@@ -1,0 +1,29 @@
+#
+# This for use with Makefile
+#
+# NOTE: Rename this file to "Makefile.local_defs" after specifying your machine settings
+#
+
+INCLUDE_PATH = -I. -I../common -I../common/newsparse -I../common/meshes -I../common/tunicate
+
+# local machine settings
+
+# For example, on Linux on a PC this will likely work:
+
+DEPEND = g++ -D__LITTLE_ENDIAN__ -DUSE_FORTRAN_BLAS -DNO_GUI -m32
+CC = g++ -Wall -D__LITTLE_ENDIAN__ -DUSE_FORTRAN_BLAS -DNO_GUI -fPIC -m32
+RELEASE_FLAGS = -O3 -funroll-loops
+DEBUG_FLAGS = -g
+LINK = g++
+
+# sub in your local lapack and blas paths here:
+LINK_LIBS = -lGL -lGLU -lglut -llapack -lblas 
+
+# On Mac OS X (on a G5), this probably will work:
+
+#DEPEND = g++ -DNO_GUI
+#CC = g++ -Wall -DNO_GUI -fPIC 
+#RELEASE_FLAGS = -fast # add -mcpu=7450 for a G4, or -mcpu=750 for a G3 since -fast enables 970(G5) instructions by default
+#DEBUG_FLAGS = -g
+#LINK = g++
+#LINK_LIBS = -framework OpenGL -framework GLUT -framework vecLib 
