@@ -1,30 +1,30 @@
 #include <zen/zen.h>
 #include <zen/MeshObject.h>
+#include <Hg/IPC/shm.hpp>
 
 namespace zenvis {
 
 struct ViewMesh : zen::INode {
-  size_t vertex_count;
   std::vector<float> vertex_data;
 
   virtual void apply() override {
     auto mesh = get_input("mesh")->as<zenbase::MeshObject>();
 
-    vertex_data.clear();
-    vertex_count = mesh->vertices.size();
-    for (int i = 0; i < vertex_count; i++) {
-      vertex_data.push_back(mesh->vertices[i].x);
-      vertex_data.push_back(mesh->vertices[i].y);
-      vertex_data.push_back(mesh->vertices[i].z);
-      vertex_data.push_back(mesh->uvs[i].x);
-      vertex_data.push_back(mesh->uvs[i].y);
-      vertex_data.push_back(mesh->normals[i].x);
-      vertex_data.push_back(mesh->normals[i].y);
-      vertex_data.push_back(mesh->normals[i].z);
-    }
+    size_t memsize = mesh->vertices.size() * 8 * sizeof(float);
+    SHM shm("/tmp/mem", memsize);
 
-    for (int i = 0; i < vertex_data.size(); i++) {
-      printf("%f\n", vertex_data[i]);
+    int memi = 0;
+    float *memdata = (float *)shm.data();
+
+    for (int i = 0; i < mesh->vertices.size(); i++) {
+      memdata[memi++] = mesh->vertices[i].x;
+      memdata[memi++] = mesh->vertices[i].y;
+      memdata[memi++] = mesh->vertices[i].z;
+      memdata[memi++] = mesh->uvs[i].x;
+      memdata[memi++] = mesh->uvs[i].y;
+      memdata[memi++] = mesh->normals[i].x;
+      memdata[memi++] = mesh->normals[i].y;
+      memdata[memi++] = mesh->normals[i].z;
     }
   }
 };
