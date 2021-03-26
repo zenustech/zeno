@@ -8,7 +8,7 @@ struct ShaderProgram : Program {
   ShaderProgram(std::string name) {
     vs = std::make_unique<Shader>(GL_VERTEX_SHADER);
     fs = std::make_unique<Shader>(GL_FRAGMENT_SHADER);
-    std::string basedir = "/home/bate/Develop/Mn/ZenProjects/OpenglVis/";
+    std::string basedir = "/home/bate/Develop/zensim/OpenglVis/";
     vs->compile(file_get_content(basedir + name + ".vert"));
     fs->compile(file_get_content(basedir + name + ".frag"));
     attach(*vs);

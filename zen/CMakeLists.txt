@@ -11,5 +11,5 @@ add_library(zenpy SHARED libzenpy.cpp)
 target_include_directories(zenpy PRIVATE include)
 target_link_libraries(zenpy PRIVATE zen)
 
-include(../../CMake/Pybind11.cmake)
+include(../cmake/Pybind11.cmake)
 do_python_bindings()

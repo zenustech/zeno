@@ -11,5 +11,5 @@ target_include_directories(zeneditor PRIVATE . imgui imnodes)
 target_include_directories(zeneditor PRIVATE ../include)
 target_link_libraries(zeneditor PRIVATE OpenGL GLEW glfw)
 
-include(../../CMake/Pybind11.cmake)
+include(../cmake/Pybind11.cmake)
 do_python_bindings()
