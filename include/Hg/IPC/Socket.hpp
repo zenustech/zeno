@@ -35,7 +35,7 @@ class Socket {
   explicit Socket(int conn = -1) : conn(conn) {}
 
 public:
-  void filedesc() const {
+  int filedesc() const {
     return conn;
   }
 
@@ -107,7 +107,7 @@ public:
     }
 
   public:
-    void filedesc() const {
+    int filedesc() const {
       return conn;
     }
 

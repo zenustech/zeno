@@ -35,7 +35,7 @@ struct ViewMesh : zen::INode {
     shm.release();
 
     Socket sock("/tmp/zenipc/command");
-    dprintf(sock.filedesc(), "MESH:%d:%s\n", vertex_count, mempath);
+    dprintf(sock.filedesc(), "@MESH %zd %s", vertex_count, mempath);
   }
 };
 
