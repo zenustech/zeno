@@ -24,5 +24,6 @@ with open(ap.output, 'w') as f:
     print('static char data[] = {', file=f)
     print(data, file=f)
     print('};', file=f)
-    print('static int res = hg::Archive::add("%s", data);' % ap.name, file=f)
+    print('static int res = hg::Archive::add('
+            '"%s", data, sizeof(data));' % ap.name, file=f)
     print('}', file=f)
