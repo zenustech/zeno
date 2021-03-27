@@ -3,7 +3,7 @@
 
 int main(int argc, char** argv)
 {
-  SocketServer serv("/tmp/UNIX.domain");
+  Socket::Server serv("/tmp/UNIX.domain", true);
 
   Socket sock = serv.listen();
   char buf[1024];
