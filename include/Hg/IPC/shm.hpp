@@ -1,11 +1,11 @@
 #pragma once
 
-#include <sys/mman.h>  
-#include <sys/types.h>  
-#include <sys/stat.h>  
-#include <fcntl.h>  
-#include <unistd.h>  
-#include <stdio.h>  
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdio.h>
 
 
 class SHM {
@@ -22,6 +22,10 @@ class SHM {
   void load(const char *path, size_t size, size_t offset)
   {
     int fd = open(path, O_RDWR, 00777);
+    if (fd < 0) {
+      perror(path);
+      return;
+    }
     m_base = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
     if (!m_base)
       perror(path);

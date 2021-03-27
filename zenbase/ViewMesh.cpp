@@ -1,6 +1,7 @@
 #include <zen/zen.h>
 #include <zen/MeshObject.h>
 #include <Hg/IPC/shm.hpp>
+#include <Hg/IPC/msq.hpp>
 
 namespace zenvis {
 
@@ -11,7 +12,9 @@ struct ViewMesh : zen::INode {
     auto mesh = get_input("mesh")->as<zenbase::MeshObject>();
 
     size_t memsize = mesh->vertices.size() * 8 * sizeof(float);
-    SHM shm("/tmp/mem", memsize);
+
+    const char *path = "/tmp/zenipc/mesh01";
+    SHM shm(path, memsize);
 
     int memi = 0;
     float *memdata = (float *)shm.data();
@@ -26,6 +29,11 @@ struct ViewMesh : zen::INode {
       memdata[memi++] = mesh->normals[i].y;
       memdata[memi++] = mesh->normals[i].z;
     }
+
+    shm.release();
+
+    MSQ msq("/tmp/zenipc/command");
+    msq.send(serialize_command("MESH", path, memsize));
   }
 };
 
