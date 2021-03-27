@@ -46,6 +46,7 @@ struct Server {
     obj->type = std::string(type);
     frm->objects.push_back(std::move(obj));
 
+    sock.writechar('%');  // inform the client that we are ready
     return true;
   }
 

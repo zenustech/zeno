@@ -17,6 +17,7 @@ struct ViewMesh : zen::INode {
     /**************/
 
     Socket sock("/tmp/zenipc/command");
+
     SharedMemory shm("/tmp/zenipc/memory", memsize);
     float *memdata = (float *)shm.data();
 
@@ -36,6 +37,8 @@ struct ViewMesh : zen::INode {
 
     shm.release();
     dprintf(sock.filedesc(), "@MESH %zd\n", memsize);
+
+    sock.readchar();  // wait server to be ready
   }
 };
 

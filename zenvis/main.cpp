@@ -135,22 +135,25 @@ static void draw_contents(void) {
 }
 
 class FPSCounter {
-  static const int N = 20;
+  double m_last_time = 0;
+  double *m_intervals;
+  int m_count = 0;
 
-  double m_last_time{0};
-  double m_intervals[N];
-  int m_count{0};
-
-protected:
-  double get_time() const {
-    return glfwGetTime();
-  }
+  const int N;
+  double (*get_time)();
 
 public:
-  FPSCounter() {
+  FPSCounter(double (*get_time)(), int N)
+    : N(N), get_time(get_time)
+  {
+    m_intervals = new double[N];
     for (int i = 0; i < N; i++) {
-      m_intervals[i] = 1e6;
+      m_intervals[i] = 0.0;
     }
+  }
+
+  ~FPSCounter() {
+    delete m_intervals;
   }
 
   void tick() {
@@ -168,24 +171,25 @@ public:
   }
 
   double fps() const {
-    return 1.0 / (1e-6 + interval());
+    double itv = interval();
+    return itv == 0.0 ? 0.0 : 1.0 / itv;
   }
 
   double interval() const {
     double ret = 0.0;
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < std::min(N, m_count); i++) {
       ret += m_intervals[i];
     }
     return ret / N;
   }
 };
 
-static FPSCounter solverFPS, renderFPS;
+static FPSCounter solverFPS(glfwGetTime, 1);
+static FPSCounter renderFPS(glfwGetTime, 10);
 
 void update_title() {
-  if (!renderFPS.ready()) {
+  if (!renderFPS.ready())
     return;
-  }
 
   char buf[512];
   sprintf(buf, "frame %d / %.1f fps / %.02f spf\n",
@@ -218,6 +222,8 @@ int mainloop() {
 
     draw_contents();
     glfwSwapBuffers(window);
+
+    curr_frameid++;
   }
 
   glfwDestroyWindow(window);

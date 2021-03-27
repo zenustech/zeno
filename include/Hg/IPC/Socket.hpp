@@ -76,6 +76,17 @@ public:
     return ret;
   }
 
+  void writechar(char c) const {
+    char buf[1] = {c};
+    this->write(buf, 1);
+  }
+
+  char readchar() const {
+    char buf[1];
+    this->read(buf, 1);
+    return buf[0];
+  }
+
   explicit Socket(const char *domain, bool streamed = true) {
     this->create(streamed);
     this->open(domain);
