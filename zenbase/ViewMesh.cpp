@@ -5,24 +5,34 @@
 #include <cstring>
 #include <vector>
 
-namespace zenvis {
+namespace zenbase {
 
 class ViewCommand {
   std::vector<char> m;
 
 public:
-  ViewCommand(const char *type, const char *path, size_t size) {
-    m.resize(sizeof(size_t) + strlen(type) + 1 + strlen(path) + 1);
-    std::memcpy(m.data(), &size, sizeof(size_t));
-    std::strcpy(m.data() + sizeof(size_t), type);
-    std::strcat(m.data() + sizeof(size_t), path);
+  enum ViewType {
+    MESH = 1,
+    PARTICLES = 2,
+    VOLUME = 3,
+  };
+
+  ViewCommand(int type, const char *path, int size) {
+    m.resize(sizeof(int) + sizeof(int) + strlen(path) + 1);
+    std::memcpy(m.data(), &size, sizeof(int));
+    std::memcpy(m.data() + sizeof(int), &type, sizeof(ViewType));
+    std::strcpy(m.data() + sizeof(int) * 2, path);
   }
 
   void *data() {
     return m.data();
   }
 
-  size_t size() {
+  const void *data() const {
+    return m.data();
+  }
+
+  size_t size() const {
     return m.size();
   }
 };
@@ -55,7 +65,7 @@ struct ViewMesh : zen::INode {
     shm.release();
 
     Socket sock("/tmp/zenipc/command", true);
-    ViewCommand cmd("MESH", path, memsize);
+    ViewCommand cmd(ViewCommand::MESH, path, memsize);
     sock.write(cmd.data(), cmd.size());
   }
 };
