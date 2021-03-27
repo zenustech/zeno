@@ -18,7 +18,7 @@ struct FrameData {
 };
 
 
-struct Server {
+struct CommandServer {
   Socket::Server serv{"/tmp/zenipc/command"};
 
   std::map<int, std::unique_ptr<FrameData>> frames;
@@ -62,9 +62,9 @@ struct Server {
 
 
 int main() {
-  Server serv;
+  CommandServer server;
   while (true) {
-    serv.fetchcmd();
+    server.fetchcmd();
     ::usleep(5000);  // sleep for 5 ms
   }
   return 0;

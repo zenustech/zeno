@@ -14,29 +14,29 @@ class SharedMemory {
 
   void load(const char *path, size_t size, size_t offset)
   {
-    int fd = open(path, O_RDWR, 00777);
+    int fd = ::open(path, O_RDWR, 00777);
     if (fd < 0) {
-      perror(path);
+      ::perror(path);
       return;
     }
-    m_base = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
+    m_base = ::mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
     if (!m_base)
-      perror(path);
-    close(fd);
+      ::perror(path);
+    ::close(fd);
   }
 
 public:
   void release()
   {
     if (m_base) {
-      munmap(m_base, m_size);
+      ::munmap(m_base, m_size);
       m_base = nullptr;
     }
   }
 
   SharedMemory(const char *path, size_t size, size_t offset = 0)
   {
-    load(path, size, offset);
+    this->load(path, size, offset);
   }
 
   void *data() const
@@ -51,6 +51,6 @@ public:
 
   ~SharedMemory()
   {
-    release();
+    this->release();
   }
 };

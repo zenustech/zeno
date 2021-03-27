@@ -36,7 +36,7 @@ class Socket {
   explicit Socket(int conn) : conn(conn) {}
 
 public:
-  Socket() = default;
+  Socket() = default;  // for listen(Socket *)
 
   int filedesc() const {
     return conn;
