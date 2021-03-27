@@ -1,5 +1,3 @@
-#pragma once
-
 #include "stdafx.hpp"
 #include "ShaderProgram.hpp"
 #include "IGraphic.hpp"
@@ -13,7 +11,7 @@ struct GraphicMesh : IGraphic {
   size_t vertex_count;
   std::unique_ptr<Buffer> vbo;
 
-  GraphicMesh(std::vector<char> const &serial) {
+  explicit GraphicMesh(std::vector<char> const &serial) {
     vertex_count = serial.size() / (8 * sizeof(float));
 
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
@@ -51,5 +49,9 @@ struct GraphicMesh : IGraphic {
     return pro;
   }
 };
+
+std::unique_ptr<IGraphic> makeGraphicMesh(std::vector<char> const &serial) {
+  return std::make_unique<GraphicMesh>(serial);
+}
 
 }

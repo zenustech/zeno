@@ -1,11 +1,10 @@
 #include "main.hpp"
 #include "frames.hpp"
 #include "IGraphic.hpp"
-#include "IG_mesh.hpp"
-//#include "IG_pars.hpp"
-//#include "IG_voxl.hpp"
 
 namespace zenvis {
+
+std::unique_ptr<IGraphic> makeGraphicMesh(std::vector<char> const &serial);
 
 std::vector<std::unique_ptr<IGraphic>> graphics;
 
@@ -28,7 +27,7 @@ void update_frame_graphics() {
     std::unique_ptr<IGraphic> gra;
 
     if (obj->type == "MESH") {
-      gra = std::make_unique<GraphicMesh>(*obj->serial);
+      gra = makeGraphicMesh(*obj->serial);
 
     //} else if (obj->type == "PARS") {
     //  gra = std::make_unique<GraphicParticles>(obj->serial);
