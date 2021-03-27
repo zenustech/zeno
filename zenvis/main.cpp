@@ -11,7 +11,8 @@ namespace zenvis {
 int curr_frameid;
 
 static GLFWwindow *window;
-static int nx = 1024, ny = 768;
+static int nx = 640, ny = 480;
+//static int nx = 1024, ny = 768;
 
 std::vector<std::unique_ptr<IGraphic>> graphics;
 
@@ -192,7 +193,7 @@ void update_title() {
     return;
 
   char buf[512];
-  sprintf(buf, "frame %d / %.1f fps / %.02f spf\n",
+  sprintf(buf, "frame %d | %.1f fps | %.02f spf\n",
       curr_frameid, renderFPS.fps(), solverFPS.interval());
   glfwSetWindowTitle(window, buf);
 }

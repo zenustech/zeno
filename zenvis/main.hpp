@@ -1,5 +1,9 @@
 #pragma once
 
+#include "stdafx.hpp"
+#include <memory>
+#include <vector>
+
 namespace zenvis {
 
 void set_program_uniforms(Program *pro);

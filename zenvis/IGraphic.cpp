@@ -1,0 +1,35 @@
+#include "main.hpp"
+#include "frames.hpp"
+#include "IGraphic.hpp"
+#include "IG_mesh.hpp"
+//#include "IG_pars.hpp"
+//#include "IG_voxl.hpp"
+
+namespace zenvis {
+
+void update_frame_graphics() {
+  graphics.clear();
+
+  if (frames.find(curr_frameid) == frames.end())
+    return;
+  auto *frm = frames.at(curr_frameid).get();
+
+  for (auto const &obj : frm->objects) {
+    std::unique_ptr<IGraphic> gra;
+
+    if (obj->type == "MESH") {
+      gra = std::make_unique<GraphicMesh>(*obj->serial);
+
+    //} else if (obj->type == "PARS") {
+    //  gra = std::make_unique<GraphicParticles>(obj->serial);
+
+    } else {
+      printf("Bad object type: %s\n", obj->type.c_str());
+      continue;
+    }
+
+    graphics.push_back(std::move(gra));
+  }
+}
+
+}
