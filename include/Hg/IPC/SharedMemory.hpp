@@ -8,7 +8,7 @@
 #include <stdio.h>
 
 
-class SHM {
+class SharedMemory {
   void *m_base{nullptr};
   size_t m_size{0};
 
@@ -33,7 +33,7 @@ class SHM {
   }
 
 public:
-  SHM(const char *path, size_t size, size_t offset = 0)
+  SharedMemory(const char *path, size_t size, size_t offset = 0)
   {
     load(path, size, offset);
   }
@@ -46,7 +46,7 @@ public:
     return m_size;
   }
 
-  ~SHM()
+  ~SharedMemory()
   {
     release();
   }
