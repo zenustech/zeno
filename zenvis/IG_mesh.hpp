@@ -34,7 +34,9 @@ struct GraphicMesh : IGraphic {
     vbo->attribute(/*index=*/2,
         /*offset=*/sizeof(float) * 5, /*stride=*/sizeof(float) * 8,
         GL_FLOAT, /*count=*/3);
+
     CHECK_GL(glDrawArrays(GL_TRIANGLES, /*first=*/0, /*count=*/vertex_count));
+
     vbo->disable_attribute(0);
     vbo->disable_attribute(1);
     vbo->disable_attribute(2);

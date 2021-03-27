@@ -19,7 +19,8 @@ class SharedMemory {
       ::perror(path);
       return;
     }
-    m_base = ::mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
+    m_size = size;
+    m_base = ::mmap(NULL, m_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
     if (!m_base)
       ::perror(path);
     ::close(fd);
@@ -31,6 +32,7 @@ public:
     if (m_base) {
       ::munmap(m_base, m_size);
       m_base = nullptr;
+      m_size = 0;
     }
   }
 

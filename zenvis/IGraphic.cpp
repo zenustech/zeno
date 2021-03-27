@@ -7,11 +7,21 @@
 
 namespace zenvis {
 
+std::vector<std::unique_ptr<IGraphic>> graphics;
+
+static int last_frameid;
+
 void update_frame_graphics() {
+  if (last_frameid == curr_frameid)
+    return;
+  last_frameid = curr_frameid;
+
   graphics.clear();
 
-  if (frames.find(curr_frameid) == frames.end())
+  if (frames.find(curr_frameid) == frames.end()) {
+    printf("frame cache invalid at frame id: %d\n", curr_frameid);
     return;
+  }
   auto *frm = frames.at(curr_frameid).get();
 
   for (auto const &obj : frm->objects) {

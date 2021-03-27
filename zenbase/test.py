@@ -10,6 +10,9 @@ def execute(frame):
         if frame == 0: zen.addNode('ViewMesh', 'No4')
         zen.setNodeInput('No4', 'mesh', 'No1::mesh')
         zen.applyNode('No4')
+        if frame == 0: zen.addNode('SleepMilis', 'No5')
+        zen.setNodeParam('No5', 'ms', int(1000))
+        zen.applyNode('No5')
         if frame == 0: zen.addNode('EndFrame', 'endFrame')
         zen.applyNode('endFrame')
 

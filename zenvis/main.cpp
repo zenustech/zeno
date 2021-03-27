@@ -14,8 +14,6 @@ static GLFWwindow *window;
 static int nx = 640, ny = 480;
 //static int nx = 1024, ny = 768;
 
-std::vector<std::unique_ptr<IGraphic>> graphics;
-
 static void error_callback(int error, const char *msg) {
   fprintf(stderr, "error %d: %s\n", error, msg);
 }
@@ -107,6 +105,7 @@ static void initialize() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
   window = glfwCreateWindow(nx, ny, "viewport", NULL, NULL);
+  glfwSetWindowPos(window, 0, 0);
   glfwMakeContextCurrent(window);
   glfwSetErrorCallback(error_callback);
   glfwSetKeyCallback(window, key_callback);
@@ -209,9 +208,13 @@ int mainloop() {
       curr_frameid = server.frameid;
       // poll the latest solved frame (if any) so that we could proceed
       server.poll();
-      if (server.frameid != curr_frameid)
+      // check if the solver has stepped forward in frame id
+      if (server.frameid != curr_frameid) {
         solverFPS.tick();
+      }
     }
+
+    update_frame_graphics();
 
     renderFPS.tick();
     update_title();
