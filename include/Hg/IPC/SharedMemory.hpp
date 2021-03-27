@@ -12,13 +12,6 @@ class SharedMemory {
   void *m_base{nullptr};
   size_t m_size{0};
 
-  void release()
-  {
-    if (m_base)
-      munmap(m_base, m_size);
-    m_base = nullptr;
-  }
-
   void load(const char *path, size_t size, size_t offset)
   {
     int fd = open(path, O_RDWR, 00777);
@@ -33,16 +26,26 @@ class SharedMemory {
   }
 
 public:
+  void release()
+  {
+    if (m_base) {
+      munmap(m_base, m_size);
+      m_base = nullptr;
+    }
+  }
+
   SharedMemory(const char *path, size_t size, size_t offset = 0)
   {
     load(path, size, offset);
   }
 
-  void *data() const {
+  void *data() const
+  {
     return m_base;
   }
 
-  size_t size() const {
+  size_t size() const
+  {
     return m_size;
   }
 

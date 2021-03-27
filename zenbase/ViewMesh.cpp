@@ -1,9 +1,31 @@
 #include <zen/zen.h>
 #include <zen/MeshObject.h>
-#include <Hg/IPC/shm.hpp>
-#include <Hg/IPC/msq.hpp>
+#include <Hg/IPC/SharedMemory.hpp>
+#include <Hg/IPC/Socket.hpp>
+#include <cstring>
+#include <vector>
 
 namespace zenvis {
+
+class ViewCommand {
+  std::vector<char> m;
+
+public:
+  ViewCommand(const char *type, const char *path, size_t size) {
+    m.resize(sizeof(size_t) + strlen(type) + 1 + strlen(path) + 1);
+    std::memcpy(m.data(), &size, sizeof(size_t));
+    std::strcpy(m.data() + sizeof(size_t), type);
+    std::strcat(m.data() + sizeof(size_t), path);
+  }
+
+  void *data() {
+    return m.data();
+  }
+
+  size_t size() {
+    return m.size();
+  }
+};
 
 struct ViewMesh : zen::INode {
   std::vector<float> vertex_data;
@@ -14,7 +36,7 @@ struct ViewMesh : zen::INode {
     size_t memsize = mesh->vertices.size() * 8 * sizeof(float);
 
     const char *path = "/tmp/zenipc/mesh01";
-    SHM shm(path, memsize);
+    SharedMemory shm(path, memsize);
 
     int memi = 0;
     float *memdata = (float *)shm.data();
@@ -32,8 +54,9 @@ struct ViewMesh : zen::INode {
 
     shm.release();
 
-    MSQ msq("/tmp/zenipc/command");
-    msq.send(serialize_command("MESH", path, memsize));
+    Socket sock("/tmp/zenipc/command", true);
+    ViewCommand cmd("MESH", path, memsize);
+    sock.write(cmd.data(), cmd.size());
   }
 };
 
