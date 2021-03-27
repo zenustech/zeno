@@ -8,9 +8,10 @@
 
 namespace zenvis {
 
+int curr_frameid;
+
 static GLFWwindow *window;
 static int nx = 1024, ny = 768;
-static std::string title = "quicksilver";
 
 std::vector<std::unique_ptr<IGraphic>> graphics;
 
@@ -104,7 +105,7 @@ static void initialize() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
-  window = glfwCreateWindow(nx, ny, title.c_str(), NULL, NULL);
+  window = glfwCreateWindow(nx, ny, "viewport", NULL, NULL);
   glfwMakeContextCurrent(window);
   glfwSetErrorCallback(error_callback);
   glfwSetKeyCallback(window, key_callback);
@@ -133,38 +134,84 @@ static void draw_contents(void) {
   CHECK_GL(glFlush());
 }
 
-static void measure_fps() {
-  char buf[128];
-  static int nframes;
-  static double last_time;
-  double curr_time = glfwGetTime();
+class FPSCounter {
+  static const int N = 20;
 
-  nframes++;
-  if (last_time == 0)
-    last_time = curr_time;
-  if (curr_time - last_time >= 1.0) {
-    sprintf(buf, "%s (%d FPS)\n", title.c_str(), nframes);
-    glfwSetWindowTitle(window, buf);
-    last_time += 1.0;
-    nframes = 0;
+  double m_last_time{0};
+  double m_intervals[N];
+  int m_count{0};
+
+protected:
+  double get_time() const {
+    return glfwGetTime();
   }
+
+public:
+  FPSCounter() {
+    for (int i = 0; i < N; i++) {
+      m_intervals[i] = 1e6;
+    }
+  }
+
+  void tick() {
+    double curr_time = get_time();
+    if (m_last_time == 0) {
+      m_last_time = curr_time;
+    }
+    double interval = std::max(0.0, curr_time - m_last_time);
+    m_intervals[m_count++ % N] = interval;
+    m_last_time = curr_time;
+  }
+
+  int ready() const {
+    return m_count % N == 0;
+  }
+
+  double fps() const {
+    return 1.0 / (1e-6 + interval());
+  }
+
+  double interval() const {
+    double ret = 0.0;
+    for (int i = 0; i < N; i++) {
+      ret += m_intervals[i];
+    }
+    return ret / N;
+  }
+};
+
+static FPSCounter solverFPS, renderFPS;
+
+void update_title() {
+  if (!renderFPS.ready()) {
+    return;
+  }
+
+  char buf[512];
+  sprintf(buf, "frame %d / %.1f fps / %.02f spf\n",
+      curr_frameid, renderFPS.fps(), solverFPS.interval());
+  glfwSetWindowTitle(window, buf);
 }
 
 int mainloop() {
   initialize();
-
   auto &server = Server::get();
 
   while (!glfwWindowShouldClose(window)) {
+
     if (curr_frameid >= server.frameid) {
       // renderer frame id can never go beyond frame id of the solver
       curr_frameid = server.frameid;
-      // non-block poll the latest solved frame (if any)
+      // poll the latest solved frame (if any) so that we could proceed
       server.poll();
+      if (server.frameid != curr_frameid)
+        solverFPS.tick();
     }
 
+    renderFPS.tick();
+    update_title();
+
     glfwPollEvents();
-    measure_fps();
 
     glfwGetFramebufferSize(window, &nx, &ny);
     CHECK_GL(glViewport(0, 0, nx, ny));

@@ -10,7 +10,7 @@ namespace zenvis {
 
 struct Server {
   Socket::Server serv{"/tmp/zenipc/command"};
-  int frameid = 1;
+  int frameid = 0;
 
   bool poll_once() {
     Socket sock;
@@ -50,7 +50,8 @@ struct Server {
   }
 
   void poll() {
-    while (poll_once());  // keep polling until queue empty or frame ends
+    // keep polling until queue empty or frame ends
+    while (poll_once());
   }
 
 private:
