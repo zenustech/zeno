@@ -1,6 +1,7 @@
 #include "stdafx.hpp"
-#include "server.hpp"
 #include "main.hpp"
+#include "server.hpp"
+#include "frames.hpp"
 #include "IGraphic.hpp"
 #include <sstream>
 #include <cstdlib>
@@ -119,69 +120,6 @@ static void initialize() {
   CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
 
   vao = std::make_unique<VAO>();
-
-#if 0
-  zen::addNode("ReadObjMesh", "No1");
-  zen::setNodeParam("No1", "path", std::string("../monkey.obj"));
-  zen::applyNode("No1");
-  zen::addNode("ViewMesh", "No2");
-  zen::setNodeInput("No2", "mesh", "No1::mesh");
-  zen::applyNode("No2");
-#else
-#if 0
-  zen::addNode("ReadParticles", "No1");
-  zen::setNodeParam("No1", "path", std::string("../monkey.obj"));
-  zen::applyNode("No1");
-  zen::addNode("ViewParticles", "No2");
-  zen::setNodeInput("No2", "pars", "No1::pars");
-  zen::applyNode("No2");
-#endif
-#endif
-
-#if 0
-  auto mesh = std::make_unique<Mesh>("monkey.obj");
-  objects.push_back(std::move(mesh));
-
-  auto pars = std::make_unique<Particles>("fake0100.txt");
-  objects.push_back(std::move(pars));
-
-  auto voxl = std::make_unique<Volume>("assets/smoke.vdb");
-  objects.push_back(std::move(voxl));
-#else
-#if 0
-  auto pars = std::make_unique<Particles>("fake0100.txt");
-  auto voxl = std::make_unique<ParticlesToVolume>(pars.get());
-  auto mesh = std::make_unique<VolumeToMesh>(voxl.get());
-  //objects.push_back(std::move(pars));
-  //objects.push_back(std::move(voxl));
-  objects.push_back(std::move(mesh));
-#else
-#if 0
-  auto mesh = std::make_unique<Mesh>("monkey.obj");
-  auto voxl = std::make_unique<MeshToVolume>(mesh.get());
-  objects.push_back(std::move(voxl));
-#else
-#if 0
-  //auto voxl = std::make_unique<Volume>("assets/smoke.vdb");
-  auto voxl = std::make_unique<Volume>("../RobustMPM/rock.vdb");
-  auto mesh = std::make_unique<VolumeToMesh>(voxl.get());
-  objects.push_back(std::move(mesh));
-#else
-#endif
-#endif
-#endif
-#endif
-
-#if 0
-  for (int i = 1; i <= 60; i++) {
-    std::stringstream ss;
-    ss << "/tmp/pars" << i << ".txt";
-    auto css = ss.str().c_str();
-    printf("Loading particles from %s\n", css);
-    auto pars = std::make_unique<Particles>(css);
-    objects.push_back(std::move(pars));
-  }
-#endif
 }
 
 static void draw_contents(void) {
@@ -212,10 +150,11 @@ static void measure_fps() {
   }
 }
 
-static int main() {
+int mainloop() {
   initialize();
+
   while (!glfwWindowShouldClose(window)) {
-    CommandServer::get().poll();
+    Server::get().poll();
 
     glfwPollEvents();
     measure_fps();
@@ -235,5 +174,5 @@ static int main() {
 }
 
 int main(int argc, char **argv) {
-  return zenvis::main();
+  return zenvis::mainloop();
 }

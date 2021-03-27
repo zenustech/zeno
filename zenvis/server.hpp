@@ -2,31 +2,14 @@
 
 #include <Hg/IPC/Socket.hpp>
 #include <Hg/IPC/SharedMemory.hpp>
-#include <cstring>
-#include <vector>
-#include <memory>
-#include <string>
-#include <map>
+#include "frames.hpp"
 
 
 namespace zenvis {
 
 
-struct ObjectData {
-  std::unique_ptr<std::vector<char>> serial;
-  std::string type;
-};
-
-
-struct FrameData {
-  std::vector<std::unique_ptr<ObjectData>> objects;
-};
-
-
-struct CommandServer {
+struct Server {
   Socket::Server serv{"/tmp/zenipc/command"};
-
-  std::map<int, std::unique_ptr<FrameData>> frames;
   int frameid = 1;
 
   void poll() {
@@ -65,14 +48,14 @@ struct CommandServer {
   }
 
 private:
-  static std::unique_ptr<CommandServer> _instance;
+  static std::unique_ptr<Server> _instance;
   struct _PrivCtor {};
 
 public:
-  CommandServer(_PrivCtor) {}
-  static CommandServer &get() {
+  Server(_PrivCtor) {}
+  static Server &get() {
     if (!_instance)
-      _instance = std::make_unique<CommandServer>(_PrivCtor{});
+      _instance = std::make_unique<Server>(_PrivCtor{});
     return *_instance;
   }
 };

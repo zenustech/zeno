@@ -9,6 +9,7 @@ namespace zenbase {
 
 struct ViewMesh : zen::INode {
   virtual void apply() override {
+
     /**************/
     auto mesh = get_input("mesh")->as<zenbase::MeshObject>();
     size_t vertex_count = mesh->vertices.size();
@@ -34,7 +35,6 @@ struct ViewMesh : zen::INode {
     /**************/
 
     shm.release();
-
     dprintf(sock.filedesc(), "@MESH %zd\n", memsize);
   }
 };
