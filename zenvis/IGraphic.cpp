@@ -19,7 +19,7 @@ void update_frame_graphics() {
   graphics.clear();
 
   if (frames.find(curr_frameid) == frames.end()) {
-    printf("frame cache invalid at frame id: %d\n", curr_frameid);
+    printf("no frame cache at frame id: %d\n", curr_frameid);
     return;
   }
   auto *frm = frames.at(curr_frameid).get();

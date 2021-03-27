@@ -8,7 +8,7 @@
 
 namespace zenvis {
 
-int curr_frameid;
+int curr_frameid = -1;
 
 static GLFWwindow *window;
 static int nx = 640, ny = 480;
@@ -205,11 +205,11 @@ int mainloop() {
 
     if (curr_frameid >= server.frameid) {
       // renderer frame id can never go beyond frame id of the solver
-      curr_frameid = server.frameid;
+      curr_frameid = server.frameid - 1;
       // poll the latest solved frame (if any) so that we could proceed
       server.poll();
       // check if the solver has stepped forward in frame id
-      if (server.frameid != curr_frameid) {
+      if (server.frameid - 1 != curr_frameid) {
         solverFPS.tick();
       }
     }
