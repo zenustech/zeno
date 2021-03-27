@@ -153,8 +153,15 @@ static void measure_fps() {
 int mainloop() {
   initialize();
 
+  auto &server = Server::get();
+
   while (!glfwWindowShouldClose(window)) {
-    Server::get().poll();
+    if (curr_frameid >= server.frameid) {
+      // renderer frame id can never go beyond frame id of the solver
+      curr_frameid = server.frameid;
+      // non-block poll the latest solved frame (if any)
+      server.poll();
+    }
 
     glfwPollEvents();
     measure_fps();

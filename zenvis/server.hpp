@@ -12,13 +12,13 @@ struct Server {
   Socket::Server serv{"/tmp/zenipc/command"};
   int frameid = 1;
 
-  void poll() {
+  bool poll_once() {
     Socket sock;
     serv.set_nonblock(true);
     bool ready = serv.listen(&sock);
     serv.set_nonblock(false);
     if (!ready)
-      return;
+      return false;
 
     char buf[1024];
     size_t num = sock.read(buf, sizeof(buf));
@@ -30,7 +30,7 @@ struct Server {
     sscanf(buf, "@%s%zd", type, &memsize);
     if (!strcmp(type, "ENDF")) {
       frameid++;
-      return;
+      return false;
     }
 
     SharedMemory shm("/tmp/zenipc/memory", memsize);
@@ -45,6 +45,12 @@ struct Server {
     std::memcpy(obj->serial->data(), shm.data(), shm.size());
     obj->type = std::string(type);
     frm->objects.push_back(std::move(obj));
+
+    return true;
+  }
+
+  void poll() {
+    while (poll_once());  // keep polling until queue empty or frame ends
   }
 
 private:

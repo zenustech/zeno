@@ -2,6 +2,6 @@
 
 namespace zenvis {
 
-std::unique_ptr<CommandServer> CommandServer::_instance;
+std::unique_ptr<Server> Server::_instance;
 
 }
