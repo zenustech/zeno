@@ -10,6 +10,8 @@ def execute(frame):
         if frame == 0: zen.addNode('ViewMesh', 'No4')
         zen.setNodeInput('No4', 'mesh', 'No1::mesh')
         zen.applyNode('No4')
+        if frame == 0: zen.addNode('EndFrame', 'endFrame')
+        zen.applyNode('endFrame')
 
 for frame in range(64):
         print('[Zen] executing frame', frame)

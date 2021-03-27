@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <fcntl.h>
 #include <memory>
 
 
@@ -32,11 +33,22 @@ class Socket {
     }
   }
 
-  explicit Socket(int conn = -1) : conn(conn) {}
+  explicit Socket(int conn) : conn(conn) {}
 
 public:
+  Socket() = default;
+
   int filedesc() const {
     return conn;
+  }
+
+  void set_nonblock(bool nonblock = true) const {
+    int flag = ::fcntl(conn, F_GETFL);
+    if (nonblock)
+      flag |= O_NONBLOCK;
+    else
+      flag &= ~O_NONBLOCK;
+    ::fcntl(conn, F_SETFL, flag);
   }
 
   void close() {
@@ -49,7 +61,7 @@ public:
   void write(const void *buf, size_t size) const {
     int ret = ::write(conn, buf, size);
     if (ret < 0) {
-      perror("write");
+      ::perror("write");
       return;
     }
   }
@@ -57,7 +69,8 @@ public:
   size_t read(void *buf, size_t size) const {
     ssize_t ret = ::read(conn, buf, size);
     if (ret < 0) {
-      perror("read");
+      if (errno != EAGAIN)
+        ::perror("read");
       return 0;
     }
     return ret;
@@ -111,21 +124,32 @@ public:
       return conn;
     }
 
-    Socket listen(int backlog = 1) const {
+    void set_nonblock(bool nonblock = true) const {
+      int flag = ::fcntl(conn, F_GETFL);
+      if (nonblock)
+        flag |= O_NONBLOCK;
+      else
+        flag &= ~O_NONBLOCK;
+      ::fcntl(conn, F_SETFL, flag);
+    }
+
+    bool listen(Socket *sock, int backlog = 10) const {
       int ret = ::listen(conn, backlog);
       if (ret < 0) {
         ::perror("listen");
-        return Socket();
+        return false;
       }
 
       struct sockaddr_un clt_addr;
       socklen_t len = sizeof(clt_addr);
       int fd = ::accept(conn, (struct sockaddr *)&clt_addr, &len);
       if (fd < 0) {
-        ::perror("accept");
-        return Socket();
+        if (errno != EAGAIN)
+          ::perror("accept");
+        return false;
       }
-      return Socket(fd);
+      sock->conn = fd;
+      return true;
     }
 
     explicit Server(const char *domain, bool streamed = true) {

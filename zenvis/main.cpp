@@ -18,15 +18,19 @@ struct FrameData {
 };
 
 
-std::map<int, std::unique_ptr<FrameData>> frames;
-int frameid = 1;
+struct Server {
+  Socket::Server serv{"/tmp/zenipc/command"};
 
+  std::map<int, std::unique_ptr<FrameData>> frames;
+  int frameid = 1;
 
-void server_loop() {
-  Socket::Server serv("/tmp/zenipc/command");
-
-  while (true) {
-    Socket sock = serv.listen();
+  void fetchcmd() {
+    Socket sock;
+    serv.set_nonblock(true);
+    bool ready = serv.listen(&sock);
+    serv.set_nonblock(false);
+    if (!ready)
+      return;
 
     char buf[1024];
     size_t num = sock.read(buf, sizeof(buf));
@@ -36,6 +40,11 @@ void server_loop() {
     size_t memsize = 0;
     char type[32] = {0};
     sscanf(buf, "@%s%zd", type, &memsize);
+    if (!strcmp(type, "ENDF")) {
+      frameid++;
+      return;
+    }
+
     SharedMemory shm("/tmp/zenipc/memory", memsize);
 
     if (frames.find(frameid) == frames.end()) {
@@ -49,11 +58,14 @@ void server_loop() {
     obj->type = std::string(type);
     frm->objects.push_back(std::move(obj));
   }
-}
+};
 
 
-int main(int argc, char **argv)
-{
-  server_loop();
+int main() {
+  Server serv;
+  while (true) {
+    serv.fetchcmd();
+    ::usleep(5000);  // sleep for 5 ms
+  }
   return 0;
 }

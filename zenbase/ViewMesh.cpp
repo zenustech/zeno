@@ -8,8 +8,6 @@
 namespace zenbase {
 
 struct ViewMesh : zen::INode {
-  std::vector<float> vertex_data;
-
   virtual void apply() override {
     /**************/
     auto mesh = get_input("mesh")->as<zenbase::MeshObject>();
