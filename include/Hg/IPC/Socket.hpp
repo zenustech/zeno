@@ -35,6 +35,10 @@ class Socket {
   explicit Socket(int conn = -1) : conn(conn) {}
 
 public:
+  void filedesc() const {
+    return conn;
+  }
+
   void close() {
     if (conn >= 0) {
       ::close(conn);
@@ -42,7 +46,7 @@ public:
     }
   }
 
-  void write(const void *buf, size_t size) {
+  void write(const void *buf, size_t size) const {
     int ret = ::write(conn, buf, size);
     if (ret < 0) {
       perror("write");
@@ -50,7 +54,7 @@ public:
     }
   }
 
-  size_t read(void *buf, size_t size) {
+  size_t read(void *buf, size_t size) const {
     ssize_t ret = ::read(conn, buf, size);
     if (ret < 0) {
       perror("read");
@@ -59,7 +63,7 @@ public:
     return ret;
   }
 
-  Socket(const char *domain, bool streamed) {
+  explicit Socket(const char *domain, bool streamed = true) {
     this->create(streamed);
     this->open(domain);
   }
@@ -103,7 +107,11 @@ public:
     }
 
   public:
-    Socket listen(int backlog = 1) {
+    void filedesc() const {
+      return conn;
+    }
+
+    Socket listen(int backlog = 1) const {
       int ret = ::listen(conn, backlog);
       if (ret < 0) {
         ::perror("listen");
@@ -120,7 +128,7 @@ public:
       return Socket(fd);
     }
 
-    Server(const char *domain, bool streamed) {
+    explicit Server(const char *domain, bool streamed = true) {
       this->create(streamed);
       this->open(domain);
     }
