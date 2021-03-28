@@ -4,6 +4,7 @@
 #include "frames.hpp"
 #include "IGraphic.hpp"
 #include <Hg/FPSCounter.hpp>
+#include <Hg/IPC/SharedMemory.hpp>
 #include <sstream>
 #include <cstdlib>
 
@@ -147,11 +148,22 @@ void update_title() {
   glfwSetWindowTitle(window, buf);
 }
 
+static std::unique_ptr<Socket::Server> srv;
+
+void sync_frameid() {
+  SharedMemory shm("/tmp/zenipc/frameid", 4);
+  int *memdata = (int *)shm.data();
+  memdata[1] = curr_frameid;
+  curr_frameid = memdata[0];
+}
+
 int mainloop() {
   initialize();
   auto &server = Server::get();
 
   while (!glfwWindowShouldClose(window)) {
+
+    sync_frameid();
 
     if (curr_frameid >= server.frameid) {
       // renderer frame id can never go beyond frame id of the solver
@@ -176,8 +188,6 @@ int mainloop() {
 
     draw_contents();
     glfwSwapBuffers(window);
-
-    curr_frameid++;
   }
 
   glfwDestroyWindow(window);
