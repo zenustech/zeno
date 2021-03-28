@@ -1,6 +1,4 @@
 find_path(zen_ROOT_DIR NAMES libzen.so PATHS
-    /home/bate/Develop/Mn/Hg/zen/zen
-    /home/dilei/Codes/Mn/Hg/zen/zen
     /usr/lib/python3.6/site-packages/zen
     /usr/lib/python3.7/site-packages/zen
     /usr/lib/python3.8/site-packages/zen
