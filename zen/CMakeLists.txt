@@ -1,8 +1,3 @@
-cmake_minimum_required(VERSION 3.18)
-project(zen LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 20)
-
-
 file(GLOB PROJECT_SOURCE *.cpp include/*/*.h)
 
 add_library(zen SHARED)
@@ -11,12 +6,10 @@ target_link_directories(zen PRIVATE ../external)
 
 target_sources(zen PRIVATE ${PROJECT_SOURCE})
 target_include_directories(zen PUBLIC include)
+
 target_compile_options(zen PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fopenmp>)
 target_link_libraries(zen PRIVATE openvdb Half IlmImf tbb)
-target_compile_definitions(zen
-    PRIVATE   FMT_HEADER_ONLY
-)
-
+target_compile_definitions(zen PRIVATE FMT_HEADER_ONLY)
 find_package(OpenMP)
 if (TARGET OpenMP::OpenMP_CXX)
     set_target_properties(OpenMP::OpenMP_CXX PROPERTIES IMPORTED_GLOBAL TRUE)
