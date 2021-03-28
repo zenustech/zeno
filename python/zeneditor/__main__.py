@@ -6,9 +6,6 @@ import os
 
 
 preloads = '''import zen
-zen.loadLibrary('../FastFLIP/build/libFLIPlib.so')
-zen.loadLibrary('../zenbase/build/libzenbase.so')
-zen.loadLibrary('../OpenglVis/build/libzenvis.so')
 '''
 
 
