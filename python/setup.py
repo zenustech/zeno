@@ -1,3 +1,6 @@
+###############################################################################
+# THIS IS A TEMPLATE OF SETUP.PY - NEVER RUN IT DIRECTLY, RUN BUILD.PY INSTEAD!
+###############################################################################
 import setuptools
 import glob
 
@@ -6,10 +9,10 @@ data_files = ['zen/libzenpy.so'] + glob.glob('zen/include/zen/*')
 setuptools.setup(name='zen',
                  packages=['zen'],
                  version='0.0.1',
-                 description='Zensim node system',
+                 description='The unified node system for CG simulation',
                  author='archibate',
                  author_email='1931127624@qq.com',
-                 url='https://github.com/littlemine/Mn',
+                 url='https://github.com/archibate/zeno',
                  install_requires=[
                      'pybind11>=2.5.0',
                  ],

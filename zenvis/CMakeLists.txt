@@ -10,5 +10,4 @@ target_link_directories(zen PRIVATE ../external)
 
 target_sources(zenvis PRIVATE ${PROJECT_SOURCE})
 target_include_directories(zenvis PRIVATE .)
-target_include_directories(zenvis PRIVATE ../include ../external)
 target_link_libraries(zenvis PRIVATE OpenGL GLEW glfw pthread)

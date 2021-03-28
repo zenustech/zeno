@@ -10,17 +10,19 @@ repodir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(repodir)
 with tempfile.TemporaryDirectory() as tmpdir:
     shutil.copy('setup.py', tmpdir)
-    shutil.copy('MANIFEST.in', tmpdir)
     shutil.copytree('zen', os.path.join(tmpdir, 'zen'))
-    assert os.path.exists('build/libzenpy.so'), 'please build the library first'
-    shutil.copy('build/libzenpy.so', os.path.join(tmpdir, 'zen/libzenpy.so'))
-    shutil.copytree('include', os.path.join(tmpdir, 'zen/include'))
+    libpath = os.path.join(repodir, '../build/zen/libzenpy.so')
+    assert os.path.exists(libpath), 'please build the library first'
+    shutil.copy(libpath, os.path.join(tmpdir, 'zen/libzenpy.so'))
+    incpath = os.path.join(repodir, '../zen/include')
+    shutil.copytree(incpath, os.path.join(tmpdir, 'zen/include'))
     os.chdir(tmpdir)
     subprocess.check_call([sys.executable, 'setup.py', 'bdist_wheel'])
     os.chdir(repodir)
-    res = glob.glob(os.path.join(tmpdir, 'dist', '*.whl'))
+    res = glob.glob(os.path.join(tmpdir, 'dist/*.whl'))
     assert len(res) == 1, res
-    whlpath = os.path.join(repodir, 'build', os.path.basename(res[0]))
+    assert os.path.exists(res[0]), res[0]
+    whlpath = os.path.join(repodir, '../build', os.path.basename(res[0]))
     shutil.copy(res[0], whlpath)
-    assert os.path.exists(whlpath)
+    assert os.path.exists(whlpath), whlpath
     print('done with', whlpath)
