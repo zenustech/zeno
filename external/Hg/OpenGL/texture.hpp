@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Hg/stb_image.h>
+#include <stb_image.h>
 
 namespace hg::OpenGL {
 

@@ -5,14 +5,12 @@ set(CMAKE_CXX_STANDARD 20)
 file(GLOB PROJECT_SOURCE *.cpp *.h)
 
 add_library(zeneditor SHARED)
-target_include_directories(zen PRIVATE ../external)
-target_link_directories(zen PRIVATE ../external)
+target_include_directories(zeneditor PRIVATE ../external)
+target_link_directories(zeneditor PRIVATE ../external)
 
 target_sources(zeneditor PRIVATE ${PROJECT_SOURCE})
 target_include_directories(zeneditor PRIVATE .)
-target_include_directories(zeneditor PRIVATE ../include ../external)
-target_link_libraries(zeneditor PRIVATE OpenGL GLEW glfw)
-target_link_libraries(zeneditor PRIVATE imgui imnodes)
+target_link_libraries(zeneditor PRIVATE OpenGL GLEW glfw imgui imnodes)
 
 include(../scripts/Pybind11.cmake)
 do_python_bindings()

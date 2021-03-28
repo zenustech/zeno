@@ -38,14 +38,7 @@ target_link_libraries(FLIPlib PUBLIC TBB::tbb pthread openblas f2c lapack cblas)
 target_link_libraries(FLIPlib PUBLIC TBB::tbbmalloc TBB::tbbmalloc_proxy)
 
 # zen link flags
-target_include_directories(FLIPlib PRIVATE ../zen/include)
-target_link_directories(FLIPlib PRIVATE ../zen/build)
 target_link_libraries(FLIPlib PRIVATE zen)
-
-# zenbase link flags
-target_include_directories(FLIPlib PRIVATE ../zenbase/include)
-target_link_directories(FLIPlib PRIVATE ../zenbase/build)
-target_link_libraries(FLIPlib PRIVATE zenbase)
 
 #disable default malloc options
 if (WIN32)
