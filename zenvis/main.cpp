@@ -201,6 +201,7 @@ int mainloop() {
     ImGui::Begin("Render Control");
     ImGui::SliderInt("Current Frame", &curr_frameid, 0, 100);
     ImGui::End();
+    ImGui::ShowDemoWindow();
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

@@ -201,7 +201,7 @@ struct NodeEditor {
     float value{0};
 
     virtual void draw_slider() override {
-      ImGui::DragFloat("", &value, 0.01f);
+      ImGui::InputFloat("", &value);
     }
 
     virtual void dump(std::ostream &out) override {
@@ -217,7 +217,7 @@ struct NodeEditor {
     int value{0};
 
     virtual void draw_slider() override {
-      ImGui::DragInt("", &value, 1);
+      ImGui::InputInt("", &value);
     }
 
     virtual void dump(std::ostream &out) override {
@@ -233,7 +233,7 @@ struct NodeEditor {
     float value[3]{0, 0, 0};
 
     virtual void draw_slider() override {
-      ImGui::DragFloat3("", value, 1);
+      ImGui::InputFloat3("", value);
     }
 
     virtual int eval_width() override {
@@ -253,7 +253,7 @@ struct NodeEditor {
     int value[3]{0, 0, 0};
 
     virtual void draw_slider() override {
-      ImGui::DragInt3("", value, 1);
+      ImGui::InputInt3("", value);
     }
 
     virtual int eval_width() override {
