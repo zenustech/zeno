@@ -12,15 +12,19 @@ class SharedMemory {
   void *m_base{nullptr};
   size_t m_size{0};
 
-  void load(const char *path, size_t size, size_t offset)
+  void load(const char *path, size_t size)
   {
+    if (::truncate(path, size) < 0) {
+      ::perror(path);
+      return;
+    }
     int fd = ::open(path, O_RDWR, 00777);
     if (fd < 0) {
       ::perror(path);
       return;
     }
     m_size = size;
-    m_base = ::mmap(NULL, m_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
+    m_base = ::mmap(NULL, m_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (!m_base)
       ::perror(path);
     ::close(fd);
@@ -36,9 +40,9 @@ public:
     }
   }
 
-  SharedMemory(const char *path, size_t size, size_t offset = 0)
+  SharedMemory(const char *path, size_t size)
   {
-    this->load(path, size, offset);
+    this->load(path, size);
   }
 
   void *data() const

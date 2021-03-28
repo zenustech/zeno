@@ -11,7 +11,7 @@ struct RandomParticles : zen::INode {
     auto pars = zen::IObject::make<ParticlesObject>();
 
     for (int i = 0; i < count; i++) {
-      glm::vec3 p(drand48() * 2 - 1, drand48( * 2 - 1), drand48() * 2 - 1);
+      glm::vec3 p(drand48() * 2 - 1, drand48() * 2 - 1, drand48() * 2 - 1);
       glm::vec3 v(0);
 
       pars->pos.push_back(p);
