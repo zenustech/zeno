@@ -148,9 +148,6 @@ static hg::FPSCounter solverFPS(glfwGetTime, 1);
 static hg::FPSCounter renderFPS(glfwGetTime, 10);
 
 void update_title() {
-  if (!renderFPS.ready())
-    return;
-
   char buf[512];
   sprintf(buf, "frame %d | %.1f fps | %.02f spf\n",
       curr_frameid, renderFPS.fps(), solverFPS.interval());
@@ -175,7 +172,6 @@ int mainloop() {
   while (!glfwWindowShouldClose(window)) {
 
     server.poll_init();
-
     if (curr_frameid >= server.frameid) {
       curr_frameid = server.frameid - 1;
       server.poll();
@@ -200,9 +196,20 @@ int mainloop() {
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(400, 55), ImGuiCond_FirstUseEver);
     ImGui::Begin("Render Control");
-    ImGui::DragInt("Current Frame", &curr_frameid);
-    if (curr_frameid < 0) curr_frameid = 0;
+
+    ImGui::SetNextItemWidth(400 - 13 * ImGui::GetFontSize());
+    ImGui::SliderInt("Current Frame", &curr_frameid, 0, server.frameid);
+
+    ImGui::SameLine();
+    static bool playing = true;
+    if (ImGui::Button(playing ? "Stop" : "Play")) {
+      printf("%d\n", playing);
+      playing = !playing;
+    }
     ImGui::End();
+
+    if (playing) curr_frameid++;
+    if (curr_frameid < 0) curr_frameid = 0;
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
