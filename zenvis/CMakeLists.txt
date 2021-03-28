@@ -5,6 +5,9 @@ project(zenvis)
 file(GLOB PROJECT_SOURCE "*.cpp" "*.hpp" "*.h")
 
 add_executable(zenvis)
+target_include_directories(zen PRIVATE ../external)
+target_link_directories(zen PRIVATE ../external)
+
 target_sources(zenvis PRIVATE ${PROJECT_SOURCE})
 target_include_directories(zenvis PRIVATE .)
 target_include_directories(zenvis PRIVATE ../include ../external)
