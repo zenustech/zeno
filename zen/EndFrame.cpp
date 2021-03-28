@@ -11,11 +11,13 @@ struct EndFrame : zen::INode {
   EndFrame() {
     Socket sock("/tmp/zenipc/command");
     dprintf(sock.filedesc(), "@INIT 0\n");
+    sock.readchar();
   }
 
   virtual void apply() override {
     Socket sock("/tmp/zenipc/command");
     dprintf(sock.filedesc(), "@ENDF 0\n");
+    sock.readchar();
   }
 };
 

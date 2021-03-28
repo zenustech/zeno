@@ -31,6 +31,7 @@ struct Server {
 
     if (!strcmp(type, "ENDF")) {
       frameid++;
+      sock.writechar('%');
       return false;
     }
 
@@ -38,6 +39,7 @@ struct Server {
       // solver initialized (clear frame cache)
       frames.clear();
       frameid = 0;
+      sock.writechar('%');
       return true;
     }
 

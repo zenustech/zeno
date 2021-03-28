@@ -1,5 +1,4 @@
 #include <Hg/OpenGL/stdafx.hpp>
-#include <Hg/IPC/SharedMemory.hpp>
 #include <Hg/IOUtils.h>
 
 #include <pybind11/pybind11.h>
@@ -66,16 +65,12 @@ void initialize() {
   glewInit();
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
+  ImGui_ImplGlfw_InitForOpenGL(window, true);
+  ImGui_ImplOpenGL3_Init("#version 330 core");
   imnodes::Initialize();
 
   editor = std::make_unique<NodeEditor>();
-
-  ImGui_ImplGlfw_InitForOpenGL(window, true);
-  ImGui_ImplOpenGL3_Init("#version 330 core");
 }
-
-static int max_frames = 1;
-static int curr_frameid = 0;
 
 std::map<std::string, std::string> new_frame() {
   std::map<std::string, std::string> ret;
@@ -109,20 +104,11 @@ std::map<std::string, std::string> new_frame() {
     ret["execute"] = ss.str();
   }
 
-  {
-    SharedMemory shm("/tmp/zenipc/frameid", 4);
-    ImGui::SetNextItemWidth(60 * ImGui::GetFontSize());
-    ImGui::SliderInt("FrameId", &curr_frameid, 0, max_frames - 1);
-
-    int *memdata = (int *)shm.data();
-    memdata[0] = curr_frameid;
-    curr_frameid = memdata[1];
-  }
-
   ImGui::SameLine();
   {
+    static int max_frames = 1;
     ImGui::SetNextItemWidth(6 * ImGui::GetFontSize());
-    ImGui::DragInt("MaxFrames", &max_frames, 1);
+    ImGui::DragInt("Frames", &max_frames, 1);
     max_frames = std::max(0, max_frames);
     std::stringstream ss;
     ss << max_frames;

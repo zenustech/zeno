@@ -5,6 +5,9 @@
 #include "IGraphic.hpp"
 #include <Hg/FPSCounter.hpp>
 #include <Hg/IPC/SharedMemory.hpp>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
 #include <sstream>
 #include <cstdlib>
 
@@ -117,6 +120,10 @@ static void initialize() {
   glfwSetScrollCallback(window, scroll_callback);
 
   glewInit();
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGui_ImplGlfw_InitForOpenGL(window, true);
+  ImGui_ImplOpenGL3_Init("#version 330 core");
 
   CHECK_GL(glEnable(GL_BLEND));
   CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
@@ -150,22 +157,22 @@ void update_title() {
   glfwSetWindowTitle(window, buf);
 }
 
-static std::unique_ptr<Socket::Server> srv;
+void finalize() {
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  ImGui::DestroyContext();
 
-void sync_frameinfo() {
-  SharedMemory shm("/tmp/zenipc/frameid", 4);
-  int *memdata = (int *)shm.data();
-  memdata[1] = curr_frameid;
-  curr_frameid = memdata[0];
+  glfwDestroyWindow(window);
+  glfwTerminate();
 }
+
+static std::unique_ptr<Socket::Server> srv;
 
 int mainloop() {
   initialize();
   auto &server = Server::get();
 
   while (!glfwWindowShouldClose(window)) {
-
-    sync_frameinfo();
 
     if (curr_frameid >= server.frameid) {
       // renderer frame id can never go beyond frame id of the solver
@@ -179,21 +186,28 @@ int mainloop() {
     }
 
     update_frame_graphics();
-
     renderFPS.tick();
     update_title();
 
     glfwPollEvents();
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
 
     glfwGetFramebufferSize(window, &nx, &ny);
     CHECK_GL(glViewport(0, 0, nx, ny));
-
     draw_contents();
+
+    ImGui::Begin("Render Control");
+    ImGui::SliderInt("Current Frame", &curr_frameid, 0, 100);
+    ImGui::End();
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     glfwSwapBuffers(window);
   }
 
-  glfwDestroyWindow(window);
-  glfwTerminate();
+  finalize();
   return 0;
 }
 
