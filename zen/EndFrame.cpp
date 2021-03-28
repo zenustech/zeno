@@ -9,8 +9,8 @@ namespace zenbase {
 
 struct EndFrame : zen::INode {
   EndFrame() {
-    Socket sock("/tmp/zenipc/command");
-    dprintf(sock.filedesc(), "@INIT 0\n");
+    Socket sock("/tmp/zenipc/initialize");
+    sock.writechar('%');
     sock.readchar();
   }
 

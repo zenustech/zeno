@@ -10,7 +10,23 @@ namespace zenvis {
 
 struct Server {
   Socket::Server serv{"/tmp/zenipc/command"};
+  Socket::Server init_serv{"/tmp/zenipc/initialize"};
   int frameid = 0;
+
+  void poll_init() {
+    Socket sock;
+    init_serv.set_nonblock(true);
+    bool ready = init_serv.listen(&sock);
+    init_serv.set_nonblock(false);
+    if (!ready)
+      return;
+    printf("=== INITIALIZE ===\n\n");
+
+    sock.readchar();
+    frameid = 0;
+    frames.clear();
+    sock.writechar('%');
+  }
 
   bool poll_once() {
     Socket sock;
@@ -33,14 +49,6 @@ struct Server {
       frameid++;
       sock.writechar('%');
       return false;
-    }
-
-    if (!strcmp(type, "INIT")) {
-      // solver initialized (clear frame cache)
-      frames.clear();
-      frameid = 0;
-      sock.writechar('%');
-      return true;
     }
 
     SharedMemory shm("/tmp/zenipc/memory", memsize);

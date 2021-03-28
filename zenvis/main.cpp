@@ -174,12 +174,11 @@ int mainloop() {
 
   while (!glfwWindowShouldClose(window)) {
 
+    server.poll_init();
+
     if (curr_frameid >= server.frameid) {
-      // renderer frame id can never go beyond frame id of the solver
       curr_frameid = server.frameid - 1;
-      // poll the latest solved frame (if any) so that we could proceed
       server.poll();
-      // check if the solver has stepped forward in frame id
       if (server.frameid - 1 != curr_frameid) {
         solverFPS.tick();
       }
@@ -201,7 +200,8 @@ int mainloop() {
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(400, 55), ImGuiCond_FirstUseEver);
     ImGui::Begin("Render Control");
-    ImGui::SliderInt("Current Frame", &curr_frameid, 0, 100);
+    ImGui::DragInt("Current Frame", &curr_frameid);
+    if (curr_frameid < 0) curr_frameid = 0;
     ImGui::End();
 
     ImGui::Render();
