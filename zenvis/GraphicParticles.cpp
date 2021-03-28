@@ -19,12 +19,6 @@ struct GraphicParticles : IGraphic {
   }
 
   virtual void draw() override {
-    if (vertex_updated) {
-      vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-      vbo->bind_data(vertex_data);
-      vertex_updated = false;
-    }
-
     auto pro = get_program();
     set_program_uniforms(pro);
 

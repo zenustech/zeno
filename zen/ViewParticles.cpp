@@ -26,9 +26,9 @@ struct ViewParticles : zen::INode {
       memdata[memi++] = pars->pos[i].x;
       memdata[memi++] = pars->pos[i].y;
       memdata[memi++] = pars->pos[i].z;
-      memdata[memi++] = mesh->vel[i].x;
-      memdata[memi++] = mesh->vel[i].y;
-      memdata[memi++] = mesh->vel[i].z;
+      memdata[memi++] = pars->vel[i].x;
+      memdata[memi++] = pars->vel[i].y;
+      memdata[memi++] = pars->vel[i].z;
     }
     /**************/
 
