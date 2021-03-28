@@ -28,9 +28,17 @@ struct Server {
     size_t memsize = 0;
     char type[32] = {0};
     sscanf(buf, "@%s%zd", type, &memsize);
+
     if (!strcmp(type, "ENDF")) {
       frameid++;
       return false;
+    }
+
+    if (!strcmp(type, "INIT")) {
+      // solver initialized (clear frame cache)
+      frames.clear();
+      frameid = 0;
+      return true;
     }
 
     SharedMemory shm("/tmp/zenipc/memory", memsize);

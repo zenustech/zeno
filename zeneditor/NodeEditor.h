@@ -390,6 +390,7 @@ struct NodeEditor {
 
     out << "def execute(frame):" << std::endl;
     out << "\timport zen" << std::endl;
+    out << "\tif frame == 0: zen.addNode('EndFrame', 'endFrame')" << std::endl;
 
     for (auto const &name: dg.applies) {
       auto node = nodes.at(name2id.at(name)).get();
@@ -418,8 +419,6 @@ struct NodeEditor {
       out << "\tzen.applyNode('" << name << "')" << std::endl;
     }
 
-    // always append an extra EndFrame node... better solutions?
-    out << "\tif frame == 0: zen.addNode('EndFrame', 'endFrame')" << std::endl;
     out << "\tzen.applyNode('endFrame')" << std::endl;
   }
 

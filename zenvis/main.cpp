@@ -10,6 +10,8 @@
 
 namespace zenvis {
 
+std::unique_ptr<Server> Server::_instance;
+
 int curr_frameid = -1;
 
 static GLFWwindow *window;
@@ -150,7 +152,7 @@ void update_title() {
 
 static std::unique_ptr<Socket::Server> srv;
 
-void sync_frameid() {
+void sync_frameinfo() {
   SharedMemory shm("/tmp/zenipc/frameid", 4);
   int *memdata = (int *)shm.data();
   memdata[1] = curr_frameid;
@@ -163,7 +165,7 @@ int mainloop() {
 
   while (!glfwWindowShouldClose(window)) {
 
-    sync_frameid();
+    sync_frameinfo();
 
     if (curr_frameid >= server.frameid) {
       // renderer frame id can never go beyond frame id of the solver
