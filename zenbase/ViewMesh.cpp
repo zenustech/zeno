@@ -43,7 +43,7 @@ struct ViewMesh : zen::INode {
 };
 
 static int defViewMesh = zen::defNodeClass<ViewMesh>("ViewMesh",
-    { /* INPUts: */ {
+    { /* inputs: */ {
         "mesh",
     }, /* outputs: */ {
     }, /* params: */ {

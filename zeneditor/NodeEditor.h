@@ -417,6 +417,10 @@ struct NodeEditor {
 
       out << "\tzen.applyNode('" << name << "')" << std::endl;
     }
+
+    // always append an extra EndFrame node... better solutions?
+    out << "\tif frame == 0: zen.addNode('EndFrame', 'endFrame')" << std::endl;
+    out << "\tzen.applyNode('endFrame')" << std::endl;
   }
 
   std::vector<int> get_selected_links() {
