@@ -3,6 +3,7 @@
 #include "server.hpp"
 #include "frames.hpp"
 #include "IGraphic.hpp"
+#include <Hg/FPSCounter.hpp>
 #include <sstream>
 #include <cstdlib>
 
@@ -11,8 +12,7 @@ namespace zenvis {
 int curr_frameid = -1;
 
 static GLFWwindow *window;
-static int nx = 640, ny = 480;
-//static int nx = 1024, ny = 768;
+static int nx = 960, ny = 800;
 
 static void error_callback(int error, const char *msg) {
   fprintf(stderr, "error %d: %s\n", error, msg);
@@ -134,58 +134,8 @@ static void draw_contents(void) {
   CHECK_GL(glFlush());
 }
 
-class FPSCounter {
-  double m_last_time = 0;
-  double *m_intervals;
-  int m_count = 0;
-
-  const int N;
-  double (*get_time)();
-
-public:
-  FPSCounter(double (*get_time)(), int N)
-    : N(N), get_time(get_time)
-  {
-    m_intervals = new double[N];
-    for (int i = 0; i < N; i++) {
-      m_intervals[i] = 0.0;
-    }
-  }
-
-  ~FPSCounter() {
-    delete m_intervals;
-  }
-
-  void tick() {
-    double curr_time = get_time();
-    if (m_last_time == 0) {
-      m_last_time = curr_time;
-    }
-    double interval = std::max(0.0, curr_time - m_last_time);
-    m_intervals[m_count++ % N] = interval;
-    m_last_time = curr_time;
-  }
-
-  int ready() const {
-    return m_count % N == 0;
-  }
-
-  double fps() const {
-    double itv = interval();
-    return itv == 0.0 ? 0.0 : 1.0 / itv;
-  }
-
-  double interval() const {
-    double ret = 0.0;
-    for (int i = 0; i < std::min(N, m_count); i++) {
-      ret += m_intervals[i];
-    }
-    return ret / N;
-  }
-};
-
-static FPSCounter solverFPS(glfwGetTime, 1);
-static FPSCounter renderFPS(glfwGetTime, 10);
+static hg::FPSCounter solverFPS(glfwGetTime, 1);
+static hg::FPSCounter renderFPS(glfwGetTime, 10);
 
 void update_title() {
   if (!renderFPS.ready())
