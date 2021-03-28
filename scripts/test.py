@@ -1,11 +1,10 @@
 import zen
-zen.loadLibrary('build/libzenbase.so')
 print(zen.dumpDescriptors())
 # ===============
 def execute(frame):
         import zen
         if frame == 0: zen.addNode('ReadObjMesh', 'No1')
-        zen.setNodeParam('No1', 'path', str(f'../monkey.obj'))
+        zen.setNodeParam('No1', 'path', str(f'monkey.obj'))
         zen.applyNode('No1')
         if frame == 0: zen.addNode('ViewMesh', 'No4')
         zen.setNodeInput('No4', 'mesh', 'No1::mesh')
