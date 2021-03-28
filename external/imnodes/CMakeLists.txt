@@ -2,6 +2,6 @@ project(imnodes LANGUAGES CXX)
 
 file(GLOB source *.cpp)
 
-add_library(imnodes ${source})
-target_include_directories(imnodes PUBLIC .)
-target_include_directories(imnodes PUBLIC ../imgui)
+add_library(imnodes SHARED ${source})
+target_include_directories(imnodes PRIVATE .)
+target_include_directories(imnodes PRIVATE ../imgui)

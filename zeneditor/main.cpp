@@ -104,21 +104,9 @@ std::map<std::string, std::string> new_frame() {
     ret["execute"] = ss.str();
   }
 
-  static int curr_frameid = 1;
-  static int max_frames = 1;
-
   ImGui::SameLine();
   {
-    ImGui::SetNextItemWidth(10 * ImGui::GetFontSize());
-    ImGui::SliderInt("Frame", &curr_frameid, 0, max_frames);
-    curr_frameid = std::max(0, curr_frameid);
-    std::stringstream ss;
-    ss << curr_frameid;
-    ret["curr_frameid"] = ss.str();
-  }
-
-  ImGui::SameLine();
-  {
+    static int max_frames = 1;
     ImGui::SetNextItemWidth(6 * ImGui::GetFontSize());
     ImGui::DragInt("Frames", &max_frames, 1);
     max_frames = std::max(0, max_frames);
