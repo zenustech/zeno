@@ -91,6 +91,8 @@ std::map<std::string, std::string> new_frame() {
   CHECK_GL(glClearColor(0.3f, 0.2f, 0.1f, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
+  ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(nx, ny), ImGuiCond_FirstUseEver);
   ImGui::Begin("Node Editor");
 
   if (ImGui::Button("Refresh Descs")) {

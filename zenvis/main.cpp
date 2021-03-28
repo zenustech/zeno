@@ -198,10 +198,11 @@ int mainloop() {
     CHECK_GL(glViewport(0, 0, nx, ny));
     draw_contents();
 
+    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(400, 55), ImGuiCond_FirstUseEver);
     ImGui::Begin("Render Control");
     ImGui::SliderInt("Current Frame", &curr_frameid, 0, 100);
     ImGui::End();
-    ImGui::ShowDemoWindow();
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
