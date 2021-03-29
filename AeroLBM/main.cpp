@@ -16,7 +16,7 @@
 using namespace hg::simd;
 
 
-const long nx = 128, ny = 128, nz = 128, nq = 15;
+const long nx = 256, ny = 256, nz = 256, nq = 15;
 
 
 const float niu = 0.005;
@@ -116,6 +116,8 @@ std::tuple<float8, float8> vectorized_f_eq(long l)
 
 void substep()
 {
+  // feq / total = 1/12
+  // simd profit = 300%
 #pragma omp parallel for
   for (long l = 0; l < nx * ny * nz; l++) {
 #if defined(HG_SIMD_FLOAT16)
@@ -176,7 +178,7 @@ int main()
 {
   initialize();
 
-  for (int i = 0; i < 32; i++) {
+  for (int i = 0; i < 8; i++) {
     printf("%d\n", i);
     substep();
   }
