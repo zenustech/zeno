@@ -32,10 +32,6 @@ namespace hg::simd {
 
     void unpacklo(_SIMD const &l, _SIMD const &r) { m = _mm256_unpacklo_ps(l.m, r.m); }
 
-    void movelh(_SIMD const &l, _SIMD const &r) { m = _mm256_movelh_ps(l.m, r.m); }
-
-    void movehl(_SIMD const &l, _SIMD const &r) { m = _mm256_movehl_ps(l.m, r.m); }
-
     int movemask() const { return _mm256_movemask_ps(m); }
 
     float gets() const { return _mm256_cvtss_f32(m); }

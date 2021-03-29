@@ -1,4 +1,9 @@
+#include <Hg/SIMD/simd.hpp>
+#ifdef HG_SIMD_FLOAT16
 #include <Hg/SIMD/float16.hpp>
+#else
+#include <Hg/SIMD/float8.hpp>
+#endif
 #include <glm/vec3.hpp>
 #include <glm/glm.hpp>
 #include <cassert>
@@ -68,20 +73,44 @@ float f_eq(long l, long q)
 }
 
 
+#ifdef HG_SIMD_FLOAT16
 float16 vectorized_f_eq(long l)
 {
   float16 d_x{0,  1, -1,  0,  0,  0,  0,  1, -1,  1, -1,  1, -1, -1,  1, 0};
   float16 d_y{0,  0,  0,  1, -1,  0,  0,  1, -1,  1, -1, -1,  1,  1, -1, 0};
   float16 d_z{0,  0,  0,  0,  0,  1, -1,  1, -1, -1,  1,  1, -1,  1, -1, 0};
-  float16 wei{2.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0,1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 0.0};
-  float m = rho[l];
+  float16 wei{2.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 0.0};
   glm::vec3 v = vel[l];
-  float uv = glm::dot(v, v);
+  float fac = inv_tau * rho[l];
+  float rhs = 1 - 1.5 * glm::dot(v, v);
   float16 eu = v.x * d_x + v.y * d_y + v.z * d_z;
-  float16 term = 3 * eu + 4.5 * (eu * eu) + (1 - 1.5 * uv);
-  float16 feq = m * (wei * term);
+  float16 term = 3 * eu + 4.5 * (eu * eu) + rhs;
+  float16 feq = fac * (wei * term);
   return feq;
 }
+#else
+std::tuple<float8, float8> vectorized_f_eq(long l)
+{
+  float8 d1_x{0,  1, -1,  0,  0,  0,  0,  1};
+  float8 d2_x{-1,  1, -1,  1, -1, -1,  1, 0};
+  float8 d1_y{0,  0,  0,  1, -1,  0,  0,  1};
+  float8 d2_y{-1,  1, -1, -1,  1,  1, -1, 0};
+  float8 d1_z{0,  0,  0,  0,  0,  1, -1,  1};
+  float8 d2_z{-1, -1,  1,  1, -1,  1, -1, 0};
+  float8 wei1{2.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/72.0};
+  float8 wei2{1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 0.0};
+  glm::vec3 v = vel[l];
+  float fac = inv_tau * rho[l];
+  float rhs = 1 - 1.5 * glm::dot(v, v);
+  float8 eu1 = v.x * d1_x + v.y * d1_y + v.z * d1_z;
+  float8 eu2 = v.x * d2_x + v.y * d2_y + v.z * d2_z;
+  float8 term1 = 3 * eu1 + 4.5 * (eu1 * eu1) + rhs;
+  float8 term2 = 3 * eu2 + 4.5 * (eu2 * eu2) + rhs;
+  float8 feq1 = fac * (wei1 * term1);
+  float8 feq2 = fac * (wei2 * term2);
+  return std::make_tuple(feq1, feq2);
+}
+#endif
 
 
 void substep2()
@@ -89,7 +118,13 @@ void substep2()
 #pragma omp parallel for
   for (long l = 0; l < nx * ny * nz; l++) {
     float arr_feq[16];
-    float16::to(*arr_feq) = vectorized_f_eq(l) * inv_tau;
+#ifdef HG_SIMD_FLOAT16
+    float16::to(arr_feq[0]) = vectorized_f_eq(l);
+#else
+    auto [feq1, feq2] = vectorized_f_eq(l);
+    float8::to(arr_feq[0]) = feq1;
+    float8::to(arr_feq[8]) = feq2;
+#endif
     for (long q = 0; q < nq; q++) {
       long lq = linearLQ(l, q);
       auto [x, y, z] = unlinearXYZ(l);
