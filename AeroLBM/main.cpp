@@ -7,12 +7,13 @@
 #include <omp.h>
 
 
-const long nx = 64, ny = 64, nz = 64, nq = 15;
+const long nx = 128, ny = 128, nz = 128, nq = 15;
 
 
 const float niu = 0.005;
 const float tau = 3.0 * niu + 0.5;
 const float inv_tau = 1 / tau;
+const long nl = nx * ny * nz;
 
 
 glm::ivec3 directions[] = {{0,0,0},{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},{1,-1,1},{-1,1,-1},{-1,1,1},{1,-1,-1}};
@@ -32,8 +33,7 @@ long linearXYZ(long x, long y, long z)
 
 long linearLQ(long l, long q)
 {
-  long nl = nx * ny * nz;
-  return l + nl * q;
+  return q + nq * l;
 }
 
 
@@ -46,8 +46,7 @@ std::tuple<long, long, long> unlinearXYZ(long i)
 
 std::tuple<long, long> unlinearLQ(long i)
 {
-  long nl = nx * ny * nz;
-  return std::make_tuple(i % nl, i / nl);
+  return std::make_tuple(i / nq, i % nq);
 }
 
 
@@ -79,6 +78,7 @@ void initialize()
 
 void substep()
 {
+#pragma omp parallel for
   for (long l = 0; l < nx * ny * nz; l++) {
     for (long q = 0; q < nq; q++) {
       long lq = linearLQ(l, q);
@@ -91,6 +91,7 @@ void substep()
       f_new[lq] = f_old[lmdq] * (1 - inv_tau) + f_eq(lmd, q) * inv_tau;
     }
   }
+#pragma omp parallel for
   for (long l = 0; l < nx * ny * nz; l++) {
     float m = 0;
     glm::vec3 v(0);
@@ -136,8 +137,10 @@ int main()
 {
   initialize();
 
-  substep();
-  apply_bc();
+  for (int i = 0; i < 32; i++) {
+    printf("%d\n", i);
+    substep();
+  }
 
   return 0;
 }
