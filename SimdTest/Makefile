@@ -1,4 +1,4 @@
 x:
 	cmake -Bbuild
 	make -Cbuild
-	sh -c 'time build/simdtest'
+	bash -c 'time build/simdtest'

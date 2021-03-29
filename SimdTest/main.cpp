@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstdio>
 #include <cmath>
+#include <omp.h>
 
 using namespace hg::SIMD;
 
@@ -14,33 +15,37 @@ void swap(T &a, T &b) {
 
 void blur1(const float *img, float *img_out, int nx)
 {
-#pragma omp parallel for simd
+#pragma omp parallel for
   for (int i = 0; i < nx; i++) {
     float xl = (img[i - 1]);
-    float xc = (img[i]);
     float xr = (img[i + 1]);
-    float res = xl + xc + xr;
+    float res = xl + xr;
     img_out[i] = res;
   }
 }
 
 void blur2(const float *img, float *img_out, int nx)
 {
-  int mx = 32;
-#pragma omp parallel for simd
-  for (int i = 0; i < nx; i += mx) {
-    for (int t = 0; t < 2; t++) {
-      for (int j = i; j < i + mx; j++) {
-        float res = img[j - 2] + img[j - 1] + img[j] + img[j + 1] + img[j + 2];
-        img_out[j] = res;
+  int mx = 512;
+  int mt = 4 * omp_get_num_procs();
+#pragma omp parallel for
+  for (int x = 0; x < nx; x += mx) {
+    for (int t = 0; t < mt; t++) {
+      for (int i = x; i < x + mx; i++) {
+        float xl = (img[i - 1]);
+        float xr = (img[i + 1]);
+        float res = xl + xr;
+        img_out[i] = res;
       }
     }
   }
 }
 
+#define blur blur2
+
 int main(void)
 {
-  int nx = 4096 * 4096;
+  int nx = 4096 * 4096 * 16;
   float *img = new float[nx];
   float *img_out = new float[nx];
   assert(img && img_out);
@@ -49,9 +54,9 @@ int main(void)
     img[i] = drand48();
   }
 
-  for (int i = 0; i < 256; i++) {
+  for (int i = 0; i < 8; i++) {
     printf("%d\n", i);
-    blur2(img, img_out, nx);
+    blur(img, img_out, nx);
     swap(img, img_out);
   }
 
