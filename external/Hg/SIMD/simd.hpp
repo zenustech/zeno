@@ -2,50 +2,55 @@
 
 #include <x86intrin.h>
 
-namespace hg::SIMD {
+namespace hg::simd {
 
-  template <class T, int N> struct _M {};
+  template <class T, int N> struct _SIMD {};
 
-  template <class T, int N> struct V {
-    typedef _M<T, N> M;
+  template <class T, int N> struct SIMD {
+    typedef _SIMD<T, N> M;
 
     M m;
-    V() {}
-    V(M const &m) : m(m) {}
+    SIMD() {}
+    SIMD(M const &m) : m(m) {}
 
-    explicit V(T x) { m.setall(x); }
+    explicit SIMD(T x) { m.setall(x); }
 
-    V(T x, T y, T z, T w) { m.set(x, y, z, w); }
+    SIMD(T x, T y, T z, T w) { m.set(x, y, z, w); }
 
-    V(T x, T y, T z, T w, T a, T b, T c, T d) { m.set(x, y, z, w, a, b, c, d); }
+    SIMD(T x, T y, T z, T w, T a, T b, T c, T d) { m.set(x, y, z, w, a, b, c, d); }
+
+    SIMD(T x, T y, T z, T w, T a, T b, T c, T d,
+         T e, T f, T g, T h, T i, T j, T k, T l) {
+         m.set(x, y, z, w, a, b, c, d, e, f, g, h, i, j, k, l);
+    }
 
 #define _DEF_IOP2(iop, name) \
-  V &iop(V const &o) {       \
+  SIMD &iop(SIMD const &o) {       \
     m.name##p(m, o.m);       \
     return *this;            \
   }                          \
                              \
-  V &iop(T o) {              \
-    m.name##p(m, V(o).m);    \
+  SIMD &iop(T o) {              \
+    m.name##p(m, SIMD(o).m);    \
     return *this;            \
   }
 
 #define _DEF_OP2(op, name)       \
-  V op(V const &o) const {       \
+  SIMD op(SIMD const &o) const {       \
     M r;                         \
     r.name##p(m, o.m);           \
     return r;                    \
   }                              \
                                  \
-  V op(T o) const {              \
+  SIMD op(T o) const {              \
     M r;                         \
-    r.name##p(m, V(o).m);        \
+    r.name##p(m, SIMD(o).m);        \
     return r;                    \
   }                              \
                                  \
-  friend V op(T t, V const &o) { \
+  friend SIMD op(T t, SIMD const &o) { \
     M r;                         \
-    r.name##p(V(t).m, o.m);      \
+    r.name##p(SIMD(t).m, o.m);      \
     return r;                    \
   }
 
@@ -76,7 +81,7 @@ namespace hg::SIMD {
     _DEF_OP2N(max);
     _DEF_OP2N(min);
 
-    V operator~() const {
+    SIMD operator~() const {
       M r;
       r.setall(0);
       r.andnot(m, r);
@@ -91,7 +96,7 @@ namespace hg::SIMD {
 #undef _DEF_OP2N
 
 #define _DEF_OP1(name) \
-  V name() const {     \
+  SIMD name() const {     \
     M r;               \
     r.name##p(m);      \
     return r;          \
@@ -117,21 +122,21 @@ namespace hg::SIMD {
 
     void storeu(T *p) const { m.storeu(p); }
 
-    static V fromu(T const &p) {
-      V v;
+    static SIMD fromu(T const &p) {
+      SIMD v;
       v.loadu(&p);
       return v;
     }
 
-    static V from(T const &p) {
-      V v;
+    static SIMD from(T const &p) {
+      SIMD v;
       v.load(&p);
       return v;
     }
 
     struct _Assign {
       T *p;
-      _Assign &operator=(V const &v) {
+      _Assign &operator=(SIMD const &v) {
         v.store(p);
         return *this;
       }
@@ -139,7 +144,7 @@ namespace hg::SIMD {
 
     struct _AssignU {
       T *p;
-      _AssignU &operator=(V const &v) {
+      _AssignU &operator=(SIMD const &v) {
         v.storeu(p);
         return *this;
       }
@@ -150,8 +155,8 @@ namespace hg::SIMD {
     static _AssignU tou(T &p) { return {&p}; }
   };
 
-  typedef V<float, 4> float4;
-  typedef V<float, 8> float8;
-  typedef V<float, 16> float16;
+  typedef SIMD<float, 4> float4;
+  typedef SIMD<float, 8> float8;
+  typedef SIMD<float, 16> float16;
 
 }  // namespace hg::SIMD

@@ -3,3 +3,5 @@ build
 rubbish.bin
 pruned
 imgui.ini
+.*.swp
+.*.un~

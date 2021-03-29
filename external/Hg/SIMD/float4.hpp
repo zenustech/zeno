@@ -2,13 +2,13 @@
 
 #include "simd.hpp"
 
-namespace hg::SIMD {
+namespace hg::simd {
 
-  template <> struct _M<float, 4> {
+  template <> struct _SIMD<float, 4> {
     __m128 m;
 
-    _M() {}
-    explicit _M(__m128 m) : m(m) {}
+    _SIMD() {}
+    explicit _SIMD(__m128 m) : m(m) {}
 
     void sets(float x) { m = _mm_set_ss(x); }
 
@@ -24,32 +24,32 @@ namespace hg::SIMD {
 
     void storeu(float *p) const { _mm_storeu_ps(p, m); }
 
-    template <int x, int y, int z, int w> void shuffle(_M const &l, _M const &r) {
+    template <int x, int y, int z, int w> void shuffle(_SIMD const &l, _SIMD const &r) {
       m = _mm_shuffle_ps(l.m, r.m, _MM_SHUFFLE(w, z, y, x));
     }
 
-    void unpackhi(_M const &l, _M const &r) { m = _mm_unpackhi_ps(l.m, r.m); }
+    void unpackhi(_SIMD const &l, _SIMD const &r) { m = _mm_unpackhi_ps(l.m, r.m); }
 
-    void unpacklo(_M const &l, _M const &r) { m = _mm_unpacklo_ps(l.m, r.m); }
+    void unpacklo(_SIMD const &l, _SIMD const &r) { m = _mm_unpacklo_ps(l.m, r.m); }
 
-    void movelh(_M const &l, _M const &r) { m = _mm_movelh_ps(l.m, r.m); }
+    void movelh(_SIMD const &l, _SIMD const &r) { m = _mm_movelh_ps(l.m, r.m); }
 
-    void movehl(_M const &l, _M const &r) { m = _mm_movehl_ps(l.m, r.m); }
+    void movehl(_SIMD const &l, _SIMD const &r) { m = _mm_movehl_ps(l.m, r.m); }
 
     int movemask() const { return _mm_movemask_ps(m); }
 
     float gets() const { return _mm_cvtss_f32(m); }
 
-    void dotp(_M const &l, _M const &r, int imm) { m = _mm_dp_ps(l.m, r.m, imm); }
+    void dotp(_SIMD const &l, _SIMD const &r, int imm) { m = _mm_dp_ps(l.m, r.m, imm); }
 
-    void blend(_M const &l, _M const &r, int imm) { m = _mm_blend_ps(l.m, r.m, imm); }
+    void blend(_SIMD const &l, _SIMD const &r, int imm) { m = _mm_blend_ps(l.m, r.m, imm); }
 
-    void blendv(_M const &l, _M const &r, _M const &c) { m = _mm_blendv_ps(l.m, r.m, c.m); }
+    void blendv(_SIMD const &l, _SIMD const &r, _SIMD const &c) { m = _mm_blendv_ps(l.m, r.m, c.m); }
 
 #define _DEF_OP2P(x) \
-  void x##p(_M const &l, _M const &r) { m = _mm_##x##_ps(l.m, r.m); }
+  void x##p(_SIMD const &l, _SIMD const &r) { m = _mm_##x##_ps(l.m, r.m); }
 #define _DEF_OP2S(x) \
-  void x##s(_M const &l, _M const &r) { m = _mm_##x##_ss(l.m, r.m); }
+  void x##s(_SIMD const &l, _SIMD const &r) { m = _mm_##x##_ss(l.m, r.m); }
 
 #define _DEF_OP2(x) \
   _DEF_OP2P(x)      \
@@ -85,9 +85,9 @@ namespace hg::SIMD {
 #undef _DEF_OP2S
 
 #define _DEF_OP1(x)                                 \
-  void x##p(_M const &o) { m = _mm_##x##_ps(o.m); } \
+  void x##p(_SIMD const &o) { m = _mm_##x##_ps(o.m); } \
                                                     \
-  void x##s(_M const &o) { m = _mm_##x##_ss(o.m); }
+  void x##s(_SIMD const &o) { m = _mm_##x##_ss(o.m); }
 
     _DEF_OP1(rcp);
     _DEF_OP1(sqrt);

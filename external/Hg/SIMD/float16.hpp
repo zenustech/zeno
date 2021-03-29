@@ -2,13 +2,13 @@
 
 #include "simd.hpp"
 
-namespace hg::SIMD {
+namespace hg::simd {
 
-  template <> struct _M<float, 16> {
+  template <> struct _SIMD<float, 16> {
     __m512 m;
 
-    _M() {}
-    explicit _M(__m512 m) : m(m) {}
+    _SIMD() {}
+    explicit _SIMD(__m512 m) : m(m) {}
 
     void setall(float x) { m = _mm512_set1_ps(x); }
 
@@ -25,32 +25,20 @@ namespace hg::SIMD {
 
     void storeu(float *p) const { _mm512_storeu_ps(p, m); }
 
-    template <int x, int y, int z, int w> void shuffle(_M const &l, _M const &r) {
+    template <int x, int y, int z, int w> void shuffle(_SIMD const &l, _SIMD const &r) {
       m = _mm512_shuffle_ps(l.m, r.m, _MM_SHUFFLE(w, z, y, x));
     }
 
-    void unpackhi(_M const &l, _M const &r) { m = _mm512_unpackhi_ps(l.m, r.m); }
+    void unpackhi(_SIMD const &l, _SIMD const &r) { m = _mm512_unpackhi_ps(l.m, r.m); }
 
-    void unpacklo(_M const &l, _M const &r) { m = _mm512_unpacklo_ps(l.m, r.m); }
-
-    void movelh(_M const &l, _M const &r) { m = _mm512_movelh_ps(l.m, r.m); }
-
-    void movehl(_M const &l, _M const &r) { m = _mm512_movehl_ps(l.m, r.m); }
-
-    int movemask() const { return _mm512_movemask_ps(m); }
+    void unpacklo(_SIMD const &l, _SIMD const &r) { m = _mm512_unpacklo_ps(l.m, r.m); }
 
     float gets() const { return _mm512_cvtss_f32(m); }
 
-    void dotp(_M const &l, _M const &r, int imm) { m = _mm512_dp_ps(l.m, r.m, imm); }
-
-    void blend(_M const &l, _M const &r, int imm) { m = _mm512_blend_ps(l.m, r.m, imm); }
-
-    void blendv(_M const &l, _M const &r, _M const &c) { m = _mm512_blendv_ps(l.m, r.m, c.m); }
-
 #define _DEF_OP2P(x) \
-  void x##p(_M const &l, _M const &r) { m = _mm512_##x##_ps(l.m, r.m); }
+  void x##p(_SIMD const &l, _SIMD const &r) { m = _mm512_##x##_ps(l.m, r.m); }
 #define _DEF_OP2S(x) \
-  void x##s(_M const &l, _M const &r) { m = _mm512_##x##_ss(l.m, r.m); }
+  void x##s(_SIMD const &l, _SIMD const &r) { m = _mm512_##x##_ss(l.m, r.m); }
 
 #define _DEF_OP2(x) \
   _DEF_OP2P(x)      \
@@ -58,9 +46,6 @@ namespace hg::SIMD {
 
     _DEF_OP2P(add);
     _DEF_OP2P(sub);
-    _DEF_OP2P(hadd);
-    _DEF_OP2P(hsub);
-    _DEF_OP2P(addsub);
     _DEF_OP2P(mul);
     _DEF_OP2P(div);
     _DEF_OP2P(min);
@@ -75,7 +60,7 @@ namespace hg::SIMD {
 #undef _DEF_OP2S
 
 #define _DEF_OP1(x) \
-  void x##p(_M const &o) { m = _mm512_##x##_ps(o.m); }
+  void x##p(_SIMD const &o) { m = _mm512_##x##_ps(o.m); }
 
     _DEF_OP1(rcp14);
     _DEF_OP1(sqrt);

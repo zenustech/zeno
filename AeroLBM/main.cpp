@@ -8,6 +8,9 @@
 #include <omp.h>
 
 
+using namespace hg::simd;
+
+
 const long nx = 128, ny = 128, nz = 128, nq = 15;
 
 
@@ -35,6 +38,7 @@ long linearXYZ(long x, long y, long z)
 long linearLQ(long l, long q)
 {
   return q + nq * l;
+  //return l + nl * q;
 }
 
 
@@ -48,6 +52,7 @@ std::tuple<long, long, long> unlinearXYZ(long i)
 std::tuple<long, long> unlinearLQ(long i)
 {
   return std::make_tuple(i / nq, i % nq);
+  //return std::make_tuple(i % nl, i / nl);
 }
 
 
@@ -60,6 +65,56 @@ float f_eq(long l, long q)
   float term = 1 + 3 * eu + 4.5 * eu * eu - 1.5 * uv;
   float feq = weights[q] * m * term;
   return feq;
+}
+
+
+float16 vectorized_f_eq(long l)
+{
+  float16 d_x{0,  1, -1,  0,  0,  0,  0,  1, -1,  1, -1,  1, -1, -1,  1, 0};
+  float16 d_y{0,  0,  0,  1, -1,  0,  0,  1, -1,  1, -1, -1,  1,  1, -1, 0};
+  float16 d_z{0,  0,  0,  0,  0,  1, -1,  1, -1, -1,  1,  1, -1,  1, -1, 0};
+  float16 wei{2.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0,1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 0.0};
+  float m = rho[l];
+  glm::vec3 v = vel[l];
+  float uv = glm::dot(v, v);
+  float16 eu = v.x * d_x + v.y * d_y + v.z * d_z;
+  float16 term = 3 * eu + 4.5 * (eu * eu) + (1 - 1.5 * uv);
+  float16 feq = m * (wei * term);
+  return feq;
+}
+
+
+void substep2()
+{
+#pragma omp parallel for
+  for (long l = 0; l < nx * ny * nz; l++) {
+    float arr_feq[16];
+    float16::to(*arr_feq) = vectorized_f_eq(l) * inv_tau;
+    for (long q = 0; q < nq; q++) {
+      long lq = linearLQ(l, q);
+      auto [x, y, z] = unlinearXYZ(l);
+      auto md = glm::ivec3(x, y, z) - directions[q];
+      md += glm::ivec3(nx, ny, nz);
+      md %= glm::ivec3(nx, ny, nz);
+      long lmd = linearXYZ(md.x, md.y, md.z);
+      long lmdq = linearLQ(lmd, q);
+      f_new[lq] = f_old[lmdq] * (1 - inv_tau) + arr_feq[q];
+    }
+  }
+#pragma omp parallel for
+  for (long l = 0; l < nx * ny * nz; l++) {
+    float m = 0;
+    glm::vec3 v(0);
+    for (long q = 0; q < nq; q++) {
+      long lq = linearLQ(l, q);
+      float f = f_new[lq];
+      v += f * (glm::vec3)directions[q];
+      m += f;
+    }
+    rho[l] = m;
+    vel[l] = v / std::max(m, (float)1e-6);
+  }
+  std::swap(f_new, f_old);
 }
 
 
@@ -106,63 +161,6 @@ void substep1()
     vel[l] = v / std::max(m, (float)1e-6);
   }
   std::swap(f_new, f_old);
-}
-
-
-void substep2()
-{
-#pragma omp parallel for
-  for (long l = 0; l < nx * ny * nz; l++) {
-    for (long q = 0; q < nq; q++) {
-      long lq = linearLQ(l, q);
-      auto [x, y, z] = unlinearXYZ(l);
-      auto md = glm::ivec3(x, y, z) - directions[q];
-      md += glm::ivec3(nx, ny, nz);
-      md %= glm::ivec3(nx, ny, nz);
-      long lmd = linearXYZ(md.x, md.y, md.z);
-      long lmdq = linearLQ(lmd, q);
-      f_new[lq] = f_old[lmdq] * (1 - inv_tau) + f_eq(lmd, q) * inv_tau;
-    }
-  }
-#pragma omp parallel for
-  for (long l = 0; l < nx * ny * nz; l++) {
-    float m = 0;
-    glm::vec3 v(0);
-    for (long q = 0; q < nq; q++) {
-      long lq = linearLQ(l, q);
-      float f = f_new[lq];
-      v += f * (glm::vec3)directions[q];
-      m += f;
-    }
-    rho[l] = m;
-    vel[l] = v / std::max(m, (float)1e-6);
-  }
-  std::swap(f_new, f_old);
-}
-
-
-void apply_bc() {
-/*
-@ti.func
-def apply_bc_core(outer, bc_type, bc_vel, ibc, jbc, kbc, inb, jnb, knb):
-    if (outer == 1):  # handle outer boundary
-        if bc_type == 0:
-            vel[ibc, jbc, kbc] = bc_vel
-        elif bc_type == 1:
-            vel[ibc, jbc, kbc] = vel[inb, jnb, knb]
-    rho[ibc, jbc, kbc] = rho[inb, jnb, knb]
-    for l in range(direction_size):
-        f_old[ibc, jbc, kbc, l] = f_eq(ibc, jbc, kbc, l) - f_eq(inb, jnb, knb, l) + f_old[inb, jnb, knb, l]
-
-
-@ti.kernel
-def apply_bc():
-    for y, z in ti.ndrange((1, res[1] - 1), (1, res[2] - 1)):
-        apply_bc_core(1, 0, [0.1, 0.0, 0.0],
-                0, y, z, 1, y, z)
-        apply_bc_core(1, 1, [0.0, 0.0, 0.0],
-                res[0] - 1, y, z, res[0] - 2, y, z)
-*/
 }
 
 
