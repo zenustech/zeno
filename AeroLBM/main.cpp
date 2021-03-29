@@ -81,10 +81,10 @@ float16 vectorized_f_eq(long l)
   float16 d_z{0,  0,  0,  0,  0,  1, -1,  1, -1, -1,  1,  1, -1,  1, -1, 0};
   float16 wei{2.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 0.0};
   glm::vec3 v = vel[l];
-  float fac = inv_tau * rho[l];
-  float rhs = 1 - 1.5 * glm::dot(v, v);
+  float fac = (4.5 * inv_tau) * rho[l];
+  float rhs = 1 / 4.5 - (1.5 / 4.5) * glm::dot(v, v);
   float16 eu = v.x * d_x + v.y * d_y + v.z * d_z;
-  float16 term = 3 * eu + 4.5 * (eu * eu) + rhs;
+  float8 term1 = (3 / 4.5 + eu) * eu + rhs;
   float16 feq = fac * (wei * term);
   return feq;
 }
@@ -100,12 +100,13 @@ std::tuple<float8, float8> vectorized_f_eq(long l)
   float8 wei1{2.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/72.0};
   float8 wei2{1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 0.0};
   glm::vec3 v = vel[l];
-  float fac = inv_tau * rho[l];
-  float rhs = 1 - 1.5 * glm::dot(v, v);
+  float fac = (4.5 * inv_tau) * rho[l];
+  float rhs = 1 / 4.5 - (1.5 / 4.5) * glm::dot(v, v);
   float8 eu1 = v.x * d1_x + v.y * d1_y + v.z * d1_z;
   float8 eu2 = v.x * d2_x + v.y * d2_y + v.z * d2_z;
-  float8 term1 = 3 * eu1 + 4.5 * (eu1 * eu1) + rhs;
-  float8 term2 = 3 * eu2 + 4.5 * (eu2 * eu2) + rhs;
+  float8 c_3o4_5{3 / 4.5};
+  float8 term1 = (c_3o4_5 + eu1) * eu1 + rhs;
+  float8 term2 = (c_3o4_5 + eu2) * eu2 + rhs;
   float8 feq1 = fac * (wei1 * term1);
   float8 feq2 = fac * (wei2 * term2);
   return std::make_tuple(feq1, feq2);

@@ -2,6 +2,17 @@
 
 #include <x86intrin.h>
 
+// gcc -march=native -dM -E - < /dev/null | egrep 'SSE|AVX|MMX'
+#ifdef __SSE__
+#define HG_SIMD_FLOAT4
+#endif
+#ifdef __AVX__
+#define HG_SIMD_FLOAT8
+#endif
+#ifdef __AVX512F__
+#define HG_SIMD_FLOAT16
+#endif
+
 namespace hg::simd {
 
   template <class T, int N> struct _SIMD {};
