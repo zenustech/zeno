@@ -139,7 +139,7 @@ namespace hg::SIMD {
 
     struct _AssignU {
       T *p;
-      _Assign &operator=(V const &v) {
+      _AssignU &operator=(V const &v) {
         v.storeu(p);
         return *this;
       }
