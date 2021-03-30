@@ -2,10 +2,10 @@ import taichi as ti
 import numpy as np
 import time
 
-d2 = 1
+d2 = 0
 
 
-ti.init(ti.cuda)
+ti.init(ti.cpu)
 
 
 if d2:
@@ -144,7 +144,7 @@ def apply_bc():
         apply_bc_core(1, 0, [0.0, 0.0, 0.0],
                 x, y, res[2] - 1, x, y, res[2] - 2)
 
-        apply_bc_core(1, 0, [0.0, 0.0, 0.0], 0.0,
+        apply_bc_core(1, 0, [0.0, 0.0, 0.0],
                 x, y, 0, x, y, 1)
 
     for x, y, z in ti.ndrange(*res):
@@ -212,7 +212,7 @@ def render():
         img[x, y] = ret / cnt
 
 
-#'''
+'''
 initialize()
 gui = ti.GUI('LBM', (1024, 256))
 while gui.running and not gui.get_event(gui.ESCAPE):
@@ -237,9 +237,10 @@ for frame in range(24 * 24):
     #grid = np.empty(res + (4,), dtype=np.float32)
     #grid[..., 3] = rho.to_numpy()
     #grid[..., :3] = vel.to_numpy()
+    continue
 
     print('store for', frame); t0 = time.time()
     np.savez(f'/tmp/{frame:06d}', rho=rho.to_numpy(), vel=vel.to_numpy())
     print('store time', time.time() - t0)
     print('==========')
-'''
+#'''
