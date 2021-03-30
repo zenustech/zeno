@@ -18,7 +18,7 @@ class SharedMemory {
       ::perror(path);
       return;
     }
-    int fd = ::open(path, O_RDWR, 00777);
+    int fd = ::open(path, O_RDWR | O_CREAT, 0777);
     if (fd < 0) {
       ::perror(path);
       return;

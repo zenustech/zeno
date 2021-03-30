@@ -163,8 +163,6 @@ void finalize() {
   glfwTerminate();
 }
 
-static std::unique_ptr<Socket::Server> srv;
-
 int mainloop() {
   initialize();
   auto &server = Server::get();

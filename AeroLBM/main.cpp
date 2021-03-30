@@ -102,8 +102,9 @@ std::tuple<float8, float8> vectorized_f_eq(long l)
   glm::vec3 v = vel[l];
   float fac = (4.5 * inv_tau) * rho[l];
   float rhs = 1 / 4.5 - (1.5 / 4.5) * glm::dot(v, v);
-  float8 eu1 = v.x * d1_x + v.y * d1_y + v.z * d1_z;
-  float8 eu2 = v.x * d2_x + v.y * d2_y + v.z * d2_z;
+  float8 vx8{v.x}, vy8{v.y}, vz8{v.z};
+  float8 eu1 = vx8 * d1_x + vy8 * d1_y + vz8 * d1_z;
+  float8 eu2 = vx8 * d2_x + vy8 * d2_y + vz8 * d2_z;
   float8 c_3o4_5{3 / 4.5};
   float8 term1 = (c_3o4_5 + eu1) * eu1 + rhs;
   float8 term2 = (c_3o4_5 + eu2) * eu2 + rhs;
@@ -121,10 +122,10 @@ void substep()
 #pragma omp parallel for
   for (long l = 0; l < nx * ny * nz; l++) {
 #if defined(HG_SIMD_FLOAT16)
-    float arr_feq[16];
+    float __attribute__((aligned(16 * sizeof(float)))) arr_feq[16];
     float16::to(arr_feq[0]) = vectorized_f_eq(l);
 #elif defined(HG_SIMD_FLOAT8)
-    float arr_feq[16];
+    float __attribute__((aligned(8 * sizeof(float)))) arr_feq[16];
     auto [feq1, feq2] = vectorized_f_eq(l);
     float8::to(arr_feq[0]) = feq1;
     float8::to(arr_feq[8]) = feq2;

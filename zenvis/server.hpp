@@ -3,12 +3,14 @@
 #include <Hg/IPC/Socket.hpp>
 #include <Hg/IPC/SharedMemory.hpp>
 #include "frames.hpp"
+#include <fcntl.h>
 
 
 namespace zenvis {
 
 
 struct Server {
+  int _mkdir = ::mkdir("/tmp/zenipc", 0777);
   Socket::Server serv{"/tmp/zenipc/command"};
   Socket::Server init_serv{"/tmp/zenipc/initialize"};
   int frameid = 0;
