@@ -72,6 +72,8 @@ struct FLIP_vdb {
 	void set_boundary_velocity_volume(openvdb::Vec3fGrid::Ptr in_boundary_velocity_volume) { m_boundary_velocity_volume = in_boundary_velocity_volume; }
 	void seed_liquid(openvdb::FloatGrid::Ptr in_sdf, const openvdb::Vec3f& init_vel);
 	int get_framenumber() { return m_framenumber; }
+static void Advect(float dt, openvdb::points::PointDataGrid::Ptr particles, openvdb::Vec3fGrid::Ptr velocity,
+				   openvdb::Vec3fGrid::Ptr velocity_after_p2g, float pic_component, int RK_ORDER);
 private:
 	void initialize_attribute_descriptor() {
 		auto pnamepair = position_attribute::attributeType();
@@ -81,6 +83,7 @@ private:
 		m_pv_attribute_descriptor = m_position_attribute_descriptor->duplicateAppend("v", vnamepair);
 	}
 	void advection(float dt);
+
 	void custom_move_points_and_set_flip_vel(
 		openvdb::points::PointDataGrid& in_out_points, 
 		const openvdb::Vec3fGrid& in_velocity_field,

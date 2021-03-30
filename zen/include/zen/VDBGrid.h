@@ -55,7 +55,7 @@ struct VDBGrid : zen::IObject {
 
 
 template <class GridT>
-struct _VDBGridWrapper : VDBGrid {
+struct VDBGridWrapper : VDBGrid {
   GridT::Ptr m_grid;
 
   virtual void output(std::string path) override {
@@ -72,11 +72,11 @@ struct _VDBGridWrapper : VDBGrid {
 };
 
 
-using VDBFloatGrid = _VDBGridWrapper<openvdb::FloatGrid>;
-using VDBIntGrid = _VDBGridWrapper<openvdb::Int32Grid>;
-using VDBFloat3Grid = _VDBGridWrapper<openvdb::Vec3fGrid>;
-using VDBInt3Grid = _VDBGridWrapper<openvdb::Vec3IGrid>;
-using VDBPointsGrid = _VDBGridWrapper<openvdb::points::PointDataGrid>;
+using VDBFloatGrid = VDBGridWrapper<openvdb::FloatGrid>;
+using VDBIntGrid = VDBGridWrapper<openvdb::Int32Grid>;
+using VDBFloat3Grid = VDBGridWrapper<openvdb::Vec3fGrid>;
+using VDBInt3Grid = VDBGridWrapper<openvdb::Vec3IGrid>;
+using VDBPointsGrid = VDBGridWrapper<openvdb::points::PointDataGrid>;
 
 
 }

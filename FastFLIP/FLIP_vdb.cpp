@@ -919,6 +919,35 @@ void FLIP_vdb::advection(float dt)
 
 }
 
+static void FLIP_vdb::Advect(float dt, openvdb::points::PointDataGrid::Ptr particles, openvdb::Vec3fGrid::Ptr velocity,
+openvdb::Vec3fGrid::Ptr velocity_after_p2g, float pic_component, int RK_ORDER)
+{
+		auto update_FLIP_velocity = [&](openvdb::points::PointDataTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+		// Attribute reader
+		// Extract the position attribute from the leaf by name (P is position).
+		const openvdb::points::AttributeArray& positionArray =
+			leaf.attributeArray("P");
+		// Extract the velocity attribute from the leaf by name (v is velocity).
+		openvdb::points::AttributeArray& velocityArray =
+			leaf.attributeArray("v");
+
+		// Create read handles for position and velocity
+		openvdb::points::AttributeHandle<openvdb::Vec3f, FLIP_vdb::PositionCodec> positionHandle(positionArray);
+		openvdb::points::AttributeWriteHandle<openvdb::Vec3f, FLIP_vdb::VelocityCodec> velocityHandle(velocityArray);
+
+		auto ovaxr{ m_velocity_after_p2g->getConstAccessor() };
+		auto vaxr{ m_velocity->getConstAccessor() };
+		for (auto iter = leaf.beginIndexOn(); iter; ++iter) {
+			openvdb::Vec3R index_gpos = iter.getCoord().asVec3d() + positionHandle.get(*iter);
+			auto original_vel = openvdb::tools::StaggeredBoxSampler::sample(ovaxr, index_gpos);
+			auto updated_vel = openvdb::tools::StaggeredBoxSampler::sample(vaxr, index_gpos);
+			auto old_pvel = velocityHandle.get(*iter);
+			velocityHandle.set(*iter, (pic_component)*updated_vel + (1.0f - pic_component) * (updated_vel - original_vel + old_pvel));
+		}
+		auto particle_man = openvdb::tree::LeafManager<openvdb::points::PointDataTree>(m_particles->tree());
+		custom_move_points_and_set_flip_vel(*particles, *velocity, *velocity_after_p2g, pic_component, dt, RK_ORDER);
+	};
+}
 namespace {
 	struct custom_integrator {
 

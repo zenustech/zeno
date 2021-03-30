@@ -98,6 +98,10 @@ struct IObject {
 };
 
 
+struct EmptyObject : IObject {
+};
+
+
 struct INode;
 static std::string getNodeName(INode *node);
 static void setObject(std::string name, IObject::Ptr object);
@@ -108,6 +112,12 @@ struct INode {
   using Ptr = std::unique_ptr<INode>;
 
   virtual void apply() = 0;
+
+  void on_apply() {
+    apply();
+    // set dummy output sockets for connection order
+    set_output("order", IObject::make<EmptyObject>());
+  }
 
   void set_param(std::string name, IValue const &value) {
     params[name] = value;
@@ -189,6 +199,15 @@ struct Descriptor {
   std::vector<std::tuple<std::string, std::string, std::string>> params;
   std::vector<std::string> categories;
 
+  int _init = initialize();
+
+  int initialize() {
+    // append dummy sockets for perserving exec orders
+    inputs.push_back("order");
+    outputs.push_back("order");
+    return 0;
+  }
+
   template <class S, class T>
   static std::string join_str(std::vector<T> const &elms, S const &delim) {
       std::stringstream ss;
@@ -256,7 +275,7 @@ public:
   }
 
   void applyNode(std::string name) {
-    safe_at(nodes, name, "node")->apply();
+    safe_at(nodes, name, "node")->on_apply();
   }
 
   void setObject(std::string name, IObject::Ptr object) {
