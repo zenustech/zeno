@@ -4,7 +4,8 @@ add_library(zen SHARED)
 target_include_directories(zen PRIVATE ../external)
 target_link_directories(zen PRIVATE ../external)
 
-target_sources(zen PRIVATE ${PROJECT_SOURCE})
+#target_sources(zen PRIVATE ${PROJECT_SOURCE})
+target_sources(zen PRIVATE libzen.cpp)
 target_include_directories(zen PUBLIC include)
 
 target_compile_options(zen PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fopenmp>)
