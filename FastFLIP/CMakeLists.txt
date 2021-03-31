@@ -18,8 +18,7 @@ set(FLIP_SOURCE levelset_util.cpp volumeMeshTools.cpp FLIP_vdb.h FLIP_vdb.cpp si
 file(GLOB LOSTOPOS_SOURCE ltcommon/*.h ltcommon/*.cpp ltcommon/tunicate/*.h ltcommon/tunicate/*.cpp ltcommon/newsparse/*.h ltcommon/newsparse/*.cpp lostopos/*.h lostopos/*.cpp d3dutils/*.cpp d3dutils/*.h)
 file(GLOB NOSYS_SOURCE nosys/*.cpp nosys/*.h)
 
-add_library(FLIPlib SHARED fucker.cpp)
-#add_library(FLIPlib SHARED ${FLIP_SOURCE} ${LOSTOPOS_SOURCE} ${NOSYS_SOURCE})
+add_library(FLIPlib SHARED fucker.cpp ${FLIP_SOURCE} ${LOSTOPOS_SOURCE} ${NOSYS_SOURCE})
 
 #simd compiler flags
 if (WIN32)
