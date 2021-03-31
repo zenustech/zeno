@@ -58,4 +58,13 @@
 //if we have P2G and G2P, both have dt, dx as params. i think users wont be happy maintian two of them to be same...
 //In Houdini, they do so, and there is a feature : duplicate_from(""), as a result, the parameter provided to one node can be chosen to duplicate
 //from another node, so they always synchronized. cool feature! will we use this as a solution? how to represent it in gui is a problem.. leaving for now, culater~
-//we can use $parameter_name$ to represent a duplicated parameter.
+//we can use $parameter_name$ to represent a duplicated parameter. <-- sounds like a global parameter?
+//so, if the $parameter_name$ is an global, we need to limit its 'useable scope', otherwise we can only use one solver in a graph..
+//maybe need support grouping nodes that share the same $ global scope? e.g. group FLIP solver nodes together, group cloth solver nodes together,
+//so that they can have different $DT$ and $DX$. then the values of $DT$ and $DX$, or $other_name$, can be set in the ui of the group.
+
+//by the way currently we support using `/tmp/{frame:06d}.obj` in str params to load a mesh sequence (e.g. `/tmp/000233.obj` at frame 233)
+//thanks the f-string syntax of Python 3.6+.
+
+// also found the the stupid `TBB::tbbmalloc_proxy` package caused `free(): invalid size`. I removed it from FLIP_vdb.cpp, hope it doesn't break
+// the solver.
