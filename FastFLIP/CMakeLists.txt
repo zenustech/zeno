@@ -8,7 +8,7 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 # add cmake file
 include (common)
 
-find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
+find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc tbbmalloc_proxy)
 find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
 find_package(Eigen3 REQUIRED)
 
@@ -29,22 +29,23 @@ target_compile_options(FLIPlib PRIVATE "-march=native")
 endif()
 
 
-target_include_directories(FLIPlib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
-target_include_directories(FLIPlib PUBLIC ltcommon ltcommon/tunicate ltcommon/newsparse lostopos d3dutils)
+target_include_directories(FLIPlib PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(FLIPlib PRIVATE ltcommon ltcommon/tunicate ltcommon/newsparse lostopos d3dutils)
 ##target_include_directories(FLIPlib PRIVATE "LosTopos/common")
 ##target_include_directories(FLIPlib PRIVATE "Droplet3D")
 
-target_link_libraries(FLIPlib PUBLIC TBB::tbb pthread openblas f2c lapack cblas)
+target_link_libraries(FLIPlib PRIVATE TBB::tbb TBB::tbbmalloc TBB::tbbmalloc_proxy)
+target_link_libraries(FLIPlib PRIVATE pthread openblas f2c lapack cblas)
 
 # zen link flags
 target_link_libraries(FLIPlib PRIVATE zen)
 
 #disable default malloc options
 if (WIN32)
-target_compile_options(FLIPlib PUBLIC -DNOMINMAX)
+  target_compile_options(FLIPlib PRIVATE -DNOMINMAX)
 endif()
 
-target_link_libraries(FLIPlib PUBLIC openvdb IlmBase::Half)
-target_link_libraries(FLIPlib PUBLIC Eigen3::Eigen)
-#target_link_libraries(FLIPlib PUBLIC SimEnvironment)
-#target_link_libraries(FLIPlib PUBLIC partio)
+target_link_libraries(FLIPlib PRIVATE openvdb IlmBase::Half)
+target_link_libraries(FLIPlib PRIVATE Eigen3::Eigen)
+#target_link_libraries(FLIPlib PRIVATE SimEnvironment)
+#target_link_libraries(FLIPlib PRIVATE partio)
