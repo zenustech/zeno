@@ -7,7 +7,6 @@
 #include "openvdb/tools/Morphology.h"
 #include "openvdb/tools/MeshToVolume.h"
 #include "SimOptions.h"
-#include "Timer.h"
 #include "levelset_util.h"
 
 #include <atomic>
@@ -358,39 +357,27 @@ bool FLIP_vdb::test()
 		//update teh solid
 		update_solid_sdf();
 
-		CSim::TimerMan::timer("Sim.step/vdbflip/advection").start();
 		advection(dt);
-		CSim::TimerMan::timer("Sim.step/vdbflip/advection").stop();
 		printf("advection done\n");
 
-		CSim::TimerMan::timer("Sim.step/vdbflip/seed").start();
 		fill_kill_particles();
-		CSim::TimerMan::timer("Sim.step/vdbflip/seed").stop();
 		printf("fill_kill_particles done\n");
-		CSim::TimerMan::timer("Sim.step/vdbflip/p2gcollect").start();
 		particle_to_grid_collect_style();
 		extrapolate_velocity(1);
 		//particle_to_grid_reduce_style();
 		calculate_face_weights();
 		clamp_liquid_phi_in_solids();
 		printf("particle_to_grid done\n");
-		CSim::TimerMan::timer("Sim.step/vdbflip/p2gcollect").stop();
 
-		CSim::TimerMan::timer("Sim.step/vdbflip/set_face_weights").start();
 		
 		set_solid_velocity();
-		CSim::TimerMan::timer("Sim.step/vdbflip/set_face_weights").stop();
 
 		apply_body_force(dt);
-		CSim::TimerMan::timer("Sim.step/vdbflip/pressure").start();
 		//solve_pressure(dt);
 
 		solve_pressure_simd(dt);
 ;
-		CSim::TimerMan::timer("Sim.step/vdbflip/pressure").stop();
-		CSim::TimerMan::timer("Sim.step/vdbflip/extrapolate").start();
 		extrapolate_velocity();
-		CSim::TimerMan::timer("Sim.step/vdbflip/extrapolate").stop();
 		stepped += dt;
 		cfl();
 	}
@@ -419,14 +406,12 @@ void FLIP_vdb::IO(std::string filename)
 		};
 		openvdb::tree::LeafManager<openvdb::FloatTree>(copied_pressure->tree()).foreach(diff_pressure);*/
 		printf("async_write frame %d\n", m_framenumber);
-		CSim::TimerMan::timer("Sim.step/vdbflip/IO").start();
 		std::stringstream s;
 		s << filename << m_framenumber << ".vdb";
 		m_boundary_velocity_volume->setName("boundary_velocity_volume");
 		//openvdb::io::File(s.str()).write({ m_particles, m_velocity, m_velocity_weights, m_liquid_sdf,  m_solid_sdf, m_pressure, m_solid_velocity });
 		//openvdb::io::File(s.str()).write({ copied_particles , copied_liquid_sdf,copied_solid_sdf, copied_velocity, copied_old_velocity, copied_pressure, copied_face_weights, copied_update, copied_RHS ,m_solid_velocity->deepCopy() });
 		openvdb::io::File(s.str()).write({ copied_particles ,m_shrinked_liquid_sdf });
-		CSim::TimerMan::timer("Sim.step/vdbflip/IO").stop();
 	};
 
 	auto save_thread{ std::thread(save_vdb) };
@@ -906,16 +891,12 @@ void FLIP_vdb::advection(float dt)
 	};//end update flip velocity
 
 	auto particle_man = openvdb::tree::LeafManager<openvdb::points::PointDataTree>(m_particles->tree());
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/updatevel").start();
 	//particle_man.foreach(update_FLIP_velocity);
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/updatevel").stop();
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/adv").start();
 	//advect them in the velocity field
 	//openvdb::points::advectPoints(*m_particles, *m_velocity, /*RK order*/ 1, /*time step*/dt, /*number of steps*/1);
 	//std::cout << " particle mem " << m_particles->memUsage() << std::endl;
 	custom_move_points_and_set_flip_vel(*m_particles, *m_velocity, *m_velocity_after_p2g, pic_component, dt, /*RK order*/ 1);
 	//openvdb::points::advectPoints(*m_particles, *m_velocity, /*RK order*/ 4, /*time step*/dt, /*number of steps*/1);
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/adv").stop();
 
 }
 
@@ -1228,11 +1209,9 @@ void FLIP_vdb::custom_move_points_and_set_flip_vel(
 	in_out_points.tree().getNodes(particle_leaves);
 
 
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/reduce").start();
 	auto reducer = std::make_unique<point_to_counter_reducer>(
 		dt, dx, in_velocity_field, in_old_velocity, PIC_component, particle_leaves, RK_order);
 	tbb::parallel_reduce(tbb::blocked_range<openvdb::Index>(0, particle_leaves.size(), 10), *reducer);
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/reduce").stop();
 	//compose the result
 	
 	auto newTree_leafman{ openvdb::tree::LeafManager<openvdb::points::PointDataTree>(reducer->m_counter_grid->tree()) };
@@ -1287,22 +1266,16 @@ void FLIP_vdb::custom_move_points_and_set_flip_vel(
 			varray.set(writer_index, particle_leaves[std::get<2>(tooiol_vec[i])]->attributeArray("v"), std::get<1>(tooiol_vec[i]));
 		}
 	};
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose").start();
 	//printf("compose_start_for_each\n");
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose/compose").start();
 	newTree_leafman.foreach(set_new_attribute_list);
 	//printf("compose_end_for_each\n");
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose/compose").stop();
 	reducer->m_counter_grid->setName("new_counter_grid");
 	auto voxel_center_transform = openvdb::math::Transform::createLinearTransform(dx);
 	reducer->m_counter_grid->setTransform(voxel_center_transform);
 	//openvdb::io::File("new_advect.vdb").write({reducer.m_counter_grid});
 	//printf("compose_start_replace_tree\n");
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose/replace").start();
 	in_out_points.setTree(reducer->m_counter_grid->treePtr());
 	//printf("compose_end_replace_tree\n");
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose/replace").stop();
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose").stop();
 }
 void FLIP_vdb::custom_move_points_and_set_flip_vel(
 	openvdb::points::PointDataGrid& in_out_points,
@@ -1314,11 +1287,9 @@ void FLIP_vdb::custom_move_points_and_set_flip_vel(
 	in_out_points.tree().getNodes(particle_leaves);
 
 
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/reduce").start();
 	auto reducer = std::make_unique<point_to_counter_reducer>(
 		dt, m_dx, in_velocity_field, in_old_velocity, PIC_component, particle_leaves, RK_order);
 	tbb::parallel_reduce(tbb::blocked_range<openvdb::Index>(0, particle_leaves.size(), 10), *reducer);
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/reduce").stop();
 	//compose the result
 
 	auto newTree_leafman{ openvdb::tree::LeafManager<openvdb::points::PointDataTree>(reducer->m_counter_grid->tree()) };
@@ -1371,21 +1342,15 @@ void FLIP_vdb::custom_move_points_and_set_flip_vel(
 			varray.set(writer_index, particle_leaves[std::get<2>(tooiol_vec[i])]->attributeArray("v"), std::get<1>(tooiol_vec[i]));
 		}
 	};
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose").start();
 	//printf("compose_start_for_each\n");
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose/compose").start();
 	newTree_leafman.foreach(set_new_attribute_list);
 	//printf("compose_end_for_each\n");
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose/compose").stop();
 	reducer->m_counter_grid->setName("new_counter_grid");
 	reducer->m_counter_grid->setTransform(m_voxel_center_transform);
 	//openvdb::io::File("new_advect.vdb").write({reducer.m_counter_grid});
 	//printf("compose_start_replace_tree\n");
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose/replace").start();
 	in_out_points.setTree(reducer->m_counter_grid->treePtr());
 	//printf("compose_end_replace_tree\n");
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose/replace").stop();
-	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose").stop();
 }
 
 void FLIP_vdb::extrapolate_velocity(int layer)
@@ -3411,11 +3376,9 @@ void FLIP_vdb::apply_pressure_gradient(float in_dt)
 void FLIP_vdb::solve_pressure_simd(float dt)
 {
 	//test construct levels
-	CSim::TimerMan::timer("Sim.step/vdbflip/pressure/buildlevel").start();
 	auto simd_solver = simd_vdb_poisson(m_liquid_sdf, m_pushed_out_liquid_sdf, m_face_weight, m_velocity, m_solid_velocity, dt, m_dx);
 	simd_solver.construct_levels();
 	simd_solver.build_rhs();
-	CSim::TimerMan::timer("Sim.step/vdbflip/pressure/buildlevel").stop();
 
 	
 
@@ -3438,14 +3401,10 @@ void FLIP_vdb::solve_pressure_simd(float dt)
 
 	//simd_solver.m_laplacian_with_levels[0]->m_dof_leafmanager->foreach(set_warm_pressure);
 
-	CSim::TimerMan::timer("Sim.step/vdbflip/pressure/simdpcg").start();
 	simd_solver.pcg_solve(pressure, 1e-7);
-	CSim::TimerMan::timer("Sim.step/vdbflip/pressure/simdpcg").stop();
 
 	m_pressure.swap(pressure);
-	CSim::TimerMan::timer("Sim.step/vdbflip/pressure/updatevel").start();
 	apply_pressure_gradient(dt);
-	CSim::TimerMan::timer("Sim.step/vdbflip/pressure/updatevel").stop();
 
 	//simd_solver.build_rhs();
 	m_rhsgrid = simd_solver.m_rhs;

@@ -16,7 +16,6 @@
 #include "vec.h"
 #include "tbb/parallel_for.h"
 #include "zxxtypedefs.h"
-#include "Timer.h"
 #include "FLIP_particle.h"
 struct iSpaceHasher
 {
@@ -47,13 +46,10 @@ struct sparse_fluid_3D{
 	{
 		//std::vector<fluid_Tile<N>> new_fluid_bulk;
 		//new_fluid_bulk.resize(0);
-		//CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks/extend_fluidbulks/first").start();
 		for (int i=0;i<fluid_bulk.size();i++)
 		{
 			//new_fluid_bulk.push_back(fluid_Tile<N>(fluid_bulk[i].tile_corner,fluid_bulk[i].bulk_index));
 		}
-		//CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks/extend_fluidbulks/first").stop();
-		//CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks/extend_fluidbulks/second").start();
 		size_t original_bulk_size = m_index3_of_non_empty_bulks.size();
 		for (int i=0;i< original_bulk_size;i++)
 		{
@@ -77,14 +73,11 @@ struct sparse_fluid_3D{
 						}
 					}
 		}
-		//CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks/extend_fluidbulks/second").stop();
 		//fluid_bulk.resize(0);
-		//CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks/extend_fluidbulks/third").start();
 		//for (int i=0;i<new_fluid_bulk.size();i++)
 		{
 			//fluid_bulk.push_back(fluid_Tile<N>(new_fluid_bulk[i].tile_corner,new_fluid_bulk[i].bulk_index));
 		}
-		//CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks/extend_fluidbulks/third").stop();
 	}
 
 	void initialize_bulks(
@@ -102,8 +95,6 @@ struct sparse_fluid_3D{
 	//	LosTopos::Vec3f hard_bmin = LosTopos::Vec3f{ -1,-1,-1 },
 	//	LosTopos::Vec3f hard_bmax = LosTopos::Vec3f{ 1, 1, 1 })
 	//{
-	//	CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks").start();
-	//		//CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks/overhead1").start();
 	//		//fluid_bulk.resize(0);
 	//		m_index3_of_non_empty_bulks.resize(0);
 	//		index_mapping.clear();
@@ -139,9 +130,7 @@ struct sparse_fluid_3D{
 	//		std::vector<char> buffer;
 	//		buffer.resize(ni*nj*nk);
 	//		buffer.assign(ni*nj*nk, 0);
-	//		//CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks/overhead1").stop();
 	//		printf("1 nijk: %d %d %d nparticles%d\n",ni,nj,nk,num_particles);
-	//		//CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks/overhead2").start();
 	//		tbb::parallel_for((uint)0, (uint) num_particles, (uint)1, [&](uint i)
 	//			//for (uint i=0;i<num_particles;i++)
 	//		{
@@ -152,7 +141,6 @@ struct sparse_fluid_3D{
 	//			size_t idx = bulk_ijk[0] + ni*bulk_ijk[1] + ni*nj*bulk_ijk[2];
 	//			buffer[idx] = 1;
 	//		});
-	//		//CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks/overhead2").stop();
 	//		printf("2\n");
 	//		for (int buffer_id = 0;buffer_id < buffer.size();buffer_id++)
 	//		{
@@ -175,9 +163,7 @@ struct sparse_fluid_3D{
 	//		for(int i=0;i<2;i++)
 	//		{
 	//			//non_boundary_bulks = fluid_bulk.size();
-	//			//CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks/extend_fluidbulks").start();
 	//			extend_fluidbulks();
-	//			//CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks/extend_fluidbulks").stop();
 	//		}
 	//		printf("4\n");
 	//		//transform the recorded index to really allocated memory
@@ -195,16 +181,13 @@ struct sparse_fluid_3D{
 	//				fluid_bulk.pop_back();
 	//			}
 	//		}*/
-	//		//CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks/push_fluid").start();
 	//		fluid_bulk.resize(m_index3_of_non_empty_bulks.size());
-	//		//CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks/push_fluid").stop();
 	//		for (int i = 0; i < fluid_bulk.size(); i++) {
 	//			fluid_bulk[i].tile_corner = m_index3_of_non_empty_bulks[i];
 	//			fluid_bulk[i].bulk_index = i;
 	//		}
 	//		
 	//		//std::cout<<non_boundary_bulks<<std::endl;
-	//		//CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks/identify_boundary").start();
 	//		for(int i=0;i<fluid_bulk.size();i++)
 	//		{
 	//			LosTopos::Vec3i bulk_ijk = fluid_bulk[i].tile_corner/N;
@@ -219,13 +202,11 @@ struct sparse_fluid_3D{
 	//			}
 
 	//		}
-	//		//CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks/identify_boundary").stop();
 	//		n_bulks = (uint)fluid_bulk.size();
 	//		std::cout<<"num of bulks:"<<fluid_bulk.size()<<std::endl;
 	//		std::cout<<"bmin:"<<bmin[0]<<" "<<bmin[1]<<" "<<bmin[2]<<std::endl;
 	//		std::cout<<"bmax:"<<bmax[0]<<" "<<bmax[1]<<" "<<bmax[2]<<std::endl;
 	//		std::cout<<"dimension:"<<ni<<" "<<nj<<" "<<nk<<std::endl;
-	//	CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks").stop();
 	//}
 
 

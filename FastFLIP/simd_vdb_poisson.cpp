@@ -3,7 +3,6 @@
 #include "openvdb/tree/LeafManager.h"
 #include "openvdb/tools/Interpolation.h"
 #include "immintrin.h"
-#include "Timer.h"
 #include "tbb/concurrent_vector.h"
 #include <atomic>
 simd_vdb_poisson::Laplacian_with_level::Laplacian_with_level(openvdb::FloatGrid::Ptr in_liquid_phi,
@@ -1185,10 +1184,8 @@ openvdb::FloatGrid::Ptr simd_vdb_poisson::Laplacian_with_level::apply(openvdb::F
 	//set the input and out put
 	m_laplacian_evaluator->set_input_lhs(in_lhs);
 	m_laplacian_evaluator->set_output_result(result);
-	CSim::TimerMan::timer("Sim.step/vdbflip/mulvsimd/apply").start();
 	//diag_leafman.foreach(apply_op);
 	m_dof_leafmanager->foreach(*m_laplacian_evaluator);
-	CSim::TimerMan::timer("Sim.step/vdbflip/mulvsimd/apply").stop();
 	_mm256_zeroall();
 	return result;
 }
@@ -1811,7 +1808,6 @@ void simd_vdb_poisson::Vcycle(
 			exit(-1);
 		}
 	}
-	//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V").start();
 	size_t nlevel = m_laplacian_with_levels.size();
 	m_v_cycle_lhss[0] = in_out_lhs;
 	m_v_cycle_rhss[0] = in_rhs;
@@ -1819,10 +1815,8 @@ void simd_vdb_poisson::Vcycle(
 	//on the finest level, relax a few iterations 
 	//in general in_out_lhs as the initial guess is not zero vector
 	for (int i = 0; i < n1; i++) {
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth0").start();
 		m_laplacian_with_levels[0]->RBGS_apply_assume_topo_inplace<true>(
 			m_v_cycle_temps[0], m_v_cycle_lhss[0], m_v_cycle_rhss[0]);
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth0").stop();
 		//the updated lhs is in m_v_cycle_temps
 		//we need to update the v_cycle_lhs
 		//m_v_cycle_lhss[0].swap(m_v_cycle_temps[0]);
@@ -1830,15 +1824,11 @@ void simd_vdb_poisson::Vcycle(
 	}
 
 	//pass the residual to the next level
-	//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/residual0").start();
 	m_laplacian_with_levels[0]->residual_apply_assume_topo(
 		m_v_cycle_temps[0], m_v_cycle_lhss[0], m_v_cycle_rhss[0]);
-	//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/residual0").stop();
 
-	//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/R0").start();
 	m_laplacian_with_levels[0]->restriction(
 		m_v_cycle_rhss[1], m_v_cycle_temps[0], *m_laplacian_with_levels[1]);
-	//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/R0").stop();
 	//pass get the residual, restrict the residual to the next level
 	for (int level = 1; level < (nlevel - 1); level++) {
 		//relax
@@ -1850,22 +1840,16 @@ void simd_vdb_poisson::Vcycle(
 		/*m_laplacian_with_levels[level]->set_grid_constant_assume_topo(
 			m_v_cycle_lhss[level], 0);*/
 		for (int i = 0; i < n1; i++) {
-			//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth"+std::to_string(level)).start();
 			m_laplacian_with_levels[level]->RBGS_apply_assume_topo_inplace<true>(
 				m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-			//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth" + std::to_string(level)).stop();
 			//m_v_cycle_lhss[level].swap(m_v_cycle_temps[level]);
 		}
 		//calculate residual
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/residual" + std::to_string(level)).start();
 		m_laplacian_with_levels[level]->residual_apply_assume_topo(
 			m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/residual" + std::to_string(level)).stop();
 
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/R" + std::to_string(level)).start();
 		m_laplacian_with_levels[level]->restriction(
 			m_v_cycle_rhss[size_t(level + 1)], m_v_cycle_temps[level], *m_laplacian_with_levels[size_t(level + 1)]);
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/R" + std::to_string(level)).stop();
 		//pass to next level
 	}//end for 0 to the last second level
 
@@ -1892,30 +1876,24 @@ void simd_vdb_poisson::Vcycle(
 		}
 	}
 	else {
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/Direct").start();
 		write_coarsest_eigen_rhs(m_coarsest_eigen_rhs, m_v_cycle_rhss[level]);
 		m_coarsest_eigen_solution = m_coarsest_solver->solve(m_coarsest_eigen_rhs);
 		write_coarsest_grid_solution(m_v_cycle_lhss[level], m_coarsest_eigen_solution);
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/Direct").stop();
 	}
 
 
 	//get the error correction back
 	for (level = nlevel - 2; level >= 0; level--) {
 		int child_level = level + 1;
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/P" + std::to_string(level)).start();
 		m_laplacian_with_levels[child_level]->prolongation</*inplace add*/true>(
 			m_v_cycle_lhss[level], m_v_cycle_lhss[child_level], *m_laplacian_with_levels[level]);
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/P" + std::to_string(level)).stop();
 		/*m_laplacian_with_levels[level]->inplace_add_assume_topo(
 			m_v_cycle_lhss[level], m_v_cycle_temps[level]);*/
 
 		for (int i = 0; i < n2; i++) {
-			//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth" + std::to_string(level)).start();
 			m_laplacian_with_levels[level]->RBGS_apply_assume_topo_inplace<false>(
 				m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]
 				);
-			//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth" + std::to_string(level)).stop();
 			//m_v_cycle_lhss[level].swap(m_v_cycle_temps[level]);
 		}
 	}
@@ -1934,13 +1912,10 @@ void simd_vdb_poisson::Vcycle(
 			target_leaf->buffer().data());
 	};//end copy to result
 
-	//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/copy").start();
 	//m_laplacian_with_levels[0]->m_dof_leafmanager->foreach(copy_to_result);
-	//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/copy").stop();
 	if ((n1 + n2) % 2 == 1) {
 		//m_v_cycle_lhss[0].swap(m_v_cycle_temps[0]);
 	}
-	//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V").stop();
 }
 
 template<int mu_time, bool skip_first_iter>
@@ -1964,10 +1939,8 @@ void simd_vdb_poisson::mucycle_RBGS(const openvdb::FloatGrid::Ptr in_out_lhs, co
 	}
 
 	for (int i = (skip_first_iter ? 1 : 0); i < n1; i++) {
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" + std::to_string(level)).start();
 		m_laplacian_with_levels[level]->RBGS_apply_assume_topo_inplace<true>(
 			m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" + std::to_string(level)).start();
 	}
 	m_laplacian_with_levels[level]->residual_apply_assume_topo(
 		m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
@@ -1990,11 +1963,9 @@ void simd_vdb_poisson::mucycle_RBGS(const openvdb::FloatGrid::Ptr in_out_lhs, co
 		m_v_cycle_lhss[level], m_v_cycle_lhss[child_level],/*parent level*/ *m_laplacian_with_levels[level]);
 
 	for (int i = 0; i < n2; i++) {
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" + std::to_string(level)).start();
 		m_laplacian_with_levels[level]->RBGS_apply_assume_topo_inplace<false>(
 			m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]
 			);
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" + std::to_string(level)).stop();
 	}
 }
 
@@ -2038,12 +2009,10 @@ void simd_vdb_poisson::mucycle_SRJ(const openvdb::FloatGrid::Ptr in_out_lhs, con
 	}
 
 	for (int i = (skip_first_iter ? 1 : 0); i < n1; i++) {
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" + std::to_string(level)).start();
 		m_laplacian_with_levels[level]->m_laplacian_evaluator->set_w_jacobi(scheduled_weight[i]);
 		m_laplacian_with_levels[level]->weighted_jacobi_apply_assume_topo(
 			m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
 		m_v_cycle_temps[level].swap(m_v_cycle_lhss[level]);
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" + std::to_string(level)).start();
 	}
 	m_laplacian_with_levels[level]->residual_apply_assume_topo(
 		m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
@@ -2061,13 +2030,11 @@ void simd_vdb_poisson::mucycle_SRJ(const openvdb::FloatGrid::Ptr in_out_lhs, con
 		m_v_cycle_lhss[level], m_v_cycle_lhss[child_level],/*parent level*/ *m_laplacian_with_levels[level]);
 
 	for (int i = 0; i < n2; i++) {
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" + std::to_string(level)).start();
 		m_laplacian_with_levels[level]->m_laplacian_evaluator->set_w_jacobi(scheduled_weight[size_t(n2 - 1 - i)]);
 		m_laplacian_with_levels[level]->weighted_jacobi_apply_assume_topo(
 			m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]
 		);
 		m_v_cycle_temps[level].swap(m_v_cycle_lhss[level]);
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" + std::to_string(level)).stop();
 	}
 
 }
@@ -2096,11 +2063,9 @@ void simd_vdb_poisson::mucycle_SPAI0(const openvdb::FloatGrid::Ptr in_out_lhs, c
 	}
 
 	for (int i = (skip_first_iter ? 1 : 0); i < n1; i++) {
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" + std::to_string(level)).start();
 		m_laplacian_with_levels[level]->SPAI0_apply_assume_topo(
 			m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
 		m_v_cycle_temps[level].swap(m_v_cycle_lhss[level]);
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" + std::to_string(level)).start();
 	}
 	m_laplacian_with_levels[level]->residual_apply_assume_topo(
 		m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
@@ -2118,12 +2083,10 @@ void simd_vdb_poisson::mucycle_SPAI0(const openvdb::FloatGrid::Ptr in_out_lhs, c
 		m_v_cycle_lhss[level], m_v_cycle_lhss[child_level],/*parent level*/ *m_laplacian_with_levels[level]);
 
 	for (int i = 0; i < n2; i++) {
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" + std::to_string(level)).start();
 		m_laplacian_with_levels[level]->SPAI0_apply_assume_topo(
 			m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]
 		);
 		m_v_cycle_temps[level].swap(m_v_cycle_lhss[level]);
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" + std::to_string(level)).stop();
 	}
 }
 
@@ -2164,12 +2127,10 @@ void simd_vdb_poisson::Kcycle_SRJ(const openvdb::FloatGrid::Ptr in_out_lhs, cons
 	}
 
 	for (int i = (skip_first_iter ? 1 : 0); i < n1; i++) {
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" + std::to_string(level)).start();
 		m_laplacian_with_levels[level]->m_laplacian_evaluator->set_w_jacobi(scheduled_weight[i]);
 		m_laplacian_with_levels[level]->weighted_jacobi_apply_assume_topo(
 			m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
 		m_v_cycle_temps[level].swap(m_v_cycle_lhss[level]);
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" + std::to_string(level)).start();
 	}
 	m_laplacian_with_levels[level]->residual_apply_assume_topo(
 		m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]);
@@ -2224,13 +2185,11 @@ void simd_vdb_poisson::Kcycle_SRJ(const openvdb::FloatGrid::Ptr in_out_lhs, cons
 		m_v_cycle_lhss[level], m_v_cycle_lhss[child_level],/*parent level*/ *m_laplacian_with_levels[level]);
 
 	for (int i = 0; i < n2; i++) {
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" + std::to_string(level)).start();
 		m_laplacian_with_levels[level]->m_laplacian_evaluator->set_w_jacobi(scheduled_weight[i]);
 		m_laplacian_with_levels[level]->weighted_jacobi_apply_assume_topo(
 			m_v_cycle_temps[level], m_v_cycle_lhss[level], m_v_cycle_rhss[level]
 		);
 		m_v_cycle_temps[level].swap(m_v_cycle_lhss[level]);
-		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/W/smooth" + std::to_string(level)).stop();
 	}
 
 }

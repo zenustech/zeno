@@ -1,7 +1,6 @@
 #include "fluidsim.h"
 #include "Sparse_buffer.h"
 #include "sparse_matrix.h"
-#include "Timer.h"
 #include "tbb/parallel_for.h"
 #include "tbb/parallel_reduce.h"
 #include "volumeMeshTools.h"
@@ -1141,7 +1140,6 @@ void FluidSim::particle_to_grid(sparse_fluid8x8x8 &_eulerian_fluid, std::vector<
     memset(reswu,0,sizeof(float)*n);
     memset(reswv,0,sizeof(float)*n);
     memset(resww,0,sizeof(float)*n);
-    CSim::TimerMan::timer("Sim.step/FLIP/p2g/u").start();
 #pragma omp parallel for
     for (int i = 0; i < _particles.size(); i++) {
         LosTopos::Vec3f pos = _particles[i].pos
@@ -1168,9 +1166,7 @@ void FluidSim::particle_to_grid(sparse_fluid8x8x8 &_eulerian_fluid, std::vector<
 
                 }
     }
-    CSim::TimerMan::timer("Sim.step/FLIP/p2g/u").stop();
 
-    CSim::TimerMan::timer("Sim.step/FLIP/p2g/v").start();
 #pragma omp parallel for
     for(int i=0;i<_particles.size();i++)
     {
@@ -1199,8 +1195,6 @@ void FluidSim::particle_to_grid(sparse_fluid8x8x8 &_eulerian_fluid, std::vector<
 
                 }
     }
-    CSim::TimerMan::timer("Sim.step/FLIP/p2g/v").stop();
-    CSim::TimerMan::timer("Sim.step/FLIP/p2g/w").start();
 #pragma omp parallel for
     for(int i=0;i<_particles.size();i++)
     {
@@ -1229,10 +1223,8 @@ void FluidSim::particle_to_grid(sparse_fluid8x8x8 &_eulerian_fluid, std::vector<
 
                 }
     }
-    CSim::TimerMan::timer("Sim.step/FLIP/p2g/w").stop();
 
 
-    CSim::TimerMan::timer("Sim.step/FLIP/p2g/compose").start();
     tbb::parallel_for((size_t)0,
                       (size_t)_eulerian_fluid.n_bulks,
                       (size_t)1,
@@ -1271,7 +1263,6 @@ void FluidSim::particle_to_grid(sparse_fluid8x8x8 &_eulerian_fluid, std::vector<
                           }
 
                       });
-    CSim::TimerMan::timer("Sim.step/FLIP/p2g/compose").stop();
 
 
 
@@ -1297,39 +1288,29 @@ void FluidSim::advance(float dt, std::function<float(const LosTopos::Vec3f&)> ph
         printf("Taking substep of size %f (to %0.3f%% of the frame)\n", substep, 100 * (t + substep) / dt);
 
         printf("FLIP advection\n");
-        CSim::TimerMan::timer("Sim.step/FLIP/advection").start();
         FLIP_advection(substep);
-        CSim::TimerMan::timer("Sim.step/FLIP/advection").stop();
 
         printf("handle_boundary\n");
         handle_boundary_layer();
 
         //printf("reinitialize bulks\n");        
-        CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks").start();
         (*eulerian_fluids).initialize_bulks(particles, dx, /*use_hard_boundary?*/true, m_flip_options.m_exterior_boundary_min, m_flip_options.m_exterior_boundary_max);
-        CSim::TimerMan::timer("Sim.step/FLIP/initialize_builks").stop();
 
-        //CSim::TimerMan::timer("Sim.step/FLIP/set_boundary_phi").start();
         
         set_boundary(phi);
-        //CSim::TimerMan::timer("Sim.step/FLIP/set_boundary_phi").stop();
 
-        CSim::TimerMan::timer("Sim.step/FLIP/p2g_fusion").start();
         //requires solid_phi
         printf("p2g\n");
         fusion_p2g_liquid_phi();
        /* particle_to_grid();
         compute_phi();*/
-        CSim::TimerMan::timer("Sim.step/FLIP/p2g_fusion").stop();
 
 
-        //CSim::TimerMan::timer("Sim.step/FLIP/set_boundary_vel").start();
         //Compute finite-volume type face area weight for each velocity sample.
         //requires solid_phi
         compute_weights();
 
         assign_boundary_layer_solid_velocities();
-        //CSim::TimerMan::timer("Sim.step/FLIP/set_boundary_vel").stop();
 
 
         //        extrapolate(4);
@@ -1355,10 +1336,8 @@ void FluidSim::advance(float dt, std::function<float(const LosTopos::Vec3f&)> ph
         
         //printf("add gravity\n");
         add_force(substep);
-        CSim::TimerMan::timer("Sim.step/FLIP/pressure").start();
         printf(" Pressure projection\n");
         project(1.0);
-        CSim::TimerMan::timer("Sim.step/FLIP/pressure").stop();
         //Pressure projection only produces valid velocities in faces with non-zero associated face area.
         //Because the advection step may interpolate from these invalid faces,
         //we must extrapolate velocities from the fluid domain into these invalid faces.
@@ -1939,11 +1918,8 @@ void FluidSim::const_velocity_volume(const std::vector<LosTopos::Vec3f>& in_pos,
 
 void FluidSim::handle_boundary_layer()
 {
-    CSim::TimerMan::timer("Sim.step/FLIP/handle_boundary_layer").start();
-    CSim::TimerMan::timer("Sim.step/FLIP/handle_boundary_layer/sea").start();
     set_sea_level_from_BEM();
     printf("get sea_level from bem complete\n");
-    CSim::TimerMan::timer("Sim.step/FLIP/handle_boundary_layer/sea").stop();
     //This function is expected to execute after the advection procedure
     //where FLIP particles move to new positions, potentially leaving gaps at boundaries.
     
@@ -1967,7 +1943,6 @@ void FluidSim::handle_boundary_layer()
         return false;
     };
 
-    CSim::TimerMan::timer("Sim.step/FLIP/handle_boundary_layer/initialize_builks").start();
     if (additionally_initialize_bulks) {
         //determine if a bulk is worth reserving
         //it happens if any of the bulk corner is in the boundary zone
@@ -1976,16 +1951,13 @@ void FluidSim::handle_boundary_layer()
             /*use hard min max*/true, m_flip_options.m_exterior_boundary_min, m_flip_options.m_exterior_boundary_max, 
            /*reserve worthy bulks*/ true, any_corner_in_boundary_layer);
     }
-    CSim::TimerMan::timer("Sim.step/FLIP/handle_boundary_layer/initialize_builks").stop();
 
     std::function<float(const LosTopos::Vec3f&)>  intrinsic_boundary = [](const LosTopos::Vec3f& x) {return float(0); };
     set_boundary(intrinsic_boundary);
     //The FLIP domain has interior bounding box that hold all the FLIP particles
     //It also hold another exterior bounding box which set the bmin and bmax of the fluid bulks
     //1. All FLIP particles are assigned to fluid bulks within the exterior bounding box
-    //CSim::TimerMan::timer("Sim.step/FLIP/handle_boundary_layer/assign_particle_to_bulks").start();
     assign_particle_to_bulks();
-    //CSim::TimerMan::timer("Sim.step/FLIP/handle_boundary_layer/assign_particle_to_bulks").stop();
     //after this step, all fluids within the exterior bounding box are recorded here
 
     //2. FlIP particles that are outside of the exterior bounding box are removed
@@ -2119,7 +2091,6 @@ void FluidSim::handle_boundary_layer()
 
     /***************************modify emitted particle velocity begin ****************************/
     //use a reference to access the required particles
-    CSim::TimerMan::timer("Sim.step/FLIP/handle_boundary_layer/extract_vel").start();
     std::vector<minimum_FLIP_particle*> ptrs_to_emitted_particles;
     size_t emitted_boundary_particle_count = 0;
     
@@ -2161,11 +2132,9 @@ void FluidSim::handle_boundary_layer()
     for (size_t i = 0; i < emitted_particle_pos.size(); i++) {
         ptrs_to_emitted_particles[i]->vel = emitted_particle_vel[i];
     }
-    CSim::TimerMan::timer("Sim.step/FLIP/handle_boundary_layer/extract_vel").stop();
     /***************************modify emitted particle velocity end   ****************************/
 
     //combine all sources of particles for the boundary layer bulks 
-    CSim::TimerMan::timer("Sim.step/FLIP/handle_boundary_layer/compose").start();
     tbb::parallel_for(size_t(0), n_boundary_bulks, [&](size_t boundary_bulk_idx) {
         
         const auto& pids = proposed_pid_at_boundary_bulks[boundary_bulk_idx];
@@ -2228,8 +2197,6 @@ void FluidSim::handle_boundary_layer()
     //   or external program (BEM).
     //   It is likely the bulk created here is not really used for future simulation
     //   The velocity is not handled here
-    CSim::TimerMan::timer("Sim.step/FLIP/handle_boundary_layer/compose").stop();
-    CSim::TimerMan::timer("Sim.step/FLIP/handle_boundary_layer").stop();
 }
 
 void FluidSim::seed_and_remove_boundary_layer_particles()
@@ -2317,7 +2284,6 @@ void FluidSim::assign_boundary_layer_solid_velocities()
     //this can later be adjusted to support BEM velocity interpolation
     std::vector<bool> dummy;
     {
-        //CSim::TimerMan::timer("Sim.step/FLIP/set_boundary_vel/extract_vel").start();
         LosTopos::Vec3f flowv;
         flowv[0] = Options::doubleValue("tank_flow_x");
         flowv[0] = Options::doubleValue("tank_flow_y");
@@ -2331,7 +2297,6 @@ void FluidSim::assign_boundary_layer_solid_velocities()
             solid_voxel_center_pos, 
             velocity);
         //printf("query solid voxel number:%d\n", solid_voxel_center_pos.size());
-        //CSim::TimerMan::timer("Sim.step/FLIP/set_boundary_vel/extract_vel").stop();
     }
     
 
@@ -2645,7 +2610,6 @@ void FluidSim::solve_pressure(float dt)
     matrix.zero();
     rhs.assign(rhs.size(), 0);
     Dofs.assign(Dofs.size(), 0);
-    CSim::TimerMan::timer("Sim.step/FLIP/pressure/buildmatrix").start();
     tbb::parallel_for((size_t)0,
                       (size_t)(*eulerian_fluids).n_bulks,
                       (size_t)1,
@@ -2849,7 +2813,6 @@ void FluidSim::solve_pressure(float dt)
 
                           }
                       });
-    CSim::TimerMan::timer("Sim.step/FLIP/pressure/buildmatrix").stop();
     // modify isolated cell RHS
     for (int i = 0; i < isolated_cell_index.size(); i++)
         rhs[isolated_cell_index[i]] = 0;
@@ -2860,10 +2823,8 @@ void FluidSim::solve_pressure(float dt)
     int iterations;
     {
         auto tend_eigen = std::chrono::steady_clock::now();
-        CSim::TimerMan::timer("Sim.step/FLIP/pressure/amg").start();
         bool success = Libo::AMGPCGSolveSparse(matrix, rhs, Dofs, Dof_ijk,
             1e-9f, 100, tolerance, iterations, nijk[0], nijk[1], nijk[2]);
-        CSim::TimerMan::timer("Sim.step/FLIP/pressure/amg").stop();
         auto tend_amg = std::chrono::steady_clock::now();
         std::chrono::duration<double> amgseconds = tend_amg - tend_eigen;
         std::cout << "amg elapsed time: " << amgseconds.count() << "s\n";
@@ -3443,10 +3404,8 @@ void FluidSim::solve_pressure_morton(float dt)
     int iterations;
     {
         auto tend_eigen = std::chrono::steady_clock::now();
-        CSim::TimerMan::timer("Sim.step/FLIP/pressure/amg").start();
         bool success = Libo::AMGPCGSolveSparse(matrix, rhs, Dofs, Dof_ijk,
             1e-9f, 100, tolerance, iterations, nijk[0], nijk[1], nijk[2]);
-        CSim::TimerMan::timer("Sim.step/FLIP/pressure/amg").stop();
         auto tend_amg = std::chrono::steady_clock::now();
         std::chrono::duration<double> amgseconds = tend_amg - tend_eigen;
         std::cout << "amg elapsed time: " << amgseconds.count() << "s\n";

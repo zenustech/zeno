@@ -10,7 +10,6 @@
 #include "blas_wrapper_independent.h"
 #include "util.h"
 #include "AlgebraicMultigrid.h"
-#include "Timer.h"
 #include "morton_encoding.h"
 namespace Libo {
 
@@ -337,7 +336,6 @@ namespace Libo {
 			b_L[i].resize(unknowns);
 			b_L[i].assign(b_L[i].size(), 0);
 		}
-		CSim::TimerMan::timer("Sim.step/FLIP/pressure/amg/precon/R").start();
 		for (int i = 0; i < total_level - 1; i++)
 		{
 			//printf("level: %d, RBGS\n", i);
@@ -345,14 +343,10 @@ namespace Libo {
 			//printf("level: %d, restriction\n", i);
 			Libo::restriction(*(R_L[i]), *(A_L[i]), x_L[i], b_L[i], b_L[i + 1]);
 		}
-		CSim::TimerMan::timer("Sim.step/FLIP/pressure/amg/precon/R").stop();
 		int i = total_level - 1;
 		//printf("level: %d, top solve\n", i);
-		CSim::TimerMan::timer("Sim.step/FLIP/pressure/amg/precon/M").start();
 		RBGS_with_pattern_tbb_range(*(A_L[i]), b_L[i], x_L[i], *(p_L[i]), 40);
-		CSim::TimerMan::timer("Sim.step/FLIP/pressure/amg/precon/M").stop();
 
-		CSim::TimerMan::timer("Sim.step/FLIP/pressure/amg/precon/P").start();
 		for (int i = total_level - 2; i >= 0; i--)
 		{
 			//printf("level: %d, prolongation\n", i);
@@ -360,7 +354,6 @@ namespace Libo {
 			//printf("level: %d, RBGS\n", i);
 			RBGS_with_pattern_tbb_range(*(A_L[i]), b_L[i], x_L[i], *(p_L[i]), 4);
 		}
-		CSim::TimerMan::timer("Sim.step/FLIP/pressure/amg/precon/P").stop();
 		x = x_L[0];
 
 		for (int i = 0; i < total_level; i++)
@@ -381,13 +374,11 @@ namespace Libo {
 		std::vector<T>& x,
 		const std::vector<T>& b)
 	{
-		CSim::TimerMan::timer("Sim.step/FLIP/pressure/amg/precon").start();
 		//printf("preconditioning begin\n");
 		x.resize(b.size());
 		x.assign(x.size(), 0);
 		amgVCycleCompressed(A_L, R_L, P_L, p_L, x, b);
 		//printf("preconditioning finished\n");
-		CSim::TimerMan::timer("Sim.step/FLIP/pressure/amg/precon").stop();
 	}
 
 	template <typename T = float>
@@ -422,7 +413,6 @@ namespace Libo {
 		std::vector<LosTopos::Vec3i>& Dof_ijk_fine,
 		std::vector<LosTopos::Vec3i>& Dof_ijk_coarse,
 		const int ni, const int nj, const int nk) {
-		CSim::TimerMan::timer("Sim.step/FLIP/pressure/amg/RP").start();
 		Libo::generatePatternSparse(Dof_ijk_fine, pattern);
 		int nni = ceil((float)ni / 2.0);
 		int nnj = ceil((float)nj / 2.0);
@@ -622,7 +612,6 @@ namespace Libo {
 				});
 		}
 
-		CSim::TimerMan::timer("Sim.step/FLIP/pressure/amg/RP").stop();
 	}//end genRP_parallel_hashmap
 
 	template <typename T = float>
@@ -681,7 +670,6 @@ namespace Libo {
 
 			//multiplyMat(*(A_L[i]), *(P_L[i]), temp, T(1.0));
 			//multiplyMat(*(R_L[i]), temp, *(A_L[i + 1]), T(0.5));
-			CSim::TimerMan::timer("Sim.step/FLIP/pressure/amg/RAP").start();
 
 			//out_P_L[i]->postmulmat(*(out_A_L[i]), temp, T(1), /*estimated_nz_cols*/ 7);
 			//out_R_L[i]->premulmat(temp, *(out_A_L[i + 1]), T(0.5), 7);
@@ -690,7 +678,6 @@ namespace Libo {
 			out_P_L[i]->postmulmat(temp, *(out_A_L[i + 1]), T(1), /*estimated_nz_cols*/ 7);
 
 
-			CSim::TimerMan::timer("Sim.step/FLIP/pressure/amg/RAP").stop();
 			//printf("multiply matrix done\n");
 			temp.resize(0);
 			temp.clear();
