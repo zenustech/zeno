@@ -8,7 +8,7 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 # add cmake file
 include (common)
 
-find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc tbbmalloc_proxy)
+find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
 find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
 find_package(Eigen3 REQUIRED)
 
@@ -34,7 +34,7 @@ target_include_directories(FLIPlib PUBLIC ltcommon ltcommon/tunicate ltcommon/ne
 ##target_include_directories(FLIPlib PRIVATE "LosTopos/common")
 ##target_include_directories(FLIPlib PRIVATE "Droplet3D")
 
-target_link_libraries(FLIPlib PUBLIC TBB::tbb pthread openblas f2c lapack TBB::tbbmalloc cblas)
+target_link_libraries(FLIPlib PUBLIC TBB::tbb pthread openblas f2c lapack cblas)
 
 # zen link flags
 target_link_libraries(FLIPlib PRIVATE zen)
