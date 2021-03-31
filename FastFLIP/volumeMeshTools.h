@@ -70,7 +70,7 @@ public:
 	}
 	void free()
 	{
-		mParticleList=std::vector<MyParticle>(0);
+		//mParticleList=std::vector<MyParticle>(0);
 	}
 	void set(int i, const openvdb::Vec3R &p, const openvdb::Real &r,
 		const openvdb::Vec3R &v = openvdb::Vec3R(0, 0, 0))

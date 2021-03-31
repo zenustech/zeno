@@ -6,6 +6,7 @@ import os
 
 
 preloads = '''import zen
+zen.loadLibrary('build/FastFLIP/libFLIPlib.so')
 '''
 
 

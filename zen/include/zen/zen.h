@@ -194,7 +194,7 @@ struct NodeClass : INodeClass {
 
 
 struct ParamDescriptor {
-  std::string type, name, deflVal, minVal, maxVal;
+  std::string type, name, defl;
 };
 
 struct Descriptor {
@@ -229,8 +229,8 @@ struct Descriptor {
     res += "(" + join_str(inputs, ",") + ")";
     res += "(" + join_str(outputs, ",") + ")";
     std::vector<std::string> paramStrs;
-    for (auto const &[type, name, deflVal, minVal, maxVal]: params) {
-      paramStrs.push_back(type + ":" + name + ":" + deflVal + ":" + minVal + ":" + maxVal);
+    for (auto const &[type, name, defl]: params) {
+      paramStrs.push_back(type + ":" + name + ":" + defl);
     }
     res += "(" + join_str(paramStrs, ",") + ")";
     res += "(" + join_str(categories, ",") + ")";

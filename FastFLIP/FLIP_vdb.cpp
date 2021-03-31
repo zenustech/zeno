@@ -919,7 +919,7 @@ void FLIP_vdb::advection(float dt)
 
 }
 
-static void FLIP_vdb::Advect(float dt, openvdb::points::PointDataGrid::Ptr particles, openvdb::Vec3fGrid::Ptr velocity,
+void FLIP_vdb::Advect(float dt, float dx, openvdb::points::PointDataGrid::Ptr particles, openvdb::Vec3fGrid::Ptr velocity,
 openvdb::Vec3fGrid::Ptr velocity_after_p2g, float pic_component, int RK_ORDER)
 {
 		auto update_FLIP_velocity = [&](openvdb::points::PointDataTree::LeafNodeType& leaf, openvdb::Index leafpos) {
@@ -935,8 +935,8 @@ openvdb::Vec3fGrid::Ptr velocity_after_p2g, float pic_component, int RK_ORDER)
 		openvdb::points::AttributeHandle<openvdb::Vec3f, FLIP_vdb::PositionCodec> positionHandle(positionArray);
 		openvdb::points::AttributeWriteHandle<openvdb::Vec3f, FLIP_vdb::VelocityCodec> velocityHandle(velocityArray);
 
-		auto ovaxr{ m_velocity_after_p2g->getConstAccessor() };
-		auto vaxr{ m_velocity->getConstAccessor() };
+		auto ovaxr{ velocity_after_p2g->getConstAccessor() };
+		auto vaxr{ velocity->getConstAccessor() };
 		for (auto iter = leaf.beginIndexOn(); iter; ++iter) {
 			openvdb::Vec3R index_gpos = iter.getCoord().asVec3d() + positionHandle.get(*iter);
 			auto original_vel = openvdb::tools::StaggeredBoxSampler::sample(ovaxr, index_gpos);
@@ -944,8 +944,8 @@ openvdb::Vec3fGrid::Ptr velocity_after_p2g, float pic_component, int RK_ORDER)
 			auto old_pvel = velocityHandle.get(*iter);
 			velocityHandle.set(*iter, (pic_component)*updated_vel + (1.0f - pic_component) * (updated_vel - original_vel + old_pvel));
 		}
-		auto particle_man = openvdb::tree::LeafManager<openvdb::points::PointDataTree>(m_particles->tree());
-		custom_move_points_and_set_flip_vel(*particles, *velocity, *velocity_after_p2g, pic_component, dt, RK_ORDER);
+		auto particle_man = openvdb::tree::LeafManager<openvdb::points::PointDataTree>(particles->tree());
+		FLIP_vdb::custom_move_points_and_set_flip_vel(*particles, *velocity, *velocity_after_p2g, pic_component, dt, dx, RK_ORDER);
 	};
 }
 namespace {
@@ -1217,12 +1217,98 @@ namespace {
 			std::tuple<uint16_t, openvdb::Index32, openvdb::Index32>>>> toffset_oindex_oleafpos_hashmap;
 	};
 }
-
 void FLIP_vdb::custom_move_points_and_set_flip_vel(
 	openvdb::points::PointDataGrid& in_out_points,
 	const openvdb::Vec3fGrid& in_velocity_field,
 	const openvdb::Vec3fGrid& in_old_velocity,
-	float PIC_component, float dt, int RK_order)
+	float PIC_component, float dt, float dx, int RK_order)
+{
+
+	std::vector<openvdb::points::PointDataTree::LeafNodeType*> particle_leaves;
+	in_out_points.tree().getNodes(particle_leaves);
+
+
+	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/reduce").start();
+	auto reducer = std::make_unique<point_to_counter_reducer>(
+		dt, dx, in_velocity_field, in_old_velocity, PIC_component, particle_leaves, RK_order);
+	tbb::parallel_reduce(tbb::blocked_range<openvdb::Index>(0, particle_leaves.size(), 10), *reducer);
+	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/reduce").stop();
+	//compose the result
+	
+	auto newTree_leafman{ openvdb::tree::LeafManager<openvdb::points::PointDataTree>(reducer->m_counter_grid->tree()) };
+
+	auto p_desc = openvdb::points::AttributeSet::Descriptor::create(position_attribute::attributeType());
+	auto pv_desc = p_desc->duplicateAppend("v", velocity_attribute::attributeType());
+	auto set_new_attribute_list = [&](openvdb::points::PointDataTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+		using  namespace openvdb::tools::local_util;
+
+		std::vector<int> voxel_particle_count; voxel_particle_count.resize(leaf.size());
+		std::vector<openvdb::PointDataIndex32> index_ends; index_ends.assign(leaf.size(), 0);
+		voxel_particle_count[0] = leaf.getValue(0);
+		index_ends[0] = voxel_particle_count[0];
+		for (auto offset = 1; offset < leaf.size(); ++offset) {
+			voxel_particle_count[offset] = leaf.getValue(offset);
+			index_ends[offset] = index_ends[offset - 1] + voxel_particle_count[offset];
+		}
+
+		//according to the index space leaf position, assign the particles to
+		//the final attribute list
+		//printf("leafcounter %d, attrcounter:%d\n", *index_ends.rbegin(), reducer.toffset_oindex_oleafpos_hashmap[leaf.origin()]->size());
+		//create the attribute set
+		
+		//auto local_pv_descriptor = pv_descriptor();
+		leaf.initializeAttributes(p_desc, *index_ends.rbegin());
+		leaf.appendAttribute(leaf.attributeSet().descriptor(), pv_desc, 1);
+
+		//attribute writer
+		leaf.setOffsets(index_ends);
+
+		//set the positions and velocities
+		//get the new attribute arrays
+		openvdb::points::AttributeArray& posarray = leaf.attributeArray("P");
+		openvdb::points::AttributeArray& varray = leaf.attributeArray("v");
+
+		// Create read handles for position and velocity
+		openvdb::points::AttributeWriteHandle<openvdb::Vec3f, FLIP_vdb::PositionCodec> posWHandle(posarray);
+		openvdb::points::AttributeWriteHandle<openvdb::Vec3f, FLIP_vdb::VelocityCodec> vWHandle(varray);
+
+		openvdb::Vec3i pcoord;
+		int writing_offset;
+		int writer_index;
+
+		//move from the original leaves
+		for (size_t i = 0; i < reducer->toffset_oindex_oleafpos_hashmap[leaf.origin()]->size(); i++) {
+			auto& tooiol_vec = *reducer->toffset_oindex_oleafpos_hashmap[leaf.origin()];
+			writing_offset = std::get<0>(tooiol_vec[i]);
+			writer_index = index_ends[writing_offset] - voxel_particle_count[writing_offset];
+			voxel_particle_count[writing_offset]--;
+
+			posarray.set(writer_index, particle_leaves[std::get<2>(tooiol_vec[i])]->attributeArray("P"), std::get<1>(tooiol_vec[i]));
+			varray.set(writer_index, particle_leaves[std::get<2>(tooiol_vec[i])]->attributeArray("v"), std::get<1>(tooiol_vec[i]));
+		}
+	};
+	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose").start();
+	//printf("compose_start_for_each\n");
+	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose/compose").start();
+	newTree_leafman.foreach(set_new_attribute_list);
+	//printf("compose_end_for_each\n");
+	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose/compose").stop();
+	reducer->m_counter_grid->setName("new_counter_grid");
+	auto voxel_center_transform = openvdb::math::Transform::createLinearTransform(dx);
+	reducer->m_counter_grid->setTransform(voxel_center_transform);
+	//openvdb::io::File("new_advect.vdb").write({reducer.m_counter_grid});
+	//printf("compose_start_replace_tree\n");
+	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose/replace").start();
+	in_out_points.setTree(reducer->m_counter_grid->treePtr());
+	//printf("compose_end_replace_tree\n");
+	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose/replace").stop();
+	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/compose").stop();
+}
+void FLIP_vdb::custom_move_points_and_set_flip_vel(
+	openvdb::points::PointDataGrid& in_out_points,
+	const openvdb::Vec3fGrid& in_velocity_field,
+	const openvdb::Vec3fGrid& in_old_velocity,
+	float PIC_component, float dt,int RK_order)
 {
 	std::vector<openvdb::points::PointDataTree::LeafNodeType*> particle_leaves;
 	in_out_points.tree().getNodes(particle_leaves);

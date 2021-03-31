@@ -498,12 +498,16 @@ struct NodeEditor {
     select_category_popup();
   }
 
+  struct ParamDescriptor {
+    std::string type, name, defl;
+  };
+
   // node type descriptor
   struct NodeTypeDesc {
     std::string name;
     std::vector<std::string> inputs;
     std::vector<std::string> outputs;
-    std::vector<std::tuple<std::string, std::string, std::string>> params;
+    std::vector<ParamDescriptor> params;
     std::set<std::string> categories;
 
     std::unique_ptr<Node> make_node() const {
@@ -545,10 +549,10 @@ struct NodeEditor {
       params.clear();
       for (auto const &s: hg::split_str(pars, ',')) {
         auto v = hg::split_str(s, ':');
-        if (v.size() == 2)  // FIXME: why "string:path:" cause split_str error
+        while (v.size() < 3)  // FIXME: why "string:path:" cause split_str error
           v.push_back("");
         assert(v.size() == 3);
-        params.push_back(std::make_tuple(v[0], v[1], v[2]));
+        params.push_back(ParamDescriptor{v[0], v[1], v[2]});
       }
 
       chr = 0;
