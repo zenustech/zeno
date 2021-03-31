@@ -41,4 +41,21 @@
 //FLIP_vdb is not visible to anybody, we can put it here, the advector node just call the API. so we need it to be static, aha, awful design of flip_vdb.
 //we should always make cpp classes available in headers, isnt it? instead of mock up.with static funcs
 //yes you are right, let's be lazy for now....
-//actually, we shall put everything here and eventually everything in FLIP_vdb will be static, so FLIP_vdb is more like a toolbox, not a class.
+//actually, we shall keep everything in FLIP_vdb and eventually everything in FLIP_vdb will be static, 
+//so FLIP_vdb is more like a toolbox, not a class.  <--- how do you think about this.
+//so it only have static funcs, no static variables? sounds like require everything to be passed as args.
+//eventually if we find the args of some funcs are common. we'll wrap them into a class, snd then become non-static again..
+//e.g. FLIP_vdb is a wrapper of particles, sdfs, velocities, etc.
+//diff is only about a trade off convinence and portability:
+//passing args with 'this' pointer - you have to carry the unused members as well.
+//passing args one by one - hard to.maintain but more like  flex&portable toolbox.
+//here are my thoughts:
+//each node, shall have inputs with none-class related type, for example:
+//P2G_Advect(dt, dx, particles, velocityFields, postVelFields, )
+//and class related params, thus
+//P2G_Advect(dt, dx, particles, velFields, postVelFields, SolverParams)
+//a FLIP domain, may have shared params in SolverParams, while P2G_Advect() can be as general as possible, in case SolverParams is not provided.
+//if we have P2G and G2P, both have dt, dx as params. i think users wont be happy maintian two of them to be same...
+//In Houdini, they do so, and there is a feature : duplicate_from(""), as a result, the parameter provided to one node can be chosen to duplicate
+//from another node, so they always synchronized. cool feature! will we use this as a solution? how to represent it in gui is a problem.. leaving for now, culater~
+//we can use $parameter_name$ to represent a duplicated parameter.
