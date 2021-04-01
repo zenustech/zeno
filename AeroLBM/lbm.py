@@ -93,22 +93,53 @@ def f_eq(x, y, z, i):
     return feq
 
 
+class subscripted:
+    def __init__(self, func):
+        self.func = func
+
+    def __getitem__(self, indices):
+        if isinstance(indices, (tuple, list)):
+            indices = tuple(indices)
+        elif indices is not None:
+            indices = (indices,)
+        else:
+            indices = ()
+        return self.func(*indices)
+
+
+@subscripted
+@ti.func
+def f_cur(x, y, z, i):
+    return f_old[odd[None], x, y, z, i]
+
+
+@subscripted
+@ti.func
+def f_nxt(x, y, z, i):
+    return f_old[1 - odd[None], x, y, z, i]
+
+
+@ti.func
+def swap_f_cur_nxt():
+    odd[None] = 1 - odd[None]
+
+
 @ti.kernel
 def collide_stream():
     for x, y, z in rho:
         for i in range(direction_size):
             xmd, ymd, zmd = (ti.Vector([x, y, z]) - directions[i]) % ti.Vector(res)
-            f_old[1 - odd[None], x, y, z, i] = f_old[odd[None], xmd, ymd, zmd, i] * (1 - inv_tau) + f_eq(xmd, ymd, zmd, i) * inv_tau
+            f_nxt[x, y, z, i] = f_cur[xmd, ymd, zmd, i] * (1 - inv_tau) + f_eq(xmd, ymd, zmd, i) * inv_tau
+    swap_f_cur_nxt()
     for x, y, z in rho:
         new_rho = 0.0
         new_vel = ti.Vector.zero(float, 3)
         for i in range(direction_size):
-            f = f_old[1 - odd[None], x, y, z, i]
+            f = f_cur[x, y, z, i]
             new_vel += f * directions[i]
             new_rho += f
         rho[x, y, z] = new_rho
         vel[x, y, z] = new_vel / max(new_rho, 1e-6)
-    odd[None] = 1 - odd[None]
 
 
 @ti.func
@@ -120,7 +151,7 @@ def apply_bc_core(outer, bc_type, bc_vel, ibc, jbc, kbc, inb, jnb, knb):
             vel[ibc, jbc, kbc] = vel[inb, jnb, knb]
     rho[ibc, jbc, kbc] = rho[inb, jnb, knb]
     for l in range(direction_size):
-        f_old[odd[None], ibc, jbc, kbc, l] = f_eq(ibc, jbc, kbc, l) - f_eq(inb, jnb, knb, l) + f_old[odd[None], inb, jnb, knb, l]
+        f_cur[ibc, jbc, kbc, l] = f_eq(ibc, jbc, kbc, l) - f_eq(inb, jnb, knb, l) + f_cur[inb, jnb, knb, l]
 
 
 @ti.kernel
