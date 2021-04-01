@@ -488,7 +488,7 @@ struct NodeEditor {
       links[link->id] = std::move(link);
     }
 
-    if (ImGui::IsKeyPressed(GLFW_KEY_X)) {
+    if (ImGui::IsKeyPressed(GLFW_KEY_DELETE)) {
       for (auto const &link_id: get_selected_links()) {
         links.erase(link_id);
       }
@@ -513,7 +513,7 @@ struct NodeEditor {
       }
     }
 
-    if (!ImGui::IsAnyItemHovered() && ImGui::IsKeyPressed(GLFW_KEY_A)) {
+    if (!ImGui::IsAnyItemHovered() && ImGui::IsKeyPressed(GLFW_KEY_TAB)) {
       ImGui::OpenPopup("select category");
     }
 
