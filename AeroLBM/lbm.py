@@ -5,7 +5,7 @@ import time
 d2 = 0
 
 
-ti.init(ti.cpu)
+ti.init(ti.cuda, kernel_profiler=True)
 
 
 if d2:
@@ -37,7 +37,8 @@ else:
 if d2:
     res = 512, 128, 1
 else:
-    res = 256, 64, 64
+    #res = 256, 64, 64
+    res = 128, 32, 32
 direction_size = len(weights_np)
 
 if d2:
@@ -92,7 +93,11 @@ def f_eq(x, y, z, i):
 
 
 @ti.kernel
-def compute_density_momentum_moment():
+def collide_stream():
+    for x, y, z in rho:
+        for i in range(15):
+            xmd, ymd, zmd = (ti.Vector([x, y, z]) - directions[i]) % ti.Vector(res)
+            f_new[x, y, z, i] = f_old[xmd, ymd, zmd, i] * (1 - inv_tau) + f_eq(xmd, ymd, zmd, i) * inv_tau
     for x, y, z in rho:
         new_rho = 0.0
         new_vel = ti.Vector.zero(float, 3)
@@ -103,14 +108,6 @@ def compute_density_momentum_moment():
             new_rho += f
         rho[x, y, z] = new_rho
         vel[x, y, z] = new_vel / max(new_rho, 1e-6)
-
-
-@ti.kernel
-def collide_and_stream():
-    for x, y, z in rho:
-        for i in range(15):
-            xmd, ymd, zmd = (ti.Vector([x, y, z]) - directions[i]) % ti.Vector(res)
-            f_new[x, y, z, i] = f_old[xmd, ymd, zmd, i] * (1 - inv_tau) + f_eq(xmd, ymd, zmd, i) * inv_tau
 
 
 @ti.func
@@ -191,8 +188,7 @@ def apply_bc_2d():
 
 
 def substep():
-    collide_and_stream()
-    compute_density_momentum_moment()
+    collide_stream()
     if d2:
         apply_bc_2d()
     else:
@@ -212,7 +208,7 @@ def render():
         img[x, y] = ret / cnt
 
 
-'''
+#'''
 initialize()
 gui = ti.GUI('LBM', (1024, 256))
 while gui.running and not gui.get_event(gui.ESCAPE):
@@ -243,4 +239,5 @@ for frame in range(24 * 24):
     np.savez(f'/tmp/{frame:06d}', rho=rho.to_numpy(), vel=vel.to_numpy())
     print('store time', time.time() - t0)
     print('==========')
-#'''
+'''
+ti.kernel_profiler_print()
