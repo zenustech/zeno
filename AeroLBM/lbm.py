@@ -5,7 +5,9 @@ import time
 d2 = 0
 
 
-ti.init(ti.cuda, kernel_profiler=True)
+#ti.init(ti.cc, log_level=ti.DEBUG)
+#ti.init(ti.cpu)
+ti.init(ti.cuda)
 
 
 if d2:
@@ -49,19 +51,26 @@ tau = 3.0 * niu + 0.5
 inv_tau = 1 / tau
 
 
-rho = ti.field(float, res)
-vel = ti.Vector.field(3, float, res)
+rho = ti.field(float)
+vel = ti.Vector.field(3, float)
 
-#f_old = ti.field(float, res + (direction_size,))
-#f_new = ti.field(float, res + (direction_size,))
-f_old = ti.field(float)
+(ti.root).dense(ti.indices(0, 1, 2), res
+        ).place(vel(0))
+(ti.root).dense(ti.indices(0, 1, 2), res
+        ).place(vel(1))
+(ti.root).dense(ti.indices(0, 1, 2), res
+        ).place(vel(2))
+(ti.root).dense(ti.indices(0, 1, 2), res
+        ).place(rho)
+
+f_neq = ti.field(float)
 odd = ti.field(int, ())
 
 (ti.root).dense(ti.indices(0, 1, 2, 3, 4), 1
         ).dense(ti.indices(4), direction_size
         ).dense(ti.indices(0), 2
         ).dense(ti.indices(1, 2, 3), res
-        ).place(f_old)
+        ).place(f_neq)
 
 directions = ti.Vector.field(3, int, direction_size)
 weights = ti.field(float, direction_size)
@@ -73,24 +82,8 @@ def init_velocity_set():
     weights.from_numpy(weights_np)
 
 
-@ti.kernel
-def initialize():
-    for x, y, z in rho:
-        rho[x, y, z] = 1
-        vel[x, y, z] = ti.Vector.zero(float, 3)
-
-    for x, y, z, i in ti.ndrange(*res, direction_size):
-        feq = f_eq(x, y, z, i)
-        f_old[odd[None], x, y, z, i] = feq
-
-
-@ti.func
-def f_eq(x, y, z, i):
-    eu = vel[x, y, z].dot(directions[i])
-    uv = vel[x, y, z].norm_sqr()
-    term = 1 + 3 * eu + 4.5 * eu**2 - 1.5 * uv
-    feq = weights[i] * rho[x, y, z] * term
-    return feq
+def vec(*args):
+    return ti.Vector(args)
 
 
 class subscripted:
@@ -106,17 +99,20 @@ class subscripted:
             indices = ()
         return self.func(*indices)
 
+    def __call__(self, *args, **kwargs):
+        return self.func(*args, **kwargs)
+
 
 @subscripted
 @ti.func
 def f_cur(x, y, z, i):
-    return f_old[odd[None], x, y, z, i]
+    return f_neq[odd[None], x, y, z, i]
 
 
 @subscripted
 @ti.func
 def f_nxt(x, y, z, i):
-    return f_old[1 - odd[None], x, y, z, i]
+    return f_neq[1 - odd[None], x, y, z, i]
 
 
 @ti.func
@@ -125,21 +121,44 @@ def swap_f_cur_nxt():
 
 
 @ti.kernel
+def initialize():
+    for x, y, z in rho:
+        rho[x, y, z] = 1
+        vel[x, y, z] = ti.Vector.zero(float, 3)
+
+    for x, y, z, i in ti.ndrange(*res, direction_size):
+        feq = f_eq(x, y, z, i)
+        f_cur[x, y, z, i] = feq
+
+
+@ti.func
+def f_eq(x, y, z, i):
+    eu = vel[x, y, z].dot(directions[i])
+    uv = vel[x, y, z].norm_sqr()
+    term = 1 + 3 * eu + 4.5 * eu**2 - 1.5 * uv
+    feq = weights[i] * rho[x, y, z] * term
+    return feq
+
+
+@ti.kernel
 def collide_stream():
     for x, y, z in rho:
         for i in range(direction_size):
-            xmd, ymd, zmd = (ti.Vector([x, y, z]) - directions[i]) % ti.Vector(res)
-            f_nxt[x, y, z, i] = f_cur[xmd, ymd, zmd, i] * (1 - inv_tau) + f_eq(xmd, ymd, zmd, i) * inv_tau
-    swap_f_cur_nxt()
+            xmd, ymd, zmd = (vec(x, y, z) - directions[i]) % ti.Vector(res)
+            f = f_cur[xmd, ymd, zmd, i]
+            feq = f_eq(xmd, ymd, zmd, i)
+            f = f * (1 - inv_tau) + feq * inv_tau
+            f_nxt[x, y, z, i] = f
     for x, y, z in rho:
         new_rho = 0.0
         new_vel = ti.Vector.zero(float, 3)
         for i in range(direction_size):
-            f = f_cur[x, y, z, i]
+            f = f_nxt[x, y, z, i]
             new_vel += f * directions[i]
             new_rho += f
         rho[x, y, z] = new_rho
         vel[x, y, z] = new_vel / max(new_rho, 1e-6)
+    swap_f_cur_nxt()
 
 
 @ti.func

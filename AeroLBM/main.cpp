@@ -16,7 +16,7 @@
 using namespace hg::simd;
 
 
-const long nx = 256, ny = 256, nz = 256, nq = 15;
+const long nx = 256, ny = 64, nz = 64, nq = 15;
 
 
 const float niu = 0.005;
@@ -179,7 +179,7 @@ int main()
 {
   initialize();
 
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < 28; i++) {
     printf("%d\n", i);
     substep();
   }
