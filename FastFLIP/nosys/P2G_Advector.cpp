@@ -28,8 +28,8 @@ static int defP2G_Advector = zen::defNodeClass<P2G_Advector>("P2G_Advector",
     /* outputs: */ {
     }, 
     /* params: */ {
-      {"float", "time_step", "0.04 0.0 none"},
-      {"float", "dx", "0.01 0.0 none"},
+      {"float", "time_step", "0.04 0.0"},
+      {"float", "dx", "0.01 0.0"},
       {"int", "RK_ORDER", "1 1 4"},
       {"float", "pic_smoothness", "0.02 0.0 1.0"},
     }, 

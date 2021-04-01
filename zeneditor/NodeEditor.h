@@ -200,8 +200,17 @@ struct NodeEditor {
   struct FloatValue : Value {
     float value{0};
 
+    float minval{0};
+    float maxval{0};
+    bool has_minval{false};
+    bool has_maxval{false};
+
     virtual void draw_slider() override {
       ImGui::InputFloat("", &value);
+      if (has_minval)
+        value = std::max(value, minval);
+      if (has_maxval)
+        value = std::min(value, maxval);
     }
 
     virtual void dump(std::ostream &out) override {
@@ -210,14 +219,25 @@ struct NodeEditor {
 
     virtual void parse(std::istream &in) override {
       in >> value;
+      has_minval = bool(in >> minval);
+      has_maxval = bool(in >> maxval);
     }
   };
 
   struct IntValue : Value {
     int value{0};
 
+    int minval{0};
+    int maxval{0};
+    bool has_minval{false};
+    bool has_maxval{false};
+
     virtual void draw_slider() override {
       ImGui::InputInt("", &value);
+      if (has_minval)
+        value = std::max(value, minval);
+      if (has_maxval)
+        value = std::min(value, maxval);
     }
 
     virtual void dump(std::ostream &out) override {
@@ -226,6 +246,8 @@ struct NodeEditor {
 
     virtual void parse(std::istream &in) override {
       in >> value;
+      has_minval = bool(in >> minval);
+      has_maxval = bool(in >> maxval);
     }
   };
 
@@ -466,7 +488,7 @@ struct NodeEditor {
       links[link->id] = std::move(link);
     }
 
-    if (ImGui::IsKeyPressed(GLFW_KEY_X)) {
+    if (ImGui::IsKeyPressed(GLFW_KEY_DELETE)) {
       for (auto const &link_id: get_selected_links()) {
         links.erase(link_id);
       }
@@ -491,7 +513,7 @@ struct NodeEditor {
       }
     }
 
-    if (!ImGui::IsAnyItemHovered() && ImGui::IsKeyPressed(GLFW_KEY_A)) {
+    if (!ImGui::IsAnyItemHovered() && ImGui::IsKeyPressed(GLFW_KEY_TAB)) {
       ImGui::OpenPopup("select category");
     }
 

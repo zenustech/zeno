@@ -51,7 +51,7 @@ static int defSimpleSolver = zen::defNodeClass<SimpleSolver>("SimpleSolver",
     {"float", "dt", "0.04"},
     {"float3", "G", "0 0 1"},
     }, /* category: */ {
-    "solver",
+    "particles",
     }});
 
 }
