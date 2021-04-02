@@ -55,9 +55,9 @@ f_neq = ti.field(float)
 odd = ti.field(int, ())
 
 (ti.root).dense(ti.indices(0, 1, 2, 3, 4), 1
-        ).dense(ti.indices(4), direction_size
         ).dense(ti.indices(0), 2
-        ).dense(ti.indices(1, 2, 3), res
+        ).dense(ti.indices(1), direction_size
+        ).dense(ti.indices(2, 3, 4), res
         ).place(f_neq)
 
 directions = ti.Vector.field(3, int, direction_size)
@@ -93,14 +93,14 @@ class fieldalike:
 
 @fieldalike
 @ti.func
-def f_cur(x, y, z, i):
-    return f_neq[odd[None], x, y, z, i]
+def f_cur(i, x, y, z):
+    return f_neq[odd[None], i, x, y, z]
 
 
 @fieldalike
 @ti.func
-def f_nxt(x, y, z, i):
-    return f_neq[1 - odd[None], x, y, z, i]
+def f_nxt(i, x, y, z):
+    return f_neq[1 - odd[None], i, x, y, z]
 
 
 @ti.func
@@ -114,13 +114,13 @@ def initialize():
         rho[x, y, z] = 1
         vel[x, y, z] = ti.Vector.zero(float, 3)
 
-    for x, y, z, i in ti.ndrange(*res, direction_size):
-        feq = f_eq(x, y, z, i)
-        f_cur[x, y, z, i] = feq
+    for i, x, y, z in ti.ndrange(direction_size, *res):
+        feq = f_eq(i, x, y, z)
+        f_cur[i, x, y, z] = feq
 
 
 @ti.func
-def f_eq(x, y, z, i):
+def f_eq(i, x, y, z):
     eu = vel[x, y, z].dot(directions[i])
     uv = vel[x, y, z].norm_sqr()
     term = 1 + 3 * eu + 4.5 * eu**2 - 1.5 * uv
@@ -133,15 +133,15 @@ def collide_stream():
     for x, y, z in rho:
         for i in range(direction_size):
             xmd, ymd, zmd = (vec(x, y, z) - directions[i]) % ti.Vector(res)
-            f = f_cur[xmd, ymd, zmd, i]
-            feq = f_eq(xmd, ymd, zmd, i)
+            f = f_cur[i, xmd, ymd, zmd]
+            feq = f_eq(i, xmd, ymd, zmd)
             f = f * (1 - inv_tau) + feq * inv_tau
-            f_nxt[x, y, z, i] = f
+            f_nxt[i, x, y, z] = f
     for x, y, z in rho:
         new_rho = 0.0
         new_vel = ti.Vector.zero(float, 3)
         for i in range(direction_size):
-            f = f_nxt[x, y, z, i]
+            f = f_nxt[i, x, y, z]
             new_vel += f * directions[i]
             new_rho += f
         rho[x, y, z] = new_rho
@@ -158,7 +158,7 @@ def apply_bc_core(outer, bc_type, bc_vel, ibc, jbc, kbc, inb, jnb, knb):
             vel[ibc, jbc, kbc] = vel[inb, jnb, knb]
     rho[ibc, jbc, kbc] = rho[inb, jnb, knb]
     for l in range(direction_size):
-        f_cur[ibc, jbc, kbc, l] = f_eq(ibc, jbc, kbc, l) - f_eq(inb, jnb, knb, l) + f_cur[inb, jnb, knb, l]
+        f_cur[l, ibc, jbc, kbc] = f_eq(l, ibc, jbc, kbc) - f_eq(l, inb, jnb, knb) + f_cur[l, inb, jnb, knb]
 
 
 @ti.kernel
