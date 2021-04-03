@@ -1,4 +1,8 @@
 import zen
+zen.loadLibrary('build/FastFLIP/libFLIPlib.so')
+
+print(zen.dumpDescriptors())
+exit()
 
 def execute(frame):
         import zen
