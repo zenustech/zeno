@@ -42,13 +42,12 @@ inv_tau = 1 / tau
 
 rho = ti.field(float)
 vel = ti.Vector.field(3, float)
-rho_nxt = ti.field(float)
-vel_nxt = ti.Vector.field(3, float)
+mask = ti.field(float)
 fie = ti.field(float)
 
 
 block = ti.root
-for _ in [rho, rho_nxt] + vel.entries + vel_nxt.entries:
+for _ in [mask, rho] + vel.entries:
     block.dense(ti.ijk, res).place(_)
 block.dense(ti.indices(0, 1, 2, 3, 4), (1, 1, 1, direction_size, 2)
             ).dense(ti.ijk, res).place(fie)
@@ -109,6 +108,13 @@ def initialize():
         rho[x, y, z] = 1
         vel[x, y, z] = ti.Vector.zero(float, 3)
 
+        mask[x, y, z] = 1
+        pos = ti.Vector([x, y, z])
+        cpos = ti.Vector(res) / ti.Vector([5, 2, 2])
+        cradius = res[1] / 4
+        if (pos - cpos).norm_sqr() < cradius**2:
+            mask[x, y, z] = 0
+
     for i, x, y, z in ti.ndrange(direction_size, *res):
         feq = f_eq(i, x, y, z)
         f_cur[i, x, y, z] = feq
@@ -126,22 +132,28 @@ def f_eq(i, x, y, z):
 @ti.kernel
 def collide_stream():
     for x, y, z in rho:
-        new_rho = 0.0
-        new_vel = ti.Vector.zero(float, 3)
+        if mask[x, y, z] != 1:
+            continue
         for i in range(direction_size):
             xmd, ymd, zmd = (vec(x, y, z) - directions[i]) % ti.Vector(res)
             f = f_cur[i, xmd, ymd, zmd]
             feq = f_eq(i, xmd, ymd, zmd)
             f = f * (1 - inv_tau) + feq * inv_tau
             f_nxt[i, x, y, z] = f
+    swap_f_cur_nxt()
+
+
+@ti.kernel
+def update_macro():
+    for x, y, z in rho:
+        new_rho = 0.0
+        new_vel = ti.Vector.zero(float, 3)
+        for i in range(direction_size):
+            f = f_cur[i, x, y, z]
             new_vel += f * directions[i]
             new_rho += f
-        rho_nxt[x, y, z] = new_rho
-        vel_nxt[x, y, z] = new_vel / max(new_rho, 1e-6)
-    for x, y, z in rho:
-        rho[x, y, z] = rho_nxt[x, y, z]
-        vel[x, y, z] = vel_nxt[x, y, z]
-    swap_f_cur_nxt()
+        rho[x, y, z] = new_rho
+        vel[x, y, z] = new_vel / max(new_rho, 1e-6)
 
 
 @ti.func
@@ -179,50 +191,14 @@ def apply_bc():
                 x, y, 0, x, y, 1)
 
     for x, y, z in ti.ndrange(*res):
-        pos = ti.Vector([x, y, z])
-        cpos = ti.Vector(res) / ti.Vector([5, 2, 2])
-        cradius = res[1] / 4
-        if (pos - cpos).norm_sqr() >= cradius**2:
-            continue
+        if mask[x, y, z] == 2:
+            vel[x, y, z] = ti.Vector.zero(float, 3)
 
-        vel[x, y, z] = ti.Vector.zero(float, 3)
-
-        xnb, ynb, znb = pos + 1 if pos > cpos else pos - 1
-        apply_bc_core(0, 0, [0.0, 0.0, 0.0],
-                x, y, z, xnb, ynb, znb)
-
-
-@ti.kernel
-def apply_bc_2d():
-    for y, z in ti.ndrange((1, res[1] - 1), 1):
-        apply_bc_core(1, 0, [0.1, 0.0, 0.0],
-                0, y, z, 1, y, z)
-        apply_bc_core(1, 1, [0.0, 0.0, 0.0],
-                res[0] - 1, y, z, res[0] - 2, y, z)
-
-    for x, z in ti.ndrange(res[0], 1):
-        apply_bc_core(1, 0, [0.0, 0.0, 0.0],
-                x, res[1] - 1, z, x, res[1] - 2, z)
-
-        apply_bc_core(1, 0, [0.0, 0.0, 0.0],
-                x, 0, z, x, 1, z)
-
-    for x, y, z in rho:
-        pos = ti.Vector([x, y])
-        cpos = ti.Vector((res[0], res[1])) / ti.Vector([5, 2])
-        cradius = res[1] / 7
-        if (pos - cpos).norm_sqr() >= cradius**2:
-            continue
-
-        vel[x, y, z] = ti.Vector.zero(float, 3)
-
-        xnb, ynb = pos + 1 if pos > cpos else pos - 1
-        apply_bc_core(0, 0, [0.0, 0.0, 0.0],
-                x, y, z, xnb, ynb, z)
 
 
 def substep():
     collide_stream()
+    update_macro()
     apply_bc()
 
 
@@ -233,7 +209,7 @@ def render():
     for x, y in img:
         ret = 0.0
         cnt = 0
-        for z in range(res[2] // 4, max(1, res[2] * 3 // 4)):
+        for z in range(res[2] * 3 // 8, res[2] * 5 // 8):
             ret += vel[x, y, z].norm() * 4
             cnt += 1
         img[x, y] = ret / cnt
