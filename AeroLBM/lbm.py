@@ -4,7 +4,7 @@ import time
 
 
 
-ti.init(ti.cuda)
+ti.init(ti.cuda, device_memory_fraction=0.6)
 
 
 '''D2Q9
@@ -32,22 +32,28 @@ weights_np = np.array([8.0/27.0,2.0/27.0,2.0/27.0,2.0/27.0,
 '''
 
 #res = 128, 32, 32
-res = 256, 64, 64
+res = 128, 64, 64
+#res = 512, 128, 128
+#res = 128, 128, 128
+#res = 64, 64, 64
 direction_size = len(weights_np)
 
-niu = 0.005
+niu = 0.003
 tau = 3.0 * niu + 0.5
 inv_tau = 1 / tau
 
 
 rho = ti.field(float)
 vel = ti.Vector.field(3, float)
-mask = ti.field(float)
+mask = ti.field(int)
+valid = ti.field(int)
+dye = ti.field(float)
+dye_nxt = ti.field(float)
 fie = ti.field(float)
 
 
 block = ti.root
-for _ in [mask, rho] + vel.entries:
+for _ in [mask, rho, dye, dye_nxt, valid] + vel.entries:
     block.dense(ti.ijk, res).place(_)
 block.dense(ti.indices(0, 1, 2, 3, 4), (1, 1, 1, direction_size, 2)
             ).dense(ti.ijk, res).place(fie)
@@ -108,12 +114,12 @@ def initialize():
         rho[x, y, z] = 1
         vel[x, y, z] = ti.Vector.zero(float, 3)
 
-        mask[x, y, z] = 1
+        mask[x, y, z] = 0
         pos = ti.Vector([x, y, z])
-        cpos = ti.Vector(res) / ti.Vector([5, 2, 2])
-        cradius = res[1] / 4
+        cpos = ti.Vector(res) / vec(5, 2, 2)
+        cradius = res[1] / 6
         if (pos - cpos).norm_sqr() < cradius**2:
-            mask[x, y, z] = 0
+            mask[x, y, z] = 1
 
     for i, x, y, z in ti.ndrange(direction_size, *res):
         feq = f_eq(i, x, y, z)
@@ -132,8 +138,6 @@ def f_eq(i, x, y, z):
 @ti.kernel
 def collide_stream():
     for x, y, z in rho:
-        if mask[x, y, z] != 1:
-            continue
         for i in range(direction_size):
             xmd, ymd, zmd = (vec(x, y, z) - directions[i]) % ti.Vector(res)
             f = f_cur[i, xmd, ymd, zmd]
@@ -190,9 +194,40 @@ def apply_bc():
         apply_bc_core(1, 0, [0.0, 0.0, 0.0],
                 x, y, 0, x, y, 1)
 
-    for x, y, z in ti.ndrange(*res):
-        if mask[x, y, z] == 2:
-            vel[x, y, z] = ti.Vector.zero(float, 3)
+    if ti.static(1):
+        for x, y, z in ti.ndrange(*res):
+            if mask[x, y, z] == 1:
+                vel[x, y, z] = ti.Vector.zero(float, 3)
+
+
+@ti.func
+def trilerp(f: ti.template(), pos):
+    p = float(pos)
+    I = int(ti.floor(p))
+    w0 = p - I
+    w1 = 1 - w0
+
+    c00 = f[I + vec(0,0,0)] * w1.x + f[I + vec(1,0,0)] * w0.x
+    c01 = f[I + vec(0,0,1)] * w1.x + f[I + vec(1,0,1)] * w0.x
+    c10 = f[I + vec(0,1,0)] * w1.x + f[I + vec(1,1,0)] * w0.x
+    c11 = f[I + vec(0,1,1)] * w1.x + f[I + vec(1,1,1)] * w0.x
+
+    c0 = c00 * w1.y + c10 * w0.y
+    c1 = c01 * w1.y + c11 * w0.y
+
+    return c0 * w1.z + c1 * w0.z
+
+
+
+@ti.kernel
+def advect_dye():
+    for x, y, z in dye:
+        p = vec(x, y, z) - vel[x, y, z]
+        dye_nxt[x, y, z] = trilerp(dye, p)
+    for x, y, z in dye:
+        dye[x, y, z] = dye_nxt[x, y, z]
+    for i, j in ti.ndrange((-1, 2), (-1, 2)):
+        dye[1, res[1] // 2 + i, res[2] // 2 + i] = 80
 
 
 
@@ -200,6 +235,7 @@ def substep():
     collide_stream()
     update_macro()
     apply_bc()
+    advect_dye()
 
 
 img = ti.field(float, (res[0], res[1]))
@@ -209,10 +245,10 @@ def render():
     for x, y in img:
         ret = 0.0
         cnt = 0
-        for z in range(res[2] * 3 // 8, res[2] * 5 // 8):
-            ret += vel[x, y, z].norm() * 4
+        for z in range(0, res[2]):
+            ret += dye[x, y, z]
             cnt += 1
-        img[x, y] = ret / cnt
+        img[x, y] = 1 - ti.exp(-ret / cnt)
 
 
 #'''
