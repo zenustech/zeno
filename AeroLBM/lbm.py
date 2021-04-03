@@ -31,7 +31,8 @@ weights_np = np.array([8.0/27.0,2.0/27.0,2.0/27.0,2.0/27.0,
             ,1.0/216.0, 1.0/216.0, 1.0/216.0, 1.0/216.0])
 '''
 
-res = 128, 32, 32
+#res = 128, 32, 32
+res = 256, 64, 64
 direction_size = len(weights_np)
 
 niu = 0.005
@@ -41,25 +42,19 @@ inv_tau = 1 / tau
 
 rho = ti.field(float)
 vel = ti.Vector.field(3, float)
+rho_nxt = ti.field(float)
+vel_nxt = ti.Vector.field(3, float)
+fie = ti.field(float)
 
-(ti.root).dense(ti.indices(0, 1, 2), res
-        ).place(vel(0))
-(ti.root).dense(ti.indices(0, 1, 2), res
-        ).place(vel(1))
-(ti.root).dense(ti.indices(0, 1, 2), res
-        ).place(vel(2))
-(ti.root).dense(ti.indices(0, 1, 2), res
-        ).place(rho)
 
-f_neq = ti.field(float)
+block = ti.root
+for _ in [rho, rho_nxt] + vel.entries + vel_nxt.entries:
+    block.dense(ti.ijk, res).place(_)
+block.dense(ti.indices(0, 1, 2, 3, 4), (1, 1, 1, direction_size, 2)
+            ).dense(ti.ijk, res).place(fie)
+
+
 odd = ti.field(int, ())
-
-(ti.root).dense(ti.indices(0, 1, 2, 3, 4), 1
-        ).dense(ti.indices(0), 2
-        ).dense(ti.indices(1), direction_size
-        ).dense(ti.indices(2, 3, 4), res
-        ).place(f_neq)
-
 directions = ti.Vector.field(3, int, direction_size)
 weights = ti.field(float, direction_size)
 
@@ -94,13 +89,13 @@ class fieldalike:
 @fieldalike
 @ti.func
 def f_cur(i, x, y, z):
-    return f_neq[odd[None], i, x, y, z]
+    return fie[x, y, z, i, odd[None]]
 
 
 @fieldalike
 @ti.func
 def f_nxt(i, x, y, z):
-    return f_neq[1 - odd[None], i, x, y, z]
+    return fie[x, y, z, i, 1 - odd[None]]
 
 
 @ti.func
@@ -131,21 +126,21 @@ def f_eq(i, x, y, z):
 @ti.kernel
 def collide_stream():
     for x, y, z in rho:
+        new_rho = 0.0
+        new_vel = ti.Vector.zero(float, 3)
         for i in range(direction_size):
             xmd, ymd, zmd = (vec(x, y, z) - directions[i]) % ti.Vector(res)
             f = f_cur[i, xmd, ymd, zmd]
             feq = f_eq(i, xmd, ymd, zmd)
             f = f * (1 - inv_tau) + feq * inv_tau
             f_nxt[i, x, y, z] = f
-    for x, y, z in rho:
-        new_rho = 0.0
-        new_vel = ti.Vector.zero(float, 3)
-        for i in range(direction_size):
-            f = f_nxt[i, x, y, z]
             new_vel += f * directions[i]
             new_rho += f
-        rho[x, y, z] = new_rho
-        vel[x, y, z] = new_vel / max(new_rho, 1e-6)
+        rho_nxt[x, y, z] = new_rho
+        vel_nxt[x, y, z] = new_vel / max(new_rho, 1e-6)
+    for x, y, z in rho:
+        rho[x, y, z] = rho_nxt[x, y, z]
+        vel[x, y, z] = vel_nxt[x, y, z]
     swap_f_cur_nxt()
 
 
@@ -212,7 +207,7 @@ def apply_bc_2d():
         apply_bc_core(1, 0, [0.0, 0.0, 0.0],
                 x, 0, z, x, 1, z)
 
-    for x, y, z in ti.ndrange(*res):
+    for x, y, z in rho:
         pos = ti.Vector([x, y])
         cpos = ti.Vector((res[0], res[1])) / ti.Vector([5, 2])
         cradius = res[1] / 7
