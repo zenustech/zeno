@@ -7,6 +7,10 @@ class INode:
         self.params = {}
         self.inputs = {}
         self.outputs = {}
+        self.initialized = False
+
+    def initialize(self):
+        pass
 
     def apply(self):
         raise NotImplementedError
@@ -38,6 +42,13 @@ class Session:
             objname = name + '::' + key
             self.objects[objname] = value
 
+    def initNode(self, name):
+        node = self.nodes[name]
+        node.initialize()
+        for key, value in node.outputs.items():
+            objname = name + '::' + key
+            self.objects[objname] = value
+
     def defNodeClass(self, name):
         def decorator(type):
             self.types[name] = type
@@ -55,6 +66,7 @@ class Session:
 session = Session()
 
 addNode = session.addNode
+initNode = session.initNode
 setNodeParam = session.setNodeParam
 setNodeInput = session.setNodeInput
 applyNode = session.applyNode

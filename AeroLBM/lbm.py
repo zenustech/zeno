@@ -12,6 +12,24 @@ def vec(*args):
     return ti.Vector(args)
 
 
+@ti.func
+def trilerp(f: ti.template(), pos):
+    p = float(pos)
+    I = int(ti.floor(p))
+    w0 = p - I
+    w1 = 1 - w0
+
+    c00 = f[I + vec(0,0,0)] * w1.x + f[I + vec(1,0,0)] * w0.x
+    c01 = f[I + vec(0,0,1)] * w1.x + f[I + vec(1,0,1)] * w0.x
+    c10 = f[I + vec(0,1,0)] * w1.x + f[I + vec(1,1,0)] * w0.x
+    c11 = f[I + vec(0,1,1)] * w1.x + f[I + vec(1,1,1)] * w0.x
+
+    c0 = c00 * w1.y + c10 * w0.y
+    c1 = c01 * w1.y + c11 * w0.y
+
+    return c0 * w1.z + c1 * w0.z
+
+
 class fieldalike:
     def __init__(self, func):
         self.func = func
@@ -36,8 +54,7 @@ class namespace:
 def closureclass(base=object):
     def decorator(ctor):
         class cls(base):
-            def __init__(self):
-                super().__init__()
+            def initialize(self):
                 ctor(self)
 
         cls.__name__ = ctor.__name__
@@ -77,20 +94,7 @@ def LBMDomain(self):
     domain.fie = fie
     domain.odd = odd
     self.outputs['domain'] = domain
-
-
-
-@zeno.defNodeClass
-@closureclass(zeno.INode)
-def LBMSolver(self):
-    domain = self.inputs['domain']
-
-    res = domain.res
-    rho = domain.rho
-    vel = domain.vel
-    mask = domain.mask
-    fie = domain.fie
-    odd = domain.odd
+    self.outputs['vel'] = vel
 
     niu = 0.0035
 
@@ -225,25 +229,6 @@ def LBMSolver(self):
                     vel[x, y, z] = ti.Vector.zero(float, 3)
 
 
-    @ti.func
-    def trilerp(f: ti.template(), pos):
-        p = float(pos)
-        I = int(ti.floor(p))
-        w0 = p - I
-        w1 = 1 - w0
-
-        c00 = f[I + vec(0,0,0)] * w1.x + f[I + vec(1,0,0)] * w0.x
-        c01 = f[I + vec(0,0,1)] * w1.x + f[I + vec(1,0,1)] * w0.x
-        c10 = f[I + vec(0,1,0)] * w1.x + f[I + vec(1,1,0)] * w0.x
-        c11 = f[I + vec(0,1,1)] * w1.x + f[I + vec(1,1,1)] * w0.x
-
-        c0 = c00 * w1.y + c10 * w0.y
-        c1 = c01 * w1.y + c11 * w0.y
-
-        return c0 * w1.z + c1 * w0.z
-
-
-
     def substep():
         collide_stream()
         update_macro()
@@ -261,8 +246,8 @@ def DyeAdvector(self):
 
     res = domain.res
 
-    dye = ti.field(float)
-    dye_nxt = ti.field(float)
+    dye = ti.field(float, res)
+    dye_nxt = ti.field(float, res)
 
 
     @ti.kernel
@@ -290,7 +275,7 @@ def DyeAdvector(self):
 def VolumeRayMarcher(self):
     domain = self.inputs['domain']
     dye = self.inputs['dye']
-    scale = self.params.get(scale, 0.7)
+    scale = self.params.get('scale', 0.7)
 
     res = domain.res
 
@@ -317,20 +302,21 @@ def VolumeRayMarcher(self):
 
 
 zeno.addNode('LBMDomain', 'domain')
-zeno.addNode('LBMSolver', 'substep')
+zeno.initNode('domain')
 zeno.addNode('DyeAdvector', 'advector')
-zeno.addNode('VolumeRayMarcher', 'render')
-zeno.setNodeInput('substep', 'domain', 'domain::domain')
 zeno.setNodeInput('advector', 'domain', 'domain::domain')
 zeno.setNodeInput('advector', 'vel', 'domain::vel')
+zeno.initNode('advector')
+zeno.addNode('VolumeRayMarcher', 'render')
 zeno.setNodeInput('render', 'domain', 'domain::domain')
 zeno.setNodeInput('render', 'dye', 'advector::dye')
+zeno.initNode('render')
 
 gui = ti.GUI('LBM', (512, 256))
 while gui.running and not gui.get_event(gui.ESCAPE):
     t0 = time.time()
     for subs in range(28):
-        zeno.applyNode('substep')
+        zeno.applyNode('domain')
         zeno.applyNode('advector')
     zeno.applyNode('render')
     img = zeno.getObject('render::img')
