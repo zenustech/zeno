@@ -69,17 +69,17 @@ def closureclass(base=object):
 @zeno.defNodeClass
 @closureclass(zeno.INode)
 def LBMDomain(self):
-    res = 64, 32, 32
+    #res = 128, 32, 32
+    res = 256, 64, 64
 
     rho = ti.field(float)
     vel = ti.Vector.field(3, float)
-    mask = ti.field(int)
     fie = ti.field(float)
 
     direction_size = 15
 
     block = ti.root
-    for _ in [mask, rho] + vel.entries:
+    for _ in [rho] + vel.entries:
         block.dense(ti.ijk, res).place(_)
     block.dense(ti.indices(0, 1, 2, 3, 4), (1, 1, 1, direction_size, 2)
                 ).dense(ti.ijk, res).place(fie)
@@ -90,9 +90,9 @@ def LBMDomain(self):
     domain.res = res
     domain.rho = rho
     domain.vel = vel
-    domain.mask = mask
     domain.fie = fie
     domain.odd = odd
+    domain.block = block
     self.outputs['domain'] = domain
     self.outputs['vel'] = vel
 
@@ -139,14 +139,6 @@ def LBMDomain(self):
             rho[x, y, z] = 1
             vel[x, y, z] = ti.Vector.zero(float, 3)
 
-        for x, y, z in rho:
-            mask[x, y, z] = 0
-            pos = ti.Vector([x, y, z])
-            cpos = ti.Vector(res) / vec(5, 2, 2)
-            cradius = res[1] / 9
-            if (pos - cpos).norm_sqr() < cradius**2:
-                mask[x, y, z] = 1
-
         for i, x, y, z in ti.ndrange(direction_size, *res):
             feq = f_eq(i, x, y, z)
             f_cur[i, x, y, z] = feq
@@ -161,8 +153,14 @@ def LBMDomain(self):
         return feq
 
 
+    domain.f_cur = f_cur
+    domain.f_nxt = f_nxt
+    domain.direction_size = direction_size
+    domain.f_eq = f_eq
+
+
     @ti.kernel
-    def collide_stream():
+    def substep():
         for x, y, z in rho:
             if not all(0 < vec(x, y, z) < vec(*res) - 1):
                 continue
@@ -175,9 +173,6 @@ def LBMDomain(self):
                 f_nxt[i, x, y, z] = f
         swap_f_cur_nxt()
 
-
-    @ti.kernel
-    def update_macro():
         for x, y, z in rho:
             new_rho = 0.0
             new_vel = ti.Vector.zero(float, 3)
@@ -187,6 +182,41 @@ def LBMDomain(self):
                 new_rho += f
             rho[x, y, z] = new_rho
             vel[x, y, z] = new_vel / max(new_rho, 1e-6)
+
+
+    self.apply = substep
+
+
+@zeno.defNodeClass
+@closureclass(zeno.INode)
+def LBMBoundary(self):
+    domain = self.inputs['domain']
+
+    block = domain.block
+    res = domain.res
+    rho = domain.rho
+    vel = domain.vel
+    f_cur = domain.f_cur
+    f_nxt = domain.f_nxt
+    direction_size = domain.direction_size
+    f_eq = domain.f_eq
+
+    mask = ti.field(int)
+
+    for _ in [mask]:
+        block.dense(ti.ijk, res).place(_)
+
+
+    @ti.materialize_callback
+    @ti.kernel
+    def initialize():
+        for x, y, z in rho:
+            mask[x, y, z] = 0
+            pos = vec(x, y)
+            cpos = vec(res[0], res[1]) / vec(5, 2)
+            cradius = res[1] / 8
+            if (pos - cpos).norm_sqr() < cradius**2:
+                mask[x, y, z] = 1
 
 
     @ti.func
@@ -210,17 +240,17 @@ def LBMDomain(self):
                     res[0] - 1, y, z, res[0] - 2, y, z)
 
         for x, z in ti.ndrange(res[0], res[2]):
-            apply_bc_core(1, 1, [0.0, 0.0, 0.0],
+            apply_bc_core(1, 0, [0.0, 0.0, 0.0],
                     x, res[1] - 1, z, x, res[1] - 2, z)
 
-            apply_bc_core(1, 1, [0.0, 0.0, 0.0],
+            apply_bc_core(1, 0, [0.0, 0.0, 0.0],
                     x, 0, z, x, 1, z)
 
         for x, y in ti.ndrange(res[0], res[1]):
-            apply_bc_core(1, 1, [0.0, 0.0, 0.0],
+            apply_bc_core(1, 0, [0.0, 0.0, 0.0],
                     x, y, res[2] - 1, x, y, res[2] - 2)
 
-            apply_bc_core(1, 1, [0.0, 0.0, 0.0],
+            apply_bc_core(1, 0, [0.0, 0.0, 0.0],
                     x, y, 0, x, y, 1)
 
         if ti.static(1):
@@ -229,12 +259,9 @@ def LBMDomain(self):
                     vel[x, y, z] = ti.Vector.zero(float, 3)
 
 
-    def substep():
-        collide_stream()
-        update_macro()
-        apply_bc()
+    self.apply = apply_bc
 
-    self.apply = substep
+    self.outputs['mask'] = mask
 
 
 
@@ -242,12 +269,16 @@ def LBMDomain(self):
 @closureclass(zeno.INode)
 def DyeAdvector(self):
     domain = self.inputs['domain']
-    vel = self.inputs['vel']
 
+    block = domain.block
     res = domain.res
+    vel = domain.vel
 
-    dye = ti.field(float, res)
-    dye_nxt = ti.field(float, res)
+    dye = ti.field(float)
+    dye_nxt = ti.field(float)
+
+    for _ in [dye, dye_nxt]:
+        block.dense(ti.ijk, res).place(_)
 
 
     @ti.kernel
@@ -275,11 +306,20 @@ def DyeAdvector(self):
 def VolumeRayMarcher(self):
     domain = self.inputs['domain']
     dye = self.inputs['dye']
+    mask = self.inputs['mask']
     scale = self.params.get('scale', 0.7)
 
     res = domain.res
 
     img = ti.field(float, (res[0], res[1]))
+
+    @ti.func
+    def factor_at(x, y, z):
+        fac = 0.0
+        if mask[x, y, z] != 1:
+            rho = scale * dye[x, y, z]
+            fac = ti.exp(-rho)
+        return fac
 
     @ti.kernel
     def render():
@@ -289,11 +329,15 @@ def VolumeRayMarcher(self):
             for z in range(0, res[2]):
                 tputy = 1.0
                 for v in range(y, res[1]):
-                    facy = ti.exp(-scale * dye[x, v, z])
+                    facy = factor_at(x, v, z)
                     tputy *= facy
-                facz = ti.exp(-scale * dye[x, y, z])
+                    if tputy <= 0:
+                        break
+                facz = factor_at(x, y, z)
                 color += tputz * tputy * (1 - facz)
                 tputz *= facz
+                if tputz <= 0:
+                    break
             img[x, y] = color
 
     self.apply = render
@@ -303,20 +347,24 @@ def VolumeRayMarcher(self):
 
 zeno.addNode('LBMDomain', 'domain')
 zeno.initNode('domain')
+zeno.addNode('LBMBoundary', 'boundary')
+zeno.setNodeInput('boundary', 'domain', 'domain::domain')
+zeno.initNode('boundary')
 zeno.addNode('DyeAdvector', 'advector')
 zeno.setNodeInput('advector', 'domain', 'domain::domain')
-zeno.setNodeInput('advector', 'vel', 'domain::vel')
 zeno.initNode('advector')
 zeno.addNode('VolumeRayMarcher', 'render')
 zeno.setNodeInput('render', 'domain', 'domain::domain')
 zeno.setNodeInput('render', 'dye', 'advector::dye')
+zeno.setNodeInput('render', 'mask', 'boundary::mask')
 zeno.initNode('render')
 
-gui = ti.GUI('LBM', (512, 256))
+gui = ti.GUI('LBM', (1024, 256))
 while gui.running and not gui.get_event(gui.ESCAPE):
     t0 = time.time()
     for subs in range(28):
         zeno.applyNode('domain')
+        zeno.applyNode('boundary')
         zeno.applyNode('advector')
     zeno.applyNode('render')
     img = zeno.getObject('render::img')
