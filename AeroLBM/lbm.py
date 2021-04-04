@@ -254,16 +254,6 @@ def LBMBoundary(self):
             f_cur[l, ibc, jbc, kbc] = f_eq(l, ibc, jbc, kbc) - f_eq(l, inb, jnb, knb) + f_cur[l, inb, jnb, knb]
 
 
-    @ti.func
-    def apply_bc_impl(x, y, z, normal):
-        p = vec(x, y, z) + normal
-        rho[x, y, z] = trilerp(rho, p)
-        vel[x, y, z] -= vel[x, y, z].dot(normal) * normal
-        for i in range(direction_size):
-            dfeq = f_eq(i, x, y, z) - trilerp(fieldalike(lambda x, y, z: f_eq(i, x, y, z)), p)
-            f_cur[i, x, y, z] = dfeq + trilerp(fieldalike(lambda x, y, z: f_cur[i, x, y, z]), p)
-
-
     @ti.kernel
     def apply_bc():
         for y, z in ti.ndrange((1, res[1] - 1), (1, res[2] - 1)):
@@ -286,12 +276,10 @@ def LBMBoundary(self):
             apply_bc_core(1, 0, [0.0, 0.0, 0.0],
                     x, y, 0, x, y, 1)
 
-        if ti.static(1):
-            for x, y, z in ti.ndrange(*res):
-                if mask[x, y, z] >= 1:
-                    vel[x, y, z] = ti.Vector.zero(float, 3)
-                    #nrml = -trigradient(mask, vec(x, y, z)).normalized(1e-6)
-                    #apply_bc_impl(x, y, z, nrml)
+        for x, y, z in rho:
+            if mask[x, y, z] >= 1:
+                nrm = -trigradient(mask, vec(x, y, z)).normalized(1e-6)
+                vel[x, y, z] -= nrm.dot(vel[x, y, z]) * nrm
 
 
     self.apply = apply_bc
