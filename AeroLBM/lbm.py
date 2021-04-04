@@ -30,6 +30,28 @@ def trilerp(f: ti.template(), pos):
     return c0 * w1.z + c1 * w0.z
 
 
+@ti.func
+def trigradient(f: ti.template(), I):
+    return vec(
+        f[I + vec(1,0,0)] - f[I - vec(1,0,0)],
+        f[I + vec(0,1,0)] - f[I - vec(0,1,0)],
+        f[I + vec(0,0,1)] - f[I - vec(0,0,1)])
+
+
+@ti.func
+def clamp(x, xmin, xmax):
+    return min(max(x, xmin), xmax)
+
+
+def fieldclamped(f):
+    @fieldalike
+    def wrapped(*indices):
+        indices = tuple(clamp(i, 0, s - 1) for i, s in zip(indices, f.shape))
+        return ti.subscript(f, indices)
+
+    return wrapped
+
+
 class fieldalike:
     def __init__(self, func):
         self.func = func
@@ -212,10 +234,11 @@ def LBMBoundary(self):
     def initialize():
         for x, y, z in rho:
             mask[x, y, z] = 0
+
             pos = vec(x, y)
             cpos = vec(res[0], res[1]) / vec(5, 2)
             cradius = res[1] / 8
-            if (pos - cpos).norm_sqr() < cradius**2:
+            if abs(pos - cpos).max() < cradius:
                 mask[x, y, z] = 1
 
 
@@ -229,6 +252,16 @@ def LBMBoundary(self):
         rho[ibc, jbc, kbc] = rho[inb, jnb, knb]
         for l in range(direction_size):
             f_cur[l, ibc, jbc, kbc] = f_eq(l, ibc, jbc, kbc) - f_eq(l, inb, jnb, knb) + f_cur[l, inb, jnb, knb]
+
+
+    @ti.func
+    def apply_bc_impl(x, y, z, normal):
+        p = vec(x, y, z) + normal
+        rho[x, y, z] = trilerp(rho, p)
+        vel[x, y, z] -= vel[x, y, z].dot(normal) * normal
+        for i in range(direction_size):
+            dfeq = f_eq(i, x, y, z) - trilerp(fieldalike(lambda x, y, z: f_eq(i, x, y, z)), p)
+            f_cur[i, x, y, z] = dfeq + trilerp(fieldalike(lambda x, y, z: f_cur[i, x, y, z]), p)
 
 
     @ti.kernel
@@ -255,8 +288,10 @@ def LBMBoundary(self):
 
         if ti.static(1):
             for x, y, z in ti.ndrange(*res):
-                if mask[x, y, z] == 1:
+                if mask[x, y, z] >= 1:
                     vel[x, y, z] = ti.Vector.zero(float, 3)
+                    #nrml = -trigradient(mask, vec(x, y, z)).normalized(1e-6)
+                    #apply_bc_impl(x, y, z, nrml)
 
 
     self.apply = apply_bc
@@ -269,6 +304,7 @@ def LBMBoundary(self):
 @closureclass(zeno.INode)
 def DyeAdvector(self):
     domain = self.inputs['domain']
+    mask = self.inputs['mask']
 
     block = domain.block
     res = domain.res
@@ -285,15 +321,13 @@ def DyeAdvector(self):
     def advect_dye():
         for x, y, z in dye:
             p = vec(x, y, z) - vel[x, y, z]
+            p = clamp(p, 0, vec(*res) - 1)
             dye_nxt[x, y, z] = trilerp(dye, p)
         for x, y, z in dye:
             dye[x, y, z] = dye_nxt[x, y, z]
-        for y, z in ti.ndrange(res[1], res[2]):
-            dye[0, y, z] = 0
-            dye[1, y, z] = 0
-        for i, j in ti.ndrange((-1, 2), (-1, 2)):
-            dye[0, res[1] // 2 + i, res[2] // 2 + i] = 80
-            dye[1, res[1] // 2 + i, res[2] // 2 + i] = 80
+        for x, y, z in dye:
+            if mask[x, y, z] >= 1:
+                dye[x, y, z] = 3
 
     self.apply = advect_dye
 
@@ -307,7 +341,7 @@ def VolumeRayMarcher(self):
     domain = self.inputs['domain']
     dye = self.inputs['dye']
     mask = self.inputs['mask']
-    scale = self.params.get('scale', 0.7)
+    scale = self.params.get('scale', 1.0)
 
     res = domain.res
 
@@ -340,6 +374,16 @@ def VolumeRayMarcher(self):
                     break
             img[x, y] = color
 
+    @ti.kernel
+    def render_debug():
+        for x, y in img:
+            color = 0.0
+            count = 0
+            for z in range(0, res[2]):
+                color += dye[x, y, z]
+                count += 1
+            img[x, y] = color
+
     self.apply = render
 
     self.outputs['img'] = img
@@ -352,6 +396,7 @@ zeno.setNodeInput('boundary', 'domain', 'domain::domain')
 zeno.initNode('boundary')
 zeno.addNode('DyeAdvector', 'advector')
 zeno.setNodeInput('advector', 'domain', 'domain::domain')
+zeno.setNodeInput('advector', 'mask', 'boundary::mask')
 zeno.initNode('advector')
 zeno.addNode('VolumeRayMarcher', 'render')
 zeno.setNodeInput('render', 'domain', 'domain::domain')
