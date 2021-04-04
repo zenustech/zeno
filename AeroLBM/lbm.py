@@ -4,7 +4,7 @@ import time
 
 
 
-ti.init(ti.cuda, device_memory_fraction=0.6)
+ti.init(ti.cuda)#, device_memory_fraction=0.6)
 
 
 '''D2Q9
@@ -32,13 +32,14 @@ weights_np = np.array([8.0/27.0,2.0/27.0,2.0/27.0,2.0/27.0,
 '''
 
 #res = 128, 32, 32
-res = 128, 64, 64
+#res = 128, 64, 64
+res = 64, 32, 32
 #res = 256, 128, 128
 #res = 128, 128, 128
 #res = 64, 64, 64
 direction_size = len(weights_np)
 
-niu = 0.0025
+niu = 0.0035
 tau = 3.0 * niu + 0.5
 inv_tau = 1 / tau
 
@@ -113,10 +114,11 @@ def initialize():
         rho[x, y, z] = 1
         vel[x, y, z] = ti.Vector.zero(float, 3)
 
+    for x, y, z in rho:
         mask[x, y, z] = 0
         pos = ti.Vector([x, y, z])
         cpos = ti.Vector(res) / vec(5, 2, 2)
-        cradius = res[1] / 8
+        cradius = res[1] / 9
         if (pos - cpos).norm_sqr() < cradius**2:
             mask[x, y, z] = 1
 
@@ -224,7 +226,7 @@ def trilerp(f: ti.template(), pos):
 @ti.kernel
 def advect_dye():
     for x, y, z in dye:
-        p = vec(x, y, z) - vel[x, y, z] * 1
+        p = vec(x, y, z) - vel[x, y, z]
         dye_nxt[x, y, z] = trilerp(dye, p)
     for x, y, z in dye:
         dye[x, y, z] = dye_nxt[x, y, z]
@@ -244,19 +246,24 @@ def substep():
     advect_dye()
 
 
-img = ti.Vector.field(3, float, (res[0], res[1]))
+img = ti.field(float, (res[0], res[1]))
 
 @ti.kernel
 def render():
     for x, y in img:
-        ret = ti.Vector.zero(float, 3)
-        cnt = 0
-        #for z in range(0, res[2]):
-        for z in range(res[2] // 2 - 1, res[2] // 2 + 1):
-            ret.x += dye[x, y, z] * 0.8
-            ret.y += vel[x, y, z].norm() * 2.5
-            cnt += 1
-        img[x, y] = 1 - ti.exp(-ret / cnt)
+        scale = 0.7
+
+        color = 0.0
+        tputz = 1.0
+        for z in range(0, res[2]):
+            tputy = 1.0
+            for v in range(y, res[1]):
+                facy = ti.exp(-scale * dye[x, v, z])
+                tputy *= facy
+            facz = ti.exp(-scale * dye[x, y, z])
+            color += tputz * tputy * (1 - facz)
+            tputz *= facz
+        img[x, y] = color
 
 
 #'''
