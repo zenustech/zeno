@@ -5,7 +5,7 @@ import time
 
 
 
-ti.init(ti.cuda, kernel_profiler=True)
+ti.init(ti.cuda)
 
 
 def vec(*args):
@@ -179,7 +179,6 @@ def LBMDomain(self):
     domain.f_nxt = f_nxt
     domain.direction_size = direction_size
     domain.f_eq = f_eq
-    domain.swap_f_cur_nxt = swap_f_cur_nxt
 
 
     @ti.kernel
@@ -222,7 +221,6 @@ def LBMBoundary(self):
     f_cur = domain.f_cur
     f_nxt = domain.f_nxt
     direction_size = domain.direction_size
-    swap_f_cur_nxt = domain.swap_f_cur_nxt
     f_eq = domain.f_eq
 
     mask = ti.field(int)
@@ -257,47 +255,43 @@ def LBMBoundary(self):
 
 
     @ti.func
-    def apply_bc_impl(x, y, z, normal, bc_type: ti.template()):
+    def apply_bc_impl(x, y, z, normal):
         p = vec(x, y, z) + normal
         rho[x, y, z] = trilerp(rho, p)
-        if ti.static(bc_type == 'sticky'):
-            vel[x, y, z] = ti.Vector.zero(float, 3)
-        elif ti.static(bc_type == 'slip'):
-            vel[x, y, z] -= vel[x, y, z].dot(normal) * normal
-        elif ti.static(bc_type == 'inflow'):
-            vel[x, y, z] = normal * 0.08
-        elif ti.static(bc_type == 'outflow'):
-            vel[x, y, z] = trilerp(vel, p)
-        else:
-            ti.static_assert(False, bc_type)
+        vel[x, y, z] -= vel[x, y, z].dot(normal) * normal
         for i in range(direction_size):
             dfeq = f_eq(i, x, y, z) - trilerp(fieldalike(lambda x, y, z: f_eq(i, x, y, z)), p)
-            f_nxt[i, x, y, z] = dfeq + trilerp(fieldalike(lambda x, y, z: f_cur[i, x, y, z]), p)
+            f_cur[i, x, y, z] = dfeq + trilerp(fieldalike(lambda x, y, z: f_cur[i, x, y, z]), p)
 
 
     @ti.kernel
     def apply_bc():
-        for x, y, z in rho:
-            if x == 0:
-                apply_bc_impl(x, y, z, vec(1, 0, 0), 'inflow')
-            elif x == res[0] - 1:
-                apply_bc_impl(x, y, z, vec(-1, 0, 0), 'outflow')
+        for y, z in ti.ndrange((1, res[1] - 1), (1, res[2] - 1)):
+            apply_bc_core(1, 0, [0.1, 0.0, 0.0],
+                    0, y, z, 1, y, z)
+            apply_bc_core(1, 1, [0.0, 0.0, 0.0],
+                    res[0] - 1, y, z, res[0] - 2, y, z)
 
-        for x, y, z in rho:
-            if z == 0:
-                apply_bc_impl(x, y, z, vec(0, 0, 1), 'sticky')
-            elif z == res[2] - 1:
-                apply_bc_impl(x, y, z, vec(0, 0, -1), 'sticky')
-            if y == 0:
-                apply_bc_impl(x, 0, z, vec(0, 1, 0), 'sticky')
-            elif y == res[1] - 1:
-                apply_bc_impl(x, y, z, vec(0, -1, 0), 'sticky')
+        for x, z in ti.ndrange(res[0], res[2]):
+            apply_bc_core(1, 0, [0.0, 0.0, 0.0],
+                    x, res[1] - 1, z, x, res[1] - 2, z)
 
-            elif mask[x, y, z] >= 1:
-                nrml = -trigradient(mask, vec(x, y, z)).normalized(1e-6)
-                apply_bc_impl(x, y, z, nrml, 'sticky')
+            apply_bc_core(1, 0, [0.0, 0.0, 0.0],
+                    x, 0, z, x, 1, z)
 
-        swap_f_cur_nxt()
+        for x, y in ti.ndrange(res[0], res[1]):
+            apply_bc_core(1, 0, [0.0, 0.0, 0.0],
+                    x, y, res[2] - 1, x, y, res[2] - 2)
+
+            apply_bc_core(1, 0, [0.0, 0.0, 0.0],
+                    x, y, 0, x, y, 1)
+
+        if ti.static(1):
+            for x, y, z in ti.ndrange(*res):
+                if mask[x, y, z] >= 1:
+                    vel[x, y, z] = ti.Vector.zero(float, 3)
+                    #nrml = -trigradient(mask, vec(x, y, z)).normalized(1e-6)
+                    #apply_bc_impl(x, y, z, nrml)
 
 
     self.apply = apply_bc
@@ -333,7 +327,7 @@ def DyeAdvector(self):
             dye[x, y, z] = dye_nxt[x, y, z]
         for x, y, z in dye:
             if mask[x, y, z] >= 1:
-                dye[x, y, z] = 1
+                dye[x, y, z] = 3
 
     self.apply = advect_dye
 
@@ -347,7 +341,7 @@ def VolumeRayMarcher(self):
     domain = self.inputs['domain']
     dye = self.inputs['dye']
     mask = self.inputs['mask']
-    scale = self.params.get('scale', 2.0)
+    scale = self.params.get('scale', 1.0)
 
     res = domain.res
 
@@ -422,5 +416,3 @@ while gui.running and not gui.get_event(gui.ESCAPE):
     gui.set_image(ti.imresize(img, *gui.res))
     print(time.time() - t0)
     gui.show()
-
-ti.kernel_profiler_print()
