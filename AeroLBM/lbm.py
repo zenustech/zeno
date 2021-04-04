@@ -5,7 +5,7 @@ import time
 
 
 
-ti.init(ti.cuda)
+ti.init(ti.cuda, kernel_profiler=True)
 
 
 def vec(*args):
@@ -118,7 +118,7 @@ def LBMDomain(self):
     self.outputs['domain'] = domain
     self.outputs['vel'] = vel
 
-    niu = 0.0035
+    niu = 0.02
 
     directions_np = np.array([[0,0,0],[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1],[1,1,1],[-1,-1,-1],[1,1,-1],[-1,-1,1],[1,-1,1],[-1,1,-1],[-1,1,1],[1,-1,-1]])
     weights_np = np.array([2.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0,1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0, 1.0/72.0])
@@ -233,53 +233,80 @@ def LBMBoundary(self):
     @ti.kernel
     def initialize():
         for x, y, z in rho:
-            mask[x, y, z] = 0
+            mask[x, y, z] = 1
 
             pos = vec(x, y)
             cpos = vec(res[0], res[1]) / vec(5, 2)
             cradius = res[1] / 8
             if abs(pos - cpos).max() < cradius:
-                mask[x, y, z] = 1
+                mask[x, y, z] = 0
+
+            #if 5 < x < res[0] - 5 and 5 < y < res[1] - 5 and 5 < z < res[2] - 5:
+            if 1:
+                #if x < 2 or res[1] - 3 < x:
+                #    mask[x, y, z] = 0
+                if y < 2 or res[1] - 3 < y:
+                    mask[x, y, z] = 0
+                if z < 2 or res[2] - 3 < z:
+                    mask[x, y, z] = 0
 
 
     @ti.func
-    def apply_bc_core(outer, bc_type, bc_vel, ibc, jbc, kbc, inb, jnb, knb):
-        if (outer == 1):  # handle outer boundary
-            if bc_type == 0:
-                vel[ibc, jbc, kbc] = bc_vel
-            elif bc_type == 1:
-                vel[ibc, jbc, kbc] = vel[inb, jnb, knb]
+    def apply_bc_core(bc_type, bc_vel, ibc, jbc, kbc, inb, jnb, knb):
+        if bc_type == 0:
+            vel[ibc, jbc, kbc] = bc_vel
+        elif bc_type == 1:
+            vel[ibc, jbc, kbc] = vel[inb, jnb, knb]
         rho[ibc, jbc, kbc] = rho[inb, jnb, knb]
         for l in range(direction_size):
             f_cur[l, ibc, jbc, kbc] = f_eq(l, ibc, jbc, kbc) - f_eq(l, inb, jnb, knb) + f_cur[l, inb, jnb, knb]
 
 
+    """
+    P(x) = Q1(x)(x-3)(x-3) + 2x-5
+    P(x) = Q2(x)(x-1) + 5
+    P(x) = Q(x)(x-3)(x-3)(x-1) + R(x)
+    P(x) = Q(x)(x-3)(x-3)(x-1) + ax + b
+    P(3) = 3a + b = 2*3-5 = 1
+    P(1) = a + b = 5
+    a = -2
+    b = 7
+    """
+
+
     @ti.kernel
     def apply_bc():
         for y, z in ti.ndrange((1, res[1] - 1), (1, res[2] - 1)):
-            apply_bc_core(1, 0, [0.1, 0.0, 0.0],
-                    0, y, z, 1, y, z)
-            apply_bc_core(1, 1, [0.0, 0.0, 0.0],
-                    res[0] - 1, y, z, res[0] - 2, y, z)
+            apply_bc_core(0, [0.1, 0.0, 0.0], 0, y, z, 1, y, z)
+            apply_bc_core(1, [0.0, 0.0, 0.0], res[0] - 1, y, z, res[0] - 2, y, z)
 
+        """
+        #'''
         for x, z in ti.ndrange(res[0], res[2]):
             apply_bc_core(1, 0, [0.0, 0.0, 0.0],
                     x, res[1] - 1, z, x, res[1] - 2, z)
 
             apply_bc_core(1, 0, [0.0, 0.0, 0.0],
                     x, 0, z, x, 1, z)
+        #'''
 
+        #'''
         for x, y in ti.ndrange(res[0], res[1]):
             apply_bc_core(1, 0, [0.0, 0.0, 0.0],
                     x, y, res[2] - 1, x, y, res[2] - 2)
 
             apply_bc_core(1, 0, [0.0, 0.0, 0.0],
                     x, y, 0, x, y, 1)
+        #'''
+        """
 
         for x, y, z in rho:
-            if mask[x, y, z] >= 1:
-                nrm = -trigradient(mask, vec(x, y, z)).normalized(1e-6)
-                vel[x, y, z] -= nrm.dot(vel[x, y, z]) * nrm
+            if mask[x, y, z] <= 0.5:
+                nrm = trigradient(fieldclamped(mask), vec(x, y, z)).normalized(1e-6)
+                if nrm.norm_sqr() > 0.5:
+                    vel[x, y, z] -= nrm.dot(vel[x, y, z]) * nrm
+                else:
+                    vel[x, y, z] = ti.Vector.zero(float, 3)
 
 
     self.apply = apply_bc
@@ -314,8 +341,10 @@ def DyeAdvector(self):
         for x, y, z in dye:
             dye[x, y, z] = dye_nxt[x, y, z]
         for x, y, z in dye:
-            if mask[x, y, z] >= 1:
+            if x < 4 and abs(y - res[1]//2) < 4 and abs(z - res[2]//2) < 4:
                 dye[x, y, z] = 3
+            #if mask[x, y, z] <= 0.5:
+                #dye[x, y, z] = 3
 
     self.apply = advect_dye
 
@@ -330,6 +359,7 @@ def VolumeRayMarcher(self):
     dye = self.inputs['dye']
     mask = self.inputs['mask']
     scale = self.params.get('scale', 1.0)
+    vel = domain.vel
 
     res = domain.res
 
@@ -337,10 +367,8 @@ def VolumeRayMarcher(self):
 
     @ti.func
     def factor_at(x, y, z):
-        fac = 0.0
-        if mask[x, y, z] != 1:
-            rho = scale * dye[x, y, z]
-            fac = ti.exp(-rho)
+        rho = scale * dye[x, y, z]
+        fac = ti.exp(-rho)
         return fac
 
     @ti.kernel
@@ -368,9 +396,10 @@ def VolumeRayMarcher(self):
             color = 0.0
             count = 0
             for z in range(0, res[2]):
-                color += dye[x, y, z]
+                #color += dye[x, y, z] * 4
+                color += vel[x, y, z].norm() * 4
                 count += 1
-            img[x, y] = color
+            img[x, y] = color / count
 
     self.apply = render
 
@@ -404,3 +433,5 @@ while gui.running and not gui.get_event(gui.ESCAPE):
     gui.set_image(ti.imresize(img, *gui.res))
     print(time.time() - t0)
     gui.show()
+
+ti.kernel_profiler_print()
