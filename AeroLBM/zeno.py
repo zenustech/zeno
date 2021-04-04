@@ -42,12 +42,30 @@ class Session:
         def decorator(type):
             self.types[name] = type
             return type
+
+        if not isinstance(name, str):
+            type = name
+            name = type.__name__
+            return decorator(type)
         return decorator
+
+    def getObject(self, name):
+        return self.objects[name]
 
 session = Session()
 
+addNode = session.addNode
+setNodeParam = session.setNodeParam
+setNodeInput = session.setNodeInput
+applyNode = session.applyNode
+defNodeClass = session.defNodeClass
+getObject = session.getObject
 
-@session.defNodeClass
+
+'''
+EXAMPLE:
+
+@defNodeClass
 class Add(INode):
     descriptor = dict(
         inputs=['lhs', 'rhs'],
@@ -59,3 +77,4 @@ class Add(INode):
         rhs = self.inputs['rhs']
         res = lhs + rhs
         self.outputs['res'] = res
+'''
