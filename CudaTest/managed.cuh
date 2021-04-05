@@ -106,7 +106,7 @@ __host__ __device__ PrimitiveT &subscript(
   size_t chunkIndex = index / ChunkSize;
   size_t chunkOffset = index % ChunkSize;
   ChunkType &chunk = container.get(chunkIndex);
-  return subscript(chunk, chunkOffset);
+  return subscript<PrimitiveT>(chunk, chunkOffset);
 }
 
 template <class PrimitiveT>

@@ -23,7 +23,7 @@ __global__ void blur(T *arr)
 
 int main(void)
 {
-  auto arr = new Dense<Place<int>, Nx>();
+  auto arr = new Dense<Dense<Place<int>, 4>, Nx / 4>();
 
   for (size_t ix = 0; ix < Nx; ix++) {
     subscript<int>(*arr, ix) = drand48();
