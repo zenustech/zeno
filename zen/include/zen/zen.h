@@ -116,7 +116,7 @@ struct INode {
   void on_apply() {
     apply();
     // set dummy output sockets for connection order
-    set_output("order", IObject::make<EmptyObject>());
+    set_output("DST", IObject::make<EmptyObject>());
   }
 
   void set_param(std::string name, IValue const &value) {
@@ -207,8 +207,8 @@ struct Descriptor {
 
   int initialize() {
     // append dummy sockets for perserving exec orders
-    inputs.push_back("order");
-    outputs.push_back("order");
+    inputs.push_back("SRC");
+    outputs.push_back("DST");
     return 0;
   }
 
