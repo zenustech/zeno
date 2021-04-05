@@ -19,16 +19,16 @@ public:
 
 
 template <class ValueT>
-class Traits {
+class _Traits {
 };
 
 
-class IAccessor {
+class _IAccessor {
 public:
-  __host__ __device__ void activate() {
+  __host__ void activate() {
   }
 
-  __host__ __device__ void deactivate() {
+  __host__ void deactivate() {
   }
 
   __host__ __device__ bool isActive() {
@@ -42,7 +42,7 @@ class Place : public Managed {
   PrimitiveT mValue;
 
 public:
-  class AccessorType : public IAccessor {
+  class AccessorType : public _IAccessor {
     PrimitiveT &mValue;
 
   public:
@@ -59,7 +59,7 @@ public:
 };
 
 template <class ValueT>
-class Traits<Place<ValueT>> {
+class _Traits<Place<ValueT>> {
 public:
   static constexpr size_t Size = 1;
 };
@@ -70,7 +70,7 @@ class Dense : public Managed {
   ValueT mData[SizeT];
 
 public:
-  class AccessorType : public IAccessor {
+  class AccessorType : public _IAccessor {
     ValueT &mValue;
 
   public:
@@ -87,7 +87,7 @@ public:
 };
 
 template <class ValueT, size_t SizeT>
-class Traits<Dense<ValueT, SizeT>> {
+class _Traits<Dense<ValueT, SizeT>> {
 public:
   static constexpr size_t Size = SizeT;
   using ValueType = ValueT;
@@ -99,7 +99,7 @@ class Pointer : public Managed {
   ValueT *mPtr;
 
 public:
-  class AccessorType : public IAccessor {
+  class AccessorType : public _IAccessor {
     ValueT *&mPtr;
 
   public:
@@ -109,13 +109,13 @@ public:
       return mPtr;
     }
 
-    __host__ __device__ void activate() {
+    __host__ void activate() {
       if (!mPtr) {
         mPtr = new ValueT();
       }
     }
 
-    __host__ __device__ void deactivate() {
+    __host__ void deactivate() {
       if (mPtr) {
         delete mPtr;
         mPtr = nullptr;
@@ -137,7 +137,7 @@ public:
 };
 
 template <class ValueT>
-class Traits<Pointer<ValueT>> {
+class _Traits<Pointer<ValueT>> {
 public:
   static constexpr size_t Size = 1;
   using ValueType = ValueT;
@@ -145,12 +145,12 @@ public:
 
 
 template <class ContainerT>
-class Subscriptor : public IAccessor
+class Subscriptor : public _IAccessor
 {
-  using ChunkType = typename Traits<ContainerT>::ValueType;
+  using ChunkType = typename _Traits<ContainerT>::ValueType;
   using ContainerAccessorType = typename ContainerT::AccessorType;
   using ChunkAccessorType = typename ChunkType::AccessorType;
-  static constexpr size_t ChunkSize = Traits<ChunkType>::Size;
+  static constexpr size_t ChunkSize = _Traits<ChunkType>::Size;
 
   ContainerT &container;
   size_t chunkIndex;
@@ -184,7 +184,7 @@ public:
     return chunkSubscriptor.isActive();
   }
 
-  __host__ __device__ void activate() {
+  __host__ void activate() {
     auto chunkAccessor = getChunkAccessor();
     chunkAccessor.activate();
     ChunkType &chunk = *chunkAccessor.get();
@@ -192,7 +192,7 @@ public:
     chunkSubscriptor.activate();
   }
 
-  __host__ __device__ void deactivate() {
+  __host__ void deactivate() {
     auto chunkAccessor = getChunkAccessor();
     if (!chunkAccessor.isActive())
       return;
@@ -203,7 +203,7 @@ public:
 };
 
 template <class PrimitiveT>
-class Subscriptor<Place<PrimitiveT>> : public IAccessor
+class Subscriptor<Place<PrimitiveT>> : public _IAccessor
 {
   using PlaceAccessorType = typename Place<PrimitiveT>::AccessorType;
   PlaceAccessorType mAccessor;

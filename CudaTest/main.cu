@@ -23,9 +23,10 @@ __global__ void blur(T *arr)
 
 int main(void)
 {
-  auto arr = new Dense<Place<int>, Nx>();
+  auto arr = new Dense<Pointer<Dense<Place<int>, 4>>, Nx / 4>();
 
   for (size_t ix = 0; ix < Nx; ix++) {
+    Subscriptor(*arr, ix).activate();
     *Subscriptor(*arr, ix).get() = 3;
   }
   blur<<<(Nx + 1023) / 1024, (Nx < 1024 ? Nx : 1024)>>>(arr);
