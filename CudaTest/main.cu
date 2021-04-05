@@ -17,21 +17,21 @@ __global__ void blur(T *arr)
 {
   size_t ix = blockIdx.x * blockDim.x + threadIdx.x;
   if (ix < Nx) {
-    arr->at(ix) = ix + 1;
+    subscript<int>(*arr, ix) = ix + 1;
   }
 }
 
 int main(void)
 {
-  auto arr = new Dense<int, Nx>();
+  auto arr = new Dense<Place<int>, Nx>();
 
   for (size_t ix = 0; ix < Nx; ix++) {
-    arr->at(ix) = drand48();
+    subscript<int>(*arr, ix) = drand48();
   }
   blur<<<(Nx + 1023) / 1024, (Nx < 1024 ? Nx : 1024)>>>(arr);
   checkCudaErrors(cudaDeviceSynchronize());
   for (size_t ix = 0; ix < Nx; ix++) {
-    printf("%d\n", arr->at(ix));
+    printf("%d\n", subscript<int>(*arr, ix));
   }
 
   delete arr;
