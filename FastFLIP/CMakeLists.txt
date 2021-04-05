@@ -34,7 +34,7 @@ target_include_directories(FLIPlib PRIVATE ltcommon ltcommon/tunicate ltcommon/n
 ##target_include_directories(FLIPlib PRIVATE "LosTopos/common")
 ##target_include_directories(FLIPlib PRIVATE "Droplet3D")
 
-target_link_libraries(FLIPlib PRIVATE TBB::tbb TBB::tbbmalloc)# TBB::tbbmalloc_proxy)
+target_link_libraries(FLIPlib PRIVATE TBB::tbb TBB::tbbmalloc TBB::tbbmalloc_proxy)
 target_link_libraries(FLIPlib PRIVATE pthread openblas f2c lapack cblas)
 
 # zen link flags
