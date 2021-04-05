@@ -23,12 +23,37 @@ class Traits {
 };
 
 
-template <class ValueT>
+class IAccessor {
+public:
+  __host__ __device__ void activate() {
+  }
+
+  __host__ __device__ void deactivate() {
+  }
+
+  __host__ __device__ bool isActive() {
+    return true;
+  }
+};
+
+
+template <class PrimitiveT>
 class Place : public Managed {
-  ValueT mValue;
+  PrimitiveT mValue;
 
 public:
-  __host__ __device__ ValueT &get(size_t index = 0) {
+  class AccessorType : public IAccessor {
+    PrimitiveT &mValue;
+
+  public:
+    __host__ __device__ AccessorType(PrimitiveT &value) : mValue(value) {}
+
+    __host__ __device__ PrimitiveT *get() {
+      return &mValue;
+    }
+  };
+
+  __host__ __device__ AccessorType access(size_t index = 0) {
     return mValue;
   }
 };
@@ -37,7 +62,6 @@ template <class ValueT>
 class Traits<Place<ValueT>> {
 public:
   static constexpr size_t Size = 1;
-  using ValueType = void;
 };
 
 
@@ -46,7 +70,18 @@ class Dense : public Managed {
   ValueT mData[SizeT];
 
 public:
-  __host__ __device__ ValueT &get(size_t index) {
+  class AccessorType : public IAccessor {
+    ValueT &mValue;
+
+  public:
+    __host__ __device__ AccessorType(ValueT &value) : mValue(value) {}
+
+    __host__ __device__ ValueT *get() {
+      return &mValue;
+    }
+  };
+
+  __host__ __device__ AccessorType access(size_t index) {
     return mData[index];
   }
 };
@@ -64,29 +99,40 @@ class Pointer : public Managed {
   ValueT *mPtr;
 
 public:
-  __host__ __device__ ValueT &get(size_t index = 0) {
-    return *mPtr;
-  }
+  class AccessorType : public IAccessor {
+    ValueT *&mPtr;
 
-  __host__ __device__ void activate() {
-    if (!mPtr) {
-      mPtr = new ValueT();
-    }
-  }
+  public:
+    __host__ __device__ AccessorType(ValueT *&ptr) : mPtr(ptr) {}
 
-  __host__ __device__ void deactivate() {
-    if (mPtr) {
-      delete mPtr;
-      mPtr = nullptr;
+    __host__ __device__ ValueT *get() {
+      return mPtr;
     }
-  }
 
-  __host__ __device__ bool is_active() {
-    if (mPtr) {
-      return true;
-    } else {
-      return false;
+    __host__ __device__ void activate() {
+      if (!mPtr) {
+        mPtr = new ValueT();
+      }
     }
+
+    __host__ __device__ void deactivate() {
+      if (mPtr) {
+        delete mPtr;
+        mPtr = nullptr;
+      }
+    }
+
+    __host__ __device__ bool isActive() {
+      if (mPtr) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  };
+
+  __host__ __device__ AccessorType access(size_t index = 0) {
+    return mPtr;
   }
 };
 
@@ -98,19 +144,77 @@ public:
 };
 
 
-template <class PrimitiveT, class ContainerT>
-__host__ __device__ PrimitiveT &subscript(
-    ContainerT &container, size_t index) {
+template <class ContainerT>
+class Subscriptor : public IAccessor
+{
   using ChunkType = typename Traits<ContainerT>::ValueType;
-  constexpr size_t ChunkSize = Traits<ChunkType>::Size;
-  size_t chunkIndex = index / ChunkSize;
-  size_t chunkOffset = index % ChunkSize;
-  ChunkType &chunk = container.get(chunkIndex);
-  return subscript<PrimitiveT>(chunk, chunkOffset);
-}
+  using ContainerAccessorType = typename ContainerT::AccessorType;
+  using ChunkAccessorType = typename ChunkType::AccessorType;
+  static constexpr size_t ChunkSize = Traits<ChunkType>::Size;
+
+  ContainerT &container;
+  size_t chunkIndex;
+  size_t chunkOffset;
+
+  __host__ __device__ ContainerAccessorType getChunkAccessor() {
+    return container.access(chunkIndex);
+  }
+
+public:
+  __host__ __device__ Subscriptor(
+      ContainerT &container, size_t index) : container(container) {
+    chunkIndex = index / ChunkSize;
+    chunkOffset = index % ChunkSize;
+  }
+
+  __host__ __device__ auto get() -> decltype(auto) {
+    auto chunkAccessor = getChunkAccessor();
+    assert(chunkAccessor.isActive());
+    ChunkType &chunk = *chunkAccessor.get();
+    Subscriptor<ChunkType> chunkSubscriptor(chunk, chunkOffset);
+    return chunkSubscriptor.get();
+  }
+
+  __host__ __device__ bool isActive() {
+    auto chunkAccessor = getChunkAccessor();
+    if (!chunkAccessor.isActive())
+      return false;
+    ChunkType &chunk = *chunkAccessor.get();
+    Subscriptor<ChunkType> chunkSubscriptor(chunk, chunkOffset);
+    return chunkSubscriptor.isActive();
+  }
+
+  __host__ __device__ void activate() {
+    auto chunkAccessor = getChunkAccessor();
+    chunkAccessor.activate();
+    ChunkType &chunk = *chunkAccessor.get();
+    Subscriptor<ChunkType> chunkSubscriptor(chunk, chunkOffset);
+    chunkSubscriptor.activate();
+  }
+
+  __host__ __device__ void deactivate() {
+    auto chunkAccessor = getChunkAccessor();
+    if (!chunkAccessor.isActive())
+      return;
+    ChunkType &chunk = *chunkAccessor.get();
+    Subscriptor<ChunkType> chunkSubscriptor(chunk, chunkOffset);
+    chunkSubscriptor.deactivate();
+  }
+};
 
 template <class PrimitiveT>
-__host__ __device__ PrimitiveT &subscript(
-    Place<PrimitiveT> &container, size_t index) {
-  return container.get(index);
-}
+class Subscriptor<Place<PrimitiveT>> : public IAccessor
+{
+  using PlaceAccessorType = typename Place<PrimitiveT>::AccessorType;
+  PlaceAccessorType mAccessor;
+
+public:
+  __host__ __device__ Subscriptor(
+      Place<PrimitiveT> &container, size_t index)
+    : mAccessor(container.access(index)) {
+  }
+
+  __host__ __device__ PrimitiveT *get() {
+    return mAccessor.get();
+  }
+};
