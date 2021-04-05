@@ -17,11 +17,11 @@ public:
 };
 
 template <class ValueT>
-class Place {
+class Place : public Managed {
   ValueT mValue;
 
 public:
-  __host__ __device__ ValueT &at() {
+  __host__ __device__ ValueT &get() {
     return mValue;
   }
 };
@@ -31,7 +31,7 @@ class Dense : public Managed {
   ValueT mData[SizeT];
 
 public:
-  __host__ __device__ ValueT &at(size_t i) {
+  __host__ __device__ ValueT &get(size_t i) {
     return mData[i];
   }
 };
@@ -41,7 +41,7 @@ class Pointer : public Managed {
   ValueT *mPtr;
 
 public:
-  __host__ __device__ ValueT &at() {
+  __host__ __device__ ValueT &get() {
     return *mPtr;
   }
 
