@@ -1,5 +1,8 @@
 #pragma once
 
+#include "helper_cuda.h"
+#include <cassert>
+
 class Managed {
 public:
   __host__ void *operator new(size_t len) {
@@ -13,83 +16,53 @@ public:
   }
 };
 
-template <typename T>
-class ManagedSlot : public Managed {
-  T core;
+template <class ValueT>
+class Place {
+  ValueT mValue;
 
 public:
-  __host__ __device__ T &get() {
-    return core;
-  }
-
-  __host__ __device__ T const &get() const {
-    return core;
+  __host__ __device__ ValueT &at() {
+    return mValue;
   }
 };
 
-template <typename T, size_t N>
-class ManagedArray : public Managed {
-  T core[N];
+template <class ValueT, size_t SizeT>
+class Dense : public Managed {
+  ValueT mData[SizeT];
 
 public:
-  __host__ __device__ T &operator()(int i) {
-    return core[i];
-  }
-
-  __host__ __device__ T const &operator()(int i) const {
-    return core[i];
+  __host__ __device__ ValueT &at(size_t i) {
+    return mData[i];
   }
 };
 
-class Memory : public Managed {
-  void *ptr{nullptr};
-  size_t len{0};
-
-  __host__ __device__ Memory(Memory const &) = delete;
-  __host__ __device__ Memory(Memory &&) = delete;
+template <class ValueT>
+class Pointer : public Managed {
+  ValueT *mPtr;
 
 public:
-  __host__ Memory(size_t len) : len(len) {
-    printf("Memory(%d)\n", (int)len);
-    cudaMallocManaged(&ptr, len);
+  __host__ __device__ ValueT &at() {
+    return *mPtr;
   }
 
-  __host__ __device__ void *data() const {
-    return ptr;
+  __host__ __device__ void activate() {
+    if (!mPtr) {
+      mPtr = new ValueT();
+    }
   }
 
-  __host__ __device__ size_t size() const {
-    return len;
+  __host__ __device__ void deactivate() {
+    if (mPtr) {
+      delete mPtr;
+      mPtr = nullptr;
+    }
   }
 
-  __host__ ~Memory() {
-    printf("~Memory(%d)\n", (int)len);
-    cudaFree(ptr);
-  }
-};
-
-template <typename T>
-class MemoryArray : public Managed {
-  Memory mem;
-  size_t len;
-
-  __host__ __device__ MemoryArray(MemoryArray const &) = delete;
-  __host__ __device__ MemoryArray(MemoryArray &&) = delete;
-
-public:
-  __host__ MemoryArray(size_t len)
-    : len(len), mem(len * sizeof(T)) {
-  }
-
-  __host__ __device__ T *data() const {
-    return (T *)mem.data();
-  }
-
-  __host__ __device__ size_t size() const {
-    return len;
-  }
-
-  __host__ __device__ T &operator()(int i) const {
-    return data()[i];
+  __host__ __device__ bool is_active() {
+    if (mPtr) {
+      return true;
+    } else {
+      return false;
+    }
   }
 };

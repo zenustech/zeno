@@ -10,33 +10,31 @@ __global__ void test() { printf("FuCK U NVIDIA!\n"); } int main(void) { test<<<1
 #include <cstdio>
 #include <cmath>
 
-__global__ void blur(MemoryArray<float> *parr)
+const size_t Nx = 128;
+
+template <class T>
+__global__ void blur(T *arr)
 {
-  auto &arr = *parr;
   size_t ix = blockIdx.x * blockDim.x + threadIdx.x;
-  printf("gpu:%d\n", (int)arr.size());
-  if (ix < arr.size()) {
-    arr(ix) = 2 * arr(ix);
+  if (ix < Nx) {
+    arr->at(ix) = ix + 1;
   }
 }
 
 int main(void)
 {
-  const size_t nx = 1 * 1;
-  auto parr = new MemoryArray<float>(nx);
-  auto &arr = *parr;
+  auto arr = new Dense<int, Nx>();
 
-  for (size_t ix = 0; ix < nx; ix++) {
-    arr(ix) = drand48();
+  for (size_t ix = 0; ix < Nx; ix++) {
+    arr->at(ix) = drand48();
   }
-  printf("cpu:%d\n", (int)arr.size());
-
-  for (size_t i = 0; i < 256; i++) {
-    blur<<<(nx + 1023) / 1024, (nx < 1024 ? nx : 1024)>>>(parr);
-  }
+  blur<<<(Nx + 1023) / 1024, (Nx < 1024 ? Nx : 1024)>>>(arr);
   checkCudaErrors(cudaDeviceSynchronize());
+  for (size_t ix = 0; ix < Nx; ix++) {
+    printf("%d\n", arr->at(ix));
+  }
 
-  delete parr;
+  delete arr;
   return 0;
 }
 #endif
