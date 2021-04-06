@@ -8,12 +8,12 @@ class Managed {
 public:
   __host__ void *operator new(size_t len) {
     void *ptr;
-    cudaMallocManaged(&ptr, len);
+    checkCudaErrors(cudaMallocManaged(&ptr, len));
     return ptr;
   }
 
   __host__ void operator delete(void *ptr) {
-    cudaFree(ptr);
+    checkCudaErrors(cudaFree(ptr));
   }
 };
 
@@ -152,26 +152,26 @@ class Subscriptor : public _IAccessor
   using ChunkAccessorType = typename ChunkType::AccessorType;
   static constexpr size_t ChunkSize = _Traits<ChunkType>::Size;
 
-  ContainerT &container;
-  size_t chunkIndex;
-  size_t chunkOffset;
+  ContainerT &mContainer;
+  size_t mChunkIndex;
+  size_t mChunkOffset;
 
   __host__ __device__ ContainerAccessorType getChunkAccessor() {
-    return container.access(chunkIndex);
+    return mContainer.access(mChunkIndex);
   }
 
 public:
   __host__ __device__ Subscriptor(
-      ContainerT &container, size_t index) : container(container) {
-    chunkIndex = index / ChunkSize;
-    chunkOffset = index % ChunkSize;
+      ContainerT &container, size_t index) : mContainer(container) {
+    mChunkIndex = index / ChunkSize;
+    mChunkOffset = index % ChunkSize;
   }
 
   __host__ __device__ auto get() -> decltype(auto) {
     auto chunkAccessor = getChunkAccessor();
     assert(chunkAccessor.isActive());
     ChunkType &chunk = *chunkAccessor.get();
-    Subscriptor<ChunkType> chunkSubscriptor(chunk, chunkOffset);
+    Subscriptor<ChunkType> chunkSubscriptor(chunk, mChunkOffset);
     return chunkSubscriptor.get();
   }
 
@@ -180,7 +180,7 @@ public:
     if (!chunkAccessor.isActive())
       return false;
     ChunkType &chunk = *chunkAccessor.get();
-    Subscriptor<ChunkType> chunkSubscriptor(chunk, chunkOffset);
+    Subscriptor<ChunkType> chunkSubscriptor(chunk, mChunkOffset);
     return chunkSubscriptor.isActive();
   }
 
@@ -188,7 +188,7 @@ public:
     auto chunkAccessor = getChunkAccessor();
     chunkAccessor.activate();
     ChunkType &chunk = *chunkAccessor.get();
-    Subscriptor<ChunkType> chunkSubscriptor(chunk, chunkOffset);
+    Subscriptor<ChunkType> chunkSubscriptor(chunk, mChunkOffset);
     chunkSubscriptor.activate();
   }
 
@@ -197,7 +197,7 @@ public:
     if (!chunkAccessor.isActive())
       return;
     ChunkType &chunk = *chunkAccessor.get();
-    Subscriptor<ChunkType> chunkSubscriptor(chunk, chunkOffset);
+    Subscriptor<ChunkType> chunkSubscriptor(chunk, mChunkOffset);
     chunkSubscriptor.deactivate();
   }
 };
