@@ -264,21 +264,22 @@ class Field {
   std::unique_ptr<ContainerT> mPtr;
 
 public:
-  Field() : mPtr(std::make_unique<ContainerT>()) {
+  __host__ Field() : mPtr(std::make_unique<ContainerT>()) {
   }
 
   class Copy {
     ContainerT *mPtr;
 
-    Copy(Field const &field) : mPtr(field.mPtr.get()) {
+  public:
+    __host__ __device__ Copy(Field const &field) : mPtr(field.mPtr.get()) {
     }
 
-    Subscriptor<ContainerT> subscript(Indices const &indices) {
+    __host__ __device__ Subscriptor<ContainerT> subscript(Indices const &indices) {
       return Subscriptor<ContainerT>(*mPtr, indices);
     }
   };
 
-  Copy copy() {
+  __host__ Copy copy() {
     return Copy(*this);
   }
 };
