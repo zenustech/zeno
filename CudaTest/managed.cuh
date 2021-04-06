@@ -271,11 +271,27 @@ public:
     ContainerT *mPtr;
 
   public:
-    __host__ __device__ Copy(Field const &field) : mPtr(field.mPtr.get()) {
+    __host__ Copy(Field const &field) : mPtr(field.mPtr.get()) {
     }
 
     __host__ __device__ Subscriptor<ContainerT> subscript(Indices const &indices) {
       return Subscriptor<ContainerT>(*mPtr, indices);
+    }
+
+    __host__ __device__ auto operator[](Indices const &indices) -> decltype(auto) {
+      return *subscript(indices).get();
+    }
+
+    __host__ __device__ bool isActive(Indices const &indices) {
+      return subscript(indices).isActive();
+    }
+
+    __host__ void activate(Indices const &indices) {
+      return subscript(indices).activate();
+    }
+
+    __host__ void deactivate(Indices const &indices) {
+      return subscript(indices).deactivate();
     }
   };
 
