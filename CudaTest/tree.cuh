@@ -4,23 +4,20 @@
 #include <cassert>
 
 
-class Managed {
-public:
-  __host__ void *operator new(size_t len) {
-    void *ptr;
-    checkCudaErrors(cudaMallocManaged(&ptr, len));
-    return ptr;
-  }
+__host__ void cMalloc(size_t len) {
+  void *ptr;
+  checkCudaErrors(cudaMallocManaged(&ptr, len));
+  return ptr;
+}
 
-  __host__ void operator delete(void *ptr) {
-    checkCudaErrors(cudaFree(ptr));
-  }
-};
+__host__ void cFree(void *ptr) {
+  checkCudaErrors(cudaFree(ptr));
+}
 
 
-class TreeNode {
-  int *mData;
+class Dense {
+  void *mData;
 
-  __host__ __device__ TreeNode() {
-  }
+  size_t childSize;
+  std::array<size_t, 8> childCount;
 };

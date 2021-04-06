@@ -2,6 +2,7 @@
 
 #include "helper_cuda.h"
 #include <cassert>
+#include <array>
 
 
 class Managed {
@@ -14,6 +15,40 @@ public:
 
   __host__ void operator delete(void *ptr) {
     checkCudaErrors(cudaFree(ptr));
+  }
+};
+
+
+using dim_t = size_t;
+
+
+class Indices {
+  size_t mIndices[8];
+
+public:
+  __host__ __device__ Indices(size_t index = 0) {
+    mIndices[0] = index;
+    for (int i = 1; i < 8; i++) {
+      mIndices[i] = 0;
+    }
+  }
+
+  __host__ __device__ Indices(std::initializer_list<size_t> indices) {
+    size_t i = 0;
+    for (auto const &index: indices) {
+      mIndices[i++] = index;
+    }
+    for (; i < 8; i++) {
+      mIndices[i] = 0;
+    }
+  }
+
+  __host__ __device__ size_t &operator[](dim_t dim) {
+    return mIndices[dim];
+  }
+
+  __host__ __device__ size_t const &operator[](dim_t dim) const {
+    return mIndices[dim];
   }
 };
 
@@ -53,7 +88,7 @@ public:
     }
   };
 
-  __host__ __device__ AccessorType access(size_t index = 0) {
+  __host__ __device__ AccessorType access(Indices const &index = 0) {
     return mValue;
   }
 };
@@ -62,10 +97,11 @@ template <class ValueT>
 class _Traits<Place<ValueT>> {
 public:
   static constexpr size_t Size = 1;
+  static constexpr dim_t Dim = 0;
 };
 
 
-template <class ValueT, size_t SizeT>
+template <class ValueT, size_t SizeT, dim_t DimT>
 class Dense : public Managed {
   ValueT mData[SizeT];
 
@@ -81,15 +117,16 @@ public:
     }
   };
 
-  __host__ __device__ AccessorType access(size_t index) {
-    return mData[index];
+  __host__ __device__ AccessorType access(Indices const &index) {
+    return mData[index[DimT]];
   }
 };
 
-template <class ValueT, size_t SizeT>
-class _Traits<Dense<ValueT, SizeT>> {
+template <class ValueT, size_t SizeT, dim_t DimT>
+class _Traits<Dense<ValueT, SizeT, DimT>> {
 public:
   static constexpr size_t Size = SizeT;
+  static constexpr dim_t Dim = DimT;
   using ValueType = ValueT;
 };
 
@@ -131,7 +168,7 @@ public:
     }
   };
 
-  __host__ __device__ AccessorType access(size_t index = 0) {
+  __host__ __device__ AccessorType access(Indices const &index = 0) {
     return mPtr;
   }
 };
@@ -140,6 +177,7 @@ template <class ValueT>
 class _Traits<Pointer<ValueT>> {
 public:
   static constexpr size_t Size = 1;
+  static constexpr dim_t Dim = 0;
   using ValueType = ValueT;
 };
 
@@ -151,10 +189,11 @@ class Subscriptor : public _IAccessor
   using ContainerAccessorType = typename ContainerT::AccessorType;
   using ChunkAccessorType = typename ChunkType::AccessorType;
   static constexpr size_t ChunkSize = _Traits<ChunkType>::Size;
+  static constexpr size_t ChunkDim = _Traits<ChunkType>::Dim;
 
   ContainerT &mContainer;
-  size_t mChunkIndex;
-  size_t mChunkOffset;
+  Indices mChunkIndex;
+  Indices mChunkOffset;
 
   __host__ __device__ ContainerAccessorType getChunkAccessor() {
     return mContainer.access(mChunkIndex);
@@ -162,9 +201,10 @@ class Subscriptor : public _IAccessor
 
 public:
   __host__ __device__ Subscriptor(
-      ContainerT &container, size_t index) : mContainer(container) {
-    mChunkIndex = index / ChunkSize;
-    mChunkOffset = index % ChunkSize;
+      ContainerT &container, Indices const &index) : mContainer(container) {
+    mChunkOffset = mChunkIndex = index;
+    mChunkIndex[ChunkDim] /= ChunkSize;
+    mChunkOffset[ChunkDim] %= ChunkSize;
   }
 
   __host__ __device__ auto get() -> decltype(auto) {
@@ -210,7 +250,7 @@ class Subscriptor<Place<PrimitiveT>> : public _IAccessor
 
 public:
   __host__ __device__ Subscriptor(
-      Place<PrimitiveT> &container, size_t index)
+      Place<PrimitiveT> &container, Indices const &index)
     : mAccessor(container.access(index)) {
   }
 

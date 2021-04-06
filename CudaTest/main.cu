@@ -23,7 +23,7 @@ __global__ void blur(T *arr)
 
 int main(void)
 {
-  auto arr = new Dense<Pointer<Dense<Place<int>, 4>>, Nx / 4>();
+  auto arr = new Dense<Pointer<Dense<Place<int>, 4, 0>>, Nx / 4, 0>();
 
   for (size_t ix = 0; ix < Nx; ix++) {
     Subscriptor(*arr, ix).activate();
