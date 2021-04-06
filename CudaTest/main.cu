@@ -23,16 +23,16 @@ __global__ void blur(T *arr)
 
 int main(void)
 {
-  auto arr = new Dense<Pointer<Dense<Place<int>, 4, 0>>, Nx / 4, 0>();
+  Field<Dense<Pointer<Dense<Place<int>, 4, 0>>, Nx / 4, 0>> arr;
 
   for (size_t ix = 0; ix < Nx; ix++) {
-    Subscriptor(*arr, ix).activate();
-    *Subscriptor(*arr, ix).get() = 3;
+    arr.subscript(ix).activate();
+    arr.subscript(ix).get() = 3;
   }
   blur<<<(Nx + 1023) / 1024, (Nx < 1024 ? Nx : 1024)>>>(arr);
   checkCudaErrors(cudaDeviceSynchronize());
   for (size_t ix = 0; ix < Nx; ix++) {
-    printf("%d\n", *Subscriptor(*arr, ix).get());
+    printf("%d\n", arr.subscript(ix).get());
   }
 
   delete arr;

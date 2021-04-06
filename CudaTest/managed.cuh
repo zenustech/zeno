@@ -2,6 +2,7 @@
 
 #include "helper_cuda.h"
 #include <cassert>
+#include <memory>
 #include <array>
 
 
@@ -26,11 +27,7 @@ class Indices {
   size_t mIndices[8];
 
 public:
-  __host__ __device__ Indices(size_t index = 0) {
-    mIndices[0] = index;
-    for (int i = 1; i < 8; i++) {
-      mIndices[i] = 0;
-    }
+  __host__ __device__ Indices(size_t index = 0) : Indices{index} {
   }
 
   __host__ __device__ Indices(std::initializer_list<size_t> indices) {
@@ -97,7 +94,7 @@ template <class ValueT>
 class _Traits<Place<ValueT>> {
 public:
   static constexpr size_t Size = 1;
-  static constexpr dim_t Dim = 0;
+  static constexpr dim_t Dim = 8;
 };
 
 
@@ -177,7 +174,7 @@ template <class ValueT>
 class _Traits<Pointer<ValueT>> {
 public:
   static constexpr size_t Size = 1;
-  static constexpr dim_t Dim = 0;
+  static constexpr dim_t Dim = 8;
   using ValueType = ValueT;
 };
 
@@ -203,8 +200,10 @@ public:
   __host__ __device__ Subscriptor(
       ContainerT &container, Indices const &index) : mContainer(container) {
     mChunkOffset = mChunkIndex = index;
-    mChunkIndex[ChunkDim] /= ChunkSize;
-    mChunkOffset[ChunkDim] %= ChunkSize;
+    if constexpr (ChunkDim != 8) {
+      mChunkIndex[ChunkDim] /= ChunkSize;
+      mChunkOffset[ChunkDim] %= ChunkSize;
+    }
   }
 
   __host__ __device__ auto get() -> decltype(auto) {
@@ -256,5 +255,30 @@ public:
 
   __host__ __device__ PrimitiveT *get() {
     return mAccessor.get();
+  }
+};
+
+
+template <class ContainerT>
+class Field {
+  std::unique_ptr<ContainerT> mPtr;
+
+public:
+  Field() : mPtr(std::make_unique<ContainerT>()) {
+  }
+
+  class Copy {
+    ContainerT *mPtr;
+
+    Copy(Field const &field) : mPtr(field.mPtr.get()) {
+    }
+
+    Subscriptor<ContainerT> subscript(Indices const &indices) {
+      return Subscriptor<ContainerT>(*mPtr, indices);
+    }
+  };
+
+  Copy copy() {
+    return Copy(*this);
   }
 };
