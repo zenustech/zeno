@@ -105,10 +105,22 @@ public:
   }
 };
 
-__global__ void blur(NDView arr)
+template <class T>
+class NDTypedView : public NDView {
+public:
+  __host__ __device__ T &operator()(Array<ssize_t, NDims> const &indices) const {
+    void *ptr = NDView::operator()(indices);
+    return *static_cast<T *>(ptr);
+  }
+
+  NDTypedView(NDView const &view) : NDView(view) {}
+  NDTypedView(NDView &&view) : NDView(view) {}
+};
+
+__global__ void blur(NDTypedView<int> arr)
 {
   ssize_t ix = blockIdx.x * blockDim.x + threadIdx.x;
-  *(int *)arr({ix}) = ix + 1;
+  arr({ix}) = ix + 1;
 }
 
 int main(void)
