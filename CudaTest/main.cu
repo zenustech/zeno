@@ -11,7 +11,7 @@ __global__ void test() { printf("FuCK U NVIDIA!\n"); } int main(void) { test<<<1
 
 template <class T, size_t N>
 class Array {
-  T m_data[N];
+  T mData[N];
 
 public:
   Array() = default;
@@ -21,64 +21,110 @@ public:
   __host__ __device__ Array(std::initializer_list<T> const &args) {
     int i = 0;
     for (auto const &value: args) {
-      m_data[i++] = value;
+      mData[i++] = value;
     }
     for (; i < N; i++) {
-      m_data[i] = T(0);
+      mData[i] = T(0);
     }
   }
 
-  __host__ __device__ T &operator[](long i) {
-    return m_data[i];
+  __host__ __device__ T &operator[](ssize_t i) {
+    return mData[i];
   }
 
-  __host__ __device__ T const &operator[](long i) const {
-    return m_data[i];
+  __host__ __device__ T const &operator[](ssize_t i) const {
+    return mData[i];
   }
 };
 
-struct NDView {
-  static constexpr long Dims = 1;
-  Array<long, Dims> stride;
-  Array<long, Dims> shape;
-  void *base{nullptr};
+static constexpr size_t NDims = 4;
+
+class NDView {
+protected:
+  Array<ssize_t, NDims> mStride;
+  Array<ssize_t, NDims> mShape;
+  void *mBase{nullptr};
 
   NDView() = default;
+
+public:
   NDView(NDView const &) = default;
   NDView(NDView &&) = default;
 
-  __host__ __device__ void *operator()(Array<long, Dims> const &indices) {
-    long offset = 0;
-    for (int i = 0; i < Dims; i++) {
-      offset += stride[i] * indices[i];
+  __host__ __device__ NDView(
+      Array<ssize_t, NDims> const &stride,
+      Array<ssize_t, NDims> const &shape,
+      void *base = nullptr)
+    : mBase(base)
+    , mStride(stride)
+    , mShape(shape)
+  {}
+
+  __host__ __device__ Array<ssize_t, NDims> const &stride() const {
+    return mStride;
+  }
+
+  __host__ __device__ Array<ssize_t, NDims> const &shape() const {
+    return mShape;
+  }
+
+  __host__ __device__ void *data() const {
+    return mBase;
+  }
+
+  __host__ __device__ ssize_t size() const {
+    ssize_t offset = 0;
+    for (int i = 0; i < NDims; i++) {
+      offset += mStride[i] * mShape[i];
     }
-    return (char *)base + offset;
+    return offset;
+  }
+
+  __host__ __device__ void *operator()(Array<ssize_t, NDims> const &indices) const {
+    ssize_t offset = 0;
+    for (int i = 0; i < NDims; i++) {
+      offset += mStride[i] * indices[i];
+    }
+    return (char *)mBase + offset;
+  }
+};
+
+class NDArray : public NDView {
+public:
+  __host__ NDArray(
+      Array<ssize_t, NDims> const &stride,
+      Array<ssize_t, NDims> const &shape)
+    : NDView(stride, shape)
+  {
+    checkCudaErrors(cudaMallocManaged(&mBase, this->size()));
+  }
+
+  __host__ ~NDArray() {
+    checkCudaErrors(cudaFree(mBase));
+    mBase = nullptr;
   }
 };
 
 __global__ void blur(NDView arr)
 {
-  long ix = blockIdx.x * blockDim.x + threadIdx.x;
+  ssize_t ix = blockIdx.x * blockDim.x + threadIdx.x;
   *(int *)arr({ix}) = ix + 1;
 }
 
 int main(void)
 {
-  NDView arr;
-  arr.shape[0] = 16;
-  arr.stride[0] = sizeof(int);
-  cudaMallocManaged(&arr.base, arr.shape[0] * arr.stride[0]);
-  for (long ix = 0; ix < 16; ix++) {
+  NDArray arr({16}, {sizeof(int)});
+
+  for (ssize_t ix = 0; ix < 16; ix++) {
     *(int *)arr({ix}) = 3;
   }
 
   blur<<<4, 4>>>(arr);
   checkCudaErrors(cudaDeviceSynchronize());
-  for (long ix = 0; ix < 16; ix++) {
+  for (ssize_t ix = 0; ix < 16; ix++) {
     printf("%d\n", *(int *)arr({ix}));
   }
 
-  cudaFree(arr.base);
   return 0;
 }
 #endif
