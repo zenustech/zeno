@@ -21,10 +21,12 @@ bl_info = {
 
 from . import (
     node_system,
+    node_execution,
 )
 
 modules = (
     node_system,
+    node_execution,
 )
 
 

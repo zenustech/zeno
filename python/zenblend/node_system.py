@@ -1,9 +1,10 @@
 import bpy
-from bpy.types import NodeTree, Node, NodeSocket
 from bpy.utils import register_class, unregister_class
+from bpy.types import NodeTree, Node, NodeSocket
 
 import nodeitems_utils
 from nodeitems_utils import NodeCategory, NodeItem
+
 
 
 class ZensimTree(NodeTree):
@@ -34,7 +35,8 @@ class ZensimSocket(NodeSocket):
 class ZensimNodeCategory(NodeCategory):
     @classmethod
     def poll(cls, context):
-        return context.space_data.tree_type == 'ZensimTreeType'
+        space = context.space_data
+        return space.type == 'NODE_EDITOR' and space.tree_type == 'ZensimTreeType'
 
 
 def to_identifier_upper(s):
@@ -68,7 +70,7 @@ def add_zensim_node_class(line):
         type, name, defl = param.split(':')
         n_params.append((type, name, defl))
 
-    print('[ZenBlend] registering:', n_name, n_inputs, n_outputs, n_params)
+    #print('[ZenBlend] registering:', n_name, n_inputs, n_outputs, n_params)
     do_add_zensim_node_class(n_name, n_inputs, n_outputs, n_params, category)
 
 
@@ -177,16 +179,15 @@ class ZensimNode_ExecutionOutput(ZensimTreeNode):
     '''Zensim graph execution output'''
 
     category = 'blender'
-    bl_idname = 'ZensimSocketType'
-    bl_label = 'Execution Output'
+    bl_idname = 'ZensimNodeType_ExecutionOutput'
+    bl_label = 'ExecutionOutput'
     bl_icon = 'PHYSICS'
 
     def init(self, context):
         self.inputs.new('ZensimSocketType', 'SRC')
 
     def draw_buttons(self, context, layout):
-        layout.operator('render.render')
-        context.space_data.node_tree
+        layout.operator('node.zensim_execute')
 
 
 nonproc_class = [
@@ -241,10 +242,8 @@ def unregister_user_nodes():
 
 
 def register():
-    global current_registered
     for cls in core_classes:
         register_class(cls)
-
 
     load_user_nodes_from_descriptors('''
 EndFrame:(SRC)(DST)()(visualize)
