@@ -4,28 +4,6 @@ Zensim Node System Blender Intergration
 Copyright (c) archibate <1931127624@qq.com> (2020- ). All Rights Reserved.
 '''
 
-node_descriptors = '''
-EndFrame:(SRC)(DST)()(visualize)
-FLIP_Solid_Modifie:(Particles,DynaSolid_SDF,StatSolid_SDF,SRC)(DST)()(FLIPSolver)
-GetVDBPoints:(grid,SRC)(pars,DST)()(openvdb)
-MakeMatrix:(SRC)(matrix,DST)(float3:position:0 0 0,float3:rotation:0 0 0,float3:scale:0 0 0)(misc)
-MeshToSDF:(mesh,SRC)(sdf,DST)(float:voxel_size:0.08)(openvdb)
-P2G_Advector:(Particles,Velocity,PostAdvVelocity,SRC)(DST)(float:time_step:0.04 0.0,float:dx:0.01 0.0,int:RK_ORDER:1 1 4,float:pic_smoothness:0.02 0.0 1.0)(FLIPSolver)
-RandomParticles:(SRC)(pars,DST)(int:count:)(particles)
-ReadObjMesh:(SRC)(mesh,DST)(string:path:)(trimesh)
-ReadParticles:(SRC)(pars,DST)(string:path:)(particles)
-ReadMesh:(SRC)(data,DST)(string:path:,string:type:float)(openvdb)
-SetVDBTransform:(grid,SRC)(DST)(float:dx:0.08,float3:position:0 0 0,float3:rotation:0 0 0,float3:scale:1 1 1)(openvdb)
-SimpleSolver:(ini_pars,SRC)(pars,DST)(float:dt:0.04,float3:G:0 0 1)(particles)
-SleepMilis:(SRC)(DST)(int:ms:1000)(misc)
-TransformMesh:(mesh,matrix,SRC)(mesh,DST)()(trimesh)
-ViewMesh:(mesh,SRC)(DST)()(visualize)
-ViewParticles:(pars,SRC)(DST)()(visualize)
-WriteObjMesh:(mesh,SRC)(DST)(string:path:)(trimesh)
-WriteParticles:(pars,SRC)(DST)(string:path:)(particles)
-WriteMesh:(data,SRC)(DST)(string:path:)(openvdb)
-'''
-
 import bpy
 from bpy.types import NodeTree, Node, NodeSocket
 from bpy.utils import register_class, unregister_class
@@ -72,12 +50,17 @@ node_categories = [
 ]
 
 
+def to_identifier_upper(s):
+    return s.upper().replace(' ', '_')
+
+
 core_classes = [
     ZensimTree,
     ZensimSocket,
 ]
 
 user_classes = []
+user_categories = {}
 
 
 def add_zensim_node_class(line):
@@ -98,10 +81,10 @@ def add_zensim_node_class(line):
         n_params.append((type, name, defl))
 
     print(n_name, n_inputs, n_outputs, n_params)
-    do_add_zensim_node_class(n_name, n_inputs, n_outputs, n_params)
+    do_add_zensim_node_class(n_name, n_inputs, n_outputs, n_params, category)
 
 
-def do_add_zensim_node_class(n_name, n_inputs, n_outputs, n_params):
+def do_add_zensim_node_class(n_name, n_inputs, n_outputs, n_params, category):
     class Def(ZensimTreeNode):
         __doc__ = 'Zensim node: ' + n_name
         bl_idname = 'ZensimNodeType_' + n_name
@@ -129,6 +112,7 @@ def do_add_zensim_node_class(n_name, n_inputs, n_outputs, n_params):
         Def.__annotations__[name] = make_zensim_param_property(type, defl)
 
     user_classes.append(Def)
+    user_categories.setdefault(category, []).append(Def.bl_idname)
 
 
 def make_zensim_param_property(type, defl):
@@ -196,32 +180,85 @@ def make_zensim_param_property(type, defl):
         assert False, 'unknown param type: ' + type
 
 
-for line in node_descriptors.splitlines():
-    add_zensim_node_class(line)
+def generate_node_categories_from_user_categories():
+    node_categories.clear()
+    for cate_name, node_names in user_categories.items():
+        cate_id_name = to_identifier_upper(cate_name)
+        items = [NodeItem(node_name) for node_name in node_names]
+        category = ZensimNodeCategory(cate_id_name, cate_name, items=items)
+        node_categories.append(category)
 
 
-def register():
-    for cls in core_classes:
-        register_class(cls)
-    register_nodes()
+def load_user_nodes_from_descriptors(descriptors):
+    unregister_user_nodes()
+
+    for line in descriptors.splitlines():
+        add_zensim_node_class(line)
+
+    generate_node_categories_from_user_categories()
+
+    register_user_nodes()
 
 
-def unregister():
-    unregister_nodes()
-    for cls in reversed(core_classes):
-        unregister_class(cls)
+user_nodes_registered = False
 
 
-def register_nodes():
+def register_user_nodes():
+    global user_nodes_registered
+
     for cls in user_classes:
         register_class(cls)
     nodeitems_utils.register_node_categories('ZENSIM_NODES', node_categories)
 
+    user_nodes_registered = True
 
-def unregister_nodes():
+
+def unregister_user_nodes():
+    global user_nodes_registered
+    if not user_nodes_registered:
+        return
+
     try:
         nodeitems_utils.unregister_node_categories('ZENSIM_NODES')
     except KeyError:
         pass
+    node_categories.clear()
     for cls in reversed(user_classes):
+        unregister_class(cls)
+
+    user_nodes_registered = False
+
+
+def register():
+    global current_registered
+    for cls in core_classes:
+        register_class(cls)
+
+
+    load_user_nodes_from_descriptors('''
+EndFrame:(SRC)(DST)()(visualize)
+FLIP_Solid_Modifie:(Particles,DynaSolid_SDF,StatSolid_SDF,SRC)(DST)()(FLIPSolver)
+GetVDBPoints:(grid,SRC)(pars,DST)()(openvdb)
+MakeMatrix:(SRC)(matrix,DST)(float3:position:0 0 0,float3:rotation:0 0 0,float3:scale:0 0 0)(misc)
+MeshToSDF:(mesh,SRC)(sdf,DST)(float:voxel_size:0.08)(openvdb)
+P2G_Advector:(Particles,Velocity,PostAdvVelocity,SRC)(DST)(float:time_step:0.04 0.0,float:dx:0.01 0.0,int:RK_ORDER:1 1 4,float:pic_smoothness:0.02 0.0 1.0)(FLIPSolver)
+RandomParticles:(SRC)(pars,DST)(int:count:)(particles)
+ReadObjMesh:(SRC)(mesh,DST)(string:path:)(trimesh)
+ReadParticles:(SRC)(pars,DST)(string:path:)(particles)
+ReadMesh:(SRC)(data,DST)(string:path:,string:type:float)(openvdb)
+SetVDBTransform:(grid,SRC)(DST)(float:dx:0.08,float3:position:0 0 0,float3:rotation:0 0 0,float3:scale:1 1 1)(openvdb)
+SimpleSolver:(ini_pars,SRC)(pars,DST)(float:dt:0.04,float3:G:0 0 1)(particles)
+SleepMilis:(SRC)(DST)(int:ms:1000)(misc)
+TransformMesh:(mesh,matrix,SRC)(mesh,DST)()(trimesh)
+ViewMesh:(mesh,SRC)(DST)()(visualize)
+ViewParticles:(pars,SRC)(DST)()(visualize)
+WriteObjMesh:(mesh,SRC)(DST)(string:path:)(trimesh)
+WriteParticles:(pars,SRC)(DST)(string:path:)(particles)
+WriteMesh:(data,SRC)(DST)(string:path:)(openvdb)
+''')
+
+
+def unregister():
+    unregister_user_nodes()
+    for cls in reversed(core_classes):
         unregister_class(cls)
