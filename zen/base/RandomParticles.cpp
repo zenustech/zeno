@@ -27,7 +27,7 @@ static int defRandomParticles = zen::defNodeClass<RandomParticles>("RandomPartic
     }, /* outputs: */ {
     "pars",
     }, /* params: */ {
-    {"int", "count", ""},
+    {"int", "count", "1 0"},
     }, /* category: */ {
     "particles",
     }});

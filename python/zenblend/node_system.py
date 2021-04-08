@@ -245,27 +245,9 @@ def register():
     for cls in core_classes:
         register_class(cls)
 
-    load_user_nodes_from_descriptors('''
-EndFrame:(SRC)(DST)()(visualize)
-FLIP_Solid_Modifie:(Particles,DynaSolid_SDF,StatSolid_SDF,SRC)(DST)()(FLIPSolver)
-GetVDBPoints:(grid,SRC)(pars,DST)()(openvdb)
-MakeMatrix:(SRC)(matrix,DST)(float3:position:0 0 0,float3:rotation:0 0 0,float3:scale:0 0 0)(misc)
-MeshToSDF:(mesh,SRC)(sdf,DST)(float:voxel_size:0.08)(openvdb)
-P2G_Advector:(Particles,Velocity,PostAdvVelocity,SRC)(DST)(float:time_step:0.04 0.0,float:dx:0.01 0.0,int:RK_ORDER:1 1 4,float:pic_smoothness:0.02 0.0 1.0)(FLIPSolver)
-RandomParticles:(SRC)(pars,DST)(int:count:)(particles)
-ReadObjMesh:(SRC)(mesh,DST)(string:path:)(trimesh)
-ReadParticles:(SRC)(pars,DST)(string:path:)(particles)
-ReadMesh:(SRC)(data,DST)(string:path:,string:type:float)(openvdb)
-SetVDBTransform:(grid,SRC)(DST)(float:dx:0.08,float3:position:0 0 0,float3:rotation:0 0 0,float3:scale:1 1 1)(openvdb)
-SimpleSolver:(ini_pars,SRC)(pars,DST)(float:dt:0.04,float3:G:0 0 1)(particles)
-SleepMilis:(SRC)(DST)(int:ms:1000)(misc)
-TransformMesh:(mesh,matrix,SRC)(mesh,DST)()(trimesh)
-ViewMesh:(mesh,SRC)(DST)()(visualize)
-ViewParticles:(pars,SRC)(DST)()(visualize)
-WriteObjMesh:(mesh,SRC)(DST)(string:path:)(trimesh)
-WriteParticles:(pars,SRC)(DST)(string:path:)(particles)
-WriteMesh:(data,SRC)(DST)(string:path:)(openvdb)
-''')
+    from .launch_script import get_node_descriptors
+    descs = get_node_descriptors()
+    load_user_nodes_from_descriptors(descs)
 
 
 def unregister():

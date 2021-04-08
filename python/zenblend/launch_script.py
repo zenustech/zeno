@@ -28,6 +28,7 @@ def _patch_ld_preload(*pathes):
     os.environ['LD_PRELOAD'] = ld_preload
 
 
+# TODO: only patch this to our _run_script()
 _patch_ld_preload(
         '/usr/lib/libtbbmalloc_proxy.so.2',
         '/usr/lib/x86_64-linux-gnu/libtbbmalloc_proxy.so.2',
@@ -48,9 +49,10 @@ print(descs, end='')
 print('=--=', end='')
 '''
     descs = _run_script(src, capture_output=True).split(b'=--=')[1]
+    descs = descs.decode()
     print('[ZenEdit] found node descriptors:')
     print('=========')
-    print(descs.decode(), end='')
+    print(descs, end='')
     print('=========')
     return descs
 
