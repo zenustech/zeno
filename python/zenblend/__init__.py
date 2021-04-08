@@ -1,7 +1,7 @@
 '''
 Zensim Node System Blender Intergration
 
-Copyright (c) archibate <1931127624@qq.com> (2020- ). All Rights Reserved.
+Copyright (c) archibate <1931127624@qq.com> (2021- ). All Rights Reserved.
 '''
 
 

@@ -1,5 +1,3 @@
-from .proc_launcher import execute_script
-
 def node_graph_to_script(
         links: dict[tuple[str, str], tuple[str, str]],
         node_types: dict[str, str],
@@ -25,7 +23,8 @@ def node_graph_to_script(
         visited.add(name)
         for depname in deps[name]:
             touch(depname)
-        applies.append(name)
+        if name != 'ExecutionOutput':
+            applies.append(name)
 
     for name in wanted:
         touch(name)

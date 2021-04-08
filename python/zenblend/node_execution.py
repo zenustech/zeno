@@ -1,7 +1,7 @@
 import bpy
 from bpy.utils import register_class, unregister_class
-from .generic_api import node_graph_to_script
-from .proc_launcher import execute_script
+from .compile_graph import node_graph_to_script
+from .launch_script import execute_script
 
 
 class ZensimExecuteOperator(bpy.types.Operator):
