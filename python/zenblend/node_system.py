@@ -89,10 +89,6 @@ def do_add_zensim_node_class(n_name, n_inputs, n_outputs, n_params, category):
             for type, name, defl in n_params:
                 layout.prop(self, name)
 
-        def draw_buttons_ext(self, context, layout):
-            for type, name, defl in n_params:
-                layout.prop(self, name)
-
     Def.__name__ = 'ZensimNode_' + n_name
 
     Def.__annotations__ = {}
@@ -177,11 +173,38 @@ def generate_node_categories_from_user_categories():
         node_categories.append(category)
 
 
+class ZensimNode_ExecutionOutput(ZensimTreeNode):
+    '''Zensim graph execution output'''
+
+    category = 'blender'
+    bl_idname = 'ZensimSocketType'
+    bl_label = 'Execution Output'
+    bl_icon = 'PHYSICS'
+
+    def init(self, context):
+        self.inputs.new('ZensimSocketType', 'SRC')
+
+    def draw_buttons(self, context, layout):
+        layout.operator('render.render')
+        context.space_data.node_tree
+
+
+nonproc_class = [
+    ZensimNode_ExecutionOutput,
+]
+
+
 def load_user_nodes_from_descriptors(descriptors):
     unregister_user_nodes()
 
+    user_classes.clear()
+    user_categories.clear()
     for line in descriptors.splitlines():
         add_zensim_node_class(line)
+
+    for cls in nonproc_class:
+        user_classes.append(cls)
+        user_categories.setdefault(cls.category, []).append(cls.bl_idname)
 
     generate_node_categories_from_user_categories()
 
