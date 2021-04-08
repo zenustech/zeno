@@ -80,7 +80,28 @@ core_classes = [
 user_classes = []
 
 
-def add_zensim_node_class(n_name, n_params, n_inputs, n_outputs):
+def add_zensim_node_class(line):
+    line = line.strip()
+    if ':' not in line:
+        return
+    n_name, rest = line.split(':', maxsplit=1)
+    assert rest.startswith('(') and rest.endswith(')'), (n_name, rest)
+    inputs, outputs, params, category = rest.strip('()').split(')(')
+
+    n_inputs = [name for name in inputs.split(',') if name]
+    n_outputs = [name for name in outputs.split(',') if name]
+    n_params = []
+    for param in params.split(','):
+        if not param:
+            continue
+        type, name, defl = param.split(':')
+        n_params.append((type, name, defl))
+
+    print(n_name, n_inputs, n_outputs, n_params)
+    do_add_zensim_node_class(n_name, n_inputs, n_outputs, n_params)
+
+
+def do_add_zensim_node_class(n_name, n_inputs, n_outputs, n_params):
     class Def(ZensimTreeNode):
         __doc__ = 'Zensim node: ' + n_name
         bl_idname = 'ZensimNodeType_' + n_name
@@ -94,69 +115,89 @@ def add_zensim_node_class(n_name, n_params, n_inputs, n_outputs):
                 self.outputs.new('ZensimSocketType', name)
 
         def draw_buttons(self, context, layout):
-            for name, _, _ in n_params:
+            for type, name, defl in n_params:
                 layout.prop(self, name)
 
         def draw_buttons_ext(self, context, layout):
-            for name, _, _ in n_params:
+            for type, name, defl in n_params:
                 layout.prop(self, name)
 
     Def.__name__ = 'ZensimNode_' + n_name
 
-    def make_prop(type, defl):
-        if type == 'string':
-            if defl == '':
-                return bpy.props.StringProperty()
-            else:
-                return bpy.props.StringProperty(default=defl)
-        elif type == 'float':
-            if defl == '':
-                return bpy.props.FloatProperty()
-            else:
-                defl_split = list(map(float, defl.split(maxsplit=2)))
-                if len(defl_split) == 1:
-                    defl, = defl_split
-                    return bpy.props.FloatProperty(default=defl)
-                elif len(defl_split) == 2:
-                    defl, minval = defl_split
-                    return bpy.props.FloatProperty(default=defl, min=minval)
-                elif len(defl_split) == 3:
-                    defl, minval, maxval = defl_split
-                    return bpy.props.FloatProperty(
-                            default=defl, min=minval, max=maxval)
-        elif type == 'int':
-            if defl == '':
-                return bpy.props.IntProperty()
-            else:
-                defl_split = defl.split(maxsplit=2)
-                if len(defl_split) == 1:
-                    return bpy.props.IntProperty(default=defl)
-                elif len(defl_split) == 2:
-                    defl, minval = defl_split
-                    return bpy.props.IntProperty(default=defl, min=minval)
-                elif len(defl_split) == 3:
-                    defl, minval, maxval = defl_split
-                    return bpy.props.IntProperty(
-                            default=defl, min=minval, max=maxval)
-        else:
-            raise RuntimeError('unknown param type: ' + type)
-
     Def.__annotations__ = {}
-    for name, type, defl in n_params:
-        Def.__annotations__[name] = make_prop(type, defl)
+    for type, name, defl in n_params:
+        Def.__annotations__[name] = make_zensim_param_property(type, defl)
 
     user_classes.append(Def)
 
 
-add_zensim_node_class(
-        'ReadObjMesh',
-        [
-            ('path', 'string', 'monkey.obj'),
-            ('dx', 'float', '3.14'),
-        ],
-        [],
-        ['mesh'],
-        )
+def make_zensim_param_property(type, defl):
+    if type == 'string':
+        if not defl:
+            return bpy.props.StringProperty()
+        else:
+            return bpy.props.StringProperty(default=defl)
+
+    elif type == 'float':
+        if not defl:
+            return bpy.props.FloatProperty()
+        else:
+            defl_split = [float(x) for x in defl.split(maxsplit=2)]
+            if len(defl_split) == 1:
+                defl, = defl_split
+                return bpy.props.FloatProperty(default=defl)
+            elif len(defl_split) == 2:
+                defl, minval = defl_split
+                return bpy.props.FloatProperty(default=defl, min=minval)
+            elif len(defl_split) == 3:
+                defl, minval, maxval = defl_split
+                return bpy.props.FloatProperty(
+                        default=defl, min=minval, max=maxval)
+            else:
+                assert False, defl_split
+
+    elif type == 'int':
+        if not defl:
+            return bpy.props.IntProperty()
+        else:
+            defl_split = [int(x) for x in defl.split(maxsplit=2)]
+            if len(defl_split) == 1:
+                defl, = defl_split
+                return bpy.props.IntProperty(default=defl)
+            elif len(defl_split) == 2:
+                defl, minval = defl_split
+                return bpy.props.IntProperty(default=defl, min=minval)
+            elif len(defl_split) == 3:
+                defl, minval, maxval = defl_split
+                return bpy.props.IntProperty(
+                        default=defl, min=minval, max=maxval)
+            else:
+                assert False, defl_split
+
+    elif type == 'float3':
+        if not defl:
+            return bpy.props.FloatVectorProperty()
+        else:
+            defl_split = [float(x) for x in defl.split(maxsplit=2)]
+            assert len(defl_split) == 3, defl_split
+            x, y, z = defl_split
+            return bpy.props.FloatVectorProperty(default=(x, y, z))
+
+    elif type == 'int3':
+        if not defl:
+            return bpy.props.IntVectorProperty()
+        else:
+            defl_split = [int(x) for x in defl.split(maxsplit=2)]
+            assert len(defl_split) == 3, defl_split
+            x, y, z = defl_split
+            return bpy.props.IntVectorProperty(default=(x, y, z))
+
+    else:
+        assert False, 'unknown param type: ' + type
+
+
+for line in node_descriptors.splitlines():
+    add_zensim_node_class(line)
 
 
 def register():
