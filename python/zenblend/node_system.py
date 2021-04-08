@@ -1,9 +1,3 @@
-'''
-Zensim Node System Blender Intergration
-
-Copyright (c) archibate <1931127624@qq.com> (2020- ). All Rights Reserved.
-'''
-
 import bpy
 from bpy.types import NodeTree, Node, NodeSocket
 from bpy.utils import register_class, unregister_class
@@ -15,7 +9,7 @@ from nodeitems_utils import NodeCategory, NodeItem
 class ZensimTree(NodeTree):
     '''Zensim node system for physics simulation'''
     bl_idname = 'ZensimTreeType'
-    bl_label = "Zensim Node Tree"
+    bl_label = 'Zensim Node Tree'
     bl_icon = 'PHYSICS'
 
 
@@ -28,7 +22,7 @@ class ZensimTreeNode(Node):
 class ZensimSocket(NodeSocket):
     '''Zensim socket'''
     bl_idname = 'ZensimSocketType'
-    bl_label = "Socket"
+    bl_label = 'Socket'
 
     def draw(self, context, layout, node, text):
         layout.label(text=text)
@@ -43,13 +37,6 @@ class ZensimNodeCategory(NodeCategory):
         return context.space_data.tree_type == 'ZensimTreeType'
 
 
-node_categories = [
-    ZensimNodeCategory('TRIMESH', "trimesh", items=[
-        NodeItem("ZensimNodeType_ReadObjMesh"),
-    ]),
-]
-
-
 def to_identifier_upper(s):
     return s.upper().replace(' ', '_')
 
@@ -59,6 +46,7 @@ core_classes = [
     ZensimSocket,
 ]
 
+node_categories = []
 user_classes = []
 user_categories = {}
 
@@ -80,7 +68,7 @@ def add_zensim_node_class(line):
         type, name, defl = param.split(':')
         n_params.append((type, name, defl))
 
-    print(n_name, n_inputs, n_outputs, n_params)
+    print('[ZenBlend] registering:', n_name, n_inputs, n_outputs, n_params)
     do_add_zensim_node_class(n_name, n_inputs, n_outputs, n_params, category)
 
 
