@@ -9,6 +9,16 @@ preloads = '''import zen
 zen.loadLibrary('build/FastFLIP/libFLIPlib.so')
 '''
 
+def add_ld_preload(path):
+    ld_preload = os.environ.get('LD_PRELOAD', '')
+    if ld_preload:
+        ld_preload = path + ':' + ld_preload
+    else:
+        ld_preload = path
+    os.environ['LD_PRELOAD'] = ld_preload
+
+add_ld_preload('/usr/lib/libtbbmalloc_proxy.so.2')
+
 
 @eval('lambda x: x()')
 def editor():
