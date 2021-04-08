@@ -9,7 +9,14 @@ preloads = '''import zen
 zen.loadLibrary('build/FastFLIP/libFLIPlib.so')
 '''
 
-def add_ld_preload(path):
+def add_ld_preload(*pathes):
+    for path in pathes:
+        path = os.path.realpath(path)
+        if os.path.isfile(path):
+            break
+    else:
+        raise RuntimeError(f'Cannot find any one of {pathes}')
+    print(f'[ZenEdit] adding {path} to LD_PRELOAD...')
     ld_preload = os.environ.get('LD_PRELOAD', '')
     if ld_preload:
         ld_preload = path + ':' + ld_preload
@@ -17,7 +24,10 @@ def add_ld_preload(path):
         ld_preload = path
     os.environ['LD_PRELOAD'] = ld_preload
 
-add_ld_preload('/usr/lib/libtbbmalloc_proxy.so.2')
+add_ld_preload(
+        '/usr/lib/libtbbmalloc_proxy.so',
+        '/usr/lib/x86_64-linux-gnu/libtbbmalloc_proxy.so',
+    )
 
 
 @eval('lambda x: x()')
