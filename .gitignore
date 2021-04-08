@@ -3,5 +3,8 @@ build
 rubbish.bin
 pruned
 imgui.ini
+
+# vim files
 .*.swp
 .*.un~
+tags

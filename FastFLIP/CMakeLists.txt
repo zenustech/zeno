@@ -8,7 +8,7 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 # add cmake file
 include (common)
 
-find_package(TBB CONFIG REQUIRED COMPONENTS tbb )#tbbmalloc tbbmalloc_proxy)
+find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
 find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
 find_package(Eigen3 REQUIRED)
 
@@ -18,9 +18,7 @@ set(FLIP_SOURCE levelset_util.cpp volumeMeshTools.cpp FLIP_vdb.h FLIP_vdb.cpp si
 file(GLOB LOSTOPOS_SOURCE ltcommon/*.h ltcommon/*.cpp ltcommon/tunicate/*.h ltcommon/tunicate/*.cpp ltcommon/newsparse/*.h ltcommon/newsparse/*.cpp lostopos/*.h lostopos/*.cpp d3dutils/*.cpp d3dutils/*.h)
 file(GLOB NOSYS_SOURCE nosys/*.cpp nosys/*.h)
 
-#add_library(FLIPlib SHARED ${FLIP_SOURCE} ${LOSTOPOS_SOURCE} ${NOSYS_SOURCE})
-#add_library(FLIPlib SHARED dummy.cpp)
-#add_executable(FLIPlib ${FLIP_SOURCE} ${LOSTOPOS_SOURCE})
+add_library(FLIPlib SHARED ${FLIP_SOURCE} ${LOSTOPOS_SOURCE} ${NOSYS_SOURCE})
 
 #simd compiler flags
 if (WIN32)
@@ -32,10 +30,8 @@ endif()
 
 target_include_directories(FLIPlib PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(FLIPlib PRIVATE ltcommon ltcommon/tunicate ltcommon/newsparse lostopos d3dutils)
-##target_include_directories(FLIPlib PRIVATE "LosTopos/common")
-##target_include_directories(FLIPlib PRIVATE "Droplet3D")
 
-target_link_libraries(FLIPlib PRIVATE TBB::tbb )#TBB::tbbmalloc TBB::tbbmalloc_proxy)
+target_link_libraries(FLIPlib PRIVATE TBB::tbb TBB::tbbmalloc)
 target_link_libraries(FLIPlib PRIVATE pthread openblas f2c lapack cblas)
 
 # zen link flags
