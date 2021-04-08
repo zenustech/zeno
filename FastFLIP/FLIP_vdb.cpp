@@ -2859,7 +2859,70 @@ namespace {
 		openvdb::FloatGrid::Ptr m_source_solid_sdf;
 	};
 }
+void FLIP_vdb::update_solid_sdf(std::vector<openvdb::FloatGrid::Ptr> &moving_solids, openvdb::FloatGrid::Ptr solid_sdf, openvdb::points::PointDataGrid::Ptr particles)
+{
+	using  namespace openvdb::tools::local_util;
+	for (auto& solidsdfptr : moving_solids) {
+		for (auto leafiter = solidsdfptr->tree().cbeginLeaf(); leafiter; ++leafiter) {
+			auto source_ipos = leafiter->origin();
+			auto source_wpos = solidsdfptr->indexToWorld(source_ipos);
+			auto target_ipos = openvdb::Coord(floorVec3(solid_sdf->worldToIndex(source_wpos)));
+			solid_sdf->tree().touchLeaf(target_ipos);
+		}
+		/*auto toucher = solid_leaf_tile_toucher(m_solid_sdf, solidsdfptr);
+		solidsdfptr->tree().visit(toucher);*/
+	}
+	//also retrieve all possible liquids trapped inside solid
+	tbb::concurrent_vector<openvdb::Coord> neib_liquid_origins;
+	auto collect_liquid_origins = [&](openvdb::points::PointDataTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+		for (auto& solidsdfptr : moving_solids) {
+			auto axr{ solidsdfptr->getConstUnsafeAccessor() };
+			for (int ii = 0; ii <= 8; ii += 8) {
+				for (int jj = 0; jj <= 8; jj += 8) {
+					for (int kk = 0; kk <= 8; kk += 8) {
+						auto at_coord = leaf.origin().offsetBy(ii, jj, kk);
+						auto wpos = particles->indexToWorld(at_coord);
+						auto ipos = solidsdfptr->worldToIndex(wpos);
+						if (openvdb::tools::BoxSampler::sample(axr, ipos) < 0) {
+							neib_liquid_origins.push_back(leaf.origin());
+							return;
+						}
+					}//end kk
+				}//end jj
+			}//end ii
+		}//end for all solids
+	};//end collect liquid origin
+	auto partman = openvdb::tree::LeafManager<openvdb::points::PointDataTree>(particles->tree());
+	partman.foreach(collect_liquid_origins);
 
+	//touch those liquid leafs as well
+	for (auto coord : neib_liquid_origins) {
+		solid_sdf->tree().touchLeaf(coord);
+	}
+
+	auto update_solid_op = [&](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+		for (const auto& solidsdfptr : moving_solids) {
+			auto source_solid_axr{ solidsdfptr->getConstAccessor() };
+
+			//get the sdf from the moving solids
+			for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+				float current_sdf = leaf.getValue(offset);
+				auto current_Ipos = leaf.offsetToGlobalCoord(offset);
+				auto current_wpos = solid_sdf->indexToWorld(current_Ipos);
+				//interpolate the value at the
+				float source_sdf = openvdb::tools::BoxSampler::sample(
+					source_solid_axr, solidsdfptr->worldToIndex(current_wpos));
+				leaf.setValueOn(offset, std::min(current_sdf, source_sdf));
+			}//end for target solid voxel
+		}//end for all moving solids
+	};//end update solid operator
+
+	auto solid_leafman = openvdb::tree::LeafManager<openvdb::FloatTree>(solid_sdf->tree());
+
+	solid_leafman.foreach(update_solid_op);
+
+	
+}
 void FLIP_vdb::update_solid_sdf()
 {
 	using  namespace openvdb::tools::local_util;

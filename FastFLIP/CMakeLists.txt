@@ -8,7 +8,7 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 # add cmake file
 include (common)
 
-find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc tbbmalloc_proxy)
+find_package(TBB CONFIG REQUIRED COMPONENTS tbb )#tbbmalloc tbbmalloc_proxy)
 find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
 find_package(Eigen3 REQUIRED)
 
@@ -19,7 +19,7 @@ file(GLOB LOSTOPOS_SOURCE ltcommon/*.h ltcommon/*.cpp ltcommon/tunicate/*.h ltco
 file(GLOB NOSYS_SOURCE nosys/*.cpp nosys/*.h)
 
 #add_library(FLIPlib SHARED ${FLIP_SOURCE} ${LOSTOPOS_SOURCE} ${NOSYS_SOURCE})
-add_library(FLIPlib SHARED dummy.cpp)
+#add_library(FLIPlib SHARED dummy.cpp)
 #add_executable(FLIPlib ${FLIP_SOURCE} ${LOSTOPOS_SOURCE})
 
 #simd compiler flags
@@ -35,7 +35,7 @@ target_include_directories(FLIPlib PRIVATE ltcommon ltcommon/tunicate ltcommon/n
 ##target_include_directories(FLIPlib PRIVATE "LosTopos/common")
 ##target_include_directories(FLIPlib PRIVATE "Droplet3D")
 
-target_link_libraries(FLIPlib PRIVATE TBB::tbb TBB::tbbmalloc TBB::tbbmalloc_proxy)
+target_link_libraries(FLIPlib PRIVATE TBB::tbb )#TBB::tbbmalloc TBB::tbbmalloc_proxy)
 target_link_libraries(FLIPlib PRIVATE pthread openblas f2c lapack cblas)
 
 # zen link flags

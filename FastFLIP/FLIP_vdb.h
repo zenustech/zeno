@@ -79,7 +79,7 @@ static void custom_move_points_and_set_flip_vel(
 		const openvdb::Vec3fGrid& in_velocity_field,
 		const openvdb::Vec3fGrid& in_old_velocity,
 		float PIC_component,float dt, float dx, int RK_order);
-		
+static void update_solid_sdf(std::vector<openvdb::FloatGrid::Ptr> &moving_solids, openvdb::FloatGrid::Ptr m_solid_sdf, openvdb::points::PointDataGrid::Ptr particles);		
 private:
 	void initialize_attribute_descriptor() {
 		auto pnamepair = position_attribute::attributeType();
@@ -108,6 +108,7 @@ private:
 	void init_boundary_fill_kill_volume();
 	void init_domain_solid_sdf();
 	void update_solid_sdf();
+	
 	void calculate_face_weights();
 	void clamp_liquid_phi_in_solids();
 	void set_solid_velocity();
