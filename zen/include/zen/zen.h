@@ -246,7 +246,6 @@ private:
   std::map<std::string, IObject::Ptr> objects;
   std::map<std::string, INode::Ptr> nodes;
   std::map<INode *, std::string> nodesRev;
-  std::vector<std::pair<void (*)(), void (*)()>> callbacks;
 
   struct _PrivCtor {};
   static std::unique_ptr<Session> _instance;
@@ -301,21 +300,6 @@ public:
     return 1;
   }
 
-  int defStartStop(void (*start)(), void (*stop)()) {
-    callbacks.push_back(std::make_pair(start, stop));
-    return 1;
-  }
-
-  void initialize() {
-    for (auto const &[start, stop]: callbacks)
-      start();
-  }
-
-  void finalize() {
-    for (auto const &[start, stop]: callbacks)
-      stop();
-  }
-
   std::string dumpDescriptors() {
     // dump the node descriptors (for node editor),
     // according to the defNodeClass'es in this DLL.
@@ -363,20 +347,8 @@ int defNodeClass(std::string name, Descriptor const &desc) {
   return Session::get().defNodeClass<T>(name, desc);
 }
 
-static int defStartStop(void (*start)(), void (*stop)()) {
-  return Session::get().defStartStop(start, stop);
-}
-
 static std::string dumpDescriptors() {
   return Session::get().dumpDescriptors();
-}
-
-static void initialize() {
-  return Session::get().initialize();
-}
-
-static void finalize() {
-  return Session::get().finalize();
 }
 
 

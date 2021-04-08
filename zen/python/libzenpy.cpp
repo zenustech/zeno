@@ -9,6 +9,4 @@ PYBIND11_MODULE(libzenpy, m) {
     m.def("setNodeInput", zen::setNodeInput);
     m.def("applyNode", zen::applyNode);
     m.def("dumpDescriptors", zen::dumpDescriptors);
-    m.def("initialize", zen::initialize);
-    m.def("finalize", zen::finalize);
 }

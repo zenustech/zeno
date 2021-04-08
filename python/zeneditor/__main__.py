@@ -87,16 +87,15 @@ def run_script(src, capture_output=False):
         exec(compile(src, '<script>', 'exec'))
 
 
+
 def do_execute_script(src, nframes):
     print('[ZenEdit] launching Python script:')
     print('=========')
     src = f'''{preloads}
 {src}
-zen.initialize()
 for frame in range({nframes}):
 \tprint('[Zen] executing frame', frame)
 \texecute(frame)
-zen.finalize()
 '''
     print(src, end='')
     print('=========')

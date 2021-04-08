@@ -55,12 +55,6 @@ def setNodeInput(name, key, srcname):
 def setNodeParam(name, key, value):
     return get_core().setNodeParam(name, key, value)
 
-def initialize():
-    return get_core().initialize()
-
-def finalize():
-    return get_core().finalize()
-
 def int3(x, y, z):
     return (int(x), int(y), int(z))
 
