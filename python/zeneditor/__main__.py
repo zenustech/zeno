@@ -15,7 +15,8 @@ def add_ld_preload(*pathes):
         if os.path.isfile(path):
             break
     else:
-        raise RuntimeError(f'Cannot find any one of {pathes}')
+        print(f'[ZenEdit] cannot find any one in {pathes}! giving up')
+        return
     print(f'[ZenEdit] adding {path} to LD_PRELOAD...')
     ld_preload = os.environ.get('LD_PRELOAD', '')
     if ld_preload:
@@ -25,8 +26,14 @@ def add_ld_preload(*pathes):
     os.environ['LD_PRELOAD'] = ld_preload
 
 add_ld_preload(
+        '/usr/lib/libtbbmalloc_proxy.so.2',
+        '/usr/lib/x86_64-linux-gnu/libtbbmalloc_proxy.so.2',
         '/usr/lib/libtbbmalloc_proxy.so',
         '/usr/lib/x86_64-linux-gnu/libtbbmalloc_proxy.so',
+        '/usr/local/lib/libtbbmalloc_proxy.so.2',
+        '/usr/local/lib/x86_64-linux-gnu/libtbbmalloc_proxy.so.2',
+        '/usr/local/lib/libtbbmalloc_proxy.so',
+        '/usr/local/lib/x86_64-linux-gnu/libtbbmalloc_proxy.so',
     )
 
 
@@ -63,6 +70,7 @@ print('=--=', end='')
     print('=========')
     editor.load_descs(descs)
 
+
 def run_script(src, capture_output=False):
     if 1:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -77,6 +85,7 @@ def run_script(src, capture_output=False):
 
     else:
         exec(compile(src, '<script>', 'exec'))
+
 
 def do_execute_script(src, nframes):
     print('[ZenEdit] launching Python script:')
