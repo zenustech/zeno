@@ -35,19 +35,28 @@ class ZensimExecuteOperator(bpy.types.Operator):
                     value = node[name]
                 else:
                     value = getattr(node, name)
+                if hasattr(value, 'foreach_get'):
+                    value = tuple(value)
                 node_params[name] = value
             node_type = node.bl_label
             nodes[node.name] = node_type, node_params
 
         if 'ExecutionOutput' in node_tree.nodes:
+            output_node = node_tree.nodes['ExecutionOutput']
+            nframes = output_node.nframes
             wanted = {'ExecutionOutput'}
+        else:
+            self.report({'ERROR'}, 'Please add an ExecutionOutput node!')
+            return {'CANCELED'}
+        '''
         elif node_selected:
             wanted = {node.name for node in node_selected}
         else:
             wanted = {node_active.name}
+        '''
 
         source = node_graph_to_script(links, nodes, wanted)
-        execute_script(source)
+        execute_script(source, nframes)
 
         return {'FINISHED'}
 

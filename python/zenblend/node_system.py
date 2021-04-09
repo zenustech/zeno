@@ -183,10 +183,14 @@ class ZensimNode_ExecutionOutput(ZensimTreeNode):
     bl_label = 'ExecutionOutput'
     bl_icon = 'PHYSICS'
 
+    nframes: bpy.props.IntProperty(min=1, default=1,
+            description='Number of frames to execute')
+
     def init(self, context):
         self.inputs.new('ZensimSocketType', 'SRC')
 
     def draw_buttons(self, context, layout):
+        layout.prop(self, 'nframes')
         layout.operator('node.zensim_execute')
 
 
