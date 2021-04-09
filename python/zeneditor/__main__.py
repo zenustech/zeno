@@ -25,6 +25,7 @@ def add_ld_preload(*pathes):
         ld_preload = path
     os.environ['LD_PRELOAD'] = ld_preload
 
+'''
 add_ld_preload(
         '/usr/lib/libtbbmalloc_proxy.so.2',
         '/usr/lib/x86_64-linux-gnu/libtbbmalloc_proxy.so.2',
@@ -35,6 +36,7 @@ add_ld_preload(
         '/usr/local/lib/libtbbmalloc_proxy.so',
         '/usr/local/lib/x86_64-linux-gnu/libtbbmalloc_proxy.so',
     )
+'''
 
 
 @eval('lambda x: x()')

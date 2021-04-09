@@ -35,7 +35,7 @@ class ZensimExecuteOperator(bpy.types.Operator):
                     value = node[name]
                 else:
                     value = getattr(node, name)
-                if hasattr(value, 'foreach_get'):
+                if hasattr(value, 'foreach_get'):  # is bpy_prop_array
                     value = tuple(value)
                 node_params[name] = value
             node_type = node.bl_label

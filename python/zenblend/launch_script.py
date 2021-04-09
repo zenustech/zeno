@@ -28,6 +28,7 @@ def _patch_ld_preload(*pathes):
     os.environ['LD_PRELOAD'] = ld_preload
 
 
+'''
 # TODO: only patch this to our _run_script()
 _patch_ld_preload(
         '/usr/lib/libtbbmalloc_proxy.so.2',
@@ -39,6 +40,7 @@ _patch_ld_preload(
         '/usr/local/lib/libtbbmalloc_proxy.so',
         '/usr/local/lib/x86_64-linux-gnu/libtbbmalloc_proxy.so',
     )
+'''
 
 
 def get_node_descriptors():
@@ -67,6 +69,8 @@ def _run_script(src, capture_output=False):
             return subprocess.check_output([sys.executable, path])
         else:
             return subprocess.check_call([sys.executable, path])
+
+        # TODO: support killing the process...
 
 
 def _execute_script(src, nframes=1):
