@@ -26,9 +26,18 @@ class ZensimExecuteOperator(bpy.types.Operator):
             src_node, src_sock = link.from_node.name, link.from_socket.name
             links[(dst_node, dst_sock)] = (src_node, src_sock)
 
-        node_types = {}
+        nodes = {}
         for node in node_tree.nodes:
-            node_types[node.name] = node.bl_label
+            n_param_names = getattr(node, 'n_param_names', set())
+            node_params = {}
+            for name in n_param_names:
+                if name in node:
+                    value = node[name]
+                else:
+                    value = getattr(node, name)
+                node_params[name] = value
+            node_type = node.bl_label
+            nodes[node.name] = node_type, node_params
 
         if 'ExecutionOutput' in node_tree.nodes:
             wanted = {'ExecutionOutput'}
@@ -37,7 +46,7 @@ class ZensimExecuteOperator(bpy.types.Operator):
         else:
             wanted = {node_active.name}
 
-        source = node_graph_to_script(links, node_types, wanted)
+        source = node_graph_to_script(links, nodes, wanted)
         execute_script(source)
 
         return {'FINISHED'}

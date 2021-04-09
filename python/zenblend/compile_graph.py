@@ -1,12 +1,12 @@
 def node_graph_to_script(
         links: dict[tuple[str, str], tuple[str, str]],
-        node_types: dict[str, str],
+        nodes: dict[str, tuple[str, dict[str, str]]],
         wanted: set[str]):
 
     deps: dict[str, set[str]] = {}
     srcs: dict[str, dict[str, str]] = {}
 
-    for node_name in node_types.keys():
+    for node_name in nodes.keys():
         deps[node_name] = set()
         srcs[node_name] = {}
 
@@ -33,11 +33,16 @@ def node_graph_to_script(
     res += "\timport zen\n"
     res += "\tif frame == 0: zen.addNode('EndFrame', 'endFrame')\n"
     for name in applies:
+        node_type, node_params = nodes[name]
         res += "\tif frame == 0: zen.addNode('{}', '{}')\n".format(
-                node_types[name], name)
+                node_type, name)
         for socket_name, src_objname in srcs[name].items():
             res += "\tzen.setNodeInput('{}', '{}', '{}')\n".format(
                             name, socket_name, src_objname)
+        for param_name, param_val in node_params.items():
+            repr_param_val = repr(param_val)
+            res += "\tzen.setNodeParam('{}', '{}', {})\n".format(
+                            name, param_name, repr_param_val)
         res += "\tzen.applyNode('{}')\n".format(name)
     res += "\tzen.applyNode('endFrame')\n"
 

@@ -70,7 +70,6 @@ def add_zensim_node_class(line):
         type, name, defl = param.split(':')
         n_params.append((type, name, defl))
 
-    #print('[ZenBlend] registering:', n_name, n_inputs, n_outputs, n_params)
     do_add_zensim_node_class(n_name, n_inputs, n_outputs, n_params, category)
 
 
@@ -80,6 +79,7 @@ def do_add_zensim_node_class(n_name, n_inputs, n_outputs, n_params, category):
         bl_idname = 'ZensimNodeType_' + n_name
         bl_label = n_name
         bl_icon = 'PHYSICS'
+        n_param_names = {name for type, name, defl in n_params}
 
         def init(self, context):
             for name in n_inputs:
