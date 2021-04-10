@@ -11,14 +11,28 @@ __global__ void test() { printf("FuCK U NVIDIA!\n"); } int main(void) { test<<<1
 #include <cstdio>
 #include <cmath>
 
-__global__ void blur(NDTypedView<int> arr)
+__global__ void CUDA_blur(NDTypedView<int> arr)
 {
   NDDim idx = getIdx();
+  NDDim thrIdx = getThreadIdx();
+  NDDim blkDim = getBlockDim();
 
-  arr({idx[0], idx[1]}) = idx[0] + 1;
+  extern __shared__ char tmpData[];
+  NDTypedView<int> tmp({blkDim[0], blkDim[1]}, tmpData);
 
-  //__shared__ char tmpData[16 * sizeof(int)];
-  //NDTypedView<int> tmp({16}, {sizeof(int)}, tmpData);
+  tmp({thrIdx[0], thrIdx[1]}) = arr({idx[0], idx[1]});
+
+  //...
+
+  arr({idx[0], idx[1]}) = tmp({thrIdx[0], thrIdx[1]});
+}
+
+void blur(NDTypedView<int> arr)
+{
+  size_t bnx = 8, bny = 8;
+  size_t nx = arr.shape()[0], ny = arr.shape()[1];
+  Launch launch(CUDA_blur, {nx, ny}, {bnx, bny}, bnx * bny * sizeof(int));
+  launch(arr);
 }
 
 int main(void)
@@ -28,16 +42,16 @@ int main(void)
 
   for (size_t iy = 0; iy < ny; iy++) {
     for (size_t ix = 0; ix < nx; ix++) {
-      *(int *)arr({ix, iy}) = 233;
+      arr({ix, iy}) = 233;
     }
   }
 
-  Launch(blur, {nx, ny}, {8, 8})(arr);
+  blur(arr);
   checkCudaErrors(cudaDeviceSynchronize());
 
   for (size_t iy = 0; iy < ny; iy++) {
     for (size_t ix = 0; ix < nx; ix++) {
-      printf("%d\n", *(int *)arr({ix, iy}));
+      printf("%d\n", arr({ix, iy}));
     }
   }
 

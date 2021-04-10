@@ -11,6 +11,7 @@ class Launch
   FuncT const &mFunc;
   dim3 mGridDim;
   dim3 mBlockDim;
+  size_t mSharedSize;
 
   template <class T, class V>
   static __host__ void iDivMin(T x, T y, V &retDiv, V &retMin) {
@@ -19,13 +20,14 @@ class Launch
     if (y <= 0)
       y = 1;
     retDiv = (x + y - 1) / y;
-    retMin = x < y ? x : y;
+    //retMin = x < y ? x : y;
+    retMin = y;
   }
 
 public:
   __host__ Launch(FuncT const &func,
-      NDDim const &dim, NDDim const &blkDim)
-    : mFunc(func)
+      NDDim const &dim, NDDim const &blkDim, size_t sharedSize = 0)
+    : mFunc(func), mSharedSize(sharedSize)
   {
     iDivMin(dim[0], blkDim[0], mGridDim.x, mBlockDim.x);
     iDivMin(dim[1], blkDim[1], mGridDim.y, mBlockDim.y);
@@ -35,7 +37,7 @@ public:
   template <class... Args>
   __host__ void operator()(Args &&... args)
   {
-    mFunc<<<mGridDim, mBlockDim>>>(std::forward<Args>(args)...);
+    mFunc<<<mGridDim, mBlockDim, mSharedSize>>>(std::forward<Args>(args)...);
   }
 };
 

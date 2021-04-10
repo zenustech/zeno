@@ -5,11 +5,9 @@
 
 static constexpr size_t NAxes = 4;
 
-using VoidPtr = void *__restrict__;
-
 class NDView {
 protected:
-  VoidPtr mBase{nullptr};
+  void *mBase{nullptr};
   Array<size_t, NAxes> mStride;
   Array<size_t, NAxes> mShape;
 
@@ -22,7 +20,7 @@ public:
   __host__ __device__ NDView(
       Array<size_t, NAxes> const &shape,
       Array<size_t, NAxes> const &stride,
-      VoidPtr base = nullptr)
+      void *base = nullptr)
     : mBase(base)
     , mStride(stride)
     , mShape(shape)
@@ -31,7 +29,7 @@ public:
   __host__ __device__ NDView(
       Array<size_t, NAxes> const &shape,
       size_t elementSize,
-      VoidPtr base = nullptr)
+      void *base = nullptr)
     : mBase(base)
     , mShape(shape)
   {
@@ -58,11 +56,11 @@ public:
     return mShape;
   }
 
-  __host__ __device__ VoidPtr const &data() const {
+  __host__ __device__ void *const &data() const {
     return mBase;
   }
 
-  __host__ __device__ VoidPtr &data() {
+  __host__ __device__ void *&data() {
     return mBase;
   }
 
@@ -74,7 +72,7 @@ public:
     return offset;
   }
 
-  __host__ __device__ VoidPtr operator()(
+  __host__ __device__ void *operator()(
       Array<size_t, NAxes> const &indices) const {
     size_t offset = 0;
     for (int i = 0; i < NAxes; i++) {
@@ -132,13 +130,18 @@ public:
     : NDArray(shape, elementSize)
   {
   }
+
+  __host__ T &operator()(Array<size_t, NAxes> const &indices) const {
+    void *ptr = NDArray::operator()(indices);
+    return *static_cast<T *>(ptr);
+  }
 };
 
 template <class T>
 class NDTypedView : public NDView {
 public:
   __host__ __device__ T &operator()(Array<size_t, NAxes> const &indices) const {
-    VoidPtr ptr = NDView::operator()(indices);
+    void *ptr = NDView::operator()(indices);
     return *static_cast<T *>(ptr);
   }
 
@@ -148,17 +151,17 @@ public:
   __host__ __device__ NDTypedView(
       Array<size_t, NAxes> const &shape,
       Array<size_t, NAxes> const &stride,
-      VoidPtr base = nullptr)
+      void *base = nullptr)
     : NDView(shape, stride, base) {}
 
   __host__ __device__ NDTypedView(
       Array<size_t, NAxes> const &shape,
-      VoidPtr base = nullptr)
+      void *base = nullptr)
     : NDView(shape, sizeof(T), base) {}
 
   __host__ __device__ NDTypedView(
       Array<size_t, NAxes> const &shape,
       size_t elementSize,
-      VoidPtr base = nullptr)
+      void *base = nullptr)
     : NDView(shape, elementSize, base) {}
 };
