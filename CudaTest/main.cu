@@ -13,10 +13,9 @@ __global__ void test() { printf("FuCK U NVIDIA!\n"); } int main(void) { test<<<1
 
 __global__ void blur(NDTypedView<int> arr)
 {
-  size_t ix = blockIdx.x * blockDim.x + threadIdx.x;
-  size_t iy = blockIdx.y * blockDim.y + threadIdx.y;
+  NDDim idx = getIdx();
 
-  arr({ix, iy}) = ix + 1;
+  arr({idx[0], idx[1]}) = idx[0] + 1;
 
   //__shared__ char tmpData[16 * sizeof(int)];
   //NDTypedView<int> tmp({16}, {sizeof(int)}, tmpData);

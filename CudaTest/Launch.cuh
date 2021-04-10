@@ -3,6 +3,8 @@
 #include "helper_cuda.h"
 #include "Array.cuh"
 
+using NDDim = Array<size_t, 3>;
+
 template <class FuncT>
 class Launch
 {
@@ -10,40 +12,61 @@ class Launch
   dim3 mGridDim;
   dim3 mBlockDim;
 
-  using NDRange = Array<size_t, 3>;
-
-  template <class T>
-  static T iDivUp(T x, T y) {
-    return (x + y - 1) / y;
-  }
-
-  template <class T>
-  static T iMin(T x, T y) {
-    return x < y ? x : y;
+  template <class T, class V>
+  static __host__ void iDivMin(T x, T y, V &retDiv, V &retMin) {
+    if (x <= 0)
+      x = 1;
+    if (y <= 0)
+      y = 1;
+    retDiv = (x + y - 1) / y;
+    retMin = x < y ? x : y;
   }
 
 public:
-  Launch(FuncT const &func, NDRange dim, NDRange blkDim)
+  __host__ Launch(FuncT const &func,
+      NDDim const &dim, NDDim const &blkDim)
     : mFunc(func)
   {
-    if (dim[0] <= 0) dim[0] = 1;
-    if (dim[1] <= 0) dim[1] = 1;
-    if (dim[2] <= 0) dim[2] = 1;
-    if (blkDim[0] <= 0) blkDim[0] = 1;
-    if (blkDim[1] <= 0) blkDim[1] = 1;
-    if (blkDim[2] <= 0) blkDim[2] = 1;
-
-    mGridDim.x = iDivUp(dim[0], blkDim[0]);
-    mGridDim.y = iDivUp(dim[1], blkDim[1]);
-    mGridDim.z = iDivUp(dim[2], blkDim[2]);
-    mBlockDim.x = iMin(dim[0], blkDim[0]);
-    mBlockDim.y = iMin(dim[1], blkDim[1]);
-    mBlockDim.z = iMin(dim[2], blkDim[2]);
+    iDivMin(dim[0], blkDim[0], mGridDim.x, mBlockDim.x);
+    iDivMin(dim[1], blkDim[1], mGridDim.y, mBlockDim.y);
+    iDivMin(dim[2], blkDim[2], mGridDim.z, mBlockDim.z);
   }
 
   template <class... Args>
-  void operator()(Args &&... args)
+  __host__ void operator()(Args &&... args)
   {
     mFunc<<<mGridDim, mBlockDim>>>(std::forward<Args>(args)...);
   }
 };
+
+inline __device__ NDDim getBlockIdx() {
+  return {blockIdx.x, blockIdx.y, blockIdx.z};
+}
+
+inline __device__ NDDim getThreadIdx() {
+  return {threadIdx.x, threadIdx.y, threadIdx.z};
+}
+
+inline __device__ NDDim getGridDim() {
+  return {gridDim.x, gridDim.y, gridDim.z};
+}
+
+inline __device__ NDDim getBlockDim() {
+  return {blockDim.x, blockDim.y, blockDim.z};
+}
+
+inline __device__ NDDim getDim() {
+  return {
+    blockDim.x * gridDim.x,
+    blockDim.y * gridDim.y,
+    blockDim.z * gridDim.z,
+  };
+}
+
+inline __device__ NDDim getIdx() {
+  return {
+    threadIdx.x + blockDim.x * blockIdx.x,
+    threadIdx.y + blockDim.y * blockIdx.y,
+    threadIdx.z + blockDim.z * blockIdx.z,
+  };
+}
