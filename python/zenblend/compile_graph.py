@@ -1,7 +1,8 @@
 def node_graph_to_script(
-        links: dict[tuple[str, str], tuple[str, str]],
-        nodes: dict[str, tuple[str, dict[str, str]]],
-        wanted: set[str]):
+        links: tuple[str, str, str, str],
+        nodes: dict[str, tuple[str, dict[str, str], tuple]],
+        wanted: list[str],
+        **extra_kwargs):
 
     deps: dict[str, set[str]] = {}
     srcs: dict[str, dict[str, str]] = {}
@@ -10,7 +11,7 @@ def node_graph_to_script(
         deps[node_name] = set()
         srcs[node_name] = {}
 
-    for (dst_node, dst_sock), (src_node, src_sock) in links.items():
+    for dst_node, dst_sock, src_node, src_sock in links:
         deps[dst_node].add(src_node)
         srcs[dst_node][dst_sock] = src_node + '::' + src_sock
 
@@ -33,7 +34,7 @@ def node_graph_to_script(
     res += "\timport zen\n"
     res += "\tif frame == 0: zen.addNode('EndFrame', 'endFrame')\n"
     for name in applies:
-        node_type, node_params = nodes[name]
+        node_type, node_params, node_uipos = nodes[name]
         res += "\tif frame == 0: zen.addNode('{}', '{}')\n".format(
                 node_type, name)
         for socket_name, src_objname in srcs[name].items():

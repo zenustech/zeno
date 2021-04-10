@@ -20,11 +20,11 @@ class ZensimExecuteOperator(bpy.types.Operator):
         node_active = context.active_node
         node_selected = context.selected_nodes
 
-        links = {}
+        links = []
         for link in node_tree.links:
             dst_node, dst_sock = link.to_node.name, link.to_socket.name
             src_node, src_sock = link.from_node.name, link.from_socket.name
-            links[(dst_node, dst_sock)] = (src_node, src_sock)
+            links.append((dst_node, dst_sock, src_node, src_sock))
 
         nodes = {}
         for node in node_tree.nodes:
@@ -39,12 +39,13 @@ class ZensimExecuteOperator(bpy.types.Operator):
                     value = tuple(value)
                 node_params[name] = value
             node_type = node.bl_label
-            nodes[node.name] = node_type, node_params
+            node_uipos = ''
+            nodes[node.name] = node_type, node_params, node_uipos
 
         if 'ExecutionOutput' in node_tree.nodes:
             output_node = node_tree.nodes['ExecutionOutput']
             nframes = output_node.nframes
-            wanted = {'ExecutionOutput'}
+            wanted = ['ExecutionOutput']
         else:
             self.report({'ERROR'}, 'Please add an ExecutionOutput node!')
             return {'CANCELED'}
@@ -55,7 +56,20 @@ class ZensimExecuteOperator(bpy.types.Operator):
             wanted = {node_active.name}
         '''
 
-        source = node_graph_to_script(links, nodes, wanted)
+        graph = dict(links=links, nodes=nodes, wanted=wanted)
+        #
+        # TO SAVE:
+        #
+        # with open('graph.json', 'w') as f:
+        #   json.dump(graph, f)
+        #
+        # TO LOAD:
+        #
+        # with open('graph.json', 'r') as f:
+        #   graph = json.load(f)
+        #
+
+        source = node_graph_to_script(**graph)
         execute_script(source, nframes)
 
         return {'FINISHED'}
