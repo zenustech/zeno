@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 template <class T, size_t N>
 class Array {
   T mData[N];

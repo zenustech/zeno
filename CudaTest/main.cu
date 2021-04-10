@@ -5,7 +5,7 @@ __global__ void test() { printf("FuCK U NVIDIA!\n"); } int main(void) { test<<<1
 
 #include "helper_cuda.h"
 #include "helper_math.h"
-#include "ndarray.cuh"
+#include "NDArray.cuh"
 #include <cassert>
 #include <cstdio>
 #include <cmath>

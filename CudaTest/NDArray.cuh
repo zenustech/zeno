@@ -3,7 +3,7 @@
 #include "helper_cuda.h"
 #include <utility>
 
-#include "containers.cuh"
+#include "Array.cuh"
 
 static constexpr size_t NDims = 4;
 
