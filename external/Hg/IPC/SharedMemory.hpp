@@ -14,15 +14,26 @@ class SharedMemory {
 
   void load(const char *path, size_t size)
   {
-    if (::truncate(path, size) < 0) {
-      ::perror(path);
-      return;
-    }
-    int fd = ::open(path, O_RDWR | O_CREAT, 0777);
+    int fd;
+
+    fd = ::open(path, O_RDWR | O_CREAT, 0777);
     if (fd < 0) {
       ::perror(path);
       return;
     }
+    ::close(fd);
+
+    if (::truncate(path, size) < 0) {
+      ::perror(path);
+      return;
+    }
+
+    fd = ::open(path, O_RDWR | O_CREAT, 0777);
+    if (fd < 0) {
+      ::perror(path);
+      return;
+    }
+
     m_size = size;
     m_base = ::mmap(NULL, m_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (!m_base)

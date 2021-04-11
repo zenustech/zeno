@@ -361,7 +361,7 @@ int defNodeClass(std::string name, Descriptor const &desc) {
 template <class T> // T <- std::unique_ptr<INode>()
 int defNodeClassByCtor(T const &ctor,
     std::string name, Descriptor const &desc) {
-  return Session::get().defNodeClassByCtor(ctor, name, desc);
+  return Session::get().defNodeClassByCtor<T>(ctor, name, desc);
 }
 
 static std::string dumpDescriptors() {
