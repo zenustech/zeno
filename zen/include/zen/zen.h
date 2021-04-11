@@ -183,12 +183,17 @@ struct INodeClass {
   virtual std::unique_ptr<INode> new_instance() = 0;
 };
 
+
 template <class T>
 struct NodeClass : INodeClass {
-  using Ptr = std::unique_ptr<NodeClass>;
+  T const &ctor;
+
+  NodeClass(T const &ctor)
+    : ctor(ctor)
+  {}
 
   virtual std::unique_ptr<INode> new_instance() override {
-    return std::make_unique<T>();
+    return ctor();
   }
 };
 
@@ -295,7 +300,13 @@ public:
 
   template <class T> // T <- INode
   int defNodeClass(std::string name, Descriptor const &desc) {
-    nodeClasses[name] = std::make_unique<NodeClass<T>>();
+    return defNodeClassByCtor(std::make_unique<T>, name, desc);
+  }
+
+  template <class T> // T <- std::unique_ptr<INode>()
+  int defNodeClassByCtor(T const &ctor,
+      std::string name, Descriptor const &desc) {
+    nodeClasses[name] = std::make_unique<NodeClass<T>>(ctor);
     nodeDescriptors[name] = desc;
     return 1;
   }
@@ -345,6 +356,12 @@ static std::string getNodeName(INode *node) {
 template <class T> // T <- INode
 int defNodeClass(std::string name, Descriptor const &desc) {
   return Session::get().defNodeClass<T>(name, desc);
+}
+
+template <class T> // T <- std::unique_ptr<INode>()
+int defNodeClassByCtor(T const &ctor,
+    std::string name, Descriptor const &desc) {
+  return Session::get().defNodeClassByCtor(ctor, name, desc);
 }
 
 static std::string dumpDescriptors() {
