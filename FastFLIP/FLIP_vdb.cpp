@@ -3998,7 +3998,27 @@ void FLIP_vdb::solve_pressure_simd(float dt)
 	//simd_solver.symmetry_test(0);
 }//end solve poisson simd
 
-
+void FLIP_vdb::field_add_vector(openvdb::Vec3fGrid::Ptr velocity_field,
+	openvdb::Vec3fGrid::Ptr face_weight,
+	float x, float y, float z, float dt)
+{
+	
+	auto add_gravity = [&](openvdb::Vec3fTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+		auto face_weight_axr{ face_weight->getConstAccessor() };
+		for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
+			if (face_weight_axr.getValue(iter.getCoord())[1] > 0) {
+				iter.modifyValue([&](openvdb::Vec3f& v) {
+					v[0] += dt * x;
+					v[1] += dt * y; 
+					v[2] += dt * z;
+					});
+			}
+		}
+		
+	};
+	auto velman = openvdb::tree::LeafManager<openvdb::Vec3fTree>(velocity_field->tree());
+	velman.foreach(add_gravity);
+}
 void FLIP_vdb::apply_body_force(float dt)
 {
 	m_acceleration_fields = m_velocity->deepCopy();

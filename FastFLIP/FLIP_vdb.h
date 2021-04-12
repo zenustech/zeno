@@ -120,6 +120,10 @@ static void apply_pressure_gradient(
 	openvdb::Vec3fGrid::Ptr solid_velocity,
 	float dt,float dx);
 
+static void field_add_vector(openvdb::Vec3fGrid::Ptr velocity_field,
+	openvdb::Vec3fGrid::Ptr face_weight,
+	float x, float y, float z, float dt);
+
 private:
 	void initialize_attribute_descriptor() {
 		auto pnamepair = position_attribute::attributeType();

@@ -14,6 +14,7 @@ namespace zenbase{
             auto dx = std::get<float>(get_param("dx"));
             auto smoothness = std::get<float>(get_param("pic_smoothness"));
             auto RK_ORDER = std::get<int>(get_param("RK_ORDER"));
+            
             auto particles = get_input("Particles")->as<VDBPointsGrid>();
             auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();
             auto velocity_after_p2g = get_input("PostAdvVelocity")->as<VDBFloat3Grid>();
