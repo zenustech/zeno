@@ -126,10 +126,16 @@ def defNodeClassByCtor(ctor, name, desc):
 def defNodeClass(cls):
     name = getattr(cls, 'z_name', cls.__name__)
 
-    inputs = list(getattr(cls, 'z_inputs', []))
-    outputs = list(getattr(cls, 'z_outputs', []))
-    params = list(map(ParamDescriptor, getattr(cls, 'z_params', [])))
-    categories = list(getattr(cls, 'z_categories', []))
+    def tostrlist(x):
+        if isinstance(x, str):
+            return [x]
+        else:
+            return list(x)
+
+    inputs = tostrlist(getattr(cls, 'z_inputs', []))
+    outputs = tostrlist(getattr(cls, 'z_outputs', []))
+    params = list(ParamDescriptor(*x) for x in getattr(cls, 'z_params', []))
+    categories = tostrlist(getattr(cls, 'z_categories', []))
 
     inputs.append("SRC")
     inputs.append("COND")
@@ -138,6 +144,13 @@ def defNodeClass(cls):
     desc = Descriptor(inputs, outputs, params, categories)
 
     defNodeClassByCtor(cls, name, desc)
+
+
+def dumpDescriptors():
+    res = ""
+    for name, desc in nodeDescriptors.items():
+        res += name + desc.serialize() + "\n"
+    return res
 
 
 nodeDescriptors : dict[str, Descriptor] = {}
