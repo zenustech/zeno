@@ -12,7 +12,7 @@ public:
 	using int_leaf_t = openvdb::Int32Tree::LeafNodeType;
 
 	//7 point Laplacian for the Poisson's equation using Ng 2009 method
-	//An efficient fluid–solid coupling algorithm for single-phase flows
+	//An efficient fluidï¿½solid coupling algorithm for single-phase flows
 	struct Laplacian_with_level {
 		/*
 		                ^  y        |

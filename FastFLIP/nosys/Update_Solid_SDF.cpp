@@ -22,7 +22,7 @@ namespace zenbase{
 
 static int defFLIP_Solid_Modifier = zen::defNodeClass<FLIP_Solid_Modifier>("FLIP_Solid_Modifie",
     { /* inputs: */ {
-        "Particles", "DynaSolid_SDF", "StatSolid_SDF"
+        "Particles", "DynaSolid_SDF", "StatSolid_SDF",
     }, 
     /* outputs: */ {
     }, 
