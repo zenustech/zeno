@@ -6,8 +6,10 @@
 namespace py = pybind11;
 
 
+template <class T>
+void setNumpyObject(std::string name, py::array_t<T> const &data) {
+  py::buffer_info buf = data.request();
 
-static void setNumpyObject(std::string name, py::buffer_info const &buf) {
   auto obj = zen::IObject::make<zenbase::NumpyObject>();
   obj->ptr = buf.ptr;
   obj->itemsize = buf.itemsize;
@@ -16,14 +18,37 @@ static void setNumpyObject(std::string name, py::buffer_info const &buf) {
   obj->shape = buf.shape;
   obj->strides = buf.strides;
 
+  printf("!!!%s\n", obj->format.c_str());
+
   zen::setObject(name, std::move(obj));
 }
 
 
+std::tuple<uintptr_t, ssize_t, std::string, ssize_t,
+  std::vector<ssize_t>, std::vector<ssize_t>>
+  getNumpyObjectMeta(std::string name) {
+  auto obj = zen::getObject(name)->as<zenbase::NumpyObject>();
+  return std::make_tuple(
+      (uintptr_t)obj->ptr, obj->itemsize, obj->format,
+      obj->ndim, obj->shape, obj->strides);
+};
+
+
 template <class T>
-void setNumpyObject(std::string name, py::array_t<T> const &data) {
-  py::buffer_info buf = data.request();
-  setNumpyObject(name, buf);
+py::array_t<T> getNumpyObject(std::string name) {
+  auto obj = zen::getObject(name)->as<zenbase::NumpyObject>();
+
+  size_t size = 1;
+  for (size_t i = 0; i < obj->ndim; i++) {
+    size *= obj->shape[i];
+  }
+  py::array_t<T> arr(size);
+  auto acc = arr.mutable_unchecked();
+  for (size_t i = 0; i < size; i++) {
+    acc(i) = *(T *)((uint8_t *)obj->ptr + obj->itemsize * i);
+  }
+  arr.resize(obj->shape);
+  return arr;
 }
 
 
@@ -33,8 +58,10 @@ PYBIND11_MODULE(libzenpy, m) {
   m.def("setNodeInput", zen::setNodeInput);
   m.def("applyNode", zen::applyNode);
   m.def("dumpDescriptors", zen::dumpDescriptors);
-#define _DEF_TYPE(x) \
-  m.def("setNumpyObject", setNumpyObject<x>);
+  m.def("getNumpyObjectMeta", getNumpyObjectMeta);
+#define _DEF_TYPE(T) \
+  m.def("setNumpyObject", setNumpyObject<T>); \
+  m.def("getNumpyObject_" #T, getNumpyObject<T>);
   _DEF_TYPE(uint8_t)
   _DEF_TYPE(uint16_t)
   _DEF_TYPE(uint32_t)
