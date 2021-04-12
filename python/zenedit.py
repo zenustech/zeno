@@ -30,6 +30,12 @@ class QDMGraphicsView(QGraphicsView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            exit()
+
+        super().keyPressEvent(event)
+
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
             self.setDragMode(QGraphicsView.ScrollHandDrag)

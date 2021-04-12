@@ -98,7 +98,8 @@ struct IObject {
 };
 
 
-struct EmptyObject : IObject {
+struct BooleanObject : IObject {
+  bool value{true};
 };
 
 
@@ -114,9 +115,19 @@ struct INode {
   virtual void apply() = 0;
 
   void on_apply() {
-    apply();
+    bool ok = true;
+
+    // get dummy boolean to see if this node should be executed
+    if (has_input("COND")) {
+      auto cond = get_input("COND")->as<BooleanObject>();
+      ok = cond->value;
+    }
+
+    if (ok)
+      apply();
+
     // set dummy output sockets for connection order
-    set_output("DST", IObject::make<EmptyObject>());
+    set_output("DST", IObject::make<BooleanObject>());
   }
 
   void set_param(std::string name, IValue const &value) {
@@ -213,6 +224,7 @@ struct Descriptor {
   int initialize() {
     // append dummy sockets for perserving exec orders
     inputs.push_back("SRC");
+    inputs.push_back("COND");
     outputs.push_back("DST");
     return 0;
   }

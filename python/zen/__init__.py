@@ -29,7 +29,6 @@ def get_core():
     return get_core
 
 
-
 ## Load extension DLLs:
 
 def loadLibrary(path):
@@ -55,8 +54,12 @@ def setNodeInput(name, key, srcname):
 def setNodeParam(name, key, value):
     return get_core().setNodeParam(name, key, value)
 
+
+## Utilities:
+
 def int3(x, y, z):
     return (int(x), int(y), int(z))
+
 
 def float3(x, y, z):
     return (float(x), float(y), float(z))
