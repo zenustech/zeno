@@ -1,4 +1,4 @@
-file(GLOB PROJECT_SOURCE *.cpp include/*/*.h view/*.cpp)# base/*.cpp)
+file(GLOB PROJECT_SOURCE *.cpp include/*/*.h misc/*.cpp view/*.cpp base/*.cpp)
 
 add_library(zen SHARED)
 target_include_directories(zen PRIVATE ../external)
