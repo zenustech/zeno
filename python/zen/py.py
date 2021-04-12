@@ -87,6 +87,14 @@ class INode(abc.ABC):
         self.set_output("DST", BooleanObject())
 
 
+def hasNodeType(type):
+    return type in nodeClasses
+
+
+def hasNodeName(name):
+    return name in nodes
+
+
 def addNode(type, name):
     node = nodeClasses[type]()
     nodesRev[node] = name
