@@ -1,0 +1,119 @@
+'''
+Python APIs
+'''
+
+
+import abc
+from collections import namedtuple
+
+
+class IObject:
+    pass
+
+
+class BooleanObject(IObject, namedtuple('BooleanObject', ['value'])):
+    def __bool__(self):
+        return self.value
+
+
+class ParamDescriptor(namedtuple('ParamDescriptor',
+    ['type', 'name', 'defl'])):
+    type: str
+    name: str
+    defl: str
+
+
+class Descriptor(namedtuple('Descriptor',
+    ['inputs', 'outputs', 'params', 'categories'])):
+    inputs: list[str]
+    outputs: list[str]
+    params: list[ParamDescriptor]
+    categories: list[str]
+
+
+class INode(abc.ABC):
+    def __init__(self):
+        self.__params = {}
+        self.__inputs = {}
+
+    def get_node_name(self):
+        return getNodeName(self)
+
+    def set_input(self, name, value):
+        self.__inputs[name] = value
+
+    def set_param(self, name, value):
+        self.__params[name] = value
+
+    def get_input(self, name):
+        return self.__inputs[name]
+
+    def get_param(self, name):
+        return self.__params[name]
+
+    def has_input(self, name):
+        return name in self.__inputs
+
+    def get_output(self, name):
+        myname = self.get_node_name()
+        return getObject(myname + "::" + name)
+
+    def set_output(self, name, value):
+        myname = self.get_node_name()
+        setObject(myname + "::" + name, value)
+
+    @abc.abstractmethod
+    def apply(self):
+        pass
+
+    def on_apply(self):
+        ok = True
+        if self.has_input("COND"):
+          cond = self.get_input("COND")
+          ok = bool(cond)
+        if ok:
+          self.apply()
+        self.set_output("DST", BooleanObject())
+
+
+def addNode(type, name):
+    node = nodeClasses[type]()
+    nodesRev[node] = name
+    nodes[name] = node
+
+
+def setNodeParam(name, key, value):
+    nodes[name].set_param(key, value)
+
+
+def setNodeInput(name, key, srcname):
+    obj = objects[srcname]
+    nodes[name].set_input(key, obj)
+
+
+def applyNode(name):
+    nodes[name].on_apply()
+
+
+def getNodeName(node):
+    return nodesRev[node]
+
+
+def setObject(name, object):
+    objects[name] = object
+
+
+def getObject(name, object):
+    return objects[name]
+
+
+def defNodeClass(ctor, name, desc):
+    nodeClasses[name] = ctor
+    nodeDescriptors[name] = desc
+
+
+nodeDescriptors : dict[str, Descriptor] = {}
+nodeClasses : dict[str, callable] = {}
+objects : dict[str, IObject] = {}
+nodes : dict[str, INode] = {}
+nodesRev : dict[INode, str] = {}
