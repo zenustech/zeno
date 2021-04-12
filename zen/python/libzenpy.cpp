@@ -6,8 +6,12 @@
 namespace py = pybind11;
 
 
+static std::map<std::string, std::unique_ptr<std::vector<char>>> savedNumpys;
+
+
 template <class T>
-void setNumpyObject(std::string name, py::array_t<T> const &data) {
+void setNumpyObject(std::string name,
+    py::array_t<T, py::array::c_style> const &data) {
   py::buffer_info buf = data.request();
 
   auto obj = zen::IObject::make<zenbase::NumpyObject>();
@@ -18,9 +22,18 @@ void setNumpyObject(std::string name, py::array_t<T> const &data) {
   obj->shape = buf.shape;
   obj->strides = buf.strides;
 
-  printf("!!!%s\n", obj->format.c_str());
+  // make a deep-copy to prevent pointer out-of-date / dirty data:
+  size_t size = 1;
+  for (size_t i = 0; i < obj->ndim; i++)
+    size += obj->shape[i];
+  size *= obj->itemsize;
+  auto saved = std::make_unique<std::vector<char>>(size);
+  std::memcpy(saved->data(), obj->ptr, size);
+  obj->ptr = saved->data();
+  savedNumpys[name] = std::move(saved);
 
   zen::setObject(name, std::move(obj));
+  // by the way, will we provide zen::deleteObject as well?
 }
 
 
@@ -35,14 +48,13 @@ std::tuple<uintptr_t, ssize_t, std::string, ssize_t,
 
 
 template <class T>
-py::array_t<T> getNumpyObject(std::string name) {
+py::array_t<T, py::array::c_style> getNumpyObject(std::string name) {
   auto obj = zen::getObject(name)->as<zenbase::NumpyObject>();
 
   size_t size = 1;
-  for (size_t i = 0; i < obj->ndim; i++) {
+  for (size_t i = 0; i < obj->ndim; i++)
     size *= obj->shape[i];
-  }
-  py::array_t<T> arr(size);
+  py::array_t<T, py::array::c_style> arr(size);
   auto acc = arr.mutable_unchecked();
   for (size_t i = 0; i < size; i++) {
     acc(i) = *(T *)((uint8_t *)obj->ptr + obj->itemsize * i);

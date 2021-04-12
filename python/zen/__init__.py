@@ -60,14 +60,11 @@ def setNodeParam(name, key, value):
 def setNumpyObject(name, arr):
     return get_core().setNumpyObject(name, arr)
 
-def getNumpyObjectMeta(name):
-    class NumpyObjectMeta:
-        pass
-
-    meta = NumpyObjectMeta()
-    meta.ptr, meta.itemsize, meta.format, meta.ndim, meta.shape, meta.strides \
-            = get_core().getNumpyObjectMeta(name)
-    return meta
+class getNumpyObjectMeta:
+    def __init__(self, name):
+        meta = get_core().getNumpyObjectMeta(name)
+        self.ptr, self.itemsize, self.format, \
+            self.ndim, self.shape, self.strides = meta
 
 def getNumpyObject(name):
     meta = getNumpyObjectMeta(name)
@@ -99,7 +96,6 @@ def getNumpyObject(name):
 
 def int3(x, y, z):
     return (int(x), int(y), int(z))
-
 
 def float3(x, y, z):
     return (float(x), float(y), float(z))
