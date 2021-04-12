@@ -30,6 +30,17 @@ class Descriptor(namedtuple('Descriptor',
     params: list[ParamDescriptor]
     categories: list[str]
 
+    def serialize(self):
+        res = ""
+        res += "(" + ",".join(self.inputs) + ")"
+        res += "(" + ",".join(self.outputs) + ")"
+        paramStrs = []
+        for type, name, defl in self.params:
+          paramStrs.append(type + ":" + name + ":" + defl)
+        res += "(" + ",".join(paramStrs) + ")"
+        res += "(" + ",".join(self.categories) + ")"
+        return res
+
 
 class INode(abc.ABC):
     def __init__(self):
@@ -107,9 +118,26 @@ def getObject(name, object):
     return objects[name]
 
 
-def defNodeClass(ctor, name, desc):
+def defNodeClassByCtor(ctor, name, desc):
     nodeClasses[name] = ctor
     nodeDescriptors[name] = desc
+
+
+def defNodeClass(cls):
+    name = getattr(cls, 'z_name', cls.__name__)
+
+    inputs = list(getattr(cls, 'z_inputs', []))
+    outputs = list(getattr(cls, 'z_outputs', []))
+    params = list(map(ParamDescriptor, getattr(cls, 'z_params', [])))
+    categories = list(getattr(cls, 'z_categories', []))
+
+    inputs.append("SRC")
+    inputs.append("COND")
+    outputs.append("DST")
+
+    desc = Descriptor(inputs, outputs, params, categories)
+
+    defNodeClassByCtor(cls, name, desc)
 
 
 nodeDescriptors : dict[str, Descriptor] = {}
