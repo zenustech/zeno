@@ -8,7 +8,6 @@
 #include <openvdb/points/PointAdvect.h>
 #include <openvdb/tools/Morphology.h>
 #include <openvdb/tools/MeshToVolume.h>
-
 namespace zenbase {
 
 
@@ -71,6 +70,9 @@ struct VDBGridWrapper : VDBGrid {
   }
 };
 
+struct TBBConcurrentIntArray : zen::IObject {
+  tbb::concurrent_vector<openvdb::Index32> m_data;
+};
 
 using VDBFloatGrid = VDBGridWrapper<openvdb::FloatGrid>;
 using VDBIntGrid = VDBGridWrapper<openvdb::Int32Grid>;

@@ -376,11 +376,10 @@ bool FLIP_vdb::test()
 		CSim::TimerMan::timer("Sim.step/vdbflip/p2gcollect").stop();
 
 		CSim::TimerMan::timer("Sim.step/vdbflip/set_face_weights").start();
-		
+		apply_body_force(dt);
 		set_solid_velocity();
 		CSim::TimerMan::timer("Sim.step/vdbflip/set_face_weights").stop();
 
-		apply_body_force(dt);
 		CSim::TimerMan::timer("Sim.step/vdbflip/pressure").start();
 		//solve_pressure(dt);
 
@@ -1877,13 +1876,56 @@ namespace {
 		openvdb::points::PointDataGrid::Ptr m_particles;
 	};
 }
+void FLIP_vdb::particle_to_grid_collect_style(
+	openvdb::points::PointDataGrid::Ptr particles,
+	openvdb::Vec3fGrid::Ptr velocity,
+	openvdb::Vec3fGrid::Ptr velocity_after_p2g,
+	openvdb::Vec3fGrid::Ptr velocity_weights,
+	openvdb::FloatGrid::Ptr liquid_sdf,
+	openvdb::FloatGrid::Ptr pushed_out_liquid_sdf,
+	float dx)
+{
+	float particle_radius = 0.5f * std::sqrt(3.0f) * dx * 1.01;
+	velocity->setTree(std::make_shared<openvdb::Vec3fTree>(
+		particles->tree(), openvdb::Vec3f{ 0 }, openvdb::TopologyCopy()));
+	openvdb::tools::dilateActiveValues(velocity->tree(), 1, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+	velocity_weights = velocity->deepCopy();
+	auto voxel_center_transform = openvdb::math::Transform::createLinearTransform(dx);
+	liquid_sdf->setTransform(voxel_center_transform);
+	liquid_sdf->setTree(std::make_shared<openvdb::FloatTree>(
+		velocity->tree(), liquid_sdf->background(), openvdb::TopologyCopy()));
+
+	auto collector_op{ p2g_collector(liquid_sdf,
+			velocity,
+			velocity_weights,
+			particles,
+			particle_radius) };
+	
+	auto vleafman = 
+	openvdb::tree::LeafManager<openvdb::Vec3fTree>(velocity->tree());
+
+	vleafman.foreach(collector_op,true);
+	
+	openvdb::Vec3fGrid::Ptr original_unweighted_velocity = velocity->deepCopy();
+
+	openvdb::tree::LeafManager<openvdb::Vec3fGrid::TreeType> velocity_grid_manager(velocity->tree());
+
+	auto velocity_normalizer = deduce_missing_velocity_and_normalize(velocity_weights, original_unweighted_velocity);
+	
+	velocity_grid_manager.foreach(velocity_normalizer, true, 1);
+	
+	//store the velocity just after the transfer
+	velocity_after_p2g = velocity->deepCopy();
+	velocity_after_p2g->setName("Velocity_After_P2G");
+	pushed_out_liquid_sdf = liquid_sdf;	
+}
 void FLIP_vdb::particle_to_grid_collect_style()
 {
 
 	printf("collect start\n");
 	//allocate the tree for transfered velocity and liquid phi
 
-	 m_velocity->setTree(std::make_shared<openvdb::Vec3fTree>(
+	m_velocity->setTree(std::make_shared<openvdb::Vec3fTree>(
 		m_particles->tree(), openvdb::Vec3f{ 0 }, openvdb::TopologyCopy()));
 	openvdb::tools::dilateActiveValues(m_velocity->tree(), 1, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
 	//velocity weights
@@ -2426,6 +2468,7 @@ namespace {
 		}
 	};
 }
+
 void FLIP_vdb::seed_liquid(openvdb::FloatGrid::Ptr in_sdf, const openvdb::Vec3f& init_vel)
 {
 	//the input is assumed to be narrowband boxes
@@ -2999,7 +3042,87 @@ void FLIP_vdb::update_solid_sdf()
 		}
 	}
 }
+void FLIP_vdb::calculate_face_weights(
+	openvdb::Vec3fGrid::Ptr face_weight, 
+	openvdb::FloatGrid::Ptr liquid_sdf,
+	openvdb::FloatGrid::Ptr solid_sdf)
+{
+	face_weight = openvdb::Vec3fGrid::create(openvdb::Vec3f{ 1.0f });
+	face_weight->setTree(std::make_shared<openvdb::Vec3fTree>(
+		liquid_sdf->tree(), openvdb::Vec3f{ 1.0f }, openvdb::TopologyCopy()));
+	openvdb::tools::dilateActiveValues(face_weight->tree(), 1, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+	face_weight->setName("Face_Weights");
+	face_weight->setTransform(liquid_sdf->transformPtr());
+	face_weight->setGridClass(openvdb::GridClass::GRID_STAGGERED);
+	auto set_face_weight_op = [&](openvdb::Vec3fTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+		auto solid_axr{ solid_sdf->getConstAccessor() };
+		//solid sdf
+		float ssdf[2][2][2];
+		openvdb::Vec3f uvwweight{ 1.f };
+		for (auto offset = 0; offset < leaf.SIZE; offset++) {
+			if (leaf.isValueMaskOff(offset)) {
+				continue;
+			}
+			for (int ii = 0; ii < 2; ii++) {
+				for (int jj = 0; jj < 2; jj++) {
+					for (int kk = 0; kk < 2; kk++) {
+						ssdf[ii][jj][kk] = solid_axr.getValue(leaf.offsetToGlobalCoord(offset) + openvdb::Coord{ ii,jj,kk });
+					}
+				}
+			}//end retrieve eight solid sdfs on the voxel corners
 
+			//fraction_inside(bl,br,tl,tr)
+			//tl-----tr
+			//|      |
+			//|      |
+			//bl-----br
+
+			//look from positive x direction
+
+			//   ^z
+			//(0,0,1)------(0,1,1)
+			//   |            |
+			//(0,0,0)------(0,1,0)>y
+			//uweight
+			uvwweight[0] = 1.0f - fraction_inside(
+				ssdf[0][0][0],
+				ssdf[0][1][0],
+				ssdf[0][0][1],
+				ssdf[0][1][1]);
+			uvwweight[0] = std::max(0.f, std::min(uvwweight[0], 1.f));
+
+			//look from positive y direction
+			//   ^x              
+			//(1,0,0)------(1,0,1)
+			//   |            |
+			//(0,0,0)------(0,0,1)>z
+			//vweight
+			uvwweight[1] = 1.0f - fraction_inside(
+				ssdf[0][0][0],
+				ssdf[0][0][1],
+				ssdf[1][0][0],
+				ssdf[1][0][1]);
+			uvwweight[1] = std::max(0.f, std::min(uvwweight[1], 1.f));
+
+			//look from positive z direction
+			//   ^y              
+			//(0,1,0)------(1,1,0)
+			//   |            |
+			//(0,0,0)------(1,0,0)>x
+			//wweight
+			uvwweight[2] = 1.0f - fraction_inside(
+				ssdf[0][0][0],
+				ssdf[1][0][0],
+				ssdf[0][1][0],
+				ssdf[1][1][0]);
+			uvwweight[2] = std::max(0.f, std::min(uvwweight[2], 1.f));
+			leaf.setValueOn(offset, uvwweight);
+		}//end for all offset
+	};//end set face weight op
+
+	auto leafman = openvdb::tree::LeafManager<openvdb::Vec3fTree>(face_weight->tree());
+	leafman.foreach(set_face_weight_op);
+}
 void FLIP_vdb::calculate_face_weights()
 {
 	m_face_weight = openvdb::Vec3fGrid::create(openvdb::Vec3f{ 1.0f });
@@ -3079,6 +3202,86 @@ void FLIP_vdb::calculate_face_weights()
 	leafman.foreach(set_face_weight_op);
 }
 
+void FLIP_vdb::clamp_liquid_phi_in_solids(openvdb::FloatGrid::Ptr liquid_sdf,
+										  openvdb::FloatGrid::Ptr solid_sdf,
+										  openvdb::FloatGrid::Ptr pushed_out_liquid_sdf,
+										  float dx)
+{
+	openvdb::tools::dilateActiveValues(liquid_sdf->tree(), 
+	1, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+	auto correct_liquid_phi_in_solid = [&](openvdb::FloatTree::LeafNodeType& leaf, 
+	openvdb::Index leafpos) {
+		//detech if there is solid
+		if (solid_sdf->tree().probeConstLeaf(leaf.origin())) {
+			auto const_solid_axr{ solid_sdf->getConstAccessor() };
+			auto shift{ openvdb::Vec3R{0.5} };
+
+			for (auto offset = 0; offset < leaf.SIZE; offset++) {
+				if (leaf.isValueMaskOff(offset)) {
+					continue;
+				}
+				auto voxel_solid_sdf = openvdb::tools::BoxSampler::sample(
+					solid_sdf->tree(), leaf.offsetToGlobalCoord(offset).asVec3d() + shift);
+
+				if (voxel_solid_sdf<0 && leaf.getValue(offset) < (-voxel_solid_sdf)) {
+					leaf.setValueOn(offset, -voxel_solid_sdf);
+				}
+			}//end for all voxel
+		}//end there is solid in this leaf
+	};//end correct_liquid_phi_in_solid
+
+	auto phi_manager = openvdb::tree::LeafManager<openvdb::FloatTree>(liquid_sdf->tree());
+
+	phi_manager.foreach(correct_liquid_phi_in_solid);
+
+	pushed_out_liquid_sdf = liquid_sdf->deepCopy();
+
+	//this is to be called by a solid manager
+	auto immerse_liquid_into_solid = [&](openvdb::FloatTree::LeafNodeType& leaf, 
+	openvdb::Index leafpos) {
+		//detech if there is solid
+		if (solid_sdf->tree().probeConstLeaf(leaf.origin())) {
+			auto pushed_out_liquid_axr{ pushed_out_liquid_sdf->getConstAccessor() };
+			auto const_solid_axr{ solid_sdf->getConstAccessor() };
+			auto shift{ openvdb::Vec3R{0.5} };
+
+			for (auto iter = leaf.beginValueOn(); iter; ++iter) {
+				auto voxel_solid_sdf = openvdb::tools::BoxSampler::sample(
+					solid_sdf->tree(), 
+					leaf.offsetToGlobalCoord(iter.offset()).asVec3d() + shift);
+
+				if (voxel_solid_sdf < 0) {
+					bool found_liquid_neib = false;
+					for (int i_neib = 0; i_neib < 6 && !found_liquid_neib; i_neib++) {
+						int component = i_neib / 2;
+						int positive_dir = (i_neib % 2 == 0);
+
+						auto test_coord = iter.getCoord();
+
+						if (positive_dir) {
+							test_coord[component]++;
+						}
+						else {
+							test_coord[component]--;
+						}
+						found_liquid_neib |= (pushed_out_liquid_axr.getValue(test_coord) < 0);
+					}//end for 6 direction
+
+					//mark this voxel as liquid
+					if (found_liquid_neib) {
+						float current_sdf = iter.getValue();
+						iter.setValue(current_sdf - dx * 1);
+						//iter.setValue(-m_dx * 0.01);
+						//iter.setValueOn();
+					}
+				}//end if this voxel is inside solid
+
+			}//end for all voxel
+		}//end there is solid in this leaf
+	};//end immerse_liquid_into_solid
+
+	phi_manager.foreach(immerse_liquid_into_solid);
+}
 void FLIP_vdb::clamp_liquid_phi_in_solids()
 {
 	//some particles can come very close to the solid boundary
@@ -3260,6 +3463,218 @@ namespace {
 	}//end fill idx tree from liquid sdf
 
 
+}
+void FLIP_vdb::apply_pressure_gradient(
+	openvdb::FloatGrid::Ptr liquid_sdf,
+	openvdb::FloatGrid::Ptr solid_sdf,
+	openvdb::FloatGrid::Ptr pushed_out_liquid_sdf,
+	openvdb::FloatGrid::Ptr pressure,
+	openvdb::Vec3fGrid::Ptr face_weight,
+	openvdb::Vec3fGrid::Ptr velocity,
+	openvdb::Vec3fGrid::Ptr solid_velocity,
+	float dx,float in_dt)
+{
+	Eigen::Matrix<float, 4, 4> invmat;
+	float invdx2 = 1.0f / (dx * dx);
+	invmat.col(0) = invdx2 * Eigen::Vector4f{ 1.0 / 8.0, 0, 0, 0 };
+	invmat.col(1) = invdx2 * Eigen::Vector4f{ 0, 1.0f / 3.0f ,0 ,-1.0f / 6.0f };
+	invmat.col(2) = invdx2 * Eigen::Vector4f{ 0, 0, 1.0f / 3.0f ,-1.0f / 6.0f };
+	invmat.col(3) = invdx2 * Eigen::Vector4f{ 0, -1.0f / 6.0f, -1.0f / 6.0f, 1.0f / 4.0f };
+
+	Eigen::Matrix<float, 4, 12> mT;
+	for (int i = -1; i <=1; i++) {
+		float fi = float(i);
+		mT.block<1, 4>(0, 4 * (i + 1)) = Eigen::Vector4f{ fi,fi,fi,fi };
+		mT.block<1, 4>(1, 4 * (i + 1)) = Eigen::Vector4f{ 0,1,1,0 };
+		mT.block<1, 4>(2, 4 * (i + 1)) = Eigen::Vector4f{ 0,0,1,1 };
+		mT.block<1, 4>(3, 4 * (i + 1)) = Eigen::Vector4f{ 1,1,1,1 };
+	}
+	mT = mT * dx;
+
+	//given the solved pressure, update the velocity
+	//this is to be used by the velocity(post_pressure) leaf manager
+	auto velocity_update_op = [&](openvdb::Vec3fTree::LeafNodeType& leaf, 
+	openvdb::Index leafpos) {
+		auto phi_axr{ liquid_sdf->getConstAccessor() };
+		auto true_phi_axr{ pushed_out_liquid_sdf->getConstAccessor() };
+		auto weight_axr{ face_weight->getConstAccessor() };
+		auto solid_vel_axr{ solid_velocity->getConstAccessor() };
+		auto solid_sdf_axr{ solid_sdf->getConstAccessor() };
+		auto pressure_axr{ pressure->getConstAccessor() };
+		//auto update_axr{ m_velocity_update->getAccessor() };
+
+		
+
+		for (auto offset = 0; offset < leaf.SIZE; offset++) {
+			if (leaf.isValueMaskOff(offset)) {
+				continue;
+			}
+			//we are looking at a velocity sample previously obtained from p2g
+			//possibly with extrapolation
+
+			//set this velocity as off unless we have an update
+			//on any component of its velocity
+			bool has_any_update = false;
+			auto gcoord = leaf.offsetToGlobalCoord(offset);
+			auto original_vel = leaf.getValue(offset);
+			auto solid_vel = solid_vel_axr.getValue(gcoord);
+
+			//face_weight=0 in solid
+			auto face_weights = weight_axr.getValue(gcoord);
+			auto vel_update = 0*original_vel;
+			//three velocity channel
+			for (int ic = 0; ic < 3; ic++) {
+				auto lower_gcoord = gcoord;
+				lower_gcoord[ic] -= 1;
+				if (face_weights[ic] > 0) {
+					//this face has liquid component
+					//does it have any dof on its side?
+					auto phi_this = phi_axr.getValue(gcoord);
+					auto phi_below = phi_axr.getValue(lower_gcoord);
+					float p_this = pressure_axr.getValue(gcoord);
+					float p_below = pressure_axr.getValue(lower_gcoord);
+
+					bool update_this_velocity = false;
+					if (phi_this < 0 && phi_below < 0) {
+						update_this_velocity = true;
+					}
+					else {
+						if (phi_this > 0 && phi_below > 0) {
+							update_this_velocity = false;
+						} // end if all outside liquid
+						else {
+							//one of them is inside the liquid, one is outside
+							if (phi_this >= 0) {
+								//this point is outside the liquid, possibly free air
+								if (openvdb::tools::BoxSampler::sample(solid_sdf_axr, gcoord.asVec3d()+openvdb::Vec3d(0.5)) > 0) {
+									//if so, set the pressure to be ghost value
+									if (true_phi_axr.getValue(lower_gcoord) < 0) {
+										update_this_velocity = true;
+									}
+									//p_this = p_below / std::min(phi_below, - m_dx*1e-3f) * phi_this;
+								}
+							}
+
+							if (phi_below >= 0) {
+								//this point is outside the liquid, possibly free air
+								if (openvdb::tools::BoxSampler::sample(solid_sdf_axr, lower_gcoord.asVec3d() + openvdb::Vec3d(0.5)) > 0) {
+									//if so, set the pressure to be ghost value
+									if (true_phi_axr.getValue(gcoord) < 0) {
+										update_this_velocity = true;
+									}
+									//p_below = p_this / std::min(phi_this, - m_dx * 1e-3f) * phi_below;
+								}
+							}
+						} //end else all outside liquid
+					}//end all inside liquid
+
+					if (update_this_velocity) {
+						float theta = 1;
+						if (phi_this >= 0 || phi_below >= 0) {
+							theta = fraction_inside(phi_below, phi_this);
+							if (theta < 0.02f) theta = 0.02f;
+						}
+							
+						original_vel[ic] -= in_dt * (float)(p_this - p_below) / dx / theta;
+						vel_update[ic] = in_dt * (float)(p_this - p_below) / dx / theta;
+						if (face_weights[ic] < 1) {
+							//use the voxel center solid sdf gradient
+							openvdb::Vec3f grad_solid{ 0 };
+							openvdb::Vec3f evalpos{ 0.5 };
+
+							//evaluate the four sdf on this face
+							Eigen::VectorXf neib_sdf = Eigen::VectorXf::Zero(12);
+
+
+							//four_sdf[0] = solid_sdf_axr.getValue(gcoord);
+							//calculate the in-plane solid normal
+							//then deduce the off-plane solid normal 
+							for (int iclevel = -1; iclevel <= 1; iclevel++) {
+								int ic4 = (iclevel + 1) * 4;
+								switch (ic) {
+								case 0:
+									//   ^z
+									//(0,0,1)------(0,1,1)
+									//   |            |
+									//(0,0,0)------(0,1,0)>y
+									//u
+									neib_sdf[0 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(iclevel, 0, 0));
+									neib_sdf[1 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(iclevel, 1, 0));
+									neib_sdf[2 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(iclevel, 1, 1));
+									neib_sdf[3 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(iclevel, 0, 1));
+									break;
+								case 1:
+									//   ^x              
+									//(1,0,0)------(1,0,1)
+									//   |            |
+									//(0,0,0)------(0,0,1)>z
+									//v
+									neib_sdf[0 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(0, iclevel, 0));
+									neib_sdf[1 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(0, iclevel, 1));
+									neib_sdf[2 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(1, iclevel, 1));
+									neib_sdf[3 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(1, iclevel, 0));
+									break;
+								case 2:
+									//   ^y              
+									//(0,1,0)------(1,1,0)
+									//   |            |
+									//(0,0,0)------(1,0,0)>x
+									//w
+									neib_sdf[0 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(0, 0, iclevel));
+									neib_sdf[1 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(1, 0, iclevel));
+									neib_sdf[2 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(1, 1, iclevel));
+									neib_sdf[3 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(0, 1, iclevel));
+									break;
+								}
+							}
+							
+
+							Eigen::Vector4f abcd = invmat * mT * neib_sdf;
+							float normal_a = std::max(-1.f, std::min(1.f, abcd[0]));
+
+							//make sure on the normal direction, the velocity has the same component
+
+							openvdb::Vec3f facev{ 0,0,0 };
+							grad_solid[ic] = normal_a;
+							facev[ic] = original_vel[ic];
+							if (1||(original_vel[ic]-solid_vel[ic]) * normal_a < 0) {
+								facev -= grad_solid * grad_solid.dot(facev);
+								facev += grad_solid * grad_solid.dot(solid_vel);
+							}
+							original_vel[ic] = facev[ic];
+							/*float penetrating = grad_solid[ic] * original_vel[ic];
+								original_vel[ic] -= penetrating;
+								original_vel[ic] += grad_solid[ic] * solid_vel[ic];
+							}*/
+
+							//mix the solid velocity and fluid velocity
+							float solid_fraction = (1 - face_weights[ic])*0.8;
+							original_vel[ic] = (1-solid_fraction) * original_vel[ic] + (solid_fraction) * solid_vel[ic];
+						}
+						has_any_update = true;
+					}//end if any dofs on two sides
+				}//end if face_weight[ic]>0
+				else {
+					//this face is inside solid
+					//just let it be the solid velocity
+					//original_vel[ic] = solid_vel[ic];
+					//has_any_update = true;
+				}//end else face_weight[ic]>0
+			}//end for three component
+
+			if (!has_any_update) {
+				leaf.setValueOff(offset, openvdb::Vec3f{ 0,0,0 });
+				//update_axr.setValueOff(leaf.offsetToGlobalCoord(offset));
+			}
+			else {
+				leaf.setValueOn(offset, original_vel);
+				//update_axr.setValue(leaf.offsetToGlobalCoord(offset), vel_update);
+			}
+		}//end for all voxels
+	};//end velocity_update_op
+
+	auto vel_leafman = openvdb::tree::LeafManager<openvdb::Vec3fTree>(velocity->tree());
+	vel_leafman.foreach(velocity_update_op);
 }
 void FLIP_vdb::apply_pressure_gradient(float in_dt)
 {
@@ -3469,12 +3884,75 @@ void FLIP_vdb::apply_pressure_gradient(float in_dt)
 	auto vel_leafman = openvdb::tree::LeafManager<openvdb::Vec3fTree>(m_velocity->tree());
 	vel_leafman.foreach(velocity_update_op);
 }
+void FLIP_vdb::solve_pressure_simd(
+	openvdb::FloatGrid::Ptr liquid_sdf,
+	openvdb::FloatGrid::Ptr pushed_out_liquid_sdf,
+	openvdb::FloatGrid::Ptr rhsgrid,
+	openvdb::FloatGrid::Ptr curr_pressure,
+	openvdb::Vec3fGrid::Ptr face_weight,
+	openvdb::Vec3fGrid::Ptr velocity,
+	openvdb::Vec3fGrid::Ptr solid_velocity,
+	float dt, float dx)
+{
+	CSim::TimerMan::timer("Sim.step/vdbflip/pressure/buildlevel").start();
+	auto simd_solver = simd_vdb_poisson(liquid_sdf, 
+	pushed_out_liquid_sdf, 
+	face_weight, velocity, 
+	solid_velocity, 
+	dt, dx);
 
+	simd_solver.construct_levels();
+	simd_solver.build_rhs();
+	CSim::TimerMan::timer("Sim.step/vdbflip/pressure/buildlevel").stop();
+
+	
+
+	auto pressure = simd_solver.m_laplacian_with_levels[0]->get_zero_vec_grid();
+	pressure->setName("Pressure");
+
+	//use the previous pressure as warm start
+	auto set_warm_pressure = [&](openvdb::Int32Tree::LeafNodeType& leaf, openvdb::Index leafpos) {
+		auto old_pressure_axr{ curr_pressure->getConstAccessor() };
+		auto* new_pressure_leaf = pressure->tree().probeLeaf(leaf.origin());
+
+		for (auto iter = new_pressure_leaf->beginValueOn(); iter; ++iter) {
+			float old_pressure = old_pressure_axr.getValue(iter.getCoord());
+			if (std::isfinite(old_pressure)) {
+				iter.setValue(old_pressure);
+			}
+
+		}
+	};//end set_warm_pressure
+
+	//simd_solver.m_laplacian_with_levels[0]->m_dof_leafmanager->foreach(set_warm_pressure);
+
+	CSim::TimerMan::timer("Sim.step/vdbflip/pressure/simdpcg").start();
+	simd_solver.pcg_solve(pressure, 1e-7);
+	CSim::TimerMan::timer("Sim.step/vdbflip/pressure/simdpcg").stop();
+
+	curr_pressure.swap(pressure);
+	// CSim::TimerMan::timer("Sim.step/vdbflip/pressure/updatevel").start();
+	// apply_pressure_gradient(dt);
+	// CSim::TimerMan::timer("Sim.step/vdbflip/pressure/updatevel").stop();
+
+	//simd_solver.build_rhs();
+	rhsgrid = simd_solver.m_rhs;
+	//m_rhsgrid = simd_solver.m_laplacian_with_levels[0]->get_zero_vec_grid();
+	//simd_solver.m_laplacian_with_levels[0]->set_grid_constant_assume_topo(m_rhsgrid, 1);
+	//simd_solver.m_laplacian_with_levels[0]->Laplacian_apply_assume_topo(m_rhsgrid, m_rhsgrid->deepCopy());
+	//m_rhsgrid = simd_solver.m_laplacian_with_levels[0]->m_Neg_z_entry;
+	rhsgrid->setName("RHS");
+}
 void FLIP_vdb::solve_pressure_simd(float dt)
 {
 	//test construct levels
 	CSim::TimerMan::timer("Sim.step/vdbflip/pressure/buildlevel").start();
-	auto simd_solver = simd_vdb_poisson(m_liquid_sdf, m_pushed_out_liquid_sdf, m_face_weight, m_velocity, m_solid_velocity, dt, m_dx);
+	auto simd_solver = simd_vdb_poisson(m_liquid_sdf, 
+	m_pushed_out_liquid_sdf, 
+	m_face_weight, m_velocity, 
+	m_solid_velocity, 
+	dt, m_dx);
+
 	simd_solver.construct_levels();
 	simd_solver.build_rhs();
 	CSim::TimerMan::timer("Sim.step/vdbflip/pressure/buildlevel").stop();
@@ -3520,7 +3998,27 @@ void FLIP_vdb::solve_pressure_simd(float dt)
 	//simd_solver.symmetry_test(0);
 }//end solve poisson simd
 
-
+void FLIP_vdb::field_add_vector(openvdb::Vec3fGrid::Ptr velocity_field,
+	openvdb::Vec3fGrid::Ptr face_weight,
+	float x, float y, float z, float dt)
+{
+	
+	auto add_gravity = [&](openvdb::Vec3fTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+		auto face_weight_axr{ face_weight->getConstAccessor() };
+		for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
+			if (face_weight_axr.getValue(iter.getCoord())[1] > 0) {
+				iter.modifyValue([&](openvdb::Vec3f& v) {
+					v[0] += dt * x;
+					v[1] += dt * y; 
+					v[2] += dt * z;
+					});
+			}
+		}
+		
+	};
+	auto velman = openvdb::tree::LeafManager<openvdb::Vec3fTree>(velocity_field->tree());
+	velman.foreach(add_gravity);
+}
 void FLIP_vdb::apply_body_force(float dt)
 {
 	m_acceleration_fields = m_velocity->deepCopy();

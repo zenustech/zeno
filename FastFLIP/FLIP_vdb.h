@@ -72,14 +72,58 @@ struct FLIP_vdb {
 	void set_boundary_velocity_volume(openvdb::Vec3fGrid::Ptr in_boundary_velocity_volume) { m_boundary_velocity_volume = in_boundary_velocity_volume; }
 	void seed_liquid(openvdb::FloatGrid::Ptr in_sdf, const openvdb::Vec3f& init_vel);
 	int get_framenumber() { return m_framenumber; }
+
 static void Advect(float dt, float dx, openvdb::points::PointDataGrid::Ptr particles, openvdb::Vec3fGrid::Ptr velocity,
-				   openvdb::Vec3fGrid::Ptr velocity_after_p2g, float pic_component, int RK_ORDER);
+	openvdb::Vec3fGrid::Ptr velocity_after_p2g, float pic_component, int RK_ORDER);
 static void custom_move_points_and_set_flip_vel(
-		openvdb::points::PointDataGrid& in_out_points, 
-		const openvdb::Vec3fGrid& in_velocity_field,
-		const openvdb::Vec3fGrid& in_old_velocity,
-		float PIC_component,float dt, float dx, int RK_order);
+	openvdb::points::PointDataGrid& in_out_points, 
+	const openvdb::Vec3fGrid& in_velocity_field,
+	const openvdb::Vec3fGrid& in_old_velocity,
+	float PIC_component,float dt, 
+	float dx, int RK_order);
 static void update_solid_sdf(std::vector<openvdb::FloatGrid::Ptr> &moving_solids, openvdb::FloatGrid::Ptr m_solid_sdf, openvdb::points::PointDataGrid::Ptr particles);		
+static void particle_to_grid_collect_style(
+	openvdb::points::PointDataGrid::Ptr particles,
+	openvdb::Vec3fGrid::Ptr velocity,
+	openvdb::Vec3fGrid::Ptr velocity_after_p2g,
+	openvdb::Vec3fGrid::Ptr velocity_weights,
+	openvdb::FloatGrid::Ptr liquid_sdf,
+	openvdb::FloatGrid::Ptr pushed_out_liquid_sdf,
+	float dx);
+static void calculate_face_weights(
+	openvdb::Vec3fGrid::Ptr face_weight, 
+	openvdb::FloatGrid::Ptr liquid_sdf,
+	openvdb::FloatGrid::Ptr solid_sdf);
+
+static void clamp_liquid_phi_in_solids(openvdb::FloatGrid::Ptr liquid_sdf,
+	openvdb::FloatGrid::Ptr solid_sdf,
+	openvdb::FloatGrid::Ptr pushed_out_liquid_sdf,
+	float dx);
+
+static void solve_pressure_simd(
+	openvdb::FloatGrid::Ptr liquid_sdf,
+	openvdb::FloatGrid::Ptr pushed_out_liquid_sdf,
+	openvdb::FloatGrid::Ptr rhsgrid,
+	openvdb::FloatGrid::Ptr curr_pressure,
+	openvdb::Vec3fGrid::Ptr face_weight,
+	openvdb::Vec3fGrid::Ptr velocity,
+	openvdb::Vec3fGrid::Ptr solid_velocity,
+	float dt, float dx);
+
+static void apply_pressure_gradient(
+	openvdb::FloatGrid::Ptr liquid_sdf,
+	openvdb::FloatGrid::Ptr solid_sdf,
+	openvdb::FloatGrid::Ptr pushed_out_liquid_sdf,
+	openvdb::FloatGrid::Ptr pressure,
+	openvdb::Vec3fGrid::Ptr face_weight,
+	openvdb::Vec3fGrid::Ptr velocity,
+	openvdb::Vec3fGrid::Ptr solid_velocity,
+	float dt,float dx);
+
+static void field_add_vector(openvdb::Vec3fGrid::Ptr velocity_field,
+	openvdb::Vec3fGrid::Ptr face_weight,
+	float x, float y, float z, float dt);
+
 private:
 	void initialize_attribute_descriptor() {
 		auto pnamepair = position_attribute::attributeType();
