@@ -9,13 +9,15 @@ struct GetVDBPoints : zen::INode {
   virtual void apply() override {
     auto grid = get_input("grid")->as<VDBPointsGrid>()->m_grid;
 
-    std::vector<openvdb::points::PointDataTree::LeafNodeType*> pars;
-    grid->tree().getNodes(pars);
-    printf("GetVDBPoints: particle leaf nodes: %d\n", pars.size());
+    std::vector<openvdb::points::PointDataTree::LeafNodeType*> leafs;
+    grid->tree().getNodes(leafs);
+    printf("GetVDBPoints: particle leaf nodes: %d\n", leafs.size());
+
+    auto transform = grid->transformPtr();
 
     auto ret = zen::IObject::make<ParticlesObject>();
 
-    for (auto const &leaf: pars) {
+    for (auto const &leaf: leafs) {
       //attributes
       // Attribute reader
       // Extract the position attribute from the leaf by name (P is position).
@@ -32,8 +34,11 @@ struct GetVDBPoints : zen::INode {
       openvdb::points::AttributeHandle<openvdb::Vec3f, VelocityCodec> velocityHandle(velocityArray);
 
       for (auto iter = leaf->beginIndexOn(); iter; ++iter) {
-        openvdb::Vec3R p = iter.getCoord().asVec3d() + positionHandle.get(*iter);
-        openvdb::Vec3R v = iter.getCoord().asVec3d() + velocityHandle.get(*iter);
+        openvdb::Vec3R p = positionHandle.get(*iter);
+        p += iter.getCoord().asVec3d();
+        // https://people.cs.clemson.edu/~jtessen/cpsc8190/OpenVDB-dpawiki.pdf
+        p = transform->indexToWorld(p);
+        openvdb::Vec3R v = velocityHandle.get(*iter);
         ret->pos.push_back(glm::vec3(p[0], p[1], p[2]));
         ret->vel.push_back(glm::vec3(v[0], v[1], v[2]));
       }
