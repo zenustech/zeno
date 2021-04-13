@@ -2,8 +2,7 @@
 Unified APIs
 '''
 
-from .py import *
-from . import cpp, py
+from . import cpp, py, npy
 
 
 def dumpDescriptors():
@@ -16,19 +15,31 @@ def addNode(type, name):
         cpp.addNode(type, name)
 
 def applyNode(name):
-    if py.hasNodeName(name):
+    if py.isPyNodeName(name):
         py.applyNode(name)
     else:
         cpp.applyNode(name)
 
+def cpp2pyObject(name):
+    obj = npy.getNumpyObject(name)
+    py.setObject(name, obj)
+
+def py2cppObject(name):
+    obj = py.getObject(name)
+    npy.setNumpyObject(name, obj)
+
 def setNodeInput(name, key, srcname):
-    if py.hasNodeName(name):
+    if py.isPyNodeName(name):
+        if not py.isPyObject(srcname):
+            cpp2pyObject(srcname)
         py.setNodeInput(name, key, srcname)
     else:
+        if py.isPyObject(srcname):
+            py2cppObject(srcname)
         cpp.setNodeInput(name)
 
 def setNodeParam(name, key, value):
-    if py.hasNodeName(name):
+    if py.isPyNodeName(name):
         py.setNodeParam(name, key, value)
     else:
         cpp.setNodeParam(name)

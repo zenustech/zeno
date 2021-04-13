@@ -87,12 +87,16 @@ class INode(abc.ABC):
         self.set_output("DST", BooleanObject())
 
 
-def hasNodeType(type):
+def isPyNodeType(type):
     return type in nodeClasses
 
 
-def hasNodeName(name):
+def isPyNodeName(name):
     return name in nodes
+
+
+def isPyObject(name):
+    return name in objects
 
 
 def addNode(type, name):
@@ -166,3 +170,11 @@ nodeClasses : dict[str, callable] = {}
 objects : dict[str, IObject] = {}
 nodes : dict[str, INode] = {}
 nodesRev : dict[INode, str] = {}
+
+
+__all__ = [
+    'INode',
+    'IObject',
+    'BooleanObject',
+    'defNodeClass',
+]
