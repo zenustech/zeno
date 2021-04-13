@@ -9,7 +9,7 @@ def dumpDescriptors():
     return py.dumpDescriptors() + cpp.dumpDescriptors()
 
 def addNode(type, name):
-    if py.hasNodeType(type):
+    if py.isPyNodeType(type):
         py.addNode(type, name)
     else:
         cpp.addNode(type, name)
@@ -36,10 +36,10 @@ def setNodeInput(name, key, srcname):
     else:
         if py.isPyObject(srcname):
             py2cppObject(srcname)
-        cpp.setNodeInput(name)
+        cpp.setNodeInput(name, key, srcname)
 
 def setNodeParam(name, key, value):
     if py.isPyNodeName(name):
         py.setNodeParam(name, key, value)
     else:
-        cpp.setNodeParam(name)
+        cpp.setNodeParam(name, key, value)
