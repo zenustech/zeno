@@ -1,3 +1,4 @@
+#if 0 // TODO: no more MATRIX OBJECT
 #include <zen/zen.h>
 #include <zen/MeshObject.h>
 #include <zen/MatrixObject.h>
@@ -50,3 +51,4 @@ static int defTransformMesh = zen::defNodeClass<TransformMesh>("TransformMesh",
     }});
 
 }
+#endif
