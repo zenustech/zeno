@@ -11,7 +11,12 @@ class IObject:
     pass
 
 
-class BooleanObject(IObject, namedtuple('BooleanObject', ['value'])):
+class BooleanObject(IObject):
+    value: bool
+
+    def __init__(self, value=True):
+        self.value = value
+
     def __bool__(self):
         return self.value
 
