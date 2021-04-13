@@ -3,6 +3,11 @@
 //#include "openvdb/openvdb.h"
 #include "openvdb/points/PointConversion.h"
 
+struct OpenvdbInitializer {
+	OpenvdbInitializer() {openvdb::initialize();}
+};
+static OpenvdbInitializer g_openvdb_initializer{};
+
 struct FLIP_vdb {
 	using vec_tree_t = openvdb::Vec3fGrid::TreeType;
 	using scalar_tree_t = openvdb::FloatGrid::TreeType;
@@ -124,6 +129,12 @@ static void field_add_vector(openvdb::Vec3fGrid::Ptr velocity_field,
 	openvdb::Vec3fGrid::Ptr face_weight,
 	float x, float y, float z, float dt);
 
+
+
+static void emit_liquid(openvdb::points::PointDataGrid::Ptr in_out_particles,
+	openvdb::FloatGrid::Ptr sdf,
+	openvdb::Vec3fGrid::Ptr vel,
+	float vx, float vy, float vz);
 private:
 	void initialize_attribute_descriptor() {
 		auto pnamepair = position_attribute::attributeType();
@@ -148,10 +159,10 @@ private:
 	bool below_waterline(float in_height);
 	bool below_sea_level(const openvdb::Vec3f& P);
 	float index_space_sea_level(const openvdb::Coord& xyz) const;
-	void init_velocity_volume();
+	//void init_velocity_volume();
 	void init_boundary_fill_kill_volume();
-	void init_domain_solid_sdf();
-	void update_solid_sdf();
+	//void init_domain_solid_sdf();
+	//void update_solid_sdf();
 	
 	void calculate_face_weights();
 	void clamp_liquid_phi_in_solids();
@@ -167,6 +178,8 @@ private:
 	//length of the voxel
 	float m_dx;
 
+	float m_cfl;
+
 	//radius of the particle
 	//prefered to be set as 0.5*sqrt(3)*dx
 	//so that when one particle is inside a voxel
@@ -177,6 +190,7 @@ private:
 	//it describes the pressure index
 	openvdb::Vec3i m_domain_index_begin, m_domain_index_end;
 
+	int m_collide_with_domain;
 	/*
 	   |<----dx---->|
 	   .------------.
@@ -255,8 +269,7 @@ private:
 
 	openvdb::Vec3fGrid::Ptr m_acceleration_fields;
 
-	//the bounding box solid sdf that does not change
-	openvdb::FloatGrid::Ptr m_domain_solid_sdf;
+
 
 	//the velocity function used to set the emitted particles and boundary
 	openvdb::Vec3fGrid::Ptr m_boundary_velocity_volume;

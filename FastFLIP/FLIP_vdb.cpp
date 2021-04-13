@@ -16,6 +16,7 @@
 // #include "BPS3D_volume_vel_cache.h" // decouple Datan BEM works for now
 
 #include <thread>
+#include "tbb/blocked_range3d.h"
 namespace {
 	struct BoxSampler {
 		template <typename axr_t>
@@ -109,17 +110,15 @@ FLIP_vdb::FLIP_vdb(const init_arg_t& in_arg)
 	using  namespace openvdb::tools::local_util;
 	m_framenumber = 0;
 
-	m_dx = in_arg.m_dx;
-	m_particle_radius = 0.5f * std::sqrt(3.0f) * m_dx * 1.01;
+	m_collide_with_domain = true;
 
-	//construct the index minimum
+	m_dx = in_arg.m_dx;
+	m_cfl = 1.f;
+	m_particle_radius = 0.5f * std::sqrt(3.0f) * m_dx * 1.01f;
+
+	//construct the index minimum and maximum that defines the simulation domain
 	m_domain_index_begin = floorVec3(in_arg.m_domain_vecf_min / m_dx);
 	m_domain_index_end = ceilVec3(in_arg.m_domain_vecf_max / m_dx);
-
-	m_domain_index_end = m_domain_index_begin + 8 * ((m_domain_index_end - m_domain_index_begin + openvdb::Vec3i{ 3,3,3 }) / 8);
-
-	//waterline
-	m_waterline = 1e-3;
 
 	m_voxel_center_transform = openvdb::math::Transform::createLinearTransform(m_dx);
 	m_voxel_vertex_transform = openvdb::math::Transform::createLinearTransform(m_dx);
@@ -128,17 +127,18 @@ FLIP_vdb::FLIP_vdb(const init_arg_t& in_arg)
 	initialize_attribute_descriptor();
 	init_grids();
 	//set the original velocity volume;
-	particle_to_grid_collect_style();
-	extrapolate_velocity(5);
+	//particle_to_grid_collect_style();
+	//extrapolate_velocity(5);
 	//particle_to_grid_reduce_style();
-	take_shapshot();
+	//take_shapshot();
 }
 
 void FLIP_vdb::init_grids()
 {
-	init_boundary_fill_kill_volume();
-	init_particles();
-	printf("particles init done\n");
+	//init_boundary_fill_kill_volume();
+	//init_particles();
+	//init_empty_point_grid();
+
 	//initialize all grids
 	m_pressure = openvdb::FloatGrid::create(float(0));
 	m_pressure->setTransform(m_voxel_center_transform);
@@ -154,11 +154,10 @@ void FLIP_vdb::init_grids()
 	m_velocity->setGridClass(openvdb::GridClass::GRID_STAGGERED);
 	m_velocity->setName("Velocity");
 
+	m_velocity_after_p2g = m_velocity->deepCopy();
+
 	m_velocity_snapshot = m_velocity->deepCopy();
 	m_velocity_snapshot->setName("Velocity_Snapshot");
-
-	//m_velocity_update = m_velocity->deepCopy();
-	//m_velocity_update->setName("Velocity_Update");
 
 	//solid velocity
 	m_solid_velocity = openvdb::Vec3fGrid::create(openvdb::Vec3f{ 0,0,0 });
@@ -194,135 +193,24 @@ void FLIP_vdb::init_grids()
 	m_solid_sdf->setGridClass(openvdb::GridClass::GRID_LEVEL_SET);
 	m_solid_sdf->setName("Solid_SDF");
 
-	init_domain_solid_sdf();
-	update_solid_sdf();
-	init_velocity_volume();
-	
+	//init_domain_solid_sdf();
+	//update_solid_sdf();
 }
 
-void FLIP_vdb::init_particles()
-{
-	m_particles = openvdb::points::PointDataGrid::create();
-	m_particles->setTransform(m_voxel_center_transform);
-	m_particles->setName("Particles");
-	auto first_leaf = m_particles->treePtr()->touchLeaf(openvdb::Coord(m_domain_index_begin));
 
-	auto leaf_idxmin = first_leaf->origin();
+// void FLIP_vdb::init_empty_point_grid()
+// {
+// 	m_particles = openvdb::points::PointDataGrid::create();
+// 	m_particles->setTransform(m_voxel_center_transform);
+// 	m_particles->setName("Particles");
+// 	auto first_leaf = m_particles->treePtr()->touchLeaf(openvdb::Coord(m_domain_index_begin));
 
-	auto to_leafmin = leaf_idxmin - m_domain_index_begin;
-	float boundary_volume_invdx = 1.0f / m_boundary_fill_kill_volume->transform().voxelSize()[0];
+// 	//add descriptors
+// 	first_leaf->initializeAttributes(pos_descriptor(), 0);
+// 	first_leaf->appendAttribute(first_leaf->attributeSet().descriptor(), m_pv_attribute_descriptor, 1);
 
-
-	std::vector<openvdb::Coord> touch_coords;
-
-	{
-		auto boundary_volume_axr{ m_boundary_fill_kill_volume->getConstAccessor() };
-		for (auto x = leaf_idxmin[0]; x < m_domain_index_end[0]; x += 8) {
-			for (auto y = leaf_idxmin[1]; y < m_domain_index_end[1]; y += 8) {
-				for (auto z = leaf_idxmin[2]; z < m_domain_index_end[2]; z += 8) {
-					auto worigin = m_particles->indexToWorld(openvdb::Coord{ x,y,z });
-					auto iorigin = m_boundary_fill_kill_volume->worldToIndex(worigin);
-					if (openvdb::tools::BoxSampler::sample(boundary_volume_axr, iorigin) < 0) {
-						/*m_particles->treePtr()->touchLeaf(openvdb::Coord{ x,y,z });*/
-						m_particles->treePtr()->touchLeaf(openvdb::Coord{ x,y,z });
-					}
-				}
-			}
-		}
-	}
-	
-
-
-	//position and velocity attributes
-	//openvdb::points::appendAttribute(m_particles->tree(), "v", velocity_attribute::attributeType());
-
-	//fill the leaves
-	auto particle_leaf_manager = openvdb::tree::LeafManager<point_tree_t>(m_particles->tree());
-
-	int particle_per_voxel = 8;
-
-	openvdb::Vec3f init_vel{
-		(float)Options::doubleValue("tank_flow_x"),
-		(float)Options::doubleValue("tank_flow_y"),
-		(float)Options::doubleValue("tank_flow_z")
-	};
-
-	auto leaf_filler = [&](point_tree_t::LeafNodeType& leaf, openvdb::Index pos_in_leafs) {
-		std::vector<openvdb::Vec3f> positions;
-		auto boundary_volume_axr{ m_boundary_fill_kill_volume->getConstAccessor() };
-
-		positions.reserve(particle_per_voxel * leaf.SIZE);
-		auto radius_threshold = -m_particle_radius * 0.55;
-		// Randomize the point positions.
-		std::random_device device;
-		std::mt19937 generator(/*seed=*/device());
-		std::uniform_real_distribution<> distribution(-0.5, 0.5);
-		int total_particle_count = 0;
-		//loop over all value voxels to generate the proposed positions;
-		for (int offset = 0; offset < leaf.SIZE; offset++) {
-			//get the voxel world position
-			auto gcoord = leaf.offsetToGlobalCoord(offset);
-			//auto wpos = m_particles->indexToWorld(gcoord);
-			openvdb::Vec3f voxelpos{ 0,0,0 };
-			int voxel_emitted_particle = 0;
-			//float voxel_sea_level = index_space_sea_level(gcoord);
-
-			if ( openvdb::tools::BoxSampler::sample(boundary_volume_axr,gcoord.asVec3d())<0) {
-				bool in_bbox = true;
-				for (int i_dir = 0; i_dir < 3; i_dir++) {
-					if (gcoord[i_dir] < m_domain_index_begin[i_dir] || gcoord[i_dir] >= m_domain_index_end[i_dir]) {
-						in_bbox = false;
-						break;
-					}
-				}
-
-				if (in_bbox) {
-					for (int i_part = 0; i_part < particle_per_voxel; ) {
-						voxelpos[0] = distribution(generator);
-						voxelpos[1] = distribution(generator);
-						voxelpos[2] = distribution(generator);
-						auto pcpos = gcoord.asVec3s() + voxelpos;
-
-						if (openvdb::tools::BoxSampler::sample(boundary_volume_axr, pcpos) < radius_threshold) {
-							positions.push_back(voxelpos);
-							voxel_emitted_particle++;
-						}
-						i_part++;
-					}//end voxel emit for loop
-				}//end in bbox
-			}//end if below waterline
-
-			//write to the leaf buffer value
-			total_particle_count += voxel_emitted_particle;
-			if (voxel_emitted_particle != 0) {
-				leaf.setOffsetOn(offset, total_particle_count);
-			}
-			else {
-				leaf.setOffsetOnly(offset, total_particle_count);
-			}
-		}//end setting offset of the particle data grid
-
-		//write to the attribute section
-		leaf.initializeAttributes(pos_descriptor(), positions.size());
-		leaf.appendAttribute(leaf.attributeSet().descriptor(), m_pv_attribute_descriptor, 1);
-
-		auto& positionarray = leaf.attributeArray("P");
-		auto write_handle = openvdb::points::AttributeWriteHandle<openvdb::Vec3f, PositionCodec>(positionarray);
-
-		auto& velarray = leaf.attributeArray("v");
-		auto v_write_handle = openvdb::points::AttributeWriteHandle<openvdb::Vec3f, VelocityCodec>(velarray);
-
-		for (auto piter = leaf.beginIndexOn(); piter; ++piter) {
-			write_handle.set(*piter, positions[*piter]);
-			v_write_handle.set(*piter, init_vel);
-		}
-	};
-	printf("Setting Initial Particles\n");
-	particle_leaf_manager.foreach(leaf_filler);
-
-	m_particles->pruneGrid(0);
-	//write_points("pointsdbg.vdb");
-}
+// 	printf("original leaf count:%d\n", m_particles->tree().leafCount());
+// }
 
 void FLIP_vdb::write_points(const std::string& fname) const
 {
@@ -355,7 +243,7 @@ bool FLIP_vdb::test()
 
 		printf("stepped:%.4f, dt:%.4f cfl:%.4f\n", stepped, dt, cfl_dt);
 		//update teh solid
-		update_solid_sdf();
+		//update_solid_sdf();
 
 		CSim::TimerMan::timer("Sim.step/vdbflip/advection").start();
 		advection(dt);
@@ -398,38 +286,98 @@ bool FLIP_vdb::test()
 
 }
 
-void FLIP_vdb::IO(std::string filename)
-{
-	auto copied_particles = narrow_band_particles();
-	//auto copied_pressure = m_pressure->deepCopy();
-	//auto copied_solid_sdf = m_solid_sdf->deepCopy();
-	//auto copied_liquid_sdf = m_pushed_out_liquid_sdf->deepCopy();
-	//auto copied_velocity = m_velocity->deepCopy();
-	//auto copied_old_velocity = m_velocity_after_p2g->deepCopy();
-	//auto copied_face_weights = m_face_weight->deepCopy();
-	//auto copied_update = m_velocity_update->deepCopy();
-	//auto copied_RHS = m_rhsgrid->deepCopy();
-	auto save_vdb = [&]() {
-		/*auto diff_pressure = [&](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index leafpos) {
-			for (auto iter = leaf.beginValueOn(); iter; ++iter) {
-				iter.setValue(iter.getValue() + 9.81 * iter.getCoord()[1] * m_dx);
-			}
-		};
-		openvdb::tree::LeafManager<openvdb::FloatTree>(copied_pressure->tree()).foreach(diff_pressure);*/
-		printf("async_write frame %d\n", m_framenumber);
-		CSim::TimerMan::timer("Sim.step/vdbflip/IO").start();
-		std::stringstream s;
-		s << filename << m_framenumber << ".vdb";
-		m_boundary_velocity_volume->setName("boundary_velocity_volume");
-		//openvdb::io::File(s.str()).write({ m_particles, m_velocity, m_velocity_weights, m_liquid_sdf,  m_solid_sdf, m_pressure, m_solid_velocity });
-		//openvdb::io::File(s.str()).write({ copied_particles , copied_liquid_sdf,copied_solid_sdf, copied_velocity, copied_old_velocity, copied_pressure, copied_face_weights, copied_update, copied_RHS ,m_solid_velocity->deepCopy() });
-		openvdb::io::File(s.str()).write({ copied_particles ,m_shrinked_liquid_sdf });
-		CSim::TimerMan::timer("Sim.step/vdbflip/IO").stop();
-	};
+// void FLIP_vdb::step(float in_dt)
+// {
+// 	float target_t = in_dt;
+// 	float stepped = 0.f;
+// 	while (stepped < target_t) {
+// 		auto cfl_dt = m_cfl * cfl_and_regularize_velocity();
+// 		float estimated_steps = std::ceil((target_t - stepped) / cfl_dt);
+// 		float estimated_dt = (target_t - stepped) / estimated_steps * 1.1;
+// 		float dt = std::min(estimated_dt, cfl_dt);
+// 		if (stepped + cfl_dt > target_t) {
+// 			dt = cfl_dt;
+// 		}
 
-	auto save_thread{ std::thread(save_vdb) };
-	save_thread.join();
-}
+// 		if (stepped + dt > target_t) {
+// 			dt = target_t - stepped;
+// 		}
+
+// 		printf("1\n");
+		
+// 		advection(dt);
+// 		printf("2\n");
+		
+// 		//emit new fluid particles
+// 		//emit_liquid(m_particles,m_source_sdfvel, m_domain_index_begin*m_dx, m_domain_index_end*m_dx);
+// 		printf("3\n");
+		
+// 		//remove particles outside of the boundary, or in the sink zone.
+// 		//solids are also a type of sink
+// 		//sink_liquid(m_sink_sdfs);
+// 		printf("4\n");
+
+// 		//update_solid_sdf_vel(m_solid_sdfvel);
+// 		printf("5\n");
+
+// 		particle_to_grid_collect_style();
+// 		printf("6\n");
+// 		extrapolate_velocity(1);
+// 		printf("7\n");
+// 		calculate_face_weights();
+// 		printf("8\n");
+// 		clamp_liquid_phi_in_solids();
+// 		printf("9\n");
+// 		apply_body_force(dt);
+// 		printf("10\n");
+// 		solve_pressure_simd(dt);
+// 		printf("11\n");
+// 		extrapolate_velocity();
+// 		printf("12\n");
+// 		stepped += dt;
+// 		cfl();
+// 		printf("13\n");
+// 	}
+// }
+
+// void FLIP_vdb::IO(std::string filename)
+// {
+// 	//auto copied_particles = narrow_band_particles();
+
+// 	auto nb_particles = openvdb::points::PointDataGrid::create();
+// 	auto interior_sdf = openvdb::FloatGrid::create();
+// 	//narrow_band_particles(nb_particles, interior_sdf, m_particles);
+
+// 	auto copied_pressure = m_pressure->deepCopy();
+// 	auto copied_solid_sdf = m_solid_sdf->deepCopy();
+// 	auto copied_liquid_sdf = m_pushed_out_liquid_sdf->deepCopy();
+// 	auto copied_velocity = m_velocity->deepCopy();
+// 	//auto copied_old_velocity = m_velocity_after_p2g->deepCopy();
+// 	//auto copied_face_weights = m_face_weight->deepCopy();
+// 	//auto copied_update = m_velocity_update->deepCopy();
+// 	//auto copied_RHS = m_rhsgrid->deepCopy();
+
+// 	auto save_vdb = [&]() {
+// 		/*auto diff_pressure = [&](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+// 			for (auto iter = leaf.beginValueOn(); iter; ++iter) {
+// 				iter.setValue(iter.getValue() + 9.81 * iter.getCoord()[1] * m_dx);
+// 			}
+// 		};
+// 		openvdb::tree::LeafManager<openvdb::FloatTree>(copied_pressure->tree()).foreach(diff_pressure);*/
+// 		printf("async_write frame %d\n", m_framenumber);
+// 		CSim::TimerMan::timer("Sim.step/vdbflip/IO").start();
+// 		std::stringstream s;
+// 		s << filename << m_framenumber << ".vdb";
+// 		m_boundary_velocity_volume->setName("boundary_velocity_volume");
+// 		//openvdb::io::File(s.str()).write({ m_particles, m_velocity, m_velocity_weights, m_liquid_sdf,  m_solid_sdf, m_pressure, m_solid_velocity });
+// 		//openvdb::io::File(s.str()).write({ copied_particles , copied_liquid_sdf,copied_solid_sdf, copied_velocity, copied_old_velocity, copied_pressure, copied_face_weights, copied_update, copied_RHS ,m_solid_velocity->deepCopy() });
+// 		openvdb::io::File(s.str()).write({ copied_particles ,m_shrinked_liquid_sdf });
+// 		CSim::TimerMan::timer("Sim.step/vdbflip/IO").stop();
+// 	};
+
+// 	auto save_thread{ std::thread(save_vdb) };
+// 	save_thread.join();
+// }
 
 namespace {
 
@@ -1960,7 +1908,7 @@ void FLIP_vdb::particle_to_grid_collect_style()
 	m_velocity_after_p2g = m_velocity->deepCopy();
 	m_velocity_after_p2g->setName("Velocity_After_P2G");
 	m_pushed_out_liquid_sdf = m_liquid_sdf;
-	//openvdb::io::File("dilated_particle.vdb").write({temp_phi_grid});
+
 }
 
 namespace {
@@ -2648,6 +2596,588 @@ void FLIP_vdb::seed_liquid(openvdb::FloatGrid::Ptr in_sdf, const openvdb::Vec3f&
 	extrapolate_velocity(5);
 }
 
+// void FLIP_vdb::emit_liquid(openvdb::points::PointDataGrid::Ptr in_out_particles, 
+// 	const std::vector<sdf_vel_pair>& in_sdf_vels, 
+// 	const openvdb::Vec3f& in_emit_world_min, 
+// 	const openvdb::Vec3f& in_emit_world_max)
+// {
+// 	for (const auto& sv : in_sdf_vels) {
+// 		emit_liquid(in_out_particles, sv, in_emit_world_min, in_emit_world_max);
+// 	}
+// }
+
+// void FLIP_vdb::emit_liquid(openvdb::points::PointDataGrid::Ptr in_out_particles, const sdf_vel_pair& in_sdf_vel, const openvdb::Vec3f& in_emit_world_min, const openvdb::Vec3f& in_emit_world_max)
+// {
+// 	using  namespace openvdb::tools::local_util;
+// 	if (!in_sdf_vel.m_activated) {
+// 		return;
+// 	}
+// 	//alias
+// 	auto in_sdf = in_sdf_vel.m_sdf;
+// 	auto in_vel = in_sdf_vel.m_vel;
+
+// 	//the input is assumed to be narrowband boxes
+// 	auto inputbbox = openvdb::CoordBBox();
+// 	auto is_valid = in_sdf->tree().evalLeafBoundingBox(inputbbox);
+// 	if (!is_valid) {
+// 		return;
+// 	}
+
+// 	//bounding box in the world coordinates
+// 	auto worldinputbbox = openvdb::BBoxd(in_sdf->indexToWorld(inputbbox.min()), in_sdf->indexToWorld(inputbbox.max()));
+// 	for (int ic = 0; ic < 3; ic++) {
+// 		if (worldinputbbox.min()[ic] < in_emit_world_min[ic]) {
+// 			worldinputbbox.min()[ic] = in_emit_world_min[ic];
+// 		}
+// 		if (worldinputbbox.max()[ic] > in_emit_world_max[ic]) {
+// 			worldinputbbox.max()[ic] = in_emit_world_max[ic];
+// 		}
+// 	}
+
+// 	//map the bounding box to the particle index space
+// 	auto loopbegin = floorVec3(in_out_particles->worldToIndex(worldinputbbox.min())) - openvdb::Vec3i(8);
+// 	auto loopend = ceilVec3(in_out_particles->worldToIndex(worldinputbbox.max())) + openvdb::Vec3i(8);
+
+// 	auto tempgrid = openvdb::BoolGrid::create();
+// 	tempgrid->setTransform(in_out_particles->transformPtr());
+// 	auto templeaf =  tempgrid->tree().touchLeaf(Coord(loopbegin));
+
+// 	loopbegin = templeaf->origin().asVec3i()/8;
+// 	templeaf = tempgrid->tree().touchLeaf(Coord(loopend));
+// 	loopend = templeaf->origin().asVec3i()/8;
+
+// 	using point_leaf_t = openvdb::points::PointDataTree::LeafNodeType;
+// 	tbb::concurrent_hash_map<openvdb::Coord, point_leaf_t*, tbbcoordhash> target_point_leaves;
+
+// 	auto pispace_range = tbb::blocked_range3d<int, int, int>(loopbegin.x(), loopend.x(), loopbegin.y(), loopend.y(), loopbegin.z(), loopend.z());
+
+// 	float dx = in_out_particles->transform().voxelSize()[0];
+// 	auto mark_active_point_leaves = [&](const tbb::blocked_range3d<int,int,int>& r) {
+// 		auto solid_axr{ in_sdf->getConstAccessor() };
+
+
+// 		for (int i = r.pages().begin(); i < r.pages().end(); i +=1) {
+// 			for (int j = r.rows().begin(); j < r.rows().end(); j +=1) {
+// 				for (int k = r.cols().begin(); k < r.cols().end(); k +=1) {
+// 					//test if any of the corner of this box touches the 
+// 					int has_solid = 0;
+// 					int i8 = i * 8, j8 = j * 8, k8 = k * 8;
+// 					for (int ii = 0; ii <= 8 && !has_solid; ii += 8) {
+// 						for (int jj = 0; jj <= 8 && !has_solid; jj += 8) {
+// 							for (int kk = 0; kk <= 8 && !has_solid; kk += 8) {
+// 								auto particle_idx_pos = openvdb::Vec3i(i8 + ii, j8 + jj, k8 + kk);
+// 								has_solid = (openvdb::tools::BoxSampler::sample(solid_axr, in_sdf->worldToIndex(in_out_particles->indexToWorld(particle_idx_pos))) < 0);
+// 							}
+// 						}
+// 					}
+
+// 					if (has_solid) {
+// 						auto floor_leaf = in_out_particles->tree().probeLeaf(openvdb::Coord(i8,j8,k8));
+// 						if (floor_leaf) {
+// 							target_point_leaves.insert(std::make_pair(floor_leaf->origin(), floor_leaf));
+// 						}
+// 						else {
+// 							auto newleaff = new openvdb::points::PointDataTree::LeafNodeType(openvdb::Coord(i8, j8, k8), 0, true);
+// 							auto new_origin = newleaff->origin();
+// 							bool success = target_point_leaves.insert(std::make_pair(newleaff->origin(), newleaff));
+// 							if (!success) {
+// 								delete newleaff;
+// 							}
+// 						}//end else found existing particle leaf
+// 					}//end if touch solid
+// 				}//loop k
+// 			}//loop j
+// 		}//loop i
+// 	};//end mark active point elaves
+// 	tbb::parallel_for(pispace_range, mark_active_point_leaves);
+
+// 	//for parallel process
+// 	std::vector<point_leaf_t*> leafarray;
+// 	for (auto& i : target_point_leaves) {
+// 		leafarray.push_back(i.second);
+// 	}
+// 	//printf("touched_leafs:%zd\n", leafarray.size());
+
+// 	std::atomic<size_t> added_particles{ 0 };
+
+// 	auto pnamepair = FLIP_vdb::position_attribute::attributeType();
+// 	auto m_position_attribute_descriptor = openvdb::points::AttributeSet::Descriptor::create(pnamepair);
+	
+// 	auto vnamepair = velocity_attribute::attributeType();
+// 	auto m_pv_attribute_descriptor = m_position_attribute_descriptor->duplicateAppend("v", vnamepair);
+
+// 	//use existing descriptors if we already have particles
+// 	if (!in_out_particles->empty()) {
+// 		for (auto it = in_out_particles->tree().cbeginLeaf(); it; ++it) {
+// 			if (it->getLastValue() != 0) {
+// 				//a non-empty leaf with attributes
+// 				m_pv_attribute_descriptor = it->attributeSet().descriptorPtr();
+// 				break;
+// 			}
+// 		}
+// 	}
+
+// 	//seed each leaf
+// 	auto seed_leaf = [&](const tbb::blocked_range<size_t>& r) {
+// 		auto in_sdf_axr{ in_sdf->getConstAccessor() };
+// 		auto in_vel_axr{ in_vel->getConstAccessor() };
+// 		float sdf_threshold = -dx * 0.55;
+
+// 		std::random_device device;
+// 		std::mt19937 generator(/*seed=*/device());
+// 		std::uniform_real_distribution<> distribution(-0.5, 0.5);
+
+// 		for (auto ileaf = r.begin(); ileaf < r.end(); ++ileaf) {
+// 			auto& leaf = *leafarray[ileaf];
+// 			std::vector<openvdb::Vec3f> new_pos, new_vel;
+// 			std::vector<openvdb::PointDataIndex32> new_idxend;
+
+// 			//check if the last element is zero
+// 			//if so, it's a new leaf
+// 			if (leaf.getLastValue() == 0) {
+// 				//initialize the attribute descriptor
+// 				auto local_pv_descriptor = m_pv_attribute_descriptor;
+// 				leaf.initializeAttributes(m_position_attribute_descriptor, 0);
+// 				leaf.appendAttribute(leaf.attributeSet().descriptor(), local_pv_descriptor, 1);
+// 			}
+
+// 			//reader
+// 			const openvdb::points::AttributeArray& positionArray =
+// 				leaf.attributeArray("P");
+// 			// Extract the velocity attribute from the leaf by name (v is velocity).
+// 			const openvdb::points::AttributeArray& velocityArray =
+// 				leaf.attributeArray("v");
+// 			auto p_handle_ptr = openvdb::points::AttributeHandle<openvdb::Vec3f, FLIP_vdb::PositionCodec>::create(positionArray);
+// 			auto v_handle_ptr = openvdb::points::AttributeHandle<openvdb::Vec3f, FLIP_vdb::VelocityCodec>::create(velocityArray);
+
+// 			openvdb::Index32 emitted_particle = 0;
+// 			for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+// 				openvdb::Index32 idxbegin = 0;
+// 				if (offset != 0) {
+// 					idxbegin = leaf.getValue(offset - 1);
+// 				}
+// 				openvdb::Index32 idxend = leaf.getValue(offset);
+
+
+// 				//used to indicate sub_voxel(8 cells) occupancy by particles
+// 				unsigned char sub_voxel_occupancy = 0;
+				
+// 				//first emit original particles
+// 				openvdb::Index32 this_voxel_emitted = 0;
+// 				for (auto idx = idxbegin; idx < idxend; ++idx) {
+// 					auto p = p_handle_ptr->get(idx);
+// 					unsigned char sv_pos = ((p[2] > 0.f) << 2) | ((p[1] > 0.f) << 1) | (p[0] > 0.f);
+// 					//only emit uniformly, otherwise skip it
+// 					if (sub_voxel_occupancy & (1 << sv_pos)) {
+// 						//that bit is active, there is already an particle
+// 						//skip it
+// 						continue;
+// 					}
+// 					sub_voxel_occupancy |= (1 << sv_pos);
+// 					new_pos.push_back(p);
+// 					new_vel.push_back(v_handle_ptr->get(idx));
+// 					emitted_particle++;
+// 					this_voxel_emitted++;
+// 				}
+
+// 				//emit to fill the sdf
+// 				auto voxelwpos = in_out_particles->indexToWorld(leaf.offsetToGlobalCoord(offset));
+// 				auto voxelipos = in_sdf->worldToIndex(voxelwpos);
+// 				if (openvdb::tools::BoxSampler::sample(in_sdf_axr, voxelipos) < dx) {
+// 					const int max_emit_trial = 16;
+// 					for (int trial = 0; this_voxel_emitted < 8 && trial<max_emit_trial; trial++) {
+// 						openvdb::Vec3d particle_pipos{ distribution(generator) ,distribution(generator) ,distribution(generator) };
+// 						auto& p = particle_pipos;
+// 						unsigned char sv_pos = ((p[2] > 0) << 2) | ((p[1] > 0) << 1) | (p[0] > 0);
+// 						//only emit uniformly, otherwise skip it
+// 						if (sub_voxel_occupancy & (1 << sv_pos)) {
+// 							//that bit is active, there is already an particle
+// 							//skip it
+// 							continue;
+// 						}
+// 						auto particlewpos = in_out_particles->indexToWorld(particle_pipos) + voxelwpos;
+// 						auto particle_sdfipos = in_sdf->worldToIndex(particlewpos);
+// 						if (openvdb::tools::BoxSampler::sample(in_sdf_axr, particle_sdfipos) < sdf_threshold) {
+// 							sub_voxel_occupancy |= 1 << sv_pos;
+// 							new_pos.push_back(particle_pipos);
+// 							new_vel.push_back(openvdb::tools::BoxSampler::sample(in_vel_axr,particle_sdfipos));
+// 							emitted_particle++;
+// 							this_voxel_emitted++;
+// 							added_particles++;
+// 						}
+// 					}//end for 16 emit trials
+// 				}//if voxel inside emitter
+
+// 				new_idxend.push_back(emitted_particle);
+// 			}//end emit original particles and new particles
+
+// 			//set the new index ends, attributes
+// 			//initialize the attribute descriptor
+// 			auto local_pv_descriptor = m_pv_attribute_descriptor;
+// 			leaf.initializeAttributes(m_position_attribute_descriptor, emitted_particle);
+// 			leaf.appendAttribute(leaf.attributeSet().descriptor(), local_pv_descriptor, 1);
+// 			leaf.setOffsets(new_idxend);
+
+// 			//set the positions and velocities
+// 			//get the new attribute arrays
+// 			openvdb::points::AttributeArray& posarray = leaf.attributeArray("P");
+// 			openvdb::points::AttributeArray& varray = leaf.attributeArray("v");
+
+// 			// Create read handles for position and velocity
+// 			openvdb::points::AttributeWriteHandle<openvdb::Vec3f, FLIP_vdb::PositionCodec> posWHandle(posarray);
+// 			openvdb::points::AttributeWriteHandle<openvdb::Vec3f, FLIP_vdb::VelocityCodec> vWHandle(varray);
+
+// 			for (auto iter = leaf.beginIndexOn(); iter; ++iter) {
+// 				posWHandle.set(*iter, new_pos[*iter]);
+// 				vWHandle.set(*iter, new_vel[*iter]);
+// 			}//end for all on voxels
+// 		}//end for range leaf
+// 	};//end seed particle 
+
+// 	tbb::parallel_for(tbb::blocked_range<size_t>(0, leafarray.size()), seed_leaf);
+// 	//printf("added particles:%zd\n", size_t(added_particles));
+// 	//printf("original leaf count:%d\n", m_particles->tree().leafCount());
+// 	for (auto leaf : leafarray) {
+// 		if (leaf != in_out_particles->tree().probeLeaf(leaf->origin())) {
+// 			in_out_particles->tree().addLeaf(leaf);
+// 		}
+// 	}
+// 	//openvdb::io::File("dbg.vdb").write({ m_particles });
+// 	//printf("new leafcount:%d\n", m_particles->tree().leafCount());
+// 	in_out_particles->pruneGrid();
+// }
+
+// void FLIP_vdb::sink_liquid(const std::vector<openvdb::FloatGrid::Ptr>& in_sdfs)
+// {
+// 	//remove all particles inside solids, in sink zone, and outside of the bounding box
+// 	auto partman = openvdb::tree::LeafManager<openvdb::points::PointDataTree>(m_particles->tree());
+
+// 	std::vector<openvdb::points::PointDataTree::LeafNodeType*> leaves;
+// 	partman.getNodes(leaves);
+
+// 	openvdb::Vec3d idx_domain_min = m_domain_index_begin - openvdb::Vec3d{ 0.5 }, 
+// 		idx_domain_max= m_domain_index_end - openvdb::Vec3d{ 0.5 };
+
+// 	auto sink_leaf = [&](const tbb::blocked_range<size_t>& r) {
+// 		std::vector<openvdb::tree::ValueAccessor<const openvdb::FloatTree>> sink_axrs;
+// 		for (size_t isink = 0; isink < in_sdfs.size(); isink++) {
+// 			sink_axrs.push_back(openvdb::tree::ValueAccessor<const openvdb::FloatTree>{ in_sdfs[isink]->tree() });
+// 		}
+
+// 		auto particle_voxel_inside_domain = [&](const openvdb::Coord& voxel_coord) {
+// 			return (voxel_coord[0] >= m_domain_index_begin[0] &&
+// 				voxel_coord[1] >= m_domain_index_begin[1] &&
+// 				voxel_coord[2] >= m_domain_index_begin[2] &&
+// 				voxel_coord[0] < m_domain_index_end[0] &&
+// 				voxel_coord[1] < m_domain_index_end[1] &&
+// 				voxel_coord[2] < m_domain_index_end[2]);
+// 		};
+
+// 		auto touch_sink = [&](const openvdb::Vec3d& pipos, float delta = 0) {
+// 			//check domain boundary in index space
+// 			if (pipos[0] <= idx_domain_min[0] || pipos[0] >= idx_domain_max[0]
+// 				|| pipos[1] <= idx_domain_min[1] || pipos[1] >= idx_domain_max[1]
+// 				|| pipos[2] <= idx_domain_min[2] || pipos[2] >= idx_domain_max[2]) {
+// 				return true;
+// 			}
+
+// 			openvdb::Vec3d wpos = m_particles->indexToWorld(pipos);
+
+// 			//check sinks
+// 			for (int isink = 0; isink < in_sdfs.size(); isink++) {
+// 				openvdb::Vec3d sinkipos = in_sdfs[isink]->worldToIndex(wpos);
+// 				if (openvdb::tools::BoxSampler::sample(sink_axrs[isink], sinkipos) < delta) {
+// 					return true;
+// 				}
+// 			}
+
+// 			return false;
+// 		};//end touch_sink
+
+// 		for (auto leafpos = r.begin(); leafpos != r.end(); leafpos++) {
+// 			auto leaforigin = leaves[leafpos]->origin();
+
+// 			bool corner_sink = false;
+// 			//anyone of its corners touch sink zone then it is worth processing
+// 			for (int i = 0; i <= 8 && !corner_sink; i += 8) {
+// 				for (int j = 0; j <= 8 && !corner_sink; j += 8) {
+// 					for (int k = 0; k <= 8 && !corner_sink; k += 8) {
+// 						corner_sink |= touch_sink(leaforigin.offset(i, j, k).asVec3d() - openvdb::Vec3d{ 0.5 });
+// 					}//k
+// 				}//j
+// 			}//i
+
+// 			if (!corner_sink) { continue; }
+// 			//below this line, at least one corner of the particle leaf touches sink zone
+// 			//loop over all particles and remove those in sink zone
+
+// 			//this bulk is empty so skip the deletion
+// 			if (leaves[leafpos]->getLastValue() == 0) {
+// 				continue;
+// 			}
+			
+// 			//new p v arrays
+// 			std::vector<openvdb::Vec3f> new_p, new_v;
+// 			std::vector<openvdb::PointDataIndex32> new_idxoffset;
+// 			new_idxoffset.reserve(leaves[leafpos]->SIZE);
+
+// 			//pv readers
+// 			const openvdb::points::AttributeArray& positionArray =
+// 				leaves[leafpos]->attributeArray("P");
+// 			// Extract the velocity attribute from the leaf by name (v is velocity).
+// 			const openvdb::points::AttributeArray& velocityArray =
+// 				leaves[leafpos]->attributeArray("v");
+
+// 			// Create read handles for position and velocity
+// 			openvdb::points::AttributeHandle<openvdb::Vec3f, FLIP_vdb::PositionCodec> positionHandle(positionArray);
+// 			openvdb::points::AttributeHandle<openvdb::Vec3f, FLIP_vdb::VelocityCodec> velocityHandle(velocityArray);
+
+
+// 			int emitted_particles = 0;
+// 			//relaxed criteria for selecting voxels
+// 			//allow further criteria for particles
+// 			float voxeldelta = 0.5 * m_particles->transform().voxelSize()[0];
+
+// 			//loop over all voxels
+// 			for (auto offset = 0; offset < leaves[leafpos]->SIZE;++offset) {
+// 				int idxend = leaves[leafpos]->getValue(offset);
+// 				int idxbegin = 0;
+// 				if (offset != 0) {
+// 					idxbegin = leaves[leafpos]->getValue(offset - 1);
+// 				}
+
+// 				if (idxend == idxbegin) {
+// 					new_idxoffset.push_back(emitted_particles);
+// 					continue;
+// 				}
+
+// 				auto voxelipos =leaves[leafpos]->offsetToGlobalCoord(offset);
+
+// 				if (!particle_voxel_inside_domain(voxelipos)) {
+// 					new_idxoffset.push_back(emitted_particles);
+// 					continue;
+// 				}
+
+// 				if (touch_sink(voxelipos.asVec3d(), voxeldelta)) {
+// 					//emit those are qualified
+// 					for (auto idx = idxbegin; idx < idxend; idx++) {
+// 						auto particleipos = positionHandle.get(idx) + voxelipos;
+// 						if (!touch_sink(particleipos)) {
+// 							new_p.push_back(positionHandle.get(idx));
+// 							new_v.push_back(velocityHandle.get(idx));
+// 							emitted_particles++;
+// 						}
+// 					}
+// 				}
+// 				else {
+// 					//emit as usual
+// 					for (auto idx = idxbegin; idx < idxend; idx++) {
+// 						new_p.push_back(positionHandle.get(idx));
+// 						new_v.push_back(velocityHandle.get(idx));
+// 						emitted_particles++;
+// 					}
+// 				}
+// 				new_idxoffset.push_back(emitted_particles);
+// 			}//end for all voxels
+
+// 			//assign new attributes
+// 			if (new_p.empty()) {
+// 				leaves[leafpos]->clearAttributes();
+// 			}
+// 			else {
+// 				auto local_pv_descriptor = m_pv_attribute_descriptor;
+// 				leaves[leafpos]->initializeAttributes(m_position_attribute_descriptor, new_p.size());
+// 				leaves[leafpos]->appendAttribute(leaves[leafpos]->attributeSet().descriptor(), local_pv_descriptor, 1);
+// 				leaves[leafpos]->setOffsets(new_idxoffset);
+
+// 				//set the positions and velocities
+// 				//get the new attribute arrays
+// 				openvdb::points::AttributeArray& posarray = leaves[leafpos]->attributeArray("P");
+// 				openvdb::points::AttributeArray& varray = leaves[leafpos]->attributeArray("v");
+
+// 				// Create read handles for position and velocity
+// 				openvdb::points::AttributeWriteHandle<openvdb::Vec3f, FLIP_vdb::PositionCodec> posWHandle(posarray);
+// 				openvdb::points::AttributeWriteHandle<openvdb::Vec3f, FLIP_vdb::VelocityCodec> vWHandle(varray);
+
+// 				for (auto iter = leaves[leafpos]->beginIndexOn(); iter; ++iter) {
+// 					posWHandle.set(*iter, new_p[*iter]);
+// 					vWHandle.set(*iter, new_v[*iter]);
+// 				}
+// 			}//end if has points to write to attribute
+// 		}//end for ranged leaf pos
+// 	};//end sink_leaf lambda
+
+// 	tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), sink_leaf);
+
+// 	m_particles->pruneGrid();
+// }
+
+namespace {
+	struct narrow_band_copy_iterator {
+
+		narrow_band_copy_iterator(const std::vector<openvdb::Index>& in_idx_of_source):
+			m_idx_of_source(in_idx_of_source) {
+			m_it = 0;
+		}
+
+		narrow_band_copy_iterator(const narrow_band_copy_iterator& other):
+		m_idx_of_source(other.m_idx_of_source),
+		m_it(other.m_it) {
+
+		}
+		operator bool() const { return m_it < m_idx_of_source.size(); }
+
+		narrow_band_copy_iterator& operator++() { ++m_it; return *this; }
+
+		openvdb::Index sourceIndex() const
+		{
+			return m_idx_of_source[m_it];
+		}
+
+		Index targetIndex() const
+		{
+			return m_it;
+		}
+
+		//idx in the attribute array
+		//[target_idx]=source_idx
+		size_t m_it;
+		const std::vector<openvdb::Index>& m_idx_of_source;
+	};
+}
+// void FLIP_vdb::narrow_band_particles(openvdb::points::PointDataGrid::Ptr out_nb_particles, 
+// 	openvdb::FloatGrid::Ptr out_interior_sdf, 
+// 	openvdb::points::PointDataGrid::Ptr in_particles, int nlayer)
+// {
+// 	//particles are stored in particle voxels
+// 	//1 dilate particle voxels and mark existing part as inactive to get the surface mask
+// 	//2 dilate the surface mask nlayer-1 to get the erosion mask
+// 	//3 dilate the surface mask nlayer to get the output particle mask
+// 	//4 use the erosion mask to generate interior sdf (every voxel has -0.5dx)
+// 	//5 use the output particle mask to generate the narrow banded particles
+
+// 	using point_leaf_t = openvdb::points::PointDataTree::LeafNodeType;
+
+// 	//1.1 dilate particle voxels to get surface mask
+// 	auto surface_mask = openvdb::BoolGrid::create();
+// 	surface_mask->setTree(std::make_shared<openvdb::BoolTree>(in_particles->tree(), /*inactive value*/false,/*active value*/true, openvdb::TopologyCopy()));
+// 	openvdb::tools::dilateActiveValues(surface_mask->tree(), 1, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+
+// 	//1.2 hollow the surface mask
+// 	auto hollow_surface_mask_lambda = [in_particles](openvdb::BoolTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+// 		auto particle_leaf = in_particles->tree().probeConstLeaf(leaf.origin());
+// 		if (!particle_leaf) {
+// 			return;
+// 		}
+
+// 		for (auto offset = 0; offset < leaf.size(); ++offset) {
+// 			if (particle_leaf->isValueOn(offset)) {
+// 				leaf.setValueOff(offset);
+// 			}
+// 		}
+// 	};//end hollow surface mask lambda
+
+// 	auto surface_mask_man = openvdb::tree::LeafManager<openvdb::BoolTree>(surface_mask->tree());
+// 	surface_mask_man.foreach(hollow_surface_mask_lambda);
+// 	surface_mask->pruneGrid();
+
+// 	//2 dilate the surface mask nlayer-1 to get the erosion mask
+// 	auto erosion_mask = surface_mask->deepCopy();
+// 	openvdb::tools::dilateActiveValues(erosion_mask->tree(), nlayer - 1, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+
+// 	//3 dilate the erosion mask to get the output particle mask
+// 	auto output_particle_mask = erosion_mask->deepCopy();
+// 	openvdb::tools::dilateActiveValues(output_particle_mask->tree(), 1, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+
+// 	//4 use the erosion mask to generate interior sdf (every voxel has -0.5dx)
+// 	float dx = in_particles->transform().voxelSize()[0];
+
+// 	auto interior_sdf = openvdb::FloatGrid::create(0.5 * dx);
+// 	interior_sdf->setTree(std::make_shared<openvdb::FloatTree>(in_particles->tree(), /*inactive value*/0.5f*dx,/*active value*/-0.5f*dx, openvdb::TopologyCopy()));
+
+// 	auto erosion_lambda = [erosion_mask, dx](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+// 		auto erosionleaf = erosion_mask->tree().probeConstLeaf(leaf.origin());
+// 		if (!erosionleaf) {
+// 			return;
+// 		}
+
+// 		for (auto offset = 0; offset < leaf.size(); ++offset) {
+// 			if (erosionleaf->isValueOn(offset)) {
+// 				leaf.setValueOff(offset, 0.5 * dx);
+// 			}
+// 		}
+// 	};//end erosion lambda
+// 	auto interior_sdf_man = openvdb::tree::LeafManager<openvdb::FloatTree>(interior_sdf->tree());
+// 	interior_sdf_man.foreach(erosion_lambda);
+	
+// 	//5 use the output particle mask to generate the narrow banded particles
+// 	auto nb_particles = openvdb::points::PointDataGrid::create();
+// 	nb_particles->setTree(std::make_shared<openvdb::points::PointDataTree>(output_particle_mask->tree(), /*background value*/0, openvdb::TopologyCopy()));
+
+// 	auto populate_nb_particle_lambda = [in_particles](openvdb::points::PointDataTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+// 		auto original_leaf = in_particles->tree().probeConstLeaf(leaf.origin());
+// 		if (!original_leaf) {
+// 			leaf.setValuesOff();
+// 			return;
+// 		}
+
+// 		if (original_leaf->getLastValue() == 0) {
+// 			//original leaf is empty, possibly not having any attribute sets
+// 			leaf.setValuesOff();
+// 			return;
+// 		}
+
+// 		//write idx ends
+// 		int emitted = 0;
+// 		std::vector<openvdb::Index> original_particle_idx;
+
+// 		for (auto offset=0; offset < leaf.size(); ++offset) {
+// 			auto idxend = original_leaf->getValue(offset);
+// 			auto idxbegin = 0;
+// 			if (offset != 0) {
+// 				idxbegin = original_leaf->getValue(offset - 1);
+// 			}
+
+// 			//emit if mask on
+// 			if (leaf.isValueOn(offset)) {
+// 				for (auto it = idxbegin; it < idxend; ++it) {
+// 					original_particle_idx.push_back(it);
+// 				}
+// 				emitted += idxend - idxbegin;
+// 			}
+// 			leaf.setOffsetOnly(offset, emitted);
+// 		}
+		
+// 		//copy the attributes
+// 		leaf.replaceAttributeSet(new openvdb::points::AttributeSet(original_leaf->attributeSet(), emitted), true);
+// 		for (const auto& it : original_leaf->attributeSet().descriptor().map()) {
+// 			const auto attributeIndex = static_cast<openvdb::Index>(it.second);
+			
+// 			auto& target_array = leaf.attributeArray(attributeIndex);
+			
+// 			narrow_band_copy_iterator copyiter(original_particle_idx);
+
+// 			target_array.copyValues(original_leaf->attributeArray(attributeIndex), copyiter);
+// 		}
+// 	};//end populate narrow band particles lambda
+// 	auto nb_manager = openvdb::tree::LeafManager<openvdb::points::PointDataTree>(nb_particles->tree());
+// 	nb_manager.foreach(populate_nb_particle_lambda,true);
+	
+// 	//write to the output
+// 	interior_sdf->pruneGrid();
+// 	nb_particles->pruneGrid();
+
+// 	out_interior_sdf->setTree(interior_sdf->treePtr());
+// 	out_interior_sdf->setTransform(in_particles->transformPtr());
+// 	out_interior_sdf->setName("surface");
+// 	out_interior_sdf->setGridClass(openvdb::GRID_LEVEL_SET);
+// 	out_nb_particles->setTree(nb_particles->treePtr());
+// 	out_nb_particles->setTransform(in_particles->transformPtr());
+// 	out_nb_particles->setName("particles");
+
+// }
+
+
 bool FLIP_vdb::below_waterline(float in_height)
 {
 	return in_height < m_waterline;
@@ -2663,23 +3193,23 @@ float FLIP_vdb::index_space_sea_level(const openvdb::Coord& xyz) const
 	return 1e-3f;
 }
 
-void FLIP_vdb::init_velocity_volume()
-{
-	openvdb::Vec3f init_vel{
-	(float)Options::doubleValue("tank_flow_x"),
-	(float)Options::doubleValue("tank_flow_y"),
-	(float)Options::doubleValue("tank_flow_z")
-	};
-	//set initial zero velocity volume
-	m_boundary_velocity_volume = openvdb::Vec3fGrid::create(openvdb::Vec3f(0));
+// void FLIP_vdb::init_velocity_volume()
+// {
+// 	openvdb::Vec3f init_vel{
+// 	(float)Options::doubleValue("tank_flow_x"),
+// 	(float)Options::doubleValue("tank_flow_y"),
+// 	(float)Options::doubleValue("tank_flow_z")
+// 	};
+// 	//set initial zero velocity volume
+// 	m_boundary_velocity_volume = openvdb::Vec3fGrid::create(openvdb::Vec3f(0));
 
-	m_boundary_velocity_volume->setTransform(m_voxel_center_transform);
-	//use the domain sdf to set inflow-outflow velocity
-	for (auto iter = m_domain_solid_sdf->tree().cbeginLeaf(); iter; ++iter) {
-		auto* p = m_boundary_velocity_volume->tree().touchLeaf(iter->origin());
-		p->fill(init_vel);
-	}
-}
+// 	m_boundary_velocity_volume->setTransform(m_voxel_center_transform);
+// 	//use the domain sdf to set inflow-outflow velocity
+// 	for (auto iter = m_domain_solid_sdf->tree().cbeginLeaf(); iter; ++iter) {
+// 		auto* p = m_boundary_velocity_volume->tree().touchLeaf(iter->origin());
+// 		p->fill(init_vel);
+// 	}
+// }
 
 void FLIP_vdb::init_boundary_fill_kill_volume()
 {
@@ -2739,118 +3269,118 @@ void FLIP_vdb::init_boundary_fill_kill_volume()
 	//openvdb::io::File("boundary_volume.vdb").write({ m_boundary_fill_kill_volume });
 }
 
-void FLIP_vdb::init_domain_solid_sdf()
-{
-	m_domain_solid_sdf = openvdb::FloatGrid::create(3.f * m_dx);
-	m_domain_solid_sdf->setTransform(m_voxel_vertex_transform);
-	m_domain_solid_sdf->setName("Domain_SDF");
-	m_domain_solid_sdf->setGridClass(openvdb::GridClass::GRID_LEVEL_SET);
+// void FLIP_vdb::init_domain_solid_sdf()
+// {
+// 	m_domain_solid_sdf = openvdb::FloatGrid::create(3.f * m_dx);
+// 	m_domain_solid_sdf->setTransform(m_voxel_vertex_transform);
+// 	m_domain_solid_sdf->setName("Domain_SDF");
+// 	m_domain_solid_sdf->setGridClass(openvdb::GridClass::GRID_LEVEL_SET);
 
-	int narrow_band_width = 8;
+// 	int narrow_band_width = 8;
 
-	auto shrinked_domain_begin = m_domain_index_begin + openvdb::Vec3i{ narrow_band_width };
-	auto shrinked_domain_end = m_domain_index_end - openvdb::Vec3i{ narrow_band_width };
+// 	auto shrinked_domain_begin = m_domain_index_begin + openvdb::Vec3i{ narrow_band_width };
+// 	auto shrinked_domain_end = m_domain_index_end - openvdb::Vec3i{ narrow_band_width };
 
-	auto extended_domain_begin = m_domain_index_begin - openvdb::Vec3i{ narrow_band_width };
-	auto extended_domain_end = m_domain_index_end + openvdb::Vec3i{ narrow_band_width };
+// 	auto extended_domain_begin = m_domain_index_begin - openvdb::Vec3i{ narrow_band_width };
+// 	auto extended_domain_end = m_domain_index_end + openvdb::Vec3i{ narrow_band_width };
 
-	//first node
-	auto* first_node = m_domain_solid_sdf->tree().touchLeaf(openvdb::Coord{ extended_domain_begin });
-	auto touch_domain_begin = first_node->origin();
-	auto touch_domain_end = extended_domain_end;
+// 	//first node
+// 	auto* first_node = m_domain_solid_sdf->tree().touchLeaf(openvdb::Coord{ extended_domain_begin });
+// 	auto touch_domain_begin = first_node->origin();
+// 	auto touch_domain_end = extended_domain_end;
 
-	auto has_point_outside_domain = [&](const openvdb::Coord& leaf_origin) {
-		for (int ii = 0; ii <= 8; ii += 8) {
-			for (int jj = 0; jj <= 8; jj += 8) {
-				for (int kk = 0; kk <= 8; kk += 8) {
-					for (int ic = 0; ic < 3; ic++) {
-						if (leaf_origin[ic] + openvdb::Coord{ ii,jj,kk }[ic] < shrinked_domain_begin[ic]) {
-							return true;
-						}
-						if (leaf_origin[ic] + openvdb::Coord{ ii,jj,kk }[ic] > shrinked_domain_end[ic]) {
-							return true;
-						}
-					}
-				}
-			}
-		}
-		return false;
-	};
+// 	auto has_point_outside_domain = [&](const openvdb::Coord& leaf_origin) {
+// 		for (int ii = 0; ii <= 8; ii += 8) {
+// 			for (int jj = 0; jj <= 8; jj += 8) {
+// 				for (int kk = 0; kk <= 8; kk += 8) {
+// 					for (int ic = 0; ic < 3; ic++) {
+// 						if (leaf_origin[ic] + openvdb::Coord{ ii,jj,kk }[ic] < shrinked_domain_begin[ic]) {
+// 							return true;
+// 						}
+// 						if (leaf_origin[ic] + openvdb::Coord{ ii,jj,kk }[ic] > shrinked_domain_end[ic]) {
+// 							return true;
+// 						}
+// 					}
+// 				}
+// 			}
+// 		}
+// 		return false;
+// 	};
 
-	for (int x = touch_domain_begin[0]; x <= touch_domain_end[0]; x++) {
-		for (int y = touch_domain_begin[1]; y <= touch_domain_end[1]; y++) {
-			for (int z = touch_domain_begin[2]; z <= touch_domain_end[2]; z++) {
-				if (has_point_outside_domain(openvdb::Coord{ x,y,z })) {
-					m_domain_solid_sdf->tree().touchLeaf(openvdb::Coord{ x,y,z });
-				}
-			}
-		}
-	}
+// 	for (int x = touch_domain_begin[0]; x <= touch_domain_end[0]; x++) {
+// 		for (int y = touch_domain_begin[1]; y <= touch_domain_end[1]; y++) {
+// 			for (int z = touch_domain_begin[2]; z <= touch_domain_end[2]; z++) {
+// 				if (has_point_outside_domain(openvdb::Coord{ x,y,z })) {
+// 					m_domain_solid_sdf->tree().touchLeaf(openvdb::Coord{ x,y,z });
+// 				}
+// 			}
+// 		}
+// 	}
 
-	auto leafman = openvdb::tree::LeafManager<openvdb::FloatTree>(m_domain_solid_sdf->tree());
+// 	auto leafman = openvdb::tree::LeafManager<openvdb::FloatTree>(m_domain_solid_sdf->tree());
 
-	openvdb::Vec3f domain_center = 0.5f * (m_domain_index_begin + m_domain_index_end);
-	openvdb::Vec3f domain_extend = openvdb::Vec3f{ m_domain_index_end } - domain_center;
+// 	openvdb::Vec3f domain_center = 0.5f * (m_domain_index_begin + m_domain_index_end);
+// 	openvdb::Vec3f domain_extend = openvdb::Vec3f{ m_domain_index_end } - domain_center;
 
-	auto set_leaf_sdf = [&](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index leafpos) {
-		for (auto offset = 0; offset < leaf.SIZE; offset++) {
-			//find the projection point on the boundary
-			auto cpos = leaf.offsetToGlobalCoord(offset);
-			//projecte cpos
-			auto ppos = cpos;
-			bool voxel_is_outside = false;
-			for (int ic = 0; ic < 3; ic++) {
-				if (ppos[ic] < m_domain_index_begin[ic]) {
-					ppos[ic] = m_domain_index_begin[ic];
-					voxel_is_outside = true;
-				}
-				//note the domain contains end-begin voxels
-				//the end voxel is outside of the domain
-				//but its solid vertex happens to be on the corner of the domain
-				//it is still counted as inside the domain
-				if (ppos[ic] > m_domain_index_end[ic]) {
-					ppos[ic] = m_domain_index_end[ic];
-					voxel_is_outside = true;
-				}
-			}
+// 	auto set_leaf_sdf = [&](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+// 		for (auto offset = 0; offset < leaf.SIZE; offset++) {
+// 			//find the projection point on the boundary
+// 			auto cpos = leaf.offsetToGlobalCoord(offset);
+// 			//projecte cpos
+// 			auto ppos = cpos;
+// 			bool voxel_is_outside = false;
+// 			for (int ic = 0; ic < 3; ic++) {
+// 				if (ppos[ic] < m_domain_index_begin[ic]) {
+// 					ppos[ic] = m_domain_index_begin[ic];
+// 					voxel_is_outside = true;
+// 				}
+// 				//note the domain contains end-begin voxels
+// 				//the end voxel is outside of the domain
+// 				//but its solid vertex happens to be on the corner of the domain
+// 				//it is still counted as inside the domain
+// 				if (ppos[ic] > m_domain_index_end[ic]) {
+// 					ppos[ic] = m_domain_index_end[ic];
+// 					voxel_is_outside = true;
+// 				}
+// 			}
 
-			if (voxel_is_outside) {
-				//outside of the domain means it's inside the solid container, set negaive distance
-				leaf.setValueOn(offset, -m_dx * (ppos - cpos).asVec3s().length());
-			}
-			else {
-				//find the closest way to move this point to the boundary
-				int effort[6];
-				//negx
-				effort[0] = cpos[0] - m_domain_index_begin[0];
-				//negy
-				effort[1] = cpos[1] - m_domain_index_begin[1];
-				//negz
-				effort[2] = cpos[2] - m_domain_index_begin[2];
+// 			if (voxel_is_outside) {
+// 				//outside of the domain means it's inside the solid container, set negaive distance
+// 				leaf.setValueOn(offset, -m_dx * (ppos - cpos).asVec3s().length());
+// 			}
+// 			else {
+// 				//find the closest way to move this point to the boundary
+// 				int effort[6];
+// 				//negx
+// 				effort[0] = cpos[0] - m_domain_index_begin[0];
+// 				//negy
+// 				effort[1] = cpos[1] - m_domain_index_begin[1];
+// 				//negz
+// 				effort[2] = cpos[2] - m_domain_index_begin[2];
 
-				//posx
-				effort[3] = m_domain_index_end[0] - cpos[0];
-				//posy
-				effort[4] = m_domain_index_end[1] - cpos[1];
-				//posz
-				effort[5] = m_domain_index_end[2] - cpos[2];
+// 				//posx
+// 				effort[3] = m_domain_index_end[0] - cpos[0];
+// 				//posy
+// 				effort[4] = m_domain_index_end[1] - cpos[1];
+// 				//posz
+// 				effort[5] = m_domain_index_end[2] - cpos[2];
 
-				int min_effort = effort[0];
+// 				int min_effort = effort[0];
 
-				for (int ieffort = 1; ieffort < 6; ieffort++) {
-					if (effort[ieffort] < min_effort) {
-						min_effort = effort[ieffort];
-					}
-				}
+// 				for (int ieffort = 1; ieffort < 6; ieffort++) {
+// 					if (effort[ieffort] < min_effort) {
+// 						min_effort = effort[ieffort];
+// 					}
+// 				}
 
-				//inside the domain the value is positive;
-				leaf.setValueOn(offset, m_dx * min_effort);
-			}
-		}//end for all voxel
-	};//end set leaf boundary sdf
+// 				//inside the domain the value is positive;
+// 				leaf.setValueOn(offset, m_dx * min_effort);
+// 			}
+// 		}//end for all voxel
+// 	};//end set leaf boundary sdf
 
-	leafman.foreach(set_leaf_sdf);
-}
+// 	leafman.foreach(set_leaf_sdf);
+// }
 
 namespace {
 	//given input target solid sdf and source solid sdf
@@ -2965,83 +3495,447 @@ void FLIP_vdb::update_solid_sdf(std::vector<openvdb::FloatGrid::Ptr> &moving_sol
 
 	
 }
-void FLIP_vdb::update_solid_sdf()
+
+
+
+
+void FLIP_vdb::emit_liquid(
+	openvdb::points::PointDataGrid::Ptr in_out_particles,
+	openvdb::FloatGrid::Ptr sdf,
+	openvdb::Vec3fGrid::Ptr vel,
+	float vx, float vy, float vz)
 {
 	using  namespace openvdb::tools::local_util;
-	//potentially update a moving sdf
-
-	//touch all nodes in the m_solids that could potentially have solids
-	for (auto& solidsdfptr : m_moving_solids) {
-		for (auto leafiter = solidsdfptr->tree().cbeginLeaf(); leafiter; ++leafiter) {
-			auto source_ipos = leafiter->origin();
-			auto source_wpos = solidsdfptr->indexToWorld(source_ipos);
-			auto target_ipos = openvdb::Coord(floorVec3(m_solid_sdf->worldToIndex(source_wpos)));
-			m_solid_sdf->tree().touchLeaf(target_ipos);
-		}
-		/*auto toucher = solid_leaf_tile_toucher(m_solid_sdf, solidsdfptr);
-		solidsdfptr->tree().visit(toucher);*/
+	
+	//alias
+	auto in_sdf = sdf;
+	auto in_vel = vel;
+	bool use_vel_volume = false;
+	//the input is assumed to be narrowband boxes
+	auto inputbbox = openvdb::CoordBBox();
+	auto is_valid = in_sdf->tree().evalLeafBoundingBox(inputbbox);
+	if (!is_valid) {
+		return;
 	}
+	if(vel!=nullptr)
+	{
+		use_vel_volume = true;
+	}
+	//bounding box in the world coordinates
+	auto worldinputbbox = openvdb::BBoxd(in_sdf->indexToWorld(inputbbox.min()), 
+		in_sdf->indexToWorld(inputbbox.max()));
+	
 
-	//also retrieve all possible liquids trapped inside solid
-	tbb::concurrent_vector<openvdb::Coord> neib_liquid_origins;
+	//map the bounding box to the particle index space
+	auto loopbegin = floorVec3(in_out_particles->worldToIndex(worldinputbbox.min())) - openvdb::Vec3i(8);
+	auto loopend = ceilVec3(in_out_particles->worldToIndex(worldinputbbox.max())) + openvdb::Vec3i(8);
 
-	auto collect_liquid_origins = [&](openvdb::points::PointDataTree::LeafNodeType& leaf, openvdb::Index leafpos) {
-		for (auto& solidsdfptr : m_moving_solids) {
-			auto axr{ solidsdfptr->getConstUnsafeAccessor() };
-			for (int ii = 0; ii <= 8; ii += 8) {
-				for (int jj = 0; jj <= 8; jj += 8) {
-					for (int kk = 0; kk <= 8; kk += 8) {
-						auto at_coord = leaf.origin().offsetBy(ii, jj, kk);
-						auto wpos = m_particles->indexToWorld(at_coord);
-						auto ipos = solidsdfptr->worldToIndex(wpos);
-						if (openvdb::tools::BoxSampler::sample(axr, ipos) < 0) {
-							neib_liquid_origins.push_back(leaf.origin());
-							return;
+	auto tempgrid = openvdb::BoolGrid::create();
+	tempgrid->setTransform(in_out_particles->transformPtr());
+	auto templeaf =  tempgrid->tree().touchLeaf(Coord(loopbegin));
+
+	loopbegin = templeaf->origin().asVec3i()/8;
+	templeaf = tempgrid->tree().touchLeaf(Coord(loopend));
+	loopend = templeaf->origin().asVec3i()/8;
+
+	using point_leaf_t = openvdb::points::PointDataTree::LeafNodeType;
+	tbb::concurrent_hash_map<openvdb::Coord, point_leaf_t*, tbbcoordhash> target_point_leaves;
+
+	auto pispace_range = tbb::blocked_range3d<int, int, int>(loopbegin.x(), loopend.x(), loopbegin.y(), loopend.y(), loopbegin.z(), loopend.z());
+
+	float dx = in_out_particles->transform().voxelSize()[0];
+	printf("%f\n",dx);
+	auto mark_active_point_leaves = [&](const tbb::blocked_range3d<int,int,int>& r) {
+		auto solid_axr{ in_sdf->getConstAccessor() };
+
+
+		for (int i = r.pages().begin(); i < r.pages().end(); i +=1) {
+			for (int j = r.rows().begin(); j < r.rows().end(); j +=1) {
+				for (int k = r.cols().begin(); k < r.cols().end(); k +=1) {
+					//test if any of the corner of this box touches the 
+					int has_solid = 0;
+					int i8 = i * 8, j8 = j * 8, k8 = k * 8;
+					for (int ii = 0; ii <= 8 && !has_solid; ii += 8) {
+						for (int jj = 0; jj <= 8 && !has_solid; jj += 8) {
+							for (int kk = 0; kk <= 8 && !has_solid; kk += 8) {
+								auto particle_idx_pos = openvdb::Vec3i(i8 + ii, j8 + jj, k8 + kk);
+								has_solid = (openvdb::tools::BoxSampler::sample(solid_axr, in_sdf->worldToIndex(in_out_particles->indexToWorld(particle_idx_pos))) < 0);
+							}
 						}
-					}//end kk
-				}//end jj
-			}//end ii
-		}//end for all solids
-	};//end collect liquid origin
-	auto partman = openvdb::tree::LeafManager<openvdb::points::PointDataTree>(m_particles->tree());
-	partman.foreach(collect_liquid_origins);
+					}
 
-	//touch those liquid leafs as well
-	for (auto coord : neib_liquid_origins) {
-		m_solid_sdf->tree().touchLeaf(coord);
+					if (has_solid) {
+						auto floor_leaf = in_out_particles->tree().probeLeaf(openvdb::Coord(i8,j8,k8));
+						if (floor_leaf) {
+							target_point_leaves.insert(std::make_pair(floor_leaf->origin(), floor_leaf));
+						}
+						else {
+							auto newleaff = new openvdb::points::PointDataTree::LeafNodeType(openvdb::Coord(i8, j8, k8), 0, true);
+							auto new_origin = newleaff->origin();
+							bool success = target_point_leaves.insert(std::make_pair(newleaff->origin(), newleaff));
+							if (!success) {
+								delete newleaff;
+							}
+						}//end else found existing particle leaf
+					}//end if touch solid
+				}//loop k
+			}//loop j
+		}//loop i
+	};//end mark active point elaves
+	tbb::parallel_for(pispace_range, mark_active_point_leaves);
+
+	//for parallel process
+	std::vector<point_leaf_t*> leafarray;
+	for (auto& i : target_point_leaves) {
+		leafarray.push_back(i.second);
 	}
+	//printf("touched_leafs:%zd\n", leafarray.size());
 
+	std::atomic<size_t> added_particles{ 0 };
 
-	auto update_solid_op = [&](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index leafpos) {
-		for (const auto& solidsdfptr : m_moving_solids) {
-			auto source_solid_axr{ solidsdfptr->getConstAccessor() };
+	auto pnamepair = FLIP_vdb::position_attribute::attributeType();
+	auto m_position_attribute_descriptor = openvdb::points::AttributeSet::Descriptor::create(pnamepair);
+	
+	auto vnamepair = FLIP_vdb::velocity_attribute::attributeType();
+	auto m_pv_attribute_descriptor = m_position_attribute_descriptor->duplicateAppend("v", vnamepair);
 
-			//get the sdf from the moving solids
-			for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-				float current_sdf = leaf.getValue(offset);
-				auto current_Ipos = leaf.offsetToGlobalCoord(offset);
-				auto current_wpos = m_solid_sdf->indexToWorld(current_Ipos);
-				//interpolate the value at the
-				float source_sdf = openvdb::tools::BoxSampler::sample(
-					source_solid_axr, solidsdfptr->worldToIndex(current_wpos));
-				leaf.setValueOn(offset, std::min(current_sdf, source_sdf));
-			}//end for target solid voxel
-		}//end for all moving solids
-	};//end update solid operator
-
-	auto solid_leafman = openvdb::tree::LeafManager<openvdb::FloatTree>(m_solid_sdf->tree());
-
-	solid_leafman.foreach(update_solid_op);
-
-	//merge the influence of the solid sdf
-	for (auto iter = m_domain_solid_sdf->tree().cbeginLeaf(); iter; ++iter) {
-		auto* leaf = m_solid_sdf->tree().touchLeaf(iter->origin());
-		for (auto viter = iter->cbeginValueOn(); viter != iter->cendValueOn(); ++viter) {
-			leaf->setValueOn(viter.offset(),
-				std::min(leaf->getValue(viter.offset()), viter.getValue()));
+	//use existing descriptors if we already have particles
+	if (!in_out_particles->empty()) {
+		for (auto it = in_out_particles->tree().cbeginLeaf(); it; ++it) {
+			if (it->getLastValue() != 0) {
+				//a non-empty leaf with attributes
+				m_pv_attribute_descriptor = it->attributeSet().descriptorPtr();
+				break;
+			}
 		}
 	}
+
+	//seed each leaf
+	auto seed_leaf = [&](const tbb::blocked_range<size_t>& r) {
+		if(use_vel_volume) 
+		{
+			auto in_sdf_axr{ in_sdf->getConstAccessor() };
+			auto in_vel_axr{ in_vel->getConstAccessor() };
+			float sdf_threshold = -dx * 0.55;
+
+			std::random_device device;
+			std::mt19937 generator(/*seed=*/device());
+			std::uniform_real_distribution<> distribution(-0.5, 0.5);
+
+			for (auto ileaf = r.begin(); ileaf < r.end(); ++ileaf) {
+				auto& leaf = *leafarray[ileaf];
+				std::vector<openvdb::Vec3f> new_pos, new_vel;
+				std::vector<openvdb::PointDataIndex32> new_idxend;
+
+				//check if the last element is zero
+				//if so, it's a new leaf
+				if (leaf.getLastValue() == 0) {
+					//initialize the attribute descriptor
+					auto local_pv_descriptor = m_pv_attribute_descriptor;
+					leaf.initializeAttributes(m_position_attribute_descriptor, 0);
+					leaf.appendAttribute(leaf.attributeSet().descriptor(), local_pv_descriptor, 1);
+				}
+
+				//reader
+				const openvdb::points::AttributeArray& positionArray =
+					leaf.attributeArray("P");
+				// Extract the velocity attribute from the leaf by name (v is velocity).
+				const openvdb::points::AttributeArray& velocityArray =
+					leaf.attributeArray("v");
+				auto p_handle_ptr = openvdb::points::AttributeHandle<openvdb::Vec3f, FLIP_vdb::PositionCodec>::create(positionArray);
+				auto v_handle_ptr = openvdb::points::AttributeHandle<openvdb::Vec3f, FLIP_vdb::VelocityCodec>::create(velocityArray);
+
+				openvdb::Index32 emitted_particle = 0;
+				for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+					openvdb::Index32 idxbegin = 0;
+					if (offset != 0) {
+						idxbegin = leaf.getValue(offset - 1);
+					}
+					openvdb::Index32 idxend = leaf.getValue(offset);
+
+
+					//used to indicate sub_voxel(8 cells) occupancy by particles
+					unsigned char sub_voxel_occupancy = 0;
+					
+					//first emit original particles
+					openvdb::Index32 this_voxel_emitted = 0;
+					for (auto idx = idxbegin; idx < idxend; ++idx) {
+						auto p = p_handle_ptr->get(idx);
+						unsigned char sv_pos = ((p[2] > 0.f) << 2) | ((p[1] > 0.f) << 1) | (p[0] > 0.f);
+						//only emit uniformly, otherwise skip it
+						if (sub_voxel_occupancy & (1 << sv_pos)) {
+							//that bit is active, there is already an particle
+							//skip it
+							continue;
+						}
+						sub_voxel_occupancy |= (1 << sv_pos);
+						new_pos.push_back(p);
+						new_vel.push_back(v_handle_ptr->get(idx));
+						emitted_particle++;
+						this_voxel_emitted++;
+					}
+
+					//emit to fill the sdf
+					auto voxelwpos = in_out_particles->indexToWorld(leaf.offsetToGlobalCoord(offset));
+					auto voxelipos = in_sdf->worldToIndex(voxelwpos);
+					if (openvdb::tools::BoxSampler::sample(in_sdf_axr, voxelipos) < dx) {
+						const int max_emit_trial = 16;
+						for (int trial = 0; this_voxel_emitted < 8 && trial<max_emit_trial; trial++) {
+							openvdb::Vec3d particle_pipos{ distribution(generator) ,distribution(generator) ,distribution(generator) };
+							auto& p = particle_pipos;
+							unsigned char sv_pos = ((p[2] > 0) << 2) | ((p[1] > 0) << 1) | (p[0] > 0);
+							//only emit uniformly, otherwise skip it
+							if (sub_voxel_occupancy & (1 << sv_pos)) {
+								//that bit is active, there is already an particle
+								//skip it
+								continue;
+							}
+							auto particlewpos = in_out_particles->indexToWorld(particle_pipos) + voxelwpos;
+							auto particle_sdfipos = in_sdf->worldToIndex(particlewpos);
+							if (openvdb::tools::BoxSampler::sample(in_sdf_axr, particle_sdfipos) < sdf_threshold) {
+								sub_voxel_occupancy |= 1 << sv_pos;
+								new_pos.push_back(particle_pipos);
+								new_vel.push_back(openvdb::tools::BoxSampler::sample(in_vel_axr,particle_sdfipos));
+								emitted_particle++;
+								this_voxel_emitted++;
+								added_particles++;
+							}
+						}//end for 16 emit trials
+					}//if voxel inside emitter
+
+					new_idxend.push_back(emitted_particle);
+				}//end emit original particles and new particles
+
+				//set the new index ends, attributes
+				//initialize the attribute descriptor
+				auto local_pv_descriptor = m_pv_attribute_descriptor;
+				leaf.initializeAttributes(m_position_attribute_descriptor, emitted_particle);
+				leaf.appendAttribute(leaf.attributeSet().descriptor(), local_pv_descriptor, 1);
+				leaf.setOffsets(new_idxend);
+
+				//set the positions and velocities
+				//get the new attribute arrays
+				openvdb::points::AttributeArray& posarray = leaf.attributeArray("P");
+				openvdb::points::AttributeArray& varray = leaf.attributeArray("v");
+
+				// Create read handles for position and velocity
+				openvdb::points::AttributeWriteHandle<openvdb::Vec3f, FLIP_vdb::PositionCodec> posWHandle(posarray);
+				openvdb::points::AttributeWriteHandle<openvdb::Vec3f, FLIP_vdb::VelocityCodec> vWHandle(varray);
+
+				for (auto iter = leaf.beginIndexOn(); iter; ++iter) {
+					posWHandle.set(*iter, new_pos[*iter]);
+					vWHandle.set(*iter, new_vel[*iter]);
+				}//end for all on voxels
+			}//end for range leaf
+		} 
+		else {
+			auto in_sdf_axr{ in_sdf->getConstAccessor() };
+			float sdf_threshold = -dx * 0.55;
+
+			std::random_device device;
+			std::mt19937 generator(/*seed=*/device());
+			std::uniform_real_distribution<> distribution(-0.5, 0.5);
+
+			for (auto ileaf = r.begin(); ileaf < r.end(); ++ileaf) {
+				auto& leaf = *leafarray[ileaf];
+				std::vector<openvdb::Vec3f> new_pos, new_vel;
+				std::vector<openvdb::PointDataIndex32> new_idxend;
+
+				//check if the last element is zero
+				//if so, it's a new leaf
+				if (leaf.getLastValue() == 0) {
+					//initialize the attribute descriptor
+					auto local_pv_descriptor = m_pv_attribute_descriptor;
+					leaf.initializeAttributes(m_position_attribute_descriptor, 0);
+					leaf.appendAttribute(leaf.attributeSet().descriptor(), local_pv_descriptor, 1);
+				}
+
+				//reader
+				const openvdb::points::AttributeArray& positionArray =
+					leaf.attributeArray("P");
+				// Extract the velocity attribute from the leaf by name (v is velocity).
+				const openvdb::points::AttributeArray& velocityArray =
+					leaf.attributeArray("v");
+				auto p_handle_ptr = openvdb::points::AttributeHandle<openvdb::Vec3f, FLIP_vdb::PositionCodec>::create(positionArray);
+				auto v_handle_ptr = openvdb::points::AttributeHandle<openvdb::Vec3f, FLIP_vdb::VelocityCodec>::create(velocityArray);
+
+				openvdb::Index32 emitted_particle = 0;
+				for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+					openvdb::Index32 idxbegin = 0;
+					if (offset != 0) {
+						idxbegin = leaf.getValue(offset - 1);
+					}
+					openvdb::Index32 idxend = leaf.getValue(offset);
+
+
+					//used to indicate sub_voxel(8 cells) occupancy by particles
+					unsigned char sub_voxel_occupancy = 0;
+					
+					//first emit original particles
+					openvdb::Index32 this_voxel_emitted = 0;
+					for (auto idx = idxbegin; idx < idxend; ++idx) {
+						auto p = p_handle_ptr->get(idx);
+						unsigned char sv_pos = ((p[2] > 0.f) << 2) | ((p[1] > 0.f) << 1) | (p[0] > 0.f);
+						//only emit uniformly, otherwise skip it
+						if (sub_voxel_occupancy & (1 << sv_pos)) {
+							//that bit is active, there is already an particle
+							//skip it
+							continue;
+						}
+						sub_voxel_occupancy |= (1 << sv_pos);
+						new_pos.push_back(p);
+						new_vel.push_back(v_handle_ptr->get(idx));
+						emitted_particle++;
+						this_voxel_emitted++;
+					}
+
+					//emit to fill the sdf
+					auto voxelwpos = in_out_particles->indexToWorld(leaf.offsetToGlobalCoord(offset));
+					auto voxelipos = in_sdf->worldToIndex(voxelwpos);
+					if (openvdb::tools::BoxSampler::sample(in_sdf_axr, voxelipos) < dx) {
+						const int max_emit_trial = 16;
+						for (int trial = 0; this_voxel_emitted < 8 && trial<max_emit_trial; trial++) {
+							openvdb::Vec3d particle_pipos{ distribution(generator) ,distribution(generator) ,distribution(generator) };
+							auto& p = particle_pipos;
+							unsigned char sv_pos = ((p[2] > 0) << 2) | ((p[1] > 0) << 1) | (p[0] > 0);
+							//only emit uniformly, otherwise skip it
+							if (sub_voxel_occupancy & (1 << sv_pos)) {
+								//that bit is active, there is already an particle
+								//skip it
+								continue;
+							}
+							auto particlewpos = in_out_particles->indexToWorld(particle_pipos) + voxelwpos;
+							auto particle_sdfipos = in_sdf->worldToIndex(particlewpos);
+							if (openvdb::tools::BoxSampler::sample(in_sdf_axr, particle_sdfipos) < sdf_threshold) {
+								sub_voxel_occupancy |= 1 << sv_pos;
+								new_pos.push_back(particle_pipos);
+								new_vel.push_back(openvdb::Vec3d(vx, vy, vz));
+								emitted_particle++;
+								this_voxel_emitted++;
+								added_particles++;
+							}
+						}//end for 16 emit trials
+					}//if voxel inside emitter
+
+					new_idxend.push_back(emitted_particle);
+				}//end emit original particles and new particles
+
+				//set the new index ends, attributes
+				//initialize the attribute descriptor
+				auto local_pv_descriptor = m_pv_attribute_descriptor;
+				leaf.initializeAttributes(m_position_attribute_descriptor, emitted_particle);
+				leaf.appendAttribute(leaf.attributeSet().descriptor(), local_pv_descriptor, 1);
+				leaf.setOffsets(new_idxend);
+
+				//set the positions and velocities
+				//get the new attribute arrays
+				openvdb::points::AttributeArray& posarray = leaf.attributeArray("P");
+				openvdb::points::AttributeArray& varray = leaf.attributeArray("v");
+
+				// Create read handles for position and velocity
+				openvdb::points::AttributeWriteHandle<openvdb::Vec3f, FLIP_vdb::PositionCodec> posWHandle(posarray);
+				openvdb::points::AttributeWriteHandle<openvdb::Vec3f, FLIP_vdb::VelocityCodec> vWHandle(varray);
+
+				for (auto iter = leaf.beginIndexOn(); iter; ++iter) {
+					posWHandle.set(*iter, new_pos[*iter]);
+					vWHandle.set(*iter, new_vel[*iter]);
+				}//end for all on voxels
+			}//end for range leaf
+		}
+	};//end seed particle 
+
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, leafarray.size()), seed_leaf);
+	//printf("added particles:%zd\n", size_t(added_particles));
+	//printf("original leaf count:%d\n", m_particles->tree().leafCount());
+	for (auto leaf : leafarray) {
+		if (leaf != in_out_particles->tree().probeLeaf(leaf->origin())) {
+			in_out_particles->tree().addLeaf(leaf);
+		}
+	}
+	//openvdb::io::File("dbg.vdb").write({ m_particles });
+	//printf("new leafcount:%d\n", m_particles->tree().leafCount());
+	in_out_particles->pruneGrid();
 }
+
+
+
+
+// void FLIP_vdb::update_solid_sdf()
+// {
+// 	using  namespace openvdb::tools::local_util;
+	
+// 	//touch all nodes in the m_solids that could potentially have solids
+// 	for (auto& solidsdfptr : m_moving_solids) {
+// 		for (auto leafiter = solidsdfptr->tree().cbeginLeaf(); leafiter; ++leafiter) {
+// 			auto source_ipos = leafiter->origin();
+// 			auto source_wpos = solidsdfptr->indexToWorld(source_ipos);
+// 			auto target_ipos = openvdb::Coord(floorVec3(m_solid_sdf->worldToIndex(source_wpos)));
+// 			m_solid_sdf->tree().touchLeaf(target_ipos);
+// 		}
+// 		/*auto toucher = solid_leaf_tile_toucher(m_solid_sdf, solidsdfptr);
+// 		solidsdfptr->tree().visit(toucher);*/
+// 	}
+
+// 	//also retrieve all possible liquids trapped inside solid
+// 	tbb::concurrent_vector<openvdb::Coord> neib_liquid_origins;
+
+// 	auto collect_liquid_origins = [&](openvdb::points::PointDataTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+// 		for (auto& solidsdfptr : m_moving_solids) {
+// 			auto axr{ solidsdfptr->getConstUnsafeAccessor() };
+// 			for (int ii = 0; ii <= 8; ii += 8) {
+// 				for (int jj = 0; jj <= 8; jj += 8) {
+// 					for (int kk = 0; kk <= 8; kk += 8) {
+// 						auto at_coord = leaf.origin().offsetBy(ii, jj, kk);
+// 						auto wpos = m_particles->indexToWorld(at_coord);
+// 						auto ipos = solidsdfptr->worldToIndex(wpos);
+// 						if (openvdb::tools::BoxSampler::sample(axr, ipos) < 0) {
+// 							neib_liquid_origins.push_back(leaf.origin());
+// 							return;
+// 						}
+// 					}//end kk
+// 				}//end jj
+// 			}//end ii
+// 		}//end for all solids
+// 	};//end collect liquid origin
+// 	auto partman = openvdb::tree::LeafManager<openvdb::points::PointDataTree>(m_particles->tree());
+// 	partman.foreach(collect_liquid_origins);
+
+// 	//touch those liquid leafs as well
+// 	for (auto coord : neib_liquid_origins) {
+// 		m_solid_sdf->tree().touchLeaf(coord);
+// 	}
+
+
+// 	auto update_solid_op = [&](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+// 		for (const auto& solidsdfptr : m_moving_solids) {
+// 			auto source_solid_axr{ solidsdfptr->getConstAccessor() };
+
+// 			//get the sdf from the moving solids
+// 			for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+// 				float current_sdf = leaf.getValue(offset);
+// 				auto current_Ipos = leaf.offsetToGlobalCoord(offset);
+// 				auto current_wpos = m_solid_sdf->indexToWorld(current_Ipos);
+// 				//interpolate the value at the
+// 				float source_sdf = openvdb::tools::BoxSampler::sample(
+// 					source_solid_axr, solidsdfptr->worldToIndex(current_wpos));
+// 				leaf.setValueOn(offset, std::min(current_sdf, source_sdf));
+// 			}//end for target solid voxel
+// 		}//end for all moving solids
+// 	};//end update solid operator
+
+// 	auto solid_leafman = openvdb::tree::LeafManager<openvdb::FloatTree>(m_solid_sdf->tree());
+
+// 	solid_leafman.foreach(update_solid_op);
+
+// 	//merge the influence of the solid sdf
+// 	for (auto iter = m_domain_solid_sdf->tree().cbeginLeaf(); iter; ++iter) {
+// 		auto* leaf = m_solid_sdf->tree().touchLeaf(iter->origin());
+// 		for (auto viter = iter->cbeginValueOn(); viter != iter->cendValueOn(); ++viter) {
+// 			leaf->setValueOn(viter.offset(),
+// 				std::min(leaf->getValue(viter.offset()), viter.getValue()));
+// 		}
+// 	}
+// }
 void FLIP_vdb::calculate_face_weights(
 	openvdb::Vec3fGrid::Ptr face_weight, 
 	openvdb::FloatGrid::Ptr liquid_sdf,
@@ -3410,6 +4304,7 @@ void FLIP_vdb::set_solid_velocity()
 	};
 	leafman.foreach(set_moving_solid_vel);
 }
+
 namespace {
 	//return the total number of degree of freedom
 	//and set the degree of freedom tree
@@ -3711,7 +4606,6 @@ void FLIP_vdb::apply_pressure_gradient(float in_dt)
 		auto pressure_axr{ m_pressure->getConstAccessor() };
 		//auto update_axr{ m_velocity_update->getAccessor() };
 
-		
 
 		for (auto offset = 0; offset < leaf.SIZE; offset++) {
 			if (leaf.isValueMaskOff(offset)) {
@@ -4022,10 +4916,7 @@ void FLIP_vdb::field_add_vector(openvdb::Vec3fGrid::Ptr velocity_field,
 void FLIP_vdb::apply_body_force(float dt)
 {
 	m_acceleration_fields = m_velocity->deepCopy();
-	openvdb::Vec3f acc;
-	acc[0] = Options::doubleValue("FLIP_acc_x");
-	acc[1] = Options::doubleValue("FLIP_acc_y");
-	acc[2] = Options::doubleValue("FLIP_acc_z");
+	openvdb::Vec3f acc{ 0 };
 	auto normacc = acc.length();
 	auto set_acceleration_field = [&](openvdb::Vec3fTree::LeafNodeType& leaf, openvdb::Index leafpos) {
 		leaf.fill(openvdb::Vec3f(0, 0, 0));
@@ -4105,7 +4996,11 @@ float FLIP_vdb::cfl()
 	auto leafman = openvdb::tree::LeafManager <openvdb::Vec3fTree>(m_velocity->tree());
 	leafman.foreach(find_per_leaf_max_vel);
 
-	float max_v = max_v_per_leaf[0];
+	float max_v = 0;
+	if (max_v_per_leaf.empty()) {
+		return std::numeric_limits<float>::max() / 2;
+	}
+	max_v = max_v_per_leaf[0];
 
 	//dont take the maximum number
 	//take the 90%?
@@ -4119,7 +5014,7 @@ float FLIP_vdb::cfl()
 			max_v = v;
 		}
 	}*/
-	max_v = max_v_per_leaf[top90];
+	max_v = max_v_per_leaf[nleaf-1];
 	printf("max velocity component:%f\n", max_v_per_leaf.back());
 	printf("cfl velocity:%f\n", max_v);
 	return m_dx / (std::abs(max_v) + 1e-6f);
@@ -4129,6 +5024,10 @@ float FLIP_vdb::cfl_and_regularize_velocity()
 {
 	std::vector<float> max_v_per_leaf;
 	max_v_per_leaf.assign(m_velocity->tree().leafCount(), 0);
+
+	if (max_v_per_leaf.empty()) {
+		return std::numeric_limits<float>::max()/2;
+	}
 
 	auto find_per_leaf_max_vel = [&](openvdb::Vec3fTree::LeafNodeType& leaf, openvdb::Index leafpos) {
 		float max_v = 0;
@@ -4147,7 +5046,10 @@ float FLIP_vdb::cfl_and_regularize_velocity()
 	auto leafman = openvdb::tree::LeafManager <openvdb::Vec3fTree>(m_velocity->tree());
 	leafman.foreach(find_per_leaf_max_vel);
 
-	float max_v = max_v_per_leaf[0];
+	float max_v = 0;
+	
+	
+	max_v = max_v_per_leaf[0];
 
 	//dont take the maximum number
 	//take the 90%?
@@ -4206,189 +5108,193 @@ float FLIP_vdb::cfl_and_regularize_velocity()
 //and only output n layer of particles with in this band
 //this will reduce the output particle size
 //this also generate the shrinked sdf object
-openvdb::points::PointDataGrid::Ptr FLIP_vdb::narrow_band_particles()
-{
-	using point_leaf_t = openvdb::points::PointDataTree::LeafNodeType;
-	//auto narrow_leaves = tbb::concurrent_hash_map<openvdb::Coord, point_leaf_t*>();
+// openvdb::points::PointDataGrid::Ptr FLIP_vdb::narrow_band_particles()
+// {
+// 	using point_leaf_t = openvdb::points::PointDataTree::LeafNodeType;
+// 	//auto narrow_leaves = tbb::concurrent_hash_map<openvdb::Coord, point_leaf_t*>();
 
-	//prepare the particle voxel mask
-	//liquidsdf is one ring larger than point datagrid
-	//this will only keep the extra one ring
-	auto point_voxel_mask = m_pushed_out_liquid_sdf->deepCopy();
+// 	//prepare the particle voxel mask
+// 	//liquidsdf is one ring larger than point datagrid
+// 	//this will only keep the extra one ring
+// 	auto point_voxel_mask = m_pushed_out_liquid_sdf->deepCopy();
 
+// 	auto keep_one_layer_mask = [&](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+// 		auto point_axr{ m_particles->getConstAccessor() };
+// 		auto pointleaf = m_particles->tree().probeConstLeaf(leaf.origin());
+// 		auto maskaxr{ point_voxel_mask->getAccessor() };
+// 		//there is no boundary in this sdf leaf
+// 		if (pointleaf && pointleaf->isValueMaskOn()) {
+// 			leaf.setValuesOff();
+// 			return;
+// 		}
+// 		for (auto iter = leaf.beginValueOn(); iter; ++iter) {
+// 			if (point_axr.isValueOn(iter.getCoord())) {
+// 				iter.setValueOff();
+// 			}
+// 		}
 
-
-	auto keep_one_layer_mask = [&](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index leafpos) {
-		auto point_axr{ m_particles->getConstAccessor() };
-		auto pointleaf = m_particles->tree().probeConstLeaf(leaf.origin());
-		auto maskaxr{ point_voxel_mask->getAccessor() };
-		//there is no boundary in this sdf leaf
-		if (pointleaf && pointleaf->isValueMaskOn()) {
-			leaf.setValuesOff();
-			return;
-		}
-		for (auto iter = leaf.beginValueOn(); iter; ++iter) {
-			if (point_axr.isValueOn(iter.getCoord())) {
-				iter.setValueOff();
-			}
-		}
-
-		for (auto iter = leaf.beginValueOn(); iter; ++iter) {
-			//if all its neighbor is inside liquid
-			//it is still surrounded by particles
-			bool all_in_liquid = true;
-			auto itercoord = iter.getCoord();
-			for (int ii = -1; ii < 2 && all_in_liquid; ii++) {
-				for (int jj = -1; jj < 2 && all_in_liquid; jj++) {
-					for (int kk = -1; kk < 2 && all_in_liquid; kk++) {
-						all_in_liquid &= 
-							maskaxr.getValue(itercoord.offsetBy(ii,jj,kk)) < 0;
-					}
-				}
-			}
-			if (all_in_liquid) {
-				iter.setValueOff();
-				continue;
-			}
+// 		for (auto iter = leaf.beginValueOn(); iter; ++iter) {
+// 			//if all its neighbor is inside liquid
+// 			//it is still surrounded by particles
+// 			bool all_in_liquid = true;
+// 			auto itercoord = iter.getCoord();
+// 			for (int ii = -1; ii < 2 && all_in_liquid; ii++) {
+// 				for (int jj = -1; jj < 2 && all_in_liquid; jj++) {
+// 					for (int kk = -1; kk < 2 && all_in_liquid; kk++) {
+// 						all_in_liquid &= 
+// 							maskaxr.getValue(itercoord.offsetBy(ii,jj,kk)) < 0;
+// 					}
+// 				}
+// 			}
+// 			if (all_in_liquid) {
+// 				iter.setValueOff();
+// 				continue;
+// 			}
 			
-			if (itercoord[0] < m_domain_index_begin[0]||itercoord[0]>=m_domain_index_end[0]||
-				itercoord[1] < m_domain_index_begin[1] || itercoord[1] >= m_domain_index_end[1] || 
-				itercoord[2] < m_domain_index_begin[2] || itercoord[2] >= m_domain_index_end[2]) {
-				iter.setValueOff();
-			}
-		}
-	};
-	auto maskman = openvdb::tree::LeafManager<openvdb::FloatTree>(point_voxel_mask->tree());
-	maskman.foreach(keep_one_layer_mask);
+// 			/*if (itercoord[0] < m_domain_index_begin[0]||itercoord[0]>=m_domain_index_end[0]||
+// 				itercoord[1] < m_domain_index_begin[1] || itercoord[1] >= m_domain_index_end[1] || 
+// 				itercoord[2] < m_domain_index_begin[2] || itercoord[2] >= m_domain_index_end[2]) {
+// 				iter.setValueOff();
+// 			}*/
+// 		}
+// 	};
+// 	auto maskman = openvdb::tree::LeafManager<openvdb::FloatTree>(point_voxel_mask->tree());
+// 	maskman.foreach(keep_one_layer_mask);
+// 	printf("keep_one_layer_mask_done\n");
+// 	auto smaller_mask = point_voxel_mask->deepCopy();
+// 	auto small_maskman = openvdb::tree::LeafManager<openvdb::FloatTree>(smaller_mask->tree());
 
-	auto smaller_mask = point_voxel_mask->deepCopy();
-	auto small_maskman = openvdb::tree::LeafManager<openvdb::FloatTree>(smaller_mask->tree());
+// 	int nlayer = 2;
+// 	//dilate the mask
+// 	openvdb::tools::dilateVoxels(maskman, nlayer, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+// 	openvdb::tools::dilateVoxels(small_maskman, nlayer - 1, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+// 	printf("dilate_voxel_mask_done\n");
+// 	//use the mask to shrink the sdf so that it only shows the interior liquid
+// 	//to be used by the shrinked sdf manager
+// 	auto shrink_sdf_op = [&](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+// 		auto smaller_mask_axr{ smaller_mask->getConstAccessor() };
+// 		auto smaller_mask_leaf= smaller_mask->tree().probeConstLeaf(leaf.origin()) ;
 
-	int nlayer = 2;
-	//dilate the mask
-	openvdb::tools::dilateVoxels(maskman, nlayer, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
-	openvdb::tools::dilateVoxels(small_maskman, nlayer - 1, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
-	
-	//use the mask to shrink the sdf so that it only shows the interior liquid
-	//to be used by the shrinked sdf manager
-	auto shrink_sdf_op = [&](openvdb::FloatTree::LeafNodeType& leaf, openvdb::Index leafpos) {
-		auto smaller_mask_axr{ smaller_mask->getConstAccessor() };
-		auto smaller_mask_leaf= smaller_mask->tree().probeConstLeaf(leaf.origin()) ;
+// 		if (leaf.isValueMaskOn()) {
+// 			//this leaf has no voxel near the free surface
+// 			//it is interior liquid
+// 			//set it off if it's quasi uniform
+// 			bool all_negative = true;
+// 			for (auto iter = leaf.beginValueAll(); iter; ++iter) {
+// 				if (iter.getValue() > 0) {
+// 					all_negative = false;
+// 					break;
+// 				}
+// 			}
+// 			if (all_negative) {
+// 				leaf.fill(-m_particle_radius, true);
+// 			}
 
-		if (leaf.isValueMaskOn()) {
-			//this leaf has no voxel near the free surface
-			//it is interior liquid
-			//set it off if it's quasi uniform
-			bool all_negative = true;
-			for (auto iter = leaf.beginValueAll(); iter; ++iter) {
-				if (iter.getValue() > 0) {
-					all_negative = false;
-					break;
-				}
-			}
-			if (all_negative) {
-				leaf.fill(-m_particle_radius, true);
-			}
+// 			//return;
+// 		}
 
-			//return;
-		}
+// 		for (auto iter = smaller_mask_leaf->beginValueOn(); iter; ++iter) {
+// 			if (leaf.isValueMaskOn(iter.offset())) {
+// 				leaf.setValueOn(iter.offset(), m_dx * 0.5);
+// 			}
+// 		}
+// 	};
 
-		for (auto iter = smaller_mask_leaf->beginValueOn(); iter; ++iter) {
-			if (leaf.isValueMaskOn(iter.offset())) {
-				leaf.setValueOn(iter.offset(), m_dx * 0.5);
-			}
-		}
-	};
+// 	m_shrinked_liquid_sdf = m_pushed_out_liquid_sdf->deepCopy();
+// 	m_shrinked_liquid_sdf->setName("Interior_SDF");
+// 	auto sdfman = openvdb::tree::LeafManager<openvdb::FloatTree>(m_shrinked_liquid_sdf->tree());
+// 	sdfman.foreach(shrink_sdf_op);
+// 	printf("shrink_sdf_done\n");
+// 	openvdb::tools::pruneLevelSet(m_shrinked_liquid_sdf->tree(), 0.5f * m_dx, -0.5f * m_dx);
+// 	//to be used by particle leaf manager
+// 	//detects leaves with particles that are near the border
+// 	//either it's not full
+// 	//or its boundary voxels detects empty neighbors
+// 	auto mark_point_on = [&](point_leaf_t& leaf, openvdb::Index leafpos) {
+// 		auto mask_axr{ point_voxel_mask->getConstAccessor() };
+// 		auto maskleaf = point_voxel_mask->tree().probeConstLeaf(leaf.origin());
 
-	m_shrinked_liquid_sdf = m_pushed_out_liquid_sdf->deepCopy();
-	m_shrinked_liquid_sdf->setName("Interior_SDF");
-	auto sdfman = openvdb::tree::LeafManager<openvdb::FloatTree>(m_shrinked_liquid_sdf->tree());
-	sdfman.foreach(shrink_sdf_op);
-	openvdb::tools::pruneLevelSet(m_shrinked_liquid_sdf->tree(), 0.5f * m_dx, -0.5f * m_dx);
-	//to be used by particle leaf manager
-	//detects leaves with particles that are near the border
-	//either it's not full
-	//or its boundary voxels detects empty neighbors
-	auto mark_point_on = [&](point_leaf_t& leaf, openvdb::Index leafpos) {
-		auto mask_axr{ point_voxel_mask->getConstAccessor() };
-		auto maskleaf = point_voxel_mask->tree().probeConstLeaf(leaf.origin());
+// 		if (!maskleaf) {
+// 			return;
+// 		}
+// 		leaf.setValueMask(maskleaf->getValueMask());
+// 		if (leaf.isValueMaskOff()) {
+// 			return;
+// 		}
 
-		leaf.setValueMask(maskleaf->getValueMask());
-		if (leaf.isValueMaskOff()) {
-			return;
-		}
+// 		std::vector<openvdb::Vec3f> pos;
+// 		std::vector<openvdb::Vec3f> vel;
+// 		std::vector<openvdb::Index> new_index;
+// 		int emitted_particle = 0;
+// 		auto& positionarray = leaf.attributeArray("P");
+// 		auto phandle = openvdb::points::AttributeHandle<openvdb::Vec3f, PositionCodec>(positionarray);
 
-		std::vector<openvdb::Vec3f> pos;
-		std::vector<openvdb::Vec3f> vel;
-		std::vector<openvdb::Index> new_index;
-		int emitted_particle = 0;
-		auto& positionarray = leaf.attributeArray("P");
-		auto phandle = openvdb::points::AttributeHandle<openvdb::Vec3f, PositionCodec>(positionarray);
+// 		auto& velarray = leaf.attributeArray("v");
+// 		auto vhandle = openvdb::points::AttributeHandle<openvdb::Vec3f, VelocityCodec>(velarray);
+// 		for (auto iter = leaf.cbeginValueAll(); iter; ++iter) {
+// 			if (!iter.isValueOn()) {
+// 				new_index.push_back(emitted_particle);
+// 			}
+// 			else {
+// 				int bidx = 0;
+// 				if (iter.offset() != 0) {
+// 					bidx = leaf.getValue(iter.offset() - 1);
+// 				}
+// 				int eidx = iter.getValue();
+// 				for (auto idx = bidx; idx < eidx; ++idx) {
+// 					pos.push_back(phandle.get(idx));
+// 					vel.push_back(vhandle.get(idx));
+// 					emitted_particle++;
+// 				}
+// 				new_index.push_back(emitted_particle);
+// 			}
+// 		}//end for all voxels in this leaf
 
-		auto& velarray = leaf.attributeArray("v");
-		auto vhandle = openvdb::points::AttributeHandle<openvdb::Vec3f, VelocityCodec>(velarray);
-		for (auto iter = leaf.cbeginValueAll(); iter; ++iter) {
-			if (!iter.isValueOn()) {
-				new_index.push_back(emitted_particle);
-			}
-			else {
-				int bidx = 0;
-				if (iter.offset() != 0) {
-					bidx = leaf.getValue(iter.offset() - 1);
-				}
-				int eidx = iter.getValue();
-				for (auto idx = bidx; idx < eidx; ++idx) {
-					pos.push_back(phandle.get(idx));
-					vel.push_back(vhandle.get(idx));
-					emitted_particle++;
-				}
-				new_index.push_back(emitted_particle);
-			}
-		}//end for all voxels in this leaf
-
-		for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-			leaf.setOffsetOnly(offset, new_index[offset]);
-		}
+// 		for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+// 			leaf.setOffsetOnly(offset, new_index[offset]);
+// 		}
 
 
-		//particle emit complete, replace the original attribute set
-		leaf.initializeAttributes(pos_descriptor(), pos.size());
-		leaf.appendAttribute(leaf.attributeSet().descriptor(), m_pv_attribute_descriptor, 1);
+// 		//particle emit complete, replace the original attribute set
+// 		leaf.initializeAttributes(pos_descriptor(), pos.size());
+// 		leaf.appendAttribute(leaf.attributeSet().descriptor(), m_pv_attribute_descriptor, 1);
 
-		auto& new_positionarray = leaf.attributeArray("P");
-		auto p_write_handle = openvdb::points::AttributeWriteHandle<openvdb::Vec3f, PositionCodec>(new_positionarray);
+// 		auto& new_positionarray = leaf.attributeArray("P");
+// 		auto p_write_handle = openvdb::points::AttributeWriteHandle<openvdb::Vec3f, PositionCodec>(new_positionarray);
 
-		auto& new_velarray = leaf.attributeArray("v");
-		auto v_write_handle = openvdb::points::AttributeWriteHandle<openvdb::Vec3f, VelocityCodec>(new_velarray);
+// 		auto& new_velarray = leaf.attributeArray("v");
+// 		auto v_write_handle = openvdb::points::AttributeWriteHandle<openvdb::Vec3f, VelocityCodec>(new_velarray);
 
-		int new_emit_counter = 0;
-		for (auto piter = leaf.beginIndexOn(); piter; ++piter) {
-			p_write_handle.set(*piter, pos[new_emit_counter]);
-			v_write_handle.set(*piter, vel[new_emit_counter]);
-			new_emit_counter++;
-		}
+// 		int new_emit_counter = 0;
+// 		for (auto piter = leaf.beginIndexOn(); piter; ++piter) {
+// 			p_write_handle.set(*piter, pos[new_emit_counter]);
+// 			v_write_handle.set(*piter, vel[new_emit_counter]);
+// 			new_emit_counter++;
+// 		}
 		
-		//finally set on and off mask
-		for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-			int bidx = 0;
-			if (offset != 0) {
-				bidx = leaf.getValue(offset - 1);
-			}
-			int eidx = leaf.getValue(offset);
-			if (bidx == eidx) {
-				leaf.setValueOff(offset);
-			}
-		}
-	};//end collect leaves with holes
+// 		//finally set on and off mask
+// 		for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+// 			int bidx = 0;
+// 			if (offset != 0) {
+// 				bidx = leaf.getValue(offset - 1);
+// 			}
+// 			int eidx = leaf.getValue(offset);
+// 			if (bidx == eidx) {
+// 				leaf.setValueOff(offset);
+// 			}
+// 		}
+// 	};//end collect leaves with holes
 	
-	auto result = m_particles->deepCopy();
-	auto resultman = openvdb::tree::LeafManager<openvdb::points::PointDataTree>(result->tree());
-	resultman.foreach(mark_point_on);
-	for (auto iter = result->tree().beginLeaf(); iter; ++iter) {
-		if (iter->isValueMaskOff()) {
-			delete result->tree().stealNode<point_leaf_t>(iter->origin(), 0, false);
-		}
-	}
+// 	auto result = m_particles->deepCopy();
+// 	auto resultman = openvdb::tree::LeafManager<openvdb::points::PointDataTree>(result->tree());
+// 	resultman.foreach(mark_point_on);
 
-	return result;
-}
+// 	printf("mark_point_on_done\n");
+// 	for (auto iter = result->tree().beginLeaf(); iter; ++iter) {
+// 		if (iter->isValueMaskOff()) {
+// 			delete result->tree().stealNode<point_leaf_t>(iter->origin(), 0, false);
+// 		}
+// 	}
+// 	printf("remove empty node done\n");
+// 	return result;
+// }

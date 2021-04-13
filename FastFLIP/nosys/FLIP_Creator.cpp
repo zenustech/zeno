@@ -31,13 +31,18 @@ struct FLIPCreator : zen::INode {
 	    auto voxel_vertex_transform = openvdb::math::Transform::createLinearTransform(dx);
 	    voxel_vertex_transform->postTranslate(openvdb::Vec3d{ -0.5,-0.5,-0.5 }*double(dx));
 
+        particles->m_grid = openvdb::points::PointDataGrid::create();
+        particles->m_grid ->setTransform(voxel_center_transform);
+        particles->m_grid ->setName("Particles");
+
+
         pressure->m_grid = openvdb::FloatGrid::create(float(0));
         pressure->m_grid->setTransform(voxel_center_transform);
         pressure->m_grid->setGridClass(openvdb::GridClass::GRID_FOG_VOLUME);
         pressure->m_grid->setName("Pressure");
 
         rhsgrid->m_grid = pressure->m_grid->deepCopy();
-        rhsgrid->m_grid->setName("RHS");
+        rhsgrid->m_grid->setName("Divergence");
 
         //velocity
         velocity->m_grid = openvdb::Vec3fGrid::create(openvdb::Vec3f{ 0 });
@@ -119,7 +124,7 @@ static int defFLIPCreator = zen::defNodeClass<FLIPCreator>("SetFLIPWorld",
                     //"boundary_velocity_volume",
             }, 
             /* params: */ {
-                {"float", "dx", "0.0"},
+                {"float", "dx", "0.01 0"},
             }, 
             /* category: */ {
                 "FLIPSolver",

@@ -14,7 +14,7 @@ find_package(Eigen3 REQUIRED)
 
 #add_library(FLIPlib SHARED FLIPwrapper.cpp FLIPwrapper.h FLIP_particle fluidsim.cpp fluidsim_fusion_p2g.cpp fluidsim.h GeometricLevelGen.cpp GeometricLevelGen.h
 #        levelset_util.cpp Sparse_buffer.cpp volumeMeshTools.cpp amg2.h morton_encoding.h FLIP_vdb.h FLIP_vdb.cpp simd_vdb_poisson.h simd_vdb_poisson.cpp)
-set(FLIP_SOURCE levelset_util.cpp volumeMeshTools.cpp FLIP_vdb.h FLIP_vdb.cpp simd_vdb_poisson.h simd_vdb_poisson.cpp sdf_source_manager.h sdf_source_manager.cpp)
+set(FLIP_SOURCE levelset_util.cpp volumeMeshTools.cpp FLIP_vdb.h FLIP_vdb.cpp simd_vdb_poisson.h simd_vdb_poisson.cpp )
 file(GLOB LOSTOPOS_SOURCE ltcommon/*.h ltcommon/*.cpp ltcommon/tunicate/*.h ltcommon/tunicate/*.cpp ltcommon/newsparse/*.h ltcommon/newsparse/*.cpp lostopos/*.h lostopos/*.cpp d3dutils/*.cpp d3dutils/*.h)
 file(GLOB NOSYS_SOURCE nosys/*.cpp nosys/*.h)
 
@@ -42,7 +42,10 @@ if (WIN32)
   target_compile_options(FLIPlib PRIVATE -DNOMINMAX)
 endif()
 
+target_link_directories(FLIPlib PUBLIC /usr/lib/x86_64-linux-gnu:/usr/local/lib)
 target_link_libraries(FLIPlib PRIVATE openvdb IlmBase::Half)
 target_link_libraries(FLIPlib PRIVATE Eigen3::Eigen)
 #target_link_libraries(FLIPlib PRIVATE SimEnvironment)
 #target_link_libraries(FLIPlib PRIVATE partio)
+
+
