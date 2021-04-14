@@ -11,14 +11,8 @@ class IObject:
     pass
 
 
-class BooleanObject(IObject):
-    value: bool
-
-    def __init__(self, value=True):
-        self.value = value
-
-    def __bool__(self):
-        return self.value
+class BooleanObject(int, IObject):
+    pass
 
 
 class ParamDescriptor(namedtuple('ParamDescriptor',
@@ -131,7 +125,7 @@ def setObject(name, object):
     objects[name] = object
 
 
-def getObject(name, object):
+def getObject(name):
     return objects[name]
 
 
@@ -166,7 +160,7 @@ def defNodeClass(cls):
 def dumpDescriptors():
     res = ""
     for name, desc in nodeDescriptors.items():
-        res += name + desc.serialize() + "\n"
+        res += name + ":" + desc.serialize() + "\n"
     return res
 
 

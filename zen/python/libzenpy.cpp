@@ -6,8 +6,31 @@
 namespace py = pybind11;
 
 
-static std::map<std::string, std::unique_ptr<std::vector<char>>> savedNumpys;
+std::string getCppObjectType(std::string name) {
+  auto obj = zen::getObject(name);
+  if (obj->as<zenbase::NumpyObject>()) {
+    return "numpy";
+  }
+  if (obj->as<zen::BooleanObject>()) {
+    return "boolean";
+  }
+  return "other";
+}
 
+
+void setBooleanObject(std::string name, bool value) {
+  auto obj = std::make_unique<zen::BooleanObject>();
+  obj->value = value;
+  zen::setObject(name, std::move(obj));
+}
+
+bool getBooleanObject(std::string name) {
+  auto obj = zen::getObject(name)->as<zen::BooleanObject>();
+  return obj->value;
+}
+
+
+static std::map<std::string, std::unique_ptr<std::vector<char>>> savedNumpys;
 
 template <class T>
 void setNumpyObject(std::string name,
@@ -36,16 +59,6 @@ void setNumpyObject(std::string name,
   // by the way, will we provide zen::deleteObject as well?
 }
 
-
-bool isNumpyObject(std::string name) {
-  auto obj = zen::getObject(name)->as<zenbase::NumpyObject>();
-  if (obj) {
-    return true;
-  }
-  return false;
-}
-
-
 std::tuple<uintptr_t, ssize_t, std::string, ssize_t,
   std::vector<ssize_t>, std::vector<ssize_t>>
   getNumpyObjectMeta(std::string name) {
@@ -54,7 +67,6 @@ std::tuple<uintptr_t, ssize_t, std::string, ssize_t,
       (uintptr_t)obj->ptr, obj->itemsize, obj->format,
       obj->ndim, obj->shape, obj->strides);
 };
-
 
 template <class T>
 py::array_t<T, py::array::c_style> getNumpyObject(std::string name) {
@@ -79,7 +91,14 @@ PYBIND11_MODULE(libzenpy, m) {
   m.def("setNodeInput", zen::setNodeInput);
   m.def("applyNode", zen::applyNode);
   m.def("dumpDescriptors", zen::dumpDescriptors);
-  m.def("isNumpyObject", isNumpyObject);
+
+  m.def("getCppObjectType", getCppObjectType);
+
+  m.def("setBooleanObject", setBooleanObject);
+  m.def("getBooleanObject", getBooleanObject);
+  //m.def("setReference", zen::setReference);
+  //m.def("getReference", zen::getReference);
+
   m.def("getNumpyObjectMeta", getNumpyObjectMeta);
 #define _DEF_TYPE(T) \
   m.def("setNumpyObject", setNumpyObject<T>); \

@@ -21,12 +21,12 @@ def applyNode(name):
         cpp.applyNode(name)
 
 def cpp2pyObject(name):
-    obj = npy.getNumpyObject(name)
+    obj = npy.getCppObject(name)
     py.setObject(name, obj)
 
 def py2cppObject(name):
     obj = py.getObject(name)
-    npy.setNumpyObject(name, obj)
+    npy.setCppObject(name, obj)
 
 def setNodeInput(name, key, srcname):
     if py.isPyNodeName(name):

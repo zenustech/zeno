@@ -2,14 +2,14 @@
 Numpy APIs
 '''
 
+import numpy as np
+
 from .core import get_core
+from .py import BooleanObject
 
 
 def setNumpyObject(name, arr):
     return get_core().setNumpyObject(name, arr)
-
-def isNumpyObject(name):
-    return get_core().isNumpyObject(name)
 
 class getNumpyObjectMeta:
     def __init__(self, name):
@@ -19,12 +19,7 @@ class getNumpyObjectMeta:
             self.isref = meta
 
 def getNumpyObject(name):
-    if not isNumpyObject(name):
-        return name
-
     meta = getNumpyObjectMeta(name)
-
-    import numpy as np
     TYPES = {
             np.uint8: 'uint8_t',
             np.uint16: 'uint16_t',
@@ -45,3 +40,37 @@ def getNumpyObject(name):
         raise KeyError(f'bad numpy data format: {meta.format}')
 
     return getattr(get_core(), 'getNumpyObject_' + c_type)(name)
+
+
+def setReference(name, srcname):
+    return get_core().setReference(name, srcname)
+
+def getReference(name):
+    return get_core().getReference(name)
+
+def getCppObjectType(name):
+    return get_core().getCppObjectType(name)
+
+
+
+class Reference(str):
+    pass
+
+def setCppObject(name, obj):
+    if isinstance(obj, np.ndarray):
+        setNumpyObject(name, obj)
+    elif isinstance(obj, BooleanObject):
+        setBooleanObject(name, bool(obj))
+    elif isinstance(obj, Reference):
+        setReference(name, str(obj))
+    else:
+        raise RuntimeError(f'unsupported type {type(name)} to pass into C++')
+
+def getCppObject(name):
+    type = getCppObjectType(name)
+    if type == 'numpy':
+        return getNumpyObject()
+    if type == 'boolean':
+        return getBooleanObject()
+    else:
+        return Reference(name)
