@@ -749,7 +749,7 @@ namespace {
 				exit(-1);
 			}
 			float epsl = 1e-5f;
-			float weight_threshold = 1e-1f;
+			float weight_threshold = 1e-2f;
 			for (openvdb::Index offset = 0; offset < vel_leaf.SIZE; offset++) {
 				if (ovelocity_leaf->isValueMaskOff(offset)) {
 					continue;
@@ -865,8 +865,11 @@ void FLIP_vdb::advection(float dt)
 
 }
 
-void FLIP_vdb::Advect(float dt, float dx, openvdb::points::PointDataGrid::Ptr particles, openvdb::Vec3fGrid::Ptr velocity,
-openvdb::Vec3fGrid::Ptr velocity_after_p2g, float pic_component, int RK_ORDER)
+void FLIP_vdb::Advect(float dt, float dx, 
+openvdb::points::PointDataGrid::Ptr &particles, 
+openvdb::Vec3fGrid::Ptr &velocity,
+openvdb::Vec3fGrid::Ptr &velocity_after_p2g, 
+float pic_component, int RK_ORDER)
 {
 		auto update_FLIP_velocity = [&](openvdb::points::PointDataTree::LeafNodeType& leaf, openvdb::Index leafpos) {
 		// Attribute reader
@@ -890,9 +893,11 @@ openvdb::Vec3fGrid::Ptr velocity_after_p2g, float pic_component, int RK_ORDER)
 			auto old_pvel = velocityHandle.get(*iter);
 			velocityHandle.set(*iter, (pic_component)*updated_vel + (1.0f - pic_component) * (updated_vel - original_vel + old_pvel));
 		}
-		auto particle_man = openvdb::tree::LeafManager<openvdb::points::PointDataTree>(particles->tree());
-		FLIP_vdb::custom_move_points_and_set_flip_vel(*particles, *velocity, *velocity_after_p2g, pic_component, dt, dx, RK_ORDER);
+		
 	};
+
+	auto particle_man = openvdb::tree::LeafManager<openvdb::points::PointDataTree>(particles->tree());
+		FLIP_vdb::custom_move_points_and_set_flip_vel(*particles, *velocity, *velocity_after_p2g, pic_component, dt, dx, RK_ORDER);
 }
 namespace {
 	struct custom_integrator {
@@ -1825,19 +1830,21 @@ namespace {
 	};
 }
 void FLIP_vdb::particle_to_grid_collect_style(
-	openvdb::points::PointDataGrid::Ptr particles,
-	openvdb::Vec3fGrid::Ptr velocity,
-	openvdb::Vec3fGrid::Ptr velocity_after_p2g,
-	openvdb::Vec3fGrid::Ptr velocity_weights,
-	openvdb::FloatGrid::Ptr liquid_sdf,
-	openvdb::FloatGrid::Ptr pushed_out_liquid_sdf,
+	openvdb::points::PointDataGrid::Ptr &particles,
+	openvdb::Vec3fGrid::Ptr &velocity,
+	openvdb::Vec3fGrid::Ptr &velocity_after_p2g,
+	openvdb::Vec3fGrid::Ptr &velocity_weights,
+	openvdb::FloatGrid::Ptr &liquid_sdf,
+	openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf,
 	float dx)
 {
 	float particle_radius = 0.5f * std::sqrt(3.0f) * dx * 1.01;
 	velocity->setTree(std::make_shared<openvdb::Vec3fTree>(
 		particles->tree(), openvdb::Vec3f{ 0 }, openvdb::TopologyCopy()));
 	openvdb::tools::dilateActiveValues(velocity->tree(), 1, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+
 	velocity_weights = velocity->deepCopy();
+
 	auto voxel_center_transform = openvdb::math::Transform::createLinearTransform(dx);
 	liquid_sdf->setTransform(voxel_center_transform);
 	liquid_sdf->setTree(std::make_shared<openvdb::FloatTree>(
@@ -1865,7 +1872,7 @@ void FLIP_vdb::particle_to_grid_collect_style(
 	//store the velocity just after the transfer
 	velocity_after_p2g = velocity->deepCopy();
 	velocity_after_p2g->setName("Velocity_After_P2G");
-	pushed_out_liquid_sdf = liquid_sdf;	
+	pushed_out_liquid_sdf = liquid_sdf->deepCopy();	
 }
 void FLIP_vdb::particle_to_grid_collect_style()
 {
@@ -1907,7 +1914,7 @@ void FLIP_vdb::particle_to_grid_collect_style()
 	//store the velocity just after the transfer
 	m_velocity_after_p2g = m_velocity->deepCopy();
 	m_velocity_after_p2g->setName("Velocity_After_P2G");
-	m_pushed_out_liquid_sdf = m_liquid_sdf;
+	m_pushed_out_liquid_sdf = m_liquid_sdf->deepCopy();
 
 }
 
@@ -3431,7 +3438,10 @@ namespace {
 		openvdb::FloatGrid::Ptr m_source_solid_sdf;
 	};
 }
-void FLIP_vdb::update_solid_sdf(std::vector<openvdb::FloatGrid::Ptr> &moving_solids, openvdb::FloatGrid::Ptr solid_sdf, openvdb::points::PointDataGrid::Ptr particles)
+void FLIP_vdb::update_solid_sdf(
+	std::vector<openvdb::FloatGrid::Ptr> &moving_solids, 
+	openvdb::FloatGrid::Ptr & solid_sdf, 
+	openvdb::points::PointDataGrid::Ptr & particles)
 {
 	using  namespace openvdb::tools::local_util;
 	for (auto& solidsdfptr : moving_solids) {
@@ -3500,9 +3510,9 @@ void FLIP_vdb::update_solid_sdf(std::vector<openvdb::FloatGrid::Ptr> &moving_sol
 
 
 void FLIP_vdb::emit_liquid(
-	openvdb::points::PointDataGrid::Ptr in_out_particles,
-	openvdb::FloatGrid::Ptr sdf,
-	openvdb::Vec3fGrid::Ptr vel,
+	openvdb::points::PointDataGrid::Ptr &in_out_particles,
+	openvdb::FloatGrid::Ptr &sdf,
+	openvdb::Vec3fGrid::Ptr &vel,
 	float vx, float vy, float vz)
 {
 	using  namespace openvdb::tools::local_util;
@@ -3937,9 +3947,9 @@ void FLIP_vdb::emit_liquid(
 // 	}
 // }
 void FLIP_vdb::calculate_face_weights(
-	openvdb::Vec3fGrid::Ptr face_weight, 
-	openvdb::FloatGrid::Ptr liquid_sdf,
-	openvdb::FloatGrid::Ptr solid_sdf)
+	openvdb::Vec3fGrid::Ptr &face_weight, 
+	openvdb::FloatGrid::Ptr &liquid_sdf,
+	openvdb::FloatGrid::Ptr &solid_sdf)
 {
 	face_weight = openvdb::Vec3fGrid::create(openvdb::Vec3f{ 1.0f });
 	face_weight->setTree(std::make_shared<openvdb::Vec3fTree>(
@@ -4096,10 +4106,11 @@ void FLIP_vdb::calculate_face_weights()
 	leafman.foreach(set_face_weight_op);
 }
 
-void FLIP_vdb::clamp_liquid_phi_in_solids(openvdb::FloatGrid::Ptr liquid_sdf,
-										  openvdb::FloatGrid::Ptr solid_sdf,
-										  openvdb::FloatGrid::Ptr pushed_out_liquid_sdf,
-										  float dx)
+void FLIP_vdb::clamp_liquid_phi_in_solids(
+	openvdb::FloatGrid::Ptr & liquid_sdf,
+	openvdb::FloatGrid::Ptr & solid_sdf,
+	openvdb::FloatGrid::Ptr & pushed_out_liquid_sdf,
+	float dx)
 {
 	openvdb::tools::dilateActiveValues(liquid_sdf->tree(), 
 	1, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
@@ -4360,13 +4371,13 @@ namespace {
 
 }
 void FLIP_vdb::apply_pressure_gradient(
-	openvdb::FloatGrid::Ptr liquid_sdf,
-	openvdb::FloatGrid::Ptr solid_sdf,
-	openvdb::FloatGrid::Ptr pushed_out_liquid_sdf,
-	openvdb::FloatGrid::Ptr pressure,
-	openvdb::Vec3fGrid::Ptr face_weight,
-	openvdb::Vec3fGrid::Ptr velocity,
-	openvdb::Vec3fGrid::Ptr solid_velocity,
+	openvdb::FloatGrid::Ptr & liquid_sdf,
+	openvdb::FloatGrid::Ptr & solid_sdf,
+	openvdb::FloatGrid::Ptr & pushed_out_liquid_sdf,
+	openvdb::FloatGrid::Ptr & pressure,
+	openvdb::Vec3fGrid::Ptr & face_weight,
+	openvdb::Vec3fGrid::Ptr & velocity,
+	openvdb::Vec3fGrid::Ptr & solid_velocity,
 	float dx,float in_dt)
 {
 	Eigen::Matrix<float, 4, 4> invmat;
@@ -4779,13 +4790,13 @@ void FLIP_vdb::apply_pressure_gradient(float in_dt)
 	vel_leafman.foreach(velocity_update_op);
 }
 void FLIP_vdb::solve_pressure_simd(
-	openvdb::FloatGrid::Ptr liquid_sdf,
-	openvdb::FloatGrid::Ptr pushed_out_liquid_sdf,
-	openvdb::FloatGrid::Ptr rhsgrid,
-	openvdb::FloatGrid::Ptr curr_pressure,
-	openvdb::Vec3fGrid::Ptr face_weight,
-	openvdb::Vec3fGrid::Ptr velocity,
-	openvdb::Vec3fGrid::Ptr solid_velocity,
+	openvdb::FloatGrid::Ptr & liquid_sdf,
+	openvdb::FloatGrid::Ptr & pushed_out_liquid_sdf,
+	openvdb::FloatGrid::Ptr & rhsgrid,
+	openvdb::FloatGrid::Ptr & curr_pressure,
+	openvdb::Vec3fGrid::Ptr & face_weight,
+	openvdb::Vec3fGrid::Ptr & velocity,
+	openvdb::Vec3fGrid::Ptr & solid_velocity,
 	float dt, float dx)
 {
 	CSim::TimerMan::timer("Sim.step/vdbflip/pressure/buildlevel").start();
@@ -4892,19 +4903,28 @@ void FLIP_vdb::solve_pressure_simd(float dt)
 	//simd_solver.symmetry_test(0);
 }//end solve poisson simd
 
-void FLIP_vdb::field_add_vector(openvdb::Vec3fGrid::Ptr velocity_field,
-	openvdb::Vec3fGrid::Ptr face_weight,
+void FLIP_vdb::field_add_vector(
+	openvdb::Vec3fGrid::Ptr &velocity_field,
+	openvdb::Vec3fGrid::Ptr &face_weight,
 	float x, float y, float z, float dt)
 {
 	
 	auto add_gravity = [&](openvdb::Vec3fTree::LeafNodeType& leaf, openvdb::Index leafpos) {
 		auto face_weight_axr{ face_weight->getConstAccessor() };
 		for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
+			if (face_weight_axr.getValue(iter.getCoord())[0] > 0) {
+				iter.modifyValue([&](openvdb::Vec3f& v) {
+						v[0] += dt * x; 
+					});
+			}
 			if (face_weight_axr.getValue(iter.getCoord())[1] > 0) {
 				iter.modifyValue([&](openvdb::Vec3f& v) {
-					v[0] += dt * x;
-					v[1] += dt * y; 
-					v[2] += dt * z;
+						v[1] += dt * y; 
+					});
+			}
+			if (face_weight_axr.getValue(iter.getCoord())[2] > 0) {
+				iter.modifyValue([&](openvdb::Vec3f& v) {
+						v[2] += dt * z; 
 					});
 			}
 		}

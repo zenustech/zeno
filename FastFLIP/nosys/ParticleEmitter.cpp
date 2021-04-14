@@ -14,9 +14,11 @@ namespace zenbase{
             float vz = std::get<float>(get_param("vz"));
             if(has_input("VelocityVolume")){
                 auto velocityVolume = get_input("VelocityVolume")->as<VDBFloat3Grid>();
-                FLIP_vdb::emit_liquid(particles->m_grid, shape->m_grid, velocityVolume->m_grid, 0, 0,0);
+                FLIP_vdb::emit_liquid(particles->m_grid, shape->m_grid, velocityVolume->m_grid, vx, vy, vz);
             } else {
-                FLIP_vdb::emit_liquid(particles->m_grid, shape->m_grid, nullptr, 0, 0,0);
+                using TmpT = decltype(std::declval<VDBFloat3Grid>().m_grid);
+                TmpT tmp{nullptr};
+                FLIP_vdb::emit_liquid(particles->m_grid, shape->m_grid, tmp, vx, vy, vz);
             }
         }
     };
