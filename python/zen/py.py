@@ -22,12 +22,7 @@ class ParamDescriptor(namedtuple('ParamDescriptor',
     defl: str
 
 
-class Descriptor(namedtuple('Descriptor',
-    ['inputs', 'outputs', 'params', 'categories'])):
-    inputs: list[str]
-    outputs: list[str]
-    params: list[ParamDescriptor]
-    categories: list[str]
+class Descriptor(namedtuple('Descriptor', ['inputs', 'outputs', 'params', 'categories'])):
 
     def serialize(self):
         res = ""
@@ -164,11 +159,12 @@ def dumpDescriptors():
     return res
 
 
-nodeDescriptors : dict[str, Descriptor] = {}
-nodeClasses : dict[str, callable] = {}
-objects : dict[str, IObject] = {}
-nodes : dict[str, INode] = {}
-nodesRev : dict[INode, str] = {}
+nodeDescriptors = {}
+nodeClasses = {}
+objects = {}
+nodes = {}
+nodesRev = {}
+
 
 
 __all__ = [
