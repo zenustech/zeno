@@ -38,11 +38,11 @@ struct MeshToSDF : zen::INode{
 
 static int defMeshToSDF = zen::defNodeClass<MeshToSDF>("MeshToSDF",
     { /* inputs: */ {
-        "mesh"
+        "mesh",
     }, /* outputs: */ {
         "sdf",
     }, /* params: */ {
-    {"float", "voxel_size", "0.08"},
+    {"float", "voxel_size", "0.08 0"},
     }, /* category: */ {
     "openvdb",
     }});

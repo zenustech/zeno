@@ -8,13 +8,20 @@ from .core import get_core
 def setNumpyObject(name, arr):
     return get_core().setNumpyObject(name, arr)
 
+def isNumpyObject(name):
+    return get_core().isNumpyObject(name)
+
 class getNumpyObjectMeta:
     def __init__(self, name):
         meta = get_core().getNumpyObjectMeta(name)
         self.ptr, self.itemsize, self.format, \
-            self.ndim, self.shape, self.strides = meta
+            self.ndim, self.shape, self.strides, \
+            self.isref = meta
 
 def getNumpyObject(name):
+    if not isNumpyObject(name):
+        return name
+
     meta = getNumpyObjectMeta(name)
 
     import numpy as np

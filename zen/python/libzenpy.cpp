@@ -37,6 +37,15 @@ void setNumpyObject(std::string name,
 }
 
 
+bool isNumpyObject(std::string name) {
+  auto obj = zen::getObject(name)->as<zenbase::NumpyObject>();
+  if (obj) {
+    return true;
+  }
+  return false;
+}
+
+
 std::tuple<uintptr_t, ssize_t, std::string, ssize_t,
   std::vector<ssize_t>, std::vector<ssize_t>>
   getNumpyObjectMeta(std::string name) {
@@ -70,6 +79,7 @@ PYBIND11_MODULE(libzenpy, m) {
   m.def("setNodeInput", zen::setNodeInput);
   m.def("applyNode", zen::applyNode);
   m.def("dumpDescriptors", zen::dumpDescriptors);
+  m.def("isNumpyObject", isNumpyObject);
   m.def("getNumpyObjectMeta", getNumpyObjectMeta);
 #define _DEF_TYPE(T) \
   m.def("setNumpyObject", setNumpyObject<T>); \

@@ -1,7 +1,7 @@
 import zen
 
 
-@defNodeClass
+@zen.defNodeClass
 class MyNode(zen.INode):
     z_name = 'MyNode'
     z_params = [('dx', 'float', '0 0')]

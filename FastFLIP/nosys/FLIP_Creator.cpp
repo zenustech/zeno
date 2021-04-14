@@ -124,7 +124,7 @@ static int defFLIPCreator = zen::defNodeClass<FLIPCreator>("SetFLIPWorld",
                     //"boundary_velocity_volume",
             }, 
             /* params: */ {
-                {"float", "dx", "0.01 0"},
+                {"float", "dx", "0.08 0"},
             }, 
             /* category: */ {
                 "FLIPSolver",

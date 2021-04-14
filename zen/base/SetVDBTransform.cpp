@@ -27,7 +27,7 @@ static int defSetVDBTransform = zen::defNodeClass<SetVDBTransform>("SetVDBTransf
     "grid",
     }, /* outputs: */ {
     }, /* params: */ {
-    {"float", "dx", "0.08"},
+    {"float", "dx", "0.08 0"},
     {"float3", "position", "0 0 0"},
     {"float3", "rotation", "0 0 0"},
     {"float3", "scale", "1 1 1"},
