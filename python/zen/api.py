@@ -22,10 +22,12 @@ def applyNode(name):
 
 def cpp2pyObject(name):
     obj = npy.getCppObject(name)
+    print('cpp2py', name, obj)
     py.setObject(name, obj)
 
 def py2cppObject(name):
     obj = py.getObject(name)
+    print('py2cpp', name, obj)
     npy.setCppObject(name, obj)
 
 def setNodeInput(name, key, srcname):
@@ -43,3 +45,12 @@ def setNodeParam(name, key, value):
         py.setNodeParam(name, key, value)
     else:
         cpp.setNodeParam(name, key, value)
+
+
+__all__ = [
+    'addNode',
+    'applyNode',
+    'setNodeInput',
+    'setNodeParam',
+    'dumpDescriptors',
+]

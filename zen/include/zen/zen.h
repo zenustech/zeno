@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 #include <variant>
+#include <optional>
 #include <sstream>
 #include <sstream>
 #include <array>
@@ -261,6 +262,7 @@ private:
   std::map<std::string, Descriptor> nodeDescriptors;
   std::map<std::string, INodeClass::Ptr> nodeClasses;
   std::map<std::string, IObject::Ptr> objects;
+  std::map<std::string, std::string> references;
   std::map<std::string, INode::Ptr> nodes;
   std::map<INode *, std::string> nodesRev;
 
@@ -291,7 +293,7 @@ public:
   void setNodeInput(std::string name,
       std::string key, std::string srcname) {
     safe_at(nodes, name, "node")->set_input(key,
-        safe_at(objects, srcname, "object"));
+        getObject(srcname));
   }
 
   void applyNode(std::string name) {
@@ -303,7 +305,20 @@ public:
   }
 
   IObject *getObject(std::string name) {
+    name = getReference(name).value_or(name);
     return safe_at(objects, name, "object");
+  }
+
+  void setReference(std::string name, std::string srcname) {
+    references[name] = srcname;
+  }
+
+  std::optional<std::string> getReference(std::string name) {
+    auto it = references.find(name);
+    if (it == references.end()) {
+      return std::nullopt;
+    }
+    return it->second;
   }
 
   std::string getNodeName(INode *node) {
@@ -359,6 +374,14 @@ static void setObject(std::string name, IObject::Ptr object) {
 
 static IObject *getObject(std::string name) {
   return Session::get().getObject(name);
+}
+
+static void setReference(std::string name, std::string srcname) {
+  return Session::get().setReference(name, srcname);
+}
+
+static std::optional<std::string> getReference(std::string name) {
+  return Session::get().getReference(name);
 }
 
 static std::string getNodeName(INode *node) {

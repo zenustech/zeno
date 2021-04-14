@@ -62,6 +62,7 @@ def setCppObject(name, obj):
     elif isinstance(obj, BooleanObject):
         setBooleanObject(name, bool(obj))
     elif isinstance(obj, Reference):
+        print('SETREF', name, obj)
         setReference(name, str(obj))
     else:
         raise RuntimeError(f'unsupported type {type(name)} to pass into C++')
@@ -74,3 +75,6 @@ def getCppObject(name):
         return getBooleanObject()
     else:
         return Reference(name)
+
+
+__all__ = ['Reference']

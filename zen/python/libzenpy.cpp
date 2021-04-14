@@ -96,8 +96,8 @@ PYBIND11_MODULE(libzenpy, m) {
 
   m.def("setBooleanObject", setBooleanObject);
   m.def("getBooleanObject", getBooleanObject);
-  //m.def("setReference", zen::setReference);
-  //m.def("getReference", zen::getReference);
+  m.def("setReference", zen::setReference);
+  m.def("getReference", zen::getReference);
 
   m.def("getNumpyObjectMeta", getNumpyObjectMeta);
 #define _DEF_TYPE(T) \
