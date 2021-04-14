@@ -99,14 +99,19 @@ std::map<std::string, std::string> new_frame() {
     ret["refresh"] = "1";
   }
 
+  static char pathBuf[1024] = "/tmp/a.json";
+  ImGui::SameLine();
+  ImGui::SetNextItemWidth(24 * ImGui::GetFontSize());
+  ImGui::InputText("", pathBuf, sizeof(pathBuf));
+
   ImGui::SameLine();
   if (ImGui::Button("Save Graph")) {
-    ret["save"] = "/tmp/graph.json";
+    ret["save"] = pathBuf;
   }
 
   ImGui::SameLine();
   if (ImGui::Button("Load Graph")) {
-    ret["load"] = "/tmp/graph.json";
+    ret["load"] = pathBuf;
   }
 
   ImGui::SameLine();
