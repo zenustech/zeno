@@ -167,6 +167,7 @@ struct NodeEditor {
     virtual void draw_slider() = 0;
     virtual void dump(std::ostream &out) = 0;
     virtual void parse(std::istream &in) = 0;
+    virtual std::string unparse(std::ostream &out) = 0;
 
     virtual int eval_width() {
       return 6;
@@ -222,6 +223,11 @@ struct NodeEditor {
       has_minval = bool(in >> minval);
       has_maxval = bool(in >> maxval);
     }
+
+    virtual std::string unparse(std::ostream &out) override {
+      out << value;
+      return "float";
+    }
   };
 
   struct IntValue : Value {
@@ -249,6 +255,11 @@ struct NodeEditor {
       has_minval = bool(in >> minval);
       has_maxval = bool(in >> maxval);
     }
+
+    virtual std::string unparse(std::ostream &out) override {
+      out << value;
+      return "int";
+    }
   };
 
   struct Float3Value : Value {
@@ -269,6 +280,11 @@ struct NodeEditor {
     virtual void parse(std::istream &in) override {
       in >> value[0] >> value[1] >> value[2];
     }
+
+    virtual std::string unparse(std::ostream &out) override {
+      out << value[0] << ' ' << value[1] << ' ' << value[2];
+      return "float3";
+    }
   };
 
   struct Int3Value : Value {
@@ -288,6 +304,11 @@ struct NodeEditor {
 
     virtual void parse(std::istream &in) override {
       in >> value[0] >> value[1] >> value[2];
+    }
+
+    virtual std::string unparse(std::ostream &out) override {
+      out << value[0] << ' ' << value[1] << ' ' << value[2];
+      return "int3";
     }
   };
 
@@ -311,6 +332,11 @@ struct NodeEditor {
 
     virtual void parse(std::istream &in) override {
       in >> value;
+    }
+
+    virtual std::string unparse(std::ostream &out) override {
+      out << value;
+      return "str";
     }
   };
 
@@ -360,6 +386,10 @@ struct NodeEditor {
     void set_pos(ImVec2 const &pos) {
       imnodes::SetNodeScreenSpacePos(id, pos);
     }
+
+    ImVec2 get_pos() {
+      return imnodes::GetNodeScreenSpacePos(id);
+    }
   };
 
   struct Link {
@@ -369,6 +399,87 @@ struct NodeEditor {
     Link(int first, int second) : id(alloc_id()), first(first), second(second) {
     }
   };
+
+  using FNodesType = std::vector<std::tuple<
+        std::string, std::string, int,
+        std::vector<int>, std::vector<int>,
+        std::vector<std::string>, int, int
+      >>;
+  using FLinksType = std::vector<std::tuple<int, int, int>>;
+  using FGraphType = std::tuple<FNodesType, FLinksType>;
+
+  void load_graph(FGraphType const &fGraph) {
+    nodes.clear();
+    links.clear();
+
+    auto [fNodes, fLinks] = fGraph;
+
+    for (auto const &[type, name, id, inputs, outputs,
+        params, posx, posy]: fNodes) {
+      std::unique_ptr<Node> node = nullptr;
+      for (auto const &ty: types) {
+        if (ty.name == type) {
+          node = ty.make_node();
+        }
+      }
+      assert(node);
+
+      node->type = type;
+      node->name = name;
+      node->id = id;
+      for (int i = 0; i < inputs.size(); i++) {
+        node->inputs[i]->id = inputs[i];
+      }
+      for (int i = 0; i < outputs.size(); i++) {
+        node->outputs[i]->id = outputs[i];
+      }
+      for (int i = 0; i < params.size(); i++) {
+        std::stringstream ss(params[i]);
+        node->params[i]->parse(ss);
+      }
+
+      node->set_pos(ImVec2(posx, posy));
+      nodes[id] = std::move(node);
+    }
+
+    for (auto const &[id, first, second]: fLinks) {
+      auto link = std::make_unique<Link>(first, second);
+      link->id = id;
+      links[id] = std::move(link);
+    }
+  }
+
+  FGraphType save_graph() {
+    FNodesType fNodes;
+    FLinksType fLinks;
+
+    for (auto const &[key, node]: nodes) {
+      std::vector<int> inputs;
+      std::vector<int> outputs;
+      std::vector<std::string> params;
+      for (auto const &i: node->params) {
+        std::stringstream ss;
+        i->unparse(ss);
+        params.push_back(ss.str());
+      }
+      for (auto const &i: node->inputs) {
+        inputs.push_back(i->id);
+      }
+      for (auto const &i: node->outputs) {
+        outputs.push_back(i->id);
+      }
+      auto pos = node->get_pos();
+      fNodes.push_back(
+        std::make_tuple(node->type, node->name, node->id,
+          inputs, outputs, params, pos.x, pos.y));
+    }
+    for (auto const &[key, link]: links) {
+      fLinks.push_back(
+        std::make_tuple(link->id, link->first, link->second));
+    }
+
+    return std::make_tuple(fNodes, fLinks);
+  }
 
   std::map<int, std::unique_ptr<Node>> nodes;
   std::map<int, std::unique_ptr<Link>> links;

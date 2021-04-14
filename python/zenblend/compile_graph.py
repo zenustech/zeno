@@ -1,6 +1,6 @@
 def node_graph_to_script(
-        links: tuple[str, str, str, str],
-        nodes: dict[str, tuple[str, dict[str, str], tuple]],
+        links: list[tuple[str, str, str, str]],
+        nodes: dict[str, tuple[str, dict[str, str], tuple[float, float]]],
         wanted: list[str],
         **extra_kwargs):
 

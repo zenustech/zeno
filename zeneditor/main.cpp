@@ -100,6 +100,16 @@ std::map<std::string, std::string> new_frame() {
   }
 
   ImGui::SameLine();
+  if (ImGui::Button("Save Graph")) {
+    ret["save"] = "/tmp/graph.json";
+  }
+
+  ImGui::SameLine();
+  if (ImGui::Button("Load Graph")) {
+    ret["load"] = "/tmp/graph.json";
+  }
+
+  ImGui::SameLine();
   if (ImGui::Button("Execute Graph")) {
     std::stringstream ss;
     editor->dump_graph(ss);
@@ -137,6 +147,14 @@ void finalize() {
   glfwTerminate();
 }
 
+NodeEditor::FGraphType save_graph() {
+  return editor->save_graph();
+}
+
+void load_graph(NodeEditor::FGraphType const &graph) {
+  return editor->load_graph(graph);
+}
+
 }
 
 
@@ -145,4 +163,6 @@ PYBIND11_MODULE(libzeneditor, m) {
     m.def("load_descs", zeneditor::load_descs);
     m.def("new_frame", zeneditor::new_frame);
     m.def("finalize", zeneditor::finalize);
+    m.def("save_graph", zeneditor::save_graph);
+    m.def("load_graph", zeneditor::load_graph);
 }

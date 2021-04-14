@@ -1,6 +1,7 @@
 import tempfile
 import subprocess
 import threading
+import json
 import sys
 import os
 
@@ -106,6 +107,20 @@ for frame in range({nframes}):
     print('[ZenEdit] Python process exited')
 
 
+def save_node_graph(path):
+    graph = editor.save_graph()
+    print(graph)
+    with open(path, 'w') as f:
+        json.dump(graph, f)
+
+
+def load_node_graph(path):
+    with open(path, 'r') as f:
+        graph = json.load(f)
+    print(graph)
+    editor.load_graph(graph)
+
+
 def execute_script(*args):
     if 1:
         t = threading.Thread(target=do_execute_script, args=args, daemon=True)
@@ -123,6 +138,10 @@ while True:
         break
     if 'refresh' in ret:
         update_node_descs()
+    if 'save' in ret:
+        save_node_graph(ret['save'])
+    if 'load' in ret:
+        load_node_graph(ret['load'])
     if 'execute' in ret:
         execute_script(ret['execute'], ret['exec_nframes'])
 editor.finalize()
