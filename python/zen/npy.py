@@ -48,6 +48,12 @@ def setReference(name, srcname):
 def getReference(name):
     return get_core().getReference(name)
 
+def setBooleanObject(name, value):
+    return get_core().setBooleanObject(name, value)
+
+def getBooleanObject(name):
+    return get_core().getBooleanObject(name)
+
 def getCppObjectType(name):
     return get_core().getCppObjectType(name)
 
@@ -65,14 +71,14 @@ def setCppObject(name, obj):
         print('SETREF', name, obj)
         setReference(name, str(obj))
     else:
-        raise RuntimeError(f'unsupported type {type(name)} to pass into C++')
+        raise RuntimeError(f'unsupported type {type(obj)} to pass into C++')
 
 def getCppObject(name):
     type = getCppObjectType(name)
     if type == 'numpy':
         return getNumpyObject()
     if type == 'boolean':
-        return getBooleanObject()
+        return BooleanObject(getBooleanObject())
     else:
         return Reference(name)
 
