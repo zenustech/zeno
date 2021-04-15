@@ -9,8 +9,34 @@ class Route(INode):
 
     def apply(self):
         obj = self.get_input('input')
-        print('Route', obj)
         self.set_output('output', obj)
+
+
+@defNodeClass
+class RunOnce(INode):
+    z_outputs = ['cond']
+    z_categories = 'misc'
+
+    def __init__(self):
+        super().__init__()
+
+        self.initialized = False
+
+    def apply(self):
+        cond = not self.initialized
+        self.initialized = True
+        self.set_output('cond', BooleanObject(cond))
+
+
+@defNodeClass
+class SleepFor(INode):
+    z_params = [('float', 'secs', '1 0')]
+    z_categories = 'misc'
+
+    def apply(self):
+        import time
+        secs = self.get_param('secs')
+        time.sleep(secs)
 
 
 
