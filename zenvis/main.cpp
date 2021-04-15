@@ -104,7 +104,7 @@ static void motion_callback(GLFWwindow *window, double xpos, double ypos) {
 
 static std::unique_ptr<VAO> vao;
 
-static void initialize() {
+void initialize() {
   glfwInit();
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -147,7 +147,7 @@ static void draw_contents(void) {
 static hg::FPSCounter solverFPS(glfwGetTime, 1);
 static hg::FPSCounter renderFPS(glfwGetTime, 10);
 
-void update_title() {
+static void update_title() {
   char buf[512];
   sprintf(buf, "frame %d | %.1f fps | %.02f spf\n",
       curr_frameid, renderFPS.fps(), solverFPS.interval());
@@ -163,63 +163,66 @@ void finalize() {
   glfwTerminate();
 }
 
-int mainloop() {
-  initialize();
+bool new_frame() {
+  if (glfwWindowShouldClose(window))
+    return false;
+
   auto &server = Server::get();
 
-  while (!glfwWindowShouldClose(window)) {
-
-    server.poll_init();
-    if (curr_frameid >= server.frameid) {
-      curr_frameid = server.frameid - 1;
-      server.poll();
-      if (server.frameid - 1 != curr_frameid) {
-        solverFPS.tick();
-      }
+  server.poll_init();
+  if (curr_frameid >= server.frameid) {
+    curr_frameid = server.frameid - 1;
+    server.poll();
+    if (server.frameid - 1 != curr_frameid) {
+      solverFPS.tick();
     }
-
-    update_frame_graphics();
-    renderFPS.tick();
-    update_title();
-
-    glfwPollEvents();
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-    glfwGetFramebufferSize(window, &nx, &ny);
-    CHECK_GL(glViewport(0, 0, nx, ny));
-    draw_contents();
-
-    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(400, 55), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Render Control");
-
-    ImGui::SetNextItemWidth(400 - 13 * ImGui::GetFontSize());
-    ImGui::SliderInt("Current Frame", &curr_frameid, 0, server.frameid);
-
-    ImGui::SameLine();
-    static bool playing = true;
-    if (ImGui::Button(playing ? "Stop" : "Play")) {
-      printf("%d\n", playing);
-      playing = !playing;
-    }
-    ImGui::End();
-
-    if (playing) curr_frameid++;
-    if (curr_frameid < 0) curr_frameid = 0;
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    glfwSwapBuffers(window);
   }
 
-  finalize();
+  update_frame_graphics();
+  renderFPS.tick();
+  update_title();
+
+  glfwPollEvents();
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+
+  glfwGetFramebufferSize(window, &nx, &ny);
+  CHECK_GL(glViewport(0, 0, nx, ny));
+  draw_contents();
+
+  ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(400, 55), ImGuiCond_FirstUseEver);
+  ImGui::Begin("Render Control");
+
+  ImGui::SetNextItemWidth(400 - 13 * ImGui::GetFontSize());
+  ImGui::SliderInt("Current Frame", &curr_frameid, 0, server.frameid);
+
+  ImGui::SameLine();
+  static bool playing = true;
+  if (ImGui::Button(playing ? "Stop" : "Play")) {
+    printf("%d\n", playing);
+    playing = !playing;
+  }
+  ImGui::End();
+
+  if (playing) curr_frameid++;
+  if (curr_frameid < 0) curr_frameid = 0;
+
+  ImGui::Render();
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+  glfwSwapBuffers(window);
+
+  return true;
+}
+
+}
+
+#if 0
+int main(int argc, char **argv) {
+  zenvis::initialize();
+  while (zenvis::new_frame());
+  zenvis::finalize();
   return 0;
 }
-
-}
-
-int main(int argc, char **argv) {
-  return zenvis::mainloop();
-}
+#endif
