@@ -1,0 +1,147 @@
+from . import core
+
+import math
+import time
+import numpy as np
+
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtOpenGL import QGLWidget
+
+from OpenGL.GL import *
+from OpenGL.GLU import *
+from OpenGL.GLUT import *
+
+
+class CameraControl:
+    def __init__(self):
+        self.mmb_pressed = False
+        self.shift_pressed = False
+        self.theta = 0.0
+        self.phi = 0.0
+        self.last_pos = (0, 0)
+        self.center = (0.0, 0.0, 0.0)
+        self.ortho_mode = False
+        self.fov = 60.0
+        self.radius = 5.0
+        self.res = (1, 1)
+
+        self.update_perspective()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MiddleButton:
+            self.mmb_pressed = True
+            self.shift_pressed = bool(event.modifiers() & Qt.ShiftModifier)
+
+        self.last_pos = event.x(), event.y()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MiddleButton:
+            self.mmb_pressed = False
+            self.shift_pressed = bool(event.modifiers() & Qt.ShiftModifier)
+
+    def mouseMoveEvent(self, event):
+        x, y = event.x(), event.y()
+        dx, dy = x - self.last_pos[0], y - self.last_pos[1]
+        dx /= self.res[0]
+        dy /= self.res[1]
+
+        if self.mmb_pressed:
+            if self.shift_pressed:
+                cos_t = np.cos(self.theta)
+                sin_t = np.sin(self.theta)
+                cos_p = np.cos(self.phi)
+                sin_p = np.sin(self.phi)
+                back = np.array([ cos_t * sin_p, sin_t, -cos_t * cos_p])
+                up = np.array([-sin_t * sin_p, cos_t, sin_t * cos_p])
+                right = np.cross(up, back)
+                up = np.cross(back, right)
+                right /= np.linalg.norm(right)
+                up /= np.linalg.norm(up)
+                delta = right * dx + up * dy
+                center = np.array(self.center)
+                center = center + delta * self.radius
+                self.center = tuple(center)
+            else:
+                self.theta -= dy * math.pi
+                self.theta = max(-math.pi / 2, min(self.theta, math.pi / 2))
+                self.phi += dx * math.pi
+                self.phi %= math.pi * 2
+
+        self.last_pos = x, y
+
+        self.update_perspective()
+
+    def update_perspective(self):
+        cx, cy, cz = self.center
+        core.look_perspective(cx, cy, cz,
+                self.theta, self.phi, self.radius,
+                self.fov, self.ortho_mode)
+
+    def wheelEvent(self, event):
+        dy = event.angleDelta().y()
+        if dy > 0:
+            self.radius *= 0.89
+        elif dy < 0:
+            self.radius /= 0.89
+
+        self.update_perspective()
+
+
+
+class ViewportWidget(QGLWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.camera = CameraControl()
+
+    @property
+    def frameid(self):
+        return core.get_curr_frameid()
+
+    @frameid.setter
+    def frameid(self, value):
+        core.set_curr_frameid(value)
+
+    @property
+    def res(self):
+        return self.camera.res
+
+    @res.setter
+    def res(self, value):
+        nx, ny = self.camera.res = value
+        core.set_window_size(nx, ny)
+        self.camera.update_perspective()
+
+    def initializeGL(self):
+        core.initialize()
+
+        self.startTimer(0)
+
+    def resizeGL(self, nx, ny):
+        print('resize', nx, ny)
+        self.res = nx, ny
+
+    def paintGL(self):
+        core.new_frame()
+        self.frameid += 1
+
+    def timerEvent(self, event):
+        self.repaint()
+
+        super().timerEvent(event)
+
+
+for name in [
+        'mousePressEvent',
+        'mouseReleaseEvent',
+        'mouseMoveEvent',
+        'wheelEvent']:
+    def closure(name):
+        oldfunc = getattr(ViewportWidget, name)
+        def newfunc(self, event):
+            getattr(self.camera, name)(event)
+            oldfunc(self, event)
+        setattr(ViewportWidget, name, newfunc)
+    closure(name)
