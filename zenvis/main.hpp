@@ -8,8 +8,4 @@ void set_program_uniforms(Program *pro);
 
 extern int curr_frameid;
 
-void initialize();
-void finalize();
-bool new_frame();
-
 }

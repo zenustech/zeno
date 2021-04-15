@@ -1,27 +1,40 @@
-import sys
-import os
+from . import core
+from OpenGL.GL import *
+from OpenGL.GLU import *
+from OpenGL.GLUT import *
+import time
 
 
-@eval('lambda x: x()')
-def core():
-    import os
-    import sys
+class App:
+    def __init__(self, nx=960, ny=800):
+        self.nx, self.ny = nx, ny
 
-    lib_dir = os.path.dirname(__file__)
+    @property
+    def curr_frameid(self):
+        return core.get_curr_frameid()
 
-    assert os.path.exists(lib_dir)
-    assert os.path.exists(os.path.join(lib_dir, 'libzenvis.so'))
+    @curr_frameid.setter
+    def curr_frameid(self, value):
+        return core.set_curr_frameid(value)
 
-    sys.path.insert(0, lib_dir)
-    try:
-        import libzenvis as core
-    finally:
-        assert sys.path.pop(0) == lib_dir
+    def draw(self):
+        self.nx = glutGet(GLUT_WINDOW_WIDTH)
+        self.ny = glutGet(GLUT_WINDOW_HEIGHT)
+        core.set_window_size(self.nx, self.ny)
 
-    return core
+        core.new_frame()
+        glFlush()
+        time.sleep(1 / 60)
 
+    def mainloop(self):
+        glutInit()
+        glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA)
+        glutInitWindowSize(self.nx, self.ny)
+        glutCreateWindow('zenvis')
+        glutDisplayFunc(self.draw)
+        glutIdleFunc(self.draw)
+        core.initialize()
+        glutMainLoop()
+        core.finalize()
 
-core.initialize()
-while core.new_frame():
-    pass
-core.finalize()
+App().mainloop()

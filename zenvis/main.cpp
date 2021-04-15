@@ -5,9 +5,6 @@
 #include "IGraphic.hpp"
 #include <Hg/FPSCounter.hpp>
 #include <Hg/IPC/SharedMemory.hpp>
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_glfw.h>
-#include <imgui/imgui_impl_opengl3.h>
 #include <sstream>
 #include <cstdlib>
 
@@ -17,12 +14,7 @@ std::unique_ptr<Server> Server::_instance;
 
 int curr_frameid = -1;
 
-static GLFWwindow *window;
 static int nx = 960, ny = 800;
-
-static void error_callback(int error, const char *msg) {
-  fprintf(stderr, "error %d: %s\n", error, msg);
-}
 
 static double last_xpos, last_ypos;
 static double theta = 0.0, phi = 0.0, radius = 3.0, fov = 60.0;
@@ -105,25 +97,7 @@ static void motion_callback(GLFWwindow *window, double xpos, double ypos) {
 static std::unique_ptr<VAO> vao;
 
 void initialize() {
-  glfwInit();
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-
-  window = glfwCreateWindow(nx, ny, "viewport", NULL, NULL);
-  glfwSetWindowPos(window, 0, 0);
-  glfwMakeContextCurrent(window);
-  glfwSetErrorCallback(error_callback);
-  glfwSetKeyCallback(window, key_callback);
-  glfwSetMouseButtonCallback(window, click_callback);
-  glfwSetCursorPosCallback(window, motion_callback);
-  glfwSetScrollCallback(window, scroll_callback);
-
   glewInit();
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImGui_ImplGlfw_InitForOpenGL(window, true);
-  ImGui_ImplOpenGL3_Init("#version 330 core");
 
   CHECK_GL(glEnable(GL_BLEND));
   CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
@@ -147,26 +121,18 @@ static void draw_contents(void) {
 static hg::FPSCounter solverFPS(glfwGetTime, 1);
 static hg::FPSCounter renderFPS(glfwGetTime, 10);
 
+static char titleBuf[512];
+
 static void update_title() {
-  char buf[512];
-  sprintf(buf, "frame %d | %.1f fps | %.02f spf\n",
+  sprintf(titleBuf, "frame %d | %.1f fps | %.02f spf\n",
       curr_frameid, renderFPS.fps(), solverFPS.interval());
-  glfwSetWindowTitle(window, buf);
 }
 
 void finalize() {
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  ImGui::DestroyContext();
-
-  glfwDestroyWindow(window);
-  glfwTerminate();
+  vao = nullptr;
 }
 
-bool new_frame() {
-  if (glfwWindowShouldClose(window))
-    return false;
-
+void new_frame() {
   auto &server = Server::get();
 
   server.poll_init();
@@ -182,47 +148,32 @@ bool new_frame() {
   renderFPS.tick();
   update_title();
 
-  glfwPollEvents();
-  ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplGlfw_NewFrame();
-  ImGui::NewFrame();
-
-  glfwGetFramebufferSize(window, &nx, &ny);
   CHECK_GL(glViewport(0, 0, nx, ny));
   draw_contents();
 
-  ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
-  ImGui::SetNextWindowSize(ImVec2(400, 55), ImGuiCond_FirstUseEver);
-  ImGui::Begin("Render Control");
-
-  ImGui::SetNextItemWidth(400 - 13 * ImGui::GetFontSize());
-  ImGui::SliderInt("Current Frame", &curr_frameid, 0, server.frameid);
-
-  ImGui::SameLine();
-  static bool playing = true;
-  if (ImGui::Button(playing ? "Stop" : "Play")) {
-    printf("%d\n", playing);
-    playing = !playing;
-  }
-  ImGui::End();
-
-  if (playing) curr_frameid++;
+  curr_frameid++;
   if (curr_frameid < 0) curr_frameid = 0;
+}
 
-  ImGui::Render();
-  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-  glfwSwapBuffers(window);
+void set_window_size(int nx_, int ny_) {
+  nx = nx_;
+  ny = ny_;
+}
 
-  return true;
+void set_curr_frameid(int frameid) {
+  curr_frameid = frameid;
+}
+
+int get_curr_frameid() {
+  return curr_frameid;
+}
+
+double get_render_fps() {
+  return renderFPS.fps();
+}
+
+double get_solver_interval() {
+  return solverFPS.interval();
 }
 
 }
-
-#if 0
-int main(int argc, char **argv) {
-  zenvis::initialize();
-  while (zenvis::new_frame());
-  zenvis::finalize();
-  return 0;
-}
-#endif
