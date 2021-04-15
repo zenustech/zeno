@@ -17,11 +17,13 @@ int curr_frameid = -1;
 static int nx = 960, ny = 800;
 
 static double last_xpos, last_ypos;
-static double theta = 0.0, phi = 0.0, radius = 3.0, fov = 60.0;
-static bool mmb_pressed, shift_pressed, ortho_mode;
 static glm::dvec3 center;
 
-void set_program_uniforms(Program *pro) {
+static glm::mat4x4 view, proj;
+
+void look_perspective(
+    double theta, double phi, double radius,
+    double fov, bool ortho_mode) {
   double cos_t = glm::cos(theta), sin_t = glm::sin(theta);
   double cos_p = glm::cos(phi), sin_p = glm::sin(phi);
   glm::dvec3 back(cos_t * sin_p, sin_t, -cos_t * cos_p);
@@ -35,6 +37,9 @@ void set_program_uniforms(Program *pro) {
                       -100.0, 100.0);
   }
 
+}
+
+void set_program_uniforms(Program *pro) {
   pro->use();
 
   auto pers = proj * view;
@@ -47,38 +52,7 @@ void set_program_uniforms(Program *pro) {
   pro->set_uniform("light.color", glm::vec3(1, 1, 1));
 }
 
-static void key_callback(GLFWwindow *window, int key, int scancode, int action,
-                         int mods) {
-  if (key == GLFW_KEY_TAB && action == GLFW_RELEASE)
-    ortho_mode = !ortho_mode;
-  if (key == GLFW_KEY_ESCAPE)
-    glfwSetWindowShouldClose(window, GLFW_TRUE);
-}
-
-static void click_callback(GLFWwindow *window, int button, int action,
-                           int mods) {
-  if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
-    mmb_pressed = action == GLFW_PRESS;
-    shift_pressed = !!(mods & GLFW_MOD_SHIFT);
-  }
-
-  if (mmb_pressed)
-    glfwGetCursorPos(window, &last_xpos, &last_ypos);
-}
-
-static void scroll_callback(GLFWwindow *window, double xoffset,
-                            double yoffset) {
-  radius *= glm::pow(0.89, yoffset);
-}
-
-static void motion_callback(GLFWwindow *window, double xpos, double ypos) {
-  double dx = (xpos - last_xpos) / nx, dy = (ypos - last_ypos) / ny;
-
-  if (mmb_pressed && !shift_pressed) {
-    theta = glm::clamp(theta - dy * M_PI, -M_PI / 2, M_PI / 2);
-    phi = phi + dx * M_PI;
-  }
-
+/*
   if (mmb_pressed && shift_pressed) {
     double cos_t = glm::cos(theta), sin_t = glm::sin(theta);
     double cos_p = glm::cos(phi), sin_p = glm::sin(phi);
@@ -89,10 +63,7 @@ static void motion_callback(GLFWwindow *window, double xpos, double ypos) {
     glm::dvec3 delta = glm::normalize(right) * dx + glm::normalize(up) * dy;
     center = center + delta * radius;
   }
-
-  last_xpos = xpos;
-  last_ypos = ypos;
-}
+*/
 
 static std::unique_ptr<VAO> vao;
 
@@ -105,6 +76,8 @@ void initialize() {
   CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
 
   vao = std::make_unique<VAO>();
+
+  Server::get();
 }
 
 static void draw_contents(void) {
@@ -150,9 +123,6 @@ void new_frame() {
 
   CHECK_GL(glViewport(0, 0, nx, ny));
   draw_contents();
-
-  curr_frameid++;
-  if (curr_frameid < 0) curr_frameid = 0;
 }
 
 void set_window_size(int nx_, int ny_) {
@@ -162,6 +132,7 @@ void set_window_size(int nx_, int ny_) {
 
 void set_curr_frameid(int frameid) {
   curr_frameid = frameid;
+  if (curr_frameid < 0) curr_frameid = 0;
 }
 
 int get_curr_frameid() {

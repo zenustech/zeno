@@ -15,6 +15,9 @@ void set_curr_frameid(int frameid);
 int get_curr_frameid();
 int get_solver_interval();
 int get_render_fps();
+void look_perspective(
+    double theta, double phi, double radius,
+    double fov, bool ortho_mode);
 
 };
 
@@ -27,4 +30,5 @@ PYBIND11_MODULE(libzenvis, m) {
     m.def("get_curr_frameid", zenvis::get_curr_frameid);
     m.def("get_solver_interval", zenvis::get_solver_interval);
     m.def("get_render_fps", zenvis::get_render_fps);
+    m.def("look_perspective", zenvis::look_perspective);
 }
