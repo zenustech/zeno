@@ -12,6 +12,31 @@ class Route(INode):
         self.set_output('output', obj)
 
 
+portals = {}
+
+
+@defNodeClass
+class PortalIn(INode):
+    z_inputs = ['port']
+    z_categories = 'misc'
+
+    def apply(self):
+        id = self.get_param('id')
+        obj = self.get_input('port')
+        portals[id] = obj
+
+
+@defNodeClass
+class PortalOut(INode):
+    z_inputs = ['port']
+    z_categories = 'misc'
+
+    def apply(self):
+        id = self.get_param('id')
+        obj = portals[id]
+        self.set_output('port', obj)
+
+
 @defNodeClass
 class RunOnce(INode):
     z_outputs = ['cond']

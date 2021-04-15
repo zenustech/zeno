@@ -17,17 +17,11 @@ class BooleanObject(int, IObject):
 
 class ParamDescriptor(namedtuple('ParamDescriptor',
     ['type', 'name', 'defl'])):
-    type: str
-    name: str
-    defl: str
+    pass
 
 
 class Descriptor(namedtuple('Descriptor',
     ['inputs', 'outputs', 'params', 'categories'])):
-    inputs: list[str]
-    outputs: list[str]
-    params: list[ParamDescriptor]
-    categories: list[str]
 
     def serialize(self):
         res = ""
@@ -164,11 +158,11 @@ def dumpDescriptors():
     return res
 
 
-nodeDescriptors : dict[str, Descriptor] = {}
-nodeClasses : dict[str, callable] = {}
-objects : dict[str, IObject] = {}
-nodes : dict[str, INode] = {}
-nodesRev : dict[INode, str] = {}
+nodeDescriptors = {}
+nodeClasses = {}
+objects = {}
+nodesRev = {}
+nodes = {}
 
 
 __all__ = [
