@@ -19,22 +19,26 @@ static int nx = 960, ny = 800;
 static double last_xpos, last_ypos;
 static glm::dvec3 center;
 
-static glm::mat4x4 view, proj;
+static glm::mat4x4 view(1), proj(1);
 
 void look_perspective(
+    double cx, double cy, double cz,
     double theta, double phi, double radius,
     double fov, bool ortho_mode) {
+  glm::dvec3 center(cx, cy, cz);
+
   double cos_t = glm::cos(theta), sin_t = glm::sin(theta);
   double cos_p = glm::cos(phi), sin_p = glm::sin(phi);
   glm::dvec3 back(cos_t * sin_p, sin_t, -cos_t * cos_p);
   glm::dvec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
 
-  auto view = glm::lookAt(center - back * radius, center, up);
-  auto proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.05, 500.0);
   if (ortho_mode) {
     view = glm::lookAt(center - back, center, up);
     proj = glm::ortho(-radius * nx / ny, radius * nx / ny, -radius, radius,
                       -100.0, 100.0);
+  } else {
+    view = glm::lookAt(center - back * radius, center, up);
+    proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.05, 500.0);
   }
 
 }

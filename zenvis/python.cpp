@@ -16,6 +16,7 @@ int get_curr_frameid();
 int get_solver_interval();
 int get_render_fps();
 void look_perspective(
+    double cx, double cy, double cz,
     double theta, double phi, double radius,
     double fov, bool ortho_mode);
 

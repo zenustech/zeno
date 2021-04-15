@@ -2,40 +2,80 @@ from . import core
 
 import sys
 import math
+import time
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtOpenGL import QGLWidget
+
 from OpenGL.GL import *
+from OpenGL.GLU import *
+from OpenGL.GLUT import *
+
+
+'''
+class GlutApp:
+    def __init__(self, nx=960, ny=800):
+        self.nx, self.ny = nx, ny
+
+    def draw(self):
+        self.nx = glutGet(GLUT_WINDOW_WIDTH)
+        self.ny = glutGet(GLUT_WINDOW_HEIGHT)
+        core.set_window_size(self.nx, self.ny)
+
+        core.set_curr_frameid(core.get_curr_frameid() + 1)
+        core.new_frame()
+        glFlush()
+        time.sleep(1 / 60)
+
+    def mainloop(self):
+        glutInit()
+        glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA)
+        glutInitWindowSize(self.nx, self.ny)
+        glutCreateWindow('zenvis')
+        glutDisplayFunc(self.draw)
+        glutIdleFunc(self.draw)
+        core.initialize()
+        glutMainLoop()
+        core.finalize()
+
+
+GlutApp().mainloop()
+exit()
+'''
 
 
 class MainWindow(QMainWindow):
-	def __init__(self, parent=None):
-		super().__init__(parent)
- 
-		self.setWindowTitle("zenvis")
-		self.resize(1100, 650)
-		screen = QDesktopWidget().geometry()
-		self_size = self.geometry()
-		self.move(
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle('zenvis')
+        self.resize(1100, 650)
+        screen = QDesktopWidget().geometry()
+        self_size = self.geometry()
+        self.move(
                 (screen.width() - self_size.width()) // 2,
                 (screen.height() - self_size.height()) // 2)
- 
-		splitter = QSplitter(Qt.Vertical)
-		widget = OpenGLWidget()
-		splitter.addWidget(widget)
-		testedit = QTextEdit()
-		splitter.addWidget(testedit)
-		splitter.setStretchFactor(0, 3)
-		splitter.setStretchFactor(1, 2)
-		splitter_main = QSplitter(Qt.Horizontal)
-		textedit_main = QTextEdit()
-		splitter_main.addWidget(textedit_main)
-		splitter_main.addWidget(splitter)
-		splitter_main.setStretchFactor(0, 1)
-		splitter_main.setStretchFactor(1, 4)
-		self.setCentralWidget(splitter_main)
+
+        opengl_widget = OpenGLWidget()
+        self.setCentralWidget(opengl_widget)
+        '''
+        splitter = QSplitter(Qt.Vertical)
+        opengl_widget = OpenGLWidget()
+        splitter.addWidget(opengl_widget)
+        testedit = QTextEdit()
+        splitter.addWidget(testedit)
+        splitter.setStretchFactor(0, 3)
+        splitter.setStretchFactor(1, 2)
+        splitter_main = QSplitter(Qt.Horizontal)
+        textedit_main = QTextEdit()
+        splitter_main.addWidget(textedit_main)
+        splitter_main.addWidget(splitter)
+        splitter_main.setStretchFactor(0, 1)
+        splitter_main.setStretchFactor(1, 4)
+        self.setCentralWidget(splitter_main)
+        '''
 
 
 class CameraControl:
@@ -46,27 +86,21 @@ class CameraControl:
         self.phi = 0.0
         self.last_pos = (0, 0)
         self.ortho_mode = False
-        self.fov = 6.0
-        self.radius = 6.0
-        self.res = (0, 0)
-
-        self.update_perspective()
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Tab:
-            self.ortho_mode = not self.ortho_mode
+        self.fov = 60.0
+        self.radius = 5.0
+        self.res = (1, 1)
 
         self.update_perspective()
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.RightButton:
+        if event.button() == Qt.MiddleButton:
             self.mmb_pressed = True
             self.shift_pressed = bool(event.modifiers() & Qt.ShiftModifier)
 
         self.last_pos = event.x(), event.y()
 
     def mouseReleaseEvent(self, event):
-        if event.button() == Qt.RightButton:
+        if event.button() == Qt.MiddleButton:
             self.mmb_pressed = False
             self.shift_pressed = bool(event.modifiers() & Qt.ShiftModifier)
 
@@ -91,7 +125,9 @@ class CameraControl:
 
     def update_perspective(self):
         print(self.theta, self.phi, self.radius, self.fov, self.ortho_mode)
-        core.look_perspective(self.theta, self.phi, self.radius,
+
+        core.look_perspective(0, 0, 0,
+                self.theta, self.phi, self.radius,
                 self.fov, self.ortho_mode)
 
     def wheelEvent(self, event):
@@ -112,6 +148,14 @@ class OpenGLWidget(QGLWidget):
         self.camera = CameraControl()
 
     @property
+    def frameid(self):
+        return core.get_curr_frameid()
+
+    @frameid.setter
+    def frameid(self, value):
+        core.set_curr_frameid(value)
+
+    @property
     def res(self):
         return self.camera.res
 
@@ -119,6 +163,7 @@ class OpenGLWidget(QGLWidget):
     def res(self, value):
         nx, ny = self.camera.res = value
         core.set_window_size(nx, ny)
+        self.camera.update_perspective()
 
     def initializeGL(self):
         core.initialize()
@@ -130,18 +175,20 @@ class OpenGLWidget(QGLWidget):
         self.res = nx, ny
 
     def paintGL(self):
-        import random
-        print('new_frame', random.random())
         core.new_frame()
+        self.frameid += 1
 
     def timerEvent(self, event):
         self.repaint()
 
         super().timerEvent(event)
- 
 
-for name in ['keyPressEvent', 'mousePressEvent', 'mouseReleaseEvent',
-        'mouseMoveEvent', 'wheelEvent']:
+
+for name in [
+        'mousePressEvent',
+        'mouseReleaseEvent',
+        'mouseMoveEvent',
+        'wheelEvent']:
     def closure(name):
         oldfunc = getattr(OpenGLWidget, name)
         def newfunc(self, event):
@@ -149,10 +196,10 @@ for name in ['keyPressEvent', 'mousePressEvent', 'mouseReleaseEvent',
             oldfunc(self, event)
         setattr(OpenGLWidget, name, newfunc)
     closure(name)
- 
- 
+
+
 if __name__ == "__main__":
-	app = QApplication(sys.argv)
-	win = MainWindow()
-	win.show()
-	sys.exit(app.exec_())
+    app = QApplication(sys.argv)
+    win = MainWindow()
+    win.show()
+    sys.exit(app.exec_())
