@@ -7,7 +7,7 @@
 #include "openvdb/openvdb.h"
 class vdb_velocity_extrapolator {
 public:
-	static void extrapolate(int n_layer, openvdb::Vec3fGrid::Ptr in_out_vel_grid);
+	static void extrapolate(int n_layer, openvdb::Vec3fGrid::Ptr &in_out_vel_grid);
 };
 namespace {
 	class velocity_extrapolate_functor {
@@ -16,12 +16,12 @@ namespace {
 	public:
 		velocity_extrapolate_functor(
 			const std::vector<vel_tree_node_t*>& in_vel_tree_node_ptrs,
-			openvdb::Vec3SGrid::Ptr in_vel_grid,
+			openvdb::Vec3fGrid::Ptr in_vel_grid,
 			openvdb::BoolGrid::Ptr in_empty_indicator) :
 			m_vel_tree_node_ptrs(in_vel_tree_node_ptrs) {
 			m_vel_has_empty_voxel = in_empty_indicator;
 			m_vel_grid = in_vel_grid;
-			m_extrapolate_vel_grid = openvdb::Vec3SGrid::create(openvdb::Vec3s{ 0,0,0 });
+			m_extrapolate_vel_grid = openvdb::Vec3fGrid::create(openvdb::Vec3f{ 0,0,0 });
 			m_extrapolate_weight_grid = openvdb::Int32Grid::create(0);
 		};
 
@@ -47,7 +47,7 @@ namespace {
 						openvdb::Coord ijk = vel_node.offsetToLocalCoord(offset);
 						if (vel_node.isValueMaskOff(offset)) {
 							//only collect the contribution from this node,
-							openvdb::Vec3s tempvel{ 0,0,0 };
+							openvdb::Vec3f tempvel{ 0,0,0 };
 							openvdb::Int32 valcount = 0;
 							openvdb::Coord c{ ijk };
 							auto coffset = offset;
@@ -163,7 +163,7 @@ namespace {
 						openvdb::Coord ijk = vel_node.offsetToLocalCoord(offset);
 						if (vel_node.isValueMaskOff(offset)) {
 							//only collect the contribution from this node,
-							openvdb::Vec3s tempvel{ 0,0,0 };
+							openvdb::Vec3f tempvel{ 0,0,0 };
 							openvdb::Int32 valcount = 0;
 							openvdb::Coord c{ ijk };
 							auto coffset = offset;
@@ -307,7 +307,7 @@ namespace {
 		{
 			m_vel_grid = rhs.m_vel_grid;
 			m_vel_has_empty_voxel = rhs.m_vel_has_empty_voxel;
-			m_extrapolate_vel_grid = openvdb::Vec3SGrid::create(openvdb::Vec3s{ 0,0,0 });
+			m_extrapolate_vel_grid = openvdb::Vec3fGrid::create(openvdb::Vec3f{ 0,0,0 });
 			m_extrapolate_weight_grid = openvdb::Int32Grid::create(0);
 		}
 
@@ -365,7 +365,7 @@ namespace {
 		//constant source part
 		const std::vector<vel_tree_node_t*>& m_vel_tree_node_ptrs;
 
-		openvdb::Vec3SGrid::Ptr m_vel_grid;
+		openvdb::Vec3fGrid::Ptr m_vel_grid;
 		//const std::vector<valid_tree_node_t*>& m_valid_tree_node_ptrs;
 
 		//empty indicator
@@ -375,7 +375,7 @@ namespace {
 
 		//reduced result
 		//temporary velocity grid storing the extrapolated value
-		openvdb::Vec3SGrid::Ptr m_extrapolate_vel_grid;
+		openvdb::Vec3fGrid::Ptr m_extrapolate_vel_grid;
 		//marks if the voxel is the result of interpolateion
 		openvdb::Int32Grid::Ptr m_extrapolate_weight_grid;
 	};//end extrapolate functor
@@ -393,7 +393,7 @@ namespace {
 		//this operator is designed for the leaf manager
 		//of m_extrapolate_vel_grid
 		//the m_result_velocity_grid must contain the leafs of the extrapolated_velocity
-		void operator()(openvdb::Vec3SGrid::TreeType::LeafNodeType& extrapolated_vel_leaf, openvdb::Index leafpos) const {
+		void operator()(openvdb::Vec3fGrid::TreeType::LeafNodeType& extrapolated_vel_leaf, openvdb::Index leafpos) const {
 			auto* result_leaf = m_result_vel_nodes[leafpos];
 			auto* count_leaf = m_count_nodes[leafpos];
 			/*if (!result_leaf||!count_leaf) {
@@ -491,7 +491,7 @@ namespace {
 }//end namespace
 
 
-void vdb_velocity_extrapolator::extrapolate(int n_layer, openvdb::Vec3fGrid::Ptr in_out_vel_grid)
+void vdb_velocity_extrapolator::extrapolate(int n_layer, openvdb::Vec3fGrid::Ptr &in_out_vel_grid)
 {
 	using vel_tree_node_t = openvdb::Vec3fTree::LeafNodeType;
 	//using valid_tree_node_t = openvdb::BoolTree::LeafNodeType;
@@ -547,7 +547,7 @@ void vdb_velocity_extrapolator::extrapolate(int n_layer, openvdb::Vec3fGrid::Ptr
 		result_vel_nodes.reserve(n_leafcount);
 		count_nodes.reserve(n_leafcount);
 
-		auto set_nodes = [&](openvdb::Vec3SGrid::TreeType::LeafNodeType& extrapolated_vel_leaf, openvdb::Index leafpos) {
+		auto set_nodes = [&](openvdb::Vec3fGrid::TreeType::LeafNodeType& extrapolated_vel_leaf, openvdb::Index leafpos) {
 			auto* vel_leaf = in_out_vel_grid->tree().touchLeaf(extrapolated_vel_leaf.origin());
 			auto* count_leaf = vel_extrapolator.m_extrapolate_weight_grid->tree().touchLeaf(extrapolated_vel_leaf.origin());
 			result_vel_nodes.push_back(vel_leaf);
