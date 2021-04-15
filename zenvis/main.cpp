@@ -64,19 +64,6 @@ void set_program_uniforms(Program *pro) {
   pro->set_uniform("light.color", glm::vec3(1, 1, 1));
 }
 
-/*
-  if (mmb_pressed && shift_pressed) {
-    double cos_t = glm::cos(theta), sin_t = glm::sin(theta);
-    double cos_p = glm::cos(phi), sin_p = glm::sin(phi);
-    glm::dvec3 back(cos_t * sin_p, sin_t, -cos_t * cos_p);
-    glm::dvec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
-    auto right = glm::cross(up, back);
-    up = glm::cross(back, right);
-    glm::dvec3 delta = glm::normalize(right) * dx + glm::normalize(up) * dy;
-    center = center + delta * radius;
-  }
-*/
-
 static std::unique_ptr<VAO> vao;
 
 void initialize() {

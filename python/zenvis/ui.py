@@ -15,9 +15,11 @@ from OpenGL.GLUT import *
 
 
 class CameraControl:
+    '''
+    MMB to orbit, Shift+MMB to pan, wheel to zoom
+    '''
     def __init__(self):
         self.mmb_pressed = False
-        self.shift_pressed = False
         self.theta = 0.0
         self.phi = 0.0
         self.last_pos = (0, 0)
@@ -30,44 +32,42 @@ class CameraControl:
         self.update_perspective()
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.MiddleButton:
-            self.mmb_pressed = True
-            self.shift_pressed = bool(event.modifiers() & Qt.ShiftModifier)
+        if not (event.buttons() & Qt.MiddleButton):
+            return
 
         self.last_pos = event.x(), event.y()
 
-    def mouseReleaseEvent(self, event):
-        if event.button() == Qt.MiddleButton:
-            self.mmb_pressed = False
-            self.shift_pressed = bool(event.modifiers() & Qt.ShiftModifier)
-
     def mouseMoveEvent(self, event):
+        if not (event.buttons() & Qt.MiddleButton):
+            return
+
         x, y = event.x(), event.y()
         dx, dy = x - self.last_pos[0], y - self.last_pos[1]
         dx /= self.res[0]
         dy /= self.res[1]
 
-        if self.mmb_pressed:
-            if self.shift_pressed:
-                cos_t = np.cos(self.theta)
-                sin_t = np.sin(self.theta)
-                cos_p = np.cos(self.phi)
-                sin_p = np.sin(self.phi)
-                back = np.array([ cos_t * sin_p, sin_t, -cos_t * cos_p])
-                up = np.array([-sin_t * sin_p, cos_t, sin_t * cos_p])
-                right = np.cross(up, back)
-                up = np.cross(back, right)
-                right /= np.linalg.norm(right)
-                up /= np.linalg.norm(up)
-                delta = right * dx + up * dy
-                center = np.array(self.center)
-                center = center + delta * self.radius
-                self.center = tuple(center)
-            else:
-                self.theta -= dy * math.pi
-                self.theta = max(-math.pi / 2, min(self.theta, math.pi / 2))
-                self.phi += dx * math.pi
-                self.phi %= math.pi * 2
+        shift_pressed = bool(event.modifiers() & Qt.ShiftModifier)
+
+        if shift_pressed:
+            cos_t = np.cos(self.theta)
+            sin_t = np.sin(self.theta)
+            cos_p = np.cos(self.phi)
+            sin_p = np.sin(self.phi)
+            back = np.array([ cos_t * sin_p, sin_t, -cos_t * cos_p])
+            up = np.array([-sin_t * sin_p, cos_t, sin_t * cos_p])
+            right = np.cross(up, back)
+            up = np.cross(back, right)
+            right /= np.linalg.norm(right)
+            up /= np.linalg.norm(up)
+            delta = right * dx + up * dy
+            center = np.array(self.center)
+            center = center + delta * self.radius
+            self.center = tuple(center)
+        else:
+            self.theta -= dy * math.pi
+            self.theta = max(-math.pi / 2, min(self.theta, math.pi / 2))
+            self.phi += dx * math.pi
+            self.phi %= math.pi * 2
 
         self.last_pos = x, y
 
@@ -81,10 +81,12 @@ class CameraControl:
 
     def wheelEvent(self, event):
         dy = event.angleDelta().y()
-        if dy > 0:
-            self.radius *= 0.89
-        elif dy < 0:
-            self.radius /= 0.89
+        scale = 0.89 if dy >= 0 else 1 / 0.89
+
+        shift_pressed = bool(event.modifiers() & Qt.ShiftModifier)
+        if shift_pressed:
+            self.fov /= scale
+        self.radius *= scale
 
         self.update_perspective()
 
@@ -133,11 +135,7 @@ class ViewportWidget(QGLWidget):
         super().timerEvent(event)
 
 
-for name in [
-        'mousePressEvent',
-        'mouseReleaseEvent',
-        'mouseMoveEvent',
-        'wheelEvent']:
+for name in ['mousePressEvent', 'mouseMoveEvent', 'wheelEvent']:
     def closure(name):
         oldfunc = getattr(ViewportWidget, name)
         def newfunc(self, event):
