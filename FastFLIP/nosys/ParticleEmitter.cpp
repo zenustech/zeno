@@ -12,20 +12,29 @@ namespace zenbase{
             float vx = std::get<float>(get_param("vx"));
             float vy = std::get<float>(get_param("vy"));
             float vz = std::get<float>(get_param("vz"));
+
+            VDBFloat3Grid* velocityVolume = new VDBFloat3Grid();
             if(has_input("VelocityVolume")){
-                auto velocityVolume = get_input("VelocityVolume")->as<VDBFloat3Grid>();
-                FLIP_vdb::emit_liquid(particles->m_grid, shape->m_grid, velocityVolume->m_grid, vx, vy, vz);
+                velocityVolume = get_input("VelocityVolume")->as<VDBFloat3Grid>();
+                
             } else {
-                using TmpT = decltype(std::declval<VDBFloat3Grid>().m_grid);
-                TmpT tmp{nullptr};
-                FLIP_vdb::emit_liquid(particles->m_grid, shape->m_grid, tmp, vx, vy, vz);
+                velocityVolume->m_grid = nullptr;
             }
+
+            VDBFloatGrid* liquid_sdf = new VDBFloatGrid();;
+            if(has_input("LiquidSDF")){
+                liquid_sdf = get_input("LiquidSDF")->as<VDBFloatGrid>();
+                
+            } else {
+                liquid_sdf->m_grid = nullptr;
+            }
+            FLIP_vdb::emit_liquid(particles->m_grid, shape->m_grid, velocityVolume->m_grid, liquid_sdf->m_grid, vx, vy, vz);
         }
     };
 
 static int defParticleEmitter = zen::defNodeClass<ParticleEmitter>("ParticleEmitter",
     { /* inputs: */ {
-        "Particles", "ShapeSDF", "VelocityVolume", 
+        "Particles", "ShapeSDF", "VelocityVolume", "LiquidSDF",
     }, 
     /* outputs: */ {
     }, 

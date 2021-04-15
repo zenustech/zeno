@@ -37,7 +37,7 @@ namespace zenbase{
                 face_weight           -> m_grid,
                 velocity              -> m_grid,
                 solid_velocity        -> m_grid,
-                dt,dx
+                dx,dt
             );
         }
     };
