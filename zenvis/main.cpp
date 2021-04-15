@@ -90,8 +90,15 @@ static void draw_contents(void) {
   CHECK_GL(glFlush());
 }
 
-static hg::FPSCounter solverFPS(glfwGetTime, 1);
-static hg::FPSCounter renderFPS(glfwGetTime, 10);
+double get_time() {
+  static auto start = std::chrono::system_clock::now();
+  auto now = std::chrono::system_clock::now();
+  std::chrono::duration<double> diff = now - start;
+  return diff.count();
+}
+
+static hg::FPSCounter solverFPS(get_time, 1);
+static hg::FPSCounter renderFPS(get_time, 10);
 
 static char titleBuf[512];
 

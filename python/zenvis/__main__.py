@@ -20,12 +20,11 @@ class MainWindow(QMainWindow):
                 (screen.height() - self_size.height()) // 2)
 
         #'''
-        widget = ViewportWidget()
-        self.setCentralWidget(widget)
+        self.viewport = ViewportWidget()
+        self.setCentralWidget(self.viewport)
         '''
         splitter = QSplitter(Qt.Vertical)
-        widget = ViewportWidget()
-        splitter.addWidget(widget)
+        splitter.addWidget(self.viewport)
         testedit = QTextEdit()
         splitter.addWidget(testedit)
         splitter.setStretchFactor(0, 3)
@@ -38,10 +37,19 @@ class MainWindow(QMainWindow):
         splitter_main.setStretchFactor(1, 4)
         self.setCentralWidget(splitter_main)
         '''
+        self.startTimer(1000 // 10)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
             app.exit()
+
+        super().keyPressEvent(event)
+
+    def timerEvent(self, event):
+        title = self.viewport.get_status_string()
+        self.setWindowTitle(title)
+
+        super().timerEvent(event)
 
 
 if __name__ == "__main__":

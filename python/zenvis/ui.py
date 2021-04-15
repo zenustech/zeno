@@ -98,6 +98,12 @@ class ViewportWidget(QGLWidget):
 
         self.camera = CameraControl()
 
+    def get_status_string(self):
+        fps = core.get_render_fps()
+        spf = core.get_solver_interval()
+        stat = f'Frame {self.frameid} | {fps:.1f} FPS | {spf:.02f} secs/step'
+        return stat
+
     @property
     def frameid(self):
         return core.get_curr_frameid()
@@ -126,12 +132,11 @@ class ViewportWidget(QGLWidget):
         self.res = nx, ny
 
     def paintGL(self):
-        core.new_frame()
         self.frameid += 1
+        core.new_frame()
 
     def timerEvent(self, event):
         self.repaint()
-
         super().timerEvent(event)
 
 

@@ -13,8 +13,8 @@ void new_frame();
 void set_window_size(int nx_, int ny_);
 void set_curr_frameid(int frameid);
 int get_curr_frameid();
-int get_solver_interval();
-int get_render_fps();
+double get_solver_interval();
+double get_render_fps();
 void look_perspective(
     double cx, double cy, double cz,
     double theta, double phi, double radius,
