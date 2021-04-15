@@ -21,6 +21,14 @@ static glm::dvec3 center;
 
 static glm::mat4x4 view(1), proj(1);
 
+void set_perspective(
+    std::array<double, 16> viewArr,
+    std::array<double, 16> projArr)
+{
+  std::memcpy(glm::value_ptr(view), viewArr.data(), viewArr.size());
+  std::memcpy(glm::value_ptr(proj), projArr.data(), projArr.size());
+}
+
 void look_perspective(
     double cx, double cy, double cz,
     double theta, double phi, double radius,

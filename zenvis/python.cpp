@@ -19,6 +19,9 @@ void look_perspective(
     double cx, double cy, double cz,
     double theta, double phi, double radius,
     double fov, bool ortho_mode);
+void set_perspective(
+    std::array<double, 16> viewArr,
+    std::array<double, 16> projArr);
 
 };
 
@@ -32,4 +35,5 @@ PYBIND11_MODULE(libzenvis, m) {
     m.def("get_solver_interval", zenvis::get_solver_interval);
     m.def("get_render_fps", zenvis::get_render_fps);
     m.def("look_perspective", zenvis::look_perspective);
+    m.def("set_perspective", zenvis::set_perspective);
 }

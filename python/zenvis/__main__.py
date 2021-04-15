@@ -3,6 +3,7 @@ from . import core
 import sys
 import math
 import time
+import numpy as np
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -77,6 +78,10 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(splitter_main)
         '''
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            app.exit()
+
 
 class CameraControl:
     def __init__(self):
@@ -85,6 +90,7 @@ class CameraControl:
         self.theta = 0.0
         self.phi = 0.0
         self.last_pos = (0, 0)
+        self.center = (0.0, 0.0, 0.0)
         self.ortho_mode = False
         self.fov = 60.0
         self.radius = 5.0
@@ -112,7 +118,20 @@ class CameraControl:
 
         if self.mmb_pressed:
             if self.shift_pressed:
-                pass
+                cos_t = np.cos(self.theta)
+                sin_t = np.sin(self.theta)
+                cos_p = np.cos(self.phi)
+                sin_p = np.sin(self.phi)
+                back = np.array([ cos_t * sin_p, sin_t, -cos_t * cos_p])
+                up = np.array([-sin_t * sin_p, cos_t, sin_t * cos_p])
+                right = np.cross(up, back)
+                up = np.cross(back, right)
+                right /= np.linalg.norm(right)
+                up /= np.linalg.norm(up)
+                delta = right * dx + up * dy
+                center = np.array(self.center)
+                center = center + delta * self.radius
+                self.center = tuple(center)
             else:
                 self.theta -= dy * math.pi
                 self.theta = max(-math.pi / 2, min(self.theta, math.pi / 2))
@@ -124,9 +143,8 @@ class CameraControl:
         self.update_perspective()
 
     def update_perspective(self):
-        print(self.theta, self.phi, self.radius, self.fov, self.ortho_mode)
-
-        core.look_perspective(0, 0, 0,
+        cx, cy, cz = self.center
+        core.look_perspective(cx, cy, cz,
                 self.theta, self.phi, self.radius,
                 self.fov, self.ortho_mode)
 
