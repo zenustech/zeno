@@ -32,7 +32,7 @@ class PortalOut(INode):
     z_outputs = ['port']
     z_params = [('string', 'id', '')]
     z_categories = 'misc'
-
+    z_outputs = ['output']
     def apply(self):
         id = self.get_param('id')
         obj = portals[id]
