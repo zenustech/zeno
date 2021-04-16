@@ -106,14 +106,6 @@ class ViewportWidget(QGLWidget):
         return stat
 
     @property
-    def frameid(self):
-        return core.get_curr_frameid()
-
-    @frameid.setter
-    def frameid(self, value):
-        core.set_curr_frameid(value)
-
-    @property
     def res(self):
         return self.camera.res
 
