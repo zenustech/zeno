@@ -3675,11 +3675,11 @@ void FLIP_vdb::emit_liquid(
 						auto p = p_handle_ptr->get(idx);
 						unsigned char sv_pos = ((p[2] > 0.f) << 2) | ((p[1] > 0.f) << 1) | (p[0] > 0.f);
 						//only emit uniformly, otherwise skip it
-						if (sub_voxel_occupancy & (1 << sv_pos)) {
-							//that bit is active, there is already an particle
-							//skip it
-							continue;
-						}
+						// if (sub_voxel_occupancy & (1 << sv_pos)) {
+						// 	//that bit is active, there is already an particle
+						// 	//skip it
+						// 	continue;
+						// }
 						sub_voxel_occupancy |= (1 << sv_pos);
 						new_pos.push_back(p);
 						new_vel.push_back(v_handle_ptr->get(idx));
@@ -3703,9 +3703,9 @@ void FLIP_vdb::emit_liquid(
 							unsigned char sv_pos = ((p[2] > 0) << 2) | ((p[1] > 0) << 1) | (p[0] > 0);
 							//only emit uniformly, otherwise skip it
 							if (sub_voxel_occupancy & (1 << sv_pos)) {
-								//that bit is active, there is already an particle
-								//skip it
-								continue;
+							 	//that bit is active, there is already an particle
+							 	//skip it
+							 	continue;
 							}
 							auto particlewpos = in_out_particles->indexToWorld(particle_pipos) + voxelwpos;
 							auto particle_sdfipos = in_sdf->worldToIndex(particlewpos);
@@ -3794,11 +3794,11 @@ void FLIP_vdb::emit_liquid(
 						auto p = p_handle_ptr->get(idx);
 						unsigned char sv_pos = ((p[2] > 0.f) << 2) | ((p[1] > 0.f) << 1) | (p[0] > 0.f);
 						//only emit uniformly, otherwise skip it
-						if (sub_voxel_occupancy & (1 << sv_pos)) {
-							//that bit is active, there is already an particle
-							//skip it
-							continue;
-						}
+						// if (sub_voxel_occupancy & (1 << sv_pos)) {
+						// 	//that bit is active, there is already an particle
+						// 	//skip it
+						// 	continue;
+						// }
 						sub_voxel_occupancy |= (1 << sv_pos);
 						new_pos.push_back(p);
 						new_vel.push_back(v_handle_ptr->get(idx));
@@ -4575,7 +4575,7 @@ void FLIP_vdb::apply_pressure_gradient(
 				else {
 					//this face is inside solid
 					//just let it be the solid velocity
-					//original_vel[ic] = solid_vel[ic];
+					original_vel[ic] = solid_vel[ic];
 					//has_any_update = true;
 				}//end else face_weight[ic]>0
 			}//end for three component

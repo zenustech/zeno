@@ -28,9 +28,8 @@ class PortalIn(INode):
 
 @defNodeClass
 class PortalOut(INode):
-    z_inputs = ['port']
     z_categories = 'misc'
-
+    z_outputs = ['output']
     def apply(self):
         id = self.get_param('id')
         obj = portals[id]
