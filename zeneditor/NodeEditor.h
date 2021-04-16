@@ -513,14 +513,14 @@ struct NodeEditor {
     std::map<std::string, std::string> portid2outnode;
     for (auto const &[key, node]: nodes) {
       if (node->type == "PortalIn") {
-        auto idname = dynamic_cast<StringValue *>(node->params[0].get())->name;
+        auto idname = dynamic_cast<StringValue *>(node->params[0].get())->value;
         portid2outnode[idname] = node->name;
       }
     }
     for (auto const &[key, node]: nodes) {
       auto &deps = dg.deps[node->name];
       if (node->type == "PortalOut") {
-        auto idname = dynamic_cast<StringValue *>(node->params[0].get())->name;
+        auto idname = dynamic_cast<StringValue *>(node->params[0].get())->value;
         auto it = portid2outnode.find(idname);
         if (it == portid2outnode.end()) {
           printf("WARNING: PortalIn not found for %s\n", idname.c_str());
