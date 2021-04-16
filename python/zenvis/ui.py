@@ -96,6 +96,7 @@ class ViewportWidget(QGLWidget):
         super().__init__(parent)
 
         self.camera = CameraControl()
+        self.startTimer(0)
 
     def get_status_string(self):
         fps = core.get_render_fps()
@@ -125,10 +126,7 @@ class ViewportWidget(QGLWidget):
     def initializeGL(self):
         core.initialize()
 
-        self.startTimer(0)
-
     def resizeGL(self, nx, ny):
-        print('resize', nx, ny)
         self.res = nx, ny
 
     def paintGL(self):

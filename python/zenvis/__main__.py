@@ -31,7 +31,7 @@ class MainWindow(QMainWindow):
         self.splitter.setStretchFactor(1, 2)
         self.setCentralWidget(self.splitter)
 
-        self.startTimer(1000 // 10)
+        self.startTimer(1000 // 60)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
