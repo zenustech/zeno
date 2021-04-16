@@ -499,7 +499,6 @@ struct NodeEditor {
       bool first_output = true;
       for (auto const &socket: node->outputs) {
         out2nodename[socket->id] = node->name;
-        // is always using ::output for first socket reasonable?
         out2name[socket->id] = node->name + "::" + socket->name;
         first_output = false;
       }
@@ -510,14 +509,32 @@ struct NodeEditor {
       dg.wanted.push_back(nodes.at(key)->name);
     }
 
+    // portal dependency mock
+    std::map<std::string, std::string> portid2outnode;
     for (auto const &[key, node]: nodes) {
-      std::vector<std::string> deps;
+      if (node->type == "PortalOut") {
+        auto idname = dynamic_cast<StringValue *>(node->params[0].get())->name;
+        portid2outnode[idname] = node->name;
+      }
+    }
+    for (auto const &[key, node]: nodes) {
+      auto &deps = dg.deps[node->name];
+      if (node->type == "PortalIn") {
+        auto idname = dynamic_cast<StringValue *>(node->params[0].get())->name;
+        auto it = portid2outnode.find(idname);
+        if (it == portid2outnode.end())
+          continue;
+        deps.push_back(it->second);
+      }
+    }
+
+    for (auto const &[key, node]: nodes) {
+      auto &deps = dg.deps[node->name];
       for (auto const &socket: node->inputs) {
         if (dst2src.find(socket->id) == dst2src.end())
           continue;
         deps.push_back(out2nodename.at(dst2src.at(socket->id)));
       }
-      dg.deps[node->name] = std::move(deps);
     }
     dg.compute();
 

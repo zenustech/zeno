@@ -28,7 +28,7 @@ class PortalIn(INode):
 
 @defNodeClass
 class PortalOut(INode):
-    z_inputs = ['port']
+    z_outputs = ['port']
     z_categories = 'misc'
 
     def apply(self):
