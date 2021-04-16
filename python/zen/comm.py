@@ -21,7 +21,7 @@ class PortalIn(INode):
     z_categories = 'misc'
     z_params = [('string', 'name', 'RenameMe!')]
     def apply(self):
-        id = self.get_param('id')
+        id = self.get_param('name')
         obj = self.get_input('port')
         portals[id] = obj
 
@@ -29,7 +29,7 @@ class PortalIn(INode):
 @defNodeClass
 class PortalOut(INode):
     z_categories = 'misc'
-    z_outputs = ['output']
+    z_outputs = ['port']
     z_params = [('string', 'name', 'MyName')]
     def apply(self):
         id = self.get_param('name')
