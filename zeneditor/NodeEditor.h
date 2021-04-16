@@ -512,18 +512,20 @@ struct NodeEditor {
     // portal dependency mock
     std::map<std::string, std::string> portid2outnode;
     for (auto const &[key, node]: nodes) {
-      if (node->type == "PortalOut") {
+      if (node->type == "PortalIn") {
         auto idname = dynamic_cast<StringValue *>(node->params[0].get())->name;
         portid2outnode[idname] = node->name;
       }
     }
     for (auto const &[key, node]: nodes) {
       auto &deps = dg.deps[node->name];
-      if (node->type == "PortalIn") {
+      if (node->type == "PortalOut") {
         auto idname = dynamic_cast<StringValue *>(node->params[0].get())->name;
         auto it = portid2outnode.find(idname);
-        if (it == portid2outnode.end())
+        if (it == portid2outnode.end()) {
+          printf("WARNING: PortalIn not found for %s\n", idname.c_str());
           continue;
+        }
         deps.push_back(it->second);
       }
     }

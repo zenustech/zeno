@@ -18,6 +18,7 @@ portals = {}
 @defNodeClass
 class PortalIn(INode):
     z_inputs = ['port']
+    z_params = [('string', 'id', '')]
     z_categories = 'misc'
 
     def apply(self):
@@ -29,6 +30,7 @@ class PortalIn(INode):
 @defNodeClass
 class PortalOut(INode):
     z_outputs = ['port']
+    z_params = [('string', 'id', '')]
     z_categories = 'misc'
 
     def apply(self):
