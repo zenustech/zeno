@@ -748,8 +748,8 @@ namespace {
 				printf("velocity voxel on, weight voxel not on. exit\n");
 				exit(-1);
 			}
-			float epsl = 1e-5f;
-			float weight_threshold = 1e-2f;
+			float epsl = 1e-4f;
+			float weight_threshold = 1e-1f;
 			for (openvdb::Index offset = 0; offset < vel_leaf.SIZE; offset++) {
 				if (ovelocity_leaf->isValueMaskOff(offset)) {
 					continue;
@@ -3513,6 +3513,7 @@ void FLIP_vdb::emit_liquid(
 	openvdb::points::PointDataGrid::Ptr &in_out_particles,
 	openvdb::FloatGrid::Ptr &sdf,
 	openvdb::Vec3fGrid::Ptr &vel,
+	openvdb::FloatGrid::Ptr &liquid_sdf,
 	float vx, float vy, float vz)
 {
 	using  namespace openvdb::tools::local_util;
@@ -3626,6 +3627,7 @@ void FLIP_vdb::emit_liquid(
 		{
 			auto in_sdf_axr{ in_sdf->getConstAccessor() };
 			auto in_vel_axr{ in_vel->getConstAccessor() };
+			
 			float sdf_threshold = -dx * 0.55;
 
 			std::random_device device;
@@ -3684,11 +3686,16 @@ void FLIP_vdb::emit_liquid(
 						emitted_particle++;
 						this_voxel_emitted++;
 					}
-
+					
 					//emit to fill the sdf
 					auto voxelwpos = in_out_particles->indexToWorld(leaf.offsetToGlobalCoord(offset));
 					auto voxelipos = in_sdf->worldToIndex(voxelwpos);
-					if (openvdb::tools::BoxSampler::sample(in_sdf_axr, voxelipos) < dx) {
+					float liquid_phi = 10000;
+					if(liquid_sdf!=nullptr)
+					{
+						liquid_phi = openvdb::tools::BoxSampler::sample(liquid_sdf->getConstAccessor(), voxelipos);
+					}
+					if (openvdb::tools::BoxSampler::sample(in_sdf_axr, voxelipos) < dx && liquid_phi>=0) {
 						const int max_emit_trial = 16;
 						for (int trial = 0; this_voxel_emitted < 8 && trial<max_emit_trial; trial++) {
 							openvdb::Vec3d particle_pipos{ distribution(generator) ,distribution(generator) ,distribution(generator) };
@@ -3802,7 +3809,12 @@ void FLIP_vdb::emit_liquid(
 					//emit to fill the sdf
 					auto voxelwpos = in_out_particles->indexToWorld(leaf.offsetToGlobalCoord(offset));
 					auto voxelipos = in_sdf->worldToIndex(voxelwpos);
-					if (openvdb::tools::BoxSampler::sample(in_sdf_axr, voxelipos) < dx) {
+					float liquid_phi = 10000;
+					if(liquid_sdf!=nullptr)
+					{
+						liquid_phi = openvdb::tools::BoxSampler::sample(liquid_sdf->getConstAccessor(), voxelipos);
+					}
+					if (openvdb::tools::BoxSampler::sample(in_sdf_axr, voxelipos) < dx && liquid_phi>=0)  {
 						const int max_emit_trial = 16;
 						for (int trial = 0; this_voxel_emitted < 8 && trial<max_emit_trial; trial++) {
 							openvdb::Vec3d particle_pipos{ distribution(generator) ,distribution(generator) ,distribution(generator) };
@@ -4908,30 +4920,49 @@ void FLIP_vdb::field_add_vector(
 	openvdb::Vec3fGrid::Ptr &face_weight,
 	float x, float y, float z, float dt)
 {
-	
-	auto add_gravity = [&](openvdb::Vec3fTree::LeafNodeType& leaf, openvdb::Index leafpos) {
-		auto face_weight_axr{ face_weight->getConstAccessor() };
-		for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
-			if (face_weight_axr.getValue(iter.getCoord())[0] > 0) {
-				iter.modifyValue([&](openvdb::Vec3f& v) {
-						v[0] += dt * x; 
-					});
+	if(face_weight!=nullptr){
+		auto add_gravity = [&](openvdb::Vec3fTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+			auto face_weight_axr{ face_weight->getConstAccessor() };
+			for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
+				if (face_weight_axr.getValue(iter.getCoord())[0] > 0) {
+					iter.modifyValue([&](openvdb::Vec3f& v) {
+							v[0] += dt * x; 
+						});
+				}
+				if (face_weight_axr.getValue(iter.getCoord())[1] > 0) {
+					iter.modifyValue([&](openvdb::Vec3f& v) {
+							v[1] += dt * y; 
+						});
+				}
+				if (face_weight_axr.getValue(iter.getCoord())[2] > 0) {
+					iter.modifyValue([&](openvdb::Vec3f& v) {
+							v[2] += dt * z; 
+						});
+				}
 			}
-			if (face_weight_axr.getValue(iter.getCoord())[1] > 0) {
+			
+		};
+		auto velman = openvdb::tree::LeafManager<openvdb::Vec3fTree>(velocity_field->tree());
+		velman.foreach(add_gravity);
+	} else {
+		auto add_gravity = [&](openvdb::Vec3fTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+			for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
 				iter.modifyValue([&](openvdb::Vec3f& v) {
-						v[1] += dt * y; 
-					});
-			}
-			if (face_weight_axr.getValue(iter.getCoord())[2] > 0) {
+					v[0] += dt * x; 
+				});
+				
 				iter.modifyValue([&](openvdb::Vec3f& v) {
-						v[2] += dt * z; 
-					});
+					v[1] += dt * y; 
+				});
+				iter.modifyValue([&](openvdb::Vec3f& v) {
+					v[2] += dt * z; 
+				});
 			}
-		}
-		
-	};
-	auto velman = openvdb::tree::LeafManager<openvdb::Vec3fTree>(velocity_field->tree());
-	velman.foreach(add_gravity);
+			
+		};
+		auto velman = openvdb::tree::LeafManager<openvdb::Vec3fTree>(velocity_field->tree());
+		velman.foreach(add_gravity);
+	}
 }
 void FLIP_vdb::apply_body_force(float dt)
 {

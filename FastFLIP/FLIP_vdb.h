@@ -143,6 +143,7 @@ static void emit_liquid(
 	openvdb::points::PointDataGrid::Ptr & in_out_particles,
 	openvdb::FloatGrid::Ptr & sdf,
 	openvdb::Vec3fGrid::Ptr & vel,
+	openvdb::FloatGrid::Ptr &liquid_sdf,
 	float vx, float vy, float vz);
 private:
 	void initialize_attribute_descriptor() {
