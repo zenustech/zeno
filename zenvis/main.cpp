@@ -141,6 +141,11 @@ void set_curr_frameid(int frameid) {
   if (curr_frameid < 0) curr_frameid = 0;
 }
 
+int get_solver_frameid() {
+  auto &server = Server::get();
+  return server.frameid;
+}
+
 int get_curr_frameid() {
   return curr_frameid;
 }

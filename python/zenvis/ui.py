@@ -91,7 +91,6 @@ class CameraControl:
         self.update_perspective()
 
 
-
 class ViewportWidget(QGLWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -101,7 +100,8 @@ class ViewportWidget(QGLWidget):
     def get_status_string(self):
         fps = core.get_render_fps()
         spf = core.get_solver_interval()
-        stat = f'Frame {self.frameid} | {fps:.1f} FPS | {spf:.02f} secs/step'
+        frameid = core.get_curr_frameid()
+        stat = f'Frame {frameid} | {fps:.1f} FPS | {spf:.02f} secs/step'
         return stat
 
     @property
@@ -132,7 +132,6 @@ class ViewportWidget(QGLWidget):
         self.res = nx, ny
 
     def paintGL(self):
-        self.frameid += 1
         core.new_frame()
 
     def timerEvent(self, event):
