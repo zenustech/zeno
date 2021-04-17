@@ -62,8 +62,12 @@ class QDMGraphicsView(QGraphicsView):
                 if isinstance(item, QDMGraphicsSocket):
                     edge = QDMGraphicsPath()
                     pos = self.mapToScene(event.pos())
-                    edge.setSrcPos(item.getCirclePos())
-                    edge.setDstPos(pos)
+                    if item.isOutput:
+                        edge.setSrcPos(item.getCirclePos())
+                        edge.setDstPos(pos)
+                    else:
+                        edge.setDstPos(item.getCirclePos())
+                        edge.setSrcPos(pos)
                     edge.updatePath()
                     self.scene().addItem(edge)
                     self.dragingEdge = edge, item
@@ -74,7 +78,10 @@ class QDMGraphicsView(QGraphicsView):
         if self.dragingEdge is not None:
             pos = self.mapToScene(event.pos())
             edge, item = self.dragingEdge
-            edge.setDstPos(pos)
+            if item.isOutput:
+                edge.setDstPos(pos)
+            else:
+                edge.setSrcPos(pos)
             edge.updatePath()
 
         super().mouseMoveEvent(event)
