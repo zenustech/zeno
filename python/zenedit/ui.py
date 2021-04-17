@@ -146,6 +146,8 @@ class QDMGraphicsView(QGraphicsView):
 
 
 TEXT_HEIGHT = 25
+HORI_MARGIN = TEXT_HEIGHT * 0.4
+SOCKET_RADIUS = TEXT_HEIGHT * 0.3
 BEZIER_FACTOR = 0.5
 
 
@@ -221,14 +223,12 @@ class QDMGraphicsEdge(QDMGraphicsPath):
 
 
 class QDMGraphicsSocket(QGraphicsItem):
-    RADIUS = TEXT_HEIGHT // 3
-
     def __init__(self, parent):
         super().__init__(parent)
 
         self.label = QGraphicsTextItem(self)
         self.label.setDefaultTextColor(QColor('#ffffff'))
-        self.label.setPos(self.RADIUS, -TEXT_HEIGHT / 2)
+        self.label.setPos(SOCKET_RADIUS, -TEXT_HEIGHT / 2)
 
         self.isOutput = False
         self.edges = set()
@@ -265,11 +265,11 @@ class QDMGraphicsSocket(QGraphicsItem):
 
     def getCircleBounds(self):
         if self.isOutput:
-            return (self.node.width - self.RADIUS, -self.RADIUS,
-                    2 * self.RADIUS, 2 * self.RADIUS)
+            return (self.node.width - SOCKET_RADIUS, -SOCKET_RADIUS,
+                    2 * SOCKET_RADIUS, 2 * SOCKET_RADIUS)
         else:
-            return (-self.RADIUS, -self.RADIUS,
-                    2 * self.RADIUS, 2 * self.RADIUS)
+            return (-SOCKET_RADIUS, -SOCKET_RADIUS,
+                    2 * SOCKET_RADIUS, 2 * SOCKET_RADIUS)
 
     def boundingRect(self):
         return QRectF(*self.getCircleBounds()).normalized()
@@ -283,8 +283,6 @@ class QDMGraphicsSocket(QGraphicsItem):
 
 
 class QDMGraphicsParam(QGraphicsProxyWidget):
-    MARGIN = 10
-
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -297,7 +295,6 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
 
         self.setWidget(self.widget)
         self.setContentsMargins(0, 0, 0, 0)
-        self.setGeometry(QRectF(self.MARGIN, 0, 180 - self.MARGIN * 2, 0))
 
     def initLayout(self):
         self.edit = QLineEdit()
@@ -319,8 +316,8 @@ class QDMGraphicsParam_int(QDMGraphicsParam):
     def initLayout(self):
         super().initLayout()
 
-        validator = QIntValidator()
-        self.edit.setValidator(validator)
+        self.validator = QIntValidator()
+        self.edit.setValidator(self.validator)
 
     def setDefault(self, default):
         default = [int(x) for x in default.split()]
@@ -331,6 +328,7 @@ class QDMGraphicsParam_int(QDMGraphicsParam):
             x, xmin = default
             self.edit.setText(str(x))
             self.validator.setBottom(xmin)
+            print(xmin)
         elif len(default) == 3:
             x, xmin, xmax = default
             self.edit.setText(str(x))
@@ -380,13 +378,12 @@ class QDMGraphicsNode(QGraphicsItem):
         self.setFlag(QGraphicsItem.ItemIsMovable)
         self.setFlag(QGraphicsItem.ItemIsSelectable)
 
-        self.width, self.height = 180, 180
-        self.back = TEXT_HEIGHT
-
+        self.width = 200
+        self.height = 0
 
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor('#eeeeee'))
-        self.title.setPos(0, -self.back)
+        self.title.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT)
 
         self.params = []
         self.sockets = []
@@ -394,50 +391,59 @@ class QDMGraphicsNode(QGraphicsItem):
     def initSockets(self, title, inputs=(), outputs=(), params=()):
         self.title.setPlainText(title)
 
+        y = TEXT_HEIGHT * 0.1
+
         self.params = []
         for index, (type, label, default) in enumerate(params):
             param = eval('QDMGraphicsParam_' + type)(self)
+            rect = QRectF(HORI_MARGIN, y, self.width - HORI_MARGIN * 2, 0)
+            param.setGeometry(rect)
             param.setLabel(label)
             param.setDefault(default)
             self.params.append(param)
+            y += param.geometry().height()
+
+        y += TEXT_HEIGHT * 0.5
 
         self.sockets = []
         for index, label in enumerate(inputs):
             socket = QDMGraphicsSocket(self)
-            index += len(params)
-            y = TEXT_HEIGHT * 0.75 + TEXT_HEIGHT * index
             socket.setPos(0, y)
             socket.setLabel(label)
             socket.setIsOutput(False)
             self.sockets.append(socket)
+            y += TEXT_HEIGHT
 
         for index, label in enumerate(outputs):
             socket = QDMGraphicsSocket(self)
             index += len(params) + len(inputs)
-            y = TEXT_HEIGHT * 0.75 + TEXT_HEIGHT * index
             socket.setPos(0, y)
             socket.setLabel(label)
             socket.setIsOutput(True)
             self.sockets.append(socket)
+            y += TEXT_HEIGHT
+
+        y += TEXT_HEIGHT * 0.75
+        self.height = y
 
     def boundingRect(self):
-        return QRectF(0, -self.back, self.width, self.height).normalized()
+        return QRectF(0, -TEXT_HEIGHT, self.width, self.height).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
         pathContent = QPainterPath()
-        pathContent.addRect(0, -self.back, self.width, self.height)
+        pathContent.addRect(0, -TEXT_HEIGHT, self.width, self.height)
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor('#333333'))
         painter.drawPath(pathContent.simplified())
 
         pathTitle = QPainterPath()
-        pathTitle.addRect(0, -self.back, self.width, TEXT_HEIGHT)
+        pathTitle.addRect(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor('#222222'))
         painter.drawPath(pathTitle.simplified())
 
         pathOutline = QPainterPath()
-        pathOutline.addRect(0, -self.back, self.width, self.height)
+        pathOutline.addRect(0, -TEXT_HEIGHT, self.width, self.height)
         pen = QPen(QColor('#cc8844' if self.isSelected() else '#000000'))
         pen.setWidth(3)
         painter.setPen(pen)
@@ -464,16 +470,15 @@ class QDMNodeEditorWidget(QWidget):
         node1.initSockets('Add',
                 ['Input1', 'Input2'],
                 ['Output1'],
-                [('float', 'VoxelSize', '0.08 0')]
                 )
         node1.setPos(-200, -100)
         self.scene.addItem(node1)
 
         node1 = QDMGraphicsNode()
-        node1.initSockets('Add',
+        node1.initSockets('Mul',
                 ['Input1', 'Input2'],
                 ['Output1'],
-                [('float', 'VoxelSize', '0.08 0')]
+                [('int', 'RK_Order', '3 1'), ('string', 'path', 'pig.obj')]
                 )
         node1.setPos(-200, 100)
         self.scene.addItem(node1)
