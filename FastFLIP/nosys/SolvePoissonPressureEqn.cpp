@@ -19,7 +19,7 @@ namespace zenbase{
     
     struct AssembleSolvePPE : zen::INode{
         virtual void apply() override {
-            auto dt = std::get<float>(get_param("dt"));
+            auto dt = get_input("dt")->as<tFloat>()->num;
             auto dx = std::get<float>(get_param("dx"));
             auto liquid_sdf            = get_input("LiquidSDF")->as<VDBFloatGrid>();
             auto pushed_out_liquid_sdf = get_input("ExtractedLiquidSDF")->as<VDBFloatGrid>();
@@ -43,6 +43,7 @@ namespace zenbase{
 
 static int defAssembleSolvePPE = zen::defNodeClass<AssembleSolvePPE>("AssembleSolvePPE",
     { /* inputs: */ {
+        "dt",
         "LiquidSDF", 
         "ExtractedLiquidSDF", 
         "Divergence",
@@ -55,7 +56,6 @@ static int defAssembleSolvePPE = zen::defNodeClass<AssembleSolvePPE>("AssembleSo
     /* outputs: */ {
     }, 
     /* params: */ {
-       {"float", "dt", "0.0"},
        {"float", "dx", "0.0"},
     }, 
     

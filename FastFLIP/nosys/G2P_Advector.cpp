@@ -10,7 +10,7 @@ namespace zenbase{
     
     struct G2P_Advector : zen::INode{
         virtual void apply() override {
-            auto dt = std::get<float>(get_param("time_step"));
+            auto dt = get_input("dt")->as<tFloat>()->num;
             auto dx = std::get<float>(get_param("dx"));
             auto smoothness = std::get<float>(get_param("pic_smoothness"));
             auto RK_ORDER = std::get<int>(get_param("RK_ORDER"));
@@ -24,12 +24,11 @@ namespace zenbase{
 
 static int defG2P_Advector = zen::defNodeClass<G2P_Advector>("G2P_Advector",
     { /* inputs: */ {
-        "Particles", "Velocity", "PostAdvVelocity",
+        "dt","Particles", "Velocity", "PostAdvVelocity",
     }, 
     /* outputs: */ {
     }, 
     /* params: */ {
-      {"float", "time_step", "0.04 0.0"},
       {"float", "dx", "0.01 0.0"},
       {"int", "RK_ORDER", "1 1 4"},
       {"float", "pic_smoothness", "0.02 0.0 1.0"},

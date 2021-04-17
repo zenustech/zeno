@@ -14,7 +14,7 @@ namespace zenbase{
     
     struct FieldAddVector : zen::INode{
         virtual void apply() override {
-            float dt = std::get<float>(get_param("alpha"));
+            auto dt = get_input("dt")->as<tFloat>()->num;
             float vx = std::get<float>(get_param("vx"));
             float vy = std::get<float>(get_param("vy"));
             float vz = std::get<float>(get_param("vz"));
@@ -36,12 +36,11 @@ namespace zenbase{
 
 static int defFieldAddVector = zen::defNodeClass<FieldAddVector>("FieldAddVector",
     { /* inputs: */ {
-        "Velocity", "FieldWeight", 
+        "dt", "Velocity", "FieldWeight", 
     }, 
     /* outputs: */ {
     }, 
     /* params: */ {
-       {"float", "alpha", "0.0"},
        {"float", "vx", "0.0"},
        {"float", "vy", "0.0"},
        {"float", "vz", "0.0"},

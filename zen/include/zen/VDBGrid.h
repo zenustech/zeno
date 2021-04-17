@@ -53,6 +53,7 @@ struct VDBGrid : zen::IObject {
 };
 
 
+
 template <class GridT>
 struct VDBGridWrapper : VDBGrid {
   GridT::Ptr m_grid;
@@ -73,6 +74,31 @@ struct VDBGridWrapper : VDBGrid {
 struct TBBConcurrentIntArray : zen::IObject {
   tbb::concurrent_vector<openvdb::Index32> m_data;
 };
+struct tFloat : zen::IObject {
+  float num;
+};
+
+struct tSetFloat : zen::INode {
+  virtual void apply() override {
+    float num = std::get<float>(get_param("num"));
+    auto data = zen::IObject::make<tFloat>();
+    data->num = num;
+    set_output("Float",data);
+    
+  }
+};
+
+
+static int deftSetFloat = zen::defNodeClass<tSetFloat>("tSetFloat",
+    { /* inputs: */ {
+    }, /* outputs: */ {
+    "Float",
+    }, /* params: */ {
+     {"float", "num", "0.0"},
+    }, /* category: */ {
+    "numeric",
+    }});
+
 
 using VDBFloatGrid = VDBGridWrapper<openvdb::FloatGrid>;
 using VDBIntGrid = VDBGridWrapper<openvdb::Int32Grid>;

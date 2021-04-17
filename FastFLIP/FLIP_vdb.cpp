@@ -5070,7 +5070,52 @@ float FLIP_vdb::cfl()
 	printf("cfl velocity:%f\n", max_v);
 	return m_dx / (std::abs(max_v) + 1e-6f);
 }
+float FLIP_vdb::cfl(openvdb::Vec3fGrid::Ptr & vel)
+{
+	std::vector<float> max_v_per_leaf;
+	max_v_per_leaf.assign(vel->tree().leafCount(), 0);
 
+	auto find_per_leaf_max_vel = [&](openvdb::Vec3fTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+		float max_v = 0;
+		for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+			if (leaf.isValueOn(offset)) {
+				for (int ic = 0; ic < 3; ic++) {
+					if (max_v < std::abs(leaf.getValue(offset)[ic])) {
+						max_v = std::abs(leaf.getValue(offset)[ic]);
+					}
+				}
+			}
+		}
+		max_v_per_leaf[leafpos] = max_v;
+	};// end find per leaf max vel
+
+	auto leafman = openvdb::tree::LeafManager <openvdb::Vec3fTree>(vel->tree());
+	leafman.foreach(find_per_leaf_max_vel);
+
+	float max_v = 0;
+	if (max_v_per_leaf.empty()) {
+		return std::numeric_limits<float>::max() / 2;
+	}
+	max_v = max_v_per_leaf[0];
+
+	//dont take the maximum number
+	//take the 90%?
+	int nleaf = max_v_per_leaf.size();
+	int top90 = nleaf * 99 / 100;
+	std::nth_element(max_v_per_leaf.begin(), max_v_per_leaf.begin() + nleaf - 1, max_v_per_leaf.end());
+	std::nth_element(max_v_per_leaf.begin(), max_v_per_leaf.begin() + top90, max_v_per_leaf.end());
+
+	/*for (const auto& v : max_v_per_leaf) {
+		if (v > max_v) {
+			max_v = v;
+		}
+	}*/
+	max_v = max_v_per_leaf[nleaf-1];
+	printf("max velocity component:%f\n", max_v_per_leaf.back());
+	printf("cfl velocity:%f\n", max_v);
+	float dx = vel->voxelSize()[0];
+	return dx / (std::abs(max_v) + 1e-6f);
+}
 float FLIP_vdb::cfl_and_regularize_velocity()
 {
 	std::vector<float> max_v_per_leaf;

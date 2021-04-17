@@ -145,6 +145,8 @@ static void emit_liquid(
 	openvdb::Vec3fGrid::Ptr & vel,
 	openvdb::FloatGrid::Ptr &liquid_sdf,
 	float vx, float vy, float vz);
+
+static float cfl(openvdb::Vec3fGrid::Ptr & vel);
 private:
 	void initialize_attribute_descriptor() {
 		auto pnamepair = position_attribute::attributeType();
