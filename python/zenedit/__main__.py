@@ -9,4 +9,5 @@ from .ui import QDMNodeEditorWidget
 
 app = QApplication(sys.argv)
 win = QDMNodeEditorWidget()
+win.show()
 sys.exit(app.exec_())

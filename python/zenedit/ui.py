@@ -443,4 +443,3 @@ class QDMNodeEditorWidget(QWidget):
         self.scene.addItem(node2)
 
         self.layout.addWidget(self.view)
-        self.show()
