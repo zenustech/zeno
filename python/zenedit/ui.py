@@ -1,4 +1,6 @@
-import sys
+'''
+Node Editor UI
+'''
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -407,12 +409,7 @@ class QDMGraphicsNode(QGraphicsItem):
         painter.drawPath(pathOutline.simplified())
 
 
-## 17.54 HAI
-## 20.10 HAO
-## 25.17 HAO
-## 30.48 HAO
-## 32.59 HAO
-class MainWidget(QWidget):
+class QDMNodeEditorWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -447,9 +444,3 @@ class MainWidget(QWidget):
 
         self.layout.addWidget(self.view)
         self.show()
-
-
-
-app = QApplication(sys.argv)
-win = MainWidget()
-sys.exit(app.exec_())
