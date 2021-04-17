@@ -207,7 +207,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         super().__init__(parent)
 
         self.label = QGraphicsTextItem(self)
-        self.label.setDefaultTextColor(Qt.white)
+        self.label.setDefaultTextColor(QColor('#ffffff'))
         self.label.setPos(self.RADIUS, -TEXT_HEIGHT / 2)
 
         self.isOutput = False
@@ -247,31 +247,129 @@ class QDMGraphicsSocket(QGraphicsItem):
         painter.drawEllipse(*self.getCircleBounds())
 
 
+class QDMGraphicsParam(QGraphicsProxyWidget):
+    MARGIN = 10
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.initLayout()
+        assert hasattr(self, 'layout')
+
+        self.widget = QWidget()
+        self.widget.setLayout(self.layout)
+        self.widget.setStyleSheet('background-color: #333333; color: #eeeeee')
+
+        self.setWidget(self.widget)
+        self.setContentsMargins(0, 0, 0, 0)
+        self.setGeometry(QRectF(self.MARGIN, 0, 180 - self.MARGIN * 2, 0))
+
+    def initLayout(self):
+        self.edit = QLineEdit()
+        self.label = QLabel()
+
+        self.layout = QHBoxLayout()
+        self.layout.addWidget(self.label)
+        self.layout.addWidget(self.edit)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+
+    def setLabel(self, label):
+        self.label.setText(label)
+
+    def setDefault(self, default):
+        raise NotImplementedError
+
+
+class QDMGraphicsParam_int(QDMGraphicsParam):
+    def initLayout(self):
+        super().initLayout()
+
+        validator = QIntValidator()
+        self.edit.setValidator(validator)
+
+    def setDefault(self, default):
+        default = [int(x) for x in default.split()]
+        if len(default) == 1:
+            x = default[0]
+            self.edit.setText(str(x))
+        elif len(default) == 2:
+            x, xmin = default
+            self.edit.setText(str(x))
+            self.validator.setBottom(xmin)
+        elif len(default) == 3:
+            x, xmin, xmax = default
+            self.edit.setText(str(x))
+            self.validator.setBottom(xmin)
+            self.validator.setTop(xmax)
+        else:
+            assert False, default
+
+
+class QDMGraphicsParam_float(QDMGraphicsParam):
+    def initLayout(self):
+        super().initLayout()
+
+        self.validator = QDoubleValidator()
+        self.edit.setValidator(self.validator)
+
+    def setDefault(self, default):
+        default = [float(x) for x in default.split()]
+        if len(default) == 1:
+            x = default[0]
+            self.edit.setText(str(x))
+        elif len(default) == 2:
+            x, xmin = default
+            self.edit.setText(str(x))
+            self.validator.setBottom(xmin)
+        elif len(default) == 3:
+            x, xmin, xmax = default
+            self.edit.setText(str(x))
+            self.validator.setBottom(xmin)
+            self.validator.setTop(xmax)
+        else:
+            assert False, default
+
+
+
+class QDMGraphicsParam_string(QDMGraphicsParam):
+    def initLayout(self):
+        super().initLayout()
+
+    def setDefault(self, default):
+        self.edit.setText(default)
+
+
 class QDMGraphicsNode(QGraphicsItem):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFlag(QGraphicsItem.ItemIsMovable)
         self.setFlag(QGraphicsItem.ItemIsSelectable)
 
-        self.width, self.height = 180, 120
+        self.width, self.height = 180, 180
+        self.back = TEXT_HEIGHT
 
-        #self.content = QSlider(Qt.Horizontal)
-        #self.proxyContent = QGraphicsProxyWidget(self)
-        #self.proxyContent.setWidget(self.content)
-        #self.proxyContent.setPos(4, 100)
 
         self.title = QGraphicsTextItem(self)
-        self.title.setDefaultTextColor(Qt.white)
-        self.title.setPos(0, -TEXT_HEIGHT)
+        self.title.setDefaultTextColor(QColor('#eeeeee'))
+        self.title.setPos(0, -self.back)
 
-        self.initSockets('Hello', ['Input1', 'Input2'], ['Output1'])
+        self.params = []
+        self.sockets = []
 
-    def initSockets(self, title, inputs=(), outputs=()):
+    def initSockets(self, title, inputs=(), outputs=(), params=()):
         self.title.setPlainText(title)
+
+        self.params = []
+        for index, (type, label, default) in enumerate(params):
+            param = eval('QDMGraphicsParam_' + type)(self)
+            param.setLabel(label)
+            param.setDefault(default)
+            self.params.append(param)
 
         self.sockets = []
         for index, label in enumerate(inputs):
             socket = QDMGraphicsSocket(self)
+            index += len(params)
             y = TEXT_HEIGHT * 0.75 + TEXT_HEIGHT * index
             socket.setPos(0, y)
             socket.setLabel(label)
@@ -280,7 +378,7 @@ class QDMGraphicsNode(QGraphicsItem):
 
         for index, label in enumerate(outputs):
             socket = QDMGraphicsSocket(self)
-            index += len(inputs)
+            index += len(params) + len(inputs)
             y = TEXT_HEIGHT * 0.75 + TEXT_HEIGHT * index
             socket.setPos(0, y)
             socket.setLabel(label)
@@ -288,23 +386,23 @@ class QDMGraphicsNode(QGraphicsItem):
             self.sockets.append(socket)
 
     def boundingRect(self):
-        return QRectF(0, -TEXT_HEIGHT, self.width, self.height).normalized()
+        return QRectF(0, -self.back, self.width, self.height).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
         pathContent = QPainterPath()
-        pathContent.addRect(0, -TEXT_HEIGHT, self.width, self.height)
+        pathContent.addRect(0, -self.back, self.width, self.height)
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor('#333333'))
         painter.drawPath(pathContent.simplified())
 
         pathTitle = QPainterPath()
-        pathTitle.addRect(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
+        pathTitle.addRect(0, -self.back, self.width, TEXT_HEIGHT)
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor('#222222'))
         painter.drawPath(pathTitle.simplified())
 
         pathOutline = QPainterPath()
-        pathOutline.addRect(0, -TEXT_HEIGHT, self.width, self.height)
+        pathOutline.addRect(0, -self.back, self.width, self.height)
         pen = QPen(QColor('#cc8844' if self.isSelected() else '#000000'))
         pen.setWidth(3)
         painter.setPen(pen)
@@ -317,7 +415,7 @@ class QDMGraphicsNode(QGraphicsItem):
 ## 25.17 HAO
 ## 30.48 HAO
 ## 32.59 HAO
-class NodeEditor(QWidget):
+class MainWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -333,10 +431,20 @@ class NodeEditor(QWidget):
         self.view.setScene(self.scene)
 
         node1 = QDMGraphicsNode()
+        node1.initSockets('Add',
+                ['Input1', 'Input2'],
+                ['Output1'],
+                [('float', 'VoxelSize', '0.08 0')]
+                )
         node1.setPos(-200, -100)
         self.scene.addItem(node1)
 
         node2 = QDMGraphicsNode()
+        node2.initSockets('Sub',
+                ['Input1', 'Input2'],
+                ['Output1'],
+                [('float', 'TimeStep', '0.04 0')]
+                )
         node2.setPos(100, 100)
         self.scene.addItem(node2)
 
@@ -346,5 +454,5 @@ class NodeEditor(QWidget):
 
 
 app = QApplication(sys.argv)
-win = NodeEditor()
+win = MainWidget()
 sys.exit(app.exec_())
