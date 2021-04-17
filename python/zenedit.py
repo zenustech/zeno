@@ -70,14 +70,14 @@ class QDMGraphicsView(QGraphicsView):
                         edge.setSrcPos(pos)
                     edge.updatePath()
                     self.scene().addItem(edge)
-                    self.dragingEdge = edge, item
+                    self.dragingEdge = edge, item, True
 
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
         if self.dragingEdge is not None:
             pos = self.mapToScene(event.pos())
-            edge, item = self.dragingEdge
+            edge, item, _ = self.dragingEdge
             if item.isOutput:
                 edge.setDstPos(pos)
             else:
@@ -93,10 +93,13 @@ class QDMGraphicsView(QGraphicsView):
         elif event.button() == Qt.LeftButton:
             if self.dragingEdge is not None:
                 item = self.itemAt(event.pos())
-                if isinstance(item, QDMGraphicsSocket):
-                    edge, srcItem = self.dragingEdge
-                    self.dragingEdge = None
+                edge, srcItem, preserve = self.dragingEdge
+                if preserve:
+                    self.dragingEdge = edge, srcItem, False
+                else:
                     self.scene().removeItem(edge)
+                    self.dragingEdge = None
+                if isinstance(item, QDMGraphicsSocket):
                     self.addEdge(srcItem, item)
 
         super().mouseReleaseEvent(event)
@@ -247,11 +250,14 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.width, self.height = 180, 120
 
+        #self.content = QSlider(Qt.Horizontal)
         #self.proxyContent = QGraphicsProxyWidget(self)
         #self.proxyContent.setWidget(self.content)
+        #self.proxyContent.setPos(4, 100)
 
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(Qt.white)
+        self.title.setPos(0, -TEXT_HEIGHT)
 
         self.initSockets()
 
@@ -262,29 +268,29 @@ class QDMGraphicsNode(QGraphicsItem):
         self.sockets = []
         for index in range(3):
             socket = QDMGraphicsSocket(self)
-            y = TEXT_HEIGHT * 1.75 + TEXT_HEIGHT * index
+            y = TEXT_HEIGHT * 0.75 + TEXT_HEIGHT * index
             socket.setPos(0, y)
             socket.setLabel('Input%s' % index)
             self.sockets.append(socket)
 
     def boundingRect(self):
-        return QRectF(0, 0, self.width, self.height).normalized()
+        return QRectF(0, -TEXT_HEIGHT, self.width, self.height).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
         pathContent = QPainterPath()
-        pathContent.addRect(0, 0, self.width, self.height)
+        pathContent.addRect(0, -TEXT_HEIGHT, self.width, self.height)
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor('#333333'))
         painter.drawPath(pathContent.simplified())
 
         pathTitle = QPainterPath()
-        pathTitle.addRect(0, 0, self.width, TEXT_HEIGHT)
+        pathTitle.addRect(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor('#222222'))
         painter.drawPath(pathTitle.simplified())
 
         pathOutline = QPainterPath()
-        pathOutline.addRect(0, 0, self.width, self.height)
+        pathOutline.addRect(0, -TEXT_HEIGHT, self.width, self.height)
         pen = QPen(QColor('#cc8844' if self.isSelected() else '#000000'))
         pen.setWidth(3)
         painter.setPen(pen)
