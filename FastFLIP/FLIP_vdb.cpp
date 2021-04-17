@@ -4559,15 +4559,15 @@ void FLIP_vdb::apply_pressure_gradient(
 								facev -= grad_solid * grad_solid.dot(facev);
 								facev += grad_solid * grad_solid.dot(solid_vel);
 							}
-							original_vel[ic] = facev[ic];
+							//original_vel[ic] = facev[ic];
 							/*float penetrating = grad_solid[ic] * original_vel[ic];
 								original_vel[ic] -= penetrating;
 								original_vel[ic] += grad_solid[ic] * solid_vel[ic];
 							}*/
 
 							//mix the solid velocity and fluid velocity
-							float solid_fraction = (1 - face_weights[ic])*0.8;
-							original_vel[ic] = (1-solid_fraction) * original_vel[ic] + (solid_fraction) * solid_vel[ic];
+							//float solid_fraction = (1 - face_weights[ic])*0.0;
+							//original_vel[ic] = (1-solid_fraction) * original_vel[ic] + (solid_fraction) * solid_vel[ic];
 						}
 						has_any_update = true;
 					}//end if any dofs on two sides
@@ -4575,7 +4575,7 @@ void FLIP_vdb::apply_pressure_gradient(
 				else {
 					//this face is inside solid
 					//just let it be the solid velocity
-					original_vel[ic] = solid_vel[ic];
+					//original_vel[ic] = solid_vel[ic];
 					//has_any_update = true;
 				}//end else face_weight[ic]>0
 			}//end for three component

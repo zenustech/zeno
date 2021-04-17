@@ -1,10 +1,11 @@
 #include <zen/zen.h>
 #include <zen/ParticlesObject.h>
+#include <zen/NumericObject.h>
 #include <omp.h>
 
 namespace zenbase {
 
-struct SimpleSolver : zen::INode {
+struct NBodySolver : zen::INode {
   ParticlesObject *pars;
   float dt{0};
   glm::vec3 G{0, 0, 0};
@@ -22,6 +23,7 @@ struct SimpleSolver : zen::INode {
   }
 
   void step() {
+    dt = get_input("dt")->as<NumericObject>()->value;
 #pragma omp parallel for
     for (int i = 0; i < pars->size(); i++) {
       pars->pos[i] += pars->vel[i] * dt;
@@ -30,25 +32,21 @@ struct SimpleSolver : zen::INode {
   }
 
   void init() {
-    // initializing members
-    pars = new_member<ParticlesObject>("pars");
-    // initializing parameters
-    dt = std::get<float>(get_param("dt"));
     G = zen::get_float3<glm::vec3>(get_param("G"));
-    // initializing internal data
     auto ini_pars = get_input("ini_pars")->as<ParticlesObject>();
+    pars = new_member<ParticlesObject>("pars");
     *pars = *ini_pars;  // deep-copy
   }
 };
 
 
-static int defSimpleSolver = zen::defNodeClass<SimpleSolver>("SimpleSolver",
+static int defNBodySolver = zen::defNodeClass<NBodySolver>("NBodySolver",
     { /* inputs: */ {
     "ini_pars",
+    "dt",
     }, /* outputs: */ {
     "pars",
     }, /* params: */ {
-    {"float", "dt", "0.04 0"},
     {"float3", "G", "0 0 1"},
     }, /* category: */ {
     "particles",

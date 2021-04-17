@@ -13,6 +13,7 @@ void new_frame();
 void set_window_size(int nx_, int ny_);
 void set_curr_frameid(int frameid);
 int get_curr_frameid();
+int get_solver_frameid();
 double get_solver_interval();
 double get_render_fps();
 void look_perspective(
@@ -32,6 +33,7 @@ PYBIND11_MODULE(libzenvis, m) {
     m.def("set_window_size", zenvis::set_window_size);
     m.def("set_curr_frameid", zenvis::set_curr_frameid);
     m.def("get_curr_frameid", zenvis::get_curr_frameid);
+    m.def("get_solver_frameid", zenvis::get_solver_frameid);
     m.def("get_solver_interval", zenvis::get_solver_interval);
     m.def("get_render_fps", zenvis::get_render_fps);
     m.def("look_perspective", zenvis::look_perspective);

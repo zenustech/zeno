@@ -5,6 +5,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 
 from .ui import ViewportWidget
+from .ctl import TimelineWidget
 
 
 class MainWindow(QMainWindow):
@@ -13,31 +14,24 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle('zenvis')
         self.resize(1100, 650)
-        screen = QDesktopWidget().geometry()
+
+        scrn_size = QDesktopWidget().geometry()
         self_size = self.geometry()
         self.move(
-                (screen.width() - self_size.width()) // 2,
-                (screen.height() - self_size.height()) // 2)
+                (scrn_size.width() - self_size.width()) // 2,
+                (scrn_size.height() - self_size.height()) // 2)
 
-        #'''
         self.viewport = ViewportWidget()
-        self.setCentralWidget(self.viewport)
-        '''
-        splitter = QSplitter(Qt.Vertical)
-        splitter.addWidget(self.viewport)
-        testedit = QTextEdit()
-        splitter.addWidget(testedit)
-        splitter.setStretchFactor(0, 3)
-        splitter.setStretchFactor(1, 2)
-        splitter_main = QSplitter(Qt.Horizontal)
-        textedit_main = QTextEdit()
-        splitter_main.addWidget(textedit_main)
-        splitter_main.addWidget(splitter)
-        splitter_main.setStretchFactor(0, 1)
-        splitter_main.setStretchFactor(1, 4)
-        self.setCentralWidget(splitter_main)
-        '''
-        self.startTimer(1000 // 10)
+        self.timeline = TimelineWidget()
+
+        self.splitter = QSplitter(Qt.Vertical)
+        self.splitter.addWidget(self.viewport)
+        self.splitter.addWidget(self.timeline)
+        self.splitter.setStretchFactor(0, 3)
+        self.splitter.setStretchFactor(1, 2)
+        self.setCentralWidget(self.splitter)
+
+        self.startTimer(1000 // 60)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:

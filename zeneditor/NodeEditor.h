@@ -540,14 +540,13 @@ struct NodeEditor {
     }
     dg.compute();
 
-    out << "def execute(frame):" << std::endl;
-    out << "\timport zen" << std::endl;
-    out << "\tif frame == 0: zen.addNode('EndFrame', 'endFrame')" << std::endl;
+    out << "def substep():" << std::endl;
+    out << "\tzen.substepBegin()" << std::endl;
 
     for (auto const &name: dg.applies) {
       auto node = nodes.at(name2id.at(name)).get();
 
-      out << "\tif frame == 0: zen.addNode('"  // only addNode on first frame
+      out << "\tif zen.G.substepid == 0: zen.addNode('"
         << node->type << "', '" << node->name << "')" << std::endl;
 
       for (auto const &socket: node->inputs) {
@@ -571,7 +570,14 @@ struct NodeEditor {
       out << "\tzen.applyNode('" << name << "')" << std::endl;
     }
 
-    out << "\tzen.applyNode('endFrame')" << std::endl;
+    out << "\tzen.substepEnd()" << std::endl;
+    out << std::endl;
+
+    out << "def execute():" << std::endl;
+    out << "\tzen.frameBegin()" << std::endl;
+    out << "\twhile zen.substepShouldContinue():" << std::endl;
+    out << "\t\tsubstep()" << std::endl;
+    out << "\tzen.frameEnd()" << std::endl;
   }
 
   std::vector<int> get_selected_links() {

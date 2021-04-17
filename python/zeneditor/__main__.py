@@ -98,7 +98,7 @@ def do_execute_script(src, nframes):
 {src}
 for frame in range({nframes}):
 \tprint('[Zen] executing frame', frame)
-\texecute(frame)
+\texecute()
 '''
     print(src, end='')
     print('=========')
