@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/MeshObject.h>
+#include <zen/NumericObject.h>
 #include <zen/VDBGrid.h>
 #include <omp.h>
 #include "FLIP_vdb.h"
@@ -10,7 +11,7 @@ namespace zenbase{
     
     struct G2P_Advector : zen::INode{
         virtual void apply() override {
-            auto dt = get_input("dt")->as<tFloat>()->num;
+            auto dt = get_input("dt")->as<zenbase::NumericObject>()->value;
             auto dx = std::get<float>(get_param("dx"));
             auto smoothness = std::get<float>(get_param("pic_smoothness"));
             auto RK_ORDER = std::get<int>(get_param("RK_ORDER"));

@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/MeshObject.h>
+#include <zen/NumericObject.h>
 #include <zen/VDBGrid.h>
 #include <omp.h>
 #include "FLIP_vdb.h"
@@ -14,7 +15,7 @@ namespace zenbase{
     
     struct FieldAddVector : zen::INode{
         virtual void apply() override {
-            auto dt = get_input("dt")->as<tFloat>()->num;
+            auto dt = get_input("dt")->as<zenbase::NumericObject>()->value;
             float vx = std::get<float>(get_param("vx"));
             float vy = std::get<float>(get_param("vy"));
             float vz = std::get<float>(get_param("vz"));
