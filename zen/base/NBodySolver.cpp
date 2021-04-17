@@ -1,14 +1,14 @@
 #include <zen/zen.h>
 #include <zen/ParticlesObject.h>
 #include <zen/NumericObject.h>
+#include <glm/glm.hpp>
+#include <cmath>
 #include <omp.h>
 
 namespace zenbase {
 
 struct NBodySolver : zen::INode {
   ParticlesObject *pars;
-  float dt{0};
-  glm::vec3 G{0, 0, 0};
 
   bool initialized{false};
 
@@ -23,16 +23,33 @@ struct NBodySolver : zen::INode {
   }
 
   void step() {
-    dt = get_input("dt")->as<NumericObject>()->value;
+    auto dt = get_input("dt")->as<NumericObject>()->value;
+    auto G = std::get<float>(get_param("G"));
+    auto M = std::get<float>(get_param("M"));
+    auto r0 = std::get<float>(get_param("r0"));
+
+#pragma omp parallel for
+    for (int i = 0; i < pars->size(); i++) {
+
+      glm::vec3 acc(0);
+      auto p = pars->pos[i];
+      for (int j = 0; j < pars->size(); j++) {
+        if (j == i) continue;
+        auto r = p - pars->pos[j];
+        auto x = r0 / std::sqrt(glm::dot(r, r) + 1e-6);
+        auto fac = G * x * x * x + M * (std::pow(x, 13) - std::pow(x, 7));
+        acc += glm::vec3(fac) * r;
+      }
+      pars->vel[i] += acc * dt;
+    }
+
 #pragma omp parallel for
     for (int i = 0; i < pars->size(); i++) {
       pars->pos[i] += pars->vel[i] * dt;
-      pars->vel[i] += G * dt;
     }
   }
 
   void init() {
-    G = zen::get_float3<glm::vec3>(get_param("G"));
     auto ini_pars = get_input("ini_pars")->as<ParticlesObject>();
     pars = new_member<ParticlesObject>("pars");
     *pars = *ini_pars;  // deep-copy
@@ -47,7 +64,9 @@ static int defNBodySolver = zen::defNodeClass<NBodySolver>("NBodySolver",
     }, /* outputs: */ {
     "pars",
     }, /* params: */ {
-    {"float3", "G", "0 0 1"},
+    {"float", "r0", "0.02"},
+    {"float", "G", "-10.0"},
+    {"float", "M", "0.001"},
     }, /* category: */ {
     "particles",
     }});
