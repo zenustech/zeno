@@ -30,6 +30,8 @@ class QDMGraphicsView(QGraphicsView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
 
+        self.dragingEdge = None
+
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
             exit()
@@ -54,6 +56,16 @@ class QDMGraphicsView(QGraphicsView):
 
             return
 
+        elif event.button() == Qt.LeftButton:
+            item = self.itemAt(event.pos())
+            print(item)
+
+            if isinstance(item, QDMGraphicsSocket):
+                if self.dragingEdge is None:
+                    self.dragingEdge = item
+                else:
+                    self.addEdge(self.dragingEdge, item)
+
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
@@ -71,6 +83,12 @@ class QDMGraphicsView(QGraphicsView):
 
         self.scale(zoomFactor, zoomFactor)
 
+    def addEdge(self, src, dst):
+        edge = QDMGraphicsEdge()
+        edge.setSrcSocket(src)
+        edge.setDstSocket(dst)
+        self.scene().addItem(edge)
+
 
 TEXT_HEIGHT = 25
 BEZIER_FACTOR = 0.5
@@ -80,6 +98,7 @@ class QDMGraphicsEdge(QGraphicsPathItem):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFlag(QGraphicsItem.ItemIsSelectable)
+        self.setZValue(-1)
 
         self.srcPos = QPointF(0, 0)
         self.dstPos = QPointF(0, 0)
@@ -115,7 +134,7 @@ class QDMGraphicsEdge(QGraphicsPathItem):
         if BEZIER_FACTOR == 0:
             path.lineTo(self.dstPos.x(), self.dstPos.y())
         else:
-            dist = abs(self.dstPos.x() - self.srcPos.x()) * BEZIER_FACTOR
+            dist = max(100, self.dstPos.x() - self.srcPos.x()) * BEZIER_FACTOR
             path.cubicTo(self.srcPos.x() + dist, self.srcPos.y(),
                     self.dstPos.x() - dist, self.dstPos.y(),
                     self.dstPos.x(), self.dstPos.y())
@@ -247,13 +266,13 @@ class NodeEditor(QWidget):
         node2.setPos(100, 100)
         self.scene.addItem(node2)
 
-        edge = QDMGraphicsEdge()
-        self.scene.addItem(edge)
-
         node1.sockets[0].setLabel('Output0')
         node1.sockets[0].setIsOutput(True)
+
+        edge = QDMGraphicsEdge()
         edge.setSrcSocket(node1.sockets[0])
-        edge.setDstSocket(node2.sockets[0])
+        edge.setDstSocket(node2.sockets[1])
+        self.scene.addItem(edge)
 
         self.layout.addWidget(self.view)
         self.show()
