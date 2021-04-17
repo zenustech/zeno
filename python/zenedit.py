@@ -22,8 +22,8 @@ class QDMGraphicsView(QGraphicsView):
 
         self.setRenderHints(QPainter.Antialiasing
                 | QPainter.HighQualityAntialiasing
-                | QPainter.TextAntialiasing
-                | QPainter.SmoothPixmapTransform)
+                | QPainter.SmoothPixmapTransform
+                | QPainter.TextAntialiasing)
 
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -66,11 +66,21 @@ class QDMGraphicsView(QGraphicsView):
                         edge.setSrcPos(item.getCirclePos())
                         edge.setDstPos(pos)
                     else:
-                        edge.setDstPos(item.getCirclePos())
                         edge.setSrcPos(pos)
+                        edge.setDstPos(item.getCirclePos())
+                    item.edges.append(edge)
                     edge.updatePath()
                     self.scene().addItem(edge)
                     self.dragingEdge = edge, item, True
+
+            else:
+                item = self.itemAt(event.pos())
+                edge, srcItem, preserve = self.dragingEdge
+                if isinstance(item, QDMGraphicsSocket):
+                    self.addEdge(srcItem, item)
+                srcItem.edges.remove(edge)
+                self.scene().removeItem(edge)
+                self.dragingEdge = None
 
         super().mousePressEvent(event)
 
@@ -79,9 +89,11 @@ class QDMGraphicsView(QGraphicsView):
             pos = self.mapToScene(event.pos())
             edge, item, _ = self.dragingEdge
             if item.isOutput:
+                edge.setSrcPos(item.getCirclePos())
                 edge.setDstPos(pos)
             else:
                 edge.setSrcPos(pos)
+                edge.setDstPos(item.getCirclePos())
             edge.updatePath()
 
         super().mouseMoveEvent(event)
@@ -89,22 +101,6 @@ class QDMGraphicsView(QGraphicsView):
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MiddleButton:
             self.setDragMode(0)
-
-        elif event.button() == Qt.LeftButton:
-            if self.dragingEdge is not None:
-                item = self.itemAt(event.pos())
-                edge, srcItem, preserve = self.dragingEdge
-                remove = False
-                if preserve:
-                    self.dragingEdge = edge, srcItem, False
-                else:
-                    remove = True
-                if isinstance(item, QDMGraphicsSocket):
-                    if self.addEdge(srcItem, item):
-                        remove = True
-                if remove:
-                    self.scene().removeItem(edge)
-                    self.dragingEdge = None
 
         super().mouseReleaseEvent(event)
 
@@ -165,7 +161,8 @@ class QDMGraphicsPath(QGraphicsPathItem):
         if BEZIER_FACTOR == 0:
             path.lineTo(self.dstPos.x(), self.dstPos.y())
         else:
-            dist = max(100, self.dstPos.x() - self.srcPos.x()) * BEZIER_FACTOR
+            dist = self.dstPos.x() - self.srcPos.x()
+            dist = max(100, dist, -dist) * BEZIER_FACTOR
             path.cubicTo(self.srcPos.x() + dist, self.srcPos.y(),
                     self.dstPos.x() - dist, self.dstPos.y(),
                     self.dstPos.x(), self.dstPos.y())
