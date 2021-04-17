@@ -54,6 +54,12 @@ def setBooleanObject(name, value):
 def getBooleanObject(name):
     return get_core().getBooleanObject(name)
 
+def setNumericObject(name, value):
+    return get_core().setNumericObject(name, value)
+
+def getNumericObject(name):
+    return get_core().getNumericObject(name)
+
 def getCppObjectType(name):
     return get_core().getCppObjectType(name)
 
@@ -62,6 +68,7 @@ def getCppObjectType(name):
 class Reference(str):
     pass
 
+
 def setCppObject(name, obj):
     if isinstance(obj, np.ndarray):
         setArrayObject(name, obj)
@@ -69,6 +76,8 @@ def setCppObject(name, obj):
         setBooleanObject(name, bool(obj))
     elif isinstance(obj, Reference):
         setReference(name, str(obj))
+    elif isinstance(obj, (int, float)):
+        setNumericObject(name, obj)
     else:
         raise RuntimeError(f'unsupported type {type(obj)} to pass into C++')
 
@@ -78,6 +87,8 @@ def getCppObject(name):
         return getArrayObject()
     if type == 'boolean':
         return BooleanObject(getBooleanObject())
+    if type == 'numeric':
+        return getNumericObject()
     else:
         return Reference(name)
 

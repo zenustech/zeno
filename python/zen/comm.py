@@ -12,6 +12,28 @@ class Route(INode):
         self.set_output('output', obj)
 
 
+@defNodeClass
+class NumericFloat(INode):
+    z_params = [('float', 'value', '0.0')]
+    z_outputs = ['output']
+    z_categories = 'numeric'
+
+    def apply(self):
+        value = self.get_param('value')
+        self.set_output('output', value)
+
+
+@defNodeClass
+class NumericInt(INode):
+    z_params = [('int', 'value', '0')]
+    z_outputs = ['output']
+    z_categories = 'numeric'
+
+    def apply(self):
+        value = self.get_param('value')
+        self.set_output('output', value)
+
+
 portals = {}
 
 

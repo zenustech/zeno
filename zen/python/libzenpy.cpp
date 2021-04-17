@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/ArrayObject.h>
+#include <zen/NumericObject.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
@@ -26,6 +27,18 @@ void setBooleanObject(std::string name, bool value) {
 
 bool getBooleanObject(std::string name) {
   auto obj = zen::getObject(name)->as<zen::BooleanObject>();
+  return obj->value;
+}
+
+
+void setNumericObject(std::string name, float value) {
+  auto obj = std::make_unique<zenbase::NumericObject>();
+  obj->value = value;
+  zen::setObject(name, std::move(obj));
+}
+
+bool getNumericObject(std::string name) {
+  auto obj = zen::getObject(name)->as<zenbase::NumericObject>();
   return obj->value;
 }
 
@@ -96,6 +109,8 @@ PYBIND11_MODULE(libzenpy, m) {
 
   m.def("setBooleanObject", setBooleanObject);
   m.def("getBooleanObject", getBooleanObject);
+  m.def("setNumericObject", setNumericObject);
+  m.def("getNumericObject", getNumericObject);
   m.def("setReference", zen::setReference);
   m.def("getReference", zen::getReference);
 
