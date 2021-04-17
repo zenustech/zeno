@@ -1,6 +1,6 @@
 #!/bin/bash
 
 export PYTHONPATH=`pwd`/python
-build/zenvis/zenvis &
-python -m zeneditor
+python -m zeneditor &
+build/zenvis/zenvis
 wait

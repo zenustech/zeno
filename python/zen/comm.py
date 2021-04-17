@@ -1,85 +1,6 @@
 from .py import *
 
 
-g = type('G', (object,), {})()
-g.frame_time = 1 / 24
-g.frame_time_elapsed = 0.0
-g.time_step_integrated = False
-
-
-@defNodeClass
-class SetFrameTime(INode):
-    z_params = [('float', 'time', '0.0')]
-    z_categories = 'keywords'
-
-    def apply(self):
-        time = self.get_param('time')
-        g.frame_time = time
-
-
-@defNodeClass
-class GetFrameTime(INode):
-    z_outputs = ['time']
-    z_categories = 'keywords'
-
-    def apply(self):
-        time = g.frame_time
-        self.set_output('time', time)
-
-
-@defNodeClass
-class GetFrameTimeElapsed(INode):
-    z_outputs = ['time']
-    z_categories = 'keywords'
-
-    def apply(self):
-        time = g.frame_time_elapsed
-        self.set_output('time', time)
-
-
-@defNodeClass
-class IntegrateFrameTime(INode):
-    z_params = [('float', 'desired_dt', '0.0')]
-    z_outputs = ['dt']
-    z_categories = 'keywords'
-
-    def apply(self):
-        if self.has_input('desired_dt'):
-            dt = self.get_input('desired_dt')
-        else:
-            dt = 1 / 24
-
-        dt = min(g.frame_time - g.frame_time_elapsed, dt)
-
-        if not g.time_step_integrated:
-            g.frame_time_elapsed += dt
-            g.time_step_integrated = True
-
-        self.set_output('dt', dt)
-
-
-@defNodeClass
-class NumericFloat(INode):
-    z_params = [('float', 'value', '0.0')]
-    z_outputs = ['output']
-    z_categories = 'numeric'
-
-    def apply(self):
-        value = self.get_param('value')
-        self.set_output('output', value)
-
-
-@defNodeClass
-class NumericInt(INode):
-    z_params = [('int', 'value', '0')]
-    z_outputs = ['output']
-    z_categories = 'numeric'
-
-    def apply(self):
-        value = self.get_param('value')
-        self.set_output('output', value)
-
-
 portals = {}
 
 
@@ -141,6 +62,28 @@ class SleepFor(INode):
         import time
         secs = self.get_param('secs')
         time.sleep(secs)
+
+
+@defNodeClass
+class NumericFloat(INode):
+    z_params = [('float', 'value', '0.0')]
+    z_outputs = ['value']
+    z_categories = 'numeric'
+
+    def apply(self):
+        value = self.get_param('value')
+        self.set_output('value', value)
+
+
+@defNodeClass
+class NumericInt(INode):
+    z_params = [('int', 'value', '0')]
+    z_outputs = ['value']
+    z_categories = 'numeric'
+
+    def apply(self):
+        value = self.get_param('value')
+        self.set_output('value', value)
 
 
 

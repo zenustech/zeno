@@ -119,6 +119,7 @@ class ViewportWidget(QGLWidget):
         core.initialize()
 
     def resizeGL(self, nx, ny):
+        print('resize', nx, ny)
         self.res = nx, ny
 
     def paintGL(self):
