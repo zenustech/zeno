@@ -8,18 +8,18 @@ from .core import get_core
 from .py import BooleanObject
 
 
-def setNumpyObject(name, arr):
-    return get_core().setNumpyObject(name, arr)
+def setArrayObject(name, arr):
+    return get_core().setArrayObject(name, arr)
 
-class getNumpyObjectMeta:
+class getArrayObjectMeta:
     def __init__(self, name):
-        meta = get_core().getNumpyObjectMeta(name)
+        meta = get_core().getArrayObjectMeta(name)
         self.ptr, self.itemsize, self.format, \
             self.ndim, self.shape, self.strides, \
             self.isref = meta
 
-def getNumpyObject(name):
-    meta = getNumpyObjectMeta(name)
+def getArrayObject(name):
+    meta = getArrayObjectMeta(name)
     TYPES = {
             np.uint8: 'uint8_t',
             np.uint16: 'uint16_t',
@@ -39,7 +39,7 @@ def getNumpyObject(name):
     else:
         raise KeyError(f'bad numpy data format: {meta.format}')
 
-    return getattr(get_core(), 'getNumpyObject_' + c_type)(name)
+    return getattr(get_core(), 'getArrayObject_' + c_type)(name)
 
 
 def setReference(name, srcname):
@@ -64,7 +64,7 @@ class Reference(str):
 
 def setCppObject(name, obj):
     if isinstance(obj, np.ndarray):
-        setNumpyObject(name, obj)
+        setArrayObject(name, obj)
     elif isinstance(obj, BooleanObject):
         setBooleanObject(name, bool(obj))
     elif isinstance(obj, Reference):
@@ -74,8 +74,8 @@ def setCppObject(name, obj):
 
 def getCppObject(name):
     type = getCppObjectType(name)
-    if type == 'numpy':
-        return getNumpyObject()
+    if type == 'array':
+        return getArrayObject()
     if type == 'boolean':
         return BooleanObject(getBooleanObject())
     else:

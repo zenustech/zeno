@@ -6,7 +6,7 @@ namespace zenbase {
 
 // https://www.cnblogs.com/JiangOil/p/11130670.html
 // Below is the same as pybind11::buffer_info
-struct NumpyObject : zen::IObject {
+struct ArrayObject : zen::IObject {
   void *ptr;
   ssize_t itemsize;
   std::string format;

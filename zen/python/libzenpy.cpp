@@ -1,5 +1,5 @@
 #include <zen/zen.h>
-#include <zen/NumpyObject.h>
+#include <zen/ArrayObject.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
@@ -8,8 +8,8 @@ namespace py = pybind11;
 
 std::string getCppObjectType(std::string name) {
   auto obj = zen::getObject(name);
-  if (obj->as<zenbase::NumpyObject>()) {
-    return "numpy";
+  if (obj->as<zenbase::ArrayObject>()) {
+    return "array";
   }
   if (obj->as<zen::BooleanObject>()) {
     return "boolean";
@@ -33,11 +33,11 @@ bool getBooleanObject(std::string name) {
 static std::map<std::string, std::unique_ptr<std::vector<char>>> savedNumpys;
 
 template <class T>
-void setNumpyObject(std::string name,
+void setArrayObject(std::string name,
     py::array_t<T, py::array::c_style> const &data) {
   py::buffer_info buf = data.request();
 
-  auto obj = zen::IObject::make<zenbase::NumpyObject>();
+  auto obj = zen::IObject::make<zenbase::ArrayObject>();
   obj->ptr = buf.ptr;
   obj->itemsize = buf.itemsize;
   obj->format = buf.format;
@@ -61,16 +61,16 @@ void setNumpyObject(std::string name,
 
 std::tuple<uintptr_t, ssize_t, std::string, ssize_t,
   std::vector<ssize_t>, std::vector<ssize_t>>
-  getNumpyObjectMeta(std::string name) {
-  auto obj = zen::getObject(name)->as<zenbase::NumpyObject>();
+  getArrayObjectMeta(std::string name) {
+  auto obj = zen::getObject(name)->as<zenbase::ArrayObject>();
   return std::make_tuple(
       (uintptr_t)obj->ptr, obj->itemsize, obj->format,
       obj->ndim, obj->shape, obj->strides);
 };
 
 template <class T>
-py::array_t<T, py::array::c_style> getNumpyObject(std::string name) {
-  auto obj = zen::getObject(name)->as<zenbase::NumpyObject>();
+py::array_t<T, py::array::c_style> getArrayObject(std::string name) {
+  auto obj = zen::getObject(name)->as<zenbase::ArrayObject>();
 
   size_t size = 1;
   for (size_t i = 0; i < obj->ndim; i++)
@@ -99,10 +99,10 @@ PYBIND11_MODULE(libzenpy, m) {
   m.def("setReference", zen::setReference);
   m.def("getReference", zen::getReference);
 
-  m.def("getNumpyObjectMeta", getNumpyObjectMeta);
+  m.def("getArrayObjectMeta", getArrayObjectMeta);
 #define _DEF_TYPE(T) \
-  m.def("setNumpyObject", setNumpyObject<T>); \
-  m.def("getNumpyObject_" #T, getNumpyObject<T>);
+  m.def("setArrayObject", setArrayObject<T>); \
+  m.def("getArrayObject_" #T, getArrayObject<T>);
   _DEF_TYPE(uint8_t)
   _DEF_TYPE(uint16_t)
   _DEF_TYPE(uint32_t)
