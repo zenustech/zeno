@@ -57,20 +57,40 @@ class QDMGraphicsView(QGraphicsView):
             return
 
         elif event.button() == Qt.LeftButton:
-            item = self.itemAt(event.pos())
-            print(item)
-
-            if isinstance(item, QDMGraphicsSocket):
-                if self.dragingEdge is None:
-                    self.dragingEdge = item
-                else:
-                    self.addEdge(self.dragingEdge, item)
+            if self.dragingEdge is None:
+                item = self.itemAt(event.pos())
+                if isinstance(item, QDMGraphicsSocket):
+                    edge = QDMGraphicsPath()
+                    pos = self.mapToScene(event.pos())
+                    edge.setSrcPos(item.getCirclePos())
+                    edge.setDstPos(pos)
+                    edge.updatePath()
+                    self.scene().addItem(edge)
+                    self.dragingEdge = edge, item
 
         super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self.dragingEdge is not None:
+            pos = self.mapToScene(event.pos())
+            edge, item = self.dragingEdge
+            edge.setDstPos(pos)
+            edge.updatePath()
+
+        super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MiddleButton:
             self.setDragMode(0)
+
+        elif event.button() == Qt.LeftButton:
+            if self.dragingEdge is not None:
+                item = self.itemAt(event.pos())
+                if isinstance(item, QDMGraphicsSocket):
+                    edge, srcItem = self.dragingEdge
+                    self.dragingEdge = None
+                    self.scene().removeItem(edge)
+                    self.addEdge(srcItem, item)
 
         super().mouseReleaseEvent(event)
 
@@ -83,7 +103,17 @@ class QDMGraphicsView(QGraphicsView):
 
         self.scale(zoomFactor, zoomFactor)
 
-    def addEdge(self, src, dst):
+    def addEdge(self, a, b):
+        if a is None or b is None:
+            return
+
+        if a.isOutput and not b.isOutput:
+            src, dst = a, b
+        elif not a.isOutput and b.isOutput:
+            src, dst = b, a
+        else:
+            return
+
         edge = QDMGraphicsEdge()
         edge.setSrcSocket(src)
         edge.setDstSocket(dst)
@@ -94,14 +124,43 @@ TEXT_HEIGHT = 25
 BEZIER_FACTOR = 0.5
 
 
-class QDMGraphicsEdge(QGraphicsPathItem):
+class QDMGraphicsPath(QGraphicsPathItem):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFlag(QGraphicsItem.ItemIsSelectable)
         self.setZValue(-1)
 
         self.srcPos = QPointF(0, 0)
         self.dstPos = QPointF(0, 0)
+
+    def setSrcPos(self, pos):
+        self.srcPos = pos
+
+    def setDstPos(self, pos):
+        self.dstPos = pos
+
+    def paint(self, painter, styleOptions, widget=None):
+        pen = QPen(QColor('#cc8844' if self.isSelected() else '#000000'))
+        pen.setWidth(3)
+        painter.setPen(pen)
+        painter.setBrush(Qt.NoBrush)
+        painter.drawPath(self.path())
+
+    def updatePath(self):
+        path = QPainterPath(self.srcPos)
+        if BEZIER_FACTOR == 0:
+            path.lineTo(self.dstPos.x(), self.dstPos.y())
+        else:
+            dist = max(100, self.dstPos.x() - self.srcPos.x()) * BEZIER_FACTOR
+            path.cubicTo(self.srcPos.x() + dist, self.srcPos.y(),
+                    self.dstPos.x() - dist, self.dstPos.y(),
+                    self.dstPos.x(), self.dstPos.y())
+        self.setPath(path)
+
+
+class QDMGraphicsEdge(QDMGraphicsPath):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFlag(QGraphicsItem.ItemIsSelectable)
 
         self.srcSocket = None
         self.dstSocket = None
@@ -123,22 +182,7 @@ class QDMGraphicsEdge(QGraphicsPathItem):
         self.updatePosition()
         self.updatePath()
 
-        pen = QPen(QColor('#cc8844' if self.isSelected() else '#000000'))
-        pen.setWidth(3)
-        painter.setPen(pen)
-        painter.setBrush(Qt.NoBrush)
-        painter.drawPath(self.path())
-
-    def updatePath(self):
-        path = QPainterPath(self.srcPos)
-        if BEZIER_FACTOR == 0:
-            path.lineTo(self.dstPos.x(), self.dstPos.y())
-        else:
-            dist = max(100, self.dstPos.x() - self.srcPos.x()) * BEZIER_FACTOR
-            path.cubicTo(self.srcPos.x() + dist, self.srcPos.y(),
-                    self.dstPos.x() - dist, self.dstPos.y(),
-                    self.dstPos.x(), self.dstPos.y())
-        self.setPath(path)
+        super().paint(painter, styleOptions, widget)
 
 
 class QDMGraphicsSocket(QGraphicsItem):
@@ -241,6 +285,11 @@ class QDMGraphicsNode(QGraphicsItem):
         painter.drawPath(pathOutline.simplified())
 
 
+## 17.54 HAI
+## 20.10 HAO
+## 25.17 HAO
+## 30.48 HAO
+## 32.59 HAO
 class NodeEditor(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -258,7 +307,7 @@ class NodeEditor(QWidget):
 
         node1 = QDMGraphicsNode()
         node1.setTitle('P2G_Advector')
-        node1.setPos(-100, -100)
+        node1.setPos(-200, -100)
         self.scene.addItem(node1)
 
         node2 = QDMGraphicsNode()
@@ -268,11 +317,6 @@ class NodeEditor(QWidget):
 
         node1.sockets[0].setLabel('Output0')
         node1.sockets[0].setIsOutput(True)
-
-        edge = QDMGraphicsEdge()
-        edge.setSrcSocket(node1.sockets[0])
-        edge.setDstSocket(node2.sockets[1])
-        self.scene.addItem(edge)
 
         self.layout.addWidget(self.view)
         self.show()
