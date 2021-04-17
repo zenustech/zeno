@@ -94,13 +94,17 @@ class QDMGraphicsView(QGraphicsView):
             if self.dragingEdge is not None:
                 item = self.itemAt(event.pos())
                 edge, srcItem, preserve = self.dragingEdge
+                remove = False
                 if preserve:
                     self.dragingEdge = edge, srcItem, False
                 else:
+                    remove = True
+                if isinstance(item, QDMGraphicsSocket):
+                    if self.addEdge(srcItem, item):
+                        remove = True
+                if remove:
                     self.scene().removeItem(edge)
                     self.dragingEdge = None
-                if isinstance(item, QDMGraphicsSocket):
-                    self.addEdge(srcItem, item)
 
         super().mouseReleaseEvent(event)
 
@@ -115,19 +119,20 @@ class QDMGraphicsView(QGraphicsView):
 
     def addEdge(self, a, b):
         if a is None or b is None:
-            return
+            return False
 
         if a.isOutput and not b.isOutput:
             src, dst = a, b
         elif not a.isOutput and b.isOutput:
             src, dst = b, a
         else:
-            return
+            return False
 
         edge = QDMGraphicsEdge()
         edge.setSrcSocket(src)
         edge.setDstSocket(dst)
         self.scene().addItem(edge)
+        return True
 
 
 TEXT_HEIGHT = 25
@@ -259,18 +264,27 @@ class QDMGraphicsNode(QGraphicsItem):
         self.title.setDefaultTextColor(Qt.white)
         self.title.setPos(0, -TEXT_HEIGHT)
 
-        self.initSockets()
+        self.initSockets('Hello', ['Input1', 'Input2'], ['Output1'])
 
-    def setTitle(self, title):
+    def initSockets(self, title, inputs=(), outputs=()):
         self.title.setPlainText(title)
 
-    def initSockets(self):
         self.sockets = []
-        for index in range(3):
+        for index, label in enumerate(inputs):
             socket = QDMGraphicsSocket(self)
             y = TEXT_HEIGHT * 0.75 + TEXT_HEIGHT * index
             socket.setPos(0, y)
-            socket.setLabel('Input%s' % index)
+            socket.setLabel(label)
+            socket.setIsOutput(False)
+            self.sockets.append(socket)
+
+        for index, label in enumerate(outputs):
+            socket = QDMGraphicsSocket(self)
+            index += len(inputs)
+            y = TEXT_HEIGHT * 0.75 + TEXT_HEIGHT * index
+            socket.setPos(0, y)
+            socket.setLabel(label)
+            socket.setIsOutput(True)
             self.sockets.append(socket)
 
     def boundingRect(self):
@@ -319,17 +333,12 @@ class NodeEditor(QWidget):
         self.view.setScene(self.scene)
 
         node1 = QDMGraphicsNode()
-        node1.setTitle('P2G_Advector')
         node1.setPos(-200, -100)
         self.scene.addItem(node1)
 
         node2 = QDMGraphicsNode()
-        node2.setTitle('FLIP_Creat')
         node2.setPos(100, 100)
         self.scene.addItem(node2)
-
-        node1.sockets[0].setLabel('Output0')
-        node1.sockets[0].setIsOutput(True)
 
         self.layout.addWidget(self.view)
         self.show()
