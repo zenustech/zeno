@@ -1,15 +1,61 @@
 from .py import *
 
 
+g = type('G', (object,), {})()
+g.frame_time = 1 / 24
+g.frame_time_elapsed = 0.0
+g.time_step_integrated = False
+
+
 @defNodeClass
-class Route(INode):
-    z_inputs = ['input']
-    z_outputs = ['output']
-    z_categories = 'misc'
+class SetFrameTime(INode):
+    z_params = [('float', 'time', '0.0')]
+    z_categories = 'keywords'
 
     def apply(self):
-        obj = self.get_input('input')
-        self.set_output('output', obj)
+        time = self.get_param('time')
+        g.frame_time = time
+
+
+@defNodeClass
+class GetFrameTime(INode):
+    z_outputs = ['time']
+    z_categories = 'keywords'
+
+    def apply(self):
+        time = g.frame_time
+        self.set_output('time', time)
+
+
+@defNodeClass
+class GetFrameTimeElapsed(INode):
+    z_outputs = ['time']
+    z_categories = 'keywords'
+
+    def apply(self):
+        time = g.frame_time_elapsed
+        self.set_output('time', time)
+
+
+@defNodeClass
+class IntegrateFrameTime(INode):
+    z_params = [('float', 'desired_dt', '0.0')]
+    z_outputs = ['dt']
+    z_categories = 'keywords'
+
+    def apply(self):
+        if self.has_input('desired_dt'):
+            dt = self.get_input('desired_dt')
+        else:
+            dt = 1 / 24
+
+        dt = min(g.frame_time - g.frame_time_elapsed, dt)
+
+        if not g.time_step_integrated:
+            g.frame_time_elapsed += dt
+            g.time_step_integrated = True
+
+        self.set_output('dt', dt)
 
 
 @defNodeClass
@@ -57,6 +103,17 @@ class PortalOut(INode):
         id = self.get_param('name')
         obj = portals[id]
         self.set_output('port', obj)
+
+
+@defNodeClass
+class Route(INode):
+    z_inputs = ['input']
+    z_outputs = ['output']
+    z_categories = 'misc'
+
+    def apply(self):
+        obj = self.get_input('input')
+        self.set_output('output', obj)
 
 
 @defNodeClass
