@@ -32,6 +32,9 @@ class QDMGraphicsView(QGraphicsView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
 
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.context_menu)
+
         self.dragingEdge = None
 
     def keyPressEvent(self, event):
@@ -62,6 +65,11 @@ class QDMGraphicsView(QGraphicsView):
             if self.dragingEdge is None:
                 item = self.itemAt(event.pos())
                 if isinstance(item, QDMGraphicsSocket):
+                    if not item.isOutput and len(item.edges):
+                        srcItem = item.getTheOnlyEdge().srcSocket
+                        item.removeAllEdges()
+                        item = srcItem
+
                     edge = QDMGraphicsPath()
                     pos = self.mapToScene(event.pos())
                     if item.isOutput:
@@ -70,7 +78,6 @@ class QDMGraphicsView(QGraphicsView):
                     else:
                         edge.setSrcPos(pos)
                         edge.setDstPos(item.getCirclePos())
-                    item.edges.append(edge)
                     edge.updatePath()
                     self.scene().addItem(edge)
                     self.dragingEdge = edge, item, True
@@ -80,7 +87,6 @@ class QDMGraphicsView(QGraphicsView):
                 edge, srcItem, preserve = self.dragingEdge
                 if isinstance(item, QDMGraphicsSocket):
                     self.addEdge(srcItem, item)
-                srcItem.edges.remove(edge)
                 self.scene().removeItem(edge)
                 self.dragingEdge = None
 
@@ -114,6 +120,12 @@ class QDMGraphicsView(QGraphicsView):
             zoomFactor = 1 / self.ZOOM_FACTOR
 
         self.scale(zoomFactor, zoomFactor)
+
+    def context_menu(self, pos):
+        menu = QMenu(self)
+        menu.addAction('Add')
+        menu.addAction('Sub')
+        menu.exec_(self.mapToGlobal(pos))
 
     def addEdge(self, a, b):
         if a is None or b is None:
@@ -181,11 +193,12 @@ class QDMGraphicsEdge(QDMGraphicsPath):
 
     def setSrcSocket(self, socket):
         assert socket.isOutput
-        socket.edges.append(self)
+        socket.addEdge(self)
         self.srcSocket = socket
 
     def setDstSocket(self, socket):
         assert not socket.isOutput
+        socket.addEdge(self)
         self.dstSocket = socket
 
     def updatePosition(self):
@@ -198,11 +211,19 @@ class QDMGraphicsEdge(QDMGraphicsPath):
 
         super().paint(painter, styleOptions, widget)
 
+    def remove(self):
+        if self.srcSocket is not None:
+            self.srcSocket.edges.remove(self)
+        if self.dstSocket is not None:
+            self.dstSocket.edges.remove(self)
+
+        self.scene().removeItem(self)
+
 
 class QDMGraphicsSocket(QGraphicsItem):
     RADIUS = TEXT_HEIGHT // 3
 
-    def __init__(self, parent=None):
+    def __init__(self, parent):
         super().__init__(parent)
 
         self.label = QGraphicsTextItem(self)
@@ -210,9 +231,24 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.label.setPos(self.RADIUS, -TEXT_HEIGHT / 2)
 
         self.isOutput = False
-        self.edges = []
+        self.edges = set()
 
         self.node = parent
+
+    def getTheOnlyEdge(self):
+        assert not self.isOutput
+        assert len(self.edges) == 1
+        return next(iter(self.edges))
+
+    def removeAllEdges(self):
+        for edge in list(self.edges):
+            edge.remove()
+        assert len(self.edges) == 0
+
+    def addEdge(self, edge):
+        if not self.isOutput:
+            self.removeAllEdges()
+        self.edges.add(edge)
 
     def setIsOutput(self, isOutput):
         self.isOutput = isOutput
@@ -431,6 +467,15 @@ class QDMNodeEditorWidget(QWidget):
                 [('float', 'VoxelSize', '0.08 0')]
                 )
         node1.setPos(-200, -100)
+        self.scene.addItem(node1)
+
+        node1 = QDMGraphicsNode()
+        node1.initSockets('Add',
+                ['Input1', 'Input2'],
+                ['Output1'],
+                [('float', 'VoxelSize', '0.08 0')]
+                )
+        node1.setPos(-200, 100)
         self.scene.addItem(node1)
 
         node2 = QDMGraphicsNode()
