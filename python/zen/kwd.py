@@ -52,7 +52,7 @@ class RunBeforeFrame(INode):
 
     def apply(self):
         cond = G.has_substep_executed
-        self.set_output('cond', cond)
+        self.set_output('cond', BooleanObject(cond))
 
 
 @defNodeClass
@@ -62,7 +62,7 @@ class RunAfterFrame(INode):
 
     def apply(self):
         cond = G.time_step_integrated
-        self.set_output('cond', cond)
+        self.set_output('cond', BooleanObject(cond))
 
 
 @defNodeClass
