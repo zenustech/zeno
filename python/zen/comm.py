@@ -86,5 +86,15 @@ class NumericInt(INode):
         self.set_output('value', value)
 
 
+@defNodeClass
+class PrintNumeric(INode):
+    z_inputs = ['value']
+    z_categories = 'numeric'
+
+    def apply(self):
+        value = self.get_input('value')
+        print('PrintNumeric:', value)
+
+
 
 __all__ = []
