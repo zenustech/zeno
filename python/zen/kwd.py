@@ -102,10 +102,12 @@ class IntegrateFrameTime(INode):
     z_categories = 'keywords'
 
     def apply(self):
+        dt = G.frame_time
+        print(self._INode__inputs)
         if self.has_input('desired_dt'):
             dt = self.get_input('desired_dt')
-        else:
-            dt = 1 / 24
+            #raise Exception(dt)
+            
 
         if G.frame_time_elapsed + dt >= G.frame_time:
             dt = G.frame_time - G.frame_time_elapsed

@@ -15,6 +15,9 @@ std::string getCppObjectType(std::string name) {
   if (obj->as<zen::BooleanObject>()) {
     return "boolean";
   }
+  if (obj->as<zenbase::NumericObject>()) {
+    return "numeric";
+  }
   return "other";
 }
 
@@ -37,7 +40,7 @@ void setNumericObject(std::string name, float value) {
   zen::setObject(name, std::move(obj));
 }
 
-bool getNumericObject(std::string name) {
+float getNumericObject(std::string name) {
   auto obj = zen::getObject(name)->as<zenbase::NumericObject>();
   return obj->value;
 }

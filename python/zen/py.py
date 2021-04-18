@@ -11,8 +11,12 @@ class IObject:
     pass
 
 
-class BooleanObject(int, IObject):
-    pass
+class BooleanObject(IObject):
+    def __init__(self, value=True):
+        self.__value = value
+
+    def __bool__(self):
+        return self.__value
 
 
 class ParamDescriptor(namedtuple('ParamDescriptor',

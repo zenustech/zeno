@@ -84,11 +84,11 @@ def setCppObject(name, obj):
 def getCppObject(name):
     type = getCppObjectType(name)
     if type == 'array':
-        return getArrayObject()
+        return getArrayObject(name)
     if type == 'boolean':
-        return BooleanObject(getBooleanObject())
+        return BooleanObject(getBooleanObject(name))
     if type == 'numeric':
-        return getNumericObject()
+        return getNumericObject(name)
     else:
         return Reference(name)
 

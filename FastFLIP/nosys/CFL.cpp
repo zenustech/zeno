@@ -17,6 +17,7 @@ namespace zenbase{
             float dx = std::get<float>(get_param("dx"));
             auto out_dt = zen::IObject::make<zenbase::NumericObject>();
             out_dt->value = FLIP_vdb::cfl(velocity->m_grid);
+            printf("CFL dt: %f\n",out_dt->value);
             set_output("cfl_dt", out_dt);
         }
     };
