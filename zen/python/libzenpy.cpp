@@ -30,6 +30,7 @@ void setBooleanObject(std::string name, bool value) {
 
 bool getBooleanObject(std::string name) {
   auto obj = zen::getObject(name)->as<zen::BooleanObject>();
+  printf("getBooleanObject: %d\n", (int)obj->value);
   return obj->value;
 }
 
@@ -42,6 +43,9 @@ void setNumericObject(std::string name, float value) {
 
 float getNumericObject(std::string name) {
   auto obj = zen::getObject(name)->as<zenbase::NumericObject>();
+  printf("getNumericObject: %f\n", obj->value);
+  for (int i = 0; i < 1; i++)
+    printf("=========================\n");
   return obj->value;
 }
 
