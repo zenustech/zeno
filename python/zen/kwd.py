@@ -18,16 +18,21 @@ G.frameid = 0
 G.substepid = 0
 G.frame_time = 1 / 24
 G.frame_time_elapsed = 0.0
-G.time_step_integrated = False
+G.has_frame_completed = False
 G.has_substep_executed = False
+G.time_step_integrated = False
 
 
 def substepShouldContinue():
-    return not G.time_step_integrated
+    if G.has_substep_executed:
+        if not G.time_step_integrated:
+            return False
+    return not G.has_frame_completed
 
 def frameBegin():
-    G.time_step_integrated = False
+    G.has_frame_completed = False
     G.has_substep_executed = False
+    G.has_time_step_integrated = False
     G.frame_time_elapsed = 0.0
 
     if G.frameid == 0: addNode('EndFrame', 'endFrame')
@@ -61,7 +66,7 @@ class RunAfterFrame(INode):
     z_categories = 'misc'
 
     def apply(self):
-        cond = G.time_step_integrated
+        cond = G.has_frame_completed
         self.set_output('cond', BooleanObject(cond))
 
 
@@ -103,19 +108,17 @@ class IntegrateFrameTime(INode):
 
     def apply(self):
         dt = G.frame_time
-        print(self._INode__inputs)
         if self.has_input('desired_dt'):
             dt = self.get_input('desired_dt')
-            #raise Exception(dt)
-            
 
         if G.frame_time_elapsed + dt >= G.frame_time:
             dt = G.frame_time - G.frame_time_elapsed
             G.frame_time_elapsed = G.frame_time
-            G.time_step_integrated = True
+            G.has_frame_completed = True
         else:
             G.frame_time_elapsed += dt
 
+        G.time_step_integrated = True
         self.set_output('actual_dt', dt)
 
 
