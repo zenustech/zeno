@@ -15,6 +15,26 @@ class QDMGraphicsScene(QGraphicsScene):
         self.setSceneRect(-width // 2, -height // 2, width, height)
         self.setBackgroundBrush(QColor('#444444'))
 
+        self.descs = {}
+        self.nodes = []
+
+    def makeNode(self, name):
+        desc = self.descs[name]
+        node = QDMGraphicsNode()
+        node.initSockets(name, desc.inputs, desc.outputs, desc.params)
+        return node
+
+    def addNode(self, node):
+        self.nodes.append(node)
+        self.addItem(node)
+
+    def removeNode(self, node):
+        self.nodes.remove(node)
+        self.removeItem(node)
+
+    def setDescriptors(self, descs):
+        self.descs = descs
+
 
 class QDMGraphicsView(QGraphicsView):
     ZOOM_FACTOR = 1.25
@@ -455,9 +475,6 @@ class QDMNodeEditorWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.descs = {}
-        self.nodes = []
-
         self.setGeometry(200, 200, 800, 600)
         self.setWindowTitle('Node Editor')
 
@@ -465,24 +482,11 @@ class QDMNodeEditorWidget(QWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
 
-        self.scene = QDMGraphicsScene()
         self.view = QDMGraphicsView(self)
-        self.view.setScene(self.scene)
-
         self.layout.addWidget(self.view)
 
-    def makeNode(self, name):
-        desc = self.descs[name]
-        node = QDMGraphicsNode()
-        node.initSockets(name,
-                desc.inputs,
-                desc.outputs,
-                desc.params)
-        return node
+        self.scene = None
 
-    def addNode(self, node):
-        self.nodes.append(node)
-        self.scene.addItem(node)
-
-    def setDescriptors(self, descs):
-        self.descs = descs
+    def setScene(self, scene):
+        self.scene = scene
+        self.view.setScene(self.scene)
