@@ -10,16 +10,18 @@ from .ctx import ExecutionContext
 
 app = QApplication(sys.argv)
 
+ctx = ExecutionContext()
 win = QDMNodeEditorWidget()
 scene = QDMGraphicsScene()
 win.setScene(scene)
 
-ctx = ExecutionContext()
-
 scene.setDescriptors(ctx.get_descriptors())
 
 node = scene.makeNode('ReadObjMesh')
-node.setPos(-100, -100)
+node.setPos(-200, -100)
+scene.addNode(node)
+node = scene.makeNode('ViewMesh')
+node.setPos(100, 100)
 scene.addNode(node)
 
 win.show()

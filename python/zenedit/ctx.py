@@ -33,12 +33,12 @@ class ExecutionContext:
 import zen
 '''
 
-    def launch_script(self, script):
+    def launch_script(self, script, nframes=1):
         script = self.header + f'''
 {script}
 for frame in range({nframes}):
     print('FRAME:', frame)
-    execute(frame)
+    execute()
 '''
         run_script(script, capture_output=False)
 
@@ -52,5 +52,4 @@ print('=--=', descs, '=--=')
         descs = descs.decode().splitlines()
         descs = [parse_descriptor_line(line) for line in descs if ':' in line]
         descs = {name: Descriptor(*args) for name, *args in descs}
-        print(descs)
         return descs

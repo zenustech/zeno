@@ -2,6 +2,9 @@
 Node Editor UI
 '''
 
+import json
+import random
+
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -18,10 +21,28 @@ class QDMGraphicsScene(QGraphicsScene):
         self.descs = {}
         self.nodes = []
 
+    def dumpGraph(self):
+        nodes = {}
+        for node in self.nodes:
+            inputs = []
+            for socket in node.inputs:
+                assert not socket.isOutput
+                source = None
+                if socket.hasAnyEdge():
+                    srcSocket = socket.getTheOnlyEdge().srcSocket
+                    source = srcSocket.node.ident, srcSocket.name
+                inputs.append(source)
+
+            data = dict(name=node.name, inputs=inputs)
+            nodes[node.ident] = data
+
+        print(json.dumps(nodes))
+
     def makeNode(self, name):
         desc = self.descs[name]
         node = QDMGraphicsNode()
-        node.initSockets(name, desc.inputs, desc.outputs, desc.params)
+        node.setName(name)
+        node.initSockets(desc.inputs, desc.outputs, desc.params)
         return node
 
     def addNode(self, node):
@@ -56,12 +77,6 @@ class QDMGraphicsView(QGraphicsView):
         self.customContextMenuRequested.connect(self.context_menu)
 
         self.dragingEdge = None
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
-            exit()
-
-        super().keyPressEvent(event)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
@@ -254,6 +269,10 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.edges = set()
 
         self.node = parent
+        self.name = None
+
+    def hasAnyEdge(self):
+        return len(self.edges) != 0
 
     def getTheOnlyEdge(self):
         assert not self.isOutput
@@ -273,8 +292,9 @@ class QDMGraphicsSocket(QGraphicsItem):
     def setIsOutput(self, isOutput):
         self.isOutput = isOutput
 
-    def setLabel(self, label):
-        self.label.setPlainText(label)
+    def setName(self, name):
+        self.name = name
+        self.label.setPlainText(name)
 
     def getCirclePos(self):
         basePos = self.node.pos() + self.pos()
@@ -316,6 +336,8 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
         self.setWidget(self.widget)
         self.setContentsMargins(0, 0, 0, 0)
 
+        self.name = None
+
     def initLayout(self):
         self.edit = QLineEdit()
         self.label = QLabel()
@@ -325,10 +347,14 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
         self.layout.addWidget(self.edit)
         self.layout.setContentsMargins(0, 0, 0, 0)
 
-    def setLabel(self, label):
-        self.label.setText(label)
+    def setName(self, name):
+        self.name = name
+        self.label.setText(name)
 
     def setDefault(self, default):
+        raise NotImplementedError
+
+    def getValue(self):
         raise NotImplementedError
 
 
@@ -357,6 +383,9 @@ class QDMGraphicsParam_int(QDMGraphicsParam):
         else:
             assert False, default
 
+    def getValue(self):
+        return int(self.edit.text())
+
 
 class QDMGraphicsParam_float(QDMGraphicsParam):
     def initLayout(self):
@@ -382,6 +411,9 @@ class QDMGraphicsParam_float(QDMGraphicsParam):
         else:
             assert False, default
 
+    def getValue(self):
+        return float(self.edit.text())
+
 
 
 class QDMGraphicsParam_string(QDMGraphicsParam):
@@ -390,6 +422,9 @@ class QDMGraphicsParam_string(QDMGraphicsParam):
 
     def setDefault(self, default):
         self.edit.setText(default)
+
+    def getValue(self):
+        return str(self.edit.text())
 
 
 class QDMGraphicsNode(QGraphicsItem):
@@ -406,41 +441,47 @@ class QDMGraphicsNode(QGraphicsItem):
         self.title.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT)
 
         self.params = []
-        self.sockets = []
+        self.inputs = []
+        self.outputs = []
+        self.name = None
+        self.ident = 'No{}'.format(random.randrange(1, 100000))
 
-    def initSockets(self, title, inputs=(), outputs=(), params=()):
-        self.title.setPlainText(title)
+    def setName(self, name):
+        self.name = name
+        self.title.setPlainText(name)
 
+    def initSockets(self, inputs=(), outputs=(), params=()):
         y = TEXT_HEIGHT * 0.1
 
-        self.params = []
-        for index, (type, label, default) in enumerate(params):
+        self.params.clear()
+        for index, (type, name, defl) in enumerate(params):
             param = eval('QDMGraphicsParam_' + type)(self)
             rect = QRectF(HORI_MARGIN, y, self.width - HORI_MARGIN * 2, 0)
             param.setGeometry(rect)
-            param.setLabel(label)
-            param.setDefault(default)
+            param.setName(name)
+            param.setDefault(defl)
             self.params.append(param)
             y += param.geometry().height()
 
         y += TEXT_HEIGHT * 0.5
 
-        self.sockets = []
-        for index, label in enumerate(inputs):
+        self.inputs.clear()
+        for index, name in enumerate(inputs):
             socket = QDMGraphicsSocket(self)
             socket.setPos(0, y)
-            socket.setLabel(label)
+            socket.setName(name)
             socket.setIsOutput(False)
-            self.sockets.append(socket)
+            self.inputs.append(socket)
             y += TEXT_HEIGHT
 
-        for index, label in enumerate(outputs):
+        self.outputs.clear()
+        for index, name in enumerate(outputs):
             socket = QDMGraphicsSocket(self)
             index += len(params) + len(inputs)
             socket.setPos(0, y)
-            socket.setLabel(label)
+            socket.setName(name)
             socket.setIsOutput(True)
-            self.sockets.append(socket)
+            self.outputs.append(socket)
             y += TEXT_HEIGHT
 
         y += TEXT_HEIGHT * 0.75
@@ -486,6 +527,15 @@ class QDMNodeEditorWidget(QWidget):
         self.layout.addWidget(self.view)
 
         self.scene = None
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            exit()
+
+        if event.key() == Qt.Key_F5:
+            self.scene.dumpGraph()
+
+        super().keyPressEvent(event)
 
     def setScene(self, scene):
         self.scene = scene
