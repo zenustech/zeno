@@ -455,6 +455,9 @@ class QDMNodeEditorWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self.descs = {}
+        self.nodes = []
+
         self.setGeometry(200, 200, 800, 600)
         self.setWindowTitle('Node Editor')
 
@@ -466,30 +469,20 @@ class QDMNodeEditorWidget(QWidget):
         self.view = QDMGraphicsView(self)
         self.view.setScene(self.scene)
 
-        node1 = QDMGraphicsNode()
-        node1.initSockets('Add',
-                ['Input1', 'Input2'],
-                ['Output1'],
-                )
-        node1.setPos(-200, -100)
-        self.scene.addItem(node1)
-
-        node1 = QDMGraphicsNode()
-        node1.initSockets('Mul',
-                ['Input1', 'Input2'],
-                ['Output1'],
-                [('int', 'RK_Order', '3 1'), ('string', 'path', 'pig.obj')]
-                )
-        node1.setPos(-200, 100)
-        self.scene.addItem(node1)
-
-        node2 = QDMGraphicsNode()
-        node2.initSockets('Sub',
-                ['Input1', 'Input2'],
-                ['Output1'],
-                [('float', 'TimeStep', '0.04 0')]
-                )
-        node2.setPos(100, 100)
-        self.scene.addItem(node2)
-
         self.layout.addWidget(self.view)
+
+    def makeNode(self, name):
+        desc = self.descs[name]
+        node = QDMGraphicsNode()
+        node.initSockets(name,
+                desc.inputs,
+                desc.outputs,
+                desc.params)
+        return node
+
+    def addNode(self, node):
+        self.nodes.append(node)
+        self.scene.addItem(node)
+
+    def setDescriptors(self, descs):
+        self.descs = descs

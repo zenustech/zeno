@@ -1,5 +1,12 @@
+from collections import namedtuple
+
 from .desc import parse_descriptor_line
 from .run import run_script
+
+
+class Descriptor(namedtuple('Descriptor',
+    'inputs, outputs, params, categories')):
+    pass
 
 
 class ExecutionContext:
@@ -16,7 +23,6 @@ for frame in range({nframes}):
     execute(frame)
 '''
         run_script(script, capture_output=False)
-        return descs
 
     def get_descriptors(self):
         script = self.header + f'''
@@ -26,6 +32,8 @@ print('=--=', descs, '=--=')
         output = run_script(script, capture_output=True)
         descs = output.split(b'=--=')[1]
         descs = descs.decode()
-        descs = descs.splitline()
+        descs = descs.splitlines()
         descs = [parse_descriptor_line(line) for line in descs]
+        descs = {x[0]: Descriptor(*x[1:]) for x in descs if x is not None}
+        print(descs)
         return descs
