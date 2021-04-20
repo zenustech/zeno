@@ -2,7 +2,6 @@
 Node Editor UI
 '''
 
-import json
 import random
 
 from PyQt5.QtWidgets import *
@@ -24,19 +23,58 @@ class QDMGraphicsScene(QGraphicsScene):
     def dumpGraph(self):
         nodes = {}
         for node in self.nodes:
-            inputs = []
+            inputs = {}
             for socket in node.inputs:
                 assert not socket.isOutput
-                source = None
+                data = None
                 if socket.hasAnyEdge():
                     srcSocket = socket.getTheOnlyEdge().srcSocket
-                    source = srcSocket.node.ident, srcSocket.name
-                inputs.append(source)
+                    data = srcSocket.node.ident, srcSocket.name
+                inputs[socket.name] = data
 
-            data = dict(name=node.name, inputs=inputs)
+            params = {}
+            for param in node.params:
+                value = param.getValue()
+                params[param.name] = value
+
+            data = dict(name=node.name, inputs=inputs, params=params)
             nodes[node.ident] = data
 
-        print(json.dumps(nodes))
+        return nodes
+
+    def loadGraph(self, graph):
+        edges = []
+        nodes = []
+
+        self.nodes.clear()
+        for ident, data in graph.items():
+            name = data['name']
+            inputs = data['inputs']
+            params = data['params']
+
+            node = self.makeNode(name)
+            node.setIdent(ident)
+            node.setName(name)
+
+            for name, value in params.items():
+                node.params[name].setValue(value)
+
+            for name, input in inputs.items():
+                dest = node.inputs[name]
+                edges.append((dest, input))
+
+            self.addNode(node)
+            nodes[ident] = node
+
+        for dest, (ident, name) in edges:
+            source = nodes[ident].outputs[name]
+            self.addEdge(source, dest)
+
+    def addEdge(self, src, dst):
+        edge = QDMGraphicsEdge()
+        edge.setSrcSocket(src)
+        edge.setDstSocket(dst)
+        self.scene().addItem(edge)
 
     def makeNode(self, name):
         desc = self.descs[name]
@@ -173,10 +211,7 @@ class QDMGraphicsView(QGraphicsView):
         else:
             return False
 
-        edge = QDMGraphicsEdge()
-        edge.setSrcSocket(src)
-        edge.setDstSocket(dst)
-        self.scene().addItem(edge)
+        self.scene().addEdge(src, dst)
         return True
 
 
@@ -352,10 +387,13 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
         self.label.setText(name)
 
     def setDefault(self, default):
-        raise NotImplementedError
+        self.setValue(default)
 
     def getValue(self):
         raise NotImplementedError
+
+    def setValue(self, value):
+        self.edit.setText(str(value))
 
 
 class QDMGraphicsParam_int(QDMGraphicsParam):
@@ -369,15 +407,15 @@ class QDMGraphicsParam_int(QDMGraphicsParam):
         default = [int(x) for x in default.split()]
         if len(default) == 1:
             x = default[0]
-            self.edit.setText(str(x))
+            self.setValue(x)
         elif len(default) == 2:
             x, xmin = default
-            self.edit.setText(str(x))
+            self.setValue(x)
             self.validator.setBottom(xmin)
             print(xmin)
         elif len(default) == 3:
             x, xmin, xmax = default
-            self.edit.setText(str(x))
+            self.setValue(x)
             self.validator.setBottom(xmin)
             self.validator.setTop(xmax)
         else:
@@ -398,14 +436,14 @@ class QDMGraphicsParam_float(QDMGraphicsParam):
         default = [float(x) for x in default.split()]
         if len(default) == 1:
             x = default[0]
-            self.edit.setText(str(x))
+            self.setValue(x)
         elif len(default) == 2:
             x, xmin = default
-            self.edit.setText(str(x))
+            self.setValue(x)
             self.validator.setBottom(xmin)
         elif len(default) == 3:
             x, xmin, xmax = default
-            self.edit.setText(str(x))
+            self.setValue(x)
             self.validator.setBottom(xmin)
             self.validator.setTop(xmax)
         else:
@@ -419,9 +457,6 @@ class QDMGraphicsParam_float(QDMGraphicsParam):
 class QDMGraphicsParam_string(QDMGraphicsParam):
     def initLayout(self):
         super().initLayout()
-
-    def setDefault(self, default):
-        self.edit.setText(default)
 
     def getValue(self):
         return str(self.edit.text())
@@ -445,6 +480,9 @@ class QDMGraphicsNode(QGraphicsItem):
         self.outputs = []
         self.name = None
         self.ident = 'No{}'.format(random.randrange(1, 100000))
+
+    def setIdent(self, ident):
+        self.ident = ident
 
     def setName(self, name):
         self.name = name
