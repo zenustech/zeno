@@ -1,3 +1,5 @@
 pybind11>=2.6.0
 PyQt5>=5.15.0
 numpy>=1.20.0
+opencv-python>=4.5.0
+PyOpenGL>=3.1.0

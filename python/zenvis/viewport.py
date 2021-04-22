@@ -96,7 +96,7 @@ class ViewportWidget(QGLWidget):
         super().__init__(parent)
 
         self.camera = CameraControl()
-        self.startTimer(0)
+        self.startTimer(1000 // 60)
 
     def get_status_string(self):
         fps = core.get_render_fps()

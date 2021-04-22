@@ -25,7 +25,7 @@ class TimelineWidget(QWidget):
         layout.addWidget(self.slider)
         self.setLayout(layout)
 
-        self.startTimer(0)
+        self.startTimer(1000 // 60)
 
     def timerEvent(self, event):
         if self.player.isChecked():

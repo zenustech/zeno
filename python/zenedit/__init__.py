@@ -614,8 +614,6 @@ class QDMFileMenu(QMenu):
                 ('Save &as', QKeySequence.SaveAs),
                 (0, 0),
                 ('&Execute', QKeySequence('F5')),
-                (0, 0),
-                ('&Close', QKeySequence.Close),
         ]
 
         for name, shortcut in acts:
@@ -657,12 +655,16 @@ class NodeEditor(QWidget):
     def reloadDescriptors(self):
         self.scene.setDescriptors(self.launcher.getDescriptors())
 
+    def getMainWindow(self):
+        main = self.parent()
+        while main is not None and not isinstance(main, QMainWindow):
+            main = main.parent()
+        print(main)
+        return main if main is not None else self
+
     def menuTriggered(self, act):
         name = act.text()
-        if name == '&Close':
-            self.close()
-
-        elif name == '&Execute':
+        if name == '&Execute':
             self.do_execute()
 
         elif name == '&New':
