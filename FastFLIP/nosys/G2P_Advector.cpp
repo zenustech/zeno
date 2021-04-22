@@ -18,14 +18,24 @@ namespace zenbase{
             
             auto particles = get_input("Particles")->as<VDBPointsGrid>();
             auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();
+            VDBFloatGrid* solid_sdf = new VDBFloatGrid();
+            if(has_input("SolidSDF"))
+                solid_sdf = get_input("SolidSDF")->as<VDBFloatGrid>();
+            else
+                solid_sdf->m_grid = nullptr;
+            VDBFloat3Grid* solid_vel = new VDBFloat3Grid();
+            if(has_input("SolidVelocity"))
+                solid_vel = get_input("SolidVelocity")->as<VDBFloat3Grid>();
+            else
+                solid_vel->m_grid = nullptr;
             auto velocity_after_p2g = get_input("PostAdvVelocity")->as<VDBFloat3Grid>();
-            FLIP_vdb::Advect(dt, dx, particles->m_grid, velocity->m_grid, velocity_after_p2g->m_grid, smoothness, RK_ORDER);
+            FLIP_vdb::Advect(dt, dx, particles->m_grid, velocity->m_grid, velocity_after_p2g->m_grid, solid_sdf->m_grid, solid_vel->m_grid, smoothness, RK_ORDER);
         }
     };
 
 static int defG2P_Advector = zen::defNodeClass<G2P_Advector>("G2P_Advector",
     { /* inputs: */ {
-        "dt","Particles", "Velocity", "PostAdvVelocity",
+        "dt","Particles", "Velocity", "PostAdvVelocity", "SolidSDF", "SolidVelocity",
     }, 
     /* outputs: */ {
     }, 

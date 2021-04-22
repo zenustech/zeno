@@ -16,18 +16,23 @@ class G:
 G = G()
 G.frameid = 0
 G.substepid = 0
-G.frame_time = 1 / 24
+G.frame_time = 0.03
 G.frame_time_elapsed = 0.0
-G.time_step_integrated = False
+G.has_frame_completed = False
 G.has_substep_executed = False
+G.time_step_integrated = False
 
 
 def substepShouldContinue():
-    return not G.time_step_integrated
+    if G.has_substep_executed:
+        if not G.time_step_integrated:
+            return False
+    return not G.has_frame_completed
 
 def frameBegin():
-    G.time_step_integrated = False
+    G.has_frame_completed = False
     G.has_substep_executed = False
+    G.has_time_step_integrated = False
     G.frame_time_elapsed = 0.0
 
     if G.frameid == 0: addNode('EndFrame', 'endFrame')
@@ -61,7 +66,7 @@ class RunAfterFrame(INode):
     z_categories = 'misc'
 
     def apply(self):
-        cond = G.time_step_integrated
+        cond = G.has_frame_completed
         self.set_output('cond', BooleanObject(cond))
 
 
@@ -99,23 +104,25 @@ class GetFrameTimeElapsed(INode):
 class IntegrateFrameTime(INode):
     z_inputs = ['desired_dt']
     z_outputs = ['actual_dt']
+    z_params = [('float', 'min_scale', '0.0001')]
     z_categories = 'keywords'
 
     def apply(self):
         dt = G.frame_time
-        print(self._INode__inputs)
         if self.has_input('desired_dt'):
             dt = self.get_input('desired_dt')
-            #raise Exception(dt)
-            
+            min_scale = self.get_param('min_scale')
+            dt = abs(dt)
+            dt = max(dt, min_scale * G.frame_time)
 
         if G.frame_time_elapsed + dt >= G.frame_time:
             dt = G.frame_time - G.frame_time_elapsed
             G.frame_time_elapsed = G.frame_time
-            G.time_step_integrated = True
+            G.has_frame_completed = True
         else:
             G.frame_time_elapsed += dt
 
+        G.time_step_integrated = True
         self.set_output('actual_dt', dt)
 
 
