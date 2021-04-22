@@ -2416,7 +2416,13 @@ void simd_vdb_poisson::build_rhs()
 				auto vneib_c = gcoord;
 				vneib_c[channel] += positive_dir;
 				auto vneib_o = idxleaf.coordToOffset(vneib_c);
-				float neibphi = liquid_phi_axr.getValue(vneib_c);
+				auto phineib_c = gcoord;
+				if (positive_dir){
+					phineib_c[channel]++;
+				} else {
+					phineib_c[channel]--;
+				}
+				float neibphi = liquid_phi_axr.getValue(phineib_c);
 
 				//retrieve the scalar variables
 				float weight;
