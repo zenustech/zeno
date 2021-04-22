@@ -2,6 +2,9 @@
 Node Editor UI
 '''
 
+import json
+import random
+
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -14,6 +17,103 @@ class QDMGraphicsScene(QGraphicsScene):
         width, height = 6400, 6400
         self.setSceneRect(-width // 2, -height // 2, width, height)
         self.setBackgroundBrush(QColor('#444444'))
+
+        self.descs = {}
+        self.cates = {}
+        self.nodes = []
+
+    def dumpGraph(self):
+        nodes = {}
+        for node in self.nodes:
+            inputs = {}
+            for name, socket in node.inputs.items():
+                assert not socket.isOutput
+                data = None
+                if socket.hasAnyEdge():
+                    srcSocket = socket.getTheOnlyEdge().srcSocket
+                    data = srcSocket.node.ident, srcSocket.name
+                inputs[name] = data
+
+            params = {}
+            for name, param in node.params.items():
+                value = param.getValue()
+                params[name] = value
+
+            uipos = node.pos().x(), node.pos().y()
+
+            data = {
+                'name': node.name,
+                'inputs': inputs,
+                'params': params,
+                'uipos': uipos,
+            }
+            nodes[node.ident] = data
+
+        return nodes
+
+    def newGraph(self):
+        for node in list(self.nodes):
+            self.removeNode(node)
+        self.nodes.clear()
+
+    def loadGraph(self, nodes):
+        edges = []
+        nodesLut = {}
+
+        for ident, data in nodes.items():
+            name = data['name']
+            inputs = data['inputs']
+            params = data['params']
+            posx, posy = data['uipos']
+
+            node = self.makeNode(name)
+            node.setIdent(ident)
+            node.setName(name)
+            node.setPos(posx, posy)
+
+            for name, value in params.items():
+                node.params[name].setValue(value)
+
+            for name, input in inputs.items():
+                if input is None:
+                    continue
+                dest = node.inputs[name]
+                edges.append((dest, input))
+
+            self.addNode(node)
+            nodesLut[ident] = node
+
+        for dest, (ident, name) in edges:
+            source = nodesLut[ident].outputs[name]
+            self.addEdge(source, dest)
+
+    def addEdge(self, src, dst):
+        edge = QDMGraphicsEdge()
+        edge.setSrcSocket(src)
+        edge.setDstSocket(dst)
+        self.addItem(edge)
+
+    def makeNode(self, name):
+        desc = self.descs[name]
+        node = QDMGraphicsNode()
+        node.setName(name)
+        node.initSockets(desc.inputs, desc.outputs, desc.params)
+        return node
+
+    def addNode(self, node):
+        self.nodes.append(node)
+        self.addItem(node)
+
+    def removeNode(self, node):
+        node.remove()
+        self.nodes.remove(node)
+        self.removeItem(node)
+
+    def setDescriptors(self, descs):
+        self.descs = descs
+        for name, desc in descs.items():
+            for cate in desc.categories:
+                self.cates.setdefault(cate, []).append(name)
 
 
 class QDMGraphicsView(QGraphicsView):
@@ -33,15 +133,10 @@ class QDMGraphicsView(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
 
         self.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.customContextMenuRequested.connect(self.context_menu)
+        self.customContextMenuRequested.connect(self.contextMenu)
 
         self.dragingEdge = None
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
-            exit()
-
-        super().keyPressEvent(event)
+        self.lastContextMenuPos = None
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
@@ -121,11 +216,28 @@ class QDMGraphicsView(QGraphicsView):
 
         self.scale(zoomFactor, zoomFactor)
 
-    def context_menu(self, pos):
+    def contextMenu(self, pos):
         menu = QMenu(self)
-        menu.addAction('Add')
-        menu.addAction('Sub')
+        acts = []
+        for cate_name, type_names in self.scene().cates.items():
+            act = QAction()
+            act.setText(cate_name)
+            childMenu = QMenu()
+            childActs = []
+            for type_name in type_names:
+                childMenu.addAction(type_name)
+            act.setMenu(childMenu)
+            acts.append(act)
+        menu.addActions(acts)
+        menu.triggered.connect(self.menuTriggered)
+        self.lastContextMenuPos = self.mapToScene(pos)
         menu.exec_(self.mapToGlobal(pos))
+
+    def menuTriggered(self, act):
+        name = act.text()
+        node = self.scene().makeNode(name)
+        node.setPos(self.lastContextMenuPos)
+        self.scene().addNode(node)
 
     def addEdge(self, a, b):
         if a is None or b is None:
@@ -138,10 +250,7 @@ class QDMGraphicsView(QGraphicsView):
         else:
             return False
 
-        edge = QDMGraphicsEdge()
-        edge.setSrcSocket(src)
-        edge.setDstSocket(dst)
-        self.scene().addItem(edge)
+        self.scene().addEdge(src, dst)
         return True
 
 
@@ -234,6 +343,10 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.edges = set()
 
         self.node = parent
+        self.name = None
+
+    def hasAnyEdge(self):
+        return len(self.edges) != 0
 
     def getTheOnlyEdge(self):
         assert not self.isOutput
@@ -253,8 +366,9 @@ class QDMGraphicsSocket(QGraphicsItem):
     def setIsOutput(self, isOutput):
         self.isOutput = isOutput
 
-    def setLabel(self, label):
-        self.label.setPlainText(label)
+    def setName(self, name):
+        self.name = name
+        self.label.setPlainText(name)
 
     def getCirclePos(self):
         basePos = self.node.pos() + self.pos()
@@ -281,6 +395,10 @@ class QDMGraphicsSocket(QGraphicsItem):
         painter.setPen(pen)
         painter.drawEllipse(*self.getCircleBounds())
 
+    def remove(self):
+        for edge in list(self.edges):
+            edge.remove()
+
 
 class QDMGraphicsParam(QGraphicsProxyWidget):
     def __init__(self, parent=None):
@@ -296,6 +414,8 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
         self.setWidget(self.widget)
         self.setContentsMargins(0, 0, 0, 0)
 
+        self.name = None
+
     def initLayout(self):
         self.edit = QLineEdit()
         self.label = QLabel()
@@ -305,11 +425,18 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
         self.layout.addWidget(self.edit)
         self.layout.setContentsMargins(0, 0, 0, 0)
 
-    def setLabel(self, label):
-        self.label.setText(label)
+    def setName(self, name):
+        self.name = name
+        self.label.setText(name)
 
     def setDefault(self, default):
+        self.setValue(default)
+
+    def getValue(self):
         raise NotImplementedError
+
+    def setValue(self, value):
+        self.edit.setText(str(value))
 
 
 class QDMGraphicsParam_int(QDMGraphicsParam):
@@ -323,19 +450,22 @@ class QDMGraphicsParam_int(QDMGraphicsParam):
         default = [int(x) for x in default.split()]
         if len(default) == 1:
             x = default[0]
-            self.edit.setText(str(x))
+            self.setValue(x)
         elif len(default) == 2:
             x, xmin = default
-            self.edit.setText(str(x))
+            self.setValue(x)
             self.validator.setBottom(xmin)
             print(xmin)
         elif len(default) == 3:
             x, xmin, xmax = default
-            self.edit.setText(str(x))
+            self.setValue(x)
             self.validator.setBottom(xmin)
             self.validator.setTop(xmax)
         else:
             assert False, default
+
+    def getValue(self):
+        return int(self.edit.text())
 
 
 class QDMGraphicsParam_float(QDMGraphicsParam):
@@ -349,18 +479,21 @@ class QDMGraphicsParam_float(QDMGraphicsParam):
         default = [float(x) for x in default.split()]
         if len(default) == 1:
             x = default[0]
-            self.edit.setText(str(x))
+            self.setValue(x)
         elif len(default) == 2:
             x, xmin = default
-            self.edit.setText(str(x))
+            self.setValue(x)
             self.validator.setBottom(xmin)
         elif len(default) == 3:
             x, xmin, xmax = default
-            self.edit.setText(str(x))
+            self.setValue(x)
             self.validator.setBottom(xmin)
             self.validator.setTop(xmax)
         else:
             assert False, default
+
+    def getValue(self):
+        return float(self.edit.text())
 
 
 
@@ -368,8 +501,8 @@ class QDMGraphicsParam_string(QDMGraphicsParam):
     def initLayout(self):
         super().initLayout()
 
-    def setDefault(self, default):
-        self.edit.setText(default)
+    def getValue(self):
+        return str(self.edit.text())
 
 
 class QDMGraphicsNode(QGraphicsItem):
@@ -385,42 +518,57 @@ class QDMGraphicsNode(QGraphicsItem):
         self.title.setDefaultTextColor(QColor('#eeeeee'))
         self.title.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT)
 
-        self.params = []
-        self.sockets = []
+        self.params = {}
+        self.inputs = {}
+        self.outputs = {}
+        self.name = None
+        self.ident = 'No{}'.format(random.randrange(1, 100000))
 
-    def initSockets(self, title, inputs=(), outputs=(), params=()):
-        self.title.setPlainText(title)
+    def remove(self):
+        for socket in list(self.inputs.values()):
+            socket.remove()
+        for socket in list(self.outputs.values()):
+            socket.remove()
 
+    def setIdent(self, ident):
+        self.ident = ident
+
+    def setName(self, name):
+        self.name = name
+        self.title.setPlainText(name)
+
+    def initSockets(self, inputs=(), outputs=(), params=()):
         y = TEXT_HEIGHT * 0.1
 
-        self.params = []
-        for index, (type, label, default) in enumerate(params):
+        self.params.clear()
+        for index, (type, name, defl) in enumerate(params):
             param = eval('QDMGraphicsParam_' + type)(self)
             rect = QRectF(HORI_MARGIN, y, self.width - HORI_MARGIN * 2, 0)
             param.setGeometry(rect)
-            param.setLabel(label)
-            param.setDefault(default)
-            self.params.append(param)
+            param.setName(name)
+            param.setDefault(defl)
+            self.params[name] = param
             y += param.geometry().height()
 
         y += TEXT_HEIGHT * 0.5
 
-        self.sockets = []
-        for index, label in enumerate(inputs):
+        self.inputs.clear()
+        for index, name in enumerate(inputs):
             socket = QDMGraphicsSocket(self)
             socket.setPos(0, y)
-            socket.setLabel(label)
+            socket.setName(name)
             socket.setIsOutput(False)
-            self.sockets.append(socket)
+            self.inputs[name] = socket
             y += TEXT_HEIGHT
 
-        for index, label in enumerate(outputs):
+        self.outputs.clear()
+        for index, name in enumerate(outputs):
             socket = QDMGraphicsSocket(self)
             index += len(params) + len(inputs)
             socket.setPos(0, y)
-            socket.setLabel(label)
+            socket.setName(name)
             socket.setIsOutput(True)
-            self.sockets.append(socket)
+            self.outputs[name] = socket
             y += TEXT_HEIGHT
 
         y += TEXT_HEIGHT * 0.75
@@ -451,6 +599,30 @@ class QDMGraphicsNode(QGraphicsItem):
         painter.drawPath(pathOutline.simplified())
 
 
+class QDMFileMenu(QMenu):
+    def __init__(self):
+        super().__init__()
+
+        self.setTitle('&File')
+
+        acts = [
+                ('&New', QKeySequence.New),
+                ('&Open', QKeySequence.Open),
+                ('&Save', QKeySequence.Save),
+                ('Save &as', QKeySequence.SaveAs),
+                (0, 0),
+                ('E&xit', QKeySequence.Close),
+        ]
+
+        for name, shortcut in acts:
+            if not name:
+                self.addSeparator()
+                continue
+            action = QAction(name, self)
+            action.setShortcut(shortcut)
+            self.addAction(action)
+
+
 class QDMNodeEditorWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -462,34 +634,60 @@ class QDMNodeEditorWidget(QWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
 
-        self.scene = QDMGraphicsScene()
+        self.menubar = QMenuBar()
+        self.menu = QDMFileMenu()
+        self.menu.triggered.connect(self.menuTriggered)
+        self.menubar.addMenu(self.menu)
+        self.layout.addWidget(self.menubar)
+
         self.view = QDMGraphicsView(self)
-        self.view.setScene(self.scene)
-
-        node1 = QDMGraphicsNode()
-        node1.initSockets('Add',
-                ['Input1', 'Input2'],
-                ['Output1'],
-                )
-        node1.setPos(-200, -100)
-        self.scene.addItem(node1)
-
-        node1 = QDMGraphicsNode()
-        node1.initSockets('Mul',
-                ['Input1', 'Input2'],
-                ['Output1'],
-                [('int', 'RK_Order', '3 1'), ('string', 'path', 'pig.obj')]
-                )
-        node1.setPos(-200, 100)
-        self.scene.addItem(node1)
-
-        node2 = QDMGraphicsNode()
-        node2.initSockets('Sub',
-                ['Input1', 'Input2'],
-                ['Output1'],
-                [('float', 'TimeStep', '0.04 0')]
-                )
-        node2.setPos(100, 100)
-        self.scene.addItem(node2)
-
         self.layout.addWidget(self.view)
+
+        self.scene = None
+        self.current_path = None
+
+    def menuTriggered(self, act):
+        name = act.text()
+        if name == 'E&xit':
+            exit()
+
+        if name == '&New':
+            self.scene.newGraph()
+
+        elif name == '&Open':
+            path, kind = QFileDialog.getOpenFileName(self, 'File to Open',
+                    '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+            if path != '':
+                self.do_open(path)
+                self.current_path = path
+
+        elif name == 'Save &as' or (name == 'Save' and self.current_path is None):
+            path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
+                    '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+            if path != '':
+                self.do_save(path)
+                self.current_path = path
+
+        elif name == '&Save':
+            self.do_save(self.current_path)
+
+    def do_save(self, path):
+        graph = self.scene.dumpGraph()
+        with open(path, 'w') as f:
+            json.dump(graph, f)
+
+    def do_open(self, path):
+        with open(path, 'r') as f:
+            graph = json.load(f)
+        self.scene.newGraph()
+        self.scene.loadGraph(graph)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            exit()
+
+        super().keyPressEvent(event)
+
+    def setScene(self, scene):
+        self.scene = scene
+        self.view.setScene(self.scene)

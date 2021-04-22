@@ -1,5 +1,30 @@
-from .desc import parse_descriptor_line
+from collections import namedtuple
+
 from .run import run_script
+
+
+def parse_descriptor_line(line):
+    z_name, rest = line.strip().split(':', maxsplit=1)
+    assert rest.startswith('(') and rest.endswith(')'), (n_name, rest)
+    inputs, outputs, params, categories = rest.strip('()').split(')(')
+
+    z_inputs = [name for name in inputs.split(',') if name]
+    z_outputs = [name for name in outputs.split(',') if name]
+    z_categories = [name for name in categories.split(',') if name]
+
+    z_params = []
+    for param in params.split(','):
+        if not param:
+            continue
+        type, name, defl = param.split(':')
+        z_params.append((type, name, defl))
+
+    return z_name, z_inputs, z_outputs, z_params, z_categories
+
+
+class Descriptor(namedtuple('Descriptor',
+    'inputs, outputs, params, categories')):
+    pass
 
 
 class ExecutionContext:
@@ -8,15 +33,14 @@ class ExecutionContext:
 import zen
 '''
 
-    def launch_script(self, script):
+    def launch_script(self, script, nframes=1):
         script = self.header + f'''
 {script}
 for frame in range({nframes}):
     print('FRAME:', frame)
-    execute(frame)
+    execute()
 '''
         run_script(script, capture_output=False)
-        return descs
 
     def get_descriptors(self):
         script = self.header + f'''
@@ -25,7 +49,7 @@ print('=--=', descs, '=--=')
 '''
         output = run_script(script, capture_output=True)
         descs = output.split(b'=--=')[1]
-        descs = descs.decode()
-        descs = descs.splitline()
-        descs = [parse_descriptor_line(line) for line in descs]
+        descs = descs.decode().splitlines()
+        descs = [parse_descriptor_line(line) for line in descs if ':' in line]
+        descs = {name: Descriptor(*args) for name, *args in descs}
         return descs

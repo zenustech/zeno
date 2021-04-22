@@ -3,6 +3,7 @@ build
 rubbish.bin
 pruned
 imgui.ini
+*.zsg
 
 # vim files
 .*.swp
