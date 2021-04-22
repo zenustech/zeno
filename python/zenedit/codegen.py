@@ -1,6 +1,12 @@
 def topology_sort(nodes):
     order = []
     visited = set()
+    portalDeps = {}
+
+    for ident, data in nodes.items():
+        if data['name'] == 'PortalIn':
+            idname = data['params']['name']
+            portalDeps[idname] = ident
 
     def touch(ident):
         if ident in visited:
@@ -9,6 +15,11 @@ def topology_sort(nodes):
 
         data = nodes[ident]
         inputs = data['inputs']
+
+        if data['name'] == 'PortalOut':
+            idname = data['params']['name']
+            srcIdent = portalDeps[idname]
+            touch(srcIdent)
 
         for name, input in inputs.items():
             if input is None:
