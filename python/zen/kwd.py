@@ -16,7 +16,7 @@ class G:
 G = G()
 G.frameid = 0
 G.substepid = 0
-G.frame_time = 1 / 24
+G.frame_time = 0.03
 G.frame_time_elapsed = 0.0
 G.has_frame_completed = False
 G.has_substep_executed = False
@@ -104,12 +104,16 @@ class GetFrameTimeElapsed(INode):
 class IntegrateFrameTime(INode):
     z_inputs = ['desired_dt']
     z_outputs = ['actual_dt']
+    z_params = [('float', 'min_scale', '0.0001')]
     z_categories = 'keywords'
 
     def apply(self):
         dt = G.frame_time
         if self.has_input('desired_dt'):
             dt = self.get_input('desired_dt')
+            min_scale = self.get_param('min_scale')
+            dt = abs(dt)
+            dt = max(dt, min_scale * G.frame_time)
 
         if G.frame_time_elapsed + dt >= G.frame_time:
             dt = G.frame_time - G.frame_time_elapsed
