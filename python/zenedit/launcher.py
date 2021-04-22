@@ -37,7 +37,7 @@ zen.loadLibrary('build/FastFLIP/libFLIPlib.so')
 
     def launchGraph(self, graph, nframes=1):
         script = generate_script(graph)
-        self.launchScript(script)
+        self.launchScript(script, nframes)
 
     def launchScript(self, script, nframes=1):
         script = self.header + f'''

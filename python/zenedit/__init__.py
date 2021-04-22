@@ -16,7 +16,7 @@ class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        width, height = 6400, 6400
+        width, height = 64000, 64000
         self.setSceneRect(-width // 2, -height // 2, width, height)
         self.setBackgroundBrush(QColor('#444444'))
 
@@ -615,7 +615,7 @@ class QDMFileMenu(QMenu):
                 (0, 0),
                 ('&Execute', QKeySequence('F5')),
         ]
-
+        
         for name, shortcut in acts:
             if not name:
                 self.addSeparator()
@@ -651,6 +651,25 @@ class NodeEditor(QWidget):
         self.view.setScene(self.scene)
 
         self.reloadDescriptors()
+        self.InitExecute()
+
+    def InitExecute(self):
+        self.textbox = QLineEdit(self)
+        self.textbox.move(20, 40)
+        self.textbox.resize(30,30)
+        
+        # Create a button in the window
+        self.button = QPushButton('Execute', self)
+        self.button.move(60,40)
+        
+        # connect button to function on_click
+        self.button.clicked.connect(self.on_click) 
+
+    @pyqtSlot()
+    def on_click(self):
+        textboxValue = self.textbox.text()
+        graph = self.scene.dumpGraph()
+        self.launcher.launchGraph(graph, int(textboxValue))
 
     def reloadDescriptors(self):
         self.scene.setDescriptors(self.launcher.getDescriptors())
