@@ -1,10 +1,39 @@
+def topology_sort(nodes):
+    order = []
+    visited = set()
+
+    def touch(ident):
+        if ident in visited:
+            return
+        visited.add(ident)
+
+        data = nodes[ident]
+        inputs = data['inputs']
+
+        for name, input in inputs.items():
+            if input is None:
+                continue
+
+            srcIdent, srcSockName = input
+            touch(srcIdent)
+
+        order.append(ident)
+
+    for ident in nodes.keys():
+        touch(ident)
+
+    return order
+
+
 def generate_script(nodes):
     lines = []
 
     lines.append('def substep():')
     lines.append('\tzen.substepBegin()')
 
-    for ident, data in nodes.items():
+    sortedIdents = topology_sort(nodes)
+    for ident in sortedIdents:
+        data = nodes[ident]
         name = data['name']
         inputs = data['inputs']
         params = data['params']
