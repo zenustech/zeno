@@ -52,7 +52,7 @@ def convert(in_data):
             value = parseParamValue(paramType, valstr)
             parameters[paramName] = value
 
-        uiPosition = posx * 1.5 - 640, posy * 1.5 - 480
+        uiPosition = posx * 1.2, posy * 1.2
 
         nodes[name] = {
             'name': type,
