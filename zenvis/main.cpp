@@ -48,7 +48,6 @@ void look_perspective(
     view = glm::lookAt(center - back * radius, center, up);
     proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.05, 500.0);
   }
-
 }
 
 void set_program_uniforms(Program *pro) {
