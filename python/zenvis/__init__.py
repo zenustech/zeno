@@ -13,7 +13,7 @@ class MainWindow(QMainWindow):
         super().__init__(parent)
 
         self.setWindowTitle('zenvis')
-        self.setGeometry(200, 200, 1100, 650)
+        self.setGeometry(200, 200, 1400, 720)
 
         scrn_size = QDesktopWidget().geometry()
         self_size = self.geometry()
@@ -29,13 +29,14 @@ class MainWindow(QMainWindow):
         self.mainsplit.setOpaqueResize(True)
         self.mainsplit.addWidget(self.viewport)
         self.mainsplit.addWidget(self.editor)
-        self.mainsplit.setStretchFactor(0, 6)
-        self.mainsplit.setStretchFactor(1, 3)
+        self.mainsplit.setStretchFactor(0, 5)
+        self.mainsplit.setStretchFactor(1, 2)
 
         self.central = QWidget()
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.mainsplit)
         self.layout.addWidget(self.timeline)
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self.central.setLayout(self.layout)
 
         self.setCentralWidget(self.central)

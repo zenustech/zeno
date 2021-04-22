@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-from .procutils import run_script
+from .procutils import run_script, go
 from .codegen import generate_script
 
 
@@ -45,7 +45,7 @@ for frame in range({nframes}):
     print('FRAME:', frame)
     execute()
 '''
-        run_script(script, capture_output=False)
+        go(run_script, script, capture_output=False)
 
     def getDescriptors(self):
         script = self.header + f'''
