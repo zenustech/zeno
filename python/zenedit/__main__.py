@@ -17,12 +17,5 @@ win.setScene(scene)
 
 scene.setDescriptors(ctx.get_descriptors())
 
-node = scene.makeNode('ReadObjMesh')
-node.setPos(-200, -100)
-scene.addNode(node)
-node = scene.makeNode('ViewMesh')
-node.setPos(100, 100)
-scene.addNode(node)
-
 win.show()
 sys.exit(app.exec_())

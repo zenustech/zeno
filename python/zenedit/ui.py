@@ -133,10 +133,10 @@ class QDMGraphicsView(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
 
         self.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.customContextMenuRequested.connect(self.context_menu)
+        self.customContextMenuRequested.connect(self.contextMenu)
 
         self.dragingEdge = None
-        self.last_context_menu_pos = None
+        self.lastContextMenuPos = None
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
@@ -216,7 +216,7 @@ class QDMGraphicsView(QGraphicsView):
 
         self.scale(zoomFactor, zoomFactor)
 
-    def context_menu(self, pos):
+    def contextMenu(self, pos):
         menu = QMenu(self)
         acts = []
         for cate_name, type_names in self.scene().cates.items():
@@ -229,15 +229,14 @@ class QDMGraphicsView(QGraphicsView):
             act.setMenu(childMenu)
             acts.append(act)
         menu.addActions(acts)
-        menu.triggered.connect(self.menu_triggered)
-        self.last_context_menu_pos = self.mapToScene(pos)
+        menu.triggered.connect(self.menuTriggered)
+        self.lastContextMenuPos = self.mapToScene(pos)
         menu.exec_(self.mapToGlobal(pos))
 
-    def menu_triggered(self, act):
+    def menuTriggered(self, act):
         name = act.text()
         node = self.scene().makeNode(name)
-        print(self.last_context_menu_pos)
-        node.setPos(self.last_context_menu_pos)
+        node.setPos(self.lastContextMenuPos)
         self.scene().addNode(node)
 
     def addEdge(self, a, b):
@@ -607,12 +606,12 @@ class QDMFileMenu(QMenu):
         self.setTitle('&File')
 
         acts = [
-                ('New', QKeySequence.New),
-                ('Open', QKeySequence.Open),
-                ('Save', QKeySequence.Save),
-                ('Save as', QKeySequence.SaveAs),
+                ('&New', QKeySequence.New),
+                ('&Open', QKeySequence.Open),
+                ('&Save', QKeySequence.Save),
+                ('Save &as', QKeySequence.SaveAs),
                 (0, 0),
-                ('Exit', QKeySequence.Close),
+                ('E&xit', QKeySequence.Close),
         ]
 
         for name, shortcut in acts:
@@ -635,41 +634,41 @@ class QDMNodeEditorWidget(QWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
 
+        self.menubar = QMenuBar()
+        self.menu = QDMFileMenu()
+        self.menu.triggered.connect(self.menuTriggered)
+        self.menubar.addMenu(self.menu)
+        self.layout.addWidget(self.menubar)
+
         self.view = QDMGraphicsView(self)
         self.layout.addWidget(self.view)
 
         self.scene = None
         self.current_path = None
 
-        self.menubar = QMenuBar()
-        self.menu = QDMFileMenu()
-        self.menubar.addMenu(self.menu)
-
-        self.layout.addWidget(self.menubar)
-
-        self.menu.triggered.connect(self.menu_triggered)
-
-    def menu_triggered(self, act):
+    def menuTriggered(self, act):
         name = act.text()
-        if name == 'Exit':
+        if name == 'E&xit':
             exit()
 
-        if name == 'New':
+        if name == '&New':
             self.scene.newGraph()
 
-        elif name == 'Open':
+        elif name == '&Open':
             path, kind = QFileDialog.getOpenFileName(self, 'File to Open',
                     '', 'Zensim Graph File(*.zsg);; All Files(*);;')
             if path != '':
                 self.do_open(path)
+                self.current_path = path
 
-        elif name == 'Save As' or (name == 'Save' and self.current_path is None):
+        elif name == 'Save &as' or (name == 'Save' and self.current_path is None):
             path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
                     '', 'Zensim Graph File(*.zsg);; All Files(*);;')
             if path != '':
                 self.do_save(path)
+                self.current_path = path
 
-        elif name == 'Save':
+        elif name == '&Save':
             self.do_save(self.current_path)
 
     def do_save(self, path):
