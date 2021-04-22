@@ -32,6 +32,7 @@ class ZenLauncher:
     def __init__(self):
         self.header = '''
 import zen
+zen.loadLibrary('build/FastFLIP/libFLIPlib.so')
 '''
 
     def launchGraph(self, graph, nframes=1):
