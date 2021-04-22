@@ -28,8 +28,11 @@ def topology_sort(nodes):
 def generate_script(nodes):
     lines = []
 
-    lines.append('def substep():')
-    lines.append('\tzen.substepBegin()')
+    def p(fmt, *args):
+        lines.append(fmt.format(*args))
+
+    p('def substep():')
+    p('\tzen.substepBegin()')
 
     sortedIdents = topology_sort(nodes)
     for ident in sortedIdents:
@@ -38,31 +41,29 @@ def generate_script(nodes):
         inputs = data['inputs']
         params = data['params']
 
-        lines.append('\tif zen.G.substepid == 0: zen.addNode({!r}, {!r})'
-                .format(name, ident))
+        p('\tif zen.G.substepid == 0: zen.addNode({!r}, {!r})', name, ident)
 
         for name, value in params.items():
-            lines.append('\tzen.setNodeParam({!r}, {!r}, {!r})'
-                    .format(ident, name, value))
+            p('\tzen.setNodeParam({!r}, {!r}, {!r})', ident, name, value)
 
         for name, input in inputs.items():
             if input is None:
                 continue
             srcIdent, srcSockName = input
             input = srcIdent + '::' + srcSockName
-            lines.append('\tzen.setNodeInput({!r}, {!r}, {!r})'
-                    .format(ident, name, input))
+            p('\tzen.setNodeInput({!r}, {!r}, {!r})', ident, name, input)
 
-        lines.append('\tzen.applyNode({!r})'
-                .format(ident))
+        p('\tzen.applyNode({!r})', ident)
 
-    lines.append('\tzen.substepEnd()')
-    lines.append('')
+    p('\tzen.substepEnd()')
+    p('')
 
-    lines.append('def execute():')
-    lines.append('\tzen.frameBegin()')
-    lines.append('\twhile zen.substepShouldContinue():')
-    lines.append('\t\tsubstep()')
-    lines.append('\tzen.frameEnd()')
+    p('def execute():')
+    p('\tzen.frameBegin()')
+    p('\twhile zen.substepShouldContinue():')
+    p('\t\tsubstep()')
+    p('\tzen.frameEnd()')
 
-    return '\n'.join(lines)
+    res = '\n'.join(lines)
+    print(res)
+    return res

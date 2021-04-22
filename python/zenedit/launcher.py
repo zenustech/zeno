@@ -1,6 +1,7 @@
 from collections import namedtuple
 
-from .run import run_script
+from .procutils import run_script
+from .codegen import generate_script
 
 
 def parse_descriptor_line(line):
@@ -34,7 +35,6 @@ import zen
 '''
 
     def launchGraph(self, graph, nframes=1):
-        from .gen import generate_script
         script = generate_script(graph)
         self.launchScript(script)
 

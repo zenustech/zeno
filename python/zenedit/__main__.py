@@ -4,8 +4,8 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
-from .ui import QDMNodeEditorWidget, QDMGraphicsScene
-from .ctx import ZenLauncher
+from .editorui import QDMNodeEditorWidget, QDMGraphicsScene
+from .launcher import ZenLauncher
 
 
 app = QApplication(sys.argv)
