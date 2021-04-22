@@ -1,9 +1,8 @@
-from . import core
-
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 
+from .coredll import core
 
 
 class TimelineWidget(QWidget):

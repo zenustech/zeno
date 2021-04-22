@@ -627,13 +627,12 @@ class QDMFileMenu(QMenu):
             self.addAction(action)
 
 
-class QDMNodeEditorWidget(QWidget):
+class NodeEditor(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.current_path = None
 
-        self.setGeometry(200, 200, 800, 600)
         self.setWindowTitle('Node Editor')
 
         self.layout = QVBoxLayout()

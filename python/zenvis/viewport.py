@@ -1,5 +1,3 @@
-from . import core
-
 import math
 import time
 import numpy as np
@@ -12,6 +10,8 @@ from PyQt5.QtOpenGL import QGLWidget
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
+
+from .coredll import core
 
 
 class CameraControl:
