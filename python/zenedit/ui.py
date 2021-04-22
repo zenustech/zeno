@@ -2,6 +2,7 @@
 Node Editor UI
 '''
 
+import json
 import random
 
 from PyQt5.QtWidgets import *
@@ -573,6 +574,29 @@ class QDMGraphicsNode(QGraphicsItem):
         painter.drawPath(pathOutline.simplified())
 
 
+class QDMFileMenu(QMenu):
+    def __init__(self):
+        super().__init__()
+
+        self.setTitle('File')
+
+        acts = [
+                ('Open', QKeySequence.Open),
+                ('Save', QKeySequence.Save),
+                ('Save as', QKeySequence.SaveAs),
+                (0, 0),
+                ('Exit', QKeySequence.Close),
+        ]
+
+        for name, shortcut in acts:
+            if not name:
+                self.addSeparator()
+                continue
+            action = QAction(name, self)
+            action.setShortcut(shortcut)
+            self.addAction(action)
+
+
 class QDMNodeEditorWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -588,13 +612,49 @@ class QDMNodeEditorWidget(QWidget):
         self.layout.addWidget(self.view)
 
         self.scene = None
+        self.current_path = None
+
+        self.menubar = QMenuBar()
+        self.menu = QDMFileMenu()
+        self.menubar.addMenu(self.menu)
+
+        self.layout.addWidget(self.menubar)
+
+        self.menu.triggered.connect(self.menu_triggered)
+
+    def menu_triggered(self, act):
+        name = act.text()
+        if name == 'Exit':
+            exit()
+
+        elif name == 'Open':
+            path, kind = QFileDialog.getOpenFileName(self, 'File to Open',
+                    '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+            if path != '':
+                self.do_open(path)
+
+        elif name == 'Save As' or (name == 'Save' and self.current_path is None):
+            path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
+                    '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+            if path != '':
+                self.do_save(path)
+
+        elif name == 'Save':
+            self.do_save(self.current_path)
+
+    def do_save(self, path):
+        graph = self.scene.dumpGraph()
+        with open(path, 'w') as f:
+            json.dump(graph, f)
+
+    def do_open(self, path):
+        with open(path, 'r') as f:
+            graph = json.load(f)
+        self.scene.loadGraph(graph)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
             exit()
-
-        if event.key() == Qt.Key_F5:
-            self.scene.dumpGraph()
 
         super().keyPressEvent(event)
 
