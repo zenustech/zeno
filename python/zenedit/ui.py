@@ -18,6 +18,7 @@ class QDMGraphicsScene(QGraphicsScene):
         self.setBackgroundBrush(QColor('#444444'))
 
         self.descs = {}
+        self.cates = {}
         self.nodes = []
 
     def dumpGraph(self):
@@ -42,12 +43,12 @@ class QDMGraphicsScene(QGraphicsScene):
 
         return nodes
 
-    def loadGraph(self, graph):
+    def loadGraph(self, nodes):
         edges = []
-        nodes = []
+        nodesLut = {}
 
         self.nodes.clear()
-        for ident, data in graph.items():
+        for ident, data in nodes.items():
             name = data['name']
             inputs = data['inputs']
             params = data['params']
@@ -64,7 +65,7 @@ class QDMGraphicsScene(QGraphicsScene):
                 edges.append((dest, input))
 
             self.addNode(node)
-            nodes[ident] = node
+            nodesLut[ident] = node
 
         for dest, (ident, name) in edges:
             source = nodes[ident].outputs[name]
@@ -93,6 +94,9 @@ class QDMGraphicsScene(QGraphicsScene):
 
     def setDescriptors(self, descs):
         self.descs = descs
+        for name, desc in descs.items():
+            for cate in desc.categories:
+                self.cates.setdefault(cate, []).append(name)
 
 
 class QDMGraphicsView(QGraphicsView):
@@ -115,6 +119,7 @@ class QDMGraphicsView(QGraphicsView):
         self.customContextMenuRequested.connect(self.context_menu)
 
         self.dragingEdge = None
+        self.last_context_menu_pos = None
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
@@ -196,9 +201,27 @@ class QDMGraphicsView(QGraphicsView):
 
     def context_menu(self, pos):
         menu = QMenu(self)
-        menu.addAction('Add')
-        menu.addAction('Sub')
+        acts = []
+        for cate_name, type_names in self.scene().cates.items():
+            act = QAction()
+            act.setText(cate_name)
+            childMenu = QMenu()
+            childActs = []
+            for type_name in type_names:
+                childMenu.addAction(type_name)
+            act.setMenu(childMenu)
+            acts.append(act)
+        menu.addActions(acts)
+        menu.triggered.connect(self.menu_triggered)
+        self.last_context_menu_pos = self.mapToScene(pos)
         menu.exec_(self.mapToGlobal(pos))
+
+    def menu_triggered(self, act):
+        name = act.text()
+        node = self.scene().makeNode(name)
+        print(self.last_context_menu_pos)
+        node.setPos(self.last_context_menu_pos)
+        self.scene().addNode(node)
 
     def addEdge(self, a, b):
         if a is None or b is None:
