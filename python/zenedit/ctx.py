@@ -27,13 +27,18 @@ class Descriptor(namedtuple('Descriptor',
     pass
 
 
-class ExecutionContext:
+class ZenLauncher:
     def __init__(self):
         self.header = '''
 import zen
 '''
 
-    def launch_script(self, script, nframes=1):
+    def launchGraph(self, graph, nframes=1):
+        from .gen import generate_script
+        script = generate_script(graph)
+        self.launchScript(script)
+
+    def launchScript(self, script, nframes=1):
         script = self.header + f'''
 {script}
 for frame in range({nframes}):
@@ -42,7 +47,7 @@ for frame in range({nframes}):
 '''
         run_script(script, capture_output=False)
 
-    def get_descriptors(self):
+    def getDescriptors(self):
         script = self.header + f'''
 descs = zen.dumpDescriptors()
 print('=--=', descs, '=--=')

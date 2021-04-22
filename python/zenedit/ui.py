@@ -611,7 +611,9 @@ class QDMFileMenu(QMenu):
                 ('&Save', QKeySequence.Save),
                 ('Save &as', QKeySequence.SaveAs),
                 (0, 0),
-                ('E&xit', QKeySequence.Close),
+                ('&Execute', QKeySequence('F5')),
+                (0, 0),
+                ('&Close', QKeySequence.Close),
         ]
 
         for name, shortcut in acts:
@@ -644,14 +646,21 @@ class QDMNodeEditorWidget(QWidget):
         self.layout.addWidget(self.view)
 
         self.scene = None
+        self.launcher = None
         self.current_path = None
+
+    def setLauncher(self, launcher):
+        self.launcher = launcher
 
     def menuTriggered(self, act):
         name = act.text()
-        if name == 'E&xit':
-            exit()
+        if name == '&Close':
+            self.close()
 
-        if name == '&New':
+        elif name == '&Execute':
+            self.do_execute()
+
+        elif name == '&New':
             self.scene.newGraph()
 
         elif name == '&Open':
@@ -661,7 +670,7 @@ class QDMNodeEditorWidget(QWidget):
                 self.do_open(path)
                 self.current_path = path
 
-        elif name == 'Save &as' or (name == 'Save' and self.current_path is None):
+        elif name == 'Save &as' or (name == '&Save' and self.current_path is None):
             path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
                     '', 'Zensim Graph File(*.zsg);; All Files(*);;')
             if path != '':
@@ -670,6 +679,10 @@ class QDMNodeEditorWidget(QWidget):
 
         elif name == '&Save':
             self.do_save(self.current_path)
+
+    def do_execute(self):
+        graph = self.scene.dumpGraph()
+        self.launcher.launchGraph(graph)
 
     def do_save(self, path):
         graph = self.scene.dumpGraph()
@@ -684,7 +697,7 @@ class QDMNodeEditorWidget(QWidget):
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
-            exit()
+            self.close()
 
         super().keyPressEvent(event)
 
