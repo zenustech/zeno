@@ -7,13 +7,11 @@ namespace zenvis {
 
 struct GraphicParticles : IGraphic {
   static inline std::unique_ptr<ShaderProgram> prog_;
-
   size_t vertex_count;
   std::unique_ptr<Buffer> vbo;
 
   explicit GraphicParticles(std::vector<char> const &serial) {
     vertex_count = serial.size() / (6 * sizeof(float));
-
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     vbo->bind_data(serial.data(), serial.size());
   }
@@ -21,7 +19,7 @@ struct GraphicParticles : IGraphic {
   virtual void draw() override {
     auto pro = get_program();
     set_program_uniforms(pro);
-
+    glEnable(GL_POINT_SPRITE_ARB);
     vbo->bind();
     vbo->attribute(/*index=*/0,
         /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 6,
@@ -33,6 +31,7 @@ struct GraphicParticles : IGraphic {
     vbo->disable_attribute(0);
     vbo->disable_attribute(1);
     vbo->unbind();
+    glDisable(GL_POINT_SPRITE_ARB);
   }
 
   Program *get_program() {
