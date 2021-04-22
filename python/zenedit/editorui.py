@@ -9,6 +9,8 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
+from .launcher import ZenLauncher
+
 
 class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
@@ -629,6 +631,8 @@ class QDMNodeEditorWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self.current_path = None
+
         self.setGeometry(200, 200, 800, 600)
         self.setWindowTitle('Node Editor')
 
@@ -645,12 +649,14 @@ class QDMNodeEditorWidget(QWidget):
         self.view = QDMGraphicsView(self)
         self.layout.addWidget(self.view)
 
-        self.scene = None
-        self.launcher = None
-        self.current_path = None
+        self.launcher = ZenLauncher()
+        self.scene = QDMGraphicsScene()
+        self.view.setScene(self.scene)
 
-    def setLauncher(self, launcher):
-        self.launcher = launcher
+        self.reloadDescriptors()
+
+    def reloadDescriptors(self):
+        self.scene.setDescriptors(self.launcher.getDescriptors())
 
     def menuTriggered(self, act):
         name = act.text()
@@ -700,7 +706,3 @@ class QDMNodeEditorWidget(QWidget):
             self.close()
 
         super().keyPressEvent(event)
-
-    def setScene(self, scene):
-        self.scene = scene
-        self.view.setScene(self.scene)
