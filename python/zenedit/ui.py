@@ -26,42 +26,57 @@ class QDMGraphicsScene(QGraphicsScene):
         nodes = {}
         for node in self.nodes:
             inputs = {}
-            for socket in node.inputs:
+            for name, socket in node.inputs.items():
                 assert not socket.isOutput
                 data = None
                 if socket.hasAnyEdge():
                     srcSocket = socket.getTheOnlyEdge().srcSocket
                     data = srcSocket.node.ident, srcSocket.name
-                inputs[socket.name] = data
+                inputs[name] = data
 
             params = {}
-            for param in node.params:
+            for name, param in node.params.items():
                 value = param.getValue()
-                params[param.name] = value
+                params[name] = value
 
-            data = dict(name=node.name, inputs=inputs, params=params)
+            uipos = node.pos().x(), node.pos().y()
+
+            data = {
+                'name': node.name,
+                'inputs': inputs,
+                'params': params,
+                'uipos': uipos,
+            }
             nodes[node.ident] = data
 
         return nodes
+
+    def newGraph(self):
+        for node in list(self.nodes):
+            self.removeNode(node)
+        self.nodes.clear()
 
     def loadGraph(self, nodes):
         edges = []
         nodesLut = {}
 
-        self.nodes.clear()
         for ident, data in nodes.items():
             name = data['name']
             inputs = data['inputs']
             params = data['params']
+            posx, posy = data['uipos']
 
             node = self.makeNode(name)
             node.setIdent(ident)
             node.setName(name)
+            node.setPos(posx, posy)
 
             for name, value in params.items():
                 node.params[name].setValue(value)
 
             for name, input in inputs.items():
+                if input is None:
+                    continue
                 dest = node.inputs[name]
                 edges.append((dest, input))
 
@@ -69,14 +84,14 @@ class QDMGraphicsScene(QGraphicsScene):
             nodesLut[ident] = node
 
         for dest, (ident, name) in edges:
-            source = nodes[ident].outputs[name]
+            source = nodesLut[ident].outputs[name]
             self.addEdge(source, dest)
 
     def addEdge(self, src, dst):
         edge = QDMGraphicsEdge()
         edge.setSrcSocket(src)
         edge.setDstSocket(dst)
-        self.scene().addItem(edge)
+        self.addItem(edge)
 
     def makeNode(self, name):
         desc = self.descs[name]
@@ -90,6 +105,7 @@ class QDMGraphicsScene(QGraphicsScene):
         self.addItem(node)
 
     def removeNode(self, node):
+        node.remove()
         self.nodes.remove(node)
         self.removeItem(node)
 
@@ -380,6 +396,10 @@ class QDMGraphicsSocket(QGraphicsItem):
         painter.setPen(pen)
         painter.drawEllipse(*self.getCircleBounds())
 
+    def remove(self):
+        for edge in list(self.edges):
+            edge.remove()
+
 
 class QDMGraphicsParam(QGraphicsProxyWidget):
     def __init__(self, parent=None):
@@ -499,11 +519,17 @@ class QDMGraphicsNode(QGraphicsItem):
         self.title.setDefaultTextColor(QColor('#eeeeee'))
         self.title.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT)
 
-        self.params = []
-        self.inputs = []
-        self.outputs = []
+        self.params = {}
+        self.inputs = {}
+        self.outputs = {}
         self.name = None
         self.ident = 'No{}'.format(random.randrange(1, 100000))
+
+    def remove(self):
+        for socket in list(self.inputs.values()):
+            socket.remove()
+        for socket in list(self.outputs.values()):
+            socket.remove()
 
     def setIdent(self, ident):
         self.ident = ident
@@ -522,7 +548,7 @@ class QDMGraphicsNode(QGraphicsItem):
             param.setGeometry(rect)
             param.setName(name)
             param.setDefault(defl)
-            self.params.append(param)
+            self.params[name] = param
             y += param.geometry().height()
 
         y += TEXT_HEIGHT * 0.5
@@ -533,7 +559,7 @@ class QDMGraphicsNode(QGraphicsItem):
             socket.setPos(0, y)
             socket.setName(name)
             socket.setIsOutput(False)
-            self.inputs.append(socket)
+            self.inputs[name] = socket
             y += TEXT_HEIGHT
 
         self.outputs.clear()
@@ -543,7 +569,7 @@ class QDMGraphicsNode(QGraphicsItem):
             socket.setPos(0, y)
             socket.setName(name)
             socket.setIsOutput(True)
-            self.outputs.append(socket)
+            self.outputs[name] = socket
             y += TEXT_HEIGHT
 
         y += TEXT_HEIGHT * 0.75
@@ -578,9 +604,10 @@ class QDMFileMenu(QMenu):
     def __init__(self):
         super().__init__()
 
-        self.setTitle('File')
+        self.setTitle('&File')
 
         acts = [
+                ('New', QKeySequence.New),
                 ('Open', QKeySequence.Open),
                 ('Save', QKeySequence.Save),
                 ('Save as', QKeySequence.SaveAs),
@@ -627,6 +654,9 @@ class QDMNodeEditorWidget(QWidget):
         if name == 'Exit':
             exit()
 
+        if name == 'New':
+            self.scene.newGraph()
+
         elif name == 'Open':
             path, kind = QFileDialog.getOpenFileName(self, 'File to Open',
                     '', 'Zensim Graph File(*.zsg);; All Files(*);;')
@@ -650,6 +680,7 @@ class QDMNodeEditorWidget(QWidget):
     def do_open(self, path):
         with open(path, 'r') as f:
             graph = json.load(f)
+        self.scene.newGraph()
         self.scene.loadGraph(graph)
 
     def keyPressEvent(self, event):
