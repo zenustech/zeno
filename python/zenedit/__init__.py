@@ -651,21 +651,21 @@ class NodeEditor(QWidget):
         self.view.setScene(self.scene)
 
         self.reloadDescriptors()
-        self.InitExecute()
+        self.initExecute()
 
-    def InitExecute(self):
+    def initExecute(self):
         self.textbox = QLineEdit(self)
         self.textbox.move(20, 40)
-        self.textbox.resize(30,30)
+        self.textbox.resize(30, 30)
+        self.textbox.setText('1')
         
         # Create a button in the window
         self.button = QPushButton('Execute', self)
-        self.button.move(60,40)
+        self.button.move(60, 40)
         
         # connect button to function on_click
         self.button.clicked.connect(self.on_click) 
 
-    @pyqtSlot()
     def on_click(self):
         textboxValue = self.textbox.text()
         graph = self.scene.dumpGraph()

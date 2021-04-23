@@ -82,7 +82,7 @@ class NumericVec2(INode):
     z_categories = 'numeric'
 
     def apply(self):
-        vec2 = np.array([self.get_param('x'), self.get_param('y')])
+        vec2 = [self.get_param('x'), self.get_param('y')]
         self.set_output('vec2', vec2)
 
 
@@ -93,7 +93,7 @@ class NumericVec3(INode):
     z_categories = 'numeric'
 
     def apply(self):
-        vec3 = np.array([self.get_param('x'), self.get_param('y'), self.get_param('z')])
+        vec3 = [self.get_param('x'), self.get_param('y'), self.get_param('z')]
         self.set_output('vec3', vec3)
 
 
@@ -104,7 +104,7 @@ class NumericVec4(INode):
     z_categories = 'numeric'
 
     def apply(self):
-        vec4 = np.array([self.get_param('x'), self.get_param('y'), self.get_param('z'), self.get_param('w'),])
+        vec4 = [self.get_param('x'), self.get_param('y'), self.get_param('z'), self.get_param('w')]
         self.set_output('vec4', vec4)
 
 
