@@ -15,36 +15,35 @@ namespace zenbase{
     
     struct FieldAddVector : zen::INode{
         virtual void apply() override {
-            auto dt = get_input("dt")->as<zenbase::NumericObject>()->get<float>();
-            float vx = std::get<float>(get_param("vx"));
-            float vy = std::get<float>(get_param("vy"));
-            float vz = std::get<float>(get_param("vz"));
+            // auto dt = get_input("dt")->as<zenbase::NumericObject>()->get<float>();
+            // float vx = std::get<float>(get_param("vx"));
+            // float vy = std::get<float>(get_param("vy"));
+            // float vz = std::get<float>(get_param("vz"));
+            auto ivec3 = get_input("invec3")->as<zenbase::NumericObject>()->get<std::array<float,3>>();
             auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();
             if(has_input("FieldWeight")) {
                 auto face_weight = get_input("FieldWeight")->as<VDBFloat3Grid>();
             
                 FLIP_vdb::field_add_vector(velocity->m_grid, 
-                face_weight->m_grid, vx, vy, vz, dt);
+                face_weight->m_grid, ivec3[0],ivec3[1],ivec3[2], 1.0);
             }
             else {
                 using TmpT = decltype(std::declval<VDBFloat3Grid>().m_grid);
                 TmpT tmp{nullptr};
                 FLIP_vdb::field_add_vector(velocity->m_grid, 
-                tmp, vx, vy, vz, dt);
+                tmp, ivec3[0],ivec3[1],ivec3[2], 1.0);
             }
         }
     };
 
 static int defFieldAddVector = zen::defNodeClass<FieldAddVector>("FieldAddVector",
     { /* inputs: */ {
-        "dt", "Velocity", "FieldWeight", 
+        "invec3", "Velocity", "FieldWeight", 
     }, 
     /* outputs: */ {
     }, 
     /* params: */ {
-       {"float", "vx", "0.0"},
-       {"float", "vy", "0.0"},
-       {"float", "vz", "0.0"},
+       
     }, 
     
     /* category: */ {

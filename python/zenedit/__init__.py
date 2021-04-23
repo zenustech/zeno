@@ -178,6 +178,7 @@ class QDMGraphicsView(QGraphicsView):
                     edge.updatePath()
                     self.scene().addItem(edge)
                     self.dragingEdge = edge, item, True
+                    self.scene().update()
 
             else:
                 item = self.itemAt(event.pos())
@@ -654,7 +655,7 @@ class NodeEditor(QWidget):
         self.initExecute()
         self.msgSc = QShortcut(QKeySequence('Del'), self)
         self.msgSc.activated.connect(self.on_delete)
-        
+
     def initExecute(self):
         self.textbox = QLineEdit(self)
         self.textbox.move(20, 40)

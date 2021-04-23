@@ -76,7 +76,7 @@ def setCppObject(name, obj):
         setBooleanObject(name, bool(obj))
     elif isinstance(obj, Reference):
         setReference(name, str(obj))
-    elif isinstance(obj, (int, float)):
+    elif isinstance(obj, (int, float, list, tuple)):
         setNumericObject(name, obj)
     else:
         raise RuntimeError(f'unsupported type {type(obj)} to pass into C++')
