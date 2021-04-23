@@ -93,6 +93,8 @@ class QDMGraphicsScene(QGraphicsScene):
         edge = QDMGraphicsEdge()
         edge.setSrcSocket(src)
         edge.setDstSocket(dst)
+        edge.updatePosition()
+        edge.updatePath()
         self.addItem(edge)
 
     def makeNode(self, name):
@@ -175,7 +177,6 @@ class QDMGraphicsView(QGraphicsView):
                     else:
                         edge.setSrcPos(pos)
                         edge.setDstPos(item.getCirclePos())
-                    edge.updatePath()
                     self.scene().addItem(edge)
                     self.dragingEdge = edge, item, True
                     self.scene().update()
@@ -186,6 +187,7 @@ class QDMGraphicsView(QGraphicsView):
                 if isinstance(item, QDMGraphicsSocket):
                     self.addEdge(srcItem, item)
                 self.scene().removeItem(edge)
+                self.scene().update()
                 self.dragingEdge = None
 
         super().mousePressEvent(event)
@@ -318,6 +320,8 @@ class QDMGraphicsEdge(QDMGraphicsPath):
     def updatePosition(self):
         self.srcPos = self.srcSocket.getCirclePos()
         self.dstPos = self.dstSocket.getCirclePos()
+
+        print('updatePos', self.srcPos, self.dstPos)
 
     def paint(self, painter, styleOptions, widget=None):
         self.updatePosition()
