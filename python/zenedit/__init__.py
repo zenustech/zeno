@@ -321,7 +321,6 @@ class QDMGraphicsEdge(QDMGraphicsPath):
         self.srcPos = self.srcSocket.getCirclePos()
         self.dstPos = self.dstSocket.getCirclePos()
 
-        print('updatePos', self.srcPos, self.dstPos)
 
     def paint(self, painter, styleOptions, widget=None):
         self.updatePosition()
