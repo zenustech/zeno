@@ -652,7 +652,9 @@ class NodeEditor(QWidget):
 
         self.reloadDescriptors()
         self.initExecute()
-
+        self.msgSc = QShortcut(QKeySequence('Del'), self)
+        self.msgSc.activated.connect(self.on_delete)
+        
     def initExecute(self):
         self.textbox = QLineEdit(self)
         self.textbox.move(20, 40)
@@ -662,14 +664,25 @@ class NodeEditor(QWidget):
         # Create a button in the window
         self.button = QPushButton('Execute', self)
         self.button.move(60, 40)
-        
         # connect button to function on_click
         self.button.clicked.connect(self.on_click) 
+
+    def initDelete(self):
+        # Create a button in the window
+        self.button = QPushButton('Delete', self)
+        self.button.move(160, 40)
+        self.button.clicked.connect(self.on_delete) 
 
     def on_click(self):
         textboxValue = self.textbox.text()
         graph = self.scene.dumpGraph()
         self.launcher.launchGraph(graph, int(textboxValue))
+
+    def on_delete(self):
+        itemList = self.scene.selectedItems()
+        if not itemList: return
+        for item in itemList :
+            self.scene.removeNode(item)
 
     def reloadDescriptors(self):
         self.scene.setDescriptors(self.launcher.getDescriptors())
