@@ -1,5 +1,5 @@
 from .py import *
-
+import numpy as np
 
 portals = {}
 
@@ -73,6 +73,39 @@ class NumericFloat(INode):
     def apply(self):
         value = self.get_param('value')
         self.set_output('value', value)
+
+
+@defNodeClass
+class NumericVec2(INode):
+    z_params = [('float', 'x', '0.0'), ('float', 'y', '0.0')]
+    z_outputs =['vec2']
+    z_categories = 'numeric'
+
+    def apply(self):
+        vec2 = np.array([self.get_param('x'), self.get_param('y')])
+        self.set_output('vec2', vec2)
+
+
+@defNodeClass
+class NumericVec3(INode):
+    z_params = [('float', 'x', '0.0'), ('float', 'y', '0.0'), ('float', 'z', '0.0')]
+    z_outputs =['vec3']
+    z_categories = 'numeric'
+
+    def apply(self):
+        vec3 = np.array([self.get_param('x'), self.get_param('y'), self.get_param('z')])
+        self.set_output('vec3', vec3)
+
+
+@defNodeClass
+class NumericVec4(INode):
+    z_params = [('float', 'x', '0.0'), ('float', 'y', '0.0'), ('float', 'z', '0.0'), ('float', 'w', '0.0')]
+    z_outputs =['vec4']
+    z_categories = 'numeric'
+
+    def apply(self):
+        vec4 = np.array([self.get_param('x'), self.get_param('y'), self.get_param('z'), self.get_param('w'),])
+        self.set_output('vec4', vec4)
 
 
 @defNodeClass

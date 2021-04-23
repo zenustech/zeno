@@ -23,7 +23,7 @@ struct NBodySolver : zen::INode {
   }
 
   void step() {
-    auto dt = get_input("dt")->as<NumericObject>()->value;
+    auto dt = get_input("dt")->as<NumericObject>()->get<float>();
     auto G = std::get<float>(get_param("G"));
     auto M = std::get<float>(get_param("M"));
     auto r0 = std::get<float>(get_param("r0"));

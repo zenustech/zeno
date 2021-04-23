@@ -15,9 +15,10 @@ namespace zenbase{
         virtual void apply() override {
             auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();
             float dx = std::get<float>(get_param("dx"));
+	    float dt = FLIP_vdb::cfl(velocity->m_grid);
+            printf("CFL dt: %f\n", dt);
             auto out_dt = zen::IObject::make<zenbase::NumericObject>();
-            out_dt->value = FLIP_vdb::cfl(velocity->m_grid);
-            printf("CFL dt: %f\n",out_dt->value);
+            out_dt->set<float>(dt);
             set_output("cfl_dt", out_dt);
         }
     };

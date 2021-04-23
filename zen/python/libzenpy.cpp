@@ -35,17 +35,14 @@ bool getBooleanObject(std::string name) {
 }
 
 
-void setNumericObject(std::string name, float value) {
+void setNumericObject(std::string name, zenbase::NumericValue value) {
   auto obj = std::make_unique<zenbase::NumericObject>();
   obj->value = value;
   zen::setObject(name, std::move(obj));
 }
 
-float getNumericObject(std::string name) {
+zenbase::NumericValue getNumericObject(std::string name) {
   auto obj = zen::getObject(name)->as<zenbase::NumericObject>();
-  printf("getNumericObject: %f\n", obj->value);
-  for (int i = 0; i < 1; i++)
-    printf("=========================\n");
   return obj->value;
 }
 

@@ -11,7 +11,7 @@ namespace zenbase{
     
     struct G2P_Advector : zen::INode{
         virtual void apply() override {
-            auto dt = get_input("dt")->as<zenbase::NumericObject>()->value;
+            auto dt = get_input("dt")->as<zenbase::NumericObject>()->get<float>();
             auto dx = std::get<float>(get_param("dx"));
             auto smoothness = std::get<float>(get_param("pic_smoothness"));
             auto RK_ORDER = std::get<int>(get_param("RK_ORDER"));
