@@ -72,7 +72,7 @@ struct Server {
 
     frm->objects.push_back(std::move(obj));
 
-    sock.writechar('%');  // inform the client that we are ready
+    sock.writechar('%');
     return true;
   }
 

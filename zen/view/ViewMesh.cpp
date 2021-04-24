@@ -1,42 +1,39 @@
 #include <zen/zen.h>
 #include <zen/MeshObject.h>
-#include <Hg/IPC/SharedMemory.hpp>
-#include <Hg/IPC/Socket.hpp>
+#include <Hg/StrUtils.h>
 #include <cstring>
 #include <vector>
+#include "ViewNode.h"
 
 namespace zenbase {
 
-struct ViewMesh : zen::INode {
-  virtual void apply() override {
+struct ViewMesh : ViewNode {
+  virtual std::vector<char> get_shader() override {
+    return std::vector<char>(0);
+  }
 
-    /**************/
+  virtual std::vector<char> get_memory() override {
     auto mesh = get_input("mesh")->as<zenbase::MeshObject>();
     size_t vertex_count = mesh->vertices.size();
-    size_t memsize = vertex_count * 8 * sizeof(float);
-    /**************/
+    std::vector<char> memory(vertex_count * 8 * sizeof(float));
 
-    Socket sock("/tmp/zenipc/command");
-    SharedMemory shm("/tmp/zenipc/memory", memsize);
-    float *memdata = (float *)shm.data();
-
-    /**************/
-    int memi = 0;
+    size_t memi = 0;
+    float *fdata = (float *)memory.data();
     for (int i = 0; i < vertex_count; i++) {
-      memdata[memi++] = mesh->vertices[i].x;
-      memdata[memi++] = mesh->vertices[i].y;
-      memdata[memi++] = mesh->vertices[i].z;
-      memdata[memi++] = mesh->uvs[i].x;
-      memdata[memi++] = mesh->uvs[i].y;
-      memdata[memi++] = mesh->normals[i].x;
-      memdata[memi++] = mesh->normals[i].y;
-      memdata[memi++] = mesh->normals[i].z;
+      fdata[memi++] = mesh->vertices[i].x;
+      fdata[memi++] = mesh->vertices[i].y;
+      fdata[memi++] = mesh->vertices[i].z;
+      fdata[memi++] = mesh->uvs[i].x;
+      fdata[memi++] = mesh->uvs[i].y;
+      fdata[memi++] = mesh->normals[i].x;
+      fdata[memi++] = mesh->normals[i].y;
+      fdata[memi++] = mesh->normals[i].z;
     }
-    /**************/
+    return memory;
+  }
 
-    shm.release();
-    dprintf(sock.filedesc(), "@MESH %zd\n", memsize);
-    sock.readchar();  // wait server to be ready
+  virtual std::string get_data_type() const override {
+    return "MESH";
   }
 };
 
