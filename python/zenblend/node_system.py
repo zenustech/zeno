@@ -80,7 +80,7 @@ def do_add_zensim_node_class(n_name, n_inputs, n_outputs, n_params, category):
         __doc__ = 'Zensim node: ' + n_name
         bl_idname = 'ZensimNodeType_' + n_name
         bl_label = n_name
-        bl_icon = 'PHYSICS'
+        bl_icon = 'BLENDER' if category == 'blender' else 'PHYSICS'
         n_param_names = [name for type, name, defl in n_params]
         n_input_names = [name for name in n_inputs]
 
