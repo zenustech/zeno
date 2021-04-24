@@ -23,7 +23,7 @@ for frame in range({nframes}):
 \texecute()
 '''
     print(script)
-    go(run_script, script)
+    return go(run_script, script)
 
 
 def getDescriptors():

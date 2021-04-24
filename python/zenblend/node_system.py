@@ -184,7 +184,7 @@ class ZensimNode_ExecutionOutput(ZensimTreeNode):
     category = 'blender'
     bl_idname = 'ZensimNodeType_ExecutionOutput'
     bl_label = 'ExecutionOutput'
-    bl_icon = 'PHYSICS'
+    bl_icon = 'BLENDER'
 
     nframes: bpy.props.IntProperty(min=1, default=1,
             description='Number of frames to execute')
