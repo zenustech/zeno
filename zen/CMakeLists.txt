@@ -1,6 +1,7 @@
 file(GLOB PROJECT_SOURCE *.cpp include/*/*.h view/*.cpp base/*.cpp)
 
 add_library(zen SHARED)
+add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)  
 target_include_directories(zen PRIVATE ../external)
 target_link_directories(zen PRIVATE ../external)
 
