@@ -693,6 +693,7 @@ class NodeEditor(QWidget):
         name = act.text()
         if name == '&New':
             self.scene.newGraph()
+            self.current_path = None
 
         elif name == '&Open':
             path, kind = QFileDialog.getOpenFileName(self, 'File to Open',

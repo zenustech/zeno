@@ -17,22 +17,24 @@ def launchGraph(graph, nframes=1):
 def launchScript(script, nframes=1):
     script = std_header + f'''
 {script}
+
 for frame in range({nframes}):
 \tprint('FRAME:', frame)
 \texecute()
 '''
     print(script)
-    go(run_script, script, capture_output=False)
+    go(run_script, script)
 
 
 def getDescriptors():
     script = std_header + f'''
 descs = zen.dumpDescriptors()
-print('=--=', descs, '=--=')
+print(descs)
 '''
-    output = run_script(script, capture_output=True)
-    descs = output.split(b'=--=')[1]
-    descs = descs.decode().splitlines()
+    descs = run_script(script)['descs']
+    if isinstance(descs, bytes):
+        descs = descs.decode()
+    descs = descs.splitlines()
     descs = [parse_descriptor_line(line) for line in descs if ':' in line]
     descs = {name: Descriptor(*args) for name, *args in descs}
     return descs

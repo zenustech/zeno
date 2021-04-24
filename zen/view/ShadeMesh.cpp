@@ -10,7 +10,7 @@ struct ShadeMesh : zen::INode {
   virtual void apply() override {
     auto shad = zen::IObject::make<zenbase::ShaderObject>();
 
-    const std::string basepath = "/home/bate/Develop/zensim/assets/";
+    const std::string basepath = "assets/";
     shad->vert = hg::file_get_content(basepath + "mesh.vert");
     shad->frag = hg::file_get_content(basepath + "mesh.frag");
 

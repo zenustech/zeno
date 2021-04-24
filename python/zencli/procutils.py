@@ -1,20 +1,21 @@
 import os
 import sys
 import tempfile
-import subprocess
 import threading
+from multiprocessing import Pool
+import runpy
 
+def my_run_path(path):
+    result = runpy.run_path(path)
+    return {'descs': result.get('descs', None)}
 
-def run_script(src, capture_output=False):
+def run_script(src):
     with tempfile.TemporaryDirectory() as tmpdir:
         path = os.path.join(tmpdir, 'script.py')
         with open(path, 'w') as f:
             f.write(src)
 
-        if capture_output:
-            return subprocess.check_output([sys.executable, path])
-        else:
-            return subprocess.check_call([sys.executable, path])
+        return Pool().map(my_run_path, [path])[0]
 
 
 def inject_ld_preload(*pathes):
