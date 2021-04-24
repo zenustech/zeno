@@ -1,3 +1,4 @@
+#include <Hg/StrUtils.h>
 #include <Hg/IterUtils.h>
 #include <Hg/Archive.hpp>
 #include "stdafx.hpp"
@@ -11,16 +12,16 @@ struct MyProgram : Program {
   MyProgram(std::vector<char> const &shader) {
     vs = std::make_unique<Shader>(GL_VERTEX_SHADER);
     fs = std::make_unique<Shader>(GL_FRAGMENT_SHADER);
-    /*auto _ = hg::split_str(hg::assign_conv<std::string>(shader), '\0');
+    auto _ = hg::split_str(hg::assign_conv<std::string>(shader), '\0');
     assert(_.size() == 2);
     auto vert = _[0], frag = _[1];
     printf("=================\n");
-    printf("%s\n", vert.c_str());
+    printf("(VERT)\n%s\n", vert.c_str());
     printf("=================\n");
-    printf("%s\n", frag.c_str());
-    printf("=================\n");*/
-    auto vert = hg::Archive::getString("particles.vert");
-    auto frag = hg::Archive::getString("particles.frag");
+    printf("(FRAG)\n%s\n", frag.c_str());
+    printf("=================\n");
+    //auto vert = hg::Archive::getString("particles.vert");
+    //auto frag = hg::Archive::getString("particles.frag");
     vs->compile(vert);
     fs->compile(frag);
     attach(*vs);

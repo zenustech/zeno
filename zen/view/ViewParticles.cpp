@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/ParticlesObject.h>
+#include <zen/ShaderObject.h>
 #include <Hg/StrUtils.h>
 #include <cstring>
 #include <vector>
@@ -9,7 +10,8 @@ namespace zenbase {
 
 struct ViewParticles : ViewNode {
   virtual std::vector<char> get_shader() override {
-    return std::vector<char>(0);
+    auto shad = get_input("shader")->as<zenbase::ShaderObject>();
+    return shad->serialize();
   }
 
   virtual std::vector<char> get_memory() override {
@@ -40,6 +42,7 @@ struct ViewParticles : ViewNode {
 static int defViewParticles = zen::defNodeClass<ViewParticles>("ViewParticles",
     { /* inputs: */ {
         "pars",
+        "shader",
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {
