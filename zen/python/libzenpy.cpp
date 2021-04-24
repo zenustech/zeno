@@ -30,7 +30,6 @@ void setBooleanObject(std::string name, bool value) {
 
 bool getBooleanObject(std::string name) {
   auto obj = zen::getObject(name)->as<zen::BooleanObject>();
-  printf("getBooleanObject: %d\n", (int)obj->value);
   return obj->value;
 }
 

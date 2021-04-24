@@ -22,12 +22,10 @@ def applyNode(name):
 
 def cpp2pyObject(name):
     obj = npy.getCppObject(name)
-    print('cpp2py', name, obj)
     py.setObject(name, obj)
 
 def py2cppObject(name):
     obj = py.getObject(name)
-    print('py2cpp', name, obj)
     npy.setCppObject(name, obj)
 
 is_cpp2py_table = set()
