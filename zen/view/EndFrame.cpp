@@ -16,7 +16,7 @@ struct EndFrame : zen::INode {
 
   virtual void apply() override {
     Socket sock("/tmp/zenipc/command");
-    dprintf(sock.filedesc(), "@ENDF 0\n");
+    dprintf(sock.filedesc(), "@ENDF 0 0\n");
     sock.readchar();
   }
 };

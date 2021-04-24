@@ -614,8 +614,6 @@ class QDMFileMenu(QMenu):
                 ('&Open', QKeySequence.Open),
                 ('&Save', QKeySequence.Save),
                 ('Save &as', QKeySequence.SaveAs),
-                (0, 0),
-                ('&Execute', QKeySequence('F5')),
         ]
         
         for name, shortcut in acts:
@@ -654,8 +652,6 @@ class NodeEditor(QWidget):
 
         self.reloadDescriptors()
         self.initExecute()
-        self.msgSc = QShortcut(QKeySequence('Del'), self)
-        self.msgSc.activated.connect(self.on_delete)
 
     def initExecute(self):
         self.textbox = QLineEdit(self)
@@ -663,19 +659,17 @@ class NodeEditor(QWidget):
         self.textbox.resize(30, 30)
         self.textbox.setText('1')
         
-        # Create a button in the window
         self.button = QPushButton('Execute', self)
         self.button.move(60, 40)
-        # connect button to function on_click
-        self.button.clicked.connect(self.on_click) 
+        self.button.clicked.connect(self.on_execute) 
 
-    def initDelete(self):
-        # Create a button in the window
-        self.button = QPushButton('Delete', self)
-        self.button.move(160, 40)
-        self.button.clicked.connect(self.on_delete) 
+        self.msgF5 = QShortcut(QKeySequence('F5'), self)
+        self.msgF5.activated.connect(self.on_execute)
 
-    def on_click(self):
+        self.msgDel = QShortcut(QKeySequence('Del'), self)
+        self.msgDel.activated.connect(self.on_delete)
+
+    def on_execute(self):
         textboxValue = self.textbox.text()
         graph = self.scene.dumpGraph()
         self.launcher.launchGraph(graph, int(textboxValue))
@@ -698,10 +692,7 @@ class NodeEditor(QWidget):
 
     def menuTriggered(self, act):
         name = act.text()
-        if name == '&Execute':
-            self.do_execute()
-
-        elif name == '&New':
+        if name == '&New':
             self.scene.newGraph()
 
         elif name == '&Open':
@@ -735,9 +726,3 @@ class NodeEditor(QWidget):
             graph = json.load(f)
         self.scene.newGraph()
         self.scene.loadGraph(graph)
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
-            self.close()
-
-        super().keyPressEvent(event)

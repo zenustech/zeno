@@ -43,9 +43,9 @@ struct Server {
     buf[num] = 0;
     printf("COMMAND: %s\n", buf);
 
-    size_t memsize = 0;
+    size_t memory_size = 0, shader_size = 0;
     char type[32] = {0};
-    sscanf(buf, "@%s%zd", type, &memsize);
+    sscanf(buf, "@%30s%zd%zd", type, &memory_size, &shader_size);
 
     if (!strcmp(type, "ENDF")) {
       frameid++;
@@ -53,7 +53,8 @@ struct Server {
       return false;
     }
 
-    SharedMemory shm("/tmp/zenipc/memory", memsize);
+    SharedMemory shm_memory("/tmp/zenipc/memory", memory_size);
+    SharedMemory shm_shader("/tmp/zenipc/shader", shader_size);
 
     if (frames.find(frameid) == frames.end()) {
       frames[frameid] = std::make_unique<FrameData>();
@@ -61,9 +62,14 @@ struct Server {
     auto const &frm = frames.at(frameid);
 
     auto obj = std::make_unique<ObjectData>();
-    obj->serial = std::make_unique<std::vector<char>>(shm.size());
-    std::memcpy(obj->serial->data(), shm.data(), shm.size());
     obj->type = std::string(type);
+
+    obj->memory = std::make_unique<std::vector<char>>(shm_memory.size());
+    std::memcpy(obj->memory->data(), shm_memory.data(), shm_memory.size());
+
+    obj->shader = std::make_unique<std::vector<char>>(shm_shader.size());
+    std::memcpy(obj->shader->data(), shm_shader.data(), shm_shader.size());
+
     frm->objects.push_back(std::move(obj));
 
     sock.writechar('%');  // inform the client that we are ready

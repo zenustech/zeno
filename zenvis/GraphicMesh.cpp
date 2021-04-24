@@ -1,6 +1,7 @@
 #include "stdafx.hpp"
 #include "ShaderProgram.hpp"
 #include "IGraphic.hpp"
+#include "frames.hpp"
 #include "main.hpp"
 
 namespace zenvis {
@@ -11,11 +12,11 @@ struct GraphicMesh : IGraphic {
   size_t vertex_count;
   std::unique_ptr<Buffer> vbo;
 
-  explicit GraphicMesh(std::vector<char> const &serial) {
-    vertex_count = serial.size() / (6 * sizeof(float));
+  explicit GraphicMesh(ObjectData const &obj) {
+    vertex_count = obj.memory->size() / (6 * sizeof(float));
 
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-    vbo->bind_data(serial.data(), serial.size());
+    vbo->bind_data(obj.memory->data(), obj.memory->size());
   }
 
   virtual void draw() override {
@@ -50,8 +51,8 @@ struct GraphicMesh : IGraphic {
   }
 };
 
-std::unique_ptr<IGraphic> makeGraphicMesh(std::vector<char> const &serial) {
-  return std::make_unique<GraphicMesh>(serial);
+std::unique_ptr<IGraphic> makeGraphicMesh(ObjectData const &obj) {
+  return std::make_unique<GraphicMesh>(obj);
 }
 
 }
