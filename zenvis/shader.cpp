@@ -20,8 +20,6 @@ struct MyProgram : Program {
     printf("=================\n");
     printf("(FRAG)\n%s\n", frag.c_str());
     printf("=================\n");
-    //auto vert = hg::Archive::getString("particles.vert");
-    //auto frag = hg::Archive::getString("particles.frag");
     vs->compile(vert);
     fs->compile(frag);
     attach(*vs);

@@ -8,10 +8,6 @@
 namespace zenbase {
 
 struct ViewMesh : ViewNode {
-  virtual std::vector<char> get_shader() override {
-    return std::vector<char>(0);
-  }
-
   virtual std::vector<char> get_memory() override {
     auto mesh = get_input("mesh")->as<zenbase::MeshObject>();
     size_t vertex_count = mesh->vertices.size();
@@ -40,6 +36,7 @@ struct ViewMesh : ViewNode {
 static int defViewMesh = zen::defNodeClass<ViewMesh>("ViewMesh",
     { /* inputs: */ {
         "mesh",
+        "shader",
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {

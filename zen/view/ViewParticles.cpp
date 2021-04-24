@@ -9,15 +9,9 @@
 namespace zenbase {
 
 struct ViewParticles : ViewNode {
-  virtual std::vector<char> get_shader() override {
-    auto shad = get_input("shader")->as<zenbase::ShaderObject>();
-    return shad->serialize();
-  }
-
   virtual std::vector<char> get_memory() override {
     auto pars = get_input("pars")->as<zenbase::ParticlesObject>();
     size_t vertex_count = pars->pos.size();
-
     std::vector<char> memory(vertex_count * 6 * sizeof(float));
 
     size_t memi = 0;

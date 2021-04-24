@@ -3,13 +3,18 @@
 #include <zen/zen.h>
 #include <Hg/IPC/SharedMemory.hpp>
 #include <Hg/IPC/Socket.hpp>
+#include <zen/ShaderObject.h>
 
 namespace zenbase {
 
 struct ViewNode : zen::INode {
-  virtual std::vector<char> get_shader() = 0;
   virtual std::vector<char> get_memory() = 0;
   virtual std::string get_data_type() const = 0;
+
+  virtual std::vector<char> get_shader() {
+    auto shad = get_input("shader")->as<zenbase::ShaderObject>();
+    return shad->serialize();
+  }
 
   virtual void apply() override {
     Socket sock("/tmp/zenipc/command");

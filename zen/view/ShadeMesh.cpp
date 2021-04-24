@@ -4,19 +4,19 @@
 
 namespace zenbase {
 
-struct ShadeParticles : zen::INode {
+struct ShadeMesh : zen::INode {
   virtual void apply() override {
     auto shad = zen::IObject::make<zenbase::ShaderObject>();
 
     const std::string basepath = "/home/bate/Develop/zensim/zenvis/";
-    shad->vert = hg::file_get_content(basepath + "particles.vert");
-    shad->frag = hg::file_get_content(basepath + "particles.frag");
+    shad->vert = hg::file_get_content(basepath + "mesh.vert");
+    shad->frag = hg::file_get_content(basepath + "mesh.frag");
 
     set_output("shader", shad);
   }
 };
 
-static int defShadeParticles = zen::defNodeClass<ShadeParticles>("ShadeParticles",
+static int defShadeMesh = zen::defNodeClass<ShadeMesh>("ShadeMesh",
     { /* inputs: */ {
     }, /* outputs: */ {
         "shader",

@@ -1,27 +1,26 @@
 #include "stdafx.hpp"
-#include "ShaderProgram.hpp"
 #include "IGraphic.hpp"
 #include "frames.hpp"
+#include "shader.hpp"
 #include "main.hpp"
 
 namespace zenvis {
 
 struct GraphicMesh : IGraphic {
-  static inline std::unique_ptr<ShaderProgram> prog_;
-
+  Program *prog;
   size_t vertex_count;
   std::unique_ptr<Buffer> vbo;
 
   explicit GraphicMesh(ObjectData const &obj) {
     vertex_count = obj.memory->size() / (6 * sizeof(float));
-
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     vbo->bind_data(obj.memory->data(), obj.memory->size());
+    prog = compile_program(*obj.shader);
   }
 
   virtual void draw() override {
-    auto pro = get_program();
-    set_program_uniforms(pro);
+    prog->use();
+    set_program_uniforms(prog);
 
     vbo->bind();
     vbo->attribute(/*index=*/0,
@@ -40,14 +39,6 @@ struct GraphicMesh : IGraphic {
     vbo->disable_attribute(1);
     vbo->disable_attribute(2);
     vbo->unbind();
-  }
-
-  Program *get_program() {
-    if (!prog_)
-      prog_ = std::make_unique<ShaderProgram>("mesh");
-    auto pro = prog_.get();
-    pro->use();
-    return pro;
   }
 };
 
