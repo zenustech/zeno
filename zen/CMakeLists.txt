@@ -1,3 +1,4 @@
+set(CMAKE_CXX_STANDARD 17)
 file(GLOB PROJECT_SOURCE *.cpp include/*/*.h view/*.cpp base/*.cpp)
 
 add_library(zen SHARED)
