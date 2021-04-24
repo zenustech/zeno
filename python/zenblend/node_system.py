@@ -5,6 +5,8 @@ from bpy.types import NodeTree, Node, NodeSocket
 import nodeitems_utils
 from nodeitems_utils import NodeCategory, NodeItem
 
+import zencli
+
 
 
 class ZensimTree(NodeTree):
@@ -53,7 +55,7 @@ user_classes = []
 user_categories = {}
 
 
-def add_zensim_node_class(line):
+def add_zensim_node_class(n_name, n_inputs, n_outputs,):
     line = line.strip()
     if ':' not in line:
         return
@@ -79,7 +81,8 @@ def do_add_zensim_node_class(n_name, n_inputs, n_outputs, n_params, category):
         bl_idname = 'ZensimNodeType_' + n_name
         bl_label = n_name
         bl_icon = 'PHYSICS'
-        n_param_names = {name for type, name, defl in n_params}
+        n_param_names = [name for type, name, defl in n_params]
+        n_input_names = [name for name in n_inputs]
 
         def init(self, context):
             for name in n_inputs:
@@ -199,13 +202,14 @@ nonproc_class = [
 ]
 
 
-def load_user_nodes_from_descriptors(descriptors):
+def load_user_nodes_from_descriptors(descs):
     unregister_user_nodes()
 
     user_classes.clear()
     user_categories.clear()
-    for line in descriptors.splitlines():
-        add_zensim_node_class(line)
+    for n_name, desc in descs.items():
+        do_add_zensim_node_class(n_name, desc.inputs, desc.outputs,
+                desc.params, desc.categories[0])
 
     for cls in nonproc_class:
         user_classes.append(cls)
@@ -246,12 +250,10 @@ def unregister_user_nodes():
 
 
 def register():
+    descs = zencli.getDescriptors()
+    load_user_nodes_from_descriptors(descs)
     for cls in core_classes:
         register_class(cls)
-
-    from .launch_script import get_node_descriptors
-    descs = get_node_descriptors()
-    load_user_nodes_from_descriptors(descs)
 
 
 def unregister():

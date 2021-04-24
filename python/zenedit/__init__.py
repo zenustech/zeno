@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
-from .launcher import ZenLauncher
+import zencli
 
 
 class QDMGraphicsScene(QGraphicsScene):
@@ -646,7 +646,6 @@ class NodeEditor(QWidget):
         self.view = QDMGraphicsView(self)
         self.layout.addWidget(self.view)
 
-        self.launcher = ZenLauncher()
         self.scene = QDMGraphicsScene()
         self.view.setScene(self.scene)
 
@@ -672,7 +671,7 @@ class NodeEditor(QWidget):
     def on_execute(self):
         textboxValue = self.textbox.text()
         graph = self.scene.dumpGraph()
-        self.launcher.launchGraph(graph, int(textboxValue))
+        zencli.launchGraph(graph, int(textboxValue))
 
     def on_delete(self):
         itemList = self.scene.selectedItems()
@@ -681,7 +680,7 @@ class NodeEditor(QWidget):
             item.remove()
 
     def reloadDescriptors(self):
-        self.scene.setDescriptors(self.launcher.getDescriptors())
+        self.scene.setDescriptors(zencli.getDescriptors())
 
     def getMainWindow(self):
         main = self.parent()
@@ -714,7 +713,7 @@ class NodeEditor(QWidget):
 
     def do_execute(self):
         graph = self.scene.dumpGraph()
-        self.launcher.launchGraph(graph)
+        zencli.launchGraph(graph)
 
     def do_save(self, path):
         graph = self.scene.dumpGraph()
