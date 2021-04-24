@@ -15,5 +15,5 @@ void main()
   velocity = vVelocity;
 
   gl_Position = mVP * vec4(position, 1.0);
-  gl_PointSize = 5;
+  gl_PointSize = D_POINT_SIZE;
 }

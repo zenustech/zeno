@@ -2,20 +2,9 @@
 #include <zen/ShaderObject.h>
 #include <Hg/IOUtils.h>
 #include <Hg/StrUtils.h>
+#include "ShaderMacros.h"
 
 namespace zenbase {
-
-struct ShaderMacros {
-  std::string lines;
-
-  void add(std::string const &name, std::string const &value) {
-    lines += "#define " + name + " " + value + "\n";
-  }
-
-  void apply(std::string &source) {
-    source = "#version 330 core\n" + lines + "/**************/\n" + source;
-  }
-};
 
 struct ShadeMesh : zen::INode {
   virtual void apply() override {
