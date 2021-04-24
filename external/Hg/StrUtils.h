@@ -8,7 +8,7 @@
 
 namespace hg {
 
-template <class S, class T>
+template <class T, class S>
 static std::string join_str(std::vector<T> const &elms, S const &delim) {
     std::stringstream ss;
     auto p = elms.begin(), end = elms.end();
@@ -29,19 +29,33 @@ static std::vector<std::string> split_str(std::string const &s, char delimiter) 
     return tokens;
 }
 
+template <class T>
+static inline std::string to_string(T const &value)
+{
+  std::stringstream ss;
+  ss << value;
+  return ss.str();
+}
+
+template <class T>
+static inline T from_string(std::string const &str)
+{
+  std::stringstream ss(str);
+  T value;
+  ss >> value;
+  return value;
+}
+
+template <class T, class S>
+static inline T contains(T const &elms, S const &key) {
+  return elms.find(key) != elms.end();
+}
+
 template <class T, class S>
 static inline T assign_conv(S const &data)
 {
   T ret;
   ret.assign(data.begin(), data.end());
-  return ret;
-}
-
-template <class T, class S>
-static inline T assign_conv(S const &begin, S const &end)
-{
-  T ret;
-  ret.assign(begin, end);
   return ret;
 }
 
