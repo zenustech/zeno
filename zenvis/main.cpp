@@ -58,9 +58,6 @@ void set_program_uniforms(Program *pro) {
   pro->set_uniform("mInvVP", glm::inverse(pers));
   pro->set_uniform("mView", view);
   pro->set_uniform("mProj", proj);
-
-  pro->set_uniform("light.dir", glm::normalize(glm::vec3(1, 2, 3)));
-  pro->set_uniform("light.color", glm::vec3(1, 1, 1));
 }
 
 static std::unique_ptr<VAO> vao;

@@ -45,4 +45,28 @@ static inline T from_string(std::string const &str)
   return value;
 }
 
+class StringBuilder {
+  std::stringstream ss;
+
+public:
+  StringBuilder() = default;
+  StringBuilder(std::string const &str) : ss(str) {}
+
+  operator std::string() {
+    return ss.str();
+  }
+
+  template <class T>
+  StringBuilder &operator<<(T const &value) {
+    ss << value;
+    return *this;
+  }
+
+  template <class T>
+  StringBuilder &operator>>(T &value) {
+    ss >> value;
+    return *this;
+  }
+};
+
 }

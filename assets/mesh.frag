@@ -21,8 +21,6 @@ struct Material {
   float specular;
 };
 
-uniform Light light;
-
 vec3 pbr(Material material, vec3 nrm, vec3 idir, vec3 odir) {
   float roughness = material.roughness;
   float metallic = material.metallic;
@@ -50,17 +48,33 @@ vec3 pbr(Material material, vec3 nrm, vec3 idir, vec3 odir) {
   return brdf * NoL;
 }
 
+vec3 calcRayDir(vec3 pos)
+{
+  vec4 vpos = mVP * vec4(pos, 1);
+  vec2 uv = vpos.xy / vpos.w;
+  vec4 ro = mInvVP * vec4(uv, -1, 1);
+  vec4 re = mInvVP * vec4(uv, +1, 1);
+  vec3 rd = normalize(re.xyz / re.w - ro.xyz / ro.w);
+  return rd;
+}
+
 void main()
 {
   vec3 normal = normalize(iNormal);
-  vec3 viewdir = vec3(0, 0, 1);
+  vec3 viewdir = -calcRayDir(position);
+
   Material material;
-  material.albedo = vec3(1, 1, 1);
-  material.roughness = 0.4;
-  material.metallic = 0.0;
+  material.albedo = D_ALBEDO;
+  material.roughness = D_ROUGHNESS;
+  material.metallic = D_METALLIC;
   material.specular = 0.5;
-  vec3 lightDir = faceforward(light.dir, -light.dir, normal);
-  vec3 strength = pbr(material, normal, lightDir, viewdir);
-  vec3 color = light.color * strength * D_COLOR;
+
+  Light light;
+  light.dir = normalize((mVP * vec4(-1, -2, 5, 0)).xyz);
+  light.dir = faceforward(light.dir, -light.dir, normal);
+  light.color = vec3(1, 1, 1);
+
+  vec3 strength = pbr(material, normal, light.dir, viewdir);
+  vec3 color = light.color * strength;
   fColor = vec4(color, 1.0);
 }
