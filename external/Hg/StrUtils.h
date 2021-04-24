@@ -29,4 +29,20 @@ static std::vector<std::string> split_str(std::string const &s, char delimiter) 
     return tokens;
 }
 
+template <class T, class S>
+static inline T assign_conv(S const &data)
+{
+  T ret;
+  ret.assign(data.begin(), data.end());
+  return ret;
+}
+
+template <class T, class S>
+static inline T assign_conv(S const &begin, S const &end)
+{
+  T ret;
+  ret.assign(begin, end);
+  return ret;
+}
+
 }

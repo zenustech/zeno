@@ -2,15 +2,20 @@
 #include <zen/ParticlesObject.h>
 #include <Hg/IPC/SharedMemory.hpp>
 #include <Hg/IPC/Socket.hpp>
+#include <Hg/StrUtils.h>
 #include <cstring>
 #include <vector>
 
 namespace zenbase {
 
 struct ViewParticles : zen::INode {
-  std::vector<char> shader;
+  std::vector<char> get_shader() {
+    return hg::assign_conv<std::vector<char>, std::string>(
+        "ss\0ww"
+        );
+  }
 
-  std::vector<char> get_memory_data() {
+  std::vector<char> get_memory() {
     auto pars = get_input("pars")->as<zenbase::ParticlesObject>();
     size_t vertex_count = pars->pos.size();
 
@@ -37,11 +42,12 @@ struct ViewParticles : zen::INode {
   virtual void apply() override {
     Socket sock("/tmp/zenipc/command");
 
-    auto memory = get_memory_data();
+    auto memory = get_memory();
     SharedMemory shm_memory("/tmp/zenipc/memory", memory.size());
     std::memcpy(shm_memory.data(), memory.data(), memory.size());
     shm_memory.release();
 
+    auto shader = get_shader();
     SharedMemory shm_shader("/tmp/zenipc/shader", shader.size());
     std::memcpy(shm_shader.data(), shader.data(), shader.size());
     shm_shader.release();
