@@ -9,7 +9,8 @@ class TimelineWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.label = QLabel('0')
+        self.label = QLabel('-')
+        self.status = QLabel('-')
 
         self.slider = QSlider(Qt.Horizontal)
         self.slider.valueChanged.connect(self.value_changed)
@@ -23,15 +24,17 @@ class TimelineWidget(QWidget):
         layout.addWidget(self.player)
         layout.addWidget(self.label)
         layout.addWidget(self.slider)
+        layout.addWidget(self.status)
         self.setLayout(layout)
 
         self.startTimer(1000 // 60)
 
     def timerEvent(self, event):
+        self.slider.setValue(self.frameid)
+        self.label.setText(str(self.frameid))
+        self.status.setText(self.get_status_string())
         if self.player.isChecked():
             self.frameid += 1
-        else:
-            self.frameid = self.frameid
 
     def value_changed(self):
         self.frameid = self.slider.value()
@@ -47,6 +50,9 @@ class TimelineWidget(QWidget):
     @frameid.setter
     def frameid(self, value):
         core.set_curr_frameid(value)
-        value = core.get_curr_frameid()
-        self.label.setText(str(value))
-        self.slider.setValue(value)
+
+    def get_status_string(self):
+        fps = core.get_render_fps()
+        spf = core.get_solver_interval()
+        stat = f'{fps:.1f} FPS | {spf:.02f} secs/step'
+        return stat

@@ -55,7 +55,7 @@ class QDMGraphicsScene(QGraphicsScene):
 
     def newGraph(self):
         for node in list(self.nodes):
-            self.removeNode(node)
+            node.remove()
         self.nodes.clear()
 
     def loadGraph(self, nodes):
@@ -107,11 +107,6 @@ class QDMGraphicsScene(QGraphicsScene):
     def addNode(self, node):
         self.nodes.append(node)
         self.addItem(node)
-
-    def removeNode(self, node):
-        node.remove()
-        self.nodes.remove(node)
-        self.removeItem(node)
 
     def setDescriptors(self, descs):
         self.descs = descs
@@ -535,6 +530,9 @@ class QDMGraphicsNode(QGraphicsItem):
             socket.remove()
         for socket in list(self.outputs.values()):
             socket.remove()
+        
+        self.scene().nodes.remove(self)
+        self.scene().removeItem(self)
 
     def setIdent(self, ident):
         self.ident = ident
@@ -685,8 +683,8 @@ class NodeEditor(QWidget):
     def on_delete(self):
         itemList = self.scene.selectedItems()
         if not itemList: return
-        for item in itemList :
-            self.scene.removeNode(item)
+        for item in itemList:
+            item.remove()
 
     def reloadDescriptors(self):
         self.scene.setDescriptors(self.launcher.getDescriptors())

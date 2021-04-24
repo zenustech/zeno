@@ -38,16 +38,8 @@ class MainWindow(QWidget):
         self.layout.addWidget(self.timeline)
         self.setLayout(self.layout)
 
-        #self.startTimer(1000 // 60)
-
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
             self.close()
 
         super().keyPressEvent(event)
-
-    def timerEvent(self, event):
-        title = self.viewport.get_status_string()
-        self.setWindowTitle(title)
-
-        super().timerEvent(event)

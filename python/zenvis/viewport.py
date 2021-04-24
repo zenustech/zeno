@@ -98,13 +98,6 @@ class ViewportWidget(QGLWidget):
         self.camera = CameraControl()
         self.startTimer(1000 // 60)
 
-    def get_status_string(self):
-        fps = core.get_render_fps()
-        spf = core.get_solver_interval()
-        frameid = core.get_curr_frameid()
-        stat = f'Frame {frameid} | {fps:.1f} FPS | {spf:.02f} secs/step'
-        return stat
-
     @property
     def res(self):
         return self.camera.res

@@ -110,14 +110,23 @@ void finalize() {
   vao = nullptr;
 }
 
+void set_curr_frameid(int frameid) {
+  curr_frameid = frameid;
+}
+
+int get_curr_frameid() {
+  return curr_frameid;
+}
+
 void new_frame() {
   auto &server = Server::get();
 
+  int frameid = get_curr_frameid();
   server.poll_init();
-  if (curr_frameid >= server.frameid) {
-    curr_frameid = server.frameid - 1;
+  if (frameid >= server.frameid) {
+    frameid = server.frameid - 1;
     server.poll();
-    if (server.frameid - 1 != curr_frameid) {
+    if (server.frameid - 1 != frameid) {
       solverFPS.tick();
     }
   }
@@ -128,6 +137,8 @@ void new_frame() {
 
   CHECK_GL(glViewport(0, 0, nx, ny));
   draw_contents();
+
+  set_curr_frameid(frameid);
 }
 
 void set_window_size(int nx_, int ny_) {
@@ -135,18 +146,9 @@ void set_window_size(int nx_, int ny_) {
   ny = ny_;
 }
 
-void set_curr_frameid(int frameid) {
-  curr_frameid = frameid;
-  if (curr_frameid < 0) curr_frameid = 0;
-}
-
 int get_solver_frameid() {
   auto &server = Server::get();
   return server.frameid;
-}
-
-int get_curr_frameid() {
-  return curr_frameid;
 }
 
 double get_render_fps() {
