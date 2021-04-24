@@ -1,16 +1,13 @@
-#version 330 core
+uniform mat4x4 mVP;
+uniform mat4x4 mInvVP;
+uniform mat4x4 mView;
+uniform mat4x4 mProj;
 
 in vec3 position;
 in vec2 texcoord;
 in vec3 iNormal;
 
 out vec4 fColor;
-
-uniform mat4x4 mVP;
-uniform mat4x4 mInvVP;
-uniform mat4x4 mView;
-uniform mat4x4 mProj;
-//uniform sampler2D ourTexture;
 
 struct Light {
   vec3 dir;
@@ -64,7 +61,6 @@ void main()
   material.specular = 0.5;
   vec3 lightDir = faceforward(light.dir, -light.dir, normal);
   vec3 strength = pbr(material, normal, lightDir, viewdir);
-  vec3 color = light.color * strength;
-  //color *= texture(ourTexture, texcoord).rgb;
+  vec3 color = light.color * strength * D_COLOR;
   fColor = vec4(color, 1.0);
 }

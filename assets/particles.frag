@@ -1,15 +1,12 @@
-#version 330 core
+uniform mat4x4 mVP;
+uniform mat4x4 mInvVP;
+uniform mat4x4 mView;
+uniform mat4x4 mProj;
 
 in vec3 position;
 in vec3 velocity;
 
 out vec4 fColor;
-
-uniform mat4x4 mVP;
-uniform mat4x4 mInvVP;
-uniform mat4x4 mView;
-uniform mat4x4 mProj;
-uniform mat4x4 mLocal;
 
 void main()
 {
