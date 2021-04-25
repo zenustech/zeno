@@ -1,4 +1,7 @@
 #!/bin/bash
 
 export PYTHONPATH=`pwd`/python
-python -m zenvis
+python -m zenweb &
+python -m zensim
+kill %1
+wait

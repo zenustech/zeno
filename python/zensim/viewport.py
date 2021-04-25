@@ -11,7 +11,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
-from .coredll import core
+import zenvis
 
 
 class CameraControl:
@@ -75,9 +75,10 @@ class CameraControl:
 
     def update_perspective(self):
         cx, cy, cz = self.center
-        core.look_perspective(cx, cy, cz,
-                self.theta, self.phi, self.radius,
-                self.fov, self.ortho_mode)
+        zenvis.sendBuf['perspective'] = dict(cx=cx, cy=cy, cz=cz,
+                theta=self.theta, phi=self.phi, radius=self.radius,
+                fov=self.fov, ortho_mode=self.ortho_mode)
+        zenvis.sendBuf['resolution'] = self.res
 
     def wheelEvent(self, event):
         dy = event.angleDelta().y()
@@ -98,25 +99,16 @@ class ViewportWidget(QGLWidget):
         self.camera = CameraControl()
         self.startTimer(1000 // 60)
 
-    @property
-    def res(self):
-        return self.camera.res
-
-    @res.setter
-    def res(self, value):
-        nx, ny = self.camera.res = value
-        core.set_window_size(nx, ny)
-        self.camera.update_perspective()
-
     def initializeGL(self):
-        core.initialize()
+        zenvis.initializeGL()
 
     def resizeGL(self, nx, ny):
         print('resize', nx, ny)
-        self.res = nx, ny
+        self.camera.res = (nx, ny)
+        self.camera.update_perspective()
 
     def paintGL(self):
-        core.new_frame()
+        zenvis.paintGL()
 
     def timerEvent(self, event):
         self.repaint()

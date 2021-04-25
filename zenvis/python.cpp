@@ -39,3 +39,16 @@ PYBIND11_MODULE(libzenvis, m) {
     m.def("look_perspective", zenvis::look_perspective);
     m.def("set_perspective", zenvis::set_perspective);
 }
+
+
+/****\
+
+server -> client: (per-frame)
+
+{frameid}:{solver_frameid}:{solver_interval}:{jpegData}
+
+client -> server: (per-mouse-event)
+
+{nx}:{ny}:{cx}:{cy}:{cz}:{theta}:{phi}:{radius}:{fov}:{ortho_mode}:{set_frameid}
+
+\****/

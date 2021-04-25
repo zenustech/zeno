@@ -11,7 +11,8 @@ from PyQt5.QtGui import *
 
 from .mtutils import go
 
-import zenwebcli
+import zencli
+#import zenwebcli as zencli
 
 
 class QDMGraphicsScene(QGraphicsScene):
@@ -652,8 +653,11 @@ class NodeEditor(QWidget):
         self.view.setScene(self.scene)
 
         self.initExecute()
-        self.initConnect()
         self.initShortcuts()
+        if hasattr(zencli, 'connectServer'):
+            self.initConnect()
+        else:
+            self.refreshDescriptors()
 
     def initShortcuts(self):
         self.msgF5 = QShortcut(QKeySequence('F5'), self)
@@ -682,15 +686,18 @@ class NodeEditor(QWidget):
         self.button_execute.move(60, 40)
         self.button_execute.clicked.connect(self.on_execute) 
 
+    def refreshDescriptors(self):
+        self.scene.setDescriptors(zencli.getDescriptors())
+
     def on_connect(self):
         baseurl = self.edit_baseurl.text()
-        zenwebcli.connectServer(baseurl)
-        self.scene.setDescriptors(zenwebcli.getDescriptors())
+        zencli.connectServer(baseurl)
+        self.refreshDescriptors()
 
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
         graph = self.scene.dumpGraph()
-        go(zenwebcli.launchGraph, graph, nframes)
+        go(zencli.launchGraph, graph, nframes)
 
     def on_delete(self):
         itemList = self.scene.selectedItems()
@@ -699,7 +706,7 @@ class NodeEditor(QWidget):
             item.remove()
 
     def reloadDescriptors(self):
-        self.scene.setDescriptors(zenwebcli.getDescriptors())
+        self.scene.setDescriptors(zencli.getDescriptors())
 
     def menuTriggered(self, act):
         name = act.text()
