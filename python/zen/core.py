@@ -10,7 +10,6 @@ def get_core():
         import sys
 
         lib_dir = os.path.dirname(__file__)
-        print(f'[Zen] importing core DLL from [{lib_dir}]...')
 
         assert os.path.exists(lib_dir)
         assert os.path.exists(os.path.join(lib_dir, 'libzenpy.so'))
@@ -34,5 +33,4 @@ def get_core():
 
 def loadLibrary(path):
     import ctypes
-    print(f'[Zen] loading extension DLL at [{path}]...')
     ctypes.cdll.LoadLibrary(path)

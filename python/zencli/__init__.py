@@ -11,7 +11,7 @@ zen.loadLibrary('build/FastFLIP/libFLIPlib.so')
 
 def launchGraph(graph, nframes=1):
     script = generate_script(graph)
-    launchScript(script, nframes)
+    return launchScript(script, nframes)
 
 
 def launchScript(script, nframes=1):
@@ -21,6 +21,7 @@ def launchScript(script, nframes=1):
 for frame in range({nframes}):
 \tprint('FRAME:', frame)
 \texecute()
+print('EXITING')
 '''
     print(script)
     return go(run_script, script)
