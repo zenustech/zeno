@@ -58,7 +58,11 @@ def generate_script(nodes):
         p('\tif zen.G.substepid == 0: zen.addNode({!r}, {!r})', name, ident)
 
         for name, value in params.items():
-            p('\tzen.setNodeParam({!r}, {!r}, {!r})', ident, name, value)
+            if isinstance(value, str):
+                valueRepr = 'f' + repr(value)
+            else:
+                valueRepr = repr(value)
+            p('\tzen.setNodeParam({!r}, {!r}, {})', ident, name, valueRepr)
 
         for name, input in inputs.items():
             if input is None:

@@ -16,7 +16,7 @@
 #include "openvdb/tools/LevelSetSphere.h"
 #include "openvdb/tools/LevelSetPlatonic.h"
 #include <openvdb/util/Util.h>
-
+#include <glm/vec3.hpp>
 #ifdef USE_PARTIO
 #include <Partio.h>
 #endif
@@ -155,5 +155,6 @@ struct vdbToolsWapper{
 
 	static void outputBgeo(std::string path, int frame, const std::vector<openvdb::Vec3s>& points, std::shared_ptr<sparse_fluid8x8x8> eulerian_fluids);
 	static void outputBgeo(std::string path, int frame, const std::vector<FLIP_particle>& flip_p);
+	static void outputBgeo(std::string path, const std::vector<glm::vec3> &pos, const std::vector<glm::vec3> &vel);
 };
 #endif //VOLUMETOOLS_H
