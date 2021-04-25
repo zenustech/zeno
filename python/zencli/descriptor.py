@@ -1,6 +1,3 @@
-from collections import namedtuple
-
-
 def parse_descriptor_line(line):
     z_name, rest = line.strip().split(':', maxsplit=1)
     assert rest.startswith('(') and rest.endswith(')'), (n_name, rest)
@@ -17,9 +14,11 @@ def parse_descriptor_line(line):
         type, name, defl = param.split(':')
         z_params.append((type, name, defl))
 
-    return z_name, z_inputs, z_outputs, z_params, z_categories
+    z_desc = {
+        'inputs': z_inputs,
+        'outputs': z_outputs,
+        'params': z_params,
+        'categories': z_categories,
+    }
 
-
-class Descriptor(namedtuple('Descriptor',
-    'inputs, outputs, params, categories')):
-    pass
+    return z_name, z_desc

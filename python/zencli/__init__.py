@@ -1,6 +1,6 @@
 from .procutils import run_script
 from .codegen import generate_script
-from .descriptor import parse_descriptor_line, Descriptor
+from .descriptor import parse_descriptor_line
 
 
 std_header = '''
@@ -9,12 +9,12 @@ zen.loadLibrary('build/FastFLIP/libFLIPlib.so')
 '''
 
 
-def launchGraph(graph):
+def launchGraph(graph, nframes):
     script = generate_script(graph)
     return launchScript(script, nframes)
 
 
-def launchScript(script):
+def launchScript(script, nframes):
     script = std_header + f'''
 {script}
 
@@ -37,5 +37,5 @@ print(descs)
         descs = descs.decode()
     descs = descs.splitlines()
     descs = [parse_descriptor_line(line) for line in descs if ':' in line]
-    descs = {name: Descriptor(*args) for name, *args in descs}
+    descs = {name: desc for name, desc in descs}
     return descs

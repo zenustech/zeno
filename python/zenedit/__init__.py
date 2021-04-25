@@ -107,7 +107,7 @@ class QDMGraphicsScene(QGraphicsScene):
         desc = self.descs[name]
         node = QDMGraphicsNode()
         node.setName(name)
-        node.initSockets(desc.inputs, desc.outputs, desc.params)
+        node.initSockets(desc['inputs'], desc['outputs'], desc['params'])
         return node
 
     def addNode(self, node):
@@ -117,7 +117,7 @@ class QDMGraphicsScene(QGraphicsScene):
     def setDescriptors(self, descs):
         self.descs = descs
         for name, desc in descs.items():
-            for cate in desc.categories:
+            for cate in desc['categories']:
                 self.cates.setdefault(cate, []).append(name)
 
 
