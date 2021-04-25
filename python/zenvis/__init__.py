@@ -16,7 +16,7 @@ def core():
     return core
 
 
-sendBuf = {
+status = {
     'frameid': 0,
     'next_frameid': -1,
     'solver_frameid': 0,
@@ -29,11 +29,11 @@ sendBuf = {
 
 
 def sendStatus():
-    core.set_window_size(*sendBuf['resolution'])
-    core.look_perspective(*sendBuf['perspective'])
-    core.set_curr_playing(sendBuf['playing'])
-    if sendBuf['next_frameid'] != -1:
-        core.set_curr_frameid(sendBuf['next_frameid'])
+    core.set_window_size(*status['resolution'])
+    core.look_perspective(*status['perspective'])
+    core.set_curr_playing(status['playing'])
+    if status['next_frameid'] != -1:
+        core.set_curr_frameid(status['next_frameid'])
 
 def recvStatus():
     frameid = core.get_curr_frameid()
@@ -41,7 +41,7 @@ def recvStatus():
     solver_interval = core.get_solver_interval()
     render_fps = core.get_render_fps()
 
-    sendBuf.update({
+    status.update({
         'frameid': frameid,
         'solver_frameid': solver_frameid,
         'solver_interval': solver_interval,

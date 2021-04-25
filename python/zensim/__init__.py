@@ -4,8 +4,7 @@ from PyQt5.QtWidgets import *
 
 from .viewport import ViewportWidget
 from .timeline import TimelineWidget
-
-from zenedit import NodeEditor
+from .editor import NodeEditor
 
 
 class MainWindow(QWidget):
