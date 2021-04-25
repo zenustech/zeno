@@ -5,6 +5,7 @@ rubbish.bin
 pruned
 imgui.ini
 *.zsg
+genCode.py
 
 # vim files
 .*.swp
