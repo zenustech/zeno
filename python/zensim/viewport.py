@@ -106,7 +106,6 @@ class ViewportWidget(QGLWidget):
         self.camera.update_perspective()
 
     def paintGL(self):
-        zenvis.exchangeStatus()
         zenvis.paintGL()
 
     def on_update(self):

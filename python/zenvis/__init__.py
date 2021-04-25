@@ -28,16 +28,14 @@ sendBuf = {
 }
 
 
-def exchangeStatus():
-    nx, ny = sendBuf['resolution']
-    core.set_window_size(nx, ny)
+def sendStatus():
+    core.set_window_size(*sendBuf['resolution'])
     core.look_perspective(*sendBuf['perspective'])
-
+    core.set_curr_playing(sendBuf['playing'])
     if sendBuf['next_frameid'] != -1:
         core.set_curr_frameid(sendBuf['next_frameid'])
 
-    core.set_curr_playing(sendBuf['playing'])
-
+def recvStatus():
     frameid = core.get_curr_frameid()
     solver_frameid = core.get_solver_frameid()
     solver_interval = core.get_solver_interval()
@@ -56,4 +54,6 @@ def initializeGL():
 
 
 def paintGL():
+    sendStatus()
     core.new_frame()
+    recvStatus()
