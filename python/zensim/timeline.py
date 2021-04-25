@@ -28,16 +28,14 @@ class TimelineWidget(QWidget):
         layout.addWidget(self.status)
         self.setLayout(layout)
 
-        self.startTimer(1000 // 60)
-
-    def timerEvent(self, event):
+    def on_update(self):
         frameid = zenvis.sendBuf['frameid']
         self.slider.setValue(frameid)
         self.label.setText(str(frameid))
         self.status.setText(self.get_status_string())
 
     def value_changed(self):
-        zenvis.sendBuf['frameid'] = self.slider.value()
+        zenvis.sendBuf['next_frameid'] = self.slider.value()
         zenvis.sendBuf['playing'] = self.player.isChecked()
 
     def get_status_string(self):

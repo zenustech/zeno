@@ -75,9 +75,9 @@ class CameraControl:
 
     def update_perspective(self):
         cx, cy, cz = self.center
-        zenvis.sendBuf['perspective'] = dict(cx=cx, cy=cy, cz=cz,
-                theta=self.theta, phi=self.phi, radius=self.radius,
-                fov=self.fov, ortho_mode=self.ortho_mode)
+        zenvis.sendBuf['perspective'] = (cx, cy, cz,
+                self.theta, self.phi, self.radius,
+                self.fov, self.ortho_mode)
         zenvis.sendBuf['resolution'] = self.res
 
     def wheelEvent(self, event):
@@ -97,22 +97,20 @@ class ViewportWidget(QGLWidget):
         super().__init__(parent)
 
         self.camera = CameraControl()
-        self.startTimer(1000 // 60)
 
     def initializeGL(self):
         zenvis.initializeGL()
 
     def resizeGL(self, nx, ny):
-        print('resize', nx, ny)
         self.camera.res = (nx, ny)
         self.camera.update_perspective()
 
     def paintGL(self):
+        zenvis.exchangeStatus()
         zenvis.paintGL()
 
-    def timerEvent(self, event):
+    def on_update(self):
         self.repaint()
-        super().timerEvent(event)
 
 
 for name in ['mousePressEvent', 'mouseMoveEvent', 'wheelEvent']:
