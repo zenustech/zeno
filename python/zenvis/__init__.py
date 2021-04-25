@@ -23,19 +23,20 @@ status = {
     'solver_interval': 0,
     'render_fps': 0,
     'resolution': (1, 1),
-    'perspective': {},
+    'perspective': (),
     'playing': True,
 }
 
 
-def sendStatus():
+def uploadStatus():
     core.set_window_size(*status['resolution'])
     core.look_perspective(*status['perspective'])
     core.set_curr_playing(status['playing'])
     if status['next_frameid'] != -1:
         core.set_curr_frameid(status['next_frameid'])
 
-def recvStatus():
+
+def _recieveStatus():
     frameid = core.get_curr_frameid()
     solver_frameid = core.get_solver_frameid()
     solver_interval = core.get_solver_interval()
@@ -54,6 +55,5 @@ def initializeGL():
 
 
 def paintGL():
-    sendStatus()
     core.new_frame()
-    recvStatus()
+    _recieveStatus()

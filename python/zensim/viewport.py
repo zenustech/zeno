@@ -109,6 +109,7 @@ class ViewportWidget(QGLWidget):
         zenvis.paintGL()
 
     def on_update(self):
+        zenvis.uploadStatus()
         self.repaint()
 
 

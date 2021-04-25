@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
-from .mtutils import go
+from zenutils import go
 
 import zenapi
 #import zenwebapi as zenapi
@@ -690,8 +690,9 @@ class NodeEditor(QWidget):
         self.scene.setDescriptors(zenapi.getDescriptors())
 
     def on_connect(self):
+        import zenwebcfg
         baseurl = self.edit_baseurl.text()
-        zenapi.connectServer(baseurl)
+        zenwebcfg.connectServer(baseurl)
         self.refreshDescriptors()
 
     def on_execute(self):
