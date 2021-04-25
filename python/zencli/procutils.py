@@ -1,13 +1,14 @@
 import os
 import sys
 import tempfile
-import threading
 from multiprocessing import Pool
 import runpy
+
 
 def my_run_path(path):
     result = runpy.run_path(path)
     return {'descs': result.get('descs', None)}
+
 
 def run_script(src):
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -32,9 +33,3 @@ def inject_ld_preload(*pathes):
     else:
         ld_preload = path
     os.environ['LD_PRELOAD'] = ld_preload
-
-
-def go(func, *args, **kwargs):
-    t = threading.Thread(target=func, args=args, kwargs=kwargs, daemon=True)
-    t.start()
-    return t

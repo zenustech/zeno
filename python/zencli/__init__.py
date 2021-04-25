@@ -1,4 +1,4 @@
-from .procutils import run_script, go
+from .procutils import run_script
 from .codegen import generate_script
 from .descriptor import parse_descriptor_line, Descriptor
 
@@ -9,12 +9,12 @@ zen.loadLibrary('build/FastFLIP/libFLIPlib.so')
 '''
 
 
-def launchGraph(graph, nframes=1):
+def launchGraph(graph):
     script = generate_script(graph)
     return launchScript(script, nframes)
 
 
-def launchScript(script, nframes=1):
+def launchScript(script):
     script = std_header + f'''
 {script}
 
@@ -24,7 +24,7 @@ for frame in range({nframes}):
 print('EXITING')
 '''
     print(script)
-    return go(run_script, script)
+    return run_script(script)
 
 
 def getDescriptors():

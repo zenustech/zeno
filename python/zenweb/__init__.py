@@ -7,12 +7,18 @@ import json
 app = Flask(__name__)
 
 
-@app.route('/launch', methods=['POST'])
-def launch():
+@app.route('/launchGraph', methods=['POST'])
+def launchGraph():
     graph = request.form['graph']
     nframes = request.form['nframes']
 
     graph = json.loads(graph)
     t = zencli.launchGraph(graph, nframes)
 
-    return {'status': 'OK'}
+    return 'OK'
+
+
+@app.route('/getDescriptors', methods=['GET'])
+def getDescriptors():
+    descs = zencli.getDescriptors()
+    return descs

@@ -9,7 +9,13 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
-import zencli
+from .mtutils import go
+
+#### for cloud computation: ####
+import zenwebcli as zencli
+
+#### for local computation: ####
+#import zencli
 
 
 class QDMGraphicsScene(QGraphicsScene):
@@ -669,9 +675,9 @@ class NodeEditor(QWidget):
         self.msgDel.activated.connect(self.on_delete)
 
     def on_execute(self):
-        textboxValue = self.textbox.text()
+        nframes = int(self.textbox.text())
         graph = self.scene.dumpGraph()
-        zencli.launchGraph(graph, int(textboxValue))
+        go(zencli.launchGraph, graph, nframes)
 
     def on_delete(self):
         itemList = self.scene.selectedItems()
@@ -681,13 +687,6 @@ class NodeEditor(QWidget):
 
     def reloadDescriptors(self):
         self.scene.setDescriptors(zencli.getDescriptors())
-
-    def getMainWindow(self):
-        main = self.parent()
-        while main is not None and not isinstance(main, QMainWindow):
-            main = main.parent()
-        print(main)
-        return main if main is not None else self
 
     def menuTriggered(self, act):
         name = act.text()
@@ -712,10 +711,6 @@ class NodeEditor(QWidget):
         elif name == '&Save':
             self.do_save(self.current_path)
 
-    def do_execute(self):
-        graph = self.scene.dumpGraph()
-        zencli.launchGraph(graph)
-
     def do_save(self, path):
         graph = self.scene.dumpGraph()
         with open(path, 'w') as f:
@@ -726,3 +721,9 @@ class NodeEditor(QWidget):
             graph = json.load(f)
         self.scene.newGraph()
         self.scene.loadGraph(graph)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.close()
+
+        super().keyPressEvent(event)
