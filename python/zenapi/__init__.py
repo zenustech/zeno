@@ -23,14 +23,15 @@ for frame in range({nframes}):
 \texecute()
 print('EXITING')
 '''
+    print('============')
     print(script)
+    print('============')
     return run_script(script)
 
 
 def getDescriptors():
     script = std_header + f'''
 descs = zen.dumpDescriptors()
-print(descs)
 '''
     descs = run_script(script)['descs']
     if isinstance(descs, bytes):

@@ -682,7 +682,7 @@ class NodeEditor(QWidget):
 
         self.button_execute = QPushButton('Execute', self)
         self.button_execute.move(60, 40)
-        self.button_execute.clicked.connect(self.on_execute) 
+        self.button_execute.clicked.connect(self.on_execute)
 
     def refreshDescriptors(self):
         self.scene.setDescriptors(zenapi.getDescriptors())

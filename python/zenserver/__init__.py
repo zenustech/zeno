@@ -1,10 +1,13 @@
 from flask import Flask, request
+from flask_sockets import Sockets
+import json
 
 import zenapi
-import json
+import zenvis
 
 
 app = Flask(__name__)
+sockets = Sockets(app)
 
 
 @app.route('/launchGraph', methods=['POST'])
@@ -20,3 +23,11 @@ def launchGraph():
 def getDescriptors():
     descs = zenapi.getDescriptors()
     return json.dumps(descs)
+
+
+@sockets.route('/webvisSocket')
+def webvisSocket(ws):
+    while not ws.closed:
+        data = ws.receive()
+        print('SOCKET:', data)
+        ws.send(data)

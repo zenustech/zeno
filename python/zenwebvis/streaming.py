@@ -1,0 +1,6 @@
+def open(url):
+    ...
+
+
+def paint():
+    ...

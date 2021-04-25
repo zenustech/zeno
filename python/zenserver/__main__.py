@@ -1,3 +1,7 @@
 from . import app
+from gevent import pywsgi
+from geventwebsocket.handler import WebSocketHandler
 
-app.run(host='0.0.0.0', port=8000, debug=True)
+host, port = '0.0.0.0', 8000
+server = pywsgi.WSGIServer((host, port), app, handler_class=WebSocketHandler)
+server.serve_forever()

@@ -25,10 +25,10 @@ def uploadStatus():
 
 
 def initializeGL():
-    streaming.start(zenwebcfg.baseurl)
-    websocket.start(zenwebcfg.baseurl)
+    streaming.open(zenwebcfg.baseurl)
+    websocket.open(zenwebcfg.baseurl)
 
-    websocket.onrecv = _onRecvCallback
+    websocket.onreceive = _onRecvCallback
 
 
 def paintGL():
