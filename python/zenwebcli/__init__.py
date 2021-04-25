@@ -3,10 +3,17 @@ import urllib.request
 import urllib.parse
 
 
-baseurl = 'http://localhost:8000'
+baseurl = None
+
+
+def connectServer(url):
+    global baseurl
+    baseurl = url
 
 
 def launchGraph(graph, nframes):
+    assert baseurl, 'Please connect to server first'
+
     params = {
         'graph': json.dumps(graph),
         'nframes': nframes,
@@ -19,6 +26,8 @@ def launchGraph(graph, nframes):
 
 
 def getDescriptors():
+    assert baseurl, 'Please connect to server first'
+
     url = baseurl + '/getDescriptors'
     response = urllib.request.urlopen(url, timeout=5)
     result = response.read().decode()
