@@ -10,9 +10,8 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
 from zenutils import go
-
-import zenapi
-#import zenwebapi as zenapi
+from zenwebcfg import zenapi
+import zenwebcfg
 
 
 class QDMGraphicsScene(QGraphicsScene):
@@ -654,10 +653,7 @@ class NodeEditor(QWidget):
 
         self.initExecute()
         self.initShortcuts()
-        if hasattr(zenapi, 'connectServer'):
-            self.initConnect()
-        else:
-            self.refreshDescriptors()
+        self.initConnect()
 
     def initShortcuts(self):
         self.msgF5 = QShortcut(QKeySequence('F5'), self)
@@ -676,6 +672,8 @@ class NodeEditor(QWidget):
         self.button_connect.move(370, 40)
         self.button_connect.clicked.connect(self.on_connect)
 
+        self.on_connect()
+
     def initExecute(self):
         self.edit_nframes = QLineEdit(self)
         self.edit_nframes.move(20, 40)
@@ -690,7 +688,6 @@ class NodeEditor(QWidget):
         self.scene.setDescriptors(zenapi.getDescriptors())
 
     def on_connect(self):
-        import zenwebcfg
         baseurl = self.edit_baseurl.text()
         zenwebcfg.connectServer(baseurl)
         self.refreshDescriptors()

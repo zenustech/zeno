@@ -1,8 +1,14 @@
+USE_WEB = 1
 
+
+import zenwebapi as zenapi
+#import zenapi
+
+#import zenwebvis as zenvis
+import zenvis
 
 baseurl = None
 
-
 def connectServer(url):
-    global baseurl
+    global baseurl, zenapi, zenvis
     baseurl = url
