@@ -1,11 +1,11 @@
 import json
-import urllib.request
-import urllib.parse
+import asyncio
+import websockets
 
 import zenwebcfg
 from zenutils import go
 
-from . import streaming, websocket
+from . import streaming
 
 
 status = {
@@ -20,20 +20,32 @@ status = {
 }
 
 
+async def ws_startup(url):
+    async with websockets.connect(url) as ws:
+
+        while True:
+            data = json.dumps(status)
+            await ws.send(data)
+
+            data = await ws.recv()
+            if data is None:
+                break
+
+            status.update(json.loads(data))
+
+
+def ws_open(url):
+    go(asyncio.get_event_loop().run_until_complete, ws_startup(url))
+
+
 def uploadStatus():
-    websocket.send(json.dumps(status))
+    print('upload', status)
 
 
 def initializeGL():
-    streaming.open(zenwebcfg.baseurl)
-    websocket.open(zenwebcfg.baseurl)
-
-    websocket.onreceive = _onRecvCallback
+    ws_open(zenwebcfg.wsurl + '/webvisSocket')
+    streaming.open(zenwebcfg.rtmpurl)
 
 
 def paintGL():
     streaming.paint()
-
-
-def _onRecvCallback(data):
-    status.update(json.loads(data))

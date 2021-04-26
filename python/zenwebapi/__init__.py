@@ -11,14 +11,14 @@ def launchGraph(graph, nframes):
         'nframes': nframes,
     }
     data = urllib.parse.urlencode(params).encode()
-    url = zenwebcfg.baseurl + '/launchGraph'
+    url = zenwebcfg.httpurl + '/launchGraph'
     response = urllib.request.urlopen(url, data=data, timeout=5)
     result = response.read().decode()
     assert result == 'OK', result
 
 
 def getDescriptors():
-    url = zenwebcfg.baseurl + '/getDescriptors'
+    url = zenwebcfg.httpurl + '/getDescriptors'
     response = urllib.request.urlopen(url, timeout=5)
     result = response.read().decode()
     descs = json.loads(result)

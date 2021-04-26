@@ -29,5 +29,10 @@ def getDescriptors():
 def webvisSocket(ws):
     while not ws.closed:
         data = ws.receive()
-        print('SOCKET:', data)
+        if data is None:
+            break
+
+        zenvis.status.update(json.loads(data))
+
+        data = json.dumps(zenvis.status)
         ws.send(data)

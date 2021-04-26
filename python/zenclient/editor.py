@@ -663,10 +663,10 @@ class NodeEditor(QWidget):
         self.msgDel.activated.connect(self.on_delete)
 
     def initConnect(self):
-        self.edit_baseurl = QLineEdit(self)
-        self.edit_baseurl.move(180, 40)
-        self.edit_baseurl.resize(180, 30)
-        self.edit_baseurl.setText('http://localhost:8000')
+        self.edit_svraddr = QLineEdit(self)
+        self.edit_svraddr.move(180, 40)
+        self.edit_svraddr.resize(180, 30)
+        self.edit_svraddr.setText('localhost')
 
         self.button_connect = QPushButton('Connect', self)
         self.button_connect.move(370, 40)
@@ -688,8 +688,8 @@ class NodeEditor(QWidget):
         self.scene.setDescriptors(zenapi.getDescriptors())
 
     def on_connect(self):
-        baseurl = self.edit_baseurl.text()
-        zenwebcfg.connectServer(baseurl)
+        svraddr = self.edit_svraddr.text()
+        zenwebcfg.connectServer(svraddr)
         self.refreshDescriptors()
 
     def on_execute(self):

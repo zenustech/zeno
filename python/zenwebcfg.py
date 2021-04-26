@@ -7,8 +7,14 @@ import zenwebapi as zenapi
 import zenwebvis as zenvis
 #import zenvis
 
-baseurl = None
+svraddr = None
+httpurl = None
+rtmpurl = None
+wsurl = None
 
-def connectServer(url):
-    global baseurl, zenapi, zenvis
-    baseurl = url
+def connectServer(addr):
+    global svraddr, httpurl, rtmpurl, wsurl
+    svraddr = addr
+    httpurl = f'http://{addr}:8000'
+    rtmpurl = f'rtmp://{addr}:8001'
+    wsurl = f'ws://{addr}:8000'
