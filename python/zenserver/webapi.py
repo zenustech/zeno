@@ -2,6 +2,7 @@ from flask import request
 import json
 
 import zenapi
+from zenutils import go
 
 from . import app
 
@@ -11,7 +12,7 @@ def launchGraph():
     graph = json.loads(request.form['graph'])
     nframes = request.form['nframes']
 
-    t = zenapi.launchGraph(graph, nframes)
+    t = go(zenapi.launchGraph, graph, nframes)
     return 'OK'
 
 
