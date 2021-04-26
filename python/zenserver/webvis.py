@@ -1,7 +1,4 @@
 import OpenGL.GL as gl
-from PIL import Image
-from io import BytesIO
-import numpy as np
 import glfw
 import json
 import queue
@@ -10,12 +7,16 @@ import zenvis
 from zenutils import go
 
 from . import app, sockets
+from . import streaming
 
 
 @sockets.route('/webvisSocket')
 def webvisSocket(ws):
     qw = queue.Queue()
+    qw.wsclosed = False
     t = go(workerWebvisSocket, qw)
+
+    streaming.start()
 
     while not ws.closed:
         data = ws.receive()
@@ -25,15 +26,18 @@ def webvisSocket(ws):
 
         zenvis.upStat.update(json.loads(data))
 
-        res = type('', (), {})()
+        res = lambda: 0
         qw.put(res)
         qw.join()
 
-        print(res.jpeg)
+        streaming.push(res.img, res.width, res.height)
 
         data = json.dumps(zenvis.dnStat)
         ws.send(data)
 
+    streaming.stop()
+
+    qw.wsclosed = True
     t.join()
 
 
@@ -43,12 +47,12 @@ def workerWebvisSocket(qw):
     assert succeed
     window = glfw.create_window(1, 1, 'webvis context', None, None)
     assert window
-    glfw.make_context_current(window)
     #glfw.hide_window(window)
+    glfw.make_context_current(window)
 
     zenvis.initializeGL()
 
-    while True:
+    while not qw.wsclosed:
         res = qw.get()
         if res is None:
             break
@@ -62,14 +66,9 @@ def workerWebvisSocket(qw):
         glfw.swap_buffers(window)
         glfw.poll_events()
 
-        img = gl.glReadPixels(0, 0, width, height,
+        res.width, res.height = width, height
+        res.img = gl.glReadPixels(0, 0, width, height,
                 gl.GL_RGB, gl.GL_UNSIGNED_BYTE)
-
-        im = Image.new('RGB', (width, height))
-        im.frombytes(img)
-        with BytesIO() as f:
-            im.save(f, 'jpeg')
-            res.jpeg = f.getvalue()
 
         qw.task_done()
 
