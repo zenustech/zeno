@@ -75,10 +75,10 @@ class CameraControl:
 
     def update_perspective(self):
         cx, cy, cz = self.center
-        zenvis.status['perspective'] = (cx, cy, cz,
+        zenvis.upStat['perspective'] = (cx, cy, cz,
                 self.theta, self.phi, self.radius,
                 self.fov, self.ortho_mode)
-        zenvis.status['resolution'] = self.res
+        zenvis.upStat['resolution'] = self.res
 
     def wheelEvent(self, event):
         dy = event.angleDelta().y()

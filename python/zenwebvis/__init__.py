@@ -1,6 +1,7 @@
 import json
 import asyncio
 import websockets
+import time
 
 import zenwebcfg
 from zenutils import go
@@ -8,12 +9,15 @@ from zenutils import go
 from . import streaming
 
 
-status = {
+dnStat = {
     'frameid': 0,
-    'next_frameid': -1,
     'solver_frameid': 0,
     'solver_interval': 0,
     'render_fps': 0,
+}
+
+upStat = {
+    'next_frameid': -1,
     'resolution': (1, 1),
     'perspective': (),
     'playing': True,
@@ -24,14 +28,14 @@ async def ws_startup(url):
     async with websockets.connect(url) as ws:
 
         while True:
-            data = json.dumps(status)
+            data = json.dumps(upStat)
             await ws.send(data)
 
             data = await ws.recv()
             if data is None:
                 break
 
-            status.update(json.loads(data))
+            dnStat.update(json.loads(data))
 
 
 def ws_open(url):
@@ -39,7 +43,7 @@ def ws_open(url):
 
 
 def uploadStatus():
-    print('upload', status)
+    pass
 
 
 def initializeGL():

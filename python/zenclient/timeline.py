@@ -29,16 +29,16 @@ class TimelineWidget(QWidget):
         self.setLayout(layout)
 
     def on_update(self):
-        frameid = zenvis.status['frameid']
+        frameid = zenvis.dnStat['frameid']
         self.slider.setValue(frameid)
         self.label.setText(str(frameid))
         self.status.setText(self.get_status_string())
 
     def value_changed(self):
-        zenvis.status['next_frameid'] = self.slider.value()
-        zenvis.status['playing'] = self.player.isChecked()
+        zenvis.upStat['next_frameid'] = self.slider.value()
+        zenvis.upStat['playing'] = self.player.isChecked()
 
     def get_status_string(self):
-        fps = zenvis.status['render_fps']
-        spf = zenvis.status['solver_interval']
+        fps = zenvis.dnStat['render_fps']
+        spf = zenvis.dnStat['solver_interval']
         return f'{fps:.1f} FPS | {spf:.02f} secs/step'

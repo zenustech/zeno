@@ -16,12 +16,15 @@ def core():
     return core
 
 
-status = {
+dnStat = {
     'frameid': 0,
-    'next_frameid': -1,
     'solver_frameid': 0,
     'solver_interval': 0,
     'render_fps': 0,
+}
+
+upStat = {
+    'next_frameid': -1,
     'resolution': (1, 1),
     'perspective': (),
     'playing': True,
@@ -29,11 +32,11 @@ status = {
 
 
 def uploadStatus():
-    core.set_window_size(*status['resolution'])
-    core.look_perspective(*status['perspective'])
-    core.set_curr_playing(status['playing'])
-    if status['next_frameid'] != -1:
-        core.set_curr_frameid(status['next_frameid'])
+    core.set_window_size(*upStat['resolution'])
+    core.look_perspective(*upStat['perspective'])
+    core.set_curr_playing(upStat['playing'])
+    if upStat['next_frameid'] != -1:
+        core.set_curr_frameid(upStat['next_frameid'])
 
 
 def _recieveStatus():
@@ -42,7 +45,7 @@ def _recieveStatus():
     solver_interval = core.get_solver_interval()
     render_fps = core.get_render_fps()
 
-    status.update({
+    dnStat.update({
         'frameid': frameid,
         'solver_frameid': solver_frameid,
         'solver_interval': solver_interval,
