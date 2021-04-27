@@ -2,6 +2,7 @@ import json
 import asyncio
 import websockets
 import time
+import OpenGL.GL as gl
 
 import zenwebcfg
 from zenutils import go
@@ -53,7 +54,9 @@ def uploadStatus():
 
 def initializeGL():
     ws_open(zenwebcfg.wsurl + '/webvisSocket')
+    streaming.initializeGL()
 
 
 def paintGL():
-    streaming.paint()
+    nx, ny = upStat['resolution']
+    streaming.paintGL(nx, ny)

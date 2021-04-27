@@ -28,7 +28,7 @@ def webvisSocket(ws):
         qw.put(res)
         qw.join()
 
-        img = streaming.encode(res.img, res.width, res.height)
+        img = streaming.encode(res.img, res.width, res.height, 2)
 
         data = json.dumps(zenvis.dnStat)
         ws.send(data)
