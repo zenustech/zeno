@@ -666,7 +666,8 @@ class NodeEditor(QWidget):
         self.edit_svraddr = QLineEdit(self)
         self.edit_svraddr.move(180, 40)
         self.edit_svraddr.resize(180, 30)
-        self.edit_svraddr.setText('localhost')
+        #self.edit_svraddr.setText('localhost')
+        self.edit_svraddr.setText('zeus.archibate.top')
 
         self.button_connect = QPushButton('Connect', self)
         self.button_connect.move(370, 40)

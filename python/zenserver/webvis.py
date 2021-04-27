@@ -28,11 +28,12 @@ def webvisSocket(ws):
         qw.put(res)
         qw.join()
 
-        img = streaming.encode(res.img, res.width, res.height, 2)
+        img = streaming.encode(res.img, res.width, res.height)
 
         data = json.dumps(zenvis.dnStat)
         ws.send(data)
         ws.send(img)
+        print(len(img) // 1024, 'KiB')
 
     qw.wsclosed = True
     t.join()
@@ -44,7 +45,7 @@ def workerWebvisSocket(qw):
     assert succeed
     window = glfw.create_window(1, 1, 'webvis context', None, None)
     assert window
-    #glfw.hide_window(window)
+    glfw.hide_window(window)
     glfw.make_context_current(window)
 
     zenvis.initializeGL()
