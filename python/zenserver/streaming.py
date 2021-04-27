@@ -4,7 +4,7 @@ from io import BytesIO
 import numpy as np
 
 
-def encode(img, width, height, scale=2, quality=70):
+def encode(img, width, height, scale=2, quality=50):
     if scale != 1:
         img = np.frombuffer(img, dtype=np.uint8).reshape(height, width, 3)
         #tl = img[:-1:scale, :-1:scale] >> np.uint8(2)
