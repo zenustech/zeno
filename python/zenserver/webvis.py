@@ -16,8 +16,6 @@ def webvisSocket(ws):
     qw.wsclosed = False
     t = go(workerWebvisSocket, qw)
 
-    streaming.start()
-
     while not ws.closed:
         data = ws.receive()
         if data is None:
@@ -30,12 +28,11 @@ def webvisSocket(ws):
         qw.put(res)
         qw.join()
 
-        streaming.push(res.img, res.width, res.height)
+        img = streaming.encode(res.img, res.width, res.height)
 
         data = json.dumps(zenvis.dnStat)
         ws.send(data)
-
-    streaming.stop()
+        ws.send(img)
 
     qw.wsclosed = True
     t.join()

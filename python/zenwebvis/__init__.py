@@ -37,6 +37,11 @@ async def ws_startup(url):
 
             dnStat.update(json.loads(data))
 
+            img = await ws.recv()
+            if img is None:
+                break
+            streaming.decode(img)
+
 
 def ws_open(url):
     go(asyncio.get_event_loop().run_until_complete, ws_startup(url))
@@ -48,7 +53,6 @@ def uploadStatus():
 
 def initializeGL():
     ws_open(zenwebcfg.wsurl + '/webvisSocket')
-    streaming.open(zenwebcfg.rtmpurl)
 
 
 def paintGL():
