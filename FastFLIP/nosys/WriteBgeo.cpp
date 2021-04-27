@@ -47,7 +47,7 @@ static int defWriteBgeo = zen::defNodeClass<WriteBgeo>("WriteBgeo",
     }, /* params: */ {
     {"string", "path", ""},
     }, /* category: */ {
-    "misc",
+    "particles",
     }});
 
 }

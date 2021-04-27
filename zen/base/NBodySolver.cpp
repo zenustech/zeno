@@ -36,8 +36,8 @@ struct NBodySolver : zen::INode {
       for (int j = 0; j < pars->size(); j++) {
         if (j == i) continue;
         auto r = p - pars->pos[j];
-        auto x = r0 / std::sqrt(glm::dot(r, r) + 1e-6);
-        auto fac = G * x * x * x + M * (std::pow(x, 13) - std::pow(x, 7));
+        auto x = std::sqrt(glm::dot(r, r));
+        auto fac = G * r0 * r0 * r0 / (x * x * x + 1e-3);// + M * (std::pow(x, 13) - std::pow(x, 7));
         acc += glm::vec3(fac) * r;
       }
       pars->vel[i] += acc * dt;

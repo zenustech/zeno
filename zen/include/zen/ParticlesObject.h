@@ -8,6 +8,7 @@
 namespace zenbase {
 
 struct ParticlesObject : zen::IObject {
+  
   std::vector<glm::vec3> pos;
   std::vector<glm::vec3> vel;
 
