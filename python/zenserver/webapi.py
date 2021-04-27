@@ -1,10 +1,10 @@
-from flask import Flask, request
-
-import zencli
+from flask import request
 import json
 
+import zenapi
+from zenutils import go
 
-app = Flask(__name__)
+from . import app
 
 
 @app.route('/launchGraph', methods=['POST'])
@@ -12,11 +12,11 @@ def launchGraph():
     graph = json.loads(request.form['graph'])
     nframes = request.form['nframes']
 
-    t = zencli.launchGraph(graph, nframes)
+    t = go(zenapi.launchGraph, graph, nframes)
     return 'OK'
 
 
 @app.route('/getDescriptors', methods=['GET'])
 def getDescriptors():
-    descs = zencli.getDescriptors()
+    descs = zenapi.getDescriptors()
     return json.dumps(descs)

@@ -1,45 +1,62 @@
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
+@eval('lambda x: x()')
+def core():
+    import os
+    import sys
 
-from .viewport import ViewportWidget
-from .timeline import TimelineWidget
+    lib_dir = os.path.dirname(__file__)
+    lib_path = os.path.join(lib_dir, 'libzenvis.so')
+    assert os.path.exists(lib_path), lib_path
 
-from zenedit import NodeEditor
+    sys.path.insert(0, lib_dir)
+    try:
+        import libzenvis as core
+    finally:
+        assert sys.path.pop(0) == lib_dir
+
+    return core
 
 
-class MainWindow(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
+dnStat = {
+    'frameid': 0,
+    'solver_frameid': 0,
+    'solver_interval': 0,
+    'render_fps': 0,
+}
 
-        self.setWindowTitle('zenvis')
-        self.setGeometry(200, 200, 1400, 720)
+upStat = {
+    'next_frameid': -1,
+    'resolution': (1, 1),
+    'perspective': (),
+    'playing': True,
+}
 
-        scrn_size = QDesktopWidget().geometry()
-        self_size = self.geometry()
-        self.move(
-                (scrn_size.width() - self_size.width()) // 2,
-                (scrn_size.height() - self_size.height()) // 2)
 
-        self.editor = NodeEditor()
-        self.viewport = ViewportWidget()
-        self.timeline = TimelineWidget()
+def uploadStatus():
+    core.set_window_size(*upStat['resolution'])
+    core.look_perspective(*upStat['perspective'])
+    core.set_curr_playing(upStat['playing'])
+    if upStat['next_frameid'] != -1:
+        core.set_curr_frameid(upStat['next_frameid'])
 
-        self.mainsplit = QSplitter(Qt.Horizontal)
-        self.mainsplit.setOpaqueResize(True)
-        self.mainsplit.addWidget(self.viewport)
-        self.mainsplit.addWidget(self.editor)
-        self.mainsplit.setStretchFactor(0, 5)
-        self.mainsplit.setStretchFactor(1, 2)
 
-        self.layout = QVBoxLayout()
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.addWidget(self.mainsplit)
-        self.layout.addWidget(self.timeline)
-        self.setLayout(self.layout)
+def _recieveStatus():
+    frameid = core.get_curr_frameid()
+    solver_frameid = core.get_solver_frameid()
+    solver_interval = core.get_solver_interval()
+    render_fps = core.get_render_fps()
 
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
-            self.close()
+    dnStat.update({
+        'frameid': frameid,
+        'solver_frameid': solver_frameid,
+        'solver_interval': solver_interval,
+        'render_fps': render_fps,
+    })
 
-        super().keyPressEvent(event)
+
+def initializeGL():
+    core.initialize()
+
+
+def paintGL():
+    core.new_frame()
+    _recieveStatus()

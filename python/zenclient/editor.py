@@ -9,9 +9,9 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
-from .mtutils import go
-
-import zenwebcli
+from zenutils import go
+from zenwebcfg import zenapi
+import zenwebcfg
 
 
 class QDMGraphicsScene(QGraphicsScene):
@@ -652,8 +652,8 @@ class NodeEditor(QWidget):
         self.view.setScene(self.scene)
 
         self.initExecute()
-        self.initConnect()
         self.initShortcuts()
+        self.initConnect()
 
     def initShortcuts(self):
         self.msgF5 = QShortcut(QKeySequence('F5'), self)
@@ -663,14 +663,17 @@ class NodeEditor(QWidget):
         self.msgDel.activated.connect(self.on_delete)
 
     def initConnect(self):
-        self.edit_baseurl = QLineEdit(self)
-        self.edit_baseurl.move(180, 40)
-        self.edit_baseurl.resize(180, 30)
-        self.edit_baseurl.setText('http://localhost:8000')
+        self.edit_svraddr = QLineEdit(self)
+        self.edit_svraddr.move(180, 40)
+        self.edit_svraddr.resize(180, 30)
+        #self.edit_svraddr.setText('localhost')
+        self.edit_svraddr.setText('zeus.archibate.top')
 
         self.button_connect = QPushButton('Connect', self)
         self.button_connect.move(370, 40)
         self.button_connect.clicked.connect(self.on_connect)
+
+        self.on_connect()
 
     def initExecute(self):
         self.edit_nframes = QLineEdit(self)
@@ -680,17 +683,20 @@ class NodeEditor(QWidget):
 
         self.button_execute = QPushButton('Execute', self)
         self.button_execute.move(60, 40)
-        self.button_execute.clicked.connect(self.on_execute) 
+        self.button_execute.clicked.connect(self.on_execute)
+
+    def refreshDescriptors(self):
+        self.scene.setDescriptors(zenapi.getDescriptors())
 
     def on_connect(self):
-        baseurl = self.edit_baseurl.text()
-        zenwebcli.connectServer(baseurl)
-        self.scene.setDescriptors(zenwebcli.getDescriptors())
+        svraddr = self.edit_svraddr.text()
+        zenwebcfg.connectServer(svraddr)
+        self.refreshDescriptors()
 
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
         graph = self.scene.dumpGraph()
-        go(zenwebcli.launchGraph, graph, nframes)
+        go(zenapi.launchGraph, graph, nframes)
 
     def on_delete(self):
         itemList = self.scene.selectedItems()
@@ -699,7 +705,7 @@ class NodeEditor(QWidget):
             item.remove()
 
     def reloadDescriptors(self):
-        self.scene.setDescriptors(zenwebcli.getDescriptors())
+        self.scene.setDescriptors(zenapi.getDescriptors())
 
     def menuTriggered(self, act):
         name = act.text()

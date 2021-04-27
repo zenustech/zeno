@@ -14,6 +14,7 @@ std::unique_ptr<Server> Server::_instance;
 
 int curr_frameid = -1;
 
+static bool playing = true;
 static int nx = 960, ny = 800;
 
 static double last_xpos, last_ypos;
@@ -104,6 +105,9 @@ void finalize() {
 void new_frame() {
   auto &server = Server::get();
 
+  if (playing)
+    curr_frameid++;
+
   server.poll_init();
   if (curr_frameid >= server.frameid) {
     curr_frameid = server.frameid - 1;
@@ -122,6 +126,10 @@ void new_frame() {
 void set_window_size(int nx_, int ny_) {
   nx = nx_;
   ny = ny_;
+}
+
+void set_curr_playing(bool playing_) {
+  playing = playing_;
 }
 
 void set_curr_frameid(int frameid) {
