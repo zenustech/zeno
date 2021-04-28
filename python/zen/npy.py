@@ -60,22 +60,34 @@ def setNumericObject(name, value):
 def getNumericObject(name):
     return get_core().getNumericObject(name)
 
+def setStringObject(name, value):
+    return get_core().setStringObject(name, value)
+
+def getStringObject(name):
+    return get_core().getStringObject(name)
+
 def getCppObjectType(name):
     return get_core().getCppObjectType(name)
 
 
 
-class Reference(str):
-    pass
+class Reference:
+    def __init__(self, name):
+        self.name = name
+
+    def __str__(self):
+        return self.name
 
 
 def setCppObject(name, obj):
     if isinstance(obj, np.ndarray):
         setArrayObject(name, obj)
-    elif isinstance(obj, BooleanObject):
-        setBooleanObject(name, bool(obj))
     elif isinstance(obj, Reference):
         setReference(name, str(obj))
+    elif isinstance(obj, BooleanObject):
+        setBooleanObject(name, bool(obj))
+    elif isinstance(obj, str):
+        setStringObject(name, obj)
     elif isinstance(obj, (int, float, list, tuple)):
         setNumericObject(name, obj)
     else:
@@ -87,6 +99,8 @@ def getCppObject(name):
         return getArrayObject(name)
     if type == 'boolean':
         return BooleanObject(getBooleanObject(name))
+    if type == 'string':
+        return getStringObject(name)
     if type == 'numeric':
         return getNumericObject(name)
     else:

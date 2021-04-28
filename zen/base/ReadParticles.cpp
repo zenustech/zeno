@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/ParticlesObject.h>
+#include <zen/StringObject.h>
 #include <cstring>
 
 namespace zenbase {
@@ -55,6 +56,26 @@ static int defReadParticles = zen::defNodeClass<ReadParticles>("ReadParticles",
     "pars",
     }, /* params: */ {
     {"string", "path", ""},
+    }, /* category: */ {
+    "particles",
+    }});
+
+
+struct ImportParticles : zen::INode {
+  virtual void apply() override {
+    auto path = get_input("path")->as<StringObject>();
+    auto pars = zen::IObject::make<ParticlesObject>();
+    readpars(path->get().c_str(), pars->pos, pars->vel);
+    set_output("pars", pars);
+  }
+};
+
+static int defImportParticles = zen::defNodeClass<ImportParticles>("ImportParticles",
+    { /* inputs: */ {
+    "path",
+    }, /* outputs: */ {
+    "pars",
+    }, /* params: */ {
     }, /* category: */ {
     "particles",
     }});

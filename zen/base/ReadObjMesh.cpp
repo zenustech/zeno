@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/MeshObject.h>
+#include <zen/StringObject.h>
 #include <cstring>
 
 namespace zenbase {
@@ -92,6 +93,26 @@ static int defReadObjMesh = zen::defNodeClass<ReadObjMesh>("ReadObjMesh",
     "mesh",
     }, /* params: */ {
     {"string", "path", ""},
+    }, /* category: */ {
+    "trimesh",
+    }});
+
+
+struct ImportObjMesh : zen::INode {
+  virtual void apply() override {
+    auto path = get_input("path")->as<StringObject>();
+    auto mesh = zen::IObject::make<MeshObject>();
+    readobj(path->get().c_str(), mesh->vertices, mesh->uvs, mesh->normals);
+    set_output("mesh", mesh);
+  }
+};
+
+static int defImportObjMesh = zen::defNodeClass<ImportObjMesh>("ImportObjMesh",
+    { /* inputs: */ {
+    "path",
+    }, /* outputs: */ {
+    "mesh",
+    }, /* params: */ {
     }, /* category: */ {
     "trimesh",
     }});
