@@ -1,4 +1,6 @@
-from .procutils import run_script
+import runpy
+from zenutils import multiproc, run_script
+
 from .codegen import generate_script
 from .descriptor import parse_descriptor_line
 
@@ -14,6 +16,10 @@ def launchGraph(graph, nframes):
     return launchScript(script, nframes)
 
 
+def _run_script(path):
+    runpy.run_path(path)
+
+
 def launchScript(script, nframes):
     script = std_header + f'''
 {script}
@@ -24,7 +30,11 @@ for frame in range({nframes}):
 print('EXITING')
 '''
     print(script)
-    return run_script(script)
+    return run_script(script, multiproc(_run_script))
+
+
+def _run_get_desc(path):
+    return runpy.run_path(path)['descs']
 
 
 def getDescriptors():
@@ -32,7 +42,7 @@ def getDescriptors():
 descs = zen.dumpDescriptors()
 print(descs)
 '''
-    descs = run_script(script)['descs']
+    descs = run_script(script, multiproc(_run_get_desc))
     if isinstance(descs, bytes):
         descs = descs.decode()
     descs = descs.splitlines()
