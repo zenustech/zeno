@@ -54,6 +54,7 @@ class ZensimExecuteOperator(bpy.types.Operator):
         return space.type == 'NODE_EDITOR' and space.tree_type == 'ZensimTreeType'
 
     def execute(self, context):
+        scene = context.scene
         space = context.space_data
         node_tree = space.node_tree
         node_active = context.active_node

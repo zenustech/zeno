@@ -33,11 +33,28 @@ def new_mesh(name, pos=[], edges=[], faces=[], uv=None):
     return mesh
 
 
+def renew_mesh(name, pos=[], edges=[], faces=[], uv=None):
+    if name in bpy.data.meshes:
+        mesh = bpy.data.meshes[name]
+        bpy.data.meshes.remove(mesh)
+    mesh = new_mesh(name, pos, edges, faces, uv)
+    return mesh
+
+
 def new_object(name, mesh):
     obj = bpy.data.objects.new(name, mesh)
     col = bpy.context.collection
     col.objects.link(obj)
     bpy.context.view_layer.objects.active = obj
+    return obj
+
+
+def renew_object(name, mesh):
+    if name in bpy.data.objects:
+        obj = bpy.data.objects[name]
+        obj.data = mesh
+    else:
+        obj = new_object(name, mesh)
     return obj
 
 

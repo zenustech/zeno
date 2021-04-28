@@ -3,7 +3,6 @@ File I/O control
 '''
 
 import os
-import shutil
 import tempfile
 
 from .py import *
@@ -15,8 +14,6 @@ iopath = None
 def setIOPath(path):
     global iopath
     iopath = path
-    shutil.rmtree(iopath, ignore_errors=True)
-    os.mkdir(iopath)
 
 
 @defNodeClass
