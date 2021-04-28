@@ -12,7 +12,7 @@ def launchGraph():
     graph = json.loads(request.form['graph'])
     nframes = request.form['nframes']
 
-    t = zenapi.launchGraph(graph, nframes)
+    zenapi.launchGraph(graph, nframes)
     return 'OK'
 
 

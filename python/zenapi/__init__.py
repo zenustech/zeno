@@ -1,4 +1,5 @@
 import runpy
+import tempfile
 from zenutils import multiproc, run_script
 
 from .codegen import generate_script
@@ -19,9 +20,10 @@ def launchGraph(graph, nframes):
 def _run_script(path):
     runpy.run_path(path)
 
-
 def launchScript(script, nframes):
+    iopath = '/tmp/zenio'
     script = std_header + f'''
+zen.setIOPath({iopath!r})
 {script}
 
 for frame in range({nframes}):
@@ -35,7 +37,6 @@ print('EXITING')
 
 def _run_get_desc(path):
     return runpy.run_path(path)['descs']
-
 
 def getDescriptors():
     script = std_header + f'''

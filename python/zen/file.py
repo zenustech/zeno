@@ -1,4 +1,22 @@
+'''
+File I/O control
+'''
+
+import os
+import shutil
+import tempfile
+
 from .py import *
+from .kwd import G
+
+
+iopath = None
+
+def setIOPath(path):
+    global iopath
+    iopath = path
+    shutil.rmtree(iopath, ignore_errors=True)
+    os.mkdir(iopath)
 
 
 @defNodeClass
@@ -13,14 +31,19 @@ class MakeString(INode):
 
 
 @defNodeClass
-class AskExport(INode):
-    z_inputs = ['path']
+class ExportPath(INode):
+    z_params = [('string', 'name', '')]
+    z_outputs = ['path']
     z_categories = 'imexport'
 
     def apply(self):
-        path = self.get_input('path')
-        with open('/tmp/zenexport', 'a') as f:
-            print(path, file=f)
+        name = self.get_param('name')
+        assert iopath is not None, 'please zen.setIOPath first'
+        dirpath = os.path.join(iopath, '{:06d}'.format(G.frameid))
+        if not os.path.isdir(dirpath):
+            os.mkdir(dirpath)
+        path = os.path.join(dirpath, name)
+        self.set_output('path', path)
 
 
-__all__ = []
+__all__ = ['setIOPath']
