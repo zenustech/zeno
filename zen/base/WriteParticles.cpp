@@ -56,8 +56,8 @@ struct ExportParticles : zen::INode {
 static int defExportParticles = zen::defNodeClass<ExportParticles>("ExportParticles",
     { /* inputs: */ {
     "pars",
-    }, /* outputs: */ {
     "path",
+    }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {
     "particles",

@@ -66,8 +66,8 @@ struct ExportObjMesh : zen::INode {
 static int defExportObjMesh = zen::defNodeClass<ExportObjMesh>("ExportObjMesh",
     { /* inputs: */ {
     "mesh",
-    }, /* outputs: */ {
     "path",
+    }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {
     "trimesh",

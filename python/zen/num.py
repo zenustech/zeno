@@ -121,15 +121,4 @@ class PrintNumeric(INode):
         print('PrintNumeric:', value)
 
 
-@defNodeClass
-class MakeString(INode):
-    z_params = [('string', 'value', '')]
-    z_outputs = ['value']
-    z_categories = 'numeric'
-
-    def apply(self):
-        value = self.get_param('value')
-        self.set_output('value', value)
-
-
 __all__ = []

@@ -48,7 +48,7 @@ static int defPolyDuplicate = zen::defNodeClass<PolyDuplicate>("PolyDuplicate",
     }, /* params: */ {
     
     }, /* category: */ {
-    "Utility",
+    "trimesh",
     }});
 
 }
