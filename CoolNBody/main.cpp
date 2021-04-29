@@ -1,10 +1,12 @@
 #include <glm/vec3.hpp>
 #include <glm/glm.hpp>
 #include <cassert>
+#include <cstring>
 #include <cstdio>
 #include <vector>
 #include <cmath>
 #include <omp.h>
+#include <sys/stat.h>
 
 
 std::vector<float> mass;
@@ -13,8 +15,9 @@ std::vector<glm::dvec3> vel;
 std::vector<glm::dvec3> acc;
 
 
-const double DT = 0.01;
-const double G = 0.01;
+const double DT = 0.001;
+const double G = -0.75;
+const double EPS = 0.01;
 
 
 void step() {
@@ -26,7 +29,7 @@ void step() {
     for (int j = 0; j < pos.size(); j++) {
       if (j == i) continue;
       glm::dvec3 r = pos[i] - pos[j];
-      double x = 1 / std::sqrt(glm::dot(r, r) + 1e-8);
+      double x = 1 / std::sqrt(glm::dot(r, r) + EPS);
       double fac = G * x * x * x;
       acc[i] += fac * r;
     }
@@ -34,7 +37,7 @@ void step() {
 
 #pragma omp parallel for
   for (int i = 0; i < pos.size(); i++) {
-    pos[i] += vel[i] * DT * 0.5 * acc[i] * DT * DT;
+    pos[i] += vel[i] * DT + 0.5 * acc[i] * DT * DT;
     vel[i] += acc[i] * DT;
   }
 }
@@ -42,10 +45,15 @@ void step() {
 
 void load(const char *path) {
   FILE *fp = fopen(path, "r");
+  if (!fp) {
+    perror(path);
+  }
   assert(fp);
   size_t count;
   fscanf(fp, "#count %zd\n", &count);
   pos.resize(count);
+  vel.resize(count);
+  mass.resize(count);
   for (int i = 0; i < pos.size(); i++) {
     fscanf(fp, "#v_mass %lf\n", &mass[i]);
     fscanf(fp, "v %lf %lf %lf\n", &pos[i].x, &pos[i].y, &pos[i].z);
@@ -57,6 +65,9 @@ void load(const char *path) {
 
 void dump(const char *path) {
   FILE *fp = fopen(path, "w");
+  if (!fp) {
+    perror(path);
+  }
   assert(fp);
   fprintf(fp, "#count %zd\n", pos.size());
   for (int i = 0; i < pos.size(); i++) {
@@ -70,9 +81,28 @@ void dump(const char *path) {
 
 int main(void)
 {
-  load("solarsystem.txt");
+  /*load("solarsystem.obj");
   for (int i = 0; i < pos.size(); i++) {
     mass[i] *= 4 * M_PI * M_PI;
     vel[i] *= 365.24;
+  }*/
+  load("dubinski.obj");
+  for (int i = 0; i < pos.size(); i++) {
+    mass[i] *= 120000.0;
+    vel[i] *= 8.0;
+    pos[i] *= 1.5;
+  }
+
+  for (int i = 0; i < 250; i++) {
+    for (int j = 0; j < 20; j++) {
+      step();
+    }
+
+    char path[1024];
+    sprintf(path, "/tmp/zenio/%06d/", i);
+    mkdir(path, 0755);
+    strcat(path, "result.obj");
+    printf("dumping to %s\n", path);
+    dump(path);
   }
 }
