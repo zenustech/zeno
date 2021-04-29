@@ -2,6 +2,7 @@ import bpy
 from bpy.utils import register_class, unregister_class
 
 import zenapi
+from zenutils import go
 
 
 
@@ -68,7 +69,7 @@ class ZensimExecuteOperator(bpy.types.Operator):
             return {'CANCELED'}
 
         nodes = dumpBlenderGraph(node_tree)
-        zenapi.launchGraph(nodes, nframes)
+        go(zenapi.launchGraph, nodes, nframes)
 
         return {'FINISHED'}
 

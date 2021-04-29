@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/VDBGrid.h>
+#include <zen/StringObject.h>
 //#include "../../Library/MnBase/Meta/Polymorphism.h"
 //openvdb::io::File(filename).write({grid});
 
@@ -13,13 +14,31 @@ struct WriteVDBGrid : zen::INode {
   }
 };
 
-
 static int defWriteVDBGrid = zen::defNodeClass<WriteVDBGrid>("WriteVDBGrid",
     { /* inputs: */ {
     "data",
     }, /* outputs: */ {
     }, /* params: */ {
     {"string", "path", ""},
+    }, /* category: */ {
+    "openvdb",
+    }});
+
+
+struct ExportVDBGrid : zen::INode {
+  virtual void apply() override {
+    auto path = get_input("path")->as<zenbase::StringObject>();
+    auto data = get_input("data")->as<VDBGrid>();
+    data->output(path->get());
+  }
+};
+
+static int defExportVDBGrid = zen::defNodeClass<ExportVDBGrid>("ExportVDBGrid",
+    { /* inputs: */ {
+    "data",
+    "path",
+    }, /* outputs: */ {
+    }, /* params: */ {
     }, /* category: */ {
     "openvdb",
     }});

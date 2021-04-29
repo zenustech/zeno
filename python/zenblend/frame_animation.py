@@ -3,26 +3,32 @@ import bpy
 import os
 import zenapi
 
-from .blender_io import renew_mesh, renew_object
+from .blender_io import renew_mesh, renew_object, renew_volume
 from .obj_mesh_io import readobj
 
 
 curr_objects = set()
-prev_objects = frozenset()
 
 
 def loadFileIntoBlender(name, ext, path, frameid):
-    assert ext == '.obj'
+    frame_name = '{}:{:06d}'.format(name, frameid)
 
-    verts, faces = readobj(path, simple=True)
-    if faces is None:
-        faces = []
+    if ext == '.obj':
+        verts, faces = readobj(path, simple=True)
+        if faces is None:
+            faces = []
+        else:
+            faces = faces.tolist()
+        verts = verts.tolist()
+        mesh = renew_mesh(frame_name, pos=verts, faces=faces)
+        obj = renew_object(name, mesh)
+
+    elif ext == '.vdb':
+        obj = renew_volume_object(name, path)
+
     else:
-        faces = faces.tolist()
-    verts = verts.tolist()
+        raise RuntimeError(f'bad file extension name: {ext}')
 
-    mesh = renew_mesh('{}:{:06d}'.format(name, frameid), pos=verts, faces=faces)
-    obj = renew_object(name, mesh)
     curr_objects.add(obj.name)
 
 
@@ -30,7 +36,6 @@ def loadFileIntoBlender(name, ext, path, frameid):
 def frameUpdateCallback(*unused_args):
     frameid = bpy.context.scene.frame_current
 
-    global prev_objects
     prev_objects = frozenset(curr_objects)
 
     curr_objects.clear()

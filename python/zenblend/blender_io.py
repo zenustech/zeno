@@ -58,6 +58,16 @@ def renew_object(name, mesh):
     return obj
 
 
+def renew_volume_object(name, path):
+    if name in bpy.data.objects:
+        obj = bpy.data.objects[name]
+        bpy.data.objects.remove(obj)
+    bpy.ops.object.volume_import(filepath=path)
+    obj = bpy.context.object
+    obj.name = name
+    return obj
+
+
 def mesh_update(mesh, pos=None, edges=None, faces=None):
     if pos is not None:
         from_numpy(mesh.vertices, 'co', pos)
@@ -66,12 +76,6 @@ def mesh_update(mesh, pos=None, edges=None, faces=None):
     if faces is not None:
         from_numpy(mesh.polygons, 'vertices', faces)
     mesh.update()
-
-
-def blender_import_mesh(path):
-    verts, faces = readobj(path, simple=True)
-    mesh = new_mesh('Zeno', pos=verts.tolist(), faces=faces.tolist())
-    new_object('Zeno', mesh)
 
 
 __all__ = []
