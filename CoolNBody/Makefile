@@ -3,4 +3,4 @@ x:
 	make -Cbuild
 	rm -rf /tmp/zenio
 	mkdir /tmp/zenio
-	build/NBody
+	sh -c "time build/NBody"

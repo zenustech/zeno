@@ -7,6 +7,7 @@ skip = int(sys.argv[1])
 with open('galaxy/data/dubinski.tab', 'r') as fin:
     lines = fin.readlines()
     lines = lines[::skip]
+    lines = lines[:len(lines) // 4 * 4]
 
 with open('dubinski.obj', 'w') as fout:
     print('#count', len(lines), file=fout)
