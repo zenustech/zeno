@@ -11,6 +11,7 @@ file(GLOB NBODY_SOURCE *.cpp *.h)
 
 #add_library(NBody SHARED ${NBODY_SOURCE})
 add_executable(NBody ${NBODY_SOURCE})
+target_compile_options(NBody PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wno-ignored-attributes>)
 
 if (WIN32)
 target_compile_options(NBody PRIVATE "/arch:AVX")
