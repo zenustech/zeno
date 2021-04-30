@@ -57,7 +57,7 @@ struct VDBGrid : zen::IObject {
 template <typename GridT>
 struct VDBGridWrapper : VDBGrid {
   typename GridT::Ptr m_grid;
-
+  VDBGridWrapper(){ m_grid = GridT::create(); }
   virtual void output(std::string path) override {
     writeFloatGrid<GridT>(path, m_grid);
   }

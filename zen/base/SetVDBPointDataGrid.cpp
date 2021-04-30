@@ -18,7 +18,7 @@ openvdb::points::PointDataGrid::Ptr particleArrayToGrid(const ParticlesObject& p
     for (auto i = 0; i < particles.size(); ++i){
       for (int d = 0; d < 3; ++d) {
             positions[i][d] = particles.pos[i][d];
-            velocitys[i][d] = particles.vel[i][d]
+            velocitys[i][d] = particles.vel[i][d];
           
           }
     }
