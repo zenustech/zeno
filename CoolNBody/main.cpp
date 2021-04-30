@@ -4,10 +4,16 @@
 #include <cstring>
 #include <cstdio>
 #include <vector>
+#include <array>
 #include <cmath>
 #include <omp.h>
 #include <sys/stat.h>
 #include <x86intrin.h>
+
+
+const double DT = 0.004;
+const double G = -1.00;
+const double EPS = 0.01;
 
 
 std::vector<double> mass;
@@ -16,23 +22,63 @@ std::vector<__m256d> vel;
 std::vector<__m256d> acc;
 
 
-const double DT = 0.004;
-const double G = -0.75;
-const double EPS = 0.01;
+std::vector<__m256d> n_center;
+std::vector<std::array<int, 8>> n_children;
+std::vector<double> n_size;
+std::vector<int> n_pid;
 
 
-static inline __m256d _mm256_rsqrt_pd(__m256d s) {
-  __m128 q = _mm256_cvtpd_ps(s);
-  q = _mm_rsqrt_ps(q);
-  __m256d x = _mm256_cvtps_pd(q);
-  __m256d y = s * x * x;
-  __m256d a = _mm256_mul_pd(y, _mm256_set1_pd(0.375));
-  a = _mm256_mul_pd(a, y);
-  __m256d b = _mm256_mul_pd(y, _mm256_set1_pd(1.25));
-  b = _mm256_sub_pd(b, _mm256_set1_pd(1.875));
-  y = _mm256_sub_pd(a, b);
-  x = _mm256_mul_pd(x, y);
-  return x;
+int alloc_node(__m256d center, double size, int pid) {
+  int n = n_center.size();
+  n_center.push_back(center);
+  n_size.push_back(size);
+  n_pid.push_back(pid);
+  n_children.push_back({0, 0, 0, 0, 0, 0, 0, 0});
+  return n;
+}
+
+
+void tree_add_particle(int i, int n = 0) {
+  int chid = _mm256_movemask_pd(n_center[n] > pos[i]) & 7;
+  int chn = n_children[n][chid];
+  if (chn != 0) {
+    tree_add_particle(i, chn);
+    return;
+  }
+  __m256d ch_dir = _mm256_setr_pd(
+      chid & 1 ? 1 : -1, chid & 2 ? 1 : -1, chid & 4 ? 1 : -1, 0.0);
+  double ch_size = n_size[n] * 0.5;
+  __m256d ch_center = n_center[n] + ch_dir * ch_size;
+  n_children[n][chid] = alloc_node(ch_center, ch_size, i);
+}
+
+
+void build_tree() {
+  __m256d bmin = pos[0];
+  __m256d bmax = pos[0];
+  for (int i = 1; i < pos.size(); i++) {
+    bmin = _mm256_min_pd(bmin, pos[i]);
+    bmax = _mm256_max_pd(bmax, pos[i]);
+  }
+  double vsize[4];
+  _mm256_storeu_pd(vsize, bmax - bmin);
+  double size = std::min(std::min(vsize[0], vsize[1]), vsize[2]);
+  __m256d center = (bmin + bmax) * 0.5;
+
+  n_size.resize(1);
+  n_center.resize(1);
+  n_children.resize(1);
+  n_pid.resize(1);
+
+  n_size[0] = size;
+  n_center[0] = center;
+  n_children[0] = {0, 0, 0, 0, 0, 0, 0, 0};
+  n_pid[0] = -1;
+
+  for (int i = 0; i < pos.size(); i++) {
+    tree_add_particle(i);
+  }
+  printf("%d\n", n_center.size());
 }
 
 
@@ -40,10 +86,10 @@ void step() {
   acc.resize(vel.size());
 
 #pragma omp parallel for
-  for (size_t i = 0; i < pos.size(); i++) {
+  for (int i = 0; i < pos.size(); i++) {
     acc[i] = _mm256_set1_pd(0.0);
 
-    for (size_t j = 0; j < pos.size(); j += 4) {
+    for (int j = 0; j < pos.size(); j += 4) {
       __m256d r0 = pos[i] - pos[j + 0];
       __m256d r1 = pos[i] - pos[j + 1];
       __m256d r2 = pos[i] - pos[j + 2];
@@ -81,8 +127,8 @@ void load(const char *path) {
     perror(path);
   }
   assert(fp);
-  size_t count;
-  fscanf(fp, "#count %zd\n", &count);
+  int count;
+  fscanf(fp, "#count %d\n", &count);
   pos.resize(count);
   vel.resize(count);
   mass.resize(count);
@@ -101,7 +147,7 @@ void dump(const char *path) {
     perror(path);
   }
   assert(fp);
-  fprintf(fp, "#count %zd\n", pos.size());
+  fprintf(fp, "#count %d\n", pos.size());
   for (int i = 0; i < pos.size(); i++) {
     fprintf(fp, "#v_mass %lf\n", mass[i]);
     fprintf(fp, "v %lf %lf %lf\n", pos[i][0], pos[i][1], pos[i][2]);
@@ -113,18 +159,20 @@ void dump(const char *path) {
 
 int main(void)
 {
-  /*load("solarsystem.obj");
+  load("solarsystem.obj");
   for (int i = 0; i < pos.size(); i++) {
     mass[i] *= 4 * M_PI * M_PI;
     vel[i] *= 365.24;
-  }*/
-  load("dubinski.obj");
+  }
+  /*load("dubinski.obj");
   for (int i = 0; i < pos.size(); i++) {
-    mass[i] *= 16000.0;
+    mass[i] *= 16000.0 * 0.75;
     vel[i] *= 8.0;
     pos[i] *= 1.5;
-  }
+  }*/
 
+  build_tree();
+  /*
   for (int i = 0; i < 250; i++) {
     for (int j = 0; j < 28; j++) {
       step();
@@ -137,4 +185,5 @@ int main(void)
     printf("dumping to %s\n", path);
     dump(path);
   }
+  */
 }
