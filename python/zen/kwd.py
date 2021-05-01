@@ -5,15 +5,12 @@ Frame & substep control
 '''
 
 
-from .kwd import *
 from .py import *
 from .api import *
 
 
-class G:
-    pass
+G = type('', (), {})()
 
-G = G()
 G.frameid = 0
 G.substepid = 0
 G.frame_time = 0.03
@@ -35,10 +32,10 @@ def frameBegin():
     G.has_time_step_integrated = False
     G.frame_time_elapsed = 0.0
 
-    if G.frameid == 0: addNode('EndFrame', 'endFrame')
+    if G.frameid == 0: addNode('EndFrame', 'endFrame')  # DELME on rfc
 
 def frameEnd():
-    applyNode('endFrame')
+    applyNode('endFrame')  # DELME on rfc
 
     G.frameid += 1
 

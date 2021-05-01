@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/MeshObject.h>
+#include <zen/StringObject.h>
 #include <cstring>
 
 namespace zenbase {
@@ -35,7 +36,6 @@ static void writeobj(
 }
 
 
-
 struct WriteObjMesh : zen::INode {
   virtual void apply() override {
     auto path = std::get<std::string>(get_param("path"));
@@ -44,13 +44,31 @@ struct WriteObjMesh : zen::INode {
   }
 };
 
-
 static int defWriteObjMesh = zen::defNodeClass<WriteObjMesh>("WriteObjMesh",
     { /* inputs: */ {
     "mesh",
     }, /* outputs: */ {
     }, /* params: */ {
     {"string", "path", ""},
+    }, /* category: */ {
+    "trimesh",
+    }});
+
+
+struct ExportObjMesh : zen::INode {
+  virtual void apply() override {
+    auto path = get_input("path")->as<StringObject>();
+    auto mesh = get_input("mesh")->as<MeshObject>();
+    writeobj(path->get().c_str(), mesh->vertices, mesh->uvs, mesh->normals);
+  }
+};
+
+static int defExportObjMesh = zen::defNodeClass<ExportObjMesh>("ExportObjMesh",
+    { /* inputs: */ {
+    "mesh",
+    "path",
+    }, /* outputs: */ {
+    }, /* params: */ {
     }, /* category: */ {
     "trimesh",
     }});

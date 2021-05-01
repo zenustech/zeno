@@ -1,4 +1,9 @@
-from .procutils import run_script
+import os
+import runpy
+import shutil
+import tempfile
+from zenutils import multiproc, run_script
+
 from .codegen import generate_script
 from .descriptor import parse_descriptor_line
 
@@ -8,14 +13,23 @@ import zen
 zen.loadLibrary('build/FastFLIP/libFLIPlib.so')
 '''
 
+iopath = '/tmp/zenio'
+
 
 def launchGraph(graph, nframes):
     script = generate_script(graph)
     return launchScript(script, nframes)
 
 
+def _run_script(path):
+    runpy.run_path(path)
+
 def launchScript(script, nframes):
+    shutil.rmtree(iopath, ignore_errors=True)
+    os.mkdir(iopath)
+
     script = std_header + f'''
+zen.setIOPath({iopath!r})
 {script}
 
 for frame in range({nframes}):
@@ -24,18 +38,27 @@ for frame in range({nframes}):
 print('EXITING')
 '''
     print(script)
-    return run_script(script)
+    return run_script(script, multiproc(_run_script))
 
+
+def _run_get_desc(path):
+    return runpy.run_path(path)['descs']
 
 def getDescriptors():
     script = std_header + f'''
 descs = zen.dumpDescriptors()
 print(descs)
 '''
-    descs = run_script(script)['descs']
+    descs = run_script(script, multiproc(_run_get_desc))
     if isinstance(descs, bytes):
         descs = descs.decode()
     descs = descs.splitlines()
     descs = [parse_descriptor_line(line) for line in descs if ':' in line]
     descs = {name: desc for name, desc in descs}
     return descs
+
+
+__all__ = [
+    'getDescriptors',
+    'launchGraph',
+]

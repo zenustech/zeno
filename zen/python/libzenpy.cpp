@@ -1,6 +1,7 @@
 #include <zen/zen.h>
 #include <zen/ArrayObject.h>
 #include <zen/NumericObject.h>
+#include <zen/StringObject.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
@@ -11,14 +12,15 @@ std::string getCppObjectType(std::string name) {
   auto obj = zen::getObject(name);
   if (obj->as<zenbase::ArrayObject>()) {
     return "array";
-  }
-  if (obj->as<zen::BooleanObject>()) {
+  } else if (obj->as<zen::BooleanObject>()) {
     return "boolean";
-  }
-  if (obj->as<zenbase::NumericObject>()) {
+  } else if (obj->as<zenbase::StringObject>()) {
+    return "string";
+  } else if (obj->as<zenbase::NumericObject>()) {
     return "numeric";
+  } else {
+    return "other";
   }
-  return "other";
 }
 
 
@@ -42,6 +44,18 @@ void setNumericObject(std::string name, zenbase::NumericValue value) {
 
 zenbase::NumericValue getNumericObject(std::string name) {
   auto obj = zen::getObject(name)->as<zenbase::NumericObject>();
+  return obj->value;
+}
+
+
+void setStringObject(std::string name, std::string value) {
+  auto obj = std::make_unique<zenbase::StringObject>();
+  obj->value = value;
+  zen::setObject(name, std::move(obj));
+}
+
+std::string getStringObject(std::string name) {
+  auto obj = zen::getObject(name)->as<zenbase::StringObject>();
   return obj->value;
 }
 
@@ -112,6 +126,8 @@ PYBIND11_MODULE(libzenpy, m) {
 
   m.def("setBooleanObject", setBooleanObject);
   m.def("getBooleanObject", getBooleanObject);
+  m.def("setStringObject", setStringObject);
+  m.def("getStringObject", getStringObject);
   m.def("setNumericObject", setNumericObject);
   m.def("getNumericObject", getNumericObject);
   m.def("setReference", zen::setReference);

@@ -33,11 +33,38 @@ def new_mesh(name, pos=[], edges=[], faces=[], uv=None):
     return mesh
 
 
+def renew_mesh(name, pos=[], edges=[], faces=[], uv=None):
+    if name in bpy.data.meshes:
+        mesh = bpy.data.meshes[name]
+        bpy.data.meshes.remove(mesh)
+    mesh = new_mesh(name, pos, edges, faces, uv)
+    return mesh
+
+
 def new_object(name, mesh):
     obj = bpy.data.objects.new(name, mesh)
     col = bpy.context.collection
     col.objects.link(obj)
     bpy.context.view_layer.objects.active = obj
+    return obj
+
+
+def renew_object(name, mesh):
+    if name in bpy.data.objects:
+        obj = bpy.data.objects[name]
+        obj.data = mesh
+    else:
+        obj = new_object(name, mesh)
+    return obj
+
+
+def renew_volume_object(name, path):
+    if name in bpy.data.objects:
+        obj = bpy.data.objects[name]
+        bpy.data.objects.remove(obj)
+    bpy.ops.object.volume_import(filepath=path)
+    obj = bpy.context.object
+    obj.name = name
     return obj
 
 
@@ -49,12 +76,6 @@ def mesh_update(mesh, pos=None, edges=None, faces=None):
     if faces is not None:
         from_numpy(mesh.polygons, 'vertices', faces)
     mesh.update()
-
-
-def blender_import_mesh(path):
-    verts, faces = readobj(path, simple=True)
-    mesh = new_mesh('Zeno', pos=verts.tolist(), faces=faces.tolist())
-    new_object('Zeno', mesh)
 
 
 __all__ = []

@@ -95,7 +95,7 @@ def readobj(path, orient='xyz', scale=None, simple=False, usemtl=True, quadok=Fa
             ret['v'] *= scale
 
     if simple:
-        return ret['v'], ret['f'][:, :, 0]
+        return ret['v'], ret['f'][:, :, 0] if len(faces) != 0 else None
 
     return ret
 

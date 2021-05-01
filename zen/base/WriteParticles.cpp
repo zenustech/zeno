@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/ParticlesObject.h>
+#include <zen/StringObject.h>
 #include <cstring>
 
 namespace zenbase {
@@ -25,7 +26,6 @@ static void writepars(
 }
 
 
-
 struct WriteParticles : zen::INode {
   virtual void apply() override {
     auto path = std::get<std::string>(get_param("path"));
@@ -34,13 +34,31 @@ struct WriteParticles : zen::INode {
   }
 };
 
-
 static int defWriteParticles = zen::defNodeClass<WriteParticles>("WriteParticles",
     { /* inputs: */ {
     "pars",
     }, /* outputs: */ {
     }, /* params: */ {
     {"string", "path", ""},
+    }, /* category: */ {
+    "particles",
+    }});
+
+
+struct ExportParticles : zen::INode {
+  virtual void apply() override {
+    auto path = get_input("path")->as<StringObject>();
+    auto pars = get_input("pars")->as<ParticlesObject>();
+    writepars(path->get().c_str(), pars->pos, pars->vel);
+  }
+};
+
+static int defExportParticles = zen::defNodeClass<ExportParticles>("ExportParticles",
+    { /* inputs: */ {
+    "pars",
+    "path",
+    }, /* outputs: */ {
+    }, /* params: */ {
     }, /* category: */ {
     "particles",
     }});
