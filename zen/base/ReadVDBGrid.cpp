@@ -1,9 +1,6 @@
 #include <zen/VDBGrid.h>
-<<<<<<< HEAD
 #include <zen/zen.h>
-=======
 #include <zen/StringObject.h>
->>>>>>> 2012ccb43749b6fa4426a2ee060a58c2a1d49810
 //#include "../../Library/MnBase/Meta/Polymorphism.h"
 // openvdb::io::File(filename).write({grid});
 
@@ -27,8 +24,6 @@ static std::unique_ptr<VDBGrid> readvdb(std::string path, std::string type)
       assert(0 && "bad VDBGrid type");
     }
     data->input(path);
-<<<<<<< HEAD
-=======
     return data;
 }
 
@@ -38,7 +33,6 @@ struct ReadVDBGrid : zen::INode {
     auto path = std::get<std::string>(get_param("path"));
     auto type = std::get<std::string>(get_param("type"));
     auto data = readvdb(path, type);
->>>>>>> 2012ccb43749b6fa4426a2ee060a58c2a1d49810
     set_output("data", data);
   }
 };
@@ -71,7 +65,6 @@ template <typename... Fs> struct overload_set : Fs... {
 template <typename... Xs>
 overload_set(Xs &&...xs) -> overload_set<remove_cvref_t<Xs>...>;
 
-<<<<<<< HEAD
 template <typename... Fs> constexpr auto make_overload_set(Fs &&...fs) {
   return overload_set<std::decay_t<Fs>...>(std::forward<Fs>(fs)...);
 }
@@ -83,7 +76,6 @@ template <typename... Fs> constexpr auto match(Fs &&...fs) {
              auto &&...vs) -> decltype(auto) {
     return std::visit(visitor, std::forward<decltype(vs)>(vs)...);
   };
-=======
 static int defReadVDBGrid = zen::defNodeClass<ReadVDBGrid>("ReadVDBGrid",
     { /* inputs: */ {
     }, /* outputs: */ {
@@ -115,8 +107,6 @@ static int defImportVDBGrid = zen::defNodeClass<ImportVDBGrid>("ImportVDBGrid",
     }, /* category: */ {
     "openvdb",
     }});
-
->>>>>>> 2012ccb43749b6fa4426a2ee060a58c2a1d49810
 }
 
 struct MakeVDBGrid : zen::INode {
