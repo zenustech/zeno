@@ -51,43 +51,6 @@ static int defReadVDBGrid = zen::defNodeClass<ReadVDBGrid>(
                         "openvdb",
                     }});
 
-template <class T> struct remove_cvref {
-  using type = std::remove_cv_t<std::remove_reference_t<T>>;
-};
-template <class T> using remove_cvref_t = typename remove_cvref<T>::type;
-/// https://github.com/SuperV1234/ndctechtown2020/blob/master/7_a_match.pdf
-template <typename... Fs> struct overload_set : Fs... {
-  template <typename... Xs>
-  constexpr overload_set(Xs &&...xs) : Fs{std::forward<Xs>(xs)}... {}
-  using Fs::operator()...;
-};
-/// class template argument deduction
-template <typename... Xs>
-overload_set(Xs &&...xs) -> overload_set<remove_cvref_t<Xs>...>;
-
-template <typename... Fs> constexpr auto make_overload_set(Fs &&...fs) {
-  return overload_set<std::decay_t<Fs>...>(std::forward<Fs>(fs)...);
-}
-
-template <typename... Ts> using variant = std::variant<Ts...>;
-
-template <typename... Fs> constexpr auto match(Fs &&...fs) {
-  return [visitor = make_overload_set(std::forward<Fs>(fs)...)](
-             auto &&...vs) -> decltype(auto) {
-    return std::visit(visitor, std::forward<decltype(vs)>(vs)...);
-  };
-static int defReadVDBGrid = zen::defNodeClass<ReadVDBGrid>("ReadVDBGrid",
-    { /* inputs: */ {
-    }, /* outputs: */ {
-    "data",
-    }, /* params: */ {
-    {"string", "path", ""},
-    {"string", "type", "float"},
-    }, /* category: */ {
-    "openvdb",
-    }});
-
-
 struct ImportVDBGrid : zen::INode {
   virtual void apply() override {
     auto path = get_input("path")->as<zenbase::StringObject>();
@@ -107,7 +70,7 @@ static int defImportVDBGrid = zen::defNodeClass<ImportVDBGrid>("ImportVDBGrid",
     }, /* category: */ {
     "openvdb",
     }});
-}
+
 
 struct MakeVDBGrid : zen::INode {
   virtual void apply() override {
@@ -116,12 +79,6 @@ struct MakeVDBGrid : zen::INode {
     auto structure = std::get<std::string>(get_param("structure"));
     auto name = std::get<std::string>(get_param("name"));
     std::unique_ptr<VDBGrid> data;
-    // using RetT =
-    //     std::variant<std::monostate, std::unique_ptr<VDBFloatGrid>,
-    //                  std::unique_ptr<VDBFloat3Grid>,
-    //                  std::unique_ptr<VDBIntGrid>, std::unique_ptr<VDBInt3Grid>,
-    //                  std::unique_ptr<VDBPointsGrid>>;
-    //RetT tmp;
     if (type == "float") {
       auto tmp = zen::IObject::make<VDBFloatGrid>();
       tmp->m_grid->setTransform(openvdb::math::Transform::createLinearTransform(dx));
@@ -154,20 +111,6 @@ struct MakeVDBGrid : zen::INode {
       printf("%s\n", type.c_str());
       assert(0 && "bad VDBGrid type");
     }
-    // match(
-    //     [dx, &structure, &name](auto &ptr) {
-    //       ptr->m_grid->setTransform(
-    //           openvdb::math::Transform::createLinearTransform(dx));
-    //       if constexpr (std::is_same_v<remove_cvref_t<decltype(ptr)>,
-    //                                    std::unique_ptr<VDBFloat3Grid>>)
-    //         if (structure == "Staggered") {
-    //           ptr->m_grid->setGridClass(openvdb::GridClass::GRID_STAGGERED);
-    //         }
-    //       ptr->m_grid->setName(name);
-    //     },
-    //     [](std::monostate) {}, [](...) {})(tmp);
-    // match([&data](auto &ptr) { data = std::move(ptr); }, [](std::monostate) {},
-    //       [](...) {})(tmp);
     set_output("data", data);
   }
 };
