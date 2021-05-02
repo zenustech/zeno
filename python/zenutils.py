@@ -1,5 +1,7 @@
 import os
+import sys
 import runpy
+import ctypes
 import tempfile
 import threading
 import functools
@@ -72,3 +74,17 @@ def run_script(src, callback=runpy.run_path):
         with open(path, 'w') as f:
             f.write(src)
         return callback(path)
+
+
+def load_library(path):
+    return ctypes.cdll.LoadLibrary(path)
+
+
+def import_library(libdir, name):
+    assert os.path.isdir(libdir), libdir
+    sys.path.insert(0, libdir)
+    try:
+        module = __import__(name)
+    finally:
+        assert sys.path.pop(0) == libdir
+    return module
