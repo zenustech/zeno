@@ -2,7 +2,8 @@ import os
 import runpy
 import shutil
 import tempfile
-from zenutils import multiproc, run_script
+import multiprocessing as mp
+from zenutils import run_script
 
 from .codegen import generate_script
 from .descriptor import parse_descriptor_line
@@ -15,14 +16,20 @@ zen.loadLibrary('build/FastFLIP/libFLIPlib.so')
 
 iopath = '/tmp/zenio'
 
+g_proc = None
+
 
 def launchGraph(graph, nframes):
     script = generate_script(graph)
     return launchScript(script, nframes)
 
 
-def _run_script(path):
-    runpy.run_path(path)
+def killProcess():
+    if g_proc is None:
+        print('worker process is not running')
+        return
+    g_proc.kill()
+
 
 def launchScript(script, nframes):
     shutil.rmtree(iopath, ignore_errors=True)
@@ -38,18 +45,18 @@ for frame in range({nframes}):
 print('EXITING')
 '''
     print(script)
-    return run_script(script, multiproc(_run_script))
-
-
-def _run_get_desc(path):
-    return runpy.run_path(path)['descs']
+    global g_proc
+    g_proc = mp.Process(target=run_script, args=[script], daemon=True)
+    g_proc.start()
+    g_proc.join()
+    g_proc = None
 
 def getDescriptors():
     script = std_header + f'''
 descs = zen.dumpDescriptors()
 print(descs)
 '''
-    descs = run_script(script, multiproc(_run_get_desc))
+    descs = run_script(script)['descs']
     if isinstance(descs, bytes):
         descs = descs.decode()
     descs = descs.splitlines()
@@ -61,4 +68,5 @@ print(descs)
 __all__ = [
     'getDescriptors',
     'launchGraph',
+    'killProcess',
 ]

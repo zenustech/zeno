@@ -689,7 +689,13 @@ class NodeEditor(QWidget):
 
         self.button_execute = QPushButton('Execute', self)
         self.button_execute.move(60, 40)
+        self.button_execute.resize(90, 30)
         self.button_execute.clicked.connect(self.on_execute) 
+
+        self.button_kill = QPushButton('Kill', self)
+        self.button_kill.move(160, 40)
+        self.button_kill.resize(80, 30)
+        self.button_kill.clicked.connect(self.on_kill) 
 
     def refreshDescriptors(self):
         self.scene.setDescriptors(zenapi.getDescriptors())
@@ -702,6 +708,9 @@ class NodeEditor(QWidget):
         baseurl = self.edit_baseurl.text()
         zenwebcfg.connectServer(baseurl)
         self.refreshDescriptors()
+
+    def on_kill(self):
+        zenapi.killProcess()
 
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
