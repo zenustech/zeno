@@ -1,15 +1,17 @@
 # python files
-__pycache__
-*.egg-info
-dist
+__pycache__/
+*.egg-info/
+dist/
+venv/
+.venv/
 
 # cmake files
-build
+build/
 
 # custom files
-outputs
-rubbish.bin
-pruned
+outputs/
+rubbish.bin/
+pruned/
 imgui.ini
 *.zsg
 genCode.py

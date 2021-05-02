@@ -17,3 +17,8 @@ def get_core():
         return core
 
     return get_core
+
+
+def loadLibrary(path):
+    from zenutils import load_library
+    load_library(path)
