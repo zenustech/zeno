@@ -1,21 +1,27 @@
-###############################################################################
-# THIS IS A TEMPLATE OF SETUP.PY - NEVER RUN IT DIRECTLY, RUN BUILD.PY INSTEAD!
-###############################################################################
+import os
 import setuptools
 import glob
 
-data_files = ['zen/libzenpy.so'] + glob.glob('zen/include/zen/*')
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-setuptools.setup(name='zen',
-                 packages=['zen'],
-                 version='0.0.1',
-                 description='The unified node system for CG simulation',
+name = 'zensim'
+version = '0.0.1'
+description = 'The unified node system for CG simulation'
+
+packages = ['zenlibs', 'zen', 'zenapi', 'zenclient']
+data_files = glob.glob('zenlibs/*.so')
+
+with open('requirements.txt') as f:
+    requirements = f.readlines()
+
+setuptools.setup(name=name,
+                 packages=packages,
+                 version=version,
+                 description=description,
                  author='archibate',
                  author_email='1931127624@qq.com',
                  url='https://github.com/archibate/zeno',
-                 install_requires=[
-                     'pybind11>=2.5.0',
-                 ],
+                 install_requires=requirements,
                  data_files=data_files,
                  keywords=['graphics', 'simulation'],
                  include_package_data=True,

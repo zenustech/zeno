@@ -1,5 +1,12 @@
+# python files
 __pycache__
+*.egg-info
+dist
+
+# cmake files
 build
+
+# custom files
 outputs
 rubbish.bin
 pruned
