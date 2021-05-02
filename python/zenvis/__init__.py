@@ -1,6 +1,6 @@
 import zenlibs
 
-core = zenlibs.get_library('libzenvis')
+core = zenlibs.import_library('libzenvis')
 
 
 status = {

@@ -11,7 +11,8 @@ from .descriptor import parse_descriptor_line
 
 std_header = '''
 import zen
-zen.loadLibrary('build/FastFLIP/libFLIPlib.so')
+import zenlibs
+zenlibs.load_library('libFLIPlib')
 '''
 
 iopath = '/tmp/zenio'

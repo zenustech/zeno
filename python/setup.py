@@ -14,7 +14,7 @@ packages = ['zenlibs', 'zen', 'zenapi', 'zenclient']
 data_files = glob.glob('zenlibs/*.so')
 
 with open('requirements.txt') as f:
-    requirements = f.readlines()
+    requirements = [x.strip() for x in f.read().split('#####')[0].splitlines()]
 
 setuptools.setup(name=name,
                  packages=packages,
