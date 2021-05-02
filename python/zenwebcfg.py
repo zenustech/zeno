@@ -1,8 +1,5 @@
-USE_WEB = 1
-
-
-import zenwebapi as zenapi
-#import zenapi
+#import zenwebapi as zenapi
+import zenapi
 
 #import zenwebvis as zenvis
 import zenvis

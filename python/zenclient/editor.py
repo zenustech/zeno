@@ -139,6 +139,32 @@ class QDMGraphicsView(QGraphicsView):
         self.dragingEdge = None
         self.lastContextMenuPos = None
 
+    def contextMenu(self, pos):
+        menu = QMenu(self)
+        cates = self.scene().cates
+        if not len(cates):
+            menu.addAction('no descriptors loaded!')
+        acts = []
+        for cate_name, type_names in cates.items():
+            act = QAction()
+            act.setText(cate_name)
+            childMenu = QMenu()
+            childActs = []
+            for type_name in type_names:
+                childMenu.addAction(type_name)
+            act.setMenu(childMenu)
+            acts.append(act)
+        menu.addActions(acts)
+        menu.triggered.connect(self.menuTriggered)
+        self.lastContextMenuPos = self.mapToScene(pos)
+        menu.exec_(self.mapToGlobal(pos))
+
+    def menuTriggered(self, act):
+        name = act.text()
+        node = self.scene().makeNode(name)
+        node.setPos(self.lastContextMenuPos)
+        self.scene().addNode(node)
+
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
             self.setDragMode(QGraphicsView.ScrollHandDrag)
@@ -217,29 +243,6 @@ class QDMGraphicsView(QGraphicsView):
             zoomFactor = 1 / self.ZOOM_FACTOR
 
         self.scale(zoomFactor, zoomFactor)
-
-    def contextMenu(self, pos):
-        menu = QMenu(self)
-        acts = []
-        for cate_name, type_names in self.scene().cates.items():
-            act = QAction()
-            act.setText(cate_name)
-            childMenu = QMenu()
-            childActs = []
-            for type_name in type_names:
-                childMenu.addAction(type_name)
-            act.setMenu(childMenu)
-            acts.append(act)
-        menu.addActions(acts)
-        menu.triggered.connect(self.menuTriggered)
-        self.lastContextMenuPos = self.mapToScene(pos)
-        menu.exec_(self.mapToGlobal(pos))
-
-    def menuTriggered(self, act):
-        name = act.text()
-        node = self.scene().makeNode(name)
-        node.setPos(self.lastContextMenuPos)
-        self.scene().addNode(node)
 
     def addEdge(self, a, b):
         if a is None or b is None:
@@ -653,9 +656,13 @@ class NodeEditor(QWidget):
 
         self.initExecute()
         self.initShortcuts()
-        self.initConnect()
+        #self.initConnect()
+        self.refreshDescriptors()
 
     def initShortcuts(self):
+        self.msgTab = QShortcut(QKeySequence('Tab'), self)
+        self.msgTab.activated.connect(self.on_add)
+
         self.msgF5 = QShortcut(QKeySequence('F5'), self)
         self.msgF5.activated.connect(self.on_execute)
 
@@ -682,15 +689,28 @@ class NodeEditor(QWidget):
 
         self.button_execute = QPushButton('Execute', self)
         self.button_execute.move(60, 40)
+        self.button_execute.resize(90, 30)
         self.button_execute.clicked.connect(self.on_execute) 
+
+        self.button_kill = QPushButton('Kill', self)
+        self.button_kill.move(160, 40)
+        self.button_kill.resize(80, 30)
+        self.button_kill.clicked.connect(self.on_kill) 
 
     def refreshDescriptors(self):
         self.scene.setDescriptors(zenapi.getDescriptors())
+
+    def on_add(self):
+        pos = QPointF(0, 0)
+        self.view.contextMenu(pos)
 
     def on_connect(self):
         baseurl = self.edit_baseurl.text()
         zenwebcfg.connectServer(baseurl)
         self.refreshDescriptors()
+
+    def on_kill(self):
+        zenapi.killProcess()
 
     def on_execute(self):
         nframes = int(self.edit_nframes.text())

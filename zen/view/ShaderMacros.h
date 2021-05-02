@@ -12,7 +12,7 @@ struct ShaderMacros {
   }
 
   void apply(std::string &source) {
-    source = "#version 330 core\n" + lines + "/**************/\n" + source;
+    source = "#version 140\n" + lines + "/**************/\n" + source;
   }
 };
 
