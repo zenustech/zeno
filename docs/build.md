@@ -21,4 +21,5 @@ git clone https://github.com/archibate/zeno.git --depth=10
 cd zeno
 pip install -r python/requirements.txt
 make
+./run.sh
 ```
