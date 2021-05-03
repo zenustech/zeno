@@ -1,0 +1,3 @@
+python/setup.py bdist_wheel && sudo docker cp python/dist/zensim-0.0.1-cp39-cp39-linux_x86_64.whl c88275d22918:/root
+
+pip uninstall -y zensim; pip uninstall -y zensim; pip install -U zensim-0.0.1-cp39-cp39-linux_x86_64.whl -i https://pypi.tuna.tsinghua.edu.cn/simple

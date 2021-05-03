@@ -10,7 +10,7 @@ name = 'zensim'
 version = '0.0.1'
 description = 'The unified node system for CG simulation'
 
-packages = ['zenlibs', 'zen', 'zenapi', 'zenclient']
+packages = ['zenlibs', 'zen', 'zenapi', 'zenvis', 'zenclient', 'zenutils']
 data_files = glob.glob('zenlibs/*.so')
 
 with open('requirements.txt') as f:

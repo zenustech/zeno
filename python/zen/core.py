@@ -7,6 +7,7 @@ Core DLL singleton
 def get_core():
     def import_core():
         import zenlibs
+        zenlibs.load_library('libzen')
         return zenlibs.import_library('libzenpy')
 
     core = None

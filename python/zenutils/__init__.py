@@ -5,6 +5,7 @@ import ctypes
 import tempfile
 import threading
 import functools
+from contextlib import contextmanager
 from multiprocessing import Pool
 
 
@@ -52,6 +53,40 @@ def goes(func):
     return wrapped
 
 
+def path_list_insert(path, pathes, append=False):
+    if pathes:
+        if append:
+            pathes = pathes + ':' + path
+        else:
+            pathes = path + ':' + pathes
+    else:
+        pathes = path
+    return path
+
+def path_list_remove(path, pathes):
+    if pathes:
+        plist = pathes.split(':')
+        plist.remove(path)
+        ':'.join(pathes)
+        return pathes
+    else:
+        raise ValueError('path list empty')
+
+
+@contextmanager
+def mock_ld_library_path(path):
+    has_pathes = 'LD_LIBRARY_PATH' in os.environ
+    pathes = os.environ.get('LD_LIBRARY_PATH', '')
+    os.environ['LD_LIBRARY_PATH'] = path_list_insert(path, pathes)
+    try:
+        yield
+    finally:
+        if has_pathes:
+            os.environ['LD_LIBRARY_PATH'] = pathes
+        else:
+            del os.environ['LD_LIBRARY_PATH']
+
+
 def inject_ld_preload(*pathes):
     for path in pathes:
         path = os.path.realpath(path)
@@ -61,11 +96,7 @@ def inject_ld_preload(*pathes):
         return
 
     ld_preload = os.environ.get('LD_PRELOAD', '')
-    if ld_preload:
-        ld_preload = path + ':' + ld_preload
-    else:
-        ld_preload = path
-    os.environ['LD_PRELOAD'] = ld_preload
+    os.environ['LD_PRELOAD'] = path_list_insert(path, ld_preload)
 
 
 def run_script(src, callback=runpy.run_path):
