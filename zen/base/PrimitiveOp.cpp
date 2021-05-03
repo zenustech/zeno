@@ -137,11 +137,16 @@ struct PrimitivePrintAttr : zen::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
     auto attrName = std::get<std::string>(get_param("attrName"));
-    auto arr = prim->attr(attrName);
-    std::visit([](auto const &arr) {
+    auto const &arr = prim->attr(attrName);
+    std::visit([attrName](auto const &arr) {
+        printf("attribute `%s`, length %d:\n", attrName.c_str(), arr.size());
         for (int i = 0; i < arr.size(); i++) {
             print_cout(arr[i]);
         }
+        if (arr.size() == 0) {
+            printf("(no data)\n");
+        }
+        printf("\n");
     }, arr);
   }
 };
@@ -161,17 +166,20 @@ struct PrimitiveFillAttr : zen::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
     auto value = std::get<float>(get_param("value"));
+    auto valueY = std::get<float>(get_param("valueY"));
+    auto valueZ = std::get<float>(get_param("valueZ"));
     auto attrName = std::get<std::string>(get_param("attrName"));
-    auto arr = prim->attr(attrName);
-    std::visit([attrName, value](auto &arr) {
-        printf("attribute %s, length %d:", attrName.c_str(), arr.size());
+    auto &arr = prim->attr(attrName);
+    std::visit([value, valueY, valueZ](auto &arr) {
+        #pragma omp parallel for
         for (int i = 0; i < arr.size(); i++) {
-            arr[i] = decltype(arr[i])(value);
+            if constexpr (std::is_same<decltype(arr[i]), glm::vec3>::value) {
+                arr[i] = glm::vec3(value, valueY, valueZ);
+            } else {
+                arr[i] = decltype(arr[i])(value);
+            }
+            print_cout(arr[i]);
         }
-        if (arr.size() == 0) {
-            printf("(no data)\n");
-        }
-        printf("\n");
     }, arr);
   }
 };
@@ -183,6 +191,8 @@ static int defPrimitiveFillAttr = zen::defNodeClass<PrimitiveFillAttr>("Primitiv
     }, /* params: */ {
     {"string", "attrName", "pos"},
     {"float", "value", "0"},
+    {"float", "valueY", "0"},
+    {"float", "valueZ", "0"},
     }, /* category: */ {
     "primitive",
     }});
