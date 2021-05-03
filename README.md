@@ -31,6 +31,5 @@ make
 
 5. package ZENO for release
 ```bash
-python python/linkdeps.py
-python python/setup.py bdist_wheel
+./release.sh
 ```

@@ -12,7 +12,7 @@ version = '0.0.1'
 description = 'The unified node system for CG simulation'
 
 packages = ['zenlibs', 'zen', 'zenapi', 'zenvis', 'zenclient', 'zenutils']
-data_files = glob.glob('zenlibs/*/*.so')
+data_files = glob.glob('zenlibs/*/*.so*')
 
 with open('requirements.txt') as f:
     requirements = [x.strip() for x in f.read().split('#####')[0].splitlines()]
