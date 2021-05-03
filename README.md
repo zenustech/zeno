@@ -1,8 +1,5 @@
-1. install dependencies
+1. install dependencies (Arch Linux)
 
-- Ubuntu
-
-- Arch Linux
 ```bash
 sudo pacman -S cmake python-pip pybind11
 sudo pacman -S tbb cblas glm glew glfw boost

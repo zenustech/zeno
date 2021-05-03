@@ -1,5 +1,5 @@
 #FROM openvdb/vfx2019
-FROM python:3.7
+FROM python
 
 COPY sources.list /etc/apt/
 RUN apt-get clean && apt-get update
