@@ -8,6 +8,9 @@ ln -s /tmp/dist-zeno dist
 
 mkdir dist/lib
 cp /usr/bin/python dist/lib
+for x in libffi.so.7 libGL.so.1 libOpenGL.so.0 libGLEW.so.2.2 libglfw.so.3; do
+    cp `realpath /usr/lib/$x` dist/lib/$x
+done
 cp `pwd`/build/FastFLIP/libFLIPlib.so dist/lib
 python scripts/linkdeps.py dist/lib
 cp `realpath /usr/lib/ld-linux-x86-64.so.2` dist/lib/ld-linux.so
@@ -25,6 +28,7 @@ for x in `ls -d /usr/lib/python3.9/* | egrep -v '(site-packages|__pycache__)'`; 
     echo copying $x...
     cp -r $x dist/lib/python3.9
 done
+mkdir dist/lib/python3.9/site-packages
 cat > dist/lib/python3.9/sitecustomize.py << EOF
 import sys
 import os
@@ -35,3 +39,5 @@ EOF
 
 cp scripts/python_wrapper.sh dist/python
 chmod +x dist/python
+dist/python -m ensurepip
+dist/python -m pip install -t dist/lib/python3.9/site-packages -U -r python/requirements.txt
