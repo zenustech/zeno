@@ -11,7 +11,7 @@ name = 'zensim'
 version = '0.0.1'
 description = 'Zensim node system editor based on PyQt5'
 
-packages = ['zenclient', 'zenutils', 'zen', 'zenapi', 'zenvis']
+packages = ['zenclient', 'zenutils', 'zen', 'zenapi', 'zenvis', 'zenlibs']
 data_files = glob.glob('zenlibs/pydlib/*') + glob.glob('zenlibs/dsolib/*')
 
 with open('requirements.txt') as f:

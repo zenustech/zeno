@@ -4,6 +4,6 @@
 here=`dirname "$0"`
 name=`basename "$0"`
 
-export LD_LIBRARY_PATH="$here"/lib:"$LD_LIBRARY_PATH"
-export PYTHONPATH="$here"/lib-python:"$PYTHONPATH"
-exec "$here"/lib/"$name" "$@"
+export LD_LIBRARY_PATH="$here"/dsolib:"$LD_LIBRARY_PATH"
+export PYTHONPATH="$here"/pythonlib:"$PYTHONPATH"
+exec "$here"/dsolib/python "$@"

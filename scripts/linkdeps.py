@@ -37,7 +37,7 @@ while True:
             if not os.path.exists(name):
                 path = os.path.realpath(path)
                 print('  ', name, '- copying', path)
-                os.symlink(path, name)
+                shutil.copy(path, name)
                 had = True
             else:
                 print('  ', name, '- exists')
