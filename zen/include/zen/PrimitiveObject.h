@@ -1,19 +1,19 @@
 #pragma once
 
 #include <zen/zen.h>
+#include <glm/vec3.hpp>
 #include <variant>
 #include <vector>
 #include <string>
 #include <memory>
-#include <array>
 #include <map>
 
 namespace zenbase {
 
-struct PrimitiveObject : zen::IObject {
+using AttributeArray = std::variant<
+    std::vector<glm::vec3>, std::vector<float>>;
 
-    using AttributeArray = std::variant<
-        std::vector<std::array<float, 3>>, std::vector<float>>;
+struct PrimitiveObject : zen::IObject {
 
     std::map<std::string, AttributeArray> m_attrs;
     size_t m_size{0};
@@ -24,7 +24,20 @@ struct PrimitiveObject : zen::IObject {
     }
 
     template <class T>
-    std::vector<T> attr(std::string name) const {
+    std::vector<T> &attr(std::string name) {
+        return m_attrs.at(name);
+    }
+
+    AttributeArray &attr(std::string name) {
+        return m_attrs.at(name);
+    }
+
+    template <class T>
+    std::vector<T> const &attr(std::string name) const {
+        return m_attrs.at(name);
+    }
+
+    AttributeArray const &attr(std::string name) const {
         return m_attrs.at(name);
     }
 
@@ -39,7 +52,7 @@ struct PrimitiveObject : zen::IObject {
 #define _PER_ALTER(T...) \
             } else if (std::holds_alternative<std::vector<T>>(val)) { \
                 std::get<std::vector<T>>(val).resize(m_size);
-            _PER_ALTER(std::array<float, 3>)
+            _PER_ALTER(glm::vec3)
             _PER_ALTER(float)
 #undef _PER_ALTER
             }
