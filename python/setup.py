@@ -11,7 +11,7 @@ name = 'zensim'
 version = '0.0.1'
 description = 'Zensim node system editor based on PyQt5'
 
-packages = ['zenclient', 'zenutils']
+packages = ['zenclient', 'zenutils', 'zen', 'zenapi', 'zenvis']
 data_files = []
 
 with open('requirements.txt') as f:
