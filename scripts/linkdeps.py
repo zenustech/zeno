@@ -30,6 +30,8 @@ os.chdir(sys.argv[1])
 had = False
 while True:
     for file in os.listdir():
+        if not os.path.isfile(file):
+            continue
         print('')
         print(file, ':', sep='')
         for name, path in ldd(file):
