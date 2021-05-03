@@ -1,6 +1,7 @@
 #include <zen/zen.h>
 #include <zen/ShaderObject.h>
 #include <Hg/IOUtils.h>
+#include <Hg/Archive.hpp>
 #include <Hg/StrUtils.h>
 #include "ShaderMacros.h"
 
@@ -10,9 +11,8 @@ struct ShadeParticles : zen::INode {
   virtual void apply() override {
     auto shad = zen::IObject::make<zenbase::ShaderObject>();
 
-    const std::string basepath = "assets/";
-    shad->vert = hg::file_get_content(basepath + "particles.vert");
-    shad->frag = hg::file_get_content(basepath + "particles.frag");
+    shad->vert = hg::Archive::getString("particles.vert");
+    shad->frag = hg::Archive::getString("particles.frag");
 
     auto point_size = std::get<int>(get_param("point_size"));
     auto vel_mag = std::get<float>(get_param("vel_mag"));

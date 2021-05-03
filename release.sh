@@ -46,5 +46,4 @@ x=`pwd`
 cd dist
 tar zcvf $x/build/zensim.tar.gz .
 cd ..
-rm dist
 echo DONE WITH build/zensim.tar.gz

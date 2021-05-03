@@ -2,6 +2,7 @@
 #include <zen/ShaderObject.h>
 #include <Hg/IOUtils.h>
 #include <Hg/StrUtils.h>
+#include <Hg/Archive.hpp>
 #include "ShaderMacros.h"
 
 namespace zenbase {
@@ -10,9 +11,8 @@ struct ShadeMesh : zen::INode {
   virtual void apply() override {
     auto shad = zen::IObject::make<zenbase::ShaderObject>();
 
-    const std::string basepath = "assets/";
-    shad->vert = hg::file_get_content(basepath + "mesh.vert");
-    shad->frag = hg::file_get_content(basepath + "mesh.frag");
+    shad->vert = hg::Archive::getString("mesh.vert");
+    shad->frag = hg::Archive::getString("mesh.frag");
 
     auto color_r = std::get<float>(get_param("color_r"));
     auto color_g = std::get<float>(get_param("color_g"));
