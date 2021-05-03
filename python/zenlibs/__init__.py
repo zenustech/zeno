@@ -12,5 +12,6 @@ def import_library(name):
     return zenutils.import_library(pyd_lib_dir, name)
 
 
-def load_library(name):
-    return zenutils.load_library(os.path.join(dso_lib_dir, name) + '.so')
+for name in os.listdir(dso_lib_dir):
+    if name.endswith('.so'):
+        zenutils.load_library(os.path.join(dso_lib_dir, name))
