@@ -1,8 +1,9 @@
-#if 0 // TODO: no more MATRIX OBJECT
 #include <zen/zen.h>
 #include <zen/MeshObject.h>
-#include <zen/MatrixObject.h>
+#include <zen/NumericObject.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform.hpp>
 #include <cstring>
 
 namespace zenbase {
@@ -10,13 +11,16 @@ namespace zenbase {
 
 static glm::vec3 mapplypos(glm::mat4 const &matrix, glm::vec3 const &vector) {
   auto vector4 = matrix * glm::vec4(vector, 1.0f);
+  
   return glm::vec3(vector4) / vector4.w;
 }
 
 
 static glm::vec3 mapplydir(glm::mat4 const &matrix, glm::vec3 const &vector) {
-  auto vector4 = matrix * glm::vec4(vector, 0.0f);
-  return glm::vec3(vector4);
+  glm::mat3 normMatrix(matrix);
+  normMatrix = glm::transpose(glm::inverse(normMatrix));
+  auto vector3 = normMatrix * vector;
+  return vector3;
 }
 
 
@@ -24,8 +28,25 @@ struct TransformMesh : zen::INode {
   virtual void apply() override {
     auto mesh = get_input("mesh")->as<MeshObject>();
     auto outmesh = zen::IObject::make<MeshObject>();
-    auto matrix = get_input("matrix")->as<MatrixObject>()->to_4x4();
+    std::array<float,3> translate = {0,0,0};
+    std::array<float,3> rotate = {0,0,0};
+    std::array<float,3> scaling = {1,1,1};
+    if(has_input("translate"))
+      translate = get_input("translate")->as<zenbase::NumericObject>()->get<std::array<float,3>>();
+    if(has_input("rotate"))
+      rotate = get_input("rotate")->as<zenbase::NumericObject>()->get<std::array<float,3>>();
+    if(has_input("scaling"))
+      scaling = get_input("scaling")->as<zenbase::NumericObject>()->get<std::array<float,3>>();
+    
+    
+    glm::mat4 matTrans = glm::translate(glm::vec3(translate[0], translate[1], translate[2]));
+    glm::mat4 matRotx  = glm::rotate( rotate[0], glm::vec3(1,0,0) );
+    glm::mat4 matRoty  = glm::rotate( rotate[1], glm::vec3(0,1,0) );
+    glm::mat4 matRotz  = glm::rotate( rotate[2], glm::vec3(0,0,1) );
+    glm::mat4 matScal  = glm::scale( glm::vec3(scaling[0], scaling[1], scaling[2] ));
+    auto matrix = matRotz*matRoty*matRotx*matScal*matTrans;
     for (auto const &x: mesh->vertices) {
+      
       outmesh->vertices.push_back(mapplypos(matrix, x));
     }
     for (auto const &x: mesh->uvs) {
@@ -42,7 +63,9 @@ struct TransformMesh : zen::INode {
 static int defTransformMesh = zen::defNodeClass<TransformMesh>("TransformMesh",
     { /* inputs: */ {
     "mesh",
-    "matrix",
+    "translate",
+    "rotate",
+    "scaling",
     }, /* outputs: */ {
     "mesh",
     }, /* params: */ {
@@ -51,4 +74,4 @@ static int defTransformMesh = zen::defNodeClass<TransformMesh>("TransformMesh",
     }});
 
 }
-#endif
+
