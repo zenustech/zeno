@@ -1,4 +1,8 @@
 1. install dependencies
+
+- Ubuntu
+
+- Arch Linux
 ```bash
 sudo pacman -S cmake python-pip pybind11
 sudo pacman -S tbb cblas glm glew glfw boost

@@ -1,0 +1,10 @@
+deb [trusted=yes] http://mirrors.aliyun.com/ubuntu/ trusty main multiverse restricted universe
+deb [trusted=yes] http://mirrors.aliyun.com/ubuntu/ trusty-backports main multiverse restricted universe
+deb [trusted=yes] http://mirrors.aliyun.com/ubuntu/ trusty-proposed main multiverse restricted universe
+deb [trusted=yes] http://mirrors.aliyun.com/ubuntu/ trusty-security main multiverse restricted universe
+deb [trusted=yes] http://mirrors.aliyun.com/ubuntu/ trusty-updates main multiverse restricted universe
+deb-src [trusted=yes] http://mirrors.aliyun.com/ubuntu/ trusty main multiverse restricted universe
+deb-src [trusted=yes] http://mirrors.aliyun.com/ubuntu/ trusty-backports main multiverse restricted universe
+deb-src [trusted=yes] http://mirrors.aliyun.com/ubuntu/ trusty-proposed main multiverse restricted universe
+deb-src [trusted=yes] http://mirrors.aliyun.com/ubuntu/ trusty-security main multiverse restricted universe
+deb-src [trusted=yes] http://mirrors.aliyun.com/ubuntu/ trusty-updates main multiverse restricted universe
