@@ -2,9 +2,8 @@
 
 import subprocess as sp
 import shutil
+import sys
 import os
-
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 
 def ldd(file):
@@ -24,12 +23,8 @@ def ldd(file):
         res.append((name, path))
     return res
 
-shutil.rmtree('zenlibs/dsolib', ignore_errors=True)
-os.mkdir('zenlibs/dsolib')
-os.chdir('zenlibs/dsolib')
 
-os.symlink('../../../build/FastFLIP/libFLIPlib.so', 'libFLIPlib.so')
-os.symlink('/usr/bin/python', 'python')
+os.chdir(sys.argv[1])
 
 
 had = False
