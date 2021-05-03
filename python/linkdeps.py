@@ -29,6 +29,7 @@ os.mkdir('zenlibs/dsolib')
 os.chdir('zenlibs/dsolib')
 
 os.symlink('../../../build/FastFLIP/libFLIPlib.so', 'libFLIPlib.so')
+os.symlink('/usr/bin/python', 'python')
 
 
 had = False

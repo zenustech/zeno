@@ -9,10 +9,10 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 name = 'zensim'
 version = '0.0.1'
-description = 'The unified node system for CG simulation'
+description = 'Zensim node system editor based on PyQt5'
 
-packages = ['zenlibs', 'zen', 'zenapi', 'zenvis', 'zenclient', 'zenutils']
-data_files = glob.glob('zenlibs/*/*.so*')
+packages = ['zenclient', 'zenutils']
+data_files = []
 
 with open('requirements.txt') as f:
     requirements = [x.strip() for x in f.read().split('#####')[0].splitlines()]

@@ -31,5 +31,5 @@ make
 
 5. package ZENO for release
 ```bash
-./release.sh
+./mkwheel.sh
 ```
