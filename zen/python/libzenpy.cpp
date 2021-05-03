@@ -115,7 +115,7 @@ py::array_t<T, py::array::c_style> getArrayObject(std::string name) {
 }
 
 
-PYBIND11_MODULE(libzen, m) {
+PYBIND11_MODULE(libzenpy, m) {
   m.def("addNode", zen::addNode);
   m.def("setNodeParam", zen::setNodeParam);
   m.def("setNodeInput", zen::setNodeInput);

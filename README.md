@@ -16,11 +16,21 @@ make -j8
 sudo make install
 ```
 
-3. clone and build zeno
+3. clone and build ZENO
 ```bash
 git clone https://github.com/archibate/zeno.git --depth=10
 cd zeno
 pip install -r python/requirements.txt
 make
+```
+
+4. run ZENO for development
+```bash
 ./run.sh
+```
+
+5. package ZENO for release
+```bash
+python python/linkdeps.py
+python python/setup.py bdist_wheel
 ```

@@ -1,6 +1,10 @@
+#!/usr/bin/env python
+
 import subprocess as sp
 import shutil
 import os
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 
 def ldd(file):
@@ -20,19 +24,24 @@ def ldd(file):
         res.append((name, path))
     return res
 
+shutil.rmtree('zenlibs/dsolib', ignore_errors=True)
+os.mkdir('zenlibs/dsolib')
+os.chdir('zenlibs/dsolib')
 
-os.chdir('/tmp/dso')
+os.symlink('../../../build/FastFLIP/libFLIPlib.so', 'libFLIPlib.so')
+
+
 had = False
 while True:
-    for file in os.listdir('.'):
+    for file in os.listdir():
         print('')
         print(file, ':', sep='')
-        res = ldd(file)
-        for name, path in res:
+        for name, path in ldd(file):
             assert path != 'not found', (file, name)
             if not os.path.exists(name):
-                print('  ', name, '- copying')
-                shutil.copy(path, '.')
+                path = os.path.realpath(path)
+                print('  ', name, '- copying', path)
+                os.symlink(path, name)
                 had = True
             else:
                 print('  ', name, '- exists')

@@ -7,8 +7,9 @@ venv/
 
 # cmake files
 build/
+dsolib/
 
-# custom files
+# output files
 outputs/
 rubbish.bin/
 pruned/
