@@ -1,8 +1,0 @@
-#FROM openvdb/vfx2019
-FROM python
-
-COPY sources.list /etc/apt
-RUN apt-get clean && apt-get update
-RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
-
-ENTRYPOINT bash
