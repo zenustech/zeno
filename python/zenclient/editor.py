@@ -660,9 +660,6 @@ class NodeEditor(QWidget):
         self.refreshDescriptors()
 
     def initShortcuts(self):
-        self.msgTab = QShortcut(QKeySequence('Tab'), self)
-        self.msgTab.activated.connect(self.on_add)
-
         self.msgF5 = QShortcut(QKeySequence('F5'), self)
         self.msgF5.activated.connect(self.on_execute)
 
