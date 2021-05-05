@@ -1,6 +1,7 @@
 #include <zen/zen.h>
 #include <zen/PrimitiveObject.h>
 #include <zen/NumericObject.h>
+#include <glm/glm.hpp>
 #include <cstring>
 #include <cassert>
 
@@ -96,10 +97,21 @@ struct PrimitiveUnaryOp : zen::INode {
     auto &arrOut = primOut->attr(attrOut);
     auto const &arrA = primA->attr(attrA);
     std::visit([op](auto &arrOut, auto const &arrA) {
-        if (op == "copy") {
-            UnaryOperator([](auto const &a) { return a; })(arrOut, arrA);
-        } else if (op == "neg") {
-            UnaryOperator([](auto const &a) { return -a; })(arrOut, arrA);
+        if (0) {
+#define _PER_OP(opname, expr) \
+        } else if (op == opname) { \
+            UnaryOperator([](auto const &a) { return expr; })(arrOut, arrA);
+        _PER_OP("copy", a)
+        _PER_OP("neg", -a)
+        _PER_OP("sqrt", glm::sqrt(a))
+        _PER_OP("sin", glm::sin(a))
+        _PER_OP("cos", glm::cos(a))
+        _PER_OP("tan", glm::tan(a))
+        _PER_OP("asin", glm::asin(a))
+        _PER_OP("acos", glm::acos(a))
+        _PER_OP("atan", glm::atan(a))
+        _PER_OP("exp", glm::exp(a))
+        _PER_OP("log", glm::log(a))
         } else {
             printf("%s\n", op.c_str());
             assert(0 && "Bad operator type");
