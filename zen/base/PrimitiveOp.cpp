@@ -96,15 +96,13 @@ struct PrimitiveUnaryOp : zen::INode {
     auto &arrOut = primOut->attr(attrOut);
     auto const &arrA = primA->attr(attrA);
     std::visit([op](auto &arrOut, auto const &arrA) {
-        if constexpr (std::is_same<decltype(arrOut[0]), decltype(arrA[0])>::value) {
-            if (op == "copy") {
-                UnaryOperator([](auto const &a) { return a; })(arrOut, arrA);
-            } else if (op == "neg") {
-                UnaryOperator([](auto const &a) { return -a; })(arrOut, arrA);
-            } else {
-                printf("%s\n", op.c_str());
-                assert(0 && "Bad operator type");
-            }
+        if (op == "copy") {
+            UnaryOperator([](auto const &a) { return a; })(arrOut, arrA);
+        } else if (op == "neg") {
+            UnaryOperator([](auto const &a) { return -a; })(arrOut, arrA);
+        } else {
+            printf("%s\n", op.c_str());
+            assert(0 && "Bad operator type");
         }
     }, arrOut, arrA);
   }
