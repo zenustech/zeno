@@ -12,10 +12,6 @@
 #include <x86intrin.h>
 
 
-const double DT = 0.005;
-const double DX = 0.1;
-
-
 glm::dvec3 gravity_func(glm::dvec3 dist) {
   double r = 1 / (glm::length(dist) + 0.001);
   return r * r * r * dist;
@@ -38,19 +34,20 @@ struct Stars {
 };
 
 
-struct Field {
+struct Neighbor {
   std::vector<std::vector<int>> table;
   glm::ivec3 res;
 
   glm::dvec3 bmin, bmax, bscale;
 
   void initialize(glm::dvec3 const &bmin_, glm::dvec3 const &bmax_) {
-    bmin = bmin_ - DX * 0.25;
-    bmax = bmax_ + DX * 0.25;
+    bmin = bmin_ + 0.1;
+    bmax = bmax_ + 0.1;
     bscale = glm::dvec3(1) / (bmax - bmin);
 
     table.clear();
-    res = (glm::ivec3)glm::ceil(bmax - bmin);
+    double dx = 10.0;
+    res = (glm::ivec3)glm::ceil((bmax - bmin) / dx);
     printf("resize %d %d %d\n", res.x, res.y, res.z);
     table.resize(res.x * res.y * res.z);
   }
@@ -82,22 +79,24 @@ struct Field {
 };
 
 
-void build_field(Stars &star, Field &field) {
+void build_neighbor(Stars &star, Neighbor &neighbor) {
   glm::dvec3 bmin, bmax;
   star.get_bounds(bmin, bmax);
-  field.initialize(bmin, bmax);
+  neighbor.initialize(bmin, bmax);
 
   for (int i = 0; i < star.pos.size(); i++) {
-    field.add_particle(star.pos[i], i);
+    neighbor.add_particle(star.pos[i], i);
   }
 }
 
 
-void compute_gravity(Stars &star, Field &field) {
+void compute_gravity(Stars &star, Neighbor &neighbor) {
   printf("computing gravity for %d stars...\n", star.pos.size());
+  star.acc.clear();
   star.acc.resize(star.pos.size());
+  #pragma omp parallel for simd
   for (int i = 0; i < star.pos.size(); i++) {
-    for (int j: field.find_neighbors(star.pos[i])) {
+    for (int j: neighbor.find_neighbors(star.pos[i])) {
       star.acc[i] += star.mass[j] * gravity_func(star.pos[j] - star.pos[i]);
     }
   }
@@ -109,6 +108,7 @@ void compute_gravity(Stars &star) {
   printf("direct computing gravity for %d stars...\n", star.pos.size());
   star.acc.clear();
   star.acc.resize(star.pos.size());
+  #pragma omp parallel for simd
   for (int i = 0; i < star.pos.size(); i++) {
     for (int j = 0; j < star.pos.size(); j++) {
       star.acc[i] += star.mass[j] * gravity_func(star.pos[j] - star.pos[i]);
@@ -118,10 +118,11 @@ void compute_gravity(Stars &star) {
 }
 
 
-void advect_particles(Stars &star) {
+void advect_particles(Stars &star, double dt) {
+  double half_dt2 = 0.5 * dt * dt;
   for (int i = 0; i < star.pos.size(); i++) {
-    star.pos[i] += star.vel[i] * DT + star.acc[i] * (DT * DT / 2);
-    star.vel[i] += star.acc[i] * DT;
+    star.pos[i] += star.vel[i] * dt + star.acc[i] * half_dt2;
+    star.vel[i] += star.acc[i] * dt;
   }
 }
 
@@ -167,9 +168,9 @@ void dump_particles(Stars &star, const char *path) {
 int main(void)
 {
   Stars star;
-  Field field;
+  Neighbor neighbor;
 
-#if 1
+#if 0
   load_particles(star, "solarsystem.obj");
   for (int i = 0; i < star.pos.size(); i++) {
     star.mass[i] *= 4 * M_PI * M_PI;
@@ -186,9 +187,13 @@ int main(void)
 
   for (int i = 0; i < 250; i++) {
     for (int j = 0; j < 28; j++) {
-      build_field(star, field);
-      compute_gravity(star, field);
-      advect_particles(star);
+#if 0
+      build_neighbor(star, neighbor);
+      compute_gravity(star, neighbor);
+#else
+      compute_gravity(star);
+#endif
+      advect_particles(star, 0.005);
     }
 
     char path[1024];
