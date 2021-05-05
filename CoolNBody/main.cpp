@@ -13,9 +13,13 @@
 
 
 const double DT = 0.005;
-const double G = 1.00;
-const double EPS = 0.001;
-const double LAM = 1.0;
+const double DX = 0.1;
+
+
+glm::dvec3 gravity_func(glm::dvec3 dist) {
+  double r = 1 / (glm::length(dist) + 0.001);
+  return r * r * r * dist;
+}
 
 
 struct Stars {
@@ -23,22 +27,69 @@ struct Stars {
   std::vector<glm::dvec3> pos;
   std::vector<glm::dvec3> vel;
   std::vector<glm::dvec3> acc;
+
+  void get_bounds(glm::dvec3 &bmin, glm::dvec3 &bmax) {
+    bmin = bmax = pos[0];
+    for (int i = 1; i < pos.size(); i++) {
+      bmin = glm::min(bmin, pos[i]);
+      bmax = glm::max(bmax, pos[i]);
+    }
+  }
 };
 
 
 struct Field {
-  std::vector<double> data;
+  std::vector<std::vector<int>> table;
+  glm::ivec3 res;
+
+  glm::dvec3 bmin, bmax, bscale;
+
+  void initialize(glm::dvec3 const &bmin_, glm::dvec3 const &bmax_) {
+    bmin = bmin_ - DX * 0.25;
+    bmax = bmax_ + DX * 0.25;
+    bscale = glm::dvec3(1) / (bmax - bmin);
+
+    table.clear();
+    res = (glm::ivec3)glm::ceil(bmax - bmin);
+    printf("resize %d %d %d\n", res.x, res.y, res.z);
+    table.resize(res.x * res.y * res.z);
+  }
+
+  int linearize(glm::ivec3 const &idx) {
+    return idx.x + res.x * (idx.y + res.y * idx.z);
+  }
+
+  std::vector<int> &at(glm::ivec3 const &idx) {
+    return table[linearize(idx)];
+  }
+
+  auto world_to_index(glm::dvec3 const &pos) {
+    auto rel = (pos - bmin) * bscale;
+    auto idx = (glm::ivec3)glm::floor(rel * (glm::dvec3)res);
+    idx = glm::max(glm::ivec3(0), glm::min(res, idx));
+    return idx;
+  }
+
+  std::vector<int> find_neighbors(glm::dvec3 const &pos) {
+    auto idx = world_to_index(pos);
+    return at(idx);
+  }
+
+  void add_particle(glm::dvec3 const &pos, int i) {
+    auto idx = world_to_index(pos);
+    at(idx).push_back(i);
+  }
 };
 
 
-glm::dvec3 gravity_func(glm::dvec3 dist) {
-  double z = 1 / (glm::length(dist) + EPS);
-  return (G * z * z * z) * dist;
-}
+void build_field(Stars &star, Field &field) {
+  glm::dvec3 bmin, bmax;
+  star.get_bounds(bmin, bmax);
+  field.initialize(bmin, bmax);
 
-
-glm::dvec3 field_gravity_at(Field &field, glm::dvec3 dist) {
-  return glm::dvec3(0);
+  for (int i = 0; i < star.pos.size(); i++) {
+    field.add_particle(star.pos[i], i);
+  }
 }
 
 
@@ -46,7 +97,9 @@ void compute_gravity(Stars &star, Field &field) {
   printf("computing gravity for %d stars...\n", star.pos.size());
   star.acc.resize(star.pos.size());
   for (int i = 0; i < star.pos.size(); i++) {
-    star.acc[i] = field_gravity_at(field, star.pos[i]);
+    for (int j: field.find_neighbors(star.pos[i])) {
+      star.acc[i] += star.mass[j] * gravity_func(star.pos[j] - star.pos[i]);
+    }
   }
   printf("computing gravity done\n");
 }
@@ -133,9 +186,8 @@ int main(void)
 
   for (int i = 0; i < 250; i++) {
     for (int j = 0; j < 28; j++) {
-      //build_field(star, field);
-      //compute_gravity(star, tree);
-      compute_gravity(star);
+      build_field(star, field);
+      compute_gravity(star, field);
       advect_particles(star);
     }
 
