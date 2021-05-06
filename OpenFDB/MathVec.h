@@ -6,7 +6,7 @@
 #include <cmath>
 
 
-namespace fdb::math {
+namespace fdb {
 
 
 template <class T>
@@ -186,6 +186,8 @@ inline bool all(T const &a) {
 using Vec3f = Vec3<float>;
 using Vec3d = Vec3<double>;
 using Vec3i = Vec3<int>;
+using Vec3u = Vec3<unsigned int>;
+using Vec3h = Vec3<unsigned short>;
 
 
 }
