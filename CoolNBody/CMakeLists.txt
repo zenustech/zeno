@@ -34,3 +34,4 @@ target_include_directories(NBody PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(NBody PRIVATE TBB::tbb TBB::tbbmalloc)
 target_link_libraries(NBody PRIVATE pthread)
 
+target_link_libraries(FLIPlib PRIVATE zen)

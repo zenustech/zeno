@@ -3,6 +3,7 @@
 #include <zen/NumericObject.h>
 #include <glm/glm.hpp>
 #include <cstring>
+#include <cstdlib>
 #include <cassert>
 
 namespace zenbase {
@@ -262,7 +263,6 @@ struct PrimitiveFillAttr : zen::INode {
             } else {
                 arr[i] = decltype(arr[i])(value);
             }
-            print_cout(arr[i]);
         }
     }, arr);
   }
@@ -277,6 +277,48 @@ static int defPrimitiveFillAttr = zen::defNodeClass<PrimitiveFillAttr>("Primitiv
     {"float", "value", "0"},
     {"float", "valueY", "0"},
     {"float", "valueZ", "0"},
+    }, /* category: */ {
+    "primitive",
+    }});
+
+
+struct PrimitiveRandomizeAttr : zen::INode {
+  virtual void apply() override {
+    auto prim = get_input("prim")->as<PrimitiveObject>();
+    auto min = std::get<float>(get_param("min"));
+    auto minY = std::get<float>(get_param("minY"));
+    auto minZ = std::get<float>(get_param("minZ"));
+    auto max = std::get<float>(get_param("max"));
+    auto maxY = std::get<float>(get_param("maxY"));
+    auto maxZ = std::get<float>(get_param("maxZ"));
+    auto attrName = std::get<std::string>(get_param("attrName"));
+    auto &arr = prim->attr(attrName);
+    std::visit([min, minY, minZ, max, maxY, maxZ](auto &arr) {
+        #pragma omp parallel for
+        for (int i = 0; i < arr.size(); i++) {
+            if constexpr (std::is_same<std::decay_t<decltype(arr[i])>, glm::vec3>::value) {
+                arr[i] = glm::mix(glm::vec3(min, minY, minZ), glm::vec3(max, maxY, maxZ),
+                        glm::vec3(drand48(), drand48(), drand48()));
+            } else {
+                arr[i] = glm::mix(min, max, (float)drand48());
+            }
+        }
+    }, arr);
+  }
+};
+
+static int defPrimitiveRandomizeAttr = zen::defNodeClass<PrimitiveRandomizeAttr>("PrimitiveRandomizeAttr",
+    { /* inputs: */ {
+    "prim",
+    }, /* outputs: */ {
+    }, /* params: */ {
+    {"string", "attrName", "pos"},
+    {"float", "min", "-1"},
+    {"float", "minY", "-1"},
+    {"float", "minZ", "-1"},
+    {"float", "max", "1"},
+    {"float", "maxY", "1"},
+    {"float", "maxZ", "1"},
     }, /* category: */ {
     "primitive",
     }});
