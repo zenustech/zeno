@@ -40,24 +40,24 @@ struct Vec3 {
 
 #define _PER_OP2(op) \
 template <class T, class S> \
-inline Vec3<T> operator op(Vec3<T> const &lhs, Vec3<S> const &rhs) { \
-  return {lhs.x op rhs.x, lhs.y op rhs.y, lhs.z op rhs.z}; \
+inline Vec3<T> operator op(Vec3<T> const &a, Vec3<S> const &b) { \
+  return {a.x op b.x, a.y op b.y, a.z op b.z}; \
 } \
 \
 template <class T, class S> \
-inline Vec3<T> operator op(T const &lhs, Vec3<S> const &rhs) { \
-  return {lhs op rhs.x, lhs op rhs.y, lhs op rhs.z}; \
+inline Vec3<T> operator op(T const &a, Vec3<S> const &b) { \
+  return {a op b.x, a op b.y, a op b.z}; \
 } \
 \
 template <class T, class S> \
-inline Vec3<T> operator op(Vec3<T> const &lhs, S const &rhs) { \
-  return {lhs.x op rhs, lhs.y op rhs, lhs.z op rhs}; \
+inline Vec3<T> operator op(Vec3<T> const &a, S const &b) { \
+  return {a.x op b, a.y op b, a.z op b}; \
 } \
 \
 template <class T, class S> \
-inline Vec3<T> &operator op##=(Vec3<T> &lhs, S const &rhs) { \
-  lhs = lhs op rhs; \
-  return lhs; \
+inline Vec3<T> &operator op##=(Vec3<T> &a, S const &b) { \
+  a = a op b; \
+  return a; \
 }
 _PER_OP2(+)
 _PER_OP2(-)
@@ -69,12 +69,18 @@ _PER_OP2(|)
 _PER_OP2(^)
 _PER_OP2(>>)
 _PER_OP2(<<)
+_PER_OP2(==)
+_PER_OP2(!=)
+_PER_OP2(<)
+_PER_OP2(>)
+_PER_OP2(<=)
+_PER_OP2(>=)
 #undef _PER_OP2
 
 #define _PER_OP1(op) \
 template <class T> \
-inline Vec3<T> operator op(Vec3<T> const &lhs) { \
-  return {op lhs.x, op lhs.y, op lhs.z}; \
+inline Vec3<T> operator op(Vec3<T> const &a) { \
+  return {op a.x, op a.y, op a.z}; \
 }
 _PER_OP1(+)
 _PER_OP1(-)
@@ -84,50 +90,52 @@ _PER_OP1(!)
 
 
 template <class T, class F>
-inline auto vapply(F const &f, Vec3<T> const &lhs) -> decltype(auto) {
-  return Vec3{f(lhs.x), f(lhs.y), f(lhs.z)};
+inline auto vapply(F const &f, Vec3<T> const &a) {
+  return Vec3{f(a.x), f(a.y), f(a.z)};
 }
 
 template <class T, class F>
-inline auto vapply(F const &f, T const &lhs) -> decltype(auto) {
-  return f(lhs);
+inline auto vapply(F const &f, T const &a) {
+  return f(a);
 }
 
 
 template <class T, class S, class F>
-inline auto vapply(F const &f, Vec3<T> const &lhs, Vec3<S> const &rhs) -> decltype(auto) {
-  return Vec3{f(lhs.x, rhs.x), f(lhs.y, rhs.y), f(lhs.z, rhs.z)};
+inline auto vapply(F const &f, Vec3<T> const &a, Vec3<S> const &b) {
+  return Vec3{f(a.x, b.x), f(a.y, b.y), f(a.z, b.z)};
 }
 
 template <class T, class S, class F>
-inline auto vapply(F const &f, T const &lhs, Vec3<S> const &rhs) -> decltype(auto) {
-  return Vec3{f(lhs, rhs.x), f(lhs, rhs.y), f(lhs, rhs.z)};
+inline auto vapply(F const &f, T const &a, Vec3<S> const &b) {
+  return Vec3{f(a, b.x), f(a, b.y), f(a, b.z)};
 }
 
 template <class T, class S, class F>
-inline auto vapply(F const &f, Vec3<T> const &lhs, S const &rhs) -> decltype(auto) {
-  return Vec3{f(lhs.x, rhs), f(lhs.y, rhs), f(lhs.z, rhs)};
+inline auto vapply(F const &f, Vec3<T> const &a, S const &b) {
+  return Vec3{f(a.x, b), f(a.y, b), f(a.z, b)};
 }
 
 template <class T, class S, class F>
-inline auto vapply(F const &f, T const &lhs, S const &rhs) -> decltype(auto) {
-  return f(lhs, rhs);
+inline auto vapply(F const &f, T const &a, S const &b) {
+  return f(a, b);
 }
 
 
 #define _PER_FN2(func) \
 template <class T, class S> \
-inline auto func(T const &lhs, S const &rhs) -> decltype(auto) { \
-  return vapply([] (auto const &x, auto const &y) { return std::func(x, y); }, lhs, rhs); \
+inline auto func(T const &a, S const &b) -> decltype(auto) { \
+  return vapply([] (auto const &x, auto const &y) { return std::func(x, y); }, a, b); \
 }
 _PER_FN2(atan2)
 _PER_FN2(pow)
+_PER_FN2(max)
+_PER_FN2(min)
 #undef _PER_FN2
 
 #define _PER_FN1(func) \
 template <class T> \
-inline auto func(T const &lhs) -> decltype(auto) { \
-  return vapply([] (auto const &x) { return std::func(x); }, lhs); \
+inline auto func(T const &a) { \
+  return vapply([] (auto const &x) { return std::func(x); }, a); \
 }
 _PER_FN1(sqrt)
 _PER_FN1(sin)
@@ -138,6 +146,37 @@ _PER_FN1(acos)
 _PER_FN1(atan)
 _PER_FN1(exp)
 _PER_FN1(log)
+
+
+template <class T>
+inline auto sum(T const &a) {
+  return a.x + a.y + a.z;
+}
+
+template <class T, class S>
+inline auto dot(T const &a, S const &b) {
+  return sum(a * b);
+}
+
+template <class T>
+inline auto length(T const &a) {
+  return sqrt(sum(a * a));
+}
+
+template <class T>
+inline auto normalize(T const &a) {
+  return a * (1 / length(a));
+}
+
+template <class T>
+inline bool any(T const &a) {
+  return a.x || a.y || a.z;
+}
+
+template <class T>
+inline bool all(T const &a) {
+  return a.x && a.y && a.z;
+}
 
 
 using Vec3f = Vec3<float>;
