@@ -186,8 +186,13 @@ inline bool all(T const &a) {
 using Vec3f = Vec3<float>;
 using Vec3d = Vec3<double>;
 using Vec3i = Vec3<int>;
-using Vec3u = Vec3<unsigned int>;
-using Vec3h = Vec3<unsigned short>;
+using Vec3l = Vec3<long>;
+using Vec3h = Vec3<short>;
+using Vec3b = Vec3<char>;
+using Vec3I = Vec3<unsigned int>;
+using Vec3L = Vec3<unsigned long>;
+using Vec3H = Vec3<unsigned short>;
+using Vec3B = Vec3<unsigned char>;
 
 
 }

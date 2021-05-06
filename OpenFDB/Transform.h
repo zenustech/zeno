@@ -6,33 +6,19 @@
 #include "MathVec.h"
 
 
-std::decay_t<int &> = int;
-std::decay_t<int []> = int *;
-
-
-template <class T>
-struct decay {
-};
-
-template <class T>
-struct decay<T *> {
-    using type = T;
-};
-
-template <class T>;
-using decay_t = decay<T>::type;
-
-decay_t<T>;
-
-
-
 namespace fdb {
 
 struct Transform {
-  double dx;
+  float dx;
+  Vec3d center;
+  unsigned int max_index;
 
-  Vec3d bmin;
-  Vec3d bmax;
+  Vec3f indexToLocal(Vec3I const &idx) {
+    auto half_max_index = max_index >> 1;
+    Vec3i signed_idx = (Vec3i)idx - half_max_index;
+    Vec3f local = signed_idx * (dx / half_max_index);
+    return local;
+  }
 };
 
 }

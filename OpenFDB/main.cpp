@@ -7,7 +7,7 @@
 
 int main(void) {
   fdb::PointsGrid grid;
-  grid.addPoint(fdb::Vec3u(3, 4, 5));
+  grid.addPoint(fdb::Vec3I(3, 4, 5));
   for (auto const &pos: grid.iterPoint()) {
     printf("%d %d %d\n", pos.x, pos.y, pos.z);
   }
