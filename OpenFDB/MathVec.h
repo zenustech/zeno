@@ -6,6 +6,9 @@
 #include <cmath>
 
 
+namespace fdb::math {
+
+
 template <class T>
 struct Vec3 {
   T x, y, z;
@@ -52,23 +55,24 @@ inline Vec3<T> operator op(T const &a, Vec3<S> const &b) { \
 template <class T, class S> \
 inline Vec3<T> operator op(Vec3<T> const &a, S const &b) { \
   return {a.x op b, a.y op b, a.z op b}; \
-} \
-\
+}
+#define _PER_IOP2(op) \
+_PER_OP2(op) \
 template <class T, class S> \
 inline Vec3<T> &operator op##=(Vec3<T> &a, S const &b) { \
   a = a op b; \
   return a; \
 }
-_PER_OP2(+)
-_PER_OP2(-)
-_PER_OP2(*)
-_PER_OP2(/)
-_PER_OP2(%)
-_PER_OP2(&)
-_PER_OP2(|)
-_PER_OP2(^)
-_PER_OP2(>>)
-_PER_OP2(<<)
+_PER_IOP2(+)
+_PER_IOP2(-)
+_PER_IOP2(*)
+_PER_IOP2(/)
+_PER_IOP2(%)
+_PER_IOP2(&)
+_PER_IOP2(|)
+_PER_IOP2(^)
+_PER_IOP2(>>)
+_PER_IOP2(<<)
 _PER_OP2(==)
 _PER_OP2(!=)
 _PER_OP2(<)
@@ -182,3 +186,6 @@ inline bool all(T const &a) {
 using Vec3f = Vec3<float>;
 using Vec3d = Vec3<double>;
 using Vec3i = Vec3<int>;
+
+
+}

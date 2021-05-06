@@ -5,6 +5,9 @@
 #include <cstddef>
 
 
+namespace fdb::volume {
+
+
 static size_t linearize(int x, int y, int z, size_t n) {
   return x + n * (y + n * z);
 }
@@ -116,3 +119,6 @@ struct Grid {
     return *touchValueAt(x, y, z);
   }
 };
+
+
+}
