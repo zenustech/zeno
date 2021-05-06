@@ -8,6 +8,17 @@
 
 namespace fdb {
 
+static size_t linearize32(Vec3I const &idx) {
+  return idx.x | (idx.y << 5) | (idx.z << 10);
+}
+
+static Vec3I unlinearize32(size_t off) {
+  Vec3I idx;
+  idx.x = off & 31;
+  idx.y = (off >> 5) & 31;
+  idx.z = off >> 10;
+  return idx;
+}
 
 static size_t linearize16(Vec3I const &idx) {
   return idx.x | (idx.y << 4) | (idx.z << 8);
@@ -42,16 +53,16 @@ struct TreeNode {
 
 template <class LeafT>
 struct RootNode {
-  TreeNode<LeafT> *mChildren[16 * 16 * 16];
+  TreeNode<LeafT> *mChildren[32 * 32 * 32];
 
   RootNode() {
-    for (int i = 0; i < 16 * 16 * 16; i++) {
+    for (int i = 0; i < 32 * 32 * 32; i++) {
       mChildren[i] = nullptr;
     }
   }
 
   ~RootNode() {
-    for (int i = 0; i < 16 * 16 * 16; i++) {
+    for (int i = 0; i < 32 * 32 * 32; i++) {
       if (mChildren[i])
         delete mChildren[i];
       mChildren[i] = nullptr;
@@ -73,13 +84,13 @@ struct Grid {
   }
 
   template <bool activate>
-  LeafT *leafAt(Vec3B const &index) const {
-    auto *&tree = root->mChildren[linearize16(index >> 4)];
+  LeafT *leafAt(Vec3H const &idx) const {
+    auto *&tree = root->mChildren[linearize32(idx >> 4)];
     if (!tree) {
       if constexpr (!activate) return nullptr;
       tree = new TreeNode<LeafT>;
     }
-    auto *&leaf = tree->mChildren[linearize16(index & 15)];
+    auto *&leaf = tree->mChildren[linearize16(idx & 15)];
     if (!leaf) {
       if constexpr (!activate) return nullptr;
       leaf = new LeafT;
@@ -88,16 +99,16 @@ struct Grid {
   }
 
   auto iterLeaf() const {
-    std::vector<std::pair<Vec3B, LeafT *>> res;
-    for (int i = 0; i < 16 * 16 * 16; i++) {
+    std::vector<std::pair<Vec3H, LeafT *>> res;
+    for (int i = 0; i < 32 * 32 * 32; i++) {
       auto *tree = root->mChildren[i];
       if (!tree) continue;
       for (int j = 0; j < 16 * 16 * 16; j++) {
         auto *leaf = tree->mChildren[j];
         if (!leaf) continue;
-        Vec3B tree_idx = unlinearize16(i);
-        Vec3B leaf_idx = unlinearize16(j);
-        Vec3B idx = (tree_idx << 4) | leaf_idx;
+        Vec3H tree_idx = unlinearize32(i);
+        Vec3H leaf_idx = unlinearize16(j);
+        Vec3H idx = (tree_idx << 4) | leaf_idx;
         res.push_back(std::make_pair(idx, leaf));
       }
     }
@@ -122,8 +133,19 @@ struct PointsLeaf {
 };
 
 struct PointsGrid : Grid<PointsLeaf> {
+  static Vec3i composeIndex(Vec3H const &idx, Vec3H const &off) {
+    Vec3i pos = (((Vec3i)idx << 16) | (Vec3i)off) - (1 << 23);
+    return pos;
+  }
+
+  static std::pair<Vec3H, Vec3H> decomposeIndex(Vec3i const &pos) {
+    Vec3H idx = (pos + (1 << 24)) >> 16;
+    Vec3H off = pos & 65535;
+    return std::make_pair(idx, off);
+  }
+
   void addPoint(Vec3i const &pos) const {
-    Vec3B idx = (pos + (1 << 23)) >> 16;
+    Vec3H idx = (pos + (1 << 24)) >> 16;
     Vec3H off = pos & 65535;
     auto *leaf = leafAt<true>(idx);
     leaf->addPoint(off);
@@ -133,7 +155,7 @@ struct PointsGrid : Grid<PointsLeaf> {
     std::vector<Vec3i> res;
     for (auto [idx, leaf]: iterLeaf()) {
       for (auto const &off: leaf->iterPoint()) {
-        Vec3i pos = (((Vec3i)idx << 16) | (Vec3i)off) - (1 << 23);
+        Vec3i pos = (((Vec3i)idx << 16) | (Vec3i)off) - (1 << 24);
         res.push_back(pos);
       }
     }

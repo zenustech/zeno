@@ -1,7 +1,6 @@
 // vim: sw=2 sts=2 ts=2
 #include <cstdio>
 #include "SparseGrid.h"
-#include "Transform.h"
 #include "MathVec.h"
 
 
@@ -13,7 +12,6 @@ int main(void) {
   grid.addPoint(fdb::Vec3i(pos / dx));
 
   for (auto const &ipos: grid.iterPoint()) {
-    printf("%d %d %d\n", ipos.x, ipos.y, ipos.z);
     fdb::Vec3f pos = (fdb::Vec3f)ipos * dx;
     printf("%f %f %f\n", pos.x, pos.y, pos.z);
   }
