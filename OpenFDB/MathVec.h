@@ -43,18 +43,18 @@ struct Vec3 {
 
 #define _PER_OP2(op) \
 template <class T, class S> \
-inline Vec3<T> operator op(Vec3<T> const &a, Vec3<S> const &b) { \
-  return {a.x op b.x, a.y op b.y, a.z op b.z}; \
+inline auto operator op(Vec3<T> const &a, Vec3<S> const &b) { \
+  return Vec3{a.x op b.x, a.y op b.y, a.z op b.z}; \
 } \
 \
 template <class T, class S> \
-inline Vec3<T> operator op(T const &a, Vec3<S> const &b) { \
-  return {a op b.x, a op b.y, a op b.z}; \
+inline auto operator op(T const &a, Vec3<S> const &b) { \
+  return Vec3{a op b.x, a op b.y, a op b.z}; \
 } \
 \
 template <class T, class S> \
-inline Vec3<T> operator op(Vec3<T> const &a, S const &b) { \
-  return {a.x op b, a.y op b, a.z op b}; \
+inline auto operator op(Vec3<T> const &a, S const &b) { \
+  return Vec3{a.x op b, a.y op b, a.z op b}; \
 }
 #define _PER_IOP2(op) \
 _PER_OP2(op) \

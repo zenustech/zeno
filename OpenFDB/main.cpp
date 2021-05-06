@@ -7,14 +7,14 @@
 
 int main(void) {
   fdb::PointsGrid grid;
-  fdb::Transform<fdb::PointsGrid::MAX_INDEX> trans(0.1);
+  float dx = 0.1;
 
   fdb::Vec3f pos(0.1, 0.4, 0.5);
-  grid.addPoint(trans.localToIndex(pos));
+  grid.addPoint(fdb::Vec3i(pos / dx));
 
   for (auto const &ipos: grid.iterPoint()) {
-    fdb::Vec3f pos = trans.indexToLocal(ipos);
     printf("%d %d %d\n", ipos.x, ipos.y, ipos.z);
+    fdb::Vec3f pos = (fdb::Vec3f)ipos * dx;
     printf("%f %f %f\n", pos.x, pos.y, pos.z);
   }
 

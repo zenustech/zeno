@@ -73,7 +73,7 @@ struct Grid {
   }
 
   template <bool activate>
-  LeafT *leafAt(Vec3I const &index) const {
+  LeafT *leafAt(Vec3B const &index) const {
     auto *&tree = root->mChildren[linearize16(index >> 4)];
     if (!tree) {
       if constexpr (!activate) return nullptr;
@@ -88,16 +88,16 @@ struct Grid {
   }
 
   auto iterLeaf() const {
-    std::vector<std::pair<Vec3I, LeafT *>> res;
+    std::vector<std::pair<Vec3B, LeafT *>> res;
     for (int i = 0; i < 16 * 16 * 16; i++) {
       auto *tree = root->mChildren[i];
       if (!tree) continue;
       for (int j = 0; j < 16 * 16 * 16; j++) {
         auto *leaf = tree->mChildren[j];
         if (!leaf) continue;
-        Vec3I tree_idx = unlinearize16(i);
-        Vec3I leaf_idx = unlinearize16(j);
-        Vec3I idx = (tree_idx << 4) | leaf_idx;
+        Vec3B tree_idx = unlinearize16(i);
+        Vec3B leaf_idx = unlinearize16(j);
+        Vec3B idx = (tree_idx << 4) | leaf_idx;
         res.push_back(std::make_pair(idx, leaf));
       }
     }
@@ -107,9 +107,9 @@ struct Grid {
 
 
 struct PointsLeaf {
-  std::vector<Vec3h> mOffsets;
+  std::vector<Vec3H> mOffsets;
 
-  void addPoint(Vec3h const &off) {
+  void addPoint(Vec3H const &off) {
     mOffsets.push_back(off);
   }
 
@@ -122,25 +122,23 @@ struct PointsLeaf {
 };
 
 struct PointsGrid : Grid<PointsLeaf> {
-  void addPoint(Vec3I const &pos) const {
-    Vec3I idx = pos >> 16;
-    Vec3h off = pos & 65535;
+  void addPoint(Vec3i const &pos) const {
+    Vec3B idx = (pos + (1 << 23)) >> 16;
+    Vec3H off = pos & 65535;
     auto *leaf = leafAt<true>(idx);
     leaf->addPoint(off);
   }
 
   auto iterPoint() const {
-    std::vector<Vec3I> res;
+    std::vector<Vec3i> res;
     for (auto [idx, leaf]: iterLeaf()) {
       for (auto const &off: leaf->iterPoint()) {
-        Vec3I pos = (idx << 16) | off;
+        Vec3i pos = (((Vec3i)idx << 16) | (Vec3i)off) - (1 << 23);
         res.push_back(pos);
       }
     }
     return res;
   }
-
-  static constexpr unsigned int MAX_INDEX = 1 << 24;
 };
 
 
