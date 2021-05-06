@@ -1,14 +1,22 @@
 // vim: sw=2 sts=2 ts=2
-#include "SparseGrid.h"
-#include "MathVec.h"
 #include <cstdio>
-#include <cmath>
+#include "SparseGrid.h"
+#include "Transform.h"
+#include "MathVec.h"
 
 
 int main(void) {
   fdb::PointsGrid grid;
-  grid.addPoint(fdb::Vec3I(3, 4, 5));
-  for (auto const &pos: grid.iterPoint()) {
-    printf("%d %d %d\n", pos.x, pos.y, pos.z);
+  fdb::Transform<fdb::PointsGrid::MAX_INDEX> trans(0.1);
+
+  fdb::Vec3f pos(0.1, 0.4, 0.5);
+  grid.addPoint(trans.localToIndex(pos));
+
+  for (auto const &ipos: grid.iterPoint()) {
+    fdb::Vec3f pos = trans.indexToLocal(ipos);
+    printf("%d %d %d\n", ipos.x, ipos.y, ipos.z);
+    printf("%f %f %f\n", pos.x, pos.y, pos.z);
   }
+
+  return 0;
 }

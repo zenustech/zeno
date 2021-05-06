@@ -13,6 +13,14 @@ static size_t linearize16(Vec3I const &idx) {
   return idx.x | (idx.y << 4) | (idx.z << 8);
 }
 
+static Vec3I unlinearize16(size_t off) {
+  Vec3I idx;
+  idx.x = off & 15;
+  idx.y = (off >> 4) & 15;
+  idx.z = off >> 8;
+  return idx;
+}
+
 template <class LeafT>
 struct TreeNode {
   LeafT *mChildren[16 * 16 * 16];
@@ -65,13 +73,13 @@ struct Grid {
   }
 
   template <bool activate>
-  LeafT *leafAt(Vec3I const &idx) const {
-    auto *&tree = root->mChildren[linearize16(idx >> 4)];
+  LeafT *leafAt(Vec3I const &index) const {
+    auto *&tree = root->mChildren[linearize16(index >> 4)];
     if (!tree) {
       if constexpr (!activate) return nullptr;
       tree = new TreeNode<LeafT>;
     }
-    auto *&leaf = tree->mChildren[linearize16(idx & 15)];
+    auto *&leaf = tree->mChildren[linearize16(index & 15)];
     if (!leaf) {
       if constexpr (!activate) return nullptr;
       leaf = new LeafT;
@@ -80,14 +88,17 @@ struct Grid {
   }
 
   auto iterLeaf() const {
-    std::vector<LeafT *> res;
+    std::vector<std::pair<Vec3I, LeafT *>> res;
     for (int i = 0; i < 16 * 16 * 16; i++) {
       auto *tree = root->mChildren[i];
       if (!tree) continue;
-      for (int i = 0; i < 16 * 16 * 16; i++) {
-        auto *leaf = tree->mChildren[i];
-        if (leaf)
-          res.push_back(leaf);
+      for (int j = 0; j < 16 * 16 * 16; j++) {
+        auto *leaf = tree->mChildren[j];
+        if (!leaf) continue;
+        Vec3I tree_idx = unlinearize16(i);
+        Vec3I leaf_idx = unlinearize16(j);
+        Vec3I idx = (tree_idx << 4) | leaf_idx;
+        res.push_back(std::make_pair(idx, leaf));
       }
     }
     return res;
@@ -120,8 +131,9 @@ struct PointsGrid : Grid<PointsLeaf> {
 
   auto iterPoint() const {
     std::vector<Vec3I> res;
-    for (auto *leaf: iterLeaf()) {
-      for (auto const &pos: leaf->iterPoint()) {
+    for (auto [idx, leaf]: iterLeaf()) {
+      for (auto const &off: leaf->iterPoint()) {
+        Vec3I pos = (idx << 16) | off;
         res.push_back(pos);
       }
     }

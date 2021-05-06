@@ -2,22 +2,31 @@
 #pragma once
 
 
-#include <cstddef>
 #include "MathVec.h"
 
 
 namespace fdb {
 
+template <int max_index>
 struct Transform {
   float dx;
-  Vec3d center;
-  unsigned int max_index;
 
-  Vec3f indexToLocal(Vec3I const &idx) {
-    auto half_max_index = max_index >> 1;
-    Vec3i signed_idx = (Vec3i)idx - half_max_index;
-    Vec3f local = signed_idx * (dx / half_max_index);
-    return local;
+  static constexpr auto half_max_index = max_index >> 1;
+
+  explicit Transform(float dx)
+    : dx(dx)
+  {}
+
+  Vec3f indexToLocal(Vec3I const &ipos) {
+    Vec3i signed_idx = (Vec3i)ipos - half_max_index;
+    Vec3f lpos = (Vec3f)signed_idx * dx;
+    return lpos;
+  }
+
+  Vec3I localToIndex(Vec3f const &lpos) {
+    Vec3i signed_idx(lpos / dx);
+    Vec3I ipos(signed_idx + half_max_index);
+    return ipos;
   }
 };
 
