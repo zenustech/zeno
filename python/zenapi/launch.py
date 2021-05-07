@@ -11,6 +11,7 @@ from .descriptor import parse_descriptor_line
 
 std_header = '''
 import zen
+zen.loadLibrary('libOCTlib.so')
 '''
 
 iopath = '/tmp/zenio'
