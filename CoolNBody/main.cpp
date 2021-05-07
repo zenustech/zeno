@@ -1,3 +1,4 @@
+// vim: sw=2 sts=2 ts=2
 #include <glm/vec3.hpp>
 #include <glm/glm.hpp>
 #include <cassert>
@@ -11,144 +12,117 @@
 #include <x86intrin.h>
 
 
-const double DT = 0.004;
-const double G = -1.00;
-const double EPS = 0.01;
-const double LAM = 1.0;
+glm::dvec3 gravity_func(glm::dvec3 dist) {
+  double r = 1 / (glm::length(dist) + 0.001);
+  return r * r * r * dist;
+}
 
 
 struct Stars {
   std::vector<double> mass;
-  std::vector<__m256d> pos;
-  std::vector<__m256d> vel;
-  std::vector<__m256d> acc;
+  std::vector<glm::dvec3> pos;
+  std::vector<glm::dvec3> vel;
+  std::vector<glm::dvec3> acc;
+
+  void get_bounds(glm::dvec3 &bmin, glm::dvec3 &bmax) {
+    bmin = bmax = pos[0];
+    for (int i = 1; i < pos.size(); i++) {
+      bmin = glm::min(bmin, pos[i]);
+      bmax = glm::max(bmax, pos[i]);
+    }
+  }
 };
 
 
-struct Octree {
-  std::vector<__m256d> center;
-  std::vector<std::array<int, 8>> children;
-  std::vector<__m256d> com;
-  std::vector<double> mass;
-  std::vector<double> size;
-  std::vector<int> pid;
+struct Neighbor {
+  std::vector<std::vector<int>> table;
+  glm::ivec3 res;
+
+  glm::dvec3 bmin, bmax, bscale;
+
+  void initialize(glm::dvec3 const &bmin_, glm::dvec3 const &bmax_) {
+    bmin = bmin_ + 0.1;
+    bmax = bmax_ + 0.1;
+    bscale = glm::dvec3(1) / (bmax - bmin);
+
+    table.clear();
+    double dx = 10.0;
+    res = (glm::ivec3)glm::ceil((bmax - bmin) / dx);
+    printf("resize %d %d %d\n", res.x, res.y, res.z);
+    table.resize(res.x * res.y * res.z);
+  }
+
+  int linearize(glm::ivec3 const &idx) {
+    return idx.x + res.x * (idx.y + res.y * idx.z);
+  }
+
+  std::vector<int> &at(glm::ivec3 const &idx) {
+    return table[linearize(idx)];
+  }
+
+  auto world_to_index(glm::dvec3 const &pos) {
+    auto rel = (pos - bmin) * bscale;
+    auto idx = (glm::ivec3)glm::floor(rel * (glm::dvec3)res);
+    idx = glm::max(glm::ivec3(0), glm::min(res, idx));
+    return idx;
+  }
+
+  std::vector<int> find_neighbors(glm::dvec3 const &pos) {
+    auto idx = world_to_index(pos);
+    return at(idx);
+  }
+
+  void add_particle(glm::dvec3 const &pos, int i) {
+    auto idx = world_to_index(pos);
+    at(idx).push_back(i);
+  }
 };
 
 
-__m256d gravity_func(__m256d dist) {
-  __m256d rr = dist * dist;
-  double z = -1 / (rr[0] + rr[1] + rr[2]);
-  return (z * z * z) * dist;
-}
-
-
-int tree_alloc_node(Octree &tree, __m256d center, double size, int pid) {
-  int n = tree.center.size();
-  tree.center.push_back(center);
-  tree.com.push_back(_mm256_setzero_pd());
-  tree.mass.push_back(0.0);
-  tree.size.push_back(size);
-  tree.pid.push_back(pid);
-  tree.children.push_back({0, 0, 0, 0, 0, 0, 0, 0});
-  return n;
-}
-
-
-void tree_add_particle(Octree &tree, Stars &star, int i, int n = 0) {
-  int chid = _mm256_movemask_pd(tree.center[n] > star.pos[i]) & 7;
-  int chn = tree.children[n][chid];
-  if (chn != 0) {
-    tree_add_particle(tree, star, i, chn);
-    return;
-  }
-  tree.com[n] += star.mass[i] * star.pos[i];
-  tree.mass[n] += star.mass[i];
-  __m256d ch_dir = _mm256_setr_pd(
-      chid & 1 ? 1 : -1, chid & 2 ? 1 : -1, chid & 4 ? 1 : -1, 0.0);
-  double ch_size = tree.size[n] * 0.5;
-  __m256d ch_center = tree.center[n] + ch_dir * ch_size;
-  tree.children[n][chid] = tree_alloc_node(tree, ch_center, ch_size, i);
-}
-
-
-void reset_root_node(Octree &tree, Stars &star) {
-  __m256d bmin = star.pos[0];
-  __m256d bmax = star.pos[0];
-  for (int i = 1; i < star.pos.size(); i++) {
-    bmin = _mm256_min_pd(bmin, star.pos[i]);
-    bmax = _mm256_max_pd(bmax, star.pos[i]);
-  }
-  double vsize[4];
-  _mm256_storeu_pd(vsize, bmax - bmin);
-  double size = std::min(std::min(vsize[0], vsize[1]), vsize[2]);
-  __m256d center = (bmin + bmax) * 0.5;
-
-  tree.size.resize(1);
-  tree.center.resize(1);
-  tree.children.resize(1);
-  tree.com.resize(1);
-  tree.mass.resize(1);
-  tree.pid.resize(1);
-
-  tree.size[0] = size;
-  tree.center[0] = center;
-  tree.com[0] = _mm256_setzero_pd();
-  tree.mass[0] = 0.0;
-  tree.children[0] = {0, 0, 0, 0, 0, 0, 0, 0};
-  tree.pid[0] = -1;
-}
-
-
-void build_tree(Stars &star, Octree &tree) {
-  printf("building octree...\n");
-  reset_root_node(tree, star);
+void build_neighbor(Stars &star, Neighbor &neighbor) {
+  glm::dvec3 bmin, bmax;
+  star.get_bounds(bmin, bmax);
+  neighbor.initialize(bmin, bmax);
 
   for (int i = 0; i < star.pos.size(); i++) {
-    tree_add_particle(tree, star, i);
-  }
-  printf("built octree with %d nodes\n", tree.center.size());
-
-  for (int n = 0; n < tree.center.size(); n++) {
-    if (tree.mass[n] != 0)
-      tree.com[n] /= tree.mass[n];
-    else
-      tree.com[n] = tree.center[n];
+    neighbor.add_particle(star.pos[i], i);
   }
 }
 
 
-__m256d gravity_at(Octree &tree, __m256d pos, int n = 0) {
-  __m256d dist = tree.com[n] - pos;
-  __m256d rr = dist * dist;
-  if (rr[0] + rr[1] + rr[2] > std::pow(LAM * tree.size[n], 2)) {
-    return tree.mass[n] * gravity_func(dist);
-  }
-
-  __m256d acc = _mm256_setzero_pd();
-  for (int chid = 0; chid < 8; chid++) {
-    int chn = tree.children[n][chid];
-    if (chn != 0)
-      acc += gravity_at(tree, pos, chn);
-  }
-  return acc;
-}
-
-
-void compute_gravity(Stars &star, Octree &tree) {
+void compute_gravity(Stars &star, Neighbor &neighbor) {
   printf("computing gravity for %d stars...\n", star.pos.size());
+  star.acc.clear();
   star.acc.resize(star.pos.size());
+  #pragma omp parallel for simd
   for (int i = 0; i < star.pos.size(); i++) {
-    star.acc[i] = gravity_at(tree, star.pos[i]);
-    printf("%lf %lf %lf\n", star.acc[i][0], star.acc[i][1], star.acc[i][2]);
+    for (int j: neighbor.find_neighbors(star.pos[i])) {
+      star.acc[i] += star.mass[j] * gravity_func(star.pos[j] - star.pos[i]);
+    }
   }
   printf("computing gravity done\n");
 }
 
 
-void advect_particles(Stars &star) {
+void compute_gravity(Stars &star) {
+  printf("direct computing gravity for %d stars...\n", star.pos.size());
+  star.acc.clear();
+  star.acc.resize(star.pos.size());
+  #pragma omp parallel for simd
   for (int i = 0; i < star.pos.size(); i++) {
-    star.pos[i] += star.vel[i] * DT + star.acc[i] * (DT * DT / 2);
-    star.vel[i] += star.acc[i] * DT;
+    for (int j = 0; j < star.pos.size(); j++) {
+      star.acc[i] += star.mass[j] * gravity_func(star.pos[j] - star.pos[i]);
+    }
+  }
+  printf("direct computing gravity done\n");
+}
+
+
+void advect_particles(Stars &star, double dt) {
+  double half_dt2 = 0.5 * dt * dt;
+  for (int i = 0; i < star.pos.size(); i++) {
+    star.pos[i] += star.vel[i] * dt + star.acc[i] * half_dt2;
+    star.vel[i] += star.acc[i] * dt;
   }
 }
 
@@ -194,7 +168,7 @@ void dump_particles(Stars &star, const char *path) {
 int main(void)
 {
   Stars star;
-  Octree tree;
+  Neighbor neighbor;
 
 #if 0
   load_particles(star, "solarsystem.obj");
@@ -213,9 +187,13 @@ int main(void)
 
   for (int i = 0; i < 250; i++) {
     for (int j = 0; j < 28; j++) {
-      build_tree(star, tree);
-      compute_gravity(star, tree);
-      advect_particles(star);
+#if 0
+      build_neighbor(star, neighbor);
+      compute_gravity(star, neighbor);
+#else
+      compute_gravity(star);
+#endif
+      advect_particles(star, 0.005);
     }
 
     char path[1024];
@@ -225,4 +203,5 @@ int main(void)
     printf("dumping to %s\n", path);
     dump_particles(star, path);
   }
+  return 0;
 }

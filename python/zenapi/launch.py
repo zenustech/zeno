@@ -3,7 +3,7 @@ import runpy
 import shutil
 import tempfile
 import multiprocessing as mp
-from zenutils import run_script
+from zenutils import run_script, mock_ld_library_path
 
 from .codegen import generate_script
 from .descriptor import parse_descriptor_line
@@ -11,7 +11,6 @@ from .descriptor import parse_descriptor_line
 
 std_header = '''
 import zen
-zen.loadLibrary('build/FastFLIP/libFLIPlib.so')
 '''
 
 iopath = '/tmp/zenio'
@@ -54,7 +53,6 @@ print('EXITING')
 def getDescriptors():
     script = std_header + f'''
 descs = zen.dumpDescriptors()
-print(descs)
 '''
     descs = run_script(script)['descs']
     if isinstance(descs, bytes):
@@ -62,6 +60,7 @@ print(descs)
     descs = descs.splitlines()
     descs = [parse_descriptor_line(line) for line in descs if ':' in line]
     descs = {name: desc for name, desc in descs}
+    print('loaded', len(descs), 'descriptors')
     return descs
 
 

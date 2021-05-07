@@ -20,7 +20,7 @@ target_compile_options(NBody PRIVATE "-march=native")
 endif()
 
 target_compile_options(NBody PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fopenmp>)
-target_link_libraries(NBody PRIVATE openvdb Half IlmImf tbb)
+target_link_libraries(NBody PRIVATE openvdb tbb)
 target_compile_definitions(NBody PRIVATE FMT_HEADER_ONLY)
 find_package(OpenMP)
 if (TARGET OpenMP::OpenMP_CXX)
@@ -34,3 +34,4 @@ target_include_directories(NBody PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(NBody PRIVATE TBB::tbb TBB::tbbmalloc)
 target_link_libraries(NBody PRIVATE pthread)
 
+target_link_libraries(FLIPlib PRIVATE zen)

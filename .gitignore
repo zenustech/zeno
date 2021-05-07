@@ -1,10 +1,19 @@
+# python files
 __pycache__
+*.egg-info
+dist
+venv
+.venv
+
+# cmake files
 build
+dsolib
+
+# output files
 outputs
 rubbish.bin
 pruned
 imgui.ini
-*.zsg
 genCode.py
 
 # vim files
