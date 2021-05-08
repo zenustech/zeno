@@ -1,6 +1,7 @@
 #pragma once
 
 #include <zen/zen.h>
+#include <glm/glm.hpp>
 #include <glm/vec3.hpp>
 #include <variant>
 #include <vector>
@@ -17,7 +18,10 @@ struct PrimitiveObject : zen::IObject {
 
     std::map<std::string, AttributeArray> m_attrs;
     size_t m_size{0};
-
+    std::vector<int> particles;
+    std::vector<glm::ivec2> lines;
+    std::vector<glm::ivec3> triangles;
+    std::vector<glm::ivec4> quads;
     template <class T>
     void add_attr(std::string name) {
         m_attrs[name] = std::vector<T>(m_size);
@@ -25,7 +29,7 @@ struct PrimitiveObject : zen::IObject {
 
     template <class T>
     std::vector<T> &attr(std::string name) {
-        return m_attrs.at(name);
+        return std::get<std::vector<T>>(m_attrs.at(name));
     }
 
     AttributeArray &attr(std::string name) {
