@@ -1,5 +1,5 @@
 set(CMAKE_CXX_STANDARD 17)
-file(GLOB PROJECT_SOURCE include/*/*.h *.cpp view/*.cpp base/*.cpp)
+file(GLOB PROJECT_SOURCE include/*/*.h *.cpp view/*.cpp base/*/*.cpp)
 
 add_library(zen SHARED)
 add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)  
