@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 project(FLIPlib)
-
+add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)  
 # add directory with macros
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -32,9 +32,8 @@ target_include_directories(FLIPlib PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(FLIPlib PRIVATE ltcommon ltcommon/tunicate ltcommon/newsparse lostopos d3dutils)
 
 target_link_libraries(FLIPlib PRIVATE TBB::tbb TBB::tbbmalloc)
-target_link_libraries(FLIPlib PRIVATE pthread openblas f2c lapack cblas)
+target_link_libraries(FLIPlib PRIVATE pthread openblas lapack cblas)
 
-# zen link flags
 target_link_libraries(FLIPlib PRIVATE zen)
 
 #disable default malloc options
@@ -46,6 +45,6 @@ target_link_directories(FLIPlib PUBLIC /usr/lib/x86_64-linux-gnu:/usr/local/lib)
 target_link_libraries(FLIPlib PRIVATE openvdb IlmBase::Half)
 target_link_libraries(FLIPlib PRIVATE Eigen3::Eigen)
 #target_link_libraries(FLIPlib PRIVATE SimEnvironment)
-#target_link_libraries(FLIPlib PRIVATE partio)
+target_link_libraries(FLIPlib PRIVATE partio)
 
 

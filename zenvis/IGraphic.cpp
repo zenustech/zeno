@@ -4,8 +4,8 @@
 
 namespace zenvis {
 
-std::unique_ptr<IGraphic> makeGraphicMesh(std::vector<char> const &serial);
-std::unique_ptr<IGraphic> makeGraphicParticles(std::vector<char> const &serial);
+std::unique_ptr<IGraphic> makeGraphicMesh(ObjectData const &obj);
+std::unique_ptr<IGraphic> makeGraphicParticles(ObjectData const &obj);
 
 std::vector<std::unique_ptr<IGraphic>> graphics;
 
@@ -28,10 +28,10 @@ void update_frame_graphics() {
     std::unique_ptr<IGraphic> gra;
 
     if (obj->type == "MESH") {
-      gra = makeGraphicMesh(*obj->serial);
+      gra = makeGraphicMesh(*obj);
 
     } else if (obj->type == "PARS") {
-      gra = makeGraphicParticles(*obj->serial);
+      gra = makeGraphicParticles(*obj);
 
     } else {
       printf("Bad object type: %s\n", obj->type.c_str());

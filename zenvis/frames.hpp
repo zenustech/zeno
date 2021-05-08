@@ -11,7 +11,8 @@ namespace zenvis {
 
 
 struct ObjectData {
-  std::unique_ptr<std::vector<char>> serial;
+  std::unique_ptr<std::vector<char>> memory;
+  std::unique_ptr<std::vector<char>> shader;
   std::string type;
 };
 

@@ -53,10 +53,11 @@ struct VDBGrid : zen::IObject {
 };
 
 
-template <class GridT>
-struct VDBGridWrapper : VDBGrid {
-  GridT::Ptr m_grid;
 
+template <typename GridT>
+struct VDBGridWrapper : VDBGrid {
+  typename GridT::Ptr m_grid;
+  VDBGridWrapper(){ m_grid = GridT::create(); }
   virtual void output(std::string path) override {
     writeFloatGrid<GridT>(path, m_grid);
   }
@@ -73,6 +74,7 @@ struct VDBGridWrapper : VDBGrid {
 struct TBBConcurrentIntArray : zen::IObject {
   tbb::concurrent_vector<openvdb::Index32> m_data;
 };
+
 
 using VDBFloatGrid = VDBGridWrapper<openvdb::FloatGrid>;
 using VDBIntGrid = VDBGridWrapper<openvdb::Int32Grid>;

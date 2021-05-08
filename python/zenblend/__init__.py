@@ -22,11 +22,13 @@ bl_info = {
 from . import (
     node_system,
     node_execution,
+    frame_animation,
 )
 
 modules = (
     node_system,
     node_execution,
+    frame_animation,
 )
 
 

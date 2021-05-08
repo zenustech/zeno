@@ -5,6 +5,8 @@ from bpy.types import NodeTree, Node, NodeSocket
 import nodeitems_utils
 from nodeitems_utils import NodeCategory, NodeItem
 
+import zenapi
+
 
 
 class ZensimTree(NodeTree):
@@ -53,33 +55,14 @@ user_classes = []
 user_categories = {}
 
 
-def add_zensim_node_class(line):
-    line = line.strip()
-    if ':' not in line:
-        return
-    n_name, rest = line.split(':', maxsplit=1)
-    assert rest.startswith('(') and rest.endswith(')'), (n_name, rest)
-    inputs, outputs, params, category = rest.strip('()').split(')(')
-
-    n_inputs = [name for name in inputs.split(',') if name]
-    n_outputs = [name for name in outputs.split(',') if name]
-    n_params = []
-    for param in params.split(','):
-        if not param:
-            continue
-        type, name, defl = param.split(':')
-        n_params.append((type, name, defl))
-
-    do_add_zensim_node_class(n_name, n_inputs, n_outputs, n_params, category)
-
-
 def do_add_zensim_node_class(n_name, n_inputs, n_outputs, n_params, category):
     class Def(ZensimTreeNode):
         __doc__ = 'Zensim node: ' + n_name
         bl_idname = 'ZensimNodeType_' + n_name
         bl_label = n_name
-        bl_icon = 'PHYSICS'
-        n_param_names = {name for type, name, defl in n_params}
+        bl_icon = 'BLENDER' if category == 'blender' else 'PHYSICS'
+        n_param_names = [name for type, name, defl in n_params]
+        n_input_names = [name for name in n_inputs]
 
         def init(self, context):
             for name in n_inputs:
@@ -181,7 +164,7 @@ class ZensimNode_ExecutionOutput(ZensimTreeNode):
     category = 'blender'
     bl_idname = 'ZensimNodeType_ExecutionOutput'
     bl_label = 'ExecutionOutput'
-    bl_icon = 'PHYSICS'
+    bl_icon = 'BLENDER'
 
     nframes: bpy.props.IntProperty(min=1, default=1,
             description='Number of frames to execute')
@@ -199,13 +182,14 @@ nonproc_class = [
 ]
 
 
-def load_user_nodes_from_descriptors(descriptors):
+def load_user_nodes_from_descriptors(descs):
     unregister_user_nodes()
 
     user_classes.clear()
     user_categories.clear()
-    for line in descriptors.splitlines():
-        add_zensim_node_class(line)
+    for n_name, desc in descs.items():
+        do_add_zensim_node_class(n_name, desc['inputs'], desc['outputs'],
+                desc['params'], desc['categories'][0])
 
     for cls in nonproc_class:
         user_classes.append(cls)
@@ -246,12 +230,10 @@ def unregister_user_nodes():
 
 
 def register():
+    descs = zenapi.getDescriptors()
+    load_user_nodes_from_descriptors(descs)
     for cls in core_classes:
         register_class(cls)
-
-    from .launch_script import get_node_descriptors
-    descs = get_node_descriptors()
-    load_user_nodes_from_descriptors(descs)
 
 
 def unregister():

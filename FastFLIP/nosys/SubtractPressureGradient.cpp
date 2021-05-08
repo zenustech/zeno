@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/MeshObject.h>
+#include <zen/NumericObject.h>
 #include <zen/VDBGrid.h>
 #include <omp.h>
 #include "FLIP_vdb.h"
@@ -19,8 +20,9 @@ namespace zenbase{
     
     struct SubtractPressureGradient : zen::INode{
         virtual void apply() override {
-            auto dt = std::get<float>(get_param("dt"));
+            
             auto dx = std::get<float>(get_param("dx"));
+            auto dt = get_input("dt")->as<zenbase::NumericObject>()->get<float>();
             auto liquid_sdf            = get_input("LiquidSDF"         )->as<VDBFloatGrid>();
             auto solid_sdf             = get_input("SolidSDF"          )->as<VDBFloatGrid>();
             auto pushed_out_liquid_sdf = get_input("ExtractedLiquidSDF")->as<VDBFloatGrid>();
@@ -44,6 +46,7 @@ namespace zenbase{
 
 static int defSubtractPressureGradient = zen::defNodeClass<SubtractPressureGradient>("SubtractPressureGradient",
     { /* inputs: */ {
+        "dt"                ,
         "LiquidSDF"         ,
         "SolidSDF"          ,
         "ExtractedLiquidSDF",
@@ -56,8 +59,7 @@ static int defSubtractPressureGradient = zen::defNodeClass<SubtractPressureGradi
     /* outputs: */ {
     }, 
     /* params: */ {
-       {"float", "dt", "0.0"},
-       {"float", "dx", "0.0"},
+        {"float", "dx", "0.0"},
     }, 
     
     /* category: */ {

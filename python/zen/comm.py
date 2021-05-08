@@ -64,27 +64,4 @@ class SleepFor(INode):
         time.sleep(secs)
 
 
-@defNodeClass
-class NumericFloat(INode):
-    z_params = [('float', 'value', '0.0')]
-    z_outputs = ['value']
-    z_categories = 'numeric'
-
-    def apply(self):
-        value = self.get_param('value')
-        self.set_output('value', value)
-
-
-@defNodeClass
-class NumericInt(INode):
-    z_params = [('int', 'value', '0')]
-    z_outputs = ['value']
-    z_categories = 'numeric'
-
-    def apply(self):
-        value = self.get_param('value')
-        self.set_output('value', value)
-
-
-
 __all__ = []

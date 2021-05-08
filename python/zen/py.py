@@ -11,17 +11,20 @@ class IObject:
     pass
 
 
-class BooleanObject(int, IObject):
-    pass
+class BooleanObject(IObject):
+    def __init__(self, value=True):
+        self.__value = value
+
+    def __bool__(self):
+        return self.__value
 
 
-class ParamDescriptor(namedtuple('ParamDescriptor',
-    ['type', 'name', 'defl'])):
+class ParamDescriptor(namedtuple('ParamDescriptor', 'type, name, defl')):
     pass
 
 
 class Descriptor(namedtuple('Descriptor',
-    ['inputs', 'outputs', 'params', 'categories'])):
+    'inputs, outputs, params, categories')):
     def serialize(self):
         res = ""
         res += "(" + ",".join(self.inputs) + ")"

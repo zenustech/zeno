@@ -1,6 +1,5 @@
 #!/bin/bash
 
 export PYTHONPATH=`pwd`/python
-python -m zeneditor &
-build/zenvis/zenvis
-wait
+export LD_LIBRARY_PATH=`pwd`/build/FastFLIP:`pwd`/build/QuickOCT
+python -m zenclient

@@ -1,4 +1,5 @@
-modpath = '/home/bate/Develop/zensim/python'
+#modpath = '/home/bate/Develop/zensim/python'
+modpath = '/home/dilei/Codes/zeno/python'
 pkgname = 'zenblend'
 
 import sys

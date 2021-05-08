@@ -14,6 +14,7 @@ std::unique_ptr<Server> Server::_instance;
 
 int curr_frameid = -1;
 
+static bool playing = true;
 static int nx = 960, ny = 800;
 
 static double last_xpos, last_ypos;
@@ -48,7 +49,6 @@ void look_perspective(
     view = glm::lookAt(center - back * radius, center, up);
     proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.05, 500.0);
   }
-
 }
 
 void set_program_uniforms(Program *pro) {
@@ -59,9 +59,6 @@ void set_program_uniforms(Program *pro) {
   pro->set_uniform("mInvVP", glm::inverse(pers));
   pro->set_uniform("mView", view);
   pro->set_uniform("mProj", proj);
-
-  pro->set_uniform("light.dir", glm::normalize(glm::vec3(1, 2, 3)));
-  pro->set_uniform("light.color", glm::vec3(1, 1, 1));
 }
 
 static std::unique_ptr<VAO> vao;
@@ -73,13 +70,14 @@ void initialize() {
   CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
   CHECK_GL(glEnable(GL_DEPTH_TEST));
   CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
+  CHECK_GL(glEnable(GL_POINT_SPRITE_ARB));
 
   vao = std::make_unique<VAO>();
 
   Server::get();
 }
 
-static void draw_contents(void) {
+static void paint_graphics(void) {
   CHECK_GL(glClearColor(0.3f, 0.2f, 0.1f, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   vao->bind();
@@ -100,19 +98,15 @@ double get_time() {
 static hg::FPSCounter solverFPS(get_time, 1);
 static hg::FPSCounter renderFPS(get_time, 10);
 
-static char titleBuf[512];
-
-static void update_title() {
-  sprintf(titleBuf, "frame %d | %.1f fps | %.02f spf\n",
-      curr_frameid, renderFPS.fps(), solverFPS.interval());
-}
-
 void finalize() {
   vao = nullptr;
 }
 
 void new_frame() {
   auto &server = Server::get();
+
+  if (playing)
+    curr_frameid++;
 
   server.poll_init();
   if (curr_frameid >= server.frameid) {
@@ -123,12 +117,10 @@ void new_frame() {
     }
   }
 
-  update_frame_graphics();
-  renderFPS.tick();
-  update_title();
-
   CHECK_GL(glViewport(0, 0, nx, ny));
-  draw_contents();
+  update_frame_graphics();
+  paint_graphics();
+  renderFPS.tick();
 }
 
 void set_window_size(int nx_, int ny_) {
@@ -136,18 +128,21 @@ void set_window_size(int nx_, int ny_) {
   ny = ny_;
 }
 
+void set_curr_playing(bool playing_) {
+  playing = playing_;
+}
+
 void set_curr_frameid(int frameid) {
   curr_frameid = frameid;
-  if (curr_frameid < 0) curr_frameid = 0;
+}
+
+int get_curr_frameid() {
+  return curr_frameid;
 }
 
 int get_solver_frameid() {
   auto &server = Server::get();
   return server.frameid;
-}
-
-int get_curr_frameid() {
-  return curr_frameid;
 }
 
 double get_render_fps() {

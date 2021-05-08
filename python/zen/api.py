@@ -22,21 +22,24 @@ def applyNode(name):
 
 def cpp2pyObject(name):
     obj = npy.getCppObject(name)
-    # print('cpp2py', name, obj)
     py.setObject(name, obj)
 
 def py2cppObject(name):
     obj = py.getObject(name)
-    # print('py2cpp', name, obj)
     npy.setCppObject(name, obj)
+
+is_cpp2py_table = set()
+is_py2cpp_table = set()
 
 def setNodeInput(name, key, srcname):
     if py.isPyNodeName(name):
-        if not py.isPyObject(srcname):
+        if srcname in is_cpp2py_table or not py.isPyObject(srcname):
+            is_cpp2py_table.add(srcname)
             cpp2pyObject(srcname)
         py.setNodeInput(name, key, srcname)
     else:
-        if py.isPyObject(srcname):
+        if srcname in is_py2cpp_table or py.isPyObject(srcname):
+            is_py2cpp_table.add(srcname)
             py2cppObject(srcname)
         cpp.setNodeInput(name, key, srcname)
 
