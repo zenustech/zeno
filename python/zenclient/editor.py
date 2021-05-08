@@ -406,6 +406,29 @@ class QDMGraphicsSocket(QGraphicsItem):
             edge.remove()
 
 
+class QDMGraphicsButton(QGraphicsProxyWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.widget = QPushButton()
+        self.widget.clicked.connect(self.on_click)
+        self.setWidget(self.widget)
+        self.setChecked(False)
+
+    def on_click(self):
+        self.setChecked(not self.checked)
+
+    def setChecked(self, checked):
+        self.checked = checked
+        if self.checked:
+            self.widget.setStyleSheet('background-color: #cc6622; color: #333333')
+        else:
+            self.widget.setStyleSheet('background-color: #333333; color: #eeeeee')
+
+    def setText(self, text):
+        self.widget.setText(text)
+
+
 class QDMGraphicsParam(QGraphicsProxyWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -547,7 +570,19 @@ class QDMGraphicsNode(QGraphicsItem):
         self.title.setPlainText(name)
 
     def initSockets(self, inputs=(), outputs=(), params=()):
-        y = TEXT_HEIGHT * 0.1
+        y = TEXT_HEIGHT * 0.2
+
+        button = QDMGraphicsButton(self)
+        rect = QRectF(HORI_MARGIN, y, self.width / 2 - HORI_MARGIN * 1.5, 0)
+        button.setGeometry(rect)
+        button.setText('OUT')
+
+        button = QDMGraphicsButton(self)
+        rect = QRectF(HORI_MARGIN * 0.5 + self.width / 2, y, self.width / 2 - HORI_MARGIN * 1.5, 0)
+        button.setGeometry(rect)
+        button.setText('MUTE')
+
+        y += TEXT_HEIGHT * 1.2
 
         self.params.clear()
         for index, (type, name, defl) in enumerate(params):
@@ -658,6 +693,8 @@ class NodeEditor(QWidget):
         self.initShortcuts()
         #self.initConnect()
         self.refreshDescriptors()
+
+        #self.do_open('assets/prim2.zsg')  ## DEBUG
 
     def initShortcuts(self):
         self.msgF5 = QShortcut(QKeySequence('F5'), self)
