@@ -28,7 +28,7 @@ static int defMakePrimitive = zen::defNodeClass<MakePrimitive>("MakePrimitive",
 struct PrimitiveResize : zen::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
-    auto size = std::get<int>(get_param("size"));
+    auto size = get_input("size")->as<NumericObject>()->get<int>();
     prim->resize(size);
   }
 };
@@ -36,9 +36,9 @@ struct PrimitiveResize : zen::INode {
 static int defPrimitiveResize = zen::defNodeClass<PrimitiveResize>("PrimitiveResize",
     { /* inputs: */ {
     "prim",
+    "size",
     }, /* outputs: */ {
     }, /* params: */ {
-    {"int", "size", "0 0"},
     }, /* category: */ {
     "primitive",
     }});

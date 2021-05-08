@@ -7,7 +7,8 @@
 namespace zenbase {
 
 
-using NumericValue = std::variant<float,
+using NumericValue = std::variant<
+  int, float,
   std::array<float, 2>,
   std::array<float, 3>,
   std::array<float, 4>>;
