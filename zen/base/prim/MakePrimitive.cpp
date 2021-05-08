@@ -51,6 +51,8 @@ struct PrimitiveResize : zen::INode {
     auto prim = get_input("prim")->as<PrimitiveObject>();
     auto size = get_input("size")->as<NumericObject>()->get<int>();
     prim->resize(size);
+
+    set_output_ref("prim", get_input_ref("prim"));
   }
 };
 
@@ -59,6 +61,7 @@ static int defPrimitiveResize = zen::defNodeClass<PrimitiveResize>("PrimitiveRes
     "prim",
     "size",
     }, /* outputs: */ {
+    "prim",
     }, /* params: */ {
     }, /* category: */ {
     "primitive",
@@ -78,6 +81,8 @@ struct PrimitiveAddAttr : zen::INode {
         printf("%s\n", type.c_str());
         assert(0 && "Bad attribute type");
     }
+
+    set_output_ref("prim", get_input_ref("prim"));
   }
 };
 
@@ -85,6 +90,7 @@ static int defPrimitiveAddAttr = zen::defNodeClass<PrimitiveAddAttr>("PrimitiveA
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
+    "prim",
     }, /* params: */ {
     {"string", "name", "pos"},
     {"string", "type", "float3"},

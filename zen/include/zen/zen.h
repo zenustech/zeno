@@ -320,6 +320,7 @@ public:
   }
 
   void setReference(std::string name, std::string srcname) {
+    srcname = getReference(srcname).value_or(srcname);
     references[name] = srcname;
   }
 

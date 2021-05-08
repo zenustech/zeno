@@ -56,8 +56,24 @@ struct PrimitiveUnaryOp : zen::INode {
             assert(0 && "Bad operator type");
         }
     }, arrOut, arrA);
+
+    set_output_ref("primOut", get_input_ref("primOut"));
   }
 };
+
+static int defPrimitiveUnaryOp = zen::defNodeClass<PrimitiveUnaryOp>("PrimitiveUnaryOp",
+    { /* inputs: */ {
+    "primA",
+    "primOut",
+    }, /* outputs: */ {
+    "primOut",
+    }, /* params: */ {
+    {"string", "attrA", "pos"},
+    {"string", "attrOut", "pos"},
+    {"string", "op", "copy"},
+    }, /* category: */ {
+    "primitive",
+    }});
 
 
 template <class FuncT>
@@ -76,20 +92,6 @@ struct BinaryOperator {
         }
     }
 };
-
-static int defPrimitiveUnaryOp = zen::defNodeClass<PrimitiveUnaryOp>("PrimitiveUnaryOp",
-    { /* inputs: */ {
-    "primA",
-    "primOut",
-    }, /* outputs: */ {
-    }, /* params: */ {
-    {"string", "attrA", "pos"},
-    {"string", "attrOut", "pos"},
-    {"string", "op", "copy"},
-    }, /* category: */ {
-    "primitive",
-    }});
-
 
 struct PrimitiveBinaryOp : zen::INode {
   virtual void apply() override {
@@ -127,6 +129,8 @@ struct PrimitiveBinaryOp : zen::INode {
             assert(0 && "Bad operator type");
         }
     }, arrOut, arrA, arrB);
+
+    set_output_ref("primOut", get_input_ref("primOut"));
   }
 };
 
@@ -136,6 +140,7 @@ static int defPrimitiveBinaryOp = zen::defNodeClass<PrimitiveBinaryOp>("Primitiv
     "primB",
     "primOut",
     }, /* outputs: */ {
+    "primOut",
     }, /* params: */ {
     {"string", "attrA", "pos"},
     {"string", "attrN", "pos"},
@@ -170,6 +175,8 @@ struct PrimitivePrintAttr : zen::INode {
         }
         printf("\n");
     }, arr);
+
+    set_output_ref("prim", get_input_ref("prim"));
   }
 };
 
@@ -177,6 +184,7 @@ static int defPrimitivePrintAttr = zen::defNodeClass<PrimitivePrintAttr>("Primit
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
+    "prim",
     }, /* params: */ {
     {"string", "attrName", "pos"},
     }, /* category: */ {
@@ -202,6 +210,8 @@ struct PrimitiveFillAttr : zen::INode {
             }
         }
     }, arr);
+
+    set_output_ref("prim", get_input_ref("prim"));
   }
 };
 
@@ -209,6 +219,7 @@ static int defPrimitiveFillAttr = zen::defNodeClass<PrimitiveFillAttr>("Primitiv
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
+    "prim",
     }, /* params: */ {
     {"string", "attrName", "pos"},
     {"float", "value", "0"},
@@ -241,6 +252,8 @@ struct PrimitiveRandomizeAttr : zen::INode {
             }
         }
     }, arr);
+
+    set_output_ref("prim", get_input_ref("prim"));
   }
 };
 
@@ -248,6 +261,7 @@ static int defPrimitiveRandomizeAttr = zen::defNodeClass<PrimitiveRandomizeAttr>
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
+    "prim",
     }, /* params: */ {
     {"string", "attrName", "pos"},
     {"float", "min", "-1"},
