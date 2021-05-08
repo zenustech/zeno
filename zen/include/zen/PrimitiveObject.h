@@ -18,10 +18,12 @@ struct PrimitiveObject : zen::IObject {
 
     std::map<std::string, AttributeArray> m_attrs;
     size_t m_size{0};
+
     std::vector<int> particles;
     std::vector<glm::ivec2> lines;
     std::vector<glm::ivec3> triangles;
     std::vector<glm::ivec4> quads;
+
     template <class T>
     void add_attr(std::string name) {
         m_attrs[name] = std::vector<T>(m_size);
