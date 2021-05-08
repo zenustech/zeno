@@ -30,8 +30,9 @@ def topology_sort(nodes):
 
         order.append(ident)
 
-    for ident in nodes.keys():
-        touch(ident)
+    for ident, data in nodes.items():
+        if 'OUT' in data['options']:
+            touch(ident)
 
     return order
 
@@ -51,6 +52,7 @@ def generate_script(nodes):
         name = data['name']
         inputs = data['inputs']
         params = data['params']
+        options = data['options']
 
         if name == 'ExecutionOutput':
             continue

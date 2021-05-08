@@ -44,12 +44,14 @@ class QDMGraphicsScene(QGraphicsScene):
                 params[name] = value
 
             uipos = node.pos().x(), node.pos().y()
+            options = node.getOptions()
 
             data = {
                 'name': node.name,
                 'inputs': inputs,
                 'params': params,
                 'uipos': uipos,
+                'options': options,
             }
             nodes[node.ident] = data
 
@@ -69,11 +71,13 @@ class QDMGraphicsScene(QGraphicsScene):
             inputs = data['inputs']
             params = data['params']
             posx, posy = data['uipos']
+            options = data.get('options', [])  # for backward compatbility
 
             node = self.makeNode(name)
             node.setIdent(ident)
             node.setName(name)
             node.setPos(posx, posy)
+            node.setOptions(options)
 
             for name, value in params.items():
                 node.params[name].setValue(value)
@@ -550,6 +554,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.params = {}
         self.inputs = {}
         self.outputs = {}
+        self.options = {}
         self.name = None
         self.ident = 'No{}'.format(random.randrange(1, 100000))
 
@@ -569,15 +574,22 @@ class QDMGraphicsNode(QGraphicsItem):
         self.name = name
         self.title.setPlainText(name)
 
+    def getOptions(self):
+        return [name for name, button in self.options.items() if button.checked]
+
+    def setOptions(self, options):
+        for name, button in self.options.items():
+            button.setChecked(name in options)
+
     def initSockets(self, inputs=(), outputs=(), params=()):
         y = TEXT_HEIGHT * 0.2
 
-        button = QDMGraphicsButton(self)
+        self.options['OUT'] = button = QDMGraphicsButton(self)
         rect = QRectF(HORI_MARGIN, y, self.width / 2 - HORI_MARGIN * 1.5, 0)
         button.setGeometry(rect)
         button.setText('OUT')
 
-        button = QDMGraphicsButton(self)
+        self.options['MUTE'] = button = QDMGraphicsButton(self)
         rect = QRectF(HORI_MARGIN * 0.5 + self.width / 2, y, self.width / 2 - HORI_MARGIN * 1.5, 0)
         button.setGeometry(rect)
         button.setText('MUTE')
