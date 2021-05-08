@@ -20,3 +20,5 @@ genCode.py
 .*.swp
 .*.un~
 tags
+.cache/
+**/__init__.pyc

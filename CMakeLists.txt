@@ -6,6 +6,16 @@ set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)
 
+if (EXISTS Zensim)
+
+include(CheckLanguage)
+check_language(CUDA)
+if(CMAKE_CUDA_COMPILER)
+    set(ZS_ENABLE_CUDA 1)
+    add_subdirectory(Zensim)
+endif()
+
+endif()
 add_subdirectory(external)
 add_subdirectory(zen)
 add_subdirectory(zenvis)

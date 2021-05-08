@@ -1,0 +1,3 @@
+[submodule "Zensim"]
+	path = Zensim
+	url = git@github.com:littlemine/Zensim.git
