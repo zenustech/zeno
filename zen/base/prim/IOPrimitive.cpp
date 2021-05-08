@@ -84,22 +84,30 @@ struct ImportPrimitive : zen::INode {
 
     size_t size = 0;
     fread(&size, sizeof(size), 1, fp);
+    printf("size = %zd\n", size);
     prim->resize(size);
 
     int count = 0;
     fread(&count, sizeof(count), 1, fp);
+    printf("count = %d\n", count);
 
     for (int i = 0; i < count; i++) {
+        printf("parsing attr %d\n", i);
+
         char type[5];
-        fread(type, sizeof(type), 1, fp);
+        fread(type, 4, 1, fp);
         type[4] = '\0';
 
         size_t namelen = 0;
         fread(&namelen, sizeof(namelen), 1, fp);
+        printf("attr namelen = %zd\n", namelen);
+        assert(namelen < 1024);
         char namebuf[namelen + 1];
         fread(namebuf, sizeof(namebuf[0]), namelen, fp);
         namebuf[namelen] = '\0';
         std::string name(namebuf);
+
+        printf("attr `%s` of type `%s`\n", namebuf, type);
 
         if (0) {
 #define _PER_ALTER(T, id) \
@@ -117,6 +125,8 @@ struct ImportPrimitive : zen::INode {
 
     // assuming prim->m_attrs is an ordered map
     for (auto const &[key, _]: prim->m_attrs) {
+        printf("reading array of attr `%s`\n", key.c_str());
+
         std::visit([=](auto &attr) {
             assert(attr.size() == size);
             fread(attr.data(), sizeof(attr[0]), size, fp);
@@ -124,6 +134,8 @@ struct ImportPrimitive : zen::INode {
     }
 
     fclose(fp);
+
+    set_output("prim", prim);
   }
 };
 
