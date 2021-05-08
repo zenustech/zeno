@@ -53,6 +53,8 @@ struct ExportPrimitive : zen::INode {
         }, prim->attr(key));
     }
 
+    // TODO: export triangles too.
+
     fclose(fp);
   }
 };
@@ -120,6 +122,8 @@ struct ImportPrimitive : zen::INode {
             fread(attr.data(), sizeof(attr[0]), size, fp);
         }, prim->attr(key));
     }
+
+    fclose(fp);
   }
 };
 
