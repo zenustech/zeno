@@ -22,3 +22,4 @@ genCode.py
 tags
 .cache/
 **/__init__.pyc
+MPM/libmpm.so
