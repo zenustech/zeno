@@ -229,7 +229,7 @@ class QDMGraphicsView(QGraphicsView):
             else:
                 edge.setSrcPos(pos)
                 edge.setDstPos(item.getCirclePos())
-            edge.updatePath()
+            self.scene().update()
 
         super().mouseMoveEvent(event)
 
@@ -284,6 +284,8 @@ class QDMGraphicsPath(QGraphicsPathItem):
         self.dstPos = pos
 
     def paint(self, painter, styleOptions, widget=None):
+        self.updatePath()
+
         pen = QPen(QColor('#cc8844' if self.isSelected() else '#000000'))
         pen.setWidth(3)
         painter.setPen(pen)
@@ -325,10 +327,8 @@ class QDMGraphicsEdge(QDMGraphicsPath):
         self.srcPos = self.srcSocket.getCirclePos()
         self.dstPos = self.dstSocket.getCirclePos()
 
-
     def paint(self, painter, styleOptions, widget=None):
         self.updatePosition()
-        self.updatePath()
 
         super().paint(painter, styleOptions, widget)
 
