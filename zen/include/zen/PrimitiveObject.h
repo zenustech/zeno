@@ -40,11 +40,16 @@ struct PrimitiveObject : zen::IObject {
 
     template <class T>
     std::vector<T> const &attr(std::string name) const {
-        return m_attrs.at(name);
+        return std::get<std::vector<T>>(m_attrs.at(name));
     }
 
     AttributeArray const &attr(std::string name) const {
         return m_attrs.at(name);
+    }
+
+    template <class T>
+    bool attr_is(std::string name) const {
+        return std::holds_alternative<std::vector<T>>(m_attrs.at(name));
     }
 
     size_t size() const {
@@ -54,14 +59,9 @@ struct PrimitiveObject : zen::IObject {
     void resize(size_t size) {
         m_size = size;
         for (auto &[key, val]: m_attrs) {
-            if (0) {
-#define _PER_ALTER(T...) \
-            } else if (std::holds_alternative<std::vector<T>>(val)) { \
-                std::get<std::vector<T>>(val).resize(m_size);
-            _PER_ALTER(glm::vec3)
-            _PER_ALTER(float)
-#undef _PER_ALTER
-            }
+            std::visit([&](auto &val) {
+                val.resize(m_size);
+            }, val);
         }
     }
 };
