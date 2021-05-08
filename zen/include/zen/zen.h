@@ -107,6 +107,7 @@ struct BooleanObject : IObject {
 struct INode;
 static std::string getNodeName(INode *node);
 static void setObject(std::string name, IObject::Ptr object);
+static void setReference(std::string name, std::string srcname);
 static IObject *getObject(std::string name);
 
 
@@ -135,21 +136,12 @@ struct INode {
     params[name] = value;
   }
 
-  void set_input(std::string name, IObject *value) {
-    inputs[name] = value;
-  }
-
-  void set_input(std::string name, IObject::Ptr const &value) {
-    set_input(name, value.get());
+  void set_input_ref(std::string name, std::string srcname) {
+    inputs[name] = srcname;
   }
 
   std::string get_node_name() {
     return getNodeName(this);
-  }
-
-  IObject *get_output(std::string name) {
-    auto myname = get_node_name();
-    return getObject(myname + "::" + name);
   }
 
 protected:
@@ -157,17 +149,36 @@ protected:
     return safe_at(params, name, "param");
   }
 
-  IObject *get_input(std::string name) {
+  std::string get_input_ref(std::string name) {
     return safe_at(inputs, name, "input");
+  }
+
+  IObject *get_input(std::string name) {
+    return getObject(get_input_ref(name));
   }
 
   bool has_input(std::string name) {
     return inputs.find(name) != inputs.end();
   }
 
-  void set_output(std::string name, IObject::Ptr object) {
+  std::string get_output_ref(std::string name) {
     auto myname = get_node_name();
-    setObject(myname + "::" + name, std::move(object));
+    return myname + "::" + name;
+  }
+
+  IObject *get_output(std::string name) {
+    auto ref = get_output_ref(name);
+    return getObject(ref);
+  }
+
+  void set_output(std::string name, IObject::Ptr object) {
+    auto ref = get_output_ref(name);
+    setObject(ref, std::move(object));
+  }
+
+  void set_output_ref(std::string name, std::string srcname) {
+    auto ref = get_output_ref(name);
+    setReference(ref, srcname);
   }
 
   template <class T>
@@ -185,7 +196,7 @@ protected:
 
 private:
   std::map<std::string, IValue> params;
-  std::map<std::string, IObject *> inputs;
+  std::map<std::string, std::string> inputs;
 };
 
 
@@ -292,8 +303,7 @@ public:
 
   void setNodeInput(std::string name,
       std::string key, std::string srcname) {
-    safe_at(nodes, name, "node")->set_input(key,
-        getObject(srcname));
+    safe_at(nodes, name, "node")->set_input_ref(key, srcname);
   }
 
   void applyNode(std::string name) {

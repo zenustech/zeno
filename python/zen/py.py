@@ -45,14 +45,18 @@ class INode(abc.ABC):
     def get_node_name(self):
         return getNodeName(self)
 
-    def set_input(self, name, value):
-        self.__inputs[name] = value
+    def set_input_ref(self, name, srcname):
+        self.__inputs[name] = srcname
 
     def set_param(self, name, value):
         self.__params[name] = value
 
-    def get_input(self, name):
+    def get_input_ref(self, name):
         return self.__inputs[name]
+
+    def get_input(self, name):
+        ref = self.get_input_ref(name)
+        return getObject(ref)
 
     def get_param(self, name):
         return self.__params[name]
@@ -64,9 +68,21 @@ class INode(abc.ABC):
         myname = self.get_node_name()
         return getObject(myname + "::" + name)
 
-    def set_output(self, name, value):
+    def get_output_ref(self, name):
         myname = self.get_node_name()
-        setObject(myname + "::" + name, value)
+        return myname + "::" + name
+
+    def get_output(self, name):
+        ref = self.get_output_ref(name)
+        return getObject(ref)
+
+    def set_output(self, name, value):
+        ref = self.get_output_ref(name)
+        setObject(ref, value)
+
+    def set_output_ref(self, name, srcname):
+        ref = self.get_output_ref(name)
+        setReference(ref, srcname)
 
     @abc.abstractmethod
     def apply(self):
@@ -105,8 +121,7 @@ def setNodeParam(name, key, value):
 
 
 def setNodeInput(name, key, srcname):
-    obj = objects[srcname]
-    nodes[name].set_input(key, obj)
+    nodes[name].set_input_ref(key, srcname)
 
 
 def applyNode(name):
@@ -119,6 +134,10 @@ def getNodeName(node):
 
 def setObject(name, object):
     objects[name] = object
+
+
+def setReference(name, srcname):
+    objects[name] = objects[srcname]
 
 
 def getObject(name):

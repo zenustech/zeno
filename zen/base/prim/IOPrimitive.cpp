@@ -90,6 +90,7 @@ struct ImportPrimitive : zen::INode {
     int count = 0;
     fread(&count, sizeof(count), 1, fp);
     printf("count = %d\n", count);
+    assert(count < 1024);
 
     for (int i = 0; i < count; i++) {
         printf("parsing attr %d\n", i);
