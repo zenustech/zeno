@@ -99,7 +99,7 @@ struct SprayParticles : zen::INode{
     }
 };
 
-static int defMeshToPrimitive = zen::defNodeClass<SprayParticles>("SprayParticles",
+static int defSprayParticles = zen::defNodeClass<SprayParticles>("SprayParticles",
     { /* inputs: */ {
         "TrianglePrim",
     }, /* outputs: */ {
