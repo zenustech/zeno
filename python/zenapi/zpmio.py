@@ -62,22 +62,29 @@ def writezpm(path, attrs, conns=None):
 
         attrinfos = []
         for name, arr in attrs.items():
+            if not isinstance(arr, np.ndarray):
+                arr = np.array(arr, dtype=np.float32)
+
             type = arr.dtype.char
             if len(arr.shape) >= 2:
                 assert len(arr.shape) == 2
                 type = str(arr.shape[1]) + type
+            else:
+                assert len(arr.shape) == 1
+
             typebuf = type.encode()
             while len(typebuf) < 4:
                 typebuf += b'\0'
             f.write(typebuf)
+
             namebuf = name.encode()
             namelen = len(namebuf)
             fwrite(f, 'N', namelen)
             f.write(namebuf)
-            attrinfos.append((type, name))
 
-        for type, name in attrinfos:
-            arr = attrs[name]
+            attrinfos.append((type, arr))
+
+        for type, arr in attrinfos:
             data = arr.tobytes()
             f.write(data)
 
