@@ -1,11 +1,9 @@
-#pragma once
 #include <zen/zen.h>
 #include <zen/MeshObject.h>
 #include <zen/PrimitiveObject.h>
 #include <zen/NumericObject.h>
 #include <zen/ParticlesObject.h>
-#include <glm/glm.hpp>
-#include <glm/vec3.hpp>
+#include <zen/vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
@@ -16,27 +14,27 @@
 
 namespace zenbase {
 //todo where to put this func???
-float area(glm::vec3 &p1, glm::vec3 &p2, glm::vec3 &p3)
+float area(zen::vec3f &p1, zen::vec3f &p2, zen::vec3f &p3)
 {
-    glm::vec3 e1 = p3-p1;
-    glm::vec3 e2 = p2-p1;
-    glm::vec3 areavec = glm::cross(e1,e2);
-    return 0.5*sqrt(glm::dot(areavec, areavec));
+    zen::vec3f e1 = p3-p1;
+    zen::vec3f e2 = p2-p1;
+    zen::vec3f areavec = zen::cross(e1,e2);
+    return 0.5*sqrt(zen::dot(areavec, areavec));
 }
 //todo where to put this func????
-bool ptInTriangle(glm::vec3 &p, glm::vec3 &p0, glm::vec3 &p1, glm::vec3 &p2)
+bool ptInTriangle(zen::vec3f &p, zen::vec3f &p0, zen::vec3f &p1, zen::vec3f &p2)
 {
-    float A = 0.5*(-p1.y * p2.x + p0.y * (-p1.x + p2.x) + p0.x * (p1.y - p2.y) + p1.x * p2.y);
+    float A = 0.5*(-p1[1] * p2[0] + p0[1] * (-p1[0] + p2[0]) + p0[0] * (p1[1] - p2[1]) + p1[0] * p2[1]);
     float sign = A < 0 ? -1.0f : 1.0f;
-    float s = (p0.y * p2.x - p0.x * p2.y + (p2.y - p0.y) * p.x + (p0.x - p2.x) * p.y) * sign;
-    float t = (p0.x * p1.y - p0.y * p1.x + (p0.y - p1.y) * p.x + (p1.x - p0.x) * p.y) * sign;
+    float s = (p0[1] * p2[0] - p0[0] * p2[1] + (p2[1] - p0[1]) * p[0] + (p0[0] - p2[0]) * p[1]) * sign;
+    float t = (p0[0] * p1[1] - p0[1] * p1[0] + (p0[1] - p1[1]) * p[0] + (p1[0] - p0[0]) * p[1]) * sign;
     
     return s > 0 && t > 0 && (s + t) < 2 * A * sign;
 }
 
 //to do where to put this func??
 template<class T>
-T baryCentricInterpolation(T &v1, T &v2, T &v3, glm::vec3 &p, glm::vec3 &vert1, glm::vec3 &vert2, glm::vec3 &vert3)
+T baryCentricInterpolation(T &v1, T &v2, T &v3, zen::vec3f &p, zen::vec3f &vert1, zen::vec3f &vert2, zen::vec3f &vert3)
 {
     float a1 = area(p, vert2, vert3);
     float a2 = area(p, vert1, vert3);
@@ -53,32 +51,32 @@ struct SprayParticles : zen::INode{
         auto channel = std::get<std::string>(get_param("channel"));
         auto prim = get_input("TrianglePrim")->as<PrimitiveObject>();
         auto result = zen::IObject::make<ParticlesObject>();
-        tbb::concurrent_vector<glm::vec3> pos(0);
-        tbb::concurrent_vector<glm::vec3> vel(0);
+        tbb::concurrent_vector<zen::vec3f> pos(0);
+        tbb::concurrent_vector<zen::vec3f> vel(0);
         size_t n = prim->triangles.size();
         printf("%d\n",n);
         std::cout<<channel<<std::endl;
         tbb::parallel_for((size_t)0, (size_t)n, (size_t)1, [&](size_t index)
             {
-                glm::vec3 a, b, c;
-                glm::ivec3 vi = prim->triangles[index];
-                a = prim->attr<glm::vec3>("pos")[vi[0]];
-                b = prim->attr<glm::vec3>("pos")[vi[1]];
-                c = prim->attr<glm::vec3>("pos")[vi[2]];
-                glm::vec3 e1 = b-a;
-                glm::vec3 e2 = c-a;
-                glm::vec3 dir1 = glm::normalize(e1);
-                glm::vec3 dir2 = glm::normalize(e2);
-                int in = glm::length(e1)/(0.5*dx);
-                int jn = glm::length(e2)/(0.5*dx);
-                glm::vec3 vel1 = prim->attr<glm::vec3>(channel)[vi[0]];
-                glm::vec3 vel2 = prim->attr<glm::vec3>(channel)[vi[1]];
-                glm::vec3 vel3 = prim->attr<glm::vec3>(channel)[vi[2]];
+                zen::vec3f a, b, c;
+                zen::vec3i vi = prim->triangles[index];
+                a = prim->attr<zen::vec3f>("pos")[vi[0]];
+                b = prim->attr<zen::vec3f>("pos")[vi[1]];
+                c = prim->attr<zen::vec3f>("pos")[vi[2]];
+                zen::vec3f e1 = b-a;
+                zen::vec3f e2 = c-a;
+                zen::vec3f dir1 = zen::normalize(e1);
+                zen::vec3f dir2 = zen::normalize(e2);
+                int in = zen::length(e1)/(0.5*dx);
+                int jn = zen::length(e2)/(0.5*dx);
+                zen::vec3f vel1 = prim->attr<zen::vec3f>(channel)[vi[0]];
+                zen::vec3f vel2 = prim->attr<zen::vec3f>(channel)[vi[1]];
+                zen::vec3f vel3 = prim->attr<zen::vec3f>(channel)[vi[2]];
                 for(int ii=0;ii<in;ii++)
                 {
                     for(int jj=0;jj<jn;jj++)
                     {
-                        glm::vec3 vij = a + (float)ii*0.5f*dx*dir1 + (float)jj*0.5f*dx*dir2;
+                        zen::vec3f vij = a + (float)ii*0.5f*dx*dir1 + (float)jj*0.5f*dx*dir2;
                         if(ptInTriangle(vij, a, b, c))
                         {
                             pos.emplace_back(vij);
@@ -93,8 +91,8 @@ struct SprayParticles : zen::INode{
         result->vel.resize(vel.size());
         tbb::parallel_for((size_t)0, (size_t)pos.size(), (size_t)1, [&](size_t index)
             {
-                result->pos[index] = pos[index];
-                result->vel[index] = vel[index];
+                result->pos[index] = zen::vec_to_other<glm::vec3>(pos[index]);
+                result->vel[index] = zen::vec_to_other<glm::vec3>(vel[index]);
             }
         );
         set_output("particles", result);

@@ -157,14 +157,24 @@ vecT array_to_vec(std::array<T, 4> const &a) {
     return {a[0], a[1], a[2], a[3]};
 }
 
-template <class T, size_t N>
+template <size_t N, class T>
 auto array_to_vec(std::array<T, N> const &a) {
     return array_to_vec<vec<N, T>>(a);
 }
 
-template <class T>
-auto array_to_vec(T const &a) {
-    return a;
+template <class OtherT, class T>
+auto vec_to_other(vec<2, T> const &a) {
+    return OtherT(a[0], a[1]);
+}
+
+template <class OtherT, class T>
+auto vec_to_other(vec<3, T> const &a) {
+    return OtherT(a[0], a[1], a[2]);
+}
+
+template <class OtherT, class T>
+auto vec_to_other(vec<4, T> const &a) {
+    return OtherT(a[0], a[1], a[2], a[4]);
 }
 
 
@@ -290,7 +300,7 @@ _PER_FN1(log)
 
 template <size_t N, class T, class S>
 inline auto dot(vec<N, T> const &a, vec<N, S> const &b) {
-    decltype(a[0] * b[0]) res(0);
+    std::decay_t<decltype(a[0] * b[0])> res(0);
     for (size_t i = 0; i < N; i++) {
         res += a[i] * b[i];
     }
@@ -299,7 +309,7 @@ inline auto dot(vec<N, T> const &a, vec<N, S> const &b) {
 
 template <size_t N, class T>
 inline auto length(vec<N, T> const &a) {
-    decltype(a[0]) res(0);
+    std::decay_t<decltype(a[0])> res(0);
     for (size_t i = 0; i < N; i++) {
         res += a[i] * a[i];
     }

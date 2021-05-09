@@ -725,7 +725,7 @@ class NodeEditor(QWidget):
         #self.initConnect()
         self.refreshDescriptors()
 
-        self.do_open('assets/prim.zsg')  ## DEBUG
+        #self.do_open('assets/prim.zsg')  ## DEBUG
 
     def initShortcuts(self):
         self.msgF5 = QShortcut(QKeySequence('F5'), self)

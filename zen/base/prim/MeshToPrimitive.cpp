@@ -1,4 +1,3 @@
-#pragma once
 #include <zen/zen.h>
 #include <zen/MeshObject.h>
 #include <zen/PrimitiveObject.h>
