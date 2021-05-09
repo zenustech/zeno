@@ -1,7 +1,7 @@
 #include <zen/zen.h>
 #include <zen/PrimitiveObject.h>
 #include <zen/StringObject.h>
-#include <glm/glm.hpp>
+#include <Hg/vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
@@ -33,7 +33,7 @@ struct ExportPrimitive : zen::INode {
         } else if (prim->attr_is<T>(name)) { \
             strcpy(type, id);
         _PER_ALTER(float, "f")
-        _PER_ALTER(glm::vec3, "f3")
+        _PER_ALTER(hg::vec3f, "f3")
 #undef _PER_ALTER
         } else {
             printf("%s\n", name);
@@ -115,7 +115,7 @@ struct ImportPrimitive : zen::INode {
         } else if (!strcmp(type, id)) { \
             prim->add_attr<T>(name);
         _PER_ALTER(float, "f")
-        _PER_ALTER(glm::vec3, "f3")
+        _PER_ALTER(hg::vec3f, "f3")
 #undef _PER_ALTER
         } else {
             printf("%s\n", name);

@@ -1,7 +1,7 @@
 #include <zen/zen.h>
 #include <zen/PrimitiveObject.h>
 #include <zen/NumericObject.h>
-#include <glm/glm.hpp>
+#include <Hg/vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
@@ -76,7 +76,7 @@ struct PrimitiveAddAttr : zen::INode {
     if (type == "float") {
         prim->add_attr<float>(name);
     } else if (type == "float3") {
-        prim->add_attr<glm::vec3>(name);
+        prim->add_attr<hg::vec3f>(name);
     } else {
         printf("%s\n", type.c_str());
         assert(0 && "Bad attribute type");

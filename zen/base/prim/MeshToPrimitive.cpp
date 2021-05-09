@@ -3,8 +3,7 @@
 #include <zen/MeshObject.h>
 #include <zen/PrimitiveObject.h>
 #include <zen/NumericObject.h>
-#include <glm/glm.hpp>
-#include <glm/vec3.hpp>
+#include <Hg/vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
@@ -15,7 +14,7 @@ struct MeshToPrimitive : zen::INode{
     virtual void apply() override {
     auto mesh = get_input("mesh")->as<MeshObject>();
     auto result = zen::IObject::make<PrimitiveObject>();
-    result->add_attr<glm::vec3>("pos");
+    result->add_attr<hg::vec3f>("pos");
     result->resize(mesh->vertices.size());
     result->triangles.resize(mesh->vertices.size()/3);
     result->quads.resize(0);
@@ -23,13 +22,13 @@ struct MeshToPrimitive : zen::INode{
 #pragma omp parallel for
     for(int i=0;i<mesh->vertices.size();i++)
     {
-        result->attr<glm::vec3>("pos")[i] = glm::vec3(mesh->vertices[i].x,
+        result->attr<hg::vec3f>("pos")[i] = hg::vec3f(mesh->vertices[i].x,
             mesh->vertices[i].y, mesh->vertices[i].z);
     }
 #pragma omp parallel for
     for(int i=0;i<mesh->vertices.size()/3;i++)
     {
-        result->triangles[i] = glm::ivec3(i*3, i*3+1, i*3+2);
+        result->triangles[i] = hg::vec3i(i*3, i*3+1, i*3+2);
     }
     
     set_output("prim", result);

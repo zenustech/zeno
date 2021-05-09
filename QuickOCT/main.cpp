@@ -7,9 +7,9 @@ using namespace zenbase;
 struct AdvectStars : zen::INode {
   virtual void apply() override {
     auto stars = get_input("stars")->as<PrimitiveObject>();
-    auto &pos = stars->attr<glm::vec3>("pos");
-    auto &vel = stars->attr<glm::vec3>("vel");
-    auto &acc = stars->attr<glm::vec3>("acc");
+    auto &pos = stars->attr<hg::vec3f>("pos");
+    auto &vel = stars->attr<hg::vec3f>("vel");
+    auto &acc = stars->attr<hg::vec3f>("acc");
     auto dt = std::get<float>(get_param("dt"));
     #pragma omp parallel for
     for (int i = 0; i < stars->size(); i++) {

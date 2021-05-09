@@ -1,8 +1,7 @@
 #pragma once
 
 #include <zen/zen.h>
-#include <glm/glm.hpp>
-#include <glm/vec3.hpp>
+#include <Hg/vec.h>
 #include <variant>
 #include <vector>
 #include <string>
@@ -12,7 +11,7 @@
 namespace zenbase {
 
 using AttributeArray = std::variant<
-    std::vector<glm::vec3>, std::vector<float>>;
+    std::vector<hg::vec3f>, std::vector<float>>;
 
 struct PrimitiveObject : zen::IObject {
 
@@ -20,9 +19,9 @@ struct PrimitiveObject : zen::IObject {
     size_t m_size{0};
 
     std::vector<int> particles;
-    std::vector<glm::ivec2> lines;
-    std::vector<glm::ivec3> triangles;
-    std::vector<glm::ivec4> quads;
+    std::vector<hg::vec2i> lines;
+    std::vector<hg::vec3i> triangles;
+    std::vector<hg::vec4i> quads;
 
     template <class T>
     void add_attr(std::string name) {

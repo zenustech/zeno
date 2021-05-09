@@ -1,3 +1,4 @@
+#if 0
 #include <zen/zen.h>
 #include <zen/VDBGrid.h>
 //#include "../../Library/MnBase/Meta/Polymorphism.h"
@@ -36,3 +37,4 @@ static int defSetVDBTransform = zen::defNodeClass<SetVDBTransform>("SetVDBTransf
     }});
 
 }
+#endif

@@ -99,7 +99,6 @@ class QDMGraphicsScene(QGraphicsScene):
         edge = QDMGraphicsEdge()
         edge.setSrcSocket(src)
         edge.setDstSocket(dst)
-        edge.updatePosition()
         edge.updatePath()
         self.addItem(edge)
 
@@ -196,23 +195,20 @@ class QDMGraphicsView(QGraphicsView):
                         item.removeAllEdges()
                         item = srcItem
 
-                    edge = QDMGraphicsPath()
+                    edge = QDMGraphicsTempEdge()
                     pos = self.mapToScene(event.pos())
-                    if item.isOutput:
-                        edge.setSrcPos(item.getCirclePos())
-                        edge.setDstPos(pos)
-                    else:
-                        edge.setSrcPos(pos)
-                        edge.setDstPos(item.getCirclePos())
+                    edge.setItem(item)
+                    edge.setEndPos(pos)
+                    edge.updatePath()
+                    self.dragingEdge = edge
                     self.scene().addItem(edge)
-                    self.dragingEdge = edge, item, True
                     self.scene().update()
 
             else:
                 item = self.itemAt(event.pos())
-                edge, srcItem, preserve = self.dragingEdge
+                edge = self.dragingEdge
                 if isinstance(item, QDMGraphicsSocket):
-                    self.addEdge(srcItem, item)
+                    self.addEdge(edge.item, item)
                 self.scene().removeItem(edge)
                 self.scene().update()
                 self.dragingEdge = None
@@ -222,13 +218,9 @@ class QDMGraphicsView(QGraphicsView):
     def mouseMoveEvent(self, event):
         if self.dragingEdge is not None:
             pos = self.mapToScene(event.pos())
-            edge, item, _ = self.dragingEdge
-            if item.isOutput:
-                edge.setSrcPos(item.getCirclePos())
-                edge.setDstPos(pos)
-            else:
-                edge.setSrcPos(pos)
-                edge.setDstPos(item.getCirclePos())
+            edge = self.dragingEdge
+            edge.setEndPos(pos)
+            edge.updatePath()
             self.scene().update()
 
         super().mouseMoveEvent(event)
@@ -277,11 +269,9 @@ class QDMGraphicsPath(QGraphicsPathItem):
         self.srcPos = QPointF(0, 0)
         self.dstPos = QPointF(0, 0)
 
-    def setSrcPos(self, pos):
-        self.srcPos = pos
-
-    def setDstPos(self, pos):
-        self.dstPos = pos
+    def setSrcDstPos(self, srcPos, dstPos):
+        self.srcPos = srcPos
+        self.dstPos = dstPos
 
     def paint(self, painter, styleOptions, widget=None):
         self.updatePath()
@@ -291,6 +281,15 @@ class QDMGraphicsPath(QGraphicsPathItem):
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
         painter.drawPath(self.path())
+
+    '''
+    def boundingRect(self):
+        x0 = min(self.srcPos.x(), self.dstPos.x())
+        y0 = min(self.srcPos.y(), self.dstPos.y())
+        x1 = max(self.srcPos.x(), self.dstPos.x())
+        y1 = max(self.srcPos.y(), self.dstPos.y())
+        return QRectF(x0, y0, x1 - x0, y1 - y0)
+    '''
 
     def updatePath(self):
         path = QPainterPath(self.srcPos)
@@ -303,6 +302,28 @@ class QDMGraphicsPath(QGraphicsPathItem):
                     self.dstPos.x() - dist, self.dstPos.y(),
                     self.dstPos.x(), self.dstPos.y())
         self.setPath(path)
+
+
+class QDMGraphicsTempEdge(QDMGraphicsPath):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.item = None
+        self.endPos = None
+
+    def setItem(self, item):
+        self.item = item
+
+    def setEndPos(self, pos):
+        self.endPos = pos
+
+    def updatePath(self):
+        if self.item.isOutput:
+            self.setSrcDstPos(self.item.getCirclePos(), self.endPos)
+        else:
+            self.setSrcDstPos(self.endPos, self.item.getCirclePos())
+
+        super().updatePath()
 
 
 class QDMGraphicsEdge(QDMGraphicsPath):
@@ -323,14 +344,12 @@ class QDMGraphicsEdge(QDMGraphicsPath):
         socket.addEdge(self)
         self.dstSocket = socket
 
-    def updatePosition(self):
-        self.srcPos = self.srcSocket.getCirclePos()
-        self.dstPos = self.dstSocket.getCirclePos()
+    def updatePath(self):
+        srcPos = self.srcSocket.getCirclePos()
+        dstPos = self.dstSocket.getCirclePos()
+        self.setSrcDstPos(srcPos, dstPos)
 
-    def paint(self, painter, styleOptions, widget=None):
-        self.updatePosition()
-
-        super().paint(painter, styleOptions, widget)
+        super().updatePath()
 
     def remove(self):
         if self.srcSocket is not None:
@@ -706,7 +725,7 @@ class NodeEditor(QWidget):
         #self.initConnect()
         self.refreshDescriptors()
 
-        #self.do_open('assets/prim2.zsg')  ## DEBUG
+        self.do_open('assets/prim.zsg')  ## DEBUG
 
     def initShortcuts(self):
         self.msgF5 = QShortcut(QKeySequence('F5'), self)
