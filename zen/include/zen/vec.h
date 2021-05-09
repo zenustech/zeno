@@ -21,6 +21,20 @@ struct vec : std::array<T, N> {
     vec(vec const &) = default;
     vec &operator=(vec const &) = default;
 
+    vec(std::array<T, N> const &a) {
+        for (size_t i = 0; i < N; i++) {
+            (*this)[i] = a[i];
+        }
+    }
+
+    operator std::array<T, N>() {
+        std::array<T, N> res;
+        for (size_t i = 0; i < N; i++) {
+            res[i] = (*this)[i];
+        }
+        return res;
+    }
+
     template <class S>
     explicit vec(vec<N, S> const &x) {
         for (size_t i = 0; i < N; i++) {
