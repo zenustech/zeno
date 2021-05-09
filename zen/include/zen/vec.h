@@ -182,7 +182,7 @@ auto vec_to_other(vec<4, T> const &a) {
 
 template <size_t N, class T, class F>
 inline auto vapply(F const &f, vec<N, T> const &a) {
-    vec<N, T> res;
+    vec<N, decltype(f(a[0]))> res;
     for (size_t i = 0; i < N; i++) {
         res[i] = f(a[i]);
     }
@@ -197,7 +197,7 @@ inline auto vapply(F const &f, T const &a) {
 
 template <size_t N, class T, class S, class F>
 inline auto vapply(F const &f, vec<N, T> const &a, vec<N, S> const &b) {
-    vec<N, T> res;
+    vec<N, decltype(f(a[0], b[0]))> res;
     for (size_t i = 0; i < N; i++) {
         res[i] = f(a[i], b[i]);
     }
@@ -206,7 +206,7 @@ inline auto vapply(F const &f, vec<N, T> const &a, vec<N, S> const &b) {
 
 template <size_t N, class T, class S, class F>
 inline auto vapply(F const &f, T const &a, vec<N, S> const &b) {
-    vec<N, T> res;
+    vec<N, decltype(f(a, b[0]))> res;
     for (size_t i = 0; i < N; i++) {
         res[i] = f(a, b[i]);
     }
@@ -215,7 +215,7 @@ inline auto vapply(F const &f, T const &a, vec<N, S> const &b) {
 
 template <size_t N, class T, class S, class F>
 inline auto vapply(F const &f, vec<N, T> const &a, S const &b) {
-    vec<N, T> res;
+    vec<N, decltype(f(a[0], b))> res;
     for (size_t i = 0; i < N; i++) {
         res[i] = f(a[i], b);
     }
@@ -234,7 +234,7 @@ inline auto operator op(T const &a, S const &b) -> decltype(auto) { \
 }
 #define _PER_IOP2(op) \
 _PER_OP2(op) \
-template <size_t N, class T, class S> \
+template <size_t N, class T, class S, std::enable_if_t<is_vec_v<T> || is_vec_v<S>, bool> = true> \
 inline vec<N, T> &operator op##=(vec<N, T> &a, S const &b) { \
   a = a op b; \
   return a; \
