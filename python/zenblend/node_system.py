@@ -165,6 +165,8 @@ class ZensimNode_ExecutionOutput(ZensimTreeNode):
     bl_idname = 'ZensimNodeType_ExecutionOutput'
     bl_label = 'ExecutionOutput'
     bl_icon = 'BLENDER'
+    n_param_names = []
+    n_input_names = ['SRC']
 
     nframes: bpy.props.IntProperty(min=1, default=1,
             description='Number of frames to execute')

@@ -31,8 +31,12 @@ def topology_sort(nodes):
         order.append(ident)
 
     for ident, data in nodes.items():
-        if 'OUT' in data['options']:
-            touch(ident)
+        if 'options' in data:  # qt editor
+            if 'OUT' in data['options']:
+                touch(ident)
+        else:  # blender editor
+            if data['name'] == 'ExecutionOutput':
+                touch(ident)
 
     return order
 
@@ -52,7 +56,6 @@ def generate_script(nodes):
         name = data['name']
         inputs = data['inputs']
         params = data['params']
-        options = data['options']
 
         if name == 'ExecutionOutput':
             continue
