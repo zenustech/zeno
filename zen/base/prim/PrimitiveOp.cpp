@@ -2,7 +2,7 @@
 #include <zen/PrimitiveObject.h>
 #include <zen/NumericObject.h>
 #include <Hg/MathUtils.h>
-#include <Hg/Vec.h>
+#include <Hg/vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
@@ -21,7 +21,7 @@ struct UnaryOperator {
         #pragma omp parallel for
         for (int i = 0; i < n; i++) {
             auto val = func(arrA[i]);
-            arrOut[i] = val;
+            arrOut[i] = (decltype(arrOut[0]))val;
         }
     }
 };
@@ -93,7 +93,7 @@ struct BinaryOperator {
         #pragma omp parallel for
         for (int i = 0; i < n; i++) {
             auto val = func(arrA[i], arrB[i]);
-            arrOut[i] = val;
+            arrOut[i] = (decltype(arrOut[0]))val;
         }
     }
 };
@@ -132,8 +132,8 @@ struct PrimitiveBinaryOp : zen::INode {
             _PER_OP("rdiv", b / a)
             _PER_OP("pow", hg::pow(a, b))
             _PER_OP("rpow", hg::pow(b, a))
-            _PER_OP("atan2", hg::atan(a, b))
-            _PER_OP("ratan2", hg::atan(b, a))
+            _PER_OP("atan2", hg::atan2(a, b))
+            _PER_OP("ratan2", hg::atan2(b, a))
 #undef _PER_OP
             } else {
                 printf("%s\n", op.c_str());
@@ -177,7 +177,7 @@ struct HalfBinaryOperator {
         #pragma omp parallel for
         for (int i = 0; i < n; i++) {
             auto val = func(arrA[i], valB);
-            arrOut[i] = val;
+            arrOut[i] = (decltype(arrOut[0]))val;
         }
     }
 };
@@ -215,8 +215,8 @@ struct PrimitiveHalfBinaryOp : zen::INode {
             _PER_OP("rdiv", b / a)
             _PER_OP("pow", hg::pow(a, b))
             _PER_OP("rpow", hg::pow(b, a))
-            _PER_OP("atan2", hg::atan(a, b))
-            _PER_OP("ratan2", hg::atan(b, a))
+            _PER_OP("atan2", hg::atan2(a, b))
+            _PER_OP("ratan2", hg::atan2(b, a))
 #undef _PER_OP
             } else {
                 printf("%s\n", op.c_str());

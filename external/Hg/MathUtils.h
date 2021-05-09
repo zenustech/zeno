@@ -1,34 +1,34 @@
 #pragma once
 
-#include "Vec.h"
+#include "vec.h"
 #include <array>
 
 
 namespace hg {
 
-template <class VecT, class T>
-VecT tovec(std::array<T, 1> const &a) {
+template <class vecT, class T>
+vecT tovec(std::array<T, 1> const &a) {
     return {a[0]};
 }
 
-template <class VecT, class T>
-VecT tovec(std::array<T, 2> const &a) {
+template <class vecT, class T>
+vecT tovec(std::array<T, 2> const &a) {
     return {a[0], a[1]};
 }
 
-template <class VecT, class T>
-VecT tovec(std::array<T, 3> const &a) {
+template <class vecT, class T>
+vecT tovec(std::array<T, 3> const &a) {
     return {a[0], a[1], a[2]};
 }
 
-template <class VecT, class T>
-VecT tovec(std::array<T, 4> const &a) {
+template <class vecT, class T>
+vecT tovec(std::array<T, 4> const &a) {
     return {a[0], a[1], a[2], a[3]};
 }
 
 template <class T, size_t N>
 auto tovec(std::array<T, N> const &a) {
-    return tovec<Vec<N, T>>(a);
+    return tovec<vec<N, T>>(a);
 }
 
 template <class T>
@@ -44,21 +44,21 @@ struct is_promotable {
 };
 
 template <class T, size_t N>
-struct is_promotable<Vec<N, T>, Vec<N, T>> {
+struct is_promotable<vec<N, T>, vec<N, T>> {
     static constexpr bool value = true;
-    using type = Vec<N, T>;
+    using type = vec<N, T>;
 };
 
 template <class T, size_t N>
-struct is_promotable<Vec<N, T>, T> {
+struct is_promotable<vec<N, T>, T> {
     static constexpr bool value = true;
-    using type = Vec<N, T>;
+    using type = vec<N, T>;
 };
 
 template <class T, size_t N>
-struct is_promotable<T, Vec<N, T>> {
+struct is_promotable<T, vec<N, T>> {
     static constexpr bool value = true;
-    using type = Vec<N, T>;
+    using type = vec<N, T>;
 };
 
 template <class T>
@@ -79,12 +79,12 @@ struct is_castable {
     static constexpr bool value = false;
 };
 template <class T, size_t N>
-struct is_castable<Vec<N, T>, T> {
+struct is_castable<vec<N, T>, T> {
     static constexpr bool value = true;
 };
 
 template <class T, size_t N>
-struct is_castable<T, Vec<N, T>> {
+struct is_castable<T, vec<N, T>> {
     static constexpr bool value = false;
 };
 
