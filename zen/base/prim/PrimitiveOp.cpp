@@ -2,7 +2,7 @@
 #include <zen/PrimitiveObject.h>
 #include <zen/NumericObject.h>
 #include <Hg/MathUtils.h>
-#include <glm/glm.hpp>
+#include <Hg/Vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
@@ -43,15 +43,15 @@ struct PrimitiveUnaryOp : zen::INode {
                 UnaryOperator([](auto const &a) { return expr; })(arrOut, arrA);
             _PER_OP("copy", a)
             _PER_OP("neg", -a)
-            _PER_OP("sqrt", glm::sqrt(a))
-            _PER_OP("sin", glm::sin(a))
-            _PER_OP("cos", glm::cos(a))
-            _PER_OP("tan", glm::tan(a))
-            _PER_OP("asin", glm::asin(a))
-            _PER_OP("acos", glm::acos(a))
-            _PER_OP("atan", glm::atan(a))
-            _PER_OP("exp", glm::exp(a))
-            _PER_OP("log", glm::log(a))
+            _PER_OP("sqrt", hg::sqrt(a))
+            _PER_OP("sin", hg::sin(a))
+            _PER_OP("cos", hg::cos(a))
+            _PER_OP("tan", hg::tan(a))
+            _PER_OP("asin", hg::asin(a))
+            _PER_OP("acos", hg::acos(a))
+            _PER_OP("atan", hg::atan(a))
+            _PER_OP("exp", hg::exp(a))
+            _PER_OP("log", hg::log(a))
 #undef _PER_OP
             } else {
                 printf("%s\n", op.c_str());
@@ -130,10 +130,10 @@ struct PrimitiveBinaryOp : zen::INode {
             _PER_OP("mul", a * b)
             _PER_OP("div", a / b)
             _PER_OP("rdiv", b / a)
-            _PER_OP("pow", glm::pow(a, b))
-            _PER_OP("rpow", glm::pow(b, a))
-            _PER_OP("atan2", glm::atan(a, b))
-            _PER_OP("ratan2", glm::atan(b, a))
+            _PER_OP("pow", hg::pow(a, b))
+            _PER_OP("rpow", hg::pow(b, a))
+            _PER_OP("atan2", hg::atan(a, b))
+            _PER_OP("ratan2", hg::atan(b, a))
 #undef _PER_OP
             } else {
                 printf("%s\n", op.c_str());
@@ -213,16 +213,23 @@ struct PrimitiveHalfBinaryOp : zen::INode {
             _PER_OP("mul", a * b)
             _PER_OP("div", a / b)
             _PER_OP("rdiv", b / a)
-            _PER_OP("pow", glm::pow(a, b))
-            _PER_OP("rpow", glm::pow(b, a))
-            _PER_OP("atan2", glm::atan(a, b))
-            _PER_OP("ratan2", glm::atan(b, a))
+            _PER_OP("pow", hg::pow(a, b))
+            _PER_OP("rpow", hg::pow(b, a))
+            _PER_OP("atan2", hg::atan(a, b))
+            _PER_OP("ratan2", hg::atan(b, a))
 #undef _PER_OP
             } else {
                 printf("%s\n", op.c_str());
                 assert(0 && "Bad operator type");
             }
         } else {
+            printf("FUCKERASDKLJLASDHJJKHLSD %s %s %s %d\n",
+            hg::typenameof<decltype(arrA[0])>(),
+            hg::typenameof<decltype(valB)>(),
+            hg::typenameof<hg::is_promotable_t<decltype(arrA[0]), decltype(valB)>>(),
+            hg::is_promotable_v<hg::vec<3, float>, float>,
+            0);
+            exit(-1);
             assert(0 && "Failed to promote variant type");
         }
     }, arrOut, arrA, valueB);
@@ -295,11 +302,11 @@ struct PrimitiveRandomizeAttr : zen::INode {
     std::visit([min, minY, minZ, max, maxY, maxZ](auto &arr) {
         #pragma omp parallel for
         for (int i = 0; i < arr.size(); i++) {
-            if constexpr (hg::is_decay_same_v<decltype(arr[i]), glm::vec3>) {
-                arr[i] = glm::mix(glm::vec3(min, minY, minZ), glm::vec3(max, maxY, maxZ),
-                        glm::vec3(drand48(), drand48(), drand48()));
+            if constexpr (hg::is_decay_same_v<decltype(arr[i]), hg::vec3f>) {
+                arr[i] = hg::mix(hg::vec3f(min, minY, minZ), hg::vec3f(max, maxY, maxZ),
+                        hg::vec3f(drand48(), drand48(), drand48()));
             } else {
-                arr[i] = glm::mix(min, max, (float)drand48());
+                arr[i] = hg::mix(min, max, (float)drand48());
             }
         }
     }, arr);
@@ -330,7 +337,7 @@ void print_cout(float x) {
     printf("%f\n", x);
 }
 
-void print_cout(glm::vec3 const &a) {
+void print_cout(hg::vec3f const &a) {
     printf("%f %f %f\n", a[0], a[1], a[2]);
 }
 

@@ -1,8 +1,6 @@
 #pragma once
 
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
+#include "Vec.h"
 #include <array>
 
 
@@ -30,7 +28,7 @@ VecT tovec(std::array<T, 4> const &a) {
 
 template <class T, size_t N>
 auto tovec(std::array<T, N> const &a) {
-    return tovec<glm::vec<N, T>>(a);
+    return tovec<Vec<N, T>>(a);
 }
 
 template <class T>
@@ -46,21 +44,21 @@ struct is_promotable {
 };
 
 template <class T, size_t N>
-struct is_promotable<glm::vec<N, T>, glm::vec<N, T>> {
+struct is_promotable<Vec<N, T>, Vec<N, T>> {
     static constexpr bool value = true;
-    using type = glm::vec<N, T>;
+    using type = Vec<N, T>;
 };
 
 template <class T, size_t N>
-struct is_promotable<glm::vec<N, T>, T> {
+struct is_promotable<Vec<N, T>, T> {
     static constexpr bool value = true;
-    using type = glm::vec<N, T>;
+    using type = Vec<N, T>;
 };
 
 template <class T, size_t N>
-struct is_promotable<T, glm::vec<N, T>> {
+struct is_promotable<T, Vec<N, T>> {
     static constexpr bool value = true;
-    using type = glm::vec<N, T>;
+    using type = Vec<N, T>;
 };
 
 template <class T>
@@ -70,10 +68,10 @@ struct is_promotable<T, T> {
 };
 
 template <class T, class S>
-constexpr bool is_promotable_v = is_promotable<T, S>::value;
+inline constexpr bool is_promotable_v = is_promotable<std::decay_t<T>, std::decay_t<S>>::value;
 
 template <class T, class S>
-using is_promotable_t = typename is_promotable<T, S>::type;
+using is_promotable_t = typename is_promotable<std::decay_t<T>, std::decay_t<S>>::type;
 
 
 template <class T, class S>
@@ -81,12 +79,12 @@ struct is_castable {
     static constexpr bool value = false;
 };
 template <class T, size_t N>
-struct is_castable<glm::vec<N, T>, T> {
+struct is_castable<Vec<N, T>, T> {
     static constexpr bool value = true;
 };
 
 template <class T, size_t N>
-struct is_castable<T, glm::vec<N, T>> {
+struct is_castable<T, Vec<N, T>> {
     static constexpr bool value = false;
 };
 
@@ -96,11 +94,20 @@ struct is_castable<T, T> {
 };
 
 template <class T, class S>
-inline constexpr bool is_castable_v = is_castable<T, S>::value;
-
-
+inline constexpr bool is_castable_v = is_castable<std::decay_t<T>, std::decay_t<S>>::value;
 
 template <class T, class S>
 inline constexpr bool is_decay_same_v = std::is_same_v<std::decay_t<T>, std::decay_t<S>>;
+
+
+template <class T>
+auto typenameof() {
+    return typeid(T).name();
+};
+
+template <class T>
+auto typenameof(T const &_) {
+    return typeid(T).name();
+};
 
 }
