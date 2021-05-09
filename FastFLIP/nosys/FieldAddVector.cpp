@@ -19,7 +19,7 @@ namespace zenbase{
             // float vx = std::get<float>(get_param("vx"));
             // float vy = std::get<float>(get_param("vy"));
             // float vz = std::get<float>(get_param("vz"));
-            auto ivec3 = get_input("invec3")->as<zenbase::NumericObject>()->get<std::array<float,3>>();
+            auto ivec3 = get_input("invec3")->as<zenbase::NumericObject>()->get<zen::vec3f>();
             auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();
             if(has_input("FieldWeight")) {
                 auto face_weight = get_input("FieldWeight")->as<VDBFloat3Grid>();
