@@ -5,6 +5,7 @@ import zenapi
 
 from .blender_io import renew_mesh, renew_object, renew_volume_object
 from .obj_mesh_io import readobj
+from .zpm_primitive_io import readzpm
 
 
 curr_objects = set()
@@ -21,6 +22,12 @@ def loadFileIntoBlender(name, ext, path, frameid):
             faces = faces.tolist()
         verts = verts.tolist()
         mesh = renew_mesh(frame_name, pos=verts, faces=faces)
+        obj = renew_object(name, mesh)
+
+    elif ext == '.zpm':
+        attrs, faces = readzpm(path, simple=True)
+        pos = attrs['pos'].tolist()
+        mesh = renew_mesh(frame_name, pos=pos)
         obj = renew_object(name, mesh)
 
     elif ext == '.vdb':
