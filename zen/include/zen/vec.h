@@ -82,7 +82,7 @@ struct is_vec<vec<N, T>> : std::true_type {
 };
 
 template <class T>
-inline constexpr bool is_vec_v = is_vec<T>::value;
+inline constexpr bool is_vec_v = is_vec<std::decay_t<T>>::value;
 
 template <class T, class S>
 struct is_vec_promotable : std::false_type {
@@ -214,7 +214,7 @@ inline auto operator op(T const &a, S const &b) -> decltype(auto) { \
 }
 #define _PER_IOP2(op) \
 _PER_OP2(op) \
-template <size_t N, class T, class S, std::enable_if_t<is_vec_v<T> || is_vec_v<S>, bool> = true> \
+template <size_t N, class T, class S> \
 inline vec<N, T> &operator op##=(vec<N, T> &a, S const &b) { \
   a = a op b; \
   return a; \
