@@ -28,15 +28,15 @@ struct TransformMesh : zen::INode {
   virtual void apply() override {
     auto mesh = get_input("mesh")->as<MeshObject>();
     auto outmesh = zen::IObject::make<MeshObject>();
-    std::array<float,3> translate = {0,0,0};
-    std::array<float,3> rotate = {0,0,0};
-    std::array<float,3> scaling = {1,1,1};
+    zen::vec3f translate = {0,0,0};
+    zen::vec3f rotate = {0,0,0};
+    zen::vec3f scaling = {1,1,1};
     if(has_input("translate"))
-      translate = get_input("translate")->as<zenbase::NumericObject>()->get<std::array<float,3>>();
+      translate = get_input("translate")->as<zenbase::NumericObject>()->get<zen::vec3f>();
     if(has_input("rotate"))
-      rotate = get_input("rotate")->as<zenbase::NumericObject>()->get<std::array<float,3>>();
+      rotate = get_input("rotate")->as<zenbase::NumericObject>()->get<zen::vec3f>();
     if(has_input("scaling"))
-      scaling = get_input("scaling")->as<zenbase::NumericObject>()->get<std::array<float,3>>();
+      scaling = get_input("scaling")->as<zenbase::NumericObject>()->get<zen::vec3f>();
     
     
     glm::mat4 matTrans = glm::translate(glm::vec3(translate[0], translate[1], translate[2]));
