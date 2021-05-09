@@ -119,3 +119,10 @@ def import_library(libdir, name):
     finally:
         assert sys.path.pop(0) == libdir
     return module
+
+
+def add_line_numbers(script):
+    res = ''
+    for i, line in enumerate(script.splitlines()):
+        res += '{:4d} | {}\n'.format(i + 1, line)
+    return res

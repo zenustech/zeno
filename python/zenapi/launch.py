@@ -3,7 +3,7 @@ import runpy
 import shutil
 import tempfile
 import multiprocessing as mp
-from zenutils import run_script, mock_ld_library_path
+from zenutils import run_script, add_line_numbers
 
 from .codegen import generate_script
 from .descriptor import parse_descriptor_line
@@ -45,7 +45,7 @@ for frame in range({nframes}):
 \texecute()
 print('EXITING')
 '''
-    print(script)
+    print(add_line_numbers(script))
     global g_proc
     g_proc = mp.Process(target=run_script, args=[script], daemon=True)
     g_proc.start()
