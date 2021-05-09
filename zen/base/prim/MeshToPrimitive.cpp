@@ -1,3 +1,4 @@
+#pragma once
 #include <zen/zen.h>
 #include <zen/MeshObject.h>
 #include <zen/PrimitiveObject.h>
@@ -14,7 +15,7 @@ struct MeshToPrimitive : zen::INode{
     auto mesh = get_input("mesh")->as<MeshObject>();
     auto result = zen::IObject::make<PrimitiveObject>();
     result->add_attr<zen::vec3f>("pos");
-    result->attr<zen::vec3f>("pos").resize(mesh->vertices.size());
+    result->resize(mesh->vertices.size());
     result->triangles.resize(mesh->vertices.size()/3);
     result->quads.resize(0);
 
