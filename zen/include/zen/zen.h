@@ -14,9 +14,6 @@
 
 namespace zen {
 
-typedef std::array<int, 3> int3;
-typedef std::array<float, 3> float3;
-
 
 class Exception : public std::exception {
 private:
@@ -62,19 +59,7 @@ T safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) {
 }
 
 
-using IValue = std::variant<std::string, int, float, int3, float3>;
-
-template <class T>
-T get_float3(IValue const &v) {
-  float3 x = std::get<float3>(v);
-  return T(x[0], x[1], x[2]);
-}
-
-template <class T>
-T get_int3(IValue const &v) {
-  int3 x = std::get<int3>(v);
-  return T(x[0], x[1], x[2]);
-}
+using IValue = std::variant<std::string, int, float>;
 
 
 struct IObject {

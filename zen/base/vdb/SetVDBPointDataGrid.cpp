@@ -1,5 +1,3 @@
-#pragma once
-
 #include <zen/zen.h>
 #include <zen/NumericObject.h>
 #include <vector>

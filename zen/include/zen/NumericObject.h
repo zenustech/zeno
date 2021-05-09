@@ -22,6 +22,11 @@ struct NumericObject : zen::IObject {
   }
 
   template <class T>
+  T is() {
+    return std::holds_alternative<T>(value);
+  }
+
+  template <class T>
   void set(T const &x) {
     value = x;
   }
