@@ -8,7 +8,7 @@ def funpack(fmt, f):
 
 def readzpm(path):
     attrs = {}
-    faces = [], [], [], []
+    conns = [], [], [], []
 
     with open(path, 'rb') as f:
         signature = f.read(8)
@@ -17,7 +17,9 @@ def readzpm(path):
         size, count = funpack('Ni', f)
         assert count < 1024, count
 
-        print('size =', size)
+        #print('size =', size)
+
+        attrinfos = []
 
         for i in range(count):
             type = f.read(4).strip(b'\0').decode()
@@ -25,17 +27,13 @@ def readzpm(path):
             assert namelen < 1024, namelen
             namebuf = f.read(namelen)
             name = namebuf.decode()
+            #print('attr', name, 'is', type)
+            attrinfos.append((type, name))
 
-            print('type =', type)
-            print('name =', name)
-
+        for type, name in attrinfos:
             n = struct.calcsize(type) * size
             arr = np.frombuffer(f.read(n), dtype=type)
-
             attrs[name] = arr
 
-    return attrs, faces
-
-
-attrs, faces = readzpm("/tmp/zenio/000000/result.zpm")
-print(attrs)
+    # TODO: read topology connections too
+    return attrs, conns

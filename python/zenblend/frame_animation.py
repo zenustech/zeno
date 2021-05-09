@@ -25,9 +25,10 @@ def loadFileIntoBlender(name, ext, path, frameid):
         obj = renew_object(name, mesh)
 
     elif ext == '.zpm':
-        attrs, faces = readzpm(path, simple=True)
+        attrs, conns = readzpm(path)
         pos = attrs['pos'].tolist()
-        mesh = renew_mesh(frame_name, pos=pos)
+        faces = conns[2]
+        mesh = renew_mesh(frame_name, pos=pos, faces=faces)
         obj = renew_object(name, mesh)
 
     elif ext == '.vdb':

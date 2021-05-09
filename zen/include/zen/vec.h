@@ -339,7 +339,7 @@ inline auto cross(vec<3, T> const &a, vec<3, S> const &b) {
 
 template <class T, class S, class F>
 inline auto mix(T const &a, S const &b, F const &f) {
-    return a * f + b * (1 - f);
+    return a * (1 - f) + b * f;
 }
 
 template <class T, class S, class F>

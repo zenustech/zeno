@@ -294,11 +294,12 @@ struct PrimitiveRandomizeAttr : zen::INode {
     auto attrName = std::get<std::string>(get_param("attrName"));
     auto &arr = prim->attr(attrName);
     std::visit([min, minY, minZ, max, maxY, maxZ](auto &arr) {
-        #pragma omp parallel for
         for (int i = 0; i < arr.size(); i++) {
             if constexpr (is_decay_same_v<decltype(arr[i]), zen::vec3f>) {
-                arr[i] = zen::mix(zen::vec3f(min, minY, minZ), zen::vec3f(max, maxY, maxZ),
-                        zen::vec3f(drand48(), drand48(), drand48()));
+                zen::vec3f f(drand48(), drand48(), drand48());
+                zen::vec3f a(min, minY, minZ);
+                zen::vec3f b(max, maxY, maxZ);
+                arr[i] = zen::mix(a, b, f);
             } else {
                 arr[i] = zen::mix(min, max, (float)drand48());
             }
