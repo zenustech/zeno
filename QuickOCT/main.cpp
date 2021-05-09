@@ -4,6 +4,38 @@
 using namespace zenbase;
 
 
+struct FishYields : zen::INode {
+  virtual void apply() override {
+    auto stars = get_input("stars")->as<PrimitiveObject>();
+    auto rate = std::get<int>(get_param("rate"));
+
+    for (auto &[_, arr]: stars->m_attrs) {
+        std::visit([rate](auto &arr) {
+            for (int i = 0, j = 0; j < arr.size(); i++, j += rate) {
+                arr[i] = arr[j];
+            }
+        }, arr);
+    }
+    size_t new_size = stars->size() / rate;
+    printf("fish yields new_size = %zd\n", new_size);
+    stars->resize(new_size);
+
+    set_output_ref("stars", get_input_ref("stars"));
+  }
+};
+
+static int defFishYields = zen::defNodeClass<FishYields>("FishYields",
+    { /* inputs: */ {
+    "stars",
+    }, /* outputs: */ {
+    "stars",
+    }, /* params: */ {
+    {"int", "rate", "1 1"},
+    }, /* category: */ {
+    "NBodySolver",
+    }});
+
+
 struct AdvectStars : zen::INode {
   virtual void apply() override {
     auto stars = get_input("stars")->as<PrimitiveObject>();
