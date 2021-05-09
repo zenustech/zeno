@@ -16,7 +16,6 @@ zen.loadLibrary('libFLIPlib.so')
 '''
 
 iopath = '/tmp/zenio'
-
 g_proc = None
 
 

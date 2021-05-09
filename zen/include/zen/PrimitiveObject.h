@@ -46,6 +46,10 @@ struct PrimitiveObject : zen::IObject {
         return m_attrs.at(name);
     }
 
+    bool has_attr(std::string name) const {
+        return m_attrs.find(name) != m_attrs.end();
+    }
+
     template <class T>
     bool attr_is(std::string name) const {
         return std::holds_alternative<std::vector<T>>(m_attrs.at(name));
