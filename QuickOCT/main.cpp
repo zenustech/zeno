@@ -7,7 +7,7 @@ using namespace zenbase;
 struct AdvectStars : zen::INode {
   virtual void apply() override {
     auto stars = get_input("stars")->as<PrimitiveObject>();
-    auto &mass = stars->attr<zen::vec3f>("mass");
+    auto &mass = stars->attr<float>("mass");
     auto &pos = stars->attr<zen::vec3f>("pos");
     auto &vel = stars->attr<zen::vec3f>("vel");
     auto &acc = stars->attr<zen::vec3f>("acc");
@@ -17,6 +17,8 @@ struct AdvectStars : zen::INode {
         pos[i] += vel[i] * dt + acc[i] * (dt * dt / 2);
         vel[i] += acc[i] * dt;
     }
+
+    set_output_ref("stars", get_input_ref("stars"));
   }
 };
 
@@ -24,6 +26,7 @@ static int defAdvectStars = zen::defNodeClass<AdvectStars>("AdvectStars",
     { /* inputs: */ {
     "stars",
     }, /* outputs: */ {
+    "stars",
     }, /* params: */ {
     {"float", "dt", "0.01 0"},
     }, /* category: */ {
@@ -41,11 +44,12 @@ static zen::vec3f gfunc(zen::vec3f const &rij) {
 struct ComputeGravity : zen::INode {
   virtual void apply() override {
     auto stars = get_input("stars")->as<PrimitiveObject>();
-    auto &mass = stars->attr<zen::vec3f>("mass");
+    auto &mass = stars->attr<float>("mass");
     auto &pos = stars->attr<zen::vec3f>("pos");
     auto &vel = stars->attr<zen::vec3f>("vel");
     auto &acc = stars->attr<zen::vec3f>("acc");
     auto G = std::get<float>(get_param("G"));
+    printf("computing gravity...\n");
     #pragma omp parallel for
     for (int i = 0; i < stars->size(); i++) {
         acc[i] = zen::vec3f(0);
@@ -53,9 +57,12 @@ struct ComputeGravity : zen::INode {
             acc[i] += mass[j] * gfunc(pos[j] - pos[i]);
         }
     }
+    printf("computing gravity done\n");
     for (int i = 0; i < stars->size(); i++) {
         acc[i] *= G;
     }
+
+    set_output_ref("stars", get_input_ref("stars"));
   }
 };
 
@@ -63,6 +70,7 @@ static int defComputeGravity = zen::defNodeClass<ComputeGravity>("ComputeGravity
     { /* inputs: */ {
     "stars",
     }, /* outputs: */ {
+    "stars",
     }, /* params: */ {
     {"float", "G", "1.0 0"},
     }, /* category: */ {

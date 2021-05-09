@@ -2,6 +2,7 @@
 Node Editor UI
 '''
 
+import os
 import json
 import random
 
@@ -725,7 +726,10 @@ class NodeEditor(QWidget):
         #self.initConnect()
         self.refreshDescriptors()
 
-        #self.do_open('assets/prim.zsg')  ## DEBUG
+        if 'ZSG_OPEN' in os.environ:
+            path = os.environ['ZSG_OPEN']
+            self.do_open(path)
+            self.current_path = path
 
     def initShortcuts(self):
         self.msgF5 = QShortcut(QKeySequence('F5'), self)
