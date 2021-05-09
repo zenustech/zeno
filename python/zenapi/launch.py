@@ -13,6 +13,7 @@ std_header = '''
 import zen
 zen.loadLibrary('libOCTlib.so')
 zen.loadLibrary('libFLIPlib.so')
+zen.loadLibrary('libmpm.so')
 '''
 
 iopath = '/tmp/zenio'
