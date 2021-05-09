@@ -8,6 +8,8 @@
 namespace zen {
 
 
+/* main class definition */
+
 template <size_t N, class T>
 struct vec : std::array<T, N> {
     vec() = default;
@@ -53,7 +55,10 @@ struct vec : std::array<T, N> {
     }
 
     vec(T const &x, T const &y) : vec{x, y} {}
+
     vec(T const &x, T const &y, T const &z) : vec{x, y, z} {}
+
+    vec(T const &x, T const &y, T const &z, T const &w) : vec{x, y, z, w} {}
 
     template <class S>
     operator vec<N, S>() const {
@@ -64,6 +69,9 @@ struct vec : std::array<T, N> {
         return res;
     }
 };
+
+
+/* type traits */
 
 template <class T>
 struct is_vec : std::false_type {
@@ -76,6 +84,91 @@ struct is_vec<vec<N, T>> : std::true_type {
 template <class T>
 inline constexpr bool is_vec_v = is_vec<T>::value;
 
+template <class T, class S>
+struct is_vec_promotable : std::false_type {
+    using type = void;
+};
+
+template <class T, size_t N>
+struct is_vec_promotable<vec<N, T>, vec<N, T>> : std::true_type {
+    using type = vec<N, T>;
+};
+
+template <class T, size_t N>
+struct is_vec_promotable<vec<N, T>, T> : std::true_type {
+    using type = vec<N, T>;
+};
+
+template <class T, size_t N>
+struct is_vec_promotable<T, vec<N, T>> : std::true_type {
+    using type = vec<N, T>;
+};
+
+template <class T>
+struct is_vec_promotable<T, T> : std::true_type {
+    using type = T;
+};
+
+template <class T, class S>
+inline constexpr bool is_vec_promotable_v = is_vec_promotable<std::decay_t<T>, std::decay_t<S>>::value;
+
+template <class T, class S>
+using is_vec_promotable_t = typename is_vec_promotable<std::decay_t<T>, std::decay_t<S>>::type;
+
+
+template <class T, class S>
+struct is_vec_castable : std::false_type {
+};
+template <class T, size_t N>
+struct is_vec_castable<vec<N, T>, T> : std::true_type {
+};
+
+template <class T, size_t N>
+struct is_vec_castable<T, vec<N, T>> : std::false_type {
+};
+
+template <class T>
+struct is_vec_castable<T, T> : std::true_type {
+};
+
+template <class T, class S>
+inline constexpr bool is_vec_castable_v = is_vec_castable<std::decay_t<T>, std::decay_t<S>>::value;
+
+
+/* converter functions */
+
+template <class vecT, class T>
+vecT array_to_vec(std::array<T, 1> const &a) {
+    return {a[0]};
+}
+
+template <class vecT, class T>
+vecT array_to_vec(std::array<T, 2> const &a) {
+    return {a[0], a[1]};
+}
+
+template <class vecT, class T>
+vecT array_to_vec(std::array<T, 3> const &a) {
+    return {a[0], a[1], a[2]};
+}
+
+template <class vecT, class T>
+vecT array_to_vec(std::array<T, 4> const &a) {
+    return {a[0], a[1], a[2], a[3]};
+}
+
+template <class T, size_t N>
+auto array_to_vec(std::array<T, N> const &a) {
+    return array_to_vec<vec<N, T>>(a);
+}
+
+template <class T>
+auto array_to_vec(T const &a) {
+    return a;
+}
+
+
+/* element-wise operations */
 
 template <size_t N, class T, class F>
 inline auto vapply(F const &f, vec<N, T> const &a) {
@@ -124,7 +217,6 @@ inline auto vapply(F const &f, T const &a, S const &b) {
     return f(a, b);
 }
 
-
 #define _PER_OP2(op) \
 template <class T, class S, std::enable_if_t<is_vec_v<T> || is_vec_v<S>, bool> = true> \
 inline auto operator op(T const &a, S const &b) -> decltype(auto) { \
@@ -166,7 +258,6 @@ _PER_OP1(~)
 _PER_OP1(!)
 #undef _PER_OP1
 
-
 #define _PER_FN2(func) \
 template <class T, class S> \
 inline auto func(T const &a, S const &b) -> decltype(auto) { \
@@ -195,11 +286,59 @@ _PER_FN1(log)
 #undef _PER_FN1
 
 
+/* vector math functions */
+
+template <size_t N, class T, class S>
+inline auto dot(vec<N, T> const &a, vec<N, S> const &b) {
+    decltype(a[0] * b[0]) res(0);
+    for (size_t i = 0; i < N; i++) {
+        res += a[i] * b[i];
+    }
+    return res;
+}
+
+template <size_t N, class T>
+inline auto length(vec<N, T> const &a) {
+    decltype(a[0]) res(0);
+    for (size_t i = 0; i < N; i++) {
+        res += a[i] * a[i];
+    }
+    return res;
+}
+
+template <size_t N, class T>
+inline auto normalize(vec<N, T> const &a) {
+    return a * (1 / length(a));
+}
+
+template <class T, class S>
+inline auto cross(vec<2, T> const &a, vec<2, S> const &b) {
+    return a[0] * b[1] - b[0] * a[1];
+}
+
+template <class T, class S>
+inline auto cross(vec<3, T> const &a, vec<3, S> const &b) {
+    return vec<3, decltype(a[0] * b[0])>(
+        a[1] * b[2] - b[1] * a[2],
+        a[2] * b[0] - b[2] * a[0],
+        a[0] * b[1] - b[0] * a[1]);
+}
+
+
+/* generic helper functions */
+
 template <class T, class S, class F>
 inline auto mix(T const &a, S const &b, F const &f) {
     return a * f + b * (1 - f);
 }
 
+template <class T, class S, class F>
+inline auto clamp(T const &x, S const &a, F const &b) {
+    return min(max(x, a), b);
+}
+
+
+/* common type definitions */
 
 using vec2f = vec<2, float>;
 using vec2d = vec<2, double>;
@@ -231,100 +370,6 @@ using vec4I = vec<4, unsigned int>;
 using vec4L = vec<4, unsigned long>;
 using vec4H = vec<4, unsigned short>;
 using vec4B = vec<4, unsigned char>;
-
-
-template <class vecT, class T>
-vecT tovec(std::array<T, 1> const &a) {
-    return {a[0]};
-}
-
-template <class vecT, class T>
-vecT tovec(std::array<T, 2> const &a) {
-    return {a[0], a[1]};
-}
-
-template <class vecT, class T>
-vecT tovec(std::array<T, 3> const &a) {
-    return {a[0], a[1], a[2]};
-}
-
-template <class vecT, class T>
-vecT tovec(std::array<T, 4> const &a) {
-    return {a[0], a[1], a[2], a[3]};
-}
-
-template <class T, size_t N>
-auto tovec(std::array<T, N> const &a) {
-    return tovec<vec<N, T>>(a);
-}
-
-template <class T>
-auto tovec(T const &a) {
-    return a;
-}
-
-
-template <class T, class S>
-struct is_promotable {
-    static constexpr bool value = false;
-    using type = void;
-};
-
-template <class T, size_t N>
-struct is_promotable<vec<N, T>, vec<N, T>> {
-    static constexpr bool value = true;
-    using type = vec<N, T>;
-};
-
-template <class T, size_t N>
-struct is_promotable<vec<N, T>, T> {
-    static constexpr bool value = true;
-    using type = vec<N, T>;
-};
-
-template <class T, size_t N>
-struct is_promotable<T, vec<N, T>> {
-    static constexpr bool value = true;
-    using type = vec<N, T>;
-};
-
-template <class T>
-struct is_promotable<T, T> {
-    static constexpr bool value = true;
-    using type = T;
-};
-
-template <class T, class S>
-inline constexpr bool is_promotable_v = is_promotable<std::decay_t<T>, std::decay_t<S>>::value;
-
-template <class T, class S>
-using is_promotable_t = typename is_promotable<std::decay_t<T>, std::decay_t<S>>::type;
-
-
-template <class T, class S>
-struct is_castable {
-    static constexpr bool value = false;
-};
-template <class T, size_t N>
-struct is_castable<vec<N, T>, T> {
-    static constexpr bool value = true;
-};
-
-template <class T, size_t N>
-struct is_castable<T, vec<N, T>> {
-    static constexpr bool value = false;
-};
-
-template <class T>
-struct is_castable<T, T> {
-    static constexpr bool value = true;
-};
-
-template <class T, class S>
-inline constexpr bool is_castable_v = is_castable<std::decay_t<T>, std::decay_t<S>>::value;
-
-template <class T, class S>
-inline constexpr bool is_decay_same_v = std::is_same_v<std::decay_t<T>, std::decay_t<S>>;
 
 
 }

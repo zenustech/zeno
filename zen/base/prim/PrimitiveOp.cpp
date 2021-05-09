@@ -8,6 +8,9 @@
 
 namespace zenbase {
 
+template <class T, class S>
+inline constexpr bool is_decay_same_v = std::is_same_v<std::decay_t<T>, std::decay_t<S>>;
+
 
 template <class FuncT>
 struct UnaryOperator {
@@ -35,7 +38,7 @@ struct PrimitiveUnaryOp : zen::INode {
     auto const &arrA = primA->attr(attrA);
     auto &arrOut = primOut->attr(attrOut);
     std::visit([op](auto &arrOut, auto const &arrA) {
-        if constexpr (zen::is_castable_v<decltype(arrOut[0]), decltype(arrA[0])>) {
+        if constexpr (zen::is_vec_castable_v<decltype(arrOut[0]), decltype(arrA[0])>) {
             if (0) {
 #define _PER_OP(opname, expr) \
             } else if (op == opname) { \
@@ -110,8 +113,8 @@ struct PrimitiveBinaryOp : zen::INode {
     auto const &arrB = primB->attr(attrB);
     auto &arrOut = primOut->attr(attrOut);
     std::visit([op](auto &arrOut, auto const &arrA, auto const &arrB) {
-        if constexpr (zen::is_decay_same_v<decltype(arrOut[0]),
-            zen::is_promotable_t<decltype(arrA[0]), decltype(arrB[0])>>) {
+        if constexpr (is_decay_same_v<decltype(arrOut[0]),
+            zen::is_vec_promotable_t<decltype(arrA[0]), decltype(arrB[0])>>) {
             if (0) {
 #define _PER_OP(opname, expr) \
             } else if (op == opname) { \
@@ -190,11 +193,10 @@ struct PrimitiveHalfBinaryOp : zen::INode {
     auto op = std::get<std::string>(get_param("op"));
     auto const &arrA = primA->attr(attrA);
     auto &arrOut = primOut->attr(attrOut);
-    auto const &valueB = get_input("valueB")->as<NumericObject>()->value;
-    std::visit([op](auto &arrOut, auto const &arrA, auto const &valueB) {
-        auto valB = zen::tovec(valueB);
-        if constexpr (zen::is_decay_same_v<decltype(arrOut[0]),
-            zen::is_promotable_t<decltype(arrA[0]), decltype(valB)>>) {
+    auto const &valB = get_input("valueB")->as<NumericObject>()->value;
+    std::visit([op](auto &arrOut, auto const &arrA, auto const &valB) {
+        if constexpr (is_decay_same_v<decltype(arrOut[0]),
+            zen::is_vec_promotable_t<decltype(arrA[0]), decltype(valB)>>) {
             if (0) {
 #define _PER_OP(opname, expr) \
             } else if (op == opname) { \
@@ -224,7 +226,7 @@ struct PrimitiveHalfBinaryOp : zen::INode {
         } else {
             assert(0 && "Failed to promote variant type");
         }
-    }, arrOut, arrA, valueB);
+    }, arrOut, arrA, valB);
 
     set_output_ref("primOut", get_input_ref("primOut"));
   }
@@ -253,7 +255,7 @@ struct PrimitiveFillAttr : zen::INode {
     auto attrName = std::get<std::string>(get_param("attrName"));
     auto &arr = prim->attr(attrName);
     std::visit([](auto &arr, auto const &value) {
-        if constexpr (zen::is_castable_v<decltype(arr[0]), decltype(value)>) {
+        if constexpr (zen::is_vec_castable_v<decltype(arr[0]), decltype(value)>) {
             #pragma omp parallel for
             for (int i = 0; i < arr.size(); i++) {
                 arr[i] = decltype(arr[i])(value);
@@ -294,7 +296,7 @@ struct PrimitiveRandomizeAttr : zen::INode {
     std::visit([min, minY, minZ, max, maxY, maxZ](auto &arr) {
         #pragma omp parallel for
         for (int i = 0; i < arr.size(); i++) {
-            if constexpr (zen::is_decay_same_v<decltype(arr[i]), zen::vec3f>) {
+            if constexpr (is_decay_same_v<decltype(arr[i]), zen::vec3f>) {
                 arr[i] = zen::mix(zen::vec3f(min, minY, minZ), zen::vec3f(max, maxY, maxZ),
                         zen::vec3f(drand48(), drand48(), drand48()));
             } else {
