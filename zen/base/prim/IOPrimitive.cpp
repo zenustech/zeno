@@ -28,12 +28,13 @@ struct ExportPrimitive : zen::INode {
 
     for (auto const &[name, _]: prim->m_attrs) {
         char type[5];
+        memset(type, 0, sizeof(type));
         if (0) {
 #define _PER_ALTER(T, id) \
         } else if (prim->attr_is<T>(name)) { \
             strcpy(type, id);
         _PER_ALTER(float, "f")
-        _PER_ALTER(zen::vec3f, "f3")
+        _PER_ALTER(zen::vec3f, "3f")
 #undef _PER_ALTER
         } else {
             printf("%s\n", name);
@@ -115,7 +116,7 @@ struct ImportPrimitive : zen::INode {
         } else if (!strcmp(type, id)) { \
             prim->add_attr<T>(name);
         _PER_ALTER(float, "f")
-        _PER_ALTER(zen::vec3f, "f3")
+        _PER_ALTER(zen::vec3f, "3f")
 #undef _PER_ALTER
         } else {
             printf("%s\n", name);
