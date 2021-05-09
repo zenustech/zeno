@@ -36,8 +36,7 @@ struct PrimitiveUnaryOp : zen::INode {
     auto const &arrA = primA->attr(attrA);
     auto &arrOut = primOut->attr(attrOut);
     std::visit([op](auto &arrOut, auto const &arrA) {
-        if constexpr (hg::is_castable_v<std::decay_t<decltype(arrOut[0])>,
-            std::decay_t<decltype(arrA[0])>>) {
+        if constexpr (hg::is_castable_v<decltype(arrOut[0]), decltype(arrA[0])>) {
             if (0) {
 #define _PER_OP(opname, expr) \
             } else if (op == opname) { \
@@ -112,7 +111,7 @@ struct PrimitiveBinaryOp : zen::INode {
     auto const &arrB = primB->attr(attrB);
     auto &arrOut = primOut->attr(attrOut);
     std::visit([op](auto &arrOut, auto const &arrA, auto const &arrB) {
-        if constexpr (std::is_same_v<std::decay_t<decltype(arrOut[0])>,
+        if constexpr (hg::is_decay_same_v<decltype(arrOut[0]),
             hg::is_promotable_t<decltype(arrA[0]), decltype(arrB[0])>>) {
             if (0) {
 #define _PER_OP(opname, expr) \
@@ -195,9 +194,8 @@ struct PrimitiveHalfBinaryOp : zen::INode {
     auto const &valueB = get_input("valueB")->as<NumericObject>()->value;
     std::visit([op](auto &arrOut, auto const &arrA, auto const &valueB) {
         auto valB = hg::tovec(valueB);
-        if constexpr (std::is_same_v<std::decay_t<decltype(arrOut[0])>,
-            hg::is_promotable_t<std::decay_t<decltype(arrA[0])>,
-                std::decay_t<decltype(valB)>>>) {
+        if constexpr (hg::is_decay_same_v<decltype(arrOut[0]),
+            hg::is_promotable_t<decltype(arrA[0]), decltype(valB)>>) {
             if (0) {
 #define _PER_OP(opname, expr) \
             } else if (op == opname) { \
@@ -225,7 +223,6 @@ struct PrimitiveHalfBinaryOp : zen::INode {
                 assert(0 && "Bad operator type");
             }
         } else {
-            printf("????????????????\n");
             assert(0 && "Failed to promote variant type");
         }
     }, arrOut, arrA, valueB);
@@ -298,7 +295,7 @@ struct PrimitiveRandomizeAttr : zen::INode {
     std::visit([min, minY, minZ, max, maxY, maxZ](auto &arr) {
         #pragma omp parallel for
         for (int i = 0; i < arr.size(); i++) {
-            if constexpr (std::is_same_v<std::decay_t<decltype(arr[i])>, glm::vec3>) {
+            if constexpr (hg::is_decay_same_v<decltype(arr[i]), glm::vec3>) {
                 arr[i] = glm::mix(glm::vec3(min, minY, minZ), glm::vec3(max, maxY, maxZ),
                         glm::vec3(drand48(), drand48(), drand48()));
             } else {

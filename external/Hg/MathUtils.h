@@ -98,4 +98,9 @@ struct is_castable<T, T> {
 template <class T, class S>
 inline constexpr bool is_castable_v = is_castable<T, S>::value;
 
+
+
+template <class T, class S>
+inline constexpr bool is_decay_same_v = std::is_same_v<std::decay_t<T>, std::decay_t<S>>;
+
 }
