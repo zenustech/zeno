@@ -5,7 +5,7 @@ import zenapi
 
 from .blender_io import renew_mesh, renew_object, renew_volume_object
 from .obj_mesh_io import readobj
-from .zpm_primitive_io import readzpm
+from zenapi.zpmio import readzpm
 
 
 curr_objects = set()

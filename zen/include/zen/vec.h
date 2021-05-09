@@ -137,26 +137,6 @@ inline constexpr bool is_vec_castable_v = is_vec_castable<std::decay_t<T>, std::
 
 /* converter functions */
 
-template <class vecT, class T>
-vecT array_to_vec(std::array<T, 1> const &a) {
-    return {a[0]};
-}
-
-template <class vecT, class T>
-vecT array_to_vec(std::array<T, 2> const &a) {
-    return {a[0], a[1]};
-}
-
-template <class vecT, class T>
-vecT array_to_vec(std::array<T, 3> const &a) {
-    return {a[0], a[1], a[2]};
-}
-
-template <class vecT, class T>
-vecT array_to_vec(std::array<T, 4> const &a) {
-    return {a[0], a[1], a[2], a[3]};
-}
-
 template <size_t N, class T>
 auto array_to_vec(std::array<T, N> const &a) {
     return array_to_vec<vec<N, T>>(a);
