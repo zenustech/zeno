@@ -1,8 +1,7 @@
 #include <zen/zen.h>
 #include <zen/PrimitiveObject.h>
 #include <zen/NumericObject.h>
-#include <Hg/MathUtils.h>
-#include <Hg/vec.h>
+#include <zen/vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
@@ -36,22 +35,22 @@ struct PrimitiveUnaryOp : zen::INode {
     auto const &arrA = primA->attr(attrA);
     auto &arrOut = primOut->attr(attrOut);
     std::visit([op](auto &arrOut, auto const &arrA) {
-        if constexpr (hg::is_castable_v<decltype(arrOut[0]), decltype(arrA[0])>) {
+        if constexpr (zen::is_castable_v<decltype(arrOut[0]), decltype(arrA[0])>) {
             if (0) {
 #define _PER_OP(opname, expr) \
             } else if (op == opname) { \
                 UnaryOperator([](auto const &a) { return expr; })(arrOut, arrA);
             _PER_OP("copy", a)
             _PER_OP("neg", -a)
-            _PER_OP("sqrt", hg::sqrt(a))
-            _PER_OP("sin", hg::sin(a))
-            _PER_OP("cos", hg::cos(a))
-            _PER_OP("tan", hg::tan(a))
-            _PER_OP("asin", hg::asin(a))
-            _PER_OP("acos", hg::acos(a))
-            _PER_OP("atan", hg::atan(a))
-            _PER_OP("exp", hg::exp(a))
-            _PER_OP("log", hg::log(a))
+            _PER_OP("sqrt", zen::sqrt(a))
+            _PER_OP("sin", zen::sin(a))
+            _PER_OP("cos", zen::cos(a))
+            _PER_OP("tan", zen::tan(a))
+            _PER_OP("asin", zen::asin(a))
+            _PER_OP("acos", zen::acos(a))
+            _PER_OP("atan", zen::atan(a))
+            _PER_OP("exp", zen::exp(a))
+            _PER_OP("log", zen::log(a))
 #undef _PER_OP
             } else {
                 printf("%s\n", op.c_str());
@@ -111,8 +110,8 @@ struct PrimitiveBinaryOp : zen::INode {
     auto const &arrB = primB->attr(attrB);
     auto &arrOut = primOut->attr(attrOut);
     std::visit([op](auto &arrOut, auto const &arrA, auto const &arrB) {
-        if constexpr (hg::is_decay_same_v<decltype(arrOut[0]),
-            hg::is_promotable_t<decltype(arrA[0]), decltype(arrB[0])>>) {
+        if constexpr (zen::is_decay_same_v<decltype(arrOut[0]),
+            zen::is_promotable_t<decltype(arrA[0]), decltype(arrB[0])>>) {
             if (0) {
 #define _PER_OP(opname, expr) \
             } else if (op == opname) { \
@@ -130,10 +129,10 @@ struct PrimitiveBinaryOp : zen::INode {
             _PER_OP("mul", a * b)
             _PER_OP("div", a / b)
             _PER_OP("rdiv", b / a)
-            _PER_OP("pow", hg::pow(a, b))
-            _PER_OP("rpow", hg::pow(b, a))
-            _PER_OP("atan2", hg::atan2(a, b))
-            _PER_OP("ratan2", hg::atan2(b, a))
+            _PER_OP("pow", zen::pow(a, b))
+            _PER_OP("rpow", zen::pow(b, a))
+            _PER_OP("atan2", zen::atan2(a, b))
+            _PER_OP("ratan2", zen::atan2(b, a))
 #undef _PER_OP
             } else {
                 printf("%s\n", op.c_str());
@@ -193,9 +192,9 @@ struct PrimitiveHalfBinaryOp : zen::INode {
     auto &arrOut = primOut->attr(attrOut);
     auto const &valueB = get_input("valueB")->as<NumericObject>()->value;
     std::visit([op](auto &arrOut, auto const &arrA, auto const &valueB) {
-        auto valB = hg::tovec(valueB);
-        if constexpr (hg::is_decay_same_v<decltype(arrOut[0]),
-            hg::is_promotable_t<decltype(arrA[0]), decltype(valB)>>) {
+        auto valB = zen::tovec(valueB);
+        if constexpr (zen::is_decay_same_v<decltype(arrOut[0]),
+            zen::is_promotable_t<decltype(arrA[0]), decltype(valB)>>) {
             if (0) {
 #define _PER_OP(opname, expr) \
             } else if (op == opname) { \
@@ -213,23 +212,16 @@ struct PrimitiveHalfBinaryOp : zen::INode {
             _PER_OP("mul", a * b)
             _PER_OP("div", a / b)
             _PER_OP("rdiv", b / a)
-            _PER_OP("pow", hg::pow(a, b))
-            _PER_OP("rpow", hg::pow(b, a))
-            _PER_OP("atan2", hg::atan2(a, b))
-            _PER_OP("ratan2", hg::atan2(b, a))
+            _PER_OP("pow", zen::pow(a, b))
+            _PER_OP("rpow", zen::pow(b, a))
+            _PER_OP("atan2", zen::atan2(a, b))
+            _PER_OP("ratan2", zen::atan2(b, a))
 #undef _PER_OP
             } else {
                 printf("%s\n", op.c_str());
                 assert(0 && "Bad operator type");
             }
         } else {
-            printf("FUCKERASDKLJLASDHJJKHLSD %s %s %s %d\n",
-            hg::typenameof<decltype(arrA[0])>(),
-            hg::typenameof<decltype(valB)>(),
-            hg::typenameof<hg::is_promotable_t<decltype(arrA[0]), decltype(valB)>>(),
-            hg::is_promotable_v<hg::vec<3, float>, float>,
-            0);
-            exit(-1);
             assert(0 && "Failed to promote variant type");
         }
     }, arrOut, arrA, valueB);
@@ -261,7 +253,7 @@ struct PrimitiveFillAttr : zen::INode {
     auto attrName = std::get<std::string>(get_param("attrName"));
     auto &arr = prim->attr(attrName);
     std::visit([](auto &arr, auto const &value) {
-        if constexpr (hg::is_castable_v<decltype(arr[0]), decltype(value)>) {
+        if constexpr (zen::is_castable_v<decltype(arr[0]), decltype(value)>) {
             #pragma omp parallel for
             for (int i = 0; i < arr.size(); i++) {
                 arr[i] = decltype(arr[i])(value);
@@ -302,11 +294,11 @@ struct PrimitiveRandomizeAttr : zen::INode {
     std::visit([min, minY, minZ, max, maxY, maxZ](auto &arr) {
         #pragma omp parallel for
         for (int i = 0; i < arr.size(); i++) {
-            if constexpr (hg::is_decay_same_v<decltype(arr[i]), hg::vec3f>) {
-                arr[i] = hg::mix(hg::vec3f(min, minY, minZ), hg::vec3f(max, maxY, maxZ),
-                        hg::vec3f(drand48(), drand48(), drand48()));
+            if constexpr (zen::is_decay_same_v<decltype(arr[i]), zen::vec3f>) {
+                arr[i] = zen::mix(zen::vec3f(min, minY, minZ), zen::vec3f(max, maxY, maxZ),
+                        zen::vec3f(drand48(), drand48(), drand48()));
             } else {
-                arr[i] = hg::mix(min, max, (float)drand48());
+                arr[i] = zen::mix(min, max, (float)drand48());
             }
         }
     }, arr);
@@ -337,7 +329,7 @@ void print_cout(float x) {
     printf("%f\n", x);
 }
 
-void print_cout(hg::vec3f const &a) {
+void print_cout(zen::vec3f const &a) {
     printf("%f %f %f\n", a[0], a[1], a[2]);
 }
 

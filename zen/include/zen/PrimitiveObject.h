@@ -1,7 +1,7 @@
 #pragma once
 
 #include <zen/zen.h>
-#include <Hg/vec.h>
+#include <zen/vec.h>
 #include <variant>
 #include <vector>
 #include <string>
@@ -11,7 +11,7 @@
 namespace zenbase {
 
 using AttributeArray = std::variant<
-    std::vector<hg::vec3f>, std::vector<float>>;
+    std::vector<zen::vec3f>, std::vector<float>>;
 
 struct PrimitiveObject : zen::IObject {
 
@@ -19,9 +19,9 @@ struct PrimitiveObject : zen::IObject {
     size_t m_size{0};
 
     std::vector<int> particles;
-    std::vector<hg::vec2i> lines;
-    std::vector<hg::vec3i> triangles;
-    std::vector<hg::vec4i> quads;
+    std::vector<zen::vec2i> lines;
+    std::vector<zen::vec3i> triangles;
+    std::vector<zen::vec4i> quads;
 
     template <class T>
     void add_attr(std::string name) {

@@ -5,7 +5,7 @@
 #include <cmath>
 
 
-namespace hg {
+namespace zen {
 
 
 template <size_t N, class T>
@@ -50,6 +50,17 @@ struct vec : std::array<T, N> {
         return res;
     }
 };
+
+template <class T>
+struct is_vec : std::false_type {
+};
+
+template <size_t N, class T>
+struct is_vec<vec<N, T>> : std::true_type {
+};
+
+template <class T>
+inline constexpr bool is_vec_v = is_vec<T>::value;
 
 
 template <size_t N, class T, class F>
@@ -101,7 +112,7 @@ inline auto vapply(F const &f, T const &a, S const &b) {
 
 
 #define _PER_OP2(op) \
-template <class T, class S> \
+template <class T, class S, std::enable_if_t<is_vec_v<T> || is_vec_v<S>, bool> = true> \
 inline auto operator op(T const &a, S const &b) -> decltype(auto) { \
   return vapply([] (auto const &x, auto const &y) { return x op y; }, a, b); \
 }
@@ -206,6 +217,100 @@ using vec4I = vec<4, unsigned int>;
 using vec4L = vec<4, unsigned long>;
 using vec4H = vec<4, unsigned short>;
 using vec4B = vec<4, unsigned char>;
+
+
+template <class vecT, class T>
+vecT tovec(std::array<T, 1> const &a) {
+    return {a[0]};
+}
+
+template <class vecT, class T>
+vecT tovec(std::array<T, 2> const &a) {
+    return {a[0], a[1]};
+}
+
+template <class vecT, class T>
+vecT tovec(std::array<T, 3> const &a) {
+    return {a[0], a[1], a[2]};
+}
+
+template <class vecT, class T>
+vecT tovec(std::array<T, 4> const &a) {
+    return {a[0], a[1], a[2], a[3]};
+}
+
+template <class T, size_t N>
+auto tovec(std::array<T, N> const &a) {
+    return tovec<vec<N, T>>(a);
+}
+
+template <class T>
+auto tovec(T const &a) {
+    return a;
+}
+
+
+template <class T, class S>
+struct is_promotable {
+    static constexpr bool value = false;
+    using type = void;
+};
+
+template <class T, size_t N>
+struct is_promotable<vec<N, T>, vec<N, T>> {
+    static constexpr bool value = true;
+    using type = vec<N, T>;
+};
+
+template <class T, size_t N>
+struct is_promotable<vec<N, T>, T> {
+    static constexpr bool value = true;
+    using type = vec<N, T>;
+};
+
+template <class T, size_t N>
+struct is_promotable<T, vec<N, T>> {
+    static constexpr bool value = true;
+    using type = vec<N, T>;
+};
+
+template <class T>
+struct is_promotable<T, T> {
+    static constexpr bool value = true;
+    using type = T;
+};
+
+template <class T, class S>
+inline constexpr bool is_promotable_v = is_promotable<std::decay_t<T>, std::decay_t<S>>::value;
+
+template <class T, class S>
+using is_promotable_t = typename is_promotable<std::decay_t<T>, std::decay_t<S>>::type;
+
+
+template <class T, class S>
+struct is_castable {
+    static constexpr bool value = false;
+};
+template <class T, size_t N>
+struct is_castable<vec<N, T>, T> {
+    static constexpr bool value = true;
+};
+
+template <class T, size_t N>
+struct is_castable<T, vec<N, T>> {
+    static constexpr bool value = false;
+};
+
+template <class T>
+struct is_castable<T, T> {
+    static constexpr bool value = true;
+};
+
+template <class T, class S>
+inline constexpr bool is_castable_v = is_castable<std::decay_t<T>, std::decay_t<S>>::value;
+
+template <class T, class S>
+inline constexpr bool is_decay_same_v = std::is_same_v<std::decay_t<T>, std::decay_t<S>>;
 
 
 }
