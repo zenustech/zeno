@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/PrimitiveObject.h>
+#include "OctreeObject.h"
 #include <algorithm>
 #include <numeric>
 #include <cassert>
@@ -128,7 +129,9 @@ struct LinearOctree : zen::INode {
 #endif
 
     // construct octree
-    std::vector<std::array<int, 8>> children(1);
+    auto tree = zen::IObject::make<OctreeObject>();
+    auto &children = tree->children;
+    children.resize(1);
 
     std::stack<int> stack;
     for (int i = 0; i < stars->size(); i++) {
@@ -161,6 +164,7 @@ struct LinearOctree : zen::INode {
     }
 
     printf("LinearOctree: %zd stars -> %zd nodes\n", stars->size(), children.size());
+    set_output("tree", tree);
     set_output_ref("stars", get_input_ref("stars"));
   }
 };
@@ -170,6 +174,53 @@ static int defLinearOctree = zen::defNodeClass<LinearOctree>("LinearOctree",
     "stars",
     }, /* outputs: */ {
     "stars",
+    "tree",
+    }, /* params: */ {
+    }, /* category: */ {
+    "NBodySolver",
+    }});
+
+
+struct CalcOctreeAttrs : zen::INode {
+    virtual void apply() override {
+        auto stars = get_input("stars")->as<PrimitiveObject>();
+        auto tree = get_input("tree")->as<OctreeObject>();
+        auto &pos = stars->attr<zen::vec3f>("pos");
+        auto &mass = stars->attr<float>("mass");
+        auto &children = tree->children;
+
+        tree->mass.clear();
+        tree->CoM.clear();
+        tree->mass.resize(children.size());
+        tree->CoM.resize(children.size());
+
+        //#pragma omp parallel for
+        for (int no = 0; no < children.size(); no++) {
+            std::stack<int> stack;
+            stack.push(no);
+            while (!stack.empty()) {
+                int curr = stack.top(); stack.pop();
+                for (int sel = 0; sel < 8; sel++) {
+                    int ch = children[curr][sel];
+                    if (ch > 0) {  // child node
+                        stack.push(ch);
+                    } else if (ch < 0) {  // leaf node
+                        int pid = -ch;
+                        tree->mass[curr] += mass[pid];
+                        tree->CoM[curr] += pos[pid] * mass[pid];
+                    }
+                }
+            }
+        }
+    }
+};
+
+static int defCalcOctreeAttrs = zen::defNodeClass<CalcOctreeAttrs>("CalcOctreeAttrs",
+    { /* inputs: */ {
+    "tree",
+    "stars",
+    }, /* outputs: */ {
+    "tree",
     }, /* params: */ {
     }, /* category: */ {
     "NBodySolver",
