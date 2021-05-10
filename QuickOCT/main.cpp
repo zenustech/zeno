@@ -2,6 +2,8 @@
 #include <zen/PrimitiveObject.h>
 #include <algorithm>
 #include <numeric>
+#include <cassert>
+#include <stack>
 
 using namespace zenbase;
 
@@ -110,6 +112,64 @@ struct MortonSorting : zen::INode {
 };
 
 static int defMortonSorting = zen::defNodeClass<MortonSorting>("MortonSorting",
+    { /* inputs: */ {
+    "stars",
+    }, /* outputs: */ {
+    "stars",
+    }, /* params: */ {
+    }, /* category: */ {
+    "NBodySolver",
+    }});
+
+
+struct LinearOctree : zen::INode {
+  virtual void apply() override {
+    auto stars = get_input("stars")->as<PrimitiveObject>();
+    auto &pos = stars->attr<zen::vec3f>("pos");
+    std::vector<int> mc(stars->size());
+
+    #pragma omp parallel for
+    for (int i = 0; i < stars->size(); i++) {
+        mc[i] = morton3d(pos[i]);
+    }
+
+    std::vector<std::array<int, 8>> children(1);
+
+    std::stack<int> stack;
+    for (int i = 0; i < stars->size(); i++) {
+        stack.push(i);
+    }
+
+    while (!stack.empty()) {
+        int pid = stack.top(); stack.pop();
+        int curr = 0;
+        for (int k = 27; k >= 0; k -= 3) {
+            int sel = (mc[pid] >> k) & 7;
+            int ch = children[curr][sel];
+            if (ch == 0) {  // empty
+                // directly insert a leaf node
+                children[curr][sel] = -pid;
+                break;
+            } else if (ch > 0) {  // child node
+                // then visit into this node
+                curr = ch;
+            } else {  // leaf node
+                // pop the leaf, replace with a child node, and visit later
+                stack.push(-ch);
+                curr = children[curr][sel] = children.size();
+                children.emplace_back();
+            }
+        }
+        assert(k >= 0);
+    }
+
+    printf("LinearOctree: %d stars -> %zd nodes\n", stars->size(), children.size());
+
+    set_output_ref("stars", get_input_ref("stars"));
+  }
+};
+
+static int defLinearOctree = zen::defNodeClass<LinearOctree>("LinearOctree",
     { /* inputs: */ {
     "stars",
     }, /* outputs: */ {
