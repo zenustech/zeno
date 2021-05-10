@@ -70,28 +70,47 @@ static int defAdvectStars = zen::defNodeClass<AdvectStars>("AdvectStars",
     }});
 
 
-static int morton3d(zen::vec3f const &pos) {
-    zen::vec3i v = zen::clamp(zen::vec3i(zen::floor(pos * 1024)), 0, 1023);
+// calc 60-bit morton code from 20-bit X,Y,Z fixed pos grid
+static unsigned long morton3d(zen::vec3f const &pos) {
+    zen::vec3L v = zen::clamp(zen::vec3L(zen::floor(pos * 1048576.0f)), 0ul, 1048575ul);
+    static_assert(sizeof(v[0]) == 8);
 
-    v = (v | (v << 16)) & 0x030000FF;
-    v = (v | (v <<  8)) & 0x0300F00F;
-    v = (v | (v <<  4)) & 0x030C30C3;
-    v = (v | (v <<  2)) & 0x09249249;
+    v = (v * 0x0000000100000001ul) & 0xFFFF00000000FFFFul;
+    v = (v * 0x0000000000010001ul) & 0x00FF0000FF0000FFul;
+    v = (v * 0x0000000000000101ul) & 0xF00F00F00F00F00Ful;
+    v = (v * 0x0000000000000011ul) & 0x30C30C30C30C30C3ul;
+    v = (v * 0x0000000000000005ul) & 0x4924924949249249ul;
 
-    return (v[0] << 2) | (v[1] << 1) | v[0];
+    return v[0] * 4 + v[1] * 2 + v[2];
 }
 
-struct MortonSorting : zen::INode {
+
+struct LinearOctree : zen::INode {
   virtual void apply() override {
     auto stars = get_input("stars")->as<PrimitiveObject>();
     auto &pos = stars->attr<zen::vec3f>("pos");
-    std::vector<int> mc(stars->size());
+
+    // compute boundaries
+    assert(pos.size() > 0);
+    zen::vec3f bmin = pos[0];
+    zen::vec3f bmax = pos[0];
+    for (int i = 1; i < stars->size(); i++) {
+        bmin = zen::min(bmin, pos[i]);
+        bmax = zen::max(bmax, pos[i]);
+    }
+    auto scale = 1 / (bmax - bmin);
+    auto offset = -bmin * scale;
+
+    // compute morton code
+    std::vector<unsigned long> mc(stars->size());
 
     #pragma omp parallel for
     for (int i = 0; i < stars->size(); i++) {
-        mc[i] = morton3d(pos[i]);
+        mc[i] = morton3d(pos[i] * scale + offset);
     }
 
+#if 0
+    // sort by morton code
     std::vector<int> indices(mc.size());
     std::iota(indices.begin(), indices.end(), 0);
     std::sort(indices.begin(), indices.end(), [&mc](int pos1, int pos2) {
@@ -106,33 +125,9 @@ struct MortonSorting : zen::INode {
             }
         }, arr);
     }
+#endif
 
-    set_output_ref("stars", get_input_ref("stars"));
-  }
-};
-
-static int defMortonSorting = zen::defNodeClass<MortonSorting>("MortonSorting",
-    { /* inputs: */ {
-    "stars",
-    }, /* outputs: */ {
-    "stars",
-    }, /* params: */ {
-    }, /* category: */ {
-    "NBodySolver",
-    }});
-
-
-struct LinearOctree : zen::INode {
-  virtual void apply() override {
-    auto stars = get_input("stars")->as<PrimitiveObject>();
-    auto &pos = stars->attr<zen::vec3f>("pos");
-    std::vector<int> mc(stars->size());
-
-    #pragma omp parallel for
-    for (int i = 0; i < stars->size(); i++) {
-        mc[i] = morton3d(pos[i]);
-    }
-
+    // construct octree
     std::vector<std::array<int, 8>> children(1);
 
     std::stack<int> stack;
@@ -142,8 +137,8 @@ struct LinearOctree : zen::INode {
 
     while (!stack.empty()) {
         int pid = stack.top(); stack.pop();
-        int curr = 0;
-        for (int k = 27; k >= 0; k -= 3) {
+        int k, curr = 0;
+        for (k = 27; k >= 0; k -= 3) {
             int sel = (mc[pid] >> k) & 7;
             int ch = children[curr][sel];
             if (ch == 0) {  // empty
@@ -160,11 +155,12 @@ struct LinearOctree : zen::INode {
                 children.emplace_back();
             }
         }
-        assert(k >= 0);
+        if (k < 0) {  // the difference of star pos < 1 / 1048576
+            printf("ERROR: particle morton code overlap!\n");
+        }
     }
 
-    printf("LinearOctree: %d stars -> %zd nodes\n", stars->size(), children.size());
-
+    printf("LinearOctree: %zd stars -> %zd nodes\n", stars->size(), children.size());
     set_output_ref("stars", get_input_ref("stars"));
   }
 };
@@ -179,12 +175,6 @@ static int defLinearOctree = zen::defNodeClass<LinearOctree>("LinearOctree",
     "NBodySolver",
     }});
 
-
-static zen::vec3f gfunc(zen::vec3f const &rij) {
-    const float eps = 1e-3;
-    float r = eps * eps + zen::dot(rij, rij);
-    return rij / (r * zen::sqrt(r));
-}
 
 struct ComputeGravity : zen::INode {
   virtual void apply() override {
