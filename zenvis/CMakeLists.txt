@@ -5,7 +5,7 @@ target_include_directories(zenvis PRIVATE ../external)
 
 target_sources(zenvis PRIVATE ${PROJECT_SOURCE})
 target_include_directories(zenvis PRIVATE .)
-target_link_libraries(zenvis PRIVATE OpenGL GLEW glfw)
+target_link_libraries(zenvis PRIVATE OpenGL GLEW)
 
 include(../scripts/Pybind11.cmake)
 do_python_bindings()

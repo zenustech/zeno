@@ -2,10 +2,12 @@ FROM archlinux
 
 COPY scripts/mirrorlist /etc/pacman.d/
 RUN pacman -Sy
-RUN pacman --noconfirm -S cmake python-pip
-RUN pacman --noconfirm -S git vim
-RUN pacman --noconfirm -S make gcc
-RUN pacman --noconfirm -S glew glfw
+RUN pacman --noconfirm -S gcc
+RUN pacman --noconfirm -S cmake
+RUN pacman --noconfirm -S python-pip
+RUN pacman --noconfirm -S git
+RUN pacman --noconfirm -S make
+RUN pacman --noconfirm -S glew
 
 COPY python/requirements.txt /root/
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
