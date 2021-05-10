@@ -1,7 +1,7 @@
 file(GLOB PROJECT_SOURCE "*.cpp" "*.hpp" "*.h")
 
 add_library(zenvis SHARED)
-target_include_directories(zenvis PRIVATE ../external)
+target_include_directories(zenvis PRIVATE ../include)
 
 target_sources(zenvis PRIVATE ${PROJECT_SOURCE})
 target_include_directories(zenvis PRIVATE .)

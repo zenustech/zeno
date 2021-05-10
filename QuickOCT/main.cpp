@@ -67,9 +67,9 @@ static int defAdvectStars = zen::defNodeClass<AdvectStars>("AdvectStars",
 
 
 static zen::vec3f gfunc(zen::vec3f const &rij) {
-    const float eps = 1e-4;
+    const float eps = 1e-3;
     float r = eps * eps + zen::dot(rij, rij);
-    return rij / zen::pow(r, 3);
+    return rij / (r * zen::sqrt(r));
 }
 
 
@@ -81,12 +81,19 @@ struct ComputeGravity : zen::INode {
     auto &vel = stars->attr<zen::vec3f>("vel");
     auto &acc = stars->attr<zen::vec3f>("acc");
     auto G = std::get<float>(get_param("G"));
+    auto eps = std::get<float>(get_param("eps"));
     printf("computing gravity...\n");
-    #pragma omp parallel for
     for (int i = 0; i < stars->size(); i++) {
         acc[i] = zen::vec3f(0);
+    }
+    #pragma omp parallel for
+    for (int i = 0; i < stars->size(); i++) {
         for (int j = i + 1; j < stars->size(); j++) {
-            acc[i] += mass[j] * gfunc(pos[j] - pos[i]);
+            auto rij = pos[j] - pos[i];
+            float r = eps * eps + zen::dot(rij, rij);
+            rij /= r * zen::sqrt(r);
+            acc[i] += mass[j] * rij;
+            acc[j] -= mass[i] * rij;
         }
     }
     printf("computing gravity done\n");
@@ -105,6 +112,7 @@ static int defComputeGravity = zen::defNodeClass<ComputeGravity>("ComputeGravity
     "stars",
     }, /* params: */ {
     {"float", "G", "1.0 0"},
+    {"float", "eps", "0.0001 0"},
     }, /* category: */ {
     "NBodySolver",
     }});
