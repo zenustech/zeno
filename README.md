@@ -1,26 +1,21 @@
-1. install dependencies (Arch Linux)
-
-```bash
-sudo pacman -S cmake python-pip pybind11
-sudo pacman -S tbb cblas glm glew glfw boost
-sudo pacman -S openvdb eigen openblas lapack
-```
-
-2. build and install IlmBase
-```bash
-git clone https://github.com/aforsythe/IlmBase.git --depth=1
-cd IlmBase
-./bootstrap
-./configure
-make -j8
-sudo make install
-```
-
-3. clone and build ZENO
+1. clone ZENO repository
 ```bash
 git clone https://github.com/archibate/zeno.git --depth=10
 cd zeno
+```
+
+2. install dependencies (Arch Linux)
+
+```bash
+sudo pacman -S cmake python-pip
+sudo pacman -S make gcc
+sudo pacman -S glew glfw
+
 pip install -r python/requirements.txt
+```
+
+3. build ZENO to binary
+```bash
 make
 ```
 
