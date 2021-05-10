@@ -53,7 +53,7 @@ class RunBeforeFrame(INode):
     z_categories = 'misc'
 
     def apply(self):
-        cond = G.has_substep_executed
+        cond = not G.has_substep_executed
         self.set_output('cond', BooleanObject(cond))
 
 
@@ -63,7 +63,7 @@ class RunAfterFrame(INode):
     z_categories = 'misc'
 
     def apply(self):
-        cond = G.has_frame_completed
+        cond = G.has_frame_completed or not G.time_step_integrated
         self.set_output('cond', BooleanObject(cond))
 
 
