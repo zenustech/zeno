@@ -24,34 +24,36 @@ struct PrimitiveObject : zen::IObject {
     std::vector<zen::vec4i> quads;
 
     template <class T>
-    void add_attr(std::string name) {
-        m_attrs[name] = std::vector<T>(m_size);
+    std::vector<T> &add_attr(std::string const &name) {
+        if (!has_attr(name))
+            m_attrs[name] = std::vector<T>(m_size);
+        return attr<T>(name);
     }
 
     template <class T>
-    std::vector<T> &attr(std::string name) {
+    std::vector<T> &attr(std::string const &name) {
         return std::get<std::vector<T>>(m_attrs.at(name));
     }
 
-    AttributeArray &attr(std::string name) {
+    AttributeArray &attr(std::string const &name) {
         return m_attrs.at(name);
     }
 
     template <class T>
-    std::vector<T> const &attr(std::string name) const {
+    std::vector<T> const &attr(std::string const &name) const {
         return std::get<std::vector<T>>(m_attrs.at(name));
     }
 
-    AttributeArray const &attr(std::string name) const {
+    AttributeArray const &attr(std::string const &name) const {
         return m_attrs.at(name);
     }
 
-    bool has_attr(std::string name) const {
+    bool has_attr(std::string const &name) const {
         return m_attrs.find(name) != m_attrs.end();
     }
 
     template <class T>
-    bool attr_is(std::string name) const {
+    bool attr_is(std::string const &name) const {
         return std::holds_alternative<std::vector<T>>(m_attrs.at(name));
     }
 

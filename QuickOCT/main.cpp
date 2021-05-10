@@ -1,5 +1,7 @@
 #include <zen/zen.h>
 #include <zen/PrimitiveObject.h>
+#include <algorithm>
+#include <numeric>
 
 using namespace zenbase;
 
@@ -66,12 +68,63 @@ static int defAdvectStars = zen::defNodeClass<AdvectStars>("AdvectStars",
     }});
 
 
+static int morton3d(zen::vec3f const &pos) {
+    zen::vec3i v = zen::clamp(zen::vec3i(zen::floor(pos * 1024)), 0, 1023);
+
+    v = (v | (v << 16)) & 0x030000FF;
+    v = (v | (v <<  8)) & 0x0300F00F;
+    v = (v | (v <<  4)) & 0x030C30C3;
+    v = (v | (v <<  2)) & 0x09249249;
+
+    return (v[0] << 2) | (v[1] << 1) | v[0];
+}
+
+struct MortonSorting : zen::INode {
+  virtual void apply() override {
+    auto stars = get_input("stars")->as<PrimitiveObject>();
+    auto &pos = stars->attr<zen::vec3f>("pos");
+    std::vector<int> mc(stars->size());
+
+    #pragma omp parallel for
+    for (int i = 0; i < stars->size(); i++) {
+        mc[i] = morton3d(pos[i]);
+    }
+
+    std::vector<int> indices(mc.size());
+    std::iota(indices.begin(), indices.end(), 0);
+    std::sort(indices.begin(), indices.end(), [&mc](int pos1, int pos2) {
+        return mc[pos1] < mc[pos2];
+    });
+
+    for (auto &[_, arr]: stars->m_attrs) {
+        std::visit([&indices](auto &arr) {
+            auto tmparr = arr;  // deep-copy
+            for (int i = 0; i < arr.size(); i++) {
+                arr[i] = tmparr[indices[i]];
+            }
+        }, arr);
+    }
+
+    set_output_ref("stars", get_input_ref("stars"));
+  }
+};
+
+static int defMortonSorting = zen::defNodeClass<MortonSorting>("MortonSorting",
+    { /* inputs: */ {
+    "stars",
+    }, /* outputs: */ {
+    "stars",
+    }, /* params: */ {
+    }, /* category: */ {
+    "NBodySolver",
+    }});
+
+
 static zen::vec3f gfunc(zen::vec3f const &rij) {
     const float eps = 1e-3;
     float r = eps * eps + zen::dot(rij, rij);
     return rij / (r * zen::sqrt(r));
 }
-
 
 struct ComputeGravity : zen::INode {
   virtual void apply() override {
