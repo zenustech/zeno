@@ -1,16 +1,12 @@
 #include "stdafx.hpp"
 #include "main.hpp"
-#include "server.hpp"
 #include "frames.hpp"
 #include "IGraphic.hpp"
 #include <Hg/FPSCounter.hpp>
-#include <Hg/IPC/SharedMemory.hpp>
 #include <sstream>
 #include <cstdlib>
 
 namespace zenvis {
-
-std::unique_ptr<Server> Server::_instance;
 
 int curr_frameid = -1;
 
@@ -73,8 +69,6 @@ void initialize() {
   CHECK_GL(glEnable(GL_POINT_SPRITE_ARB));
 
   vao = std::make_unique<VAO>();
-
-  Server::get();
 }
 
 static void paint_graphics(void) {
@@ -102,25 +96,23 @@ void finalize() {
   vao = nullptr;
 }
 
-void new_frame() {
-  auto &server = Server::get();
-
+int play_frameid(int max_frameid) {
   if (playing)
     curr_frameid++;
-
-  server.poll_init();
-  if (curr_frameid >= server.frameid) {
-    curr_frameid = server.frameid - 1;
-    server.poll();
-    if (server.frameid - 1 != curr_frameid) {
-      solverFPS.tick();
-    }
+  if (curr_frameid >= max_frameid) {
+    curr_frameid = max_frameid - 1;
   }
+  return curr_frameid;
+}
 
+void new_frame() {
   CHECK_GL(glViewport(0, 0, nx, ny));
-  update_frame_graphics();
   paint_graphics();
   renderFPS.tick();
+}
+
+void load_file(std::string name, std::string ext, std::string path, int frameid) {
+    printf("load_file: %s\n", path.c_str());
 }
 
 void set_window_size(int nx_, int ny_) {
@@ -138,11 +130,6 @@ void set_curr_frameid(int frameid) {
 
 int get_curr_frameid() {
   return curr_frameid;
-}
-
-int get_solver_frameid() {
-  auto &server = Server::get();
-  return server.frameid;
 }
 
 double get_render_fps() {

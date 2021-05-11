@@ -7,7 +7,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtOpenGL import QGLWidget
 
-from zenwebcfg import zenvis
+import zenvis
 
 
 class CameraControl:
@@ -105,7 +105,6 @@ class ViewportWidget(QGLWidget):
         zenvis.paintGL()
 
     def on_update(self):
-        zenvis.uploadStatus()
         self.repaint()
 
 

@@ -11,8 +11,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
 from zenutils import go
-from zenwebcfg import zenapi
-import zenwebcfg
+import zenapi
 
 
 class QDMGraphicsScene(QGraphicsScene):
@@ -775,6 +774,7 @@ class NodeEditor(QWidget):
 
     def on_connect(self):
         baseurl = self.edit_baseurl.text()
+        import zenwebcfg
         zenwebcfg.connectServer(baseurl)
         self.refreshDescriptors()
 
