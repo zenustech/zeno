@@ -9,7 +9,7 @@ cd zeno
 ```bash
 sudo pacman -S cmake python-pip
 sudo pacman -S make gcc
-sudo pacman -S glew glfw
+sudo pacman -S qt5-base
 
 pip install pybind11 numpy
 pip install PyQt5

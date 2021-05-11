@@ -64,7 +64,7 @@ void set_program_uniforms(Program *pro) {
 static std::unique_ptr<VAO> vao;
 
 void initialize() {
-  glewInit();
+  gladLoadGL();
 
   CHECK_GL(glEnable(GL_BLEND));
   CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
