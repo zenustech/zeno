@@ -65,7 +65,7 @@ void initialize() {
   CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
   CHECK_GL(glEnable(GL_DEPTH_TEST));
   CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
-  CHECK_GL(glEnable(GL_POINT_SPRITE_ARB));
+  //CHECK_GL(glEnable(GL_POINT_SPRITE_ARB));
 
   vao = std::make_unique<VAO>();
 }

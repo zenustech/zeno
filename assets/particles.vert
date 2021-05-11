@@ -1,13 +1,15 @@
+#version 120
+
 uniform mat4 mVP;
 uniform mat4 mInvVP;
 uniform mat4 mView;
 uniform mat4 mProj;
 
-in vec3 vPosition;
-in vec3 vVelocity;
+attribute vec3 vPosition;
+attribute vec3 vVelocity;
 
-out vec3 position;
-out vec3 velocity;
+varying vec3 position;
+varying vec3 velocity;
 
 void main()
 {
@@ -15,5 +17,5 @@ void main()
   velocity = vVelocity;
 
   gl_Position = mVP * vec4(position, 1.0);
-  gl_PointSize = D_POINT_SIZE;
+  gl_PointSize = 5.0;
 }

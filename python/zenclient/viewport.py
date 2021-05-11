@@ -5,7 +5,7 @@ import numpy as np
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
-from PyQt5.QtOpenGL import QGLWidget
+from PyQt5.QtOpenGL import *
 
 import zenvis
 
@@ -90,7 +90,10 @@ class CameraControl:
 
 class ViewportWidget(QGLWidget):
     def __init__(self, parent=None):
-        super().__init__(parent)
+        fmt = QGLFormat()
+        fmt.setVersion(3, 0)
+        fmt.setProfile(QGLFormat.CoreProfile)
+        super().__init__(fmt, parent)
 
         self.camera = CameraControl()
 

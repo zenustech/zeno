@@ -1,7 +1,6 @@
 #include "stdafx.hpp"
 #include "IGraphic.hpp"
-#include "frames.hpp"
-#include "shader.hpp"
+#include "MyShader.hpp"
 #include "main.hpp"
 #include <zen/vec.h>
 #include <Hg/IOUtils.h>
@@ -20,7 +19,7 @@ struct GraphicPrimitive : IGraphic {
     ) {
     vertex_count = pos.size();
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-    std::vector<zen::vec3f> mem(vertex_count);
+    std::vector<zen::vec3f> mem(vertex_count * 2);
     for (int i = 0; i < vertex_count; i++) {
         mem[2 * i + 0] = pos[i];
         mem[2 * i + 1] = vel[i];
