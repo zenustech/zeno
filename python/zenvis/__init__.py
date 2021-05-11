@@ -1,5 +1,6 @@
 import zenlibs
 import zenapi
+from zenapi.zpmio import readzpm
 
 core = zenlibs.import_library('libzenvis')
 

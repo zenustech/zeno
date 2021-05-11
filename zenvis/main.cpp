@@ -1,6 +1,5 @@
 #include "stdafx.hpp"
 #include "main.hpp"
-#include "frames.hpp"
 #include "IGraphic.hpp"
 #include <Hg/FPSCounter.hpp>
 #include <sstream>
@@ -109,10 +108,6 @@ void new_frame() {
   CHECK_GL(glViewport(0, 0, nx, ny));
   paint_graphics();
   renderFPS.tick();
-}
-
-void load_file(std::string name, std::string ext, std::string path, int frameid) {
-    printf("load_file: %s\n", path.c_str());
 }
 
 void set_window_size(int nx_, int ny_) {
