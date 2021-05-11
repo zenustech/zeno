@@ -15,6 +15,14 @@ struct MyProgram : Program {
     auto _ = hg::split_str(hg::assign_conv<std::string>(shader), '\0');
     assert(_.size() == 2);
     auto vert = _[0], frag = _[1];
+    init(vert, frag);
+  }
+
+  MyProgram(std::string const &vert, std::string const &frag) {
+    init(vert, frag);
+  }
+
+  void init(std::string const &vert, std::string const &frag) {
     printf("=================\n");
     printf("(VERT)\n%s\n", vert.c_str());
     printf("=================\n");
@@ -38,6 +46,17 @@ Program *compile_program(std::vector<char> const &shader)
     return prog_cache.at(key).get();
 
   auto prog = std::make_unique<MyProgram>(shader);
+  auto prog_ptr = prog.get();
+  prog_cache[key] = std::move(prog);
+  return prog_ptr;
+}
+
+Program *compile_program(std::string const &vert, std::string const &frag)
+{
+  std::string key = "simple";
+  if (prog_cache.find(key) != prog_cache.end())
+    return prog_cache.at(key).get();
+  auto prog = std::make_unique<MyProgram>(vert, frag);
   auto prog_ptr = prog.get();
   prog_cache[key] = std::move(prog);
   return prog_ptr;

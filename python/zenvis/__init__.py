@@ -40,6 +40,7 @@ def _recieveStatus():
 def _frameUpdate():
     max_frameid = zenapi.getFrameCount(250)
     frameid = core.play_frameid(max_frameid)
+    core.clear_graphics()
     for name, ext, path in zenapi.getFrameFiles(frameid):
         core.load_file(name, ext, path, frameid)
 

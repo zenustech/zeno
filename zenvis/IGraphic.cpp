@@ -5,56 +5,39 @@
 
 namespace zenvis {
 
-std::unique_ptr<IGraphic> makeGraphicMesh(ObjectData const &obj);
-std::unique_ptr<IGraphic> makeGraphicParticles(ObjectData const &obj);
-
 std::vector<std::unique_ptr<IGraphic>> graphics;
 
+std::unique_ptr<IGraphic> makeGraphicPrimitive
+    ( std::vector<zen::vec3f> const &pos
+    , std::vector<zen::vec3f> const &vel
+    );
 
-void load_file(std::string name, std::string ext, std::string path, int frameid) {
-    printf("load_file: %s\n", path.c_str());
 
+std::unique_ptr<IGraphic> makeGraphic(std::string path, std::string ext) {
     if (ext == ".zpm") {
         auto prim = std::make_unique<zenbase::PrimitiveObject>();
-        zenbase::readzpm(prim.get(), path);
+        zenbase::readzpm(prim.get(), path.c_str());
         auto &pos = prim->attr<zen::vec3f>("pos");
+        auto &vel = prim->attr<zen::vec3f>("vel");
+        return makeGraphicPrimitive(pos, vel);
 
     } else {
         printf("%s\n", ext.c_str());
         assert(0 && "bad file extension name");
     }
+    return nullptr;
 }
 
-void update_frame_graphics() {
-    static int last_frameid = -2;
-    if (last_frameid == curr_frameid)
-        return;
-    last_frameid = curr_frameid;
 
+void clear_graphics() {
     graphics.clear();
+}
 
-    if (frames.find(curr_frameid) == frames.end()) {
-        printf("no frame cache at frame id: %d\n", curr_frameid);
-        return;
-    }
-    auto *frm = frames.at(curr_frameid).get();
+void load_file(std::string name, std::string ext, std::string path, int frameid) {
+    printf("load_file: %s\n", path.c_str());
 
-    for (auto const &obj : frm->objects) {
-        std::unique_ptr<IGraphic> gra;
-
-        if (obj->type == "MESH") {
-            gra = makeGraphicMesh(*obj);
-
-        } else if (obj->type == "PARS") {
-            gra = makeGraphicParticles(*obj);
-
-        } else {
-            printf("Bad object type: %s\n", obj->type.c_str());
-            continue;
-        }
-
-        graphics.push_back(std::move(gra));
-    }
+    auto ig = makeGraphic(path, ext);
+    graphics.push_back(std::move(ig));
 }
 
 }
