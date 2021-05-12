@@ -212,6 +212,10 @@ struct CalcOctreeAttrs : zen::INode {
                 }
             }
         }
+        for (int no = 0; no < children.size(); no++) {
+            if (tree->mass[no] != 0)
+                tree->CoM[no] /= tree->mass[no];
+        }
     }
 };
 
