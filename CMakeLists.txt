@@ -6,13 +6,13 @@ option(ZS_WITH_OPENVDB "Enable OpenVDB" ON)
 option(ZS_RELEASE_MODE "Enable Release Build" ON)
 
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if (ZS_RELEASE_MODE)
     set(CMAKE_BUILD_TYPE Release)
 else()
     set(CMAKE_BUILD_TYPE Debug)
 endif()
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 
 # core
