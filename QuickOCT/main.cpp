@@ -146,7 +146,7 @@ struct LinearOctree : zen::INode {
     while (!stack.empty()) {
         int pid = stack.top(); stack.pop();
         int k, curr = 0;
-        for (k = 27; k >= 0; k -= 3) {
+        for (k = 60 - 3; k >= 0; k -= 3) {
             int sel = (mc[pid] >> k) & 7;
             int ch = children[curr][sel];
             if (ch == 0) {  // empty
@@ -165,7 +165,7 @@ struct LinearOctree : zen::INode {
             }
         }
         if (k < 0) {  // the difference of star pos < 1 / 1048576
-            printf("ERROR: particle morton code overlap!\n");
+            printf("ERROR: particle morton code overlap 0x%lX!\n", mc[pid]);
         }
     }
 
@@ -200,7 +200,7 @@ struct CalcOctreeAttrs : zen::INode {
         tree->mass.resize(children.size());
         tree->CoM.resize(children.size());
 
-        //#pragma omp parallel for
+        #pragma omp parallel for
         for (int no = 0; no < children.size(); no++) {
             std::stack<int> stack;
             stack.push(no);
@@ -306,6 +306,49 @@ static int defComputeGravity = zen::defNodeClass<ComputeGravity>("ComputeGravity
     {"float", "G", "1.0 0"},
     {"float", "eps", "0.0001 0"},
     {"float", "lam", "1.0 0"},
+    }, /* category: */ {
+    "NBodySolver",
+    }});
+
+
+struct DirectComputeGravity : zen::INode {
+  virtual void apply() override {
+    auto stars = get_input("stars")->as<PrimitiveObject>();
+    auto &mass = stars->attr<float>("mass");
+    auto &pos = stars->attr<zen::vec3f>("pos");
+    auto &vel = stars->attr<zen::vec3f>("vel");
+    auto &acc = stars->attr<zen::vec3f>("acc");
+    auto G = std::get<float>(get_param("G"));
+    auto eps = std::get<float>(get_param("eps"));
+    printf("computing gravity...\n");
+    for (int i = 0; i < stars->size(); i++) {
+        acc[i] = zen::vec3f(0);
+    }
+    #pragma omp parallel for
+    for (int i = 0; i < stars->size(); i++) {
+        for (int j = 0; j < stars->size(); j++) {
+            auto rij = pos[j] - pos[i];
+            rij *= invpow3(rij, eps);
+            acc[i] += mass[j] * rij;
+        }
+    }
+    printf("computing gravity done\n");
+    for (int i = 0; i < stars->size(); i++) {
+        acc[i] *= G;
+    }
+
+    set_output_ref("stars", get_input_ref("stars"));
+  }
+};
+
+static int defDirectComputeGravity = zen::defNodeClass<DirectComputeGravity>("DirectComputeGravity",
+    { /* inputs: */ {
+    "stars",
+    }, /* outputs: */ {
+    "stars",
+    }, /* params: */ {
+    {"float", "G", "1.0 0"},
+    {"float", "eps", "0.0001 0"},
     }, /* category: */ {
     "NBodySolver",
     }});
