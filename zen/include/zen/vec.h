@@ -295,7 +295,7 @@ inline auto length(vec<N, T> const &a) {
     for (size_t i = 0; i < N; i++) {
         res += a[i] * a[i];
     }
-    return res;
+    return std::sqrt(res);
 }
 
 template <size_t N, class T>

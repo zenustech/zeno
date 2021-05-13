@@ -35,7 +35,7 @@ static void writezpm(PrimitiveObject const *prim, const char *path) {
         _PER_ALTER(zen::vec3f, "3f")
 #undef _PER_ALTER
         } else {
-            printf("%s\n", name);
+            //printf("%s\n", name);
             assert(0 && "Bad primitive variant type");
         }
         fwrite(type, 4, 1, fp);
@@ -67,16 +67,16 @@ static void readzpm(PrimitiveObject *prim, const char *path) {
 
     size_t size = 0;
     fread(&size, sizeof(size), 1, fp);
-    printf("size = %zd\n", size);
+    //printf("size = %zd\n", size);
     prim->resize(size);
 
     int count = 0;
     fread(&count, sizeof(count), 1, fp);
-    printf("count = %d\n", count);
+    //printf("count = %d\n", count);
     assert(count < 1024);
 
     for (int i = 0; i < count; i++) {
-        printf("parsing attr %d\n", i);
+        //printf("parsing attr %d\n", i);
 
         char type[5];
         fread(type, 4, 1, fp);
@@ -84,14 +84,14 @@ static void readzpm(PrimitiveObject *prim, const char *path) {
 
         size_t namelen = 0;
         fread(&namelen, sizeof(namelen), 1, fp);
-        printf("attr namelen = %zd\n", namelen);
+        //printf("attr namelen = %zd\n", namelen);
         assert(namelen < 1024);
         char namebuf[namelen + 1];
         fread(namebuf, sizeof(namebuf[0]), namelen, fp);
         namebuf[namelen] = '\0';
         std::string name(namebuf);
 
-        printf("attr `%s` of type `%s`\n", namebuf, type);
+        //printf("attr `%s` of type `%s`\n", namebuf, type);
 
         if (0) {
 #define _PER_ALTER(T, id) \
@@ -101,7 +101,7 @@ static void readzpm(PrimitiveObject *prim, const char *path) {
         _PER_ALTER(zen::vec3f, "3f")
 #undef _PER_ALTER
         } else {
-            printf("%s\n", name);
+            //printf("%s\n", name);
             assert(0 && "Bad primitive variant type");
         }
     }
@@ -109,7 +109,7 @@ static void readzpm(PrimitiveObject *prim, const char *path) {
 
     // assuming prim->m_attrs is an ordered map
     for (auto const &[key, _]: prim->m_attrs) {
-        printf("reading array of attr `%s`\n", key.c_str());
+        //printf("reading array of attr `%s`\n", key.c_str());
 
         std::visit([=](auto &attr) {
             assert(attr.size() == size);

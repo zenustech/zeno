@@ -238,6 +238,13 @@ static int defCalcOctreeAttrs = zen::defNodeClass<CalcOctreeAttrs>("CalcOctreeAt
     }});
 
 
+float invpow3(zen::vec3f const &a, float eps) {
+    float rr = zen::dot(a, a) + eps * eps;
+    float r = zen::sqrt(rr);
+    return 1 / (r * rr);
+}
+
+
 struct ComputeGravity : zen::INode {
   virtual void apply() override {
     auto stars = get_input("stars")->as<PrimitiveObject>();
@@ -265,14 +272,14 @@ struct ComputeGravity : zen::INode {
                     auto d2CoM = tree->CoM[curr] - pos[i];
                     float node_size = tree->scale / (1 << depth);
                     if (zen::length(d2CoM) > lam * node_size) {
-                        acc[i] += d2CoM * (tree->mass[curr] / zen::pow(zen::length(d2CoM), 3));
+                        acc[i] += d2CoM * tree->mass[curr] * invpow3(d2CoM, eps);
                     } else {
                         stack.push(std::make_tuple<int, int>((int)ch, depth + 1));
                     }
                 } else if (ch < 0) {  // leaf node
                     int pid = -1 - ch;
                     auto d2leaf = pos[pid] - pos[i];
-                    acc[i] += d2leaf * (mass[pid] / zen::pow(zen::length(d2leaf), 3));
+                    acc[i] += d2leaf * mass[pid] * invpow3(d2leaf, eps);
                 }
             }
         }

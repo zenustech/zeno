@@ -16,7 +16,7 @@ def getFrameFiles(frameid):
                 res.append((name, ext, path))
     except FileNotFoundError:
         pass
-    return res
+    return tuple(res)
 
 
 def getFrameCount(max_frameid):

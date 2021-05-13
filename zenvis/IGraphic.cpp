@@ -34,7 +34,7 @@ void clear_graphics() {
 }
 
 void load_file(std::string name, std::string ext, std::string path, int frameid) {
-    printf("load_file: %s\n", path.c_str());
+    //printf("load_file: %s\n", path.c_str());
 
     auto ig = makeGraphic(path, ext);
     graphics.push_back(std::move(ig));
