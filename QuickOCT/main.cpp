@@ -214,8 +214,8 @@ struct CalcOctreeAttrs : zen::INode {
                         stack.push(ch);
                     } else if (ch < 0) {  // leaf node
                         int pid = -1 - ch;
-                        tree->mass[curr] += mass[pid];
-                        tree->CoM[curr] += pos[pid] * mass[pid];
+                        tree->mass[no] += mass[pid];
+                        tree->CoM[no] += pos[pid] * mass[pid];
                     }
                 }
             }
@@ -225,6 +225,9 @@ struct CalcOctreeAttrs : zen::INode {
             if (tree->mass[no] != 0)
                 tree->CoM[no] /= tree->mass[no];
         }
+
+        printf("total mass %f at %f %f %f\n", tree->mass[0],
+            tree->CoM[0][0], tree->CoM[0][1], tree->CoM[0][2]);
 
         set_output_ref("tree", get_input_ref("tree"));
     }
@@ -270,17 +273,17 @@ struct ComputeGravity : zen::INode {
         stack.push(std::make_tuple<int, int>(0, 0));
         while (!stack.empty()) {
             auto [curr, depth] = stack.top(); stack.pop();
+            auto d2CoM = tree->CoM[curr] - pos[i];
+            float node_size = tree->radius / (1 << depth);
+            if (zen::length(d2CoM) > lam * node_size) {
+                //printf("accel %d by far %d %f %d\n", i, curr, node_size, depth);
+                acc[i] += d2CoM * tree->mass[curr] * invpow3(d2CoM, eps);
+                continue;
+            }
             for (int sel = 0; sel < 8; sel++) {
                 int ch = tree->children[curr][sel];
                 if (ch > 0) {  // child node
-                    auto d2CoM = tree->CoM[ch] - pos[i];
-                    float node_size = tree->radius / (1 << (depth + 1));
-                    if (zen::length(d2CoM) > lam * node_size) {
-                        //printf("accel %d by far %d %f %d\n", i, ch, node_size, depth);
-                        acc[i] += d2CoM * tree->mass[ch] * invpow3(d2CoM, eps);
-                    } else {
-                        stack.push(std::make_tuple<int, int>((int)ch, depth + 1));
-                    }
+                    stack.push(std::make_tuple<int, int>((int)ch, depth + 1));
                 } else if (ch < 0) {  // leaf node
                     int pid = -1 - ch;
                     auto d2leaf = pos[pid] - pos[i];
