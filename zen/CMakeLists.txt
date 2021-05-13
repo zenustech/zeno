@@ -1,5 +1,4 @@
 file(GLOB PROJECT_SOURCE include/*/*.h *.cpp view/*.cpp mesh/*.cpp pars/*.cpp prim/*.cpp)
-file(GLOB VDB_SOURCE include/*/*.h *.cpp view/*.cpp mesh/*.cpp pars/*.cpp vdb/*.cpp)
 
 add_library(zen SHARED ${PROJECT_SOURCE})
 target_include_directories(zen PRIVATE ../include)
