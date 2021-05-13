@@ -37,16 +37,21 @@ def _recieveStatus():
     })
 
 
+old_frameid = -2
+
 def _frameUpdate():
+    global old_frameid
     max_frameid = zenapi.getFrameCount(250)
-    old_frameid = frameid = core.get_curr_frameid()
+    frameid = core.get_curr_frameid()
     if status['playing']:
-      frameid = min(frameid + 1, max_frameid - 1)
+        frameid += 1
+    frameid = min(frameid, max_frameid - 1)
     core.set_curr_frameid(frameid)
     if old_frameid != frameid:
         core.clear_graphics()
         for name, ext, path in zenapi.getFrameFiles(frameid):
             core.load_file(name, ext, path, frameid)
+    old_frameid = frameid
 
 
 def initializeGL():
