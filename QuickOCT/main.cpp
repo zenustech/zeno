@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/PrimitiveObject.h>
+#include <zen/NumericObject.h>
 #include "OctreeObject.h"
 #include <algorithm>
 #include <numeric>
@@ -48,7 +49,7 @@ struct AdvectStars : zen::INode {
     auto &pos = stars->attr<zen::vec3f>("pos");
     auto &vel = stars->attr<zen::vec3f>("vel");
     auto &acc = stars->attr<zen::vec3f>("acc");
-    auto dt = std::get<float>(get_param("dt"));
+    auto dt = get_input("dt")->as<NumericObject>()->get<float>();
     #pragma omp parallel for
     for (int i = 0; i < stars->size(); i++) {
         pos[i] += vel[i] * dt + acc[i] * (dt * dt / 2);
@@ -62,10 +63,10 @@ struct AdvectStars : zen::INode {
 static int defAdvectStars = zen::defNodeClass<AdvectStars>("AdvectStars",
     { /* inputs: */ {
     "stars",
+    "dt",
     }, /* outputs: */ {
     "stars",
     }, /* params: */ {
-    {"float", "dt", "0.01 0"},
     }, /* category: */ {
     "NBodySolver",
     }});
@@ -150,7 +151,7 @@ struct LinearOctree : zen::INode {
             int ch = children[curr][sel];
             if (ch == 0) {  // empty
                 // directly insert a leaf node
-                children[curr][sel] = -pid;
+                children[curr][sel] = -1 - pid;
                 break;
             } else if (ch > 0) {  // child node
                 // then visit into this node
@@ -269,16 +270,18 @@ struct ComputeGravity : zen::INode {
             for (int sel = 0; sel < 8; sel++) {
                 int ch = tree->children[curr][sel];
                 if (ch > 0) {  // child node
-                    auto d2CoM = tree->CoM[curr] - pos[i];
+                    auto d2CoM = tree->CoM[ch] - pos[i];
                     float node_size = tree->scale / (1 << depth);
                     if (zen::length(d2CoM) > lam * node_size) {
-                        acc[i] += d2CoM * tree->mass[curr] * invpow3(d2CoM, eps);
+                        //printf("accel %d by far %d\n", i, ch);
+                        acc[i] += d2CoM * tree->mass[ch] * invpow3(d2CoM, eps);
                     } else {
                         stack.push(std::make_tuple<int, int>((int)ch, depth + 1));
                     }
                 } else if (ch < 0) {  // leaf node
                     int pid = -1 - ch;
                     auto d2leaf = pos[pid] - pos[i];
+                    //printf("accel %d by near %d\n", i, pid);
                     acc[i] += d2leaf * mass[pid] * invpow3(d2leaf, eps);
                 }
             }
