@@ -220,6 +220,7 @@ struct CalcOctreeAttrs : zen::INode {
                 }
             }
         }
+        #pragma omp parallel for
         for (int no = 0; no < children.size(); no++) {
             if (tree->mass[no] != 0)
                 tree->CoM[no] /= tree->mass[no];
@@ -273,7 +274,7 @@ struct ComputeGravity : zen::INode {
                 int ch = tree->children[curr][sel];
                 if (ch > 0) {  // child node
                     auto d2CoM = tree->CoM[ch] - pos[i];
-                    float node_size = tree->radius / (1 << depth);
+                    float node_size = tree->radius / (1 << (depth + 1));
                     if (zen::length(d2CoM) > lam * node_size) {
                         //printf("accel %d by far %d %f %d\n", i, ch, node_size, depth);
                         acc[i] += d2CoM * tree->mass[ch] * invpow3(d2CoM, eps);
