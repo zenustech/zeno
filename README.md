@@ -17,7 +17,10 @@ pip install PyQt5
 
 3. build ZENO to binary
 ```bash
-make
+cmake -B build
+# if you don't have openvdb:
+# cmake -B build -DZS_WITH_OPENVDB:BOOL=OFF
+make -C build -j8
 ```
 
 4. run ZENO for development

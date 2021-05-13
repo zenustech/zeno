@@ -1,18 +1,32 @@
 cmake_minimum_required(VERSION 3.19)
 project(zeno LANGUAGES C CXX)
 
+
+option(ZS_WITH_OPENVDB "Enable OpenVDB" ON)
+option(ZS_RELEASE_MODE "Enable Release Build" ON)
+
+
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+if (ZS_RELEASE_MODE)
+    set(CMAKE_BUILD_TYPE Release)
+else()
+    set(CMAKE_BUILD_TYPE Debug)
+endif()
+
 
 # core
 add_subdirectory(zen)
-add_subdirectory(zenvdb)
 add_subdirectory(zenvis)
+if (ZS_WITH_OPENVDB)
+    add_subdirectory(zenvdb)
+endif()
 
 # apps
-add_subdirectory(FastFLIP)
 add_subdirectory(QuickOCT)
+if (ZS_WITH_OPENVDB)
+    add_subdirectory(FastFLIP)
+endif()
 
 # deps
 add_subdirectory(glad)
