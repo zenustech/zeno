@@ -12,6 +12,6 @@ struct OctreeObject : zen::IObject {  // should OctreeObject : PrimitiveObject?
     std::vector<float> mass;
 
     zen::vec3f offset;
-    float scale;
+    float radius;
 
 };

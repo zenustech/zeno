@@ -100,16 +100,18 @@ struct LinearOctree : zen::INode {
         bmin = zen::min(bmin, pos[i]);
         bmax = zen::max(bmax, pos[i]);
     }
-    auto scales = 1 / (bmax - bmin);
-    auto offset = -bmin * scales;
-    float scale = zen::max(scales[0], zen::max(scales[1], scales[2]));
+    bmin -= 1e-6;
+    bmax += 1e-6;
+    auto radii = bmax - bmin;
+    auto offset = -bmin / radii;
+    float radius = zen::max(radii[0], zen::max(radii[1], radii[2]));
 
     // compute morton code
     std::vector<unsigned long> mc(stars->size());
 
     #pragma omp parallel for
     for (int i = 0; i < stars->size(); i++) {
-        mc[i] = morton3d(pos[i] * scale + offset);
+        mc[i] = morton3d(pos[i] / radii + offset);
     }
 
 #if 0
@@ -133,7 +135,7 @@ struct LinearOctree : zen::INode {
     // construct octree
     auto tree = zen::IObject::make<OctreeObject>();
     tree->offset = offset;
-    tree->scale = scale;
+    tree->radius = radius;
 
     auto &children = tree->children;
     children.resize(1);
@@ -169,7 +171,7 @@ struct LinearOctree : zen::INode {
         }
     }
 
-    printf("LinearOctree: %zd stars -> %zd nodes\n", stars->size(), children.size());
+    printf("%zd stars, %zd nodes, radius %f\n", stars->size(), children.size(), radius);
     set_output("tree", tree);
     set_output_ref("stars", get_input_ref("stars"));
   }
@@ -271,9 +273,9 @@ struct ComputeGravity : zen::INode {
                 int ch = tree->children[curr][sel];
                 if (ch > 0) {  // child node
                     auto d2CoM = tree->CoM[ch] - pos[i];
-                    float node_size = tree->scale / (1 << depth);
+                    float node_size = tree->radius / (1 << depth);
                     if (zen::length(d2CoM) > lam * node_size) {
-                        //printf("accel %d by far %d\n", i, ch);
+                        //printf("accel %d by far %d %f %d\n", i, ch, node_size, depth);
                         acc[i] += d2CoM * tree->mass[ch] * invpow3(d2CoM, eps);
                     } else {
                         stack.push(std::make_tuple<int, int>((int)ch, depth + 1));
