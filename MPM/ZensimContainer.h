@@ -1,6 +1,6 @@
 #pragma once
 
-#include "zensim/container/Hashtable.hpp"
+#include "zensim/container/HashTable.hpp"
 #include <zen/zen.h>
 
 namespace zenbase {

@@ -6,7 +6,7 @@ project(MPM)
 # endif (POLICY CMP0104)
 enable_language(CXX)
 
-add_library(mpm SHARED main.cpp nosys/ToZensimParticles.cpp nosys/OutputZensimParticles.cpp nosys/ConstitutiveModels.cpp nosys/ToZensimLevelSet.cpp nosys/ZensimBoundary.cpp)
+add_library(mpm SHARED main.cpp nosys/ToZensimParticles.cpp nosys/OutputZensimParticles.cpp nosys/ConstitutiveModels.cpp nosys/ToZensimLevelSet.cpp nosys/ZensimBoundary.cpp nosys/PartitionForParticles.cpp)
 
 if (${ZS_ENABLE_CUDA})
     enable_language(CUDA)
@@ -14,8 +14,8 @@ if (${ZS_ENABLE_CUDA})
 endif()
 
 set_target_properties(mpm
-PROPERTIES  COMPILE_LANGUAGE CXX
-            LINKER_LANGUAGE CXX)
+  PROPERTIES  COMPILE_LANGUAGE CXX
+              LINKER_LANGUAGE CXX)
 target_compile_features(mpm PRIVATE cxx_std_17)
 # target_link_libraries(mpm PRIVATE culib)
 

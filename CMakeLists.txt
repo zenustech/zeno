@@ -16,6 +16,7 @@ if(CMAKE_CUDA_COMPILER)
     # add_library(zen)
 else()
     set(ZS_ENABLE_CUDA 0)
+    add_subdirectory(Zensim)
 endif()
 
 endif()
