@@ -3,7 +3,6 @@
 //#include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/geometry/VdbLevelSet.h"
 #include "zensim/simulation/sparsity/SparsityCompute.hpp"
-#include <zen/VDBGrid.h>
 
 namespace zenbase {
 
