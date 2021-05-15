@@ -18,6 +18,23 @@ struct P2G : zen::INode {
     auto stepDt = std::get<float>(get_param("dt"));
 
     auto cudaPol = zs::cuda_exec().device(0);
+#if 0
+    zs::match([](auto &m) { fmt::print("model type: {}\n", zs::demangle(m)); })(
+        model);
+    zs::match([](auto &p) {
+      fmt::print("particle type: {}\n", zs::demangle(p));
+    })(particles);
+    zs::match([](auto &t) { fmt::print("table type: {}\n", zs::demangle(t)); })(
+        partition);
+    zs::match([](auto &g) { fmt::print("grid type: {}\n", zs::demangle(g)); })(
+        grid);
+#elif 0
+    fmt::print("start displaying\n");
+    fmt::print("par {}\n", particles.index());
+    fmt::print("table {}\n", partition.index());
+    fmt::print("grid {}\n", grid.index());
+    fmt::print("model {}\n", model.index());
+#endif
     zs::match([&](auto &constitutiveModel, auto &obj, auto &partition,
                   auto &grid)
                   -> std::enable_if_t<
@@ -25,7 +42,11 @@ struct P2G : zen::INode {
                           zs::remove_cvref_t<decltype(partition)>::dim &&
                       zs::remove_cvref_t<decltype(obj)>::dim ==
                           zs::remove_cvref_t<decltype(grid)>::dim> {
-      // fmt::print("{} particles p2g\n", obj.size());
+#if 0
+      fmt::print("par addr: {}\n", obj.X.self().address());
+      fmt::print("table addr: {}\n", partition.self().address());
+      fmt::print("grid addr: {}\n", grid.blocks.self().address());
+#endif
       cudaPol({obj.size()},
               zs::P2GTransfer{zs::wrapv<zs::execspace_e::cuda>{},
                               zs::wrapv<zs::transfer_scheme_e::apic>{}, stepDt,
