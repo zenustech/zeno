@@ -1,10 +1,10 @@
 #include "../ZensimContainer.h"
 #include "../ZensimGeometry.h"
 #include "../ZensimModel.h"
+#include "zensim/cuda/container/HashTable.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/cuda/simulation/transfer/G2P.hpp"
 #include "zensim/cuda/simulation/transfer/P2G.hpp"
-#include "zensim/cuda/container/HashTable.hpp"
 
 namespace zenbase {
 
@@ -25,6 +25,7 @@ struct P2G : zen::INode {
                           zs::remove_cvref_t<decltype(partition)>::dim &&
                       zs::remove_cvref_t<decltype(obj)>::dim ==
                           zs::remove_cvref_t<decltype(grid)>::dim> {
+      // fmt::print("{} particles p2g\n", obj.size());
       cudaPol({obj.size()},
               zs::P2GTransfer{zs::wrapv<zs::execspace_e::cuda>{},
                               zs::wrapv<zs::transfer_scheme_e::apic>{}, stepDt,
@@ -56,6 +57,7 @@ struct G2P : zen::INode {
                           zs::remove_cvref_t<decltype(partition)>::dim &&
                       zs::remove_cvref_t<decltype(obj)>::dim ==
                           zs::remove_cvref_t<decltype(grid)>::dim> {
+      // fmt::print("{} particles g2p\n", obj.size());
       cudaPol({obj.size()},
               zs::G2PTransfer{zs::wrapv<zs::execspace_e::cuda>{},
                               zs::wrapv<zs::transfer_scheme_e::apic>{}, stepDt,

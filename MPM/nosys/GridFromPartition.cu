@@ -25,6 +25,7 @@ struct GridFromPartition : zen::INode {
     cudaPol(
         {(std::size_t)cnt, (std::size_t)GridT::block_t::space},
         zs::CleanGridBlocks{zs::wrapv<zs::execspace_e::cuda>{}, gridblocks});
+    // fmt::print("{} grid blocks from partition\n", cnt);
 
     grid->get() = gridblocks;
     set_output("ZSGrid", grid);
@@ -50,6 +51,7 @@ struct ExpandPartition : zen::INode {
               zs::EnlargeSparsity{zs::wrapv<zs::execspace_e::cuda>{}, partition,
                                   Table::key_t ::uniform(lo),
                                   Table::key_t ::uniform(hi)});
+    // fmt::print("expanded to {} grid blocks\n", partition.size());
     })(partition);
   }
 };

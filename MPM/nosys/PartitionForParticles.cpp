@@ -15,7 +15,15 @@ struct SpatialPartitionForParticles : zen::INode {
     // pass in FloatGrid::Ptr
     auto &particles = get_input("ZSParticles")->as<ZenoParticles>()->get();
 
+#if 1
     partition->get() = zs::partition_for_particles(particles, dx, blocklen);
+#else
+    auto tmp = zs::partition_for_particles(particles, dx, blocklen);
+    auto a = zs::match([](auto &t) { return t.size(); })(tmp);
+    auto b = zs::match([](auto &p) { return p.size(); })(particles);
+    fmt::print("{} blocks for {} particles\n", a, b);
+    partition->get() = std::move(tmp);
+#endif
 
     set_output("ZSPartition", partition);
   }

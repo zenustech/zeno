@@ -25,6 +25,7 @@ struct GridUpdate : zen::INode {
     auto cudaPol = zs::cuda_exec().device(0);
     zs::match([&](auto &partition, auto &grid) {
       using GridT = zs::remove_cvref_t<decltype(grid)>;
+      // fmt::print("updating {} grid blocks\n", partition.size());
       cudaPol(
           {(std::size_t)partition.size(), (std::size_t)GridT::block_t::space},
           zs::ComputeGridBlockVelocity{zs::wrapv<zs::execspace_e::cuda>{},
@@ -58,6 +59,7 @@ struct ResolveBoundaryOnGrid : zen::INode {
                     zs::remove_cvref_t<decltype(partition)>::dim &&
                 zs::remove_cvref_t<decltype(partition)>::dim ==
                     zs::remove_cvref_t<decltype(grid)>::dim> {
+          // fmt::print("projecting {} grid blocks\n", partition.size());
           using Grid = zs::remove_cvref_t<decltype(grid)>;
           cudaPol({(std::size_t)partition.size(),
                    (std::size_t)Grid::block_t::space},
