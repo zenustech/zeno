@@ -4,6 +4,8 @@ uniform mat4 mVP;
 uniform mat4 mInvVP;
 uniform mat4 mView;
 uniform mat4 mProj;
+uniform mat4 mInvView;
+uniform mat4 mInvProj;
 
 attribute vec3 vPosition;
 attribute vec3 vVelocity;
