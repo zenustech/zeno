@@ -16,6 +16,10 @@ void main()
   position = vPosition;
   velocity = vVelocity;
 
-  gl_Position = mVP * vec4(position, 1.0);
-  gl_PointSize = 5.0;
+  gl_Position = mVP * vec4(position, 1);
+  vec3 vpos = gl_Position.xyz;
+
+  float radius = 100.0;
+
+  gl_PointSize = radius / vpos.z;
 }
