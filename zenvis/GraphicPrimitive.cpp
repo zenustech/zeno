@@ -15,7 +15,7 @@ struct GraphicPrimitive : IGraphic {
 
   GraphicPrimitive
     ( std::vector<zen::vec3f> const &pos
-    , std::vector<zen::vec3f> const &vel
+    , std::vector<zen::vec3f> const &clr
     , std::string const &path
     ) {
     vertex_count = pos.size();
@@ -23,7 +23,7 @@ struct GraphicPrimitive : IGraphic {
     std::vector<zen::vec3f> mem(vertex_count * 2);
     for (int i = 0; i < vertex_count; i++) {
         mem[2 * i + 0] = pos[i];
-        mem[2 * i + 1] = vel[i];
+        mem[2 * i + 1] = clr[i];
     }
     vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
 
@@ -40,15 +40,15 @@ struct GraphicPrimitive : IGraphic {
 "uniform mat4 mProj;\n"
 "\n"
 "attribute vec3 vPosition;\n"
-"attribute vec3 vVelocity;\n"
+"attribute vec3 vVercolor;\n"
 "\n"
 "varying vec3 position;\n"
-"varying vec3 velocity;\n"
+"varying vec3 vercolor;\n"
 "\n"
 "void main()\n"
 "{\n"
 "  position = vPosition;\n"
-"  velocity = vVelocity;\n"
+"  vercolor = vVercolor;\n"
 "\n"
 "  gl_Position = mVP * vec4(position, 1.0);\n"
 "  gl_PointSize = 5.0;\n"
@@ -64,15 +64,13 @@ struct GraphicPrimitive : IGraphic {
 "uniform mat4 mProj;\n"
 "\n"
 "varying vec3 position;\n"
-"varying vec3 velocity;\n"
+"varying vec3 vercolor;\n"
 "\n"
 "void main()\n"
 "{\n"
 "  if (length(gl_PointCoord - vec2(0.5)) > 0.5)\n"
 "    discard;\n"
-"  float factor = length(velocity) / max(float(10), 1e-4);\n"
-"  vec3 color = mix(vec3(0.2, 0.3, 0.6), vec3(1.1, 0.8, 0.5), factor);\n"
-"  gl_FragColor = vec4(color, 1.0);\n"
+"  gl_FragColor = vec4(vercolor, 1.0);\n"
 "}\n";
     }
 
@@ -101,10 +99,10 @@ struct GraphicPrimitive : IGraphic {
 
 std::unique_ptr<IGraphic> makeGraphicPrimitive
     ( std::vector<zen::vec3f> const &pos
-    , std::vector<zen::vec3f> const &vel
+    , std::vector<zen::vec3f> const &clr
     , std::string const &path
     ) {
-  return std::make_unique<GraphicPrimitive>(pos, vel, path);
+  return std::make_unique<GraphicPrimitive>(pos, clr, path);
 }
 
 }

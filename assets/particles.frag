@@ -8,7 +8,7 @@ uniform mat4 mInvView;
 uniform mat4 mInvProj;
 
 varying vec3 position;
-varying vec3 velocity;
+varying vec3 vercolor;
 
 struct Light {
   vec3 dir;
@@ -69,7 +69,7 @@ void main()
   vec3 viewdir = -calcRayDir(position);
 
   Material material;
-  material.albedo = vec3(1.0, 1.0, 1.0);
+  material.albedo = vercolor;
   material.roughness = 0.4;
   material.metallic = 0.0;
   material.specular = 0.5;

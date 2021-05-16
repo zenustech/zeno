@@ -8,15 +8,15 @@ uniform mat4 mInvView;
 uniform mat4 mInvProj;
 
 attribute vec3 vPosition;
-attribute vec3 vVelocity;
+attribute vec3 vVercolor;
 
 varying vec3 position;
-varying vec3 velocity;
+varying vec3 vercolor;
 
 void main()
 {
   position = vPosition;
-  velocity = vVelocity;
+  vercolor = vVercolor;
 
   gl_Position = mVP * vec4(position, 1);
   vec3 vpos = gl_Position.xyz;
