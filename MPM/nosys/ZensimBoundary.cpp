@@ -15,7 +15,7 @@ struct ZensimBoundary : zen::INode {
         return zs::collider_e::Slip;
       else if (type == "separate")
         return zs::collider_e::Separate;
-      return {};
+      return zs::collider_e::Sticky;
     };
     // pass in FloatGrid::Ptr
     auto &ls = get_input("ZSLevelSet")->as<ZenoSparseLevelSet>()->get();

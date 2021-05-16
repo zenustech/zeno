@@ -1,5 +1,8 @@
 #include "../ZensimGeometry.h"
+// #include "zensim/geometry/GeometrySampler.h"
 #include "zensim/geometry/VdbLevelSet.h"
+// #include "zensim/geometry/VdbSampler.h"
+// #include "zensim/io/ParticleIO.hpp"
 #include <zen/VDBGrid.h>
 
 namespace zenbase {
@@ -20,11 +23,9 @@ struct ToZensimLevelSet : zen::INode {
 };
 
 static int defToZensimLevelSet = zen::defNodeClass<ToZensimLevelSet>(
-    "ToZensimLevelSet", {
-                            /* inputs: */ {"VDBFloatGrid"},
-                            /* outputs: */ {"ZSLevelSet"},
-                            /* params: */ {},
-                            /* category: */ {"simulation"}
-                        });
+    "ToZensimLevelSet", {/* inputs: */ {"VDBFloatGrid"},
+                         /* outputs: */ {"ZSLevelSet"},
+                         /* params: */ {},
+                         /* category: */ {"simulation"}});
 
 } // namespace zenbase
