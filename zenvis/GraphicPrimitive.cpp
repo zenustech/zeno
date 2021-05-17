@@ -72,7 +72,7 @@ struct GraphicPrimitive : IGraphic {
         GL_FLOAT, /*count=*/3);
 
     ebo->bind();
-    CHECK_GL(glDrawElements(GL_LINES, /*count=*/lines_count,
+    CHECK_GL(glDrawElements(GL_LINES, /*count=*/lines_count * 2,
           GL_UNSIGNED_INT, /*first=*/0));
     ebo->unbind();
 
