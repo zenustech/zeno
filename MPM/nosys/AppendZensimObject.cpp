@@ -11,6 +11,8 @@ struct PairZensimParticles : zen::INode {
   void apply() override {
     ZenoParticleObjects ret{};
     auto mergeParticles = [&](std::string paramStr) {
+      if (!has_input(paramStr))
+        return;
       if (get_input(paramStr)->as<ZenoParticles>())
         ret.push_back(get_input(paramStr)->as<ZenoParticles>());
       else if (get_input(paramStr)->as<ZenoParticleList>()) {
