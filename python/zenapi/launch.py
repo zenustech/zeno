@@ -12,6 +12,7 @@ from .descriptor import parse_descriptor_line
 std_header = '''
 import zen
 zen.loadLibrary('libOCTlib.so')
+zen.loadLibrary('libZMSlib.so')
 #zen.loadLibrary('libFLIPlib.so')
 '''
 

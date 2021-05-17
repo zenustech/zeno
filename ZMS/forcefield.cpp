@@ -1,0 +1,137 @@
+#include <zen/zen.h>
+#include <zen/PrimitiveObject.h>
+#include <zen/NumericObject.h>
+#include "Forcefield.h"
+
+using namespace zenbase;
+
+// Minimum image convention
+zen::vec3f ForceFieldObject::distance(zen::vec3f ri, zen::vec3f rj, float boxlength) {
+    auto d = ri - rj;
+    for (int i = 0; i < 3; i++) {
+        while (d[i] <= -0.5 * boxlength) d[i] += boxlength;
+        while (d[i] > 0.5 * boxlength) d[i] -= boxlength;
+    }
+    return d;
+}
+
+void ForceFieldObject::force(std::vector<zen::vec3f, std::allocator<zen::vec3f>> &pos,
+        std::vector<zen::vec3f, std::allocator<zen::vec3f>> &acc,
+        float boxlength) {
+    float mass = 1.0f; // TODO: add primitive type attribute and mass table
+    // External potental
+    int n = pos.size();
+    #pragma omp parallel for
+    for (int i = 0; i < n; i++) {
+        acc[i] = zen::vec3f(0.0f);
+        if (external != nullptr) {
+            acc[i] += external->force(pos[i]) / mass;
+        }
+    }
+    // Pairwise potential with cutoff
+    if (nonbond != nullptr) {
+        # pragma omp parallel for collapse(1)
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i != j) {
+                    auto d = distance(pos[i], pos[j], boxlength);
+                    float r2 = zen::length(d);
+                    if (r2 <= nonbond->rcut * nonbond->rcut) {
+                        //printf("%d %d %f %f %f %f\n", i, j, d[0], d[1], d[2], r2);
+                        auto force = nonbond->virial(r2) * d / r2;
+                        // Pairwise force is always along the distance direction
+                        acc[i] += force;
+                    }
+                }
+            }
+        }
+    }
+}
+
+float ForceFieldObject::energy(std::vector<zen::vec3f, std::allocator<zen::vec3f>> &pos,
+        float boxlength) {
+    float ep = 0.0f;
+    // External potental
+    int n = pos.size();
+    if (external != nullptr) {
+        #pragma omp parallel for
+        for (int i = 0; i < n; i++) {  
+            ep += external->energy(pos[i]);
+        }
+    }
+    // Pairwise potential with cutoff
+    if (nonbond != nullptr) {
+        # pragma omp parallel for reduction(+: ep) collapse(1) 
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < i; j++) {
+                auto d = distance(pos[i], pos[j], boxlength);
+                float r2 = zen::length(d);
+                if (r2 <= nonbond->rcut * nonbond->rcut)  {
+                    ep += nonbond->energy(r2);
+                }
+            }
+        }
+    }
+    return ep;
+}
+
+
+struct ApplyForce: zen::INode {
+  virtual void apply() override {
+    auto prim = get_input("prim")->as<PrimitiveObject>();
+    auto &pos = prim->attr<zen::vec3f>("pos");
+    auto &acc = prim->attr<zen::vec3f>("acc");
+    auto boxlength = get_input("boxlength")->as<NumericObject>()->get<float>();
+    
+    auto forcefield = get_input("forcefield")->as<ForceFieldObject>();
+    
+    // We strictly use conservative forces (no velocity argument)
+    // Mass of particles is contained in the force field;
+    // TODO: add primitive type attribute
+    forcefield->force(pos, acc, boxlength);
+    printf("Apply force\n");
+    set_output_ref("prim", get_input_ref("prim"));
+  }
+};
+
+static int defApplyForce = zen::defNodeClass<ApplyForce>("ApplyForce",
+    { /* inputs: */ {
+    "prim",
+    "forcefield",
+    "boxlength",
+    }, /* outputs: */ {
+    "prim",
+    }, /* params: */ {
+    }, /* category: */ {
+    "Molecular",
+    }});
+
+
+struct ForceField: zen::INode {
+  virtual void apply() override {
+    auto nonbond = get_input("nonbond");
+    //auto external = get_input("external");
+    auto forcefield = zen::IObject::make<ForceFieldObject>();
+    if (nonbond != nullptr) {
+      forcefield->nonbond = nonbond->as<IPairwiseInteraction>();
+    }
+    //if (external != nullptr) {
+    //  forcefield->external = external->as<ExternalInteraction>();
+    //}
+    set_output("forcefield", forcefield);
+  }
+};
+
+static int defForceField = zen::defNodeClass<ForceField>("ForceField",
+    { /* inputs: */ {
+    "nonbond",
+    "coulomb",
+    "bonded",
+    "external",
+    "mass",
+    }, /* outputs: */ {
+    "forcefield",
+    }, /* params: */ {
+    }, /* category: */ {
+    "Molecular",
+    }});
