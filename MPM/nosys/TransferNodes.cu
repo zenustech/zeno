@@ -5,6 +5,7 @@
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/cuda/simulation/transfer/G2P.hpp"
 #include "zensim/cuda/simulation/transfer/P2G.hpp"
+#include <zen/NumericObject.h>
 
 namespace zenbase {
 
@@ -15,7 +16,8 @@ struct P2G : zen::INode {
     auto &partition = get_input("ZSPartition")->as<ZenoPartition>()->get();
     auto &grid = get_input("ZSGrid")->as<ZenoGrid>()->get();
 
-    auto stepDt = std::get<float>(get_param("dt"));
+    // auto stepDt = std::get<float>(get_param("dt"));
+    auto stepDt = get_input("dt")->as<zenbase::NumericObject>()->get<float>();
 
     auto cudaPol = zs::cuda_exec().device(0);
 #if 0
@@ -56,10 +58,11 @@ struct P2G : zen::INode {
 };
 
 static int defP2G = zen::defNodeClass<P2G>(
-    "P2G", {/* inputs: */ {"ZSModel", "ZSParticles", "ZSGrid", "ZSPartition"},
-            /* outputs: */ {},
-            /* params: */ {{"float", "dt", "0.0001"}},
-            /* category: */ {"simulation"}});
+    "P2G",
+    {/* inputs: */ {"dt", "ZSModel", "ZSParticles", "ZSGrid", "ZSPartition"},
+     /* outputs: */ {},
+     /* params: */ {/*{"float", "dt", "0.0001"}*/},
+     /* category: */ {"simulation"}});
 
 struct G2P : zen::INode {
   void apply() override {
@@ -68,7 +71,8 @@ struct G2P : zen::INode {
     auto &partition = get_input("ZSPartition")->as<ZenoPartition>()->get();
     auto &particles = get_input("ZSParticles")->as<ZenoParticles>()->get();
 
-    auto stepDt = std::get<float>(get_param("dt"));
+    // auto stepDt = std::get<float>(get_param("dt"));
+    auto stepDt = get_input("dt")->as<zenbase::NumericObject>()->get<float>();
 
     auto cudaPol = zs::cuda_exec().device(0);
     zs::match([&](auto &constitutiveModel, auto &grid, auto &partition,
@@ -88,9 +92,10 @@ struct G2P : zen::INode {
 };
 
 static int defG2P = zen::defNodeClass<G2P>(
-    "G2P", {/* inputs: */ {"ZSModel", "ZSParticles", "ZSGrid", "ZSPartition"},
-            /* outputs: */ {},
-            /* params: */ {{"float", "dt", "0.0001"}},
-            /* category: */ {"simulation"}});
+    "G2P",
+    {/* inputs: */ {"dt", "ZSModel", "ZSParticles", "ZSGrid", "ZSPartition"},
+     /* outputs: */ {},
+     /* params: */ {/*{"float", "dt", "0.0001"}*/},
+     /* category: */ {"simulation"}});
 
 } // namespace zenbase

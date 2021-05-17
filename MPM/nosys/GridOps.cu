@@ -17,7 +17,8 @@ struct GridUpdate : zen::INode {
 
     auto &partition = get_input("ZSPartition")->as<ZenoPartition>()->get();
     auto &grid = get_input("ZSGrid")->as<ZenoGrid>()->get();
-    auto stepDt = std::get<float>(get_param("dt"));
+    // auto stepDt = std::get<float>(get_param("dt"));
+    auto stepDt = get_input("dt")->as<zenbase::NumericObject>()->get<float>();
     auto gravity = std::get<float>(get_param("gravity"));
 
     zs::Vector<float> velSqr{1, zs::memsrc_e::um, 0};
@@ -39,10 +40,10 @@ struct GridUpdate : zen::INode {
 };
 
 static int defGridUpdate = zen::defNodeClass<GridUpdate>(
-    "GridUpdate", {/* inputs: */ {"ZSPartition", "ZSGrid"},
+    "GridUpdate", {/* inputs: */ {"dt", "ZSPartition", "ZSGrid"},
                    /* outputs: */ {"MaxVelSqr"},
                    /* params: */
-                   {{"float", "dt", "1"}, {"float", "gravity", "-9.8"}},
+                   {/*{"float", "dt", "1"}, */ {"float", "gravity", "-9.8"}},
                    /* category: */ {"simulation"}});
 
 struct ResolveBoundaryOnGrid : zen::INode {
