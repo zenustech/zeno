@@ -17,7 +17,7 @@ struct MeshToPrimitive : zen::INode{
     result->add_attr<zen::vec3f>("uv");
     result->add_attr<zen::vec3f>("normal");
     result->resize(mesh->vertices.size());
-    result->triangles.resize(mesh->vertices.size()/3);
+    result->tris.resize(mesh->vertices.size()/3);
     result->quads.resize(0);
 
 #pragma omp parallel for
@@ -32,7 +32,7 @@ struct MeshToPrimitive : zen::INode{
 #pragma omp parallel for
     for(int i=0;i<mesh->vertices.size()/3;i++)
     {
-        result->triangles[i] = zen::vec3i(i*3, i*3+1, i*3+2);
+        result->tris[i] = zen::vec3i(i*3, i*3+1, i*3+2);
     }
     
     set_output("prim", result);

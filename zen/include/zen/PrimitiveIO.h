@@ -52,7 +52,21 @@ static void writezpm(PrimitiveObject const *prim, const char *path) {
         }, prim->attr(key));
     }
 
-    // TODO: export triangles too.
+    size = prim->points.size();
+    fwrite(&size, sizeof(size_t), 1, fp);
+    fwrite(prim->points.data(), sizeof(prim->points[0]), prim->points.size(), fp);
+
+    size = prim->lines.size();
+    fwrite(&size, sizeof(size_t), 1, fp);
+    fwrite(prim->lines.data(), sizeof(prim->lines[0]), prim->lines.size(), fp);
+
+    size = prim->tris.size();
+    fwrite(&size, sizeof(size_t), 1, fp);
+    fwrite(prim->tris.data(), sizeof(prim->tris[0]), prim->tris.size(), fp);
+
+    size = prim->quads.size();
+    fwrite(&size, sizeof(size_t), 1, fp);
+    fwrite(prim->quads.data(), sizeof(prim->quads[0]), prim->quads.size(), fp);
 
     fclose(fp);
 }
@@ -116,6 +130,22 @@ static void readzpm(PrimitiveObject *prim, const char *path) {
             fread(attr.data(), sizeof(attr[0]), size, fp);
         }, prim->attr(key));
     }
+
+    fread(&size, sizeof(size_t), 1, fp);
+    prim->points.resize(size);
+    fread(prim->points.data(), sizeof(prim->points[0]), prim->points.size(), fp);
+
+    fread(&size, sizeof(size_t), 1, fp);
+    prim->lines.resize(size);
+    fread(prim->lines.data(), sizeof(prim->lines[0]), prim->lines.size(), fp);
+
+    fread(&size, sizeof(size_t), 1, fp);
+    prim->tris.resize(size);
+    fread(prim->tris.data(), sizeof(prim->tris[0]), prim->tris.size(), fp);
+
+    fread(&size, sizeof(size_t), 1, fp);
+    prim->quads.resize(size);
+    fread(prim->quads.data(), sizeof(prim->quads[0]), prim->quads.size(), fp);
 
     fclose(fp);
 }

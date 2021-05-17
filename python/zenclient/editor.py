@@ -753,7 +753,7 @@ class NodeEditor(QWidget):
         self.edit_nframes = QLineEdit(self)
         self.edit_nframes.move(20, 40)
         self.edit_nframes.resize(30, 30)
-        self.edit_nframes.setText('250')
+        self.edit_nframes.setText('1')
 
         self.button_execute = QPushButton('Execute', self)
         self.button_execute.move(60, 40)

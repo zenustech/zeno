@@ -238,7 +238,7 @@ _PER_OP2(>=)
 #undef _PER_OP2
 
 #define _PER_OP1(op) \
-template <class T> \
+template <class T, std::enable_if_t<is_vec_v<T>, bool> = true> \
 inline auto operator op(T const &a) { \
   return vapply([] (auto const &x) { return op x; }, a); \
 }

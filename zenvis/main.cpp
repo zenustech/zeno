@@ -54,6 +54,8 @@ void set_program_uniforms(Program *pro) {
   pro->set_uniform("mInvVP", glm::inverse(pers));
   pro->set_uniform("mView", view);
   pro->set_uniform("mProj", proj);
+  pro->set_uniform("mInvView", glm::inverse(view));
+  pro->set_uniform("mInvProj", glm::inverse(proj));
 }
 
 static std::unique_ptr<VAO> vao;

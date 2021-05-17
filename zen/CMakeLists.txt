@@ -10,6 +10,7 @@ target_include_directories(zen PUBLIC include)
 
 find_package(OpenMP)
 if (TARGET OpenMP::OpenMP_CXX)
+    message("found package: OpenMP::OpenMP_CXX")
     target_link_libraries(zen PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
