@@ -8,8 +8,7 @@ namespace zenvis {
 std::vector<std::unique_ptr<IGraphic>> graphics;
 
 std::unique_ptr<IGraphic> makeGraphicPrimitive
-    ( std::vector<zen::vec3f> const &pos
-    , std::vector<zen::vec3f> const &clr
+    ( zenbase::PrimitiveObject *prim
     , std::string const &path
     );
 
@@ -18,9 +17,7 @@ std::unique_ptr<IGraphic> makeGraphic(std::string path, std::string ext) {
     if (ext == ".zpm") {
         auto prim = std::make_unique<zenbase::PrimitiveObject>();
         zenbase::readzpm(prim.get(), path.c_str());
-        auto &pos = prim->add_attr<zen::vec3f>("pos");
-        auto &clr = prim->add_attr<zen::vec3f>("clr");
-        return makeGraphicPrimitive(pos, clr, path);
+        return makeGraphicPrimitive(prim.get(), path);
 
     } else {
         //printf("%s\n", ext.c_str());

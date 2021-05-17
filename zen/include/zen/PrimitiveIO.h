@@ -52,21 +52,21 @@ static void writezpm(PrimitiveObject const *prim, const char *path) {
         }, prim->attr(key));
     }
 
-    size = points.size();
+    size = prim->points.size();
     fwrite(&size, sizeof(size_t), 1, fp);
-    fwrite(points.data(), sizeof(points[0]), points.size(), fp);
+    fwrite(prim->points.data(), sizeof(prim->points[0]), prim->points.size(), fp);
 
-    size = lines.size();
+    size = prim->lines.size();
     fwrite(&size, sizeof(size_t), 1, fp);
-    fwrite(lines.data(), sizeof(lines[0]), lines.size(), fp);
+    fwrite(prim->lines.data(), sizeof(prim->lines[0]), prim->lines.size(), fp);
 
-    size = tris.size();
+    size = prim->tris.size();
     fwrite(&size, sizeof(size_t), 1, fp);
-    fwrite(tris.data(), sizeof(tris[0]), tris.size(), fp);
+    fwrite(prim->tris.data(), sizeof(prim->tris[0]), prim->tris.size(), fp);
 
-    size = quads.size();
+    size = prim->quads.size();
     fwrite(&size, sizeof(size_t), 1, fp);
-    fwrite(quads.data(), sizeof(quads[0]), quads.size(), fp);
+    fwrite(prim->quads.data(), sizeof(prim->quads[0]), prim->quads.size(), fp);
 
     fclose(fp);
 }
@@ -132,20 +132,20 @@ static void readzpm(PrimitiveObject *prim, const char *path) {
     }
 
     fread(&size, sizeof(size_t), 1, fp);
-    points.resize(size);
-    fread(points.data(), sizeof(points[0]), points.size(), fp);
+    prim->points.resize(size);
+    fread(prim->points.data(), sizeof(prim->points[0]), prim->points.size(), fp);
 
     fread(&size, sizeof(size_t), 1, fp);
-    lines.resize(size);
-    fread(lines.data(), sizeof(lines[0]), lines.size(), fp);
+    prim->lines.resize(size);
+    fread(prim->lines.data(), sizeof(prim->lines[0]), prim->lines.size(), fp);
 
     fread(&size, sizeof(size_t), 1, fp);
-    tris.resize(size);
-    fread(tris.data(), sizeof(tris[0]), tris.size(), fp);
+    prim->tris.resize(size);
+    fread(prim->tris.data(), sizeof(prim->tris[0]), prim->tris.size(), fp);
 
     fread(&size, sizeof(size_t), 1, fp);
-    quads.resize(size);
-    fread(quads.data(), sizeof(quads[0]), quads.size(), fp);
+    prim->quads.resize(size);
+    fread(prim->quads.data(), sizeof(prim->quads[0]), prim->quads.size(), fp);
 
     fclose(fp);
 }

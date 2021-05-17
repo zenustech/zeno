@@ -5,6 +5,7 @@
 #include <zen/vec.h>
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
+#include <zen/PrimitiveObject.h>
 
 namespace zenvis {
 
@@ -14,10 +15,11 @@ struct GraphicPrimitive : IGraphic {
   std::unique_ptr<Buffer> vbo;
 
   GraphicPrimitive
-    ( std::vector<zen::vec3f> const &pos
-    , std::vector<zen::vec3f> const &clr
+    ( zenbase::PrimitiveObject *prim
     , std::string const &path
     ) {
+    auto const &pos = prim->add_attr<zen::vec3f>("pos");
+    auto const &clr = prim->add_attr<zen::vec3f>("clr");
     vertex_count = pos.size();
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     std::vector<zen::vec3f> mem(vertex_count * 2);
@@ -98,11 +100,10 @@ struct GraphicPrimitive : IGraphic {
 };
 
 std::unique_ptr<IGraphic> makeGraphicPrimitive
-    ( std::vector<zen::vec3f> const &pos
-    , std::vector<zen::vec3f> const &clr
+    ( zenbase::PrimitiveObject *prim
     , std::string const &path
     ) {
-  return std::make_unique<GraphicPrimitive>(pos, clr, path);
+  return std::make_unique<GraphicPrimitive>(prim, path);
 }
 
 }
