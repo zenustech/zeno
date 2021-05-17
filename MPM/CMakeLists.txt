@@ -6,7 +6,7 @@ project(MPM)
 # endif (POLICY CMP0104)
 enable_language(CXX)
 
-add_library(mpm SHARED main.cpp nosys/ToZensimParticles.cpp nosys/OutputZensimParticles.cpp nosys/ConstitutiveModels.cpp nosys/ToZensimLevelSet.cpp nosys/ZensimBoundary.cpp nosys/PartitionForParticles.cpp nosys/GridFromPartition.cu nosys/TransferNodes.cu nosys/GridOps.cu nosys/ToParticleObject.cpp)
+add_library(mpm SHARED main.cpp nosys/ToZensimParticles.cpp nosys/OutputZensimParticles.cpp nosys/ConstitutiveModels.cpp nosys/ToZensimLevelSet.cpp nosys/ZensimBoundary.cpp nosys/PartitionForParticles.cpp nosys/GridFromPartition.cu nosys/TransferNodes.cu nosys/GridOps.cu nosys/ToParticleObject.cpp nosys/AppendZensimObject.cpp)
 
 if (${ZS_ENABLE_CUDA})
     enable_language(CUDA)
