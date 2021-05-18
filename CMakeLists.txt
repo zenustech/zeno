@@ -24,6 +24,7 @@ endif()
 # core
 add_subdirectory(zen)
 add_subdirectory(zenvis)
+add_subdirectory(zenbase)
 add_subdirectory(glad)
 add_subdirectory(partio)
 add_subdirectory(QuickOCT)

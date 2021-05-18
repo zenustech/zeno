@@ -9,4 +9,4 @@ if (TARGET OpenMP::OpenMP_CXX)
     target_link_libraries(zen PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-target_link_libraries(OCTlib PRIVATE zen)
+target_link_libraries(OCTlib PRIVATE zen zenbase)

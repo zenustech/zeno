@@ -7,7 +7,7 @@ target_sources(zenvis PRIVATE ${PROJECT_SOURCE})
 target_include_directories(zenvis PRIVATE .)
 target_include_directories(zenvis PRIVATE ../zen/include)
 target_link_libraries(zenvis PRIVATE OpenGL glad)
-target_link_libraries(zenvis PRIVATE zen)
+target_link_libraries(zenvis PRIVATE zen zenbase)
 
 include(../cmake/ZenPybind11.cmake)
 do_python_bindings()
