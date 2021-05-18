@@ -10,9 +10,13 @@
 namespace zenvis {
 
 struct GraphicPrimitive : IGraphic {
-  Program *points_prog;
   std::unique_ptr<Buffer> vbo;
   size_t vertex_count;
+  bool draw_all_points;
+
+  Program *points_prog;
+  std::unique_ptr<Buffer> points_ebo;
+  size_t points_count;
 
   Program *lines_prog;
   std::unique_ptr<Buffer> lines_ebo;
@@ -37,17 +41,32 @@ struct GraphicPrimitive : IGraphic {
         mem[2 * i + 1] = clr[i];
     }
     vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
-    points_prog = get_points_program(path);
+
+    points_count = prim->points.size();
+    if (points_count) {
+        points_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+        points_ebo->bind_data(prim->points.data(), points_count * sizeof(prim->points[0]));
+        points_prog = get_points_program(path);
+    }
 
     lines_count = prim->lines.size();
-    lines_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
-    lines_ebo->bind_data(prim->lines.data(), lines_count * sizeof(prim->lines[0]));
-    lines_prog = get_lines_program(path);
+    if (lines_count) {
+        lines_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+        lines_ebo->bind_data(prim->lines.data(), lines_count * sizeof(prim->lines[0]));
+        lines_prog = get_lines_program(path);
+    }
 
     tris_count = prim->tris.size();
-    tris_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
-    tris_ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
-    tris_prog = get_tris_program(path);
+    if (tris_count) {
+        tris_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+        tris_ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
+        tris_prog = get_tris_program(path);
+    }
+
+    draw_all_points = !points_count && !lines_count && !tris_count;
+    if (draw_all_points) {
+        points_prog = get_points_program(path);
+    }
   }
 
   virtual void draw() override {
@@ -59,15 +78,27 @@ struct GraphicPrimitive : IGraphic {
         /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 6,
         GL_FLOAT, /*count=*/3);
 
-    points_prog->use();
-    set_program_uniforms(points_prog);
+    if (draw_all_points) {
+        //printf("ALLPOINTS\n");
+        points_prog->use();
+        set_program_uniforms(points_prog);
+        CHECK_GL(glDrawArrays(GL_POINTS, /*first=*/0, /*count=*/vertex_count));
+    }
 
-    CHECK_GL(glDrawArrays(GL_POINTS, /*first=*/0, /*count=*/vertex_count));
+    if (points_count) {
+        //printf("POINTS\n");
+        points_prog->use();
+        set_program_uniforms(points_prog);
+        points_ebo->bind();
+        CHECK_GL(glDrawElements(GL_POINTS, /*count=*/points_count * 2,
+              GL_UNSIGNED_INT, /*first=*/0));
+        points_ebo->unbind();
+    }
 
     if (lines_count) {
+        //printf("LINES\n");
         lines_prog->use();
         set_program_uniforms(lines_prog);
-
         lines_ebo->bind();
         CHECK_GL(glDrawElements(GL_LINES, /*count=*/lines_count * 2,
               GL_UNSIGNED_INT, /*first=*/0));
@@ -75,9 +106,9 @@ struct GraphicPrimitive : IGraphic {
     }
 
     if (tris_count) {
+        //printf("TRIS\n");
         tris_prog->use();
         set_program_uniforms(tris_prog);
-
         tris_ebo->bind();
         CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/tris_count * 3,
               GL_UNSIGNED_INT, /*first=*/0));
