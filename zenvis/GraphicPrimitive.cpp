@@ -10,13 +10,21 @@
 namespace zenvis {
 
 struct GraphicPrimitive : IGraphic {
-  Program *points_prog;
-  Program *lines_prog;
-
-  size_t vertex_count;
   std::unique_ptr<Buffer> vbo;
-  std::unique_ptr<Buffer> ebo;
+  size_t vertex_count;
+  bool draw_all_points;
+
+  Program *points_prog;
+  std::unique_ptr<Buffer> points_ebo;
+  size_t points_count;
+
+  Program *lines_prog;
+  std::unique_ptr<Buffer> lines_ebo;
   size_t lines_count;
+
+  Program *tris_prog;
+  std::unique_ptr<Buffer> tris_ebo;
+  size_t tris_count;
 
   GraphicPrimitive
     ( zenbase::PrimitiveObject *prim
@@ -34,18 +42,34 @@ struct GraphicPrimitive : IGraphic {
     }
     vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
 
-    lines_count = prim->lines.size();
-    ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
-    ebo->bind_data(prim->lines.data(), lines_count * sizeof(prim->lines[0]));
+    points_count = prim->points.size();
+    if (points_count) {
+        points_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+        points_ebo->bind_data(prim->points.data(), points_count * sizeof(prim->points[0]));
+        points_prog = get_points_program(path);
+    }
 
-    points_prog = get_points_program(path);
-    lines_prog = get_lines_program(path);
+    lines_count = prim->lines.size();
+    if (lines_count) {
+        lines_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+        lines_ebo->bind_data(prim->lines.data(), lines_count * sizeof(prim->lines[0]));
+        lines_prog = get_lines_program(path);
+    }
+
+    tris_count = prim->tris.size();
+    if (tris_count) {
+        tris_ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+        tris_ebo->bind_data(prim->tris.data(), tris_count * sizeof(prim->tris[0]));
+        tris_prog = get_tris_program(path);
+    }
+
+    draw_all_points = !points_count && !lines_count && !tris_count;
+    if (draw_all_points) {
+        points_prog = get_points_program(path);
+    }
   }
 
   virtual void draw() override {
-    points_prog->use();
-    set_program_uniforms(points_prog);
-
     vbo->bind();
     vbo->attribute(/*index=*/0,
         /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 6,
@@ -54,27 +78,42 @@ struct GraphicPrimitive : IGraphic {
         /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 6,
         GL_FLOAT, /*count=*/3);
 
-    CHECK_GL(glDrawArrays(GL_POINTS, /*first=*/0, /*count=*/vertex_count));
+    if (draw_all_points) {
+        //printf("ALLPOINTS\n");
+        points_prog->use();
+        set_program_uniforms(points_prog);
+        CHECK_GL(glDrawArrays(GL_POINTS, /*first=*/0, /*count=*/vertex_count));
+    }
 
-    vbo->disable_attribute(0);
-    vbo->disable_attribute(1);
-    vbo->unbind();
+    if (points_count) {
+        //printf("POINTS\n");
+        points_prog->use();
+        set_program_uniforms(points_prog);
+        points_ebo->bind();
+        CHECK_GL(glDrawElements(GL_POINTS, /*count=*/points_count * 2,
+              GL_UNSIGNED_INT, /*first=*/0));
+        points_ebo->unbind();
+    }
 
-    lines_prog->use();
-    set_program_uniforms(lines_prog);
+    if (lines_count) {
+        //printf("LINES\n");
+        lines_prog->use();
+        set_program_uniforms(lines_prog);
+        lines_ebo->bind();
+        CHECK_GL(glDrawElements(GL_LINES, /*count=*/lines_count * 2,
+              GL_UNSIGNED_INT, /*first=*/0));
+        lines_ebo->unbind();
+    }
 
-    vbo->bind();
-    vbo->attribute(/*index=*/0,
-        /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 6,
-        GL_FLOAT, /*count=*/3);
-    vbo->attribute(/*index=*/1,
-        /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 6,
-        GL_FLOAT, /*count=*/3);
-
-    ebo->bind();
-    CHECK_GL(glDrawElements(GL_LINES, /*count=*/lines_count * 2,
-          GL_UNSIGNED_INT, /*first=*/0));
-    ebo->unbind();
+    if (tris_count) {
+        //printf("TRIS\n");
+        tris_prog->use();
+        set_program_uniforms(tris_prog);
+        tris_ebo->bind();
+        CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/tris_count * 3,
+              GL_UNSIGNED_INT, /*first=*/0));
+        tris_ebo->unbind();
+    }
 
     vbo->disable_attribute(0);
     vbo->disable_attribute(1);
@@ -135,6 +174,58 @@ struct GraphicPrimitive : IGraphic {
   Program *get_lines_program(std::string const &path) {
     auto vert = hg::file_get_content(path + ".lines.vert");
     auto frag = hg::file_get_content(path + ".lines.frag");
+
+    if (vert.size() == 0) {
+      vert =
+"#version 120\n"
+"\n"
+"uniform mat4 mVP;\n"
+"uniform mat4 mInvVP;\n"
+"uniform mat4 mView;\n"
+"uniform mat4 mProj;\n"
+"uniform mat4 mInvView;\n"
+"uniform mat4 mInvProj;\n"
+"\n"
+"attribute vec3 vPosition;\n"
+"attribute vec3 vVercolor;\n"
+"\n"
+"varying vec3 position;\n"
+"varying vec3 vercolor;\n"
+"\n"
+"void main()\n"
+"{\n"
+"  position = vPosition;\n"
+"  vercolor = vVercolor;\n"
+"\n"
+"  gl_Position = mVP * vec4(position, 1.0);\n"
+"}\n";
+    }
+    if (frag.size() == 0) {
+      frag =
+"#version 120\n"
+"\n"
+"uniform mat4 mVP;\n"
+"uniform mat4 mInvVP;\n"
+"uniform mat4 mView;\n"
+"uniform mat4 mProj;\n"
+"uniform mat4 mInvView;\n"
+"uniform mat4 mInvProj;\n"
+"\n"
+"varying vec3 position;\n"
+"varying vec3 vercolor;\n"
+"\n"
+"void main()\n"
+"{\n"
+"  gl_FragColor = vec4(vercolor, 1.0);\n"
+"}\n";
+    }
+
+    return compile_program(vert, frag);
+  }
+
+  Program *get_tris_program(std::string const &path) {
+    auto vert = hg::file_get_content(path + ".tris.vert");
+    auto frag = hg::file_get_content(path + ".tris.frag");
 
     if (vert.size() == 0) {
       vert =

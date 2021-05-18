@@ -104,4 +104,27 @@ static int defPrimitiveSimpleQuads = zen::defNodeClass<PrimitiveSimpleQuads>("Pr
     "primitive",
     }});
 
+
+struct PrimitiveClearConnect : zen::INode {
+  virtual void apply() override {
+    auto prim = get_input("prim")->as<PrimitiveObject>();
+    prim->points.clear();
+    prim->lines.clear();
+    prim->tris.clear();
+    prim->quads.clear();
+
+    set_output_ref("prim", get_input_ref("prim"));
+  }
+};
+
+static int defPrimitiveClearConnect = zen::defNodeClass<PrimitiveClearConnect>("PrimitiveClearConnect",
+    { /* inputs: */ {
+    "prim",
+    }, /* outputs: */ {
+    "prim",
+    }, /* params: */ {
+    }, /* category: */ {
+    "primitive",
+    }});
+
 }
