@@ -11,9 +11,10 @@ from .descriptor import parse_descriptor_line
 
 std_header = '''
 import zen
+zen.loadLibrary('libzenbase.so')
+zen.loadLibrary('libzenvdb.so')
 zen.loadLibrary('libOCTlib.so')
 zen.loadLibrary('libFLIPlib.so')
-zen.loadLibrary('libzenvdb.so')
 '''
 
 iopath = '/tmp/zenio'
