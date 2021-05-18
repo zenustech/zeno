@@ -8,25 +8,21 @@ set(CMAKE_BUILD_TYPE Release)#Debug)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 
-# TODO: refactor this path to better
-# openvdb
-set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/lib/cmake/OpenVDB/)
+set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/lib/cmake/OpenVDB /usr/local/lib/cmake/OpenVDB)
 find_package(OpenVDB QUIET)
 option(ZS_ENABLE_OPENVDB "Enable OpenVDB" ON)
 if (NOT ${OpenVDB_FOUND})
     set(ZS_ENABLE_OPENVDB OFF)
-    message("OpenVDB turned off mandatorily")
 endif()
-# message("\n\n\nopenvdb find status: ${OpenVDB_FOUND}\n\n\n")
-# message("\n\n\nopenvdb status: ${ZS_ENABLE_OPENVDB}\n\n\n")
+message("==> OpenVDB find status: ${OpenVDB_FOUND}")
+message("==> OpenVDB enable status: ${ZS_ENABLE_OPENVDB}")
 
 
-# core
 add_subdirectory(zen)
 add_subdirectory(zenvis)
 add_subdirectory(zenbase)
-add_subdirectory(glad)
-add_subdirectory(partio)
+add_subdirectory(external/glad)
+add_subdirectory(external/partio)
 add_subdirectory(QuickOCT)
 if(ZS_ENABLE_OPENVDB)
     add_subdirectory(zenvdb)

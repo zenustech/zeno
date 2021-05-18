@@ -18,7 +18,7 @@ if (WIN32)
         OUTPUT_VARIABLE PYTHON_EXECUTABLE_PATH)
 else ()
     execute_process(COMMAND which ${PYTHON_EXECUTABLE}
-            OUTPUT_VARIABLE PYTHON_EXECUTABLE_PATH)
+        OUTPUT_VARIABLE PYTHON_EXECUTABLE_PATH)
 endif ()
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
         "import sys;\
