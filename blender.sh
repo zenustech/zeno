@@ -14,5 +14,9 @@ __import__('zenblend').register()
 EOF
 
 export PYTHONPATH=`pwd`/python
-export LD_LIBRARY_PATH=`pwd`/build/FastFLIP:`pwd`/build/QuickOCT
-optirun blender --python-use-system-env
+export LD_LIBRARY_PATH=`pwd`/build/FastFLIP:`pwd`/build/QuickOCT:`pwd`/build/zenvdb:`pwd`/build/zenbase
+if [ -z $USE_GDB ]; then
+    optirun blender --python-use-system-env
+else
+    optirun gdb blender -ex 'r --python-use-system-env'
+fi
