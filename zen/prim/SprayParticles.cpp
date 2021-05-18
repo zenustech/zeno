@@ -7,9 +7,6 @@
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
-#include "tbb/scalable_allocator.h"
-#include "tbb/concurrent_vector.h"
-#include "tbb/parallel_for.h"
 #include "iostream"
 
 namespace zenbase {
@@ -51,50 +48,48 @@ struct SprayParticles : zen::INode{
         auto channel = std::get<std::string>(get_param("channel"));
         auto prim = get_input("TrianglePrim")->as<PrimitiveObject>();
         auto result = zen::IObject::make<ParticlesObject>();
-        tbb::concurrent_vector<zen::vec3f> pos(0);
-        tbb::concurrent_vector<zen::vec3f> vel(0);
-        size_t n = prim->triangles.size();
+        std::vector<zen::vec3f> pos(0);
+        std::vector<zen::vec3f> vel(0);
+        size_t n = prim->tris.size();
         printf("%d\n",n);
         std::cout<<channel<<std::endl;
-        tbb::parallel_for((size_t)0, (size_t)n, (size_t)1, [&](size_t index)
+        #pragma omp parallel for
+        for (size_t index = 0; index < n; index++) {
+            zen::vec3f a, b, c;
+            zen::vec3i vi = prim->tris[index];
+            a = prim->attr<zen::vec3f>("pos")[vi[0]];
+            b = prim->attr<zen::vec3f>("pos")[vi[1]];
+            c = prim->attr<zen::vec3f>("pos")[vi[2]];
+            zen::vec3f e1 = b-a;
+            zen::vec3f e2 = c-a;
+            zen::vec3f dir1 = zen::normalize(e1);
+            zen::vec3f dir2 = zen::normalize(e2);
+            int in = zen::length(e1)/(0.5*dx);
+            int jn = zen::length(e2)/(0.5*dx);
+            zen::vec3f vel1 = prim->attr<zen::vec3f>(channel)[vi[0]];
+            zen::vec3f vel2 = prim->attr<zen::vec3f>(channel)[vi[1]];
+            zen::vec3f vel3 = prim->attr<zen::vec3f>(channel)[vi[2]];
+            for(int ii=0;ii<in;ii++)
             {
-                zen::vec3f a, b, c;
-                zen::vec3i vi = prim->triangles[index];
-                a = prim->attr<zen::vec3f>("pos")[vi[0]];
-                b = prim->attr<zen::vec3f>("pos")[vi[1]];
-                c = prim->attr<zen::vec3f>("pos")[vi[2]];
-                zen::vec3f e1 = b-a;
-                zen::vec3f e2 = c-a;
-                zen::vec3f dir1 = zen::normalize(e1);
-                zen::vec3f dir2 = zen::normalize(e2);
-                int in = zen::length(e1)/(0.5*dx);
-                int jn = zen::length(e2)/(0.5*dx);
-                zen::vec3f vel1 = prim->attr<zen::vec3f>(channel)[vi[0]];
-                zen::vec3f vel2 = prim->attr<zen::vec3f>(channel)[vi[1]];
-                zen::vec3f vel3 = prim->attr<zen::vec3f>(channel)[vi[2]];
-                for(int ii=0;ii<in;ii++)
+                for(int jj=0;jj<jn;jj++)
                 {
-                    for(int jj=0;jj<jn;jj++)
+                    zen::vec3f vij = a + (float)ii*0.5f*dx*dir1 + (float)jj*0.5f*dx*dir2;
+                    if(ptInTriangle(vij, a, b, c))
                     {
-                        zen::vec3f vij = a + (float)ii*0.5f*dx*dir1 + (float)jj*0.5f*dx*dir2;
-                        if(ptInTriangle(vij, a, b, c))
-                        {
-                            pos.emplace_back(vij);
-                            vel.emplace_back(baryCentricInterpolation(vel1,vel2,vel3, vij, a,b,c));
-                        }
+                        pos.emplace_back(vij);
+                        vel.emplace_back(baryCentricInterpolation(vel1,vel2,vel3, vij, a,b,c));
                     }
                 }
-
             }
-        );
+
+        }
         result->pos.resize(pos.size());
         result->vel.resize(vel.size());
-        tbb::parallel_for((size_t)0, (size_t)pos.size(), (size_t)1, [&](size_t index)
-            {
-                result->pos[index] = zen::vec_to_other<glm::vec3>(pos[index]);
-                result->vel[index] = zen::vec_to_other<glm::vec3>(vel[index]);
-            }
-        );
+        #pragma omp parallel for
+        for (size_t index = 0; index < pos.size(); index++) {
+            result->pos[index] = zen::vec_to_other<glm::vec3>(pos[index]);
+            result->vel[index] = zen::vec_to_other<glm::vec3>(vel[index]);
+        }
         set_output("particles", result);
     }
 };
