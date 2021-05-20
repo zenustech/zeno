@@ -68,6 +68,12 @@ struct PrimitiveObject : zen::IObject {
                 val.resize(m_size);
             }, val);
         }
+        points.resize(m_size);
+        #pragma omp parallel for
+        for(int i=0;i<m_size;i++)
+        {
+            points[i] = i;
+        }
     }
 };
 

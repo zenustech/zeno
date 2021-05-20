@@ -2,6 +2,7 @@
 Frame & substep control
 
 (pyb to zxx: actually should rename keywords -> stepcontrol?)
+-- keep it as keywords since stuff here may extend
 '''
 
 
@@ -31,6 +32,7 @@ def frameBegin():
     G.has_substep_executed = False
     G.has_time_step_integrated = False
     G.frame_time_elapsed = 0.0
+
 
 def frameEnd():
     G.frameid += 1
@@ -82,6 +84,32 @@ class GetFrameTime(INode):
         time = G.frame_time
         self.set_output('time', time)
 
+@defNodeClass
+class GetFrameNum(INode):
+    z_outputs = ['FrameNum']
+    z_categories = 'keywords'
+
+    def apply(self):
+        fnum = G.frameid
+        self.set_output('FrameNum', fnum)
+
+@defNodeClass
+class GetFramePortion(INode):
+    z_outputs = ['FramePortion']
+    z_categories = 'keywords'
+
+    def apply(self):
+        fprotion = G.frame_time_elapsed/G.frame_time
+        self.set_output('FramePortion', fprotion)
+
+@defNodeClass
+class GetTime(INode):
+    z_outputs = ['Time']
+    z_categories = 'keywords'
+
+    def apply(self):
+        time = G.frameid*G.frame_time + G.frame_time_elapsed
+        self.set_output('Time', time)
 
 @defNodeClass
 class GetFrameTimeElapsed(INode):

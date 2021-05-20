@@ -8,6 +8,9 @@
 #include <cstdlib>
 #include <cassert>
 #include "iostream"
+#include "tbb/scalable_allocator.h"
+#include "tbb/parallel_for.h"
+#include "tbb/concurrent_vector.h"
 
 namespace zenbase {
 //todo where to put this func???
@@ -26,7 +29,7 @@ bool ptInTriangle(zen::vec3f &p, zen::vec3f &p0, zen::vec3f &p1, zen::vec3f &p2)
     float s = (p0[1] * p2[0] - p0[0] * p2[1] + (p2[1] - p0[1]) * p[0] + (p0[0] - p2[0]) * p[1]) * sign;
     float t = (p0[0] * p1[1] - p0[1] * p1[0] + (p0[1] - p1[1]) * p[0] + (p1[0] - p0[0]) * p[1]) * sign;
     
-    return s > 0 && t > 0 && (s + t) < 2 * A * sign;
+    return s > 0 && t > 0 && ((s + t) < 2 * A * sign);
 }
 
 //to do where to put this func??
@@ -48,13 +51,12 @@ struct SprayParticles : zen::INode{
         auto channel = std::get<std::string>(get_param("channel"));
         auto prim = get_input("TrianglePrim")->as<PrimitiveObject>();
         auto result = zen::IObject::make<ParticlesObject>();
-        std::vector<zen::vec3f> pos(0);
-        std::vector<zen::vec3f> vel(0);
+        tbb::concurrent_vector<zen::vec3f> pos(0);
+        tbb::concurrent_vector<zen::vec3f> vel(0);
         size_t n = prim->tris.size();
         printf("%d\n",n);
         std::cout<<channel<<std::endl;
-        #pragma omp parallel for
-        for (size_t index = 0; index < n; index++) {
+        tbb::parallel_for( (size_t)0, (size_t)n, (size_t)1, [&](size_t index){
             zen::vec3f a, b, c;
             zen::vec3i vi = prim->tris[index];
             a = prim->attr<zen::vec3f>("pos")[vi[0]];
@@ -62,8 +64,8 @@ struct SprayParticles : zen::INode{
             c = prim->attr<zen::vec3f>("pos")[vi[2]];
             zen::vec3f e1 = b-a;
             zen::vec3f e2 = c-a;
-            zen::vec3f dir1 = zen::normalize(e1);
-            zen::vec3f dir2 = zen::normalize(e2);
+            zen::vec3f dir1 = e1/zen::length(e1);
+            zen::vec3f dir2 = e2/zen::length(e2);
             int in = zen::length(e1)/(0.5*dx);
             int jn = zen::length(e2)/(0.5*dx);
             zen::vec3f vel1 = prim->attr<zen::vec3f>(channel)[vi[0]];
@@ -82,7 +84,7 @@ struct SprayParticles : zen::INode{
                 }
             }
 
-        }
+        });
         result->pos.resize(pos.size());
         result->vel.resize(vel.size());
         #pragma omp parallel for
