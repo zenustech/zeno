@@ -10,7 +10,7 @@ add_library(mpm SHARED nosys/ToZensimParticles.cpp nosys/OutputZensimParticles.c
 
 if (${ZS_ENABLE_CUDA})
     enable_language(CUDA)
-    set_target_properties(mpm PROPERTIES CUDA_ARCHITECTURES OFF)
+    # set_target_properties(mpm PROPERTIES CUDA_ARCHITECTURES OFF)
     target_compile_features(mpm PRIVATE cuda_std_17)
 endif()
 
