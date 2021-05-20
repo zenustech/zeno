@@ -2,6 +2,7 @@
 Node Editor UI
 '''
 
+import os
 import json
 import random
 
@@ -10,8 +11,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
 from zenutils import go
-from zenwebcfg import zenapi
-import zenwebcfg
+import zenapi
 
 
 class QDMGraphicsScene(QGraphicsScene):
@@ -44,12 +44,14 @@ class QDMGraphicsScene(QGraphicsScene):
                 params[name] = value
 
             uipos = node.pos().x(), node.pos().y()
+            options = node.getOptions()
 
             data = {
                 'name': node.name,
                 'inputs': inputs,
                 'params': params,
                 'uipos': uipos,
+                'options': options,
             }
             nodes[node.ident] = data
 
@@ -69,11 +71,13 @@ class QDMGraphicsScene(QGraphicsScene):
             inputs = data['inputs']
             params = data['params']
             posx, posy = data['uipos']
+            options = data.get('options', [])  # for backward compatbility
 
             node = self.makeNode(name)
             node.setIdent(ident)
             node.setName(name)
             node.setPos(posx, posy)
+            node.setOptions(options)
 
             for name, value in params.items():
                 node.params[name].setValue(value)
@@ -95,7 +99,6 @@ class QDMGraphicsScene(QGraphicsScene):
         edge = QDMGraphicsEdge()
         edge.setSrcSocket(src)
         edge.setDstSocket(dst)
-        edge.updatePosition()
         edge.updatePath()
         self.addItem(edge)
 
@@ -192,23 +195,20 @@ class QDMGraphicsView(QGraphicsView):
                         item.removeAllEdges()
                         item = srcItem
 
-                    edge = QDMGraphicsPath()
+                    edge = QDMGraphicsTempEdge()
                     pos = self.mapToScene(event.pos())
-                    if item.isOutput:
-                        edge.setSrcPos(item.getCirclePos())
-                        edge.setDstPos(pos)
-                    else:
-                        edge.setSrcPos(pos)
-                        edge.setDstPos(item.getCirclePos())
+                    edge.setItem(item)
+                    edge.setEndPos(pos)
+                    edge.updatePath()
+                    self.dragingEdge = edge
                     self.scene().addItem(edge)
-                    self.dragingEdge = edge, item, True
                     self.scene().update()
 
             else:
                 item = self.itemAt(event.pos())
-                edge, srcItem, preserve = self.dragingEdge
+                edge = self.dragingEdge
                 if isinstance(item, QDMGraphicsSocket):
-                    self.addEdge(srcItem, item)
+                    self.addEdge(edge.item, item)
                 self.scene().removeItem(edge)
                 self.scene().update()
                 self.dragingEdge = None
@@ -218,14 +218,10 @@ class QDMGraphicsView(QGraphicsView):
     def mouseMoveEvent(self, event):
         if self.dragingEdge is not None:
             pos = self.mapToScene(event.pos())
-            edge, item, _ = self.dragingEdge
-            if item.isOutput:
-                edge.setSrcPos(item.getCirclePos())
-                edge.setDstPos(pos)
-            else:
-                edge.setSrcPos(pos)
-                edge.setDstPos(item.getCirclePos())
+            edge = self.dragingEdge
+            edge.setEndPos(pos)
             edge.updatePath()
+            self.scene().update()
 
         super().mouseMoveEvent(event)
 
@@ -273,18 +269,27 @@ class QDMGraphicsPath(QGraphicsPathItem):
         self.srcPos = QPointF(0, 0)
         self.dstPos = QPointF(0, 0)
 
-    def setSrcPos(self, pos):
-        self.srcPos = pos
-
-    def setDstPos(self, pos):
-        self.dstPos = pos
+    def setSrcDstPos(self, srcPos, dstPos):
+        self.srcPos = srcPos
+        self.dstPos = dstPos
 
     def paint(self, painter, styleOptions, widget=None):
+        self.updatePath()
+
         pen = QPen(QColor('#cc8844' if self.isSelected() else '#000000'))
         pen.setWidth(3)
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
         painter.drawPath(self.path())
+
+    '''
+    def boundingRect(self):
+        x0 = min(self.srcPos.x(), self.dstPos.x())
+        y0 = min(self.srcPos.y(), self.dstPos.y())
+        x1 = max(self.srcPos.x(), self.dstPos.x())
+        y1 = max(self.srcPos.y(), self.dstPos.y())
+        return QRectF(x0, y0, x1 - x0, y1 - y0)
+    '''
 
     def updatePath(self):
         path = QPainterPath(self.srcPos)
@@ -297,6 +302,28 @@ class QDMGraphicsPath(QGraphicsPathItem):
                     self.dstPos.x() - dist, self.dstPos.y(),
                     self.dstPos.x(), self.dstPos.y())
         self.setPath(path)
+
+
+class QDMGraphicsTempEdge(QDMGraphicsPath):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.item = None
+        self.endPos = None
+
+    def setItem(self, item):
+        self.item = item
+
+    def setEndPos(self, pos):
+        self.endPos = pos
+
+    def updatePath(self):
+        if self.item.isOutput:
+            self.setSrcDstPos(self.item.getCirclePos(), self.endPos)
+        else:
+            self.setSrcDstPos(self.endPos, self.item.getCirclePos())
+
+        super().updatePath()
 
 
 class QDMGraphicsEdge(QDMGraphicsPath):
@@ -317,16 +344,12 @@ class QDMGraphicsEdge(QDMGraphicsPath):
         socket.addEdge(self)
         self.dstSocket = socket
 
-    def updatePosition(self):
-        self.srcPos = self.srcSocket.getCirclePos()
-        self.dstPos = self.dstSocket.getCirclePos()
+    def updatePath(self):
+        srcPos = self.srcSocket.getCirclePos()
+        dstPos = self.dstSocket.getCirclePos()
+        self.setSrcDstPos(srcPos, dstPos)
 
-
-    def paint(self, painter, styleOptions, widget=None):
-        self.updatePosition()
-        self.updatePath()
-
-        super().paint(painter, styleOptions, widget)
+        super().updatePath()
 
     def remove(self):
         if self.srcSocket is not None:
@@ -404,6 +427,29 @@ class QDMGraphicsSocket(QGraphicsItem):
     def remove(self):
         for edge in list(self.edges):
             edge.remove()
+
+
+class QDMGraphicsButton(QGraphicsProxyWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.widget = QPushButton()
+        self.widget.clicked.connect(self.on_click)
+        self.setWidget(self.widget)
+        self.setChecked(False)
+
+    def on_click(self):
+        self.setChecked(not self.checked)
+
+    def setChecked(self, checked):
+        self.checked = checked
+        if self.checked:
+            self.widget.setStyleSheet('background-color: #cc6622; color: #333333')
+        else:
+            self.widget.setStyleSheet('background-color: #333333; color: #eeeeee')
+
+    def setText(self, text):
+        self.widget.setText(text)
 
 
 class QDMGraphicsParam(QGraphicsProxyWidget):
@@ -527,6 +573,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.params = {}
         self.inputs = {}
         self.outputs = {}
+        self.options = {}
         self.name = None
         self.ident = 'No{}'.format(random.randrange(1, 100000))
 
@@ -546,8 +593,27 @@ class QDMGraphicsNode(QGraphicsItem):
         self.name = name
         self.title.setPlainText(name)
 
+    def getOptions(self):
+        return [name for name, button in self.options.items() if button.checked]
+
+    def setOptions(self, options):
+        for name, button in self.options.items():
+            button.setChecked(name in options)
+
     def initSockets(self, inputs=(), outputs=(), params=()):
-        y = TEXT_HEIGHT * 0.1
+        y = TEXT_HEIGHT * 0.2
+
+        self.options['OUT'] = button = QDMGraphicsButton(self)
+        rect = QRectF(HORI_MARGIN, y, self.width / 2 - HORI_MARGIN * 1.5, 0)
+        button.setGeometry(rect)
+        button.setText('OUT')
+
+        self.options['MUTE'] = button = QDMGraphicsButton(self)
+        rect = QRectF(HORI_MARGIN * 0.5 + self.width / 2, y, self.width / 2 - HORI_MARGIN * 1.5, 0)
+        button.setGeometry(rect)
+        button.setText('MUTE')
+
+        y += TEXT_HEIGHT * 1.2
 
         self.params.clear()
         for index, (type, name, defl) in enumerate(params):
@@ -659,6 +725,11 @@ class NodeEditor(QWidget):
         #self.initConnect()
         self.refreshDescriptors()
 
+        if 'ZSG_OPEN' in os.environ:
+            path = os.environ['ZSG_OPEN']
+            self.do_open(path)
+            self.current_path = path
+
     def initShortcuts(self):
         self.msgF5 = QShortcut(QKeySequence('F5'), self)
         self.msgF5.activated.connect(self.on_execute)
@@ -703,6 +774,7 @@ class NodeEditor(QWidget):
 
     def on_connect(self):
         baseurl = self.edit_baseurl.text()
+        import zenwebcfg
         zenwebcfg.connectServer(baseurl)
         self.refreshDescriptors()
 

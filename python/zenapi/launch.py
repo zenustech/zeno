@@ -3,7 +3,7 @@ import runpy
 import shutil
 import tempfile
 import multiprocessing as mp
-from zenutils import run_script, mock_ld_library_path
+from zenutils import run_script, add_line_numbers
 
 from .codegen import generate_script
 from .descriptor import parse_descriptor_line
@@ -11,13 +11,14 @@ from .descriptor import parse_descriptor_line
 
 std_header = '''
 import zen
+zen.loadLibrary('libzenbase.so')
+zen.loadLibrary('libzenvdb.so')
 zen.loadLibrary('libOCTlib.so')
 zen.loadLibrary('libFLIPlib.so')
 zen.loadLibrary('libmpm.so')
 '''
 
 iopath = '/tmp/zenio'
-
 g_proc = None
 
 
@@ -30,7 +31,8 @@ def killProcess():
     if g_proc is None:
         print('worker process is not running')
         return
-    g_proc.kill()
+    g_proc.terminate()
+    print('worker process killed')
 
 
 def launchScript(script, nframes):
@@ -46,12 +48,16 @@ for frame in range({nframes}):
 \texecute()
 print('EXITING')
 '''
-    print(script)
-    global g_proc
-    g_proc = mp.Process(target=run_script, args=[script], daemon=True)
-    g_proc.start()
-    g_proc.join()
-    g_proc = None
+    print(add_line_numbers(script))
+    if 1:
+        global g_proc
+        g_proc = mp.Process(target=run_script, args=[script], daemon=True)
+        g_proc.start()
+        g_proc.join()
+        print('worker processed exited with', g_proc.exitcode)
+        g_proc = None
+    else:
+        run_script(script)
 
 def getDescriptors():
     script = std_header + f'''

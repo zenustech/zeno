@@ -11,3 +11,4 @@ from .kwd import *
 from .comm import *
 from .num import *
 from .file import *
+from .logic import *

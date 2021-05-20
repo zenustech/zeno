@@ -32,11 +32,7 @@ def frameBegin():
     G.has_time_step_integrated = False
     G.frame_time_elapsed = 0.0
 
-    if G.frameid == 0: addNode('EndFrame', 'endFrame')  # DELME on rfc
-
 def frameEnd():
-    applyNode('endFrame')  # DELME on rfc
-
     G.frameid += 1
 
 def substepBegin():
@@ -53,7 +49,7 @@ class RunBeforeFrame(INode):
     z_categories = 'misc'
 
     def apply(self):
-        cond = G.has_substep_executed
+        cond = not G.has_substep_executed
         self.set_output('cond', BooleanObject(cond))
 
 
@@ -63,7 +59,7 @@ class RunAfterFrame(INode):
     z_categories = 'misc'
 
     def apply(self):
-        cond = G.has_frame_completed
+        cond = G.has_frame_completed or not G.time_step_integrated
         self.set_output('cond', BooleanObject(cond))
 
 

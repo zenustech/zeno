@@ -5,6 +5,7 @@ import zenapi
 
 from .blender_io import renew_mesh, renew_object, renew_volume_object
 from .obj_mesh_io import readobj
+from zenapi.zpmio import readzpm
 
 
 curr_objects = set()
@@ -13,7 +14,14 @@ curr_objects = set()
 def loadFileIntoBlender(name, ext, path, frameid):
     frame_name = '{}:{:06d}'.format(name, frameid)
 
-    if ext == '.obj':
+    if ext == '.zpm':
+        attrs, conns = readzpm(path)
+        pos = attrs['pos'].tolist()
+        faces = conns[2]
+        mesh = renew_mesh(frame_name, pos=pos, faces=faces)
+        obj = renew_object(name, mesh)
+
+    elif ext == '.obj':
         verts, faces = readobj(path, simple=True)
         if faces is None:
             faces = []

@@ -30,8 +30,13 @@ def topology_sort(nodes):
 
         order.append(ident)
 
-    for ident in nodes.keys():
-        touch(ident)
+    for ident, data in nodes.items():
+        if 'options' in data:  # qt editor
+            if 'OUT' in data['options']:
+                touch(ident)
+        else:  # blender editor
+            if data['name'] == 'ExecutionOutput':
+                touch(ident)
 
     return order
 

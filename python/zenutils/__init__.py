@@ -5,6 +5,7 @@ import ctypes
 import tempfile
 import threading
 import functools
+import traceback
 from contextlib import contextmanager
 from multiprocessing import Pool
 
@@ -107,8 +108,15 @@ def run_script(src, callback=runpy.run_path):
         return callback(path)
 
 
-def load_library(path):
-    return ctypes.cdll.LoadLibrary(path)
+def load_library(path, ignore_errors=False):
+    if ignore_errors:
+        return ctypes.cdll.LoadLibrary(path)
+    else:
+        try:
+            return ctypes.cdll.LoadLibrary(path)
+        except OSError:
+            traceback.print_exc()
+            return None
 
 
 def import_library(libdir, name):
@@ -119,3 +127,10 @@ def import_library(libdir, name):
     finally:
         assert sys.path.pop(0) == libdir
     return module
+
+
+def add_line_numbers(script):
+    res = ''
+    for i, line in enumerate(script.splitlines()):
+        res += '{:4d} | {}\n'.format(i + 1, line)
+    return res

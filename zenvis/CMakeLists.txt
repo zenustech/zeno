@@ -1,12 +1,13 @@
 file(GLOB PROJECT_SOURCE "*.cpp" "*.hpp" "*.h")
 
 add_library(zenvis SHARED)
-target_include_directories(zenvis PRIVATE ../external)
-target_link_directories(zenvis PRIVATE ../external)
+target_include_directories(zenvis PRIVATE ../include)
 
 target_sources(zenvis PRIVATE ${PROJECT_SOURCE})
 target_include_directories(zenvis PRIVATE .)
-target_link_libraries(zenvis PRIVATE OpenGL GLEW glfw)
+target_include_directories(zenvis PRIVATE ../zen/include)
+target_include_directories(zenvis PRIVATE ../zenbase/include)
+target_link_libraries(zenvis PRIVATE OpenGL glad)
 
-include(../scripts/Pybind11.cmake)
+include(../cmake/ZenPybind11.cmake)
 do_python_bindings()
