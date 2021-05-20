@@ -15,14 +15,12 @@ sudo pacman -S make
 sudo pacman -S cmake
 sudo pacman -S python
 sudo pacman -S python-pip
-sudo pacman -S python-pybind11
+sudo pacman -S pybind11
 sudo pacman -S python-numpy
+sudo pacman -S python-pyqt5
 sudo pacman -S qt5-base
 sudo pacman -S libglvnd
 sudo pacman -S mesa
-
-pip install -U pip
-pip install PyQt5
 ```
 
 - Ubuntu 20.04
