@@ -4,11 +4,14 @@
 #include "../ZensimGeometry.h"
 #include "../ZensimModel.h"
 #include "zensim/simulation/mpm/Simulator.hpp"
+#include "zensim/tpls/fmt/color.h"
+#include "zensim/tpls/fmt/format.h"
 
 namespace zenbase {
 
 struct ToZensimParticles : zen::INode {
   void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ToZensimParticles\n");
     auto &model = get_input("ZSModel")->as<ZenoConstitutiveModel>()->get();
     auto inParticles = get_input("ParticleObject")->as<ParticlesObject>();
     auto outParticles = zen::IObject::make<ZenoParticles>();
@@ -65,6 +68,7 @@ struct ToZensimParticles : zen::INode {
             }
           })(model, outParticles->get());
     }
+    fmt::print(fg(fmt::color::cyan), "done executing ToZensimParticles\n");
     set_output("ZensimParticles", outParticles);
   }
 };

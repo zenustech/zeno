@@ -4,11 +4,14 @@
 
 #include "../ZensimGeometry.h"
 #include "../ZensimObject.h"
+#include "zensim/tpls/fmt/color.h"
+#include "zensim/tpls/fmt/format.h"
 
 namespace zenbase {
 
 struct PairZensimParticles : zen::INode {
   void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing PairZensimParticles\n");
     ZenoParticleObjects ret{};
     auto mergeParticles = [&](std::string paramStr) {
       if (!has_input(paramStr))
@@ -33,6 +36,7 @@ struct PairZensimParticles : zen::INode {
     auto particleList = zen::IObject::make<ZenoParticleList>();
     particleList->get() = std::move(ret);
     set_output("ZensimParticleList", particleList);
+    fmt::print(fg(fmt::color::cyan), "done executing PairZensimParticles\n");
   }
 };
 

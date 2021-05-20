@@ -5,11 +5,14 @@
 #include "zensim/cuda/simulation/grid/GridOp.hpp"
 #include "zensim/simulation/sparsity/SparsityCompute.hpp"
 #include "zensim/simulation/sparsity/SparsityOp.hpp"
+#include "zensim/tpls/fmt/color.h"
+#include "zensim/tpls/fmt/format.h"
 
 namespace zenbase {
 
 struct GridFromPartition : zen::INode {
   void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing GridFromPartition\n");
     auto &partition = get_input("ZSPartition")->as<ZenoPartition>()->get();
     auto mh =
         zs::match([](auto &partition) { return partition.base(); })(partition);
@@ -28,6 +31,7 @@ struct GridFromPartition : zen::INode {
     // fmt::print("{} grid blocks from partition\n", cnt);
 
     grid->get() = gridblocks;
+    fmt::print(fg(fmt::color::cyan), "done executing GridFromPartition\n");
     set_output("ZSGrid", grid);
   }
 };
@@ -40,6 +44,7 @@ static int defGridFromPartition = zen::defNodeClass<GridFromPartition>(
 
 struct ExpandPartition : zen::INode {
   void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ExpandPartition\n");
     auto &partition = get_input("ZSPartition")->as<ZenoPartition>()->get();
     auto lo = std::get<int>(get_param("lo"));
     auto hi = std::get<int>(get_param("hi"));
@@ -51,8 +56,9 @@ struct ExpandPartition : zen::INode {
               zs::EnlargeSparsity{zs::wrapv<zs::execspace_e::cuda>{}, partition,
                                   Table::key_t ::uniform(lo),
                                   Table::key_t ::uniform(hi)});
-    // fmt::print("expanded to {} grid blocks\n", partition.size());
+      // fmt::print("expanded to {} grid blocks\n", partition.size());
     })(partition);
+    fmt::print(fg(fmt::color::cyan), "done executing ExpandPartition\n");
   }
 };
 

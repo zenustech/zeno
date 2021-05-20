@@ -7,11 +7,15 @@
 #include "zensim/geometry/VdbLevelSet.h"
 #include "zensim/simulation/sparsity/SparsityCompute.hpp"
 #include "zensim/simulation/sparsity/SparsityOp.hpp"
+#include "zensim/tpls/fmt/color.h"
+#include "zensim/tpls/fmt/format.h"
 
 namespace zenbase {
 
 struct SpatialPartitionForParticles : zen::INode {
   void apply() override {
+    fmt::print(fg(fmt::color::green),
+               "begin executing SpatialPartitionForParticles\n");
     auto partition = zen::IObject::make<ZenoPartition>();
 
     auto dx = std::get<float>(get_param("dx"));
@@ -46,6 +50,8 @@ struct SpatialPartitionForParticles : zen::INode {
     }
     partition->get() = std::move(ret);
 
+    fmt::print(fg(fmt::color::cyan),
+               "done executing SpatialPartitionForParticles\n");
     set_output("ZSPartition", partition);
   }
 };

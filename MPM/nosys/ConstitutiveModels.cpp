@@ -1,11 +1,14 @@
 #include "../ZensimModel.h"
 
+#include "zensim/tpls/fmt/color.h"
+#include "zensim/tpls/fmt/format.h"
 #include <zen/zen.h>
 
 namespace zenbase {
 
 struct ModelEquationOfState : zen::INode {
   void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ModelEquationOfState\n");
     auto model = zen::IObject::make<ZenoConstitutiveModel>();
 
     zs::EquationOfStateConfig res{};
@@ -18,6 +21,7 @@ struct ModelEquationOfState : zen::INode {
 
     model->get() = res;
     set_output("Model", model);
+    fmt::print(fg(fmt::color::cyan), "done executing ModelEquationOfState\n");
   }
 };
 
@@ -37,6 +41,7 @@ static int defEquationOfStateConfig = zen::defNodeClass<ModelEquationOfState>(
 /// fixed corotated
 struct ModelFixedCorotated : zen::INode {
   void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing FixedCorotatedConfig\n");
     auto model = zen::IObject::make<ZenoConstitutiveModel>();
 
     zs::FixedCorotatedConfig res{};
@@ -47,6 +52,7 @@ struct ModelFixedCorotated : zen::INode {
     res.nu = std::get<float>(get_param("poisson_ratio"));
 
     model->get() = res;
+    fmt::print(fg(fmt::color::cyan), "done executing FixedCorotatedConfig\n");
     set_output("Model", model);
   }
 };

@@ -4,11 +4,14 @@
 #include <zen/zen.h>
 
 #include "../ZensimGeometry.h"
+#include "zensim/tpls/fmt/color.h"
+#include "zensim/tpls/fmt/format.h"
 
 namespace zenbase {
 
 struct ToParticleObject : zen::INode {
   void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ToParticleObject\n");
     auto &zspars = get_input("ZSParticles")->as<ZenoParticles>()->get();
     auto pars = zen::IObject::make<ParticlesObject>();
     auto &pos = pars->pos;
@@ -24,6 +27,7 @@ struct ToParticleObject : zen::INode {
         dst = glm::vec3{src[0], src[1], src[2]};
     })(zspars);
 
+    fmt::print(fg(fmt::color::cyan), "done executing ToParticleObject\n");
     set_output("pars", pars);
   }
 };

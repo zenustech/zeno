@@ -3,12 +3,15 @@
 #include "zensim/geometry/VdbLevelSet.h"
 // #include "zensim/geometry/VdbSampler.h"
 // #include "zensim/io/ParticleIO.hpp"
+#include "zensim/tpls/fmt/color.h"
+#include "zensim/tpls/fmt/format.h"
 #include <zen/VDBGrid.h>
 
 namespace zenbase {
 
 struct ToZensimLevelSet : zen::INode {
   void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ToZensimLevelSet\n");
     auto ls = zen::IObject::make<ZenoSparseLevelSet>();
 
     // auto path = std::get<std::string>(get_param("path"));
@@ -18,6 +21,7 @@ struct ToZensimLevelSet : zen::INode {
 
     ls->get() = zs::convertFloatGridToSparseLevelSet(
         gridPtr, zs::MemoryHandle{zs::memsrc_e::um, 0});
+    fmt::print(fg(fmt::color::cyan), "done executing ToZensimLevelSet\n");
     set_output("ZSLevelSet", ls);
   }
 };

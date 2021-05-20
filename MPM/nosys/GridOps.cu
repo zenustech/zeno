@@ -6,12 +6,15 @@
 #include "zensim/cuda/simulation/grid/GridOp.hpp"
 #include "zensim/geometry/VdbLevelSet.h"
 #include "zensim/simulation/sparsity/SparsityCompute.hpp"
+#include "zensim/tpls/fmt/color.h"
+#include "zensim/tpls/fmt/format.h"
 #include <zen/NumericObject.h>
 
 namespace zenbase {
 
 struct GridUpdate : zen::INode {
   void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing GridUpdate\n");
     // auto dt = get_input("dt")->as<zenbase::NumericObject>()->get<float>();
     auto maxVelSqr = zen::IObject::make<zenbase::NumericObject>();
 
@@ -35,6 +38,7 @@ struct GridUpdate : zen::INode {
     })(partition, grid);
 
     maxVelSqr->set<float>(velSqr[0]);
+    fmt::print(fg(fmt::color::cyan), "done executing GridUpdate\n");
     set_output("MaxVelSqr", maxVelSqr);
   }
 };
@@ -48,6 +52,8 @@ static int defGridUpdate = zen::defNodeClass<GridUpdate>(
 
 struct ResolveBoundaryOnGrid : zen::INode {
   void apply() override {
+    fmt::print(fg(fmt::color::green),
+               "begin executing ResolveBoundaryOnGrid\n");
     auto &partition = get_input("ZSPartition")->as<ZenoPartition>()->get();
     auto &grid = get_input("ZSGrid")->as<ZenoGrid>()->get();
     auto &boundary = get_input("ZSBoundary")->as<ZenoBoundary>()->get();
@@ -69,6 +75,7 @@ struct ResolveBoundaryOnGrid : zen::INode {
                       grid});
         },
         [](...) {})(boundary, partition, grid);
+    fmt::print(fg(fmt::color::cyan), "done executing ResolveBoundaryOnGrid\n");
   }
 };
 

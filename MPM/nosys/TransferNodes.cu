@@ -6,12 +6,15 @@
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/cuda/simulation/transfer/G2P.hpp"
 #include "zensim/cuda/simulation/transfer/P2G.hpp"
+#include "zensim/tpls/fmt/color.h"
+#include "zensim/tpls/fmt/format.h"
 #include <zen/NumericObject.h>
 
 namespace zenbase {
 
 struct P2G : zen::INode {
   void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing P2G\n");
     auto &model = get_input("ZSModel")->as<ZenoConstitutiveModel>()->get();
     // auto &particles = get_input("ZSParticles")->as<ZenoParticles>()->get();
     ZenoParticleObjects parObjPtrs{};
@@ -45,6 +48,7 @@ struct P2G : zen::INode {
                                     grid});
           })(model, particles, partition, grid);
     }
+    fmt::print(fg(fmt::color::cyan), "done executing P2G\n");
   }
 };
 
@@ -57,6 +61,7 @@ static int defP2G = zen::defNodeClass<P2G>(
 
 struct G2P : zen::INode {
   void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing G2P\n");
     auto &model = get_input("ZSModel")->as<ZenoConstitutiveModel>()->get();
     auto &grid = get_input("ZSGrid")->as<ZenoGrid>()->get();
     auto &partition = get_input("ZSPartition")->as<ZenoPartition>()->get();
@@ -90,6 +95,7 @@ struct G2P : zen::INode {
                                     obj});
           })(model, grid, partition, particles);
     }
+    fmt::print(fg(fmt::color::cyan), "done executing G2P\n");
   }
 };
 

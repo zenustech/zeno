@@ -1,10 +1,13 @@
 #include "../ZenoSimulation.h"
 #include "../ZensimGeometry.h"
+#include "zensim/tpls/fmt/color.h"
+#include "zensim/tpls/fmt/format.h"
 
 namespace zenbase {
 
 struct ZensimBoundary : zen::INode {
   void apply() override {
+    fmt::print(fg(fmt::color::green), "begin executing ZensinBoundary\n");
     auto boundary = zen::IObject::make<ZenoBoundary>();
 
     auto type = std::get<std::string>(get_param("type"));
@@ -21,6 +24,7 @@ struct ZensimBoundary : zen::INode {
     auto &ls = get_input("ZSLevelSet")->as<ZenoSparseLevelSet>()->get();
 
     boundary->get() = zs::LevelSetBoundary{ls, queryType()};
+    fmt::print(fg(fmt::color::cyan), "done executing ZensinBoundary\n");
     set_output("ZSBoundary", boundary);
   }
 };
