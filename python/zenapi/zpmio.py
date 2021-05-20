@@ -12,7 +12,7 @@ def fwrite(f, fmt, *args):
 
 def readzpm(path):
     attrs = {}
-    conns = [], [], [], []
+    conns = [None, None, None, None]
 
     with open(path, 'rb') as f:
         signature = f.read(8)
@@ -38,7 +38,14 @@ def readzpm(path):
             arr = np.frombuffer(data, dtype=type)
             attrs[name] = arr
 
-    # TODO: read topology connections too
+    for dim in [1, 2, 3, 4]:
+        size, = fread(f, 'N')
+        type = '{}I'.format(dim if dim != 1 else '')
+        n = struct.calcsize(type) * size
+        data = f.read(n)
+        arr = np.frombuffer(data, dtype=type)
+        conns[dim - 1] = arr
+
     return attrs, conns
 
 
@@ -88,8 +95,14 @@ def writezpm(path, attrs, conns=None):
             data = arr.tobytes()
             f.write(data)
 
-    # TODO: read topology connections too
-    return attrs, conns
+    for dim in [1, 2, 3, 4]:
+        arr = conns[dim - 1]
+        type = '{}I'.format(dim if dim != 1 else '')
+        if not isinstance(arr, np.ndarray):
+            arr = np.array(arr, dtype=type)
+        data = arr.tobytes()
+        fwrite(f, 'N', len(arr))
+        f.write(data)
 
 
 '''
