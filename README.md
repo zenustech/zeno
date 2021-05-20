@@ -14,7 +14,7 @@ sudo pacman -S git gcc make cmake python python-pip pybind11 python-numpy python
 
 - Ubuntu 20.04
 ```bash
-sudo apt-get install git gcc make cmake python-is-python3 python-dev-is-python3 python-pip-whl libqt5core5a qt5dxcb-plugin libglvnd-dev libglapi-mesa libosmesa6
+sudo apt-get install git gcc make cmake python-is-python3 python-dev-is-python3 python3-pp libqt5core5a qt5dxcb-plugin libglvnd-dev libglapi-mesa libosmesa6
 
 python --version  # make sure Python version >= 3.7
 python -m pip install -U pip
