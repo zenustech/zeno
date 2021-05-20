@@ -30,7 +30,7 @@ class MakeString(INode):
 
 @defNodeClass
 class ExportPath(INode):
-    z_params = [('string', 'name', '')]
+    z_params = [('string', 'name', 'out.zpm')]
     z_outputs = ['path']
     z_categories = 'imexport'
 
