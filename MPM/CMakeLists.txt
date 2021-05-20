@@ -47,7 +47,7 @@ target_compile_definitions(mpm
       PUBLIC        CMAKE_GENERATOR_PLATFORM=x64
     )
 
-target_link_libraries(mpm PRIVATE zen)
+target_link_libraries(mpm PRIVATE zen zenbase zenvdb)
 target_link_libraries(mpm PRIVATE zensim)
 
 #disable default malloc options
