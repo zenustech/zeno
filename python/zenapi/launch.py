@@ -48,7 +48,7 @@ for frame in range({nframes}):
 print('EXITING')
 '''
     print(add_line_numbers(script))
-    if 0:
+    if 1:
         global g_proc
         g_proc = mp.Process(target=run_script, args=[script], daemon=True)
         g_proc.start()

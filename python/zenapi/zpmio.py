@@ -95,14 +95,14 @@ def writezpm(path, attrs, conns=None):
             data = arr.tobytes()
             f.write(data)
 
-    for dim in [1, 2, 3, 4]:
-        arr = conns[dim - 1]
-        type = '{}I'.format(dim if dim != 1 else '')
-        if not isinstance(arr, np.ndarray):
-            arr = np.array(arr, dtype=type)
-        data = arr.tobytes()
-        fwrite(f, 'N', len(arr))
-        f.write(data)
+        for dim in [1, 2, 3, 4]:
+            arr = conns[dim - 1]
+            type = '{}I'.format(dim if dim != 1 else '')
+            if not isinstance(arr, np.ndarray):
+                arr = np.array(arr, dtype=type)
+            data = arr.tobytes()
+            fwrite(f, 'N', len(arr))
+            f.write(data)
 
 
 '''
