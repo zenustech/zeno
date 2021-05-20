@@ -1,7 +1,7 @@
 FROM archlinux
 
 COPY scripts/mirrorlist /etc/pacman.d/
-RUN pacman -Sy
+RUN pacman --noconfirm -Sy
 RUN pacman --noconfirm -S git
 RUN pacman --noconfirm -S gcc
 RUN pacman --noconfirm -S make
@@ -16,7 +16,8 @@ RUN pacman --noconfirm -S libglvnd
 RUN pacman --noconfirm -S mesa
 RUN pacman --noconfirm -S ttf-roboto
 
-RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+RUN python -m pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+
 RUN echo git clone https://gitee.com/archibate/zeno.git --depth=1 > /root/get-zeno.sh && chmod +x /root/get-zeno.sh
 
 ENTRYPOINT bash

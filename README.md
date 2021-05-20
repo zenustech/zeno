@@ -9,40 +9,16 @@ ZEn NOde system - a simple & unified way of computation by connecting node graph
 
 - Arch Linux
 ```bash
-sudo pacman -S git
-sudo pacman -S gcc
-sudo pacman -S make
-sudo pacman -S cmake
-sudo pacman -S python
-sudo pacman -S python-pip
-sudo pacman -S pybind11
-sudo pacman -S python-numpy
-sudo pacman -S python-pyqt5
-sudo pacman -S qt5-base
-sudo pacman -S libglvnd
-sudo pacman -S mesa
+sudo pacman -S git gcc make cmake python python-pip pybind11 python-numpy python-pyqt5 qt5-base libglvnd mesa
 ```
 
 - Ubuntu 20.04
 ```bash
-sudo apt-get install git
-sudo apt-get install gcc
-sudo apt-get install make
-sudo apt-get install cmake
-sudo apt-get install python-is-python3
-sudo apt-get install python-dev-is-python3
-sudo apt-get install python-pip-whl
-sudo apt-get install libqt5core5a
-sudo apt-get install qt5dxcb-plugin
-sudo apt-get install libglvnd-dev
-sudo apt-get install libglapi-mesa
-sudo apt-get install libosmesa6
+sudo apt-get install git gcc make cmake python-is-python3 python-dev-is-python3 python-pip-whl libqt5core5a qt5dxcb-plugin libglvnd-dev libglapi-mesa libosmesa6
 
 python --version  # make sure Python version >= 3.7
 python -m pip install -U pip
-python -m pip install pybind11
-python -m pip install numpy
-python -m pip install PyQt5
+python -m pip install pybind11 numpy PyQt5
 ```
 
 - Windows
@@ -51,19 +27,10 @@ Download and install [MSYS2 20210419](https://repo.msys2.org/distrib/x86_64/msys
 
 ```bash
 pacman -Sy
-pacman -S gcc
-pacman -S make
-pacman -S cmake
-pacman -S python
-pacman -S python-devel
-pacman -S python-pip
-pacman -S mingw-w64-x86_64-mesa
-pacman -S mingw-w64-x86_64-qt5
-pacman -S mingw-w64-x86_64-python-pyqt5
+pacman -S git gcc make cmake python python-devel python-pip mingw-w64-x86_64-mesa mingw-w64-x86_64-qt5 mingw-w64-x86_64-python-pyqt5
 
 python -m pip install -U pip
-python -m pip install pybind11
-python -m pip install numpy
+python -m pip install pybind11 numpy
 ```
 
 
