@@ -276,7 +276,7 @@ struct ComputeGravity : zen::INode {
             auto d2CoM = tree->CoM[curr] - pos[i];
             float node_size = tree->radius / (1 << depth);
             if (zen::length(d2CoM) > lam * node_size) {
-                //printf("accel %d by far %d %f %d\n", i, curr, node_size, depth);
+                printf("accel %d by far %d %f %d\n", i, curr, node_size, depth);
                 acc[i] += d2CoM * tree->mass[curr] * invpow3(d2CoM, eps);
                 continue;
             }
@@ -287,7 +287,7 @@ struct ComputeGravity : zen::INode {
                 } else if (ch < 0) {  // leaf node
                     int pid = -1 - ch;
                     auto d2leaf = pos[pid] - pos[i];
-                    //printf("accel %d by near %d\n", i, pid);
+                    printf("accel %d by near %d\n", i, pid);
                     acc[i] += d2leaf * mass[pid] * invpow3(d2leaf, eps);
                 }
             }

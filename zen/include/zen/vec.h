@@ -79,10 +79,14 @@ struct is_vec : std::false_type {
 
 template <size_t N, class T>
 struct is_vec<vec<N, T>> : std::true_type {
+    static constexpr size_t _N = N;
 };
 
 template <class T>
 inline constexpr bool is_vec_v = is_vec<std::decay_t<T>>::value;
+
+template <class T>
+inline constexpr size_t is_vec_n = is_vec<std::decay_t<T>>::_N;
 
 template <class T, class S>
 struct is_vec_promotable : std::false_type {
