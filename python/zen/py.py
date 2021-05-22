@@ -56,8 +56,8 @@ class INode(abc.ABC):
 
     def get_input(self, name):
         ref = self.get_input_ref(name)
-        from .api import ensureObject
-        ensureObject(ref, is_py_dst=True)
+        from .api import requireObject
+        requireObject(ref)
         return getObject(ref)
 
     def get_param(self, name):

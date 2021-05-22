@@ -25,6 +25,9 @@ def applyNode(name):
     if py.isPyNodeName(name):
         py.applyNode(name)
     else:
+        deps = cpp.getNodeRequirements(name)
+        for dep in deps:
+            requireObject(dep, is_py_dst=False)
         cpp.applyNode(name)
 
 def cpp2pyObject(name):
@@ -50,7 +53,7 @@ def setNodeParam(name, key, value):
 def isObject(srcname):
     return py.isPyObject(srcname) or cpp.isCppObject(srcname)
 
-def ensureObject(srcname, is_py_dst=True):
+def requireObject(srcname, is_py_dst=True):
     if isObject(srcname):
         return
 

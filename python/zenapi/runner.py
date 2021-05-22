@@ -24,7 +24,7 @@ def run_graph(nodes, nframes, iopath):
         zen.frameBegin()
         while zen.substepShouldContinue():
             zen.substepBegin()
-            zen.run_graph_once(nodes)
+            run_graph_once(nodes)
             zen.substepEnd()
         zen.frameEnd()
     print('EXITING')
@@ -44,7 +44,6 @@ def run_graph_once(nodes):
             if input is None:
                 continue
             srcIdent, srcSockName = input
-            request(srcIdent, visited)
             inputObjName = srcIdent + '::' + srcSockName
             zen.setNodeInput(ident, name, inputObjName)
 

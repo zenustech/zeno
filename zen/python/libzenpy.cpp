@@ -124,6 +124,8 @@ PYBIND11_MODULE(libzenpy, m) {
   m.def("applyNode", zen::applyNode);
   m.def("dumpDescriptors", zen::dumpDescriptors);
 
+  m.def("isCppObject", zen::hasObject);
+  m.def("getNodeRequirements", zen::getNodeRequirements);
   m.def("getCppObjectType", getCppObjectType);
 
   m.def("setBooleanObject", setBooleanObject);
