@@ -10,6 +10,10 @@ from contextlib import contextmanager
 from multiprocessing import Pool
 
 
+def rel2abs(file, *args):
+    return os.path.join(os.path.dirname(os.path.abspath(file)), *args)
+
+
 class LazyImport:
     def __init__(self, name):
         self.__name = name
@@ -28,22 +32,14 @@ def go(func, *args, **kwargs):
     return t
 
 
-def _our_run(param):
+def _do_multiproc_evaluate(param):
     func, args, kwargs = param
     return func(*args, **kwargs)
 
 
-def multiprocgo(func, *args, **kwargs):
+def multiproc_evaluate(func, *args, **kwargs):
     param = func, args, kwargs
-    return Pool().map(_our_run, [param])[0]
-
-
-def multiproc(func):
-    @functools.wraps(func)
-    def wrapped(*args, **kwargs):
-        return multiprocgo(func, *args, **kwargs)
-
-    return wrapped
+    return Pool().map(_do_multiproc_evaluate, [param])[0]
 
 
 def goes(func):
@@ -63,6 +59,7 @@ def path_list_insert(path, pathes, append=False):
     else:
         pathes = path
     return path
+
 
 def path_list_remove(path, pathes):
     if pathes:
@@ -86,18 +83,6 @@ def mock_ld_library_path(path):
             os.environ['LD_LIBRARY_PATH'] = pathes
         else:
             del os.environ['LD_LIBRARY_PATH']
-
-
-def inject_ld_preload(*pathes):
-    for path in pathes:
-        path = os.path.realpath(path)
-        if os.path.isfile(path):
-            break
-    else:
-        return
-
-    ld_preload = os.environ.get('LD_PRELOAD', '')
-    os.environ['LD_PRELOAD'] = path_list_insert(path, ld_preload)
 
 
 def run_script(src, callback=runpy.run_path):
