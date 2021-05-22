@@ -1,7 +1,5 @@
 '''
 Frame & substep control
-
-(pyb to zxx: actually should rename keywords -> stepcontrol?)
 '''
 
 
@@ -65,7 +63,7 @@ class RunAfterFrame(INode):
 @defNodeClass
 class SetFrameTime(INode):
     z_inputs = ['time']
-    z_categories = 'keywords'
+    z_categories = 'substep'
 
     def apply(self):
         time = self.get_input('time')
@@ -75,7 +73,7 @@ class SetFrameTime(INode):
 @defNodeClass
 class GetFrameTime(INode):
     z_outputs = ['time']
-    z_categories = 'keywords'
+    z_categories = 'substep'
 
     def apply(self):
         time = G.frame_time
@@ -85,7 +83,7 @@ class GetFrameTime(INode):
 @defNodeClass
 class GetFrameTimeElapsed(INode):
     z_outputs = ['time']
-    z_categories = 'keywords'
+    z_categories = 'substep'
 
     def apply(self):
         time = G.frame_time_elapsed
@@ -97,7 +95,7 @@ class IntegrateFrameTime(INode):
     z_inputs = ['desired_dt']
     z_outputs = ['actual_dt']
     z_params = [('float', 'min_scale', '0.0001')]
-    z_categories = 'keywords'
+    z_categories = 'substep'
 
     def apply(self):
         dt = G.frame_time
