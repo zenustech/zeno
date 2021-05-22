@@ -1,35 +1,27 @@
 import zen
 
-from zenutils import run_script
+from zenutils import run_script, load_library
 
-zen.loadLibrary('libzenbase.so')
-zen.loadLibrary('libzenvdb.so')
-zen.loadLibrary('libOCTlib.so')
-zen.loadLibrary('libFLIPlib.so')
-
-
-
-def get_descriptors():
-    descs = zen.dumpDescriptors()
-    if isinstance(descs, bytes):
-        descs = descs.decode()
-    return descs
+load_library('libzenbase.so')
+load_library('libzenvdb.so')
+load_library('libOCTlib.so')
+load_library('libFLIPlib.so')
 
 
-def run_graph(nodes, nframes, iopath):
+def runGraph(nodes, nframes, iopath):
     zen.setIOPath(iopath)
     for frameid in range(nframes):
         print('FRAME:', frameid)
         zen.frameBegin()
         while zen.substepShouldContinue():
             zen.substepBegin()
-            run_graph_once(nodes)
+            runGraphOnce(nodes)
             zen.substepEnd()
         zen.frameEnd()
     print('EXITING')
 
 
-def run_graph_once(nodes):
+def runGraphOnce(nodes):
     for ident in nodes:
         data = nodes[ident]
         name = data['name']
@@ -56,3 +48,6 @@ def run_graph_once(nodes):
         data = nodes[ident]
         if 'OUT' in data['options']:
             zen.applyNode(ident)
+
+
+__all__ = ['runGraph', 'runGraphOnce']

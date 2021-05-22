@@ -2,7 +2,7 @@ import runpy
 import tempfile
 import multiprocessing as mp
 
-from .runner import run_graph, get_descriptors
+from zen import runGraph, dumpDescriptors
 from .descriptor import parse_descriptor_line
 
 
@@ -34,11 +34,11 @@ def _launch_mproc(func, *args):
 
 
 def launchGraph(graph, nframes):
-    _launch_mproc(run_graph, graph, nframes, iopath)
+    _launch_mproc(runGraph, graph, nframes, iopath)
 
 
 def getDescriptors():
-    descs = get_descriptors()
+    descs = dumpDescriptors()
     descs = descs.splitlines()
     descs = [parse_descriptor_line(line) for line in descs if ':' in line]
     descs = {name: desc for name, desc in descs}
