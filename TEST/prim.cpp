@@ -10,23 +10,28 @@ using std::cout;
 using std::endl;
 
 
-struct AOSOA
+template <size_t CHK_SIZE = 512, size_t MAX_ELMS = 64>
+class AOSOA
 {
-    static constexpr size_t CHK_SIZE = 512;
+    struct ElmInfo {
+        size_t size;
+        size_t offset;
+    };
 
-    size_t m_count;
-    std::vector<size_t> m_sizes;
-    std::vector<size_t> m_offsets;
+    size_t m_size;
+    ElmInfo m_elms[MAX_ELMS];
+    size_t m_elmcount;
     size_t m_stride;
 
     std::vector<void *> m_chunks;
 
+public:
     explicit AOSOA(std::vector<size_t> const &elmsizes) {
         size_t accum = 0;
-        m_sizes = elmsizes;
-        m_offsets.resize(m_sizes.size());
-        for (size_t i = 0; i < m_sizes.size(); i++) {
-            m_offsets[i] = accum * CHK_SIZE;
+        m_elmcount = elmsizes.size();
+        for (size_t i = 0; i < m_elmcount; i++) {
+            m_elms[i].size = elmsizes[i];
+            m_elms[i].offset = accum * CHK_SIZE;
             accum += elmsizes[i];
         }
         m_stride = accum;
@@ -34,7 +39,8 @@ struct AOSOA
 
     void *address(size_t a, size_t p) const {
         size_t chkidx = p / CHK_SIZE;
-        size_t chkoff = (p % CHK_SIZE) * m_sizes[a] + m_offsets[a];
+        auto elm = m_elms[a];
+        size_t chkoff = (p % CHK_SIZE) * elm.size + elm.offset;
         return (void *)((char *)m_chunks[chkidx] + chkoff);
     }
 
@@ -51,18 +57,18 @@ struct AOSOA
             void *p = std::malloc(size);
             m_chunks[i] = p;
         }
-        m_count = n;
+        m_size = n;
     }
 
     size_t size() const {
-        return m_count;
+        return m_size;
     }
 };
 
 
 int main(void)
 {
-    AOSOA a({sizeof(int), sizeof(short), sizeof(char), sizeof(char)});
+    AOSOA<> a({sizeof(int), sizeof(short), sizeof(char), sizeof(char)});
     a.resize(32);
     a.resize(1000);
     for (int i = 0; i < 1000; i++) {
