@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
+#include <chrono>
 
 #define show(x) (std::cout << #x "=" << (x) << std::endl)
 
@@ -10,7 +11,7 @@ using std::cout;
 using std::endl;
 
 
-template <size_t CHK_SIZE = 512, size_t MAX_ELMS = 64>
+template <size_t CHK_SIZE = 4096, size_t MAX_ELMS = 64>
 class AOSOA
 {
     struct ElmInfo {
@@ -66,29 +67,69 @@ public:
 };
 
 
+
+
 int main(void)
 {
-    AOSOA<> a({sizeof(int), sizeof(short), sizeof(char), sizeof(char)});
-    a.resize(32);
-    a.resize(1000);
-    for (int i = 0; i < 1000; i++) {
-        *(int *)a.address(0, i) = i + 1;
+    {
+        AOSOA<> a({sizeof(float), sizeof(float), sizeof(float)});
+
+        size_t n = 64 * 1024 * 1024;
+        a.resize(n);
+
+        auto t0 = std::chrono::steady_clock::now();
+
+        for (int i = 0; i < n; i++) {
+            auto &x = *(float *)a.address(0, i);
+            auto &y = *(float *)a.address(1, i);
+            auto &z = *(float *)a.address(2, i);
+            x = (float)drand48();
+            y = (float)drand48();
+            z = (float)drand48();
+        }
+
+        float ret = 0.0;
+        for (int i = 0; i < n; i++) {
+            auto &x = *(float *)a.address(0, i);
+            auto &y = *(float *)a.address(1, i);
+            auto &z = *(float *)a.address(2, i);
+            ret += x + y + z;
+        }
+        cout << ret << endl;
+
+        auto t1 = std::chrono::steady_clock::now();
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+        cout << ms << " ms" << endl;
     }
-    for (int i = 0; i < 1000; i++) {
-        cout << i << "=" << *(int *)a.address(0, i) << endl;
+
+    {
+        size_t n = 64 * 1024 * 1024;
+        float *a = new float[n * 3];
+
+        auto t0 = std::chrono::steady_clock::now();
+
+        for (int i = 0; i < n; i++) {
+            auto &x = a[i + n * 0];
+            auto &y = a[i + n * 1];
+            auto &z = a[i + n * 2];
+            x = (float)drand48();
+            y = (float)drand48();
+            z = (float)drand48();
+        }
+
+        float ret = 0.0;
+        for (int i = 0; i < n; i++) {
+            auto &x = a[i + n * 0];
+            auto &y = a[i + n * 1];
+            auto &z = a[i + n * 2];
+            ret += x + y + z;
+        }
+        cout << ret << endl;
+
+        auto t1 = std::chrono::steady_clock::now();
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+        cout << ms << " ms" << endl;
     }
-    a.resize(8);
-    a.resize(1024);
-    for (int i = 0; i < 14; i++) {
-        cout << i << "=" << *(int *)a.address(0, i) << endl;
-    }
-    show(a.address(0, 0));
-    show(a.address(1, 0));
-    show(a.address(2, 0));
-    show(a.address(3, 0));
-    show(a.address(0, 1));
-    show(a.address(1, 1));
-    show(a.address(2, 1));
-    show(a.address(3, 1));
+
     return 0;
 }
