@@ -32,13 +32,15 @@ struct GraphicPrimitive : IGraphic {
     ) {
     auto const &pos = prim->add_attr<zen::vec3f>("pos");
     auto const &clr = prim->add_attr<zen::vec3f>("clr");
+    auto const &nrm = prim->add_attr<zen::vec3f>("nrm");
     vertex_count = prim->size();
 
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-    std::vector<zen::vec3f> mem(vertex_count * 2);
+    std::vector<zen::vec3f> mem(vertex_count * 3);
     for (int i = 0; i < vertex_count; i++) {
-        mem[2 * i + 0] = pos[i];
-        mem[2 * i + 1] = clr[i];
+        mem[3 * i + 0] = pos[i];
+        mem[3 * i + 1] = clr[i];
+        mem[3 * i + 2] = nrm[i];
     }
     vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
 
@@ -72,10 +74,13 @@ struct GraphicPrimitive : IGraphic {
   virtual void draw() override {
     vbo->bind();
     vbo->attribute(/*index=*/0,
-        /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 6,
+        /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 9,
         GL_FLOAT, /*count=*/3);
     vbo->attribute(/*index=*/1,
-        /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 6,
+        /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 9,
+        GL_FLOAT, /*count=*/3);
+    vbo->attribute(/*index=*/2,
+        /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 9,
         GL_FLOAT, /*count=*/3);
 
     if (draw_all_points) {
@@ -90,7 +95,7 @@ struct GraphicPrimitive : IGraphic {
         points_prog->use();
         set_program_uniforms(points_prog);
         points_ebo->bind();
-        CHECK_GL(glDrawElements(GL_POINTS, /*count=*/points_count * 2,
+        CHECK_GL(glDrawElements(GL_POINTS, /*count=*/points_count * 1,
               GL_UNSIGNED_INT, /*first=*/0));
         points_ebo->unbind();
     }
@@ -134,15 +139,15 @@ struct GraphicPrimitive : IGraphic {
 "uniform mat4 mProj;\n"
 "\n"
 "attribute vec3 vPosition;\n"
-"attribute vec3 vVercolor;\n"
+"attribute vec3 vColor;\n"
 "\n"
 "varying vec3 position;\n"
-"varying vec3 vercolor;\n"
+"varying vec3 color;\n"
 "\n"
 "void main()\n"
 "{\n"
 "  position = vPosition;\n"
-"  vercolor = vVercolor;\n"
+"  color = vColor;\n"
 "\n"
 "  gl_Position = mVP * vec4(position, 1.0);\n"
 "  gl_PointSize = 5.0;\n"
@@ -158,13 +163,13 @@ struct GraphicPrimitive : IGraphic {
 "uniform mat4 mProj;\n"
 "\n"
 "varying vec3 position;\n"
-"varying vec3 vercolor;\n"
+"varying vec3 color;\n"
 "\n"
 "void main()\n"
 "{\n"
 "  if (length(gl_PointCoord - vec2(0.5)) > 0.5)\n"
 "    discard;\n"
-"  gl_FragColor = vec4(vercolor, 1.0);\n"
+"  gl_FragColor = vec4(color, 1.0);\n"
 "}\n";
     }
 
@@ -187,15 +192,15 @@ struct GraphicPrimitive : IGraphic {
 "uniform mat4 mInvProj;\n"
 "\n"
 "attribute vec3 vPosition;\n"
-"attribute vec3 vVercolor;\n"
+"attribute vec3 vColor;\n"
 "\n"
 "varying vec3 position;\n"
-"varying vec3 vercolor;\n"
+"varying vec3 color;\n"
 "\n"
 "void main()\n"
 "{\n"
 "  position = vPosition;\n"
-"  vercolor = vVercolor;\n"
+"  color = vColor;\n"
 "\n"
 "  gl_Position = mVP * vec4(position, 1.0);\n"
 "}\n";
@@ -212,11 +217,11 @@ struct GraphicPrimitive : IGraphic {
 "uniform mat4 mInvProj;\n"
 "\n"
 "varying vec3 position;\n"
-"varying vec3 vercolor;\n"
+"varying vec3 color;\n"
 "\n"
 "void main()\n"
 "{\n"
-"  gl_FragColor = vec4(vercolor, 1.0);\n"
+"  gl_FragColor = vec4(color, 1.0);\n"
 "}\n";
     }
 
@@ -239,15 +244,18 @@ struct GraphicPrimitive : IGraphic {
 "uniform mat4 mInvProj;\n"
 "\n"
 "attribute vec3 vPosition;\n"
-"attribute vec3 vVercolor;\n"
+"attribute vec3 vColor;\n"
+"attribute vec3 vNormal;\n"
 "\n"
 "varying vec3 position;\n"
-"varying vec3 vercolor;\n"
+"varying vec3 iColor;\n"
+"varying vec3 iNormal;\n"
 "\n"
 "void main()\n"
 "{\n"
 "  position = vPosition;\n"
-"  vercolor = vVercolor;\n"
+"  iColor = vColor;\n"
+"  iNormal = vNormal;\n"
 "\n"
 "  gl_Position = mVP * vec4(position, 1.0);\n"
 "}\n";
@@ -264,11 +272,77 @@ struct GraphicPrimitive : IGraphic {
 "uniform mat4 mInvProj;\n"
 "\n"
 "varying vec3 position;\n"
-"varying vec3 vercolor;\n"
+"varying vec3 iColor;\n"
+"varying vec3 iNormal;\n"
+"\n"
+"struct Light {\n"
+"  vec3 dir;\n"
+"  vec3 color;\n"
+"};\n"
+"\n"
+"struct Material {\n"
+"  vec3 albedo;\n"
+"  float roughness;\n"
+"  float metallic;\n"
+"  float specular;\n"
+"};\n"
+"\n"
+"vec3 pbr(Material material, vec3 nrm, vec3 idir, vec3 odir) {\n"
+"  float roughness = material.roughness;\n"
+"  float metallic = material.metallic;\n"
+"  float specular = material.specular;\n"
+"  vec3 albedo = material.albedo;\n"
+"\n"
+"  vec3 hdir = normalize(idir + odir);\n"
+"  float NoH = max(0, dot(hdir, nrm));\n"
+"  float NoL = max(0, dot(idir, nrm));\n"
+"  float NoV = max(0, dot(odir, nrm));\n"
+"  float VoH = clamp(dot(odir, hdir), 0, 1);\n"
+"  float LoH = clamp(dot(idir, hdir), 0, 1);\n"
+"\n"
+"  vec3 f0 = metallic * albedo + (1 - metallic) * 0.16 * specular * specular;\n"
+"  vec3 fdf = f0 + (1 - f0) * pow(1 - VoH, 5);\n"
+"\n"
+"  float k = (roughness + 1) * (roughness + 1) / 8;\n"
+"  float vdf = 0.25 / ((NoV * k + 1 - k) * (NoL * k + 1 - k));\n"
+"\n"
+"  float alpha2 = max(0, roughness * roughness);\n"
+"  float denom = 1 - NoH * NoH * (1 - alpha2);\n"
+"  float ndf = alpha2 / (denom * denom);\n"
+"\n"
+"  vec3 brdf = fdf * vdf * ndf * f0 + (1 - f0) * albedo;\n"
+"  return brdf * NoL;\n"
+"}\n"
+"\n"
+"vec3 calcRayDir(vec3 pos)\n"
+"{\n"
+"  vec4 vpos = mVP * vec4(pos, 1);\n"
+"  vec2 uv = vpos.xy / vpos.w;\n"
+"  vec4 ro = mInvVP * vec4(uv, -1, 1);\n"
+"  vec4 re = mInvVP * vec4(uv, +1, 1);\n"
+"  vec3 rd = normalize(re.xyz / re.w - ro.xyz / ro.w);\n"
+"  return rd;\n"
+"}\n"
 "\n"
 "void main()\n"
 "{\n"
-"  gl_FragColor = vec4(vercolor, 1.0);\n"
+"  vec3 normal = normalize(iNormal);\n"
+"  vec3 viewdir = -calcRayDir(position);\n"
+"\n"
+"  Material material;\n"
+"  material.albedo = vec3(0.8);\n"
+"  material.roughness = 0.4;\n"
+"  material.metallic = 0.0;\n"
+"  material.specular = 0.5;\n"
+"\n"
+"  Light light;\n"
+"  light.dir = normalize((mVP * vec4(-1, -2, 5, 0)).xyz);\n"
+"  light.dir = faceforward(light.dir, -light.dir, normal);\n"
+"  light.color = vec3(1, 1, 1);\n"
+"\n"
+"  vec3 strength = pbr(material, normal, light.dir, viewdir);\n"
+"  vec3 color = light.color * strength;\n"
+"  gl_FragColor = vec4(color, 1.0);\n"
 "}\n";
     }
 
