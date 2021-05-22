@@ -1,5 +1,6 @@
 x: prim.exe
 	./$<
+	@#gdb ./$< -ex r
 
 %.exe: %.cpp
-	g++ -o $@ $<
+	g++ -ggdb -gstabs+ -O0 -o $@ $<
