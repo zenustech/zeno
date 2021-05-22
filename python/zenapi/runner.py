@@ -36,7 +36,6 @@ def run_graph_once(nodes):
         inputs = data['inputs']
         params = data['params']
 
-        print('APPLY', name, ident)
         zen.addNode(name, ident)
 
         for name, input in inputs.items():

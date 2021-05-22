@@ -6,13 +6,11 @@ Frame & substep control
 
 
 from .py import *
-from .api import *
+from .api import invalidateAllObjects
 
 
 G = type('', (), {})()
 
-G.is_cpp2py_table = set()
-G.is_py2cpp_table = set()
 G.frameid = 0
 G.substepid = 0
 G.frame_time = 0.03
@@ -37,7 +35,7 @@ def frameEnd():
     G.frameid += 1
 
 def substepBegin():
-    pass
+    invalidateAllObjects()
 
 def substepEnd():
     G.substepid += 1

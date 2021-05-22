@@ -49,31 +49,32 @@ def setNodeParam(name, key, value):
     else:
         cpp.setNodeParam(name, key, value)
 
-def hasObject(srcname):
-    return py.isPyObject(srcname) or cpp.isCppObject(srcname)
 
-
+visited = set()
 is_py2cpp_table = set()
 is_cpp2py_table = set()
 
+def invalidateAllObjects():
+    visited.clear()
+
 def requireObject(srcname, is_py_dst=True):
-    if hasObject(srcname):
+    if srcname in visited:
         return
+    visited.add(srcname)
 
     nodename, sockname = srcname.split('::')
     applyNode(nodename)
 
     is_py_src = py.isPyNodeName(nodename)
-    print(srcname, is_py_src, is_py_dst)
 
     if not is_py_dst:
         if srcname in is_py2cpp_table or is_py_src:
-            print('py2cpp', srcname)
+            #print('py2cpp', srcname)
             is_py2cpp_table.add(srcname)
             py2cppObject(srcname)
     else:
         if srcname in is_cpp2py_table or not is_py_src:
-            print('cpp2py', srcname)
+            #print('cpp2py', srcname)
             is_cpp2py_table.add(srcname)
             cpp2pyObject(srcname)
 
