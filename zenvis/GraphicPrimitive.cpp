@@ -32,13 +32,15 @@ struct GraphicPrimitive : IGraphic {
     ) {
     auto const &pos = prim->add_attr<zen::vec3f>("pos");
     auto const &clr = prim->add_attr<zen::vec3f>("clr");
+    auto const &nrm = prim->add_attr<zen::vec3f>("nrm");
     vertex_count = prim->size();
 
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-    std::vector<zen::vec3f> mem(vertex_count * 2);
+    std::vector<zen::vec3f> mem(vertex_count * 3);
     for (int i = 0; i < vertex_count; i++) {
-        mem[2 * i + 0] = pos[i];
-        mem[2 * i + 1] = clr[i];
+        mem[3 * i + 0] = pos[i];
+        mem[3 * i + 1] = clr[i];
+        mem[3 * i + 2] = nrm[i];
     }
     vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
 
@@ -72,10 +74,13 @@ struct GraphicPrimitive : IGraphic {
   virtual void draw() override {
     vbo->bind();
     vbo->attribute(/*index=*/0,
-        /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 6,
+        /*offset=*/sizeof(float) * 0, /*stride=*/sizeof(float) * 9,
         GL_FLOAT, /*count=*/3);
     vbo->attribute(/*index=*/1,
-        /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 6,
+        /*offset=*/sizeof(float) * 3, /*stride=*/sizeof(float) * 9,
+        GL_FLOAT, /*count=*/3);
+    vbo->attribute(/*index=*/2,
+        /*offset=*/sizeof(float) * 6, /*stride=*/sizeof(float) * 9,
         GL_FLOAT, /*count=*/3);
 
     if (draw_all_points) {
@@ -90,7 +95,7 @@ struct GraphicPrimitive : IGraphic {
         points_prog->use();
         set_program_uniforms(points_prog);
         points_ebo->bind();
-        CHECK_GL(glDrawElements(GL_POINTS, /*count=*/points_count * 2,
+        CHECK_GL(glDrawElements(GL_POINTS, /*count=*/points_count * 1,
               GL_UNSIGNED_INT, /*first=*/0));
         points_ebo->unbind();
     }
@@ -134,15 +139,15 @@ struct GraphicPrimitive : IGraphic {
 "uniform mat4 mProj;\n"
 "\n"
 "attribute vec3 vPosition;\n"
-"attribute vec3 vVercolor;\n"
+"attribute vec3 vColor;\n"
 "\n"
 "varying vec3 position;\n"
-"varying vec3 vercolor;\n"
+"varying vec3 color;\n"
 "\n"
 "void main()\n"
 "{\n"
 "  position = vPosition;\n"
-"  vercolor = vVercolor;\n"
+"  color = vColor;\n"
 "\n"
 "  gl_Position = mVP * vec4(position, 1.0);\n"
 "  gl_PointSize = 5.0;\n"
@@ -158,13 +163,13 @@ struct GraphicPrimitive : IGraphic {
 "uniform mat4 mProj;\n"
 "\n"
 "varying vec3 position;\n"
-"varying vec3 vercolor;\n"
+"varying vec3 color;\n"
 "\n"
 "void main()\n"
 "{\n"
 "  if (length(gl_PointCoord - vec2(0.5)) > 0.5)\n"
 "    discard;\n"
-"  gl_FragColor = vec4(vercolor, 1.0);\n"
+"  gl_FragColor = vec4(color, 1.0);\n"
 "}\n";
     }
 
@@ -187,15 +192,15 @@ struct GraphicPrimitive : IGraphic {
 "uniform mat4 mInvProj;\n"
 "\n"
 "attribute vec3 vPosition;\n"
-"attribute vec3 vVercolor;\n"
+"attribute vec3 vColor;\n"
 "\n"
 "varying vec3 position;\n"
-"varying vec3 vercolor;\n"
+"varying vec3 color;\n"
 "\n"
 "void main()\n"
 "{\n"
 "  position = vPosition;\n"
-"  vercolor = vVercolor;\n"
+"  color = vColor;\n"
 "\n"
 "  gl_Position = mVP * vec4(position, 1.0);\n"
 "}\n";
@@ -212,11 +217,11 @@ struct GraphicPrimitive : IGraphic {
 "uniform mat4 mInvProj;\n"
 "\n"
 "varying vec3 position;\n"
-"varying vec3 vercolor;\n"
+"varying vec3 color;\n"
 "\n"
 "void main()\n"
 "{\n"
-"  gl_FragColor = vec4(vercolor, 1.0);\n"
+"  gl_FragColor = vec4(color, 1.0);\n"
 "}\n";
     }
 
@@ -239,15 +244,18 @@ struct GraphicPrimitive : IGraphic {
 "uniform mat4 mInvProj;\n"
 "\n"
 "attribute vec3 vPosition;\n"
-"attribute vec3 vVercolor;\n"
+"attribute vec3 vColor;\n"
+"attribute vec3 vNormal;\n"
 "\n"
 "varying vec3 position;\n"
-"varying vec3 vercolor;\n"
+"varying vec3 color;\n"
+"varying vec3 iNormal;\n"
 "\n"
 "void main()\n"
 "{\n"
 "  position = vPosition;\n"
-"  vercolor = vVercolor;\n"
+"  color = vColor;\n"
+"  iNormal = vNormal;\n"
 "\n"
 "  gl_Position = mVP * vec4(position, 1.0);\n"
 "}\n";
@@ -264,11 +272,13 @@ struct GraphicPrimitive : IGraphic {
 "uniform mat4 mInvProj;\n"
 "\n"
 "varying vec3 position;\n"
-"varying vec3 vercolor;\n"
+"varying vec3 color;\n"
+"varying vec3 iNormal;\n"
 "\n"
 "void main()\n"
 "{\n"
-"  gl_FragColor = vec4(vercolor, 1.0);\n"
+"  vec3 normal = normalize(iNormal);\n"
+"  gl_FragColor = vec4(normal * 0.5 + 0.5, 1.0);\n"
 "}\n";
     }
 
