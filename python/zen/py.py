@@ -6,6 +6,8 @@ Python APIs
 import abc
 from collections import namedtuple
 
+from .api import requireObject
+
 
 class IObject:
     pass
@@ -56,7 +58,6 @@ class INode(abc.ABC):
 
     def get_input(self, name):
         ref = self.get_input_ref(name)
-        from .api import requireObject
         requireObject(ref)
         return getObject(ref)
 
@@ -80,7 +81,12 @@ class INode(abc.ABC):
 
     def set_output_ref(self, name, srcname):
         ref = self.get_output_ref(name)
+        requireObject(srcname)
+        print('SetOUTputREF', ref, srcname)##
         setReference(ref, srcname)
+
+    def init(self):
+        pass
 
     @abc.abstractmethod
     def apply(self):
@@ -116,9 +122,9 @@ def addNode(type, name):
     nodes[name] = node
 
 
-def touchNode(name):
+def initNode(name):
     node = nodes[name]
-    node.touch()
+    node.init()
 
 
 def setNodeParam(name, key, value):

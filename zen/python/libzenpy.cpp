@@ -121,6 +121,7 @@ PYBIND11_MODULE(libzenpy, m) {
   m.def("addNode", zen::addNode);
   m.def("setNodeParam", zen::setNodeParam);
   m.def("setNodeInput", zen::setNodeInput);
+  m.def("initNode", zen::initNode);
   m.def("applyNode", zen::applyNode);
   m.def("dumpDescriptors", zen::dumpDescriptors);
 

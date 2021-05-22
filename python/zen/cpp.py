@@ -11,6 +11,9 @@ def dumpDescriptors():
 def addNode(type, name):
     return get_core().addNode(type, name)
 
+def initNode(name):
+    return get_core().initNode(name)
+
 def applyNode(name):
     return get_core().applyNode(name)
 

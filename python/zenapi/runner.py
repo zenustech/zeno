@@ -18,7 +18,6 @@ def get_descriptors():
 
 def run_graph(nodes, nframes, iopath):
     zen.setIOPath(iopath)
-    zen.initializeGlobals()
     for frameid in range(nframes):
         print('FRAME:', frameid)
         zen.frameBegin()
@@ -51,6 +50,8 @@ def run_graph_once(nodes):
             if type(value) is str:
                 value = eval('f' + repr(value))
             zen.setNodeParam(ident, name, value)
+
+        zen.initNode(ident)
 
     for ident in nodes:
         data = nodes[ident]

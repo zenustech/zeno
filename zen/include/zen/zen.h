@@ -100,12 +100,20 @@ struct INode {
   using Ptr = std::unique_ptr<INode>;
 
   virtual void apply() = 0;
+
+  virtual void init() {
+  }
+
   virtual std::vector<std::string> requirements() {
     std::vector<std::string> ret;
     for (auto const &[key, name]: inputs) {
       ret.push_back(name);
     }
     return ret;
+  }
+
+  void on_init() {
+    init();
   }
 
   void on_apply() {
@@ -305,6 +313,10 @@ public:
     safe_at(nodes, name, "node")->set_input_ref(key, srcname);
   }
 
+  void initNode(std::string name) {
+    safe_at(nodes, name, "node")->on_init();
+  }
+
   void applyNode(std::string name) {
     safe_at(nodes, name, "node")->on_apply();
   }
@@ -377,6 +389,10 @@ static void setNodeParam(std::string name,
 static void setNodeInput(std::string name,
     std::string key, std::string srcname) {
   return Session::get().setNodeInput(name, key, srcname);
+}
+
+static void initNode(std::string name) {
+  return Session::get().initNode(name);
 }
 
 static void applyNode(std::string name) {

@@ -3,7 +3,6 @@ Unified APIs
 '''
 
 from . import cpp, py, npy
-from .kwd import G
 
 
 def dumpDescriptors():
@@ -15,11 +14,11 @@ def addNode(type, name):
     else:
         cpp.addNode(type, name)
 
-def touchNode(type, name):
-    if py.isPyNodeType(type):
-        py.touchNode(type, name)
+def initNode(name):
+    if py.isPyNodeName(name):
+        py.initNode(name)
     else:
-        cpp.touchNode(type, name)
+        cpp.initNode(name)
 
 def applyNode(name):
     if py.isPyNodeName(name):
@@ -50,29 +49,38 @@ def setNodeParam(name, key, value):
     else:
         cpp.setNodeParam(name, key, value)
 
-def isObject(srcname):
+def hasObject(srcname):
     return py.isPyObject(srcname) or cpp.isCppObject(srcname)
 
+
+is_py2cpp_table = set()
+is_cpp2py_table = set()
+
 def requireObject(srcname, is_py_dst=True):
-    if isObject(srcname):
+    if hasObject(srcname):
         return
 
     nodename, sockname = srcname.split('::')
     applyNode(nodename)
-    is_py_src = py.isPyNodeName(nodename)
 
-    if is_py_src and not is_py_dst:
-        if srcname in G.is_py2cpp_table or py.isPyObject(srcname):
-            G.is_py2cpp_table.add(srcname)
+    is_py_src = py.isPyNodeName(nodename)
+    print(srcname, is_py_src, is_py_dst)
+
+    if not is_py_dst:
+        if srcname in is_py2cpp_table or is_py_src:
+            print('py2cpp', srcname)
+            is_py2cpp_table.add(srcname)
             py2cppObject(srcname)
-    if not is_py_src and is_py_dst:
-        if srcname in G.is_cpp2py_table or not py.isPyObject(srcname):
-            G.is_cpp2py_table.add(srcname)
+    else:
+        if srcname in is_cpp2py_table or not is_py_src:
+            print('cpp2py', srcname)
+            is_cpp2py_table.add(srcname)
             cpp2pyObject(srcname)
 
 
 __all__ = [
     'addNode',
+    'initNode',
     'applyNode',
     'setNodeInput',
     'setNodeParam',

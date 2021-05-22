@@ -1,7 +1,9 @@
 from .py import *
+from .api import requireObject
 
 
 portals = {}
+portalIns = {}
 
 
 @defNodeClass
@@ -9,10 +11,18 @@ class PortalIn(INode):
     z_inputs = ['port']
     z_categories = 'misc'
     z_params = [('string', 'name', 'RenameMe!')]
+
+    def init(self):
+        ident = self.get_node_name()
+        name = self.get_param('name')
+        if name in portalIns:
+            raise RuntimeError(f'duplicate portal name: `{name}`')
+        portalIns[name] = ident
+
     def apply(self):
-        id = self.get_param('name')
+        name = self.get_param('name')
         ref = self.get_input_ref('port')
-        portals[id] = ref
+        portals[name] = ref
 
 
 @defNodeClass
@@ -20,9 +30,14 @@ class PortalOut(INode):
     z_categories = 'misc'
     z_outputs = ['port']
     z_params = [('string', 'name', 'MyName')]
+
     def apply(self):
-        id = self.get_param('name')
-        ref = portals[id]
+        name = self.get_param('name')
+        if name not in portalIns:
+            raise RuntimeError(f'no PortalIn for name: `{name}`')
+        depnode = portalIns[name]
+        requireObject(depnode + '::DST')
+        ref = portals[name]
         self.set_output_ref('port', ref)
 
 
