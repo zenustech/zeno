@@ -71,10 +71,11 @@ public:
 
 int main(void)
 {
+    size_t n = 64 * 1024 * 1024;
+
+    // ordered access AOSOA
     {
         AOSOA<> a({sizeof(float), sizeof(float), sizeof(float)});
-
-        size_t n = 64 * 1024 * 1024;
         a.resize(n);
 
         auto t0 = std::chrono::steady_clock::now();
@@ -102,8 +103,8 @@ int main(void)
         cout << ms << " ms" << endl;
     }
 
+    // ordered access c-array
     {
-        size_t n = 64 * 1024 * 1024;
         float *a = new float[n * 3];
 
         auto t0 = std::chrono::steady_clock::now();
@@ -119,6 +120,67 @@ int main(void)
 
         float ret = 0.0;
         for (int i = 0; i < n; i++) {
+            auto &x = a[i + n * 0];
+            auto &y = a[i + n * 1];
+            auto &z = a[i + n * 2];
+            ret += x + y + z;
+        }
+        cout << ret << endl;
+
+        auto t1 = std::chrono::steady_clock::now();
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+        cout << ms << " ms" << endl;
+    }
+
+    // random access AOSOA
+    {
+        AOSOA<> a({sizeof(float), sizeof(float), sizeof(float)});
+        a.resize(n);
+
+        auto t0 = std::chrono::steady_clock::now();
+
+        for (int i = 0; i < n; i++) {
+            auto &x = *(float *)a.address(0, i);
+            auto &y = *(float *)a.address(1, i);
+            auto &z = *(float *)a.address(2, i);
+            x = (float)drand48();
+            y = (float)drand48();
+            z = (float)drand48();
+        }
+
+        float ret = 0.0;
+        for (int i = 0; i < n; i++) {
+            int j = (i * 12345 + 1234567) % n;
+            auto &x = *(float *)a.address(0, j);
+            auto &y = *(float *)a.address(1, j);
+            auto &z = *(float *)a.address(2, j);
+            ret += x + y + z;
+        }
+        cout << ret << endl;
+
+        auto t1 = std::chrono::steady_clock::now();
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+        cout << ms << " ms" << endl;
+    }
+
+    // random access c-array
+    {
+        float *a = new float[n * 3];
+
+        auto t0 = std::chrono::steady_clock::now();
+
+        for (int i = 0; i < n; i++) {
+            auto &x = a[i + n * 0];
+            auto &y = a[i + n * 1];
+            auto &z = a[i + n * 2];
+            x = (float)drand48();
+            y = (float)drand48();
+            z = (float)drand48();
+        }
+
+        float ret = 0.0;
+        for (int i = 0; i < n; i++) {
+            int j = (i * 12345 + 1234567) % n;
             auto &x = a[i + n * 0];
             auto &y = a[i + n * 1];
             auto &z = a[i + n * 2];

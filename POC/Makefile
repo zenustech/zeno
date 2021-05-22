@@ -4,4 +4,4 @@ x: prim.exe
 
 %.exe: %.cpp
 	@#g++ -ggdb -gstabs+ -O0 -o $@ $<
-	g++ -O3 -o $@ $<
+	g++ -O1 -o $@ $<
