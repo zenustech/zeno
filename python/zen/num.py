@@ -125,11 +125,13 @@ class NumericOperator(INode):
 @defNodeClass
 class PrintNumeric(INode):
     z_inputs = ['value']
+    z_params = [('string', 'hint', 'PrintNumeric')]
     z_categories = 'numeric'
 
     def apply(self):
         value = self.get_input('value')
-        print('PrintNumeric:', value)
+        hint = self.get_param('hint')
+        print('[{}] {!r}'.format(hint, value))
 
 
 __all__ = []

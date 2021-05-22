@@ -15,7 +15,7 @@ class IObject:
 
 class BooleanObject(IObject):
     def __init__(self, value=True):
-        self.__value = value
+        self.__value = bool(value)
 
     def __bool__(self):
         return self.__value
@@ -82,7 +82,6 @@ class INode(abc.ABC):
     def set_output_ref(self, name, srcname):
         ref = self.get_output_ref(name)
         requireObject(srcname)
-        print('SetOUTputREF', ref, srcname)##
         setReference(ref, srcname)
 
     def init(self):

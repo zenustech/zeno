@@ -55,7 +55,7 @@ class Route(INode):
 @defNodeClass
 class RunOnce(INode):
     z_outputs = ['cond']
-    z_categories = 'misc'
+    z_categories = 'substep'
 
     def __init__(self):
         super().__init__()
@@ -127,6 +127,32 @@ class LogicNot(INode):
         val = self.get_param('val')
         res = not val
         self.set_output('res', res)
+
+
+@defNodeClass
+class PrintMessage(INode):
+    z_params = [('string', 'msg', 'Your message')]
+    z_categories = 'misc'
+
+    def apply(self):
+        msg = self.get_param('msg')
+        print(msg)
+
+
+
+@defNodeClass
+class IfCondition(INode):
+    z_inputs = ['cond', 'true', 'false']
+    z_outputs = ['out']
+    z_categories = 'misc'
+
+    def apply(self):
+        cond = self.get_input('cond')
+        if cond:
+            ret = self.get_input_ref('true')
+        else:
+            ret = self.get_input_ref('false')
+        self.set_output_ref('out', ret)
 
 
 __all__ = []

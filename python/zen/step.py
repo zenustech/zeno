@@ -43,7 +43,7 @@ def substepEnd():
 @defNodeClass
 class RunBeforeFrame(INode):
     z_outputs = ['cond']
-    z_categories = 'misc'
+    z_categories = 'substep'
 
     def apply(self):
         cond = not G.has_substep_executed
@@ -53,7 +53,7 @@ class RunBeforeFrame(INode):
 @defNodeClass
 class RunAfterFrame(INode):
     z_outputs = ['cond']
-    z_categories = 'misc'
+    z_categories = 'substep'
 
     def apply(self):
         cond = G.has_frame_completed or not G.time_step_integrated

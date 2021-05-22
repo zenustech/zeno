@@ -22,7 +22,7 @@ def killProcess():
 
 
 def _launch_mproc(func, *args):
-    if 1:
+    if 0:
         global g_proc
         g_proc = mp.Process(target=func, args=tuple(args), daemon=True)
         g_proc.start()
