@@ -56,6 +56,8 @@ class INode(abc.ABC):
 
     def get_input(self, name):
         ref = self.get_input_ref(name)
+        from .api import ensureObject
+        ensureObject(ref, is_py_dst=True)
         return getObject(ref)
 
     def get_param(self, name):
@@ -63,10 +65,6 @@ class INode(abc.ABC):
 
     def has_input(self, name):
         return name in self.__inputs
-
-    def get_output(self, name):
-        myname = self.get_node_name()
-        return getObject(myname + "::" + name)
 
     def get_output_ref(self, name):
         myname = self.get_node_name()
@@ -116,6 +114,11 @@ def addNode(type, name):
     node = nodeClasses[type]()
     nodesRev[node] = name
     nodes[name] = node
+
+
+def touchNode(name):
+    node = nodes[name]
+    node.touch()
 
 
 def setNodeParam(name, key, value):

@@ -3,6 +3,7 @@ Unified APIs
 '''
 
 from . import cpp, py, npy
+from .kwd import G
 
 
 def dumpDescriptors():
@@ -13,6 +14,12 @@ def addNode(type, name):
         py.addNode(type, name)
     else:
         cpp.addNode(type, name)
+
+def touchNode(type, name):
+    if py.isPyNodeType(type):
+        py.touchNode(type, name)
+    else:
+        cpp.touchNode(type, name)
 
 def applyNode(name):
     if py.isPyNodeName(name):
@@ -28,19 +35,10 @@ def py2cppObject(name):
     obj = py.getObject(name)
     npy.setCppObject(name, obj)
 
-is_cpp2py_table = set()
-is_py2cpp_table = set()
-
 def setNodeInput(name, key, srcname):
     if py.isPyNodeName(name):
-        if srcname in is_cpp2py_table or not py.isPyObject(srcname):
-            is_cpp2py_table.add(srcname)
-            cpp2pyObject(srcname)
         py.setNodeInput(name, key, srcname)
     else:
-        if srcname in is_py2cpp_table or py.isPyObject(srcname):
-            is_py2cpp_table.add(srcname)
-            py2cppObject(srcname)
         cpp.setNodeInput(name, key, srcname)
 
 def setNodeParam(name, key, value):
@@ -48,6 +46,26 @@ def setNodeParam(name, key, value):
         py.setNodeParam(name, key, value)
     else:
         cpp.setNodeParam(name, key, value)
+
+def isObject(srcname):
+    return py.isPyObject(srcname) or cpp.isCppObject(srcname)
+
+def ensureObject(srcname, is_py_dst=True):
+    if isObject(srcname):
+        return
+
+    nodename, sockname = srcname.split('::')
+    applyNode(nodename)
+    is_py_src = py.isPyNodeName(nodename)
+
+    if is_py_src and not is_py_dst:
+        if srcname in G.is_py2cpp_table or py.isPyObject(srcname):
+            G.is_py2cpp_table.add(srcname)
+            py2cppObject(srcname)
+    if not is_py_src and is_py_dst:
+        if srcname in G.is_cpp2py_table or not py.isPyObject(srcname):
+            G.is_cpp2py_table.add(srcname)
+            cpp2pyObject(srcname)
 
 
 __all__ = [

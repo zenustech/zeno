@@ -13,6 +13,8 @@ from .kwd import G
 iopath = None
 
 def setIOPath(path):
+    shutil.rmtree(path, ignore_errors=True)
+    os.mkdir(path)
     global iopath
     iopath = path
 

@@ -507,7 +507,6 @@ class QDMGraphicsParam_int(QDMGraphicsParam):
             x, xmin = default
             self.setValue(x)
             self.validator.setBottom(xmin)
-            print(xmin)
         elif len(default) == 3:
             x, xmin, xmax = default
             self.setValue(x)

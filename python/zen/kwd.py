@@ -11,14 +11,16 @@ from .api import *
 
 G = type('', (), {})()
 
-G.frameid = 0
-G.substepid = 0
-G.frame_time = 0.03
-G.frame_time_elapsed = 0.0
-G.has_frame_completed = False
-G.has_substep_executed = False
-G.time_step_integrated = False
-
+def initializeGlobals():
+    G.is_cpp2py_table = set()
+    G.is_py2cpp_table = set()
+    G.frameid = 0
+    G.substepid = 0
+    G.frame_time = 0.03
+    G.frame_time_elapsed = 0.0
+    G.has_frame_completed = False
+    G.has_substep_executed = False
+    G.time_step_integrated = False
 
 def substepShouldContinue():
     if G.has_substep_executed:
@@ -121,6 +123,7 @@ class IntegrateFrameTime(INode):
 
 __all__ = [
     'G',
+    'initializeGlobals',
     'substepShouldContinue',
     'frameBegin',
     'frameEnd',
