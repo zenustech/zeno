@@ -20,7 +20,16 @@ def initNode(name):
     else:
         cpp.initNode(name)
 
+visited = set()
+
+def invalidateNodes():
+    visited.clear()
+
 def applyNode(name):
+    if name in visited:
+        return
+    visited.add(name)
+
     if py.isPyNodeName(name):
         py.applyNode(name)
     else:
@@ -50,18 +59,10 @@ def setNodeParam(name, key, value):
         cpp.setNodeParam(name, key, value)
 
 
-visited = set()
 is_py2cpp_table = set()
 is_cpp2py_table = set()
 
-def invalidateAllObjects():
-    visited.clear()
-
 def requireObject(srcname, is_py_dst=True):
-    if srcname in visited:
-        return
-    visited.add(srcname)
-
     nodename, sockname = srcname.split('::')
     applyNode(nodename)
 
@@ -85,5 +86,6 @@ __all__ = [
     'applyNode',
     'setNodeInput',
     'setNodeParam',
+    'invalidateNodes',
     'dumpDescriptors',
 ]

@@ -6,7 +6,7 @@ Frame & substep control
 
 
 from .py import *
-from .api import invalidateAllObjects
+from .api import invalidateNodes
 
 
 G = type('', (), {})()
@@ -35,7 +35,7 @@ def frameEnd():
     G.frameid += 1
 
 def substepBegin():
-    invalidateAllObjects()
+    invalidateNodes()
 
 def substepEnd():
     G.substepid += 1
