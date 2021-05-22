@@ -15,6 +15,7 @@ struct AOSOA
     static constexpr size_t CHK_SIZE = 512;
 
     size_t m_count;
+    std::vector<size_t> m_sizes;
     std::vector<size_t> m_offsets;
     size_t m_stride;
 
@@ -22,17 +23,18 @@ struct AOSOA
 
     explicit AOSOA(std::vector<size_t> const &elmsizes) {
         size_t accum = 0;
-        m_offsets.resize(elmsizes.size());
-        for (size_t i = 0; i < elmsizes.size(); i++) {
-            m_offsets[i] = accum;
+        m_sizes = elmsizes;
+        m_offsets.resize(m_sizes.size());
+        for (size_t i = 0; i < m_sizes.size(); i++) {
+            m_offsets[i] = accum * CHK_SIZE;
             accum += elmsizes[i];
         }
         m_stride = accum;
     }
 
     void *address(size_t a, size_t p) const {
-        size_t chkoff = m_stride * (p % CHK_SIZE) + m_offsets[a];
         size_t chkidx = p / CHK_SIZE;
+        size_t chkoff = (p % CHK_SIZE) * m_sizes[a] + m_offsets[a];
         return (void *)((char *)m_chunks[chkidx] + chkoff);
     }
 
@@ -78,5 +80,9 @@ int main(void)
     show(a.address(1, 0));
     show(a.address(2, 0));
     show(a.address(3, 0));
+    show(a.address(0, 1));
+    show(a.address(1, 1));
+    show(a.address(2, 1));
+    show(a.address(3, 1));
     return 0;
 }
