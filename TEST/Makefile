@@ -1,4 +1,4 @@
-x: calc.exe
+x: prim.exe
 	./$<
 
 %.exe: %.cpp
