@@ -60,7 +60,7 @@ def generate_script(nodes):
         if name == 'ExecutionOutput':
             continue
 
-        p('\tif zen.G.substepid == 0: zen.addNode({!r}, {!r})', name, ident)
+        p('\tzen.addNode({!r}, {!r})', name, ident)
 
         for name, value in params.items():
             if isinstance(value, str):

@@ -276,6 +276,8 @@ public:
   }
 
   void addNode(std::string type, std::string name) {
+    if (nodes.find(name) != nodes.end())
+      return;
     auto node = safe_at(nodeClasses, type, "node class")->new_instance();
     nodesRev[node.get()] = name;
     nodes[name] = std::move(node);

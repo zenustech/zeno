@@ -111,6 +111,8 @@ def isPyObject(name):
 
 
 def addNode(type, name):
+    if name in nodes:
+        return
     node = nodeClasses[type]()
     nodesRev[node] = name
     nodes[name] = node
