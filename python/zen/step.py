@@ -7,7 +7,7 @@ Frame & substep control
 
 
 from .py import *
-from .api import *
+from .api import invalidateNodes
 
 
 G = type('', (), {})()
@@ -19,7 +19,6 @@ G.frame_time_elapsed = 0.0
 G.has_frame_completed = False
 G.has_substep_executed = False
 G.time_step_integrated = False
-
 
 def substepShouldContinue():
     if G.has_substep_executed:
@@ -38,7 +37,7 @@ def frameEnd():
     G.frameid += 1
 
 def substepBegin():
-    pass
+    invalidateNodes()
 
 def substepEnd():
     G.substepid += 1
@@ -48,7 +47,7 @@ def substepEnd():
 @defNodeClass
 class RunBeforeFrame(INode):
     z_outputs = ['cond']
-    z_categories = 'misc'
+    z_categories = 'substep'
 
     def apply(self):
         cond = not G.has_substep_executed
@@ -58,7 +57,7 @@ class RunBeforeFrame(INode):
 @defNodeClass
 class RunAfterFrame(INode):
     z_outputs = ['cond']
-    z_categories = 'misc'
+    z_categories = 'substep'
 
     def apply(self):
         cond = G.has_frame_completed or not G.time_step_integrated
@@ -68,7 +67,7 @@ class RunAfterFrame(INode):
 @defNodeClass
 class SetFrameTime(INode):
     z_inputs = ['time']
-    z_categories = 'keywords'
+    z_categories = 'substep'
 
     def apply(self):
         time = self.get_input('time')
@@ -78,7 +77,7 @@ class SetFrameTime(INode):
 @defNodeClass
 class GetFrameTime(INode):
     z_outputs = ['time']
-    z_categories = 'keywords'
+    z_categories = 'substep'
 
     def apply(self):
         time = G.frame_time
@@ -114,7 +113,7 @@ class GetTime(INode):
 @defNodeClass
 class GetFrameTimeElapsed(INode):
     z_outputs = ['time']
-    z_categories = 'keywords'
+    z_categories = 'substep'
 
     def apply(self):
         time = G.frame_time_elapsed
@@ -126,7 +125,7 @@ class IntegrateFrameTime(INode):
     z_inputs = ['desired_dt']
     z_outputs = ['actual_dt']
     z_params = [('float', 'min_scale', '0.0001')]
-    z_categories = 'keywords'
+    z_categories = 'substep'
 
     def apply(self):
         dt = G.frame_time

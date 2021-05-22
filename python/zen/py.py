@@ -6,6 +6,8 @@ Python APIs
 import abc
 from collections import namedtuple
 
+from .api import requireObject
+
 
 class IObject:
     pass
@@ -13,7 +15,7 @@ class IObject:
 
 class BooleanObject(IObject):
     def __init__(self, value=True):
-        self.__value = value
+        self.__value = bool(value)
 
     def __bool__(self):
         return self.__value
@@ -56,6 +58,7 @@ class INode(abc.ABC):
 
     def get_input(self, name):
         ref = self.get_input_ref(name)
+        requireObject(ref)
         return getObject(ref)
 
     def get_param(self, name):
@@ -63,10 +66,6 @@ class INode(abc.ABC):
 
     def has_input(self, name):
         return name in self.__inputs
-
-    def get_output(self, name):
-        myname = self.get_node_name()
-        return getObject(myname + "::" + name)
 
     def get_output_ref(self, name):
         myname = self.get_node_name()
@@ -82,7 +81,11 @@ class INode(abc.ABC):
 
     def set_output_ref(self, name, srcname):
         ref = self.get_output_ref(name)
+        requireObject(srcname)
         setReference(ref, srcname)
+
+    def init(self):
+        pass
 
     @abc.abstractmethod
     def apply(self):
@@ -111,9 +114,16 @@ def isPyObject(name):
 
 
 def addNode(type, name):
+    if name in nodes:
+        return
     node = nodeClasses[type]()
     nodesRev[node] = name
     nodes[name] = node
+
+
+def initNode(name):
+    node = nodes[name]
+    node.init()
 
 
 def setNodeParam(name, key, value):

@@ -16,6 +16,7 @@ pruned
 imgui.ini
 genCode.py
 *.zpm
+*.exe
 
 # vim files
 .*.swp

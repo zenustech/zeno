@@ -1,4 +1,4 @@
-file(GLOB PROJECT_SOURCE include/*/*.h *.cpp view/*.cpp mesh/*.cpp pars/*.cpp prim/*.cpp) 
+file(GLOB PROJECT_SOURCE include/*/*.h *.cpp mesh/*.cpp pars/*.cpp prim/*.cpp)
 
 add_library(zenbase SHARED ${PROJECT_SOURCE})
 target_include_directories(zenbase PRIVATE ../include)

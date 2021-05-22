@@ -1,7 +1,9 @@
 from .py import *
+from .api import requireObject
 
 
 portals = {}
+portalIns = {}
 
 
 @defNodeClass
@@ -9,10 +11,18 @@ class PortalIn(INode):
     z_inputs = ['port']
     z_categories = 'misc'
     z_params = [('string', 'name', 'RenameMe!')]
+
+    def init(self):
+        ident = self.get_node_name()
+        name = self.get_param('name')
+        if name in portalIns:
+            raise RuntimeError(f'duplicate portal name: `{name}`')
+        portalIns[name] = ident
+
     def apply(self):
-        id = self.get_param('name')
+        name = self.get_param('name')
         ref = self.get_input_ref('port')
-        portals[id] = ref
+        portals[name] = ref
 
 
 @defNodeClass
@@ -20,9 +30,14 @@ class PortalOut(INode):
     z_categories = 'misc'
     z_outputs = ['port']
     z_params = [('string', 'name', 'MyName')]
+
     def apply(self):
-        id = self.get_param('name')
-        ref = portals[id]
+        name = self.get_param('name')
+        if name not in portalIns:
+            raise RuntimeError(f'no PortalIn for name: `{name}`')
+        depnode = portalIns[name]
+        requireObject(depnode + '::DST')
+        ref = portals[name]
         self.set_output_ref('port', ref)
 
 
@@ -40,7 +55,7 @@ class Route(INode):
 @defNodeClass
 class RunOnce(INode):
     z_outputs = ['cond']
-    z_categories = 'misc'
+    z_categories = 'substep'
 
     def __init__(self):
         super().__init__()
@@ -62,6 +77,82 @@ class SleepFor(INode):
         import time
         secs = self.get_param('secs')
         time.sleep(secs)
+
+
+@defNodeClass
+class LogicConst(INode):
+    z_params = [('int', 'value', '0')]
+    z_outputs = ['value']
+    z_categories = 'logical'
+
+    def apply(self):
+        value = self.get_param('value')
+        value = BooleanObject(value)
+        self.set_output('value', value)
+
+
+@defNodeClass
+class LogicAnd(INode):
+    z_inputs = ['lhs', 'rhs']
+    z_outputs = ['res']
+    z_categories = 'logical'
+
+    def apply(self):
+        lhs = self.get_param('lhs')
+        rhs = self.get_param('rhs')
+        res = lhs and rhs
+        self.set_output('res', res)
+
+
+@defNodeClass
+class LogicOr(INode):
+    z_inputs = ['lhs', 'rhs']
+    z_outputs = ['res']
+    z_categories = 'logical'
+
+    def apply(self):
+        lhs = self.get_param('lhs')
+        rhs = self.get_param('rhs')
+        res = lhs or rhs
+        self.set_output('res', res)
+
+
+@defNodeClass
+class LogicNot(INode):
+    z_inputs = ['val']
+    z_outputs = ['res']
+    z_categories = 'logical'
+
+    def apply(self):
+        val = self.get_param('val')
+        res = not val
+        self.set_output('res', res)
+
+
+@defNodeClass
+class PrintMessage(INode):
+    z_params = [('string', 'msg', 'Your message')]
+    z_categories = 'misc'
+
+    def apply(self):
+        msg = self.get_param('msg')
+        print(msg)
+
+
+
+@defNodeClass
+class IfCondition(INode):
+    z_inputs = ['cond', 'true', 'false']
+    z_outputs = ['out']
+    z_categories = 'misc'
+
+    def apply(self):
+        cond = self.get_input('cond')
+        if cond:
+            ret = self.get_input_ref('true')
+        else:
+            ret = self.get_input_ref('false')
+        self.set_output_ref('out', ret)
 
 
 __all__ = []

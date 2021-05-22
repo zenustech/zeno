@@ -7,12 +7,14 @@ import shutil
 import tempfile
 
 from .py import *
-from .kwd import G
+from .step import G
 
 
 iopath = None
 
 def setIOPath(path):
+    shutil.rmtree(path, ignore_errors=True)
+    os.mkdir(path)
     global iopath
     iopath = path
 
@@ -21,7 +23,7 @@ def setIOPath(path):
 class MakeString(INode):
     z_params = [('string', 'value', '')]
     z_outputs = ['value']
-    z_categories = 'imexport'
+    z_categories = 'fileio'
 
     def apply(self):
         value = self.get_param('value')
@@ -32,7 +34,7 @@ class MakeString(INode):
 class ExportPath(INode):
     z_params = [('string', 'name', 'out.zpm')]
     z_outputs = ['path']
-    z_categories = 'imexport'
+    z_categories = 'fileio'
 
     def apply(self):
         name = self.get_param('name')
@@ -48,7 +50,7 @@ class ExportPath(INode):
 class ExportShader(INode):
     z_params = [('string', 'type', 'points')]
     z_inputs = ['primPath', 'fragShaderPath', 'vertShaderPath']
-    z_categories = 'imexport'
+    z_categories = 'fileio'
 
     def apply(self):
         type = self.get_param('type')
