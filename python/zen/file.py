@@ -64,8 +64,10 @@ class ExportShader(INode):
 @defNodeClass
 class EndFrame(INode):
     z_categories = 'fileio'
+    z_inputs = ['chain']
 
     def apply(self):
+        self.get_input('chain')
         assert iopath is not None, 'please zen.setIOPath first'
         dirpath = os.path.join(iopath, '{:06d}'.format(G.frameid))
         if not os.path.isdir(dirpath):
