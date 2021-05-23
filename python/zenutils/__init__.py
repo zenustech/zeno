@@ -1,7 +1,11 @@
 import os
 import sys
+import time
 import runpy
+import base64
 import ctypes
+import random
+import struct
 import tempfile
 import threading
 import functools
@@ -119,3 +123,7 @@ def add_line_numbers(script):
     for i, line in enumerate(script.splitlines()):
         res += '{:4d} | {}\n'.format(i + 1, line)
     return res
+
+
+def gen_unique_ident():
+    return ''.join(reversed(base64.b64encode(random.randbytes(4) + struct.pack('L', time.time_ns())).decode()))

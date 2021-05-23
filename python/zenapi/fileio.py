@@ -7,8 +7,7 @@ def getFrameFiles(frameid):
     if launch.g_iopath is None:
         return ()
     dirpath = os.path.join(launch.g_iopath, '{:06d}'.format(frameid))
-    lockpath = os.path.join(dirpath, 'done.lock')
-    if not os.path.exists(lockpath):
+    if not os.path.exists(os.path.join(dirpath, 'done.lock')):
         return ()
     res = []
     for name in os.listdir(dirpath):
@@ -24,6 +23,6 @@ def getFrameCount(max_frameid):
         return 0
     for frameid in range(max_frameid):
         dirpath = os.path.join(launch.g_iopath, '{:06d}'.format(frameid))
-        if not os.path.isdir(dirpath):
+        if not os.path.exists(os.path.join(dirpath, 'done.lock')):
             return frameid
     return max_frameid
