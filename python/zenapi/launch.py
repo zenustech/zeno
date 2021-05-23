@@ -15,7 +15,7 @@ g_iopath = None
 g_lock = threading.Lock()
 
 
-def _kill_mproc():
+def killProcess():
     global g_proc
     if g_proc is None:
         print('worker process is not running')
@@ -25,20 +25,16 @@ def _kill_mproc():
     print('worker process killed')
 
 
-def killProcess():
-    with g_lock:
-        _kill_mproc()
-
-
 def _launch_mproc(func, *args):
     global g_proc
     if g_proc is not None:
-        _killProcess()
+        killProcess()
     if 1:
         g_proc = Process(target=func, args=tuple(args), daemon=True)
         g_proc.start()
         g_proc.join()
-        print('worker processed exited with', g_proc.exitcode)
+        if g_proc is not None:
+            print('worker processed exited with', g_proc.exitcode)
         g_proc = None
     else:
         func(*args)
@@ -53,12 +49,11 @@ def cleanIOPath():
 
 
 def launchGraph(graph, nframes):
-    with g_lock:
-        global g_iopath
-        cleanIOPath()
-        g_iopath = tempfile.mkdtemp(prefix='zenvis-')
-        print('iopath:', g_iopath)
-        _launch_mproc(runGraph, graph, nframes, g_iopath)
+    global g_iopath
+    cleanIOPath()
+    g_iopath = tempfile.mkdtemp(prefix='zenvis-')
+    print('iopath:', g_iopath)
+    _launch_mproc(runGraph, graph, nframes, g_iopath)
 
 
 def getDescriptors():
