@@ -34,6 +34,7 @@ echo 'Server = http://mirrors.ustc.edu.cn/msys2/mingw/ucrt64' > /etc/pacman.d/mi
 pacman -Sy
 pacman -S git gcc make cmake python python-devel python-pip mingw-w64-x86_64-mesa mingw-w64-x86_64-qt5 mingw-w64-x86_64-python-pyqt5
 
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 python -m pip install -U pip
 python -m pip install pybind11 numpy
 ```
