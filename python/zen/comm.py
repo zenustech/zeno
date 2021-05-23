@@ -15,8 +15,8 @@ class PortalIn(INode):
     def init(self):
         ident = self.get_node_name()
         name = self.get_param('name')
-        if name in portalIns:
-            raise RuntimeError(f'duplicate portal name: `{name}`')
+        #if name in portalIns:
+        #    raise RuntimeError(f'duplicate portal name: `{name}`')
         portalIns[name] = ident
 
     def apply(self):

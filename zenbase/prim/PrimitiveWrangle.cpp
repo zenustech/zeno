@@ -5,7 +5,12 @@
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
+#include <algorithm>
+#include <cctype>
 #include <stack>
+#include <iostream>
+
+#define ARR_SKIP 1
 
 
 namespace zen {
@@ -16,6 +21,7 @@ struct array : std::array<T, N> {
 
     static array fill(T const &x) {
         array a;
+        #pragma omp simd
         for (size_t i = 0; i < N; i++) {
             a[i] = x;
         }
@@ -24,6 +30,7 @@ struct array : std::array<T, N> {
 
     static array load(T const *x) {
         array a;
+        #pragma omp simd
         for (size_t i = 0; i < N; i++) {
             a[i] = x[i];
         }
@@ -31,6 +38,7 @@ struct array : std::array<T, N> {
     }
 
     static void store(T *x, array const &a) {
+        #pragma omp simd
         for (size_t i = 0; i < N; i++) {
             x[i] = a[i];
         }
@@ -39,6 +47,7 @@ struct array : std::array<T, N> {
     template <class F>
     static array apply(F const &f, array const &a) {
         array r;
+        #pragma omp simd
         for (size_t i = 0; i < N; i++) {
             r[i] = f(a[i]);
         }
@@ -48,6 +57,7 @@ struct array : std::array<T, N> {
     template <class F>
     static array apply(F const &f, array const &a, array const &b) {
         array r;
+        #pragma omp simd
         for (size_t i = 0; i < N; i++) {
             r[i] = f(a[i], b[i]);
         }
@@ -57,6 +67,7 @@ struct array : std::array<T, N> {
     template <class F>
     static array apply(F const &f, array const &a, array const &b, array const &c) {
         array r;
+        #pragma omp simd
         for (size_t i = 0; i < N; i++) {
             r[i] = f(a[i], b[i], c[i]);
         }
@@ -70,7 +81,7 @@ struct array : std::array<T, N> {
 namespace zenbase {
 
 
-struct Opcode {
+struct Opcode : zen::IObject {
     enum {
         OP_LOAD,
         OP_STORE,
@@ -103,31 +114,81 @@ struct Opcode {
         OP_CEIL,
         OP_LENGTH,
         OP_NORMALIZE,
+        OP_DOTX,
+        OP_DOTY,
+        OP_DOTZ,
 
         OP_VEC,
         OP_MIX,
+        OP_MLA,
     };
 
     std::vector<int> ops;
     std::vector<int> pids;
-    std::vector<float> imms;
+    std::vector<zen::vec3f> imms;
     std::vector<std::string> names;
 
-    Opcode() {
-        ops.push_back(OP_LOAD);
-        pids.push_back(0);
-        names.push_back("pos");
+    static int opFromName(std::string name) {
+        std::transform(name.begin(), name.end(), name.begin(), ::toupper);
+        if (0) {
+        #define _EVAL(x) x
+        #define _PER_NAME(x) \
+        } else if (name == #x) { \
+            return _EVAL(OP_##x);
+        _PER_NAME(ADD)
+        _PER_NAME(SUB)
+        _PER_NAME(MUL)
+        _PER_NAME(DIV)
+        _PER_NAME(MOD)
+        _PER_NAME(POW)
+        _PER_NAME(ATAN2)
+        _PER_NAME(MIN)
+        _PER_NAME(MAX)
+        _PER_NAME(FMOD)
+        _PER_NAME(DOT)
+        _PER_NAME(CROSS)
 
-        ops.push_back(OP_LENGTH);
+        _PER_NAME(NEG)
+        _PER_NAME(SQRT)
+        _PER_NAME(SIN)
+        _PER_NAME(COS)
+        _PER_NAME(TAN)
+        _PER_NAME(ASIN)
+        _PER_NAME(ACOS)
+        _PER_NAME(ATAN)
+        _PER_NAME(EXP)
+        _PER_NAME(LOG)
+        _PER_NAME(FLOOR)
+        _PER_NAME(CEIL)
+        _PER_NAME(LENGTH)
+        _PER_NAME(NORMALIZE)
+        _PER_NAME(DOTX)
+        _PER_NAME(DOTY)
+        _PER_NAME(DOTZ)
 
-        ops.push_back(OP_IMMED);
-        imms.push_back(1.0);
+        _PER_NAME(VEC)
+        _PER_NAME(MIX)
+        _PER_NAME(MLA)
+        #undef _PER_NAME
+        #undef _EVAL
+        }
+        assert(0 && "bad op name");
+        return -1;
+    }
 
-        ops.push_back(OP_MUL);
-
-        ops.push_back(OP_STORE);
-        pids.push_back(0);
-        names.push_back("clr");
+    void concat(Opcode const &other) {
+        for (auto const &i: other.ops) {
+            ops.push_back(i);
+        }
+        for (auto const &i: other.pids) {
+            pids.push_back(i);
+        }
+        for (auto const &i: other.imms) {
+            imms.push_back(i);
+        }
+        for (auto const &i: other.names) {
+            names.push_back(i);
+        }
     }
 
     void apply(size_t index, std::vector<PrimitiveObject *> const &primList) const {
@@ -135,7 +196,7 @@ struct Opcode {
         auto pidit = pids.begin();
         auto immit = imms.begin();
         auto nameit = names.begin();
-        using ValType = zen::array<zen::vec3f, 1>;
+        using ValType = zen::array<zen::vec3f, ARR_SKIP>;
         std::stack<ValType> stack;
         for (; opit != ops.end(); opit++) {
             switch (*opit) {
@@ -149,14 +210,13 @@ struct Opcode {
                     ValType::store(arr.data() + index, val);
                 } break;
                 case OP_IMMED: {
-                    auto val = zen::vec3f(*immit++);
-                    stack.push(ValType::fill(val));
+                    stack.push(ValType::fill(*immit++));
                 } break;
 
                 #define _PER_BINARY_OP(op, expr) \
                 case op: { \
-                    auto &lhs = stack.top(); stack.pop(); \
                     auto &rhs = stack.top(); stack.pop(); \
+                    auto &lhs = stack.top(); stack.pop(); \
                     auto ret = ValType::apply([]( \
                             auto const &lhs, auto const &rhs) { \
                         return (expr); \
@@ -199,13 +259,16 @@ struct Opcode {
                 _PER_UNARY_OP(OP_CEIL, zen::ceil(lhs))
                 _PER_UNARY_OP(OP_LENGTH, zen::vec3f(zen::length(lhs)))
                 _PER_UNARY_OP(OP_NORMALIZE, zen::normalize(lhs))
+                _PER_UNARY_OP(OP_DOTX, zen::vec3f(lhs[0]))
+                _PER_UNARY_OP(OP_DOTY, zen::vec3f(lhs[1]))
+                _PER_UNARY_OP(OP_DOTZ, zen::vec3f(lhs[2]))
                 #undef _PER_UNARY_OP
 
                 #define _PER_TERNARY_OP(op, expr) \
                 case op: { \
-                    auto &lhs = stack.top(); stack.pop(); \
-                    auto &mhs = stack.top(); stack.pop(); \
                     auto &rhs = stack.top(); stack.pop(); \
+                    auto &mhs = stack.top(); stack.pop(); \
+                    auto &lhs = stack.top(); stack.pop(); \
                     auto ret = ValType::apply([]( \
                             auto const &lhs, auto const &mhs, auto const &rhs) { \
                         return (expr); \
@@ -214,6 +277,7 @@ struct Opcode {
                 } break;
                 _PER_TERNARY_OP(OP_VEC, zen::vec3f(lhs[0], mhs[0], rhs[0]))
                 _PER_TERNARY_OP(OP_MIX, zen::mix(lhs, mhs, rhs))
+                _PER_TERNARY_OP(OP_MLA, lhs * mhs + rhs)
                 #undef _PER_TERNARY_OP
             }
         }
@@ -221,35 +285,191 @@ struct Opcode {
 };
 
 
+struct WrangleImmed : zen::INode {
+  virtual void apply() override {
+    auto value = get_input("value")->as<NumericObject>();
+    auto res = std::make_unique<Opcode>();
+    zen::vec3f val;
+    if (value->is<float>())
+        val = zen::vec3f(value->get<float>());
+    else
+        val = value->get<zen::vec3f>();
+    res->ops.push_back(Opcode::OP_IMMED);
+    res->imms.push_back(val);
+    set_output("res", res);
+  }
+};
+
+static int defWrangleImmed = zen::defNodeClass<WrangleImmed>("WrangleImmed",
+    { /* inputs: */ {
+    "value",
+    }, /* outputs: */ {
+    "res",
+    }, /* params: */ {
+    }, /* category: */ {
+    "primitive",
+    }});
+
+
+struct WrangleLoad : zen::INode {
+  virtual void apply() override {
+    auto primId = std::get<int>(get_param("primId"));
+    auto attrName = std::get<std::string>(get_param("attrName"));
+    auto res = std::make_unique<Opcode>();
+    res->ops.push_back(Opcode::OP_LOAD);
+    res->pids.push_back(primId);
+    res->names.push_back(attrName);
+    set_output("res", res);
+  }
+};
+
+static int defWrangleLoad = zen::defNodeClass<WrangleLoad>("WrangleLoad",
+    { /* inputs: */ {
+    }, /* outputs: */ {
+    "res",
+    }, /* params: */ {
+    {"int", "primId", "0"},
+    {"string", "attrName", "pos"},
+    }, /* category: */ {
+    "primitive",
+    }});
+
+
+struct WrangleStore : zen::INode {
+  virtual void apply() override {
+    auto primId = std::get<int>(get_param("primId"));
+    auto attrName = std::get<std::string>(get_param("attrName"));
+    auto res = std::make_unique<Opcode>();
+    auto val = get_input("val")->as<Opcode>();
+    res->concat(*val);
+    res->ops.push_back(Opcode::OP_STORE);
+    res->pids.push_back(primId);
+    res->names.push_back(attrName);
+    set_output("res", res);
+  }
+};
+
+static int defWrangleStore = zen::defNodeClass<WrangleStore>("WrangleStore",
+    { /* inputs: */ {
+    "val",
+    }, /* outputs: */ {
+    "res",
+    }, /* params: */ {
+    {"int", "primId", "0"},
+    {"string", "attrName", "pos"},
+    }, /* category: */ {
+    "primitive",
+    }});
+
+
+struct WrangleUnaryOp : zen::INode {
+  virtual void apply() override {
+    auto opName = std::get<std::string>(get_param("opName"));
+    auto res = std::make_unique<Opcode>();
+    auto lhs = get_input("lhs")->as<Opcode>();
+    res->concat(*lhs);
+    res->ops.push_back(Opcode::opFromName(opName));
+    set_output("res", res);
+  }
+};
+
+static int defWrangleUnaryOp = zen::defNodeClass<WrangleUnaryOp>("WrangleUnaryOp",
+    { /* inputs: */ {
+    "lhs",
+    }, /* outputs: */ {
+    "res",
+    }, /* params: */ {
+    {"string", "opName", "neg"},
+    }, /* category: */ {
+    "primitive",
+    }});
+
+
+struct WrangleBinaryOp : zen::INode {
+  virtual void apply() override {
+    auto opName = std::get<std::string>(get_param("opName"));
+    auto res = std::make_unique<Opcode>();
+    auto lhs = get_input("lhs")->as<Opcode>();
+    auto rhs = get_input("rhs")->as<Opcode>();
+    res->concat(*lhs);
+    res->concat(*rhs);
+    res->ops.push_back(Opcode::opFromName(opName));
+    set_output("res", res);
+  }
+};
+
+static int defWrangleBinaryOp = zen::defNodeClass<WrangleBinaryOp>("WrangleBinaryOp",
+    { /* inputs: */ {
+    "lhs",
+    "rhs",
+    }, /* outputs: */ {
+    "res",
+    }, /* params: */ {
+    {"string", "opName", "add"},
+    }, /* category: */ {
+    "primitive",
+    }});
+
+
+struct WrangleTernaryOp : zen::INode {
+  virtual void apply() override {
+    auto opName = std::get<std::string>(get_param("opName"));
+    auto res = std::make_unique<Opcode>();
+    auto lhs = get_input("lhs")->as<Opcode>();
+    auto mhs = get_input("mhs")->as<Opcode>();
+    auto rhs = get_input("rhs")->as<Opcode>();
+    res->concat(*lhs);
+    res->concat(*mhs);
+    res->concat(*rhs);
+    res->ops.push_back(Opcode::opFromName(opName));
+    set_output("res", res);
+  }
+};
+
+static int defWrangleTernaryOp = zen::defNodeClass<WrangleTernaryOp>("WrangleTernaryOp",
+    { /* inputs: */ {
+    "lhs",
+    "mhs",
+    "rhs",
+    }, /* outputs: */ {
+    "res",
+    }, /* params: */ {
+    {"string", "opName", "vec"},
+    }, /* category: */ {
+    "primitive",
+    }});
+
+
 struct PrimitiveWrangle : zen::INode {
   virtual void apply() override {
     std::vector<PrimitiveObject *> primList = {
-        has_input("primA") ? get_input("primA")->as<PrimitiveObject>() : nullptr,
-        has_input("primB") ? get_input("primB")->as<PrimitiveObject>() : nullptr,
-        has_input("primC") ? get_input("primC")->as<PrimitiveObject>() : nullptr,
-        has_input("primD") ? get_input("primD")->as<PrimitiveObject>() : nullptr,
+        has_input("prim0") ? get_input("prim0")->as<PrimitiveObject>() : nullptr,
+        has_input("prim1") ? get_input("prim1")->as<PrimitiveObject>() : nullptr,
+        has_input("prim2") ? get_input("prim2")->as<PrimitiveObject>() : nullptr,
+        has_input("prim3") ? get_input("prim3")->as<PrimitiveObject>() : nullptr,
     };
     assert(primList[0]);
 
-    Opcode opcode;
+    auto opcode = get_input("wrangle")->as<Opcode>();
 
     #pragma omp parallel for
-    for (size_t i = 0; i < primList[0]->size(); i += 1) {
-        opcode.apply(i, primList);
+    for (size_t i = 0; i < primList[0]->size(); i += ARR_SKIP) {
+        opcode->apply(i, primList);
     }
 
-    set_output_ref("primA", get_input_ref("primA"));
+    set_output_ref("prim0", get_input_ref("prim0"));
   }
 };
 
 static int defPrimitiveWrangle = zen::defNodeClass<PrimitiveWrangle>("PrimitiveWrangle",
     { /* inputs: */ {
-    "primA",
-    "primB",
-    "primC",
-    "primD",
+    "wrangle",
+    "prim0",
+    "prim1",
+    "prim2",
+    "prim3",
     }, /* outputs: */ {
-    "primA",
+    "prim0",
     }, /* params: */ {
     }, /* category: */ {
     "primitive",
