@@ -4,7 +4,9 @@ from . import launch
 
 
 def getFrameFiles(frameid):
-    dirpath = os.path.join(launch.iopath, '{:06d}'.format(frameid))
+    if launch.g_iopath is None:
+        return ()
+    dirpath = os.path.join(launch.g_iopath, '{:06d}'.format(frameid))
     if not os.path.isdir(dirpath):
         return ()
     res = []
@@ -20,8 +22,10 @@ def getFrameFiles(frameid):
 
 
 def getFrameCount(max_frameid):
+    if launch.g_iopath is None:
+        return 0
     for frameid in range(max_frameid):
-        dirpath = os.path.join(launch.iopath, '{:06d}'.format(frameid))
+        dirpath = os.path.join(launch.g_iopath, '{:06d}'.format(frameid))
         if not os.path.isdir(dirpath):
             return frameid
     return max_frameid

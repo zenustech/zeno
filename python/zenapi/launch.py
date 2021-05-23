@@ -1,30 +1,41 @@
 import runpy
 import tempfile
-import multiprocessing as mp
+import threading
+import atexit
+import shutil
+import os
 
+from multiprocessing import Process
 from zen import runGraph, dumpDescriptors
 from .descriptor import parse_descriptor_line
 
 
-std_header = '''
-'''
-
-iopath = '/tmp/zenio'
 g_proc = None
+g_iopath = None
+g_lock = threading.Lock()
 
 
-def killProcess():
+def _kill_mproc():
+    global g_proc
     if g_proc is None:
         print('worker process is not running')
         return
     g_proc.terminate()
+    g_proc = None
     print('worker process killed')
 
 
+def killProcess():
+    with g_lock:
+        _kill_mproc()
+
+
 def _launch_mproc(func, *args):
+    global g_proc
+    if g_proc is not None:
+        _killProcess()
     if 1:
-        global g_proc
-        g_proc = mp.Process(target=func, args=tuple(args), daemon=True)
+        g_proc = Process(target=func, args=tuple(args), daemon=True)
         g_proc.start()
         g_proc.join()
         print('worker processed exited with', g_proc.exitcode)
@@ -33,8 +44,21 @@ def _launch_mproc(func, *args):
         func(*args)
 
 
+@atexit.register
+def cleanIOPath():
+    global g_iopath
+    if g_iopath is not None:
+        shutil.rmtree(g_iopath, ignore_errors=True)
+    g_iopath = None
+
+
 def launchGraph(graph, nframes):
-    _launch_mproc(runGraph, graph, nframes, iopath)
+    with g_lock:
+        global g_iopath
+        cleanIOPath()
+        g_iopath = tempfile.mkdtemp(prefix='zenvis-')
+        print('iopath:', g_iopath)
+        _launch_mproc(runGraph, graph, nframes, g_iopath)
 
 
 def getDescriptors():
