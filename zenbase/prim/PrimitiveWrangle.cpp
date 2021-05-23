@@ -7,6 +7,66 @@
 #include <cassert>
 #include <stack>
 
+
+namespace zen {
+
+template <class T, size_t N>
+struct array : std::array<T, N> {
+    array() = default;
+
+    static array fill(T const &x) {
+        array a;
+        for (size_t i = 0; i < N; i++) {
+            a[i] = x;
+        }
+        return a;
+    }
+
+    static array load(T const *x) {
+        array a;
+        for (size_t i = 0; i < N; i++) {
+            a[i] = x[i];
+        }
+        return a;
+    }
+
+    static void store(T *x, array const &a) {
+        for (size_t i = 0; i < N; i++) {
+            x[i] = a[i];
+        }
+    }
+
+    template <class F>
+    static array apply(F const &f, array const &a) {
+        array r;
+        for (size_t i = 0; i < N; i++) {
+            r[i] = f(a[i]);
+        }
+        return r;
+    }
+
+    template <class F>
+    static array apply(F const &f, array const &a, array const &b) {
+        array r;
+        for (size_t i = 0; i < N; i++) {
+            r[i] = f(a[i], b[i]);
+        }
+        return r;
+    }
+
+    template <class F>
+    static array apply(F const &f, array const &a, array const &b, array const &c) {
+        array r;
+        for (size_t i = 0; i < N; i++) {
+            r[i] = f(a[i], b[i], c[i]);
+        }
+        return r;
+    }
+};
+
+};
+
+
 namespace zenbase {
 
 
@@ -75,27 +135,32 @@ struct Opcode {
         auto pidit = pids.begin();
         auto immit = imms.begin();
         auto nameit = names.begin();
-        std::stack<zen::vec3f> stack;
+        using ValType = zen::array<zen::vec3f, 1>;
+        std::stack<ValType> stack;
         for (; opit != ops.end(); opit++) {
             switch (*opit) {
                 case OP_LOAD: {
                     auto const &arr = primList[*pidit++]->attr<zen::vec3f>(*nameit++);
-                    stack.push(arr[index]);
+                    stack.push(ValType::load(arr.data() + index));
                 } break;
                 case OP_STORE: {
                     auto &arr = primList[*pidit++]->attr<zen::vec3f>(*nameit++);
-                    arr[index] = stack.top(); stack.pop();
+                    auto val = stack.top(); stack.pop();
+                    ValType::store(arr.data() + index, val);
                 } break;
                 case OP_IMMED: {
                     auto val = zen::vec3f(*immit++);
-                    stack.push(val);
+                    stack.push(ValType::fill(val));
                 } break;
 
                 #define _PER_BINARY_OP(op, expr) \
                 case op: { \
                     auto &lhs = stack.top(); stack.pop(); \
                     auto &rhs = stack.top(); stack.pop(); \
-                    auto ret = (expr); \
+                    auto ret = ValType::apply([]( \
+                            auto const &lhs, auto const &rhs) { \
+                        return (expr); \
+                    }, lhs, rhs); \
                     stack.push(ret); \
                 } break;
                 _PER_BINARY_OP(OP_ADD, lhs + rhs)
@@ -114,7 +179,10 @@ struct Opcode {
                 #define _PER_UNARY_OP(op, expr) \
                 case op: { \
                     auto &lhs = stack.top(); stack.pop(); \
-                    auto ret = (expr); \
+                    auto ret = ValType::apply([]( \
+                            auto const &lhs) { \
+                        return (expr); \
+                    }, lhs); \
                     stack.push(ret); \
                 } break;
                 _PER_UNARY_OP(OP_NEG, -lhs)
@@ -138,7 +206,10 @@ struct Opcode {
                     auto &lhs = stack.top(); stack.pop(); \
                     auto &mhs = stack.top(); stack.pop(); \
                     auto &rhs = stack.top(); stack.pop(); \
-                    auto ret = (expr); \
+                    auto ret = ValType::apply([]( \
+                            auto const &lhs, auto const &mhs, auto const &rhs) { \
+                        return (expr); \
+                    }, lhs, mhs, rhs); \
                     stack.push(ret); \
                 } break;
                 _PER_TERNARY_OP(OP_VEC, zen::vec3f(lhs[0], mhs[0], rhs[0]))
@@ -163,7 +234,7 @@ struct PrimitiveWrangle : zen::INode {
     Opcode opcode;
 
     #pragma omp parallel for
-    for (size_t i = 0; i < primList[0]->size(); i++) {
+    for (size_t i = 0; i < primList[0]->size(); i += 1) {
         opcode.apply(i, primList);
     }
 
