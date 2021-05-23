@@ -42,6 +42,10 @@ struct Opcode {
         OP_FLOOR,
         OP_CEIL,
         OP_LENGTH,
+        OP_NORMALIZE,
+
+        OP_VEC,
+        OP_MIX,
     };
 
     std::vector<int> ops;
@@ -126,7 +130,20 @@ struct Opcode {
                 _PER_UNARY_OP(OP_FLOOR, zen::floor(lhs))
                 _PER_UNARY_OP(OP_CEIL, zen::ceil(lhs))
                 _PER_UNARY_OP(OP_LENGTH, zen::vec3f(zen::length(lhs)))
+                _PER_UNARY_OP(OP_NORMALIZE, zen::normalize(lhs))
                 #undef _PER_UNARY_OP
+
+                #define _PER_TERNARY_OP(op, expr) \
+                case op: { \
+                    auto &lhs = stack.top(); stack.pop(); \
+                    auto &mhs = stack.top(); stack.pop(); \
+                    auto &rhs = stack.top(); stack.pop(); \
+                    auto ret = (expr); \
+                    stack.push(ret); \
+                } break;
+                _PER_TERNARY_OP(OP_VEC, zen::vec3f(lhs[0], mhs[0], rhs[0]))
+                _PER_TERNARY_OP(OP_MIX, zen::mix(lhs, mhs, rhs))
+                #undef _PER_TERNARY_OP
             }
         }
     }

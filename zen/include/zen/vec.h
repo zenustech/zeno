@@ -334,6 +334,16 @@ inline auto clamp(T const &x, S const &a, F const &b) {
     return min(max(x, a), b);
 }
 
+template <size_t N, class T, std::enable_if_t<!is_vec_v<T>, bool> = true>
+inline auto tovec(T const &x) {
+    return vec<N, T>(x);
+}
+
+template <size_t N, class T>
+inline auto tovec(vec<N, T> const &x) {
+    return x;
+}
+
 
 /* common type definitions */
 
