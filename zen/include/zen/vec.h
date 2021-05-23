@@ -261,6 +261,7 @@ _PER_FN2(atan2)
 _PER_FN2(pow)
 _PER_FN2(max)
 _PER_FN2(min)
+_PER_FN2(fmod)
 #undef _PER_FN2
 
 #define _PER_FN1(func) \
@@ -331,6 +332,16 @@ inline auto mix(T const &a, S const &b, F const &f) {
 template <class T, class S, class F>
 inline auto clamp(T const &x, S const &a, F const &b) {
     return min(max(x, a), b);
+}
+
+template <size_t N, class T, std::enable_if_t<!is_vec_v<T>, bool> = true>
+inline auto tovec(T const &x) {
+    return vec<N, T>(x);
+}
+
+template <size_t N, class T>
+inline auto tovec(vec<N, T> const &x) {
+    return x;
 }
 
 
