@@ -4,13 +4,12 @@ Node Editor UI
 
 import os
 import json
-import random
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
-from zenutils import go
+from zenutils import go, gen_unique_ident
 import zenapi
 
 
@@ -71,7 +70,7 @@ class QDMGraphicsScene(QGraphicsScene):
             inputs = data['inputs']
             params = data['params']
             posx, posy = data['uipos']
-            options = data.get('options', [])  # for backward compatbility
+            options = data['options']
 
             node = self.makeNode(name)
             node.setIdent(ident)
@@ -574,7 +573,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.outputs = {}
         self.options = {}
         self.name = None
-        self.ident = 'No{}'.format(random.randrange(1, 100000))
+        self.ident = gen_unique_ident()
 
     def remove(self):
         for socket in list(self.inputs.values()):
