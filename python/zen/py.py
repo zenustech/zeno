@@ -87,11 +87,16 @@ class INode(abc.ABC):
     def init(self):
         pass
 
+    def on_init(self):
+        self.init()
+
     @abc.abstractmethod
     def apply(self):
         pass
 
     def on_apply(self):
+        if self.has_input("SRC"):
+            self.get_input("SRC")
         ok = True
         if self.has_input("COND"):
           cond = self.get_input("COND")
@@ -123,7 +128,7 @@ def addNode(type, name):
 
 def initNode(name):
     node = nodes[name]
-    node.init()
+    node.on_init()
 
 
 def setNodeParam(name, key, value):

@@ -61,4 +61,17 @@ class ExportShader(INode):
         shutil.copy(fragShaderPath, primPath + '.' + type + '.frag')
 
 
+@defNodeClass
+class EndFrame(INode):
+    z_categories = 'fileio'
+
+    def apply(self):
+        assert iopath is not None, 'please zen.setIOPath first'
+        dirpath = os.path.join(iopath, '{:06d}'.format(G.frameid))
+        if not os.path.isdir(dirpath):
+            os.mkdir(dirpath)
+        with open(os.path.join(dirpath, 'done.lock'), 'w') as f:
+            f.write('DONE')
+
+
 __all__ = ['setIOPath']
