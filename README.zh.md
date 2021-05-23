@@ -36,7 +36,10 @@ pacman -S git cmake
 pacman -S gcc make
 pacman -S python python-devel python-pip
 pacman -S mingw-w64-x86_64-mesa mingw-w64-x86_64-qt5 mingw-w64-x86_64-python-pyqt5
-pacman -S mingw-w64-x86_64-python-numpy mingw-w64-x86_64-pybind11
+
+python -m pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+python -m pip install -U pip
+python -m pip install pybind11 numpy
 ```
 
 
