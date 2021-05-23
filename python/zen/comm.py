@@ -1,5 +1,5 @@
 from .py import *
-from .api import requireObject
+from .api import requireObject, hasObject
 
 
 portals = {}
@@ -139,7 +139,6 @@ class PrintMessage(INode):
         print(msg)
 
 
-
 @defNodeClass
 class IfCondition(INode):
     z_inputs = ['cond', 'true', 'false']
@@ -153,6 +152,18 @@ class IfCondition(INode):
         else:
             ret = self.get_input_ref('false')
         self.set_output_ref('out', ret)
+
+
+@defNodeClass
+class CachedOnce(INode):
+    z_inputs = ['value']
+    z_outputs = ['value']
+    z_categories = 'misc'
+
+    def apply(self):
+        if not hasObject(self.get_output_ref('value')):
+            value = self.get_input_ref('value')
+            self.set_output_ref('value', value)
 
 
 __all__ = []

@@ -79,6 +79,9 @@ def requireObject(srcname, is_py_dst=True):
             is_cpp2py_table.add(srcname)
             cpp2pyObject(srcname)
 
+def hasObject(srcname):
+    return py.isPyObject(srcname) or cpp.isCppObject(srcname)
+
 
 __all__ = [
     'addNode',

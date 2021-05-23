@@ -87,11 +87,16 @@ class INode(abc.ABC):
     def init(self):
         pass
 
+    def on_init(self):
+        self.init()
+
     @abc.abstractmethod
     def apply(self):
         pass
 
     def on_apply(self):
+        if self.has_input("SRC"):
+          self.get_input("SRC")  # to invoke requireObject
         ok = True
         if self.has_input("COND"):
           cond = self.get_input("COND")
@@ -123,7 +128,7 @@ def addNode(type, name):
 
 def initNode(name):
     node = nodes[name]
-    node.init()
+    node.on_init()
 
 
 def setNodeParam(name, key, value):
@@ -160,7 +165,7 @@ def defNodeClassByCtor(ctor, name, desc):
 
 
 def defNodeClass(cls):
-    name = getattr(cls, 'z_name', cls.__name__)
+    cls.z_name = name = getattr(cls, 'z_name', cls.__name__)
 
     def tostrlist(x):
         if isinstance(x, str):
@@ -168,10 +173,10 @@ def defNodeClass(cls):
         else:
             return list(x)
 
-    inputs = tostrlist(getattr(cls, 'z_inputs', []))
-    outputs = tostrlist(getattr(cls, 'z_outputs', []))
-    params = list(ParamDescriptor(*x) for x in getattr(cls, 'z_params', []))
-    categories = tostrlist(getattr(cls, 'z_categories', []))
+    cls.z_inputs = inputs = tostrlist(getattr(cls, 'z_inputs', []))
+    cls.z_outputs = outputs = tostrlist(getattr(cls, 'z_outputs', []))
+    cls.z_params = params = [ParamDescriptor(*x) for x in getattr(cls, 'z_params', [])]
+    cls.z_categories = categories = tostrlist(getattr(cls, 'z_categories', []))
 
     inputs.append("SRC")
     inputs.append("COND")

@@ -307,7 +307,7 @@ static int defWrangleImmed = zen::defNodeClass<WrangleImmed>("WrangleImmed",
     "res",
     }, /* params: */ {
     }, /* category: */ {
-    "primitive",
+    "wrangler",
     }});
 
 
@@ -331,7 +331,7 @@ static int defWrangleLoad = zen::defNodeClass<WrangleLoad>("WrangleLoad",
     {"int", "primId", "0"},
     {"string", "attrName", "pos"},
     }, /* category: */ {
-    "primitive",
+    "wrangler",
     }});
 
 
@@ -358,7 +358,7 @@ static int defWrangleStore = zen::defNodeClass<WrangleStore>("WrangleStore",
     {"int", "primId", "0"},
     {"string", "attrName", "pos"},
     }, /* category: */ {
-    "primitive",
+    "wrangler",
     }});
 
 
@@ -381,7 +381,7 @@ static int defWrangleUnaryOp = zen::defNodeClass<WrangleUnaryOp>("WrangleUnaryOp
     }, /* params: */ {
     {"string", "opName", "neg"},
     }, /* category: */ {
-    "primitive",
+    "wrangler",
     }});
 
 
@@ -407,7 +407,7 @@ static int defWrangleBinaryOp = zen::defNodeClass<WrangleBinaryOp>("WrangleBinar
     }, /* params: */ {
     {"string", "opName", "add"},
     }, /* category: */ {
-    "primitive",
+    "wrangler",
     }});
 
 
@@ -436,7 +436,7 @@ static int defWrangleTernaryOp = zen::defNodeClass<WrangleTernaryOp>("WrangleTer
     }, /* params: */ {
     {"string", "opName", "vec"},
     }, /* category: */ {
-    "primitive",
+    "wrangler",
     }});
 
 
