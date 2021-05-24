@@ -159,6 +159,10 @@ def getObject(name):
     return objects[name]
 
 
+def getNodeByName(name):
+    return nodes[name]
+
+
 def defNodeClassByCtor(ctor, name, desc):
     nodeClasses[name] = ctor
     nodeDescriptors[name] = desc
@@ -183,8 +187,8 @@ def defNodeClass(cls):
     outputs.append("DST")
 
     desc = Descriptor(inputs, outputs, params, categories)
-
     defNodeClassByCtor(cls, name, desc)
+    return cls
 
 
 def dumpDescriptors():
