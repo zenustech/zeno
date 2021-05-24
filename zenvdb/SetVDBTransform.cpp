@@ -1,6 +1,8 @@
 #if 0
 #include <zen/zen.h>
 #include <zen/VDBGrid.h>
+#include <openvdb/tools/GridTransformer.h>
+
 //#include "../../Library/MnBase/Meta/Polymorphism.h"
 //openvdb::io::File(filename).write({grid});
 
@@ -36,5 +38,12 @@ static int defSetVDBTransform = zen::defNodeClass<SetVDBTransform>("SetVDBTransf
     "openvdb",
     }});
 
+
+
+struct  ResampleVDBGrid : zen::INode {
+  virtual void apply() override {
+    
+  }
+};
 }
 #endif
