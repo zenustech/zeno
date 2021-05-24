@@ -169,6 +169,25 @@ class RepeatTimes(INode):
 
 
 @defNodeClass
+class RepeatUntil(INode):
+    z_inputs = ['stm', 'cond']
+    z_outputs = ['lastStm']
+    z_categories = 'misc'
+
+    def apply(self):
+        while True:
+            with newExecutionContext():
+                if self.has_input('stm'):
+                    stm = self.get_input_ref('stm')
+                    self.set_output_ref('lastStm', stm)
+                cond = self.get_input('cond')
+                if cond:
+                    break
+                else:
+                    print('cond not satisfied, repeat')
+
+
+@defNodeClass
 class CachedOnce(INode):
     z_inputs = ['value']
     z_outputs = ['value']

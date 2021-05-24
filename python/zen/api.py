@@ -27,13 +27,15 @@ def initNode(name):
 visited = set()
 
 @contextmanager
-def newExecutionContext():
+def newExecutionContext(isolated=False):
     global visited
     try:
         old_visited = visited
         visited = set()
         yield
     finally:
+        if not isolated:
+            old_visited.update(visited)
         visited = old_visited
 
 def invalidateNodes():
