@@ -1,3 +1,3 @@
-[submodule "Zensim"]
+[submodule "external/Zensim"]
 	path = external/Zensim
-	url = git@github.com:littlemine/Zensim.git
+	url = git@github.com:zensim-dev/Zensim.git
