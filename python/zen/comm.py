@@ -1,5 +1,5 @@
 from .py import *
-from .api import requireObject, hasObject
+from .api import requireObject, hasObject, newExecutionContext
 
 
 portals = {}
@@ -152,6 +152,20 @@ class IfCondition(INode):
         else:
             ret = self.get_input_ref('false')
         self.set_output_ref('out', ret)
+
+
+@defNodeClass
+class RepeatTimes(INode):
+    z_inputs = ['stm', 'times']
+    z_outputs = ['lastStm']
+    z_categories = 'misc'
+
+    def apply(self):
+        times = self.get_input('times')
+        for i in range(times):
+            with newExecutionContext():
+                stm = self.get_input_ref('stm')
+                self.set_output_ref('lastStm', stm)
 
 
 @defNodeClass

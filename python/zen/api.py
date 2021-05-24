@@ -4,9 +4,12 @@ Unified APIs
 
 from . import cpp, py, npy
 
+from contextlib import contextmanager
+
 
 def dumpDescriptors():
     return py.dumpDescriptors() + cpp.dumpDescriptors()
+
 
 def addNode(type, name):
     if py.isPyNodeType(type):
@@ -20,7 +23,18 @@ def initNode(name):
     else:
         cpp.initNode(name)
 
+
 visited = set()
+
+@contextmanager
+def newExecutionContext():
+    global visited
+    try:
+        old_visited = visited
+        visited = set()
+        yield
+    finally:
+        visited = old_visited
 
 def invalidateNodes():
     visited.clear()
@@ -37,6 +51,7 @@ def applyNode(name):
         for dep in deps:
             requireObject(dep, is_py_dst=False)
         cpp.applyNode(name)
+
 
 def cpp2pyObject(name):
     obj = npy.getCppObject(name)
@@ -91,4 +106,5 @@ __all__ = [
     'setNodeParam',
     'invalidateNodes',
     'dumpDescriptors',
+    'newExecutionContext',
 ]
