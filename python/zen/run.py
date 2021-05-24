@@ -21,6 +21,11 @@ def runGraph(nodes, nframes, iopath):
     print('EXITING')
 
 
+def evaluateExpr(expr):
+    frame = zen.G.frameid
+    return eval('f' + repr(expr))
+
+
 def runGraphOnce(nodes):
     for ident in nodes:
         data = nodes[ident]
@@ -39,7 +44,7 @@ def runGraphOnce(nodes):
 
         for name, value in params.items():
             if type(value) is str:
-                value = eval('f' + repr(value))
+                value = evaluateExpr(value)
             zen.setNodeParam(ident, name, value)
 
         zen.initNode(ident)
