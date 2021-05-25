@@ -1,11 +1,8 @@
 import os
 import sys
-import time
+import uuid
 import runpy
-import base64
 import ctypes
-import random
-import struct
 import tempfile
 import threading
 import functools
@@ -126,4 +123,5 @@ def add_line_numbers(script):
 
 
 def gen_unique_ident():
-    return ''.join(reversed(base64.b64encode(random.randbytes(4) + struct.pack('L', time.time_ns())).decode()))
+    return str(uuid.uuid1())
+    #return ''.join(reversed(base64.b64encode(random.randbytes(4) + struct.pack('L', time.time_ns())).decode()))
