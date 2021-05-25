@@ -8,6 +8,7 @@
 #include <openvdb/points/PointAdvect.h>
 #include <openvdb/tools/Morphology.h>
 #include <openvdb/tools/MeshToVolume.h>
+#include <string.h>
 namespace zenbase {
 
 
@@ -50,6 +51,7 @@ struct VDBGrid : zen::IObject {
     virtual void output(std::string path) = 0;
     virtual void input(std::string path) = 0;
     virtual void setTransform(openvdb::math::Transform::Ptr const &trans) = 0;
+    virtual std::string getType() {return std::string();}
 };
 
 
@@ -68,6 +70,32 @@ struct VDBGridWrapper : VDBGrid {
 
   virtual void setTransform(openvdb::math::Transform::Ptr const &trans) override {
     m_grid->setTransform(trans);
+  }
+
+  virtual std::string getType(){
+    if(std::is_same<GridT, openvdb::FloatGrid>::value)
+    {
+      return std::string("FloatGrid");
+    }
+    else if(std::is_same<GridT, openvdb::Int32Grid>::value)
+    {
+        return std::string("Int32Grid");
+    }
+    else if(std::is_same<GridT, openvdb::Vec3fGrid>::value)
+    {
+      return std::string("Vec3fGrid");
+    }
+    else if(std::is_same<GridT, openvdb::Vec3IGrid>::value)
+    {
+      return std::string("Vec3IGrid");
+    }
+    else if(std::is_same<GridT, openvdb::points::PointDataGrid>::value)
+    {
+      return std::string("PointDataGrid");
+    }
+    else {
+      return std::string("");
+    }
   }
 };
 
