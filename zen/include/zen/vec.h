@@ -269,6 +269,7 @@ template <class T> \
 inline auto func(T const &a) { \
   return vapply([] (auto const &x) { return std::func(x); }, a); \
 }
+_PER_FN1(abs)
 _PER_FN1(sqrt)
 _PER_FN1(sin)
 _PER_FN1(cos)

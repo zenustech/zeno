@@ -1319,7 +1319,8 @@ namespace {
 					pItpos = pIspos;
 					movefunc(pItpos, adv_vel);
 					ptCoord = openvdb::Coord{ floorVec3(pItpos + openvdb::Vec3f{ 0.5f }) };
-
+					
+					
 					//collision detection, see if this coordinate is inside the solid
 					if (naxr.isValueOn(ptCoord)) {
 						float new_pos_solid_sdf = openvdb::tools::BoxSampler::sample(sdfaxr, pItpos + openvdb::Vec3f{ 0.5 });
@@ -1331,7 +1332,7 @@ namespace {
 							}
 							//inside, but still can be saved, use the surface normal to move back the particle
 							auto snormal = naxr.getValue(ptCoord);
-							//handle velocity bounces
+							// //handle velocity bounces
 							particle_vel += (vnaxr.getValue(ptCoord) - snormal.dot(particle_vel)) * snormal;
 							//move particle out
 							pItpos -= new_pos_solid_sdf * snormal * invdx * 1.0f;
@@ -2152,7 +2153,7 @@ void FLIP_vdb::particle_to_grid_collect_style(
 	auto voxel_center_transform = openvdb::math::Transform::createLinearTransform(dx);
 	liquid_sdf->setTransform(voxel_center_transform);
 	liquid_sdf->setTree(std::make_shared<openvdb::FloatTree>(
-		velocity->tree(), liquid_sdf->background(), openvdb::TopologyCopy()));
+		velocity->tree(), 0.5f * std::sqrt(3.0f) * dx * 1.01f, openvdb::TopologyCopy()));
 
 	auto collector_op{ p2g_collector(liquid_sdf,
 			velocity,
@@ -4696,33 +4697,16 @@ void FLIP_vdb::apply_pressure_gradient(
 	openvdb::Vec3fGrid::Ptr & solid_velocity,
 	float dx,float in_dt)
 {
-	Eigen::Matrix<float, 4, 4> invmat;
-	float invdx2 = 1.0f / (dx * dx);
-	invmat.col(0) = invdx2 * Eigen::Vector4f{ 1.0 / 8.0, 0, 0, 0 };
-	invmat.col(1) = invdx2 * Eigen::Vector4f{ 0, 1.0f / 3.0f ,0 ,-1.0f / 6.0f };
-	invmat.col(2) = invdx2 * Eigen::Vector4f{ 0, 0, 1.0f / 3.0f ,-1.0f / 6.0f };
-	invmat.col(3) = invdx2 * Eigen::Vector4f{ 0, -1.0f / 6.0f, -1.0f / 6.0f, 1.0f / 4.0f };
-
-	Eigen::Matrix<float, 4, 12> mT;
-	for (int i = -1; i <=1; i++) {
-		float fi = float(i);
-		mT.block<1, 4>(0, 4 * (i + 1)) = Eigen::Vector4f{ fi,fi,fi,fi };
-		mT.block<1, 4>(1, 4 * (i + 1)) = Eigen::Vector4f{ 0,1,1,0 };
-		mT.block<1, 4>(2, 4 * (i + 1)) = Eigen::Vector4f{ 0,0,1,1 };
-		mT.block<1, 4>(3, 4 * (i + 1)) = Eigen::Vector4f{ 1,1,1,1 };
-	}
-	mT = mT * dx;
-
+	float boundary_friction_coef = Options::doubleValue("FLIP_solid_friction");
 	//given the solved pressure, update the velocity
 	//this is to be used by the velocity(post_pressure) leaf manager
-	auto velocity_update_op = [&](openvdb::Vec3fTree::LeafNodeType& leaf, 
-	openvdb::Index leafpos) {
-		auto phi_axr{ liquid_sdf->getConstAccessor() };
-		auto true_phi_axr{ pushed_out_liquid_sdf->getConstAccessor() };
-		auto weight_axr{ face_weight->getConstAccessor() };
-		auto solid_vel_axr{ solid_velocity->getConstAccessor() };
-		auto solid_sdf_axr{ solid_sdf->getConstAccessor() };
-		auto pressure_axr{ pressure->getConstAccessor() };
+	auto velocity_update_op = [&](openvdb::Vec3fTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+		auto phi_axr{ liquid_sdf->getConstUnsafeAccessor() };
+		auto true_phi_axr{ pushed_out_liquid_sdf->getConstUnsafeAccessor() };
+		auto weight_axr{ face_weight->getConstUnsafeAccessor() };
+		auto solid_vel_axr{ solid_velocity->getConstUnsafeAccessor() };
+		auto solid_sdf_axr{ solid_sdf->getConstUnsafeAccessor() };
+		auto pressure_axr{ pressure->getConstUnsafeAccessor() };
 		//auto update_axr{ m_velocity_update->getAccessor() };
 
 		
@@ -4767,24 +4751,17 @@ void FLIP_vdb::apply_pressure_gradient(
 						else {
 							//one of them is inside the liquid, one is outside
 							if (phi_this >= 0) {
-								//this point is outside the liquid, possibly free air
-								if (openvdb::tools::BoxSampler::sample(solid_sdf_axr, gcoord.asVec3d()+openvdb::Vec3d(0.5)) > 0) {
+								//this point is outside the liquid, possibly free air or free air in the liquid
 									//if so, set the pressure to be ghost value
-									if (true_phi_axr.getValue(lower_gcoord) < 0) {
-										update_this_velocity = true;
-									}
-									//p_this = p_below / std::min(phi_below, - m_dx*1e-3f) * phi_this;
+								if (true_phi_axr.getValue(lower_gcoord) < 0) {
+									update_this_velocity = true;
 								}
 							}
-
 							if (phi_below >= 0) {
-								//this point is outside the liquid, possibly free air
-								if (openvdb::tools::BoxSampler::sample(solid_sdf_axr, lower_gcoord.asVec3d() + openvdb::Vec3d(0.5)) > 0) {
+								//this point below is outside the liquid, possibly free air
 									//if so, set the pressure to be ghost value
-									if (true_phi_axr.getValue(gcoord) < 0) {
-										update_this_velocity = true;
-									}
-									//p_below = p_this / std::min(phi_this, - m_dx * 1e-3f) * phi_below;
+								if (true_phi_axr.getValue(gcoord) < 0) {
+									update_this_velocity = true;
 								}
 							}
 						} //end else all outside liquid
@@ -4800,78 +4777,9 @@ void FLIP_vdb::apply_pressure_gradient(
 						original_vel[ic] -= in_dt * (float)(p_this - p_below) / dx / theta;
 						vel_update[ic] = in_dt * (float)(p_this - p_below) / dx / theta;
 						if (face_weights[ic] < 1) {
-							//use the voxel center solid sdf gradient
-							openvdb::Vec3f grad_solid{ 0 };
-							openvdb::Vec3f evalpos{ 0.5 };
-
-							//evaluate the four sdf on this face
-							Eigen::VectorXf neib_sdf = Eigen::VectorXf::Zero(12);
-
-
-							//four_sdf[0] = solid_sdf_axr.getValue(gcoord);
-							//calculate the in-plane solid normal
-							//then deduce the off-plane solid normal 
-							for (int iclevel = -1; iclevel <= 1; iclevel++) {
-								int ic4 = (iclevel + 1) * 4;
-								switch (ic) {
-								case 0:
-									//   ^z
-									//(0,0,1)------(0,1,1)
-									//   |            |
-									//(0,0,0)------(0,1,0)>y
-									//u
-									neib_sdf[0 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(iclevel, 0, 0));
-									neib_sdf[1 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(iclevel, 1, 0));
-									neib_sdf[2 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(iclevel, 1, 1));
-									neib_sdf[3 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(iclevel, 0, 1));
-									break;
-								case 1:
-									//   ^x              
-									//(1,0,0)------(1,0,1)
-									//   |            |
-									//(0,0,0)------(0,0,1)>z
-									//v
-									neib_sdf[0 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(0, iclevel, 0));
-									neib_sdf[1 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(0, iclevel, 1));
-									neib_sdf[2 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(1, iclevel, 1));
-									neib_sdf[3 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(1, iclevel, 0));
-									break;
-								case 2:
-									//   ^y              
-									//(0,1,0)------(1,1,0)
-									//   |            |
-									//(0,0,0)------(1,0,0)>x
-									//w
-									neib_sdf[0 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(0, 0, iclevel));
-									neib_sdf[1 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(1, 0, iclevel));
-									neib_sdf[2 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(1, 1, iclevel));
-									neib_sdf[3 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(0, 1, iclevel));
-									break;
-								}
-							}
-							
-
-							Eigen::Vector4f abcd = invmat * mT * neib_sdf;
-							float normal_a = std::max(-1.f, std::min(1.f, abcd[0]));
-
-							//make sure on the normal direction, the velocity has the same component
-
-							openvdb::Vec3f facev{ 0,0,0 };
-							grad_solid[ic] = normal_a;
-							facev[ic] = original_vel[ic];
-							if (1||(original_vel[ic]-solid_vel[ic]) * normal_a < 0) {
-								facev -= grad_solid * grad_solid.dot(facev);
-								facev += grad_solid * grad_solid.dot(solid_vel);
-							}
-							//original_vel[ic] = facev[ic];
-							/*float penetrating = grad_solid[ic] * original_vel[ic];
-								original_vel[ic] -= penetrating;
-								original_vel[ic] += grad_solid[ic] * solid_vel[ic];
-							}*/
-
-							//mix the solid velocity and fluid velocity
-							//float solid_fraction = (1 - face_weights[ic])*0.0;
-							//original_vel[ic] = (1-solid_fraction) * original_vel[ic] + (solid_fraction) * solid_vel[ic];
+							//mix the solid velocity and fluid velocity if friction is expected
+							float solid_fraction = (1 - face_weights[ic])* boundary_friction_coef;
+							original_vel[ic] = (1-solid_fraction) * original_vel[ic] + (solid_fraction) * solid_vel[ic];
 						}
 						has_any_update = true;
 					}//end if any dofs on two sides
@@ -4885,7 +4793,7 @@ void FLIP_vdb::apply_pressure_gradient(
 			}//end for three component
 
 			if (!has_any_update) {
-				leaf.setValueOff(offset, openvdb::Vec3f{ 0,0,0 });
+				leaf.setValueOff(offset);
 				//update_axr.setValueOff(leaf.offsetToGlobalCoord(offset));
 			}
 			else {

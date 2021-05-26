@@ -361,7 +361,7 @@ void simd_vdb_poisson::Laplacian_with_level::initialize_finest(openvdb::FloatGri
 							this_diag_entry += term / theta;
 						}
 						else {
-							this_diag_entry += term * 1e-1f;
+							//this_diag_entry += term * 1e-1f;
 						}
 					}//end else other cell is dof
 				}//end for 6 faces
@@ -2414,14 +2414,17 @@ void simd_vdb_poisson::build_rhs()
 				}
 
 				auto vneib_c = gcoord;
+				auto phineib_c = gcoord;
 				vneib_c[channel] += positive_dir;
 				auto vneib_o = idxleaf.coordToOffset(vneib_c);
-				auto phineib_c = gcoord;
-				if (positive_dir){
+
+				if (positive_dir) {
 					phineib_c[channel]++;
-				} else {
+				}
+				else {
 					phineib_c[channel]--;
 				}
+
 				float neibphi = liquid_phi_axr.getValue(phineib_c);
 
 				//retrieve the scalar variables

@@ -81,7 +81,10 @@ struct MakeVDBGrid : zen::INode {
     std::unique_ptr<VDBGrid> data;
     if (type == "float") {
       auto tmp = zen::IObject::make<VDBFloatGrid>();
-      tmp->m_grid->setTransform(openvdb::math::Transform::createLinearTransform(dx));
+      auto transform = openvdb::math::Transform::createLinearTransform(dx);
+      if(structure==std::string("vertex"))
+        transform->postTranslate(openvdb::Vec3d{ -0.5,-0.5,-0.5 }*double(dx));
+      tmp->m_grid->setTransform(transform);
       tmp->m_grid->setName(name);
       data = std::move(tmp);
     } else if (type == "float3") {

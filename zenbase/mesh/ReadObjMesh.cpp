@@ -1,7 +1,9 @@
 #include <zen/zen.h>
+#include <zen/NumericObject.h>
 #include <zen/MeshObject.h>
 #include <zen/StringObject.h>
 #include <cstring>
+#include <omp.h>
 
 namespace zenbase {
 
@@ -108,7 +110,7 @@ static void readobj(
           last_index = index;
         }
       }else {
-        printf("face vert only\n");
+        //printf("face vert only\n");
         glm::uvec3 last_index, first_index, index;
 
         fscanf(fp, "%d", &index.x);
@@ -159,7 +161,35 @@ static int defReadObjMesh = zen::defNodeClass<ReadObjMesh>("ReadObjMesh",
     "trimesh",
     }});
 
+struct MeshMix : zen::INode {
+  virtual void apply() override {
+    auto meshA = get_input("meshA")->as<MeshObject>();
+    auto meshB = get_input("meshB")->as<MeshObject>();
+    auto coef = get_input("coef")->as<zenbase::NumericObject>()->get<float>();
+    auto mesh = zen::IObject::make<MeshObject>();
+    mesh->vertices=meshA->vertices;
+    mesh->uvs=meshA->uvs;
+    mesh->normals=meshA->normals;
+#pragma omp parallel for
+    for(int i=0;i<mesh->vertices.size();i++)
+    {
+      mesh->vertices[i] = (1.0f-coef)*meshA->vertices[i] + coef*meshB->vertices[i];
+    }
+    set_output("mesh", mesh);
+  }
+};
 
+static int defMeshMix = zen::defNodeClass<MeshMix>("MeshMix",
+    { /* inputs: */ {
+      "meshA",
+      "meshB",
+      "coef",
+    }, /* outputs: */ {
+    "mesh",
+    }, /* params: */ {
+    }, /* category: */ {
+    "trimesh",
+    }});
 struct ImportObjMesh : zen::INode {
   virtual void apply() override {
     auto path = get_input("path")->as<StringObject>();

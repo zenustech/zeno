@@ -167,6 +167,76 @@ static int defPrimitiveBinaryOp = zen::defNodeClass<PrimitiveBinaryOp>("Primitiv
     }});
 
 
+
+struct PrimitiveReduction : zen::INode {
+    virtual void apply() override{
+        auto prim = get_input("prim")->as<PrimitiveObject>();
+        auto attrToReduce = std::get<std::string>(get_param("attr"));
+        auto op = std::get<std::string>(get_param("op"));
+        zenbase::NumericValue result;
+        if (zenbase::is_vec3f_vector(prim->attr(attrToReduce)))
+            result = prim->reduce<zen::vec3f>(attrToReduce, op);
+        else 
+            result = prim->reduce<float>(attrToReduce, op);
+        auto out = zen::IObject::make<zenbase::NumericObject>();
+        out->set(result);
+        set_output("result", out);
+    }
+};
+static int defPrimitiveReduction = zen::defNodeClass<PrimitiveReduction>("PrimitiveReduction",
+    { /* inputs: */ {
+    "prim",
+    }, /* outputs: */ {
+    "result",
+    }, /* params: */ {
+    {"string", "attr", "pos"},
+    {"string", "op", "avg"},
+    }, /* category: */ {
+    "primitive",
+    }});
+
+
+struct PrimitiveMix : zen::INode {
+    virtual void apply() override{
+        auto primA = get_input("primA")->as<PrimitiveObject>();
+        auto primB = get_input("primB")->as<PrimitiveObject>();
+        auto primOut = get_input("primOut")->as<PrimitiveObject>();
+        auto attrA = std::get<std::string>(get_param("attrA"));
+        auto attrB = std::get<std::string>(get_param("attrB"));
+        auto attrOut = std::get<std::string>(get_param("attrOut"));
+        auto const &arrA = primA->attr(attrA);
+        auto const &arrB = primB->attr(attrB);
+        auto &arrOut = primOut->attr(attrOut);
+        auto coef = get_input("coef")->as<zenbase::NumericObject>()->get<float>();
+        
+        std::visit([coef](auto &arrA, auto &arrB, auto &arrOut) {
+          if constexpr (std::is_same_v<decltype(arrA), decltype(arrB)> && std::is_same_v<decltype(arrA), decltype(arrOut)>) {
+#pragma omp parallel for
+            for (int i = 0; i < arrOut.size(); i++) {
+                arrOut[i] = (1.0-coef)*arrA[i] + coef*arrB[i];
+            }
+          }
+        }, arrA, arrB, arrOut);
+        set_output_ref("primOut", get_input_ref("primOut"));
+    }
+};
+static int defPrimitiveMix = zen::defNodeClass<PrimitiveMix>("PrimitiveMix",
+    { /* inputs: */ {
+    "primA",
+    "primB",
+    "primOut",
+    "coef",
+    }, /* outputs: */ {
+    "primOut",
+    }, /* params: */ {
+    {"string", "attrA", "pos"},
+    {"string", "attrB", "pos"},
+    {"string", "attrOut", "pos"},
+    }, /* category: */ {
+    "primitive",
+    }});
+
+
 template <class FuncT>
 struct HalfBinaryOperator {
     FuncT func;
