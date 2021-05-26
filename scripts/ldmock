@@ -1,0 +1,5 @@
+#!/bin/bash
+
+root="$(dirname -- "$(realpath -- "$0")")"
+export LD_LIBRARY_PATH="$root/lib:$LD_LIBRARY_PATH"
+exec -a "$0" -- "$root/sbin/$(basename "$0")" "$@"
