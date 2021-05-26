@@ -25,8 +25,11 @@ struct MeshToPrimitive : zen::INode{
     {
         result->attr<zen::vec3f>("pos")[i] = zen::vec3f(mesh->vertices[i].x,
             mesh->vertices[i].y, mesh->vertices[i].z);
+
+        if(mesh->uvs.size()>0)
         result->attr<zen::vec3f>("clr")[i] = zen::vec3f(mesh->uvs[i].x, mesh->uvs[i].y,
             0);
+        if(mesh->normals.size()>0)
         result->attr<zen::vec3f>("nrm")[i] = zen::vec3f(mesh->normals[i].x, mesh->normals[i].y,mesh->normals[i].z);
     }
 #pragma omp parallel for

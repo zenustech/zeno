@@ -24,43 +24,105 @@ static void readobj(
     abort();
   }
 
+  bool has_normal = false;
+  bool has_texcoord = false;
   char hdr[128];
-  while (EOF != fscanf(fp, "%s", hdr)) {
+  while (EOF != fscanf(fp, "%s", hdr)) 
+  {
     if (!strcmp(hdr, "v")) {
       glm::vec3 vertex;
       fscanf(fp, "%f %f %f\n", &vertex.x, &vertex.y, &vertex.z);
       vertices.push_back(vertex);
 
     } else if (!strcmp(hdr, "vt")) {
+      has_texcoord = true;
       glm::vec2 uv;
       fscanf(fp, "%f %f\n", &uv.x, &uv.y);
       uvs.push_back(uv);
 
     } else if (!strcmp(hdr, "vn")) {
+      has_normal = true;
       glm::vec3 normal;
       fscanf(fp, "%f %f %f\n", &normal.x, &normal.y, &normal.z);
       normals.push_back(normal);
 
     } else if (!strcmp(hdr, "f")) {
-      glm::uvec3 last_index, first_index, index;
+      if(has_normal&&has_texcoord)
+      {
+        glm::uvec3 last_index, first_index, index;
 
-      fscanf(fp, "%d/%d/%d", &index.x, &index.y, &index.z);
-      first_index = index;
+        fscanf(fp, "%d/%d/%d", &index.x, &index.y, &index.z);
+        first_index = index;
 
-      fscanf(fp, "%d/%d/%d", &index.x, &index.y, &index.z);
-      last_index = index;
-
-      while (fscanf(fp, "%d/%d/%d", &index.x, &index.y, &index.z) > 0) {
-        vertex_indices.push_back(first_index.x);
-        uv_indices.push_back(first_index.y);
-        normal_indices.push_back(first_index.z);
-        vertex_indices.push_back(last_index.x);
-        uv_indices.push_back(last_index.y);
-        normal_indices.push_back(last_index.z);
-        vertex_indices.push_back(index.x);
-        uv_indices.push_back(index.y);
-        normal_indices.push_back(index.z);
+        fscanf(fp, "%d/%d/%d", &index.x, &index.y, &index.z);
         last_index = index;
+
+        while (fscanf(fp, "%d/%d/%d", &index.x, &index.y, &index.z) > 0) {
+          vertex_indices.push_back(first_index.x);
+          uv_indices.push_back(first_index.y);
+          normal_indices.push_back(first_index.z);
+          vertex_indices.push_back(last_index.x);
+          uv_indices.push_back(last_index.y);
+          normal_indices.push_back(last_index.z);
+          vertex_indices.push_back(index.x);
+          uv_indices.push_back(index.y);
+          normal_indices.push_back(index.z);
+          last_index = index;
+        }
+      }else if(has_normal)
+      {
+        glm::uvec3 last_index, first_index, index;
+
+        fscanf(fp, "%d/%d", &index.x, &index.y);
+        first_index = index;
+
+        fscanf(fp, "%d/%d", &index.x, &index.y);
+        last_index = index;
+
+        while (fscanf(fp, "%d/%d", &index.x, &index.y) > 0) {
+          vertex_indices.push_back(first_index.x);
+          normal_indices.push_back(first_index.y);
+          vertex_indices.push_back(last_index.x);
+          normal_indices.push_back(last_index.y);
+          vertex_indices.push_back(index.x);
+          normal_indices.push_back(index.y);
+          last_index = index;
+        }
+      }else if(has_texcoord)
+      {
+        glm::uvec3 last_index, first_index, index;
+
+        fscanf(fp, "%d/%d", &index.x, &index.y);
+        first_index = index;
+
+        fscanf(fp, "%d/%d", &index.x, &index.y);
+        last_index = index;
+
+        while (fscanf(fp, "%d/%d", &index.x, &index.y) > 0) {
+          vertex_indices.push_back(first_index.x);
+          uv_indices.push_back(first_index.y);
+          vertex_indices.push_back(last_index.x);
+          uv_indices.push_back(last_index.y);
+          vertex_indices.push_back(index.x);
+          uv_indices.push_back(index.y);
+          last_index = index;
+        }
+      }else {
+        printf("face vert only\n");
+        glm::uvec3 last_index, first_index, index;
+
+        fscanf(fp, "%d", &index.x);
+        first_index = index;
+
+        fscanf(fp, "%d", &index.x);
+        last_index = index;
+
+        while (fscanf(fp, "%d", &index.x) > 0) {
+          vertex_indices.push_back(first_index.x);
+          vertex_indices.push_back(last_index.x);
+          vertex_indices.push_back(index.x);
+          last_index = index;
+        }
       }
     }
   }
