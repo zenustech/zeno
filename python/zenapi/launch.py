@@ -29,15 +29,15 @@ def _launch_mproc(func, *args):
     global g_proc
     if g_proc is not None:
         killProcess()
-    if 1:
+    if os.environ.get('ZEN_SPROC'):
+        func(*args)
+    else:
         g_proc = Process(target=func, args=tuple(args), daemon=True)
         g_proc.start()
         g_proc.join()
         if g_proc is not None:
             print('worker processed exited with', g_proc.exitcode)
         g_proc = None
-    else:
-        func(*args)
 
 
 @atexit.register
