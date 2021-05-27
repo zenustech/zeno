@@ -31,7 +31,8 @@ struct MeshToSDF : zen::INode{
     {
         triangles[i] = openvdb::Vec3I(i*3, i*3+1, i*3+2);
     }
-    result->m_grid = openvdb::tools::meshToSignedDistanceField<openvdb::FloatGrid>(*openvdb::math::Transform::createLinearTransform(h),points, triangles, quads, 4, 4); 
+    result->m_grid = openvdb::tools::meshToSignedDistanceField<openvdb::FloatGrid>(*openvdb::math::Transform::createLinearTransform(h),points, triangles, quads, 4, 4);
+    openvdb::tools::signedFloodFill(result->m_grid->tree());
     set_output("sdf", result);
   }
 };

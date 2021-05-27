@@ -1290,7 +1290,7 @@ namespace {
 				openvdb::Coord olbegin{ openvdb::Coord::max() };
 				openvdb::Coord olend{ openvdb::Coord::min() };
 				float flip_component = (1.0f - m_pic_component);
-				float deep_threshold = -2 * m_dx;
+				float deep_threshold = -4.0 * m_dx;
 				float touch_threshold = 0.6f * m_dx;
 				float invdx = 1.0f / m_dx;
 				float dtinvdx = dt / m_dx;
@@ -1320,24 +1320,26 @@ namespace {
 					movefunc(pItpos, adv_vel);
 					ptCoord = openvdb::Coord{ floorVec3(pItpos + openvdb::Vec3f{ 0.5f }) };
 					
-					
+					float new_pos_solid_sdf = openvdb::tools::BoxSampler::sample(sdfaxr, pItpos + openvdb::Vec3f{ 0.5 });
 					//collision detection, see if this coordinate is inside the solid
-					if (naxr.isValueOn(ptCoord)) {
-						float new_pos_solid_sdf = openvdb::tools::BoxSampler::sample(sdfaxr, pItpos + openvdb::Vec3f{ 0.5 });
-						new_pos_solid_sdf -= touch_threshold;
-						if (new_pos_solid_sdf < 0) {
+					if (new_pos_solid_sdf<0) {
+						
+						
+						
 							if (new_pos_solid_sdf < deep_threshold) {
 								//too deep, just continue to next particle
 								continue;
 							}
 							//inside, but still can be saved, use the surface normal to move back the particle
 							auto snormal = naxr.getValue(ptCoord);
-							// //handle velocity bounces
-							particle_vel += (vnaxr.getValue(ptCoord) - snormal.dot(particle_vel)) * snormal;
 							//move particle out
 							pItpos -= new_pos_solid_sdf * snormal * invdx * 1.0f;
 							ptCoord = openvdb::Coord{ floorVec3(pItpos + openvdb::Vec3f{ 0.5f }) };
-						}//end if particle is truly inside solid
+							//handle velocity bounces
+							particle_vel += (vnaxr.getValue(ptCoord) - snormal.dot(particle_vel)) * snormal;
+							
+							
+						
 						
 					}//end if surface normal exist
 
@@ -2143,7 +2145,7 @@ void FLIP_vdb::particle_to_grid_collect_style(
 	openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf,
 	float dx)
 {
-	float particle_radius = 0.5f * std::sqrt(3.0f) * dx * 1.01;
+	float particle_radius = 0.6f * std::sqrt(3.0f) * dx * 1.01;
 	velocity->setTree(std::make_shared<openvdb::Vec3fTree>(
 		particles->tree(), openvdb::Vec3f{ 0 }, openvdb::TopologyCopy()));
 	openvdb::tools::dilateActiveValues(velocity->tree(), 1, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
@@ -2153,7 +2155,7 @@ void FLIP_vdb::particle_to_grid_collect_style(
 	auto voxel_center_transform = openvdb::math::Transform::createLinearTransform(dx);
 	liquid_sdf->setTransform(voxel_center_transform);
 	liquid_sdf->setTree(std::make_shared<openvdb::FloatTree>(
-		velocity->tree(), 0.5f * std::sqrt(3.0f) * dx * 1.01f, openvdb::TopologyCopy()));
+		velocity->tree(), 0.9f*dx, openvdb::TopologyCopy()));
 
 	auto collector_op{ p2g_collector(liquid_sdf,
 			velocity,
