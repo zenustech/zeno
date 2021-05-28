@@ -42,6 +42,7 @@ struct SimulationBox : zen::INode {
     prim->add_attr<zen::vec3f>("pos");
     prim->add_attr<zen::vec3f>("vel");
     prim->add_attr<zen::vec3f>("acc");
+    prim->add_attr<zen::vec3f>("clr");
     prim->add_attr<float>("mass");
     auto boxlength_obj = zen::IObject::make<NumericObject>();
     boxlength_obj->set(boxlength);
@@ -78,6 +79,7 @@ struct InitializeSystem: zen::INode {
     // random initialize for now
     auto &pos = prim->attr<zen::vec3f>("pos");
     auto &vel = prim->attr<zen::vec3f>("vel");
+    auto &clr = prim->attr<zen::vec3f>("clr");
     auto &mass = prim->attr<float>("mass");
 
     auto n = pos.size();
@@ -92,6 +94,7 @@ struct InitializeSystem: zen::INode {
         vel[i] = v;
         vcm += vel[i];
         mass[i] = 1.0f; // ad-hoc, reserved for mix-atom simulation
+        clr[i] = zen::vec3f(1);
     }
     vcm /= n;
     for (int i = 0; i < n; i++) {

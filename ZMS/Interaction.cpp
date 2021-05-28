@@ -18,8 +18,9 @@ struct LennardJonesInteraction: IPairwiseInteraction {
 
     virtual float energy(float r2) {
       float r6 = r2 * r2 * r2;
-      return 4 * epsilon * (sigma6 * sigma6 / (r6 * r6) - sigma6 / r6);
+      return 4 * epsilon * (sigma6 * sigma6 / (r6 * r6) - sigma6 / r6) - ecut;
     }
+
 };
 
 struct LennardJones: zen::INode {
@@ -30,10 +31,12 @@ struct LennardJones: zen::INode {
     auto sigma3 = sigma * sigma * sigma;
     
     auto lj = zen::IObject::make<LennardJonesInteraction>();
-    printf("LJ: %f %f\n", sigma, epsilon);
     lj->rcut = rcut;
+    lj->rcutsq = rcut * rcut;
     lj->sigma6 = sigma3 * sigma3;
     lj->epsilon = epsilon;
+    lj->ecut = lj->energy(rcut * rcut);
+    printf("LJ: %f %f %f %f\n", sigma, epsilon, lj->rcut, lj->ecut);
     set_output("lennard-jones", lj);
   }
 };
