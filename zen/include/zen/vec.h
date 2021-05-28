@@ -238,7 +238,7 @@ _PER_OP2(>=)
 #undef _PER_OP2
 
 #define _PER_OP1(op) \
-template <class T> \
+template <class T, std::enable_if_t<is_vec_v<T>, bool> = true> \
 inline auto operator op(T const &a) { \
   return vapply([] (auto const &x) { return op x; }, a); \
 }
@@ -295,7 +295,7 @@ inline auto length(vec<N, T> const &a) {
     for (size_t i = 0; i < N; i++) {
         res += a[i] * a[i];
     }
-    return res;
+    return std::sqrt(res);
 }
 
 template <size_t N, class T>

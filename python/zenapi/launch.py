@@ -14,6 +14,7 @@ import zen
 zen.loadLibrary('libOCTlib.so')
 zen.loadLibrary('libZMSlib.so')
 #zen.loadLibrary('libFLIPlib.so')
+#zen.loadLibrary('libzenvdb.so')
 '''
 
 iopath = '/tmp/zenio'

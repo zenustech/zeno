@@ -18,9 +18,9 @@ struct PrimitiveObject : zen::IObject {
     std::map<std::string, AttributeArray> m_attrs;
     size_t m_size{0};
 
-    std::vector<int> particles;
+    std::vector<int> points;
     std::vector<zen::vec2i> lines;
-    std::vector<zen::vec3i> triangles;
+    std::vector<zen::vec3i> tris;
     std::vector<zen::vec4i> quads;
 
     template <class T>

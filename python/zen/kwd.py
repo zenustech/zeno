@@ -32,11 +32,7 @@ def frameBegin():
     G.has_time_step_integrated = False
     G.frame_time_elapsed = 0.0
 
-    if G.frameid == 0: addNode('EndFrame', 'endFrame')  # DELME on rfc
-
 def frameEnd():
-    applyNode('endFrame')  # DELME on rfc
-
     G.frameid += 1
 
 def substepBegin():

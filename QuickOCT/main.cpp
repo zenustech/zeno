@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/PrimitiveObject.h>
+#include <zen/NumericObject.h>
 #include "OctreeObject.h"
 #include <algorithm>
 #include <numeric>
@@ -48,7 +49,7 @@ struct AdvectStars : zen::INode {
     auto &pos = stars->attr<zen::vec3f>("pos");
     auto &vel = stars->attr<zen::vec3f>("vel");
     auto &acc = stars->attr<zen::vec3f>("acc");
-    auto dt = std::get<float>(get_param("dt"));
+    auto dt = get_input("dt")->as<NumericObject>()->get<float>();
     #pragma omp parallel for
     for (int i = 0; i < stars->size(); i++) {
         pos[i] += vel[i] * dt + acc[i] * (dt * dt / 2);
@@ -62,10 +63,10 @@ struct AdvectStars : zen::INode {
 static int defAdvectStars = zen::defNodeClass<AdvectStars>("AdvectStars",
     { /* inputs: */ {
     "stars",
+    "dt",
     }, /* outputs: */ {
     "stars",
     }, /* params: */ {
-    {"float", "dt", "0.01 0"},
     }, /* category: */ {
     "NBodySolver",
     }});
@@ -99,15 +100,18 @@ struct LinearOctree : zen::INode {
         bmin = zen::min(bmin, pos[i]);
         bmax = zen::max(bmax, pos[i]);
     }
-    auto scale = 1 / (bmax - bmin);
-    auto offset = -bmin * scale;
+    bmin -= 1e-6;
+    bmax += 1e-6;
+    auto radii = bmax - bmin;
+    auto offset = -bmin / radii;
+    float radius = zen::max(radii[0], zen::max(radii[1], radii[2]));
 
     // compute morton code
     std::vector<unsigned long> mc(stars->size());
 
     #pragma omp parallel for
     for (int i = 0; i < stars->size(); i++) {
-        mc[i] = morton3d(pos[i] * scale + offset);
+        mc[i] = morton3d(pos[i] / radii + offset);
     }
 
 #if 0
@@ -130,6 +134,9 @@ struct LinearOctree : zen::INode {
 
     // construct octree
     auto tree = zen::IObject::make<OctreeObject>();
+    tree->offset = offset;
+    tree->radius = radius;
+
     auto &children = tree->children;
     children.resize(1);
 
@@ -141,29 +148,30 @@ struct LinearOctree : zen::INode {
     while (!stack.empty()) {
         int pid = stack.top(); stack.pop();
         int k, curr = 0;
-        for (k = 27; k >= 0; k -= 3) {
+        for (k = 60 - 3; k >= 0; k -= 3) {
             int sel = (mc[pid] >> k) & 7;
             int ch = children[curr][sel];
             if (ch == 0) {  // empty
                 // directly insert a leaf node
-                children[curr][sel] = -pid;
+                children[curr][sel] = -1 - pid;
                 break;
             } else if (ch > 0) {  // child node
                 // then visit into this node
                 curr = ch;
             } else {  // leaf node
                 // pop the leaf, replace with a child node, and visit later
-                stack.push(-ch);
+                int oldpid = -1 - ch;
+                stack.push(oldpid);
                 curr = children[curr][sel] = children.size();
                 children.emplace_back();
             }
         }
         if (k < 0) {  // the difference of star pos < 1 / 1048576
-            printf("ERROR: particle morton code overlap!\n");
+            printf("ERROR: particle morton code overlap 0x%lX!\n", mc[pid]);
         }
     }
 
-    printf("LinearOctree: %zd stars -> %zd nodes\n", stars->size(), children.size());
+    printf("%zd stars, %zd nodes, radius %f\n", stars->size(), children.size(), radius);
     set_output("tree", tree);
     set_output_ref("stars", get_input_ref("stars"));
   }
@@ -194,7 +202,7 @@ struct CalcOctreeAttrs : zen::INode {
         tree->mass.resize(children.size());
         tree->CoM.resize(children.size());
 
-        //#pragma omp parallel for
+        #pragma omp parallel for
         for (int no = 0; no < children.size(); no++) {
             std::stack<int> stack;
             stack.push(no);
@@ -205,13 +213,23 @@ struct CalcOctreeAttrs : zen::INode {
                     if (ch > 0) {  // child node
                         stack.push(ch);
                     } else if (ch < 0) {  // leaf node
-                        int pid = -ch;
-                        tree->mass[curr] += mass[pid];
-                        tree->CoM[curr] += pos[pid] * mass[pid];
+                        int pid = -1 - ch;
+                        tree->mass[no] += mass[pid];
+                        tree->CoM[no] += pos[pid] * mass[pid];
                     }
                 }
             }
         }
+        #pragma omp parallel for
+        for (int no = 0; no < children.size(); no++) {
+            if (tree->mass[no] != 0)
+                tree->CoM[no] /= tree->mass[no];
+        }
+
+        printf("total mass %f at %f %f %f\n", tree->mass[0],
+            tree->CoM[0][0], tree->CoM[0][1], tree->CoM[0][2]);
+
+        set_output_ref("tree", get_input_ref("tree"));
     }
 };
 
@@ -227,7 +245,79 @@ static int defCalcOctreeAttrs = zen::defNodeClass<CalcOctreeAttrs>("CalcOctreeAt
     }});
 
 
+float invpow3(zen::vec3f const &a, float eps) {
+    float rr = zen::dot(a, a) + eps * eps;
+    float r = zen::sqrt(rr);
+    return 1 / (r * rr);
+}
+
+
 struct ComputeGravity : zen::INode {
+  virtual void apply() override {
+    auto stars = get_input("stars")->as<PrimitiveObject>();
+    auto tree = get_input("tree")->as<OctreeObject>();
+    auto &mass = stars->attr<float>("mass");
+    auto &pos = stars->attr<zen::vec3f>("pos");
+    auto &vel = stars->attr<zen::vec3f>("vel");
+    auto &acc = stars->attr<zen::vec3f>("acc");
+    auto G = std::get<float>(get_param("G"));
+    auto lam = std::get<float>(get_param("lam"));
+    auto eps = std::get<float>(get_param("eps"));
+    printf("computing gravity...\n");
+    for (int i = 0; i < stars->size(); i++) {
+        acc[i] = zen::vec3f(0);
+    }
+    #pragma omp parallel for
+    for (int i = 0; i < stars->size(); i++) {
+        std::stack<std::tuple<int, int>> stack;
+        stack.push(std::make_tuple<int, int>(0, 0));
+        while (!stack.empty()) {
+            auto [curr, depth] = stack.top(); stack.pop();
+            auto d2CoM = tree->CoM[curr] - pos[i];
+            float node_size = tree->radius / (1 << depth);
+            if (zen::length(d2CoM) > lam * node_size) {
+                //printf("accel %d by far %d %f %d\n", i, curr, node_size, depth);
+                acc[i] += d2CoM * tree->mass[curr] * invpow3(d2CoM, eps);
+                continue;
+            }
+            for (int sel = 0; sel < 8; sel++) {
+                int ch = tree->children[curr][sel];
+                if (ch > 0) {  // child node
+                    stack.push(std::make_tuple<int, int>((int)ch, depth + 1));
+                } else if (ch < 0) {  // leaf node
+                    int pid = -1 - ch;
+                    auto d2leaf = pos[pid] - pos[i];
+                    //printf("accel %d by near %d\n", i, pid);
+                    acc[i] += d2leaf * mass[pid] * invpow3(d2leaf, eps);
+                }
+            }
+        }
+    }
+    printf("computing gravity done\n");
+    for (int i = 0; i < stars->size(); i++) {
+        acc[i] *= G;
+    }
+
+    set_output_ref("stars", get_input_ref("stars"));
+  }
+};
+
+static int defComputeGravity = zen::defNodeClass<ComputeGravity>("ComputeGravity",
+    { /* inputs: */ {
+    "stars",
+    "tree",
+    }, /* outputs: */ {
+    "stars",
+    }, /* params: */ {
+    {"float", "G", "1.0 0"},
+    {"float", "eps", "0.0001 0"},
+    {"float", "lam", "1.0 0"},
+    }, /* category: */ {
+    "NBodySolver",
+    }});
+
+
+struct DirectComputeGravity : zen::INode {
   virtual void apply() override {
     auto stars = get_input("stars")->as<PrimitiveObject>();
     auto &mass = stars->attr<float>("mass");
@@ -242,12 +332,10 @@ struct ComputeGravity : zen::INode {
     }
     #pragma omp parallel for
     for (int i = 0; i < stars->size(); i++) {
-        for (int j = i + 1; j < stars->size(); j++) {
+        for (int j = 0; j < stars->size(); j++) {
             auto rij = pos[j] - pos[i];
-            float r = eps * eps + zen::dot(rij, rij);
-            rij /= r * zen::sqrt(r);
+            rij *= invpow3(rij, eps);
             acc[i] += mass[j] * rij;
-            acc[j] -= mass[i] * rij;
         }
     }
     printf("computing gravity done\n");
@@ -259,7 +347,7 @@ struct ComputeGravity : zen::INode {
   }
 };
 
-static int defComputeGravity = zen::defNodeClass<ComputeGravity>("ComputeGravity",
+static int defDirectComputeGravity = zen::defNodeClass<DirectComputeGravity>("DirectComputeGravity",
     { /* inputs: */ {
     "stars",
     }, /* outputs: */ {

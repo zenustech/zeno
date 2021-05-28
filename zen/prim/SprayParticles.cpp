@@ -1,4 +1,3 @@
-#if 0  // TO REMOVE TBB DEP FOR NOW
 #include <zen/zen.h>
 #include <zen/MeshObject.h>
 #include <zen/PrimitiveObject.h>
@@ -114,4 +113,3 @@ static int defSprayParticles = zen::defNodeClass<SprayParticles>("SprayParticles
 
 }
 
-#endif
