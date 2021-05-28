@@ -1,5 +1,6 @@
 #include "tbb/scalable_allocator.h"
 #include "FLIP_vdb.h"
+#include <openvdb/Types.h>
 #include <openvdb/points/PointCount.h>
 #include "openvdb/tree/LeafManager.h"
 #include "openvdb/points/PointAdvect.h"
@@ -1168,6 +1169,7 @@ namespace {
 			std::tuple<uint16_t, openvdb::Index32, openvdb::Index32>>>> toffset_oindex_oleafpos_hashmap;
 	};
 
+	
 
 	struct point_to_counter_reducer2 {
 
@@ -1290,7 +1292,7 @@ namespace {
 				openvdb::Coord olbegin{ openvdb::Coord::max() };
 				openvdb::Coord olend{ openvdb::Coord::min() };
 				float flip_component = (1.0f - m_pic_component);
-				float deep_threshold = -2 * m_dx;
+				float deep_threshold = -4.0 * m_dx;
 				float touch_threshold = 0.6f * m_dx;
 				float invdx = 1.0f / m_dx;
 				float dtinvdx = dt / m_dx;
@@ -1319,24 +1321,27 @@ namespace {
 					pItpos = pIspos;
 					movefunc(pItpos, adv_vel);
 					ptCoord = openvdb::Coord{ floorVec3(pItpos + openvdb::Vec3f{ 0.5f }) };
-
+					
+					float new_pos_solid_sdf = openvdb::tools::BoxSampler::sample(sdfaxr, pItpos + openvdb::Vec3f{ 0.5 });
 					//collision detection, see if this coordinate is inside the solid
-					if (naxr.isValueOn(ptCoord)) {
-						float new_pos_solid_sdf = openvdb::tools::BoxSampler::sample(sdfaxr, pItpos + openvdb::Vec3f{ 0.5 });
-						new_pos_solid_sdf -= touch_threshold;
-						if (new_pos_solid_sdf < 0) {
+					if (new_pos_solid_sdf<0) {
+						
+						
+						
 							if (new_pos_solid_sdf < deep_threshold) {
 								//too deep, just continue to next particle
 								continue;
 							}
 							//inside, but still can be saved, use the surface normal to move back the particle
 							auto snormal = naxr.getValue(ptCoord);
-							//handle velocity bounces
-							particle_vel += (vnaxr.getValue(ptCoord) - snormal.dot(particle_vel)) * snormal;
 							//move particle out
 							pItpos -= new_pos_solid_sdf * snormal * invdx * 1.0f;
 							ptCoord = openvdb::Coord{ floorVec3(pItpos + openvdb::Vec3f{ 0.5f }) };
-						}//end if particle is truly inside solid
+							//handle velocity bounces
+							particle_vel += (vnaxr.getValue(ptCoord) - snormal.dot(particle_vel)) * snormal;
+							
+							
+						
 						
 					}//end if surface normal exist
 
@@ -1471,6 +1476,8 @@ namespace {
 			std::vector<
 			std::tuple<uint16_t, openvdb::Index32, openvdb::Index32>>>> toffset_oindex_oleafpos_hashmap;
 	};
+
+	
 }
 void FLIP_vdb::custom_move_points_and_set_flip_vel(
 	openvdb::points::PointDataGrid& in_out_points,
@@ -2142,7 +2149,7 @@ void FLIP_vdb::particle_to_grid_collect_style(
 	openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf,
 	float dx)
 {
-	float particle_radius = 0.5f * std::sqrt(3.0f) * dx * 1.01;
+	float particle_radius = 0.6f * std::sqrt(3.0f) * dx * 1.01;
 	velocity->setTree(std::make_shared<openvdb::Vec3fTree>(
 		particles->tree(), openvdb::Vec3f{ 0 }, openvdb::TopologyCopy()));
 	openvdb::tools::dilateActiveValues(velocity->tree(), 1, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
@@ -2152,7 +2159,7 @@ void FLIP_vdb::particle_to_grid_collect_style(
 	auto voxel_center_transform = openvdb::math::Transform::createLinearTransform(dx);
 	liquid_sdf->setTransform(voxel_center_transform);
 	liquid_sdf->setTree(std::make_shared<openvdb::FloatTree>(
-		velocity->tree(), liquid_sdf->background(), openvdb::TopologyCopy()));
+		velocity->tree(), 0.9f*dx, openvdb::TopologyCopy()));
 
 	auto collector_op{ p2g_collector(liquid_sdf,
 			velocity,
@@ -4696,33 +4703,16 @@ void FLIP_vdb::apply_pressure_gradient(
 	openvdb::Vec3fGrid::Ptr & solid_velocity,
 	float dx,float in_dt)
 {
-	Eigen::Matrix<float, 4, 4> invmat;
-	float invdx2 = 1.0f / (dx * dx);
-	invmat.col(0) = invdx2 * Eigen::Vector4f{ 1.0 / 8.0, 0, 0, 0 };
-	invmat.col(1) = invdx2 * Eigen::Vector4f{ 0, 1.0f / 3.0f ,0 ,-1.0f / 6.0f };
-	invmat.col(2) = invdx2 * Eigen::Vector4f{ 0, 0, 1.0f / 3.0f ,-1.0f / 6.0f };
-	invmat.col(3) = invdx2 * Eigen::Vector4f{ 0, -1.0f / 6.0f, -1.0f / 6.0f, 1.0f / 4.0f };
-
-	Eigen::Matrix<float, 4, 12> mT;
-	for (int i = -1; i <=1; i++) {
-		float fi = float(i);
-		mT.block<1, 4>(0, 4 * (i + 1)) = Eigen::Vector4f{ fi,fi,fi,fi };
-		mT.block<1, 4>(1, 4 * (i + 1)) = Eigen::Vector4f{ 0,1,1,0 };
-		mT.block<1, 4>(2, 4 * (i + 1)) = Eigen::Vector4f{ 0,0,1,1 };
-		mT.block<1, 4>(3, 4 * (i + 1)) = Eigen::Vector4f{ 1,1,1,1 };
-	}
-	mT = mT * dx;
-
+	
 	//given the solved pressure, update the velocity
 	//this is to be used by the velocity(post_pressure) leaf manager
-	auto velocity_update_op = [&](openvdb::Vec3fTree::LeafNodeType& leaf, 
-	openvdb::Index leafpos) {
-		auto phi_axr{ liquid_sdf->getConstAccessor() };
-		auto true_phi_axr{ pushed_out_liquid_sdf->getConstAccessor() };
-		auto weight_axr{ face_weight->getConstAccessor() };
-		auto solid_vel_axr{ solid_velocity->getConstAccessor() };
-		auto solid_sdf_axr{ solid_sdf->getConstAccessor() };
-		auto pressure_axr{ pressure->getConstAccessor() };
+	auto velocity_update_op = [&](openvdb::Vec3fTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+		auto phi_axr{ liquid_sdf->getConstUnsafeAccessor() };
+		auto true_phi_axr{ pushed_out_liquid_sdf->getConstUnsafeAccessor() };
+		auto weight_axr{ face_weight->getConstUnsafeAccessor() };
+		auto solid_vel_axr{ solid_velocity->getConstUnsafeAccessor() };
+		auto solid_sdf_axr{ solid_sdf->getConstUnsafeAccessor() };
+		auto pressure_axr{ pressure->getConstUnsafeAccessor() };
 		//auto update_axr{ m_velocity_update->getAccessor() };
 
 		
@@ -4767,24 +4757,21 @@ void FLIP_vdb::apply_pressure_gradient(
 						else {
 							//one of them is inside the liquid, one is outside
 							if (phi_this >= 0) {
-								//this point is outside the liquid, possibly free air
-								if (openvdb::tools::BoxSampler::sample(solid_sdf_axr, gcoord.asVec3d()+openvdb::Vec3d(0.5)) > 0) {
+								//this point is outside the liquid, possibly free air or free air in the liquid
 									//if so, set the pressure to be ghost value
+								if (phi_this+phi_below<0) {
 									if (true_phi_axr.getValue(lower_gcoord) < 0) {
 										update_this_velocity = true;
 									}
-									//p_this = p_below / std::min(phi_below, - m_dx*1e-3f) * phi_this;
 								}
 							}
-
 							if (phi_below >= 0) {
-								//this point is outside the liquid, possibly free air
-								if (openvdb::tools::BoxSampler::sample(solid_sdf_axr, lower_gcoord.asVec3d() + openvdb::Vec3d(0.5)) > 0) {
+								//this point below is outside the liquid, possibly free air
 									//if so, set the pressure to be ghost value
+								if (phi_this+phi_below<0) {
 									if (true_phi_axr.getValue(gcoord) < 0) {
 										update_this_velocity = true;
 									}
-									//p_below = p_this / std::min(phi_this, - m_dx * 1e-3f) * phi_below;
 								}
 							}
 						} //end else all outside liquid
@@ -4800,78 +4787,9 @@ void FLIP_vdb::apply_pressure_gradient(
 						original_vel[ic] -= in_dt * (float)(p_this - p_below) / dx / theta;
 						vel_update[ic] = in_dt * (float)(p_this - p_below) / dx / theta;
 						if (face_weights[ic] < 1) {
-							//use the voxel center solid sdf gradient
-							openvdb::Vec3f grad_solid{ 0 };
-							openvdb::Vec3f evalpos{ 0.5 };
-
-							//evaluate the four sdf on this face
-							Eigen::VectorXf neib_sdf = Eigen::VectorXf::Zero(12);
-
-
-							//four_sdf[0] = solid_sdf_axr.getValue(gcoord);
-							//calculate the in-plane solid normal
-							//then deduce the off-plane solid normal 
-							for (int iclevel = -1; iclevel <= 1; iclevel++) {
-								int ic4 = (iclevel + 1) * 4;
-								switch (ic) {
-								case 0:
-									//   ^z
-									//(0,0,1)------(0,1,1)
-									//   |            |
-									//(0,0,0)------(0,1,0)>y
-									//u
-									neib_sdf[0 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(iclevel, 0, 0));
-									neib_sdf[1 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(iclevel, 1, 0));
-									neib_sdf[2 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(iclevel, 1, 1));
-									neib_sdf[3 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(iclevel, 0, 1));
-									break;
-								case 1:
-									//   ^x              
-									//(1,0,0)------(1,0,1)
-									//   |            |
-									//(0,0,0)------(0,0,1)>z
-									//v
-									neib_sdf[0 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(0, iclevel, 0));
-									neib_sdf[1 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(0, iclevel, 1));
-									neib_sdf[2 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(1, iclevel, 1));
-									neib_sdf[3 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(1, iclevel, 0));
-									break;
-								case 2:
-									//   ^y              
-									//(0,1,0)------(1,1,0)
-									//   |            |
-									//(0,0,0)------(1,0,0)>x
-									//w
-									neib_sdf[0 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(0, 0, iclevel));
-									neib_sdf[1 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(1, 0, iclevel));
-									neib_sdf[2 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(1, 1, iclevel));
-									neib_sdf[3 + ic4] = solid_sdf_axr.getValue(gcoord.offsetBy(0, 1, iclevel));
-									break;
-								}
-							}
-							
-
-							Eigen::Vector4f abcd = invmat * mT * neib_sdf;
-							float normal_a = std::max(-1.f, std::min(1.f, abcd[0]));
-
-							//make sure on the normal direction, the velocity has the same component
-
-							openvdb::Vec3f facev{ 0,0,0 };
-							grad_solid[ic] = normal_a;
-							facev[ic] = original_vel[ic];
-							if (1||(original_vel[ic]-solid_vel[ic]) * normal_a < 0) {
-								facev -= grad_solid * grad_solid.dot(facev);
-								facev += grad_solid * grad_solid.dot(solid_vel);
-							}
-							//original_vel[ic] = facev[ic];
-							/*float penetrating = grad_solid[ic] * original_vel[ic];
-								original_vel[ic] -= penetrating;
-								original_vel[ic] += grad_solid[ic] * solid_vel[ic];
-							}*/
-
-							//mix the solid velocity and fluid velocity
-							//float solid_fraction = (1 - face_weights[ic])*0.0;
-							//original_vel[ic] = (1-solid_fraction) * original_vel[ic] + (solid_fraction) * solid_vel[ic];
+							//mix the solid velocity and fluid velocity if friction is expected
+							float solid_fraction = (1 - face_weights[ic]);
+							original_vel[ic] = (1-solid_fraction) * original_vel[ic] + (solid_fraction) * solid_vel[ic];
 						}
 						has_any_update = true;
 					}//end if any dofs on two sides
@@ -4885,7 +4803,7 @@ void FLIP_vdb::apply_pressure_gradient(
 			}//end for three component
 
 			if (!has_any_update) {
-				leaf.setValueOff(offset, openvdb::Vec3f{ 0,0,0 });
+				leaf.setValueOff(offset, openvdb::Vec3R(0,0,0));
 				//update_axr.setValueOff(leaf.offsetToGlobalCoord(offset));
 			}
 			else {
@@ -5228,17 +5146,20 @@ void FLIP_vdb::field_add_vector(
 		auto add_gravity = [&](openvdb::Vec3fTree::LeafNodeType& leaf, openvdb::Index leafpos) {
 			auto face_weight_axr{ face_weight->getConstAccessor() };
 			for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
-				if (face_weight_axr.getValue(iter.getCoord())[0] > 0) {
+				//if (face_weight_axr.getValue(iter.getCoord())[0] > 0) 
+				{
 					iter.modifyValue([&](openvdb::Vec3f& v) {
 							v[0] += dt * x; 
 						});
 				}
-				if (face_weight_axr.getValue(iter.getCoord())[1] > 0) {
+				//if (face_weight_axr.getValue(iter.getCoord())[1] > 0) 
+				{
 					iter.modifyValue([&](openvdb::Vec3f& v) {
 							v[1] += dt * y; 
 						});
 				}
-				if (face_weight_axr.getValue(iter.getCoord())[2] > 0) {
+				//if (face_weight_axr.getValue(iter.getCoord())[2] > 0) 
+				{
 					iter.modifyValue([&](openvdb::Vec3f& v) {
 							v[2] += dt * z; 
 						});
@@ -5513,32 +5434,32 @@ void FLIP_vdb::Advect(float dt, float dx,
 {
 	//update the FLIP particle velocity
 
-	auto update_FLIP_velocity = [&](openvdb::points::PointDataTree::LeafNodeType& leaf, openvdb::Index leafpos) {
-		// Attribute reader
-		// Extract the position attribute from the leaf by name (P is position).
-		const openvdb::points::AttributeArray& positionArray =
-			leaf.attributeArray("P");
-		// Extract the velocity attribute from the leaf by name (v is velocity).
-		openvdb::points::AttributeArray& velocityArray =
-			leaf.attributeArray("v");
+	// auto update_FLIP_velocity = [&](openvdb::points::PointDataTree::LeafNodeType& leaf, openvdb::Index leafpos) {
+	// 	// Attribute reader
+	// 	// Extract the position attribute from the leaf by name (P is position).
+	// 	const openvdb::points::AttributeArray& positionArray =
+	// 		leaf.attributeArray("P");
+	// 	// Extract the velocity attribute from the leaf by name (v is velocity).
+	// 	openvdb::points::AttributeArray& velocityArray =
+	// 		leaf.attributeArray("v");
 
-		// Create read handles for position and velocity
-		openvdb::points::AttributeHandle<openvdb::Vec3f, FLIP_vdb::PositionCodec> positionHandle(positionArray);
-		openvdb::points::AttributeWriteHandle<openvdb::Vec3f, FLIP_vdb::VelocityCodec> velocityHandle(velocityArray);
+	// 	// Create read handles for position and velocity
+	// 	openvdb::points::AttributeHandle<openvdb::Vec3f, FLIP_vdb::PositionCodec> positionHandle(positionArray);
+	// 	openvdb::points::AttributeWriteHandle<openvdb::Vec3f, FLIP_vdb::VelocityCodec> velocityHandle(velocityArray);
 
-		auto ovaxr{ velocity_after_p2g->getConstAccessor() };
-		auto vaxr{ velocity->getConstAccessor() };
-		for (auto iter = leaf.beginIndexOn(); iter; ++iter) {
-			openvdb::Vec3R index_gpos = iter.getCoord().asVec3d() + positionHandle.get(*iter);
-			auto original_vel = openvdb::tools::StaggeredBoxSampler::sample(ovaxr, index_gpos);
-			auto updated_vel = openvdb::tools::StaggeredBoxSampler::sample(vaxr, index_gpos);
-			auto old_pvel = velocityHandle.get(*iter);
-			velocityHandle.set(*iter, (pic_component)*updated_vel + (1.0f - pic_component) * (updated_vel - original_vel + old_pvel));
-		}
+	// 	auto ovaxr{ velocity_after_p2g->getConstAccessor() };
+	// 	auto vaxr{ velocity->getConstAccessor() };
+	// 	for (auto iter = leaf.beginIndexOn(); iter; ++iter) {
+	// 		openvdb::Vec3R index_gpos = iter.getCoord().asVec3d() + positionHandle.get(*iter);
+	// 		auto original_vel = openvdb::tools::StaggeredBoxSampler::sample(ovaxr, index_gpos);
+	// 		auto updated_vel = openvdb::tools::StaggeredBoxSampler::sample(vaxr, index_gpos);
+	// 		auto old_pvel = velocityHandle.get(*iter);
+	// 		velocityHandle.set(*iter, (pic_component)*updated_vel + (1.0f - pic_component) * (updated_vel - original_vel + old_pvel));
+	// 	}
 
-	};//end update flip velocity
+	// };//end update flip velocity
 
-	auto particle_man = openvdb::tree::LeafManager<openvdb::points::PointDataTree>(particles->tree());
+	// auto particle_man = openvdb::tree::LeafManager<openvdb::points::PointDataTree>(particles->tree());
 	
 	//openvdb::io::File(std::to_string(m_framenumber)+"vn.vdb").write({ voxel_center_solid_normal, voxel_center_solid_vn });
 
@@ -5943,3 +5864,42 @@ void FLIP_vdb::custom_move_points_and_set_flip_vel(
 // 	printf("remove empty node done\n");
 // 	return result;
 // }
+void FLIP_vdb::point_integrate_vector(openvdb::points::PointDataGrid::Ptr & in_out_particles,openvdb::Vec3R &dx, std::string channel)
+{
+	std::vector<openvdb::points::PointDataTree::LeafNodeType*> leafs;
+    in_out_particles->tree().getNodes(leafs);
+	auto transform = in_out_particles->transformPtr();
+
+	tbb::parallel_for(tbb::blocked_range<openvdb::Index>(0, leafs.size(), 1), [&](tbb::blocked_range<openvdb::Index> r)
+	{
+		for (int i=r.begin(); i<r.end(); ++i)
+		{
+			auto leaf = leafs[i];
+			//attributes
+			// Attribute reader
+			// Extract the position attribute from the leaf by name (P is position).
+			openvdb::points::AttributeArray& positionArray =
+				leaf->attributeArray("P");
+			// Extract the velocity attribute from the leaf by name (v is velocity).
+			openvdb::points::AttributeArray& velocityArray =
+				leaf->attributeArray("v");
+
+			using PositionCodec = openvdb::points::FixedPointCodec</*one byte*/false>;
+			using VelocityCodec = openvdb::points::TruncateCodec;
+			// Create read handles for position and velocity
+			openvdb::points::AttributeHandle<openvdb::Vec3f, PositionCodec> positionHandle(positionArray);
+			openvdb::points::AttributeHandle<openvdb::Vec3f, VelocityCodec> velocityHandle(velocityArray);
+			openvdb::points::AttributeWriteHandle<openvdb::Vec3f, VelocityCodec> velocityWHandle(velocityArray);
+
+			for (auto iter = leaf->beginIndexOn(); iter; ++iter) 
+			{
+				openvdb::Vec3R v = velocityHandle.get(*iter);
+				if(channel==std::string("vel"))
+				{
+					v+=dx;
+				}
+				velocityWHandle.set(*iter, v);
+			}	
+		}
+    });
+}

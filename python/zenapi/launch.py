@@ -1,65 +1,63 @@
-import os
 import runpy
-import shutil
 import tempfile
-import multiprocessing as mp
-from zenutils import run_script, add_line_numbers
+import threading
+import atexit
+import shutil
+import os
 
-from .codegen import generate_script
+from multiprocessing import Process
+from zen import runGraph, dumpDescriptors
 from .descriptor import parse_descriptor_line
 
 
-std_header = '''
-import zen
-zen.loadLibrary('libOCTlib.so')
-zen.loadLibrary('libZMSlib.so')
-#zen.loadLibrary('libFLIPlib.so')
-#zen.loadLibrary('libzenvdb.so')
-'''
-
-iopath = '/tmp/zenio'
 g_proc = None
-
-
-def launchGraph(graph, nframes):
-    script = generate_script(graph)
-    return launchScript(script, nframes)
+g_iopath = None
+g_lock = threading.Lock()
 
 
 def killProcess():
+    global g_proc
     if g_proc is None:
         print('worker process is not running')
         return
-    g_proc.kill()
-
-
-def launchScript(script, nframes):
-    shutil.rmtree(iopath, ignore_errors=True)
-    os.mkdir(iopath)
-
-    script = std_header + f'''
-zen.setIOPath({iopath!r})
-{script}
-
-for frame in range({nframes}):
-\tprint('FRAME:', frame)
-\texecute()
-print('EXITING')
-'''
-    print(add_line_numbers(script))
-    global g_proc
-    g_proc = mp.Process(target=run_script, args=[script], daemon=True)
-    g_proc.start()
-    g_proc.join()
+    g_proc.terminate()
     g_proc = None
+    print('worker process killed')
+
+
+def _launch_mproc(func, *args):
+    global g_proc
+    if g_proc is not None:
+        killProcess()
+    if 1:
+        g_proc = Process(target=func, args=tuple(args), daemon=True)
+        g_proc.start()
+        g_proc.join()
+        if g_proc is not None:
+            print('worker processed exited with', g_proc.exitcode)
+        g_proc = None
+    else:
+        func(*args)
+
+
+@atexit.register
+def cleanIOPath():
+    global g_iopath
+    if g_iopath is not None:
+        shutil.rmtree(g_iopath, ignore_errors=True)
+    g_iopath = None
+
+
+def launchGraph(graph, nframes):
+    global g_iopath
+    cleanIOPath()
+    g_iopath = tempfile.mkdtemp(prefix='zenvis-')
+    print('iopath:', g_iopath)
+    _launch_mproc(runGraph, graph, nframes, g_iopath)
+
 
 def getDescriptors():
-    script = std_header + f'''
-descs = zen.dumpDescriptors()
-'''
-    descs = run_script(script)['descs']
-    if isinstance(descs, bytes):
-        descs = descs.decode()
+    descs = dumpDescriptors()
     descs = descs.splitlines()
     descs = [parse_descriptor_line(line) for line in descs if ':' in line]
     descs = {name: desc for name, desc in descs}

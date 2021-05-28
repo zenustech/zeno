@@ -18,7 +18,8 @@ namespace zenbase{
 	    float dt = FLIP_vdb::cfl(velocity->m_grid);
             printf("CFL dt: %f\n", dt);
             auto out_dt = zen::IObject::make<zenbase::NumericObject>();
-            out_dt->set<float>(dt);
+            float scaling = dx/velocity->m_grid->voxelSize()[0];
+            out_dt->set<float>(scaling*dt);
             set_output("cfl_dt", out_dt);
         }
     };

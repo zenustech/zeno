@@ -101,6 +101,21 @@ struct INode {
 
   virtual void apply() = 0;
 
+  virtual void init() {
+  }
+
+  virtual std::vector<std::string> requirements() {
+    std::vector<std::string> ret;
+    for (auto const &[key, name]: inputs) {
+      ret.push_back(name);
+    }
+    return ret;
+  }
+
+  void on_init() {
+    init();
+  }
+
   void on_apply() {
     bool ok = true;
 
@@ -139,7 +154,8 @@ protected:
   }
 
   IObject *get_input(std::string name) {
-    return getObject(get_input_ref(name));
+    auto ref = get_input_ref(name);
+    return getObject(ref);
   }
 
   bool has_input(std::string name) {
@@ -276,9 +292,15 @@ public:
   }
 
   void addNode(std::string type, std::string name) {
+    if (nodes.find(name) != nodes.end())
+      return;
     auto node = safe_at(nodeClasses, type, "node class")->new_instance();
     nodesRev[node.get()] = name;
     nodes[name] = std::move(node);
+  }
+
+  std::vector<std::string> getNodeRequirements(std::string name) {
+    return safe_at(nodes, name, "node")->requirements();
   }
 
   void setNodeParam(std::string name,
@@ -291,12 +313,21 @@ public:
     safe_at(nodes, name, "node")->set_input_ref(key, srcname);
   }
 
+  void initNode(std::string name) {
+    safe_at(nodes, name, "node")->on_init();
+  }
+
   void applyNode(std::string name) {
     safe_at(nodes, name, "node")->on_apply();
   }
 
   void setObject(std::string name, IObject::Ptr object) {
     objects[name] = std::move(object);
+  }
+
+  bool hasObject(std::string name) {
+    name = getReference(name).value_or(name);
+    return objects.find(name) != objects.end();
   }
 
   IObject *getObject(std::string name) {
@@ -360,12 +391,20 @@ static void setNodeInput(std::string name,
   return Session::get().setNodeInput(name, key, srcname);
 }
 
+static void initNode(std::string name) {
+  return Session::get().initNode(name);
+}
+
 static void applyNode(std::string name) {
   return Session::get().applyNode(name);
 }
 
 static void setObject(std::string name, IObject::Ptr object) {
   return Session::get().setObject(name, std::move(object));
+}
+
+static bool hasObject(std::string name) {
+  return Session::get().hasObject(name);
 }
 
 static IObject *getObject(std::string name) {
@@ -397,6 +436,10 @@ int defNodeClassByCtor(T const &ctor,
 
 static std::string dumpDescriptors() {
   return Session::get().dumpDescriptors();
+}
+
+static std::vector<std::string> getNodeRequirements(std::string name) {
+  return Session::get().getNodeRequirements(name);
 }
 
 

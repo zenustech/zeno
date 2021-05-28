@@ -79,10 +79,14 @@ struct is_vec : std::false_type {
 
 template <size_t N, class T>
 struct is_vec<vec<N, T>> : std::true_type {
+    static constexpr size_t _N = N;
 };
 
 template <class T>
 inline constexpr bool is_vec_v = is_vec<std::decay_t<T>>::value;
+
+template <class T>
+inline constexpr size_t is_vec_n = is_vec<std::decay_t<T>>::_N;
 
 template <class T, class S>
 struct is_vec_promotable : std::false_type {
@@ -257,6 +261,7 @@ _PER_FN2(atan2)
 _PER_FN2(pow)
 _PER_FN2(max)
 _PER_FN2(min)
+_PER_FN2(fmod)
 #undef _PER_FN2
 
 #define _PER_FN1(func) \
@@ -264,6 +269,7 @@ template <class T> \
 inline auto func(T const &a) { \
   return vapply([] (auto const &x) { return std::func(x); }, a); \
 }
+_PER_FN1(abs)
 _PER_FN1(sqrt)
 _PER_FN1(sin)
 _PER_FN1(cos)
@@ -327,6 +333,16 @@ inline auto mix(T const &a, S const &b, F const &f) {
 template <class T, class S, class F>
 inline auto clamp(T const &x, S const &a, F const &b) {
     return min(max(x, a), b);
+}
+
+template <size_t N, class T, std::enable_if_t<!is_vec_v<T>, bool> = true>
+inline auto tovec(T const &x) {
+    return vec<N, T>(x);
+}
+
+template <size_t N, class T>
+inline auto tovec(vec<N, T> const &x) {
+    return x;
 }
 
 

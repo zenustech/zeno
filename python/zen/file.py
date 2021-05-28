@@ -7,12 +7,14 @@ import shutil
 import tempfile
 
 from .py import *
-from .kwd import G
+from .step import G
 
 
 iopath = None
 
 def setIOPath(path):
+    shutil.rmtree(path, ignore_errors=True)
+    os.mkdir(path)
     global iopath
     iopath = path
 
@@ -21,7 +23,7 @@ def setIOPath(path):
 class MakeString(INode):
     z_params = [('string', 'value', '')]
     z_outputs = ['value']
-    z_categories = 'imexport'
+    z_categories = 'fileio'
 
     def apply(self):
         value = self.get_param('value')
@@ -30,9 +32,9 @@ class MakeString(INode):
 
 @defNodeClass
 class ExportPath(INode):
-    z_params = [('string', 'name', '')]
+    z_params = [('string', 'name', 'out.zpm')]
     z_outputs = ['path']
-    z_categories = 'imexport'
+    z_categories = 'fileio'
 
     def apply(self):
         name = self.get_param('name')
@@ -48,7 +50,7 @@ class ExportPath(INode):
 class ExportShader(INode):
     z_params = [('string', 'type', 'points')]
     z_inputs = ['primPath', 'fragShaderPath', 'vertShaderPath']
-    z_categories = 'imexport'
+    z_categories = 'fileio'
 
     def apply(self):
         type = self.get_param('type')
@@ -57,6 +59,21 @@ class ExportShader(INode):
         fragShaderPath = self.get_input('fragShaderPath')
         shutil.copy(vertShaderPath, primPath + '.' + type + '.vert')
         shutil.copy(fragShaderPath, primPath + '.' + type + '.frag')
+
+
+@defNodeClass
+class EndFrame(INode):
+    z_categories = 'fileio'
+    z_inputs = ['chain']
+
+    def apply(self):
+        self.get_input('chain')
+        assert iopath is not None, 'please zen.setIOPath first'
+        dirpath = os.path.join(iopath, '{:06d}'.format(G.frameid))
+        if not os.path.isdir(dirpath):
+            os.mkdir(dirpath)
+        with open(os.path.join(dirpath, 'done.lock'), 'w') as f:
+            f.write('DONE')
 
 
 __all__ = ['setIOPath']

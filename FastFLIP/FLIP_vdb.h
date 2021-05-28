@@ -2,6 +2,7 @@
 //FLIP simulation based on openvdb points and grid structure
 //#include "openvdb/openvdb.h"
 #include "openvdb/points/PointConversion.h"
+#include <openvdb/Types.h>
 
 struct OpenvdbInitializer {
 	OpenvdbInitializer() {openvdb::initialize();}
@@ -162,6 +163,8 @@ static void emit_liquid(
 	float vx, float vy, float vz);
 
 static float cfl(openvdb::Vec3fGrid::Ptr & vel);
+
+static void point_integrate_vector(openvdb::points::PointDataGrid::Ptr & in_out_particles, openvdb::Vec3R &dx, std::string channel);
 private:
 	void initialize_attribute_descriptor() {
 		auto pnamepair = position_attribute::attributeType();

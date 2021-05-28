@@ -76,6 +76,8 @@ BIN_OP_TABLE = dict(
         div=np.divide,
         pow=np.power,
         atan2=np.arctan2,
+        min=np.minimum,
+        max=np.maximum,
         )
 UN_OP_TABLE = dict(
         sin=np.sin,
@@ -87,6 +89,8 @@ UN_OP_TABLE = dict(
         sqrt=np.sqrt,
         exp=np.exp,
         log=np.log,
+        max=np.max,
+        min=np.min,
         )
 
 def do_binary_operator(op, lhs, rhs):
@@ -125,11 +129,13 @@ class NumericOperator(INode):
 @defNodeClass
 class PrintNumeric(INode):
     z_inputs = ['value']
+    z_params = [('string', 'hint', 'PrintNumeric')]
     z_categories = 'numeric'
 
     def apply(self):
         value = self.get_input('value')
-        print('PrintNumeric:', value)
+        hint = self.get_param('hint')
+        print('[{}] {!r}'.format(hint, value))
 
 
 __all__ = []
