@@ -167,35 +167,6 @@ static int defPrimitiveBinaryOp = zen::defNodeClass<PrimitiveBinaryOp>("Primitiv
     }});
 
 
-
-struct PrimitiveReduction : zen::INode {
-    virtual void apply() override{
-        auto prim = get_input("prim")->as<PrimitiveObject>();
-        auto attrToReduce = std::get<std::string>(get_param("attr"));
-        auto op = std::get<std::string>(get_param("op"));
-        zenbase::NumericValue result;
-        if (zenbase::is_vec3f_vector(prim->attr(attrToReduce)))
-            result = prim->reduce<zen::vec3f>(attrToReduce, op);
-        else 
-            result = prim->reduce<float>(attrToReduce, op);
-        auto out = zen::IObject::make<zenbase::NumericObject>();
-        out->set(result);
-        set_output("result", out);
-    }
-};
-static int defPrimitiveReduction = zen::defNodeClass<PrimitiveReduction>("PrimitiveReduction",
-    { /* inputs: */ {
-    "prim",
-    }, /* outputs: */ {
-    "result",
-    }, /* params: */ {
-    {"string", "attr", "pos"},
-    {"string", "op", "avg"},
-    }, /* category: */ {
-    "primitive",
-    }});
-
-
 struct PrimitiveMix : zen::INode {
     virtual void apply() override{
         auto primA = get_input("primA")->as<PrimitiveObject>();

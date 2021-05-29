@@ -4759,20 +4759,20 @@ void FLIP_vdb::apply_pressure_gradient(
 							if (phi_this >= 0) {
 								//this point is outside the liquid, possibly free air or free air in the liquid
 									//if so, set the pressure to be ghost value
-								if (phi_this+phi_below<0) {
+								//if (phi_this+phi_below<0) {
 									if (true_phi_axr.getValue(lower_gcoord) < 0) {
 										update_this_velocity = true;
 									}
-								}
+								//}
 							}
 							if (phi_below >= 0) {
 								//this point below is outside the liquid, possibly free air
 									//if so, set the pressure to be ghost value
-								if (phi_this+phi_below<0) {
+								//if (phi_this+phi_below<0) {
 									if (true_phi_axr.getValue(gcoord) < 0) {
 										update_this_velocity = true;
 									}
-								}
+								//}
 							}
 						} //end else all outside liquid
 					}//end all inside liquid
