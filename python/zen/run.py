@@ -6,6 +6,7 @@ load_library('libzenbase.so')
 load_library('libzenvdb.so')
 load_library('libOCTlib.so')
 load_library('libFLIPlib.so')
+load_library('libZMSlib.so')
 
 
 def runGraph(nodes, nframes, iopath):

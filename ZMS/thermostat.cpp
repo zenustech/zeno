@@ -15,7 +15,7 @@ struct ScaleVelocity: zen::INode {
     float ek = 0; // 2 * Ek
     #pragma omp parallel for reduction(+: ek)
     for (int i = 0; i < n; i++) {
-        ek += zen::length(vel[i]); // is actually sqr length
+        ek += zen::lengthsq(vel[i]); // is actually sqr length
     }
     float temp_scale = sqrtf(3 * temperature * n / ek);
     rel_err = std::fmin(std::fmax(0, rel_err), 1);
