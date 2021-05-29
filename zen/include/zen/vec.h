@@ -296,6 +296,15 @@ inline auto dot(vec<N, T> const &a, vec<N, S> const &b) {
 }
 
 template <size_t N, class T>
+inline auto lengthsq(vec<N, T> const &a) {
+    std::decay_t<decltype(a[0])> res(0);
+    for (size_t i = 0; i < N; i++) {
+        res += a[i] * a[i];
+    }
+    return res;
+}
+
+template <size_t N, class T>
 inline auto length(vec<N, T> const &a) {
     std::decay_t<decltype(a[0])> res(0);
     for (size_t i = 0; i < N; i++) {
