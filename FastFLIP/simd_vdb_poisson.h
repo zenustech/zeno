@@ -155,7 +155,7 @@ public:
 		dt = in_dt;
 		m_dx = in_dx;
 		m_iteration = 0;
-		m_max_iter = 100;
+		m_max_iter = 20;
 	}
 	std::vector<Laplacian_with_level::Ptr> m_laplacian_with_levels;
 	std::vector<openvdb::FloatGrid::Ptr> m_v_cycle_lhss;
@@ -192,7 +192,9 @@ public:
 
 	void build_rhs();
 	
-	void pcg_solve(openvdb::FloatGrid::Ptr in_out_presssure, float tolerance);
+	bool pcg_solve(openvdb::FloatGrid::Ptr in_out_presssure, float tolerance);
+	void smooth_solve(openvdb::FloatGrid::Ptr in_out_presssure, int n)
+;
 	int iterations();
 	openvdb::FloatGrid::Ptr m_rhs;
 	void symmetry_test(int level = 0);

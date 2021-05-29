@@ -1588,7 +1588,7 @@ void simd_vdb_poisson::Laplacian_with_level::restriction(
 						}//kk
 					}//jj
 				}//ii
-				iter.setValue(temp_sum * 0.125f * 0.5f * 1.8f);
+				iter.setValue(temp_sum * 0.125f);
 			}//if fine leaf
 		}//for all coarse on voxels
 	};//end collect from fine
@@ -1872,7 +1872,7 @@ void simd_vdb_poisson::Vcycle(
 	//at the coarsest level 
 	int level = nlevel - 1;
 
-	bool use_iter = false;
+	bool use_iter = true;
 
 	if (nlevel != m_laplacian_with_levels.size()) {
 		use_iter = true;
@@ -2517,10 +2517,11 @@ void simd_vdb_poisson::build_rhs()
 			}//end for 6 faces of this voxel
 
 			if (diag_axr.getValue(gcoord) < (m_laplacian_with_levels[0]->m_diag_entry_min_threshold)) {
-				//if (diag_axr.getValue(gcoord) == 0) {
+				if (diag_axr.getValue(gcoord) == 0) {
 					//printf("isolated rhs id:%d, val:%e\n", isolated_cell, local_rhs);
-				local_rhs = 0;
-				isolated_cell++;
+					local_rhs = 0;
+					isolated_cell++;
+				}
 			}
 			if (solid_count >= 4) {
 				//disable suction from solid.
@@ -2533,8 +2534,34 @@ void simd_vdb_poisson::build_rhs()
 	m_laplacian_with_levels[0]->m_dof_leafmanager->foreach(build_rhs_op);
 	printf("isolated cell:%d\n", int(isolated_cell));
 }
+void simd_vdb_poisson::smooth_solve(openvdb::FloatGrid::Ptr in_out_presssure, int n)
+{
+	auto& level0 = *m_laplacian_with_levels[0];
 
-void simd_vdb_poisson::pcg_solve(openvdb::FloatGrid::Ptr in_out_presssure, float tolerance)
+	if (!m_rhs) {
+		build_rhs();
+	}
+	if (!in_out_presssure->tree().hasSameTopology(level0.m_dof_idx->tree())) {
+		printf("input guess pressure does not match dof idx pattern\n");
+		exit(-1);
+	}
+	auto r = level0.get_zero_vec_grid();
+	level0.residual_apply_assume_topo(r, in_out_presssure, m_rhs);
+
+	m_v_cycle_rhss[0] = r;
+	for (int i = 0; i < n; i++) {
+		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth0").start();
+		m_laplacian_with_levels[0]->RBGS_apply_assume_topo_inplace<true>(
+			m_v_cycle_lhss[0], m_v_cycle_temps[0], m_v_cycle_rhss[0]);
+		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth0").stop();
+		//the updated lhs is in m_v_cycle_temps
+		//we need to update the v_cycle_lhs
+		//m_v_cycle_lhss[0].swap(m_v_cycle_temps[0]);
+		//now the lhs is updated
+	}
+	lv_axpy(1, m_v_cycle_lhss[0], in_out_presssure);
+}
+bool simd_vdb_poisson::pcg_solve(openvdb::FloatGrid::Ptr in_out_presssure, float tolerance)
 {
 	auto& level0 = *m_laplacian_with_levels[0];
 	if (!in_out_presssure->tree().hasSameTopology(level0.m_dof_idx->tree())) {
@@ -2557,7 +2584,7 @@ void simd_vdb_poisson::pcg_solve(openvdb::FloatGrid::Ptr in_out_presssure, float
 
 	//line3
 	if (nu <= numax) {
-		return;
+		return true;
 	}
 
 	//line4
@@ -2565,7 +2592,7 @@ void simd_vdb_poisson::pcg_solve(openvdb::FloatGrid::Ptr in_out_presssure, float
 	level0.set_grid_constant_assume_topo(p, 0);
 	mucycle_SRJ<2, true>(p, r, 0);
 	//Kcycle_SRJ<true>(p, r);
-	//Vcycle(p, r);
+	//Vcycle(p, r,4,4,200);
 	float rho = lv_dot(p, r);
 
 	auto z = level0.get_zero_vec_grid();
@@ -2584,14 +2611,14 @@ void simd_vdb_poisson::pcg_solve(openvdb::FloatGrid::Ptr in_out_presssure, float
 			//line10
 			lv_axpy(alpha, p, in_out_presssure);
 			//line11
-			return;
+			return (nu<=numax)&&(m_iteration<=(m_max_iter-1));
 			//line12
 		}
 		//line13
 		level0.set_grid_constant_assume_topo(z, 0);
 		mucycle_SRJ<2, true>(z, r, 0);
 		//Kcycle_SRJ<true>(z, r);
-		//Vcycle(z, r);
+		//Vcycle(z, r,4,4,200);
 		float rho_new = lv_dot(z, r);
 
 		//line14

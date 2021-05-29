@@ -2159,7 +2159,7 @@ void FLIP_vdb::particle_to_grid_collect_style(
 	auto voxel_center_transform = openvdb::math::Transform::createLinearTransform(dx);
 	liquid_sdf->setTransform(voxel_center_transform);
 	liquid_sdf->setTree(std::make_shared<openvdb::FloatTree>(
-		velocity->tree(), 0.9f*dx, openvdb::TopologyCopy()));
+		velocity->tree(), 0.6f * std::sqrt(3.0f) * dx * 1.01, openvdb::TopologyCopy()));
 
 	auto collector_op{ p2g_collector(liquid_sdf,
 			velocity,
@@ -4451,8 +4451,8 @@ void FLIP_vdb::clamp_liquid_phi_in_solids(
 				auto voxel_solid_sdf = openvdb::tools::BoxSampler::sample(
 					solid_sdf->tree(), leaf.offsetToGlobalCoord(offset).asVec3d() + shift);
 
-				if (voxel_solid_sdf<0 && leaf.getValue(offset) < (-voxel_solid_sdf)) {
-					leaf.setValueOn(offset, -voxel_solid_sdf);
+				if (voxel_solid_sdf<0) {
+					leaf.setValueOn(offset, dx);
 				}
 			}//end for all voxel
 		}//end there is solid in this leaf
@@ -4498,9 +4498,9 @@ void FLIP_vdb::clamp_liquid_phi_in_solids(
 					//mark this voxel as liquid
 					if (found_liquid_neib) {
 						float current_sdf = iter.getValue();
-						iter.setValue(current_sdf - dx * 1);
-						//iter.setValue(-m_dx * 0.01);
-						//iter.setValueOn();
+						iter.setValue( -0.5f * dx);
+						//iter.setValue(-dx * 0.01);
+						iter.setValueOn();
 					}
 				}//end if this voxel is inside solid
 
@@ -5066,10 +5066,17 @@ void FLIP_vdb::solve_pressure_simd(
 	//simd_solver.m_laplacian_with_levels[0]->m_dof_leafmanager->foreach(set_warm_pressure);
 
 	CSim::TimerMan::timer("Sim.step/vdbflip/pressure/simdpcg").start();
-	simd_solver.pcg_solve(pressure, 1e-7);
+	bool converged = simd_solver.pcg_solve(pressure, 1e-7);
 	CSim::TimerMan::timer("Sim.step/vdbflip/pressure/simdpcg").stop();
-
-	curr_pressure.swap(pressure);
+	if(converged)
+		curr_pressure.swap(pressure);
+	else
+	{
+		pressure = simd_solver.m_laplacian_with_levels[0]->get_zero_vec_grid();
+		simd_solver.m_laplacian_with_levels[0]->m_dof_leafmanager->foreach(set_warm_pressure);
+		simd_solver.smooth_solve(pressure, 200);
+		curr_pressure.swap(pressure);
+	}
 	// CSim::TimerMan::timer("Sim.step/vdbflip/pressure/updatevel").start();
 	// apply_pressure_gradient(dt);
 	// CSim::TimerMan::timer("Sim.step/vdbflip/pressure/updatevel").stop();
