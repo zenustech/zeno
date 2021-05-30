@@ -38,25 +38,26 @@ struct RBGrid {
 
     inline size_t linearize(size_t i, size_t j, size_t k) const {
         //static_assert(N % 2 == 0);
-        //k = k / 2 + (N / 2) * ((i + j + k) % 2);
+        k = k / 2 + (N / 2) * ((i + j + k) % 2);
         return i + N * (j + k * N);
     }
 
     void smooth(RBGrid const &rhs, size_t times) {
         for (size_t t = 0; t < (times + 1) / 2 * 2; t++) {
             #pragma omp parallel for schedule(static)
-            for (size_t _ = 0; _ < N * N * N; _++) {
-                auto [i, j, k] = unlinearize(N, _);
-                if ((i + j + k) % 2 == t % 2) {
-                    T x1 = i > 0 ? at(i - 1, j, k) : T(0);
-                    T x2 = i < N - 1 ? at(i + 1, j, k) : T(0);
-                    T y1 = j > 0 ? at(i, j - 1, k) : T(0);
-                    T y2 = j < N - 1 ? at(i, j + 1, k) : T(0);
-                    T z1 = k > 0 ? at(i, j, k - 1) : T(0);
-                    T z2 = k < N - 1 ? at(i, j, k + 1) : T(0);
-                    T f = rhs.at(i, j, k);
-                    T val = x1 + x2 + y1 + y2 + z1 + z2 + f;
-                    at(i, j, k) = val / 6;
+            for (size_t k = 1; k < N - 1; k++) {
+                for (size_t j = 1; j < N - 1; j++) {
+                    for (size_t i = 1 + (j + k + t) % 2; i < N - 1; i += 2) {
+                        T x1 = at(i - 1, j, k);
+                        T x2 = at(i + 1, j, k);
+                        T y1 = at(i, j - 1, k);
+                        T y2 = at(i, j + 1, k);
+                        T z1 = at(i, j, k - 1);
+                        T z2 = at(i, j, k + 1);
+                        T f = rhs.at(i, j, k);
+                        T val = x1 + x2 + y1 + y2 + z1 + z2 + f;
+                        at(i, j, k) = val / 6;
+                    }
                 }
             }
         }
@@ -224,7 +225,7 @@ int main(void)
 
     auto t0 = std::chrono::steady_clock::now();
     vcycle(v, f, 64);
-    cgstep(v, f, 40);
+    //cgstep(v, f, 40);
     auto t1 = std::chrono::steady_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
     cout << ms << " ms" << endl;
