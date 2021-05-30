@@ -38,7 +38,7 @@ struct RBGrid {
 
     inline size_t linearize(size_t i, size_t j, size_t k) const {
         //static_assert(N % 2 == 0);
-        k = k / 2 + (N / 2) * ((i + j + k) % 2);
+        //k = k / 2 + (N / 2) * ((i + j + k) % 2);
         return i + N * (j + k * N);
     }
 
@@ -73,16 +73,6 @@ struct RBGrid {
         T c = at(i, j, k);
         T val = 6 * c - (x1 + x2 + y1 + y2 + z1 + z2);
         return val;
-    }
-
-    T innerprod() const {
-        T res(0);
-        #pragma omp parallel for reduction(+:res)
-        for (size_t _ = 0; _ < N * N * N; _++) {
-            auto [i, j, k] = unlinearize(N, _);
-            res += around_at(i, j, k) * at(i, j, k);
-        }
-        return res;
     }
 
     void residual(RBGrid &out, RBGrid const &rhs) const {
@@ -169,7 +159,13 @@ void cgstep(RBGrid<N, T> &v, RBGrid<N, T> const &f, size_t times) {
     r.copy(d);
 
     for (int t = 0; t < times; t++) {
-        T dAd = d.innerprod();
+        T dAd(0);
+        #pragma omp parallel for reduction(+:dAd)
+        for (size_t _ = 0; _ < N * N * N; _++) {
+            auto [i, j, k] = unlinearize(N, _);
+            dAd += d.around_at(i, j, k) * d.at(i, j, k);
+        }
+
         T alpha = r.normsqr() / (dAd + 1e-6);
 
         T beta(0);
@@ -186,8 +182,7 @@ void cgstep(RBGrid<N, T> &v, RBGrid<N, T> const &f, size_t times) {
         #pragma omp parallel for
         for (size_t _ = 0; _ < N * N * N; _++) {
             auto [i, j, k] = unlinearize(N, _);
-            d.at(i, j, k) *= beta;
-            d.at(i, j, k) += r.at(i, j, k);
+            d.at(i, j, k) = d.at(i, j, k) * beta + r.at(i, j, k);
         }
     }
 }
@@ -224,8 +219,8 @@ int main(void)
     f.at(N / 2, N / 2, N / 2) = 32;
 
     auto t0 = std::chrono::steady_clock::now();
-    vcycle(v, f, 64);
-    //cgstep(v, f, 40);
+    vcycle(v, f, 80);
+    cgstep(v, f, 40);
     auto t1 = std::chrono::steady_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
     cout << ms << " ms" << endl;
