@@ -1,7 +1,7 @@
-x: prim.exe
+x: mg.exe
 	./$<
 	@#gdb ./$< -ex r
 
 %.exe: %.cpp
 	@#g++ -ggdb -gstabs+ -O0 -o $@ $<
-	g++ -O1 -o $@ $<
+	g++ -O3 -o $@ $<
