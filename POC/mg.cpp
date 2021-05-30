@@ -19,8 +19,9 @@ struct RBGrid {
     T *m;
 
     RBGrid() {
-        m = new T[N * N * N];
-        std::memset(m, 0, sizeof(T) * N * N * N);
+        size_t size = (N + 2) * (N + 2) * (N + 2);
+        m = new T[size];
+        std::memset(m, 0, sizeof(T) * size);
     }
 
     ~RBGrid() {
@@ -37,17 +38,15 @@ struct RBGrid {
     }
 
     inline size_t linearize(size_t i, size_t j, size_t k) const {
-        //static_assert(N % 2 == 0);
-        //k = k / 2 + (N / 2) * ((i + j + k) % 2);
-        return i + N * (j + k * N);
+        return i + 1 + (N + 2) * (j + 1 + (N + 2) * (k + 1));
     }
 
     void smooth(RBGrid const &rhs, size_t times) {
-        for (size_t t = 0; t < (times + 1) / 2 * 2; t++) {
-            #pragma omp parallel for schedule(static)
-            for (size_t k = 1; k < N - 1; k++) {
-                for (size_t j = 1; j < N - 1; j++) {
-                    for (size_t i = 1 + (j + k + t) % 2; i < N - 1; i += 2) {
+        for (size_t t = 0; t < times; t++) {
+            #pragma omp parallel for
+            for (size_t k = 0; k < N; k++) {
+                for (size_t j = 0; j < N; j++) {
+                    for (size_t i = (j + k + t) % 2; i < N; i += 2) {
                         T x1 = at(i - 1, j, k);
                         T x2 = at(i + 1, j, k);
                         T y1 = at(i, j - 1, k);
@@ -64,12 +63,12 @@ struct RBGrid {
     }
 
     T around_at(int i, int j, int k) const {
-        T x1 = i > 0 ? at(i - 1, j, k) : T(0);
-        T x2 = i < N - 1 ? at(i + 1, j, k) : T(0);
-        T y1 = j > 0 ? at(i, j - 1, k) : T(0);
-        T y2 = j < N - 1 ? at(i, j + 1, k) : T(0);
-        T z1 = k > 0 ? at(i, j, k - 1) : T(0);
-        T z2 = k < N - 1 ? at(i, j, k + 1) : T(0);
+        T x1 = at(i - 1, j, k);
+        T x2 = at(i + 1, j, k);
+        T y1 = at(i, j - 1, k);
+        T y2 = at(i, j + 1, k);
+        T z1 = at(i, j, k - 1);
+        T z2 = at(i, j, k + 1);
         T c = at(i, j, k);
         T val = 6 * c - (x1 + x2 + y1 + y2 + z1 + z2);
         return val;
