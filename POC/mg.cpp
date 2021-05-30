@@ -20,7 +20,7 @@ struct VDBGrid {
         Leaf *m[16 * 16 * 16];
 
         InternalNode() {
-            std::memset(m, 0, sizeof(Leaf *) * 16 * 16 * 16);
+            std::memset(m, 0, sizeof(m));
         }
 
         ~InternalNode() {
@@ -33,11 +33,10 @@ struct VDBGrid {
         }
     };
 
-    InternalNode **m;
+    InternalNode *m[32 * 32 * 32];
 
     VDBGrid() {
-        m = new InternalNode *[32 * 32 * 32];
-        std::memset(m, 0, sizeof(Leaf *) * 32 * 32 * 32);
+        std::memset(m, 0, sizeof(m));
     }
 
     ~VDBGrid() {
@@ -47,8 +46,6 @@ struct VDBGrid {
                 m[i] = nullptr;
             }
         }
-        delete m;
-        m = nullptr;
     }
 
     Leaf *leaf_at(size_t i, size_t j, size_t k) {
@@ -112,7 +109,7 @@ struct BoundaryLeaf {
     T m[10 * 10 * 10];
 
     BoundaryLeaf() {
-        std::memset(m, 0, sizeof(T) * 10 * 10 * 10);
+        std::memset(m, 0, sizeof(m));
     }
 
     inline T &at(size_t i, size_t j, size_t k) {
