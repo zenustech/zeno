@@ -4,4 +4,4 @@ x: mg.exe
 
 %.exe: %.cpp
 	@#g++ -ggdb -gstabs+ -O0 -o $@ $<
-	g++ -O3 -o $@ $<
+	g++ -fopenmp -march=native -O3 -o $@ $<
