@@ -45,6 +45,10 @@ struct VDBGrid {
     }
 
     ~VDBGrid() {
+        clear_leaves();
+    }
+
+    void clear_leaves() {
         for (long i = 0; i < 32 * 32 * 32; i++) {
             if (m[i]) {
                 delete m[i];
@@ -206,6 +210,7 @@ struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
     static constexpr long N = 8;
 
     void sync_boundaries() const {
+        #pragma omp parallel for
         for (auto [leaf, ii, jj, kk]: this->get_leaves()) {
             if (auto *other = this->ro_leaf_at(ii + 1, jj, kk); other)
                 for (long j = 0; j < 8; j++)
@@ -271,6 +276,7 @@ struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
     void smooth(RBGrid const &rhs, long times) {
         for (long t = 0; t < times; t++) {
             this->sync_boundaries();
+            #pragma omp parallel for
             for (auto [leaf, ii, jj, kk]: this->get_leaves()) {
                 auto *rhs_leaf = rhs.ro_leaf_at(ii, jj, kk);
                 assert(rhs_leaf);
@@ -307,6 +313,7 @@ struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
 
     void residual(RBGrid &out, RBGrid const &rhs) const {
         this->sync_boundaries();
+        #pragma omp parallel for
         for (auto [leaf, ii, jj, kk]: this->get_leaves()) {
             auto *out_leaf = out.leaf_at(ii, jj, kk);
             auto *rhs_leaf = rhs.ro_leaf_at(ii, jj, kk);
@@ -320,6 +327,7 @@ struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
     }
 
     void add(RBGrid const &src) {
+        #pragma omp parallel for
         for (auto [src_leaf, ii, jj, kk]: src.get_leaves()) {
             auto *leaf = this->leaf_at(ii, jj, kk);
             for (long k = 0; k < N; k++) {
@@ -358,6 +366,7 @@ struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
     }
 
     void prolongate(RBGrid const &src) {
+        #pragma omp parallel for
         for (auto [src_leaf, ii, jj, kk]: src.get_leaves()) {
             for (long kb = 0; kb < 2; kb++) {
                 for (long jb = 0; jb < 2; jb++) {
@@ -431,7 +440,7 @@ template <long N, class T>
 void vcycle(RBGrid<T> &v, RBGrid<T> const &f, long times) {
     v.smooth(f, times);
 
-    if constexpr (N > 32) {
+    if constexpr (N > 0) {
         RBGrid<T> r;
         v.residual(r, f);
 
@@ -439,7 +448,7 @@ void vcycle(RBGrid<T> &v, RBGrid<T> const &f, long times) {
         RBGrid<T> r2;
         r2.restrict(r);
 
-        vcycle<N / 2, T>(e2, r2, times << 1);
+        vcycle<N - 1, T>(e2, r2, times << 1);
 
         RBGrid<T> e;
         e.prolongate(e2);
@@ -451,14 +460,13 @@ void vcycle(RBGrid<T> &v, RBGrid<T> const &f, long times) {
 
 int main(void)
 {
-    constexpr long N = 128;
     RBGrid<float> v;
     RBGrid<float> f;
     RBGrid<float> r;
 
-    for (long k = 256-8; k < 256+8; k++) {
-        for (long j = 256-8; j < 256+8; j++) {
-            for (long i = 256-8; i < 256+8; i++) {
+    for (long k = 256-16; k < 256+16; k++) {
+        for (long j = 256-16; j < 256+16; j++) {
+            for (long i = 256-16; i < 256+16; i++) {
                 //cout << i << ',' << j << ',' << k << endl;
                 (void)f.leaf_at(i, j, k);
             }
@@ -471,9 +479,9 @@ int main(void)
     show(f.leaf_count());
 
     auto t0 = std::chrono::steady_clock::now();
-    //v.smooth(f, 160);
-    vcycle<N>(v, f, 80);
-    //cgstep<N>(v, f, 40);
+    v.smooth(f, 80);
+    //vcycle<3>(v, f, 40);
+    //cgstep(v, f, 20);
     auto t1 = std::chrono::steady_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
     cout << ms << " ms" << endl;
