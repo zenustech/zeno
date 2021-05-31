@@ -11,8 +11,8 @@ using std::endl;
 #define show(x) (cout << #x "=" << (x) << endl)
 
 
-inline std::tuple<size_t, size_t, size_t> unlinearize(size_t N, size_t idx) {
-    return std::make_tuple<size_t, size_t, size_t>(
+inline std::tuple<long, long, long> unlinearize(long N, long idx) {
+    return std::make_tuple<long, long, long>(
         idx % N, idx / N % N, idx / N / N);
 }
 
@@ -27,7 +27,7 @@ struct VDBGrid {
         }
 
         ~InternalNode() {
-            for (size_t i = 0; i < 16 * 16 * 16; i++) {
+            for (long i = 0; i < 16 * 16 * 16; i++) {
                 if (m[i]) {
                     delete m[i];
                     m[i] = nullptr;
@@ -43,7 +43,7 @@ struct VDBGrid {
     }
 
     ~VDBGrid() {
-        for (size_t i = 0; i < 32 * 32 * 32; i++) {
+        for (long i = 0; i < 32 * 32 * 32; i++) {
             if (m[i]) {
                 delete m[i];
                 m[i] = nullptr;
@@ -51,11 +51,11 @@ struct VDBGrid {
         }
     }
 
-    Leaf *leaf_at(size_t i, size_t j, size_t k) {
-        size_t ii = i / 16;
-        size_t jj = j / 16;
-        size_t kk = k / 16;
-        size_t mm = ii + 32 * (jj + 32 * kk);
+    Leaf *leaf_at(long i, long j, long k) {
+        long ii = i / 16;
+        long jj = j / 16;
+        long kk = k / 16;
+        long mm = ii + 32 * (jj + 32 * kk);
         InternalNode *&n = m[mm];
         if (!n) {
             n = new InternalNode();
@@ -71,15 +71,15 @@ struct VDBGrid {
         return p;
     }
 
-    Leaf *ro_leaf_at(size_t i, size_t j, size_t k) const {
+    Leaf *ro_leaf_at(long i, long j, long k) const {
         if (i < 0 || j < 0 || k < 0)
             return nullptr;
         if (i >= 512 || j >= 512 || k >= 512)
             return nullptr;
-        size_t ii = i / 16;
-        size_t jj = j / 16;
-        size_t kk = k / 16;
-        size_t mm = ii + 32 * (jj + 32 * kk);
+        long ii = i / 16;
+        long jj = j / 16;
+        long kk = k / 16;
+        long mm = ii + 32 * (jj + 32 * kk);
         InternalNode *n = m[mm];
         if (!n) {
             return nullptr;
@@ -94,26 +94,26 @@ struct VDBGrid {
 
     template <class Func>
     void foreach_leaf(Func const &callback) const {
-        for (size_t i = 0; i < 32 * 32 * 32; i++) {
+        for (long i = 0; i < 32 * 32 * 32; i++) {
             InternalNode *n = m[i];
             if (!n) continue;
-            size_t ii = i % 32;
-            size_t ij = i / 32 % 32;
-            size_t ik = i / 32 / 32;
-            for (size_t j = 0; j < 16 * 16 * 16; j++) {
+            long ii = i % 32;
+            long ij = i / 32 % 32;
+            long ik = i / 32 / 32;
+            for (long j = 0; j < 16 * 16 * 16; j++) {
                 Leaf *p = n->m[j];
                 if (!p) continue;
-                size_t ji = j % 16;
-                size_t jj = j / 16 % 16;
-                size_t jk = j / 16 / 16;
+                long ji = j % 16;
+                long jj = j / 16 % 16;
+                long jk = j / 16 / 16;
                 callback(p, ii * 16 + ji, ij * 16 + jj, ik * 16 + jk);
             }
         }
     }
 
     auto get_leaves() const {
-        std::vector<std::tuple<Leaf *, size_t, size_t, size_t>> leaves;
-        this->foreach_leaf([&] (auto *p, size_t ii, size_t jj, size_t kk) {
+        std::vector<std::tuple<Leaf *, long, long, long>> leaves;
+        this->foreach_leaf([&] (auto *p, long ii, long jj, long kk) {
             leaves.emplace_back(p, ii, jj, kk);
         });
         return leaves;
@@ -129,15 +129,15 @@ struct BoundaryLeaf {
         std::memset(m, 0, sizeof(m));
     }
 
-    inline T &at(size_t i, size_t j, size_t k) {
+    inline T &at(long i, long j, long k) {
         return m[linearize(i, j, k)];
     }
 
-    inline T const &at(size_t i, size_t j, size_t k) const {
+    inline T const &at(long i, long j, long k) const {
         return m[linearize(i, j, k)];
     }
 
-    inline size_t linearize(size_t i, size_t j, size_t k) const {
+    inline long linearize(long i, long j, long k) const {
         return i + 1 + 10 * (j + 1 + 10 * (k + 1));
     }
 
@@ -163,15 +163,15 @@ struct SimpleLeaf {
         std::memset(m, 0, sizeof(T) * 8 * 8 * 8);
     }
 
-    inline T &at(size_t i, size_t j, size_t k) {
+    inline T &at(long i, long j, long k) {
         return m[linearize(i, j, k)];
     }
 
-    inline T const &at(size_t i, size_t j, size_t k) const {
+    inline T const &at(long i, long j, long k) const {
         return m[linearize(i, j, k)];
     }
 
-    inline size_t linearize(size_t i, size_t j, size_t k) const {
+    inline long linearize(long i, long j, long k) const {
         return i + 8 * (j + 8 * k);
     }
 };
@@ -179,34 +179,58 @@ struct SimpleLeaf {
 
 template <class T>
 struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
-    static constexpr size_t N = 8;
+    static constexpr long N = 8;
 
     void sync_boundaries() const {
         for (auto [leaf, ii, jj, kk]: this->get_leaves()) {
             if (auto *other = this->ro_leaf_at(ii + 1, jj, kk); other)
-                for (size_t j = 0; j < 8; j++)
-                    for (size_t i = 0; i < 8; i++)
+                for (long j = 0; j < 8; j++)
+                    for (long i = 0; i < 8; i++)
                         leaf->at(8, i, j) = leaf->at(0, i, j);
+            else
+                for (long j = 0; j < 8; j++)
+                    for (long i = 0; i < 8; i++)
+                        leaf->at(8, i, j) = 0;
             if (auto *other = this->ro_leaf_at(ii - 1, jj, kk); other)
-                for (size_t j = 0; j < 8; j++)
-                    for (size_t i = 0; i < 8; i++)
+                for (long j = 0; j < 8; j++)
+                    for (long i = 0; i < 8; i++)
                         leaf->at(-1, i, j) = leaf->at(7, i, j);
+            else
+                for (long j = 0; j < 8; j++)
+                    for (long i = 0; i < 8; i++)
+                        leaf->at(-1, i, j) = 0;
             if (auto *other = this->ro_leaf_at(ii, jj + 1, kk); other)
-                for (size_t j = 0; j < 8; j++)
-                    for (size_t i = 0; i < 8; i++)
+                for (long j = 0; j < 8; j++)
+                    for (long i = 0; i < 8; i++)
                         leaf->at(8, i, j) = leaf->at(0, i, j);
+            else
+                for (long j = 0; j < 8; j++)
+                    for (long i = 0; i < 8; i++)
+                        leaf->at(8, i, j) = 0;
             if (auto *other = this->ro_leaf_at(ii, jj - 1, kk); other)
-                for (size_t j = 0; j < 8; j++)
-                    for (size_t i = 0; i < 8; i++)
+                for (long j = 0; j < 8; j++)
+                    for (long i = 0; i < 8; i++)
                         leaf->at(i, -1, j) = leaf->at(i, 7, j);
+            else
+                for (long j = 0; j < 8; j++)
+                    for (long i = 0; i < 8; i++)
+                        leaf->at(i, -1, j) = 0;
             if (auto *other = this->ro_leaf_at(ii, jj, kk + 1); other)
-                for (size_t j = 0; j < 8; j++)
-                    for (size_t i = 0; i < 8; i++)
+                for (long j = 0; j < 8; j++)
+                    for (long i = 0; i < 8; i++)
                         leaf->at(8, i, j) = leaf->at(0, i, j);
+            else
+                for (long j = 0; j < 8; j++)
+                    for (long i = 0; i < 8; i++)
+                        leaf->at(8, i, j) = 0;
             if (auto *other = this->ro_leaf_at(ii, jj, kk - 1); other)
-                for (size_t j = 0; j < 8; j++)
-                    for (size_t i = 0; i < 8; i++)
+                for (long j = 0; j < 8; j++)
+                    for (long i = 0; i < 8; i++)
                         leaf->at(i, j, -1) = leaf->at(i, j, 7);
+            else
+                for (long j = 0; j < 8; j++)
+                    for (long i = 0; i < 8; i++)
+                        leaf->at(i, j, -1) = 0;
         }
     }
 
@@ -217,19 +241,19 @@ struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
         }
     }
 
-    size_t leaf_count() const {
+    long leaf_count() const {
         return this->get_leaves().size();
     }
 
-    void smooth(RBGrid const &rhs, size_t times) {
-        this->sync_boundaries();
-        for (size_t t = 0; t < times; t++) {
+    void smooth(RBGrid const &rhs, long times) {
+        for (long t = 0; t < times; t++) {
+            this->sync_boundaries();
             for (auto [leaf, ii, jj, kk]: this->get_leaves()) {
                 auto *rhs_leaf = rhs.ro_leaf_at(ii, jj, kk);
                 assert(rhs_leaf);
-                for (size_t k = 0; k < N; k++) {
-                    for (size_t j = 0; j < N; j++) {
-                        for (size_t i = (j + k + t) % 2; i < N; i += 2) {
+                for (long k = 0; k < N; k++) {
+                    for (long j = 0; j < N; j++) {
+                        for (long i = (j + k + t) % 2; i < N; i += 2) {
                             T x1 = leaf->at(i - 1, j, k);
                             T x2 = leaf->at(i + 1, j, k);
                             T y1 = leaf->at(i, j - 1, k);
@@ -249,7 +273,7 @@ struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
     T normsqr() const {
         T res(0);
         for (auto [leaf, ii, jj, kk]: this->get_leaves()) {
-            for (size_t _ = 0; _ < N * N * N; _++) {
+            for (long _ = 0; _ < N * N * N; _++) {
                 auto [i, j, k] = unlinearize(N, _);
                 T val = leaf->at(i, j, k);
                 res += val * val;
@@ -259,11 +283,12 @@ struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
     }
 
     void residual(RBGrid &out, RBGrid const &rhs) const {
+        this->sync_boundaries();
         for (auto [leaf, ii, jj, kk]: this->get_leaves()) {
             auto *out_leaf = out.leaf_at(ii, jj, kk);
             auto *rhs_leaf = rhs.ro_leaf_at(ii, jj, kk);
             assert(rhs_leaf);
-            for (size_t _ = 0; _ < N * N * N; _++) {
+            for (long _ = 0; _ < N * N * N; _++) {
                 auto [i, j, k] = unlinearize(N, _);
                 T val = rhs_leaf->at(i, j, k) - leaf->around_at(i, j, k);
                 out_leaf->at(i, j, k) = val;
@@ -274,9 +299,9 @@ struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
     void add(RBGrid const &src) {
         for (auto [src_leaf, ii, jj, kk]: src.get_leaves()) {
             auto *leaf = this->leaf_at(ii, jj, kk);
-            for (size_t k = 0; k < N; k++) {
-                for (size_t j = 0; j < N; j++) {
-                    for (size_t i = 0; i < N; i++) {
+            for (long k = 0; k < N; k++) {
+                for (long j = 0; j < N; j++) {
+                    for (long i = 0; i < N; i++) {
                         leaf->at(i, j, k) += src_leaf->at(i, j, k);
                     }
                 }
@@ -287,9 +312,9 @@ struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
     void restrict(RBGrid const &src) {
         for (auto [src_leaf, ii, jj, kk]: src.get_leaves()) {
             auto *leaf = this->leaf_at(ii / 2, jj / 2, kk / 2);
-            for (size_t k = 0; k < N / 2; k++) {
-                for (size_t j = 0; j < N / 2; j++) {
-                    for (size_t i = 0; i < N / 2; i++) {
+            for (long k = 0; k < N / 2; k++) {
+                for (long j = 0; j < N / 2; j++) {
+                    for (long i = 0; i < N / 2; i++) {
                         T ooo = src_leaf->at(i * 2 + 0, j * 2 + 0, k * 2 + 0);
                         T ioo = src_leaf->at(i * 2 + 1, j * 2 + 0, k * 2 + 0);
                         T iio = src_leaf->at(i * 2 + 1, j * 2 + 1, k * 2 + 0);
@@ -311,17 +336,17 @@ struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
 
     void prolongate(RBGrid const &src) {
         for (auto [src_leaf, ii, jj, kk]: src.get_leaves()) {
-            for (size_t kb = 0; kb < 2; kb++) {
-                for (size_t jb = 0; jb < 2; jb++) {
-                    for (size_t ib = 0; ib < 2; ib++) {
+            for (long kb = 0; kb < 2; kb++) {
+                for (long jb = 0; jb < 2; jb++) {
+                    for (long ib = 0; ib < 2; ib++) {
                         auto *leaf = this->leaf_at(
                             ii * 2 + ib, jj * 2 + jb, kk * 2 + kb);
-                        for (size_t k = 0; k < N; k++) {
-                            for (size_t j = 0; j < N; j++) {
-                                for (size_t i = 0; i < N; i++) {
-                                    size_t ia = ib * (N / 2) + i / 2;
-                                    size_t ja = jb * (N / 2) + j / 2;
-                                    size_t ka = kb * (N / 2) + k / 2;
+                        for (long k = 0; k < N; k++) {
+                            for (long j = 0; j < N; j++) {
+                                for (long i = 0; i < N; i++) {
+                                    long ia = ib * (N / 2) + i / 2;
+                                    long ja = jb * (N / 2) + j / 2;
+                                    long ka = kb * (N / 2) + k / 2;
                                     T val = src_leaf->at(ia, ja, ka);
                                     leaf->at(i, j, k) = val;
                                 }
@@ -336,13 +361,13 @@ struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
 
 
 #if 0
-template <size_t N, class T>
-void cgstep(RBGrid<N, T> &v, RBGrid<N, T> const &f, size_t times) {
+template <long N, class T>
+void cgstep(RBGrid<N, T> &v, RBGrid<N, T> const &f, long times) {
     RBGrid<N, T> d;
     RBGrid<N, T> r;
 
     #pragma omp parallel for
-    for (size_t _ = 0; _ < N * N * N; _++) {
+    for (long _ = 0; _ < N * N * N; _++) {
         auto [i, j, k] = unlinearize(N, _);
         d.at(i, j, k) = f.at(i, j, k) - v.around_at(i, j, k);
     }
@@ -351,7 +376,7 @@ void cgstep(RBGrid<N, T> &v, RBGrid<N, T> const &f, size_t times) {
     for (int t = 0; t < times; t++) {
         T dAd(0);
         #pragma omp parallel for reduction(+:dAd)
-        for (size_t _ = 0; _ < N * N * N; _++) {
+        for (long _ = 0; _ < N * N * N; _++) {
             auto [i, j, k] = unlinearize(N, _);
             dAd += d.around_at(i, j, k) * d.at(i, j, k);
         }
@@ -360,7 +385,7 @@ void cgstep(RBGrid<N, T> &v, RBGrid<N, T> const &f, size_t times) {
 
         T beta(0);
         #pragma omp parallel for reduction(+:beta)
-        for (size_t _ = 0; _ < N * N * N; _++) {
+        for (long _ = 0; _ < N * N * N; _++) {
             auto [i, j, k] = unlinearize(N, _);
             v.at(i, j, k) += alpha * d.at(i, j, k);
             r.at(i, j, k) -= alpha * d.around_at(i, j, k);
@@ -370,7 +395,7 @@ void cgstep(RBGrid<N, T> &v, RBGrid<N, T> const &f, size_t times) {
         beta /= (alpha + 1e-6) * dAd;
 
         #pragma omp parallel for
-        for (size_t _ = 0; _ < N * N * N; _++) {
+        for (long _ = 0; _ < N * N * N; _++) {
             auto [i, j, k] = unlinearize(N, _);
             d.at(i, j, k) = d.at(i, j, k) * beta + r.at(i, j, k);
         }
@@ -379,8 +404,8 @@ void cgstep(RBGrid<N, T> &v, RBGrid<N, T> const &f, size_t times) {
 #endif
 
 
-template <size_t N, class T>
-void vcycle(RBGrid<T> &v, RBGrid<T> const &f, size_t times) {
+template <long N, class T>
+void vcycle(RBGrid<T> &v, RBGrid<T> const &f, long times) {
     v.smooth(f, times);
 
     if constexpr (N > 32) {
@@ -403,14 +428,14 @@ void vcycle(RBGrid<T> &v, RBGrid<T> const &f, size_t times) {
 
 int main(void)
 {
-    constexpr size_t N = 128;
+    constexpr long N = 128;
     RBGrid<float> v;
     RBGrid<float> f;
     RBGrid<float> r;
 
-    for (size_t k = 256-8; k < 256+8; k++) {
-        for (size_t j = 256-8; j < 256+8; j++) {
-            for (size_t i = 256-8; i < 256+8; i++) {
+    for (long k = 256-8; k < 256+8; k++) {
+        for (long j = 256-8; j < 256+8; j++) {
+            for (long i = 256-8; i < 256+8; i++) {
                 //cout << i << ',' << j << ',' << k << endl;
                 (void)f.leaf_at(i, j, k);
             }
