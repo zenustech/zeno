@@ -63,7 +63,7 @@ struct VDBGrid {
         ii = i % 16;
         jj = j % 16;
         kk = k % 16;
-        mm = ii + jj * (16 + kk * 16);
+        mm = ii + 16 * (jj + kk * 16);
         Leaf *&p = n->m[mm];
         if (!p) {
             p = new Leaf();
@@ -72,6 +72,10 @@ struct VDBGrid {
     }
 
     Leaf *ro_leaf_at(size_t i, size_t j, size_t k) const {
+        if (i < 0 || j < 0 || k < 0)
+            return nullptr;
+        if (i >= 512 || j >= 512 || k >= 512)
+            return nullptr;
         size_t ii = i / 16;
         size_t jj = j / 16;
         size_t kk = k / 16;
@@ -83,7 +87,7 @@ struct VDBGrid {
         ii = i % 16;
         jj = j % 16;
         kk = k % 16;
-        mm = ii + jj * (16 + kk * 16);
+        mm = ii + 16 * (jj + kk * 16);
         Leaf *p = n->m[mm];
         return p;
     }
@@ -177,23 +181,44 @@ template <class T>
 struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
     static constexpr size_t N = 8;
 
-    void sync_boundaries() {
+    void sync_boundaries() const {
         for (auto [leaf, ii, jj, kk]: this->get_leaves()) {
+            if (auto *other = this->ro_leaf_at(ii + 1, jj, kk); other)
+                for (size_t j = 0; j < 8; j++)
+                    for (size_t i = 0; i < 8; i++)
+                        leaf->at(8, i, j) = leaf->at(0, i, j);
+            if (auto *other = this->ro_leaf_at(ii - 1, jj, kk); other)
+                for (size_t j = 0; j < 8; j++)
+                    for (size_t i = 0; i < 8; i++)
+                        leaf->at(-1, i, j) = leaf->at(7, i, j);
+            if (auto *other = this->ro_leaf_at(ii, jj + 1, kk); other)
+                for (size_t j = 0; j < 8; j++)
+                    for (size_t i = 0; i < 8; i++)
+                        leaf->at(8, i, j) = leaf->at(0, i, j);
+            if (auto *other = this->ro_leaf_at(ii, jj - 1, kk); other)
+                for (size_t j = 0; j < 8; j++)
+                    for (size_t i = 0; i < 8; i++)
+                        leaf->at(i, -1, j) = leaf->at(i, 7, j);
+            if (auto *other = this->ro_leaf_at(ii, jj, kk + 1); other)
+                for (size_t j = 0; j < 8; j++)
+                    for (size_t i = 0; i < 8; i++)
+                        leaf->at(8, i, j) = leaf->at(0, i, j);
+            if (auto *other = this->ro_leaf_at(ii, jj, kk - 1); other)
+                for (size_t j = 0; j < 8; j++)
+                    for (size_t i = 0; i < 8; i++)
+                        leaf->at(i, j, -1) = leaf->at(i, j, 7);
         }
     }
 
     void copy_topology(RBGrid const &src) {
         for (auto [src_leaf, ii, jj, kk]: src.get_leaves()) {
+            //cout << ii << ' ' << jj << ' ' << kk << endl;
             (void)this->leaf_at(ii, jj, kk);
         }
     }
 
     size_t leaf_count() const {
-        size_t count = 0;
-        for (auto [leaf, ii, jj, kk]: this->get_leaves()) {
-            count++;
-        }
-        return count;
+        return this->get_leaves().size();
     }
 
     void smooth(RBGrid const &rhs, size_t times) {
@@ -248,11 +273,11 @@ struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
 
     void add(RBGrid const &src) {
         for (auto [src_leaf, ii, jj, kk]: src.get_leaves()) {
-            auto *leaf = this->leaf_at(ii / 2, jj / 2, kk / 2);
+            auto *leaf = this->leaf_at(ii, jj, kk);
             for (size_t k = 0; k < N; k++) {
                 for (size_t j = 0; j < N; j++) {
                     for (size_t i = 0; i < N; i++) {
-                        leaf->at(i, j, k) = src_leaf->at(i, j, k);
+                        leaf->at(i, j, k) += src_leaf->at(i, j, k);
                     }
                 }
             }
@@ -308,139 +333,6 @@ struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
         }
     }
 };
-
-
-#if 0
-template <size_t N, class T>
-struct RBGrid {
-    T *m;
-
-    RBGrid() {
-        size_t size = (N + 2) * (N + 2) * (N + 2);
-        m = new T[size];
-        std::memset(m, 0, sizeof(T) * size);
-    }
-
-    ~RBGrid() {
-        delete m;
-        m = nullptr;
-    }
-
-    inline T &at(size_t i, size_t j, size_t k) {
-        return m[linearize(i, j, k)];
-    }
-
-    inline T const &at(size_t i, size_t j, size_t k) const {
-        return m[linearize(i, j, k)];
-    }
-
-    inline size_t linearize(size_t i, size_t j, size_t k) const {
-        return i + 1 + (N + 2) * (j + 1 + (N + 2) * (k + 1));
-    }
-
-    void smooth(RBGrid const &rhs, size_t times) {
-        for (size_t t = 0; t < times; t++) {
-            #pragma omp parallel for
-            for (size_t k = 0; k < N; k++) {
-                for (size_t j = 0; j < N; j++) {
-                    for (size_t i = (j + k + t) % 2; i < N; i += 2) {
-                        T x1 = at(i - 1, j, k);
-                        T x2 = at(i + 1, j, k);
-                        T y1 = at(i, j - 1, k);
-                        T y2 = at(i, j + 1, k);
-                        T z1 = at(i, j, k - 1);
-                        T z2 = at(i, j, k + 1);
-                        T f = rhs.at(i, j, k);
-                        T val = x1 + x2 + y1 + y2 + z1 + z2 + f;
-                        at(i, j, k) = val / 6;
-                    }
-                }
-            }
-        }
-    }
-
-    T around_at(int i, int j, int k) const {
-        T x1 = at(i - 1, j, k);
-        T x2 = at(i + 1, j, k);
-        T y1 = at(i, j - 1, k);
-        T y2 = at(i, j + 1, k);
-        T z1 = at(i, j, k - 1);
-        T z2 = at(i, j, k + 1);
-        T c = at(i, j, k);
-        T val = 6 * c - (x1 + x2 + y1 + y2 + z1 + z2);
-        return val;
-    }
-
-    void residual(RBGrid &out, RBGrid const &rhs) const {
-        #pragma omp parallel for
-        for (size_t _ = 0; _ < N * N * N; _++) {
-            auto [i, j, k] = unlinearize(N, _);
-            T val = rhs.at(i, j, k) - around_at(i, j, k);
-            out.at(i, j, k) = val;
-        }
-    }
-
-    void restrict(RBGrid<N * 2, T> const &src) {
-        #pragma omp parallel for
-        for (size_t _ = 0; _ < N * N * N; _++) {
-            auto [i, j, k] = unlinearize(N, _);
-            T ooo = src.at(i * 2 + 0, j * 2 + 0, k * 2 + 0);
-            T ioo = src.at(i * 2 + 1, j * 2 + 0, k * 2 + 0);
-            T iio = src.at(i * 2 + 1, j * 2 + 1, k * 2 + 0);
-            T iii = src.at(i * 2 + 1, j * 2 + 1, k * 2 + 1);
-            T oio = src.at(i * 2 + 0, j * 2 + 1, k * 2 + 0);
-            T oii = src.at(i * 2 + 0, j * 2 + 1, k * 2 + 1);
-            T ooi = src.at(i * 2 + 0, j * 2 + 0, k * 2 + 1);
-            T ioi = src.at(i * 2 + 1, j * 2 + 0, k * 2 + 1);
-            T val = ooo + ioo + iio + iii + oio + oii + ooi + ioi;
-            at(i, j, k) = val / 8;
-        }
-    }
-
-    void prolongate(RBGrid<N / 2, T> const &src) {
-        #pragma omp parallel for
-        for (size_t _ = 0; _ < N * N * N; _++) {
-            auto [i, j, k] = unlinearize(N, _);
-            at(i, j, k) = src.at(i / 2, j / 2, k / 2);
-        }
-    }
-
-    void add(RBGrid const &src) {
-        #pragma omp parallel for
-        for (size_t _ = 0; _ < N * N * N; _++) {
-            auto [i, j, k] = unlinearize(N, _);
-            at(i, j, k) += src.at(i, j, k);
-        }
-    }
-
-    void copy(RBGrid const &src) {
-        #pragma omp parallel for
-        for (size_t _ = 0; _ < N * N * N; _++) {
-            auto [i, j, k] = unlinearize(N, _);
-            at(i, j, k) = src.at(i, j, k);
-        }
-    }
-
-    void fill(T val) {
-        #pragma omp parallel for
-        for (size_t _ = 0; _ < N * N * N; _++) {
-            auto [i, j, k] = unlinearize(N, _);
-            at(i, j, k) = val;
-        }
-    }
-
-    T normsqr() const {
-        T res(0);
-        #pragma omp parallel for reduction(+:res)
-        for (size_t _ = 0; _ < N * N * N; _++) {
-            auto [i, j, k] = unlinearize(N, _);
-            T val = at(i, j, k);
-            res += val * val;
-        }
-        return res;
-    }
-};
-#endif
 
 
 #if 0
@@ -516,9 +408,10 @@ int main(void)
     RBGrid<float> f;
     RBGrid<float> r;
 
-    for (size_t k = 248; k < 264; k++) {
-        for (size_t j = 248; j < 264; j++) {
-            for (size_t i = 248; i < 264; i++) {
+    for (size_t k = 256-8; k < 256+8; k++) {
+        for (size_t j = 256-8; j < 256+8; j++) {
+            for (size_t i = 256-8; i < 256+8; i++) {
+                //cout << i << ',' << j << ',' << k << endl;
                 (void)f.leaf_at(i, j, k);
             }
         }
@@ -526,7 +419,8 @@ int main(void)
 
     f.leaf_at(256, 256, 256)->at(4, 4, 4) = 32;
     v.copy_topology(f);
-    f.copy_topology(v);
+    show(v.leaf_count());
+    show(f.leaf_count());
 
     auto t0 = std::chrono::steady_clock::now();
     //v.smooth(f, 128);
@@ -538,4 +432,5 @@ int main(void)
 
     v.residual(r, f);
     cout << std::sqrt(r.normsqr()) << endl;
+    return 0;
 }
