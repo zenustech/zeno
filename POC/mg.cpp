@@ -5,6 +5,7 @@
 #include <tuple>
 #include <vector>
 #include <cassert>
+#include <omp.h>
 
 using std::cout;
 using std::endl;
@@ -278,6 +279,7 @@ struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
             this->sync_boundaries();
             #pragma omp parallel for
             for (auto [leaf, ii, jj, kk]: this->get_leaves()) {
+                //show(omp_get_thread_num());
                 auto *rhs_leaf = rhs.ro_leaf_at(ii, jj, kk);
                 assert(rhs_leaf);
                 for (long k = 0; k < N; k++) {
