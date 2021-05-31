@@ -1,24 +1,33 @@
 # ZENO
 
-ZEn NOde system - a simple & unified way of computation by connecting node graphs
+Unified node system framework for physics simulation and other CG applications.
 
 
-## Build & Run
+# Features
 
-### install dependencies
+## Extensible
 
-* Git
-* GCC
-* Make
-* CMake
-* Python
-* Python Pybind11
-* Python Numpy
-* Python PyQt5
-* OpenGL
-* Qt5
+The node system is very extensible. Though ZENO itself doesn't provide any solvers,
+instead it allows users to **write their own nodes** using its C++ or Python API.
+Here's some of the node libraries that have been implemented by our developers:
 
-we have figure out how to install these packages on some platforms as follows:
+- built-in primitive ops (by @archibate)
+- OpenVDB FLIP fluids (by @zhxx1987)
+- Tree-code N-body (by @archibate)
+- Molocular Dynamics (by @victoriacity)
+- GPU MPM with CUDA (by @littlemine)
+
+Loading these libraries would add corresponding functional nodes into ZENO,
+after which you can creating node graphs with them for simulation.
+You may also add your own solver nodes to ZENO with this workflow if you'd like.
+
+
+# How to play
+
+
+# Build & Run
+
+## install dependencies
 
 - Arch Linux
 ```bash
@@ -51,27 +60,27 @@ python -m pip install pybind11 numpy
 Comming soon... before that please try install all these dependencies manually. If you succeed, please let us know your build step, thanks in advance!
 
 
-### clone ZENO repository
+## clone ZENO repository
 ```bash
 git clone https://github.com/zensim-dev/zeno.git --depth=10
 cd zeno
 ```
 
 
-### build ZENO into binary
+## build ZENO
 ```bash
 cmake -B build
 make -C build -j8
 ```
 
 
-### run ZENO for development
+## run ZENO for development
 ```bash
 ./run.sh
 ```
 
 
-## Build & Run with Docker
+## run ZENO in Docker
 ```bash
 ./docker.sh
 ```

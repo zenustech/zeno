@@ -1,11 +1,16 @@
 # ZENO
 
-禅节点系统 - 一种基于节点图简洁而统一的计算方式
+用于物理仿真和其他计算机图形学应用的统一节点系统框架。
 
 
-## 构建与运行
+# 特性
 
-### 安装依赖项
+## 高度可扩展
+
+
+# 构建与运行
+
+## 安装依赖项
 
 - Arch Linux
 ```bash
@@ -43,21 +48,21 @@ python -m pip install pybind11 numpy
 ```
 
 
-### 克隆 ZENO 仓库
+## 克隆 ZENO 仓库
 ```bash
 git clone https://gitee.com/archibate/zeno.git --depth=10
 cd zeno
 ```
 
 
-### 构建 ZENO
+## 构建 ZENO
 ```bash
 cmake -B build
 make -C build -j8
 ```
 
 
-### 以开发者模式运行 ZENO
+## 以开发者模式运行 ZENO
 ```bash
 ./run.sh
 ```
