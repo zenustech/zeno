@@ -186,51 +186,51 @@ struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
             if (auto *other = this->ro_leaf_at(ii + 1, jj, kk); other)
                 for (long j = 0; j < 8; j++)
                     for (long i = 0; i < 8; i++)
-                        leaf->at(8, i, j) = leaf->at(0, i, j);
+                        leaf->at(8, i, j) = other->at(0, i, j);
             else
                 for (long j = 0; j < 8; j++)
                     for (long i = 0; i < 8; i++)
-                        leaf->at(8, i, j) = 0;
+                        leaf->at(8, i, j) = T(0);
             if (auto *other = this->ro_leaf_at(ii - 1, jj, kk); other)
                 for (long j = 0; j < 8; j++)
                     for (long i = 0; i < 8; i++)
-                        leaf->at(-1, i, j) = leaf->at(7, i, j);
+                        leaf->at(-1, i, j) = other->at(7, i, j);
             else
                 for (long j = 0; j < 8; j++)
                     for (long i = 0; i < 8; i++)
-                        leaf->at(-1, i, j) = 0;
+                        leaf->at(-1, i, j) = T(0);
             if (auto *other = this->ro_leaf_at(ii, jj + 1, kk); other)
                 for (long j = 0; j < 8; j++)
                     for (long i = 0; i < 8; i++)
-                        leaf->at(8, i, j) = leaf->at(0, i, j);
+                        leaf->at(8, i, j) = other->at(0, i, j);
             else
                 for (long j = 0; j < 8; j++)
                     for (long i = 0; i < 8; i++)
-                        leaf->at(8, i, j) = 0;
+                        leaf->at(8, i, j) = T(0);
             if (auto *other = this->ro_leaf_at(ii, jj - 1, kk); other)
                 for (long j = 0; j < 8; j++)
                     for (long i = 0; i < 8; i++)
-                        leaf->at(i, -1, j) = leaf->at(i, 7, j);
+                        leaf->at(i, -1, j) = other->at(i, 7, j);
             else
                 for (long j = 0; j < 8; j++)
                     for (long i = 0; i < 8; i++)
-                        leaf->at(i, -1, j) = 0;
+                        leaf->at(i, -1, j) = T(0);
             if (auto *other = this->ro_leaf_at(ii, jj, kk + 1); other)
                 for (long j = 0; j < 8; j++)
                     for (long i = 0; i < 8; i++)
-                        leaf->at(8, i, j) = leaf->at(0, i, j);
+                        leaf->at(8, i, j) = other->at(0, i, j);
             else
                 for (long j = 0; j < 8; j++)
                     for (long i = 0; i < 8; i++)
-                        leaf->at(8, i, j) = 0;
+                        leaf->at(8, i, j) = T(0);
             if (auto *other = this->ro_leaf_at(ii, jj, kk - 1); other)
                 for (long j = 0; j < 8; j++)
                     for (long i = 0; i < 8; i++)
-                        leaf->at(i, j, -1) = leaf->at(i, j, 7);
+                        leaf->at(i, j, -1) = other->at(i, j, 7);
             else
                 for (long j = 0; j < 8; j++)
                     for (long i = 0; i < 8; i++)
-                        leaf->at(i, j, -1) = 0;
+                        leaf->at(i, j, -1) = T(0);
         }
     }
 
@@ -448,7 +448,7 @@ int main(void)
     show(f.leaf_count());
 
     auto t0 = std::chrono::steady_clock::now();
-    //v.smooth(f, 128);
+    //v.smooth(f, 160);
     vcycle<N>(v, f, 80);
     //cgstep<N>(v, f, 40);
     auto t1 = std::chrono::steady_clock::now();
