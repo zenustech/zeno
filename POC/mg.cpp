@@ -19,6 +19,8 @@ inline std::tuple<long, long, long> unlinearize(long N, long idx) {
 
 template <class Leaf>
 struct VDBGrid {
+    using LeafType = Leaf;
+
     struct InternalNode {
         Leaf *m[16 * 16 * 16];
 
@@ -121,8 +123,28 @@ struct VDBGrid {
 };
 
 
+template <class Leaf>
+struct BitmaskedLeaf : Leaf {
+    unsigned char mask[8 * 8];
+
+    inline bool is_active(long i, long j, long k) {
+        return (mask[j + k * 8] & (1 << i)) != 0;
+    }
+
+    inline void activate(long i, long j, long k) {
+        mask[j +k * 8] |= (1 << i);
+    }
+
+    inline void deactivate(long i, long j, long k) {
+        mask[j + k * 8] &= ~(1 << i);
+    }
+};
+
+
 template <class T>
 struct BoundaryLeaf {
+    using ValueType = T;
+
     T m[10 * 10 * 10];
 
     BoundaryLeaf() {
@@ -157,6 +179,8 @@ struct BoundaryLeaf {
 
 template <class T>
 struct SimpleLeaf {
+    using ValueType = T;
+
     T m[8 * 8 * 8];
 
     SimpleLeaf() {
@@ -236,7 +260,6 @@ struct RBGrid : VDBGrid<BoundaryLeaf<T>> {
 
     void copy_topology(RBGrid const &src) {
         for (auto [src_leaf, ii, jj, kk]: src.get_leaves()) {
-            //cout << ii << ' ' << jj << ' ' << kk << endl;
             (void)this->leaf_at(ii, jj, kk);
         }
     }
