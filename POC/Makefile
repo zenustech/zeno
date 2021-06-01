@@ -1,4 +1,4 @@
-x: mg.exe Makefile
+x: spgrid.exe Makefile
 	./$<
 	#gdb ./$< -ex r
 
