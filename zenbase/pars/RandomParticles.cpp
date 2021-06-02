@@ -4,6 +4,12 @@
 
 namespace zenbase {
 
+#if defined(_MSC_VER)
+static inline double drand48() {
+	return rand() * (1.0 / RAND_MAX);
+}
+#endif
+
 struct RandomParticles : zen::INode {
   virtual void apply() override {
     int count = std::get<int>(get_param("count"));

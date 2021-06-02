@@ -11,6 +11,14 @@
 #include <array>
 #include <map>
 
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#define ZEN_CONSTEXPR_IF
+#else
+#define ZEN_CONSTEXPR_IF constexpr
+#endif
+
 
 namespace zen {
 

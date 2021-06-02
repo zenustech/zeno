@@ -23,3 +23,8 @@ genCode.py
 .*.swp
 .*.un~
 tags
+
+# ide files
+/.vs
+/.vscode
+/.idea
