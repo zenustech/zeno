@@ -9,10 +9,10 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 name = 'zensim'
 version = '0.0.1'
-description = 'Zensim node system editor based on PyQt5'
+description = 'Open-source node system framework for physics simulation and other CG applications'
 
 packages = ['zenqt', 'zenutils', 'zen', 'zenapi', 'zenvis']
-data_files = glob.glob('zenlibs/pydlib/*') + glob.glob('zenlibs/dsolib/*')
+data_files = glob.glob('zen/mods/*') + ['zen/libzenpy.so', 'zenvis/libzenvis.so']
 
 requirements = ['numpy', 'pybind11']
 
@@ -27,7 +27,7 @@ setuptools.setup(name=name,
                  description=description,
                  author='archibate',
                  author_email='1931127624@qq.com',
-                 url='https://github.com/archibate/zeno',
+                 url='https://github.com/zensim-dev/zeno',
                  install_requires=requirements,
                  data_files=data_files,
                  keywords=['graphics', 'simulation'],
