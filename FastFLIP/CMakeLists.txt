@@ -1,9 +1,6 @@
-cmake_minimum_required(VERSION 3.19)
-set(CMAKE_CXX_STANDARD 17)
-project(FLIPlib)
 add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)  
 # add directory with macros
-set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
+set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} cmake)
 
 # add cmake file
 include (common)
@@ -35,6 +32,7 @@ target_link_libraries(FLIPlib PRIVATE TBB::tbb TBB::tbbmalloc)
 target_link_libraries(FLIPlib PRIVATE pthread openblas lapack cblas)
 
 target_link_libraries(FLIPlib PRIVATE zen zenbase zenvdb)
+set_property(TARGET FLIPlib PROPERTY LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/python/zen/mods)
 
 #disable default malloc options
 if (WIN32)

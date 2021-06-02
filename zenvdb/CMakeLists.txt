@@ -4,6 +4,7 @@ add_library(zenvdb SHARED ${PROJECT_SOURCE})
 target_include_directories(zenvdb PRIVATE ../include)
 target_include_directories(zenvdb PUBLIC include)
 target_link_libraries(zenvdb PRIVATE zen zenbase)
+set_property(TARGET zenvdb PROPERTY LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/python/zen/mods)
 
 find_package(OpenMP)
 if (TARGET OpenMP::OpenMP_CXX)

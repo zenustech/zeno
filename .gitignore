@@ -17,6 +17,7 @@ imgui.ini
 genCode.py
 *.zpm
 *.exe
+*.so
 
 # vim files
 .*.swp
