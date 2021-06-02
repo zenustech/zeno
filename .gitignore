@@ -19,3 +19,8 @@ rubbish.bin
 .*.swp
 .*.un~
 tags
+
+# ide files
+/.vs
+/.vscode
+/.idea

@@ -21,7 +21,6 @@ struct array : std::array<T, N> {
 
     static array fill(T const &x) {
         array a;
-        #pragma omp simd
         for (size_t i = 0; i < N; i++) {
             a[i] = x;
         }
@@ -30,7 +29,6 @@ struct array : std::array<T, N> {
 
     static array load(T const *x) {
         array a;
-        #pragma omp simd
         for (size_t i = 0; i < N; i++) {
             a[i] = x[i];
         }
@@ -38,7 +36,6 @@ struct array : std::array<T, N> {
     }
 
     static void store(T *x, array const &a) {
-        #pragma omp simd
         for (size_t i = 0; i < N; i++) {
             x[i] = a[i];
         }
@@ -47,7 +44,6 @@ struct array : std::array<T, N> {
     template <class F>
     static array apply(F const &f, array const &a) {
         array r;
-        #pragma omp simd
         for (size_t i = 0; i < N; i++) {
             r[i] = f(a[i]);
         }
@@ -57,7 +53,6 @@ struct array : std::array<T, N> {
     template <class F>
     static array apply(F const &f, array const &a, array const &b) {
         array r;
-        #pragma omp simd
         for (size_t i = 0; i < N; i++) {
             r[i] = f(a[i], b[i]);
         }
@@ -67,7 +62,6 @@ struct array : std::array<T, N> {
     template <class F>
     static array apply(F const &f, array const &a, array const &b, array const &c) {
         array r;
-        #pragma omp simd
         for (size_t i = 0; i < N; i++) {
             r[i] = f(a[i], b[i], c[i]);
         }
@@ -453,7 +447,7 @@ struct PrimitiveWrangle : zen::INode {
     auto opcode = get_input("wrangle")->as<Opcode>();
 
     #pragma omp parallel for
-    for (size_t i = 0; i < primList[0]->size(); i += ARR_SKIP) {
+    for (ssize_t i = 0; i < primList[0]->size(); i += ARR_SKIP) {
         opcode->apply(i, primList);
     }
 

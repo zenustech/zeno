@@ -4,6 +4,7 @@
 #include <Hg/FPSCounter.hpp>
 #include <sstream>
 #include <cstdlib>
+#include <array>
 
 namespace zenvis {
 

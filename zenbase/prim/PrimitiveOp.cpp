@@ -8,6 +8,13 @@
 
 namespace zenbase {
 
+
+#if defined(_MSC_VER)
+	static inline double drand48() {
+		return rand() * (1.0 / RAND_MAX);
+	}
+#endif
+
 template <class T, class S>
 inline constexpr bool is_decay_same_v = std::is_same_v<std::decay_t<T>, std::decay_t<S>>;
 
@@ -182,7 +189,7 @@ struct PrimitiveMix : zen::INode {
         
         std::visit([coef](auto &arrA, auto &arrB, auto &arrOut) {
           if constexpr (std::is_same_v<decltype(arrA), decltype(arrB)> && std::is_same_v<decltype(arrA), decltype(arrOut)>) {
-#pragma omp parallel for
+			#pragma omp parallel for
             for (int i = 0; i < arrOut.size(); i++) {
                 arrOut[i] = (1.0-coef)*arrA[i] + coef*arrB[i];
             }

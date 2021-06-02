@@ -20,6 +20,7 @@ else ()
     execute_process(COMMAND which ${PYTHON_EXECUTABLE}
         OUTPUT_VARIABLE PYTHON_EXECUTABLE_PATH)
 endif ()
+message("==> Python executable path: ${PYTHON_EXECUTABLE_PATH}")
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
         "import sys;\
         from distutils import sysconfig;\
@@ -65,7 +66,7 @@ if (NOT PYBIND11_IMPORT_RET)
     # returns zero if success
     message("    pybind11 include: ${PYBIND11_INCLUDE_DIR}")
 else ()
-    message(FATAL_ERROR "Cannot import pybind11. Please install. ([sudo] pip3 install --user pybind11)")
+    message(FATAL_ERROR "Cannot import pybind11. Please install: ${PYTHON_EXECUTABLE} -m pip install pybind11")
 endif ()
 include_directories(${PYBIND11_INCLUDE_DIR})
 
