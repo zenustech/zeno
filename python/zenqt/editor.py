@@ -723,10 +723,14 @@ class NodeEditor(QWidget):
         #self.initConnect()
         self.refreshDescriptors()
 
-        if 'ZSG_OPEN' in os.environ:
-            path = os.environ['ZSG_OPEN']
+        if 'ZEN_OPEN' in os.environ:
+            path = os.environ['ZEN_OPEN']
             self.do_open(path)
             self.current_path = path
+
+        if os.environ.get('ZEN_DOEXEC'):
+            print('ZEN_DOEXEC found, direct execute')
+            self.on_execute()
 
     def initShortcuts(self):
         self.msgF5 = QShortcut(QKeySequence('F5'), self)
