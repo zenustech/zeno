@@ -2546,13 +2546,15 @@ void simd_vdb_poisson::smooth_solve(openvdb::FloatGrid::Ptr in_out_presssure, in
 		exit(-1);
 	}
 	auto r = level0.get_zero_vec_grid();
+	lv_copyval(m_v_cycle_temps[0], r, 0);
+	lv_copyval(m_v_cycle_lhss[0], r, 0);
 	level0.residual_apply_assume_topo(r, in_out_presssure, m_rhs);
-
+	
 	m_v_cycle_rhss[0] = r;
 	for (int i = 0; i < n; i++) {
 		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth0").start();
 		m_laplacian_with_levels[0]->RBGS_apply_assume_topo_inplace<true>(
-			m_v_cycle_lhss[0], m_v_cycle_temps[0], m_v_cycle_rhss[0]);
+			m_v_cycle_temps[0], m_v_cycle_lhss[0], m_v_cycle_rhss[0]);
 		//CSim::TimerMan::timer("Sim.step/vdbflip/simdpcg/V/smooth0").stop();
 		//the updated lhs is in m_v_cycle_temps
 		//we need to update the v_cycle_lhs
