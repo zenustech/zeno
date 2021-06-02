@@ -1,7 +1,7 @@
 import zenapi
 from zenapi.zpmio import readzpm
 
-from . import libzenvis as core
+import libzenvis as core
 
 
 status = {

@@ -10,6 +10,8 @@ build
 *.zpm
 *.exe
 *.so
+*.dylib
+*.pyd
 
 # rubbish files
 outputs
@@ -20,7 +22,8 @@ rubbish.bin
 .*.un~
 tags
 
-# ide files
+# vs2017 files
 /.vs
-/.vscode
-/.idea
+*.pdb
+*.ilk
+/CMakeSettings.json

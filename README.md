@@ -47,7 +47,7 @@ doesn't provide any solvers, instead it allows users to **write their own nodes*
 using its C++ or Python API.
 Here's some of the node libraries that have been implemented by our developers:
 
-- built-in primitive ops (by @archibate)
+- basic primitive ops (by @archibate)
 - OpenVDB FLIP fluids (by @zhxx1987)
 - Tree-code N-body (by @archibate)
 - Molocular Dynamics (by @victoriacity)
@@ -66,16 +66,16 @@ node system and all other powerful tools in Blender.
 
 # Build & Run
 
-## install dependencies
+## install requirements
 
 - Arch Linux
 ```bash
-sudo pacman -S git gcc make cmake python python-pip pybind11 python-numpy python-pyqt5 qt5-base libglvnd mesa
+sudo pacman -S gcc make cmake python python-pip pybind11 python-numpy python-pyqt5 qt5-base libglvnd mesa
 ```
 
 - Ubuntu 20.04
 ```bash
-sudo apt-get install git gcc make cmake python-is-python3 python-dev-is-python3 python3-pip libqt5core5a qt5dxcb-plugin libglvnd-dev libglapi-mesa libosmesa6
+sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip libqt5core5a qt5dxcb-plugin libglvnd-dev libglapi-mesa libosmesa6
 
 python --version  # make sure Python version >= 3.7
 python -m pip install -U pip
@@ -83,58 +83,49 @@ python -m pip install pybind11 numpy PyQt5
 ```
 
 - Windows 10
-1. Install Visual Studio 2017.
-2. Install Python 3.8 64-bit. IMPORTANT: make sure you **Add Python 3.8 to PATH**!
-4. Start CMD in **Administrator mode** and type these commands:
+1. Install Python 3.8 64-bit. IMPORTANT: make sure you **Add Python 3.8 to PATH**! After that rebooting your computer would be the best.
+2. Start CMD in **Administrator mode** and type these commands:
 ```cmd
 python -m pip install pybind11 numpy PyQt5
 ```
 (Fun fact: you will be redirected to Microsoft Store if `python` is not added to PATH properly :)
+Make sure it starts to downloading and installing successfully without `ERROR` (warnings are OK though).
 
-### If you got `ERROR: Could not install packages due to an EnvironmentError: [Errno 13] Permission denied: 'c:\\python38\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\d3dcompiler_47.dll'``:
+If you got `ERROR: Could not install packages due to an EnvironmentError: [Errno 13] Permission denied: 'c:\\python38\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\d3dcompiler_47.dll'``:
+**Quit anti-virus softwares** like 360, they are likely stopping `pip` from copying DLL files..
 
-* **Quit anti-virus softwares** like 360, they are likely stopping `pip` from copying DLL files...
+If you got `ImportError: DLL load failed while importing QtGui: 找不到指定的模块。`:
+Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe).
 
-### If you got `ImportError: DLL load failed while importing QtGui: 找不到指定的模块。`
-
-* Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe).
-
-### If you got  `ImportError: DLL load failed while importing QtGui: %1 不是有效的 Win32 应用程序。`
-
-* Run these commands in CMD (yes, uninstall them for twice):
-```cmd
-python -m pip uninstall -y PyQt5 PyQt5-sip PyQt5-Qt5
-python -m pip uninstall -y PyQt5 PyQt5-sip PyQt5-Qt5
-```
-* Visit http://mirrors.aliyun.com/pypi/simple/pyqt5/, click `PyQt5-5.11.3-5.11.2-cp35.cp36.cp37.cp38-none-win_amd64.whl`.
-* Visit http://mirrors.aliyun.com/pypi/simple/pyqt5-qt5/, click `PyQt5_Qt5-5.15.2-py3-none-win_amd64.whl`.
-* Visit http://mirrors.aliyun.com/pypi/simple/pyqt5-sip/, click `PyQt5_sip-4.19.19-cp38-none-win_amd64.whl`.
-* Rename `PyQt5-5.11.3-5.11.2-cp35.cp36.cp37.cp38-none-win_amd64.whl` to `PyQt5-5.11.3-5.11.2-cp35.cp36.cp37.cp38-none-win32.whl`.
-* Rename `PyQt5_Qt5-5.15.2-py3-none-win_amd64.whl` to `PyQt5_Qt5-5.15.2-py3-none-win32.whl`.
-* Rename `PyQt5_sip-4.19.19-cp38-none-win_amd64.whl` to `PyQt5_sip-4.19.19-cp38-none-win32.whl`.
-* Run these commands in CMD:
-```cmd
-python -m pip install PyQt5-5.11.3-5.11.2-cp35.cp36.cp37.cp38-none-win32.whl
-python -m pip install PyQt5_Qt5-5.15.2-py3-none-win32.whl
-python -m pip install PyQt5_sip-4.19.19-cp38-none-win_amd64.whl
-```
+3. Install Visual Studio 2017 Community Edition (for free!).
 
 
 ## build ZENO
+- Linux
 ```bash
 cmake -B build
 make -C build -j8
 ```
 
+- Windows
+Open ZENO repo in Visual Studio 2017, click `Project -> Build All`.
+
 
 ## run ZENO for development
+- Linux
 ```bash
 ./run.sh
+```
+
+- Windows
+```cmd
+run.bat
 ```
 
 
 ## package ZENO into PyPI wheel
 ```bash
+python -m pip install wheel twine ninja
 python python/setup.py bdist_wheel
-ls python/dist/*.whl
+echo python/dist/*.whl
 ```
