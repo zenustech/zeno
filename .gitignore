@@ -2,22 +2,18 @@
 __pycache__
 *.egg-info
 dist
-venv
-.venv
 
 # cmake files
 build
-dsolib
 
-# output files
-outputs
-rubbish.bin
-pruned
-imgui.ini
-genCode.py
+# binary files
 *.zpm
 *.exe
 *.so
+
+# rubbish files
+outputs
+rubbish.bin
 
 # vim files
 .*.swp

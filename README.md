@@ -99,7 +99,8 @@ make -C build -j8
 ```
 
 
-## run ZENO in Docker
+## package ZENO into PyPI wheel
 ```bash
-./docker.sh
+python python/setup.py bdist_wheel
+ls python/dist/*.whl
 ```
