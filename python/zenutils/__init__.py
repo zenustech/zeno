@@ -94,15 +94,12 @@ def run_script(src, callback=runpy.run_path):
         return callback(path)
 
 
-def load_library(path, ignore_errors=False):
-    if ignore_errors:
+def load_library(path):
+    try:
         return ctypes.cdll.LoadLibrary(path)
-    else:
-        try:
-            return ctypes.cdll.LoadLibrary(path)
-        except OSError:
-            traceback.print_exc()
-            return None
+    except OSError:
+        traceback.print_exc()
+        return None
 
 
 def import_library(libdir, name):
