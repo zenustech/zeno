@@ -16,7 +16,7 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 
 name = 'zensim'
-version = '0.0.1'
+version = '0.0.1.dev1'
 description = 'Open-source node system framework for physics simulation and other CG applications'
 
 packages = ['zenqt', 'zenutils', 'zen', 'zenapi', 'zenvis']
@@ -54,7 +54,7 @@ setuptools.setup(
         #license='Apache 2.0 License',
         classifiers=[
             'Development Status :: 2 - Pre-Alpha',
-            'Topic :: Software Development :: Compilers',
+            #'Topic :: Software Development :: Compilers',
             'Topic :: Multimedia :: Graphics',
             'Topic :: Games/Entertainment :: Simulation',
             'Intended Audience :: Science/Research',
