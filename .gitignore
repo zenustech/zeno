@@ -17,6 +17,9 @@ build
 outputs
 rubbish.bin
 
+# setup files
+python/zen/usr
+
 # vim files
 .*.swp
 .*.un~

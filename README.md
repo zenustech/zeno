@@ -127,22 +127,14 @@ run.bat
 
 
 ## package ZENO into PyPI wheel
-- Linux
 ```bash
-sudo python -m pip install wheel twine ninja
+sudo python -m pip install wheel
 python python/setup.py bdist_wheel
 ls python/dist/*.whl
 ```
 
-- Windows
-Start CMD in **Administrator mode** and type these commands:
-```cmd
-python -m pip install wheel twine ninja
-python python/setup.py bdist_wheel
-dir python/dist/*.whl
-```
-
 ## upload ZENO to PyPI.org (needs password / token)
 ```bash
+sudo python -m pip install twine
 twine upload python/dist/*.whl
 ```
