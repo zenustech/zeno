@@ -20,10 +20,18 @@ version = '0.0.1'
 description = 'Open-source node system framework for physics simulation and other CG applications'
 
 packages = ['zenqt', 'zenutils', 'zen', 'zenapi', 'zenvis']
-data_files = glob('zen/*.so') + glob('zenvis/*.so')
-data_files += glob('zen/usr')
-
 requirements = ['numpy', 'PyQt5']
+
+def treefiles(dir):
+    if not os.path.isdir(dir):
+        yield dir
+    else:
+        for name in os.listdir(dir):
+            path = os.path.join(dir, name)
+            yield from treefiles(path)
+
+data_files = glob('zen/*.so') + glob('zenvis/*.so')
+data_files += treefiles('zen/usr')
 
 print('version:', version)
 print('packages:', packages)
