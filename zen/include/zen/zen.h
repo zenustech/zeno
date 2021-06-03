@@ -14,9 +14,6 @@
 #if defined(_MSC_VER)
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
-#define ZEN_CONSTEXPR_IF
-#else
-#define ZEN_CONSTEXPR_IF constexpr
 #endif
 
 
@@ -99,9 +96,9 @@ struct BooleanObject : IObject {
 
 struct INode;
 static std::string getNodeName(INode *node);
-static void setObject(std::string name, IObject::Ptr object);
-static void setReference(std::string name, std::string srcname);
-static IObject *getObject(std::string name);
+static void setObject(std::string const &name, IObject::Ptr object);
+static void setReference(std::string const &name, std::string const &srcname);
+static IObject *getObject(std::string const &name);
 
 
 struct INode {
@@ -140,11 +137,11 @@ struct INode {
     set_output("DST", IObject::make<BooleanObject>());
   }
 
-  void set_param(std::string name, IValue const &value) {
+  void set_param(std::string const &name, IValue const &value) {
     params[name] = value;
   }
 
-  void set_input_ref(std::string name, std::string srcname) {
+  void set_input_ref(std::string const &name, std::string const &srcname) {
     inputs[name] = srcname;
   }
 
@@ -153,50 +150,50 @@ struct INode {
   }
 
 protected:
-  IValue get_param(std::string name) {
+  IValue get_param(std::string const &name) {
     return safe_at(params, name, "param");
   }
 
-  std::string get_input_ref(std::string name) {
+  std::string get_input_ref(std::string const &name) {
     return safe_at(inputs, name, "input");
   }
 
-  IObject *get_input(std::string name) {
+  IObject *get_input(std::string const &name) {
     auto ref = get_input_ref(name);
     return getObject(ref);
   }
 
-  bool has_input(std::string name) {
+  bool has_input(std::string const &name) {
     return inputs.find(name) != inputs.end();
   }
 
-  std::string get_output_ref(std::string name) {
+  std::string get_output_ref(std::string const &name) {
     auto myname = get_node_name();
     return myname + "::" + name;
   }
 
-  IObject *get_output(std::string name) {
+  IObject *get_output(std::string const &name) {
     auto ref = get_output_ref(name);
     return getObject(ref);
   }
 
-  void set_output(std::string name, IObject::Ptr object) {
+  void set_output(std::string const &name, IObject::Ptr object) {
     auto ref = get_output_ref(name);
     setObject(ref, std::move(object));
   }
 
-  void set_output_ref(std::string name, std::string srcname) {
+  void set_output_ref(std::string const &name, std::string const &srcname) {
     auto ref = get_output_ref(name);
     setReference(ref, srcname);
   }
 
   template <class T>
-  void set_output(std::string name, std::unique_ptr<T> &object) {
+  void set_output(std::string const &name, std::unique_ptr<T> &object) {
     set_output(name, std::move(object));
   }
 
   template <class T>
-  T *new_member(std::string name) {
+  T *new_member(std::string const &name) {
     IObject::Ptr object = IObject::make<T>();
     IObject *rawptr = object.get();
     set_output(name, std::move(object));
@@ -299,7 +296,7 @@ public:
   Session(_PrivCtor) {
   }
 
-  void addNode(std::string type, std::string name) {
+  void addNode(std::string const &type, std::string const &name) {
     if (nodes.find(name) != nodes.end())
       return;
     auto node = safe_at(nodeClasses, type, "node class")->new_instance();
@@ -307,48 +304,48 @@ public:
     nodes[name] = std::move(node);
   }
 
-  std::vector<std::string> getNodeRequirements(std::string name) {
+  std::vector<std::string> getNodeRequirements(std::string const &name) {
     return safe_at(nodes, name, "node")->requirements();
   }
 
-  void setNodeParam(std::string name,
-      std::string key, IValue const &value) {
+  void setNodeParam(std::string const &name,
+      std::string const &key, IValue const &value) {
     safe_at(nodes, name, "node")->set_param(key, value);
   }
 
-  void setNodeInput(std::string name,
-      std::string key, std::string srcname) {
+  void setNodeInput(std::string const &name,
+      std::string const &key, std::string const &srcname) {
     safe_at(nodes, name, "node")->set_input_ref(key, srcname);
   }
 
-  void initNode(std::string name) {
+  void initNode(std::string const &name) {
     safe_at(nodes, name, "node")->on_init();
   }
 
-  void applyNode(std::string name) {
+  void applyNode(std::string const &name) {
     safe_at(nodes, name, "node")->on_apply();
   }
 
-  void setObject(std::string name, IObject::Ptr object) {
+  void setObject(std::string const &name, IObject::Ptr object) {
     objects[name] = std::move(object);
   }
 
-  bool hasObject(std::string name) {
-    name = getReference(name).value_or(name);
-    return objects.find(name) != objects.end();
+  bool hasObject(std::string const &name) {
+    auto refname = getReference(name).value_or(name);
+    return objects.find(refname) != objects.end();
   }
 
-  IObject *getObject(std::string name) {
-    name = getReference(name).value_or(name);
-    return safe_at(objects, name, "object");
+  IObject *getObject(std::string const &name) {
+    auto refname = getReference(name).value_or(name);
+    return safe_at(objects, refname, "object");
   }
 
-  void setReference(std::string name, std::string srcname) {
-    srcname = getReference(srcname).value_or(srcname);
-    references[name] = srcname;
+  void setReference(std::string const &name, std::string const &srcname) {
+    auto refname = getReference(srcname).value_or(srcname);
+    references[name] = refname;
   }
 
-  std::optional<std::string> getReference(std::string name) {
+  std::optional<std::string> getReference(std::string const &name) {
     auto it = references.find(name);
     if (it == references.end()) {
       return std::nullopt;
@@ -361,7 +358,7 @@ public:
   }
 
   template <class T> // T <- INode
-  int defNodeClass(std::string name, Descriptor const &desc) {
+  int defNodeClass(std::string const &name, Descriptor const &desc) {
     return defNodeClassByCtor(std::make_unique<T>, name, desc);
   }
 
@@ -385,45 +382,45 @@ public:
 };
 
 
-static void addNode(std::string name, std::string type) {
+static void addNode(std::string const &name, std::string const &type) {
   return Session::get().addNode(name, type);
 }
 
-static void setNodeParam(std::string name,
-    std::string key, IValue const &value) {
+static void setNodeParam(std::string const &name,
+    std::string const &key, IValue const &value) {
   return Session::get().setNodeParam(name, key, value);
 }
 
-static void setNodeInput(std::string name,
-    std::string key, std::string srcname) {
+static void setNodeInput(std::string const &name,
+    std::string const &key, std::string const &srcname) {
   return Session::get().setNodeInput(name, key, srcname);
 }
 
-static void initNode(std::string name) {
+static void initNode(std::string const &name) {
   return Session::get().initNode(name);
 }
 
-static void applyNode(std::string name) {
+static void applyNode(std::string const &name) {
   return Session::get().applyNode(name);
 }
 
-static void setObject(std::string name, IObject::Ptr object) {
+static void setObject(std::string const &name, IObject::Ptr object) {
   return Session::get().setObject(name, std::move(object));
 }
 
-static bool hasObject(std::string name) {
+static bool hasObject(std::string const &name) {
   return Session::get().hasObject(name);
 }
 
-static IObject *getObject(std::string name) {
+static IObject *getObject(std::string const &name) {
   return Session::get().getObject(name);
 }
 
-static void setReference(std::string name, std::string srcname) {
+static void setReference(std::string const &name, std::string const &srcname) {
   return Session::get().setReference(name, srcname);
 }
 
-static std::optional<std::string> getReference(std::string name) {
+static std::optional<std::string> getReference(std::string const &name) {
   return Session::get().getReference(name);
 }
 
