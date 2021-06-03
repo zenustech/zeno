@@ -2,30 +2,37 @@
 C++ APIs
 '''
 
-from .core import get_core
+@eval('lambda x: x')
+def _():
+    from zenutils import load_library, rel2abs
+
+    load_library(rel2abs('libzen.so'))
+
+
+from . import libzenpy as _core
 
 
 def dumpDescriptors():
-    return get_core().dumpDescriptors()
+    return _core.dumpDescriptors()
 
 def addNode(type, name):
-    return get_core().addNode(type, name)
+    return _core.addNode(type, name)
 
 def initNode(name):
-    return get_core().initNode(name)
+    return _core.initNode(name)
 
 def applyNode(name):
-    return get_core().applyNode(name)
+    return _core.applyNode(name)
 
 def setNodeInput(name, key, srcname):
-    return get_core().setNodeInput(name, key, srcname)
+    return _core.setNodeInput(name, key, srcname)
 
 def setNodeParam(name, key, value):
-    return get_core().setNodeParam(name, key, value)
+    return _core.setNodeParam(name, key, value)
 
 def getNodeRequirements(name):
-    return get_core().getNodeRequirements(name)
+    return _core.getNodeRequirements(name)
 
 def isCppObject(name):
-    return get_core().isCppObject(name)
+    return _core.isCppObject(name)
 
