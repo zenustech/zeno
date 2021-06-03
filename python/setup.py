@@ -19,7 +19,7 @@ name = 'zensim'
 version = '0.0.1.dev1'
 description = 'Open-source node system framework for physics simulation and other CG applications'
 
-packages = ['zenqt', 'zenutils', 'zen', 'zenapi', 'zenvis']
+packages = ['zenqt', 'zenutils', 'zen', 'zenapi']
 requirements = ['numpy', 'PyQt5']
 
 def treefiles(dir):
