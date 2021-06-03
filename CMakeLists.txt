@@ -9,6 +9,4 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include(common)
 
 add_subdirectory(external/pybind11)
-add_subdirectory(external/glad)
 add_subdirectory(zen)
-add_subdirectory(zenvis)
