@@ -68,9 +68,12 @@ node system and all other powerful tools in Blender.
 
 ## install requirements
 
+You need a C++17 compiler, CMake 3.12+, and Python 3.6+ to build ZENO; NumPy and PyQt5 to run ZENO editor.
+Other requirements like Pybind11 or GLAD are self-contained and you don't have to worry installing them manually.
+
 - Arch Linux
 ```bash
-sudo pacman -S gcc make cmake python python-pip pybind11 python-numpy python-pyqt5 qt5-base libglvnd mesa
+sudo pacman -S gcc make cmake python python-pip python-numpy python-pyqt5 qt5-base libglvnd mesa
 ```
 
 - Ubuntu 20.04
@@ -78,15 +81,15 @@ sudo pacman -S gcc make cmake python python-pip pybind11 python-numpy python-pyq
 sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip libqt5core5a qt5dxcb-plugin libglvnd-dev libglapi-mesa libosmesa6
 
 python --version  # make sure Python version >= 3.7
-python -m pip install -U pip
-python -m pip install pybind11 numpy PyQt5
+sudo python -m pip install -U pip
+sudo python -m pip install numpy PyQt5
 ```
 
 - Windows 10
 1. Install Python 3.8 64-bit. IMPORTANT: make sure you **Add Python 3.8 to PATH**! After that rebooting your computer would be the best.
 2. Start CMD in **Administrator mode** and type these commands:
 ```cmd
-python -m pip install pybind11 numpy PyQt5
+python -m pip install numpy PyQt5
 ```
 (Fun fact: you will be redirected to Microsoft Store if `python` is not added to PATH properly :)
 Make sure it starts to downloading and installing successfully without `ERROR` (warnings are OK though).
@@ -94,10 +97,10 @@ Make sure it starts to downloading and installing successfully without `ERROR` (
 If you got `ERROR: Could not install packages due to an EnvironmentError: [Errno 13] Permission denied: 'c:\\python38\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\d3dcompiler_47.dll'``:
 **Quit anti-virus softwares** like 360, they are likely stopping `pip` from copying DLL files..
 
-If you got `ImportError: DLL load failed while importing QtGui: 找不到指定的模块。`:
+If you got `ImportError: DLL load failed while importing QtGui`:
 Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe).
 
-3. Install Visual Studio 2017 Community Edition (for free!).
+3. Install Visual Studio 2017 Community Edition or later version (for C++17 support in MSVC).
 
 
 ## build ZENO
@@ -124,8 +127,22 @@ run.bat
 
 
 ## package ZENO into PyPI wheel
+- Linux
 ```bash
+sudo python -m pip install wheel twine ninja
+python python/setup.py bdist_wheel
+ls python/dist/*.whl
+```
+
+- Windows
+Start CMD in **Administrator mode** and type these commands:
+```cmd
 python -m pip install wheel twine ninja
 python python/setup.py bdist_wheel
-echo python/dist/*.whl
+dir python/dist/*.whl
+```
+
+## upload ZENO to PyPI.org (needs password / token)
+```bash
+twine upload python/dist/*.whl
 ```

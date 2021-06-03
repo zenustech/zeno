@@ -8,7 +8,6 @@ RUN pacman --noconfirm -S make
 RUN pacman --noconfirm -S cmake
 RUN pacman --noconfirm -S python
 RUN pacman --noconfirm -S python-pip
-RUN pacman --noconfirm -S pybind11
 RUN pacman --noconfirm -S python-numpy
 RUN pacman --noconfirm -S python-pyqt5
 RUN pacman --noconfirm -S qt5-base

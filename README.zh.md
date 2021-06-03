@@ -12,7 +12,7 @@
 
 - Arch Linux
 ```bash
-sudo pacman -S git gcc make cmake python python-pip pybind11 python-numpy python-pyqt5 qt5-base libglvnd mesa
+sudo pacman -S gcc make cmake python python-pip pybind11 python-numpy python-pyqt5 qt5-base libglvnd mesa
 ```
 
 - Ubuntu 20.04
@@ -20,8 +20,8 @@ sudo pacman -S git gcc make cmake python python-pip pybind11 python-numpy python
 sudo apt-get install git gcc make cmake python-is-python3 python-dev-is-python3 python3-pip libqt5core5a qt5dxcb-plugin libglvnd-dev libglapi-mesa libosmesa6
 
 python --version  # 确保 Python 版本 >= 3.7
-python -m pip install -U pip
-python -m pip install pybind11 numpy PyQt5
+sudo python -m pip install -U pip
+sudo python -m pip install pybind11 numpy PyQt5
 ```
 
 
