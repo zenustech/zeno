@@ -495,7 +495,7 @@ static Session &getSession() {
             }
             proc = (void *)::GetProcAddress(hdll, symbol);
             if (!proc) {
-                printf("failed to open %s: %d\n", symbol, ::GetLastError());
+                printf("failed to load symbol %s: %d\n", symbol, ::GetLastError());
                 abort();
             }
         }

@@ -125,16 +125,23 @@ Open ZENO repo in Visual Studio 2017, click `Project -> Build All`.
 run.bat
 ```
 
+## install ZENO globally for Python
+```bash
+python setup.py install
+```
+
+
 
 ## package ZENO into PyPI wheel
 ```bash
 sudo python -m pip install wheel
-python python/setup.py bdist_wheel
-ls python/dist/*.whl
+python setup.py bdist_wheel
+ls dist/*.whl
 ```
+
 
 ## upload ZENO to PyPI.org (needs password / token)
 ```bash
 sudo python -m pip install twine
-twine upload python/dist/*.whl
+twine upload dist/*.whl
 ```

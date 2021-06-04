@@ -21,6 +21,7 @@ if (zen_IMPORT_RET)
     message(FATAL_ERROR "Cannot import zen. Have you installed it or add it to PYTHONPATH?")
 endif ()
 
+
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
         "import sys; import zen; sys.stdout.write(zen.getInstallDir())"
         OUTPUT_VARIABLE zen_INSTALL_DIR)

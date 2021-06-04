@@ -30,8 +30,10 @@ def treefiles(dir):
             path = os.path.join(dir, name)
             yield from treefiles(path)
 
-data_files = glob('zen/*.so') + glob('zenvis/*.so')
+data_files = glob('zen/*.so')
+data_files += glob('zen/*.pyd')
 data_files += treefiles('zen/usr')
+data_files += treefiles('zen/autoload')
 
 print('version:', version)
 print('packages:', packages)

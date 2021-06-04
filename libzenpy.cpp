@@ -78,8 +78,8 @@ void setArrayObject(std::string name,
   obj->strides = buf.strides;
 
   // make a deep-copy to prevent pointer out-of-date / dirty data:
-  size_t size = 1;
-  for (size_t i = 0; i < obj->ndim; i++)
+  ssize_t size = 1;
+  for (ssize_t i = 0; i < obj->ndim; i++)
     size += obj->shape[i];
   size *= obj->itemsize;
   auto saved = std::make_unique<std::vector<char>>(size);
@@ -105,12 +105,12 @@ template <class T>
 py::array_t<T, py::array::c_style> getArrayObject(std::string name) {
   auto obj = zen::getObject(name)->as<zenbase::ArrayObject>();
 
-  size_t size = 1;
-  for (size_t i = 0; i < obj->ndim; i++)
+  ssize_t size = 1;
+  for (ssize_t i = 0; i < obj->ndim; i++)
     size *= obj->shape[i];
   py::array_t<T, py::array::c_style> arr(size);
   auto acc = arr.mutable_unchecked();
-  for (size_t i = 0; i < size; i++) {
+  for (ssize_t i = 0; i < size; i++) {
     acc(i) = *(T *)((uint8_t *)obj->ptr + obj->itemsize * i);
   }
   arr.resize(obj->shape);
