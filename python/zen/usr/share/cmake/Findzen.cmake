@@ -22,18 +22,14 @@ if (zen_IMPORT_RET)
 endif ()
 
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
-        "import sys; import zen; sys.stdout.write(zen.getInstallDir())"
-        OUTPUT_VARIABLE zen_INSTALL_DIR)
+        "import sys; import zen; sys.stdout.write(zen.getIncludeDir())"
+        OUTPUT_VARIABLE zen_INCLUDE_DIR)
 
-message("zen_INSTALL_DIR=${zen_INSTALL_DIR}")
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+        "import sys; import zen; sys.stdout.write(zen.getLibraryDir())"
+        OUTPUT_VARIABLE zen_LIBRARY_DIR)
 
-set(zen_AUTOLOAD_DIR ${zen_INSTALL_DIR}/autoload)
-set(zen_CMAKE_MODULE_DIR ${zen_INSTALL_DIR}/usr/share/cmake)
-set(zen_INCLUDE_DIR ${zen_INSTALL_DIR}/usr/include)
-set(zen_LIBRARY_DIR ${zen_INSTALL_DIR}/usr/lib)
-
-add_library(zen INTERFACE)
-target_include_directories(zen INTERFACE ${zen_INCLUDE_DIR})
-if (NOT WIN32)
-	target_link_libraries(zen INTERFACE dl)
-endif()
+message("zen_INCLUDE_DIR=${zen_INCLUDE_DIR}")
+message("zen_LIBRARY_DIR=${zen_LIBRARY_DIR}")
+link_directories(${zen_LIBRARY_DIR})
+include_directories(${zen_INCLUDE_DIR})

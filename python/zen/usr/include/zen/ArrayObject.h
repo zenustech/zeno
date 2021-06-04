@@ -2,11 +2,6 @@
 
 #include <zen/zen.h>
 
-#ifdef _MSC_VER
-#include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
-#endif
-
 namespace zenbase {
 
 // https://www.cnblogs.com/JiangOil/p/11130670.html

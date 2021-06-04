@@ -95,9 +95,10 @@ std::tuple<uintptr_t, ssize_t, std::string, ssize_t,
   std::vector<ssize_t>, std::vector<ssize_t>>
   getArrayObjectMeta(std::string name) {
   auto obj = zen::getObject(name)->as<zenbase::ArrayObject>();
-  return std::make_tuple(
-      (uintptr_t)obj->ptr, obj->itemsize, obj->format,
-      obj->ndim, obj->shape, obj->strides);
+  return std::tuple<uintptr_t, ssize_t, std::string, ssize_t,
+	  std::vector<ssize_t>, std::vector<ssize_t>>(
+      (uintptr_t)obj->ptr, (ssize_t)obj->itemsize, (std::string)obj->format,
+      (ssize_t)obj->ndim, (std::vector<ssize_t>)obj->shape, (std::vector<ssize_t>)obj->strides);
 };
 
 template <class T>

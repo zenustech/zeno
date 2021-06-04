@@ -6,7 +6,7 @@ from zenutils import load_library, rel2abs, os_name
 
 if os_name == 'linux':
     load_library(rel2abs(__file__, 'usr', 'lib', 'libzensession.so'))
-elif os_name == 'windows':
+elif os_name == 'win32':
     load_library(rel2abs(__file__, 'usr', 'lib', 'zensession.dll'))
 else:
     raise RuntimeError(f'Unsupported OS: {os_name}')

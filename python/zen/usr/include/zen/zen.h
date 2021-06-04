@@ -11,6 +11,11 @@
 #include <array>
 #include <map>
 
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 
 namespace zen {
 
@@ -278,7 +283,19 @@ private:
   std::map<std::string, INode::Ptr> nodes;
   std::map<INode *, std::string> nodesRev;
 
+  struct _PrivCtor {};
+  static std::unique_ptr<Session> _instance;
+
 public:
+  static Session &get() {
+    if (!_instance)
+      _instance = std::make_unique<Session>(_PrivCtor{});
+    return *_instance.get();
+  }
+
+  Session(_PrivCtor) {
+  }
+
   void addNode(std::string const &type, std::string const &name) {
     if (nodes.find(name) != nodes.end())
       return;
@@ -365,159 +382,75 @@ public:
 };
 
 
-static Session &getSession();
-
 static void addNode(std::string const &name, std::string const &type) {
-  return getSession().addNode(name, type);
+  return Session::get().addNode(name, type);
 }
 
 static void setNodeParam(std::string const &name,
     std::string const &key, IValue const &value) {
-  return getSession().setNodeParam(name, key, value);
+  return Session::get().setNodeParam(name, key, value);
 }
 
 static void setNodeInput(std::string const &name,
     std::string const &key, std::string const &srcname) {
-  return getSession().setNodeInput(name, key, srcname);
+  return Session::get().setNodeInput(name, key, srcname);
 }
 
 static void initNode(std::string const &name) {
-  return getSession().initNode(name);
+  return Session::get().initNode(name);
 }
 
 static void applyNode(std::string const &name) {
-  return getSession().applyNode(name);
+  return Session::get().applyNode(name);
 }
 
 static void setObject(std::string const &name, IObject::Ptr object) {
-  return getSession().setObject(name, std::move(object));
+  return Session::get().setObject(name, std::move(object));
 }
 
 static bool hasObject(std::string const &name) {
-  return getSession().hasObject(name);
+  return Session::get().hasObject(name);
 }
 
 static IObject *getObject(std::string const &name) {
-  return getSession().getObject(name);
+  return Session::get().getObject(name);
 }
 
 static void setReference(std::string const &name, std::string const &srcname) {
-  return getSession().setReference(name, srcname);
+  return Session::get().setReference(name, srcname);
 }
 
 static std::optional<std::string> getReference(std::string const &name) {
-  return getSession().getReference(name);
+  return Session::get().getReference(name);
 }
 
 static std::string getNodeName(INode *node) {
-  return getSession().getNodeName(node);
+  return Session::get().getNodeName(node);
 }
 
 template <class T> // T <- INode
 int defNodeClass(std::string name, Descriptor const &desc) {
-  return getSession().defNodeClass<T>(name, desc);
+  return Session::get().defNodeClass<T>(name, desc);
 }
 
 template <class T> // T <- std::unique_ptr<INode>()
 int defNodeClassByCtor(T const &ctor,
     std::string name, Descriptor const &desc) {
-  return getSession().defNodeClassByCtor<T>(ctor, name, desc);
+  return Session::get().defNodeClassByCtor<T>(ctor, name, desc);
 }
 
 static std::string dumpDescriptors() {
-  return getSession().dumpDescriptors();
+  return Session::get().dumpDescriptors();
 }
 
 static std::vector<std::string> getNodeRequirements(std::string name) {
-  return getSession().getNodeRequirements(name);
+  return Session::get().getNodeRequirements(name);
 }
 
 
-}
 
-
-
-
-
-#include <cstdio>
-#include <cassert>
-#if defined(__linux__)
-#include <dlfcn.h>
-#elif defined(_WIN32)
-#include <Windows.h>
+#ifdef ZEN_IMPLEMENTATION
+std::unique_ptr<Session> Session::_instance;
 #endif
-
-
-namespace zen {
-
-
-static Session &getSession() {
-
-    struct DLLSession {
-        void *proc;
-
-    #if defined(__linux__)
-        void *hdll;
-
-        DLLSession() {
-            const char symbol[] = "__zensession_getSession_v1";
-            const char path[] = "libzensession.so";
-
-            hdll = ::dlopen(path, RTLD_NOW | RTLD_GLOBAL);
-            if (!hdll) {
-                char const *err = dlerror();
-                printf("failed to open %s: %s\n", path, err ? err : "no error");
-                abort();
-            }
-            void *proc = ::dlsym(hdll, symbol);
-            if (!proc) {
-                char const *err = dlerror();
-                printf("failed to load symbol %s: %s\n", symbol, err ? err : "no error");
-                abort();
-            }
-        }
-
-        ~DLLSession() {
-            ::dlclose(hdll);
-            hdll = nullptr;
-        }
-    #elif defined(_WIN32)
-        ::HINSTANCE hdll;
-
-        DLLSession() {
-            const char symbol[] = "__zensession_getSession_v1";
-            const char path[] = "zensession.dll";
-
-            hdll = ::LoadLibraryExA(path, NULL, NULL);
-            if (!hdll) {
-                printf("failed to open %s: %d\n", path, ::GetLastError());
-                abort();
-            }
-            proc = (void *)::GetProcAddress(hdll, symbol);
-            if (!proc) {
-                printf("failed to open %s: %d\n", symbol, ::GetLastError());
-                abort();
-            }
-        }
-
-        ~DLLSession() {
-            ::FreeLibrary(hdll);
-        }
-    #else
-    #error "only windows and linux are supported for now"
-    #endif
-
-        Session *getSession() {
-            return ((Session *(*)())proc)();
-        }
-    };
-
-    static std::unique_ptr<DLLSession> dll;
-    if (!dll) {
-        dll = std::make_unique<DLLSession>();
-    }
-    return *dll->getSession();
-}
-
 
 }

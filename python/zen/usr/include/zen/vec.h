@@ -259,8 +259,8 @@ inline auto func(T const &a, S const &b) -> decltype(auto) { \
 }
 _PER_FN2(atan2)
 _PER_FN2(pow)
-//_PER_FN2(max)
-//_PER_FN2(min)
+_PER_FN2(max)
+_PER_FN2(min)
 _PER_FN2(fmod)
 #undef _PER_FN2
 
