@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.12)
+project(demo_project LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/../cmake ${PROJECT_SOURCE_DIR}/../share/cmake)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+find_package(zen REQUIRED)
+add_library(demo_project SHARED MyNode.cpp)
+target_link_libraries(demo_project PRIVATE zen)

@@ -12,7 +12,7 @@ add_subdirectory(external/pybind11)
 
 
 add_library(zensession SHARED zensession.cpp include/zen/zen.h)
-target_include_directories(zensession PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(zensession PUBLIC include)
 target_library_output_dir(zensession ${PROJECT_SOURCE_DIR}/zen/usr/lib)
 
 pybind11_add_module(libzenpy libzenpy.cpp)
