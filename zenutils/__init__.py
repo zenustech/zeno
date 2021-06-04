@@ -11,6 +11,9 @@ from contextlib import contextmanager
 from multiprocessing import Pool
 
 
+os_name = sys.platform
+
+
 def rel2abs(file, *args):
     return os.path.join(os.path.dirname(os.path.abspath(file)), *args)
 

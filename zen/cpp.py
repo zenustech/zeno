@@ -2,9 +2,14 @@
 C++ APIs
 '''
 
-from zenutils import load_library, rel2abs
+from zenutils import load_library, rel2abs, os_name
 
-load_library(rel2abs(__file__, 'usr', 'lib', 'libzensession.so'))
+if os_name == 'linux':
+    load_library(rel2abs(__file__, 'usr', 'lib', 'libzensession.so'))
+elif os_name == 'windows':
+    load_library(rel2abs(__file__, 'usr', 'lib', 'zensession.dll'))
+else:
+    raise RuntimeError(f'Unsupported OS: {os_name}')
 
 
 from . import libzenpy as _core

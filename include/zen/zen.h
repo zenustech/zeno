@@ -451,103 +451,72 @@ static std::vector<std::string> getNodeRequirements(std::string name) {
 namespace zen {
 
 
-struct DLLSession {
-    void *proc;
-
-#if defined(__linux__)
-    void *hdll;
-
-    DLLSession() {
-        const char symbol[] = "__zensession_getSession_v1";
-        const char path[] = "libzensession.so";
-
-        hdll = ::dlopen(path, RTLD_NOW | RTLD_GLOBAL);
-        if (!hdll) {
-            char const *err = dlerror();
-            printf("failed to open %s: %s\n", path, err ? err : "no error");
-            abort();
-        }
-        void *proc = ::dlsym(hdll, symbol);
-        if (!proc) {
-            char const *err = dlerror();
-            printf("failed to load symbol %s: %s\n", symbol, err ? err : "no error");
-            abort();
-        }
-    }
-
-    ~DLLSession() {
-        ::dlclose(hdll);
-        hdll = nullptr;
-    }
-#elif defined(_WIN32)
-    ::HINSTANCE hdll;
-
-    DLLSession() {
-        const char symbol[] = "__zensession_getSession_v1";
-        const char path[] = "libzensession.dll";
-
-        hdll = ::LoadLibraryExA(path, NULL, NULL);
-        if (!hdll) {
-            printf("failed to open %s: %s\n", path, GetLastError());
-            abort();
-        }
-        proc = (void *)::GetProcAddress(hdll, symbol);
-        if (!proc) {
-            printf("failed to open %s: %s\n", symbol, GetLastError());
-            abort();
-        }
-    }
-
-    ~DLLSession() {
-        ::FreeLibrary(hdll);
-    }
-#else
-#error "only windows and linux are supported for now"
-#endif
-
-    Session *getSession() {
-        return ((Session *(*)())proc)();
-    }
-};
-
-
 static Session &getSession() {
-    static Session *sess = nullptr;
-    if (!sess) {
-#if defined(__linux__)
-        void *hdll = ::dlopen("libzensession.so", RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE);
-        if (!hdll) {
-            char const *err = dlerror();
-            printf("failed to open libzensession.so: %s\n", err ? err : "no error");
-            abort();
+
+    struct DLLSession {
+        void *proc;
+
+    #if defined(__linux__)
+        void *hdll;
+
+        DLLSession() {
+            const char symbol[] = "__zensession_getSession_v1";
+            const char path[] = "libzensession.so";
+
+            hdll = ::dlopen(path, RTLD_NOW | RTLD_GLOBAL);
+            if (!hdll) {
+                char const *err = dlerror();
+                printf("failed to open %s: %s\n", path, err ? err : "no error");
+                abort();
+            }
+            void *proc = ::dlsym(hdll, symbol);
+            if (!proc) {
+                char const *err = dlerror();
+                printf("failed to load symbol %s: %s\n", symbol, err ? err : "no error");
+                abort();
+            }
         }
-        void *proc = ::dlsym(hdll, "__zensession_getSession_v1");
-        if (!proc) {
-            char const *err = dlerror();
-            printf("failed to load symbol: %s\n", err ? err : "no error");
-            abort();
+
+        ~DLLSession() {
+            ::dlclose(hdll);
+            hdll = nullptr;
         }
-        sess = ((Session *(*)())proc)();
-        ::dlclose(hdll);
-        hdll = nullptr;
-#elif defined(_WIN32)
-#else
-        auto hdll = ::LoadLibraryExA("libzensession.dll", NULL, NULL);
-        if (!hdll) {
-            printf("failed to open libzensession.dll: %s\n", GetLastError());
-            abort();
+    #elif defined(_WIN32)
+        ::HINSTANCE hdll;
+
+        DLLSession() {
+            const char symbol[] = "__zensession_getSession_v1";
+            const char path[] = "zensession.dll";
+
+            hdll = ::LoadLibraryExA(path, NULL, NULL);
+            if (!hdll) {
+                printf("failed to open %s: %s\n", path, GetLastError());
+                abort();
+            }
+            proc = (void *)::GetProcAddress(hdll, symbol);
+            if (!proc) {
+                printf("failed to open %s: %s\n", symbol, GetLastError());
+                abort();
+            }
         }
-        void *proc = dlsym(hdll, "__zensession_getSession_v1");
-        assert(proc);
-        sess = ((Session *(*)())proc)();
-        assert(sess);
-        dlclose(hdll);
-        hdll = nullptr;
-#error "only windows and linux are supported for now"
-#endif
-        assert(sess);
+
+        ~DLLSession() {
+            ::FreeLibrary(hdll);
+        }
+    #else
+    #error "only windows and linux are supported for now"
+    #endif
+
+        Session *getSession() {
+            return ((Session *(*)())proc)();
+        }
+    };
+
+    static std::unique_ptr<DLLSession> dll;
+    if (!dll) {
+        dll = std::make_unique<DLLSession>();
     }
-    return *sess;
+    return *dll->getSession();
 }
 
 
