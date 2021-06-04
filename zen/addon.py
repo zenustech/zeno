@@ -2,6 +2,9 @@ import os
 
 from zenutils import load_library, rel2abs
 
+def getInstallDir():
+    return rel2abs(__file__)
+
 def getIncludeDir():
     return rel2abs(__file__, 'usr', 'include')
 
@@ -12,9 +15,9 @@ def getAutoloadDir():
     return rel2abs(__file__, 'autoload')
 
 dir = getAutoloadDir()
-for name in os.listdir(dir):
-    path = os.path.join(dir, name)
-    #print('autoload', path)
-    load_library(path)
+if os.path.isdir(dir):
+    for name in os.listdir(dir):
+        path = os.path.join(dir, name)
+        load_library(path, ignore_errors=True)
 
-__all__ = ['getIncludeDir', 'getLibraryDir', 'getAutoloadDir']
+__all__ = ['getInstallDir', 'getIncludeDir', 'getLibraryDir', 'getAutoloadDir']

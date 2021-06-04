@@ -4,7 +4,7 @@ C++ APIs
 
 from zenutils import load_library, rel2abs
 
-load_library(rel2abs('libzen.so'))
+load_library(rel2abs(__file__, 'usr', 'lib', 'libzensession.so'))
 
 
 from . import libzenpy as _core

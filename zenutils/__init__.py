@@ -15,6 +15,15 @@ def rel2abs(file, *args):
     return os.path.join(os.path.dirname(os.path.abspath(file)), *args)
 
 
+def treefiles(dir):
+    if not os.path.isdir(dir):
+        yield dir
+    else:
+        for name in os.listdir(dir):
+            path = os.path.join(dir, name)
+            yield from treefiles(path)
+
+
 class LazyImport:
     def __init__(self, name):
         self.__name = name
@@ -94,12 +103,15 @@ def run_script(src, callback=runpy.run_path):
         return callback(path)
 
 
-def load_library(path):
-    try:
+def load_library(path, ignore_errors=False):
+    if ignore_errors:
+        try:
+            return ctypes.cdll.LoadLibrary(path)
+        except OSError:
+            traceback.print_exc()
+            return None
+    else:
         return ctypes.cdll.LoadLibrary(path)
-    except OSError:
-        traceback.print_exc()
-        return None
 
 
 def import_library(libdir, name):
