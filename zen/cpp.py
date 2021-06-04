@@ -2,11 +2,9 @@
 C++ APIs
 '''
 
-@eval('lambda x: x')
-def _():
-    from zenutils import load_library, rel2abs
+from zenutils import load_library, rel2abs
 
-    load_library(rel2abs('libzen.so'))
+load_library(rel2abs('libzen.so'))
 
 
 from . import libzenpy as _core

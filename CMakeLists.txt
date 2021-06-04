@@ -13,14 +13,12 @@ add_subdirectory(external/pybind11)
 
 add_library(zensession SHARED zensession.cpp include/zen/zen.h)
 target_include_directories(zensession PUBLIC include)
-if (NOT WIN32)
-    target_link_libraries(zensession PUBLIC dl)
-endif()
-target_library_output_dir(zensession ${PROJECT_SOURCE_DIR}/zen/usr/lib)
+target_link_libraries(zensession PUBLIC dl)
+set_property(TARGET zensession PROPERTY LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/zen/usr/lib)
 
 pybind11_add_module(libzenpy libzenpy.cpp)
 target_link_libraries(libzenpy PRIVATE zensession)
-target_library_output_dir(libzenpy ${PROJECT_SOURCE_DIR}/zen)
+set_property(TARGET libzenpy PROPERTY LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/zen)
 
 add_custom_command(TARGET libzenpy POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/zen/autoload

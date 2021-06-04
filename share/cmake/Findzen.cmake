@@ -34,5 +34,4 @@ message("zen_LIBRARY_DIR=${zen_LIBRARY_DIR}")
 
 add_library(zen INTERFACE)
 target_include_directories(zen INTERFACE ${zen_INCLUDE_DIR})
-target_link_directories(zen INTERFACE ${zen_LIBRARY_DIR})
-target_link_libraries(zen INTERFACE zensession)
+target_link_libraries(zen INTERFACE dl)

@@ -8,4 +8,13 @@ def getIncludeDir():
 def getLibraryDir():
     return rel2abs(__file__, 'usr', 'lib')
 
-__all__ = ['getIncludeDir', 'getLibraryDir']
+def getAutoloadDir():
+    return rel2abs(__file__, 'autoload')
+
+dir = getAutoloadDir()
+for name in os.listdir(dir):
+    path = os.path.join(dir, name)
+    #print('autoload', path)
+    load_library(path)
+
+__all__ = ['getIncludeDir', 'getLibraryDir', 'getAutoloadDir']
