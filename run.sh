@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PYTHONPATH=`pwd`/python
+export PYTHONPATH=`pwd`
 if [ -z $USE_GDB ]; then
     python -m zenqt
 else
