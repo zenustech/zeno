@@ -1,16 +1,12 @@
+#define _ZEN_INDLL
 #include <zen/zen.h>
 
 static std::unique_ptr<zen::Session> sess;
 
-#ifdef _MSC_VER
-#define _DLLEXPORT __declspec(dllexport)
-#else
-#define _DLLEXPORT
-#endif
-
-extern "C" _DLLEXPORT zen::Session *__zensession_getSession_v1() {
+_ZEN_API zen::Session &zen::getSession() {
     if (!sess) {
         sess = std::make_unique<zen::Session>();
     }
-    return sess.get();
+	printf("%p\n", sess.get());
+	return *sess;
 }

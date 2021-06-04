@@ -35,6 +35,5 @@ set(zen_LIBRARY_DIR ${zen_INSTALL_DIR}/usr/lib)
 
 add_library(zen INTERFACE)
 target_include_directories(zen INTERFACE ${zen_INCLUDE_DIR})
-if (NOT WIN32)
-	target_link_libraries(zen INTERFACE dl)
-endif()
+link_directories(${zen_LIBRARY_DIR})
+target_link_libraries(zen INTERFACE zensession)

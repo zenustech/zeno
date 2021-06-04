@@ -12,6 +12,15 @@
 #include <map>
 
 
+#ifdef _MSC_VER
+#ifdef _ZEN_INDLL
+#define _ZEN_API __declspec(dllexport)
+#else
+#define _ZEN_API __declspec(dllimport)
+#endif
+#endif
+
+
 namespace zen {
 
 
@@ -365,7 +374,7 @@ public:
 };
 
 
-static Session &getSession();
+extern _ZEN_API Session &getSession();
 
 static void addNode(std::string const &name, std::string const &type) {
   return getSession().addNode(name, type);
@@ -439,6 +448,7 @@ static std::vector<std::string> getNodeRequirements(std::string name) {
 
 
 
+#if 0
 #include <cstdio>
 #include <cassert>
 #if defined(__linux__)
@@ -521,3 +531,4 @@ static Session &getSession() {
 
 
 }
+#endif

@@ -9,6 +9,13 @@ struct MyNode : zen::INode {
   }
 };
 
+int myfunc() {
+	printf("demo_project: %p\n", &zen::getSession());
+	return 0;
+}
+
+static int myfuncval = myfunc();
+
 static int defMyNode = zen::defNodeClass<MyNode>("MyNode",
     { /* inputs: */ {
     }, /* outputs: */ {
