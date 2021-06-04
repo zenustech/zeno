@@ -17,8 +17,9 @@ build
 outputs
 rubbish.bin
 
-# setup files
-python/zen/usr
+# autogen files
+zen/usr
+zen/autoload
 
 # vim files
 .*.swp

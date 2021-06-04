@@ -8,8 +8,13 @@
 #include <optional>
 #include <sstream>
 #include <sstream>
+#include <cassert>
 #include <array>
 #include <map>
+
+#if defined(__linux__)
+#include <dlfcn.h>
+#endif
 
 #if defined(_MSC_VER)
 #include <BaseTsd.h>
@@ -283,19 +288,7 @@ private:
   std::map<std::string, INode::Ptr> nodes;
   std::map<INode *, std::string> nodesRev;
 
-  struct _PrivCtor {};
-  static std::unique_ptr<Session> _instance;
-
 public:
-  static Session &get() {
-    if (!_instance)
-      _instance = std::make_unique<Session>(_PrivCtor{});
-    return *_instance.get();
-  }
-
-  Session(_PrivCtor) {
-  }
-
   void addNode(std::string const &type, std::string const &name) {
     if (nodes.find(name) != nodes.end())
       return;
@@ -382,75 +375,89 @@ public:
 };
 
 
+static Session &getSession();
+
 static void addNode(std::string const &name, std::string const &type) {
-  return Session::get().addNode(name, type);
+  return getSession().addNode(name, type);
 }
 
 static void setNodeParam(std::string const &name,
     std::string const &key, IValue const &value) {
-  return Session::get().setNodeParam(name, key, value);
+  return getSession().setNodeParam(name, key, value);
 }
 
 static void setNodeInput(std::string const &name,
     std::string const &key, std::string const &srcname) {
-  return Session::get().setNodeInput(name, key, srcname);
+  return getSession().setNodeInput(name, key, srcname);
 }
 
 static void initNode(std::string const &name) {
-  return Session::get().initNode(name);
+  return getSession().initNode(name);
 }
 
 static void applyNode(std::string const &name) {
-  return Session::get().applyNode(name);
+  return getSession().applyNode(name);
 }
 
 static void setObject(std::string const &name, IObject::Ptr object) {
-  return Session::get().setObject(name, std::move(object));
+  return getSession().setObject(name, std::move(object));
 }
 
 static bool hasObject(std::string const &name) {
-  return Session::get().hasObject(name);
+  return getSession().hasObject(name);
 }
 
 static IObject *getObject(std::string const &name) {
-  return Session::get().getObject(name);
+  return getSession().getObject(name);
 }
 
 static void setReference(std::string const &name, std::string const &srcname) {
-  return Session::get().setReference(name, srcname);
+  return getSession().setReference(name, srcname);
 }
 
 static std::optional<std::string> getReference(std::string const &name) {
-  return Session::get().getReference(name);
+  return getSession().getReference(name);
 }
 
 static std::string getNodeName(INode *node) {
-  return Session::get().getNodeName(node);
+  return getSession().getNodeName(node);
 }
 
 template <class T> // T <- INode
 int defNodeClass(std::string name, Descriptor const &desc) {
-  return Session::get().defNodeClass<T>(name, desc);
+  return getSession().defNodeClass<T>(name, desc);
 }
 
 template <class T> // T <- std::unique_ptr<INode>()
 int defNodeClassByCtor(T const &ctor,
     std::string name, Descriptor const &desc) {
-  return Session::get().defNodeClassByCtor<T>(ctor, name, desc);
+  return getSession().defNodeClassByCtor<T>(ctor, name, desc);
 }
 
 static std::string dumpDescriptors() {
-  return Session::get().dumpDescriptors();
+  return getSession().dumpDescriptors();
 }
 
 static std::vector<std::string> getNodeRequirements(std::string name) {
-  return Session::get().getNodeRequirements(name);
+  return getSession().getNodeRequirements(name);
 }
 
 
 
-#ifdef ZEN_IMPLEMENTATION
-std::unique_ptr<Session> Session::_instance;
-#endif
+static Session &getSession() {
+    static Session *sess = nullptr;
+    if (!sess) {
+        void *hdll = dlopen("libzensession.so", RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE);
+        assert(hdll);
+        void *proc = dlsym(hdll, "__zensession_getSession_v1");
+        assert(proc);
+        sess = ((Session *(*)())proc)();
+        assert(sess);
+        dlclose(hdll);
+        hdll = nullptr;
+    }
+    return *sess;
+}
+
 
 }
