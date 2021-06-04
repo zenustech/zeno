@@ -31,5 +31,8 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
 
 message("zen_INCLUDE_DIR=${zen_INCLUDE_DIR}")
 message("zen_LIBRARY_DIR=${zen_LIBRARY_DIR}")
-link_directories(${zen_LIBRARY_DIR})
-include_directories(${zen_INCLUDE_DIR})
+
+add_library(zen INTERFACE)
+target_include_directories(zen INTERFACE ${zen_INCLUDE_DIR})
+target_link_directories(zen INTERFACE ${zen_LIBRARY_DIR})
+target_link_libraries(zen INTERFACE zensession)
