@@ -114,7 +114,9 @@ make -C build -j8
 ```cmd
 cmake -B build
 ```
-Then open ```build/zeno.sln``` in Visual Studio 2019, click `Project -> Build All`.
+Then open ```build/zeno.sln``` in Visual Studio 2019, and **switch to Release in build configuration**, then click `Project -> Build All`.
+
+IMPORTANT: you must always use Release mode in MSVC, cause they use different allocators in Release and Debug mode, if you link a DLL of Release mode and a DLL in Debug mode together on Windows, they will crash when passing STL objects...
 
 
 ## run ZENO for development
@@ -176,7 +178,7 @@ make -C build
 cd Projects
 cmake -B build
 ```
-Then open ```Projects/build/zeno_projects.sln``` in Visual Studio 2019, click `Project -> Build All`.
+Then open ```Projects/build/zeno_projects.sln``` in Visual Studio 2019, **switch to Release in build configuration**, click `Project -> Build All`.
 
 
 ## Write your own one!
