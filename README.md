@@ -94,13 +94,13 @@ python -m pip install numpy PyQt5
 (Fun fact: you will be redirected to Microsoft Store if `python` is not added to PATH properly :)
 Make sure it starts to downloading and installing successfully without `ERROR` (warnings are OK though).
 
-If you got `ERROR: Could not install packages due to an EnvironmentError: [Errno 13] Permission denied: 'c:\\python38\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\d3dcompiler_47.dll'``:
+If you got `ERROR: Could not install packages due to an EnvironmentError: [Errno 13] Permission denied: 'c:\\python38\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\d3dcompiler_47.dll''`:
 **Quit anti-virus softwares** like 360, they are likely stopping `pip` from copying DLL files..
 
 If you got `ImportError: DLL load failed while importing QtGui`:
 Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe).
 
-3. Install Visual Studio 2017 Community Edition or later version (for C++17 support in MSVC).
+3. Install Visual Studio 2019 Community Edition or later version (for C++17 support in MSVC).
 
 
 ## build ZENO
@@ -111,7 +111,10 @@ make -C build -j8
 ```
 
 - Windows
-Open ZENO repo in Visual Studio 2017, click `Project -> Build All`.
+```cmd
+cmake -B build
+```
+Then open ```build/zeno.sln``` in Visual Studio 2019, click `Project -> Build All`.
 
 
 ## run ZENO for development
@@ -147,20 +150,39 @@ twine upload dist/*.whl
 ```
 
 
-# Build node libraries
+# Node libraries
 
 ZENO is extensible which means we may write node libraries for it.
 
 
+# Build requirements
+
+Before building node libraries, you need to install ZENO first (or add zeno source root to PYTHONPATH), to do so:
+```bash
+python setup.py install
+```
+
+## Build official node libraries
+
+- Linux
+```bash
+cd Projects
+cmake -B build
+make -C build
+```
+
+- Windows
+```cmd
+cd Projects
+cmake -B build
+```
+Then open ```Projects/build/zeno_projects.sln``` in Visual Studio 2019, click `Project -> Build All`.
+
+
 ## Write your own one!
 
-See `demo_project/` for example.
+See ```demo_project/``` for example on how to write custom nodes in ZENO.
 
-HINT: Run ```rm -rf zen/autoload/*.so``` if you keep crashing when ZENO tries to load DLLs from this folder at start up.
+## Installing node libraries
 
-
-## Build our exisiting libraries
-
-```bash
-make -C Projects
-```
+To install a node library for ZENO just copy the `.so` or `.dll` files to `zen/autoload/`. See ```demo_project/CMakeLists.txt``` for how to automate this in CMake.
