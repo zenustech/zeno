@@ -1,9 +1,8 @@
 file(GLOB PROJECT_SOURCE include/*/*.h *.cpp)
 
 add_library(zenvdb SHARED ${PROJECT_SOURCE})
-target_include_directories(zenvdb PRIVATE ../include)
 target_include_directories(zenvdb PUBLIC include)
-target_link_libraries(zenvdb PRIVATE zenbase)
+target_include_directories(zenvdb PRIVATE ../zenbase/include)
 
 find_package(OpenMP)
 if (TARGET OpenMP::OpenMP_CXX)
@@ -17,5 +16,14 @@ target_link_libraries(zenvdb PRIVATE openvdb IlmBase::Half TBB::tbbmalloc TBB::t
 
 find_package(zen REQUIRED)
 target_link_libraries(zenvdb PRIVATE zen)
-set_property(TARGET zenvdb PROPERTY LIBRARY_OUTPUT_DIRECTORY ${zen_INSTALL_DIR}/autoload)
-set_property(TARGET zenvdb PROPERTY RUNTIME_OUTPUT_DIRECTORY ${zen_INSTALL_DIR}/autoload)
+set_target_properties(zenvdb PROPERTIES
+	LIBRARY_OUTPUT_DIRECTORY ${zen_AUTOLOAD_DIR}
+	RUNTIME_OUTPUT_DIRECTORY ${zen_AUTOLOAD_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY ${zen_AUTOLOAD_DIR}
+	LIBRARY_OUTPUT_DIRECTORY_DEBUG ${zen_AUTOLOAD_DIR}
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ${zen_AUTOLOAD_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${zen_AUTOLOAD_DIR}
+	LIBRARY_OUTPUT_DIRECTORY_RELEASE ${zen_AUTOLOAD_DIR}
+	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${zen_AUTOLOAD_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${zen_AUTOLOAD_DIR}
+	)
