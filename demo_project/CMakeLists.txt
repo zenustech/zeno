@@ -7,6 +7,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../share/
 
 add_library(demo_project SHARED MyNode.cpp)
 
+find_package(zen REQUIRED)
 target_link_libraries(demo_project PRIVATE zen)
 set_target_properties(demo_project PROPERTIES
 	LIBRARY_OUTPUT_DIRECTORY ${zen_AUTOLOAD_DIR}
