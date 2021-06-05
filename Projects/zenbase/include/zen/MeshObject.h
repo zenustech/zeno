@@ -21,7 +21,7 @@ struct MeshObject : zen::IObject {
   void translate(const glm::vec3 &p)
   {
     #pragma omp parallel for
-    for(size_t i=0;i<vertices.size();i++)
+    for(int i=0;i<vertices.size();i++)
     {
       vertices[i] += p;
     }
@@ -33,7 +33,7 @@ struct MeshObject : zen::IObject {
     omesh->uvs.resize(uvs.size());
     omesh->normals.resize(normals.size());
     #pragma omp parallel for
-    for(size_t i=0;i<vertices.size();i++)
+    for(int i=0;i<vertices.size();i++)
     {
       omesh->vertices[i] = vertices[i];
       omesh->uvs[i] = uvs[i];

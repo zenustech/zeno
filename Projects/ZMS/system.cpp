@@ -4,6 +4,12 @@
 
 using namespace zenbase;
 
+#ifdef _MSC_VER
+static inline double drand48() {
+	return rand() / (double)RAND_MAX;
+}
+#endif
+
 struct PeriodicBoundary : zen::INode {
   virtual void apply() override {
     auto prims = get_input("prims")->as<PrimitiveObject>();

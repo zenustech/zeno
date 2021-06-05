@@ -100,7 +100,7 @@ static void readzpm(PrimitiveObject *prim, const char *path) {
         fread(&namelen, sizeof(namelen), 1, fp);
         //printf("attr namelen = %zd\n", namelen);
         assert(namelen < 1024);
-        char namebuf[namelen + 1];
+        char *namebuf = (char *)alloca(namelen + 1);
         fread(namebuf, sizeof(namebuf[0]), namelen, fp);
         namebuf[namelen] = '\0';
         std::string name(namebuf);

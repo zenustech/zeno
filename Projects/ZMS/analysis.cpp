@@ -42,7 +42,7 @@ struct KineticEnergy: zen::INode {
     auto energy = zen::IObject::make<NumericObject>();
 
     float ek = 0.0f;
-    #pragma omp paralle for
+    #pragma omp parallel for
     for (int i = 0; i < vel.size(); i++) {
         ek += zen::lengthsq(vel[i]);
     }

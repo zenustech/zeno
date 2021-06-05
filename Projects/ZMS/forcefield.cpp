@@ -30,7 +30,7 @@ void ForceFieldObject::force(std::vector<zen::vec3f, std::allocator<zen::vec3f>>
     }
     // Pairwise potential with cutoff
     if (nonbond != nullptr) {
-        # pragma omp parallel for collapse(1)
+        # pragma omp parallel for
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 if (i != j) {
@@ -61,7 +61,7 @@ float ForceFieldObject::energy(std::vector<zen::vec3f, std::allocator<zen::vec3f
     }
     // Pairwise potential with cutoff
     if (nonbond != nullptr) {
-        # pragma omp parallel for reduction(+: ep) collapse(1) 
+        # pragma omp parallel for reduction(+: ep)
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < i; j++) {
                 auto d = distance(pos[i], pos[j], boxlength);
