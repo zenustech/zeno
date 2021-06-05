@@ -4,6 +4,51 @@
 namespace zen {
 
 
+
+	template <class S, class T>
+	static std::string join_str(std::vector<T> const &elms, S const &delim) {
+		std::stringstream ss;
+		auto p = elms.begin(), end = elms.end();
+		if (p != end)
+			ss << *p++;
+		for (; p != end; ++p) {
+			ss << delim << *p;
+		}
+		return ss.str();
+	}
+
+
+	template <class T>
+	T *safe_at(std::map<std::string, std::unique_ptr<T>> const &m,
+		std::string const &key, std::string const &msg) {
+		auto it = m.find(key);
+		if (it == m.end()) {
+			throw Exception("invalid " + msg + " name: " + key);
+		}
+		return it->second.get();
+	}
+
+
+	template <class T>
+	T safe_at(std::map<std::string, T> const &m,
+		std::string const &key, std::string const &msg) {
+		auto it = m.find(key);
+		if (it == m.end()) {
+			throw std::string("invalid " + msg + " name: " + key);
+		}
+		return it->second;
+	}
+
+
+	template <class T, class S>
+	T safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) {
+		auto it = m.find(key);
+		if (it == m.end()) {
+			throw std::string("invalid " + msg + "as index");
+		}
+		return it->second;
+	}
+
 	static std::unique_ptr<zen::Session> sess;
 
 	ZENAPI Session &zen::getSession() {

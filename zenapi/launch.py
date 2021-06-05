@@ -4,10 +4,13 @@ import threading
 import atexit
 import shutil
 import os
-
+import zen
 from multiprocessing import Process
-from zen import runGraph, dumpDescriptors
+
 from .descriptor import parse_descriptor_line
+
+
+zen.loadAutoloads()
 
 
 g_proc = None
@@ -53,11 +56,11 @@ def launchGraph(graph, nframes):
     cleanIOPath()
     g_iopath = tempfile.mkdtemp(prefix='zenvis-')
     print('iopath:', g_iopath)
-    _launch_mproc(runGraph, graph, nframes, g_iopath)
+    _launch_mproc(zen.runGraph, graph, nframes, g_iopath)
 
 
 def getDescriptors():
-    descs = dumpDescriptors()
+    descs = zen.dumpDescriptors()
     descs = descs.splitlines()
     descs = [parse_descriptor_line(line) for line in descs if ':' in line]
     descs = {name: desc for name, desc in descs}
