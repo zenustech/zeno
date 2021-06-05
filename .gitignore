@@ -27,6 +27,7 @@ zen/autoload/
 .*.swp
 .*.un~
 /tags
+*~
 
 # msvc files
 .vs/

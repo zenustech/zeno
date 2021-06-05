@@ -13,6 +13,12 @@ target_include_directories(zensession PRIVATE include)
 set_property(TARGET zensession PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib)
 set_property(TARGET zensession PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib)
 set_property(TARGET zensession PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib)
+set_property(TARGET zensession PROPERTY LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib)
+set_property(TARGET zensession PROPERTY RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib)
+set_property(TARGET zensession PROPERTY ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib)
+set_property(TARGET zensession PROPERTY LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib)
+set_property(TARGET zensession PROPERTY RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib)
+set_property(TARGET zensession PROPERTY ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib)
 
 pybind11_add_module(libzenpy libzenpy.cpp)
 target_include_directories(libzenpy PRIVATE include)
@@ -22,7 +28,7 @@ set_property(TARGET libzenpy PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_S
 add_custom_command(TARGET libzenpy PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib
-	)
+    )
 
 add_custom_command(TARGET libzenpy POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload
