@@ -30,3 +30,9 @@ add_custom_command(TARGET libzenpy POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/share ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/share
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/include
     )
+
+#add_library(demo_project SHARED demo_project/MyNode.cpp)
+#target_include_directories(demo_project PRIVATE include)
+#target_link_libraries(demo_project PUBLIC zensession)
+#set_property(TARGET demo_project PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload)
+#set_property(TARGET demo_project PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload)

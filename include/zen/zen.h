@@ -14,9 +14,9 @@
 
 #ifdef _MSC_VER
 #ifdef _ZEN_INDLL
-#define _ZEN_API __declspec(dllexport)
+#define ZENAPI __declspec(dllexport)
 #else
-#define _ZEN_API __declspec(dllimport)
+#define ZENAPI __declspec(dllimport)
 #endif
 #endif
 
@@ -210,7 +210,7 @@ private:
 };
 
 
-struct INodeClass {
+struct ZENAPI INodeClass {
   using Ptr = std::unique_ptr<INodeClass>;
 
   virtual std::unique_ptr<INode> new_instance() = 0;
@@ -374,7 +374,7 @@ public:
 };
 
 
-extern _ZEN_API Session &getSession();
+extern ZENAPI Session &getSession();
 
 static void addNode(std::string const &name, std::string const &type) {
   return getSession().addNode(name, type);
