@@ -21,6 +21,7 @@ if (zen_IMPORT_RET)
     message(FATAL_ERROR "Cannot import zen. Have you installed it or add it to PYTHONPATH?")
 endif ()
 
+
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
         "import sys; import zen; sys.stdout.write(zen.getInstallDir())"
         OUTPUT_VARIABLE zen_INSTALL_DIR)
@@ -34,6 +35,5 @@ set(zen_LIBRARY_DIR ${zen_INSTALL_DIR}/usr/lib)
 
 add_library(zen INTERFACE)
 target_include_directories(zen INTERFACE ${zen_INCLUDE_DIR})
-if (NOT WIN32)
-	target_link_libraries(zen INTERFACE dl)
-endif()
+link_directories(${zen_LIBRARY_DIR})
+target_link_libraries(zen INTERFACE zensession)

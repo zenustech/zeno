@@ -1,36 +1,37 @@
 # python files
-__pycache__
-*.egg-info
-dist
+__pycache__/
+*.egg-info/
+dist/
 
 # cmake files
-build
+build/
 
 # binary files
 *.zpm
 *.exe
 *.so
 *.dll
+*.lib
 *.dylib
 *.pyd
-*.manifest
-*.exp
 
 # rubbish files
-outputs
-rubbish.bin
+outputs/
+rubbish.bin/
 
 # autogen files
-zen/usr
-zen/autoload
+zen/usr/
+zen/autoload/
 
 # vim files
 .*.swp
 .*.un~
-tags
+/tags
 
-# vs2017 files
-/.vs
+# msvc files
+.vs/
 *.pdb
 *.ilk
+*.manifest
+*.exp
 /CMakeSettings.json
