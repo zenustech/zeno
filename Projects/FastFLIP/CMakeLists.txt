@@ -45,6 +45,8 @@ target_link_directories(FLIPlib PUBLIC /usr/lib/x86_64-linux-gnu:/usr/local/lib)
 target_link_libraries(FLIPlib PRIVATE openvdb IlmBase::Half)
 target_link_libraries(FLIPlib PRIVATE Eigen3::Eigen)
 #target_link_libraries(FLIPlib PRIVATE SimEnvironment)
+
+add_subdirectory(partio)
 target_link_libraries(FLIPlib PRIVATE partio)
 
 

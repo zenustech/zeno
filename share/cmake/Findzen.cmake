@@ -1,7 +1,5 @@
 message("Finding package zen...")
 
-mark_as_advanced(zen_INSTALL_DIR)
-
 if (PYTHON_EXECUTABLE)
     message("Using ${PYTHON_EXECUTABLE} as python executable.")
 else ()
