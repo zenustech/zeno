@@ -151,4 +151,4 @@ twine upload dist/*.whl
 
 See `demo_project/` for example.
 
-Run `rm -rf zen/autoload/*` if you keep crashing when ZENO tries to load DLLs there.
+Run `rm -rf zen/autoload/*` if you keep crashing when ZENO tries to load DLLs from this folder at start up.

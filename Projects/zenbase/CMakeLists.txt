@@ -11,6 +11,7 @@ endif()
 find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
 target_link_libraries(zenbase PRIVATE TBB::tbb TBB::tbbmalloc)
 
+find_package(zen REQUIRED)
 target_link_libraries(zenbase PRIVATE zen)
 set_property(TARGET zenbase PROPERTY LIBRARY_OUTPUT_DIRECTORY ${zen_INSTALL_DIR}/autoload)
 set_property(TARGET zenbase PROPERTY RUNTIME_OUTPUT_DIRECTORY ${zen_INSTALL_DIR}/autoload)
