@@ -51,7 +51,7 @@ namespace zen {
 
 	static std::unique_ptr<zen::Session> sess;
 
-	ZENAPI Session &zen::getSession() {
+	ZENAPI Session &getSession() {
 		if (!sess) {
 			sess = std::make_unique<zen::Session>();
 		}

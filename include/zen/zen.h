@@ -18,6 +18,8 @@
 #else
 #define ZENAPI __declspec(dllimport)
 #endif
+#else
+#define ZENAPI
 #endif
 
 
