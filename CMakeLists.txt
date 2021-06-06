@@ -25,38 +25,15 @@ add_custom_command(TARGET libzenpy PRE_BUILD
 	)
 
 add_custom_command(TARGET libzenpy POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/README.md ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload/README.md
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/share ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/share
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/include
     )
 
-<<<<<<< HEAD
-set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/lib/cmake/OpenVDB /usr/local/lib/cmake/OpenVDB)
-find_package(OpenVDB QUIET)
-option(ZS_ENABLE_OPENVDB "Enable OpenVDB" ON)
-if (NOT ${OpenVDB_FOUND})
-    set(ZS_ENABLE_OPENVDB OFF)
-endif()
-message("==> OpenVDB find status: ${OpenVDB_FOUND}")
-message("==> OpenVDB enable status: ${ZS_ENABLE_OPENVDB}")
-
-
-add_subdirectory(zen)
-add_subdirectory(zenvis)
-add_subdirectory(zenbase)
-add_subdirectory(external/glad)
-add_subdirectory(QuickOCT)
-add_subdirectory(ZMS)
-if(ZS_ENABLE_OPENVDB)
-    add_subdirectory(zenvdb)
-    add_subdirectory(FastFLIP)
-    add_subdirectory(external/partio)
-endif()
-=======
 #add_library(demo_project SHARED demo_project/MyNode.cpp)
 #target_include_directories(demo_project PRIVATE include)
 #target_link_libraries(demo_project PUBLIC zensession)
 #set_property(TARGET demo_project PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload)
 #set_property(TARGET demo_project PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload)
->>>>>>> master

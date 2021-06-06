@@ -10,4 +10,9 @@ if (TARGET OpenMP::OpenMP_CXX)
     target_link_libraries(ZMSlib PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-target_link_libraries(ZMSlib PRIVATE zen zenbase)
+target_link_libraries(ZMSlib PRIVATE zenbase)
+
+find_package(zen REQUIRED)
+target_link_libraries(ZMSlib PRIVATE zen)
+set_property(TARGET ZMSlib PROPERTY LIBRARY_OUTPUT_DIRECTORY ${zen_INSTALL_DIR}/autoload)
+set_property(TARGET ZMSlib PROPERTY RUNTIME_OUTPUT_DIRECTORY ${zen_INSTALL_DIR}/autoload)

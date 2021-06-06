@@ -2,14 +2,6 @@ import zen
 
 from zenutils import run_script
 
-<<<<<<< HEAD:python/zen/run.py
-load_library('libzenbase.so')
-load_library('libzenvdb.so')
-load_library('libOCTlib.so')
-load_library('libFLIPlib.so')
-load_library('libZMSlib.so')
-=======
->>>>>>> master:zen/run.py
 
 
 def runGraph(nodes, nframes, iopath):
