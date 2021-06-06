@@ -145,3 +145,10 @@ ls dist/*.whl
 sudo python -m pip install twine
 twine upload dist/*.whl
 ```
+
+
+# Write node libraries for ZENO
+
+See `demo_project/` for example.
+
+Run `rm -rf zen/autoload/*` if you keep crashing when ZENO tries to load DLLs there.
