@@ -4,9 +4,9 @@
 #include <variant>
 #include <array>
 
-namespace zenbase {
+namespace zen {
 
-struct StringObject : zen::IObject {
+struct StringObject : IObject {
   std::string value;
 
   std::string const &get() const {

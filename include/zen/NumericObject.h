@@ -5,7 +5,7 @@
 #include <variant>
 #include <array>
 
-namespace zenbase {
+namespace zen {
 
 
 using NumericValue = std::variant<
@@ -14,7 +14,7 @@ using NumericValue = std::variant<
 using FixedNumericValue = std::variant<
   int, float, std::array<float, 2>, std::array<float, 3>, std::array<float, 4>>;
 
-struct NumericObject : zen::IObject {
+struct NumericObject : IObject {
   NumericValue value;
 
   template <class T>

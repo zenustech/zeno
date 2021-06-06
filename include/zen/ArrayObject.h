@@ -7,11 +7,11 @@
 typedef SSIZE_T ssize_t;
 #endif
 
-namespace zenbase {
+namespace zen {
 
 // https://www.cnblogs.com/JiangOil/p/11130670.html
 // Below is the same as pybind11::buffer_info
-struct ArrayObject : zen::IObject {
+struct ArrayObject : IObject {
   void *ptr;
   ssize_t itemsize;
   std::string format;

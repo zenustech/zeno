@@ -7,65 +7,65 @@
 #include <zen/zen.h>
 namespace py = pybind11;
 
-std::string getCppObjectType(std::string name) {
+static std::string getCppObjectType(std::string name) {
   auto obj = zen::getObject(name);
-  if (obj->as<zenbase::ArrayObject>()) {
+  if (obj->as<zen::ArrayObject>()) {
     return "array";
   } else if (obj->as<zen::BooleanObject>()) {
     return "boolean";
-  } else if (obj->as<zenbase::StringObject>()) {
+  } else if (obj->as<zen::StringObject>()) {
     return "string";
-  } else if (obj->as<zenbase::NumericObject>()) {
+  } else if (obj->as<zen::NumericObject>()) {
     return "numeric";
   } else {
     return "other";
   }
 }
 
-void setBooleanObject(std::string name, bool value) {
+static void setBooleanObject(std::string name, bool value) {
   auto obj = std::make_unique<zen::BooleanObject>();
   obj->value = value;
   zen::setObject(name, std::move(obj));
 }
 
-bool getBooleanObject(std::string name) {
+static bool getBooleanObject(std::string name) {
   auto obj = zen::getObject(name)->as<zen::BooleanObject>();
   return obj->value;
 }
 
-void setNumericObject(std::string name, zenbase::FixedNumericValue value) {
-  auto obj = std::make_unique<zenbase::NumericObject>();
+static void setNumericObject(std::string name, zen::FixedNumericValue value) {
+  auto obj = std::make_unique<zen::NumericObject>();
   std::visit([&](auto const &x) { obj->value = (decltype(obj->value))x; },
              value);
   zen::setObject(name, std::move(obj));
 }
 
-zenbase::FixedNumericValue getNumericObject(std::string name) {
-  auto obj = zen::getObject(name)->as<zenbase::NumericObject>();
-  zenbase::FixedNumericValue value;
+static zen::FixedNumericValue getNumericObject(std::string name) {
+  auto obj = zen::getObject(name)->as<zen::NumericObject>();
+  zen::FixedNumericValue value;
   std::visit([&](auto const &x) { value = (decltype(value))x; }, obj->value);
   return value;
 }
 
-void setStringObject(std::string name, std::string value) {
-  auto obj = std::make_unique<zenbase::StringObject>();
+static void setStringObject(std::string name, std::string value) {
+  auto obj = std::make_unique<zen::StringObject>();
   obj->value = value;
   zen::setObject(name, std::move(obj));
 }
 
-std::string getStringObject(std::string name) {
-  auto obj = zen::getObject(name)->as<zenbase::StringObject>();
+static std::string getStringObject(std::string name) {
+  auto obj = zen::getObject(name)->as<zen::StringObject>();
   return obj->value;
 }
 
 static std::map<std::string, std::unique_ptr<std::vector<char>>> savedNumpys;
 
 template <class T>
-void setArrayObject(std::string name,
+static void setArrayObject(std::string name,
                     py::array_t<T, py::array::c_style> const &data) {
   py::buffer_info buf = data.request();
 
-  auto obj = zen::IObject::make<zenbase::ArrayObject>();
+  auto obj = zen::IObject::make<zen::ArrayObject>();
   obj->ptr = buf.ptr;
   obj->itemsize = buf.itemsize;
   obj->format = buf.format;
@@ -87,10 +87,10 @@ void setArrayObject(std::string name,
   // by the way, will we provide zen::deleteObject as well?
 }
 
-std::tuple<uintptr_t, ssize_t, std::string, ssize_t, std::vector<ssize_t>,
+static std::tuple<uintptr_t, ssize_t, std::string, ssize_t, std::vector<ssize_t>,
            std::vector<ssize_t>>
 getArrayObjectMeta(std::string name) {
-  auto obj = zen::getObject(name)->as<zenbase::ArrayObject>();
+  auto obj = zen::getObject(name)->as<zen::ArrayObject>();
   return std::tuple<uintptr_t, ssize_t, std::string, ssize_t,
                     std::vector<ssize_t>, std::vector<ssize_t>>(
       (uintptr_t)obj->ptr, (ssize_t)obj->itemsize, (std::string)obj->format,
@@ -99,8 +99,8 @@ getArrayObjectMeta(std::string name) {
 };
 
 template <class T>
-py::array_t<T, py::array::c_style> getArrayObject(std::string name) {
-  auto obj = zen::getObject(name)->as<zenbase::ArrayObject>();
+static py::array_t<T, py::array::c_style> getArrayObject(std::string name) {
+  auto obj = zen::getObject(name)->as<zen::ArrayObject>();
 
   ssize_t size = 1;
   for (ssize_t i = 0; i < obj->ndim; i++)
