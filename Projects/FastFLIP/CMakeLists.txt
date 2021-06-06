@@ -34,7 +34,7 @@ target_include_directories(FLIPlib PRIVATE ltcommon ltcommon/tunicate ltcommon/n
 target_link_libraries(FLIPlib PRIVATE TBB::tbb TBB::tbbmalloc)
 target_link_libraries(FLIPlib PRIVATE pthread openblas lapack cblas)
 
-target_link_libraries(FLIPlib PRIVATE zen zenbase zenvdb)
+target_link_libraries(FLIPlib PRIVATE zenbase zenvdb)
 
 #disable default malloc options
 if (WIN32)
@@ -48,3 +48,7 @@ target_link_libraries(FLIPlib PRIVATE Eigen3::Eigen)
 target_link_libraries(FLIPlib PRIVATE partio)
 
 
+find_package(zen REQUIRED)
+target_link_libraries(FLIPlib PRIVATE zen)
+set_property(TARGET FLIPlib PROPERTY LIBRARY_OUTPUT_DIRECTORY ${zen_INSTALL_DIR}/autoload)
+set_property(TARGET FLIPlib PROPERTY RUNTIME_OUTPUT_DIRECTORY ${zen_INSTALL_DIR}/autoload)
