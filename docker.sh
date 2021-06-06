@@ -7,7 +7,7 @@ xhost +
 Please execute:
 
 cd /root
-./get-zeno.sh
+./github-zeno.sh
 cd zeno
 
 after login the container.

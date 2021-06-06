@@ -1,0 +1,24 @@
+cmake_minimum_required(VERSION 3.12)
+project(zenbase LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ../zen/share/cmake)
+
+file(GLOB PROJECT_SOURCE include/*/*.h *.cpp mesh/*.cpp pars/*.cpp prim/*.cpp)
+
+add_library(zenbase SHARED ${PROJECT_SOURCE})
+target_include_directories(zenbase PRIVATE ../include)
+target_include_directories(zenbase PUBLIC include)
+
+find_package(zen REQUIRED)
+target_link_libraries(zenbase PRIVATE zen)
+
+find_package(OpenMP)
+if (TARGET OpenMP::OpenMP_CXX)
+    message("found package: OpenMP::OpenMP_CXX")
+    target_link_libraries(zenbase PRIVATE OpenMP::OpenMP_CXX)
+endif()
+
+#find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
+#target_link_libraries(zenbase PRIVATE TBB::tbb TBB::tbbmalloc)

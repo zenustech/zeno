@@ -1,30 +1,38 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.12)
 project(zeno LANGUAGES C CXX)
 
-
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-
-set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/lib/cmake/OpenVDB /usr/local/lib/cmake/OpenVDB)
-find_package(OpenVDB QUIET)
-option(ZS_ENABLE_OPENVDB "Enable OpenVDB" ON)
-if (NOT ${OpenVDB_FOUND})
-    set(ZS_ENABLE_OPENVDB OFF)
-endif()
-message("==> OpenVDB find status: ${OpenVDB_FOUND}")
-message("==> OpenVDB enable status: ${ZS_ENABLE_OPENVDB}")
+add_subdirectory(external/pybind11)
 
 
-add_subdirectory(zen)
-add_subdirectory(zenvis)
-add_subdirectory(zenbase)
-add_subdirectory(external/glad)
-add_subdirectory(QuickOCT)
-if(ZS_ENABLE_OPENVDB)
-    add_subdirectory(zenvdb)
-    add_subdirectory(FastFLIP)
-    add_subdirectory(external/partio)
-endif()
+add_library(zensession SHARED zensession.cpp include/zen/zen.h)
+target_include_directories(zensession PRIVATE include)
+set_property(TARGET zensession PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib)
+set_property(TARGET zensession PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib)
+set_property(TARGET zensession PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib)
+
+pybind11_add_module(libzenpy libzenpy.cpp)
+target_include_directories(libzenpy PRIVATE include)
+target_link_libraries(libzenpy PUBLIC zensession)
+set_property(TARGET libzenpy PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen)
+
+add_custom_command(TARGET libzenpy PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib
+	)
+
+add_custom_command(TARGET libzenpy POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/README.md ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload/README.md
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/share ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/share
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/include
+    )
+
+#add_library(demo_project SHARED demo_project/MyNode.cpp)
+#target_include_directories(demo_project PRIVATE include)
+#target_link_libraries(demo_project PUBLIC zensession)
+#set_property(TARGET demo_project PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload)
+#set_property(TARGET demo_project PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload)

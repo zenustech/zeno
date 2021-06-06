@@ -1,7 +1,8 @@
-x: prim.exe
+x: spgrid.exe Makefile
 	./$<
-	@#gdb ./$< -ex r
+	#gdb ./$< -ex r
 
-%.exe: %.cpp
-	@#g++ -ggdb -gstabs+ -O0 -o $@ $<
-	g++ -O1 -o $@ $<
+%.exe: %.cpp Makefile
+	#g++ -std=c++17 -ggdb -gstabs+ -O0 -o $@ $<
+	g++ -std=c++17 -fopenmp -march=native -O3 -o $@ $<
+	#clang++ -std=c++17 -march=native -O3 -o $@ $<

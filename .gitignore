@@ -1,24 +1,37 @@
 # python files
-__pycache__
-*.egg-info
-dist
-venv
-.venv
+__pycache__/
+*.egg-info/
+dist/
 
 # cmake files
-build
-dsolib
+build/
 
-# output files
-outputs
-rubbish.bin
-pruned
-imgui.ini
-genCode.py
+# binary files
 *.zpm
 *.exe
+*.so
+*.dll
+*.lib
+*.dylib
+*.pyd
+
+# rubbish files
+outputs/
+rubbish.bin/
+
+# autogen files
+zen/usr/
+zen/autoload/
 
 # vim files
 .*.swp
 .*.un~
-tags
+/tags
+
+# msvc files
+.vs/
+*.pdb
+*.ilk
+*.manifest
+*.exp
+/CMakeSettings.json

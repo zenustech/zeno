@@ -11,3 +11,10 @@ macro (append_files files ext)
     list (APPEND ${files} ${_files})
   endforeach (dir)
 endmacro (append_files)
+
+
+macro (target_library_output_dir tgt dir)
+    if (NOT DEFINED PYTHON_PACKAGE_VERSION)
+        set_property(TARGET ${tgt} PROPERTY LIBRARY_OUTPUT_DIRECTORY ${dir})
+    endif()
+endmacro()
