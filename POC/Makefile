@@ -1,4 +1,4 @@
-x: spgrid.exe Makefile
+x: tpls.exe Makefile
 	./$<
 	#gdb ./$< -ex r
 
