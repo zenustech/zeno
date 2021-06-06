@@ -7,10 +7,6 @@ import setuptools
 import subprocess
 from glob import glob
 
-#from setuptools.extension import Extension
-#from setuptools.command.build_ext import build_ext
-#from setuptools.command.build_py import build_py
-
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -53,7 +49,7 @@ setuptools.setup(
         data_files=data_files,
         include_package_data=True,
         keywords=['graphics', 'simulation'],
-        #license='Apache 2.0 License',
+        #license='Apache 2.0',
         classifiers=[
             'Development Status :: 2 - Pre-Alpha',
             #'Topic :: Software Development :: Compilers',
@@ -71,7 +67,5 @@ setuptools.setup(
                 'zenqt=zenqt.main:main',
             ],
         },
-        #ext_modules=ext_modules,
-        #cmdclass={'build_ext': CMakeBulid},
         zip_safe=False,
 )

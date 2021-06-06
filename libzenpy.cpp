@@ -1,12 +1,11 @@
-#include <zen/zen.h>
+#include <pybind11/numpy.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 #include <zen/ArrayObject.h>
 #include <zen/NumericObject.h>
 #include <zen/StringObject.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
-#include <pybind11/stl.h>
+#include <zen/zen.h>
 namespace py = pybind11;
-
 
 std::string getCppObjectType(std::string name) {
   auto obj = zen::getObject(name);
@@ -23,7 +22,6 @@ std::string getCppObjectType(std::string name) {
   }
 }
 
-
 void setBooleanObject(std::string name, bool value) {
   auto obj = std::make_unique<zen::BooleanObject>();
   obj->value = value;
@@ -35,10 +33,10 @@ bool getBooleanObject(std::string name) {
   return obj->value;
 }
 
-
 void setNumericObject(std::string name, zenbase::FixedNumericValue value) {
   auto obj = std::make_unique<zenbase::NumericObject>();
-  std::visit([&](auto const &x) { obj->value = (decltype(obj->value))x; }, value);
+  std::visit([&](auto const &x) { obj->value = (decltype(obj->value))x; },
+             value);
   zen::setObject(name, std::move(obj));
 }
 
@@ -48,7 +46,6 @@ zenbase::FixedNumericValue getNumericObject(std::string name) {
   std::visit([&](auto const &x) { value = (decltype(value))x; }, obj->value);
   return value;
 }
-
 
 void setStringObject(std::string name, std::string value) {
   auto obj = std::make_unique<zenbase::StringObject>();
@@ -61,12 +58,11 @@ std::string getStringObject(std::string name) {
   return obj->value;
 }
 
-
 static std::map<std::string, std::unique_ptr<std::vector<char>>> savedNumpys;
 
 template <class T>
 void setArrayObject(std::string name,
-    py::array_t<T, py::array::c_style> const &data) {
+                    py::array_t<T, py::array::c_style> const &data) {
   py::buffer_info buf = data.request();
 
   auto obj = zen::IObject::make<zenbase::ArrayObject>();
@@ -91,14 +87,15 @@ void setArrayObject(std::string name,
   // by the way, will we provide zen::deleteObject as well?
 }
 
-std::tuple<uintptr_t, ssize_t, std::string, ssize_t,
-  std::vector<ssize_t>, std::vector<ssize_t>>
-  getArrayObjectMeta(std::string name) {
+std::tuple<uintptr_t, ssize_t, std::string, ssize_t, std::vector<ssize_t>,
+           std::vector<ssize_t>>
+getArrayObjectMeta(std::string name) {
   auto obj = zen::getObject(name)->as<zenbase::ArrayObject>();
   return std::tuple<uintptr_t, ssize_t, std::string, ssize_t,
-	  std::vector<ssize_t>, std::vector<ssize_t>>(
+                    std::vector<ssize_t>, std::vector<ssize_t>>(
       (uintptr_t)obj->ptr, (ssize_t)obj->itemsize, (std::string)obj->format,
-      (ssize_t)obj->ndim, (std::vector<ssize_t>)obj->shape, (std::vector<ssize_t>)obj->strides);
+      (ssize_t)obj->ndim, (std::vector<ssize_t>)obj->shape,
+      (std::vector<ssize_t>)obj->strides);
 };
 
 template <class T>
@@ -116,7 +113,6 @@ py::array_t<T, py::array::c_style> getArrayObject(std::string name) {
   arr.resize(obj->shape);
   return arr;
 }
-
 
 PYBIND11_MODULE(libzenpy, m) {
   m.def("addNode", zen::addNode);
@@ -140,8 +136,8 @@ PYBIND11_MODULE(libzenpy, m) {
   m.def("getReference", zen::getReference);
 
   m.def("getArrayObjectMeta", getArrayObjectMeta);
-#define _DEF_TYPE(T) \
-  m.def("setArrayObject", setArrayObject<T>); \
+#define _DEF_TYPE(T)                                                           \
+  m.def("setArrayObject", setArrayObject<T>);                                  \
   m.def("getArrayObject_" #T, getArrayObject<T>);
   _DEF_TYPE(uint8_t)
   _DEF_TYPE(uint16_t)
