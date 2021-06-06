@@ -4,16 +4,16 @@ Numpy APIs
 
 import numpy as np
 
-from .core import get_core
+from . import libzenpy as _core
 from .py import BooleanObject
 
 
 def setArrayObject(name, arr):
-    return get_core().setArrayObject(name, arr)
+    return _core.setArrayObject(name, arr)
 
 class getArrayObjectMeta:
     def __init__(self, name):
-        meta = get_core().getArrayObjectMeta(name)
+        meta = _core.getArrayObjectMeta(name)
         self.ptr, self.itemsize, self.format, \
             self.ndim, self.shape, self.strides, \
             self.isref = meta
@@ -39,35 +39,35 @@ def getArrayObject(name):
     else:
         raise KeyError(f'bad numpy data format: {meta.format}')
 
-    return getattr(get_core(), 'getArrayObject_' + c_type)(name)
+    return getattr(_core, 'getArrayObject_' + c_type)(name)
 
 
 def setReference(name, srcname):
-    return get_core().setReference(name, srcname)
+    return _core.setReference(name, srcname)
 
 def getReference(name):
-    return get_core().getReference(name)
+    return _core.getReference(name)
 
 def setBooleanObject(name, value):
-    return get_core().setBooleanObject(name, value)
+    return _core.setBooleanObject(name, value)
 
 def getBooleanObject(name):
-    return get_core().getBooleanObject(name)
+    return _core.getBooleanObject(name)
 
 def setNumericObject(name, value):
-    return get_core().setNumericObject(name, value)
+    return _core.setNumericObject(name, value)
 
 def getNumericObject(name):
-    return get_core().getNumericObject(name)
+    return _core.getNumericObject(name)
 
 def setStringObject(name, value):
-    return get_core().setStringObject(name, value)
+    return _core.setStringObject(name, value)
 
 def getStringObject(name):
-    return get_core().getStringObject(name)
+    return _core.getStringObject(name)
 
 def getCppObjectType(name):
-    return get_core().getCppObjectType(name)
+    return _core.getCppObjectType(name)
 
 
 

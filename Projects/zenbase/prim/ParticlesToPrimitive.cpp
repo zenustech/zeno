@@ -7,7 +7,7 @@
 #include <cstdlib>
 #include <cassert>
 
-namespace zenbase {
+namespace zen {
 
 struct ParticlesToPrimitive : zen::INode{
     virtual void apply() override {

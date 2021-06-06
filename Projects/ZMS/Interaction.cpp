@@ -3,7 +3,7 @@
 #include <zen/NumericObject.h>
 #include "Interaction.h"
 
-using namespace zenbase;
+using namespace zen;
 
 struct LennardJonesInteraction: IPairwiseInteraction {
     float sigma6, epsilon;

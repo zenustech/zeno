@@ -8,7 +8,7 @@
 //(*openvdb::math::Transform::createLinearTransform(h), 
 //points, triangles, quads, 4, 4);
 
-namespace zenbase {
+namespace zen {
 
 struct MeshToSDF : zen::INode{
     virtual void apply() override {

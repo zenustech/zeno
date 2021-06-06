@@ -9,7 +9,7 @@
 #include <cstdio>
 
 
-namespace zenbase {
+namespace zen {
 
 
 static void writezpm(PrimitiveObject const *prim, const char *path) {

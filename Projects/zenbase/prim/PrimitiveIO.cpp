@@ -8,7 +8,7 @@
 #include <cassert>
 #include <cstdio>
 
-namespace zenbase {
+namespace zen {
 
 
 struct ExportPrimitive : zen::INode {

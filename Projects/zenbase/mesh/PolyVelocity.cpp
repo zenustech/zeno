@@ -9,7 +9,7 @@
 //(*openvdb::math::Transform::createLinearTransform(h), 
 //points, triangles, quads, 4, 4);
 
-namespace zenbase {
+namespace zen {
 void subtractMesh(float dt, MeshObject* a, MeshObject* b,
                   ParticlesObject* c)
 {
@@ -25,7 +25,7 @@ void subtractMesh(float dt, MeshObject* a, MeshObject* b,
 }
 struct GeoVertexVel : zen::INode{
     virtual void apply() override {
-        auto dt = get_input("dt")->as<zenbase::NumericObject>()->get<float>();
+        auto dt = get_input("dt")->as<zen::NumericObject>()->get<float>();
         auto mesh1 = get_input("TargetMesh")->as<MeshObject>();
         auto mesh2 = get_input("OriginMesh")->as<MeshObject>();
         auto result = zen::IObject::make<ParticlesObject>();

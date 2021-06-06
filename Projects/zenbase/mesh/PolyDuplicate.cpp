@@ -8,7 +8,7 @@
 //(*openvdb::math::Transform::createLinearTransform(h), 
 //points, triangles, quads, 4, 4);
 
-namespace zenbase {
+namespace zen {
 void MergeMesh(std::unique_ptr<MeshObject> &to, std::shared_ptr<MeshObject> &from)
 {
     size_t n = to->vertices.size();

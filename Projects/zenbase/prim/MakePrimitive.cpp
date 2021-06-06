@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <cassert>
 
-namespace zenbase {
+namespace zen {
 
 
 struct MakePrimitive : zen::INode {

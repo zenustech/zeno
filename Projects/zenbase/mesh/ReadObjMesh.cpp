@@ -5,7 +5,7 @@
 #include <cstring>
 #include <omp.h>
 
-namespace zenbase {
+namespace zen {
 
 static void readobj(
     const char *path,
@@ -165,7 +165,7 @@ struct MeshMix : zen::INode {
   virtual void apply() override {
     auto meshA = get_input("meshA")->as<MeshObject>();
     auto meshB = get_input("meshB")->as<MeshObject>();
-    auto coef = get_input("coef")->as<zenbase::NumericObject>()->get<float>();
+    auto coef = get_input("coef")->as<zen::NumericObject>()->get<float>();
     auto mesh = zen::IObject::make<MeshObject>();
     mesh->vertices=meshA->vertices;
     mesh->uvs=meshA->uvs;

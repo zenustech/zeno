@@ -934,6 +934,7 @@ namespace {
 			openvdb::Vec3f V3 = openvdb::tools::StaggeredBoxSampler::sample(vaxr, ipos + V2 * dtinvx);
 			ipos += dtinvx * (V0 + 2.0f * (V1 + V2) + V3) * (1.0f / 6.0f);
 		}
+		
 
 		float dx;
 		float invdx;
@@ -1386,7 +1387,7 @@ namespace {
 						//increment the counter
 						uint16_t toffset = writing_leaf->coordToOffset(ptCoord);
 						auto existing_par = writing_leaf->getValue(toffset);
-						if (existing_par > 16) {
+						if (existing_par > 27) {
 							continue;
 						}
 						writing_leaf->setOffsetOn(toffset, existing_par + 1);
@@ -2172,7 +2173,7 @@ void FLIP_vdb::particle_to_grid_collect_style(
 	openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf,
 	float dx)
 {
-	float particle_radius = 0.6f  * dx * 1.01;
+	float particle_radius = 0.6f  * dx * sqrt(3.0f) * 1.01;
 	velocity->setTree(std::make_shared<openvdb::Vec3fTree>(
 		particles->tree(), openvdb::Vec3f{ 0 }, openvdb::TopologyCopy()));
 	openvdb::tools::dilateActiveValues(velocity->tree(), 1, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
@@ -2182,7 +2183,7 @@ void FLIP_vdb::particle_to_grid_collect_style(
 	auto voxel_center_transform = openvdb::math::Transform::createLinearTransform(dx);
 	liquid_sdf->setTransform(voxel_center_transform);
 	liquid_sdf->setTree(std::make_shared<openvdb::FloatTree>(
-		velocity->tree(), 0.6f *  dx * 1.01, openvdb::TopologyCopy()));
+		velocity->tree(), 0.6f *  dx * sqrt(3.0f) * 1.01, openvdb::TopologyCopy()));
 
 	auto collector_op{ p2g_collector(liquid_sdf,
 			velocity,
@@ -5502,7 +5503,7 @@ void FLIP_vdb::Advect(float dt, float dx,
 		velocity_after_p2g,
 		solid_sdf,
 		solid_vel,
-		pic_component, dt, 0,/*RK order*/ 1);
+		pic_component, dt, 0,/*RK order*/ RK_ORDER);
 }
 void FLIP_vdb::AdvectSheetty(float dt, float dx, float surfacedist, 
 	openvdb::points::PointDataGrid::Ptr &particles,
@@ -5520,7 +5521,7 @@ void FLIP_vdb::AdvectSheetty(float dt, float dx, float surfacedist,
 		velocity_after_p2g,
 		solid_sdf,
 		solid_vel,
-		pic_component, dt, surfacedist, /*RK order*/ 1);
+		pic_component, dt, surfacedist, /*RK order*/ RK_ORDER);
 }
 void FLIP_vdb::custom_move_points_and_set_flip_vel(
 	openvdb::points::PointDataGrid::Ptr in_out_points,

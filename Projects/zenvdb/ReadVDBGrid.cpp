@@ -4,7 +4,7 @@
 //#include "../../Library/MnBase/Meta/Polymorphism.h"
 // openvdb::io::File(filename).write({grid});
 
-namespace zenbase {
+namespace zen {
 
 static std::unique_ptr<VDBGrid> readvdb(std::string path, std::string type)
 {
@@ -53,7 +53,7 @@ static int defReadVDBGrid = zen::defNodeClass<ReadVDBGrid>(
 
 struct ImportVDBGrid : zen::INode {
   virtual void apply() override {
-    auto path = get_input("path")->as<zenbase::StringObject>();
+    auto path = get_input("path")->as<zen::StringObject>();
     auto type = std::get<std::string>(get_param("type"));
     auto data = readvdb(path->get(), type);
     set_output("data", data);
@@ -135,4 +135,4 @@ static int defMakeVDBGrid = zen::defNodeClass<MakeVDBGrid>(
                         "openvdb",
                     }});
 
-} // namespace zenbase
+} // namespace zen

@@ -13,7 +13,7 @@
 #include <openvdb/tools/LevelSetSphere.h>
 #include <openvdb/tools/ChangeBackground.h>
 
-namespace zenbase {
+namespace zen {
     struct  VDBRenormalizeSDF : zen::INode {
   virtual void apply() override {
 

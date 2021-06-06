@@ -10,7 +10,7 @@
 #include <zen/ParticlesObject.h>
 #include <openvdb/openvdb.h>
 #include <openvdb/points/PointConversion.h>
-namespace zenbase {
+namespace zen {
 openvdb::points::PointDataGrid::Ptr particleArrayToGrid(ParticlesObject* particles, float dx) 
 {
     std::vector<openvdb::Vec3f> positions(particles->size());

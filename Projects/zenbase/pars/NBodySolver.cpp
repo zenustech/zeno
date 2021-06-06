@@ -5,7 +5,7 @@
 #include <cmath>
 #include <omp.h>
 
-namespace zenbase {
+namespace zen {
 
 struct NBodySolver : zen::INode {
   ParticlesObject *pars;

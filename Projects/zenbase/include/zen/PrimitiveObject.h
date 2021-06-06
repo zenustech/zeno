@@ -8,7 +8,7 @@
 #include <memory>
 #include <map>
 
-namespace zenbase {
+namespace zen {
 
 using AttributeArray = std::variant<
     std::vector<zen::vec3f>, std::vector<float>>;

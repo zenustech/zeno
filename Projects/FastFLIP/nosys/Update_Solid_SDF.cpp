@@ -6,7 +6,7 @@
 //void FLIP_vdb::update_solid_sdf(std::vector<openvdb::FloatGrid::Ptr> &moving_solids, 
 //openvdb::points::PointDataGrid::Ptr particles)
 
-namespace zenbase{
+namespace zen{
     
     struct FLIP_Solid_Modifier : zen::INode{
         virtual void apply() override {

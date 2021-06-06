@@ -9,7 +9,7 @@
 #include <openvdb/tools/Morphology.h>
 #include <openvdb/tools/MeshToVolume.h>
 #include <string.h>
-namespace zenbase {
+namespace zen {
 
 
 template <typename GridT>

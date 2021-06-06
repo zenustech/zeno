@@ -72,7 +72,7 @@ struct array : std::array<T, N> {
 };
 
 
-namespace zenbase {
+namespace zen {
 
 
 struct Opcode : zen::IObject {

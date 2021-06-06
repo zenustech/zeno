@@ -12,7 +12,7 @@
 	openvdb::FloatGrid::Ptr pushed_out_liquid_sdf,
 	float dx);
  */
-namespace zenbase{
+namespace zen{
     
     struct FLIP_P2G : zen::INode{
         virtual void apply() override {

@@ -3,7 +3,7 @@
 #include <zen/VDBGrid.h>
 #include <omp.h>
 
-namespace zenbase {
+namespace zen {
 
 struct GetVDBPoints : zen::INode {
   virtual void apply() override {
