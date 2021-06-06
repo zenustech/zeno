@@ -1,19 +1,20 @@
-0: a
+default: all
 
-a:
+all: core
+	make -C Projects
+
+core:
 	cmake -B build
 	make -C build -j `python -c 'from multiprocessing import cpu_count; print(cpu_count() * 2)'`
 
-b:
-	python/setup.py bdist
+run: all
+	./run.sh
 
-x: a
+install:
+	python/setup.py install
+
+dist:
+	python/setup.py bdist_wheel
+
+debug: all
 	USE_GDB= ZEN_OPEN=assets/mesh.zsg ./run.sh
-
-y: a
-	scripts/alldlls.sh
-
-z: a
-	./dist.sh
-	du -h /tmp/dist
-	docker run -v /tmp/dist:/tmp/dist -it algebr/openface
