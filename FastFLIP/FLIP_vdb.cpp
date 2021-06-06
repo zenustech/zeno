@@ -1,6 +1,7 @@
 #include "tbb/scalable_allocator.h"
 #include "FLIP_vdb.h"
 #include <openvdb/Types.h>
+#include <openvdb/openvdb.h>
 #include <openvdb/points/PointCount.h>
 #include "openvdb/tree/LeafManager.h"
 #include "openvdb/points/PointAdvect.h"
@@ -12,6 +13,7 @@
 
 #include <atomic>
 //intrinsics
+#include <openvdb/tools/Interpolation.h>
 #include <xmmintrin.h>
 #include "simd_vdb_poisson.h"
 // #include "BPS3D_volume_vel_cache.h" // decouple Datan BEM works for now
@@ -1176,6 +1178,7 @@ namespace {
 		point_to_counter_reducer2(
 			const float in_dt,
 			const float in_dx,
+			const openvdb::FloatGrid& in_liquidsdf, 
 			const openvdb::Vec3fGrid& in_velocity,
 			const openvdb::Vec3fGrid& in_velocity_to_be_advected,
 			const openvdb::Vec3fGrid& in_old_velocity,
@@ -1184,6 +1187,7 @@ namespace {
 			const openvdb::FloatGrid& in_center_solid_vel_n,
 			float pic_component,
 			const std::vector<openvdb::points::PointDataTree::LeafNodeType*>& in_particles,
+			float surfacedist, 
 			int RK_order) : dt(in_dt),
 			m_rk_order(RK_order), m_dx(in_dx), m_invdx(1.0f / in_dx),
 			m_velocity(in_velocity),
@@ -1193,8 +1197,11 @@ namespace {
 			m_center_solidgrad(in_center_solid_grad),
 			m_center_solidveln(in_center_solid_vel_n),
 			m_pic_component(pic_component),
-			m_particles(in_particles)
+			m_particles(in_particles),
+			m_liquidsdf(in_liquidsdf),
+			m_surfacedist(surfacedist)
 		{
+			
 			m_integrator = std::make_shared<custom_integrator>(in_velocity, in_dx, in_dt);
 			m_counter_grid = openvdb::points::PointDataGrid::create();
 		}
@@ -1208,7 +1215,9 @@ namespace {
 			m_solid_sdf(other.m_solid_sdf),
 			m_center_solidgrad(other.m_center_solidgrad),
 			m_center_solidveln(other.m_center_solidveln),
-			m_particles(other.m_particles) {
+			m_particles(other.m_particles),
+			m_surfacedist(other.m_surfacedist),
+			m_liquidsdf(other.m_liquidsdf) {
 			m_integrator = std::make_shared<custom_integrator>(m_velocity, m_dx, dt);
 			m_counter_grid = openvdb::points::PointDataGrid::create();
 		}
@@ -1217,6 +1226,7 @@ namespace {
 		//loop over ranges of flattened particle leaves
 		void operator()(const tbb::blocked_range<openvdb::Index>& r) {
 			using  namespace openvdb::tools::local_util;
+			auto liquid_sdf_axr{m_liquidsdf.getConstUnsafeAccessor() };
 			auto counter_axr{ m_counter_grid->getAccessor() };
 			auto vaxr{ m_velocity.getConstUnsafeAccessor() };
 			auto v_tobe_adv_axr{ m_velocity_to_be_advected.getConstAccessor() };
@@ -1306,7 +1316,18 @@ namespace {
 					old_vel = openvdb::tools::StaggeredBoxSampler::sample(old_vaxr, pIspos);*/
 					adv_vel = StaggeredBoxSampler::sample(vaxr, pIspos);
 					old_vel = StaggeredBoxSampler::sample(old_vaxr, pIspos);
-
+					float p_liquidsdf = openvdb::tools::BoxSampler::sample(liquid_sdf_axr, pIspos);
+					float t_coef = 1;
+					if(p_liquidsdf<0 && p_liquidsdf>=-m_surfacedist)
+					{
+						t_coef = p_liquidsdf/-m_surfacedist;
+					}
+					if(p_liquidsdf>=0)
+					{
+						t_coef = 0;
+					}
+					if(m_surfacedist>0)
+						flip_component = t_coef*1.0f + (1.0f - t_coef) * flip_component;
 					if (adv_same_field) {
 						carried_vel = adv_vel;
 					}
@@ -1316,6 +1337,7 @@ namespace {
 
 					//update the velocity of the particle
 					/*particle_vel = (m_pic_component)*adv_vel + (1.0f - m_pic_component) * (adv_vel - old_vel + particle_vel);*/
+
 					particle_vel = adv_vel + flip_component * (-old_vel + particle_vel);
 
 					pItpos = pIspos;
@@ -1447,7 +1469,7 @@ namespace {
 
 		//time step
 		const float dt;
-
+		const float m_surfacedist;
 		const int m_rk_order;
 		//index to world transform
 		//for the particles as well as the velocity
@@ -1456,6 +1478,7 @@ namespace {
 
 		//the velocity field used to advect the particles
 		const openvdb::Vec3fGrid& m_velocity;
+		const openvdb::FloatGrid& m_liquidsdf;
 		const openvdb::Vec3fGrid& m_velocity_to_be_advected;
 		const openvdb::Vec3fGrid& m_old_velocity;
 		float m_pic_component;
@@ -5474,20 +5497,40 @@ void FLIP_vdb::Advect(float dt, float dx,
 	//openvdb::points::advectPoints(*m_particles, *m_velocity, /*RK order*/ 1, /*time step*/dt, /*number of steps*/1);
 	//std::cout << " particle mem " << m_particles->memUsage() << std::endl;
 	custom_move_points_and_set_flip_vel(particles, 
+		nullptr,
 		velocity, velocity,
 		velocity_after_p2g,
 		solid_sdf,
 		solid_vel,
-		pic_component, dt, /*RK order*/ 1);
+		pic_component, dt, 0,/*RK order*/ 1);
+}
+void FLIP_vdb::AdvectSheetty(float dt, float dx, float surfacedist, 
+	openvdb::points::PointDataGrid::Ptr &particles,
+	openvdb::FloatGrid::Ptr &liquid_sdf,
+	openvdb::Vec3fGrid::Ptr &velocity,
+	openvdb::Vec3fGrid::Ptr &velocity_after_p2g,
+	openvdb::FloatGrid::Ptr &solid_sdf,
+	openvdb::Vec3fGrid::Ptr &solid_vel,
+	float pic_component, int RK_ORDER)
+{
+	
+	custom_move_points_and_set_flip_vel(particles, 
+	    liquid_sdf, 
+		velocity, velocity,
+		velocity_after_p2g,
+		solid_sdf,
+		solid_vel,
+		pic_component, dt, surfacedist, /*RK order*/ 1);
 }
 void FLIP_vdb::custom_move_points_and_set_flip_vel(
 	openvdb::points::PointDataGrid::Ptr in_out_points,
+	const openvdb::FloatGrid::Ptr in_liquid_sdf, 
 	const openvdb::Vec3fGrid::Ptr in_velocity_field,
 	const openvdb::Vec3fGrid::Ptr in_velocity_field_to_be_advected,
 	const openvdb::Vec3fGrid::Ptr in_old_velocity,
 	 openvdb::FloatGrid::Ptr in_solid_sdf,
 	 openvdb::Vec3fGrid::Ptr in_solid_vel,
-	float PIC_component, float dt, int RK_order)
+	float PIC_component, float dt, float surfacedist, int RK_order)
 {
 	if (!in_out_points) {
 		return;
@@ -5595,12 +5638,18 @@ void FLIP_vdb::custom_move_points_and_set_flip_vel(
 	std::vector<openvdb::points::PointDataTree::LeafNodeType*> particle_leaves;
 	in_out_points->tree().getNodes(particle_leaves);
 
-
+	auto to_use_liquid_sdf = openvdb::FloatGrid::create(dx);
+        to_use_liquid_sdf->setGridClass(openvdb::GridClass::GRID_LEVEL_SET);
+        to_use_liquid_sdf->setTransform(openvdb::math::Transform::createLinearTransform(dx));
+	if(in_liquid_sdf!=nullptr)
+	{
+		to_use_liquid_sdf = in_liquid_sdf->deepCopy();
+	}
 	auto reducer = std::make_unique<point_to_counter_reducer2>(
-		dt, dx, 
+		dt, dx, *to_use_liquid_sdf, 
 		*in_velocity_field, *in_velocity_field_to_be_advected, *in_old_velocity, 
 		*in_solid_sdf, *voxel_center_solid_normal, *voxel_center_solid_vn,
-		PIC_component, particle_leaves, RK_order);
+		PIC_component, particle_leaves, surfacedist, RK_order);
 	tbb::parallel_reduce(tbb::blocked_range<openvdb::Index>(0, particle_leaves.size(), 10), *reducer);
 
 	//compose the result
