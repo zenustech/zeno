@@ -30,11 +30,9 @@ class Exception : public std::exception {
 private:
   std::string msg;
 public:
-  Exception(std::string const &msg) : msg(msg) {}
-
-  char const *what() const throw() {
-    return msg.c_str();
-  }
+  ZENAPI Exception(std::string const &msg) noexcept;
+  ZENAPI ~Exception() noexcept;
+  ZENAPI char const *what() const noexcept;
 };
 
 

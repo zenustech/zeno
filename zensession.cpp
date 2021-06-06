@@ -3,6 +3,17 @@
 
 namespace zen {
 
+
+ZENAPI Exception::Exception(std::string const &msg) noexcept
+    : msg(msg) {
+}
+
+ZENAPI Exception::~Exception() noexcept = default;
+
+ZENAPI char const *Exception::what() const noexcept {
+    return msg.c_str();
+}
+
 template <class S, class T>
 static std::string join_str(std::vector<T> const &elms, S const &delim) {
   std::stringstream ss;
