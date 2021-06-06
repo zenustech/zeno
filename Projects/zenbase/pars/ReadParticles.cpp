@@ -3,7 +3,7 @@
 #include <zen/StringObject.h>
 #include <cstring>
 
-namespace zenbase {
+namespace zen {
 
 static void readpars(
     const char *path,

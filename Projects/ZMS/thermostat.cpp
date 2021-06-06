@@ -2,7 +2,7 @@
 #include <zen/PrimitiveObject.h>
 #include <zen/NumericObject.h>
 
-using namespace zenbase;
+using namespace zen;
 
 struct ScaleVelocity: zen::INode {
   virtual void apply() override {

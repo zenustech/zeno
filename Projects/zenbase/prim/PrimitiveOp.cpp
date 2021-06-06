@@ -12,7 +12,7 @@ static inline double drand48() {
 }
 #endif
 
-namespace zenbase {
+namespace zen {
 
 template <class T, class S>
 inline constexpr bool is_decay_same_v = std::is_same_v<std::decay_t<T>, std::decay_t<S>>;
@@ -184,7 +184,7 @@ struct PrimitiveMix : zen::INode {
         auto const &arrA = primA->attr(attrA);
         auto const &arrB = primB->attr(attrB);
         auto &arrOut = primOut->attr(attrOut);
-        auto coef = get_input("coef")->as<zenbase::NumericObject>()->get<float>();
+        auto coef = get_input("coef")->as<zen::NumericObject>()->get<float>();
         
         std::visit([coef](auto &arrA, auto &arrB, auto &arrOut) {
           if constexpr (std::is_same_v<decltype(arrA), decltype(arrB)> && std::is_same_v<decltype(arrA), decltype(arrOut)>) {

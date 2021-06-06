@@ -29,7 +29,7 @@ static void outputBgeo(std::string path,
 
 
 
-namespace zenbase {
+namespace zen {
 
 struct WriteBgeo : zen::INode {
   virtual void apply() override {

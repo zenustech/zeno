@@ -8,7 +8,7 @@
 #include <glm/vec2.hpp>
 #include <vector>
 
-namespace zenbase {
+namespace zen {
 
 struct MeshObject : zen::IObject {
   std::vector<glm::vec3> vertices;

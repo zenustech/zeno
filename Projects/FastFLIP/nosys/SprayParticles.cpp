@@ -12,7 +12,7 @@
 #include "tbb/parallel_for.h"
 #include "tbb/concurrent_vector.h"
 
-namespace zenbase {
+namespace zen {
 //todo where to put this func???
 float area(zen::vec3f &p1, zen::vec3f &p2, zen::vec3f &p3)
 {

@@ -7,7 +7,7 @@
 #include <cstdlib>
 #include <cassert>
 
-namespace zenbase {
+namespace zen {
 
 struct MeshToPrimitive : zen::INode{
     virtual void apply() override {

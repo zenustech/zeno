@@ -6,7 +6,7 @@
 #include <glm/gtx/transform.hpp>
 #include <cstring>
 
-namespace zenbase {
+namespace zen {
 
 
 static glm::vec3 mapplypos(glm::mat4 const &matrix, glm::vec3 const &vector) {
@@ -32,11 +32,11 @@ struct TransformMesh : zen::INode {
     zen::vec3f rotate = {0,0,0};
     zen::vec3f scaling = {1,1,1};
     if(has_input("translate"))
-      translate = get_input("translate")->as<zenbase::NumericObject>()->get<zen::vec3f>();
+      translate = get_input("translate")->as<zen::NumericObject>()->get<zen::vec3f>();
     if(has_input("rotate"))
-      rotate = get_input("rotate")->as<zenbase::NumericObject>()->get<zen::vec3f>();
+      rotate = get_input("rotate")->as<zen::NumericObject>()->get<zen::vec3f>();
     if(has_input("scaling"))
-      scaling = get_input("scaling")->as<zenbase::NumericObject>()->get<zen::vec3f>();
+      scaling = get_input("scaling")->as<zen::NumericObject>()->get<zen::vec3f>();
     
     
     glm::mat4 matTrans = glm::translate(glm::vec3(translate[0], translate[1], translate[2]));

@@ -517,7 +517,7 @@ void vdb_velocity_extrapolator::extrapolate(int n_layer, openvdb::Vec3fGrid::Ptr
 
 
 
-namespace zenbase{
+namespace zen{
     
     struct Vec3FieldExtrapolate : zen::INode{
         virtual void apply() override {

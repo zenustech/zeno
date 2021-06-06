@@ -4,7 +4,7 @@
 //#include "../../Library/MnBase/Meta/Polymorphism.h"
 //openvdb::io::File(filename).write({grid});
 
-namespace zenbase {
+namespace zen {
 
 struct WriteVDBGrid : zen::INode {
   virtual void apply() override {
@@ -27,7 +27,7 @@ static int defWriteVDBGrid = zen::defNodeClass<WriteVDBGrid>("WriteVDBGrid",
 
 struct ExportVDBGrid : zen::INode {
   virtual void apply() override {
-    auto path = get_input("path")->as<zenbase::StringObject>();
+    auto path = get_input("path")->as<zen::StringObject>();
     auto data = get_input("data")->as<VDBGrid>();
     data->output(path->get());
   }

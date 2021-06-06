@@ -7,11 +7,11 @@
 // I finally decide put this P2G_Advector into FastFLIP, to reduce modularizing effort..
 //static void Advect(float dt, openvdb::points::PointDataGrid::Ptr m_particles, openvdb::Vec3fGrid::Ptr m_velocity,
 //				   openvdb::Vec3fGrid::Ptr m_velocity_after_p2g, float pic_component, int RK_ORDER);
-namespace zenbase{
+namespace zen{
     
     struct G2PAdvectorSheet : zen::INode{
         virtual void apply() override {
-            auto dt = get_input("dt")->as<zenbase::NumericObject>()->get<float>();
+            auto dt = get_input("dt")->as<zen::NumericObject>()->get<float>();
             auto dx = std::get<float>(get_param("dx"));
             auto surfaceSize = std::get<int>(get_param("surface_size"));
             auto smoothness = std::get<float>(get_param("pic_smoothness"));

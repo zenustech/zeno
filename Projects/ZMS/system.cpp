@@ -2,7 +2,7 @@
 #include <zen/PrimitiveObject.h>
 #include <zen/NumericObject.h>
 
-using namespace zenbase;
+using namespace zen;
 
 #ifdef _MSC_VER
 static inline double drand48() {

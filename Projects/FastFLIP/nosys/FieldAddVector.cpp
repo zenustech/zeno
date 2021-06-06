@@ -11,15 +11,15 @@
 	float x, float y, float z, float dt)
 */
 
-namespace zenbase{
+namespace zen{
     
     struct FieldAddVector : zen::INode{
         virtual void apply() override {
-            // auto dt = get_input("dt")->as<zenbase::NumericObject>()->get<float>();
+            // auto dt = get_input("dt")->as<zen::NumericObject>()->get<float>();
             // float vx = std::get<float>(get_param("vx"));
             // float vy = std::get<float>(get_param("vy"));
             // float vz = std::get<float>(get_param("vz"));
-            auto ivec3 = get_input("invec3")->as<zenbase::NumericObject>()->get<zen::vec3f>();
+            auto ivec3 = get_input("invec3")->as<zen::NumericObject>()->get<zen::vec3f>();
             auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();
             if(has_input("FieldWeight")) {
                 auto face_weight = get_input("FieldWeight")->as<VDBFloat3Grid>();

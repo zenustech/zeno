@@ -7,7 +7,7 @@
 //#include "../../Library/MnBase/Meta/Polymorphism.h"
 //openvdb::io::File(filename).write({grid});
 
-namespace zenbase {
+namespace zen {
 
 // struct SetVDBTransform : zen::INode {
 //   virtual void apply() override {

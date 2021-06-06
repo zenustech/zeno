@@ -8,7 +8,7 @@ static inline double drand48() {
 }
 #endif
 
-namespace zenbase {
+namespace zen {
 
 struct RandomParticles : zen::INode {
   virtual void apply() override {

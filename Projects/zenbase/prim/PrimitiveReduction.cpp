@@ -8,7 +8,7 @@
 //#include <tbb/parallel_for.h>
 //#include <tbb/parallel_reduce.h>
 
-namespace zenbase {
+namespace zen {
 
 template <class T>
 static T prim_reduce(PrimitiveObject *prim, std::string channel, std::string type)
@@ -50,12 +50,12 @@ struct PrimitiveReduction : zen::INode {
         auto prim = get_input("prim")->as<PrimitiveObject>();
         auto attrToReduce = std::get<std::string>(get_param("attr"));
         auto op = std::get<std::string>(get_param("op"));
-        zenbase::NumericValue result;
+        zen::NumericValue result;
         if (prim->attr_is<zen::vec3f>(attrToReduce))
             result = prim_reduce<zen::vec3f>(prim, attrToReduce, op);
         else 
             result = prim_reduce<float>(prim, attrToReduce, op);
-        auto out = zen::IObject::make<zenbase::NumericObject>();
+        auto out = zen::IObject::make<zen::NumericObject>();
         out->set(result);
         set_output("result", out);
     }

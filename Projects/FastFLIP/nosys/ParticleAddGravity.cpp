@@ -4,12 +4,12 @@
 #include <omp.h>
 #include "FLIP_vdb.h"
 
-namespace zenbase{
+namespace zen{
     
     struct ParticleAddDV : zen::INode{
         virtual void apply() override {
             auto particles = get_input("Particles")->as<VDBPointsGrid>();
-            auto dv = get_input("dv")->as<zenbase::NumericObject>()->get<zen::vec3f>();
+            auto dv = get_input("dv")->as<zen::NumericObject>()->get<zen::vec3f>();
 
             float vx = std::get<float>(get_param("vx"));
             float vy = std::get<float>(get_param("vy"));

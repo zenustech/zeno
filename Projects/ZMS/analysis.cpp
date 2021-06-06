@@ -3,7 +3,7 @@
 #include <zen/NumericObject.h>
 #include "Forcefield.h"
 
-using namespace zenbase;
+using namespace zen;
 
 struct PotentialEnergy: zen::INode {
   virtual void apply() override {

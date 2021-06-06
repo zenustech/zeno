@@ -3,7 +3,7 @@
 #include <zen/NumericObject.h>
 #include "Forcefield.h"
 
-using namespace zenbase;
+using namespace zen;
 
 // Minimum image convention
 zen::vec3f ForceFieldObject::distance(zen::vec3f ri, zen::vec3f rj, float boxlength) {

@@ -3,7 +3,7 @@
 #include <zen/VDBGrid.h>
 #include <omp.h>
 #include "FLIP_vdb.h"
-namespace zenbase{
+namespace zen{
 struct FLIPCreator : zen::INode {
     virtual void apply() override {
         

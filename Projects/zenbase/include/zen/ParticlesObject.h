@@ -5,7 +5,7 @@
 #include <glm/vec3.hpp>
 #include <vector>
 
-namespace zenbase {
+namespace zen {
 
 struct ParticlesObject : zen::IObject {
   
