@@ -140,15 +140,27 @@ ls dist/*.whl
 ```
 
 
-## upload ZENO to PyPI.org (needs password / token)
+## upload ZENO to PyPI.org (needs password)
 ```bash
 sudo python -m pip install twine
 twine upload dist/*.whl
 ```
 
 
-# Write node libraries for ZENO
+# Build node libraries
+
+ZENO is extensible which means we may write node libraries for it.
+
+
+## Write your own one!
 
 See `demo_project/` for example.
 
-Run `rm -rf zen/autoload/*` if you keep crashing when ZENO tries to load DLLs from this folder at start up.
+HINT: Run ```rm -rf zen/autoload/*.so``` if you keep crashing when ZENO tries to load DLLs from this folder at start up.
+
+
+## Build our exisiting libraries
+
+```bash
+make -C Projects
+```

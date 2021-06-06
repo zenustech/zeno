@@ -18,7 +18,7 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
         RESULT_VARIABLE zen_IMPORT_RET)
 if (zen_IMPORT_RET)
     # returns zero if success
-    message(FATAL_ERROR "Cannot import zen. Have you installed it or add it to PYTHONPATH?")
+    message(FATAL_ERROR "Failed to import zen. Have you installed it or add it to PYTHONPATH? Also try clean autoload folder?")
 endif ()
 
 
