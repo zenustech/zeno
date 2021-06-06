@@ -33,6 +33,7 @@ zen/autoload/
 # msvc files
 .vs/
 .idea/
+.run/
 *.pdb
 *.ilk
 *.manifest
