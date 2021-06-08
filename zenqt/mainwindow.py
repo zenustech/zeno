@@ -11,7 +11,7 @@ class MainWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setWindowTitle('zenvis')
+        self.setWindowTitle('ZENO Qt Editor')
         self.setGeometry(200, 200, 1400, 720)
 
         scrn_size = QDesktopWidget().geometry()

@@ -15,7 +15,7 @@ class TimelineWidget(QWidget):
         self.slider = QSlider(Qt.Horizontal)
         self.slider.valueChanged.connect(self.value_changed)
         self.slider.setMinimum(0)
-        self.slider.setMaximum(250)
+        self.slider.setMaximum(1000)
 
         self.player = QCheckBox('Play')
         self.player.clicked.connect(self.value_changed)
