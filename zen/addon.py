@@ -27,4 +27,7 @@ def loadAutoloads():
 				path = os.path.join(dir, name)
 				load_library(path, ignore_errors=True)
 
+if not os.environ.get('ZEN_NOAUTOLOAD'):
+    loadAutoloads()
+
 __all__ = ['getInstallDir', 'getIncludeDir', 'getLibraryDir', 'getAutoloadDir', 'loadAutoloads']

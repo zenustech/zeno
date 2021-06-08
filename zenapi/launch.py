@@ -10,9 +10,6 @@ from multiprocessing import Process
 from .descriptor import parse_descriptor_line
 
 
-zen.loadAutoloads()
-
-
 g_proc = None
 g_iopath = None
 g_lock = threading.Lock()
