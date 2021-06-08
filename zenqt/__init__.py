@@ -1,1 +1,1 @@
-from .editor import NodeEditor as MainWindow
+from .mainwindow import MainWindow

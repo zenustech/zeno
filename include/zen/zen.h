@@ -224,49 +224,49 @@ public:
 
 extern ZENAPI Session &getSession();
 
-static void addNode(std::string const &name, std::string const &type) {
+inline void addNode(std::string const &name, std::string const &type) {
   return getSession().addNode(name, type);
 }
 
-static void setNodeParam(std::string const &name,
+inline void setNodeParam(std::string const &name,
     std::string const &key, IValue const &value) {
   return getSession().setNodeParam(name, key, value);
 }
 
-static void setNodeInput(std::string const &name,
+inline void setNodeInput(std::string const &name,
     std::string const &key, std::string const &srcname) {
   return getSession().setNodeInput(name, key, srcname);
 }
 
-static void initNode(std::string const &name) {
+inline void initNode(std::string const &name) {
   return getSession().initNode(name);
 }
 
-static void applyNode(std::string const &name) {
+inline void applyNode(std::string const &name) {
   return getSession().applyNode(name);
 }
 
-static void setObject(std::string const &name, IObject::Ptr object) {
+inline void setObject(std::string const &name, IObject::Ptr object) {
   return getSession().setObject(name, std::move(object));
 }
 
-static bool hasObject(std::string const &name) {
+inline bool hasObject(std::string const &name) {
   return getSession().hasObject(name);
 }
 
-static IObject *getObject(std::string const &name) {
+inline IObject *getObject(std::string const &name) {
   return getSession().getObject(name);
 }
 
-static void setReference(std::string const &name, std::string const &srcname) {
+inline void setReference(std::string const &name, std::string const &srcname) {
   return getSession().setReference(name, srcname);
 }
 
-static std::optional<std::string> getReference(std::string const &name) {
+inline std::optional<std::string> getReference(std::string const &name) {
   return getSession().getReference(name);
 }
 
-static std::string getNodeName(INode *node) {
+inline std::string getNodeName(INode *node) {
   return getSession().getNodeName(node);
 }
 
@@ -281,11 +281,11 @@ int defNodeClassByCtor(T const &ctor,
   return getSession().defNodeClassByCtor<T>(ctor, name, desc);
 }
 
-static std::string dumpDescriptors() {
+inline std::string dumpDescriptors() {
   return getSession().dumpDescriptors();
 }
 
-static std::vector<std::string> getNodeRequirements(std::string name) {
+inline std::vector<std::string> getNodeRequirements(std::string name) {
   return getSession().getNodeRequirements(name);
 }
 
