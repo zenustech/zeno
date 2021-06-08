@@ -6,6 +6,8 @@ set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(external/pybind11)
+add_subdirectory(external/glad)
+add_subdirectory(zenvis)
 
 
 add_library(zensession SHARED zensession.cpp include/zen/zen.h)

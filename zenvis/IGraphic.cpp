@@ -8,15 +8,15 @@ namespace zenvis {
 std::vector<std::unique_ptr<IGraphic>> graphics;
 
 std::unique_ptr<IGraphic> makeGraphicPrimitive
-    ( zenbase::PrimitiveObject *prim
+    ( zen::PrimitiveObject *prim
     , std::string const &path
     );
 
 
 std::unique_ptr<IGraphic> makeGraphic(std::string path, std::string ext) {
     if (ext == ".zpm") {
-        auto prim = std::make_unique<zenbase::PrimitiveObject>();
-        zenbase::readzpm(prim.get(), path.c_str());
+        auto prim = std::make_unique<zen::PrimitiveObject>();
+        zen::readzpm(prim.get(), path.c_str());
         return makeGraphicPrimitive(prim.get(), path);
 
     } else {

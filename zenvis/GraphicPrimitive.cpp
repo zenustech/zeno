@@ -27,7 +27,7 @@ struct GraphicPrimitive : IGraphic {
   size_t tris_count;
 
   GraphicPrimitive
-    ( zenbase::PrimitiveObject *prim
+    ( zen::PrimitiveObject *prim
     , std::string const &path
     ) {
     auto const &pos = prim->add_attr<zen::vec3f>("pos");
@@ -351,7 +351,7 @@ struct GraphicPrimitive : IGraphic {
 };
 
 std::unique_ptr<IGraphic> makeGraphicPrimitive
-    ( zenbase::PrimitiveObject *prim
+    ( zen::PrimitiveObject *prim
     , std::string const &path
     ) {
   return std::make_unique<GraphicPrimitive>(prim, path);
