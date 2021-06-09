@@ -42,7 +42,7 @@ struct INodeClass {
 
 template <class F>
 struct ImplNodeClass : INodeClass {
-  F ctor;
+  F const &ctor;
 
   ImplNodeClass(F const &ctor) : ctor(ctor) {}
 
@@ -93,6 +93,7 @@ struct MyNodeB : INode {
   }
 };
 
+int defMyNodeA = defNodeClass(std::make_unique<MyNodeA>, "MyNodeA");
 int defMyNodeB = defNodeClass(std::make_unique<MyNodeB>, "MyNodeB");
 
 int main()
