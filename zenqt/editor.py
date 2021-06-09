@@ -160,19 +160,17 @@ class QDMGraphicsView(QGraphicsView):
         for act in edit.menu.actions():
             if not isinstance(act, QWidgetAction):
                 edit.menu.removeAction(act)
-        for key in self.scene().searchNode(edit.text()):
+        pattern = edit.text()
+        for key in self.scene().searchNode(pattern):
             edit.menu.addAction(key)
 
-    def contextMenu(self, pos):
-        menu = QMenu(self)
-
-        edit = QDMSearchLineEdit(menu, self)
-        edit.textChanged.connect(lambda: self.updateSearch(edit))
-        edit.setFocus()
-
+    def getCategoryActions(self):
         cates = self.scene().cates
         if not len(cates):
-            menu.addAction('no descriptors loaded!')
+            act = QAction()
+            act.setText('ERROR: no descriptors loaded!')
+            act.setEnabled(False)
+            return [act]
         acts = []
         for cate_name, type_names in cates.items():
             act = QAction()
@@ -183,6 +181,16 @@ class QDMGraphicsView(QGraphicsView):
                 childMenu.addAction(type_name)
             act.setMenu(childMenu)
             acts.append(act)
+        return acts
+
+    def contextMenu(self, pos):
+        menu = QMenu(self)
+
+        edit = QDMSearchLineEdit(menu, self)
+        edit.textChanged.connect(lambda: self.updateSearch(edit))
+        edit.setFocus()
+
+        acts = self.getCategoryActions()
         menu.addActions(acts)
         menu.triggered.connect(self.menuTriggered)
         self.lastContextMenuPos = self.mapToScene(pos)
