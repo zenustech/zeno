@@ -27,7 +27,9 @@ def treefiles(dir):
             yield from treefiles(path)
 
 data_files = glob('zen/*.so')
+data_files = glob('zenvis/*.so')
 data_files += glob('zen/*.pyd')
+data_files += glob('zenvis/*.pyd')
 data_files += treefiles('zen/usr')
 data_files += treefiles('zen/autoload')
 

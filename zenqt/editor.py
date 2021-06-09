@@ -101,6 +101,11 @@ class QDMGraphicsScene(QGraphicsScene):
         edge.updatePath()
         self.addItem(edge)
 
+    def searchNode(self, name):
+        for key in self.descs.keys():
+            if name.lower() in key.lower():
+                yield key
+
     def makeNode(self, name):
         desc = self.descs[name]
         node = QDMGraphicsNode()
@@ -117,6 +122,16 @@ class QDMGraphicsScene(QGraphicsScene):
         for name, desc in descs.items():
             for cate in desc['categories']:
                 self.cates.setdefault(cate, []).append(name)
+
+
+class QDMSearchLineEdit(QLineEdit):
+    def __init__(self, menu, view):
+        super().__init__(menu)
+        self.menu = menu
+        self.view = view
+        self.wact = QWidgetAction(self.menu)
+        self.wact.setDefaultWidget(self)
+        self.menu.addAction(self.wact)
 
 
 class QDMGraphicsView(QGraphicsView):
@@ -141,8 +156,20 @@ class QDMGraphicsView(QGraphicsView):
         self.dragingEdge = None
         self.lastContextMenuPos = None
 
+    def updateSearch(self, edit):
+        for act in edit.menu.actions():
+            if not isinstance(act, QWidgetAction):
+                edit.menu.removeAction(act)
+        for key in self.scene().searchNode(edit.text()):
+            edit.menu.addAction(key)
+
     def contextMenu(self, pos):
         menu = QMenu(self)
+
+        edit = QDMSearchLineEdit(menu, self)
+        edit.textChanged.connect(lambda: self.updateSearch(edit))
+        edit.setFocus()
+
         cates = self.scene().cates
         if not len(cates):
             menu.addAction('no descriptors loaded!')
@@ -163,6 +190,8 @@ class QDMGraphicsView(QGraphicsView):
 
     def menuTriggered(self, act):
         name = act.text()
+        if name == '':
+            return
         node = self.scene().makeNode(name)
         node.setPos(self.lastContextMenuPos)
         self.scene().addNode(node)
