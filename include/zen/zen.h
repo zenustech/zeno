@@ -76,7 +76,6 @@ static IObject *getObject(std::string const &name);
 struct INode {
   using Ptr = std::unique_ptr<INode>;
 
-
   ZENAPI INode();
   ZENAPI ~INode();
 

@@ -19,10 +19,11 @@ cmake-build-*/
 # rubbish files
 outputs/
 rubbish.bin/
+/assets/galaxy
 
 # autogen files
-zen/usr/
-zen/autoload/
+/zen/usr/
+/zen/autoload/
 
 # vim files
 .*.swp
