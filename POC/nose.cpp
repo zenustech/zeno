@@ -36,7 +36,31 @@ struct INode {
 
 std::map<Id, std::unique_ptr<INode>> nodes;
 
-void addNode(Id const &id, std::unique_ptr<INode> &&node) {
+struct INodeClass {
+  virtual std::unique_ptr<INode> new_instance() const = 0;
+};
+
+template <class F>
+struct ImplNodeClass : INodeClass {
+  F ctor;
+
+  ImplNodeClass(F const &ctor) : ctor(ctor) {}
+
+  virtual std::unique_ptr<INode> new_instance() const override {
+    return ctor();
+  }
+};
+
+std::map<Id, std::unique_ptr<INodeClass>> nodeClasses;
+
+template <class F>
+int defNodeClass(F const &ctor, Id const &id) {
+  nodeClasses[id] = std::make_unique<ImplNodeClass<F>>(ctor);
+  return 1;
+}
+
+void addNode(Id const &cls, Id const &id) {
+  auto node = nodeClasses.at(cls)->new_instance();
   node->myname = id;
   nodes[id] = std::move(node);
 }
@@ -69,10 +93,12 @@ struct MyNodeB : INode {
   }
 };
 
+int defMyNodeB = defNodeClass(std::make_unique<MyNodeB>, "MyNodeB");
+
 int main()
 {
-  addNode("A", std::make_unique<MyNodeA>());
-  addNode("B", std::make_unique<MyNodeB>());
+  addNode("MyNodeA", "A");
+  addNode("MyNodeB", "B");
   applyNode("A");
   setNodeInput("B", "In0", "A", "Out0");
   applyNode("B");
