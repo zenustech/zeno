@@ -27,8 +27,8 @@ def initNode(name):
 def applyNode(name):
     return _core.applyNode(name)
 
-def setNodeInput(name, key, srcname, srckey):
-    return _core.setNodeInput(name, key, srcname, srckey)
+def setNodeInput(name, key, srcname):
+    return _core.setNodeInput(name, key, srcname)
 
 def setNodeParam(name, key, value):
     return _core.setNodeParam(name, key, value)

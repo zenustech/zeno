@@ -35,7 +35,8 @@ def runGraphOnce(nodes):
             if input is None:
                 continue
             srcIdent, srcSockName = input
-            zen.setNodeInput(ident, name, srcIdent, srcSockName)
+            inputObjName = srcIdent + '::' + srcSockName
+            zen.setNodeInput(ident, name, inputObjName)
 
         for name, value in params.items():
             if type(value) is str:
