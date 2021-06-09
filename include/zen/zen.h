@@ -86,6 +86,8 @@ struct INode {
   ZENAPI void on_apply();
   ZENAPI void set_param(std::string const &name, IValue const &value);
   ZENAPI void set_input_ref(std::string const &name, std::string const &srcname);
+  ZENAPI std::string get_output_ref(std::string const &name);
+  ZENAPI IObject *get_output(std::string const &name);
   ZENAPI std::string get_node_name();
 
 protected:
@@ -93,8 +95,6 @@ protected:
 	ZENAPI std::string get_input_ref(std::string const &name);
 	ZENAPI IObject *get_input(std::string const &name);
 	ZENAPI bool has_input(std::string const &name);
-	ZENAPI std::string get_output_ref(std::string const &name);
-	ZENAPI IObject *get_output(std::string const &name);
 	ZENAPI void set_output(std::string const &name, IObject::Ptr object);
 	ZENAPI void set_output_ref(std::string const &name, std::string const &srcname);
 
@@ -105,7 +105,7 @@ protected:
 
   template <class T>
   T *new_member(std::string const &name) {
-    IObject::Ptr object = IObject::make<T>();
+    std::unique_ptr<IObject> object = std::make_unique<T>();
     IObject *rawptr = object.get();
     set_output(name, std::move(object));
     return static_cast<T *>(rawptr);
@@ -114,6 +114,7 @@ protected:
 private:
   std::map<std::string, IValue> params;
   std::map<std::string, std::string> inputs;
+  std::map<std::string, std::string> outputs;
 };
 
 
@@ -184,7 +185,8 @@ public:
 	  std::string const &key, IValue const &value);
 
   ZENAPI void setNodeInput(std::string const &name,
-	  std::string const &key, std::string const &srcname);
+	  std::string const &key, std::string const &srcname,
+      std::string const &srckey);
 
   ZENAPI void initNode(std::string const &name);
 
@@ -233,8 +235,9 @@ inline void setNodeParam(std::string const &name,
 }
 
 inline void setNodeInput(std::string const &name,
-    std::string const &key, std::string const &srcname) {
-  return getSession().setNodeInput(name, key, srcname);
+    std::string const &key, std::string const &srcname,
+    std::string const &srckey) {
+  return getSession().setNodeInput(name, key, srcname, srckey);
 }
 
 inline void initNode(std::string const &name) {
