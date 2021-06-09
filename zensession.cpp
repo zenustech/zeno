@@ -108,7 +108,6 @@ ZENAPI bool INode::has_input(std::string const &name) {
 }
 
 ZENAPI std::string INode::get_output_ref(std::string const &name) {
-  return safe_at(outputs, name, "output");
   auto myname = get_node_name();
   return myname + "::" + name;
 }
@@ -118,15 +117,15 @@ ZENAPI IObject *INode::get_output(std::string const &name) {
   return getObject(ref);
 }
 
-ZENAPI void INode::set_output(std::string const &name, std::unique_ptr<IObject> object) {
-  auto ref = get_node_name() + "::" + name;
-  set_output_ref(name, ref);
+ZENAPI void INode::set_output(std::string const &name, IObject::Ptr object) {
+  auto ref = get_output_ref(name);
   setObject(ref, std::move(object));
 }
 
 ZENAPI void INode::set_output_ref(std::string const &name,
                                   std::string const &srcname) {
-  outputs[name] = srcname;
+  auto ref = get_output_ref(name);
+  setReference(ref, srcname);
 }
 
 ZENAPI void INode::on_apply() {
@@ -142,7 +141,7 @@ ZENAPI void INode::on_apply() {
     apply();
 
   // set dummy output sockets for connection order
-  set_output("DST", std::make_unique<BooleanObject>());
+  set_output("DST", IObject::make<BooleanObject>());
 }
 
 ZENAPI INodeClass::INodeClass() = default;
@@ -200,10 +199,8 @@ ZENAPI void Session::setNodeParam(std::string const &name,
 }
 ZENAPI void Session::setNodeInput(std::string const &name,
                                   std::string const &key,
-                                  std::string const &srcname,
-                                  std::string const &srckey) {
-  auto ref = safe_at(nodes, srcname, "node")->get_output_ref(srckey);
-  safe_at(nodes, name, "node")->set_input_ref(key, ref);
+                                  std::string const &srcname) {
+  safe_at(nodes, name, "node")->set_input_ref(key, srcname);
 }
 ZENAPI void Session::initNode(std::string const &name) {
   safe_at(nodes, name, "node")->on_init();
@@ -211,7 +208,7 @@ ZENAPI void Session::initNode(std::string const &name) {
 ZENAPI void Session::applyNode(std::string const &name) {
   safe_at(nodes, name, "node")->on_apply();
 }
-ZENAPI void Session::setObject(std::string const &name, std::unique_ptr<IObject> object) {
+ZENAPI void Session::setObject(std::string const &name, IObject::Ptr object) {
   objects[name] = std::move(object);
 }
 ZENAPI bool Session::hasObject(std::string const &name) {
