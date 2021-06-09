@@ -109,8 +109,6 @@ ZENAPI bool INode::has_input(std::string const &name) {
 
 ZENAPI std::string INode::get_output_ref(std::string const &name) {
   return safe_at(outputs, name, "output");
-  auto myname = get_node_name();
-  return myname + "::" + name;
 }
 
 ZENAPI IObject *INode::get_output(std::string const &name) {
