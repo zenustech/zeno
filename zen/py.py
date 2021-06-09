@@ -58,6 +58,7 @@ class INode(abc.ABC):
 
     def get_input(self, name):
         ref = self.get_input_ref(name)
+        requireObject(ref)
         return getObject(ref)
 
     def get_param(self, name):
@@ -67,20 +68,21 @@ class INode(abc.ABC):
         return name in self.__inputs
 
     def get_output_ref(self, name):
-        requireObject(name)
-        return self.__outputs[name]
+        myname = self.get_node_name()
+        return myname + "::" + name
 
     def get_output(self, name):
         ref = self.get_output_ref(name)
         return getObject(ref)
 
     def set_output(self, name, value):
-        ref = self.get_node_name() + '::' + name
+        ref = self.get_output_ref(name)
         setObject(ref, value)
-        self.set_output_ref(name, ref)
 
     def set_output_ref(self, name, srcname):
-        self.__output[name] = srcname
+        ref = self.get_output_ref(name)
+        requireObject(srcname)
+        setReference(ref, srcname)
 
     def init(self):
         pass
