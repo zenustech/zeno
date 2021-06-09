@@ -63,11 +63,11 @@ def py2cppObject(name):
     obj = py.getObject(name)
     npy.setCppObject(name, obj)
 
-def setNodeInput(name, key, srcname):
+def setNodeInput(name, key, srcname, srckey):
     if py.isPyNodeName(name):
-        py.setNodeInput(name, key, srcname)
+        py.setNodeInput(name, key, srcname, srckey)
     else:
-        cpp.setNodeInput(name, key, srcname)
+        cpp.setNodeInput(name, key, srcname, srckey)
 
 def setNodeParam(name, key, value):
     if py.isPyNodeName(name):

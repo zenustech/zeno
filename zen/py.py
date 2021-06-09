@@ -135,8 +135,9 @@ def setNodeParam(name, key, value):
     nodes[name].set_param(key, value)
 
 
-def setNodeInput(name, key, srcname):
-    nodes[name].set_input_ref(key, srcname)
+def setNodeInput(name, key, srcname, srckey):
+    ref = nodes[srcname].get_output_ref(srckey)
+    nodes[name].set_input_ref(key, ref)
 
 
 def applyNode(name):
