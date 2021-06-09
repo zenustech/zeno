@@ -156,10 +156,10 @@ struct Descriptor {
 
   ZENAPI Descriptor();
   ZENAPI Descriptor(
-	  std::vector<std::string> inputs,
-	  std::vector<std::string> outputs,
-	  std::vector<ParamDescriptor> params,
-	  std::vector<std::string> categories);
+	  std::vector<std::string> const &inputs,
+	  std::vector<std::string> const &outputs,
+	  std::vector<ParamDescriptor> const &params,
+	  std::vector<std::string> const &categories);
   ZENAPI ~Descriptor();
 
   ZENAPI std::string serialize() const;

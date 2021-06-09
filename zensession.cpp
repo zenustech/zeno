@@ -156,10 +156,10 @@ ZENAPI ParamDescriptor::~ParamDescriptor() = default;
 
 ZENAPI Descriptor::Descriptor() = default;
 
-ZENAPI Descriptor::Descriptor(std::vector<std::string> inputs,
-                              std::vector<std::string> outputs,
-                              std::vector<ParamDescriptor> params,
-                              std::vector<std::string> categories)
+ZENAPI Descriptor::Descriptor(std::vector<std::string> const &inputs,
+                              std::vector<std::string> const &outputs,
+                              std::vector<ParamDescriptor> const &params,
+                              std::vector<std::string> const &categories)
     : inputs(inputs), outputs(outputs), params(params), categories(categories) {
   // append dummy sockets for perserving exec orders
   this->inputs.push_back("SRC");

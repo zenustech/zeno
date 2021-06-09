@@ -3,38 +3,40 @@
 using std::cout;
 using std::endl;
 
-using Id = std::string;
-
 struct IObject {
     virtual ~IObject() = default;
 };
 
-std::map<Id, std::unique_ptr<IObject>> objects;
+std::map<std::string, std::unique_ptr<IObject>> objects;
 
 struct INode {
-    Id myname;
-    std::map<Id, Id> inputs;
-    std::map<Id, Id> outputs;
+    std::string myname;
+    std::map<std::string, std::string> inputs;
+    std::map<std::string, std::string> outputs;
 
     virtual void apply() = 0;
 
-    IObject *get_input(Id const &id) {
+    bool has_input(std::string const &id) {
+        return objects.find(inputs.at(id)) != objects.end();
+    }
+
+    IObject *get_input(std::string const &id) {
         return objects.at(inputs.at(id)).get();
     }
 
     template <class T>
-        T *get_input(Id const &id) {
+        T *get_input(std::string const &id) {
             return dynamic_cast<T *>(get_input(id));
         }
 
-    void set_output(Id const &id, std::unique_ptr<IObject> &&obj) {
+    void set_output(std::string const &id, std::unique_ptr<IObject> &&obj) {
         auto objid = myname + "::" + id;
         objects[objid] = std::move(obj);
         outputs[id] = objid;
     }
 };
 
-std::map<Id, std::unique_ptr<INode>> nodes;
+std::map<std::string, std::unique_ptr<INode>> nodes;
 
 struct ParamDescriptor {
   std::string type, name, defl;
@@ -64,10 +66,10 @@ struct Descriptor {
 
   Descriptor() = default;
   Descriptor(
-	  std::vector<std::string> inputs,
-	  std::vector<std::string> outputs,
-	  std::vector<ParamDescriptor> params,
-	  std::vector<std::string> categories)
+	  std::vector<std::string> const &inputs,
+	  std::vector<std::string> const &outputs,
+	  std::vector<ParamDescriptor> const &params,
+	  std::vector<std::string> const &categories)
       : inputs(inputs), outputs(outputs), params(params), categories(categories) {}
 
   std::string serialize() const {
@@ -105,25 +107,25 @@ struct ImplNodeClass : INodeClass {
     }
 };
 
-std::map<Id, std::unique_ptr<INodeClass>> nodeClasses;
+std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
 
 template <class F>
-int defNodeClass(F const &ctor, Id const &id, Descriptor const &desc = {}) {
+int defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {
     nodeClasses[id] = std::make_unique<ImplNodeClass<F>>(ctor, desc);
     return 1;
 }
 
-void addNode(Id const &cls, Id const &id) {
+void addNode(std::string const &cls, std::string const &id) {
     auto node = nodeClasses.at(cls)->new_instance();
     node->myname = id;
     nodes[id] = std::move(node);
 }
 
-void applyNode(Id const &id) {
+void applyNode(std::string const &id) {
     nodes.at(id)->apply();
 }
 
-void setNodeInput(Id const &dn, Id const &ds, Id const &sn, Id const &ss) {
+void setNodeInput(std::string const &dn, std::string const &ds, std::string const &sn, std::string const &ss) {
     nodes.at(dn)->inputs[ds] = nodes.at(sn)->outputs.at(ss);
 }
 
