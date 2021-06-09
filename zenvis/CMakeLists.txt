@@ -1,13 +1,19 @@
 file(GLOB PROJECT_SOURCE "*.cpp" "*.hpp" "*.h")
 
-add_library(zenvis SHARED)
-target_include_directories(zenvis PRIVATE ../include)
-
-target_sources(zenvis PRIVATE ${PROJECT_SOURCE})
-target_include_directories(zenvis PRIVATE .)
-target_include_directories(zenvis PRIVATE ../zen/include)
-target_link_libraries(zenvis PRIVATE OpenGL glad)
-target_link_libraries(zenvis PRIVATE zen)
-
-include(../scripts/Pybind11.cmake)
-do_python_bindings()
+pybind11_add_module(libzenvis ${PROJECT_SOURCE})
+target_include_directories(libzenvis PRIVATE .)
+target_include_directories(libzenvis PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(libzenvis PRIVATE ${PROJECT_SOURCE_DIR}/Projects/include)
+target_include_directories(libzenvis PRIVATE ${PROJECT_SOURCE_DIR}/Projects/zenbase/include)
+target_link_libraries(libzenvis PRIVATE glad)
+set_target_properties(libzenvis PROPERTIES
+	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}
+	LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}
+	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}
+	)
