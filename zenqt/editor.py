@@ -149,7 +149,6 @@ class QDMGraphicsView(QGraphicsView):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-        self.setDragMode(QGraphicsView.RubberBandDrag)
 
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.contextMenu)
@@ -224,6 +223,8 @@ class QDMGraphicsView(QGraphicsView):
             return
 
         elif event.button() == Qt.LeftButton:
+            self.setDragMode(QGraphicsView.RubberBandDrag)
+
             if self.dragingEdge is None:
                 item = self.itemAt(event.pos())
                 if isinstance(item, QDMGraphicsSocket):
@@ -264,7 +265,10 @@ class QDMGraphicsView(QGraphicsView):
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MiddleButton:
-            self.setDragMode(QGraphicsView.RubberBandDrag)
+            self.setDragMode(0)
+
+        elif event.button() == Qt.LeftButton:
+            self.setDragMode(0)
 
         super().mouseReleaseEvent(event)
 
