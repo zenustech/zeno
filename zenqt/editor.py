@@ -546,6 +546,7 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
         super().__init__(parent)
 
         self.initLayout()
+        self.edit.editingFinished.connect(lambda : parent.scene().record())
         assert hasattr(self, 'layout')
 
         self.widget = QWidget()
