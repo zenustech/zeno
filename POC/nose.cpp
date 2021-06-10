@@ -18,6 +18,7 @@ struct Context {
 void applyNode(std::string const &id, Context *ctx);
 
 struct INode {
+public:
     std::string myname;
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
     std::map<std::string, std::string> inputs;
@@ -32,21 +33,53 @@ struct INode {
         apply();
     }
 
+protected:
+    /*
+     * @name apply()
+     * @brief user should override this pure virtual function,
+     * @brief it will be called when the node is executed
+     */
     virtual void apply() = 0;
 
-    bool has_input(std::string const &id) {
+    /*
+     * @name has_input(id)
+     * @param[id] the input socket name
+     * @return true if connected, false otherwise
+     * @brief test if the input socket is connected
+     */
+    bool has_input(std::string const &id) const {
         return objects.find(inputs.at(id)) != objects.end();
     }
 
-    IObject *get_input(std::string const &id) {
+    /*
+     * @name get_input(id)
+     * @param[id] the input socket name
+     * @return pointer to the object
+     * @brief get the object passed into the input socket
+     */
+    IObject *get_input(std::string const &id) const {
         return objects.at(inputs.at(id)).get();
     }
 
+    /*
+     * @name get_input<T>(id)
+     * @template[T] the object type you want to cast to
+     * @param[id] the input socket name
+     * @return pointer to the object, will be null if the input is not of that type
+     * @brief get the object passed into the input socket,
+     * @brief and cast it to the given type
+     */
     template <class T>
-        T *get_input(std::string const &id) {
+        T *get_input(std::string const &id) const {
             return dynamic_cast<T *>(get_input(id));
         }
 
+    /*
+     * @name set_output(id, std::move(obj))
+     * @param[id] the output socket name
+     * @param[obj] the (unique) pointer to the object
+     * @brief set an object to the output socket
+     */
     void set_output(std::string const &id, std::unique_ptr<IObject> &&obj) {
         auto objid = myname + "::" + id;
         objects[objid] = std::move(obj);
