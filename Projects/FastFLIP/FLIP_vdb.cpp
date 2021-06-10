@@ -1322,13 +1322,14 @@ namespace {
 					if(p_liquidsdf<0 && p_liquidsdf>=-m_surfacedist)
 					{
 						t_coef = p_liquidsdf/-m_surfacedist;
+						t_coef = std::min(std::max(t_coef,0.0f), 1.0f);
 					}
 					if(p_liquidsdf>=0)
 					{
 						t_coef = 0;
 					}
 					if(m_surfacedist>0)
-						flip_component = t_coef*1.0f + (1.0f - t_coef) * flip_component;
+						flip_component = t_coef*flip_component;
 					if (adv_same_field) {
 						carried_vel = adv_vel;
 					}
@@ -1414,7 +1415,7 @@ namespace {
 						//increment the counter
 						uint16_t toffset = writing_leaf->coordToOffset(ptCoord);
 						auto existing_par = writing_leaf->getValue(toffset);
-						if (existing_par > 16) {
+						if (existing_par > 27) {
 							continue;
 						}
 
@@ -2173,7 +2174,7 @@ void FLIP_vdb::particle_to_grid_collect_style(
 	openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf,
 	float dx)
 {
-	float particle_radius = 0.6f  * dx * sqrt(3.0f) * 1.01;
+	float particle_radius = 0.5f  * dx * sqrt(3.0f) * 1.01;
 	velocity->setTree(std::make_shared<openvdb::Vec3fTree>(
 		particles->tree(), openvdb::Vec3f{ 0 }, openvdb::TopologyCopy()));
 	openvdb::tools::dilateActiveValues(velocity->tree(), 1, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
@@ -2183,7 +2184,7 @@ void FLIP_vdb::particle_to_grid_collect_style(
 	auto voxel_center_transform = openvdb::math::Transform::createLinearTransform(dx);
 	liquid_sdf->setTransform(voxel_center_transform);
 	liquid_sdf->setTree(std::make_shared<openvdb::FloatTree>(
-		velocity->tree(), 0.6f *  dx * sqrt(3.0f) * 1.01, openvdb::TopologyCopy()));
+		velocity->tree(), 0.5f *  dx * sqrt(3.0f) * 1.01, openvdb::TopologyCopy()));
 
 	auto collector_op{ p2g_collector(liquid_sdf,
 			velocity,
