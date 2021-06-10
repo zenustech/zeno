@@ -34,7 +34,7 @@ target_include_directories(FLIPlib PRIVATE ltcommon ltcommon/tunicate ltcommon/n
 target_link_libraries(FLIPlib PRIVATE TBB::tbb TBB::tbbmalloc)
 target_link_libraries(FLIPlib PRIVATE pthread openblas lapack cblas)
 
-target_link_libraries(FLIPlib PRIVATE zen)
+target_link_libraries(FLIPlib PRIVATE zen zenbase zenvdb)
 
 #disable default malloc options
 if (WIN32)
