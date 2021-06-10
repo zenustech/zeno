@@ -180,7 +180,7 @@ void applyNode(std::string const &id, Context *ctx) {
 
 void bindNodeInput(std::string const &dn, std::string const &ds,
     std::string const &sn, std::string const &ss) {
-    nodes.at(dn)->inputBounds[ds] = std::pair<std::string, std::string>(sn, ss);
+    nodes.at(dn)->inputBounds[ds] = std::pair(sn, ss);
 }
 
 std::string dumpDescriptors() {
@@ -193,10 +193,15 @@ std::string dumpDescriptors() {
 
 struct MyObject : IObject {
     int i = 0;
+
+    ~MyObject() {
+        printf("~MyObject() called, i = %d\n", i);
+    }
 };
 
 struct MyNodeA : INode {
     virtual void apply() override {
+        printf("MyNodeA::apply()\n");
         auto obj = std::make_unique<MyObject>();
         set_output("Out0", std::move(obj));
     }
@@ -204,6 +209,7 @@ struct MyNodeA : INode {
 
 struct MyNodeB : INode {
     virtual void apply() override {
+        printf("MyNodeB::apply()\n");
         auto obj = get_input<MyObject>("In0");
         auto newobj = std::make_unique<MyObject>();
         newobj->i = obj->i + 1;
@@ -218,10 +224,12 @@ int main()
 {
     addNode("MyNodeA", "A");
     addNode("MyNodeB", "B");
+    addNode("MyNodeB", "C");
     bindNodeInput("B", "In0", "A", "Out0");
+    bindNodeInput("C", "In0", "B", "Out0");
     Context ctx;
-    applyNode("B", &ctx);
-    auto objid = nodes.at("B")->outputs.at("Out0");
+    applyNode("C", &ctx);
+    auto objid = nodes.at("C")->outputs.at("Out0");
     cout << "objid=" << objid << endl;
     auto obj = dynamic_cast<MyObject *>(objects.at(objid).get());
     cout << "obj->i=" << obj->i << endl;
