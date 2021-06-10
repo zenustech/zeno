@@ -484,6 +484,14 @@ class QDMGraphicsSocket(QGraphicsItem):
     def setIsOutput(self, isOutput):
         self.isOutput = isOutput
 
+        if isOutput:
+            document = self.label.document()
+            option = document.defaultTextOption()
+            option.setAlignment(Qt.AlignRight)
+            document.setDefaultTextOption(option)
+            width = self.node.boundingRect().width() - 15
+            self.label.setTextWidth(width)
+
     def setName(self, name):
         self.name = name
         self.label.setPlainText(name)
