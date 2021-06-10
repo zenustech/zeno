@@ -7,9 +7,15 @@ struct IObject {
     virtual ~IObject() = default;
 };
 
-std::map<std::string, std::unique_ptr<IObject>> objects;
 struct INode;
+std::map<std::string, std::unique_ptr<IObject>> objects;
 std::map<std::string, std::unique_ptr<INode>> nodes;
+
+struct Context {
+    std::set<std::string> visited;
+};
+
+void applyNode(std::string const &id, Context *ctx);
 
 struct INode {
     std::string myname;
@@ -17,9 +23,10 @@ struct INode {
     std::map<std::string, std::string> inputs;
     std::map<std::string, std::string> outputs;
 
-    void doApply() {
+    void doApply(Context *ctx) {
         for (auto [ds, bound]: inputBounds) {
             auto [sn, ss] = bound;
+            applyNode(sn, ctx);
             inputs[ds] = nodes.at(sn)->outputs.at(ss);
         }
         apply();
@@ -130,8 +137,12 @@ void addNode(std::string const &cls, std::string const &id) {
     nodes[id] = std::move(node);
 }
 
-void applyNode(std::string const &id) {
-    nodes.at(id)->doApply();
+void applyNode(std::string const &id, Context *ctx) {
+    if (ctx->visited.find(id) != ctx->visited.end()) {
+        return;
+    }
+    ctx->visited.insert(id);
+    nodes.at(id)->doApply(ctx);
 }
 
 void bindNodeInput(std::string const &dn, std::string const &ds,
@@ -175,8 +186,8 @@ int main()
     addNode("MyNodeA", "A");
     addNode("MyNodeB", "B");
     bindNodeInput("B", "In0", "A", "Out0");
-    applyNode("A");
-    applyNode("B");
+    Context ctx;
+    applyNode("B", &ctx);
     auto objid = nodes.at("B")->outputs.at("Out0");
     cout << "objid=" << objid << endl;
     auto obj = dynamic_cast<MyObject *>(objects.at(objid).get());
