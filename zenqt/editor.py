@@ -312,6 +312,14 @@ class QDMGraphicsView(QGraphicsView):
 
         super().mouseReleaseEvent(event)
 
+        any_node_moved = False
+        for node in self.scene().nodes:
+            if node.moved:
+                any_node_moved = True
+                node.moved = False
+        if any_node_moved:
+            self.scene().record()
+
     def wheelEvent(self, event):
         zoomFactor = 1
         if event.angleDelta().y() > 0:
@@ -656,6 +664,12 @@ class QDMGraphicsNode(QGraphicsItem):
         self.options = {}
         self.name = None
         self.ident = gen_unique_ident()
+
+        self.moved = False
+    
+    def mouseMoveEvent(self, event):
+        super().mouseMoveEvent(event)
+        self.moved = True
 
     def remove(self):
         for socket in list(self.inputs.values()):
