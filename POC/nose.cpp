@@ -8,11 +8,22 @@ struct IObject {
 };
 
 std::map<std::string, std::unique_ptr<IObject>> objects;
+struct INode;
+std::map<std::string, std::unique_ptr<INode>> nodes;
 
 struct INode {
     std::string myname;
+    std::map<std::string, std::pair<std::string, std::string>> inputBounds;
     std::map<std::string, std::string> inputs;
     std::map<std::string, std::string> outputs;
+
+    void doApply() {
+        for (auto [ds, bound]: inputBounds) {
+            auto [sn, ss] = bound;
+            inputs[ds] = nodes.at(sn)->outputs.at(ss);
+        }
+        apply();
+    }
 
     virtual void apply() = 0;
 
@@ -35,8 +46,6 @@ struct INode {
         outputs[id] = objid;
     }
 };
-
-std::map<std::string, std::unique_ptr<INode>> nodes;
 
 struct ParamDescriptor {
   std::string type, name, defl;
@@ -122,11 +131,12 @@ void addNode(std::string const &cls, std::string const &id) {
 }
 
 void applyNode(std::string const &id) {
-    nodes.at(id)->apply();
+    nodes.at(id)->doApply();
 }
 
-void setNodeInput(std::string const &dn, std::string const &ds, std::string const &sn, std::string const &ss) {
-    nodes.at(dn)->inputs[ds] = nodes.at(sn)->outputs.at(ss);
+void bindNodeInput(std::string const &dn, std::string const &ds,
+    std::string const &sn, std::string const &ss) {
+    nodes.at(dn)->inputBounds[ds] = std::pair<std::string, std::string>(sn, ss);
 }
 
 std::string dumpDescriptors() {
@@ -164,8 +174,8 @@ int main()
 {
     addNode("MyNodeA", "A");
     addNode("MyNodeB", "B");
+    bindNodeInput("B", "In0", "A", "Out0");
     applyNode("A");
-    setNodeInput("B", "In0", "A", "Out0");
     applyNode("B");
     auto objid = nodes.at("B")->outputs.at("Out0");
     cout << "objid=" << objid << endl;
