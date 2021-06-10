@@ -13,6 +13,36 @@ from PyQt5.QtGui import *
 from zenutils import go
 import zenapi
 
+class HistoryStack:
+    def __init__(self, scene):
+        self.scene = scene
+        self.current_pointer = -1
+        self.stack = []
+
+    def undo(self):
+        # can not undo at stack bottom
+        if self.current_pointer == 0:
+            return
+        self.current_pointer -= 1
+        current_scene = self.stack[self.current_pointer]
+        self.scene.newGraph()
+        self.scene.loadGraph(current_scene)
+
+    def redo(self):
+        # can not redo at stack top
+        if self.current_pointer == len(self.stack) - 1:
+            return
+        self.current_pointer += 1
+        current_scene = self.stack[self.current_pointer]
+        self.scene.newGraph()
+        self.scene.loadGraph(current_scene)
+    
+    def record(self):
+        if self.current_pointer != len(self.stack) - 1:
+            self.stack = self.stack[:self.current_pointer + 1]
+        nodes = self.scene.dumpGraph()
+        self.stack.append(nodes)
+        self.current_pointer += 1
 
 class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
@@ -25,6 +55,8 @@ class QDMGraphicsScene(QGraphicsScene):
         self.descs = {}
         self.cates = {}
         self.nodes = []
+
+        self.history_stack = HistoryStack(self)
 
     def dumpGraph(self):
         nodes = {}
@@ -119,6 +151,15 @@ class QDMGraphicsScene(QGraphicsScene):
             for cate in desc['categories']:
                 self.cates.setdefault(cate, []).append(name)
 
+    def record(self):
+        self.history_stack.record()
+
+    def undo(self):
+        self.history_stack.undo()
+
+    def redo(self):
+        self.history_stack.redo()
+
 
 class QDMGraphicsView(QGraphicsView):
     ZOOM_FACTOR = 1.25
@@ -168,6 +209,7 @@ class QDMGraphicsView(QGraphicsView):
         node = self.scene().makeNode(name)
         node.setPos(self.lastContextMenuPos)
         self.scene().addNode(node)
+        self.scene().record()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
@@ -213,6 +255,8 @@ class QDMGraphicsView(QGraphicsView):
                 self.scene().removeItem(edge)
                 self.scene().update()
                 self.dragingEdge = None
+                if isinstance(item, QDMGraphicsSocket):
+                    self.scene().record()
 
         super().mousePressEvent(event)
 
@@ -686,6 +730,9 @@ class QDMFileMenu(QMenu):
                 ('&Open', QKeySequence.Open),
                 ('&Save', QKeySequence.Save),
                 ('Save &as', QKeySequence.SaveAs),
+                (None, None),
+                ('Undo', QKeySequence.Undo),
+                ('Redo', QKeySequence.Redo),
         ]
         
         for name, shortcut in acts:
@@ -719,6 +766,7 @@ class NodeEditor(QWidget):
         self.layout.addWidget(self.view)
 
         self.scene = QDMGraphicsScene()
+        self.scene.record()
         self.view.setScene(self.scene)
 
         self.initExecute()
@@ -792,6 +840,7 @@ class NodeEditor(QWidget):
         if not itemList: return
         for item in itemList:
             item.remove()
+        self.scene.record()
 
     def reloadDescriptors(self):
         self.scene.setDescriptors(zenapi.getDescriptors())
@@ -800,6 +849,7 @@ class NodeEditor(QWidget):
         name = act.text()
         if name == '&New':
             self.scene.newGraph()
+            self.scene.record()
             self.current_path = None
 
         elif name == '&Open':
@@ -819,6 +869,12 @@ class NodeEditor(QWidget):
         elif name == '&Save':
             self.do_save(self.current_path)
 
+        elif name == 'Undo':
+            self.scene.undo()
+
+        elif name == 'Redo':
+            self.scene.redo()
+
     def do_save(self, path):
         graph = self.scene.dumpGraph()
         with open(path, 'w') as f:
@@ -829,6 +885,7 @@ class NodeEditor(QWidget):
             graph = json.load(f)
         self.scene.newGraph()
         self.scene.loadGraph(graph)
+        self.scene.record()
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
