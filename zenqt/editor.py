@@ -653,6 +653,24 @@ class QDMGraphicsParam_string(QDMGraphicsParam):
     def getValue(self):
         return str(self.edit.text())
 
+categoryColor = {
+    'substep'   : '#66CC99',
+    'keywords'  : '#0099CC',
+    'graph'     : '#FF33CC',
+    'utility'   : '#0099CC',
+    'logical'   : '#003366',
+    'control'   : '#003366',
+    'mutable'   : '#0099CC',
+    'numeric'   : '#0099CC',
+    'fileio'    : '#0099CC',
+    'Molecular' : '#6666FF',
+    'FLIPSolver': '#CC0033',
+    'openvdb'   : '#FF9933',
+    'trimesh'   : '#996699',
+    'particles' : '#FF33CC',
+    'primitive' : '#99CC00',
+    'wrangler'  : '#0099CC',
+}
 
 class QDMGraphicsNode(QGraphicsItem):
     def __init__(self, parent=None):
@@ -762,10 +780,16 @@ class QDMGraphicsNode(QGraphicsItem):
         painter.setBrush(QColor('#333333'))
         painter.drawPath(pathContent.simplified())
 
+        color = '#222222'
+        cates = self.scene().cates
+        for k, v in cates.items():
+            if self.name in v:
+                color = categoryColor[k]
+                break
         pathTitle = QPainterPath()
         pathTitle.addRect(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor('#222222'))
+        painter.setBrush(QColor(color))
         painter.drawPath(pathTitle.simplified())
 
         pathOutline = QPainterPath()
