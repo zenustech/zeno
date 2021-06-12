@@ -1,33 +1,43 @@
 # ZENO
 
-Open-source node system framework for physics simulation and other CG applications.
+Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
+//better have some screenshot here
+
+# ZenCompute
+Open-source code development framework to easily develop high-performance pysical simulation code that both run on cpu and gpu with out too much effort
+//better have some screenshot here
+
+# This Repo
+Integrated Toolbox, from volumetric geometry process tools(VDB), to state-of-art, commercially robust, highly optimized physics solvers and visualization
+nodes, and Node-implemented(provided by .zsg file) various VFX and simulation solutions.
 
 
-# Features
+# Motivation
 
 Nowadays, many CG artists have reached an agreement that creating arts (especially
-physics simulation and animation) using nodes is very convinent and flexible.
+physics simulation and animation) using visual-programming tool is very convinent and flexible.
 
-And ZENO aims to provide a great tool for both technical artists and CG developers.
+This repo aims to provide a great tool for both technical artists and CG developers, and researchers from physics simulation.
 
-## Intuitive
+## Easy Plug, Easy Go
 
-Without one line of code, artists may create animations by simply connecting nodes.
-Here's an example of water simulation:
+One may create complicated simulation scenarios by simply connecting the nodes provided by the system:
+For example:
 
-This is the charm of node programming, the direction of data flow is very clear
-to you as the inputs & outputs are connected, making it very easy to create and
-understand.
+This is the charm of visual-programming, not only the direction of data-flow, but also the logic-flow
+of the solution algorithm is presented at no more clarity.
 
 ## Flexible
+One can easily change or adjust a solution by simply break and reconnect of the nodes. Building a molecular simulation
+from scratch took no more than 7 minutes!
 
 ## Performant
 
 ZENO nodes are mainly written in C++. By connecting nodes in our Qt5 editor,
 you are invoking our highly optimized programs by our senior engineers. And
-all you need to do is explore the art-space without bothering to tackle these
+all you need to do is to explore in your mind-space without bothering to tackle 
 low-level details.
-In fact, it's shown by @zhxx1987 that our FLIP solver is 4x faster than Houdini
+performance-wisely, it's shown by @zhxx1987 that our FLIP solver is 4x faster than Houdini
 at large scale.
 
 ## Unified
