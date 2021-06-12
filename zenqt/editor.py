@@ -12,6 +12,8 @@ from PyQt5.QtGui import *
 from zenutils import go, gen_unique_ident
 import zenapi
 
+MAX_STACK_LENGTH = 100
+
 class HistoryStack:
     def __init__(self, scene):
         self.scene = scene
@@ -22,6 +24,7 @@ class HistoryStack:
         # can not undo at stack bottom
         if self.current_pointer == 0:
             return
+
         self.current_pointer -= 1
         current_scene = self.stack[self.current_pointer]
         self.scene.newGraph()
@@ -31,6 +34,7 @@ class HistoryStack:
         # can not redo at stack top
         if self.current_pointer == len(self.stack) - 1:
             return
+
         self.current_pointer += 1
         current_scene = self.stack[self.current_pointer]
         self.scene.newGraph()
@@ -39,9 +43,15 @@ class HistoryStack:
     def record(self):
         if self.current_pointer != len(self.stack) - 1:
             self.stack = self.stack[:self.current_pointer + 1]
+
         nodes = self.scene.dumpGraph()
         self.stack.append(nodes)
         self.current_pointer += 1
+
+        # limit the stack length
+        if self.current_pointer > MAX_STACK_LENGTH:
+            self.stack = self.stack[1:]
+            self.current_pointer = MAX_STACK_LENGTH
 
 class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
