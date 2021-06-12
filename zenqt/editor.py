@@ -66,6 +66,7 @@ class QDMGraphicsScene(QGraphicsScene):
         self.nodes = []
 
         self.history_stack = HistoryStack(self)
+        self.moved = False
 
     def dumpGraph(self):
         nodes = {}
@@ -322,13 +323,9 @@ class QDMGraphicsView(QGraphicsView):
 
         super().mouseReleaseEvent(event)
 
-        any_node_moved = False
-        for node in self.scene().nodes:
-            if node.moved:
-                any_node_moved = True
-                node.moved = False
-        if any_node_moved:
+        if self.scene().moved:
             self.scene().record()
+            self.scene().moved = False
 
     def wheelEvent(self, event):
         zoomFactor = 1
@@ -676,11 +673,9 @@ class QDMGraphicsNode(QGraphicsItem):
         self.name = None
         self.ident = gen_unique_ident()
 
-        self.moved = False
-    
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
-        self.moved = True
+        self.scene().moved = True
 
     def remove(self):
         for socket in list(self.inputs.values()):
