@@ -11,18 +11,11 @@ class TimelineWidget(QWidget):
 
         self.label = QLabel('-')
         self.status = QLabel('-')
-        self.maxframe = QLineEdit()
-        self.validator = QIntValidator()
-        self.validator.setBottom(0)
-        self.maxframe.setValidator(self.validator)
-        self.maxframe.textChanged.connect(self.maxframe_changed)
 
         self.slider = QSlider(Qt.Horizontal)
         self.slider.valueChanged.connect(self.value_changed)
         self.slider.setMinimum(0)
-        self.slider.setMaximum(250)
-        self.maxframe.setText(str(self.slider.maximum()))
-        self.maxframe.setFixedWidth(40)
+        self.slider.setMaximum(1)
 
         self.player = QCheckBox('Play')
         self.player.clicked.connect(self.value_changed)
@@ -32,9 +25,14 @@ class TimelineWidget(QWidget):
         layout.addWidget(self.player)
         layout.addWidget(self.label)
         layout.addWidget(self.slider)
-        layout.addWidget(self.maxframe)
         layout.addWidget(self.status)
         self.setLayout(layout)
+
+    def setEditor(self, editor):
+        self.editor = editor
+        self.maxframe = self.editor.edit_nframes
+        self.maxframe.textChanged.connect(self.maxframe_changed)
+        self.maxframe.setText(str(self.slider.maximum()))
 
     def maxframe_changed(self):
         self.slider.setMaximum(int(self.maxframe.text()))
