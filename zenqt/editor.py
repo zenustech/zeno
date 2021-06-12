@@ -17,6 +17,9 @@ MAX_STACK_LENGTH = 100
 class HistoryStack:
     def __init__(self, scene):
         self.scene = scene
+        self.init_state()
+    
+    def init_state(self):
         self.current_pointer = -1
         self.stack = []
 
@@ -908,6 +911,7 @@ class NodeEditor(QWidget):
         name = act.text()
         if name == '&New':
             self.scene.newGraph()
+            self.scene.history_stack.init_state()
             self.scene.record()
             self.current_path = None
 
@@ -943,6 +947,7 @@ class NodeEditor(QWidget):
         with open(path, 'r') as f:
             graph = json.load(f)
         self.scene.newGraph()
+        self.scene.history_stack.init_state()
         self.scene.loadGraph(graph)
         self.scene.record()
 
