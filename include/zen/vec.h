@@ -209,21 +209,23 @@ inline auto vapply(F const &f, vec<N, T> const &a, S const &b) {
     return res;
 }
 
-template <class T, class S, class F>
+template <class T, class S>
+inline constexpr bool is_vapply_v = (is_vec_v<T> || is_vec_v<S>) && (!is_vec_v<T> || !is_vec_v<S> || is_vec_n<T> == is_vec_n<S>);
+
+template <class T, class S, class F, std::enable_if_t<is_vapply_v<T, S>, bool> = true>
 inline auto vapply(F const &f, T const &a, S const &b) {
     return f(a, b);
 }
 
 #define _PER_OP2(op) \
-template <class T, class S, \
-    std::enable_if_t<(is_vec_v<T> || is_vec_v<S>) && ((!is_vec_v<T> || !is_vec_v<S>) || is_vec_n<T> == is_vec_n<S>), \
-    bool> = true> \
+template <class T, class S, std::enable_if_t<is_vapply_v<T, S>, bool> = true> \
 inline auto operator op(T const &a, S const &b) -> decltype(auto) { \
   return vapply([] (auto const &x, auto const &y) { return x op y; }, a, b); \
 }
 #define _PER_IOP2(op) \
 _PER_OP2(op) \
-template <size_t N, class T, class S> \
+template <size_t N, class T, class S, \
+    std::enable_if_t<is_vapply_v<vec<N, T>, S>, bool> = true> \
 inline vec<N, T> &operator op##=(vec<N, T> &a, S const &b) { \
   a = a op b; \
   return a; \
