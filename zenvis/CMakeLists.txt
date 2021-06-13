@@ -1,7 +1,7 @@
 file(GLOB PROJECT_SOURCE "*.cpp" "*.hpp" "*.h")
 
 pybind11_add_module(libzenvis ${PROJECT_SOURCE})
-target_add_definitions(
+add_definitions(-DZEN_FREE_IOBJECT)
 target_include_directories(libzenvis PRIVATE .)
 target_include_directories(libzenvis PRIVATE ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(libzenvis PRIVATE ${PROJECT_SOURCE_DIR}/Projects/include)
