@@ -7,36 +7,85 @@ struct IObject {
     virtual ~IObject() = default;
 };
 
+struct INode;
 std::map<std::string, std::unique_ptr<IObject>> objects;
+std::map<std::string, std::unique_ptr<INode>> nodes;
+
+struct Context {
+    std::set<std::string> visited;
+};
+
+void applyNode(std::string const &id, Context *ctx);
 
 struct INode {
+public:
     std::string myname;
+    std::map<std::string, std::pair<std::string, std::string>> inputBounds;
     std::map<std::string, std::string> inputs;
     std::map<std::string, std::string> outputs;
 
+    void doApply(Context *ctx) {
+        for (auto [ds, bound]: inputBounds) {
+            auto [sn, ss] = bound;
+            applyNode(sn, ctx);
+            inputs[ds] = nodes.at(sn)->outputs.at(ss);
+        }
+        apply();
+    }
+
+protected:
+    /*
+     * @name apply()
+     * @brief user should override this pure virtual function,
+     * @brief it will be called when the node is executed
+     */
     virtual void apply() = 0;
 
-    bool has_input(std::string const &id) {
+    /*
+     * @name has_input(id)
+     * @param[id] the input socket name
+     * @return true if connected, false otherwise
+     * @brief test if the input socket is connected
+     */
+    bool has_input(std::string const &id) const {
         return objects.find(inputs.at(id)) != objects.end();
     }
 
-    IObject *get_input(std::string const &id) {
+    /*
+     * @name get_input(id)
+     * @param[id] the input socket name
+     * @return pointer to the object
+     * @brief get the object passed into the input socket
+     */
+    IObject *get_input(std::string const &id) const {
         return objects.at(inputs.at(id)).get();
     }
 
+    /*
+     * @name get_input<T>(id)
+     * @template[T] the object type you want to cast to
+     * @param[id] the input socket name
+     * @return pointer to the object, will be null if the input is not of that type
+     * @brief get the object passed into the input socket,
+     * @brief and cast it to the given type
+     */
     template <class T>
-        T *get_input(std::string const &id) {
+        T *get_input(std::string const &id) const {
             return dynamic_cast<T *>(get_input(id));
         }
 
+    /*
+     * @name set_output(id, std::move(obj))
+     * @param[id] the output socket name
+     * @param[obj] the (unique) pointer to the object
+     * @brief set an object to the output socket
+     */
     void set_output(std::string const &id, std::unique_ptr<IObject> &&obj) {
         auto objid = myname + "::" + id;
         objects[objid] = std::move(obj);
         outputs[id] = objid;
     }
 };
-
-std::map<std::string, std::unique_ptr<INode>> nodes;
 
 struct ParamDescriptor {
   std::string type, name, defl;
@@ -121,12 +170,17 @@ void addNode(std::string const &cls, std::string const &id) {
     nodes[id] = std::move(node);
 }
 
-void applyNode(std::string const &id) {
-    nodes.at(id)->apply();
+void applyNode(std::string const &id, Context *ctx) {
+    if (ctx->visited.find(id) != ctx->visited.end()) {
+        return;
+    }
+    ctx->visited.insert(id);
+    nodes.at(id)->doApply(ctx);
 }
 
-void setNodeInput(std::string const &dn, std::string const &ds, std::string const &sn, std::string const &ss) {
-    nodes.at(dn)->inputs[ds] = nodes.at(sn)->outputs.at(ss);
+void bindNodeInput(std::string const &dn, std::string const &ds,
+    std::string const &sn, std::string const &ss) {
+    nodes.at(dn)->inputBounds[ds] = std::pair(sn, ss);
 }
 
 std::string dumpDescriptors() {
@@ -139,10 +193,15 @@ std::string dumpDescriptors() {
 
 struct MyObject : IObject {
     int i = 0;
+
+    ~MyObject() {
+        printf("~MyObject() called, i = %d\n", i);
+    }
 };
 
 struct MyNodeA : INode {
     virtual void apply() override {
+        printf("MyNodeA::apply()\n");
         auto obj = std::make_unique<MyObject>();
         set_output("Out0", std::move(obj));
     }
@@ -150,6 +209,7 @@ struct MyNodeA : INode {
 
 struct MyNodeB : INode {
     virtual void apply() override {
+        printf("MyNodeB::apply()\n");
         auto obj = get_input<MyObject>("In0");
         auto newobj = std::make_unique<MyObject>();
         newobj->i = obj->i + 1;
@@ -164,10 +224,12 @@ int main()
 {
     addNode("MyNodeA", "A");
     addNode("MyNodeB", "B");
-    applyNode("A");
-    setNodeInput("B", "In0", "A", "Out0");
-    applyNode("B");
-    auto objid = nodes.at("B")->outputs.at("Out0");
+    addNode("MyNodeB", "C");
+    bindNodeInput("B", "In0", "A", "Out0");
+    bindNodeInput("C", "In0", "B", "Out0");
+    Context ctx;
+    applyNode("C", &ctx);
+    auto objid = nodes.at("C")->outputs.at("Out0");
     cout << "objid=" << objid << endl;
     auto obj = dynamic_cast<MyObject *>(objects.at(objid).get());
     cout << "obj->i=" << obj->i << endl;

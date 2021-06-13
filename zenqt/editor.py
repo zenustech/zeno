@@ -762,7 +762,6 @@ class NodeEditor(QWidget):
 
         self.initExecute()
         self.initShortcuts()
-        #self.initConnect()
         self.refreshDescriptors()
 
         if 'ZEN_OPEN' in os.environ:
@@ -780,18 +779,6 @@ class NodeEditor(QWidget):
 
         self.msgDel = QShortcut(QKeySequence('Del'), self)
         self.msgDel.activated.connect(self.on_delete)
-
-    def initConnect(self):
-        self.edit_baseurl = QLineEdit(self)
-        self.edit_baseurl.move(180, 40)
-        self.edit_baseurl.resize(180, 30)
-        self.edit_baseurl.setText('http://localhost:8000')
-
-        self.button_connect = QPushButton('Connect', self)
-        self.button_connect.move(370, 40)
-        self.button_connect.clicked.connect(self.on_connect)
-
-        self.on_connect()
 
     def initExecute(self):
         self.edit_nframes = QLineEdit(self)
@@ -835,9 +822,6 @@ class NodeEditor(QWidget):
         if not itemList: return
         for item in itemList:
             item.remove()
-
-    def reloadDescriptors(self):
-        self.scene.setDescriptors(zenapi.getDescriptors())
 
     def menuTriggered(self, act):
         name = act.text()
