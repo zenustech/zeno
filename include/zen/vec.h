@@ -75,6 +75,7 @@ struct vec : std::array<T, N> {
 
 template <class T>
 struct is_vec : std::false_type {
+    static constexpr size_t _N = 0;
 };
 
 template <size_t N, class T>
@@ -188,7 +189,8 @@ inline auto vapply(F const &f, vec<N, T> const &a, vec<N, S> const &b) {
     return res;
 }
 
-template <size_t N, class T, class S, class F>
+template <size_t N, class T, class S, class F,
+    std::enable_if_t<!is_vec_v<T>, bool> = true>
 inline auto vapply(F const &f, T const &a, vec<N, S> const &b) {
     vec<N, decltype(f(a, b[0]))> res;
     for (size_t i = 0; i < N; i++) {
@@ -197,7 +199,8 @@ inline auto vapply(F const &f, T const &a, vec<N, S> const &b) {
     return res;
 }
 
-template <size_t N, class T, class S, class F>
+template <size_t N, class T, class S, class F,
+    std::enable_if_t<!is_vec_v<S>, bool> = true>
 inline auto vapply(F const &f, vec<N, T> const &a, S const &b) {
     vec<N, decltype(f(a[0], b))> res;
     for (size_t i = 0; i < N; i++) {
@@ -212,7 +215,9 @@ inline auto vapply(F const &f, T const &a, S const &b) {
 }
 
 #define _PER_OP2(op) \
-template <class T, class S, std::enable_if_t<is_vec_v<T> || is_vec_v<S>, bool> = true> \
+template <class T, class S, \
+    std::enable_if_t<(is_vec_v<T> || is_vec_v<S>) && ((!is_vec_v<T> || !is_vec_v<S>) || is_vec_n<T> == is_vec_n<S>), \
+    bool> = true> \
 inline auto operator op(T const &a, S const &b) -> decltype(auto) { \
   return vapply([] (auto const &x, auto const &y) { return x op y; }, a, b); \
 }

@@ -119,7 +119,7 @@ protected:
     /*
      * @name get_param(id)
      * @param[id] the parameter name
-     * @return a varient for parameter value
+     * @return a variant for parameter value
      * @brief get the parameter value by parameter name
      */
     ZENAPI IValue get_param(std::string const &id) const;

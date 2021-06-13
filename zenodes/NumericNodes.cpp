@@ -93,6 +93,64 @@ ZENDEFNODE(NumericVec4, {
 });
 
 
+struct NumericOperator : zen::INode {
+
+    struct op_add {
+        template <class T1, class T2, decltype(
+                std::declval<T1>() + std::declval<T2>()
+                , true) = true>
+        static auto apply(T1 const &x, T2 const &y) {
+            return x + y;
+        }
+    };
+
+    template <class T, class ...>
+    using _left_t = T;
+
+    template <class Op, class ...Ts>
+    struct _op_apply {
+        static int apply(Ts const &...ts) {
+            std::cout << "Invalid numeric operation encountered!" << std::endl;
+            return 0;
+        }
+    };
+
+    template <class Op, class ...Ts>
+    struct _op_apply<_left_t<Op, decltype(
+            Op::apply(std::declval<Ts>()...))>, Ts...> {
+
+        static auto apply(Ts const &...ts) {
+            return Op::apply(ts...);
+        }
+    };
+
+    template <class Op, class ...Ts>
+    static auto op_apply(Ts const &...ts) {
+        return _op_apply<Op, Ts...>::apply(ts...);
+    }
+
+    virtual void apply() override {
+        auto op = get_param<std::string>("op_type");
+        auto lhs = get_input<zen::NumericObject>("lhs");
+        auto rhs = get_input<zen::NumericObject>("rhs");
+        auto ret = std::make_unique<zen::NumericObject>();
+
+        std::visit([op, &ret](auto const &lhs, auto const &rhs) {
+            ret->value = op_apply<op_add>(lhs, rhs);
+        }, lhs->value, rhs->value);
+
+        set_output("ret", std::move(ret));
+    }
+};
+
+ZENDEFNODE(NumericOperator, {
+    {"lhs", "rhs"},
+    {"ret"},
+    {{"string", "op_type", "copy"}},
+    {"numeric"},
+});
+
+
 struct PrintNumeric : zen::INode {
     template <class T>
     struct do_print {
@@ -119,7 +177,7 @@ struct PrintNumeric : zen::INode {
         auto obj = get_input<zen::NumericObject>("value");
         auto hint = get_param<std::string>("hint");
         std::cout << hint << ": ";
-        std::visit([&](auto val) {
+        std::visit([](auto const &val) {
             do_print _(val);
         }, obj->value);
         std::cout << std::endl;
