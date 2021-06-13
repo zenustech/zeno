@@ -50,8 +50,12 @@ using IValue = std::variant<std::string, int, float>;
 
 
 struct IObject {
-    IObject();
-    virtual ~IObject();
+#ifndef ZEN_FREE_IOBJECT
+    ZENAPI IObject();
+    ZENAPI virtual ~IObject();
+#else
+    virtual ~IObject() = default;
+#endif
 
     template <class T>
     ZENDEPRECATED T *as() { return dynamic_cast<T *>(this); }

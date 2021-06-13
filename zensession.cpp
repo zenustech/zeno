@@ -43,8 +43,17 @@ T safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) {
 }
 
 
+ZENAPI Session &getSession() {
+  if (!sess) {
+    sess = std::make_unique<zen::Session>();
+  }
+  return *sess;
+}
+
+#ifndef ZEN_FREE_IOBJECT
 ZENAPI IObject::IObject() = default;
 ZENAPI IObject::~IObject() = default;
+#endif
 
 ZENAPI INode::INode() = default;
 ZENAPI INode::~INode() = default;
