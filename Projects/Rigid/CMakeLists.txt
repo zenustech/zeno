@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.19)
 set(CMAKE_CXX_STANDARD 17)
 project(zenRigidLib)
 add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)  
-find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
 
 # add directory with macros
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
@@ -17,8 +16,8 @@ if (WIN32)
   target_compile_options(zenRigidLib PRIVATE -DNOMINMAX)
 endif()
 
-target_link_directories(zenRigidLib PUBLIC /usr/lib/x86_64-linux-gnu:/usr/local/lib)
-target_link_libraries(zenRigidLib PRIVATE openvdb IlmBase::Half)
+#find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
+#target_link_libraries(zenRigidLib PRIVATE openvdb IlmBase::Half)
 target_link_libraries(zenRigidLib PRIVATE pthread openblas lapack cblas)
 
 target_link_libraries(zenRigidLib PRIVATE LinearMath)
