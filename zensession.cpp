@@ -3,7 +3,6 @@
 
 namespace zen {
 
-
 ZENAPI Exception::Exception(std::string const &msg) noexcept
     : msg(msg) {
 }
@@ -44,6 +43,8 @@ T safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) {
 }
 
 
+ZENAPI IObject::IObject() = default;
+ZENAPI IObject::~IObject() = default;
 
 ZENAPI INode::INode() = default;
 ZENAPI INode::~INode() = default;
@@ -138,6 +139,34 @@ ZENAPI Session &getSession() {
         ptr = std::make_unique<Session>();
     }
     return *ptr;
+}
+
+
+
+ParamDescriptor::ParamDescriptor(std::string const &type,
+	  std::string const &name, std::string const &defl)
+      : type(type), name(name), defl(defl) {}
+ParamDescriptor::~ParamDescriptor() = default;
+
+ZENAPI Descriptor::Descriptor() = default;
+ZENAPI Descriptor::Descriptor(
+  std::vector<std::string> const &inputs,
+  std::vector<std::string> const &outputs,
+  std::vector<ParamDescriptor> const &params,
+  std::vector<std::string> const &categories)
+  : inputs(inputs), outputs(outputs), params(params), categories(categories) {}
+
+ZENAPI std::string Descriptor::serialize() const {
+  std::string res = "";
+  res += "(" + join_str(inputs, ",") + ")";
+  res += "(" + join_str(outputs, ",") + ")";
+  std::vector<std::string> paramStrs;
+  for (auto const &[type, name, defl] : params) {
+      paramStrs.push_back(type + ":" + name + ":" + defl);
+  }
+  res += "(" + join_str(paramStrs, ",") + ")";
+  res += "(" + join_str(categories, ",") + ")";
+  return res;
 }
 
 

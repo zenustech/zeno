@@ -50,7 +50,8 @@ using IValue = std::variant<std::string, int, float>;
 
 
 struct IObject {
-    virtual ~IObject() = default;
+    IObject();
+    virtual ~IObject();
 
     template <class T>
     ZENDEPRECATED T *as() { return dynamic_cast<T *>(this); }
@@ -124,6 +125,13 @@ protected:
      */
     ZENAPI IValue get_param(std::string const &id) const;
 
+    /*
+     * @name get_param<T>(id)
+     * @template[T] the parameter type to assume
+     * @param[id] the parameter name
+     * @return the parameter value of given type
+     * @brief get the parameter value by parameter name, given type assumed
+     */
     template <class T>
         T get_param(std::string const &id) const {
             return std::get<T>(get_param(id));
@@ -146,9 +154,9 @@ protected:
 struct ParamDescriptor {
   std::string type, name, defl;
 
-  ParamDescriptor(std::string const &type,
-	  std::string const &name, std::string const &defl)
-      : type(type), name(name), defl(defl) {}
+  ZENAPI ParamDescriptor(std::string const &type,
+	  std::string const &name, std::string const &defl);
+  ZENAPI ~ParamDescriptor();
 };
 
 template <class S, class T>
@@ -169,26 +177,14 @@ struct Descriptor {
   std::vector<ParamDescriptor> params;
   std::vector<std::string> categories;
 
-  Descriptor() = default;
-  Descriptor(
+  ZENAPI Descriptor();
+  ZENAPI Descriptor(
 	  std::vector<std::string> const &inputs,
 	  std::vector<std::string> const &outputs,
 	  std::vector<ParamDescriptor> const &params,
-	  std::vector<std::string> const &categories)
-      : inputs(inputs), outputs(outputs), params(params), categories(categories) {}
+	  std::vector<std::string> const &categories);
 
-  std::string serialize() const {
-      std::string res = "";
-      res += "(" + join_str(inputs, ",") + ")";
-      res += "(" + join_str(outputs, ",") + ")";
-      std::vector<std::string> paramStrs;
-      for (auto const &[type, name, defl] : params) {
-          paramStrs.push_back(type + ":" + name + ":" + defl);
-      }
-      res += "(" + join_str(paramStrs, ",") + ")";
-      res += "(" + join_str(categories, ",") + ")";
-      return res;
-  }
+  ZENAPI std::string serialize() const;
 };
 
 struct INodeClass {
