@@ -781,7 +781,10 @@ class NodeEditor(QWidget):
         self.msgDel.activated.connect(self.on_delete)
 
     def initExecute(self):
+        validator = QIntValidator()
+        validator.setBottom(0)
         self.edit_nframes = QLineEdit(self)
+        self.edit_nframes.setValidator(validator)
         self.edit_nframes.move(20, 40)
         self.edit_nframes.resize(30, 30)
         self.edit_nframes.setText('1')
