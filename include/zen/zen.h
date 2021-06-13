@@ -227,6 +227,7 @@ struct Session {
         return 1;
     }
 
+    ZENAPI void clearNodes();
     ZENAPI void applyNode(std::string const &id);
     ZENAPI void addNode(std::string const &cls, std::string const &id);
     ZENAPI void requestNode(std::string const &id, Context *ctx);
@@ -253,6 +254,10 @@ ZENDEPRECATED inline int defNodeClass(std::string const &id, Descriptor const &d
 
 inline std::string dumpDescriptors() {
     return getSession().dumpDescriptors();
+}
+
+inline void clearNodes() {
+    return getSession().clearNodes();
 }
 
 inline void addNode(std::string const &cls, std::string const &id) {

@@ -88,6 +88,11 @@ ZENAPI IObject *Session::getObject(std::string const &id) const {
     return objects.at(id).get();
 }
 
+ZENAPI void Session::clearNodes() {
+    nodes.clear();
+    objects.clear();
+}
+
 ZENAPI void Session::addNode(std::string const &cls, std::string const &id) {
     auto node = nodeClasses.at(cls)->new_instance();
     node->sess = this;
