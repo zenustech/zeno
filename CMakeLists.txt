@@ -28,7 +28,7 @@ set_target_properties(zensession PROPERTIES
 pybind11_add_module(libzenpy libzenpy.cpp)
 target_include_directories(libzenpy PRIVATE include)
 target_link_libraries(libzenpy PUBLIC zensession)
-set_property(TARGET libzenpy PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen)
+set_property(TARGET libzenpy PROPERTY LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/zen)
 
 add_custom_command(TARGET libzenpy PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr
