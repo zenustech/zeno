@@ -3,6 +3,29 @@
 #include <memory>
 #include <vector>
 
+struct BulletObject {
+    std::unique_ptr<btCollisionShape> colShape;
+    std::unique_ptr<btDefaultMotionState> myMotionState;
+    std::unique_ptr<btRigidBody> body;
+    btScalar mass = 0.f;
+    btTransform trans;
+
+    BulletObject(btScalar mass_,
+        btTransform const &trans,
+        std::unique_ptr<btCollisionShape> &&colShape_)
+        : mass(mass_), colShape(std::move(colShape_))
+    {
+        btVector3 localInertia(0, 0, 0);
+        if (mass != 0)
+            colShape->calculateLocalInertia(mass, localInertia);
+
+        //using motionstate is optional, it provides interpolation capabilities, and only synchronizes 'active' objects
+        myMotionState = std::make_unique<btDefaultMotionState>(trans);
+        btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState.get(), colShape.get(), localInertia);
+        body = std::make_unique<btRigidBody>(rbInfo);
+    }
+};
+
 struct BulletWorld {
 
     std::unique_ptr<btDefaultCollisionConfiguration> collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
@@ -18,27 +41,15 @@ struct BulletWorld {
 
     std::unique_ptr<btDiscreteDynamicsWorld> dynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>(dispatcher.get(), overlappingPairCache.get(), solver.get(), collisionConfiguration.get());
 
-    std::vector<std::unique_ptr<btCollisionShape>> collisionShapes;
+    std::vector<std::unique_ptr<BulletObject>> objects;
 
     BulletWorld() {
         dynamicsWorld->setGravity(btVector3(0, -10, 0));
     }
 
-    ~BulletWorld() {
-        for (int i = dynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--)
-        {
-            btCollisionObject* obj = dynamicsWorld->getCollisionObjectArray()[i];
-            btRigidBody* body = btRigidBody::upcast(obj);
-            if (body && body->getMotionState())
-            {
-                delete body->getMotionState();
-            }
-            dynamicsWorld->removeCollisionObject(obj);
-            delete obj;
-        }
-
-        //next line is optional: it will be cleared by the destructor when the array goes out of scope
-        collisionShapes.clear();
+    void addObject(std::unique_ptr<BulletObject> &&obj) {
+        dynamicsWorld->addRigidBody(obj->body.get());
+        objects.push_back(std::move(obj));
     }
 
     //the ground is a cube of side 100 at position y = -56.
@@ -52,21 +63,7 @@ struct BulletWorld {
 
         btScalar mass(0.);
 
-        //rigidbody is dynamic if and only if mass is non zero, otherwise static
-        bool isDynamic = (mass != 0.f);
-
-        btVector3 localInertia(0, 0, 0);
-        if (isDynamic)
-            groundShape->calculateLocalInertia(mass, localInertia);
-
-        //using motionstate is optional, it provides interpolation capabilities, and only synchronizes 'active' objects
-        btDefaultMotionState* myMotionState = new btDefaultMotionState(groundTransform);
-        btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, groundShape.get(), localInertia);
-        btRigidBody* body = new btRigidBody(rbInfo);
-
-        //add the body to the dynamics world
-        dynamicsWorld->addRigidBody(body);
-        collisionShapes.push_back(std::move(groundShape));
+        addObject(std::make_unique<BulletObject>(mass, groundTransform, std::move(groundShape)));
     }
 
     void addBall() {
@@ -80,22 +77,7 @@ struct BulletWorld {
 
         btScalar mass(1.f);
 
-        //rigidbody is dynamic if and only if mass is non zero, otherwise static
-        bool isDynamic = (mass != 0.f);
-
-        btVector3 localInertia(0, 0, 0);
-        if (isDynamic)
-            colShape->calculateLocalInertia(mass, localInertia);
-
-        startTransform.setOrigin(btVector3(2, 10, 0));
-
-        //using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-        btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
-        btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, colShape.get(), localInertia);
-        btRigidBody* body = new btRigidBody(rbInfo);
-
-        dynamicsWorld->addRigidBody(body);
-        collisionShapes.push_back(std::move(colShape));
+        addObject(std::make_unique<BulletObject>(mass, startTransform, std::move(colShape)));
     }
 
     void step() {
