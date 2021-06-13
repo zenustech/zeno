@@ -65,6 +65,10 @@ ZENAPI IObject *INode::get_input(std::string const &id) const {
     return sess->getObject(inputs.at(id));
 }
 
+ZENAPI IValue INode::get_param(std::string const &id) const {
+    return params.at(id);
+}
+
 ZENAPI void INode::set_output(std::string const &id, std::unique_ptr<IObject> &&obj) {
     auto objid = myname + "::" + id;
     sess->objects[objid] = std::move(obj);
@@ -109,17 +113,22 @@ ZENAPI void Session::bindNodeInput(std::string const &dn, std::string const &ds,
     nodes.at(dn)->inputBounds[ds] = std::pair(sn, ss);
 }
 
+ZENAPI void Session::setNodeParam(std::string const &id, std::string const &par,
+        IValue const &val) {
+    nodes.at(id)->params[par] = val;
+}
+
 ZENAPI std::string Session::dumpDescriptors() const {
   std::string res = "";
   for (auto const &[key, cls] : nodeClasses) {
-    res += key + ":" + cls->desc->serialize() + "\n";
+    res += "DESC:" + key + ":" + cls->desc->serialize() + "\n";
   }
   return res;
 }
 
 
 ZENAPI Session &getSession() {
-    std::unique_ptr<Session> ptr;
+    static std::unique_ptr<Session> ptr;
     if (!ptr) {
         ptr = std::make_unique<Session>();
     }

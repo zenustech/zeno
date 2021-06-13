@@ -58,8 +58,10 @@ def launchGraph(graph, nframes):
 
 def getDescriptors():
     descs = zen.dumpDescriptors()
+    print('descriptors:')
+    print(descs)
     descs = descs.splitlines()
-    descs = [parse_descriptor_line(line) for line in descs if ':' in line]
+    descs = [parse_descriptor_line(line) for line in descs if line.startswith('DESC:')]
     descs = {name: desc for name, desc in descs}
     print('loaded', len(descs), 'descriptors')
     return descs

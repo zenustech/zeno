@@ -15,17 +15,17 @@ def getAutoloadDir():
     return rel2abs(__file__, 'autoload')
 
 def loadAutoloads():
-	dir = getAutoloadDir()
-	if os.path.isdir(dir):
-		for name in os.listdir(dir):
-			ext = ''
-			if os_name == 'linux':
-				ext = '.so'
-			elif os_name == 'win32':
-				ext = '.dll'
-			if name.endswith(ext):
-				path = os.path.join(dir, name)
-				load_library(path, ignore_errors=True)
+    dir = getAutoloadDir()
+    if os.path.isdir(dir):
+        for name in os.listdir(dir):
+            ext = ''
+            if os_name == 'linux':
+                ext = '.so'
+            elif os_name == 'win32':
+                ext = '.dll'
+            if name.endswith(ext):
+                path = os.path.join(dir, name)
+                load_library(path, ignore_errors=True)
 
 if not os.environ.get('ZEN_NOAUTOLOAD'):
     loadAutoloads()

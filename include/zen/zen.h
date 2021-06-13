@@ -13,13 +13,23 @@
 
 
 #ifdef _MSC_VER
-#ifdef _ZEN_INDLL
-#define ZENAPI __declspec(dllexport)
+
+# ifdef _ZEN_INDLL
+#  define ZENAPI __declspec(dllexport)
+# else
+#  define ZENAPI __declspec(dllimport)
+# endif
+# define ZENDEPRECATED
+
 #else
-#define ZENAPI __declspec(dllimport)
-#endif
-#else
-#define ZENAPI
+
+# define ZENAPI
+# ifdef __GNUC__
+#  define ZENDEPRECATED __attribute__((deprecated))
+# else
+#  define ZENDEPRECATED
+# endif
+
 #endif
 
 
@@ -41,6 +51,12 @@ using IValue = std::variant<std::string, int, float>;
 
 struct IObject {
     virtual ~IObject() = default;
+
+    template <class T>
+    ZENDEPRECATED T *as() { return dynamic_cast<T *>(this); }
+
+    template <class T>
+    ZENDEPRECATED const T *as() const { return dynamic_cast<const T *>(this); }
 };
 
 struct Session;
@@ -56,6 +72,7 @@ public:
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
     std::map<std::string, std::string> inputs;
     std::map<std::string, std::string> outputs;
+    std::map<std::string, IValue> params;
 
     ZENAPI INode();
     ZENAPI ~INode();
@@ -100,12 +117,30 @@ protected:
         }
 
     /*
+     * @name get_param(id)
+     * @param[id] the parameter name
+     * @return a varient for parameter value
+     * @brief get the parameter value by parameter name
+     */
+    ZENAPI IValue get_param(std::string const &id) const;
+
+    template <class T>
+        T get_param(std::string const &id) const {
+            return std::get<T>(get_param(id));
+        }
+
+    /*
      * @name set_output(id, std::move(obj))
      * @param[id] the output socket name
      * @param[obj] the (unique) pointer to the object
      * @brief set an object to the output socket
      */
     ZENAPI void set_output(std::string const &id, std::unique_ptr<IObject> &&obj);
+
+    template <class T>
+    ZENDEPRECATED void set_output(std::string const &id, std::unique_ptr<T> &obj) {
+        set_output(id, std::move(obj));
+    }
 };
 
 struct ParamDescriptor {
@@ -198,6 +233,8 @@ struct Session {
     ZENAPI void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss);
     ZENAPI std::string dumpDescriptors() const;
+    ZENAPI void setNodeParam(std::string const &id, std::string const &par,
+        IValue const &val);
 };
 
 
@@ -207,6 +244,11 @@ ZENAPI Session &getSession();
 template <class F>
 inline int defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {
     return getSession().defNodeClass(ctor, id, desc);
+}
+
+template <class T>
+inline int defNodeClass(std::string const &id, Descriptor const &desc = {}) {
+    return getSession().defNodeClass(std::make_unique<T>, id, desc);
 }
 
 inline std::string dumpDescriptors() {
@@ -224,6 +266,11 @@ inline void applyNode(std::string const &id) {
 inline void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss) {
     return getSession().bindNodeInput(dn, ds, sn, ss);
+}
+
+inline void setNodeParam(std::string const &id, std::string const &par,
+        IValue const &val) {
+    return getSession().setNodeParam(id, par, val);
 }
 
 
