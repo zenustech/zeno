@@ -22,7 +22,7 @@ target_link_libraries(zenRigidLib PRIVATE BulletDynamics)
 target_link_libraries(zenRigidLib PRIVATE BulletSoftBody)
 
 
-if (OFF)
+if (ON)
     find_package(zen REQUIRED)
     target_link_libraries(zenRigidLib PRIVATE zen)
     set_target_properties(zenRigidLib PROPERTIES
@@ -37,5 +37,5 @@ if (OFF)
         ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${zen_AUTOLOAD_DIR}
         )
     target_include_directories(zenRigidLib PRIVATE ../zenbase/include)
-    target_include_directories(zenRigidLib PRIVATE ../zenvdb/include)
+    #target_include_directories(zenRigidLib PRIVATE ../zenvdb/include)
 endif()
