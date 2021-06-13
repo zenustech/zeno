@@ -247,7 +247,7 @@ inline int defNodeClass(F const &ctor, std::string const &id, Descriptor const &
 }
 
 template <class T>
-inline int defNodeClass(std::string const &id, Descriptor const &desc = {}) {
+ZENDEPRECATED inline int defNodeClass(std::string const &id, Descriptor const &desc = {}) {
     return getSession().defNodeClass(std::make_unique<T>, id, desc);
 }
 
@@ -272,6 +272,10 @@ inline void setNodeParam(std::string const &id, std::string const &par,
         IValue const &val) {
     return getSession().setNodeParam(id, par, val);
 }
+
+
+#define ZENDEFNODE(Class, desc...) \
+    static int def##Class = zen::defNodeClass(std::make_unique<Class>, #Class, desc)
 
 
 }

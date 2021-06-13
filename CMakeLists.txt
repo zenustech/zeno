@@ -10,7 +10,9 @@ add_subdirectory(external/glad)
 add_subdirectory(zenvis)
 
 
-add_library(zensession SHARED zensession.cpp include/zen/zen.h)
+file(GLOB ZENODES_SOURCE zenodes/*.cpp include/zen/*.h)
+
+add_library(zensession SHARED zensession.cpp ${ZENODES_SOURCE})
 target_include_directories(zensession PRIVATE include)
 set(OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib)
 set_target_properties(zensession PROPERTIES

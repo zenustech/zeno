@@ -2,22 +2,22 @@
 #include <cstdio>
 #include <zen/NumericObject.h>
 
-struct MyObject : zen::IObject {
+struct Number : zen::IObject {
     int value;
 };
 
 
-struct MakeMyObject : zen::INode {
+struct MakeNumber : zen::INode {
     virtual void apply() override {
-        printf("MakeMyObject::apply() called!\n");
+        printf("MakeNumber::apply() called!\n");
         int value = get_param<int>("value");
-        auto obj = std::make_unique<MyObject>();
+        auto obj = std::make_unique<Number>();
         obj->value = value;
         set_output("obj", std::move(obj));
     }
 };
 
-static int defMakeMyObject = zen::defNodeClass<MakeMyObject>("MakeMyObject",
+ZENDEFNODE(MakeNumber,
    { /* inputs: */ {
    }, /* outputs: */ {
        "obj",
@@ -28,18 +28,18 @@ static int defMakeMyObject = zen::defNodeClass<MakeMyObject>("MakeMyObject",
    }});
 
 
-struct MyAdd : zen::INode {
+struct NumberAdd : zen::INode {
   virtual void apply() override {
-      printf("MyAdd::apply() called!\n");
-      auto lhs = get_input<MyObject>("lhs");
-      auto rhs = get_input<MyObject>("rhs");
-      auto result = std::make_unique<MyObject>();
+      printf("NumberAdd::apply() called!\n");
+      auto lhs = get_input<Number>("lhs");
+      auto rhs = get_input<Number>("rhs");
+      auto result = std::make_unique<Number>();
       result->value = lhs->value + rhs->value;
       set_output("result", std::move(result));
   }
 };
 
-static int defMyAdd = zen::defNodeClass<MyAdd>("MyAdd",
+ZENDEFNODE(NumberAdd,
     { /* inputs: */ {
         "lhs", "rhs",
     }, /* outputs: */ {
@@ -50,19 +50,19 @@ static int defMyAdd = zen::defNodeClass<MyAdd>("MyAdd",
     }});
 
 
-struct MyPrint : zen::INode {
+struct NumberPrint : zen::INode {
     virtual void apply() override {
-        printf("MyPrint::apply() called!\n");
+        printf("NumberPrint::apply() called!\n");
         if (has_input("obj")) {
-            auto obj = get_input<MyObject>("obj");
-            printf("MyPrint: object value is %d\n", obj->value);
+            auto obj = get_input<Number>("obj");
+            printf("NumberPrint: object value is %d\n", obj->value);
         } else {
             printf("input socket `obj` not connected!\n");
         }
     }
 };
 
-static int defMyPrint = zen::defNodeClass<MyPrint>("MyPrint",
+ZENDEFNODE(NumberPrint,
    { /* inputs: */ {
            "obj",
    }, /* outputs: */ {
