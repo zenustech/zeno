@@ -52,18 +52,16 @@ def launchGraph(graph, nframes):
     global g_iopath
     cleanIOPath()
     g_iopath = tempfile.mkdtemp(prefix='zenvis-')
-    print('iopath:', g_iopath)
+    print('IOPath:', g_iopath)
     _launch_mproc(zen.runGraph, graph, nframes, g_iopath)
 
 
 def getDescriptors():
     descs = zen.dumpDescriptors()
-    print('descriptors:')
-    print(descs)
     descs = descs.splitlines()
     descs = [parse_descriptor_line(line) for line in descs if line.startswith('DESC:')]
     descs = {name: desc for name, desc in descs}
-    print('loaded', len(descs), 'descriptors')
+    print('Loaded', len(descs), 'descriptors')
     return descs
 
 

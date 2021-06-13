@@ -25,6 +25,7 @@ def loadAutoloads():
                 ext = '.dll'
             if name.endswith(ext):
                 path = os.path.join(dir, name)
+                print('Loading addon module from [{}]'.format(path))
                 load_library(path, ignore_errors=True)
 
 if not os.environ.get('ZEN_NOAUTOLOAD'):
