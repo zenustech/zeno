@@ -3,16 +3,22 @@
 ## Major Dependencies
 
 - FastFLIP
-  - todo
+  - OpenVDB
+  - IlmBase (or OpenEXR)
+  - Eigen3
+  - TBB
 
 - Zenbase
-  - todo
+  - OpenMP C++ (optional)
 
 - Zenvdb
-  - todo
+  - OpenVDB
+  - IlmBase (or OpenEXR)
+  - TBB
+  - OpenMP C++ (optional)
 
 - ZMS
-  - todo
+  - OpenMP C++ (optional)
 
 ## Miscellaneous
 
@@ -24,7 +30,7 @@ For now (up to June 13th, 2021) the following official node libraries are known 
 
 If only the compilable libraries are needed, try the following before compilation starts:
 
-In `/Projects/CMakeLists.txt`, comment the following lines:
+In `Projects/CMakeLists.txt`, comment the following lines:
 
 ```
 add_subdirectory(zenvdb)

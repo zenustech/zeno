@@ -268,7 +268,7 @@ class QDMGraphicsView(QGraphicsView):
                     event.localPos(), event.screenPos(),
                     Qt.MiddleButton, Qt.NoButton,
                     event.modifiers())
-            super().mousePressEvent(releaseEvent)
+            super().mouseReleaseEvent(releaseEvent)
 
             fakeEvent = QMouseEvent(event.type(),
                     event.localPos(), event.screenPos(),
