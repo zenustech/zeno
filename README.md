@@ -7,6 +7,7 @@ Open-source node system framework, to change your algorithmic code into useful t
 
 Integrated Toolbox, from volumetric geometry process tools (OpenVDB), to state-of-art, commercially robust, highly optimized physics solvers and visualization
 nodes, and various VFX and simulation solutions based on our nodes (provided by .zsg file).
+//better have some screenshot here
 
 ## ZenCompute (@littlemine)
 
@@ -25,14 +26,17 @@ This repo aims to provide a great tool for both technical artists and CG develop
 
 One may create complicated simulation scenarios by simply connecting the nodes provided by the system:
 For example:
-
-This is the charm of visual-programming, not only the direction of data-flow, but also the logic-flow
-of the solution algorithm is presented at no more clarity.
+//put a node editor screenshot here
+This is the charm of visual-programming, not only the direction of data-flow, but also the logic-flow of the solution algorithm is presented at no more clarity.
+In fact, building a molecular simulation from scratch took no more than 7 minutes!
 
 ## Flexible
 
-One can easily change or adjust a solution by simply break and reconnect of the nodes. Building a molecular simulation
-from scratch took no more than 7 minutes!
+One can easily change or adjust a solution by simply break and reconnect of the nodes.
+Unlike many simulation softwares that have fixed functionality, we provide the building
+blocks of algorithms in the form of **nodes** at a relatively low granularity.
+By connecting these nodes, you can literally create your unique solver that best fits
+your need, rather than being limited by the imagination of software programmers.
 
 ## Performant
 
@@ -40,8 +44,8 @@ ZENO nodes are mainly written in C++. By connecting nodes in our Qt5 editor,
 you are invoking our highly optimized programs by our senior engineers. And
 all you need to do is to explore in your mind-space without bothering to tackle 
 low-level details.
-performance-wisely, it's shown by @zhxx1987 that our FLIP solver is 4x faster than Houdini
-at large scale.
+Performance-wisely, it's shown by @zhxx1987 that our FLIP solver is 4x faster than
+Houdini at large scale.
 
 ## Unified
 
@@ -168,7 +172,7 @@ twine upload dist/*.whl
 # Node libraries
 
 ZENO is extensible which means we may write node libraries for it.
-The source code of our official node libraries are provided in `Projects/`.
+The source code of all our official node libraries are provided in `Projects/`.
 
 
 ## Build node libraries
