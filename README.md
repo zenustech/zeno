@@ -3,13 +3,15 @@
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 //better have some screenshot here
 
-# ZenCompute
-Open-source code development framework to easily develop high-performance pysical simulation code that both run on cpu and gpu with out too much effort
-//better have some screenshot here
+## Features
 
-# This Repo
-Integrated Toolbox, from volumetric geometry process tools(VDB), to state-of-art, commercially robust, highly optimized physics solvers and visualization
-nodes, and Node-implemented(provided by .zsg file) various VFX and simulation solutions.
+Integrated Toolbox, from volumetric geometry process tools (OpenVDB), to state-of-art, commercially robust, highly optimized physics solvers and visualization
+nodes, and various VFX and simulation solutions based on our nodes (provided by .zsg file).
+
+## ZenCompute (@littlemine)
+
+Open-source code development framework to easily develop high-performance physical simulation code that both run on cpu and gpu with out too much effort.
+//better have some screenshot here
 
 
 # Motivation
@@ -28,6 +30,7 @@ This is the charm of visual-programming, not only the direction of data-flow, bu
 of the solution algorithm is presented at no more clarity.
 
 ## Flexible
+
 One can easily change or adjust a solution by simply break and reconnect of the nodes. Building a molecular simulation
 from scratch took no more than 7 minutes!
 
@@ -165,16 +168,19 @@ twine upload dist/*.whl
 # Node libraries
 
 ZENO is extensible which means we may write node libraries for it.
+The source code of our official node libraries are provided in `Projects/`.
 
 
-## Build requirements
+## Build node libraries
+
+### Requirements
 
 Before building node libraries, you need to install ZENO first (or add zeno source root to PYTHONPATH), to do so:
 ```bash
 python setup.py install
 ```
 
-## Build official node libraries
+### Build libraries
 
 - Linux
 ```bash
