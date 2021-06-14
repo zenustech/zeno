@@ -6,10 +6,10 @@ def getInstallDir():
     return rel2abs(__file__)
 
 def getIncludeDir():
-    return rel2abs(__file__, 'usr', 'include')
+    return rel2abs(__file__, 'include')
 
 def getLibraryDir():
-    return rel2abs(__file__, 'usr', 'lib')
+    return rel2abs(__file__, 'lib')
 
 def getAutoloadDir():
     return rel2abs(__file__, 'autoload')

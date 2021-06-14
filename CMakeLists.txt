@@ -10,11 +10,11 @@ add_subdirectory(external/glad)
 add_subdirectory(zenvis)
 
 
-file(GLOB ZENODES_SOURCE zenodes/*.cpp include/zen/*.h)
+file(GLOB ZENODES_SOURCE zenodes/*.cpp zen/include/zen/*.h)
 
 add_library(zensession SHARED zensession.cpp zenstate.cpp ${ZENODES_SOURCE})
-target_include_directories(zensession PRIVATE include)
-set(OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib)
+target_include_directories(zensession PRIVATE zen/include)
+set(OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zen/lib)
 set_target_properties(zensession PROPERTIES
 	LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
 	RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
@@ -28,32 +28,31 @@ set_target_properties(zensession PROPERTIES
 	)
 
 pybind11_add_module(libzenpy libzenpy.cpp)
-target_include_directories(libzenpy PRIVATE include)
+target_include_directories(libzenpy PRIVATE zen/include)
 target_link_libraries(libzenpy PUBLIC zensession)
 set_property(TARGET libzenpy PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen)
+set(OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zen)
 set_target_properties(libzenpy PROPERTIES
-	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen
-	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen
-	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen
-	LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/zen
-	RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/zen
-	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/zen
-	LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/zen
-	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/zen
-	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/zen
+	LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
+	RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR}
+	LIBRARY_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
+	LIBRARY_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
+	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
 	)
 
 add_custom_command(TARGET libzenpy PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/lib
     )
 
 add_custom_command(TARGET libzenpy POST_BUILD
     #COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload
     #COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/README.md ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload/README.md
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/share ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/share
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/include
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/share ${CMAKE_CURRENT_SOURCE_DIR}/zen/share
     )
 
 #add_subdirectory(demo_project)
