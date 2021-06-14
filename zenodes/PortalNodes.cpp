@@ -1,8 +1,8 @@
 #include <zen/zen.h>
 #include <zen/GlobalState.h>
 
-std::map<std::string, std::string> portalIns;
-std::map<std::string, std::string> portals;
+static std::map<std::string, std::string> portalIns;
+static std::map<std::string, std::string> portals;
 
 struct PortalIn : zen::INode {
     virtual void complete() override {
@@ -40,3 +40,19 @@ ZENDEFNODE(PortalOut, {
     {{"string", "name", "RenameMe!"}},
     {"portal"},
 });
+
+
+struct Route : zen::INode {
+    virtual void apply() override {
+        auto ref = get_input_ref("input");
+        set_output_ref("output", ref);
+    }
+};
+
+ZENDEFNODE(Route, {
+    {"input"},
+    {"output"},
+    {},
+    {"portal"},
+});
+
