@@ -1,7 +1,7 @@
 def parse_descriptor_line(line):
-    z_name, rest = line.strip().split(':', maxsplit=1)
+    _, z_name, rest = line.strip().split(':', maxsplit=2)
     assert rest.startswith('(') and rest.endswith(')'), (n_name, rest)
-    inputs, outputs, params, categories = rest.strip('()').split(')(')
+    inputs, outputs, params, categories = rest[1:-1].split(')(')
 
     z_inputs = [name for name in inputs.split(',') if name]
     z_outputs = [name for name in outputs.split(',') if name]

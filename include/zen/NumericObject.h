@@ -11,9 +11,6 @@ namespace zen {
 using NumericValue = std::variant<
   int, float, zen::vec2f, zen::vec3f, zen::vec4f>;
 
-using FixedNumericValue = std::variant<
-  int, float, std::array<float, 2>, std::array<float, 3>, std::array<float, 4>>;
-
 struct NumericObject : IObject {
   NumericValue value;
 

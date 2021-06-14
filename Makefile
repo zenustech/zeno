@@ -1,7 +1,10 @@
-default: core run
+default: demo run
 
 all: core
 	make -C Projects
+
+demo: core
+	make -C demo_project
 
 core:
 	cmake -B build
