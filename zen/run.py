@@ -3,15 +3,14 @@ from . import core
 
 
 def runGraph(nodes, nframes, iopath):
-    #zen.setIOPath(iopath)
+    #core.setIOPath(iopath)
     for frameid in range(nframes):
         print('FRAME:', frameid)
-        #zen.frameBegin()
-        #while zen.substepShouldContinue():
-            #zen.substepBegin()
+        #core.frameBegin()
+        #while core.substepBegin():
         runGraphOnce(nodes, frameid)
-            #zen.substepEnd()
-        #zen.frameEnd()
+            #core.substepEnd()
+        #core.frameEnd()
     print('EXITING')
 
 
