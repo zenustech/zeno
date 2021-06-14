@@ -31,7 +31,7 @@ data_files = glob('zenvis/*.so')
 data_files += glob('zen/*.pyd')
 data_files += glob('zenvis/*.pyd')
 data_files += treefiles('zen/lib')
-data_files += treefiles('zen/share')
+data_files += treefiles('zen/cmake')
 data_files += treefiles('zen/include')
 data_files += treefiles('zen/autoload')
 

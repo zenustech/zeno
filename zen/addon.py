@@ -11,6 +11,9 @@ def getIncludeDir():
 def getLibraryDir():
     return rel2abs(__file__, 'lib')
 
+def getCMakeDir():
+    return rel2abs(__file__, 'cmake')
+
 def getAutoloadDir():
     return rel2abs(__file__, 'autoload')
 
@@ -31,4 +34,4 @@ def loadAutoloads():
 if not os.environ.get('ZEN_NOAUTOLOAD'):
     loadAutoloads()
 
-__all__ = ['getInstallDir', 'getIncludeDir', 'getLibraryDir', 'getAutoloadDir', 'loadAutoloads']
+__all__ = ['getInstallDir', 'getIncludeDir', 'getLibraryDir', 'getAutoloadDir', 'getCMakeDir', 'loadAutoloads']

@@ -23,7 +23,6 @@ rubbish.bin/
 
 # autogen files
 /zen/lib/
-/zen/share/
 /zen/autoload/
 
 # vim files
