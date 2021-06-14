@@ -1,8 +1,9 @@
 #include <zen/zen.h>
 #include <zen/StringObject.h>
 #include <zen/GlobalState.h>
-#include <iostream>
 #include <filesystem>
+#include <iostream>
+#include <fstream>
 
 namespace fs = std::filesystem;
 
@@ -53,9 +54,8 @@ struct EndFrame : zen::INode {
             fs::create_directory(path);
         }
         path /= "done.lock";
-        auto ret = std::make_unique<zen::StringObject>();
-        ret->set(path.string());
-        set_output("path", std::move(ret));
+        std::ofstream ofs(path.string());
+        ofs.write("DONE", 4);
     }
 };
 

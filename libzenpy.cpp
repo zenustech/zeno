@@ -13,7 +13,10 @@ PYBIND11_MODULE(libzenpy, m) {
     m.def("clearNodes", zen::clearNodes);
     m.def("applyNodes", zen::applyNodes);
     m.def("addNode", zen::addNode);
-    m.def("setIOPath", [] (std::string const &iopath) { return zen::state.setIOPath(iopath); });
+    m.def("setIOPath", [] (std::string const &iopath) {
+        zen::state = zen::GlobalState();
+        return zen::state.setIOPath(iopath);
+    });
     m.def("frameBegin", [] () { return zen::state.frameBegin(); });
     m.def("frameEnd", [] () { return zen::state.frameEnd(); });
     m.def("substepBegin", [] () { return zen::state.substepBegin(); });
