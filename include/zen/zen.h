@@ -57,7 +57,7 @@ struct IObject {
     virtual ~IObject() = default;
 #endif
 
-    using Ptr = ZENDEPRECATED std::unique_ptr<IObject>;
+    using Ptr = std::unique_ptr<IObject>;
 
     template <class T>
     ZENDEPRECATED static std::unique_ptr<T> make() { return std::make_unique<T>(); }
@@ -243,7 +243,7 @@ struct Session {
     }
 
     ZENAPI void clearNodes();
-    ZENAPI void applyNode(std::string const &id);
+    ZENAPI void applyNodes(std::vector<std::string> const &ids);
     ZENAPI void addNode(std::string const &cls, std::string const &id);
     ZENAPI void requestNode(std::string const &id, Context *ctx);
     ZENAPI void bindNodeInput(std::string const &dn, std::string const &ds,
@@ -279,8 +279,8 @@ inline void addNode(std::string const &cls, std::string const &id) {
     return getSession().addNode(cls, id);
 }
 
-inline void applyNode(std::string const &id) {
-    return getSession().applyNode(id);
+inline void applyNodes(std::vector<std::string> const &ids) {
+    return getSession().applyNodes(ids);
 }
 
 inline void bindNodeInput(std::string const &dn, std::string const &ds,

@@ -41,10 +41,13 @@ def runGraphOnce(nodes, frame=None):
                 value = evaluateExpr(value, frame)
             core.setNodeParam(ident, name, value)
 
+    applies = []
     for ident in nodes:
         data = nodes[ident]
         if 'OUT' in data['options']:
-            core.applyNode(ident)
+            applies.append(ident)
+
+    core.applyNodes(applies)
 
 def dumpDescriptors():
     return core.dumpDescriptors()
