@@ -16,7 +16,7 @@ ZENDEFNODE(RunOnce, {
     {},
     {"cond"},
     {},
-    {"substep"},
+    {"runtime"},
 });
 
 struct RunAfterFrame : zen::INode {
@@ -32,7 +32,7 @@ ZENDEFNODE(RunAfterFrame, {
     {},
     {"cond"},
     {},
-    {"substep"},
+    {"runtime"},
 });
 
 struct RunBeforeFrame : zen::INode {
@@ -48,7 +48,7 @@ ZENDEFNODE(RunBeforeFrame, {
     {},
     {"cond"},
     {},
-    {"substep"},
+    {"runtime"},
 });
 
 
@@ -63,7 +63,83 @@ ZENDEFNODE(SetFrameTime, {
     {"time"},
     {},
     {},
-    {"substep"},
+    {"runtime"},
+});
+
+struct GetFrameTime : zen::INode {
+    virtual void apply() override {
+        auto time = std::make_unique<zen::NumericObject>();
+        time->set(zen::state.frame_time);
+        set_output("time", std::move(time));
+    }
+};
+
+ZENDEFNODE(GetFrameTime, {
+    {},
+    {"time"},
+    {},
+    {"runtime"},
+});
+
+struct GetFrameTimeElapsed : zen::INode {
+    virtual void apply() override {
+        auto time = std::make_unique<zen::NumericObject>();
+        time->set(zen::state.frame_time_elapsed);
+        set_output("time", std::move(time));
+    }
+};
+
+ZENDEFNODE(GetFrameTimeElapsed, {
+    {},
+    {"time"},
+    {},
+    {"runtime"},
+});
+
+struct GetFrameNum : zen::INode {
+    virtual void apply() override {
+        auto num = std::make_unique<zen::NumericObject>();
+        num->set(zen::state.frameid);
+        set_output("FrameNum", std::move(num));
+    }
+};
+
+ZENDEFNODE(GetFrameNum, {
+    {},
+    {"FrameNum"},
+    {},
+    {"runtime"},
+});
+
+struct GetTime : zen::INode {
+    virtual void apply() override {
+        auto time = std::make_unique<zen::NumericObject>();
+        time->set(zen::state.frameid * zen::state.frame_time
+            + zen::state.frame_time_elapsed);
+        set_output("time", std::move(time));
+    }
+};
+
+ZENDEFNODE(GetTime, {
+    {},
+    {"time"},
+    {},
+    {"runtime"},
+});
+
+struct GetFramePortion : zen::INode {
+    virtual void apply() override {
+        auto portion = std::make_unique<zen::NumericObject>();
+        portion->set(zen::state.frame_time_elapsed / zen::state.frame_time);
+        set_output("FramePortion", std::move(portion));
+    }
+};
+
+ZENDEFNODE(GetFramePortion, {
+    {},
+    {"FramePortion"},
+    {},
+    {"runtime"},
 });
 
 struct IntegrateFrameTime : zen::INode {
@@ -92,5 +168,5 @@ ZENDEFNODE(IntegrateFrameTime, {
     {"desired_dt"},
     {"actual_dt"},
     {{"float", "min_scale", "0.0001"}},
-    {"substep"},
+    {"runtime"},
 });
