@@ -29,7 +29,9 @@ def loadAutoloads():
             if name.endswith(ext):
                 path = os.path.join(dir, name)
                 print('Loading addon module from [{}]'.format(path))
-                load_library(path, ignore_errors=True)
+                res = load_library(path, ignore_errors=True)
+                if res is None:
+                    print('Failed to load addon module [{}]'.format(path))
 
 if not os.environ.get('ZEN_NOAUTOLOAD'):
     loadAutoloads()

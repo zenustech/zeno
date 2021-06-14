@@ -106,6 +106,11 @@ def run_script(src, callback=runpy.run_path):
         return callback(path)
 
 
+def add_library_path(path):
+    import win32api
+    win32api.SetDllDirectory(path)
+
+
 def load_library(path, ignore_errors=False):
     if ignore_errors:
         try:

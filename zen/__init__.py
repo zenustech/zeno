@@ -2,7 +2,6 @@
 Zensim Node System
 '''
 
-from . import libzenpy as core
-
+from .dll import core
 from .run import *
 from .addon import *
