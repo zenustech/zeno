@@ -57,6 +57,11 @@ struct IObject {
     virtual ~IObject() = default;
 #endif
 
+    using Ptr = ZENDEPRECATED std::unique_ptr<IObject>;
+
+    template <class T>
+    ZENDEPRECATED static std::unique_ptr<T> make() { return std::make_unique<T>(); }
+
     template <class T>
     ZENDEPRECATED T *as() { return dynamic_cast<T *>(this); }
 
@@ -117,9 +122,11 @@ protected:
      * @brief and cast it to the given type
      */
     template <class T>
-        T *get_input(std::string const &id) const {
-            return dynamic_cast<T *>(get_input(id));
-        }
+    T *get_input(std::string const &id) const {
+        return dynamic_cast<T *>(get_input(id));
+    }
+
+    ZENAPI std::string get_input_ref(std::string const &id) const;
 
     /*
      * @name get_param(id)
@@ -137,9 +144,9 @@ protected:
      * @brief get the parameter value by parameter name, given type assumed
      */
     template <class T>
-        T get_param(std::string const &id) const {
-            return std::get<T>(get_param(id));
-        }
+    T get_param(std::string const &id) const {
+        return std::get<T>(get_param(id));
+    }
 
     /*
      * @name set_output(id, std::move(obj))
@@ -148,6 +155,8 @@ protected:
      * @brief set an object to the output socket
      */
     ZENAPI void set_output(std::string const &id, std::unique_ptr<IObject> &&obj);
+
+    ZENAPI std::string set_output_ref(std::string const &id, std::string const &ref);
 
     template <class T>
     ZENDEPRECATED void set_output(std::string const &id, std::unique_ptr<T> &obj) {
