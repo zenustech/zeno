@@ -1,5 +1,6 @@
 #define _ZEN_INDLL
 #include <zen/zen.h>
+#include <zen/ConditionObject.h>
 
 namespace zen {
 
@@ -57,7 +58,15 @@ ZENAPI void INode::doApply(Context *ctx) {
         sess->requestNode(sn, ctx);
         inputs[ds] = sess->getNodeOutput(sn, ss);
     }
-    apply();
+    bool ok = true;
+    if (has_input("COND")) {
+        auto cond = get_input<zen::ConditionObject>("COND");
+        if (!cond->get())
+            ok = false;
+    }
+    if (ok)
+        apply();
+    set_output("DST", std::make_unique<zen::ConditionObject>());
 }
 
 ZENAPI bool INode::has_input(std::string const &id) const {
@@ -165,7 +174,11 @@ ZENAPI Descriptor::Descriptor(
   std::vector<std::string> const &outputs,
   std::vector<ParamDescriptor> const &params,
   std::vector<std::string> const &categories)
-  : inputs(inputs), outputs(outputs), params(params), categories(categories) {}
+  : inputs(inputs), outputs(outputs), params(params), categories(categories) {
+    this->inputs.push_back("SRC");
+    this->inputs.push_back("COND");
+    this->outputs.push_back("DST");
+}
 
 ZENAPI std::string Descriptor::serialize() const {
   std::string res = "";

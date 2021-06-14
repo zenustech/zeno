@@ -3,7 +3,6 @@
 #include <zen/zen.h>
 #include <zen/vec.h>
 #include <variant>
-#include <array>
 
 namespace zen {
 
