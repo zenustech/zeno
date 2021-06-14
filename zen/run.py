@@ -3,14 +3,14 @@ from . import core
 
 
 def runGraph(nodes, nframes, iopath):
-    #core.setIOPath(iopath)
+    core.setIOPath(iopath)
     for frameid in range(nframes):
         print('FRAME:', frameid)
-        #core.frameBegin()
-        #while core.substepBegin():
-        runGraphOnce(nodes, frameid)
-            #core.substepEnd()
-        #core.frameEnd()
+        core.frameBegin()
+        while core.substepBegin():
+            runGraphOnce(nodes, frameid)
+            core.substepEnd()
+        core.frameEnd()
     print('EXITING')
 
 

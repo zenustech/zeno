@@ -12,7 +12,7 @@ add_subdirectory(zenvis)
 
 file(GLOB ZENODES_SOURCE zenodes/*.cpp include/zen/*.h)
 
-add_library(zensession SHARED zensession.cpp ${ZENODES_SOURCE})
+add_library(zensession SHARED zensession.cpp zenstate.cpp ${ZENODES_SOURCE})
 target_include_directories(zensession PRIVATE include)
 set(OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/lib)
 set_target_properties(zensession PROPERTIES
@@ -45,8 +45,5 @@ add_custom_command(TARGET libzenpy POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/zen/usr/include
     )
 
-#add_library(demo_project SHARED demo_project/MyNode.cpp)
-#target_include_directories(demo_project PRIVATE include)
-#target_link_libraries(demo_project PUBLIC zensession)
-#set_property(TARGET demo_project PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload)
-#set_property(TARGET demo_project PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload)
+#add_subdirectory(demo_project)
+add_subdirectory(Projects)
