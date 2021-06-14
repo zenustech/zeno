@@ -10,7 +10,7 @@ PYBIND11_MODULE(libzenpy, m) {
   m.def("bindNodeInput", zen::bindNodeInput);
   m.def("setNodeParam", zen::setNodeParam);
   m.def("clearNodes", zen::clearNodes);
-  m.def("applyNode", zen::applyNode);
+  m.def("applyNodes", zen::applyNodes);
   m.def("addNode", zen::addNode);
 
   py::register_exception_translator([](std::exception_ptr p) {

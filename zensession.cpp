@@ -78,6 +78,13 @@ ZENAPI void INode::set_output(std::string const &id, std::unique_ptr<IObject> &&
     outputs[id] = objid;
 }
 
+ZENAPI std::string INode::set_output_ref(const std::string &id, const std::string &ref) {
+    return outputs[id] = ref;
+}
+
+ZENAPI std::string INode::get_input_ref(const std::string &id) const {
+    return inputs.at(id);
+}
 
 ZENAPI void Session::_defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls) {
     nodeClasses[id] = std::move(cls);
@@ -111,9 +118,11 @@ ZENAPI void Session::requestNode(std::string const &id, Context *ctx) {
     nodes.at(id)->doApply(ctx);
 }
 
-ZENAPI void Session::applyNode(std::string const &id) {
+ZENAPI void Session::applyNodes(std::vector<std::string> const &ids) {
     auto ctx = std::make_unique<Context>();
-    requestNode(id, ctx.get());
+    for (auto const &id: ids) {
+        requestNode(id, ctx.get());
+    }
 }
 
 ZENAPI void Session::bindNodeInput(std::string const &dn, std::string const &ds,

@@ -3,15 +3,14 @@ from . import core
 
 
 def runGraph(nodes, nframes, iopath):
-    #zen.setIOPath(iopath)
+    #core.setIOPath(iopath)
     for frameid in range(nframes):
         print('FRAME:', frameid)
-        #zen.frameBegin()
-        #while zen.substepShouldContinue():
-            #zen.substepBegin()
+        #core.frameBegin()
+        #while core.substepBegin():
         runGraphOnce(nodes, frameid)
-            #zen.substepEnd()
-        #zen.frameEnd()
+            #core.substepEnd()
+        #core.frameEnd()
     print('EXITING')
 
 
@@ -41,10 +40,13 @@ def runGraphOnce(nodes, frame=None):
                 value = evaluateExpr(value, frame)
             core.setNodeParam(ident, name, value)
 
+    applies = []
     for ident in nodes:
         data = nodes[ident]
         if 'OUT' in data['options']:
-            core.applyNode(ident)
+            applies.append(ident)
+
+    core.applyNodes(applies)
 
 def dumpDescriptors():
     return core.dumpDescriptors()
