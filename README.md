@@ -76,7 +76,7 @@ node system and all other powerful tools in Blender.
 
 # Build & Run
 
-## install requirements
+## Installation requirements
 
 You need a C++17 compiler, CMake 3.12+, and Python 3.6+ to build ZENO; NumPy and PyQt5 to run ZENO editor.
 Other requirements like Pybind11 or GLAD are self-contained and you don't have to worry installing them manually.
@@ -105,7 +105,7 @@ python -m pip install numpy PyQt5
 Make sure it starts to downloading and installing successfully without `ERROR` (warnings are OK though).
 
 If you got `ERROR: Could not install packages due to an EnvironmentError: [Errno 13] Permission denied: 'c:\\python38\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\d3dcompiler_47.dll''`:
-**Quit anti-virus softwares** like 360, they are likely stopping `pip` from copying DLL files..
+**Quit anti-virus softwares** (e.g. 360), they probably prevent `pip` from copying DLL files.
 
 If you got `ImportError: DLL load failed while importing QtGui`:
 Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe).
@@ -113,7 +113,7 @@ Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/
 3. Install Visual Studio 2019 Community Edition or later version (for C++17 support in MSVC).
 
 
-## build ZENO
+## Build ZENO
 - Linux
 ```bash
 cmake -B build
@@ -124,12 +124,12 @@ make -C build -j8
 ```cmd
 cmake -B build
 ```
-Then open ```build/zeno.sln``` in Visual Studio 2019, and **switch to Release in build configuration**, then click `Project -> Build All`.
+Then open ```build/zeno.sln``` in Visual Studio 2019, and **switch to Release mode in build configurations**, then run `Build -> Build All`.
 
-IMPORTANT: you must always use Release mode in MSVC, cause they use different allocators in Release and Debug mode, if you link a DLL of Release mode and a DLL in Debug mode together on Windows, they will crash when passing STL objects...
+IMPORTANT: In MSVC, Release mode must **always be active** when building ZENO, since MSVC uses different allocators in Release and Debug mode. If a DLL of Release mode and a DLL in Debug mode are linked together in Windows, it will crash when passing STL objects.
 
 
-## run ZENO for development
+## Run ZENO for development
 - Linux
 ```bash
 ./run.sh
@@ -140,14 +140,14 @@ IMPORTANT: you must always use Release mode in MSVC, cause they use different al
 run.bat
 ```
 
-## install ZENO globally for Python
+## Install ZENO globally for Python
 ```bash
 python setup.py install
 ```
 
 
 
-## package ZENO into PyPI wheel
+## Packing ZENO into PyPI wheel
 ```bash
 sudo python -m pip install wheel
 python setup.py bdist_wheel
@@ -155,7 +155,7 @@ ls dist/*.whl
 ```
 
 
-## upload ZENO to PyPI.org (needs password)
+## Upload ZENO to PyPI.org (password required)
 ```bash
 sudo python -m pip install twine
 twine upload dist/*.whl
@@ -184,16 +184,19 @@ make -C build
 ```
 
 - Windows
+
+For Windows users, **make sure to check the [more detailed README](./Projects/README.md)** for the most updated info and known issues before build starts.
+
 ```cmd
 cd Projects
 cmake -B build
 ```
-Then open ```Projects/build/zeno_projects.sln``` in Visual Studio 2019, **switch to Release in build configuration**, click `Project -> Build All`.
+Then open ```Projects/build/zeno_projects.sln``` in Visual Studio 2019, **switch to Release in build configuration**, run `Build -> Build All`.
 
 
 ## Write your own one!
 
-See ```demo_project/``` for example on how to write custom nodes in ZENO.
+See ```demo_project/``` for an example on how to write custom nodes in ZENO.
 
 ## Installing node libraries
 
