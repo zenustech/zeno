@@ -161,7 +161,9 @@ protected:
     template <class T>
     ZENDEPRECATED T *new_member(std::string const &id) {
         auto obj = std::make_unique<T>();
-        return set_output(id, std::move(obj));
+        auto obj_ptr = obj.get();
+        set_output(id, std::move(obj));
+        return obj_ptr;
     }
 
     template <class T>

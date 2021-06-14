@@ -1,4 +1,4 @@
-default: demo run
+default: all run
 
 all: core
 	make -C Projects
