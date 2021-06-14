@@ -23,6 +23,7 @@ class MainWindow(QWidget):
         self.editor = NodeEditor()
         self.viewport = ViewportWidget()
         self.timeline = TimelineWidget()
+        self.timeline.setEditor(self.editor)
 
         self.mainsplit = QSplitter(Qt.Horizontal)
         self.mainsplit.setOpaqueResize(True)

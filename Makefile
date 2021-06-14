@@ -17,4 +17,4 @@ dist:
 	python/setup.py bdist_wheel
 
 debug: all
-	USE_GDB= ZEN_OPEN=assets/mesh.zsg ./run.sh
+	USE_GDB= ZEN_OPEN=assets/crag.zsg ./run.sh

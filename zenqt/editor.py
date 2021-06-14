@@ -205,7 +205,6 @@ class QDMGraphicsView(QGraphicsView):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-        self.setDragMode(QGraphicsView.RubberBandDrag)
 
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.contextMenu)
@@ -271,7 +270,7 @@ class QDMGraphicsView(QGraphicsView):
                     event.localPos(), event.screenPos(),
                     Qt.MiddleButton, Qt.NoButton,
                     event.modifiers())
-            super().mousePressEvent(releaseEvent)
+            super().mouseReleaseEvent(releaseEvent)
 
             fakeEvent = QMouseEvent(event.type(),
                     event.localPos(), event.screenPos(),
@@ -282,6 +281,8 @@ class QDMGraphicsView(QGraphicsView):
             return
 
         elif event.button() == Qt.LeftButton:
+            self.setDragMode(QGraphicsView.RubberBandDrag)
+
             if self.dragingEdge is None:
                 item = self.itemAt(event.pos())
                 if isinstance(item, QDMGraphicsSocket):
@@ -324,8 +325,11 @@ class QDMGraphicsView(QGraphicsView):
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MiddleButton:
-            self.setDragMode(QGraphicsView.RubberBandDrag)
             self.scene().mmd_press = False
+            self.setDragMode(0)
+
+        elif event.button() == Qt.LeftButton:
+            self.setDragMode(0)
 
         super().mouseReleaseEvent(event)
 
@@ -841,7 +845,6 @@ class NodeEditor(QWidget):
 
         self.initExecute()
         self.initShortcuts()
-        #self.initConnect()
         self.refreshDescriptors()
 
         if 'ZEN_OPEN' in os.environ:
@@ -860,20 +863,11 @@ class NodeEditor(QWidget):
         self.msgDel = QShortcut(QKeySequence('Del'), self)
         self.msgDel.activated.connect(self.on_delete)
 
-    def initConnect(self):
-        self.edit_baseurl = QLineEdit(self)
-        self.edit_baseurl.move(180, 40)
-        self.edit_baseurl.resize(180, 30)
-        self.edit_baseurl.setText('http://localhost:8000')
-
-        self.button_connect = QPushButton('Connect', self)
-        self.button_connect.move(370, 40)
-        self.button_connect.clicked.connect(self.on_connect)
-
-        self.on_connect()
-
     def initExecute(self):
+        validator = QIntValidator()
+        validator.setBottom(0)
         self.edit_nframes = QLineEdit(self)
+        self.edit_nframes.setValidator(validator)
         self.edit_nframes.move(20, 40)
         self.edit_nframes.resize(30, 30)
         self.edit_nframes.setText('1')
@@ -915,9 +909,6 @@ class NodeEditor(QWidget):
         for item in itemList:
             item.remove()
         self.scene.record()
-
-    def reloadDescriptors(self):
-        self.scene.setDescriptors(zenapi.getDescriptors())
 
     def menuTriggered(self, act):
         name = act.text()
