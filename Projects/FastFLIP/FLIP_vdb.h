@@ -9,6 +9,22 @@ struct OpenvdbInitializer {
 	OpenvdbInitializer() {openvdb::initialize();}
 };
 static OpenvdbInitializer g_openvdb_initializer{};
+static float *randomTable;
+struct initRandomTable{
+	initRandomTable(){
+	randomTable = new float[21474836];
+	std::random_device device;
+	std::mt19937 generator(/*seed=*/device());
+	std::uniform_real_distribution<> distribution(-0.5, 0.5);
+	#pragma omp parallel	
+		for (size_t i=0;i<21474836;i++)
+		{
+			
+			randomTable[i] = distribution(generator);
+		}
+	}
+};
+static initRandomTable g_randomTableInitializer{};
 
 struct FLIP_vdb {
 	using vec_tree_t = openvdb::Vec3fGrid::TreeType;
@@ -175,6 +191,11 @@ static void emit_liquid(
 static float cfl(openvdb::Vec3fGrid::Ptr & vel);
 
 static void point_integrate_vector(openvdb::points::PointDataGrid::Ptr & in_out_particles, openvdb::Vec3R &dx, std::string channel);
+
+static void reseed_fluid(
+	openvdb::points::PointDataGrid::Ptr &in_out_particles,
+	openvdb::FloatGrid::Ptr &liquid_sdf,
+	openvdb::Vec3fGrid::Ptr &velocity);
 private:
 	void initialize_attribute_descriptor() {
 		auto pnamepair = position_attribute::attributeType();

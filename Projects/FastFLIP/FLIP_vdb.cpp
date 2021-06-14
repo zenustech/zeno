@@ -1329,7 +1329,7 @@ namespace {
 						t_coef = 0;
 					}
 					if(m_surfacedist>0)
-						flip_component = t_coef*flip_component;
+						flip_component = t_coef*flip_component + (1.0f - t_coef) * 0.9f;
 					if (adv_same_field) {
 						carried_vel = adv_vel;
 					}
@@ -2174,7 +2174,7 @@ void FLIP_vdb::particle_to_grid_collect_style(
 	openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf,
 	float dx)
 {
-	float particle_radius = 0.5f  * dx * sqrt(3.0f) * 1.01;
+	float particle_radius = 0.6f  * dx  * 1.01;
 	velocity->setTree(std::make_shared<openvdb::Vec3fTree>(
 		particles->tree(), openvdb::Vec3f{ 0 }, openvdb::TopologyCopy()));
 	openvdb::tools::dilateActiveValues(velocity->tree(), 1, openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
@@ -2184,7 +2184,7 @@ void FLIP_vdb::particle_to_grid_collect_style(
 	auto voxel_center_transform = openvdb::math::Transform::createLinearTransform(dx);
 	liquid_sdf->setTransform(voxel_center_transform);
 	liquid_sdf->setTree(std::make_shared<openvdb::FloatTree>(
-		velocity->tree(), 0.5f *  dx * sqrt(3.0f) * 1.01, openvdb::TopologyCopy()));
+		velocity->tree(), 0.6f *  dx * 1.01, openvdb::TopologyCopy()));
 
 	auto collector_op{ p2g_collector(liquid_sdf,
 			velocity,
@@ -2361,8 +2361,12 @@ namespace {
 
 				// Randomize the point positions.
 				std::random_device device;
-				std::mt19937 generator(/*seed=*/device());
-				std::uniform_real_distribution<> distribution(-0.5, 0.5);
+				std::uniform_int_distribution<> intdistrib(0, 21474836);
+    			std::mt19937 gen(/*seed=*/device());
+				size_t index = intdistrib(gen);
+				// std::random_device device;
+				// std::mt19937 generator(/*seed=*/device());
+				// std::uniform_real_distribution<> distribution(-0.5, 0.5);
 
 				// Attribute reader
 				// Extract the position attribute from the leaf by name (P is position).
@@ -2487,13 +2491,13 @@ namespace {
 							//emit particles up to min_np
 							for (; this_voxel_emitted < min_np; ) {
 								//generate new position
-								openvdb::Vec3f pos{ distribution(generator) };
+								openvdb::Vec3f pos{ randomTable[(index++)%21474836] };
 								auto new_point_particle_wpos = m_transform->indexToWorld(pos + voxel_gcoord);
 								auto new_point_boundary_ipos = m_boundary_fill_kill_volume->worldToIndex(new_point_particle_wpos);
 								if (openvdb::tools::BoxSampler::sample(boundary_volume_axr, new_point_boundary_ipos) < -particle_radius) {
 									//fully emit
-									pos[0] = distribution(generator);
-									pos[2] = distribution(generator);
+									pos[0] = randomTable[(index++)%21474836];
+									pos[2] = randomTable[(index++)%21474836];
 									new_positions.push_back(pos);
 
 									const openvdb::Vec3f vel = openvdb::tools::BoxSampler::sample(
@@ -2839,9 +2843,13 @@ void FLIP_vdb::seed_liquid(openvdb::FloatGrid::Ptr in_sdf, const openvdb::Vec3f&
 		auto in_sdf_axr{ in_sdf->getConstAccessor() };
 		float sdf_threshold = -m_particle_radius * 0.55;
 
+		// std::random_device device;
+		// std::mt19937 generator(/*seed=*/device());
+		// std::uniform_real_distribution<> distribution(-0.5, 0.5);
 		std::random_device device;
-		std::mt19937 generator(/*seed=*/device());
-		std::uniform_real_distribution<> distribution(-0.5, 0.5);
+		std::uniform_int_distribution<> intdistrib(0, 21474836);
+    	std::mt19937 gen(/*seed=*/device());
+		size_t index = intdistrib(gen);
 
 		for (auto ileaf = r.begin(); ileaf < r.end(); ++ileaf) {
 			auto& leaf = *leafarray[ileaf];
@@ -2887,7 +2895,7 @@ void FLIP_vdb::seed_liquid(openvdb::FloatGrid::Ptr in_sdf, const openvdb::Vec3f&
 				auto voxelipos = in_sdf->worldToIndex(voxelwpos);
 				if (openvdb::tools::BoxSampler::sample(in_sdf_axr, voxelipos) < m_dx) {
 					for (; this_voxel_emitted < 8; this_voxel_emitted++) {
-						openvdb::Vec3d particle_pipos{ distribution(generator) ,distribution(generator) ,distribution(generator) };
+						openvdb::Vec3d particle_pipos{ randomTable[(index++)%21474836] ,randomTable[(index++)%21474836],randomTable[(index++)%21474836] };
 						auto particlewpos = m_particles->indexToWorld(particle_pipos) + voxelwpos;
 						auto particle_sdfipos = in_sdf->worldToIndex(particlewpos);
 						if (openvdb::tools::BoxSampler::sample(in_sdf_axr, particle_sdfipos) < sdf_threshold) {
@@ -3841,7 +3849,162 @@ void FLIP_vdb::update_solid_sdf(
 
 	
 }
+void FLIP_vdb::reseed_fluid(
+	openvdb::points::PointDataGrid::Ptr &in_out_particles,
+	openvdb::FloatGrid::Ptr &liquid_sdf,
+	openvdb::Vec3fGrid::Ptr &velocity)
+{
+	using  namespace openvdb::tools::local_util;
+	float dx = in_out_particles->transform().voxelSize()[0];
+	std::vector<openvdb::points::PointDataTree::LeafNodeType*> particle_leaves;
+	in_out_particles->tree().getNodes(particle_leaves);
 
+
+	auto pnamepair = FLIP_vdb::position_attribute::attributeType();
+	auto m_position_attribute_descriptor = openvdb::points::AttributeSet::Descriptor::create(pnamepair);
+	
+	auto vnamepair = FLIP_vdb::velocity_attribute::attributeType();
+	auto m_pv_attribute_descriptor = m_position_attribute_descriptor->duplicateAppend("v", vnamepair);
+
+	//use existing descriptors if we already have particles
+	if (!in_out_particles->empty()) {
+		for (auto it = in_out_particles->tree().cbeginLeaf(); it; ++it) {
+			if (it->getLastValue() != 0) {
+				//a non-empty leaf with attributes
+				m_pv_attribute_descriptor = it->attributeSet().descriptorPtr();
+				break;
+			}
+		}
+	}
+
+
+	//CSim::TimerMan::timer("Sim.step/vdbflip/advection/reduce").start();
+	auto seed_leaf2 = [&](const tbb::blocked_range<size_t>& r) 
+	{
+			auto liquid_sdf_axr{liquid_sdf->getConstUnsafeAccessor() };
+			auto vaxr{ velocity->getConstUnsafeAccessor() };
+			// std::random_device device;
+			// std::mt19937 generator(/*seed=*/device());
+			// std::uniform_real_distribution<> distribution(-0.5, 0.5);
+			std::random_device device;
+			std::uniform_int_distribution<> intdistrib(0, 21474836);
+    		std::mt19937 gen(/*seed=*/device());
+			size_t index = intdistrib(gen);
+			//leaf iter
+			for (auto liter = r.begin(); liter != r.end(); ++liter) {
+				auto& leaf = *particle_leaves[liter];
+				std::vector<openvdb::Vec3f> new_pos, new_vel;
+				std::vector<openvdb::PointDataIndex32> new_idxend;
+
+				//check if the last element is zero
+				//if so, it's a new leaf
+				if (leaf.getLastValue() == 0) {
+					//initialize the attribute descriptor
+					auto local_pv_descriptor = m_pv_attribute_descriptor;
+					leaf.initializeAttributes(m_position_attribute_descriptor, 0);
+					leaf.appendAttribute(leaf.attributeSet().descriptor(), local_pv_descriptor, 1);
+				}
+
+				//reader
+				const openvdb::points::AttributeArray& positionArray =
+					leaf.attributeArray("P");
+				// Extract the velocity attribute from the leaf by name (v is velocity).
+				const openvdb::points::AttributeArray& velocityArray =
+					leaf.attributeArray("v");
+				auto p_handle_ptr = openvdb::points::AttributeHandle<openvdb::Vec3f, FLIP_vdb::PositionCodec>::create(positionArray);
+				auto v_handle_ptr = openvdb::points::AttributeHandle<openvdb::Vec3f, FLIP_vdb::VelocityCodec>::create(velocityArray);
+
+				openvdb::Index32 emitted_particle = 0;
+				for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+					openvdb::Index32 idxbegin = 0;
+					if (offset != 0) {
+						idxbegin = leaf.getValue(offset - 1);
+					}
+					openvdb::Index32 idxend = leaf.getValue(offset);
+					int count = 0;
+					//used to indicate sub_voxel(8 cells) occupancy by particles
+					unsigned char sub_voxel_occupancy = 0;
+					
+					//first emit original particles
+					openvdb::Index32 this_voxel_emitted = 0;
+					for (auto idx = idxbegin; idx < idxend; ++idx) {
+						auto p = p_handle_ptr->get(idx);
+						unsigned char sv_pos = ((p[2] > 0.f) << 2) | ((p[1] > 0.f) << 1) | (p[0] > 0.f);
+						//only emit uniformly, otherwise skip it
+						// if (sub_voxel_occupancy & (1 << sv_pos)) {
+						// 	//that bit is active, there is already an particle
+						// 	//skip it
+						// 	continue;
+						// }
+						sub_voxel_occupancy |= (1 << sv_pos);
+						new_pos.push_back(p);
+						new_vel.push_back(v_handle_ptr->get(idx));
+						emitted_particle++;
+						this_voxel_emitted++;
+					}
+
+					auto voxelwpos = in_out_particles->indexToWorld(leaf.offsetToGlobalCoord(offset));
+					auto voxelipos = liquid_sdf->worldToIndex(voxelwpos);
+					float liquid_phi = openvdb::tools::BoxSampler::sample(liquid_sdf->getConstAccessor(), voxelipos);
+					if(liquid_phi<-dx && this_voxel_emitted<4)
+					{
+						const int max_emit_trial = 16;
+						for (int trial = 0; this_voxel_emitted < 6 && trial<max_emit_trial; trial++) {
+							openvdb::Vec3d particle_pipos{ randomTable[(index++)%21474836],randomTable[(index++)%21474836],randomTable[(index++)%21474836] };
+							auto& p = particle_pipos;
+							unsigned char sv_pos = ((p[2] > 0) << 2) | ((p[1] > 0) << 1) | (p[0] > 0);
+							//only emit uniformly, otherwise skip it
+							if (sub_voxel_occupancy & (1 << sv_pos)) {
+							 	//that bit is active, there is already an particle
+							 	//skip it
+							 	continue;
+							}
+							auto particlewpos = in_out_particles->indexToWorld(particle_pipos) + voxelwpos;
+							auto velsamplepos = velocity->worldToIndex(particlewpos);
+							sub_voxel_occupancy |= 1 << sv_pos;
+							new_pos.push_back(particle_pipos);
+							new_vel.push_back(StaggeredBoxSampler::sample(vaxr, velsamplepos));
+							emitted_particle++;
+							this_voxel_emitted++;							
+						}//end for 16 emit trials
+					}
+					new_idxend.push_back(emitted_particle);
+				}
+
+				auto local_pv_descriptor = m_pv_attribute_descriptor;
+				leaf.initializeAttributes(m_position_attribute_descriptor, emitted_particle);
+				leaf.appendAttribute(leaf.attributeSet().descriptor(), local_pv_descriptor, 1);
+				leaf.setOffsets(new_idxend);
+
+				//set the positions and velocities
+				//get the new attribute arrays
+				openvdb::points::AttributeArray& posarray = leaf.attributeArray("P");
+				openvdb::points::AttributeArray& varray = leaf.attributeArray("v");
+
+				// Create read handles for position and velocity
+				openvdb::points::AttributeWriteHandle<openvdb::Vec3f, FLIP_vdb::PositionCodec> posWHandle(posarray);
+				openvdb::points::AttributeWriteHandle<openvdb::Vec3f, FLIP_vdb::VelocityCodec> vWHandle(varray);
+
+				for (auto iter = leaf.beginIndexOn(); iter; ++iter) {
+					posWHandle.set(*iter, new_pos[*iter]);
+					vWHandle.set(*iter, new_vel[*iter]);
+				}//end for all on voxels
+			}
+	};
+
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, particle_leaves.size()), seed_leaf2);
+	//printf("added particles:%zd\n", size_t(added_particles));
+	//printf("original leaf count:%d\n", m_particles->tree().leafCount());
+	for (auto leaf : particle_leaves) {
+		if (leaf != in_out_particles->tree().probeLeaf(leaf->origin())) {
+			in_out_particles->tree().addLeaf(leaf);
+		}
+	}
+	//openvdb::io::File("dbg.vdb").write({ m_particles });
+	//printf("new leafcount:%d\n", m_particles->tree().leafCount());
+	in_out_particles->pruneGrid();
+
+}
 
 
 
@@ -3966,9 +4129,13 @@ void FLIP_vdb::emit_liquid(
 			
 			float sdf_threshold = -dx * 0.55;
 
+			// std::random_device device;
+			// std::mt19937 generator(/*seed=*/device());
+			// std::uniform_real_distribution<> distribution(-0.5, 0.5);
 			std::random_device device;
-			std::mt19937 generator(/*seed=*/device());
-			std::uniform_real_distribution<> distribution(-0.5, 0.5);
+			std::uniform_int_distribution<> intdistrib(0, 21474836);
+    		std::mt19937 gen(/*seed=*/device());
+			size_t index = intdistrib(gen);
 
 			for (auto ileaf = r.begin(); ileaf < r.end(); ++ileaf) {
 				auto& leaf = *leafarray[ileaf];
@@ -4034,7 +4201,7 @@ void FLIP_vdb::emit_liquid(
 					if (openvdb::tools::BoxSampler::sample(in_sdf_axr, voxelipos) < dx && liquid_phi>=0) {
 						const int max_emit_trial = 16;
 						for (int trial = 0; this_voxel_emitted < 8 && trial<max_emit_trial; trial++) {
-							openvdb::Vec3d particle_pipos{ distribution(generator) ,distribution(generator) ,distribution(generator) };
+							openvdb::Vec3d particle_pipos{ randomTable[(index++)%21474836],randomTable[(index++)%21474836],randomTable[(index++)%21474836] };
 							auto& p = particle_pipos;
 							unsigned char sv_pos = ((p[2] > 0) << 2) | ((p[1] > 0) << 1) | (p[0] > 0);
 							//only emit uniformly, otherwise skip it
@@ -4085,9 +4252,13 @@ void FLIP_vdb::emit_liquid(
 			auto in_sdf_axr{ in_sdf->getConstAccessor() };
 			float sdf_threshold = -dx * 0.55;
 
+			// std::random_device device;
+			// std::mt19937 generator(/*seed=*/device());
+			// std::uniform_real_distribution<> distribution(-0.5, 0.5);
 			std::random_device device;
-			std::mt19937 generator(/*seed=*/device());
-			std::uniform_real_distribution<> distribution(-0.5, 0.5);
+			std::uniform_int_distribution<> intdistrib(0, 21474836);
+    		std::mt19937 gen(/*seed=*/device());
+			size_t index = intdistrib(gen);
 
 			for (auto ileaf = r.begin(); ileaf < r.end(); ++ileaf) {
 				auto& leaf = *leafarray[ileaf];
@@ -4153,7 +4324,7 @@ void FLIP_vdb::emit_liquid(
 					if (openvdb::tools::BoxSampler::sample(in_sdf_axr, voxelipos) < dx && liquid_phi>=0)  {
 						const int max_emit_trial = 16;
 						for (int trial = 0; this_voxel_emitted < 8 && trial<max_emit_trial; trial++) {
-							openvdb::Vec3d particle_pipos{ distribution(generator) ,distribution(generator) ,distribution(generator) };
+							openvdb::Vec3d particle_pipos{ randomTable[(index++)%21474836],randomTable[(index++)%21474836],randomTable[(index++)%21474836] };
 							auto& p = particle_pipos;
 							unsigned char sv_pos = ((p[2] > 0) << 2) | ((p[1] > 0) << 1) | (p[0] > 0);
 							//only emit uniformly, otherwise skip it
