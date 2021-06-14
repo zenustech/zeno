@@ -40,6 +40,8 @@ def runGraphOnce(nodes, frame=None):
                 value = evaluateExpr(value, frame)
             core.setNodeParam(ident, name, value)
 
+        core.completeNode(ident)
+
     applies = []
     for ident in nodes:
         data = nodes[ident]

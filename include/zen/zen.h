@@ -87,7 +87,8 @@ public:
     ZENAPI INode();
     ZENAPI ~INode();
 
-    ZENAPI void doApply(Context *ctx);
+    ZENAPI void doApply();
+    ZENAPI virtual void complete();
 
 protected:
     /*
@@ -233,6 +234,7 @@ struct Session {
     std::map<std::string, std::unique_ptr<IObject>> objects;
     std::map<std::string, std::unique_ptr<INode>> nodes;
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
+    std::unique_ptr<Context> ctx;
 
     ZENAPI void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
     ZENAPI std::string getNodeOutput(std::string const &sn, std::string const &ss) const;
@@ -247,7 +249,8 @@ struct Session {
     ZENAPI void clearNodes();
     ZENAPI void applyNodes(std::vector<std::string> const &ids);
     ZENAPI void addNode(std::string const &cls, std::string const &id);
-    ZENAPI void requestNode(std::string const &id, Context *ctx);
+    ZENAPI void applyNode(std::string const &id);
+    ZENAPI void completeNode(std::string const &id);
     ZENAPI void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss);
     ZENAPI std::string dumpDescriptors() const;
@@ -279,6 +282,10 @@ inline void clearNodes() {
 
 inline void addNode(std::string const &cls, std::string const &id) {
     return getSession().addNode(cls, id);
+}
+
+inline void completeNode(std::string const &id) {
+    return getSession().completeNode(id);
 }
 
 inline void applyNodes(std::vector<std::string> const &ids) {

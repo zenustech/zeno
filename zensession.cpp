@@ -52,10 +52,12 @@ ZENAPI IObject::~IObject() = default;
 ZENAPI INode::INode() = default;
 ZENAPI INode::~INode() = default;
 
-ZENAPI void INode::doApply(Context *ctx) {
+ZENAPI void INode::complete() {}
+
+ZENAPI void INode::doApply() {
     for (auto [ds, bound]: inputBounds) {
         auto [sn, ss] = bound;
-        sess->requestNode(sn, ctx);
+        sess->applyNode(sn);
         inputs[ds] = sess->getNodeOutput(sn, ss);
     }
     bool ok = true;
@@ -119,19 +121,24 @@ ZENAPI void Session::addNode(std::string const &cls, std::string const &id) {
     nodes[id] = std::move(node);
 }
 
-ZENAPI void Session::requestNode(std::string const &id, Context *ctx) {
+ZENAPI void Session::completeNode(std::string const &id) {
+    nodes.at(id)->complete();
+}
+
+ZENAPI void Session::applyNode(std::string const &id) {
     if (ctx->visited.find(id) != ctx->visited.end()) {
         return;
     }
     ctx->visited.insert(id);
-    nodes.at(id)->doApply(ctx);
+    nodes.at(id)->doApply();
 }
 
 ZENAPI void Session::applyNodes(std::vector<std::string> const &ids) {
-    auto ctx = std::make_unique<Context>();
+    ctx = std::make_unique<Context>();
     for (auto const &id: ids) {
-        requestNode(id, ctx.get());
+        applyNode(id);
     }
+    ctx = nullptr;
 }
 
 ZENAPI void Session::bindNodeInput(std::string const &dn, std::string const &ds,
