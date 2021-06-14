@@ -70,6 +70,7 @@ class QDMGraphicsScene(QGraphicsScene):
 
         self.history_stack = HistoryStack(self)
         self.moved = False
+        self.mmd_press = False
 
     def dumpGraph(self):
         nodes = {}
@@ -264,6 +265,7 @@ class QDMGraphicsView(QGraphicsView):
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
             self.setDragMode(QGraphicsView.ScrollHandDrag)
+            self.scene().mmd_press = True
 
             releaseEvent = QMouseEvent(QEvent.MouseButtonRelease,
                     event.localPos(), event.screenPos(),
@@ -323,6 +325,7 @@ class QDMGraphicsView(QGraphicsView):
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MiddleButton:
             self.setDragMode(QGraphicsView.RubberBandDrag)
+            self.scene().mmd_press = False
 
         super().mouseReleaseEvent(event)
 
@@ -401,6 +404,11 @@ class QDMGraphicsPath(QGraphicsPathItem):
                     self.dstPos.x() - dist, self.dstPos.y(),
                     self.dstPos.x(), self.dstPos.y())
         self.setPath(path)
+
+    def mousePressEvent(self, event):
+        if self.scene().mmd_press:
+            return
+        super().mousePressEvent(event)
 
 
 class QDMGraphicsTempEdge(QDMGraphicsPath):
@@ -776,6 +784,10 @@ class QDMGraphicsNode(QGraphicsItem):
         painter.setBrush(Qt.NoBrush)
         painter.drawPath(pathOutline.simplified())
 
+    def mousePressEvent(self, event):
+        if self.scene().mmd_press:
+            return
+        super().mousePressEvent(event)
 
 class QDMFileMenu(QMenu):
     def __init__(self):
