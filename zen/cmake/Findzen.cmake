@@ -28,7 +28,7 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
 
 message("zen_INSTALL_DIR=${zen_INSTALL_DIR}")
 
-set(zen_AUTOLOAD_DIR ${zen_INSTALL_DIR}/autoload)
+set(zen_AUTOLOAD_DIR ${zen_INSTALL_DIR}/lib)
 set(zen_CMAKE_MODULE_DIR ${zen_INSTALL_DIR}/share/cmake)
 set(zen_INCLUDE_DIR ${zen_INSTALL_DIR}/include)
 set(zen_LIBRARY_DIR ${zen_INSTALL_DIR}/lib)

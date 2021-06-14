@@ -33,7 +33,6 @@ data_files += glob('zenvis/*.pyd')
 data_files += treefiles('zen/lib')
 data_files += treefiles('zen/cmake')
 data_files += treefiles('zen/include')
-data_files += treefiles('zen/autoload')
 
 print('version:', version)
 print('packages:', packages)

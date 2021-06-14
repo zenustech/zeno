@@ -1,15 +1,9 @@
-import os, time
+import os, time, win32api, ctypes
 
-from zenutils import load_library, add_library_path, rel2abs, os_name
+from zenutils import load_library, rel2abs, os_name
 
-if os_name == 'linux':
-    libpath = rel2abs(__file__, 'lib', 'libzensession.so')
-    load_library(libpath)
-elif os_name == 'win32':
-    libname = 'zensession.dll'
-    libdir = rel2abs(__file__, 'lib')
-    add_library_path(libdir)
-    load_library(libname)
+win32api.SetDllDirectory(rel2abs(__file__, 'lib'))
+ctypes.cdll.LoadLibrary('zensession.dll')
 
 from . import libzenpy as core
 
