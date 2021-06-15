@@ -108,8 +108,8 @@ struct NumericOperator : zen::INode {
         } \
     }; \
  \
-    template <class T0, class T1, class T2> \
-    struct _op_##name<_left_t<T0, decltype( \
+    template <class T1, class T2> \
+    struct _op_##name<std::void_t<decltype( \
             std::declval<T1>() op std::declval<T2>())>, T1, T2> { \
         static auto apply(T1 const &t1, T2 const &t2) { \
             return t1 op t2; \
@@ -130,8 +130,8 @@ struct NumericOperator : zen::INode {
         } \
     }; \
  \
-    template <class T0, class T1> \
-    struct _op_##name<_left_t<T0, decltype( \
+    template <class T1> \
+    struct _op_##name<std::void_t<decltype( \
             op std::declval<T1>())>, T1> { \
         static auto apply(T1 const &t1) { \
             return op t1; \
@@ -152,8 +152,8 @@ struct NumericOperator : zen::INode {
         } \
     }; \
  \
-    template <class T0, class ...Ts> \
-    struct _op_##name<_left_t<T0, decltype( \
+    template <class ...Ts> \
+    struct _op_##name<std::void_t<decltype( \
             zen::name(std::declval<Ts>()...))>, Ts...> { \
         static auto apply(Ts const &...ts) { \
             return zen::name(ts...); \

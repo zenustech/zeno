@@ -21,5 +21,5 @@ struct GlobalState {
     ZENAPI void setIOPath(std::string const &iopath_);
 };
 
-extern GlobalState state;
+ZENAPI extern GlobalState state;
 }

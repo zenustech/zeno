@@ -1,4 +1,3 @@
-#define _ZEN_INDLL
 #include <zen/zen.h>
 #include <zen/ConditionObject.h>
 

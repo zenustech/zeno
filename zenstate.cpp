@@ -2,7 +2,7 @@
 
 namespace zen {
 
-GlobalState state;
+ZENAPI GlobalState state;
 
 ZENAPI bool GlobalState::substepBegin() {
     if (has_substep_executed) {
