@@ -8,7 +8,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../zen/cm
 
 include_directories(include)
 
-#add_subdirectory(zenbase)
+add_subdirectory(zenbase)
 #add_subdirectory(ZMS)
 #add_subdirectory(zenvdb)
 #add_subdirectory(FastFLIP)
