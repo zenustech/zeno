@@ -179,6 +179,11 @@ class QDMGraphicsScene(QGraphicsScene):
     def redo(self):
         self.history_stack.redo()
 
+    def mousePressEvent(self, event):
+        if self.scene().mmd_press:
+            return
+        super().mousePressEvent(event)
+
 
 class QDMSearchLineEdit(QLineEdit):
     def __init__(self, menu, view):
@@ -409,10 +414,6 @@ class QDMGraphicsPath(QGraphicsPathItem):
                     self.dstPos.x(), self.dstPos.y())
         self.setPath(path)
 
-    def mousePressEvent(self, event):
-        if self.scene().mmd_press:
-            return
-        super().mousePressEvent(event)
 
 
 class QDMGraphicsTempEdge(QDMGraphicsPath):
@@ -788,10 +789,6 @@ class QDMGraphicsNode(QGraphicsItem):
         painter.setBrush(Qt.NoBrush)
         painter.drawPath(pathOutline.simplified())
 
-    def mousePressEvent(self, event):
-        if self.scene().mmd_press:
-            return
-        super().mousePressEvent(event)
 
 class QDMFileMenu(QMenu):
     def __init__(self):
