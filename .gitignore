@@ -21,10 +21,6 @@ outputs/
 rubbish.bin/
 /assets/galaxy
 
-# autogen files
-/zen/usr/
-/zen/autoload/
-
 # vim files
 .*.swp
 .*.un~
@@ -40,3 +36,6 @@ rubbish.bin/
 *.manifest
 *.exp
 /CMakeSettings.json
+
+# binary folders
+/zen/lib/

@@ -18,7 +18,7 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
         RESULT_VARIABLE zen_IMPORT_RET)
 if (zen_IMPORT_RET)
     # returns zero if success
-    message(FATAL_ERROR "Failed to import zenutils. Have you installed it or add it to PYTHONPATH? Also try clean autoload folder?")
+    message(FATAL_ERROR "Failed to import zenutils. Have you installed it or add it to PYTHONPATH?")
 endif ()
 
 
@@ -28,14 +28,14 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
 
 message("zen_INSTALL_DIR=${zen_INSTALL_DIR}")
 
-set(zen_AUTOLOAD_DIR ${zen_INSTALL_DIR}/autoload)
-set(zen_CMAKE_MODULE_DIR ${zen_INSTALL_DIR}/usr/share/cmake)
-set(zen_INCLUDE_DIR ${zen_INSTALL_DIR}/usr/include)
-set(zen_LIBRARY_DIR ${zen_INSTALL_DIR}/usr/lib)
+set(zen_AUTOLOAD_DIR ${zen_INSTALL_DIR}/lib)
+set(zen_CMAKE_MODULE_DIR ${zen_INSTALL_DIR}/share/cmake)
+set(zen_INCLUDE_DIR ${zen_INSTALL_DIR}/include)
+set(zen_LIBRARY_DIR ${zen_INSTALL_DIR}/lib)
 if (NOT WIN32)
-    set(zen_LIBRARY ${zen_INSTALL_DIR}/usr/lib/libzensession.so)
+    set(zen_LIBRARY ${zen_LIBRARY_DIR}/libzensession.so)
 else()
-    set(zen_LIBRARY ${zen_INSTALL_DIR}/usr/lib/zensession.lib)
+    set(zen_LIBRARY ${zen_LIBRARY_DIR}/zensession.lib)
 endif()
 
 message("zen_INCLUDE_DIR=${zen_INCLUDE_DIR}")

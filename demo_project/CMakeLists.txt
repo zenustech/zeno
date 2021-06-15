@@ -2,10 +2,11 @@ cmake_minimum_required(VERSION 3.12)
 project(demo_project LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_BUILD_TYPE Debug)  # WARNING: YOU MUST USE RELEASE BUILD ON WINDOWS THANKS TO THE STUPID MECHINISM OF MSVC!
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../share/cmake)
+set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../zen/cmake)
+set(ENV{PYTHONPATH} ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
-add_library(demo_project SHARED MyNode.cpp)
+add_library(demo_project SHARED main.cpp)
 
 find_package(zen REQUIRED)
 target_link_libraries(demo_project PRIVATE zen)

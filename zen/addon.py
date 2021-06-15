@@ -1,33 +1,37 @@
-import os
+import os, ctypes
 
-from zenutils import load_library, rel2abs, os_name
+from zenutils import rel2abs, os_name
 
 def getInstallDir():
     return rel2abs(__file__)
 
 def getIncludeDir():
-    return rel2abs(__file__, 'usr', 'include')
+    return rel2abs(__file__, 'include')
 
 def getLibraryDir():
-    return rel2abs(__file__, 'usr', 'lib')
+    return rel2abs(__file__, 'lib')
+
+def getCMakeDir():
+    return rel2abs(__file__, 'cmake')
 
 def getAutoloadDir():
-    return rel2abs(__file__, 'autoload')
+    return rel2abs(__file__, 'lib')
 
 def loadAutoloads():
-	dir = getAutoloadDir()
-	if os.path.isdir(dir):
-		for name in os.listdir(dir):
-			ext = ''
-			if os_name == 'linux':
-				ext = '.so'
-			elif os_name == 'win32':
-				ext = '.dll'
-			if name.endswith(ext):
-				path = os.path.join(dir, name)
-				load_library(path, ignore_errors=True)
+    dir = getAutoloadDir()
+    if os.path.isdir(dir):
+        for name in os.listdir(dir):
+            if os_name == 'win32':
+                if name.endswith('.dll'):
+                    print('Loading addon [{}]'.format(name))
+                    ctypes.cdll.LoadLibrary(name)
+            else:
+                if name.endswith('.so'):
+                    path = os.path.join(dir, name)
+                    print('Loading addon [{}]'.format(path))
+                    ctypes.cdll.LoadLibrary(path)
 
 if not os.environ.get('ZEN_NOAUTOLOAD'):
     loadAutoloads()
 
-__all__ = ['getInstallDir', 'getIncludeDir', 'getLibraryDir', 'getAutoloadDir', 'loadAutoloads']
+__all__ = ['getInstallDir', 'getIncludeDir', 'getLibraryDir', 'getAutoloadDir', 'getCMakeDir', 'loadAutoloads']

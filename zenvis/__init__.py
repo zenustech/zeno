@@ -39,7 +39,7 @@ def _recieveStatus():
 old_frame_files = ()
 
 def _frameUpdate():
-    max_frameid = zenapi.getFrameCount(1000)
+    max_frameid = zenapi.getFrameCount()
     frameid = core.get_curr_frameid()
     if status['playing']:
         frameid += 1
