@@ -70,7 +70,7 @@ class QDMGraphicsScene(QGraphicsScene):
 
         self.history_stack = HistoryStack(self)
         self.moved = False
-        self.mmd_press = False
+        self.mmb_press = False
 
     def dumpGraph(self):
         nodes = {}
@@ -180,7 +180,7 @@ class QDMGraphicsScene(QGraphicsScene):
         self.history_stack.redo()
 
     def mousePressEvent(self, event):
-        if self.scene().mmd_press:
+        if self.mmb_press:
             return
         super().mousePressEvent(event)
 
@@ -269,7 +269,7 @@ class QDMGraphicsView(QGraphicsView):
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
             self.setDragMode(QGraphicsView.ScrollHandDrag)
-            self.scene().mmd_press = True
+            self.scene().mmb_press = True
 
             releaseEvent = QMouseEvent(QEvent.MouseButtonRelease,
                     event.localPos(), event.screenPos(),
@@ -332,7 +332,7 @@ class QDMGraphicsView(QGraphicsView):
         super().mouseReleaseEvent(event)
 
         if event.button() == Qt.MiddleButton:
-            self.scene().mmd_press = False
+            self.scene().mmb_press = False
             self.setDragMode(0)
 
         elif event.button() == Qt.LeftButton:
