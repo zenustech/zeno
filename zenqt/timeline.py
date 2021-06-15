@@ -35,7 +35,7 @@ class TimelineWidget(QWidget):
         self.maxframe.setText(str(self.slider.maximum()))
 
     def maxframe_changed(self):
-        self.slider.setMaximum(int(self.maxframe.text()))
+        self.slider.setMaximum(int('0' + self.maxframe.text()))
 
     def on_update(self):
         frameid = zenvis.status['frameid']

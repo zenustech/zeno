@@ -19,7 +19,7 @@
 # else
 #  define ZENAPI __declspec(dllimport)
 # endif
-# define ZENDEPRECATED
+# define ZENDEPRECATED __declspec(deprecated)
 
 #else
 
@@ -50,7 +50,7 @@ using IValue = std::variant<std::string, int, float>;
 
 
 struct IObject {
-#ifndef ZEN_FREE_IOBJECT
+#ifndef _ZEN_FREE_IOBJECT
     ZENAPI IObject();
     ZENAPI virtual ~IObject();
 #else
@@ -303,8 +303,9 @@ inline void setNodeParam(std::string const &id, std::string const &par,
 }
 
 
-#define ZENDEFNODE(Class, desc...) \
-    static int def##Class = zen::defNodeClass(std::make_unique<Class>, #Class, desc)
+
+#define ZENDEFNODE(Class, ...) \
+    static int def##Class = zen::defNodeClass(std::make_unique<Class>, #Class, __VA_ARGS__)
 
 
 }

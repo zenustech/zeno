@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 project(zeno LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(external/pybind11)
@@ -10,9 +10,10 @@ add_subdirectory(external/glad)
 add_subdirectory(zenvis)
 
 
-file(GLOB ZENODES_SOURCE zenodes/*.cpp zen/include/zen/*.h)
+file(GLOB ZENSESSION_SOURCE zen/*.cpp zen/nodes/*.cpp zen/include/zen/*.h)
 
-add_library(zensession SHARED zensession.cpp zenstate.cpp ${ZENODES_SOURCE})
+add_library(zensession SHARED ${ZENSESSION_SOURCE})
+target_compile_definitions(zensession PRIVATE -D_ZEN_INDLL)
 target_include_directories(zensession PRIVATE zen/include)
 set(OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zen/lib)
 set_target_properties(zensession PROPERTIES
@@ -48,10 +49,4 @@ add_custom_command(TARGET libzenpy PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/lib
     )
 
-add_custom_command(TARGET libzenpy POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/README.md ${CMAKE_CURRENT_SOURCE_DIR}/zen/autoload/README.md
-    )
-
-add_subdirectory(demo_project)
 add_subdirectory(Projects)

@@ -1,4 +1,3 @@
-#define _ZEN_INDLL
 #include <zen/zen.h>
 #include <zen/ConditionObject.h>
 
@@ -29,7 +28,7 @@ T safe_at(std::map<std::string, T> const &m, std::string const &key,
           std::string const &msg) {
   auto it = m.find(key);
   if (it == m.end()) {
-    throw std::string("invalid " + msg + " name: " + key);
+    throw Exception("invalid " + msg + " name: " + key);
   }
   return it->second;
 }
@@ -38,7 +37,7 @@ template <class T, class S>
 T safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) {
   auto it = m.find(key);
   if (it == m.end()) {
-    throw std::string("invalid " + msg + "as index");
+    throw Exception("invalid " + msg + " as index");
   }
   return it->second;
 }
@@ -76,11 +75,11 @@ ZENAPI bool INode::has_input(std::string const &id) const {
 }
 
 ZENAPI IObject *INode::get_input(std::string const &id) const {
-    return sess->getObject(inputs.at(id));
+    return sess->getObject(safe_at(inputs, id, "input"));
 }
 
 ZENAPI IValue INode::get_param(std::string const &id) const {
-    return params.at(id);
+    return safe_at(params, id, "param");
 }
 
 ZENAPI void INode::set_output(std::string const &id, std::unique_ptr<IObject> &&obj) {
@@ -94,7 +93,7 @@ ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref)
 }
 
 ZENAPI std::string INode::get_input_ref(const std::string &id) const {
-    return inputs.at(id);
+    return safe_at(inputs, id, "input");
 }
 
 ZENAPI void Session::_defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls) {
@@ -102,11 +101,12 @@ ZENAPI void Session::_defNodeClass(std::string const &id, std::unique_ptr<INodeC
 }
 
 ZENAPI std::string Session::getNodeOutput(std::string const &sn, std::string const &ss) const {
-    return nodes.at(sn)->outputs.at(ss);
+    auto node = safe_at(nodes, sn, "node");
+    return safe_at(node->outputs, ss, "node output");
 }
 
 ZENAPI IObject *Session::getObject(std::string const &id) const {
-    return objects.at(id).get();
+    return safe_at(objects, id, "object");
 }
 
 ZENAPI void Session::clearNodes() {
@@ -116,15 +116,20 @@ ZENAPI void Session::clearNodes() {
 
 ZENAPI void Session::addNode(std::string const &cls, std::string const &id) {
     if (nodes.find(id) != nodes.end())
+<<<<<<< HEAD:zensession.cpp
         return;
     auto node = nodeClasses.at(cls)->new_instance();
+=======
+        return;  // no add twice, to prevent output object invalid
+    auto node = safe_at(nodeClasses, cls, "node class")->new_instance();
+>>>>>>> master:zen/zen.cpp
     node->sess = this;
     node->myname = id;
     nodes[id] = std::move(node);
 }
 
 ZENAPI void Session::completeNode(std::string const &id) {
-    nodes.at(id)->complete();
+    safe_at(nodes, id, "node")->complete();
 }
 
 ZENAPI void Session::applyNode(std::string const &id) {
@@ -132,7 +137,7 @@ ZENAPI void Session::applyNode(std::string const &id) {
         return;
     }
     ctx->visited.insert(id);
-    nodes.at(id)->doApply();
+    safe_at(nodes, id, "node")->doApply();
 }
 
 ZENAPI void Session::applyNodes(std::vector<std::string> const &ids) {
@@ -145,12 +150,12 @@ ZENAPI void Session::applyNodes(std::vector<std::string> const &ids) {
 
 ZENAPI void Session::bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss) {
-    nodes.at(dn)->inputBounds[ds] = std::pair(sn, ss);
+    safe_at(nodes, dn, "node")->inputBounds[ds] = std::pair(sn, ss);
 }
 
 ZENAPI void Session::setNodeParam(std::string const &id, std::string const &par,
         IValue const &val) {
-    nodes.at(id)->params[par] = val;
+    safe_at(nodes, id, "node")->params[par] = val;
 }
 
 ZENAPI std::string Session::dumpDescriptors() const {

@@ -18,11 +18,13 @@ def getFrameFiles(frameid):
     return tuple(res)
 
 
-def getFrameCount(max_frameid):
+def getFrameCount(max_frameid=None):
     if launch.g_iopath is None:
         return 0
-    for frameid in range(max_frameid):
+    frameid = 0
+    while max_frameid is None or frameid < max_frameid:
         dirpath = os.path.join(launch.g_iopath, '{:06d}'.format(frameid))
         if not os.path.exists(os.path.join(dirpath, 'done.lock')):
             return frameid
+        frameid += 1
     return max_frameid
