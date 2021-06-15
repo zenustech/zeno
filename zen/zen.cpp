@@ -116,13 +116,8 @@ ZENAPI void Session::clearNodes() {
 
 ZENAPI void Session::addNode(std::string const &cls, std::string const &id) {
     if (nodes.find(id) != nodes.end())
-<<<<<<< HEAD:zensession.cpp
-        return;
-    auto node = nodeClasses.at(cls)->new_instance();
-=======
         return;  // no add twice, to prevent output object invalid
     auto node = safe_at(nodeClasses, cls, "node class")->new_instance();
->>>>>>> master:zen/zen.cpp
     node->sess = this;
     node->myname = id;
     nodes[id] = std::move(node);
