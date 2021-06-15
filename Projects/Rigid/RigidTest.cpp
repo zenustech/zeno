@@ -1,7 +1,8 @@
 #include <zen/zen.h>
 #include <zen/NumericObject.h>
-#include <stdio.h>
+#include <zen/PrimitiveObject.h>
 #include <btBulletDynamicsCommon.h>
+#include <BulletCollision/CollisionShapes/btShapeHull.h>
 #include <memory>
 #include <vector>
 
@@ -47,6 +48,50 @@ ZENDEFNODE(BulletMakeSphereShape, {
 });
 
 
+struct BulletTriangleMesh : zen::IObject {
+    btTriangleMesh mesh;
+};
+
+struct PrimitiveToBulletMesh : zen::INode {
+    virtual void apply() override {
+        auto prim = get_input<zen::PrimitiveObject>("prim");
+        auto mesh = std::make_unique<BulletTriangleMesh>();
+        // ...
+        set_output("mesh", std::move(mesh));
+    }
+};
+
+ZENDEFNODE(PrimitiveToBulletMesh, {
+    {"prim"},
+    {"mesh"},
+    {},
+    {"Rigid"},
+});
+
+struct BulletMakeConvexHullShape : zen::INode {
+    virtual void apply() override {
+
+        auto triMesh = &get_input<BulletTriangleMesh>("triMesh")->mesh;
+        auto inShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
+        auto hull = std::make_unique<btShapeHull>(inShape.get());
+        hull->buildHull(inShape->getMargin());
+
+        auto shape = std::make_unique<BulletCollisionShape>(
+            std::make_unique<btConvexHullShape>(
+                reinterpret_cast<const float *>(hull->getVertexPointer()),
+                hull->numVertices()));
+        set_output("shape", std::move(shape));
+    }
+};
+
+ZENDEFNODE(BulletMakeConvexHullShape, {
+    {"triMesh"},
+    {"shape"},
+    {},
+    {"Rigid"},
+});
+
+
 struct BulletTransform : zen::IObject {
     btTransform trans;
 };
@@ -70,7 +115,6 @@ ZENDEFNODE(BulletMakeTransform, {
 
 
 struct BulletObject : zen::IObject {
-    std::unique_ptr<btCollisionShape> colShape;
     std::unique_ptr<btDefaultMotionState> myMotionState;
     std::unique_ptr<btRigidBody> body;
     btScalar mass = 0.f;
@@ -78,8 +122,8 @@ struct BulletObject : zen::IObject {
 
     BulletObject(btScalar mass_,
         btTransform const &trans,
-        std::unique_ptr<btCollisionShape> &&colShape_)
-        : mass(mass_), colShape(std::move(colShape_))
+        btCollisionShape *colShape)
+        : mass(mass_)
     {
         btVector3 localInertia(0, 0, 0);
         if (mass != 0)
@@ -87,7 +131,7 @@ struct BulletObject : zen::IObject {
 
         //using motionstate is optional, it provides interpolation capabilities, and only synchronizes 'active' objects
         myMotionState = std::make_unique<btDefaultMotionState>(trans);
-        btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState.get(), colShape.get(), localInertia);
+        btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState.get(), colShape, localInertia);
         body = std::make_unique<btRigidBody>(rbInfo);
     }
 };
@@ -98,7 +142,7 @@ struct BulletMakeObject : zen::INode {
         auto mass = get_input<zen::NumericObject>("mass")->get<float>();
         auto trans = get_input<BulletTransform>("trans");
         auto object = std::make_unique<BulletObject>(
-            mass, trans->trans, std::move(shape->shape));
+            mass, trans->trans, shape->shape.get());
         set_output("object", std::move(object));
     }
 };
