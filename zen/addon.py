@@ -6,28 +6,32 @@ def getInstallDir():
     return rel2abs(__file__)
 
 def getIncludeDir():
-    return rel2abs(__file__, 'usr', 'include')
+    return rel2abs(__file__, 'include')
 
 def getLibraryDir():
-    return rel2abs(__file__, 'usr', 'lib')
+    return rel2abs(__file__, 'lib')
+
+def getCMakeDir():
+    return rel2abs(__file__, 'cmake')
 
 def getAutoloadDir():
     return rel2abs(__file__, 'autoload')
 
 def loadAutoloads():
-	dir = getAutoloadDir()
-	if os.path.isdir(dir):
-		for name in os.listdir(dir):
-			ext = ''
-			if os_name == 'linux':
-				ext = '.so'
-			elif os_name == 'win32':
-				ext = '.dll'
-			if name.endswith(ext):
-				path = os.path.join(dir, name)
-				load_library(path, ignore_errors=True)
+    dir = getAutoloadDir()
+    if os.path.isdir(dir):
+        for name in os.listdir(dir):
+            ext = ''
+            if os_name == 'linux':
+                ext = '.so'
+            elif os_name == 'win32':
+                ext = '.dll'
+            if name.endswith(ext):
+                path = os.path.join(dir, name)
+                print('Loading addon module from [{}]'.format(path))
+                load_library(path, ignore_errors=True)
 
 if not os.environ.get('ZEN_NOAUTOLOAD'):
     loadAutoloads()
 
-__all__ = ['getInstallDir', 'getIncludeDir', 'getLibraryDir', 'getAutoloadDir', 'loadAutoloads']
+__all__ = ['getInstallDir', 'getIncludeDir', 'getLibraryDir', 'getAutoloadDir', 'getCMakeDir', 'loadAutoloads']

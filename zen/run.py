@@ -1,54 +1,57 @@
-import zen
-
-from zenutils import run_script
+from . import core
 
 
 
 def runGraph(nodes, nframes, iopath):
-    zen.setIOPath(iopath)
+    core.setIOPath(iopath)
     for frameid in range(nframes):
         print('FRAME:', frameid)
-        zen.frameBegin()
-        while zen.substepShouldContinue():
-            zen.substepBegin()
-            runGraphOnce(nodes)
-            zen.substepEnd()
-        zen.frameEnd()
+        core.frameBegin()
+        while core.substepBegin():
+            runGraphOnce(nodes, frameid)
+            core.substepEnd()
+        core.frameEnd()
     print('EXITING')
 
 
-def evaluateExpr(expr):
-    frame = zen.G.frameid
+def evaluateExpr(expr, frame=None):
     return eval('f' + repr(expr))
 
 
-def runGraphOnce(nodes):
+def runGraphOnce(nodes, frame=None):
+    core.clearNodes()
+
     for ident in nodes:
         data = nodes[ident]
         name = data['name']
         inputs = data['inputs']
         params = data['params']
 
-        zen.addNode(name, ident)
+        core.addNode(name, ident)
 
         for name, input in inputs.items():
             if input is None:
                 continue
             srcIdent, srcSockName = input
-            inputObjName = srcIdent + '::' + srcSockName
-            zen.setNodeInput(ident, name, inputObjName)
+            core.bindNodeInput(ident, name, srcIdent, srcSockName)
 
         for name, value in params.items():
             if type(value) is str:
-                value = evaluateExpr(value)
-            zen.setNodeParam(ident, name, value)
+                value = evaluateExpr(value, frame)
+            core.setNodeParam(ident, name, value)
 
-        zen.initNode(ident)
+        core.completeNode(ident)
 
+    applies = []
     for ident in nodes:
         data = nodes[ident]
         if 'OUT' in data['options']:
-            zen.applyNode(ident)
+            applies.append(ident)
+
+    core.applyNodes(applies)
+
+def dumpDescriptors():
+    return core.dumpDescriptors()
 
 
-__all__ = ['runGraph', 'runGraphOnce']
+__all__ = ['runGraph', 'runGraphOnce', 'dumpDescriptors']
