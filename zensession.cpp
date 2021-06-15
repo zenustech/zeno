@@ -115,6 +115,8 @@ ZENAPI void Session::clearNodes() {
 }
 
 ZENAPI void Session::addNode(std::string const &cls, std::string const &id) {
+    if (nodes.find(id) != nodes.end())
+        return;
     auto node = nodeClasses.at(cls)->new_instance();
     node->sess = this;
     node->myname = id;

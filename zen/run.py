@@ -19,7 +19,7 @@ def evaluateExpr(expr, frame=None):
 
 
 def runGraphOnce(nodes, frame=None):
-    core.clearNodes()
+    #core.clearNodes()
 
     for ident in nodes:
         data = nodes[ident]
