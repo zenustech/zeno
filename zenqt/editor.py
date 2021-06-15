@@ -322,13 +322,13 @@ class QDMGraphicsView(QGraphicsView):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        super().mouseReleaseEvent(event)
+
         if event.button() == Qt.MiddleButton:
             self.setDragMode(0)
 
         elif event.button() == Qt.LeftButton:
             self.setDragMode(0)
-
-        super().mouseReleaseEvent(event)
 
         if self.scene().moved:
             self.scene().record()
