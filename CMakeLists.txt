@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 project(zeno LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(external/pybind11)
@@ -49,5 +49,4 @@ add_custom_command(TARGET libzenpy PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/lib
     )
 
-add_subdirectory(demo_project)
 add_subdirectory(Projects)
