@@ -47,6 +47,12 @@ low-level details.
 Performance-wisely, it's shown by @zhxx1987 that our FLIP solver is 4x faster than
 Houdini at large scale.
 
+## Control-flows
+
+Unlike many node systems (e.g. Blender), ZENO has a strong time-order and provide a
+lot of control-flow nodes including IfCondition, RepeatUntil, CreateMutable, etc..
+This enable you to make turing-equivalent programs that fit real-world problems.
+
 ## Unified
 
 Despite we already have many node systems today, but the are usually bound to
