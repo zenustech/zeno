@@ -12,6 +12,49 @@ from PyQt5.QtGui import *
 from zenutils import go, gen_unique_ident
 import zenapi
 
+MAX_STACK_LENGTH = 100
+
+class HistoryStack:
+    def __init__(self, scene):
+        self.scene = scene
+        self.init_state()
+    
+    def init_state(self):
+        self.current_pointer = -1
+        self.stack = []
+
+    def undo(self):
+        # can not undo at stack bottom
+        if self.current_pointer == 0:
+            return
+
+        self.current_pointer -= 1
+        current_scene = self.stack[self.current_pointer]
+        self.scene.newGraph()
+        self.scene.loadGraph(current_scene)
+
+    def redo(self):
+        # can not redo at stack top
+        if self.current_pointer == len(self.stack) - 1:
+            return
+
+        self.current_pointer += 1
+        current_scene = self.stack[self.current_pointer]
+        self.scene.newGraph()
+        self.scene.loadGraph(current_scene)
+    
+    def record(self):
+        if self.current_pointer != len(self.stack) - 1:
+            self.stack = self.stack[:self.current_pointer + 1]
+
+        nodes = self.scene.dumpGraph()
+        self.stack.append(nodes)
+        self.current_pointer += 1
+
+        # limit the stack length
+        if self.current_pointer > MAX_STACK_LENGTH:
+            self.stack = self.stack[1:]
+            self.current_pointer = MAX_STACK_LENGTH
 
 class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
@@ -24,6 +67,9 @@ class QDMGraphicsScene(QGraphicsScene):
         self.descs = {}
         self.cates = {}
         self.nodes = []
+
+        self.history_stack = HistoryStack(self)
+        self.moved = False
 
     def dumpGraph(self):
         nodes = {}
@@ -123,6 +169,15 @@ class QDMGraphicsScene(QGraphicsScene):
             for cate in desc['categories']:
                 self.cates.setdefault(cate, []).append(name)
 
+    def record(self):
+        self.history_stack.record()
+
+    def undo(self):
+        self.history_stack.undo()
+
+    def redo(self):
+        self.history_stack.redo()
+
 
 class QDMSearchLineEdit(QLineEdit):
     def __init__(self, menu, view):
@@ -203,6 +258,7 @@ class QDMGraphicsView(QGraphicsView):
         node = self.scene().makeNode(name)
         node.setPos(self.lastContextMenuPos)
         self.scene().addNode(node)
+        self.scene().record()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
@@ -212,7 +268,7 @@ class QDMGraphicsView(QGraphicsView):
                     event.localPos(), event.screenPos(),
                     Qt.MiddleButton, Qt.NoButton,
                     event.modifiers())
-            super().mousePressEvent(releaseEvent)
+            super().mouseReleaseEvent(releaseEvent)
 
             fakeEvent = QMouseEvent(event.type(),
                     event.localPos(), event.screenPos(),
@@ -250,6 +306,8 @@ class QDMGraphicsView(QGraphicsView):
                 self.scene().removeItem(edge)
                 self.scene().update()
                 self.dragingEdge = None
+                if isinstance(item, QDMGraphicsSocket):
+                    self.scene().record()
 
         super().mousePressEvent(event)
 
@@ -271,6 +329,10 @@ class QDMGraphicsView(QGraphicsView):
             self.setDragMode(0)
 
         super().mouseReleaseEvent(event)
+
+        if self.scene().moved:
+            self.scene().record()
+            self.scene().moved = False
 
     def wheelEvent(self, event):
         zoomFactor = 1
@@ -498,6 +560,7 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
         super().__init__(parent)
 
         self.initLayout()
+        self.edit.editingFinished.connect(lambda : parent.scene().record())
         assert hasattr(self, 'layout')
 
         self.widget = QWidget()
@@ -617,6 +680,10 @@ class QDMGraphicsNode(QGraphicsItem):
         self.name = None
         self.ident = gen_unique_ident()
 
+    def mouseMoveEvent(self, event):
+        super().mouseMoveEvent(event)
+        self.scene().moved = True
+
     def remove(self):
         for socket in list(self.inputs.values()):
             socket.remove()
@@ -725,6 +792,9 @@ class QDMFileMenu(QMenu):
                 ('&Open', QKeySequence.Open),
                 ('&Save', QKeySequence.Save),
                 ('Save &as', QKeySequence.SaveAs),
+                (None, None),
+                ('Undo', QKeySequence.Undo),
+                ('Redo', QKeySequence.Redo),
         ]
         
         for name, shortcut in acts:
@@ -758,6 +828,7 @@ class NodeEditor(QWidget):
         self.layout.addWidget(self.view)
 
         self.scene = QDMGraphicsScene()
+        self.scene.record()
         self.view.setScene(self.scene)
 
         self.initExecute()
@@ -781,7 +852,10 @@ class NodeEditor(QWidget):
         self.msgDel.activated.connect(self.on_delete)
 
     def initExecute(self):
+        validator = QIntValidator()
+        validator.setBottom(0)
         self.edit_nframes = QLineEdit(self)
+        self.edit_nframes.setValidator(validator)
         self.edit_nframes.move(20, 40)
         self.edit_nframes.resize(30, 30)
         self.edit_nframes.setText('1')
@@ -822,11 +896,14 @@ class NodeEditor(QWidget):
         if not itemList: return
         for item in itemList:
             item.remove()
+        self.scene.record()
 
     def menuTriggered(self, act):
         name = act.text()
         if name == '&New':
             self.scene.newGraph()
+            self.scene.history_stack.init_state()
+            self.scene.record()
             self.current_path = None
 
         elif name == '&Open':
@@ -846,6 +923,12 @@ class NodeEditor(QWidget):
         elif name == '&Save':
             self.do_save(self.current_path)
 
+        elif name == 'Undo':
+            self.scene.undo()
+
+        elif name == 'Redo':
+            self.scene.redo()
+
     def do_save(self, path):
         graph = self.scene.dumpGraph()
         with open(path, 'w') as f:
@@ -855,7 +938,9 @@ class NodeEditor(QWidget):
         with open(path, 'r') as f:
             graph = json.load(f)
         self.scene.newGraph()
+        self.scene.history_stack.init_state()
         self.scene.loadGraph(graph)
+        self.scene.record()
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:

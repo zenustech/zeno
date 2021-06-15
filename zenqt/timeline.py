@@ -15,7 +15,7 @@ class TimelineWidget(QWidget):
         self.slider = QSlider(Qt.Horizontal)
         self.slider.valueChanged.connect(self.value_changed)
         self.slider.setMinimum(0)
-        self.slider.setMaximum(1000)
+        self.slider.setMaximum(1)
 
         self.player = QCheckBox('Play')
         self.player.clicked.connect(self.value_changed)
@@ -27,6 +27,15 @@ class TimelineWidget(QWidget):
         layout.addWidget(self.slider)
         layout.addWidget(self.status)
         self.setLayout(layout)
+
+    def setEditor(self, editor):
+        self.editor = editor
+        self.maxframe = self.editor.edit_nframes
+        self.maxframe.textChanged.connect(self.maxframe_changed)
+        self.maxframe.setText(str(self.slider.maximum()))
+
+    def maxframe_changed(self):
+        self.slider.setMaximum(int(self.maxframe.text()))
 
     def on_update(self):
         frameid = zenvis.status['frameid']

@@ -22,7 +22,7 @@ rubbish.bin/
 /assets/galaxy
 
 # autogen files
-/zen/usr/
+/zen/lib/
 /zen/autoload/
 
 # vim files

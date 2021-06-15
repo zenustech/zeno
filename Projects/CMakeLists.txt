@@ -4,11 +4,11 @@ project(zeno_projects LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../share/cmake ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../zen/cmake ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include_directories(include)
 
-add_subdirectory(zenbase)
+#add_subdirectory(zenbase)
 #add_subdirectory(ZMS)
 #add_subdirectory(zenvdb)
 #add_subdirectory(FastFLIP)

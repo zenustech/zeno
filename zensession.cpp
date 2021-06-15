@@ -1,5 +1,6 @@
 #define _ZEN_INDLL
 #include <zen/zen.h>
+#include <zen/ConditionObject.h>
 
 namespace zen {
 
@@ -51,13 +52,23 @@ ZENAPI IObject::~IObject() = default;
 ZENAPI INode::INode() = default;
 ZENAPI INode::~INode() = default;
 
-ZENAPI void INode::doApply(Context *ctx) {
+ZENAPI void INode::complete() {}
+
+ZENAPI void INode::doApply() {
     for (auto [ds, bound]: inputBounds) {
         auto [sn, ss] = bound;
-        sess->requestNode(sn, ctx);
+        sess->applyNode(sn);
         inputs[ds] = sess->getNodeOutput(sn, ss);
     }
-    apply();
+    bool ok = true;
+    if (has_input("COND")) {
+        auto cond = get_input<zen::ConditionObject>("COND");
+        if (!cond->get())
+            ok = false;
+    }
+    if (ok)
+        apply();
+    set_output("DST", std::make_unique<zen::ConditionObject>());
 }
 
 ZENAPI bool INode::has_input(std::string const &id) const {
@@ -78,8 +89,8 @@ ZENAPI void INode::set_output(std::string const &id, std::unique_ptr<IObject> &&
     outputs[id] = objid;
 }
 
-ZENAPI std::string INode::set_output_ref(const std::string &id, const std::string &ref) {
-    return outputs[id] = ref;
+ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {
+    outputs[id] = ref;
 }
 
 ZENAPI std::string INode::get_input_ref(const std::string &id) const {
@@ -110,19 +121,24 @@ ZENAPI void Session::addNode(std::string const &cls, std::string const &id) {
     nodes[id] = std::move(node);
 }
 
-ZENAPI void Session::requestNode(std::string const &id, Context *ctx) {
+ZENAPI void Session::completeNode(std::string const &id) {
+    nodes.at(id)->complete();
+}
+
+ZENAPI void Session::applyNode(std::string const &id) {
     if (ctx->visited.find(id) != ctx->visited.end()) {
         return;
     }
     ctx->visited.insert(id);
-    nodes.at(id)->doApply(ctx);
+    nodes.at(id)->doApply();
 }
 
 ZENAPI void Session::applyNodes(std::vector<std::string> const &ids) {
-    auto ctx = std::make_unique<Context>();
+    ctx = std::make_unique<Context>();
     for (auto const &id: ids) {
-        requestNode(id, ctx.get());
+        applyNode(id);
     }
+    ctx = nullptr;
 }
 
 ZENAPI void Session::bindNodeInput(std::string const &dn, std::string const &ds,
@@ -165,7 +181,11 @@ ZENAPI Descriptor::Descriptor(
   std::vector<std::string> const &outputs,
   std::vector<ParamDescriptor> const &params,
   std::vector<std::string> const &categories)
-  : inputs(inputs), outputs(outputs), params(params), categories(categories) {}
+  : inputs(inputs), outputs(outputs), params(params), categories(categories) {
+    this->inputs.push_back("SRC");
+    this->inputs.push_back("COND");
+    this->outputs.push_back("DST");
+}
 
 ZENAPI std::string Descriptor::serialize() const {
   std::string res = "";

@@ -3,13 +3,16 @@
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 //better have some screenshot here
 
-# ZenCompute
-Open-source code development framework to easily develop high-performance pysical simulation code that both run on cpu and gpu with out too much effort
+## Features
+
+Integrated Toolbox, from volumetric geometry process tools (OpenVDB), to state-of-art, commercially robust, highly optimized physics solvers and visualization
+nodes, and various VFX and simulation solutions based on our nodes (provided by .zsg file).
 //better have some screenshot here
 
-# This Repo
-Integrated Toolbox, from volumetric geometry process tools(VDB), to state-of-art, commercially robust, highly optimized physics solvers and visualization
-nodes, and Node-implemented(provided by .zsg file) various VFX and simulation solutions.
+## ZenCompute (@littlemine)
+
+Open-source code development framework to easily develop high-performance physical simulation code that both run on cpu and gpu with out too much effort.
+//better have some screenshot here
 
 
 # Motivation
@@ -23,13 +26,17 @@ This repo aims to provide a great tool for both technical artists and CG develop
 
 One may create complicated simulation scenarios by simply connecting the nodes provided by the system:
 For example:
-
-This is the charm of visual-programming, not only the direction of data-flow, but also the logic-flow
-of the solution algorithm is presented at no more clarity.
+//put a node editor screenshot here
+This is the charm of visual-programming, not only the direction of data-flow, but also the logic-flow of the solution algorithm is presented at no more clarity.
+In fact, building a molecular simulation from scratch took no more than 7 minutes!
 
 ## Flexible
-One can easily change or adjust a solution by simply break and reconnect of the nodes. Building a molecular simulation
-from scratch took no more than 7 minutes!
+
+One can easily change or adjust a solution by simply break and reconnect of the nodes.
+Unlike many simulation softwares that have fixed functionality, we provide the building
+blocks of algorithms in the form of **nodes** at a relatively low granularity.
+By connecting these nodes, you can literally create your unique solver that best fits
+your need, rather than being limited by the imagination of software programmers.
 
 ## Performant
 
@@ -37,8 +44,8 @@ ZENO nodes are mainly written in C++. By connecting nodes in our Qt5 editor,
 you are invoking our highly optimized programs by our senior engineers. And
 all you need to do is to explore in your mind-space without bothering to tackle 
 low-level details.
-performance-wisely, it's shown by @zhxx1987 that our FLIP solver is 4x faster than Houdini
-at large scale.
+Performance-wisely, it's shown by @zhxx1987 that our FLIP solver is 4x faster than
+Houdini at large scale.
 
 ## Unified
 
@@ -76,7 +83,7 @@ node system and all other powerful tools in Blender.
 
 # Build & Run
 
-## install requirements
+## Installation requirements
 
 You need a C++17 compiler, CMake 3.12+, and Python 3.6+ to build ZENO; NumPy and PyQt5 to run ZENO editor.
 Other requirements like Pybind11 or GLAD are self-contained and you don't have to worry installing them manually.
@@ -105,7 +112,7 @@ python -m pip install numpy PyQt5
 Make sure it starts to downloading and installing successfully without `ERROR` (warnings are OK though).
 
 If you got `ERROR: Could not install packages due to an EnvironmentError: [Errno 13] Permission denied: 'c:\\python38\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\d3dcompiler_47.dll''`:
-**Quit anti-virus softwares** like 360, they are likely stopping `pip` from copying DLL files..
+**Quit anti-virus softwares** (e.g. 360), they probably prevent `pip` from copying DLL files.
 
 If you got `ImportError: DLL load failed while importing QtGui`:
 Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe).
@@ -113,7 +120,7 @@ Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/
 3. Install Visual Studio 2019 Community Edition or later version (for C++17 support in MSVC).
 
 
-## build ZENO
+## Build ZENO
 - Linux
 ```bash
 cmake -B build
@@ -124,12 +131,12 @@ make -C build -j8
 ```cmd
 cmake -B build
 ```
-Then open ```build/zeno.sln``` in Visual Studio 2019, and **switch to Release in build configuration**, then click `Project -> Build All`.
+Then open ```build/zeno.sln``` in Visual Studio 2019, and **switch to Release mode in build configurations**, then run `Build -> Build All`.
 
-IMPORTANT: you must always use Release mode in MSVC, cause they use different allocators in Release and Debug mode, if you link a DLL of Release mode and a DLL in Debug mode together on Windows, they will crash when passing STL objects...
+IMPORTANT: In MSVC, Release mode must **always be active** when building ZENO, since MSVC uses different allocators in Release and Debug mode. If a DLL of Release mode and a DLL in Debug mode are linked together in Windows, it will crash when passing STL objects.
 
 
-## run ZENO for development
+## Run ZENO for development
 - Linux
 ```bash
 ./run.sh
@@ -140,14 +147,14 @@ IMPORTANT: you must always use Release mode in MSVC, cause they use different al
 run.bat
 ```
 
-## install ZENO globally for Python
+## Install ZENO globally for Python
 ```bash
 python setup.py install
 ```
 
 
 
-## package ZENO into PyPI wheel
+## Packing ZENO into PyPI wheel
 ```bash
 sudo python -m pip install wheel
 python setup.py bdist_wheel
@@ -155,7 +162,7 @@ ls dist/*.whl
 ```
 
 
-## upload ZENO to PyPI.org (needs password)
+## Upload ZENO to PyPI.org (password required)
 ```bash
 sudo python -m pip install twine
 twine upload dist/*.whl
@@ -165,16 +172,19 @@ twine upload dist/*.whl
 # Node libraries
 
 ZENO is extensible which means we may write node libraries for it.
+The source code of all our official node libraries are provided in `Projects/`.
 
 
-## Build requirements
+## Build node libraries
+
+### Requirements
 
 Before building node libraries, you need to install ZENO first (or add zeno source root to PYTHONPATH), to do so:
 ```bash
 python setup.py install
 ```
 
-## Build official node libraries
+### Build libraries
 
 - Linux
 ```bash
@@ -184,16 +194,19 @@ make -C build
 ```
 
 - Windows
+
+For Windows users, **make sure to check the [more detailed README](./Projects/README.md)** for the most updated info and known issues before build starts.
+
 ```cmd
 cd Projects
 cmake -B build
 ```
-Then open ```Projects/build/zeno_projects.sln``` in Visual Studio 2019, **switch to Release in build configuration**, click `Project -> Build All`.
+Then open ```Projects/build/zeno_projects.sln``` in Visual Studio 2019, **switch to Release in build configuration**, run `Build -> Build All`.
 
 
 ## Write your own one!
 
-See ```demo_project/``` for example on how to write custom nodes in ZENO.
+See ```demo_project/``` for an example on how to write custom nodes in ZENO.
 
 ## Installing node libraries
 
