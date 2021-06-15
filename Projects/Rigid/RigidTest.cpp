@@ -19,7 +19,7 @@ struct BulletMakeBoxShape : zen::INode {
     virtual void apply() override {
         auto v3size = get_input<zen::NumericObject>("v3size")->get<zen::vec3f>();
         auto shape = std::make_unique<BulletCollisionShape>(
-            std::make_unique<btBoxShape>(btVector3(v3size[0], v3size[1], v3size[2])));
+            std::make_unique<btBoxShape>(zen::vec_to_other<btVector3>(v3size)));
         set_output("shape", std::move(shape));
     }
 };
@@ -56,7 +56,14 @@ struct PrimitiveToBulletMesh : zen::INode {
     virtual void apply() override {
         auto prim = get_input<zen::PrimitiveObject>("prim");
         auto mesh = std::make_unique<BulletTriangleMesh>();
-        // ...
+        auto pos = prim->attr<zen::vec3f>("pos");
+        for (int i = 0; i < prim->tris.size(); i++) {
+            auto f = prim->tris[i];
+            mesh->mesh.addTriangle(
+                zen::vec_to_other<btVector3>(pos[f[0]]),
+                zen::vec_to_other<btVector3>(pos[f[1]]),
+                zen::vec_to_other<btVector3>(pos[f[2]]));
+        }
         set_output("mesh", std::move(mesh));
     }
 };
@@ -238,8 +245,7 @@ struct BulletSetWorldGravity : zen::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
         auto gravity = get_input<zen::NumericObject>("gravity")->get<zen::vec3f>();
-        world->dynamicsWorld->setGravity(
-            btVector3(gravity[0], gravity[1], gravity[2]));
+        world->dynamicsWorld->setGravity(zen::vec_to_other<btVector3>(gravity));
     }
 };
 
