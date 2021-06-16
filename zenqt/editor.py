@@ -127,10 +127,19 @@ class QDMGraphicsScene(QGraphicsScene):
             node.setOptions(options)
 
             for name, value in params.items():
-                node.params[name].setValue(value)
+                if name not in node.params:
+                    print('no param named [{}] for [{}]'.format(
+                        name, nodes[ident]['name']))
+                    continue
+                param = node.params[name]
+                param.setValue(value)
 
             for name, input in inputs.items():
                 if input is None:
+                    continue
+                if name not in node.inputs:
+                    print('no input named [{}] for [{}]'.format(
+                        name, nodes[ident]['name']))
                     continue
                 dest = node.inputs[name]
                 edges.append((dest, input))
@@ -140,7 +149,10 @@ class QDMGraphicsScene(QGraphicsScene):
 
         for dest, (ident, name) in edges:
             srcnode = nodesLut[ident]
-            srcnode.addOutput(name)
+            if name not in srcnode.outputs:
+                print('no output named [{}] for [{}]'.format(
+                    name, nodes[ident]['name']))
+                continue
             source = srcnode.outputs[name]
             self.addEdge(source, dest)
 
