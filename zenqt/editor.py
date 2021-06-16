@@ -790,7 +790,8 @@ class QDMGraphicsNode(QGraphicsItem):
         painter.drawPath(pathTitle.simplified())
 
         pathOutline = QPainterPath()
-        pathOutline.addRect(0, -TEXT_HEIGHT, self.width, self.height)
+        r = 4
+        pathOutline.addRoundedRect(0, -TEXT_HEIGHT, self.width, self.height, r, r)
         pen = QPen(QColor('#cc8844' if self.isSelected() else '#000000'))
         pen.setWidth(3)
         painter.setPen(pen)
