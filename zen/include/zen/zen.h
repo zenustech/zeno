@@ -54,10 +54,13 @@ struct IObject {
     ZENAPI IObject();
     ZENAPI virtual ~IObject();
 #else
+    IObject() = default;
     virtual ~IObject() = default;
 #endif
 
-    using Ptr = std::unique_ptr<IObject>;
+    virtual std::unique_ptr<IObject> clone() const = 0;
+
+    /*ZENDEPRACATED*/ using Ptr = std::unique_ptr<IObject>;
 
     template <class T>
     ZENDEPRECATED static std::unique_ptr<T> make() { return std::make_unique<T>(); }
@@ -67,6 +70,14 @@ struct IObject {
 
     template <class T>
     ZENDEPRECATED const T *as() const { return dynamic_cast<const T *>(this); }
+};
+
+template <class Derived, class Base = IObject>
+struct Object : Base {
+    static_assert(std::is_base_of_v<IObject, Base>);
+    virtual std::unique_ptr<IObject> clone() const override {
+        return std::make_unique<Derived>(static_cast<Derived const &>(*this));
+    }
 };
 
 struct Session;

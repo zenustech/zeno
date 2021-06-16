@@ -13,7 +13,7 @@ namespace zen {
 using AttributeArray = std::variant<
     std::vector<zen::vec3f>, std::vector<float>>;
 
-struct PrimitiveObject : zen::IObject {
+struct PrimitiveObject : zen::Object<PrimitiveObject> {
 
     std::map<std::string, AttributeArray> m_attrs;
     size_t m_size{0};

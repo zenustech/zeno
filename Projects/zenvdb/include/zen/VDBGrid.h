@@ -47,7 +47,7 @@ void writeFloatGrid(const std::string &fn, typename GridT::Ptr grid) {
 }
 
 
-struct VDBGrid : zen::IObject {
+struct VDBGrid : zen::Object<VDBGrid> {
     virtual void output(std::string path) = 0;
     virtual void input(std::string path) = 0;
     virtual void setTransform(openvdb::math::Transform::Ptr const &trans) = 0;
@@ -99,7 +99,7 @@ struct VDBGridWrapper : VDBGrid {
   }
 };
 
-struct TBBConcurrentIntArray : zen::IObject {
+struct TBBConcurrentIntArray : zen::Object<TBBConcurrentIntArray> {
   tbb::concurrent_vector<openvdb::Index32> m_data;
 };
 

@@ -5,7 +5,7 @@
 
 using namespace zen;
 
-struct LennardJonesInteraction: IPairwiseInteraction {
+struct LennardJonesInteraction: zen::Object<LennardJonesInteraction, IPairwiseInteraction> {
     float sigma6, epsilon;
     // Virial (force * r) is more useful than plain force
     // Both virial and energy takes SQUARED distance as argument.
