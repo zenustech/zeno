@@ -1,4 +1,5 @@
-O=
+#O=
+O=assets/crash.zsg
 
 default: all run
 

@@ -120,7 +120,7 @@ class QDMGraphicsScene(QGraphicsScene):
             options = data['options']
 
             if name not in self.descs:
-                print('no node named [{}]'.format(name))
+                print('no node class named [{}]'.format(name))
                 continue
             node = self.makeNode(name)
             node.initSockets()
@@ -151,6 +151,10 @@ class QDMGraphicsScene(QGraphicsScene):
             nodesLut[ident] = node
 
         for dest, (ident, name) in edges:
+            if ident not in nodesLut:
+                print('no source node ident [{}] for [{}]'.format(
+                    ident, dest.name))
+                continue
             srcnode = nodesLut[ident]
             if name not in srcnode.outputs:
                 print('no output named [{}] for [{}]'.format(
