@@ -10,6 +10,7 @@
 #include <array>
 #include <map>
 #include <set>
+#include <any>
 
 
 #ifdef _MSC_VER
@@ -49,27 +50,10 @@ public:
 using IValue = std::variant<std::string, int, float>;
 
 
-struct IObject {
-#ifndef _ZEN_FREE_IOBJECT
-    ZENAPI IObject();
-    ZENAPI virtual ~IObject();
-#else
-    virtual ~IObject() = default;
-#endif
-
-    using Ptr = std::unique_ptr<IObject>;
-
-    template <class T>
-    ZENDEPRECATED static std::unique_ptr<T> make() { return std::make_unique<T>(); }
-
-    template <class T>
-    ZENDEPRECATED T *as() { return dynamic_cast<T *>(this); }
-
-    template <class T>
-    ZENDEPRECATED const T *as() const { return dynamic_cast<const T *>(this); }
-};
-
 struct Session;
+
+/*ZENDEPRECATED*/ struct IObject {
+};
 
 struct Context {
     std::set<std::string> visited;
@@ -112,7 +96,7 @@ protected:
      * @return pointer to the object
      * @brief get the object passed into the input socket
      */
-    ZENAPI IObject *get_input(std::string const &id) const;
+    ZENAPI std::any *get_input(std::string const &id) const;
 
     /*
      * @name get_input<T>(id)
@@ -124,7 +108,7 @@ protected:
      */
     template <class T>
     T *get_input(std::string const &id) const {
-        return dynamic_cast<T *>(get_input(id));
+        return &std::any_cast<T &>(*get_input(id));
     }
 
     ZENAPI std::string get_input_ref(std::string const &id) const;
@@ -149,15 +133,16 @@ protected:
         return std::get<T>(get_param(id));
     }
 
-    /*
-     * @name set_output(id, std::move(obj))
-     * @param[id] the output socket name
-     * @param[obj] the (unique) pointer to the object
-     * @brief set an object to the output socket
-     */
-    ZENAPI void set_output(std::string const &id, std::unique_ptr<IObject> &&obj);
+    ZENAPI std::any *new_output(std::string const &id);
 
     ZENAPI void set_output_ref(std::string const &id, std::string const &ref);
+
+    /*template <class T>
+    ZENAPI T *new_output(std::string const &id) {
+        auto obj = new_output(id);
+        *obj = std::make_any<T>();
+        return &std::any_cast<T &>(*obj);
+    }*/
 
     template <class T>
     ZENDEPRECATED T *new_member(std::string const &id) {
@@ -165,6 +150,11 @@ protected:
         auto obj_ptr = obj.get();
         set_output(id, std::move(obj));
         return obj_ptr;
+    }
+
+    template <class T>
+    ZENDEPRECATED void set_output(std::string const &id, std::unique_ptr<T> &&obj) {
+        *new_output(id) = *obj;
     }
 
     template <class T>
@@ -231,14 +221,14 @@ struct ImplNodeClass : INodeClass {
 };
 
 struct Session {
-    std::map<std::string, std::unique_ptr<IObject>> objects;
+    std::map<std::string, std::unique_ptr<std::any>> objects;
     std::map<std::string, std::unique_ptr<INode>> nodes;
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
     std::unique_ptr<Context> ctx;
 
     ZENAPI void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
     ZENAPI std::string getNodeOutput(std::string const &sn, std::string const &ss) const;
-    ZENAPI IObject *getObject(std::string const &id) const;
+    ZENAPI std::any *getObject(std::string const &id) const;
 
     template <class F>
     int defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {

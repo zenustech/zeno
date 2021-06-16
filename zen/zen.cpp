@@ -43,11 +43,6 @@ T safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) {
 }
 
 
-#ifndef ZEN_FREE_IOBJECT
-ZENAPI IObject::IObject() = default;
-ZENAPI IObject::~IObject() = default;
-#endif
-
 ZENAPI INode::INode() = default;
 ZENAPI INode::~INode() = default;
 
@@ -74,7 +69,7 @@ ZENAPI bool INode::has_input(std::string const &id) const {
     return inputs.find(id) != inputs.end();
 }
 
-ZENAPI IObject *INode::get_input(std::string const &id) const {
+ZENAPI std::any *INode::get_input(std::string const &id) const {
     return sess->getObject(safe_at(inputs, id, "input"));
 }
 
@@ -82,10 +77,13 @@ ZENAPI IValue INode::get_param(std::string const &id) const {
     return safe_at(params, id, "param");
 }
 
-ZENAPI void INode::set_output(std::string const &id, std::unique_ptr<IObject> &&obj) {
+ZENAPI std::any *INode::new_output(std::string const &id) {
     auto objid = myname + "::" + id;
+    auto obj = std::make_unique<std::any>();
+    auto obj_ptr = obj.get();
     sess->objects[objid] = std::move(obj);
-    outputs[id] = objid;
+    set_output_ref(id, objid);
+    return obj_ptr;
 }
 
 ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {
@@ -105,7 +103,7 @@ ZENAPI std::string Session::getNodeOutput(std::string const &sn, std::string con
     return safe_at(node->outputs, ss, "node output");
 }
 
-ZENAPI IObject *Session::getObject(std::string const &id) const {
+ZENAPI std::any *Session::getObject(std::string const &id) const {
     return safe_at(objects, id, "object");
 }
 
