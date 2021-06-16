@@ -105,16 +105,22 @@ struct BulletTransform : zen::IObject {
 
 struct BulletMakeTransform : zen::INode {
     virtual void apply() override {
-        auto origin = get_input<zen::NumericObject>("origin")->get<zen::vec3f>();
         auto trans = std::make_unique<BulletTransform>();
         trans->trans.setIdentity();
-        trans->trans.setOrigin(btVector3(origin[0], origin[1], origin[2]));
+        if (has_input("origin")) {
+            auto origin = get_input<zen::NumericObject>("origin")->get<zen::vec3f>();
+            trans->trans.setOrigin(zen::vec_to_other<btVector3>(origin));
+        }
+        if (has_input("rotation")) {
+            auto rotation = get_input<zen::NumericObject>("rotation")->get<zen::vec3f>();
+            trans->trans.setRotation(zen::vec_to_other<btQuaternion>(rotation));
+        }
         set_output("trans", std::move(trans));
     }
 };
 
 ZENDEFNODE(BulletMakeTransform, {
-    {"origin"},
+    {"origin", "rotation"},
     {"trans"},
     {},
     {"Rigid"},
@@ -182,18 +188,21 @@ ZENDEFNODE(BulletGetObjTransform, {
     {"Rigid"},
 });
 
-struct BulletGetTransformInfo : zen::INode {
+struct BulletExtractTransform : zen::INode {
     virtual void apply() override {
-        auto const &trans = get_input<BulletObject>("trans")->trans;
+        auto trans = &get_input<BulletTransform>("trans")->trans;
         auto origin = std::make_unique<zen::NumericObject>();
-        origin->set(zen::other_to_vec<3>(trans.getOrigin()));
+        auto rotation = std::make_unique<zen::NumericObject>();
+        origin->set(zen::other_to_vec<3>(trans->getOrigin()));
+        rotation->set(zen::other_to_vec<4>(trans->getRotation()));
         set_output("origin", std::move(origin));
+        set_output("rotation", std::move(rotation));
     }
 };
 
-ZENDEFNODE(BulletGetTransformInfo, {
+ZENDEFNODE(BulletExtractTransform, {
     {"trans"},
-    {"origin"},
+    {"origin", "rotation"},
     {},
     {"Rigid"},
 });
@@ -245,7 +254,7 @@ struct BulletWorld : zen::IObject {
     void step(float dt = 1.f / 60.f) {
         dynamicsWorld->stepSimulation(dt, 10);
 
-        for (int j = dynamicsWorld->getNumCollisionObjects() - 1; j >= 0; j--)
+        /*for (int j = dynamicsWorld->getNumCollisionObjects() - 1; j >= 0; j--)
         {
             btCollisionObject* obj = dynamicsWorld->getCollisionObjectArray()[j];
             btRigidBody* body = btRigidBody::upcast(obj);
@@ -259,7 +268,7 @@ struct BulletWorld : zen::IObject {
                 trans = obj->getWorldTransform();
             }
             printf("world pos object %d = %f,%f,%f\n", j, float(trans.getOrigin().getX()), float(trans.getOrigin().getY()), float(trans.getOrigin().getZ()));
-        }
+        }*/
     }
 };
 
