@@ -51,4 +51,34 @@ static int defPolyDuplicate = zen::defNodeClass<PolyDuplicate>("PolyDuplicate",
         "trimesh",
     }});
 
-}
+struct MeshCopy : zen::INode {
+  virtual void apply() override {
+    auto copyFromMesh = get_input("copyFrom")->as<MeshObject>();
+    auto copyToMesh = get_input("copyTo")->as<MeshObject>();
+    copyToMesh->vertices.resize(copyFromMesh->vertices.size());
+    copyToMesh->uvs.resize(copyFromMesh->uvs.size());
+    copyToMesh->normals.resize(copyFromMesh->normals.size());
+#pragma omp parallel for
+    for (int i = 0; i < copyFromMesh->vertices.size(); i++) {
+      copyToMesh->vertices[i] = copyFromMesh->vertices[i];
+      copyToMesh->uvs[i] = copyFromMesh->uvs[i];
+      copyToMesh->normals[i] = copyFromMesh->normals[i];
+    }
+  }
+};
+
+static int defMeshCopy =
+    zen::defNodeClass<MeshCopy>("MeshCopy", {/* inputs: */
+                                             {
+                                                 "copyFrom",
+                                                 "copyTo",
+                                             },
+                                             /* outputs: */
+                                             {},
+                                             /* params: */
+                                             {},
+                                             /* category: */
+                                             {
+                                                 "trimesh",
+                                             }});
+} // namespace zen
