@@ -1,4 +1,4 @@
-x=nose
+x=vcopy
 
 x: $x.exe Makefile
 	./$<

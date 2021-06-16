@@ -75,6 +75,7 @@ Here's some of the node libraries that have been implemented by our developers:
 - Tree-code N-body (by @archibate)
 - Molocular Dynamics (by @victoriacity)
 - GPU MPM with CUDA (by @littlemine)
+- Bullet3 rigid dynamics (by @archibate)
 
 Loading these libraries would add corresponding functional nodes into ZENO,
 after which you can creating node graphs with them for simulation.
