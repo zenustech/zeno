@@ -75,7 +75,7 @@ struct array : std::array<T, N> {
 namespace zen {
 
 
-struct Opcode : zen::IObject {
+struct Opcode : zen::Object<Opcode> {
     enum {
         OP_LOAD,
         OP_STORE,

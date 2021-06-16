@@ -6,7 +6,7 @@
 #include <vector>
 #include <array>
 
-struct ForceFieldObject : zen::IObject {
+struct ForceFieldObject : zen::Object<ForceFieldObject> {
 
     // We assume intermolecular potential is always pairwise
     IPairwiseInteraction *nonbond;

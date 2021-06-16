@@ -47,7 +47,7 @@ void writeFloatGrid(const std::string &fn, typename GridT::Ptr grid) {
 }
 
 
-struct VDBGrid : zen::Object<VDBGrid> {
+struct VDBGrid : zen::IObject {
     virtual void output(std::string path) = 0;
     virtual void input(std::string path) = 0;
     virtual void setTransform(openvdb::math::Transform::Ptr const &trans) = 0;
@@ -57,7 +57,7 @@ struct VDBGrid : zen::Object<VDBGrid> {
 
 
 template <typename GridT>
-struct VDBGridWrapper : VDBGrid {
+struct VDBGridWrapper : zen::Object<VDBGridWrapper<GridT>, VDBGrid> {
   typename GridT::Ptr m_grid;
   VDBGridWrapper(){ m_grid = GridT::create(); }
   virtual void output(std::string path) override {
