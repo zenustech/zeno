@@ -172,7 +172,25 @@ auto vec_to_other(vec<3, T> const &a) {
 
 template <class OtherT, class T>
 auto vec_to_other(vec<4, T> const &a) {
-    return OtherT(a[0], a[1], a[2], a[4]);
+    return OtherT(a[0], a[1], a[2], a[3]);
+}
+
+template <class OtherT, size_t N, class T>
+auto vec_to_other(vec<N, T> const &a) {
+    OtherT res;
+    for (size_t i = 0; i < N; i++) {
+        res[i] = a[i];
+    }
+    return res;
+}
+
+template <size_t N, class OtherT>
+auto other_to_vec(OtherT const &x) {
+    vec<N, std::decay_t<decltype(x[0])>> res;
+    for (size_t i = 0; i < N; i++) {
+        res[i] = x[i];
+    }
+    return res;
 }
 
 

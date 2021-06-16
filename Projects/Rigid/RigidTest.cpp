@@ -161,9 +161,45 @@ ZENDEFNODE(BulletMakeObject, {
     {"Rigid"},
 });
 
+struct BulletGetObjTransform : zen::INode {
+    virtual void apply() override {
+        auto obj = get_input<BulletObject>("object");
+        auto body = obj->body.get();
+        auto trans = std::make_unique<BulletTransform>();
+        if (body && body->getMotionState()) {
+            body->getMotionState()->getWorldTransform(trans->trans);
+        } else {
+            trans->trans = static_cast<btCollisionObject *>(body)->getWorldTransform();
+        }
+        set_output("trans", std::move(trans));
+    }
+};
+
+ZENDEFNODE(BulletGetObjTransform, {
+    {"object"},
+    {"trans"},
+    {},
+    {"Rigid"},
+});
+
+struct BulletGetTransformInfo : zen::INode {
+    virtual void apply() override {
+        auto const &trans = get_input<BulletObject>("trans")->trans;
+        auto origin = std::make_unique<zen::NumericObject>();
+        origin->set(zen::other_to_vec<3>(trans.getOrigin()));
+        set_output("origin", std::move(origin));
+    }
+};
+
+ZENDEFNODE(BulletGetTransformInfo, {
+    {"trans"},
+    {"origin"},
+    {},
+    {"Rigid"},
+});
+
 
 struct BulletWorld : zen::IObject {
-
     std::unique_ptr<btDefaultCollisionConfiguration> collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
     std::unique_ptr<btCollisionDispatcher> dispatcher = std::make_unique<btCollisionDispatcher>(collisionConfiguration.get());
     std::unique_ptr<btBroadphaseInterface> overlappingPairCache = std::make_unique<btDbvtBroadphase>();
