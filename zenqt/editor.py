@@ -119,17 +119,30 @@ class QDMGraphicsScene(QGraphicsScene):
             posx, posy = data['uipos']
             options = data['options']
 
+            if name not in self.descs:
+                print('no node class named [{}]'.format(name))
+                continue
             node = self.makeNode(name)
+            node.initSockets()
             node.setIdent(ident)
             node.setName(name)
             node.setPos(posx, posy)
             node.setOptions(options)
 
             for name, value in params.items():
-                node.params[name].setValue(value)
+                if name not in node.params:
+                    print('no param named [{}] for [{}]'.format(
+                        name, nodes[ident]['name']))
+                    continue
+                param = node.params[name]
+                param.setValue(value)
 
             for name, input in inputs.items():
                 if input is None:
+                    continue
+                if name not in node.inputs:
+                    print('no input named [{}] for [{}]'.format(
+                        name, nodes[ident]['name']))
                     continue
                 dest = node.inputs[name]
                 edges.append((dest, input))
@@ -138,7 +151,16 @@ class QDMGraphicsScene(QGraphicsScene):
             nodesLut[ident] = node
 
         for dest, (ident, name) in edges:
-            source = nodesLut[ident].outputs[name]
+            if ident not in nodesLut:
+                print('no source node ident [{}] for [{}]'.format(
+                    ident, dest.name))
+                continue
+            srcnode = nodesLut[ident]
+            if name not in srcnode.outputs:
+                print('no output named [{}] for [{}]'.format(
+                    name, nodes[ident]['name']))
+                continue
+            source = srcnode.outputs[name]
             self.addEdge(source, dest)
 
     def addEdge(self, src, dst):
@@ -157,7 +179,9 @@ class QDMGraphicsScene(QGraphicsScene):
         desc = self.descs[name]
         node = QDMGraphicsNode()
         node.setName(name)
-        node.initSockets(desc['inputs'], desc['outputs'], desc['params'])
+        node.desc_inputs = desc['inputs']
+        node.desc_outputs = desc['outputs']
+        node.desc_params = desc['params']
         return node
 
     def addNode(self, node):
@@ -262,6 +286,7 @@ class QDMGraphicsView(QGraphicsView):
         if name == '':
             return
         node = self.scene().makeNode(name)
+        node.initSockets()
         node.setPos(self.lastContextMenuPos)
         self.scene().addNode(node)
         self.scene().record()
@@ -689,6 +714,10 @@ class QDMGraphicsNode(QGraphicsItem):
         self.name = None
         self.ident = gen_unique_ident()
 
+        self.desc_inputs = []
+        self.desc_outputs = []
+        self.desc_params = []
+
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
         self.scene().moved = True
@@ -716,7 +745,7 @@ class QDMGraphicsNode(QGraphicsItem):
         for name, button in self.options.items():
             button.setChecked(name in options)
 
-    def initSockets(self, inputs=(), outputs=(), params=()):
+    def initSockets(self):
         y = TEXT_HEIGHT * 0.2
 
         self.options['OUT'] = button = QDMGraphicsButton(self)
@@ -732,7 +761,7 @@ class QDMGraphicsNode(QGraphicsItem):
         y += TEXT_HEIGHT * 1.2
 
         self.params.clear()
-        for index, (type, name, defl) in enumerate(params):
+        for index, (type, name, defl) in enumerate(self.desc_params):
             param = eval('QDMGraphicsParam_' + type)(self)
             rect = QRectF(HORI_MARGIN, y, self.width - HORI_MARGIN * 2, 0)
             param.setGeometry(rect)
@@ -744,7 +773,7 @@ class QDMGraphicsNode(QGraphicsItem):
         y += TEXT_HEIGHT * 0.5
 
         self.inputs.clear()
-        for index, name in enumerate(inputs):
+        for index, name in enumerate(self.desc_inputs):
             socket = QDMGraphicsSocket(self)
             socket.setPos(0, y)
             socket.setName(name)
@@ -753,9 +782,9 @@ class QDMGraphicsNode(QGraphicsItem):
             y += TEXT_HEIGHT
 
         self.outputs.clear()
-        for index, name in enumerate(outputs):
+        for index, name in enumerate(self.desc_outputs):
             socket = QDMGraphicsSocket(self)
-            index += len(params) + len(inputs)
+            index += len(self.desc_params) + len(self.desc_inputs)
             socket.setPos(0, y)
             socket.setName(name)
             socket.setIsOutput(True)
@@ -844,7 +873,7 @@ class NodeEditor(QWidget):
         self.initShortcuts()
         self.refreshDescriptors()
 
-        if 'ZEN_OPEN' in os.environ:
+        if os.environ.get('ZEN_OPEN'):
             path = os.environ['ZEN_OPEN']
             self.do_open(path)
             self.current_path = path
