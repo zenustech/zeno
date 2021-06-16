@@ -106,7 +106,7 @@ sudo python -m pip install numpy PyQt5
 1. Install Python 3.8 64-bit. IMPORTANT: make sure you **Add Python 3.8 to PATH**! After that rebooting your computer would be the best.
 2. Start CMD in **Administrator mode** and type these commands:
 ```cmd
-python -m pip install numpy PyQt5
+python -m pip install numpy PyQt5 pywin32
 ```
 (Fun fact: you will be redirected to Microsoft Store if `python` is not added to PATH properly :)
 Make sure it starts to downloading and installing successfully without `ERROR` (warnings are OK though).
@@ -169,13 +169,47 @@ twine upload dist/*.whl
 ```
 
 
-# Node libraries
+# Extensions
 
 ZENO is extensible which means we may write node libraries for it.
-The source code of all our official node libraries are provided in `Projects/`.
+The source code of all our official libraries are provided in `Projects/`.
 
+## Build libraries
 
-## Build node libraries
+For now, official node libraries will be built by default when running the
+```ALL_BUILD``` target of CMake.
+
+### Major dependencies
+
+Building them require some dependencies, please comment the, for example:
+
+```cmake
+add_subdirectory(zenbase)
+#add_subdirectory(FastFLIP)
+```
+
+in `Projects/CMakeLists.txt` if you meet trouble building them.
+And here goes the dependencies:
+
+- FastFLIP
+  - OpenVDB
+  - IlmBase (or OpenEXR)
+  - Eigen3
+  - TBB
+
+- Zenbase
+  - OpenMP C++ (optional)
+
+- Zenvdb
+  - OpenVDB
+  - IlmBase (or OpenEXR)
+  - TBB
+  - OpenMP C++ (optional)
+
+- ZMS
+  - OpenMP C++ (optional)
+
+<!--
 
 ### Requirements
 
@@ -202,12 +236,12 @@ cd Projects
 cmake -B build
 ```
 Then open ```Projects/build/zeno_projects.sln``` in Visual Studio 2019, **switch to Release in build configuration**, run `Build -> Build All`.
-
+-->
 
 ## Write your own one!
 
 See ```demo_project/``` for an example on how to write custom nodes in ZENO.
 
-## Installing node libraries
+### Installing node libraries
 
 To install a node library for ZENO just copy the `.so` or `.dll` files to `zen/autoload/`. See ```demo_project/CMakeLists.txt``` for how to automate this in CMake.
