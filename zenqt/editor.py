@@ -127,13 +127,11 @@ class QDMGraphicsScene(QGraphicsScene):
             node.setOptions(options)
 
             for name, value in params.items():
-                node.addParam(name)
                 node.params[name].setValue(value)
 
             for name, input in inputs.items():
                 if input is None:
                     continue
-                node.addInput(name)
                 dest = node.inputs[name]
                 edges.append((dest, input))
 
@@ -727,18 +725,6 @@ class QDMGraphicsNode(QGraphicsItem):
     def setOptions(self, options):
         for name, button in self.options.items():
             button.setChecked(name in options)
-
-    def addInput(self, name):
-        if name not in self.inputs:
-            self.desc_inputs.append(name)
-
-    def addOutput(self, name):
-        if name not in self.outputs:
-            self.desc_outputs.append(name)
-
-    def addParam(self, name):
-        if name not in self.params:
-            self.desc_params.append(('string', name, '(invalid)'))
 
     def initSockets(self):
         y = TEXT_HEIGHT * 0.2
