@@ -9,6 +9,7 @@
 
 namespace zen {
 
+
 static glm::vec3 mapplypos(glm::mat4 const &matrix, glm::vec3 const &vector) {
   auto vector4 = matrix * glm::vec4(vector, 1.0f);
   
@@ -46,31 +47,38 @@ struct TransformPrimitive : zen::INode {
         glm::mat4 matScal  = glm::scale( glm::vec3(scaling[0], scaling[1], scaling[2] ));
         auto matrix = matTrans*matRotz*matRoty*matRotx*matQuat*matScal;
 
-        auto prim = get_input("prim")->as<PrimitiveObject>();
-        auto outprim = zen::IObject::make<PrimitiveObject>(*prim);
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto outprim = std::make_unique<PrimitiveObject>(*prim);
 
         if (prim->has_attr("pos")) {
-            auto &pos = prim->attr<zen::vec3f>("pos");
+            auto &pos = outprim->attr<zen::vec3f>("pos");
             //#pragma omp parallel for
             for (int i = 0; i < pos.size(); i++) {
-                pos[i] = mapplypos(matrix, pos[i]);
+                auto p = zen::vec_to_other<glm::vec3>(pos[i]);
+                p = mapplypos(matrix, p);
+                pos[i] = zen::other_to_vec<3>(p);
             }
         }
 
         if (prim->has_attr("nrm")) {
-            auto &nrm = prim->attr<zen::vec3f>("nrm");
+            auto &nrm = outprim->attr<zen::vec3f>("nrm");
             //#pragma omp parallel for
-            for (int i = 0; i < nrm.size(); i++) {  // TODO: inverse-transpose??
-                nrm[i] = glm::normalize(mapplydir(matrix, nrm[i]));
+            for (int i = 0; i < nrm.size(); i++) {
+                auto n = zen::vec_to_other<glm::vec3>(nrm[i]);
+                n = glm::normalize(mapplydir(matrix, n));  // TODO: inverse-transpose??
+                nrm[i] = zen::other_to_vec<3>(n);
             }
         }
-        set_output("outPrim", outprim);
+        set_output("outPrim", std::move(outprim));
     }
 };
 
-ZENDEFNODE(PrimitiveTransform, {
+ZENDEFNODE(TransformPrimitive, {
     {"prim", "translation", "eulerXYZ", "quatRotation", "scaling"},
     {"outPrim"},
     {},
     {"primitive"},
+});
+
+
 }
