@@ -119,6 +119,9 @@ class QDMGraphicsScene(QGraphicsScene):
             posx, posy = data['uipos']
             options = data['options']
 
+            if name not in self.descs:
+                print('no node named [{}]'.format(name))
+                continue
             node = self.makeNode(name)
             node.initSockets()
             node.setIdent(ident)
@@ -866,7 +869,7 @@ class NodeEditor(QWidget):
         self.initShortcuts()
         self.refreshDescriptors()
 
-        if 'ZEN_OPEN' in os.environ:
+        if os.environ.get('ZEN_OPEN'):
             path = os.environ['ZEN_OPEN']
             self.do_open(path)
             self.current_path = path
