@@ -16,6 +16,8 @@ MAX_STACK_LENGTH = 100
 
 style = {
     'title_color': '#638E77',
+    'title_text_color': '#FFFFFF',
+    'socket_text_color': '#FFFFFF',
     'panel_color': '#282828',
     'line_color': '#B0B0B0',
     'background_color': '#2C2C2C',
@@ -27,10 +29,12 @@ style = {
     'line_width': 4,
     'socket_outline_width': 2,
     'socket_radius': 10,
-    'node_radius': 4,
-    'node_width': 200,
+    'node_radius': 6,
+    'node_width': 233,
     'node_height': 232,
-    'node_tile_height': 41,
+    'node_title_height': 41,
+
+    'hori_margin': 15,
 }
 
 class HistoryStack:
@@ -384,10 +388,9 @@ class QDMGraphicsView(QGraphicsView):
         self.scene().addEdge(src, dst)
         return True
 
-
-TEXT_HEIGHT = 25
-HORI_MARGIN = TEXT_HEIGHT * 0.4
-SOCKET_RADIUS = TEXT_HEIGHT * 0.3
+TEXT_HEIGHT = style['node_title_height']
+HORI_MARGIN = style['hori_margin']
+SOCKET_RADIUS = style['socket_radius']
 BEZIER_FACTOR = 0.5
 
 
@@ -497,8 +500,8 @@ class QDMGraphicsSocket(QGraphicsItem):
         super().__init__(parent)
 
         self.label = QGraphicsTextItem(self)
-        self.label.setDefaultTextColor(QColor('#ffffff'))
-        self.label.setPos(SOCKET_RADIUS, -TEXT_HEIGHT / 2)
+        self.label.setDefaultTextColor(QColor(style['socket_text_color']))
+        self.label.setPos(HORI_MARGIN, -SOCKET_RADIUS)
 
         self.isOutput = False
         self.edges = set()
@@ -532,7 +535,7 @@ class QDMGraphicsSocket(QGraphicsItem):
             option = document.defaultTextOption()
             option.setAlignment(Qt.AlignRight)
             document.setDefaultTextOption(option)
-            width = self.node.boundingRect().width() - 15
+            width = self.node.boundingRect().width() - HORI_MARGIN * 2
             self.label.setTextWidth(width)
 
     def setName(self, name):
@@ -602,7 +605,7 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
 
         self.widget = QWidget()
         self.widget.setLayout(self.layout)
-        self.widget.setStyleSheet('background-color: #333333; color: #eeeeee')
+        self.widget.setStyleSheet('background-color: {}; color: #eeeeee'.format(style['panel_color']))
 
         self.setWidget(self.widget)
         self.setContentsMargins(0, 0, 0, 0)
@@ -707,8 +710,8 @@ class QDMGraphicsNode(QGraphicsItem):
         self.height = 0
 
         self.title = QGraphicsTextItem(self)
-        self.title.setDefaultTextColor(QColor('#eeeeee'))
-        self.title.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT)
+        self.title.setDefaultTextColor(QColor(style['title_text_color']))
+        self.title.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT + HORI_MARGIN)
 
         self.params = {}
         self.inputs = {}
@@ -745,7 +748,7 @@ class QDMGraphicsNode(QGraphicsItem):
             button.setChecked(name in options)
 
     def initSockets(self, inputs=(), outputs=(), params=()):
-        y = TEXT_HEIGHT * 0.2
+        y = HORI_MARGIN
 
         self.options['OUT'] = button = QDMGraphicsButton(self)
         rect = QRectF(HORI_MARGIN, y, self.width / 2 - HORI_MARGIN * 1.5, 0)
