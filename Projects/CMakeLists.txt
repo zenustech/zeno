@@ -10,7 +10,7 @@ include_directories(include)
 
 add_subdirectory(zenbase)
 add_subdirectory(ZMS)
-if (NOT WIN32)
+if (OFF)
     add_subdirectory(zenvdb)
     add_subdirectory(FastFLIP)
 endif()
