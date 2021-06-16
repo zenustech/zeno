@@ -1,3 +1,5 @@
+O=assets/test.zsg
+
 default: all run
 
 all:
