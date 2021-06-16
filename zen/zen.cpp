@@ -88,8 +88,8 @@ ZENAPI void INode::set_output(std::string const &id, std::unique_ptr<IObject> &&
     outputs[id] = objid;
 }
 
-ZENAPI std::string INode::set_output_ref(const std::string &id, const std::string &ref) {
-    return outputs[id] = ref;
+ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {
+    outputs[id] = ref;
 }
 
 ZENAPI std::string INode::get_input_ref(const std::string &id) const {

@@ -1,5 +1,4 @@
-#O=
-O=assets/crash.zsg
+O=assets/rigid.zsg
 
 default: all run
 
@@ -17,4 +16,4 @@ dist:
 	python/setup.py bdist_wheel
 
 debug: all
-	USE_GDB= ZEN_OPEN=$O ./run.sh
+	USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh
