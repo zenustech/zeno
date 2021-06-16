@@ -44,8 +44,7 @@ struct TransformPrimitive : zen::INode {
         glm::quat myQuat(rotation[3], rotation[0], rotation[1], rotation[2]);
         glm::mat4 matQuat  = glm::toMat4(myQuat);
         glm::mat4 matScal  = glm::scale( glm::vec3(scaling[0], scaling[1], scaling[2] ));
-        //auto matrix = matTrans*matRotz*matRoty*matRotx*matQuat*matScal;
-        auto matrix = matTrans*(matQuat);
+        auto matrix = matTrans*matRotz*matRoty*matRotx*matQuat*matScal;
 
         auto prim = get_input<PrimitiveObject>("prim");
         auto outprim = std::make_unique<PrimitiveObject>(*prim);
