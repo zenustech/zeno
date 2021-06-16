@@ -3,7 +3,7 @@ set(CMAKE_CXX_STANDARD 17)
 project(FLIPlib)
 add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)  
 # add directory with macros
-set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
+set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake /usr/local/lib/cmake/OpenVDB/)
 
 # add cmake file
 include (common)
@@ -11,6 +11,7 @@ include (common)
 find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
 find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(OpenVDB REQUIRED)
 
 #add_library(FLIPlib SHARED FLIPwrapper.cpp FLIPwrapper.h FLIP_particle fluidsim.cpp fluidsim_fusion_p2g.cpp fluidsim.h GeometricLevelGen.cpp GeometricLevelGen.h
 #        levelset_util.cpp Sparse_buffer.cpp volumeMeshTools.cpp amg2.h morton_encoding.h FLIP_vdb.h FLIP_vdb.cpp simd_vdb_poisson.h simd_vdb_poisson.cpp)
@@ -40,7 +41,7 @@ if (WIN32)
 endif()
 
 target_link_directories(FLIPlib PUBLIC /usr/lib/x86_64-linux-gnu:/usr/local/lib)
-target_link_libraries(FLIPlib PRIVATE openvdb IlmBase::Half)
+target_link_libraries(FLIPlib PRIVATE OpenVDB::openvdb IlmBase::Half)
 target_link_libraries(FLIPlib PRIVATE Eigen3::Eigen)
 #target_link_libraries(FLIPlib PRIVATE SimEnvironment)
 
