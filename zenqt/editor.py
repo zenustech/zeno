@@ -14,6 +14,25 @@ import zenapi
 
 MAX_STACK_LENGTH = 100
 
+style = {
+    'title_color': '#638E77',
+    'panel_color': '#282828',
+    'line_color': '#B0B0B0',
+    'background_color': '#2C2C2C',
+    'selected_color': '#CC8844',
+    'socket_color': '#4A4A4A',
+    'button_color': '#1E1E1E',
+    'button_text_color': '#818181',
+
+    'line_width': 4,
+    'socket_outline_width': 2,
+    'socket_radius': 10,
+    'node_radius': 4,
+    'node_width': 200,
+    'node_height': 232,
+    'node_tile_height': 41,
+}
+
 class HistoryStack:
     def __init__(self, scene):
         self.scene = scene
@@ -62,7 +81,7 @@ class QDMGraphicsScene(QGraphicsScene):
 
         width, height = 64000, 64000
         self.setSceneRect(-width // 2, -height // 2, width, height)
-        self.setBackgroundBrush(QColor('#444444'))
+        self.setBackgroundBrush(QColor(style['background_color']))
 
         self.descs = {}
         self.cates = {}
@@ -387,8 +406,9 @@ class QDMGraphicsPath(QGraphicsPathItem):
     def paint(self, painter, styleOptions, widget=None):
         self.updatePath()
 
-        pen = QPen(QColor('#cc8844' if self.isSelected() else '#000000'))
-        pen.setWidth(3)
+        color = 'selected_color' if self.isSelected() else 'line_color'
+        pen = QPen(QColor(style[color]))
+        pen.setWidth(style['line_width'])
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
         painter.drawPath(self.path())
@@ -538,9 +558,9 @@ class QDMGraphicsSocket(QGraphicsItem):
         return QRectF(*self.getCircleBounds()).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-        painter.setBrush(QColor('#6666cc'))
-        pen = QPen(QColor('#111111'))
-        pen.setWidth(2)
+        painter.setBrush(QColor(style['title_color']))
+        pen = QPen(QColor(style['line_color']))
+        pen.setWidth(style['socket_outline_width'])
         painter.setPen(pen)
         painter.drawEllipse(*self.getCircleBounds())
 
@@ -566,7 +586,7 @@ class QDMGraphicsButton(QGraphicsProxyWidget):
         if self.checked:
             self.widget.setStyleSheet('background-color: #cc6622; color: #333333')
         else:
-            self.widget.setStyleSheet('background-color: #333333; color: #eeeeee')
+            self.widget.setStyleSheet('background-color: {}; color: {}'.format(style['button_color'], style['button_text_color']))
 
     def setText(self, text):
         self.widget.setText(text)
@@ -683,7 +703,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.setFlag(QGraphicsItem.ItemIsMovable)
         self.setFlag(QGraphicsItem.ItemIsSelectable)
 
-        self.width = 200
+        self.width = style['node_width']
         self.height = 0
 
         self.title = QGraphicsTextItem(self)
@@ -780,20 +800,21 @@ class QDMGraphicsNode(QGraphicsItem):
         pathContent = QPainterPath()
         pathContent.addRect(0, -TEXT_HEIGHT, self.width, self.height)
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor('#333333'))
+        painter.setBrush(QColor(style['panel_color']))
         painter.drawPath(pathContent.simplified())
 
         pathTitle = QPainterPath()
         pathTitle.addRect(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor('#222222'))
+        painter.setBrush(QColor(style['title_color']))
         painter.drawPath(pathTitle.simplified())
 
         pathOutline = QPainterPath()
-        r = 4
+        r = style['node_radius']
         pathOutline.addRoundedRect(0, -TEXT_HEIGHT, self.width, self.height, r, r)
-        pen = QPen(QColor('#cc8844' if self.isSelected() else '#000000'))
-        pen.setWidth(3)
+        pathOutlineColor = 'selected_color' if self.isSelected() else 'line_color'
+        pen = QPen(QColor(style[pathOutlineColor]))
+        pen.setWidth(style['line_width'])
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
         painter.drawPath(pathOutline.simplified())
