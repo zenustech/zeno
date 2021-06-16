@@ -7,7 +7,7 @@
 #include <vector>
 
 
-struct BulletCollisionShape : zen::IObject {
+struct BulletCollisionShape : zen::Object<BulletCollisionShape> {
     std::unique_ptr<btCollisionShape> shape;
 
     BulletCollisionShape(std::unique_ptr<btCollisionShape> &&shape)
@@ -48,7 +48,7 @@ ZENDEFNODE(BulletMakeSphereShape, {
 });
 
 
-struct BulletTriangleMesh : zen::IObject {
+struct BulletTriangleMesh : zen::Object<BulletTriangleMesh> {
     btTriangleMesh mesh;
 };
 
@@ -99,7 +99,7 @@ ZENDEFNODE(BulletMakeConvexHullShape, {
 });
 
 
-struct BulletTransform : zen::IObject {
+struct BulletTransform : zen::Object<BulletTransform> {
     btTransform trans;
 };
 
@@ -127,7 +127,7 @@ ZENDEFNODE(BulletMakeTransform, {
 });
 
 
-struct BulletObject : zen::IObject {
+struct BulletObject : zen::Object<BulletObject> {
     std::unique_ptr<btDefaultMotionState> myMotionState;
     std::unique_ptr<btRigidBody> body;
     btScalar mass = 0.f;
@@ -208,7 +208,7 @@ ZENDEFNODE(BulletExtractTransform, {
 });
 
 
-struct BulletWorld : zen::IObject {
+struct BulletWorld : zen::Object<BulletWorld> {
     std::unique_ptr<btDefaultCollisionConfiguration> collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
     std::unique_ptr<btCollisionDispatcher> dispatcher = std::make_unique<btCollisionDispatcher>(collisionConfiguration.get());
     std::unique_ptr<btBroadphaseInterface> overlappingPairCache = std::make_unique<btDbvtBroadphase>();
