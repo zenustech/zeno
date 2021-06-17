@@ -86,13 +86,16 @@ struct Context {
 };
 
 struct ListObject {
-    std::vector<std::unique_ptr<IObject>> m_arr;
+    using array_type = std::vector<std::unique_ptr<IObject>>;
+    using scalar_type = std::unique_ptr<IObject>;
+    std::variant<array_type, scalar_type> m;
 
     ZENAPI ListObject();
     ZENAPI ~ListObject();
 
+    ZENAPI size_t broadcast(size_t n) const;
     ZENAPI IObject *at(size_t i) const;
-    ZENAPI std::unique_ptr<IObject> &operator[](size_t i);
+    ZENAPI void set(size_t i, std::unique_ptr<IObject> &&obj);
 };
 
 struct INode {

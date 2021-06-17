@@ -55,15 +55,28 @@ ZENAPI std::unique_ptr<IObject> IObject::clone() const {
 ZENAPI ListObject::ListObject() = default;
 ZENAPI ListObject::~ListObject() = default;
 
-ZENAPI IObject *ListObject::at(size_t i) const {
-    return m_arr[i].get();
+ZENAPI size_t ListObject::broadcast(size_t n) const {
+    return n;
 }
 
-ZENAPI std::unique_ptr<IObject> &ListObject::operator[](size_t i) {
-    if (m_arr.size() <= i) {
-        m_arr.resize(i + 1);
+ZENAPI IObject *ListObject::at(size_t i) const {
+    if (std::holds_alternative<scalar_type>(m)) {
+        return std::get<scalar_type>(m).get();
+    } else {
+        return std::get<array_type>(m)[i].get();
     }
-    return m_arr[i];
+}
+
+ZENAPI void ListObject::set(size_t i, std::unique_ptr<IObject> &&obj) {
+    if (std::holds_alternative<scalar_type>(m)) {
+        m = std::move(obj);
+    } else {
+        auto &arr = std::get<array_type>(m);
+        if (arr.size() <= i) {
+            arr.resize(i + 1);
+        }
+        arr[i] = std::move(obj);
+    }
 }
 
 ZENAPI INode::INode() = default;
@@ -116,7 +129,7 @@ ZENAPI ListObject &INode::set_output_list(std::string const &id) {
 
 ZENAPI void INode::set_output(std::string const &id, std::unique_ptr<IObject> &&obj) {
     auto &objlist = set_output_list(id);
-    objlist[list_idx] = std::move(obj);
+    objlist.set(list_idx, std::move(obj));
 }
 
 ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {
