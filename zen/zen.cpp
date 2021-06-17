@@ -24,7 +24,7 @@ T *safe_at(std::map<std::string, std::unique_ptr<T>> const &m,
 }
 
 template <class T>
-T safe_at(std::map<std::string, T> const &m, std::string const &key,
+T const &safe_at(std::map<std::string, T> const &m, std::string const &key,
           std::string const &msg) {
   auto it = m.find(key);
   if (it == m.end()) {
@@ -34,7 +34,7 @@ T safe_at(std::map<std::string, T> const &m, std::string const &key,
 }
 
 template <class T, class S>
-T safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) {
+T const &safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) {
   auto it = m.find(key);
   if (it == m.end()) {
     throw Exception("invalid " + msg + " as index");
@@ -78,18 +78,31 @@ ZENAPI bool INode::has_input(std::string const &id) const {
     return inputs.find(id) != inputs.end();
 }
 
+ZENAPI vector_of_ptr<IObject> &INode::get_input_list(std::string const &id) const {
+    auto ref = safe_at(inputs, id, "input");
+    return sess->getObject(ref);
+}
+
 ZENAPI IObject *INode::get_input(std::string const &id) const {
-    return sess->getObject(safe_at(inputs, id, "input"));
+    return get_input_list(id)[list_idx].get();
 }
 
 ZENAPI IValue INode::get_param(std::string const &id) const {
     return safe_at(params, id, "param");
 }
 
-ZENAPI void INode::set_output(std::string const &id, std::unique_ptr<IObject> &&obj) {
+ZENAPI vector_of_ptr<IObject> &INode::set_output_list(std::string const &id) {
     auto objid = myname + "::" + id;
-    sess->objects[objid] = std::move(obj);
+    auto &objlist = sess->objects[objid];
     outputs[id] = objid;
+    return objlist;
+}
+
+ZENAPI void INode::set_output(std::string const &id, std::unique_ptr<IObject> &&obj) {
+    auto &objlist = set_output_list(id);
+    if (objlist.size() < list_idx + 1)
+        objlist.resize(list_idx + 1);
+    objlist[list_idx] = std::move(obj);//bBUGGY on multi-frame
 }
 
 ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {
@@ -109,8 +122,9 @@ ZENAPI std::string Session::getNodeOutput(std::string const &sn, std::string con
     return safe_at(node->outputs, ss, "node output");
 }
 
-ZENAPI IObject *Session::getObject(std::string const &id) const {
-    return safe_at(objects, id, "object");
+ZENAPI vector_of_ptr<IObject> &Session::getObject(std::string const &id) const {
+    auto const &vip = safe_at(objects, id, "object");
+    return const_cast<vector_of_ptr<IObject> &>(vip);
 }
 
 ZENAPI void Session::clearNodes() {
