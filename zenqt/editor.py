@@ -40,6 +40,7 @@ style = {
     'text_height': 28,
 
     'hori_margin': 15,
+    'vert_margin': 15,
 }
 
 class HistoryStack:
@@ -419,6 +420,7 @@ class QDMGraphicsView(QGraphicsView):
         return True
 
 TEXT_HEIGHT = style['text_height']
+VERT_MARGIN = style['vert_margin']
 HORI_MARGIN = style['hori_margin']
 SOCKET_RADIUS = style['socket_radius']
 BEZIER_FACTOR = 0.5
@@ -807,7 +809,7 @@ class QDMGraphicsNode(QGraphicsItem):
         y += TEXT_HEIGHT * 1.2
 
         self.params.clear()
-        for index, (type, name, defl) in enumerate(self.params):
+        for index, (type, name, defl) in enumerate(params):
             param = eval('QDMGraphicsParam_' + type)(self)
             rect = QRectF(HORI_MARGIN, y, self.width - HORI_MARGIN * 2, 0)
             param.setGeometry(rect)
@@ -816,7 +818,7 @@ class QDMGraphicsNode(QGraphicsItem):
             self.params[name] = param
             y += param.geometry().height()
 
-        y += TEXT_HEIGHT * 0.5
+        y += TEXT_HEIGHT * 0.8
 
         socket_start = y
 
