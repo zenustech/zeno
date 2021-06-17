@@ -30,6 +30,7 @@ rubbish.bin/
 # msvc files
 .vs/
 .idea/
+.vscode/
 .run/
 *.pdb
 *.ilk
