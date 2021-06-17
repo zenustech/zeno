@@ -30,6 +30,7 @@ rubbish.bin/
 # msvc files
 .vs/
 .idea/
+.vscode/
 .run/
 *.pdb
 *.ilk
@@ -39,6 +40,3 @@ rubbish.bin/
 
 # binary folders
 /zen/lib/
-
-# vscode settings
-.vscode/
