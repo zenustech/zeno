@@ -27,6 +27,8 @@ style = {
     'selected_color': '#EE8844',
     'button_color': '#704433',
     'button_text_color': '#ffffff',
+    'button_selected_color': '#cc6622',
+    'button_selected_text_color': '#333333',
     'output_shift': 1,
 
     'line_width': 4,
@@ -55,6 +57,8 @@ style = {
     'selected_color': '#EE8844',
     'button_color': '#1e1e1e',
     'button_text_color': '#ffffff',
+    'button_selected_color': '#449922',
+    'button_selected_text_color': '#333333',
     'output_shift': 1,
 
     'line_width': 4,
@@ -646,9 +650,11 @@ class QDMGraphicsButton(QGraphicsProxyWidget):
     def setChecked(self, checked):
         self.checked = checked
         if self.checked:
-            self.widget.setStyleSheet('background-color: #cc6622; color: #333333')
+            self.widget.setStyleSheet('background-color: {}; color: {}'.format(
+                style['button_selected_color'], style['button_selected_text_color']))
         else:
-            self.widget.setStyleSheet('background-color: {}; color: {}'.format(style['button_color'], style['button_text_color']))
+            self.widget.setStyleSheet('background-color: {}; color: {}'.format(
+                style['button_color'], style['button_text_color']))
 
     def setText(self, text):
         self.widget.setText(text)
