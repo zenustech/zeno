@@ -13,7 +13,7 @@ template <class T>
 struct PtrObject : AnyObject {
     std::unique_ptr<T> tp;
 
-    PtrObject(std::unique_ptr<T> &&tp) : tp(std::move(tp)) {}
+    explicit PtrObject(std::unique_ptr<T> &&tp) : tp(std::move(tp)) {}
 
     virtual AnyObject *clone() const override {
         return new PtrObject<T>(std::make_unique<T>(static_cast<T const &>(*tp)));
@@ -28,10 +28,11 @@ template <class T>
 struct ImplObject : AnyObject {
     T t;
 
-    ImplObject(T const &t) : t(t) {}
+    template <class Ts...>
+    explicit ImplObject(Ts const &... ts) : t(ts...) {}
 
     virtual AnyObject *clone() const override {
-        return new ImplObject<T>(t);
+        return new ImplObject<T>(static_cast<T const &>(t));
     }
 
     virtual void show() const override {
@@ -59,7 +60,8 @@ struct VDBFloatGrid : VDBGrid {
 
 int main(void)
 {
-    AnyObject *p = new PtrObject<VDBFloatGrid>( std::make_unique<VDBFloatGrid>() );
+    std::unique_ptr<VDBGrid> up = std::make_unique<VDBFloatGrid>();
+    AnyObject *p = new PtrObject<VDBGrid>( std::move(up) );
     p->show();
     auto q = p->clone();
     q->show();
