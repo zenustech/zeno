@@ -56,3 +56,16 @@ ZENDEFNODE(Route, {
     {"portal"},
 });
 
+struct Clone : zen::INode {
+    virtual void apply() override {
+        *new_output("output") = *get_input("input");
+    }
+};
+
+ZENDEFNODE(Clone, {
+    {"input"},
+    {"output"},
+    {},
+    {"portal"},
+});
+
