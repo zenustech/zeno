@@ -782,6 +782,8 @@ class QDMGraphicsNode(QGraphicsItem):
 
         y += TEXT_HEIGHT * 0.5
 
+        socket_start = y
+
         self.inputs.clear()
         for index, name in enumerate(inputs):
             socket = QDMGraphicsSocket(self)
@@ -790,6 +792,10 @@ class QDMGraphicsNode(QGraphicsItem):
             socket.setIsOutput(False)
             self.inputs[name] = socket
             y += TEXT_HEIGHT
+
+        y = socket_start + TEXT_HEIGHT
+        if len(inputs) > len(outputs):
+            y += (len(inputs) - len(outputs)) * TEXT_HEIGHT
 
         self.outputs.clear()
         for index, name in enumerate(outputs):
@@ -800,6 +806,8 @@ class QDMGraphicsNode(QGraphicsItem):
             socket.setIsOutput(True)
             self.outputs[name] = socket
             y += TEXT_HEIGHT
+
+        y = socket_start + TEXT_HEIGHT + max(len(inputs), len(outputs)) * TEXT_HEIGHT
 
         y += TEXT_HEIGHT * 0.75
         self.height = y
