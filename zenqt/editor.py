@@ -15,20 +15,18 @@ import zenapi
 MAX_STACK_LENGTH = 100
 
 style = {
-    #'title_color': '#cc6622',
     'title_color': '#307e3f',
     'socket_color': '#2266cc',
     'title_text_color': '#FFFFFF',
     'title_text_size': 10,
     'socket_text_size': 10,
     'socket_text_color': '#FFFFFF',
-    'panel_color': '#282828',
+    'panel_color': '#664433',
     'line_color': '#B0B0B0',
     'background_color': '#2C2C2C',
     'selected_color': '#EE8844',
-    #'socket_color': '#4A4A4A',
-    'button_color': '#1E1E1E',
-    'button_text_color': '#818181',
+    'button_color': '#704433',
+    'button_text_color': '#ffffff',
 
     'line_width': 4,
     'node_outline_width': 3,
@@ -794,7 +792,7 @@ class QDMGraphicsNode(QGraphicsItem):
         outputs = self.desc_outputs
         params = self.desc_params
 
-        y = HORI_MARGIN
+        y = TEXT_HEIGHT * 0.4
 
         self.options['OUT'] = button = QDMGraphicsButton(self)
         rect = QRectF(HORI_MARGIN, y, self.width / 2 - HORI_MARGIN * 1.5, 0)
@@ -806,7 +804,7 @@ class QDMGraphicsNode(QGraphicsItem):
         button.setGeometry(rect)
         button.setText('MUTE')
 
-        y += TEXT_HEIGHT * 1.2
+        y += TEXT_HEIGHT * 1.3
 
         self.params.clear()
         for index, (type, name, defl) in enumerate(params):
@@ -818,7 +816,10 @@ class QDMGraphicsNode(QGraphicsItem):
             self.params[name] = param
             y += param.geometry().height()
 
-        y += TEXT_HEIGHT * 0.8
+        if len(params):
+            y += TEXT_HEIGHT * 0.7
+        else:
+            y += TEXT_HEIGHT * 0.4
 
         socket_start = y
 
