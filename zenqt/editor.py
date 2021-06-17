@@ -40,6 +40,34 @@ style = {
     'hori_margin': 10,
 }
 
+style = {
+    'socket_color': '#638e77',
+    'title_color': '#4a4a4a',
+    #'title_color': '#638e77',
+    #'socket_color': '#4a4a4a',
+    'title_text_color': '#FFFFFF',
+    'title_text_size': 10,
+    'socket_text_size': 10,
+    'socket_text_color': '#FFFFFF',
+    'panel_color': '#282828',
+    'line_color': '#B0B0B0',
+    'background_color': '#2C2C2C',
+    'selected_color': '#EE8844',
+    'button_color': '#1e1e1e',
+    'button_text_color': '#ffffff',
+    'output_shift': 1,
+
+    'line_width': 4,
+    'node_outline_width': 3,
+    'socket_outline_width': 2,
+    'node_rounded_radius': 6,
+    'socket_radius': 8,
+    'node_width': 200,
+    'text_height': 25,
+
+    'hori_margin': 10,
+}
+
 class HistoryStack:
     def __init__(self, scene):
         self.scene = scene
