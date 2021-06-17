@@ -27,18 +27,17 @@ style = {
     'selected_color': '#EE8844',
     'button_color': '#704433',
     'button_text_color': '#ffffff',
+    'output_shift': 1,
 
     'line_width': 4,
     'node_outline_width': 3,
     'socket_outline_width': 2,
     'node_rounded_radius': 6,
     'socket_radius': 8,
-    'node_width': 233,
-    'node_height': 232,
-    'text_height': 28,
+    'node_width': 200,
+    'text_height': 25,
 
-    'hori_margin': 15,
-    'vert_margin': 15,
+    'hori_margin': 10,
 }
 
 class HistoryStack:
@@ -418,7 +417,6 @@ class QDMGraphicsView(QGraphicsView):
         return True
 
 TEXT_HEIGHT = style['text_height']
-VERT_MARGIN = style['vert_margin']
 HORI_MARGIN = style['hori_margin']
 SOCKET_RADIUS = style['socket_radius']
 BEZIER_FACTOR = 0.5
@@ -800,7 +798,8 @@ class QDMGraphicsNode(QGraphicsItem):
         button.setText('OUT')
 
         self.options['MUTE'] = button = QDMGraphicsButton(self)
-        rect = QRectF(HORI_MARGIN * 0.5 + self.width / 2, y, self.width / 2 - HORI_MARGIN * 1.5, 0)
+        rect = QRectF(HORI_MARGIN * 0.5 + self.width / 2,
+            y, self.width / 2 - HORI_MARGIN * 1.5, 0)
         button.setGeometry(rect)
         button.setText('MUTE')
 
@@ -821,7 +820,7 @@ class QDMGraphicsNode(QGraphicsItem):
         else:
             y += TEXT_HEIGHT * 0.4
 
-        socket_start = y
+        socket_start = y + TEXT_HEIGHT * style['output_shift']
 
         self.inputs.clear()
         for index, name in enumerate(inputs):
@@ -832,7 +831,7 @@ class QDMGraphicsNode(QGraphicsItem):
             self.inputs[name] = socket
             y += TEXT_HEIGHT
 
-        y = socket_start + TEXT_HEIGHT
+        y = socket_start
         if len(inputs) > len(outputs):
             y += (len(inputs) - len(outputs)) * TEXT_HEIGHT
 
@@ -846,7 +845,7 @@ class QDMGraphicsNode(QGraphicsItem):
             self.outputs[name] = socket
             y += TEXT_HEIGHT
 
-        y = socket_start + TEXT_HEIGHT + max(len(inputs), len(outputs)) * TEXT_HEIGHT
+        y = socket_start + max(len(inputs), len(outputs)) * TEXT_HEIGHT
 
         y += TEXT_HEIGHT * 0.75
         self.height = y
