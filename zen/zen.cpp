@@ -52,6 +52,20 @@ ZENAPI std::unique_ptr<IObject> IObject::clone() const {
 }
 #endif
 
+ZENAPI ListObject::ListObject() = default;
+ZENAPI ListObject::~ListObject() = default;
+
+ZENAPI IObject *ListObject::at(size_t i) const {
+    return m_arr[i].get();
+}
+
+ZENAPI std::unique_ptr<IObject> &ListObject::operator[](size_t i) {
+    if (m_arr.size() <= i) {
+        m_arr.resize(i + 1);
+    }
+    return m_arr[i];
+}
+
 ZENAPI INode::INode() = default;
 ZENAPI INode::~INode() = default;
 
@@ -69,8 +83,10 @@ ZENAPI void INode::doApply() {
         if (!cond->get())
             ok = false;
     }
-    if (ok)
+    if (ok) {
+        // TODO: loops this
         apply();
+    }
     set_output("DST", std::make_unique<zen::ConditionObject>());
 }
 
@@ -78,7 +94,7 @@ ZENAPI bool INode::has_input(std::string const &id) const {
     return inputs.find(id) != inputs.end();
 }
 
-ZENAPI vector_of_ptr<IObject> &INode::get_input_list(std::string const &id) const {
+ZENAPI ListObject &INode::get_input_list(std::string const &id) const {
     auto ref = safe_at(inputs, id, "input");
     return sess->getObject(ref);
 }
@@ -91,7 +107,7 @@ ZENAPI IValue INode::get_param(std::string const &id) const {
     return safe_at(params, id, "param");
 }
 
-ZENAPI vector_of_ptr<IObject> &INode::set_output_list(std::string const &id) {
+ZENAPI ListObject &INode::set_output_list(std::string const &id) {
     auto objid = myname + "::" + id;
     auto &objlist = sess->objects[objid];
     outputs[id] = objid;
@@ -120,9 +136,9 @@ ZENAPI std::string Session::getNodeOutput(std::string const &sn, std::string con
     return safe_at(node->outputs, ss, "node output");
 }
 
-ZENAPI vector_of_ptr<IObject> &Session::getObject(std::string const &id) const {
+ZENAPI ListObject &Session::getObject(std::string const &id) const {
     auto const &vip = safe_at(objects, id, "object");
-    return const_cast<vector_of_ptr<IObject> &>(vip);
+    return const_cast<ListObject &>(vip);
 }
 
 ZENAPI void Session::clearNodes() {

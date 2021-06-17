@@ -85,23 +85,14 @@ struct Context {
     std::set<std::string> visited;
 };
 
-template <class T>
-struct vector_of_ptr {
-    std::vector<std::unique_ptr<T>> m_arr;
+struct ListObject {
+    std::vector<std::unique_ptr<IObject>> m_arr;
 
-    vector_of_ptr() = default;
-    ~vector_of_ptr() = default;
+    ZENAPI ListObject();
+    ZENAPI ~ListObject();
 
-    T *at(size_t i) const {
-        return m_arr[i].get();
-    }
-
-    std::unique_ptr<T> &operator[](size_t i) {
-        if (m_arr.size() <= i) {
-            m_arr.resize(i + 1);
-        }
-        return m_arr[i];
-    }
+    ZENAPI IObject *at(size_t i) const;
+    ZENAPI std::unique_ptr<IObject> &operator[](size_t i);
 };
 
 struct INode {
@@ -126,7 +117,7 @@ protected:
 
     ZENAPI bool has_input(std::string const &id) const;
 
-    ZENAPI vector_of_ptr<IObject> &get_input_list(std::string const &id) const;
+    ZENAPI ListObject &get_input_list(std::string const &id) const;
 
     ZENAPI IObject *get_input(std::string const &id) const;
 
@@ -144,7 +135,7 @@ protected:
         return std::get<T>(get_param(id));
     }
 
-    ZENAPI vector_of_ptr<IObject> &set_output_list(std::string const &id);
+    ZENAPI ListObject &set_output_list(std::string const &id);
 
     ZENAPI void set_output(std::string const &id, std::unique_ptr<IObject> &&obj);
 
@@ -222,14 +213,14 @@ struct ImplNodeClass : INodeClass {
 };
 
 struct Session {
-    std::map<std::string, vector_of_ptr<IObject>> objects;
+    std::map<std::string, ListObject> objects;
     std::map<std::string, std::unique_ptr<INode>> nodes;
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
     std::unique_ptr<Context> ctx;
 
     ZENAPI void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
     ZENAPI std::string getNodeOutput(std::string const &sn, std::string const &ss) const;
-    ZENAPI vector_of_ptr<IObject> &getObject(std::string const &id) const;
+    ZENAPI ListObject &getObject(std::string const &id) const;
 
     template <class F>
     int defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {
