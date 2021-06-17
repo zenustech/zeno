@@ -17,6 +17,8 @@ MAX_STACK_LENGTH = 100
 style = {
     'title_color': '#638E77',
     'title_text_color': '#FFFFFF',
+    'title_text_size': 10,
+    'socket_text_size': 10,
     'socket_text_color': '#FFFFFF',
     'panel_color': '#282828',
     'line_color': '#B0B0B0',
@@ -502,6 +504,9 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.label = QGraphicsTextItem(self)
         self.label.setDefaultTextColor(QColor(style['socket_text_color']))
         self.label.setPos(HORI_MARGIN, -SOCKET_RADIUS)
+        font = QFont()
+        font.setPointSize(style['socket_text_size'])
+        self.label.setFont(font)
 
         self.isOutput = False
         self.edges = set()
@@ -712,6 +717,9 @@ class QDMGraphicsNode(QGraphicsItem):
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor(style['title_text_color']))
         self.title.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT + HORI_MARGIN)
+        font = QFont()
+        font.setPointSize(style['title_text_size'])
+        self.title.setFont(font)
 
         self.params = {}
         self.inputs = {}
