@@ -9,6 +9,9 @@ all:
 run: all
 	ZEN_OPEN=$O ./run.sh
 
+clean_run:
+	ZEN_OPEN=$O ./run.sh
+
 install:
 	python/setup.py install
 
