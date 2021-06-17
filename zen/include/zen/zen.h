@@ -53,8 +53,11 @@ struct IObject {
 #ifndef _ZEN_FREE_IOBJECT
     ZENAPI IObject();
     ZENAPI virtual ~IObject();
+
+    ZENAPI virtual IObject *clone() const;
 #else
     virtual ~IObject() = default;
+    virtual IObject *clone() const { return nullptr; }
 #endif
 
     using Ptr = std::unique_ptr<IObject>;
@@ -67,6 +70,13 @@ struct IObject {
 
     template <class T>
     ZENDEPRECATED const T *as() const { return dynamic_cast<const T *>(this); }
+};
+
+template <class Derived, class Base = IObject>
+struct IObjectClone : Base {
+    virtual IObject *clone() const {
+        return new Derived(static_cast<Derived const &>(*this));
+    }
 };
 
 struct Session;

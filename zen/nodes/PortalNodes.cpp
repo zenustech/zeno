@@ -56,3 +56,24 @@ ZENDEFNODE(Route, {
     {"portal"},
 });
 
+
+struct Clone : zen::INode {
+    virtual void apply() override {
+        auto obj = get_input("object");
+        zen::IObject *newptr = obj->clone();
+        if (!newptr) {
+            printf("ERROR: requested object doesn't support clone\n");
+            return;
+        }
+        std::unique_ptr<zen::IObject> newobj(newptr);
+        set_output("newObject", std::move(newobj));
+    }
+};
+
+ZENDEFNODE(Clone, {
+    {"object"},
+    {"newObject"},
+    {},
+    {"portal"},
+});
+

@@ -46,6 +46,10 @@ T safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) {
 #ifndef ZEN_FREE_IOBJECT
 ZENAPI IObject::IObject() = default;
 ZENAPI IObject::~IObject() = default;
+
+ZENAPI IObject *IObject::clone() const {
+    return nullptr;
+}
 #endif
 
 ZENAPI INode::INode() = default;
