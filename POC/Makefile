@@ -1,4 +1,4 @@
-x=nose
+x=vptr
 
 x: $x.exe Makefile
 	./$<
