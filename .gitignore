@@ -39,3 +39,6 @@ rubbish.bin/
 
 # binary folders
 /zen/lib/
+
+# vscode settings
+.vscode/

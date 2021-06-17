@@ -157,7 +157,7 @@ protected:
      */
     ZENAPI void set_output(std::string const &id, std::unique_ptr<IObject> &&obj);
 
-    ZENAPI std::string set_output_ref(std::string const &id, std::string const &ref);
+    ZENAPI void set_output_ref(std::string const &id, std::string const &ref);
 
     template <class T>
     ZENDEPRECATED T *new_member(std::string const &id) {

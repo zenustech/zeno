@@ -1,5 +1,7 @@
 file(GLOB PROJECT_SOURCE include/*/*.h *.cpp)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/lib/cmake/OpenVDB/)
+
 add_library(zenvdb SHARED ${PROJECT_SOURCE})
 target_include_directories(zenvdb PUBLIC include)
 target_include_directories(zenvdb PRIVATE ../zenbase/include)
@@ -12,7 +14,8 @@ endif()
 
 find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
 find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
-target_link_libraries(zenvdb PRIVATE openvdb IlmBase::Half TBB::tbbmalloc TBB::tbb)
+find_package(OpenVDB REQUIRED)
+target_link_libraries(zenvdb PRIVATE OpenVDB::openvdb IlmBase::Half TBB::tbbmalloc TBB::tbb)
 
 find_package(zen REQUIRED)
 target_link_libraries(zenvdb PRIVATE zen)
