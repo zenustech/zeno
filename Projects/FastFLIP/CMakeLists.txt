@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.19)
 set(CMAKE_CXX_STANDARD 17)
 project(FLIPlib)
 add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)  
-# add directory with macros
-set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake /usr/local/lib/cmake/OpenVDB/)
 
 # add cmake file
 include (common)
