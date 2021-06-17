@@ -15,34 +15,6 @@ import zenapi
 MAX_STACK_LENGTH = 100
 
 style = {
-    'title_color': '#307e3f',
-    'socket_color': '#2266cc',
-    'title_text_color': '#FFFFFF',
-    'title_text_size': 10,
-    'socket_text_size': 10,
-    'socket_text_color': '#FFFFFF',
-    'panel_color': '#664433',
-    'line_color': '#B0B0B0',
-    'background_color': '#2C2C2C',
-    'selected_color': '#EE8844',
-    'button_color': '#704433',
-    'button_text_color': '#ffffff',
-    'button_selected_color': '#cc6622',
-    'button_selected_text_color': '#333333',
-    'output_shift': 1,
-
-    'line_width': 4,
-    'node_outline_width': 3,
-    'socket_outline_width': 2,
-    'node_rounded_radius': 6,
-    'socket_radius': 8,
-    'node_width': 200,
-    'text_height': 25,
-
-    'hori_margin': 10,
-}
-
-style = {
     'socket_color': '#638e77',
     'title_color': '#4a4a4a',
     #'title_color': '#638e77',
@@ -61,8 +33,8 @@ style = {
     'button_selected_text_color': '#333333',
     'output_shift': 1,
 
-    'line_width': 4,
-    'node_outline_width': 3,
+    'line_width': 3,
+    'node_outline_width': 2,
     'socket_outline_width': 2,
     'node_rounded_radius': 6,
     'socket_radius': 8,
