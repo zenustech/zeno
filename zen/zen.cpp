@@ -47,7 +47,7 @@ T safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) {
 ZENAPI IObject::IObject() = default;
 ZENAPI IObject::~IObject() = default;
 
-ZENAPI IObject *IObject::clone() const {
+ZENAPI std::unique_ptr<IObject> IObject::clone() const {
     return nullptr;
 }
 #endif
