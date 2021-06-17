@@ -55,8 +55,21 @@ ZENAPI std::unique_ptr<IObject> IObject::clone() const {
 ZENAPI ListObject::ListObject() = default;
 ZENAPI ListObject::~ListObject() = default;
 
-ZENAPI size_t ListObject::broadcast(size_t n) const {
-    return n;
+ZENAPI bool ListObject::isScalar() const {
+    return std::holds_alternative<scalar_type>(m);
+}
+
+ZENAPI size_t ListObject::arraySize() const {
+    return std::get<array_type>(m).size();
+}
+
+ZENAPI std::optional<size_t> ListObject::broadcast(std::optional<size_t> n) const {
+    if (isScalar())
+        return n;
+    else if (n.has_value())
+        return std::min(n.value(), arraySize());
+    else
+        return arraySize();
 }
 
 ZENAPI IObject *ListObject::at(size_t i) const {
@@ -85,21 +98,31 @@ ZENAPI INode::~INode() = default;
 ZENAPI void INode::complete() {}
 
 ZENAPI void INode::doApply() {
+    std::optional<size_t> siz;
+
     for (auto [ds, bound]: inputBounds) {
         auto [sn, ss] = bound;
         sess->applyNode(sn);
-        inputs[ds] = sess->getNodeOutput(sn, ss);
+        auto ref = sess->getNodeOutput(sn, ss);
+        auto &obj = sess->getObject(ref);
+        siz = obj.broadcast(siz);
+        inputs[ds] = ref;
     }
+
     bool ok = true;
     if (has_input("COND")) {
         auto cond = get_input<zen::ConditionObject>("COND");
         if (!cond->get())
             ok = false;
     }
+
     if (ok) {
-        // TODO: loops this
-        apply();
+        for (size_t i = 0; i < siz.value_or(1); i++) {
+            list_idx = i;
+            apply();
+        }
     }
+
     set_output("DST", std::make_unique<zen::ConditionObject>());
 }
 

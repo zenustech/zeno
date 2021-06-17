@@ -93,7 +93,10 @@ struct ListObject {
     ZENAPI ListObject();
     ZENAPI ~ListObject();
 
+    ZENAPI bool isScalar() const;
+    ZENAPI size_t arraySize() const;
     ZENAPI size_t broadcast(size_t n) const;
+    ZENAPI std::optional<size_t> broadcast(std::optional<size_t> n) const;
     ZENAPI IObject *at(size_t i) const;
     ZENAPI void set(size_t i, std::unique_ptr<IObject> &&obj);
 };
