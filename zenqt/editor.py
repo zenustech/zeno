@@ -34,7 +34,7 @@ style = {
     'node_radius': 6,
     'node_width': 233,
     'node_height': 232,
-    'node_title_height': 41,
+    'text_height': 31,
 
     'hori_margin': 15,
 }
@@ -415,7 +415,7 @@ class QDMGraphicsView(QGraphicsView):
         self.scene().addEdge(src, dst)
         return True
 
-TEXT_HEIGHT = style['node_title_height']
+TEXT_HEIGHT = style['text_height']
 HORI_MARGIN = style['hori_margin']
 SOCKET_RADIUS = style['socket_radius']
 BEZIER_FACTOR = 0.5
@@ -741,7 +741,7 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor(style['title_text_color']))
-        self.title.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT + HORI_MARGIN)
+        self.title.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT + HORI_MARGIN * 0.25)
         font = QFont()
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
@@ -784,8 +784,11 @@ class QDMGraphicsNode(QGraphicsItem):
         for name, button in self.options.items():
             button.setChecked(name in options)
 
+    def initSockets(self):
+        inputs = self.desc_inputs
+        outputs = self.desc_outputs
+        params = self.desc_params
 
-    def initSockets(self, inputs=(), outputs=(), params=()):
         y = HORI_MARGIN
 
         self.options['OUT'] = button = QDMGraphicsButton(self)
@@ -801,7 +804,7 @@ class QDMGraphicsNode(QGraphicsItem):
         y += TEXT_HEIGHT * 1.2
 
         self.params.clear()
-        for index, (type, name, defl) in enumerate(self.desc_params):
+        for index, (type, name, defl) in enumerate(self.params):
             param = eval('QDMGraphicsParam_' + type)(self)
             rect = QRectF(HORI_MARGIN, y, self.width - HORI_MARGIN * 2, 0)
             param.setGeometry(rect)
@@ -815,7 +818,7 @@ class QDMGraphicsNode(QGraphicsItem):
         socket_start = y
 
         self.inputs.clear()
-        for index, name in enumerate(self.desc_inputs):
+        for index, name in enumerate(inputs):
             socket = QDMGraphicsSocket(self)
             socket.setPos(0, y)
             socket.setName(name)
@@ -828,7 +831,7 @@ class QDMGraphicsNode(QGraphicsItem):
             y += (len(inputs) - len(outputs)) * TEXT_HEIGHT
 
         self.outputs.clear()
-        for index, name in enumerate(self.desc_outputs):
+        for index, name in enumerate(outputs):
             socket = QDMGraphicsSocket(self)
             index += len(self.desc_params) + len(self.desc_inputs)
             socket.setPos(0, y)
