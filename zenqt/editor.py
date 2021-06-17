@@ -15,7 +15,9 @@ import zenapi
 MAX_STACK_LENGTH = 100
 
 style = {
-    'title_color': '#638E77',
+    #'title_color': '#cc6622',
+    'title_color': '#307e3f',
+    'socket_color': '#2266cc',
     'title_text_color': '#FFFFFF',
     'title_text_size': 10,
     'socket_text_size': 10,
@@ -23,18 +25,19 @@ style = {
     'panel_color': '#282828',
     'line_color': '#B0B0B0',
     'background_color': '#2C2C2C',
-    'selected_color': '#CC8844',
-    'socket_color': '#4A4A4A',
+    'selected_color': '#EE8844',
+    #'socket_color': '#4A4A4A',
     'button_color': '#1E1E1E',
     'button_text_color': '#818181',
 
     'line_width': 4,
+    'node_outline_width': 3,
     'socket_outline_width': 2,
-    'socket_radius': 10,
-    'node_radius': 6,
+    'node_rounded_radius': 6,
+    'socket_radius': 8,
     'node_width': 233,
     'node_height': 232,
-    'text_height': 31,
+    'text_height': 28,
 
     'hori_margin': 15,
 }
@@ -528,7 +531,7 @@ class QDMGraphicsSocket(QGraphicsItem):
 
         self.label = QGraphicsTextItem(self)
         self.label.setDefaultTextColor(QColor(style['socket_text_color']))
-        self.label.setPos(HORI_MARGIN, -SOCKET_RADIUS)
+        self.label.setPos(HORI_MARGIN, -TEXT_HEIGHT * 0.5)
         font = QFont()
         font.setPointSize(style['socket_text_size'])
         self.label.setFont(font)
@@ -591,7 +594,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         return QRectF(*self.getCircleBounds()).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-        painter.setBrush(QColor(style['title_color']))
+        painter.setBrush(QColor(style['socket_color']))
         pen = QPen(QColor(style['line_color']))
         pen.setWidth(style['socket_outline_width'])
         painter.setPen(pen)
@@ -741,7 +744,7 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor(style['title_text_color']))
-        self.title.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT + HORI_MARGIN * 0.25)
+        self.title.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT * 0.9)
         font = QFont()
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
@@ -862,11 +865,11 @@ class QDMGraphicsNode(QGraphicsItem):
         painter.drawPath(pathTitle.simplified())
 
         pathOutline = QPainterPath()
-        r = style['node_radius']
+        r = style['node_rounded_radius']
         pathOutline.addRoundedRect(0, -TEXT_HEIGHT, self.width, self.height, r, r)
         pathOutlineColor = 'selected_color' if self.isSelected() else 'line_color'
         pen = QPen(QColor(style[pathOutlineColor]))
-        pen.setWidth(style['line_width'])
+        pen.setWidth(style['node_outline_width'])
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
         painter.drawPath(pathOutline.simplified())

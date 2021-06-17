@@ -1,5 +1,8 @@
 O=assets/rigid.zsg
 
+clean_run:
+	ZEN_OPEN=$O ./run.sh
+
 default: all run
 
 all:
