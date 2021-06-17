@@ -27,12 +27,14 @@ static T prim_reduce(PrimitiveObject *prim, std::string channel, std::string typ
 		for (int i = 1; i < temp.size(); i++) {
 			total = zen::max(total, temp[i]);
 		}
+        return total;
     }
     if(type==std::string("min")){
 		T total = temp[0];
 		for (int i = 1; i < temp.size(); i++) {
 			total = zen::min(total, temp[i]);
 		}
+        return total;
     }
     if(type==std::string("absmax"))
     {
@@ -42,6 +44,7 @@ static T prim_reduce(PrimitiveObject *prim, std::string channel, std::string typ
 		}
         return total;
     }
+    return (T)0;
 }
 
 

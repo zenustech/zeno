@@ -69,8 +69,9 @@ ZENAPI bool INode::has_input(std::string const &id) const {
     return inputs.find(id) != inputs.end();
 }
 
-ZENAPI std::any *INode::get_input(std::string const &id) const {
-    return sess->getObject(safe_at(inputs, id, "input"));
+ZENAPI INode::my_std_any *INode::get_input(std::string const &id) const {
+    auto ret = sess->getObject(safe_at(inputs, id, "input"));
+    return new my_std_any(ret);
 }
 
 ZENAPI IValue INode::get_param(std::string const &id) const {

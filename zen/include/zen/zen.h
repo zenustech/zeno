@@ -26,7 +26,7 @@
 
 # define ZENAPI
 # ifdef __GNUC__
-#  define ZENDEPRECATED __attribute__((deprecated))
+#  define ZENDEPRECATED //__attribute__((deprecated))
 # else
 #  define ZENDEPRECATED
 # endif
@@ -52,7 +52,18 @@ using IValue = std::variant<std::string, int, float>;
 
 struct Session;
 
-/*ZENDEPRECATED*/ struct IObject {
+struct IObject {
+    ZENDEPRECATED IObject() = default;
+
+    template <class T>
+    ZENDEPRECATED static std::unique_ptr<T> make() {
+        return std::make_unique<T>();
+    }
+
+    template <class T>
+    ZENDEPRECATED static T *as() {
+        return std::make_unique<T>();
+    }
 };
 
 struct Context {
@@ -75,37 +86,24 @@ public:
     ZENAPI virtual void complete();
 
 protected:
-    /*
-     * @name apply()
-     * @brief user should override this pure virtual function,
-     * @brief it will be called when the node is executed
-     */
     virtual void apply() = 0;
 
-    /*
-     * @name has_input(id)
-     * @param[id] the input socket name
-     * @return true if connected, false otherwise
-     * @brief test if the input socket is connected
-     */
     ZENAPI bool has_input(std::string const &id) const;
 
-    /*
-     * @name get_input(id)
-     * @param[id] the input socket name
-     * @return pointer to the object
-     * @brief get the object passed into the input socket
-     */
-    ZENAPI std::any *get_input(std::string const &id) const;
+    struct my_std_any {
+        std::any *_m_p;
 
-    /*
-     * @name get_input<T>(id)
-     * @template[T] the object type you want to cast to
-     * @param[id] the input socket name
-     * @return pointer to the object, will be null if the input is not of that type
-     * @brief get the object passed into the input socket,
-     * @brief and cast it to the given type
-     */
+        my_std_any(std::any *p) : _m_p(p) {
+        }
+
+        template <class T>
+        ZENDEPRECATED T *as() { return &std::any_cast<T &>(*_m_p); }
+
+        operator std::any &() { return *_m_p; }
+    };
+
+    ZENAPI my_std_any *get_input(std::string const &id) const;
+
     template <class T>
     T *get_input(std::string const &id) const {
         return &std::any_cast<T &>(*get_input(id));
@@ -113,21 +111,8 @@ protected:
 
     ZENAPI std::string get_input_ref(std::string const &id) const;
 
-    /*
-     * @name get_param(id)
-     * @param[id] the parameter name
-     * @return a variant for parameter value
-     * @brief get the parameter value by parameter name
-     */
     ZENAPI IValue get_param(std::string const &id) const;
 
-    /*
-     * @name get_param<T>(id)
-     * @template[T] the parameter type to assume
-     * @param[id] the parameter name
-     * @return the parameter value of given type
-     * @brief get the parameter value by parameter name, given type assumed
-     */
     template <class T>
     T get_param(std::string const &id) const {
         return std::get<T>(get_param(id));
@@ -138,7 +123,7 @@ protected:
     ZENAPI void set_output_ref(std::string const &id, std::string const &ref);
 
     /*template <class T>
-    ZENAPI T *new_output(std::string const &id) {
+    T *new_output(std::string const &id) {
         auto obj = new_output(id);
         *obj = std::make_any<T>();
         return &std::any_cast<T &>(*obj);
@@ -154,7 +139,7 @@ protected:
 
     template <class T>
     ZENDEPRECATED void set_output(std::string const &id, std::unique_ptr<T> &&obj) {
-        *new_output(id) = *obj;
+        *new_output(id) = std::make_any<T>(*obj);
     }
 
     template <class T>
