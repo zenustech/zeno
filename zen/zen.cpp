@@ -84,7 +84,7 @@ ZENAPI vector_of_ptr<IObject> &INode::get_input_list(std::string const &id) cons
 }
 
 ZENAPI IObject *INode::get_input(std::string const &id) const {
-    return get_input_list(id)[list_idx].get();
+    return get_input_list(id).at(list_idx);
 }
 
 ZENAPI IValue INode::get_param(std::string const &id) const {
@@ -100,9 +100,7 @@ ZENAPI vector_of_ptr<IObject> &INode::set_output_list(std::string const &id) {
 
 ZENAPI void INode::set_output(std::string const &id, std::unique_ptr<IObject> &&obj) {
     auto &objlist = set_output_list(id);
-    if (objlist.size() < list_idx + 1)
-        objlist.resize(list_idx + 1);
-    objlist[list_idx] = std::move(obj);//bBUGGY on multi-frame
+    objlist[list_idx] = std::move(obj);
 }
 
 ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {

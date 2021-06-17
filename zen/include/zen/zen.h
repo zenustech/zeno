@@ -48,9 +48,6 @@ public:
 
 using IValue = std::variant<std::string, int, float>;
 
-template <class T>
-using vector_of_ptr = std::vector<std::unique_ptr<T>>;
-
 
 struct IObject {
 #ifndef _ZEN_FREE_IOBJECT
@@ -86,6 +83,25 @@ struct Session;
 
 struct Context {
     std::set<std::string> visited;
+};
+
+template <class T>
+struct vector_of_ptr {
+    std::vector<std::unique_ptr<T>> m_arr;
+
+    vector_of_ptr() = default;
+    ~vector_of_ptr() = default;
+
+    T *at(size_t i) const {
+        return m_arr[i].get();
+    }
+
+    std::unique_ptr<T> &operator[](size_t i) {
+        if (m_arr.size() <= i) {
+            m_arr.resize(i + 1);
+        }
+        return m_arr[i];
+    }
 };
 
 struct INode {
