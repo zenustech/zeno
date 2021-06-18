@@ -1,8 +1,5 @@
 O=assets/rigid.zsg
 
-clean_run:
-	ZEN_OPEN=$O ./run.sh
-
 default: all run
 
 all:
@@ -10,6 +7,9 @@ all:
 	make -C build -j `python -c 'from multiprocessing import cpu_count; print(cpu_count() * 2)'`
 
 run: all
+	ZEN_OPEN=$O ./run.sh
+
+clean_run:
 	ZEN_OPEN=$O ./run.sh
 
 install:
