@@ -15,10 +15,9 @@ import zenapi
 MAX_STACK_LENGTH = 100
 
 style = {
-    'socket_color': '#638e77',
-    'title_color': '#4a4a4a',
-    #'title_color': '#638e77',
-    #'socket_color': '#4a4a4a',
+    'title_color': '#638e77',
+    'socket_connect_color': '#638e77',
+    'socket_unconnect_color': '#4a4a4a',
     'title_text_color': '#FFFFFF',
     'title_text_size': 10,
     'socket_text_size': 10,
@@ -596,7 +595,8 @@ class QDMGraphicsSocket(QGraphicsItem):
         return QRectF(*self.getCircleBounds()).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-        painter.setBrush(QColor(style['socket_color']))
+        socket_color = 'socket_connect_color' if self.hasAnyEdge() else 'socket_unconnect_color'
+        painter.setBrush(QColor(style[socket_color]))
         pen = QPen(QColor(style['line_color']))
         pen.setWidth(style['socket_outline_width'])
         painter.setPen(pen)
