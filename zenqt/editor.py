@@ -40,6 +40,8 @@ style = {
     'node_width': 200,
     'text_height': 25,
 
+    'copy_offset': 200,
+
     'hori_margin': 10,
 }
 
@@ -101,9 +103,11 @@ class QDMGraphicsScene(QGraphicsScene):
         self.moved = False
         self.mmb_press = False
 
-    def dumpGraph(self):
+    def dumpGraph(self, input_nodes=None):
         nodes = {}
-        for node in self.nodes:
+        if input_nodes == None:
+            input_nodes = self.nodes
+        for node in input_nodes:
             inputs = {}
             for name, socket in node.inputs.items():
                 assert not socket.isOutput
@@ -137,7 +141,7 @@ class QDMGraphicsScene(QGraphicsScene):
             node.remove()
         self.nodes.clear()
 
-    def loadGraph(self, nodes):
+    def loadGraph(self, nodes, activated=False):
         edges = []
         nodesLut = {}
 
@@ -178,6 +182,8 @@ class QDMGraphicsScene(QGraphicsScene):
 
             self.addNode(node)
             nodesLut[ident] = node
+            if activated:
+                node.setSelected(activated)
 
         for dest, (ident, name) in edges:
             if ident not in nodesLut:
@@ -190,7 +196,9 @@ class QDMGraphicsScene(QGraphicsScene):
                     name, nodes[ident]['name']))
                 continue
             source = srcnode.outputs[name]
-            self.addEdge(source, dest)
+            edge = self.addEdge(source, dest)
+            if activated:
+                edge.setSelected(True)
 
     def addEdge(self, src, dst):
         edge = QDMGraphicsEdge()
@@ -198,6 +206,7 @@ class QDMGraphicsScene(QGraphicsScene):
         edge.setDstSocket(dst)
         edge.updatePath()
         self.addItem(edge)
+        return edge
 
     def searchNode(self, name):
         for key in self.descs.keys():
@@ -897,6 +906,8 @@ class QDMFileMenu(QMenu):
                 (None, None),
                 ('Undo', QKeySequence.Undo),
                 ('Redo', QKeySequence.Redo),
+                (None, None),
+                ('Duplicate', 'ctrl+d'),
         ]
         
         for name, shortcut in acts:
@@ -1030,6 +1041,30 @@ class NodeEditor(QWidget):
 
         elif name == 'Redo':
             self.scene.redo()
+
+        elif name == 'Duplicate':
+            itemList = self.scene.selectedItems()
+            for i in itemList:
+                i.setSelected(False)
+            itemList = list(filter(lambda n: type(n) == QDMGraphicsNode, itemList))
+            nodes = self.scene.dumpGraph(itemList)
+            nid_map = {}
+            for nid in nodes:
+                nid_map[nid] = gen_unique_ident()
+            new_nodes = {}
+            for nid, n in nodes.items():
+                x, y = n['uipos']
+                n['uipos'] = (x, y + style['copy_offset'])
+                inputs = n['inputs']
+                for name, info in inputs.items():
+                    if info == None:
+                        continue
+                    nid_, name_ = info
+                    info = (nid_map[nid_], name_)
+                    inputs[name] = info
+                new_nodes[nid_map[nid]] = n
+            self.scene.loadGraph(new_nodes, True)
+            self.scene.record()
 
     def do_save(self, path):
         graph = self.scene.dumpGraph()
