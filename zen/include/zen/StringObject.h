@@ -6,7 +6,7 @@
 
 namespace zen {
 
-struct StringObject : IObject {
+struct StringObject : IObjectClone<StringObject> {
   std::string value;
 
   std::string const &get() const {

@@ -7,7 +7,7 @@
 
 namespace zen {
 
-struct ParticlesObject : zen::IObject {
+struct ParticlesObject : zen::IObjectClone<ParticlesObject> {
   
   std::vector<glm::vec3> pos;
   std::vector<glm::vec3> vel;

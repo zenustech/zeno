@@ -6,7 +6,7 @@
 namespace zen {
 
 
-struct ConditionObject : IObject {
+struct ConditionObject : IObjectClone<ConditionObject> {
   bool value = true;
 
   bool get() {
