@@ -87,7 +87,7 @@ struct Context {
 
 struct ListObject {
     std::vector<std::unique_ptr<IObject>> m_arr;
-    bool m_isList = true;
+    bool m_isList = false;
 
     ZENAPI ListObject();
     ZENAPI ~ListObject();

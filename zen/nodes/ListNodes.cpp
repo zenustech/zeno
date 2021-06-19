@@ -58,3 +58,20 @@ ZENDEFNODE(CloneFillList, {
     {},
     {"list"},
 });
+
+
+struct TestIsList : zen::INode {
+    virtual void apply() override {
+        auto &inp = get_input_list("input");
+        auto ret = std::make_unique<zen::ConditionObject>();
+        ret->set(inp.m_isList);
+        set_output("isList", std::move(ret));
+    }
+};
+
+ZENDEFNODE(TestIsList, {
+    {"input"},
+    {"isList"},
+    {},
+    {"list"},
+});
