@@ -1060,7 +1060,10 @@ class NodeEditor(QWidget):
                     if info == None:
                         continue
                     nid_, name_ = info
-                    info = (nid_map[nid_], name_)
+                    if nid_ in nid_map:
+                        info = (nid_map[nid_], name_)
+                    else:
+                        info = None
                     inputs[name] = info
                 new_nodes[nid_map[nid]] = n
             self.scene.loadGraph(new_nodes, True)
