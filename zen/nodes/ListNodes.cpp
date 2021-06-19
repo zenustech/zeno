@@ -14,7 +14,7 @@ struct ListRange : zen::INode {
             step = get_input<zen::NumericObject>("step")->get<int>();
 
         auto &ret = set_output_list("list");
-        ret.m_isScalar = false;
+        ret.m_isList = true;
         ret.m_arr.clear();
         for (int i = start; i < stop; i++) {
             auto val = std::make_unique<zen::NumericObject>();
@@ -39,7 +39,7 @@ struct CloneFillList : zen::INode {
         auto obj = get_input("object");
 
         auto &ret = set_output_list("list");
-        ret.m_isScalar = false;
+        ret.m_isList = true;
         ret.m_arr.clear();
         for (int i = 0; i < count; i++) {
             auto newobj = obj->clone();

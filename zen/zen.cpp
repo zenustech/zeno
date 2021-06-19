@@ -56,7 +56,7 @@ ZENAPI ListObject::ListObject() = default;
 ZENAPI ListObject::~ListObject() = default;
 
 ZENAPI bool ListObject::isScalar() const {
-    return m_isScalar;
+    return !m_isList;
 }
 
 ZENAPI size_t ListObject::arraySize() const {
@@ -96,7 +96,6 @@ ZENAPI void INode::doApply() {
         sess->applyNode(sn);
         auto ref = sess->getNodeOutput(sn, ss);
         auto &obj = sess->getObject(ref);
-        printf("broadcast by %s\n", ref.c_str());
         siz = obj.broadcast(siz);
         inputs[ds] = ref;
     }
@@ -109,8 +108,6 @@ ZENAPI void INode::doApply() {
     }
 
     if (ok) {
-        printf("has_val = %d\n", siz.has_value());
-        printf("val_or0 = %d\n", siz.value_or(0));
         for (size_t i = 0; i < siz.value_or(1); i++) {
             list_idx = i;
             apply();
