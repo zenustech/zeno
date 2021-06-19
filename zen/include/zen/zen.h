@@ -118,7 +118,8 @@ public:
 protected:
     virtual void apply() = 0;
 
-    size_t list_idx = 0;
+    bool m_isList = true;
+    size_t m_listIdx = 0;
 
     ZENAPI bool has_input(std::string const &id) const;
 

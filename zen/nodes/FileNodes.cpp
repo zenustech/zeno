@@ -22,17 +22,21 @@ ZENDEFNODE(MakeString, {
     {"fileio"},
 });
 
+static int objid = 0;
+
 struct ExportPath : zen::INode {
     virtual void apply() override {
-        auto name = get_param<std::string>("name");
         char buf[100];
+        auto ext = get_param<std::string>("ext");
         sprintf(buf, "%06d", zen::state.frameid);
         auto path = fs::path(zen::state.iopath) / buf;
         if (!fs::is_directory(path)) {
             fs::create_directory(path);
         }
-        path /= name;
+        sprintf(buf, "%06d.%s", objid++, ext.c_str());
+        path /= buf;
         auto ret = std::make_unique<zen::StringObject>();
+        printf("EXPORTPATH: %s\n", path.c_str());
         ret->set(path.string());
         set_output("path", std::move(ret));
     }
@@ -41,7 +45,7 @@ struct ExportPath : zen::INode {
 ZENDEFNODE(ExportPath, {
     {},
     {"path"},
-    {{"string", "name", "out.zpm"}},
+    {{"string", "ext", "zpm"}},
     {"fileio"},
 });
 

@@ -108,12 +108,15 @@ ZENAPI void INode::doApply() {
     }
 
     if (ok) {
+        m_isList = siz.has_value();
         for (size_t i = 0; i < siz.value_or(1); i++) {
-            list_idx = i;
+            m_listIdx = i;
             apply();
         }
     }
 
+    m_isList = false;
+    m_listIdx = 0;
     set_output("DST", std::make_unique<zen::ConditionObject>());
 }
 
@@ -127,7 +130,7 @@ ZENAPI ListObject &INode::get_input_list(std::string const &id) const {
 }
 
 ZENAPI IObject *INode::get_input(std::string const &id) const {
-    return get_input_list(id).at(list_idx);
+    return get_input_list(id).at(m_listIdx);
 }
 
 ZENAPI IValue INode::get_param(std::string const &id) const {
@@ -143,7 +146,8 @@ ZENAPI ListObject &INode::set_output_list(std::string const &id) {
 
 ZENAPI void INode::set_output(std::string const &id, std::unique_ptr<IObject> &&obj) {
     auto &objlist = set_output_list(id);
-    objlist.set(list_idx, std::move(obj));
+    objlist.m_isList = m_isList;
+    objlist.set(m_listIdx, std::move(obj));
 }
 
 ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {
