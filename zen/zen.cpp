@@ -74,7 +74,7 @@ ZENAPI std::optional<size_t> ListObject::broadcast(std::optional<size_t> n) cons
 }
 
 ZENAPI IObject *ListObject::at(size_t i) const {
-    return m_arr[i].get();
+    return m_arr[i % m_arr.size()].get();
 }
 
 ZENAPI void ListObject::set(size_t i, std::unique_ptr<IObject> &&obj) {
