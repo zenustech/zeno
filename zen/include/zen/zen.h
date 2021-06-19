@@ -86,9 +86,8 @@ struct Context {
 };
 
 struct ListObject {
-    using array_type = std::vector<std::unique_ptr<IObject>>;
-    using scalar_type = std::unique_ptr<IObject>;
-    std::variant<array_type, scalar_type> m;
+    std::vector<std::unique_ptr<IObject>> m_arr;
+    bool m_isScalar = true;
 
     ZENAPI ListObject();
     ZENAPI ~ListObject();

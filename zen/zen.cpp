@@ -56,40 +56,31 @@ ZENAPI ListObject::ListObject() = default;
 ZENAPI ListObject::~ListObject() = default;
 
 ZENAPI bool ListObject::isScalar() const {
-    return std::holds_alternative<scalar_type>(m);
+    return m_isScalar;
 }
 
 ZENAPI size_t ListObject::arraySize() const {
-    return std::get<array_type>(m).size();
+    return m_arr.size();
 }
 
 ZENAPI std::optional<size_t> ListObject::broadcast(std::optional<size_t> n) const {
-    if (isScalar())
+    if (isScalar()) {
         return n;
-    else if (n.has_value())
+    } else if (n.has_value()) {
         return std::min(n.value(), arraySize());
-    else
+    } else {
         return arraySize();
+    }
 }
 
 ZENAPI IObject *ListObject::at(size_t i) const {
-    if (std::holds_alternative<scalar_type>(m)) {
-        return std::get<scalar_type>(m).get();
-    } else {
-        return std::get<array_type>(m)[i].get();
-    }
+    return m_arr[i].get();
 }
 
 ZENAPI void ListObject::set(size_t i, std::unique_ptr<IObject> &&obj) {
-    if (std::holds_alternative<scalar_type>(m)) {
-        m = std::move(obj);
-    } else {
-        auto &arr = std::get<array_type>(m);
-        if (arr.size() <= i) {
-            arr.resize(i + 1);
-        }
-        arr[i] = std::move(obj);
-    }
+    if (m_arr.size() < i + 1)
+        m_arr.resize(i + 1);
+    m_arr[i] = std::move(obj);
 }
 
 ZENAPI INode::INode() = default;
@@ -105,6 +96,7 @@ ZENAPI void INode::doApply() {
         sess->applyNode(sn);
         auto ref = sess->getNodeOutput(sn, ss);
         auto &obj = sess->getObject(ref);
+        printf("broadcast by %s\n", ref.c_str());
         siz = obj.broadcast(siz);
         inputs[ds] = ref;
     }
@@ -117,6 +109,8 @@ ZENAPI void INode::doApply() {
     }
 
     if (ok) {
+        printf("has_val = %d\n", siz.has_value());
+        printf("val_or0 = %d\n", siz.value_or(0));
         for (size_t i = 0; i < siz.value_or(1); i++) {
             list_idx = i;
             apply();
