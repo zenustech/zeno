@@ -36,7 +36,7 @@ struct ExportPath : zen::INode {
         sprintf(buf, "%06d.%s", objid++, ext.c_str());
         path /= buf;
         auto ret = std::make_unique<zen::StringObject>();
-        printf("EXPORTPATH: %s\n", path.c_str());
+        //printf("EXPORTPATH: %s\n", path.c_str());
         ret->set(path.string());
         set_output("path", std::move(ret));
     }
