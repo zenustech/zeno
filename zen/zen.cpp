@@ -74,11 +74,11 @@ ZENAPI std::optional<size_t> ListObject::broadcast(std::optional<size_t> n) cons
     }
 }
 
-ZENAPI IObject *ListObject::at(size_t i) const {
-    return m_arr[i % m_arr.size()].get();
+ZENAPI std::shared_ptr<IObject> const &ListObject::at(size_t i) const {
+    return m_arr[i % m_arr.size()];
 }
 
-ZENAPI void ListObject::set(size_t i, std::unique_ptr<IObject> &&obj) {
+ZENAPI void ListObject::set(size_t i, std::shared_ptr<IObject> &&obj) {
     if (m_arr.size() < i + 1)
         m_arr.resize(i + 1);
     m_arr[i] = std::move(obj);
@@ -195,7 +195,8 @@ ZENAPI ListObject &INode::get_input_list(std::string const &id) const {
     return sess->getObject(ref);
 }
 
-ZENAPI IObject *INode::get_input(std::string const &id) const {
+ZENAPI std::shared_ptr<IObject> INode::get_input(
+    std::string const &id) const {
     return get_input_list(id).at(m_listIdx);
 }
 
@@ -210,7 +211,7 @@ ZENAPI ListObject &INode::set_output_list(std::string const &id) {
     return objlist;
 }
 
-ZENAPI void INode::set_output(std::string const &id, std::unique_ptr<IObject> &&obj) {
+ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
     auto &objlist = set_output_list(id);
     objlist.m_isList = m_isList;
     objlist.set(m_listIdx, std::move(obj));

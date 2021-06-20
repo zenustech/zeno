@@ -18,7 +18,7 @@ struct BulletCollisionShape : zen::IObject {
 struct BulletMakeBoxShape : zen::INode {
     virtual void apply() override {
         auto v3size = get_input<zen::NumericObject>("v3size")->get<zen::vec3f>();
-        auto shape = std::make_unique<BulletCollisionShape>(
+        auto shape = std::make_shared<BulletCollisionShape>(
             std::make_unique<btBoxShape>(zen::vec_to_other<btVector3>(v3size)));
         set_output("shape", std::move(shape));
     }
@@ -216,15 +216,15 @@ struct BulletWorld : zen::IObject {
 
     std::unique_ptr<btDiscreteDynamicsWorld> dynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>(dispatcher.get(), overlappingPairCache.get(), solver.get(), collisionConfiguration.get());
 
-    std::vector<BulletObject *> objects;
+    std::vector<std::shared_ptr<BulletObject>> objects;
 
     BulletWorld() {
         dynamicsWorld->setGravity(btVector3(0, -10, 0));
     }
 
-    void addObject(BulletObject *obj) {
+    void addObject(std::shared_ptr<BulletObject> obj) {
         dynamicsWorld->addRigidBody(obj->body.get());
-        objects.push_back(obj);
+        objects.push_back(std::move(obj));
     }
 
     /*
@@ -320,7 +320,7 @@ struct BulletWorldAddObject : zen::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
         auto object = get_input<BulletObject>("object");
-        world->addObject(object);
+        world->addObject(std::move(object));
         set_output_ref("world", get_input_ref("world"));
     }
 };

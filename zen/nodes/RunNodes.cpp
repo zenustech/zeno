@@ -6,7 +6,7 @@
 struct RunOnce : zen::INode {
     virtual void apply() override {
         bool yes = zen::state.substepid == 0;
-        auto obj = std::make_unique<zen::ConditionObject>();
+        auto obj = std::make_shared<zen::ConditionObject>();
         obj->set(yes);
         set_output("cond", std::move(obj));
     }
@@ -22,7 +22,7 @@ ZENDEFNODE(RunOnce, {
 struct RunAfterFrame : zen::INode {
     virtual void apply() override {
         bool yes = zen::state.has_frame_completed || !zen::state.time_step_integrated;
-        auto obj = std::make_unique<zen::ConditionObject>();
+        auto obj = std::make_shared<zen::ConditionObject>();
         obj->set(yes);
         set_output("cond", std::move(obj));
     }
@@ -38,7 +38,7 @@ ZENDEFNODE(RunAfterFrame, {
 struct RunBeforeFrame : zen::INode {
     virtual void apply() override {
         bool yes = !zen::state.has_substep_executed;
-        auto obj = std::make_unique<zen::ConditionObject>();
+        auto obj = std::make_shared<zen::ConditionObject>();
         obj->set(yes);
         set_output("cond", std::move(obj));
     }
@@ -68,7 +68,7 @@ ZENDEFNODE(SetFrameTime, {
 
 struct GetFrameTime : zen::INode {
     virtual void apply() override {
-        auto time = std::make_unique<zen::NumericObject>();
+        auto time = std::make_shared<zen::NumericObject>();
         time->set(zen::state.frame_time);
         set_output("time", std::move(time));
     }
@@ -83,7 +83,7 @@ ZENDEFNODE(GetFrameTime, {
 
 struct GetFrameTimeElapsed : zen::INode {
     virtual void apply() override {
-        auto time = std::make_unique<zen::NumericObject>();
+        auto time = std::make_shared<zen::NumericObject>();
         time->set(zen::state.frame_time_elapsed);
         set_output("time", std::move(time));
     }
@@ -98,7 +98,7 @@ ZENDEFNODE(GetFrameTimeElapsed, {
 
 struct GetFrameNum : zen::INode {
     virtual void apply() override {
-        auto num = std::make_unique<zen::NumericObject>();
+        auto num = std::make_shared<zen::NumericObject>();
         num->set(zen::state.frameid);
         set_output("FrameNum", std::move(num));
     }
@@ -113,7 +113,7 @@ ZENDEFNODE(GetFrameNum, {
 
 struct GetTime : zen::INode {
     virtual void apply() override {
-        auto time = std::make_unique<zen::NumericObject>();
+        auto time = std::make_shared<zen::NumericObject>();
         time->set(zen::state.frameid * zen::state.frame_time
             + zen::state.frame_time_elapsed);
         set_output("time", std::move(time));
@@ -129,7 +129,7 @@ ZENDEFNODE(GetTime, {
 
 struct GetFramePortion : zen::INode {
     virtual void apply() override {
-        auto portion = std::make_unique<zen::NumericObject>();
+        auto portion = std::make_shared<zen::NumericObject>();
         portion->set(zen::state.frame_time_elapsed / zen::state.frame_time);
         set_output("FramePortion", std::move(portion));
     }
@@ -158,9 +158,9 @@ struct IntegrateFrameTime : zen::INode {
             zen::state.frame_time_elapsed += dt;
         }
         zen::state.time_step_integrated = true;
-        auto ret = std::make_unique<zen::NumericObject>();
+        auto ret = std::make_shared<zen::NumericObject>();
         ret->set(dt);
-        set_output("actual_dt", ret);
+        set_output("actual_dt", std::move(ret));
     }
 };
 

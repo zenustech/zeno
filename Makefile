@@ -1,4 +1,4 @@
-O=assets/testmm.zsg
+O=assets/rigid.zsg
 
 default: all run
 
