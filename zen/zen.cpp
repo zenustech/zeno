@@ -24,7 +24,7 @@ T *safe_at(std::map<std::string, std::unique_ptr<T>> const &m,
 }
 
 template <class T>
-T safe_at(std::map<std::string, T> const &m, std::string const &key,
+T const &safe_at(std::map<std::string, T> const &m, std::string const &key,
           std::string const &msg) {
   auto it = m.find(key);
   if (it == m.end()) {
@@ -34,7 +34,7 @@ T safe_at(std::map<std::string, T> const &m, std::string const &key,
 }
 
 template <class T, class S>
-T safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) {
+T const &safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) {
   auto it = m.find(key);
   if (it == m.end()) {
     throw Exception("invalid " + msg + " as index");
@@ -52,44 +52,111 @@ ZENAPI std::unique_ptr<IObject> IObject::clone() const {
 }
 #endif
 
+ZENAPI ListObject::ListObject() = default;
+ZENAPI ListObject::~ListObject() = default;
+
+ZENAPI bool ListObject::isScalar() const {
+    return !m_isList;
+}
+
+ZENAPI size_t ListObject::arraySize() const {
+    return m_arr.size();
+}
+
+ZENAPI std::optional<size_t> ListObject::broadcast(std::optional<size_t> n) const {
+    if (isScalar()) {
+        return n;
+    } else if (n.has_value()) {
+        return std::min(n.value(), arraySize());
+    } else {
+        return arraySize();
+    }
+}
+
+ZENAPI IObject *ListObject::at(size_t i) const {
+    return m_arr[i % m_arr.size()].get();
+}
+
+ZENAPI void ListObject::set(size_t i, std::unique_ptr<IObject> &&obj) {
+    if (m_arr.size() < i + 1)
+        m_arr.resize(i + 1);
+    m_arr[i] = std::move(obj);
+}
+
 ZENAPI INode::INode() = default;
 ZENAPI INode::~INode() = default;
 
 ZENAPI void INode::complete() {}
 
 ZENAPI void INode::doApply() {
+    std::optional<size_t> siz;
+
     for (auto [ds, bound]: inputBounds) {
         auto [sn, ss] = bound;
         sess->applyNode(sn);
-        inputs[ds] = sess->getNodeOutput(sn, ss);
+        auto ref = sess->getNodeOutput(sn, ss);
+        auto &obj = sess->getObject(ref);
+        siz = obj.broadcast(siz);
+        inputs[ds] = ref;
     }
+
     bool ok = true;
     if (has_input("COND")) {
         auto cond = get_input<zen::ConditionObject>("COND");
         if (!cond->get())
             ok = false;
     }
-    if (ok)
-        apply();
+
+    if (ok) {
+        m_isList = siz.has_value();
+        m_listSize = siz.value_or(1);
+        m_listIdx = 0;
+        listapply();
+    }
+
+    m_isList = false;
+    m_listIdx = 0;
     set_output("DST", std::make_unique<zen::ConditionObject>());
+}
+
+ZENAPI void INode::listapply() {
+    for (size_t i = 0; i < m_listSize; i++) {
+        m_listIdx = i;
+        apply();
+    }
+}
+
+ZENAPI void INode::apply() {
 }
 
 ZENAPI bool INode::has_input(std::string const &id) const {
     return inputs.find(id) != inputs.end();
 }
 
+ZENAPI ListObject &INode::get_input_list(std::string const &id) const {
+    auto ref = safe_at(inputs, id, "input");
+    return sess->getObject(ref);
+}
+
 ZENAPI IObject *INode::get_input(std::string const &id) const {
-    return sess->getObject(safe_at(inputs, id, "input"));
+    return get_input_list(id).at(m_listIdx);
 }
 
 ZENAPI IValue INode::get_param(std::string const &id) const {
     return safe_at(params, id, "param");
 }
 
-ZENAPI void INode::set_output(std::string const &id, std::unique_ptr<IObject> &&obj) {
+ZENAPI ListObject &INode::set_output_list(std::string const &id) {
     auto objid = myname + "::" + id;
-    sess->objects[objid] = std::move(obj);
+    auto &objlist = sess->objects[objid];
     outputs[id] = objid;
+    return objlist;
+}
+
+ZENAPI void INode::set_output(std::string const &id, std::unique_ptr<IObject> &&obj) {
+    auto &objlist = set_output_list(id);
+    objlist.m_isList = m_isList;
+    objlist.set(m_listIdx, std::move(obj));
 }
 
 ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {
@@ -109,8 +176,9 @@ ZENAPI std::string Session::getNodeOutput(std::string const &sn, std::string con
     return safe_at(node->outputs, ss, "node output");
 }
 
-ZENAPI IObject *Session::getObject(std::string const &id) const {
-    return safe_at(objects, id, "object");
+ZENAPI ListObject &Session::getObject(std::string const &id) const {
+    auto const &vip = safe_at(objects, id, "object");
+    return const_cast<ListObject &>(vip);
 }
 
 ZENAPI void Session::clearNodes() {
