@@ -21,6 +21,7 @@ target_link_libraries(zenRigidLib PRIVATE BulletInverseDynamics)
 target_link_libraries(zenRigidLib PRIVATE BulletCollision)
 target_link_libraries(zenRigidLib PRIVATE BulletDynamics)
 target_link_libraries(zenRigidLib PRIVATE BulletSoftBody)
+target_link_libraries(zenRigidLib PRIVATE HACD)
 
 
 if (ON)

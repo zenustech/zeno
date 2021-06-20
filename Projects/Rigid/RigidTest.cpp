@@ -3,6 +3,11 @@
 #include <zen/PrimitiveObject.h>
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
+#include <hacdCircularList.h>
+#include <hacdVector.h>
+#include <hacdICHull.h>
+#include <hacdGraph.h>
+#include <hacdHACD.h>
 #include <memory>
 #include <vector>
 
