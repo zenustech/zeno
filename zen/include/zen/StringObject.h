@@ -1,8 +1,7 @@
 #pragma once
 
 #include <zen/zen.h>
-#include <variant>
-#include <array>
+#include <string>
 
 namespace zen {
 
