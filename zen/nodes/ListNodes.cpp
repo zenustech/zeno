@@ -21,7 +21,6 @@ struct ListRange : zen::INode {
             val->set(i);
             ret.m_arr.push_back(std::move(val));
         }
-        printf("%d\n", ret.m_arr.size());
     }
 };
 
@@ -72,6 +71,45 @@ struct TestIsList : zen::INode {
 ZENDEFNODE(TestIsList, {
     {"input"},
     {"isList"},
+    {},
+    {"list"},
+});
+
+
+struct EmptyList : zen::INode {
+    virtual void apply() override {
+        auto &ret = set_output_list("list");
+        ret.m_isList = true;
+        ret.m_arr.clear();
+    }
+};
+
+ZENDEFNODE(EmptyList, {
+    {},
+    {"list"},
+    {},
+    {"list"},
+});
+
+
+struct ListAppendClone : zen::INode {
+    virtual void apply() override {
+        auto &inp = get_input_list("input");
+        auto obj = get_input("object");
+        inp.m_isList = true;
+        auto newobj = obj->clone();
+        if (!newobj) {
+            printf("ERROR: requested object doesn't support clone\n");
+            return;
+        }
+        inp.m_arr.push_back(newobj);
+        set_output_ref("list", get_input_ref("list"));
+    }
+};
+
+ZENDEFNODE(EmptyList, {
+    {"list", "object"},
+    {"list"},
     {},
     {"list"},
 });
