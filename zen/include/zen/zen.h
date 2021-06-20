@@ -54,16 +54,16 @@ struct IObject {
     ZENAPI IObject();
     ZENAPI virtual ~IObject();
 
-    ZENAPI virtual std::unique_ptr<IObject> clone() const;
+    ZENAPI virtual std::shared_ptr<IObject> clone() const;
 #else
     virtual ~IObject() = default;
-    virtual std::unique_ptr<IObject> clone() const { return nullptr; }
+    virtual std::shared_ptr<IObject> clone() const { return nullptr; }
 #endif
 
     using Ptr = std::unique_ptr<IObject>;
 
     template <class T>
-    ZENDEPRECATED static std::unique_ptr<T> make() { return std::make_unique<T>(); }
+    ZENDEPRECATED static std::shared_ptr<T> make() { return std::make_shared<T>(); }
 
     template <class T>
     ZENDEPRECATED T *as() { return dynamic_cast<T *>(this); }
@@ -74,8 +74,8 @@ struct IObject {
 
 template <class Derived, class Base = IObject>
 struct IObjectClone : Base {
-    virtual std::unique_ptr<IObject> clone() const {
-        return std::make_unique<Derived>(static_cast<Derived const &>(*this));
+    virtual std::shared_ptr<IObject> clone() const {
+        return std::make_shared<Derived>(static_cast<Derived const &>(*this));
     }
 };
 
@@ -86,7 +86,7 @@ struct Context {
 };
 
 struct ListObject {
-    std::vector<std::unique_ptr<IObject>> m_arr;
+    std::vector<std::shared_ptr<IObject>> m_arr;
     bool m_isList = false;
 
     ZENAPI ListObject();
@@ -96,8 +96,8 @@ struct ListObject {
     ZENAPI size_t arraySize() const;
     ZENAPI size_t broadcast(size_t n) const;
     ZENAPI std::optional<size_t> broadcast(std::optional<size_t> n) const;
-    ZENAPI IObject *at(size_t i) const;
-    ZENAPI void set(size_t i, std::unique_ptr<IObject> &&obj);
+    ZENAPI std::shared_ptr<IObject> const &at(size_t i) const;
+    ZENAPI void set(size_t i, std::shared_ptr<IObject> &&obj);
 };
 
 struct INode {
@@ -113,6 +113,7 @@ public:
     ZENAPI ~INode();
 
     ZENAPI void doApply();
+    ZENAPI void doComplete();
     ZENAPI virtual void complete();
 
 protected:
@@ -127,11 +128,11 @@ protected:
 
     ZENAPI ListObject &get_input_list(std::string const &id) const;
 
-    ZENAPI IObject *get_input(std::string const &id) const;
+    ZENAPI std::shared_ptr<IObject> get_input(std::string const &id) const;
 
     template <class T>
-    T *get_input(std::string const &id) const {
-        return dynamic_cast<T *>(get_input(id));
+    std::shared_ptr<T> get_input(std::string const &id) const {
+        return std::dynamic_pointer_cast<T>(get_input(id));
     }
 
     ZENAPI std::string get_input_ref(std::string const &id) const;
@@ -145,20 +146,20 @@ protected:
 
     ZENAPI ListObject &set_output_list(std::string const &id);
 
-    ZENAPI void set_output(std::string const &id, std::unique_ptr<IObject> &&obj);
+    ZENAPI void set_output(std::string const &id, std::shared_ptr<IObject> &&obj);
 
     ZENAPI void set_output_ref(std::string const &id, std::string const &ref);
 
     template <class T>
     ZENDEPRECATED T *new_member(std::string const &id) {
-        auto obj = std::make_unique<T>();
+        auto obj = std::make_shared<T>();
         auto obj_ptr = obj.get();
         set_output(id, std::move(obj));
         return obj_ptr;
     }
 
     template <class T>
-    ZENDEPRECATED void set_output(std::string const &id, std::unique_ptr<T> &obj) {
+    ZENDEPRECATED void set_output(std::string const &id, std::shared_ptr<T> &obj) {
         set_output(id, std::move(obj));
     }
 };
@@ -226,6 +227,9 @@ struct Session {
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
     std::unique_ptr<Context> ctx;
 
+    std::map<std::string, int> objectRefs;
+    std::map<std::string, int> socketRefs;
+
     ZENAPI void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
     ZENAPI std::string getNodeOutput(std::string const &sn, std::string const &ss) const;
     ZENAPI ListObject &getObject(std::string const &id) const;
@@ -236,6 +240,14 @@ struct Session {
         return 1;
     }
 
+    ZENAPI void refObject(std::string const &id);
+    ZENAPI void refSocket(std::string const &sn,
+        std::string const &ss);
+    ZENAPI void derefObject(std::string const &id);
+    ZENAPI void derefSocket(std::string const &sn,
+        std::string const &ss);
+    ZENAPI void gcObject(std::string const &sn,
+        std::string const &ss, std::string const &id);
     ZENAPI void clearNodes();
     ZENAPI void applyNodes(std::vector<std::string> const &ids);
     ZENAPI void addNode(std::string const &cls, std::string const &id);

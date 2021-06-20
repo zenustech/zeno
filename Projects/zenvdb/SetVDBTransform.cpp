@@ -94,8 +94,8 @@ struct CombineVDB : zen::INode{
 
     std::string targetType = get_input("FieldA")->as<VDBGrid>()->getType();
     std::string sourceType = get_input("FieldB")->as<VDBGrid>()->getType();
-    std::unique_ptr<VDBFloatGrid> dataf;
-    std::unique_ptr<VDBFloat3Grid> dataf3;
+    std::shared_ptr<VDBFloatGrid> dataf;
+    std::shared_ptr<VDBFloat3Grid> dataf3;
     
     if(targetType == sourceType && targetType==std::string("FloatGrid"))
     {

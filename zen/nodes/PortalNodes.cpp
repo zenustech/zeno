@@ -2,7 +2,7 @@
 #include <zen/GlobalState.h>
 
 static std::map<std::string, std::string> portalIns;
-static std::map<std::string, std::string> portals;
+static std::map<std::string, std::shared_ptr<zen::IObject>> portals;
 
 struct PortalIn : zen::INode {
     virtual void complete() override {
@@ -12,8 +12,8 @@ struct PortalIn : zen::INode {
 
     virtual void apply() override {
         auto name = get_param<std::string>("name");
-        auto ref = get_input_ref("port");
-        portals[name] = ref;
+        auto obj = get_input("port");
+        portals[name] = std::move(obj);
     }
 };
 
@@ -28,9 +28,9 @@ struct PortalOut : zen::INode {
     virtual void apply() override {
         auto name = get_param<std::string>("name");
         auto depnode = portalIns.at(name);
-        this->sess->applyNode(depnode);
-        auto ref = portals.at(name);
-        set_output_ref("port", ref);
+        sess->applyNode(depnode);
+        auto obj = portals.at(name);
+        set_output("port", std::move(obj));
     }
 };
 
@@ -44,8 +44,8 @@ ZENDEFNODE(PortalOut, {
 
 struct Route : zen::INode {
     virtual void apply() override {
-        auto ref = get_input_ref("input");
-        set_output_ref("output", ref);
+        auto obj = get_input("input");
+        set_output("output", std::move(obj));
     }
 };
 

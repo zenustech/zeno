@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/ConditionObject.h>
+#include <cassert>
 
 namespace zen {
 
@@ -47,7 +48,7 @@ T const &safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) 
 ZENAPI IObject::IObject() = default;
 ZENAPI IObject::~IObject() = default;
 
-ZENAPI std::unique_ptr<IObject> IObject::clone() const {
+ZENAPI std::shared_ptr<IObject> IObject::clone() const {
     return nullptr;
 }
 #endif
@@ -73,11 +74,11 @@ ZENAPI std::optional<size_t> ListObject::broadcast(std::optional<size_t> n) cons
     }
 }
 
-ZENAPI IObject *ListObject::at(size_t i) const {
-    return m_arr[i % m_arr.size()].get();
+ZENAPI std::shared_ptr<IObject> const &ListObject::at(size_t i) const {
+    return m_arr[i % m_arr.size()];
 }
 
-ZENAPI void ListObject::set(size_t i, std::unique_ptr<IObject> &&obj) {
+ZENAPI void ListObject::set(size_t i, std::shared_ptr<IObject> &&obj) {
     if (m_arr.size() < i + 1)
         m_arr.resize(i + 1);
     m_arr[i] = std::move(obj);
@@ -86,15 +87,63 @@ ZENAPI void ListObject::set(size_t i, std::unique_ptr<IObject> &&obj) {
 ZENAPI INode::INode() = default;
 ZENAPI INode::~INode() = default;
 
+ZENAPI void Session::refObject(
+    std::string const &id) {
+    int n = ++objectRefs[id];
+    //printf("RO %s %d\n", id.c_str(), n);
+}
+ZENAPI void Session::refSocket(
+    std::string const &sn, std::string const &ss) {
+    int n = ++socketRefs[sn + "::" + ss];
+    //printf("RS %s::%s %d\n", sn.c_str(), ss.c_str(), n);
+}
+ZENAPI void Session::derefObject(
+    std::string const &id) {
+    int n = --objectRefs[id];
+    //printf("DO %s %d\n", id.c_str(), n);
+}
+ZENAPI void Session::derefSocket(
+    std::string const &sn, std::string const &ss) {
+    int n = --socketRefs[sn + "::" + ss];
+    //printf("DS %s::%s %d\n", sn.c_str(), ss.c_str(), n);
+}
+ZENAPI void Session::gcObject(
+    std::string const &sn, std::string const &ss,
+    std::string const &id) {
+    auto sno = nodes.at(sn).get();
+    if (sno->inputs.find("COND") != sno->inputs.end()) {
+        // TODO: tmpwalkarnd
+        return;
+    }
+    int n = objectRefs[id];
+    int m = socketRefs[sn + "::" + ss];
+    //printf("GC %s::%s/%s %d/%d\n", sn.c_str(), ss.c_str(), id.c_str(), m, n);
+    if (n <= 0 && m <= 0) {
+        assert(!n && !m);
+        objectRefs.erase(id);
+        socketRefs.erase(sn + "::" + ss);
+        objects.erase(id);
+    }
+}
+
+ZENAPI void INode::doComplete() {
+    for (auto [ds, bound]: inputBounds) {
+        auto [sn, ss] = bound;
+        sess->refSocket(sn, ss);
+    }
+    complete();
+}
+
 ZENAPI void INode::complete() {}
 
 ZENAPI void INode::doApply() {
     std::optional<size_t> siz;
 
-    for (auto [ds, bound]: inputBounds) {
+    for (auto const &[ds, bound]: inputBounds) {
         auto [sn, ss] = bound;
         sess->applyNode(sn);
         auto ref = sess->getNodeOutput(sn, ss);
+        sess->refObject(ref);
         auto &obj = sess->getObject(ref);
         siz = obj.broadcast(siz);
         inputs[ds] = ref;
@@ -114,6 +163,19 @@ ZENAPI void INode::doApply() {
         listapply();
     }
 
+    for (auto const &[ds, bound]: inputBounds) {
+        auto [sn, ss] = bound;
+        sess->derefSocket(sn, ss);
+        auto ref = inputs.at(ds);
+        sess->derefObject(ref);
+        sess->gcObject(sn, ss, ref);
+    }
+
+    for (auto const &[id, _]: outputs) {
+        auto ref = outputs.at(id);
+        sess->gcObject(myname, id, ref);
+    }
+
     m_isList = false;
     m_listIdx = 0;
     set_output("DST", std::make_unique<zen::ConditionObject>());
@@ -126,8 +188,7 @@ ZENAPI void INode::listapply() {
     }
 }
 
-ZENAPI void INode::apply() {
-}
+ZENAPI void INode::apply() {}
 
 ZENAPI bool INode::has_input(std::string const &id) const {
     return inputs.find(id) != inputs.end();
@@ -138,7 +199,8 @@ ZENAPI ListObject &INode::get_input_list(std::string const &id) const {
     return sess->getObject(ref);
 }
 
-ZENAPI IObject *INode::get_input(std::string const &id) const {
+ZENAPI std::shared_ptr<IObject> INode::get_input(
+    std::string const &id) const {
     return get_input_list(id).at(m_listIdx);
 }
 
@@ -153,13 +215,14 @@ ZENAPI ListObject &INode::set_output_list(std::string const &id) {
     return objlist;
 }
 
-ZENAPI void INode::set_output(std::string const &id, std::unique_ptr<IObject> &&obj) {
+ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
     auto &objlist = set_output_list(id);
     objlist.m_isList = m_isList;
     objlist.set(m_listIdx, std::move(obj));
 }
 
 ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {
+    sess->refObject(ref);
     outputs[id] = ref;
 }
 
@@ -196,7 +259,7 @@ ZENAPI void Session::addNode(std::string const &cls, std::string const &id) {
 }
 
 ZENAPI void Session::completeNode(std::string const &id) {
-    safe_at(nodes, id, "node")->complete();
+    safe_at(nodes, id, "node")->doComplete();
 }
 
 ZENAPI void Session::applyNode(std::string const &id) {

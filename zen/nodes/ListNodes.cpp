@@ -17,7 +17,7 @@ struct ListRange : zen::INode {
         ret.m_isList = true;
         ret.m_arr.clear();
         for (int i = start; i < stop; i++) {
-            auto val = std::make_unique<zen::NumericObject>();
+            auto val = std::make_shared<zen::NumericObject>();
             val->set(i);
             ret.m_arr.push_back(std::move(val));
         }
@@ -62,7 +62,7 @@ ZENDEFNODE(CloneFillList, {
 struct TestIsList : zen::INode {
     virtual void listapply() override {
         auto &inp = get_input_list("input");
-        auto ret = std::make_unique<zen::ConditionObject>();
+        auto ret = std::make_shared<zen::ConditionObject>();
         ret->set(inp.m_isList);
         set_output("isList", std::move(ret));
     }

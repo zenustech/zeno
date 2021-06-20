@@ -758,7 +758,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.outputs = {}
         self.options = {}
         self.name = None
-        self.ident = gen_unique_ident()
+        self.ident = None
 
         self.desc_inputs = []
         self.desc_outputs = []
@@ -781,6 +781,8 @@ class QDMGraphicsNode(QGraphicsItem):
         self.ident = ident
 
     def setName(self, name):
+        if self.ident is None:
+            self.ident = gen_unique_ident(name)
         self.name = name
         self.title.setPlainText(name)
 

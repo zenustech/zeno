@@ -134,6 +134,6 @@ def add_line_numbers(script):
     return res
 
 
-def gen_unique_ident():
-    return str(uuid.uuid1())
+def gen_unique_ident(suffix):
+    return str(uuid.uuid1()) + '-' + suffix
     #return ''.join(reversed(base64.b64encode(random.randbytes(4) + struct.pack('L', time.time_ns())).decode()))

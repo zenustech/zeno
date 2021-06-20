@@ -282,7 +282,7 @@ struct Opcode : zen::IObject {
 struct WrangleImmed : zen::INode {
   virtual void apply() override {
     auto value = get_input("value")->as<NumericObject>();
-    auto res = std::make_unique<Opcode>();
+    auto res = std::make_shared<Opcode>();
     zen::vec3f val;
     if (value->is<float>())
         val = zen::vec3f(value->get<float>());
@@ -290,7 +290,7 @@ struct WrangleImmed : zen::INode {
         val = value->get<zen::vec3f>();
     res->ops.push_back(Opcode::OP_IMMED);
     res->imms.push_back(val);
-    set_output("res", res);
+    set_output("res", std::move(res));
   }
 };
 
@@ -309,11 +309,11 @@ struct WrangleLoad : zen::INode {
   virtual void apply() override {
     auto primId = std::get<int>(get_param("primId"));
     auto attrName = std::get<std::string>(get_param("attrName"));
-    auto res = std::make_unique<Opcode>();
+    auto res = std::make_shared<Opcode>();
     res->ops.push_back(Opcode::OP_LOAD);
     res->pids.push_back(primId);
     res->names.push_back(attrName);
-    set_output("res", res);
+    set_output("res", std::move(res));
   }
 };
 
@@ -333,7 +333,7 @@ struct WrangleStore : zen::INode {
   virtual void apply() override {
     auto primId = std::get<int>(get_param("primId"));
     auto attrName = std::get<std::string>(get_param("attrName"));
-    auto res = std::make_unique<Opcode>();
+    auto res = std::make_shared<Opcode>();
     auto val = get_input("val")->as<Opcode>();
     res->concat(*val);
     res->ops.push_back(Opcode::OP_STORE);
@@ -359,7 +359,7 @@ static int defWrangleStore = zen::defNodeClass<WrangleStore>("WrangleStore",
 struct WrangleUnaryOp : zen::INode {
   virtual void apply() override {
     auto opName = std::get<std::string>(get_param("opName"));
-    auto res = std::make_unique<Opcode>();
+    auto res = std::make_shared<Opcode>();
     auto lhs = get_input("lhs")->as<Opcode>();
     res->concat(*lhs);
     res->ops.push_back(Opcode::opFromName(opName));
@@ -382,7 +382,7 @@ static int defWrangleUnaryOp = zen::defNodeClass<WrangleUnaryOp>("WrangleUnaryOp
 struct WrangleBinaryOp : zen::INode {
   virtual void apply() override {
     auto opName = std::get<std::string>(get_param("opName"));
-    auto res = std::make_unique<Opcode>();
+    auto res = std::make_shared<Opcode>();
     auto lhs = get_input("lhs")->as<Opcode>();
     auto rhs = get_input("rhs")->as<Opcode>();
     res->concat(*lhs);
@@ -408,7 +408,7 @@ static int defWrangleBinaryOp = zen::defNodeClass<WrangleBinaryOp>("WrangleBinar
 struct WrangleTernaryOp : zen::INode {
   virtual void apply() override {
     auto opName = std::get<std::string>(get_param("opName"));
-    auto res = std::make_unique<Opcode>();
+    auto res = std::make_shared<Opcode>();
     auto lhs = get_input("lhs")->as<Opcode>();
     auto mhs = get_input("mhs")->as<Opcode>();
     auto rhs = get_input("rhs")->as<Opcode>();
