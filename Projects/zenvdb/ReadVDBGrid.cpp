@@ -6,9 +6,9 @@
 
 namespace zen {
 
-static std::unique_ptr<VDBGrid> readvdb(std::string path, std::string type)
+static std::shared_ptr<VDBGrid> readvdb(std::string path, std::string type)
 {
-    std::unique_ptr<VDBGrid> data;
+    std::shared_ptr<VDBGrid> data;
     if (type == "float") {
       data = zen::IObject::make<VDBFloatGrid>();
     } else if (type == "float3") {
@@ -56,7 +56,7 @@ struct ImportVDBGrid : zen::INode {
     auto path = get_input("path")->as<zen::StringObject>();
     auto type = std::get<std::string>(get_param("type"));
     auto data = readvdb(path->get(), type);
-    set_output("data", data);
+    set_output("data", std::move(data));
   }
 };
 
@@ -78,7 +78,7 @@ struct MakeVDBGrid : zen::INode {
     auto type = std::get<std::string>(get_param("type"));
     auto structure = std::get<std::string>(get_param("structure"));
     auto name = std::get<std::string>(get_param("name"));
-    std::unique_ptr<VDBGrid> data;
+    std::shared_ptr<VDBGrid> data;
     if (type == "float") {
       auto tmp = zen::IObject::make<VDBFloatGrid>();
       auto transform = openvdb::math::Transform::createLinearTransform(dx);
