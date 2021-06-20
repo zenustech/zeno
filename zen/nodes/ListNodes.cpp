@@ -4,7 +4,7 @@
 
 
 struct ListRange : zen::INode {
-    virtual void apply() override {
+    virtual void listapply() override {
         int start = 0, stop = 0, step = 1;
         if (has_input("start"))
             start = get_input<zen::NumericObject>("start")->get<int>();
@@ -33,7 +33,7 @@ ZENDEFNODE(ListRange, {
 
 
 struct CloneFillList : zen::INode {
-    virtual void apply() override {
+    virtual void listapply() override {
         int count = get_input<zen::NumericObject>("count")->get<int>();
         auto obj = get_input("object");
 
@@ -60,7 +60,7 @@ ZENDEFNODE(CloneFillList, {
 
 
 struct TestIsList : zen::INode {
-    virtual void apply() override {
+    virtual void listapply() override {
         auto &inp = get_input_list("input");
         auto ret = std::make_unique<zen::ConditionObject>();
         ret->set(inp.m_isList);
@@ -77,7 +77,7 @@ ZENDEFNODE(TestIsList, {
 
 
 struct EmptyList : zen::INode {
-    virtual void apply() override {
+    virtual void listapply() override {
         auto &ret = set_output_list("list");
         ret.m_isList = true;
         ret.m_arr.clear();
@@ -93,21 +93,21 @@ ZENDEFNODE(EmptyList, {
 
 
 struct ListAppendClone : zen::INode {
-    virtual void apply() override {
+    virtual void listapply() override {
         auto &inp = get_input_list("input");
         auto obj = get_input("object");
-        inp.m_isList = true;
         auto newobj = obj->clone();
         if (!newobj) {
             printf("ERROR: requested object doesn't support clone\n");
             return;
         }
-        inp.m_arr.push_back(newobj);
+        inp.m_isList = true;
+        inp.m_arr.push_back(std::move(newobj));
         set_output_ref("list", get_input_ref("list"));
     }
 };
 
-ZENDEFNODE(EmptyList, {
+ZENDEFNODE(ListAppendClone, {
     {"list", "object"},
     {"list"},
     {},

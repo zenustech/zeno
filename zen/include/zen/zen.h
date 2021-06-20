@@ -116,9 +116,11 @@ public:
     ZENAPI virtual void complete();
 
 protected:
-    virtual void apply() = 0;
+    ZENAPI virtual void apply();
+    ZENAPI virtual void listapply();
 
-    bool m_isList = true;
+    bool m_isList = false;
+    size_t m_listSize = 1;
     size_t m_listIdx = 0;
 
     ZENAPI bool has_input(std::string const &id) const;

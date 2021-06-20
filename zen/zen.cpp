@@ -109,15 +109,24 @@ ZENAPI void INode::doApply() {
 
     if (ok) {
         m_isList = siz.has_value();
-        for (size_t i = 0; i < siz.value_or(1); i++) {
-            m_listIdx = i;
-            apply();
-        }
+        m_listSize = siz.value_or(1);
+        m_listIdx = 0;
+        listapply();
     }
 
     m_isList = false;
     m_listIdx = 0;
     set_output("DST", std::make_unique<zen::ConditionObject>());
+}
+
+ZENAPI void INode::listapply() {
+    for (size_t i = 0; i < m_listSize; i++) {
+        m_listIdx = i;
+        apply();
+    }
+}
+
+ZENAPI void INode::apply() {
 }
 
 ZENAPI bool INode::has_input(std::string const &id) const {
