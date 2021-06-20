@@ -54,10 +54,10 @@ struct IObject {
     ZENAPI IObject();
     ZENAPI virtual ~IObject();
 
-    ZENAPI virtual std::unique_ptr<IObject> clone() const;
+    ZENAPI virtual std::shared_ptr<IObject> clone() const;
 #else
     virtual ~IObject() = default;
-    virtual std::unique_ptr<IObject> clone() const { return nullptr; }
+    virtual std::shared_ptr<IObject> clone() const { return nullptr; }
 #endif
 
     using Ptr = std::unique_ptr<IObject>;
@@ -74,8 +74,8 @@ struct IObject {
 
 template <class Derived, class Base = IObject>
 struct IObjectClone : Base {
-    virtual std::unique_ptr<IObject> clone() const {
-        return std::make_unique<Derived>(static_cast<Derived const &>(*this));
+    virtual std::shared_ptr<IObject> clone() const {
+        return std::make_shared<Derived>(static_cast<Derived const &>(*this));
     }
 };
 

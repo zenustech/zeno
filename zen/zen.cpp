@@ -48,7 +48,7 @@ T const &safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) 
 ZENAPI IObject::IObject() = default;
 ZENAPI IObject::~IObject() = default;
 
-ZENAPI std::unique_ptr<IObject> IObject::clone() const {
+ZENAPI std::shared_ptr<IObject> IObject::clone() const {
     return nullptr;
 }
 #endif
@@ -110,6 +110,11 @@ ZENAPI void Session::derefSocket(
 ZENAPI void Session::gcObject(
     std::string const &sn, std::string const &ss,
     std::string const &id) {
+    auto sno = nodes.at(sn).get();
+    if (sno->inputs.find("COND") != sno->inputs.end()) {
+        // TODO: tmpwalkarnd
+        return;
+    }
     int n = objectRefs[id];
     int m = socketRefs[sn + "::" + ss];
     printf("GC %s::%s/%s %d/%d\n",
@@ -163,9 +168,7 @@ ZENAPI void INode::doApply() {
         auto [sn, ss] = bound;
         sess->derefSocket(sn, ss);
         auto ref = inputs.at(ds);
-        if (!has_input("COND")) {  // TODO: this is a tmp wlkarnd
-            sess->derefObject(ref);
-        }
+        sess->derefObject(ref);
         sess->gcObject(sn, ss, ref);
     }
 
