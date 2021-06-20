@@ -906,7 +906,7 @@ class QDMFileMenu(QMenu):
                 ('Undo', QKeySequence.Undo),
                 ('Redo', QKeySequence.Redo),
                 (None, None),
-                ('Duplicate', 'ctrl+d'),
+                ('Duplicate', QKeySequence.Copy),
         ]
         
         for name, shortcut in acts:
