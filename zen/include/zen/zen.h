@@ -53,8 +53,11 @@ struct IObject {
 #ifndef _ZEN_FREE_IOBJECT
     ZENAPI IObject();
     ZENAPI virtual ~IObject();
+
+    ZENAPI virtual std::unique_ptr<IObject> clone() const;
 #else
     virtual ~IObject() = default;
+    virtual std::unique_ptr<IObject> clone() const { return nullptr; }
 #endif
 
     using Ptr = std::unique_ptr<IObject>;
@@ -69,10 +72,32 @@ struct IObject {
     ZENDEPRECATED const T *as() const { return dynamic_cast<const T *>(this); }
 };
 
+template <class Derived, class Base = IObject>
+struct IObjectClone : Base {
+    virtual std::unique_ptr<IObject> clone() const {
+        return std::make_unique<Derived>(static_cast<Derived const &>(*this));
+    }
+};
+
 struct Session;
 
 struct Context {
     std::set<std::string> visited;
+};
+
+struct ListObject {
+    std::vector<std::unique_ptr<IObject>> m_arr;
+    bool m_isList = false;
+
+    ZENAPI ListObject();
+    ZENAPI ~ListObject();
+
+    ZENAPI bool isScalar() const;
+    ZENAPI size_t arraySize() const;
+    ZENAPI size_t broadcast(size_t n) const;
+    ZENAPI std::optional<size_t> broadcast(std::optional<size_t> n) const;
+    ZENAPI IObject *at(size_t i) const;
+    ZENAPI void set(size_t i, std::unique_ptr<IObject> &&obj);
 };
 
 struct INode {
@@ -91,37 +116,19 @@ public:
     ZENAPI virtual void complete();
 
 protected:
-    /*
-     * @name apply()
-     * @brief user should override this pure virtual function,
-     * @brief it will be called when the node is executed
-     */
-    virtual void apply() = 0;
+    ZENAPI virtual void apply();
+    ZENAPI virtual void listapply();
 
-    /*
-     * @name has_input(id)
-     * @param[id] the input socket name
-     * @return true if connected, false otherwise
-     * @brief test if the input socket is connected
-     */
+    bool m_isList = false;
+    size_t m_listSize = 1;
+    size_t m_listIdx = 0;
+
     ZENAPI bool has_input(std::string const &id) const;
 
-    /*
-     * @name get_input(id)
-     * @param[id] the input socket name
-     * @return pointer to the object
-     * @brief get the object passed into the input socket
-     */
+    ZENAPI ListObject &get_input_list(std::string const &id) const;
+
     ZENAPI IObject *get_input(std::string const &id) const;
 
-    /*
-     * @name get_input<T>(id)
-     * @template[T] the object type you want to cast to
-     * @param[id] the input socket name
-     * @return pointer to the object, will be null if the input is not of that type
-     * @brief get the object passed into the input socket,
-     * @brief and cast it to the given type
-     */
     template <class T>
     T *get_input(std::string const &id) const {
         return dynamic_cast<T *>(get_input(id));
@@ -129,32 +136,15 @@ protected:
 
     ZENAPI std::string get_input_ref(std::string const &id) const;
 
-    /*
-     * @name get_param(id)
-     * @param[id] the parameter name
-     * @return a variant for parameter value
-     * @brief get the parameter value by parameter name
-     */
     ZENAPI IValue get_param(std::string const &id) const;
 
-    /*
-     * @name get_param<T>(id)
-     * @template[T] the parameter type to assume
-     * @param[id] the parameter name
-     * @return the parameter value of given type
-     * @brief get the parameter value by parameter name, given type assumed
-     */
     template <class T>
     T get_param(std::string const &id) const {
         return std::get<T>(get_param(id));
     }
 
-    /*
-     * @name set_output(id, std::move(obj))
-     * @param[id] the output socket name
-     * @param[obj] the (unique) pointer to the object
-     * @brief set an object to the output socket
-     */
+    ZENAPI ListObject &set_output_list(std::string const &id);
+
     ZENAPI void set_output(std::string const &id, std::unique_ptr<IObject> &&obj);
 
     ZENAPI void set_output_ref(std::string const &id, std::string const &ref);
@@ -231,14 +221,14 @@ struct ImplNodeClass : INodeClass {
 };
 
 struct Session {
-    std::map<std::string, std::unique_ptr<IObject>> objects;
+    std::map<std::string, ListObject> objects;
     std::map<std::string, std::unique_ptr<INode>> nodes;
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
     std::unique_ptr<Context> ctx;
 
     ZENAPI void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
     ZENAPI std::string getNodeOutput(std::string const &sn, std::string const &ss) const;
-    ZENAPI IObject *getObject(std::string const &id) const;
+    ZENAPI ListObject &getObject(std::string const &id) const;
 
     template <class F>
     int defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {

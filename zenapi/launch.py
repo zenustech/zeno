@@ -44,8 +44,9 @@ def _launch_mproc(func, *args):
 def cleanIOPath():
     global g_iopath
     if g_iopath is not None:
-        shutil.rmtree(g_iopath, ignore_errors=True)
-    g_iopath = None
+        iopath = g_iopath
+        g_iopath = None
+        shutil.rmtree(iopath, ignore_errors=True)
 
 
 def launchGraph(graph, nframes):

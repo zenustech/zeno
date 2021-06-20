@@ -10,7 +10,7 @@ namespace zen {
 using NumericValue = std::variant<
   int, float, zen::vec2f, zen::vec3f, zen::vec4f>;
 
-struct NumericObject : IObject {
+struct NumericObject : IObjectClone<NumericObject> {
   NumericValue value;
 
   template <class T>
