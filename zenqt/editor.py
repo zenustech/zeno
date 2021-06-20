@@ -905,7 +905,6 @@ class QDMFileMenu(QMenu):
                 (None, None),
                 ('Undo', QKeySequence.Undo),
                 ('Redo', QKeySequence.Redo),
-                (None, None),
                 ('Duplicate', QKeySequence.Copy),
         ]
         
