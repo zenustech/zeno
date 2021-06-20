@@ -113,6 +113,7 @@ public:
     ZENAPI ~INode();
 
     ZENAPI void doApply();
+    ZENAPI void doComplete();
     ZENAPI virtual void complete();
 
 protected:
@@ -226,6 +227,9 @@ struct Session {
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
     std::unique_ptr<Context> ctx;
 
+    std::map<std::string, int> objectRefs;
+    std::map<std::string, int> socketRefs;
+
     ZENAPI void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
     ZENAPI std::string getNodeOutput(std::string const &sn, std::string const &ss) const;
     ZENAPI ListObject &getObject(std::string const &id) const;
@@ -236,6 +240,14 @@ struct Session {
         return 1;
     }
 
+    ZENAPI void refObject(std::string const &id);
+    ZENAPI void refSocket(std::string const &sn,
+        std::string const &ss);
+    ZENAPI void derefObject(std::string const &id);
+    ZENAPI void derefSocket(std::string const &sn,
+        std::string const &ss);
+    ZENAPI void gcObject(std::string const &sn,
+        std::string const &ss, std::string const &id);
     ZENAPI void clearNodes();
     ZENAPI void applyNodes(std::vector<std::string> const &ids);
     ZENAPI void addNode(std::string const &cls, std::string const &id);
