@@ -39,9 +39,8 @@ style = {
     'socket_radius': 8,
     'node_width': 200,
     'text_height': 25,
-
-    'copy_offset': 200,
-
+    'copy_offset_x': 100,
+    'copy_offset_y': 100,
     'hori_margin': 10,
 }
 
@@ -141,7 +140,7 @@ class QDMGraphicsScene(QGraphicsScene):
             node.remove()
         self.nodes.clear()
 
-    def loadGraph(self, nodes, activated=False):
+    def loadGraph(self, nodes, select_all=False):
         edges = []
         nodesLut = {}
 
@@ -182,8 +181,8 @@ class QDMGraphicsScene(QGraphicsScene):
 
             self.addNode(node)
             nodesLut[ident] = node
-            if activated:
-                node.setSelected(activated)
+            if select_all:
+                node.setSelected(True)
 
         for dest, (ident, name) in edges:
             if ident not in nodesLut:
@@ -197,7 +196,7 @@ class QDMGraphicsScene(QGraphicsScene):
                 continue
             source = srcnode.outputs[name]
             edge = self.addEdge(source, dest)
-            if activated:
+            if select_all:
                 edge.setSelected(True)
 
     def addEdge(self, src, dst):
@@ -1046,7 +1045,7 @@ class NodeEditor(QWidget):
             itemList = self.scene.selectedItems()
             for i in itemList:
                 i.setSelected(False)
-            itemList = list(filter(lambda n: type(n) == QDMGraphicsNode, itemList))
+            itemList = [n for n in itemList if isinstance(n, QDMGraphicsNode)]
             nodes = self.scene.dumpGraph(itemList)
             nid_map = {}
             for nid in nodes:
@@ -1054,7 +1053,7 @@ class NodeEditor(QWidget):
             new_nodes = {}
             for nid, n in nodes.items():
                 x, y = n['uipos']
-                n['uipos'] = (x, y + style['copy_offset'])
+                n['uipos'] = (x + style['copy_offset_x'], y + style['copy_offset_y'])
                 inputs = n['inputs']
                 for name, info in inputs.items():
                     if info == None:
@@ -1066,7 +1065,7 @@ class NodeEditor(QWidget):
                         info = None
                     inputs[name] = info
                 new_nodes[nid_map[nid]] = n
-            self.scene.loadGraph(new_nodes, True)
+            self.scene.loadGraph(new_nodes, select_all=True)
             self.scene.record()
 
     def do_save(self, path):
