@@ -3,9 +3,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE Debug)
 project(zenRigidLib)
 
+add_subdirectory(bullet3)
+add_subdirectory(HACD)
+
 file (GLOB ZEN_RIGID_SOURCE *.cpp)
 add_library(zenRigidLib SHARED ${ZEN_RIGID_SOURCE})
-add_subdirectory(bullet3)
 target_include_directories(zenRigidLib PRIVATE .)
 target_include_directories(zenRigidLib PRIVATE bullet3/src)
 
