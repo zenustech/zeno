@@ -105,7 +105,7 @@ ZENAPI void Session::derefObject(
 ZENAPI void Session::derefSocket(
     std::string const &sn, std::string const &ss) {
     int n = --socketRefs[sn + "::" + ss];
-    printf("DS %s:::%s %d\n", sn.c_str(), ss.c_str(), n);
+    printf("DS %s::%s %d\n", sn.c_str(), ss.c_str(), n);
 }
 ZENAPI void Session::gcObject(
     std::string const &sn, std::string const &ss,
@@ -163,7 +163,9 @@ ZENAPI void INode::doApply() {
         auto [sn, ss] = bound;
         sess->derefSocket(sn, ss);
         auto ref = inputs.at(ds);
-        sess->derefObject(ref);
+        if (!has_input("COND")) {  // TODO: this is a tmp wlkarnd
+            sess->derefObject(ref);
+        }
         sess->gcObject(sn, ss, ref);
     }
 

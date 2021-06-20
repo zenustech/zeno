@@ -143,7 +143,6 @@ struct BulletObject : zen::IObject {
         if (mass != 0)
             colShape->shape->calculateLocalInertia(mass, localInertia);
 
-        //using motionstate is optional, it provides interpolation capabilities, and only synchronizes 'active' objects
         myMotionState = std::make_unique<btDefaultMotionState>(trans);
         btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState.get(), colShape->shape.get(), localInertia);
         body = std::make_unique<btRigidBody>(rbInfo);
