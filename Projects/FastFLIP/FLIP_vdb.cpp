@@ -1329,7 +1329,7 @@ namespace {
 						t_coef = 0;
 					}
 					if(m_surfacedist>0)
-						flip_component = t_coef*flip_component + (1.0f - t_coef) * 0.9f;
+						flip_component = t_coef * flip_component + (1.0f - t_coef) * 0.95f;
 					if (adv_same_field) {
 						carried_vel = adv_vel;
 					}

@@ -64,13 +64,49 @@ struct SprayParticles : zen::INode{
             c = prim->attr<zen::vec3f>("pos")[vi[2]];
             zen::vec3f e1 = b-a;
             zen::vec3f e2 = c-a;
+            zen::vec3f e3 = c-b;
             zen::vec3f dir1 = e1/zen::length(e1);
             zen::vec3f dir2 = e2/zen::length(e2);
-            int in = zen::length(e1)/(0.5*dx);
-            int jn = zen::length(e2)/(0.5*dx);
+            zen::vec3f dir3 = e3/zen::length(e3);
+            int in = zen::length(e1)/(0.5*dx)+1;
+            int jn = zen::length(e2)/(0.5*dx)+1;
+            int kn = zen::length(e3)/(0.5*dx)+1;
             zen::vec3f vel1 = prim->attr<zen::vec3f>(channel)[vi[0]];
             zen::vec3f vel2 = prim->attr<zen::vec3f>(channel)[vi[1]];
             zen::vec3f vel3 = prim->attr<zen::vec3f>(channel)[vi[2]];
+            pos.emplace_back(a);
+            vel.emplace_back(vel1);
+            pos.emplace_back(b);
+            vel.emplace_back(vel2);
+            pos.emplace_back(c);
+            vel.emplace_back(vel3);
+            for(int kk=0;kk<kn;kk++)
+            {
+                zen::vec3f vij = b + (float)kk*0.5f*dx*dir3;
+                if(ptInTriangle(vij, a, b, c))
+                {
+                    pos.emplace_back(vij);
+                    vel.emplace_back(baryCentricInterpolation(vel1,vel2,vel3, vij, a,b,c));
+                }
+            }
+            for(int ii=0;ii<in;ii++)
+            {
+                zen::vec3f vij = a + (float)ii*0.5f*dx*dir1;
+                if(ptInTriangle(vij, a, b, c))
+                {
+                    pos.emplace_back(vij);
+                    vel.emplace_back(baryCentricInterpolation(vel1,vel2,vel3, vij, a,b,c));
+                }
+            }
+            for(int jj=0;jj<jn;jj++)
+            {
+                zen::vec3f vij = a + (float)jj*0.5f*dx*dir2;
+                if(ptInTriangle(vij, a, b, c))
+                {
+                    pos.emplace_back(vij);
+                    vel.emplace_back(baryCentricInterpolation(vel1,vel2,vel3, vij, a,b,c));
+                }
+            }
             for(int ii=0;ii<in;ii++)
             {
                 for(int jj=0;jj<jn;jj++)
