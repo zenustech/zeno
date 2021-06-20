@@ -28,7 +28,7 @@ struct PortalOut : zen::INode {
     virtual void apply() override {
         auto name = get_param<std::string>("name");
         auto depnode = portalIns.at(name);
-        this->sess->applyNode(depnode);
+        sess->applyNode(depnode);
         auto ref = portals.at(name);
         set_output_ref("port", ref);
     }
