@@ -13,10 +13,22 @@ struct BulletTransform : zen::IObject {
 
 struct BulletCollisionShape : zen::IObject {
     std::unique_ptr<btCollisionShape> shape;
-    std::vector<std::shared_ptr<BulletCollisionShape>> childShapes;
 
     BulletCollisionShape(std::unique_ptr<btCollisionShape> &&shape)
         : shape(std::move(shape)) {
+    }
+};
+
+struct BulletCompoundShape : BulletCollisionShape {
+    std::vector<std::shared_ptr<BulletCollisionShape>> children;
+
+    using BulletCollisionShape::BulletCollisionShape;
+
+    void addChild(btTransform const &trans,
+        std::shared_ptr<BulletCollisionShape> child) {
+        auto comShape = static_cast<btCompoundShape *>(shape.get());
+        comShape->addChildShape(trans, child->shape.get());
+        children.push_back(std::move(child));
     }
 };
 
@@ -106,7 +118,7 @@ ZENDEFNODE(BulletMakeConvexHullShape, {
 struct BulletMakeCompoundShape : zen::INode {
     virtual void apply() override {
         auto compound = std::make_unique<btCompoundShape>();
-        auto shape = std::make_shared<BulletCollisionShape>(std::move(compound));
+        auto shape = std::make_shared<BulletCompoundShape>(std::move(compound));
         set_output("compound", std::move(shape));
     }
 };
@@ -120,21 +132,17 @@ ZENDEFNODE(BulletMakeCompoundShape, {
 
 struct BulletCompoundAddChild : zen::INode {
     virtual void apply() override {
-        auto compound = get_input<BulletCollisionShape>("compound");
-        auto convex = get_input<BulletCollisionShape>("shape");
+        auto compound = get_input<BulletCompoundShape>("compound");
+        auto childShape = get_input<BulletCollisionShape>("childShape");
         auto trans = get_input<BulletTransform>("trans")->trans;
 
-        auto comShape = dynamic_cast<btCompoundShape *>(compound->shape.get());
-        assert(comShape);
-        comShape->addChildShape(trans, convex->shape.get());
-        compound->childShapes.push_back(std::move(convex));
-
+        compound->addChild(trans, std::move(childShape));
         set_output_ref("compound", get_input_ref("compound"));
     }
 };
 
 ZENDEFNODE(BulletCompoundAddChild, {
-    {"compound", "shape", "trans"},
+    {"compound", "childShape", "trans"},
     {"compound"},
     {},
     {"Rigid"},
@@ -159,6 +167,23 @@ struct BulletMakeTransform : zen::INode {
 
 ZENDEFNODE(BulletMakeTransform, {
     {"origin", "rotation"},
+    {"trans"},
+    {},
+    {"Rigid"},
+});
+
+struct BulletComposeTransform : zen::INode {
+    virtual void apply() override {
+        auto transFirst = get_input<BulletTransform>("transFirst")->trans;
+        auto transSecond = get_input<BulletTransform>("transSecond")->trans;
+        auto trans = std::make_unique<BulletTransform>();
+        trans->trans = transFirst * transSecond;
+        set_output("trans", std::move(trans));
+    }
+};
+
+ZENDEFNODE(BulletComposeTransform, {
+    {"transFirst", "transSecond"},
     {"trans"},
     {},
     {"Rigid"},
