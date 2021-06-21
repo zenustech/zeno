@@ -107,6 +107,10 @@ may be provided to tell this module where to look.
 cmake_minimum_required(VERSION 3.12)
 include(GNUInstallDirs)
 
+# Monitoring <PackageName>_ROOT variables
+if(POLICY CMP0074)
+  cmake_policy(SET CMP0074 NEW)
+endif()
 
 # Include utility functions for version information
 include(${CMAKE_CURRENT_LIST_DIR}/OpenVDBUtils.cmake)
@@ -444,7 +448,7 @@ endif()
 
 # Add standard dependencies
 
-find_package(Imath CONFIG REQUIRED)
+find_package(IlmBase REQUIRED COMPONENTS Half)
 find_package(TBB REQUIRED COMPONENTS tbb)
 find_package(ZLIB REQUIRED)
 
@@ -596,7 +600,8 @@ if(OpenVDB_USES_LOG4CPLUS)
 endif()
 
 if(OpenVDB_USES_EXR)
-  find_package(OpenEXR CONFIG REQUIRED)
+  find_package(IlmBase REQUIRED)
+  find_package(OpenEXR REQUIRED)
 endif()
 
 if(UNIX)
@@ -607,7 +612,7 @@ if(WIN32)
   # @note OPENVDB_OPENEXR_STATICLIB is old functionality from the makefiles
   #       used in PlatformConfig.h to configure EXR exports. Once this file
   #       is completely removed, this define can be too
-  get_target_property(ILMBASE_LIB_TYPE Imath::Imath TYPE)
+  get_target_property(ILMBASE_LIB_TYPE IlmBase::Half TYPE)
   if(OPENEXR_USE_STATIC_LIBS OR (${ILMBASE_LIB_TYPE} STREQUAL STATIC_LIBRARY))
     list(APPEND OpenVDB_DEFINITIONS OPENVDB_OPENEXR_STATICLIB)
   endif()
@@ -622,7 +627,7 @@ endif()
 set(_OPENVDB_VISIBLE_DEPENDENCIES
   Boost::iostreams
   Boost::system
-  Imath::Imath
+  IlmBase::Half
 )
 
 if(OpenVDB_ABI)
@@ -631,7 +636,10 @@ endif()
 
 if(OpenVDB_USES_EXR)
   list(APPEND _OPENVDB_VISIBLE_DEPENDENCIES
-    OpenEXR::OpenEXR
+    IlmBase::IlmThread
+    IlmBase::Iex
+    IlmBase::Imath
+    OpenEXR::IlmImf
   )
   list(APPEND OpenVDB_DEFINITIONS OPENVDB_TOOLS_RAYTRACER_USE_EXR)
 endif()
