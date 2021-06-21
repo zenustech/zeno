@@ -53,37 +53,6 @@ ZENAPI std::shared_ptr<IObject> IObject::clone() const {
 }
 #endif
 
-ZENAPI ArrayObject::ArrayObject() = default;
-ZENAPI ArrayObject::~ArrayObject() = default;
-
-ZENAPI bool ArrayObject::isScalar() const {
-    return !m_isList;
-}
-
-ZENAPI size_t ArrayObject::arraySize() const {
-    return m_arr.size();
-}
-
-ZENAPI std::optional<size_t> ArrayObject::broadcast(std::optional<size_t> n) const {
-    if (isScalar()) {
-        return n;
-    } else if (n.has_value()) {
-        return std::min(n.value(), arraySize());
-    } else {
-        return arraySize();
-    }
-}
-
-ZENAPI std::shared_ptr<IObject> const &ArrayObject::at(size_t i) const {
-    return m_arr[i % m_arr.size()];
-}
-
-ZENAPI void ArrayObject::set(size_t i, std::shared_ptr<IObject> &&obj) {
-    if (m_arr.size() < i + 1)
-        m_arr.resize(i + 1);
-    m_arr[i] = std::move(obj);
-}
-
 ZENAPI INode::INode() = default;
 ZENAPI INode::~INode() = default;
 
@@ -154,9 +123,6 @@ ZENAPI void INode::doApply() {
     }
 
     if (ok) {
-        m_isList = siz.has_value();
-        m_listSize = siz.value_or(1);
-        m_listIdx = 0;
         listapply();
     }
 
@@ -173,16 +139,11 @@ ZENAPI void INode::doApply() {
         sess->gcObject(myname, id, ref);
     }
 
-    m_isList = false;
-    m_listIdx = 0;
     set_output("DST", std::make_unique<zen::ConditionObject>());
 }
 
 ZENAPI void INode::listapply() {
-    for (size_t i = 0; i < m_listSize; i++) {
-        m_listIdx = i;
-        apply();
-    }
+    apply();
 }
 
 ZENAPI void INode::apply() {}

@@ -85,21 +85,6 @@ struct Context {
     std::set<std::string> visited;
 };
 
-struct ArrayObject {
-    std::vector<std::shared_ptr<IObject>> m_arr;
-    bool m_isList = false;
-
-    ZENAPI ArrayObject();
-    ZENAPI ~ArrayObject();
-
-    ZENAPI bool isScalar() const;
-    ZENAPI size_t arraySize() const;
-    ZENAPI size_t broadcast(size_t n) const;
-    ZENAPI std::optional<size_t> broadcast(std::optional<size_t> n) const;
-    ZENAPI std::shared_ptr<IObject> const &at(size_t i) const;
-    ZENAPI void set(size_t i, std::shared_ptr<IObject> &&obj);
-};
-
 struct INode {
 public:
     Session *sess = nullptr;
@@ -119,10 +104,6 @@ public:
 protected:
     ZENAPI virtual void apply();
     ZENAPI virtual void listapply();
-
-    bool m_isList = false;
-    size_t m_listSize = 1;
-    size_t m_listIdx = 0;
 
     ZENAPI bool has_input(std::string const &id) const;
 
