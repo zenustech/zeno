@@ -50,3 +50,9 @@ class MainWindow(QWidget):
         self.viewport.on_update()
         self.timeline.on_update()
         super().timerEvent(event)
+
+    def closeEvent(self, event):
+        if self.editor.confirm_discard('Exit'):
+            event.accept()
+        else:
+            event.ignore()

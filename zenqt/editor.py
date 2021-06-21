@@ -101,6 +101,10 @@ class QDMGraphicsScene(QGraphicsScene):
         self.history_stack = HistoryStack(self)
         self.moved = False
         self.mmb_press = False
+        self.contentChanged = False
+
+    def setContentChanged(self, flag):
+        self.contentChanged = flag
 
     def dumpGraph(self, input_nodes=None):
         nodes = {}
@@ -233,6 +237,7 @@ class QDMGraphicsScene(QGraphicsScene):
 
     def record(self):
         self.history_stack.record()
+        self.setContentChanged(True)
 
     def undo(self):
         self.history_stack.undo()
@@ -963,6 +968,7 @@ class NodeEditor(QWidget):
 
         self.scene = QDMGraphicsScene()
         self.scene.record()
+        self.scene.setContentChanged(False)
         self.view.setScene(self.scene)
 
         self.initExecute()
@@ -1035,12 +1041,17 @@ class NodeEditor(QWidget):
     def menuTriggered(self, act):
         name = act.text()
         if name == '&New':
+            if not self.confirm_discard('New'):
+                return
             self.scene.newGraph()
             self.scene.history_stack.init_state()
             self.scene.record()
+            self.scene.setContentChanged(False)
             self.current_path = None
 
         elif name == '&Open':
+            if not self.confirm_discard('Open'):
+                return
             path, kind = QFileDialog.getOpenFileName(self, 'File to Open',
                     '', 'Zensim Graph File(*.zsg);; All Files(*);;')
             if path != '':
@@ -1094,6 +1105,7 @@ class NodeEditor(QWidget):
         graph = self.scene.dumpGraph()
         with open(path, 'w') as f:
             json.dump(graph, f)
+        self.scene.setContentChanged(False)
 
     def do_open(self, path):
         with open(path, 'r') as f:
@@ -1102,9 +1114,11 @@ class NodeEditor(QWidget):
         self.scene.history_stack.init_state()
         self.scene.loadGraph(graph)
         self.scene.record()
+        self.scene.setContentChanged(False)
 
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
-            self.close()
-
-        super().keyPressEvent(event)
+    def confirm_discard(self, title):
+        if self.scene.contentChanged:
+            flag = QMessageBox.question(self, title, 'Discard unsaved changes?',
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            return flag == QMessageBox.Yes
+        return True
