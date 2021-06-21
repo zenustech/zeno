@@ -902,9 +902,26 @@ class QDMFileMenu(QMenu):
                 ('&Open', QKeySequence.Open),
                 ('&Save', QKeySequence.Save),
                 ('Save &as', QKeySequence.SaveAs),
-                (None, None),
+        ]
+
+        for name, shortcut in acts:
+            if not name:
+                self.addSeparator()
+                continue
+            action = QAction(name, self)
+            action.setShortcut(shortcut)
+            self.addAction(action)
+
+class QDMEditMenu(QMenu):
+    def __init__(self):
+        super().__init__()
+
+        self.setTitle('&Edit')
+
+        acts = [
                 ('Undo', QKeySequence.Undo),
                 ('Redo', QKeySequence.Redo),
+                (None, None),
                 ('Duplicate', QKeySequence.Copy),
         ]
         
@@ -933,6 +950,10 @@ class NodeEditor(QWidget):
         self.menu = QDMFileMenu()
         self.menu.triggered.connect(self.menuTriggered)
         self.menubar.addMenu(self.menu)
+
+        self.menuEdit = QDMEditMenu()
+        self.menuEdit.triggered.connect(self.menuTriggered)
+        self.menubar.addMenu(self.menuEdit)
         self.layout.addWidget(self.menubar)
 
         self.view = QDMGraphicsView(self)
