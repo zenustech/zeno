@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import *
 
 from .viewport import ViewportWidget
 from .timeline import TimelineWidget
-from .editor import NodeEditor, openFileSaveDialog
+from .editor import NodeEditor
 
 
 class MainWindow(QWidget):
@@ -52,22 +52,7 @@ class MainWindow(QWidget):
         super().timerEvent(event)
 
     def closeEvent(self, event):
-        if self.editor.scene.contentChanged:
-            flag = QMessageBox.question(self,
-                                        'Exit',
-                                        "Save your graph data before exit?",
-                                        QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
-                                        QMessageBox.Yes)
-            if flag == QMessageBox.Yes:
-                path = openFileSaveDialog()
-                if path != '':
-                    self.editor.do_save(path)
-                    event.accept()
-                else:
-                    event.ignore()
-            elif flag == QMessageBox.No:
-                event.accept()
-            elif flag == QMessageBox.Cancel:
-                event.ignore()
-            else:
-                raise NotImplementedError
+        if self.editor.confirm_discard('Exit'):
+            event.accept()
+        else:
+            event.ignore()

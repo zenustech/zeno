@@ -86,8 +86,6 @@ class HistoryStack:
             self.stack = self.stack[1:]
             self.current_pointer = MAX_STACK_LENGTH
 
-        self.scene.setContentChanged(True)
-
 class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -239,6 +237,7 @@ class QDMGraphicsScene(QGraphicsScene):
 
     def record(self):
         self.history_stack.record()
+        self.setContentChanged(True)
 
     def undo(self):
         self.history_stack.undo()
@@ -1042,10 +1041,12 @@ class NodeEditor(QWidget):
     def menuTriggered(self, act):
         name = act.text()
         if name == '&New':
-            self.scene.newGraph()
-            self.scene.history_stack.init_state()
-            self.scene.record()
-            self.current_path = None
+            if self.confirm_discard('New'):
+                self.scene.newGraph()
+                self.scene.history_stack.init_state()
+                self.scene.record()
+                self.scene.setContentChanged(False)
+                self.current_path = None
 
         elif name == '&Open':
             path, kind = QFileDialog.getOpenFileName(self, 'File to Open',
@@ -1055,7 +1056,8 @@ class NodeEditor(QWidget):
                 self.current_path = path
 
         elif name == 'Save &as' or (name == '&Save' and self.current_path is None):
-            path = openFileSaveDialog()
+            path, kind = QFileDialog.getSaveFileName(None, 'Path to Save',
+                '', 'Zensim Graph File(*.zsg);; All Files(*);;')
             if path != '':
                 self.do_save(path)
                 self.current_path = path
@@ -1111,13 +1113,9 @@ class NodeEditor(QWidget):
         self.scene.record()
         self.scene.setContentChanged(False)
 
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
-            self.close()
-
-        super().keyPressEvent(event)
-
-def openFileSaveDialog():
-    path, kind = QFileDialog.getSaveFileName(None, 'Path to Save',
-        '', 'Zensim Graph File(*.zsg);; All Files(*);;')
-    return path
+    def confirm_discard(self, title):
+        if self.scene.contentChanged:
+            flag = QMessageBox.question(self, title, 'Discard unsaved changes?',
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            return flag == QMessageBox.Yes
+        return True
