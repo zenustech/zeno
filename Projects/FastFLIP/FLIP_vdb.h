@@ -5,25 +5,32 @@
 #include <openvdb/Types.h>
 #include <openvdb/openvdb.h>
 
+
 struct OpenvdbInitializer {
 	OpenvdbInitializer() {openvdb::initialize();}
 };
 static OpenvdbInitializer g_openvdb_initializer{};
-static float *randomTable;
+
+static inline float *randomTable;
+
 struct initRandomTable{
-	initRandomTable(){
-	randomTable = new float[21474836];
-	std::random_device device;
-	std::mt19937 generator(/*seed=*/device());
-	std::uniform_real_distribution<> distribution(-0.5, 0.5);
-	#pragma omp parallel	
+	
+	initRandomTable()
+	{
+		randomTable = new float[21474836];
+		std::random_device device;
+		std::mt19937 generator(/*seed=*/device());
+		std::uniform_real_distribution<> distribution(-0.5, 0.5);
+		#pragma omp parallel for
 		for (size_t i=0;i<21474836;i++)
 		{
 			
 			randomTable[i] = distribution(generator);
 		}
 	}
+	
 };
+
 static initRandomTable g_randomTableInitializer{};
 
 struct FLIP_vdb {
@@ -37,6 +44,7 @@ struct FLIP_vdb {
 	//using PositionCodec = openvdb::points::NullCodec;
 	using position_attribute = openvdb::points::TypedAttributeArray<openvdb::Vec3f, PositionCodec>;
 	using VelocityCodec = openvdb::points::TruncateCodec;
+
 	//using VelocityCodec = openvdb::points::NullCodec;
 	using velocity_attribute = openvdb::points::TypedAttributeArray<openvdb::Vec3f, VelocityCodec>;
 

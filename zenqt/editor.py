@@ -39,7 +39,8 @@ style = {
     'socket_radius': 8,
     'node_width': 200,
     'text_height': 25,
-
+    'copy_offset_x': 100,
+    'copy_offset_y': 100,
     'hori_margin': 10,
 }
 
@@ -101,9 +102,11 @@ class QDMGraphicsScene(QGraphicsScene):
         self.moved = False
         self.mmb_press = False
 
-    def dumpGraph(self):
+    def dumpGraph(self, input_nodes=None):
         nodes = {}
-        for node in self.nodes:
+        if input_nodes == None:
+            input_nodes = self.nodes
+        for node in input_nodes:
             inputs = {}
             for name, socket in node.inputs.items():
                 assert not socket.isOutput
@@ -137,7 +140,7 @@ class QDMGraphicsScene(QGraphicsScene):
             node.remove()
         self.nodes.clear()
 
-    def loadGraph(self, nodes):
+    def loadGraph(self, nodes, select_all=False):
         edges = []
         nodesLut = {}
 
@@ -178,6 +181,8 @@ class QDMGraphicsScene(QGraphicsScene):
 
             self.addNode(node)
             nodesLut[ident] = node
+            if select_all:
+                node.setSelected(True)
 
         for dest, (ident, name) in edges:
             if ident not in nodesLut:
@@ -190,7 +195,9 @@ class QDMGraphicsScene(QGraphicsScene):
                     name, nodes[ident]['name']))
                 continue
             source = srcnode.outputs[name]
-            self.addEdge(source, dest)
+            edge = self.addEdge(source, dest)
+            if select_all:
+                edge.setSelected(True)
 
     def addEdge(self, src, dst):
         edge = QDMGraphicsEdge()
@@ -198,6 +205,7 @@ class QDMGraphicsScene(QGraphicsScene):
         edge.setDstSocket(dst)
         edge.updatePath()
         self.addItem(edge)
+        return edge
 
     def searchNode(self, name):
         for key in self.descs.keys():
@@ -896,9 +904,27 @@ class QDMFileMenu(QMenu):
                 ('&Open', QKeySequence.Open),
                 ('&Save', QKeySequence.Save),
                 ('Save &as', QKeySequence.SaveAs),
-                (None, None),
+        ]
+
+        for name, shortcut in acts:
+            if not name:
+                self.addSeparator()
+                continue
+            action = QAction(name, self)
+            action.setShortcut(shortcut)
+            self.addAction(action)
+
+class QDMEditMenu(QMenu):
+    def __init__(self):
+        super().__init__()
+
+        self.setTitle('&Edit')
+
+        acts = [
                 ('Undo', QKeySequence.Undo),
                 ('Redo', QKeySequence.Redo),
+                (None, None),
+                ('Duplicate', QKeySequence.Copy),
         ]
         
         for name, shortcut in acts:
@@ -926,6 +952,10 @@ class NodeEditor(QWidget):
         self.menu = QDMFileMenu()
         self.menu.triggered.connect(self.menuTriggered)
         self.menubar.addMenu(self.menu)
+
+        self.menuEdit = QDMEditMenu()
+        self.menuEdit.triggered.connect(self.menuTriggered)
+        self.menubar.addMenu(self.menuEdit)
         self.layout.addWidget(self.menubar)
 
         self.view = QDMGraphicsView(self)
@@ -1032,6 +1062,33 @@ class NodeEditor(QWidget):
 
         elif name == 'Redo':
             self.scene.redo()
+
+        elif name == 'Duplicate':
+            itemList = self.scene.selectedItems()
+            for i in itemList:
+                i.setSelected(False)
+            itemList = [n for n in itemList if isinstance(n, QDMGraphicsNode)]
+            nodes = self.scene.dumpGraph(itemList)
+            nid_map = {}
+            for nid in nodes:
+                nid_map[nid] = gen_unique_ident()
+            new_nodes = {}
+            for nid, n in nodes.items():
+                x, y = n['uipos']
+                n['uipos'] = (x + style['copy_offset_x'], y + style['copy_offset_y'])
+                inputs = n['inputs']
+                for name, info in inputs.items():
+                    if info == None:
+                        continue
+                    nid_, name_ = info
+                    if nid_ in nid_map:
+                        info = (nid_map[nid_], name_)
+                    else:
+                        info = None
+                    inputs[name] = info
+                new_nodes[nid_map[nid]] = n
+            self.scene.loadGraph(new_nodes, select_all=True)
+            self.scene.record()
 
     def do_save(self, path):
         graph = self.scene.dumpGraph()

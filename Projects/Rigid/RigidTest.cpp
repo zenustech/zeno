@@ -339,6 +339,35 @@ ZENDEFNODE(BulletGetObjTransform, {
     {"Rigid"},
 });
 
+struct BulletGetObjMotion : zen::INode {
+    virtual void apply() override {
+        auto obj = get_input<BulletObject>("object");
+        auto body = obj->body.get();
+        auto linearVel = zen::IObject::make<zen::NumericObject>();
+        auto angularVel = zen::IObject::make<zen::NumericObject>();
+        linearVel->set<zen::vec3f>(zen::vec3f(0));
+        angularVel->set<zen::vec3f>(zen::vec3f(0));
+
+        if (body && body->getLinearVelocity() ) {
+            auto v = body->getLinearVelocity();
+            linearVel->set<zen::vec3f>(zen::vec3f(v.x(), v.y(), v.z()));
+        }
+        if (body && body->getAngularVelocity() ){
+            auto w = body->getAngularVelocity();
+            angularVel->set<zen::vec3f>(zen::vec3f(w.x(), w.y(), w.z()));
+        }
+        set_output("linearVel", linearVel);
+        set_output("angularVel", angularVel);
+    }
+};
+
+ZENDEFNODE(BulletGetObjMotion, {
+    {"object"},
+    {"linearVel", "angularVel"},
+    {},
+    {"Rigid"},
+});
+
 struct BulletExtractTransform : zen::INode {
     virtual void apply() override {
         auto trans = &get_input<BulletTransform>("trans")->trans;
@@ -484,41 +513,3 @@ ZENDEFNODE(BulletWorldAddObject, {
 });
 
 
-#if 0
-/// This is a Hello World program for running a basic Bullet physics simulation
-
-int main(int argc, char** argv)
-{
-    ///-----initialization_start-----
-
-    ///collision configuration contains default setup for memory, collision setup. Advanced users can create their own configuration.
-    BulletWorld w;
-
-    ///-----initialization_end-----
-
-    //keep track of the shapes, we release memory at exit.
-    //make sure to re-use collision shapes among rigid bodies whenever possible!
-    w.addGround();
-    w.addBall();
-
-    ///create a few basic rigid bodies
-
-    /// Do some simulation
-
-    ///-----stepsimulation_start-----
-    for (int i = 0; i < 120; i++) {
-        w.step();
-    }
-
-    ///-----stepsimulation_end-----
-
-    //cleanup in the reverse order of creation/initialization
-
-    ///-----cleanup_start-----
-
-    //remove the rigidbodies from the dynamics world and delete them
-
-
-    return 0;
-}
-#endif
