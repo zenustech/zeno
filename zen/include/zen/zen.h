@@ -126,8 +126,6 @@ protected:
 
     ZENAPI bool has_input(std::string const &id) const;
 
-    ZENAPI ArrayObject &get_input_list(std::string const &id) const;
-
     ZENAPI std::shared_ptr<IObject> get_input(std::string const &id) const;
 
     template <class T>
@@ -143,8 +141,6 @@ protected:
     T get_param(std::string const &id) const {
         return std::get<T>(get_param(id));
     }
-
-    ZENAPI ArrayObject &set_output_list(std::string const &id);
 
     ZENAPI void set_output(std::string const &id, std::shared_ptr<IObject> &&obj);
 
@@ -222,7 +218,7 @@ struct ImplNodeClass : INodeClass {
 };
 
 struct Session {
-    std::map<std::string, ArrayObject> objects;
+    std::map<std::string, std::shared_ptr<IObject>> objects;
     std::map<std::string, std::unique_ptr<INode>> nodes;
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
     std::unique_ptr<Context> ctx;
@@ -232,7 +228,7 @@ struct Session {
 
     ZENAPI void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
     ZENAPI std::string getNodeOutput(std::string const &sn, std::string const &ss) const;
-    ZENAPI ArrayObject &getObject(std::string const &id) const;
+    ZENAPI std::shared_ptr<IObject> const &getObject(std::string const &id) const;
 
     template <class F>
     int defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {

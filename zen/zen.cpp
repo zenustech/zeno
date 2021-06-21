@@ -143,9 +143,6 @@ ZENAPI void INode::doApply() {
         auto [sn, ss] = bound;
         sess->applyNode(sn);
         auto ref = sess->getNodeOutput(sn, ss);
-        sess->refObject(ref);
-        auto &obj = sess->getObject(ref);
-        siz = obj.broadcast(siz);
         inputs[ds] = ref;
     }
 
@@ -194,31 +191,19 @@ ZENAPI bool INode::has_input(std::string const &id) const {
     return inputs.find(id) != inputs.end();
 }
 
-ZENAPI ArrayObject &INode::get_input_list(std::string const &id) const {
+ZENAPI std::shared_ptr<IObject> INode::get_input(std::string const &id) const {
     auto ref = safe_at(inputs, id, "input");
     return sess->getObject(ref);
-}
-
-ZENAPI std::shared_ptr<IObject> INode::get_input(
-    std::string const &id) const {
-    return get_input_list(id).at(m_listIdx);
 }
 
 ZENAPI IValue INode::get_param(std::string const &id) const {
     return safe_at(params, id, "param");
 }
 
-ZENAPI ArrayObject &INode::set_output_list(std::string const &id) {
+ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
     auto objid = myname + "::" + id;
     auto &objlist = sess->objects[objid];
     outputs[id] = objid;
-    return objlist;
-}
-
-ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
-    auto &objlist = set_output_list(id);
-    objlist.m_isList = m_isList;
-    objlist.set(m_listIdx, std::move(obj));
 }
 
 ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {
@@ -239,9 +224,8 @@ ZENAPI std::string Session::getNodeOutput(std::string const &sn, std::string con
     return safe_at(node->outputs, ss, "node output");
 }
 
-ZENAPI ArrayObject &Session::getObject(std::string const &id) const {
-    auto const &vip = safe_at(objects, id, "object");
-    return const_cast<ArrayObject &>(vip);
+ZENAPI std::shared_ptr<IObject> const &Session::getObject(std::string const &id) const {
+    return safe_at(objects, id, "object");
 }
 
 ZENAPI void Session::clearNodes() {

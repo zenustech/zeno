@@ -1,3 +1,4 @@
+#if 0
 #include <zen/zen.h>
 #include <zen/NumericObject.h>
 #include <zen/ConditionObject.h>
@@ -113,3 +114,4 @@ ZENDEFNODE(ListAppendClone, {
     {},
     {"list"},
 });
+#endif
