@@ -325,9 +325,6 @@ struct NumericRandom : zen::INode {
     virtual void apply() override {
         auto dim = get_param<int>("dim");
         auto obj = std::make_shared<zen::NumericObject>();
-        drand48();
-        drand48();
-        drand48();
         switch (dim) {
         default:
             obj->set(float(drand48()));

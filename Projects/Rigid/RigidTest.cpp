@@ -111,7 +111,8 @@ struct PrimitiveConvexDecomposition : zen::INode {
         }
 
         for (int i = 0; i < prim->tris.size(); i++) {
-            triangles.push_back(zen::vec_to_other<HACD::Vec3<long>>(prim->tris[i]));
+            triangles.push_back(
+                zen::vec_to_other<HACD::Vec3<long>>(prim->tris[i]));
         }
 
         HACD::HACD hacd;
@@ -133,12 +134,17 @@ struct PrimitiveConvexDecomposition : zen::INode {
         size_t nClusters = hacd.GetNClusters();
 
         auto &listPrim = set_output_list("listPrim");
+        listPrim.m_isList = true;
+        listPrim.m_arr.clear();
 
         printf("hacd got %d clusters\n", nClusters);
 
         for (size_t c = 0; c < nClusters; c++) {
             size_t nPoints = hacd.GetNPointsCH(c);
             size_t nTriangles = hacd.GetNTrianglesCH(c);
+
+            printf("hacd cluster %d have %d points, %d triangles\n",
+                c, nPoints, nTriangles);
 
             points.clear();
             points.resize(nPoints);
@@ -148,19 +154,22 @@ struct PrimitiveConvexDecomposition : zen::INode {
 
             auto outprim = std::make_shared<zen::PrimitiveObject>();
             outprim->resize(nPoints);
+            outprim->tris.resize(nTriangles);
 
             auto &outpos = outprim->add_attr<zen::vec3f>("pos");
             for (size_t i = 0; i < nPoints; i++) {
                 auto p = points[i];
+                //printf("point %d: %f %f %f\n", i, p.X(), p.Y(), p.Z());
                 outpos[i] = zen::vec3f(p.X(), p.Y(), p.Z());
             }
 
             for (size_t i = 0; i < nTriangles; i++) {
                 auto p = triangles[i];
-                prim->tris[i] = zen::vec3i(p.X(), p.Y(), p.Z());
+                //printf("triangle %d: %d %d %d\n", i, p.X(), p.Y(), p.Z());
+                outprim->tris[i] = zen::vec3i(p.X(), p.Y(), p.Z());
             }
 
-            listPrim.set(c, std::move(outprim));
+            listPrim.m_arr.push_back(std::move(outprim));
         }
     }
 };
