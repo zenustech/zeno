@@ -86,6 +86,8 @@ class HistoryStack:
             self.stack = self.stack[1:]
             self.current_pointer = MAX_STACK_LENGTH
 
+        self.scene.setContentChanged(True)
+
 class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -331,7 +333,6 @@ class QDMGraphicsView(QGraphicsView):
         node.setPos(self.lastContextMenuPos)
         self.scene().addNode(node)
         self.scene().record()
-        self.scene().setContentChanged(True)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
@@ -382,7 +383,6 @@ class QDMGraphicsView(QGraphicsView):
                 self.dragingEdge = None
                 if isinstance(item, QDMGraphicsSocket):
                     self.scene().record()
-                    self.scene().setContentChanged(True)
 
         super().mousePressEvent(event)
 
@@ -408,7 +408,6 @@ class QDMGraphicsView(QGraphicsView):
 
         if self.scene().moved:
             self.scene().record()
-            self.scene().setContentChanged(True)
             self.scene().moved = False
 
     def wheelEvent(self, event):
@@ -652,10 +651,7 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
         super().__init__(parent)
 
         self.initLayout()
-        def callback():
-            parent.scene().record()
-            parent.scene().setContentChanged(True)
-        self.edit.editingFinished.connect(callback)
+        self.edit.editingFinished.connect(lambda : parent.scene().record())
         assert hasattr(self, 'layout')
 
         self.widget = QWidget()
@@ -973,6 +969,7 @@ class NodeEditor(QWidget):
 
         self.scene = QDMGraphicsScene()
         self.scene.record()
+        self.scene.setContentChanged(False)
         self.view.setScene(self.scene)
 
         self.initExecute()
@@ -1041,7 +1038,6 @@ class NodeEditor(QWidget):
         for item in itemList:
             item.remove()
         self.scene.record()
-        self.scene.setContentChanged(True)
 
     def menuTriggered(self, act):
         name = act.text()
@@ -1099,7 +1095,6 @@ class NodeEditor(QWidget):
                 new_nodes[nid_map[nid]] = n
             self.scene.loadGraph(new_nodes, select_all=True)
             self.scene.record()
-            self.scene.setContentChanged(True)
 
     def do_save(self, path):
         graph = self.scene.dumpGraph()
@@ -1114,6 +1109,7 @@ class NodeEditor(QWidget):
         self.scene.history_stack.init_state()
         self.scene.loadGraph(graph)
         self.scene.record()
+        self.scene.setContentChanged(False)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
