@@ -2,6 +2,12 @@
 #include <zen/NumericObject.h>
 #include <iostream>
 
+#ifdef _MSC_VER
+static inline double drand48() {
+	return rand() / (double)RAND_MAX;
+}
+#endif
+
 
 struct NumericInt : zen::INode {
     virtual void apply() override {
@@ -311,5 +317,35 @@ ZENDEFNODE(PrintNumeric, {
     {"value"},
     {},
     {{"string", "hint", "PrintNumeric"}},
+    {"numeric"},
+});
+
+
+struct NumericRandom : zen::INode {
+    virtual void apply() override {
+        auto dim = get_param<int>("dim");
+        auto obj = std::make_shared<zen::NumericObject>();
+        switch (dim) {
+        default:
+            obj->set(float(drand48()));
+            break;
+        case 2:
+            obj->set(zen::vec2f(drand48(), drand48()));
+            break;
+        case 3:
+            obj->set(zen::vec3f(drand48(), drand48(), drand48()));
+            break;
+        case 4:
+            obj->set(zen::vec4f(drand48(), drand48(), drand48(), drand48()));
+            break;
+        };
+        set_output("value", std::move(obj));
+    }
+};
+
+ZENDEFNODE(NumericRandom, {
+    {},
+    {"value"},
+    {{"int", "dim", "0 0 4"}},
     {"numeric"},
 });

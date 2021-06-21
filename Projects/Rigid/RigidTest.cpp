@@ -3,16 +3,37 @@
 #include <zen/PrimitiveObject.h>
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
+#include <hacdCircularList.h>
+#include <hacdVector.h>
+#include <hacdICHull.h>
+#include <hacdGraph.h>
+#include <hacdHACD.h>
 #include <memory>
 #include <vector>
 
 
+struct BulletTransform : zen::IObject {
+    btTransform trans;
+};
 
 struct BulletCollisionShape : zen::IObject {
     std::unique_ptr<btCollisionShape> shape;
 
     BulletCollisionShape(std::unique_ptr<btCollisionShape> &&shape)
         : shape(std::move(shape)) {
+    }
+};
+
+struct BulletCompoundShape : BulletCollisionShape {
+    std::vector<std::shared_ptr<BulletCollisionShape>> children;
+
+    using BulletCollisionShape::BulletCollisionShape;
+
+    void addChild(btTransform const &trans,
+        std::shared_ptr<BulletCollisionShape> child) {
+        auto comShape = static_cast<btCompoundShape *>(shape.get());
+        comShape->addChildShape(trans, child->shape.get());
+        children.push_back(std::move(child));
     }
 };
 
@@ -76,18 +97,101 @@ ZENDEFNODE(PrimitiveToBulletMesh, {
     {"Rigid"},
 });
 
+struct PrimitiveConvexDecomposition : zen::INode {
+    virtual void listapply() override {
+        auto prim = get_input<zen::PrimitiveObject>("prim");
+        auto &pos = prim->attr<zen::vec3f>("pos");
+
+        std::vector<HACD::Vec3<HACD::Real>> points;
+        std::vector<HACD::Vec3<long>> triangles;
+
+        for (int i = 0; i < pos.size(); i++) {
+            points.push_back(
+                zen::vec_to_other<HACD::Vec3<HACD::Real>>(pos[i]));
+        }
+
+        for (int i = 0; i < prim->tris.size(); i++) {
+            triangles.push_back(
+                zen::vec_to_other<HACD::Vec3<long>>(prim->tris[i]));
+        }
+
+        HACD::HACD hacd;
+        hacd.SetPoints(points.data());
+        hacd.SetNPoints(points.size());
+        hacd.SetTriangles(triangles.data());
+        hacd.SetNTriangles(triangles.size());
+
+		hacd.SetCompacityWeight(0.1);
+		hacd.SetVolumeWeight(0.0);
+		hacd.SetNClusters(2);
+		hacd.SetNVerticesPerCH(100);
+		hacd.SetConcavity(100.0);
+		hacd.SetAddExtraDistPoints(false);
+		hacd.SetAddNeighboursDistPoints(false);
+		hacd.SetAddFacesPoints(false);
+
+        hacd.Compute();
+        size_t nClusters = hacd.GetNClusters();
+
+        auto &listPrim = set_output_list("listPrim");
+        listPrim.m_isList = true;
+        listPrim.m_arr.clear();
+
+        printf("hacd got %d clusters\n", nClusters);
+
+        for (size_t c = 0; c < nClusters; c++) {
+            size_t nPoints = hacd.GetNPointsCH(c);
+            size_t nTriangles = hacd.GetNTrianglesCH(c);
+
+            printf("hacd cluster %d have %d points, %d triangles\n",
+                c, nPoints, nTriangles);
+
+            points.clear();
+            points.resize(nPoints);
+            triangles.clear();
+            triangles.resize(nTriangles);
+            hacd.GetCH(c, points.data(), triangles.data());
+
+            auto outprim = std::make_shared<zen::PrimitiveObject>();
+            outprim->resize(nPoints);
+            outprim->tris.resize(nTriangles);
+
+            auto &outpos = outprim->add_attr<zen::vec3f>("pos");
+            for (size_t i = 0; i < nPoints; i++) {
+                auto p = points[i];
+                //printf("point %d: %f %f %f\n", i, p.X(), p.Y(), p.Z());
+                outpos[i] = zen::vec3f(p.X(), p.Y(), p.Z());
+            }
+
+            for (size_t i = 0; i < nTriangles; i++) {
+                auto p = triangles[i];
+                //printf("triangle %d: %d %d %d\n", i, p.X(), p.Y(), p.Z());
+                outprim->tris[i] = zen::vec3i(p.X(), p.Y(), p.Z());
+            }
+
+            listPrim.m_arr.push_back(std::move(outprim));
+        }
+    }
+};
+
+ZENDEFNODE(PrimitiveConvexDecomposition, {
+    {"prim"},
+    {"listPrim"},
+    {},
+    {"Rigid"},
+});
+
+
 struct BulletMakeConvexHullShape : zen::INode {
     virtual void apply() override {
-
         auto triMesh = &get_input<BulletTriangleMesh>("triMesh")->mesh;
         auto inShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
         auto hull = std::make_unique<btShapeHull>(inShape.get());
         hull->buildHull(inShape->getMargin());
+        auto convex = std::make_unique<btConvexHullShape>(
+            (const float *)hull->getVertexPointer(), hull->numVertices());
 
-        auto shape = std::make_unique<BulletCollisionShape>(
-            std::make_unique<btConvexHullShape>(
-                reinterpret_cast<const float *>(hull->getVertexPointer()),
-                hull->numVertices()));
+        auto shape = std::make_shared<BulletCollisionShape>(std::move(convex));
         set_output("shape", std::move(shape));
     }
 };
@@ -99,10 +203,39 @@ ZENDEFNODE(BulletMakeConvexHullShape, {
     {"Rigid"},
 });
 
-
-struct BulletTransform : zen::IObject {
-    btTransform trans;
+struct BulletMakeCompoundShape : zen::INode {
+    virtual void apply() override {
+        auto compound = std::make_unique<btCompoundShape>();
+        auto shape = std::make_shared<BulletCompoundShape>(std::move(compound));
+        set_output("compound", std::move(shape));
+    }
 };
+
+ZENDEFNODE(BulletMakeCompoundShape, {
+    {""},
+    {"compound"},
+    {},
+    {"Rigid"},
+});
+
+struct BulletCompoundAddChild : zen::INode {
+    virtual void apply() override {
+        auto compound = get_input<BulletCompoundShape>("compound");
+        auto childShape = get_input<BulletCollisionShape>("childShape");
+        auto trans = get_input<BulletTransform>("trans")->trans;
+
+        compound->addChild(trans, std::move(childShape));
+        set_output_ref("compound", get_input_ref("compound"));
+    }
+};
+
+ZENDEFNODE(BulletCompoundAddChild, {
+    {"compound", "childShape", "trans"},
+    {"compound"},
+    {},
+    {"Rigid"},
+});
+
 
 struct BulletMakeTransform : zen::INode {
     virtual void apply() override {
@@ -122,6 +255,23 @@ struct BulletMakeTransform : zen::INode {
 
 ZENDEFNODE(BulletMakeTransform, {
     {"origin", "rotation"},
+    {"trans"},
+    {},
+    {"Rigid"},
+});
+
+struct BulletComposeTransform : zen::INode {
+    virtual void apply() override {
+        auto transFirst = get_input<BulletTransform>("transFirst")->trans;
+        auto transSecond = get_input<BulletTransform>("transSecond")->trans;
+        auto trans = std::make_unique<BulletTransform>();
+        trans->trans = transFirst * transSecond;
+        set_output("trans", std::move(trans));
+    }
+};
+
+ZENDEFNODE(BulletComposeTransform, {
+    {"transFirst", "transSecond"},
     {"trans"},
     {},
     {"Rigid"},
@@ -214,6 +364,30 @@ struct BulletGetObjMotion : zen::INode {
 ZENDEFNODE(BulletGetObjMotion, {
     {"object"},
     {"linearVel", "angularVel"},
+    {},
+    {"Rigid"},
+});
+
+struct RigidVelToPrimitive : zen::INode {
+    virtual void apply() override {
+        auto prim = get_input<zen::PrimitiveObject>("prim");
+        auto com = get_input<zen::NumericObject>("centroid")->get<zen::vec3f>();
+        auto lin = get_input<zen::NumericObject>("linearVel")->get<zen::vec3f>();
+        auto ang = get_input<zen::NumericObject>("angularVel")->get<zen::vec3f>();
+
+        auto &pos = prim->attr<zen::vec3f>("pos");
+        auto &vel = prim->add_attr<zen::vec3f>("vel");
+        for (size_t i = 0; i < prim->size(); i++) {
+            vel[i] = lin + zen::cross(ang, pos[i] - com);
+        }
+
+        set_output_ref("prim", get_input_ref("prim"));
+    }
+};
+
+ZENDEFNODE(RigidVelToPrimitive, {
+    {"prim", "centroid", "linearVel", "angularVel"},
+    {"prim"},
     {},
     {"Rigid"},
 });

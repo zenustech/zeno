@@ -14,7 +14,7 @@ struct MeshToPrimitive : zen::INode{
     auto mesh = get_input("mesh")->as<MeshObject>();
     auto result = zen::IObject::make<PrimitiveObject>();
     result->add_attr<zen::vec3f>("pos");
-    result->add_attr<zen::vec3f>("clr");
+    result->add_attr<zen::vec3f>("tex");
     result->add_attr<zen::vec3f>("nrm");
     result->resize(mesh->vertices.size());
     result->tris.resize(mesh->vertices.size()/3);
@@ -27,7 +27,7 @@ struct MeshToPrimitive : zen::INode{
             mesh->vertices[i].y, mesh->vertices[i].z);
 
         if(mesh->uvs.size()>0)
-        result->attr<zen::vec3f>("clr")[i] = zen::vec3f(mesh->uvs[i].x, mesh->uvs[i].y,
+        result->attr<zen::vec3f>("tex")[i] = zen::vec3f(mesh->uvs[i].x, mesh->uvs[i].y,
             0);
         if(mesh->normals.size()>0)
         result->attr<zen::vec3f>("nrm")[i] = zen::vec3f(mesh->normals[i].x, mesh->normals[i].y,mesh->normals[i].z);
