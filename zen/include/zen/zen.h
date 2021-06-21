@@ -85,12 +85,12 @@ struct Context {
     std::set<std::string> visited;
 };
 
-struct ListObject {
+struct ArrayObject {
     std::vector<std::shared_ptr<IObject>> m_arr;
     bool m_isList = false;
 
-    ZENAPI ListObject();
-    ZENAPI ~ListObject();
+    ZENAPI ArrayObject();
+    ZENAPI ~ArrayObject();
 
     ZENAPI bool isScalar() const;
     ZENAPI size_t arraySize() const;
@@ -126,7 +126,7 @@ protected:
 
     ZENAPI bool has_input(std::string const &id) const;
 
-    ZENAPI ListObject &get_input_list(std::string const &id) const;
+    ZENAPI ArrayObject &get_input_list(std::string const &id) const;
 
     ZENAPI std::shared_ptr<IObject> get_input(std::string const &id) const;
 
@@ -144,7 +144,7 @@ protected:
         return std::get<T>(get_param(id));
     }
 
-    ZENAPI ListObject &set_output_list(std::string const &id);
+    ZENAPI ArrayObject &set_output_list(std::string const &id);
 
     ZENAPI void set_output(std::string const &id, std::shared_ptr<IObject> &&obj);
 
@@ -222,7 +222,7 @@ struct ImplNodeClass : INodeClass {
 };
 
 struct Session {
-    std::map<std::string, ListObject> objects;
+    std::map<std::string, ArrayObject> objects;
     std::map<std::string, std::unique_ptr<INode>> nodes;
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
     std::unique_ptr<Context> ctx;
@@ -232,7 +232,7 @@ struct Session {
 
     ZENAPI void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
     ZENAPI std::string getNodeOutput(std::string const &sn, std::string const &ss) const;
-    ZENAPI ListObject &getObject(std::string const &id) const;
+    ZENAPI ArrayObject &getObject(std::string const &id) const;
 
     template <class F>
     int defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {
