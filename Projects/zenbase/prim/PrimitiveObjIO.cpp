@@ -19,7 +19,7 @@ static void readobj(
         abort();
     }
 
-    printf("o %s\n", path);
+    //printf("o %s\n", path);
 
     char hdr[128];
     while (EOF != fscanf(fp, "%s", hdr)) 
@@ -27,7 +27,7 @@ static void readobj(
         if (!strcmp(hdr, "v")) {
             zen::vec3f vertex;
             fscanf(fp, "%f %f %f\n", &vertex[0], &vertex[1], &vertex[2]);
-            printf("v %f %f %f\n", vertex[0], vertex[1], vertex[2]);
+            //printf("v %f %f %f\n", vertex[0], vertex[1], vertex[2]);
             vertices.push_back(vertex);
 
         } else if (!strcmp(hdr, "f")) {
@@ -41,7 +41,7 @@ static void readobj(
 
             while (fscanf(fp, "%d/%d/%d", &index[0], &index[1], &index[2]) > 0) {
                 zen::vec3i face(first_index[0], last_index[0], index[0]);
-                printf("f %d %d %d\n", face[0], face[1], face[2]);
+                //printf("f %d %d %d\n", face[0], face[1], face[2]);
                 indices.push_back(face - 1);
                 last_index = index;
             }
