@@ -368,6 +368,30 @@ ZENDEFNODE(BulletGetObjMotion, {
     {"Rigid"},
 });
 
+struct RigidVelToPrimitive : zen::INode {
+    virtual void apply() override {
+        auto prim = get_input<zen::PrimitiveObject>("prim");
+        auto com = get_input<zen::NumericObject>("centroid")->get<zen::vec3f>();
+        auto lin = get_input<zen::NumericObject>("linearVel")->get<zen::vec3f>();
+        auto ang = get_input<zen::NumericObject>("angularVel")->get<zen::vec3f>();
+
+        auto &pos = prim->attr<zen::vec3f>("pos");
+        auto &vel = prim->add_attr<zen::vec3f>("vel");
+        for (size_t i = 0; i < prim->size(); i++) {
+            vel[i] = lin + zen::cross(ang, pos[i] - com);
+        }
+
+        set_output_ref("prim", get_input_ref("prim"));
+    }
+};
+
+ZENDEFNODE(RigidVelToPrimitive, {
+    {"prim", "centroid", "linearVel", "angularVel"},
+    {"prim"},
+    {},
+    {"Rigid"},
+});
+
 struct BulletExtractTransform : zen::INode {
     virtual void apply() override {
         auto trans = &get_input<BulletTransform>("trans")->trans;
