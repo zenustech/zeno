@@ -968,6 +968,9 @@ class NodeEditor(QWidget):
         self.initShortcuts()
         self.refreshDescriptors()
 
+        self.handleEnvironParams()
+
+    def handleEnvironParams(self):
         if os.environ.get('ZEN_OPEN'):
             path = os.environ['ZEN_OPEN']
             self.do_open(path)
