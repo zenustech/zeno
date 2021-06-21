@@ -953,14 +953,7 @@ class NodeEditor(QWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
 
-        self.menubar = QMenuBar()
-        self.menu = QDMFileMenu()
-        self.menu.triggered.connect(self.menuTriggered)
-        self.menubar.addMenu(self.menu)
-
-        self.menuEdit = QDMEditMenu()
-        self.menuEdit.triggered.connect(self.menuTriggered)
-        self.menubar.addMenu(self.menuEdit)
+        self.menubar = self.initMenu()
         self.layout.addWidget(self.menubar)
 
         self.view = QDMGraphicsView(self)
@@ -983,6 +976,17 @@ class NodeEditor(QWidget):
         if os.environ.get('ZEN_DOEXEC'):
             print('ZEN_DOEXEC found, direct execute')
             self.on_execute()
+
+    def initMenu(self):
+        menubar = QMenuBar()
+        self.menu = QDMFileMenu()
+        self.menu.triggered.connect(self.menuTriggered)
+        menubar.addMenu(self.menu)
+
+        self.menuEdit = QDMEditMenu()
+        self.menuEdit.triggered.connect(self.menuTriggered)
+        menubar.addMenu(self.menuEdit)
+        return menubar
 
     def initShortcuts(self):
         self.msgF5 = QShortcut(QKeySequence('F5'), self)
