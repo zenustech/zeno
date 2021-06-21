@@ -1059,8 +1059,7 @@ class NodeEditor(QWidget):
                 self.current_path = path
 
         elif name == 'Save &as' or (name == '&Save' and self.current_path is None):
-            path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
-                    '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+            path = openFileSaveDialog()
             if path != '':
                 self.do_save(path)
                 self.current_path = path
@@ -1121,3 +1120,8 @@ class NodeEditor(QWidget):
             self.close()
 
         super().keyPressEvent(event)
+
+def openFileSaveDialog():
+    path, kind = QFileDialog.getSaveFileName(None, 'Path to Save',
+        '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+    return path

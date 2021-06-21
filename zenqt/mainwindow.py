@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import *
 
 from .viewport import ViewportWidget
 from .timeline import TimelineWidget
-from .editor import NodeEditor
+from .editor import NodeEditor, openFileSaveDialog
 
 
 class MainWindow(QWidget):
@@ -59,8 +59,7 @@ class MainWindow(QWidget):
                                         QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
                                         QMessageBox.Yes)
             if flag == QMessageBox.Yes:
-                path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
-                    '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+                path = openFileSaveDialog()
                 if path != '':
                     self.editor.do_save(path)
                     event.accept()
