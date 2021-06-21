@@ -1,4 +1,4 @@
-O=assets/HACD.zsg
+O=assets/rigid3.zsg
 
 default: all run
 
