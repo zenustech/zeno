@@ -97,16 +97,90 @@ ZENDEFNODE(PrimitiveToBulletMesh, {
     {"Rigid"},
 });
 
+struct PrimitiveConvexDecomposition : zen::INode {
+    virtual void listapply() override {
+        auto prim = get_input<zen::PrimitiveObject>("prim");
+        auto &pos = prim->attr<zen::vec3f>("pos");
+
+        std::vector<HACD::Vec3<HACD::Real>> points;
+        std::vector<HACD::Vec3<long>> triangles;
+
+        for (int i = 0; i < pos.size(); i++) {
+            points.push_back(
+                zen::vec_to_other<HACD::Vec3<HACD::Real>>(pos[i]));
+        }
+
+        for (int i = 0; i < prim->tris.size(); i++) {
+            triangles.push_back(zen::vec_to_other<HACD::Vec3<long>>(prim->tris[i]));
+        }
+
+        HACD::HACD hacd;
+        hacd.SetPoints(points.data());
+        hacd.SetNPoints(points.size());
+        hacd.SetTriangles(triangles.data());
+        hacd.SetNTriangles(triangles.size());
+
+		hacd.SetCompacityWeight(0.1);
+		hacd.SetVolumeWeight(0.0);
+		hacd.SetNClusters(2);
+		hacd.SetNVerticesPerCH(100);
+		hacd.SetConcavity(100.0);
+		hacd.SetAddExtraDistPoints(false);
+		hacd.SetAddNeighboursDistPoints(false);
+		hacd.SetAddFacesPoints(false);
+
+        hacd.Compute();
+        size_t nClusters = hacd.GetNClusters();
+
+        auto &listPrim = set_output_list("listPrim");
+
+        printf("got %d clusters\n", nClusters);
+
+        for (size_t c = 0; c < nClusters; c++) {
+            size_t nPoints = hacd.GetNPointsCH(c);
+            size_t nTriangles = hacd.GetNTrianglesCH(c);
+
+            points.clear();
+            points.resize(nPoints);
+            triangles.clear();
+            triangles.resize(nTriangles);
+            hacd.GetCH(c, points.data(), triangles.data());
+
+            auto outprim = std::make_shared<zen::PrimitiveObject>();
+            outprim->resize(nPoints);
+
+            auto &outpos = outprim->add_attr<zen::vec3f>("pos");
+            for (size_t i = 0; i < nPoints; i++) {
+                auto p = points[i];
+                outpos[i] = zen::vec3f(p.X(), p.Y(), p.Z());
+            }
+
+            for (size_t i = 0; i < nTriangles; i++) {
+                auto p = triangles[i];
+                prim->tris[i] = zen::vec3i(p.X(), p.Y(), p.Z());
+            }
+
+            listPrim.set(c, std::move(outprim));
+        }
+    }
+};
+
+ZENDEFNODE(PrimitiveConvexDecomposition, {
+    {"prim"},
+    {"listPrim"},
+    {},
+    {"Rigid"},
+});
+
+
 struct BulletMakeConvexHullShape : zen::INode {
     virtual void apply() override {
-
         auto triMesh = &get_input<BulletTriangleMesh>("triMesh")->mesh;
         auto inShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
         auto hull = std::make_unique<btShapeHull>(inShape.get());
         hull->buildHull(inShape->getMargin());
         auto convex = std::make_unique<btConvexHullShape>(
-            reinterpret_cast<const float *>(hull->getVertexPointer()),
-            hull->numVertices());
+            (const float *)hull->getVertexPointer(), hull->numVertices());
 
         auto shape = std::make_shared<BulletCollisionShape>(std::move(convex));
         set_output("shape", std::move(shape));
