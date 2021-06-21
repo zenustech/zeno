@@ -50,3 +50,25 @@ class MainWindow(QWidget):
         self.viewport.on_update()
         self.timeline.on_update()
         super().timerEvent(event)
+
+    def closeEvent(self, event):
+        if self.editor.scene.contentChanged:
+            flag = QMessageBox.question(self,
+                                        'Exit',
+                                        "Save your graph data before exit?",
+                                        QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+                                        QMessageBox.Yes)
+            if flag == QMessageBox.Yes:
+                path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
+                    '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+                if path != '':
+                    self.editor.do_save(path)
+                    event.accept()
+                else:
+                    event.ignore()
+            elif flag == QMessageBox.No:
+                event.accept()
+            elif flag == QMessageBox.Cancel:
+                event.ignore()
+            else:
+                raise NotImplementedError

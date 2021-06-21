@@ -101,6 +101,10 @@ class QDMGraphicsScene(QGraphicsScene):
         self.history_stack = HistoryStack(self)
         self.moved = False
         self.mmb_press = False
+        self.contentChanged = False
+
+    def setContentChanged(self, flag):
+        self.contentChanged = flag
 
     def dumpGraph(self, input_nodes=None):
         nodes = {}
@@ -327,6 +331,7 @@ class QDMGraphicsView(QGraphicsView):
         node.setPos(self.lastContextMenuPos)
         self.scene().addNode(node)
         self.scene().record()
+        self.scene().setContentChanged(True)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
@@ -377,6 +382,7 @@ class QDMGraphicsView(QGraphicsView):
                 self.dragingEdge = None
                 if isinstance(item, QDMGraphicsSocket):
                     self.scene().record()
+                    self.scene().setContentChanged(True)
 
         super().mousePressEvent(event)
 
@@ -402,6 +408,7 @@ class QDMGraphicsView(QGraphicsView):
 
         if self.scene().moved:
             self.scene().record()
+            self.scene().setContentChanged(True)
             self.scene().moved = False
 
     def wheelEvent(self, event):
@@ -645,7 +652,10 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
         super().__init__(parent)
 
         self.initLayout()
-        self.edit.editingFinished.connect(lambda : parent.scene().record())
+        def callback():
+            parent.scene().record()
+            parent.scene().setContentChanged(True)
+        self.edit.editingFinished.connect(callback)
         assert hasattr(self, 'layout')
 
         self.widget = QWidget()
@@ -1031,6 +1041,7 @@ class NodeEditor(QWidget):
         for item in itemList:
             item.remove()
         self.scene.record()
+        self.scene.setContentChanged(True)
 
     def menuTriggered(self, act):
         name = act.text()
@@ -1089,11 +1100,13 @@ class NodeEditor(QWidget):
                 new_nodes[nid_map[nid]] = n
             self.scene.loadGraph(new_nodes, select_all=True)
             self.scene.record()
+            self.scene.setContentChanged(True)
 
     def do_save(self, path):
         graph = self.scene.dumpGraph()
         with open(path, 'w') as f:
             json.dump(graph, f)
+        self.scene.setContentChanged(False)
 
     def do_open(self, path):
         with open(path, 'r') as f:
