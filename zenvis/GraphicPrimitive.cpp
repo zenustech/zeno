@@ -30,9 +30,27 @@ struct GraphicPrimitive : IGraphic {
     ( zen::PrimitiveObject *prim
     , std::string const &path
     ) {
-    auto const &pos = prim->add_attr<zen::vec3f>("pos");
-    auto const &clr = prim->add_attr<zen::vec3f>("clr");
-    auto const &nrm = prim->add_attr<zen::vec3f>("nrm");
+    if (!prim->has_attr("pos")) {
+        auto &pos = prim->add_attr<zen::vec3f>("pos");
+        for (size_t i = 0; i < pos.size(); i++) {
+            pos[i] = zen::vec3f(i * (1.0f / (pos.size() - 1)), 0, 0);
+        }
+    }
+    if (!prim->has_attr("clr")) {
+        auto &clr = prim->add_attr<zen::vec3f>("clr");
+        for (size_t i = 0; i < clr.size(); i++) {
+            clr[i] = zen::vec3f(0.8);
+        }
+    }
+    if (!prim->has_attr("nrm")) {
+        auto &nrm = prim->add_attr<zen::vec3f>("nrm");
+        for (size_t i = 0; i < nrm.size(); i++) {
+            nrm[i] = zen::vec3f(1 / zen::sqrt(3.0f));
+        }
+    }
+    auto const &pos = prim->attr<zen::vec3f>("pos");
+    auto const &clr = prim->attr<zen::vec3f>("clr");
+    auto const &nrm = prim->attr<zen::vec3f>("nrm");
     vertex_count = prim->size();
 
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
@@ -122,6 +140,7 @@ struct GraphicPrimitive : IGraphic {
 
     vbo->disable_attribute(0);
     vbo->disable_attribute(1);
+    vbo->disable_attribute(2);
     vbo->unbind();
   }
 
@@ -330,7 +349,8 @@ struct GraphicPrimitive : IGraphic {
 "  vec3 viewdir = -calcRayDir(position);\n"
 "\n"
 "  Material material;\n"
-"  material.albedo = vec3(0.8);\n"
+//"  material.albedo = vec3(0.8);\n"
+"  material.albedo = iColor;\n"
 "  material.roughness = 0.4;\n"
 "  material.metallic = 0.0;\n"
 "  material.specular = 0.5;\n"
