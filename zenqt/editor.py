@@ -1041,14 +1041,17 @@ class NodeEditor(QWidget):
     def menuTriggered(self, act):
         name = act.text()
         if name == '&New':
-            if self.confirm_discard('New'):
-                self.scene.newGraph()
-                self.scene.history_stack.init_state()
-                self.scene.record()
-                self.scene.setContentChanged(False)
-                self.current_path = None
+            if not self.confirm_discard('New'):
+                return
+            self.scene.newGraph()
+            self.scene.history_stack.init_state()
+            self.scene.record()
+            self.scene.setContentChanged(False)
+            self.current_path = None
 
         elif name == '&Open':
+            if not self.confirm_discard('Open'):
+                return
             path, kind = QFileDialog.getOpenFileName(self, 'File to Open',
                     '', 'Zensim Graph File(*.zsg);; All Files(*);;')
             if path != '':
