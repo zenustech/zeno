@@ -134,7 +134,7 @@ struct PrimitiveConvexDecomposition : zen::INode {
 
         auto &listPrim = set_output_list("listPrim");
 
-        printf("got %d clusters\n", nClusters);
+        printf("hacd got %d clusters\n", nClusters);
 
         for (size_t c = 0; c < nClusters; c++) {
             size_t nPoints = hacd.GetNPointsCH(c);
