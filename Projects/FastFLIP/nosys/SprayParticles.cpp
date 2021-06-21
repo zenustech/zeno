@@ -54,8 +54,6 @@ struct SprayParticles : zen::INode{
         tbb::concurrent_vector<zen::vec3f> pos(0);
         tbb::concurrent_vector<zen::vec3f> vel(0);
         size_t n = prim->tris.size();
-        printf("%d\n",n);
-        std::cout<<channel<<std::endl;
         tbb::parallel_for( (size_t)0, (size_t)n, (size_t)1, [&](size_t index){
             zen::vec3f a, b, c;
             zen::vec3i vi = prim->tris[index];
