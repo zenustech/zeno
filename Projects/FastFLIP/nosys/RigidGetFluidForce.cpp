@@ -10,33 +10,82 @@
 
 
 namespace zen{
-struct rigid_pressure_force_reducer {
-    rigid_pressure_force_reducer(const std::vector<zen::vec3f>& inPosArray,
-        const openvdb::Vec3f& inMassCenter,
-        openvdb::FloatGrid::Ptr inPressure,
-        openvdb::Vec3fGrid::Ptr inFaceWeights,
-        openvdb::FloatGrid::Ptr inLiquidSDF, float indt):
-        myPosArray(inPosArray),
-        myMassCenter(inMassCenter),
-        myPressure(inPressure),
-        myFaceWeights(inFaceWeights), 
-        myLiquidSDF(inLiquidSDF),
-        dt(indt) {
-        myTotalForce = openvdb::Vec3f{ 0.f};
-        myTotalTorque = openvdb::Vec3f{ 0.f };
+
+struct rigid_body_surface_voxel_mask_reducer {
+    
+    rigid_body_surface_voxel_mask_reducer(const std::vector<zen::vec3f>& inPosArray, 
+        openvdb::FloatGrid::Ptr inLiquidSDF): 
+        myPosArray(inPosArray), 
+        myLiquidSDF(inLiquidSDF){
         myMask = openvdb::BoolGrid::create(false);
     }
 
+    rigid_body_surface_voxel_mask_reducer(const rigid_body_surface_voxel_mask_reducer& other, tbb::split):
+        myPosArray(other.myPosArray), myLiquidSDF(other.myLiquidSDF) {
+        myMask = openvdb::BoolGrid::create(false);
+    }
+
+	void operator()(const tbb::blocked_range<size_t>& r) {
+		using  namespace openvdb::tools::local_util;
+		//Const accessors
+		auto LiquidSDFAccessor(myLiquidSDF->getConstUnsafeAccessor());
+		auto MaskAccessor(myMask->getAccessor());
+
+		//algorithm:
+		//step1:
+		//pos is a refined sample of object face,
+		//so here simply rasterize it to a temple vdb field mask
+		//mask = make vdbFloatGrid(0), transform(dx)
+		//for p in pos, ijk = worldToIndex(p), mask(ijk)=1
+		for (size_t i = r.begin(); i != r.end(); ++i) {
+			const auto& p = myPosArray[i];
+			//1 find the index position of this position
+			openvdb::Vec3f vdbwpos{ p[0],p[1],p[2] };
+			openvdb::Vec3f vdbipos = myLiquidSDF->worldToIndex(vdbwpos);
+
+			//note phi is defined at the cell center
+			//therefore to find the right sdf voxel this point belongs to,
+			//a 0.5f shift is required.
+			const openvdb::Coord gcoord{ floorVec3(vdbipos + openvdb::Vec3f(0.5f)) };
+            if (LiquidSDFAccessor.getValue(gcoord) < 0) {
+                MaskAccessor.setValueOn(gcoord);
+            }
+		}//End loop all points
+	}
+
+    void join(const rigid_body_surface_voxel_mask_reducer& other) {
+        myMask->topologyUnion(*other.myMask);
+    }
+
+    const std::vector<zen::vec3f>& myPosArray;
+
+    openvdb::BoolGrid::Ptr myMask;
+    openvdb::FloatGrid::Ptr myLiquidSDF;
+};
+
+struct rigid_pressure_force_reducer {
+    rigid_pressure_force_reducer(const std::vector<openvdb::BoolTree::LeafNodeType*>& inMaskLeaves,
+        const openvdb::Vec3f& inMassCenter,
+        openvdb::FloatGrid::Ptr inPressure,
+        openvdb::Vec3fGrid::Ptr inFaceWeights,
+        float indt):
+        myMaskLeaves(inMaskLeaves),
+        myMassCenter(inMassCenter),
+        myPressure(inPressure),
+        myFaceWeights(inFaceWeights), 
+        dt(indt) {
+        myTotalForce = openvdb::Vec3f{ 0.f};
+        myTotalTorque = openvdb::Vec3f{ 0.f };
+    }
+
     rigid_pressure_force_reducer(const rigid_pressure_force_reducer& other, tbb::split):
-        myPosArray(other.myPosArray), 
+        myMaskLeaves(other.myMaskLeaves), 
         myMassCenter(other.myMassCenter), 
         myPressure(other.myPressure),
         myFaceWeights(other.myFaceWeights),
-        myLiquidSDF(other.myLiquidSDF),
         dt(other.dt) {
         myTotalForce = openvdb::Vec3f{ 0.f };
         myTotalTorque = openvdb::Vec3f{ 0.f };
-        myMask = openvdb::BoolGrid::create(false);
     }
 
     void operator()(const tbb::blocked_range<size_t>& r) {
@@ -44,94 +93,72 @@ struct rigid_pressure_force_reducer {
         //Const accessors
         auto PressureAccessor(myPressure->getConstUnsafeAccessor());
         auto FaceWeightsAccessor(myFaceWeights->getConstUnsafeAccessor());
-        auto LiquidSDFAccessor(myLiquidSDF->getConstUnsafeAccessor());
-        auto MaskAccessor(myMask->getAccessor());
 
         double dx = myPressure->voxelSize()[0];
         double dx2 = dx * dx;
         for (size_t i = r.begin(); i != r.end(); ++i) {
-            auto& p = myPosArray[i];
-            //1 find the index position of this position
-            openvdb::Vec3f vdbwpos{ p[0],p[1],p[2] };
-            openvdb::Vec3f vdbipos = myPressure->worldToIndex(vdbwpos);
+            const auto& leaf = *myMaskLeaves[i];
 
-            //note p is defined at the cell center
-            //therefore to find the right pressure voxel this point belongs to,
-            //a 0.5f shift is required.
-            const openvdb::Coord gcoord{ floorVec3(vdbipos + openvdb::Vec3f(0.5f)) };
-
-            //skip a cell that has already contributed
-            if (MaskAccessor.isValueOn(gcoord)) {
-                continue;
-            }
-
-            //skip points outside of the liquid
-            //this is tested after the mask because sampling can be more expensive
-            if (openvdb::tools::BoxSampler::sample(LiquidSDFAccessor, vdbipos) >= 0) {
-                continue;
-            }
-
-            MaskAccessor.setValueOn(gcoord);
-
-            openvdb::Vec3f voxelCenter = myPressure->indexToWorld(gcoord);
-            //step2:
-            //mathematics: the pressure force a boundary element receives
-            // equals to  the pressure force it sends to fluid
-            //         
-            //              vweight(j+1)
-            //             ____________
-            //             |////////  |
-            //             |/s///     |
-            //  uweight(i) |///  p    | uweight(i+1)
-            //             |/         |
-            //             |__________|
-            //              vweight(j)
-            //
-            //  ForceToFluid = dx^2*(
-            //                        p*uweight(i+1)*(+1,0) + p*uweight(i)*(-1,0)
-            //                       +p*vweight(j+1)*(0,+1) + p*vweight(j)*(0,-1)
-            //                      )
-            //  
-            //  ForceFromFluid = - ForceToFluid;               Eqn 1
-            //   note how this is a better approx to p*n*dA;
-            openvdb::Vec3f ForceToFluid{ 0.f };
-            openvdb::Vec3f thisWeight = FaceWeightsAccessor.getValue(gcoord);
-            ForceToFluid.x() = FaceWeightsAccessor.getValue(gcoord.offsetBy(1, 0, 0))[0] - thisWeight[0];
-            ForceToFluid.y() = FaceWeightsAccessor.getValue(gcoord.offsetBy(0, 1, 0))[1] - thisWeight[1];
-            ForceToFluid.z() = FaceWeightsAccessor.getValue(gcoord.offsetBy(0, 0, 1))[2] - thisWeight[2];
-            openvdb::Vec3f ForceFromFluid = -ForceToFluid * dx2 * PressureAccessor.getValue(gcoord);
-            //as a result, we only cumulate for each boundary
-            //  cell(we marked out in step1)
-            //  
-            //   atomic force = 0, torc = 0;
-            //   for each marked boundary cell, 
-            //      if liquid_phi<0
-            //         force_of_the_cell = Eqn1
-            //         force += force_of_the_cell;
-            //         torc += cross(masscenter - pcell, force_of_the_cell);
-            //
-            // totalForce = dt*force
-            // totalTorc = dt*torc;     
-            myTotalForce += dt * ForceFromFluid;
-            myTotalTorque += dt * (voxelCenter - myMassCenter).cross(ForceFromFluid);
-        }//End loop all points
+            //for all active liquid masks
+            for (auto iter = leaf.beginValueOn(); iter; ++iter) {
+                const auto gcoord = iter.getCoord();
+                openvdb::Vec3f voxelCenter = myPressure->indexToWorld(gcoord);
+                //step2:
+                //mathematics: the pressure force a boundary element receives
+                // equals to  the pressure force it sends to fluid
+                //         
+                //              vweight(j+1)
+                //             ____________
+                //             |////////  |
+                //             |/s///     |
+                //  uweight(i) |///  p    | uweight(i+1)
+                //             |/         |
+                //             |__________|
+                //              vweight(j)
+                //
+                //  ForceToFluid = dx^2*(
+                //                        p*uweight(i+1)*(+1,0) + p*uweight(i)*(-1,0)
+                //                       +p*vweight(j+1)*(0,+1) + p*vweight(j)*(0,-1)
+                //                      )
+                //  
+                //  ForceFromFluid = - ForceToFluid;               Eqn 1
+                //   note how this is a better approx to p*n*dA;
+                openvdb::Vec3f ForceToFluid{ 0.f };
+                openvdb::Vec3f thisWeight = FaceWeightsAccessor.getValue(gcoord);
+                ForceToFluid.x() = FaceWeightsAccessor.getValue(gcoord.offsetBy(1, 0, 0))[0] - thisWeight[0];
+                ForceToFluid.y() = FaceWeightsAccessor.getValue(gcoord.offsetBy(0, 1, 0))[1] - thisWeight[1];
+                ForceToFluid.z() = FaceWeightsAccessor.getValue(gcoord.offsetBy(0, 0, 1))[2] - thisWeight[2];
+                openvdb::Vec3f ForceFromFluid = -ForceToFluid * dx2 * PressureAccessor.getValue(gcoord);
+                //as a result, we only cumulate for each boundary
+                //  cell(we marked out in step1)
+                //  
+                //   atomic force = 0, torc = 0;
+                //   for each marked boundary cell, 
+                //      if liquid_phi<0
+                //         force_of_the_cell = Eqn1
+                //         force += force_of_the_cell;
+                //         torc += cross(masscenter - pcell, force_of_the_cell);
+                //
+                // totalForce = dt*force
+                // totalTorc = dt*torc;     
+                myTotalForce += dt * ForceFromFluid;
+                myTotalTorque += dt * (voxelCenter - myMassCenter).cross(ForceFromFluid);
+            }//end for all active voxels
+        }//end for all leaves
     }//End operator()
 
     void join(const rigid_pressure_force_reducer& other) {
         myTotalForce += other.myTotalForce;
         myTotalTorque += other.myTotalTorque;
-        myMask->topologyUnion(*other.myMask);
     }
 
 
-    const std::vector<zen::vec3f>& myPosArray;
+    const std::vector<openvdb::BoolTree::LeafNodeType*>& myMaskLeaves;
     const openvdb::Vec3f& myMassCenter;
     const float dt;
 
-    openvdb::BoolGrid::Ptr myMask;
     openvdb::FloatGrid::Ptr myPressure;
     openvdb::Vec3fGrid::Ptr myFaceWeights;
-    openvdb::FloatGrid::Ptr myLiquidSDF;
     openvdb::Vec3f myTotalForce;
     openvdb::Vec3f myTotalTorque;
 };
@@ -151,6 +178,15 @@ struct rigid_pressure_force_reducer {
         //so here simply rasterize it to a temple vdb field mask
         //mask = make vdbFloatGrid(0), transform(dx)
         //for p in pos, ijk = worldToIndex(p), mask(ijk)=1
+        rigid_body_surface_voxel_mask_reducer mask_reducer(pos, liquid_sdf);
+
+        //The grain size here prevent tbb generate too much threads because creating a tree has overhead.
+        //Tune this parameter to get optimal performance
+        tbb::parallel_reduce(tbb::blocked_range<size_t>(0, pos.size(),/*grain size*/1), mask_reducer);
+
+        std::vector<openvdb::BoolTree::LeafNodeType*> mask_leaves;
+        mask_leaves.reserve(mask_reducer.myMask->tree().leafCount());
+        mask_reducer.myMask->tree().getNodes(mask_leaves);
 
         //step2:
         //mathematics: the pressure force a boundary element receives
@@ -185,20 +221,17 @@ struct rigid_pressure_force_reducer {
         //
         // totalForce = dt*force
         // totalTorc = dt*torc;
-
         openvdb::Vec3f masscenter{ massCenter[0],massCenter[1],massCenter[2] };
-        rigid_pressure_force_reducer reducer(pos,
+        rigid_pressure_force_reducer    ForceReducer(mask_leaves,
             masscenter,
             pressure,
-            faceWeights,
-            liquid_sdf, dt);
+            faceWeights, dt);
 
-        //The grain size here prevent tbb generate too much threads because creating a tree has overhead.
-        //Tune this parameter to get optimal performance
-        tbb::parallel_reduce(tbb::blocked_range<size_t>(0, pos.size(),/*grain size*/1), reducer);
+        tbb::parallel_reduce(tbb::blocked_range<size_t>(0, mask_leaves.size(),/*grain size*/1), ForceReducer);
+
         for (int i = 0; i < 3; i++) {
-            totalForce[i] = reducer.myTotalForce[i];
-            totalTorc[i] = reducer.myTotalTorque[i];
+            totalForce[i] = ForceReducer.myTotalForce[i];
+            totalTorc[i] = ForceReducer.myTotalTorque[i];
         }
 
     }
