@@ -456,7 +456,9 @@ struct BulletWorld : zen::IObject {
     }*/
 
     void step(float dt = 1.f / 60.f) {
-        dynamicsWorld->stepSimulation(dt, 10);
+        std::cout<<dt<<std::endl;
+        for(int i=0;i<10;i++)
+            dynamicsWorld->stepSimulation(0.1*dt, 1, 0.1*dt);
 
         /*for (int j = dynamicsWorld->getNumCollisionObjects() - 1; j >= 0; j--)
         {
@@ -524,6 +526,7 @@ struct BulletWorldAddObject : zen::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
         auto object = get_input<BulletObject>("object");
+        object->body->setDamping(0,0);
         world->addObject(std::move(object));
         set_output_ref("world", get_input_ref("world"));
     }
@@ -536,4 +539,19 @@ ZENDEFNODE(BulletWorldAddObject, {
     {"Rigid"},
 });
 
+struct BulletObjectApplyForce:zen::INode {
+    virtual void apply() override {
+        auto object = get_input<BulletObject>("object");
+        auto forceImpulse = get_input<zen::NumericObject>("ForceImpulse")->get<zen::vec3f>();
+        auto torqueImpulse = get_input<zen::NumericObject>("ForceImpulse")->get<zen::vec3f>();
+        object->body->applyCentralImpulse(zen::vec_to_other<btVector3>(forceImpulse));
+        object->body->applyTorqueImpulse(zen::vec_to_other<btVector3>(torqueImpulse));
+    }
+};
 
+ZENDEFNODE(BulletObjectApplyForce, {
+    {"object", "ForceImpulse", "TorqueImpulse"},
+    {},
+    {},
+    {"Rigid"},
+});
