@@ -23,7 +23,13 @@ ZENDEFNODE(ListLength, {
 
 
 struct BeginFor : zen::INode {
-    int m_index = 0, m_count = 1;
+    int m_index;
+    int m_count;
+
+    void initState() {
+        m_index = 0;
+        m_count = 1;
+    }
 
     bool isContinue() const {
         return m_index < m_count;
@@ -69,7 +75,8 @@ struct EndFor : zen::INode {
     virtual void doApply() override {
         auto [sn, ss] = inputBounds.at("FOR");
         auto fore = dynamic_cast<BeginFor *>(sess->nodes.at(sn).get());
-        assert(fore);
+        assert(fore && "EndFor::FOR must be conn to BeginFor::FOR");
+        fore->initState();
         while (fore->isContinue()) {
             push_context();
             zen::INode::doApply();
