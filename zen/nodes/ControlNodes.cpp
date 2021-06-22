@@ -1,4 +1,5 @@
 #include <zen/zen.h>
+#include <zen/ListObject.h>
 #include <zen/NumericObject.h>
 #include <zen/ConditionObject.h>
 #include <cassert>
@@ -35,11 +36,17 @@ struct ContextManagedNode : zen::INode {
 };
 
 
-struct BeginFor : zen::INode {
+struct IBeginFor : zen::INode {
+    virtual bool isContinue() const = 0;
+    virtual void update() = 0;
+};
+
+
+struct BeginFor : IBeginFor {
     int m_index;
     int m_count;
 
-    bool isContinue() const {
+    virtual bool isContinue() const override {
         return m_index < m_count;
     }
 
@@ -49,10 +56,11 @@ struct BeginFor : zen::INode {
         set_output("FOR", std::make_shared<zen::ConditionObject>());
     }
 
-    void update() {
+    virtual void update() override {
         auto ret = std::make_shared<zen::NumericObject>();
-        ret->set(m_index++);
+        ret->set(m_index);
         set_output("index", std::move(ret));
+        m_index++;
     }
 };
 
@@ -67,7 +75,7 @@ ZENDEFNODE(BeginFor, {
 struct EndFor : ContextManagedNode {
     virtual void doApply() override {
         auto [sn, ss] = inputBounds.at("FOR");
-        auto fore = dynamic_cast<BeginFor *>(sess->nodes.at(sn).get());
+        auto fore = dynamic_cast<IBeginFor *>(sess->nodes.at(sn).get());
         if (!fore) {
             printf("EndFor::FOR must be conn to BeginFor::FOR!\n");
             abort();
@@ -87,6 +95,38 @@ struct EndFor : ContextManagedNode {
 ZENDEFNODE(EndFor, {
     {"FOR"},
     {},
+    {},
+    {"list"},
+});
+
+
+struct BeginForEach : IBeginFor {
+    int m_index;
+    std::shared_ptr<zen::ListObject> m_list;
+
+    virtual bool isContinue() const override {
+        return m_index < m_list->arr.size();
+    }
+
+    virtual void apply() override {
+        m_index = 0;
+        m_list = get_input<zen::ListObject>("list");
+        set_output("FOR", std::make_shared<zen::ConditionObject>());
+    }
+
+    virtual void update() override {
+        auto ret = std::make_shared<zen::NumericObject>();
+        ret->set(m_index);
+        set_output("index", std::move(ret));
+        auto obj = m_list->arr[m_index];
+        set_output("object", std::move(obj));
+        m_index++;
+    }
+};
+
+ZENDEFNODE(BeginForEach, {
+    {"list"},
+    {"object", "index", "FOR"},
     {},
     {"list"},
 });
