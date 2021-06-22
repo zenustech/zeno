@@ -940,12 +940,20 @@ class QDMEditMenu(QMenu):
             action.setShortcut(shortcut)
             self.addAction(action)
 
+class QDMGraphicsSceneView(QDMGraphicsView):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self._scene = QDMGraphicsScene()
+        self._scene.record()
+        self._scene.setContentChanged(False)
+        self.setScene(self._scene)
+
+        self.current_path = None
 
 class NodeEditor(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-
-        self.current_path = None
 
         self.setWindowTitle('Node Editor')
 
@@ -956,13 +964,8 @@ class NodeEditor(QWidget):
         self.menubar = self.initMenu()
         self.layout.addWidget(self.menubar)
 
-        self.view = QDMGraphicsView(self)
+        self.view = QDMGraphicsSceneView(self)
         self.layout.addWidget(self.view)
-
-        self.scene = QDMGraphicsScene()
-        self.scene.record()
-        self.scene.setContentChanged(False)
-        self.view.setScene(self.scene)
 
         self.initExecute()
         self.initShortcuts()
@@ -970,11 +973,20 @@ class NodeEditor(QWidget):
 
         self.handleEnvironParams()
 
+    def currentScene(self):
+        return self.view._scene
+
+    def currentPath(self):
+        return self.view._scene.current_path
+
+    def setCurrentPath(self, path):
+        self.view._scene.current_path = path
+
     def handleEnvironParams(self):
         if os.environ.get('ZEN_OPEN'):
             path = os.environ['ZEN_OPEN']
             self.do_open(path)
-            self.current_path = path
+            self.setCurrentPath(path)
 
         if os.environ.get('ZEN_DOEXEC'):
             print('ZEN_DOEXEC found, direct execute')
@@ -1018,7 +1030,7 @@ class NodeEditor(QWidget):
         self.button_kill.clicked.connect(self.on_kill) 
 
     def refreshDescriptors(self):
-        self.scene.setDescriptors(zenapi.getDescriptors())
+        self.currentScene().setDescriptors(zenapi.getDescriptors())
 
     def on_add(self):
         pos = QPointF(0, 0)
@@ -1035,26 +1047,26 @@ class NodeEditor(QWidget):
 
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
-        graph = self.scene.dumpGraph()
+        graph = self.currentScene().dumpGraph()
         go(zenapi.launchGraph, graph, nframes)
 
     def on_delete(self):
-        itemList = self.scene.selectedItems()
+        itemList = self.currentScene().selectedItems()
         if not itemList: return
         for item in itemList:
             item.remove()
-        self.scene.record()
+        self.currentScene().record()
 
     def menuTriggered(self, act):
         name = act.text()
         if name == '&New':
             if not self.confirm_discard('New'):
                 return
-            self.scene.newGraph()
-            self.scene.history_stack.init_state()
-            self.scene.record()
-            self.scene.setContentChanged(False)
-            self.current_path = None
+            self.currentScene().newGraph()
+            self.currentScene().history_stack.init_state()
+            self.currentScene().record()
+            self.currentScene().setContentChanged(False)
+            self.setCurrentPath(None)
 
         elif name == '&Open':
             if not self.confirm_discard('Open'):
@@ -1063,30 +1075,30 @@ class NodeEditor(QWidget):
                     '', 'Zensim Graph File(*.zsg);; All Files(*);;')
             if path != '':
                 self.do_open(path)
-                self.current_path = path
+                self.setCurrentPath(path)
 
-        elif name == 'Save &as' or (name == '&Save' and self.current_path is None):
+        elif name == 'Save &as' or (name == '&Save' and self.currentPath() is None):
             path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
                     '', 'Zensim Graph File(*.zsg);; All Files(*);;')
             if path != '':
                 self.do_save(path)
-                self.current_path = path
+                self.setCurrentPath(path)
 
         elif name == '&Save':
-            self.do_save(self.current_path)
+            self.do_save(self.currentPath())
 
         elif name == 'Undo':
-            self.scene.undo()
+            self.currentScene().undo()
 
         elif name == 'Redo':
-            self.scene.redo()
+            self.currentScene().redo()
 
         elif name == 'Duplicate':
-            itemList = self.scene.selectedItems()
+            itemList = self.currentScene().selectedItems()
             for i in itemList:
                 i.setSelected(False)
             itemList = [n for n in itemList if isinstance(n, QDMGraphicsNode)]
-            nodes = self.scene.dumpGraph(itemList)
+            nodes = self.currentScene().dumpGraph(itemList)
             nid_map = {}
             for nid in nodes:
                 nid_map[nid] = gen_unique_ident()
@@ -1105,28 +1117,28 @@ class NodeEditor(QWidget):
                         info = None
                     inputs[name] = info
                 new_nodes[nid_map[nid]] = n
-            self.scene.loadGraph(new_nodes, select_all=True)
-            self.scene.record()
+            self.currentScene().loadGraph(new_nodes, select_all=True)
+            self.currentScene().record()
 
     def do_save(self, path):
-        graph = self.scene.dumpGraph()
+        graph = self.currentScene().dumpGraph()
         with open(path, 'w') as f:
             json.dump(graph, f)
-        self.scene.setContentChanged(False)
+        self.currentScene().setContentChanged(False)
 
     def do_open(self, path):
         with open(path, 'r') as f:
             graph = json.load(f)
-        self.scene.newGraph()
-        self.scene.history_stack.init_state()
-        self.scene.loadGraph(graph)
-        self.scene.record()
-        self.scene.setContentChanged(False)
+        self.currentScene().newGraph()
+        self.currentScene().history_stack.init_state()
+        self.currentScene().loadGraph(graph)
+        self.currentScene().record()
+        self.currentScene().setContentChanged(False)
 
     def confirm_discard(self, title):
         if os.environ.get('ZEN_OPEN'):
             return True
-        if self.scene.contentChanged:
+        if self.currentScene().contentChanged:
             flag = QMessageBox.question(self, title, 'Discard unsaved changes?',
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             return flag == QMessageBox.Yes
