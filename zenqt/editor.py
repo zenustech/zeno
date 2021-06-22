@@ -964,14 +964,32 @@ class NodeEditor(QWidget):
         self.menubar = self.initMenu()
         self.layout.addWidget(self.menubar)
 
+        self.mdi = QMdiArea()
+        self.mdi.setViewMode(QMdiArea.TabbedView)
+        self.mdi.setDocumentMode(True)
+        self.mdi.setTabsClosable(True)
+        self.mdi.setTabsMovable(True)
+        self.layout.addWidget(self.mdi)
+
+        # 向子窗口中添加控件
         self.view = QDMGraphicsSceneView(self)
-        self.layout.addWidget(self.view)
+
+        self.initFlag = False
 
         self.initExecute()
         self.initShortcuts()
         self.refreshDescriptors()
 
         self.handleEnvironParams()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        if self.initFlag == False:
+            self.initFlag = True
+            sub = QMdiSubWindow()
+            sub.setWidget(self.view)
+            sub.setWindowTitle('SubWindow')
+            self.mdi.addSubWindow(sub)
 
     def currentScene(self):
         return self.view._scene
