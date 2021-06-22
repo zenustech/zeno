@@ -99,7 +99,7 @@ ZENDEFNODE(PrimitiveToBulletMesh, {
 });
 
 struct PrimitiveConvexDecomposition : zen::INode {
-    virtual void listapply() override {
+    virtual void apply() override {
         auto prim = get_input<zen::PrimitiveObject>("prim");
         auto &pos = prim->attr<zen::vec3f>("pos");
 

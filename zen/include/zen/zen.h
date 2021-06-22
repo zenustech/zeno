@@ -97,13 +97,12 @@ public:
     ZENAPI INode();
     ZENAPI ~INode();
 
-    ZENAPI void doApply();
     ZENAPI void doComplete();
     ZENAPI virtual void complete();
 
+    ZENAPI virtual void doApply();
 protected:
-    ZENAPI virtual void apply();
-    ZENAPI virtual void listapply();
+    ZENAPI virtual void apply() = 0;
 
     ZENAPI bool has_input(std::string const &id) const;
 

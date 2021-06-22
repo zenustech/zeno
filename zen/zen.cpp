@@ -123,7 +123,7 @@ ZENAPI void INode::doApply() {
     }
 
     if (ok) {
-        listapply();
+        apply();
     }
 
     for (auto const &[ds, bound]: inputBounds) {
@@ -141,12 +141,6 @@ ZENAPI void INode::doApply() {
 
     set_output("DST", std::make_unique<zen::ConditionObject>());
 }
-
-ZENAPI void INode::listapply() {
-    apply();
-}
-
-ZENAPI void INode::apply() {}
 
 ZENAPI bool INode::has_input(std::string const &id) const {
     return inputs.find(id) != inputs.end();
