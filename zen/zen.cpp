@@ -59,22 +59,22 @@ ZENAPI INode::~INode() = default;
 ZENAPI void Session::refObject(
     std::string const &id) {
     int n = ++objectRefs[id];
-    //printf("RO %s %d\n", id.c_str(), n);
+    printf("RO %s %d\n", id.c_str(), n);
 }
 ZENAPI void Session::refSocket(
     std::string const &sn, std::string const &ss) {
     int n = ++socketRefs[sn + "::" + ss];
-    //printf("RS %s::%s %d\n", sn.c_str(), ss.c_str(), n);
+    printf("RS %s::%s %d\n", sn.c_str(), ss.c_str(), n);
 }
 ZENAPI void Session::derefObject(
     std::string const &id) {
     int n = --objectRefs[id];
-    //printf("DO %s %d\n", id.c_str(), n);
+    printf("DO %s %d\n", id.c_str(), n);
 }
 ZENAPI void Session::derefSocket(
     std::string const &sn, std::string const &ss) {
     int n = --socketRefs[sn + "::" + ss];
-    //printf("DS %s::%s %d\n", sn.c_str(), ss.c_str(), n);
+    printf("DS %s::%s %d\n", sn.c_str(), ss.c_str(), n);
 }
 ZENAPI void Session::gcObject(
     std::string const &sn, std::string const &ss,
@@ -86,7 +86,7 @@ ZENAPI void Session::gcObject(
     }
     int n = objectRefs[id];
     int m = socketRefs[sn + "::" + ss];
-    //printf("GC %s::%s/%s %d/%d\n", sn.c_str(), ss.c_str(), id.c_str(), m, n);
+    printf("GC %s::%s/%s %d/%d\n", sn.c_str(), ss.c_str(), id.c_str(), m, n);
     if (n <= 0 && m <= 0) {
         assert(!n && !m);
         objectRefs.erase(id);
@@ -96,7 +96,7 @@ ZENAPI void Session::gcObject(
 }
 
 ZENAPI void INode::doComplete() {
-    for (auto [ds, bound]: inputBounds) {
+    for (auto const &[ds, bound]: inputBounds) {
         auto [sn, ss] = bound;
         sess->refSocket(sn, ss);
     }
@@ -156,7 +156,7 @@ ZENAPI IValue INode::get_param(std::string const &id) const {
 ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
     auto objid = myname + "::" + id;
     sess->objects[objid] = std::move(obj);
-    outputs[id] = objid;
+    set_output_ref(id, objid);
 }
 
 ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {
