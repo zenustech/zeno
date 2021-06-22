@@ -971,7 +971,6 @@ class NodeEditor(QWidget):
         self.mdi.setTabsMovable(True)
         self.layout.addWidget(self.mdi)
 
-        # 向子窗口中添加控件
         self.view = QDMGraphicsSceneView(self)
 
         self.initFlag = False
@@ -1033,17 +1032,18 @@ class NodeEditor(QWidget):
         validator.setBottom(0)
         self.edit_nframes = QLineEdit(self)
         self.edit_nframes.setValidator(validator)
-        self.edit_nframes.move(20, 40)
+        button_y_offset = 60
+        self.edit_nframes.move(20, button_y_offset)
         self.edit_nframes.resize(30, 30)
         self.edit_nframes.setText('1')
 
         self.button_execute = QPushButton('Execute', self)
-        self.button_execute.move(60, 40)
+        self.button_execute.move(60, button_y_offset)
         self.button_execute.resize(90, 30)
         self.button_execute.clicked.connect(self.on_execute) 
 
         self.button_kill = QPushButton('Kill', self)
-        self.button_kill.move(160, 40)
+        self.button_kill.move(160, button_y_offset)
         self.button_kill.resize(80, 30)
         self.button_kill.clicked.connect(self.on_kill) 
 
