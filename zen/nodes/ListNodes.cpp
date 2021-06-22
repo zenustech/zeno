@@ -14,7 +14,7 @@ struct ListLength : zen::INode {
 
 ZENDEFNODE(ListLength, {
     {"list"},
-    {"index"},
+    {"length"},
     {},
     {"list"},
 });
