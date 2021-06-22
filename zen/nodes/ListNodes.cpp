@@ -31,7 +31,6 @@ struct BeginFor : zen::INode {
 
     virtual void apply() override {
         auto count = get_input<zen::NumericObject>("count")->get<int>();
-        auto list = get_input<zen::ListObject>("list");
 
         auto fore = std::make_shared<zen::ConditionObject>();
         set_output("FOR", std::move(fore));

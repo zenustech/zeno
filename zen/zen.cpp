@@ -155,7 +155,7 @@ ZENAPI IValue INode::get_param(std::string const &id) const {
 
 ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
     auto objid = myname + "::" + id;
-    auto &objlist = sess->objects[objid];
+    sess->objects[objid] = std::move(obj);
     outputs[id] = objid;
 }
 
