@@ -106,8 +106,6 @@ ZENAPI void INode::doComplete() {
 ZENAPI void INode::complete() {}
 
 ZENAPI void INode::doApply() {
-    std::optional<size_t> siz;
-
     for (auto const &[ds, bound]: inputBounds) {
         auto [sn, ss] = bound;
         sess->applyNode(sn);
@@ -131,12 +129,12 @@ ZENAPI void INode::doApply() {
         sess->derefSocket(sn, ss);
         auto ref = inputs.at(ds);
         sess->derefObject(ref);
-        sess->gcObject(sn, ss, ref);
+        //sess->gcObject(sn, ss, ref);
     }
 
     for (auto const &[id, _]: outputs) {
         auto ref = outputs.at(id);
-        sess->gcObject(myname, id, ref);
+        //sess->gcObject(myname, id, ref);
     }
 
     set_output("DST", std::make_unique<zen::ConditionObject>());

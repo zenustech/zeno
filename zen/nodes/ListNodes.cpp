@@ -1,6 +1,7 @@
 #include <zen/zen.h>
 #include <zen/ListObject.h>
 #include <zen/NumericObject.h>
+#include <zen/ConditionObject.h>
 #include <cassert>
 
 
@@ -21,12 +22,6 @@ ZENDEFNODE(ListLength, {
 });
 
 
-struct BeginFor;
-
-struct BeginForObject : zen::IObject {
-    BeginFor *that;
-};
-
 struct BeginFor : zen::INode {
     int m_index = 0, m_count = 1;
 
@@ -37,8 +32,8 @@ struct BeginFor : zen::INode {
     virtual void apply() override {
         auto count = get_input<zen::NumericObject>("count")->get<int>();
         auto list = get_input<zen::ListObject>("list");
-        auto fore = std::make_shared<BeginForObject>();
-        fore->that = this;
+
+        auto fore = std::make_shared<zen::ConditionObject>();
         set_output("FOR", std::move(fore));
 
         auto ret = std::make_shared<zen::NumericObject>();
@@ -74,11 +69,9 @@ struct EndFor : zen::INode {
 
     virtual void doApply() override {
         auto [sn, ss] = inputBounds.at("FOR");
-        sess->applyNode(sn);
-        auto ref = sess->getNodeOutput(sn, ss);
-        auto fore = std::dynamic_pointer_cast<BeginForObject>(
-            sess->getObject(ref));
-        while (fore->that->isContinue()) {
+        auto fore = dynamic_cast<BeginFor *>(sess->nodes.at(sn).get());
+        assert(fore);
+        while (fore->isContinue()) {
             push_context();
             zen::INode::doApply();
             pop_context();
