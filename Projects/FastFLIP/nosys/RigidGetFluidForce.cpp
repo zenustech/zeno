@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/MeshObject.h>
+#include <zen/PrimitiveObject.h>
 #include <zen/NumericObject.h>
 #include <zen/VDBGrid.h>
 #include <omp.h>
@@ -112,7 +113,7 @@ struct rigid_pressure_force_reducer {
             // totalForce = dt*force
             // totalTorc = dt*torc;     
             myTotalForce += dt * ForceFromFluid;
-            myTotalTorque += dt * (myMassCenter - voxelCenter).cross(ForceFromFluid);
+            myTotalTorque += dt * (voxelCenter - myMassCenter).cross(ForceFromFluid);
         }//End loop all points
     }//End operator()
 
@@ -194,7 +195,7 @@ struct rigid_pressure_force_reducer {
 
         //The grain size here prevent tbb generate too much threads because creating a tree has overhead.
         //Tune this parameter to get optimal performance
-        tbb::parallel_reduce(tbb::blocked_range<size_t>(0, pos.size(),/*grain size*/100), reducer);
+        tbb::parallel_reduce(tbb::blocked_range<size_t>(0, pos.size(),/*grain size*/1), reducer);
         for (int i = 0; i < 3; i++) {
             totalForce[i] = reducer.myTotalForce[i];
             totalTorc[i] = reducer.myTotalTorque[i];
@@ -203,7 +204,29 @@ struct rigid_pressure_force_reducer {
     }
     struct RigidGetPressureForce:zen::INode{
         virtual void apply() override {
-
+            auto dt = get_input("dt")->as<zen::NumericObject>()->get<float>();
+            auto massCenter = get_input("MassCenter")->as<zen::NumericObject>()->get<zen::vec3f>();
+            auto rigid = get_input("Rigid")->as<zen::PrimitiveObject>();
+            auto Pressure = get_input("Pressure")->as<zen::VDBFloatGrid>();
+            auto CellFWeight = get_input("CellFWeight")->as<zen::VDBFloat3Grid>();
+            auto LiquidSDF = get_input("LiquidSDF")->as<zen::VDBFloatGrid>();
+            auto TotalForceImpulse = zen::IObject::make<zen::NumericObject>();
+            auto TotalTorcImpulse = zen::IObject::make<zen::NumericObject>();
+            std::vector<zen::vec3f> pos;
+            pos.resize(rigid->attr<zen::vec3f>("pos").size());
+            #pragma omp parallel for
+            for(int i=0;i<rigid->attr<zen::vec3f>("pos").size();i++)
+            {
+                pos[i] = rigid->attr<zen::vec3f>("pos")[i];
+            }
+            zen::vec3f totalForce;
+            zen::vec3f totalTorc;
+            samplePressureForce(dt,pos,Pressure->m_grid,CellFWeight->m_grid,
+                                     LiquidSDF->m_grid, massCenter, totalForce, totalTorc);
+            TotalForceImpulse->set<zen::vec3f>(totalForce);
+            TotalTorcImpulse->set<zen::vec3f>(totalTorc);
+            set_output("TotalForceImpulse", TotalForceImpulse);
+            set_output("TotalTorcImpulse", TotalTorcImpulse);
         }
     };
     static int defRigidGetPressureForce = zen::defNodeClass<RigidGetPressureForce>("RigidGetPressureForce",
