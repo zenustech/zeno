@@ -53,37 +53,6 @@ ZENAPI std::shared_ptr<IObject> IObject::clone() const {
 }
 #endif
 
-ZENAPI ListObject::ListObject() = default;
-ZENAPI ListObject::~ListObject() = default;
-
-ZENAPI bool ListObject::isScalar() const {
-    return !m_isList;
-}
-
-ZENAPI size_t ListObject::arraySize() const {
-    return m_arr.size();
-}
-
-ZENAPI std::optional<size_t> ListObject::broadcast(std::optional<size_t> n) const {
-    if (isScalar()) {
-        return n;
-    } else if (n.has_value()) {
-        return std::min(n.value(), arraySize());
-    } else {
-        return arraySize();
-    }
-}
-
-ZENAPI std::shared_ptr<IObject> const &ListObject::at(size_t i) const {
-    return m_arr[i % m_arr.size()];
-}
-
-ZENAPI void ListObject::set(size_t i, std::shared_ptr<IObject> &&obj) {
-    if (m_arr.size() < i + 1)
-        m_arr.resize(i + 1);
-    m_arr[i] = std::move(obj);
-}
-
 ZENAPI INode::INode() = default;
 ZENAPI INode::~INode() = default;
 
@@ -127,25 +96,20 @@ ZENAPI void Session::gcObject(
 }
 
 ZENAPI void INode::doComplete() {
-    for (auto [ds, bound]: inputBounds) {
-        auto [sn, ss] = bound;
-        sess->refSocket(sn, ss);
-    }
     complete();
 }
 
 ZENAPI void INode::complete() {}
 
 ZENAPI void INode::doApply() {
-    std::optional<size_t> siz;
-
+    for (auto const &[ds, bound]: inputBounds) {
+        auto [sn, ss] = bound;
+        sess->refSocket(sn, ss);
+    }
     for (auto const &[ds, bound]: inputBounds) {
         auto [sn, ss] = bound;
         sess->applyNode(sn);
         auto ref = sess->getNodeOutput(sn, ss);
-        sess->refObject(ref);
-        auto &obj = sess->getObject(ref);
-        siz = obj.broadcast(siz);
         inputs[ds] = ref;
     }
 
@@ -157,10 +121,7 @@ ZENAPI void INode::doApply() {
     }
 
     if (ok) {
-        m_isList = siz.has_value();
-        m_listSize = siz.value_or(1);
-        m_listIdx = 0;
-        listapply();
+        apply();
     }
 
     for (auto const &[ds, bound]: inputBounds) {
@@ -168,57 +129,34 @@ ZENAPI void INode::doApply() {
         sess->derefSocket(sn, ss);
         auto ref = inputs.at(ds);
         sess->derefObject(ref);
-        sess->gcObject(sn, ss, ref);
+        //sess->gcObject(sn, ss, ref);
     }
 
     for (auto const &[id, _]: outputs) {
         auto ref = outputs.at(id);
-        sess->gcObject(myname, id, ref);
+        //sess->gcObject(myname, id, ref);
     }
 
-    m_isList = false;
-    m_listIdx = 0;
     set_output("DST", std::make_unique<zen::ConditionObject>());
 }
-
-ZENAPI void INode::listapply() {
-    for (size_t i = 0; i < m_listSize; i++) {
-        m_listIdx = i;
-        apply();
-    }
-}
-
-ZENAPI void INode::apply() {}
 
 ZENAPI bool INode::has_input(std::string const &id) const {
     return inputs.find(id) != inputs.end();
 }
 
-ZENAPI ListObject &INode::get_input_list(std::string const &id) const {
+ZENAPI std::shared_ptr<IObject> INode::get_input(std::string const &id) const {
     auto ref = safe_at(inputs, id, "input");
     return sess->getObject(ref);
-}
-
-ZENAPI std::shared_ptr<IObject> INode::get_input(
-    std::string const &id) const {
-    return get_input_list(id).at(m_listIdx);
 }
 
 ZENAPI IValue INode::get_param(std::string const &id) const {
     return safe_at(params, id, "param");
 }
 
-ZENAPI ListObject &INode::set_output_list(std::string const &id) {
-    auto objid = myname + "::" + id;
-    auto &objlist = sess->objects[objid];
-    outputs[id] = objid;
-    return objlist;
-}
-
 ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
-    auto &objlist = set_output_list(id);
-    objlist.m_isList = m_isList;
-    objlist.set(m_listIdx, std::move(obj));
+    auto objid = myname + "::" + id;
+    sess->objects[objid] = std::move(obj);
+    set_output_ref(id, objid);
 }
 
 ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {
@@ -239,9 +177,8 @@ ZENAPI std::string Session::getNodeOutput(std::string const &sn, std::string con
     return safe_at(node->outputs, ss, "node output");
 }
 
-ZENAPI ListObject &Session::getObject(std::string const &id) const {
-    auto const &vip = safe_at(objects, id, "object");
-    return const_cast<ListObject &>(vip);
+ZENAPI std::shared_ptr<IObject> const &Session::getObject(std::string const &id) const {
+    return safe_at(objects, id, "object");
 }
 
 ZENAPI void Session::clearNodes() {

@@ -1,86 +1,46 @@
 #include <zen/zen.h>
+#include <zen/ListObject.h>
 #include <zen/NumericObject.h>
-#include <zen/ConditionObject.h>
 
 
-struct ListRange : zen::INode {
-    virtual void listapply() override {
-        int start = 0, stop = 0, step = 1;
-        if (has_input("start"))
-            start = get_input<zen::NumericObject>("start")->get<int>();
-        if (has_input("stop"))
-            stop = get_input<zen::NumericObject>("stop")->get<int>();
-        if (has_input("step"))
-            step = get_input<zen::NumericObject>("step")->get<int>();
-
-        auto &ret = set_output_list("list");
-        ret.m_isList = true;
-        ret.m_arr.clear();
-        for (int i = start; i < stop; i++) {
-            auto val = std::make_shared<zen::NumericObject>();
-            val->set(i);
-            ret.m_arr.push_back(std::move(val));
-        }
+struct ListLength : zen::INode {
+    virtual void apply() override {
+        auto list = get_input<zen::ListObject>("list");
+        auto ret = std::make_shared<zen::NumericObject>();
+        ret->set<int>(list->arr.size());
+        set_output("length", std::move(ret));
     }
 };
 
-ZENDEFNODE(ListRange, {
-    {"start", "stop", "step"},
+ZENDEFNODE(ListLength, {
     {"list"},
+    {"length"},
     {},
     {"list"},
 });
 
 
-struct CloneFillList : zen::INode {
-    virtual void listapply() override {
-        int count = get_input<zen::NumericObject>("count")->get<int>();
-        auto obj = get_input("object");
-
-        auto &ret = set_output_list("list");
-        ret.m_isList = true;
-        ret.m_arr.clear();
-        for (int i = 0; i < count; i++) {
-            auto newobj = obj->clone();
-            if (!newobj) {
-                printf("ERROR: requested object doesn't support clone\n");
-                return;
-            }
-            ret.m_arr.push_back(std::move(newobj));
-        }
+struct ExtractList : zen::INode {
+    virtual void apply() override {
+        auto list = get_input<zen::ListObject>("list");
+        auto index = get_input<zen::NumericObject>("index")->get<int>();
+        auto obj = list->arr[index];
+        set_output("object", std::move(obj));
     }
 };
 
-ZENDEFNODE(CloneFillList, {
-    {"count", "object"},
-    {"list"},
-    {},
-    {"list"},
-});
-
-
-struct TestIsList : zen::INode {
-    virtual void listapply() override {
-        auto &inp = get_input_list("input");
-        auto ret = std::make_shared<zen::ConditionObject>();
-        ret->set(inp.m_isList);
-        set_output("isList", std::move(ret));
-    }
-};
-
-ZENDEFNODE(TestIsList, {
-    {"input"},
-    {"isList"},
+ZENDEFNODE(ExtractList, {
+    {"list", "index"},
+    {"object"},
     {},
     {"list"},
 });
 
 
 struct EmptyList : zen::INode {
-    virtual void listapply() override {
-        auto &ret = set_output_list("list");
-        ret.m_isList = true;
-        ret.m_arr.clear();
+    virtual void apply() override {
+        auto list = std::make_shared<zen::ListObject>();
+        set_output("list", std::move(list));
     }
 };
 
@@ -92,22 +52,16 @@ ZENDEFNODE(EmptyList, {
 });
 
 
-struct ListAppendClone : zen::INode {
-    virtual void listapply() override {
-        auto &inp = get_input_list("input");
+struct AppendList : zen::INode {
+    virtual void apply() override {
+        auto list = get_input<zen::ListObject>("list");
         auto obj = get_input("object");
-        auto newobj = obj->clone();
-        if (!newobj) {
-            printf("ERROR: requested object doesn't support clone\n");
-            return;
-        }
-        inp.m_isList = true;
-        inp.m_arr.push_back(std::move(newobj));
+        list->arr.push_back(std::move(obj));
         set_output_ref("list", get_input_ref("list"));
     }
 };
 
-ZENDEFNODE(ListAppendClone, {
+ZENDEFNODE(AppendList, {
     {"list", "object"},
     {"list"},
     {},
