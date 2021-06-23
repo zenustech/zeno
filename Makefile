@@ -1,4 +1,4 @@
-O=assets/forloop.zsg
+O=assets/forloop2.zsg
 
 default: all run
 
