@@ -18,7 +18,11 @@ def evaluateExpr(expr, frame=None):
     return eval('f' + repr(expr))
 
 
-def runGraphOnce(nodes, frame=None):
+def switchGraph(name):
+    core.switchGraph(name)
+
+
+def loadGraph(nodes, frame=None):
     #core.clearNodes()
 
     for ident in nodes:
@@ -42,6 +46,10 @@ def runGraphOnce(nodes, frame=None):
 
         core.completeNode(ident)
 
+
+def runGraphOnce(nodes, frame=None):
+    loadGraph(nodes, frame)
+
     applies = []
     for ident in nodes:
         data = nodes[ident]
@@ -54,4 +62,10 @@ def dumpDescriptors():
     return core.dumpDescriptors()
 
 
-__all__ = ['runGraph', 'runGraphOnce', 'dumpDescriptors']
+__all__ = [
+    'runGraph',
+    'runGraphOnce',
+    'dumpDescriptors',
+    'switchGraph',
+    'loadGraph',
+]

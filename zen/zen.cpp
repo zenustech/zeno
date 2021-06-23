@@ -223,8 +223,10 @@ ZENAPI void Graph::setNodeParam(std::string const &id, std::string const &par,
 
 
 ZENAPI Session::Session() {
-    graph = std::make_unique<Graph>();
-    graph->sess = this;
+    auto gra = std::make_unique<Graph>();
+    gra->sess = this;
+    currGraph = gra.get();
+    graphs["main"] = std::move(gra);
 }
 
 ZENAPI Session::~Session() = default;
@@ -233,8 +235,12 @@ ZENAPI void Session::_defNodeClass(std::string const &id, std::unique_ptr<INodeC
     nodeClasses[id] = std::move(cls);
 }
 
+ZENAPI void Session::switchGraph(std::string const &name) {
+    currGraph = graphs[name].get();  // auto create if non-exist
+}
+
 ZENAPI Graph &Session::getGraph() const {
-    return *graph;
+    return *currGraph;
 }
 
 ZENAPI std::string Session::dumpDescriptors() const {

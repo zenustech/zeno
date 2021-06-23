@@ -207,6 +207,9 @@ struct Graph {
     std::map<std::string, std::shared_ptr<IObject>> objects;
     std::unique_ptr<Context> ctx;
 
+    std::map<std::string, std::shared_ptr<IObject>> subInputs;
+    std::map<std::string, std::shared_ptr<IObject>> subOutputs;
+
     std::map<std::string, int> objectRefs;
     std::map<std::string, int> socketRefs;
 
@@ -233,12 +236,14 @@ struct Graph {
 
 struct Session {
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
-    std::unique_ptr<Graph> graph;
+    std::map<std::string, std::unique_ptr<Graph>> graphs;
+    Graph *currGraph;
 
     ZENAPI Session();
     ZENAPI ~Session();
 
     ZENAPI Graph &getGraph() const;
+    ZENAPI void switchGraph(std::string const &name);
     ZENAPI std::string dumpDescriptors() const;
     ZENAPI void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
 
@@ -265,6 +270,10 @@ ZENDEPRECATED inline int defNodeClass(std::string const &id, Descriptor const &d
 
 inline std::string dumpDescriptors() {
     return getSession().dumpDescriptors();
+}
+
+inline void switchGraph(std::string const &name) {
+    return getSession().switchGraph(name);
 }
 
 inline void clearNodes() {

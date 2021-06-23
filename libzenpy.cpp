@@ -11,6 +11,7 @@ PYBIND11_MODULE(libzenpy, m) {
     m.def("bindNodeInput", zen::bindNodeInput);
     m.def("setNodeParam", zen::setNodeParam);
     m.def("completeNode", zen::completeNode);
+    m.def("switchGraph", zen::switchGraph);
     m.def("clearNodes", zen::clearNodes);
     m.def("applyNodes", zen::applyNodes);
     m.def("addNode", zen::addNode);

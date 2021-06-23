@@ -8,6 +8,7 @@ import zen
 from multiprocessing import Process
 
 from .descriptor import parse_descriptor_line
+from .preproc import preprocessGraph
 
 
 g_proc = None
@@ -50,6 +51,7 @@ def cleanIOPath():
 
 
 def launchGraph(graph, nframes):
+    graph = preprocessGraph(graph)
     global g_iopath
     cleanIOPath()
     g_iopath = tempfile.mkdtemp(prefix='zenvis-')
