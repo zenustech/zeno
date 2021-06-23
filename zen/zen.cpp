@@ -56,27 +56,27 @@ ZENAPI std::shared_ptr<IObject> IObject::clone() const {
 ZENAPI INode::INode() = default;
 ZENAPI INode::~INode() = default;
 
-ZENAPI void Session::refObject(
+ZENAPI void Graph::refObject(
     std::string const &id) {
     int n = ++objectRefs[id];
     //printf("RO %s %d\n", id.c_str(), n);
 }
-ZENAPI void Session::refSocket(
+ZENAPI void Graph::refSocket(
     std::string const &sn, std::string const &ss) {
     int n = ++socketRefs[sn + "::" + ss];
     //printf("RS %s::%s %d\n", sn.c_str(), ss.c_str(), n);
 }
-ZENAPI void Session::derefObject(
+ZENAPI void Graph::derefObject(
     std::string const &id) {
     int n = --objectRefs[id];
     //printf("DO %s %d\n", id.c_str(), n);
 }
-ZENAPI void Session::derefSocket(
+ZENAPI void Graph::derefSocket(
     std::string const &sn, std::string const &ss) {
     int n = --socketRefs[sn + "::" + ss];
     //printf("DS %s::%s %d\n", sn.c_str(), ss.c_str(), n);
 }
-ZENAPI void Session::gcObject(
+ZENAPI void Graph::gcObject(
     std::string const &sn, std::string const &ss,
     std::string const &id) {
     auto sno = nodes.at(sn).get();
@@ -104,12 +104,12 @@ ZENAPI void INode::complete() {}
 ZENAPI void INode::doApply() {
     for (auto const &[ds, bound]: inputBounds) {
         auto [sn, ss] = bound;
-        sess->refSocket(sn, ss);
+        graph->refSocket(sn, ss);
     }
     for (auto const &[ds, bound]: inputBounds) {
         auto [sn, ss] = bound;
-        sess->applyNode(sn);
-        auto ref = sess->getNodeOutput(sn, ss);
+        graph->applyNode(sn);
+        auto ref = graph->getNodeOutput(sn, ss);
         inputs[ds] = ref;
     }
 
@@ -126,15 +126,15 @@ ZENAPI void INode::doApply() {
 
     for (auto const &[ds, bound]: inputBounds) {
         auto [sn, ss] = bound;
-        sess->derefSocket(sn, ss);
+        graph->derefSocket(sn, ss);
         auto ref = inputs.at(ds);
-        sess->derefObject(ref);
-        //sess->gcObject(sn, ss, ref);
+        graph->derefObject(ref);
+        //graph->gcObject(sn, ss, ref);  // TODO: fix gc on forloop
     }
 
     for (auto const &[id, _]: outputs) {
         auto ref = outputs.at(id);
-        //sess->gcObject(myname, id, ref);
+        //graph->gcObject(myname, id, ref);  // TODO: fix gc on forloop
     }
 
     set_output("DST", std::make_unique<zen::ConditionObject>());
@@ -146,7 +146,7 @@ ZENAPI bool INode::has_input(std::string const &id) const {
 
 ZENAPI std::shared_ptr<IObject> INode::get_input(std::string const &id) const {
     auto ref = safe_at(inputs, id, "input");
-    return sess->getObject(ref);
+    return graph->getObject(ref);
 }
 
 ZENAPI IValue INode::get_param(std::string const &id) const {
@@ -155,12 +155,12 @@ ZENAPI IValue INode::get_param(std::string const &id) const {
 
 ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
     auto objid = myname + "::" + id;
-    sess->objects[objid] = std::move(obj);
+    graph->objects[objid] = std::move(obj);
     set_output_ref(id, objid);
 }
 
 ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {
-    sess->refObject(ref);
+    graph->refObject(ref);
     outputs[id] = ref;
 }
 
@@ -168,38 +168,34 @@ ZENAPI std::string INode::get_input_ref(const std::string &id) const {
     return safe_at(inputs, id, "input");
 }
 
-ZENAPI void Session::_defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls) {
-    nodeClasses[id] = std::move(cls);
-}
-
-ZENAPI std::string Session::getNodeOutput(std::string const &sn, std::string const &ss) const {
+ZENAPI std::string Graph::getNodeOutput(std::string const &sn, std::string const &ss) const {
     auto node = safe_at(nodes, sn, "node");
     return safe_at(node->outputs, ss, "node output");
 }
 
-ZENAPI std::shared_ptr<IObject> const &Session::getObject(std::string const &id) const {
+ZENAPI std::shared_ptr<IObject> const &Graph::getObject(std::string const &id) const {
     return safe_at(objects, id, "object");
 }
 
-ZENAPI void Session::clearNodes() {
+ZENAPI void Graph::clearNodes() {
     nodes.clear();
     objects.clear();
 }
 
-ZENAPI void Session::addNode(std::string const &cls, std::string const &id) {
+ZENAPI void Graph::addNode(std::string const &cls, std::string const &id) {
     if (nodes.find(id) != nodes.end())
         return;  // no add twice, to prevent output object invalid
-    auto node = safe_at(nodeClasses, cls, "node class")->new_instance();
-    node->sess = this;
+    auto node = safe_at(sess->nodeClasses, cls, "node class")->new_instance();
+    node->graph = this;
     node->myname = id;
     nodes[id] = std::move(node);
 }
 
-ZENAPI void Session::completeNode(std::string const &id) {
+ZENAPI void Graph::completeNode(std::string const &id) {
     safe_at(nodes, id, "node")->doComplete();
 }
 
-ZENAPI void Session::applyNode(std::string const &id) {
+ZENAPI void Graph::applyNode(std::string const &id) {
     if (ctx->visited.find(id) != ctx->visited.end()) {
         return;
     }
@@ -207,7 +203,7 @@ ZENAPI void Session::applyNode(std::string const &id) {
     safe_at(nodes, id, "node")->doApply();
 }
 
-ZENAPI void Session::applyNodes(std::vector<std::string> const &ids) {
+ZENAPI void Graph::applyNodes(std::vector<std::string> const &ids) {
     ctx = std::make_unique<Context>();
     for (auto const &id: ids) {
         applyNode(id);
@@ -215,14 +211,38 @@ ZENAPI void Session::applyNodes(std::vector<std::string> const &ids) {
     ctx = nullptr;
 }
 
-ZENAPI void Session::bindNodeInput(std::string const &dn, std::string const &ds,
+ZENAPI void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss) {
     safe_at(nodes, dn, "node")->inputBounds[ds] = std::pair(sn, ss);
 }
 
-ZENAPI void Session::setNodeParam(std::string const &id, std::string const &par,
+ZENAPI void Graph::setNodeParam(std::string const &id, std::string const &par,
         IValue const &val) {
     safe_at(nodes, id, "node")->params[par] = val;
+}
+
+
+ZENAPI Session::Session() {
+    switchGraph("main");
+}
+
+ZENAPI Session::~Session() = default;
+
+ZENAPI void Session::_defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls) {
+    nodeClasses[id] = std::move(cls);
+}
+
+ZENAPI void Session::switchGraph(std::string const &name) {
+    if (graphs.find(name) == graphs.end()) {
+        auto subg = std::make_unique<zen::Graph>();
+        subg->sess = this;
+        graphs[name] = std::move(subg);
+    }
+    currGraph = graphs.at(name).get();
+}
+
+ZENAPI Graph &Session::getGraph() const {
+    return *currGraph;
 }
 
 ZENAPI std::string Session::dumpDescriptors() const {

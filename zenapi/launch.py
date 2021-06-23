@@ -49,12 +49,12 @@ def cleanIOPath():
         shutil.rmtree(iopath, ignore_errors=True)
 
 
-def launchGraph(graph, nframes):
+def launchScene(scene, nframes):
     global g_iopath
     cleanIOPath()
     g_iopath = tempfile.mkdtemp(prefix='zenvis-')
     print('IOPath:', g_iopath)
-    _launch_mproc(zen.runGraph, graph, nframes, g_iopath)
+    _launch_mproc(zen.runScene, scene, nframes, g_iopath)
 
 
 def getDescriptors():
@@ -68,6 +68,6 @@ def getDescriptors():
 
 __all__ = [
     'getDescriptors',
-    'launchGraph',
+    'launchScene',
     'killProcess',
 ]

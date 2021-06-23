@@ -79,7 +79,7 @@ struct IObjectClone : Base {
     }
 };
 
-struct Session;
+struct Graph;
 
 struct Context {
     std::set<std::string> visited;
@@ -87,7 +87,8 @@ struct Context {
 
 struct INode {
 public:
-    Session *sess = nullptr;
+    Graph *graph = nullptr;
+
     std::string myname;
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
     std::map<std::string, std::string> inputs;
@@ -197,24 +198,20 @@ struct ImplNodeClass : INodeClass {
     }
 };
 
-struct Session {
-    std::map<std::string, std::shared_ptr<IObject>> objects;
+struct Session;
+
+struct Graph {
+    Session *sess = nullptr;
+
     std::map<std::string, std::unique_ptr<INode>> nodes;
-    std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
+    std::map<std::string, std::shared_ptr<IObject>> objects;
     std::unique_ptr<Context> ctx;
+
+    std::map<std::string, std::shared_ptr<IObject>> subInputs;
+    std::map<std::string, std::shared_ptr<IObject>> subOutputs;
 
     std::map<std::string, int> objectRefs;
     std::map<std::string, int> socketRefs;
-
-    ZENAPI void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
-    ZENAPI std::string getNodeOutput(std::string const &sn, std::string const &ss) const;
-    ZENAPI std::shared_ptr<IObject> const &getObject(std::string const &id) const;
-
-    template <class F>
-    int defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {
-        _defNodeClass(id, std::make_unique<ImplNodeClass<F>>(ctor, desc));
-        return 1;
-    }
 
     ZENAPI void refObject(std::string const &id);
     ZENAPI void refSocket(std::string const &sn,
@@ -231,9 +228,30 @@ struct Session {
     ZENAPI void completeNode(std::string const &id);
     ZENAPI void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss);
-    ZENAPI std::string dumpDescriptors() const;
     ZENAPI void setNodeParam(std::string const &id, std::string const &par,
         IValue const &val);
+    ZENAPI std::string getNodeOutput(std::string const &sn, std::string const &ss) const;
+    ZENAPI std::shared_ptr<IObject> const &getObject(std::string const &id) const;
+};
+
+struct Session {
+    std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
+    std::map<std::string, std::unique_ptr<Graph>> graphs;
+    Graph *currGraph;
+
+    ZENAPI Session();
+    ZENAPI ~Session();
+
+    ZENAPI Graph &getGraph() const;
+    ZENAPI void switchGraph(std::string const &name);
+    ZENAPI std::string dumpDescriptors() const;
+    ZENAPI void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
+
+    template <class F>
+    int defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {
+        _defNodeClass(id, std::make_unique<ImplNodeClass<F>>(ctor, desc));
+        return 1;
+    }
 };
 
 
@@ -254,30 +272,34 @@ inline std::string dumpDescriptors() {
     return getSession().dumpDescriptors();
 }
 
+inline void switchGraph(std::string const &name) {
+    return getSession().switchGraph(name);
+}
+
 inline void clearNodes() {
-    return getSession().clearNodes();
+    return getSession().getGraph().clearNodes();
 }
 
 inline void addNode(std::string const &cls, std::string const &id) {
-    return getSession().addNode(cls, id);
+    return getSession().getGraph().addNode(cls, id);
 }
 
 inline void completeNode(std::string const &id) {
-    return getSession().completeNode(id);
+    return getSession().getGraph().completeNode(id);
 }
 
 inline void applyNodes(std::vector<std::string> const &ids) {
-    return getSession().applyNodes(ids);
+    return getSession().getGraph().applyNodes(ids);
 }
 
 inline void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss) {
-    return getSession().bindNodeInput(dn, ds, sn, ss);
+    return getSession().getGraph().bindNodeInput(dn, ds, sn, ss);
 }
 
 inline void setNodeParam(std::string const &id, std::string const &par,
         IValue const &val) {
-    return getSession().setNodeParam(id, par, val);
+    return getSession().getGraph().setNodeParam(id, par, val);
 }
 
 
