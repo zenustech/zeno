@@ -461,7 +461,7 @@ class QDMGraphicsPath(QGraphicsPathItem):
         painter.drawPath(self.path())
 
     def boundingRect(self):
-        padding_x = 300 
+        padding_x = style['node_width'] + 50
         padding_y = 500 
         x0 = min(self.srcPos.x(), self.dstPos.x())
         y0 = min(self.srcPos.y(), self.dstPos.y())
