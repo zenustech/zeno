@@ -1,7 +1,7 @@
 ####################################################
 # FUN FACT: DID U KNOW THAT MICROSOFT LOVES LINUX? #
 ####################################################
-if (MSVC)
+if (MSVC)  # we must use this to fix bullet3 on win
     set(BUILD_SHARED_LIBS OFF)
     add_compile_options(
             $<$<CONFIG:>:/MT> #---------|
@@ -12,6 +12,7 @@ endif()
 ####################################################
 # FUN FACT: DID U KNOW THAT MICROSOFT BUYS GITHUB? #
 ####################################################
+#set(CMAKE_INSTALL_PREFIX ${zen_INSTALL_DIR})
 
 add_subdirectory(bullet3)
 add_subdirectory(HACD)
