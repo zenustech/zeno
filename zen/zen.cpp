@@ -96,6 +96,7 @@ ZENAPI void Graph::gcObject(
 }
 
 ZENAPI void INode::doComplete() {
+    set_output("DST", std::make_unique<zen::ConditionObject>());
     complete();
 }
 
@@ -129,15 +130,13 @@ ZENAPI void INode::doApply() {
         graph->derefSocket(sn, ss);
         auto ref = inputs.at(ds);
         graph->derefObject(ref);
-        //graph->gcObject(sn, ss, ref);  // TODO: fix gc on forloop
+        graph->gcObject(sn, ss, ref);  // TODO: fix gc on forloop
     }
 
     for (auto const &[id, _]: outputs) {
         auto ref = outputs.at(id);
-        //graph->gcObject(myname, id, ref);  // TODO: fix gc on forloop
+        graph->gcObject(myname, id, ref);  // TODO: fix gc on forloop
     }
-
-    set_output("DST", std::make_unique<zen::ConditionObject>());
 }
 
 ZENAPI bool INode::has_input(std::string const &id) const {
