@@ -993,9 +993,9 @@ class NodeEditor(QWidget):
             self.mdi.addSubWindow(sub)
 
     def currentScene(self):
-        actWin = self.mdi.activeSubWindow()
+        actWin = self.mdi.currentSubWindow()
         if actWin:
-            s = self.mdi.activeSubWindow().widget()._scene
+            s = self.mdi.currentSubWindow().widget()._scene
         else:
             s = self.view._scene
         return s
