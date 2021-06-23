@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/GlobalState.h>
+#include <cassert>
 
 
 struct SubInput : zen::INode {
@@ -39,7 +40,7 @@ struct Subgraph : zen::INode {
         auto name = get_param<std::string>("name");
 
         auto subg = graph->sess->graphs.at(name).get();
-        subg->sess = graph->sess;
+        assert(subg->sess == graph->sess);
 
         for (auto const &[key, ref]: inputs) {
             auto obj = graph->getObject(ref);

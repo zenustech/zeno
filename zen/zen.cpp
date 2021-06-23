@@ -236,7 +236,12 @@ ZENAPI void Session::_defNodeClass(std::string const &id, std::unique_ptr<INodeC
 }
 
 ZENAPI void Session::switchGraph(std::string const &name) {
-    currGraph = graphs[name].get();  // auto create if non-exist
+    if (graphs.find(name) == graphs.end()) {
+        auto subg = std::make_unique<zen::Graph>();
+        subg->sess = this;
+        graphs[name] = std::move(subg);
+    }
+    currGraph = graphs.at(name).get();
 }
 
 ZENAPI Graph &Session::getGraph() const {
