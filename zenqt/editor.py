@@ -992,7 +992,12 @@ class NodeEditor(QWidget):
             self.mdi.addSubWindow(sub)
 
     def currentScene(self):
-        return self.view._scene
+        actWin = self.mdi.activeSubWindow()
+        if actWin:
+            s = self.mdi.activeSubWindow().widget()._scene
+        else:
+            s = self.view._scene
+        return s
 
     def currentPath(self):
         return self.view._scene.current_path
@@ -1103,6 +1108,7 @@ class NodeEditor(QWidget):
             sub.setWindowTitle('SubWindow')
             self.mdi.addSubWindow(sub)
             view.show()
+            self.refreshDescriptors()
 
         elif name == 'Save &as' or (name == '&Save' and self.currentPath() is None):
             path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
