@@ -993,11 +993,11 @@ class NodeEditor(QWidget):
             self.mdi.addSubWindow(sub)
 
     def currentScene(self):
-        actWin = self.mdi.activeSubWindow()
-        if actWin:
-            s = self.mdi.activeSubWindow().widget()._scene
-        else:
+        lst = self.mdi.subWindowList(QMdiArea.WindowOrder.ActivationHistoryOrder)
+        if lst == []:
             s = self.view._scene
+        else:
+            s = lst[-1].widget()._scene
         return s
 
     def currentPath(self):
