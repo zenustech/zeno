@@ -451,8 +451,6 @@ class QDMGraphicsPath(QGraphicsPathItem):
         self.dstPos = dstPos
 
     def paint(self, painter, styleOptions, widget=None):
-        self.updatePath()
-
         color = 'selected_color' if self.isSelected() else 'line_color'
         pen = QPen(QColor(style[color]))
         pen.setWidth(style['line_width'])
@@ -782,6 +780,12 @@ class QDMGraphicsNode(QGraphicsItem):
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
         self.scene().moved = True
+        for socket in self.inputs.values():
+            for edge in socket.edges:
+                edge.updatePath()
+        for socket in self.outputs.values():
+            for edge in socket.edges:
+                edge.updatePath()
 
     def remove(self):
         for socket in list(self.inputs.values()):
@@ -1031,7 +1035,8 @@ class NodeEditor(QWidget):
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
         graph = self.scene.dumpGraph()
-        go(zenapi.launchGraph, graph, nframes)
+        scene = {'main': graph}
+        go(zenapi.launchScene, scene, nframes)
 
     def on_delete(self):
         itemList = self.scene.selectedItems()

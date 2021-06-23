@@ -222,10 +222,7 @@ ZENAPI void Graph::setNodeParam(std::string const &id, std::string const &par,
 
 
 ZENAPI Session::Session() {
-    auto gra = std::make_unique<Graph>();
-    gra->sess = this;
-    currGraph = gra.get();
-    graphs["main"] = std::move(gra);
+    switchGraph("main");
 }
 
 ZENAPI Session::~Session() = default;
