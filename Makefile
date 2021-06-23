@@ -1,4 +1,4 @@
-O=assets/subgraph.zsg
+O=assets/forloop.zsg
 
 default: all run
 
