@@ -1,24 +1,27 @@
+import json
+
 from . import core
 
 
 
-def runGraph(nodes, nframes, iopath):
+def runScene(scene, nframes, iopath):
     core.setIOPath(iopath)
     for frameid in range(nframes):
         print('FRAME:', frameid)
+        global frame; frame = frameid  # todo: xinxin happy
         core.frameBegin()
         while core.substepBegin():
-            runGraphOnce(nodes, frameid)
+            runSceneOnce(scene)
             core.substepEnd()
         core.frameEnd()
     print('EXITING')
 
 
-def evaluateExpr(expr, frame=None):
+def evaluateExpr(expr):
     return eval('f' + repr(expr))
 
 
-def runGraphOnce(nodes, frame=None):
+def loadGraph(nodes):
     #core.clearNodes()
 
     for ident in nodes:
@@ -37,21 +40,34 @@ def runGraphOnce(nodes, frame=None):
 
         for name, value in params.items():
             if type(value) is str:
-                value = evaluateExpr(value, frame)
+                value = evaluateExpr(value)
             core.setNodeParam(ident, name, value)
 
         core.completeNode(ident)
 
+
+def runSceneOnce(graphs):
+    for name, nodes in graphs.items():
+        core.switchGraph(name)
+        loadGraph(nodes)
+
+    nodes = graphs['main']
+    # 'main' graph use 'OUT' as applies, subgraphs use 'SubOutput' as applies
     applies = []
     for ident in nodes:
         data = nodes[ident]
         if 'OUT' in data['options']:
             applies.append(ident)
 
+    core.switchGraph('main')
     core.applyNodes(applies)
 
 def dumpDescriptors():
     return core.dumpDescriptors()
 
 
-__all__ = ['runGraph', 'runGraphOnce', 'dumpDescriptors']
+__all__ = [
+    'runScene',
+    'runSceneOnce',
+    'dumpDescriptors',
+]

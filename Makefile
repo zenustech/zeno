@@ -1,4 +1,4 @@
-O=assets/rigid3.zsg
+O=assets/numeric2.zsg
 
 default: all run
 

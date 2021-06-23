@@ -1,9 +1,13 @@
 cmake_minimum_required(VERSION 3.12)
 project(zeno LANGUAGES C CXX)
 
+if (NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE Release)
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 
 add_subdirectory(external/pybind11)
 add_subdirectory(external/glad)

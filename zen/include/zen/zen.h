@@ -79,30 +79,16 @@ struct IObjectClone : Base {
     }
 };
 
-struct Session;
+struct Graph;
 
 struct Context {
     std::set<std::string> visited;
 };
 
-struct ListObject {
-    std::vector<std::shared_ptr<IObject>> m_arr;
-    bool m_isList = false;
-
-    ZENAPI ListObject();
-    ZENAPI ~ListObject();
-
-    ZENAPI bool isScalar() const;
-    ZENAPI size_t arraySize() const;
-    ZENAPI size_t broadcast(size_t n) const;
-    ZENAPI std::optional<size_t> broadcast(std::optional<size_t> n) const;
-    ZENAPI std::shared_ptr<IObject> const &at(size_t i) const;
-    ZENAPI void set(size_t i, std::shared_ptr<IObject> &&obj);
-};
-
 struct INode {
 public:
-    Session *sess = nullptr;
+    Graph *graph = nullptr;
+
     std::string myname;
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
     std::map<std::string, std::string> inputs;
@@ -112,21 +98,14 @@ public:
     ZENAPI INode();
     ZENAPI ~INode();
 
-    ZENAPI void doApply();
     ZENAPI void doComplete();
-    ZENAPI virtual void complete();
 
+    ZENAPI virtual void doApply();
 protected:
-    ZENAPI virtual void apply();
-    ZENAPI virtual void listapply();
-
-    bool m_isList = false;
-    size_t m_listSize = 1;
-    size_t m_listIdx = 0;
+    ZENAPI virtual void complete();
+    ZENAPI virtual void apply() = 0;
 
     ZENAPI bool has_input(std::string const &id) const;
-
-    ZENAPI ListObject &get_input_list(std::string const &id) const;
 
     ZENAPI std::shared_ptr<IObject> get_input(std::string const &id) const;
 
@@ -143,8 +122,6 @@ protected:
     T get_param(std::string const &id) const {
         return std::get<T>(get_param(id));
     }
-
-    ZENAPI ListObject &set_output_list(std::string const &id);
 
     ZENAPI void set_output(std::string const &id, std::shared_ptr<IObject> &&obj);
 
@@ -221,24 +198,20 @@ struct ImplNodeClass : INodeClass {
     }
 };
 
-struct Session {
-    std::map<std::string, ListObject> objects;
+struct Session;
+
+struct Graph {
+    Session *sess = nullptr;
+
     std::map<std::string, std::unique_ptr<INode>> nodes;
-    std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
+    std::map<std::string, std::shared_ptr<IObject>> objects;
     std::unique_ptr<Context> ctx;
+
+    std::map<std::string, std::shared_ptr<IObject>> subInputs;
+    std::map<std::string, std::shared_ptr<IObject>> subOutputs;
 
     std::map<std::string, int> objectRefs;
     std::map<std::string, int> socketRefs;
-
-    ZENAPI void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
-    ZENAPI std::string getNodeOutput(std::string const &sn, std::string const &ss) const;
-    ZENAPI ListObject &getObject(std::string const &id) const;
-
-    template <class F>
-    int defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {
-        _defNodeClass(id, std::make_unique<ImplNodeClass<F>>(ctor, desc));
-        return 1;
-    }
 
     ZENAPI void refObject(std::string const &id);
     ZENAPI void refSocket(std::string const &sn,
@@ -255,9 +228,30 @@ struct Session {
     ZENAPI void completeNode(std::string const &id);
     ZENAPI void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss);
-    ZENAPI std::string dumpDescriptors() const;
     ZENAPI void setNodeParam(std::string const &id, std::string const &par,
         IValue const &val);
+    ZENAPI std::string getNodeOutput(std::string const &sn, std::string const &ss) const;
+    ZENAPI std::shared_ptr<IObject> const &getObject(std::string const &id) const;
+};
+
+struct Session {
+    std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
+    std::map<std::string, std::unique_ptr<Graph>> graphs;
+    Graph *currGraph;
+
+    ZENAPI Session();
+    ZENAPI ~Session();
+
+    ZENAPI Graph &getGraph() const;
+    ZENAPI void switchGraph(std::string const &name);
+    ZENAPI std::string dumpDescriptors() const;
+    ZENAPI void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
+
+    template <class F>
+    int defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {
+        _defNodeClass(id, std::make_unique<ImplNodeClass<F>>(ctor, desc));
+        return 1;
+    }
 };
 
 
@@ -278,30 +272,34 @@ inline std::string dumpDescriptors() {
     return getSession().dumpDescriptors();
 }
 
+inline void switchGraph(std::string const &name) {
+    return getSession().switchGraph(name);
+}
+
 inline void clearNodes() {
-    return getSession().clearNodes();
+    return getSession().getGraph().clearNodes();
 }
 
 inline void addNode(std::string const &cls, std::string const &id) {
-    return getSession().addNode(cls, id);
+    return getSession().getGraph().addNode(cls, id);
 }
 
 inline void completeNode(std::string const &id) {
-    return getSession().completeNode(id);
+    return getSession().getGraph().completeNode(id);
 }
 
 inline void applyNodes(std::vector<std::string> const &ids) {
-    return getSession().applyNodes(ids);
+    return getSession().getGraph().applyNodes(ids);
 }
 
 inline void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss) {
-    return getSession().bindNodeInput(dn, ds, sn, ss);
+    return getSession().getGraph().bindNodeInput(dn, ds, sn, ss);
 }
 
 inline void setNodeParam(std::string const &id, std::string const &par,
         IValue const &val) {
-    return getSession().setNodeParam(id, par, val);
+    return getSession().getGraph().setNodeParam(id, par, val);
 }
 
 

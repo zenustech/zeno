@@ -1,4 +1,5 @@
 #include <zen/zen.h>
+#include <zen/ListObject.h>
 #include <zen/NumericObject.h>
 #include <zen/PrimitiveObject.h>
 #include <btBulletDynamicsCommon.h>
@@ -98,7 +99,7 @@ ZENDEFNODE(PrimitiveToBulletMesh, {
 });
 
 struct PrimitiveConvexDecomposition : zen::INode {
-    virtual void listapply() override {
+    virtual void apply() override {
         auto prim = get_input<zen::PrimitiveObject>("prim");
         auto &pos = prim->attr<zen::vec3f>("pos");
 
@@ -133,16 +134,13 @@ struct PrimitiveConvexDecomposition : zen::INode {
         hacd.Compute();
         size_t nClusters = hacd.GetNClusters();
 
-        auto &listPrim = set_output_list("listPrim");
-        listPrim.m_isList = true;
-        listPrim.m_arr.clear();
+        auto listPrim = std::make_shared<zen::ListObject>();
+        listPrim->arr.clear();
 
         printf("hacd got %d clusters\n", nClusters);
-
         for (size_t c = 0; c < nClusters; c++) {
             size_t nPoints = hacd.GetNPointsCH(c);
             size_t nTriangles = hacd.GetNTrianglesCH(c);
-
             printf("hacd cluster %d have %d points, %d triangles\n",
                 c, nPoints, nTriangles);
 
@@ -169,8 +167,10 @@ struct PrimitiveConvexDecomposition : zen::INode {
                 outprim->tris[i] = zen::vec3i(p.X(), p.Y(), p.Z());
             }
 
-            listPrim.m_arr.push_back(std::move(outprim));
+            listPrim->arr.push_back(std::move(outprim));
         }
+
+        set_output("listPrim", std::move(listPrim));
     }
 };
 

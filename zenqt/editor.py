@@ -453,8 +453,6 @@ class QDMGraphicsPath(QGraphicsPathItem):
         self.dstPos = dstPos
 
     def paint(self, painter, styleOptions, widget=None):
-        self.updatePath()
-
         color = 'selected_color' if self.isSelected() else 'line_color'
         pen = QPen(QColor(style[color]))
         pen.setWidth(style['line_width'])
@@ -534,9 +532,11 @@ class QDMGraphicsEdge(QDMGraphicsPath):
 
     def remove(self):
         if self.srcSocket is not None:
-            self.srcSocket.edges.remove(self)
+            if self in self.srcSocket.edges:
+                self.srcSocket.edges.remove(self)
         if self.dstSocket is not None:
-            self.dstSocket.edges.remove(self)
+            if self in self.dstSocket.edges:
+                self.dstSocket.edges.remove(self)
 
         self.scene().removeItem(self)
 
@@ -782,6 +782,12 @@ class QDMGraphicsNode(QGraphicsItem):
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
         self.scene().moved = True
+        for socket in self.inputs.values():
+            for edge in socket.edges:
+                edge.updatePath()
+        for socket in self.outputs.values():
+            for edge in socket.edges:
+                edge.updatePath()
 
     def remove(self):
         for socket in list(self.inputs.values()):
@@ -1069,14 +1075,18 @@ class NodeEditor(QWidget):
 
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
+
         graph = self.currentScene().dumpGraph()
-        go(zenapi.launchGraph, graph, nframes)
+        scene = {'main': graph}
+        go(zenapi.launchScene, scene, nframes)
+
 
     def on_delete(self):
         itemList = self.currentScene().selectedItems()
         if not itemList: return
         for item in itemList:
-            item.remove()
+            if item.scene() is not None:
+                item.remove()
         self.currentScene().record()
 
     def menuTriggered(self, act):
