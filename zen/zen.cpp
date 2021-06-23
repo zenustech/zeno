@@ -96,6 +96,7 @@ ZENAPI void Graph::gcObject(
 }
 
 ZENAPI void INode::doComplete() {
+    set_output("DST", std::make_unique<zen::ConditionObject>());
     complete();
 }
 
@@ -136,8 +137,6 @@ ZENAPI void INode::doApply() {
         auto ref = outputs.at(id);
         graph->gcObject(myname, id, ref);  // TODO: fix gc on forloop
     }
-
-    set_output("DST", std::make_unique<zen::ConditionObject>());
 }
 
 ZENAPI bool INode::has_input(std::string const &id) const {
