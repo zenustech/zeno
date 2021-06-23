@@ -103,6 +103,8 @@ class QDMGraphicsScene(QGraphicsScene):
         self.mmb_press = False
         self.contentChanged = False
 
+        self.current_path = None
+
     def setContentChanged(self, flag):
         self.contentChanged = flag
 
@@ -950,7 +952,6 @@ class QDMGraphicsSceneView(QDMGraphicsView):
         self._scene.setContentChanged(False)
         self.setScene(self._scene)
 
-        self.current_path = None
 
 class NodeEditor(QWidget):
     def __init__(self, parent=None):
@@ -1000,10 +1001,10 @@ class NodeEditor(QWidget):
         return s
 
     def currentPath(self):
-        return self.view._scene.current_path
+        return self.currentScene().current_path
 
     def setCurrentPath(self, path):
-        self.view._scene.current_path = path
+        self.currentScene().current_path = path
 
     def handleEnvironParams(self):
         if os.environ.get('ZEN_OPEN'):
