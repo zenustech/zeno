@@ -460,14 +460,14 @@ class QDMGraphicsPath(QGraphicsPathItem):
         painter.setBrush(Qt.NoBrush)
         painter.drawPath(self.path())
 
-    '''
     def boundingRect(self):
+        padding_x = 300 
+        padding_y = 500 
         x0 = min(self.srcPos.x(), self.dstPos.x())
         y0 = min(self.srcPos.y(), self.dstPos.y())
-        x1 = max(self.srcPos.x(), self.dstPos.x())
-        y1 = max(self.srcPos.y(), self.dstPos.y())
-        return QRectF(x0, y0, x1 - x0, y1 - y0)
-    '''
+        w =  abs(self.srcPos.x() - self.dstPos.x())
+        h =  abs(self.srcPos.y() - self.dstPos.y())
+        return QRectF(x0 - padding_x, y0 - padding_y, w + padding_x * 2, h + padding_y * 2)
 
     def updatePath(self):
         path = QPainterPath(self.srcPos)
