@@ -532,9 +532,11 @@ class QDMGraphicsEdge(QDMGraphicsPath):
 
     def remove(self):
         if self.srcSocket is not None:
-            self.srcSocket.edges.remove(self)
+            if self in self.srcSocket.edges:
+                self.srcSocket.edges.remove(self)
         if self.dstSocket is not None:
-            self.dstSocket.edges.remove(self)
+            if self in self.dstSocket.edges:
+                self.dstSocket.edges.remove(self)
 
         self.scene().removeItem(self)
 
@@ -1035,7 +1037,8 @@ class NodeEditor(QWidget):
         itemList = self.scene.selectedItems()
         if not itemList: return
         for item in itemList:
-            item.remove()
+            if item.scene() is not None:
+                item.remove()
         self.scene.record()
 
     def menuTriggered(self, act):
