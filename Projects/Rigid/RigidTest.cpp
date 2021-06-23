@@ -293,7 +293,7 @@ struct BulletObject : zen::IObject {
         btVector3 localInertia(0, 0, 0);
         if (mass != 0)
             colShape->shape->calculateLocalInertia(mass, localInertia);
-
+        
         myMotionState = std::make_unique<btDefaultMotionState>(trans);
         btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState.get(), colShape->shape.get(), localInertia);
         body = std::make_unique<btRigidBody>(rbInfo);
@@ -543,7 +543,7 @@ struct BulletObjectApplyForce:zen::INode {
     virtual void apply() override {
         auto object = get_input<BulletObject>("object");
         auto forceImpulse = get_input<zen::NumericObject>("ForceImpulse")->get<zen::vec3f>();
-        auto torqueImpulse = get_input<zen::NumericObject>("ForceImpulse")->get<zen::vec3f>();
+        auto torqueImpulse = get_input<zen::NumericObject>("TorqueImpulse")->get<zen::vec3f>();
         object->body->applyCentralImpulse(zen::vec_to_other<btVector3>(forceImpulse));
         object->body->applyTorqueImpulse(zen::vec_to_other<btVector3>(torqueImpulse));
     }

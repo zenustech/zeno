@@ -4,7 +4,7 @@
 #include <zen/VDBGrid.h>
 #include <omp.h>
 #include "FLIP_vdb.h"
-// I finally decide put this P2G_Advector into FastFLIP, to reduce modularizing effort..
+
 //static void Advect(float dt, openvdb::points::PointDataGrid::Ptr m_particles, openvdb::Vec3fGrid::Ptr m_velocity,
 //				   openvdb::Vec3fGrid::Ptr m_velocity_after_p2g, float pic_component, int RK_ORDER);
 namespace zen{

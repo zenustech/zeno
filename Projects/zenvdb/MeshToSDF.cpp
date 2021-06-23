@@ -32,7 +32,12 @@ struct MeshToSDF : zen::INode{
     {
         triangles[i] = openvdb::Vec3I(i*3, i*3+1, i*3+2);
     }
-    result->m_grid = openvdb::tools::meshToSignedDistanceField<openvdb::FloatGrid>(*openvdb::math::Transform::createLinearTransform(h),points, triangles, quads, 4, 4);
+    auto vdbtransform = openvdb::math::Transform::createLinearTransform(h);
+    if(std::get<std::string>(get_param("type"))==std::string("vertex"))
+    {
+        vdbtransform->postTranslate(openvdb::Vec3d{ -0.5,-0.5,-0.5 }*double(h));
+    }
+    result->m_grid = openvdb::tools::meshToSignedDistanceField<openvdb::FloatGrid>(*vdbtransform,points, triangles, quads, 4, 4);
     openvdb::tools::signedFloodFill(result->m_grid->tree());
     set_output("sdf", result);
   }
@@ -45,6 +50,7 @@ static int defMeshToSDF = zen::defNodeClass<MeshToSDF>("MeshToSDF",
         "sdf",
     }, /* params: */ {
     {"float", "voxel_size", "0.08 0"},
+    {"string", "type", "vertex"},
     }, /* category: */ {
     "openvdb",
     }});
@@ -72,7 +78,12 @@ struct PrimitiveToSDF : zen::INode{
     {
         triangles[i] = openvdb::Vec3I(mesh->tris[i][0], mesh->tris[i][1], mesh->tris[i][2]);
     }
-    result->m_grid = openvdb::tools::meshToSignedDistanceField<openvdb::FloatGrid>(*openvdb::math::Transform::createLinearTransform(h),points, triangles, quads, 4, 4);
+    auto vdbtransform = openvdb::math::Transform::createLinearTransform(h);
+    if(std::get<std::string>(get_param("type"))==std::string("vertex"))
+    {
+        vdbtransform->postTranslate(openvdb::Vec3d{ -0.5,-0.5,-0.5 }*double(h));
+    }
+    result->m_grid = openvdb::tools::meshToSignedDistanceField<openvdb::FloatGrid>(*vdbtransform,points, triangles, quads, 4, 4);
     openvdb::tools::signedFloodFill(result->m_grid->tree());
     set_output("sdf", result);
   }
@@ -84,7 +95,8 @@ static int defPrimitiveToSDF = zen::defNodeClass<PrimitiveToSDF>("PrimitiveToSDF
     }, /* outputs: */ {
         "sdf",
     }, /* params: */ {
-    {"float", "voxel_size", "0.08 0"},
+        {"float", "voxel_size", "0.08 0"},
+        {"string", "type", "vertex"},
     }, /* category: */ {
     "openvdb",
     }});
