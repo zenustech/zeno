@@ -1,3 +1,5 @@
+import json
+
 from . import core
 
 
@@ -18,11 +20,33 @@ def evaluateExpr(expr, frame=None):
     return eval('f' + repr(expr))
 
 
-def switchGraph(name):
-    core.switchGraph(name)
+g_subgraph_loaded = set()
+
+
+def preprocessGraph(nodes):
+    for ident, data in nodes.items():
+        name = data['name']
+        if name == 'Subgraph':
+            params = data['params']
+            name = params['name']
+
+            if name not in g_subgraph_loaded:
+                # load the subgraph if not loaded yet
+                with open(name, 'r') as f:
+                    subg = json.load(f)
+
+                core.switchGraph(name)
+                loadGraph(subg)
+                core.switchGraph('main')
+
+                g_subgraph_loaded.add(name)
+
+    return nodes
 
 
 def loadGraph(nodes, frame=None):
+    nodes = preprocessGraph(nodes)
+
     #core.clearNodes()
 
     for ident in nodes:
@@ -48,6 +72,8 @@ def loadGraph(nodes, frame=None):
 
 
 def runGraphOnce(nodes, frame=None):
+    # 'main' graph use 'OUT' as applies, subgraphs use 'SubOutput' as applies
+
     loadGraph(nodes, frame)
 
     applies = []
@@ -66,6 +92,5 @@ __all__ = [
     'runGraph',
     'runGraphOnce',
     'dumpDescriptors',
-    'switchGraph',
     'loadGraph',
 ]
