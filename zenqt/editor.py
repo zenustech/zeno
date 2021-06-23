@@ -969,7 +969,7 @@ class NodeEditor(QWidget):
         self.mdi = QMdiArea()
         self.mdi.setViewMode(QMdiArea.TabbedView)
         self.mdi.setDocumentMode(True)
-        # self.mdi.setTabsClosable(True)
+        self.mdi.setTabsClosable(True)
         self.mdi.setTabsMovable(True)
         self.layout.addWidget(self.mdi)
 
@@ -987,10 +987,7 @@ class NodeEditor(QWidget):
         super().showEvent(event)
         if self.initFlag == False:
             self.initFlag = True
-            sub = QMdiSubWindow()
-            sub.setWidget(self.view)
-            sub.setWindowTitle('SubWindow')
-            self.mdi.addSubWindow(sub)
+            self.mdi.addSubWindow(self.view)
 
     def currentScene(self):
         actWin = self.mdi.currentSubWindow()
@@ -1103,11 +1100,8 @@ class NodeEditor(QWidget):
                 self.setCurrentPath(path)
 
         elif name == 'NewTab':
-            sub = QMdiSubWindow()
             view = QDMGraphicsSceneView(self)
-            sub.setWidget(view)
-            sub.setWindowTitle('SubWindow')
-            self.mdi.addSubWindow(sub)
+            self.mdi.addSubWindow(view)
             view.show()
             self.refreshDescriptors()
 
