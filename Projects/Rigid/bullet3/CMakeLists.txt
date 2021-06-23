@@ -26,7 +26,7 @@ SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG")
 OPTION(USE_DOUBLE_PRECISION "Use double precision"	OFF)
 SET(CLAMP_VELOCITIES "0" CACHE STRING "Clamp rigid bodies' velocity to this value, if larger than zero. Useful to prevent floating point errors or in general runaway velocities in complex scenarios")
 OPTION(USE_GRAPHICAL_BENCHMARK "Use Graphical Benchmark" OFF)
-OPTION(BUILD_SHARED_LIBS "Use shared libraries" ON)
+OPTION(BUILD_SHARED_LIBS "Use shared libraries" OFF)
 OPTION(USE_SOFT_BODY_MULTI_BODY_DYNAMICS_WORLD "Use btSoftMultiBodyDynamicsWorld" ON)
 OPTION(USE_OPENVR "Use OpenVR for virtual reality" OFF)
 

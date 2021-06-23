@@ -1,8 +1,8 @@
 ####################################################
 # FUN FACT: DID U KNOW THAT MICROSOFT LOVES LINUX? #
 ####################################################
-set(BUILD_SHARED_LIBS OFF)
 if (MSVC)
+    set(BUILD_SHARED_LIBS OFF)
     add_compile_options(
             $<$<CONFIG:>:/MT> #---------|
             $<$<CONFIG:Debug>:/MTd> #---|-- Statically link the runtime libraries
