@@ -18,13 +18,13 @@ struct ContextManagedNode : zen::INode {
 
     void push_context() {
         assert(!m_ctx);
-        m_ctx = std::move(sess->ctx);
-        sess->ctx = std::make_unique<zen::Context>(*m_ctx);
+        m_ctx = std::move(graph->ctx);
+        graph->ctx = std::make_unique<zen::Context>(*m_ctx);
     }
 
     void pop_context() {
         assert(m_ctx);
-        sess->ctx = std::move(m_ctx);
+        graph->ctx = std::move(m_ctx);
     }
 
     auto scoped_push_context() {
@@ -68,19 +68,19 @@ ZENDEFNODE(BeginFor, {
     {"count"},
     {"index", "FOR"},
     {},
-    {"list"},
+    {"control"},
 });
 
 
 struct EndFor : ContextManagedNode {
     virtual void doApply() override {
         auto [sn, ss] = inputBounds.at("FOR");
-        auto fore = dynamic_cast<IBeginFor *>(sess->nodes.at(sn).get());
+        auto fore = dynamic_cast<IBeginFor *>(graph->nodes.at(sn).get());
         if (!fore) {
             printf("EndFor::FOR must be conn to BeginFor::FOR!\n");
             abort();
         }
-        sess->applyNode(sn);
+        graph->applyNode(sn);
         while (fore->isContinue()) {
             fore->update();
             push_context();
@@ -96,7 +96,7 @@ ZENDEFNODE(EndFor, {
     {"FOR"},
     {},
     {},
-    {"list"},
+    {"control"},
 });
 
 
@@ -128,5 +128,5 @@ ZENDEFNODE(BeginForEach, {
     {"list"},
     {"object", "index", "FOR"},
     {},
-    {"list"},
+    {"control"},
 });
