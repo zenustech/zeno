@@ -1,4 +1,4 @@
-O=assets/subgraph.zsg
+O=assets/numeric2.zsg
 
 default: all run
 

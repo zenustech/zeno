@@ -1029,7 +1029,8 @@ class NodeEditor(QWidget):
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
         graph = self.scene.dumpGraph()
-        go(zenapi.launchGraph, graph, nframes)
+        scene = {'main': graph}
+        go(zenapi.launchScene, scene, nframes)
 
     def on_delete(self):
         itemList = self.scene.selectedItems()
