@@ -2,8 +2,6 @@
 # FUN FACT: DID U KNOW THAT MICROSOFT LOVES LINUX? #
 ####################################################
 set(BUILD_SHARED_LIBS OFF)
-set(CMAKE_DEBUG_POSTFIX "")
-set(CMAKE_RELEASE_POSTFIX "")
 if (MSVC)
     add_compile_options(
             $<$<CONFIG:>:/MT> #---------|
