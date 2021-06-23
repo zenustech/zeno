@@ -906,6 +906,7 @@ class QDMFileMenu(QMenu):
 
         acts = [
                 ('&New', QKeySequence.New),
+                ('NewTab', 'ctrl+shift+t'),
                 ('&Open', QKeySequence.Open),
                 ('&Save', QKeySequence.Save),
                 ('Save &as', QKeySequence.SaveAs),
@@ -967,7 +968,7 @@ class NodeEditor(QWidget):
         self.mdi = QMdiArea()
         self.mdi.setViewMode(QMdiArea.TabbedView)
         self.mdi.setDocumentMode(True)
-        self.mdi.setTabsClosable(True)
+        # self.mdi.setTabsClosable(True)
         self.mdi.setTabsMovable(True)
         self.layout.addWidget(self.mdi)
 
@@ -1094,6 +1095,14 @@ class NodeEditor(QWidget):
             if path != '':
                 self.do_open(path)
                 self.setCurrentPath(path)
+
+        elif name == 'NewTab':
+            sub = QMdiSubWindow()
+            view = QDMGraphicsSceneView(self)
+            sub.setWidget(view)
+            sub.setWindowTitle('SubWindow')
+            self.mdi.addSubWindow(sub)
+            view.show()
 
         elif name == 'Save &as' or (name == '&Save' and self.currentPath() is None):
             path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
