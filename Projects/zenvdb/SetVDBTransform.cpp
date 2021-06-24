@@ -1,4 +1,5 @@
 
+#include <openvdb/openvdb.h>
 #include <zen/zen.h>
 #include <zen/VDBGrid.h>
 #include <openvdb/tools/GridTransformer.h>
@@ -95,7 +96,9 @@ struct CombineVDB : zen::INode{
     std::string targetType = get_input("FieldA")->as<VDBGrid>()->getType();
     std::string sourceType = get_input("FieldB")->as<VDBGrid>()->getType();
     std::shared_ptr<VDBFloatGrid> dataf;
+    openvdb::FloatGrid::Ptr dataft;
     std::shared_ptr<VDBFloat3Grid> dataf3;
+    openvdb::Vec3fGrid::Ptr dataf3t;
     
     if(targetType == sourceType && targetType==std::string("FloatGrid"))
     {
@@ -105,6 +108,7 @@ struct CombineVDB : zen::INode{
         auto target = get_input("FieldA")->as<VDBFloatGrid>();
         auto source = get_input("FieldB")->as<VDBFloatGrid>();
         dataf->m_grid = target->m_grid->deepCopy();
+        dataft = source->m_grid->deepCopy();
         if(OpType==std::string("CSGUnion"))
         {
           openvdb::tools::csgUnion(*(dataf->m_grid), *(source->m_grid));
@@ -117,6 +121,7 @@ struct CombineVDB : zen::INode{
         {
           openvdb::tools::csgDifference(*(dataf->m_grid), *(source->m_grid));
         }
+        source->m_grid = dataft->deepCopy();
         set_output("FieldOut", dataf);
     }
     

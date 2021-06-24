@@ -8,6 +8,7 @@
 #include <openvdb/tools/Morphology.h>
 #include <openvdb/tools/MeshToVolume.h>
 #include <zen/ParticlesObject.h>
+#include <zen/PrimitiveObject.h>
 #include <openvdb/openvdb.h>
 #include <openvdb/points/PointConversion.h>
 namespace zen {
@@ -75,7 +76,37 @@ openvdb::points::PointDataGrid::Ptr particleArrayToGrid(ParticlesObject* particl
     return grid;
 }
 
+struct PrimToVDBPointDataGrid : zen::INode {
+  virtual void apply() override {
+    auto dx = std::get<float>(get_param("dx"));
+    auto prims = get_input("ParticleGeo")->as<PrimitiveObject>();
+    ParticlesObject* particles = new ParticlesObject();
+    particles->pos.resize(prims->attr<zen::vec3f>("pos").size());
+    particles->vel.resize(prims->attr<zen::vec3f>("pos").size());
+    #pragma omp parallel for
+    for(int i=0;i<prims->attr<zen::vec3f>("pos").size();i++)
+    {
+        particles->pos[i] = zen::vec_to_other<glm::vec3>(prims->attr<zen::vec3f>("pos")[i]);
+        particles->vel[i] = glm::vec3(0,0,0);
+        if(prims->has_attr("vel"))
+            particles->vel[i] = zen::vec_to_other<glm::vec3>(prims->attr<zen::vec3f>("vel")[i]);
+    }
+    auto data = zen::IObject::make<VDBPointsGrid>();
+    data->m_grid = particleArrayToGrid(particles, dx);
+    set_output("Particles", data);
+  }
+};
 
+static int defPrimToVDBPointDataGrid = zen::defNodeClass<PrimToVDBPointDataGrid>("PrimToVDBPointDataGrid",
+    { /* inputs: */ {
+        "ParticleGeo", 
+    }, /* outputs: */ {
+        "Particles",
+    }, /* params: */ {
+    {"float", "dx", "0.0"},
+    }, /* category: */ {
+        "primitive",
+    }});
 
 struct SetVDBPointDataGrid : zen::INode {
   virtual void apply() override {
@@ -97,6 +128,7 @@ static int defSetVDBPointDataGrid = zen::defNodeClass<SetVDBPointDataGrid>("SetV
     }, /* category: */ {
         "particles",
     }});
+
 
 }
 
