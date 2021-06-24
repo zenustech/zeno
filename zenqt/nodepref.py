@@ -6,31 +6,6 @@ class QDMGraphicsNode_Subgraph(QDMGraphicsNode):
         super().__init__(parent)  # todo: support dyn-node-desc
 
 
-class QDMGraphicsTextEdit(QGraphicsProxyWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.widget = QPushButton()
-        self.widget.clicked.connect(self.on_click)
-        self.setWidget(self.widget)
-        self.setChecked(False)
-
-    def on_click(self):
-        self.setChecked(not self.checked)
-
-    def setChecked(self, checked):
-        self.checked = checked
-        if self.checked:
-            self.widget.setStyleSheet('background-color: {}; color: {}'.format(
-                style['button_selected_color'], style['button_selected_text_color']))
-        else:
-            self.widget.setStyleSheet('background-color: {}; color: {}'.format(
-                style['button_color'], style['button_text_color']))
-
-    def setText(self, text):
-        self.widget.setText(text)
-
-
 class QDMGraphicsNode_Comment(QDMGraphicsNode):
     def __init__(self, parent=None):
         super().__init__(parent)
