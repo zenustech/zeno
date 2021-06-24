@@ -918,6 +918,7 @@ class QDMFileMenu(QMenu):
                 ('&New', QKeySequence.New),
                 ('&Open', QKeySequence.Open),
                 ('&Save', QKeySequence.Save),
+                ('&Import', 'ctrl+shift+o'),
                 ('Save &as', QKeySequence.SaveAs),
         ]
 
@@ -1082,6 +1083,14 @@ class NodeEditor(QWidget):
             prog[name] = graph
         return prog
 
+    def importProgram(self, prog):
+        if 'main' not in prog:  # backward-compatbility
+            prog = {'main': prog}
+        graph = prog['main']
+        self.scene.newGraph()
+        self.scene.loadGraph(graph)
+        self.scene.record()
+
     def loadProgram(self, prog):
         self.clearScenes()
         if 'main' not in prog:  # backward-compatbility
@@ -1109,6 +1118,7 @@ class NodeEditor(QWidget):
         if name == '&New':
             if not self.confirm_discard('New'):
                 return
+            # TODO: wrong here! should be self.newProgram()
             self.scene.newGraph()
             self.scene.history_stack.init_state()
             self.scene.record()
@@ -1133,6 +1143,12 @@ class NodeEditor(QWidget):
 
         elif name == '&Save':
             self.do_save(self.current_path)
+
+        elif name == '&Import':
+            path, kind = QFileDialog.getOpenFileName(self, 'File to Open',
+                    '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+            if path != '':
+                self.do_import(path)
 
         elif name == 'Undo':
             self.scene.undo()
@@ -1173,6 +1189,11 @@ class NodeEditor(QWidget):
             json.dump(prog, f)
         for scene in self.scenes.values():
             scene.setContentChanged(False)
+
+    def do_import(self, path):
+        with open(path, 'r') as f:
+            prog = json.load(f)
+        self.importProgram(prog)
 
     def do_open(self, path):
         with open(path, 'r') as f:
