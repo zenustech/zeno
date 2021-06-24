@@ -1,4 +1,4 @@
-O=assets/testforgc.zsg
+#O=assets/testforgc.zsg
 
 default: all run
 

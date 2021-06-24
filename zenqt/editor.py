@@ -1074,11 +1074,24 @@ class NodeEditor(QWidget):
     def on_kill(self):
         zenapi.killProcess()
 
+    def dumpProgram(self):
+        prog = {}
+        for name, scene in self.scenes.items():
+            graph = scene.dumpGraph()
+            prog[name] = graph
+        return prog
+
+    def loadProgram(self, prog):
+        self.clearScenes()
+        for name, graph in prog.items():
+            self.switchScene(name)
+            self.scene.loadGraph(graph)
+        self.switchScene('main')
+
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
-        graph = self.scene.dumpGraph()
-        scene = {'main': graph}
-        go(zenapi.launchScene, scene, nframes)
+        prog = self.dumpProgram()
+        go(zenapi.launchScene, prog, nframes)
 
     def on_delete(self):
         itemList = self.scene.selectedItems()
@@ -1152,19 +1165,15 @@ class NodeEditor(QWidget):
             self.scene.record()
 
     def do_save(self, path):
-        graph = self.scene.dumpGraph()
+        prog = self.dumpProgram()
         with open(path, 'w') as f:
-            json.dump(graph, f)
-        self.scene.setContentChanged(False)
+            json.dump(prog, f)
+        #self.scene.setContentChanged(False)  #TODO: self.setContentChanged
 
     def do_open(self, path):
         with open(path, 'r') as f:
-            graph = json.load(f)
-        self.scene.newGraph()
-        self.scene.history_stack.init_state()
-        self.scene.loadGraph(graph)
-        self.scene.record()
-        self.scene.setContentChanged(False)
+            prog = json.load(f)
+        self.loadProgram(prog)
 
     def confirm_discard(self, title):
         if os.environ.get('ZEN_OPEN'):
