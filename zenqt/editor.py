@@ -241,9 +241,11 @@ class QDMGraphicsScene(QGraphicsScene):
 
     def undo(self):
         self.history_stack.undo()
+        self.setContentChanged(True)
 
     def redo(self):
         self.history_stack.redo()
+        self.setContentChanged(True)
 
     def mousePressEvent(self, event):
         if self.mmb_press:
