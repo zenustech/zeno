@@ -1117,6 +1117,16 @@ class NodeEditor(QWidget):
         self.clearScenes()
         self.switchScene('main')
 
+    def getOpenFileName():
+        path, kind = QFileDialog.getOpenFileName(self, 'File to Open',
+                '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+        return path
+
+    def getSaveFileName():
+        path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
+                '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+        return path
+
     def menuTriggered(self, act):
         name = act.text()
         if name == '&New':
@@ -1128,16 +1138,14 @@ class NodeEditor(QWidget):
         elif name == '&Open':
             if not self.confirm_discard('Open'):
                 return
-            path, kind = QFileDialog.getOpenFileName(self, 'File to Open',
-                    '', 'Zensim Graph File(*.zsg);; All Files(*);;')
-            if path != '':
+            path = self.getOpenFileName()
+            if path:
                 self.do_open(path)
                 self.current_path = path
 
         elif name == 'Save &as' or (name == '&Save' and self.current_path is None):
-            path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
-                    '', 'Zensim Graph File(*.zsg);; All Files(*);;')
-            if path != '':
+            path = self.getSaveFileName()
+            if path:
                 self.do_save(path)
                 self.current_path = path
 
@@ -1145,8 +1153,7 @@ class NodeEditor(QWidget):
             self.do_save(self.current_path)
 
         elif name == '&Import':
-            path, kind = QFileDialog.getOpenFileName(self, 'File to Open',
-                    '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+            path = self.getOpenFileName()
             if path != '':
                 self.do_import(path)
 
