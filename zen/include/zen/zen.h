@@ -223,7 +223,7 @@ struct Graph {
     ZENAPI ~Graph();
 
     ZENAPI void refObject(std::string const &id);
-    ZENAPI void refSocket(std::string const &sn,
+    ZENAPI void compRefSocket(std::string const &sn,
         std::string const &ss);
     ZENAPI void derefObject(std::string const &id);
     ZENAPI void derefSocket(std::string const &sn,

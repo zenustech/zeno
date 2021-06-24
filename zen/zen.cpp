@@ -66,7 +66,7 @@ ZENAPI void Graph::refObject(
     int n = ++ctx->objectRefs[id];
     //printf("%p RO %s %d\n", ctx.get(), id.c_str(), n);
 }
-ZENAPI void Graph::refSocket(
+ZENAPI void Graph::compRefSocket(
     std::string const &sn, std::string const &ss) {
     auto key = sn + "::" + ss;
     int n = ++socketRefs[key];
@@ -121,7 +121,7 @@ ZENAPI void INode::doComplete() {
     outputs["DST"] = "_AUTO_DST";
     for (auto const &[ds, bound]: inputBounds) {
         auto [sn, ss] = bound;
-        graph->refSocket(sn, ss);
+        graph->compRefSocket(sn, ss);
     }
     complete();
 }
