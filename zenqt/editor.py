@@ -1042,24 +1042,24 @@ class NodeEditor(QWidget):
         self.button_kill.clicked.connect(self.on_kill) 
 
         self.edit_graphname = QLineEdit(self)
-        self.edit_graphname.move(20, 90)
-        self.edit_graphname.resize(60, 30)
+        self.edit_graphname.move(270, 40)
+        self.edit_graphname.resize(70, 30)
         self.edit_graphname.setText('main')
 
         self.button_switch = QPushButton('Switch', self)
-        self.button_switch.move(90, 90)
+        self.button_switch.move(350, 40)
         self.button_switch.resize(80, 30)
         self.button_switch.clicked.connect(self.on_switch_graph)
 
         self.button_delete = QPushButton('Delete', self)
-        self.button_delete.move(180, 90)
+        self.button_delete.move(440, 40)
         self.button_delete.resize(80, 30)
         self.button_delete.clicked.connect(self.on_delete_graph)
 
     def on_switch_graph(self):
         name = self.edit_graphname.text()
         self.switchScene(name)
-        print(list(self.scenes.keys()))
+        print('all subgraphs are:', list(self.scenes.keys()))
 
     def on_delete_graph(self):
         self.deleteCurrScene()
@@ -1083,6 +1083,8 @@ class NodeEditor(QWidget):
 
     def loadProgram(self, prog):
         self.clearScenes()
+        if 'main' not in prog:  # backward-compatbility
+            prog = {'main': prog}
         for name, graph in prog.items():
             self.switchScene(name)
             self.scene.loadGraph(graph)
@@ -1168,7 +1170,7 @@ class NodeEditor(QWidget):
         prog = self.dumpProgram()
         with open(path, 'w') as f:
             json.dump(prog, f)
-        for scene in self.scenes.value():
+        for scene in self.scenes.values():
             scene.setContentChanged(False)
 
     def do_open(self, path):
