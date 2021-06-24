@@ -979,21 +979,22 @@ class NodeEditor(QWidget):
         self.initShortcuts()
         self.initDescriptors()
 
-        self.newScene()
+        self.scenes = {}
+        self.switchScene('main')
         self.handleEnvironParams()
 
-    def on_swap(self):
-        if hasattr(self, '_oldscene'):
-            self.view.setScene(self._oldscene)
-        else:
-            self._oldscene = self.scene
-            self.newScene()
+    def clearScenes(self):
+        self.scenes.clear()
 
-    def newScene(self):
-        scene = QDMGraphicsScene()
-        scene.record()
-        scene.setContentChanged(False)
-        scene.setDescriptors(self.descs)
+    def switchScene(self, name):
+        if name not in self.scenes:
+            scene = QDMGraphicsScene()
+            scene.record()
+            scene.setContentChanged(False)
+            scene.setDescriptors(self.descs)
+            self.scenes[name] = scene
+        else:
+            scene = self.scenes[name]
         self.view.setScene(scene)
 
     @property
@@ -1036,10 +1037,28 @@ class NodeEditor(QWidget):
         self.button_kill.resize(80, 30)
         self.button_kill.clicked.connect(self.on_kill) 
 
-        self.button_swap = QPushButton('Swap', self)
-        self.button_swap.move(260, 40)
-        self.button_swap.resize(80, 30)
-        self.button_swap.clicked.connect(self.on_swap) 
+        self.edit_graphname = QLineEdit(self)
+        self.edit_graphname.move(20, 90)
+        self.edit_graphname.resize(60, 30)
+        self.edit_graphname.setText('main')
+
+        self.button_switch = QPushButton('Switch', self)
+        self.button_switch.move(90, 90)
+        self.button_switch.resize(80, 30)
+        self.button_switch.clicked.connect(self.on_switch_graph)
+
+        self.button_delete = QPushButton('Delete', self)
+        self.button_delete.move(180, 90)
+        self.button_delete.resize(80, 30)
+        self.button_delete.clicked.connect(self.on_delete_graph)
+
+    def on_switch_graph(self):
+        name = self.edit_graphname.text()
+        self.switchScene(name)
+        print('switch', name)
+
+    def on_delete_graph(self):
+        self.deleteCurrScene()
 
     def initDescriptors(self):
         self.descs = zenapi.getDescriptors()
