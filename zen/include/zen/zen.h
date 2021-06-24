@@ -198,7 +198,6 @@ struct Session;
 
 struct Context {
     std::set<std::string> visited;
-
     std::map<std::string, int> objectRefs;
     std::map<std::string, int> socketRefs;
 
@@ -215,6 +214,8 @@ struct Graph {
 
     std::map<std::string, std::shared_ptr<IObject>> subInputs;
     std::map<std::string, std::shared_ptr<IObject>> subOutputs;
+
+    std::map<std::string, int> socketRefs;
 
     std::unique_ptr<Context> ctx;
 
