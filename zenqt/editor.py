@@ -982,7 +982,7 @@ class NodeEditor(QWidget):
         self.initDescriptors()
 
         self.scenes = {}
-        self.switchScene('main')
+        self.newProgram()
         self.handleEnvironParams()
 
     def clearScenes(self):
@@ -1113,16 +1113,16 @@ class NodeEditor(QWidget):
                 item.remove()
         self.scene.record()
 
+    def newProgram(self):
+        self.clearScenes()
+        self.switchScene('main')
+
     def menuTriggered(self, act):
         name = act.text()
         if name == '&New':
             if not self.confirm_discard('New'):
                 return
-            # TODO: wrong here! should be self.newProgram()
-            self.scene.newGraph()
-            self.scene.history_stack.init_state()
-            self.scene.record()
-            self.scene.setContentChanged(False)
+            self.newProgram()
             self.current_path = None
 
         elif name == '&Open':
