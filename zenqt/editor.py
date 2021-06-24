@@ -107,6 +107,7 @@ class QDMGraphicsScene(QGraphicsScene):
 
     def setContentChanged(self, flag):
         self.contentChanged = flag
+        self._view.setWindowModified(flag)
 
     def dumpGraph(self, input_nodes=None):
         nodes = {}
@@ -286,11 +287,12 @@ class QDMGraphicsView(QGraphicsView):
         self.lastContextMenuPos = None
 
         self._scene = QDMGraphicsScene()
+        self._scene._view = self
         self._scene.record()
         self._scene.setContentChanged(False)
         self.setScene(self._scene)
 
-        self.setWindowTitle('Untitled')
+        self.setWindowTitle('Untitled' + '[*]')
 
     def updateSearch(self, edit):
         for act in edit.menu.actions():
@@ -1166,7 +1168,7 @@ class NodeEditor(QWidget):
         self.currentScene().setContentChanged(False)
 
         filename = os.path.basename(path)
-        self.currentView().setWindowTitle(filename)
+        self.currentView().setWindowTitle(filename + '[*]')
 
     def do_open(self, path):
         with open(path, 'r') as f:
@@ -1178,7 +1180,7 @@ class NodeEditor(QWidget):
         self.currentScene().setContentChanged(False)
 
         filename = os.path.basename(path)
-        self.currentView().setWindowTitle(filename)
+        self.currentView().setWindowTitle(filename + '[*]')
 
     def confirm_discard(self, title):
         if os.environ.get('ZEN_OPEN'):
