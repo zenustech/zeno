@@ -979,15 +979,28 @@ class NodeEditor(QWidget):
         self.initShortcuts()
         self.initDescriptors()
 
-        self.scene = QDMGraphicsScene()
-        self.scene.record()
-        self.scene.setContentChanged(False)
-        self.scene.setDescriptors(self.descs)
-        self.view.setScene(self.scene)
-
+        self.newScene()
         self.handleEnvironParams()
 
-    def handleEnvironParams():
+    def on_swap(self):
+        if hasattr(self, '_oldscene'):
+            self.view.setScene(self._oldscene)
+        else:
+            self._oldscene = self.scene
+            self.newScene()
+
+    def newScene(self):
+        scene = QDMGraphicsScene()
+        scene.record()
+        scene.setContentChanged(False)
+        scene.setDescriptors(self.descs)
+        self.view.setScene(scene)
+
+    @property
+    def scene(self):
+        return self.view.scene()
+
+    def handleEnvironParams(self):
         if os.environ.get('ZEN_OPEN'):
             path = os.environ['ZEN_OPEN']
             self.do_open(path)
@@ -1022,6 +1035,11 @@ class NodeEditor(QWidget):
         self.button_kill.move(160, 40)
         self.button_kill.resize(80, 30)
         self.button_kill.clicked.connect(self.on_kill) 
+
+        self.button_swap = QPushButton('Swap', self)
+        self.button_swap.move(260, 40)
+        self.button_swap.resize(80, 30)
+        self.button_swap.clicked.connect(self.on_swap) 
 
     def initDescriptors(self):
         self.descs = zenapi.getDescriptors()
