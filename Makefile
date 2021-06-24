@@ -1,4 +1,4 @@
-#O=assets/testforgc.zsg
+O=assets/rigid_pool.zsg
 
 default: all run
 

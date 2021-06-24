@@ -215,6 +215,9 @@ struct Graph {
     std::map<std::string, std::shared_ptr<IObject>> subInputs;
     std::map<std::string, std::shared_ptr<IObject>> subOutputs;
 
+    std::map<std::string, std::string> portalIns;
+    std::map<std::string, std::shared_ptr<zen::IObject>> portals;
+
     std::map<std::string, int> socketRefs;
 
     std::unique_ptr<Context> ctx;
