@@ -28,6 +28,8 @@ class TimelineWidget(QWidget):
         layout.addWidget(self.status)
         self.setLayout(layout)
 
+        self.setFixedHeight(50)
+
     def setEditor(self, editor):
         self.editor = editor
         self.maxframe = self.editor.edit_nframes
