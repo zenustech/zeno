@@ -53,6 +53,18 @@ ZENDEFNODE(Route, {
     {"portal"},
 });
 
+struct Comment : Route {  // ui defined in zen/nodepref.py
+};
+
+ZENDEFNODE(Comment, {
+    {"input"},
+    {"output"},
+    {},
+    {"portal"},
+});
+
+
+
 
 struct Clone : zen::INode {
     virtual void apply() override {
@@ -72,4 +84,3 @@ ZENDEFNODE(Clone, {
     {},
     {"portal"},
 });
-
