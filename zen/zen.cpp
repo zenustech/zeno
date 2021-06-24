@@ -56,57 +56,79 @@ ZENAPI std::shared_ptr<IObject> IObject::clone() const {
 ZENAPI INode::INode() = default;
 ZENAPI INode::~INode() = default;
 
+ZENAPI Context::Context() = default;
+ZENAPI Context::~Context() = default;
+
+ZENAPI Context::Context(Context const &other) = default;
+
 ZENAPI void Graph::refObject(
     std::string const &id) {
-    int n = ++objectRefs[id];
-    //printf("RO %s %d\n", id.c_str(), n);
+    int n = ++ctx->objectRefs[id];
+    //printf("%p RO %s %d\n", ctx.get(), id.c_str(), n);
 }
-ZENAPI void Graph::refSocket(
+ZENAPI void Graph::compRefSocket(
     std::string const &sn, std::string const &ss) {
-    int n = ++socketRefs[sn + "::" + ss];
-    //printf("RS %s::%s %d\n", sn.c_str(), ss.c_str(), n);
+    auto key = sn + "::" + ss;
+    int n = ++socketRefs[key];
+    //printf("%p RS %s %d\n", ctx.get(), key.c_str(), n);
 }
 ZENAPI void Graph::derefObject(
     std::string const &id) {
-    int n = --objectRefs[id];
-    //printf("DO %s %d\n", id.c_str(), n);
+    if (ctx->objectRefs.find(id) == ctx->objectRefs.end())
+        return;
+    int n = --ctx->objectRefs.at(id);
+    //printf("%p DO %s %d\n", ctx.get(), id.c_str(), n);
 }
 ZENAPI void Graph::derefSocket(
     std::string const &sn, std::string const &ss) {
-    int n = --socketRefs[sn + "::" + ss];
-    //printf("DS %s::%s %d\n", sn.c_str(), ss.c_str(), n);
+    auto key = sn + "::" + ss;
+    if (ctx->socketRefs.find(key) == ctx->socketRefs.end())
+        return;
+    int n = --ctx->socketRefs.at(key);
+    //printf("%p DS %s %d\n", ctx.get(), key.c_str(), n);
 }
 ZENAPI void Graph::gcObject(
     std::string const &sn, std::string const &ss,
     std::string const &id) {
+    auto key = sn + "::" + ss;
     auto sno = nodes.at(sn).get();
     if (sno->inputs.find("COND") != sno->inputs.end()) {
         // TODO: tmpwalkarnd
         return;
     }
-    int n = objectRefs[id];
-    int m = socketRefs[sn + "::" + ss];
-    //printf("GC %s::%s/%s %d/%d\n", sn.c_str(), ss.c_str(), id.c_str(), m, n);
+    if (ctx->objectRefs.find(id) == ctx->objectRefs.end())
+        return;
+    if (ctx->socketRefs.find(key) == ctx->socketRefs.end())
+        return;
+    int n = ctx->objectRefs.at(id);
+    int m = ctx->socketRefs.at(key);
+    printf("%p GC %s/%s %d/%d\n", ctx.get(), key.c_str(), id.c_str(), m, n);
     if (n <= 0 && m <= 0) {
         assert(!n && !m);
-        objectRefs.erase(id);
-        socketRefs.erase(sn + "::" + ss);
+        ctx->objectRefs.erase(id);
+        ctx->socketRefs.erase(key);
         objects.erase(id);
     }
 }
 
+ZENAPI Graph::Graph() {
+    objects["_AUTO_DST"] = std::make_shared<ConditionObject>();
+}
+
+ZENAPI Graph::~Graph() = default;
+
 ZENAPI void INode::doComplete() {
-    set_output("DST", std::make_unique<zen::ConditionObject>());
+    outputs["DST"] = "_AUTO_DST";
+    for (auto const &[ds, bound]: inputBounds) {
+        auto [sn, ss] = bound;
+        graph->compRefSocket(sn, ss);
+    }
     complete();
 }
 
 ZENAPI void INode::complete() {}
 
 ZENAPI void INode::doApply() {
-    for (auto const &[ds, bound]: inputBounds) {
-        auto [sn, ss] = bound;
-        graph->refSocket(sn, ss);
-    }
     for (auto const &[ds, bound]: inputBounds) {
         auto [sn, ss] = bound;
         graph->applyNode(sn);
@@ -130,12 +152,12 @@ ZENAPI void INode::doApply() {
         graph->derefSocket(sn, ss);
         auto ref = inputs.at(ds);
         graph->derefObject(ref);
-        //graph->gcObject(sn, ss, ref);  // TODO: fix gc on forloop
+        graph->gcObject(sn, ss, ref);  // TODO: fix gc on forloop
     }
 
     for (auto const &[id, _]: outputs) {
         auto ref = outputs.at(id);
-        //graph->gcObject(myname, id, ref);  // TODO: fix gc on forloop
+        graph->gcObject(myname, id, ref);  // TODO: fix gc on forloop
     }
 }
 
@@ -159,7 +181,7 @@ ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&
 }
 
 ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {
-    graph->refObject(ref);
+    //graph->refObject(ref);
     outputs[id] = ref;
 }
 
@@ -204,6 +226,7 @@ ZENAPI void Graph::applyNode(std::string const &id) {
 
 ZENAPI void Graph::applyNodes(std::vector<std::string> const &ids) {
     ctx = std::make_unique<Context>();
+    ctx->socketRefs = socketRefs;
     for (auto const &id: ids) {
         applyNode(id);
     }
