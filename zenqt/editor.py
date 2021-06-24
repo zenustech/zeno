@@ -285,6 +285,11 @@ class QDMGraphicsView(QGraphicsView):
         self.dragingEdge = None
         self.lastContextMenuPos = None
 
+        self._scene = QDMGraphicsScene()
+        self._scene.record()
+        self._scene.setContentChanged(False)
+        self.setScene(self._scene)
+
     def updateSearch(self, edit):
         for act in edit.menu.actions():
             if not isinstance(act, QWidgetAction):
@@ -949,15 +954,6 @@ class QDMEditMenu(QMenu):
             action.setShortcut(shortcut)
             self.addAction(action)
 
-class QDMGraphicsSceneView(QDMGraphicsView):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self._scene = QDMGraphicsScene()
-        self._scene.record()
-        self._scene.setContentChanged(False)
-        self.setScene(self._scene)
-
 
 class NodeEditor(QWidget):
     def __init__(self, parent=None):
@@ -979,7 +975,7 @@ class NodeEditor(QWidget):
         self.mdi.setTabsMovable(True)
         self.layout.addWidget(self.mdi)
 
-        self.view = QDMGraphicsSceneView(self)
+        self.view = QDMGraphicsView(self)
 
         self.initFlag = False
 
@@ -1110,7 +1106,7 @@ class NodeEditor(QWidget):
                 self.setCurrentPath(path)
 
         elif name == 'NewTab':
-            view = QDMGraphicsSceneView(self)
+            view = QDMGraphicsView(self)
             self.mdi.addSubWindow(view)
             view.show()
             self.refreshDescriptors()
