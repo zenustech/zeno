@@ -1200,7 +1200,9 @@ class NodeEditor(QWidget):
     def confirm_discard(self, title):
         if os.environ.get('ZEN_OPEN'):
             return True
-        if self.currentScene().contentChanged:
+        wnds = self.mdi.subWindowList()
+        flags = [wnd.widget().scene().contentChanged for wnd in wnds]
+        if any(flags):
             flag = QMessageBox.question(self, title, 'Discard unsaved changes?',
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             return flag == QMessageBox.Yes
