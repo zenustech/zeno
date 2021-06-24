@@ -1168,7 +1168,8 @@ class NodeEditor(QWidget):
         prog = self.dumpProgram()
         with open(path, 'w') as f:
             json.dump(prog, f)
-        #self.scene.setContentChanged(False)  #TODO: self.setContentChanged
+        for scene in self.scenes.value():
+            scene.setContentChanged(False)
 
     def do_open(self, path):
         with open(path, 'r') as f:
@@ -1178,7 +1179,11 @@ class NodeEditor(QWidget):
     def confirm_discard(self, title):
         if os.environ.get('ZEN_OPEN'):
             return True
-        if self.scene.contentChanged:
+        contentChanged = False
+        for scene in self.scenes.values():
+            if scene.contentChanged:
+                contentChanged = True
+        if contentChanged:
             flag = QMessageBox.question(self, title, 'Discard unsaved changes?',
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             return flag == QMessageBox.Yes
