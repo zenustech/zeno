@@ -986,6 +986,10 @@ class NodeEditor(QWidget):
     def clearScenes(self):
         self.scenes.clear()
 
+    def deleteCurrScene(self):
+        self.scenes.remove(self.scene)
+        self.switchScene('main')
+
     def switchScene(self, name):
         if name not in self.scenes:
             scene = QDMGraphicsScene()
@@ -1055,7 +1059,7 @@ class NodeEditor(QWidget):
     def on_switch_graph(self):
         name = self.edit_graphname.text()
         self.switchScene(name)
-        print('switch', name)
+        print(list(self.scenes.keys()))
 
     def on_delete_graph(self):
         self.deleteCurrScene()
