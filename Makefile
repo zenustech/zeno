@@ -1,4 +1,4 @@
-O=assets/numeric2.zsg
+O=assets/mergeprim.zsg
 
 default: all run
 

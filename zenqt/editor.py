@@ -451,6 +451,7 @@ class QDMGraphicsPath(QGraphicsPathItem):
         self.dstPos = dstPos
 
     def paint(self, painter, styleOptions, widget=None):
+        self.updatePath()
         color = 'selected_color' if self.isSelected() else 'line_color'
         pen = QPen(QColor(style[color]))
         pen.setWidth(style['line_width'])
