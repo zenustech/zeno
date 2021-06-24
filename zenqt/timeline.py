@@ -1,8 +1,30 @@
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
+from PyQt5.QtSvg import *
 
 import zenvis
+
+
+class SvgWidget(QSvgWidget):
+    def __init__(self):
+        super(SvgWidget, self).__init__()
+        self.render = self.renderer()
+        self.load('./ui_assets/play.svg')
+        self.checked = True
+        # PyQt5 >= 5.15
+        self.render.setAspectRatioMode(Qt.KeepAspectRatio)
+    
+    def isChecked(self):
+        return self.checked
+    
+    def mousePressEvent(self, event):
+        super().mouseMoveEvent(event)
+        self.checked = not self.checked
+        if self.checked:
+            self.load('./ui_assets/play.svg')
+        else:
+            self.load('./ui_assets/stop.svg')
 
 
 class TimelineWidget(QWidget):
@@ -17,9 +39,7 @@ class TimelineWidget(QWidget):
         self.slider.setMinimum(0)
         self.slider.setMaximum(1)
 
-        self.player = QCheckBox('Play')
-        self.player.clicked.connect(self.value_changed)
-        self.player.setChecked(True)
+        self.player = SvgWidget()
 
         layout = QHBoxLayout()
         layout.addWidget(self.player)
