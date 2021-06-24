@@ -975,15 +975,19 @@ class NodeEditor(QWidget):
         self.view = QDMGraphicsView(self)
         self.layout.addWidget(self.view)
 
+        self.initExecute()
+        self.initShortcuts()
+        self.initDescriptors()
+
         self.scene = QDMGraphicsScene()
         self.scene.record()
         self.scene.setContentChanged(False)
+        self.scene.setDescriptors(self.descs)
         self.view.setScene(self.scene)
 
-        self.initExecute()
-        self.initShortcuts()
-        self.refreshDescriptors()
+        self.handleEnvironParams()
 
+    def handleEnvironParams():
         if os.environ.get('ZEN_OPEN'):
             path = os.environ['ZEN_OPEN']
             self.do_open(path)
@@ -1019,18 +1023,12 @@ class NodeEditor(QWidget):
         self.button_kill.resize(80, 30)
         self.button_kill.clicked.connect(self.on_kill) 
 
-    def refreshDescriptors(self):
-        self.scene.setDescriptors(zenapi.getDescriptors())
+    def initDescriptors(self):
+        self.descs = zenapi.getDescriptors()
 
     def on_add(self):
         pos = QPointF(0, 0)
         self.view.contextMenu(pos)
-
-    def on_connect(self):
-        baseurl = self.edit_baseurl.text()
-        import zenwebcfg
-        zenwebcfg.connectServer(baseurl)
-        self.refreshDescriptors()
 
     def on_kill(self):
         zenapi.killProcess()
