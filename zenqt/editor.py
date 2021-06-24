@@ -290,6 +290,8 @@ class QDMGraphicsView(QGraphicsView):
         self._scene.setContentChanged(False)
         self.setScene(self._scene)
 
+        self.setWindowTitle('Untitled')
+
     def updateSearch(self, edit):
         for act in edit.menu.actions():
             if not isinstance(act, QWidgetAction):
@@ -992,12 +994,15 @@ class NodeEditor(QWidget):
             self.mdi.addSubWindow(self.view)
 
     def currentScene(self):
-        actWin = self.mdi.currentSubWindow()
-        if actWin:
-            s = self.mdi.currentSubWindow().widget()._scene
+        return self.currentView()._scene
+
+    def currentView(self):
+        curWin = self.mdi.currentSubWindow()
+        if curWin:
+            v = curWin.widget()
         else:
-            s = self.view._scene
-        return s
+            v = self.view
+        return v
 
     def currentPath(self):
         return self.currentScene().current_path
@@ -1160,6 +1165,9 @@ class NodeEditor(QWidget):
             json.dump(graph, f)
         self.currentScene().setContentChanged(False)
 
+        filename = os.path.basename(path)
+        self.currentView().setWindowTitle(filename)
+
     def do_open(self, path):
         with open(path, 'r') as f:
             graph = json.load(f)
@@ -1168,6 +1176,9 @@ class NodeEditor(QWidget):
         self.currentScene().loadGraph(graph)
         self.currentScene().record()
         self.currentScene().setContentChanged(False)
+
+        filename = os.path.basename(path)
+        self.currentView().setWindowTitle(filename)
 
     def confirm_discard(self, title):
         if os.environ.get('ZEN_OPEN'):
