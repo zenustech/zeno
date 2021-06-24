@@ -218,7 +218,8 @@ class QDMGraphicsScene(QGraphicsScene):
 
     def makeNode(self, name):
         desc = self.descs[name]
-        node = QDMGraphicsNode()
+        ctor = globals().get('QDMGraphicsNode_' + name, QDMGraphicsNode)
+        node = ctor()
         node.setName(name)
         node.desc_inputs = desc['inputs']
         node.desc_outputs = desc['outputs']
@@ -820,7 +821,7 @@ class QDMGraphicsNode(QGraphicsItem):
         outputs = self.desc_outputs
         params = self.desc_params
 
-        y = TEXT_HEIGHT * 0.4
+        y = self.height + TEXT_HEIGHT * 0.4
 
         self.options['OUT'] = button = QDMGraphicsButton(self)
         rect = QRectF(HORI_MARGIN, y, self.width / 2 - HORI_MARGIN * 1.5, 0)
@@ -837,7 +838,7 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.params.clear()
         for index, (type, name, defl) in enumerate(params):
-            param = eval('QDMGraphicsParam_' + type)(self)
+            param = globals()['QDMGraphicsParam_' + type](self)
             rect = QRectF(HORI_MARGIN, y, self.width - HORI_MARGIN * 2, 0)
             param.setGeometry(rect)
             param.setName(name)
@@ -1190,3 +1191,6 @@ class NodeEditor(QWidget):
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             return flag == QMessageBox.Yes
         return True
+
+
+from .nodepref import *

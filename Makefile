@@ -1,4 +1,4 @@
-O=assets/rigid_pool.zsg
+O=assets/comment.zsg
 
 default: all run
 
