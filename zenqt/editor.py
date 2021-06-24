@@ -241,9 +241,11 @@ class QDMGraphicsScene(QGraphicsScene):
 
     def undo(self):
         self.history_stack.undo()
+        self.setContentChanged(True)
 
     def redo(self):
         self.history_stack.redo()
+        self.setContentChanged(True)
 
     def mousePressEvent(self, event):
         if self.mmb_press:
@@ -973,15 +975,37 @@ class NodeEditor(QWidget):
         self.view = QDMGraphicsView(self)
         self.layout.addWidget(self.view)
 
-        self.scene = QDMGraphicsScene()
-        self.scene.record()
-        self.scene.setContentChanged(False)
-        self.view.setScene(self.scene)
-
         self.initExecute()
         self.initShortcuts()
-        self.refreshDescriptors()
+        self.initDescriptors()
 
+        self.scenes = {}
+        self.switchScene('main')
+        self.handleEnvironParams()
+
+    def clearScenes(self):
+        self.scenes.clear()
+
+    def deleteCurrScene(self):
+        self.scenes.remove(self.scene)
+        self.switchScene('main')
+
+    def switchScene(self, name):
+        if name not in self.scenes:
+            scene = QDMGraphicsScene()
+            scene.record()
+            scene.setContentChanged(False)
+            scene.setDescriptors(self.descs)
+            self.scenes[name] = scene
+        else:
+            scene = self.scenes[name]
+        self.view.setScene(scene)
+
+    @property
+    def scene(self):
+        return self.view.scene()
+
+    def handleEnvironParams(self):
         if os.environ.get('ZEN_OPEN'):
             path = os.environ['ZEN_OPEN']
             self.do_open(path)
@@ -1017,27 +1041,59 @@ class NodeEditor(QWidget):
         self.button_kill.resize(80, 30)
         self.button_kill.clicked.connect(self.on_kill) 
 
-    def refreshDescriptors(self):
-        self.scene.setDescriptors(zenapi.getDescriptors())
+        self.edit_graphname = QLineEdit(self)
+        self.edit_graphname.move(270, 40)
+        self.edit_graphname.resize(70, 30)
+        self.edit_graphname.setText('main')
+
+        self.button_switch = QPushButton('Switch', self)
+        self.button_switch.move(350, 40)
+        self.button_switch.resize(80, 30)
+        self.button_switch.clicked.connect(self.on_switch_graph)
+
+        self.button_delete = QPushButton('Delete', self)
+        self.button_delete.move(440, 40)
+        self.button_delete.resize(80, 30)
+        self.button_delete.clicked.connect(self.on_delete_graph)
+
+    def on_switch_graph(self):
+        name = self.edit_graphname.text()
+        self.switchScene(name)
+        print('all subgraphs are:', list(self.scenes.keys()))
+
+    def on_delete_graph(self):
+        self.deleteCurrScene()
+
+    def initDescriptors(self):
+        self.descs = zenapi.getDescriptors()
 
     def on_add(self):
         pos = QPointF(0, 0)
         self.view.contextMenu(pos)
 
-    def on_connect(self):
-        baseurl = self.edit_baseurl.text()
-        import zenwebcfg
-        zenwebcfg.connectServer(baseurl)
-        self.refreshDescriptors()
-
     def on_kill(self):
         zenapi.killProcess()
 
+    def dumpProgram(self):
+        prog = {}
+        for name, scene in self.scenes.items():
+            graph = scene.dumpGraph()
+            prog[name] = graph
+        return prog
+
+    def loadProgram(self, prog):
+        self.clearScenes()
+        if 'main' not in prog:  # backward-compatbility
+            prog = {'main': prog}
+        for name, graph in prog.items():
+            self.switchScene(name)
+            self.scene.loadGraph(graph)
+        self.switchScene('main')
+
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
-        graph = self.scene.dumpGraph()
-        scene = {'main': graph}
-        go(zenapi.launchScene, scene, nframes)
+        prog = self.dumpProgram()
+        go(zenapi.launchScene, prog, nframes)
 
     def on_delete(self):
         itemList = self.scene.selectedItems()
@@ -1111,24 +1167,25 @@ class NodeEditor(QWidget):
             self.scene.record()
 
     def do_save(self, path):
-        graph = self.scene.dumpGraph()
+        prog = self.dumpProgram()
         with open(path, 'w') as f:
-            json.dump(graph, f)
-        self.scene.setContentChanged(False)
+            json.dump(prog, f)
+        for scene in self.scenes.values():
+            scene.setContentChanged(False)
 
     def do_open(self, path):
         with open(path, 'r') as f:
-            graph = json.load(f)
-        self.scene.newGraph()
-        self.scene.history_stack.init_state()
-        self.scene.loadGraph(graph)
-        self.scene.record()
-        self.scene.setContentChanged(False)
+            prog = json.load(f)
+        self.loadProgram(prog)
 
     def confirm_discard(self, title):
         if os.environ.get('ZEN_OPEN'):
             return True
-        if self.scene.contentChanged:
+        contentChanged = False
+        for scene in self.scenes.values():
+            if scene.contentChanged:
+                contentChanged = True
+        if contentChanged:
             flag = QMessageBox.question(self, title, 'Discard unsaved changes?',
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             return flag == QMessageBox.Yes
