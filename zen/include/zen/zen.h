@@ -201,6 +201,10 @@ struct Context {
 
     std::map<std::string, int> objectRefs;
     std::map<std::string, int> socketRefs;
+
+    ZENAPI Context();
+    ZENAPI Context(Context const &other);
+    ZENAPI ~Context();
 };
 
 struct Graph {

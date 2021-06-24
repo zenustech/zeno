@@ -56,24 +56,32 @@ ZENAPI std::shared_ptr<IObject> IObject::clone() const {
 ZENAPI INode::INode() = default;
 ZENAPI INode::~INode() = default;
 
+ZENAPI Context::Context() = default;
+ZENAPI Context::~Context() = default;
+
+ZENAPI Context::Context(Context const &other)
+    : visited(other.visited)
+    , objectRefs(other.objectRefs)
+    {
+}
+
 ZENAPI void Graph::refObject(
     std::string const &id) {
-    printf("%p!!!\n", ctx.get());
     int n = ++ctx->objectRefs[id];
-    printf("RO %s %d\n", id.c_str(), n);
+    printf("%p RO %s %d\n", ctx.get(), id.c_str(), n);
 }
 ZENAPI void Graph::refSocket(
     std::string const &sn, std::string const &ss) {
     auto key = sn + "::" + ss;
     int n = ++ctx->socketRefs[key];
-    printf("RS %s %d\n", key.c_str(), n);
+    printf("%p RS %s %d\n", ctx.get(), key.c_str(), n);
 }
 ZENAPI void Graph::derefObject(
     std::string const &id) {
     if (ctx->objectRefs.find(id) == ctx->objectRefs.end())
         return;
     int n = --ctx->objectRefs.at(id);
-    printf("DO %s %d\n", id.c_str(), n);
+    printf("%p DO %s %d\n", ctx.get(), id.c_str(), n);
 }
 ZENAPI void Graph::derefSocket(
     std::string const &sn, std::string const &ss) {
@@ -81,7 +89,7 @@ ZENAPI void Graph::derefSocket(
     if (ctx->socketRefs.find(key) == ctx->socketRefs.end())
         return;
     int n = --ctx->socketRefs.at(key);
-    printf("RS %s %d\n", key.c_str(), n);
+    printf("%p DS %s %d\n", ctx.get(), key.c_str(), n);
 }
 ZENAPI void Graph::gcObject(
     std::string const &sn, std::string const &ss,
@@ -92,9 +100,13 @@ ZENAPI void Graph::gcObject(
         // TODO: tmpwalkarnd
         return;
     }
-    int n = ctx->objectRefs[id];
-    int m = ctx->socketRefs[key];
-    printf("GC %s/%s %d/%d\n", key.c_str(), id.c_str(), m, n);
+    if (ctx->objectRefs.find(id) == ctx->objectRefs.end())
+        return;
+    if (ctx->socketRefs.find(key) == ctx->socketRefs.end())
+        return;
+    int n = ctx->objectRefs.at(id);
+    int m = ctx->socketRefs.at(key);
+    printf("%p GC %s/%s %d/%d\n", ctx.get(), key.c_str(), id.c_str(), m, n);
     if (n <= 0 && m <= 0) {
         assert(!n && !m);
         ctx->objectRefs.erase(id);
@@ -144,12 +156,12 @@ ZENAPI void INode::doApply() {
         graph->derefSocket(sn, ss);
         auto ref = inputs.at(ds);
         graph->derefObject(ref);
-        //graph->gcObject(sn, ss, ref);  // TODO: fix gc on forloop
+        graph->gcObject(sn, ss, ref);  // TODO: fix gc on forloop
     }
 
     for (auto const &[id, _]: outputs) {
         auto ref = outputs.at(id);
-        //graph->gcObject(myname, id, ref);  // TODO: fix gc on forloop
+        graph->gcObject(myname, id, ref);  // TODO: fix gc on forloop
     }
 }
 

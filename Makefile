@@ -1,4 +1,4 @@
-O=assets/mergeprim.zsg
+O=assets/testforgc.zsg
 
 default: all run
 
