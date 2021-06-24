@@ -58,45 +58,59 @@ ZENAPI INode::~INode() = default;
 
 ZENAPI void Graph::refObject(
     std::string const &id) {
-    int n = ++objectRefs[id];
-    //printf("RO %s %d\n", id.c_str(), n);
+    printf("%p!!!\n", ctx.get());
+    int n = ++ctx->objectRefs[id];
+    printf("RO %s %d\n", id.c_str(), n);
 }
 ZENAPI void Graph::refSocket(
     std::string const &sn, std::string const &ss) {
-    int n = ++socketRefs[sn + "::" + ss];
-    //printf("RS %s::%s %d\n", sn.c_str(), ss.c_str(), n);
+    auto key = sn + "::" + ss;
+    int n = ++ctx->socketRefs[key];
+    printf("RS %s %d\n", key.c_str(), n);
 }
 ZENAPI void Graph::derefObject(
     std::string const &id) {
-    int n = --objectRefs[id];
-    //printf("DO %s %d\n", id.c_str(), n);
+    if (ctx->objectRefs.find(id) == ctx->objectRefs.end())
+        return;
+    int n = --ctx->objectRefs.at(id);
+    printf("DO %s %d\n", id.c_str(), n);
 }
 ZENAPI void Graph::derefSocket(
     std::string const &sn, std::string const &ss) {
-    int n = --socketRefs[sn + "::" + ss];
-    //printf("DS %s::%s %d\n", sn.c_str(), ss.c_str(), n);
+    auto key = sn + "::" + ss;
+    if (ctx->socketRefs.find(key) == ctx->socketRefs.end())
+        return;
+    int n = --ctx->socketRefs.at(key);
+    printf("RS %s %d\n", key.c_str(), n);
 }
 ZENAPI void Graph::gcObject(
     std::string const &sn, std::string const &ss,
     std::string const &id) {
+    auto key = sn + "::" + ss;
     auto sno = nodes.at(sn).get();
     if (sno->inputs.find("COND") != sno->inputs.end()) {
         // TODO: tmpwalkarnd
         return;
     }
-    int n = objectRefs[id];
-    int m = socketRefs[sn + "::" + ss];
-    //printf("GC %s::%s/%s %d/%d\n", sn.c_str(), ss.c_str(), id.c_str(), m, n);
+    int n = ctx->objectRefs[id];
+    int m = ctx->socketRefs[key];
+    printf("GC %s/%s %d/%d\n", key.c_str(), id.c_str(), m, n);
     if (n <= 0 && m <= 0) {
         assert(!n && !m);
-        objectRefs.erase(id);
-        socketRefs.erase(sn + "::" + ss);
+        ctx->objectRefs.erase(id);
+        ctx->socketRefs.erase(key);
         objects.erase(id);
     }
 }
 
+ZENAPI Graph::Graph() {
+    objects["_AUTO_DST"] = std::make_shared<ConditionObject>();
+}
+
+ZENAPI Graph::~Graph() = default;
+
 ZENAPI void INode::doComplete() {
-    set_output("DST", std::make_unique<zen::ConditionObject>());
+    outputs["DST"] = "_AUTO_DST";
     complete();
 }
 
