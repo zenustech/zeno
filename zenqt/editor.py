@@ -443,6 +443,21 @@ class QDMGraphicsView(QGraphicsView):
         self.scene().addEdge(src, dst)
         return True
 
+    def confirm_discard(self, title):
+        if os.environ.get('ZEN_OPEN'):
+            return True
+        if self.scene().contentChanged:
+            flag = QMessageBox.question(self, title, 'Discard unsaved changes?',
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            return flag == QMessageBox.Yes
+        return True
+
+    def closeEvent(self, event):
+        if self.confirm_discard('Exit'):
+            event.accept()
+        else:
+            event.ignore()
+
 TEXT_HEIGHT = style['text_height']
 HORI_MARGIN = style['hori_margin']
 SOCKET_RADIUS = style['socket_radius']
