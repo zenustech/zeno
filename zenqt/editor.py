@@ -1146,12 +1146,12 @@ class NodeEditor(QWidget):
         self.clearScenes()
         self.switchScene('main')
 
-    def getOpenFileName():
+    def getOpenFileName(self):
         path, kind = QFileDialog.getOpenFileName(self, 'File to Open',
                 '', 'Zensim Graph File(*.zsg);; All Files(*);;')
         return path
 
-    def getSaveFileName():
+    def getSaveFileName(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
                 '', 'Zensim Graph File(*.zsg);; All Files(*);;')
         return path

@@ -3,6 +3,7 @@ import sys
 import uuid
 import runpy
 import ctypes
+import hashlib
 import tempfile
 import threading
 import functools
@@ -134,6 +135,8 @@ def add_line_numbers(script):
     return res
 
 
-def gen_unique_ident(suffix):
-    return str(uuid.uuid1()) + '-' + suffix
+def gen_unique_ident(suffix='x'):
+    uid = uuid.uuid1().bytes
+    uid = hashlib.md5(uid).hexdigest()[:8]
+    return uid + '-' + suffix
     #return ''.join(reversed(base64.b64encode(random.randbytes(4) + struct.pack('L', time.time_ns())).decode()))
