@@ -1,7 +1,7 @@
 # ZENO
 
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
-//better have some screenshot here
+![rigid3.zsg](images/rigid3.jpg)
 
 ## Features
 
@@ -30,6 +30,8 @@ For example:
 This is the charm of visual-programming, not only the direction of data-flow, but also the logic-flow of the solution algorithm is presented at no more clarity.
 In fact, building a molecular simulation from scratch took no more than 7 minutes!
 
+![lennardjones.zsg](images/lennardjones.jpg)
+
 ## Flexible
 
 One can easily change or adjust a solution by simply break and reconnect of the nodes.
@@ -47,11 +49,15 @@ low-level details.
 Performance-wisely, it's shown by @zhxx1987 that our FLIP solver is 4x faster than
 Houdini at large scale.
 
+![FLIPSolver.zsg](images/FLIPSolver.jpg)
+
 ## Control-flows
 
-Unlike many node systems (e.g. Blender), ZENO has a strong time-order and provide a
-lot of control-flow nodes including IfCondition, RepeatUntil, CreateMutable, etc..
+Unlike many pure functional node systems (e.g. Blender), ZENO has a strong time-order
+and provide a lot of control-flow nodes including CachedOnce, BeginForEach, EndFor, etc.
 This enable you to make turing-equivalent programs that fit real-world problems.
+
+![forloop.zsg](images/forloop.jpg)
 
 ## Unified
 
