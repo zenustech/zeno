@@ -1065,11 +1065,6 @@ class NodeEditor(QWidget):
         self.button_delete.resize(80, 30)
         self.button_delete.clicked.connect(self.deleteCurrScene)
 
-        self.button_refresh = QPushButton('Refresh', self)
-        self.button_refresh.move(530, 40)
-        self.button_refresh.resize(80, 30)
-        self.button_refresh.clicked.connect(self.initDescriptors)
-
     def on_switch_graph(self):
         name = self.edit_graphname.text()
         self.switchScene(name)
