@@ -1106,28 +1106,28 @@ class NodeEditor(QWidget):
         prog['descs'] = dict(self.descs)
         return prog
 
-    def importProgram(self, prog):
-        if 'graph' not in prog:  # backward-compatbility
-            if 'main' not in prog:  # backward-compatbility
+    def bkwdCompatProgram(self, prog):
+        if 'graph' not in prog:
+            if 'main' not in prog:
                 prog = {'main': prog}
             prog = {'graph': prog}
-        if 'descs' in prog:
-            self.setDescriptors(prog['descs'])
+        if 'descs' not in prog:
+            prog['descs'] = dict(self.descs)
+        return prog
+
+    def importProgram(self, prog):
+        prog = self.bkwdCompatProgram(prog)
+        self.setDescriptors(prog['descs'])
         self.scene.newGraph()
         self.scene.loadGraph(graph)
         self.scene.record()
         self.initDescriptors()
 
     def loadProgram(self, prog):
-        if 'graph' not in prog:  # backward-compatbility
-            if 'main' not in prog:  # backward-compatbility
-                prog = {'main': prog}
-            prog = {'graph': prog}
-        if 'descs' in prog:
-            self.setDescriptors(prog['descs'])
+        prog = self.bkwdCompatProgram(prog)
+        self.setDescriptors(prog['descs'])
         self.clearScenes()
         for name, graph in prog['graph'].items():
-            print(name, graph)
             self.switchScene(name)
             self.scene.loadGraph(graph)
         self.switchScene('main')
