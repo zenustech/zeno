@@ -158,10 +158,7 @@ class QDMGraphicsScene(QGraphicsScene):
             if name not in self.descs:
                 print('no node class named [{}]'.format(name))
                 continue
-            node = self.makeNodeBase(name)
-            node.desc_inputs = desc['inputs']
-            node.desc_outputs = desc['outputs']
-            node.desc_params = desc['params']
+            node = self.makeNode(name)
             node.initSockets()
             node.setIdent(ident)
             node.setName(name)
@@ -1096,12 +1093,15 @@ class NodeEditor(QWidget):
         for name, scene in self.scenes.items():
             graph = scene.dumpGraph()
             prog[name] = graph
+        prog['__desc'] = dict(self.descs)
         return prog
 
     def importProgram(self, prog):
         if 'main' not in prog:  # backward-compatbility
             prog = {'main': prog}
         graph = prog['main']
+        if '__desc' in prog:
+            self.descs = prog['__desc']
         self.scene.newGraph()
         self.scene.loadGraph(graph)
         self.scene.record()
@@ -1111,7 +1111,11 @@ class NodeEditor(QWidget):
         self.clearScenes()
         if 'main' not in prog:  # backward-compatbility
             prog = {'main': prog}
+        if '__desc' in prog:
+            self.descs = prog['__desc']
         for name, graph in prog.items():
+            if name.startswith('__'):
+                continue
             self.switchScene(name)
             self.scene.loadGraph(graph)
         self.switchScene('main')
