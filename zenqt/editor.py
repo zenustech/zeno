@@ -929,7 +929,8 @@ class QDMGraphicsNode(QGraphicsItem):
         self.unfold()
 
     def boundingRect(self):
-        return QRectF(0, -TEXT_HEIGHT, self.width, self.height).normalized()
+        h = TEXT_HEIGHT if self.collapsed else self.height
+        return QRectF(0, -TEXT_HEIGHT, self.width, h).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
         if not self.collapsed:
