@@ -1,4 +1,4 @@
-O=assets/gctest.zsg
+O=assets/forloop2.zsg
 
 default: all run
 
