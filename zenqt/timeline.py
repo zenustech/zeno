@@ -3,6 +3,8 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtSvg import *
 
+from . import asset_path
+
 import zenvis
 
 
@@ -10,7 +12,7 @@ class SvgWidget(QSvgWidget):
     def __init__(self, timeline):
         super().__init__()
         self.render = self.renderer()
-        self.load('./ui_assets/play.svg')
+        self.load(asset_path('play.svg'))
         self.timeline = timeline
         self.checked = True
         # PyQt5 >= 5.15
@@ -24,9 +26,9 @@ class SvgWidget(QSvgWidget):
         self.checked = not self.checked
         self.timeline.value_changed()
         if self.checked:
-            self.load('./ui_assets/play.svg')
+            self.load(asset_path('play.svg'))
         else:
-            self.load('./ui_assets/stop.svg')
+            self.load(asset_path('stop.svg'))
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
 class TimelineWidget(QWidget):
