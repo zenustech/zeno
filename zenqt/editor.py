@@ -679,7 +679,7 @@ class QDMSVGButton(QSvgWidget):
             self.load(asset_path('unfold.svg'))
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
-class QDMCollpaseButton(QGraphicsProxyWidget):
+class QDMCollapseButton(QGraphicsProxyWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -807,8 +807,8 @@ class QDMGraphicsNode(QGraphicsItem):
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
 
-        self.collpase_button = QDMCollpaseButton(self)
-        self.collpase_button.setPos(150, -TEXT_HEIGHT * 0.9)
+        self.collapse_button = QDMCollapseButton(self)
+        self.collapse_button.setPos(150, -TEXT_HEIGHT * 0.9)
 
         self.params = {}
         self.inputs = {}
