@@ -94,14 +94,20 @@ class QDMGraphicsScene(QGraphicsScene):
         self.setSceneRect(-width // 2, -height // 2, width, height)
         self.setBackgroundBrush(QColor(style['background_color']))
 
-        self.descs = {}
-        self.cates = {}
         self.nodes = []
 
         self.history_stack = HistoryStack(self)
         self.moved = False
         self.mmb_press = False
         self.contentChanged = False
+
+    @property
+    def descs(self):
+        return self.editor.descs
+
+    @property
+    def cates(self):
+        return self.editor.cates
 
     def setContentChanged(self, flag):
         self.contentChanged = flag
@@ -233,13 +239,6 @@ class QDMGraphicsScene(QGraphicsScene):
     def addNode(self, node):
         self.nodes.append(node)
         self.addItem(node)
-
-    def setDescriptors(self, descs):
-        self.descs = descs
-        self.cates.clear()
-        for name, desc in descs.items():
-            for cate in desc['categories']:
-                self.cates.setdefault(cate, []).append(name)
 
     def record(self):
         self.history_stack.record()
@@ -983,6 +982,8 @@ class NodeEditor(QWidget):
         self.layout.addWidget(self.view)
 
         self.scenes = {}
+        self.descs = {}
+        self.cates = {}
 
         self.initExecute()
         self.initShortcuts()
@@ -1001,9 +1002,9 @@ class NodeEditor(QWidget):
     def switchScene(self, name):
         if name not in self.scenes:
             scene = QDMGraphicsScene()
+            scene.editor = self
             scene.record()
             scene.setContentChanged(False)
-            scene.setDescriptors(self.descs)
             self.scenes[name] = scene
         else:
             scene = self.scenes[name]
@@ -1072,14 +1073,21 @@ class NodeEditor(QWidget):
     def on_switch_graph(self):
         name = self.edit_graphname.text()
         self.switchScene(name)
+        self.initDescriptors()
         print('all subgraphs are:', list(self.scenes.keys()))
 
+    def setDescriptors(self, descs):
+        self.descs = descs
+        self.cates.clear()
+        for name, desc in self.descs.items():
+            for cate in desc['categories']:
+                self.cates.setdefault(cate, []).append(name)
+
     def initDescriptors(self):
-        self.descs = zenapi.getDescriptors()
+        descs = zenapi.getDescriptors()
         subg_descs = self.getSubgraphDescs()
-        self.descs.update(subg_descs)
-        for scene in self.scenes.values():
-            scene.setDescriptors(self.descs)
+        descs.update(subg_descs)
+        self.setDescriptors(descs)
 
     def on_add(self):
         pos = QPointF(0, 0)
@@ -1089,33 +1097,37 @@ class NodeEditor(QWidget):
         zenapi.killProcess()
 
     def dumpProgram(self):
-        prog = {}
+        graphs = {}
         for name, scene in self.scenes.items():
             graph = scene.dumpGraph()
-            prog[name] = graph
-        prog['__desc'] = dict(self.descs)
+            graphs[name] = graph
+        prog = {}
+        prog['graph'] = graphs
+        prog['descs'] = dict(self.descs)
         return prog
 
     def importProgram(self, prog):
-        if 'main' not in prog:  # backward-compatbility
-            prog = {'main': prog}
-        graph = prog['main']
-        if '__desc' in prog:
-            self.descs = prog['__desc']
+        if 'graph' not in prog:  # backward-compatbility
+            if 'main' not in prog:  # backward-compatbility
+                prog = {'main': prog}
+            prog = {'graph': prog}
+        if 'descs' in prog:
+            self.setDescriptors(prog['descs'])
         self.scene.newGraph()
         self.scene.loadGraph(graph)
         self.scene.record()
         self.initDescriptors()
 
     def loadProgram(self, prog):
+        if 'graph' not in prog:  # backward-compatbility
+            if 'main' not in prog:  # backward-compatbility
+                prog = {'main': prog}
+            prog = {'graph': prog}
+        if 'descs' in prog:
+            self.setDescriptors(prog['descs'])
         self.clearScenes()
-        if 'main' not in prog:  # backward-compatbility
-            prog = {'main': prog}
-        if '__desc' in prog:
-            self.descs = prog['__desc']
-        for name, graph in prog.items():
-            if name.startswith('__'):
-                continue
+        for name, graph in prog['graph'].items():
+            print(name, graph)
             self.switchScene(name)
             self.scene.loadGraph(graph)
         self.switchScene('main')
