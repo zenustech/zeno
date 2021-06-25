@@ -8,9 +8,12 @@ import json
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+from PyQt5.QtSvg import *
 
 from zenutils import go, gen_unique_ident
 import zenapi
+
+from . import asset_path
 
 MAX_STACK_LENGTH = 100
 
@@ -653,6 +656,36 @@ class QDMGraphicsButton(QGraphicsProxyWidget):
         self.widget.setText(text)
 
 
+class QDMSVGButton(QSvgWidget):
+    def __init__(self):
+        super().__init__()
+        self.render = self.renderer()
+        self.load(asset_path('collapse.svg'))
+        self.checked = True
+        # PyQt5 >= 5.15
+        self.render.setAspectRatioMode(Qt.KeepAspectRatio)
+
+        self.setStyleSheet('background-color: {}'.format(style['title_color']))
+    
+    def isChecked(self):
+        return self.checked
+    
+    def mousePressEvent(self, event):
+        super().mouseMoveEvent(event)
+        self.checked = not self.checked
+        if self.checked:
+            self.load(asset_path('collapse.svg'))
+        else:
+            self.load(asset_path('unfold.svg'))
+        self.render.setAspectRatioMode(Qt.KeepAspectRatio)
+
+class QDMCollpaseButton(QGraphicsProxyWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.widget = QDMSVGButton()
+        self.setWidget(self.widget)
+
 class QDMGraphicsParam(QGraphicsProxyWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -773,6 +806,9 @@ class QDMGraphicsNode(QGraphicsItem):
         font = QFont()
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
+
+        self.collpase_button = QDMCollpaseButton(self)
+        self.collpase_button.setPos(150, -TEXT_HEIGHT * 0.9)
 
         self.params = {}
         self.inputs = {}
