@@ -61,57 +61,14 @@ ZENAPI Context::~Context() = default;
 
 ZENAPI Context::Context(Context const &other)
     : visited(other.visited)
-    //, socketRefs(other.socketRefs)
 {
-    printf("%p -> %p\n", &other, this);
 }
 
-ZENAPI void Graph::compRefSocket(
-    std::string const &sn, std::string const &ss) {
-    auto key = sn + "::" + ss;
-    int n = ++socketRefs[key];
-    printf("%p RS %s %d\n", ctx.get(), key.c_str(), n);
-}
-ZENAPI void Graph::derefSocket(
-    std::string const &sn, std::string const &ss) {
-    auto key = sn + "::" + ss;
-    if (ctx->socketRefs.find(key) == ctx->socketRefs.end())
-        return;
-    int n = --ctx->socketRefs.at(key);
-    printf("%p DS %s %d\n", ctx.get(), key.c_str(), n);
-}
-ZENAPI void Graph::gcObject(
-    std::string const &sn, std::string const &ss,
-    std::string const &id) {
-    if (id == "_AUTO_DST")
-        return;
-    auto key = sn + "::" + ss;
-    auto sno = nodes.at(sn).get();
-    if (sno->inputs.find("COND") != sno->inputs.end())
-        return; // TODO: temp walkaround by not GC for COND'ed nodes
-    if (ctx->socketRefs.find(key) == ctx->socketRefs.end())
-        return;
-    int n = ctx->socketRefs.at(key);
-    printf("%p GC %s %d\n", ctx.get(), key.c_str(), n);
-    if (n <= 0) {
-        assert(!n);
-        ctx->socketRefs.erase(key);
-        objects.erase(id);
-    }
-}
-
-ZENAPI Graph::Graph() {
-    objects["_AUTO_DST"] = std::make_shared<ConditionObject>();
-}
-
+ZENAPI Graph::Graph() = default;
 ZENAPI Graph::~Graph() = default;
 
 ZENAPI void INode::doComplete() {
-    outputs["DST"] = "_AUTO_DST";
-    for (auto const &[ds, bound]: inputBounds) {
-        auto [sn, ss] = bound;
-        graph->compRefSocket(sn, ss);
-    }
+    set_output("DST", std::make_shared<ConditionObject>());
     complete();
 }
 
@@ -134,18 +91,6 @@ ZENAPI void INode::doApply() {
 
     if (ok) {
         apply();
-    }
-
-    for (auto const &[ds, bound]: inputBounds) {
-        auto [sn, ss] = bound;
-        graph->derefSocket(sn, ss);
-        auto ref = inputs.at(ds);
-        graph->gcObject(sn, ss, ref);  // TODO: fix gc on forloop
-    }
-
-    for (auto const &[id, _]: outputs) {
-        auto ref = outputs.at(id);
-        graph->gcObject(myname, id, ref);  // TODO: fix gc on forloop
     }
 }
 
@@ -213,7 +158,6 @@ ZENAPI void Graph::applyNode(std::string const &id) {
 
 ZENAPI void Graph::applyNodes(std::vector<std::string> const &ids) {
     ctx = std::make_unique<Context>();
-    ctx->socketRefs = socketRefs;
     for (auto const &id: ids) {
         applyNode(id);
     }
