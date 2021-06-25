@@ -1128,6 +1128,7 @@ class NodeEditor(QWidget):
         self.setDescriptors(prog['descs'])
         self.clearScenes()
         for name, graph in prog['graph'].items():
+            print('Loading subgraph', name)
             self.switchScene(name)
             self.scene.loadGraph(graph)
         self.switchScene('main')
