@@ -12,7 +12,7 @@ class QDMPlayButton(QSvgWidget):
     def __init__(self, timeline):
         super().__init__()
         self.render = self.renderer()
-        self.load(asset_path('play.svg'))
+        self.load(asset_path('stop.svg'))
         self.timeline = timeline
         self.checked = True
         # PyQt5 >= 5.15
@@ -26,9 +26,9 @@ class QDMPlayButton(QSvgWidget):
         self.checked = not self.checked
         self.timeline.value_changed()
         if self.checked:
-            self.load(asset_path('play.svg'))
-        else:
             self.load(asset_path('stop.svg'))
+        else:
+            self.load(asset_path('play.svg'))
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
 class TimelineWidget(QWidget):
