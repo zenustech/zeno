@@ -368,19 +368,20 @@ class QDMGraphicsView(QGraphicsView):
             if self.dragingEdge is None:
                 item = self.itemAt(event.pos())
                 if isinstance(item, QDMGraphicsSocket):
-                    if not item.isOutput and len(item.edges):
-                        srcItem = item.getTheOnlyEdge().srcSocket
-                        item.removeAllEdges()
-                        item = srcItem
+                    if not item.dummy:
+                        if not item.isOutput and len(item.edges):
+                            srcItem = item.getTheOnlyEdge().srcSocket
+                            item.removeAllEdges()
+                            item = srcItem
 
-                    edge = QDMGraphicsTempEdge()
-                    pos = self.mapToScene(event.pos())
-                    edge.setItem(item)
-                    edge.setEndPos(pos)
-                    edge.updatePath()
-                    self.dragingEdge = edge
-                    self.scene().addItem(edge)
-                    self.scene().update()
+                        edge = QDMGraphicsTempEdge()
+                        pos = self.mapToScene(event.pos())
+                        edge.setItem(item)
+                        edge.setEndPos(pos)
+                        edge.updatePath()
+                        self.dragingEdge = edge
+                        self.scene().addItem(edge)
+                        self.scene().update()
 
             else:
                 item = self.itemAt(event.pos())
@@ -566,6 +567,7 @@ class QDMGraphicsSocket(QGraphicsItem):
 
         self.node = parent
         self.name = None
+        self.dummy = False
 
     def hasAnyEdge(self):
         return len(self.edges) != 0
@@ -861,6 +863,23 @@ class QDMGraphicsNode(QGraphicsItem):
             button.setChecked(name in options)
 
     def initSockets(self):
+        h = - TEXT_HEIGHT / 2
+        s = QDMGraphicsSocket(self)
+        s.setPos(0, h)
+        s.setIsOutput(False)
+        s.dummy = True
+        self.dummy_input_socket = s
+        self.dummy_input_socket.hide()
+
+        w = style['node_width']
+        s = QDMGraphicsSocket(self)
+        s.setPos(w, h)
+        s.setIsOutput(False)
+        s.dummy = True
+        self.dummy_output_socket = s
+        self.dummy_output_socket.hide()
+
+
         inputs = self.desc_inputs
         outputs = self.desc_outputs
         params = self.desc_params
@@ -958,6 +977,9 @@ class QDMGraphicsNode(QGraphicsItem):
         painter.drawPath(pathOutline.simplified())
 
     def collapse(self):
+        self.dummy_input_socket.show()
+        self.dummy_output_socket.show()
+
         self.collapsed = True
         self.options['OUT'].hide()
         self.options['MUTE'].hide()
@@ -969,6 +991,9 @@ class QDMGraphicsNode(QGraphicsItem):
             v.hide()
 
     def unfold(self):
+        self.dummy_input_socket.hide()
+        self.dummy_output_socket.hide()
+
         self.collapsed = False
         self.options['OUT'].show()
         self.options['MUTE'].show()
