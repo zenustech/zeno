@@ -809,6 +809,7 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.collapse_button = QDMCollapseButton(self)
         self.collapse_button.setPos(150, -TEXT_HEIGHT * 0.9)
+        self.collapsed = False
 
         self.params = {}
         self.inputs = {}
@@ -921,15 +922,19 @@ class QDMGraphicsNode(QGraphicsItem):
         y += TEXT_HEIGHT * 0.75
         self.height = y
 
+        self.collapse()
+        self.unfold()
+
     def boundingRect(self):
         return QRectF(0, -TEXT_HEIGHT, self.width, self.height).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-        pathContent = QPainterPath()
-        pathContent.addRect(0, -TEXT_HEIGHT, self.width, self.height)
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['panel_color']))
-        painter.drawPath(pathContent.simplified())
+        if not self.collapsed:
+            pathContent = QPainterPath()
+            pathContent.addRect(0, -TEXT_HEIGHT, self.width, self.height)
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QColor(style['panel_color']))
+            painter.drawPath(pathContent.simplified())
 
         pathTitle = QPainterPath()
         pathTitle.addRect(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
@@ -939,13 +944,36 @@ class QDMGraphicsNode(QGraphicsItem):
 
         pathOutline = QPainterPath()
         r = style['node_rounded_radius']
-        pathOutline.addRoundedRect(0, -TEXT_HEIGHT, self.width, self.height, r, r)
+        h = TEXT_HEIGHT if self.collapsed else self.height
+        pathOutline.addRoundedRect(0, -TEXT_HEIGHT, self.width, h, r, r)
         pathOutlineColor = 'selected_color' if self.isSelected() else 'line_color'
         pen = QPen(QColor(style[pathOutlineColor]))
         pen.setWidth(style['node_outline_width'])
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
         painter.drawPath(pathOutline.simplified())
+
+    def collapse(self):
+        self.collapsed = True
+        self.options['OUT'].hide()
+        self.options['MUTE'].hide()
+        for k, v in self.params.items():
+            v.hide()
+        for k, v in self.inputs.items():
+            v.hide()
+        for k, v in self.outputs.items():
+            v.hide()
+
+    def unfold(self):
+        self.collapsed = False
+        self.options['OUT'].show()
+        self.options['MUTE'].show()
+        for k, v in self.params.items():
+            v.show()
+        for k, v in self.inputs.items():
+            v.show()
+        for k, v in self.outputs.items():
+            v.show()
 
 
 class QDMFileMenu(QMenu):
