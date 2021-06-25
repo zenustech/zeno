@@ -1,4 +1,4 @@
-O=assets/subgraph.zsg
+O=assets/gctest.zsg
 
 default: all run
 
