@@ -83,6 +83,8 @@ ZENAPI void Graph::derefSocket(
 ZENAPI void Graph::gcObject(
     std::string const &sn, std::string const &ss,
     std::string const &id) {
+    if (id == "_AUTO_DST")
+        return;
     auto key = sn + "::" + ss;
     auto sno = nodes.at(sn).get();
     if (sno->inputs.find("COND") != sno->inputs.end())
