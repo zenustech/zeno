@@ -81,10 +81,6 @@ struct IObjectClone : Base {
 
 struct Graph;
 
-struct Context {
-    std::set<std::string> visited;
-};
-
 struct INode {
 public:
     Graph *graph = nullptr;
@@ -200,27 +196,41 @@ struct ImplNodeClass : INodeClass {
 
 struct Session;
 
+struct Context {
+    std::set<std::string> visited;
+    std::map<std::string, int> socketRefs;
+
+    ZENAPI Context();
+    ZENAPI Context(Context const &other);
+    ZENAPI ~Context();
+};
+
 struct Graph {
     Session *sess = nullptr;
 
     std::map<std::string, std::unique_ptr<INode>> nodes;
     std::map<std::string, std::shared_ptr<IObject>> objects;
-    std::unique_ptr<Context> ctx;
 
     std::map<std::string, std::shared_ptr<IObject>> subInputs;
     std::map<std::string, std::shared_ptr<IObject>> subOutputs;
 
-    std::map<std::string, int> objectRefs;
+    std::map<std::string, std::string> portalIns;
+    std::map<std::string, std::shared_ptr<zen::IObject>> portals;
+
     std::map<std::string, int> socketRefs;
 
-    ZENAPI void refObject(std::string const &id);
-    ZENAPI void refSocket(std::string const &sn,
+    std::unique_ptr<Context> ctx;
+
+    ZENAPI Graph();
+    ZENAPI ~Graph();
+
+    ZENAPI void compRefSocket(std::string const &sn,
         std::string const &ss);
-    ZENAPI void derefObject(std::string const &id);
     ZENAPI void derefSocket(std::string const &sn,
         std::string const &ss);
     ZENAPI void gcObject(std::string const &sn,
         std::string const &ss, std::string const &id);
+
     ZENAPI void clearNodes();
     ZENAPI void applyNodes(std::vector<std::string> const &ids);
     ZENAPI void addNode(std::string const &cls, std::string const &id);

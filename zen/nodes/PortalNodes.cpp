@@ -1,19 +1,16 @@
 #include <zen/zen.h>
 #include <zen/GlobalState.h>
 
-static std::map<std::string, std::string> portalIns;
-static std::map<std::string, std::shared_ptr<zen::IObject>> portals;
-
 struct PortalIn : zen::INode {
     virtual void complete() override {
         auto name = get_param<std::string>("name");
-        portalIns[name] = this->myname;
+        graph->portalIns[name] = this->myname;
     }
 
     virtual void apply() override {
         auto name = get_param<std::string>("name");
         auto obj = get_input("port");
-        portals[name] = std::move(obj);
+        graph->portals[name] = std::move(obj);
     }
 };
 
@@ -27,9 +24,9 @@ ZENDEFNODE(PortalIn, {
 struct PortalOut : zen::INode {
     virtual void apply() override {
         auto name = get_param<std::string>("name");
-        auto depnode = portalIns.at(name);
+        auto depnode = graph->portalIns.at(name);
         graph->applyNode(depnode);
-        auto obj = portals.at(name);
+        auto obj = graph->portals.at(name);
         set_output("port", std::move(obj));
     }
 };
@@ -56,6 +53,18 @@ ZENDEFNODE(Route, {
     {"portal"},
 });
 
+struct Comment : Route {  // ui defined in zen/nodepref.py
+};
+
+ZENDEFNODE(Comment, {
+    {"input"},
+    {"output"},
+    {},
+    {"portal"},
+});
+
+
+
 
 struct Clone : zen::INode {
     virtual void apply() override {
@@ -75,4 +84,3 @@ ZENDEFNODE(Clone, {
     {},
     {"portal"},
 });
-

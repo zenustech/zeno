@@ -52,4 +52,47 @@ static int defMeshToPrimitive = zen::defNodeClass<MeshToPrimitive>("MeshToPrimit
     "primitive",
     }});
 
+
+
+struct PrimitiveToMesh : zen::INode{
+    virtual void apply() override {
+    auto mesh = get_input("prim")->as<PrimitiveObject>();
+    auto result = zen::IObject::make<MeshObject>();
+    auto pos = mesh->attr<zen::vec3f>("pos");
+    auto uv = mesh->attr<zen::vec3f>("tex");
+    auto nrm = mesh->attr<zen::vec3f>("nrm");
+    result->vertices.resize(pos.size());
+    result->uvs.resize(uv.size());
+    result->normals.resize(nrm.size());
+
+#pragma omp parallel for
+    for(int i=0;i<result->vertices.size();i++)
+    {
+        result->vertices[i] = glm::vec3(mesh->attr<zen::vec3f>("pos")[i][0],
+            mesh->attr<zen::vec3f>("pos")[i][1], mesh->attr<zen::vec3f>("pos")[i][2]);
+
+        if(result->uvs.size()>0)
+            result->uvs[i] = glm::vec2(mesh->attr<zen::vec3f>("tex")[i][0], 
+            mesh->attr<zen::vec3f>("tex")[i][1]);
+
+        if(result->normals.size()>0)
+            result->normals[i] = glm::vec3(mesh->attr<zen::vec3f>("nrm")[i][0], mesh->attr<zen::vec3f>("nrm")[i][1],mesh->attr<zen::vec3f>("nrm")[i][2]);
+    }
+
+    
+    set_output("mesh", result);
+  }
+};
+
+static int defPrimitiveToMesh = zen::defNodeClass<PrimitiveToMesh>("PrimitiveToMesh",
+    { /* inputs: */ {
+        "prim",
+    }, /* outputs: */ {
+        "mesh",
+    }, /* params: */ { 
+    }, /* category: */ {
+    "primitive",
+    }});
+
+
 }

@@ -94,14 +94,20 @@ class QDMGraphicsScene(QGraphicsScene):
         self.setSceneRect(-width // 2, -height // 2, width, height)
         self.setBackgroundBrush(QColor(style['background_color']))
 
-        self.descs = {}
-        self.cates = {}
         self.nodes = []
 
         self.history_stack = HistoryStack(self)
         self.moved = False
         self.mmb_press = False
         self.contentChanged = False
+
+    @property
+    def descs(self):
+        return self.editor.descs
+
+    @property
+    def cates(self):
+        return self.editor.cates
 
     def setContentChanged(self, flag):
         self.contentChanged = flag
@@ -216,10 +222,15 @@ class QDMGraphicsScene(QGraphicsScene):
             if name.lower() in key.lower():
                 yield key
 
-    def makeNode(self, name):
-        desc = self.descs[name]
-        node = QDMGraphicsNode()
+    def makeNodeBase(self, name):
+        ctor = globals().get('QDMGraphicsNode_' + name, QDMGraphicsNode)
+        node = ctor()
         node.setName(name)
+        return node
+
+    def makeNode(self, name):
+        node = self.makeNodeBase(name)
+        desc = self.descs[name]
         node.desc_inputs = desc['inputs']
         node.desc_outputs = desc['outputs']
         node.desc_params = desc['params']
@@ -229,21 +240,17 @@ class QDMGraphicsScene(QGraphicsScene):
         self.nodes.append(node)
         self.addItem(node)
 
-    def setDescriptors(self, descs):
-        self.descs = descs
-        for name, desc in descs.items():
-            for cate in desc['categories']:
-                self.cates.setdefault(cate, []).append(name)
-
     def record(self):
         self.history_stack.record()
         self.setContentChanged(True)
 
     def undo(self):
         self.history_stack.undo()
+        self.setContentChanged(True)
 
     def redo(self):
         self.history_stack.redo()
+        self.setContentChanged(True)
 
     def mousePressEvent(self, event):
         if self.mmb_press:
@@ -451,6 +458,7 @@ class QDMGraphicsPath(QGraphicsPathItem):
         self.dstPos = dstPos
 
     def paint(self, painter, styleOptions, widget=None):
+        self.updatePath()
         color = 'selected_color' if self.isSelected() else 'line_color'
         pen = QPen(QColor(style[color]))
         pen.setWidth(style['line_width'])
@@ -817,7 +825,7 @@ class QDMGraphicsNode(QGraphicsItem):
         outputs = self.desc_outputs
         params = self.desc_params
 
-        y = TEXT_HEIGHT * 0.4
+        y = self.height + TEXT_HEIGHT * 0.4
 
         self.options['OUT'] = button = QDMGraphicsButton(self)
         rect = QRectF(HORI_MARGIN, y, self.width / 2 - HORI_MARGIN * 1.5, 0)
@@ -834,7 +842,7 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.params.clear()
         for index, (type, name, defl) in enumerate(params):
-            param = eval('QDMGraphicsParam_' + type)(self)
+            param = globals()['QDMGraphicsParam_' + type](self)
             rect = QRectF(HORI_MARGIN, y, self.width - HORI_MARGIN * 2, 0)
             param.setGeometry(rect)
             param.setName(name)
@@ -865,7 +873,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.outputs.clear()
         for index, name in enumerate(outputs):
             socket = QDMGraphicsSocket(self)
-            index += len(self.desc_params) + len(self.desc_inputs)
+            index += len(params) + len(inputs)
             socket.setPos(0, y)
             socket.setName(name)
             socket.setIsOutput(True)
@@ -914,6 +922,7 @@ class QDMFileMenu(QMenu):
                 ('&New', QKeySequence.New),
                 ('&Open', QKeySequence.Open),
                 ('&Save', QKeySequence.Save),
+                ('&Import', 'ctrl+shift+o'),
                 ('Save &as', QKeySequence.SaveAs),
         ]
 
@@ -972,15 +981,40 @@ class NodeEditor(QWidget):
         self.view = QDMGraphicsView(self)
         self.layout.addWidget(self.view)
 
-        self.scene = QDMGraphicsScene()
-        self.scene.record()
-        self.scene.setContentChanged(False)
-        self.view.setScene(self.scene)
+        self.scenes = {}
+        self.descs = {}
+        self.cates = {}
 
         self.initExecute()
         self.initShortcuts()
-        self.refreshDescriptors()
+        self.initDescriptors()
 
+        self.newProgram()
+        self.handleEnvironParams()
+
+    def clearScenes(self):
+        self.scenes.clear()
+
+    def deleteCurrScene(self):
+        self.scenes.remove(self.scene)
+        self.switchScene('main')
+
+    def switchScene(self, name):
+        if name not in self.scenes:
+            scene = QDMGraphicsScene()
+            scene.editor = self
+            scene.record()
+            scene.setContentChanged(False)
+            self.scenes[name] = scene
+        else:
+            scene = self.scenes[name]
+        self.view.setScene(scene)
+
+    @property
+    def scene(self):
+        return self.view.scene()
+
+    def handleEnvironParams(self):
         if os.environ.get('ZEN_OPEN'):
             path = os.environ['ZEN_OPEN']
             self.do_open(path)
@@ -1016,27 +1050,89 @@ class NodeEditor(QWidget):
         self.button_kill.resize(80, 30)
         self.button_kill.clicked.connect(self.on_kill) 
 
-    def refreshDescriptors(self):
-        self.scene.setDescriptors(zenapi.getDescriptors())
+        self.edit_graphname = QLineEdit(self)
+        self.edit_graphname.move(270, 40)
+        self.edit_graphname.resize(70, 30)
+        self.edit_graphname.setText('main')
+
+        self.button_switch = QPushButton('Switch', self)
+        self.button_switch.move(350, 40)
+        self.button_switch.resize(80, 30)
+        self.button_switch.clicked.connect(self.on_switch_graph)
+
+        self.button_delete = QPushButton('Delete', self)
+        self.button_delete.move(440, 40)
+        self.button_delete.resize(80, 30)
+        self.button_delete.clicked.connect(self.deleteCurrScene)
+
+    def on_switch_graph(self):
+        name = self.edit_graphname.text()
+        self.switchScene(name)
+        self.initDescriptors()
+        print('all subgraphs are:', list(self.scenes.keys()))
+
+    def setDescriptors(self, descs):
+        self.descs = descs
+        self.cates.clear()
+        for name, desc in self.descs.items():
+            for cate in desc['categories']:
+                self.cates.setdefault(cate, []).append(name)
+
+    def initDescriptors(self):
+        descs = zenapi.getDescriptors()
+        subg_descs = self.getSubgraphDescs()
+        descs.update(subg_descs)
+        self.setDescriptors(descs)
 
     def on_add(self):
         pos = QPointF(0, 0)
         self.view.contextMenu(pos)
 
-    def on_connect(self):
-        baseurl = self.edit_baseurl.text()
-        import zenwebcfg
-        zenwebcfg.connectServer(baseurl)
-        self.refreshDescriptors()
-
     def on_kill(self):
         zenapi.killProcess()
 
+    def dumpProgram(self):
+        graphs = {}
+        for name, scene in self.scenes.items():
+            graph = scene.dumpGraph()
+            graphs[name] = graph
+        prog = {}
+        prog['graph'] = graphs
+        prog['descs'] = dict(self.descs)
+        return prog
+
+    def bkwdCompatProgram(self, prog):
+        if 'graph' not in prog:
+            if 'main' not in prog:
+                prog = {'main': prog}
+            prog = {'graph': prog}
+        if 'descs' not in prog:
+            prog['descs'] = dict(self.descs)
+        return prog
+
+    def importProgram(self, prog):
+        prog = self.bkwdCompatProgram(prog)
+        self.setDescriptors(prog['descs'])
+        self.scene.newGraph()
+        self.scene.loadGraph(graph)
+        self.scene.record()
+        self.initDescriptors()
+
+    def loadProgram(self, prog):
+        prog = self.bkwdCompatProgram(prog)
+        self.setDescriptors(prog['descs'])
+        self.clearScenes()
+        for name, graph in prog['graph'].items():
+            print('Loading subgraph', name)
+            self.switchScene(name)
+            self.scene.loadGraph(graph)
+        self.switchScene('main')
+        self.initDescriptors()
+
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
-        graph = self.scene.dumpGraph()
-        scene = {'main': graph}
-        go(zenapi.launchScene, scene, nframes)
+        prog = self.dumpProgram()
+        go(zenapi.launchScene, prog['graph'], nframes)
 
     def on_delete(self):
         itemList = self.scene.selectedItems()
@@ -1046,35 +1142,49 @@ class NodeEditor(QWidget):
                 item.remove()
         self.scene.record()
 
+    def newProgram(self):
+        self.clearScenes()
+        self.switchScene('main')
+
+    def getOpenFileName(self):
+        path, kind = QFileDialog.getOpenFileName(self, 'File to Open',
+                '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+        return path
+
+    def getSaveFileName(self):
+        path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
+                '', 'Zensim Graph File(*.zsg);; All Files(*);;')
+        return path
+
     def menuTriggered(self, act):
         name = act.text()
         if name == '&New':
             if not self.confirm_discard('New'):
                 return
-            self.scene.newGraph()
-            self.scene.history_stack.init_state()
-            self.scene.record()
-            self.scene.setContentChanged(False)
+            self.newProgram()
             self.current_path = None
 
         elif name == '&Open':
             if not self.confirm_discard('Open'):
                 return
-            path, kind = QFileDialog.getOpenFileName(self, 'File to Open',
-                    '', 'Zensim Graph File(*.zsg);; All Files(*);;')
-            if path != '':
+            path = self.getOpenFileName()
+            if path:
                 self.do_open(path)
                 self.current_path = path
 
         elif name == 'Save &as' or (name == '&Save' and self.current_path is None):
-            path, kind = QFileDialog.getSaveFileName(self, 'Path to Save',
-                    '', 'Zensim Graph File(*.zsg);; All Files(*);;')
-            if path != '':
+            path = self.getSaveFileName()
+            if path:
                 self.do_save(path)
                 self.current_path = path
 
         elif name == '&Save':
             self.do_save(self.current_path)
+
+        elif name == '&Import':
+            path = self.getOpenFileName()
+            if path != '':
+                self.do_import(path)
 
         elif name == 'Undo':
             self.scene.undo()
@@ -1110,25 +1220,59 @@ class NodeEditor(QWidget):
             self.scene.record()
 
     def do_save(self, path):
-        graph = self.scene.dumpGraph()
+        prog = self.dumpProgram()
         with open(path, 'w') as f:
-            json.dump(graph, f)
-        self.scene.setContentChanged(False)
+            json.dump(prog, f)
+        for scene in self.scenes.values():
+            scene.setContentChanged(False)
+
+    def do_import(self, path):
+        with open(path, 'r') as f:
+            prog = json.load(f)
+        self.importProgram(prog)
 
     def do_open(self, path):
         with open(path, 'r') as f:
-            graph = json.load(f)
-        self.scene.newGraph()
-        self.scene.history_stack.init_state()
-        self.scene.loadGraph(graph)
-        self.scene.record()
-        self.scene.setContentChanged(False)
+            prog = json.load(f)
+        self.loadProgram(prog)
 
     def confirm_discard(self, title):
         if os.environ.get('ZEN_OPEN'):
             return True
-        if self.scene.contentChanged:
+        contentChanged = False
+        for scene in self.scenes.values():
+            if scene.contentChanged:
+                contentChanged = True
+        if contentChanged:
             flag = QMessageBox.question(self, title, 'Discard unsaved changes?',
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             return flag == QMessageBox.Yes
         return True
+
+    def getSubgraphDescs(self):
+        descs = {}
+        for name, scene in self.scenes.items():
+            if name == 'main': continue
+            graph = scene.dumpGraph()
+            subcategory = 'subgraph'
+            subinputs = []
+            suboutputs = []
+            for node in graph.values():
+                if node['name'] == 'SubInput':
+                    subinputs.append(node['params']['name'])
+                elif node['name'] == 'SubOutput':
+                    suboutputs.append(node['params']['name'])
+                elif node['name'] == 'SubCategory':
+                    subcategory = node['params']['name']
+            subinputs.extend(self.descs['Subgraph']['inputs'])
+            suboutputs.extend(self.descs['Subgraph']['outputs'])
+            desc = {}
+            desc['inputs'] = subinputs
+            desc['outputs'] = suboutputs
+            desc['params'] = []
+            desc['categories'] = [subcategory]
+            descs[name] = desc
+        return descs
+
+
+from .nodepref import *
