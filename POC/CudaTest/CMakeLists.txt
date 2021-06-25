@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 file(GLOB PROJECT_SOURCE *.cpp *.h *.cu *.cuh)
 
-set(CMAKE_CUDA_ARCHITECTURES 52 61 75)
+set(CMAKE_CUDA_ARCHITECTURES 52 61 75 80)
 
 add_executable(cudatest)
 target_sources(cudatest PRIVATE ${PROJECT_SOURCE})

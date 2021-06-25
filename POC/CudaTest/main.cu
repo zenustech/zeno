@@ -1,4 +1,4 @@
-#if 0
+#if 1
 #include <stdio.h>
 __global__ void test() { printf("FuCK U NVIDIA!\n"); } int main(void) { test<<<1, 1>>>(); cudaDeviceSynchronize(); }
 #else
