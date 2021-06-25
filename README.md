@@ -40,6 +40,8 @@ blocks of algorithms in the form of **nodes** at a relatively low granularity.
 By connecting these nodes, you can literally create your unique solver that best fits
 your need, rather than being limited by the imagination of software programmers.
 
+[TODO: ```rigid_pool.zsg``` to demo solid-fluid couple]
+
 ## Performant
 
 ZENO nodes are mainly written in C++. By connecting nodes in our Qt5 editor,
@@ -77,6 +79,7 @@ using its C++ or Python API.
 Here's some of the node libraries that have been implemented by our developers:
 
 - basic primitive ops (by @archibate)
+- basic OpenVDB ops (by @zhxx1987)
 - OpenVDB FLIP fluids (by @zhxx1987)
 - Tree-code N-body (by @archibate)
 - Molocular Dynamics (by @victoriacity)
@@ -91,6 +94,8 @@ You may also add your own solver nodes to ZENO with this workflow if you'd like.
 Not only you can play ZENO in our official Qt5 editor, but also we may install
 ZENO as a **Blender addon**! With that, you can enjoy the flexibilty of ZENO
 node system and all other powerful tools in Blender.
+
+[TODO: demostrate our blender addon here]
 
 
 # Build & Run
