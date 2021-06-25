@@ -31,6 +31,7 @@ def loadGraph(nodes, subgkeys):
         params = data['params']
 
         if name in subgkeys:
+            params['name'] = name
             name = 'Subgraph'
         core.addNode(name, ident)
 
