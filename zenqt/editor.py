@@ -158,7 +158,10 @@ class QDMGraphicsScene(QGraphicsScene):
             if name not in self.descs:
                 print('no node class named [{}]'.format(name))
                 continue
-            node = self.makeNode(name)
+            node = self.makeNodeBase(name)
+            node.desc_inputs = desc['inputs']
+            node.desc_outputs = desc['outputs']
+            node.desc_params = desc['params']
             node.initSockets()
             node.setIdent(ident)
             node.setName(name)
@@ -216,11 +219,15 @@ class QDMGraphicsScene(QGraphicsScene):
             if name.lower() in key.lower():
                 yield key
 
-    def makeNode(self, name):
-        desc = self.descs[name]
+    def makeNodeBase(self, name):
         ctor = globals().get('QDMGraphicsNode_' + name, QDMGraphicsNode)
         node = ctor()
         node.setName(name)
+        return node
+
+    def makeNode(self, name):
+        node = self.makeNodeBase(name)
+        desc = self.descs[name]
         node.desc_inputs = desc['inputs']
         node.desc_outputs = desc['outputs']
         node.desc_params = desc['params']
@@ -870,7 +877,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.outputs.clear()
         for index, name in enumerate(outputs):
             socket = QDMGraphicsSocket(self)
-            index += len(self.desc_params) + len(self.desc_inputs)
+            index += len(params) + len(inputs)
             socket.setPos(0, y)
             socket.setName(name)
             socket.setIsOutput(True)
