@@ -232,6 +232,7 @@ class QDMGraphicsScene(QGraphicsScene):
 
     def setDescriptors(self, descs):
         self.descs = descs
+        self.cates.clear()
         for name, desc in descs.items():
             for cate in desc['categories']:
                 self.cates.setdefault(cate, []).append(name)
@@ -977,11 +978,12 @@ class NodeEditor(QWidget):
         self.view = QDMGraphicsView(self)
         self.layout.addWidget(self.view)
 
+        self.scenes = {}
+
         self.initExecute()
         self.initShortcuts()
         self.initDescriptors()
 
-        self.scenes = {}
         self.newProgram()
         self.handleEnvironParams()
 
@@ -1056,18 +1058,24 @@ class NodeEditor(QWidget):
         self.button_delete = QPushButton('Delete', self)
         self.button_delete.move(440, 40)
         self.button_delete.resize(80, 30)
-        self.button_delete.clicked.connect(self.on_delete_graph)
+        self.button_delete.clicked.connect(self.deleteCurrScene)
+
+        self.button_refresh = QPushButton('Refresh', self)
+        self.button_refresh.move(530, 40)
+        self.button_refresh.resize(80, 30)
+        self.button_refresh.clicked.connect(self.initDescriptors)
 
     def on_switch_graph(self):
         name = self.edit_graphname.text()
         self.switchScene(name)
         print('all subgraphs are:', list(self.scenes.keys()))
 
-    def on_delete_graph(self):
-        self.deleteCurrScene()
-
     def initDescriptors(self):
         self.descs = zenapi.getDescriptors()
+        subg_descs = self.getSubgraphDescs()
+        self.descs.update(subg_descs)
+        for scene in self.scenes.values():
+            scene.setDescriptors(self.descs)
 
     def on_add(self):
         pos = QPointF(0, 0)
@@ -1090,6 +1098,7 @@ class NodeEditor(QWidget):
         self.scene.newGraph()
         self.scene.loadGraph(graph)
         self.scene.record()
+        self.initDescriptors()
 
     def loadProgram(self, prog):
         self.clearScenes()
@@ -1099,6 +1108,7 @@ class NodeEditor(QWidget):
             self.switchScene(name)
             self.scene.loadGraph(graph)
         self.switchScene('main')
+        self.initDescriptors()
 
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
@@ -1219,6 +1229,31 @@ class NodeEditor(QWidget):
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             return flag == QMessageBox.Yes
         return True
+
+    def getSubgraphDescs(self):
+        descs = {}
+        for name, scene in self.scenes.items():
+            if name == 'main': continue
+            graph = scene.dumpGraph()
+            subcategory = 'subgraph'
+            subinputs = []
+            suboutputs = []
+            for node in graph.values():
+                if node['name'] == 'SubInput':
+                    subinputs.append(node['params']['name'])
+                elif node['name'] == 'SubOutput':
+                    suboutputs.append(node['params']['name'])
+                elif node['name'] == 'SubCategory':
+                    subcategory = node['params']['name']
+            subinputs.extend(self.descs['Subgraph']['inputs'])
+            suboutputs.extend(self.descs['Subgraph']['outputs'])
+            desc = {}
+            desc['inputs'] = subinputs
+            desc['outputs'] = suboutputs
+            desc['params'] = []
+            desc['categories'] = [subcategory]
+            descs[name] = desc
+        return descs
 
 
 from .nodepref import *
