@@ -4,6 +4,7 @@
 #include <zen/PrimitiveObject.h>
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
+#include <BulletCollision/CollisionShapes/btConvexPointCloudShape.h>
 #include <hacdCircularList.h>
 #include <hacdVector.h>
 #include <hacdICHull.h>
@@ -85,7 +86,7 @@ struct PrimitiveToBulletMesh : zen::INode {
             mesh->mesh.addTriangle(
                 zen::vec_to_other<btVector3>(pos[f[0]]),
                 zen::vec_to_other<btVector3>(pos[f[1]]),
-                zen::vec_to_other<btVector3>(pos[f[2]]));
+                zen::vec_to_other<btVector3>(pos[f[2]]), true);
         }
         set_output("mesh", std::move(mesh));
     }
@@ -187,9 +188,17 @@ struct BulletMakeConvexHullShape : zen::INode {
         auto triMesh = &get_input<BulletTriangleMesh>("triMesh")->mesh;
         auto inShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
         auto hull = std::make_unique<btShapeHull>(inShape.get());
-        hull->buildHull(inShape->getMargin());
+        hull->buildHull(0.01, 256);
         auto convex = std::make_unique<btConvexHullShape>(
-            (const float *)hull->getVertexPointer(), hull->numVertices());
+             (const float *)hull->getVertexPointer(), hull->numVertices());
+        // auto convex = std::make_unique<btConvexPointCloudShape>();
+        // btVector3* points = new btVector3[inShape->getNumVertices()];
+        // for(int i=0;i<inShape->getNumVertices(); i++)
+        // {
+        //     btVector3 v;
+        //     inShape->getVertex(i, v);
+        //     points[i]=v;
+        // }
 
         auto shape = std::make_shared<BulletCollisionShape>(std::move(convex));
         set_output("shape", std::move(shape));
