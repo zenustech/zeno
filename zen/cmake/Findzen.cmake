@@ -38,6 +38,7 @@ else()
     set(zen_LIBRARY ${zen_LIBRARY_DIR}/zensession.lib)
 endif()
 
+message("zen_INSTALL_DIR=${zen_INSTALL_DIR}")
 message("zen_INCLUDE_DIR=${zen_INCLUDE_DIR}")
 message("zen_CMAKE_MODULE_DIR=${zen_CMAKE_MODULE_DIR}")
 message("zen_AUTOLOAD_DIR=${zen_AUTOLOAD_DIR}")

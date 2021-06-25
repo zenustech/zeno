@@ -2,6 +2,15 @@ O=assets/forloop2.zsg
 
 default: all run
 
+install: prepare
+	python/setup.py install
+
+dist: prepare
+	python/setup.py bdist_wheel
+
+prepare:
+	make -C build install
+
 all:
 	cmake -B build -DCMAKE_BUILD_TYPE=Release
 	make -C build -j `python -c 'from multiprocessing import cpu_count; print(cpu_count() * 2)'`
