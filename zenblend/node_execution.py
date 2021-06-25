@@ -39,6 +39,7 @@ def dumpBlenderGraph(node_tree):
             'inputs': node_inputs,
             'params': node_params,
             'uipos': node_uipos,
+            'options': ['OUT'] if node_type == 'ExecutionOutput' else [],
         }
 
     return nodes
@@ -68,8 +69,9 @@ class ZensimExecuteOperator(bpy.types.Operator):
             self.report({'ERROR'}, 'Please add an ExecutionOutput node!')
             return {'CANCELED'}
 
-        nodes = dumpBlenderGraph(node_tree)
-        go(zenapi.launchGraph, nodes, nframes)
+        graph = dumpBlenderGraph(node_tree)
+        scene = {'main': graph}
+        go(zenapi.launchScene, scene, nframes)
 
         return {'FINISHED'}
 

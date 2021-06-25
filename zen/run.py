@@ -33,6 +33,8 @@ def loadGraph(nodes, subgkeys):
         if name in subgkeys:
             params['name'] = name
             name = 'Subgraph'
+        elif name == 'ExecutionOutput':
+            name = 'Route'
         core.addNode(name, ident)
 
         for name, input in inputs.items():
