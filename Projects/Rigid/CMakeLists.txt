@@ -8,6 +8,8 @@ if (MSVC)
             $<$<CONFIG:Debug>:/MTd> #---|-- Statically link the runtime libraries
             $<$<CONFIG:Release>:/MT> #--|
     )  # cl: 命令行 warning D9025 :正在重写“/MD”(用“/MT”)
+else()
+    set(BUILD_SHARED_LIBS ON)
 endif()
 ####################################################
 # FUN FACT: DID U KNOW THAT MICROSOFT BUYS GITHUB? #
