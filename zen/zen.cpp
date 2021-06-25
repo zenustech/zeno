@@ -59,25 +59,18 @@ ZENAPI INode::~INode() = default;
 ZENAPI Context::Context() = default;
 ZENAPI Context::~Context() = default;
 
-ZENAPI Context::Context(Context const &other) = default;
-
-ZENAPI void Graph::refObject(
-    std::string const &id) {
-    int n = ++ctx->objectRefs[id];
-    //printf("%p RO %s %d\n", ctx.get(), id.c_str(), n);
+ZENAPI Context::Context(Context const &other)
+    : visited(other.visited)
+    //, socketRefs(other.socketRefs)
+{
+    printf("%p -> %p\n", &other, this);
 }
+
 ZENAPI void Graph::compRefSocket(
     std::string const &sn, std::string const &ss) {
     auto key = sn + "::" + ss;
     int n = ++socketRefs[key];
-    //printf("%p RS %s %d\n", ctx.get(), key.c_str(), n);
-}
-ZENAPI void Graph::derefObject(
-    std::string const &id) {
-    if (ctx->objectRefs.find(id) == ctx->objectRefs.end())
-        return;
-    int n = --ctx->objectRefs.at(id);
-    //printf("%p DO %s %d\n", ctx.get(), id.c_str(), n);
+    printf("%p RS %s %d\n", ctx.get(), key.c_str(), n);
 }
 ZENAPI void Graph::derefSocket(
     std::string const &sn, std::string const &ss) {
@@ -85,27 +78,21 @@ ZENAPI void Graph::derefSocket(
     if (ctx->socketRefs.find(key) == ctx->socketRefs.end())
         return;
     int n = --ctx->socketRefs.at(key);
-    //printf("%p DS %s %d\n", ctx.get(), key.c_str(), n);
+    printf("%p DS %s %d\n", ctx.get(), key.c_str(), n);
 }
 ZENAPI void Graph::gcObject(
     std::string const &sn, std::string const &ss,
     std::string const &id) {
     auto key = sn + "::" + ss;
     auto sno = nodes.at(sn).get();
-    if (sno->inputs.find("COND") != sno->inputs.end()) {
-        // TODO: tmpwalkarnd
-        return;
-    }
-    if (ctx->objectRefs.find(id) == ctx->objectRefs.end())
-        return;
+    if (sno->inputs.find("COND") != sno->inputs.end())
+        return; // TODO: temp walkaround by not GC for COND'ed nodes
     if (ctx->socketRefs.find(key) == ctx->socketRefs.end())
         return;
-    int n = ctx->objectRefs.at(id);
-    int m = ctx->socketRefs.at(key);
-    printf("%p GC %s/%s %d/%d\n", ctx.get(), key.c_str(), id.c_str(), m, n);
-    if (n <= 0 && m <= 0) {
-        assert(!n && !m);
-        ctx->objectRefs.erase(id);
+    int n = ctx->socketRefs.at(key);
+    printf("%p GC %s %d\n", ctx.get(), key.c_str(), n);
+    if (n <= 0) {
+        assert(!n);
         ctx->socketRefs.erase(key);
         objects.erase(id);
     }
@@ -151,7 +138,6 @@ ZENAPI void INode::doApply() {
         auto [sn, ss] = bound;
         graph->derefSocket(sn, ss);
         auto ref = inputs.at(ds);
-        graph->derefObject(ref);
         graph->gcObject(sn, ss, ref);  // TODO: fix gc on forloop
     }
 
@@ -181,7 +167,6 @@ ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&
 }
 
 ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {
-    //graph->refObject(ref);
     outputs[id] = ref;
 }
 

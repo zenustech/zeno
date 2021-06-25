@@ -198,7 +198,6 @@ struct Session;
 
 struct Context {
     std::set<std::string> visited;
-    std::map<std::string, int> objectRefs;
     std::map<std::string, int> socketRefs;
 
     ZENAPI Context();
@@ -225,10 +224,8 @@ struct Graph {
     ZENAPI Graph();
     ZENAPI ~Graph();
 
-    ZENAPI void refObject(std::string const &id);
     ZENAPI void compRefSocket(std::string const &sn,
         std::string const &ss);
-    ZENAPI void derefObject(std::string const &id);
     ZENAPI void derefSocket(std::string const &sn,
         std::string const &ss);
     ZENAPI void gcObject(std::string const &sn,

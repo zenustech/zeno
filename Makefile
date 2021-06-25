@@ -1,6 +1,15 @@
-O=assets/subgraph.zsg
+O=assets/forloop2.zsg
 
 default: all run
+
+install: prepare
+	python/setup.py install
+
+dist: prepare
+	python/setup.py bdist_wheel
+
+prepare:
+	make -C build install
 
 all:
 	cmake -B build -DCMAKE_BUILD_TYPE=Release
