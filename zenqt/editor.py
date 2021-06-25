@@ -660,23 +660,25 @@ class QDMSVGButton(QSvgWidget):
     def __init__(self):
         super().__init__()
         self.render = self.renderer()
-        self.load(asset_path('collapse.svg'))
-        self.checked = True
+        self.load(asset_path('unfold.svg'))
+        self.collapsed = False
         # PyQt5 >= 5.15
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
         self.setStyleSheet('background-color: {}'.format(style['title_color']))
     
     def isChecked(self):
-        return self.checked
+        return self.collapseds
     
     def mousePressEvent(self, event):
         super().mouseMoveEvent(event)
-        self.checked = not self.checked
-        if self.checked:
+        self.collapsed = not self.collapsed
+        if self.collapsed:
             self.load(asset_path('collapse.svg'))
+            self.node.collapse()
         else:
             self.load(asset_path('unfold.svg'))
+            self.node.unfold()
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
 class QDMCollapseButton(QGraphicsProxyWidget):
@@ -810,6 +812,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.collapse_button = QDMCollapseButton(self)
         self.collapse_button.setPos(150, -TEXT_HEIGHT * 0.9)
         self.collapsed = False
+        self.collapse_button.widget.node = self
 
         self.params = {}
         self.inputs = {}
