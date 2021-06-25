@@ -8,7 +8,7 @@ from . import asset_path
 import zenvis
 
 
-class SvgWidget(QSvgWidget):
+class QDMPlayButton(QSvgWidget):
     def __init__(self, timeline):
         super().__init__()
         self.render = self.renderer()
@@ -43,7 +43,7 @@ class TimelineWidget(QWidget):
         self.slider.setMinimum(0)
         self.slider.setMaximum(1)
 
-        self.player = SvgWidget(self)
+        self.player = QDMPlayButton(self)
 
         layout = QHBoxLayout()
         layout.addWidget(self.player)
