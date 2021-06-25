@@ -1,4 +1,4 @@
-O=assets/comment.zsg
+O=assets/subgraph.zsg
 
 default: all run
 

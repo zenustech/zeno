@@ -21,7 +21,7 @@ def evaluateExpr(expr):
     return eval('f' + repr(expr))
 
 
-def loadGraph(nodes):
+def loadGraph(nodes, subgkeys):
     #core.clearNodes()
 
     for ident in nodes:
@@ -30,6 +30,8 @@ def loadGraph(nodes):
         inputs = data['inputs']
         params = data['params']
 
+        if name in subgkeys:
+            name = 'Subgraph'
         core.addNode(name, ident)
 
         for name, input in inputs.items():
@@ -47,9 +49,10 @@ def loadGraph(nodes):
 
 
 def runSceneOnce(graphs):
+    subgkeys = set(graphs.keys())
     for name, nodes in graphs.items():
         core.switchGraph(name)
-        loadGraph(nodes)
+        loadGraph(nodes, subgkeys)
 
     nodes = graphs['main']
     # 'main' graph use 'OUT' as applies, subgraphs use 'SubOutput' as applies
