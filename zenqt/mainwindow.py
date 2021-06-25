@@ -12,7 +12,7 @@ class MainWindow(QWidget):
         super().__init__(parent)
 
         self.setWindowTitle('ZENO Qt Editor')
-        self.setGeometry(200, 200, 1400, 720)
+        self.setGeometry(200, 200, 1000, 1000)
 
         scrn_size = QDesktopWidget().geometry()
         self_size = self.geometry()
@@ -25,12 +25,15 @@ class MainWindow(QWidget):
         self.timeline = TimelineWidget()
         self.timeline.setEditor(self.editor)
 
-        self.mainsplit = QSplitter(Qt.Horizontal)
-        self.mainsplit.setOpaqueResize(True)
-        self.mainsplit.addWidget(self.viewport)
+        self.upsplit = QSplitter(Qt.Horizontal)
+        self.upsplit.addWidget(self.viewport)
+        self.upsplit.addWidget(QWidget())
+        self.upsplit.setStretchFactor(1, 1)
+
+        self.mainsplit = QSplitter(Qt.Vertical)
+        self.mainsplit.addWidget(self.upsplit)
         self.mainsplit.addWidget(self.editor)
-        self.mainsplit.setStretchFactor(0, 5)
-        self.mainsplit.setStretchFactor(1, 2)
+        self.mainsplit.setStretchFactor(0, 1)
 
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
