@@ -514,7 +514,16 @@ class QDMGraphicsTempEdge(QDMGraphicsPath):
 
         super().updatePath()
 
-
+        # s = self.srcSocket
+        # if not s.node.collapse:
+        #     srcPos = s.getCirclePos()
+        # else:
+        #     srcPos = s.node.dummy_output_socket.getCirclePos()
+        # s = self.dstSocket
+        # if not s.node.collapse:
+        #     srcPos = s.getCirclePos()
+        # else:
+        #     srcPos = s.node.dummy_intput_socket.getCirclePos()
 class QDMGraphicsEdge(QDMGraphicsPath):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -534,8 +543,16 @@ class QDMGraphicsEdge(QDMGraphicsPath):
         self.dstSocket = socket
 
     def updatePath(self):
-        srcPos = self.srcSocket.getCirclePos()
-        dstPos = self.dstSocket.getCirclePos()
+        s = self.srcSocket
+        if not s.node.collapsed:
+            srcPos = s.getCirclePos()
+        else:
+            srcPos = s.node.dummy_output_socket.getCirclePos()
+        s = self.dstSocket
+        if not s.node.collapsed:
+            dstPos = s.getCirclePos()
+        else:
+            dstPos = s.node.dummy_input_socket.getCirclePos()
         self.setSrcDstPos(srcPos, dstPos)
 
         super().updatePath()
@@ -989,6 +1006,10 @@ class QDMGraphicsNode(QGraphicsItem):
             v.hide()
         for k, v in self.outputs.items():
             v.hide()
+
+        for socket in self.outputs.values():
+            for edge in socket.edges:
+                edge.updatePath()
 
     def unfold(self):
         self.dummy_input_socket.hide()
