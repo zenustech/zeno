@@ -181,7 +181,7 @@ ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&
 }
 
 ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {
-    //graph->refObject(ref);
+    graph->refObject(ref);
     outputs[id] = ref;
 }
 
