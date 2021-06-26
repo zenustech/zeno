@@ -959,9 +959,6 @@ class QDMGraphicsNode(QGraphicsItem):
         y += TEXT_HEIGHT * 0.75
         self.height = y
 
-        #self.collapse()
-        #self.unfold()
-
     def boundingRect(self):
         h = TEXT_HEIGHT if self.collapsed else self.height
         return QRectF(0, -TEXT_HEIGHT, self.width, h).normalized()
