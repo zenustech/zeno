@@ -45,7 +45,7 @@ style = {
     'copy_offset_x': 100,
     'copy_offset_y': 100,
     'hori_margin': 10,
-    'dummy_node_offset': 25,
+    'dummy_socket_offset': 15,
 }
 
 class HistoryStack:
@@ -669,7 +669,7 @@ class QDMGraphicsButton(QGraphicsProxyWidget):
         self.widget.setText(text)
 
 
-class QDMSVGButton(QSvgWidget):
+class QDMCollapseButton(QSvgWidget):
     def __init__(self):
         super().__init__()
         self.render = self.renderer()
@@ -694,11 +694,12 @@ class QDMSVGButton(QSvgWidget):
             self.node.unfold()
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
-class QDMCollapseButton(QGraphicsProxyWidget):
+
+class QDMGraphicsCollapseButton(QGraphicsProxyWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.widget = QDMSVGButton()
+        self.widget = QDMCollapseButton()
         self.setWidget(self.widget)
 
 class QDMGraphicsParam(QGraphicsProxyWidget):
@@ -822,7 +823,7 @@ class QDMGraphicsNode(QGraphicsItem):
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
 
-        self.collapse_button = QDMCollapseButton(self)
+        self.collapse_button = QDMGraphicsCollapseButton(self)
         self.collapse_button.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT * 0.9)
         self.collapsed = False
         self.collapse_button.widget.node = self
@@ -873,9 +874,9 @@ class QDMGraphicsNode(QGraphicsItem):
         for name, button in self.options.items():
             button.setChecked(name in options)
 
-    def initSockets(self):
+    def initDummySockets(self):
         h = - TEXT_HEIGHT / 2
-        offset = style['dummy_node_offset']
+        offset = style['dummy_socket_offset']
         s = QDMGraphicsSocket(self)
         s.setPos(-offset, h)
         s.setIsOutput(False)
@@ -891,6 +892,8 @@ class QDMGraphicsNode(QGraphicsItem):
         self.dummy_output_socket = s
         self.dummy_output_socket.hide()
 
+    def initSockets(self):
+        self.initDummySockets()
 
         inputs = self.desc_inputs
         outputs = self.desc_outputs
@@ -956,8 +959,8 @@ class QDMGraphicsNode(QGraphicsItem):
         y += TEXT_HEIGHT * 0.75
         self.height = y
 
-        self.collapse()
-        self.unfold()
+        #self.collapse()
+        #self.unfold()
 
     def boundingRect(self):
         h = TEXT_HEIGHT if self.collapsed else self.height
