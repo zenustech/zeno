@@ -964,21 +964,40 @@ class QDMGraphicsNode(QGraphicsItem):
         return QRectF(0, -TEXT_HEIGHT, self.width, h).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
+        r = style['node_rounded_radius']
+
         if not self.collapsed:
             pathContent = QPainterPath()
-            pathContent.addRect(0, -TEXT_HEIGHT, self.width, self.height)
+            rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
+            pathContent.addRoundedRect(rect, r, r)
             painter.setPen(Qt.NoPen)
             painter.setBrush(QColor(style['panel_color']))
             painter.drawPath(pathContent.simplified())
 
+            pathContent = QPainterPath()
+            rect = QRectF(0, 0, self.width, r)
+            pathContent.addRect(rect)
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QColor(style['panel_color']))
+            painter.drawPath(pathContent.simplified())
+
+        # title round top
         pathTitle = QPainterPath()
-        pathTitle.addRect(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
+        rect = QRectF(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
+        pathTitle.addRoundedRect(rect, r, r)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(style['title_color']))
+        painter.drawPath(pathTitle.simplified())
+        
+        # title direct bottom
+        pathTitle = QPainterPath()
+        rect = QRectF(0, -r, self.width, r)
+        pathTitle.addRect(rect)
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor(style['title_color']))
         painter.drawPath(pathTitle.simplified())
 
         pathOutline = QPainterPath()
-        r = style['node_rounded_radius']
         h = TEXT_HEIGHT if self.collapsed else self.height
         pathOutline.addRoundedRect(0, -TEXT_HEIGHT, self.width, h, r, r)
         pathOutlineColor = 'selected_color' if self.isSelected() else 'line_color'
