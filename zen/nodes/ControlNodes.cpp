@@ -130,3 +130,27 @@ ZENDEFNODE(BeginForEach, {
     {},
     {"control"},
 });
+
+
+struct CachedOnce : zen::INode {
+    bool m_done = false;
+
+    virtual void doApply() override {
+        if (!m_done) {
+            zen::INode::doApply();
+            m_done = true;
+        }
+    }
+
+    virtual void apply() override {
+        auto ptr = get_input("input");
+        set_output("output", std::move(ptr));
+    }
+};
+
+ZENDEFNODE(CachedOnce, {
+    {"input"},
+    {"output"},
+    {},
+    {"control"},
+});
