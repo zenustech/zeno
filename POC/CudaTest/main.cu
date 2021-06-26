@@ -22,7 +22,7 @@ int main(void)
 
   checkCudaErrors(cudaDeviceSynchronize());
 
-  for (int i = 0; i < 64; i++) {
+  for (int i = 0; i < nx; i++) {
     printf("%f\n", img[i]);
   }
 
