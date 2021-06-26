@@ -26,8 +26,6 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
         "import zenutils, sys, os; sys.stdout.write(os.path.abspath(zenutils.rel2abs(zenutils.__file__, '..', 'zen')))"
         OUTPUT_VARIABLE zen_INSTALL_DIR)
 
-message("zen_INSTALL_DIR=${zen_INSTALL_DIR}")
-
 set(zen_AUTOLOAD_DIR ${zen_INSTALL_DIR}/lib)
 set(zen_CMAKE_MODULE_DIR ${zen_INSTALL_DIR}/share/cmake)
 set(zen_INCLUDE_DIR ${zen_INSTALL_DIR}/include)
