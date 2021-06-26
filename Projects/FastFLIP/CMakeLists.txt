@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.16)
 set(CMAKE_CXX_STANDARD 17)
 project(FLIPlib)
 add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)  
@@ -31,7 +31,7 @@ target_include_directories(FLIPlib PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(FLIPlib PRIVATE ltcommon ltcommon/tunicate ltcommon/newsparse lostopos d3dutils)
 
 target_link_libraries(FLIPlib PRIVATE TBB::tbb TBB::tbbmalloc)
-target_link_libraries(FLIPlib PRIVATE pthread openblas lapack cblas)
+target_link_libraries(FLIPlib PRIVATE pthread openblas lapack)
 
 #disable default malloc options
 if (WIN32)
