@@ -37,8 +37,6 @@ def loadFileIntoBlender(name, ext, path, frameid):
     else:
         return
 
-    print(name, ext, path)
-
     curr_objects.add(obj.name)
 
 

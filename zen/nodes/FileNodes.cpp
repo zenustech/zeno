@@ -60,6 +60,7 @@ struct EndFrame : zen::INode {
         path /= "done.lock";
         std::ofstream ofs(path.string());
         ofs.write("DONE", 4);
+        objid = 0;
     }
 };
 
