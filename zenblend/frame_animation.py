@@ -35,7 +35,9 @@ def loadFileIntoBlender(name, ext, path, frameid):
         obj = renew_volume_object(name, path)
 
     else:
-        raise RuntimeError(f'bad file extension name: {ext}')
+        return
+
+    print(name, ext, path)
 
     curr_objects.add(obj.name)
 
