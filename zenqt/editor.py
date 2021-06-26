@@ -670,7 +670,7 @@ class QDMGraphicsButton(QGraphicsProxyWidget):
 
 
 class QDMCollapseButton(QSvgWidget):
-    def __init__(self):
+    def __init__(self, parent=None):
         super().__init__()
         self.render = self.renderer()
         self.load(asset_path('unfold.svg'))
@@ -679,6 +679,7 @@ class QDMCollapseButton(QSvgWidget):
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
         self.setStyleSheet('background-color: {}'.format(style['title_color']))
+        self.node = parent
     
     def isChecked(self):
         return self.collapseds
@@ -699,7 +700,7 @@ class QDMGraphicsCollapseButton(QGraphicsProxyWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.widget = QDMCollapseButton()
+        self.widget = QDMCollapseButton(parent)
         self.setWidget(self.widget)
 
 class QDMGraphicsParam(QGraphicsProxyWidget):
@@ -818,15 +819,14 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor(style['title_text_color']))
-        self.title.setPos(HORI_MARGIN * 2, -TEXT_HEIGHT * 0.9)
+        self.title.setPos(HORI_MARGIN * 2, -TEXT_HEIGHT * 0.92)
         font = QFont()
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
 
         self.collapse_button = QDMGraphicsCollapseButton(self)
-        self.collapse_button.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT * 0.9)
+        self.collapse_button.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT * 0.84)
         self.collapsed = False
-        self.collapse_button.widget.node = self
 
         self.params = {}
         self.inputs = {}
