@@ -45,6 +45,7 @@ style = {
     'copy_offset_x': 100,
     'copy_offset_y': 100,
     'hori_margin': 10,
+    'dummy_node_offset': 25,
 }
 
 class HistoryStack:
@@ -638,7 +639,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         return QRectF(*self.getCircleBounds()).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-        socket_color = 'socket_connect_color' if self.hasAnyEdge() else 'socket_unconnect_color'
+        socket_color = 'socket_connect_color' if self.hasAnyEdge() or self.dummy else 'socket_unconnect_color'
         painter.setBrush(QColor(style[socket_color]))
         pen = QPen(QColor(style['line_color']))
         pen.setWidth(style['socket_outline_width'])
@@ -823,13 +824,13 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor(style['title_text_color']))
-        self.title.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT * 0.9)
+        self.title.setPos(HORI_MARGIN * 2, -TEXT_HEIGHT * 0.9)
         font = QFont()
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
 
         self.collapse_button = QDMCollapseButton(self)
-        self.collapse_button.setPos(150, -TEXT_HEIGHT * 0.9)
+        self.collapse_button.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT * 0.9)
         self.collapsed = False
         self.collapse_button.widget.node = self
 
@@ -881,8 +882,9 @@ class QDMGraphicsNode(QGraphicsItem):
 
     def initSockets(self):
         h = - TEXT_HEIGHT / 2
+        offset = style['dummy_node_offset']
         s = QDMGraphicsSocket(self)
-        s.setPos(0, h)
+        s.setPos(-offset, h)
         s.setIsOutput(False)
         s.dummy = True
         self.dummy_input_socket = s
@@ -890,7 +892,7 @@ class QDMGraphicsNode(QGraphicsItem):
 
         w = style['node_width']
         s = QDMGraphicsSocket(self)
-        s.setPos(w, h)
+        s.setPos(w + offset, h)
         s.setIsOutput(False)
         s.dummy = True
         self.dummy_output_socket = s
