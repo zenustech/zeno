@@ -368,21 +368,20 @@ class QDMGraphicsView(QGraphicsView):
 
             if self.dragingEdge is None:
                 item = self.itemAt(event.pos())
-                if isinstance(item, QDMGraphicsSocket):
-                    if not item.dummy:
-                        if not item.isOutput and len(item.edges):
-                            srcItem = item.getTheOnlyEdge().srcSocket
-                            item.removeAllEdges()
-                            item = srcItem
+                if isinstance(item, QDMGraphicsSocket) and not item.dummy:
+                    if not item.isOutput and len(item.edges):
+                        srcItem = item.getTheOnlyEdge().srcSocket
+                        item.removeAllEdges()
+                        item = srcItem
 
-                        edge = QDMGraphicsTempEdge()
-                        pos = self.mapToScene(event.pos())
-                        edge.setItem(item)
-                        edge.setEndPos(pos)
-                        edge.updatePath()
-                        self.dragingEdge = edge
-                        self.scene().addItem(edge)
-                        self.scene().update()
+                    edge = QDMGraphicsTempEdge()
+                    pos = self.mapToScene(event.pos())
+                    edge.setItem(item)
+                    edge.setEndPos(pos)
+                    edge.updatePath()
+                    self.dragingEdge = edge
+                    self.scene().addItem(edge)
+                    self.scene().update()
 
             else:
                 item = self.itemAt(event.pos())
@@ -515,16 +514,7 @@ class QDMGraphicsTempEdge(QDMGraphicsPath):
 
         super().updatePath()
 
-        # s = self.srcSocket
-        # if not s.node.collapse:
-        #     srcPos = s.getCirclePos()
-        # else:
-        #     srcPos = s.node.dummy_output_socket.getCirclePos()
-        # s = self.dstSocket
-        # if not s.node.collapse:
-        #     srcPos = s.getCirclePos()
-        # else:
-        #     srcPos = s.node.dummy_intput_socket.getCirclePos()
+
 class QDMGraphicsEdge(QDMGraphicsPath):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -639,7 +629,10 @@ class QDMGraphicsSocket(QGraphicsItem):
         return QRectF(*self.getCircleBounds()).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-        socket_color = 'socket_connect_color' if self.hasAnyEdge() or self.dummy else 'socket_unconnect_color'
+        if self.hasAnyEdge() or self.dummy:
+            socket_color = 'socket_connect_color'
+        else:
+            socket_color = 'socket_unconnect_color'
         painter.setBrush(QColor(style[socket_color]))
         pen = QPen(QColor(style['line_color']))
         pen.setWidth(style['socket_outline_width'])
