@@ -959,36 +959,48 @@ class QDMGraphicsNode(QGraphicsItem):
         y += TEXT_HEIGHT * 0.75
         self.height = y
 
-        #self.collapse()
-        #self.unfold()
-
     def boundingRect(self):
         h = TEXT_HEIGHT if self.collapsed else self.height
         return QRectF(0, -TEXT_HEIGHT, self.width, h).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
+        r = style['node_rounded_radius']
+
         if not self.collapsed:
             pathContent = QPainterPath()
-            pathContent.addRect(0, -TEXT_HEIGHT, self.width, self.height)
+            rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
+            pathContent.addRoundedRect(rect, r, r)
             painter.setPen(Qt.NoPen)
             painter.setBrush(QColor(style['panel_color']))
             painter.drawPath(pathContent.simplified())
 
-        pathTitle = QPainterPath()
-        pathTitle.addRect(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['title_color']))
-        painter.drawPath(pathTitle.simplified())
+            # title round top
+            pathTitle = QPainterPath()
+            rect = QRectF(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
+            pathTitle.addRoundedRect(rect, r, r)
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QColor(style['title_color']))
+            painter.drawPath(pathTitle.simplified())
+            
+            # title direct bottom
+            pathTitle = QPainterPath()
+            rect = QRectF(0, -r, self.width, r)
+            pathTitle.addRect(rect)
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QColor(style['title_color']))
+            painter.drawPath(pathTitle.simplified())
 
         pathOutline = QPainterPath()
-        r = style['node_rounded_radius']
         h = TEXT_HEIGHT if self.collapsed else self.height
         pathOutline.addRoundedRect(0, -TEXT_HEIGHT, self.width, h, r, r)
         pathOutlineColor = 'selected_color' if self.isSelected() else 'line_color'
         pen = QPen(QColor(style[pathOutlineColor]))
         pen.setWidth(style['node_outline_width'])
         painter.setPen(pen)
-        painter.setBrush(Qt.NoBrush)
+        if not self.collapsed:
+            painter.setBrush(Qt.NoBrush)
+        else:
+            painter.setBrush(QColor(style['title_color']))
         painter.drawPath(pathOutline.simplified())
 
     def collapse(self):
