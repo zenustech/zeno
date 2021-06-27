@@ -23,15 +23,13 @@ jobs:
             python: 3.8
 
     runs-on: ${{ matrix.os }}
+    container: archibate/zeno_dev:latest
 
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python }}
-
-    - name: Install Requirements
-      run: sudo bash scripts/ubuntu.sh
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
