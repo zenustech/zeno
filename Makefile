@@ -1,4 +1,4 @@
-O=assets/testnumute.zsg
+O=assets/prim.zsg
 
 default: all run
 

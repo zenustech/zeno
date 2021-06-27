@@ -22,7 +22,8 @@ PYBIND11_MODULE(libzenpy, m) {
         return zen::state.setIOPath(iopath);
     });
     m.def("frameBegin", [] () { return zen::state.frameBegin(); });
-    m.def("frameEnd", [] () { return zen::state.frameEnd(); });
+    m.def("frameEnd", [] () {
+        zen::endCurrFrame(); return zen::state.frameEnd(); });
     m.def("substepBegin", [] () { return zen::state.substepBegin(); });
     m.def("substepEnd", [] () { return zen::state.substepEnd(); });
 
