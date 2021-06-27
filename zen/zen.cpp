@@ -51,6 +51,9 @@ ZENAPI IObject::~IObject() = default;
 ZENAPI std::shared_ptr<IObject> IObject::clone() const {
     return nullptr;
 }
+
+ZENAPI void IObject::visualize() {
+}
 #endif
 
 ZENAPI INode::INode() = default;
@@ -75,6 +78,30 @@ ZENAPI void INode::doComplete() {
 
 ZENAPI void INode::complete() {}
 
+ZENAPI bool INode::checkApplyCondition() {
+    if (has_input("COND")) {  // TODO: deprecate COND
+        auto cond = get_input<zen::ConditionObject>("COND");
+        if (!cond->get())
+            return false;
+    }
+
+    if (has_option("ONCE")) {
+        if (has_executed_complete) {
+            return false;
+        } else {
+            has_executed = true;
+        }
+    }
+
+    if (has_option("MUTE")) {
+        auto desc = nodeClass->desc.get();
+        set_output(desc->outputs[0], get_input(desc->inputs[0]));
+        return false;
+    }
+
+    return true;
+}
+
 ZENAPI void INode::doApply() {
     for (auto const &[ds, bound]: inputBounds) {
         auto [sn, ss] = bound;
@@ -83,29 +110,17 @@ ZENAPI void INode::doApply() {
         inputs[ds] = ref;
     }
 
-    if (has_input("COND")) {  // TODO: deprecate COND
-        auto cond = get_input<zen::ConditionObject>("COND");
-        if (!cond->get())
-            return;
+    if (checkApplyCondition()) {
+        apply();
     }
 
-    if (has_option("ONCE")) {
-        if (has_executed_complete) {
-            return;
-        } else {
-            has_executed = true;
-        }
-    }
-
-    if (has_option("MUTE")) {
+    if (has_option("VIEW")) {
         auto desc = nodeClass->desc.get();
-        if (desc->inputs.size() > 0 && desc->outputs.size() > 0) {
-            set_output(desc->outputs[0], get_input(desc->inputs[0]));
-        }
-        return;
+        auto id = desc->outputs[0];
+        auto ref = safe_at(outputs, id, "output");
+        auto obj = graph->getObject(ref);
+        obj->visualize();
     }
-
-    apply();
 }
 
 ZENAPI bool INode::has_option(std::string const &id) const {

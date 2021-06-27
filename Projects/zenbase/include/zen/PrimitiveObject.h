@@ -23,6 +23,12 @@ struct PrimitiveObject : zen::IObjectClone<PrimitiveObject> {
     std::vector<zen::vec3i> tris;
     std::vector<zen::vec4i> quads;
 
+#ifndef _ZEN_FREE_IOBJECT
+    virtual void visualize() override;
+#else
+    virtual void visualize() override {}
+#endif
+
     template <class T>
     std::vector<T> &add_attr(std::string const &name) {
         if (!has_attr(name))

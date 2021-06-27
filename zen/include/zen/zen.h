@@ -55,9 +55,11 @@ struct IObject {
     ZENAPI virtual ~IObject();
 
     ZENAPI virtual std::shared_ptr<IObject> clone() const;
+    ZENAPI virtual void visualize();
 #else
     virtual ~IObject() = default;
     virtual std::shared_ptr<IObject> clone() const { return nullptr; }
+    ZENAPI virtual void visualize() {}
 #endif
 
     using Ptr = std::unique_ptr<IObject>;
@@ -104,32 +106,30 @@ protected:
     bool has_executed = false;
     bool has_executed_complete = false;
 
+    ZENAPI bool checkApplyCondition();
+
     ZENAPI virtual void complete();
     ZENAPI virtual void apply() = 0;
 
     ZENAPI bool has_option(std::string const &id) const;
-
     ZENAPI bool has_input(std::string const &id) const;
-
     ZENAPI std::shared_ptr<IObject> get_input(std::string const &id) const;
+    ZENAPI std::string get_input_ref(std::string const &id) const;
+    ZENAPI IValue get_param(std::string const &id) const;
+    ZENAPI void set_output(std::string const &id,
+        std::shared_ptr<IObject> &&obj);
+    ZENAPI void set_output_ref(std::string const &id, std::string const &ref);
 
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
         return std::dynamic_pointer_cast<T>(get_input(id));
     }
 
-    ZENAPI std::string get_input_ref(std::string const &id) const;
-
-    ZENAPI IValue get_param(std::string const &id) const;
-
     template <class T>
     T get_param(std::string const &id) const {
         return std::get<T>(get_param(id));
     }
 
-    ZENAPI void set_output(std::string const &id, std::shared_ptr<IObject> &&obj);
-
-    ZENAPI void set_output_ref(std::string const &id, std::string const &ref);
 
     template <class T>
     ZENDEPRECATED T *new_member(std::string const &id) {
@@ -140,7 +140,8 @@ protected:
     }
 
     template <class T>
-    ZENDEPRECATED void set_output(std::string const &id, std::shared_ptr<T> &obj) {
+    ZENDEPRECATED void set_output(std::string const &id,
+        std::shared_ptr<T> &obj) {
         set_output(id, std::move(obj));
     }
 };
@@ -247,6 +248,7 @@ struct Graph {
 struct Session {
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
     std::map<std::string, std::unique_ptr<Graph>> graphs;
+    std::vector<std::shared_ptr<zen::IObject>> viewObjects;
     Graph *currGraph;
 
     ZENAPI Session();
