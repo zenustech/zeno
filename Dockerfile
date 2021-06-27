@@ -29,8 +29,7 @@ RUN cd c-blosc && git checkout tags/v1.5.0 -b v1.5.0 && mkdir build && cd build 
 RUN git clone https://gitee.com/zeng_gui/openvdb.git
 RUN cd openvdb && mkdir build && cd build && cmake .. && make -j8 && make install && cd ../..
 
-RUN wget http://www.netlib.org/blas/blast-forum/cblas.tgz
-RUN tar zxvf cblas.tgz && cd CBLAS && make -j8 && make install && cd ..
+############################################################################
 
 RUN apt-get install -y python-is-python3
 RUN apt-get install -y python-dev-is-python3
