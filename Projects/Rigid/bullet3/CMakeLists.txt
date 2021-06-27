@@ -26,7 +26,7 @@ SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG")
 OPTION(USE_DOUBLE_PRECISION "Use double precision"	OFF)
 SET(CLAMP_VELOCITIES "0" CACHE STRING "Clamp rigid bodies' velocity to this value, if larger than zero. Useful to prevent floating point errors or in general runaway velocities in complex scenarios")
 OPTION(USE_GRAPHICAL_BENCHMARK "Use Graphical Benchmark" OFF)
-OPTION(BUILD_SHARED_LIBS "Use shared libraries" OFF)
+#OPTION(BUILD_SHARED_LIBS "Use shared libraries" OFF)
 OPTION(USE_SOFT_BODY_MULTI_BODY_DYNAMICS_WORLD "Use btSoftMultiBodyDynamicsWorld" ON)
 OPTION(USE_OPENVR "Use OpenVR for virtual reality" OFF)
 
@@ -48,10 +48,10 @@ ENDIF (BULLET2_MULTITHREADING)
 if (MSVC)  # we must use this to fix bullet3 on win
     set(BUILD_SHARED_LIBS OFF)
     add_compile_options(
-            $<$<CONFIG:>:/MT> #---------|
-            $<$<CONFIG:Debug>:/MTd> #---|-- Statically link the runtime libraries
-            $<$<CONFIG:Release>:/MT> #--|
-    )  # cl: 命令行 warning D9025 :正在重写“/MD”(用“/MT”)
+            $<$<CONFIG:>:/MD> #---------|
+            $<$<CONFIG:Debug>:/MDd> #---|-- Statically link the runtime libraries
+            $<$<CONFIG:Release>:/MD> #--|
+    )  # cl: 命令行 warning D9025 :正在重写“/MT”(用“/MD”)
 else()
     set(BUILD_SHARED_LIBS ON)
 endif()
