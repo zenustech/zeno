@@ -25,11 +25,5 @@ run: all
 clean_run:
 	ZEN_OPEN=$O ./run.sh
 
-install:
-	python/setup.py install
-
-dist:
-	python/setup.py bdist_wheel
-
 debug: dbg_all
 	USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh

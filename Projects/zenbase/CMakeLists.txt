@@ -1,6 +1,7 @@
 file(GLOB PROJECT_SOURCE include/*/*.h *.cpp mesh/*.cpp pars/*.cpp prim/*.cpp)
 
 add_library(zenbase SHARED ${PROJECT_SOURCE})
+target_compile_definitions(zenbase PRIVATE -DDLL_ZENBASE)
 target_include_directories(zenbase PUBLIC include)
 
 find_package(OpenMP)

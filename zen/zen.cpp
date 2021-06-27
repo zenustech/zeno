@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/ConditionObject.h>
+#include <zen/GlobalState.h>
 #include <cassert>
 
 namespace zen {
@@ -44,7 +45,6 @@ T const &safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) 
 }
 
 
-#ifndef ZEN_FREE_IOBJECT
 ZENAPI IObject::IObject() = default;
 ZENAPI IObject::~IObject() = default;
 
@@ -54,7 +54,6 @@ ZENAPI std::shared_ptr<IObject> IObject::clone() const {
 
 ZENAPI void IObject::visualize() {
 }
-#endif
 
 ZENAPI INode::INode() = default;
 ZENAPI INode::~INode() = default;
@@ -72,7 +71,6 @@ ZENAPI Graph::~Graph() = default;
 
 ZENAPI void INode::doComplete() {
     set_output("DST", std::make_shared<ConditionObject>());
-    has_executed_complete = has_executed;
     complete();
 }
 
@@ -86,11 +84,8 @@ ZENAPI bool INode::checkApplyCondition() {
     }
 
     if (has_option("ONCE")) {
-        if (has_executed_complete) {
+        if (zen::state.frameid != 0)
             return false;
-        } else {
-            has_executed = true;
-        }
     }
 
     if (has_option("MUTE")) {
@@ -117,8 +112,7 @@ ZENAPI void INode::doApply() {
     if (has_option("VIEW")) {
         auto desc = nodeClass->desc.get();
         auto id = desc->outputs[0];
-        auto ref = safe_at(outputs, id, "output");
-        auto obj = graph->getObject(ref);
+        auto obj = safe_at(outputs, id, "output");
         obj->visualize();
     }
 }
@@ -132,8 +126,7 @@ ZENAPI bool INode::has_input(std::string const &id) const {
 }
 
 ZENAPI std::shared_ptr<IObject> INode::get_input(std::string const &id) const {
-    auto ref = safe_at(inputs, id, "input");
-    return graph->getObject(ref);
+    return safe_at(inputs, id, "input");
 }
 
 ZENAPI IValue INode::get_param(std::string const &id) const {
@@ -141,31 +134,17 @@ ZENAPI IValue INode::get_param(std::string const &id) const {
 }
 
 ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
-    auto objid = myname + "::" + id;
-    graph->objects[objid] = std::move(obj);
-    set_output_ref(id, objid);
+    outputs[id] = std::move(obj);
 }
 
-ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {
-    outputs[id] = ref;
-}
-
-ZENAPI std::string INode::get_input_ref(const std::string &id) const {
-    return safe_at(inputs, id, "input");
-}
-
-ZENAPI std::string Graph::getNodeOutput(std::string const &sn, std::string const &ss) const {
+ZENAPI std::shared_ptr<IObject> const &Graph::getNodeOutput(
+    std::string const &sn, std::string const &ss) const {
     auto node = safe_at(nodes, sn, "node");
-    return safe_at(node->outputs, ss, "node output");
-}
-
-ZENAPI std::shared_ptr<IObject> const &Graph::getObject(std::string const &id) const {
-    return safe_at(objects, id, "object");
+    return safe_at(node->outputs, ss, "output");
 }
 
 ZENAPI void Graph::clearNodes() {
     nodes.clear();
-    objects.clear();
 }
 
 ZENAPI void Graph::addNode(std::string const &cls, std::string const &id) {

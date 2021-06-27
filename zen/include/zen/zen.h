@@ -14,7 +14,7 @@
 
 #ifdef _MSC_VER
 
-# ifdef _ZEN_INDLL
+# ifdef DLL_ZENSESSION
 #  define ZENAPI __declspec(dllexport)
 # else
 #  define ZENAPI __declspec(dllimport)
@@ -50,7 +50,7 @@ using IValue = std::variant<std::string, int, float>;
 
 
 struct IObject {
-#ifndef _ZEN_FREE_IOBJECT
+#ifndef ZEN_NOREFDLL
     ZENAPI IObject();
     ZENAPI virtual ~IObject();
 
@@ -91,8 +91,8 @@ public:
 
     std::string myname;
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
-    std::map<std::string, std::string> inputs;
-    std::map<std::string, std::string> outputs;
+    std::map<std::string, std::shared_ptr<IObject>> inputs;
+    std::map<std::string, std::shared_ptr<IObject>> outputs;
     std::map<std::string, IValue> params;
     std::set<std::string> options;
 
@@ -103,9 +103,6 @@ public:
     ZENAPI virtual void doApply();
 
 protected:
-    bool has_executed = false;
-    bool has_executed_complete = false;
-
     ZENAPI bool checkApplyCondition();
 
     ZENAPI virtual void complete();
@@ -113,12 +110,18 @@ protected:
 
     ZENAPI bool has_option(std::string const &id) const;
     ZENAPI bool has_input(std::string const &id) const;
-    ZENAPI std::shared_ptr<IObject> get_input(std::string const &id) const;
-    ZENAPI std::string get_input_ref(std::string const &id) const;
     ZENAPI IValue get_param(std::string const &id) const;
+    ZENAPI std::shared_ptr<IObject> get_input(std::string const &id) const;
     ZENAPI void set_output(std::string const &id,
         std::shared_ptr<IObject> &&obj);
-    ZENAPI void set_output_ref(std::string const &id, std::string const &ref);
+
+    ZENAPI std::shared_ptr<IObject> get_input_ref(std::string const &id) const {
+        return get_input(id);
+    }
+    ZENDEPRECATED void set_output_ref(std::string const &id,
+        std::shared_ptr<IObject> &&obj) {
+        set_output(id, std::move(obj));
+    }
 
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
@@ -217,7 +220,6 @@ struct Graph {
     Session *sess = nullptr;
 
     std::map<std::string, std::unique_ptr<INode>> nodes;
-    std::map<std::string, std::shared_ptr<IObject>> objects;
 
     std::map<std::string, std::shared_ptr<IObject>> subInputs;
     std::map<std::string, std::shared_ptr<IObject>> subOutputs;
@@ -241,14 +243,13 @@ struct Graph {
         IValue const &val);
     ZENAPI void setNodeOptions(std::string const &id,
             std::set<std::string> const &opts);
-    ZENAPI std::string getNodeOutput(std::string const &sn, std::string const &ss) const;
-    ZENAPI std::shared_ptr<IObject> const &getObject(std::string const &id) const;
+    ZENAPI std::shared_ptr<IObject> const &getNodeOutput(
+        std::string const &sn, std::string const &ss) const;
 };
 
 struct Session {
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
     std::map<std::string, std::unique_ptr<Graph>> graphs;
-    std::vector<std::shared_ptr<zen::IObject>> viewObjects;
     Graph *currGraph;
 
     ZENAPI Session();
