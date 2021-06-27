@@ -1,6 +1,11 @@
 #include <zen/zen.h>
 #include <zen/Visualization.h>
 #include <zen/GlobalState.h>
+#include <filesystem>
+#include <fstream>
+#include <cstdio>
+
+namespace fs = std::filesystem;
 
 namespace zen::Visualization {
 
@@ -15,7 +20,6 @@ ZENAPI std::string exportPath(std::string const &ext) {
     }
     sprintf(buf, "%06d.%s", objid++, ext.c_str());
     path /= buf;
-    auto ret = std::make_unique<zen::StringObject>();
     //printf("EXPORTPATH: %s\n", path.c_str());
     return path.string();
 }
