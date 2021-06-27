@@ -103,9 +103,6 @@ public:
     ZENAPI virtual void doApply();
 
 protected:
-    bool has_executed = false;
-    bool has_executed_complete = false;
-
     ZENAPI bool checkApplyCondition();
 
     ZENAPI virtual void complete();

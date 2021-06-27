@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/ConditionObject.h>
+#include <zen/GlobalState.h>
 #include <cassert>
 
 namespace zen {
@@ -72,7 +73,6 @@ ZENAPI Graph::~Graph() = default;
 
 ZENAPI void INode::doComplete() {
     set_output("DST", std::make_shared<ConditionObject>());
-    has_executed_complete = has_executed;
     complete();
 }
 
@@ -86,11 +86,8 @@ ZENAPI bool INode::checkApplyCondition() {
     }
 
     if (has_option("ONCE")) {
-        if (has_executed_complete) {
+        if (zen::state.frameid != 0)
             return false;
-        } else {
-            has_executed = true;
-        }
     }
 
     if (has_option("MUTE")) {
