@@ -75,23 +75,16 @@ ZENAPI void INode::doComplete() {
 
 ZENAPI void INode::complete() {}
 
-ZENAPI void INode::doApply() {
-    for (auto const &[ds, bound]: inputBounds) {
-        auto [sn, ss] = bound;
-        graph->applyNode(sn);
-        auto ref = graph->getNodeOutput(sn, ss);
-        inputs[ds] = ref;
-    }
-
+ZENAPI bool INode::checkApplyCondition() {
     if (has_input("COND")) {  // TODO: deprecate COND
         auto cond = get_input<zen::ConditionObject>("COND");
         if (!cond->get())
-            return;
+            return false;
     }
 
     if (has_option("ONCE")) {
         if (has_executed_complete) {
-            return;
+            return false;
         } else {
             has_executed = true;
         }
@@ -102,10 +95,26 @@ ZENAPI void INode::doApply() {
         if (desc->inputs.size() > 0 && desc->outputs.size() > 0) {
             set_output(desc->outputs[0], get_input(desc->inputs[0]));
         }
-        return;
+        return false;
     }
 
-    apply();
+    return true;
+}
+
+ZENAPI void INode::doApply() {
+    for (auto const &[ds, bound]: inputBounds) {
+        auto [sn, ss] = bound;
+        graph->applyNode(sn);
+        auto ref = graph->getNodeOutput(sn, ss);
+        inputs[ds] = ref;
+    }
+
+    if (checkApplyCondition()) {
+        apply();
+    }
+
+    if (has_option("VIEW")) {
+    }
 }
 
 ZENAPI bool INode::has_option(std::string const &id) const {
