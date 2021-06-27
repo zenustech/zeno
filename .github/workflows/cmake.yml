@@ -19,11 +19,15 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            python: 3.8
+        #- os: ubuntu-latest
+        #  python: 3.8
+        #  container: archibate/zeno_dev:latest
+        - os: windows-latest
+          python: 3.8
+          container: ''
 
     runs-on: ${{ matrix.os }}
-    container: archibate/zeno_dev:latest
+    container: ${{ matrix.container }}
 
     steps:
     - uses: actions/checkout@v2
