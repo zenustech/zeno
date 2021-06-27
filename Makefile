@@ -1,4 +1,4 @@
-O=assets/testcache.zsg
+O=assets/testnumute.zsg
 
 default: all run
 

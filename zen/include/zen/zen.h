@@ -80,12 +80,12 @@ struct IObjectClone : Base {
 };
 
 struct Graph;
+struct INodeClass;
 
 struct INode {
 public:
     Graph *graph = nullptr;
-    bool has_executed = false;
-    bool has_executed_complete = false;
+    INodeClass *nodeClass = nullptr;
 
     std::string myname;
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
@@ -98,9 +98,12 @@ public:
     ZENAPI ~INode();
 
     ZENAPI void doComplete();
-
     ZENAPI virtual void doApply();
+
 protected:
+    bool has_executed = false;
+    bool has_executed_complete = false;
+
     ZENAPI virtual void complete();
     ZENAPI virtual void apply() = 0;
 

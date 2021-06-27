@@ -83,24 +83,29 @@ ZENAPI void INode::doApply() {
         inputs[ds] = ref;
     }
 
-    bool ok = true;
     if (has_input("COND")) {  // TODO: deprecate COND
         auto cond = get_input<zen::ConditionObject>("COND");
         if (!cond->get())
-            ok = false;
+            return;
     }
 
     if (has_option("ONCE")) {
         if (has_executed_complete) {
-            ok = false;
+            return;
         } else {
             has_executed = true;
         }
     }
 
-    if (ok) {
-        apply();
+    if (has_option("MUTE")) {
+        auto desc = nodeClass->desc.get();
+        if (desc->inputs.size() > 0 && desc->outputs.size() > 0) {
+            set_output(desc->outputs[0], get_input(desc->inputs[0]));
+        }
+        return;
     }
+
+    apply();
 }
 
 ZENAPI bool INode::has_option(std::string const &id) const {
@@ -151,9 +156,11 @@ ZENAPI void Graph::clearNodes() {
 ZENAPI void Graph::addNode(std::string const &cls, std::string const &id) {
     if (nodes.find(id) != nodes.end())
         return;  // no add twice, to prevent output object invalid
-    auto node = safe_at(sess->nodeClasses, cls, "node class")->new_instance();
+    auto cl = safe_at(sess->nodeClasses, cls, "node class");
+    auto node = cl->new_instance();
     node->graph = this;
     node->myname = id;
+    node->nodeClass = cl;
     nodes[id] = std::move(node);
 }
 
