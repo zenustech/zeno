@@ -51,6 +51,9 @@ ZENAPI IObject::~IObject() = default;
 ZENAPI std::shared_ptr<IObject> IObject::clone() const {
     return nullptr;
 }
+
+ZENAPI void IObject::visualize() const {
+}
 #endif
 
 ZENAPI INode::INode() = default;
@@ -240,6 +243,13 @@ ZENAPI std::string Session::dumpDescriptors() const {
     res += "DESC:" + key + ":" + cls->desc->serialize() + "\n";
   }
   return res;
+}
+
+ZENAPI Session::endCurrFrame() {
+    for (auto const &obj: viewObjects) {
+        obj->visualize();
+    }
+    viewObjects.clear();
 }
 
 
