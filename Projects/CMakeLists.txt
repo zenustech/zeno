@@ -7,10 +7,18 @@ set(ENV{PYTHONPATH} ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 include_directories(include)
 
-#add_subdirectory(zenbase)
-add_subdirectory(Rigid)
-#add_subdirectory(ZMS)
-#if (NOT WIN32)
-    #add_subdirectory(zenvdb)
-    #add_subdirectory(FastFLIP)
-#endif()
+set(EXTENSION_LIST Rigid ZMS zenbase zenvdb FastFLIP)
+
+foreach (name IN ITEMS ${EXTENSION_LIST})
+    option(EXTENSION_${name} "Build ZENO with extension: ${name}" ON)
+endforeach()
+
+if (WIN32)
+    set(EXTENSION_zenvdb OFF)
+    set(EXTENSION_FastFLIP OFF)
+endif()
+
+foreach (name IN ITEMS ${EXTENSION_LIST})
+    message("Building ZENO with extension: ${name}")
+    add_subdirectory(${name})
+endforeach()
