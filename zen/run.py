@@ -8,7 +8,7 @@ def runScene(scene, nframes, iopath):
     core.setIOPath(iopath)
     for frameid in range(nframes):
         print('FRAME:', frameid)
-        global frame; frame = frameid  # todo: xinxin happy
+        global frame; frame = frameid  # todo: xinxin happy {frame:06d}
         core.frameBegin()
         while core.substepBegin():
             runSceneOnce(scene)
@@ -21,7 +21,7 @@ def evaluateExpr(expr):
     return eval('f' + repr(expr))
 
 
-def loadGraph(nodes, subgkeys):
+def loadGraph(nodes, subgkeys):  # todo: this actually only need invoke once?
     #core.clearNodes()
 
     for ident in nodes:
@@ -29,6 +29,7 @@ def loadGraph(nodes, subgkeys):
         name = data['name']
         inputs = data['inputs']
         params = data['params']
+        options = data['options']
 
         if name in subgkeys:
             params['name'] = name
@@ -47,6 +48,8 @@ def loadGraph(nodes, subgkeys):
             if type(value) is str:
                 value = evaluateExpr(value)
             core.setNodeParam(ident, name, value)
+
+        core.setNodeOptions(ident, options)
 
         core.completeNode(ident)
 

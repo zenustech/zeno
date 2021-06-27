@@ -174,6 +174,11 @@ ZENAPI void Graph::setNodeParam(std::string const &id, std::string const &par,
     safe_at(nodes, id, "node")->params[par] = val;
 }
 
+ZENAPI void Graph::setNodeOptions(std::string const &id,
+        std::set<std::string> const &opts) {
+    safe_at(nodes, id, "node")->options = opts;
+}
+
 
 ZENAPI Session::Session() {
     switchGraph("main");

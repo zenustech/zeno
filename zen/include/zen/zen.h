@@ -90,6 +90,7 @@ public:
     std::map<std::string, std::string> inputs;
     std::map<std::string, std::string> outputs;
     std::map<std::string, IValue> params;
+    std::set<std::string> options;
 
     ZENAPI INode();
     ZENAPI ~INode();
@@ -214,9 +215,7 @@ struct Graph {
     std::map<std::string, std::shared_ptr<IObject>> subOutputs;
 
     std::map<std::string, std::string> portalIns;
-    std::map<std::string, std::shared_ptr<zen::IObject>> portals;
-
-    std::map<std::string, int> socketRefs;
+    std::map<std::string, std::shared_ptr<IObject>> portals;
 
     std::unique_ptr<Context> ctx;
 
@@ -232,6 +231,8 @@ struct Graph {
         std::string const &sn, std::string const &ss);
     ZENAPI void setNodeParam(std::string const &id, std::string const &par,
         IValue const &val);
+    ZENAPI void setNodeOptions(std::string const &id,
+            std::set<std::string> const &opts);
     ZENAPI std::string getNodeOutput(std::string const &sn, std::string const &ss) const;
     ZENAPI std::shared_ptr<IObject> const &getObject(std::string const &id) const;
 };
@@ -302,6 +303,11 @@ inline void bindNodeInput(std::string const &dn, std::string const &ds,
 inline void setNodeParam(std::string const &id, std::string const &par,
         IValue const &val) {
     return getSession().getGraph().setNodeParam(id, par, val);
+}
+
+inline void setNodeOptions(std::string const &id,
+        std::set<std::string> const &opts) {
+    return getSession().getGraph().setNodeOptions(id, opts);
 }
 
 
