@@ -49,7 +49,7 @@ def loadGraph(nodes, subgkeys):  # todo: this actually only need invoke once?
                 value = evaluateExpr(value)
             core.setNodeParam(ident, name, value)
 
-        core.setNodeOptions(ident, options)
+        core.setNodeOptions(ident, set(options))
 
         core.completeNode(ident)
 

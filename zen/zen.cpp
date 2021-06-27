@@ -83,15 +83,27 @@ ZENAPI void INode::doApply() {
     }
 
     bool ok = true;
-    if (has_input("COND")) {
+    if (has_input("COND")) {  // TODO: deprecate COND
         auto cond = get_input<zen::ConditionObject>("COND");
         if (!cond->get())
             ok = false;
     }
 
+    if (has_option("ONCE")) {
+        if (has_once) {
+            ok = false;
+        } else {
+            has_once = true;
+        }
+    }
+
     if (ok) {
         apply();
     }
+}
+
+ZENAPI bool INode::has_option(std::string const &id) const {
+    return options.find(id) != options.end();
 }
 
 ZENAPI bool INode::has_input(std::string const &id) const {
@@ -235,7 +247,7 @@ ZENAPI Descriptor::Descriptor(
   std::vector<std::string> const &categories)
   : inputs(inputs), outputs(outputs), params(params), categories(categories) {
     this->inputs.push_back("SRC");
-    this->inputs.push_back("COND");
+    this->inputs.push_back("COND");  // TODO: deprecate COND
     this->outputs.push_back("DST");
 }
 

@@ -84,6 +84,7 @@ struct Graph;
 struct INode {
 public:
     Graph *graph = nullptr;
+    bool has_once = false;
 
     std::string myname;
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
@@ -101,6 +102,8 @@ public:
 protected:
     ZENAPI virtual void complete();
     ZENAPI virtual void apply() = 0;
+
+    ZENAPI bool has_option(std::string const &id) const;
 
     ZENAPI bool has_input(std::string const &id) const;
 
