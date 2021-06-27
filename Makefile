@@ -1,4 +1,4 @@
-O=assets/rigid3.zsg
+O=assets/testcache.zsg
 
 default: all run
 
