@@ -7,9 +7,24 @@
 #include <variant>
 #include <optional>
 #include <sstream>
-#include <sstream>
 #include <array>
 #include <map>
+#include <set>
+
+
+#ifdef _MSC_VER
+
+# ifdef DLL_ZENSESSION
+#  define ZENAPI __declspec(dllexport)
+# else
+#  define ZENAPI __declspec(dllimport)
+# endif
+
+#else
+
+# define ZENAPI
+
+#endif
 
 
 namespace zen {
@@ -19,196 +34,142 @@ class Exception : public std::exception {
 private:
   std::string msg;
 public:
-  Exception(std::string const &msg) : msg(msg) {}
-
-  char const *what() const throw() {
-    return msg.c_str();
-  }
+  ZENAPI Exception(std::string const &msg) noexcept;
+  ZENAPI ~Exception() noexcept;
+  ZENAPI char const *what() const noexcept;
 };
-
-
-template <class T>
-T *safe_at(std::map<std::string, std::unique_ptr<T>> const &m,
-    std::string const &key, std::string const &msg) {
-  auto it = m.find(key);
-  if (it == m.end()) {
-    throw Exception("invalid " + msg + " name: " + key);
-  }
-  return it->second.get();
-}
-
-
-template <class T>
-T safe_at(std::map<std::string, T> const &m,
-    std::string const &key, std::string const &msg) {
-  auto it = m.find(key);
-  if (it == m.end()) {
-    throw std::string("invalid " + msg + " name: " + key);
-  }
-  return it->second;
-}
-
-
-template <class T, class S>
-T safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) {
-  auto it = m.find(key);
-  if (it == m.end()) {
-    throw std::string("invalid " + msg + "as index");
-  }
-  return it->second;
-}
 
 
 using IValue = std::variant<std::string, int, float>;
 
 
 struct IObject {
-  using Ptr = std::unique_ptr<IObject>;
+#ifndef ZEN_NOREFDLL
+    ZENAPI IObject();
+    ZENAPI virtual ~IObject();
 
-  template <class T>
-  static std::unique_ptr<T> make() {
-    return std::make_unique<T>();
-  }
+    ZENAPI virtual std::shared_ptr<IObject> clone() const;
+    ZENAPI virtual void visualize();
+#else
+    virtual ~IObject() = default;
+    virtual std::shared_ptr<IObject> clone() const { return nullptr; }
+    ZENAPI virtual void visualize() {}
+#endif
 
-  template <class T>
-  T *as() {
-    return dynamic_cast<T *>(this);
-  }
+    using Ptr = std::unique_ptr<IObject>;
 
-  template <class T>
-  const T *as() const {
-    return dynamic_cast<const T *>(this);
-  }
+    template <class T>
+    [[deprecated("std::make_shared<T>")]]
+    static std::shared_ptr<T> make() { return std::make_shared<T>(); }
 
-  virtual ~IObject() = default;
+    template <class T>
+    [[deprecated("dynamic_cast<T *>")]]
+    T *as() { return dynamic_cast<T *>(this); }
+
+    template <class T>
+    [[deprecated("dynamic_cast<const T *>")]]
+    const T *as() const { return dynamic_cast<const T *>(this); }
 };
 
-
-struct BooleanObject : IObject {
-  bool value{true};
+template <class Derived, class Base = IObject>
+struct IObjectClone : Base {
+    virtual std::shared_ptr<IObject> clone() const {
+        return std::make_shared<Derived>(static_cast<Derived const &>(*this));
+    }
 };
 
-
-struct INode;
-static std::string getNodeName(INode *node);
-static void setObject(std::string name, IObject::Ptr object);
-static void setReference(std::string name, std::string srcname);
-static IObject *getObject(std::string name);
-
+struct Graph;
+struct INodeClass;
 
 struct INode {
-  using Ptr = std::unique_ptr<INode>;
+public:
+    Graph *graph = nullptr;
+    INodeClass *nodeClass = nullptr;
 
-  virtual void apply() = 0;
+    std::string myname;
+    std::map<std::string, std::pair<std::string, std::string>> inputBounds;
+    std::map<std::string, std::shared_ptr<IObject>> inputs;
+    std::map<std::string, std::shared_ptr<IObject>> outputs;
+    std::map<std::string, IValue> params;
+    std::set<std::string> options;
 
-  void on_apply() {
-    bool ok = true;
+    ZENAPI INode();
+    ZENAPI ~INode();
 
-    // get dummy boolean to see if this node should be executed
-    if (has_input("COND")) {
-      auto cond = get_input("COND")->as<BooleanObject>();
-      ok = cond->value;
-    }
-
-    if (ok)
-      apply();
-
-    // set dummy output sockets for connection order
-    set_output("DST", IObject::make<BooleanObject>());
-  }
-
-  void set_param(std::string name, IValue const &value) {
-    params[name] = value;
-  }
-
-  void set_input_ref(std::string name, std::string srcname) {
-    inputs[name] = srcname;
-  }
-
-  std::string get_node_name() {
-    return getNodeName(this);
-  }
+    ZENAPI void doComplete();
+    ZENAPI virtual void doApply();
 
 protected:
-  IValue get_param(std::string name) {
-    return safe_at(params, name, "param");
-  }
+    ZENAPI bool checkApplyCondition();
 
-  std::string get_input_ref(std::string name) {
-    return safe_at(inputs, name, "input");
-  }
+    ZENAPI virtual void complete();
+    ZENAPI virtual void apply() = 0;
 
-  IObject *get_input(std::string name) {
-    return getObject(get_input_ref(name));
-  }
+    ZENAPI bool has_option(std::string const &id) const;
+    ZENAPI bool has_input(std::string const &id) const;
+    ZENAPI IValue get_param(std::string const &id) const;
+    ZENAPI std::shared_ptr<IObject> get_input(std::string const &id) const;
+    ZENAPI void set_output(std::string const &id,
+        std::shared_ptr<IObject> &&obj);
 
-  bool has_input(std::string name) {
-    return inputs.find(name) != inputs.end();
-  }
+    [[deprecated("get_input")]]
+    std::shared_ptr<IObject> get_input_ref(std::string const &id) const {
+        return get_input(id);
+    }
 
-  std::string get_output_ref(std::string name) {
-    auto myname = get_node_name();
-    return myname + "::" + name;
-  }
+    [[deprecated("set_output")]]
+    void set_output_ref(std::string const &id,
+        std::shared_ptr<IObject> &&obj) {
+        set_output(id, std::move(obj));
+    }
 
-  IObject *get_output(std::string name) {
-    auto ref = get_output_ref(name);
-    return getObject(ref);
-  }
+    template <class T>
+    std::shared_ptr<T> get_input(std::string const &id) const {
+        return std::dynamic_pointer_cast<T>(get_input(id));
+    }
 
-  void set_output(std::string name, IObject::Ptr object) {
-    auto ref = get_output_ref(name);
-    setObject(ref, std::move(object));
-  }
+    template <class T>
+    T get_param(std::string const &id) const {
+        return std::get<T>(get_param(id));
+    }
 
-  void set_output_ref(std::string name, std::string srcname) {
-    auto ref = get_output_ref(name);
-    setReference(ref, srcname);
-  }
 
-  template <class T>
-  void set_output(std::string name, std::unique_ptr<T> &object) {
-    set_output(name, std::move(object));
-  }
+    template <class T>
+    [[deprecated("set_output")]]
+    T *new_member(std::string const &id) {
+        auto obj = std::make_shared<T>();
+        auto obj_ptr = obj.get();
+        set_output(id, std::move(obj));
+        return obj_ptr;
+    }
 
-  template <class T>
-  T *new_member(std::string name) {
-    IObject::Ptr object = IObject::make<T>();
-    IObject *rawptr = object.get();
-    set_output(name, std::move(object));
-    return static_cast<T *>(rawptr);
-  }
-
-private:
-  std::map<std::string, IValue> params;
-  std::map<std::string, std::string> inputs;
+    template <class T>
+    [[deprecated("set_output(id, std::move(obj))")]]
+    void set_output(std::string const &id,
+        std::shared_ptr<T> &obj) {
+        set_output(id, std::move(obj));
+    }
 };
-
-
-struct INodeClass {
-  using Ptr = std::unique_ptr<INodeClass>;
-
-  virtual std::unique_ptr<INode> new_instance() = 0;
-};
-
-
-template <class T>
-struct NodeClass : INodeClass {
-  T const &ctor;
-
-  NodeClass(T const &ctor)
-    : ctor(ctor)
-  {}
-
-  virtual std::unique_ptr<INode> new_instance() override {
-    return ctor();
-  }
-};
-
 
 struct ParamDescriptor {
   std::string type, name, defl;
+
+  ZENAPI ParamDescriptor(std::string const &type,
+	  std::string const &name, std::string const &defl);
+  ZENAPI ~ParamDescriptor();
 };
+
+template <class S, class T>
+static std::string join_str(std::vector<T> const &elms, S const &delim) {
+  std::stringstream ss;
+  auto p = elms.begin(), end = elms.end();
+  if (p != end)
+    ss << *p++;
+  for (; p != end; ++p) {
+    ss << delim << *p;
+  }
+  return ss.str();
+}
 
 struct Descriptor {
   std::vector<std::string> inputs;
@@ -216,193 +177,156 @@ struct Descriptor {
   std::vector<ParamDescriptor> params;
   std::vector<std::string> categories;
 
-  int _init = initialize();
+  ZENAPI Descriptor();
+  ZENAPI Descriptor(
+	  std::vector<std::string> const &inputs,
+	  std::vector<std::string> const &outputs,
+	  std::vector<ParamDescriptor> const &params,
+	  std::vector<std::string> const &categories);
 
-  int initialize() {
-    // append dummy sockets for perserving exec orders
-    inputs.push_back("SRC");
-    inputs.push_back("COND");
-    outputs.push_back("DST");
-    return 0;
-  }
-
-  template <class S, class T>
-  static std::string join_str(std::vector<T> const &elms, S const &delim) {
-      std::stringstream ss;
-      auto p = elms.begin(), end = elms.end();
-      if (p != end)
-        ss << *p++;
-      for (; p != end; ++p) {
-          ss << delim << *p;
-      }
-      return ss.str();
-  }
-
-  std::string serialize() const {
-    std::string res = "";
-    res += "(" + join_str(inputs, ",") + ")";
-    res += "(" + join_str(outputs, ",") + ")";
-    std::vector<std::string> paramStrs;
-    for (auto const &[type, name, defl]: params) {
-      paramStrs.push_back(type + ":" + name + ":" + defl);
-    }
-    res += "(" + join_str(paramStrs, ",") + ")";
-    res += "(" + join_str(categories, ",") + ")";
-    return res;
-  }
+  ZENAPI std::string serialize() const;
 };
 
+struct INodeClass {
+    std::unique_ptr<Descriptor> desc;
+
+    INodeClass(Descriptor const &desc)
+        : desc(std::make_unique<Descriptor>(desc)) {}
+
+    virtual std::unique_ptr<INode> new_instance() const = 0;
+};
+
+template <class F>
+struct ImplNodeClass : INodeClass {
+    F const &ctor;
+
+    ImplNodeClass(F const &ctor, Descriptor const &desc)
+        : INodeClass(desc), ctor(ctor) {}
+
+    virtual std::unique_ptr<INode> new_instance() const override {
+        return ctor();
+    }
+};
+
+struct Session;
+
+struct Context {
+    std::set<std::string> visited;
+
+    ZENAPI Context();
+    ZENAPI Context(Context const &other);
+    ZENAPI ~Context();
+};
+
+struct Graph {
+    Session *sess = nullptr;
+
+    std::map<std::string, std::unique_ptr<INode>> nodes;
+
+    std::map<std::string, std::shared_ptr<IObject>> subInputs;
+    std::map<std::string, std::shared_ptr<IObject>> subOutputs;
+
+    std::map<std::string, std::string> portalIns;
+    std::map<std::string, std::shared_ptr<IObject>> portals;
+
+    std::unique_ptr<Context> ctx;
+
+    ZENAPI Graph();
+    ZENAPI ~Graph();
+
+    ZENAPI void clearNodes();
+    ZENAPI void applyNodes(std::vector<std::string> const &ids);
+    ZENAPI void addNode(std::string const &cls, std::string const &id);
+    ZENAPI void applyNode(std::string const &id);
+    ZENAPI void completeNode(std::string const &id);
+    ZENAPI void bindNodeInput(std::string const &dn, std::string const &ds,
+        std::string const &sn, std::string const &ss);
+    ZENAPI void setNodeParam(std::string const &id, std::string const &par,
+        IValue const &val);
+    ZENAPI void setNodeOptions(std::string const &id,
+            std::set<std::string> const &opts);
+    ZENAPI std::shared_ptr<IObject> const &getNodeOutput(
+        std::string const &sn, std::string const &ss) const;
+};
 
 struct Session {
-private:
-  std::map<std::string, Descriptor> nodeDescriptors;
-  std::map<std::string, INodeClass::Ptr> nodeClasses;
-  std::map<std::string, IObject::Ptr> objects;
-  std::map<std::string, std::string> references;
-  std::map<std::string, INode::Ptr> nodes;
-  std::map<INode *, std::string> nodesRev;
+    std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
+    std::map<std::string, std::unique_ptr<Graph>> graphs;
+    Graph *currGraph;
 
-  struct _PrivCtor {};
-  static std::unique_ptr<Session> _instance;
+    ZENAPI Session();
+    ZENAPI ~Session();
 
-public:
-  static Session &get() {
-    if (!_instance)
-      _instance = std::make_unique<Session>(_PrivCtor{});
-    return *_instance.get();
-  }
+    ZENAPI Graph &getGraph() const;
+    ZENAPI void switchGraph(std::string const &name);
+    ZENAPI std::string dumpDescriptors() const;
+    ZENAPI void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
 
-  Session(_PrivCtor) {
-  }
-
-  void addNode(std::string type, std::string name) {
-    auto node = safe_at(nodeClasses, type, "node class")->new_instance();
-    nodesRev[node.get()] = name;
-    nodes[name] = std::move(node);
-  }
-
-  void setNodeParam(std::string name,
-      std::string key, IValue const &value) {
-    safe_at(nodes, name, "node")->set_param(key, value);
-  }
-
-  void setNodeInput(std::string name,
-      std::string key, std::string srcname) {
-    safe_at(nodes, name, "node")->set_input_ref(key, srcname);
-  }
-
-  void applyNode(std::string name) {
-    safe_at(nodes, name, "node")->on_apply();
-  }
-
-  void setObject(std::string name, IObject::Ptr object) {
-    objects[name] = std::move(object);
-  }
-
-  IObject *getObject(std::string name) {
-    name = getReference(name).value_or(name);
-    return safe_at(objects, name, "object");
-  }
-
-  void setReference(std::string name, std::string srcname) {
-    srcname = getReference(srcname).value_or(srcname);
-    references[name] = srcname;
-  }
-
-  std::optional<std::string> getReference(std::string name) {
-    auto it = references.find(name);
-    if (it == references.end()) {
-      return std::nullopt;
+    template <class F>
+    int defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {
+        _defNodeClass(id, std::make_unique<ImplNodeClass<F>>(ctor, desc));
+        return 1;
     }
-    return it->second;
-  }
-
-  std::string getNodeName(INode *node) {
-    return safe_at(nodesRev, node, "node pointer");
-  }
-
-  template <class T> // T <- INode
-  int defNodeClass(std::string name, Descriptor const &desc) {
-    return defNodeClassByCtor(std::make_unique<T>, name, desc);
-  }
-
-  template <class T> // T <- std::unique_ptr<INode>()
-  int defNodeClassByCtor(T const &ctor,
-      std::string name, Descriptor const &desc) {
-    nodeClasses[name] = std::make_unique<NodeClass<T>>(ctor);
-    nodeDescriptors[name] = desc;
-    return 1;
-  }
-
-  std::string dumpDescriptors() {
-    // dump the node descriptors (for node editor),
-    // according to the defNodeClass'es in this DLL.
-    std::string res = "";
-    for (auto const &[key, desc]: nodeDescriptors) {
-      res += key + ":" + desc.serialize() + "\n";
-    }
-    return res;
-  }
 };
 
 
-static void addNode(std::string name, std::string type) {
-  return Session::get().addNode(name, type);
+ZENAPI Session &getSession();
+
+
+template <class F>
+inline int defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {
+    return getSession().defNodeClass(ctor, id, desc);
 }
 
-static void setNodeParam(std::string name,
-    std::string key, IValue const &value) {
-  return Session::get().setNodeParam(name, key, value);
+template <class T>
+[[deprecated("ZENDEFNODE(T, ...)")]]
+inline int defNodeClass(std::string const &id, Descriptor const &desc = {}) {
+    return getSession().defNodeClass(std::make_unique<T>, id, desc);
 }
 
-static void setNodeInput(std::string name,
-    std::string key, std::string srcname) {
-  return Session::get().setNodeInput(name, key, srcname);
+inline std::string dumpDescriptors() {
+    return getSession().dumpDescriptors();
 }
 
-static void applyNode(std::string name) {
-  return Session::get().applyNode(name);
+inline void switchGraph(std::string const &name) {
+    return getSession().switchGraph(name);
 }
 
-static void setObject(std::string name, IObject::Ptr object) {
-  return Session::get().setObject(name, std::move(object));
+inline void clearNodes() {
+    return getSession().getGraph().clearNodes();
 }
 
-static IObject *getObject(std::string name) {
-  return Session::get().getObject(name);
+inline void addNode(std::string const &cls, std::string const &id) {
+    return getSession().getGraph().addNode(cls, id);
 }
 
-static void setReference(std::string name, std::string srcname) {
-  return Session::get().setReference(name, srcname);
+inline void completeNode(std::string const &id) {
+    return getSession().getGraph().completeNode(id);
 }
 
-static std::optional<std::string> getReference(std::string name) {
-  return Session::get().getReference(name);
+inline void applyNodes(std::vector<std::string> const &ids) {
+    return getSession().getGraph().applyNodes(ids);
 }
 
-static std::string getNodeName(INode *node) {
-  return Session::get().getNodeName(node);
+inline void bindNodeInput(std::string const &dn, std::string const &ds,
+        std::string const &sn, std::string const &ss) {
+    return getSession().getGraph().bindNodeInput(dn, ds, sn, ss);
 }
 
-template <class T> // T <- INode
-int defNodeClass(std::string name, Descriptor const &desc) {
-  return Session::get().defNodeClass<T>(name, desc);
+inline void setNodeParam(std::string const &id, std::string const &par,
+        IValue const &val) {
+    return getSession().getGraph().setNodeParam(id, par, val);
 }
 
-template <class T> // T <- std::unique_ptr<INode>()
-int defNodeClassByCtor(T const &ctor,
-    std::string name, Descriptor const &desc) {
-  return Session::get().defNodeClassByCtor<T>(ctor, name, desc);
-}
-
-static std::string dumpDescriptors() {
-  return Session::get().dumpDescriptors();
+inline void setNodeOptions(std::string const &id,
+        std::set<std::string> const &opts) {
+    return getSession().getGraph().setNodeOptions(id, opts);
 }
 
 
 
-#ifdef ZEN_IMPLEMENTATION
-std::unique_ptr<Session> Session::_instance;
-#endif
+#define ZENDEFNODE(Class, ...) \
+    static int def##Class = zen::defNodeClass(std::make_unique<Class>, #Class, __VA_ARGS__)
+
 
 }

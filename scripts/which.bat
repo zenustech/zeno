@@ -1,0 +1,1 @@
+@where %1 | findstr /v Microsoft.WindowsApps

@@ -1,4 +1,29 @@
-x:
-	cmake -B build
+O=assets/prim.zsg
+
+default: run
+
+install: prepare
+	python/setup.py install
+
+wheel: prepare
+	python/setup.py bdist_wheel
+
+prepare: all
+	make -C build install
+	cp -d /tmp/tmp-install/lib/*.so* zen/lib/
+
+all:
+	cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
 	make -C build -j `python -c 'from multiprocessing import cpu_count; print(cpu_count() * 2)'`
-	USE_GDB= ZSG_OPEN=assets/octree.zsg ./run.sh
+
+debug_all:
+	cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
+	make -C build -j `python -c 'from multiprocessing import cpu_count; print(cpu_count() * 2)'`
+
+run: all
+	ZEN_OPEN=$O ./run.sh
+
+debug: debug_all
+	USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh
+
+.PHONY: all debug_all debug run prepare install wheel default

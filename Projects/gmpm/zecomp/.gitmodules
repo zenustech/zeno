@@ -1,0 +1,6 @@
+[submodule "include/zensim/tpls"]
+	path = include/zensim/tpls
+	url = https://github.com/zensim-dev/tpls.git
+[submodule "Assets"]
+	path = Assets
+	url = https://github.com/zensim-dev/assets.git

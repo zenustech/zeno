@@ -1,0 +1,134 @@
+#include <zen/zen.h>
+#include <zen/NumericObject.h>
+#include <vector>
+#include <zen/VDBGrid.h>
+#include <openvdb/points/PointCount.h>
+#include <openvdb/tree/LeafManager.h>
+#include <openvdb/points/PointAdvect.h>
+#include <openvdb/tools/Morphology.h>
+#include <openvdb/tools/MeshToVolume.h>
+#include <zen/ParticlesObject.h>
+#include <zen/PrimitiveObject.h>
+#include <openvdb/openvdb.h>
+#include <openvdb/points/PointConversion.h>
+namespace zen {
+openvdb::points::PointDataGrid::Ptr particleArrayToGrid(ParticlesObject* particles, float dx) 
+{
+    std::vector<openvdb::Vec3f> positions(particles->size());
+    std::vector<openvdb::Vec3f> velocitys(particles->size());
+    // for (auto &&[dst, src] : zip(positions, particles))
+    for (auto i = 0; i < particles->size(); ++i){
+      for (int d = 0; d < 3; ++d) {
+            positions[i][d] = particles->pos[i][d];
+            velocitys[i][d] = particles->vel[i][d];
+          
+          }
+    }
+    // The VDB Point-Partioner is used when bucketing points and requires a
+    // specific interface. For convenience, we use the PointAttributeVector
+    // wrapper around an stl vector wrapper here, however it is also possible to
+    // write one for a custom data structure in order to match the interface
+    // required.
+    openvdb::points::PointAttributeVector<openvdb::Vec3f> positionsWrapper(positions);
+    // This method computes a voxel-size to match the number of
+    // points / voxel requested. Although it won't be exact, it typically offers
+    // a good balance of memory against performance.
+    int pointsPerVoxel = 8;
+    float voxelSize = dx;
+    // Print the voxel-size to cout
+    // Create a transform using this voxel-size.
+    openvdb::math::Transform::Ptr transform
+        = openvdb::math::Transform::createLinearTransform(voxelSize);
+
+
+    openvdb::tools::PointIndexGrid::Ptr pointIndexGrid =
+        openvdb::tools::createPointIndexGrid<openvdb::tools::PointIndexGrid>(
+            positionsWrapper, *transform);
+    // Create a PointDataGrid containing these four points and using the
+    // transform given. This function has two template parameters, (1) the codec
+    // to use for storing the position, (2) the grid we want to create
+    // (ie a PointDataGrid).
+    // We use no compression here for the positions.
+    using PositionCodec = openvdb::points::FixedPointCodec</*one byte*/false>;
+	//using PositionCodec = openvdb::points::TruncateCodec;
+	//using PositionCodec = openvdb::points::NullCodec;
+	using position_attribute = openvdb::points::TypedAttributeArray<openvdb::Vec3f, PositionCodec>;
+	using VelocityCodec = openvdb::points::TruncateCodec;
+	//using VelocityCodec = openvdb::points::NullCodec;
+	using velocity_attribute = openvdb::points::TypedAttributeArray<openvdb::Vec3f, VelocityCodec>;
+    auto pnamepair = position_attribute::attributeType();
+    auto vnamepair = velocity_attribute::attributeType();
+
+    openvdb::points::PointDataGrid::Ptr grid =
+        openvdb::points::createPointDataGrid<PositionCodec,
+            openvdb::points::PointDataGrid>(*pointIndexGrid, positionsWrapper, *transform);
+
+
+    openvdb::points::appendAttribute(grid->tree(), "v", vnamepair);
+
+    openvdb::points::PointAttributeVector<openvdb::Vec3f> velocityWrapper(velocitys);
+
+    openvdb::points::populateAttribute<openvdb::points::PointDataTree,
+        openvdb::tools::PointIndexTree, openvdb::points::PointAttributeVector<openvdb::Vec3f>>(
+            grid->tree(), pointIndexGrid->tree(), "v", velocityWrapper);
+    
+    grid->setName("Points");
+    return grid;
+}
+
+struct PrimToVDBPointDataGrid : zen::INode {
+  virtual void apply() override {
+    auto dx = std::get<float>(get_param("dx"));
+    auto prims = get_input("ParticleGeo")->as<PrimitiveObject>();
+    ParticlesObject* particles = new ParticlesObject();
+    particles->pos.resize(prims->attr<zen::vec3f>("pos").size());
+    particles->vel.resize(prims->attr<zen::vec3f>("pos").size());
+    #pragma omp parallel for
+    for(int i=0;i<prims->attr<zen::vec3f>("pos").size();i++)
+    {
+        particles->pos[i] = zen::vec_to_other<glm::vec3>(prims->attr<zen::vec3f>("pos")[i]);
+        particles->vel[i] = glm::vec3(0,0,0);
+        if(prims->has_attr("vel"))
+            particles->vel[i] = zen::vec_to_other<glm::vec3>(prims->attr<zen::vec3f>("vel")[i]);
+    }
+    auto data = zen::IObject::make<VDBPointsGrid>();
+    data->m_grid = particleArrayToGrid(particles, dx);
+    set_output("Particles", data);
+  }
+};
+
+static int defPrimToVDBPointDataGrid = zen::defNodeClass<PrimToVDBPointDataGrid>("PrimToVDBPointDataGrid",
+    { /* inputs: */ {
+        "ParticleGeo", 
+    }, /* outputs: */ {
+        "Particles",
+    }, /* params: */ {
+    {"float", "dx", "0.0"},
+    }, /* category: */ {
+        "primitive",
+    }});
+
+struct SetVDBPointDataGrid : zen::INode {
+  virtual void apply() override {
+    auto dx = std::get<float>(get_param("dx"));
+    auto particles = get_input("ParticleGeo")->as<ParticlesObject>();
+    auto data = zen::IObject::make<VDBPointsGrid>();
+    data->m_grid = particleArrayToGrid(particles, dx);
+    set_output("Particles", data);
+  }
+};
+
+static int defSetVDBPointDataGrid = zen::defNodeClass<SetVDBPointDataGrid>("SetVDBPointDataGrid",
+    { /* inputs: */ {
+        "ParticleGeo", 
+    }, /* outputs: */ {
+        "Particles",
+    }, /* params: */ {
+    {"float", "dx", "0.0"},
+    }, /* category: */ {
+        "particles",
+    }});
+
+
+}
+

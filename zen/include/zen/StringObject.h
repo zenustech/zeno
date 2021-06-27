@@ -1,12 +1,11 @@
 #pragma once
 
 #include <zen/zen.h>
-#include <variant>
-#include <array>
+#include <string>
 
-namespace zenbase {
+namespace zen {
 
-struct StringObject : zen::IObject {
+struct StringObject : IObjectClone<StringObject> {
   std::string value;
 
   std::string const &get() const {

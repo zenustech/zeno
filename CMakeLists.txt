@@ -1,46 +1,57 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.12)
 project(zeno LANGUAGES C CXX)
 
+if (NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE Release)
+endif()
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} /usr/lib/cmake/OpenVDB /usr/local/lib/cmake/OpenVDB)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_BUILD_TYPE Release)#Debug)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-if (EXISTS external/Zensim)
+include_directories(include)
 
-    include(CheckLanguage)
-    check_language(CUDA)
-    if(CMAKE_CUDA_COMPILER)
-        set(ZS_ENABLE_CUDA 1)
-        add_subdirectory(external/Zensim)
-        # add_library(zen)
-    else()
-        set(ZS_ENABLE_CUDA 0)
-        add_subdirectory(external/Zensim)
-    endif()
-
-endif()
-
-find_package(OpenVDB QUIET)
-option(ZS_ENABLE_OPENVDB "Enable OpenVDB" ON)
-if (NOT ${OpenVDB_FOUND})
-    set(ZS_ENABLE_OPENVDB OFF)
-endif()
-message("==> OpenVDB find status: ${OpenVDB_FOUND}")
-message("==> OpenVDB enable status: ${ZS_ENABLE_OPENVDB}")
-
-
-add_subdirectory(zen)
-add_subdirectory(zenvis)
-add_subdirectory(zenbase)
+add_subdirectory(external/pybind11)
 add_subdirectory(external/glad)
-add_subdirectory(QuickOCT)
-if(ZS_ENABLE_OPENVDB)
-    add_subdirectory(zenvdb)
-    add_subdirectory(FastFLIP)
-    add_subdirectory(external/partio)
-    if (EXISTS external/Zensim)
-        add_subdirectory(MPM)
-    endif()
-endif()
+add_subdirectory(zenvis)
+
+
+file(GLOB ZENSESSION_SOURCE zen/*.cpp zen/nodes/*.cpp zen/nodes/*/*.cpp zen/include/zen/*.h)
+
+add_library(zensession SHARED ${ZENSESSION_SOURCE})
+target_compile_definitions(zensession PRIVATE -DDLL_ZENSESSION)
+target_include_directories(zensession PRIVATE zen/include)
+set(OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zen/lib)
+set_target_properties(zensession PROPERTIES
+	LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
+	RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR}
+	LIBRARY_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
+	LIBRARY_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
+	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
+	)
+
+pybind11_add_module(libzenpy libzenpy.cpp)
+target_include_directories(libzenpy PRIVATE zen/include)
+target_link_libraries(libzenpy PRIVATE zensession)
+set_property(TARGET libzenpy PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen)
+set(OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zen)
+set_target_properties(libzenpy PROPERTIES
+	LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
+	RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR}
+	LIBRARY_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
+	LIBRARY_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
+	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
+	)
+
+add_custom_command(TARGET libzenpy PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/lib
+    )
+
+add_subdirectory(Projects)
