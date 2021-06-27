@@ -1,6 +1,6 @@
 #include <zen/zen.h>
 #include <zen/NumericObject.h>
-#include <iostream>
+#include <cstdio>
 
 
 struct GCTest : zen::NumericObject {

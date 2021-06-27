@@ -57,7 +57,7 @@ struct AppendList : zen::INode {
         auto list = get_input<zen::ListObject>("list");
         auto obj = get_input("object");
         list->arr.push_back(std::move(obj));
-        set_output_ref("list", get_input_ref("list"));
+        set_output("list", get_input("list"));
     }
 };
 
