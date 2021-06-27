@@ -31,7 +31,7 @@ target_include_directories(FLIPlib PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(FLIPlib PRIVATE ltcommon ltcommon/tunicate ltcommon/newsparse lostopos d3dutils)
 
 target_link_libraries(FLIPlib PRIVATE TBB::tbb TBB::tbbmalloc)
-target_link_libraries(FLIPlib PRIVATE pthread openblas lapack)
+target_link_libraries(FLIPlib PRIVATE pthread openblas lapack cblas)
 
 #disable default malloc options
 if (WIN32)
