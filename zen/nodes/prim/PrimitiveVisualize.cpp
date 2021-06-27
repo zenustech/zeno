@@ -5,7 +5,7 @@
 
 namespace zen {
 
-void PrimitiveObject::visualize() {
+ZENAPI void PrimitiveObject::visualize() {
     auto path = Visualization::exportPath("zpm");
     writezpm(this, path.c_str());
 }

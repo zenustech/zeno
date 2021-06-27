@@ -20,8 +20,6 @@ target_link_libraries(zenRigidLib PRIVATE HACD)
 
 find_package(zen REQUIRED)
 target_link_libraries(zenRigidLib PRIVATE zen)
-target_include_directories(zenRigidLib PRIVATE ../zenbase/include)
-target_include_directories(zenRigidLib PRIVATE ../zenvdb/include)
 
 set_target_properties(zenRigidLib PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${zen_AUTOLOAD_DIR}

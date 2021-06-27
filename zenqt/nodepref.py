@@ -1,11 +1,6 @@
 from .editor import *
 
 
-class QDMGraphicsNode_Subgraph(QDMGraphicsNode):
-    def __init__(self, parent=None):
-        super().__init__(parent)  # todo: support dyn-node-desc
-
-
 class QDMGraphicsNode_Comment(QDMGraphicsNode):
     def __init__(self, parent=None):
         super().__init__(parent)

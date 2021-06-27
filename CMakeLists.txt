@@ -14,7 +14,7 @@ add_subdirectory(external/glad)
 add_subdirectory(zenvis)
 
 
-file(GLOB ZENSESSION_SOURCE zen/*.cpp zen/nodes/*.cpp zen/include/zen/*.h)
+file(GLOB ZENSESSION_SOURCE zen/*.cpp zen/nodes/*.cpp zen/nodes/*/*.cpp zen/include/zen/*.h)
 
 add_library(zensession SHARED ${ZENSESSION_SOURCE})
 target_compile_definitions(zensession PRIVATE -DDLL_ZENSESSION)
