@@ -1,6 +1,5 @@
 #include <zen/zen.h>
 #include <zen/ConditionObject.h>
-#include <zen/Visualization.h>
 #include <cassert>
 
 namespace zen {
@@ -120,7 +119,7 @@ ZENAPI void INode::doApply() {
         auto id = desc->outputs[0];
         auto ref = safe_at(outputs, id, "output");
         auto obj = graph->getObject(ref);
-        graph->sess->viewObjects.push_back(std::move(obj));
+        obj->visualize();
     }
 }
 
@@ -245,14 +244,6 @@ ZENAPI std::string Session::dumpDescriptors() const {
     res += "DESC:" + key + ":" + cls->desc->serialize() + "\n";
   }
   return res;
-}
-
-ZENAPI void Session::endCurrFrame() {
-    for (auto const &obj: viewObjects) {
-        obj->visualize();
-    }
-    Visualization::endFrame();
-    viewObjects.clear();
 }
 
 

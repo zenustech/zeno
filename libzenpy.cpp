@@ -3,6 +3,7 @@
 #include <pybind11/stl.h>
 #include <zen/zen.h>
 #include <zen/GlobalState.h>
+#include <zen/Visualization.h>
 namespace py = pybind11;
 
 
@@ -23,7 +24,9 @@ PYBIND11_MODULE(libzenpy, m) {
     });
     m.def("frameBegin", [] () { return zen::state.frameBegin(); });
     m.def("frameEnd", [] () {
-        zen::endCurrFrame(); return zen::state.frameEnd(); });
+        zen::Visualization::endFrame();
+        return zen::state.frameEnd();
+    });
     m.def("substepBegin", [] () { return zen::state.substepBegin(); });
     m.def("substepEnd", [] () { return zen::state.substepEnd(); });
 
