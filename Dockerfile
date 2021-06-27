@@ -29,20 +29,17 @@ RUN cd c-blosc && git checkout tags/v1.5.0 -b v1.5.0 && mkdir build && cd build 
 RUN git clone https://gitee.com/zeng_gui/openvdb.git
 RUN cd openvdb && mkdir build && cd build && cmake .. && make -j8 && make install && cd ../..
 
-RUN wget http://www.netlib.org/blas/blast-forum/cblas.tgz
-RUN tar zxvf cblas.tgz && cd CBLAS && make -j8 && make install && cd ..
-
 RUN apt-get install -y python-is-python3
 RUN apt-get install -y python-dev-is-python3
 RUN apt-get install -y python3-pip
 RUN python -m pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
 
-RUN python -m pip install numpy
-RUN python -m pip install PyQt5
-RUN apt-get install -y libqt5core5a
-RUN apt-get install -y qt5dxcb-plugin
-RUN apt-get install -y libglvnd-dev
-RUN apt-get install -y libglapi-mesa
-RUN apt-get install -y libosmesa6
+#RUN python -m pip install numpy
+#RUN python -m pip install PyQt5
+#RUN apt-get install -y libqt5core5a
+#RUN apt-get install -y qt5dxcb-plugin
+#RUN apt-get install -y libglvnd-dev
+#RUN apt-get install -y libglapi-mesa
+#RUN apt-get install -y libosmesa6
 
 ENTRYPOINT bash
