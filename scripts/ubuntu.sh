@@ -2,6 +2,8 @@
 
 set -e
 
+rm -rf /tmp/build && mkdir /tmp/build && cd /tmp/build
+
 apt-get install -y wget
 apt-get install -y git
 apt-get install -y gcc
