@@ -84,7 +84,8 @@ struct Graph;
 struct INode {
 public:
     Graph *graph = nullptr;
-    bool has_once = false;
+    bool has_executed = false;
+    bool has_executed_complete = false;
 
     std::string myname;
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;

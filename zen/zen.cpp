@@ -69,6 +69,7 @@ ZENAPI Graph::~Graph() = default;
 
 ZENAPI void INode::doComplete() {
     set_output("DST", std::make_shared<ConditionObject>());
+    has_executed_complete = has_executed;
     complete();
 }
 
@@ -90,10 +91,10 @@ ZENAPI void INode::doApply() {
     }
 
     if (has_option("ONCE")) {
-        if (has_once) {
+        if (has_executed_complete) {
             ok = false;
         } else {
-            has_once = true;
+            has_executed = true;
         }
     }
 
