@@ -92,9 +92,7 @@ ZENAPI bool INode::checkApplyCondition() {
 
     if (has_option("MUTE")) {
         auto desc = nodeClass->desc.get();
-        if (desc->inputs.size() > 0 && desc->outputs.size() > 0) {
-            set_output(desc->outputs[0], get_input(desc->inputs[0]));
-        }
+        set_output(desc->outputs[0], get_input(desc->inputs[0]));
         return false;
     }
 
@@ -114,6 +112,10 @@ ZENAPI void INode::doApply() {
     }
 
     if (has_option("VIEW")) {
+        auto id = desc->outputs[0];
+        auto ref = safe_at(outputs, id, "output");
+        auto obj = graph->getObject(ref);
+        graph->sess->viewObjects.push_back(std::move(obj));
     }
 }
 

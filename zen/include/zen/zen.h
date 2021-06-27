@@ -246,11 +246,13 @@ struct Graph {
 struct Session {
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
     std::map<std::string, std::unique_ptr<Graph>> graphs;
+    std::vector<std::shared_ptr<zen::IObject>> viewObjects;
     Graph *currGraph;
 
     ZENAPI Session();
     ZENAPI ~Session();
 
+    ZENAPI void endCurrFrame();
     ZENAPI Graph &getGraph() const;
     ZENAPI void switchGraph(std::string const &name);
     ZENAPI std::string dumpDescriptors() const;
@@ -314,6 +316,10 @@ inline void setNodeParam(std::string const &id, std::string const &par,
 inline void setNodeOptions(std::string const &id,
         std::set<std::string> const &opts) {
     return getSession().getGraph().setNodeOptions(id, opts);
+}
+
+inline void endCurrFrame() {
+    return getSession().endCurrFrame();
 }
 
 
