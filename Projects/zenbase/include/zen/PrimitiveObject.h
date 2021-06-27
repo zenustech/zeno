@@ -23,7 +23,7 @@ struct PrimitiveObject : zen::IObjectClone<PrimitiveObject> {
     std::vector<zen::vec3i> tris;
     std::vector<zen::vec4i> quads;
 
-#ifndef _ZEN_FREE_IOBJECT
+#ifdef DLL_ZENBASE
     virtual void visualize() override;
 #else
     virtual void visualize() override {}

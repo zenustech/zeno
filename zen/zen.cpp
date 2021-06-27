@@ -45,7 +45,6 @@ T const &safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) 
 }
 
 
-#ifndef ZEN_FREE_IOBJECT
 ZENAPI IObject::IObject() = default;
 ZENAPI IObject::~IObject() = default;
 
@@ -55,7 +54,6 @@ ZENAPI std::shared_ptr<IObject> IObject::clone() const {
 
 ZENAPI void IObject::visualize() {
 }
-#endif
 
 ZENAPI INode::INode() = default;
 ZENAPI INode::~INode() = default;

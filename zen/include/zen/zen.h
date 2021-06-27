@@ -14,7 +14,7 @@
 
 #ifdef _MSC_VER
 
-# ifdef _ZEN_INDLL
+# ifdef DLL_ZENSESSION
 #  define ZENAPI __declspec(dllexport)
 # else
 #  define ZENAPI __declspec(dllimport)
@@ -50,7 +50,7 @@ using IValue = std::variant<std::string, int, float>;
 
 
 struct IObject {
-#ifndef _ZEN_FREE_IOBJECT
+#ifndef ZEN_NOREFDLL
     ZENAPI IObject();
     ZENAPI virtual ~IObject();
 
