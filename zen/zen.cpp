@@ -69,6 +69,7 @@ ZENAPI Graph::~Graph() = default;
 
 ZENAPI void INode::doComplete() {
     set_output("DST", std::make_shared<ConditionObject>());
+    has_executed_complete = has_executed;
     complete();
 }
 
@@ -82,16 +83,33 @@ ZENAPI void INode::doApply() {
         inputs[ds] = ref;
     }
 
-    bool ok = true;
-    if (has_input("COND")) {
+    if (has_input("COND")) {  // TODO: deprecate COND
         auto cond = get_input<zen::ConditionObject>("COND");
         if (!cond->get())
-            ok = false;
+            return;
     }
 
-    if (ok) {
-        apply();
+    if (has_option("ONCE")) {
+        if (has_executed_complete) {
+            return;
+        } else {
+            has_executed = true;
+        }
     }
+
+    if (has_option("MUTE")) {
+        auto desc = nodeClass->desc.get();
+        if (desc->inputs.size() > 0 && desc->outputs.size() > 0) {
+            set_output(desc->outputs[0], get_input(desc->inputs[0]));
+        }
+        return;
+    }
+
+    apply();
+}
+
+ZENAPI bool INode::has_option(std::string const &id) const {
+    return options.find(id) != options.end();
 }
 
 ZENAPI bool INode::has_input(std::string const &id) const {
@@ -138,9 +156,11 @@ ZENAPI void Graph::clearNodes() {
 ZENAPI void Graph::addNode(std::string const &cls, std::string const &id) {
     if (nodes.find(id) != nodes.end())
         return;  // no add twice, to prevent output object invalid
-    auto node = safe_at(sess->nodeClasses, cls, "node class")->new_instance();
+    auto cl = safe_at(sess->nodeClasses, cls, "node class");
+    auto node = cl->new_instance();
     node->graph = this;
     node->myname = id;
+    node->nodeClass = cl;
     nodes[id] = std::move(node);
 }
 
@@ -172,6 +192,11 @@ ZENAPI void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
 ZENAPI void Graph::setNodeParam(std::string const &id, std::string const &par,
         IValue const &val) {
     safe_at(nodes, id, "node")->params[par] = val;
+}
+
+ZENAPI void Graph::setNodeOptions(std::string const &id,
+        std::set<std::string> const &opts) {
+    safe_at(nodes, id, "node")->options = opts;
 }
 
 
@@ -230,7 +255,7 @@ ZENAPI Descriptor::Descriptor(
   std::vector<std::string> const &categories)
   : inputs(inputs), outputs(outputs), params(params), categories(categories) {
     this->inputs.push_back("SRC");
-    this->inputs.push_back("COND");
+    this->inputs.push_back("COND");  // TODO: deprecate COND
     this->outputs.push_back("DST");
 }
 

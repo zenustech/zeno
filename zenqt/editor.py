@@ -645,11 +645,17 @@ class QDMGraphicsSocket(QGraphicsItem):
 
 
 class QDMGraphicsButton(QGraphicsProxyWidget):
+    class QDMLabel(QLabel):
+        def mousePressEvent(self, event):
+            self.on_click()
+            super().mousePressEvent(event)
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.widget = QPushButton()
-        self.widget.clicked.connect(self.on_click)
+        self.widget = self.QDMLabel()
+        self.widget.setAlignment(Qt.AlignCenter)
+        self.widget.on_click = self.on_click
         self.setWidget(self.widget)
         self.setChecked(False)
 
@@ -892,27 +898,27 @@ class QDMGraphicsNode(QGraphicsItem):
         self.dummy_output_socket = s
         self.dummy_output_socket.hide()
 
+    def initCondButtons(self):
+        cond_keys = ['OUT', 'MUTE', 'ONCE', 'VIEW']
+        for i, key in enumerate(cond_keys):
+            button = QDMGraphicsButton(self)
+            M = HORI_MARGIN * 0.2
+            H = TEXT_HEIGHT * 0.9
+            W = self.width / len(cond_keys)
+            rect = QRectF(W * i + M, -TEXT_HEIGHT * 2.3, W - M * 2, H)
+            button.setGeometry(rect)
+            button.setText(key)
+            self.options[key] = button
+
     def initSockets(self):
         self.initDummySockets()
+        self.initCondButtons()
 
         inputs = self.desc_inputs
         outputs = self.desc_outputs
         params = self.desc_params
 
         y = self.height + TEXT_HEIGHT * 0.4
-
-        self.options['OUT'] = button = QDMGraphicsButton(self)
-        rect = QRectF(HORI_MARGIN, y, self.width / 2 - HORI_MARGIN * 1.5, 0)
-        button.setGeometry(rect)
-        button.setText('OUT')
-
-        self.options['MUTE'] = button = QDMGraphicsButton(self)
-        rect = QRectF(HORI_MARGIN * 0.5 + self.width / 2,
-            y, self.width / 2 - HORI_MARGIN * 1.5, 0)
-        button.setGeometry(rect)
-        button.setText('MUTE')
-
-        y += TEXT_HEIGHT * 1.3
 
         self.params.clear()
         for index, (type, name, defl) in enumerate(params):
@@ -1008,13 +1014,13 @@ class QDMGraphicsNode(QGraphicsItem):
         self.dummy_output_socket.show()
 
         self.collapsed = True
-        self.options['OUT'].hide()
-        self.options['MUTE'].hide()
-        for k, v in self.params.items():
+        for v in self.options.values():
             v.hide()
-        for k, v in self.inputs.items():
+        for v in self.params.values():
             v.hide()
-        for k, v in self.outputs.items():
+        for v in self.inputs.values():
+            v.hide()
+        for v in self.outputs.values():
             v.hide()
 
         for socket in self.outputs.values():
@@ -1026,13 +1032,13 @@ class QDMGraphicsNode(QGraphicsItem):
         self.dummy_output_socket.hide()
 
         self.collapsed = False
-        self.options['OUT'].show()
-        self.options['MUTE'].show()
-        for k, v in self.params.items():
+        for v in self.options.values():
             v.show()
-        for k, v in self.inputs.items():
+        for v in self.params.values():
             v.show()
-        for k, v in self.outputs.items():
+        for v in self.inputs.values():
+            v.show()
+        for v in self.outputs.values():
             v.show()
 
 

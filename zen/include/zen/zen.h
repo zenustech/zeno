@@ -80,26 +80,34 @@ struct IObjectClone : Base {
 };
 
 struct Graph;
+struct INodeClass;
 
 struct INode {
 public:
     Graph *graph = nullptr;
+    INodeClass *nodeClass = nullptr;
 
     std::string myname;
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
     std::map<std::string, std::string> inputs;
     std::map<std::string, std::string> outputs;
     std::map<std::string, IValue> params;
+    std::set<std::string> options;
 
     ZENAPI INode();
     ZENAPI ~INode();
 
     ZENAPI void doComplete();
-
     ZENAPI virtual void doApply();
+
 protected:
+    bool has_executed = false;
+    bool has_executed_complete = false;
+
     ZENAPI virtual void complete();
     ZENAPI virtual void apply() = 0;
+
+    ZENAPI bool has_option(std::string const &id) const;
 
     ZENAPI bool has_input(std::string const &id) const;
 
@@ -214,9 +222,7 @@ struct Graph {
     std::map<std::string, std::shared_ptr<IObject>> subOutputs;
 
     std::map<std::string, std::string> portalIns;
-    std::map<std::string, std::shared_ptr<zen::IObject>> portals;
-
-    std::map<std::string, int> socketRefs;
+    std::map<std::string, std::shared_ptr<IObject>> portals;
 
     std::unique_ptr<Context> ctx;
 
@@ -232,6 +238,8 @@ struct Graph {
         std::string const &sn, std::string const &ss);
     ZENAPI void setNodeParam(std::string const &id, std::string const &par,
         IValue const &val);
+    ZENAPI void setNodeOptions(std::string const &id,
+            std::set<std::string> const &opts);
     ZENAPI std::string getNodeOutput(std::string const &sn, std::string const &ss) const;
     ZENAPI std::shared_ptr<IObject> const &getObject(std::string const &id) const;
 };
@@ -302,6 +310,11 @@ inline void bindNodeInput(std::string const &dn, std::string const &ds,
 inline void setNodeParam(std::string const &id, std::string const &par,
         IValue const &val) {
     return getSession().getGraph().setNodeParam(id, par, val);
+}
+
+inline void setNodeOptions(std::string const &id,
+        std::set<std::string> const &opts) {
+    return getSession().getGraph().setNodeOptions(id, opts);
 }
 
 
