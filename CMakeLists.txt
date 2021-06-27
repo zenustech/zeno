@@ -8,6 +8,7 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+include_directories(include)
 
 add_subdirectory(external/pybind11)
 add_subdirectory(external/glad)
