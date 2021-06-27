@@ -1,17 +1,14 @@
 cmake_minimum_required(VERSION 3.19)
-project(MPM CXX)
 
-include(CheckLanguage)
-check_language(CUDA)
-if(${CMAKE_CUDA_COMPILER})
-    enable_language(CUDA)
-    set(ZS_ENABLE_CUDA ON)
-    set(ZS_ENABLE_OPENVDB OFF)
-    set(ENABLE_GMPM_BUILD ON)
-    add_subdirectory(zecomp)
-else()
-    set(ENABLE_GMPM_BUILD OFF)
-endif()
+#set(ENABLE_GMPM_BUILD ON)
+option(ENABLE_GMPM_BUILD OFF)
+
+if (ENABLE_GMPM_BUILD)
+
+project(MPM CXX CUDA)
+set(ZS_ENABLE_CUDA ON)
+set(ZS_ENABLE_OPENVDB OFF)
+add_subdirectory(zecomp)
 
 #if (EXISTS zecomp AND EXISTS zecomp/include/zensim/tpls)
 
@@ -20,8 +17,6 @@ endif()
 # if (POLICY CMP0104)
 #   cmake_policy(SET CMP0104 OLD)
 # endif (POLICY CMP0104)
-
-if (ENABLE_GMPM_BUILD)
 
 add_library(gmpm SHARED 
   nosys/ToZensimParticles.cpp 
@@ -65,6 +60,17 @@ set_target_properties(gmpm
     )
 
 find_package(zen REQUIRED)
+set_target_properties(gmpm PROPERTIES
+	LIBRARY_OUTPUT_DIRECTORY ${zen_AUTOLOAD_DIR}
+	RUNTIME_OUTPUT_DIRECTORY ${zen_AUTOLOAD_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY ${zen_AUTOLOAD_DIR}
+	LIBRARY_OUTPUT_DIRECTORY_DEBUG ${zen_AUTOLOAD_DIR}
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ${zen_AUTOLOAD_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${zen_AUTOLOAD_DIR}
+	LIBRARY_OUTPUT_DIRECTORY_RELEASE ${zen_AUTOLOAD_DIR}
+	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${zen_AUTOLOAD_DIR}
+	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${zen_AUTOLOAD_DIR}
+	)
 target_link_libraries(gmpm PRIVATE zen zenbase zenvdb)
 target_link_libraries(gmpm PRIVATE zecomp)
 target_include_directories(gmpm PRIVATE ../zenbase/include)
