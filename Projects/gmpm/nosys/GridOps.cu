@@ -29,14 +29,13 @@ struct GridUpdate : zen::INode {
     auto cudaPol = zs::cuda_exec().device(0);
     zs::match([&](auto &partition, auto &grid) {
       using GridT = zs::remove_cvref_t<decltype(grid)>;
-      // fmt::print("updating {} grid blocks\n", partition.size());
+      fmt::print("updating {} grid blocks\n", partition.size());
       cudaPol(
-          {(std::size_t)partition.size(), (std::size_t)GridT::block_t::space},
+          {(std::size_t)partition.size(), (std::size_t)GridT::block_t::space()},
           zs::ComputeGridBlockVelocity{zs::wrapv<zs::execspace_e::cuda>{},
                                        zs::wrapv<zs::transfer_scheme_e::apic>{},
                                        grid, stepDt, gravity, velSqr.data()});
     })(partition, grid);
-
     maxVelSqr->set<float>(velSqr[0]);
     fmt::print(fg(fmt::color::cyan), "done executing GridUpdate\n");
     set_output("MaxVelSqr", maxVelSqr);
