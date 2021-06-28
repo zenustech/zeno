@@ -23,8 +23,8 @@ jobs:
           python: 3.8
           container: archibate/zeno_dev:latest
           options: -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
-        - os: ubuntu-18.04
-          python: 3.7
+        #- os: ubuntu-18.04
+        #  python: 3.7
         - os: ubuntu-20.04
           python: 3.8
         - os: windows-latest
