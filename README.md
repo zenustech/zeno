@@ -3,6 +3,7 @@
 [![CMake](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml) [![License](https://img.shields.io/github/license/zensim-dev/zeno)](LICENSE) [![Version](https://img.shields.io/github/v/release/zensim-dev/zeno)](https://github.com/zensim-dev/zeno/releases)
 
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
+
 ![rigid3.zsg](images/rigid3.jpg)
 
 ## Features
@@ -26,13 +27,12 @@ This repo aims to provide a great tool for both technical artists and CG develop
 
 ## Easy Plug, Easy Go
 
-One may create complicated simulation scenarios by simply connecting the nodes provided by the system:
-For example:
-//put a node editor screenshot here
-This is the charm of visual-programming, not only the direction of data-flow, but also the logic-flow of the solution algorithm is presented at no more clarity.
-In fact, building a molecular simulation from scratch took no more than 7 minutes!
+One may create complicated simulation scenarios by simply connecting the nodes provided by the system. For example, here's a molecular simulation built by our users:
 
 ![lennardjones.zsg](images/lennardjones.jpg)
+
+This is the charm of visual-programming, not only the direction of data-flow, but also the logic-flow of the solution algorithm is presented at no more clarity.
+In fact, building this molecular simulation from scratch took no more than 7 minutes!
 
 ## Flexible
 
