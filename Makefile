@@ -1,35 +1,29 @@
-O=assets/forloop2.zsg
+O=assets/prim.zsg
 
-default: all run
+default: run
 
 install: prepare
 	python/setup.py install
 
-dist: prepare
+wheel: prepare
 	python/setup.py bdist_wheel
 
-prepare:
+prepare: all
 	make -C build install
+	cp -d /tmp/tmp-install/lib/*.so* zen/lib/
 
 all:
-	cmake -B build -DCMAKE_BUILD_TYPE=Release
+	cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
 	make -C build -j `python -c 'from multiprocessing import cpu_count; print(cpu_count() * 2)'`
 
-dbg_all:
-	cmake -B build -DCMAKE_BUILD_TYPE=Debug
+debug_all:
+	cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
 	make -C build -j `python -c 'from multiprocessing import cpu_count; print(cpu_count() * 2)'`
 
 run: all
 	ZEN_OPEN=$O ./run.sh
 
-clean_run:
-	ZEN_OPEN=$O ./run.sh
-
-install:
-	python/setup.py install
-
-dist:
-	python/setup.py bdist_wheel
-
-debug: dbg_all
+debug: debug_all
 	USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh
+
+.PHONY: all debug_all debug run prepare install wheel default

@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/ConditionObject.h>
+#include <zen/GlobalState.h>
 #include <cassert>
 
 namespace zen {
@@ -44,14 +45,15 @@ T const &safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) 
 }
 
 
-#ifndef ZEN_FREE_IOBJECT
 ZENAPI IObject::IObject() = default;
 ZENAPI IObject::~IObject() = default;
 
 ZENAPI std::shared_ptr<IObject> IObject::clone() const {
     return nullptr;
 }
-#endif
+
+ZENAPI void IObject::visualize() {
+}
 
 ZENAPI INode::INode() = default;
 ZENAPI INode::~INode() = default;
@@ -74,6 +76,27 @@ ZENAPI void INode::doComplete() {
 
 ZENAPI void INode::complete() {}
 
+ZENAPI bool INode::checkApplyCondition() {
+    if (has_input("COND")) {  // TODO: deprecate COND
+        auto cond = get_input<zen::ConditionObject>("COND");
+        if (!cond->get())
+            return false;
+    }
+
+    if (has_option("ONCE")) {
+        if (zen::state.frameid != 0)
+            return false;
+    }
+
+    if (has_option("MUTE")) {
+        auto desc = nodeClass->desc.get();
+        set_output(desc->outputs[0], get_input(desc->inputs[0]));
+        return false;
+    }
+
+    return true;
+}
+
 ZENAPI void INode::doApply() {
     for (auto const &[ds, bound]: inputBounds) {
         auto [sn, ss] = bound;
@@ -82,16 +105,20 @@ ZENAPI void INode::doApply() {
         inputs[ds] = ref;
     }
 
-    bool ok = true;
-    if (has_input("COND")) {
-        auto cond = get_input<zen::ConditionObject>("COND");
-        if (!cond->get())
-            ok = false;
-    }
-
-    if (ok) {
+    if (checkApplyCondition()) {
         apply();
     }
+
+    if (has_option("VIEW")) {
+        auto desc = nodeClass->desc.get();
+        auto id = desc->outputs[0];
+        auto obj = safe_at(outputs, id, "output");
+        obj->visualize();
+    }
+}
+
+ZENAPI bool INode::has_option(std::string const &id) const {
+    return options.find(id) != options.end();
 }
 
 ZENAPI bool INode::has_input(std::string const &id) const {
@@ -99,8 +126,7 @@ ZENAPI bool INode::has_input(std::string const &id) const {
 }
 
 ZENAPI std::shared_ptr<IObject> INode::get_input(std::string const &id) const {
-    auto ref = safe_at(inputs, id, "input");
-    return graph->getObject(ref);
+    return safe_at(inputs, id, "input");
 }
 
 ZENAPI IValue INode::get_param(std::string const &id) const {
@@ -108,39 +134,27 @@ ZENAPI IValue INode::get_param(std::string const &id) const {
 }
 
 ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
-    auto objid = myname + "::" + id;
-    graph->objects[objid] = std::move(obj);
-    set_output_ref(id, objid);
+    outputs[id] = std::move(obj);
 }
 
-ZENAPI void INode::set_output_ref(const std::string &id, const std::string &ref) {
-    outputs[id] = ref;
-}
-
-ZENAPI std::string INode::get_input_ref(const std::string &id) const {
-    return safe_at(inputs, id, "input");
-}
-
-ZENAPI std::string Graph::getNodeOutput(std::string const &sn, std::string const &ss) const {
+ZENAPI std::shared_ptr<IObject> const &Graph::getNodeOutput(
+    std::string const &sn, std::string const &ss) const {
     auto node = safe_at(nodes, sn, "node");
-    return safe_at(node->outputs, ss, "node output");
-}
-
-ZENAPI std::shared_ptr<IObject> const &Graph::getObject(std::string const &id) const {
-    return safe_at(objects, id, "object");
+    return safe_at(node->outputs, ss, "output");
 }
 
 ZENAPI void Graph::clearNodes() {
     nodes.clear();
-    objects.clear();
 }
 
 ZENAPI void Graph::addNode(std::string const &cls, std::string const &id) {
     if (nodes.find(id) != nodes.end())
         return;  // no add twice, to prevent output object invalid
-    auto node = safe_at(sess->nodeClasses, cls, "node class")->new_instance();
+    auto cl = safe_at(sess->nodeClasses, cls, "node class");
+    auto node = cl->new_instance();
     node->graph = this;
     node->myname = id;
+    node->nodeClass = cl;
     nodes[id] = std::move(node);
 }
 
@@ -172,6 +186,11 @@ ZENAPI void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
 ZENAPI void Graph::setNodeParam(std::string const &id, std::string const &par,
         IValue const &val) {
     safe_at(nodes, id, "node")->params[par] = val;
+}
+
+ZENAPI void Graph::setNodeOptions(std::string const &id,
+        std::set<std::string> const &opts) {
+    safe_at(nodes, id, "node")->options = opts;
 }
 
 
@@ -230,7 +249,7 @@ ZENAPI Descriptor::Descriptor(
   std::vector<std::string> const &categories)
   : inputs(inputs), outputs(outputs), params(params), categories(categories) {
     this->inputs.push_back("SRC");
-    this->inputs.push_back("COND");
+    this->inputs.push_back("COND");  // TODO: deprecate COND
     this->outputs.push_back("DST");
 }
 

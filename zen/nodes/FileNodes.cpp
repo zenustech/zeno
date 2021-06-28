@@ -24,7 +24,7 @@ ZENDEFNODE(MakeString, {
 
 static int objid = 0;
 
-struct ExportPath : zen::INode {
+struct ExportPath : zen::INode {  // TODO: deprecated
     virtual void apply() override {
         char buf[100];
         auto ext = get_param<std::string>("ext");
@@ -49,7 +49,7 @@ ZENDEFNODE(ExportPath, {
     {"fileio"},
 });
 
-struct EndFrame : zen::INode {
+struct EndFrame : zen::INode {  // TODO: deprecated
     virtual void apply() override {
         char buf[100];
         sprintf(buf, "%06d", zen::state.frameid);
@@ -60,6 +60,7 @@ struct EndFrame : zen::INode {
         path /= "done.lock";
         std::ofstream ofs(path.string());
         ofs.write("DONE", 4);
+        objid = 0;
     }
 };
 

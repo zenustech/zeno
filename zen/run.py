@@ -4,35 +4,50 @@ from . import core
 
 
 
-def runScene(scene, nframes, iopath):
+def runScene(graphs, nframes, iopath):
     core.setIOPath(iopath)
+
+    subgkeys = set(graphs.keys())
+    for name, nodes in graphs.items():
+        core.switchGraph(name)
+        loadGraph(nodes, subgkeys)
+
+    applies = []
+    for ident, data in graphs['main'].items():
+        data = nodes[ident]
+        if 'OUT' in data['options']:
+            applies.append(ident)
+
+    core.switchGraph('main')
     for frameid in range(nframes):
         print('FRAME:', frameid)
-        global frame; frame = frameid  # todo: xinxin happy
+
+        global frame; frame = frameid
         core.frameBegin()
         while core.substepBegin():
-            runSceneOnce(scene)
+            core.applyNodes(applies)
             core.substepEnd()
         core.frameEnd()
+
     print('EXITING')
 
 
-def evaluateExpr(expr):
-    return eval('f' + repr(expr))
-
 
 def loadGraph(nodes, subgkeys):
-    #core.clearNodes()
+    core.clearNodes()
 
     for ident in nodes:
         data = nodes[ident]
         name = data['name']
         inputs = data['inputs']
         params = data['params']
+        options = data['options']
 
         if name in subgkeys:
             params['name'] = name
             name = 'Subgraph'
+        elif name == 'ExecutionOutput':
+            name = 'Route'
         core.addNode(name, ident)
 
         for name, input in inputs.items():
@@ -46,32 +61,20 @@ def loadGraph(nodes, subgkeys):
                 value = evaluateExpr(value)
             core.setNodeParam(ident, name, value)
 
+        core.setNodeOptions(ident, set(options))
+
         core.completeNode(ident)
 
-
-def runSceneOnce(graphs):
-    subgkeys = set(graphs.keys())
-    for name, nodes in graphs.items():
-        core.switchGraph(name)
-        loadGraph(nodes, subgkeys)
-
-    nodes = graphs['main']
-    # 'main' graph use 'OUT' as applies, subgraphs use 'SubOutput' as applies
-    applies = []
-    for ident in nodes:
-        data = nodes[ident]
-        if 'OUT' in data['options']:
-            applies.append(ident)
-
-    core.switchGraph('main')
-    core.applyNodes(applies)
 
 def dumpDescriptors():
     return core.dumpDescriptors()
 
 
+def evaluateExpr(expr):
+    return eval('f' + repr(expr))
+
+
 __all__ = [
     'runScene',
-    'runSceneOnce',
     'dumpDescriptors',
 ]

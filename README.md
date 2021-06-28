@@ -84,18 +84,22 @@ Here's some of the node libraries that have been implemented by our developers:
 - Tree-code N-body (by @archibate)
 - Molocular Dynamics (by @victoriacity)
 - GPU MPM with CUDA (by @littlemine)
+- Bullet3 rigid solver (by @archibate)
 
 Loading these libraries would add corresponding functional nodes into ZENO,
 after which you can creating node graphs with them for simulation.
 You may also add your own solver nodes to ZENO with this workflow if you'd like.
 
+![rigid3.zsg](images/extensible.jpg)
+
 ## Integratable
 
 Not only you can play ZENO in our official Qt5 editor, but also we may install
 ZENO as a **Blender addon**! With that, you can enjoy the flexibilty of ZENO
-node system and all other powerful tools in Blender.
+node system and all other powerful tools in Blender. See `Blender addon` section
+for more information.
 
-[TODO: demostrate our blender addon here]
+![blender.blend](images/blender.jpg)
 
 
 # Build & Run
@@ -188,12 +192,12 @@ twine upload dist/*.whl
 
 # Extensions
 
-ZENO is extensible which means we may write node libraries for it.
-The source code of all our official libraries are provided in `Projects/`.
+ZENO is extensible which means we may write extensions (node libraries) for it.
+The source code of all our official extensions are provided in `Projects/`.
 
-## Build libraries
+## Build extensions
 
-For now, official node libraries will be built by default when running the
+For now, official extensions will be built by default when running the
 ```ALL_BUILD``` target of CMake.
 
 ### Major dependencies
@@ -226,39 +230,16 @@ And here goes the dependencies:
 - ZMS
   - OpenMP C++ (optional)
 
-<!--
-
-### Requirements
-
-Before building node libraries, you need to install ZENO first (or add zeno source root to PYTHONPATH), to do so:
-```bash
-python setup.py install
-```
-
-### Build libraries
-
-- Linux
-```bash
-cd Projects
-cmake -B build
-make -C build
-```
-
-- Windows
-
-For Windows users, **make sure to check the [more detailed README](./Projects/README.md)** for the most updated info and known issues before build starts.
-
-```cmd
-cd Projects
-cmake -B build
-```
-Then open ```Projects/build/zeno_projects.sln``` in Visual Studio 2019, **switch to Release in build configuration**, run `Build -> Build All`.
--->
-
-## Write your own one!
+## Write your own extension!
 
 See ```demo_project/``` for an example on how to write custom nodes in ZENO.
 
-### Installing node libraries
+### Installing extensions
 
 To install a node library for ZENO just copy the `.so` or `.dll` files to `zen/autoload/`. See ```demo_project/CMakeLists.txt``` for how to automate this in CMake.
+
+
+
+# Blender addon
+
+Work in progress, see `assets/blender.blend`. The source code of our blender addon is under `zenblend/`.

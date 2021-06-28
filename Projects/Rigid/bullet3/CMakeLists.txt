@@ -42,6 +42,25 @@ IF (BULLET2_MULTITHREADING)
 ENDIF (BULLET2_MULTITHREADING)
 
 
+####################################################
+# FUN FACT: DID U KNOW THAT MICROSOFT LOVES LINUX? #
+####################################################
+if (MSVC)  # we must use this to fix bullet3 on win
+    set(BUILD_SHARED_LIBS OFF)
+    add_compile_options(
+            $<$<CONFIG:>:/MT> #---------|
+            $<$<CONFIG:Debug>:/MTd> #---|-- Statically link the runtime libraries
+            $<$<CONFIG:Release>:/MT> #--|
+    )  # cl: 命令行 warning D9025 :正在重写“/MD”(用“/MT”)
+else()
+    set(BUILD_SHARED_LIBS ON)
+endif()
+####################################################
+# FUN FACT: DID U KNOW THAT MICROSOFT BUYS GITHUB? #
+####################################################
+
+
+
 IF(NOT WIN32)
 	SET(DL ${CMAKE_DL_LIBS})
 	IF(CMAKE_SYSTEM_NAME MATCHES "Linux")

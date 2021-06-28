@@ -1,0 +1,3 @@
+[submodule "Projects/gmpm/zecomp"]
+	path = Projects/gmpm/zecomp
+	url = https://github.com/zensim-dev/zpc.git

@@ -42,9 +42,8 @@ struct Subgraph : zen::INode {
         auto subg = graph->sess->graphs.at(name).get();
         assert(subg->sess == graph->sess);
 
-        for (auto const &[key, ref]: inputs) {
-            auto obj = graph->getObject(ref);
-            subg->subInputs[key] = std::move(obj);
+        for (auto const &[key, obj]: inputs) {
+            subg->subInputs[key] = obj;
         }
 
         std::vector<std::string> applies;

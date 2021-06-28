@@ -38,13 +38,13 @@ def readzpm(path):
             arr = np.frombuffer(data, dtype=type)
             attrs[name] = arr
 
-    for dim in [1, 2, 3, 4]:
-        size, = fread(f, 'N')
-        type = '{}I'.format(dim if dim != 1 else '')
-        n = struct.calcsize(type) * size
-        data = f.read(n)
-        arr = np.frombuffer(data, dtype=type)
-        conns[dim - 1] = arr
+        for dim in [1, 2, 3, 4]:
+            size, = fread(f, 'N')
+            type = '{}I'.format(dim if dim != 1 else '')
+            n = struct.calcsize(type) * size
+            data = f.read(n)
+            arr = np.frombuffer(data, dtype=type)
+            conns[dim - 1] = arr
 
     return attrs, conns
 

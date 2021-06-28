@@ -8,9 +8,12 @@ import json
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+from PyQt5.QtSvg import *
 
 from zenutils import go, gen_unique_ident
 import zenapi
+
+from . import asset_path
 
 MAX_STACK_LENGTH = 100
 
@@ -42,6 +45,7 @@ style = {
     'copy_offset_x': 100,
     'copy_offset_y': 100,
     'hori_margin': 10,
+    'dummy_socket_offset': 15,
 }
 
 class HistoryStack:
@@ -364,7 +368,7 @@ class QDMGraphicsView(QGraphicsView):
 
             if self.dragingEdge is None:
                 item = self.itemAt(event.pos())
-                if isinstance(item, QDMGraphicsSocket):
+                if isinstance(item, QDMGraphicsSocket) and not item.dummy:
                     if not item.isOutput and len(item.edges):
                         srcItem = item.getTheOnlyEdge().srcSocket
                         item.removeAllEdges()
@@ -530,8 +534,16 @@ class QDMGraphicsEdge(QDMGraphicsPath):
         self.dstSocket = socket
 
     def updatePath(self):
-        srcPos = self.srcSocket.getCirclePos()
-        dstPos = self.dstSocket.getCirclePos()
+        s = self.srcSocket
+        if not s.node.collapsed:
+            srcPos = s.getCirclePos()
+        else:
+            srcPos = s.node.dummy_output_socket.getCirclePos()
+        s = self.dstSocket
+        if not s.node.collapsed:
+            dstPos = s.getCirclePos()
+        else:
+            dstPos = s.node.dummy_input_socket.getCirclePos()
         self.setSrcDstPos(srcPos, dstPos)
 
         super().updatePath()
@@ -563,6 +575,7 @@ class QDMGraphicsSocket(QGraphicsItem):
 
         self.node = parent
         self.name = None
+        self.dummy = False
 
     def hasAnyEdge(self):
         return len(self.edges) != 0
@@ -616,7 +629,10 @@ class QDMGraphicsSocket(QGraphicsItem):
         return QRectF(*self.getCircleBounds()).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-        socket_color = 'socket_connect_color' if self.hasAnyEdge() else 'socket_unconnect_color'
+        if self.hasAnyEdge() or self.dummy:
+            socket_color = 'socket_connect_color'
+        else:
+            socket_color = 'socket_unconnect_color'
         painter.setBrush(QColor(style[socket_color]))
         pen = QPen(QColor(style['line_color']))
         pen.setWidth(style['socket_outline_width'])
@@ -629,11 +645,17 @@ class QDMGraphicsSocket(QGraphicsItem):
 
 
 class QDMGraphicsButton(QGraphicsProxyWidget):
+    class QDMLabel(QLabel):
+        def mousePressEvent(self, event):
+            self.on_click()
+            super().mousePressEvent(event)
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.widget = QPushButton()
-        self.widget.clicked.connect(self.on_click)
+        self.widget = self.QDMLabel()
+        self.widget.setAlignment(Qt.AlignCenter)
+        self.widget.on_click = self.on_click
         self.setWidget(self.widget)
         self.setChecked(False)
 
@@ -652,6 +674,40 @@ class QDMGraphicsButton(QGraphicsProxyWidget):
     def setText(self, text):
         self.widget.setText(text)
 
+
+class QDMCollapseButton(QSvgWidget):
+    def __init__(self, parent=None):
+        super().__init__()
+        self.render = self.renderer()
+        self.load(asset_path('unfold.svg'))
+        self.collapsed = False
+        # PyQt5 >= 5.15
+        self.render.setAspectRatioMode(Qt.KeepAspectRatio)
+
+        self.setStyleSheet('background-color: {}'.format(style['title_color']))
+        self.node = parent
+    
+    def isChecked(self):
+        return self.collapseds
+    
+    def mousePressEvent(self, event):
+        super().mouseMoveEvent(event)
+        self.collapsed = not self.collapsed
+        if self.collapsed:
+            self.load(asset_path('collapse.svg'))
+            self.node.collapse()
+        else:
+            self.load(asset_path('unfold.svg'))
+            self.node.unfold()
+        self.render.setAspectRatioMode(Qt.KeepAspectRatio)
+
+
+class QDMGraphicsCollapseButton(QGraphicsProxyWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.widget = QDMCollapseButton(parent)
+        self.setWidget(self.widget)
 
 class QDMGraphicsParam(QGraphicsProxyWidget):
     def __init__(self, parent=None):
@@ -769,10 +825,14 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor(style['title_text_color']))
-        self.title.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT * 0.9)
+        self.title.setPos(HORI_MARGIN * 2, -TEXT_HEIGHT * 0.92)
         font = QFont()
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
+
+        self.collapse_button = QDMGraphicsCollapseButton(self)
+        self.collapse_button.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT * 0.84)
+        self.collapsed = False
 
         self.params = {}
         self.inputs = {}
@@ -820,25 +880,45 @@ class QDMGraphicsNode(QGraphicsItem):
         for name, button in self.options.items():
             button.setChecked(name in options)
 
+    def initDummySockets(self):
+        h = - TEXT_HEIGHT / 2
+        offset = style['dummy_socket_offset']
+        s = QDMGraphicsSocket(self)
+        s.setPos(-offset, h)
+        s.setIsOutput(False)
+        s.dummy = True
+        self.dummy_input_socket = s
+        self.dummy_input_socket.hide()
+
+        w = style['node_width']
+        s = QDMGraphicsSocket(self)
+        s.setPos(w + offset, h)
+        s.setIsOutput(False)
+        s.dummy = True
+        self.dummy_output_socket = s
+        self.dummy_output_socket.hide()
+
+    def initCondButtons(self):
+        cond_keys = ['OUT', 'MUTE', 'ONCE', 'VIEW']
+        for i, key in enumerate(cond_keys):
+            button = QDMGraphicsButton(self)
+            M = HORI_MARGIN * 0.2
+            H = TEXT_HEIGHT * 0.9
+            W = self.width / len(cond_keys)
+            rect = QRectF(W * i + M, -TEXT_HEIGHT * 2.3, W - M * 2, H)
+            button.setGeometry(rect)
+            button.setText(key)
+            self.options[key] = button
+
     def initSockets(self):
+        self.initDummySockets()
+        self.initCondButtons()
+
         inputs = self.desc_inputs
         outputs = self.desc_outputs
         params = self.desc_params
 
         y = self.height + TEXT_HEIGHT * 0.4
-
-        self.options['OUT'] = button = QDMGraphicsButton(self)
-        rect = QRectF(HORI_MARGIN, y, self.width / 2 - HORI_MARGIN * 1.5, 0)
-        button.setGeometry(rect)
-        button.setText('OUT')
-
-        self.options['MUTE'] = button = QDMGraphicsButton(self)
-        rect = QRectF(HORI_MARGIN * 0.5 + self.width / 2,
-            y, self.width / 2 - HORI_MARGIN * 1.5, 0)
-        button.setGeometry(rect)
-        button.setText('MUTE')
-
-        y += TEXT_HEIGHT * 1.3
 
         self.params.clear()
         for index, (type, name, defl) in enumerate(params):
@@ -886,30 +966,80 @@ class QDMGraphicsNode(QGraphicsItem):
         self.height = y
 
     def boundingRect(self):
-        return QRectF(0, -TEXT_HEIGHT, self.width, self.height).normalized()
+        h = TEXT_HEIGHT if self.collapsed else self.height
+        return QRectF(0, -TEXT_HEIGHT, self.width, h).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-        pathContent = QPainterPath()
-        pathContent.addRect(0, -TEXT_HEIGHT, self.width, self.height)
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['panel_color']))
-        painter.drawPath(pathContent.simplified())
+        r = style['node_rounded_radius']
 
-        pathTitle = QPainterPath()
-        pathTitle.addRect(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['title_color']))
-        painter.drawPath(pathTitle.simplified())
+        if not self.collapsed:
+            pathContent = QPainterPath()
+            rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
+            pathContent.addRoundedRect(rect, r, r)
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QColor(style['panel_color']))
+            painter.drawPath(pathContent.simplified())
+
+            # title round top
+            pathTitle = QPainterPath()
+            rect = QRectF(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
+            pathTitle.addRoundedRect(rect, r, r)
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QColor(style['title_color']))
+            painter.drawPath(pathTitle.simplified())
+            
+            # title direct bottom
+            pathTitle = QPainterPath()
+            rect = QRectF(0, -r, self.width, r)
+            pathTitle.addRect(rect)
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QColor(style['title_color']))
+            painter.drawPath(pathTitle.simplified())
 
         pathOutline = QPainterPath()
-        r = style['node_rounded_radius']
-        pathOutline.addRoundedRect(0, -TEXT_HEIGHT, self.width, self.height, r, r)
+        h = TEXT_HEIGHT if self.collapsed else self.height
+        pathOutline.addRoundedRect(0, -TEXT_HEIGHT, self.width, h, r, r)
         pathOutlineColor = 'selected_color' if self.isSelected() else 'line_color'
         pen = QPen(QColor(style[pathOutlineColor]))
         pen.setWidth(style['node_outline_width'])
         painter.setPen(pen)
-        painter.setBrush(Qt.NoBrush)
+        if not self.collapsed:
+            painter.setBrush(Qt.NoBrush)
+        else:
+            painter.setBrush(QColor(style['title_color']))
         painter.drawPath(pathOutline.simplified())
+
+    def collapse(self):
+        self.dummy_input_socket.show()
+        self.dummy_output_socket.show()
+
+        self.collapsed = True
+        for v in self.options.values():
+            v.hide()
+        for v in self.params.values():
+            v.hide()
+        for v in self.inputs.values():
+            v.hide()
+        for v in self.outputs.values():
+            v.hide()
+
+        for socket in self.outputs.values():
+            for edge in socket.edges:
+                edge.updatePath()
+
+    def unfold(self):
+        self.dummy_input_socket.hide()
+        self.dummy_output_socket.hide()
+
+        self.collapsed = False
+        for v in self.options.values():
+            v.show()
+        for v in self.params.values():
+            v.show()
+        for v in self.inputs.values():
+            v.show()
+        for v in self.outputs.values():
+            v.show()
 
 
 class QDMFileMenu(QMenu):

@@ -8,16 +8,17 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+include_directories(include)
 
 add_subdirectory(external/pybind11)
 add_subdirectory(external/glad)
 add_subdirectory(zenvis)
 
 
-file(GLOB ZENSESSION_SOURCE zen/*.cpp zen/nodes/*.cpp zen/include/zen/*.h)
+file(GLOB ZENSESSION_SOURCE zen/*.cpp zen/nodes/*.cpp zen/nodes/*/*.cpp zen/include/zen/*.h)
 
 add_library(zensession SHARED ${ZENSESSION_SOURCE})
-target_compile_definitions(zensession PRIVATE -D_ZEN_INDLL)
+target_compile_definitions(zensession PRIVATE -DDLL_ZENSESSION)
 target_include_directories(zensession PRIVATE zen/include)
 set(OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zen/lib)
 set_target_properties(zensession PROPERTIES
@@ -34,7 +35,7 @@ set_target_properties(zensession PROPERTIES
 
 pybind11_add_module(libzenpy libzenpy.cpp)
 target_include_directories(libzenpy PRIVATE zen/include)
-target_link_libraries(libzenpy PUBLIC zensession)
+target_link_libraries(libzenpy PRIVATE zensession)
 set_property(TARGET libzenpy PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen)
 set(OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zen)
 set_target_properties(libzenpy PROPERTIES

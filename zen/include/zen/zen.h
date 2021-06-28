@@ -14,21 +14,15 @@
 
 #ifdef _MSC_VER
 
-# ifdef _ZEN_INDLL
+# ifdef DLL_ZENSESSION
 #  define ZENAPI __declspec(dllexport)
 # else
 #  define ZENAPI __declspec(dllimport)
 # endif
-# define ZENDEPRECATED __declspec(deprecated)
 
 #else
 
 # define ZENAPI
-# ifdef __GNUC__
-#  define ZENDEPRECATED __attribute__((deprecated))
-# else
-#  define ZENDEPRECATED
-# endif
 
 #endif
 
@@ -50,26 +44,31 @@ using IValue = std::variant<std::string, int, float>;
 
 
 struct IObject {
-#ifndef _ZEN_FREE_IOBJECT
+#ifndef ZEN_NOREFDLL
     ZENAPI IObject();
     ZENAPI virtual ~IObject();
 
     ZENAPI virtual std::shared_ptr<IObject> clone() const;
+    ZENAPI virtual void visualize();
 #else
     virtual ~IObject() = default;
     virtual std::shared_ptr<IObject> clone() const { return nullptr; }
+    ZENAPI virtual void visualize() {}
 #endif
 
     using Ptr = std::unique_ptr<IObject>;
 
     template <class T>
-    ZENDEPRECATED static std::shared_ptr<T> make() { return std::make_shared<T>(); }
+    [[deprecated("std::make_shared<T>")]]
+    static std::shared_ptr<T> make() { return std::make_shared<T>(); }
 
     template <class T>
-    ZENDEPRECATED T *as() { return dynamic_cast<T *>(this); }
+    [[deprecated("dynamic_cast<T *>")]]
+    T *as() { return dynamic_cast<T *>(this); }
 
     template <class T>
-    ZENDEPRECATED const T *as() const { return dynamic_cast<const T *>(this); }
+    [[deprecated("dynamic_cast<const T *>")]]
+    const T *as() const { return dynamic_cast<const T *>(this); }
 };
 
 template <class Derived, class Base = IObject>
@@ -80,51 +79,64 @@ struct IObjectClone : Base {
 };
 
 struct Graph;
+struct INodeClass;
 
 struct INode {
 public:
     Graph *graph = nullptr;
+    INodeClass *nodeClass = nullptr;
 
     std::string myname;
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
-    std::map<std::string, std::string> inputs;
-    std::map<std::string, std::string> outputs;
+    std::map<std::string, std::shared_ptr<IObject>> inputs;
+    std::map<std::string, std::shared_ptr<IObject>> outputs;
     std::map<std::string, IValue> params;
+    std::set<std::string> options;
 
     ZENAPI INode();
     ZENAPI ~INode();
 
     ZENAPI void doComplete();
-
     ZENAPI virtual void doApply();
+
 protected:
+    ZENAPI bool checkApplyCondition();
+
     ZENAPI virtual void complete();
     ZENAPI virtual void apply() = 0;
 
+    ZENAPI bool has_option(std::string const &id) const;
     ZENAPI bool has_input(std::string const &id) const;
-
+    ZENAPI IValue get_param(std::string const &id) const;
     ZENAPI std::shared_ptr<IObject> get_input(std::string const &id) const;
+    ZENAPI void set_output(std::string const &id,
+        std::shared_ptr<IObject> &&obj);
+
+    [[deprecated("get_input")]]
+    std::shared_ptr<IObject> get_input_ref(std::string const &id) const {
+        return get_input(id);
+    }
+
+    [[deprecated("set_output")]]
+    void set_output_ref(std::string const &id,
+        std::shared_ptr<IObject> &&obj) {
+        set_output(id, std::move(obj));
+    }
 
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
         return std::dynamic_pointer_cast<T>(get_input(id));
     }
 
-    ZENAPI std::string get_input_ref(std::string const &id) const;
-
-    ZENAPI IValue get_param(std::string const &id) const;
-
     template <class T>
     T get_param(std::string const &id) const {
         return std::get<T>(get_param(id));
     }
 
-    ZENAPI void set_output(std::string const &id, std::shared_ptr<IObject> &&obj);
-
-    ZENAPI void set_output_ref(std::string const &id, std::string const &ref);
 
     template <class T>
-    ZENDEPRECATED T *new_member(std::string const &id) {
+    [[deprecated("set_output")]]
+    T *new_member(std::string const &id) {
         auto obj = std::make_shared<T>();
         auto obj_ptr = obj.get();
         set_output(id, std::move(obj));
@@ -132,7 +144,9 @@ protected:
     }
 
     template <class T>
-    ZENDEPRECATED void set_output(std::string const &id, std::shared_ptr<T> &obj) {
+    [[deprecated("set_output(id, std::move(obj))")]]
+    void set_output(std::string const &id,
+        std::shared_ptr<T> &obj) {
         set_output(id, std::move(obj));
     }
 };
@@ -208,15 +222,12 @@ struct Graph {
     Session *sess = nullptr;
 
     std::map<std::string, std::unique_ptr<INode>> nodes;
-    std::map<std::string, std::shared_ptr<IObject>> objects;
 
     std::map<std::string, std::shared_ptr<IObject>> subInputs;
     std::map<std::string, std::shared_ptr<IObject>> subOutputs;
 
     std::map<std::string, std::string> portalIns;
-    std::map<std::string, std::shared_ptr<zen::IObject>> portals;
-
-    std::map<std::string, int> socketRefs;
+    std::map<std::string, std::shared_ptr<IObject>> portals;
 
     std::unique_ptr<Context> ctx;
 
@@ -232,8 +243,10 @@ struct Graph {
         std::string const &sn, std::string const &ss);
     ZENAPI void setNodeParam(std::string const &id, std::string const &par,
         IValue const &val);
-    ZENAPI std::string getNodeOutput(std::string const &sn, std::string const &ss) const;
-    ZENAPI std::shared_ptr<IObject> const &getObject(std::string const &id) const;
+    ZENAPI void setNodeOptions(std::string const &id,
+            std::set<std::string> const &opts);
+    ZENAPI std::shared_ptr<IObject> const &getNodeOutput(
+        std::string const &sn, std::string const &ss) const;
 };
 
 struct Session {
@@ -266,7 +279,8 @@ inline int defNodeClass(F const &ctor, std::string const &id, Descriptor const &
 }
 
 template <class T>
-ZENDEPRECATED inline int defNodeClass(std::string const &id, Descriptor const &desc = {}) {
+[[deprecated("ZENDEFNODE(T, ...)")]]
+inline int defNodeClass(std::string const &id, Descriptor const &desc = {}) {
     return getSession().defNodeClass(std::make_unique<T>, id, desc);
 }
 
@@ -302,6 +316,11 @@ inline void bindNodeInput(std::string const &dn, std::string const &ds,
 inline void setNodeParam(std::string const &id, std::string const &par,
         IValue const &val) {
     return getSession().getGraph().setNodeParam(id, par, val);
+}
+
+inline void setNodeOptions(std::string const &id,
+        std::set<std::string> const &opts) {
+    return getSession().getGraph().setNodeOptions(id, opts);
 }
 
 

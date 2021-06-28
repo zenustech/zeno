@@ -41,8 +41,10 @@ ZENDEFNODE(PortalOut, {
 
 struct Route : zen::INode {
     virtual void apply() override {
-        auto obj = get_input("input");
-        set_output("output", std::move(obj));
+        if (has_input("input")) {
+            auto obj = get_input("input");
+            set_output("output", std::move(obj));
+        }
     }
 };
 

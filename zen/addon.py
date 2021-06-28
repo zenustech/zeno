@@ -28,7 +28,7 @@ def loadAutoloads():
             if name.endswith('.dll'):
                 paths.append(name)
         else:
-            if name.endswith('.so') or 'so' in name.split('.'):
+            if name.endswith('.so'):
                 path = os.path.join(dir, name)
                 paths.append(path)
 
