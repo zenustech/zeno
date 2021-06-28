@@ -163,7 +163,7 @@ class QDMGraphicsScene(QGraphicsScene):
             inputs = data['inputs']
             params = data['params']
             posx, posy = data['uipos']
-            options = data['options']
+            options = data.get('options', [])
 
             if name not in self.descs:
                 print('no node class named [{}]'.format(name))

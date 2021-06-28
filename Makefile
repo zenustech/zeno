@@ -20,6 +20,10 @@ debug_all:
 	cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
 	make -C build -j `python -c 'from multiprocessing import cpu_count; print(cpu_count() * 2)'`
 
+configure:
+	cmake -B build
+	ccmake -B build
+
 run: all
 	ZEN_OPEN=$O ./run.sh
 
