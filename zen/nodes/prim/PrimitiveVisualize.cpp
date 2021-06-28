@@ -12,41 +12,40 @@ ZENAPI void PrimitiveObject::visualize() {
 }
 
 
-struct PrimitiveShadeObject : zen::IObject {
+struct PrimitiveShadePointsObject : zen::IObject {
     std::string vertpath, fragpath;
     std::shared_ptr<PrimitiveObject> prim;
 
     virtual void visualize() override {
         auto path = Visualization::exportPath("zpm");
-        fs::copy_file(vertpath, path + ".vert");
-        fs::copy_file(fragpath, path + ".frag");
-        writezpm(this, path.c_str());
+        fs::copy_file(vertpath, path + ".points.vert");
+        fs::copy_file(fragpath, path + ".points.frag");
+        writezpm(prim.get(), path.c_str());
     }
 };
 
 
-struct PrimitiveShade : zen::INode {
+struct PrimitiveShadePoints : zen::INode {
   virtual void apply() override {
-    auto prim = get_input("prim")->as<PrimitiveObject>();
-    auto shade = std::make_shared<PrimitiveShadeObject>();
-    shade->prim = std::move(prim);
+    auto shade = std::make_shared<PrimitiveShadePointsObject>();
+    shade->prim = get_input<PrimitiveObject>("prim");
     shade->vertpath = get_param<std::string>("vertpath");
     shade->fragpath = get_param<std::string>("fragpath");
 
-    set_output_ref("primShade", std::move(shade));
+    set_output_ref("shade", std::move(shade));
   }
 };
 
-ZENDEF(PrimitiveShade,
+ZENDEFNODE(PrimitiveShadePoints,
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
-    "primShade",
+    "shade",
     }, /* params: */ {
     {"string", "vertpath", "xxx.vert"},
     {"string", "fragpath", "xxx.frag"},
     }, /* category: */ {
-    "primitive",
+    "visualize",
     }});
 
 }
