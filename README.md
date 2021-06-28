@@ -1,5 +1,7 @@
 # ZENO
 
+[![CMake](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml)
+
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 ![rigid3.zsg](images/rigid3.jpg)
 
@@ -145,6 +147,8 @@ Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/
 - Linux
 ```bash
 cmake -B build
+# If you decide to build OpenVDB related extensions:
+# cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
 make -C build -j8
 ```
 
@@ -200,35 +204,47 @@ The source code of all our official extensions are provided in `Projects/`.
 For now, official extensions will be built by default when running the
 ```ALL_BUILD``` target of CMake.
 
-### Major dependencies
-
-Building them require some dependencies, please comment the, for example:
-
-```cmake
-add_subdirectory(zenbase)
-#add_subdirectory(FastFLIP)
+Note that the extensions: ZenVDB and FastFLIP are not built by default.
+You can use
+```bash
+cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
 ```
+to enable them.
 
-in `Projects/CMakeLists.txt` if you meet trouble building them.
-And here goes the dependencies:
+# Major dependencies
 
-- FastFLIP
+Building them require some dependencies:
+
+- Rigid (bullet3 rigid dynamics)
+  - no dependencies!
+
+- ZMS (molocular dynamics)
+  - OpenMP (optional)
+
+- ZenBASE (deprecated mesh operations)
+  - OpenMP (optional)
+
+- ZenVDB (OpenVDB ops and tools, not built by default)
   - OpenVDB
-  - IlmBase (or OpenEXR)
+  - IlmBase
+  - TBB
+  - OpenMP (optional)
+
+- FastFLIP (zhxx's OpenVDB FLIP solver, not built by default)
+  - OpenVDB
+  - IlmBase
   - Eigen3
   - TBB
+  - OpenBLAS
+  - ZenVDB (see above)
+  - ZenBASE (see above)
 
-- Zenbase
-  - OpenMP C++ (optional)
+- GMPM (wxl's GPU MPM solver, not built by default)
+  - CUDA toolkit
+  - OpenVDB (optional)
 
-- Zenvdb
-  - OpenVDB
-  - IlmBase (or OpenEXR)
-  - TBB
-  - OpenMP C++ (optional)
-
-- ZMS
-  - OpenMP C++ (optional)
+Other extensions are built by default because their dependencies are
+self-contained and portable to all platforms.
 
 ## Write your own extension!
 
@@ -239,7 +255,6 @@ See ```demo_project/``` for an example on how to write custom nodes in ZENO.
 To install a node library for ZENO just copy the `.so` or `.dll` files to `zen/autoload/`. See ```demo_project/CMakeLists.txt``` for how to automate this in CMake.
 
 
-
 # Blender addon
 
-Work in progress, see `assets/blender.blend`. The source code of our blender addon is under `zenblend/`.
+Work in progress, see `assets/blender.blend`. The source code of our blender addon is under `zenblend/`. Contributions are more than welcome!
