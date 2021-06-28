@@ -56,7 +56,7 @@ add_custom_command(TARGET libzenpy PRE_BUILD
 
 option(ZENO_BUILD_EXTENSIONS "Build extensions for Zeno" ON)
 if (ZENO_BUILD_EXTENSIONS)
-    add_subdirectory(Projects)
+    add_subdirectory(projects)
 endif()
 
 option(ZENO_BUILD_TESTS "Build tests for Zeno" ON)
