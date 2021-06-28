@@ -30,6 +30,6 @@ static int defToZensimLevelSet = zen::defNodeClass<ToZensimLevelSet>(
     "ToZensimLevelSet", {/* inputs: */ {"VDBFloatGrid"},
                          /* outputs: */ {"ZSLevelSet"},
                          /* params: */ {},
-                         /* category: */ {"simulation"}});
+                         /* category: */ {"GPUMPM"}});
 
 } // namespace zen

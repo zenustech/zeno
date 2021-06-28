@@ -33,6 +33,6 @@ static int defZensimBoundary = zen::defNodeClass<ZensimBoundary>(
     "ZensimBoundary", {/* inputs: */ {"ZSLevelSet"},
                        /* outputs: */ {"ZSBoundary"},
                        /* params: */ {{"string", "type", "sticky"}},
-                       /* category: */ {"simulation"}});
+                       /* category: */ {"GPUMPM"}});
 
 } // namespace zen

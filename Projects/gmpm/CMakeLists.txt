@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 
 #set(ENABLE_GMPM_BUILD ON)
-option(ENABLE_GMPM_BUILD OFF)
+set(ENABLE_GMPM_BUILD ON)
 
 if (ENABLE_GMPM_BUILD)
 
