@@ -9,7 +9,7 @@ Open-source node system framework, to change your algorithmic code into useful t
 ## Features
 
 Integrated Toolbox, from volumetric geometry process tools (OpenVDB), to state-of-art, commercially robust, highly optimized physics solvers and visualization
-nodes, and various VFX and simulation solutions based on our nodes (provided by .zsg file).
+nodes, and various VFX and simulation solutions based on our nodes (provided by .zsg file in `arts/` folder).
 //better have some screenshot here
 
 ## ZenCompute (@littlemine)
@@ -195,7 +195,7 @@ twine upload dist/*.whl
 # Extensions
 
 ZENO is extensible which means we may write extensions (node libraries) for it.
-The source code of all our official extensions are provided in `Projects/`.
+The source code of all our official extensions are provided in `projects/`.
 
 ## Build extensions
 
