@@ -4,7 +4,7 @@
 
 namespace zen::Visualization {
 
-ZENAPI std::string exportPath(std::string const &ext);
+ZENAPI std::string exportPath();
 ZENAPI void endFrame();
 
 }

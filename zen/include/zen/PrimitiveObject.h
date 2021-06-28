@@ -24,9 +24,9 @@ struct PrimitiveObject : zen::IObjectClone<PrimitiveObject> {
     std::vector<zen::vec4i> quads;
 
 #ifndef ZEN_NOREFDLL
-    ZENAPI virtual void visualize() override;
+    ZENAPI virtual void dumpfile(std::string const &path) override;
 #else
-    virtual void visualize() override {}
+    virtual void dumpfile(std::string const &path) override {}
 #endif
 
     template <class T>

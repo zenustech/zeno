@@ -1,3 +1,0 @@
-set(project_name zecomp)
-set(project_version 0.0.0)
-set(project_description "Zecomp: highly efficient parallel compute framework")

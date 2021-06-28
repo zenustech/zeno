@@ -49,11 +49,11 @@ struct IObject {
     ZENAPI virtual ~IObject();
 
     ZENAPI virtual std::shared_ptr<IObject> clone() const;
-    ZENAPI virtual void visualize();
+    ZENAPI virtual void dumpfile(std::string const &path);
 #else
     virtual ~IObject() = default;
     virtual std::shared_ptr<IObject> clone() const { return nullptr; }
-    virtual void visualize() {}
+    virtual void dumpfile(std::string const &path) {}
 #endif
 
     using Ptr = std::unique_ptr<IObject>;
