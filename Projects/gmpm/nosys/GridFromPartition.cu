@@ -40,7 +40,7 @@ static int defGridFromPartition = zen::defNodeClass<GridFromPartition>(
     "GridFromPartition", {/* inputs: */ {"ZSPartition"},
                           /* outputs: */ {"ZSGrid"},
                           /* params: */ {{"float", "dx", "1"}},
-                          /* category: */ {"simulation"}});
+                          /* category: */ {"GPUMPM"}});
 
 struct ExpandPartition : zen::INode {
   void apply() override {
@@ -66,6 +66,6 @@ static int defExpandPartition = zen::defNodeClass<ExpandPartition>(
     "ExpandPartition", {/* inputs: */ {"ZSPartition"},
                         /* outputs: */ {},
                         /* params: */ {{"int", "lo", "0"}, {"int", "hi", "1"}},
-                        /* category: */ {"simulation"}});
+                        /* category: */ {"GPUMPM"}});
 
 } // namespace zen

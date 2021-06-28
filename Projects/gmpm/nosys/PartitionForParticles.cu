@@ -62,6 +62,6 @@ static int defSpatialPartitionForParticles = zen::defNodeClass<
     {/* inputs: */ {"ZSParticles"},
      /* outputs: */ {"ZSPartition"},
      /* params: */ {{"float", "dx", "1"}, {"int", "block_side_length", "4"}},
-     /* category: */ {"simulation"}});
+     /* category: */ {"GPUMPM"}});
 
 } // namespace zen

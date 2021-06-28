@@ -48,7 +48,7 @@ static int defGridUpdate = zen::defNodeClass<GridUpdate>(
                    /* outputs: */ {"MaxVelSqr"},
                    /* params: */
                    {/*{"float", "dt", "1"}, */ {"float", "gravity", "-9.8"}},
-                   /* category: */ {"simulation"}});
+                   /* category: */ {"GPUMPM"}});
 
 struct ResolveBoundaryOnGrid : zen::INode {
   void apply() override {
@@ -84,6 +84,6 @@ static int defResolveBoundaryOnGrid = zen::defNodeClass<ResolveBoundaryOnGrid>(
     {/* inputs: */ {"ZSPartition", "ZSGrid", "ZSBoundary"},
      /* outputs: */ {},
      /* params: */ {},
-     /* category: */ {"simulation"}});
+     /* category: */ {"GPUMPM"}});
 
 } // namespace zen
