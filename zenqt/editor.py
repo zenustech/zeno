@@ -163,7 +163,7 @@ class QDMGraphicsScene(QGraphicsScene):
             inputs = data['inputs']
             params = data['params']
             posx, posy = data['uipos']
-            options = data['options']
+            options = data.get('options', [])
 
             if name not in self.descs:
                 print('no node class named [{}]'.format(name))
@@ -1040,6 +1040,10 @@ class QDMGraphicsNode(QGraphicsItem):
             v.show()
         for v in self.outputs.values():
             v.show()
+
+        for socket in self.outputs.values():
+            for edge in socket.edges:
+                edge.updatePath()
 
 
 class QDMFileMenu(QMenu):

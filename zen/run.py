@@ -21,7 +21,6 @@ def runScene(graphs, nframes, iopath):
     for frameid in range(nframes):
         print('FRAME:', frameid)
 
-        global frame; frame = frameid
         core.frameBegin()
         while core.substepBegin():
             core.applyNodes(applies)
@@ -56,8 +55,6 @@ def loadGraph(nodes, subgkeys):
             core.bindNodeInput(ident, name, srcIdent, srcSockName)
 
         for name, value in params.items():
-            if type(value) is str:
-                value = evaluateExpr(value)
             core.setNodeParam(ident, name, value)
 
         core.setNodeOptions(ident, set(options))
@@ -67,10 +64,6 @@ def loadGraph(nodes, subgkeys):
 
 def dumpDescriptors():
     return core.dumpDescriptors()
-
-
-def evaluateExpr(expr):
-    return eval('f' + repr(expr))
 
 
 __all__ = [
