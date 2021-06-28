@@ -1,11 +1,17 @@
 #include <zen/zen.h>
 #include <zen/Visualization.h>
 #include <zen/GlobalState.h>
-#include <filesystem>
 #include <fstream>
 #include <cstdio>
 
+#if __has_include(<filesystem>)
+#include <filesystem>
 namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+namespace fs = std::experimental::filesystem;
+#else
+#error "missing <filesystem> header."
+#endif
 
 namespace zen::Visualization {
 
