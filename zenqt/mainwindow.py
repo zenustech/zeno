@@ -6,6 +6,7 @@ from .viewport import ViewportWidget
 from .timeline import TimelineWidget
 from .editor import NodeEditor
 
+from . import asset_path
 
 class MainWindow(QWidget):
     def __init__(self, parent=None):
@@ -40,6 +41,8 @@ class MainWindow(QWidget):
         self.layout.addWidget(self.mainsplit)
         self.layout.addWidget(self.timeline)
         self.setLayout(self.layout)
+
+        self.setWindowIcon(QIcon(asset_path('logo.ico')))
 
         self.startTimer(1000 // 60)
 
