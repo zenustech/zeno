@@ -39,6 +39,12 @@ jobs:
       with:
         python-version: ${{ matrix.python }}
 
+    - uses: actions/cache@v2
+      with:
+        key: ${{matrix.os}}-${{matrix.python}}-${{env.BUILD_TYPE}}-${{hashFiles('**/CMakeLists.txt')}}
+        path: |
+          ${{github.workspace}}/build
+
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
