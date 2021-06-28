@@ -1,6 +1,6 @@
 # ZENO
 
-[![CMake](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml)
+[![CMake](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml) [![License](https://img.shields.io/github/license/zensim-dev/zeno)](LICENSE) [![Version](https://img.shields.io/github/v/release/zensim-dev/zeno)](https://github.com/zensim-dev/zeno/releases)
 
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 ![rigid3.zsg](images/rigid3.jpg)
@@ -147,8 +147,6 @@ Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/
 - Linux
 ```bash
 cmake -B build
-# If you decide to build OpenVDB related extensions:
-# cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
 make -C build -j8
 ```
 
@@ -204,6 +202,8 @@ The source code of all our official extensions are provided in `Projects/`.
 For now, official extensions will be built by default when running the
 ```ALL_BUILD``` target of CMake.
 
+### FastFLIP
+
 Note that the extensions: ZenVDB and FastFLIP are not built by default.
 You can use
 ```bash
@@ -211,7 +211,20 @@ cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
 ```
 to enable them.
 
-# Major dependencies
+### GMPM
+
+You need to update git submodules before building @littlemine's GPU MPM.
+To do so:
+```bash
+git submodule update --init --recursive
+```
+Then:
+```bash
+cmake -B build -DEXTENSION_gmpm:BOOL=ON
+```
+to enable it.
+
+### Major dependencies
 
 Building them require some dependencies:
 
@@ -224,13 +237,13 @@ Building them require some dependencies:
 - ZenBASE (deprecated mesh operations)
   - OpenMP (optional)
 
-- ZenVDB (OpenVDB ops and tools, not built by default)
+- ZenVDB (OpenVDB ops and tools)
   - OpenVDB
   - IlmBase
   - TBB
   - OpenMP (optional)
 
-- FastFLIP (zhxx's OpenVDB FLIP solver, not built by default)
+- FastFLIP (zhxx's OpenVDB FLIP solver)
   - OpenVDB
   - IlmBase
   - Eigen3
@@ -239,7 +252,7 @@ Building them require some dependencies:
   - ZenVDB (see above)
   - ZenBASE (see above)
 
-- GMPM (wxl's GPU MPM solver, not built by default)
+- GMPM (wxl's GPU MPM solver)
   - CUDA toolkit
   - OpenVDB (optional)
 
