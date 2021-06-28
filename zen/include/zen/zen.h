@@ -53,7 +53,7 @@ struct IObject {
 #else
     virtual ~IObject() = default;
     virtual std::shared_ptr<IObject> clone() const { return nullptr; }
-    ZENAPI virtual void visualize() {}
+    virtual void visualize() {}
 #endif
 
     using Ptr = std::unique_ptr<IObject>;

@@ -19,11 +19,19 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            python: 3.8
+        - os: ubuntu-latest
+          python: 3.8
+          container: archibate/zeno_dev:latest
+          options: -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
+        #- os: ubuntu-18.04
+        #  python: 3.7
+        - os: ubuntu-20.04
+          python: 3.8
+        - os: windows-latest
+          python: 3.9
 
     runs-on: ${{ matrix.os }}
-    container: archibate/zeno_dev:latest
+    container: ${{ matrix.container }}
 
     steps:
     - uses: actions/checkout@v2
@@ -34,7 +42,7 @@ jobs:
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ${{matrix.options}}
 
     - name: Build
       # Build your program with the given configuration
