@@ -1041,6 +1041,10 @@ class QDMGraphicsNode(QGraphicsItem):
         for v in self.outputs.values():
             v.show()
 
+        for socket in self.outputs.values():
+            for edge in socket.edges:
+                edge.updatePath()
+
 
 class QDMFileMenu(QMenu):
     def __init__(self):

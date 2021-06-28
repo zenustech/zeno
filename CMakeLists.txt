@@ -54,4 +54,12 @@ add_custom_command(TARGET libzenpy PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/lib
     )
 
-add_subdirectory(Projects)
+option(ZENO_BUILD_EXTENSIONS "Enable extensions for Zeno" ON)
+if (ZENO_BUILD_EXTENSIONS)
+    add_subdirectory(Projects)
+endif()
+
+option(ZENO_BUILD_TESTS "Enable tests for Zeno" ON)
+if (ZENO_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
