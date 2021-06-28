@@ -12,6 +12,7 @@ endforeach()
 if (WIN32)
     set(EXTENSION_zenvdb OFF)
     set(EXTENSION_FastFLIP OFF)
+    set(EXTENSION_gmpm OFF)
 endif()
 
 foreach (name IN ITEMS ${EXTENSION_LIST})
