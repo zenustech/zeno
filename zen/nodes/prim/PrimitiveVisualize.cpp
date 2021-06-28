@@ -6,9 +6,8 @@
 
 namespace zen {
 
-ZENAPI void PrimitiveObject::visualize() {
-    auto path = Visualization::exportPath("zpm");
-    writezpm(this, path.c_str());
+ZENAPI void PrimitiveObject::dumpfile(std::string const &path) {
+    writezpm(this, (path + ".zpm").c_str());
 }
 
 
@@ -16,11 +15,10 @@ struct PrimitiveShadePointsObject : zen::IObject {
     std::string vertpath, fragpath;
     std::shared_ptr<PrimitiveObject> prim;
 
-    virtual void visualize() override {
-        auto path = Visualization::exportPath("zpm");
-        fs::copy_file(vertpath, path + ".points.vert");
-        fs::copy_file(fragpath, path + ".points.frag");
-        writezpm(prim.get(), path.c_str());
+    virtual void dumpfile(std::string const &path) override {
+        fs::copy_file(vertpath, path + ".zpm.points.vert");
+        fs::copy_file(fragpath, path + ".zpm.points.frag");
+        prim->dumpfile(path);
     }
 };
 

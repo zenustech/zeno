@@ -1,5 +1,6 @@
 #include <zen/zen.h>
 #include <zen/ConditionObject.h>
+#include <zen/Visualization.h>
 #include <zen/GlobalState.h>
 #include <cassert>
 
@@ -52,7 +53,7 @@ ZENAPI std::shared_ptr<IObject> IObject::clone() const {
     return nullptr;
 }
 
-ZENAPI void IObject::visualize() {
+ZENAPI void IObject::dumpfile(std::string const &path) {
 }
 
 ZENAPI INode::INode() = default;
@@ -113,7 +114,8 @@ ZENAPI void INode::doApply() {
         auto desc = nodeClass->desc.get();
         auto id = desc->outputs[0];
         auto obj = safe_at(outputs, id, "output");
-        obj->visualize();
+        auto path = Visualization::exportPath();
+        obj->dumpfile(path);
     }
 }
 
