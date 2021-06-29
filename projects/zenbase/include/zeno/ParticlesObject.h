@@ -5,9 +5,9 @@
 #include <glm/vec3.hpp>
 #include <vector>
 
-namespace zen {
+namespace zeno {
 
-struct ParticlesObject : zen::IObjectClone<ParticlesObject> {
+struct ParticlesObject : zeno::IObjectClone<ParticlesObject> {
   
   std::vector<glm::vec3> pos;
   std::vector<glm::vec3> vel;

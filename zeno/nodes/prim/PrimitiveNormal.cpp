@@ -6,29 +6,29 @@
 #include <cstdlib>
 #include <cassert>
 
-namespace zen {
+namespace zeno {
 
 
-struct PrimitiveCalcNormal : zen::INode {
+struct PrimitiveCalcNormal : zeno::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
-    auto &nrm = prim->add_attr<zen::vec3f>("nrm");
-    auto &pos = prim->attr<zen::vec3f>("pos");
+    auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
+    auto &pos = prim->attr<zeno::vec3f>("pos");
 
     for (size_t i = 0; i < nrm.size(); i++) {
-        nrm[i] = zen::vec3f(0);
+        nrm[i] = zeno::vec3f(0);
     }
 
     for (size_t i = 0; i < prim->tris.size(); i++) {
         auto ind = prim->tris[i];
-        auto n = zen::cross(pos[ind[1]] - pos[ind[0]], pos[ind[2]] - pos[ind[0]]);
+        auto n = zeno::cross(pos[ind[1]] - pos[ind[0]], pos[ind[2]] - pos[ind[0]]);
         nrm[ind[0]] += n;
         nrm[ind[1]] += n;
         nrm[ind[2]] += n;
     }
 
     for (size_t i = 0; i < nrm.size(); i++) {
-        nrm[i] = zen::normalize(nrm[i]);
+        nrm[i] = zeno::normalize(nrm[i]);
     }
 
     set_output_ref("prim", get_input_ref("prim"));
@@ -42,7 +42,7 @@ ZENDEFNODE(PrimitiveCalcNormal, {
     {"primitive"},
 });
 
-struct PrimitiveSplitEdges : zen::INode {
+struct PrimitiveSplitEdges : zeno::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
 
@@ -61,7 +61,7 @@ struct PrimitiveSplitEdges : zen::INode {
     prim->resize(prim->tris.size() * 3);
 
     for (size_t i = 0; i < prim->tris.size(); i++) {
-        prim->tris[i] = zen::vec3i(i * 3 + 0, i * 3 + 1, i * 3 + 2);
+        prim->tris[i] = zeno::vec3i(i * 3 + 0, i * 3 + 1, i * 3 + 2);
     }
 
     set_output_ref("prim", get_input_ref("prim"));

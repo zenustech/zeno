@@ -5,7 +5,7 @@
 
 namespace zen{
     
-    struct FluidReseed : zen::INode{
+    struct FluidReseed : zeno::INode{
         virtual void apply() override {
             auto particles = get_input("Particles")->as<VDBPointsGrid>();
             auto liquidSDF = get_input("LiquidSDF")->as<VDBFloatGrid>();
@@ -14,7 +14,7 @@ namespace zen{
         }
     };
 
-static int defFluidReseed = zen::defNodeClass<FluidReseed>("FluidReseed",
+static int defFluidReseed = zeno::defNodeClass<FluidReseed>("FluidReseed",
     { /* inputs: */ {
         "Particles", "LiquidSDF", "FluidVel",
     }, 

@@ -3,7 +3,7 @@
 #include <zeno/zeno.h>
 #include <vector>
 
-namespace zen {
+namespace zeno {
 
 template <class T>
 struct VectorObject : IObjectClone<VectorObject<T>> {

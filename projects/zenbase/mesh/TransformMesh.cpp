@@ -6,7 +6,7 @@
 #include <glm/gtx/transform.hpp>
 #include <cstring>
 
-namespace zen {
+namespace zeno {
 
 
 static glm::vec3 mapplypos(glm::mat4 const &matrix, glm::vec3 const &vector) {
@@ -24,19 +24,19 @@ static glm::vec3 mapplydir(glm::mat4 const &matrix, glm::vec3 const &vector) {
 }
 
 
-struct TransformMesh : zen::INode {
+struct TransformMesh : zeno::INode {
   virtual void apply() override {
     auto mesh = get_input("mesh")->as<MeshObject>();
-    auto outmesh = zen::IObject::make<MeshObject>();
-    zen::vec3f translate = {0,0,0};
-    zen::vec3f rotate = {0,0,0};
-    zen::vec3f scaling = {1,1,1};
+    auto outmesh = zeno::IObject::make<MeshObject>();
+    zeno::vec3f translate = {0,0,0};
+    zeno::vec3f rotate = {0,0,0};
+    zeno::vec3f scaling = {1,1,1};
     if(has_input("translate"))
-      translate = get_input("translate")->as<zen::NumericObject>()->get<zen::vec3f>();
+      translate = get_input("translate")->as<zeno::NumericObject>()->get<zeno::vec3f>();
     if(has_input("rotate"))
-      rotate = get_input("rotate")->as<zen::NumericObject>()->get<zen::vec3f>();
+      rotate = get_input("rotate")->as<zeno::NumericObject>()->get<zeno::vec3f>();
     if(has_input("scaling"))
-      scaling = get_input("scaling")->as<zen::NumericObject>()->get<zen::vec3f>();
+      scaling = get_input("scaling")->as<zeno::NumericObject>()->get<zeno::vec3f>();
     
     
     glm::mat4 matTrans = glm::translate(glm::vec3(translate[0], translate[1], translate[2]));
@@ -60,7 +60,7 @@ struct TransformMesh : zen::INode {
 };
 
 
-static int defTransformMesh = zen::defNodeClass<TransformMesh>("TransformMesh",
+static int defTransformMesh = zeno::defNodeClass<TransformMesh>("TransformMesh",
     { /* inputs: */ {
     "mesh",
     "translate",

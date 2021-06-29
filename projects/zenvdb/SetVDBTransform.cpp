@@ -8,15 +8,15 @@
 //#include "../../Library/MnBase/Meta/Polymorphism.h"
 //openvdb::io::File(filename).write({grid});
 
-namespace zen {
+namespace zeno {
 
-// struct SetVDBTransform : zen::INode {
+// struct SetVDBTransform : zeno::INode {
 //   virtual void apply() override {
 //     auto dx = std::get<float>(get_param("dx"));
 //     auto grid = get_input("grid")->as<VDBGrid>();
-//     auto position = zen::get_float3<openvdb::Vec3f>(get_param("position"));
-//     auto rotation = zen::get_float3<openvdb::Vec3f>(get_param("rotation"));
-//     auto scale = zen::get_float3<openvdb::Vec3f>(get_param("scale"));
+//     auto position = zeno::get_float3<openvdb::Vec3f>(get_param("position"));
+//     auto rotation = zeno::get_float3<openvdb::Vec3f>(get_param("rotation"));
+//     auto scale = zeno::get_float3<openvdb::Vec3f>(get_param("scale"));
 
 //     auto transform = openvdb::math::Transform::createLinearTransform(dx);
 //     transform->postRotate(rotation[0], openvdb::math::X_AXIS);
@@ -27,7 +27,7 @@ namespace zen {
 // };
 
 
-// static int defSetVDBTransform = zen::defNodeClass<SetVDBTransform>("SetVDBTransform",
+// static int defSetVDBTransform = zeno::defNodeClass<SetVDBTransform>("SetVDBTransform",
 //     { /* inputs: */ {
 //     "grid",
 //     }, /* outputs: */ {
@@ -57,7 +57,7 @@ void resampleVDB(typename GridT::Ptr source, typename GridT::Ptr target)
 
 }
 
-struct  ResampleVDBGrid : zen::INode {
+struct  ResampleVDBGrid : zeno::INode {
   virtual void apply() override {
 
     std::string targetType = get_input("resampleTo")->as<VDBGrid>()->getType();
@@ -81,7 +81,7 @@ struct  ResampleVDBGrid : zen::INode {
   }
 };
 
-static int defResampleVDBGrid = zen::defNodeClass<ResampleVDBGrid>("ResampleVDBGrid",
+static int defResampleVDBGrid = zeno::defNodeClass<ResampleVDBGrid>("ResampleVDBGrid",
      { /* inputs: */ {
      "resampleTo", "resampleFrom",
      }, /* outputs: */ {
@@ -90,7 +90,7 @@ static int defResampleVDBGrid = zen::defNodeClass<ResampleVDBGrid>("ResampleVDBG
      "openvdb",
      }});
 
-struct CombineVDB : zen::INode{
+struct CombineVDB : zeno::INode{
   virtual void apply() override {
 
     std::string targetType = get_input("FieldA")->as<VDBGrid>()->getType();
@@ -103,7 +103,7 @@ struct CombineVDB : zen::INode{
     if(targetType == sourceType && targetType==std::string("FloatGrid"))
     {
         auto OpType = std::get<std::string>(get_param("OpType"));
-        dataf = zen::IObject::make<VDBFloatGrid>();
+        dataf = zeno::IObject::make<VDBFloatGrid>();
         
         auto target = get_input("FieldA")->as<VDBFloatGrid>();
         auto source = get_input("FieldB")->as<VDBFloatGrid>();
@@ -127,7 +127,7 @@ struct CombineVDB : zen::INode{
     
   }
 };
-static int defCombineVDB = zen::defNodeClass<CombineVDB>("CombineVDB",
+static int defCombineVDB = zeno::defNodeClass<CombineVDB>("CombineVDB",
      { /* inputs: */ {
      "FieldA", "FieldB",
      }, /* outputs: */ {

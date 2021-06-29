@@ -6,10 +6,10 @@
 #include <cstdlib>
 #include <cassert>
 
-namespace zen {
+namespace zeno {
 
 
-struct PrimitiveMerge : zen::INode {
+struct PrimitiveMerge : zeno::INode {
   virtual void apply() override {
     auto list = get_input("listPrim")->as<ListObject>();
     auto outprim = std::make_shared<PrimitiveObject>();

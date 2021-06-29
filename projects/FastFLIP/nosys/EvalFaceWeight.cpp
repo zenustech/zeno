@@ -15,7 +15,7 @@ void FLIP_vdb::calculate_face_weights(
 
 namespace zen{
     
-    struct CutCellWeightEval : zen::INode{
+    struct CutCellWeightEval : zeno::INode{
         virtual void apply() override {
             auto face_weight = get_input("FaceWeight")->as<VDBFloat3Grid>();
             auto liquid_sdf = get_input("LiquidSDF")->as<VDBFloatGrid>();
@@ -25,7 +25,7 @@ namespace zen{
         }
     };
 
-static int defCutCellWeightEval = zen::defNodeClass<CutCellWeightEval>("CutCellWeight",
+static int defCutCellWeightEval = zeno::defNodeClass<CutCellWeightEval>("CutCellWeight",
     { /* inputs: */ {
         "LiquidSDF", "SolidSDF", "FaceWeight",
     }, 

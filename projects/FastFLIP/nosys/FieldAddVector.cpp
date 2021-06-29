@@ -13,13 +13,13 @@
 
 namespace zen{
     
-    struct FieldAddVector : zen::INode{
+    struct FieldAddVector : zeno::INode{
         virtual void apply() override {
-            // auto dt = get_input("dt")->as<zen::NumericObject>()->get<float>();
+            // auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
             // float vx = std::get<float>(get_param("vx"));
             // float vy = std::get<float>(get_param("vy"));
             // float vz = std::get<float>(get_param("vz"));
-            auto ivec3 = get_input("invec3")->as<zen::NumericObject>()->get<zen::vec3f>();
+            auto ivec3 = get_input("invec3")->as<zeno::NumericObject>()->get<zeno::vec3f>();
             auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();
             if(has_input("FieldWeight")) {
                 auto face_weight = get_input("FieldWeight")->as<VDBFloat3Grid>();
@@ -36,7 +36,7 @@ namespace zen{
         }
     };
 
-static int defFieldAddVector = zen::defNodeClass<FieldAddVector>("FieldAddVector",
+static int defFieldAddVector = zeno::defNodeClass<FieldAddVector>("FieldAddVector",
     { /* inputs: */ {
         "invec3", "Velocity", "FieldWeight", 
     }, 

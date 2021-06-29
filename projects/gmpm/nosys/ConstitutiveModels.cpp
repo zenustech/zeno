@@ -4,12 +4,12 @@
 #include "zensim/tpls/fmt/format.h"
 #include <zeno/zeno.h>
 
-namespace zen {
+namespace zeno {
 
-struct ModelEquationOfState : zen::INode {
+struct ModelEquationOfState : zeno::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ModelEquationOfState\n");
-    auto model = zen::IObject::make<ZenoConstitutiveModel>();
+    auto model = zeno::IObject::make<ZenoConstitutiveModel>();
 
     zs::EquationOfStateConfig res{};
     res.rho = std::get<float>(get_param("density"));
@@ -25,7 +25,7 @@ struct ModelEquationOfState : zen::INode {
   }
 };
 
-static int defEquationOfStateConfig = zen::defNodeClass<ModelEquationOfState>(
+static int defEquationOfStateConfig = zeno::defNodeClass<ModelEquationOfState>(
     "EquationOfStateConfig", {/* inputs: */ {},
                               /* outputs: */
                               {{"Model"}},
@@ -39,10 +39,10 @@ static int defEquationOfStateConfig = zen::defNodeClass<ModelEquationOfState>(
                               {"constitutive_model"}});
 
 /// fixed corotated
-struct ModelFixedCorotated : zen::INode {
+struct ModelFixedCorotated : zeno::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing FixedCorotatedConfig\n");
-    auto model = zen::IObject::make<ZenoConstitutiveModel>();
+    auto model = zeno::IObject::make<ZenoConstitutiveModel>();
 
     zs::FixedCorotatedConfig res{};
     res.rho = std::get<float>(get_param("density"));
@@ -57,7 +57,7 @@ struct ModelFixedCorotated : zen::INode {
   }
 };
 
-static int defFixedCorotatedConfig = zen::defNodeClass<ModelFixedCorotated>(
+static int defFixedCorotatedConfig = zeno::defNodeClass<ModelFixedCorotated>(
     "FixedCorotatedConfig", {/* inputs: */ {},
                              /* outputs: */
                              {{"Model"}},

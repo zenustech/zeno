@@ -8,7 +8,7 @@
 
 namespace zen{
     
-    struct FLIP_Solid_Modifier : zen::INode{
+    struct FLIP_Solid_Modifier : zeno::INode{
         virtual void apply() override {
             auto particles = get_input("Particles")->as<VDBPointsGrid>();
 
@@ -28,7 +28,7 @@ namespace zen{
         }
     };
 
-static int defFLIP_Solid_Modifier = zen::defNodeClass<FLIP_Solid_Modifier>("FLIPApplyBoundary",
+static int defFLIP_Solid_Modifier = zeno::defNodeClass<FLIP_Solid_Modifier>("FLIPApplyBoundary",
     { /* inputs: */ {
         "Particles", "DynaSolid_SDF", "StatSolid_SDF",
     }, 

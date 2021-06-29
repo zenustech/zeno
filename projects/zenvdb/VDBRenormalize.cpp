@@ -13,8 +13,8 @@
 #include <openvdb/tools/LevelSetSphere.h>
 #include <openvdb/tools/ChangeBackground.h>
 
-namespace zen {
-    struct  VDBRenormalizeSDF : zen::INode {
+namespace zeno {
+    struct  VDBRenormalizeSDF : zeno::INode {
   virtual void apply() override {
 
     auto inoutSDF = get_input("inoutSDF")->as<VDBFloatGrid>();
@@ -31,7 +31,7 @@ namespace zen {
   }
 };
 
-static int defVDBRenormalizeSDF = zen::defNodeClass<VDBRenormalizeSDF>("VDBRenormalizeSDF",
+static int defVDBRenormalizeSDF = zeno::defNodeClass<VDBRenormalizeSDF>("VDBRenormalizeSDF",
      { /* inputs: */ {
      "inoutSDF", 
      }, /* outputs: */ {

@@ -5,9 +5,9 @@
 #include <cmath>
 #include <omp.h>
 
-namespace zen {
+namespace zeno {
 
-struct NBodySolver : zen::INode {
+struct NBodySolver : zeno::INode {
   ParticlesObject *pars;
 
   bool initialized{false};
@@ -57,7 +57,7 @@ struct NBodySolver : zen::INode {
 };
 
 
-static int defNBodySolver = zen::defNodeClass<NBodySolver>("NBodySolver",
+static int defNBodySolver = zeno::defNodeClass<NBodySolver>("NBodySolver",
     { /* inputs: */ {
     "ini_pars",
     "dt",

@@ -9,9 +9,9 @@
 //				   openvdb::Vec3fGrid::Ptr m_velocity_after_p2g, float pic_component, int RK_ORDER);
 namespace zen{
     
-    struct G2P_Advector : zen::INode{
+    struct G2P_Advector : zeno::INode{
         virtual void apply() override {
-            auto dt = get_input("dt")->as<zen::NumericObject>()->get<float>();
+            auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
             auto dx = std::get<float>(get_param("dx"));
             auto smoothness = std::get<float>(get_param("pic_smoothness"));
             auto RK_ORDER = std::get<int>(get_param("RK_ORDER"));
@@ -33,7 +33,7 @@ namespace zen{
         }
     };
 
-static int defG2P_Advector = zen::defNodeClass<G2P_Advector>("G2P_Advector",
+static int defG2P_Advector = zeno::defNodeClass<G2P_Advector>("G2P_Advector",
     { /* inputs: */ {
         "dt","Particles", "Velocity", "PostAdvVelocity", "SolidSDF", "SolidVelocity",
     }, 

@@ -9,7 +9,7 @@
 #include <cstdio>
 
 
-namespace zen {
+namespace zeno {
 
 
 static void writezpm(PrimitiveObject const *prim, const char *path) {
@@ -32,7 +32,7 @@ static void writezpm(PrimitiveObject const *prim, const char *path) {
         } else if (prim->attr_is<T>(name)) { \
             strcpy(type, id);
         _PER_ALTER(float, "f")
-        _PER_ALTER(zen::vec3f, "3f")
+        _PER_ALTER(zeno::vec3f, "3f")
 #undef _PER_ALTER
         } else {
             //printf("%s\n", name);
@@ -112,7 +112,7 @@ static void readzpm(PrimitiveObject *prim, const char *path) {
         } else if (!strcmp(type, id)) { \
             prim->add_attr<T>(name);
         _PER_ALTER(float, "f")
-        _PER_ALTER(zen::vec3f, "3f")
+        _PER_ALTER(zeno::vec3f, "3f")
 #undef _PER_ALTER
         } else {
             //printf("%s\n", name);

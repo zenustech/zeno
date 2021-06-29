@@ -3,7 +3,7 @@
 #include <zeno/NumericObject.h>
 #include "Interaction.h"
 
-using namespace zen;
+using namespace zeno;
 
 struct LennardJonesInteraction: IPairwiseInteraction {
     float sigma6, epsilon;
@@ -23,14 +23,14 @@ struct LennardJonesInteraction: IPairwiseInteraction {
 
 };
 
-struct LennardJones: zen::INode {
+struct LennardJones: zeno::INode {
   virtual void apply() override {
     auto rcut = get_input("rcut")->as<NumericObject>()->get<float>();
     auto sigma = get_input("sigma")->as<NumericObject>()->get<float>();
     auto epsilon = get_input("epsilon")->as<NumericObject>()->get<float>();
     auto sigma3 = sigma * sigma * sigma;
     
-    auto lj = zen::IObject::make<LennardJonesInteraction>();
+    auto lj = zeno::IObject::make<LennardJonesInteraction>();
     lj->rcut = rcut;
     lj->rcutsq = rcut * rcut;
     lj->sigma6 = sigma3 * sigma3;
@@ -41,7 +41,7 @@ struct LennardJones: zen::INode {
   }
 };
 
-static int defLennardJones = zen::defNodeClass<LennardJones>("LennardJones",
+static int defLennardJones = zeno::defNodeClass<LennardJones>("LennardJones",
     { /* inputs: */ {
     "rcut",
     "sigma",

@@ -4,7 +4,7 @@
 // I am thinking about create an empty result, only to indicate the order of nodes process?
 // here this node is modifying two data simultaneously, particles, and velocity grid. which are all global data pointers
 // I want this node to return an empty result(such as int 0), only to provide a connection to a next node. 
-            // oh isee, you're tring to return a 'int', which is not an zen::IObject now
+            // oh isee, you're tring to return a 'int', which is not an zeno::IObject now
             // we currently only have Matrix, Mesh, Particles as IObject
             // primitive types like int, can only be parameters (by get_param) now
             // should I add them? I 

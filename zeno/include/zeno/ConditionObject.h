@@ -3,7 +3,7 @@
 #include <zeno/zeno.h>
 #include <zeno/vec.h>
 
-namespace zen {
+namespace zeno {
 
 
 struct ConditionObject : IObjectClone<ConditionObject> {

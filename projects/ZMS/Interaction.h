@@ -6,7 +6,7 @@
 #include <vector>
 #include <array>
 
-struct IPairwiseInteraction: zen::IObject {
+struct IPairwiseInteraction: zeno::IObject {
     float rcut = 0.0f; // 0 means no cutoff
     float rcutsq, ecut;
     // Virial (force * r) is more useful than plain force
@@ -15,10 +15,10 @@ struct IPairwiseInteraction: zen::IObject {
     virtual float energy(float r2) = 0;
 };
 
-struct IExternalInteraction: zen::IObject {
+struct IExternalInteraction: zeno::IObject {
     float rcut = 0.0f; // 0 means no cutoff
-    virtual float force(zen::vec3f p) = 0;
-    virtual float energy(zen::vec3f p) = 0;
+    virtual float force(zeno::vec3f p) = 0;
+    virtual float energy(zeno::vec3f p) = 0;
 };
 
 

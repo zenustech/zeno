@@ -12,17 +12,17 @@
 #include "tbb/parallel_for.h"
 #include "tbb/concurrent_vector.h"
 
-namespace zen {
+namespace zeno {
 //todo where to put this func???
-float area(zen::vec3f &p1, zen::vec3f &p2, zen::vec3f &p3)
+float area(zeno::vec3f &p1, zeno::vec3f &p2, zeno::vec3f &p3)
 {
-    zen::vec3f e1 = p3-p1;
-    zen::vec3f e2 = p2-p1;
-    zen::vec3f areavec = zen::cross(e1,e2);
-    return 0.5*sqrt(zen::dot(areavec, areavec));
+    zeno::vec3f e1 = p3-p1;
+    zeno::vec3f e2 = p2-p1;
+    zeno::vec3f areavec = zeno::cross(e1,e2);
+    return 0.5*sqrt(zeno::dot(areavec, areavec));
 }
 //todo where to put this func????
-bool ptInTriangle(zen::vec3f &p, zen::vec3f &p0, zen::vec3f &p1, zen::vec3f &p2)
+bool ptInTriangle(zeno::vec3f &p, zeno::vec3f &p0, zeno::vec3f &p1, zeno::vec3f &p2)
 {
     float A = 0.5*(-p1[1] * p2[0] + p0[1] * (-p1[0] + p2[0]) + p0[0] * (p1[1] - p2[1]) + p1[0] * p2[1]);
     float sign = A < 0 ? -1.0f : 1.0f;
@@ -34,7 +34,7 @@ bool ptInTriangle(zen::vec3f &p, zen::vec3f &p0, zen::vec3f &p1, zen::vec3f &p2)
 
 //to do where to put this func??
 template<class T>
-T baryCentricInterpolation(T &v1, T &v2, T &v3, zen::vec3f &p, zen::vec3f &vert1, zen::vec3f &vert2, zen::vec3f &vert3)
+T baryCentricInterpolation(T &v1, T &v2, T &v3, zeno::vec3f &p, zeno::vec3f &vert1, zeno::vec3f &vert2, zeno::vec3f &vert3)
 {
     float a1 = area(p, vert2, vert3);
     float a2 = area(p, vert1, vert3);
@@ -45,33 +45,33 @@ T baryCentricInterpolation(T &v1, T &v2, T &v3, zen::vec3f &p, zen::vec3f &vert1
     return w1 * v1 + w2 * v2 + w3 * v3;
 }
 
-struct SprayParticles : zen::INode{
+struct SprayParticles : zeno::INode{
     virtual void apply() override {
         auto dx = std::get<float>(get_param("dx"));
         auto channel = std::get<std::string>(get_param("channel"));
         auto prim = get_input("TrianglePrim")->as<PrimitiveObject>();
-        auto result = zen::IObject::make<ParticlesObject>();
-        tbb::concurrent_vector<zen::vec3f> pos(0);
-        tbb::concurrent_vector<zen::vec3f> vel(0);
+        auto result = zeno::IObject::make<ParticlesObject>();
+        tbb::concurrent_vector<zeno::vec3f> pos(0);
+        tbb::concurrent_vector<zeno::vec3f> vel(0);
         size_t n = prim->tris.size();
         tbb::parallel_for( (size_t)0, (size_t)n, (size_t)1, [&](size_t index){
-            zen::vec3f a, b, c;
-            zen::vec3i vi = prim->tris[index];
-            a = prim->attr<zen::vec3f>("pos")[vi[0]];
-            b = prim->attr<zen::vec3f>("pos")[vi[1]];
-            c = prim->attr<zen::vec3f>("pos")[vi[2]];
-            zen::vec3f e1 = b-a;
-            zen::vec3f e2 = c-a;
-            zen::vec3f e3 = c-b;
-            zen::vec3f dir1 = e1/zen::length(e1);
-            zen::vec3f dir2 = e2/zen::length(e2);
-            zen::vec3f dir3 = e3/zen::length(e3);
-            int in = zen::length(e1)/(0.5*dx)+1;
-            int jn = zen::length(e2)/(0.5*dx)+1;
-            int kn = zen::length(e3)/(0.5*dx)+1;
-            zen::vec3f vel1 = prim->attr<zen::vec3f>(channel)[vi[0]];
-            zen::vec3f vel2 = prim->attr<zen::vec3f>(channel)[vi[1]];
-            zen::vec3f vel3 = prim->attr<zen::vec3f>(channel)[vi[2]];
+            zeno::vec3f a, b, c;
+            zeno::vec3i vi = prim->tris[index];
+            a = prim->attr<zeno::vec3f>("pos")[vi[0]];
+            b = prim->attr<zeno::vec3f>("pos")[vi[1]];
+            c = prim->attr<zeno::vec3f>("pos")[vi[2]];
+            zeno::vec3f e1 = b-a;
+            zeno::vec3f e2 = c-a;
+            zeno::vec3f e3 = c-b;
+            zeno::vec3f dir1 = e1/zeno::length(e1);
+            zeno::vec3f dir2 = e2/zeno::length(e2);
+            zeno::vec3f dir3 = e3/zeno::length(e3);
+            int in = zeno::length(e1)/(0.5*dx)+1;
+            int jn = zeno::length(e2)/(0.5*dx)+1;
+            int kn = zeno::length(e3)/(0.5*dx)+1;
+            zeno::vec3f vel1 = prim->attr<zeno::vec3f>(channel)[vi[0]];
+            zeno::vec3f vel2 = prim->attr<zeno::vec3f>(channel)[vi[1]];
+            zeno::vec3f vel3 = prim->attr<zeno::vec3f>(channel)[vi[2]];
             pos.emplace_back(a);
             vel.emplace_back(vel1);
             pos.emplace_back(b);
@@ -80,7 +80,7 @@ struct SprayParticles : zen::INode{
             vel.emplace_back(vel3);
             for(int kk=0;kk<kn;kk++)
             {
-                zen::vec3f vij = b + (float)kk*0.5f*dx*dir3;
+                zeno::vec3f vij = b + (float)kk*0.5f*dx*dir3;
                 if(ptInTriangle(vij, a, b, c))
                 {
                     pos.emplace_back(vij);
@@ -89,7 +89,7 @@ struct SprayParticles : zen::INode{
             }
             for(int ii=0;ii<in;ii++)
             {
-                zen::vec3f vij = a + (float)ii*0.5f*dx*dir1;
+                zeno::vec3f vij = a + (float)ii*0.5f*dx*dir1;
                 if(ptInTriangle(vij, a, b, c))
                 {
                     pos.emplace_back(vij);
@@ -98,7 +98,7 @@ struct SprayParticles : zen::INode{
             }
             for(int jj=0;jj<jn;jj++)
             {
-                zen::vec3f vij = a + (float)jj*0.5f*dx*dir2;
+                zeno::vec3f vij = a + (float)jj*0.5f*dx*dir2;
                 if(ptInTriangle(vij, a, b, c))
                 {
                     pos.emplace_back(vij);
@@ -109,7 +109,7 @@ struct SprayParticles : zen::INode{
             {
                 for(int jj=0;jj<jn;jj++)
                 {
-                    zen::vec3f vij = a + (float)ii*0.5f*dx*dir1 + (float)jj*0.5f*dx*dir2;
+                    zeno::vec3f vij = a + (float)ii*0.5f*dx*dir1 + (float)jj*0.5f*dx*dir2;
                     if(ptInTriangle(vij, a, b, c))
                     {
                         pos.emplace_back(vij);
@@ -123,14 +123,14 @@ struct SprayParticles : zen::INode{
         result->vel.resize(vel.size());
         #pragma omp parallel for
         for (size_t index = 0; index < pos.size(); index++) {
-            result->pos[index] = zen::vec_to_other<glm::vec3>(pos[index]);
-            result->vel[index] = zen::vec_to_other<glm::vec3>(vel[index]);
+            result->pos[index] = zeno::vec_to_other<glm::vec3>(pos[index]);
+            result->vel[index] = zeno::vec_to_other<glm::vec3>(vel[index]);
         }
         set_output("particles", result);
     }
 };
 
-static int defSprayParticles = zen::defNodeClass<SprayParticles>("SprayParticles",
+static int defSprayParticles = zeno::defNodeClass<SprayParticles>("SprayParticles",
     { /* inputs: */ {
         "TrianglePrim",
     }, /* outputs: */ {

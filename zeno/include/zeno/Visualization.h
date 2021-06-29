@@ -2,7 +2,7 @@
 
 #include <zeno/zeno.h>
 
-namespace zen::Visualization {
+namespace zeno::Visualization {
 
 ZENAPI std::string exportPath();
 ZENAPI void endFrame();

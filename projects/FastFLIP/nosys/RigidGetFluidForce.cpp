@@ -13,7 +13,7 @@ namespace zen{
 
 struct rigid_body_surface_voxel_mask_reducer {
     
-    rigid_body_surface_voxel_mask_reducer(const std::vector<zen::vec3f>& inPosArray, 
+    rigid_body_surface_voxel_mask_reducer(const std::vector<zeno::vec3f>& inPosArray,
         openvdb::FloatGrid::Ptr inLiquidSDF): 
         myPosArray(inPosArray), 
         myLiquidSDF(inLiquidSDF){
@@ -57,7 +57,7 @@ struct rigid_body_surface_voxel_mask_reducer {
         myMask->topologyUnion(*other.myMask);
     }
 
-    const std::vector<zen::vec3f>& myPosArray;
+    const std::vector<zeno::vec3f>& myPosArray;
 
     openvdb::BoolGrid::Ptr myMask;
     openvdb::FloatGrid::Ptr myLiquidSDF;
@@ -164,13 +164,13 @@ struct rigid_pressure_force_reducer {
 };
     void samplePressureForce(
         float dt,
-        std::vector<zen::vec3f> & pos,
+        std::vector<zeno::vec3f> & pos,
         openvdb::FloatGrid::Ptr & pressure,
         openvdb::Vec3fGrid::Ptr & faceWeights,
         openvdb::FloatGrid::Ptr & liquid_sdf,
-        zen::vec3f &massCenter,
-        zen::vec3f &totalForce,
-        zen::vec3f &totalTorc)
+        zeno::vec3f &massCenter,
+        zeno::vec3f &totalForce,
+        zeno::vec3f &totalTorc)
     {
         //algorithm:
         //step1:
@@ -235,34 +235,34 @@ struct rigid_pressure_force_reducer {
         }
 
     }
-    struct RigidGetPressureForce:zen::INode{
+    struct RigidGetPressureForce:zeno::INode{
         virtual void apply() override {
-            auto dt = get_input("dt")->as<zen::NumericObject>()->get<float>();
-            auto massCenter = get_input("MassCenter")->as<zen::NumericObject>()->get<zen::vec3f>();
-            auto rigid = get_input("Rigid")->as<zen::PrimitiveObject>();
-            auto Pressure = get_input("Pressure")->as<zen::VDBFloatGrid>();
-            auto CellFWeight = get_input("CellFWeight")->as<zen::VDBFloat3Grid>();
-            auto LiquidSDF = get_input("LiquidSDF")->as<zen::VDBFloatGrid>();
-            auto TotalForceImpulse = zen::IObject::make<zen::NumericObject>();
-            auto TotalTorcImpulse = zen::IObject::make<zen::NumericObject>();
-            std::vector<zen::vec3f> pos;
-            pos.resize(rigid->attr<zen::vec3f>("pos").size());
+            auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
+            auto massCenter = get_input("MassCenter")->as<zeno::NumericObject>()->get<zeno::vec3f>();
+            auto rigid = get_input("Rigid")->as<zeno::PrimitiveObject>();
+            auto Pressure = get_input("Pressure")->as<zeno::VDBFloatGrid>();
+            auto CellFWeight = get_input("CellFWeight")->as<zeno::VDBFloat3Grid>();
+            auto LiquidSDF = get_input("LiquidSDF")->as<zeno::VDBFloatGrid>();
+            auto TotalForceImpulse = zeno::IObject::make<zeno::NumericObject>();
+            auto TotalTorcImpulse = zeno::IObject::make<zeno::NumericObject>();
+            std::vector<zeno::vec3f> pos;
+            pos.resize(rigid->attr<zeno::vec3f>("pos").size());
             #pragma omp parallel for
-            for(int i=0;i<rigid->attr<zen::vec3f>("pos").size();i++)
+            for(int i=0;i<rigid->attr<zeno::vec3f>("pos").size();i++)
             {
-                pos[i] = rigid->attr<zen::vec3f>("pos")[i];
+                pos[i] = rigid->attr<zeno::vec3f>("pos")[i];
             }
-            zen::vec3f totalForce;
-            zen::vec3f totalTorc;
+            zeno::vec3f totalForce;
+            zeno::vec3f totalTorc;
             samplePressureForce(dt,pos,Pressure->m_grid,CellFWeight->m_grid,
                                      LiquidSDF->m_grid, massCenter, totalForce, totalTorc);
-            TotalForceImpulse->set<zen::vec3f>(totalForce);
-            TotalTorcImpulse->set<zen::vec3f>(totalTorc);
+            TotalForceImpulse->set<zeno::vec3f>(totalForce);
+            TotalTorcImpulse->set<zeno::vec3f>(totalTorc);
             set_output("TotalForceImpulse", TotalForceImpulse);
             set_output("TotalTorcImpulse", TotalTorcImpulse);
         }
     };
-    static int defRigidGetPressureForce = zen::defNodeClass<RigidGetPressureForce>("RigidGetPressureForce",
+    static int defRigidGetPressureForce = zeno::defNodeClass<RigidGetPressureForce>("RigidGetPressureForce",
     { /* inputs: */ {
         "dt", "MassCenter", "Rigid", "Pressure", "CellFWeight", "LiquidSDF",
     }, 

@@ -5,7 +5,7 @@
 
 namespace zen{
     
-    struct ParticleEmitter : zen::INode{
+    struct ParticleEmitter : zeno::INode{
         virtual void apply() override {
             auto particles = get_input("Particles")->as<VDBPointsGrid>();
             auto shape = get_input("ShapeSDF")->as<VDBFloatGrid>();
@@ -32,7 +32,7 @@ namespace zen{
         }
     };
 
-static int defParticleEmitter = zen::defNodeClass<ParticleEmitter>("ParticleEmitter",
+static int defParticleEmitter = zeno::defNodeClass<ParticleEmitter>("ParticleEmitter",
     { /* inputs: */ {
         "Particles", "ShapeSDF", "VelocityVolume", "LiquidSDF",
     }, 

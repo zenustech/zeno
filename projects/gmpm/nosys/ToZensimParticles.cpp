@@ -8,14 +8,14 @@
 #include "zensim/tpls/fmt/color.h"
 #include "zensim/tpls/fmt/format.h"
 
-namespace zen {
+namespace zeno {
 
-struct ToZensimParticles : zen::INode {
+struct ToZensimParticles : zeno::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ToZensimParticles\n");
     auto &model = get_input("ZSModel")->as<ZenoConstitutiveModel>()->get();
     auto inParticles = get_input("ParticleObject")->as<ParticlesObject>();
-    auto outParticles = zen::IObject::make<ZenoParticles>();
+    auto outParticles = zeno::IObject::make<ZenoParticles>();
     const auto size = inParticles->size();
     outParticles->get() = zs::Particles<zs::f32, 3>{};
 
@@ -74,7 +74,7 @@ struct ToZensimParticles : zen::INode {
   }
 };
 
-static int defToZensimParticles = zen::defNodeClass<ToZensimParticles>(
+static int defToZensimParticles = zeno::defNodeClass<ToZensimParticles>(
     "ToZensimParticles", {/* inputs: */ {"ZSModel", "ParticleObject"},
                           /* outputs: */
                           {"ZensimParticles"},

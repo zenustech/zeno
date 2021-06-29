@@ -3,16 +3,16 @@
 #include <zeno/NumericObject.h>
 #include "Forcefield.h"
 
-using namespace zen;
+using namespace zeno;
 
-struct PotentialEnergy: zen::INode {
+struct PotentialEnergy: zeno::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
-    auto &pos = prim->attr<zen::vec3f>("pos");
+    auto &pos = prim->attr<zeno::vec3f>("pos");
     auto boxlength = get_input("boxlength")->as<NumericObject>()->get<float>();
     auto forcefield = get_input("forcefield")->as<ForceFieldObject>();
     
-    auto energy = zen::IObject::make<NumericObject>();
+    auto energy = zeno::IObject::make<NumericObject>();
 
     // We strictly use conservative forces (no velocity argument)
     // Mass of particles is contained in the force field;
@@ -22,7 +22,7 @@ struct PotentialEnergy: zen::INode {
   }
 };
 
-static int defPotentialEnergy = zen::defNodeClass<PotentialEnergy>("PotentialEnergy",
+static int defPotentialEnergy = zeno::defNodeClass<PotentialEnergy>("PotentialEnergy",
     { /* inputs: */ {
     "prim",
     "forcefield",
@@ -34,24 +34,24 @@ static int defPotentialEnergy = zen::defNodeClass<PotentialEnergy>("PotentialEne
     "Molecular",
     }});
 
-struct KineticEnergy: zen::INode {
+struct KineticEnergy: zeno::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
-    auto &vel = prim->attr<zen::vec3f>("vel");
+    auto &vel = prim->attr<zeno::vec3f>("vel");
     
-    auto energy = zen::IObject::make<NumericObject>();
+    auto energy = zeno::IObject::make<NumericObject>();
 
     float ek = 0.0f;
     #pragma omp parallel for
     for (int i = 0; i < vel.size(); i++) {
-        ek += zen::lengthsq(vel[i]);
+        ek += zeno::lengthsq(vel[i]);
     }
     energy->set<float>(ek * 0.5f);
     set_output("kinetic energy", energy);
   }
 };
 
-static int defKineticEnergy = zen::defNodeClass<KineticEnergy>("KineticEnergy",
+static int defKineticEnergy = zeno::defNodeClass<KineticEnergy>("KineticEnergy",
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {

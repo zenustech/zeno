@@ -7,28 +7,28 @@
 #include <cstdlib>
 #include <cassert>
 
-namespace zen {
+namespace zeno {
 
-struct PrimitiveToParticles : zen::INode{
+struct PrimitiveToParticles : zeno::INode{
     virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
-    auto result = zen::IObject::make<ParticlesObject>();
+    auto result = zeno::IObject::make<ParticlesObject>();
     result->pos.resize(prim->size());
     result->vel.resize(prim->size());
 
     #pragma omp parallel for
     for(int i=0;i<prim->size();i++)
     {
-        result->pos[i] = zen::vec_to_other<glm::vec3>(prim->attr<zen::vec3f>("pos")[i]);
+        result->pos[i] = zeno::vec_to_other<glm::vec3>(prim->attr<zeno::vec3f>("pos")[i]);
         if (prim->has_attr("vel"))
-            result->vel[i] = zen::vec_to_other<glm::vec3>(prim->attr<zen::vec3f>("vel")[i]);
+            result->vel[i] = zeno::vec_to_other<glm::vec3>(prim->attr<zeno::vec3f>("vel")[i]);
     }
     
     set_output("pars", result);
   }
 };
 
-static int defPrimitiveToParticles = zen::defNodeClass<PrimitiveToParticles>("PrimitiveToParticles",
+static int defPrimitiveToParticles = zeno::defNodeClass<PrimitiveToParticles>("PrimitiveToParticles",
     { /* inputs: */ {
         "prim",
     }, /* outputs: */ {

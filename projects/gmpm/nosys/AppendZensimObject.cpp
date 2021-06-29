@@ -7,9 +7,9 @@
 #include "zensim/tpls/fmt/color.h"
 #include "zensim/tpls/fmt/format.h"
 
-namespace zen {
+namespace zeno {
 
-struct PairZensimParticles : zen::INode {
+struct PairZensimParticles : zeno::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing PairZensimParticles\n");
     ZenoParticleObjects ret{};
@@ -33,14 +33,14 @@ struct PairZensimParticles : zen::INode {
     mergeParticles("ZSParticlesA");
     mergeParticles("ZSParticlesB");
 
-    auto particleList = zen::IObject::make<ZenoParticleList>();
+    auto particleList = zeno::IObject::make<ZenoParticleList>();
     particleList->get() = std::move(ret);
     set_output("ZensimParticleList", particleList);
     fmt::print(fg(fmt::color::cyan), "done executing PairZensimParticles\n");
   }
 };
 
-static int defPairZensimParticles = zen::defNodeClass<PairZensimParticles>(
+static int defPairZensimParticles = zeno::defNodeClass<PairZensimParticles>(
     "PairZensimParticles", {/* inputs: */ {"ZSParticlesA", "ZSParticlesB"},
                             /* outputs: */
                             {"ZensimParticleList"},

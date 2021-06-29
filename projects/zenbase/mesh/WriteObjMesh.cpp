@@ -3,7 +3,7 @@
 #include <zeno/StringObject.h>
 #include <cstring>
 
-namespace zen {
+namespace zeno {
 
 static void writeobj(
     const char *path,
@@ -36,7 +36,7 @@ static void writeobj(
 }
 
 
-struct WriteObjMesh : zen::INode {
+struct WriteObjMesh : zeno::INode {
   virtual void apply() override {
     auto path = std::get<std::string>(get_param("path"));
     auto mesh = get_input("mesh")->as<MeshObject>();
@@ -44,7 +44,7 @@ struct WriteObjMesh : zen::INode {
   }
 };
 
-static int defWriteObjMesh = zen::defNodeClass<WriteObjMesh>("WriteObjMesh",
+static int defWriteObjMesh = zeno::defNodeClass<WriteObjMesh>("WriteObjMesh",
     { /* inputs: */ {
     "mesh",
     }, /* outputs: */ {
@@ -55,7 +55,7 @@ static int defWriteObjMesh = zen::defNodeClass<WriteObjMesh>("WriteObjMesh",
     }});
 
 
-struct ExportObjMesh : zen::INode {
+struct ExportObjMesh : zeno::INode {
   virtual void apply() override {
     auto path = get_input("path")->as<StringObject>();
     auto mesh = get_input("mesh")->as<MeshObject>();
@@ -63,7 +63,7 @@ struct ExportObjMesh : zen::INode {
   }
 };
 
-static int defExportObjMesh = zen::defNodeClass<ExportObjMesh>("ExportObjMesh",
+static int defExportObjMesh = zeno::defNodeClass<ExportObjMesh>("ExportObjMesh",
     { /* inputs: */ {
     "mesh",
     "path",

@@ -18,11 +18,11 @@ static void apply_pressure_gradient(
 
 namespace zen{
     
-    struct SubtractPressureGradient : zen::INode{
+    struct SubtractPressureGradient : zeno::INode{
         virtual void apply() override {
             
             auto dx = std::get<float>(get_param("dx"));
-            auto dt = get_input("dt")->as<zen::NumericObject>()->get<float>();
+            auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
             auto liquid_sdf            = get_input("LiquidSDF"         )->as<VDBFloatGrid>();
             auto solid_sdf             = get_input("SolidSDF"          )->as<VDBFloatGrid>();
             auto pushed_out_liquid_sdf = get_input("ExtractedLiquidSDF")->as<VDBFloatGrid>();
@@ -44,7 +44,7 @@ namespace zen{
         }
     };
 
-static int defSubtractPressureGradient = zen::defNodeClass<SubtractPressureGradient>("SubtractPressureGradient",
+static int defSubtractPressureGradient = zeno::defNodeClass<SubtractPressureGradient>("SubtractPressureGradient",
     { /* inputs: */ {
         "dt"                ,
         "LiquidSDF"         ,

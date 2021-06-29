@@ -11,7 +11,7 @@ static void clamp_liquid_phi_in_solids(openvdb::FloatGrid::Ptr liquid_sdf,
 */
 namespace zen{
     
-    struct PushOutLiquidSDF : zen::INode{
+    struct PushOutLiquidSDF : zeno::INode{
         virtual void apply() override {
             auto dx = std::get<float>(get_param("dx"));
             auto liquid_sdf = get_input("LiquidSDF")->as<VDBFloatGrid>();
@@ -23,7 +23,7 @@ namespace zen{
         }
     };
 
-static int defPushOutLiquidSDF = zen::defNodeClass<PushOutLiquidSDF>("PushOutLiquidSDF",
+static int defPushOutLiquidSDF = zeno::defNodeClass<PushOutLiquidSDF>("PushOutLiquidSDF",
     { /* inputs: */ {
         "LiquidSDF", "SolidSDF", "ExtractedLiquidSDF",
     }, 

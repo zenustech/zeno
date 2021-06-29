@@ -5,7 +5,7 @@
 #include <cstring>
 #include <omp.h>
 
-namespace zen {
+namespace zeno {
 
 static void readobj(
     const char *path,
@@ -142,16 +142,16 @@ static void readobj(
 }
 
 
-struct ReadObjMesh : zen::INode {
+struct ReadObjMesh : zeno::INode {
   virtual void apply() override {
     auto path = std::get<std::string>(get_param("path"));
-    auto mesh = zen::IObject::make<MeshObject>();
+    auto mesh = zeno::IObject::make<MeshObject>();
     readobj(path.c_str(), mesh->vertices, mesh->uvs, mesh->normals);
     set_output("mesh", mesh);
   }
 };
 
-static int defReadObjMesh = zen::defNodeClass<ReadObjMesh>("ReadObjMesh",
+static int defReadObjMesh = zeno::defNodeClass<ReadObjMesh>("ReadObjMesh",
     { /* inputs: */ {
     }, /* outputs: */ {
     "mesh",
@@ -161,12 +161,12 @@ static int defReadObjMesh = zen::defNodeClass<ReadObjMesh>("ReadObjMesh",
     "trimesh",
     }});
 
-struct MeshMix : zen::INode {
+struct MeshMix : zeno::INode {
   virtual void apply() override {
     auto meshA = get_input("meshA")->as<MeshObject>();
     auto meshB = get_input("meshB")->as<MeshObject>();
-    auto coef = get_input("coef")->as<zen::NumericObject>()->get<float>();
-    auto mesh = zen::IObject::make<MeshObject>();
+    auto coef = get_input("coef")->as<zeno::NumericObject>()->get<float>();
+    auto mesh = zeno::IObject::make<MeshObject>();
     mesh->vertices=meshA->vertices;
     mesh->uvs=meshA->uvs;
     mesh->normals=meshA->normals;
@@ -179,7 +179,7 @@ struct MeshMix : zen::INode {
   }
 };
 
-static int defMeshMix = zen::defNodeClass<MeshMix>("MeshMix",
+static int defMeshMix = zeno::defNodeClass<MeshMix>("MeshMix",
     { /* inputs: */ {
       "meshA",
       "meshB",
@@ -190,16 +190,16 @@ static int defMeshMix = zen::defNodeClass<MeshMix>("MeshMix",
     }, /* category: */ {
     "trimesh",
     }});
-struct ImportObjMesh : zen::INode {
+struct ImportObjMesh : zeno::INode {
   virtual void apply() override {
     auto path = get_input("path")->as<StringObject>();
-    auto mesh = zen::IObject::make<MeshObject>();
+    auto mesh = zeno::IObject::make<MeshObject>();
     readobj(path->get().c_str(), mesh->vertices, mesh->uvs, mesh->normals);
     set_output("mesh", mesh);
   }
 };
 
-static int defImportObjMesh = zen::defNodeClass<ImportObjMesh>("ImportObjMesh",
+static int defImportObjMesh = zeno::defNodeClass<ImportObjMesh>("ImportObjMesh",
     { /* inputs: */ {
     "path",
     }, /* outputs: */ {

@@ -6,7 +6,7 @@
 #include <vector>
 #include <array>
 
-struct ForceFieldObject : zen::IObject {
+struct ForceFieldObject : zeno::IObject {
 
     // We assume intermolecular potential is always pairwise
     IPairwiseInteraction *nonbond;
@@ -16,12 +16,12 @@ struct ForceFieldObject : zen::IObject {
     IExternalInteraction *external;
 
     // Minimum image convention
-    zen::vec3f distance(zen::vec3f ri, zen::vec3f rj, float boxlength);
+    zeno::vec3f distance(zeno::vec3f ri, zeno::vec3f rj, float boxlength);
 
-    void force(std::vector<zen::vec3f, std::allocator<zen::vec3f>> &pos,
-            std::vector<zen::vec3f, std::allocator<zen::vec3f>> &acc,
+    void force(std::vector<zeno::vec3f, std::allocator<zeno::vec3f>> &pos,
+            std::vector<zeno::vec3f, std::allocator<zeno::vec3f>> &acc,
             float boxlength);
 
-    float energy(std::vector<zen::vec3f, std::allocator<zen::vec3f>> &pos,
+    float energy(std::vector<zeno::vec3f, std::allocator<zeno::vec3f>> &pos,
             float boxlength);
 };

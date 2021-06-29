@@ -3,7 +3,7 @@
 #include <zeno/zeno.h>
 #include <string>
 
-namespace zen {
+namespace zeno {
 
 struct StringObject : IObjectClone<StringObject> {
   std::string value;

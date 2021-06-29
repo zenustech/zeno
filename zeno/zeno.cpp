@@ -4,7 +4,7 @@
 #include <zeno/GlobalState.h>
 #include <cassert>
 
-namespace zen {
+namespace zeno {
 
 ZENAPI Exception::Exception(std::string const &msg) noexcept
     : msg(msg) {
@@ -79,13 +79,13 @@ ZENAPI void INode::complete() {}
 
 ZENAPI bool INode::checkApplyCondition() {
     if (has_input("COND")) {  // TODO: deprecate COND
-        auto cond = get_input<zen::ConditionObject>("COND");
+        auto cond = get_input<zeno::ConditionObject>("COND");
         if (!cond->get())
             return false;
     }
 
     if (has_option("ONCE")) {
-        if (zen::state.frameid != 0)
+        if (zeno::state.frameid != 0)
             return false;
     }
 
@@ -208,7 +208,7 @@ ZENAPI void Session::_defNodeClass(std::string const &id, std::unique_ptr<INodeC
 
 ZENAPI void Session::switchGraph(std::string const &name) {
     if (graphs.find(name) == graphs.end()) {
-        auto subg = std::make_unique<zen::Graph>();
+        auto subg = std::make_unique<zeno::Graph>();
         subg->sess = this;
         graphs[name] = std::move(subg);
     }

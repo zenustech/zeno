@@ -4,14 +4,14 @@
 #include <zeno/PrimitiveIO.h>
 #include <zeno/filesystem.h>
 
-namespace zen {
+namespace zeno {
 
 ZENAPI void PrimitiveObject::dumpfile(std::string const &path) {
     writezpm(this, (path + ".zpm").c_str());
 }
 
 
-struct PrimitiveShadeObject : zen::IObject {
+struct PrimitiveShadeObject : zeno::IObject {
     std::string vertpath, fragpath;
     std::shared_ptr<PrimitiveObject> prim;
     std::string primtype;
@@ -24,7 +24,7 @@ struct PrimitiveShadeObject : zen::IObject {
 };
 
 
-struct PrimitiveShade : zen::INode {
+struct PrimitiveShade : zeno::INode {
   virtual void apply() override {
     auto shade = std::make_shared<PrimitiveShadeObject>();
     shade->prim = get_input<PrimitiveObject>("prim");

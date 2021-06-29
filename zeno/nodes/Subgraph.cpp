@@ -3,7 +3,7 @@
 #include <cassert>
 
 
-struct SubInput : zen::INode {
+struct SubInput : zeno::INode {
     virtual void apply() override {
         auto name = get_param<std::string>("name");
         auto obj = graph->subInputs.at(name);
@@ -19,7 +19,7 @@ ZENDEFNODE(SubInput, {
 });
 
 
-struct SubOutput : zen::INode {
+struct SubOutput : zeno::INode {
     virtual void apply() override {
         auto name = get_param<std::string>("name");
         auto obj = get_input("port");
@@ -35,7 +35,7 @@ ZENDEFNODE(SubOutput, {
 });
 
 
-struct Subgraph : zen::INode {
+struct Subgraph : zeno::INode {
     virtual void apply() override {
         auto name = get_param<std::string>("name");
 
@@ -72,7 +72,7 @@ ZENDEFNODE(Subgraph, {
 });
 
 
-struct SubCategory : zen::INode {
+struct SubCategory : zeno::INode {
     virtual void apply() override {}
 };
 

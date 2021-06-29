@@ -2,9 +2,9 @@
 #include "zensim/geometry/Collider.h"
 #include <zeno/zeno.h>
 
-namespace zen {
+namespace zeno {
 
-struct ZenoBoundary : zen::IObject {
+struct ZenoBoundary : zeno::IObject {
   auto &get() noexcept { return boundary; }
   const auto &get() const noexcept { return boundary; }
   zs::GeneralBoundary boundary;

@@ -2,7 +2,7 @@
 
 #include <zeno/zeno.h>
 
-namespace zen {
+namespace zeno {
 
 struct GlobalState {
     std::string iopath = "/tmp/zenio";

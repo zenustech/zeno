@@ -8,10 +8,10 @@
 #include <cassert>
 #include <cstdio>
 
-namespace zen {
+namespace zeno {
 
 
-struct ExportPrimitive : zen::INode {
+struct ExportPrimitive : zeno::INode {
   virtual void apply() override {
     auto path = get_input("path")->as<StringObject>();
     auto prim = get_input("prim")->as<PrimitiveObject>();
@@ -19,7 +19,7 @@ struct ExportPrimitive : zen::INode {
   }
 };
 
-static int defExportPrimitive = zen::defNodeClass<ExportPrimitive>("ExportPrimitive",
+static int defExportPrimitive = zeno::defNodeClass<ExportPrimitive>("ExportPrimitive",
     { /* inputs: */ {
     "prim",
     "path",
@@ -30,16 +30,16 @@ static int defExportPrimitive = zen::defNodeClass<ExportPrimitive>("ExportPrimit
     }});
 
 
-struct ImportPrimitive : zen::INode {
+struct ImportPrimitive : zeno::INode {
   virtual void apply() override {
     auto path = get_input("path")->as<StringObject>();
-    auto prim = zen::IObject::make<PrimitiveObject>();
+    auto prim = zeno::IObject::make<PrimitiveObject>();
     readzpm(prim.get(), path->get().c_str());
     set_output("prim", prim);
   }
 };
 
-static int defImportPrimitive = zen::defNodeClass<ImportPrimitive>("ImportPrimitive",
+static int defImportPrimitive = zeno::defNodeClass<ImportPrimitive>("ImportPrimitive",
     { /* inputs: */ {
     "path",
     }, /* outputs: */ {

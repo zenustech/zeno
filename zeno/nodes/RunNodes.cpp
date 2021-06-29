@@ -3,10 +3,10 @@
 #include <zeno/ConditionObject.h>
 #include <zeno/GlobalState.h>
 
-struct RunOnce : zen::INode {  // TODO: deprecated
+struct RunOnce : zeno::INode {  // TODO: deprecated
     virtual void apply() override {
-        bool yes = zen::state.substepid == 0;
-        auto obj = std::make_shared<zen::ConditionObject>();
+        bool yes = zeno::state.substepid == 0;
+        auto obj = std::make_shared<zeno::ConditionObject>();
         obj->set(yes);
         set_output("cond", std::move(obj));
     }
@@ -19,10 +19,10 @@ ZENDEFNODE(RunOnce, {
     {"runtime"},
 });
 
-struct RunAfterFrame : zen::INode {  // TODO: deprecated
+struct RunAfterFrame : zeno::INode {  // TODO: deprecated
     virtual void apply() override {
-        bool yes = zen::state.has_frame_completed || !zen::state.time_step_integrated;
-        auto obj = std::make_shared<zen::ConditionObject>();
+        bool yes = zeno::state.has_frame_completed || !zeno::state.time_step_integrated;
+        auto obj = std::make_shared<zeno::ConditionObject>();
         obj->set(yes);
         set_output("cond", std::move(obj));
     }
@@ -35,10 +35,10 @@ ZENDEFNODE(RunAfterFrame, {
     {"runtime"},
 });
 
-struct RunBeforeFrame : zen::INode {  // TODO: deprecated
+struct RunBeforeFrame : zeno::INode {  // TODO: deprecated
     virtual void apply() override {
-        bool yes = !zen::state.has_substep_executed;
-        auto obj = std::make_shared<zen::ConditionObject>();
+        bool yes = !zeno::state.has_substep_executed;
+        auto obj = std::make_shared<zeno::ConditionObject>();
         obj->set(yes);
         set_output("cond", std::move(obj));
     }
@@ -52,10 +52,10 @@ ZENDEFNODE(RunBeforeFrame, {
 });
 
 
-struct SetFrameTime : zen::INode {
+struct SetFrameTime : zeno::INode {
     virtual void apply() override {
-        auto time = get_input<zen::NumericObject>("time")->get<float>();
-        zen::state.frame_time = time;
+        auto time = get_input<zeno::NumericObject>("time")->get<float>();
+        zeno::state.frame_time = time;
     }
 };
 
@@ -66,10 +66,10 @@ ZENDEFNODE(SetFrameTime, {
     {"runtime"},
 });
 
-struct GetFrameTime : zen::INode {
+struct GetFrameTime : zeno::INode {
     virtual void apply() override {
-        auto time = std::make_shared<zen::NumericObject>();
-        time->set(zen::state.frame_time);
+        auto time = std::make_shared<zeno::NumericObject>();
+        time->set(zeno::state.frame_time);
         set_output("time", std::move(time));
     }
 };
@@ -81,10 +81,10 @@ ZENDEFNODE(GetFrameTime, {
     {"runtime"},
 });
 
-struct GetFrameTimeElapsed : zen::INode {
+struct GetFrameTimeElapsed : zeno::INode {
     virtual void apply() override {
-        auto time = std::make_shared<zen::NumericObject>();
-        time->set(zen::state.frame_time_elapsed);
+        auto time = std::make_shared<zeno::NumericObject>();
+        time->set(zeno::state.frame_time_elapsed);
         set_output("time", std::move(time));
     }
 };
@@ -96,10 +96,10 @@ ZENDEFNODE(GetFrameTimeElapsed, {
     {"runtime"},
 });
 
-struct GetFrameNum : zen::INode {
+struct GetFrameNum : zeno::INode {
     virtual void apply() override {
-        auto num = std::make_shared<zen::NumericObject>();
-        num->set(zen::state.frameid);
+        auto num = std::make_shared<zeno::NumericObject>();
+        num->set(zeno::state.frameid);
         set_output("FrameNum", std::move(num));
     }
 };
@@ -111,11 +111,11 @@ ZENDEFNODE(GetFrameNum, {
     {"runtime"},
 });
 
-struct GetTime : zen::INode {
+struct GetTime : zeno::INode {
     virtual void apply() override {
-        auto time = std::make_shared<zen::NumericObject>();
-        time->set(zen::state.frameid * zen::state.frame_time
-            + zen::state.frame_time_elapsed);
+        auto time = std::make_shared<zeno::NumericObject>();
+        time->set(zeno::state.frameid * zeno::state.frame_time
+            + zeno::state.frame_time_elapsed);
         set_output("time", std::move(time));
     }
 };
@@ -127,10 +127,10 @@ ZENDEFNODE(GetTime, {
     {"runtime"},
 });
 
-struct GetFramePortion : zen::INode {
+struct GetFramePortion : zeno::INode {
     virtual void apply() override {
-        auto portion = std::make_shared<zen::NumericObject>();
-        portion->set(zen::state.frame_time_elapsed / zen::state.frame_time);
+        auto portion = std::make_shared<zeno::NumericObject>();
+        portion->set(zeno::state.frame_time_elapsed / zeno::state.frame_time);
         set_output("FramePortion", std::move(portion));
     }
 };
@@ -142,23 +142,23 @@ ZENDEFNODE(GetFramePortion, {
     {"runtime"},
 });
 
-struct IntegrateFrameTime : zen::INode {
+struct IntegrateFrameTime : zeno::INode {
     virtual void apply() override {
-        float dt = zen::state.frame_time;
+        float dt = zeno::state.frame_time;
         if (has_input("desired_dt")) {
-            dt = get_input<zen::NumericObject>("desired_dt")->get<float>();
+            dt = get_input<zeno::NumericObject>("desired_dt")->get<float>();
             auto min_scale = get_param<float>("min_scale");
-            dt = std::max(std::fabs(dt), min_scale * zen::state.frame_time);
+            dt = std::max(std::fabs(dt), min_scale * zeno::state.frame_time);
         }
-        if (zen::state.frame_time_elapsed + dt >= zen::state.frame_time) {
-            dt = zen::state.frame_time - zen::state.frame_time_elapsed;
-            zen::state.frame_time_elapsed = zen::state.frame_time;
-            zen::state.has_frame_completed = true;
+        if (zeno::state.frame_time_elapsed + dt >= zeno::state.frame_time) {
+            dt = zeno::state.frame_time - zeno::state.frame_time_elapsed;
+            zeno::state.frame_time_elapsed = zeno::state.frame_time;
+            zeno::state.has_frame_completed = true;
         } else {
-            zen::state.frame_time_elapsed += dt;
+            zeno::state.frame_time_elapsed += dt;
         }
-        zen::state.time_step_integrated = true;
-        auto ret = std::make_shared<zen::NumericObject>();
+        zeno::state.time_step_integrated = true;
+        auto ret = std::make_shared<zeno::NumericObject>();
         ret->set(dt);
         set_output("actual_dt", std::move(ret));
     }

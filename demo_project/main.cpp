@@ -2,12 +2,12 @@
 #include <cstdio>
 #include <zeno/NumericObject.h>
 
-struct Number : zen::IObject {
+struct Number : zeno::IObject {
     int value;
 };
 
 
-struct MakeNumber : zen::INode {
+struct MakeNumber : zeno::INode {
     virtual void apply() override {
         printf("MakeNumber::apply() called!\n");
         int value = get_param<int>("value");
@@ -28,7 +28,7 @@ ZENDEFNODE(MakeNumber,
    }});
 
 
-struct NumberAdd : zen::INode {
+struct NumberAdd : zeno::INode {
   virtual void apply() override {
       printf("NumberAdd::apply() called!\n");
       auto lhs = get_input<Number>("lhs");
@@ -50,7 +50,7 @@ ZENDEFNODE(NumberAdd,
     }});
 
 
-struct NumberPrint : zen::INode {
+struct NumberPrint : zeno::INode {
     virtual void apply() override {
         printf("NumberPrint::apply() called!\n");
         if (has_input("obj")) {

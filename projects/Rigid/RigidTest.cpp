@@ -14,11 +14,11 @@
 #include <vector>
 
 
-struct BulletTransform : zen::IObject {
+struct BulletTransform : zeno::IObject {
     btTransform trans;
 };
 
-struct BulletCollisionShape : zen::IObject {
+struct BulletCollisionShape : zeno::IObject {
     std::unique_ptr<btCollisionShape> shape;
 
     BulletCollisionShape(std::unique_ptr<btCollisionShape> &&shape)
@@ -39,11 +39,11 @@ struct BulletCompoundShape : BulletCollisionShape {
     }
 };
 
-struct BulletMakeBoxShape : zen::INode {
+struct BulletMakeBoxShape : zeno::INode {
     virtual void apply() override {
-        auto v3size = get_input<zen::NumericObject>("v3size")->get<zen::vec3f>();
+        auto v3size = get_input<zeno::NumericObject>("v3size")->get<zeno::vec3f>();
         auto shape = std::make_shared<BulletCollisionShape>(
-            std::make_unique<btBoxShape>(zen::vec_to_other<btVector3>(v3size)));
+            std::make_unique<btBoxShape>(zeno::vec_to_other<btVector3>(v3size)));
         set_output("shape", std::move(shape));
     }
 };
@@ -55,9 +55,9 @@ ZENDEFNODE(BulletMakeBoxShape, {
     {"Rigid"},
 });
 
-struct BulletMakeSphereShape : zen::INode {
+struct BulletMakeSphereShape : zeno::INode {
     virtual void apply() override {
-        auto radius = get_input<zen::NumericObject>("radius")->get<float>();
+        auto radius = get_input<zeno::NumericObject>("radius")->get<float>();
         auto shape = std::make_unique<BulletCollisionShape>(
             std::make_unique<btSphereShape>(btScalar(radius)));
         set_output("shape", std::move(shape));
@@ -72,21 +72,21 @@ ZENDEFNODE(BulletMakeSphereShape, {
 });
 
 
-struct BulletTriangleMesh : zen::IObject {
+struct BulletTriangleMesh : zeno::IObject {
     btTriangleMesh mesh;
 };
 
-struct PrimitiveToBulletMesh : zen::INode {
+struct PrimitiveToBulletMesh : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<zen::PrimitiveObject>("prim");
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto mesh = std::make_unique<BulletTriangleMesh>();
-        auto pos = prim->attr<zen::vec3f>("pos");
+        auto pos = prim->attr<zeno::vec3f>("pos");
         for (int i = 0; i < prim->tris.size(); i++) {
             auto f = prim->tris[i];
             mesh->mesh.addTriangle(
-                zen::vec_to_other<btVector3>(pos[f[0]]),
-                zen::vec_to_other<btVector3>(pos[f[1]]),
-                zen::vec_to_other<btVector3>(pos[f[2]]), true);
+                zeno::vec_to_other<btVector3>(pos[f[0]]),
+                zeno::vec_to_other<btVector3>(pos[f[1]]),
+                zeno::vec_to_other<btVector3>(pos[f[2]]), true);
         }
         set_output("mesh", std::move(mesh));
     }
@@ -99,22 +99,22 @@ ZENDEFNODE(PrimitiveToBulletMesh, {
     {"Rigid"},
 });
 
-struct PrimitiveConvexDecomposition : zen::INode {
+struct PrimitiveConvexDecomposition : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<zen::PrimitiveObject>("prim");
-        auto &pos = prim->attr<zen::vec3f>("pos");
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto &pos = prim->attr<zeno::vec3f>("pos");
 
         std::vector<HACD::Vec3<HACD::Real>> points;
         std::vector<HACD::Vec3<long>> triangles;
 
         for (int i = 0; i < pos.size(); i++) {
             points.push_back(
-                zen::vec_to_other<HACD::Vec3<HACD::Real>>(pos[i]));
+                zeno::vec_to_other<HACD::Vec3<HACD::Real>>(pos[i]));
         }
 
         for (int i = 0; i < prim->tris.size(); i++) {
             triangles.push_back(
-                zen::vec_to_other<HACD::Vec3<long>>(prim->tris[i]));
+                zeno::vec_to_other<HACD::Vec3<long>>(prim->tris[i]));
         }
 
         HACD::HACD hacd;
@@ -135,7 +135,7 @@ struct PrimitiveConvexDecomposition : zen::INode {
         hacd.Compute();
         size_t nClusters = hacd.GetNClusters();
 
-        auto listPrim = std::make_shared<zen::ListObject>();
+        auto listPrim = std::make_shared<zeno::ListObject>();
         listPrim->arr.clear();
 
         printf("hacd got %d clusters\n", nClusters);
@@ -151,21 +151,21 @@ struct PrimitiveConvexDecomposition : zen::INode {
             triangles.resize(nTriangles);
             hacd.GetCH(c, points.data(), triangles.data());
 
-            auto outprim = std::make_shared<zen::PrimitiveObject>();
+            auto outprim = std::make_shared<zeno::PrimitiveObject>();
             outprim->resize(nPoints);
             outprim->tris.resize(nTriangles);
 
-            auto &outpos = outprim->add_attr<zen::vec3f>("pos");
+            auto &outpos = outprim->add_attr<zeno::vec3f>("pos");
             for (size_t i = 0; i < nPoints; i++) {
                 auto p = points[i];
                 //printf("point %d: %f %f %f\n", i, p.X(), p.Y(), p.Z());
-                outpos[i] = zen::vec3f(p.X(), p.Y(), p.Z());
+                outpos[i] = zeno::vec3f(p.X(), p.Y(), p.Z());
             }
 
             for (size_t i = 0; i < nTriangles; i++) {
                 auto p = triangles[i];
                 //printf("triangle %d: %d %d %d\n", i, p.X(), p.Y(), p.Z());
-                outprim->tris[i] = zen::vec3i(p.X(), p.Y(), p.Z());
+                outprim->tris[i] = zeno::vec3i(p.X(), p.Y(), p.Z());
             }
 
             listPrim->arr.push_back(std::move(outprim));
@@ -183,7 +183,7 @@ ZENDEFNODE(PrimitiveConvexDecomposition, {
 });
 
 
-struct BulletMakeConvexHullShape : zen::INode {
+struct BulletMakeConvexHullShape : zeno::INode {
     virtual void apply() override {
         auto triMesh = &get_input<BulletTriangleMesh>("triMesh")->mesh;
         auto inShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
@@ -212,7 +212,7 @@ ZENDEFNODE(BulletMakeConvexHullShape, {
     {"Rigid"},
 });
 
-struct BulletMakeCompoundShape : zen::INode {
+struct BulletMakeCompoundShape : zeno::INode {
     virtual void apply() override {
         auto compound = std::make_unique<btCompoundShape>();
         auto shape = std::make_shared<BulletCompoundShape>(std::move(compound));
@@ -227,7 +227,7 @@ ZENDEFNODE(BulletMakeCompoundShape, {
     {"Rigid"},
 });
 
-struct BulletCompoundAddChild : zen::INode {
+struct BulletCompoundAddChild : zeno::INode {
     virtual void apply() override {
         auto compound = get_input<BulletCompoundShape>("compound");
         auto childShape = get_input<BulletCollisionShape>("childShape");
@@ -246,17 +246,17 @@ ZENDEFNODE(BulletCompoundAddChild, {
 });
 
 
-struct BulletMakeTransform : zen::INode {
+struct BulletMakeTransform : zeno::INode {
     virtual void apply() override {
         auto trans = std::make_unique<BulletTransform>();
         trans->trans.setIdentity();
         if (has_input("origin")) {
-            auto origin = get_input<zen::NumericObject>("origin")->get<zen::vec3f>();
-            trans->trans.setOrigin(zen::vec_to_other<btVector3>(origin));
+            auto origin = get_input<zeno::NumericObject>("origin")->get<zeno::vec3f>();
+            trans->trans.setOrigin(zeno::vec_to_other<btVector3>(origin));
         }
         if (has_input("rotation")) {
-            auto rotation = get_input<zen::NumericObject>("rotation")->get<zen::vec3f>();
-            trans->trans.setRotation(zen::vec_to_other<btQuaternion>(rotation));
+            auto rotation = get_input<zeno::NumericObject>("rotation")->get<zeno::vec3f>();
+            trans->trans.setRotation(zeno::vec_to_other<btQuaternion>(rotation));
         }
         set_output("trans", std::move(trans));
     }
@@ -269,7 +269,7 @@ ZENDEFNODE(BulletMakeTransform, {
     {"Rigid"},
 });
 
-struct BulletComposeTransform : zen::INode {
+struct BulletComposeTransform : zeno::INode {
     virtual void apply() override {
         auto transFirst = get_input<BulletTransform>("transFirst")->trans;
         auto transSecond = get_input<BulletTransform>("transSecond")->trans;
@@ -287,7 +287,7 @@ ZENDEFNODE(BulletComposeTransform, {
 });
 
 
-struct BulletObject : zen::IObject {
+struct BulletObject : zeno::IObject {
     std::unique_ptr<btDefaultMotionState> myMotionState;
     std::unique_ptr<btRigidBody> body;
     std::shared_ptr<BulletCollisionShape> colShape;
@@ -309,10 +309,10 @@ struct BulletObject : zen::IObject {
     }
 };
 
-struct BulletMakeObject : zen::INode {
+struct BulletMakeObject : zeno::INode {
     virtual void apply() override {
         auto shape = get_input<BulletCollisionShape>("shape");
-        auto mass = get_input<zen::NumericObject>("mass")->get<float>();
+        auto mass = get_input<zeno::NumericObject>("mass")->get<float>();
         auto trans = get_input<BulletTransform>("trans");
         auto object = std::make_unique<BulletObject>(
             mass, trans->trans, shape);
@@ -327,7 +327,7 @@ ZENDEFNODE(BulletMakeObject, {
     {"Rigid"},
 });
 
-struct BulletGetObjTransform : zen::INode {
+struct BulletGetObjTransform : zeno::INode {
     virtual void apply() override {
         auto obj = get_input<BulletObject>("object");
         auto body = obj->body.get();
@@ -348,22 +348,22 @@ ZENDEFNODE(BulletGetObjTransform, {
     {"Rigid"},
 });
 
-struct BulletGetObjMotion : zen::INode {
+struct BulletGetObjMotion : zeno::INode {
     virtual void apply() override {
         auto obj = get_input<BulletObject>("object");
         auto body = obj->body.get();
-        auto linearVel = zen::IObject::make<zen::NumericObject>();
-        auto angularVel = zen::IObject::make<zen::NumericObject>();
-        linearVel->set<zen::vec3f>(zen::vec3f(0));
-        angularVel->set<zen::vec3f>(zen::vec3f(0));
+        auto linearVel = zeno::IObject::make<zeno::NumericObject>();
+        auto angularVel = zeno::IObject::make<zeno::NumericObject>();
+        linearVel->set<zeno::vec3f>(zeno::vec3f(0));
+        angularVel->set<zeno::vec3f>(zeno::vec3f(0));
 
         if (body && body->getLinearVelocity() ) {
             auto v = body->getLinearVelocity();
-            linearVel->set<zen::vec3f>(zen::vec3f(v.x(), v.y(), v.z()));
+            linearVel->set<zeno::vec3f>(zeno::vec3f(v.x(), v.y(), v.z()));
         }
         if (body && body->getAngularVelocity() ){
             auto w = body->getAngularVelocity();
-            angularVel->set<zen::vec3f>(zen::vec3f(w.x(), w.y(), w.z()));
+            angularVel->set<zeno::vec3f>(zeno::vec3f(w.x(), w.y(), w.z()));
         }
         set_output("linearVel", linearVel);
         set_output("angularVel", angularVel);
@@ -377,17 +377,17 @@ ZENDEFNODE(BulletGetObjMotion, {
     {"Rigid"},
 });
 
-struct RigidVelToPrimitive : zen::INode {
+struct RigidVelToPrimitive : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<zen::PrimitiveObject>("prim");
-        auto com = get_input<zen::NumericObject>("centroid")->get<zen::vec3f>();
-        auto lin = get_input<zen::NumericObject>("linearVel")->get<zen::vec3f>();
-        auto ang = get_input<zen::NumericObject>("angularVel")->get<zen::vec3f>();
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto com = get_input<zeno::NumericObject>("centroid")->get<zeno::vec3f>();
+        auto lin = get_input<zeno::NumericObject>("linearVel")->get<zeno::vec3f>();
+        auto ang = get_input<zeno::NumericObject>("angularVel")->get<zeno::vec3f>();
 
-        auto &pos = prim->attr<zen::vec3f>("pos");
-        auto &vel = prim->add_attr<zen::vec3f>("vel");
+        auto &pos = prim->attr<zeno::vec3f>("pos");
+        auto &vel = prim->add_attr<zeno::vec3f>("vel");
         for (size_t i = 0; i < prim->size(); i++) {
-            vel[i] = lin + zen::cross(ang, pos[i] - com);
+            vel[i] = lin + zeno::cross(ang, pos[i] - com);
         }
 
         set_output_ref("prim", get_input_ref("prim"));
@@ -401,13 +401,13 @@ ZENDEFNODE(RigidVelToPrimitive, {
     {"Rigid"},
 });
 
-struct BulletExtractTransform : zen::INode {
+struct BulletExtractTransform : zeno::INode {
     virtual void apply() override {
         auto trans = &get_input<BulletTransform>("trans")->trans;
-        auto origin = std::make_unique<zen::NumericObject>();
-        auto rotation = std::make_unique<zen::NumericObject>();
-        origin->set(zen::other_to_vec<3>(trans->getOrigin()));
-        rotation->set(zen::other_to_vec<4>(trans->getRotation()));
+        auto origin = std::make_unique<zeno::NumericObject>();
+        auto rotation = std::make_unique<zeno::NumericObject>();
+        origin->set(zeno::other_to_vec<3>(trans->getOrigin()));
+        rotation->set(zeno::other_to_vec<4>(trans->getRotation()));
         set_output("origin", std::move(origin));
         set_output("rotation", std::move(rotation));
     }
@@ -421,7 +421,7 @@ ZENDEFNODE(BulletExtractTransform, {
 });
 
 
-struct BulletWorld : zen::IObject {
+struct BulletWorld : zeno::IObject {
     std::unique_ptr<btDefaultCollisionConfiguration> collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
     std::unique_ptr<btCollisionDispatcher> dispatcher = std::make_unique<btCollisionDispatcher>(collisionConfiguration.get());
     std::unique_ptr<btBroadphaseInterface> overlappingPairCache = std::make_unique<btDbvtBroadphase>();
@@ -487,7 +487,7 @@ struct BulletWorld : zen::IObject {
     }
 };
 
-struct BulletMakeWorld : zen::INode {
+struct BulletMakeWorld : zeno::INode {
     virtual void apply() override {
         auto world = std::make_unique<BulletWorld>();
         set_output("world", std::move(world));
@@ -501,11 +501,11 @@ ZENDEFNODE(BulletMakeWorld, {
     {"Rigid"},
 });
 
-struct BulletSetWorldGravity : zen::INode {
+struct BulletSetWorldGravity : zeno::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
-        auto gravity = get_input<zen::NumericObject>("gravity")->get<zen::vec3f>();
-        world->dynamicsWorld->setGravity(zen::vec_to_other<btVector3>(gravity));
+        auto gravity = get_input<zeno::NumericObject>("gravity")->get<zeno::vec3f>();
+        world->dynamicsWorld->setGravity(zeno::vec_to_other<btVector3>(gravity));
     }
 };
 
@@ -516,10 +516,10 @@ ZENDEFNODE(BulletSetWorldGravity, {
     {"Rigid"},
 });
 
-struct BulletStepWorld : zen::INode {
+struct BulletStepWorld : zeno::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
-        auto dt = get_input<zen::NumericObject>("dt")->get<float>();
+        auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
         world->step(dt);
     }
 };
@@ -531,7 +531,7 @@ ZENDEFNODE(BulletStepWorld, {
     {"Rigid"},
 });
 
-struct BulletWorldAddObject : zen::INode {
+struct BulletWorldAddObject : zeno::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
         auto object = get_input<BulletObject>("object");
@@ -548,13 +548,13 @@ ZENDEFNODE(BulletWorldAddObject, {
     {"Rigid"},
 });
 
-struct BulletObjectApplyForce:zen::INode {
+struct BulletObjectApplyForce:zeno::INode {
     virtual void apply() override {
         auto object = get_input<BulletObject>("object");
-        auto forceImpulse = get_input<zen::NumericObject>("ForceImpulse")->get<zen::vec3f>();
-        auto torqueImpulse = get_input<zen::NumericObject>("TorqueImpulse")->get<zen::vec3f>();
-        object->body->applyCentralImpulse(zen::vec_to_other<btVector3>(forceImpulse));
-        object->body->applyTorqueImpulse(zen::vec_to_other<btVector3>(torqueImpulse));
+        auto forceImpulse = get_input<zeno::NumericObject>("ForceImpulse")->get<zeno::vec3f>();
+        auto torqueImpulse = get_input<zeno::NumericObject>("TorqueImpulse")->get<zeno::vec3f>();
+        object->body->applyCentralImpulse(zeno::vec_to_other<btVector3>(forceImpulse));
+        object->body->applyTorqueImpulse(zeno::vec_to_other<btVector3>(torqueImpulse));
     }
 };
 

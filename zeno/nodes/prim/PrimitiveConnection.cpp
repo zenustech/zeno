@@ -6,10 +6,10 @@
 #include <cstdlib>
 #include <cassert>
 
-namespace zen {
+namespace zeno {
 
 
-struct PrimitiveSimplePoints : zen::INode {
+struct PrimitiveSimplePoints : zeno::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
     size_t points_count = prim->size();
@@ -22,7 +22,7 @@ struct PrimitiveSimplePoints : zen::INode {
   }
 };
 
-static int defPrimitiveSimplePoints = zen::defNodeClass<PrimitiveSimplePoints>("PrimitiveSimplePoints",
+static int defPrimitiveSimplePoints = zeno::defNodeClass<PrimitiveSimplePoints>("PrimitiveSimplePoints",
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
@@ -33,20 +33,20 @@ static int defPrimitiveSimplePoints = zen::defNodeClass<PrimitiveSimplePoints>("
     }});
 
 
-struct PrimitiveSimpleLines : zen::INode {
+struct PrimitiveSimpleLines : zeno::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
     size_t lines_count = prim->size() / 2;
     prim->lines.resize(lines_count);
     for (int i = 0; i < lines_count; i++) {
-      prim->lines[i] = zen::vec2i(2 * i, 2 * i + 1);
+      prim->lines[i] = zeno::vec2i(2 * i, 2 * i + 1);
     }
 
     set_output_ref("prim", get_input_ref("prim"));
   }
 };
 
-static int defPrimitiveSimpleLines = zen::defNodeClass<PrimitiveSimpleLines>("PrimitiveSimpleLines",
+static int defPrimitiveSimpleLines = zeno::defNodeClass<PrimitiveSimpleLines>("PrimitiveSimpleLines",
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
@@ -57,20 +57,20 @@ static int defPrimitiveSimpleLines = zen::defNodeClass<PrimitiveSimpleLines>("Pr
     }});
 
 
-struct PrimitiveSimpleTris : zen::INode {
+struct PrimitiveSimpleTris : zeno::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
     size_t tris_count = prim->size() / 3;
     prim->tris.resize(tris_count);
     for (int i = 0; i < tris_count; i++) {
-      prim->tris[i] = zen::vec3i(3 * i, 3 * i + 1, 3 * i + 2);
+      prim->tris[i] = zeno::vec3i(3 * i, 3 * i + 1, 3 * i + 2);
     }
 
     set_output_ref("prim", get_input_ref("prim"));
   }
 };
 
-static int defPrimitiveSimpleTris = zen::defNodeClass<PrimitiveSimpleTris>("PrimitiveSimpleTris",
+static int defPrimitiveSimpleTris = zeno::defNodeClass<PrimitiveSimpleTris>("PrimitiveSimpleTris",
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
@@ -81,20 +81,20 @@ static int defPrimitiveSimpleTris = zen::defNodeClass<PrimitiveSimpleTris>("Prim
     }});
 
 
-struct PrimitiveSimpleQuads : zen::INode {
+struct PrimitiveSimpleQuads : zeno::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
     size_t quads_count = prim->size() / 4;
     prim->quads.resize(quads_count);
     for (int i = 0; i < quads_count; i++) {
-      prim->quads[i] = zen::vec4i(4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3);
+      prim->quads[i] = zeno::vec4i(4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3);
     }
 
     set_output_ref("prim", get_input_ref("prim"));
   }
 };
 
-static int defPrimitiveSimpleQuads = zen::defNodeClass<PrimitiveSimpleQuads>("PrimitiveSimpleQuads",
+static int defPrimitiveSimpleQuads = zeno::defNodeClass<PrimitiveSimpleQuads>("PrimitiveSimpleQuads",
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
@@ -105,7 +105,7 @@ static int defPrimitiveSimpleQuads = zen::defNodeClass<PrimitiveSimpleQuads>("Pr
     }});
 
 
-struct PrimitiveClearConnect : zen::INode {
+struct PrimitiveClearConnect : zeno::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
     prim->points.clear();
@@ -117,7 +117,7 @@ struct PrimitiveClearConnect : zen::INode {
   }
 };
 
-static int defPrimitiveClearConnect = zen::defNodeClass<PrimitiveClearConnect>("PrimitiveClearConnect",
+static int defPrimitiveClearConnect = zeno::defNodeClass<PrimitiveClearConnect>("PrimitiveClearConnect",
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {

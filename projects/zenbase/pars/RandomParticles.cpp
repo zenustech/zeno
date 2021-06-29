@@ -8,14 +8,14 @@ static inline double drand48() {
 }
 #endif
 
-namespace zen {
+namespace zeno {
 
-struct RandomParticles : zen::INode {
+struct RandomParticles : zeno::INode {
   virtual void apply() override {
     int count = std::get<int>(get_param("count"));
     float Prange = std::get<float>(get_param("Prange"));
     float Vrange = std::get<float>(get_param("Vrange"));
-    auto pars = zen::IObject::make<ParticlesObject>();
+    auto pars = zeno::IObject::make<ParticlesObject>();
 
     for (int i = 0; i < count; i++) {
       glm::vec3 p(drand48() * 2 - 1, drand48() * 2 - 1, drand48() * 2 - 1);
@@ -29,7 +29,7 @@ struct RandomParticles : zen::INode {
   }
 };
 
-static int defRandomParticles = zen::defNodeClass<RandomParticles>("RandomParticles",
+static int defRandomParticles = zeno::defNodeClass<RandomParticles>("RandomParticles",
     { /* inputs: */ {
     }, /* outputs: */ {
     "pars",

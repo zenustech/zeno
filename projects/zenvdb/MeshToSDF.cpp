@@ -9,13 +9,13 @@
 //(*openvdb::math::Transform::createLinearTransform(h), 
 //points, triangles, quads, 4, 4);
 
-namespace zen {
+namespace zeno {
 
-struct MeshToSDF : zen::INode{
+struct MeshToSDF : zeno::INode{
     virtual void apply() override {
     auto h = std::get<float>(get_param("voxel_size"));
     auto mesh = get_input("mesh")->as<MeshObject>();
-    auto result = zen::IObject::make<VDBFloatGrid>();
+    auto result = zeno::IObject::make<VDBFloatGrid>();
     std::vector<openvdb::Vec3s> points;
     std::vector<openvdb::Vec3I> triangles;
     std::vector<openvdb::Vec4I> quads;
@@ -43,7 +43,7 @@ struct MeshToSDF : zen::INode{
   }
 };
 
-static int defMeshToSDF = zen::defNodeClass<MeshToSDF>("MeshToSDF",
+static int defMeshToSDF = zeno::defNodeClass<MeshToSDF>("MeshToSDF",
     { /* inputs: */ {
         "mesh",
     }, /* outputs: */ {
@@ -57,21 +57,21 @@ static int defMeshToSDF = zen::defNodeClass<MeshToSDF>("MeshToSDF",
 
 
 
-struct PrimitiveToSDF : zen::INode{
+struct PrimitiveToSDF : zeno::INode{
     virtual void apply() override {
     auto h = std::get<float>(get_param("voxel_size"));
     auto mesh = get_input("PrimitiveMesh")->as<PrimitiveObject>();
-    auto result = zen::IObject::make<VDBFloatGrid>();
+    auto result = zeno::IObject::make<VDBFloatGrid>();
     std::vector<openvdb::Vec3s> points;
     std::vector<openvdb::Vec3I> triangles;
     std::vector<openvdb::Vec4I> quads;
-    points.resize(mesh->attr<zen::vec3f>("pos").size());
+    points.resize(mesh->attr<zeno::vec3f>("pos").size());
     triangles.resize(mesh->tris.size());
     quads.resize(0);
 #pragma omp parallel for
     for(int i=0;i<points.size();i++)
     {
-        points[i] = openvdb::Vec3s(mesh->attr<zen::vec3f>("pos")[i][0], mesh->attr<zen::vec3f>("pos")[i][1], mesh->attr<zen::vec3f>("pos")[i][2]);
+        points[i] = openvdb::Vec3s(mesh->attr<zeno::vec3f>("pos")[i][0], mesh->attr<zeno::vec3f>("pos")[i][1], mesh->attr<zeno::vec3f>("pos")[i][2]);
     }
 #pragma omp parallel for
     for(int i=0;i<triangles.size();i++)
@@ -89,7 +89,7 @@ struct PrimitiveToSDF : zen::INode{
   }
 };
 
-static int defPrimitiveToSDF = zen::defNodeClass<PrimitiveToSDF>("PrimitiveToSDF",
+static int defPrimitiveToSDF = zeno::defNodeClass<PrimitiveToSDF>("PrimitiveToSDF",
     { /* inputs: */ {
         "PrimitiveMesh",
     }, /* outputs: */ {
