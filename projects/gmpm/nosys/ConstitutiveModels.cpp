@@ -2,7 +2,7 @@
 
 #include "zensim/tpls/fmt/color.h"
 #include "zensim/tpls/fmt/format.h"
-#include <zen/zen.h>
+#include <zeno/zen.h>
 
 namespace zen {
 

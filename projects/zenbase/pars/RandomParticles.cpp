@@ -1,5 +1,5 @@
-#include <zen/zen.h>
-#include <zen/ParticlesObject.h>
+#include <zeno/zen.h>
+#include <zeno/ParticlesObject.h>
 #include <cstring>
 
 #ifdef _MSC_VER

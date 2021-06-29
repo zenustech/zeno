@@ -1,8 +1,8 @@
-#include <zen/zen.h>
-#include <zen/PrimitiveObject.h>
-#include <zen/Visualization.h>
-#include <zen/PrimitiveIO.h>
-#include <zen/filesystem.h>
+#include <zeno/zen.h>
+#include <zeno/PrimitiveObject.h>
+#include <zeno/Visualization.h>
+#include <zeno/PrimitiveIO.h>
+#include <zeno/filesystem.h>
 
 namespace zen {
 

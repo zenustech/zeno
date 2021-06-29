@@ -1,5 +1,5 @@
-#include <zen/zen.h>
-#include <zen/GlobalState.h>
+#include <zeno/zen.h>
+#include <zeno/GlobalState.h>
 
 struct PortalIn : zen::INode {
     virtual void complete() override {
@@ -55,7 +55,7 @@ ZENDEFNODE(Route, {
     {"portal"},
 });
 
-struct Comment : Route {  // ui defined in zen/nodepref.py
+struct Comment : Route {  // ui defined in zeno/nodepref.py
 };
 
 ZENDEFNODE(Comment, {

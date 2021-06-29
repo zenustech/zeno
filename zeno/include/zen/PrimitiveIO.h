@@ -1,8 +1,8 @@
 #pragma once
 
-#include <zen/zen.h>
-#include <zen/PrimitiveObject.h>
-#include <zen/vec.h>
+#include <zeno/zen.h>
+#include <zeno/PrimitiveObject.h>
+#include <zeno/vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>

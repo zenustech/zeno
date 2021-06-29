@@ -2277,7 +2277,7 @@ void ImGui::TableMergeDrawChannels(ImGuiTable* table)
         }
 
         // Invalidate current draw channel
-        // (we don't clear DrawChannelFrozen/DrawChannelUnfrozen solely to facilitate debugging/later inspection of data)
+        // (we don't clear DrawChannelFrozeno/DrawChannelUnfrozen solely to facilitate debugging/later inspection of data)
         column->DrawChannelCurrent = (ImGuiTableDrawChannelIdx)-1;
     }
 

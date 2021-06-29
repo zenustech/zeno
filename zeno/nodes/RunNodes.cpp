@@ -1,7 +1,7 @@
-#include <zen/zen.h>
-#include <zen/NumericObject.h>
-#include <zen/ConditionObject.h>
-#include <zen/GlobalState.h>
+#include <zeno/zen.h>
+#include <zeno/NumericObject.h>
+#include <zeno/ConditionObject.h>
+#include <zeno/GlobalState.h>
 
 struct RunOnce : zen::INode {  // TODO: deprecated
     virtual void apply() override {

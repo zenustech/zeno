@@ -1,8 +1,8 @@
-#include <zen/zen.h>
-#include <zen/ParticlesObject.h>
-#include <zen/PrimitiveObject.h>
-#include <zen/NumericObject.h>
-#include <zen/vec.h>
+#include <zeno/zen.h>
+#include <zeno/ParticlesObject.h>
+#include <zeno/PrimitiveObject.h>
+#include <zeno/NumericObject.h>
+#include <zeno/vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>

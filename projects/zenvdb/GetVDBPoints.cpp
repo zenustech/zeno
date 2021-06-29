@@ -1,6 +1,6 @@
-#include <zen/zen.h>
-#include <zen/ParticlesObject.h>
-#include <zen/VDBGrid.h>
+#include <zeno/zen.h>
+#include <zeno/ParticlesObject.h>
+#include <zeno/VDBGrid.h>
 #include <omp.h>
 
 namespace zen {

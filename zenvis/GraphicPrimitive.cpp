@@ -2,10 +2,10 @@
 #include "IGraphic.hpp"
 #include "MyShader.hpp"
 #include "main.hpp"
-#include <zen/vec.h>
+#include <zeno/vec.h>
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
-#include <zen/PrimitiveObject.h>
+#include <zeno/PrimitiveObject.h>
 
 namespace zenvis {
 

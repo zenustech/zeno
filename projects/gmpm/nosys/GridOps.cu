@@ -8,7 +8,7 @@
 #include "zensim/simulation/sparsity/SparsityCompute.hpp"
 #include "zensim/tpls/fmt/color.h"
 #include "zensim/tpls/fmt/format.h"
-#include <zen/NumericObject.h>
+#include <zeno/NumericObject.h>
 
 namespace zen {
 

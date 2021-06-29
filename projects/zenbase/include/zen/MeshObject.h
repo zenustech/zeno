@@ -3,7 +3,7 @@
 
 #include <cstddef>
 #include <memory>
-#include <zen/zen.h>
+#include <zeno/zen.h>
 #include <glm/vec3.hpp>
 #include <glm/vec2.hpp>
 #include <vector>

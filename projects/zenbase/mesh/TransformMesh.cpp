@@ -1,6 +1,6 @@
-#include <zen/zen.h>
-#include <zen/MeshObject.h>
-#include <zen/NumericObject.h>
+#include <zeno/zen.h>
+#include <zeno/MeshObject.h>
+#include <zeno/NumericObject.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>

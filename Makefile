@@ -10,7 +10,7 @@ wheel: prepare
 
 prepare: all
 	make -C build install
-	cp -d /tmp/tmp-install/lib/*.so* zen/lib/
+	cp -d /tmp/tmp-install/lib/*.so* zeno/lib/
 
 all:
 	cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install

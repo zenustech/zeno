@@ -1,5 +1,5 @@
-#include <zen/zen.h>
-#include <zen/ParticlesObject.h>
+#include <zeno/zen.h>
+#include <zeno/ParticlesObject.h>
 #include <Partio.h>
 static void outputBgeo(std::string path, 
   const std::vector<glm::vec3> &pos, 

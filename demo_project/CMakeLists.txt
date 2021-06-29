@@ -3,7 +3,7 @@ project(demo_project LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../zen/cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../zeno/cmake)
 set(ENV{PYTHONPATH} ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 add_library(demo_project SHARED main.cpp)

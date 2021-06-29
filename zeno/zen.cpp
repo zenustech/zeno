@@ -1,7 +1,7 @@
-#include <zen/zen.h>
-#include <zen/ConditionObject.h>
-#include <zen/Visualization.h>
-#include <zen/GlobalState.h>
+#include <zeno/zen.h>
+#include <zeno/ConditionObject.h>
+#include <zeno/Visualization.h>
+#include <zeno/GlobalState.h>
 #include <cassert>
 
 namespace zen {

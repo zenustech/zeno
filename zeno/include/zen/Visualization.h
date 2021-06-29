@@ -1,6 +1,6 @@
 #pragma once
 
-#include <zen/zen.h>
+#include <zeno/zen.h>
 
 namespace zen::Visualization {
 
