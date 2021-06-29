@@ -1,11 +1,11 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/ParticlesObject.h>
 #include <zeno/VDBGrid.h>
 #include <omp.h>
 
-namespace zen {
+namespace zeno {
 
-struct GetVDBPoints : zen::INode {
+struct GetVDBPoints : zeno::INode {
   virtual void apply() override {
     auto grid = get_input("grid")->as<VDBPointsGrid>()->m_grid;
 
@@ -15,7 +15,7 @@ struct GetVDBPoints : zen::INode {
 
     auto transform = grid->transformPtr();
 
-    auto ret = zen::IObject::make<ParticlesObject>();
+    auto ret = zeno::IObject::make<ParticlesObject>();
 
     for (auto const &leaf: leafs) {
       //attributes
@@ -47,7 +47,7 @@ struct GetVDBPoints : zen::INode {
   }
 };
 
-static int defGetVDBPoints = zen::defNodeClass<GetVDBPoints>("GetVDBPoints",
+static int defGetVDBPoints = zeno::defNodeClass<GetVDBPoints>("GetVDBPoints",
     { /* inputs: */ {
         "grid",
     }, /* outputs: */ {

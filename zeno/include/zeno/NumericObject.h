@@ -1,14 +1,14 @@
 #pragma once
 
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/vec.h>
 #include <variant>
 
-namespace zen {
+namespace zeno {
 
 
 using NumericValue = std::variant<
-  int, float, zen::vec2f, zen::vec3f, zen::vec4f>;
+  int, float, zeno::vec2f, zeno::vec3f, zeno::vec4f>;
 
 struct NumericObject : IObjectClone<NumericObject> {
   NumericValue value;

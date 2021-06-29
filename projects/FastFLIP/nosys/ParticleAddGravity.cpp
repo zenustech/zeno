@@ -1,15 +1,15 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/NumericObject.h>
 #include <zeno/VDBGrid.h>
 #include <omp.h>
 #include "FLIP_vdb.h"
 
-namespace zen{
+namespace zeno{
     
-    struct ParticleAddDV : zen::INode{
+    struct ParticleAddDV : zeno::INode{
         virtual void apply() override {
             auto particles = get_input("Particles")->as<VDBPointsGrid>();
-            auto dv = get_input("dv")->as<zen::NumericObject>()->get<zen::vec3f>();
+            auto dv = get_input("dv")->as<zeno::NumericObject>()->get<zeno::vec3f>();
 
             float vx = std::get<float>(get_param("vx"));
             float vy = std::get<float>(get_param("vy"));
@@ -19,7 +19,7 @@ namespace zen{
         }
     };
 
-static int defParticleAddDV = zen::defNodeClass<ParticleAddDV>("ParticleAddDV",
+static int defParticleAddDV = zeno::defNodeClass<ParticleAddDV>("ParticleAddDV",
     { /* inputs: */ {
         "Particles", "dv", 
     }, 

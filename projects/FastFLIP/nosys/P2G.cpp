@@ -1,4 +1,4 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/MeshObject.h>
 #include <zeno/VDBGrid.h>
 #include <omp.h>
@@ -12,9 +12,9 @@
 	openvdb::FloatGrid::Ptr pushed_out_liquid_sdf,
 	float dx);
  */
-namespace zen{
+namespace zeno{
     
-    struct FLIP_P2G : zen::INode{
+    struct FLIP_P2G : zeno::INode{
         virtual void apply() override {
             auto dx = std::get<float>(get_param("dx"));
             auto Particles = get_input("Particles")->as<VDBPointsGrid>();
@@ -30,7 +30,7 @@ namespace zen{
         }
     };
 
-static int defFLIP_P2G = zen::defNodeClass<FLIP_P2G>("FLIP_P2G",
+static int defFLIP_P2G = zeno::defNodeClass<FLIP_P2G>("FLIP_P2G",
     { /* inputs: */ {
         "Particles", "Velocity", "PostP2GVelocity", "VelocityWeights", "LiquidSDF", "ExtractedLiquidSDF",
     }, 

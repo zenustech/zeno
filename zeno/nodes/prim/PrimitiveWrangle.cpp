@@ -1,4 +1,4 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/vec.h>
@@ -13,7 +13,7 @@
 #define ARR_SKIP 1
 
 
-namespace zen {
+namespace zeno {
 
 template <class T, size_t N>
 struct array : std::array<T, N> {
@@ -72,10 +72,10 @@ struct array : std::array<T, N> {
 };
 
 
-namespace zen {
+namespace zeno {
 
 
-struct Opcode : zen::IObject {
+struct Opcode : zeno::IObject {
     enum {
         OP_LOAD,
         OP_STORE,
@@ -119,7 +119,7 @@ struct Opcode : zen::IObject {
 
     std::vector<int> ops;
     std::vector<int> pids;
-    std::vector<zen::vec3f> imms;
+    std::vector<zeno::vec3f> imms;
     std::vector<std::string> names;
 
     static int opFromName(std::string name) {
@@ -190,16 +190,16 @@ struct Opcode : zen::IObject {
         auto pidit = pids.begin();
         auto immit = imms.begin();
         auto nameit = names.begin();
-        using ValType = zen::array<zen::vec3f, ARR_SKIP>;
+        using ValType = zeno::array<zeno::vec3f, ARR_SKIP>;
         std::stack<ValType> stack;
         for (; opit != ops.end(); opit++) {
             switch (*opit) {
                 case OP_LOAD: {
-                    auto const &arr = primList[*pidit++]->attr<zen::vec3f>(*nameit++);
+                    auto const &arr = primList[*pidit++]->attr<zeno::vec3f>(*nameit++);
                     stack.push(ValType::load(arr.data() + index));
                 } break;
                 case OP_STORE: {
-                    auto &arr = primList[*pidit++]->attr<zen::vec3f>(*nameit++);
+                    auto &arr = primList[*pidit++]->attr<zeno::vec3f>(*nameit++);
                     auto val = stack.top(); stack.pop();
                     ValType::store(arr.data() + index, val);
                 } break;
@@ -221,13 +221,13 @@ struct Opcode : zen::IObject {
                 _PER_BINARY_OP(OP_SUB, lhs - rhs)
                 _PER_BINARY_OP(OP_MUL, lhs * rhs)
                 _PER_BINARY_OP(OP_DIV, lhs / rhs)
-                _PER_BINARY_OP(OP_POW, zen::pow(lhs, rhs))
-                _PER_BINARY_OP(OP_ATAN2, zen::atan2(lhs, rhs))
-                _PER_BINARY_OP(OP_MIN, zen::min(lhs, rhs))
-                _PER_BINARY_OP(OP_MAX, zen::max(lhs, rhs))
-                _PER_BINARY_OP(OP_FMOD, zen::fmod(lhs, rhs))
-                _PER_BINARY_OP(OP_DOT, zen::vec3f(zen::dot(lhs, rhs)))
-                _PER_BINARY_OP(OP_CROSS, zen::cross(lhs, rhs))
+                _PER_BINARY_OP(OP_POW, zeno::pow(lhs, rhs))
+                _PER_BINARY_OP(OP_ATAN2, zeno::atan2(lhs, rhs))
+                _PER_BINARY_OP(OP_MIN, zeno::min(lhs, rhs))
+                _PER_BINARY_OP(OP_MAX, zeno::max(lhs, rhs))
+                _PER_BINARY_OP(OP_FMOD, zeno::fmod(lhs, rhs))
+                _PER_BINARY_OP(OP_DOT, zeno::vec3f(zeno::dot(lhs, rhs)))
+                _PER_BINARY_OP(OP_CROSS, zeno::cross(lhs, rhs))
                 #undef _PER_BINARY_OP
 
                 #define _PER_UNARY_OP(op, expr) \
@@ -240,22 +240,22 @@ struct Opcode : zen::IObject {
                     stack.push(ret); \
                 } break;
                 _PER_UNARY_OP(OP_NEG, -lhs)
-                _PER_UNARY_OP(OP_SQRT, zen::sqrt(lhs))
-                _PER_UNARY_OP(OP_SIN, zen::sin(lhs))
-                _PER_UNARY_OP(OP_COS, zen::cos(lhs))
-                _PER_UNARY_OP(OP_TAN, zen::tan(lhs))
-                _PER_UNARY_OP(OP_ASIN, zen::asin(lhs))
-                _PER_UNARY_OP(OP_ACOS, zen::acos(lhs))
-                _PER_UNARY_OP(OP_ATAN, zen::atan(lhs))
-                _PER_UNARY_OP(OP_EXP, zen::exp(lhs))
-                _PER_UNARY_OP(OP_LOG, zen::log(lhs))
-                _PER_UNARY_OP(OP_FLOOR, zen::floor(lhs))
-                _PER_UNARY_OP(OP_CEIL, zen::ceil(lhs))
-                _PER_UNARY_OP(OP_LENGTH, zen::vec3f(zen::length(lhs)))
-                _PER_UNARY_OP(OP_NORMALIZE, zen::normalize(lhs))
-                _PER_UNARY_OP(OP_DOTX, zen::vec3f(lhs[0]))
-                _PER_UNARY_OP(OP_DOTY, zen::vec3f(lhs[1]))
-                _PER_UNARY_OP(OP_DOTZ, zen::vec3f(lhs[2]))
+                _PER_UNARY_OP(OP_SQRT, zeno::sqrt(lhs))
+                _PER_UNARY_OP(OP_SIN, zeno::sin(lhs))
+                _PER_UNARY_OP(OP_COS, zeno::cos(lhs))
+                _PER_UNARY_OP(OP_TAN, zeno::tan(lhs))
+                _PER_UNARY_OP(OP_ASIN, zeno::asin(lhs))
+                _PER_UNARY_OP(OP_ACOS, zeno::acos(lhs))
+                _PER_UNARY_OP(OP_ATAN, zeno::atan(lhs))
+                _PER_UNARY_OP(OP_EXP, zeno::exp(lhs))
+                _PER_UNARY_OP(OP_LOG, zeno::log(lhs))
+                _PER_UNARY_OP(OP_FLOOR, zeno::floor(lhs))
+                _PER_UNARY_OP(OP_CEIL, zeno::ceil(lhs))
+                _PER_UNARY_OP(OP_LENGTH, zeno::vec3f(zeno::length(lhs)))
+                _PER_UNARY_OP(OP_NORMALIZE, zeno::normalize(lhs))
+                _PER_UNARY_OP(OP_DOTX, zeno::vec3f(lhs[0]))
+                _PER_UNARY_OP(OP_DOTY, zeno::vec3f(lhs[1]))
+                _PER_UNARY_OP(OP_DOTZ, zeno::vec3f(lhs[2]))
                 #undef _PER_UNARY_OP
 
                 #define _PER_TERNARY_OP(op, expr) \
@@ -269,8 +269,8 @@ struct Opcode : zen::IObject {
                     }, lhs, mhs, rhs); \
                     stack.push(ret); \
                 } break;
-                _PER_TERNARY_OP(OP_VEC, zen::vec3f(lhs[0], mhs[0], rhs[0]))
-                _PER_TERNARY_OP(OP_MIX, zen::mix(lhs, mhs, rhs))
+                _PER_TERNARY_OP(OP_VEC, zeno::vec3f(lhs[0], mhs[0], rhs[0]))
+                _PER_TERNARY_OP(OP_MIX, zeno::mix(lhs, mhs, rhs))
                 _PER_TERNARY_OP(OP_MLA, lhs * mhs + rhs)
                 #undef _PER_TERNARY_OP
             }
@@ -279,22 +279,22 @@ struct Opcode : zen::IObject {
 };
 
 
-struct WrangleImmed : zen::INode {
+struct WrangleImmed : zeno::INode {
   virtual void apply() override {
     auto value = get_input("value")->as<NumericObject>();
     auto res = std::make_shared<Opcode>();
-    zen::vec3f val;
+    zeno::vec3f val;
     if (value->is<float>())
-        val = zen::vec3f(value->get<float>());
+        val = zeno::vec3f(value->get<float>());
     else
-        val = value->get<zen::vec3f>();
+        val = value->get<zeno::vec3f>();
     res->ops.push_back(Opcode::OP_IMMED);
     res->imms.push_back(val);
     set_output("res", std::move(res));
   }
 };
 
-static int defWrangleImmed = zen::defNodeClass<WrangleImmed>("WrangleImmed",
+static int defWrangleImmed = zeno::defNodeClass<WrangleImmed>("WrangleImmed",
     { /* inputs: */ {
     "value",
     }, /* outputs: */ {
@@ -305,7 +305,7 @@ static int defWrangleImmed = zen::defNodeClass<WrangleImmed>("WrangleImmed",
     }});
 
 
-struct WrangleLoad : zen::INode {
+struct WrangleLoad : zeno::INode {
   virtual void apply() override {
     auto primId = std::get<int>(get_param("primId"));
     auto attrName = std::get<std::string>(get_param("attrName"));
@@ -317,7 +317,7 @@ struct WrangleLoad : zen::INode {
   }
 };
 
-static int defWrangleLoad = zen::defNodeClass<WrangleLoad>("WrangleLoad",
+static int defWrangleLoad = zeno::defNodeClass<WrangleLoad>("WrangleLoad",
     { /* inputs: */ {
     }, /* outputs: */ {
     "res",
@@ -329,7 +329,7 @@ static int defWrangleLoad = zen::defNodeClass<WrangleLoad>("WrangleLoad",
     }});
 
 
-struct WrangleStore : zen::INode {
+struct WrangleStore : zeno::INode {
   virtual void apply() override {
     auto primId = std::get<int>(get_param("primId"));
     auto attrName = std::get<std::string>(get_param("attrName"));
@@ -343,7 +343,7 @@ struct WrangleStore : zen::INode {
   }
 };
 
-static int defWrangleStore = zen::defNodeClass<WrangleStore>("WrangleStore",
+static int defWrangleStore = zeno::defNodeClass<WrangleStore>("WrangleStore",
     { /* inputs: */ {
     "val",
     }, /* outputs: */ {
@@ -356,7 +356,7 @@ static int defWrangleStore = zen::defNodeClass<WrangleStore>("WrangleStore",
     }});
 
 
-struct WrangleUnaryOp : zen::INode {
+struct WrangleUnaryOp : zeno::INode {
   virtual void apply() override {
     auto opName = std::get<std::string>(get_param("opName"));
     auto res = std::make_shared<Opcode>();
@@ -367,7 +367,7 @@ struct WrangleUnaryOp : zen::INode {
   }
 };
 
-static int defWrangleUnaryOp = zen::defNodeClass<WrangleUnaryOp>("WrangleUnaryOp",
+static int defWrangleUnaryOp = zeno::defNodeClass<WrangleUnaryOp>("WrangleUnaryOp",
     { /* inputs: */ {
     "lhs",
     }, /* outputs: */ {
@@ -379,7 +379,7 @@ static int defWrangleUnaryOp = zen::defNodeClass<WrangleUnaryOp>("WrangleUnaryOp
     }});
 
 
-struct WrangleBinaryOp : zen::INode {
+struct WrangleBinaryOp : zeno::INode {
   virtual void apply() override {
     auto opName = std::get<std::string>(get_param("opName"));
     auto res = std::make_shared<Opcode>();
@@ -392,7 +392,7 @@ struct WrangleBinaryOp : zen::INode {
   }
 };
 
-static int defWrangleBinaryOp = zen::defNodeClass<WrangleBinaryOp>("WrangleBinaryOp",
+static int defWrangleBinaryOp = zeno::defNodeClass<WrangleBinaryOp>("WrangleBinaryOp",
     { /* inputs: */ {
     "lhs",
     "rhs",
@@ -405,7 +405,7 @@ static int defWrangleBinaryOp = zen::defNodeClass<WrangleBinaryOp>("WrangleBinar
     }});
 
 
-struct WrangleTernaryOp : zen::INode {
+struct WrangleTernaryOp : zeno::INode {
   virtual void apply() override {
     auto opName = std::get<std::string>(get_param("opName"));
     auto res = std::make_shared<Opcode>();
@@ -420,7 +420,7 @@ struct WrangleTernaryOp : zen::INode {
   }
 };
 
-static int defWrangleTernaryOp = zen::defNodeClass<WrangleTernaryOp>("WrangleTernaryOp",
+static int defWrangleTernaryOp = zeno::defNodeClass<WrangleTernaryOp>("WrangleTernaryOp",
     { /* inputs: */ {
     "lhs",
     "mhs",
@@ -434,7 +434,7 @@ static int defWrangleTernaryOp = zen::defNodeClass<WrangleTernaryOp>("WrangleTer
     }});
 
 
-struct PrimitiveWrangle : zen::INode {
+struct PrimitiveWrangle : zeno::INode {
   virtual void apply() override {
     std::vector<PrimitiveObject *> primList = {
         has_input("prim0") ? get_input("prim0")->as<PrimitiveObject>() : nullptr,
@@ -455,7 +455,7 @@ struct PrimitiveWrangle : zen::INode {
   }
 };
 
-static int defPrimitiveWrangle = zen::defNodeClass<PrimitiveWrangle>("PrimitiveWrangle",
+static int defPrimitiveWrangle = zeno::defNodeClass<PrimitiveWrangle>("PrimitiveWrangle",
     { /* inputs: */ {
     "wrangle",
     "prim0",

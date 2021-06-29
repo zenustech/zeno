@@ -23,7 +23,7 @@
 #endif
 
 
-namespace zen {
+namespace zeno {
 
 
 class Exception : public std::exception {
@@ -322,7 +322,7 @@ inline void setNodeOptions(std::string const &id,
 
 
 #define ZENDEFNODE(Class, ...) \
-    static int def##Class = zen::defNodeClass(std::make_unique<Class>, #Class, __VA_ARGS__)
+    static int def##Class = zeno::defNodeClass(std::make_unique<Class>, #Class, __VA_ARGS__)
 
 
 }

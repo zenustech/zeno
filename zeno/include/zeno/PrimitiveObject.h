@@ -1,6 +1,6 @@
 #pragma once
 
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/vec.h>
 #include <variant>
 #include <vector>
@@ -8,20 +8,20 @@
 #include <memory>
 #include <map>
 
-namespace zen {
+namespace zeno {
 
 using AttributeArray = std::variant<
-    std::vector<zen::vec3f>, std::vector<float>>;
+    std::vector<zeno::vec3f>, std::vector<float>>;
 
-struct PrimitiveObject : zen::IObjectClone<PrimitiveObject> {
+struct PrimitiveObject : zeno::IObjectClone<PrimitiveObject> {
 
     std::map<std::string, AttributeArray> m_attrs;
     size_t m_size{0};
 
     std::vector<int> points;
-    std::vector<zen::vec2i> lines;
-    std::vector<zen::vec3i> tris;
-    std::vector<zen::vec4i> quads;
+    std::vector<zeno::vec2i> lines;
+    std::vector<zeno::vec3i> tris;
+    std::vector<zeno::vec4i> quads;
 
 #ifndef ZEN_NOREFDLL
     ZENAPI virtual void dumpfile(std::string const &path) override;

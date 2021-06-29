@@ -3,12 +3,12 @@
 #include "zensim/tpls/fmt/color.h"
 #include "zensim/tpls/fmt/format.h"
 
-namespace zen {
+namespace zeno {
 
-struct ZensimBoundary : zen::INode {
+struct ZensimBoundary : zeno::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ZensinBoundary\n");
-    auto boundary = zen::IObject::make<ZenoBoundary>();
+    auto boundary = zeno::IObject::make<ZenoBoundary>();
 
     auto type = std::get<std::string>(get_param("type"));
     auto queryType = [&type]() -> zs::collider_e {
@@ -29,10 +29,10 @@ struct ZensimBoundary : zen::INode {
   }
 };
 
-static int defZensimBoundary = zen::defNodeClass<ZensimBoundary>(
+static int defZensimBoundary = zeno::defNodeClass<ZensimBoundary>(
     "ZensimBoundary", {/* inputs: */ {"ZSLevelSet"},
                        /* outputs: */ {"ZSBoundary"},
                        /* params: */ {{"string", "type", "sticky"}},
                        /* category: */ {"GPUMPM"}});
 
-} // namespace zen
+} // namespace zeno

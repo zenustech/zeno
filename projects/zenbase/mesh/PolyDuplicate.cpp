@@ -1,4 +1,4 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/MeshObject.h>
 #include <zeno/ParticlesObject.h>
 #include <omp.h>
@@ -8,7 +8,7 @@
 //(*openvdb::math::Transform::createLinearTransform(h), 
 //points, triangles, quads, 4, 4);
 
-namespace zen {
+namespace zeno {
 void MergeMesh(std::shared_ptr<MeshObject> &to, std::shared_ptr<MeshObject> &from)
 {
     size_t n = to->vertices.size();
@@ -23,11 +23,11 @@ void MergeMesh(std::shared_ptr<MeshObject> &to, std::shared_ptr<MeshObject> &fro
         to->normals[n+i] = from->normals[i];
     }
 }
-struct PolyDuplicate : zen::INode{
+struct PolyDuplicate : zeno::INode{
     virtual void apply() override {
     auto inmesh = get_input("Mesh")->as<MeshObject>();
     auto posList = get_input("Particles")->as<ParticlesObject>();
-    auto result = zen::IObject::make<MeshObject>();
+    auto result = zeno::IObject::make<MeshObject>();
     printf("%d\n",posList->pos.size());
     for(int i=0;i<posList->size();i++)
     {
@@ -40,7 +40,7 @@ struct PolyDuplicate : zen::INode{
   }
 };
 
-static int defPolyDuplicate = zen::defNodeClass<PolyDuplicate>("PolyDuplicate",
+static int defPolyDuplicate = zeno::defNodeClass<PolyDuplicate>("PolyDuplicate",
     { /* inputs: */ {
         "Mesh", "Particles", 
     }, /* outputs: */ {
@@ -51,7 +51,7 @@ static int defPolyDuplicate = zen::defNodeClass<PolyDuplicate>("PolyDuplicate",
         "trimesh",
     }});
 
-struct MeshCopy : zen::INode {
+struct MeshCopy : zeno::INode {
   virtual void apply() override {
     auto copyFromMesh = get_input("copyFrom")->as<MeshObject>();
     auto copyToMesh = get_input("copyTo")->as<MeshObject>();
@@ -68,7 +68,7 @@ struct MeshCopy : zen::INode {
 };
 
 static int defMeshCopy =
-    zen::defNodeClass<MeshCopy>("MeshCopy", {/* inputs: */
+    zeno::defNodeClass<MeshCopy>("MeshCopy", {/* inputs: */
                                              {
                                                  "copyFrom",
                                                  "copyTo",
@@ -81,4 +81,4 @@ static int defMeshCopy =
                                              {
                                                  "trimesh",
                                              }});
-} // namespace zen
+} // namespace zeno

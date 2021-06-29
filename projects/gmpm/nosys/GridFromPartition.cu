@@ -8,9 +8,9 @@
 #include "zensim/tpls/fmt/color.h"
 #include "zensim/tpls/fmt/format.h"
 
-namespace zen {
+namespace zeno {
 
-struct GridFromPartition : zen::INode {
+struct GridFromPartition : zeno::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing GridFromPartition\n");
     auto &partition = get_input("ZSPartition")->as<ZenoPartition>()->get();
@@ -20,7 +20,7 @@ struct GridFromPartition : zen::INode {
         zs::match([](auto &partition) { return partition.size(); })(partition);
     auto dx = std::get<float>(get_param("dx"));
 
-    auto grid = zen::IObject::make<ZenoGrid>();
+    auto grid = zeno::IObject::make<ZenoGrid>();
     using GridT = zs::GridBlocks<zs::GridBlock<zs::dat32, 3, 2, 2>>;
     GridT gridblocks{dx, cnt, mh.memspace(), mh.devid()};
 
@@ -36,13 +36,13 @@ struct GridFromPartition : zen::INode {
   }
 };
 
-static int defGridFromPartition = zen::defNodeClass<GridFromPartition>(
+static int defGridFromPartition = zeno::defNodeClass<GridFromPartition>(
     "GridFromPartition", {/* inputs: */ {"ZSPartition"},
                           /* outputs: */ {"ZSGrid"},
                           /* params: */ {{"float", "dx", "1"}},
                           /* category: */ {"GPUMPM"}});
 
-struct ExpandPartition : zen::INode {
+struct ExpandPartition : zeno::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ExpandPartition\n");
     auto &partition = get_input("ZSPartition")->as<ZenoPartition>()->get();
@@ -62,10 +62,10 @@ struct ExpandPartition : zen::INode {
   }
 };
 
-static int defExpandPartition = zen::defNodeClass<ExpandPartition>(
+static int defExpandPartition = zeno::defNodeClass<ExpandPartition>(
     "ExpandPartition", {/* inputs: */ {"ZSPartition"},
                         /* outputs: */ {},
                         /* params: */ {{"int", "lo", "0"}, {"int", "hi", "1"}},
                         /* category: */ {"GPUMPM"}});
 
-} // namespace zen
+} // namespace zeno

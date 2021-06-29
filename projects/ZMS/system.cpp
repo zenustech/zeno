@@ -1,8 +1,8 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/NumericObject.h>
 
-using namespace zen;
+using namespace zeno;
 
 #ifdef _MSC_VER
 static inline double drand48() {
@@ -10,10 +10,10 @@ static inline double drand48() {
 }
 #endif
 
-struct PeriodicBoundary : zen::INode {
+struct PeriodicBoundary : zeno::INode {
   virtual void apply() override {
     auto prims = get_input("prims")->as<PrimitiveObject>();
-    auto &pos = prims->attr<zen::vec3f>("pos");
+    auto &pos = prims->attr<zeno::vec3f>("pos");
     float boxlength = get_input("boxlength")->as<NumericObject>()->get<float>();
     #pragma omp parallel for
     for (int i = 0; i < prims->size(); i++) {
@@ -27,7 +27,7 @@ struct PeriodicBoundary : zen::INode {
   }
 };
 
-static int defPeriodicBoundary = zen::defNodeClass<PeriodicBoundary>("PeriodicBoundary",
+static int defPeriodicBoundary = zeno::defNodeClass<PeriodicBoundary>("PeriodicBoundary",
     { /* inputs: */ {
     "prims",
     "boxlength",
@@ -39,20 +39,20 @@ static int defPeriodicBoundary = zen::defNodeClass<PeriodicBoundary>("PeriodicBo
     }});
 
 
-struct SimulationBox : zen::INode {
+struct SimulationBox : zeno::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
     auto boxlength = std::get<float>(get_param("boxlength"));
     auto n_particles = std::get<int>(get_param("n_particles"));
     prim->resize(n_particles);
-    prim->add_attr<zen::vec3f>("pos");
-    prim->add_attr<zen::vec3f>("vel");
-    prim->add_attr<zen::vec3f>("acc");
-    prim->add_attr<zen::vec3f>("clr");
+    prim->add_attr<zeno::vec3f>("pos");
+    prim->add_attr<zeno::vec3f>("vel");
+    prim->add_attr<zeno::vec3f>("acc");
+    prim->add_attr<zeno::vec3f>("clr");
     prim->add_attr<float>("mass");
-    auto boxlength_obj = zen::IObject::make<NumericObject>();
+    auto boxlength_obj = zeno::IObject::make<NumericObject>();
     boxlength_obj->set(boxlength);
-    auto n_particles_obj = zen::IObject::make<NumericObject>();
+    auto n_particles_obj = zeno::IObject::make<NumericObject>();
     n_particles_obj->set(n_particles);
 
     set_output_ref("prim", get_input_ref("prim"));
@@ -63,7 +63,7 @@ struct SimulationBox : zen::INode {
 };
 
 
-static int defSimulationBox = zen::defNodeClass<SimulationBox>("SimulationBox",
+static int defSimulationBox = zeno::defNodeClass<SimulationBox>("SimulationBox",
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
@@ -77,30 +77,30 @@ static int defSimulationBox = zen::defNodeClass<SimulationBox>("SimulationBox",
     "Molecular",
     }});
 
-struct InitializeSystem: zen::INode {
+struct InitializeSystem: zeno::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
     auto boxlength_obj = get_input("boxlength")->as<NumericObject>();
     float boxlength = boxlength_obj->get<float>();
     // random initialize for now
-    auto &pos = prim->attr<zen::vec3f>("pos");
-    auto &vel = prim->attr<zen::vec3f>("vel");
-    auto &clr = prim->attr<zen::vec3f>("clr");
+    auto &pos = prim->attr<zeno::vec3f>("pos");
+    auto &vel = prim->attr<zeno::vec3f>("vel");
+    auto &clr = prim->attr<zeno::vec3f>("clr");
     auto &mass = prim->attr<float>("mass");
 
     auto n = pos.size();
     int nx = ceilf(cbrtf((float) n));
     float spacing = boxlength / nx;
-    zen::vec3f vcm(0);
+    zeno::vec3f vcm(0);
     for (int i = 0; i < n; i++) {
-        zen::vec3i base(i / (nx * nx), (i % (nx * nx)) / nx, i % nx);
-        zen::vec3f p(drand48(), drand48(), drand48());
-        zen::vec3f v(drand48(), drand48(), drand48());
+        zeno::vec3i base(i / (nx * nx), (i % (nx * nx)) / nx, i % nx);
+        zeno::vec3f p(drand48(), drand48(), drand48());
+        zeno::vec3f v(drand48(), drand48(), drand48());
         pos[i] = spacing * (p * 0.4 + 0.1 + base);
         vel[i] = v;
         vcm += vel[i];
         mass[i] = 1.0f; // ad-hoc, reserved for mix-atom simulation
-        clr[i] = zen::vec3f(1);
+        clr[i] = zeno::vec3f(1);
     }
     vcm /= n;
     for (int i = 0; i < n; i++) {
@@ -111,7 +111,7 @@ struct InitializeSystem: zen::INode {
 
 };
 
-static int defInitializeSystem = zen::defNodeClass<InitializeSystem>("InitializeSystem",
+static int defInitializeSystem = zeno::defNodeClass<InitializeSystem>("InitializeSystem",
     { /* inputs: */ {
     "prim",
     "boxlength",

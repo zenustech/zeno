@@ -1,4 +1,4 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/ListObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/ConditionObject.h>
@@ -13,13 +13,13 @@ struct RAII {
 };
 
 
-struct ContextManagedNode : zen::INode {
-    std::unique_ptr<zen::Context> m_ctx = nullptr;
+struct ContextManagedNode : zeno::INode {
+    std::unique_ptr<zeno::Context> m_ctx = nullptr;
 
     void push_context() {
         assert(!m_ctx);
         m_ctx = std::move(graph->ctx);
-        graph->ctx = std::make_unique<zen::Context>(*m_ctx);
+        graph->ctx = std::make_unique<zeno::Context>(*m_ctx);
     }
 
     void pop_context() {
@@ -36,7 +36,7 @@ struct ContextManagedNode : zen::INode {
 };
 
 
-struct IBeginFor : zen::INode {
+struct IBeginFor : zeno::INode {
     virtual bool isContinue() const = 0;
     virtual void update() = 0;
 };
@@ -52,12 +52,12 @@ struct BeginFor : IBeginFor {
 
     virtual void apply() override {
         m_index = 0;
-        m_count = get_input<zen::NumericObject>("count")->get<int>();
-        set_output("FOR", std::make_shared<zen::ConditionObject>());
+        m_count = get_input<zeno::NumericObject>("count")->get<int>();
+        set_output("FOR", std::make_shared<zeno::ConditionObject>());
     }
 
     virtual void update() override {
-        auto ret = std::make_shared<zen::NumericObject>();
+        auto ret = std::make_shared<zeno::NumericObject>();
         ret->set(m_index);
         set_output("index", std::move(ret));
         m_index++;
@@ -84,7 +84,7 @@ struct EndFor : ContextManagedNode {
         while (fore->isContinue()) {
             fore->update();
             push_context();
-            zen::INode::doApply();
+            zeno::INode::doApply();
             pop_context();
         }
     }
@@ -102,7 +102,7 @@ ZENDEFNODE(EndFor, {
 
 struct BeginForEach : IBeginFor {
     int m_index;
-    std::shared_ptr<zen::ListObject> m_list;
+    std::shared_ptr<zeno::ListObject> m_list;
 
     virtual bool isContinue() const override {
         return m_index < m_list->arr.size();
@@ -110,12 +110,12 @@ struct BeginForEach : IBeginFor {
 
     virtual void apply() override {
         m_index = 0;
-        m_list = get_input<zen::ListObject>("list");
-        set_output("FOR", std::make_shared<zen::ConditionObject>());
+        m_list = get_input<zeno::ListObject>("list");
+        set_output("FOR", std::make_shared<zeno::ConditionObject>());
     }
 
     virtual void update() override {
-        auto ret = std::make_shared<zen::NumericObject>();
+        auto ret = std::make_shared<zeno::NumericObject>();
         ret->set(m_index);
         set_output("index", std::move(ret));
         auto obj = m_list->arr[m_index];
@@ -132,12 +132,12 @@ ZENDEFNODE(BeginForEach, {
 });
 
 
-struct CachedOnce : zen::INode {
+struct CachedOnce : zeno::INode {
     bool m_done = false;
 
     virtual void doApply() override {
         if (!m_done) {
-            zen::INode::doApply();
+            zeno::INode::doApply();
             m_done = true;
         }
     }

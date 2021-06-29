@@ -3,14 +3,14 @@
 
 #include <cstddef>
 #include <memory>
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <glm/vec3.hpp>
 #include <glm/vec2.hpp>
 #include <vector>
 
-namespace zen {
+namespace zeno {
 
-struct MeshObject : zen::IObjectClone<MeshObject> {
+struct MeshObject : zeno::IObjectClone<MeshObject> {
   std::vector<glm::vec3> vertices;
   std::vector<glm::vec2> uvs;
   std::vector<glm::vec3> normals;

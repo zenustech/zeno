@@ -1,7 +1,7 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/GlobalState.h>
 
-struct PortalIn : zen::INode {
+struct PortalIn : zeno::INode {
     virtual void complete() override {
         auto name = get_param<std::string>("name");
         graph->portalIns[name] = this->myname;
@@ -21,7 +21,7 @@ ZENDEFNODE(PortalIn, {
     {"portal"},
 });
 
-struct PortalOut : zen::INode {
+struct PortalOut : zeno::INode {
     virtual void apply() override {
         auto name = get_param<std::string>("name");
         auto depnode = graph->portalIns.at(name);
@@ -39,7 +39,7 @@ ZENDEFNODE(PortalOut, {
 });
 
 
-struct Route : zen::INode {
+struct Route : zeno::INode {
     virtual void apply() override {
         if (has_input("input")) {
             auto obj = get_input("input");
@@ -68,7 +68,7 @@ ZENDEFNODE(Comment, {
 
 
 
-struct Clone : zen::INode {
+struct Clone : zeno::INode {
     virtual void apply() override {
         auto obj = get_input("object");
         auto newobj = obj->clone();

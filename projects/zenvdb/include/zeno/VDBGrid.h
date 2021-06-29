@@ -1,6 +1,6 @@
 #pragma once
 
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <vector>
 
 #include <openvdb/points/PointCount.h>
@@ -9,7 +9,7 @@
 #include <openvdb/tools/Morphology.h>
 #include <openvdb/tools/MeshToVolume.h>
 #include <string.h>
-namespace zen {
+namespace zeno {
 
 
 template <typename GridT>
@@ -47,7 +47,7 @@ void writeFloatGrid(const std::string &fn, typename GridT::Ptr grid) {
 }
 
 
-struct VDBGrid : zen::IObject {
+struct VDBGrid : zeno::IObject {
     virtual void output(std::string path) = 0;
     virtual void input(std::string path) = 0;
     virtual void setTransform(openvdb::math::Transform::Ptr const &trans) = 0;
@@ -57,7 +57,7 @@ struct VDBGrid : zen::IObject {
 
 
 template <typename GridT>
-//struct VDBGridWrapper : zen::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
+//struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
 struct VDBGridWrapper : VDBGrid {
   typename GridT::Ptr m_grid;
 
@@ -102,7 +102,7 @@ struct VDBGridWrapper : VDBGrid {
   }
 };
 
-struct TBBConcurrentIntArray : zen::IObject {
+struct TBBConcurrentIntArray : zeno::IObject {
   tbb::concurrent_vector<openvdb::Index32> m_data;
 };
 

@@ -1,17 +1,17 @@
 #pragma once
 
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/vec.h>
 #include <vector>
 #include <array>
 
-struct OctreeObject : zen::IObject {  // should OctreeObject : PrimitiveObject?
+struct OctreeObject : zeno::IObject {  // should OctreeObject : PrimitiveObject?
 
     std::vector<std::array<int, 8>> children;
-    std::vector<zen::vec3f> CoM;
+    std::vector<zeno::vec3f> CoM;
     std::vector<float> mass;
 
-    zen::vec3f offset;
+    zeno::vec3f offset;
     float radius;
 
 };

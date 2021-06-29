@@ -1,4 +1,4 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/MeshObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/VDBGrid.h>
@@ -16,11 +16,11 @@ static void FLIP_vdb::solve_pressure_simd(
 	float dt, float dx);
 */
 
-namespace zen{
+namespace zeno{
     
-    struct AssembleSolvePPE : zen::INode{
+    struct AssembleSolvePPE : zeno::INode{
         virtual void apply() override {
-            auto dt = get_input("dt")->as<zen::NumericObject>()->get<float>();
+            auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
             auto dx = std::get<float>(get_param("dx"));
             auto liquid_sdf            = get_input("LiquidSDF")->as<VDBFloatGrid>();
             auto pushed_out_liquid_sdf = get_input("ExtractedLiquidSDF")->as<VDBFloatGrid>();
@@ -42,7 +42,7 @@ namespace zen{
         }
     };
 
-static int defAssembleSolvePPE = zen::defNodeClass<AssembleSolvePPE>("AssembleSolvePPE",
+static int defAssembleSolvePPE = zeno::defNodeClass<AssembleSolvePPE>("AssembleSolvePPE",
     { /* inputs: */ {
         "dt",
         "LiquidSDF", 

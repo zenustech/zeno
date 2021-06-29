@@ -1,4 +1,4 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/StringObject.h>
 #include <zeno/vec.h>
@@ -9,8 +9,8 @@
 
 
 static void readobj(
-        std::vector<zen::vec3f> &vertices,
-        std::vector<zen::vec3i> &indices,
+        std::vector<zeno::vec3f> &vertices,
+        std::vector<zeno::vec3i> &indices,
         const char *path)
 {
     FILE *fp = fopen(path, "r");
@@ -25,13 +25,13 @@ static void readobj(
     while (EOF != fscanf(fp, "%s", hdr)) 
     {
         if (!strcmp(hdr, "v")) {
-            zen::vec3f vertex;
+            zeno::vec3f vertex;
             fscanf(fp, "%f %f %f\n", &vertex[0], &vertex[1], &vertex[2]);
             //printf("v %f %f %f\n", vertex[0], vertex[1], vertex[2]);
             vertices.push_back(vertex);
 
         } else if (!strcmp(hdr, "f")) {
-            zen::vec3i last_index, first_index, index;
+            zeno::vec3i last_index, first_index, index;
 
             fscanf(fp, "%d/%d/%d", &index[0], &index[1], &index[2]);
             first_index = index;
@@ -40,7 +40,7 @@ static void readobj(
             last_index = index;
 
             while (fscanf(fp, "%d/%d/%d", &index[0], &index[1], &index[2]) > 0) {
-                zen::vec3i face(first_index[0], last_index[0], index[0]);
+                zeno::vec3i face(first_index[0], last_index[0], index[0]);
                 //printf("f %d %d %d\n", face[0], face[1], face[2]);
                 indices.push_back(face - 1);
                 last_index = index;
@@ -50,18 +50,18 @@ static void readobj(
 }
 
 
-struct ImportObjPrimitive : zen::INode {
+struct ImportObjPrimitive : zeno::INode {
     virtual void apply() override {
-        auto path = get_input("path")->as<zen::StringObject>();
-        auto prim = zen::IObject::make<zen::PrimitiveObject>();
-        auto &pos = prim->add_attr<zen::vec3f>("pos");
+        auto path = get_input("path")->as<zeno::StringObject>();
+        auto prim = zeno::IObject::make<zeno::PrimitiveObject>();
+        auto &pos = prim->add_attr<zeno::vec3f>("pos");
         readobj(pos, prim->tris, path->get().c_str());
         prim->resize(pos.size());
         set_output("prim", prim);
     }
 };
 
-static int defImportObjPrimitive = zen::defNodeClass<ImportObjPrimitive>("ImportObjPrimitive",
+static int defImportObjPrimitive = zeno::defNodeClass<ImportObjPrimitive>("ImportObjPrimitive",
         { /* inputs: */ {
         "path",
         }, /* outputs: */ {

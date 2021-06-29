@@ -1,4 +1,4 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/MeshObject.h>
 #include <zeno/VDBGrid.h>
 #include <omp.h>
@@ -6,9 +6,9 @@
 //void FLIP_vdb::update_solid_sdf(std::vector<openvdb::FloatGrid::Ptr> &moving_solids, 
 //openvdb::points::PointDataGrid::Ptr particles)
 
-namespace zen{
+namespace zeno{
     
-    struct FLIP_Solid_Modifier : zen::INode{
+    struct FLIP_Solid_Modifier : zeno::INode{
         virtual void apply() override {
             auto particles = get_input("Particles")->as<VDBPointsGrid>();
 
@@ -28,7 +28,7 @@ namespace zen{
         }
     };
 
-static int defFLIP_Solid_Modifier = zen::defNodeClass<FLIP_Solid_Modifier>("FLIPApplyBoundary",
+static int defFLIP_Solid_Modifier = zeno::defNodeClass<FLIP_Solid_Modifier>("FLIPApplyBoundary",
     { /* inputs: */ {
         "Particles", "DynaSolid_SDF", "StatSolid_SDF",
     }, 

@@ -26,6 +26,8 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
         "import zenutils, sys, os; sys.stdout.write(os.path.abspath(zenutils.rel2abs(zenutils.__file__, '..', 'zeno')))"
         OUTPUT_VARIABLE zeno_INSTALL_DIR)
 
+message("Found ZENO at: ${zeno_INSTALL_DIR}")
+
 set(zeno_AUTOLOAD_DIR ${zeno_INSTALL_DIR}/lib)
 set(zeno_CMAKE_MODULE_DIR ${zeno_INSTALL_DIR}/share/cmake)
 set(zeno_INCLUDE_DIR ${zeno_INSTALL_DIR}/include)
@@ -36,12 +38,12 @@ else()
     set(zeno_LIBRARY ${zeno_LIBRARY_DIR}/zeno.lib)
 endif()
 
-message("zeno_INSTALL_DIR=${zeno_INSTALL_DIR}")
-message("zeno_INCLUDE_DIR=${zeno_INCLUDE_DIR}")
-message("zeno_CMAKE_MODULE_DIR=${zeno_CMAKE_MODULE_DIR}")
-message("zeno_AUTOLOAD_DIR=${zeno_AUTOLOAD_DIR}")
-message("zeno_LIBRARY_DIR=${zeno_LIBRARY_DIR}")
-message("zeno_LIBRARY=${zeno_LIBRARY}")
+#message("zeno_INSTALL_DIR=${zeno_INSTALL_DIR}")
+#message("zeno_INCLUDE_DIR=${zeno_INCLUDE_DIR}")
+#message("zeno_CMAKE_MODULE_DIR=${zeno_CMAKE_MODULE_DIR}")
+#message("zeno_AUTOLOAD_DIR=${zeno_AUTOLOAD_DIR}")
+#message("zeno_LIBRARY_DIR=${zeno_LIBRARY_DIR}")
+#message("zeno_LIBRARY=${zeno_LIBRARY}")
 if (NOT TARGET zeno)
     add_library(zeno INTERFACE)
     target_link_libraries(zeno INTERFACE ${zeno_LIBRARY})

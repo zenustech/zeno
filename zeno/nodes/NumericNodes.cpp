@@ -1,4 +1,4 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/NumericObject.h>
 #include <iostream>
 
@@ -9,9 +9,9 @@ static inline double drand48() {
 #endif
 
 
-struct NumericInt : zen::INode {
+struct NumericInt : zeno::INode {
     virtual void apply() override {
-        auto obj = std::make_unique<zen::NumericObject>();
+        auto obj = std::make_unique<zeno::NumericObject>();
         obj->set(get_param<int>("value"));
         set_output("value", std::move(obj));
     }
@@ -25,9 +25,9 @@ ZENDEFNODE(NumericInt, {
 });
 
 
-struct NumericFloat : zen::INode {
+struct NumericFloat : zeno::INode {
     virtual void apply() override {
-        auto obj = std::make_unique<zen::NumericObject>();
+        auto obj = std::make_unique<zeno::NumericObject>();
         obj->set(get_param<float>("value"));
         set_output("value", std::move(obj));
     }
@@ -41,12 +41,12 @@ ZENDEFNODE(NumericFloat, {
 });
 
 
-struct NumericVec2 : zen::INode {
+struct NumericVec2 : zeno::INode {
     virtual void apply() override {
-        auto obj = std::make_unique<zen::NumericObject>();
+        auto obj = std::make_unique<zeno::NumericObject>();
         auto x = get_param<float>("x");
         auto y = get_param<float>("y");
-        obj->set(zen::vec2f(x, y));
+        obj->set(zeno::vec2f(x, y));
         set_output("vec2", std::move(obj));
     }
 };
@@ -59,13 +59,13 @@ ZENDEFNODE(NumericVec2, {
 });
 
 
-struct NumericVec3 : zen::INode {
+struct NumericVec3 : zeno::INode {
     virtual void apply() override {
-        auto obj = std::make_unique<zen::NumericObject>();
+        auto obj = std::make_unique<zeno::NumericObject>();
         auto x = get_param<float>("x");
         auto y = get_param<float>("y");
         auto z = get_param<float>("z");
-        obj->set(zen::vec3f(x, y, z));
+        obj->set(zeno::vec3f(x, y, z));
         set_output("vec3", std::move(obj));
     }
 };
@@ -78,14 +78,14 @@ ZENDEFNODE(NumericVec3, {
 });
 
 
-struct NumericVec4 : zen::INode {
+struct NumericVec4 : zeno::INode {
     virtual void apply() override {
-        auto obj = std::make_unique<zen::NumericObject>();
+        auto obj = std::make_unique<zeno::NumericObject>();
         auto x = get_param<float>("x");
         auto y = get_param<float>("y");
         auto z = get_param<float>("z");
         auto w = get_param<float>("w");
-        obj->set(zen::vec4f(x, y, z, w));
+        obj->set(zeno::vec4f(x, y, z, w));
         set_output("vec4", std::move(obj));
     }
 };
@@ -99,7 +99,7 @@ ZENDEFNODE(NumericVec4, {
 });
 
 
-struct NumericOperator : zen::INode {
+struct NumericOperator : zeno::INode {
 
 
     template <class T, class ...>
@@ -160,9 +160,9 @@ struct NumericOperator : zen::INode {
  \
     template <class ...Ts> \
     struct _op_##name<std::void_t<decltype( \
-            zen::name(std::declval<Ts>()...))>, Ts...> { \
+            zeno::name(std::declval<Ts>()...))>, Ts...> { \
         static auto apply(Ts const &...ts) { \
-            return zen::name(ts...); \
+            return zeno::name(ts...); \
         } \
     }; \
  \
@@ -211,11 +211,11 @@ struct NumericOperator : zen::INode {
 
     virtual void apply() override {
         auto op = get_param<std::string>("op_type");
-        auto ret = std::make_unique<zen::NumericObject>();
-        auto lhs = get_input<zen::NumericObject>("lhs");
+        auto ret = std::make_unique<zeno::NumericObject>();
+        auto lhs = get_input<zeno::NumericObject>("lhs");
         
         if (has_input("rhs")) {
-            auto rhs = get_input<zen::NumericObject>("rhs");
+            auto rhs = get_input<zeno::NumericObject>("rhs");
             if(op == "set") lhs->value = rhs->value;
             std::visit([op, &ret](auto const &lhs, auto const &rhs) {
 
@@ -279,7 +279,7 @@ ZENDEFNODE(NumericOperator, {
 });
 
 
-struct PrintNumeric : zen::INode {
+struct PrintNumeric : zeno::INode {
     template <class T>
     struct do_print {
         do_print(T const &x) {
@@ -288,8 +288,8 @@ struct PrintNumeric : zen::INode {
     };
 
     template <size_t N, class T>
-    struct do_print<zen::vec<N, T>> {
-        do_print(zen::vec<N, T> const &x) {
+    struct do_print<zeno::vec<N, T>> {
+        do_print(zeno::vec<N, T> const &x) {
             std::cout << "(";
             for (int i = 0; i < N; i++) {
                 std::cout << x[i];
@@ -302,7 +302,7 @@ struct PrintNumeric : zen::INode {
     };
 
     virtual void apply() override {
-        auto obj = get_input<zen::NumericObject>("value");
+        auto obj = get_input<zeno::NumericObject>("value");
         auto hint = get_param<std::string>("hint");
         std::cout << hint << ": ";
         std::visit([](auto const &val) {
@@ -320,22 +320,22 @@ ZENDEFNODE(PrintNumeric, {
 });
 
 
-struct NumericRandom : zen::INode {
+struct NumericRandom : zeno::INode {
     virtual void apply() override {
         auto dim = get_param<int>("dim");
-        auto obj = std::make_shared<zen::NumericObject>();
+        auto obj = std::make_shared<zeno::NumericObject>();
         switch (dim) {
         default:
             obj->set(float(drand48()));
             break;
         case 2:
-            obj->set(zen::vec2f(drand48(), drand48()));
+            obj->set(zeno::vec2f(drand48(), drand48()));
             break;
         case 3:
-            obj->set(zen::vec3f(drand48(), drand48(), drand48()));
+            obj->set(zeno::vec3f(drand48(), drand48(), drand48()));
             break;
         case 4:
-            obj->set(zen::vec4f(drand48(), drand48(), drand48(), drand48()));
+            obj->set(zeno::vec4f(drand48(), drand48(), drand48(), drand48()));
             break;
         };
         set_output("value", std::move(obj));

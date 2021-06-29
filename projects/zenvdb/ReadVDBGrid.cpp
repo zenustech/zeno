@@ -1,24 +1,24 @@
 #include <zeno/VDBGrid.h>
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/StringObject.h>
 //#include "../../Library/MnBase/Meta/Polymorphism.h"
 // openvdb::io::File(filename).write({grid});
 
-namespace zen {
+namespace zeno {
 
 static std::shared_ptr<VDBGrid> readvdb(std::string path, std::string type)
 {
     std::shared_ptr<VDBGrid> data;
     if (type == "float") {
-      data = zen::IObject::make<VDBFloatGrid>();
+      data = zeno::IObject::make<VDBFloatGrid>();
     } else if (type == "float3") {
-      data = zen::IObject::make<VDBFloat3Grid>();
+      data = zeno::IObject::make<VDBFloat3Grid>();
     } else if (type == "int") {
-      data = zen::IObject::make<VDBIntGrid>();
+      data = zeno::IObject::make<VDBIntGrid>();
     } else if (type == "int3") {
-      data = zen::IObject::make<VDBInt3Grid>();
+      data = zeno::IObject::make<VDBInt3Grid>();
     } else if (type == "points") {
-      data = zen::IObject::make<VDBPointsGrid>();
+      data = zeno::IObject::make<VDBPointsGrid>();
     } else {
       printf("%s\n", type.c_str());
       assert(0 && "bad VDBGrid type");
@@ -28,7 +28,7 @@ static std::shared_ptr<VDBGrid> readvdb(std::string path, std::string type)
 }
 
 
-struct ReadVDBGrid : zen::INode {
+struct ReadVDBGrid : zeno::INode {
   virtual void apply() override {
     auto path = std::get<std::string>(get_param("path"));
     auto type = std::get<std::string>(get_param("type"));
@@ -36,7 +36,7 @@ struct ReadVDBGrid : zen::INode {
     set_output("data", data);
   }
 };
-static int defReadVDBGrid = zen::defNodeClass<ReadVDBGrid>(
+static int defReadVDBGrid = zeno::defNodeClass<ReadVDBGrid>(
     "ReadVDBGrid", {/* inputs: */ {}, /* outputs: */
                     {
                         "data",
@@ -51,16 +51,16 @@ static int defReadVDBGrid = zen::defNodeClass<ReadVDBGrid>(
                         "openvdb",
                     }});
 
-struct ImportVDBGrid : zen::INode {
+struct ImportVDBGrid : zeno::INode {
   virtual void apply() override {
-    auto path = get_input("path")->as<zen::StringObject>();
+    auto path = get_input("path")->as<zeno::StringObject>();
     auto type = std::get<std::string>(get_param("type"));
     auto data = readvdb(path->get(), type);
     set_output("data", std::move(data));
   }
 };
 
-static int defImportVDBGrid = zen::defNodeClass<ImportVDBGrid>("ImportVDBGrid",
+static int defImportVDBGrid = zeno::defNodeClass<ImportVDBGrid>("ImportVDBGrid",
     { /* inputs: */ {
     "path",
     }, /* outputs: */ {
@@ -72,7 +72,7 @@ static int defImportVDBGrid = zen::defNodeClass<ImportVDBGrid>("ImportVDBGrid",
     }});
 
 
-struct MakeVDBGrid : zen::INode {
+struct MakeVDBGrid : zeno::INode {
   virtual void apply() override {
     auto dx = std::get<float>(get_param("dx"));
     auto type = std::get<std::string>(get_param("type"));
@@ -80,7 +80,7 @@ struct MakeVDBGrid : zen::INode {
     auto name = std::get<std::string>(get_param("name"));
     std::shared_ptr<VDBGrid> data;
     if (type == "float") {
-      auto tmp = zen::IObject::make<VDBFloatGrid>();
+      auto tmp = zeno::IObject::make<VDBFloatGrid>();
       auto transform = openvdb::math::Transform::createLinearTransform(dx);
       if(structure==std::string("vertex"))
         transform->postTranslate(openvdb::Vec3d{ -0.5,-0.5,-0.5 }*double(dx));
@@ -88,7 +88,7 @@ struct MakeVDBGrid : zen::INode {
       tmp->m_grid->setName(name);
       data = std::move(tmp);
     } else if (type == "float3") {
-      auto tmp = zen::IObject::make<VDBFloat3Grid>();
+      auto tmp = zeno::IObject::make<VDBFloat3Grid>();
       tmp->m_grid->setTransform(openvdb::math::Transform::createLinearTransform(dx));
       tmp->m_grid->setName(name);
       if (structure == "Staggered") {
@@ -96,17 +96,17 @@ struct MakeVDBGrid : zen::INode {
       }
       data = std::move(tmp);
     } else if (type == "int") {
-      auto tmp = zen::IObject::make<VDBIntGrid>();
+      auto tmp = zeno::IObject::make<VDBIntGrid>();
       tmp->m_grid->setTransform(openvdb::math::Transform::createLinearTransform(dx));
       tmp->m_grid->setName(name);
       data = std::move(tmp);
     } else if (type == "int3") {
-      auto tmp = zen::IObject::make<VDBInt3Grid>();
+      auto tmp = zeno::IObject::make<VDBInt3Grid>();
       tmp->m_grid->setTransform(openvdb::math::Transform::createLinearTransform(dx));
       tmp->m_grid->setName(name);
       data = std::move(tmp);
     } else if (type == "points") {
-      auto tmp = zen::IObject::make<VDBPointsGrid>();
+      auto tmp = zeno::IObject::make<VDBPointsGrid>();
       tmp->m_grid->setTransform(openvdb::math::Transform::createLinearTransform(dx));
       tmp->m_grid->setName(name);
       data = std::move(tmp);
@@ -118,7 +118,7 @@ struct MakeVDBGrid : zen::INode {
   }
 };
 
-static int defMakeVDBGrid = zen::defNodeClass<MakeVDBGrid>(
+static int defMakeVDBGrid = zeno::defNodeClass<MakeVDBGrid>(
     "MakeVDBGrid", {/* inputs: */ {}, /* outputs: */
                     {
                         "data",
@@ -135,4 +135,4 @@ static int defMakeVDBGrid = zen::defNodeClass<MakeVDBGrid>(
                         "openvdb",
                     }});
 
-} // namespace zen
+} // namespace zeno

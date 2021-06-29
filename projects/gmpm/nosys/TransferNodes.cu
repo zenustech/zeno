@@ -10,9 +10,9 @@
 #include "zensim/tpls/fmt/format.h"
 #include <zeno/NumericObject.h>
 
-namespace zen {
+namespace zeno {
 
-struct P2G : zen::INode {
+struct P2G : zeno::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing P2G\n");
     auto &model = get_input("ZSModel")->as<ZenoConstitutiveModel>()->get();
@@ -28,7 +28,7 @@ struct P2G : zen::INode {
     auto &grid = get_input("ZSGrid")->as<ZenoGrid>()->get();
 
     // auto stepDt = std::get<float>(get_param("dt"));
-    auto stepDt = get_input("dt")->as<zen::NumericObject>()->get<float>();
+    auto stepDt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
 
     auto cudaPol = zs::cuda_exec().device(0);
 
@@ -52,14 +52,14 @@ struct P2G : zen::INode {
   }
 };
 
-static int defP2G = zen::defNodeClass<P2G>(
+static int defP2G = zeno::defNodeClass<P2G>(
     "P2G",
     {/* inputs: */ {"dt", "ZSModel", "ZSParticles", "ZSGrid", "ZSPartition"},
      /* outputs: */ {},
      /* params: */ {/*{"float", "dt", "0.0001"}*/},
      /* category: */ {"simulation"}});
 
-struct G2P : zen::INode {
+struct G2P : zeno::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing G2P\n");
     auto &model = get_input("ZSModel")->as<ZenoConstitutiveModel>()->get();
@@ -75,7 +75,7 @@ struct G2P : zen::INode {
     }
 
     // auto stepDt = std::get<float>(get_param("dt"));
-    auto stepDt = get_input("dt")->as<zen::NumericObject>()->get<float>();
+    auto stepDt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
 
     auto cudaPol = zs::cuda_exec().device(0);
     for (auto &&parObjPtr : parObjPtrs) {
@@ -99,11 +99,11 @@ struct G2P : zen::INode {
   }
 };
 
-static int defG2P = zen::defNodeClass<G2P>(
+static int defG2P = zeno::defNodeClass<G2P>(
     "G2P",
     {/* inputs: */ {"dt", "ZSModel", "ZSParticles", "ZSGrid", "ZSPartition"},
      /* outputs: */ {},
      /* params: */ {/*{"float", "dt", "0.0001"}*/},
      /* category: */ {"simulation"}});
 
-} // namespace zen
+} // namespace zeno
