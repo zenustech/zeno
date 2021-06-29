@@ -1,18 +1,18 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/Visualization.h>
 #include <zeno/GlobalState.h>
 #include <zeno/filesystem.h>
 #include <fstream>
 #include <cstdio>
 
-namespace zen::Visualization {
+namespace zeno::Visualization {
 
 static int objid = 0;
 
 ZENAPI std::string exportPath() {
     char buf[100];
-    sprintf(buf, "%06d", zen::state.frameid);
-    auto path = fs::path(zen::state.iopath) / buf;
+    sprintf(buf, "%06d", zeno::state.frameid);
+    auto path = fs::path(zeno::state.iopath) / buf;
     if (!fs::is_directory(path)) {
         fs::create_directory(path);
     }
@@ -24,8 +24,8 @@ ZENAPI std::string exportPath() {
 
 ZENAPI void endFrame() {
     char buf[100];
-    sprintf(buf, "%06d", zen::state.frameid);
-    auto path = fs::path(zen::state.iopath) / buf;
+    sprintf(buf, "%06d", zeno::state.frameid);
+    auto path = fs::path(zeno::state.iopath) / buf;
     if (!fs::is_directory(path)) {
         fs::create_directory(path);
     }

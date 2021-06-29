@@ -1,4 +1,4 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/NumericObject.h>
 #include <vector>
 #include <zeno/VDBGrid.h>
@@ -11,7 +11,7 @@
 #include <zeno/PrimitiveObject.h>
 #include <openvdb/openvdb.h>
 #include <openvdb/points/PointConversion.h>
-namespace zen {
+namespace zeno {
 openvdb::points::PointDataGrid::Ptr particleArrayToGrid(ParticlesObject* particles, float dx) 
 {
     std::vector<openvdb::Vec3f> positions(particles->size());
@@ -76,28 +76,28 @@ openvdb::points::PointDataGrid::Ptr particleArrayToGrid(ParticlesObject* particl
     return grid;
 }
 
-struct PrimToVDBPointDataGrid : zen::INode {
+struct PrimToVDBPointDataGrid : zeno::INode {
   virtual void apply() override {
     auto dx = std::get<float>(get_param("dx"));
     auto prims = get_input("ParticleGeo")->as<PrimitiveObject>();
     ParticlesObject* particles = new ParticlesObject();
-    particles->pos.resize(prims->attr<zen::vec3f>("pos").size());
-    particles->vel.resize(prims->attr<zen::vec3f>("pos").size());
+    particles->pos.resize(prims->attr<zeno::vec3f>("pos").size());
+    particles->vel.resize(prims->attr<zeno::vec3f>("pos").size());
     #pragma omp parallel for
-    for(int i=0;i<prims->attr<zen::vec3f>("pos").size();i++)
+    for(int i=0;i<prims->attr<zeno::vec3f>("pos").size();i++)
     {
-        particles->pos[i] = zen::vec_to_other<glm::vec3>(prims->attr<zen::vec3f>("pos")[i]);
+        particles->pos[i] = zeno::vec_to_other<glm::vec3>(prims->attr<zeno::vec3f>("pos")[i]);
         particles->vel[i] = glm::vec3(0,0,0);
         if(prims->has_attr("vel"))
-            particles->vel[i] = zen::vec_to_other<glm::vec3>(prims->attr<zen::vec3f>("vel")[i]);
+            particles->vel[i] = zeno::vec_to_other<glm::vec3>(prims->attr<zeno::vec3f>("vel")[i]);
     }
-    auto data = zen::IObject::make<VDBPointsGrid>();
+    auto data = zeno::IObject::make<VDBPointsGrid>();
     data->m_grid = particleArrayToGrid(particles, dx);
     set_output("Particles", data);
   }
 };
 
-static int defPrimToVDBPointDataGrid = zen::defNodeClass<PrimToVDBPointDataGrid>("PrimToVDBPointDataGrid",
+static int defPrimToVDBPointDataGrid = zeno::defNodeClass<PrimToVDBPointDataGrid>("PrimToVDBPointDataGrid",
     { /* inputs: */ {
         "ParticleGeo", 
     }, /* outputs: */ {
@@ -108,17 +108,17 @@ static int defPrimToVDBPointDataGrid = zen::defNodeClass<PrimToVDBPointDataGrid>
         "primitive",
     }});
 
-struct SetVDBPointDataGrid : zen::INode {
+struct SetVDBPointDataGrid : zeno::INode {
   virtual void apply() override {
     auto dx = std::get<float>(get_param("dx"));
     auto particles = get_input("ParticleGeo")->as<ParticlesObject>();
-    auto data = zen::IObject::make<VDBPointsGrid>();
+    auto data = zeno::IObject::make<VDBPointsGrid>();
     data->m_grid = particleArrayToGrid(particles, dx);
     set_output("Particles", data);
   }
 };
 
-static int defSetVDBPointDataGrid = zen::defNodeClass<SetVDBPointDataGrid>("SetVDBPointDataGrid",
+static int defSetVDBPointDataGrid = zeno::defNodeClass<SetVDBPointDataGrid>("SetVDBPointDataGrid",
     { /* inputs: */ {
         "ParticleGeo", 
     }, /* outputs: */ {

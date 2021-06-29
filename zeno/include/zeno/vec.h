@@ -5,7 +5,7 @@
 #include <cmath>
 
 
-namespace zen {
+namespace zeno {
 
 
 /* main class definition */

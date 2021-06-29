@@ -1,4 +1,4 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/MeshObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/VDBGrid.h>
@@ -7,11 +7,11 @@
 
 //static void Advect(float dt, openvdb::points::PointDataGrid::Ptr m_particles, openvdb::Vec3fGrid::Ptr m_velocity,
 //				   openvdb::Vec3fGrid::Ptr m_velocity_after_p2g, float pic_component, int RK_ORDER);
-namespace zen{
+namespace zeno{
     
-    struct G2PAdvectorSheet : zen::INode{
+    struct G2PAdvectorSheet : zeno::INode{
         virtual void apply() override {
-            auto dt = get_input("dt")->as<zen::NumericObject>()->get<float>();
+            auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
             auto dx = std::get<float>(get_param("dx"));
             auto surfaceSize = std::get<int>(get_param("surface_size"));
             auto smoothness = std::get<float>(get_param("pic_smoothness"));
@@ -35,7 +35,7 @@ namespace zen{
         }
     };
 
-static int defG2PAdvectorSheet = zen::defNodeClass<G2PAdvectorSheet>("G2PAdvectorSheetty",
+static int defG2PAdvectorSheet = zeno::defNodeClass<G2PAdvectorSheet>("G2PAdvectorSheetty",
     { /* inputs: */ {
         "dt","Particles", "Velocity", "LiquidSDF", "PostAdvVelocity", "SolidSDF", "SolidVelocity",
     }, 

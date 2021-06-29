@@ -1,4 +1,4 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/ParticlesObject.h>
 #include <Partio.h>
 static void outputBgeo(std::string path, 
@@ -29,9 +29,9 @@ static void outputBgeo(std::string path,
 
 
 
-namespace zen {
+namespace zeno {
 
-struct WriteBgeo : zen::INode {
+struct WriteBgeo : zeno::INode {
   virtual void apply() override {
     auto path = std::get<std::string>(get_param("path"));
     auto data = get_input("data")->as<ParticlesObject>();
@@ -40,7 +40,7 @@ struct WriteBgeo : zen::INode {
 };
 
 
-static int defWriteBgeo = zen::defNodeClass<WriteBgeo>("WriteBgeo",
+static int defWriteBgeo = zeno::defNodeClass<WriteBgeo>("WriteBgeo",
     { /* inputs: */ {
     "data",
     }, /* outputs: */ {

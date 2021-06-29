@@ -1,11 +1,11 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/VDBGrid.h>
 #include <omp.h>
 #include "FLIP_vdb.h"
 
-namespace zen{
+namespace zeno{
     
-    struct ParticleEmitter : zen::INode{
+    struct ParticleEmitter : zeno::INode{
         virtual void apply() override {
             auto particles = get_input("Particles")->as<VDBPointsGrid>();
             auto shape = get_input("ShapeSDF")->as<VDBFloatGrid>();
@@ -32,7 +32,7 @@ namespace zen{
         }
     };
 
-static int defParticleEmitter = zen::defNodeClass<ParticleEmitter>("ParticleEmitter",
+static int defParticleEmitter = zeno::defNodeClass<ParticleEmitter>("ParticleEmitter",
     { /* inputs: */ {
         "Particles", "ShapeSDF", "VelocityVolume", "LiquidSDF",
     }, 

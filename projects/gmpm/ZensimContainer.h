@@ -1,15 +1,15 @@
 #pragma once
 
 #include "zensim/container/HashTable.hpp"
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 
-namespace zen {
+namespace zeno {
 
-struct ZenoPartition : zen::IObject {
+struct ZenoPartition : zeno::IObject {
   auto &get() noexcept { return table; }
   const auto &get() const noexcept { return table; }
   zs::GeneralHashTable table;
 };
 
 
-} // namespace zen
+} // namespace zeno

@@ -129,7 +129,7 @@ sudo python -m pip install numpy PyQt5
 1. Install Python 3.8 64-bit. IMPORTANT: make sure you **Add Python 3.8 to PATH**! After that rebooting your computer would be the best.
 2. Start CMD in **Administrator mode** and type these commands:
 ```cmd
-python -m pip install numpy PyQt5 pywin32
+python -m pip install numpy PyQt5
 ```
 (Fun fact: you will be redirected to Microsoft Store if `python` is not added to PATH properly :)
 Make sure it starts to downloading and installing successfully without `ERROR` (warnings are OK though).

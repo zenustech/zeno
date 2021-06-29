@@ -1,9 +1,9 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/NumericObject.h>
 #include <cstdio>
 
 
-struct GCTest : zen::NumericObject {
+struct GCTest : zeno::NumericObject {
     GCTest() {
         printf("GCTest()\n");
     }
@@ -14,7 +14,7 @@ struct GCTest : zen::NumericObject {
 };
 
 
-struct MakeGCTest : zen::INode {
+struct MakeGCTest : zeno::INode {
     virtual void apply() override {
         auto obj = std::make_unique<GCTest>();
         obj->set<int>(get_param<int>("value"));

@@ -1,5 +1,5 @@
 #include <zeno/ParticlesObject.h>
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 
 #include "../ZensimGeometry.h"
 #include "zensim/io/ParticleIO.hpp"
@@ -7,9 +7,9 @@
 #include "zensim/tpls/fmt/color.h"
 #include "zensim/tpls/fmt/format.h"
 
-namespace zen {
+namespace zeno {
 
-struct OutputZensimParticles : zen::INode {
+struct OutputZensimParticles : zeno::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green),
                "begin executing OutputZensimParticles\n");
@@ -22,7 +22,7 @@ struct OutputZensimParticles : zen::INode {
   }
 };
 
-static int defOutputZensimParticles = zen::defNodeClass<OutputZensimParticles>(
+static int defOutputZensimParticles = zeno::defNodeClass<OutputZensimParticles>(
     "OutputZensimParticles", {/* inputs: */ {"ZensimParticles"},
                               /* outputs: */
                               {},
@@ -31,4 +31,4 @@ static int defOutputZensimParticles = zen::defNodeClass<OutputZensimParticles>(
                               /* category: */
                               {"ZensimGeometry"}});
 
-} // namespace zen
+} // namespace zeno

@@ -16,7 +16,6 @@ add_subdirectory(zenvis)
 
 
 file(GLOB ZENO_SOURCE zeno/*.cpp zeno/nodes/*.cpp zeno/nodes/*/*.cpp zeno/include/*/*.h)
-
 add_library(zeno SHARED ${ZENO_SOURCE})
 target_compile_definitions(zeno PRIVATE -DDLL_ZENO)
 target_include_directories(zeno PUBLIC zeno/include)
@@ -33,10 +32,11 @@ set_target_properties(zeno PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
 	)
 
-pybind11_add_module(libzenpy libzenpy.cpp)
-target_link_libraries(libzenpy PRIVATE zeno)
+file(GLOB PYZENO_SOURCE pyzeno/*.cpp)
+pybind11_add_module(pyzeno ${PYZENO_SOURCE})
+target_link_libraries(pyzeno PRIVATE zeno)
 set(OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zeno)
-set_target_properties(libzenpy PROPERTIES
+set_target_properties(pyzeno PROPERTIES
 	LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
 	RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
 	ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR}

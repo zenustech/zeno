@@ -1,4 +1,4 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/vec.h>
@@ -12,7 +12,7 @@ static inline double drand48() {
 }
 #endif
 
-namespace zen {
+namespace zeno {
 
 template <class T, class S>
 inline constexpr bool is_decay_same_v = std::is_same_v<std::decay_t<T>, std::decay_t<S>>;
@@ -34,7 +34,7 @@ struct UnaryOperator {
     }
 };
 
-struct PrimitiveUnaryOp : zen::INode {
+struct PrimitiveUnaryOp : zeno::INode {
   virtual void apply() override {
     auto primA = get_input("primA")->as<PrimitiveObject>();
     auto primOut = get_input("primOut")->as<PrimitiveObject>();
@@ -44,22 +44,22 @@ struct PrimitiveUnaryOp : zen::INode {
     auto const &arrA = primA->attr(attrA);
     auto &arrOut = primOut->attr(attrOut);
     std::visit([op](auto &arrOut, auto const &arrA) {
-        if constexpr (zen::is_vec_castable_v<decltype(arrOut[0]), decltype(arrA[0])>) {
+        if constexpr (zeno::is_vec_castable_v<decltype(arrOut[0]), decltype(arrA[0])>) {
             if (0) {
 #define _PER_OP(opname, expr) \
             } else if (op == opname) { \
                 UnaryOperator([](auto const &a) { return expr; })(arrOut, arrA);
             _PER_OP("copy", a)
             _PER_OP("neg", -a)
-            _PER_OP("sqrt", zen::sqrt(a))
-            _PER_OP("sin", zen::sin(a))
-            _PER_OP("cos", zen::cos(a))
-            _PER_OP("tan", zen::tan(a))
-            _PER_OP("asin", zen::asin(a))
-            _PER_OP("acos", zen::acos(a))
-            _PER_OP("atan", zen::atan(a))
-            _PER_OP("exp", zen::exp(a))
-            _PER_OP("log", zen::log(a))
+            _PER_OP("sqrt", zeno::sqrt(a))
+            _PER_OP("sin", zeno::sin(a))
+            _PER_OP("cos", zeno::cos(a))
+            _PER_OP("tan", zeno::tan(a))
+            _PER_OP("asin", zeno::asin(a))
+            _PER_OP("acos", zeno::acos(a))
+            _PER_OP("atan", zeno::atan(a))
+            _PER_OP("exp", zeno::exp(a))
+            _PER_OP("log", zeno::log(a))
 #undef _PER_OP
             } else {
                 printf("%s\n", op.c_str());
@@ -74,7 +74,7 @@ struct PrimitiveUnaryOp : zen::INode {
   }
 };
 
-static int defPrimitiveUnaryOp = zen::defNodeClass<PrimitiveUnaryOp>("PrimitiveUnaryOp",
+static int defPrimitiveUnaryOp = zeno::defNodeClass<PrimitiveUnaryOp>("PrimitiveUnaryOp",
     { /* inputs: */ {
     "primA",
     "primOut",
@@ -106,7 +106,7 @@ struct BinaryOperator {
     }
 };
 
-struct PrimitiveBinaryOp : zen::INode {
+struct PrimitiveBinaryOp : zeno::INode {
   virtual void apply() override {
     auto primA = get_input("primA")->as<PrimitiveObject>();
     auto primB = get_input("primB")->as<PrimitiveObject>();
@@ -120,7 +120,7 @@ struct PrimitiveBinaryOp : zen::INode {
     auto &arrOut = primOut->attr(attrOut);
     std::visit([op](auto &arrOut, auto const &arrA, auto const &arrB) {
         if constexpr (is_decay_same_v<decltype(arrOut[0]),
-            zen::is_vec_promotable_t<decltype(arrA[0]), decltype(arrB[0])>>) {
+            zeno::is_vec_promotable_t<decltype(arrA[0]), decltype(arrB[0])>>) {
             if (0) {
 #define _PER_OP(opname, expr) \
             } else if (op == opname) { \
@@ -138,10 +138,10 @@ struct PrimitiveBinaryOp : zen::INode {
             _PER_OP("mul", a * b)
             _PER_OP("div", a / b)
             _PER_OP("rdiv", b / a)
-            _PER_OP("pow", zen::pow(a, b))
-            _PER_OP("rpow", zen::pow(b, a))
-            _PER_OP("atan2", zen::atan2(a, b))
-            _PER_OP("ratan2", zen::atan2(b, a))
+            _PER_OP("pow", zeno::pow(a, b))
+            _PER_OP("rpow", zeno::pow(b, a))
+            _PER_OP("atan2", zeno::atan2(a, b))
+            _PER_OP("ratan2", zeno::atan2(b, a))
 #undef _PER_OP
             } else {
                 printf("%s\n", op.c_str());
@@ -156,7 +156,7 @@ struct PrimitiveBinaryOp : zen::INode {
   }
 };
 
-static int defPrimitiveBinaryOp = zen::defNodeClass<PrimitiveBinaryOp>("PrimitiveBinaryOp",
+static int defPrimitiveBinaryOp = zeno::defNodeClass<PrimitiveBinaryOp>("PrimitiveBinaryOp",
     { /* inputs: */ {
     "primA",
     "primB",
@@ -173,7 +173,7 @@ static int defPrimitiveBinaryOp = zen::defNodeClass<PrimitiveBinaryOp>("Primitiv
     }});
 
 
-struct PrimitiveMix : zen::INode {
+struct PrimitiveMix : zeno::INode {
     virtual void apply() override{
         auto primA = get_input("primA")->as<PrimitiveObject>();
         auto primB = get_input("primB")->as<PrimitiveObject>();
@@ -184,7 +184,7 @@ struct PrimitiveMix : zen::INode {
         auto const &arrA = primA->attr(attrA);
         auto const &arrB = primB->attr(attrB);
         auto &arrOut = primOut->attr(attrOut);
-        auto coef = get_input("coef")->as<zen::NumericObject>()->get<float>();
+        auto coef = get_input("coef")->as<zeno::NumericObject>()->get<float>();
         
         std::visit([coef](auto &arrA, auto &arrB, auto &arrOut) {
           if constexpr (std::is_same_v<decltype(arrA), decltype(arrB)> && std::is_same_v<decltype(arrA), decltype(arrOut)>) {
@@ -197,7 +197,7 @@ struct PrimitiveMix : zen::INode {
         set_output_ref("primOut", get_input_ref("primOut"));
     }
 };
-static int defPrimitiveMix = zen::defNodeClass<PrimitiveMix>("PrimitiveMix",
+static int defPrimitiveMix = zeno::defNodeClass<PrimitiveMix>("PrimitiveMix",
     { /* inputs: */ {
     "primA",
     "primB",
@@ -231,7 +231,7 @@ struct HalfBinaryOperator {
     }
 };
 
-struct PrimitiveHalfBinaryOp : zen::INode {
+struct PrimitiveHalfBinaryOp : zeno::INode {
   virtual void apply() override {
     auto primA = get_input("primA")->as<PrimitiveObject>();
     auto primOut = get_input("primOut")->as<PrimitiveObject>();
@@ -243,7 +243,7 @@ struct PrimitiveHalfBinaryOp : zen::INode {
     auto const &valB = get_input("valueB")->as<NumericObject>()->value;
     std::visit([op](auto &arrOut, auto const &arrA, auto const &valB) {
         if constexpr (is_decay_same_v<decltype(arrOut[0]),
-            zen::is_vec_promotable_t<decltype(arrA[0]), decltype(valB)>>) {
+            zeno::is_vec_promotable_t<decltype(arrA[0]), decltype(valB)>>) {
             if (0) {
 #define _PER_OP(opname, expr) \
             } else if (op == opname) { \
@@ -261,10 +261,10 @@ struct PrimitiveHalfBinaryOp : zen::INode {
             _PER_OP("mul", a * b)
             _PER_OP("div", a / b)
             _PER_OP("rdiv", b / a)
-            _PER_OP("pow", zen::pow(a, b))
-            _PER_OP("rpow", zen::pow(b, a))
-            _PER_OP("atan2", zen::atan2(a, b))
-            _PER_OP("ratan2", zen::atan2(b, a))
+            _PER_OP("pow", zeno::pow(a, b))
+            _PER_OP("rpow", zeno::pow(b, a))
+            _PER_OP("atan2", zeno::atan2(a, b))
+            _PER_OP("ratan2", zeno::atan2(b, a))
 #undef _PER_OP
             } else {
                 printf("%s\n", op.c_str());
@@ -279,7 +279,7 @@ struct PrimitiveHalfBinaryOp : zen::INode {
   }
 };
 
-static int defPrimitiveHalfBinaryOp = zen::defNodeClass<PrimitiveHalfBinaryOp>("PrimitiveHalfBinaryOp",
+static int defPrimitiveHalfBinaryOp = zeno::defNodeClass<PrimitiveHalfBinaryOp>("PrimitiveHalfBinaryOp",
     { /* inputs: */ {
     "primA",
     "valueB",
@@ -295,14 +295,14 @@ static int defPrimitiveHalfBinaryOp = zen::defNodeClass<PrimitiveHalfBinaryOp>("
     }});
 
 
-struct PrimitiveFillAttr : zen::INode {
+struct PrimitiveFillAttr : zeno::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
     auto const &value = get_input("value")->as<NumericObject>()->value;
     auto attrName = std::get<std::string>(get_param("attrName"));
     auto &arr = prim->attr(attrName);
     std::visit([](auto &arr, auto const &value) {
-        if constexpr (zen::is_vec_castable_v<decltype(arr[0]), decltype(value)>) {
+        if constexpr (zeno::is_vec_castable_v<decltype(arr[0]), decltype(value)>) {
             #pragma omp parallel for
             for (int i = 0; i < arr.size(); i++) {
                 arr[i] = decltype(arr[i])(value);
@@ -316,7 +316,7 @@ struct PrimitiveFillAttr : zen::INode {
   }
 };
 
-static int defPrimitiveFillAttr = zen::defNodeClass<PrimitiveFillAttr>("PrimitiveFillAttr",
+static int defPrimitiveFillAttr = zeno::defNodeClass<PrimitiveFillAttr>("PrimitiveFillAttr",
     { /* inputs: */ {
     "prim",
     "value",
@@ -329,7 +329,7 @@ static int defPrimitiveFillAttr = zen::defNodeClass<PrimitiveFillAttr>("Primitiv
     }});
 
 
-struct PrimitiveRandomizeAttr : zen::INode {
+struct PrimitiveRandomizeAttr : zeno::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
     auto min = std::get<float>(get_param("min"));
@@ -342,13 +342,13 @@ struct PrimitiveRandomizeAttr : zen::INode {
     auto &arr = prim->attr(attrName);
     std::visit([min, minY, minZ, max, maxY, maxZ](auto &arr) {
         for (int i = 0; i < arr.size(); i++) {
-            if constexpr (is_decay_same_v<decltype(arr[i]), zen::vec3f>) {
-                zen::vec3f f(drand48(), drand48(), drand48());
-                zen::vec3f a(min, minY, minZ);
-                zen::vec3f b(max, maxY, maxZ);
-                arr[i] = zen::mix(a, b, f);
+            if constexpr (is_decay_same_v<decltype(arr[i]), zeno::vec3f>) {
+                zeno::vec3f f(drand48(), drand48(), drand48());
+                zeno::vec3f a(min, minY, minZ);
+                zeno::vec3f b(max, maxY, maxZ);
+                arr[i] = zeno::mix(a, b, f);
             } else {
-                arr[i] = zen::mix(min, max, (float)drand48());
+                arr[i] = zeno::mix(min, max, (float)drand48());
             }
         }
     }, arr);
@@ -357,7 +357,7 @@ struct PrimitiveRandomizeAttr : zen::INode {
   }
 };
 
-static int defPrimitiveRandomizeAttr = zen::defNodeClass<PrimitiveRandomizeAttr>("PrimitiveRandomizeAttr",
+static int defPrimitiveRandomizeAttr = zeno::defNodeClass<PrimitiveRandomizeAttr>("PrimitiveRandomizeAttr",
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
@@ -379,12 +379,12 @@ void print_cout(float x) {
     printf("%f\n", x);
 }
 
-void print_cout(zen::vec3f const &a) {
+void print_cout(zeno::vec3f const &a) {
     printf("%f %f %f\n", a[0], a[1], a[2]);
 }
 
 
-struct PrimitivePrintAttr : zen::INode {
+struct PrimitivePrintAttr : zeno::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
     auto attrName = std::get<std::string>(get_param("attrName"));
@@ -404,7 +404,7 @@ struct PrimitivePrintAttr : zen::INode {
   }
 };
 
-static int defPrimitivePrintAttr = zen::defNodeClass<PrimitivePrintAttr>("PrimitivePrintAttr",
+static int defPrimitivePrintAttr = zeno::defNodeClass<PrimitivePrintAttr>("PrimitivePrintAttr",
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {

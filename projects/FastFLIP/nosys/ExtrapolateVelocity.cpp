@@ -1,4 +1,4 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/VDBGrid.h>
 #include <omp.h>
 #include <openvdb/tools/Composite.h>
@@ -517,9 +517,9 @@ void vdb_velocity_extrapolator::extrapolate(int n_layer, openvdb::Vec3fGrid::Ptr
 
 
 
-namespace zen{
+namespace zeno{
     
-    struct Vec3FieldExtrapolate : zen::INode{
+    struct Vec3FieldExtrapolate : zeno::INode{
         virtual void apply() override {
             int n = std::get<int>(get_param("NumIterates"));
             auto velocity = get_input("Field")->as<VDBFloat3Grid>();
@@ -528,7 +528,7 @@ namespace zen{
         }
     };
 
-static int defVec3FieldExtrapolate = zen::defNodeClass<Vec3FieldExtrapolate>("Vec3FieldExtrapolate",
+static int defVec3FieldExtrapolate = zeno::defNodeClass<Vec3FieldExtrapolate>("Vec3FieldExtrapolate",
     { /* inputs: */ {
         "Field", 
     }, 

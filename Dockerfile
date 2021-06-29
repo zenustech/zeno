@@ -29,7 +29,9 @@ RUN cd c-blosc && git checkout tags/v1.5.0 -b v1.5.0 && mkdir build && cd build 
 RUN git clone https://gitee.com/zeng_gui/openvdb.git
 RUN cd openvdb && mkdir build && cd build && cmake .. && make -j8 && make install && cd ../..
 
-############################################################################
+#################################################
+# Below is only for end-user application images #
+#################################################
 
 RUN apt-get install -y python-is-python3
 RUN apt-get install -y python-dev-is-python3

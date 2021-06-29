@@ -5,25 +5,25 @@
 #include "ZensimGeometry.h"
 #include "ZensimModel.h"
 
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 
-namespace zen {
+namespace zeno {
 
 using ZenoConstitutiveModels = std::vector<ZenoConstitutiveModel *>;
 using ZenoParticleObjects = std::vector<ZenoParticles *>;
 using ZenoBoundaries = std::vector<ZenoBoundary *>;
 
-struct ZenoParticleList : zen::IObject {
+struct ZenoParticleList : zeno::IObject {
   auto &get() noexcept { return objects; }
   const auto &get() const noexcept { return objects; }
   ZenoParticleObjects objects;
 };
 
-struct ZenoZensimObjects : zen::IObject {
+struct ZenoZensimObjects : zeno::IObject {
   auto &get() noexcept { return objects; }
   const auto &get() const noexcept { return objects; }
   zs::variant<ZenoConstitutiveModels, ZenoParticleObjects, ZenoBoundaries>
       objects;
 };
 
-} // namespace zen
+} // namespace zeno

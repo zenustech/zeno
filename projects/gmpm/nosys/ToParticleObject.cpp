@@ -1,19 +1,19 @@
 #include <cstring>
 #include <vector>
 #include <zeno/ParticlesObject.h>
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 
 #include "../ZensimGeometry.h"
 #include "zensim/tpls/fmt/color.h"
 #include "zensim/tpls/fmt/format.h"
 
-namespace zen {
+namespace zeno {
 
-struct ToParticleObject : zen::INode {
+struct ToParticleObject : zeno::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ToParticleObject\n");
     auto &zspars = get_input("ZSParticles")->as<ZenoParticles>()->get();
-    auto pars = zen::IObject::make<ParticlesObject>();
+    auto pars = zeno::IObject::make<ParticlesObject>();
     auto &pos = pars->pos;
     auto &vel = pars->vel;
 
@@ -32,9 +32,9 @@ struct ToParticleObject : zen::INode {
   }
 };
 
-static int defToParticleObject = zen::defNodeClass<ToParticleObject>(
+static int defToParticleObject = zeno::defNodeClass<ToParticleObject>(
     "ToParticleObject", {/* inputs: */ {"ZSParticles"},
                          /* outputs: */ {"pars"}, /* params: */ {},
                          /* category: */ {"ZensimGeometry"}});
 
-} // namespace zen
+} // namespace zeno

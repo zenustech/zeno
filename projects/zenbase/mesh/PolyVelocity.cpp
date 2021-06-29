@@ -1,4 +1,4 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/MeshObject.h>
 #include <zeno/ParticlesObject.h>
 #include <omp.h>
@@ -9,7 +9,7 @@
 //(*openvdb::math::Transform::createLinearTransform(h), 
 //points, triangles, quads, 4, 4);
 
-namespace zen {
+namespace zeno {
 void subtractMesh(float dt, MeshObject* a, MeshObject* b,
                   ParticlesObject* c)
 {
@@ -23,18 +23,18 @@ void subtractMesh(float dt, MeshObject* a, MeshObject* b,
         c->vel[i] = (a->vertices[i] - b->vertices[i])/dt;
     }
 }
-struct GeoVertexVel : zen::INode{
+struct GeoVertexVel : zeno::INode{
     virtual void apply() override {
-        auto dt = get_input("dt")->as<zen::NumericObject>()->get<float>();
+        auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
         auto mesh1 = get_input("TargetMesh")->as<MeshObject>();
         auto mesh2 = get_input("OriginMesh")->as<MeshObject>();
-        auto result = zen::IObject::make<ParticlesObject>();
+        auto result = zeno::IObject::make<ParticlesObject>();
         subtractMesh(dt, mesh1, mesh2, result.get());
         set_output("MeshVel", result);
   }
 };
 
-static int defGeoVertexVel = zen::defNodeClass<GeoVertexVel>("GeoVertexVel",
+static int defGeoVertexVel = zeno::defNodeClass<GeoVertexVel>("GeoVertexVel",
     { /* inputs: */ {
         "dt", "TargetMesh", "OriginMesh", 
     }, /* outputs: */ {

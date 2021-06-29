@@ -10,13 +10,13 @@
 #include "zensim/tpls/fmt/color.h"
 #include "zensim/tpls/fmt/format.h"
 
-namespace zen {
+namespace zeno {
 
-struct SpatialPartitionForParticles : zen::INode {
+struct SpatialPartitionForParticles : zeno::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green),
                "begin executing SpatialPartitionForParticles\n");
-    auto partition = zen::IObject::make<ZenoPartition>();
+    auto partition = zeno::IObject::make<ZenoPartition>();
 
     auto dx = std::get<float>(get_param("dx"));
     auto blocklen = std::get<int>(get_param("block_side_length"));
@@ -56,7 +56,7 @@ struct SpatialPartitionForParticles : zen::INode {
   }
 };
 
-static int defSpatialPartitionForParticles = zen::defNodeClass<
+static int defSpatialPartitionForParticles = zeno::defNodeClass<
     SpatialPartitionForParticles>(
     "SpatialPartitionForParticles",
     {/* inputs: */ {"ZSParticles"},
@@ -64,4 +64,4 @@ static int defSpatialPartitionForParticles = zen::defNodeClass<
      /* params: */ {{"float", "dx", "1"}, {"int", "block_side_length", "4"}},
      /* category: */ {"GPUMPM"}});
 
-} // namespace zen
+} // namespace zeno

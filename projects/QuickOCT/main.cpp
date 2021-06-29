@@ -1,4 +1,4 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/NumericObject.h>
 #include "OctreeObject.h"
@@ -10,7 +10,7 @@
 using namespace zenbase;
 
 
-struct FishYields : zen::INode {
+struct FishYields : zeno::INode {
   virtual void apply() override {
     auto stars = get_input("stars")->as<PrimitiveObject>();
     auto rate = std::get<int>(get_param("rate"));
@@ -30,7 +30,7 @@ struct FishYields : zen::INode {
   }
 };
 
-static int defFishYields = zen::defNodeClass<FishYields>("FishYields",
+static int defFishYields = zeno::defNodeClass<FishYields>("FishYields",
     { /* inputs: */ {
     "stars",
     }, /* outputs: */ {
@@ -42,13 +42,13 @@ static int defFishYields = zen::defNodeClass<FishYields>("FishYields",
     }});
 
 
-struct AdvectStars : zen::INode {
+struct AdvectStars : zeno::INode {
   virtual void apply() override {
     auto stars = get_input("stars")->as<PrimitiveObject>();
     auto &mass = stars->attr<float>("mass");
-    auto &pos = stars->attr<zen::vec3f>("pos");
-    auto &vel = stars->attr<zen::vec3f>("vel");
-    auto &acc = stars->attr<zen::vec3f>("acc");
+    auto &pos = stars->attr<zeno::vec3f>("pos");
+    auto &vel = stars->attr<zeno::vec3f>("vel");
+    auto &acc = stars->attr<zeno::vec3f>("acc");
     auto dt = get_input("dt")->as<NumericObject>()->get<float>();
     #pragma omp parallel for
     for (int i = 0; i < stars->size(); i++) {
@@ -60,7 +60,7 @@ struct AdvectStars : zen::INode {
   }
 };
 
-static int defAdvectStars = zen::defNodeClass<AdvectStars>("AdvectStars",
+static int defAdvectStars = zeno::defNodeClass<AdvectStars>("AdvectStars",
     { /* inputs: */ {
     "stars",
     "dt",
@@ -73,8 +73,8 @@ static int defAdvectStars = zen::defNodeClass<AdvectStars>("AdvectStars",
 
 
 // calc 60-bit morton code from 20-bit X,Y,Z fixed pos grid
-static unsigned long morton3d(zen::vec3f const &pos) {
-    zen::vec3L v = zen::clamp(zen::vec3L(zen::floor(pos * 1048576.0f)), 0ul, 1048575ul);
+static unsigned long morton3d(zeno::vec3f const &pos) {
+    zeno::vec3L v = zeno::clamp(zeno::vec3L(zeno::floor(pos * 1048576.0f)), 0ul, 1048575ul);
     static_assert(sizeof(v[0]) == 8);
 
     v = (v * 0x0000000100000001ul) & 0xFFFF00000000FFFFul;
@@ -87,24 +87,24 @@ static unsigned long morton3d(zen::vec3f const &pos) {
 }
 
 
-struct LinearOctree : zen::INode {
+struct LinearOctree : zeno::INode {
   virtual void apply() override {
     auto stars = get_input("stars")->as<PrimitiveObject>();
-    auto &pos = stars->attr<zen::vec3f>("pos");
+    auto &pos = stars->attr<zeno::vec3f>("pos");
 
     // compute boundaries
     assert(pos.size() > 0);
-    zen::vec3f bmin = pos[0];
-    zen::vec3f bmax = pos[0];
+    zeno::vec3f bmin = pos[0];
+    zeno::vec3f bmax = pos[0];
     for (int i = 1; i < stars->size(); i++) {
-        bmin = zen::min(bmin, pos[i]);
-        bmax = zen::max(bmax, pos[i]);
+        bmin = zeno::min(bmin, pos[i]);
+        bmax = zeno::max(bmax, pos[i]);
     }
     bmin -= 1e-6;
     bmax += 1e-6;
     auto radii = bmax - bmin;
     auto offset = -bmin / radii;
-    float radius = zen::max(radii[0], zen::max(radii[1], radii[2]));
+    float radius = zeno::max(radii[0], zeno::max(radii[1], radii[2]));
 
     // compute morton code
     std::vector<unsigned long> mc(stars->size());
@@ -133,7 +133,7 @@ struct LinearOctree : zen::INode {
 #endif
 
     // construct octree
-    auto tree = zen::IObject::make<OctreeObject>();
+    auto tree = zeno::IObject::make<OctreeObject>();
     tree->offset = offset;
     tree->radius = radius;
 
@@ -177,7 +177,7 @@ struct LinearOctree : zen::INode {
   }
 };
 
-static int defLinearOctree = zen::defNodeClass<LinearOctree>("LinearOctree",
+static int defLinearOctree = zeno::defNodeClass<LinearOctree>("LinearOctree",
     { /* inputs: */ {
     "stars",
     }, /* outputs: */ {
@@ -189,11 +189,11 @@ static int defLinearOctree = zen::defNodeClass<LinearOctree>("LinearOctree",
     }});
 
 
-struct CalcOctreeAttrs : zen::INode {
+struct CalcOctreeAttrs : zeno::INode {
     virtual void apply() override {
         auto stars = get_input("stars")->as<PrimitiveObject>();
         auto tree = get_input("tree")->as<OctreeObject>();
-        auto &pos = stars->attr<zen::vec3f>("pos");
+        auto &pos = stars->attr<zeno::vec3f>("pos");
         auto &mass = stars->attr<float>("mass");
         auto &children = tree->children;
 
@@ -233,7 +233,7 @@ struct CalcOctreeAttrs : zen::INode {
     }
 };
 
-static int defCalcOctreeAttrs = zen::defNodeClass<CalcOctreeAttrs>("CalcOctreeAttrs",
+static int defCalcOctreeAttrs = zeno::defNodeClass<CalcOctreeAttrs>("CalcOctreeAttrs",
     { /* inputs: */ {
     "tree",
     "stars",
@@ -245,27 +245,27 @@ static int defCalcOctreeAttrs = zen::defNodeClass<CalcOctreeAttrs>("CalcOctreeAt
     }});
 
 
-float invpow3(zen::vec3f const &a, float eps) {
-    float rr = zen::dot(a, a) + eps * eps;
-    float r = zen::sqrt(rr);
+float invpow3(zeno::vec3f const &a, float eps) {
+    float rr = zeno::dot(a, a) + eps * eps;
+    float r = zeno::sqrt(rr);
     return 1 / (r * rr);
 }
 
 
-struct ComputeGravity : zen::INode {
+struct ComputeGravity : zeno::INode {
   virtual void apply() override {
     auto stars = get_input("stars")->as<PrimitiveObject>();
     auto tree = get_input("tree")->as<OctreeObject>();
     auto &mass = stars->attr<float>("mass");
-    auto &pos = stars->attr<zen::vec3f>("pos");
-    auto &vel = stars->attr<zen::vec3f>("vel");
-    auto &acc = stars->attr<zen::vec3f>("acc");
+    auto &pos = stars->attr<zeno::vec3f>("pos");
+    auto &vel = stars->attr<zeno::vec3f>("vel");
+    auto &acc = stars->attr<zeno::vec3f>("acc");
     auto G = std::get<float>(get_param("G"));
     auto lam = std::get<float>(get_param("lam"));
     auto eps = std::get<float>(get_param("eps"));
     printf("computing gravity...\n");
     for (int i = 0; i < stars->size(); i++) {
-        acc[i] = zen::vec3f(0);
+        acc[i] = zeno::vec3f(0);
     }
     #pragma omp parallel for
     for (int i = 0; i < stars->size(); i++) {
@@ -275,7 +275,7 @@ struct ComputeGravity : zen::INode {
             auto [curr, depth] = stack.top(); stack.pop();
             auto d2CoM = tree->CoM[curr] - pos[i];
             float node_size = tree->radius / (1 << depth);
-            if (zen::length(d2CoM) > lam * node_size) {
+            if (zeno::length(d2CoM) > lam * node_size) {
                 printf("accel %d by far %d %f %d\n", i, curr, node_size, depth);
                 acc[i] += d2CoM * tree->mass[curr] * invpow3(d2CoM, eps);
                 continue;
@@ -302,7 +302,7 @@ struct ComputeGravity : zen::INode {
   }
 };
 
-static int defComputeGravity = zen::defNodeClass<ComputeGravity>("ComputeGravity",
+static int defComputeGravity = zeno::defNodeClass<ComputeGravity>("ComputeGravity",
     { /* inputs: */ {
     "stars",
     "tree",
@@ -317,18 +317,18 @@ static int defComputeGravity = zen::defNodeClass<ComputeGravity>("ComputeGravity
     }});
 
 
-struct DirectComputeGravity : zen::INode {
+struct DirectComputeGravity : zeno::INode {
   virtual void apply() override {
     auto stars = get_input("stars")->as<PrimitiveObject>();
     auto &mass = stars->attr<float>("mass");
-    auto &pos = stars->attr<zen::vec3f>("pos");
-    auto &vel = stars->attr<zen::vec3f>("vel");
-    auto &acc = stars->attr<zen::vec3f>("acc");
+    auto &pos = stars->attr<zeno::vec3f>("pos");
+    auto &vel = stars->attr<zeno::vec3f>("vel");
+    auto &acc = stars->attr<zeno::vec3f>("acc");
     auto G = std::get<float>(get_param("G"));
     auto eps = std::get<float>(get_param("eps"));
     printf("computing gravity...\n");
     for (int i = 0; i < stars->size(); i++) {
-        acc[i] = zen::vec3f(0);
+        acc[i] = zeno::vec3f(0);
     }
     #pragma omp parallel for
     for (int i = 0; i < stars->size(); i++) {
@@ -347,7 +347,7 @@ struct DirectComputeGravity : zen::INode {
   }
 };
 
-static int defDirectComputeGravity = zen::defNodeClass<DirectComputeGravity>("DirectComputeGravity",
+static int defDirectComputeGravity = zeno::defNodeClass<DirectComputeGravity>("DirectComputeGravity",
     { /* inputs: */ {
     "stars",
     }, /* outputs: */ {

@@ -1,11 +1,11 @@
 file(GLOB PROJECT_SOURCE "*.cpp" "*.hpp" "*.h")
 
-pybind11_add_module(libzenvis ${PROJECT_SOURCE})
-target_compile_definitions(libzenvis PRIVATE -DZEN_NOREFDLL)
-target_include_directories(libzenvis PRIVATE .)
-target_include_directories(libzenvis PRIVATE ${PROJECT_SOURCE_DIR}/zeno/include)
-target_link_libraries(libzenvis PRIVATE glad)
-set_target_properties(libzenvis PROPERTIES
+pybind11_add_module(pyzenvis ${PROJECT_SOURCE})
+target_compile_definitions(pyzenvis PRIVATE -DZEN_NOREFDLL)
+target_include_directories(pyzenvis PRIVATE .)
+target_include_directories(pyzenvis PRIVATE ${PROJECT_SOURCE_DIR}/zeno/include)
+target_link_libraries(pyzenvis PRIVATE glad)
+set_target_properties(pyzenvis PROPERTIES
 	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}

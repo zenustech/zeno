@@ -7,12 +7,12 @@
 #include "zensim/tpls/fmt/format.h"
 #include <zeno/VDBGrid.h>
 
-namespace zen {
+namespace zeno {
 
-struct ToZensimLevelSet : zen::INode {
+struct ToZensimLevelSet : zeno::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing ToZensimLevelSet\n");
-    auto ls = zen::IObject::make<ZenoSparseLevelSet>();
+    auto ls = zeno::IObject::make<ZenoSparseLevelSet>();
 
     // auto path = std::get<std::string>(get_param("path"));
     // pass in FloatGrid::Ptr
@@ -26,10 +26,10 @@ struct ToZensimLevelSet : zen::INode {
   }
 };
 
-static int defToZensimLevelSet = zen::defNodeClass<ToZensimLevelSet>(
+static int defToZensimLevelSet = zeno::defNodeClass<ToZensimLevelSet>(
     "ToZensimLevelSet", {/* inputs: */ {"VDBFloatGrid"},
                          /* outputs: */ {"ZSLevelSet"},
                          /* params: */ {},
                          /* category: */ {"GPUMPM"}});
 
-} // namespace zen
+} // namespace zeno

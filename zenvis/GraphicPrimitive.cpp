@@ -27,34 +27,34 @@ struct GraphicPrimitive : IGraphic {
   size_t tris_count;
 
   GraphicPrimitive
-    ( zen::PrimitiveObject *prim
+    ( zeno::PrimitiveObject *prim
     , std::string const &path
     ) {
     if (!prim->has_attr("pos")) {
-        auto &pos = prim->add_attr<zen::vec3f>("pos");
+        auto &pos = prim->add_attr<zeno::vec3f>("pos");
         for (size_t i = 0; i < pos.size(); i++) {
-            pos[i] = zen::vec3f(i * (1.0f / (pos.size() - 1)), 0, 0);
+            pos[i] = zeno::vec3f(i * (1.0f / (pos.size() - 1)), 0, 0);
         }
     }
     if (!prim->has_attr("clr")) {
-        auto &clr = prim->add_attr<zen::vec3f>("clr");
+        auto &clr = prim->add_attr<zeno::vec3f>("clr");
         for (size_t i = 0; i < clr.size(); i++) {
-            clr[i] = zen::vec3f(0.8);
+            clr[i] = zeno::vec3f(0.8);
         }
     }
     if (!prim->has_attr("nrm")) {
-        auto &nrm = prim->add_attr<zen::vec3f>("nrm");
+        auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
         for (size_t i = 0; i < nrm.size(); i++) {
-            nrm[i] = zen::vec3f(1 / zen::sqrt(3.0f));
+            nrm[i] = zeno::vec3f(1 / zeno::sqrt(3.0f));
         }
     }
-    auto const &pos = prim->attr<zen::vec3f>("pos");
-    auto const &clr = prim->attr<zen::vec3f>("clr");
-    auto const &nrm = prim->attr<zen::vec3f>("nrm");
+    auto const &pos = prim->attr<zeno::vec3f>("pos");
+    auto const &clr = prim->attr<zeno::vec3f>("clr");
+    auto const &nrm = prim->attr<zeno::vec3f>("nrm");
     vertex_count = prim->size();
 
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
-    std::vector<zen::vec3f> mem(vertex_count * 3);
+    std::vector<zeno::vec3f> mem(vertex_count * 3);
     for (int i = 0; i < vertex_count; i++) {
         mem[3 * i + 0] = pos[i];
         mem[3 * i + 1] = clr[i];
@@ -371,7 +371,7 @@ struct GraphicPrimitive : IGraphic {
 };
 
 std::unique_ptr<IGraphic> makeGraphicPrimitive
-    ( zen::PrimitiveObject *prim
+    ( zeno::PrimitiveObject *prim
     , std::string const &path
     ) {
   return std::make_unique<GraphicPrimitive>(prim, path);

@@ -3,26 +3,26 @@
 #include "zensim/geometry/SparseLevelSet.hpp"
 #include "zensim/geometry/Structure.hpp"
 #include "zensim/geometry/Structurefree.hpp"
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 
-namespace zen {
+namespace zeno {
 
-struct ZenoParticles : zen::IObject {
+struct ZenoParticles : zeno::IObject {
   auto &get() noexcept { return particles; }
   const auto &get() const noexcept { return particles; }
   zs::GeneralParticles particles;
 };
 
-struct ZenoGrid : zen::IObject {
+struct ZenoGrid : zeno::IObject {
   auto &get() noexcept { return grid; }
   const auto &get() const noexcept { return grid; }
   zs::GeneralGridBlocks grid;
 };
 
-struct ZenoSparseLevelSet : zen::IObject {
+struct ZenoSparseLevelSet : zeno::IObject {
   auto &get() noexcept { return ls; }
   const auto &get() const noexcept { return ls; }
   zs::SparseLevelSet<3> ls;
 };
 
-} // namespace zen
+} // namespace zeno

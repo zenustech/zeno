@@ -1,11 +1,11 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/VDBGrid.h>
 #include <omp.h>
 #include "FLIP_vdb.h"
 
-namespace zen{
+namespace zeno{
     
-    struct FluidReseed : zen::INode{
+    struct FluidReseed : zeno::INode{
         virtual void apply() override {
             auto particles = get_input("Particles")->as<VDBPointsGrid>();
             auto liquidSDF = get_input("LiquidSDF")->as<VDBFloatGrid>();
@@ -14,7 +14,7 @@ namespace zen{
         }
     };
 
-static int defFluidReseed = zen::defNodeClass<FluidReseed>("FluidReseed",
+static int defFluidReseed = zeno::defNodeClass<FluidReseed>("FluidReseed",
     { /* inputs: */ {
         "Particles", "LiquidSDF", "FluidVel",
     }, 

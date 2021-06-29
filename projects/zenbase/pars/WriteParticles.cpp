@@ -1,9 +1,9 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/ParticlesObject.h>
 #include <zeno/StringObject.h>
 #include <cstring>
 
-namespace zen {
+namespace zeno {
 
 static void writepars(
     const char *path,
@@ -26,7 +26,7 @@ static void writepars(
 }
 
 
-struct WriteParticles : zen::INode {
+struct WriteParticles : zeno::INode {
   virtual void apply() override {
     auto path = std::get<std::string>(get_param("path"));
     auto pars = get_input("pars")->as<ParticlesObject>();
@@ -34,7 +34,7 @@ struct WriteParticles : zen::INode {
   }
 };
 
-static int defWriteParticles = zen::defNodeClass<WriteParticles>("WriteParticles",
+static int defWriteParticles = zeno::defNodeClass<WriteParticles>("WriteParticles",
     { /* inputs: */ {
     "pars",
     }, /* outputs: */ {
@@ -45,7 +45,7 @@ static int defWriteParticles = zen::defNodeClass<WriteParticles>("WriteParticles
     }});
 
 
-struct ExportParticles : zen::INode {
+struct ExportParticles : zeno::INode {
   virtual void apply() override {
     auto path = get_input("path")->as<StringObject>();
     auto pars = get_input("pars")->as<ParticlesObject>();
@@ -53,7 +53,7 @@ struct ExportParticles : zen::INode {
   }
 };
 
-static int defExportParticles = zen::defNodeClass<ExportParticles>("ExportParticles",
+static int defExportParticles = zeno::defNodeClass<ExportParticles>("ExportParticles",
     { /* inputs: */ {
     "pars",
     "path",

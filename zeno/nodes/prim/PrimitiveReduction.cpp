@@ -1,4 +1,4 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/vec.h>
@@ -8,7 +8,7 @@
 //#include <tbb/parallel_for.h>
 //#include <tbb/parallel_reduce.h>
 
-namespace zen {
+namespace zeno {
 
 template <class T>
 static T prim_reduce(PrimitiveObject *prim, std::string channel, std::string type)
@@ -25,42 +25,42 @@ static T prim_reduce(PrimitiveObject *prim, std::string channel, std::string typ
     if(type==std::string("max")){
 		T total = temp[0];
 		for (int i = 1; i < temp.size(); i++) {
-			total = zen::max(total, temp[i]);
+			total = zeno::max(total, temp[i]);
 		}
     }
     if(type==std::string("min")){
 		T total = temp[0];
 		for (int i = 1; i < temp.size(); i++) {
-			total = zen::min(total, temp[i]);
+			total = zeno::min(total, temp[i]);
 		}
     }
     if(type==std::string("absmax"))
     {
-        T total=zen::abs(temp[0]);
+        T total=zeno::abs(temp[0]);
 		for (int i = 1; i < temp.size(); i++) {
-			total = zen::max(total, zen::abs(temp[i]));
+			total = zeno::max(total, zeno::abs(temp[i]));
 		}
         return total;
     }
 }
 
 
-struct PrimitiveReduction : zen::INode {
+struct PrimitiveReduction : zeno::INode {
     virtual void apply() override{
         auto prim = get_input("prim")->as<PrimitiveObject>();
         auto attrToReduce = std::get<std::string>(get_param("attr"));
         auto op = std::get<std::string>(get_param("op"));
-        zen::NumericValue result;
-        if (prim->attr_is<zen::vec3f>(attrToReduce))
-            result = prim_reduce<zen::vec3f>(prim, attrToReduce, op);
+        zeno::NumericValue result;
+        if (prim->attr_is<zeno::vec3f>(attrToReduce))
+            result = prim_reduce<zeno::vec3f>(prim, attrToReduce, op);
         else 
             result = prim_reduce<float>(prim, attrToReduce, op);
-        auto out = zen::IObject::make<zen::NumericObject>();
+        auto out = zeno::IObject::make<zeno::NumericObject>();
         out->set(result);
         set_output("result", out);
     }
 };
-static int defPrimitiveReduction = zen::defNodeClass<PrimitiveReduction>("PrimitiveReduction",
+static int defPrimitiveReduction = zeno::defNodeClass<PrimitiveReduction>("PrimitiveReduction",
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {

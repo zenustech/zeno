@@ -10,18 +10,18 @@
 #include "zensim/tpls/fmt/format.h"
 #include <zeno/NumericObject.h>
 
-namespace zen {
+namespace zeno {
 
-struct GridUpdate : zen::INode {
+struct GridUpdate : zeno::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing GridUpdate\n");
-    // auto dt = get_input("dt")->as<zen::NumericObject>()->get<float>();
-    auto maxVelSqr = zen::IObject::make<zen::NumericObject>();
+    // auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
+    auto maxVelSqr = zeno::IObject::make<zeno::NumericObject>();
 
     auto &partition = get_input("ZSPartition")->as<ZenoPartition>()->get();
     auto &grid = get_input("ZSGrid")->as<ZenoGrid>()->get();
     // auto stepDt = std::get<float>(get_param("dt"));
-    auto stepDt = get_input("dt")->as<zen::NumericObject>()->get<float>();
+    auto stepDt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
     auto gravity = std::get<float>(get_param("gravity"));
 
     zs::Vector<float> velSqr{1, zs::memsrc_e::um, 0};
@@ -42,14 +42,14 @@ struct GridUpdate : zen::INode {
   }
 };
 
-static int defGridUpdate = zen::defNodeClass<GridUpdate>(
+static int defGridUpdate = zeno::defNodeClass<GridUpdate>(
     "GridUpdate", {/* inputs: */ {"dt", "ZSPartition", "ZSGrid"},
                    /* outputs: */ {"MaxVelSqr"},
                    /* params: */
                    {/*{"float", "dt", "1"}, */ {"float", "gravity", "-9.8"}},
                    /* category: */ {"GPUMPM"}});
 
-struct ResolveBoundaryOnGrid : zen::INode {
+struct ResolveBoundaryOnGrid : zeno::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green),
                "begin executing ResolveBoundaryOnGrid\n");
@@ -78,11 +78,11 @@ struct ResolveBoundaryOnGrid : zen::INode {
   }
 };
 
-static int defResolveBoundaryOnGrid = zen::defNodeClass<ResolveBoundaryOnGrid>(
+static int defResolveBoundaryOnGrid = zeno::defNodeClass<ResolveBoundaryOnGrid>(
     "ResolveBoundaryOnGrid",
     {/* inputs: */ {"ZSPartition", "ZSGrid", "ZSBoundary"},
      /* outputs: */ {},
      /* params: */ {},
      /* category: */ {"GPUMPM"}});
 
-} // namespace zen
+} // namespace zeno

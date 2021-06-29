@@ -15,7 +15,7 @@ name = 'zensim'
 version = '0.0.1.dev1'
 description = 'Open-source node system framework for physics simulation and other CG applications'
 
-packages = ['zenqt', 'zenutils', 'zen', 'zenapi', 'zenvis']
+packages = ['zenqt', 'zenutils', 'zeno', 'zenapi', 'zenvis']
 requirements = ['numpy', 'PyQt5']
 
 def treefiles(dir):
@@ -53,7 +53,7 @@ setuptools.setup(
         data_files=data_files,
         include_package_data=True,
         keywords=['graphics', 'simulation'],
-        license='MIT',
+        license='MPL-2.0',
         classifiers=[
             'Development Status :: 2 - Pre-Alpha',
             'Topic :: Software Development :: Frameworks',
@@ -61,7 +61,7 @@ setuptools.setup(
             'Topic :: Games/Entertainment :: Simulation',
             'Intended Audience :: Science/Research',
             'Intended Audience :: Developers',
-            'License :: OSI Approved :: MIT License',
+            'License :: OSI Approved :: Mozilla Public License Version 2.0',
             'Programming Language :: Python :: 3.7',
             'Programming Language :: Python :: 3.8',
             'Programming Language :: Python :: 3.9',

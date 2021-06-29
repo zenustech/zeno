@@ -1,14 +1,14 @@
 #pragma once
 
 #include "zensim/physics/ConstitutiveModel.hpp"
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 
-namespace zen {
+namespace zeno {
 
-struct ZenoConstitutiveModel : zen::IObject {
+struct ZenoConstitutiveModel : zeno::IObject {
   auto &get() noexcept { return model; }
   const auto &get() const noexcept { return model; }
   zs::ConstitutiveModelConfig model;
 };
 
-} // namespace zen
+} // namespace zeno

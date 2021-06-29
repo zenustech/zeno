@@ -1,6 +1,6 @@
 #include <zeno/GlobalState.h>
 
-namespace zen {
+namespace zeno {
 
 ZENAPI GlobalState state;
 
