@@ -27,8 +27,8 @@ def treefiles(dir):
             yield from treefiles(path)
 
 data_files = glob('zeno/*.so')
-data_files = glob('zenqt/assets/*')
-data_files = glob('zenvis/*.so')
+data_files += glob('zenqt/assets/*')
+data_files += glob('zenvis/*.so')
 data_files += glob('zeno/*.pyd')
 data_files += glob('zenvis/*.pyd')
 data_files += treefiles('zeno/lib')
