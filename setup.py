@@ -61,7 +61,7 @@ setuptools.setup(
             'Topic :: Games/Entertainment :: Simulation',
             'Intended Audience :: Science/Research',
             'Intended Audience :: Developers',
-            'License :: OSI Approved :: Mozilla Public License Version 2.0',
+            'License :: OSI Approved :: Mozilla Public License 2.0',
             'Programming Language :: Python :: 3.7',
             'Programming Language :: Python :: 3.8',
             'Programming Language :: Python :: 3.9',
