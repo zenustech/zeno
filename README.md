@@ -265,7 +265,7 @@ See ```demo_project/``` for an example on how to write custom nodes in ZENO.
 
 ### Installing extensions
 
-To install a node library for ZENO just copy the `.so` or `.dll` files to `zen/autoload/`. See ```demo_project/CMakeLists.txt``` for how to automate this in CMake.
+To install a node library for ZENO just copy the `.so` or `.dll` files to `zeno/autoload/`. See ```demo_project/CMakeLists.txt``` for how to automate this in CMake.
 
 
 # Blender addon

@@ -1,6 +1,6 @@
-#include <zen/zen.h>
+#include <zeno/zen.h>
 #include <cstdio>
-#include <zen/NumericObject.h>
+#include <zeno/NumericObject.h>
 
 struct Number : zen::IObject {
     int value;

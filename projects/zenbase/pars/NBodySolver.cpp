@@ -1,6 +1,6 @@
-#include <zen/zen.h>
-#include <zen/ParticlesObject.h>
-#include <zen/NumericObject.h>
+#include <zeno/zen.h>
+#include <zeno/ParticlesObject.h>
+#include <zeno/NumericObject.h>
 #include <glm/glm.hpp>
 #include <cmath>
 #include <omp.h>

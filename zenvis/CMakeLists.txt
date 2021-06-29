@@ -1,9 +1,9 @@
 file(GLOB PROJECT_SOURCE "*.cpp" "*.hpp" "*.h")
 
 pybind11_add_module(libzenvis ${PROJECT_SOURCE})
-add_definitions(-DZEN_NOREFDLL)
+target_compile_definitions(libzenvis PRIVATE -DZEN_NOREFDLL)
 target_include_directories(libzenvis PRIVATE .)
-target_include_directories(libzenvis PRIVATE ${PROJECT_SOURCE_DIR}/zen/include)
+target_include_directories(libzenvis PRIVATE ${PROJECT_SOURCE_DIR}/zeno/include)
 target_link_libraries(libzenvis PRIVATE glad)
 set_target_properties(libzenvis PROPERTIES
 	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}

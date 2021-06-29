@@ -5,7 +5,7 @@
 // #include "zensim/io/ParticleIO.hpp"
 #include "zensim/tpls/fmt/color.h"
 #include "zensim/tpls/fmt/format.h"
-#include <zen/VDBGrid.h>
+#include <zeno/VDBGrid.h>
 
 namespace zen {
 

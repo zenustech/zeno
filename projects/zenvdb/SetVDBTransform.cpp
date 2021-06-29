@@ -1,7 +1,7 @@
 
 #include <openvdb/openvdb.h>
-#include <zen/zen.h>
-#include <zen/VDBGrid.h>
+#include <zeno/zen.h>
+#include <zeno/VDBGrid.h>
 #include <openvdb/tools/GridTransformer.h>
 #include <openvdb/tools/Composite.h>
 

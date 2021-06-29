@@ -1,7 +1,7 @@
 #pragma once
 
-#include <zen/zen.h>
-#include <zen/vec.h>
+#include <zeno/zen.h>
+#include <zeno/vec.h>
 #include "Interaction.h"
 #include <vector>
 #include <array>

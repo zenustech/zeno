@@ -1,6 +1,6 @@
-#include <zen/zen.h>
-#include <zen/ParticlesObject.h>
-#include <zen/StringObject.h>
+#include <zeno/zen.h>
+#include <zeno/ParticlesObject.h>
+#include <zeno/StringObject.h>
 #include <cstring>
 
 namespace zen {

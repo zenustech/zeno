@@ -369,7 +369,7 @@ It's mostly a bunch of personal notes, probably incomplete. Feel free to query i
  - misc: possible compile-time support for string view/range instead of char* would e.g. facilitate usage with Rust (#683)
  - misc: possible compile-time support for wchar_t instead of char*?
 
- - remote: make a system like RemoteImGui first-class citizen/project (#75)
+ - remote: make a system like RemoteImGui first-class citizeno/project (#75)
 
  - demo: find a way to demonstrate textures in the examples application, as it such a common issue for new users.
  - demo: demonstrate using PushStyleVar() in more details.
