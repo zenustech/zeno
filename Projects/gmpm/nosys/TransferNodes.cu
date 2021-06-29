@@ -57,7 +57,7 @@ static int defP2G = zen::defNodeClass<P2G>(
     {/* inputs: */ {"dt", "ZSModel", "ZSParticles", "ZSGrid", "ZSPartition"},
      /* outputs: */ {},
      /* params: */ {/*{"float", "dt", "0.0001"}*/},
-     /* category: */ {"GPUMPM"}});
+     /* category: */ {"simulation"}});
 
 struct G2P : zen::INode {
   void apply() override {
@@ -104,6 +104,6 @@ static int defG2P = zen::defNodeClass<G2P>(
     {/* inputs: */ {"dt", "ZSModel", "ZSParticles", "ZSGrid", "ZSPartition"},
      /* outputs: */ {},
      /* params: */ {/*{"float", "dt", "0.0001"}*/},
-     /* category: */ {"GPUMPM"}});
+     /* category: */ {"simulation"}});
 
 } // namespace zen

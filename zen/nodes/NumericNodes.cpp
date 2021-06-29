@@ -170,7 +170,6 @@ struct NumericOperator : zen::INode {
     static auto op_##name(Ts const &...ts) { \
         return _op_##name<void, Ts...>::apply(ts...); \
     }
-
     _PER_OP2(+, add)
     _PER_OP2(-, sub)
     _PER_OP2(*, mul)
@@ -214,10 +213,10 @@ struct NumericOperator : zen::INode {
         auto op = get_param<std::string>("op_type");
         auto ret = std::make_unique<zen::NumericObject>();
         auto lhs = get_input<zen::NumericObject>("lhs");
-
+        
         if (has_input("rhs")) {
             auto rhs = get_input<zen::NumericObject>("rhs");
-
+            if(op == "set") lhs->value = rhs->value;
             std::visit([op, &ret](auto const &lhs, auto const &rhs) {
 
                 if (op == "copy") ret->value = lhs;
