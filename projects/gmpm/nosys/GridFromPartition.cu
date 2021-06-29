@@ -20,9 +20,16 @@ struct GridFromPartition : zen::INode {
         zs::match([](auto &partition) { return partition.size(); })(partition);
     auto dx = std::get<float>(get_param("dx"));
 
-    auto grid = zen::IObject::make<ZenoGrid>();
+    // auto grid = zen::IObject::make<ZenoGrid>();
+    auto &grid = get_input("ZSGrid")->as<ZenoGrid>()->get();
     using GridT = zs::GridBlocks<zs::GridBlock<zs::dat32, 3, 2, 2>>;
-    GridT gridblocks{dx, cnt, mh.memspace(), mh.devid()};
+    // GridT gridblocks{dx, cnt, mh.memspace(), mh.devid()};
+    GridT &gridblocks = std::get<GridT>(grid);
+    if (gridblocks.dx.asFloat() != dx)
+      gridblocks = GridT{dx, cnt, mh.memspace(), mh.devid()};
+    else
+      gridblocks.resize(cnt);
+    // ret = TableT{cnt, mh.memspace(), mh.devid()};
 
     auto cudaPol = zs::cuda_exec().device(0);
     cudaPol(
@@ -30,15 +37,15 @@ struct GridFromPartition : zen::INode {
         zs::CleanGridBlocks{zs::wrapv<zs::execspace_e::cuda>{}, gridblocks});
     // fmt::print("{} grid blocks from partition\n", cnt);
 
-    grid->get() = gridblocks;
+    // grid = gridblocks;
     fmt::print(fg(fmt::color::cyan), "done executing GridFromPartition\n");
-    set_output("ZSGrid", grid);
+    // set_output("ZSGrid", grid);
   }
 };
 
 static int defGridFromPartition = zen::defNodeClass<GridFromPartition>(
-    "GridFromPartition", {/* inputs: */ {"ZSPartition"},
-                          /* outputs: */ {"ZSGrid"},
+    "GridFromPartition", {/* inputs: */ {"ZSGrid", "ZSPartition"},
+                          /* outputs: */ {},
                           /* params: */ {{"float", "dx", "1"}},
                           /* category: */ {"GPUMPM"}});
 

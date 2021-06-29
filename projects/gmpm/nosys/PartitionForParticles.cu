@@ -16,7 +16,8 @@ struct SpatialPartitionForParticles : zen::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green),
                "begin executing SpatialPartitionForParticles\n");
-    auto partition = zen::IObject::make<ZenoPartition>();
+    // auto partition = zen::IObject::make<ZenoPartition>();
+    auto &partition = get_input("ZSPartition")->as<ZenoPartition>()->get();
 
     auto dx = std::get<float>(get_param("dx"));
     auto blocklen = std::get<int>(get_param("block_side_length"));
@@ -35,7 +36,11 @@ struct SpatialPartitionForParticles : zen::INode {
       cnt += zs::match([](auto &p) { return p.size(); })(parObjPtr->get());
       mh = zs::match([](auto &p) { return p.handle(); })(parObjPtr->get());
     }
-    zs::HashTable<zs::i32, 3, int> ret{cnt, mh.memspace(), mh.devid()};
+    using TableT = zs::HashTable<zs::i32, 3, int>;
+    // zs::HashTable<zs::i32, 3, int> ret{cnt, mh.memspace(), mh.devid()};
+    TableT &ret = std::get<TableT>(partition);
+    if (ret._tableSize < ret.evaluateTableSize(cnt))
+      ret = TableT{cnt, mh.memspace(), mh.devid()};
 
     auto cudaPol = zs::cuda_exec().device(0);
     cudaPol({ret._tableSize},
@@ -48,19 +53,19 @@ struct SpatialPartitionForParticles : zen::INode {
                                     blocklen, ret, p.X});
       })(particles);
     }
-    partition->get() = std::move(ret);
 
+    // partition->get() = std::move(ret);
     fmt::print(fg(fmt::color::cyan),
                "done executing SpatialPartitionForParticles\n");
-    set_output("ZSPartition", partition);
+    // set_output("ZSPartition", partition);
   }
 };
 
 static int defSpatialPartitionForParticles = zen::defNodeClass<
     SpatialPartitionForParticles>(
     "SpatialPartitionForParticles",
-    {/* inputs: */ {"ZSParticles"},
-     /* outputs: */ {"ZSPartition"},
+    {/* inputs: */ {"ZSPartition", "ZSParticles"},
+     /* outputs: */ {},
      /* params: */ {{"float", "dx", "1"}, {"int", "block_side_length", "4"}},
      /* category: */ {"GPUMPM"}});
 
