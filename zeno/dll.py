@@ -12,6 +12,6 @@ if os_name == 'win32':
 else:
     ctypes.cdll.LoadLibrary(rel2abs(__file__, 'lib', 'libzeno.so'))
 
-from . import libzenpy as core
+from . import pyzeno as core
 
 __all__ = ['core']

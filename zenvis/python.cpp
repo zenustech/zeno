@@ -29,7 +29,7 @@ void set_perspective(
 
 };
 
-PYBIND11_MODULE(libzenvis, m) {
+PYBIND11_MODULE(pyzenvis, m) {
     m.def("initialize", zenvis::initialize);
     m.def("finalize", zenvis::finalize);
     m.def("new_frame", zenvis::new_frame);
