@@ -23,6 +23,7 @@ style = {
     'socket_unconnect_color': '#4a4a4a',
     'title_text_color': '#FFFFFF',
     'title_text_size': 10,
+    'button_text_size': 10,
     'socket_text_size': 10,
     'socket_text_color': '#FFFFFF',
     'panel_color': '#282828',
@@ -646,6 +647,12 @@ class QDMGraphicsSocket(QGraphicsItem):
 
 class QDMGraphicsButton(QGraphicsProxyWidget):
     class QDMLabel(QLabel):
+        def __init__(self):
+            super().__init__()
+            font = QFont()
+            font.setPointSize(style['button_text_size'])
+            self.setFont(font)
+
         def mousePressEvent(self, event):
             self.on_click()
             super().mousePressEvent(event)
@@ -727,8 +734,13 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
         self.name = None
 
     def initLayout(self):
+        font = QFont()
+        font.setPointSize(style['socket_text_size'])
+
         self.edit = QLineEdit()
+        self.edit.setFont(font)
         self.label = QLabel()
+        self.label.setFont(font)
 
         self.layout = QHBoxLayout()
         self.layout.addWidget(self.label)
@@ -825,7 +837,7 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor(style['title_text_color']))
-        self.title.setPos(HORI_MARGIN * 2, -TEXT_HEIGHT * 0.92)
+        self.title.setPos(HORI_MARGIN * 2, -TEXT_HEIGHT)
         font = QFont()
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
