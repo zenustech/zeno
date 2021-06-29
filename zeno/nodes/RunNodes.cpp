@@ -16,7 +16,7 @@ ZENDEFNODE(RunOnce, {
     {},
     {"cond"},
     {},
-    {"runtime"},
+    {"frame"},
 });
 
 struct RunAfterFrame : zeno::INode {  // TODO: deprecated
@@ -32,7 +32,7 @@ ZENDEFNODE(RunAfterFrame, {
     {},
     {"cond"},
     {},
-    {"runtime"},
+    {"frame"},
 });
 
 struct RunBeforeFrame : zeno::INode {  // TODO: deprecated
@@ -48,7 +48,7 @@ ZENDEFNODE(RunBeforeFrame, {
     {},
     {"cond"},
     {},
-    {"runtime"},
+    {"frame"},
 });
 
 
@@ -63,7 +63,7 @@ ZENDEFNODE(SetFrameTime, {
     {"time"},
     {},
     {},
-    {"runtime"},
+    {"frame"},
 });
 
 struct GetFrameTime : zeno::INode {
@@ -78,7 +78,7 @@ ZENDEFNODE(GetFrameTime, {
     {},
     {"time"},
     {},
-    {"runtime"},
+    {"frame"},
 });
 
 struct GetFrameTimeElapsed : zeno::INode {
@@ -93,7 +93,7 @@ ZENDEFNODE(GetFrameTimeElapsed, {
     {},
     {"time"},
     {},
-    {"runtime"},
+    {"frame"},
 });
 
 struct GetFrameNum : zeno::INode {
@@ -108,7 +108,7 @@ ZENDEFNODE(GetFrameNum, {
     {},
     {"FrameNum"},
     {},
-    {"runtime"},
+    {"frame"},
 });
 
 struct GetTime : zeno::INode {
@@ -124,7 +124,7 @@ ZENDEFNODE(GetTime, {
     {},
     {"time"},
     {},
-    {"runtime"},
+    {"frame"},
 });
 
 struct GetFramePortion : zeno::INode {
@@ -139,7 +139,7 @@ ZENDEFNODE(GetFramePortion, {
     {},
     {"FramePortion"},
     {},
-    {"runtime"},
+    {"frame"},
 });
 
 struct IntegrateFrameTime : zeno::INode {
@@ -168,5 +168,5 @@ ZENDEFNODE(IntegrateFrameTime, {
     {"desired_dt"},
     {"actual_dt"},
     {{"float", "min_scale", "0.0001"}},
-    {"runtime"},
+    {"frame"},
 });
