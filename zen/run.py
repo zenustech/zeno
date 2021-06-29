@@ -14,7 +14,6 @@ def runScene(graphs, nframes, iopath):
 
     applies = []
     for ident, data in graphs['main'].items():
-        data = nodes[ident]
         if 'OUT' in data['options']:
             applies.append(ident)
 

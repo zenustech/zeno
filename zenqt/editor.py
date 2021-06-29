@@ -1130,7 +1130,10 @@ class NodeEditor(QWidget):
         self.scenes.clear()
 
     def deleteCurrScene(self):
-        self.scenes.remove(self.scene)
+        for k, v in self.scenes.items():
+            if v is self.scene:
+                del self.scenes[k]
+                break
         self.switchScene('main')
 
     def switchScene(self, name):
@@ -1248,8 +1251,13 @@ class NodeEditor(QWidget):
         prog = self.bkwdCompatProgram(prog)
         self.setDescriptors(prog['descs'])
         self.scene.newGraph()
-        self.scene.loadGraph(graph)
+        for name, graph in prog['graph'].items():
+            if not name =='main':
+                print('Loading subgraph', name)
+                self.switchScene(name)
+                self.scene.loadGraph(graph)
         self.scene.record()
+        self.switchScene('main')
         self.initDescriptors()
 
     def loadProgram(self, prog):
