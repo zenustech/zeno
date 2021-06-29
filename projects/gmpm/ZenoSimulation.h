@@ -1,6 +1,6 @@
 #pragma once
 #include "zensim/geometry/Collider.h"
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 
 namespace zen {
 

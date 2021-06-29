@@ -1,6 +1,6 @@
 
 #include <openvdb/openvdb.h>
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/VDBGrid.h>
 #include <openvdb/tools/GridTransformer.h>
 #include <openvdb/tools/Composite.h>

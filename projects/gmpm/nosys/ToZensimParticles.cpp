@@ -1,5 +1,5 @@
 #include <zeno/ParticlesObject.h>
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 
 #include "../ZensimGeometry.h"
 #include "../ZensimModel.h"

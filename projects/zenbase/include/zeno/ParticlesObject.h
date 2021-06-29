@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <glm/vec3.hpp>
 #include <vector>
 

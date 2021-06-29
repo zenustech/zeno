@@ -1,7 +1,7 @@
 #include <cstring>
 #include <vector>
 #include <zeno/ParticlesObject.h>
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 
 #include "../ZensimGeometry.h"
 #include "zensim/tpls/fmt/color.h"

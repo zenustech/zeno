@@ -1,7 +1,7 @@
 #pragma once
 
 #include "zensim/container/HashTable.hpp"
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 
 namespace zen {
 

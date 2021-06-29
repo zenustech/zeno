@@ -1,7 +1,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <zeno/GlobalState.h>
 #include <zeno/Visualization.h>
 namespace py = pybind11;

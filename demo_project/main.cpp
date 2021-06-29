@@ -1,4 +1,4 @@
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 #include <cstdio>
 #include <zeno/NumericObject.h>
 

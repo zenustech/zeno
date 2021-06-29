@@ -3,7 +3,7 @@
 #include "zensim/geometry/SparseLevelSet.hpp"
 #include "zensim/geometry/Structure.hpp"
 #include "zensim/geometry/Structurefree.hpp"
-#include <zeno/zen.h>
+#include <zeno/zeno.h>
 
 namespace zen {
 
