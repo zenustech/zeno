@@ -40,3 +40,6 @@ rubbish.bin/
 
 # binary folders
 /zeno/lib/
+
+# files to hide
+projects/Euler/Hades

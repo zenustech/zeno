@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.12)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../zeno/cmake ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(ENV{PYTHONPATH} ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
-set(EXTENSIONS_LIST Rigid ZMS zenbase zenvdb FastFLIP gmpm)
+set(EXTENSIONS_LIST Rigid ZMS zenbase zenvdb FastFLIP gmpm Euler)
 set(EXTENSIONS_ENABLE_LIST Rigid ZMS zenbase)
 
 foreach (name IN ITEMS ${EXTENSIONS_LIST})

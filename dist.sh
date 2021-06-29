@@ -1,17 +1,22 @@
 #!/bin/bash
 set -e
 
-PREFIX=/home/dilei/zenv/env
+rm -rf /tmp/zenv-build /tmp/zenv
+mkdir -p /tmp/zenv-build /tmp/zenv
+cd /tmp/zenv-build
+
+PREFIX=/tmp/zenv
 NCPU=32
 
-git clone https://github.com/patchelf/patchelf.git --depth=1
+git clone https://github.com/zensim-dev/patchelf.git --depth=1
 cd patchelf
+./bootstrap.sh
 ./configure --prefix=$PREFIX
-make -j $NCPU build_all
+make -j $NCPU
 make install
 cd ..
 
-git clone https://github.com/python/cpython.git --branch=3.8 --depth=1
+git clone https://github.com/zensim-dev/cpython.git --branch=3.8 --depth=1
 cd cpython
 ./configure --enable-shared --enable-optimizations --prefix=$PREFIX
 make -j $NCPU build_all
