@@ -9,7 +9,7 @@
 
 
 
-namespace zen{
+namespace zeno{
     
     struct CFL : zeno::INode{
         virtual void apply() override {

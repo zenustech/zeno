@@ -16,7 +16,7 @@ static void FLIP_vdb::solve_pressure_simd(
 	float dt, float dx);
 */
 
-namespace zen{
+namespace zeno{
     
     struct AssembleSolvePPE : zeno::INode{
         virtual void apply() override {

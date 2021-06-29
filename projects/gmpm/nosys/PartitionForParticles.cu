@@ -64,4 +64,4 @@ static int defSpatialPartitionForParticles = zeno::defNodeClass<
      /* params: */ {{"float", "dx", "1"}, {"int", "block_side_length", "4"}},
      /* category: */ {"GPUMPM"}});
 
-} // namespace zen
+} // namespace zeno

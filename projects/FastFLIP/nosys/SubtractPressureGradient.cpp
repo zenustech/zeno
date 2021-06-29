@@ -16,7 +16,7 @@ static void apply_pressure_gradient(
 	float dx,float dt);
 */
 
-namespace zen{
+namespace zeno{
     
     struct SubtractPressureGradient : zeno::INode{
         virtual void apply() override {

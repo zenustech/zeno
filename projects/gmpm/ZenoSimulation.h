@@ -10,4 +10,4 @@ struct ZenoBoundary : zeno::IObject {
   zs::GeneralBoundary boundary;
 };
 
-} // namespace zen
+} // namespace zeno

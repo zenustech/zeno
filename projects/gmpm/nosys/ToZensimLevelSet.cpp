@@ -32,4 +32,4 @@ static int defToZensimLevelSet = zeno::defNodeClass<ToZensimLevelSet>(
                          /* params: */ {},
                          /* category: */ {"GPUMPM"}});
 
-} // namespace zen
+} // namespace zeno

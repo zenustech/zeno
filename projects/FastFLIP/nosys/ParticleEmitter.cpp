@@ -3,7 +3,7 @@
 #include <omp.h>
 #include "FLIP_vdb.h"
 
-namespace zen{
+namespace zeno{
     
     struct ParticleEmitter : zeno::INode{
         virtual void apply() override {

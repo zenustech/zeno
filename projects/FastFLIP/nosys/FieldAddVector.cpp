@@ -11,7 +11,7 @@
 	float x, float y, float z, float dt)
 */
 
-namespace zen{
+namespace zeno{
     
     struct FieldAddVector : zeno::INode{
         virtual void apply() override {

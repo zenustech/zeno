@@ -31,4 +31,4 @@ static int defOutputZensimParticles = zeno::defNodeClass<OutputZensimParticles>(
                               /* category: */
                               {"ZensimGeometry"}});
 
-} // namespace zen
+} // namespace zeno

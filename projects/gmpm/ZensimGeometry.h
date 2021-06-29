@@ -25,4 +25,4 @@ struct ZenoSparseLevelSet : zeno::IObject {
   zs::SparseLevelSet<3> ls;
 };
 
-} // namespace zen
+} // namespace zeno

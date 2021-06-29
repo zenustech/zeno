@@ -9,7 +9,7 @@ static void clamp_liquid_phi_in_solids(openvdb::FloatGrid::Ptr liquid_sdf,
 										  openvdb::FloatGrid::Ptr pushed_out_liquid_sdf,
 										  float dx);
 */
-namespace zen{
+namespace zeno{
     
     struct PushOutLiquidSDF : zeno::INode{
         virtual void apply() override {

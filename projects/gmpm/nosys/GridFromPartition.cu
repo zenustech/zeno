@@ -68,4 +68,4 @@ static int defExpandPartition = zeno::defNodeClass<ExpandPartition>(
                         /* params: */ {{"int", "lo", "0"}, {"int", "hi", "1"}},
                         /* category: */ {"GPUMPM"}});
 
-} // namespace zen
+} // namespace zeno

@@ -9,7 +9,7 @@
 
 
 
-namespace zen{
+namespace zeno{
 
 struct rigid_body_surface_voxel_mask_reducer {
     

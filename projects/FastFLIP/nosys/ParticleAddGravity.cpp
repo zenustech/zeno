@@ -4,7 +4,7 @@
 #include <omp.h>
 #include "FLIP_vdb.h"
 
-namespace zen{
+namespace zeno{
     
     struct ParticleAddDV : zeno::INode{
         virtual void apply() override {

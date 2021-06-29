@@ -69,4 +69,4 @@ static int defFixedCorotatedConfig = zeno::defNodeClass<ModelFixedCorotated>(
                              /* category: */
                              {"constitutive_model"}});
 
-} // namespace zen
+} // namespace zeno

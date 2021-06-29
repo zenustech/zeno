@@ -13,7 +13,7 @@ void FLIP_vdb::calculate_face_weights(
 */
 
 
-namespace zen{
+namespace zeno{
     
     struct CutCellWeightEval : zeno::INode{
         virtual void apply() override {

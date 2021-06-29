@@ -269,4 +269,4 @@ ZENAPI std::string Descriptor::serialize() const {
 }
 
 
-} // namespace zen
+} // namespace zeno

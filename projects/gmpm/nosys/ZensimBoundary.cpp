@@ -35,4 +35,4 @@ static int defZensimBoundary = zeno::defNodeClass<ZensimBoundary>(
                        /* params: */ {{"string", "type", "sticky"}},
                        /* category: */ {"GPUMPM"}});
 
-} // namespace zen
+} // namespace zeno

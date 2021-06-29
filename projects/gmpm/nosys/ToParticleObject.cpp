@@ -37,4 +37,4 @@ static int defToParticleObject = zeno::defNodeClass<ToParticleObject>(
                          /* outputs: */ {"pars"}, /* params: */ {},
                          /* category: */ {"ZensimGeometry"}});
 
-} // namespace zen
+} // namespace zeno

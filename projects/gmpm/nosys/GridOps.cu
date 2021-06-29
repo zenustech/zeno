@@ -85,4 +85,4 @@ static int defResolveBoundaryOnGrid = zeno::defNodeClass<ResolveBoundaryOnGrid>(
      /* params: */ {},
      /* category: */ {"GPUMPM"}});
 
-} // namespace zen
+} // namespace zeno

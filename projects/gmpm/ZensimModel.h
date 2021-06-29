@@ -11,4 +11,4 @@ struct ZenoConstitutiveModel : zeno::IObject {
   zs::ConstitutiveModelConfig model;
 };
 
-} // namespace zen
+} // namespace zeno
