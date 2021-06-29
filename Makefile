@@ -1,4 +1,4 @@
-O=assets/prim.zsg
+O=arts/prim.zsg
 
 default: run
 

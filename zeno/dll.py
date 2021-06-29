@@ -8,9 +8,9 @@ if os_name == 'win32':
     except ImportError as e:
         raise ImportError('Please run: python -m pip install pywin32') from e
     win32api.SetDllDirectory(rel2abs(__file__, 'lib'))
-    ctypes.cdll.LoadLibrary('zensession.dll')
+    ctypes.cdll.LoadLibrary('zeno.dll')
 else:
-    ctypes.cdll.LoadLibrary(rel2abs(__file__, 'lib', 'libzensession.so'))
+    ctypes.cdll.LoadLibrary(rel2abs(__file__, 'lib', 'libzeno.so'))
 
 from . import libzenpy as core
 

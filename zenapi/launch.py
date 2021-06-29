@@ -4,7 +4,7 @@ import threading
 import atexit
 import shutil
 import os
-import zen
+import zeno
 from multiprocessing import Process
 
 from .descriptor import parse_descriptor_line
@@ -54,11 +54,11 @@ def launchScene(scene, nframes):
     cleanIOPath()
     g_iopath = tempfile.mkdtemp(prefix='zenvis-')
     print('IOPath:', g_iopath)
-    _launch_mproc(zen.runScene, scene, nframes, g_iopath)
+    _launch_mproc(zeno.runScene, scene, nframes, g_iopath)
 
 
 def getDescriptors():
-    descs = zen.dumpDescriptors()
+    descs = zeno.dumpDescriptors()
     descs = descs.splitlines()
     descs = [parse_descriptor_line(line) for line in descs if line.startswith('DESC:')]
     descs = {name: desc for name, desc in descs}
