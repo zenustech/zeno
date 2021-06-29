@@ -24,6 +24,9 @@ configure:
 	cmake -B build
 	ccmake -B build
 
+test: all
+	build/tests/zentest
+
 run: all
 	ZEN_OPEN=$O ./run.sh
 
