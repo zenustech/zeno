@@ -13,17 +13,13 @@
 
 
 #ifdef _MSC_VER
-
-# ifdef DLL_ZENSESSION
+# ifdef DLL_ZENO
 #  define ZENAPI __declspec(dllexport)
 # else
 #  define ZENAPI __declspec(dllimport)
 # endif
-
 #else
-
 # define ZENAPI
-
 #endif
 
 
