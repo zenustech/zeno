@@ -16,7 +16,7 @@ struct SpatialPartitionForParticles : zeno::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green),
                "begin executing SpatialPartitionForParticles\n");
-    // auto partition = zen::IObject::make<ZenoPartition>();
+    // auto partition = zeno::IObject::make<ZenoPartition>();
     auto &partition = get_input("ZSPartition")->as<ZenoPartition>()->get();
 
     auto dx = std::get<float>(get_param("dx"));

@@ -20,7 +20,7 @@ struct GridFromPartition : zeno::INode {
         zs::match([](auto &partition) { return partition.size(); })(partition);
     auto dx = std::get<float>(get_param("dx"));
 
-    // auto grid = zen::IObject::make<ZenoGrid>();
+    // auto grid = zeno::IObject::make<ZenoGrid>();
     auto &grid = get_input("ZSGrid")->as<ZenoGrid>()->get();
     using GridT = zs::GridBlocks<zs::GridBlock<zs::dat32, 3, 2, 2>>;
     // GridT gridblocks{dx, cnt, mh.memspace(), mh.devid()};
@@ -43,7 +43,7 @@ struct GridFromPartition : zeno::INode {
   }
 };
 
-static int defGridFromPartition = zen::defNodeClass<GridFromPartition>(
+static int defGridFromPartition = zeno::defNodeClass<GridFromPartition>(
     "GridFromPartition", {/* inputs: */ {"ZSGrid", "ZSPartition"},
                           /* outputs: */ {},
                           /* params: */ {{"float", "dx", "1"}},
