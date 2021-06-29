@@ -24,6 +24,7 @@ add_library(gmpm SHARED
   nosys/ConstitutiveModels.cpp 
   nosys/ToZensimLevelSet.cpp 
   nosys/ZensimBoundary.cpp 
+  nosys/MakePartitionAndGrid.cpp 
   #nosys/Test.cu
   nosys/PartitionForParticles.cu 
   nosys/GridFromPartition.cu 
