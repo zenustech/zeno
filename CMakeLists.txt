@@ -50,7 +50,7 @@ set_target_properties(libzenpy PROPERTIES
 
 option(ZENO_BUILD_EXTENSIONS "Build extensions for Zeno" ON)
 if (ZENO_BUILD_EXTENSIONS)
-    #add_subdirectory(projects)
+    add_subdirectory(projects)
 endif()
 
 option(ZENO_BUILD_TESTS "Build tests for Zeno" ON)
