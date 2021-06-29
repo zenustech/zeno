@@ -15,13 +15,13 @@ add_subdirectory(external/glad)
 add_subdirectory(zenvis)
 
 
-file(GLOB ZENSESSION_SOURCE zen/*.cpp zen/nodes/*.cpp zen/nodes/*/*.cpp zen/include/zen/*.h)
+file(GLOB ZENO_SOURCE zeno/*.cpp zeno/nodes/*.cpp zeno/nodes/*/*.cpp zeno/include/*/*.h)
 
-add_library(zensession SHARED ${ZENSESSION_SOURCE})
-target_compile_definitions(zensession PRIVATE -DDLL_ZENSESSION)
-target_include_directories(zensession PRIVATE zen/include)
-set(OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zen/lib)
-set_target_properties(zensession PROPERTIES
+add_library(zeno SHARED ${ZENO_SOURCE})
+target_compile_definitions(zeno PRIVATE -DDLL_ZENO)
+target_include_directories(zeno PUBLIC zeno/include)
+set(OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zeno/lib)
+set_target_properties(zeno PROPERTIES
 	LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
 	RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
 	ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR}
@@ -34,10 +34,8 @@ set_target_properties(zensession PROPERTIES
 	)
 
 pybind11_add_module(libzenpy libzenpy.cpp)
-target_include_directories(libzenpy PRIVATE zen/include)
-target_link_libraries(libzenpy PRIVATE zensession)
-set_property(TARGET libzenpy PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/zen)
-set(OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zen)
+target_link_libraries(libzenpy PRIVATE zeno)
+set(OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zeno)
 set_target_properties(libzenpy PROPERTIES
 	LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
 	RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
@@ -50,13 +48,9 @@ set_target_properties(libzenpy PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
 	)
 
-add_custom_command(TARGET libzenpy PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/zen/lib
-    )
-
 option(ZENO_BUILD_EXTENSIONS "Build extensions for Zeno" ON)
 if (ZENO_BUILD_EXTENSIONS)
-    add_subdirectory(projects)
+    #add_subdirectory(projects)
 endif()
 
 option(ZENO_BUILD_TESTS "Build tests for Zeno" ON)
