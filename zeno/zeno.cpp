@@ -111,6 +111,9 @@ ZENAPI void INode::doApply() {
     }
 
     if (has_option("VIEW")) {
+        if (state.has_substep_executed) {
+            return;
+        }
         auto desc = nodeClass->desc.get();
         auto id = desc->outputs[0];
         auto obj = safe_at(outputs, id, "output");

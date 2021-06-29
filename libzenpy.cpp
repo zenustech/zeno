@@ -22,12 +22,12 @@ PYBIND11_MODULE(libzenpy, m) {
         zeno::state = zeno::GlobalState();
         return zeno::state.setIOPath(iopath);
     });
-    m.def("frameBegin", [] () { return zeno::state.frameBegin(); });
     m.def("substepBegin", [] () { return zeno::state.substepBegin(); });
-    m.def("frameEnd", [] () { return zeno::state.frameEnd(); });
-    m.def("substepEnd", [] () {
+    m.def("substepEnd", [] () { return zeno::state.substepEnd(); });
+    m.def("frameBegin", [] () { return zeno::state.frameBegin(); });
+    m.def("frameEnd", [] () {
         zeno::Visualization::endFrame();
-        return zeno::state.substepEnd();
+        return zeno::state.frameEnd();
     });
 
     py::register_exception_translator([](std::exception_ptr p) {
