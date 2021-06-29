@@ -1,4 +1,4 @@
-O=arts/prim.zsg
+O=arts/rigid3.zsg
 
 default: run
 
