@@ -10,6 +10,8 @@ NCPU=48
 
 mkdir -p $PREFIX/lib
 
+# apt-get install -y libffi-dev zlib1g-dev patchelf
+
 ## openblas
 #cp -d /usr/lib/x86_64-linux-gnu/openblas*-pthread/libopenblas*.so $PREFIX/lib
 #
@@ -20,25 +22,26 @@ mkdir -p $PREFIX/lib
 ## openexr
 #git clone https://github.com/zensim-dev/openexr.git --depth=1
 #cd openexr
-#cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX
-#make -C build -j $NCPU
-#make -C build install
+#cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX
+#make -j $NCPU
+#make install
 #cd ..
 #
 ## c-blosc
 #git clone https://github.com/zensim-dev/c-blosc.git --branch=v1.5.0 --depth=1
 #cd c-blosc
-#cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX
-#make -C build -j $NCPU
-#make -C build install
+#cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX
+#make -j $NCPU
+#make install
 #cd ..
 #
 ## openvdb
 #git clone https://github.com/zensim-dev/openvdb.git --depth=1
 #cd openvdb
-#cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX
-#make -C build -j $NCPU
-#make -C build install
+#mkdir -p build && cd build
+#cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX
+#make -j $NCPU
+#make install
 #cd ..
 
 # patchelf
@@ -51,22 +54,22 @@ mkdir -p $PREFIX/lib
 #cd ..
 
 # cpython
-git clone https://gitee.com/mirrors/cpython.git --branch=3.8 --depth=1
+git clone https://gitee.com/mirrors/cpython.git --branch=3.6 --depth=1
 cd cpython
 ./configure --enable-shared --enable-optimizations --prefix=$PREFIX
 make -j $NCPU build_all
 make install
 cd ..
-patchelf --set-rpath $PREFIX/lib $PREFIX/bin/python3.8
+patchelf --set-rpath $PREFIX/lib $PREFIX/bin/python3.6
 
 # zeno
 git clone https://gitee.com/archibate/zeno.git --depth=1
 cd zeno
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_PYTHON_INCLUDE_DIR:BOOL=ON -DPYTHON_INCLUDE_DIR=$PREFIX/include/python3.8 -DPYTHON_EXECUTABLE=$PREFIX/bin/python3.8 #-DEXTENSION_FastFLIP:BOOL=ON -DEXTENSION_zenvdb:BOOL=ON
-make -C build -j $NCPU
-make -C build install
-python3.8 -m pip install -t $PREFIX/lib/python3.8 PyQt5 numpy
-$PREFIX/bin/python3.8 setup.py install
+cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_PYTHON_INCLUDE_DIR:BOOL=ON -DPYTHON_INCLUDE_DIR=$PREFIX/include/python3.6 -DPYTHON_EXECUTABLE=$PREFIX/bin/python3.6 #-DEXTENSION_FastFLIP:BOOL=ON -DEXTENSION_zenvdb:BOOL=ON
+make -j $NCPU
+make install
+python3.6 -m pip install -t $PREFIX/lib/python3.6 PyQt5 numpy
+$PREFIX/bin/python3.6 setup.py install
 cd ..
 
 cat > $PREFIX/start.sh <<EOF
@@ -74,9 +77,10 @@ cat > $PREFIX/start.sh <<EOF
 
 oldwd="\$(pwd)"
 cd -- "\$(dirname "\$0")"
-export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:\$(pwd)/lib"
+newwd="\$(pwd)"
 cd -- "\$oldwd"
-bin/python3.8 -m zenqt "\$@"
+export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:\$newwd/lib"
+exec -- "\$newwd/bin/python3.6" -m zenqt "\$@"
 EOF
 
 chmod +x $PREFIX/start.sh
