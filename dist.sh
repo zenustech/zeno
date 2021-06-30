@@ -10,48 +10,10 @@ NCPU=48
 
 mkdir -p $PREFIX/lib
 
-# apt-get install -y libffi-dev zlib1g-dev patchelf
-
-## openblas
-#cp -d /usr/lib/x86_64-linux-gnu/openblas*-pthread/libopenblas*.so $PREFIX/lib
-#
-## boost
-#cp -d /usr/lib/x86_64-linux-gnu/libboost_iostreams.so* $PREFIX/lib
-#cp -d /usr/lib/x86_64-linux-gnu/libboost_system.so* $PREFIX/lib
-#
-## openexr
-#git clone https://github.com/zensim-dev/openexr.git --depth=1
-#cd openexr
-#cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX
-#make -j $NCPU
-#make install
-#cd ..
-#
-## c-blosc
-#git clone https://github.com/zensim-dev/c-blosc.git --branch=v1.5.0 --depth=1
-#cd c-blosc
-#cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX
-#make -j $NCPU
-#make install
-#cd ..
-#
-## openvdb
-#git clone https://github.com/zensim-dev/openvdb.git --depth=1
-#cd openvdb
-#mkdir -p build && cd build
-#cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX
-#make -j $NCPU
-#make install
-#cd ..
-
-# patchelf
-#git clone https://github.com/zensim-dev/patchelf.git --depth=1
-#cd patchelf
-#./bootstrap.sh
-#./configure --enable-optimizations --prefix=$PREFIX
-#make -j $NCPU
-#make install
-#cd ..
+cp -d /usr/lib/x86_64-linux-gnu/libffi.so* $PREFIX/lib
+cp -d /usr/lib/x86_64-linux-gnu/libz.so* $PREFIX/lib
+cp -d /usr/lib/x86_64-linux-gnu/libcrypt.so* $PREFIX/lib
+cp -d /usr/lib/x86_64-linux-gnu/libgomp.so* $PREFIX/lib
 
 # cpython
 git clone https://gitee.com/mirrors/cpython.git --branch=3.6 --depth=1
