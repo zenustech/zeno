@@ -55,9 +55,17 @@ cd ..
 # zeno
 git clone https://github.com/zensim-dev/zeno.git --depth=1
 cd zeno
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_PYTHON_INCLUDE_DIR:BOOL=ON -DPYTHON_INCLUDE_DIR=$PREFIX/include/python3.8 -DPYTHON_EXECUTABLE=$PREFIX/bin/python3.8
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_PYTHON_INCLUDE_DIR:BOOL=ON -DPYTHON_INCLUDE_DIR=$PREFIX/include/python3.8 -DPYTHON_EXECUTABLE=$PREFIX/bin/python3.8 -DEXTENSION_FastFLIP:BOOL=ON -DEXTENSION_zenvdb:BOOL=ON
 make -C build -j $NCPU
 make -C build install
 python3.8 -m pip install -t $PREFIX/lib/python3.8 PyQt5 numpy
 $PREFIX/bin/python3.8 setup.py install
 cd ..
+
+cat > $PREFIX/start.sh <<EOF
+#!/bin/bash
+
+cd "\$(basename "\$0")"
+bin/patchelf --set-rpath "\`pwd\`" bin/python3.8
+bin/python3.8 -m zenqt
+EOF
