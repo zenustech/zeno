@@ -51,7 +51,7 @@ mkdir -p $PREFIX/lib
 #cd ..
 
 # cpython
-git clone https://github.com/zensim-dev/cpython.git --branch=3.8 --depth=1
+git clone https://gitee.com/mirrors/cpython.git --branch=3.8 --depth=1
 cd cpython
 ./configure --enable-shared --enable-optimizations --prefix=$PREFIX
 make -j $NCPU build_all
@@ -60,7 +60,7 @@ cd ..
 patchelf --set-rpath $PREFIX/lib $PREFIX/bin/python3.8
 
 # zeno
-git clone https://github.com/zensim-dev/zeno.git --depth=1
+git clone https://gitee.com/archibate/zeno.git --depth=1
 cd zeno
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_PYTHON_INCLUDE_DIR:BOOL=ON -DPYTHON_INCLUDE_DIR=$PREFIX/include/python3.8 -DPYTHON_EXECUTABLE=$PREFIX/bin/python3.8 #-DEXTENSION_FastFLIP:BOOL=ON -DEXTENSION_zenvdb:BOOL=ON
 make -C build -j $NCPU
