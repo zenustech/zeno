@@ -13,6 +13,34 @@
 namespace Bow {
 namespace EulerGas {
 
+template <class T, int dim>
+struct solverControl {
+    // ambient data
+    Array<T, dim + 2, 1> q_amb;
+    T P_amb;
+    T gamma;
+    // clamp data
+    T clamp_ratio = 1e-6;
+    T lowest_rho = 1.25e-6;
+    T lowest_int_e_by_rho = 2e-6;
+    // control datas
+    bool use_RK = true;
+    bool high_order_Bspline = false;
+    bool have_solid = false;
+    bool have_gravity_gas = false;
+    bool add_source_term = false;
+    T cg_converge_cretiria = 1e-7;
+    int cg_it_limit = 500;
+    bool output_vtk = false;
+    // calculating dt
+    T dt_min = 5e-10;
+    T dt_max = 5e-2;
+    T CFL = 0.5;
+    T v_ref = 0;
+    T a_ref = 0;
+};
+typedef solverControl<double, 3> solverControld;
+typedef solverControl<float, 3> solverControlf;
 template <class T, int dim, class StorageIndex, bool XFastestSweep = false>
 class GasSimulator : virtual public PhysicallyBasedSimulator<T, dim> {
 public:
@@ -54,7 +82,7 @@ public:
     T a_ref = 0;
 
     // fields wrapper
-    FieldHelperDense<T, dim, StorageIndex, XFastestSweep> field_helper;
+    FieldHelperDense<T, dim, StorageIndex, XFastestSweep>& field_helper;
     // linear projection sys
     // assembler and builder
     Bow::LinearProjection::GasAssembler<
@@ -110,13 +138,81 @@ public:
 
         Bow::FileSystem::create_path(output_directory);
     }
-
+    solverControl<T, dim> getSolverControl()
+    {
+        solverControl<T, dim> _sc;
+        _sc.q_amb = q_amb;
+        _sc.P_amb = P_amb;
+        _sc.gamma = gamma;
+        _sc.clamp_ratio = clamp_ratio;
+        _sc.lowest_rho = lowest_rho;
+        _sc.lowest_int_e_by_rho = lowest_int_e_by_rho;
+        _sc.use_RK = use_RK;
+        _sc.high_order_Bspline = high_order_Bspline;
+        _sc.have_solid = have_solid;
+        _sc.have_gravity_gas = have_gravity_gas;
+        _sc.add_source_term = add_source_term;
+        _sc.cg_converge_cretiria = cg_converge_cretiria;
+        _sc.cg_it_limit = cg_it_limit;
+        _sc.output_vtk = output_vtk;
+        _sc.dt_min = dt_min;
+        _sc.dt_max = dt_max;
+        _sc.CFL = CFL;
+        _sc.v_ref = v_ref;
+        _sc.a_ref = a_ref;
+        return _sc;
+    }
+    void setSolverControl(solverControl<T, dim>& _sc)
+    {
+        q_amb = _sc.q_amb;
+        P_amb = _sc.P_amb;
+        gamma = _sc.gamma;
+        clamp_ratio = _sc.clamp_ratio;
+        lowest_rho = _sc.lowest_rho;
+        lowest_int_e_by_rho = _sc.lowest_int_e_by_rho;
+        use_RK = _sc.use_RK;
+        high_order_Bspline = _sc.high_order_Bspline;
+        have_solid = _sc.have_solid;
+        have_gravity_gas = _sc.have_gravity_gas;
+        add_source_term = _sc.add_source_term;
+        cg_converge_cretiria = _sc.cg_converge_cretiria;
+        cg_it_limit = _sc.cg_it_limit;
+        output_vtk = _sc.output_vtk;
+        dt_min = _sc.dt_min;
+        dt_max = _sc.dt_max;
+        CFL = _sc.CFL;
+        v_ref = _sc.v_ref;
+        a_ref = _sc.a_ref;
+    }
+    GasSimulator(const T dx_, const Array<int, dim, 1> bbmin_,
+        const Array<int, dim, 1> bbmax_,
+        const Array<T, dim + 2, 1> q_amb_, FieldHelperDense<T, dim, StorageIndex, XFastestSweep>& _field_helper,
+        const T gamma_ = 1.4,
+        const T CFL_ = 0.5)
+        : dx(dx_), field_helper(_field_helper), sys_builder(dx_), coupling_sys_builder(dx_), gamma(gamma_), CFL(CFL_)
+    {
+        set_ambient(q_amb_, gamma_);
+        // close the simd domain
+        field_helper.iterateGridSerial(
+            [&](const IV& I) {
+                StorageIndex idx = field_helper.grid[I].idx;
+                if ((I.array() - bbmin_ < 0).any() || (I.array() - bbmax_ >= 0).any())
+                    field_helper.cell_type[idx] = CellType::FREE;
+                else
+                    field_helper.cell_type[idx] = CellType::GAS;
+            },
+            2);
+        // initial backup
+        field_helper.cell_type_origin = field_helper.cell_type;
+        field_helper.cell_type_backup = field_helper.cell_type;
+    }
     // constructor
     GasSimulator(const T dx_, const Array<int, dim, 1> bbmin_,
         const Array<int, dim, 1> bbmax_,
+        FieldHelperDense<T, dim, StorageIndex, XFastestSweep>& _field_helper,
         const Array<T, dim + 2, 1> q_amb_, const T gamma_ = 1.4,
         const T CFL_ = 0.5)
-        : dx(dx_), field_helper(q_amb_, bbmin_, bbmax_), sys_builder(dx_), coupling_sys_builder(dx_), gamma(gamma_), CFL(CFL_)
+        : dx(dx_), field_helper(_field_helper), sys_builder(dx_), coupling_sys_builder(dx_), gamma(gamma_), CFL(CFL_)
     {
         set_ambient(q_amb_, gamma_);
         // close the simd domain
@@ -436,5 +532,6 @@ public:
             dump_vtk(frame_num);
     }
 };
+typedef GasSimulator<double, 3, long long, true> zenCompressSim;
 }
 } // namespace Bow::EulerGas

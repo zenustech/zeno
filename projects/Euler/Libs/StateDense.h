@@ -73,6 +73,7 @@ public:
     // for visualization
     Field<T> shawdow_graph;
     Field<TV> schlieren;
+    float dx;
 
     //SERIALIZATION_REGISTER(q)
     //SERIALIZATION_REGISTER(cell_type)
@@ -91,8 +92,8 @@ public:
     // source term, added to the qs after advection+projection directly
     Field<QArray> source;
 
-    FieldHelperDense(const QArray& q_amb, const IA bbmin_, const IA bbmax_)
-        : grid(bbmin_, bbmax_, 2)
+    FieldHelperDense(const QArray& q_amb, const IA bbmin_, const IA bbmax_, float _dx)
+        : grid(bbmin_, bbmax_, 2), dx(_dx)
     {
         // Resize the background fields
         // TODO decouple fields to outside this class
@@ -567,8 +568,8 @@ public:
     };
 };
 
-FieldHelperDense<double, 3, long long, true>* FieldHelperDenseDouble3Ptr;
-
+typedef FieldHelperDense<double, 3, long long, true>* FieldHelperDenseDouble3Ptr;
+typedef FieldHelperDense<double, 3, long long, true> FieldHelperDenseDouble3;
 }
 } // namespace Bow::EulerGas
 
