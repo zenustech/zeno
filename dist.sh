@@ -73,7 +73,7 @@ cat > $PREFIX/start.sh <<EOF
 #!/bin/bash
 
 cd "\$(dirname "\$0")"
-bin/patchelf --set-rpath "\$(pwd)" bin/python3.8
+bin/patchelf --set-rpath "\$(pwd)/lib" bin/python3.8
 bin/python3.8 -m zenqt
 EOF
 
