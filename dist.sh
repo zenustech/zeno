@@ -65,7 +65,9 @@ cd ..
 cat > $PREFIX/start.sh <<EOF
 #!/bin/bash
 
-cd "\$(basename "\$0")"
-bin/patchelf --set-rpath "\`pwd\`" bin/python3.8
+cd "\$(dirname "\$0")"
+bin/patchelf --set-rpath "\$(pwd)" bin/python3.8
 bin/python3.8 -m zenqt
 EOF
+
+chmod +x $PREFIX/start.sh
