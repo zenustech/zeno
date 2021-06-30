@@ -1,3 +1,4 @@
+# archibate/zeno_dev
 FROM ubuntu:20.04
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -19,27 +20,17 @@ RUN apt-get install -y libopenexr-dev
 RUN apt-get install -y zlib1g-dev
 RUN apt-get install -y libeigen3-dev
 RUN apt-get install -y libopenblas-dev
+RUN apt-get install -y dh-autoreconf
+RUN apt-get install -y libffi-dev
 
-RUN git clone https://gitee.com/codespace1212/c-blosc.git
+RUN git clone https://github.com/zensim-dev/c-blosc.git
 RUN cd c-blosc && git checkout tags/v1.5.0 -b v1.5.0 && mkdir build && cd build && cmake .. && make -j32 && make install && cd ../..
 
-RUN git clone https://gitee.com/zeng_gui/openvdb.git
+RUN git clone https://github.com/zensim-dev/openvdb.git
 RUN cd openvdb && mkdir build && cd build && cmake .. && make -j32 && make install && cd ../..
 
 RUN apt-get install -y python-is-python3
 RUN apt-get install -y python-dev-is-python3
 RUN apt-get install -y python3-pip
-
-#################################################
-# Below is only for end-user application images #
-#################################################
-
-#RUN python -m pip install numpy
-#RUN python -m pip install PyQt5
-#RUN apt-get install -y libqt5core5a
-#RUN apt-get install -y qt5dxcb-plugin
-#RUN apt-get install -y libglvnd-dev
-#RUN apt-get install -y libglapi-mesa
-#RUN apt-get install -y libosmesa6
 
 ENTRYPOINT bash
