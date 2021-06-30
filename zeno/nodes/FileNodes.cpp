@@ -1,11 +1,11 @@
 #include <zeno/zeno.h>
 #include <zeno/StringObject.h>
 #include <zeno/GlobalState.h>
-#include <filesystem>
+#include <zeno/filesystem.h>
 #include <iostream>
 #include <fstream>
 
-namespace fs = std::filesystem;
+namespace fs = zeno::fs;
 
 struct MakeString : zeno::INode {
     virtual void apply() override {

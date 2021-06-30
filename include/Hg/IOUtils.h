@@ -1,10 +1,23 @@
 #pragma once
 
 #include <string>
-#include <filesystem>
 #include <iostream>
 #include <fstream>
 #include <cstdio>
+
+#if __has_include(<filesystem>)
+#include <filesystem>
+namespace hg {
+namespace fs = std::filesystem;
+}
+#elif __has_include(<experimental/filesystem>)
+#include <experimental/filesystem>
+namespace hg {
+namespace fs = std::experimental::filesystem;
+}
+#else
+#error "missing <filesystem> header."
+#endif
 
 
 namespace hg {
