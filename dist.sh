@@ -37,7 +37,7 @@ cp -d /usr/lib/x86_64-linux-gnu/libboost_system.so* $PREFIX/lib
 #cp -d /usr/lib/x86_64-linux-gnu/liblzma.so* $PREFIX/lib
 
 # c-blosc
-git clone https://github.com/Blosc/c-blosc.git --branch=v1.5.0 --depth=1
+git clone https://github.com/zensim-dev/c-blosc.git --branch=v1.5.0 --depth=1
 cd c-blosc
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX
 make -C build -j $NCPU
@@ -45,7 +45,7 @@ make -C build install
 cd ..
 
 # openvdb
-git clone https://github.com/AcademySoftwareFoundation/openvdb.git --depth=1
+git clone https://github.com/zensim-dev/openvdb.git --depth=1
 cd openvdb
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX
 make -C build -j $NCPU
