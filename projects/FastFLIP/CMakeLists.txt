@@ -11,7 +11,7 @@ find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenVDB REQUIRED)
 
-set(FLIP_SOURCE levelset_util.cpp volumeMeshTools.cpp FLIP_vdb.h FLIP_vdb.cpp simd_vdb_poisson.h simd_vdb_poisson.cpp SimOptions.cpp Timer.cpp )
+set(FLIP_SOURCE levelset_util.cpp FLIP_vdb.h FLIP_vdb.cpp simd_vdb_poisson.h simd_vdb_poisson.cpp )
 file(GLOB NOSYS_SOURCE nosys/*.cpp nosys/*.h)
 
 add_library(FLIPlib SHARED ${FLIP_SOURCE} ${NOSYS_SOURCE})
@@ -27,7 +27,7 @@ endif()
 target_include_directories(FLIPlib PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_link_libraries(FLIPlib PRIVATE TBB::tbb TBB::tbbmalloc)
-target_link_libraries(FLIPlib PRIVATE pthread openblas lapack)
+target_link_libraries(FLIPlib PRIVATE pthread)
 
 #disable default malloc options
 if (WIN32)
