@@ -2,7 +2,7 @@
 
 export PYTHONPATH=`pwd`
 if [ -z $USE_GDB ]; then
-    python -m zenqt
+    python3 -m zenqt
 else
-    gdb python -ex 'r -m zenqt'
+    gdb python3 -ex 'r -m zenqt'
 fi
