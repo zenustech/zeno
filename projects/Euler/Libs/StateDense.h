@@ -58,25 +58,25 @@ public:
 
     GasDenseGrid<dim, StorageIndex, XFastestSweep> grid;
     // Background Fields:
-    Field<QArray> q, q_backup;
-    Field<FArray> flux;
-    Field<T> rhof;
-    Field<T> Pf, Pf_backup;
-    Field<TV> uf;
+    Field<QArray> q, q_backup; // center
+    Field<FArray> flux; // mac
+    Field<T> rhof; // center
+    Field<T> Pf, Pf_backup; //vertex
+    Field<TV> uf; //center
     // Solid Background Fields:
-    Field<T> rhos;
-    Field<T> Ps, Ps_backup;
-    Field<TV> us;
-    Field<T> las, ghost_volume, ghost_volume_center;
+    Field<T> rhos; // center
+    Field<T> Ps, Ps_backup; // vertex
+    Field<TV> us; // center
+    Field<T> las, ghost_volume, ghost_volume_center; // vertex/vertex/center
     // celltypes
-    Field<int> cell_type, cell_type_backup, cell_type_origin;
+    Field<int> cell_type, cell_type_backup, cell_type_origin; // center
     // for visualization
     Field<T> shawdow_graph;
     Field<TV> schlieren;
 
-    SERIALIZATION_REGISTER(q)
-    SERIALIZATION_REGISTER(cell_type)
-    SERIALIZATION_REGISTER(cell_type_origin)
+    //SERIALIZATION_REGISTER(q)
+    //SERIALIZATION_REGISTER(cell_type)
+    //SERIALIZATION_REGISTER(cell_type_origin)
 
     // active dof numbers
     StorageIndex nuf = 0, nPf = 0, nYf = 0, nHf = 0;
@@ -566,6 +566,9 @@ public:
         return;
     };
 };
+
+FieldHelperDense<double, 3, long long, true>* FieldHelperDenseDouble3Ptr;
+
 }
 } // namespace Bow::EulerGas
 
