@@ -14,6 +14,7 @@ cp -d /usr/lib/x86_64-linux-gnu/libz.so* $PREFIX/lib
 cp -d /usr/lib/x86_64-linux-gnu/libcrypt.so* $PREFIX/lib
 cp -d /usr/lib/x86_64-linux-gnu/libgomp.so* $PREFIX/lib
 cp -d /usr/lib/x86_64-linux-gnu/libgthread-2.0.so* $PREFIX/lib
+cp -d /usr/lib/x86_64-linux-gnu/libglib-2.0.so* $PREFIX/lib
 
 # cpython
 git clone https://gitee.com/mirrors/cpython.git --branch=3.6 --depth=1
@@ -37,6 +38,7 @@ cd ..
 cat > $PREFIX/start.sh <<EOF
 #!/bin/bash
 
+echo "If ZENO Qt editor failed to start, consider run: apt install qt5dxcb-plugin"
 oldwd="\$(pwd)"
 cd -- "\$(dirname "\$0")"
 newwd="\$(pwd)"
