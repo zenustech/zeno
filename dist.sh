@@ -6,7 +6,7 @@ mkdir -p /tmp/zenv-build /tmp/zenv
 cd /tmp/zenv-build
 
 PREFIX=/tmp/zenv
-NCPU=16
+NCPU=48
 
 mkdir -p $PREFIX/lib
 
@@ -51,22 +51,22 @@ make install
 cd ..
 
 # cpython
-git clone https://github.com/zensim-dev/cpython.git --branch=3.9 --depth=1
+git clone https://github.com/zensim-dev/cpython.git --branch=3.8 --depth=1
 cd cpython
 ./configure --enable-shared --enable-optimizations --prefix=$PREFIX
 make -j $NCPU build_all
 make install
 cd ..
-$PREFIX/bin/patchelf --set-rpath $PREFIX/lib $PREFIX/bin/python3.9
+$PREFIX/bin/patchelf --set-rpath $PREFIX/lib $PREFIX/bin/python3.8
 
 # zeno
 git clone https://github.com/zensim-dev/zeno.git --depth=1
 cd zeno
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_PYTHON_INCLUDE_DIR:BOOL=ON -DPYTHON_INCLUDE_DIR=$PREFIX/include/python3.9 -DPYTHON_EXECUTABLE=$PREFIX/bin/python3.9 #-DEXTENSION_FastFLIP:BOOL=ON -DEXTENSION_zenvdb:BOOL=ON
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_PYTHON_INCLUDE_DIR:BOOL=ON -DPYTHON_INCLUDE_DIR=$PREFIX/include/python3.8 -DPYTHON_EXECUTABLE=$PREFIX/bin/python3.8 #-DEXTENSION_FastFLIP:BOOL=ON -DEXTENSION_zenvdb:BOOL=ON
 make -C build -j $NCPU
 make -C build install
-http_proxy= https_proxy= python3.9 -m pip install -t $PREFIX/lib/python3.9 PyQt5 numpy
-$PREFIX/bin/python3.9 setup.py install
+http_proxy= https_proxy= python3.8 -m pip install -t $PREFIX/lib/python3.8 PyQt5 numpy
+$PREFIX/bin/python3.8 setup.py install
 cd ..
 
 cat > $PREFIX/start.sh <<EOF
@@ -76,7 +76,7 @@ oldwd="\$(pwd)"
 cd -- "\$(dirname "\$0")"
 export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:\$(pwd)/lib"
 cd -- "\$oldwd"
-bin/python3.9 -m zenqt "\$@"
+bin/python3.8 -m zenqt "\$@"
 EOF
 
 chmod +x $PREFIX/start.sh
