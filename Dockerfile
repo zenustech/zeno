@@ -22,6 +22,7 @@ RUN apt-get install -y libeigen3-dev
 RUN apt-get install -y libopenblas-dev
 RUN apt-get install -y dh-autoreconf
 RUN apt-get install -y libffi-dev
+RUN apt-get install -y patchelf
 
 RUN git clone https://github.com/zensim-dev/c-blosc.git
 RUN cd c-blosc && git checkout tags/v1.5.0 -b v1.5.0 && mkdir build && cd build && cmake .. && make -j32 && make install && cd ../..
@@ -32,5 +33,10 @@ RUN cd openvdb && mkdir build && cd build && cmake .. && make -j32 && make insta
 RUN apt-get install -y python-is-python3
 RUN apt-get install -y python-dev-is-python3
 RUN apt-get install -y python3-pip
+
+COPY dist.sh .
+
+RUN apt-get install -y libglvnd-dev
+RUN apt-get install -y libglapi-mesa
 
 ENTRYPOINT bash
