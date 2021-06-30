@@ -1,4 +1,4 @@
-# archibate/zeno_dev
+# archibate/zeno_dist
 FROM ubuntu:18.04
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -23,6 +23,4 @@ RUN apt-get install -y libffi-dev
 RUN apt-get install -y zlib1g-dev
 RUN apt-get install -y patchelf
 
-COPY dist.sh .
-
-ENTRYPOINT bash
+COPY _dist.sh /root

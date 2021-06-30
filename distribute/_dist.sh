@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-rm -rf /tmp/zenv-build /tmp/zenv
 mkdir -p /tmp/zenv-build /tmp/zenv
 cd /tmp/zenv-build
 
@@ -14,6 +13,7 @@ cp -d /usr/lib/x86_64-linux-gnu/libffi.so* $PREFIX/lib
 cp -d /usr/lib/x86_64-linux-gnu/libz.so* $PREFIX/lib
 cp -d /usr/lib/x86_64-linux-gnu/libcrypt.so* $PREFIX/lib
 cp -d /usr/lib/x86_64-linux-gnu/libgomp.so* $PREFIX/lib
+cp -d /usr/lib/x86_64-linux-gnu/libgthread-2.0.so* $PREFIX/lib
 
 # cpython
 git clone https://gitee.com/mirrors/cpython.git --branch=3.6 --depth=1
