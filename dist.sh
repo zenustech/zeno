@@ -10,6 +10,21 @@ NCPU=48
 
 mkdir -p $PREFIX/lib
 
+# openblas
+cp -d /usr/lib/x86_64-linux-gnu/openblas*-pthread/libopenblas*.so $PREFIX/lib
+
+# boost
+cp -d /usr/lib/x86_64-linux-gnu/libboost_iostreams.so* $PREFIX/lib
+cp -d /usr/lib/x86_64-linux-gnu/libboost_system.so* $PREFIX/lib
+
+# openexr
+git clone https://github.com/zensim-dev/openexr.git --depth=1
+cd openexr
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX
+make -C build -j $NCPU
+make -C build install
+cd ..
+
 # patchelf
 git clone https://github.com/zensim-dev/patchelf.git --depth=1
 cd patchelf
@@ -27,14 +42,6 @@ make -j $NCPU build_all
 make install
 cd ..
 $PREFIX/bin/patchelf --set-rpath $PREFIX/lib $PREFIX/bin/python3.8
-
-# boost
-cp -d /usr/lib/x86_64-linux-gnu/libboost_iostreams.so* $PREFIX/lib
-cp -d /usr/lib/x86_64-linux-gnu/libboost_system.so* $PREFIX/lib
-
-# zlib
-#cp -d /usr/lib/x86_64-linux-gnu/libz.so* $PREFIX/lib
-#cp -d /usr/lib/x86_64-linux-gnu/liblzma.so* $PREFIX/lib
 
 # c-blosc
 git clone https://github.com/zensim-dev/c-blosc.git --branch=v1.5.0 --depth=1
