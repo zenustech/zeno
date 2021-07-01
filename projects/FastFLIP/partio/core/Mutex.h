@@ -40,97 +40,59 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
 #include <pthread.h>
 
-namespace Partio
-{
+namespace Partio {
 
 #ifndef PARTIO_USE_SPINLOCK
 
-    class PartioMutex
-    {
-        pthread_mutex_t CacheLock;
-    
-    public:
-        inline PartioMutex()
-        {
-            pthread_mutex_init(&CacheLock,0);
-        }
-    
-        inline ~PartioMutex()
-        {
-            pthread_mutex_destroy(&CacheLock);
-        }
-    
-        inline void lock()
-        {
-            pthread_mutex_lock(&CacheLock);
-        }
-    
-        inline void unlock()
-        {
-            pthread_mutex_unlock(&CacheLock);
-        }
-    };
-    
+class PartioMutex {
+  pthread_mutex_t CacheLock;
+
+public:
+  inline PartioMutex() { pthread_mutex_init(&CacheLock, 0); }
+
+  inline ~PartioMutex() { pthread_mutex_destroy(&CacheLock); }
+
+  inline void lock() { pthread_mutex_lock(&CacheLock); }
+
+  inline void unlock() { pthread_mutex_unlock(&CacheLock); }
+};
+
 #else
 
-    class PartioMutex
-    {
-        pthread_spinlock_t CacheLock;
-    
-    public:
-        inline PartioMutex()
-        {
-            pthread_spinlock_init(&CacheLock,PTHREAD_PROCESS_PRIVATE);
-        }
-    
-        inline ~PartioMutex()
-        {
-            pthread_spinlock_destroy(&CacheLock);
-        }
-    
-        inline void lock()
-        {
-            pthread_spinlock_lock(&CacheLock);
-        }
-    
-        inline void unlock()
-        {
-            pthread_spinlock_unlock(&CacheLock);
-        }
-    };
-    
+class PartioMutex {
+  pthread_spinlock_t CacheLock;
+
+public:
+  inline PartioMutex() {
+    pthread_spinlock_init(&CacheLock, PTHREAD_PROCESS_PRIVATE);
+  }
+
+  inline ~PartioMutex() { pthread_spinlock_destroy(&CacheLock); }
+
+  inline void lock() { pthread_spinlock_lock(&CacheLock); }
+
+  inline void unlock() { pthread_spinlock_unlock(&CacheLock); }
+};
+
 #endif // USE_PTHREAD_SPINLOCK
-}
+} // namespace Partio
 
 #else
 #include <windows.h>
-    namespace Partio{
+namespace Partio {
 
-   class PartioMutex
-    {
-        HANDLE CacheLock;
-    
-    public:
-        inline PartioMutex()
-        {
-            CacheLock=CreateMutex(0,FALSE,"partiocache");
-        }
-    
-        inline ~PartioMutex()
-        {
-            CloseHandle(CacheLock);
-        }
-    
-        inline void lock()
-        {
-            WaitForSingleObject(CacheLock,INFINITE);
-        }
-    
-        inline void unlock()
-        {
-            ReleaseMutex(CacheLock);
-        }
-    };
-    }
+class PartioMutex {
+  HANDLE CacheLock;
+
+public:
+  inline PartioMutex() { CacheLock = CreateMutex(0, FALSE, "partiocache"); }
+
+  inline ~PartioMutex() { CloseHandle(CacheLock); }
+
+  inline void lock() { WaitForSingleObject(CacheLock, INFINITE); }
+
+  inline void unlock() { ReleaseMutex(CacheLock); }
+};
+} // namespace Partio
 #endif // USE_PTHREADS
 #endif // Header guard

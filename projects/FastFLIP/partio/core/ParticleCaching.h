@@ -36,9 +36,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 #ifndef _ParticleCaching_h_
 #define _ParticleCaching_h_
 
-namespace Partio{
+namespace Partio {
 class Particles;
-void freeCached(ParticlesInfo* particles);
-}
+void freeCached(ParticlesInfo *particles);
+} // namespace Partio
 
 #endif

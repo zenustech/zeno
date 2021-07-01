@@ -39,97 +39,109 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 #include <cassert>
 #include <iostream>
 
-namespace Partio{
+namespace Partio {
 
-template<class T>
-void endianSwap(T& value)
-{
-     T temp=value;
-     char* src=(char*)&temp;
-     char* dest=(char*)&value;
-     for(unsigned int i=0;i<sizeof(T);i++){
-         dest[i]=src[sizeof(T)-i-1];
-     }
+template <class T> void endianSwap(T &value) {
+  T temp = value;
+  char *src = (char *)&temp;
+  char *dest = (char *)&value;
+  for (unsigned int i = 0; i < sizeof(T); i++) {
+    dest[i] = src[sizeof(T) - i - 1];
+  }
 }
 
 #ifdef PartioBIG_ENDIAN
 struct BIGEND {
-    template<class T> static void swap(T&){
-    }
+  template <class T> static void swap(T &) {}
 };
 
 struct LITEND {
-    template<class T> static void swap(T& x){
-        endianSwap(x);
-    }
+  template <class T> static void swap(T &x) { endianSwap(x); }
 };
 #else
 struct BIGEND {
-    template<class T> static void swap(T& x){
-        endianSwap(x);
-    }
+  template <class T> static void swap(T &x) { endianSwap(x); }
 };
 
 struct LITEND {
-    template<class T> static void swap(T&){
-    }
+  template <class T> static void swap(T &) {}
 };
 #endif
 
-template<class E,class T> inline void
-read(std::istream& input,T& d)
-{
-    input.read((char*)&d,sizeof(T));
-    E::swap(d);
+template <class E, class T> inline void read(std::istream &input, T &d) {
+  input.read((char *)&d, sizeof(T));
+  E::swap(d);
 }
 
-template<class E,class T> inline void
-write(std::ostream& output,const T& d)
-{
-    T copy=d;
-    E::swap(copy);
-    output.write((char*)&copy,sizeof(T));
+template <class E, class T>
+inline void write(std::ostream &output, const T &d) {
+  T copy = d;
+  E::swap(copy);
+  output.write((char *)&copy, sizeof(T));
 }
 
-template<class E,class T1,class T2>
-void read(std::istream& input,T1& d1,T2& d2)
-{read<E>(input,d1);read<E>(input,d2);}
-
-template<class E,class T1,class T2,class T3>
-void read(std::istream& input,T1& d1,T2& d2,T3& d3)
-{read<E>(input,d1);read<E>(input,d2,d3);}
-
-template<class E,class T1,class T2,class T3,class T4>
-void read(std::istream& input,T1& d1,T2& d2,T3& d3,T4& d4)
-{read<E>(input,d1);read<E>(input,d2,d3,d4);}
-
-template<class E,class T1,class T2,class T3,class T4,class T5>
-void read(std::istream& input,T1& d1,T2& d2,T3& d3,T4& d4,T5& d5)
-{read<E>(input,d1);read<E>(input,d2,d3,d4,d5);}
-
-template<class E,class T1,class T2,class T3,class T4,class T5,class T6>
-void read(std::istream& input,T1& d1,T2& d2,T3& d3,T4& d4,T5& d5,T6& d6)
-{read<E>(input,d1);read<E>(input,d2,d3,d4,d5,d6);}
-
-template<class E,class T1,class T2>
-void write(std::ostream& output,const T1& d1,const T2& d2)
-{write<E>(output,d1);write<E>(output,d2);}
-
-template<class E,class T1,class T2,class T3>
-void write(std::ostream& output,const T1& d1,const T2& d2,const T3& d3)
-{write<E>(output,d1);write<E>(output,d2,d3);}
-
-template<class E,class T1,class T2,class T3,class T4>
-void write(std::ostream& output,const T1& d1,const T2& d2,const T3& d3,const T4& d4)
-{write<E>(output,d1);write<E>(output,d2,d3,d4);}
-
-template<class E,class T1,class T2,class T3,class T4,class T5>
-void write(std::ostream& output,const T1& d1,const T2& d2,const T3& d3,const T4& d4,const T5& d5)
-{write<E>(output,d1);write<E>(output,d2,d3,d4,d5);}
-
-template<class E,class T1,class T2,class T3,class T4,class T5,class T6>
-void write(std::ostream& output,const T1& d1,const T2& d2,const T3& d3,const T4& d4,const T5& d5,const T6& d6)
-{write<E>(output,d1);write<E>(output,d2,d3,d4,d5,d6);}
-
+template <class E, class T1, class T2>
+void read(std::istream &input, T1 &d1, T2 &d2) {
+  read<E>(input, d1);
+  read<E>(input, d2);
 }
+
+template <class E, class T1, class T2, class T3>
+void read(std::istream &input, T1 &d1, T2 &d2, T3 &d3) {
+  read<E>(input, d1);
+  read<E>(input, d2, d3);
+}
+
+template <class E, class T1, class T2, class T3, class T4>
+void read(std::istream &input, T1 &d1, T2 &d2, T3 &d3, T4 &d4) {
+  read<E>(input, d1);
+  read<E>(input, d2, d3, d4);
+}
+
+template <class E, class T1, class T2, class T3, class T4, class T5>
+void read(std::istream &input, T1 &d1, T2 &d2, T3 &d3, T4 &d4, T5 &d5) {
+  read<E>(input, d1);
+  read<E>(input, d2, d3, d4, d5);
+}
+
+template <class E, class T1, class T2, class T3, class T4, class T5, class T6>
+void read(std::istream &input, T1 &d1, T2 &d2, T3 &d3, T4 &d4, T5 &d5, T6 &d6) {
+  read<E>(input, d1);
+  read<E>(input, d2, d3, d4, d5, d6);
+}
+
+template <class E, class T1, class T2>
+void write(std::ostream &output, const T1 &d1, const T2 &d2) {
+  write<E>(output, d1);
+  write<E>(output, d2);
+}
+
+template <class E, class T1, class T2, class T3>
+void write(std::ostream &output, const T1 &d1, const T2 &d2, const T3 &d3) {
+  write<E>(output, d1);
+  write<E>(output, d2, d3);
+}
+
+template <class E, class T1, class T2, class T3, class T4>
+void write(std::ostream &output, const T1 &d1, const T2 &d2, const T3 &d3,
+           const T4 &d4) {
+  write<E>(output, d1);
+  write<E>(output, d2, d3, d4);
+}
+
+template <class E, class T1, class T2, class T3, class T4, class T5>
+void write(std::ostream &output, const T1 &d1, const T2 &d2, const T3 &d3,
+           const T4 &d4, const T5 &d5) {
+  write<E>(output, d1);
+  write<E>(output, d2, d3, d4, d5);
+}
+
+template <class E, class T1, class T2, class T3, class T4, class T5, class T6>
+void write(std::ostream &output, const T1 &d1, const T2 &d2, const T3 &d3,
+           const T4 &d4, const T5 &d5, const T6 &d6) {
+  write<E>(output, d1);
+  write<E>(output, d2, d3, d4, d5, d6);
+}
+
+} // namespace Partio
 #endif

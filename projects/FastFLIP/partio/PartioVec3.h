@@ -36,70 +36,76 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 #pragma once
 
 #include <algorithm>
-#include <iostream>
 #include <cmath>
+#include <iostream>
 
-namespace Partio{
+namespace Partio {
 
-class Vec3
-{
+class Vec3 {
 public:
-    float x,y,z;
+  float x, y, z;
 
-    inline Vec3()
-        :x(0),y(0),z(0)
-    {}
+  inline Vec3() : x(0), y(0), z(0) {}
 
-    inline Vec3(const float x,const float y,const float z)
-        :x(x),y(y),z(z)
-    {}
+  inline Vec3(const float x, const float y, const float z) : x(x), y(y), z(z) {}
 
-    inline Vec3(const float v[3])
-        :x(v[0]),y(v[1]),z(v[2])
-    {}
+  inline Vec3(const float v[3]) : x(v[0]), y(v[1]), z(v[2]) {}
 
-    inline float length()
-    {return std::sqrt(x*x+y*y+z*z);}
+  inline float length() { return std::sqrt(x * x + y * y + z * z); }
 
-    inline float normalize()
-    {float l=length();x/=l;y/=l;z/=l;return l;}
+  inline float normalize() {
+    float l = length();
+    x /= l;
+    y /= l;
+    z /= l;
+    return l;
+  }
 
-    inline Vec3 normalized() const
-    {Vec3 foo(x,y,z);foo.normalize();return foo;}
+  inline Vec3 normalized() const {
+    Vec3 foo(x, y, z);
+    foo.normalize();
+    return foo;
+  }
 
-    inline Vec3 operator*(const float a) const
-    {return Vec3(a*x,a*y,a*z);}
+  inline Vec3 operator*(const float a) const {
+    return Vec3(a * x, a * y, a * z);
+  }
 
-    inline Vec3 operator-(const Vec3& v) const
-    {return Vec3(x-v.x,y-v.y,z-v.z);}
+  inline Vec3 operator-(const Vec3 &v) const {
+    return Vec3(x - v.x, y - v.y, z - v.z);
+  }
 
-    inline Vec3 operator+(const Vec3& v) const
-    {return Vec3(x+v.x,y+v.y,z+v.z);}
+  inline Vec3 operator+(const Vec3 &v) const {
+    return Vec3(x + v.x, y + v.y, z + v.z);
+  }
 
-    inline Vec3 operator+=(const Vec3& v)
-    {x+=v.x;y+=v.y;z+=v.z;return *this;}
+  inline Vec3 operator+=(const Vec3 &v) {
+    x += v.x;
+    y += v.y;
+    z += v.z;
+    return *this;
+  }
 
-    inline Vec3 cross(const Vec3& v) const
-    {Vec3 ret(y*v.z-z*v.y,z*v.x-x*v.z,x*v.y-y*v.x);return ret;}
+  inline Vec3 cross(const Vec3 &v) const {
+    Vec3 ret(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
+    return ret;
+  }
 
-    inline Vec3 min(const Vec3& v) const
-    {
-        return Vec3(std::min(x,v.x),std::min(y,v.y),std::min(z,v.z));
-    }
+  inline Vec3 min(const Vec3 &v) const {
+    return Vec3(std::min(x, v.x), std::min(y, v.y), std::min(z, v.z));
+  }
 
-    inline Vec3 max(const Vec3& v) const
-    {
-        return Vec3(std::max(x,v.x),std::max(y,v.y),std::max(z,v.z));
-    }
+  inline Vec3 max(const Vec3 &v) const {
+    return Vec3(std::max(x, v.x), std::max(y, v.y), std::max(z, v.z));
+  }
 };
 
-
-inline std::ostream& operator<<(std::ostream& stream,const Vec3& v)
-{return stream<<v.x<<" "<<v.y<<" "<<v.z;}
-
-inline Vec3 operator*(const float a,const Vec3& v)
-{
-    return Vec3(a*v.x,a*v.y,a*v.z);
+inline std::ostream &operator<<(std::ostream &stream, const Vec3 &v) {
+  return stream << v.x << " " << v.y << " " << v.z;
 }
 
+inline Vec3 operator*(const float a, const Vec3 &v) {
+  return Vec3(a * v.x, a * v.y, a * v.z);
 }
+
+} // namespace Partio

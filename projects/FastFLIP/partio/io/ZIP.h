@@ -39,50 +39,50 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 #include <fstream>
 #include <iostream>
 #include <map>
-#include <string>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
-namespace Partio{
+namespace Partio {
 struct ZipFileHeader;
 //#####################################################################
 // Functions Gzip_Out/Gzip_In - Create streams that read/write .gz
 //#####################################################################
-std::istream* Gzip_In(const std::string& filename,std::ios::openmode mode);
-std::ostream* Gzip_Out(const std::string& filename,std::ios::openmode mode);
+std::istream *Gzip_In(const std::string &filename, std::ios::openmode mode);
+std::ostream *Gzip_Out(const std::string &filename, std::ios::openmode mode);
 //#####################################################################
 // Class ZipFileWriter
 //#####################################################################
-class ZipFileWriter
-{
-    std::ofstream ostream;
-    std::vector<ZipFileHeader*> files;
-public:
+class ZipFileWriter {
+  std::ofstream ostream;
+  std::vector<ZipFileHeader *> files;
 
-//#####################################################################
-    ZipFileWriter(const std::string& filename);
-    virtual ~ZipFileWriter();
-    std::ostream* Add_File(const std::string& filename,const bool binary=true);
-//#####################################################################
+public:
+  //#####################################################################
+  ZipFileWriter(const std::string &filename);
+  virtual ~ZipFileWriter();
+  std::ostream *Add_File(const std::string &filename, const bool binary = true);
+  //#####################################################################
 };
 
 //#####################################################################
 // Class ZipFileReader
 //#####################################################################
-class ZipFileReader
-{
-    std::ifstream istream;
+class ZipFileReader {
+  std::ifstream istream;
+
 public:
-    std::map<std::string,ZipFileHeader*> filename_to_header;
-    
-//#####################################################################
-    ZipFileReader(const std::string& filename);
-    virtual ~ZipFileReader();
-    std::istream* Get_File(const std::string& filename,const bool binary=true);
-    void Get_File_List(std::vector<std::string>& filenames) const;
+  std::map<std::string, ZipFileHeader *> filename_to_header;
+
+  //#####################################################################
+  ZipFileReader(const std::string &filename);
+  virtual ~ZipFileReader();
+  std::istream *Get_File(const std::string &filename, const bool binary = true);
+  void Get_File_List(std::vector<std::string> &filenames) const;
+
 private:
-    bool Find_And_Read_Central_Header();
-//#####################################################################
+  bool Find_And_Read_Central_Header();
+  //#####################################################################
 };
-}
+} // namespace Partio
 #endif
