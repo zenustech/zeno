@@ -4,6 +4,7 @@ set -e
 rm -rf /tmp/zenv
 mkdir -p /tmp/zenv/{bin,lib/python3.9}
 
+cp -d /tmp/tmp-install/lib/*.so* /tmp/zenv/lib
 for x in `scripts/tracedll.sh python3 -m zenapi arts/FLIPSolver.zsg`; do
     y="`realpath $x`"
     echo "$x => $y"

@@ -39,6 +39,9 @@ target_link_libraries(FLIPlib PRIVATE OpenVDB::openvdb IlmBase::Half)
 target_link_libraries(FLIPlib PRIVATE Eigen3::Eigen)
 
 add_subdirectory(partio)
+IF (NOT WIN32)
+    INSTALL(TARGETS partio DESTINATION lib)
+ENDIF()
 target_link_libraries(FLIPlib PRIVATE partio)
 
 
