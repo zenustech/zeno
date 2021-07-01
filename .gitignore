@@ -40,4 +40,7 @@ rubbish.bin/
 
 # binary folders
 /zeno/lib/
+
+# files to hide
 /zenv/
+

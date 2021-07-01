@@ -8,6 +8,7 @@ if (ENABLE_GMPM_BUILD)
 project(MPM CXX CUDA)
 set(ZS_ENABLE_CUDA ON)
 set(ZS_ENABLE_OPENVDB ON)
+set(ZENSIM_INSTALL OFF)
 add_subdirectory(zecomp)
 
 #if (EXISTS zecomp AND EXISTS zecomp/include/zensim/tpls)

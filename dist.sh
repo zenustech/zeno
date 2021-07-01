@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+
 rm -rf /tmp/build
 mkdir -p /tmp/build/{bin,lib/python3.9}
 
@@ -53,3 +54,4 @@ cd /tmp
 rm -rf $fname $fname.tar.gz
 mv build $fname
 tar zcvf $fname.tar.gz $fname/
+

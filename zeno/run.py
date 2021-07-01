@@ -7,7 +7,6 @@ def evaluateExpr(expr, frameid):
     frame = frameid
     return eval('f' + repr(expr))
 
-
 def runScene(graphs, nframes, iopath):
     core.setIOPath(iopath)
 
@@ -19,14 +18,15 @@ def runScene(graphs, nframes, iopath):
     applies = []
     nodes = graphs['main']
     for ident, data in nodes.items():
+
         if 'OUT' in data['options']:
             applies.append(ident)
+            datas.append(data)
 
     core.switchGraph('main')
 
     for frameid in range(nframes):
         print('FRAME:', frameid)
-
         for nodes in graphs.values():
             for ident, data in nodes.items():
                 name = data['name']
