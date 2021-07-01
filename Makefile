@@ -1,6 +1,6 @@
 O=arts/rigid3.zsg
 
-default: all
+default: run
 
 dist: all
 	make -C build install

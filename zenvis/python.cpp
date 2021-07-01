@@ -12,7 +12,6 @@ void finalize();
 void new_frame();
 void clear_graphics();
 void load_file(std::string name, std::string ext, std::string path, int frameid);
-int play_frameid(int max_frameid);
 void set_curr_playing(bool playing);
 void set_window_size(int nx, int ny);
 void set_curr_frameid(int frameid);
@@ -33,7 +32,6 @@ PYBIND11_MODULE(pyzenvis, m) {
     m.def("initialize", zenvis::initialize);
     m.def("finalize", zenvis::finalize);
     m.def("new_frame", zenvis::new_frame);
-    m.def("play_frameid", zenvis::play_frameid);
     m.def("set_window_size", zenvis::set_window_size);
     m.def("set_curr_playing", zenvis::set_curr_playing);
     m.def("set_curr_frameid", zenvis::set_curr_frameid);
