@@ -16,6 +16,13 @@ cp -d /usr/lib/x86_64-linux-gnu/libgomp.so* $PREFIX/lib
 cp -d /usr/lib/x86_64-linux-gnu/libgthread-2.0.so* $PREFIX/lib
 cp -d /usr/lib/x86_64-linux-gnu/libglib-2.0.so* $PREFIX/lib
 
+cp -d /usr/lib/x86_64-linux-gnu/libbz2.so* $PREFIX/lib
+cp -d /usr/lib/x86_64-linux-gnu/liblzma.so* $PREFIX/lib
+cp -d /usr/lib/x86_64-linux-gnu/libzstd.so* $PREFIX/lib
+cp -d /usr/lib/x86_64-linux-gnu/libopenblas.so* $PREFIX/lib
+
+cp -d /usr/local/lib/libblosc.so* $PREFIX/lib
+
 # cpython
 git clone https://gitee.com/mirrors/cpython.git --branch=3.6 --depth=1
 cd cpython
