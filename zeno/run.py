@@ -15,27 +15,26 @@ def runScene(graphs, nframes, iopath):
         core.switchGraph(name)
         loadGraph(nodes, subgkeys)
 
+    
     applies = []
     nodes = graphs['main']
     for ident, data in nodes.items():
 
         if 'OUT' in data['options']:
             applies.append(ident)
-            datas.append(data)
 
     core.switchGraph('main')
 
     for frameid in range(nframes):
         print('FRAME:', frameid)
-        for nodes in graphs.values():
-            for ident, data in nodes.items():
-                name = data['name']
-                inputs = data['inputs']
-                params = data['params']
-                for name, value in params.items():
-                    if type(value) is str:
-                        value = evaluateExpr(value, frameid)
-                        core.setNodeParam(ident, name, value)
+        for ident, data in graphs['main'].items():
+            name = data['name']
+            inputs = data['inputs']
+            params = data['params']
+            for name, value in params.items():
+                if type(value) is str:
+                    value = evaluateExpr(value, frameid)
+                    core.setNodeParam(ident, name, value)
 
         core.frameBegin()
         while core.substepBegin():
