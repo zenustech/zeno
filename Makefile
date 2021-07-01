@@ -1,6 +1,6 @@
 O=arts/rigid3.zsg
 
-default: dist
+default: all
 
 dist: all
 	make -C build install
@@ -27,4 +27,4 @@ run: all
 debug: debug_all
 	USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh
 
-.PHONY: all debug_all debug run prepare install wheel default
+.PHONY: all debug_all debug run dist test configure default
