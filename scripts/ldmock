@@ -121,5 +121,5 @@ echo "root is [$root]" >&2
 echo "base is [$base]" >&2
 export PYTHONHOME="$root"
 export LD_LIBRARY_PATH="$root/lib:$LD_LIBRARY_PATH"
-exec -a "$0" -- "$root/sbin/$base" "$@"
-#exec "$root/lib/ld-linux-x86-64.so.2" --library-path "$root/lib" --argv0 "$0" "$root/sbin/$base" "$@"
+#exec -a "$0" -- "$root/sbin/$base" "$@"
+exec "$root/lib/ld-linux-x86-64.so.2" --library-path "$root/lib" --argv0 "$0" "$root/sbin/$base" "$@"
