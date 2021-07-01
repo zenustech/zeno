@@ -3,6 +3,9 @@ import json
 from . import core
 
 
+def evaluateExpr(expr, frameid):
+    frame = frameid
+    return eval('f' + repr(expr))
 
 def runScene(graphs, nframes, iopath):
     core.setIOPath(iopath)
@@ -13,14 +16,25 @@ def runScene(graphs, nframes, iopath):
         loadGraph(nodes, subgkeys)
 
     applies = []
+    datas = []
     for ident, data in graphs['main'].items():
         if 'OUT' in data['options']:
             applies.append(ident)
+            datas.append(data)
 
     core.switchGraph('main')
+
     for frameid in range(nframes):
         print('FRAME:', frameid)
-
+        for idx, ident in enumerate(applies):
+            data = datas[idx]
+            name = data['name']
+            inputs = data['inputs']
+            params = data['params']
+            for name, value in params.items():
+                if type(value) is str:
+                    value = evaluateExpr(value, frameid)
+                    core.setNodeParam(ident, name, value)
         core.frameBegin()
         while core.substepBegin():
             core.applyNodes(applies)
