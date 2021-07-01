@@ -17,7 +17,8 @@ def runScene(graphs, nframes, iopath):
         loadGraph(nodes, subgkeys)
 
     applies = []
-    for ident, data in graphs['main'].items():
+    nodes = graphs['main']
+    for ident, data in nodes.items():
         if 'OUT' in data['options']:
             applies.append(ident)
 
@@ -26,14 +27,15 @@ def runScene(graphs, nframes, iopath):
     for frameid in range(nframes):
         print('FRAME:', frameid)
 
-        for ident, data in graphs['main'].items():
-            name = data['name']
-            inputs = data['inputs']
-            params = data['params']
-            for name, value in params.items():
-                if type(value) is str:
-                    value = evaluateExpr(value, frameid)
-                    core.setNodeParam(ident, name, value)
+        for nodes in graphs.values():
+            for ident, data in nodes.items():
+                name = data['name']
+                inputs = data['inputs']
+                params = data['params']
+                for name, value in params.items():
+                    if type(value) is str:
+                        value = evaluateExpr(value, frameid)
+                        core.setNodeParam(ident, name, value)
 
         core.frameBegin()
         while core.substepBegin():
