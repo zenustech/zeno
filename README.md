@@ -170,25 +170,21 @@ IMPORTANT: In MSVC, Release mode must **always be active** when building ZENO, s
 run.bat
 ```
 
-## Install ZENO globally for Python
+## Install ZENO locally
 ```bash
+make -C build install
 python setup.py install
 ```
 
 
 
-## Packing ZENO into PyPI wheel
+## Packing ZENO into binary release
+- Arch Linux
 ```bash
-sudo python -m pip install wheel
-python setup.py bdist_wheel
-ls dist/*.whl
-```
-
-
-## Upload ZENO to PyPI.org (password required)
-```bash
-sudo python -m pip install twine
-twine upload dist/*.whl
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
+make -C build -j8
+make -C build install
+./dist.sh
 ```
 
 
@@ -204,7 +200,7 @@ For now, official extensions will be built by default when running the
 
 ### FastFLIP
 
-Note that the extensions: ZenVDB and FastFLIP are not built by default.
+Note that the extensions: ZenVDB and FastFLIP are **not built by default**.
 You can use
 ```bash
 cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
