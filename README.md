@@ -1,6 +1,6 @@
 # ZENO
 
-[![CMake](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml) [![License](https://img.shields.io/github/license/zensim-dev/zeno)](LICENSE) [![Version](https://img.shields.io/github/v/release/zensim-dev/zeno)](https://github.com/zensim-dev/zeno/releases)
+[![CMake](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml) [![License](https://github.com/zensim-dev/zeno/blob/master/LICENSE)](LICENSE) [![Version](https://img.shields.io/github/v/release/zensim-dev/zeno)](https://github.com/zensim-dev/zeno/releases)
 
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 
@@ -91,7 +91,7 @@ Here's some of the node libraries that have been implemented by our developers:
 
 - basic primitive ops (by @archibate)
 - basic OpenVDB ops (by @zhxx1987)
-- OpenVDB FLIP fluids (by @zhxx1987)
+- OpenVDB FLIP fluids (by @zhxx1987 and @ureternalreward)
 - Tree-code N-body (by @archibate)
 - Molocular Dynamics (by @victoriacity)
 - GPU MPM with CUDA (by @littlemine)
@@ -285,7 +285,7 @@ Building them require some dependencies:
   - TBB
   - OpenMP (optional)
 
-- FastFLIP (zhxx's OpenVDB FLIP solver)
+- FastFLIP (OpenVDB FLIP solver)
   - OpenVDB
   - IlmBase
   - Eigen3
@@ -294,7 +294,7 @@ Building them require some dependencies:
   - ZenVDB (see above)
   - ZenBASE (see above)
 
-- GMPM (wxl's GPU MPM solver)
+- GMPM (GPU MPM solver)
   - CUDA toolkit
   - OpenVDB (optional)
 
