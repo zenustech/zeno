@@ -81,6 +81,7 @@ class TimelineWidget(QWidget):
 
         self.slider = QSlider(Qt.Horizontal)
         self.slider.valueChanged.connect(self.value_changed)
+        self.slider.sliderPressed.connect(self.stop_play)
         self.slider.setMinimum(0)
         self.slider.setMaximum(1)
 
