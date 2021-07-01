@@ -123,7 +123,7 @@ void set_curr_playing(bool playing_) {
 }
 
 void set_curr_frameid(int frameid) {
-  curr_frameid = frameid;
+  curr_frameid = std::max(frameid, 0);
 }
 
 int get_curr_frameid() {

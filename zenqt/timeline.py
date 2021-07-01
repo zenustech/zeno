@@ -129,11 +129,10 @@ class TimelineWidget(QWidget):
 
     def next_frame(self):
         self.stop_play()
-        f = zenvis.status['next_frameid']
-        maxframe = int('0' + self.maxframe.text())
-        zenvis.status['next_frameid'] = min(f + 1, maxframe - 1)
+        f = zenvis.status['frameid']
+        zenvis.status['next_frameid'] = f + 1
 
     def prev_frame(self):
         self.stop_play()
-        f = zenvis.status['next_frameid']
-        zenvis.status['next_frameid'] = max(f - 1, 0)
+        f = zenvis.status['frameid']
+        zenvis.status['next_frameid'] = f - 1
