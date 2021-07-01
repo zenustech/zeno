@@ -11,8 +11,8 @@ from glob import glob
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 
-name = 'zensim'
-version = '0.0.1.dev1'
+name = 'zensim-zeno'
+version = '2021.7.1'
 description = 'Open-source node system framework for physics simulation and other CG applications'
 
 packages = ['zenqt', 'zenutils', 'zeno', 'zenapi', 'zenvis']
