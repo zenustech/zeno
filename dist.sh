@@ -39,3 +39,13 @@ EOF
 chmod +x /tmp/zenv/start.sh
 
 echo 'docker run -v /tmp/zenv:/tmp/zenv -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=unix$DISPLAY -it ubuntu:18.04 /tmp/zenv/start.sh'
+
+
+version=`cat setup.py | grep "version =" | awk -F "version = '" '{print $2}' | cut -d\' -f1`
+fname=zeno-linux-$version
+echo $fname
+
+cd /tmp
+rm -rf $fname $fname.tar.gz
+mv zenv $fname
+tar zcvf $fname.tar.gz $fname/

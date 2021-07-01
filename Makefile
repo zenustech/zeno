@@ -5,6 +5,7 @@ default: all
 dist: all
 	make -C build install
 	./dist.sh
+	cd /tmp/zenv && tar zcvf ../zeno-
 
 all:
 	cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
