@@ -214,9 +214,7 @@ struct MakeCompressibleFlow : zeno::INode {
     ibmax[2] = bmin[2] + nz;
     flowData->gas =
         new Bow::EulerGas::FieldHelperDenseDouble3(q_amb, ibmin, ibmax, dx);
-    Bow::EulerGas::zenCompressSim sim(dx, ibmin, ibmax, q_amb,
-                                      *(flowData->gas));
-    sim.initialize();
+
     set_output("CompressibleFlow", flowData);
   }
 };
@@ -227,5 +225,100 @@ ZENDEFNODE(MakeCompressibleFlow, {
                                      {},
                                      {"CompressibleFlow"},
                                  });
+
+struct CompressibleSimStates : zeno::IObject {
+  Bow::EulerGas::solverControld data;
+};
+
+struct makeCompressibleSim : zeno::INode {
+  virtual void apply() override {
+    auto flowData = get_input("inFlowData")->as<ZenCompressAero>();
+    auto simParam = zeno::IObject::make<CompressibleSimStates>();
+    Bow::EulerGas::zenCompressSim sim(
+        flowData->gas->dx, flowData->gas->grid.bbmin, flowData->gas->grid.bbmax,
+        flowData->gas->m_q_amb, *(flowData->gas));
+    simParam->data = sim.getSolverControl();
+    set_output_ref("outFlowData", get_input_ref("inFlowData"));
+    set_output("SimParam", simParam);
+  }
+};
+ZENDEFNODE(makeCompressibleSim, {
+                                    {"inFlowData"},
+                                    {"outFlowData", "SimParam"},
+                                    {},
+                                    {"CompressibleFlow"},
+                                });
+
+struct MakeVelocityPressure : zeno::INode {
+  virtual void apply() override {
+    auto flowData = get_input("inFlowData")->as<ZenCompressAero>();
+    auto simParam = get_input("simParam")->as<CompressibleSimStates>();
+    Bow::EulerGas::zenCompressSim sim(
+        flowData->gas->dx, flowData->gas->grid.bbmin, flowData->gas->grid.bbmax,
+        flowData->gas->m_q_amb, *(flowData->gas));
+    sim.setSolverControl(simParam->data);
+    sim.initialize();
+    simParam->data = sim.getSolverControl();
+    set_output_ref("outFlowData", get_input_ref("inFlowData"));
+  }
+};
+ZENDEFNODE(MakeVelocityPressure, {
+                                     {"inFlowData", "simParam"},
+                                     {"outFlowData"},
+                                     {},
+                                     {"CompressibleFlow"},
+                                 });
+
+struct CompressibleAdvection : zeno::INode {
+  virtual void apply() override {
+    auto flowData = get_input("inFlowData")->as<ZenCompressAero>();
+    auto simParam = get_input("simParam")->as<CompressibleSimStates>();
+    auto rk_order =
+        get_input("RK_Order")->as<zeno::NumericObject>()->get<int>();
+    auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
+
+    Bow::EulerGas::zenCompressSim sim(
+        flowData->gas->dx, flowData->gas->grid.bbmin, flowData->gas->grid.bbmax,
+        flowData->gas->m_q_amb, *(flowData->gas));
+
+    sim.setSolverControl(simParam->data);
+    sim.advection(dt, rk_order);
+    simParam->data = sim.getSolverControl();
+    set_output_ref("outFlowData", get_input_ref("inFlowData"));
+  }
+};
+ZENDEFNODE(CompressibleAdvection,
+           {
+               {"inFlowData", "simParam", "RK_Order", "dt"},
+               {"outFlowData"},
+               {},
+               {"CompressibleFlow"},
+           });
+
+struct CompressibleProjection : zeno::INode {
+  virtual void apply() override {
+    auto flowData = get_input("inFlowData")->as<ZenCompressAero>();
+    auto simParam = get_input("simParam")->as<CompressibleSimStates>();
+    auto rk_order =
+        get_input("RK_Order")->as<zeno::NumericObject>()->get<int>();
+    auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
+
+    Bow::EulerGas::zenCompressSim sim(
+        flowData->gas->dx, flowData->gas->grid.bbmin, flowData->gas->grid.bbmax,
+        flowData->gas->m_q_amb, *(flowData->gas));
+
+    sim.setSolverControl(simParam->data);
+    sim.projection(dt, rk_order);
+    simParam->data = sim.getSolverControl();
+    set_output_ref("outFlowData", get_input_ref("inFlowData"));
+  }
+};
+ZENDEFNODE(CompressibleProjection,
+           {
+               {"inFlowData", "simParam", "RK_Order", "dt"},
+               {"outFlowData"},
+               {},
+               {"CompressibleFlow"},
+           });
 
 } // namespace zeno

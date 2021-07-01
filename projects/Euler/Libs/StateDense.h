@@ -74,6 +74,7 @@ public:
     Field<T> shawdow_graph;
     Field<TV> schlieren;
     float dx;
+    QArray m_q_amb;
 
     //SERIALIZATION_REGISTER(q)
     //SERIALIZATION_REGISTER(cell_type)
@@ -97,6 +98,7 @@ public:
     {
         // Resize the background fields
         // TODO decouple fields to outside this class
+        m_q_amb = q_amb;
         StorageIndex gridNum = grid.gridNum();
         q.resize(gridNum, q_amb);
         q_backup.resize(gridNum, q_amb);

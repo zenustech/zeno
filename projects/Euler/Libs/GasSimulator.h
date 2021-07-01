@@ -38,6 +38,7 @@ struct solverControl {
     T CFL = 0.5;
     T v_ref = 0;
     T a_ref = 0;
+    bool initialized = false;
 };
 typedef solverControl<double, 3> solverControld;
 typedef solverControl<float, 3> solverControlf;
@@ -80,6 +81,7 @@ public:
     T CFL = 0.5;
     T v_ref = 0;
     T a_ref = 0;
+    bool initialized = false;
 
     // fields wrapper
     FieldHelperDense<T, dim, StorageIndex, XFastestSweep>& field_helper;
@@ -160,6 +162,7 @@ public:
         _sc.CFL = CFL;
         _sc.v_ref = v_ref;
         _sc.a_ref = a_ref;
+        _sc.initialized = initialized;
         return _sc;
     }
     void setSolverControl(solverControl<T, dim>& _sc)
@@ -183,6 +186,7 @@ public:
         CFL = _sc.CFL;
         v_ref = _sc.v_ref;
         a_ref = _sc.a_ref;
+        initialized = _sc.initialized;
     }
     GasSimulator(const T dx_, const Array<int, dim, 1> bbmin_,
         const Array<int, dim, 1> bbmax_,
@@ -419,6 +423,30 @@ public:
 
     void initialize() override
     {
+        if (!initialized) {
+            // test once
+            Bow::Vector<int, dim> center_I = ((field_helper.grid.bbmin + field_helper.grid.bbmax) / 2).matrix();
+            float r = 20;
+            int extend = 0;
+            for (int i = field_helper.grid.bbmin(0) - extend; i < field_helper.grid.bbmax(0) + extend; i++)
+                for (int j = field_helper.grid.bbmin(1) - extend; j < field_helper.grid.bbmax(1) + extend; j++)
+                    for (int k = field_helper.grid.bbmin(2) - extend; k < field_helper.grid.bbmax(2) + extend;
+                         k++) {
+                        Bow::Vector<int, dim> I(i, j, k);
+                        if ((I - center_I).template cast<T>().norm() < r) {
+                            int idx = field_helper.grid[I].idx;
+                            field_helper.q[idx] *= 10;
+                        }
+                    }
+            // field_helper.iterateGridSerial([&](const Bow::Vector<int, dim>& I) {
+            //     if ((I - center_I).template cast<T>().norm() < r) {
+            //         int idx = field_helper.grid[I].idx;
+            //         field_helper.q[idx] *= 10;
+            //     }
+            // },0);
+            initialized = true;
+        }
+
         mark_dof();
         convert_q_to_primitives();
         backup();
