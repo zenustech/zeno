@@ -5,10 +5,10 @@ rm -rf /tmp/zenv
 mkdir -p /tmp/zenv/{bin,lib/python3.9}
 
 cp -d /tmp/tmp-install/lib/*.so* /tmp/zenv/lib
-for x in `scripts/tracedll.sh python3 -m zenapi arts/FLIPSolver.zsg`; do
+for x in `ZEN_SPROC=1 ZEN_DOEXEC=2 ZEN_OPEN=arts/FLIPSolver.zsg scripts/tracedll.sh python3 -m zenqt`; do
     y="`realpath $x`"
     echo "$x => $y"
-    x="$(echo "$x" | awk -F.so '{print $1".so*"}')"
+    x="$(echo "$x" | sed 's/\.so/@dot@so/g' | awk -F @dot@so '{print $1".so*"}')"
     cp -d $x /tmp/zenv/lib
     cp "$y" /tmp/zenv/lib
 done
@@ -38,4 +38,4 @@ exec -- "\$newwd/bin/python3.9" -m zenqt "\$@"
 EOF
 chmod +x /tmp/zenv/start.sh
 
-echo 'docker run -v /tmp/zenv:/tmp/zenv -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=unix$DISPLAY -it ubuntu:18.04'
+echo 'docker run -v /tmp/zenv:/tmp/zenv -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=unix$DISPLAY -it ubuntu:18.04 /tmp/zenv/start.sh'
