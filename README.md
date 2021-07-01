@@ -87,6 +87,7 @@ Here's some of the node libraries that have been implemented by our developers:
 - Molocular Dynamics (by @victoriacity)
 - GPU MPM with CUDA (by @littlemine)
 - Bullet3 rigid solver (by @archibate)
+- Hypersonic air solver (by @Eydcao)
 
 Loading these libraries would add corresponding functional nodes into ZENO,
 after which you can creating node graphs with them for simulation.
