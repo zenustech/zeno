@@ -39,7 +39,8 @@ template <class T> struct DenseFieldWrapper : DenseField {
   float dx;
   openvdb::Coord bmin;
   int ni, nj, nk;
-  size_t size() { return ni * nj * nk; }
+  size_t m_size;
+  size_t size() { return m_size; }
   std::string spatialType;
 
   virtual std::string getType() {
@@ -143,11 +144,13 @@ struct GetDenseField : zeno::INode {
       oField->dx = gas->dx;
       oField->bmin = openvdb::Coord(gas->grid.bbmin[0], gas->grid.bbmin[1],
                                     gas->grid.bbmin[2]);
+
       oField->ni = gas->grid.bbmax[0] - gas->grid.bbmin[0];
       oField->nj = gas->grid.bbmax[1] - gas->grid.bbmin[1];
       oField->nk = gas->grid.bbmax[2] - gas->grid.bbmin[2];
+
       oField->spatialType = std::string("vertex");
-      oField->size();
+      oField->m_size = gas->Pf.size();
       set_output("outDenseField", oField);
     }
     if (field == std::string("rho")) {
@@ -156,11 +159,13 @@ struct GetDenseField : zeno::INode {
       oField->dx = gas->dx;
       oField->bmin = openvdb::Coord(gas->grid.bbmin[0], gas->grid.bbmin[1],
                                     gas->grid.bbmin[2]);
+
       oField->ni = gas->grid.bbmax[0] - gas->grid.bbmin[0];
       oField->nj = gas->grid.bbmax[1] - gas->grid.bbmin[1];
       oField->nk = gas->grid.bbmax[2] - gas->grid.bbmin[2];
+
       oField->spatialType = std::string("center");
-      oField->size();
+      oField->m_size = gas->Pf.size();
       set_output("outDenseField", oField);
     }
     if (field == std::string("u")) {
@@ -169,11 +174,13 @@ struct GetDenseField : zeno::INode {
       oField->dx = gas->dx;
       oField->bmin = openvdb::Coord(gas->grid.bbmin[0], gas->grid.bbmin[1],
                                     gas->grid.bbmin[2]);
+
       oField->ni = gas->grid.bbmax[0] - gas->grid.bbmin[0];
       oField->nj = gas->grid.bbmax[1] - gas->grid.bbmin[1];
       oField->nk = gas->grid.bbmax[2] - gas->grid.bbmin[2];
+
       oField->spatialType = std::string("center");
-      oField->size();
+      oField->m_size = gas->Pf.size();
       set_output("outDenseField", oField);
     }
   }
@@ -209,9 +216,9 @@ struct MakeCompressibleFlow : zeno::INode {
     ibmin[0] = bmin[0] / dx;
     ibmin[1] = bmin[1] / dx;
     ibmin[2] = bmin[2] / dx;
-    ibmax[0] = bmin[0] + nx;
-    ibmax[1] = bmin[1] + ny;
-    ibmax[2] = bmin[2] + nz;
+    ibmax[0] = ibmin[0] + nx;
+    ibmax[1] = ibmin[1] + ny;
+    ibmax[2] = ibmin[2] + nz;
     flowData->gas =
         new Bow::EulerGas::FieldHelperDenseDouble3(q_amb, ibmin, ibmax, dx);
 
@@ -256,9 +263,11 @@ struct MakeVelocityPressure : zeno::INode {
     Bow::EulerGas::zenCompressSim sim(
         flowData->gas->dx, flowData->gas->grid.bbmin, flowData->gas->grid.bbmax,
         flowData->gas->m_q_amb, *(flowData->gas));
+
     sim.setSolverControl(simParam->data);
     sim.initialize();
     simParam->data = sim.getSolverControl();
+
     set_output_ref("outFlowData", get_input_ref("inFlowData"));
   }
 };

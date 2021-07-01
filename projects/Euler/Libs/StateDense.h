@@ -75,7 +75,7 @@ public:
     Field<TV> schlieren;
     float dx;
     QArray m_q_amb;
-
+    bool initialized = false;
     //SERIALIZATION_REGISTER(q)
     //SERIALIZATION_REGISTER(cell_type)
     //SERIALIZATION_REGISTER(cell_type_origin)
@@ -92,7 +92,25 @@ public:
 
     // source term, added to the qs after advection+projection directly
     Field<QArray> source;
-
+    void set_ambient(const Array<T, dim + 2, 1> q_amb_)
+    {
+        //BOW_ASSERT_INFO(q_amb_(0) > 0, "defined negative density for ambient");
+        //BOW_ASSERT_INFO(q_amb_(1) > 0, "defined negative total energy for ambient");
+        //T int_e = q_amb_(1) - 0.5 * (q_amb_.template tail<dim>() * q_amb_.template tail<dim>//()).sum() / q_amb_(0);
+        //BOW_ASSERT_INFO(int_e > 0, "defined negative internal energy for ambient");
+        //q_amb = q_amb_;
+        //P_amb = Bow::ConstitutiveModel::IdealGas::get_pressure_from_int_energy(
+        //gamma_, int_e);
+        //gamma = gamma_;
+        //gas_assembler.gamma = gamma;
+        //solid_assembler.P_amb = P_amb;
+        std::fill(q.begin(), q.end(), q_amb_);
+        std::fill(q_backup.begin(), q_backup.end(),
+            q_amb_);
+        // threshold for clamping
+        //lowest_rho = clamp_ratio * q_amb(0);
+        //lowest_int_e_by_rho = clamp_ratio * int_e / q_amb(0);
+    }
     FieldHelperDense(const QArray& q_amb, const IA bbmin_, const IA bbmax_, float _dx)
         : grid(bbmin_, bbmax_, 2), dx(_dx)
     {
@@ -125,6 +143,10 @@ public:
         schlieren.resize(gridNum, TV::Zero());
         // source term
         source.resize(gridNum, QArray::Zero());
+        if (!initialized) {
+            set_ambient(q_amb);
+            initialized = true;
+        }
     };
     ~FieldHelperDense(){};
 

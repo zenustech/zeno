@@ -112,9 +112,9 @@ public:
         gamma = gamma_;
         gas_assembler.gamma = gamma;
         solid_assembler.P_amb = P_amb;
-        std::fill(field_helper.q.begin(), field_helper.q.end(), q_amb);
-        std::fill(field_helper.q_backup.begin(), field_helper.q_backup.end(),
-            q_amb);
+        //std::fill(field_helper.q.begin(), field_helper.q.end(), q_amb);
+        //std::fill(field_helper.q_backup.begin(), field_helper.q_backup.end(),
+        //q_amb);
         // threshold for clamping
         lowest_rho = clamp_ratio * q_amb(0);
         lowest_int_e_by_rho = clamp_ratio * int_e / q_amb(0);
@@ -424,6 +424,7 @@ public:
     void initialize() override
     {
         if (!initialized) {
+
             // test once
             Bow::Vector<int, dim> center_I = ((field_helper.grid.bbmin + field_helper.grid.bbmax) / 2).matrix();
             float r = 20;
@@ -449,6 +450,8 @@ public:
 
         mark_dof();
         convert_q_to_primitives();
+        int idx = field_helper.grid[Bow::Vector<int, dim>::Zero()].idx;
+        std::cout << "center q " << field_helper.q[idx] << std::endl;
         backup();
     }
 
