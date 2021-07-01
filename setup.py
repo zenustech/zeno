@@ -68,6 +68,7 @@ setuptools.setup(
         ],
         entry_points={
             'console_scripts': [
+                'zenapi=zenapi.main:main',
                 'zenqt=zenqt.main:main',
             ],
         },
