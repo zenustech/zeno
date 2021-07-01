@@ -26,8 +26,7 @@ def runScene(graphs, nframes, iopath):
 
     for frameid in range(nframes):
         print('FRAME:', frameid)
-        for idx, ident in enumerate(applies):
-            data = datas[idx]
+        for ident, data in graphs['main'].items():
             name = data['name']
             inputs = data['inputs']
             params = data['params']
