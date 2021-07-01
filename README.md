@@ -5,6 +5,9 @@
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 
 ![rigid3.zsg](images/rigid3.jpg)
+![robot hit water](images/crag_hit_water.gif)
+![two way coupled fluid-rigid(Rigid_pool2.zsg)](images/FSI.gif)
+
 
 ## Features
 
