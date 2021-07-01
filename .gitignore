@@ -38,7 +38,5 @@ outputs/
 
 # binary folders
 /zeno/lib/
-
-# files to hide
 /zenv/
 
