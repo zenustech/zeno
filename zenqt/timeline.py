@@ -42,16 +42,29 @@ class QDMNextButton(QSvgWidget):
         self.timeline = timeline
         # PyQt5 >= 5.15
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
+
+        self.counter = 0
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.callback)
     
     def mousePressEvent(self, event):
         super().mouseMoveEvent(event)
         self.timeline.next_frame()
         self.load(asset_path('next-click.svg'))
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
+        self.counter = 0
+        self.timer.start(100)
     
     def mouseReleaseEvent(self, event):
         self.load(asset_path('next.svg'))
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
+        self.timer.stop()
+
+    def callback(self):
+        self.counter += 1
+        if self.counter >= 3:
+            self.timeline.next_frame()
+
 
 class QDMPrevButton(QSvgWidget):
     def __init__(self, timeline):
@@ -61,16 +74,28 @@ class QDMPrevButton(QSvgWidget):
         self.timeline = timeline
         # PyQt5 >= 5.15
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
+
+        self.counter = 0
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.callback)
     
     def mousePressEvent(self, event):
         super().mouseMoveEvent(event)
         self.timeline.prev_frame()
         self.load(asset_path('prev-click.svg'))
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
+        self.counter = 0
+        self.timer.start(100)
     
     def mouseReleaseEvent(self, event):
         self.load(asset_path('prev.svg'))
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
+        self.timer.stop()
+    
+    def callback(self):
+        self.counter += 1
+        if self.counter >= 3:
+            self.timeline.prev_frame()
 
 class TimelineWidget(QWidget):
     def __init__(self, parent=None):
