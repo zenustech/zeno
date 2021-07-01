@@ -46,8 +46,8 @@ fname=zeno-linux-$version
 echo $fname
 
 cp scripts/release_note.md /tmp/build/README.md
-cp assets /tmp/build/
-cp arts /tmp/build/
+cp -r assets /tmp/build/
+cp -r arts /tmp/build/
 
 cd /tmp
 rm -rf $fname $fname.tar.gz
