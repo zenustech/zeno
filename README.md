@@ -105,7 +105,8 @@ for more information.
 
 
 # End-user Installation
-##
+
+## Get binary release
 
 Go to the [release page](https://github.com/zensim-dev/zeno/releases/), and click Assets -> download `zeno-linux-20xx.x.x.tar.gz`.
 Then, extract this archive, and simply run `./start.sh`, then the node editor window will shows up if everything is working well.
@@ -216,6 +217,9 @@ make -C build install
 # you will get /tmp/zeno-linux-20xx.x.x.tar.gz
 ```
 
+- Windows
+W.I.P.
+
 
 ## ZENO Extensions
 
@@ -290,9 +294,9 @@ See ```demo_project/``` for an example on how to write custom nodes in ZENO.
 
 #### Installing extensions
 
-To install a node library for ZENO just copy the `.so` or `.dll` files to `zeno/autoload/`. See ```demo_project/CMakeLists.txt``` for how to automate this in CMake.
+To install a node library for ZENO just copy the `.so` or `.dll` files to `zeno/lib/`. See ```demo_project/CMakeLists.txt``` for how to automate this in CMake.
 
 
 # Blender addon
 
-Work in progress, see `assets/blender.blend`. The source code of our blender addon is under `zenblend/`. Contributions are more than welcome!
+Work in progress, may not work, see `assets/blender.blend`. The source code of our blender addon is under `zenblend/`. Contributions are more than welcome!
