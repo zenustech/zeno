@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/bash
+set -e
 
 # https://github.com/mkropat/sh-realpath/blob/master/realpath.sh {{{
 
@@ -116,9 +117,15 @@ _bsd_stat_readlink() {
 real="$(myrealpath "$0")"
 root="$(dirname -- "$real")"
 base="$(basename -- "$0")"
+
 if [ "x" == "x$ldmock_no_mockenv" ]; then
     export PYTHONHOME="$root"
-    export LIBGL_DRIVERS_PATH="/usr/lib/dri:/usr/lib64/dri:/usr/lib/x86_64-linux-gnu/dri:$LIBGL_DRIVERS_PATH"
+    for x in /usr/lib/dri /usr/lib/x86_64-linux-gnu/dri; do
+        if [ -d $x ]; then
+            export LIBGL_DRIVERS_PATH="$x"
+            break
+        fi
+    done
     export ldmock_no_mockenv=1
     if [ "x" != "x$ldmock_no_ldlinux" ]; then
         export LD_LIBRARY_PATH="$root/lib:$LD_LIBRARY_PATH"
