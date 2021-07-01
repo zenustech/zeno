@@ -3,11 +3,18 @@
 [![CMake](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml) [![License](https://img.shields.io/github/license/zensim-dev/zeno)](LICENSE) [![Version](https://img.shields.io/github/v/release/zensim-dev/zeno)](https://github.com/zensim-dev/zeno/releases)
 
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
-
+<div style="float: right">
 ![rigid3.zsg](images/rigid3.jpg)
+</div>
+<div style="float: right">
 ![robot hit water](images/crag_hit_water.gif)
+</div>
+<div style="float: right">
 ![two way coupled fluid-rigid(Rigid_pool2.zsg)](images/FSI.gif)
+ </div>
+ <div style="float: right">
 ![SuperSonic Flow](images/shock.gif)
+  </div>
 
 
 ## Features
