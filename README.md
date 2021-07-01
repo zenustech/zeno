@@ -228,7 +228,10 @@ make -C build install
 ```
 
 - Windows
-W.I.P.
+First, download `zenv-windows-prebuilt.zip` from [this page](https://github.com/zensim-dev/binaries/releases).
+Second, extract it directly into project root.
+Then run `dist.bat` in project root.
+Finally, rename the `zenv` folder to `zeno-windows-20xx.x.x`, and archive it into `zeno-windows-20xx.x.x.zip`.
 
 
 ## ZENO Extensions
