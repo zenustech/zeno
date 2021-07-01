@@ -42,10 +42,10 @@ style = {
     'node_rounded_radius': 6,
     'socket_radius': 8,
     'node_width': 200,
-    'text_height': 25,
+    'text_height': 23,
     'copy_offset_x': 100,
     'copy_offset_y': 100,
-    'hori_margin': 10,
+    'hori_margin': 9,
     'dummy_socket_offset': 15,
 }
 

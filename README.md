@@ -87,6 +87,7 @@ Here's some of the node libraries that have been implemented by our developers:
 - Molocular Dynamics (by @victoriacity)
 - GPU MPM with CUDA (by @littlemine)
 - Bullet3 rigid solver (by @archibate)
+- Hypersonic air solver (by @Eydcao)
 
 Loading these libraries would add corresponding functional nodes into ZENO,
 after which you can creating node graphs with them for simulation.
@@ -104,7 +105,26 @@ for more information.
 ![blender.blend](images/blender.jpg)
 
 
-# Build & Run
+# End-user Installation
+
+## Get binary release
+
+Go to the [release page](https://github.com/zensim-dev/zeno/releases/), and click Assets -> download `zeno-linux-20xx.x.x.tar.gz`.
+Then, extract this archive, and simply run `./start.sh`, then the node editor window will shows up if everything is working well.
+
+## How to play
+
+There are some example graphs in the `./arts/` folder, you may open them in the editor and have fun!
+Currently `rigid3.zsg`, `FLIPSolver.zsg`, `prim.zsg`, and `lennardjones.zsg` are confirmed to be functional.
+Hint: To run an animation for 100 frames, change the `1` on the top-left of node editor to `100`, then click `Execute`.
+Also MMB to drag in the node editor, LMB click on sockets to create connections. MMB drag in the viewport to orbit camera, Shift+MMB to pan camera.
+
+## Bug report
+
+If you find the binary version didn't worked properly or some error message has been thrown on your machine, please let me know by opening an [issue](https://github.com/zensim-dev/zeno/issues) on GitHub, thanks for you support!
+
+
+# Developer Build
 
 ## Installation requirements
 
@@ -159,7 +179,7 @@ Then open ```build/zeno.sln``` in Visual Studio 2019, and **switch to Release mo
 IMPORTANT: In MSVC, Release mode must **always be active** when building ZENO, since MSVC uses different allocators in Release and Debug mode. If a DLL of Release mode and a DLL in Debug mode are linked together in Windows, it will crash when passing STL objects.
 
 
-## Run ZENO for development
+### Run ZENO for development
 - Linux
 ```bash
 ./run.sh
@@ -170,48 +190,58 @@ IMPORTANT: In MSVC, Release mode must **always be active** when building ZENO, s
 run.bat
 ```
 
-## Install ZENO globally for Python
+## Install ZENO globally
+- Linux
 ```bash
+make -C build install
 python setup.py install
 ```
 
+- Windows
+```cmd
+python setup.py install
+```
 
-
-## Packing ZENO into PyPI wheel
-```bash
-sudo python -m pip install wheel
-python setup.py bdist_wheel
-ls dist/*.whl
+### Run ZENO after installation
+```cmd
+python -m zenqt
 ```
 
 
-## Upload ZENO to PyPI.org (password required)
+## Packing ZENO into binary release
+- Arch Linux
 ```bash
-sudo python -m pip install twine
-twine upload dist/*.whl
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
+make -C build -j8
+make -C build install
+./dist.sh
+# you will get /tmp/zeno-linux-20xx.x.x.tar.gz
 ```
 
+- Windows
+W.I.P.
 
-# Extensions
+
+## ZENO Extensions
 
 ZENO is extensible which means we may write extensions (node libraries) for it.
 The source code of all our official extensions are provided in `projects/`.
 
-## Build extensions
+### Build extensions
 
 For now, official extensions will be built by default when running the
 ```ALL_BUILD``` target of CMake.
 
-### FastFLIP
+#### ZenVDB & FastFLIP
 
-Note that the extensions: ZenVDB and FastFLIP are not built by default.
+Note that the extensions: ZenVDB and FastFLIP are **not built by default**.
 You can use
 ```bash
 cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
 ```
 to enable them.
 
-### GMPM
+#### GMPM
 
 You need to update git submodules before building @littlemine's GPU MPM.
 To do so:
@@ -224,7 +254,7 @@ cmake -B build -DEXTENSION_gmpm:BOOL=ON
 ```
 to enable it.
 
-### Major dependencies
+#### Major dependencies
 
 Building them require some dependencies:
 
@@ -259,15 +289,15 @@ Building them require some dependencies:
 Other extensions are built by default because their dependencies are
 self-contained and portable to all platforms.
 
-## Write your own extension!
+### Write your own extension!
 
 See ```demo_project/``` for an example on how to write custom nodes in ZENO.
 
-### Installing extensions
+#### Installing extensions
 
-To install a node library for ZENO just copy the `.so` or `.dll` files to `zeno/autoload/`. See ```demo_project/CMakeLists.txt``` for how to automate this in CMake.
+To install a node library for ZENO just copy the `.so` or `.dll` files to `zeno/lib/`. See ```demo_project/CMakeLists.txt``` for how to automate this in CMake.
 
 
 # Blender addon
 
-Work in progress, see `assets/blender.blend`. The source code of our blender addon is under `zenblend/`. Contributions are more than welcome!
+Work in progress, may not work, see `assets/blender.blend`. The source code of our blender addon is under `zenblend/`. Contributions are more than welcome!

@@ -74,7 +74,7 @@ void initialize() {
 }
 
 static void paint_graphics(void) {
-  CHECK_GL(glClearColor(0.3f, 0.2f, 0.1f, 0.0f));
+  CHECK_GL(glClearColor(0.23f, 0.23f, 0.23f, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   vao->bind();
   for (auto const &gra: graphics) {
@@ -98,15 +98,6 @@ void finalize() {
   vao = nullptr;
 }
 
-int play_frameid(int max_frameid) {
-  if (playing)
-    curr_frameid++;
-  if (curr_frameid >= max_frameid) {
-    curr_frameid = max_frameid - 1;
-  }
-  return curr_frameid;
-}
-
 void new_frame() {
   CHECK_GL(glViewport(0, 0, nx, ny));
   paint_graphics();
@@ -123,7 +114,7 @@ void set_curr_playing(bool playing_) {
 }
 
 void set_curr_frameid(int frameid) {
-  curr_frameid = frameid;
+  curr_frameid = std::max(frameid, 0);
 }
 
 int get_curr_frameid() {

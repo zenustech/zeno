@@ -1,35 +1,57 @@
 #!/bin/bash
 set -e
 
-rm -rf /tmp/zenv-build /tmp/zenv
-mkdir -p /tmp/zenv-build /tmp/zenv
-cd /tmp/zenv-build
 
-PREFIX=/tmp/zenv
-NCPU=32
+rm -rf /tmp/build
+mkdir -p /tmp/build/{bin,lib/python3.9}
 
-git clone https://github.com/zensim-dev/patchelf.git --depth=1
-cd patchelf
-./bootstrap.sh
-./configure --prefix=$PREFIX
-make -j $NCPU
-make install
-cd ..
+cp -d /tmp/tmp-install/lib/*.so* /tmp/build/lib
+for x in `ZEN_SPROC=1 ZEN_DOEXEC=2 ZEN_OPEN=arts/FLIPSolver.zsg scripts/tracedll.sh python3 -m zenqt`; do
+    y="`realpath $x`"
+    echo "$x => $y"
+    x="$(echo "$x" | sed 's/\.so/@dot@so/g' | awk -F @dot@so '{print $1".so*"}')"
+    cp -d $x /tmp/build/lib
+    cp "$y" /tmp/build/lib
+done
+cp -d /usr/lib/ld-linux-x86-64.so.2 /usr/lib/ld-2.33.so /tmp/build/lib
+cp -rd `ls -d /usr/lib/python3.9/* | grep -v site-packages` /tmp/build/lib/python3.9
+cp -d /usr/bin/python{,3,3.9}{,-config} /tmp/build/bin
+/tmp/build/bin/python3.9 -m ensurepip
+https_proxy= python3.9 -m pip install -t /tmp/build/lib/python3.9 PyQt5 numpy
+/tmp/build/bin/python3.9 setup.py install
 
-git clone https://github.com/zensim-dev/cpython.git --branch=3.8 --depth=1
-cd cpython
-./configure --enable-shared --enable-optimizations --prefix=$PREFIX
-make -j $NCPU build_all
-make install
-cd ..
-$PREFIX/bin/patchelf --set-rpath $PREFIX/lib $PREFIX/bin/python3.8
+mv /tmp/build/{bin,.bin}
+mkdir -p /tmp/build/bin
 
-python3.8 -m pip install -t $PREFIX/lib/python3.8 PyQt5 numpy
+cp scripts/ldmock /tmp/build/.ldmock
+for x in `ls /tmp/build/.bin`; do
+    ln -sf ../.ldmock /tmp/build/bin/$x
+done
 
-git clone https://github.com/zensim-dev/zeno.git --depth=1
-cd zeno
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_PYTHON_INCLUDE_DIR:BOOL=ON -DPYTHON_INCLUDE_DIR=$PREFIX/include/python3.8 -DPYTHON_EXECUTABLE=$PREFIX/bin/python3.8
-make -C build -j $NCPU
-make -C build install
-$PREFIX/bin/python3.8 setup.py install
-cd ..
+cat > /tmp/build/start.sh <<EOF
+#!/bin/bash
+
+oldwd="\$(pwd)"
+cd -- "\$(dirname "\$0")"
+newwd="\$(pwd)"
+cd -- "\$oldwd"
+exec -- "\$newwd/bin/python3.9" -m zenqt "\$@"
+EOF
+chmod +x /tmp/build/start.sh
+
+echo 'docker run -v /tmp/build:/tmp/build -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=unix$DISPLAY -it ubuntu:18.04 /tmp/build/start.sh'
+
+
+version=`cat setup.py | grep "version =" | awk -F "version = '" '{print $2}' | cut -d\' -f1`
+fname=zeno-linux-$version
+echo $fname
+
+cp scripts/release_note.md /tmp/build/README.md
+cp -r assets /tmp/build/
+cp -r arts /tmp/build/
+
+cd /tmp
+rm -rf $fname $fname.tar.gz
+mv build $fname
+tar zcvf $fname.tar.gz $fname/
+

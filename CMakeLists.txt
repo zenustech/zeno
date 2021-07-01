@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.10)
 project(zeno LANGUAGES C CXX)
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -17,6 +17,9 @@ add_subdirectory(zenvis)
 
 file(GLOB ZENO_SOURCE zeno/*.cpp zeno/nodes/*.cpp zeno/nodes/*/*.cpp zeno/include/*/*.h)
 add_library(zeno SHARED ${ZENO_SOURCE})
+if (UNIX)
+	target_link_libraries(zeno PRIVATE stdc++fs)
+endif()
 target_compile_definitions(zeno PRIVATE -DDLL_ZENO)
 target_include_directories(zeno PUBLIC zeno/include)
 set(OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zeno/lib)

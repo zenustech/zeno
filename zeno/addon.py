@@ -24,12 +24,14 @@ def loadAutoloads():
 
     paths = []
     for name in os.listdir(dir):
+        path = os.path.join(dir, name)
+        if os.path.islink(path):
+            continue
         if os_name == 'win32':
             if name.endswith('.dll'):
                 paths.append(name)
         else:
-            if name.endswith('.so'):
-                path = os.path.join(dir, name)
+            if 'so' in name.split(os.extsep):
                 paths.append(path)
 
     retries = {}

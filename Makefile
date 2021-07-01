@@ -2,15 +2,9 @@ O=arts/rigid3.zsg
 
 default: run
 
-install: prepare
-	python/setup.py install
-
-wheel: prepare
-	python/setup.py bdist_wheel
-
-prepare: all
+dist: all
 	make -C build install
-	cp -d /tmp/tmp-install/lib/*.so* zeno/lib/
+	./dist.sh
 
 all:
 	cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
@@ -33,4 +27,4 @@ run: all
 debug: debug_all
 	USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh
 
-.PHONY: all debug_all debug run prepare install wheel default
+.PHONY: all debug_all debug run dist test configure default
