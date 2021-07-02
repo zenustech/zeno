@@ -1350,8 +1350,6 @@ class NodeEditor(QWidget):
 
         elif name == 'Copy':
             itemList = self.scene.selectedItems()
-            for i in itemList:
-                i.setSelected(False)
             itemList = [n for n in itemList if isinstance(n, QDMGraphicsNode)]
             nodes = self.scene.dumpGraph(itemList)
             self.clipboard = nodes
@@ -1359,7 +1357,9 @@ class NodeEditor(QWidget):
         elif name == 'Paste':
             if self.clipboard is None:
                 return
-
+            itemList = self.scene.selectedItems()
+            for i in itemList:
+                i.setSelected(False)
             nodes = self.clipboard
             nid_map = {}
             for nid in nodes:
