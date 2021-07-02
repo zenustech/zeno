@@ -41,6 +41,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
 #ifndef _PartioParticleAttribute_h_
 #define _PartioParticleAttribute_h_
+
+#include <string>
+
 namespace Partio {
 
 // Particle Types
