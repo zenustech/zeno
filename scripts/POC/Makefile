@@ -1,4 +1,4 @@
-x=vptr
+x=vlist
 
 x: $x.exe Makefile
 	./$<

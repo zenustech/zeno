@@ -80,5 +80,4 @@ ZENDEFNODE(SampleVDBToPrimitive, {
     {"openvdb"},
 });
 
-
 }
