@@ -295,6 +295,8 @@ class QDMGraphicsView(QGraphicsView):
         self.dragingEdge = None
         self.lastContextMenuPos = None
 
+        self.node_editor = parent
+
     def updateSearch(self, edit):
         for act in edit.menu.actions():
             if not isinstance(act, QWidgetAction):
@@ -344,6 +346,16 @@ class QDMGraphicsView(QGraphicsView):
         node.setPos(self.lastContextMenuPos)
         self.scene().addNode(node)
         self.scene().record()
+
+    def mouseDoubleClickEvent(self, event):
+        itemList = self.scene().selectedItems()
+        itemList = [n for n in itemList if isinstance(n, QDMGraphicsNode)]
+        if len(itemList) != 1:
+            return
+        item = itemList[0]
+        n = item.name
+        if n in self.node_editor.scenes:
+            self.node_editor.switchScene(n)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
@@ -687,7 +699,6 @@ class QDMCollapseButton(QSvgWidget):
         super().__init__()
         self.render = self.renderer()
         self.load(asset_path('unfold.svg'))
-        self.collapsed = False
         # PyQt5 >= 5.15
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
@@ -699,13 +710,17 @@ class QDMCollapseButton(QSvgWidget):
     
     def mousePressEvent(self, event):
         super().mouseMoveEvent(event)
-        self.collapsed = not self.collapsed
-        if self.collapsed:
-            self.load(asset_path('collapse.svg'))
+        self.node.collapsed = not self.node.collapsed
+        if self.node.collapsed:
             self.node.collapse()
         else:
-            self.load(asset_path('unfold.svg'))
             self.node.unfold()
+
+    def update_svg(self):
+        if self.node.collapsed:
+            self.load(asset_path('collapse.svg'))
+        else:
+            self.load(asset_path('unfold.svg'))
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
 
@@ -715,6 +730,9 @@ class QDMGraphicsCollapseButton(QGraphicsProxyWidget):
 
         self.widget = QDMCollapseButton(parent)
         self.setWidget(self.widget)
+
+    def update_svg(self):
+        self.widget.update_svg()
 
 class QDMGraphicsParam(QGraphicsProxyWidget):
     def __init__(self, parent=None):
@@ -886,9 +904,12 @@ class QDMGraphicsNode(QGraphicsItem):
         self.title.setPlainText(name)
 
     def getOptions(self):
-        return [name for name, button in self.options.items() if button.checked]
+        collapsed_status = ['collapsed'] if self.collapsed else []
+        return [name for name, button in self.options.items() if button.checked] + collapsed_status
 
     def setOptions(self, options):
+        if 'collapsed' in options:
+            self.collapse()
         for name, button in self.options.items():
             button.setChecked(name in options)
 
@@ -1026,6 +1047,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.dummy_output_socket.show()
 
         self.collapsed = True
+        self.collapse_button.update_svg()
         for v in self.options.values():
             v.hide()
         for v in self.params.values():
@@ -1044,6 +1066,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.dummy_output_socket.hide()
 
         self.collapsed = False
+        self.collapse_button.update_svg()
         for v in self.options.values():
             v.show()
         for v in self.params.values():
@@ -1160,6 +1183,8 @@ class NodeEditor(QWidget):
         else:
             scene = self.scenes[name]
         self.view.setScene(scene)
+        self.edit_graphname.clear()
+        self.edit_graphname.addItems(self.scenes.keys())
 
     @property
     def scene(self):
@@ -1201,25 +1226,30 @@ class NodeEditor(QWidget):
         self.button_kill.resize(80, 30)
         self.button_kill.clicked.connect(self.on_kill) 
 
-        self.edit_graphname = QLineEdit(self)
+        self.edit_graphname = QComboBox(self)
+        self.edit_graphname.setEditable(True)
         self.edit_graphname.move(270, 40)
-        self.edit_graphname.resize(70, 30)
-        self.edit_graphname.setText('main')
+        self.edit_graphname.resize(130, 30)
+        self.edit_graphname.textActivated.connect(self.on_switch_graph)
 
-        self.button_switch = QPushButton('Switch', self)
-        self.button_switch.move(350, 40)
-        self.button_switch.resize(80, 30)
-        self.button_switch.clicked.connect(self.on_switch_graph)
+        self.button_new = QPushButton('New', self)
+        self.button_new.move(410, 40)
+        self.button_new.resize(80, 30)
+        self.button_new.clicked.connect(self.on_new_graph)
 
         self.button_delete = QPushButton('Delete', self)
-        self.button_delete.move(440, 40)
+        self.button_delete.move(500, 40)
         self.button_delete.resize(80, 30)
         self.button_delete.clicked.connect(self.deleteCurrScene)
 
-    def on_switch_graph(self):
-        name = self.edit_graphname.text()
+    def on_switch_graph(self, name):
         self.switchScene(name)
         self.initDescriptors()
+        self.edit_graphname.setCurrentText(name)
+
+    def on_new_graph(self):
+        name = self.edit_graphname.currentText()
+        self.on_switch_graph(name)
         print('all subgraphs are:', list(self.scenes.keys()))
 
     def setDescriptors(self, descs):

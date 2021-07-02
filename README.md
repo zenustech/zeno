@@ -1,10 +1,10 @@
 # ZENO
 
-[![CMake](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml) [![License](https://img.shields.io/badge/license-MPL-blue)](LICENSE) [![Version](https://img.shields.io/github/v/release/zensim-dev/zeno)](https://github.com/zensim-dev/zeno/releases)
+[![CMake](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml) [![License](https://img.shields.io/badge/license-MPLv2-blue)](LICENSE) [![Version](https://img.shields.io/github/v/release/zensim-dev/zeno)](https://github.com/zensim-dev/zeno/releases)
 
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 
-![rigid3.zsg](images/rigid3.jpg)
+![rigid3.zsg](images/rigid3.jpg "arts/rigid3.zsg")
 
 
 ## Features
@@ -21,9 +21,9 @@ nodes, and various VFX and simulation solutions based on our nodes (provided by 
 
 ## ZenCompute (@littlemine)
 
-Open-source code development framework to easily develop high-performance physical simulation code that both run on cpu and gpu with out too much effort.
+Open-source code development framework to easily develop high-performance physical simulation code that both run on cpu and gpu with out too much effort. Now intergrated into ZENO.
 
-![ZenCompute development framework](images/zencompute.png)
+[![ZenCompute development framework](images/zencompute.png)](https://github.com/zensim-dev/zpc)
 
 
 # Motivation
@@ -37,7 +37,7 @@ This repo aims to provide a great tool for both technical artists and CG develop
 
 One may create complicated simulation scenarios by simply connecting the nodes provided by the system. For example, here's a molecular simulation built by our users:
 
-![lennardjones.zsg](images/lennardjones.jpg)
+![lennardjones.zsg](images/lennardjones.jpg "arts/lennardjones.zsg")
 
 This is the charm of visual-programming, not only the direction of data-flow, but also the logic-flow of the solution algorithm is presented at no more clarity.
 In fact, building this molecular simulation from scratch took no more than 7 minutes!
@@ -49,10 +49,9 @@ Unlike many simulation softwares that have fixed functionality, we provide the b
 blocks of algorithms in the form of **nodes** at a relatively low granularity.
 By connecting these nodes, you can literally create your unique solver that best fits
 your need, rather than being limited by the imagination of software programmers.
+For example, here @zhxx1987 created two-way coupled fluid-rigid simulation by adding some nodes to pass momentums from surfaces despite the FLIP solver didn't support fluid-rigid coupling at the first place:
 
-Rigid_pool2.zsg
-
-![two way coupled fluid-rigid (Rigid_pool2.zsg)](images/FSI.gif)
+![Rigid_pool2.zsg](images/FSI.gif "arts/Rigid_pool2.zsg")
 
 
 ## Performant
@@ -64,7 +63,7 @@ low-level details.
 Performance-wisely, it's shown by @zhxx1987 that our FLIP solver is 4x faster than
 Houdini at large scale.
 
-![FLIPSolver.zsg](images/FLIPSolver.jpg)
+![FLIPSolver.zsg](images/FLIPSolver.jpg "arts/FLIPSolver.zsg")
 
 ## Control-flows
 
@@ -72,17 +71,20 @@ Unlike many pure functional node systems (e.g. Blender), ZENO has a strong time-
 and provide a lot of control-flow nodes including CachedOnce, BeginForEach, EndFor, etc.
 This enable you to make turing-equivalent programs that fit real-world problems.
 
-![forloop.zsg](images/forloop.jpg)
+![forloop.zsg](images/forloop.jpg "arts/forloop.zsg")
 
 ## Unified
 
 Despite we already have many node systems today, but the are usually bound to
 specific softwares, e.g. Blender, Houdini, Unreal, etc.. These softwares usually
-already contains a lot of nodes and assumptions and thus hard to use for developers
-to extend it.
+already contains a lot of nodes and assumptions and thus hard to use for
+developers to extend it.
 What's more, a user who wrote a cloth simulation node for Blender cannot couple
 with a user who wrote a fluid simulation in Houdini.
 So, we want to create a unified framework customized for simulation with nodes.
+Here's an example on how to add a ZENO node with its C++ API:
+
+![demo_project/main.cpp](images/demo_project.png "demo_project/main.cpp")
 
 ## Extensible
 
@@ -104,7 +106,7 @@ Loading these libraries would add corresponding functional nodes into ZENO,
 after which you can creating node graphs with them for simulation.
 You may also add your own solver nodes to ZENO with this workflow if you'd like.
 
-![rigid3.zsg](images/extensible.jpg)
+![demoproject.zsg](images/demoprojgraph.jpg "arts/demoproject.zsg")
 
 ## Integratable
 
@@ -113,7 +115,7 @@ ZENO as a **Blender addon**! With that, you can enjoy the flexibilty of ZENO
 node system and all other powerful tools in Blender. See `Blender addon` section
 for more information.
 
-![blender.blend](images/blender.jpg)
+![blender.blend](images/blender.jpg "assets/blender.blend")
 
 
 # End-user Installation
@@ -143,11 +145,13 @@ You need a C++17 compiler, CMake 3.12+, and Python 3.6+ to build ZENO; NumPy and
 Other requirements like Pybind11 or GLAD are self-contained and you don't have to worry installing them manually.
 
 - Arch Linux
+
 ```bash
 sudo pacman -S gcc make cmake python python-pip python-numpy python-pyqt5 qt5-base libglvnd mesa
 ```
 
 - Ubuntu 20.04
+
 ```bash
 sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip libqt5core5a qt5dxcb-plugin libglvnd-dev libglapi-mesa libosmesa6
 
@@ -157,6 +161,7 @@ sudo python -m pip install numpy PyQt5
 ```
 
 - Windows 10
+
 1. Install Python 3.8 64-bit. IMPORTANT: make sure you **Add Python 3.8 to PATH**! After that rebooting your computer would be the best.
 2. Start CMD in **Administrator mode** and type these commands:
 ```cmd
@@ -175,13 +180,16 @@ Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/
 
 
 ## Build ZENO
+
 - Linux
+
 ```bash
 cmake -B build
 make -C build -j8
 ```
 
 - Windows
+
 ```cmd
 cmake -B build
 ```
@@ -191,24 +199,30 @@ IMPORTANT: In MSVC, Release mode must **always be active** when building ZENO, s
 
 
 ### Run ZENO for development
+
 - Linux
+
 ```bash
 ./run.sh
 ```
 
 - Windows
+
 ```cmd
 run.bat
 ```
 
 ## Install ZENO globally
+
 - Linux
+
 ```bash
 make -C build install
 python setup.py install
 ```
 
 - Windows
+
 ```cmd
 python setup.py install
 ```
@@ -221,6 +235,7 @@ python -m zenqt
 
 ## Packing ZENO into binary release
 - Arch Linux
+
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
 make -C build -j8
@@ -230,6 +245,7 @@ make -C build install
 ```
 
 - Windows
+
 First, download `zenv-windows-prebuilt.zip` from [this page](https://github.com/zensim-dev/binaries/releases).
 Second, extract it directly into project root.
 Then run `dist.bat` in project root.
@@ -312,6 +328,26 @@ See ```demo_project/``` for an example on how to write custom nodes in ZENO.
 To install a node library for ZENO just copy the `.so` or `.dll` files to `zeno/lib/`. See ```demo_project/CMakeLists.txt``` for how to automate this in CMake.
 
 
-# Blender addon
+# Miscellaneous
+
+## Blender addon
 
 Work in progress, may not work, see `assets/blender.blend`. The source code of our blender addon is under `zenblend/`. Contributions are more than welcome!
+
+## Contributors
+
+Thank you to all the people who have already contributed to ZENO!
+
+[![Contributors](https://contrib.rocks/image?repo=zensim-dev/zeno)](https://github.com/zensim-dev/zeno/graphs/contributors)
+
+## License
+
+ZENO is licensed under the Mozilla Public License Version 2.0, see [LICENSE](LICENSE) for more information.
+
+## Contact us
+
+You may contact us via WeChat:
+
+* @zhxx1987: shinshinzhang
+
+* @archibate: tanh233
