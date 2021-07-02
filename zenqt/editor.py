@@ -1412,8 +1412,6 @@ class NodeEditor(QWidget):
         with open(path, 'r') as f:
             prog = json.load(f)
         self.loadProgram(prog)
-        self.edit_graphname.clear()
-        self.edit_graphname.addItems(self.scenes.keys())
 
     def confirm_discard(self, title):
         if os.environ.get('ZEN_OPEN'):
