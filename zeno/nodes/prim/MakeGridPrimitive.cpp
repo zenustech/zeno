@@ -17,10 +17,13 @@ struct Make2DGridPrimitive : INode {
             : 1.f / std::max(nx - 1, (size_t)1);
         float dy = has_input("dy") ? get_input<NumericObject>("dy")->get<float>()
             : (has_input("dx") ? dx : 1.f / std::max(ny - 1, (size_t)1));
-        vec3f ax = get_input<NumericObject>("dirX")->get<vec3f>() * dx;
-        vec3f ay = get_input<NumericObject>("dirY")->get<vec3f>() * dy;
+        vec3f ax = get_input<NumericObject>("sizeX")->get<vec3f>() * dx;
+        vec3f ay = get_input<NumericObject>("sizeY")->get<vec3f>() * dy;
         vec3f o = has_input("origin") ? get_input<NumericObject>("origin")->get<vec3f>()
-            : -(ax * (nx - 1) + ay * (ny - 1)) / 2;
+            : vec3f(0);
+
+        if (get_param<int>("isCentered"))
+            o -= (ax * (nx - 1) + ay * (ny - 1)) / 2;
 
         auto prim = std::make_shared<PrimitiveObject>();
         prim->resize(nx * ny);
@@ -39,10 +42,11 @@ struct Make2DGridPrimitive : INode {
 
 ZENDEFNODE(Make2DGridPrimitive,
         { /* inputs: */ {
-        "nx", "ny", "dx", "dy", "dirX", "dirY", "origin",
+        "nx", "ny", "dx", "dy", "sizeX", "sizeY", "origin",
         }, /* outputs: */ {
         "prim",
         }, /* params: */ {
+        {"int", "isCentered", "0"},
         }, /* category: */ {
         "primitive",
         }});
