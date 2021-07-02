@@ -301,6 +301,13 @@ class QDMGraphicsView(QGraphicsView):
 
         self.node_editor = parent
 
+    def setViewInfo(self, scene):
+        transform = QTransform()
+        transform.scale(scene.scale, scene.scale)
+        self.setTransform(transform)
+        self.horizontalScrollBar().setValue(scene.trans_x)
+        self.verticalScrollBar().setValue(scene.trans_y)
+
     def updateSearch(self, edit):
         for act in edit.menu.actions():
             if not isinstance(act, QWidgetAction):
@@ -1180,6 +1187,7 @@ class NodeEditor(QWidget):
         else:
             scene = self.scenes[name]
         self.view.setScene(scene)
+        self.view.setViewInfo(scene)
         self.edit_graphname.clear()
         self.edit_graphname.addItems(self.scenes.keys())
 
@@ -1311,6 +1319,11 @@ class NodeEditor(QWidget):
             print('Loading subgraph', name)
             self.switchScene(name)
             self.scene.loadGraph(graph)
+            if 'views' in prog:
+                v = prog['views'][name]
+                self.scene.scale = v['scale']
+                self.scene.trans_x = v['trans_x']
+                self.scene.trans_y = v['trans_y']
         self.switchScene('main')
         self.initDescriptors()
 
