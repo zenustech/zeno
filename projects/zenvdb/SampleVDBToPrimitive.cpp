@@ -11,50 +11,60 @@ struct attr_to_vdb_type {
 
 template <>
 struct attr_to_vdb_type<float> {
+    static constexpr bool is_scalar = true;
     using type = VDBFloatGrid;
 };
 
 template <>
 struct attr_to_vdb_type<vec3f> {
+    static constexpr bool is_scalar = false;
     using type = VDBFloat3Grid;
 };
 
 template <>
 struct attr_to_vdb_type<int> {
+    static constexpr bool is_scalar = true;
     using type = VDBIntGrid;
 };
 
 template <>
 struct attr_to_vdb_type<vec3i> {
+    static constexpr bool is_scalar = false;
     using type = VDBInt3Grid;
 };
 
 template <class T>
-using attr_to_vdb_type_t = typename attr_to_vdb_type<T>::type;
-
-template <class T>
 void sampleVDBAttribute(std::vector<vec3f> const &pos, std::vector<T> &arr,
-    VDBGrid *ggrid, std::string const &attr) {
-    using VDBType = attr_to_vdb_type_t<T>;
+    VDBGrid *ggrid) {
+    using VDBType = typename attr_to_vdb_type<T>::type;
     auto ptr = dynamic_cast<VDBType *>(ggrid);
     if (!ptr) {
         printf("ERROR: vdb attribute type mismatch!\n");
         return;
     }
     auto grid = ptr->m_grid;
+
+    for (size_t i = 0; i < pos.size(); i++) {
+        auto _pos = vec_to_other<openvdb::Vec3R>(pos[i]);
+        auto val = openvdb::tools::PointSampler::sample(grid->tree(), _pos);
+        if constexpr (attr_to_vdb_type<T>::is_scalar) {
+            arr[i] = val;
+        } else {
+            arr[i] = other_to_vec<3>(val);
+        }
+    }
 }
 
 struct SampleVDBToPrimitive : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto grid = get_input<VDBGrid>("grid");
-        auto attrPrim = get_param<std::string>("attrPrim");
-        auto attrGrid = get_param<std::string>("attrGrid");
+        auto grid = get_input<VDBGrid>("vdbGrid");
+        auto attr = get_param<std::string>("primAttr");
         auto &pos = prim->attr<vec3f>("pos");
 
         std::visit([&] (auto &vel) {
-            sampleVDBAttribute(pos, vel, grid.get(), attrGrid);
-        }, prim->attr(attrPrim));
+            sampleVDBAttribute(pos, vel, grid.get());
+        }, prim->attr(attr));
 
         set_output("prim", std::move(prim));
     }
@@ -63,7 +73,7 @@ struct SampleVDBToPrimitive : INode {
 ZENDEFNODE(SampleVDBToPrimitive, {
     {"prim", "vdbGrid"},
     {"prim"},
-    {{"string", "attrPrim", "vel"}, {"string", "attrGrid", "v"}},
+    {{"string", "primAttr", "vel"}},
     {"openvdb"},
 });
 
