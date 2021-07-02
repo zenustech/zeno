@@ -23,7 +23,7 @@ nodes, and various VFX and simulation solutions based on our nodes (provided by 
 
 Open-source code development framework to easily develop high-performance physical simulation code that both run on cpu and gpu with out too much effort.
 
-![ZenCompute development framework](images/zencompute.png)
+[![ZenCompute development framework](images/zencompute.png)](https://github.com/zensim-dev/zpc)
 
 
 # Motivation
@@ -50,7 +50,7 @@ blocks of algorithms in the form of **nodes** at a relatively low granularity.
 By connecting these nodes, you can literally create your unique solver that best fits
 your need, rather than being limited by the imagination of software programmers.
 
-![two way coupled fluid-rigid (Rigid_pool2.zsg)](images/FSI.gif "arts/Rigid_pool2.zsg")
+![two way coupled fluid-rigid - Rigid_pool2.zsg](images/FSI.gif "arts/Rigid_pool2.zsg")
 
 
 ## Performant
