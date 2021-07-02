@@ -44,7 +44,8 @@ void sampleVDBAttribute(std::vector<vec3f> const &pos, std::vector<T> &arr,
     }
     auto grid = ptr->m_grid;
 
-    for (size_t i = 0; i < pos.size(); i++) {
+    #pragma omp parallel for
+    for (int i = 0; i < pos.size(); i++) {
         auto p0 = pos[i];
         auto p1 = vec_to_other<openvdb::Vec3R>(p0);
         auto p2 = grid->worldToIndex(p1);
