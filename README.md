@@ -1,6 +1,6 @@
 # ZENO
 
-[![CMake](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml) [![License](https://img.shields.io/badge/license-MPL-blue)](LICENSE) [![Version](https://img.shields.io/github/v/release/zensim-dev/zeno)](https://github.com/zensim-dev/zeno/releases)
+[![CMake](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml) [![License](https://img.shields.io/badge/license-MPLv2-blue)](LICENSE) [![Version](https://img.shields.io/github/v/release/zensim-dev/zeno)](https://github.com/zensim-dev/zeno/releases)
 
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 
@@ -311,6 +311,25 @@ See ```demo_project/``` for an example on how to write custom nodes in ZENO.
 To install a node library for ZENO just copy the `.so` or `.dll` files to `zeno/lib/`. See ```demo_project/CMakeLists.txt``` for how to automate this in CMake.
 
 
-# Blender addon
+# Miscellaneous
+
+## Blender addon
 
 Work in progress, may not work, see `assets/blender.blend`. The source code of our blender addon is under `zenblend/`. Contributions are more than welcome!
+
+## Contributors
+
+Thank you to all the people who have already contributed to ZENO!
+
+[![Contributors](https://contrib.rocks/image?repo=zensim-dev/zeno)](https://github.com/zensim-dev/zeno/graphs/contributors)
+
+## License
+
+ZENO is licensed under the Mozilla Public License Version 2.0, see [LICENSE](LICENSE) for more information.
+
+## Contact us
+
+You may contact us via WeChat:
+
+@zhxx1987: shinshinzhang
+@archibate: tanh233
