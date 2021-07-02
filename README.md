@@ -7,26 +7,24 @@ Open-source node system framework, to change your algorithmic code into useful t
 ![rigid3.zsg](images/rigid3.jpg)
 
 
-![robot hit water](images/crag_hit_water.gif)
-
-
-![two way coupled fluid-rigid(Rigid_pool2.zsg)](images/FSI.gif)
-
-
-![SuperSonic Flow](images/shock.gif)
-
-
-
 ## Features
 
 Integrated Toolbox, from volumetric geometry process tools (OpenVDB), to state-of-art, commercially robust, highly optimized physics solvers and visualization
 nodes, and various VFX and simulation solutions based on our nodes (provided by .zsg file in `arts/` folder).
-//better have some screenshot here
+
+## Gallery
+
+![robot hit water](images/crag_hit_water.gif)
+
+![two way coupled fluid-rigid (Rigid_pool2.zsg)](images/FSI.gif)
+
+![SuperSonic Flow](images/shock.gif)
 
 ## ZenCompute (@littlemine)
 
 Open-source code development framework to easily develop high-performance physical simulation code that both run on cpu and gpu with out too much effort.
-//better have some screenshot here
+
+![ZenCompute development framework](images/zencompute.jpg)
 
 
 # Motivation
