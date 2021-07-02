@@ -1219,21 +1219,26 @@ class NodeEditor(QWidget):
         self.edit_graphname.setEditable(True)
         self.edit_graphname.move(270, 40)
         self.edit_graphname.resize(130, 30)
+        self.edit_graphname.textActivated.connect(self.on_switch_graph)
 
-        self.button_switch = QPushButton('Switch', self)
-        self.button_switch.move(410, 40)
-        self.button_switch.resize(80, 30)
-        self.button_switch.clicked.connect(self.on_switch_graph)
+        self.button_new = QPushButton('New', self)
+        self.button_new.move(410, 40)
+        self.button_new.resize(80, 30)
+        self.button_new.clicked.connect(self.on_new_graph)
 
         self.button_delete = QPushButton('Delete', self)
         self.button_delete.move(500, 40)
         self.button_delete.resize(80, 30)
         self.button_delete.clicked.connect(self.deleteCurrScene)
 
-    def on_switch_graph(self):
-        name = self.edit_graphname.currentText()
+    def on_switch_graph(self, name):
         self.switchScene(name)
         self.initDescriptors()
+        self.edit_graphname.setCurrentText(name)
+
+    def on_new_graph(self):
+        name = self.edit_graphname.currentText()
+        self.on_switch_graph(name)
         print('all subgraphs are:', list(self.scenes.keys()))
 
     def setDescriptors(self, descs):
