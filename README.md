@@ -4,7 +4,7 @@
 
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 
-![rigid3.zsg](images/rigid3.jpg)
+![rigid3.zsg](images/rigid3.jpg "arts/rigid3.zsg")
 
 
 ## Features
@@ -37,7 +37,7 @@ This repo aims to provide a great tool for both technical artists and CG develop
 
 One may create complicated simulation scenarios by simply connecting the nodes provided by the system. For example, here's a molecular simulation built by our users:
 
-![lennardjones.zsg](images/lennardjones.jpg)
+![lennardjones.zsg](images/lennardjones.jpg "arts/lennardjones.zsg")
 
 This is the charm of visual-programming, not only the direction of data-flow, but also the logic-flow of the solution algorithm is presented at no more clarity.
 In fact, building this molecular simulation from scratch took no more than 7 minutes!
@@ -50,9 +50,7 @@ blocks of algorithms in the form of **nodes** at a relatively low granularity.
 By connecting these nodes, you can literally create your unique solver that best fits
 your need, rather than being limited by the imagination of software programmers.
 
-Rigid_pool2.zsg
-
-![two way coupled fluid-rigid (Rigid_pool2.zsg)](images/FSI.gif)
+![two way coupled fluid-rigid (Rigid_pool2.zsg)](images/FSI.gif "arts/Rigid_pool2.zsg")
 
 
 ## Performant
@@ -64,7 +62,7 @@ low-level details.
 Performance-wisely, it's shown by @zhxx1987 that our FLIP solver is 4x faster than
 Houdini at large scale.
 
-![FLIPSolver.zsg](images/FLIPSolver.jpg)
+![FLIPSolver.zsg](images/FLIPSolver.jpg "arts/FLIPSolver.zsg")
 
 ## Control-flows
 
@@ -72,7 +70,7 @@ Unlike many pure functional node systems (e.g. Blender), ZENO has a strong time-
 and provide a lot of control-flow nodes including CachedOnce, BeginForEach, EndFor, etc.
 This enable you to make turing-equivalent programs that fit real-world problems.
 
-![forloop.zsg](images/forloop.jpg)
+![forloop.zsg](images/forloop.jpg "arts/forloop.zsg")
 
 ## Unified
 
@@ -104,7 +102,7 @@ Loading these libraries would add corresponding functional nodes into ZENO,
 after which you can creating node graphs with them for simulation.
 You may also add your own solver nodes to ZENO with this workflow if you'd like.
 
-![rigid3.zsg](images/extensible.jpg)
+![rigid3.zsg](images/extensible.jpg "arts/rigid3.zsg")
 
 ## Integratable
 
@@ -113,7 +111,7 @@ ZENO as a **Blender addon**! With that, you can enjoy the flexibilty of ZENO
 node system and all other powerful tools in Blender. See `Blender addon` section
 for more information.
 
-![blender.blend](images/blender.jpg)
+![blender.blend](images/blender.jpg "assets/blender.blend")
 
 
 # End-user Installation
