@@ -1170,6 +1170,8 @@ class NodeEditor(QWidget):
         else:
             scene = self.scenes[name]
         self.view.setScene(scene)
+        self.edit_graphname.clear()
+        self.edit_graphname.addItems(self.scenes.keys())
 
     @property
     def scene(self):
@@ -1215,7 +1217,6 @@ class NodeEditor(QWidget):
         self.edit_graphname.setEditable(True)
         self.edit_graphname.move(270, 40)
         self.edit_graphname.resize(70, 30)
-        self.edit_graphname.addItem('main')
 
         self.button_switch = QPushButton('Switch', self)
         self.button_switch.move(350, 40)
@@ -1232,8 +1233,6 @@ class NodeEditor(QWidget):
         self.switchScene(name)
         self.initDescriptors()
         print('all subgraphs are:', list(self.scenes.keys()))
-        self.edit_graphname.clear()
-        self.edit_graphname.addItems(self.scenes.keys())
 
     def setDescriptors(self, descs):
         self.descs = descs
@@ -1404,6 +1403,8 @@ class NodeEditor(QWidget):
         with open(path, 'r') as f:
             prog = json.load(f)
         self.loadProgram(prog)
+        self.edit_graphname.clear()
+        self.edit_graphname.addItems(self.scenes.keys())
 
     def confirm_discard(self, title):
         if os.environ.get('ZEN_OPEN'):
