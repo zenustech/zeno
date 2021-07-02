@@ -16,7 +16,6 @@ nodes, and various VFX and simulation solutions based on our nodes (provided by 
 
 ![robot hit water](images/crag_hit_water.gif)
 
-![two way coupled fluid-rigid (Rigid_pool2.zsg)](images/FSI.gif)
 
 ![SuperSonic Flow](images/shock.gif)
 
@@ -51,7 +50,9 @@ blocks of algorithms in the form of **nodes** at a relatively low granularity.
 By connecting these nodes, you can literally create your unique solver that best fits
 your need, rather than being limited by the imagination of software programmers.
 
-[TODO: ```rigid_pool.zsg``` to demo solid-fluid couple]
+Rigid_pool2.zsg
+![two way coupled fluid-rigid (Rigid_pool2.zsg)](images/FSI.gif)
+
 
 ## Performant
 
