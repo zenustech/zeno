@@ -10,24 +10,19 @@ struct OpenvdbInitializer {
 };
 static OpenvdbInitializer g_openvdb_initializer{};
 
-static inline float *randomTable;
+static inline float *randomTable = nullptr;
 
-struct initRandomTable {
-
-  initRandomTable() {
+static inline void initRandomTable() {
+    if (randomTable) return;
     randomTable = new float[21474836];
     std::random_device device;
     std::mt19937 generator(/*seed=*/device());
     std::uniform_real_distribution<> distribution(-0.5, 0.5);
 #pragma omp parallel for
     for (size_t i = 0; i < 21474836; i++) {
-
-      randomTable[i] = distribution(generator);
+        randomTable[i] = distribution(generator);
     }
-  }
-};
-
-static initRandomTable g_randomTableInitializer{};
+}
 
 struct FLIP_vdb {
   using vec_tree_t = openvdb::Vec3fGrid::TreeType;
