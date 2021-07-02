@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
-#include <cstdio>
 #include <zeno/NumericObject.h>
+#include <cstdio>
 
 struct Number : zeno::IObject {
     int value;
@@ -18,36 +18,36 @@ struct MakeNumber : zeno::INode {
 };
 
 ZENDEFNODE(MakeNumber,
-   { /* inputs: */ {
-   }, /* outputs: */ {
-       "obj",
-   }, /* params: */ {
-       {"int", "value", "233 0"},  // defl min max; defl min; defl
-   }, /* category: */ {
-       "demo_project",
-   }});
+        { /* inputs: */ {
+        }, /* outputs: */ {
+        "obj",
+        }, /* params: */ {
+        {"int", "value", "233 0"},  // defl min max; defl min; defl
+        }, /* category: */ {
+        "demo_project",
+        }});
 
 
 struct NumberAdd : zeno::INode {
-  virtual void apply() override {
-      printf("NumberAdd::apply() called!\n");
-      auto lhs = get_input<Number>("lhs");
-      auto rhs = get_input<Number>("rhs");
-      auto result = std::make_shared<Number>();
-      result->value = lhs->value + rhs->value;
-      set_output("result", std::move(result));
-  }
+    virtual void apply() override {
+        printf("NumberAdd::apply() called!\n");
+        auto lhs = get_input<Number>("lhs");
+        auto rhs = get_input<Number>("rhs");
+        auto result = std::make_shared<Number>();
+        result->value = lhs->value + rhs->value;
+        set_output("result", std::move(result));
+    }
 };
 
 ZENDEFNODE(NumberAdd,
-    { /* inputs: */ {
+        { /* inputs: */ {
         "lhs", "rhs",
-    }, /* outputs: */ {
+        }, /* outputs: */ {
         "result",
-    }, /* params: */ {
-    }, /* category: */ {
-    "demo_project",
-    }});
+        }, /* params: */ {
+        }, /* category: */ {
+        "demo_project",
+        }});
 
 
 struct NumberPrint : zeno::INode {
@@ -63,10 +63,10 @@ struct NumberPrint : zeno::INode {
 };
 
 ZENDEFNODE(NumberPrint,
-   { /* inputs: */ {
-           "obj",
-   }, /* outputs: */ {
-   }, /* params: */ {
-   }, /* category: */ {
-           "demo_project",
-   }});
+        { /* inputs: */ {
+        "obj",
+        }, /* outputs: */ {
+        }, /* params: */ {
+        }, /* category: */ {
+        "demo_project",
+        }});

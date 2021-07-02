@@ -76,11 +76,14 @@ This enable you to make turing-equivalent programs that fit real-world problems.
 
 Despite we already have many node systems today, but the are usually bound to
 specific softwares, e.g. Blender, Houdini, Unreal, etc.. These softwares usually
-already contains a lot of nodes and assumptions and thus hard to use for developers
-to extend it.
+already contains a lot of nodes and assumptions and thus hard to use for
+developers to extend it.
 What's more, a user who wrote a cloth simulation node for Blender cannot couple
 with a user who wrote a fluid simulation in Houdini.
 So, we want to create a unified framework customized for simulation with nodes.
+Here's an example on how to add a ZENO node with its C++ API:
+
+![demo_project/main.cpp](images/demo_project.png "demo_project/main.cpp")
 
 ## Extensible
 
