@@ -19,8 +19,8 @@ def runScene(graphs, nframes, iopath):
     applies = []
     nodes = graphs['main']
     for ident, data in nodes.items():
-
-        if 'OUT' in data['options']:
+        options = data['options']
+        if 'OUT' in options or 'VIEW' in options:
             applies.append(ident)
 
     core.switchGraph('main')

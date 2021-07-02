@@ -45,8 +45,10 @@ void sampleVDBAttribute(std::vector<vec3f> const &pos, std::vector<T> &arr,
     auto grid = ptr->m_grid;
 
     for (size_t i = 0; i < pos.size(); i++) {
-        auto _pos = vec_to_other<openvdb::Vec3R>(pos[i]);
-        auto val = openvdb::tools::PointSampler::sample(grid->tree(), _pos);
+        auto p0 = pos[i];
+        auto p1 = vec_to_other<openvdb::Vec3R>(p0);
+        auto p2 = grid->worldToIndex(p1);
+        auto val = openvdb::tools::PointSampler::sample(grid->tree(), p2);
         if constexpr (attr_to_vdb_type<T>::is_scalar) {
             arr[i] = val;
         } else {

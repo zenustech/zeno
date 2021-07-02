@@ -29,7 +29,6 @@ struct Make2DGridPrimitive : INode {
             for (size_t x = 0; x < nx; x++) {
                 vec3f p = o + x * ax + y * ay;
                 size_t i = x + y * nx;
-                printf("%zd %f %f %f\n", i, p[0], p[1], p[2]);
                 pos[i] = p;
             }
         }
