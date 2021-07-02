@@ -16,10 +16,8 @@ cmake-build-*/
 *.dylib
 *.pyd
 
-# rubbish files
+# output files
 outputs/
-rubbish.bin/
-/assets/galaxy
 
 # vim files
 .*.swp

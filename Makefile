@@ -1,4 +1,4 @@
-O=arts/rigid3.zsg
+O=arts/samplevdb.zsg
 
 default: run
 

@@ -190,31 +190,36 @@ struct Opcode : zeno::IObject {
         auto pidit = pids.begin();
         auto immit = imms.begin();
         auto nameit = names.begin();
-        using ValType = zeno::array<zeno::vec3f, ARR_SKIP>;
-        std::stack<ValType> stack;
+        std::stack<zeno::vec3f> stack;
         for (; opit != ops.end(); opit++) {
             switch (*opit) {
                 case OP_LOAD: {
-                    auto const &arr = primList[*pidit++]->attr<zeno::vec3f>(*nameit++);
-                    stack.push(ValType::load(arr.data() + index));
+                    auto const &attr = primList[*pidit++]->attr(*nameit++);
+                    auto val = std::visit([&] (auto const &arr) {
+                        return zeno::vec3f(arr[index]);
+                    }, attr);
+                    stack.push(val);
                 } break;
                 case OP_STORE: {
-                    auto &arr = primList[*pidit++]->attr<zeno::vec3f>(*nameit++);
                     auto val = stack.top(); stack.pop();
-                    ValType::store(arr.data() + index, val);
+                    auto &attr = primList[*pidit++]->attr(*nameit++);
+                    if (std::holds_alternative<std::vector<zeno::vec3f>>(attr)) {
+                        auto &arr = std::get<std::vector<zeno::vec3f>>(attr);
+                        arr[index] = val;
+                    } else {
+                        auto &arr = std::get<std::vector<float>>(attr);
+                        arr[index] = val[0];
+                    }
                 } break;
                 case OP_IMMED: {
-                    stack.push(ValType::fill(*immit++));
+                    stack.push(*immit++);
                 } break;
 
                 #define _PER_BINARY_OP(op, expr) \
                 case op: { \
                     auto &rhs = stack.top(); stack.pop(); \
                     auto &lhs = stack.top(); stack.pop(); \
-                    auto ret = ValType::apply([]( \
-                            auto const &lhs, auto const &rhs) { \
-                        return (expr); \
-                    }, lhs, rhs); \
+                    auto ret = (expr); \
                     stack.push(ret); \
                 } break;
                 _PER_BINARY_OP(OP_ADD, lhs + rhs)
@@ -233,10 +238,7 @@ struct Opcode : zeno::IObject {
                 #define _PER_UNARY_OP(op, expr) \
                 case op: { \
                     auto &lhs = stack.top(); stack.pop(); \
-                    auto ret = ValType::apply([]( \
-                            auto const &lhs) { \
-                        return (expr); \
-                    }, lhs); \
+                    auto ret = (expr); \
                     stack.push(ret); \
                 } break;
                 _PER_UNARY_OP(OP_NEG, -lhs)
@@ -263,10 +265,7 @@ struct Opcode : zeno::IObject {
                     auto &rhs = stack.top(); stack.pop(); \
                     auto &mhs = stack.top(); stack.pop(); \
                     auto &lhs = stack.top(); stack.pop(); \
-                    auto ret = ValType::apply([]( \
-                            auto const &lhs, auto const &mhs, auto const &rhs) { \
-                        return (expr); \
-                    }, lhs, mhs, rhs); \
+                    auto ret = (expr); \
                     stack.push(ret); \
                 } break;
                 _PER_TERNARY_OP(OP_VEC, zeno::vec3f(lhs[0], mhs[0], rhs[0]))
@@ -457,11 +456,11 @@ struct PrimitiveWrangle : zeno::INode {
 
 static int defPrimitiveWrangle = zeno::defNodeClass<PrimitiveWrangle>("PrimitiveWrangle",
     { /* inputs: */ {
-    "wrangle",
     "prim0",
     "prim1",
     "prim2",
     "prim3",
+    "wrangle",
     }, /* outputs: */ {
     "prim0",
     }, /* params: */ {

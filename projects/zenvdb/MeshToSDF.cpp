@@ -1,6 +1,8 @@
 #include <zeno/zeno.h>
 #include <zeno/MeshObject.h>
 #include <zeno/PrimitiveObject.h>
+#include <openvdb/tools/Morphology.h>
+#include <openvdb/tools/MeshToVolume.h>
 #include <zeno/VDBGrid.h>
 #include <omp.h>
 //#include <tl/function_ref.hpp>

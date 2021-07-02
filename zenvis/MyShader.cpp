@@ -14,11 +14,11 @@ struct MyProgram : Program {
   MyProgram(std::string const &vert, std::string const &frag) {
     vs = std::make_unique<Shader>(GL_VERTEX_SHADER);
     fs = std::make_unique<Shader>(GL_FRAGMENT_SHADER);
-    printf("=================\n");
-    printf("(VERT)\n%s\n", vert.c_str());
-    printf("=================\n");
-    printf("(FRAG)\n%s\n", frag.c_str());
-    printf("=================\n");
+    //printf("=================\n");
+    //printf("(VERT)\n%s\n", vert.c_str());
+    //printf("=================\n");
+    //printf("(FRAG)\n%s\n", frag.c_str());
+    //printf("=================\n");
     vs->compile(vert);
     fs->compile(frag);
     attach(*vs);
