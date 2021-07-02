@@ -106,6 +106,10 @@ class QDMGraphicsScene(QGraphicsScene):
         self.mmb_press = False
         self.contentChanged = False
 
+        self.scale = 1
+        self.trans_x = 0
+        self.trans_y = 0
+
     @property
     def descs(self):
         return self.editor.descs
@@ -426,6 +430,9 @@ class QDMGraphicsView(QGraphicsView):
             self.scene().mmb_press = False
             self.setDragMode(0)
 
+            self.scene().trans_x = self.horizontalScrollBar().value()
+            self.scene().trans_y = self.verticalScrollBar().value()
+
         elif event.button() == Qt.LeftButton:
             self.setDragMode(0)
 
@@ -441,6 +448,7 @@ class QDMGraphicsView(QGraphicsView):
             zoomFactor = 1 / self.ZOOM_FACTOR
 
         self.scale(zoomFactor, zoomFactor)
+        self.scene().scale = self.transform().m11()
 
     def addEdge(self, a, b):
         if a is None or b is None:
@@ -1258,11 +1266,18 @@ class NodeEditor(QWidget):
 
     def dumpProgram(self):
         graphs = {}
+        views = {}
         for name, scene in self.scenes.items():
             graph = scene.dumpGraph()
             graphs[name] = graph
+            views[name] = {
+                'scale': scene.scale,
+                'trans_x': scene.trans_x,
+                'trans_y': scene.trans_y,
+            }
         prog = {}
         prog['graph'] = graphs
+        prog['views'] = views
         prog['descs'] = dict(self.descs)
         return prog
 
