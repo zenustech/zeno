@@ -84,7 +84,6 @@ So, we want to create a unified framework customized for simulation with nodes.
 Here's an example on how to add a ZENO node with its C++ API:
 
 ![demo_project/main.cpp](images/demo_project.png "demo_project/main.cpp")
-![demoproject.zsg](images/demoprojgraph.jpg "arts/demoproject.zsg")
 
 ## Extensible
 
@@ -106,7 +105,7 @@ Loading these libraries would add corresponding functional nodes into ZENO,
 after which you can creating node graphs with them for simulation.
 You may also add your own solver nodes to ZENO with this workflow if you'd like.
 
-![rigid3.zsg](images/extensible.jpg "arts/rigid3.zsg")
+![demoproject.zsg](images/demoprojgraph.jpg "arts/demoproject.zsg")
 
 ## Integratable
 
