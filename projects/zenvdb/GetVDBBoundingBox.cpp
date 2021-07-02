@@ -60,12 +60,22 @@ using vlist_of_vdb_type = vlist<VDBFloatGrid, VDBFloat3Grid,
 template <class GridT>
 void calcVdbBounds(GridT *grid, vec3f &bmin, vec3f &bmax)
 {
-    for (auto leaf = grid->tree().cbeginLeaf(); leaf; ++leaf) {
-        auto o = leaf->origin();
-        auto p = grid->indexToWorld(o);
-        printf("%f %f %f\n", p[0], p[1], p[2]);
-        //for (auto iter = leaf->cbeginValueOn(); iter; ++iter) {
-        //}
+    bool any = false;
+    auto leaf = grid->tree().cbeginLeaf();
+    if (!leaf) {
+        bmin = bmax = vec3f(0);
+        return;
+    }
+    auto o = leaf->origin();
+    auto p = grid->indexToWorld(leaf->origin());
+    bmin = bmax = other_to_vec<3>(p);
+    for (++leaf; leaf; ++leaf) {
+        auto p = grid->indexToWorld(leaf->origin());
+        auto pos = other_to_vec<3>(p);
+        bmin = zeno::min(bmin, pos);
+        bmax = zeno::max(bmax, pos);
+        // TODO: extent this bbox by 1 index
+        // TODO: visualization -> MakeVisualBoundingBox
     }
 }
 
