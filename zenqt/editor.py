@@ -1211,10 +1211,11 @@ class NodeEditor(QWidget):
         self.button_kill.resize(80, 30)
         self.button_kill.clicked.connect(self.on_kill) 
 
-        self.edit_graphname = QLineEdit(self)
+        self.edit_graphname = QComboBox(self)
+        self.edit_graphname.setEditable(True)
         self.edit_graphname.move(270, 40)
         self.edit_graphname.resize(70, 30)
-        self.edit_graphname.setText('main')
+        self.edit_graphname.addItem('main')
 
         self.button_switch = QPushButton('Switch', self)
         self.button_switch.move(350, 40)
@@ -1227,10 +1228,12 @@ class NodeEditor(QWidget):
         self.button_delete.clicked.connect(self.deleteCurrScene)
 
     def on_switch_graph(self):
-        name = self.edit_graphname.text()
+        name = self.edit_graphname.currentText()
         self.switchScene(name)
         self.initDescriptors()
         print('all subgraphs are:', list(self.scenes.keys()))
+        self.edit_graphname.clear()
+        self.edit_graphname.addItems(self.scenes.keys())
 
     def setDescriptors(self, descs):
         self.descs = descs
