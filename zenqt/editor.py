@@ -295,6 +295,8 @@ class QDMGraphicsView(QGraphicsView):
         self.dragingEdge = None
         self.lastContextMenuPos = None
 
+        self.node_editor = parent
+
     def updateSearch(self, edit):
         for act in edit.menu.actions():
             if not isinstance(act, QWidgetAction):
@@ -344,6 +346,16 @@ class QDMGraphicsView(QGraphicsView):
         node.setPos(self.lastContextMenuPos)
         self.scene().addNode(node)
         self.scene().record()
+
+    def mouseDoubleClickEvent(self, event):
+        itemList = self.scene().selectedItems()
+        itemList = [n for n in itemList if isinstance(n, QDMGraphicsNode)]
+        if len(itemList) != 1:
+            return
+        item = itemList[0]
+        n = item.name
+        if n in self.node_editor.scenes:
+            self.node_editor.switchScene(n)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
