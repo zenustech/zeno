@@ -84,6 +84,7 @@ So, we want to create a unified framework customized for simulation with nodes.
 Here's an example on how to add a ZENO node with its C++ API:
 
 ![demo_project/main.cpp](images/demo_project.png "demo_project/main.cpp")
+![demoproject.zsg](images/demoprojgraph.jpg "arts/demoproject.zsg")
 
 ## Extensible
 
