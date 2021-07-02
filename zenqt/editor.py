@@ -1216,15 +1216,15 @@ class NodeEditor(QWidget):
         self.edit_graphname = QComboBox(self)
         self.edit_graphname.setEditable(True)
         self.edit_graphname.move(270, 40)
-        self.edit_graphname.resize(70, 30)
+        self.edit_graphname.resize(130, 30)
 
         self.button_switch = QPushButton('Switch', self)
-        self.button_switch.move(350, 40)
+        self.button_switch.move(410, 40)
         self.button_switch.resize(80, 30)
         self.button_switch.clicked.connect(self.on_switch_graph)
 
         self.button_delete = QPushButton('Delete', self)
-        self.button_delete.move(440, 40)
+        self.button_delete.move(500, 40)
         self.button_delete.resize(80, 30)
         self.button_delete.clicked.connect(self.deleteCurrScene)
 
