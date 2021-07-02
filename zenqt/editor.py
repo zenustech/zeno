@@ -1090,7 +1090,8 @@ class QDMEditMenu(QMenu):
                 ('Undo', QKeySequence.Undo),
                 ('Redo', QKeySequence.Redo),
                 (None, None),
-                ('Duplicate', QKeySequence.Copy),
+                ('Copy', QKeySequence.Copy),
+                ('Paste', QKeySequence.Paste),
         ]
         
         for name, shortcut in acts:
@@ -1346,12 +1347,16 @@ class NodeEditor(QWidget):
         elif name == 'Redo':
             self.scene.redo()
 
-        elif name == 'Duplicate':
+        elif name == 'Copy':
             itemList = self.scene.selectedItems()
             for i in itemList:
                 i.setSelected(False)
             itemList = [n for n in itemList if isinstance(n, QDMGraphicsNode)]
             nodes = self.scene.dumpGraph(itemList)
+            self.clipboard = nodes
+
+        elif name == 'Paste':
+            nodes = self.clipboard
             nid_map = {}
             for nid in nodes:
                 nid_map[nid] = gen_unique_ident()
