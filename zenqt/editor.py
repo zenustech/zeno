@@ -687,7 +687,6 @@ class QDMCollapseButton(QSvgWidget):
         super().__init__()
         self.render = self.renderer()
         self.load(asset_path('unfold.svg'))
-        self.collapsed = False
         # PyQt5 >= 5.15
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
@@ -699,13 +698,17 @@ class QDMCollapseButton(QSvgWidget):
     
     def mousePressEvent(self, event):
         super().mouseMoveEvent(event)
-        self.collapsed = not self.collapsed
-        if self.collapsed:
-            self.load(asset_path('collapse.svg'))
+        self.node.collapsed = not self.node.collapsed
+        if self.node.collapsed:
             self.node.collapse()
         else:
-            self.load(asset_path('unfold.svg'))
             self.node.unfold()
+
+    def update_svg(self):
+        if self.node.collapsed:
+            self.load(asset_path('collapse.svg'))
+        else:
+            self.load(asset_path('unfold.svg'))
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
 
@@ -715,6 +718,9 @@ class QDMGraphicsCollapseButton(QGraphicsProxyWidget):
 
         self.widget = QDMCollapseButton(parent)
         self.setWidget(self.widget)
+
+    def update_svg(self):
+        self.widget.update_svg()
 
 class QDMGraphicsParam(QGraphicsProxyWidget):
     def __init__(self, parent=None):
@@ -886,9 +892,12 @@ class QDMGraphicsNode(QGraphicsItem):
         self.title.setPlainText(name)
 
     def getOptions(self):
-        return [name for name, button in self.options.items() if button.checked]
+        collapsed_status = ['collapsed'] if self.collapsed else []
+        return [name for name, button in self.options.items() if button.checked] + collapsed_status
 
     def setOptions(self, options):
+        if 'collapsed' in options:
+            self.collapse()
         for name, button in self.options.items():
             button.setChecked(name in options)
 
@@ -1026,6 +1035,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.dummy_output_socket.show()
 
         self.collapsed = True
+        self.collapse_button.update_svg()
         for v in self.options.values():
             v.hide()
         for v in self.params.values():
@@ -1044,6 +1054,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.dummy_output_socket.hide()
 
         self.collapsed = False
+        self.collapse_button.update_svg()
         for v in self.options.values():
             v.show()
         for v in self.params.values():
