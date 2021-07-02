@@ -21,7 +21,7 @@ nodes, and various VFX and simulation solutions based on our nodes (provided by 
 
 ## ZenCompute (@littlemine)
 
-Open-source code development framework to easily develop high-performance physical simulation code that both run on cpu and gpu with out too much effort.
+Open-source code development framework to easily develop high-performance physical simulation code that both run on cpu and gpu with out too much effort. Now intergrated into ZENO.
 
 [![ZenCompute development framework](images/zencompute.png)](https://github.com/zensim-dev/zpc)
 
@@ -145,11 +145,13 @@ You need a C++17 compiler, CMake 3.12+, and Python 3.6+ to build ZENO; NumPy and
 Other requirements like Pybind11 or GLAD are self-contained and you don't have to worry installing them manually.
 
 - Arch Linux
+
 ```bash
 sudo pacman -S gcc make cmake python python-pip python-numpy python-pyqt5 qt5-base libglvnd mesa
 ```
 
 - Ubuntu 20.04
+
 ```bash
 sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip libqt5core5a qt5dxcb-plugin libglvnd-dev libglapi-mesa libosmesa6
 
@@ -159,6 +161,7 @@ sudo python -m pip install numpy PyQt5
 ```
 
 - Windows 10
+
 1. Install Python 3.8 64-bit. IMPORTANT: make sure you **Add Python 3.8 to PATH**! After that rebooting your computer would be the best.
 2. Start CMD in **Administrator mode** and type these commands:
 ```cmd
@@ -177,13 +180,16 @@ Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/
 
 
 ## Build ZENO
+
 - Linux
+
 ```bash
 cmake -B build
 make -C build -j8
 ```
 
 - Windows
+
 ```cmd
 cmake -B build
 ```
@@ -193,24 +199,30 @@ IMPORTANT: In MSVC, Release mode must **always be active** when building ZENO, s
 
 
 ### Run ZENO for development
+
 - Linux
+
 ```bash
 ./run.sh
 ```
 
 - Windows
+
 ```cmd
 run.bat
 ```
 
 ## Install ZENO globally
+
 - Linux
+
 ```bash
 make -C build install
 python setup.py install
 ```
 
 - Windows
+
 ```cmd
 python setup.py install
 ```
@@ -223,6 +235,7 @@ python -m zenqt
 
 ## Packing ZENO into binary release
 - Arch Linux
+
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
 make -C build -j8
@@ -232,6 +245,7 @@ make -C build install
 ```
 
 - Windows
+
 First, download `zenv-windows-prebuilt.zip` from [this page](https://github.com/zensim-dev/binaries/releases).
 Second, extract it directly into project root.
 Then run `dist.bat` in project root.
