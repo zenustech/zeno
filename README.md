@@ -49,8 +49,9 @@ Unlike many simulation softwares that have fixed functionality, we provide the b
 blocks of algorithms in the form of **nodes** at a relatively low granularity.
 By connecting these nodes, you can literally create your unique solver that best fits
 your need, rather than being limited by the imagination of software programmers.
+For example, here @zhxx1987 created two-way coupled fluid-rigid simulation by adding some nodes to pass momentums from surfaces despite the FLIP solver didn't support fluid-rigid coupling at the first place:
 
-![two way coupled fluid-rigid - Rigid_pool2.zsg](images/FSI.gif "arts/Rigid_pool2.zsg")
+![Rigid_pool2.zsg](images/FSI.gif "arts/Rigid_pool2.zsg")
 
 
 ## Performant
@@ -347,5 +348,6 @@ ZENO is licensed under the Mozilla Public License Version 2.0, see [LICENSE](LIC
 
 You may contact us via WeChat:
 
-@zhxx1987: shinshinzhang
-@archibate: tanh233
+* @zhxx1987: shinshinzhang
+
+* @archibate: tanh233
