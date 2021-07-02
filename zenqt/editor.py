@@ -1108,6 +1108,7 @@ class NodeEditor(QWidget):
         super().__init__(parent)
 
         self.current_path = None
+        self.clipboard = None
 
         self.setWindowTitle('Node Editor')
 
@@ -1356,6 +1357,9 @@ class NodeEditor(QWidget):
             self.clipboard = nodes
 
         elif name == 'Paste':
+            if self.clipboard is None:
+                return
+
             nodes = self.clipboard
             nid_map = {}
             for nid in nodes:
