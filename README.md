@@ -51,6 +51,7 @@ By connecting these nodes, you can literally create your unique solver that best
 your need, rather than being limited by the imagination of software programmers.
 
 Rigid_pool2.zsg
+
 ![two way coupled fluid-rigid (Rigid_pool2.zsg)](images/FSI.gif)
 
 
