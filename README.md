@@ -24,7 +24,7 @@ nodes, and various VFX and simulation solutions based on our nodes (provided by 
 
 Open-source code development framework to easily develop high-performance physical simulation code that both run on cpu and gpu with out too much effort.
 
-![ZenCompute development framework](images/zencompute.jpg)
+![ZenCompute development framework](images/zencompute.png)
 
 
 # Motivation
