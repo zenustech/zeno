@@ -1,44 +1,12 @@
 {
  "graph": {
   "main": {
-   "0a96a449-NumericInt": {
-    "name": "NumericInt",
-    "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "value": 128
-    },
-    "uipos": [
-     552.0699218750001,
-     295.8764648437498
-    ],
-    "options": []
-   },
-   "df3a7bea-NumericVec3": {
-    "name": "NumericVec3",
-    "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "x": 0.0,
-     "y": 0.0,
-     "z": 1.0
-    },
-    "uipos": [
-     -924.2718749999999,
-     -103.11562500000008
-    ],
-    "options": []
-   },
    "39087cc3-PrimitiveAddAttr": {
     "name": "PrimitiveAddAttr",
     "inputs": {
      "prim": [
-      "ab5a5e5f-PortalOut",
-      "port"
+      "8b46ddc5-SampleVDBToPrimitive",
+      "prim"
      ],
      "SRC": null,
      "COND": null
@@ -48,28 +16,8 @@
      "type": "float3"
     },
     "uipos": [
-     2825.5360839843734,
-     1018.7619628906244
-    ],
-    "options": []
-   },
-   "b176c97f-PrimitiveAddAttr": {
-    "name": "PrimitiveAddAttr",
-    "inputs": {
-     "prim": [
-      "76b44903-Make2DGridPrimitive",
-      "prim"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "name": "rho",
-     "type": "float"
-    },
-    "uipos": [
-     1189.0332031250002,
-     443.1284179687499
+     1436.004833984374,
+     882.7463378906243
     ],
     "options": []
    },
@@ -92,8 +40,8 @@
     },
     "params": {},
     "uipos": [
-     3068.132568359374,
-     1188.2980957031245
+     1704.8513183593748,
+     1053.5324707031248
     ],
     "options": [
      "VIEW"
@@ -110,8 +58,8 @@
      "attrName": "rho"
     },
     "uipos": [
-     1788.0966308593745,
-     1003.5551269531248
+     424.8153808593754,
+     868.789501953125
     ],
     "options": []
    },
@@ -129,8 +77,8 @@
      "opName": "neg"
     },
     "uipos": [
-     2071.296630859374,
-     1039.5551269531247
+     708.0153808593748,
+     904.789501953125
     ],
     "options": []
    },
@@ -152,8 +100,8 @@
      "opName": "mul"
     },
     "uipos": [
-     2314.496630859375,
-     1090.7551269531245
+     951.2153808593755,
+     955.9895019531248
     ],
     "options": []
    },
@@ -169,8 +117,8 @@
     },
     "params": {},
     "uipos": [
-     2069.6966308593746,
-     1240.355126953125
+     706.4153808593753,
+     1105.5895019531251
     ],
     "options": []
    },
@@ -186,8 +134,8 @@
      "z": 0.0
     },
     "uipos": [
-     1816.8966308593742,
-     1201.9551269531244
+     453.61538085937514,
+     1067.1895019531246
     ],
     "options": []
    },
@@ -209,8 +157,8 @@
      "opName": "mul"
     },
     "uipos": [
-     2322.496630859374,
-     1318.7551269531245
+     959.2153808593746,
+     1183.9895019531248
     ],
     "options": []
    },
@@ -226,8 +174,8 @@
     },
     "params": {},
     "uipos": [
-     2077.6966308593746,
-     1468.3551269531245
+     714.4153808593753,
+     1333.5895019531242
     ],
     "options": []
    },
@@ -243,8 +191,8 @@
      "z": 0.0
     },
     "uipos": [
-     1824.8966308593742,
-     1429.9551269531244
+     461.61538085937514,
+     1295.1895019531246
     ],
     "options": []
    },
@@ -266,8 +214,8 @@
      "opName": "add"
     },
     "uipos": [
-     2573.296630859374,
-     1255.7551269531245
+     1210.0153808593748,
+     1120.9895019531248
     ],
     "options": []
    },
@@ -286,8 +234,8 @@
      "attrName": "clr"
     },
     "uipos": [
-     2825.296630859374,
-     1296.7551269531245
+     1462.0153808593748,
+     1161.9895019531248
     ],
     "options": []
    },
@@ -301,8 +249,8 @@
      "value": "assets/Pig_Head.obj"
     },
     "uipos": [
-     -1218.859375,
-     1399.625
+     -724.4746093750002,
+     1060.8798828125002
     ],
     "options": [
      "ONCE"
@@ -323,8 +271,8 @@
      "type": "vertex"
     },
     "uipos": [
-     -715.8593749999999,
-     1193.6249999999995
+     -221.474609375,
+     854.8798828124998
     ],
     "options": [
      "ONCE"
@@ -342,245 +290,12 @@
     },
     "params": {},
     "uipos": [
-     -970.8593749999999,
-     1391.625
+     -476.474609375,
+     1052.8798828125002
     ],
     "options": [
      "ONCE"
     ]
-   },
-   "13d5000a-PortalIn": {
-    "name": "PortalIn",
-    "inputs": {
-     "port": [
-      "5fcec9c4-PrimitiveToSDF",
-      "sdf"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "name": "vdb"
-    },
-    "uipos": [
-     -436.3437500000001,
-     1267.9375
-    ],
-    "options": []
-   },
-   "c6b6c822-PortalOut": {
-    "name": "PortalOut",
-    "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "name": "vdb"
-    },
-    "uipos": [
-     1198.0332031250002,
-     672.3784179687497
-    ],
-    "options": []
-   },
-   "c4f9415f-x": {
-    "name": "PortalOut",
-    "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "name": "vdb"
-    },
-    "uipos": [
-     -1525.796875,
-     -45.01562499999977
-    ],
-    "options": []
-   },
-   "7a29aa9c-GetVDBBoundingBox": {
-    "name": "GetVDBBoundingBox",
-    "inputs": {
-     "vdbGrid": [
-      "c4f9415f-x",
-      "port"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {},
-    "uipos": [
-     -1423.546875,
-     199.23437500000023
-    ],
-    "options": []
-   },
-   "ab5a5e5f-PortalOut": {
-    "name": "PortalOut",
-    "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "name": "slice"
-    },
-    "uipos": [
-     2574.3528808593746,
-     1060.837158203125
-    ],
-    "options": []
-   },
-   "873f0bb8-PortalIn": {
-    "name": "PortalIn",
-    "inputs": {
-     "port": [
-      "8d9c881c-SampleVDBToPrimitive",
-      "prim"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "name": "slice"
-    },
-    "uipos": [
-     1721.7832031250002,
-     536.3284179687499
-    ],
-    "options": []
-   },
-   "d8c3ff4f-MakeOrthonormalBase": {
-    "name": "MakeOrthonormalBase",
-    "inputs": {
-     "normal": [
-      "df3a7bea-NumericVec3",
-      "vec3"
-     ],
-     "tangent": null,
-     "SRC": null,
-     "COND": null
-    },
-    "params": {},
-    "uipos": [
-     -687.2968750000001,
-     69.42187500000006
-    ],
-    "options": []
-   },
-   "76b44903-Make2DGridPrimitive": {
-    "name": "Make2DGridPrimitive",
-    "inputs": {
-     "nx": [
-      "0a96a449-NumericInt",
-      "value"
-     ],
-     "ny": null,
-     "sizeX": [
-      "45fbbd8a-NumericOperator",
-      "ret"
-     ],
-     "sizeY": [
-      "5822c249-x",
-      "ret"
-     ],
-     "scale": null,
-     "origin": [
-      "ec77ebbb-NumericOperator",
-      "ret"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "isCentered": 0
-    },
-    "uipos": [
-     820.919921875,
-     290.6108398437499
-    ],
-    "options": []
-   },
-   "69bde591-MakeVisualAABBPrimitive": {
-    "name": "MakeVisualAABBPrimitive",
-    "inputs": {
-     "boundMin": [
-      "76be4bd9-GetVDBBound",
-      "bmin"
-     ],
-     "boundMax": [
-      "76be4bd9-GetVDBBound",
-      "bmax"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "connType": 2
-    },
-    "uipos": [
-     -937.4468749999996,
-     162.2343750000001
-    ],
-    "options": [
-     "VIEW"
-    ]
-   },
-   "8d9c881c-SampleVDBToPrimitive": {
-    "name": "SampleVDBToPrimitive",
-    "inputs": {
-     "prim": [
-      "b176c97f-PrimitiveAddAttr",
-      "prim"
-     ],
-     "vdbGrid": [
-      "c6b6c822-PortalOut",
-      "port"
-     ],
-     "primAttr": [
-      "fa391b6d-MakeString",
-      "value"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {},
-    "uipos": [
-     1452.7832031250002,
-     512.1284179687499
-    ],
-    "options": []
-   },
-   "fa391b6d-MakeString": {
-    "name": "MakeString",
-    "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "value": "rho"
-    },
-    "uipos": [
-     1469.7832031250002,
-     725.1284179687497
-    ],
-    "options": []
-   },
-   "76be4bd9-GetVDBBound": {
-    "name": "GetVDBBound",
-    "inputs": {
-     "vdbGrid": [
-      "c4f9415f-x",
-      "port"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {},
-    "uipos": [
-     -1255.796875,
-     -65.51562499999994
-    ],
-    "options": []
    },
    "b81f6b9b-PrimitiveCalcNormal": {
     "name": "PrimitiveCalcNormal",
@@ -594,47 +309,32 @@
     },
     "params": {},
     "uipos": [
-     -724.7125,
-     1432.1499999999996
+     -230.3277343750001,
+     1093.4048828124999
     ],
     "options": [
-     "ONCE"
+     "ONCE",
+     "VIEW"
     ]
    },
-   "ed2eb4b5-PlaneProjectPrimitive2DAABB": {
-    "name": "PlaneProjectPrimitive2DAABB",
+   "f63279d1-x": {
+    "name": "NumericVec3",
     "inputs": {
-     "origin": [
-      "0fa02ad0-SubInput",
-      "port"
-     ],
-     "normal": [
-      "d8c3ff4f-MakeOrthonormalBase",
-      "normal"
-     ],
-     "tangent": [
-      "d8c3ff4f-MakeOrthonormalBase",
-      "tangent"
-     ],
-     "bitangent": [
-      "d8c3ff4f-MakeOrthonormalBase",
-      "bitangent"
-     ],
-     "prim": [
-      "69bde591-MakeVisualAABBPrimitive",
-      "prim"
-     ],
      "SRC": null,
      "COND": null
     },
-    "params": {},
+    "params": {
+     "x": 1.0,
+     "y": 1.0,
+     "z": 1.0
+    },
     "uipos": [
-     -421.98437500000006,
-     175.01562500000017
+     420.61353149413924,
+     568.8146423339837
     ],
     "options": []
    },
-   "ca87643a-x": {
+   "e2d9bb11-NumericVec3": {
     "name": "NumericVec3",
     "inputs": {
      "SRC": null,
@@ -646,83 +346,136 @@
      "z": 0.0
     },
     "uipos": [
-     -1195.896875,
-     409.884375
+     411.4804687500008,
+     334.0683593750001
     ],
     "options": []
    },
-   "71909cf7-NumericOperator": {
-    "name": "NumericOperator",
+   "e49089cc-SlicePlaneForAABB": {
+    "name": "SlicePlaneForAABB",
     "inputs": {
-     "lhs": [
-      "ed2eb4b5-PlaneProjectPrimitive2DAABB",
-      "boundMax2D"
+     "origin": [
+      "e2d9bb11-NumericVec3",
+      "vec3"
      ],
-     "rhs": [
-      "ed2eb4b5-PlaneProjectPrimitive2DAABB",
-      "boundMin2D"
+     "normal": [
+      "f63279d1-x",
+      "vec3"
      ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "op_type": "sub"
-    },
-    "uipos": [
-     -169.16015625000017,
-     317.13671875000006
-    ],
-    "options": []
-   },
-   "275b2760-UnpackNumericVec": {
-    "name": "UnpackNumericVec",
-    "inputs": {
-     "vec": [
-      "71909cf7-NumericOperator",
-      "ret"
+     "boundMin": [
+      "59980a2a-GetVDBBound",
+      "bmin"
+     ],
+     "boundMax": [
+      "59980a2a-GetVDBBound",
+      "bmax"
      ],
      "SRC": null,
      "COND": null
     },
     "params": {},
     "uipos": [
-     -179.25,
-     670.5000000000001
+     666.1441406249995,
+     632.9304687499997
     ],
     "options": []
    },
-   "45fbbd8a-NumericOperator": {
-    "name": "NumericOperator",
+   "59980a2a-GetVDBBound": {
+    "name": "GetVDBBound",
     "inputs": {
-     "lhs": [
-      "d8c3ff4f-MakeOrthonormalBase",
-      "tangent"
+     "vdbGrid": [
+      "5fcec9c4-PrimitiveToSDF",
+      "sdf"
      ],
-     "rhs": [
-      "275b2760-UnpackNumericVec",
-      "X"
+     "SRC": null,
+     "COND": null
+    },
+    "params": {},
+    "uipos": [
+     173.96171875000016,
+     587.2839843750002
+    ],
+    "options": []
+   },
+   "c6416b5e-PrimitiveAddAttr": {
+    "name": "PrimitiveAddAttr",
+    "inputs": {
+     "prim": [
+      "e49089cc-SlicePlaneForAABB",
+      "prim"
      ],
      "SRC": null,
      "COND": null
     },
     "params": {
-     "op_type": "mul"
+     "name": "rho",
+     "type": "float"
     },
     "uipos": [
-     75.75,
-     640.5000000000001
+     937.4999999999998,
+     683.7499999999995
     ],
     "options": []
    },
-   "5822c249-x": {
+   "8b46ddc5-SampleVDBToPrimitive": {
+    "name": "SampleVDBToPrimitive",
+    "inputs": {
+     "prim": [
+      "c6416b5e-PrimitiveAddAttr",
+      "prim"
+     ],
+     "vdbGrid": [
+      "5fcec9c4-PrimitiveToSDF",
+      "sdf"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "primAttr": "rho"
+    },
+    "uipos": [
+     1185.0,
+     750.0
+    ],
+    "options": []
+   },
+   "6554c495-MakeVisualAABBPrimitive": {
+    "name": "MakeVisualAABBPrimitive",
+    "inputs": {
+     "boundMin": [
+      "59980a2a-GetVDBBound",
+      "bmin"
+     ],
+     "boundMax": [
+      "59980a2a-GetVDBBound",
+      "bmax"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "connType": 2
+    },
+    "uipos": [
+     175.0,
+     775.0
+    ],
+    "options": [
+     "VIEW"
+    ]
+   }
+  },
+  "SlicePlaneForAABB": {
+   "ad47c4af-x": {
     "name": "NumericOperator",
     "inputs": {
      "lhs": [
-      "d8c3ff4f-MakeOrthonormalBase",
+      "338a4c53-x",
       "bitangent"
      ],
      "rhs": [
-      "275b2760-UnpackNumericVec",
+      "c2dd3175-x",
       "Y"
      ],
      "SRC": null,
@@ -732,83 +485,53 @@
      "op_type": "mul"
     },
     "uipos": [
-     77.75,
-     862.5000000000001
+     1810.9172668457022,
+     1355.8906555175781
     ],
     "options": []
    },
-   "26c3c166-x": {
-    "name": "UnpackNumericVec",
+   "b29108d4-x": {
+    "name": "PlaneProjectPrimitive2DAABB",
     "inputs": {
-     "vec": [
-      "ed2eb4b5-PlaneProjectPrimitive2DAABB",
-      "boundMin2D"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {},
-    "uipos": [
-     -160.2500000000001,
-     76.75000000000011
-    ],
-    "options": []
-   },
-   "ec77ebbb-NumericOperator": {
-    "name": "NumericOperator",
-    "inputs": {
-     "lhs": [
-      "004e2b36-x",
-      "ret"
-     ],
-     "rhs": [
-      "0fa02ad0-SubInput",
+     "origin": [
+      "4c1e34b1-x",
       "port"
      ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "op_type": "add"
-    },
-    "uipos": [
-     571.9999999999995,
-     515.5
-    ],
-    "options": []
-   },
-   "05b1b3b1-NumericOperator": {
-    "name": "NumericOperator",
-    "inputs": {
-     "lhs": [
-      "d8c3ff4f-MakeOrthonormalBase",
+     "normal": [
+      "338a4c53-x",
+      "normal"
+     ],
+     "tangent": [
+      "338a4c53-x",
       "tangent"
      ],
-     "rhs": [
-      "26c3c166-x",
-      "X"
+     "bitangent": [
+      "338a4c53-x",
+      "bitangent"
+     ],
+     "prim": [
+      "9058a71d-x",
+      "prim"
      ],
      "SRC": null,
      "COND": null
     },
-    "params": {
-     "op_type": "mul"
-    },
+    "params": {},
     "uipos": [
-     81.4999999999998,
-     171.75000000000017
+     1311.182891845702,
+     668.4062805175781
     ],
     "options": []
    },
-   "a820009e-x": {
+   "d0365d37-x": {
     "name": "NumericOperator",
     "inputs": {
      "lhs": [
-      "d8c3ff4f-MakeOrthonormalBase",
+      "338a4c53-x",
       "bitangent"
      ],
      "rhs": [
-      "26c3c166-x",
+      "e534fac3-x",
       "Y"
      ],
      "SRC": null,
@@ -818,35 +541,44 @@
      "op_type": "mul"
     },
     "uipos": [
-     78.49999999999996,
-     407.0000000000001
+     1811.6672668457022,
+     900.390655517578
     ],
     "options": []
    },
-   "004e2b36-x": {
-    "name": "NumericOperator",
+   "138daf86-x": {
+    "name": "NumericInt",
     "inputs": {
-     "lhs": [
-      "05b1b3b1-NumericOperator",
-      "ret"
-     ],
-     "rhs": [
-      "a820009e-x",
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "value": 128
+    },
+    "uipos": [
+     2285.2371887207023,
+     789.2671203613277
+    ],
+    "options": []
+   },
+   "c2dd3175-x": {
+    "name": "UnpackNumericVec",
+    "inputs": {
+     "vec": [
+      "d94df16d-x",
       "ret"
      ],
      "SRC": null,
      "COND": null
     },
-    "params": {
-     "op_type": "add"
-    },
+    "params": {},
     "uipos": [
-     313.4999999999998,
-     359.5000000000001
+     1553.9172668457027,
+     1163.8906555175781
     ],
     "options": []
    },
-   "0fa02ad0-SubInput": {
+   "4c1e34b1-x": {
     "name": "SubInput",
     "inputs": {
      "SRC": null,
@@ -856,12 +588,154 @@
      "name": "origin"
     },
     "uipos": [
-     -694.9374999999991,
-     349.8749999999998
+     1038.2297668457031,
+     843.2656555175777
     ],
     "options": []
    },
-   "8efc979d-SubCategory": {
+   "2c8234d6-x": {
+    "name": "NumericOperator",
+    "inputs": {
+     "lhs": [
+      "57fdf449-x",
+      "ret"
+     ],
+     "rhs": [
+      "d0365d37-x",
+      "ret"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "op_type": "add"
+    },
+    "uipos": [
+     2046.667266845702,
+     852.890655517578
+    ],
+    "options": []
+   },
+   "c91f467c-x": {
+    "name": "NumericOperator",
+    "inputs": {
+     "lhs": [
+      "2c8234d6-x",
+      "ret"
+     ],
+     "rhs": [
+      "4c1e34b1-x",
+      "port"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "op_type": "add"
+    },
+    "uipos": [
+     2305.1672668457018,
+     1008.8906555175779
+    ],
+    "options": []
+   },
+   "57fdf449-x": {
+    "name": "NumericOperator",
+    "inputs": {
+     "lhs": [
+      "338a4c53-x",
+      "tangent"
+     ],
+     "rhs": [
+      "e534fac3-x",
+      "X"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "op_type": "mul"
+    },
+    "uipos": [
+     1814.667266845702,
+     665.1406555175781
+    ],
+    "options": []
+   },
+   "e534fac3-x": {
+    "name": "UnpackNumericVec",
+    "inputs": {
+     "vec": [
+      "b29108d4-x",
+      "boundMin2D"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {},
+    "uipos": [
+     1572.9172668457022,
+     570.1406555175781
+    ],
+    "options": []
+   },
+   "9d105929-x": {
+    "name": "NumericOperator",
+    "inputs": {
+     "lhs": [
+      "338a4c53-x",
+      "tangent"
+     ],
+     "rhs": [
+      "c2dd3175-x",
+      "X"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "op_type": "mul"
+    },
+    "uipos": [
+     1808.9172668457022,
+     1133.8906555175781
+    ],
+    "options": []
+   },
+   "13ddcebc-x": {
+    "name": "Make2DGridPrimitive",
+    "inputs": {
+     "nx": [
+      "138daf86-x",
+      "value"
+     ],
+     "ny": null,
+     "sizeX": [
+      "9d105929-x",
+      "ret"
+     ],
+     "sizeY": [
+      "ad47c4af-x",
+      "ret"
+     ],
+     "scale": null,
+     "origin": [
+      "c91f467c-x",
+      "ret"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "isCentered": 0
+    },
+    "uipos": [
+     2554.087188720702,
+     784.0014953613278
+    ],
+    "options": []
+   },
+   "eee1f980-x": {
     "name": "SubCategory",
     "inputs": {
      "SRC": null,
@@ -871,8 +745,136 @@
      "name": "mathematica"
     },
     "uipos": [
-     -930.0,
-     504.0
+     803.1672668457021,
+     997.3906555175779
+    ],
+    "options": []
+   },
+   "9058a71d-x": {
+    "name": "MakeVisualAABBPrimitive",
+    "inputs": {
+     "boundMin": [
+      "7287ecce-SubInput",
+      "port"
+     ],
+     "boundMax": [
+      "04bb19a6-x",
+      "port"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "connType": 2
+    },
+    "uipos": [
+     795.7203918457025,
+     655.625030517578
+    ],
+    "options": []
+   },
+   "d94df16d-x": {
+    "name": "NumericOperator",
+    "inputs": {
+     "lhs": [
+      "b29108d4-x",
+      "boundMax2D"
+     ],
+     "rhs": [
+      "b29108d4-x",
+      "boundMin2D"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "op_type": "sub"
+    },
+    "uipos": [
+     1564.007110595702,
+     810.5273742675779
+    ],
+    "options": []
+   },
+   "338a4c53-x": {
+    "name": "MakeOrthonormalBase",
+    "inputs": {
+     "normal": [
+      "e0abc473-SubInput",
+      "port"
+     ],
+     "tangent": null,
+     "SRC": null,
+     "COND": null
+    },
+    "params": {},
+    "uipos": [
+     1045.8703918457022,
+     562.8125305175779
+    ],
+    "options": []
+   },
+   "750c7369-SubOutput": {
+    "name": "SubOutput",
+    "inputs": {
+     "port": [
+      "13ddcebc-x",
+      "prim"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "name": "prim"
+    },
+    "uipos": [
+     2968.1672668457013,
+     943.3906555175777
+    ],
+    "options": []
+   },
+   "e0abc473-SubInput": {
+    "name": "SubInput",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "name": "normal"
+    },
+    "uipos": [
+     781.875,
+     433.0000000000002
+    ],
+    "options": []
+   },
+   "7287ecce-SubInput": {
+    "name": "SubInput",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "name": "boundMin"
+    },
+    "uipos": [
+     496.0000000000002,
+     544.0
+    ],
+    "options": []
+   },
+   "04bb19a6-x": {
+    "name": "SubInput",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "name": "boundMax"
+    },
+    "uipos": [
+     502.4000000000001,
+     731.2
     ],
     "options": []
    }
@@ -3193,7 +3195,6 @@
    "inputs": [
     "prim",
     "vdbGrid",
-    "primAttr",
     "SRC",
     "COND"
    ],
@@ -3201,7 +3202,13 @@
     "prim",
     "DST"
    ],
-   "params": [],
+   "params": [
+    [
+     "string",
+     "primAttr",
+     "rho"
+    ]
+   ],
    "categories": [
     "visualize"
    ]
@@ -3640,6 +3647,24 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "SlicePlaneForAABB": {
+   "inputs": [
+    "origin",
+    "normal",
+    "boundMin",
+    "boundMax",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "mathematica"
    ]
   }
  }
