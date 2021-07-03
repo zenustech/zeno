@@ -1,12 +1,13 @@
 #include <zeno/zeno.h>
 #include <zeno/GlobalState.h>
+#include <zeno/safe_at.h>
 #include <cassert>
 
 
 struct SubInput : zeno::INode {
     virtual void apply() override {
         auto name = get_param<std::string>("name");
-        auto obj = graph->subInputs.at(name);
+        auto obj = zeno::safe_at(graph->subInputs, name, "subinput");
         set_output("port", std::move(obj));
     }
 };
