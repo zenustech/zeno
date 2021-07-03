@@ -57,13 +57,13 @@ struct type_list_find<type_list<T, Ts...>, T> {
     static constexpr int value = 0;
 };
 
-/* wrangle.h */
+/* program.h */
 
 struct Context {
     float regtable[256];
     float *memtable[256];
 
-    float memfetch(int index) {
+    float memfetch(int index) const {
         return *memtable[index];
     }
 
@@ -131,21 +131,68 @@ struct Instruction {
     }
 };
 
+struct Program {
+    std::vector<Instruction> insts;
+
+    void execute(Context *ctx) const {
+        for (auto const &inst: insts) {
+            inst.execute(ctx);
+        }
+    }
+};
+
+/* wrangle.h */
+
+void vectors_wrangle(Program const &prog,
+    std::vector<std::vector<float>> &arrs) {
+    if (arrs.size() == 0)
+        return;
+    size_t size = arrs[0].size();
+    for (int i = 1; i < arrs.size(); i++) {
+        size = std::min(arrs[i].size(), size);
+    }
+    Context ctx;
+    for (int i = 0; i < arrs.size(); i++) {
+        auto &arr = arrs[i];
+        ctx.memtable[i] = arr.data();
+    }
+    for (int i = 0; i < size; i++) {
+        prog.execute(&ctx);
+        for (int j = 0; j < arrs.size(); j++) {
+            ctx.memtable[j]++;
+        }
+    }
+}
+
 /* main.cpp */
 
 int main(void)
 {
     Context ctx;
+
     Instruction inst;
     inst.opcode = Opcode::add;
-    inst.dst.type = OperandType::reg;
+    inst.dst.type = OperandType::mem;
     inst.dst.index = 0;
-    inst.lhs.type = OperandType::reg;
+    inst.lhs.type = OperandType::mem;
     inst.lhs.index = 0;
     inst.rhs.type = OperandType::imm;
     inst.rhs.value = 3.14f;
     inst.execute(&ctx);
-    cout << ctx.regtable[0] << endl;
+
+    Program prog;
+    prog.insts.push_back(inst);
+
+    std::vector<std::vector<float>> arrs;
+    arrs.emplace_back(16);
+    for (int i = 0; i < 8; i++) {
+        arrs[0][i] = 2.718f;
+    }
+    vectors_wrangle(prog, arrs);
+
+    for (int i = 0; i < 16; i++) {
+        cout << arrs[0][i] << endl;
+    }
 
     return 0;
 }
