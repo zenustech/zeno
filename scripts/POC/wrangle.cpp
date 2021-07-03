@@ -100,11 +100,16 @@ struct array {
     constexpr dtype type() const { return m_type; }
     void *data() const { return (void *)m_data.data(); }
     size_t size() const { return m_size; }
+
+    void resize(size_t n) {
+        m_size = n;
+        m_data.resize(n * dtype_size(m_type));
+    }
 };
 
 template <class T>
 void do_apply(T *p, size_t n) {
-    printf("%s\n", typeid(T).name());
+    printf("%s %d\n", typeid(T).name(), n);
 }
 
 void apply(array &a) {
@@ -126,6 +131,7 @@ int main(void)
 {
     array a;
     a.m_type = dtype::i32;
+    a.resize(128);
     apply(a);
     std::cout << dtype_name(type_to_dtype<int>::value) << std::endl;
     return 0;
