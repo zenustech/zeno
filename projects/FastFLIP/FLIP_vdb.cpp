@@ -1976,6 +1976,7 @@ struct particle_fill_kill_op {
   // the leaf nodes here are assumed to either contain solid voxels
   // or has any corner outside the interior box
   void operator()(const tbb::blocked_range<openvdb::Index> &r) const {
+    initRandomTable();
     std::vector<openvdb::PointDataIndex32> new_attribute_offsets;
     std::vector<openvdb::Vec3f> new_positions;
     std::vector<openvdb::Vec3f> new_velocity;
@@ -2564,6 +2565,7 @@ void FLIP_vdb::update_solid_sdf(
 void FLIP_vdb::reseed_fluid(
     openvdb::points::PointDataGrid::Ptr &in_out_particles,
     openvdb::FloatGrid::Ptr &liquid_sdf, openvdb::Vec3fGrid::Ptr &velocity) {
+  initRandomTable();
   using namespace openvdb::tools::local_util;
   float dx = in_out_particles->transform().voxelSize()[0];
   std::vector<openvdb::points::PointDataTree::LeafNodeType *> particle_leaves;
@@ -2735,6 +2737,7 @@ void FLIP_vdb::emit_liquid(
     openvdb::points::PointDataGrid::Ptr &in_out_particles,
     openvdb::FloatGrid::Ptr &sdf, openvdb::Vec3fGrid::Ptr &vel,
     openvdb::FloatGrid::Ptr &liquid_sdf, float vx, float vy, float vz) {
+  initRandomTable();
   using namespace openvdb::tools::local_util;
 
   // alias

@@ -52,6 +52,32 @@ void sampleVDBAttribute(std::vector<vec3f> const &pos, std::vector<T> &arr,
     }
   }
 }
+
+struct SampleVDBToPrimitive : INode {
+  virtual void apply() override {
+    auto prim = get_input<PrimitiveObject>("prim");
+    auto grid = get_input<VDBGrid>("vdbGrid");
+    auto attr = get_input<StringObject>("primAttr")->get();
+    auto &pos = prim->attr<vec3f>("pos");
+    /*if (grid->getType() == std::string("FloatGrid")) {
+      prim->add_attr<float>(attr);
+    } else if (grid->getType() == std::string("Vec3fGrid")) {
+      prim->add_attr<vec3f>(attr);
+    }*/
+    std::visit([&](auto &vel) { sampleVDBAttribute(pos, vel, grid.get()); },
+               prim->attr(attr));
+
+    set_output("prim", std::move(prim));
+  }
+};
+
+ZENDEFNODE(SampleVDBToPrimitive, {
+                                     {"prim", "vdbGrid", "primAttr"},
+                                     {"prim"},
+                                     {},
+                                     {"visualize"},
+                                 });
+
 struct GetVDBBound : INode {
   virtual void apply() override {
     auto grid = get_input<VDBGrid>("vdbGrid");
@@ -98,31 +124,6 @@ ZENDEFNODE(GetVDBBound, {
                             {},
                             {"openvdb"},
                         });
-struct SampleVDBToPrimitive : INode {
-  virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
-    auto grid = get_input<VDBGrid>("vdbGrid");
-    std::string attrs = get_input<StringObject>("primdAttr")->get();
-    auto attr = get_param<std::string>("primAttr");
-    auto &pos = prim->attr<vec3f>("pos");
-    if (grid->getType() == std::string("FloatGrid"))
-      prim->add_attr<float>(attrs);
-    if (grid->getType() == std::string("Float3Grid")) {
-      prim->add_attr<zeno::vec3f>(attrs);
-    }
-    std::visit([&](auto &vel) { sampleVDBAttribute(pos, vel, grid.get()); },
-               prim->attr(attrs));
-
-    set_output("prim", std::move(prim));
-  }
-};
-
-ZENDEFNODE(SampleVDBToPrimitive, {
-                                     {"prim", "vdbGrid", "primdAttr"},
-                                     {"prim"},
-                                     {{"string", "primAttr", "vel"}},
-                                     {"visualize"},
-                                 });
 
 // this is to be deprecated
 struct HeatMap {
@@ -156,7 +157,7 @@ void colorFromAttr(std::vector<T> &arr, std::vector<zeno::vec3f> &clr,
 #pragma omp parallel for
   for (int i = 0; i < arr.size(); i++) {
     float d;
-    if (!std::is_same<T, float>::value)
+    if constexpr (!std::is_same<T, float>::value)
       d = std::sqrt(zeno::dot(arr[i], arr[i]));
     else if constexpr (std::is_same<T, float>::value)
       d = arr[i];

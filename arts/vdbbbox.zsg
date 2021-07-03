@@ -1,99 +1,7 @@
 {
  "graph": {
   "main": {
-   "0a96a449-NumericInt": {
-    "name": "NumericInt",
-    "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "value": 128
-    },
-    "uipos": [
-     -399.5999999999999,
-     -95.0
-    ],
-    "options": []
-   },
-   "df3a7bea-NumericVec3": {
-    "name": "NumericVec3",
-    "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "x": 0.0,
-     "y": 3.0,
-     "z": 0.0
-    },
-    "uipos": [
-     -403.35,
-     300.9
-    ],
-    "options": []
-   },
-   "a3d3c606-NumericVec3": {
-    "name": "NumericVec3",
-    "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "x": 3.0,
-     "y": 0.0,
-     "z": 0.0
-    },
-    "uipos": [
-     -402.05000000000007,
-     84.69999999999999
-    ],
-    "options": []
-   },
-   "39087cc3-PrimitiveAddAttr": {
-    "name": "PrimitiveAddAttr",
-    "inputs": {
-     "prim": [
-      "8cf5c24a-SampleVDBToPrimitive",
-      "prim"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "name": "clr",
-     "type": "float3"
-    },
-    "uipos": [
-     696.2500000000001,
-     145.75
-    ],
-    "options": []
-   },
-   "8cf5c24a-SampleVDBToPrimitive": {
-    "name": "SampleVDBToPrimitive",
-    "inputs": {
-     "prim": [
-      "b176c97f-PrimitiveAddAttr",
-      "prim"
-     ],
-     "vdbGrid": [
-      "34250153-MeshToSDF",
-      "sdf"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "primAttr": "rho"
-    },
-    "uipos": [
-     420.25,
-     138.5
-    ],
-    "options": []
-   },
-   "693e312b-ReadObjMesh": {
+   "c0baff2a-ReadObjMesh": {
     "name": "ReadObjMesh",
     "inputs": {
      "SRC": null,
@@ -103,60 +11,38 @@
      "path": "assets/Pig_Head.obj"
     },
     "uipos": [
-     -268.0,
-     530.0
+     -959.9200000000001,
+     -13.719999999999999
     ],
     "options": [
      "ONCE"
     ]
    },
-   "34250153-MeshToSDF": {
+   "51f53abe-MeshToSDF": {
     "name": "MeshToSDF",
     "inputs": {
      "mesh": [
-      "693e312b-ReadObjMesh",
+      "635cffaf-TransformMesh",
       "mesh"
      ],
      "SRC": null,
      "COND": null
     },
     "params": {
-     "voxel_size": 0.04,
+     "voxel_size": 0.02,
      "type": "vertex"
     },
     "uipos": [
-     -19.0,
-     393.0
-    ],
-    "options": [
-     "ONCE"
-    ]
-   },
-   "b176c97f-PrimitiveAddAttr": {
-    "name": "PrimitiveAddAttr",
-    "inputs": {
-     "prim": [
-      "89cdfd21-Make2DGridPrimitive",
-      "prim"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "name": "rho",
-     "type": "float"
-    },
-    "uipos": [
-     151.25000000000006,
-     74.00000000000003
+     -403.5999999999999,
+     -96.12
     ],
     "options": []
    },
-   "abd73164-MeshToPrimitive": {
+   "428423bc-MeshToPrimitive": {
     "name": "MeshToPrimitive",
     "inputs": {
      "mesh": [
-      "693e312b-ReadObjMesh",
+      "635cffaf-TransformMesh",
       "mesh"
      ],
      "SRC": null,
@@ -164,266 +50,121 @@
     },
     "params": {},
     "uipos": [
-     -8.800000000000011,
-     624.0000000000001
-    ],
-    "options": [
-     "ONCE"
-    ]
-   },
-   "a923b3d2-PrimitiveWrangle": {
-    "name": "PrimitiveWrangle",
-    "inputs": {
-     "prim0": [
-      "39087cc3-PrimitiveAddAttr",
-      "prim"
-     ],
-     "prim1": null,
-     "prim2": null,
-     "prim3": null,
-     "wrangle": [
-      "c83a1221-WrangleStore",
-      "res"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {},
-    "uipos": [
-     1596.1171874999995,
-     613.8046874999999
+     -428.0,
+     139.68
     ],
     "options": [
      "VIEW"
     ]
    },
-   "6eeb14c1-WrangleLoad": {
-    "name": "WrangleLoad",
+   "c2eee3c7-GetVDBBoundingBox": {
+    "name": "GetVDBBoundingBox",
     "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "primId": 0,
-     "attrName": "rho"
-    },
-    "uipos": [
-     316.0812500000002,
-     429.06171875000007
-    ],
-    "options": []
-   },
-   "aaea0b53-WrangleUnaryOp": {
-    "name": "WrangleUnaryOp",
-    "inputs": {
-     "lhs": [
-      "6eeb14c1-WrangleLoad",
-      "res"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "opName": "neg"
-    },
-    "uipos": [
-     599.28125,
-     465.06171874999995
-    ],
-    "options": []
-   },
-   "ae2d087b-WrangleBinaryOp": {
-    "name": "WrangleBinaryOp",
-    "inputs": {
-     "lhs": [
-      "aaea0b53-WrangleUnaryOp",
-      "res"
-     ],
-     "rhs": [
-      "6d2f06bc-WrangleImmed",
-      "res"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "opName": "mul"
-    },
-    "uipos": [
-     842.48125,
-     516.26171875
-    ],
-    "options": []
-   },
-   "6d2f06bc-WrangleImmed": {
-    "name": "WrangleImmed",
-    "inputs": {
-     "value": [
-      "16ec581f-NumericVec3",
-      "vec3"
+     "vdbGrid": [
+      "51f53abe-MeshToSDF",
+      "sdf"
      ],
      "SRC": null,
      "COND": null
     },
     "params": {},
     "uipos": [
-     597.6812500000001,
-     665.8617187500001
+     -132.0,
+     -21.0
     ],
     "options": []
    },
-   "16ec581f-NumericVec3": {
-    "name": "NumericVec3",
-    "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "x": 0.0,
-     "y": 2.0,
-     "z": 0.0
-    },
-    "uipos": [
-     344.88125000000014,
-     627.4617187499998
-    ],
-    "options": []
-   },
-   "329ea771-x": {
-    "name": "WrangleBinaryOp",
-    "inputs": {
-     "lhs": [
-      "6eeb14c1-WrangleLoad",
-      "res"
-     ],
-     "rhs": [
-      "4032687c-x",
-      "res"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "opName": "mul"
-    },
-    "uipos": [
-     850.4812499999998,
-     744.26171875
-    ],
-    "options": []
-   },
-   "4032687c-x": {
-    "name": "WrangleImmed",
+   "19a089e3-PrintNumeric": {
+    "name": "PrintNumeric",
     "inputs": {
      "value": [
-      "e43dbb35-x",
-      "vec3"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {},
-    "uipos": [
-     605.6812500000001,
-     893.8617187499999
-    ],
-    "options": []
-   },
-   "e43dbb35-x": {
-    "name": "NumericVec3",
-    "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "x": 2.0,
-     "y": 0.0,
-     "z": 0.0
-    },
-    "uipos": [
-     352.8812499999999,
-     855.4617187499998
-    ],
-    "options": []
-   },
-   "91a45ba4-WrangleBinaryOp": {
-    "name": "WrangleBinaryOp",
-    "inputs": {
-     "lhs": [
-      "ae2d087b-WrangleBinaryOp",
-      "res"
-     ],
-     "rhs": [
-      "329ea771-x",
-      "res"
+      "c2eee3c7-GetVDBBoundingBox",
+      "boundMin"
      ],
      "SRC": null,
      "COND": null
     },
     "params": {
-     "opName": "add"
+     "hint": "BoundMin"
     },
     "uipos": [
-     1101.28125,
-     681.26171875
+     170.0,
+     -137.0
     ],
-    "options": []
+    "options": [
+     "OUT"
+    ]
    },
-   "c83a1221-WrangleStore": {
-    "name": "WrangleStore",
+   "5e84f396-x": {
+    "name": "PrintNumeric",
     "inputs": {
-     "val": [
-      "91a45ba4-WrangleBinaryOp",
-      "res"
+     "value": [
+      "c2eee3c7-GetVDBBoundingBox",
+      "boundMax"
      ],
      "SRC": null,
      "COND": null
     },
     "params": {
-     "primId": 0,
-     "attrName": "clr"
+     "hint": "BoundMax"
     },
     "uipos": [
-     1353.28125,
-     722.26171875
+     169.0,
+     133.0
     ],
-    "options": []
+    "options": [
+     "OUT"
+    ]
    },
-   "89cdfd21-Make2DGridPrimitive": {
-    "name": "Make2DGridPrimitive",
+   "d7d28189-MakeVisualAABBPrimitive": {
+    "name": "MakeVisualAABBPrimitive",
     "inputs": {
-     "nx": [
-      "0a96a449-NumericInt",
-      "value"
+     "boundMin": [
+      "c2eee3c7-GetVDBBoundingBox",
+      "boundMin"
      ],
-     "ny": null,
-     "dx": null,
-     "dy": null,
-     "sizeX": [
-      "a3d3c606-NumericVec3",
-      "vec3"
+     "boundMax": [
+      "c2eee3c7-GetVDBBoundingBox",
+      "boundMax"
      ],
-     "sizeY": [
-      "df3a7bea-NumericVec3",
-      "vec3"
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "connType": 2
+    },
+    "uipos": [
+     438.0,
+     -21.0
+    ],
+    "options": [
+     "VIEW"
+    ]
+   },
+   "635cffaf-TransformMesh": {
+    "name": "TransformMesh",
+    "inputs": {
+     "mesh": [
+      "c0baff2a-ReadObjMesh",
+      "mesh"
      ],
-     "origin": [
-      "45d8868e-NumericInterpolation",
+     "translate": [
+      "7b3610ba-NumericInterpolation",
       "dst"
      ],
+     "rotate": null,
+     "scaling": null,
      "SRC": null,
      "COND": null
     },
-    "params": {
-     "isCentered": 1
-    },
+    "params": {},
     "uipos": [
-     -109.0,
-     -73.0
+     -700.0,
+     -2.0
     ],
     "options": []
    },
-   "eb52bb0f-NumericVec3": {
+   "b0a8299c-NumericVec3": {
     "name": "NumericVec3",
     "inputs": {
      "SRC": null,
@@ -431,36 +172,78 @@
     },
     "params": {
      "x": 0.0,
-     "y": 0.0,
-     "z": -1.5
+     "y": -1.0,
+     "z": 0.0
     },
     "uipos": [
-     -1007.75,
-     343.25
+     -1231.0,
+     333.0
     ],
     "options": []
    },
-   "45d8868e-NumericInterpolation": {
+   "931a0a10-GetFrameNum": {
+    "name": "GetFrameNum",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {},
+    "uipos": [
+     -1235.0,
+     139.0
+    ],
+    "options": []
+   },
+   "b14d163a-NumericInt": {
+    "name": "NumericInt",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "value": 20
+    },
+    "uipos": [
+     -1475.0,
+     175.0
+    ],
+    "options": []
+   },
+   "60d7a5f4-x": {
+    "name": "NumericVec3",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "x": 0.0,
+     "y": 1.0,
+     "z": 0.0
+    },
+    "uipos": [
+     -1460.0,
+     347.0
+    ],
+    "options": []
+   },
+   "7b3610ba-NumericInterpolation": {
     "name": "NumericInterpolation",
     "inputs": {
      "src": [
-      "f6731780-GetFrameNum",
+      "931a0a10-GetFrameNum",
       "FrameNum"
      ],
-     "srcMin": [
-      "d0e3ade7-NumericInt",
-      "value"
-     ],
+     "srcMin": null,
      "srcMax": [
-      "5ddec741-NumericInt",
+      "b14d163a-NumericInt",
       "value"
      ],
      "dstMin": [
-      "eb52bb0f-NumericVec3",
+      "60d7a5f4-x",
       "vec3"
      ],
      "dstMax": [
-      "bb3c2ad8-x",
+      "b0a8299c-NumericVec3",
       "vec3"
      ],
      "SRC": null,
@@ -470,91 +253,10 @@
      "isClamped": 0
     },
     "uipos": [
-     -695.75,
-     175.25
+     -965.0,
+     216.0
     ],
     "options": []
-   },
-   "bb3c2ad8-x": {
-    "name": "NumericVec3",
-    "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "x": 0.0,
-     "y": 0.0,
-     "z": 1.5
-    },
-    "uipos": [
-     -1008.75,
-     572.25
-    ],
-    "options": []
-   },
-   "f6731780-GetFrameNum": {
-    "name": "GetFrameNum",
-    "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {},
-    "uipos": [
-     -800.8,
-     -11.200000000000003
-    ],
-    "options": []
-   },
-   "d0e3ade7-NumericInt": {
-    "name": "NumericInt",
-    "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "value": 0
-    },
-    "uipos": [
-     -1035.4000000000003,
-     -7.399999999999977
-    ],
-    "options": []
-   },
-   "5ddec741-NumericInt": {
-    "name": "NumericInt",
-    "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "value": 128
-    },
-    "uipos": [
-     -1017.0,
-     162.0
-    ],
-    "options": []
-   },
-   "6d9c4ec5-PrintNumeric": {
-    "name": "PrintNumeric",
-    "inputs": {
-     "value": [
-      "45d8868e-NumericInterpolation",
-      "dst"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "hint": "Origin"
-    },
-    "uipos": [
-     -660.0,
-     457.0
-    ],
-    "options": [
-     "OUT"
-    ]
    }
   }
  },

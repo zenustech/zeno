@@ -49,6 +49,6 @@ set_target_properties(ZenEulerLib PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
 	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
 )
-target_include_directories(ZenEulerLib PRIVATE ../zenbase/include)
+target_include_directories(ZenEulerLib PRIVATE ../oldzenbase/include)
 target_include_directories(ZenEulerLib PRIVATE ../zenvdb/include)
 

@@ -58,5 +58,5 @@ set_target_properties(FLIPlib PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
 	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
 	)
-target_include_directories(FLIPlib PRIVATE ../zenbase/include)
+target_include_directories(FLIPlib PRIVATE ../oldzenbase/include)
 target_include_directories(FLIPlib PRIVATE ../zenvdb/include)

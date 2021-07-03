@@ -73,9 +73,9 @@ set_target_properties(gmpm PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
 	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
 	)
-target_link_libraries(gmpm PRIVATE zeno zenbase zenvdb)
+target_link_libraries(gmpm PRIVATE zeno)
 target_link_libraries(gmpm PRIVATE zecomp)
-target_include_directories(gmpm PRIVATE ../zenbase/include)
+target_include_directories(gmpm PRIVATE ../oldzenbase/include)
 target_include_directories(gmpm PRIVATE ../zenvdb/include)
 
 endif(ENABLE_GMPM_BUILD)

@@ -67,7 +67,7 @@ struct Subgraph : zeno::INode {
 ZENDEFNODE(Subgraph, {
     {},//"input1", "input2", "input3", "input4"},
     {},//"output1", "output2", "output3", "output4"},
-    {{"string", "name", "SubgraphTitle"}},
+    {{"string", "name", "DoNotUseThisNodeDirectly"}},
     {"subgraph"},
 });
 
