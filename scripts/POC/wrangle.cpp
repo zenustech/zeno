@@ -118,14 +118,18 @@ void do_apply(fat_ptr<T> fp) {
     printf("%s %d\n", typeid(T).name(), fp.size);
 }
 
-void apply(array &a) {
-    auto dt = a.type();
+template <class T>
+auto arr_to_fatptr(array *a) {
+    return fat_ptr<T>{(T *)a->data(), a->size()};
+}
+
+void apply(array *a) {
+    auto dt = a->type();
     static_for<0, magic_enum::enum_values<dtype>().size()>([&](auto i) {
         constexpr auto t = magic_enum::enum_cast<dtype>(i).value();
         if (dt == t) {
             using T = typename dtype_to_type<t>::type;
-            fat_ptr<T> fp{(T *)a.data(), a.size()};
-            do_apply<T>(fp);
+            do_apply<T>(arr_to_fatptr<T>(a));
             return true;
         }
         return false;
@@ -136,10 +140,10 @@ void apply(array &a) {
 
 int main(void)
 {
-    array a;
-    a.m_type = dtype::i32;
-    a.resize(128);
+    auto a = new array;
+    a->m_type = dtype::i32;
+    a->resize(128);
     apply(a);
-    std::cout << dtype_name(type_to_dtype<int>::value) << std::endl;
+    delete a;
     return 0;
 }
