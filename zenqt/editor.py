@@ -160,6 +160,14 @@ class QDMGraphicsScene(QGraphicsScene):
             node.remove()
         self.nodes.clear()
 
+    def loadGraphEx(self, graph):
+        nodes = graph['nodes']
+        self.loadGraph(nodes)
+        view = graph['view']
+        self.scale = view['scale']
+        self.trans_x = view['trans_x']
+        self.trans_y = view['trans_y']
+
     def loadGraph(self, nodes, select_all=False):
         edges = []
         nodesLut = {}
@@ -1339,7 +1347,8 @@ class NodeEditor(QWidget):
             if name != 'main':
                 print('Importing subgraph', name)
                 self.switchScene(name)
-                self.scene.loadGraph(graph)
+                nodes = graph['nodes']
+                self.scene.loadGraphEx(graph)
         self.scene.record()
         self.switchScene('main')
         self.initDescriptors()
@@ -1351,12 +1360,7 @@ class NodeEditor(QWidget):
         for name, graph in prog['graph'].items():
             print('Loading subgraph', name)
             self.switchScene(name)
-            nodes = graph['nodes']
-            self.scene.loadGraph(nodes)
-            view = graph['view']
-            self.scene.scale = view['scale']
-            self.scene.trans_x = view['trans_x']
-            self.scene.trans_y = view['trans_y']
+            self.scene.loadGraphEx(graph)
         self.switchScene('main')
         self.initDescriptors()
 
