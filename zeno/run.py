@@ -11,13 +11,13 @@ def runScene(graphs, nframes, iopath):
     core.setIOPath(iopath)
 
     subgkeys = set(graphs.keys())
-    for name, nodes in graphs.items():
+    for name, graph in graphs.items():
         core.switchGraph(name)
-        loadGraph(nodes, subgkeys)
+        loadGraph(graph['nodes'], subgkeys)
 
     
     applies = []
-    nodes = graphs['main']
+    nodes = graphs['main']['nodes']
     for ident, data in nodes.items():
         options = data['options']
         if 'OUT' in options or 'VIEW' in options:
@@ -27,7 +27,8 @@ def runScene(graphs, nframes, iopath):
 
     for frameid in range(nframes):
         print('FRAME:', frameid)
-        for ident, data in graphs['main'].items():
+        ### BEGIN XINXIN HAPPY >>>>>
+        for ident, data in graphs['main']['nodes'].items():
             name = data['name']
             inputs = data['inputs']
             params = data['params']
@@ -35,6 +36,7 @@ def runScene(graphs, nframes, iopath):
                 if type(value) is str:
                     value = evaluateExpr(value, frameid)
                     core.setNodeParam(ident, name, value)
+        ### ENDOF XINXIN HAPPY <<<<<
 
         core.frameBegin()
         while core.substepBegin():
