@@ -55,7 +55,7 @@ struct dyncast_derived {
 
 template <class L, template <class> class Op, class ...Ts>
 static bool vlistdyncast(Ts &&...ts) {
-    return vlistfor<dyncast_derived, L, Op>()(std::forward<Ts>(ts...));
+    return vlistfor<dyncast_derived, L, Op>()(std::forward<Ts>(ts)...);
 }
 
 
@@ -81,7 +81,6 @@ void calcVdbBounds(GridT *grid, vec3f &bmin, vec3f &bmax)
         bmin = zeno::min(bmin, pos);
         bmax = zeno::max(bmax, pos);
         // TODO: extent this bbox by 1 index
-        // TODO: visualization -> MakeVisualBoundingBox
     }
 }
 
@@ -96,7 +95,7 @@ struct GetVDBBoundingBox : INode {
     virtual void apply() override {
         auto ggrid = get_input<VDBGrid>("vdbGrid");
         zeno::vec3f bmin, bmax;
-        vlistdyncast<vlist_of_vdb_type, opCalcVdbBounds>()(
+        vlistdyncast<vlist_of_vdb_type, opCalcVdbBounds>(
             ggrid.get(), bmin, bmax);
 
         auto boundMin = std::make_shared<NumericObject>();
