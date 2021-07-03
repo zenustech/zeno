@@ -66,7 +66,6 @@ using vlist_of_vdb_type = vlist<VDBFloatGrid, VDBFloat3Grid,
 template <class GridT>
 void calcVdbBounds(GridT *grid, vec3f &bmin, vec3f &bmax)
 {
-    bool any = false;
     auto leaf = grid->tree().cbeginLeaf();
     if (!leaf) {
         bmin = bmax = vec3f(0);
@@ -75,12 +74,13 @@ void calcVdbBounds(GridT *grid, vec3f &bmin, vec3f &bmax)
     bmin = vec3f(+1e6);
     bmax = vec3f(-1e6);
     for (; leaf; ++leaf) {
-        std::decay_t<decltype(leaf->origin())> offset;
+        auto origin = leaf->origin();
+        decltype(origin) offset;
         for (int i = 0; i < 8; i++) {
             offset[0] = !!(i & 1);
             offset[1] = !!(i & 2);
             offset[2] = !!(i & 4);
-            auto p = grid->indexToWorld(leaf->origin() + offset);
+            auto p = grid->indexToWorld(origin + offset);
             auto pos = other_to_vec<3>(p);
             bmin = zeno::min(bmin, pos);
             bmax = zeno::max(bmax, pos);
