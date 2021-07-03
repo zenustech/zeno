@@ -1,3 +1,4 @@
+#if 0
 #include <zeno/zeno.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/NumericObject.h>
@@ -121,3 +122,4 @@ ZENDEFNODE(GetVDBBoundingBox, {
 
 
 }
+#endif
