@@ -355,7 +355,7 @@ class QDMGraphicsView(QGraphicsView):
         item = itemList[0]
         n = item.name
         if n in self.node_editor.scenes:
-            self.node_editor.switchScene(n)
+            self.node_editor.on_switch_graph(n)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
