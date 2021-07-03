@@ -106,6 +106,10 @@ class QDMGraphicsScene(QGraphicsScene):
         self.mmb_press = False
         self.contentChanged = False
 
+        self.scale = 1
+        self.trans_x = 0
+        self.trans_y = 0
+
     @property
     def descs(self):
         return self.editor.descs
@@ -297,6 +301,13 @@ class QDMGraphicsView(QGraphicsView):
 
         self.node_editor = parent
 
+    def setViewInfo(self, scene):
+        transform = QTransform()
+        transform.scale(scene.scale, scene.scale)
+        self.setTransform(transform)
+        self.horizontalScrollBar().setValue(scene.trans_x)
+        self.verticalScrollBar().setValue(scene.trans_y)
+
     def updateSearch(self, edit):
         for act in edit.menu.actions():
             if not isinstance(act, QWidgetAction):
@@ -426,6 +437,9 @@ class QDMGraphicsView(QGraphicsView):
             self.scene().mmb_press = False
             self.setDragMode(0)
 
+            self.scene().trans_x = self.horizontalScrollBar().value()
+            self.scene().trans_y = self.verticalScrollBar().value()
+
         elif event.button() == Qt.LeftButton:
             self.setDragMode(0)
 
@@ -441,6 +455,7 @@ class QDMGraphicsView(QGraphicsView):
             zoomFactor = 1 / self.ZOOM_FACTOR
 
         self.scale(zoomFactor, zoomFactor)
+        self.scene().scale = self.transform().m11()
 
     def addEdge(self, a, b):
         if a is None or b is None:
@@ -1183,6 +1198,7 @@ class NodeEditor(QWidget):
         else:
             scene = self.scenes[name]
         self.view.setScene(scene)
+        self.view.setViewInfo(scene)
         self.edit_graphname.clear()
         self.edit_graphname.addItems(self.scenes.keys())
 
@@ -1274,11 +1290,18 @@ class NodeEditor(QWidget):
 
     def dumpProgram(self):
         graphs = {}
+        views = {}
         for name, scene in self.scenes.items():
             graph = scene.dumpGraph()
             graphs[name] = graph
+            views[name] = {
+                'scale': scene.scale,
+                'trans_x': scene.trans_x,
+                'trans_y': scene.trans_y,
+            }
         prog = {}
         prog['graph'] = graphs
+        prog['views'] = views
         prog['descs'] = dict(self.descs)
         return prog
 
@@ -1312,6 +1335,11 @@ class NodeEditor(QWidget):
             print('Loading subgraph', name)
             self.switchScene(name)
             self.scene.loadGraph(graph)
+            if 'views' in prog:
+                v = prog['views'][name]
+                self.scene.scale = v['scale']
+                self.scene.trans_x = v['trans_x']
+                self.scene.trans_y = v['trans_y']
         self.switchScene('main')
         self.initDescriptors()
 
