@@ -5,8 +5,8 @@
     "name": "PrimitiveAddAttr",
     "inputs": {
      "prim": [
-      "8b46ddc5-SampleVDBToPrimitive",
-      "prim"
+      "81b3bf3e-VdbSlice",
+      "slicePrim"
      ],
      "SRC": null,
      "COND": null
@@ -316,7 +316,22 @@
      "ONCE"
     ]
    },
-   "f63279d1-x": {
+   "240b4861-x": {
+    "name": "NumericInt",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "value": 128
+    },
+    "uipos": [
+     -224.0,
+     -555.0
+    ],
+    "options": []
+   },
+   "8d998812-x": {
     "name": "NumericVec3",
     "inputs": {
      "SRC": null,
@@ -328,12 +343,12 @@
      "z": 0.0
     },
     "uipos": [
-     -173.63291625976677,
-     -424.1875701904298
+     31.367083740233227,
+     -432.1875701904298
     ],
     "options": []
    },
-   "e2d9bb11-NumericVec3": {
+   "68e306a5-x": {
     "name": "NumericVec3",
     "inputs": {
      "SRC": null,
@@ -345,137 +360,52 @@
      "z": 0.0
     },
     "uipos": [
-     -173.56597900390523,
-     -653.9338531494136
+     31.434020996094773,
+     -661.9338531494136
     ],
     "options": []
    },
-   "59980a2a-GetVDBBound": {
-    "name": "GetVDBBound",
+   "81b3bf3e-VdbSlice": {
+    "name": "VdbSlice",
     "inputs": {
      "vdbGrid": [
       "5fcec9c4-PrimitiveToSDF",
       "sdf"
      ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {},
-    "uipos": [
-     -722.7878540039057,
-     -279.5541656494138
-    ],
-    "options": []
-   },
-   "c6416b5e-PrimitiveAddAttr": {
-    "name": "PrimitiveAddAttr",
-    "inputs": {
-     "prim": [
-      "c100852d-SlicePlaneForPrimitive",
-      "primPlane"
+     "channelName": [
+      "b3e556da-MakeString",
+      "value"
      ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "name": "rho",
-     "type": "float"
-    },
-    "uipos": [
-     341.45355224609375,
-     -371.25221252441406
-    ],
-    "options": []
-   },
-   "8b46ddc5-SampleVDBToPrimitive": {
-    "name": "SampleVDBToPrimitive",
-    "inputs": {
-     "prim": [
-      "c6416b5e-PrimitiveAddAttr",
-      "prim"
-     ],
-     "vdbGrid": [
-      "5fcec9c4-PrimitiveToSDF",
-      "sdf"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "primAttr": "rho"
-    },
-    "uipos": [
-     588.953552246094,
-     -305.0022125244136
-    ],
-    "options": []
-   },
-   "6554c495-MakeVisualAABBPrimitive": {
-    "name": "MakeVisualAABBPrimitive",
-    "inputs": {
-     "boundMin": [
-      "59980a2a-GetVDBBound",
-      "bmin"
-     ],
-     "boundMax": [
-      "59980a2a-GetVDBBound",
-      "bmax"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "connType": 2
-    },
-    "uipos": [
-     -408.59644775390603,
-     -342.85221252441363
-    ],
-    "options": [
-     "VIEW"
-    ]
-   },
-   "c100852d-SlicePlaneForPrimitive": {
-    "name": "SlicePlaneForPrimitive",
-    "inputs": {
      "origin": [
-      "e2d9bb11-NumericVec3",
+      "68e306a5-x",
       "vec3"
      ],
      "normal": [
-      "f63279d1-x",
+      "8d998812-x",
       "vec3"
-     ],
-     "primIn": [
-      "6554c495-MakeVisualAABBPrimitive",
-      "prim"
-     ],
-     "resolution": [
-      "d6faaecf-NumericInt",
-      "value"
      ],
      "SRC": null,
      "COND": null
     },
     "params": {},
     "uipos": [
-     102.0,
-     -407.0
+     313.0,
+     -391.0
     ],
     "options": []
    },
-   "d6faaecf-NumericInt": {
-    "name": "NumericInt",
+   "b3e556da-MakeString": {
+    "name": "MakeString",
     "inputs": {
      "SRC": null,
      "COND": null
     },
     "params": {
-     "value": 128
+     "value": "rho"
     },
     "uipos": [
-     -429.0,
-     -547.0
+     302.0,
+     -566.0
     ],
     "options": []
    }
@@ -870,6 +800,193 @@
     "uipos": [
      1412.0,
      -208.0
+    ],
+    "options": []
+   }
+  },
+  "VdbSlice": {
+   "9cc9d518-x": {
+    "name": "MakeVisualAABBPrimitive",
+    "inputs": {
+     "boundMin": [
+      "0b388123-x",
+      "bmin"
+     ],
+     "boundMax": [
+      "0b388123-x",
+      "bmax"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "connType": 2
+    },
+    "uipos": [
+     -308.59644775390603,
+     -242.85221252441363
+    ],
+    "options": []
+   },
+   "7a2aaf6c-x": {
+    "name": "SlicePlaneForPrimitive",
+    "inputs": {
+     "origin": [
+      "39620337-x",
+      "port"
+     ],
+     "normal": [
+      "99c0a7fa-x",
+      "port"
+     ],
+     "primIn": [
+      "9cc9d518-x",
+      "prim"
+     ],
+     "resolution": null,
+     "SRC": null,
+     "COND": null
+    },
+    "params": {},
+    "uipos": [
+     198.0,
+     -309.0
+    ],
+    "options": []
+   },
+   "0b388123-x": {
+    "name": "GetVDBBound",
+    "inputs": {
+     "vdbGrid": [
+      "876fa589-SubInput",
+      "port"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {},
+    "uipos": [
+     -622.7878540039057,
+     -179.5541656494138
+    ],
+    "options": []
+   },
+   "876fa589-SubInput": {
+    "name": "SubInput",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "name": "vdbGrid"
+    },
+    "uipos": [
+     -876.0,
+     -242.39999999999998
+    ],
+    "options": []
+   },
+   "9835f6db-SubOutput": {
+    "name": "SubOutput",
+    "inputs": {
+     "port": [
+      "e7348324-SampleVDBToPrimitive",
+      "prim"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "name": "slicePrim"
+    },
+    "uipos": [
+     948.0,
+     -183.0
+    ],
+    "options": []
+   },
+   "da10d330-SubCategory": {
+    "name": "SubCategory",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "name": "visualization"
+    },
+    "uipos": [
+     86.0,
+     -39.0
+    ],
+    "options": []
+   },
+   "e7348324-SampleVDBToPrimitive": {
+    "name": "SampleVDBToPrimitive",
+    "inputs": {
+     "prim": [
+      "7a2aaf6c-x",
+      "primPlane"
+     ],
+     "vdbGrid": [
+      "876fa589-SubInput",
+      "port"
+     ],
+     "primAttr": [
+      "5b4a2f1f-SubInput",
+      "port"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {},
+    "uipos": [
+     705.0,
+     -160.0
+    ],
+    "options": []
+   },
+   "5b4a2f1f-SubInput": {
+    "name": "SubInput",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "name": "channelName"
+    },
+    "uipos": [
+     452.0,
+     -30.0
+    ],
+    "options": []
+   },
+   "39620337-x": {
+    "name": "SubInput",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "name": "origin"
+    },
+    "uipos": [
+     -99.0,
+     -455.0
+    ],
+    "options": []
+   },
+   "99c0a7fa-x": {
+    "name": "SubInput",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "name": "normal"
+    },
+    "uipos": [
+     -85.0,
+     -282.0
     ],
     "options": []
    }
@@ -1540,24 +1657,6 @@
    "params": [],
    "categories": [
     "openvdb"
-   ]
-  },
-  "HeatMapPrimitive": {
-   "inputs": [
-    "prim",
-    "primdAttr",
-    "min",
-    "max",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "prim",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "visualize"
    ]
   },
   "ImportObjMesh": {
@@ -3136,6 +3235,7 @@
    "inputs": [
     "prim",
     "vdbGrid",
+    "primAttr",
     "SRC",
     "COND"
    ],
@@ -3143,15 +3243,9 @@
     "prim",
     "DST"
    ],
-   "params": [
-    [
-     "string",
-     "primAttr",
-     "rho"
-    ]
-   ],
+   "params": [],
    "categories": [
-    "visualize"
+    "openvdb"
    ]
   },
   "ScaleVelocity": {
@@ -3606,6 +3700,24 @@
    "params": [],
    "categories": [
     "mathematica"
+   ]
+  },
+  "VdbSlice": {
+   "inputs": [
+    "vdbGrid",
+    "channelName",
+    "origin",
+    "normal",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "slicePrim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "visualization"
    ]
   }
  }

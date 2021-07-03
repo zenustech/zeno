@@ -57,7 +57,7 @@ struct SampleVDBToPrimitive : INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
     auto grid = get_input<VDBGrid>("vdbGrid");
-    auto attr = get_param<std::string>("primAttr");
+    auto attr = get_input<StringObject>("primAttr")->get();
     auto &pos = prim->attr<vec3f>("pos");
     std::visit([&](auto &vel) { sampleVDBAttribute(pos, vel, grid.get()); },
                prim->attr(attr));
@@ -67,10 +67,10 @@ struct SampleVDBToPrimitive : INode {
 };
 
 ZENDEFNODE(SampleVDBToPrimitive, {
-                                     {"prim", "vdbGrid"},
+                                     {"prim", "vdbGrid", "primAttr"},
                                      {"prim"},
-                                     {{"string", "primAttr", "rho"}},
-                                     {"visualize"},
+                                     {},
+                                     {"openvdb"},
                                  });
 
 struct GetVDBBound : INode {
@@ -120,6 +120,8 @@ ZENDEFNODE(GetVDBBound, {
                             {"openvdb"},
                         });
 
+
+#if 0
 // this is to be deprecated
 struct HeatMap {
   std::vector<zeno::vec3f> colorBar;
@@ -187,4 +189,5 @@ ZENDEFNODE(HeatMapPrimitive, {
                                  {"visualize"},
                              });
 
+#endif
 } // namespace zeno

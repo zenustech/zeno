@@ -171,6 +171,7 @@ ZENAPI void Graph::applyNode(std::string const &id) {
     if (ctx->visited.find(id) != ctx->visited.end()) {
         return;
     }
+    printf("- %s\n", id.c_str());
     ctx->visited.insert(id);
     safe_at(nodes, id, "node")->doApply();
 }
