@@ -59,16 +59,18 @@ struct type_list_find<type_list<T, Ts...>, T> {
 
 /* wrangle.h */
 
-static float regtable[256];
-static float memtable[256];
+struct Context {
+    float regtable[256];
+    float *memtable[256];
 
-float memfetch(int index) {
-    return memtable[index];
-}
+    float memfetch(int index) {
+        return *memtable[index];
+    }
 
-void memstore(int index, float value) {
-    memtable[index] = value;
-}
+    void memstore(int index, float value) {
+        *memtable[index] = value;
+    }
+};
 
 enum class Opcode : int {
     mov, add, sub, mul, div,
@@ -85,27 +87,27 @@ struct Operand {
         float value;
     };
 
-    float get() const {
+    float get(Context *ctx) const {
         switch (type) {
         case OperandType::imm:
             return value;
         case OperandType::reg:
-            return regtable[index];
+            return ctx->regtable[index];
         case OperandType::mem:
-            return memfetch(index);
+            return ctx->memfetch(index);
         }
         return 0;
     }
 
-    void set(float x) const {
+    void set(Context *ctx, float x) const {
         switch (type) {
         case OperandType::imm:
             return;
         case OperandType::reg:
-            regtable[index] = x;
+            ctx->regtable[index] = x;
             return;
         case OperandType::mem:
-            memstore(index, x);
+            ctx->memstore(index, x);
             return;
         }
     }
@@ -115,9 +117,9 @@ struct Instruction {
     Opcode opcode;
     Operand dst, lhs, rhs;
 
-    void execute() const {
-        float x = lhs.get();
-        float y = rhs.get();
+    void execute(Context *ctx) const {
+        float x = lhs.get(ctx);
+        float y = rhs.get(ctx);
         float z = 0;
         switch (opcode) {
         case Opcode::add: z = x + y; break;
@@ -125,7 +127,7 @@ struct Instruction {
         case Opcode::mul: z = x * y; break;
         case Opcode::div: z = x / y; break;
         }
-        dst.set(z);
+        dst.set(ctx, z);
     }
 };
 
@@ -133,6 +135,7 @@ struct Instruction {
 
 int main(void)
 {
+    Context ctx;
     Instruction inst;
     inst.opcode = Opcode::add;
     inst.dst.type = OperandType::reg;
@@ -141,8 +144,8 @@ int main(void)
     inst.lhs.index = 0;
     inst.rhs.type = OperandType::imm;
     inst.rhs.value = 3.14f;
-    inst.execute();
-    cout << regtable[0] << endl;
+    inst.execute(&ctx);
+    cout << ctx.regtable[0] << endl;
 
     return 0;
 }
