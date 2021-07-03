@@ -20,7 +20,10 @@ struct PlaneProjectPrimitive2DAABB : INode {
             auto p = pos[line[0]], q = pos[line[1]];
             auto u = dot(origin - p, normal);
             auto v = dot(q - p, normal);
-            if (0 < u * v && u < v) {  // 0 < u / v && u / v < 1
+            if (std::fabs(v) < 1e-6)
+                continue;
+            auto d = u / v;
+            if (0 <= d && d <= 1) {
                 auto dist = p + (q - p) * (u / v) - origin;
                 vec2f coor{dot(dist, tangent), dot(dist, bitangent)};
                 bmin = zeno::min(bmin, coor);

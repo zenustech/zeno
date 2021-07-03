@@ -12,10 +12,10 @@ struct MakeOrthonormalBase : INode {
             tangent = get_input<NumericObject>("tangent")->get<vec3f>();
             bitangent = cross(normal, tangent);
         } else {
-            tangent = vec3f(233, 555, 666);
+            tangent = vec3f(0, 0, 1);
             bitangent = cross(normal, tangent);
             if (dot(bitangent, bitangent) < 1e-5) {
-                tangent = vec3f(-777, -211, -985);
+                tangent = vec3f(0, 1, 0);
                bitangent = cross(normal, tangent);
             }
         }

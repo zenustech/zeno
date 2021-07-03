@@ -313,8 +313,7 @@
      62.81673278808623
     ],
     "options": [
-     "ONCE",
-     "VIEW"
+     "ONCE"
     ]
    },
    "f63279d1-x": {
@@ -325,8 +324,8 @@
     },
     "params": {
      "x": 1.0,
-     "y": 1.0,
-     "z": 1.0
+     "y": 0.0,
+     "z": 0.0
     },
     "uipos": [
      -173.63291625976677,
@@ -1528,22 +1527,6 @@
     "openvdb"
    ]
   },
-  "GetVDBBoundingBox": {
-   "inputs": [
-    "vdbGrid",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "boundMin",
-    "boundMax",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "openvdb"
-   ]
-  },
   "GetVDBPoints": {
    "inputs": [
     "grid",
@@ -2139,26 +2122,6 @@
     "numeric"
    ]
   },
-  "NumericRandom": {
-   "inputs": [
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "value",
-    "DST"
-   ],
-   "params": [
-    [
-     "int",
-     "dim",
-     "0 0 4"
-    ]
-   ],
-   "categories": [
-    "numeric"
-   ]
-  },
   "NumericVec2": {
    "inputs": [
     "SRC",
@@ -2278,24 +2241,6 @@
    "params": [],
    "categories": [
     "Molecular"
-   ]
-  },
-  "PlaneEvaluate2DCoorTo3D": {
-   "inputs": [
-    "coor2D",
-    "origin",
-    "tangent",
-    "bitangent",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "coor3D",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "mathematica"
    ]
   },
   "PlaneProjectPrimitive2DAABB": {
