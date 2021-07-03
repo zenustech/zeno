@@ -5,13 +5,18 @@
 #include <openvdb/Types.h>
 #include <openvdb/openvdb.h>
 
-struct OpenvdbInitializer {
-  OpenvdbInitializer() { openvdb::initialize(); }
-};
-static OpenvdbInitializer g_openvdb_initializer{};
+
 
 static inline float *randomTable = nullptr;
-
+inline float frand(int i)
+{
+	int value = (i ^ 61) ^ (i >> 16);
+	value *= 9;
+	value ^= value << 4;
+	value *= 0x27d4eb2d;
+	value ^= value >> 15;	
+    return (float)value/(float)RAND_MAX;
+}
 static inline void initRandomTable() {
     if (randomTable) return;
     randomTable = new float[21474836];
@@ -20,10 +25,13 @@ static inline void initRandomTable() {
     std::uniform_real_distribution<> distribution(-0.5, 0.5);
 #pragma omp parallel for
     for (size_t i = 0; i < 21474836; i++) {
-        randomTable[i] = distribution(generator);
+        randomTable[i] = frand(i)-0.5f;
     }
 }
-
+struct OpenvdbInitializer {
+  OpenvdbInitializer() { openvdb::initialize(); initRandomTable(); }
+};
+static OpenvdbInitializer g_openvdb_initializer{};
 struct FLIP_vdb {
   using vec_tree_t = openvdb::Vec3fGrid::TreeType;
   using scalar_tree_t = openvdb::FloatGrid::TreeType;
