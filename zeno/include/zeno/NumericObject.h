@@ -13,6 +13,9 @@ using NumericValue = std::variant<
 struct NumericObject : IObjectClone<NumericObject> {
   NumericValue value;
 
+  NumericObject() = default;
+  NumericObject(NumericValue value) : value(value) {}
+
   template <class T>
   T get() {
     return std::get<T>(value);

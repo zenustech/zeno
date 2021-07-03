@@ -1,4 +1,4 @@
-O=arts/samplevdb.zsg
+O=arts/vdbslice.zsg
 
 default: run
 
