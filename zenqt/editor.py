@@ -15,6 +15,7 @@ import zenapi
 
 from . import asset_path
 
+CURR_VERSION = 'v1'
 MAX_STACK_LENGTH = 100
 
 style = {
@@ -1303,6 +1304,7 @@ class NodeEditor(QWidget):
         prog['graph'] = graphs
         prog['views'] = views
         prog['descs'] = dict(self.descs)
+        prog['version'] = CURR_VERSION
         return prog
 
     def bkwdCompatProgram(self, prog):
@@ -1322,6 +1324,11 @@ class NodeEditor(QWidget):
                         'trans_y': 0,
                     },
                 }
+        if 'version' not in prog:
+            prog['version'] = 'v0'
+        if prog['version'] != CURR_VERSION:
+            print('WARNING: Loading graph of version', prog['version'],
+                'with editor version', CURR_VERSION)
         return prog
 
     def importProgram(self, prog):
@@ -1329,8 +1336,8 @@ class NodeEditor(QWidget):
         self.setDescriptors(prog['descs'])
         self.scene.newGraph()
         for name, graph in prog['graph'].items():
-            if not name =='main':
-                print('Loading subgraph', name)
+            if name != 'main':
+                print('Importing subgraph', name)
                 self.switchScene(name)
                 self.scene.loadGraph(graph)
         self.scene.record()
