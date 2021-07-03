@@ -203,16 +203,24 @@ Instruction parse_instruction(std::string const &line) {
     return inst;
 }
 
+Program parse_program(std::string const &lines) {
+    Program prog;
+    for (auto const &line: split_str(lines, '\n')) {
+        if (line.size() != 0)
+            prog.insts.push_back(parse_instruction(line));
+    }
+    return prog;
+}
+
 /* main.cpp */
 
 int main(void)
 {
     Context ctx;
 
-    Instruction inst = parse_instruction("add @0 @0 #3.14");
-
-    Program prog;
-    prog.insts.push_back(inst);
+    Program prog = parse_program(
+        "add @0 @0 #3.14\n"
+    );
 
     std::vector<float> arr(16);
     for (int i = 0; i < 8; i++) {
