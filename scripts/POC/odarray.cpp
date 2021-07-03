@@ -27,14 +27,12 @@ struct type_list {
 
 template <>
 struct type_list<> {
-    static constexpr int length = 0;
 };
 
 template <class T, class ...Ts>
 struct type_list<T, Ts...> {
     using head = T;
     using rest = type_list<Ts...>;
-    static constexpr int length = rest::length + 1;
 };
 
 template <class L, unsigned int N>
@@ -128,22 +126,42 @@ auto arr_to_fatptr(odarray *a) {
     return fat_ptr<T>{(T *)a->data(), a->size()};
 }
 
-template <class T>
-void impl_apply(fat_ptr<T> fp) {
-    printf("%s %d\n", typeid(T).name(), fp.size);
+void impl_apply() {
 }
 
-void apply(odarray *a) {
-    auto dt = a->type();
-    static_for<0, magic_enum::enum_values<dtype>().size()>([&](auto i) {
-        constexpr auto t = magic_enum::enum_cast<dtype>(i).value();
-        if (dt == t) {
-            using T = typename dtype_to_type<t>::type;
-            impl_apply<T>(arr_to_fatptr<T>(a));
-            return true;
-        }
-        return false;
-    });
+template <class T, class ...Ts>
+void impl_apply(fat_ptr<T> fp, fat_ptr<Ts> ...fps) {
+    printf("%s %d\n", typeid(T).name(), fp.size);
+    impl_apply(fps...);
+}
+
+template <size_t N, class ...Ts>
+void type_impl_apply(std::array<odarray *, N> const &as) {
+    type_impl_apply(as);
+}
+
+template <size_t N, class ...Ts>
+void type_apply(std::array<odarray *, N> const &as) {
+    constexpr size_t I = sizeof...(Ts);
+    if constexpr (I >= N) {
+        type_impl_apply<N, Ts...>(as);
+    } else {
+        auto dt = as[I]->type();
+        static_for<0, magic_enum::enum_values<dtype>().size()>([&](auto i) {
+            constexpr auto t = magic_enum::enum_cast<dtype>(i).value();
+            if (dt == t) {
+                using T = typename dtype_to_type<t>::type;
+                type_apply<N, T, Ts...>(as);
+                return true;
+            }
+            return false;
+        });
+    }
+}
+
+template <class ...As>
+void apply(As *...as) {
+    type_apply<sizeof...(As)>({as...});
 }
 
 /* main.cpp */
