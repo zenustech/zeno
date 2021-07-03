@@ -8,14 +8,14 @@
 
 
 static inline float *randomTable = nullptr;
-inline float frand(int i)
+inline float frand(unsigned int i)
 {
-	int value = (i ^ 61) ^ (i >> 16);
+	unsigned int value = (i ^ 61) ^ (i >> 16);
 	value *= 9;
 	value ^= value << 4;
 	value *= 0x27d4eb2d;
 	value ^= value >> 15;	
-    return (float)value/(float)RAND_MAX;
+    return (float)value/(float)4294967296;
 }
 static inline void initRandomTable() {
     if (randomTable) return;
