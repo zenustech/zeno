@@ -3,6 +3,11 @@
 #include <magic_enum.hpp>
 #include <iostream>
 
+using std::cout;
+using std::endl;
+
+/* meta.h */
+
 template <int First, int Last, typename Lambda>
 inline constexpr bool static_for(Lambda const &f) {
     if constexpr (First < Last) {
@@ -45,8 +50,7 @@ struct type_list_find<type_list<T, Ts...>, T> {
     static constexpr int value = 0;
 };
 
-using std::cout;
-using std::endl;
+/* dtype.h */
 
 enum class dtype : int {
     none, i32, f32,
@@ -86,6 +90,8 @@ constexpr size_t dtype_size(dtype dt) {
     return ret;
 }
 
+/* array.h */
+
 struct array {
     std::vector<char> m_data;
     dtype m_type;
@@ -113,6 +119,8 @@ void apply(array &a) {
         return false;
     });
 }
+
+/* main.cpp */
 
 int main(void)
 {
