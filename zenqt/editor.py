@@ -15,6 +15,7 @@ import zenapi
 
 from . import asset_path
 
+CURR_VERSION = 'v1'
 MAX_STACK_LENGTH = 100
 
 style = {
@@ -105,6 +106,10 @@ class QDMGraphicsScene(QGraphicsScene):
         self.moved = False
         self.mmb_press = False
         self.contentChanged = False
+
+        self.scale = 1
+        self.trans_x = 0
+        self.trans_y = 0
 
     @property
     def descs(self):
@@ -297,6 +302,14 @@ class QDMGraphicsView(QGraphicsView):
 
         self.node_editor = parent
 
+    def setScene(self, scene):
+        super().setScene(scene)
+        transform = QTransform()
+        transform.scale(scene.scale, scene.scale)
+        self.setTransform(transform)
+        self.horizontalScrollBar().setValue(scene.trans_x)
+        self.verticalScrollBar().setValue(scene.trans_y)
+
     def updateSearch(self, edit):
         for act in edit.menu.actions():
             if not isinstance(act, QWidgetAction):
@@ -426,6 +439,9 @@ class QDMGraphicsView(QGraphicsView):
             self.scene().mmb_press = False
             self.setDragMode(0)
 
+            self.scene().trans_x = self.horizontalScrollBar().value()
+            self.scene().trans_y = self.verticalScrollBar().value()
+
         elif event.button() == Qt.LeftButton:
             self.setDragMode(0)
 
@@ -441,6 +457,7 @@ class QDMGraphicsView(QGraphicsView):
             zoomFactor = 1 / self.ZOOM_FACTOR
 
         self.scale(zoomFactor, zoomFactor)
+        self.scene().scale = self.transform().m11()
 
     def addEdge(self, a, b):
         if a is None or b is None:
@@ -1274,12 +1291,20 @@ class NodeEditor(QWidget):
 
     def dumpProgram(self):
         graphs = {}
+        views = {}
         for name, scene in self.scenes.items():
-            graph = scene.dumpGraph()
-            graphs[name] = graph
+            nodes = scene.dumpGraph()
+            view = {
+                'scale': scene.scale,
+                'trans_x': scene.trans_x,
+                'trans_y': scene.trans_y,
+            }
+            graphs[name] = {'nodes': nodes, 'view': view}
         prog = {}
         prog['graph'] = graphs
+        prog['views'] = views
         prog['descs'] = dict(self.descs)
+        prog['version'] = CURR_VERSION
         return prog
 
     def bkwdCompatProgram(self, prog):
@@ -1289,6 +1314,21 @@ class NodeEditor(QWidget):
             prog = {'graph': prog}
         if 'descs' not in prog:
             prog['descs'] = dict(self.descs)
+        for name, graph in prog['graph'].items():
+            if 'nodes' not in graph:
+                prog['graph'][name] = {
+                    'nodes': graph,
+                    'view': {
+                        'scale': 1,
+                        'trans_x': 0,
+                        'trans_y': 0,
+                    },
+                }
+        if 'version' not in prog:
+            prog['version'] = 'v0'
+        if prog['version'] != CURR_VERSION:
+            print('WARNING: Loading graph of version', prog['version'],
+                'with editor version', CURR_VERSION)
         return prog
 
     def importProgram(self, prog):
@@ -1296,8 +1336,8 @@ class NodeEditor(QWidget):
         self.setDescriptors(prog['descs'])
         self.scene.newGraph()
         for name, graph in prog['graph'].items():
-            if not name =='main':
-                print('Loading subgraph', name)
+            if name != 'main':
+                print('Importing subgraph', name)
                 self.switchScene(name)
                 self.scene.loadGraph(graph)
         self.scene.record()
@@ -1311,14 +1351,19 @@ class NodeEditor(QWidget):
         for name, graph in prog['graph'].items():
             print('Loading subgraph', name)
             self.switchScene(name)
-            self.scene.loadGraph(graph)
+            nodes = graph['nodes']
+            self.scene.loadGraph(nodes)
+            view = graph['view']
+            self.scene.scale = view['scale']
+            self.scene.trans_x = view['trans_x']
+            self.scene.trans_y = view['trans_y']
         self.switchScene('main')
         self.initDescriptors()
 
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
         prog = self.dumpProgram()
-        go(zenapi.launchScene, prog['graph'], nframes)
+        go(zenapi.launchScene, prog['graph']['nodes'], nframes)
 
     def on_delete(self):
         itemList = self.scene.selectedItems()
