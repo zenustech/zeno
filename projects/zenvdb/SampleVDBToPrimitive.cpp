@@ -59,6 +59,14 @@ struct SampleVDBToPrimitive : INode {
     auto grid = get_input<VDBGrid>("vdbGrid");
     auto attr = get_input<StringObject>("primAttr")->get();
     auto &pos = prim->attr<vec3f>("pos");
+
+    if (dynamic_cast<VDBFloatGrid *>(grid.get()))
+        prim->add_attr<float>(attr);
+    else if (dynamic_cast<VDBFloat3Grid *>(grid.get()))
+        prim->add_attr<vec3f>(attr);
+    else
+        printf("unknown vdb grid type\n");
+
     std::visit([&](auto &vel) { sampleVDBAttribute(pos, vel, grid.get()); },
                prim->attr(attr));
 
