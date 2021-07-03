@@ -57,13 +57,8 @@ struct SampleVDBToPrimitive : INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
     auto grid = get_input<VDBGrid>("vdbGrid");
-    auto attr = get_input<StringObject>("primAttr")->get();
+    auto attr = get_param<std::string>("primAttr");
     auto &pos = prim->attr<vec3f>("pos");
-    /*if (grid->getType() == std::string("FloatGrid")) {
-      prim->add_attr<float>(attr);
-    } else if (grid->getType() == std::string("Vec3fGrid")) {
-      prim->add_attr<vec3f>(attr);
-    }*/
     std::visit([&](auto &vel) { sampleVDBAttribute(pos, vel, grid.get()); },
                prim->attr(attr));
 
@@ -72,9 +67,9 @@ struct SampleVDBToPrimitive : INode {
 };
 
 ZENDEFNODE(SampleVDBToPrimitive, {
-                                     {"prim", "vdbGrid", "primAttr"},
+                                     {"prim", "vdbGrid"},
                                      {"prim"},
-                                     {},
+                                     {{"string", "primAttr", "rho"}},
                                      {"visualize"},
                                  });
 

@@ -45,7 +45,7 @@ struct PlaneEvaluate2DCoorTo3D : INode {
         auto origin = get_input<NumericObject>("origin")->get<vec3f>();
         auto tangent = get_input<NumericObject>("tangent")->get<vec3f>();
         auto bitangent = get_input<NumericObject>("bitangent")->get<vec3f>();
-        auto coor = get_input<NumericObject>("coor")->get<vec2f>();
+        auto coor = get_input<NumericObject>("coor2D")->get<vec2f>();
 
         auto pos = origin + coor[0] * tangent + coor[1] * bitangent;
         set_output("coor3D", std::make_shared<NumericObject>(pos));

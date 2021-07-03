@@ -11,8 +11,8 @@
      "value": 128
     },
     "uipos": [
-     -399.5999999999999,
-     -95.0
+     552.0699218750001,
+     295.8764648437498
     ],
     "options": []
    },
@@ -28,8 +28,8 @@
      "z": 1.0
     },
     "uipos": [
-     -889.8968749999999,
-     -178.11562500000002
+     -924.2718749999999,
+     -103.11562500000008
     ],
     "options": []
    },
@@ -48,8 +48,8 @@
      "type": "float3"
     },
     "uipos": [
-     2017.5832031249988,
-     541.9248046874995
+     2825.5360839843734,
+     1018.7619628906244
     ],
     "options": []
    },
@@ -68,8 +68,8 @@
      "type": "float"
     },
     "uipos": [
-     151.25000000000006,
-     74.00000000000003
+     1189.0332031250002,
+     443.1284179687499
     ],
     "options": []
    },
@@ -92,8 +92,8 @@
     },
     "params": {},
     "uipos": [
-     2260.179687499999,
-     711.4609374999999
+     3068.132568359374,
+     1188.2980957031245
     ],
     "options": [
      "VIEW"
@@ -110,8 +110,8 @@
      "attrName": "rho"
     },
     "uipos": [
-     980.1437499999997,
-     526.7179687500001
+     1788.0966308593745,
+     1003.5551269531248
     ],
     "options": []
    },
@@ -129,8 +129,8 @@
      "opName": "neg"
     },
     "uipos": [
-     1263.3437499999995,
-     562.7179687499998
+     2071.296630859374,
+     1039.5551269531247
     ],
     "options": []
    },
@@ -152,8 +152,8 @@
      "opName": "mul"
     },
     "uipos": [
-     1506.5437499999996,
-     613.9179687499999
+     2314.496630859375,
+     1090.7551269531245
     ],
     "options": []
    },
@@ -169,8 +169,8 @@
     },
     "params": {},
     "uipos": [
-     1261.7437499999996,
-     763.51796875
+     2069.6966308593746,
+     1240.355126953125
     ],
     "options": []
    },
@@ -186,8 +186,8 @@
      "z": 0.0
     },
     "uipos": [
-     1008.9437499999997,
-     725.1179687499997
+     1816.8966308593742,
+     1201.9551269531244
     ],
     "options": []
    },
@@ -209,8 +209,8 @@
      "opName": "mul"
     },
     "uipos": [
-     1514.5437499999994,
-     841.9179687499999
+     2322.496630859374,
+     1318.7551269531245
     ],
     "options": []
    },
@@ -226,8 +226,8 @@
     },
     "params": {},
     "uipos": [
-     1269.7437499999996,
-     991.5179687499998
+     2077.6966308593746,
+     1468.3551269531245
     ],
     "options": []
    },
@@ -243,8 +243,8 @@
      "z": 0.0
     },
     "uipos": [
-     1016.9437499999995,
-     953.1179687499997
+     1824.8966308593742,
+     1429.9551269531244
     ],
     "options": []
    },
@@ -266,8 +266,8 @@
      "opName": "add"
     },
     "uipos": [
-     1765.3437499999993,
-     778.9179687499999
+     2573.296630859374,
+     1255.7551269531245
     ],
     "options": []
    },
@@ -286,8 +286,8 @@
      "attrName": "clr"
     },
     "uipos": [
-     2017.3437499999993,
-     819.9179687499999
+     2825.296630859374,
+     1296.7551269531245
     ],
     "options": []
    },
@@ -301,8 +301,8 @@
      "value": "assets/Pig_Head.obj"
     },
     "uipos": [
-     -1248.546875,
-     1105.875
+     -1218.859375,
+     1399.625
     ],
     "options": [
      "ONCE"
@@ -323,8 +323,8 @@
      "type": "vertex"
     },
     "uipos": [
-     -745.5468749999999,
-     899.8749999999999
+     -715.8593749999999,
+     1193.6249999999995
     ],
     "options": [
      "ONCE"
@@ -342,8 +342,8 @@
     },
     "params": {},
     "uipos": [
-     -1000.5468749999999,
-     1097.875
+     -970.8593749999999,
+     1391.625
     ],
     "options": [
      "ONCE"
@@ -363,8 +363,8 @@
      "name": "vdb"
     },
     "uipos": [
-     -466.03125,
-     974.1875
+     -436.3437500000001,
+     1267.9375
     ],
     "options": []
    },
@@ -378,8 +378,8 @@
      "name": "vdb"
     },
     "uipos": [
-     160.25,
-     303.25
+     1198.0332031250002,
+     672.3784179687497
     ],
     "options": []
    },
@@ -425,8 +425,8 @@
      "name": "slice"
     },
     "uipos": [
-     1766.4,
-     584.0000000000002
+     2574.3528808593746,
+     1060.837158203125
     ],
     "options": []
    },
@@ -444,8 +444,8 @@
      "name": "slice"
     },
     "uipos": [
-     684.0,
-     167.20000000000002
+     1721.7832031250002,
+     536.3284179687499
     ],
     "options": []
    },
@@ -462,8 +462,8 @@
     },
     "params": {},
     "uipos": [
-     -731.046875,
-     52.23437500000006
+     -687.2968750000001,
+     69.42187500000006
     ],
     "options": []
    },
@@ -476,24 +476,27 @@
      ],
      "ny": null,
      "sizeX": [
-      "d8c3ff4f-MakeOrthonormalBase",
-      "tangent"
+      "45fbbd8a-NumericOperator",
+      "ret"
      ],
      "sizeY": [
-      "d8c3ff4f-MakeOrthonormalBase",
-      "bitangent"
+      "5822c249-x",
+      "ret"
      ],
      "scale": null,
-     "origin": null,
+     "origin": [
+      "ec77ebbb-NumericOperator",
+      "ret"
+     ],
      "SRC": null,
      "COND": null
     },
     "params": {
-     "isCentered": 1
+     "isCentered": 0
     },
     "uipos": [
-     -107.0,
-     -48.0
+     820.919921875,
+     290.6108398437499
     ],
     "options": []
    },
@@ -515,8 +518,8 @@
      "connType": 2
     },
     "uipos": [
-     -1115.4468749999996,
-     164.2343750000001
+     -937.4468749999996,
+     162.2343750000001
     ],
     "options": [
      "VIEW"
@@ -542,8 +545,8 @@
     },
     "params": {},
     "uipos": [
-     415.0,
-     143.0
+     1452.7832031250002,
+     512.1284179687499
     ],
     "options": []
    },
@@ -557,8 +560,8 @@
      "value": "rho"
     },
     "uipos": [
-     432.0,
-     356.0
+     1469.7832031250002,
+     725.1284179687497
     ],
     "options": []
    },
@@ -591,8 +594,8 @@
     },
     "params": {},
     "uipos": [
-     -754.4,
-     1138.4
+     -724.7125,
+     1432.1499999999996
     ],
     "options": [
      "ONCE"
@@ -602,8 +605,8 @@
     "name": "PlaneProjectPrimitive2DAABB",
     "inputs": {
      "origin": [
-      "ca87643a-x",
-      "vec3"
+      "0fa02ad0-SubInput",
+      "port"
      ],
      "normal": [
       "d8c3ff4f-MakeOrthonormalBase",
@@ -626,8 +629,8 @@
     },
     "params": {},
     "uipos": [
-     -460.046875,
-     155.48437500000017
+     -421.98437500000006,
+     175.01562500000017
     ],
     "options": []
    },
@@ -645,6 +648,231 @@
     "uipos": [
      -1195.896875,
      409.884375
+    ],
+    "options": []
+   },
+   "71909cf7-NumericOperator": {
+    "name": "NumericOperator",
+    "inputs": {
+     "lhs": [
+      "ed2eb4b5-PlaneProjectPrimitive2DAABB",
+      "boundMax2D"
+     ],
+     "rhs": [
+      "ed2eb4b5-PlaneProjectPrimitive2DAABB",
+      "boundMin2D"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "op_type": "sub"
+    },
+    "uipos": [
+     -169.16015625000017,
+     317.13671875000006
+    ],
+    "options": []
+   },
+   "275b2760-UnpackNumericVec": {
+    "name": "UnpackNumericVec",
+    "inputs": {
+     "vec": [
+      "71909cf7-NumericOperator",
+      "ret"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {},
+    "uipos": [
+     -179.25,
+     670.5000000000001
+    ],
+    "options": []
+   },
+   "45fbbd8a-NumericOperator": {
+    "name": "NumericOperator",
+    "inputs": {
+     "lhs": [
+      "d8c3ff4f-MakeOrthonormalBase",
+      "tangent"
+     ],
+     "rhs": [
+      "275b2760-UnpackNumericVec",
+      "X"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "op_type": "mul"
+    },
+    "uipos": [
+     75.75,
+     640.5000000000001
+    ],
+    "options": []
+   },
+   "5822c249-x": {
+    "name": "NumericOperator",
+    "inputs": {
+     "lhs": [
+      "d8c3ff4f-MakeOrthonormalBase",
+      "bitangent"
+     ],
+     "rhs": [
+      "275b2760-UnpackNumericVec",
+      "Y"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "op_type": "mul"
+    },
+    "uipos": [
+     77.75,
+     862.5000000000001
+    ],
+    "options": []
+   },
+   "26c3c166-x": {
+    "name": "UnpackNumericVec",
+    "inputs": {
+     "vec": [
+      "ed2eb4b5-PlaneProjectPrimitive2DAABB",
+      "boundMin2D"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {},
+    "uipos": [
+     -160.2500000000001,
+     76.75000000000011
+    ],
+    "options": []
+   },
+   "ec77ebbb-NumericOperator": {
+    "name": "NumericOperator",
+    "inputs": {
+     "lhs": [
+      "004e2b36-x",
+      "ret"
+     ],
+     "rhs": [
+      "0fa02ad0-SubInput",
+      "port"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "op_type": "add"
+    },
+    "uipos": [
+     571.9999999999995,
+     515.5
+    ],
+    "options": []
+   },
+   "05b1b3b1-NumericOperator": {
+    "name": "NumericOperator",
+    "inputs": {
+     "lhs": [
+      "d8c3ff4f-MakeOrthonormalBase",
+      "tangent"
+     ],
+     "rhs": [
+      "26c3c166-x",
+      "X"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "op_type": "mul"
+    },
+    "uipos": [
+     81.4999999999998,
+     171.75000000000017
+    ],
+    "options": []
+   },
+   "a820009e-x": {
+    "name": "NumericOperator",
+    "inputs": {
+     "lhs": [
+      "d8c3ff4f-MakeOrthonormalBase",
+      "bitangent"
+     ],
+     "rhs": [
+      "26c3c166-x",
+      "Y"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "op_type": "mul"
+    },
+    "uipos": [
+     78.49999999999996,
+     407.0000000000001
+    ],
+    "options": []
+   },
+   "004e2b36-x": {
+    "name": "NumericOperator",
+    "inputs": {
+     "lhs": [
+      "05b1b3b1-NumericOperator",
+      "ret"
+     ],
+     "rhs": [
+      "a820009e-x",
+      "ret"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "op_type": "add"
+    },
+    "uipos": [
+     313.4999999999998,
+     359.5000000000001
+    ],
+    "options": []
+   },
+   "0fa02ad0-SubInput": {
+    "name": "SubInput",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "name": "origin"
+    },
+    "uipos": [
+     -694.9374999999991,
+     349.8749999999998
+    ],
+    "options": []
+   },
+   "8efc979d-SubCategory": {
+    "name": "SubCategory",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "name": "mathematica"
+    },
+    "uipos": [
+     -930.0,
+     504.0
     ],
     "options": []
    }
@@ -2054,6 +2282,24 @@
     "Molecular"
    ]
   },
+  "PlaneEvaluate2DCoorTo3D": {
+   "inputs": [
+    "coor2D",
+    "origin",
+    "tangent",
+    "bitangent",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "coor3D",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "mathematica"
+   ]
+  },
   "PlaneProjectPrimitive2DAABB": {
    "inputs": [
     "origin",
@@ -2165,7 +2411,7 @@
     ]
    ],
    "categories": [
-    "primitive"
+    "openvdb"
    ]
   },
   "PrimitiveAddAttr": {
@@ -3159,6 +3405,24 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "UnpackNumericVec": {
+   "inputs": [
+    "vec",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "X",
+    "Y",
+    "Z",
+    "W",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
    ]
   },
   "VDBRenormalizeSDF": {
