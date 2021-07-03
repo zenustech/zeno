@@ -1,4 +1,4 @@
-O=arts/vdbslice.zsg
+O=arts/testtoint.zsg
 
 default: run
 

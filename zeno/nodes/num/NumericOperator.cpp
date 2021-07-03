@@ -143,6 +143,7 @@ struct NumericOperator : zeno::INode {
     _PER_OP(max)
     _PER_OP(min)
     _PER_OP(fmod)
+                else std::cout << "Bad binary op name: " << op << std::endl;
 #undef _PER_OP
 
             }, lhs->value, rhs->value);
@@ -168,6 +169,9 @@ struct NumericOperator : zeno::INode {
     _PER_OP(log)
     _PER_OP(floor)
     _PER_OP(ceil)
+    _PER_OP(toint)
+    _PER_OP(tofloat)
+                else std::cout << "Bad unary op name: " << op << std::endl;
 #undef _PER_OP
 
             }, lhs->value);
