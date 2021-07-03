@@ -15,6 +15,26 @@ inline constexpr bool static_for(Lambda const &f) {
     return false;
 }
 
+template <class...>
+struct type_list {
+};
+
+template <class T, class ...Ts>
+struct type_list<T, Ts...> {
+    using head = T;
+    using rest = type_list<Ts...>;
+};
+
+template <class L, unsigned int N>
+struct type_list_nth {
+    using type = typename type_list_nth<typename L::rest, N - 1>::type;
+};
+
+template <class L>
+struct type_list_nth<L, 0> {
+    using type = typename L::head;
+};
+
 using std::cout;
 using std::endl;
 
@@ -22,23 +42,11 @@ enum class dtype : int {
     none, i32, f32,
 };
 
+using dtype_type_list = type_list<void, int, float>;
+
 template <dtype dt>
 struct dtype_traits {
-};
-
-template <>
-struct dtype_traits<dtype::none> {
-    using type = void;
-};
-
-template <>
-struct dtype_traits<dtype::i32> {
-    using type = int;
-};
-
-template <>
-struct dtype_traits<dtype::f32> {
-    using type = float;
+    using type = typename type_list_nth<dtype_type_list, int(dt)>::type;
 };
 
 constexpr auto dtype_name(dtype dt) {
