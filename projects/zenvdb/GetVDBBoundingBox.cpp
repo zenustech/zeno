@@ -72,15 +72,19 @@ void calcVdbBounds(GridT *grid, vec3f &bmin, vec3f &bmax)
         bmin = bmax = vec3f(0);
         return;
     }
-    auto o = leaf->origin();
-    auto p = grid->indexToWorld(leaf->origin());
-    bmin = bmax = other_to_vec<3>(p);
-    for (++leaf; leaf; ++leaf) {
-        auto p = grid->indexToWorld(leaf->origin());
-        auto pos = other_to_vec<3>(p);
-        bmin = zeno::min(bmin, pos);
-        bmax = zeno::max(bmax, pos);
-        // TODO: extent this bbox by 1 index
+    bmin = vec3f(+1e6);
+    bmax = vec3f(-1e6);
+    for (; leaf; ++leaf) {
+        std::decay_t<decltype(leaf->origin())> offset;
+        for (int i = 0; i < 8; i++) {
+            offset[0] = !!(i & 1);
+            offset[1] = !!(i & 2);
+            offset[2] = !!(i & 4);
+            auto p = grid->indexToWorld(leaf->origin() + offset);
+            auto pos = other_to_vec<3>(p);
+            bmin = zeno::min(bmin, pos);
+            bmax = zeno::max(bmax, pos);
+        }
     }
 }
 
