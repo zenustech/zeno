@@ -410,8 +410,8 @@
     },
     "params": {},
     "uipos": [
-     -1038.75,
-     69.50000000000017
+     -1206.75,
+     271.50000000000017
     ],
     "options": []
    },
@@ -522,12 +522,12 @@
     "name": "MakeVisualAABBPrimitive",
     "inputs": {
      "boundMin": [
-      "7a29aa9c-GetVDBBoundingBox",
-      "boundMin"
+      "76be4bd9-GetVDBBound",
+      "bmin"
      ],
      "boundMax": [
-      "7a29aa9c-GetVDBBoundingBox",
-      "boundMax"
+      "76be4bd9-GetVDBBound",
+      "bmax"
      ],
      "SRC": null,
      "COND": null
@@ -536,8 +536,8 @@
      "connType": 2
     },
     "uipos": [
-     -899.25,
-     280.5
+     -937.6499999999999,
+     216.5
     ],
     "options": [
      "VIEW"
@@ -550,12 +550,12 @@
      "srcMin": null,
      "srcMax": null,
      "dstMin": [
-      "7a29aa9c-GetVDBBoundingBox",
-      "boundMin"
+      "76be4bd9-GetVDBBound",
+      "bmin"
      ],
      "dstMax": [
-      "7a29aa9c-GetVDBBoundingBox",
-      "boundMax"
+      "76be4bd9-GetVDBBound",
+      "bmax"
      ],
      "SRC": null,
      "COND": null
@@ -608,6 +608,42 @@
      356.0
     ],
     "options": []
+   },
+   "76be4bd9-GetVDBBound": {
+    "name": "GetVDBBound",
+    "inputs": {
+     "vdbGrid": [
+      "c4f9415f-x",
+      "port"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {},
+    "uipos": [
+     -1039.0,
+     6.75
+    ],
+    "options": []
+   },
+   "b81f6b9b-PrimitiveCalcNormal": {
+    "name": "PrimitiveCalcNormal",
+    "inputs": {
+     "prim": [
+      "79c6d7b7-ImportObjPrimitive",
+      "prim"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {},
+    "uipos": [
+     -754.4,
+     1138.4
+    ],
+    "options": [
+     "ONCE"
+    ]
    }
   }
  },
