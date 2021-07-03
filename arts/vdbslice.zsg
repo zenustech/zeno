@@ -53,29 +53,6 @@
     ],
     "options": []
    },
-   "8cf5c24a-SampleVDBToPrimitive": {
-    "name": "SampleVDBToPrimitive",
-    "inputs": {
-     "prim": [
-      "b176c97f-PrimitiveAddAttr",
-      "prim"
-     ],
-     "vdbGrid": [
-      "c6b6c822-PortalOut",
-      "port"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "primAttr": "rho"
-    },
-    "uipos": [
-     420.25,
-     136.0
-    ],
-    "options": []
-   },
    "b176c97f-PrimitiveAddAttr": {
     "name": "PrimitiveAddAttr",
     "inputs": {
@@ -457,7 +434,7 @@
     "name": "PortalIn",
     "inputs": {
      "port": [
-      "8cf5c24a-SampleVDBToPrimitive",
+      "8d9c881c-SampleVDBToPrimitive",
       "prim"
      ],
      "SRC": null,
@@ -589,6 +566,46 @@
     "uipos": [
      -640.0,
      135.0
+    ],
+    "options": []
+   },
+   "8d9c881c-SampleVDBToPrimitive": {
+    "name": "SampleVDBToPrimitive",
+    "inputs": {
+     "prim": [
+      "b176c97f-PrimitiveAddAttr",
+      "prim"
+     ],
+     "vdbGrid": [
+      "c6b6c822-PortalOut",
+      "port"
+     ],
+     "primAttr": [
+      "fa391b6d-MakeString",
+      "value"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {},
+    "uipos": [
+     415.0,
+     143.0
+    ],
+    "options": []
+   },
+   "fa391b6d-MakeString": {
+    "name": "MakeString",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "value": "rho"
+    },
+    "uipos": [
+     432.0,
+     356.0
     ],
     "options": []
    }
@@ -1230,6 +1247,22 @@
     "frame"
    ]
   },
+  "GetVDBBound": {
+   "inputs": [
+    "vdbGrid",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "bmin",
+    "bmax",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
   "GetVDBBoundingBox": {
    "inputs": [
     "vdbGrid",
@@ -1259,6 +1292,24 @@
    "params": [],
    "categories": [
     "openvdb"
+   ]
+  },
+  "HeatMapPrimitive": {
+   "inputs": [
+    "prim",
+    "primdAttr",
+    "min",
+    "max",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "visualize"
    ]
   },
   "ImportObjMesh": {
@@ -1817,6 +1868,26 @@
      "string",
      "op_type",
      "copy"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericRandom": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "value",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "dim",
+     "0 0 4"
     ]
    ],
    "categories": [
@@ -2817,6 +2888,7 @@
    "inputs": [
     "prim",
     "vdbGrid",
+    "primAttr",
     "SRC",
     "COND"
    ],
@@ -2824,15 +2896,9 @@
     "prim",
     "DST"
    ],
-   "params": [
-    [
-     "string",
-     "primAttr",
-     "vel"
-    ]
-   ],
+   "params": [],
    "categories": [
-    "openvdb"
+    "visualize"
    ]
   },
   "ScaleVelocity": {

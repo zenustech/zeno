@@ -375,7 +375,9 @@ struct NumericInterpolation : zeno::INode {
   }
 
   virtual void apply() override {
-    auto src = get_input<zeno::NumericObject>("src")->value;
+    auto src = has_input("src")
+                      ? get_input<zeno::NumericObject>("src")->value
+                      : 0.5f;
     auto srcMin = has_input("srcMin")
                       ? get_input<zeno::NumericObject>("srcMin")->value
                       : 0;

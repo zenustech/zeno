@@ -25,8 +25,6 @@ struct Make2DGridPrimitive : INode {
             ay *= scale;
         }
 
-        if (get_param<int>("isCentered"))
-            o -= (ax * (nx - 1) + ay * (ny - 1)) / 2;
 
     if (get_param<int>("isCentered"))
       o -= (ax * (nx - 1) + ay * (ny - 1)) / 2;
