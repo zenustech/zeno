@@ -1415,7 +1415,7 @@ class NodeEditor(QWidget):
     def do_save(self, path):
         prog = self.dumpProgram()
         with open(path, 'w') as f:
-            json.dump(prog, f)
+            json.dump(prog, f, indent=1)
         for scene in self.scenes.values():
             scene.setContentChanged(False)
 

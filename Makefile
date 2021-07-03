@@ -1,4 +1,4 @@
-O=arts/vdbbbox.zsg
+O=arts/samplevdb.zsg
 
 default: run
 
