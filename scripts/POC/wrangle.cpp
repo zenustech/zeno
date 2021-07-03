@@ -57,103 +57,92 @@ struct type_list_find<type_list<T, Ts...>, T> {
     static constexpr int value = 0;
 };
 
-/* dtype.h */
+/* wrangle.h */
 
-enum class dtype : int {
-    none, i32, f32,
-};
+static float regtable[256];
+static float memtable[256];
 
-using dtype_type_list = type_list<void, int, float>;
-
-template <dtype dt>
-struct dtype_to_type {
-    using type = typename type_list_nth<dtype_type_list, int(dt)>::type;
-};
-
-template <class T>
-struct type_to_dtype {
-    static constexpr dtype value = magic_enum::enum_cast<dtype>(
-        type_list_find<dtype_type_list, T>::value).value();
-};
-
-constexpr auto dtype_name(dtype dt) {
-    return magic_enum::enum_name(dt);
+float memfetch(int index) {
+    return memtable[index];
 }
 
-constexpr size_t dtype_size(dtype dt) {
-    size_t ret = 0;
-    static_for<0, magic_enum::enum_values<dtype>().size()>([&](auto i) {
-        constexpr auto t = magic_enum::enum_cast<dtype>(i).value();
-        if (dt == t) {
-            using T = typename dtype_to_type<t>::type;
-            if constexpr (std::is_void_v<T>)
-                ret = 0;
-            else
-                ret = sizeof(T);
-            return true;
+void memstore(int index, float value) {
+    memtable[index] = value;
+}
+
+enum class Opcode : int {
+    mov, add, sub, mul, div,
+};
+
+enum class OperandType : int {
+    imm, reg, mem,
+};
+
+struct Operand {
+    OperandType type;
+    union {
+        int index;
+        float value;
+    };
+
+    float get() const {
+        switch (type) {
+        case OperandType::imm:
+            return value;
+        case OperandType::reg:
+            return regtable[index];
+        case OperandType::mem:
+            return memfetch(index);
         }
-        return false;
-    });
-    return ret;
-}
+        return 0;
+    }
 
-/* odarray.h */
-
-template <class T = void>
-struct fat_ptr {
-    T *base;
-    size_t size;
-
-    template <class S>
-    explicit operator fat_ptr<S>() const { return {(S *)base, size}; }
-};
-
-struct odarray {
-    std::vector<char> m_data;
-    dtype m_type;
-    size_t m_size;
-
-    constexpr dtype type() const { return m_type; }
-    void *data() const { return (void *)m_data.data(); }
-    size_t size() const { return m_size; }
-
-    void resize(size_t n) {
-        m_size = n;
-        m_data.resize(n * dtype_size(m_type));
+    void set(float x) const {
+        switch (type) {
+        case OperandType::imm:
+            return;
+        case OperandType::reg:
+            regtable[index] = x;
+            return;
+        case OperandType::mem:
+            memstore(index, x);
+            return;
+        }
     }
 };
 
-template <class T = void>
-auto arr_to_fatptr(odarray *a) {
-    return fat_ptr<T>{(T *)a->data(), a->size()};
-}
+struct Instruction {
+    Opcode opcode;
+    Operand dst, lhs, rhs;
 
-template <class T>
-void impl_apply(fat_ptr<T> fp) {
-    printf("%s %d\n", typeid(T).name(), fp.size);
-}
-
-void apply(odarray *a) {
-    auto dt = a->type();
-    static_for<0, magic_enum::enum_values<dtype>().size()>([&](auto i) {
-        constexpr auto t = magic_enum::enum_cast<dtype>(i).value();
-        if (dt == t) {
-            using T = typename dtype_to_type<t>::type;
-            impl_apply<T>(arr_to_fatptr<T>(a));
-            return true;
+    void execute() const {
+        float x = lhs.get();
+        float y = rhs.get();
+        float z = 0;
+        switch (opcode) {
+        case Opcode::add: z = x + y; break;
+        case Opcode::sub: z = x - y; break;
+        case Opcode::mul: z = x * y; break;
+        case Opcode::div: z = x / y; break;
         }
-        return false;
-    });
-}
+        dst.set(z);
+    }
+};
 
 /* main.cpp */
 
 int main(void)
 {
-    auto a = new odarray;
-    a->m_type = dtype::i32;
-    a->resize(128);
-    apply(a);
-    delete a;
+    Instruction inst;
+    inst.opcode = Opcode::add;
+    inst.dst.type = OperandType::reg;
+    inst.dst.index = 0;
+    inst.lhs.type = OperandType::reg;
+    inst.lhs.index = 0;
+    inst.rhs.type = OperandType::imm;
+    inst.rhs.value = 3.14f;
+    inst.execute();
+    cout << regtable[0] << endl;
+
     return 0;
 }
