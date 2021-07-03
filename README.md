@@ -90,7 +90,7 @@ Here's an example on how to add a ZENO node with its C++ API:
 
 As a comparison, the ZENO node system is very extensible. Although ZENO itself
 doesn't provide any solvers, instead it allows users to **write their own nodes**
-using its C++ or Python API.
+using its C++ API.
 Here's some of the node libraries that have been implemented by our developers:
 
 - basic primitive ops (by @archibate)
@@ -294,7 +294,7 @@ Building them require some dependencies:
 - ZMS (molocular dynamics)
   - OpenMP (optional)
 
-- ZenBASE (deprecated mesh operations)
+- OldZenBASE (deprecated mesh operations)
   - OpenMP (optional)
 
 - ZenVDB (OpenVDB ops and tools)
@@ -310,7 +310,7 @@ Building them require some dependencies:
   - TBB
   - OpenBLAS
   - ZenVDB (see above)
-  - ZenBASE (see above)
+  - OldZenBASE (see above)
 
 - GMPM (GPU MPM solver)
   - CUDA toolkit
