@@ -1948,6 +1948,7 @@ struct particle_fill_kill_op {
                         FLIP_vdb::descriptor_t::Ptr pv_descriptor)
       : m_leaf_nodes(in_nodes), m_p_descriptor(p_descriptor),
         m_pv_descriptor(pv_descriptor) {
+    initRandomTable();
     m_boundary_fill_kill_volume = in_boundary_fill_kill_volume;
     m_domain_begin = in_domain_begin;
     m_domain_end = in_domain_end;
@@ -1976,7 +1977,7 @@ struct particle_fill_kill_op {
   // the leaf nodes here are assumed to either contain solid voxels
   // or has any corner outside the interior box
   void operator()(const tbb::blocked_range<openvdb::Index> &r) const {
-    initRandomTable();
+
     std::vector<openvdb::PointDataIndex32> new_attribute_offsets;
     std::vector<openvdb::Vec3f> new_positions;
     std::vector<openvdb::Vec3f> new_velocity;
