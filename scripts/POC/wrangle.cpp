@@ -143,27 +143,17 @@ struct Program {
 
 /* wrangle.h */
 
-void particles_wrangle(Program const &prog, std::vector<float> &arr) {
-    Context ctx;
-    ctx.memtable[0] = arr.data();
-    for (int i = 0; i < arr.size(); i++) {
-        prog.execute(&ctx);
-        ctx.memtable[0]++;
-    }
-}
-
-void zipped_particles_wrangle(Program const &prog,
-    std::vector<std::vector<float>> &arrs) {
+void vectors_wrangle(Program const &prog,
+    std::vector<std::vector<float> *> const &arrs) {
     if (arrs.size() == 0)
         return;
-    size_t size = arrs[0].size();
+    size_t size = arrs[0]->size();
     for (int i = 1; i < arrs.size(); i++) {
-        size = std::min(arrs[i].size(), size);
+        size = std::min(arrs[i]->size(), size);
     }
     Context ctx;
     for (int i = 0; i < arrs.size(); i++) {
-        auto &arr = arrs[i];
-        ctx.memtable[i] = arr.data();
+        ctx.memtable[i] = arrs[i]->data();
     }
     for (int i = 0; i < size; i++) {
         prog.execute(&ctx);
@@ -187,7 +177,6 @@ int main(void)
     inst.lhs.index = 0;
     inst.rhs.type = OperandType::imm;
     inst.rhs.value = 3.14f;
-    inst.execute(&ctx);
 
     Program prog;
     prog.insts.push_back(inst);
@@ -196,7 +185,7 @@ int main(void)
     for (int i = 0; i < 8; i++) {
         arr[i] = 2.718f;
     }
-    particles_wrangle(prog, arr);
+    vectors_wrangle(prog, {&arr});
 
     for (int i = 0; i < 16; i++) {
         cout << arr[i] << endl;
