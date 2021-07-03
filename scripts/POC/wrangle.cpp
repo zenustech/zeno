@@ -2,6 +2,8 @@
 #include <type_traits>
 #include <magic_enum.hpp>
 #include <iostream>
+#include <cassert>
+#include <sstream>
 #include <array>
 
 using std::cout;
@@ -122,6 +124,7 @@ struct Instruction {
         float y = rhs.get(ctx);
         float z = 0;
         switch (opcode) {
+        case Opcode::mov: z = x; break;
         case Opcode::add: z = x + y; break;
         case Opcode::sub: z = x - y; break;
         case Opcode::mul: z = x * y; break;
@@ -163,20 +166,50 @@ void vectors_wrangle(Program const &prog,
     }
 }
 
+/* parse.cpp */
+
+static std::vector<std::string> split_str(std::string const &s, char delimiter) {
+  std::vector<std::string> tokens;
+  std::string token;
+  std::istringstream iss(s);
+  while (std::getline(iss, token, delimiter))
+    tokens.push_back(token);
+  return tokens;
+}
+
+Operand parse_operand(std::string const &ident) {
+    Operand operand;
+    switch (ident[0]) {
+    case '#': operand.type = OperandType::imm; break;
+    case '$': operand.type = OperandType::reg; break;
+    case '@': operand.type = OperandType::mem; break;
+    }
+    std::stringstream ss(ident.substr(1));
+    if (operand.type == OperandType::imm)
+        ss >> operand.value;
+    else
+        ss >> operand.index;
+    return operand;
+}
+
+Instruction parse_instruction(std::string const &line) {
+    auto tokens = split_str(line, ' ');
+    assert(tokens.size() == 4);
+    Instruction inst;
+    inst.opcode = magic_enum::enum_cast<Opcode>(tokens[0]).value();
+    inst.dst = parse_operand(tokens[1]);
+    inst.lhs = parse_operand(tokens[2]);
+    inst.rhs = parse_operand(tokens[3]);
+    return inst;
+}
+
 /* main.cpp */
 
 int main(void)
 {
     Context ctx;
 
-    Instruction inst;
-    inst.opcode = Opcode::add;
-    inst.dst.type = OperandType::mem;
-    inst.dst.index = 0;
-    inst.lhs.type = OperandType::mem;
-    inst.lhs.index = 0;
-    inst.rhs.type = OperandType::imm;
-    inst.rhs.value = 3.14f;
+    Instruction inst = parse_instruction("add @0 @0 #3.14");
 
     Program prog;
     prog.insts.push_back(inst);
