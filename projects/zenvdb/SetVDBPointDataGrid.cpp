@@ -105,7 +105,7 @@ static int defPrimToVDBPointDataGrid = zeno::defNodeClass<PrimToVDBPointDataGrid
     }, /* params: */ {
     {"float", "dx", "0.0"},
     }, /* category: */ {
-        "primitive",
+        "openvdb",
     }});
 
 struct SetVDBPointDataGrid : zeno::INode {

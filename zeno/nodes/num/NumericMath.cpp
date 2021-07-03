@@ -34,22 +34,3 @@ ZENDEFNODE(MakeOrthonormalBase, {
     {},
     {"mathematica"},
 });
-
-
-struct PlaneIntersectPrimitive : INode {
-    virtual void apply() override {
-        auto normal = get_input<NumericObject>("normal")->get<vec3f>();
-        auto tangent = get_input<NumericObject>("tangent")->get<vec3f>();
-        auto bitangent = get_input<NumericObject>("bitangent")->get<vec3f>();
-
-        for (int i = 0; i < 12; i++) {
-        }
-    }
-};
-
-ZENDEFNODE(PlaneIntersectPrimitive, {
-    {"normal", "tangent", "bitangent", "origin"},
-    {"list2DCoors"},
-    {},
-    {"mathematica"},
-});

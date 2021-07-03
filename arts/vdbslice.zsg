@@ -28,8 +28,8 @@
      "z": 1.0
     },
     "uipos": [
-     -672.0999999999999,
-     -105.85000000000002
+     -889.8968749999999,
+     -178.11562500000002
     ],
     "options": []
    },
@@ -393,8 +393,8 @@
      "name": "vdb"
     },
     "uipos": [
-     -1309.0,
-     27.25000000000017
+     -1525.796875,
+     -45.01562499999977
     ],
     "options": []
    },
@@ -410,8 +410,8 @@
     },
     "params": {},
     "uipos": [
-     -1206.75,
-     271.50000000000017
+     -1423.546875,
+     199.23437500000023
     ],
     "options": []
    },
@@ -462,8 +462,8 @@
     },
     "params": {},
     "uipos": [
-     -391.25,
-     79.5
+     -731.046875,
+     52.23437500000006
     ],
     "options": []
    },
@@ -483,14 +483,8 @@
       "d8c3ff4f-MakeOrthonormalBase",
       "bitangent"
      ],
-     "scale": [
-      "92d58270-NumericFloat",
-      "value"
-     ],
-     "origin": [
-      "1ef0bdee-NumericInterpolation",
-      "dst"
-     ],
+     "scale": null,
+     "origin": null,
      "SRC": null,
      "COND": null
     },
@@ -500,21 +494,6 @@
     "uipos": [
      -107.0,
      -48.0
-    ],
-    "options": []
-   },
-   "92d58270-NumericFloat": {
-    "name": "NumericFloat",
-    "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "value": 3.0
-    },
-    "uipos": [
-     -370.5,
-     269.5
     ],
     "options": []
    },
@@ -536,38 +515,12 @@
      "connType": 2
     },
     "uipos": [
-     -937.6499999999999,
-     216.5
+     -1115.4468749999996,
+     164.2343750000001
     ],
     "options": [
      "VIEW"
     ]
-   },
-   "1ef0bdee-NumericInterpolation": {
-    "name": "NumericInterpolation",
-    "inputs": {
-     "src": null,
-     "srcMin": null,
-     "srcMax": null,
-     "dstMin": [
-      "76be4bd9-GetVDBBound",
-      "bmin"
-     ],
-     "dstMax": [
-      "76be4bd9-GetVDBBound",
-      "bmax"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "isClamped": 0
-    },
-    "uipos": [
-     -640.0,
-     135.0
-    ],
-    "options": []
    },
    "8d9c881c-SampleVDBToPrimitive": {
     "name": "SampleVDBToPrimitive",
@@ -621,8 +574,8 @@
     },
     "params": {},
     "uipos": [
-     -1039.0,
-     6.75
+     -1255.796875,
+     -65.51562499999994
     ],
     "options": []
    },
@@ -644,6 +597,56 @@
     "options": [
      "ONCE"
     ]
+   },
+   "ed2eb4b5-PlaneProjectPrimitive2DAABB": {
+    "name": "PlaneProjectPrimitive2DAABB",
+    "inputs": {
+     "origin": [
+      "ca87643a-x",
+      "vec3"
+     ],
+     "normal": [
+      "d8c3ff4f-MakeOrthonormalBase",
+      "normal"
+     ],
+     "tangent": [
+      "d8c3ff4f-MakeOrthonormalBase",
+      "tangent"
+     ],
+     "bitangent": [
+      "d8c3ff4f-MakeOrthonormalBase",
+      "bitangent"
+     ],
+     "prim": [
+      "69bde591-MakeVisualAABBPrimitive",
+      "prim"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {},
+    "uipos": [
+     -460.046875,
+     155.48437500000017
+    ],
+    "options": []
+   },
+   "ca87643a-x": {
+    "name": "NumericVec3",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "x": 0.0,
+     "y": 0.0,
+     "z": 0.0
+    },
+    "uipos": [
+     -1195.896875,
+     409.884375
+    ],
+    "options": []
    }
   }
  },
@@ -1594,7 +1597,7 @@
    ],
    "params": [],
    "categories": [
-    "numeric"
+    "mathematica"
    ]
   },
   "MakePrimitive": {
@@ -2049,6 +2052,26 @@
    "params": [],
    "categories": [
     "Molecular"
+   ]
+  },
+  "PlaneProjectPrimitive2DAABB": {
+   "inputs": [
+    "origin",
+    "normal",
+    "tangent",
+    "bitangent",
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "boundMin2D",
+    "boundMax2D",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "mathematica"
    ]
   },
   "PolyDuplicate": {

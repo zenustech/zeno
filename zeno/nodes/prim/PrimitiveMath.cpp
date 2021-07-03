@@ -14,7 +14,6 @@ struct PlaneProjectPrimitive2DAABB : INode {
         auto prim = get_input<PrimitiveObject>("prim");
 
         vec2f bmin(+1e6), bmax(-1e6);
-
         auto &pos = prim->attr<vec3f>("pos");
         for (int i = 0; i < prim->lines.size(); i++) {
             auto line = prim->lines[i];
@@ -36,6 +35,26 @@ struct PlaneProjectPrimitive2DAABB : INode {
 ZENDEFNODE(PlaneProjectPrimitive2DAABB, {
     {"origin", "normal", "tangent", "bitangent", "prim"},
     {"boundMin2D", "boundMax2D"},
+    {},
+    {"mathematica"},
+});
+
+
+struct PlaneEvaluate2DCoorTo3D : INode {
+    virtual void apply() override {
+        auto origin = get_input<NumericObject>("origin")->get<vec3f>();
+        auto tangent = get_input<NumericObject>("tangent")->get<vec3f>();
+        auto bitangent = get_input<NumericObject>("bitangent")->get<vec3f>();
+        auto coor = get_input<NumericObject>("coor")->get<vec2f>();
+
+        auto pos = origin + coor[0] * tangent + coor[1] * bitangent;
+        set_output("coor3D", std::make_shared<NumericObject>(pos));
+    }
+};
+
+ZENDEFNODE(PlaneEvaluate2DCoorTo3D, {
+    {"coor2D", "origin", "tangent", "bitangent"},
+    {"coor3D"},
     {},
     {"mathematica"},
 });
