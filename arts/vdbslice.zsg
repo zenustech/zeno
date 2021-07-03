@@ -5,7 +5,7 @@
     "name": "PrimitiveAddAttr",
     "inputs": {
      "prim": [
-      "81b3bf3e-VdbSlice",
+      "a614e6f4-VdbSlice",
       "slicePrim"
      ],
      "SRC": null,
@@ -313,7 +313,8 @@
      62.81673278808623
     ],
     "options": [
-     "ONCE"
+     "ONCE",
+     "VIEW"
     ]
    },
    "240b4861-x": {
@@ -339,12 +340,12 @@
     },
     "params": {
      "x": 1.0,
-     "y": 0.0,
-     "z": 0.0
+     "y": 1.0,
+     "z": 1.0
     },
     "uipos": [
-     31.367083740233227,
-     -432.1875701904298
+     48.36708374023323,
+     -433.1875701904298
     ],
     "options": []
    },
@@ -365,7 +366,22 @@
     ],
     "options": []
    },
-   "81b3bf3e-VdbSlice": {
+   "b3e556da-MakeString": {
+    "name": "MakeString",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "value": "rho"
+    },
+    "uipos": [
+     302.0,
+     -566.0
+    ],
+    "options": []
+   },
+   "a614e6f4-VdbSlice": {
     "name": "VdbSlice",
     "inputs": {
      "vdbGrid": [
@@ -384,28 +400,17 @@
       "8d998812-x",
       "vec3"
      ],
+     "resolution": [
+      "240b4861-x",
+      "value"
+     ],
      "SRC": null,
      "COND": null
     },
     "params": {},
     "uipos": [
-     313.0,
-     -391.0
-    ],
-    "options": []
-   },
-   "b3e556da-MakeString": {
-    "name": "MakeString",
-    "inputs": {
-     "SRC": null,
-     "COND": null
-    },
-    "params": {
-     "value": "rho"
-    },
-    "uipos": [
-     302.0,
-     -566.0
+     362.0,
+     -383.0
     ],
     "options": []
    }
@@ -843,7 +848,10 @@
       "9cc9d518-x",
       "prim"
      ],
-     "resolution": null,
+     "resolution": [
+      "98b29670-SubInput",
+      "port"
+     ],
      "SRC": null,
      "COND": null
     },
@@ -987,6 +995,21 @@
     "uipos": [
      -85.0,
      -282.0
+    ],
+    "options": []
+   },
+   "98b29670-SubInput": {
+    "name": "SubInput",
+    "inputs": {
+     "SRC": null,
+     "COND": null
+    },
+    "params": {
+     "name": "resolution"
+    },
+    "uipos": [
+     195.0,
+     -502.0
     ],
     "options": []
    }
@@ -3708,6 +3731,7 @@
     "channelName",
     "origin",
     "normal",
+    "resolution",
     "SRC",
     "COND"
    ],
