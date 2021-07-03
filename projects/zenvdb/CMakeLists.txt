@@ -4,7 +4,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/lib/cmake/OpenVDB/)
 
 add_library(zenvdb SHARED ${PROJECT_SOURCE})
 target_include_directories(zenvdb PUBLIC include)
-target_include_directories(zenvdb PRIVATE ../zenbase/include)
+target_include_directories(zenvdb PRIVATE ../oldzenbase/include)
 
 find_package(OpenMP)
 if (TARGET OpenMP::OpenMP_CXX)
