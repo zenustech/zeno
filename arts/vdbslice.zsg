@@ -313,8 +313,7 @@
      1093.4048828124999
     ],
     "options": [
-     "ONCE",
-     "VIEW"
+     "ONCE"
     ]
    },
    "f63279d1-x": {
@@ -556,8 +555,8 @@
      "value": 128
     },
     "uipos": [
-     2285.2371887207023,
-     789.2671203613277
+     2280.2371887207028,
+     770.2671203613277
     ],
     "options": []
    },
@@ -818,7 +817,7 @@
     "name": "SubOutput",
     "inputs": {
      "port": [
-      "13ddcebc-x",
+      "dd3a81c6-PrimitiveClearConnect",
       "prim"
      ],
      "SRC": null,
@@ -828,8 +827,8 @@
      "name": "prim"
     },
     "uipos": [
-     2968.1672668457013,
-     943.3906555175777
+     3032.1672668457013,
+     936.3906555175777
     ],
     "options": []
    },
@@ -875,6 +874,23 @@
     "uipos": [
      502.4000000000001,
      731.2
+    ],
+    "options": []
+   },
+   "dd3a81c6-PrimitiveClearConnect": {
+    "name": "PrimitiveClearConnect",
+    "inputs": {
+     "prim": [
+      "13ddcebc-x",
+      "prim"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {},
+    "uipos": [
+     2795.75,
+     947.75
     ],
     "options": []
    }

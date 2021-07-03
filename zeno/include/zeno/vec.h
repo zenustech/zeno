@@ -313,6 +313,18 @@ _PER_FN1(floor)
 _PER_FN1(ceil)
 #undef _PER_FN1
 
+template <class To, class T> inline auto cast(T const &a) {
+  return vapply([](auto const &x) { return (To)x; }, a);
+}
+
+template <class T> inline auto toint(T const &a) {
+  return cast<int, T>(a);
+}
+
+template <class T> inline auto tofloat(T const &a) {
+  return cast<float, T>(a);
+}
+
 /* vector math functions */
 inline auto dot(float a, float b) { return a * b; }
 template <size_t N, class T, class S>

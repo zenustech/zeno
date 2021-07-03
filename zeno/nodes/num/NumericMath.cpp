@@ -64,4 +64,3 @@ ZENDEFNODE(UnpackNumericVec, {
     {},
     {"numeric"},
 });
-

@@ -108,6 +108,8 @@ struct NumericOperator : zeno::INode {
     _PER_FN(log)
     _PER_FN(floor)
     _PER_FN(ceil)
+    _PER_FN(toint)
+    _PER_FN(tofloat)
 
 #undef _PER_FN
 #undef _PER_OP2
