@@ -92,6 +92,12 @@ constexpr size_t dtype_size(dtype dt) {
 
 /* array.h */
 
+template <class T = void>
+struct fat_ptr {
+    T *base;
+    size_t size;
+};
+
 struct array {
     std::vector<char> m_data;
     dtype m_type;
@@ -108,8 +114,8 @@ struct array {
 };
 
 template <class T>
-void do_apply(T *p, size_t n) {
-    printf("%s %d\n", typeid(T).name(), n);
+void do_apply(fat_ptr<T> fp) {
+    printf("%s %d\n", typeid(T).name(), fp.size);
 }
 
 void apply(array &a) {
@@ -118,7 +124,8 @@ void apply(array &a) {
         constexpr auto t = magic_enum::enum_cast<dtype>(i).value();
         if (dt == t) {
             using T = typename dtype_to_type<t>::type;
-            do_apply<T>((T *)a.data(), a.size());
+            fat_ptr<T> fp{(T *)a.data(), a.size()};
+            do_apply<T>(fp);
             return true;
         }
         return false;
