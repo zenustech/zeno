@@ -3,7 +3,7 @@
 
 using namespace zeno;
 
-struct MakeOrthonormalAxes : INode {
+struct MakeOrthonormalBase : INode {
     virtual void apply() override {
         auto normal = get_input<NumericObject>("normal")->get<vec3f>();
         normal = normalize(normal);
@@ -28,7 +28,7 @@ struct MakeOrthonormalAxes : INode {
     }
 };
 
-ZENDEFNODE(MakeOrthonormalAxes, {
+ZENDEFNODE(MakeOrthonormalBase, {
     {"normal", "tangent"},
     {"normal", "tangent", "bitangent"},
     {},

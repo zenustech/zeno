@@ -50,7 +50,7 @@ struct NumericInterpolation : zeno::INode {
     }
 
     virtual void apply() override {
-        auto src = get_input<zeno::NumericObject>("src")->value;
+        auto src = has_input("src") ? get_input<zeno::NumericObject>("src")->value : 0.5f;
         auto srcMin = has_input("srcMin") ? get_input<zeno::NumericObject>("srcMin")->value : 0;
         auto srcMax = has_input("srcMax") ? get_input<zeno::NumericObject>("srcMax")->value : 1;
         auto dstMin = has_input("dstMin") ? get_input<zeno::NumericObject>("dstMin")->value : 0;
