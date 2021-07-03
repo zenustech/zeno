@@ -1,13 +1,12 @@
-#include <zeno/zeno.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/vec.h>
-#include <cstring>
-#include <cstdlib>
 #include <cassert>
+#include <cstdlib>
+#include <cstring>
+#include <zeno/NumericObject.h>
+#include <zeno/PrimitiveObject.h>
+#include <zeno/vec.h>
+#include <zeno/zeno.h>
 
 namespace zeno {
-
 
 struct Make2DGridPrimitive : INode {
     virtual void apply() override {
@@ -29,19 +28,37 @@ struct Make2DGridPrimitive : INode {
         if (get_param<int>("isCentered"))
             o -= (ax * (nx - 1) + ay * (ny - 1)) / 2;
 
-        auto prim = std::make_shared<PrimitiveObject>();
-        prim->resize(nx * ny);
-        auto &pos = prim->add_attr<vec3f>("pos");
-        for (size_t y = 0; y < ny; y++) {
-            for (size_t x = 0; x < nx; x++) {
-                vec3f p = o + x * ax + y * ay;
-                size_t i = x + y * nx;
-                pos[i] = p;
-            }
-        }
+    if (get_param<int>("isCentered"))
+      o -= (ax * (nx - 1) + ay * (ny - 1)) / 2;
 
-        set_output("prim", std::move(prim));
+    auto prim = std::make_shared<PrimitiveObject>();
+    prim->resize(nx * ny);
+    auto &pos = prim->add_attr<vec3f>("pos");
+#pragma omp parallel for
+    // for (size_t y = 0; y < ny; y++) {
+    //     for (size_t x = 0; x < nx; x++) {
+    for (int index = 0; index < nx * ny; index++) {
+      int x = index % nx;
+      int y = index / nx;
+      vec3f p = o + x * ax + y * ay;
+      size_t i = x + y * nx;
+      pos[i] = p;
+      // }
     }
+    prim->tris.resize((nx - 1) * (ny - 1) * 2);
+#pragma omp parallel for
+    for (int index = 0; index < (nx - 1) * (ny - 1); index++) {
+      int x = index % (nx - 1);
+      int y = index / (nx - 1);
+      prim->tris[index * 2][0] = y * nx + x;
+      prim->tris[index * 2][1] = y * nx + x + 1;
+      prim->tris[index * 2][2] = (y + 1) * nx + x + 1;
+      prim->tris[index * 2 + 1][0] = (y + 1) * nx + x + 1;
+      prim->tris[index * 2 + 1][1] = (y + 1) * nx + x;
+      prim->tris[index * 2 + 1][2] = y * nx + x;
+    }
+    set_output("prim", std::move(prim));
+  }
 };
 
 ZENDEFNODE(Make2DGridPrimitive,
@@ -55,5 +72,4 @@ ZENDEFNODE(Make2DGridPrimitive,
         "primitive",
         }});
 
-
-}
+} // namespace zeno
