@@ -35,6 +35,16 @@ struct type_list_nth<L, 0> {
     using type = typename L::head;
 };
 
+template <class L, class T>
+struct type_list_find {
+    static constexpr int value = type_list_find<typename L::rest, T>::value + 1;
+};
+
+template <class T, class ...Ts>
+struct type_list_find<type_list<T, Ts...>, T> {
+    static constexpr int value = 0;
+};
+
 using std::cout;
 using std::endl;
 
@@ -45,8 +55,14 @@ enum class dtype : int {
 using dtype_type_list = type_list<void, int, float>;
 
 template <dtype dt>
-struct dtype_traits {
+struct dtype_to_type {
     using type = typename type_list_nth<dtype_type_list, int(dt)>::type;
+};
+
+template <class T>
+struct type_to_dtype {
+    static constexpr dtype value = magic_enum::enum_cast<dtype>(
+        type_list_find<dtype_type_list, T>::value).value();
 };
 
 constexpr auto dtype_name(dtype dt) {
@@ -58,7 +74,7 @@ constexpr size_t dtype_size(dtype dt) {
     static_for<0, magic_enum::enum_values<dtype>().size()>([&](auto i) {
         constexpr auto t = magic_enum::enum_cast<dtype>(i).value();
         if (dt == t) {
-            using T = typename dtype_traits<t>::type;
+            using T = typename dtype_to_type<t>::type;
             if constexpr (std::is_void_v<T>)
                 ret = 0;
             else
@@ -90,7 +106,7 @@ void apply(array &a) {
     static_for<0, magic_enum::enum_values<dtype>().size()>([&](auto i) {
         constexpr auto t = magic_enum::enum_cast<dtype>(i).value();
         if (dt == t) {
-            using T = typename dtype_traits<t>::type;
+            using T = typename dtype_to_type<t>::type;
             do_apply<T>((T *)a.data(), a.size());
             return true;
         }
@@ -103,5 +119,6 @@ int main(void)
     array a;
     a.m_type = dtype::i32;
     apply(a);
+    std::cout << dtype_name(type_to_dtype<int>::value) << std::endl;
     return 0;
 }
