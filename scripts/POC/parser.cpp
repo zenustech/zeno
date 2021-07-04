@@ -12,9 +12,33 @@
 #include <set>
 
 struct Parser {
-    std::istringstream sin;
+    std::string code;
+    const char *cp;
 
-    Parser(std::string const &code) : sin(code) {}
+    bool get(char &c) {
+        for (; *cp && isblank(*cp); cp++);
+        c = *cp;
+        if (c) cp++;
+        return !!c;
+    }
+
+    bool get(std::string &s) {
+        for (; *cp && isblank(*cp); cp++);
+        s = "";
+        if (!*cp) return false;
+        if (isalnum(*cp)) {
+            for (; *cp && isalnum(*cp); s += *cp++);
+        } else {
+            for (; *cp && !isalnum(*cp); s += *cp++);
+        }
+        return s.size() != 0;
+    }
+
+    void unget() {
+        cp--;
+    }
+
+    Parser(std::string const &code_) : code(code_), cp(code.c_str()) {}
 
     struct Token {
         enum class Type {
@@ -212,23 +236,23 @@ struct Parser {
 
     bool tokenize() {
         char head = 0;
-        if (!(sin >> head))
+        if (!get(head))
             return false;
         if (isdigit(head)) {
-            sin.unget();
+            unget();
             std::string ident;
-            sin >> ident;
+            get(ident);
             tokens.emplace_back(Token::Type::imm, ident);
             return true;
         } else if (head == '@') {
             std::string ident;
-            sin >> ident;
+            get(ident);
             tokens.emplace_back(Token::Type::mem, ident);
             return true;
         } else if (isalpha(head)) {
-            sin.unget();
+            unget();
             std::string ident;
-            sin >> ident;
+            get(ident);
             tokens.emplace_back(Token::Type::reg, ident);
             return true;
         }
@@ -237,13 +261,13 @@ struct Parser {
             tokens.emplace_back(Token::Type::op, op);
             return true;
         }
-        sin.unget();
+        unget();
         return false;
     }
 };
 
 int main(void) {
-    Parser p("posz = 1 + 3 * fit ( posx + 1 , posy , posz )");
+    Parser p("posz = fit (12,3)");
     while (p.tokenize());
     p.init_parse();
     p.parse_stmt();
