@@ -15,8 +15,8 @@ struct Make2DGridPrimitive : INode {
             get_input<NumericObject>("ny")->get<int>() : nx;
         float dx = 1.f / std::max(nx - 1, (size_t)1);
         float dy = 1.f / std::max(ny - 1, (size_t)1);
-        vec3f ax = get_input<NumericObject>("sizeX")->get<vec3f>() * dx;
-        vec3f ay = get_input<NumericObject>("sizeY")->get<vec3f>() * dy;
+        vec3f ax = get_input<NumericObject>("sizeX")->get<vec3f>();
+        vec3f ay = get_input<NumericObject>("sizeY")->get<vec3f>();
         vec3f o = has_input("origin") ?
             get_input<NumericObject>("origin")->get<vec3f>() : vec3f(0);
         if (has_input("scale")) {
@@ -27,7 +27,8 @@ struct Make2DGridPrimitive : INode {
 
 
     if (get_param<int>("isCentered"))
-      o -= (ax * (nx - 1) + ay * (ny - 1)) / 2;
+      o -= (ax + ay) / 2;
+    ax *= dx; ay *= dy;
 
     auto prim = std::make_shared<PrimitiveObject>();
     prim->resize(nx * ny);

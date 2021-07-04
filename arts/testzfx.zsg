@@ -2,8 +2,8 @@
  "graph": {
   "main": {
    "nodes": {
-    "56645919-ParseProgram": {
-     "name": "ParseProgram",
+    "56645919-CompileProgram": {
+     "name": "CompileProgram",
      "inputs": {
       "code": [
        "c0000180-MakeString",
@@ -23,11 +23,11 @@
      "name": "ParticlesWrangle",
      "inputs": {
       "particles": [
-       "336e5dd6-MakeParticles",
+       "97632f15-PrimitiveToParticles",
        "particles"
       ],
       "program": [
-       "56645919-ParseProgram",
+       "56645919-CompileProgram",
        "program"
       ],
       "SRC": null,
@@ -37,22 +37,6 @@
      "uipos": [
       139.0,
       -86.8
-     ],
-     "options": []
-    },
-    "336e5dd6-MakeParticles": {
-     "name": "MakeParticles",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "nchannels": 3,
-      "size": 32
-     },
-     "uipos": [
-      -171.20000000000002,
-      -204.0
      ],
      "options": []
     },
@@ -82,19 +66,115 @@
       "COND": null
      },
      "params": {
-      "value": "add @0 @0 #0.4"
+      "value": "add @6 @0 #0.5"
      },
      "uipos": [
-      -444.80000000000007,
-      -14.400000000000006
+      -469.4000000000001,
+      -28.200000000000003
+     ],
+     "options": []
+    },
+    "f276a3c5-Make2DGridPrimitive": {
+     "name": "Make2DGridPrimitive",
+     "inputs": {
+      "nx": [
+       "36a7473b-NumericInt",
+       "value"
+      ],
+      "ny": null,
+      "sizeX": [
+       "e18676b0-x",
+       "vec3"
+      ],
+      "sizeY": [
+       "df5bd003-NumericVec3",
+       "vec3"
+      ],
+      "scale": null,
+      "origin": null,
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "isCentered": 1
+     },
+     "uipos": [
+      -459.20000000000005,
+      -384.0000000000001
+     ],
+     "options": []
+    },
+    "97632f15-PrimitiveToParticles": {
+     "name": "PrimitiveToParticles",
+     "inputs": {
+      "prim": [
+       "f276a3c5-Make2DGridPrimitive",
+       "prim"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      -160.0,
+      -200.0
+     ],
+     "options": []
+    },
+    "36a7473b-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": 32
+     },
+     "uipos": [
+      -716.0,
+      -425.6
+     ],
+     "options": []
+    },
+    "df5bd003-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "x": 0.0,
+      "y": 1.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -717.6000000000001,
+      -236.0
+     ],
+     "options": []
+    },
+    "e18676b0-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "x": 1.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -959.2000000000003,
+      -323.20000000000005
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -417,
-    "trans_y": -379
+    "scale": 1.5625,
+    "trans_x": -1051,
+    "trans_y": -362
    }
   }
  },
@@ -745,7 +825,7 @@
     "numeric"
    ]
   },
-  "ParseProgram": {
+  "CompileProgram": {
    "inputs": [
     "code",
     "SRC",
@@ -1282,6 +1362,21 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "PrimitiveToParticles": {
+   "inputs": [
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "particles",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
    ]
   },
   "PrimitiveUnaryOp": {

@@ -7,7 +7,7 @@
 
 using namespace zeno;
 
-struct ParseProgram : INode {
+struct CompileProgram : INode {
     virtual void apply() override {
         auto code = get_input<StringObject>("code")->get();
         auto program = std::make_shared<ProgramObject>();
@@ -16,7 +16,7 @@ struct ParseProgram : INode {
     }
 };
 
-ZENDEFNODE(ParseProgram, {
+ZENDEFNODE(CompileProgram, {
     {"code"},
     {"program"},
     {},
