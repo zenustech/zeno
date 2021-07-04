@@ -11,7 +11,8 @@
 #include <stack>
 #include <set>
 
-struct Parser {
+class Parser {
+private:
     std::string code;
     const char *cp;
 
@@ -19,31 +20,18 @@ struct Parser {
         for (; *cp && isspace(*cp); cp++);
     }
 
-    bool get(char &c) {
-        for (; *cp && isspace(*cp); cp++);
-        c = *cp;
-        if (c) cp++;
-        return !!c;
+public:
+    Parser(std::string const &code_) : code(code_), cp(code.c_str()) {
+        while (tokenize());
+        init_parse();
     }
 
-    bool get(std::string &s) {
-        s = "";
-        for (; *cp && isspace(*cp); cp++);
-        if (!*cp) return false;
-        if (isalnum(*cp)) {
-            for (; isalnum(*cp); s += *cp++);
-        } else {
-            for (; *cp && !isalnum(*cp); s += *cp++);
-        }
-        return s.size() != 0;
+    auto parse() {
+        parse_stmt();
+        return pop_ast();
     }
 
-    void unget() {
-        cp--;
-    }
-
-    Parser(std::string const &code_) : code(code_), cp(code.c_str()) {}
-
+private:
     struct Token {
         enum class Type {
             op, mem, reg, imm, none,
@@ -269,17 +257,14 @@ struct Parser {
             tokens.emplace_back(Token::Type::op, op);
             return true;
         }
-        unget();
+        cp--;
         return false;
     }
 };
 
 int main(void) {
-    Parser p("posz = fit (12, -3)");
-    while (p.tokenize());
-    p.init_parse();
-    p.parse_stmt();
-    auto a = p.pop_ast();
+    Parser p("posz = 1 + 2");
+    auto a = p.parse();
     a->print();
     return 0;
 }
