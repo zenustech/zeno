@@ -59,18 +59,32 @@ struct type_list_find<type_list<T, Ts...>, T> {
     static constexpr int value = 0;
 };
 
+/* simd.h */
+
+template <size_t N, class T>
+struct simd {
+    T m[N];
+
+    operator+=(simd const &other) {
+        for (int i = 0; i < N; i++) {
+            m[i] += other[i];
+        }
+    }
+};
+
 /* program.h */
 
 struct Context {
     float regtable[256];
     float *memtable[256];
+    size_t memindex;
 
     float memfetch(int index) const {
-        return *memtable[index];
+        return memtable[index][memindex];
     }
 
     void memstore(int index, float value) {
-        *memtable[index] = value;
+        memtable[index][memindex] = value;
     }
 };
 
@@ -159,10 +173,11 @@ void vectors_wrangle(Program const &prog,
         ctx.memtable[i] = arrs[i]->data();
     }
     for (int i = 0; i < size; i++) {
+        ctx.memidx = i;
         prog.execute(&ctx);
-        for (int j = 0; j < arrs.size(); j++) {
+        /*for (int j = 0; j < arrs.size(); j++) {
             ctx.memtable[j]++;
-        }
+        }*/
     }
 }
 
