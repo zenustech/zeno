@@ -82,6 +82,8 @@ struct Parser {
             std::move(token), std::move(lhs), std::move(rhs)));
     }
 
+    static inline const char opchars[] = "+-*/=()";
+
     bool parse_atom() {
         if (token->type == Token::Type::op)
             return false;
@@ -101,6 +103,16 @@ struct Parser {
                 return false;
             }
             emplace_ast(opToken, pop_ast());
+            return true;
+        }
+        if (token->is_op({"("})) {
+            token++;
+            if (!parse_expr()) {
+                token--;
+            }
+            if (token->is_op({")"})) {
+                token++;
+            }
             return true;
         }
         return false;
@@ -168,7 +180,7 @@ struct Parser {
             tokens.emplace_back(Token::Type::reg, ident);
             return true;
         }
-        if (strchr("+-*/=()", head)) {
+        if (strchr(opchars, head)) {
             std::string op(1, head);
             tokens.emplace_back(Token::Type::op, op);
             return true;
@@ -179,7 +191,7 @@ struct Parser {
 };
 
 int main(void) {
-    Parser p("@posz = @posx + @posy - 3.14");
+    Parser p("@posz = @posx + @posy - ( 3.14 * @posz )");
     while (p.tokenize());
     p.init_parse();
     p.parse_stmt();
