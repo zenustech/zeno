@@ -12,6 +12,10 @@ struct Particles {
         return m_arrs.size();
     }
 
+    std::vector<float> *channel(size_t i) const {
+        return m_arrs[i].get();
+    }
+
     void set_nchannels(size_t n) {
         size_t m = m_arrs.size();
         m_arrs.resize(n);

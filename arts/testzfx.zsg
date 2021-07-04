@@ -5,21 +5,27 @@
     "56645919-ParseProgram": {
      "name": "ParseProgram",
      "inputs": {
-      "code": null,
+      "code": [
+       "c0000180-MakeString",
+       "value"
+      ],
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      -169.0,
-      -65.0
+      -173.79999999999998,
+      9.400000000000002
      ],
      "options": []
     },
     "ddbfd75c-ParticlesWrangle": {
      "name": "ParticlesWrangle",
      "inputs": {
-      "particles": null,
+      "particles": [
+       "336e5dd6-MakeParticles",
+       "particles"
+      ],
       "program": [
        "56645919-ParseProgram",
        "program"
@@ -29,16 +35,66 @@
      },
      "params": {},
      "uipos": [
-      211.0,
-      -46.0
+      139.0,
+      -86.8
+     ],
+     "options": []
+    },
+    "336e5dd6-MakeParticles": {
+     "name": "MakeParticles",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "nchannels": 3,
+      "size": 32
+     },
+     "uipos": [
+      -171.20000000000002,
+      -204.0
+     ],
+     "options": []
+    },
+    "776fe294-ParticlesToPrimitive": {
+     "name": "ParticlesToPrimitive",
+     "inputs": {
+      "particles": [
+       "ddbfd75c-ParticlesWrangle",
+       "particles"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      420.0,
+      -44.80000000000001
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "c0000180-MakeString": {
+     "name": "MakeString",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": "add @0 @0 #0.4"
+     },
+     "uipos": [
+      -444.80000000000007,
+      -14.400000000000006
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": 0,
-    "trans_y": 0
+    "trans_x": -417,
+    "trans_y": -379
    }
   }
  },
@@ -431,6 +487,31 @@
     "mathematica"
    ]
   },
+  "MakeParticles": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "particles",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "nchannels",
+     "0"
+    ],
+    [
+     "int",
+     "size",
+     "0"
+    ]
+   ],
+   "categories": [
+    "zenofx"
+   ]
+  },
   "MakePrimitive": {
    "inputs": [
     "SRC",
@@ -672,6 +753,21 @@
    ],
    "outputs": [
     "program",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesToPrimitive": {
+   "inputs": [
+    "particles",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
     "DST"
    ],
    "params": [],

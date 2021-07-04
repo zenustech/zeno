@@ -12,6 +12,7 @@ struct ParticlesWrangle : INode {
         auto particles = get_input<ParticlesObject>("particles");
         auto program = get_input<ProgramObject>("program");
         particles_wrangle(&program->prog, &particles->pars);
+        set_output("particles", std::move(particles));
     }
 };
 
