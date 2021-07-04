@@ -2,7 +2,7 @@
 #include <zeno/StringObject.h>
 #include "no_ProgramObject.h"
 #include "program.h"
-#include "parse.h"
+#include "compile.h"
 #include <memory>
 
 using namespace zeno;
@@ -11,7 +11,7 @@ struct ParseProgram : INode {
     virtual void apply() override {
         auto code = get_input<StringObject>("code")->get();
         auto program = std::make_shared<ProgramObject>();
-        program->prog = parse_program(code);
+        program->prog = compile_program(code);
         set_output("program", std::move(program));
     }
 };

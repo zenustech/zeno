@@ -12,7 +12,7 @@ static std::vector<std::string> split_str(std::string const &s, char delimiter) 
   return tokens;
 }
 
-static Operand parse_operand(std::string const &ident) {
+static Operand compile_operand(std::string const &ident) {
     Operand operand;
     switch (ident[0]) {
     case '#': operand.type = OperandType::imm; break;
@@ -27,22 +27,22 @@ static Operand parse_operand(std::string const &ident) {
     return operand;
 }
 
-Instruction parse_instruction(std::string const &line) {
+Instruction compile_instruction(std::string const &line) {
     auto tokens = split_str(line, ' ');
     assert(tokens.size() == 4);
     Instruction inst;
     inst.opcode = magic_enum::enum_cast<Opcode>(tokens[0]).value();
-    inst.dst = parse_operand(tokens[1]);
-    inst.lhs = parse_operand(tokens[2]);
-    inst.rhs = parse_operand(tokens[3]);
+    inst.dst = compile_operand(tokens[1]);
+    inst.lhs = compile_operand(tokens[2]);
+    inst.rhs = compile_operand(tokens[3]);
     return inst;
 }
 
-Program parse_program(std::string const &lines) {
+Program compile_program(std::string const &lines) {
     Program prog;
     for (auto const &line: split_str(lines, '\n')) {
         if (line.size() != 0)
-            prog.insts.push_back(parse_instruction(line));
+            prog.insts.push_back(compile_instruction(line));
     }
     return prog;
 }
