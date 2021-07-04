@@ -16,18 +16,18 @@ struct Parser {
     const char *cp;
 
     bool get(char &c) {
-        for (; *cp && isblank(*cp); cp++);
+        for (; *cp && isspace(*cp); cp++);
         c = *cp;
         if (c) cp++;
         return !!c;
     }
 
     bool get(std::string &s) {
-        for (; *cp && isblank(*cp); cp++);
         s = "";
+        for (; *cp && isspace(*cp); cp++);
         if (!*cp) return false;
         if (isalnum(*cp)) {
-            for (; *cp && isalnum(*cp); s += *cp++);
+            for (; isalnum(*cp); s += *cp++);
         } else {
             for (; *cp && !isalnum(*cp); s += *cp++);
         }
@@ -244,11 +244,13 @@ struct Parser {
             get(ident);
             tokens.emplace_back(Token::Type::imm, ident);
             return true;
+
         } else if (head == '@') {
             std::string ident;
             get(ident);
             tokens.emplace_back(Token::Type::mem, ident);
             return true;
+
         } else if (isalpha(head)) {
             unget();
             std::string ident;
@@ -267,7 +269,7 @@ struct Parser {
 };
 
 int main(void) {
-    Parser p("posz = fit (12,3)");
+    Parser p("posz = fit (12, -3)");
     while (p.tokenize());
     p.init_parse();
     p.parse_stmt();
