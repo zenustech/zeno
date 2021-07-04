@@ -16,8 +16,5 @@ void vectors_wrangle(Program const &prog,
     for (int i = 0; i < size; i++) {
         ctx.memindex = i;
         prog.execute(&ctx);
-        /*for (int j = 0; j < arrs.size(); j++) {
-            ctx.memtable[j]++;
-        }*/
     }
 }

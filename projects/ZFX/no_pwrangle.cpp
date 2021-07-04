@@ -1,3 +1,4 @@
+#include <zeno/zeno.h>
 #include "program.h"
 #include "pwrangle.h"
 #include "parse.h"
@@ -5,10 +6,6 @@
 
 using std::cout;
 using std::endl;
-
-/* parse.cpp */
-
-/* main.cpp */
 
 int main(void)
 {
