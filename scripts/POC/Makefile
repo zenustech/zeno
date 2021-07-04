@@ -1,4 +1,4 @@
-x=parser
+x=compile
 
 x: $x.exe Makefile
 	./$<

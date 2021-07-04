@@ -122,7 +122,7 @@ private:
     bool parse_funcall() {  // funcall := symbol "(" [expr ["," expr]*]? ")"
         if (token->type == Token::Type::reg) {
             auto opToken = *token++;
-            opToken->type = Token::Type::func;
+            opToken.type = Token::Type::func;
             if (token->is_op({"("})) {
                 token++;
                 if (token->is_op({")"})) {
