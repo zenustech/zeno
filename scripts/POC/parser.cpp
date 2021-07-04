@@ -15,6 +15,10 @@ struct Parser {
     std::string code;
     const char *cp;
 
+    void skipws() {
+        for (; *cp && isspace(*cp); cp++);
+    }
+
     bool get(char &c) {
         for (; *cp && isspace(*cp); cp++);
         c = *cp;
@@ -235,31 +239,33 @@ struct Parser {
     }
 
     bool tokenize() {
-        char head = 0;
-        if (!get(head))
+        skipws();
+        char head = *cp++;
+        if (!head)
             return false;
         if (isdigit(head)) {
-            unget();
             std::string ident;
-            get(ident);
+            ident += head;
+            for (; isdigit(*cp); ident += *cp++);
             tokens.emplace_back(Token::Type::imm, ident);
             return true;
 
         } else if (head == '@') {
             std::string ident;
-            get(ident);
+            for (; isalnum(*cp); ident += *cp++);
             tokens.emplace_back(Token::Type::mem, ident);
             return true;
 
         } else if (isalpha(head)) {
-            unget();
             std::string ident;
-            get(ident);
+            ident += head;
+            for (; isalnum(*cp); ident += *cp++);
             tokens.emplace_back(Token::Type::reg, ident);
             return true;
         }
         if (strchr(opchars, head)) {
-            std::string op(1, head);
+            std::string op;
+            op += head;
             tokens.emplace_back(Token::Type::op, op);
             return true;
         }
