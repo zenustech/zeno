@@ -59,19 +59,6 @@ struct type_list_find<type_list<T, Ts...>, T> {
     static constexpr int value = 0;
 };
 
-/* simd.h */
-
-template <size_t N, class T>
-struct simd {
-    T m[N];
-
-    operator+=(simd const &other) {
-        for (int i = 0; i < N; i++) {
-            m[i] += other[i];
-        }
-    }
-};
-
 /* program.h */
 
 struct Context {
