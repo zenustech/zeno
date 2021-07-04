@@ -1,4 +1,4 @@
-x=wrangle
+x=parser
 
 x: $x.exe Makefile
 	./$<
