@@ -18,7 +18,7 @@ struct Parser {
 
     struct Token {
         enum class Type {
-            op, mem, reg, imm,
+            op, mem, reg, imm, none,
         } type;
         std::string ident;
 
@@ -33,34 +33,52 @@ struct Parser {
     decltype(tokens.begin()) token;
 
     void init_parse() {
+        tokens.emplace_back(Token::Type::none, "EOF");
         token = tokens.begin();
     }
 
     struct AST {
         Token token;
-        std::unique_ptr<AST> lhs, rhs;
+        std::vector<std::unique_ptr<AST>> args;
 
         explicit AST
             ( Token token
-            , std::unique_ptr<AST> lhs = nullptr
-            , std::unique_ptr<AST> rhs = nullptr
+            , std::vector<std::unique_ptr<AST>> args = {}
             )
             : token(std::move(token))
-            , lhs(std::move(lhs))
-            , rhs(std::move(rhs))
+            , args(std::move(args))
             {}
+
+        explicit AST
+            ( Token token
+            , std::unique_ptr<AST> lhs
+            )
+            : token(std::move(token))
+            {
+                args.push_back(std::move(lhs));
+            }
+
+        explicit AST
+            ( Token token
+            , std::unique_ptr<AST> lhs
+            , std::unique_ptr<AST> rhs
+            )
+            : token(std::move(token))
+            {
+                args.push_back(std::move(lhs));
+                args.push_back(std::move(rhs));
+            }
 
         void print(std::string const &indent = "") const {
             printf("%s%s", indent.c_str(), token.ident.c_str());
-            if (!(lhs || rhs)) {
+            if (args.size() == 0) {
                 printf("\n");
                 return;
             }
             printf("(\n", indent.c_str());
-            if (lhs)
-                lhs->print(indent + "  ");
-            if (rhs)
-                rhs->print(indent + "  ");
+            for (auto const &arg: args) {
+                arg->print(indent + "  ");
+            }
             printf("%s)\n", indent.c_str());
         }
     };
@@ -73,18 +91,14 @@ struct Parser {
         return ptr;
     }
 
-    void emplace_ast
-            ( Token token
-            , std::unique_ptr<AST> lhs = nullptr
-            , std::unique_ptr<AST> rhs = nullptr
-            ) {
-        ast_nodes.push(std::make_unique<AST>(
-            std::move(token), std::move(lhs), std::move(rhs)));
+    template <class ...Ts>
+    void emplace_ast(Ts &&...ts) {
+        ast_nodes.push(std::make_unique<AST>(std::forward<Ts>(ts)...));
     }
 
-    static inline const char opchars[] = "+-*/=()";
+    static inline const char opchars[] = "+-*/=(,)";
 
-    bool parse_atom() {
+    bool parse_atom() {  // atom := symbol | literial
         if (token->type == Token::Type::op)
             return false;
         emplace_ast(*token);
@@ -92,7 +106,41 @@ struct Parser {
         return true;
     }
 
-    bool parse_factor() {  // factor := atom | <"+"|"-"> factor | "(" expr ")"
+    bool parse_funcall() {  // funcall := symbol "(" [expr ["," expr]*]? ")"
+        if (token->type == Token::Type::reg) {
+            token++;
+            if (token->is_op({"("})) {
+                auto opToken = *token++;
+                if (token->is_op({")"})) {
+                    emplace_ast(opToken);
+                    return true;
+                } else if (parse_expr()) {
+                    std::vector<std::unique_ptr<AST>> arglist;
+                    arglist.push_back(pop_ast());
+                    while (token->is_op({","})) {
+                        token++;
+                        if (parse_expr()) {
+                            arglist.push_back(pop_ast());
+                        } else {
+                            token--;
+                            break;
+                        }
+                    }
+                    if (token->is_op({")"})) {
+                        token++;
+                    }
+                    emplace_ast(opToken, std::move(arglist));
+                    return true;
+                }
+                token--;
+            }
+            token--;
+        }
+        return false;
+    }
+
+    bool parse_factor() {
+        // factor := atom | <"+"|"-"> factor | "(" expr ")" | funcall
         if (parse_atom()) {
             return true;
         }
@@ -115,7 +163,7 @@ struct Parser {
             }
             return true;
         }
-        return false;
+        return parse_funcall();
     }
 
     bool parse_term() {  // term := factor [<"*"|"/"|"%"> factor]*
@@ -191,7 +239,7 @@ struct Parser {
 };
 
 int main(void) {
-    Parser p("@posz = @posx + @posy - ( 3.14 * @posz )");
+    Parser p("posz = fit ( posx + 1, posy, posz )");
     while (p.tokenize());
     p.init_parse();
     p.parse_stmt();
