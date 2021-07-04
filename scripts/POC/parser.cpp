@@ -13,23 +13,20 @@ struct Parser {
 
     Parser(std::string const &code) : ss(code) {}
 
-    void push_mem(std::string const &ident) {
-        printf("mem: %s\n", ident.c_str());
-    }
+    struct Token {
+        enum class Type {
+            mem, reg, op, imm,
+        } type;
+        std::string ident;
+        float value = 0;
 
-    void push_reg(std::string const &ident) {
-        printf("reg: %s\n", ident.c_str());
-    }
+        Token(Type type, std::string const &ident) : type(type), ident(ident) {}
+        Token(Type type, float value) : type(type), value(value) {}
+    };
 
-    void push_op(std::string const &op) {
-        printf("op: %s\n", op.c_str());
-    }
+    std::vector<Token> tokens;
 
-    void push_imm(float value) {
-        printf("imm: %f\n", value);
-    }
-
-    bool toke() {
+    bool tokenize() {
         char head = 0;
         if (!(ss >> head))
             return false;
@@ -37,23 +34,23 @@ struct Parser {
             ss.unget();
             float value;
             ss >> value;
-            push_imm(value);
+            tokens.emplace_back(Token::Type::imm, value);
             return true;
-        } else if (head == '@' || isalpha(head)) {
-            if (head != '@')
-                ss.unget();
+        } else if (head == '@') {
             std::string ident;
             ss >> ident;
-            if (head == '@')
-                push_mem(ident);
-            else
-                push_reg(ident);
+            tokens.emplace_back(Token::Type::mem, ident);
+            return true;
+        } else if (isalpha(head)) {
+            ss.unget();
+            std::string ident;
+            ss >> ident;
+            tokens.emplace_back(Token::Type::reg, ident);
             return true;
         }
-
         if (strchr("+-*/=", head)) {
             std::string op(1, head);
-            push_op(op);
+            tokens.emplace_back(Token::Type::op, op);
             return true;
         }
         ss.unget();
@@ -62,8 +59,7 @@ struct Parser {
 };
 
 int main(void) {
-    Parser p("@posz = 1");
-    while (p.toke()) {
-    }
+    Parser p("@posz = @posx + 1");
+    while (p.tokenize());
     return 0;
 }
