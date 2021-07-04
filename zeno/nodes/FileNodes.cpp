@@ -22,6 +22,16 @@ ZENDEFNODE(MakeString, {
     {"fileio"},
 });
 
+struct MakeMultilineString : MakeString {
+};
+
+ZENDEFNODE(MakeMultilineString, {
+    {},
+    {"value"},
+    {{"multiline_string", "value", ""}},
+    {"fileio"},
+});
+
 static int objid = 0;
 
 struct ExportPath : zeno::INode {  // TODO: deprecated

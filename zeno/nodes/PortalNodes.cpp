@@ -55,17 +55,6 @@ ZENDEFNODE(Route, {
     {"portal"},
 });
 
-struct Comment : Route {  // ui defined in zeno/nodepref.py
-};
-
-ZENDEFNODE(Comment, {
-    {"input"},
-    {"output"},
-    {},
-    {"portal"},
-});
-
-
 
 
 struct Clone : zeno::INode {

@@ -6,7 +6,7 @@
      "name": "CompileProgram",
      "inputs": {
       "code": [
-       "c0000180-MakeString",
+       "5da6df65-MakeMultilineString",
        "value"
       ],
       "SRC": null,
@@ -58,21 +58,6 @@
      "options": [
       "VIEW"
      ]
-    },
-    "c0000180-MakeString": {
-     "name": "MakeString",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "value": "add @6 @0 #0.5"
-     },
-     "uipos": [
-      -469.4000000000001,
-      -28.200000000000003
-     ],
-     "options": []
     },
     "f276a3c5-Make2DGridPrimitive": {
      "name": "Make2DGridPrimitive",
@@ -169,12 +154,27 @@
       -323.20000000000005
      ],
      "options": []
+    },
+    "5da6df65-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": "add @6 @0 #0.5\nadd @7 @1 #0.5"
+     },
+     "uipos": [
+      -431.35999999999996,
+      -37.75999999999998
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": -1051,
-    "trans_y": -362
+    "trans_x": -1026,
+    "trans_y": -205
    }
   }
  },
@@ -259,19 +259,19 @@
     "portal"
    ]
   },
-  "Comment": {
+  "CompileProgram": {
    "inputs": [
-    "input",
+    "code",
     "SRC",
     "COND"
    ],
    "outputs": [
-    "output",
+    "program",
     "DST"
    ],
    "params": [],
    "categories": [
-    "portal"
+    "zenofx"
    ]
   },
   "EmptyList": {
@@ -549,6 +549,26 @@
     "debug"
    ]
   },
+  "MakeMultilineString": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "value",
+    "DST"
+   ],
+   "params": [
+    [
+     "multiline_string",
+     "value",
+     ""
+    ]
+   ],
+   "categories": [
+    "fileio"
+   ]
+  },
   "MakeOrthonormalBase": {
    "inputs": [
     "normal",
@@ -823,21 +843,6 @@
    ],
    "categories": [
     "numeric"
-   ]
-  },
-  "CompileProgram": {
-   "inputs": [
-    "code",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "program",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
    ]
   },
   "ParticlesToPrimitive": {

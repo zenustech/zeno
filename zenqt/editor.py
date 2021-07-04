@@ -26,6 +26,7 @@ style = {
     'title_text_size': 10,
     'button_text_size': 10,
     'socket_text_size': 10,
+    'param_text_size': 10,
     'socket_text_color': '#FFFFFF',
     'panel_color': '#282828',
     'line_color': '#B0B0B0',
@@ -762,9 +763,11 @@ class QDMGraphicsCollapseButton(QGraphicsProxyWidget):
 class QDMGraphicsParam(QGraphicsProxyWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.parent = parent
 
         self.initLayout()
-        self.edit.editingFinished.connect(lambda : parent.scene().record())
+        if hasattr(self.edit, 'editingFinished'):
+            self.edit.editingFinished.connect(self.edit_finished)
         assert hasattr(self, 'layout')
 
         self.widget = QWidget()
@@ -776,9 +779,12 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
 
         self.name = None
 
+    def edit_finished(self):
+        self.parent.scene().record()
+
     def initLayout(self):
         font = QFont()
-        font.setPointSize(style['socket_text_size'])
+        font.setPointSize(style['param_text_size'])
 
         self.edit = QLineEdit()
         self.edit.setFont(font)
@@ -798,7 +804,7 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
         self.setValue(default)
 
     def getValue(self):
-        raise NotImplementedError
+        return str(self.edit.text())
 
     def setValue(self, value):
         self.edit.setText(str(value))
@@ -867,6 +873,44 @@ class QDMGraphicsParam_string(QDMGraphicsParam):
 
     def getValue(self):
         return str(self.edit.text())
+
+
+class QDMGraphicsParam_multiline_string(QDMGraphicsParam):
+    class QDMPlainTextEdit(QPlainTextEdit):
+        def focusOutEvent(self, event):
+            self.parent.edit_finished()
+            super().focusOutEvent(event)
+
+    def initLayout(self):
+        font = QFont()
+        font.setPointSize(style['param_text_size'])
+
+        self.edit = self.QDMPlainTextEdit()
+        self.edit.parent = self
+        self.edit.setFont(font)
+        self.edit.setStyleSheet('background-color: {}; color: {}'.format(
+            style['button_color'], style['button_text_color']))
+
+        self.label = QLabel()
+        self.label.setFont(font)
+
+        self.layout = QVBoxLayout()
+        self.layout.addWidget(self.label)
+        self.layout.addWidget(self.edit)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+
+        self.setWidget(self.edit)
+
+    def setGeometry(self, rect):
+        rect = QRectF(rect)
+        rect.setHeight(6 * TEXT_HEIGHT)
+        super().setGeometry(rect)
+
+    def setValue(self, value):
+        self.edit.setPlainText(str(value))
+
+    def getValue(self):
+        return str(self.edit.toPlainText())
 
 
 class QDMGraphicsNode(QGraphicsItem):
