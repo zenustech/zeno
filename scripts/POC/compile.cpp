@@ -12,10 +12,6 @@ auto parse_program(std::string const &code) {
     return p.parse();
 }
 
-std::string opchar_to_opcode(std::string const &op) {
-    return "add";
-}
-
 struct Translator {
     struct Visit {
         std::string lvalue;
@@ -26,7 +22,7 @@ struct Translator {
 
     std::string alloc_register() {
         char buf[233];
-        sprintf(buf, "$%d", regid++ % 256);
+        sprintf(buf, "$%d", regid++);
         return buf;
     }
 
@@ -43,13 +39,28 @@ struct Translator {
         return vis.lvalue;
     }
 
+    void movalue(Visit &src, std::string const &dst) {
+        if (src.lvalue.size() == 0) {
+            src.lvalue = dst;
+            emit(src.rvalue + " " + dst);
+        } else {
+            emit("mov " + src.lvalue + " " + dst);
+        }
+    }
+
     Visit make_visit(std::string const &lvalue, std::string const &rvalue) {
         return {lvalue, rvalue};
     }
 
     Visit visit(AST *ast) {
         if (ast->token.type == Token::Type::op) {
-            auto res = opchar_to_opcode(ast->token.ident);
+            if (ast->token.ident == "=") {
+                auto src = visit(ast->args[1].get());
+                auto dst = visit(ast->args[0].get());
+                movalue(src, dst.lvalue);
+                return make_visit("", "");
+            }
+            auto res = ast->token.ident;
             for (auto const &arg: ast->args) {
                 auto vis = visit(arg.get());
                 res += " " + lvalue(vis);
@@ -79,9 +90,11 @@ std::string translate_program(AST *ast) {
 }
 
 int main() {
-    Parser par("2 + 3 + 1");
+    auto stm = "a = 4 * a + 3 * b";
+    cout << stm << endl;
+    Parser par(stm);
     auto ast = par.parse();
-    ast->print();
+    //ast->print();
     translate_program(ast.get());
     return 0;
 }
