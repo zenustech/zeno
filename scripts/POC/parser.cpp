@@ -108,9 +108,9 @@ struct Parser {
 
     bool parse_funcall() {  // funcall := symbol "(" [expr ["," expr]*]? ")"
         if (token->type == Token::Type::reg) {
-            token++;
+            auto opToken = *token++;
             if (token->is_op({"("})) {
-                auto opToken = *token++;
+                token++;
                 if (token->is_op({")"})) {
                     emplace_ast(opToken);
                     return true;
@@ -140,7 +140,10 @@ struct Parser {
     }
 
     bool parse_factor() {
-        // factor := atom | <"+"|"-"> factor | "(" expr ")" | funcall
+        // factor := funcall | atom | <"+"|"-"> factor | "(" expr ")"
+        if (parse_funcall()) {
+            return true;
+        }
         if (parse_atom()) {
             return true;
         }
@@ -163,7 +166,7 @@ struct Parser {
             }
             return true;
         }
-        return parse_funcall();
+        return false;
     }
 
     bool parse_term() {  // term := factor [<"*"|"/"|"%"> factor]*
@@ -202,6 +205,7 @@ struct Parser {
             if (!parse_expr()) {
                 token--;
             }
+            emplace_ast(opToken, pop_ast(), pop_ast());
         }
         return true;
     }
@@ -239,7 +243,7 @@ struct Parser {
 };
 
 int main(void) {
-    Parser p("posz = fit ( posx + 1, posy, posz )");
+    Parser p("posz = 1 + 3 * fit ( posx + 1 , posy , posz )");
     while (p.tokenize());
     p.init_parse();
     p.parse_stmt();
