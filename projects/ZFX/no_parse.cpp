@@ -1,14 +1,11 @@
 #include <zeno/zeno.h>
 #include <zeno/StringObject.h>
+#include "no_ProgramObject.h"
 #include "program.h"
 #include "parse.h"
 #include <memory>
 
 using namespace zeno;
-
-struct ProgramObject {
-    Program prog;
-};
 
 struct ParseProgram : INode {
     virtual void apply() override {

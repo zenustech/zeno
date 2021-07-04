@@ -10,6 +10,7 @@ namespace zeno {
 template <class T>
 struct copiable_unique_ptr : std::unique_ptr<T> {
     using std::unique_ptr<T>::unique_ptr;
+    using std::unique_ptr<T>::operator=;
 
     copiable_unique_ptr(std::unique_ptr<T> &&o)
         : std::unique_ptr<T>(std::move(o)) {

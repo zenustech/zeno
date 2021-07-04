@@ -1,29 +1,23 @@
 #include <zeno/zeno.h>
 #include "program.h"
+#include "no_ProgramObject.h"
+#include "no_ParticlesObject.h"
 #include "pwrangle.h"
-#include "parse.h"
-#include <iostream>
+#include "particles.h"
 
-using std::cout;
-using std::endl;
+using namespace zeno;
 
-int main(void)
-{
-    Context ctx;
-
-    Program prog = parse_program(
-        "add @0 @0 #3.14\n"
-    );
-
-    std::vector<float> arr(16);
-    for (int i = 0; i < 8; i++) {
-        arr[i] = 2.718f;
+struct ParticlesWrangle : INode {
+    virtual void apply() override {
+        auto particles = get_input<ParticlesObject>("particles");
+        auto program = get_input<ProgramObject>("program");
+        particles_wrangle(&program->prog, &particles->pars);
     }
-    vectors_wrangle(prog, {&arr});
+};
 
-    for (int i = 0; i < 16; i++) {
-        cout << arr[i] << endl;
-    }
-
-    return 0;
-}
+ZENDEFNODE(ParticlesWrangle, {
+    {"particles", "program"},
+    {"particles"},
+    {},
+    {"zenofx"},
+});
