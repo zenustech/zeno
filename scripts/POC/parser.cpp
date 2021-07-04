@@ -6,13 +6,13 @@
 #include <sstream>
 #include <cstring>
 #include <cctype>
+#include <memory>
 #include <array>
 #include <stack>
 #include <set>
 
 struct Parser {
     std::istringstream sin;
-    std::ostringstream sout;
 
     Parser(std::string const &code) : sin(code) {}
 
@@ -21,10 +21,8 @@ struct Parser {
             op, mem, reg, imm,
         } type;
         std::string ident;
-        float value = 0;
 
         Token(Type type, std::string const &ident) : type(type), ident(ident) {}
-        Token(Type type, float value) : type(type), value(value) {}
 
         bool is_op(std::set<std::string> const &list) {
             return type == Type::op && list.find(ident) != list.end();
@@ -38,13 +36,34 @@ struct Parser {
         token = tokens.begin();
     }
 
+    struct AST {
+        std::unique_ptr<AST> lhs, rhs;
+        Token token;
+
+        AST
+            ( std::unique_ptr<AST> lhs
+            , std::unique_ptr<AST> rhs
+            , Token token
+            )
+            : lhs(std::move(lhs))
+            , rhs(std::move(rhs))
+            , token(std::move(token))
+            {}
+        explicit AST
+            ( Token token
+            )
+            : lhs(nullptr)
+            , rhs(nullptr)
+            , token(std::move(token))
+            {}
+    };
+
+    std::stack<std::unique_ptr<AST>> asts;
+
     bool parse_atom() {
         if (token->type == Token::Type::op)
             return false;
-        if (token->type == Token::Type::imm)
-            printf("[%f]\n", token->value);
-        else
-            printf("[%s]\n", token->ident.c_str());
+        asts.push(std::make_unique<AST>(*token));
         token++;
         return true;
     }
@@ -54,7 +73,14 @@ struct Parser {
     }
 
     bool parse_term() {  // term := factor [<"*"|"/"|"%"> factor]*
-        return parse_factor();
+        if (!parse_factor())
+            return false;
+        while (token->is_op({"*", "/", "%"})) {
+            token++;
+            if (!parse_factor())
+                break;
+        }
+        return true;
     }
 
     bool parse_expr() {  // expr := term [<"+"|"-"> term]*
@@ -84,9 +110,9 @@ struct Parser {
             return false;
         if (isdigit(head)) {
             sin.unget();
-            float value;
-            sin >> value;
-            tokens.emplace_back(Token::Type::imm, value);
+            std::string ident;
+            sin >> ident;
+            tokens.emplace_back(Token::Type::imm, ident);
             return true;
         } else if (head == '@') {
             std::string ident;
