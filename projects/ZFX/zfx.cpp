@@ -1,4 +1,5 @@
-#include "compile.h"
+#include "Program.h"
+#include "split_str.h"
 #include <string>
 #include <memory>
 #include <vector>
@@ -383,15 +384,6 @@ struct Transcriptor {
         return lines;
     }
 };
-
-static std::vector<std::string> split_str(std::string const &s, char delimiter) {
-    std::vector<std::string> tokens;
-    std::string token;
-    std::istringstream iss(s);
-    while (std::getline(iss, token, delimiter))
-        tokens.push_back(token);
-    return tokens;
-}
 
 static std::string opchar_to_name(std::string const &op) {
     if (op == "+") return "add";

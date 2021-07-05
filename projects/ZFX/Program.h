@@ -8,14 +8,13 @@
 struct Context {
     float regtable[256];
     float *memtable[256];
-    size_t memindex = 0;
 
     float memfetch(int index) const {
-        return memtable[index][memindex];
+        return *memtable[index];
     }
 
     void memstore(int index, float value) {
-        memtable[index][memindex] = value;
+        *memtable[index] = value;
     }
 };
 
@@ -89,3 +88,7 @@ struct Program {
         }
     }
 };
+
+std::string zfx_to_assembly(std::string const &code);
+Program assemble_program(std::string const &lines);
+Program *compile_program(std::string const &code);

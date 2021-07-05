@@ -2,25 +2,6 @@
  "graph": {
   "main": {
    "nodes": {
-    "776fe294-ParticlesToPrimitive": {
-     "name": "ParticlesToPrimitive",
-     "inputs": {
-      "particles": [
-       "a5ee16c0-ParticlesWrangle",
-       "particles"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      420.0,
-      -44.80000000000001
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
     "f276a3c5-Make2DGridPrimitive": {
      "name": "Make2DGridPrimitive",
      "inputs": {
@@ -48,23 +29,6 @@
      "uipos": [
       -459.20000000000005,
       -384.0000000000001
-     ],
-     "options": []
-    },
-    "97632f15-PrimitiveToParticles": {
-     "name": "PrimitiveToParticles",
-     "inputs": {
-      "prim": [
-       "f276a3c5-Make2DGridPrimitive",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -160.0,
-      -200.0
      ],
      "options": []
     },
@@ -124,22 +88,22 @@
       "COND": null
      },
      "params": {
-      "value": "define f3 @pos\ndefine f3 @vel\ndefine f3 @clr\n@clr = @pos + @vel + 0.5\n@clr = @pos + @vel + 0.5"
+      "value": "define f3 @pos\ndefine f3 @clr\n@clr = @pos + 0.5\n@clr = @pos + 0.5"
      },
      "uipos": [
-      -158.07999999999993,
-      -21.760000000000012
+      -463.3599999999999,
+      -67.84000000000002
      ],
      "options": []
     },
     "a5ee16c0-ParticlesWrangle": {
      "name": "ParticlesWrangle",
      "inputs": {
-      "particles": [
-       "97632f15-PrimitiveToParticles",
-       "particles"
+      "prim": [
+       "f276a3c5-Make2DGridPrimitive",
+       "prim"
       ],
-      "ZFXCode": [
+      "zfxCode": [
        "5da6df65-MakeMultilineString",
        "value"
       ],
@@ -148,16 +112,18 @@
      },
      "params": {},
      "uipos": [
-      125.43999999999994,
-      -72.32000000000001
+      -128.37000000000006,
+      -171.06999999999996
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     }
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": -935,
-    "trans_y": -522
+    "trans_x": -1179,
+    "trans_y": -435
    }
   }
  },
@@ -555,31 +521,6 @@
     "mathematica"
    ]
   },
-  "MakeParticles": {
-   "inputs": [
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "particles",
-    "DST"
-   ],
-   "params": [
-    [
-     "int",
-     "nchannels",
-     "0"
-    ],
-    [
-     "int",
-     "size",
-     "0"
-    ]
-   ],
-   "categories": [
-    "zenofx"
-   ]
-  },
   "MakePrimitive": {
    "inputs": [
     "SRC",
@@ -813,30 +754,15 @@
     "numeric"
    ]
   },
-  "ParticlesToPrimitive": {
+  "ParticlesWrangle": {
    "inputs": [
-    "particles",
+    "prim",
+    "zfxCode",
     "SRC",
     "COND"
    ],
    "outputs": [
     "prim",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
-  "ParticlesWrangle": {
-   "inputs": [
-    "particles",
-    "ZFXCode",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "particles",
     "DST"
    ],
    "params": [],
@@ -1335,21 +1261,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "PrimitiveToParticles": {
-   "inputs": [
-    "prim",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "particles",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
    ]
   },
   "PrimitiveUnaryOp": {

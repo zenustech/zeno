@@ -1,18 +1,9 @@
-#include "program.h"
-#include "compile.h"
+#include "Program.h"
+#include "split_str.h"
 #include <magic_enum.hpp>
 #include <sstream>
 #include <cassert>
 #include <string>
-
-static std::vector<std::string> split_str(std::string const &s, char delimiter) {
-    std::vector<std::string> tokens;
-    std::string token;
-    std::istringstream iss(s);
-    while (std::getline(iss, token, delimiter))
-        tokens.push_back(token);
-    return tokens;
-}
 
 struct Assembler {
     Operand assemble_operand(std::string const &ident) {
