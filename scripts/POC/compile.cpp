@@ -106,11 +106,11 @@ struct Finalizer {
     std::map<int, std::pair<std::string, std::string>> casting;
 
     Finalizer() {
-        typing["@a"] = "f1";
+        typing["@a"] = "f3";
         typing["@b"] = "f1";
     }
 
-    std::string opchar_to_name(std::string const &op) {
+    static std::string opchar_to_name(std::string const &op) {
         if (op == "+") return "add";
         if (op == "-") return "sub";
         if (op == "*") return "mul";
@@ -124,7 +124,7 @@ struct Finalizer {
         exit(-1);
     }
 
-    std::string determine_type(std::string const &exp) {
+    std::string determine_type(std::string const &exp) const {
         if (exp[0] == '#') {
             return exp.substr(1).find('.') ? "f1" : "i1";
         }
@@ -135,7 +135,7 @@ struct Finalizer {
         return it->second;
     }
 
-    std::string type_of(std::string const &exp) {
+    std::string type_of(std::string const &exp) const {
         auto it = typing.find(exp);
         if (it == typing.end()) {
             error("cannot determine type of ", exp);
@@ -143,7 +143,7 @@ struct Finalizer {
         return it->second;
     }
 
-    static std::string tag_dim(std::string const &exp, int d) {
+    std::string tag_dim(std::string const &exp, int d) const {
         if (exp[0] == '#')
             return exp;
         char buf[233];
@@ -163,14 +163,28 @@ struct Finalizer {
             auto opinst = dsttype[0] + opchar_to_name(opcode);
             cout << opinst << " " << tag_dim(dst, d);
             for (auto const &arg: args) {
-                cout << " " << tag_dim(arg, d);
+                auto argdim = get_digit(type_of(arg)[1]);
+                cout << " " << tag_dim(arg, d % argdim);
             }
             cout << endl;
         }
     }
 
     std::string promote_type(std::string const &lhs, std::string const &rhs) {
-        return lhs[0] <= rhs[0] ? lhs : rhs;
+        char stype = lhs[0] <= rhs[0] ? lhs[0] : rhs[0];
+        char dim = 0;
+        if (lhs[1] == '1') {
+            dim = rhs[1];
+        } else if (rhs[1] == '1') {
+            dim = lhs[1];
+        } else {
+            if (lhs[1] != rhs[1]) {
+                error("vector dimension mismatch: ",
+                    get_digit(lhs[1]), " != ", get_digit(rhs[1]));
+            }
+            dim = lhs[1];
+        }
+        return std::string() + stype + dim;
     }
 
     void op_promote_type(std::string const &dst,
@@ -230,7 +244,7 @@ struct Finalizer {
 };
 
 int main() {
-    auto code = "@a = 4 * @a";
+    auto code = "@a = @b * @a";
     cout << code << endl;
 
     Parser p(code);
