@@ -84,8 +84,11 @@ public:
     }
 
     auto parse() {
-        parse_stmt();
-        return pop_ast();
+        std::vector<std::unique_ptr<AST>> asts;
+        while (parse_stmt()) {
+            asts.push_back(pop_ast());
+        }
+        return asts;
     }
 
 private:
@@ -114,6 +117,8 @@ private:
 
     bool parse_atom() {  // atom := symbol | literial
         if (token->type == Token::Type::op)
+            return false;
+        if (token->type == Token::Type::none)
             return false;
         emplace_ast(*token);
         token++;

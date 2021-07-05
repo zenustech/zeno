@@ -127,10 +127,6 @@ struct UnwrapPass {
     std::map<std::string, std::string> typing;
     std::stringstream oss;
 
-    explicit UnwrapPass(decltype(typing) const &inityping)
-        : typing(inityping) {
-    }
-
     std::string determine_type(std::string const &exp) const {
         if (exp[0] == '#') {
             return strchr(exp.substr(1).c_str(), '.') ? "f1" : "i1";
@@ -381,25 +377,27 @@ struct ReassignPass {
 };
 
 
-std::string compile_program(
-    std::map<std::string, std::string> const &inityping,
-    std::string const &code) {
+std::string compile_program(std::string const &code) {
     cout << "===" << endl;
     cout << code << endl;
     cout << "===" << endl;
 
     Parser p(code);
-    auto ast = p.parse();
-    cout << ast->dump() << endl;
+    auto asts = p.parse();
+    for (auto const &ast: asts) {
+        cout << ast->dump() << endl;
+    }
     cout << "===" << endl;
 
     Transcriptor t;
-    t.visit(ast.get());
+    for (auto const &ast: asts) {
+        t.visit(ast.get());
+    }
     auto ir = t.dump();
     cout << ir;
     cout << "===" << endl;
 
-    UnwrapPass uwp(inityping);
+    UnwrapPass uwp;
     uwp.parse(ir);
     auto uwir = uwp.dump();
     cout << uwir;
