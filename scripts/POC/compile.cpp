@@ -8,11 +8,6 @@
 using std::cout;
 using std::endl;
 
-auto parse_program(std::string const &code) {
-    Parser p(code);
-    return p.parse();
-}
-
 struct Translator {
     struct Visit {
         std::string lvalue;
@@ -91,15 +86,53 @@ struct Translator {
 
     std::string lines;
 
-    std::string get_assembly() {
+    std::string dump() const {
         return lines;
     }
 };
 
+static std::vector<std::string> split_str(std::string const &s, char delimiter) {
+  std::vector<std::string> tokens;
+  std::string token;
+  std::istringstream iss(s);
+  while (std::getline(iss, token, delimiter))
+    tokens.push_back(token);
+  return tokens;
+}
+
+struct Finalizer {
+    void parse(std::string const &lines) {
+        for (auto const &line: split_str(lines, '\n')) {
+            auto ops = split_str(line, ' ');
+            auto opcode = ops[0];
+            std::vector<std::string> args;
+            for (int i = 1; i < ops.size() - 1; i++) {
+                args.push_back(ops[i]);
+            }
+            auto dst = ops[ops.size() - 1];
+        }
+    }
+
+    std::string dump() const {
+        return "done";
+    }
+};
+
+auto parse_program(std::string const &code) {
+    Parser p(code);
+    return p.parse();
+}
+
 std::string translate_program(AST *ast) {
     Translator t;
     t.visit(ast);
-    return t.get_assembly();
+    return t.dump();
+}
+
+std::string finalize_program(std::string const &ir) {
+    Finalizer f;
+    f.parse(ir);
+    return f.dump();
 }
 
 int main() {
@@ -107,7 +140,8 @@ int main() {
     cout << stm << endl;
     Parser par(stm);
     auto ast = par.parse();
-    //ast->print();
-    translate_program(ast.get());
+    auto ir = translate_program(ast.get());
+    auto assem = finalize_program(ir);
+    cout << assem << endl;
     return 0;
 }

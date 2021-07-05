@@ -1,6 +1,6 @@
 # ZENO
 
-[![CMake](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zensim-dev/zeno/actions/workflows/cmake.yml) [![License](https://img.shields.io/badge/license-MPLv2-blue)](LICENSE) [![Version](https://img.shields.io/github/v/release/zensim-dev/zeno)](https://github.com/zensim-dev/zeno/releases)
+[![CMake](https://github.com/zenustech/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zenustech/zeno/actions/workflows/cmake.yml) [![License](https://img.shields.io/badge/license-MPLv2-blue)](LICENSE) [![Version](https://img.shields.io/github/v/release/zenustech/zeno)](https://github.com/zenustech/zeno/releases)
 
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 
@@ -23,7 +23,7 @@ nodes, and various VFX and simulation solutions based on our nodes (provided by 
 
 Open-source code development framework to easily develop high-performance physical simulation code that both run on cpu and gpu with out too much effort. Now intergrated into ZENO.
 
-[![ZenCompute development framework](images/zencompute.png)](https://github.com/zensim-dev/zpc)
+[![ZenCompute development framework](images/zencompute.png)](https://github.com/zenustech/zpc)
 
 
 # Motivation
@@ -122,7 +122,7 @@ for more information.
 
 ## Get binary release
 
-Go to the [release page](https://github.com/zensim-dev/zeno/releases/), and click Assets -> download `zeno-linux-20xx.x.x.tar.gz`.
+Go to the [release page](https://github.com/zenustech/zeno/releases/), and click Assets -> download `zeno-linux-20xx.x.x.tar.gz`.
 Then, extract this archive, and simply run `./start.sh`, then the node editor window will shows up if everything is working well.
 
 ## How to play
@@ -134,7 +134,7 @@ Also MMB to drag in the node editor, LMB click on sockets to create connections.
 
 ## Bug report
 
-If you find the binary version didn't worked properly or some error message has been thrown on your machine, please let me know by opening an [issue](https://github.com/zensim-dev/zeno/issues) on GitHub, thanks for you support!
+If you find the binary version didn't worked properly or some error message has been thrown on your machine, please let me know by opening an [issue](https://github.com/zenustech/zeno/issues) on GitHub, thanks for you support!
 
 
 # Developer Build
@@ -246,7 +246,7 @@ make -C build install
 
 - Windows
 
-First, download `zenv-windows-prebuilt.zip` from [this page](https://github.com/zensim-dev/binaries/releases).
+First, download `zenv-windows-prebuilt.zip` from [this page](https://github.com/zenustech/binaries/releases).
 Second, extract it directly into project root.
 Then run `dist.bat` in project root.
 Finally, rename the `zenv` folder to `zeno-windows-20xx.x.x`, and archive it into `zeno-windows-20xx.x.x.zip`.
@@ -338,7 +338,7 @@ Work in progress, may not work, see `assets/blender.blend`. The source code of o
 
 Thank you to all the people who have already contributed to ZENO!
 
-[![Contributors](https://contrib.rocks/image?repo=zensim-dev/zeno)](https://github.com/zensim-dev/zeno/graphs/contributors)
+[![Contributors](https://contrib.rocks/image?repo=zenustech/zeno)](https://github.com/zenustech/zeno/graphs/contributors)
 
 ## License
 
