@@ -9,7 +9,7 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-struct Translator {
+struct Transcriptor {
     struct Visit {
         std::string lvalue;
         std::string rvalue;
@@ -101,12 +101,11 @@ static std::vector<std::string> split_str(std::string const &s, char delimiter) 
   return tokens;
 }
 
-struct Unwrapper {
+struct UnwrapPass {
     std::map<std::string, std::string> typing;
-    std::map<int, std::pair<std::string, std::string>> casting;
     std::stringstream oss;
 
-    Unwrapper() {
+    UnwrapPass() {
         typing["@a"] = "f3";
         typing["@b"] = "f1";
     }
@@ -242,6 +241,20 @@ struct Unwrapper {
     }
 };
 
+struct UntypePass {
+    std::stringstream oss;
+
+    void parse(std::string const &lines) {
+        for (auto const &line: split_str(lines, '\n')) {
+            if (line.size() == 0) return;
+        }
+    }
+
+    std::string dump() const {
+        return oss.str();
+    }
+};
+
 int main() {
     auto code = "@a = @a + @b * ((3 + 1) + 1.4)";
     cout << code << endl;
@@ -252,17 +265,23 @@ int main() {
     cout << ast->dump() << endl;
     cout << "===" << endl;
 
-    Translator t;
+    Transcriptor t;
     t.visit(ast.get());
     ast = nullptr;
     auto ir = t.dump();
     cout << ir;
     cout << "===" << endl;
 
-    Unwrapper u;
-    u.parse(ir);
-    auto iir = u.dump();
-    cout << iir;
+    UnwrapPass uwp;
+    uwp.parse(ir);
+    auto uwir = uwp.dump();
+    cout << uwir;
+    cout << "===" << endl;
+
+    UntypePass utp;
+    utp.parse(uwir);
+    auto utir = utp.dump();
+    cout << utir;
     cout << "===" << endl;
 
     return 0;
