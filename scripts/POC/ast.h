@@ -53,17 +53,18 @@ struct AST {
             args.push_back(std::move(rhs));
         }
 
-    void print(std::string const &indent = "") const {
-        printf("%s%s", indent.c_str(), token.ident.c_str());
-        if (args.size() == 0) {
-            printf("\n");
-            return;
-        }
-        printf("(\n", indent.c_str());
+    std::string dump() const {
+        std::string res;
+        if (args.size() != 0)
+            res += "(";
+        res += token.ident;
         for (auto const &arg: args) {
-            arg->print(indent + "  ");
+            res += " ";
+            res += arg->dump();
         }
-        printf("%s)\n", indent.c_str());
+        if (args.size() != 0)
+            res += ")";
+        return res;
     }
 };
 

@@ -101,11 +101,12 @@ static std::vector<std::string> split_str(std::string const &s, char delimiter) 
   return tokens;
 }
 
-struct Finalizer {
+struct Unwrapper {
     std::map<std::string, std::string> typing;
     std::map<int, std::pair<std::string, std::string>> casting;
+    std::stringstream oss;
 
-    Finalizer() {
+    Unwrapper() {
         typing["@a"] = "f3";
         typing["@b"] = "f1";
     }
@@ -158,12 +159,12 @@ struct Finalizer {
         int dim = get_digit(dsttype[1]);
         for (int d = 0; d < dim; d++) {
             auto opinst = dsttype[0] + opchar_to_name(opcode);
-            cout << opinst << " " << tag_dim(dst, d);
+            oss << opinst << " " << tag_dim(dst, d);
             for (auto const &arg: args) {
                 auto argdim = get_digit(determine_type(arg)[1]);
-                cout << " " << tag_dim(arg, d % argdim);
+                oss << " " << tag_dim(arg, d % argdim);
             }
-            cout << endl;
+            oss << '\n';
         }
     }
 
@@ -193,7 +194,7 @@ struct Finalizer {
         auto it = typing.find(dst);
         if (it == typing.end()) {
             typing[dst] = curtype;
-            cout << "def " << dst << " " << curtype << endl;
+            oss << "def " << dst << " " << curtype << '\n';
         } else {
             if (it->second != curtype) {
                 if (dst[0] == '@') {
@@ -201,7 +202,7 @@ struct Finalizer {
                         error("cannot cast: ", it->second, " <- ", curtype);
                     }
                 }
-                cout << "def " << dst << " " << curtype << endl;
+                oss << "def " << dst << " " << curtype << '\n';
                 typing[dst] = promote_type(it->second, curtype);
             }
         }
@@ -237,26 +238,32 @@ struct Finalizer {
     }
 
     std::string dump() const {
-        return "done";
+        return oss.str();
     }
 };
 
 int main() {
     auto code = "@a = @a + @b * ((3 + 1) + 1.4)";
     cout << code << endl;
+    cout << "===" << endl;
 
     Parser p(code);
     auto ast = p.parse();
+    cout << ast->dump() << endl;
+    cout << "===" << endl;
 
     Translator t;
     t.visit(ast.get());
     ast = nullptr;
     auto ir = t.dump();
+    cout << ir;
+    cout << "===" << endl;
 
-    Finalizer f;
-    f.parse(ir);
-    auto assem = f.dump();
+    Unwrapper u;
+    u.parse(ir);
+    auto iir = u.dump();
+    cout << iir;
+    cout << "===" << endl;
 
-    cout << assem << endl;
     return 0;
 }
