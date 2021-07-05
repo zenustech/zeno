@@ -558,6 +558,8 @@ class QDMGraphicsNode_FrameResizeHelper(QGraphicsItem):
         self.node = parent
         self.name = None
 
+        self.setAcceptHoverEvents(True)
+
     def getCirclePos(self):
         basePos = self.node.pos() + self.pos()
         return basePos
@@ -583,6 +585,12 @@ class QDMGraphicsNode_FrameResizeHelper(QGraphicsItem):
         p = self.pos()
         self.node.setWidthHeight(p.x(), p.y() + TEXT_HEIGHT)
 
+    def hoverEnterEvent(self, event):
+        self.setCursor(Qt.SizeFDiagCursor)
+
+    def hoverLeaveEvent(self, event):
+        self.setCursor(Qt.ArrowCursor)
+``
 
 class QDMGraphicsSocket(QGraphicsItem):
     def __init__(self, parent):
