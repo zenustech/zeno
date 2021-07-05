@@ -1332,6 +1332,14 @@ class NodeEditor(QWidget):
         descs = zenapi.getDescriptors()
         subg_descs = self.getSubgraphDescs()
         descs.update(subg_descs)
+        descs.update({
+            'Frame': {
+                'inputs': [],
+                'outputs': [],
+                'params': [],
+                'categories': ['layout'],
+            } 
+        })
         self.setDescriptors(descs)
 
     def on_add(self):
