@@ -282,7 +282,7 @@ struct UntypePass {
     int tmpid = 0;
     std::string emit_cast(char src, char dst, std::string const &exp) {
         char tmp[233];
-        sprintf(tmp, "$tmp%d", tmpid);
+        sprintf(tmp, "$tmp%d", tmpid++);
         oss << "cvt" << dst << src << " " << tmp << " " << exp << '\n';
         return tmp;
     }
@@ -308,6 +308,53 @@ struct UntypePass {
             oss << opcode << " " << dst;
             for (int i = 0; i < args.size(); i++) {
                 oss << " " << args[i];
+            }
+            oss << '\n';
+        }
+    }
+
+    std::string dump() const {
+        return oss.str();
+    }
+};
+
+struct ReassignPass {
+    std::stringstream oss;
+
+    int regid = 0;
+    int memid = 0;
+    std::map<std::string, std::string> assignment;
+    std::map<std::string, int> memories;
+
+    std::string reassign_register(std::string const &exp) {
+        if (exp[0] != '@') {
+            auto key = exp.substr(1);
+            auto it = memories.find(i);
+            char buf[233];
+            int id = memid++;
+            sprintf(buf, "@%d", id);
+            return buf;
+        }
+
+        if (exp[0] != '$')
+            return exp;
+        auto it = assignment.find(exp);
+        if (it != assignment.end()) {
+            return it->second;
+        }
+        char buf[233];
+        sprintf(buf, "$%d", regid++);
+        assignment[exp] = buf;
+        return buf;
+    }
+
+    void parse(std::string const &lines) {
+        for (auto const &line: split_str(lines, '\n')) {
+            if (line.size() == 0) return;
+            auto ops = split_str(line, ' ');
+            oss << ops[0];
+            for (int i = 2; i < ops.size(); i++) {
+                oss << " " << reassign_register(ops[i]);
             }
             oss << '\n';
         }
@@ -346,6 +393,12 @@ int main() {
     utp.parse(uwir);
     auto utir = utp.dump();
     cout << utir;
+    cout << "===" << endl;
+
+    ReassignPass rap;
+    rap.parse(uwir);
+    auto rair = rap.dump();
+    cout << rair;
     cout << "===" << endl;
 
     return 0;
