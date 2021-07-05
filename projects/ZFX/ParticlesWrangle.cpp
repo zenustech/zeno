@@ -19,15 +19,17 @@ static void vectors_wrangle(Program const *prog,
     for (int i = 1; i < chs.size(); i++) {
         size = std::min(chs[i].count, size);
     }
-    Context ctx;
-    for (int i = 0; i < chs.size(); i++) {
-        ctx.memtable[i] = chs[i].base;
-    }
+    // Context ctx;
+    // for (int i = 0; i < chs.size(); i++) {
+    //     ctx.memtable[i] = chs[i].base;
+    // }
+    #pragma omp parallel for
     for (int i = 0; i < size; i++) {
-        prog->execute(&ctx);
-        for (int i = 0; i < chs.size(); i++) {
-            ctx.memtable[i] = chs[i].base;
+        Context ctx;
+        for (int j = 0; j < chs.size(); j++) {
+            ctx.memtable[j] = chs[j].base + chs[j].stride * i;
         }
+        prog->execute(&ctx);
     }
 }
 
@@ -44,7 +46,7 @@ static void particles_wrangle(Program const *prog,
         std::visit([&] (auto const &arr) {
             iob.base = (float *)arr.data() + dimid;
             iob.count = arr.size();
-            iob.stride = sizeof(arr[0]);
+            iob.stride = sizeof(arr[0])/sizeof(float);
         }, attr);
         chs[i] = iob;
     }
