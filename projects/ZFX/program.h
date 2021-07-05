@@ -81,7 +81,7 @@ struct Instruction {
 
 struct Program {
     std::vector<Instruction> insts;
-    std::map<std::string, int> memories;
+    std::vector<std::string> channels;
 
     void execute(Context *ctx) const {
         for (auto const &inst: insts) {
