@@ -327,11 +327,17 @@ struct ReassignPass {
     std::map<std::string, int> memories;
 
     std::string reassign_register(std::string const &exp) {
-        if (exp[0] != '@') {
+        if (exp[0] == '@') {
             auto key = exp.substr(1);
-            auto it = memories.find(i);
+            auto it = memories.find(key);
+            int id;
+            if (it != memories.end()) {
+                id = it->second;
+            } else {
+                id = memid++;
+                memories[key] = id;
+            }
             char buf[233];
-            int id = memid++;
             sprintf(buf, "@%d", id);
             return buf;
         }
@@ -357,6 +363,9 @@ struct ReassignPass {
                 oss << " " << reassign_register(ops[i]);
             }
             oss << '\n';
+        }
+        for (auto const &[key, id]: memories) {
+            oss << "layout @" << id << " " << key << endl;
         }
     }
 
