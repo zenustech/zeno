@@ -128,32 +128,7 @@ class QDMGraphicsScene(QGraphicsScene):
         if input_nodes == None:
             input_nodes = self.nodes
         for node in input_nodes:
-            inputs = {}
-            for name, socket in node.inputs.items():
-                assert not socket.isOutput
-                data = None
-                if socket.hasAnyEdge():
-                    srcSocket = socket.getTheOnlyEdge().srcSocket
-                    data = srcSocket.node.ident, srcSocket.name
-                inputs[name] = data
-
-            params = {}
-            for name, param in node.params.items():
-                value = param.getValue()
-                params[name] = value
-
-            uipos = node.pos().x(), node.pos().y()
-            options = node.getOptions()
-
-            data = {
-                'name': node.name,
-                'inputs': inputs,
-                'params': params,
-                'uipos': uipos,
-                'options': options,
-            }
-            nodes[node.ident] = data
-
+            nodes.update(node.dump())
         return nodes
 
     def newGraph(self):
@@ -175,38 +150,12 @@ class QDMGraphicsScene(QGraphicsScene):
 
         for ident, data in nodes.items():
             name = data['name']
-            inputs = data['inputs']
-            params = data['params']
-            posx, posy = data['uipos']
-            options = data.get('options', [])
-
             if name not in self.descs:
                 print('no node class named [{}]'.format(name))
                 continue
             node = self.makeNode(name)
-            node.initSockets()
-            node.setIdent(ident)
-            node.setName(name)
-            node.setPos(posx, posy)
-            node.setOptions(options)
-
-            for name, value in params.items():
-                if name not in node.params:
-                    print('no param named [{}] for [{}]'.format(
-                        name, nodes[ident]['name']))
-                    continue
-                param = node.params[name]
-                param.setValue(value)
-
-            for name, input in inputs.items():
-                if input is None:
-                    continue
-                if name not in node.inputs:
-                    print('no input named [{}] for [{}]'.format(
-                        name, nodes[ident]['name']))
-                    continue
-                dest = node.inputs[name]
-                edges.append((dest, input))
+            node_edges = node.load(ident, data)
+            edges.extend(node_edges)
 
             self.addNode(node)
             nodesLut[ident] = node
@@ -1279,6 +1228,68 @@ class QDMGraphicsNode(QGraphicsItem):
         for socket in self.outputs.values():
             for edge in socket.edges:
                 edge.updatePath()
+
+    def dump(self):
+        node = self
+        inputs = {}
+        for name, socket in node.inputs.items():
+            assert not socket.isOutput
+            data = None
+            if socket.hasAnyEdge():
+                srcSocket = socket.getTheOnlyEdge().srcSocket
+                data = srcSocket.node.ident, srcSocket.name
+            inputs[name] = data
+
+        params = {}
+        for name, param in node.params.items():
+            value = param.getValue()
+            params[name] = value
+
+        uipos = node.pos().x(), node.pos().y()
+        options = node.getOptions()
+
+        data = {
+            'name': node.name,
+            'inputs': inputs,
+            'params': params,
+            'uipos': uipos,
+            'options': options,
+        }
+        return {node.ident: data}
+    
+    def load(self, ident, data):
+        node = self
+        name = data['name']
+        inputs = data['inputs']
+        params = data['params']
+        posx, posy = data['uipos']
+        options = data.get('options', [])
+
+        node.initSockets()
+        node.setIdent(ident)
+        node.setName(name)
+        node.setPos(posx, posy)
+        node.setOptions(options)
+
+        for name, value in params.items():
+            if name not in node.params:
+                print('no param named [{}] for [{}]'.format(
+                    name, nodes[ident]['name']))
+                continue
+            param = node.params[name]
+            param.setValue(value)
+
+        edges = []
+        for name, input in inputs.items():
+            if input is None:
+                continue
+            if name not in node.inputs:
+                print('no input named [{}] for [{}]'.format(
+                    name, nodes[ident]['name']))
+                continue
+            dest = node.inputs[name]
+            edges.append((dest, input))
+        return edges
 
 
 class QDMFileMenu(QMenu):
