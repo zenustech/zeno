@@ -1,6 +1,5 @@
 #include <zeno/zeno.h>
 #include <zeno/PrimitiveObject.h>
-#include "no_ProgramObject.h"
 #include "no_ParticlesObject.h"
 #include "particles.h"
 
