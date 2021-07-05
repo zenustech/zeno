@@ -167,7 +167,8 @@ struct UnwrapPass {
         }
     }
 
-    std::string promote_type(std::string const &lhs, std::string const &rhs) {
+    static std::string promote_type(std::string const &lhs,
+        std::string const &rhs) {
         char stype = lhs[0] <= rhs[0] ? lhs[0] : rhs[0];
         char dim = 0;
         if (lhs[1] == '1') {
@@ -261,7 +262,7 @@ struct UntypePass {
             for (int d = 0; d < dim; d++) {
                 char buf[233];
                 sprintf(buf, "%s.%d", exp.c_str(), d);
-                printf("deftype %s %c\n", buf, ptype);
+                //printf("deftype %s %c\n", buf, ptype);
                 typing[buf] = ptype;
             }
         }
@@ -278,6 +279,14 @@ struct UntypePass {
         return it->second;
     }
 
+    int tmpid = 0;
+    std::string emit_cast(char src, char dst, std::string const &exp) {
+        char tmp[233];
+        sprintf(tmp, "$tmp%d", tmpid);
+        oss << "cvt" << dst << src << " " << tmp << " " << exp << '\n';
+        return tmp;
+    }
+
     void parse(std::string const &lines) {
         for (auto const &line: split_str(lines, '\n')) {
             if (line.size() == 0) return;
@@ -289,11 +298,18 @@ struct UntypePass {
                 auto arg = ops[i];
                 args.push_back(arg);
             }
+            auto dsttype = determine_type(dst);
             for (int i = 0; i < args.size(); i++) {
-                auto argtype = determine_type(args[i]) == 1;
-                if (argtype) {
+                auto argtype = determine_type(args[i]);
+                if (argtype != dsttype) {
+                    args[i] = emit_cast(argtype, dsttype, args[i]);
                 }
             }
+            oss << opcode << " " << dst;
+            for (int i = 0; i < args.size(); i++) {
+                oss << " " << args[i];
+            }
+            oss << '\n';
         }
     }
 
