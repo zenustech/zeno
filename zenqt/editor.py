@@ -29,6 +29,8 @@ style = {
     'param_text_size': 10,
     'socket_text_color': '#FFFFFF',
     'panel_color': '#282828',
+    'frame_title_color': '#393939',
+    'frame_panel_color': '#1B1B1B',
     'line_color': '#B0B0B0',
     'background_color': '#2C2C2C',
     'selected_color': '#EE8844',
@@ -950,7 +952,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
         pathContent.addRoundedRect(rect, r, r)
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['panel_color']))
+        painter.setBrush(QColor(style['frame_panel_color']))
         painter.drawPath(pathContent.simplified())
 
         # title round top
@@ -958,7 +960,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         rect = QRectF(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
         pathTitle.addRoundedRect(rect, r, r)
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['title_color']))
+        painter.setBrush(QColor(style['frame_title_color']))
         painter.drawPath(pathTitle.simplified())
         
         # title direct bottom
@@ -966,17 +968,8 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         rect = QRectF(0, -r, self.width, r)
         pathTitle.addRect(rect)
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['title_color']))
+        painter.setBrush(QColor(style['frame_title_color']))
         painter.drawPath(pathTitle.simplified())
-
-        pathOutline = QPainterPath()
-        pathOutline.addRoundedRect(0, -TEXT_HEIGHT, self.width, self.height, r, r)
-        pathOutlineColor = 'selected_color' if self.isSelected() else 'line_color'
-        pen = QPen(QColor(style[pathOutlineColor]))
-        pen.setWidth(style['node_outline_width'])
-        painter.setPen(pen)
-        painter.setBrush(Qt.NoBrush)
-        painter.drawPath(pathOutline.simplified())
 
     def setWidthHeight(self, width, height):
         width = max(width, style['node_width'])
