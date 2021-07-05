@@ -8,7 +8,7 @@
 struct Context {
     float regtable[256];
     float *memtable[256];
-    size_t memindex;
+    size_t memindex = 0;
 
     float memfetch(int index) const {
         return memtable[index][memindex];

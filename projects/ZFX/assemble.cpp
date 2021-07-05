@@ -34,9 +34,9 @@ Instruction assemble_instruction(std::string const &line) {
     assert(tokens.size() == 4);
     Instruction inst;
     inst.opcode = magic_enum::enum_cast<Opcode>(tokens[0]).value();
-    inst.lhs = assemble_operand(tokens[1]);
-    inst.rhs = assemble_operand(tokens[2]);
-    inst.dst = assemble_operand(tokens[3]);
+    inst.dst = assemble_operand(tokens[1]);
+    inst.lhs = assemble_operand(tokens[2]);
+    inst.rhs = assemble_operand(tokens[3]);
     return inst;
 }
 
