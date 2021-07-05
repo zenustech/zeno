@@ -162,7 +162,7 @@
       "COND": null
      },
      "params": {
-      "value": "add @6 @0 #3.14"
+      "value": "@clr = @pos + @vel + 0.5"
      },
      "uipos": [
       -431.35999999999996,
@@ -173,8 +173,8 @@
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": -959,
-    "trans_y": -242
+    "trans_x": -1103,
+    "trans_y": -187
    }
   }
  },

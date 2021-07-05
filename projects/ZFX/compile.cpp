@@ -1,4 +1,3 @@
-#include "program.h"
 #include "compile.h"
 #include "ast.h"
 #include <sstream>
@@ -107,8 +106,7 @@ static std::string opchar_to_name(std::string const &op) {
     if (op == "-") return "sub";
     if (op == "*") return "mul";
     if (op == "/") return "div";
-    if (op == "mov") return "mov";
-    return "";
+    return op;
 }
 
 static int get_digit(char c) {
@@ -129,9 +127,8 @@ struct UnwrapPass {
     std::map<std::string, std::string> typing;
     std::stringstream oss;
 
-    UnwrapPass() {
-        typing["@a"] = "f3";
-        typing["@b"] = "f1";
+    explicit UnwrapPass(decltype(typing) const &inityping)
+        : typing(inityping) {
     }
 
     std::string determine_type(std::string const &exp) const {
@@ -158,7 +155,9 @@ struct UnwrapPass {
         auto dsttype = determine_type(dst);
         int dim = get_digit(dsttype[1]);
         for (int d = 0; d < dim; d++) {
-            auto opinst = dsttype[0] + opchar_to_name(opcode);
+            auto opinst = opchar_to_name(opcode);
+            if (dsttype[0] != 'f')
+                opinst = dsttype[0] + opinst;
             oss << opinst << " " << tag_dim(dst, d);
             for (auto const &arg: args) {
                 auto argdim = get_digit(determine_type(arg)[1]);
@@ -369,18 +368,22 @@ struct ReassignPass {
             }
             oss << '\n';
         }
-        /*for (auto const &[key, id]: memories) {
-            oss << "def @" << id << " " << key << endl;
-        }*/
     }
 
     std::string dump() const {
-        return oss.str();
+        std::stringstream os;
+        for (auto const &[key, id]: memories) {
+            os << "bind " << id << " " << key << endl;
+        }
+        os << oss.str();
+        return os.str();
     }
 };
 
 
-Program compile_program(std::string const &code) {
+std::string compile_program(
+    std::map<std::string, std::string> const &inityping,
+    std::string const &code) {
     cout << "===" << endl;
     cout << code << endl;
     cout << "===" << endl;
@@ -396,7 +399,7 @@ Program compile_program(std::string const &code) {
     cout << ir;
     cout << "===" << endl;
 
-    UnwrapPass uwp;
+    UnwrapPass uwp(inityping);
     uwp.parse(ir);
     auto uwir = uwp.dump();
     cout << uwir;
@@ -415,7 +418,5 @@ Program compile_program(std::string const &code) {
     cout << rair;
     cout << "===" << endl;
 
-    auto prog = assemble_program(rair);
-    prog.memories = rap.get_memories();
-    return prog;
+    return rair;
 }
