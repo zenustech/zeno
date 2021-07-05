@@ -143,7 +143,7 @@ struct Finalizer {
         return it->second;
     }
 
-    std::string tag_dim(std::string const &exp, int d) {
+    static std::string tag_dim(std::string const &exp, int d) {
         if (exp[0] == '#')
             return exp;
         char buf[233];
@@ -151,11 +151,14 @@ struct Finalizer {
         return buf;
     }
 
+    static int get_digit(char c) {
+        return c <= '9' ? c - '0' : c - 'a';
+    }
+
     void emit_op(std::string const &opcode, std::string const &dst,
         std::vector<std::string> const &args) {
         auto dsttype = type_of(dst);
-        int dim = 0;
-        std::stringstream(dsttype.substr(1)) >> dim;
+        int dim = get_digit(dsttype[1]);
         for (int d = 0; d < dim; d++) {
             auto opinst = dsttype[0] + opchar_to_name(opcode);
             cout << opinst << " " << tag_dim(dst, d);
