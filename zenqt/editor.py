@@ -568,18 +568,19 @@ class QDMGraphicsNode_FrameResizeHelper(QGraphicsItem):
         return QRectF(*self.getCircleBounds()).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-        socket_color = 'socket_unconnect_color'
-        painter.setBrush(QColor(style[socket_color]))
-        pen = QPen(QColor(style['line_color']))
-        pen.setWidth(style['socket_outline_width'])
-        painter.setPen(pen)
-        painter.drawEllipse(*self.getCircleBounds())
+        painter.setBrush(QColor(style['line_color']))
+        painter.setPen(Qt.NoPen)
+        painter.drawPolygon(*[
+            QPointF(0, 0),
+            QPointF(10, 0),
+            QPointF(0, 10),
+        ])
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
         p = self.pos()
-        self.node.width = p.x() - 10
-        self.node.height = p.y() - 10
+        self.node.width = p.x()
+        self.node.height = p.y() + TEXT_HEIGHT
 
 
 class QDMGraphicsSocket(QGraphicsItem):
