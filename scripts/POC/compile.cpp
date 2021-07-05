@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iostream>
 #include <cstdlib>
+#include <map>
 
 using std::cout;
 using std::endl;
@@ -24,6 +25,18 @@ struct Translator {
         char buf[233];
         sprintf(buf, "$%d", regid++);
         return buf;
+    }
+
+    std::map<std::string, std::string> regalloc;
+
+    std::string get_register(std::string const &name) {
+        auto it = regalloc.find(name);
+        if (it == regalloc.end()) {
+            auto reg = alloc_register();
+            regalloc[name] = reg;
+            return reg;
+        }
+        return it->second;
     }
 
     void emit(std::string const &str) {
@@ -69,7 +82,7 @@ struct Translator {
         } else if (ast->token.type == Token::Type::mem) {
             return make_visit("@" + ast->token.ident, "");
         } else if (ast->token.type == Token::Type::reg) {
-            return make_visit("$" + ast->token.ident, "");
+            return make_visit(get_register(ast->token.ident), "");
         } else if (ast->token.type == Token::Type::imm) {
             return make_visit("#" + ast->token.ident, "");
         }
@@ -90,7 +103,7 @@ std::string translate_program(AST *ast) {
 }
 
 int main() {
-    auto stm = "a = 4 * a + 3 * b";
+    auto stm = "@a = 4 * @a + 3 * @b";
     cout << stm << endl;
     Parser par(stm);
     auto ast = par.parse();
