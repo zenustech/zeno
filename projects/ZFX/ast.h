@@ -19,6 +19,10 @@ struct Token {
     bool is_op(std::set<std::string> const &list) {
         return type == Type::op && list.find(ident) != list.end();
     }
+
+    bool is_ident(std::set<std::string> const &list) {
+        return type == Type::reg && list.find(ident) != list.end();
+    }
 };
 
 struct AST {
@@ -84,11 +88,16 @@ public:
     }
 
     auto parse() {
+        while (parse_definition());
         std::vector<std::unique_ptr<AST>> asts;
         while (parse_stmt()) {
             asts.push_back(pop_ast());
         }
         return asts;
+    }
+
+    auto const &get_typing() const {
+        return typing;
     }
 
 private:
@@ -100,6 +109,7 @@ private:
         token = tokens.begin();
     }
 
+    std::map<std::string, std::string> typing;
     std::stack<std::unique_ptr<AST>> ast_nodes;
 
     std::unique_ptr<AST> pop_ast() {
@@ -215,6 +225,24 @@ private:
             emplace_ast(opToken, pop_ast(), pop_ast());
         }
         return true;
+    }
+
+    bool parse_definition() {  // definition := "define" type symbol
+        if (token->is_ident({"define"})) {
+            auto opToken = *token++;
+            auto type = *token++;
+            if (type.type == Token::Type::reg) {
+                auto symbol = *token++;
+                if (symbol.type == Token::Type::mem) {
+                    typing[symbol.ident] = type.ident;
+                    return true;
+                }
+                token--;
+            }
+            token--;
+            token--;
+        }
+        return false;
     }
 
     bool parse_stmt() {  // stmt := expr ["=" expr]?

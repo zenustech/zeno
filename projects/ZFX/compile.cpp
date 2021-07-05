@@ -127,6 +127,10 @@ struct UnwrapPass {
     std::map<std::string, std::string> typing;
     std::stringstream oss;
 
+    void set_typing(std::map<std::string, std::string> const &typ) {
+        typing = typ;
+    }
+
     std::string determine_type(std::string const &exp) const {
         if (exp[0] == '#') {
             return strchr(exp.substr(1).c_str(), '.') ? "f1" : "i1";
@@ -398,6 +402,7 @@ std::string compile_program(std::string const &code) {
     cout << "===" << endl;
 
     UnwrapPass uwp;
+    uwp.set_typing(p.get_typing());
     uwp.parse(ir);
     auto uwir = uwp.dump();
     cout << uwir;
