@@ -2,93 +2,212 @@
  "graph": {
   "main": {
    "nodes": {
-    "f276a3c5-Make2DGridPrimitive": {
-     "name": "Make2DGridPrimitive",
+    "77f82990-MakeString": {
+     "name": "MakeString",
      "inputs": {
-      "nx": [
-       "36a7473b-NumericInt",
-       "value"
-      ],
-      "ny": null,
-      "sizeX": [
-       "e18676b0-x",
-       "vec3"
-      ],
-      "sizeY": [
-       "df5bd003-NumericVec3",
-       "vec3"
-      ],
-      "scale": null,
-      "origin": null,
       "SRC": null,
       "COND": null
      },
      "params": {
-      "isCentered": 1
+      "value": "/home/dilei/testmesh/tet.vtk"
      },
      "uipos": [
-      -435.45000000000005,
-      -381.5000000000001
+      -772.7890624999999,
+      -349.2226562499999
      ],
      "options": [
-      "ONCE"
+      "collapsed"
      ]
     },
-    "36a7473b-NumericInt": {
+    "e8b12f6c-x": {
+     "name": "MakeString",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": "/home/dilei/testmesh/solid_data_"
+     },
+     "uipos": [
+      -740.7890624999999,
+      -391.2226562499999
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "b078ad74-NumericInt": {
      "name": "NumericInt",
      "inputs": {
       "SRC": null,
       "COND": null
      },
      "params": {
-      "value": 1024
+      "value": 5
      },
      "uipos": [
-      -806.0,
-      -505.6
+      -801.7890624999999,
+      -297.2226562499999
      ],
-     "options": []
+     "options": [
+      "collapsed"
+     ]
     },
-    "df5bd003-NumericVec3": {
-     "name": "NumericVec3",
+    "6d1af88a-NumericInt": {
+     "name": "NumericInt",
      "inputs": {
       "SRC": null,
       "COND": null
      },
      "params": {
-      "x": 0.0,
-      "y": 1.0,
-      "z": 0.0
+      "value": 0
      },
      "uipos": [
-      -712.6000000000001,
-      -157.25
+      -804.7890624999999,
+      -243.22265624999991
      ],
-     "options": []
+     "options": [
+      "collapsed"
+     ]
     },
-    "e18676b0-x": {
-     "name": "NumericVec3",
+    "a435dde7-NumericInt": {
+     "name": "NumericInt",
      "inputs": {
       "SRC": null,
       "COND": null
      },
      "params": {
-      "x": 1.0,
-      "y": 0.0,
-      "z": 0.0
+      "value": 267
      },
      "uipos": [
-      -959.2000000000003,
-      -323.20000000000005
+      -791.7890624999999,
+      -194.22265624999991
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "999b643f-MakeMPMMehser": {
+     "name": "MakeMPMMehser",
+     "inputs": {
+      "pathPreFix": [
+       "e8b12f6c-x",
+       "value"
+      ],
+      "tet_path": [
+       "77f82990-MakeString",
+       "value"
+      ],
+      "smooth_iter": [
+       "b078ad74-NumericInt",
+       "value"
+      ],
+      "start": [
+       "6d1af88a-NumericInt",
+       "value"
+      ],
+      "end": [
+       "a435dde7-NumericInt",
+       "value"
+      ],
+      "edge_stretch": [
+       "2f7c68b3-NumericFloat",
+       "value"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      -239.03125,
+      -270.91796875
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "2f7c68b3-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": 2.5
+     },
+     "uipos": [
+      -718.7890624999999,
+      -143.22265624999997
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "a2e06821-MesherProcessFrame": {
+     "name": "MesherProcessFrame",
+     "inputs": {
+      "Mesher": [
+       "999b643f-MakeMPMMehser",
+       "MPMMehser"
+      ],
+      "frameNumber": [
+       "89ab99cb-GetFrameNum",
+       "FrameNum"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      247.87500000000006,
+      -341.625
      ],
      "options": []
     },
-    "d174fe34-PrimitiveAddAttr": {
+    "a2ec5fb4-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "861b7386-PrimitiveBinaryOp",
+       "primOut"
+      ],
+      "zfxCode": [
+       "c681b773-MakeMultilineString",
+       "value"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      1932.4374999999998,
+      -39.03750000000002
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "c681b773-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": "define f3 @pos\ndefine f3 @vel\ndefine f3 @clr\n\n@clr = @vel*10000.0"
+     },
+     "uipos": [
+      1568.2874999999997,
+      49.66249999999998
+     ],
+     "options": []
+    },
+    "ac5eef1a-PrimitiveAddAttr": {
      "name": "PrimitiveAddAttr",
      "inputs": {
       "prim": [
-       "f276a3c5-Make2DGridPrimitive",
-       "prim"
+       "a2e06821-MesherProcessFrame",
+       "FramePrimitive"
       ],
       "SRC": null,
       "COND": null
@@ -98,56 +217,141 @@
       "type": "float3"
      },
      "uipos": [
-      -164.37499999999997,
-      -285.3124999999999
+      660.3874999999999,
+      -424.0375000000002
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
-    "a57fae8c-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
+    "89ab99cb-GetFrameNum": {
+     "name": "GetFrameNum",
      "inputs": {
-      "prim": [
-       "d174fe34-PrimitiveAddAttr",
-       "prim"
-      ],
-      "zfxCode": [
-       "d58b69ef-MakeMultilineString",
-       "value"
-      ],
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      265.0,
-      -3.75
+      -128.74999999999997,
+      22.812500000000007
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
-    "d58b69ef-MakeMultilineString": {
-     "name": "MakeMultilineString",
+    "30b8e98c-MesherProcessFrame": {
+     "name": "MesherProcessFrame",
+     "inputs": {
+      "Mesher": [
+       "999b643f-MakeMPMMehser",
+       "MPMMehser"
+      ],
+      "frameNumber": [
+       "16710e74-NumericOperator",
+       "ret"
+      ],
+      "SRC": [
+       "a2e06821-MesherProcessFrame",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      643.35,
+      -31.750000000000007
+     ],
+     "options": []
+    },
+    "16710e74-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "89ab99cb-GetFrameNum",
+       "FrameNum"
+      ],
+      "rhs": [
+       "c42bed52-NumericInt",
+       "value"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      315.90000000000003,
+      147.45000000000002
+     ],
+     "options": []
+    },
+    "c42bed52-NumericInt": {
+     "name": "NumericInt",
      "inputs": {
       "SRC": null,
       "COND": null
      },
      "params": {
-      "value": "define f3 @pos\ndefine f3 @clr\n\n@clr = @pos + 0.5"
+      "value": 1
      },
      "uipos": [
-      -117.5,
-      16.25
+      8.950000000000031,
+      247.45000000000007
+     ],
+     "options": []
+    },
+    "cbd4c603-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "30b8e98c-MesherProcessFrame",
+       "FramePrimitive"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "name": "clr",
+      "type": "float3"
+     },
+     "uipos": [
+      956.0,
+      -52.0
+     ],
+     "options": []
+    },
+    "861b7386-PrimitiveBinaryOp": {
+     "name": "PrimitiveBinaryOp",
+     "inputs": {
+      "primA": [
+       "cbd4c603-PrimitiveAddAttr",
+       "prim"
+      ],
+      "primB": [
+       "ac5eef1a-PrimitiveAddAttr",
+       "prim"
+      ],
+      "primOut": [
+       "ac5eef1a-PrimitiveAddAttr",
+       "prim"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "attrA": "pos",
+      "attrB": "pos",
+      "attrOut": "clr",
+      "op": "sub"
+     },
+     "uipos": [
+      1233.0,
+      -248.0
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": -852,
-    "trans_y": -482
+    "scale": 1.5625,
+    "trans_x": 2263,
+    "trans_y": -184
    }
   }
  },
@@ -1505,6 +1709,26 @@
     "GPUMPM"
    ]
   },
+  "MakeMPMMehser": {
+   "inputs": [
+    "pathPreFix",
+    "tet_path",
+    "smooth_iter",
+    "start",
+    "end",
+    "edge_stretch",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "MPMMehser",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
   "MakeMultilineString": {
    "inputs": [
     "SRC",
@@ -1741,6 +1965,22 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "MesherProcessFrame": {
+   "inputs": [
+    "Mesher",
+    "frameNumber",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "FramePrimitive",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "NBodySolver": {

@@ -32,18 +32,22 @@ struct GraphicPrimitive : IGraphic {
     ) {
     if (!prim->has_attr("pos")) {
         auto &pos = prim->add_attr<zeno::vec3f>("pos");
+        #pragma omp parallel for
         for (size_t i = 0; i < pos.size(); i++) {
             pos[i] = zeno::vec3f(i * (1.0f / (pos.size() - 1)), 0, 0);
         }
     }
     if (!prim->has_attr("clr")) {
         auto &clr = prim->add_attr<zeno::vec3f>("clr");
+        #pragma omp parallel for
         for (size_t i = 0; i < clr.size(); i++) {
             clr[i] = zeno::vec3f(0.8);
         }
     }
     if (!prim->has_attr("nrm")) {
         auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
+
+        #pragma omp parallel for
         for (size_t i = 0; i < nrm.size(); i++) {
             nrm[i] = zeno::vec3f(1 / zeno::sqrt(3.0f));
         }
@@ -55,6 +59,7 @@ struct GraphicPrimitive : IGraphic {
 
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     std::vector<zeno::vec3f> mem(vertex_count * 3);
+    #pragma omp parallel for
     for (int i = 0; i < vertex_count; i++) {
         mem[3 * i + 0] = pos[i];
         mem[3 * i + 1] = clr[i];
