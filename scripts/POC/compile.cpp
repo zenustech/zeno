@@ -126,16 +126,8 @@ struct Finalizer {
 
     std::string determine_type(std::string const &exp) const {
         if (exp[0] == '#') {
-            return exp.substr(1).find('.') ? "f1" : "i1";
+            return strchr(exp.substr(1).c_str(), '.') ? "f1" : "i1";
         }
-        auto it = typing.find(exp);
-        if (it == typing.end()) {
-            error("cannot determine type of ", exp);
-        }
-        return it->second;
-    }
-
-    std::string type_of(std::string const &exp) const {
         auto it = typing.find(exp);
         if (it == typing.end()) {
             error("cannot determine type of ", exp);
@@ -152,18 +144,22 @@ struct Finalizer {
     }
 
     static int get_digit(char c) {
-        return c <= '9' ? c - '0' : c - 'a';
+        return c <= '9' ? c - '0' : c - 'A';
+    }
+
+    static char put_digit(int n) {
+        return n <= 9 ? n + '0' : n - 10 + 'A';
     }
 
     void emit_op(std::string const &opcode, std::string const &dst,
         std::vector<std::string> const &args) {
-        auto dsttype = type_of(dst);
+        auto dsttype = determine_type(dst);
         int dim = get_digit(dsttype[1]);
         for (int d = 0; d < dim; d++) {
             auto opinst = dsttype[0] + opchar_to_name(opcode);
             cout << opinst << " " << tag_dim(dst, d);
             for (auto const &arg: args) {
-                auto argdim = get_digit(type_of(arg)[1]);
+                auto argdim = get_digit(determine_type(arg)[1]);
                 cout << " " << tag_dim(arg, d % argdim);
             }
             cout << endl;
@@ -179,8 +175,7 @@ struct Finalizer {
             dim = lhs[1];
         } else {
             if (lhs[1] != rhs[1]) {
-                error("vector dimension mismatch: ",
-                    get_digit(lhs[1]), " != ", get_digit(rhs[1]));
+                error("vector dimension mismatch: ", lhs[1], " != ", rhs[1]);
             }
             dim = lhs[1];
         }
@@ -244,7 +239,7 @@ struct Finalizer {
 };
 
 int main() {
-    auto code = "@a = @b * @a";
+    auto code = "@a = @a + @b * (3 + 1)";
     cout << code << endl;
 
     Parser p(code);
