@@ -115,6 +115,7 @@ struct Finalizer {
         if (op == "-") return "sub";
         if (op == "*") return "mul";
         if (op == "/") return "div";
+        if (op == "mov") return "mov";
         return "";
     }
 
@@ -196,9 +197,11 @@ struct Finalizer {
         } else {
             if (it->second != curtype) {
                 if (dst[0] == '@') {
-                    error("cannot implicit cast: ", it->second, " <- ", curtype);
+                    if (promote_type(it->second, curtype) != it->second) {
+                        error("cannot cast: ", it->second, " <- ", curtype);
+                    }
                 }
-                cout << "redef " << dst << " " << curtype << endl;
+                cout << "def " << dst << " " << curtype << endl;
                 typing[dst] = promote_type(it->second, curtype);
             }
         }
@@ -239,7 +242,7 @@ struct Finalizer {
 };
 
 int main() {
-    auto code = "@a = @a + @b * (3 + 1)";
+    auto code = "@a = @a + @b * ((3 + 1) + 1.4)";
     cout << code << endl;
 
     Parser p(code);
