@@ -912,6 +912,98 @@ class QDMGraphicsParam_multiline_string(QDMGraphicsParam):
     def getValue(self):
         return str(self.edit.toPlainText())
 
+class QDMGraphicsNode_Frame(QGraphicsItem):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFlag(QGraphicsItem.ItemIsMovable)
+        self.setFlag(QGraphicsItem.ItemIsSelectable)
+
+        self.width = style['node_width']
+        self.height = 0
+
+        self.title = QGraphicsTextItem(self)
+        self.title.setDefaultTextColor(QColor(style['title_text_color']))
+        self.title.setPos(HORI_MARGIN * 2, -TEXT_HEIGHT)
+        font = QFont()
+        font.setPointSize(style['title_text_size'])
+        self.title.setFont(font)
+
+        self.collapsed = False
+
+        self.params = {}
+        self.inputs = {}
+        self.outputs = {}
+        self.options = {}
+        self.name = None
+        self.ident = None
+
+        self.desc_inputs = []
+        self.desc_outputs = []
+        self.desc_params = []
+
+    def mouseMoveEvent(self, event):
+        super().mouseMoveEvent(event)
+        self.scene().moved = True
+
+    def remove(self):
+        pass
+
+    def setIdent(self, ident):
+        self.ident = ident
+
+    def setName(self, name):
+        if self.ident is None:
+            self.ident = gen_unique_ident(name)
+        self.name = name
+        self.title.setPlainText(name)
+
+    def getOptions(self):
+        return []
+
+    def setOptions(self, options):
+        pass
+
+    def initSockets(self):
+        self.height = 100
+
+    def boundingRect(self):
+        h = TEXT_HEIGHT if self.collapsed else self.height
+        return QRectF(0, -TEXT_HEIGHT, self.width, h).normalized()
+
+    def paint(self, painter, styleOptions, widget=None):
+        r = style['node_rounded_radius']
+
+        pathContent = QPainterPath()
+        rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
+        pathContent.addRoundedRect(rect, r, r)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(style['panel_color']))
+        painter.drawPath(pathContent.simplified())
+
+        # title round top
+        pathTitle = QPainterPath()
+        rect = QRectF(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
+        pathTitle.addRoundedRect(rect, r, r)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(style['title_color']))
+        painter.drawPath(pathTitle.simplified())
+        
+        # title direct bottom
+        pathTitle = QPainterPath()
+        rect = QRectF(0, -r, self.width, r)
+        pathTitle.addRect(rect)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(style['title_color']))
+        painter.drawPath(pathTitle.simplified())
+
+        pathOutline = QPainterPath()
+        pathOutline.addRoundedRect(0, -TEXT_HEIGHT, self.width, self.height, r, r)
+        pathOutlineColor = 'selected_color' if self.isSelected() else 'line_color'
+        pen = QPen(QColor(style[pathOutlineColor]))
+        pen.setWidth(style['node_outline_width'])
+        painter.setPen(pen)
+        painter.setBrush(Qt.NoBrush)
+        painter.drawPath(pathOutline.simplified())
 
 class QDMGraphicsNode(QGraphicsItem):
     def __init__(self, parent=None):
