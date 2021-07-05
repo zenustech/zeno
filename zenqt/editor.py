@@ -959,6 +959,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor(style['title_text_color']))
         self.title.setPos(HORI_MARGIN * 2, -TEXT_HEIGHT)
+        self.title.setTextInteractionFlags(Qt.TextEditable)
         font = QFont()
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
