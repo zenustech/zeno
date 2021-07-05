@@ -232,20 +232,20 @@ private:
         if (isdigit(head)) {
             std::string ident;
             ident += head;
-            for (; isdigit(*cp); ident += *cp++);
+            for (; isdigit(*cp) || *cp == '.'; ident += *cp++);
             tokens.emplace_back(Token::Type::imm, ident);
             return true;
 
         } else if (head == '@') {
             std::string ident;
-            for (; isalnum(*cp); ident += *cp++);
+            for (; isalnum(*cp) || *cp == '.'; ident += *cp++);
             tokens.emplace_back(Token::Type::mem, ident);
             return true;
 
         } else if (isalpha(head)) {
             std::string ident;
             ident += head;
-            for (; isalnum(*cp); ident += *cp++);
+            for (; isalnum(*cp) || *cp == '.'; ident += *cp++);
             tokens.emplace_back(Token::Type::reg, ident);
             return true;
         }

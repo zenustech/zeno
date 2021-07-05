@@ -126,7 +126,7 @@ struct Finalizer {
 
     std::string determine_type(std::string const &exp) {
         if (exp[0] == '#') {
-            return exp.substr(1).find('.') ? "f1" : "i1";
+            return exp.substr(1).find('.') ? "f3" : "i3";
         }
         auto it = typing.find(exp);
         if (it == typing.end()) {
@@ -143,16 +143,26 @@ struct Finalizer {
         return it->second;
     }
 
+    std::string tag_dim(std::string const &exp, int d) {
+        if (exp[0] == '#')
+            return exp;
+        char buf[233];
+        sprintf(buf, "%s.%d", exp.c_str(), d);
+        return buf;
+    }
+
     void emit_op(std::string const &opcode, std::string const &dst,
         std::vector<std::string> const &args) {
         auto dsttype = type_of(dst);
         auto dim = dsttype[1] - '0';
-        auto opinst = dsttype[0] + opchar_to_name(opcode);
-        cout << opinst << " " << dst;
-        for (auto const &arg: args) {
-            cout << " " << arg;
+        for (int d = 0; d < dim; d++) {
+            auto opinst = dsttype[0] + opchar_to_name(opcode);
+            cout << opinst << " " << tag_dim(dst, d);
+            for (auto const &arg: args) {
+                cout << " " << tag_dim(arg, d);
+            }
+            cout << endl;
         }
-        cout << endl;
     }
 
     std::string promote_type(std::string const &lhs, std::string const &rhs) {
@@ -172,6 +182,9 @@ struct Finalizer {
             cout << "def " << dst << " " << curtype << endl;
         } else {
             if (it->second != curtype) {
+                if (dst[0] == '@') {
+                    error("cannot implicit cast: ", it->second, " <- ", curtype);
+                }
                 cout << "redef " << dst << " " << curtype << endl;
                 typing[dst] = promote_type(it->second, curtype);
             }
@@ -192,6 +205,7 @@ struct Finalizer {
             auto dst = ops[ops.size() - 1];
             op_promote_type(dst, opcode, argtypes);
         }
+
         for (auto const &line: split_str(lines, '\n')) {
             if (line.size() == 0) return;
             auto ops = split_str(line, ' ');
