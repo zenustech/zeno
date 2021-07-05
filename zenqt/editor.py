@@ -590,7 +590,7 @@ class QDMGraphicsNode_FrameResizeHelper(QGraphicsItem):
 
     def hoverLeaveEvent(self, event):
         self.setCursor(Qt.ArrowCursor)
-``
+
 
 class QDMGraphicsSocket(QGraphicsItem):
     def __init__(self, parent):
