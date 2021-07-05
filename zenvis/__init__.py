@@ -49,10 +49,13 @@ def _frameUpdate():
     global old_frame_files
     frame_files = zenapi.getFrameFiles(frameid)
     if old_frame_files != frame_files:
-        core.clear_graphics()
         for name, ext, path in frame_files:
             core.load_file(name, ext, path, frameid)
     old_frame_files = frame_files
+
+
+def clearGraphics():
+    core.clear_graphics()
 
 
 def initializeGL():
