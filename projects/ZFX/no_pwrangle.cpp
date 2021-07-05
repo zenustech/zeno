@@ -12,7 +12,7 @@ struct ParticlesWrangle : INode {
         auto particles = get_input<ParticlesObject>("particles");
         auto code = get_input<StringObject>("ZFXCode")->get();
         auto prog = compile_program(code);
-        particles_wrangle(&prog, &particles->pars);
+        particles_wrangle(prog, &particles->pars);
         set_output("particles", std::move(particles));
     }
 };

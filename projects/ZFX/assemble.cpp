@@ -49,8 +49,10 @@ struct Assembler {
         assert(tokens.size() > 2);
         Instruction inst;
         auto opcode = magic_enum::enum_cast<Opcode>(tokens[0]);
-        if (!opcode.has_value())
+        if (!opcode.has_value()) {
+            printf("ERROR: invalid opcode: %s\n", tokens[0].c_str());
             return std::nullopt;
+        }
         inst.opcode = opcode.value();
         inst.dst = assemble_operand(tokens[1]);
         if (tokens.size() > 2)
