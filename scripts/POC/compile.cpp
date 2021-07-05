@@ -301,7 +301,7 @@ struct UntypePass {
             auto dsttype = determine_type(dst);
             for (int i = 0; i < args.size(); i++) {
                 auto argtype = determine_type(args[i]);
-                if (argtype != dsttype) {
+                if (argtype != dsttype && args[i][0] != '#') {
                     args[i] = emit_cast(argtype, dsttype, args[i]);
                 }
             }
@@ -319,7 +319,7 @@ struct UntypePass {
 };
 
 int main() {
-    auto code = "@a = @a + @b * ((3 + 1) + 1.4)";
+    auto code = "@a = @a + @b * (3 + 1.4)";
     cout << code << endl;
     cout << "===" << endl;
 
