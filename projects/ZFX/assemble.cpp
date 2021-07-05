@@ -6,45 +6,62 @@
 #include <string>
 
 static std::vector<std::string> split_str(std::string const &s, char delimiter) {
-  std::vector<std::string> tokens;
-  std::string token;
-  std::istringstream iss(s);
-  while (std::getline(iss, token, delimiter))
-    tokens.push_back(token);
-  return tokens;
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream iss(s);
+    while (std::getline(iss, token, delimiter))
+        tokens.push_back(token);
+    return tokens;
 }
 
-static Operand assemble_operand(std::string const &ident) {
-    Operand operand;
-    switch (ident[0]) {
-    case '#': operand.type = OperandType::imm; break;
-    case '$': operand.type = OperandType::reg; break;
-    case '@': operand.type = OperandType::mem; break;
+struct Assembler {
+    Operand assemble_operand(std::string const &ident) {
+        Operand operand;
+        switch (ident[0]) {
+        case '#': operand.type = OperandType::imm; break;
+        case '$': operand.type = OperandType::reg; break;
+        case '@': operand.type = OperandType::mem; break;
+        }
+        std::stringstream ss(ident.substr(1));
+        if (operand.type == OperandType::imm)
+            ss >> operand.value;
+        else
+            ss >> operand.index;
+        return operand;
     }
-    std::stringstream ss(ident.substr(1));
-    if (operand.type == OperandType::imm)
-        ss >> operand.value;
-    else
-        ss >> operand.index;
-    return operand;
-}
 
-Instruction assemble_instruction(std::string const &line) {
-    auto tokens = split_str(line, ' ');
-    assert(tokens.size() == 4);
-    Instruction inst;
-    inst.opcode = magic_enum::enum_cast<Opcode>(tokens[0]).value();
-    inst.dst = assemble_operand(tokens[1]);
-    inst.lhs = assemble_operand(tokens[2]);
-    inst.rhs = assemble_operand(tokens[3]);
-    return inst;
-}
+    std::optional<Instruction> assemble_inst(std::string const &line) {
+        auto tokens = split_str(line, ' ');
+        assert(tokens.size() > 2);
+        Instruction inst;
+        auto opcode = magic_enum::enum_cast<Opcode>(tokens[0]);
+        if (!opcode.has_value())
+            return std::nullopt;
+        inst.opcode = opcode.value();
+        inst.dst = assemble_operand(tokens[1]);
+        if (tokens.size() > 2)
+            inst.lhs = assemble_operand(tokens[2]);
+        if (tokens.size() > 3)
+            inst.rhs = assemble_operand(tokens[3]);
+        return inst;
+    }
+
+    Program prog;
+
+    void assemble(std::string const &lines) {
+        for (auto const &line: split_str(lines, '\n')) {
+            if (line.size() == 0)
+                continue;
+            auto inst = assemble_inst(line);
+            if (inst.has_value()) {
+                prog.insts.push_back(inst.value());
+            }
+        }
+    }
+};
 
 Program assemble_program(std::string const &lines) {
-    Program prog;
-    for (auto const &line: split_str(lines, '\n')) {
-        if (line.size() != 0)
-            prog.insts.push_back(assemble_instruction(line));
-    }
-    return prog;
+    Assembler a;
+    a.assemble(lines);
+    return a.prog;
 }
