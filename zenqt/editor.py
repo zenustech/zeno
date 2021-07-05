@@ -602,19 +602,10 @@ class QDMGraphicsNode_FrameResizeHelper(QGraphicsItem):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.label = QGraphicsTextItem(self)
-        self.label.setDefaultTextColor(QColor(style['socket_text_color']))
-        self.label.setPos(HORI_MARGIN, -TEXT_HEIGHT * 0.5)
-        font = QFont()
-        font.setPointSize(style['socket_text_size'])
-        self.label.setFont(font)
+        self.setFlag(QGraphicsItem.ItemIsMovable)
 
         self.node = parent
         self.name = None
-
-    def setName(self, name):
-        self.name = name
-        self.label.setPlainText(name)
 
     def getCirclePos(self):
         basePos = self.node.pos() + self.pos()
@@ -634,6 +625,12 @@ class QDMGraphicsNode_FrameResizeHelper(QGraphicsItem):
         pen.setWidth(style['socket_outline_width'])
         painter.setPen(pen)
         painter.drawEllipse(*self.getCircleBounds())
+
+    def mouseMoveEvent(self, event):
+        super().mouseMoveEvent(event)
+        p = self.pos()
+        self.node.width = p.x() - 10
+        self.node.height = p.y() - 10
 
 
 class QDMGraphicsSocket(QGraphicsItem):
