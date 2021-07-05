@@ -942,17 +942,11 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         self.name = name
         self.title.setPlainText(name)
 
-    def getOptions(self):
-        return []
-
-    def setOptions(self, options):
-        pass
-
     def initSockets(self):
         self.height = 100
-        helper = QDMGraphicsNode_FrameResizeHelper(self)
+        self.helper = QDMGraphicsNode_FrameResizeHelper(self)
         h = self.height - TEXT_HEIGHT
-        helper.setPos(self.width, h)
+        self.helper.setPos(self.width, h)
 
     def boundingRect(self):
         h = TEXT_HEIGHT if self.collapsed else self.height
@@ -992,6 +986,37 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
         painter.drawPath(pathOutline.simplified())
+
+    def setWidthHeight(self, width, height):
+        self.width = width
+        self.height = height
+        self.helper.setPos(width, height)
+
+    def dump(self):
+        uipos = self.pos().x(), self.pos().y()
+        data = {
+            'name': self.name,
+            'uipos': uipos,
+            'width': self.width,
+            'height': self.height,
+            'title': self.title.toPlainText(),
+        }
+        return {self.ident: data}
+    
+    def load(self, ident, data):
+        name = data['name']
+        posx, posy = data['uipos']
+
+        self.initSockets()
+        self.setIdent(ident)
+        self.setName(name)
+        self.setPos(posx, posy)
+        self.setWidthHeight(data['width'], data['height'])
+
+        self.title.setPlainText(data['title'])
+
+        edges = []
+        return edges
 
 class QDMGraphicsNode(QGraphicsItem):
     def __init__(self, parent=None):
