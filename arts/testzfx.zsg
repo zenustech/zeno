@@ -162,7 +162,7 @@
       "COND": null
      },
      "params": {
-      "value": "define f3 @pos\ndefine f3 @vel\n@clr = @pos + @vel + 0.5\n@clr = @pos + @vel + 0.5"
+      "value": "define f3 @pos\ndefine f3 @vel\ndefine f3 @clr\n@clr = @pos + @vel + 0.5\n@clr = @pos + @vel + 0.5"
      },
      "uipos": [
       -431.35999999999996,
@@ -173,8 +173,8 @@
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": -1185,
-    "trans_y": -240
+    "trans_x": -1149,
+    "trans_y": -256
    }
   }
  },

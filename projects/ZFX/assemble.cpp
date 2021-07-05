@@ -30,7 +30,7 @@ struct Assembler {
         return operand;
     }
 
-    void bind_memory(int memid, std::string const &attr) {
+    void bind_channel(int memid, std::string const &attr) {
         if (prog.channels.size() < memid + 1)
             prog.channels.resize(memid + 1);
         prog.channels[memid] = attr;
@@ -43,7 +43,7 @@ struct Assembler {
             assert(tokens.size() > 3);
             int memid = 0;
             std::stringstream(tokens[1]) >> memid;
-            bind_memory(memid, tokens[2]);
+            bind_channel(memid, tokens[2]);
             return std::nullopt;
         }
         assert(tokens.size() > 2);

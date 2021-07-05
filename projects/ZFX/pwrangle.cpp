@@ -20,9 +20,12 @@ void vectors_wrangle(Program const *prog,
 }
 
 void particles_wrangle(Program const *prog, Particles const *pars) {
-    std::vector<std::vector<float> *> arrs;
-    for (auto const &parr: pars->m_arrs) {
-        arrs.push_back(parr.get());
+    std::vector<std::vector<float> *> arrs(prog->channels.size());
+    for (int i = 0; i < arrs.size(); i++) {
+        auto const &chname = prog->channels[i];
+        auto chid = pars->chid_of_name(chname);
+        auto parr = &pars->channel(chid);
+        arrs[i] = parr;
     }
     vectors_wrangle(prog, arrs);
 }

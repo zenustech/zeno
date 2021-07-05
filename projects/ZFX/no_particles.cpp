@@ -65,6 +65,15 @@ struct PrimitiveToParticles : INode {
         auto prim = get_input<PrimitiveObject>("prim");
         pars->resize(prim->size());
         pars->set_nchannels(9);
+        pars->set_channel_name(0, "pos.0");
+        pars->set_channel_name(1, "pos.1");
+        pars->set_channel_name(2, "pos.2");
+        pars->set_channel_name(3, "vel.0");
+        pars->set_channel_name(4, "vel.1");
+        pars->set_channel_name(5, "vel.2");
+        pars->set_channel_name(6, "clr.0");
+        pars->set_channel_name(7, "clr.1");
+        pars->set_channel_name(8, "clr.2");
         auto &prim_pos = prim->add_attr<vec3f>("pos");
         auto &prim_vel = prim->add_attr<vec3f>("vel");
         auto &prim_clr = prim->add_attr<vec3f>("clr");
