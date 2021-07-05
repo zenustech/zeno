@@ -364,9 +364,9 @@ struct ReassignPass {
             }
             oss << '\n';
         }
-        for (auto const &[key, id]: memories) {
-            oss << "layout @" << id << " " << key << endl;
-        }
+        /*for (auto const &[key, id]: memories) {
+            oss << "def @" << id << " " << key << endl;
+        }*/
     }
 
     std::string dump() const {
@@ -376,6 +376,8 @@ struct ReassignPass {
 
 int main() {
     auto code = "@a = @a + @b * (3 + 1.4)";
+
+    cout << "===" << endl;
     cout << code << endl;
     cout << "===" << endl;
 
