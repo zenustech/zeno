@@ -903,7 +903,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         self.setFlag(QGraphicsItem.ItemIsSelectable)
 
         self.width = style['node_width']
-        self.height = 0
+        self.height = 100
 
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor(style['title_text_color']))
@@ -913,18 +913,8 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
 
-        self.collapsed = False
-
-        self.params = {}
-        self.inputs = {}
-        self.outputs = {}
-        self.options = {}
         self.name = None
         self.ident = None
-
-        self.desc_inputs = []
-        self.desc_outputs = []
-        self.desc_params = []
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
@@ -943,14 +933,12 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         self.title.setPlainText(name)
 
     def initSockets(self):
-        self.height = 100
         self.helper = QDMGraphicsNode_FrameResizeHelper(self)
         h = self.height - TEXT_HEIGHT
         self.helper.setPos(self.width, h)
 
     def boundingRect(self):
-        h = TEXT_HEIGHT if self.collapsed else self.height
-        return QRectF(0, -TEXT_HEIGHT, self.width, h).normalized()
+        return QRectF(0, -TEXT_HEIGHT, self.width, self.height).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
         r = style['node_rounded_radius']
