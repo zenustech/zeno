@@ -5,3 +5,4 @@
 
 Instruction assemble_instruction(std::string const &line);
 Program assemble_program(std::string const &lines);
+Program compile_program(std::string const &code);

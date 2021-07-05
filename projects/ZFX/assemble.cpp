@@ -1,4 +1,6 @@
 #include "program.h"
+#include "compile.h"
+#include <magic_enum.hpp>
 #include <sstream>
 #include <cassert>
 #include <string>

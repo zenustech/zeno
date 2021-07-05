@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstdio>
 #include <vector>
-#include <magic_enum.hpp>
+#include <string>
+#include <map>
 
 struct Context {
     float regtable[256];
@@ -79,6 +81,7 @@ struct Instruction {
 
 struct Program {
     std::vector<Instruction> insts;
+    std::map<std::string, int> memories;
 
     void execute(Context *ctx) const {
         for (auto const &inst: insts) {

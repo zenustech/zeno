@@ -53,17 +53,18 @@ struct AST {
             args.push_back(std::move(rhs));
         }
 
-    void print(std::string const &indent = "") const {
-        printf("%s%s", indent.c_str(), token.ident.c_str());
-        if (args.size() == 0) {
-            printf("\n");
-            return;
-        }
-        printf("(\n", indent.c_str());
+    std::string dump() const {
+        std::string res;
+        if (args.size() != 0)
+            res += "(";
+        res += token.ident;
         for (auto const &arg: args) {
-            arg->print(indent + "  ");
+            res += " ";
+            res += arg->dump();
         }
-        printf("%s)\n", indent.c_str());
+        if (args.size() != 0)
+            res += ")";
+        return res;
     }
 };
 
@@ -122,7 +123,7 @@ private:
     bool parse_funcall() {  // funcall := symbol "(" [expr ["," expr]*]? ")"
         if (token->type == Token::Type::reg) {
             auto opToken = *token++;
-            opToken->type = Token::Type::func;
+            opToken.type = Token::Type::func;
             if (token->is_op({"("})) {
                 token++;
                 if (token->is_op({")"})) {
@@ -232,20 +233,20 @@ private:
         if (isdigit(head)) {
             std::string ident;
             ident += head;
-            for (; isdigit(*cp); ident += *cp++);
+            for (; isdigit(*cp) || *cp == '.'; ident += *cp++);
             tokens.emplace_back(Token::Type::imm, ident);
             return true;
 
         } else if (head == '@') {
             std::string ident;
-            for (; isalnum(*cp); ident += *cp++);
+            for (; isalnum(*cp) || *cp == '.'; ident += *cp++);
             tokens.emplace_back(Token::Type::mem, ident);
             return true;
 
         } else if (isalpha(head)) {
             std::string ident;
             ident += head;
-            for (; isalnum(*cp); ident += *cp++);
+            for (; isalnum(*cp) || *cp == '.'; ident += *cp++);
             tokens.emplace_back(Token::Type::reg, ident);
             return true;
         }
