@@ -598,6 +598,44 @@ class QDMGraphicsEdge(QDMGraphicsPath):
         self.scene().removeItem(self)
 
 
+class QDMGraphicsNode_FrameResizeHelper(QGraphicsItem):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.label = QGraphicsTextItem(self)
+        self.label.setDefaultTextColor(QColor(style['socket_text_color']))
+        self.label.setPos(HORI_MARGIN, -TEXT_HEIGHT * 0.5)
+        font = QFont()
+        font.setPointSize(style['socket_text_size'])
+        self.label.setFont(font)
+
+        self.node = parent
+        self.name = None
+
+    def setName(self, name):
+        self.name = name
+        self.label.setPlainText(name)
+
+    def getCirclePos(self):
+        basePos = self.node.pos() + self.pos()
+        return basePos
+
+    def getCircleBounds(self):
+        return (-SOCKET_RADIUS, -SOCKET_RADIUS,
+                2 * SOCKET_RADIUS, 2 * SOCKET_RADIUS)
+
+    def boundingRect(self):
+        return QRectF(*self.getCircleBounds()).normalized()
+
+    def paint(self, painter, styleOptions, widget=None):
+        socket_color = 'socket_unconnect_color'
+        painter.setBrush(QColor(style[socket_color]))
+        pen = QPen(QColor(style['line_color']))
+        pen.setWidth(style['socket_outline_width'])
+        painter.setPen(pen)
+        painter.drawEllipse(*self.getCircleBounds())
+
+
 class QDMGraphicsSocket(QGraphicsItem):
     def __init__(self, parent):
         super().__init__(parent)
@@ -965,6 +1003,9 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
 
     def initSockets(self):
         self.height = 100
+        helper = QDMGraphicsNode_FrameResizeHelper(self)
+        h = self.height - TEXT_HEIGHT
+        helper.setPos(self.width, h)
 
     def boundingRect(self):
         h = TEXT_HEIGHT if self.collapsed else self.height
