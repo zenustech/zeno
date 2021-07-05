@@ -899,6 +899,9 @@ class QDMGraphicsParam_multiline_string(QDMGraphicsParam):
 class QDMGraphicsNode_Frame(QGraphicsItem):
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        self.setZValue(-2)
+
         self.setFlag(QGraphicsItem.ItemIsMovable)
         self.setFlag(QGraphicsItem.ItemIsSelectable)
 
