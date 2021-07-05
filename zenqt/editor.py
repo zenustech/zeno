@@ -579,8 +579,7 @@ class QDMGraphicsNode_FrameResizeHelper(QGraphicsItem):
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
         p = self.pos()
-        self.node.width = p.x()
-        self.node.height = p.y() + TEXT_HEIGHT
+        self.node.setWidthHeight(p.x(), p.y() + TEXT_HEIGHT)
 
 
 class QDMGraphicsSocket(QGraphicsItem):
@@ -977,9 +976,11 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         painter.drawPath(pathOutline.simplified())
 
     def setWidthHeight(self, width, height):
+        width = max(width, style['node_width'])
+        height = max(height, 100)
         self.width = width
         self.height = height
-        self.helper.setPos(width, height)
+        self.helper.setPos(width, height - TEXT_HEIGHT)
 
     def dump(self):
         uipos = self.pos().x(), self.pos().y()
