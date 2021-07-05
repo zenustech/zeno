@@ -6,6 +6,7 @@
 #include <map>
 
 using std::cout;
+using std::cerr;
 using std::endl;
 
 struct Translator {
@@ -35,7 +36,7 @@ struct Translator {
     }
 
     void emit(std::string const &str) {
-        printf("[%s]\n", str.c_str());
+        lines += str + "\n";
     }
 
     std::string lvalue(Visit &vis) {
@@ -101,15 +102,107 @@ static std::vector<std::string> split_str(std::string const &s, char delimiter) 
 }
 
 struct Finalizer {
+    std::map<std::string, std::string> typing;
+    std::map<int, std::pair<std::string, std::string>> casting;
+
+    Finalizer() {
+        typing["@a"] = "f3";
+        typing["@b"] = "f3";
+    }
+
+    std::string opchar_to_name(std::string const &op) {
+        if (op == "+") return "add";
+        if (op == "-") return "sub";
+        if (op == "*") return "mul";
+        if (op == "/") return "div";
+        return "";
+    }
+
+    template <class ...Ts>
+    static void error(Ts &&...ts) {
+        (cerr << "ERROR: " << ... << ts) << endl;
+        exit(-1);
+    }
+
+    std::string determine_type(std::string const &exp) {
+        if (exp[0] == '#') {
+            return exp.substr(1).find('.') ? "f1" : "i1";
+        }
+        auto it = typing.find(exp);
+        if (it == typing.end()) {
+            error("cannot determine type of ", exp);
+        }
+        return it->second;
+    }
+
+    std::string type_of(std::string const &exp) {
+        auto it = typing.find(exp);
+        if (it == typing.end()) {
+            error("cannot determine type of ", exp);
+        }
+        return it->second;
+    }
+
+    void emit_op(std::string const &opcode, std::string const &dst,
+        std::vector<std::string> const &args) {
+        auto dsttype = type_of(dst);
+        auto dim = dsttype[1] - '0';
+        auto opinst = dsttype[0] + opchar_to_name(opcode);
+        cout << opinst << " " << dst;
+        for (auto const &arg: args) {
+            cout << " " << arg;
+        }
+        cout << endl;
+    }
+
+    std::string promote_type(std::string const &lhs, std::string const &rhs) {
+        return lhs[0] <= rhs[0] ? lhs : rhs;
+    }
+
+    void op_promote_type(std::string const &dst,
+        std::string const &opcode, std::vector<std::string> const &types) {
+        auto curtype = types[0];
+        for (int i = 1; i < types.size(); i++) {
+            auto const &type = types[i];
+            curtype = promote_type(curtype, type);
+        }
+        auto it = typing.find(dst);
+        if (it == typing.end()) {
+            typing[dst] = curtype;
+            cout << "def " << dst << " " << curtype << endl;
+        } else {
+            if (it->second != curtype) {
+                cout << "redef " << dst << " " << curtype << endl;
+                typing[dst] = promote_type(it->second, curtype);
+            }
+        }
+    }
+
     void parse(std::string const &lines) {
         for (auto const &line: split_str(lines, '\n')) {
+            if (line.size() == 0) return;
+            auto ops = split_str(line, ' ');
+            auto opcode = ops[0];
+            std::vector<std::string> argtypes;
+            for (int i = 1; i < ops.size() - 1; i++) {
+                auto arg = ops[i];
+                auto type = determine_type(arg);
+                argtypes.push_back(type);
+            }
+            auto dst = ops[ops.size() - 1];
+            op_promote_type(dst, opcode, argtypes);
+        }
+        for (auto const &line: split_str(lines, '\n')) {
+            if (line.size() == 0) return;
             auto ops = split_str(line, ' ');
             auto opcode = ops[0];
             std::vector<std::string> args;
             for (int i = 1; i < ops.size() - 1; i++) {
-                args.push_back(ops[i]);
+                auto arg = ops[i];
+                args.push_back(arg);
             }
             auto dst = ops[ops.size() - 1];
+            emit_op(opcode, dst, args);
         }
     }
 
@@ -118,30 +211,22 @@ struct Finalizer {
     }
 };
 
-auto parse_program(std::string const &code) {
+int main() {
+    auto code = "@a = 4 * @a";
+    cout << code << endl;
+
     Parser p(code);
-    return p.parse();
-}
+    auto ast = p.parse();
 
-std::string translate_program(AST *ast) {
     Translator t;
-    t.visit(ast);
-    return t.dump();
-}
+    t.visit(ast.get());
+    ast = nullptr;
+    auto ir = t.dump();
 
-std::string finalize_program(std::string const &ir) {
     Finalizer f;
     f.parse(ir);
-    return f.dump();
-}
+    auto assem = f.dump();
 
-int main() {
-    auto stm = "@a = 4 * @a + 3 * @b";
-    cout << stm << endl;
-    Parser par(stm);
-    auto ast = par.parse();
-    auto ir = translate_program(ast.get());
-    auto assem = finalize_program(ir);
     cout << assem << endl;
     return 0;
 }
