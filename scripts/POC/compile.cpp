@@ -101,6 +101,29 @@ static std::vector<std::string> split_str(std::string const &s, char delimiter) 
   return tokens;
 }
 
+static std::string opchar_to_name(std::string const &op) {
+    if (op == "+") return "add";
+    if (op == "-") return "sub";
+    if (op == "*") return "mul";
+    if (op == "/") return "div";
+    if (op == "mov") return "mov";
+    return "";
+}
+
+static int get_digit(char c) {
+    return c <= '9' ? c - '0' : c - 'A';
+}
+
+static char put_digit(int n) {
+    return n <= 9 ? n + '0' : n - 10 + 'A';
+}
+
+template <class ...Ts>
+static void error(Ts &&...ts) {
+    (cerr << "ERROR: " << ... << ts) << endl;
+    exit(-1);
+}
+
 struct UnwrapPass {
     std::map<std::string, std::string> typing;
     std::stringstream oss;
@@ -108,21 +131,6 @@ struct UnwrapPass {
     UnwrapPass() {
         typing["@a"] = "f3";
         typing["@b"] = "f1";
-    }
-
-    static std::string opchar_to_name(std::string const &op) {
-        if (op == "+") return "add";
-        if (op == "-") return "sub";
-        if (op == "*") return "mul";
-        if (op == "/") return "div";
-        if (op == "mov") return "mov";
-        return "";
-    }
-
-    template <class ...Ts>
-    static void error(Ts &&...ts) {
-        (cerr << "ERROR: " << ... << ts) << endl;
-        exit(-1);
     }
 
     std::string determine_type(std::string const &exp) const {
@@ -142,14 +150,6 @@ struct UnwrapPass {
         char buf[233];
         sprintf(buf, "%s.%d", exp.c_str(), d);
         return buf;
-    }
-
-    static int get_digit(char c) {
-        return c <= '9' ? c - '0' : c - 'A';
-    }
-
-    static char put_digit(int n) {
-        return n <= 9 ? n + '0' : n - 10 + 'A';
     }
 
     void emit_op(std::string const &opcode, std::string const &dst,
@@ -193,7 +193,6 @@ struct UnwrapPass {
         auto it = typing.find(dst);
         if (it == typing.end()) {
             typing[dst] = curtype;
-            oss << "def " << dst << " " << curtype << '\n';
         } else {
             if (it->second != curtype) {
                 if (dst[0] == '@') {
@@ -201,13 +200,12 @@ struct UnwrapPass {
                         error("cannot cast: ", it->second, " <- ", curtype);
                     }
                 }
-                oss << "def " << dst << " " << curtype << '\n';
                 typing[dst] = promote_type(it->second, curtype);
             }
         }
     }
 
-    void parse(std::string const &lines) {
+    void type_check(std::string const &lines) {
         for (auto const &line: split_str(lines, '\n')) {
             if (line.size() == 0) return;
             auto ops = split_str(line, ' ');
@@ -221,7 +219,9 @@ struct UnwrapPass {
             auto dst = ops[ops.size() - 1];
             op_promote_type(dst, opcode, argtypes);
         }
+    }
 
+    void emission(std::string const &lines) {
         for (auto const &line: split_str(lines, '\n')) {
             if (line.size() == 0) return;
             auto ops = split_str(line, ' ');
@@ -236,17 +236,64 @@ struct UnwrapPass {
         }
     }
 
+    void parse(std::string const &lines) {
+        type_check(lines);
+        emission(lines);
+    }
+
     std::string dump() const {
         return oss.str();
+    }
+
+    auto const &get_typing() const {
+        return typing;
     }
 };
 
 struct UntypePass {
     std::stringstream oss;
+    std::map<std::string, char> typing;
+
+    void set_typing(std::map<std::string, std::string> const &uwTyping) {
+        for (auto const &[exp, type]: uwTyping) {
+            auto dim = get_digit(type[1]);
+            auto ptype = type[0];
+            for (int d = 0; d < dim; d++) {
+                char buf[233];
+                sprintf(buf, "%s.%d", exp.c_str(), d);
+                printf("deftype %s %c\n", buf, ptype);
+                typing[buf] = ptype;
+            }
+        }
+    }
+
+    char determine_type(std::string const &exp) const {
+        if (exp[0] == '#') {
+            return strchr(exp.substr(1).c_str(), '.') ? 'f' : 'i';
+        }
+        auto it = typing.find(exp);
+        if (it == typing.end()) {
+            error("cannot determine type of ", exp);
+        }
+        return it->second;
+    }
 
     void parse(std::string const &lines) {
         for (auto const &line: split_str(lines, '\n')) {
             if (line.size() == 0) return;
+            auto ops = split_str(line, ' ');
+            auto opcode = ops[0];
+            auto dst = ops[1];
+            std::vector<std::string> args;
+            for (int i = 2; i < ops.size(); i++) {
+                auto arg = ops[i];
+                args.push_back(arg);
+            }
+            for (int i = 0; i < args.size(); i++) {
+                auto argtype = determine_type(args[i]) == 1;
+                if (argtype) {
+                }
+            }
         }
     }
 
@@ -279,6 +326,7 @@ int main() {
     cout << "===" << endl;
 
     UntypePass utp;
+    utp.set_typing(uwp.get_typing());
     utp.parse(uwir);
     auto utir = utp.dump();
     cout << utir;
