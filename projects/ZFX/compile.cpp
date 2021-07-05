@@ -128,7 +128,9 @@ struct UnwrapPass {
     std::stringstream oss;
 
     void set_typing(std::map<std::string, std::string> const &typ) {
-        typing = typ;
+        for (auto const &[symb, type]: typ) {
+            typing['@' + symb] = type;
+        }
     }
 
     std::string determine_type(std::string const &exp) const {
