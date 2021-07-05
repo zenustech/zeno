@@ -106,8 +106,8 @@ struct Finalizer {
     std::map<int, std::pair<std::string, std::string>> casting;
 
     Finalizer() {
-        typing["@a"] = "f3";
-        typing["@b"] = "f3";
+        typing["@a"] = "f1";
+        typing["@b"] = "f1";
     }
 
     std::string opchar_to_name(std::string const &op) {
@@ -126,7 +126,7 @@ struct Finalizer {
 
     std::string determine_type(std::string const &exp) {
         if (exp[0] == '#') {
-            return exp.substr(1).find('.') ? "f3" : "i3";
+            return exp.substr(1).find('.') ? "f1" : "i1";
         }
         auto it = typing.find(exp);
         if (it == typing.end()) {
@@ -154,7 +154,8 @@ struct Finalizer {
     void emit_op(std::string const &opcode, std::string const &dst,
         std::vector<std::string> const &args) {
         auto dsttype = type_of(dst);
-        auto dim = dsttype[1] - '0';
+        int dim = 0;
+        std::stringstream(dsttype.substr(1)) >> dim;
         for (int d = 0; d < dim; d++) {
             auto opinst = dsttype[0] + opchar_to_name(opcode);
             cout << opinst << " " << tag_dim(dst, d);
