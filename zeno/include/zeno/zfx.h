@@ -1,5 +1,15 @@
 #pragma once
 
+/*******************\
+ ZFX wrangling language for ZENO:  {Z=f(x)}
+
+ This is a header-only library. To use it in your zeno project, just:
+
+    #define ZFX_IMPLEMENTATION
+    #include <zeno/zfx.h>
+
+\*******************/
+
 #ifdef ZFX_IMPLEMENTATION
 #include <magic_enum.hpp>
 #include <iostream>
