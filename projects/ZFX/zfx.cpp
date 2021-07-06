@@ -12,13 +12,9 @@
 #include <map>
 #include <set>
 
-using std::cout;
-using std::cerr;
-using std::endl;
-
 template <class ...Ts>
 static void error(Ts &&...ts) {
-    (cerr << "ERROR: " << ... << ts) << endl;
+    (std::cerr << "ERROR: " << ... << ts) << std::endl;
     exit(-1);
 }
 
@@ -736,7 +732,7 @@ struct ReassignPass {
     std::string dump() const {
         std::stringstream os;
         for (auto const &[key, id]: memories) {
-            os << "bind " << id << " " << key << endl;
+            os << "bind " << id << " " << key << std::endl;
         }
         os << oss.str();
         return os.str();
@@ -747,18 +743,18 @@ struct ReassignPass {
 #define PRINT_IR
 std::string zfx_to_assembly(std::string const &code) {
 #ifdef PRINT_IR
-    cout << "=== ZFX" << endl;
-    cout << code << endl;
-    cout << "=== Parser" << endl;
+    std::cout << "=== ZFX" << std::endl;
+    std::cout << code << std::endl;
+    std::cout << "=== Parser" << std::endl;
 #endif
 
     Parser p(code);
     auto asts = p.parse();
 #ifdef PRINT_IR
     for (auto const &ast: asts) {
-        cout << ast->dump() << endl;
+        std::cout << ast->dump() << std::endl;
     }
-    cout << "=== Transcriptor" << endl;
+    std::cout << "=== Transcriptor" << std::endl;
 #endif
 
     Transcriptor ts;
@@ -767,16 +763,16 @@ std::string zfx_to_assembly(std::string const &code) {
     }
     auto tsir = ts.dump();
 #ifdef PRINT_IR
-    cout << tsir;
-    cout << "=== InitialPass" << endl;
+    std::cout << tsir;
+    std::cout << "=== InitialPass" << std::endl;
 #endif
 
     InitialPass inp;
     inp.parse(tsir);
     auto inir = inp.dump();
 #ifdef PRINT_IR
-    cout << inir;
-    cout << "=== UnfuncPass" << endl;
+    std::cout << inir;
+    std::cout << "=== UnfuncPass" << std::endl;
 #endif
 
     UnfuncPass ufp;
@@ -784,8 +780,8 @@ std::string zfx_to_assembly(std::string const &code) {
     ufp.parse(inir);
     auto ufir = ufp.dump();
 #ifdef PRINT_IR
-    cout << ufir;
-    cout << "=== UnwrapPass" << endl;
+    std::cout << ufir;
+    std::cout << "=== UnwrapPass" << std::endl;
 #endif
 
     UnwrapPass uwp;
@@ -793,16 +789,16 @@ std::string zfx_to_assembly(std::string const &code) {
     uwp.parse(ufir);
     auto uwir = uwp.dump();
 #ifdef PRINT_IR
-    cout << uwir;
-    cout << "=== ReassignPass" << endl;
+    std::cout << uwir;
+    std::cout << "=== ReassignPass" << std::endl;
 #endif
 
     ReassignPass rap;
     rap.parse(uwir);
     auto rair = rap.dump();
 #ifdef PRINT_IR
-    cout << rair;
-    cout << "=== Assemble" << endl;
+    std::cout << rair;
+    std::cout << "=== Assemble" << std::endl;
 #endif
 
     return rair;
