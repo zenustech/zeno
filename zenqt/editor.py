@@ -1003,6 +1003,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         data = {
             'name': self.name,
             'uipos': uipos,
+            'special': True,
             'width': self.width,
             'height': self.height,
             'title': self.title.toPlainText(),

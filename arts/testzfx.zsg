@@ -142,12 +142,23 @@
       16.25
      ],
      "options": []
+    },
+    "db264043-Frame": {
+     "name": "Frame",
+     "uipos": [
+      -260.9728,
+      -42.36800000000001
+     ],
+     "special": true,
+     "width": 482.4,
+     "height": 326.40000000000003,
+     "title": "This is ZFX node!"
     }
    },
    "view": {
-    "scale": 2.44140625,
-    "trans_x": -681,
-    "trans_y": 86
+    "scale": 1.25,
+    "trans_x": -642,
+    "trans_y": -162
    }
   }
  },
