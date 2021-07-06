@@ -1,12 +1,8 @@
-#include "zfx.h"
 #include <zeno/zeno.h>
+#include <zeno/zfx.h>
 #include <zeno/StringObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <cassert>
-
-using namespace zenofx;
-
-Compiler zfx_compiler;
 
 struct Buffer {
     float *base = nullptr;
@@ -15,7 +11,7 @@ struct Buffer {
 };
 
 static void vectors_wrangle
-    ( Program const *prog
+    ( zfx::Program const *prog
     , std::vector<Buffer> const &chs
     ) {
     if (chs.size() == 0)
@@ -35,7 +31,7 @@ static void vectors_wrangle
 }
 
 static void particles_wrangle
-    ( Program const *prog
+    ( zfx::Program const *prog
     , zeno::PrimitiveObject const *prim
     ) {
     std::vector<Buffer> chs(prog->channels.size());
@@ -78,7 +74,7 @@ struct ParticlesWrangle : zeno::INode {
         for (auto const &param: params) {
             pars.push_back(param->value);
         }*/
-        auto prog = zfx_compiler.compile(code);
+        auto prog = zfx::compile_program(code);
         particles_wrangle(prog, prim.get());
         set_output("prim", std::move(prim));
     }

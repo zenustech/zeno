@@ -1,6 +1,6 @@
 file (GLOB WRANGLE_SOURCE *.cpp)
 add_library(wrangleLib SHARED ${WRANGLE_SOURCE})
-target_include_directories(wrangleLib PRIVATE .)
+target_include_directories(wrangleLib PRIVATE . include)
 
 find_package(zeno REQUIRED)
 target_link_libraries(wrangleLib PRIVATE zeno)

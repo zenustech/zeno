@@ -1,3 +1,6 @@
+#pragma once
+
+#ifdef ZFX_IMPLEMENTATION
 #include <magic_enum.hpp>
 #include <iostream>
 #include <cstring>
@@ -13,8 +16,16 @@
 #include <stack>
 #include <map>
 #include <set>
+#else
+#include <cstdio>
+#include <vector>
+#include <memory>
+#include <string>
+#include <cmath>
+#include <map>
+#endif
 
-namespace zenofx {
+namespace zfx {
 
 struct Context {
     float regtable[256];
@@ -120,6 +131,7 @@ struct Program {
     }
 };
 
+#ifdef ZFX_IMPLEMENTATION
 static std::vector<std::string> split_str(std::string const &s, char delimiter) {
     std::vector<std::string> tokens;
     std::string token;
@@ -926,7 +938,7 @@ struct ReassignPass {
 
 
 #define ZFX_PRINT_IR
-static std::string zfx_to_assembly(std::string const &code) {
+static std::string source_to_assembly(std::string const &code) {
 #ifdef ZFX_PRINT_IR
     std::cout << "=== ZFX" << std::endl;
     std::cout << code << std::endl;
@@ -989,6 +1001,10 @@ static std::string zfx_to_assembly(std::string const &code) {
     return rair;
 }
 
+static Program compile_program(std::string const &code) {
+    return assemble_program(source_to_assembly(code));
+}
+
 struct Compiler {
     std::map<std::string, std::unique_ptr<Program>> cache;
         
@@ -998,11 +1014,20 @@ struct Compiler {
             return it->second.get();
         }
         auto prog = std::make_unique<Program>(
-            assemble_program(zfx_to_assembly(code)));
+            assemble_program(source_to_assembly(code)));
         auto rawptr = prog.get();
         cache[code] = std::move(prog);
         return rawptr;
     }
 };
+
+static Compiler main_compiler;
+
+Program *compile_program(std::string const &code) {
+    return main_compiler.compile(code);
+}
+#else  // ifdef ZFX_IMPLEMENTATION
+Program *compile_program(std::string const &code);
+#endif  // ifdef ZFX_IMPLEMENTATION
 
 }
