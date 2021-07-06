@@ -22,7 +22,7 @@ static void vectors_wrangle
     }
     #pragma omp parallel for
     for (int i = 0; i < size; i++) {
-        Context ctx;
+        zfx::Context ctx;
         for (int j = 0; j < chs.size(); j++) {
             ctx.memtable[j] = chs[j].base + chs[j].stride * i;
         }
@@ -36,7 +36,7 @@ static void particles_wrangle
     ) {
     std::vector<Buffer> chs(prog->channels.size());
     for (int i = 0; i < chs.size(); i++) {
-        auto chan = split_str(prog->channels[i], '.');
+        auto chan = zfx::split_str(prog->channels[i], '.');
         assert(chan.size() == 2);
         int dimid = 0;
         std::stringstream(chan[1]) >> dimid;

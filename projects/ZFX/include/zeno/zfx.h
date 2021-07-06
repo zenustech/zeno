@@ -131,8 +131,7 @@ struct Program {
     }
 };
 
-#ifdef ZFX_IMPLEMENTATION
-static std::vector<std::string> split_str(std::string const &s, char delimiter) {
+static inline auto split_str(std::string const &s, char delimiter) {
     std::vector<std::string> tokens;
     std::string token;
     std::istringstream iss(s);
@@ -141,6 +140,7 @@ static std::vector<std::string> split_str(std::string const &s, char delimiter) 
     return tokens;
 }
 
+#ifdef ZFX_IMPLEMENTATION
 struct Assembler {
     Operand assemble_operand(std::string const &ident) {
         Operand operand;
@@ -999,10 +999,6 @@ static std::string source_to_assembly(std::string const &code) {
 #endif
 
     return rair;
-}
-
-static Program compile_program(std::string const &code) {
-    return assemble_program(source_to_assembly(code));
 }
 
 struct Compiler {
