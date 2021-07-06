@@ -446,8 +446,23 @@ struct UnfuncPass {
     std::map<std::string, std::string> typing;
     std::stringstream oss;
 
+    int tmpid = 0;
+    std::string alloc_register() {
+        char buf[233];
+        sprintf(buf, "$_Tp%d", tmpid++);
+        return buf;
+    }
+
     void emit_op(std::string const &opcode, std::string const &dst,
         std::vector<std::string> const &args) {
+
+        if (opcode == "rsqrt") {
+            auto tmp = alloc_register();
+            emit_op("sqrt", tmp, args);
+            emit_op("div", dst, {"#1", tmp});
+            return;
+        }
+
         oss << opcode << " " << dst;
         for (int i = 0; i < args.size(); i++) {
             oss << " " << args[i];
@@ -487,7 +502,7 @@ struct UnwrapPass {
 
     std::string determine_type(std::string const &exp) const {
         if (exp[0] == '#') {
-            return strchr(exp.substr(1).c_str(), '.') ? "f1" : "i1";
+            return "f1";
         }
         auto it = typing.find(exp);
         if (it == typing.end()) {
