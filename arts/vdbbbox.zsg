@@ -57,29 +57,12 @@
      "VIEW"
     ]
    },
-   "c2eee3c7-GetVDBBoundingBox": {
-    "name": "GetVDBBoundingBox",
-    "inputs": {
-     "vdbGrid": [
-      "51f53abe-MeshToSDF",
-      "sdf"
-     ],
-     "SRC": null,
-     "COND": null
-    },
-    "params": {},
-    "uipos": [
-     -132.0,
-     -21.0
-    ],
-    "options": []
-   },
    "19a089e3-PrintNumeric": {
     "name": "PrintNumeric",
     "inputs": {
      "value": [
-      "c2eee3c7-GetVDBBoundingBox",
-      "boundMin"
+      "d7e19e94-GetVDBBound",
+      "bmin"
      ],
      "SRC": null,
      "COND": null
@@ -99,8 +82,8 @@
     "name": "PrintNumeric",
     "inputs": {
      "value": [
-      "c2eee3c7-GetVDBBoundingBox",
-      "boundMax"
+      "d7e19e94-GetVDBBound",
+      "bmax"
      ],
      "SRC": null,
      "COND": null
@@ -120,12 +103,12 @@
     "name": "MakeVisualAABBPrimitive",
     "inputs": {
      "boundMin": [
-      "c2eee3c7-GetVDBBoundingBox",
-      "boundMin"
+      "d7e19e94-GetVDBBound",
+      "bmin"
      ],
      "boundMax": [
-      "c2eee3c7-GetVDBBoundingBox",
-      "boundMax"
+      "d7e19e94-GetVDBBound",
+      "bmax"
      ],
      "SRC": null,
      "COND": null
@@ -257,6 +240,23 @@
      216.0
     ],
     "options": []
+   },
+   "d7e19e94-GetVDBBound": {
+    "name": "GetVDBBound",
+    "inputs": {
+     "vdbGrid": [
+      "51f53abe-MeshToSDF",
+      "sdf"
+     ],
+     "SRC": null,
+     "COND": null
+    },
+    "params": {},
+    "uipos": [
+     -138.0,
+     27.0
+    ],
+    "options": []
    }
   }
  },
@@ -292,6 +292,33 @@
    "params": [],
    "categories": [
     "Molecular"
+   ]
+  },
+  "AssembleSolvePPE": {
+   "inputs": [
+    "dt",
+    "LiquidSDF",
+    "ExtractedLiquidSDF",
+    "Divergence",
+    "Pressure",
+    "CellFWeight",
+    "Velocity",
+    "SolidVelocity",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
    ]
   },
   "BeginFor": {
@@ -575,6 +602,27 @@
     "Rigid"
    ]
   },
+  "CFL_dt": {
+   "inputs": [
+    "Velocity",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "cfl_dt",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
   "CachedOnce": {
    "inputs": [
     "input",
@@ -652,6 +700,73 @@
     "portal"
    ]
   },
+  "CompressibleAdvection": {
+   "inputs": [
+    "inFlowData",
+    "simParam",
+    "RK_Order",
+    "dt",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "outFlowData",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
+  "CompressibleProjection": {
+   "inputs": [
+    "inFlowData",
+    "simParam",
+    "RK_Order",
+    "dt",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "outFlowData",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
+  "CutCellWeight": {
+   "inputs": [
+    "LiquidSDF",
+    "SolidSDF",
+    "FaceWeight",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "DenseFieldToVDB": {
+   "inputs": [
+    "inDenseField",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "VDBField",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
   "EmptyList": {
    "inputs": [
     "SRC",
@@ -692,6 +807,71 @@
    "params": [],
    "categories": [
     "fileio"
+   ]
+  },
+  "EquationOfStateConfig": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "Model",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "density",
+     "1e3"
+    ],
+    [
+     "float",
+     "volume",
+     "1"
+    ],
+    [
+     "float",
+     "bulk_modulus",
+     "1e4"
+    ],
+    [
+     "float",
+     "gamma",
+     "7"
+    ],
+    [
+     "float",
+     "viscosity",
+     "0.01"
+    ]
+   ],
+   "categories": [
+    "constitutive_model"
+   ]
+  },
+  "ExpandPartition": {
+   "inputs": [
+    "ZSPartition",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "lo",
+     "0"
+    ],
+    [
+     "int",
+     "hi",
+     "1"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "ExportObjMesh": {
@@ -790,6 +970,114 @@
     "list"
    ]
   },
+  "FLIPApplyBoundary": {
+   "inputs": [
+    "Particles",
+    "DynaSolid_SDF",
+    "StatSolid_SDF",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "FLIP_P2G": {
+   "inputs": [
+    "Particles",
+    "Velocity",
+    "PostP2GVelocity",
+    "VelocityWeights",
+    "LiquidSDF",
+    "ExtractedLiquidSDF",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.01 0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "FieldAddVector": {
+   "inputs": [
+    "invec3",
+    "Velocity",
+    "FieldWeight",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "FixedCorotatedConfig": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "Model",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "density",
+     "1e3"
+    ],
+    [
+     "float",
+     "volume",
+     "1"
+    ],
+    [
+     "float",
+     "youngs_modulus",
+     "1e4"
+    ],
+    [
+     "float",
+     "poisson_ratio",
+     "0.4"
+    ]
+   ],
+   "categories": [
+    "constitutive_model"
+   ]
+  },
+  "FluidReseed": {
+   "inputs": [
+    "Particles",
+    "LiquidSDF",
+    "FluidVel",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
   "ForceField": {
    "inputs": [
     "nonbond",
@@ -809,6 +1097,100 @@
     "Molecular"
    ]
   },
+  "G2P": {
+   "inputs": [
+    "dt",
+    "ZSModel",
+    "ZSParticles",
+    "ZSGrid",
+    "ZSPartition",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "simulation"
+   ]
+  },
+  "G2PAdvectorSheetty": {
+   "inputs": [
+    "dt",
+    "Particles",
+    "Velocity",
+    "LiquidSDF",
+    "PostAdvVelocity",
+    "SolidSDF",
+    "SolidVelocity",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.01 0.0"
+    ],
+    [
+     "int",
+     "RK_ORDER",
+     "1 1 4"
+    ],
+    [
+     "float",
+     "pic_smoothness",
+     "0.1 0.0 1.0"
+    ],
+    [
+     "int",
+     "surface_size",
+     "4 0 8"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "G2P_Advector": {
+   "inputs": [
+    "dt",
+    "Particles",
+    "Velocity",
+    "PostAdvVelocity",
+    "SolidSDF",
+    "SolidVelocity",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.01 0.0"
+    ],
+    [
+     "int",
+     "RK_ORDER",
+     "1 1 4"
+    ],
+    [
+     "float",
+     "pic_smoothness",
+     "0.02 0.0 1.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
   "GeoVertexVel": {
    "inputs": [
     "dt",
@@ -824,6 +1206,27 @@
    "params": [],
    "categories": [
     "trimesh"
+   ]
+  },
+  "GetDenseField": {
+   "inputs": [
+    "inSolverData",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "outDenseField",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "FieldName",
+     "p u rho"
+    ]
+   ],
+   "categories": [
+    "CompressibleFlow"
    ]
   },
   "GetFrameNum": {
@@ -896,15 +1299,15 @@
     "frame"
    ]
   },
-  "GetVDBBoundingBox": {
+  "GetVDBBound": {
    "inputs": [
     "vdbGrid",
     "SRC",
     "COND"
    ],
    "outputs": [
-    "boundMin",
-    "boundMax",
+    "bmin",
+    "bmax",
     "DST"
    ],
    "params": [],
@@ -925,6 +1328,50 @@
    "params": [],
    "categories": [
     "openvdb"
+   ]
+  },
+  "GridFromPartition": {
+   "inputs": [
+    "ZSGrid",
+    "ZSPartition",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "1"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
+  "GridUpdate": {
+   "inputs": [
+    "dt",
+    "ZSPartition",
+    "ZSGrid",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "MaxVelSqr",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "gravity",
+     "-9.8"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "ImportObjMesh": {
@@ -1096,10 +1543,9 @@
    "inputs": [
     "nx",
     "ny",
-    "dx",
-    "dy",
     "sizeX",
     "sizeY",
+    "scale",
     "origin",
     "SRC",
     "COND"
@@ -1117,6 +1563,24 @@
    ],
    "categories": [
     "primitive"
+   ]
+  },
+  "MakeCompressibleFlow": {
+   "inputs": [
+    "bmin",
+    "bmax",
+    "dx",
+    "q_amb",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "CompressibleFlow",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
    ]
   },
   "MakeGCTest": {
@@ -1139,24 +1603,67 @@
     "debug"
    ]
   },
-  "MakeNumber": {
+  "MakeGrid": {
    "inputs": [
     "SRC",
     "COND"
    ],
    "outputs": [
-    "obj",
+    "ZSGrid",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "1"
+    ],
+    [
+     "int",
+     "count",
+     "1"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
+  "MakeOrthonormalBase": {
+   "inputs": [
+    "normal",
+    "tangent",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "normal",
+    "tangent",
+    "bitangent",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "mathematica"
+   ]
+  },
+  "MakePartition": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "ZSPartition",
     "DST"
    ],
    "params": [
     [
      "int",
-     "value",
-     "233 0"
+     "count",
+     "1"
     ]
    ],
    "categories": [
-    "demo_project"
+    "GPUMPM"
    ]
   },
   "MakePrimitive": {
@@ -1226,6 +1733,22 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "MakeVelocityPressure": {
+   "inputs": [
+    "inFlowData",
+    "simParam",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "outFlowData",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
    ]
   },
   "MakeVisualAABBPrimitive": {
@@ -1355,36 +1878,6 @@
     "particles"
    ]
   },
-  "NumberAdd": {
-   "inputs": [
-    "lhs",
-    "rhs",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "result",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "demo_project"
-   ]
-  },
-  "NumberPrint": {
-   "inputs": [
-    "obj",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "demo_project"
-   ]
-  },
   "NumericFloat": {
    "inputs": [
     "SRC",
@@ -1466,26 +1959,6 @@
      "string",
      "op_type",
      "copy"
-    ]
-   ],
-   "categories": [
-    "numeric"
-   ]
-  },
-  "NumericRandom": {
-   "inputs": [
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "value",
-    "DST"
-   ],
-   "params": [
-    [
-     "int",
-     "dim",
-     "0 0 4"
     ]
    ],
    "categories": [
@@ -1582,6 +2055,129 @@
     "numeric"
    ]
   },
+  "OutputZensimParticles": {
+   "inputs": [
+    "ZensimParticles",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "ZensimGeometry"
+   ]
+  },
+  "P2G": {
+   "inputs": [
+    "dt",
+    "ZSModel",
+    "ZSParticles",
+    "ZSGrid",
+    "ZSPartition",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "simulation"
+   ]
+  },
+  "PairZensimParticles": {
+   "inputs": [
+    "ZSParticlesA",
+    "ZSParticlesB",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "ZensimParticleList",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "ZensimGeometry"
+   ]
+  },
+  "ParticleAddDV": {
+   "inputs": [
+    "Particles",
+    "dv",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "channel",
+     "vel"
+    ],
+    [
+     "float",
+     "vx",
+     "0.0"
+    ],
+    [
+     "float",
+     "vy",
+     "0.0"
+    ],
+    [
+     "float",
+     "vz",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "ParticleEmitter": {
+   "inputs": [
+    "Particles",
+    "ShapeSDF",
+    "VelocityVolume",
+    "LiquidSDF",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "vx",
+     "0.0"
+    ],
+    [
+     "float",
+     "vy",
+     "0.0"
+    ],
+    [
+     "float",
+     "vz",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
   "ParticlesToPrimitive": {
    "inputs": [
     "pars",
@@ -1611,6 +2207,26 @@
    "params": [],
    "categories": [
     "Molecular"
+   ]
+  },
+  "PlaneProjectPrimitive2DAABB": {
+   "inputs": [
+    "origin",
+    "normal",
+    "tangent",
+    "bitangent",
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "boundMin2D",
+    "boundMax2D",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "mathematica"
    ]
   },
   "PolyDuplicate": {
@@ -1704,7 +2320,7 @@
     ]
    ],
    "categories": [
-    "primitive"
+    "openvdb"
    ]
   },
   "PrimitiveAddAttr": {
@@ -2297,6 +2913,28 @@
     "numeric"
    ]
   },
+  "PushOutLiquidSDF": {
+   "inputs": [
+    "LiquidSDF",
+    "SolidSDF",
+    "ExtractedLiquidSDF",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
   "RandomParticles": {
    "inputs": [
     "SRC",
@@ -2407,6 +3045,49 @@
     "openvdb"
    ]
   },
+  "ResolveBoundaryOnGrid": {
+   "inputs": [
+    "ZSPartition",
+    "ZSGrid",
+    "ZSBoundary",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
+  "RigidGetPressureForce": {
+   "inputs": [
+    "dt",
+    "MassCenter",
+    "Rigid",
+    "Pressure",
+    "CellFWeight",
+    "LiquidSDF",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "TotalForceImpulse",
+    "TotalTorcImpulse",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
   "RigidVelToPrimitive": {
    "inputs": [
     "prim",
@@ -2486,6 +3167,7 @@
    "inputs": [
     "prim",
     "vdbGrid",
+    "primAttr",
     "SRC",
     "COND"
    ],
@@ -2493,13 +3175,7 @@
     "prim",
     "DST"
    ],
-   "params": [
-    [
-     "string",
-     "primAttr",
-     "vel"
-    ]
-   ],
+   "params": [],
    "categories": [
     "openvdb"
    ]
@@ -2525,6 +3201,42 @@
    ],
    "categories": [
     "Molecular"
+   ]
+  },
+  "SetFLIPWorld": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "Particles",
+    "Pressure",
+    "Divergence",
+    "CellFWeight",
+    "PressureDOFID",
+    "IsolatedCellDOF",
+    "Velocity",
+    "DeltaVelocity",
+    "VelocitySnapshot",
+    "PostAdvVelocity",
+    "SolidVelocity",
+    "VelocityWeights",
+    "LiquidSDF",
+    "LiquidSDFSnapshot",
+    "ExtractedLiquidSDF",
+    "ErodedLiquidSDF",
+    "SolidSDF",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.08 0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
    ]
   },
   "SetFrameTime": {
@@ -2588,6 +3300,58 @@
    ],
    "categories": [
     "Molecular"
+   ]
+  },
+  "SpatialPartitionForParticles": {
+   "inputs": [
+    "ZSPartition",
+    "ZSParticles",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "1"
+    ],
+    [
+     "int",
+     "block_side_length",
+     "4"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
+  "SprayParticles": {
+   "inputs": [
+    "TrianglePrim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "particles",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.01"
+    ],
+    [
+     "string",
+     "channel",
+     "vel"
+    ]
+   ],
+   "categories": [
+    "primitive"
    ]
   },
   "SubCategory": {
@@ -2661,11 +3425,84 @@
     [
      "string",
      "name",
-     "SubgraphTitle"
+     "DoNotUseThisNodeDirectly"
     ]
    ],
    "categories": [
     "subgraph"
+   ]
+  },
+  "SubtractPressureGradient": {
+   "inputs": [
+    "dt",
+    "LiquidSDF",
+    "SolidSDF",
+    "ExtractedLiquidSDF",
+    "Pressure",
+    "CellFWeight",
+    "Velocity",
+    "SolidVelocity",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "ToParticleObject": {
+   "inputs": [
+    "ZSParticles",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "pars",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "ZensimGeometry"
+   ]
+  },
+  "ToZensimLevelSet": {
+   "inputs": [
+    "VDBFloatGrid",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "ZSLevelSet",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
+  "ToZensimParticles": {
+   "inputs": [
+    "ZSModel",
+    "ParticleObject",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "ZensimParticles",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "ZensimGeometry"
    ]
   },
   "TransformMesh": {
@@ -2705,6 +3542,24 @@
     "primitive"
    ]
   },
+  "UnpackNumericVec": {
+   "inputs": [
+    "vec",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "X",
+    "Y",
+    "Z",
+    "W",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
+   ]
+  },
   "VDBRenormalizeSDF": {
    "inputs": [
     "inoutSDF",
@@ -2728,6 +3583,26 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "Vec3FieldExtrapolate": {
+   "inputs": [
+    "Field",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "NumIterates",
+     "1"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
    ]
   },
   "WrangleBinaryOp": {
@@ -2862,6 +3737,26 @@
     "wrangler"
    ]
   },
+  "WriteBgeo": {
+   "inputs": [
+    "data",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "particles"
+   ]
+  },
   "WriteObjMesh": {
    "inputs": [
     "mesh",
@@ -2920,6 +3815,43 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "ZensimBoundary": {
+   "inputs": [
+    "ZSLevelSet",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "ZSBoundary",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "type",
+     "sticky"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
+  "makeCompressibleSim": {
+   "inputs": [
+    "inFlowData",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "outFlowData",
+    "SimParam",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
    ]
   }
  }

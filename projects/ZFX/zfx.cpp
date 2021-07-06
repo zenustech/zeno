@@ -1,13 +1,306 @@
-#include "program.h"
-#include "ast.h"
+#include "Program.h"
+#include "split_str.h"
+#include <string>
+#include <memory>
+#include <vector>
+#include <cstring>
 #include <sstream>
 #include <iostream>
 #include <cstdlib>
+#include <cctype>
+#include <stack>
 #include <map>
+#include <set>
 
 using std::cout;
 using std::cerr;
 using std::endl;
+
+struct Token {
+    enum class Type {
+        op, mem, reg, imm, func, none,
+    } type;
+    std::string ident;
+
+    Token(Type type, std::string const &ident) : type(type), ident(ident) {}
+
+    bool is_op(std::set<std::string> const &list) {
+        return type == Type::op && list.find(ident) != list.end();
+    }
+
+    bool is_ident(std::set<std::string> const &list) {
+        return type == Type::reg && list.find(ident) != list.end();
+    }
+};
+
+struct AST {
+    Token token;
+    std::vector<std::unique_ptr<AST>> args;
+
+    explicit AST
+        ( Token token
+        , std::vector<std::unique_ptr<AST>> args = {}
+        )
+        : token(std::move(token))
+        , args(std::move(args))
+        {}
+
+    explicit AST
+        ( Token token
+        , std::unique_ptr<AST> lhs
+        )
+        : token(std::move(token))
+        {
+            args.push_back(std::move(lhs));
+        }
+
+    explicit AST
+        ( Token token
+        , std::unique_ptr<AST> lhs
+        , std::unique_ptr<AST> rhs
+        )
+        : token(std::move(token))
+        {
+            args.push_back(std::move(lhs));
+            args.push_back(std::move(rhs));
+        }
+
+    std::string dump() const {
+        std::string res;
+        if (args.size() != 0)
+            res += "(";
+        res += token.ident;
+        for (auto const &arg: args) {
+            res += " ";
+            res += arg->dump();
+        }
+        if (args.size() != 0)
+            res += ")";
+        return res;
+    }
+};
+
+class Parser {
+private:
+    std::string code;
+    const char *cp;
+
+    void skipws() {
+        for (; *cp && isspace(*cp); cp++);
+    }
+
+public:
+    Parser(std::string const &code_) : code(code_), cp(code.c_str()) {
+        while (tokenize());
+        init_parse();
+    }
+
+    auto parse() {
+        while (parse_definition());
+        std::vector<std::unique_ptr<AST>> asts;
+        while (parse_stmt()) {
+            asts.push_back(pop_ast());
+        }
+        return asts;
+    }
+
+    auto const &get_typing() const {
+        return typing;
+    }
+
+private:
+    std::vector<Token> tokens;
+    decltype(tokens.begin()) token;
+
+    void init_parse() {
+        tokens.emplace_back(Token::Type::none, "EOF");
+        token = tokens.begin();
+    }
+
+    std::map<std::string, std::string> typing;
+    std::stack<std::unique_ptr<AST>> ast_nodes;
+
+    std::unique_ptr<AST> pop_ast() {
+        auto ptr = std::move(ast_nodes.top());
+        ast_nodes.pop();
+        return ptr;
+    }
+
+    template <class ...Ts>
+    void emplace_ast(Ts &&...ts) {
+        ast_nodes.push(std::make_unique<AST>(std::forward<Ts>(ts)...));
+    }
+
+    static inline const char opchars[] = "+-*/=(,)";
+
+    bool parse_atom() {  // atom := symbol | literial
+        if (token->type == Token::Type::op)
+            return false;
+        if (token->type == Token::Type::none)
+            return false;
+        emplace_ast(*token);
+        token++;
+        return true;
+    }
+
+    bool parse_funcall() {  // funcall := symbol "(" [expr ["," expr]*]? ")"
+        if (token->type == Token::Type::reg) {
+            auto opToken = *token++;
+            opToken.type = Token::Type::func;
+            if (token->is_op({"("})) {
+                token++;
+                if (token->is_op({")"})) {
+                    emplace_ast(opToken);
+                    return true;
+                } else if (parse_expr()) {
+                    std::vector<std::unique_ptr<AST>> arglist;
+                    arglist.push_back(pop_ast());
+                    while (token->is_op({","})) {
+                        token++;
+                        if (parse_expr()) {
+                            arglist.push_back(pop_ast());
+                        } else {
+                            token--;
+                            break;
+                        }
+                    }
+                    if (token->is_op({")"})) {
+                        token++;
+                    }
+                    emplace_ast(opToken, std::move(arglist));
+                    return true;
+                }
+                token--;
+            }
+            token--;
+        }
+        return false;
+    }
+
+    bool parse_factor() {
+        // factor := funcall | atom | <"+"|"-"> factor | "(" expr ")"
+        if (parse_funcall()) {
+            return true;
+        }
+        if (parse_atom()) {
+            return true;
+        }
+        if (token->is_op({"+", "-"})) {
+            auto opToken = *token++;
+            if (!parse_factor()) {
+                token--;
+                return false;
+            }
+            emplace_ast(opToken, pop_ast());
+            return true;
+        }
+        if (token->is_op({"("})) {
+            token++;
+            if (!parse_expr()) {
+                token--;
+            }
+            if (token->is_op({")"})) {
+                token++;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    bool parse_term() {  // term := factor [<"*"|"/"|"%"> factor]*
+        if (!parse_factor())
+            return false;
+        while (token->is_op({"*", "/", "%"})) {
+            auto opToken = *token++;
+            if (!parse_factor()) {
+                token--;
+                break;
+            }
+            emplace_ast(opToken, pop_ast(), pop_ast());
+        }
+        return true;
+    }
+
+    bool parse_expr() {  // expr := term [<"+"|"-"> term]*
+        if (!parse_term())
+            return false;
+        while (token->is_op({"+", "-"})) {
+            auto opToken = *token++;
+            if (!parse_term()) {
+                token--;
+                break;
+            }
+            emplace_ast(opToken, pop_ast(), pop_ast());
+        }
+        return true;
+    }
+
+    bool parse_definition() {  // definition := "define" type symbol
+        if (token->is_ident({"define"})) {
+            auto opToken = *token++;
+            auto type = *token++;
+            if (type.type == Token::Type::reg) {
+                auto symbol = *token++;
+                if (symbol.type == Token::Type::mem) {
+                    typing[symbol.ident] = type.ident;
+                    return true;
+                }
+                token--;
+            }
+            token--;
+            token--;
+        }
+        return false;
+    }
+
+    bool parse_stmt() {  // stmt := expr ["=" expr]?
+        if (!parse_expr())
+            return false;
+        if (token->is_op({"="})) {
+            auto opToken = *token++;
+            if (!parse_expr()) {
+                token--;
+            }
+            emplace_ast(opToken, pop_ast(), pop_ast());
+        }
+        return true;
+    }
+
+    bool tokenize() {
+        skipws();
+        char head = *cp++;
+        if (!head)
+            return false;
+        if (isdigit(head)) {
+            std::string ident;
+            ident += head;
+            for (; isdigit(*cp) || *cp == '.'; ident += *cp++);
+            tokens.emplace_back(Token::Type::imm, ident);
+            return true;
+
+        } else if (head == '@') {
+            std::string ident;
+            for (; isalnum(*cp) || *cp == '.'; ident += *cp++);
+            tokens.emplace_back(Token::Type::mem, ident);
+            return true;
+
+        } else if (isalpha(head)) {
+            std::string ident;
+            ident += head;
+            for (; isalnum(*cp) || *cp == '.'; ident += *cp++);
+            tokens.emplace_back(Token::Type::reg, ident);
+            return true;
+        }
+        if (strchr(opchars, head)) {
+            std::string op;
+            op += head;
+            tokens.emplace_back(Token::Type::op, op);
+            return true;
+        }
+        cp--;
+        return false;
+    }
+};
 
 struct Transcriptor {
     struct Visit {
@@ -92,22 +385,12 @@ struct Transcriptor {
     }
 };
 
-static std::vector<std::string> split_str(std::string const &s, char delimiter) {
-  std::vector<std::string> tokens;
-  std::string token;
-  std::istringstream iss(s);
-  while (std::getline(iss, token, delimiter))
-    tokens.push_back(token);
-  return tokens;
-}
-
 static std::string opchar_to_name(std::string const &op) {
     if (op == "+") return "add";
     if (op == "-") return "sub";
     if (op == "*") return "mul";
     if (op == "/") return "div";
-    if (op == "mov") return "mov";
-    return "";
+    return op;
 }
 
 static int get_digit(char c) {
@@ -128,9 +411,10 @@ struct UnwrapPass {
     std::map<std::string, std::string> typing;
     std::stringstream oss;
 
-    UnwrapPass() {
-        typing["@a"] = "f3";
-        typing["@b"] = "f1";
+    void set_typing(std::map<std::string, std::string> const &typ) {
+        for (auto const &[symb, type]: typ) {
+            typing['@' + symb] = type;
+        }
     }
 
     std::string determine_type(std::string const &exp) const {
@@ -157,7 +441,9 @@ struct UnwrapPass {
         auto dsttype = determine_type(dst);
         int dim = get_digit(dsttype[1]);
         for (int d = 0; d < dim; d++) {
-            auto opinst = dsttype[0] + opchar_to_name(opcode);
+            auto opinst = opchar_to_name(opcode);
+            if (dsttype[0] != 'f')
+                opinst = dsttype[0] + opinst;
             oss << opinst << " " << tag_dim(dst, d);
             for (auto const &arg: args) {
                 auto argdim = get_digit(determine_type(arg)[1]);
@@ -326,6 +612,10 @@ struct ReassignPass {
     std::map<std::string, std::string> assignment;
     std::map<std::string, int> memories;
 
+    auto const &get_memories() const {
+        return memories;
+    }
+
     std::string reassign_register(std::string const &exp) {
         if (exp[0] == '@') {
             auto key = exp.substr(1);
@@ -359,58 +649,76 @@ struct ReassignPass {
             if (line.size() == 0) return;
             auto ops = split_str(line, ' ');
             oss << ops[0];
-            for (int i = 2; i < ops.size(); i++) {
+            for (int i = 1; i < ops.size(); i++) {
                 oss << " " << reassign_register(ops[i]);
             }
             oss << '\n';
         }
-        /*for (auto const &[key, id]: memories) {
-            oss << "def @" << id << " " << key << endl;
-        }*/
     }
 
     std::string dump() const {
-        return oss.str();
+        std::stringstream os;
+        for (auto const &[key, id]: memories) {
+            os << "bind " << id << " " << key << endl;
+        }
+        os << oss.str();
+        return os.str();
     }
 };
 
-int main() {
-    auto code = "@a = @a + @b * (3 + 1.4)";
 
+//#define PRINT_IR
+std::string zfx_to_assembly(std::string const &code) {
+#ifdef PRINT_IR
     cout << "===" << endl;
     cout << code << endl;
     cout << "===" << endl;
+#endif
 
     Parser p(code);
-    auto ast = p.parse();
-    cout << ast->dump() << endl;
+    auto asts = p.parse();
+#ifdef PRINT_IR
+    for (auto const &ast: asts) {
+        cout << ast->dump() << endl;
+    }
     cout << "===" << endl;
+#endif
 
     Transcriptor t;
-    t.visit(ast.get());
-    ast = nullptr;
+    for (auto const &ast: asts) {
+        t.visit(ast.get());
+    }
     auto ir = t.dump();
+#ifdef PRINT_IR
     cout << ir;
     cout << "===" << endl;
+#endif
 
     UnwrapPass uwp;
+    uwp.set_typing(p.get_typing());
     uwp.parse(ir);
     auto uwir = uwp.dump();
+#ifdef PRINT_IR
     cout << uwir;
     cout << "===" << endl;
+#endif
 
     UntypePass utp;
     utp.set_typing(uwp.get_typing());
     utp.parse(uwir);
     auto utir = utp.dump();
+#ifdef PRINT_IR
     cout << utir;
     cout << "===" << endl;
+#endif
 
     ReassignPass rap;
     rap.parse(uwir);
     auto rair = rap.dump();
+#ifdef PRINT_IR
     cout << rair;
     cout << "===" << endl;
+#endif
 
-    return 0;
+    return rair;
 }

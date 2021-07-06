@@ -1,23 +1,24 @@
 #include <zeno/zeno.h>
-#include "program.h"
-#include "no_ProgramObject.h"
+#include <zeno/StringObject.h>
 #include "no_ParticlesObject.h"
-#include "pwrangle.h"
 #include "particles.h"
+#include "pwrangle.h"
+#include "compile.h"
 
 using namespace zeno;
 
 struct ParticlesWrangle : INode {
     virtual void apply() override {
         auto particles = get_input<ParticlesObject>("particles");
-        auto program = get_input<ProgramObject>("program");
-        particles_wrangle(&program->prog, &particles->pars);
+        auto code = get_input<StringObject>("ZFXCode")->get();
+        auto prog = compile_program(code);
+        particles_wrangle(prog, &particles->pars);
         set_output("particles", std::move(particles));
     }
 };
 
 ZENDEFNODE(ParticlesWrangle, {
-    {"particles", "program"},
+    {"particles", "ZFXCode"},
     {"particles"},
     {},
     {"zenofx"},
