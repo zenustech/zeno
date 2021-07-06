@@ -586,10 +586,11 @@ class QDMGraphicsNode_FrameResizeHelper(QGraphicsItem):
         self.node.setWidthHeight(p.x(), p.y() + TEXT_HEIGHT)
 
     def hoverEnterEvent(self, event):
-        self.node.setSelected(False)
+        self.node.setFlag(QGraphicsItem.ItemIsMovable, False)
         self.setCursor(Qt.SizeFDiagCursor)
 
     def hoverLeaveEvent(self, event):
+        self.node.setFlag(QGraphicsItem.ItemIsMovable, True)
         self.setCursor(Qt.ArrowCursor)
 
 
