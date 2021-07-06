@@ -93,6 +93,7 @@ doesn't provide any solvers, instead it allows users to **write their own nodes*
 using its C++ API.
 Here's some of the node libraries that have been implemented by our developers:
 
+- ZenoFX expression wrangler (by @archibate)
 - basic primitive ops (by @archibate)
 - basic OpenVDB ops (by @zhxx1987)
 - OpenVDB FLIP fluids (by @zhxx1987 and @ureternalreward)
@@ -101,6 +102,7 @@ Here's some of the node libraries that have been implemented by our developers:
 - GPU MPM with CUDA (by @littlemine)
 - Bullet3 rigid solver (by @archibate)
 - Hypersonic air solver (by @Eydcao)
+- MPM Meshing (by @zhxx1987)
 
 Loading these libraries would add corresponding functional nodes into ZENO,
 after which you can creating node graphs with them for simulation.
@@ -288,6 +290,9 @@ to enable it.
 
 Building them require some dependencies:
 
+- ZFX (ZenoFX expression wrangler)
+  - OpenMP (optional)
+
 - Rigid (bullet3 rigid dynamics)
   - no dependencies!
 
@@ -311,10 +316,16 @@ Building them require some dependencies:
   - OpenBLAS
   - ZenVDB (see above)
   - OldZenBASE (see above)
+  - OpenMP (optional)
 
 - GMPM (GPU MPM solver)
   - CUDA toolkit
   - OpenVDB (optional)
+  - OpenMP (optional)
+
+- Mesher (MPM Meshing)
+  - Eigen3
+  - OpenMP (optional)
 
 Other extensions are built by default because their dependencies are
 self-contained and portable to all platforms.

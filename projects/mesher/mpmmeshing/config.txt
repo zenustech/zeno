@@ -1,0 +1,6 @@
+path /home/yunuo/Workspace/Research/meshing/data/3D_DiskTear/
+smooth_iter 150
+edge_strech 2.6
+start_frame 0
+end_frame 75
+fileprefix data_

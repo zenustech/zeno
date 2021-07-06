@@ -1,0 +1,27 @@
+#include "Render.h"
+#include <iostream>
+
+int main(int argc, char *argv[])
+{
+
+    Render *MyRender = new Render();
+
+    std::string cmd_input_path;
+    if (argc == 2)
+    {
+        cmd_input_path = argv[1];
+        std::cout << "Dealing with sim data from" << cmd_input_path << std::endl;
+    }
+
+    MyRender->ParametersIn(cmd_input_path);
+
+    MyRender->preprocess();
+    for (int i = MyRender->start_frame; i <= MyRender->end_frame; i++)
+    {
+        // system("pause");
+        MyRender->process(i);
+    }
+
+    // system("pause");
+    return 0;
+}

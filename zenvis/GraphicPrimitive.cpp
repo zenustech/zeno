@@ -44,6 +44,7 @@ struct GraphicPrimitive : IGraphic {
     }
     if (!prim->has_attr("nrm")) {
         auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
+
         for (size_t i = 0; i < nrm.size(); i++) {
             nrm[i] = zeno::vec3f(1 / zeno::sqrt(3.0f));
         }
