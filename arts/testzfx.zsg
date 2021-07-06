@@ -135,7 +135,7 @@
       "COND": null
      },
      "params": {
-      "value": "@clr = @pos + 0.5"
+      "value": "@clr = sqrt(@pos + 0.5)"
      },
      "uipos": [
       -117.5,
@@ -146,8 +146,8 @@
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": -877,
-    "trans_y": -238
+    "trans_x": -710,
+    "trans_y": -151
    }
   }
  },

@@ -18,7 +18,7 @@ using std::endl;
 
 struct Token {
     enum class Type {
-        op, mem, reg, imm, func, none,
+        op, mem, reg, imm, call, none,
     } type;
     std::string ident;
 
@@ -146,7 +146,7 @@ private:
     bool parse_funcall() {  // funcall := symbol "(" [expr ["," expr]*]? ")"
         if (token->type == Token::Type::reg) {
             auto opToken = *token++;
-            opToken.type = Token::Type::func;
+            opToken.type = Token::Type::call;
             if (token->is_op({"("})) {
                 token++;
                 if (token->is_op({")"})) {
@@ -362,6 +362,13 @@ struct Transcriptor {
                 movalue(src, dst.lvalue);
                 return make_visit("", "");
             }
+            auto res = ast->token.ident;
+            for (auto const &arg: ast->args) {
+                auto vis = visit(arg.get());
+                res += " " + lvalue(vis);
+            }
+            return make_visit("", res);
+        } else if (ast->token.type == Token::Type::call) {
             auto res = ast->token.ident;
             for (auto const &arg: ast->args) {
                 auto vis = visit(arg.get());
@@ -667,7 +674,7 @@ struct ReassignPass {
 };
 
 
-//#define PRINT_IR
+#define PRINT_IR
 std::string zfx_to_assembly(std::string const &code) {
 #ifdef PRINT_IR
     cout << "===" << endl;
