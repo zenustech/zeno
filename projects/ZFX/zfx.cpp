@@ -533,7 +533,7 @@ struct TypeCheck {
         }
     }
 
-    void parse(std::string const &lines) {
+    void type_check(std::string const &lines) {
         for (auto const &line: split_str(lines, '\n')) {
             if (line.size() == 0) return;
             auto ops = split_str(line, ' ');
@@ -550,8 +550,7 @@ struct TypeCheck {
     }
 };
 
-struct UnfuncPass {
-    std::map<std::string, std::string> typing;
+struct UnfuncPass : TypeCheck {
     std::stringstream oss;
 
     std::string determine_type(std::string const &exp) const {
@@ -623,6 +622,7 @@ struct UnfuncPass {
     }
 
     void parse(std::string const &lines) {
+        type_check(lines);
         for (auto const &line: split_str(lines, '\n')) {
             if (line.size() == 0) return;
             auto ops = split_str(line, ' ');
@@ -642,29 +642,8 @@ struct UnfuncPass {
     }
 };
 
-struct UnwrapPass {
-    std::map<std::string, std::string> typing;
+struct UnwrapPass : TypeCheck {
     std::stringstream oss;
-
-    std::string determine_type(std::string const &exp) const {
-        if (exp[0] == '#') {
-            return "f1";
-        }
-        auto exps = split_str(exp, '.');
-        if (exps.size() == 2) {
-            auto it = typing.find(exps[0]);
-            if (it == typing.end()) {
-                error("cannot determine type of ", exp);
-            }
-            return it->second;
-        }
-
-        auto it = typing.find(exp);
-        if (it == typing.end()) {
-            error("cannot determine type of ", exp);
-        }
-        return it->second;
-    }
 
     void emit_op(std::string const &opcode, std::string const &dst,
         std::vector<std::string> const &args) {
@@ -682,6 +661,7 @@ struct UnwrapPass {
     }
 
     void parse(std::string const &lines) {
+        type_check(lines);
         for (auto const &line: split_str(lines, '\n')) {
             if (line.size() == 0) return;
             auto ops = split_str(line, ' ');
@@ -698,10 +678,6 @@ struct UnwrapPass {
 
     std::string dump() const {
         return oss.str();
-    }
-
-    auto const &get_typing() const {
-        return typing;
     }
 };
 
@@ -800,36 +776,20 @@ std::string zfx_to_assembly(std::string const &code) {
     auto inir = inp.dump();
 #ifdef PRINT_IR
     cout << inir;
-    cout << "=== InitialTypeCheck" << endl;
-#endif
-
-    TypeCheck intc;
-    intc.set_parser_typing(p.get_typing());
-    intc.parse(inir);
-#ifdef PRINT_IR
-    cout << intc.dump_typing();
     cout << "=== UnfuncPass" << endl;
 #endif
 
     UnfuncPass ufp;
-    ufp.typing = intc.typing;
+    ufp.set_parser_typing(p.get_typing());
     ufp.parse(inir);
     auto ufir = ufp.dump();
 #ifdef PRINT_IR
     cout << ufir;
-    cout << "=== UnfuncTypeCheck" << endl;
-#endif
-
-    TypeCheck uftc;
-    uftc.set_parser_typing(p.get_typing());
-    uftc.parse(ufir);
-#ifdef PRINT_IR
-    cout << uftc.dump_typing();
     cout << "=== UnwrapPass" << endl;
 #endif
 
     UnwrapPass uwp;
-    uwp.typing = uftc.typing;
+    uwp.set_parser_typing(p.get_typing());
     uwp.parse(ufir);
     auto uwir = uwp.dump();
 #ifdef PRINT_IR
