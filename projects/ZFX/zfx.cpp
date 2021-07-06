@@ -606,6 +606,13 @@ struct UnfuncPass {
                     emit_op("add", dst, {dst, tmp});
             }
             return;
+
+        } else if (opcode == "length") {
+            if (args.size() != 1) error("length takes exactly 1 argument\n");
+            auto src = args[0];
+            emit_op("dot", dst, {src, src});
+            emit_op("sqrt", dst, {dst});
+            return;
         }
 
         oss << opcode << " " << dst;
