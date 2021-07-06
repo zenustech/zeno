@@ -401,7 +401,7 @@ static std::string opchar_to_name(std::string const &op) {
 }
 
 static int get_digit(char c) {
-    return c <= '9' ? c - '0' : c - 'A';
+    return c <= '9' ? c - '0' : c < 'w' ? c - 'A' : c == 'w' ? 3 : c - 'x';
 }
 
 static char put_digit(int n) {
@@ -504,6 +504,15 @@ struct UnwrapPass {
         if (exp[0] == '#') {
             return "f1";
         }
+        auto exps = split_str(exp, '.');
+        if (exps.size() == 2) {
+            auto it = typing.find(exps[0]);
+            if (it == typing.end()) {
+                error("cannot determine type of ", exp);
+            }
+            return it->second;
+        }
+
         auto it = typing.find(exp);
         if (it == typing.end()) {
             error("cannot determine type of ", exp);

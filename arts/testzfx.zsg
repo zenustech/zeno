@@ -135,7 +135,7 @@
       "COND": null
      },
      "params": {
-      "value": "@clr = rsqrt(@pos + 0.5)"
+      "value": "c = @pos + 0.5\n@clr = c.0 + c.1"
      },
      "uipos": [
       -117.5,
@@ -146,8 +146,8 @@
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": -473,
-    "trans_y": -179
+    "trans_x": 40,
+    "trans_y": 185
    }
   }
  },
