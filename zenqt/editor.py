@@ -981,6 +981,16 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         painter.setBrush(QColor(style['frame_title_color']))
         painter.drawPath(pathTitle.simplified())
 
+        if self.isSelected():
+            pathOutline = QPainterPath()
+            rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
+            pathOutline.addRoundedRect(rect, r, r)
+            pen = QPen(QColor(style['selected_color']))
+            pen.setWidth(style['node_outline_width'])
+            painter.setPen(pen)
+            painter.setBrush(Qt.NoBrush)
+            painter.drawPath(pathOutline.simplified())
+
     def setWidthHeight(self, width, height):
         width = max(width, style['node_width'])
         height = max(height, 100)
