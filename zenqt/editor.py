@@ -549,7 +549,7 @@ class QDMGraphicsEdge(QDMGraphicsPath):
         self.scene().removeItem(self)
 
 
-class QDMGraphicsNode_FrameResizeHelper(QGraphicsItem):
+class QDMGraphicsFrameResizeHelper(QGraphicsItem):
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -948,7 +948,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         self.title.setPlainText(name)
 
     def initSockets(self):
-        self.helper = QDMGraphicsNode_FrameResizeHelper(self)
+        self.helper = QDMGraphicsFrameResizeHelper(self)
         h = self.height - TEXT_HEIGHT
         self.helper.setPos(self.width, h)
 
