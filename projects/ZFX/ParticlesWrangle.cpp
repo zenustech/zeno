@@ -57,6 +57,19 @@ struct ParticlesWrangle : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
+        std::ostringstream oss;
+        for (auto const &[key, attr]: prim->m_attrs) {
+            oss << "define ";
+            std::visit([&oss] (auto const &v) {
+                using T = std::decay_t<decltype(v[0])>;
+                if constexpr (std::is_same_v<T, zeno::vec3f>) oss << "f3";
+                else if constexpr (std::is_same_v<T, float>) oss << "f1";
+                else
+                    oss << "unknown";
+            }, attr);
+            oss << " @" << key << '\n';
+        }
+        code = oss.str() + code;
         /*auto params = get_input<zeno::ListObject>("params")->get();
         std::vector<zeno::NumericValue> pars;
         for (auto const &param: params) {
