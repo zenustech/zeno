@@ -91,6 +91,7 @@ class CustomSlider(QSlider):
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
         self.timeline.stop_play()
+        self.setValue(QStyle.sliderValueFromPosition(self.minimum(), self.maximum(), event.x(), self.width()))
 
 
 class TimelineWidget(QWidget):
