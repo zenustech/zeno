@@ -96,6 +96,8 @@ class TimelineWidget(QWidget):
         self.slider.sliderPressed.connect(self.stop_play)
         self.slider.setMinimum(0)
         self.slider.setMaximum(1)
+        self.slider.setTickInterval(24)
+        self.slider.setTickPosition(QSlider.TicksAbove)
 
         self.player = QDMPlayButton(self)
         self.prevBtn = QDMPrevButton(self)
