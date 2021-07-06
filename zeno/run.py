@@ -29,6 +29,8 @@ def runScene(graphs, nframes, iopath):
         print('FRAME:', frameid)
         ### BEGIN XINXIN HAPPY >>>>>
         for ident, data in graphs['main']['nodes'].items():
+            if 'inputs' not in data:  # Frame
+                continue
             name = data['name']
             inputs = data['inputs']
             params = data['params']
@@ -52,6 +54,8 @@ def loadGraph(nodes, subgkeys):
 
     for ident in nodes:
         data = nodes[ident]
+        if 'inputs' not in data:
+            continue
         name = data['name']
         inputs = data['inputs']
         params = data['params']
