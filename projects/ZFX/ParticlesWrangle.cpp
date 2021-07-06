@@ -1,9 +1,12 @@
-#include "Program.h"
-#include "split_str.h"
+#include "zfx.h"
 #include <zeno/zeno.h>
 #include <zeno/StringObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <cassert>
+
+using namespace zenofx;
+
+Compiler zfx_compiler;
 
 struct Buffer {
     float *base = nullptr;
@@ -75,7 +78,7 @@ struct ParticlesWrangle : zeno::INode {
         for (auto const &param: params) {
             pars.push_back(param->value);
         }*/
-        auto prog = compile_program(code);
+        auto prog = zfx_compiler.compile(code);
         particles_wrangle(prog, prim.get());
         set_output("prim", std::move(prim));
     }
