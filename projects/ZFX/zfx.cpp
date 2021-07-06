@@ -16,6 +16,12 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
+template <class ...Ts>
+static void error(Ts &&...ts) {
+    (cerr << "ERROR: " << ... << ts) << endl;
+    exit(-1);
+}
+
 struct Token {
     enum class Type {
         op, mem, reg, imm, call, none,
@@ -392,12 +398,43 @@ struct Transcriptor {
     }
 };
 
+static std::string tag_dim(std::string const &exp, int d) {
+    if (exp[0] == '#')
+        return exp;
+    if (strchr(exp.c_str(), '.')) {
+        return exp;
+    }
+    char buf[233];
+    sprintf(buf, "%s.%d", exp.c_str(), d);
+    return buf;
+}
+
 static std::string opchar_to_name(std::string const &op) {
     if (op == "+") return "add";
     if (op == "-") return "sub";
     if (op == "*") return "mul";
     if (op == "/") return "div";
     return op;
+}
+
+static std::string promote_type(std::string const &lhs,
+    std::string const &rhs) {
+    if (lhs[0] != rhs[0]) {
+        error("cannot implicit promote type: ", lhs[0], " <=> ", rhs[0]);
+    }
+    char stype = lhs[0];
+    char dim = 0;
+    if (lhs[1] == '1') {
+        dim = rhs[1];
+    } else if (rhs[1] == '1') {
+        dim = lhs[1];
+    } else {
+        if (lhs[1] != rhs[1]) {
+            error("vector dimension mismatch: ", lhs[1], " != ", rhs[1]);
+        }
+        dim = lhs[1];
+    }
+    return std::string() + stype + dim;
 }
 
 static int get_digit(char c) {
@@ -408,13 +445,7 @@ static char put_digit(int n) {
     return n <= 9 ? n + '0' : n - 10 + 'A';
 }
 
-template <class ...Ts>
-static void error(Ts &&...ts) {
-    (cerr << "ERROR: " << ... << ts) << endl;
-    exit(-1);
-}
-
-struct UntypePass {
+struct InitialPass {
     std::stringstream oss;
 
     void parse(std::string const &lines) {
@@ -442,9 +473,106 @@ struct UntypePass {
     }
 };
 
+struct TypeCheck {
+    std::map<std::string, std::string> typing;
+    std::stringstream oss;
+
+    void set_parser_typing(std::map<std::string, std::string> const &typ) {
+        for (auto const &[symb, type]: typ) {
+            typing['@' + symb] = type;
+        }
+    }
+
+    std::string dump_typing() {
+        oss.clear();
+        for (auto const &[sym, type]: typing) {
+            oss << "define " << type << " " << sym << '\n';
+        }
+        return oss.str();
+    }
+
+    std::string determine_type(std::string const &exp) const {
+        if (exp[0] == '#') {
+            return "f1";
+        }
+        auto exps = split_str(exp, '.');
+        if (exps.size() == 2) {
+            auto it = typing.find(exps[0]);
+            if (it == typing.end()) {
+                error("cannot determine type of ", exp);
+            }
+            return it->second;
+        }
+
+        auto it = typing.find(exp);
+        if (it == typing.end()) {
+            error("cannot determine type of ", exp);
+        }
+        return it->second;
+    }
+
+    void op_promote_type(std::string const &dst,
+        std::string const &opcode, std::vector<std::string> const &types) {
+        auto curtype = types[0];
+        for (int i = 1; i < types.size(); i++) {
+            auto const &type = types[i];
+            curtype = promote_type(curtype, type);
+        }
+        auto it = typing.find(dst);
+        if (it == typing.end()) {
+            typing[dst] = curtype;
+        } else {
+            if (it->second != curtype) {
+                if (dst[0] == '@') {
+                    if (promote_type(it->second, curtype) != it->second) {
+                        error("cannot cast: ", it->second, " <- ", curtype);
+                    }
+                }
+                typing[dst] = promote_type(it->second, curtype);
+            }
+        }
+    }
+
+    void parse(std::string const &lines) {
+        for (auto const &line: split_str(lines, '\n')) {
+            if (line.size() == 0) return;
+            auto ops = split_str(line, ' ');
+            auto opcode = ops[0];
+            std::vector<std::string> argtypes;
+            for (int i = 2; i < ops.size(); i++) {
+                auto arg = ops[i];
+                auto type = determine_type(arg);
+                argtypes.push_back(type);
+            }
+            auto dst = ops[1];
+            op_promote_type(dst, opcode, argtypes);
+        }
+    }
+};
+
 struct UnfuncPass {
     std::map<std::string, std::string> typing;
     std::stringstream oss;
+
+    std::string determine_type(std::string const &exp) const {
+        if (exp[0] == '#') {
+            return "f1";
+        }
+        auto exps = split_str(exp, '.');
+        if (exps.size() == 2) {
+            auto it = typing.find(exps[0]);
+            if (it == typing.end()) {
+                error("cannot determine component type of ", exp);
+            }
+            return it->second;
+        }
+
+        auto it = typing.find(exp);
+        if (it == typing.end()) {
+            error("cannot determine type of ", exp);
+        }
+        return it->second;
+    }
 
     int tmpid = 0;
     std::string alloc_register() {
@@ -460,6 +588,23 @@ struct UnfuncPass {
             auto tmp = alloc_register();
             emit_op("sqrt", tmp, args);
             emit_op("div", dst, {"#1", tmp});
+            return;
+
+        } else if (opcode == "dot") {
+            if (args.size() != 2) error("dot takes exactly 2 arguments\n");
+            auto lhs = args[0], rhs = args[1];
+            auto dim = get_digit(determine_type(lhs)[1]);
+            auto ldim = get_digit(determine_type(rhs)[1]);
+            if (dim != ldim) {
+                error("vector dimension mismatch for dot: ", dim, " ", ldim);
+            }
+            for (int d = 0; d < dim; d++) {
+                auto tmp = alloc_register();
+                emit_op("mul", d == 0 ? dst : tmp,
+                    {tag_dim(lhs, d), tag_dim(rhs, d)});
+                if (d != 0)
+                    emit_op("add", dst, {dst, tmp});
+            }
             return;
         }
 
@@ -494,12 +639,6 @@ struct UnwrapPass {
     std::map<std::string, std::string> typing;
     std::stringstream oss;
 
-    void set_typing(std::map<std::string, std::string> const &typ) {
-        for (auto const &[symb, type]: typ) {
-            typing['@' + symb] = type;
-        }
-    }
-
     std::string determine_type(std::string const &exp) const {
         if (exp[0] == '#') {
             return "f1";
@@ -520,17 +659,6 @@ struct UnwrapPass {
         return it->second;
     }
 
-    std::string tag_dim(std::string const &exp, int d) const {
-        if (exp[0] == '#')
-            return exp;
-        if (strchr(exp.c_str(), '.')) {
-            return exp;
-        }
-        char buf[233];
-        sprintf(buf, "%s.%d", exp.c_str(), d);
-        return buf;
-    }
-
     void emit_op(std::string const &opcode, std::string const &dst,
         std::vector<std::string> const &args) {
         auto dsttype = determine_type(dst);
@@ -546,65 +674,7 @@ struct UnwrapPass {
         }
     }
 
-    static std::string promote_type(std::string const &lhs,
-        std::string const &rhs) {
-        if (lhs[0] != rhs[0]) {
-            error("cannot implicit promote type: ", lhs[0], " <=> ", rhs[0]);
-        }
-        char stype = lhs[0];
-        char dim = 0;
-        if (lhs[1] == '1') {
-            dim = rhs[1];
-        } else if (rhs[1] == '1') {
-            dim = lhs[1];
-        } else {
-            if (lhs[1] != rhs[1]) {
-                error("vector dimension mismatch: ", lhs[1], " != ", rhs[1]);
-            }
-            dim = lhs[1];
-        }
-        return std::string() + stype + dim;
-    }
-
-    void op_promote_type(std::string const &dst,
-        std::string const &opcode, std::vector<std::string> const &types) {
-        auto curtype = types[0];
-        for (int i = 1; i < types.size(); i++) {
-            auto const &type = types[i];
-            curtype = promote_type(curtype, type);
-        }
-        auto it = typing.find(dst);
-        if (it == typing.end()) {
-            typing[dst] = curtype;
-        } else {
-            if (it->second != curtype) {
-                if (dst[0] == '@') {
-                    if (promote_type(it->second, curtype) != it->second) {
-                        error("cannot cast: ", it->second, " <- ", curtype);
-                    }
-                }
-                typing[dst] = promote_type(it->second, curtype);
-            }
-        }
-    }
-
-    void type_check(std::string const &lines) {
-        for (auto const &line: split_str(lines, '\n')) {
-            if (line.size() == 0) return;
-            auto ops = split_str(line, ' ');
-            auto opcode = ops[0];
-            std::vector<std::string> argtypes;
-            for (int i = 2; i < ops.size(); i++) {
-                auto arg = ops[i];
-                auto type = determine_type(arg);
-                argtypes.push_back(type);
-            }
-            auto dst = ops[1];
-            op_promote_type(dst, opcode, argtypes);
-        }
-    }
-
-    void emission(std::string const &lines) {
+    void parse(std::string const &lines) {
         for (auto const &line: split_str(lines, '\n')) {
             if (line.size() == 0) return;
             auto ops = split_str(line, ' ');
@@ -617,11 +687,6 @@ struct UnwrapPass {
             auto dst = ops[1];
             emit_op(opcode, dst, args);
         }
-    }
-
-    void parse(std::string const &lines) {
-        type_check(lines);
-        emission(lines);
     }
 
     std::string dump() const {
@@ -720,27 +785,44 @@ std::string zfx_to_assembly(std::string const &code) {
     auto tsir = ts.dump();
 #ifdef PRINT_IR
     cout << tsir;
-    cout << "=== UntypePass" << endl;
+    cout << "=== InitialPass" << endl;
 #endif
 
-    UntypePass utp;
-    utp.parse(tsir);
-    auto utir = utp.dump();
+    InitialPass inp;
+    inp.parse(tsir);
+    auto inir = inp.dump();
 #ifdef PRINT_IR
-    cout << utir;
+    cout << inir;
+    cout << "=== InitialTypeCheck" << endl;
+#endif
+
+    TypeCheck intc;
+    intc.set_parser_typing(p.get_typing());
+    intc.parse(inir);
+#ifdef PRINT_IR
+    cout << intc.dump_typing();
     cout << "=== UnfuncPass" << endl;
 #endif
 
     UnfuncPass ufp;
-    ufp.parse(utir);
+    ufp.typing = intc.typing;
+    ufp.parse(inir);
     auto ufir = ufp.dump();
 #ifdef PRINT_IR
     cout << ufir;
+    cout << "=== UnfuncTypeCheck" << endl;
+#endif
+
+    TypeCheck uftc;
+    uftc.set_parser_typing(p.get_typing());
+    uftc.parse(ufir);
+#ifdef PRINT_IR
+    cout << uftc.dump_typing();
     cout << "=== UnwrapPass" << endl;
 #endif
 
     UnwrapPass uwp;
-    uwp.set_typing(p.get_typing());
+    uwp.typing = uftc.typing;
     uwp.parse(ufir);
     auto uwir = uwp.dump();
 #ifdef PRINT_IR

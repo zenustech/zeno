@@ -135,7 +135,7 @@
       "COND": null
      },
      "params": {
-      "value": "c = @pos*10\nr = c.0*c.0 + c.1*c.1 + c.2*c.2\n@clr = sin(r)"
+      "value": "c = @pos*10\nr = dot(c, c)\n@clr = sin(r)"
      },
      "uipos": [
       -117.5,
@@ -146,8 +146,8 @@
    },
    "view": {
     "scale": 2.44140625,
-    "trans_x": -649,
-    "trans_y": -106
+    "trans_x": -746,
+    "trans_y": -3
    }
   }
  },
@@ -1710,6 +1710,14 @@
    ],
    "categories": [
     "wrangler"
+   ]
+  },
+  "Frame": {
+   "inputs": [],
+   "outputs": [],
+   "params": [],
+   "categories": [
+    "layout"
    ]
   }
  },
