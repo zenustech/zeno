@@ -316,10 +316,12 @@ Building them require some dependencies:
   - OpenBLAS
   - ZenVDB (see above)
   - OldZenBASE (see above)
+  - OpenMP (optional)
 
 - GMPM (GPU MPM solver)
   - CUDA toolkit
   - OpenVDB (optional)
+  - OpenMP (optional)
 
 - Mesher (MPM Meshing)
   - Eigen3
