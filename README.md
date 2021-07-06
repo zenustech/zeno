@@ -273,6 +273,11 @@ cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
 ```
 to enable them.
 
+##### Known issues
+
+* The FastFLIP solver only work well with OpenVDB 7.1.3, and have bug in some
+specific scenes with OpenVDB 8.1.
+
 #### GMPM
 
 You need to update git submodules before building @littlemine's GPU MPM.
