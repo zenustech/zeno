@@ -29,10 +29,13 @@ class QDMPlayButton(QSvgWidget):
             self.load(asset_path('play.svg'))
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
-    def mousePressEvent(self, event):
-        super().mouseMoveEvent(event)
+    def changeWithTimeline(self):
         self.change()
         self.timeline.value_changed()
+
+    def mousePressEvent(self, event):
+        super().mouseMoveEvent(event)
+        self.changeWithTimeline()
 
 
 class QDMPrevNextButton(QSvgWidget):
@@ -50,7 +53,7 @@ class QDMPrevNextButton(QSvgWidget):
     
     def mousePressEvent(self, event):
         super().mouseMoveEvent(event)
-        self.timeline.next_frame()
+        self.callback()
         self.load(asset_path(self.svg_down))
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
         self.counter = 0
@@ -93,6 +96,8 @@ class TimelineWidget(QWidget):
         self.slider.sliderPressed.connect(self.stop_play)
         self.slider.setMinimum(0)
         self.slider.setMaximum(1)
+        self.slider.setTickInterval(24)
+        self.slider.setTickPosition(QSlider.TicksAbove)
 
         self.player = QDMPlayButton(self)
         self.prevBtn = QDMPrevButton(self)
@@ -107,6 +112,12 @@ class TimelineWidget(QWidget):
         layout.addWidget(self.status)
         self.setLayout(layout)
         self.setFixedHeight(38)
+
+        self.initShortcuts()
+
+    def initShortcuts(self):
+        self.msgPlay = QShortcut(QKeySequence(' '), self)
+        self.msgPlay.activated.connect(lambda: self.player.changeWithTimeline())
 
     def setEditor(self, editor):
         self.editor = editor
