@@ -308,11 +308,11 @@ struct Transcriptor {
         std::string rvalue;
     };
 
-    int regid = 0;
+    int tmpid = 0;
 
     std::string alloc_register() {
         char buf[233];
-        sprintf(buf, "$%d", regid++);
+        sprintf(buf, "$_Tm%d", tmpid++);
         return buf;
     }
 
@@ -321,7 +321,7 @@ struct Transcriptor {
     std::string get_register(std::string const &name) {
         auto it = regalloc.find(name);
         if (it == regalloc.end()) {
-            auto reg = alloc_register();
+            auto reg = "$" + name;
             regalloc[name] = reg;
             return reg;
         }
@@ -401,7 +401,7 @@ static std::string opchar_to_name(std::string const &op) {
 }
 
 static int get_digit(char c) {
-    return c <= '9' ? c - '0' : c < 'w' ? c - 'A' : c == 'w' ? 3 : c - 'x';
+    return c <= '9' ? c - '0' : c - 'A';
 }
 
 static char put_digit(int n) {
@@ -523,6 +523,9 @@ struct UnwrapPass {
     std::string tag_dim(std::string const &exp, int d) const {
         if (exp[0] == '#')
             return exp;
+        if (strchr(exp.c_str(), '.')) {
+            return exp;
+        }
         char buf[233];
         sprintf(buf, "%s.%d", exp.c_str(), d);
         return buf;

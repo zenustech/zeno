@@ -135,7 +135,7 @@
       "COND": null
      },
      "params": {
-      "value": "c = @pos + 0.5\n@clr = c.0 + c.1"
+      "value": "c = @pos*10\nr = c.0*c.0 + c.1*c.1 + c.2*c.2\n@clr = sin(r)"
      },
      "uipos": [
       -117.5,
@@ -145,9 +145,9 @@
     }
    },
    "view": {
-    "scale": 1.5625,
-    "trans_x": 40,
-    "trans_y": 185
+    "scale": 2.44140625,
+    "trans_x": -649,
+    "trans_y": -106
    }
   }
  },
