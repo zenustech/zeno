@@ -934,7 +934,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         self.scene().moved = True
 
     def remove(self):
-        pass
+        self.scene().removeItem(self)
 
     def setIdent(self, ident):
         self.ident = ident
