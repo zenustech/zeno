@@ -50,7 +50,7 @@ class QDMPrevNextButton(QSvgWidget):
     
     def mousePressEvent(self, event):
         super().mouseMoveEvent(event)
-        self.timeline.next_frame()
+        self.callback()
         self.load(asset_path(self.svg_down))
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
         self.counter = 0
