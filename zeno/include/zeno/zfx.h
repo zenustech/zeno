@@ -531,7 +531,7 @@ private:
 
         } else if (head == '@') {
             std::string ident;
-            for (; isalnum(*cp) || *cp == '.' || *cp == '_'; ident += *cp++);
+            for (; isalnum(*cp) || strchr("_.:", *cp); ident += *cp++);
             tokens.emplace_back(Token::Type::mem, ident);
             return true;
 

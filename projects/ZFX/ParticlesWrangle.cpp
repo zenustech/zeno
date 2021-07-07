@@ -174,7 +174,7 @@ struct ParticleParticleWrangle : zeno::INode {
                 else if constexpr (std::is_same_v<T, float>) oss << "f1";
                 else oss << "unknown";
             }, attr);
-            oss << " @" << key << "_j" << '\n';
+            oss << " @" << key << ":j" << '\n';
         }
 
         auto params = get_input<zeno::ListObject>("params");
@@ -214,7 +214,7 @@ struct ParticleParticleWrangle : zeno::INode {
         std::vector<Buffer> chs(prog->channels.size());
         for (int i = 0; i < chs.size(); i++) {
             auto channe = zfx::split_str(prog->channels[i], '.');
-            auto chan = zfx::split_str(channe[0], '_');
+            auto chan = zfx::split_str(channe[0], ':');
             if (chan.size() == 1) {
                 chan.push_back("i");
             }
