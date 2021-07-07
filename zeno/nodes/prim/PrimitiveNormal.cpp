@@ -12,9 +12,9 @@ namespace zeno {
 struct PrimitiveCalcNormal : zeno::INode {
   virtual void apply() override {
     auto prim = get_input("prim")->as<PrimitiveObject>();
+
     auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
     auto &pos = prim->attr<zeno::vec3f>("pos");
-
     for (size_t i = 0; i < nrm.size(); i++) {
         nrm[i] = zeno::vec3f(0);
     }
@@ -26,7 +26,6 @@ struct PrimitiveCalcNormal : zeno::INode {
         nrm[ind[1]] += n;
         nrm[ind[2]] += n;
     }
-
     for (size_t i = 0; i < nrm.size(); i++) {
         nrm[i] = zeno::normalize(nrm[i]);
     }
