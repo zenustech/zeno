@@ -2,137 +2,123 @@
  "graph": {
   "main": {
    "nodes": {
-    "f276a3c5-Make2DGridPrimitive": {
-     "name": "Make2DGridPrimitive",
+    "fd6a5cdc-PrimitiveRandomizeAttr": {
+     "name": "PrimitiveRandomizeAttr",
      "inputs": {
-      "nx": [
-       "36a7473b-NumericInt",
-       "value"
+      "prim": [
+       "9c42f535-PrimitiveAddAttr",
+       "prim"
       ],
-      "ny": null,
-      "sizeX": [
-       "e18676b0-x",
-       "vec3"
-      ],
-      "sizeY": [
-       "df5bd003-NumericVec3",
-       "vec3"
-      ],
-      "scale": null,
-      "origin": null,
       "SRC": null,
       "COND": null
      },
      "params": {
-      "isCentered": 1
+      "attrName": "pos",
+      "min": -1.0,
+      "minY": -1.0,
+      "minZ": -1.0,
+      "max": 1.0,
+      "maxY": 1.0,
+      "maxZ": 1.0
      },
      "uipos": [
-      -435.45000000000005,
-      -381.5000000000001
+      682.8799999999999,
+      209.71999999999997
+     ],
+     "options": []
+    },
+    "5647df28-MakePrimitive": {
+     "name": "MakePrimitive",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      411.68,
+      229.96000000000004
      ],
      "options": [
-      "ONCE"
+      "collapsed"
      ]
     },
-    "36a7473b-NumericInt": {
+    "9c42f535-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "1b9f2e90-PrimitiveResize",
+       "prim"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "name": "pos",
+      "type": "float3"
+     },
+     "uipos": [
+      412.92,
+      311.92
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "1b9f2e90-PrimitiveResize": {
+     "name": "PrimitiveResize",
+     "inputs": {
+      "prim": [
+       "5647df28-MakePrimitive",
+       "prim"
+      ],
+      "size": [
+       "13273af4-NumericInt",
+       "value"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      413.44000000000005,
+      270.72
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "13273af4-NumericInt": {
      "name": "NumericInt",
      "inputs": {
       "SRC": null,
       "COND": null
      },
      "params": {
-      "value": 512
+      "value": 32
      },
      "uipos": [
-      -806.0,
-      -505.6
+      142.07999999999998,
+      197.11999999999995
      ],
      "options": []
     },
-    "df5bd003-NumericVec3": {
-     "name": "NumericVec3",
+    "edd1a362-ParticleParticleWrangle": {
+     "name": "ParticleParticleWrangle",
      "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 2.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -712.6000000000001,
-      -157.25
-     ],
-     "options": []
-    },
-    "e18676b0-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 2.0,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -959.2000000000003,
-      -323.20000000000005
-     ],
-     "options": []
-    },
-    "d174fe34-PrimitiveAddAttr": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "f276a3c5-Make2DGridPrimitive",
+      "prim1": [
+       "fd6a5cdc-PrimitiveRandomizeAttr",
        "prim"
       ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      -164.37499999999997,
-      -285.3124999999999
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "d58b69ef-MakeMultilineString": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "value": "c = @pos * 0.5 + arg0 * 1.5\nc = c + vec3(0, 2, 4)\n@clr = cos(c) * 0.5 + 0.5"
-     },
-     "uipos": [
-      -137.7,
-      -55.35
-     ],
-     "options": []
-    },
-    "53dcf140-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "d174fe34-PrimitiveAddAttr",
+      "prim2": [
+       "fd6a5cdc-PrimitiveRandomizeAttr",
        "prim"
       ],
       "zfxCode": [
-       "d58b69ef-MakeMultilineString",
+       "0f1821eb-MakeMultilineString",
        "value"
       ],
       "params": [
-       "c00623e7-MakeSmallList",
+       "0876afdd-EmptyList",
        "list"
       ],
       "SRC": null,
@@ -140,89 +126,48 @@
      },
      "params": {},
      "uipos": [
-      498.56,
-      -51.84
+      1013.1199999999997,
+      332.79999999999995
      ],
      "options": [
       "VIEW"
      ]
     },
-    "f22f708f-GetFrameNum": {
-     "name": "GetFrameNum",
+    "0f1821eb-MakeMultilineString": {
+     "name": "MakeMultilineString",
      "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -383.488,
-      265.21600000000007
-     ],
-     "options": []
-    },
-    "0980c73f-GetFrameTime": {
-     "name": "GetFrameTime",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -394.75200000000007,
-      411.1360000000001
-     ],
-     "options": []
-    },
-    "2e9a88fe-NumericOperator": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "f22f708f-GetFrameNum",
-       "FrameNum"
-      ],
-      "rhs": [
-       "0980c73f-GetFrameTime",
-       "time"
-      ],
       "SRC": null,
       "COND": null
      },
      "params": {
-      "op_type": "mul"
+      "value": "@pos = @pos + 0.1"
      },
      "uipos": [
-      -56.511999999999986,
-      256.8960000000001
+      678.4000000000001,
+      566.4000000000002
      ],
      "options": []
     },
-    "c00623e7-MakeSmallList": {
-     "name": "MakeSmallList",
+    "0876afdd-EmptyList": {
+     "name": "EmptyList",
      "inputs": {
-      "obj0": [
-       "2e9a88fe-NumericOperator",
-       "ret"
-      ],
-      "obj1": null,
-      "obj2": null,
-      "obj3": null,
-      "obj4": null,
-      "obj5": null,
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      238.39999999999992,
-      112.80000000000004
+      1014.3999999999999,
+      560.0
      ],
-     "options": []
+     "options": [
+      "collapsed"
+     ]
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -356,
-    "trans_y": -13
+    "scale": 1.5625,
+    "trans_x": 625,
+    "trans_y": 508
    }
   }
  },

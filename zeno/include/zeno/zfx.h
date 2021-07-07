@@ -531,14 +531,14 @@ private:
 
         } else if (head == '@') {
             std::string ident;
-            for (; isalnum(*cp) || *cp == '.'; ident += *cp++);
+            for (; isalnum(*cp) || *cp == '.' || *cp == '_'; ident += *cp++);
             tokens.emplace_back(Token::Type::mem, ident);
             return true;
 
-        } else if (isalpha(head)) {
+        } else if (isalpha(head) || head == '_') {
             std::string ident;
             ident += head;
-            for (; isalnum(*cp) || *cp == '.'; ident += *cp++);
+            for (; isalnum(*cp) || *cp == '.' || *cp == '_'; ident += *cp++);
             tokens.emplace_back(Token::Type::reg, ident);
             return true;
         }
