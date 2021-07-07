@@ -84,8 +84,8 @@ class QDMNextButton(QDMPrevNextButton):
         self.timeline.next_frame()
 
 class QDMSlider(QSlider):
-    def __init__(self, parent, timeline):
-        super().__init__(parent)
+    def __init__(self, type, timeline):
+        super().__init__(type)
         self.timeline = timeline
 
     def mouseMoveEvent(self, event):
