@@ -554,7 +554,7 @@ class QDMGraphicsEdge(QDMGraphicsPath):
         self.scene().removeItem(self)
 
 
-class QDMGraphicsFrameResizeHelper(QGraphicsItem):
+class QDMGraphicsBlackboardResizeHelper(QGraphicsItem):
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -913,7 +913,7 @@ class QDMGraphicsParam_multiline_string(QDMGraphicsParam):
     def getValue(self):
         return str(self.edit.toPlainText())
 
-class QDMGraphicsNode_Frame(QGraphicsItem):
+class QDMGraphicsNode_Blackboard(QGraphicsItem):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -953,7 +953,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         self.title.setPlainText(name)
 
     def initSockets(self):
-        self.helper = QDMGraphicsFrameResizeHelper(self)
+        self.helper = QDMGraphicsBlackboardResizeHelper(self)
         h = self.height - TEXT_HEIGHT
         self.helper.setPos(self.width, h)
 
@@ -1512,7 +1512,7 @@ class NodeEditor(QWidget):
         subg_descs = self.getSubgraphDescs()
         descs.update(subg_descs)
         descs.update({
-            'Frame': {
+            'Blackboard': {
                 'inputs': [],
                 'outputs': [],
                 'params': [],
