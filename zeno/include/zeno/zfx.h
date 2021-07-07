@@ -128,6 +128,7 @@ struct Instruction {
 struct Program {
     std::vector<Instruction> insts;
     std::vector<std::string> channels;
+    std::vector<std::string> parameters;
 
     void execute(Context *ctx) const {
         for (auto const &inst: insts) {
@@ -170,6 +171,12 @@ struct Assembler {
         prog.channels[memid] = attr;
     }
 
+    void bind_parameter(int parid, std::string const &name) {
+        if (prog.parameters.size() < parid + 1)
+            prog.parameters.resize(parid + 1);
+        prog.parameters[parid] = name;
+    }
+
     std::optional<Instruction> assemble_inst(std::string const &line) {
         auto tokens = split_str(line, ' ');
         assert(tokens.size() > 1);
@@ -178,6 +185,13 @@ struct Assembler {
             int memid = 0;
             std::stringstream(tokens[1]) >> memid;
             bind_channel(memid, tokens[2]);
+            return std::nullopt;
+        }
+        if (tokens[0] == "parm") {
+            assert(tokens.size() > 2);
+            int parid = 0;
+            std::stringstream(tokens[1]) >> parid;
+            bind_parameter(parid, tokens[2]);
             return std::nullopt;
         }
         assert(tokens.size() > 2);
@@ -314,6 +328,10 @@ public:
         return typing;
     }
 
+    auto const &get_parnames() const {
+        return parnames;
+    }
+
 private:
     std::vector<Token> tokens;
     decltype(tokens.begin()) token;
@@ -445,7 +463,10 @@ private:
         return true;
     }
 
-    bool parse_definition() {  // definition := "define" type symbol
+    std::vector<std::string> parnames;
+
+    bool parse_definition() {
+        // definition := "define" type symbol | "parname" symbol
         if (token->is_ident({"define"})) {
             auto opToken = *token++;
             auto type = *token++;
@@ -459,6 +480,16 @@ private:
                     return true;
                 }
                 token--;
+            }
+            token--;
+            token--;
+
+        } else if (token->is_ident({"parname"})) {
+            auto opToken = *token++;
+            auto symbol = *token++;
+            if (symbol.type == Token::Type::reg) {
+                parnames.push_back(symbol.ident);
+                return true;
             }
             token--;
             token--;
@@ -977,6 +1008,16 @@ struct ReassignPass {
     int memid = 0;
     std::map<std::string, std::string> assignment;
     std::map<std::string, int> memories;
+    std::map<std::string, int> parnames;
+
+    void set_parnames(std::vector<std::string> const &pars) {
+        for (auto const &par: pars) {
+            auto id = regid++;
+            parnames[par] = id;
+            std::ostringstream idss; idss << '$' << id;
+            assignment['$' + par] = idss.str();
+        }
+    }
 
     auto const &get_memories() const {
         return memories;
@@ -1000,6 +1041,7 @@ struct ReassignPass {
 
         if (exp[0] != '$')
             return exp;
+
         auto it = assignment.find(exp);
         if (it != assignment.end()) {
             return it->second;
@@ -1026,6 +1068,9 @@ struct ReassignPass {
         std::stringstream os;
         for (auto const &[key, id]: memories) {
             os << "bind " << id << " " << key << std::endl;
+        }
+        for (auto const &[key, id]: parnames) {
+            os << "parm " << id << " " << key << std::endl;
         }
         os << oss.str();
         return os.str();
@@ -1089,6 +1134,7 @@ static std::string source_to_assembly(std::string const &code) {
 #endif
 
     ReassignPass rap;
+    rap.set_parnames(p.get_parnames());
     rap.parse(uwir);
     auto rair = rap.dump();
 #ifdef ZFX_PRINT_IR

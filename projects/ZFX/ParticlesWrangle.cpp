@@ -15,6 +15,7 @@ struct Buffer {
 static void vectors_wrangle
     ( zfx::Program const *prog
     , std::vector<Buffer> const &chs
+    , std::vector<float> const &pars
     ) {
     if (chs.size() == 0)
         return;
@@ -50,19 +51,32 @@ struct ParticlesWrangle : zeno::INode {
         }
 
         auto params = get_input<zeno::ListObject>("params");
-        std::vector<zeno::NumericValue> pars;
+        std::vector<float> pars;
+        std::vector<std::string> parnames;
         for (auto const &obj: params->arr) {
+            auto key = (std::string)"arg0";
             auto par = dynamic_cast<zeno::NumericObject *>(obj.get());
             oss << "define ";
-            std::visit([&oss] (auto const &v) {
+            std::visit([&] (auto const &v) {
                 using T = std::decay_t<decltype(v)>;
-                if constexpr (std::is_same_v<T, zeno::vec3f>) oss << "f3";
-                else if constexpr (std::is_same_v<T, float>) oss << "f1";
-                else oss << "unknown";
+                if constexpr (std::is_same_v<T, zeno::vec3f>) {
+                    oss << "f3";
+                    pars.push_back(v[0]);
+                    pars.push_back(v[1]);
+                    pars.push_back(v[2]);
+                    parnames.push_back(key + ".0");
+                    parnames.push_back(key + ".1");
+                    parnames.push_back(key + ".2");
+                } else if constexpr (std::is_same_v<T, float>) {
+                    oss << "f1";
+                    pars.push_back(v);
+                    parnames.push_back(key + ".0");
+                } else oss << "unknown";
             }, par->value);
-            auto key = "arg0";
             oss << " " << key << '\n';
-            pars.push_back(par->value);
+        }
+        for (auto const &par: parnames) {
+            oss << "parname " << par << '\n';
         }
 
         code = oss.str() + code;
@@ -83,7 +97,7 @@ struct ParticlesWrangle : zeno::INode {
             }, attr);
             chs[i] = iob;
         }
-        vectors_wrangle(prog, chs);
+        vectors_wrangle(prog, chs, pars);
 
         set_output("prim", std::move(prim));
     }
