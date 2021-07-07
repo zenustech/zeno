@@ -1,7 +1,8 @@
 #pragma once
 
 /*******************\
- ZFX wrangling language for ZENO:  {Z=f(x)}
+
+ ZFX - the wrangling language for ZENO:  {Z=f(x)}
 
  This is a header-only library. To use it in your zeno project, just:
 
@@ -10,6 +11,12 @@
 
 \*******************/
 
+#include <cstdio>
+#include <vector>
+#include <memory>
+#include <string>
+#include <cmath>
+
 #ifdef ZFX_IMPLEMENTATION
 #include <magic_enum.hpp>
 #include <iostream>
@@ -17,22 +24,10 @@
 #include <cassert>
 #include <sstream>
 #include <cstdlib>
-#include <string>
-#include <memory>
-#include <vector>
-#include <cstdio>
 #include <cctype>
-#include <cmath>
 #include <stack>
 #include <map>
 #include <set>
-#else
-#include <cstdio>
-#include <vector>
-#include <memory>
-#include <string>
-#include <cmath>
-#include <map>
 #endif
 
 namespace zfx {
@@ -149,6 +144,8 @@ static inline auto split_str(std::string const &s, char delimiter) {
         tokens.push_back(token);
     return tokens;
 }
+
+Program *compile_program(std::string const &code);
 
 #ifdef ZFX_IMPLEMENTATION
 struct Assembler {
@@ -987,6 +984,7 @@ static std::string source_to_assembly(std::string const &code) {
     ufp.parse(inir);
     auto ufir = ufp.dump();
 #ifdef ZFX_PRINT_IR
+    std::cout << ufp.dump_typing();
     std::cout << ufir;
     std::cout << "=== UnwrapPass" << std::endl;
 #endif
@@ -996,6 +994,7 @@ static std::string source_to_assembly(std::string const &code) {
     uwp.parse(ufir);
     auto uwir = uwp.dump();
 #ifdef ZFX_PRINT_IR
+    std::cout << uwp.dump_typing();
     std::cout << uwir;
     std::cout << "=== ReassignPass" << std::endl;
 #endif
@@ -1032,8 +1031,6 @@ static Compiler main_compiler;
 Program *compile_program(std::string const &code) {
     return main_compiler.compile(code);
 }
-#else  // ifdef ZFX_IMPLEMENTATION
-Program *compile_program(std::string const &code);
 #endif  // ifdef ZFX_IMPLEMENTATION
 
 }
