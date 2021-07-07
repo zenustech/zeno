@@ -26,6 +26,9 @@ static void vectors_wrangle
     #pragma omp parallel for
     for (int i = 0; i < size; i++) {
         zfx::Context ctx;
+        for (int j = 0; j < pars.size(); j++) {
+            ctx.regtable[j] = pars[j];
+        }
         for (int j = 0; j < chs.size(); j++) {
             ctx.memtable[j] = chs[j].base + chs[j].stride * i;
         }
