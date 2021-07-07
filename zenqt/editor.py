@@ -928,8 +928,8 @@ class QDMGraphicsBlackboardContent(QGraphicsProxyWidget):
     def setText(self, text):
         self.widget.setPlainText(str(text))
 
-    def getValue(self):
-        return str(self.edit.toPlainText())
+    def getText(self):
+        return self.widget.toPlainText()
 
 class QDMGraphicsNode_Blackboard(QGraphicsItem):
     def __init__(self, parent=None):
@@ -1037,6 +1037,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
             'width': self.width,
             'height': self.height,
             'title': self.title.toPlainText(),
+            'content': self.content.getText(),
         }
         return {self.ident: data}
     
@@ -1051,6 +1052,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
         self.setWidthHeight(data['width'], data['height'])
 
         self.title.setPlainText(data['title'])
+        self.content.setText(data['content'])
 
         edges = []
         return edges
