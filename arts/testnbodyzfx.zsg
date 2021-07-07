@@ -6,7 +6,7 @@
      "name": "PrimitiveRandomizeAttr",
      "inputs": {
       "prim": [
-       "9c42f535-PrimitiveAddAttr",
+       "9bcf0a55-PrimitiveAddAttr",
        "prim"
       ],
       "SRC": null,
@@ -23,9 +23,11 @@
      },
      "uipos": [
       682.8799999999999,
-      209.71999999999997
+      208.92000000000007
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "5647df28-MakePrimitive": {
      "name": "MakePrimitive",
@@ -39,6 +41,7 @@
       229.96000000000004
      ],
      "options": [
+      "ONCE",
       "collapsed"
      ]
     },
@@ -57,10 +60,11 @@
       "type": "float3"
      },
      "uipos": [
-      412.92,
+      413.72,
       311.92
      ],
      "options": [
+      "ONCE",
       "collapsed"
      ]
     },
@@ -84,6 +88,7 @@
       270.72
      ],
      "options": [
+      "ONCE",
       "collapsed"
      ]
     },
@@ -94,13 +99,15 @@
       "COND": null
      },
      "params": {
-      "value": 512
+      "value": 256
      },
      "uipos": [
       142.07999999999998,
       197.11999999999995
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "edd1a362-ParticleParticleWrangle": {
      "name": "ParticleParticleWrangle",
@@ -118,7 +125,7 @@
        "value"
       ],
       "params": [
-       "0876afdd-EmptyList",
+       "4ac6e43b-AppendList",
        "list"
       ],
       "SRC": null,
@@ -129,9 +136,7 @@
       1013.1199999999997,
       332.79999999999995
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "0f1821eb-MakeMultilineString": {
      "name": "MakeMultilineString",
@@ -140,7 +145,7 @@
       "COND": null
      },
      "params": {
-      "value": "c = @pos_j\n@pos.1 = cos(@pos.0 * 4)\n@pos.2 = 0"
+      "value": "dis = @pos_j - @pos\nacc = dis / pow(length(dis) + 0.01, 3)\n@vel = @vel + arg0 * 0.001 * acc"
      },
      "uipos": [
       678.4000000000001,
@@ -148,7 +153,110 @@
      ],
      "options": []
     },
-    "0876afdd-EmptyList": {
+    "9bcf0a55-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "9c42f535-PrimitiveAddAttr",
+       "prim"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "name": "vel",
+      "type": "float3"
+     },
+     "uipos": [
+      416.80000000000007,
+      354.4000000000001
+     ],
+     "options": [
+      "ONCE",
+      "collapsed"
+     ]
+    },
+    "50f117cf-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "edd1a362-ParticleParticleWrangle",
+       "prim1"
+      ],
+      "zfxCode": [
+       "97230540-x",
+       "value"
+      ],
+      "params": [
+       "4ac6e43b-AppendList",
+       "list"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      1363.1999999999998,
+      347.20000000000005
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "97230540-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": "@pos = @pos + @vel * arg0"
+     },
+     "uipos": [
+      1019.9999999999995,
+      579.4000000000002
+     ],
+     "options": []
+    },
+    "518fab5d-GetFrameTime": {
+     "name": "GetFrameTime",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      1005.3000000000002,
+      159.3499999999999
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "4ac6e43b-AppendList": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "2506dd7f-EmptyList",
+       "list"
+      ],
+      "object": [
+       "518fab5d-GetFrameTime",
+       "time"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      1009.75,
+      267.85000000000036
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "2506dd7f-EmptyList": {
      "name": "EmptyList",
      "inputs": {
       "SRC": null,
@@ -156,8 +264,8 @@
      },
      "params": {},
      "uipos": [
-      1014.3999999999999,
-      560.0
+      1008.0,
+      212.0
      ],
      "options": [
       "collapsed"
@@ -165,9 +273,9 @@
     }
    },
    "view": {
-    "scale": 1.953125,
-    "trans_x": 831,
-    "trans_y": 959
+    "scale": 1.25,
+    "trans_x": 438,
+    "trans_y": 508
    }
   }
  },
