@@ -12,8 +12,8 @@
       "path": "/home/dilei/Desktop/jet.obj"
      },
      "uipos": [
-      -519.0,
-      -142.0
+      -729.546875,
+      -153.25000000000003
      ],
      "options": []
     },
@@ -29,8 +29,8 @@
      },
      "params": {},
      "uipos": [
-      -237.0,
-      -51.0
+      -485.04687500000006,
+      -81.93750000000001
      ],
      "options": []
     },
@@ -49,8 +49,8 @@
       "type": "vertex"
      },
      "uipos": [
-      51.0,
-      -27.0
+      -210.71875,
+      -86.76562500000001
      ],
      "options": []
     },
@@ -58,8 +58,8 @@
      "name": "SDFToPoly",
      "inputs": {
       "SDF": [
-       "f61924c7-PrimitiveToSDF",
-       "sdf"
+       "a8a6d996-CombineVDB",
+       "FieldOut"
       ],
       "SRC": null,
       "COND": null
@@ -69,8 +69,8 @@
       "adaptivity": 0.0
      },
      "uipos": [
-      362.0,
-      56.0
+      457.3906250000001,
+      46.64062500000003
      ],
      "options": []
     },
@@ -86,18 +86,95 @@
      },
      "params": {},
      "uipos": [
-      666.0,
-      71.0
+      789.6093750000002,
+      32.953125
      ],
      "options": [
       "VIEW"
      ]
+    },
+    "5221d0e2-ReadObjMesh": {
+     "name": "ReadObjMesh",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "path": "/home/dilei/Desktop/box.obj"
+     },
+     "uipos": [
+      -789.9218750000001,
+      111.25000000000001
+     ],
+     "options": []
+    },
+    "fe12f778-x": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "eebe46c8-x",
+       "prim"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "voxel_size": 0.01,
+      "type": "vertex"
+     },
+     "uipos": [
+      -267.90625,
+      226.67187500000003
+     ],
+     "options": []
+    },
+    "eebe46c8-x": {
+     "name": "MeshToPrimitive",
+     "inputs": {
+      "mesh": [
+       "5221d0e2-ReadObjMesh",
+       "mesh"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      -540.671875,
+      200.87500000000003
+     ],
+     "options": []
+    },
+    "a8a6d996-CombineVDB": {
+     "name": "CombineVDB",
+     "inputs": {
+      "FieldA": [
+       "f61924c7-PrimitiveToSDF",
+       "sdf"
+      ],
+      "FieldB": [
+       "fe12f778-x",
+       "sdf"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "MultiplierA": 1.0,
+      "MultiplierB": 1.0,
+      "OpType": "CSGUnion"
+     },
+     "uipos": [
+      160.78125,
+      -19.765624999999915
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1,
-    "trans_x": -242,
-    "trans_y": -277
+    "scale": 0.6400000000000001,
+    "trans_x": -495,
+    "trans_y": -147
    }
   }
  },
