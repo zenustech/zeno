@@ -145,7 +145,7 @@
       "COND": null
      },
      "params": {
-      "value": "dis = @pos:j - @pos\nacc = dis / pow(length(dis) + 0.01, 3)\n@vel = @vel + arg0 * 0.001 * acc"
+      "value": "dis = @pos:j - @pos\nacc = dis / pow(length(dis) + 0.01, 3)\n@vel += arg0 * 0.001 * acc"
      },
      "uipos": [
       678.4000000000001,
@@ -210,7 +210,7 @@
       "COND": null
      },
      "params": {
-      "value": "@pos = @pos + @vel * arg0"
+      "value": "@pos += @vel * arg0"
      },
      "uipos": [
       1019.9999999999995,
@@ -273,9 +273,9 @@
     }
    },
    "view": {
-    "scale": 1.953125,
-    "trans_x": 305,
-    "trans_y": 478
+    "scale": 1.5625,
+    "trans_x": 864,
+    "trans_y": 754
    }
   }
  },
