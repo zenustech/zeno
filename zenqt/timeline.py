@@ -88,10 +88,17 @@ class QDMSlider(QSlider):
         super().__init__(parent)
         self.timeline = timeline
 
+    def mouseMoveEvent(self, event):
+        super().mouseMoveEvent(event)
+        self.timeline.stop_play()
+        self.setValue(QStyle.sliderValueFromPosition(
+            self.minimum(), self.maximum(), event.x(), self.width()))
+
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
         self.timeline.stop_play()
-        self.setValue(QStyle.sliderValueFromPosition(self.minimum(), self.maximum(), event.x(), self.width()))
+        self.setValue(QStyle.sliderValueFromPosition(
+            self.minimum(), self.maximum(), event.x(), self.width()))
 
 
 class TimelineWidget(QWidget):
