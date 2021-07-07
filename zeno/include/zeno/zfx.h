@@ -791,6 +791,13 @@ struct UnfuncPass : TypeCheck {
             emit_op("add", dst, {tmp, args[2]});
             return;
 
+        } else if (opcode == "mls") {
+            if (args.size() != 3) error("mls takes exactly 3 arguments\n");
+            auto tmp = alloc_register();
+            emit_op("mul", tmp, {args[0], args[1]});
+            emit_op("sub", dst, {tmp, args[2]});
+            return;
+
         } else if (opcode == "inversesqrt") {
             emit_op("sqrt", dst, args);
             emit_op("div", dst, {"#1", dst});
@@ -845,8 +852,8 @@ struct UnfuncPass : TypeCheck {
                 int e = (d + 1) % 3, f = (d + 2) % 3;
                 emit_op("mul", tag_dim(tmp, d),
                     {tag_dim(lhs, e), tag_dim(rhs, f)});
-                emit_op("mla", tag_dim(tmp, d),
-                    {tag_dim(lhs, e), tag_dim(rhs, f), tag_dim(tmp, d)});
+                emit_op("mls", tag_dim(tmp, d),
+                    {tag_dim(lhs, f), tag_dim(rhs, e), tag_dim(tmp, d)});
             }
             if (!direct)
                 define_type(tmp, determine_type(lhs));
@@ -1053,6 +1060,7 @@ static std::string source_to_assembly(std::string const &code) {
 #endif
 
     UnwrapPass uwp;
+    uwp.typing = ufp.typing;
     uwp.set_parser_typing(p.get_typing());
     uwp.parse(ufir);
     auto uwir = uwp.dump();

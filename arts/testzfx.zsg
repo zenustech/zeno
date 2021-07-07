@@ -135,7 +135,7 @@
       "COND": null
      },
      "params": {
-      "value": "c = @pos*10\nr = length(c)\n@clr = r % 1"
+      "value": "c = @pos*10\nr = cross(c, c - 1)\n@clr = r"
      },
      "uipos": [
       -117.5,
@@ -157,8 +157,8 @@
    },
    "view": {
     "scale": 1.953125,
-    "trans_x": -787,
-    "trans_y": -182
+    "trans_x": -709,
+    "trans_y": -78
    }
   }
  },
