@@ -835,8 +835,9 @@ struct UnfuncPass : TypeCheck {
             }
             return;
 
-        } else if (opcode.substr(0, 3) == "vec" && opcode.size() == 4) {
-            int dim = 3;
+        } else if (opcode.substr(0, 3) == "vec") {
+            int dim;
+            std::istringstream(opcode.substr(3)) >> dim;
             if (args.size() != dim)
                 error(opcode, " takes exactly ", dim, " arguments\n");
 
@@ -844,7 +845,7 @@ struct UnfuncPass : TypeCheck {
             for (int d = 0; d < dim; d++) {
                 emit_op("mov", tag_dim(tmp, d), {args[d]});
             }
-            std::stringstream typss;
+            std::ostringstream typss;
             typss << "f" << dim;
             auto typ = typss.str();
             define_type(tmp, typ);
