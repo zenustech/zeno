@@ -936,6 +936,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         self.scene().moved = True
 
     def remove(self):
+        self.scene().nodes.remove(self)
         self.scene().removeItem(self)
 
     def setIdent(self, ident):
@@ -1003,6 +1004,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         data = {
             'name': self.name,
             'uipos': uipos,
+            'special': True,
             'width': self.width,
             'height': self.height,
             'title': self.title.toPlainText(),

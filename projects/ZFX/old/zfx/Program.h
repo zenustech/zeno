@@ -10,11 +10,11 @@ struct Context {
     float regtable[256];
     float *memtable[256];
 
-    float memfetch(int index) const {
+    constexpr float memfetch(int index) const {
         return *memtable[index];
     }
 
-    void memstore(int index, float value) {
+    constexpr void memstore(int index, float value) {
         *memtable[index] = value;
     }
 };
@@ -37,7 +37,7 @@ struct Operand {
         float value;
     };
 
-    float get(Context *ctx) const {
+    constexpr float get(Context *ctx) const {
         switch (type) {
         case OperandType::imm:
             return value;
@@ -49,7 +49,7 @@ struct Operand {
         return 0;
     }
 
-    void set(Context *ctx, float x) const {
+    constexpr void set(Context *ctx, float x) const {
         switch (type) {
         case OperandType::imm:
             return;
@@ -67,7 +67,7 @@ struct Instruction {
     Opcode opcode;
     Operand dst, lhs, rhs;
 
-    void execute(Context *ctx) const {
+    constexpr void execute(Context *ctx) const {
         float x = lhs.get(ctx);
         float y = rhs.get(ctx);
         float z = 0;

@@ -96,7 +96,7 @@ class TimelineWidget(QWidget):
         self.slider.sliderPressed.connect(self.stop_play)
         self.slider.setMinimum(0)
         self.slider.setMaximum(1)
-        self.slider.setTickInterval(24)
+        self.slider.setTickInterval(10)
         self.slider.setTickPosition(QSlider.TicksAbove)
 
         self.player = QDMPlayButton(self)
@@ -116,7 +116,7 @@ class TimelineWidget(QWidget):
         self.initShortcuts()
 
     def initShortcuts(self):
-        self.msgPlay = QShortcut(QKeySequence(' '), self)
+        self.msgPlay = QShortcut(QKeySequence(Qt.Key_Space), self)
         self.msgPlay.activated.connect(lambda: self.player.changeWithTimeline())
 
     def setEditor(self, editor):
