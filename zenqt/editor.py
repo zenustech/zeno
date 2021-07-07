@@ -913,6 +913,24 @@ class QDMGraphicsParam_multiline_string(QDMGraphicsParam):
     def getValue(self):
         return str(self.edit.toPlainText())
 
+class QDMGraphicsBlackboardContent(QGraphicsProxyWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.widget = QPlainTextEdit()
+        self.widget.parent = self
+        self.widget.setStyleSheet('color: #eeeeee')
+        p = self.widget.palette()
+        p.setColor(QPalette.Active, QPalette.Base, QColor(style['panel_color']))
+        self.widget.setPalette(p)
+        self.setWidget(self.widget)
+
+    def setText(self, text):
+        self.widget.setPlainText(str(text))
+
+    def getValue(self):
+        return str(self.edit.toPlainText())
+
 class QDMGraphicsNode_Blackboard(QGraphicsItem):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -923,7 +941,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
         self.setFlag(QGraphicsItem.ItemIsSelectable)
 
         self.width = style['node_width']
-        self.height = 100
+        self.height = 150
 
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor(style['title_text_color']))
@@ -956,6 +974,10 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
         self.helper = QDMGraphicsBlackboardResizeHelper(self)
         h = self.height - TEXT_HEIGHT
         self.helper.setPos(self.width, h)
+
+        self.content = QDMGraphicsBlackboardContent(self)
+        rect = QRectF(HORI_MARGIN, HORI_MARGIN, self.width - HORI_MARGIN * 2, 0)
+        self.content.setGeometry(rect)
 
     def boundingRect(self):
         return QRectF(0, -TEXT_HEIGHT, self.width, self.height).normalized()
@@ -998,10 +1020,13 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
 
     def setWidthHeight(self, width, height):
         width = max(width, style['node_width'])
-        height = max(height, 100)
+        height = max(height, 150)
         self.width = width
         self.height = height
         self.helper.setPos(width, height - TEXT_HEIGHT)
+
+        rect = QRectF(HORI_MARGIN, HORI_MARGIN, self.width - HORI_MARGIN * 2, 0)
+        self.content.setGeometry(rect)
 
     def dump(self):
         uipos = self.pos().x(), self.pos().y()
