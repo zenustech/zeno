@@ -83,6 +83,23 @@ class QDMNextButton(QDMPrevNextButton):
     def callback(self):
         self.timeline.next_frame()
 
+class QDMSlider(QSlider):
+    def __init__(self, type, timeline):
+        super().__init__(type)
+        self.timeline = timeline
+
+    def mouseMoveEvent(self, event):
+        super().mouseMoveEvent(event)
+        self.timeline.stop_play()
+        self.setValue(QStyle.sliderValueFromPosition(
+            self.minimum(), self.maximum(), event.x(), self.width()))
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        self.timeline.stop_play()
+        self.setValue(QStyle.sliderValueFromPosition(
+            self.minimum(), self.maximum(), event.x(), self.width()))
+
 
 class TimelineWidget(QWidget):
     def __init__(self, parent=None):
@@ -91,13 +108,13 @@ class TimelineWidget(QWidget):
         self.label = QLabel('-')
         self.status = QLabel('-')
 
-        self.slider = QSlider(Qt.Horizontal)
+        self.slider = QDMSlider(Qt.Horizontal, self)
         self.slider.valueChanged.connect(self.value_changed)
         self.slider.sliderPressed.connect(self.stop_play)
         self.slider.setMinimum(0)
         self.slider.setMaximum(1)
         self.slider.setTickInterval(10)
-        self.slider.setTickPosition(QSlider.TicksAbove)
+        self.slider.setTickPosition(QSlider.TicksBelow)
 
         self.player = QDMPlayButton(self)
         self.prevBtn = QDMPrevButton(self)
