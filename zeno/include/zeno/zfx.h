@@ -800,10 +800,31 @@ struct UnfuncPass : TypeCheck {
     void emit_op(std::string const &opcode, std::string const &dst,
         std::vector<std::string> const &args) {
 
-        if (opcode == "rsqrt") {
+        if (opcode == "mla") {
+            if (args.size() != 3) error("mla takes exactly 3 arguments\n");
             auto tmp = alloc_register();
-            emit_op("sqrt", tmp, args);
-            emit_op("div", dst, {"#1", tmp});
+            emit_op("mul", tmp, {args[0], args[1]});
+            emit_op("add", dst, {tmp, args[2]});
+            return;
+
+        } else if (opcode == "inversesqrt") {
+            emit_op("sqrt", dst, args);
+            emit_op("div", dst, {"#1", dst});
+            return;
+
+        } else if (opcode == "clamp") {  // clamp(x, a, b) = min(max(x, a), b)
+            if (args.size() != 3) error("clamp takes exactly 3 arguments\n");
+            auto tmp = alloc_register();
+            emit_op("max", tmp, {args[0], args[1]});
+            emit_op("min", dst, {tmp, args[2]});
+            return;
+
+        } else if (opcode == "mix") {  // mix(x, y, a) = x + (y - x) * a
+            if (args.size() != 3) error("mix takes exactly 3 arguments\n");
+            auto tmp = alloc_register();
+            emit_op("sub", tmp, {args[1], args[0]});
+            emit_op("mul", dst, {tmp, args[2]});
+            emit_op("add", dst, {tmp, args[0]});
             return;
 
         } else if (opcode == "dot") {
@@ -814,20 +835,57 @@ struct UnfuncPass : TypeCheck {
             if (dim != ldim) {
                 error("vector dimension mismatch for dot: ", dim, " ", ldim);
             }
-            for (int d = 0; d < dim; d++) {
-                auto tmp = alloc_register();
-                emit_op("mul", d == 0 ? dst : tmp,
-                    {tag_dim(lhs, d), tag_dim(rhs, d)});
-                if (d != 0)
-                    emit_op("add", dst, {dst, tmp});
+            auto tmp = alloc_register();
+            emit_op("mul", dim == 1 ? dst : tmp,
+                {tag_dim(lhs, 0), tag_dim(rhs, 0)});
+            for (int d = 1; d < dim; d++) {
+                emit_op("mla", d == dim - 1 ? dst : tmp,
+                    {tag_dim(lhs, d), tag_dim(rhs, d), tmp});
             }
             return;
 
-        } else if (opcode == "length") {
+        } else if (opcode == "cross") {
+            if (args.size() != 2) error("cross takes exactly 2 arguments\n");
+            auto lhs = args[0], rhs = args[1];
+            auto dim = get_digit(determine_type(lhs)[1]);
+            auto ldim = get_digit(determine_type(rhs)[1]);
+            if (dim != ldim) {
+                error("vector dimension mismatch for cross: ", dim, " ", ldim);
+            }
+            if (dim == 3) {
+                error("cross only support 3d vectors for now");
+            }
+            auto tmp = dst != lhs && dst != rhs ? dst : alloc_register();
+            for (int d = 0; d < 3; d++) {
+                int e = (d + 1) % 3, f = (d + 2) % 3;
+                emit_op("mul", tag_dim(tmp, d),
+                    {tag_dim(lhs, e), tag_dim(rhs, f)});
+                emit_op("mla", tag_dim(tmp, d),
+                    {tag_dim(lhs, e), tag_dim(rhs, f), tag_dim(tmp, d)});
+            }
+            return;
+
+        } else if (opcode == "length") {  // length(x) = sqrt(dot(x, x))
             if (args.size() != 1) error("length takes exactly 1 argument\n");
             auto src = args[0];
-            emit_op("dot", dst, {src, src});
-            emit_op("sqrt", dst, {dst});
+            auto tmp = alloc_register();
+            emit_op("dot", tmp, {src, src});
+            emit_op("sqrt", dst, {tmp});
+            return;
+
+        } else if (opcode == "normalize") {  // normalize(x) = x / length(x)
+            if (args.size() != 1) error("normalize takes exactly 1 argument\n");
+            auto src = args[0];
+            auto tmp = alloc_register();
+            emit_op("length", tmp, {src});
+            emit_op("div", dst, {src, tmp});
+            return;
+
+        } else if (opcode == "distance") {  // distance(x, y) = length(y - x)
+            if (args.size() != 1) error("distance takes exactly 2 arguments\n");
+            auto tmp = alloc_register();
+            emit_op("sub", tmp, {args[1], args[0]});
+            emit_op("length", dst, {tmp});
             return;
         }
 
