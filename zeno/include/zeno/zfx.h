@@ -452,7 +452,10 @@ private:
             if (type.type == Token::Type::reg) {
                 auto symbol = *token++;
                 if (symbol.type == Token::Type::mem) {
-                    typing[symbol.ident] = type.ident;
+                    typing['@' + symbol.ident] = type.ident;
+                    return true;
+                } else if (symbol.type == Token::Type::reg) {
+                    typing['$' + symbol.ident] = type.ident;
                     return true;
                 }
                 token--;
@@ -463,16 +466,23 @@ private:
         return false;
     }
 
-    bool parse_stmt() {  // stmt := expr ["=" expr]?
-        if (!parse_expr())
+    bool parse_stmt() {  // stmt := atom "=" expr
+        if (token->type == Token::Type::op)
             return false;
-        if (token->is_op({"="})) {
-            auto opToken = *token++;
-            if (!parse_expr()) {
-                token--;
-            }
-            emplace_ast(opToken, pop_ast(), pop_ast());
+        if (token->type == Token::Type::none)
+            return false;
+        emplace_ast(*token);
+        token++;
+        if (!token->is_op({"="})) {
+            token--;
+            return false;
         }
+        auto opToken = *token++;
+        if (!parse_expr()) {
+            token--;
+            return false;
+        }
+        emplace_ast(opToken, pop_ast(), pop_ast());
         return true;
     }
 
@@ -693,12 +703,6 @@ struct InitialPass {
 struct TypeCheck {
     std::map<std::string, std::string> typing;
     std::stringstream oss;
-
-    void set_parser_typing(std::map<std::string, std::string> const &typ) {
-        for (auto const &[symb, type]: typ) {
-            typing['@' + symb] = type;
-        }
-    }
 
     std::string dump_typing() {
         oss.clear();
@@ -1065,7 +1069,7 @@ static std::string source_to_assembly(std::string const &code) {
 #endif
 
     UnfuncPass ufp;
-    ufp.set_parser_typing(p.get_typing());
+    ufp.typing = p.get_typing();
     ufp.parse(inir);
     auto ufir = ufp.dump();
 #ifdef ZFX_PRINT_IR
@@ -1076,7 +1080,6 @@ static std::string source_to_assembly(std::string const &code) {
 
     UnwrapPass uwp;
     uwp.typing = ufp.typing;
-    uwp.set_parser_typing(p.get_typing());
     uwp.parse(ufir);
     auto uwir = uwp.dump();
 #ifdef ZFX_PRINT_IR

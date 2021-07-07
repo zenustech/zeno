@@ -105,29 +105,6 @@
       "ONCE"
      ]
     },
-    "a57fae8c-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "d174fe34-PrimitiveAddAttr",
-       "prim"
-      ],
-      "zfxCode": [
-       "d58b69ef-MakeMultilineString",
-       "value"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      265.0,
-      -3.75
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
     "d58b69ef-MakeMultilineString": {
      "name": "MakeMultilineString",
      "inputs": {
@@ -135,11 +112,11 @@
       "COND": null
      },
      "params": {
-      "value": "c = @pos*2\nc = vec3(c.1, c.2, c.0)\nr = abs(c.0)\n@clr = r"
+      "value": "@clr = arg0"
      },
      "uipos": [
-      -117.5,
-      16.25
+      -358.5,
+      -17.75
      ],
      "options": []
     },
@@ -153,12 +130,90 @@
      "width": 482.4,
      "height": 326.40000000000003,
      "title": "This is ZFX node!"
+    },
+    "53dcf140-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "d174fe34-PrimitiveAddAttr",
+       "prim"
+      ],
+      "zfxCode": [
+       "d58b69ef-MakeMultilineString",
+       "value"
+      ],
+      "params": [
+       "9582f779-AppendList",
+       "list"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      498.56,
+      -51.84
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "0fb62870-EmptyList": {
+     "name": "EmptyList",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      -28.879999999999995,
+      28.119999999999962
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "9582f779-AppendList": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "0fb62870-EmptyList",
+       "list"
+      ],
+      "object": [
+       "a6222abe-NumericFloat",
+       "value"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      246.12,
+      29.840000000000046
+     ],
+     "options": []
+    },
+    "a6222abe-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": 1.0
+     },
+     "uipos": [
+      -30.720000000000056,
+      94.72000000000003
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.5625,
-    "trans_x": -642,
-    "trans_y": -110
+    "scale": 1.25,
+    "trans_x": -871,
+    "trans_y": -259
    }
   }
  },
@@ -829,6 +884,7 @@
    "inputs": [
     "prim",
     "zfxCode",
+    "params",
     "SRC",
     "COND"
    ],

@@ -2,6 +2,8 @@
 #include <zeno/zfx.h>
 #include <zeno/StringObject.h>
 #include <zeno/PrimitiveObject.h>
+#include <zeno/NumericObject.h>
+#include <zeno/ListObject.h>
 #include <cassert>
 
 struct Buffer {
@@ -30,31 +32,10 @@ static void vectors_wrangle
     }
 }
 
-static void particles_wrangle
-    ( zfx::Program const *prog
-    , zeno::PrimitiveObject const *prim
-    ) {
-    std::vector<Buffer> chs(prog->channels.size());
-    for (int i = 0; i < chs.size(); i++) {
-        auto chan = zfx::split_str(prog->channels[i], '.');
-        assert(chan.size() == 2);
-        int dimid = 0;
-        std::stringstream(chan[1]) >> dimid;
-        Buffer iob;
-        auto const &attr = prim->attr(chan[0]);
-        std::visit([&] (auto const &arr) {
-            iob.base = (float *)arr.data() + dimid;
-            iob.count = arr.size();
-            iob.stride = sizeof(arr[0]) / sizeof(float);
-        }, attr);
-        chs[i] = iob;
-    }
-    vectors_wrangle(prog, chs);
-}
-
 struct ParticlesWrangle : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
+
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
         std::ostringstream oss;
         for (auto const &[key, attr]: prim->m_attrs) {
@@ -63,25 +44,53 @@ struct ParticlesWrangle : zeno::INode {
                 using T = std::decay_t<decltype(v[0])>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) oss << "f3";
                 else if constexpr (std::is_same_v<T, float>) oss << "f1";
-                else
-                    oss << "unknown";
+                else oss << "unknown";
             }, attr);
             oss << " @" << key << '\n';
         }
-        code = oss.str() + code;
-        /*auto params = get_input<zeno::ListObject>("params")->get();
+
+        auto params = get_input<zeno::ListObject>("params");
         std::vector<zeno::NumericValue> pars;
-        for (auto const &param: params) {
-            pars.push_back(param->value);
-        }*/
+        for (auto const &obj: params->arr) {
+            auto par = dynamic_cast<zeno::NumericObject *>(obj.get());
+            oss << "define ";
+            std::visit([&oss] (auto const &v) {
+                using T = std::decay_t<decltype(v)>;
+                if constexpr (std::is_same_v<T, zeno::vec3f>) oss << "f3";
+                else if constexpr (std::is_same_v<T, float>) oss << "f1";
+                else oss << "unknown";
+            }, par->value);
+            auto key = "arg0";
+            oss << " " << key << '\n';
+            pars.push_back(par->value);
+        }
+
+        code = oss.str() + code;
         auto prog = zfx::compile_program(code);
-        particles_wrangle(prog, prim.get());
+
+        std::vector<Buffer> chs(prog->channels.size());
+        for (int i = 0; i < chs.size(); i++) {
+            auto chan = zfx::split_str(prog->channels[i], '.');
+            assert(chan.size() == 2);
+            int dimid = 0;
+            std::stringstream(chan[1]) >> dimid;
+            Buffer iob;
+            auto const &attr = prim->attr(chan[0]);
+            std::visit([&] (auto const &arr) {
+                iob.base = (float *)arr.data() + dimid;
+                iob.count = arr.size();
+                iob.stride = sizeof(arr[0]) / sizeof(float);
+            }, attr);
+            chs[i] = iob;
+        }
+        vectors_wrangle(prog, chs);
+
         set_output("prim", std::move(prim));
     }
 };
 
 ZENDEFNODE(ParticlesWrangle, {
-    {"prim", "zfxCode"},
+    {"prim", "zfxCode", "params"},
     {"prim"},
     {},
     {"zenofx"},
