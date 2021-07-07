@@ -29,8 +29,8 @@ style = {
     'param_text_size': 10,
     'socket_text_color': '#FFFFFF',
     'panel_color': '#282828',
-    'frame_title_color': '#393939',
-    'frame_panel_color': '#1B1B1B',
+    'blackboard_title_color': '#393939',
+    'blackboard_panel_color': '#1B1B1B',
     'line_color': '#B0B0B0',
     'background_color': '#2C2C2C',
     'selected_color': '#EE8844',
@@ -989,7 +989,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
         rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
         pathContent.addRoundedRect(rect, r, r)
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['frame_panel_color']))
+        painter.setBrush(QColor(style['blackboard_panel_color']))
         painter.drawPath(pathContent.simplified())
 
         # title round top
@@ -997,7 +997,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
         rect = QRectF(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
         pathTitle.addRoundedRect(rect, r, r)
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['frame_title_color']))
+        painter.setBrush(QColor(style['blackboard_title_color']))
         painter.drawPath(pathTitle.simplified())
         
         # title direct bottom
@@ -1005,7 +1005,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
         rect = QRectF(0, -r, self.width, r)
         pathTitle.addRect(rect)
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['frame_title_color']))
+        painter.setBrush(QColor(style['blackboard_title_color']))
         painter.drawPath(pathTitle.simplified())
 
         if self.isSelected():
