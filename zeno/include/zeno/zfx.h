@@ -835,25 +835,20 @@ struct UnfuncPass : TypeCheck {
             }
             return;
 
-        } else if (opcode == "vec3") {
+        } else if (opcode.substr(0, 3) == "vec" && opcode.size() == 4) {
             int dim = 3;
             if (args.size() != dim)
                 error(opcode, " takes exactly ", dim, " arguments\n");
 
-            bool direct = false;
-            auto tmp = direct ? dst : alloc_register();
+            auto tmp = alloc_register();
             for (int d = 0; d < dim; d++) {
                 emit_op("mov", tag_dim(tmp, d), {args[d]});
             }
             std::stringstream typss;
             typss << "f" << dim;
             auto typ = typss.str();
-            if (!direct) {
-                define_type(tmp, typ);
-                emit_op("mov", dst, {tmp});
-            } else {
-                define_type(dst, typ);
-            }
+            define_type(tmp, typ);
+            emit_op("mov", dst, {tmp});
             return;
 
         } else if (opcode == "cross") {
@@ -867,8 +862,7 @@ struct UnfuncPass : TypeCheck {
             if (dim != 3) {
                 error("cross only support 3d vectors for now");
             }
-            bool direct = dst != lhs && dst != rhs;
-            auto tmp = direct ? dst : alloc_register();
+            auto tmp = alloc_register();
             for (int d = 0; d < 3; d++) {
                 int e = (d + 1) % 3, f = (d + 2) % 3;
                 emit_op("mul", tag_dim(tmp, d),
@@ -876,12 +870,8 @@ struct UnfuncPass : TypeCheck {
                 emit_op("mls", tag_dim(tmp, d),
                     {tag_dim(lhs, f), tag_dim(rhs, e), tag_dim(tmp, d)});
             }
-            if (!direct) {
-                define_type(tmp, "f3");
-                emit_op("mov", dst, {tmp});
-            } else {
-                define_type(dst, "f3");
-            }
+            define_type(tmp, "f3");
+            emit_op("mov", dst, {tmp});
             return;
 
         } else if (opcode == "length") {  // length(x) = sqrt(dot(x, x))

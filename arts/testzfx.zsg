@@ -135,7 +135,7 @@
       "COND": null
      },
      "params": {
-      "value": "c = @pos*10\nr = cross(c, vec3(0, 0, 1))\n@clr = r"
+      "value": "c = @pos*2\nc = vec3(c.1, c.2, c.0)\nr = abs(c.0)\n@clr = r"
      },
      "uipos": [
       -117.5,
@@ -156,9 +156,9 @@
     }
    },
    "view": {
-    "scale": 1.953125,
-    "trans_x": -212,
-    "trans_y": 234
+    "scale": 1.5625,
+    "trans_x": -642,
+    "trans_y": -110
    }
   }
  },
