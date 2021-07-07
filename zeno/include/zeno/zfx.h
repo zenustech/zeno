@@ -822,9 +822,9 @@ struct UnfuncPass : TypeCheck {
             if (args.size() != 2) error("dot takes exactly 2 arguments\n");
             auto lhs = args[0], rhs = args[1];
             auto dim = get_digit(determine_type(lhs)[1]);
-            auto ldim = get_digit(determine_type(rhs)[1]);
-            if (dim != ldim) {
-                error("vector dimension mismatch for dot: ", dim, " ", ldim);
+            auto rdim = get_digit(determine_type(rhs)[1]);
+            if (dim != rdim) {
+                error("vector dimension mismatch for dot: ", dim, " ", rdim);
             }
             auto tmp = alloc_register();
             emit_op("mul", dim == 1 ? dst : tmp,
@@ -835,13 +835,34 @@ struct UnfuncPass : TypeCheck {
             }
             return;
 
+        } else if (opcode == "vec3") {
+            int dim = 3;
+            if (args.size() != dim)
+                error(opcode, " takes exactly ", dim, " arguments\n");
+
+            bool direct = false;
+            auto tmp = direct ? dst : alloc_register();
+            for (int d = 0; d < dim; d++) {
+                emit_op("mov", tag_dim(tmp, d), {args[d]});
+            }
+            std::stringstream typss;
+            typss << "f" << dim;
+            auto typ = typss.str();
+            if (!direct) {
+                define_type(tmp, typ);
+                emit_op("mov", dst, {tmp});
+            } else {
+                define_type(dst, typ);
+            }
+            return;
+
         } else if (opcode == "cross") {
             if (args.size() != 2) error("cross takes exactly 2 arguments\n");
             auto lhs = args[0], rhs = args[1];
             auto dim = get_digit(determine_type(lhs)[1]);
-            auto ldim = get_digit(determine_type(rhs)[1]);
-            if (dim != ldim) {
-                error("vector dimension mismatch for cross: ", dim, " ", ldim);
+            auto rdim = get_digit(determine_type(rhs)[1]);
+            if (dim != rdim) {
+                error("vector dimension mismatch for cross: ", dim, " ", rdim);
             }
             if (dim != 3) {
                 error("cross only support 3d vectors for now");
@@ -855,9 +876,12 @@ struct UnfuncPass : TypeCheck {
                 emit_op("mls", tag_dim(tmp, d),
                     {tag_dim(lhs, f), tag_dim(rhs, e), tag_dim(tmp, d)});
             }
-            if (!direct)
-                define_type(tmp, determine_type(lhs));
-            define_type(dst, determine_type(lhs));
+            if (!direct) {
+                define_type(tmp, "f3");
+                emit_op("mov", dst, {tmp});
+            } else {
+                define_type(dst, "f3");
+            }
             return;
 
         } else if (opcode == "length") {  // length(x) = sqrt(dot(x, x))
