@@ -94,7 +94,7 @@
       "COND": null
      },
      "params": {
-      "value": 32
+      "value": 512
      },
      "uipos": [
       142.07999999999998,
@@ -140,7 +140,7 @@
       "COND": null
      },
      "params": {
-      "value": "@pos = @pos + 0.1"
+      "value": "c = @pos_j\n@pos.1 = cos(@pos.0 * 4)\n@pos.2 = 0"
      },
      "uipos": [
       678.4000000000001,
@@ -165,9 +165,9 @@
     }
    },
    "view": {
-    "scale": 1.5625,
-    "trans_x": 625,
-    "trans_y": 508
+    "scale": 1.953125,
+    "trans_x": 831,
+    "trans_y": 959
    }
   }
  },

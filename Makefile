@@ -1,6 +1,6 @@
 O=arts/testnbodyzfx.zsg
 
-default: run
+default: debug
 
 dist: all
 	make -C build install

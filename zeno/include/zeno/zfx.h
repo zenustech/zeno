@@ -181,7 +181,7 @@ struct Assembler {
         auto tokens = split_str(line, ' ');
         assert(tokens.size() > 1);
         if (tokens[0] == "bind") {
-            assert(tokens.size() > 3);
+            assert(tokens.size() > 2);
             int memid = 0;
             std::stringstream(tokens[1]) >> memid;
             bind_channel(memid, tokens[2]);
@@ -194,7 +194,7 @@ struct Assembler {
             bind_parameter(parid, tokens[2]);
             return std::nullopt;
         }
-        assert(tokens.size() > 2);
+        assert(tokens.size() > 1);
         Instruction inst;
         auto opcode = magic_enum::enum_cast<Opcode>(tokens[0]);
         if (!opcode.has_value()) {

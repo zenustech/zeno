@@ -174,7 +174,7 @@ struct ParticleParticleWrangle : zeno::INode {
                 else if constexpr (std::is_same_v<T, float>) oss << "f1";
                 else oss << "unknown";
             }, attr);
-            oss << " @_" << key << '\n';
+            oss << " @" << key << "_j" << '\n';
         }
 
         auto params = get_input<zeno::ListObject>("params");
@@ -211,12 +211,16 @@ struct ParticleParticleWrangle : zeno::INode {
         code = oss.str() + code;
         auto prog = zfx::compile_program(code);
 
-        std::vector<Buffer> chs;
-        for (int i = 0; i < prog->channels.size(); i++) {
-            auto chan = zfx::split_str(prog->channels[i], '.');
+        std::vector<Buffer> chs(prog->channels.size());
+        for (int i = 0; i < chs.size(); i++) {
+            auto channe = zfx::split_str(prog->channels[i], '.');
+            auto chan = zfx::split_str(channe[0], '_');
+            if (chan.size() == 1) {
+                chan.push_back("i");
+            }
             assert(chan.size() == 2);
             int dimid = 0;
-            std::stringstream(chan[1]) >> dimid;
+            std::stringstream(channe[1]) >> dimid;
             Buffer iob;
             auto const &attr = prim1->attr(chan[0]);
             std::visit([&] (auto const &arr) {
@@ -224,7 +228,7 @@ struct ParticleParticleWrangle : zeno::INode {
                 iob.count = arr.size();
                 iob.stride = sizeof(arr[0]) / sizeof(float);
             }, attr);
-            iob.which = chan[0][0] == '_' ? 1 : 0;
+            iob.which = chan[1][0] - 'i';
             chs[i] = iob;
         }
         vectors_vectors_wrangle(prog, chs, pars);
