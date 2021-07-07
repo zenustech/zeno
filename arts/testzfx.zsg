@@ -41,7 +41,7 @@
       "COND": null
      },
      "params": {
-      "value": 1024
+      "value": 512
      },
      "uipos": [
       -806.0,
@@ -57,7 +57,7 @@
      },
      "params": {
       "x": 0.0,
-      "y": 1.0,
+      "y": 2.0,
       "z": 0.0
      },
      "uipos": [
@@ -73,7 +73,7 @@
       "COND": null
      },
      "params": {
-      "x": 1.0,
+      "x": 2.0,
       "y": 0.0,
       "z": 0.0
      },
@@ -112,11 +112,11 @@
       "COND": null
      },
      "params": {
-      "value": "c = @pos + 0.5\n@clr = arg0 * c"
+      "value": "c = @pos * 0.5 + arg0 * 1.5\nc = c + vec3(0, 2, 4)\n@clr = cos(c) * 0.5 + 0.5"
      },
      "uipos": [
-      -358.5,
-      -17.75
+      -137.7,
+      -55.35
      ],
      "options": []
     },
@@ -155,8 +155,8 @@
      },
      "params": {},
      "uipos": [
-      -28.879999999999995,
-      28.119999999999962
+      188.72000000000003,
+      139.32
      ],
      "options": [
       "collapsed"
@@ -170,39 +170,75 @@
        "list"
       ],
       "object": [
-       "a6222abe-NumericFloat",
-       "value"
+       "2e9a88fe-NumericOperator",
+       "ret"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      246.12,
-      29.840000000000046
+      195.71999999999997,
+      182.6400000000001
      ],
-     "options": []
+     "options": [
+      "collapsed"
+     ]
     },
-    "a6222abe-NumericFloat": {
-     "name": "NumericFloat",
+    "f22f708f-GetFrameNum": {
+     "name": "GetFrameNum",
      "inputs": {
       "SRC": null,
       "COND": null
      },
+     "params": {},
+     "uipos": [
+      -383.488,
+      265.21600000000007
+     ],
+     "options": []
+    },
+    "0980c73f-GetFrameTime": {
+     "name": "GetFrameTime",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      -394.75200000000007,
+      411.1360000000001
+     ],
+     "options": []
+    },
+    "2e9a88fe-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "f22f708f-GetFrameNum",
+       "FrameNum"
+      ],
+      "rhs": [
+       "0980c73f-GetFrameTime",
+       "time"
+      ],
+      "SRC": null,
+      "COND": null
+     },
      "params": {
-      "value": 1.0
+      "op_type": "mul"
      },
      "uipos": [
-      -49.92000000000006,
-      123.52000000000001
+      -56.511999999999986,
+      256.8960000000001
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -582,
-    "trans_y": -100
+    "trans_x": -561,
+    "trans_y": -61
    }
   }
  },

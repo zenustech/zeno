@@ -56,8 +56,10 @@ struct ParticlesWrangle : zeno::INode {
         auto params = get_input<zeno::ListObject>("params");
         std::vector<float> pars;
         std::vector<std::string> parnames;
-        for (auto const &obj: params->arr) {
-            auto key = (std::string)"arg0";
+        for (int i = 0; i < params->arr.size(); i++) {
+            auto const &obj = params->arr[i];
+            std::ostringstream keyss; keyss << "arg" << i;
+            auto key = keyss.str();
             auto par = dynamic_cast<zeno::NumericObject *>(obj.get());
             oss << "define ";
             std::visit([&] (auto const &v) {
