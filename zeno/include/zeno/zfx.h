@@ -337,7 +337,11 @@ private:
         ast_nodes.push(std::make_unique<AST>(std::forward<Ts>(ts)...));
     }
 
-    static inline const char opchars[] = "+-*/=(,)";
+    static inline const char opchars[] = "+-*/%=(,)";
+    static inline const char *opstrs[] = {
+        "+", "-", "*", "/", "%", "=", "(", ",", ")",
+        NULL,
+    };
 
     bool parse_atom() {  // atom := symbol | literial
         if (token->type == Token::Type::op)
@@ -500,6 +504,18 @@ private:
         if (strchr(opchars, head)) {
             std::string op;
             op += head;
+            while (*cp) {
+                const char **p;
+                auto nop = op + *cp;
+                for (p = opstrs; *p; p++) {
+                    std::string s(*p);
+                    if (s.substr(0, nop.size()) == nop)
+                        break;
+                }
+                if (!*p)
+                    break;
+                op += *cp++;
+            }
             tokens.emplace_back(Token::Type::op, op);
             return true;
         }
@@ -614,6 +630,7 @@ static std::string opchar_to_name(std::string const &op) {
     if (op == "-") return "sub";
     if (op == "*") return "mul";
     if (op == "/") return "div";
+    if (op == "%") return "mod";
     return op;
 }
 
