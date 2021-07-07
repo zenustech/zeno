@@ -262,6 +262,11 @@ class QDMGraphicsView(QGraphicsView):
 
         self.node_editor = parent
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.scene().trans_x = self.horizontalScrollBar().value()
+        self.scene().trans_y = self.verticalScrollBar().value()
+
     def setScene(self, scene):
         super().setScene(scene)
         transform = QTransform()
