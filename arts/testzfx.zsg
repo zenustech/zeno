@@ -132,7 +132,7 @@
        "value"
       ],
       "params": [
-       "9582f779-AppendList",
+       "c00623e7-MakeSmallList",
        "list"
       ],
       "SRC": null,
@@ -145,44 +145,6 @@
      ],
      "options": [
       "VIEW"
-     ]
-    },
-    "0fb62870-EmptyList": {
-     "name": "EmptyList",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      188.72000000000003,
-      139.32
-     ],
-     "options": [
-      "collapsed"
-     ]
-    },
-    "9582f779-AppendList": {
-     "name": "AppendList",
-     "inputs": {
-      "list": [
-       "0fb62870-EmptyList",
-       "list"
-      ],
-      "object": [
-       "2e9a88fe-NumericOperator",
-       "ret"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      195.71999999999997,
-      182.6400000000001
-     ],
-     "options": [
-      "collapsed"
      ]
     },
     "f22f708f-GetFrameNum": {
@@ -233,12 +195,34 @@
       256.8960000000001
      ],
      "options": []
+    },
+    "c00623e7-MakeSmallList": {
+     "name": "MakeSmallList",
+     "inputs": {
+      "obj0": [
+       "2e9a88fe-NumericOperator",
+       "ret"
+      ],
+      "obj1": null,
+      "obj2": null,
+      "obj3": null,
+      "obj4": null,
+      "obj5": null,
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      238.39999999999992,
+      112.80000000000004
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -561,
-    "trans_y": -61
+    "trans_x": -378,
+    "trans_y": -7
    }
   }
  },
@@ -668,6 +652,26 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "MakeSmallList": {
+   "inputs": [
+    "obj0",
+    "obj1",
+    "obj2",
+    "obj3",
+    "obj4",
+    "obj5",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "list",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "list"
    ]
   },
   "MakeString": {
