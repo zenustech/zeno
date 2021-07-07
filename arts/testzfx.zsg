@@ -120,17 +120,6 @@
      ],
      "options": []
     },
-    "db264043-Frame": {
-     "name": "Frame",
-     "uipos": [
-      -260.9728,
-      -44.76800000000001
-     ],
-     "special": true,
-     "width": 482.4,
-     "height": 326.40000000000003,
-     "title": "This is ZFX node!"
-    },
     "53dcf140-ParticlesWrangle": {
      "name": "ParticlesWrangle",
      "inputs": {
@@ -212,8 +201,8 @@
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -770,
-    "trans_y": -153
+    "trans_x": -582,
+    "trans_y": -100
    }
   }
  },
