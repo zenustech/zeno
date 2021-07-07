@@ -708,6 +708,10 @@ struct TypeCheck {
         return oss.str();
     }
 
+    void define_type(std::string const &exp, std::string const &typ) {
+        typing[exp] = typ;
+    }
+
     std::string determine_type(std::string const &exp) const {
         if (exp[0] == '#') {
             return "f1";
@@ -769,26 +773,6 @@ struct TypeCheck {
 
 struct UnfuncPass : TypeCheck {
     std::stringstream oss;
-
-    std::string determine_type(std::string const &exp) const {
-        if (exp[0] == '#') {
-            return "f1";
-        }
-        auto exps = split_str(exp, '.');
-        if (exps.size() == 2) {
-            auto it = typing.find(exps[0]);
-            if (it == typing.end()) {
-                error("cannot determine component type of ", exp);
-            }
-            return it->second;
-        }
-
-        auto it = typing.find(exp);
-        if (it == typing.end()) {
-            error("cannot determine type of ", exp);
-        }
-        return it->second;
-    }
 
     int tmpid = 0;
     std::string alloc_register() {
@@ -852,10 +836,11 @@ struct UnfuncPass : TypeCheck {
             if (dim != ldim) {
                 error("vector dimension mismatch for cross: ", dim, " ", ldim);
             }
-            if (dim == 3) {
+            if (dim != 3) {
                 error("cross only support 3d vectors for now");
             }
-            auto tmp = dst != lhs && dst != rhs ? dst : alloc_register();
+            bool direct = dst != lhs && dst != rhs;
+            auto tmp = direct ? dst : alloc_register();
             for (int d = 0; d < 3; d++) {
                 int e = (d + 1) % 3, f = (d + 2) % 3;
                 emit_op("mul", tag_dim(tmp, d),
@@ -863,6 +848,9 @@ struct UnfuncPass : TypeCheck {
                 emit_op("mla", tag_dim(tmp, d),
                     {tag_dim(lhs, e), tag_dim(rhs, f), tag_dim(tmp, d)});
             }
+            if (!direct)
+                define_type(tmp, determine_type(lhs));
+            define_type(dst, determine_type(lhs));
             return;
 
         } else if (opcode == "length") {  // length(x) = sqrt(dot(x, x))
