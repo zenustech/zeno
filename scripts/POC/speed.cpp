@@ -19,12 +19,16 @@ int main() {
     for (int i = 0; i < N; i++) {
         zfx::Context ctx;
         ctx.memtable[0] = (float *)x + i;
-        prog->execute(&ctx);
+        for (int j = 0; j < 4; j++) {
+            prog->execute(&ctx);
+        }
     }
 #else
     #pragma omp parallel for
     for (int i = 0; i < N; i++) {
-        x[i] = x[i] * x[i] + x[i] * 3.14f + 2.718f / x[i];
+        for (int j = 0; j < 4; j++) {
+            x[i] = x[i] * x[i] + x[i] * 3.14f + 2.718f / x[i];
+        }
     }
 #endif
 
