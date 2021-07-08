@@ -7,3 +7,4 @@ copy /y arts zenv
 copy /y assets zenv
 copy /y scripts\start.bat zenv
 copy /y scripts\start_nocons.bat zenv
+copy /y scripts\release_note.md zenv
