@@ -5,8 +5,20 @@
 #include <zeno/NumericObject.h>
 #include <zeno/ListObject.h>
 #include <cassert>
-#include <zeno/ZenoInc.h>
 
+#define HASH_MAX 1024
+
+struct HashEntry {
+    std::vector<int> pid;
+};
+
+struct HashTable {
+    HashEntry entries[HASH_MAX];
+};
+
+static int hash3i(zeno::vec3i const &v) {
+    return (v[0] * 985211 + v[1] * 54321 + v[2] * 3141592 + 142857) % HASH_MAX;
+}
 
 struct Buffer {
     float *base = nullptr;
@@ -15,124 +27,19 @@ struct Buffer {
     int which = 0;
 };
 
-static void vectors_wrangle
+template <class F>
+static void vectors_neighbor_wrangle
     ( zfx::Program const *prog
+    , std::vector<zeno::vec3f> const &pos
     , std::vector<Buffer> const &chs
     , std::vector<float> const &pars
+    , size_t size1, size_t size2
+    , F const &get_neighbor
     ) {
     if (chs.size() == 0)
         return;
-    size_t size = chs[0].count;
-    for (int i = 1; i < chs.size(); i++) {
-        size = std::min(chs[i].count, size);
-    }
     #pragma omp parallel for
-    for (int i = 0; i < size; i++) {
-        zfx::Context ctx;
-        for (int j = 0; j < pars.size(); j++) {
-            ctx.regtable[j] = pars[j];
-        }
-        for (int j = 0; j < chs.size(); j++) {
-            ctx.memtable[j] = chs[j].base + chs[j].stride * i;
-        }
-        prog->execute(&ctx);
-    }
-}
-
-struct ParticlesWrangle : zeno::INode {
-    virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-
-        auto code = get_input<zeno::StringObject>("zfxCode")->get();
-        std::ostringstream oss;
-        for (auto const &[key, attr]: prim->m_attrs) {
-            oss << "define ";
-            std::visit([&oss] (auto const &v) {
-                using T = std::decay_t<decltype(v[0])>;
-                if constexpr (std::is_same_v<T, zeno::vec3f>) oss << "f3";
-                else if constexpr (std::is_same_v<T, float>) oss << "f1";
-                else oss << "unknown";
-            }, attr);
-            oss << " @" << key << '\n';
-        }
-
-        auto params = get_input<zeno::ListObject>("params");
-        std::vector<float> pars;
-        std::vector<std::string> parnames;
-        for (int i = 0; i < params->arr.size(); i++) {
-            auto const &obj = params->arr[i];
-            std::ostringstream keyss; keyss << "arg" << i;
-            auto key = keyss.str();
-            auto par = dynamic_cast<zeno::NumericObject *>(obj.get());
-            oss << "define ";
-            std::visit([&] (auto const &v) {
-                using T = std::decay_t<decltype(v)>;
-                if constexpr (std::is_same_v<T, zeno::vec3f>) {
-                    oss << "f3";
-                    pars.push_back(v[0]);
-                    pars.push_back(v[1]);
-                    pars.push_back(v[2]);
-                    parnames.push_back(key + ".0");
-                    parnames.push_back(key + ".1");
-                    parnames.push_back(key + ".2");
-                } else if constexpr (std::is_same_v<T, float>) {
-                    oss << "f1";
-                    pars.push_back(v);
-                    parnames.push_back(key + ".0");
-                } else oss << "unknown";
-            }, par->value);
-            oss << " " << key << '\n';
-        }
-        for (auto const &par: parnames) {
-            oss << "parname " << par << '\n';
-        }
-
-        code = oss.str() + code;
-        auto prog = zfx::compile_program(code);
-
-        std::vector<Buffer> chs(prog->channels.size());
-        for (int i = 0; i < chs.size(); i++) {
-            auto chan = zfx::split_str(prog->channels[i], '.');
-            assert(chan.size() == 2);
-            int dimid = 0;
-            std::stringstream(chan[1]) >> dimid;
-            Buffer iob;
-            auto const &attr = prim->attr(chan[0]);
-            std::visit([&] (auto const &arr) {
-                iob.base = (float *)arr.data() + dimid;
-                iob.count = arr.size();
-                iob.stride = sizeof(arr[0]) / sizeof(float);
-            }, attr);
-            chs[i] = iob;
-        }
-        vectors_wrangle(prog, chs, pars);
-
-        set_output("prim", std::move(prim));
-    }
-};
-
-ZENDEFNODE(ParticlesWrangle, {
-    {"prim", "zfxCode", "params"},
-    {"prim"},
-    {},
-    {"zenofx"},
-});
-
-
-static void vectors_vectors_wrangle
-    ( zfx::Program const *prog
-    , std::vector<Buffer> const &chs
-    , std::vector<float> const &pars
-    ) {
-    if (chs.size() == 0)
-        return;
-    std::vector<size_t> sizes(2);
-    for (int i = 1; i < chs.size(); i++) {
-        auto w = chs[i].which;
-        sizes[w] = !sizes[w] ? chs[i].count : std::min(chs[i].count, sizes[w]);
-    }
-    #pragma omp parallel for
-    for (int i1 = 0; i1 < sizes[0]; i1++) {
+    for (int i1 = 0; i1 < size1; i1++) {
         zfx::Context ctx;
         for (int j = 0; j < pars.size(); j++) {
             ctx.regtable[j] = pars[j];
@@ -141,7 +48,7 @@ static void vectors_vectors_wrangle
             if (chs[j].which == 0)
                 ctx.memtable[j] = chs[j].base + chs[j].stride * i1;
         }
-        for (int i2 = 0; i2 < sizes[1]; i2++) {
+        for (int i2: get_neighbor(pos[i1])) {
             for (int j = 0; j < chs.size(); j++) {
                 if (chs[j].which == 1)
                     ctx.memtable[j] = chs[j].base + chs[j].stride * i2;
@@ -151,10 +58,11 @@ static void vectors_vectors_wrangle
     }
 }
 
-struct ParticleParticleWrangle : zeno::INode {
+struct ParticlesNeighborWrangle : zeno::INode {
     virtual void apply() override {
         auto prim1 = get_input<zeno::PrimitiveObject>("prim1");
         auto prim2 = get_input<zeno::PrimitiveObject>("prim2");
+        auto radius = get_input<zeno::NumericObject>("radius")->get<float>();
 
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
         std::ostringstream oss;
@@ -233,14 +141,58 @@ struct ParticleParticleWrangle : zeno::INode {
             iob.which = chan[1][0] - 'i';
             chs[i] = iob;
         }
-        vectors_vectors_wrangle(prog, chs, pars);
+        auto const &p1pos = prim1->attr<zeno::vec3f>("pos");
+        auto const &p2pos = prim2->attr<zeno::vec3f>("pos");
+
+        auto pmin = p2pos[0], pmax = p2pos[0];
+        for (int i = 1; i < p2pos.size(); i++) {
+            pmin = zeno::min(pmin, p2pos[i]);
+            pmax = zeno::max(pmax, p2pos[i]);
+        }
+        //printf("pmin = %f %f %f\n", pmin[0], pmin[1], pmin[2]);
+        //printf("pmax = %f %f %f\n", pmax[0], pmax[1], pmax[2]);
+
+        auto psize = pmax - pmin;
+        auto pinvscale = std::max(psize[0], std::max(psize[1], psize[2]));
+        int nres = (int)(0.5f * pinvscale / radius);
+        printf("[pnw] hash grid resolution: %d\n", nres);
+        auto pscale = nres / pinvscale;
+        auto hash3d = [=](zeno::vec3f const &p) {
+            auto q = (p - pmin) * pscale;
+            return hash3i(zeno::clamp(zeno::vec3i(q), 0, nres));
+        };
+
+        HashTable ht;
+        for (int i = 0; i < p2pos.size(); i++) {
+            auto m = hash3d(p2pos[i]);
+            ht.entries[m].pid.push_back(i);
+        }
+
+        vectors_neighbor_wrangle(prog, p1pos,
+            chs, pars, prim1->size(), prim2->size(), [&](zeno::vec3f const &p) {
+                std::vector<int> res;
+#if 1  // modify this to 0 to enjoy ultra-slow brute-force neighbor
+                std::set<int> ms;
+                for (int d = -1; d < 2; d++) for (int e = -1; e < 2; e++)
+                for (int f = -1; f < 2; f++)
+                    ms.insert(hash3d(p + radius * zeno::vec3f(d, e, f)));
+                for (int m: ms) for (int i: ht.entries[m].pid) {
+#else
+                for (int i = 0; i < p2pos.size(); i++) {
+#endif
+                    if (zeno::length(p2pos[i] - p) <= radius) {
+                        res.push_back(i);
+                    }
+                }
+                return res;
+            });
 
         set_output("prim1", std::move(prim1));
     }
 };
 
-ZENDEFNODE(ParticleParticleWrangle, {
-    {"prim1", "prim2", "zfxCode", "params"},
+ZENDEFNODE(ParticlesNeighborWrangle, {
+    {"prim1", "prim2", "radius", "zfxCode", "params"},
     {"prim1"},
     {},
     {"zenofx"},

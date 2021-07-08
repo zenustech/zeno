@@ -15,6 +15,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <sstream>
 #include <cmath>
 
 #ifdef ZFX_IMPLEMENTATION
@@ -22,7 +23,6 @@
 #include <iostream>
 #include <cstring>
 #include <cassert>
-#include <sstream>
 #include <cstdlib>
 #include <cctype>
 #include <stack>
@@ -1099,7 +1099,7 @@ static std::string source_to_assembly(std::string const &code) {
     std::cout << "=== Parser" << std::endl;
 #endif
 
-    Parser p(code);
+    Parser p(code + '\n');
     auto asts = p.parse();
 #ifdef ZFX_PRINT_IR
     for (auto const &ast: asts) {
