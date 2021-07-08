@@ -5,7 +5,7 @@ from bpy.types import NodeTree, Node, NodeSocket
 import nodeitems_utils
 from nodeitems_utils import NodeCategory, NodeItem
 
-import zenapi
+from zeno import launch
 
 
 
@@ -232,7 +232,7 @@ def unregister_user_nodes():
 
 
 def register():
-    descs = zenapi.getDescriptors()
+    descs = launch.getDescriptors()
     load_user_nodes_from_descriptors(descs)
     for cls in core_classes:
         register_class(cls)

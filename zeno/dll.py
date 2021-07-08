@@ -13,5 +13,6 @@ else:
     ctypes.cdll.LoadLibrary(rel2abs(__file__, 'lib', 'libzeno.so'))
 
 from . import pyzeno as core
+from .addon import *
 
 __all__ = ['core']

@@ -4,10 +4,8 @@ import threading
 import atexit
 import shutil
 import os
-import zeno
+from . import run
 from multiprocessing import Process
-
-from .descriptor import parse_descriptor_line
 
 
 g_proc = None
@@ -54,16 +52,42 @@ def launchScene(scene, nframes):
     cleanIOPath()
     g_iopath = tempfile.mkdtemp(prefix='zenvis-')
     print('IOPath:', g_iopath)
-    _launch_mproc(zeno.runScene, scene, nframes, g_iopath)
+    _launch_mproc(run.runScene, scene, nframes, g_iopath)
 
 
 def getDescriptors():
-    descs = zeno.dumpDescriptors()
+    descs = run.dumpDescriptors()
     descs = descs.splitlines()
     descs = [parse_descriptor_line(line) for line in descs if line.startswith('DESC:')]
     descs = {name: desc for name, desc in descs}
     print('Loaded', len(descs), 'descriptors')
     return descs
+
+
+def parse_descriptor_line(line):
+    _, z_name, rest = line.strip().split(':', maxsplit=2)
+    assert rest.startswith('(') and rest.endswith(')'), (n_name, rest)
+    inputs, outputs, params, categories = rest[1:-1].split(')(')
+
+    z_inputs = [name for name in inputs.split(',') if name]
+    z_outputs = [name for name in outputs.split(',') if name]
+    z_categories = [name for name in categories.split(',') if name]
+
+    z_params = []
+    for param in params.split(','):
+        if not param:
+            continue
+        type, name, defl = param.split(':')
+        z_params.append((type, name, defl))
+
+    z_desc = {
+        'inputs': z_inputs,
+        'outputs': z_outputs,
+        'params': z_params,
+        'categories': z_categories,
+    }
+
+    return z_name, z_desc
 
 
 __all__ = [
