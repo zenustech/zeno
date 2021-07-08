@@ -1405,7 +1405,6 @@ class NodeEditor(QWidget):
         self.initDescriptors()
 
         self.newProgram()
-        self.handleEnvironParams()
 
     def clearScenes(self):
         self.scenes.clear()
@@ -1443,6 +1442,12 @@ class NodeEditor(QWidget):
         if os.environ.get('ZEN_DOEXEC'):
             print('ZEN_DOEXEC found, direct execute')
             self.on_execute()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.handleEnvironParams()
+        #self.scene().trans_x = self.horizontalScrollBar().value()
+        #self.scene().trans_y = self.verticalScrollBar().value()
 
     def initShortcuts(self):
         self.msgF5 = QShortcut(QKeySequence('F5'), self)
