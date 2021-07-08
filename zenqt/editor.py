@@ -11,7 +11,7 @@ from PySide2.QtGui import *
 from PySide2.QtSvg import *
 
 from zenutils import go, gen_unique_ident
-import zenapi
+from zeno import launch
 
 from . import asset_path
 
@@ -1523,7 +1523,7 @@ class NodeEditor(QWidget):
                 self.cates.setdefault(cate, []).append(name)
 
     def initDescriptors(self):
-        descs = zenapi.getDescriptors()
+        descs = launch.getDescriptors()
         subg_descs = self.getSubgraphDescs()
         descs.update(subg_descs)
         descs.update({
@@ -1541,7 +1541,7 @@ class NodeEditor(QWidget):
         self.view.contextMenu(pos)
 
     def on_kill(self):
-        zenapi.killProcess()
+        launch.killProcess()
 
     def dumpProgram(self):
         graphs = {}
@@ -1613,7 +1613,7 @@ class NodeEditor(QWidget):
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
         prog = self.dumpProgram()
-        go(zenapi.launchScene, prog['graph'], nframes)
+        go(launch.launchScene, prog['graph'], nframes)
 
     def on_delete(self):
         itemList = self.scene.selectedItems()
