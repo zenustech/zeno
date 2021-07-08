@@ -52,6 +52,7 @@
        "1b9f2e90-PrimitiveResize",
        "prim"
       ],
+      "fillValue": null,
       "SRC": null,
       "COND": null
      },
@@ -99,7 +100,7 @@
       "COND": null
      },
      "params": {
-      "value": 256
+      "value": 512
      },
      "uipos": [
       142.07999999999998,
@@ -162,6 +163,7 @@
        "9c42f535-PrimitiveAddAttr",
        "prim"
       ],
+      "fillValue": null,
       "SRC": null,
       "COND": null
      },
@@ -313,7 +315,7 @@
       "COND": null
      },
      "params": {
-      "value": 0.3
+      "value": 0.1
      },
      "uipos": [
       995.1999999999998,
@@ -324,8 +326,8 @@
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": 1009,
-    "trans_y": 774
+    "trans_x": 1119,
+    "trans_y": 751
    }
   }
  },
@@ -1645,6 +1647,7 @@
   "PrimitiveAddAttr": {
    "inputs": [
     "prim",
+    "fillValue",
     "SRC",
     "COND"
    ],

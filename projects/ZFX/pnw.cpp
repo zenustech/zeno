@@ -144,22 +144,42 @@ struct ParticlesNeighborWrangle : zeno::INode {
         auto const &p1pos = prim1->attr<zeno::vec3f>("pos");
         auto const &p2pos = prim2->attr<zeno::vec3f>("pos");
 
-        int nres = (int)(1. / radius);
+        auto pmin = p2pos[0], pmax = p2pos[0];
+        for (int i = 1; i < p2pos.size(); i++) {
+            pmin = zeno::min(pmin, p2pos[i]);
+            pmax = zeno::max(pmax, p2pos[i]);
+        }
+        printf("pmin = %f %f %f\n", pmin[0], pmin[1], pmin[2]);
+        printf("pmax = %f %f %f\n", pmax[0], pmax[1], pmax[2]);
+
+        auto psize = pmax - pmin;
+        auto pinvscale = std::max(psize[0], std::max(psize[1], psize[2]));
+        int nres = (int)(0.5f * pinvscale / radius);
+        printf("nres = %d\n", nres);
+        auto pscale = nres / pinvscale;
         auto hash3d = [=](zeno::vec3f const &p) {
-            return hash3i(zeno::clamp(zeno::vec3i(p * nres), 0, nres));
+            auto q = (p - pmin) * pscale;
+            return hash3i(zeno::clamp(zeno::vec3i(q), 0, nres));
         };
 
         HashTable ht;
         for (int i = 0; i < p2pos.size(); i++) {
-            auto m = hash3d(p2pos[0]);
+            auto m = hash3d(p2pos[i]);
             ht.entries[m].pid.push_back(i);
         }
 
         vectors_neighbor_wrangle(prog, p1pos,
             chs, pars, prim1->size(), prim2->size(), [&](zeno::vec3f const &p) {
                 std::vector<int> res;
-                auto m = hash3d(p);
-                for (int i: ht.entries[m].pid) {
+#if 1
+                std::set<int> ms;
+                for (int d = -1; d < 2; d++) for (int e = -1; e < 2; e++)
+                for (int f = -1; f < 2; f++)
+                    ms.insert(hash3d(p + radius * zeno::vec3f(d, e, f)));
+                for (int m: ms) for (int i: ht.entries[m].pid) {
+#else
+                for (int i = 0; i < p2pos.size(); i++) {
+#endif
                     if (zeno::length(p2pos[i] - p) <= radius) {
                         res.push_back(i);
                     }
