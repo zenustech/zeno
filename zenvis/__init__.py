@@ -1,6 +1,4 @@
-import zenapi
-from zenapi.zpmio import readzpm
-
+from . import fileio
 from . import pyzenvis as core
 
 
@@ -39,7 +37,10 @@ def _recieveStatus():
 old_frame_files = ()
 
 def _frameUpdate():
-    max_frameid = zenapi.getFrameCount()
+    if fileio.isIOPathChanged():
+        core.clear_graphics()
+
+    max_frameid = fileio.getFrameCount()
     frameid = core.get_curr_frameid()
     if status['playing']:
         frameid += 1
@@ -47,15 +48,11 @@ def _frameUpdate():
     core.set_curr_frameid(frameid)
 
     global old_frame_files
-    frame_files = zenapi.getFrameFiles(frameid)
+    frame_files = fileio.getFrameFiles(frameid)
     if old_frame_files != frame_files:
         for name, ext, path in frame_files:
             core.load_file(name, ext, path, frameid)
     old_frame_files = frame_files
-
-
-def clearGraphics():
-    core.clear_graphics()
 
 
 def initializeGL():

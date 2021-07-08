@@ -34,17 +34,24 @@ FrameData *current_frame_data() {
     return frames[curr_frameid].get();
 }
 
+void auto_gc_frame_data() {
+    //std::vector<std::unique_ptr<FrameData>> frames;
+}
+
 void clear_graphics() {
     frames.clear();
 }
 
 void load_file(std::string name, std::string ext, std::string path, int frameid) {
+    if (ext == ".lock")
+        return;
+
     auto &graphics = current_frame_data()->graphics;
     if (graphics.find(name) != graphics.end()) {
-        printf("cached: %p %s %s\n", &graphics, path.c_str(), name.c_str());
+        //printf("cached: %p %s %s\n", &graphics, path.c_str(), name.c_str());
         return;
     }
-    printf("load_file: %p %s %s\n", &graphics, path.c_str(), name.c_str());
+    //printf("load_file: %p %s %s\n", &graphics, path.c_str(), name.c_str());
 
     auto ig = makeGraphic(path, ext);
     if (!ig) return;
