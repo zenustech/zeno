@@ -143,7 +143,7 @@ If you find the binary version didn't worked properly or some error message has 
 
 ## Installation requirements
 
-You need a C++17 compiler, CMake 3.12+, and Python 3.6+ to build ZENO; NumPy and PyQt5 to run ZENO editor.
+You need a C++17 compiler, CMake 3.12+, and Python 3.6+ to build ZENO; NumPy and PySide2 (Qt for Python) to run ZENO editor.
 Other requirements like Pybind11 or GLAD are self-contained and you don't have to worry installing them manually.
 
 - Arch Linux
@@ -159,7 +159,7 @@ sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 pyth
 
 python --version  # make sure Python version >= 3.7
 sudo python -m pip install -U pip
-sudo python -m pip install numpy PyQt5
+sudo python -m pip install numpy PySide2
 ```
 
 - Windows 10
@@ -167,12 +167,12 @@ sudo python -m pip install numpy PyQt5
 1. Install Python 3.8 64-bit. IMPORTANT: make sure you **Add Python 3.8 to PATH**! After that rebooting your computer would be the best.
 2. Start CMD in **Administrator mode** and type these commands:
 ```cmd
-python -m pip install numpy PyQt5
+python -m pip install numpy PySide2
 ```
 (Fun fact: you will be redirected to Microsoft Store if `python` is not added to PATH properly :)
 Make sure it starts to downloading and installing successfully without `ERROR` (warnings are OK though).
 
-If you got `ERROR: Could not install packages due to an EnvironmentError: [Errno 13] Permission denied: 'c:\\python38\\Lib\\site-packages\\PyQt5\\Qt5\\bin\\d3dcompiler_47.dll''`:
+If you got `ERROR: Could not install packages due to an EnvironmentError: [Errno 13] Permission denied: 'c:\\python38\\Lib\\site-packages\\PySide2\\Qt5\\bin\\d3dcompiler_47.dll''`:
 **Quit anti-virus softwares** (e.g. 360), they probably prevent `pip` from copying DLL files.
 
 If you got `ImportError: DLL load failed while importing QtGui`:

@@ -1,7 +1,7 @@
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtSvg import *
+from PySide2.QtGui import *
+from PySide2.QtCore import *
+from PySide2.QtWidgets import *
+from PySide2.QtSvg import *
 
 from . import asset_path
 
@@ -15,7 +15,7 @@ class QDMPlayButton(QSvgWidget):
         self.load(asset_path('stop.svg'))
         self.timeline = timeline
         self.checked = True
-        # PyQt5 >= 5.15
+        # PySide2 >= 5.15
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
     
     def isChecked(self):
@@ -44,7 +44,7 @@ class QDMPrevNextButton(QSvgWidget):
         self.render = self.renderer()
         self.load(asset_path(self.svg_up))
         self.timeline = timeline
-        # PyQt5 >= 5.15
+        # PySide2 >= 5.15
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
         self.counter = 0
