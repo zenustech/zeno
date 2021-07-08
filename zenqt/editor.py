@@ -270,6 +270,11 @@ class QDMGraphicsView(QGraphicsView):
         self.horizontalScrollBar().setValue(scene.trans_x)
         self.verticalScrollBar().setValue(scene.trans_y)
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.scene().trans_x = self.horizontalScrollBar().value()
+        self.scene().trans_y = self.verticalScrollBar().value()
+
     def updateSearch(self, edit):
         for act in edit.menu.actions():
             if not isinstance(act, QWidgetAction):
@@ -1460,8 +1465,6 @@ class NodeEditor(QWidget):
     def showEvent(self, event):
         super().showEvent(event)
         self.handleEnvironParams()
-        #self.scene().trans_x = self.horizontalScrollBar().value()
-        #self.scene().trans_y = self.verticalScrollBar().value()
 
     def initShortcuts(self):
         self.msgF5 = QShortcut(QKeySequence('F5'), self)
