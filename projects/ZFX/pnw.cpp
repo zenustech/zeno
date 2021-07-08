@@ -149,13 +149,13 @@ struct ParticlesNeighborWrangle : zeno::INode {
             pmin = zeno::min(pmin, p2pos[i]);
             pmax = zeno::max(pmax, p2pos[i]);
         }
-        printf("pmin = %f %f %f\n", pmin[0], pmin[1], pmin[2]);
-        printf("pmax = %f %f %f\n", pmax[0], pmax[1], pmax[2]);
+        //printf("pmin = %f %f %f\n", pmin[0], pmin[1], pmin[2]);
+        //printf("pmax = %f %f %f\n", pmax[0], pmax[1], pmax[2]);
 
         auto psize = pmax - pmin;
         auto pinvscale = std::max(psize[0], std::max(psize[1], psize[2]));
         int nres = (int)(0.5f * pinvscale / radius);
-        printf("nres = %d\n", nres);
+        printf("[pnw] hash grid resolution: %d\n", nres);
         auto pscale = nres / pinvscale;
         auto hash3d = [=](zeno::vec3f const &p) {
             auto q = (p - pmin) * pscale;
@@ -171,7 +171,7 @@ struct ParticlesNeighborWrangle : zeno::INode {
         vectors_neighbor_wrangle(prog, p1pos,
             chs, pars, prim1->size(), prim2->size(), [&](zeno::vec3f const &p) {
                 std::vector<int> res;
-#if 1
+#if 1  // modify this to 0 to enjoy ultra-slow brute-force neighbor
                 std::set<int> ms;
                 for (int d = -1; d < 2; d++) for (int e = -1; e < 2; e++)
                 for (int f = -1; f < 2; f++)
