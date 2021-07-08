@@ -34,13 +34,13 @@ FrameData *current_frame_data() {
     return frames[curr_frameid].get();
 }
 
-void auto_gc_frame_data(size_t nkeep) {
+void auto_gc_frame_data(int nkeep) {
     for (int i = 0; i < frames.size(); i++) {
         auto const &frame = frames[i];
         if (frame) {
-            auto endi = std::min(curr_frameid + nkeep, frames.size());
+            auto endi = std::min(curr_frameid + nkeep / 2, (int)frames.size());
             auto begi = std::max(endi - nkeep, 0);
-            if (i <= endi || i < begi) {
+            if (i >= endi || i < begi) {
                 printf("auto gc free %d\n", i);
                 frames[i] = nullptr;
             }

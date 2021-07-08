@@ -10,6 +10,7 @@ status = {
     'render_fps': 0,
     'resolution': (1, 1),
     'perspective': (),
+    'cache_frames': 10,
     'playing': True,
 }
 
@@ -46,7 +47,7 @@ def _frameUpdate():
         frameid += 1
     frameid = min(frameid, max_frameid - 1)
     core.set_curr_frameid(frameid)
-    core.auto_gc_frame_data()
+    core.auto_gc_frame_data(status['cache_frames'])
 
     global old_frame_files
     frame_files = fileio.getFrameFiles(frameid)

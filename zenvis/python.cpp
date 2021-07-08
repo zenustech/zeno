@@ -11,7 +11,7 @@ void initialize();
 void finalize();
 void new_frame();
 void clear_graphics();
-void auto_gc_frame_data();
+void auto_gc_frame_data(int nkeep);
 void load_file(std::string name, std::string ext, std::string path, int frameid);
 void set_curr_playing(bool playing);
 void set_window_size(int nx, int ny);
