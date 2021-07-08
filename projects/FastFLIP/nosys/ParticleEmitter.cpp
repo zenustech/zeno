@@ -13,24 +13,24 @@ struct ParticleEmitter : zeno::INode {
     float vy = std::get<float>(get_param("vy"));
     float vz = std::get<float>(get_param("vz"));
 
-    VDBFloat3Grid *velocityVolume = new VDBFloat3Grid();
+    openvdb::Vec3fGrid::Ptr velocityVolume;
     if (has_input("VelocityVolume")) {
-      velocityVolume = get_input("VelocityVolume")->as<VDBFloat3Grid>();
+      velocityVolume = get_input("VelocityVolume")->as<VDBFloat3Grid>()->m_grid;
 
     } else {
-      velocityVolume->m_grid = nullptr;
+      velocityVolume = nullptr;
     }
 
-    VDBFloatGrid *liquid_sdf = new VDBFloatGrid();
-    ;
+    openvdb::FloatGrid::Ptr liquid_sdf;
+
     if (has_input("LiquidSDF")) {
-      liquid_sdf = get_input("LiquidSDF")->as<VDBFloatGrid>();
+      liquid_sdf = get_input("LiquidSDF")->as<VDBFloatGrid>()->m_grid;
 
     } else {
-      liquid_sdf->m_grid = nullptr;
+      liquid_sdf = nullptr;
     }
     FLIP_vdb::emit_liquid(particles->m_grid, shape->m_grid,
-                          velocityVolume->m_grid, liquid_sdf->m_grid, vx, vy,
+                          velocityVolume, liquid_sdf, vx, vy,
                           vz);
   }
 };
