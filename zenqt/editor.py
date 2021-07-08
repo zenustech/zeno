@@ -452,6 +452,8 @@ class QDMGraphicsPath(QGraphicsPathItem):
         self.srcPos = QPointF(0, 0)
         self.dstPos = QPointF(0, 0)
 
+        self.magic = 0.5
+
     def setSrcDstPos(self, srcPos, dstPos):
         self.srcPos = srcPos
         self.dstPos = dstPos
@@ -460,7 +462,7 @@ class QDMGraphicsPath(QGraphicsPathItem):
         self.updatePath()
         color = 'selected_color' if self.isSelected() else 'line_color'
         pen = QPen(QColor(style[color]))
-        pen.setWidth(style['line_width'])
+        pen.setWidth(style['line_width'] - self.magic * 2)
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
         painter.drawPath(self.path())
@@ -479,11 +481,29 @@ class QDMGraphicsPath(QGraphicsPathItem):
         if BEZIER_FACTOR == 0:
             path.lineTo(self.dstPos.x(), self.dstPos.y())
         else:
-            dist = self.dstPos.x() - self.srcPos.x()
+            s = self.srcPos
+            d = self.dstPos
+            dist = d.x() - s.x()
             dist = max(100, dist, -dist) * BEZIER_FACTOR
-            path.cubicTo(self.srcPos.x() + dist, self.srcPos.y(),
-                    self.dstPos.x() - dist, self.dstPos.y(),
-                    self.dstPos.x(), self.dstPos.y())
+            if abs(s.x() - d.x()) > abs(s.y() - d.y()):
+                _x = 0
+                _y = self.magic
+            else:
+                _x = self.magic
+                _y = 0
+            path = QPainterPath(QPointF(s.x() - _x, s.y() - _y))
+            path.cubicTo(
+                s.x() + dist - _x, s.y() - _y,
+                d.x() - dist - _x, d.y() - _y,
+                d.x() - _x, d.y() - _y
+            )
+            path.lineTo(d.x() + _x, d.y() + _y)
+            path.cubicTo(
+                d.x() - dist + _x, d.y() + _y,
+                s.x() + dist + _x, s.y() + _y,
+                s.x() + _x, s.y() + _y
+            )
+            path.closeSubpath()
         self.setPath(path)
 
 
