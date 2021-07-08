@@ -121,16 +121,12 @@ static void vectors_vectors_wrangle
     ( zfx::Program const *prog
     , std::vector<Buffer> const &chs
     , std::vector<float> const &pars
+    , size_t size1, size_t size2
     ) {
     if (chs.size() == 0)
         return;
-    std::vector<size_t> sizes(2);
-    for (int i = 1; i < chs.size(); i++) {
-        auto w = chs[i].which;
-        sizes[w] = !sizes[w] ? chs[i].count : std::min(chs[i].count, sizes[w]);
-    }
     #pragma omp parallel for
-    for (int i1 = 0; i1 < sizes[0]; i1++) {
+    for (int i1 = 0; i1 < size1; i1++) {
         zfx::Context ctx;
         for (int j = 0; j < pars.size(); j++) {
             ctx.regtable[j] = pars[j];
@@ -139,7 +135,7 @@ static void vectors_vectors_wrangle
             if (chs[j].which == 0)
                 ctx.memtable[j] = chs[j].base + chs[j].stride * i1;
         }
-        for (int i2 = 0; i2 < sizes[1]; i2++) {
+        for (int i2 = 0; i2 < size2; i2++) {
             for (int j = 0; j < chs.size(); j++) {
                 if (chs[j].which == 1)
                     ctx.memtable[j] = chs[j].base + chs[j].stride * i2;
@@ -231,7 +227,7 @@ struct ParticleParticleWrangle : zeno::INode {
             iob.which = chan[1][0] - 'i';
             chs[i] = iob;
         }
-        vectors_vectors_wrangle(prog, chs, pars);
+        vectors_vectors_wrangle(prog, chs, pars, prim1->size(), prim2->size());
 
         set_output("prim1", std::move(prim1));
     }
