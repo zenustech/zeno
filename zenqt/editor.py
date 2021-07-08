@@ -1024,6 +1024,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
         rect = QRectF(HORI_MARGIN, HORI_MARGIN, self.width - HORI_MARGIN * 2,
             self.height - TEXT_HEIGHT - HORI_MARGIN * 2)
         self.content.setGeometry(rect)
+        self.title.setTextWidth(self.width - HORI_MARGIN * 4)
 
     def dump(self):
         uipos = self.pos().x(), self.pos().y()
