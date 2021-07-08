@@ -1,4 +1,4 @@
-O=arts/testzfx.zsg
+O=../../Desktop/zhangneicun.zsg
 
 default: run
 
