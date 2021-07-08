@@ -29,8 +29,8 @@ style = {
     'param_text_size': 10,
     'socket_text_color': '#FFFFFF',
     'panel_color': '#282828',
-    'frame_title_color': '#393939',
-    'frame_panel_color': '#1B1B1B',
+    'blackboard_title_color': '#393939',
+    'blackboard_panel_color': '#1B1B1B',
     'line_color': '#B0B0B0',
     'background_color': '#2C2C2C',
     'selected_color': '#EE8844',
@@ -549,7 +549,7 @@ class QDMGraphicsEdge(QDMGraphicsPath):
         self.scene().removeItem(self)
 
 
-class QDMGraphicsFrameResizeHelper(QGraphicsItem):
+class QDMGraphicsBlackboardResizeHelper(QGraphicsItem):
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -908,7 +908,25 @@ class QDMGraphicsParam_multiline_string(QDMGraphicsParam):
     def getValue(self):
         return str(self.edit.toPlainText())
 
-class QDMGraphicsNode_Frame(QGraphicsItem):
+class QDMGraphicsBlackboardContent(QGraphicsProxyWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.widget = QPlainTextEdit()
+        self.widget.parent = self
+        self.widget.setStyleSheet('color: #eeeeee')
+        p = self.widget.palette()
+        p.setColor(QPalette.Active, QPalette.Base, QColor(style['panel_color']))
+        self.widget.setPalette(p)
+        self.setWidget(self.widget)
+
+    def setText(self, text):
+        self.widget.setPlainText(str(text))
+
+    def getText(self):
+        return self.widget.toPlainText()
+
+class QDMGraphicsNode_Blackboard(QGraphicsItem):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -918,7 +936,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         self.setFlag(QGraphicsItem.ItemIsSelectable)
 
         self.width = style['node_width']
-        self.height = 100
+        self.height = 150
 
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor(style['title_text_color']))
@@ -949,9 +967,13 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         self.title.setPlainText(name)
 
     def initSockets(self):
-        self.helper = QDMGraphicsFrameResizeHelper(self)
+        self.helper = QDMGraphicsBlackboardResizeHelper(self)
         h = self.height - TEXT_HEIGHT
         self.helper.setPos(self.width, h)
+
+        self.content = QDMGraphicsBlackboardContent(self)
+        rect = QRectF(HORI_MARGIN, HORI_MARGIN, self.width - HORI_MARGIN * 2, 0)
+        self.content.setGeometry(rect)
 
     def boundingRect(self):
         return QRectF(0, -TEXT_HEIGHT, self.width, self.height).normalized()
@@ -963,7 +985,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
         pathContent.addRoundedRect(rect, r, r)
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['frame_panel_color']))
+        painter.setBrush(QColor(style['blackboard_panel_color']))
         painter.drawPath(pathContent.simplified())
 
         # title round top
@@ -971,7 +993,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         rect = QRectF(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
         pathTitle.addRoundedRect(rect, r, r)
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['frame_title_color']))
+        painter.setBrush(QColor(style['blackboard_title_color']))
         painter.drawPath(pathTitle.simplified())
         
         # title direct bottom
@@ -979,7 +1001,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         rect = QRectF(0, -r, self.width, r)
         pathTitle.addRect(rect)
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['frame_title_color']))
+        painter.setBrush(QColor(style['blackboard_title_color']))
         painter.drawPath(pathTitle.simplified())
 
         if self.isSelected():
@@ -994,10 +1016,13 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
 
     def setWidthHeight(self, width, height):
         width = max(width, style['node_width'])
-        height = max(height, 100)
+        height = max(height, 150)
         self.width = width
         self.height = height
         self.helper.setPos(width, height - TEXT_HEIGHT)
+
+        rect = QRectF(HORI_MARGIN, HORI_MARGIN, self.width - HORI_MARGIN * 2, 0)
+        self.content.setGeometry(rect)
 
     def dump(self):
         uipos = self.pos().x(), self.pos().y()
@@ -1008,6 +1033,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
             'width': self.width,
             'height': self.height,
             'title': self.title.toPlainText(),
+            'content': self.content.getText(),
         }
         return {self.ident: data}
     
@@ -1022,6 +1048,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         self.setWidthHeight(data['width'], data['height'])
 
         self.title.setPlainText(data['title'])
+        self.content.setText(data['content'])
 
         edges = []
         return edges
@@ -1508,7 +1535,7 @@ class NodeEditor(QWidget):
         subg_descs = self.getSubgraphDescs()
         descs.update(subg_descs)
         descs.update({
-            'Frame': {
+            'Blackboard': {
                 'inputs': [],
                 'outputs': [],
                 'params': [],
