@@ -41,7 +41,7 @@ static void vectors_vectors_wrangle
     }
 }
 
-struct ParticleParticleWrangle : zeno::INode {
+struct ParticlesNeighborWrangle : zeno::INode {
     virtual void apply() override {
         auto prim1 = get_input<zeno::PrimitiveObject>("prim1");
         auto prim2 = get_input<zeno::PrimitiveObject>("prim2");
@@ -129,7 +129,7 @@ struct ParticleParticleWrangle : zeno::INode {
     }
 };
 
-ZENDEFNODE(ParticleParticleWrangle, {
+ZENDEFNODE(ParticlesNeighborWrangle, {
     {"prim1", "prim2", "zfxCode", "params"},
     {"prim1"},
     {},

@@ -13,42 +13,37 @@ struct Buffer {
     int which = 0;
 };
 
-static void vectors_vectors_wrangle
+static void vectors_wrangle
     ( zfx::Program const *prog
     , std::vector<Buffer> const &chs
     , std::vector<float> const &pars
-    , size_t size1, size_t size2
     ) {
     if (chs.size() == 0)
         return;
+    size_t size = chs[0].count;
+    for (int i = 1; i < chs.size(); i++) {
+        size = std::min(chs[i].count, size);
+    }
     #pragma omp parallel for
-    for (int i1 = 0; i1 < size1; i1++) {
+    for (int i = 0; i < size; i++) {
         zfx::Context ctx;
         for (int j = 0; j < pars.size(); j++) {
             ctx.regtable[j] = pars[j];
         }
         for (int j = 0; j < chs.size(); j++) {
-            if (chs[j].which == 0)
-                ctx.memtable[j] = chs[j].base + chs[j].stride * i1;
+            ctx.memtable[j] = chs[j].base + chs[j].stride * i;
         }
-        for (int i2 = 0; i2 < size2; i2++) {
-            for (int j = 0; j < chs.size(); j++) {
-                if (chs[j].which == 1)
-                    ctx.memtable[j] = chs[j].base + chs[j].stride * i2;
-            }
-            prog->execute(&ctx);
-        }
+        prog->execute(&ctx);
     }
 }
 
-struct ParticleParticleWrangle : zeno::INode {
+struct ParticlesWrangle : zeno::INode {
     virtual void apply() override {
-        auto prim1 = get_input<zeno::PrimitiveObject>("prim1");
-        auto prim2 = get_input<zeno::PrimitiveObject>("prim2");
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
 
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
         std::ostringstream oss;
-        for (auto const &[key, attr]: prim1->m_attrs) {
+        for (auto const &[key, attr]: prim->m_attrs) {
             oss << "define ";
             std::visit([&oss] (auto const &v) {
                 using T = std::decay_t<decltype(v[0])>;
@@ -57,16 +52,6 @@ struct ParticleParticleWrangle : zeno::INode {
                 else oss << "unknown";
             }, attr);
             oss << " @" << key << '\n';
-        }
-        for (auto const &[key, attr]: prim2->m_attrs) {
-            oss << "define ";
-            std::visit([&oss] (auto const &v) {
-                using T = std::decay_t<decltype(v[0])>;
-                if constexpr (std::is_same_v<T, zeno::vec3f>) oss << "f3";
-                else if constexpr (std::is_same_v<T, float>) oss << "f1";
-                else oss << "unknown";
-            }, attr);
-            oss << " @" << key << ":j" << '\n';
         }
 
         auto params = get_input<zeno::ListObject>("params");
@@ -105,33 +90,28 @@ struct ParticleParticleWrangle : zeno::INode {
 
         std::vector<Buffer> chs(prog->channels.size());
         for (int i = 0; i < chs.size(); i++) {
-            auto channe = zfx::split_str(prog->channels[i], '.');
-            auto chan = zfx::split_str(channe[0], ':');
-            if (chan.size() == 1) {
-                chan.push_back("i");
-            }
+            auto chan = zfx::split_str(prog->channels[i], '.');
             assert(chan.size() == 2);
             int dimid = 0;
-            std::stringstream(channe[1]) >> dimid;
+            std::stringstream(chan[1]) >> dimid;
             Buffer iob;
-            auto const &attr = prim1->attr(chan[0]);
+            auto const &attr = prim->attr(chan[0]);
             std::visit([&] (auto const &arr) {
                 iob.base = (float *)arr.data() + dimid;
                 iob.count = arr.size();
                 iob.stride = sizeof(arr[0]) / sizeof(float);
             }, attr);
-            iob.which = chan[1][0] - 'i';
             chs[i] = iob;
         }
-        vectors_vectors_wrangle(prog, chs, pars, prim1->size(), prim2->size());
+        vectors_wrangle(prog, chs, pars);
 
-        set_output("prim1", std::move(prim1));
+        set_output("prim", std::move(prim));
     }
 };
 
-ZENDEFNODE(ParticleParticleWrangle, {
-    {"prim1", "prim2", "zfxCode", "params"},
-    {"prim1"},
+ZENDEFNODE(ParticlesWrangle, {
+    {"prim", "zfxCode", "params"},
+    {"prim"},
     {},
     {"zenofx"},
 });
