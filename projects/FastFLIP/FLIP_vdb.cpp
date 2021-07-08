@@ -518,37 +518,38 @@ struct deduce_missing_velocity_and_normalize {
       // check its three component
       for (int i_component = 0; i_component < 3; i_component++) {
         float weight = oweight_leaf->getValue(offset)[i_component];
-        if (weight < weight_threshold) {
-          // we have a voxel that is touched but does not have weights and
-          // velocity deduce from neighbor
-          openvdb::Coord c = ovelocity_leaf->offsetToGlobalCoord(offset);
+        // if (weight < weight_threshold) {
+        //   // we have a voxel that is touched but does not have weights and
+        //   // velocity deduce from neighbor
+        //   openvdb::Coord c = ovelocity_leaf->offsetToGlobalCoord(offset);
 
-          float total_weights = 0;
-          float weighted_component = 0;
+        //   float total_weights = 0;
+        //   float weighted_component = 0;
 
-          for (int ii = -2; ii <= 2; ii++) {
-            for (int jj = -2; jj <= 2; jj++) {
-              for (int kk = -2; kk <= 2; kk++) {
-                total_weights += original_weights_accessor.getValue(
-                    c + openvdb::Coord{ii, jj, kk})[i_component];
-                weighted_component += original_velocity_accessor.getValue(
-                    c + openvdb::Coord{ii, jj, kk})[i_component];
-              }
-            }
-          }
+        //   for (int ii = -2; ii <= 2; ii++) {
+        //     for (int jj = -2; jj <= 2; jj++) {
+        //       for (int kk = -2; kk <= 2; kk++) {
+        //         total_weights += original_weights_accessor.getValue(
+        //             c + openvdb::Coord{ii, jj, kk})[i_component];
+        //         weighted_component += original_velocity_accessor.getValue(
+        //             c + openvdb::Coord{ii, jj, kk})[i_component];
+        //       }
+        //     }
+        //   }
 
-          if (total_weights == 0) {
-            printf("a voxel is touched and has zero channel weight, but its "
-                   "neighbor voxel dont have touched channel\n");
-            std::cout << "coordinate: " << c << std::endl;
-            exit(-1);
-          }
+          // if (total_weights == 0) {
+          //   printf("a voxel is touched and has zero channel weight, but its "
+          //          "neighbor voxel dont have touched channel\n");
+          //   std::cout << "coordinate: " << c << std::endl;
+          //   exit(-1);
+          // }
 
-          vel[i_component] = weighted_component / (total_weights);
-        } else {
+          //vel[i_component] = weighted_component / (total_weights);
+       // } else {
           // weight !=0
-          vel[i_component] /= weight;
-        }
+          
+            vel[i_component] /= weight+1e-4;
+        //}
       } // end for three component find missing velocity
 
       // store the weighted version
@@ -1107,7 +1108,7 @@ struct point_to_counter_reducer2 {
           pItpos -= new_pos_solid_sdf * snormal * invdx * 1.0f;
           ptCoord = openvdb::Coord{floorVec3(pItpos + openvdb::Vec3f{0.5f})};
           // handle velocity bounces
-          particle_vel +=
+          particle_vel += 
               (vnaxr.getValue(ptCoord) - snormal.dot(particle_vel)) * snormal;
 
         } // end if surface normal exist
@@ -1866,7 +1867,7 @@ void FLIP_vdb::particle_to_grid_collect_style(
     openvdb::Vec3fGrid::Ptr &velocity_weights,
     openvdb::FloatGrid::Ptr &liquid_sdf,
     openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf, float dx) {
-  float particle_radius = 0.6f * dx * 1.01;
+  float particle_radius = 0.8f * dx * 1.01;
   velocity->setTree(std::make_shared<openvdb::Vec3fTree>(
       particles->tree(), openvdb::Vec3f{0}, openvdb::TopologyCopy()));
   openvdb::tools::dilateActiveValues(
@@ -1899,6 +1900,7 @@ void FLIP_vdb::particle_to_grid_collect_style(
 
   velocity_grid_manager.foreach (velocity_normalizer, true, 1);
 
+  //velocity = original_unweighted_velocity->deepCopy();
   // store the velocity just after the transfer
   velocity_after_p2g = velocity->deepCopy();
   velocity_after_p2g->setName("Velocity_After_P2G");

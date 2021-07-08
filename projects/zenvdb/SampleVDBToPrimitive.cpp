@@ -4,6 +4,8 @@
 #include <zeno/VDBGrid.h>
 #include <zeno/vec.h>
 #include <zeno/zeno.h>
+#include <zeno/ZenoInc.h>
+
 namespace zeno {
 
 template <class T> struct attr_to_vdb_type {};

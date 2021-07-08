@@ -4,6 +4,8 @@
 #include <zeno/NumericObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
+#include <zeno/ZenoInc.h>
+
 /*
 static void apply_pressure_gradient(
         openvdb::FloatGrid::Ptr liquid_sdf,
@@ -22,6 +24,10 @@ struct SubtractPressureGradient : zeno::INode {
   virtual void apply() override {
 
     auto dx = std::get<float>(get_param("dx"));
+    if(has_input("Dx"))
+    {
+      dx = get_input("Dx")->as<NumericObject>()->get<float>();
+    }
     auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
     auto liquid_sdf = get_input("LiquidSDF")->as<VDBFloatGrid>();
     auto solid_sdf = get_input("SolidSDF")->as<VDBFloatGrid>();
@@ -42,7 +48,7 @@ struct SubtractPressureGradient : zeno::INode {
 static int defSubtractPressureGradient =
     zeno::defNodeClass<SubtractPressureGradient>("SubtractPressureGradient",
                                                  {/* inputs: */ {
-                                                      "dt",
+                                                      "dt","Dx",
                                                       "LiquidSDF",
                                                       "SolidSDF",
                                                       "ExtractedLiquidSDF",

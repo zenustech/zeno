@@ -5,6 +5,8 @@
 #include <zeno/NumericObject.h>
 #include <zeno/ListObject.h>
 #include <cassert>
+#include <zeno/ZenoInc.h>
+
 
 struct Buffer {
     float *base = nullptr;

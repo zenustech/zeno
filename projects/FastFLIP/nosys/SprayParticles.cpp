@@ -11,6 +11,7 @@
 #include <zeno/PrimitiveObject.h>
 #include <zeno/vec.h>
 #include <zeno/zeno.h>
+#include <zeno/ZenoInc.h>
 
 namespace zeno {
 // todo where to put this func???
@@ -53,6 +54,10 @@ T baryCentricInterpolation(T &v1, T &v2, T &v3, zeno::vec3f &p,
 struct SprayParticles : zeno::INode {
   virtual void apply() override {
     auto dx = std::get<float>(get_param("dx"));
+    if(has_input("Dx"))
+    {
+      dx = get_input("Dx")->as<NumericObject>()->get<float>();
+    }
     auto channel = std::get<std::string>(get_param("channel"));
     auto prim = get_input("TrianglePrim")->as<PrimitiveObject>();
     auto result = zeno::IObject::make<ParticlesObject>();
@@ -132,7 +137,7 @@ struct SprayParticles : zeno::INode {
 
 static int defSprayParticles = zeno::defNodeClass<SprayParticles>(
     "SprayParticles", {/* inputs: */ {
-                           "TrianglePrim",
+                           "TrianglePrim", "Dx",
                        },
                        /* outputs: */
                        {

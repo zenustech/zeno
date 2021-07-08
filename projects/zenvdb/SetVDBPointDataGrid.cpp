@@ -11,6 +11,8 @@
 #include <zeno/PrimitiveObject.h>
 #include <openvdb/openvdb.h>
 #include <openvdb/points/PointConversion.h>
+#include <zeno/ZenoInc.h>
+
 namespace zeno {
 openvdb::points::PointDataGrid::Ptr particleArrayToGrid(ParticlesObject* particles, float dx) 
 {
@@ -79,6 +81,10 @@ openvdb::points::PointDataGrid::Ptr particleArrayToGrid(ParticlesObject* particl
 struct PrimToVDBPointDataGrid : zeno::INode {
   virtual void apply() override {
     auto dx = std::get<float>(get_param("dx"));
+    if(has_input("Dx"))
+    {
+      dx = get_input("Dx")->as<NumericObject>()->get<float>();
+    }
     auto prims = get_input("ParticleGeo")->as<PrimitiveObject>();
     auto particles = std::make_unique<ParticlesObject>();
     particles->pos.resize(prims->attr<zeno::vec3f>("pos").size());
@@ -99,7 +105,7 @@ struct PrimToVDBPointDataGrid : zeno::INode {
 
 static int defPrimToVDBPointDataGrid = zeno::defNodeClass<PrimToVDBPointDataGrid>("PrimToVDBPointDataGrid",
     { /* inputs: */ {
-        "ParticleGeo", 
+        "ParticleGeo", "Dx",
     }, /* outputs: */ {
         "Particles",
     }, /* params: */ {
@@ -111,6 +117,10 @@ static int defPrimToVDBPointDataGrid = zeno::defNodeClass<PrimToVDBPointDataGrid
 struct SetVDBPointDataGrid : zeno::INode {
   virtual void apply() override {
     auto dx = std::get<float>(get_param("dx"));
+    if(has_input("Dx"))
+    {
+      dx = get_input("Dx")->as<NumericObject>()->get<float>();
+    }
     auto particles = get_input("ParticleGeo")->as<ParticlesObject>();
     auto data = zeno::IObject::make<VDBPointsGrid>();
     data->m_grid = particleArrayToGrid(particles, dx);
@@ -120,7 +130,7 @@ struct SetVDBPointDataGrid : zeno::INode {
 
 static int defSetVDBPointDataGrid = zeno::defNodeClass<SetVDBPointDataGrid>("SetVDBPointDataGrid",
     { /* inputs: */ {
-        "ParticleGeo", 
+        "ParticleGeo", "Dx",
     }, /* outputs: */ {
         "Particles",
     }, /* params: */ {

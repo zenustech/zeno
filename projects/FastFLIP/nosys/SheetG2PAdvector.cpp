@@ -4,6 +4,8 @@
 #include <zeno/NumericObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
+#include <zeno/ZenoInc.h>
+
 
 // static void Advect(float dt, openvdb::points::PointDataGrid::Ptr m_particles,
 // openvdb::Vec3fGrid::Ptr m_velocity, 				   openvdb::Vec3fGrid::Ptr
@@ -14,6 +16,10 @@ struct G2PAdvectorSheet : zeno::INode {
   virtual void apply() override {
     auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
     auto dx = std::get<float>(get_param("dx"));
+    if(has_input("Dx"))
+    {
+      dx = get_input("Dx")->as<NumericObject>()->get<float>();
+    }
     auto surfaceSize = std::get<int>(get_param("surface_size"));
     auto smoothness = std::get<float>(get_param("pic_smoothness"));
     auto RK_ORDER = std::get<int>(get_param("RK_ORDER"));
@@ -42,7 +48,7 @@ struct G2PAdvectorSheet : zeno::INode {
 
 static int defG2PAdvectorSheet = zeno::defNodeClass<G2PAdvectorSheet>(
     "G2PAdvectorSheetty", {/* inputs: */ {
-                               "dt",
+                               "dt","Dx",
                                "Particles",
                                "Velocity",
                                "LiquidSDF",

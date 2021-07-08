@@ -2,6 +2,7 @@
 #include <omp.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
+#include <zeno/ZenoInc.h>
 
 namespace zeno {
 

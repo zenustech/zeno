@@ -1,6 +1,9 @@
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
 #include <zeno/StringObject.h>
+#include <zeno/NumericObject.h>
+#include <zeno/ZenoInc.h>
+
 //#include "../../Library/MnBase/Meta/Polymorphism.h"
 // openvdb::io::File(filename).write({grid});
 
@@ -75,6 +78,10 @@ static int defImportVDBGrid = zeno::defNodeClass<ImportVDBGrid>("ImportVDBGrid",
 struct MakeVDBGrid : zeno::INode {
   virtual void apply() override {
     auto dx = std::get<float>(get_param("dx"));
+    if(has_input("Dx"))
+    {
+      dx = get_input("Dx")->as<NumericObject>()->get<float>();
+    }
     auto type = std::get<std::string>(get_param("type"));
     auto structure = std::get<std::string>(get_param("structure"));
     auto name = std::get<std::string>(get_param("name"));
@@ -119,7 +126,7 @@ struct MakeVDBGrid : zeno::INode {
 };
 
 static int defMakeVDBGrid = zeno::defNodeClass<MakeVDBGrid>(
-    "MakeVDBGrid", {/* inputs: */ {}, /* outputs: */
+    "MakeVDBGrid", {/* inputs: */ {"Dx",}, /* outputs: */
                     {
                         "data",
                     },
