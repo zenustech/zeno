@@ -21,21 +21,22 @@ struct G2PAdvectorSheet : zeno::INode {
     auto particles = get_input("Particles")->as<VDBPointsGrid>();
     auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();
     auto liquidsdf = get_input("LiquidSDF")->as<VDBFloatGrid>();
-    VDBFloatGrid *solid_sdf = new VDBFloatGrid();
+    openvdb::FloatGrid::Ptr solid_sdf;
     if (has_input("SolidSDF"))
-      solid_sdf = get_input("SolidSDF")->as<VDBFloatGrid>();
+      solid_sdf = get_input("SolidSDF")->as<VDBFloatGrid>()->m_grid;
     else
-      solid_sdf->m_grid = nullptr;
-    VDBFloat3Grid *solid_vel = new VDBFloat3Grid();
+      solid_sdf = nullptr;
+
+    openvdb::Vec3fGrid::Ptr solid_vel;
     if (has_input("SolidVelocity"))
-      solid_vel = get_input("SolidVelocity")->as<VDBFloat3Grid>();
+      solid_vel = get_input("SolidVelocity")->as<VDBFloat3Grid>()->m_grid;
     else
-      solid_vel->m_grid = nullptr;
+      solid_vel = nullptr;
     auto velocity_after_p2g = get_input("PostAdvVelocity")->as<VDBFloat3Grid>();
     FLIP_vdb::AdvectSheetty(dt, dx, (float)surfaceSize * dx, particles->m_grid,
                             liquidsdf->m_grid, velocity->m_grid,
-                            velocity_after_p2g->m_grid, solid_sdf->m_grid,
-                            solid_vel->m_grid, smoothness, RK_ORDER);
+                            velocity_after_p2g->m_grid, solid_sdf,
+                            solid_vel, smoothness, RK_ORDER);
   }
 };
 

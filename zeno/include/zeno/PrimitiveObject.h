@@ -34,7 +34,11 @@ struct PrimitiveObject : zeno::IObjectClone<PrimitiveObject> {
       m_attrs[name] = std::vector<T>(m_size);
     return attr<T>(name);
   }
-
+  template <class T> std::vector<T> &add_attr(std::string const &name, T value) {
+    if (!has_attr(name))
+      m_attrs[name] = std::vector<T>(m_size, value);
+    return attr<T>(name);
+  }
   template <class T> std::vector<T> &attr(std::string const &name) {
     return std::get<std::vector<T>>(m_attrs.at(name));
   }

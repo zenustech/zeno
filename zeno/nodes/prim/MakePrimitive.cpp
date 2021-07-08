@@ -74,9 +74,21 @@ struct PrimitiveAddAttr : zeno::INode {
     auto name = std::get<std::string>(get_param("name"));
     auto type = std::get<std::string>(get_param("type"));
     if (type == "float") {
+      if(has_input("fillValue")){
+        auto fillvalue = get_input("fillValue")->as<NumericObject>()->get<float>();
+        prim->add_attr<float>(name, fillvalue);
+      }
+      else {
         prim->add_attr<float>(name);
+      }
     } else if (type == "float3") {
-        prim->add_attr<zeno::vec3f>(name);
+        if(has_input("fillValue")){
+          auto fillvalue = get_input("fillValue")->as<NumericObject>()->get<vec3f>();
+          prim->add_attr<vec3f>(name, fillvalue);
+        }
+        else {
+          prim->add_attr<vec3f>(name);
+        }
     } else {
         printf("%s\n", type.c_str());
         assert(0 && "Bad attribute type");
@@ -88,7 +100,7 @@ struct PrimitiveAddAttr : zeno::INode {
 
 static int defPrimitiveAddAttr = zeno::defNodeClass<PrimitiveAddAttr>("PrimitiveAddAttr",
     { /* inputs: */ {
-    "prim",
+    "prim","fillValue",
     }, /* outputs: */ {
     "prim",
     }, /* params: */ {

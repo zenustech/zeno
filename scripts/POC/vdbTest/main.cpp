@@ -1,29 +1,15 @@
-#include <zeno/zeno.h>
-#include <zeno/NumericObject.h>
-#include <vector>
-#include <zeno/VDBGrid.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <openvdb/openvdb.h>
 #include <openvdb/points/PointCount.h>
 #include <openvdb/tree/LeafManager.h>
 #include <openvdb/points/PointAdvect.h>
 #include <openvdb/tools/Morphology.h>
 #include <openvdb/tools/MeshToVolume.h>
-#include <zeno/ParticlesObject.h>
-#include <zeno/PrimitiveObject.h>
-#include <openvdb/openvdb.h>
 #include <openvdb/points/PointConversion.h>
-namespace zeno {
-openvdb::points::PointDataGrid::Ptr particleArrayToGrid(ParticlesObject* particles, float dx) 
+
+openvdb::points::PointDataGrid::Ptr particleArrayToGrid(std::vector<openvdb::Vec3f>& positions, std::vector<openvdb::Vec3f> &velocitys, float dx) 
 {
-    std::vector<openvdb::Vec3f> positions(particles->size());
-    std::vector<openvdb::Vec3f> velocitys(particles->size());
-    // for (auto &&[dst, src] : zip(positions, particles))
-    for (auto i = 0; i < particles->size(); ++i){
-      for (int d = 0; d < 3; ++d) {
-            positions[i][d] = particles->pos[i][d];
-            velocitys[i][d] = particles->vel[i][d];
-          
-          }
-    }
     // The VDB Point-Partioner is used when bucketing points and requires a
     // specific interface. For convenience, we use the PointAttributeVector
     // wrapper around an stl vector wrapper here, however it is also possible to
@@ -75,60 +61,41 @@ openvdb::points::PointDataGrid::Ptr particleArrayToGrid(ParticlesObject* particl
     grid->setName("Points");
     return grid;
 }
-
-struct PrimToVDBPointDataGrid : zeno::INode {
-  virtual void apply() override {
-    auto dx = std::get<float>(get_param("dx"));
-    auto prims = get_input("ParticleGeo")->as<PrimitiveObject>();
-    auto particles = std::make_unique<ParticlesObject>();
-    particles->pos.resize(prims->attr<zeno::vec3f>("pos").size());
-    particles->vel.resize(prims->attr<zeno::vec3f>("pos").size());
-    #pragma omp parallel for
-    for(int i=0;i<prims->attr<zeno::vec3f>("pos").size();i++)
-    {
-        particles->pos[i] = zeno::vec_to_other<glm::vec3>(prims->attr<zeno::vec3f>("pos")[i]);
-        particles->vel[i] = glm::vec3(0,0,0);
-        if(prims->has_attr("vel"))
-            particles->vel[i] = zeno::vec_to_other<glm::vec3>(prims->attr<zeno::vec3f>("vel")[i]);
-    }
-    auto data = zeno::IObject::make<VDBPointsGrid>();
-    data->m_grid = particleArrayToGrid(particles.get(), dx);
-    set_output("Particles", data);
-  }
+struct VDBGrid {
+    virtual void input() = 0;
+};
+template <class T>
+struct VDBWrapper : VDBGrid {
+    typename T::Ptr m_grid;
+    virtual void input() override { printf("input\n");; }
+    VDBWrapper() { printf("ctor\n"); }
+    ~VDBWrapper() { printf("dtor\n"); }
 };
 
-static int defPrimToVDBPointDataGrid = zeno::defNodeClass<PrimToVDBPointDataGrid>("PrimToVDBPointDataGrid",
-    { /* inputs: */ {
-        "ParticleGeo", 
-    }, /* outputs: */ {
-        "Particles",
-    }, /* params: */ {
-    {"float", "dx", "0.0"},
-    }, /* category: */ {
-        "openvdb",
-    }});
+std::unique_ptr<VDBWrapper<openvdb::points::PointDataGrid>> wrap;
 
-struct SetVDBPointDataGrid : zeno::INode {
-  virtual void apply() override {
-    auto dx = std::get<float>(get_param("dx"));
-    auto particles = get_input("ParticleGeo")->as<ParticlesObject>();
-    auto data = zeno::IObject::make<VDBPointsGrid>();
-    data->m_grid = particleArrayToGrid(particles, dx);
-    set_output("Particles", data);
-  }
-};
-
-static int defSetVDBPointDataGrid = zeno::defNodeClass<SetVDBPointDataGrid>("SetVDBPointDataGrid",
-    { /* inputs: */ {
-        "ParticleGeo", 
-    }, /* outputs: */ {
-        "Particles",
-    }, /* params: */ {
-    {"float", "dx", "0.0"},
-    }, /* category: */ {
-        "particles",
-    }});
-
-
+void createALotVDB(std::vector<openvdb::Vec3f>& positions, std::vector<openvdb::Vec3f> &velocitys, float dx)
+{
+    wrap = std::make_unique<VDBWrapper<openvdb::points::PointDataGrid>>();
+        wrap->m_grid = particleArrayToGrid(positions, velocitys, dx);
 }
-
+int main(int argc, char* argv[])
+{
+    openvdb::initialize();
+    //need a large enought point data...
+    std::vector<openvdb::Vec3f> points;
+    std::vector<openvdb::Vec3f> velocities;
+    points.resize(512*512*512);
+    velocities.resize(points.size());
+    for(int i=0;i<points.size();i++)
+    {
+        points[i] = openvdb::Vec3f((float)rand()/(float)RAND_MAX,(float)rand()/(float)RAND_MAX,(float)rand()/(float)RAND_MAX);
+        velocities[i] = openvdb::Vec3f((float)rand()/(float)RAND_MAX,(float)rand()/(float)RAND_MAX,(float)rand()/(float)RAND_MAX);
+    }
+    for(int i=0;i<100;i++)
+    {
+        createALotVDB(points, velocities, 1.0/512.0);
+    }
+    getchar();
+    return 0;
+}

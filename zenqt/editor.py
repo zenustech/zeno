@@ -1611,7 +1611,7 @@ class NodeEditor(QWidget):
     def importProgram(self, prog):
         prog = self.bkwdCompatProgram(prog)
         self.setDescriptors(prog['descs'])
-        self.scene.newGraph()
+        # self.scene.newGraph()
         for name, graph in prog['graph'].items():
             if name != 'main':
                 print('Importing subgraph', name)
