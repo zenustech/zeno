@@ -11,6 +11,7 @@ void initialize();
 void finalize();
 void new_frame();
 void clear_graphics();
+void auto_gc_frame_data();
 void load_file(std::string name, std::string ext, std::string path, int frameid);
 void set_curr_playing(bool playing);
 void set_window_size(int nx, int ny);
@@ -41,6 +42,7 @@ PYBIND11_MODULE(pyzenvis, m) {
     m.def("look_perspective", zenvis::look_perspective);
     m.def("set_perspective", zenvis::set_perspective);
     m.def("clear_graphics", zenvis::clear_graphics);
+    m.def("auto_gc_frame_data", zenvis::auto_gc_frame_data);
     m.def("load_file", zenvis::load_file);
 }
 
