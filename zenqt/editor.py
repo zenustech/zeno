@@ -972,8 +972,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
         self.helper.setPos(self.width, h)
 
         self.content = QDMGraphicsBlackboardContent(self)
-        rect = QRectF(HORI_MARGIN, HORI_MARGIN, self.width - HORI_MARGIN * 2, 0)
-        self.content.setGeometry(rect)
+        self.setWidthHeight(self.width, self.height)
 
     def boundingRect(self):
         return QRectF(0, -TEXT_HEIGHT, self.width, self.height).normalized()
@@ -1021,7 +1020,8 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
         self.height = height
         self.helper.setPos(width, height - TEXT_HEIGHT)
 
-        rect = QRectF(HORI_MARGIN, HORI_MARGIN, self.width - HORI_MARGIN * 2, 0)
+        rect = QRectF(HORI_MARGIN, HORI_MARGIN, self.width - HORI_MARGIN * 2,
+            self.height - TEXT_HEIGHT - HORI_MARGIN * 2)
         self.content.setGeometry(rect)
 
     def dump(self):
