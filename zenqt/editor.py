@@ -5,10 +5,10 @@ Node Editor UI
 import os
 import json
 
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtSvg import *
+from PySide2.QtWidgets import *
+from PySide2.QtCore import *
+from PySide2.QtGui import *
+from PySide2.QtSvg import *
 
 from zenutils import go, gen_unique_ident
 import zenapi
@@ -397,13 +397,13 @@ class QDMGraphicsView(QGraphicsView):
 
         if event.button() == Qt.MiddleButton:
             self.scene().mmb_press = False
-            self.setDragMode(0)
+            self.setDragMode(QGraphicsView.NoDrag)
 
             self.scene().trans_x = self.horizontalScrollBar().value()
             self.scene().trans_y = self.verticalScrollBar().value()
 
         elif event.button() == Qt.LeftButton:
-            self.setDragMode(0)
+            self.setDragMode(QGraphicsView.NoDrag)
 
         if self.scene().moved:
             self.scene().record()
@@ -574,7 +574,7 @@ class QDMGraphicsBlackboardResizeHelper(QGraphicsItem):
     def paint(self, painter, styleOptions, widget=None):
         painter.setBrush(QColor(style['line_color']))
         painter.setPen(Qt.NoPen)
-        painter.drawPolygon(*[
+        painter.drawPolygon([
             QPointF(0, 0),
             QPointF(10, 0),
             QPointF(0, 10),
@@ -721,7 +721,7 @@ class QDMCollapseButton(QSvgWidget):
         super().__init__()
         self.render = self.renderer()
         self.load(asset_path('unfold.svg'))
-        # PyQt5 >= 5.15
+        # PySide2 >= 5.15
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
         self.setStyleSheet('background-color: {}'.format(style['title_color']))
@@ -1420,7 +1420,6 @@ class NodeEditor(QWidget):
         self.initDescriptors()
 
         self.newProgram()
-        self.handleEnvironParams()
 
     def clearScenes(self):
         self.scenes.clear()
@@ -1458,6 +1457,12 @@ class NodeEditor(QWidget):
         if os.environ.get('ZEN_DOEXEC'):
             print('ZEN_DOEXEC found, direct execute')
             self.on_execute()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.handleEnvironParams()
+        #self.scene().trans_x = self.horizontalScrollBar().value()
+        #self.scene().trans_y = self.verticalScrollBar().value()
 
     def initShortcuts(self):
         self.msgF5 = QShortcut(QKeySequence('F5'), self)
