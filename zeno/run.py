@@ -1,6 +1,6 @@
 import json
 
-from . import core
+from .dll import core
 
 
 def evaluateExpr(expr, frameid):
