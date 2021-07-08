@@ -2,6 +2,13 @@ import os
 
 from . import launch
 
+g_lastiopath = None
+
+def isIOPathChanged():
+    global g_lastiopath
+    res = g_lastiopath != launch.g_iopath
+    g_lastiopath = launch.g_iopath
+    return res
 
 def getFrameFiles(frameid):
     if launch.g_iopath is None:

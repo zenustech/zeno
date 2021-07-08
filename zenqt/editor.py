@@ -5,13 +5,13 @@ Node Editor UI
 import os
 import json
 
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtSvg import *
+from PySide2.QtWidgets import *
+from PySide2.QtCore import *
+from PySide2.QtGui import *
+from PySide2.QtSvg import *
 
 from zenutils import go, gen_unique_ident
-import zenapi
+from zeno import launch
 
 from . import asset_path
 
@@ -29,8 +29,8 @@ style = {
     'param_text_size': 10,
     'socket_text_color': '#FFFFFF',
     'panel_color': '#282828',
-    'frame_title_color': '#393939',
-    'frame_panel_color': '#1B1B1B',
+    'blackboard_title_color': '#393939',
+    'blackboard_panel_color': '#1B1B1B',
     'line_color': '#B0B0B0',
     'background_color': '#2C2C2C',
     'selected_color': '#EE8844',
@@ -270,6 +270,11 @@ class QDMGraphicsView(QGraphicsView):
         self.horizontalScrollBar().setValue(scene.trans_x)
         self.verticalScrollBar().setValue(scene.trans_y)
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.scene().trans_x = self.horizontalScrollBar().value()
+        self.scene().trans_y = self.verticalScrollBar().value()
+
     def updateSearch(self, edit):
         for act in edit.menu.actions():
             if not isinstance(act, QWidgetAction):
@@ -397,13 +402,13 @@ class QDMGraphicsView(QGraphicsView):
 
         if event.button() == Qt.MiddleButton:
             self.scene().mmb_press = False
-            self.setDragMode(0)
+            self.setDragMode(QGraphicsView.NoDrag)
 
             self.scene().trans_x = self.horizontalScrollBar().value()
             self.scene().trans_y = self.verticalScrollBar().value()
 
         elif event.button() == Qt.LeftButton:
-            self.setDragMode(0)
+            self.setDragMode(QGraphicsView.NoDrag)
 
         if self.scene().moved:
             self.scene().record()
@@ -549,7 +554,7 @@ class QDMGraphicsEdge(QDMGraphicsPath):
         self.scene().removeItem(self)
 
 
-class QDMGraphicsFrameResizeHelper(QGraphicsItem):
+class QDMGraphicsBlackboardResizeHelper(QGraphicsItem):
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -574,7 +579,7 @@ class QDMGraphicsFrameResizeHelper(QGraphicsItem):
     def paint(self, painter, styleOptions, widget=None):
         painter.setBrush(QColor(style['line_color']))
         painter.setPen(Qt.NoPen)
-        painter.drawPolygon(*[
+        painter.drawPolygon([
             QPointF(0, 0),
             QPointF(10, 0),
             QPointF(0, 10),
@@ -721,7 +726,7 @@ class QDMCollapseButton(QSvgWidget):
         super().__init__()
         self.render = self.renderer()
         self.load(asset_path('unfold.svg'))
-        # PyQt5 >= 5.15
+        # PySide2 >= 5.15
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
         self.setStyleSheet('background-color: {}'.format(style['title_color']))
@@ -908,7 +913,8 @@ class QDMGraphicsParam_multiline_string(QDMGraphicsParam):
     def getValue(self):
         return str(self.edit.toPlainText())
 
-class QDMGraphicsNode_Frame(QGraphicsItem):
+
+class QDMGraphicsNode_Blackboard(QGraphicsItem):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -918,7 +924,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         self.setFlag(QGraphicsItem.ItemIsSelectable)
 
         self.width = style['node_width']
-        self.height = 100
+        self.height = 150
 
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor(style['title_text_color']))
@@ -927,6 +933,15 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         font = QFont()
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
+
+        self.content = QGraphicsTextItem(self)
+        self.content.setDefaultTextColor(QColor(style['title_text_color']))
+        self.content.setPos(HORI_MARGIN, HORI_MARGIN)
+        self.content.setTextInteractionFlags(Qt.TextEditorInteraction)
+        self.content.setFont(font)
+
+        self.helper = QDMGraphicsBlackboardResizeHelper(self)
+        self.setWidthHeight(self.width, self.height)
 
         self.name = None
         self.ident = None
@@ -949,9 +964,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         self.title.setPlainText(name)
 
     def initSockets(self):
-        self.helper = QDMGraphicsFrameResizeHelper(self)
-        h = self.height - TEXT_HEIGHT
-        self.helper.setPos(self.width, h)
+        pass
 
     def boundingRect(self):
         return QRectF(0, -TEXT_HEIGHT, self.width, self.height).normalized()
@@ -963,7 +976,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
         pathContent.addRoundedRect(rect, r, r)
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['frame_panel_color']))
+        painter.setBrush(QColor(style['blackboard_panel_color']))
         painter.drawPath(pathContent.simplified())
 
         # title round top
@@ -971,7 +984,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         rect = QRectF(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
         pathTitle.addRoundedRect(rect, r, r)
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['frame_title_color']))
+        painter.setBrush(QColor(style['blackboard_title_color']))
         painter.drawPath(pathTitle.simplified())
         
         # title direct bottom
@@ -979,7 +992,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         rect = QRectF(0, -r, self.width, r)
         pathTitle.addRect(rect)
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['frame_title_color']))
+        painter.setBrush(QColor(style['blackboard_title_color']))
         painter.drawPath(pathTitle.simplified())
 
         if self.isSelected():
@@ -994,10 +1007,14 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
 
     def setWidthHeight(self, width, height):
         width = max(width, style['node_width'])
-        height = max(height, 100)
+        height = max(height, 150)
         self.width = width
         self.height = height
         self.helper.setPos(width, height - TEXT_HEIGHT)
+
+        rect = QRectF(HORI_MARGIN, HORI_MARGIN, self.width - HORI_MARGIN * 2,
+            self.height - TEXT_HEIGHT - HORI_MARGIN * 2)
+        self.content.setTextWidth(self.width - HORI_MARGIN * 2)
 
     def dump(self):
         uipos = self.pos().x(), self.pos().y()
@@ -1008,6 +1025,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
             'width': self.width,
             'height': self.height,
             'title': self.title.toPlainText(),
+            'content': self.content.toPlainText(),
         }
         return {self.ident: data}
     
@@ -1022,6 +1040,7 @@ class QDMGraphicsNode_Frame(QGraphicsItem):
         self.setWidthHeight(data['width'], data['height'])
 
         self.title.setPlainText(data['title'])
+        self.content.setPlainText(data['content'])
 
         edges = []
         return edges
@@ -1405,7 +1424,6 @@ class NodeEditor(QWidget):
         self.initDescriptors()
 
         self.newProgram()
-        self.handleEnvironParams()
 
     def clearScenes(self):
         self.scenes.clear()
@@ -1443,6 +1461,10 @@ class NodeEditor(QWidget):
         if os.environ.get('ZEN_DOEXEC'):
             print('ZEN_DOEXEC found, direct execute')
             self.on_execute()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.handleEnvironParams()
 
     def initShortcuts(self):
         self.msgF5 = QShortcut(QKeySequence('F5'), self)
@@ -1504,11 +1526,11 @@ class NodeEditor(QWidget):
                 self.cates.setdefault(cate, []).append(name)
 
     def initDescriptors(self):
-        descs = zenapi.getDescriptors()
+        descs = launch.getDescriptors()
         subg_descs = self.getSubgraphDescs()
         descs.update(subg_descs)
         descs.update({
-            'Frame': {
+            'Blackboard': {
                 'inputs': [],
                 'outputs': [],
                 'params': [],
@@ -1522,7 +1544,7 @@ class NodeEditor(QWidget):
         self.view.contextMenu(pos)
 
     def on_kill(self):
-        zenapi.killProcess()
+        launch.killProcess()
 
     def dumpProgram(self):
         graphs = {}
@@ -1594,7 +1616,7 @@ class NodeEditor(QWidget):
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
         prog = self.dumpProgram()
-        go(zenapi.launchScene, prog['graph'], nframes)
+        go(launch.launchScene, prog['graph'], nframes)
 
     def on_delete(self):
         itemList = self.scene.selectedItems()

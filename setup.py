@@ -16,7 +16,7 @@ version = '2021.7.1'
 description = 'Open-source node system framework for physics simulation and other CG applications'
 
 packages = ['zenqt', 'zenutils', 'zeno', 'zenapi', 'zenvis']
-requirements = ['numpy', 'PyQt5']
+requirements = ['numpy', 'PySide2']
 
 def treefiles(dir):
     if not os.path.isdir(dir):
@@ -26,11 +26,14 @@ def treefiles(dir):
             path = os.path.join(dir, name)
             yield from treefiles(path)
 
-data_files = glob('zeno/*.so')
-data_files += glob('zenqt/assets/*')
-data_files += glob('zenvis/*.so')
+data_files = []
+data_files += glob('zeno/*.so')
+data_files += glob('zeno/*.dylib')
 data_files += glob('zeno/*.pyd')
+data_files += glob('zenvis/*.so')
+data_files += glob('zenvis/*.dylib')
 data_files += glob('zenvis/*.pyd')
+data_files += glob('zenqt/assets/*')
 data_files += treefiles('zeno/lib')
 data_files += treefiles('zeno/cmake')
 data_files += treefiles('zeno/include')
@@ -68,7 +71,7 @@ setuptools.setup(
         ],
         entry_points={
             'console_scripts': [
-                'zenapi=zenapi.main:main',
+                'zeno=zeno.main:main',
                 'zenqt=zenqt.main:main',
             ],
         },

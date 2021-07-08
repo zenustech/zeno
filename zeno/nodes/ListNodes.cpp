@@ -67,3 +67,26 @@ ZENDEFNODE(AppendList, {
     {},
     {"list"},
 });
+
+
+struct MakeSmallList : zeno::INode {
+    virtual void apply() override {
+        auto list = std::make_shared<zeno::ListObject>();
+        for (int i = 0; i < 6; i++) {
+            std::stringstream namess;
+            namess << "obj" << i;
+            auto name = namess.str();
+            if (!has_input(name)) break;
+            auto obj = get_input(name);
+            list->arr.push_back(std::move(obj));
+        }
+        set_output("list", std::move(list));
+    }
+};
+
+ZENDEFNODE(MakeSmallList, {
+    {"obj0", "obj1", "obj2", "obj3", "obj4", "obj5"},
+    {"list"},
+    {},
+    {"list"},
+});

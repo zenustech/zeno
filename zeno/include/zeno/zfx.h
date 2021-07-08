@@ -181,7 +181,7 @@ struct Assembler {
         auto tokens = split_str(line, ' ');
         assert(tokens.size() > 1);
         if (tokens[0] == "bind") {
-            assert(tokens.size() > 3);
+            assert(tokens.size() > 2);
             int memid = 0;
             std::stringstream(tokens[1]) >> memid;
             bind_channel(memid, tokens[2]);
@@ -194,7 +194,7 @@ struct Assembler {
             bind_parameter(parid, tokens[2]);
             return std::nullopt;
         }
-        assert(tokens.size() > 2);
+        assert(tokens.size() > 1);
         Instruction inst;
         auto opcode = magic_enum::enum_cast<Opcode>(tokens[0]);
         if (!opcode.has_value()) {
@@ -358,6 +358,7 @@ private:
     static inline const char opchars[] = "+-*/%=(,)";
     static inline const char *opstrs[] = {
         "+", "-", "*", "/", "%", "=", "(", ",", ")",
+        "+=", "-=", "*=", "/=", "%=",
         NULL,
     };
 
@@ -497,14 +498,14 @@ private:
         return false;
     }
 
-    bool parse_stmt() {  // stmt := atom "=" expr
+    bool parse_stmt() {  // stmt := atom <"="|"+="|"-="|"*="|"/="|"%="> expr
         if (token->type == Token::Type::op)
             return false;
         if (token->type == Token::Type::none)
             return false;
         emplace_ast(*token);
         token++;
-        if (!token->is_op({"="})) {
+        if (!token->is_op({"=", "+=", "-=", "*=", "/=", "%="})) {
             token--;
             return false;
         }
@@ -531,21 +532,21 @@ private:
 
         } else if (head == '@') {
             std::string ident;
-            for (; isalnum(*cp) || *cp == '.'; ident += *cp++);
+            for (; isalnum(*cp) || strchr("_.:", *cp); ident += *cp++);
             tokens.emplace_back(Token::Type::mem, ident);
             return true;
 
-        } else if (isalpha(head)) {
+        } else if (isalpha(head) || head == '_') {
             std::string ident;
             ident += head;
-            for (; isalnum(*cp) || *cp == '.'; ident += *cp++);
+            for (; isalnum(*cp) || *cp == '.' || *cp == '_'; ident += *cp++);
             tokens.emplace_back(Token::Type::reg, ident);
             return true;
         }
         if (strchr(opchars, head)) {
             std::string op;
             op += head;
-            while (*cp) {
+            while (*cp && strchr(opchars, *cp)) {
                 const char **p;
                 auto nop = op + *cp;
                 for (p = opstrs; *p; p++) {
@@ -597,6 +598,9 @@ struct Transcriptor {
 
     std::string lvalue(Visit &vis) {
         if (vis.lvalue.size() == 0) {
+            if (vis.rvalue.size() == 0) {
+                error("invalid value encountered\n");
+            }
             auto reg = alloc_register();
             vis.lvalue = reg;
             emit(vis.rvalue + " " + reg);
@@ -613,16 +617,24 @@ struct Transcriptor {
         }
     }
 
+    void inplace_movalue(char op, Visit &src, std::string const &dst) {
+        emit(std::string() + op + " " + lvalue(src) + " " + dst + " " + dst);
+    }
+
     Visit make_visit(std::string const &lvalue, std::string const &rvalue) {
         return {lvalue, rvalue};
     }
 
     Visit visit(AST *ast) {
         if (ast->token.type == Token::Type::op) {
-            if (ast->token.ident == "=") {
+            if (ast->token.is_op({"=", "+=", "-=", "*=", "/=", "%="})) {
                 auto src = visit(ast->args[1].get());
                 auto dst = visit(ast->args[0].get());
-                movalue(src, dst.lvalue);
+                if (ast->token.ident == "=") {
+                    movalue(src, dst.lvalue);
+                } else {
+                    inplace_movalue(ast->token.ident[0], src, dst.lvalue);
+                }
                 return make_visit("", "");
             }
             auto res = ast->token.ident;
@@ -672,6 +684,7 @@ static std::string opchar_to_name(std::string const &op) {
     if (op == "*") return "mul";
     if (op == "/") return "div";
     if (op == "%") return "mod";
+    if (op == "=") return "mov";
     return op;
 }
 

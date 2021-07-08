@@ -2,6 +2,8 @@
 
 #include <memory>
 #include <vector>
+#include <string>
+#include <map>
 
 namespace zenvis {
 
@@ -9,8 +11,12 @@ struct IGraphic {
   virtual void draw() = 0;
 };
 
-extern std::vector<std::unique_ptr<IGraphic>> graphics;
+struct FrameData {
+    std::map<std::string, std::unique_ptr<IGraphic>> graphics;
+};
 
-void update_frame_graphics();
+FrameData *current_frame_data();
+
+extern std::vector<std::unique_ptr<FrameData>> frames;
 
 }

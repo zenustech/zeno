@@ -132,7 +132,7 @@
        "value"
       ],
       "params": [
-       "9582f779-AppendList",
+       "c00623e7-MakeSmallList",
        "list"
       ],
       "SRC": null,
@@ -144,42 +144,6 @@
       -122.465
      ],
      "options": []
-    },
-    "0fb62870-EmptyList": {
-     "name": "EmptyList",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -1035.7643749999995,
-      142.00749999999994
-     ],
-     "options": []
-    },
-    "9582f779-AppendList": {
-     "name": "AppendList",
-     "inputs": {
-      "list": [
-       "0fb62870-EmptyList",
-       "list"
-      ],
-      "object": [
-       "2e9a88fe-NumericOperator",
-       "ret"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      15.454374999999857,
-      169.28062500000013
-     ],
-     "options": [
-      "collapsed"
-     ]
     },
     "f22f708f-GetFrameNum": {
      "name": "GetFrameNum",
@@ -237,30 +201,33 @@
      ],
      "options": []
     },
-    "4d1fb069-PrimitiveCalcNormal": {
-     "name": "PrimitiveCalcNormal",
+    "c00623e7-MakeSmallList": {
+     "name": "MakeSmallList",
      "inputs": {
-      "prim": [
-       "53dcf140-ParticlesWrangle",
-       "prim"
+      "obj0": [
+       "2e9a88fe-NumericOperator",
+       "ret"
       ],
+      "obj1": null,
+      "obj2": null,
+      "obj3": null,
+      "obj4": null,
+      "obj5": null,
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      710.25,
-      -111.75
+      238.39999999999992,
+      112.80000000000004
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     }
    },
    "view": {
-    "scale": 0.8000000000000002,
-    "trans_x": -897,
-    "trans_y": -144
+    "scale": 1.25,
+    "trans_x": -356,
+    "trans_y": -13
    }
   }
  },
@@ -757,7 +724,27 @@
     "CompressibleFlow"
    ]
   },
-  "EmptyList": {
+  "MakeSmallList": {
+   "inputs": [
+    "obj0",
+    "obj1",
+    "obj2",
+    "obj3",
+    "obj4",
+    "obj5",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "list",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "MakeString": {
    "inputs": [
     "SRC",
     "COND"
@@ -1052,7 +1039,25 @@
     "constitutive_model"
    ]
   },
-  "FluidReseed": {
+  "ParticleParticleWrangle": {
+   "inputs": [
+    "prim1",
+    "prim2",
+    "zfxCode",
+    "params",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim1",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesWrangle": {
    "inputs": [
     "Particles",
     "LiquidSDF",

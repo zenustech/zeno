@@ -5,7 +5,7 @@
 
 namespace zenvis {
 
-std::vector<std::unique_ptr<IGraphic>> graphics;
+std::vector<std::unique_ptr<FrameData>> frames;
 
 std::unique_ptr<IGraphic> makeGraphicPrimitive
     ( zeno::PrimitiveObject *prim
@@ -26,17 +26,55 @@ std::unique_ptr<IGraphic> makeGraphic(std::string path, std::string ext) {
     return nullptr;
 }
 
+FrameData *current_frame_data() {
+    if (frames.size() < curr_frameid + 1)
+        frames.resize(curr_frameid + 1);
+    if (!frames[curr_frameid])
+        frames[curr_frameid] = std::make_unique<FrameData>();
+    return frames[curr_frameid].get();
+}
+
+void auto_gc_frame_data(int nkeep) {
+    for (int i = 0; i < frames.size(); i++) {
+        auto const &frame = frames[i];
+        if (frame) {
+            auto endi = std::min(curr_frameid + nkeep / 2, (int)frames.size());
+            auto begi = std::max(endi - nkeep, 0);
+            if (i >= endi || i < begi) {
+                //printf("auto gc free %d\n", i);
+                frames[i] = nullptr;
+            }
+        }
+    }
+}
+
+std::vector<int> get_valid_frames_list() {
+    std::vector<int> res;
+    for (int i = 0; i < frames.size(); i++) {
+        if (frames[i])
+            res.push_back(i);
+    }
+    return res;
+}
 
 void clear_graphics() {
-    graphics.clear();
+    frames.clear();
 }
 
 void load_file(std::string name, std::string ext, std::string path, int frameid) {
-    //printf("load_file: %s\n", path.c_str());
+    if (ext == ".lock")
+        return;
+
+    auto &graphics = current_frame_data()->graphics;
+    if (graphics.find(name) != graphics.end()) {
+        //printf("cached: %p %s %s\n", &graphics, path.c_str(), name.c_str());
+        return;
+    }
+    //printf("load_file: %p %s %s\n", &graphics, path.c_str(), name.c_str());
 
     auto ig = makeGraphic(path, ext);
-    if (ig != nullptr)
-      graphics.push_back(std::move(ig));
+    if (!ig) return;
+    graphics[name] = std::move(ig);
 }
 
 }
