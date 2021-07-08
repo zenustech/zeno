@@ -920,10 +920,10 @@ class QDMGraphicsBlackboardContent(QGraphicsProxyWidget):
         self.widget.setPalette(p)
         self.setWidget(self.widget)
 
-    def setText(self, text):
+    def setPlainText(self, text):
         self.widget.setPlainText(str(text))
 
-    def getText(self):
+    def toPlainText(self):
         return self.widget.toPlainText()
 
 class QDMGraphicsNode_Blackboard(QGraphicsItem):
@@ -946,6 +946,12 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
 
+        self.content = QDMGraphicsBlackboardContent(self)
+        self.content.setFont(font)
+
+        self.helper = QDMGraphicsBlackboardResizeHelper(self)
+        self.setWidthHeight(self.width, self.height)
+
         self.name = None
         self.ident = None
 
@@ -967,12 +973,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
         self.title.setPlainText(name)
 
     def initSockets(self):
-        self.helper = QDMGraphicsBlackboardResizeHelper(self)
-        h = self.height - TEXT_HEIGHT
-        self.helper.setPos(self.width, h)
-
-        self.content = QDMGraphicsBlackboardContent(self)
-        self.setWidthHeight(self.width, self.height)
+        pass
 
     def boundingRect(self):
         return QRectF(0, -TEXT_HEIGHT, self.width, self.height).normalized()
@@ -1033,7 +1034,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
             'width': self.width,
             'height': self.height,
             'title': self.title.toPlainText(),
-            'content': self.content.getText(),
+            'content': self.content.toPlainText(),
         }
         return {self.ident: data}
     
@@ -1048,7 +1049,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
         self.setWidthHeight(data['width'], data['height'])
 
         self.title.setPlainText(data['title'])
-        self.content.setText(data['content'])
+        self.content.setPlainText(data['content'])
 
         edges = []
         return edges
