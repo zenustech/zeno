@@ -1,6 +1,6 @@
 import os
 
-from zeno import launch
+from . import launch
 
 g_lastiopath = None
 

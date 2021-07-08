@@ -5,7 +5,7 @@ import os
 from .blender_io import renew_mesh, renew_object, renew_volume_object
 from .obj_mesh_io import readobj
 from zeno.zpmio import readzpm
-from zeno import launch
+from zeno import fileio
 
 
 curr_objects = set()
@@ -47,7 +47,7 @@ def frameUpdateCallback(*unused_args):
     prev_objects = frozenset(curr_objects)
 
     curr_objects.clear()
-    for name, ext, path in launch.getFrameFiles(frameid):
+    for name, ext, path in fileio.getFrameFiles(frameid):
         loadFileIntoBlender(name, ext, path, frameid)
 
     for name in prev_objects:
