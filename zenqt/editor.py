@@ -908,23 +908,6 @@ class QDMGraphicsParam_multiline_string(QDMGraphicsParam):
     def getValue(self):
         return str(self.edit.toPlainText())
 
-class QDMGraphicsBlackboardContent(QGraphicsProxyWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.widget = QPlainTextEdit()
-        self.widget.parent = self
-        self.widget.setStyleSheet('color: #eeeeee')
-        p = self.widget.palette()
-        p.setColor(QPalette.Active, QPalette.Base, QColor(style['panel_color']))
-        self.widget.setPalette(p)
-        self.setWidget(self.widget)
-
-    def setPlainText(self, text):
-        self.widget.setPlainText(str(text))
-
-    def toPlainText(self):
-        return self.widget.toPlainText()
 
 class QDMGraphicsNode_Blackboard(QGraphicsItem):
     def __init__(self, parent=None):
@@ -946,7 +929,10 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
 
-        self.content = QDMGraphicsBlackboardContent(self)
+        self.content = QGraphicsTextItem(self)
+        self.content.setDefaultTextColor(QColor(style['title_text_color']))
+        self.content.setPos(HORI_MARGIN, HORI_MARGIN)
+        self.content.setTextInteractionFlags(Qt.TextEditorInteraction)
         self.content.setFont(font)
 
         self.helper = QDMGraphicsBlackboardResizeHelper(self)
@@ -1023,7 +1009,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
 
         rect = QRectF(HORI_MARGIN, HORI_MARGIN, self.width - HORI_MARGIN * 2,
             self.height - TEXT_HEIGHT - HORI_MARGIN * 2)
-        self.content.setGeometry(rect)
+        self.content.setTextWidth(self.width - HORI_MARGIN * 2)
         self.title.setTextWidth(self.width - HORI_MARGIN * 4)
 
     def dump(self):
