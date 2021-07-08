@@ -46,7 +46,7 @@ version=`cat setup.py | grep "version =" | awk -F "version = '" '{print $2}' | c
 fname=zeno-linux-$version
 echo $fname
 
-cp scripts/release_note.md /tmp/build/README.md
+cp scripts/release_note.md /tmp/build/
 cp -r assets /tmp/build/
 cp -r arts /tmp/build/
 
