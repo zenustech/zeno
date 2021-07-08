@@ -6,6 +6,20 @@
 #include <zeno/ListObject.h>
 #include <cassert>
 
+#define HASH_MAX 1024
+
+struct HashEntry {
+    std::vector<int> pid;
+};
+
+struct HashTable {
+    HashEntry entries[HASH_MAX];
+};
+
+static int hash3i(zeno::vec3i const &v) {
+    return (v[0] * 985211 + v[1] * 54321 + v[2] * 3141592 + 142857) % HASH_MAX;
+}
+
 struct Buffer {
     float *base = nullptr;
     size_t count = 0;
@@ -129,11 +143,24 @@ struct ParticlesNeighborWrangle : zeno::INode {
         }
         auto const &p1pos = prim1->attr<zeno::vec3f>("pos");
         auto const &p2pos = prim2->attr<zeno::vec3f>("pos");
+
+        int nres = (int)(1. / radius);
+        auto hash3d = [=](zeno::vec3f const &p) {
+            return hash3i(zeno::clamp(zeno::vec3i(p * nres), 0, nres));
+        };
+
+        HashTable ht;
+        for (int i = 0; i < p2pos.size(); i++) {
+            auto m = hash3d(p2pos[0]);
+            ht.entries[m].pid.push_back(i);
+        }
+
         vectors_neighbor_wrangle(prog, p1pos,
             chs, pars, prim1->size(), prim2->size(), [&](zeno::vec3f const &p) {
                 std::vector<int> res;
-                for (int i = 0; i < p2pos.size(); i++) {
-                    if (zeno::length(p2pos[i] - p) < radius) {
+                auto m = hash3d(p);
+                for (int i: ht.entries[m].pid) {
+                    if (zeno::length(p2pos[i] - p) <= radius) {
                         res.push_back(i);
                     }
                 }
