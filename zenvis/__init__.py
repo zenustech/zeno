@@ -1,6 +1,4 @@
-import zenapi
-from zenapi.zpmio import readzpm
-
+from . import fileio
 from . import pyzenvis as core
 
 
@@ -12,6 +10,7 @@ status = {
     'render_fps': 0,
     'resolution': (1, 1),
     'perspective': (),
+    'cache_frames': 10,
     'playing': True,
 }
 
@@ -39,17 +38,21 @@ def _recieveStatus():
 old_frame_files = ()
 
 def _frameUpdate():
-    max_frameid = zenapi.getFrameCount()
+    if fileio.isIOPathChanged():
+        core.clear_graphics()
+
+    max_frameid = fileio.getFrameCount()
     frameid = core.get_curr_frameid()
     if status['playing']:
         frameid += 1
     frameid = min(frameid, max_frameid - 1)
     core.set_curr_frameid(frameid)
+    core.auto_gc_frame_data(status['cache_frames'])
+    print(core.get_valid_frames_list())
 
     global old_frame_files
-    frame_files = zenapi.getFrameFiles(frameid)
+    frame_files = fileio.getFrameFiles(frameid)
     if old_frame_files != frame_files:
-        core.clear_graphics()
         for name, ext, path in frame_files:
             core.load_file(name, ext, path, frameid)
     old_frame_files = frame_files
