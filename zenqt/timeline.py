@@ -1,7 +1,7 @@
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtSvg import *
+from PySide2.QtGui import *
+from PySide2.QtCore import *
+from PySide2.QtWidgets import *
+from PySide2.QtSvg import *
 
 from . import asset_path
 
@@ -15,7 +15,7 @@ class QDMPlayButton(QSvgWidget):
         self.load(asset_path('stop.svg'))
         self.timeline = timeline
         self.checked = True
-        # PyQt5 >= 5.15
+        # PySide2 >= 5.15
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
     
     def isChecked(self):
@@ -29,10 +29,13 @@ class QDMPlayButton(QSvgWidget):
             self.load(asset_path('play.svg'))
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
-    def mousePressEvent(self, event):
-        super().mouseMoveEvent(event)
+    def changeWithTimeline(self):
         self.change()
         self.timeline.value_changed()
+
+    def mousePressEvent(self, event):
+        super().mouseMoveEvent(event)
+        self.changeWithTimeline()
 
 
 class QDMPrevNextButton(QSvgWidget):
@@ -41,7 +44,7 @@ class QDMPrevNextButton(QSvgWidget):
         self.render = self.renderer()
         self.load(asset_path(self.svg_up))
         self.timeline = timeline
-        # PyQt5 >= 5.15
+        # PySide2 >= 5.15
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
         self.counter = 0
@@ -50,7 +53,7 @@ class QDMPrevNextButton(QSvgWidget):
     
     def mousePressEvent(self, event):
         super().mouseMoveEvent(event)
-        self.timeline.next_frame()
+        self.callback()
         self.load(asset_path(self.svg_down))
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
         self.counter = 0
@@ -80,6 +83,23 @@ class QDMNextButton(QDMPrevNextButton):
     def callback(self):
         self.timeline.next_frame()
 
+class QDMSlider(QSlider):
+    def __init__(self, type, timeline):
+        super().__init__(type)
+        self.timeline = timeline
+
+    def mouseMoveEvent(self, event):
+        super().mouseMoveEvent(event)
+        self.timeline.stop_play()
+        self.setValue(QStyle.sliderValueFromPosition(
+            self.minimum(), self.maximum(), event.x(), self.width()))
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        self.timeline.stop_play()
+        self.setValue(QStyle.sliderValueFromPosition(
+            self.minimum(), self.maximum(), event.x(), self.width()))
+
 
 class TimelineWidget(QWidget):
     def __init__(self, parent=None):
@@ -88,11 +108,13 @@ class TimelineWidget(QWidget):
         self.label = QLabel('-')
         self.status = QLabel('-')
 
-        self.slider = QSlider(Qt.Horizontal)
+        self.slider = QDMSlider(Qt.Horizontal, self)
         self.slider.valueChanged.connect(self.value_changed)
         self.slider.sliderPressed.connect(self.stop_play)
         self.slider.setMinimum(0)
         self.slider.setMaximum(1)
+        self.slider.setTickInterval(10)
+        self.slider.setTickPosition(QSlider.TicksBelow)
 
         self.player = QDMPlayButton(self)
         self.prevBtn = QDMPrevButton(self)
@@ -107,6 +129,12 @@ class TimelineWidget(QWidget):
         layout.addWidget(self.status)
         self.setLayout(layout)
         self.setFixedHeight(38)
+
+        self.initShortcuts()
+
+    def initShortcuts(self):
+        self.msgPlay = QShortcut(QKeySequence(Qt.Key_Space), self)
+        self.msgPlay.activated.connect(lambda: self.player.changeWithTimeline())
 
     def setEditor(self, editor):
         self.editor = editor

@@ -19,6 +19,8 @@ def runScene(graphs, nframes, iopath):
     applies = []
     nodes = graphs['main']['nodes']
     for ident, data in nodes.items():
+        if 'special' in data:
+            continue
         options = data['options']
         if 'OUT' in options or 'VIEW' in options:
             applies.append(ident)
@@ -29,6 +31,8 @@ def runScene(graphs, nframes, iopath):
         print('FRAME:', frameid)
         ### BEGIN XINXIN HAPPY >>>>>
         for ident, data in graphs['main']['nodes'].items():
+            if 'special' in data:
+                continue
             name = data['name']
             inputs = data['inputs']
             params = data['params']
@@ -50,8 +54,9 @@ def runScene(graphs, nframes, iopath):
 def loadGraph(nodes, subgkeys):
     core.clearNodes()
 
-    for ident in nodes:
-        data = nodes[ident]
+    for ident, data in nodes.items():
+        if 'special' in data:
+            continue
         name = data['name']
         inputs = data['inputs']
         params = data['params']

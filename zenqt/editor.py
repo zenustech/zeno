@@ -5,10 +5,10 @@ Node Editor UI
 import os
 import json
 
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtSvg import *
+from PySide2.QtWidgets import *
+from PySide2.QtCore import *
+from PySide2.QtGui import *
+from PySide2.QtSvg import *
 
 from zenutils import go, gen_unique_ident
 import zenapi
@@ -29,6 +29,8 @@ style = {
     'param_text_size': 10,
     'socket_text_color': '#FFFFFF',
     'panel_color': '#282828',
+    'frame_title_color': '#393939',
+    'frame_panel_color': '#1B1B1B',
     'line_color': '#B0B0B0',
     'background_color': '#2C2C2C',
     'selected_color': '#EE8844',
@@ -128,32 +130,7 @@ class QDMGraphicsScene(QGraphicsScene):
         if input_nodes == None:
             input_nodes = self.nodes
         for node in input_nodes:
-            inputs = {}
-            for name, socket in node.inputs.items():
-                assert not socket.isOutput
-                data = None
-                if socket.hasAnyEdge():
-                    srcSocket = socket.getTheOnlyEdge().srcSocket
-                    data = srcSocket.node.ident, srcSocket.name
-                inputs[name] = data
-
-            params = {}
-            for name, param in node.params.items():
-                value = param.getValue()
-                params[name] = value
-
-            uipos = node.pos().x(), node.pos().y()
-            options = node.getOptions()
-
-            data = {
-                'name': node.name,
-                'inputs': inputs,
-                'params': params,
-                'uipos': uipos,
-                'options': options,
-            }
-            nodes[node.ident] = data
-
+            nodes.update(node.dump())
         return nodes
 
     def newGraph(self):
@@ -175,38 +152,12 @@ class QDMGraphicsScene(QGraphicsScene):
 
         for ident, data in nodes.items():
             name = data['name']
-            inputs = data['inputs']
-            params = data['params']
-            posx, posy = data['uipos']
-            options = data.get('options', [])
-
             if name not in self.descs:
                 print('no node class named [{}]'.format(name))
                 continue
             node = self.makeNode(name)
-            node.initSockets()
-            node.setIdent(ident)
-            node.setName(name)
-            node.setPos(posx, posy)
-            node.setOptions(options)
-
-            for name, value in params.items():
-                if name not in node.params:
-                    print('no param named [{}] for [{}]'.format(
-                        name, nodes[ident]['name']))
-                    continue
-                param = node.params[name]
-                param.setValue(value)
-
-            for name, input in inputs.items():
-                if input is None:
-                    continue
-                if name not in node.inputs:
-                    print('no input named [{}] for [{}]'.format(
-                        name, nodes[ident]['name']))
-                    continue
-                dest = node.inputs[name]
-                edges.append((dest, input))
+            node_edges = node.load(ident, data)
+            edges.extend(node_edges)
 
             self.addNode(node)
             nodesLut[ident] = node
@@ -446,13 +397,13 @@ class QDMGraphicsView(QGraphicsView):
 
         if event.button() == Qt.MiddleButton:
             self.scene().mmb_press = False
-            self.setDragMode(0)
+            self.setDragMode(QGraphicsView.NoDrag)
 
             self.scene().trans_x = self.horizontalScrollBar().value()
             self.scene().trans_y = self.verticalScrollBar().value()
 
         elif event.button() == Qt.LeftButton:
-            self.setDragMode(0)
+            self.setDragMode(QGraphicsView.NoDrag)
 
         if self.scene().moved:
             self.scene().record()
@@ -598,6 +549,51 @@ class QDMGraphicsEdge(QDMGraphicsPath):
         self.scene().removeItem(self)
 
 
+class QDMGraphicsFrameResizeHelper(QGraphicsItem):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.setFlag(QGraphicsItem.ItemIsMovable)
+
+        self.node = parent
+        self.name = None
+
+        self.setAcceptHoverEvents(True)
+
+    def getCirclePos(self):
+        basePos = self.node.pos() + self.pos()
+        return basePos
+
+    def getCircleBounds(self):
+        return (-SOCKET_RADIUS, -SOCKET_RADIUS,
+                2 * SOCKET_RADIUS, 2 * SOCKET_RADIUS)
+
+    def boundingRect(self):
+        return QRectF(*self.getCircleBounds()).normalized()
+
+    def paint(self, painter, styleOptions, widget=None):
+        painter.setBrush(QColor(style['line_color']))
+        painter.setPen(Qt.NoPen)
+        painter.drawPolygon([
+            QPointF(0, 0),
+            QPointF(10, 0),
+            QPointF(0, 10),
+        ])
+
+    def mouseMoveEvent(self, event):
+        super().mouseMoveEvent(event)
+        p = self.pos()
+        self.node.setWidthHeight(p.x(), p.y() + TEXT_HEIGHT)
+
+    def hoverEnterEvent(self, event):
+        self.node.setFlag(QGraphicsItem.ItemIsMovable, False)
+        self.setCursor(Qt.SizeFDiagCursor)
+
+    def hoverLeaveEvent(self, event):
+        self.node.setFlag(QGraphicsItem.ItemIsMovable, True)
+        self.setCursor(Qt.ArrowCursor)
+
+
 class QDMGraphicsSocket(QGraphicsItem):
     def __init__(self, parent):
         super().__init__(parent)
@@ -725,7 +721,7 @@ class QDMCollapseButton(QSvgWidget):
         super().__init__()
         self.render = self.renderer()
         self.load(asset_path('unfold.svg'))
-        # PyQt5 >= 5.15
+        # PySide2 >= 5.15
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
         self.setStyleSheet('background-color: {}'.format(style['title_color']))
@@ -912,6 +908,123 @@ class QDMGraphicsParam_multiline_string(QDMGraphicsParam):
     def getValue(self):
         return str(self.edit.toPlainText())
 
+class QDMGraphicsNode_Frame(QGraphicsItem):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setZValue(-2)
+
+        self.setFlag(QGraphicsItem.ItemIsMovable)
+        self.setFlag(QGraphicsItem.ItemIsSelectable)
+
+        self.width = style['node_width']
+        self.height = 100
+
+        self.title = QGraphicsTextItem(self)
+        self.title.setDefaultTextColor(QColor(style['title_text_color']))
+        self.title.setPos(HORI_MARGIN * 2, -TEXT_HEIGHT)
+        self.title.setTextInteractionFlags(Qt.TextEditorInteraction)
+        font = QFont()
+        font.setPointSize(style['title_text_size'])
+        self.title.setFont(font)
+
+        self.name = None
+        self.ident = None
+
+    def mouseMoveEvent(self, event):
+        super().mouseMoveEvent(event)
+        self.scene().moved = True
+
+    def remove(self):
+        self.scene().nodes.remove(self)
+        self.scene().removeItem(self)
+
+    def setIdent(self, ident):
+        self.ident = ident
+
+    def setName(self, name):
+        if self.ident is None:
+            self.ident = gen_unique_ident(name)
+        self.name = name
+        self.title.setPlainText(name)
+
+    def initSockets(self):
+        self.helper = QDMGraphicsFrameResizeHelper(self)
+        h = self.height - TEXT_HEIGHT
+        self.helper.setPos(self.width, h)
+
+    def boundingRect(self):
+        return QRectF(0, -TEXT_HEIGHT, self.width, self.height).normalized()
+
+    def paint(self, painter, styleOptions, widget=None):
+        r = style['node_rounded_radius']
+
+        pathContent = QPainterPath()
+        rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
+        pathContent.addRoundedRect(rect, r, r)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(style['frame_panel_color']))
+        painter.drawPath(pathContent.simplified())
+
+        # title round top
+        pathTitle = QPainterPath()
+        rect = QRectF(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
+        pathTitle.addRoundedRect(rect, r, r)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(style['frame_title_color']))
+        painter.drawPath(pathTitle.simplified())
+        
+        # title direct bottom
+        pathTitle = QPainterPath()
+        rect = QRectF(0, -r, self.width, r)
+        pathTitle.addRect(rect)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(style['frame_title_color']))
+        painter.drawPath(pathTitle.simplified())
+
+        if self.isSelected():
+            pathOutline = QPainterPath()
+            rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
+            pathOutline.addRoundedRect(rect, r, r)
+            pen = QPen(QColor(style['selected_color']))
+            pen.setWidth(style['node_outline_width'])
+            painter.setPen(pen)
+            painter.setBrush(Qt.NoBrush)
+            painter.drawPath(pathOutline.simplified())
+
+    def setWidthHeight(self, width, height):
+        width = max(width, style['node_width'])
+        height = max(height, 100)
+        self.width = width
+        self.height = height
+        self.helper.setPos(width, height - TEXT_HEIGHT)
+
+    def dump(self):
+        uipos = self.pos().x(), self.pos().y()
+        data = {
+            'name': self.name,
+            'uipos': uipos,
+            'special': True,
+            'width': self.width,
+            'height': self.height,
+            'title': self.title.toPlainText(),
+        }
+        return {self.ident: data}
+    
+    def load(self, ident, data):
+        name = data['name']
+        posx, posy = data['uipos']
+
+        self.initSockets()
+        self.setIdent(ident)
+        self.setName(name)
+        self.setPos(posx, posy)
+        self.setWidthHeight(data['width'], data['height'])
+
+        self.title.setPlainText(data['title'])
+
+        edges = []
+        return edges
 
 class QDMGraphicsNode(QGraphicsItem):
     def __init__(self, parent=None):
@@ -1149,6 +1262,68 @@ class QDMGraphicsNode(QGraphicsItem):
             for edge in socket.edges:
                 edge.updatePath()
 
+    def dump(self):
+        node = self
+        inputs = {}
+        for name, socket in node.inputs.items():
+            assert not socket.isOutput
+            data = None
+            if socket.hasAnyEdge():
+                srcSocket = socket.getTheOnlyEdge().srcSocket
+                data = srcSocket.node.ident, srcSocket.name
+            inputs[name] = data
+
+        params = {}
+        for name, param in node.params.items():
+            value = param.getValue()
+            params[name] = value
+
+        uipos = node.pos().x(), node.pos().y()
+        options = node.getOptions()
+
+        data = {
+            'name': node.name,
+            'inputs': inputs,
+            'params': params,
+            'uipos': uipos,
+            'options': options,
+        }
+        return {node.ident: data}
+    
+    def load(self, ident, data):
+        node = self
+        name = data['name']
+        inputs = data['inputs']
+        params = data['params']
+        posx, posy = data['uipos']
+        options = data.get('options', [])
+
+        node.initSockets()
+        node.setIdent(ident)
+        node.setName(name)
+        node.setPos(posx, posy)
+        node.setOptions(options)
+
+        for name, value in params.items():
+            if name not in node.params:
+                print('no param named [{}] for [{}]'.format(
+                    name, nodes[ident]['name']))
+                continue
+            param = node.params[name]
+            param.setValue(value)
+
+        edges = []
+        for name, input in inputs.items():
+            if input is None:
+                continue
+            if name not in node.inputs:
+                print('no input named [{}] for [{}]'.format(
+                    name, nodes[ident]['name']))
+                continue
+            dest = node.inputs[name]
+            edges.append((dest, input))
+        return edges
+
 
 class QDMFileMenu(QMenu):
     def __init__(self):
@@ -1230,7 +1405,6 @@ class NodeEditor(QWidget):
         self.initDescriptors()
 
         self.newProgram()
-        self.handleEnvironParams()
 
     def clearScenes(self):
         self.scenes.clear()
@@ -1268,6 +1442,12 @@ class NodeEditor(QWidget):
         if os.environ.get('ZEN_DOEXEC'):
             print('ZEN_DOEXEC found, direct execute')
             self.on_execute()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.handleEnvironParams()
+        #self.scene().trans_x = self.horizontalScrollBar().value()
+        #self.scene().trans_y = self.verticalScrollBar().value()
 
     def initShortcuts(self):
         self.msgF5 = QShortcut(QKeySequence('F5'), self)
@@ -1332,6 +1512,14 @@ class NodeEditor(QWidget):
         descs = zenapi.getDescriptors()
         subg_descs = self.getSubgraphDescs()
         descs.update(subg_descs)
+        descs.update({
+            'Frame': {
+                'inputs': [],
+                'outputs': [],
+                'params': [],
+                'categories': ['layout'],
+            } 
+        })
         self.setDescriptors(descs)
 
     def on_add(self):

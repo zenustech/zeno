@@ -1,4 +1,4 @@
-O=arts/testzfx.zsg
+O=arts/testnbodyzfx.zsg
 
 default: run
 

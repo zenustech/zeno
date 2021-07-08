@@ -12,13 +12,15 @@
 #include <map>
 #include <set>
 
-using std::cout;
-using std::cerr;
-using std::endl;
+template <class ...Ts>
+static void error(Ts &&...ts) {
+    (std::cerr << "ERROR: " << ... << ts) << std::endl;
+    exit(-1);
+}
 
 struct Token {
     enum class Type {
-        op, mem, reg, imm, func, none,
+        op, mem, reg, imm, call, none,
     } type;
     std::string ident;
 
@@ -146,7 +148,7 @@ private:
     bool parse_funcall() {  // funcall := symbol "(" [expr ["," expr]*]? ")"
         if (token->type == Token::Type::reg) {
             auto opToken = *token++;
-            opToken.type = Token::Type::func;
+            opToken.type = Token::Type::call;
             if (token->is_op({"("})) {
                 token++;
                 if (token->is_op({")"})) {
@@ -308,11 +310,11 @@ struct Transcriptor {
         std::string rvalue;
     };
 
-    int regid = 0;
+    int tmpid = 0;
 
     std::string alloc_register() {
         char buf[233];
-        sprintf(buf, "$%d", regid++);
+        sprintf(buf, "$_Tm%d", tmpid++);
         return buf;
     }
 
@@ -321,7 +323,7 @@ struct Transcriptor {
     std::string get_register(std::string const &name) {
         auto it = regalloc.find(name);
         if (it == regalloc.end()) {
-            auto reg = alloc_register();
+            auto reg = "$" + name;
             regalloc[name] = reg;
             return reg;
         }
@@ -368,6 +370,13 @@ struct Transcriptor {
                 res += " " + lvalue(vis);
             }
             return make_visit("", res);
+        } else if (ast->token.type == Token::Type::call) {
+            auto res = ast->token.ident;
+            for (auto const &arg: ast->args) {
+                auto vis = visit(arg.get());
+                res += " " + lvalue(vis);
+            }
+            return make_visit("", res);
         } else if (ast->token.type == Token::Type::mem) {
             return make_visit("@" + ast->token.ident, "");
         } else if (ast->token.type == Token::Type::reg) {
@@ -385,12 +394,43 @@ struct Transcriptor {
     }
 };
 
+static std::string tag_dim(std::string const &exp, int d) {
+    if (exp[0] == '#')
+        return exp;
+    if (strchr(exp.c_str(), '.')) {
+        return exp;
+    }
+    char buf[233];
+    sprintf(buf, "%s.%d", exp.c_str(), d);
+    return buf;
+}
+
 static std::string opchar_to_name(std::string const &op) {
     if (op == "+") return "add";
     if (op == "-") return "sub";
     if (op == "*") return "mul";
     if (op == "/") return "div";
     return op;
+}
+
+static std::string promote_type(std::string const &lhs,
+    std::string const &rhs) {
+    if (lhs[0] != rhs[0]) {
+        error("cannot implicit promote type: ", lhs[0], " <=> ", rhs[0]);
+    }
+    char stype = lhs[0];
+    char dim = 0;
+    if (lhs[1] == '1') {
+        dim = rhs[1];
+    } else if (rhs[1] == '1') {
+        dim = lhs[1];
+    } else {
+        if (lhs[1] != rhs[1]) {
+            error("vector dimension mismatch: ", lhs[1], " != ", rhs[1]);
+        }
+        dim = lhs[1];
+    }
+    return std::string() + stype + dim;
 }
 
 static int get_digit(char c) {
@@ -401,73 +441,70 @@ static char put_digit(int n) {
     return n <= 9 ? n + '0' : n - 10 + 'A';
 }
 
-template <class ...Ts>
-static void error(Ts &&...ts) {
-    (cerr << "ERROR: " << ... << ts) << endl;
-    exit(-1);
-}
-
-struct UnwrapPass {
-    std::map<std::string, std::string> typing;
+struct InitialPass {
     std::stringstream oss;
 
-    void set_typing(std::map<std::string, std::string> const &typ) {
-        for (auto const &[symb, type]: typ) {
-            typing['@' + symb] = type;
-        }
-    }
-
-    std::string determine_type(std::string const &exp) const {
-        if (exp[0] == '#') {
-            return strchr(exp.substr(1).c_str(), '.') ? "f1" : "i1";
-        }
-        auto it = typing.find(exp);
-        if (it == typing.end()) {
-            error("cannot determine type of ", exp);
-        }
-        return it->second;
-    }
-
-    std::string tag_dim(std::string const &exp, int d) const {
-        if (exp[0] == '#')
-            return exp;
-        char buf[233];
-        sprintf(buf, "%s.%d", exp.c_str(), d);
-        return buf;
-    }
-
-    void emit_op(std::string const &opcode, std::string const &dst,
-        std::vector<std::string> const &args) {
-        auto dsttype = determine_type(dst);
-        int dim = get_digit(dsttype[1]);
-        for (int d = 0; d < dim; d++) {
+    void parse(std::string const &lines) {
+        for (auto const &line: split_str(lines, '\n')) {
+            if (line.size() == 0) return;
+            auto ops = split_str(line, ' ');
+            auto opcode = ops[0];
+            std::vector<std::string> args;
+            for (int i = 1; i < ops.size() - 1; i++) {
+                auto arg = ops[i];
+                args.push_back(arg);
+            }
+            auto dst = ops[ops.size() - 1];
             auto opinst = opchar_to_name(opcode);
-            if (dsttype[0] != 'f')
-                opinst = dsttype[0] + opinst;
-            oss << opinst << " " << tag_dim(dst, d);
-            for (auto const &arg: args) {
-                auto argdim = get_digit(determine_type(arg)[1]);
-                oss << " " << tag_dim(arg, d % argdim);
+            oss << opinst << " " << dst;
+            for (int i = 0; i < args.size(); i++) {
+                oss << " " << args[i];
             }
             oss << '\n';
         }
     }
 
-    static std::string promote_type(std::string const &lhs,
-        std::string const &rhs) {
-        char stype = lhs[0] <= rhs[0] ? lhs[0] : rhs[0];
-        char dim = 0;
-        if (lhs[1] == '1') {
-            dim = rhs[1];
-        } else if (rhs[1] == '1') {
-            dim = lhs[1];
-        } else {
-            if (lhs[1] != rhs[1]) {
-                error("vector dimension mismatch: ", lhs[1], " != ", rhs[1]);
-            }
-            dim = lhs[1];
+    std::string dump() const {
+        return oss.str();
+    }
+};
+
+struct TypeCheck {
+    std::map<std::string, std::string> typing;
+    std::stringstream oss;
+
+    void set_parser_typing(std::map<std::string, std::string> const &typ) {
+        for (auto const &[symb, type]: typ) {
+            typing['@' + symb] = type;
         }
-        return std::string() + stype + dim;
+    }
+
+    std::string dump_typing() {
+        oss.clear();
+        for (auto const &[sym, type]: typing) {
+            oss << "define " << type << " " << sym << '\n';
+        }
+        return oss.str();
+    }
+
+    std::string determine_type(std::string const &exp) const {
+        if (exp[0] == '#') {
+            return "f1";
+        }
+        auto exps = split_str(exp, '.');
+        if (exps.size() == 2) {
+            auto it = typing.find(exps[0]);
+            if (it == typing.end()) {
+                error("cannot determine type of ", exp);
+            }
+            return it->second;
+        }
+
+        auto it = typing.find(exp);
+        if (it == typing.end()) {
+            error("cannot determine type of ", exp);
+        }
+        return it->second;
     }
 
     void op_promote_type(std::string const &dst,
@@ -498,66 +535,33 @@ struct UnwrapPass {
             auto ops = split_str(line, ' ');
             auto opcode = ops[0];
             std::vector<std::string> argtypes;
-            for (int i = 1; i < ops.size() - 1; i++) {
+            for (int i = 2; i < ops.size(); i++) {
                 auto arg = ops[i];
                 auto type = determine_type(arg);
                 argtypes.push_back(type);
             }
-            auto dst = ops[ops.size() - 1];
+            auto dst = ops[1];
             op_promote_type(dst, opcode, argtypes);
         }
     }
-
-    void emission(std::string const &lines) {
-        for (auto const &line: split_str(lines, '\n')) {
-            if (line.size() == 0) return;
-            auto ops = split_str(line, ' ');
-            auto opcode = ops[0];
-            std::vector<std::string> args;
-            for (int i = 1; i < ops.size() - 1; i++) {
-                auto arg = ops[i];
-                args.push_back(arg);
-            }
-            auto dst = ops[ops.size() - 1];
-            emit_op(opcode, dst, args);
-        }
-    }
-
-    void parse(std::string const &lines) {
-        type_check(lines);
-        emission(lines);
-    }
-
-    std::string dump() const {
-        return oss.str();
-    }
-
-    auto const &get_typing() const {
-        return typing;
-    }
 };
 
-struct UntypePass {
+struct UnfuncPass : TypeCheck {
     std::stringstream oss;
-    std::map<std::string, char> typing;
 
-    void set_typing(std::map<std::string, std::string> const &uwTyping) {
-        for (auto const &[exp, type]: uwTyping) {
-            auto dim = get_digit(type[1]);
-            auto ptype = type[0];
-            for (int d = 0; d < dim; d++) {
-                char buf[233];
-                sprintf(buf, "%s.%d", exp.c_str(), d);
-                //printf("deftype %s %c\n", buf, ptype);
-                typing[buf] = ptype;
-            }
-        }
-    }
-
-    char determine_type(std::string const &exp) const {
+    std::string determine_type(std::string const &exp) const {
         if (exp[0] == '#') {
-            return strchr(exp.substr(1).c_str(), '.') ? 'f' : 'i';
+            return "f1";
         }
+        auto exps = split_str(exp, '.');
+        if (exps.size() == 2) {
+            auto it = typing.find(exps[0]);
+            if (it == typing.end()) {
+                error("cannot determine component type of ", exp);
+            }
+            return it->second;
+        }
+
         auto it = typing.find(exp);
         if (it == typing.end()) {
             error("cannot determine type of ", exp);
@@ -566,36 +570,105 @@ struct UntypePass {
     }
 
     int tmpid = 0;
-    std::string emit_cast(char src, char dst, std::string const &exp) {
-        char tmp[233];
-        sprintf(tmp, "$tmp%d", tmpid++);
-        oss << "cvt" << dst << src << " " << tmp << " " << exp << '\n';
-        return tmp;
+    std::string alloc_register() {
+        char buf[233];
+        sprintf(buf, "$_Tp%d", tmpid++);
+        return buf;
+    }
+
+    void emit_op(std::string const &opcode, std::string const &dst,
+        std::vector<std::string> const &args) {
+
+        if (opcode == "rsqrt") {
+            auto tmp = alloc_register();
+            emit_op("sqrt", tmp, args);
+            emit_op("div", dst, {"#1", tmp});
+            return;
+
+        } else if (opcode == "dot") {
+            if (args.size() != 2) error("dot takes exactly 2 arguments\n");
+            auto lhs = args[0], rhs = args[1];
+            auto dim = get_digit(determine_type(lhs)[1]);
+            auto ldim = get_digit(determine_type(rhs)[1]);
+            if (dim != ldim) {
+                error("vector dimension mismatch for dot: ", dim, " ", ldim);
+            }
+            for (int d = 0; d < dim; d++) {
+                auto tmp = alloc_register();
+                emit_op("mul", d == 0 ? dst : tmp,
+                    {tag_dim(lhs, d), tag_dim(rhs, d)});
+                if (d != 0)
+                    emit_op("add", dst, {dst, tmp});
+            }
+            return;
+
+        } else if (opcode == "length") {
+            if (args.size() != 1) error("length takes exactly 1 argument\n");
+            auto src = args[0];
+            emit_op("dot", dst, {src, src});
+            emit_op("sqrt", dst, {dst});
+            return;
+        }
+
+        oss << opcode << " " << dst;
+        for (int i = 0; i < args.size(); i++) {
+            oss << " " << args[i];
+        }
+        oss << '\n';
     }
 
     void parse(std::string const &lines) {
+        type_check(lines);
         for (auto const &line: split_str(lines, '\n')) {
             if (line.size() == 0) return;
             auto ops = split_str(line, ' ');
             auto opcode = ops[0];
-            auto dst = ops[1];
             std::vector<std::string> args;
             for (int i = 2; i < ops.size(); i++) {
                 auto arg = ops[i];
                 args.push_back(arg);
             }
-            auto dsttype = determine_type(dst);
-            for (int i = 0; i < args.size(); i++) {
-                auto argtype = determine_type(args[i]);
-                if (argtype != dsttype && args[i][0] != '#') {
-                    args[i] = emit_cast(argtype, dsttype, args[i]);
-                }
-            }
-            oss << opcode << " " << dst;
-            for (int i = 0; i < args.size(); i++) {
-                oss << " " << args[i];
+            auto dst = ops[1];
+            emit_op(opcode, dst, args);
+        }
+    }
+
+    std::string dump() const {
+        return oss.str();
+    }
+};
+
+struct UnwrapPass : TypeCheck {
+    std::stringstream oss;
+
+    void emit_op(std::string const &opcode, std::string const &dst,
+        std::vector<std::string> const &args) {
+        auto dsttype = determine_type(dst);
+        int dim = get_digit(dsttype[1]);
+        for (int d = 0; d < dim; d++) {
+            auto opinst = opcode;
+            oss << opinst << " " << tag_dim(dst, d);
+            for (auto const &arg: args) {
+                auto argdim = get_digit(determine_type(arg)[1]);
+                oss << " " << tag_dim(arg, d % argdim);
             }
             oss << '\n';
+        }
+    }
+
+    void parse(std::string const &lines) {
+        type_check(lines);
+        for (auto const &line: split_str(lines, '\n')) {
+            if (line.size() == 0) return;
+            auto ops = split_str(line, ' ');
+            auto opcode = ops[0];
+            std::vector<std::string> args;
+            for (int i = 2; i < ops.size(); i++) {
+                auto arg = ops[i];
+                args.push_back(arg);
+            }
+            auto dst = ops[1];
+            emit_op(opcode, dst, args);
         }
     }
 
@@ -659,7 +732,7 @@ struct ReassignPass {
     std::string dump() const {
         std::stringstream os;
         for (auto const &[key, id]: memories) {
-            os << "bind " << id << " " << key << endl;
+            os << "bind " << id << " " << key << std::endl;
         }
         os << oss.str();
         return os.str();
@@ -667,57 +740,65 @@ struct ReassignPass {
 };
 
 
-//#define PRINT_IR
+#define PRINT_IR
 std::string zfx_to_assembly(std::string const &code) {
 #ifdef PRINT_IR
-    cout << "===" << endl;
-    cout << code << endl;
-    cout << "===" << endl;
+    std::cout << "=== ZFX" << std::endl;
+    std::cout << code << std::endl;
+    std::cout << "=== Parser" << std::endl;
 #endif
 
     Parser p(code);
     auto asts = p.parse();
 #ifdef PRINT_IR
     for (auto const &ast: asts) {
-        cout << ast->dump() << endl;
+        std::cout << ast->dump() << std::endl;
     }
-    cout << "===" << endl;
+    std::cout << "=== Transcriptor" << std::endl;
 #endif
 
-    Transcriptor t;
+    Transcriptor ts;
     for (auto const &ast: asts) {
-        t.visit(ast.get());
+        ts.visit(ast.get());
     }
-    auto ir = t.dump();
+    auto tsir = ts.dump();
 #ifdef PRINT_IR
-    cout << ir;
-    cout << "===" << endl;
+    std::cout << tsir;
+    std::cout << "=== InitialPass" << std::endl;
+#endif
+
+    InitialPass inp;
+    inp.parse(tsir);
+    auto inir = inp.dump();
+#ifdef PRINT_IR
+    std::cout << inir;
+    std::cout << "=== UnfuncPass" << std::endl;
+#endif
+
+    UnfuncPass ufp;
+    ufp.set_parser_typing(p.get_typing());
+    ufp.parse(inir);
+    auto ufir = ufp.dump();
+#ifdef PRINT_IR
+    std::cout << ufir;
+    std::cout << "=== UnwrapPass" << std::endl;
 #endif
 
     UnwrapPass uwp;
-    uwp.set_typing(p.get_typing());
-    uwp.parse(ir);
+    uwp.set_parser_typing(p.get_typing());
+    uwp.parse(ufir);
     auto uwir = uwp.dump();
 #ifdef PRINT_IR
-    cout << uwir;
-    cout << "===" << endl;
-#endif
-
-    UntypePass utp;
-    utp.set_typing(uwp.get_typing());
-    utp.parse(uwir);
-    auto utir = utp.dump();
-#ifdef PRINT_IR
-    cout << utir;
-    cout << "===" << endl;
+    std::cout << uwir;
+    std::cout << "=== ReassignPass" << std::endl;
 #endif
 
     ReassignPass rap;
     rap.parse(uwir);
     auto rair = rap.dump();
 #ifdef PRINT_IR
-    cout << rair;
-    cout << "===" << endl;
+    std::cout << rair;
+    std::cout << "=== Assemble" << std::endl;
 #endif
 
     return rair;

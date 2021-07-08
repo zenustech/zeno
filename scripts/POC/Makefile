@@ -1,4 +1,4 @@
-x=compile
+x=reflect
 
 x: $x.exe Makefile
 	./$<
