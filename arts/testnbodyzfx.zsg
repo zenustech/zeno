@@ -284,6 +284,10 @@
        "fd6a5cdc-PrimitiveRandomizeAttr",
        "prim"
       ],
+      "radius": [
+       "a66decc1-NumericFloat",
+       "value"
+      ],
       "zfxCode": [
        "0f1821eb-MakeMultilineString",
        "value"
@@ -301,12 +305,27 @@
       384.0
      ],
      "options": []
+    },
+    "a66decc1-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": 0.3
+     },
+     "uipos": [
+      995.1999999999998,
+      649.6000000000001
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": 1116,
-    "trans_y": 323
+    "trans_x": 1009,
+    "trans_y": 774
    }
   }
  },
@@ -1467,6 +1486,7 @@
    "inputs": [
     "prim1",
     "prim2",
+    "radius",
     "zfxCode",
     "params",
     "SRC",

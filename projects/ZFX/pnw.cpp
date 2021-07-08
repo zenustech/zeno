@@ -13,11 +13,14 @@ struct Buffer {
     int which = 0;
 };
 
-static void vectors_vectors_wrangle
+template <class F>
+static void vectors_neighbor_wrangle
     ( zfx::Program const *prog
+    , std::vector<zeno::vec3f> const &pos
     , std::vector<Buffer> const &chs
     , std::vector<float> const &pars
     , size_t size1, size_t size2
+    , F const &get_neighbor
     ) {
     if (chs.size() == 0)
         return;
@@ -31,7 +34,7 @@ static void vectors_vectors_wrangle
             if (chs[j].which == 0)
                 ctx.memtable[j] = chs[j].base + chs[j].stride * i1;
         }
-        for (int i2 = 0; i2 < size2; i2++) {
+        for (int i2: get_neighbor(pos[i1])) {
             for (int j = 0; j < chs.size(); j++) {
                 if (chs[j].which == 1)
                     ctx.memtable[j] = chs[j].base + chs[j].stride * i2;
@@ -45,6 +48,7 @@ struct ParticlesNeighborWrangle : zeno::INode {
     virtual void apply() override {
         auto prim1 = get_input<zeno::PrimitiveObject>("prim1");
         auto prim2 = get_input<zeno::PrimitiveObject>("prim2");
+        auto radius = get_input<zeno::NumericObject>("radius")->get<float>();
 
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
         std::ostringstream oss;
@@ -123,14 +127,25 @@ struct ParticlesNeighborWrangle : zeno::INode {
             iob.which = chan[1][0] - 'i';
             chs[i] = iob;
         }
-        vectors_vectors_wrangle(prog, chs, pars, prim1->size(), prim2->size());
+        auto const &p1pos = prim1->attr<zeno::vec3f>("pos");
+        auto const &p2pos = prim2->attr<zeno::vec3f>("pos");
+        vectors_neighbor_wrangle(prog, p1pos,
+            chs, pars, prim1->size(), prim2->size(), [&](zeno::vec3f const &p) {
+                std::vector<int> res;
+                for (int i = 0; i < p2pos.size(); i++) {
+                    if (zeno::length(p2pos[i] - p) < radius) {
+                        res.push_back(i);
+                    }
+                }
+                return res;
+            });
 
         set_output("prim1", std::move(prim1));
     }
 };
 
 ZENDEFNODE(ParticlesNeighborWrangle, {
-    {"prim1", "prim2", "zfxCode", "params"},
+    {"prim1", "prim2", "radius", "zfxCode", "params"},
     {"prim1"},
     {},
     {"zenofx"},

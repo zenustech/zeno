@@ -1,4 +1,4 @@
-x=reflect
+x=sphash
 
 x: $x.exe Makefile
 	./$<
