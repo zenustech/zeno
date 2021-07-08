@@ -1,7 +1,7 @@
 import bpy
 from bpy.utils import register_class, unregister_class
 
-import zenapi
+from zeno import launch
 from zenutils import go
 
 
@@ -71,7 +71,7 @@ class ZensimExecuteOperator(bpy.types.Operator):
 
         graph = dumpBlenderGraph(node_tree)
         scene = {'main': graph}
-        go(zenapi.launchScene, scene, nframes)
+        go(launch.launchScene, scene, nframes)
 
         return {'FINISHED'}
 
