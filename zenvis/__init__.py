@@ -48,7 +48,7 @@ def _frameUpdate():
     frameid = min(frameid, max_frameid - 1)
     core.set_curr_frameid(frameid)
     core.auto_gc_frame_data(status['cache_frames'])
-    print(core.get_valid_frames_list())
+    #print(core.get_valid_frames_list())
 
     global old_frame_files
     frame_files = fileio.getFrameFiles(frameid)
