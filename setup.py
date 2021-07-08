@@ -26,11 +26,14 @@ def treefiles(dir):
             path = os.path.join(dir, name)
             yield from treefiles(path)
 
-data_files = glob('zeno/*.so')
-data_files += glob('zenqt/assets/*')
-data_files += glob('zenvis/*.so')
+data_files = []
+data_files += glob('zeno/*.so')
+data_files += glob('zeno/*.dylib')
 data_files += glob('zeno/*.pyd')
+data_files += glob('zenvis/*.so')
+data_files += glob('zenvis/*.dylib')
 data_files += glob('zenvis/*.pyd')
+data_files += glob('zenqt/assets/*')
 data_files += treefiles('zeno/lib')
 data_files += treefiles('zeno/cmake')
 data_files += treefiles('zeno/include')

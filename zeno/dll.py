@@ -9,6 +9,8 @@ if os_name == 'win32':
     else:
         os.environ['PATH'] += os.pathsep + dllpath
     ctypes.cdll.LoadLibrary('zeno.dll')
+elif os_name == 'darwin':
+    ctypes.cdll.LoadLibrary(rel2abs(__file__, 'lib', 'libzeno.dylib'))
 else:
     ctypes.cdll.LoadLibrary(rel2abs(__file__, 'lib', 'libzeno.so'))
 
