@@ -8,3 +8,6 @@ d: $x.exe Makefile
 
 %.exe: %.cpp Makefile
 	g++ -I../../../include -std=c++17 -ggdb -gstabs+ -O0 -o $@ $<
+
+y:
+	cat test.asm | ./a.sh
