@@ -60,23 +60,64 @@ private:
     std::vector<uint8_t> res;
 
 public:
-    void addAvxMemoryOp(int type, int op, int val, int adr, int mflag,
-        int immadr = 0, int adr2 = 0, int adr2shift = 0) {
+    struct MemoryAddress {
+        int adr, mflag, immadr, adr2, adr2shift;
+
+        MemoryAddress
+        ( int adr
+        , int mflag = memflag::reg
+        , int immadr = 0
+        , int adr2 = 0
+        , int adr2shift = 0
+        )
+        : adr(adr)
+        , mflag(mflag)
+        , immadr(immadr)
+        , adr2(adr2)
+        , adr2shift(adr2shift)
+        {}
+
+        void dump(std::vector<uint8_t> &res, int val) {
+            res.push_back(mflag | val << 3 | adr);
+            if (mflag & memflag::reg_reg) {
+                res.push_back(adr2 | adr2shift << 6);
+            }
+            if (mflag & memflag::reg_imm8) {
+                res.push_back(immadr & 0xff);
+            } else if (mflag & memflag::reg_imm32) {
+                res.push_back(immadr & 0xff);
+                res.push_back(immadr >> 8 & 0xff);
+                res.push_back(immadr >> 16 & 0xff);
+                res.push_back(immadr >> 24 & 0xff);
+            }
+        }
+    };
+
+    void addAvxBroadcastLoadOp(int type, int val, MemoryAddress adr) {
+        res.push_back(0xc5);
+        res.push_back(type | 0x78);
+        res.push_back(0x79 | type << 2 & 0x04);
+        res.push_back(0x18 | type >> 2 & 0x01);
+        adr.dump(res, val);
+    }
+
+    void addAvxMemoryOp(int type, int op, int val, MemoryAddress adr) {
         res.push_back(0xc5);
         res.push_back(type | 0x38);
         res.push_back(op);
-        res.push_back(mflag | val << 3 | adr);
-        if (mflag & memflag::reg_reg) {
-            res.push_back(adr2 | adr2shift << 6);
-        }
-        if (mflag & memflag::reg_imm8) {
-            res.push_back(immadr & 0xff);
-        } else if (mflag & memflag::reg_imm32) {
-            res.push_back(immadr & 0xff);
-            res.push_back(immadr >> 8 & 0xff);
-            res.push_back(immadr >> 16 & 0xff);
-            res.push_back(immadr >> 24 & 0xff);
-        }
+        adr.dump(res, val);
+    }
+
+    void addRegularLoadOp(int val, MemoryAddress adr) {
+        res.push_back(0x48);
+        res.push_back(0x89);
+        adr.dump(res, val);
+    }
+
+    void addRegularStoreOp(int val, MemoryAddress adr) {
+        res.push_back(0x48);
+        res.push_back(0x8b);
+        adr.dump(res, val);
     }
 
     void addAvxBinaryOp(int type, int op, int dst, int lhs, int rhs) {
@@ -158,7 +199,7 @@ public:
         ) {
         auto entry = (void (*)())this->mem;
         asm volatile (
-            "nop; nop; call *%6"
+            "call *%6"
             : "=a" (rax), "=c" (rcx), "=d" (rdx)
             : "a" (rax), "c" (rcx), "d" (rdx)
             , "" (entry)
@@ -170,12 +211,11 @@ public:
 
 int main() {
     SIMDBuilder builder;
-    builder.addAvxMemoryOp(optype::xmmps, opcode::loadu, opreg::mm0,
-        opreg::rdx, memflag::reg);
+    builder.addAvxMemoryOp(optype::xmmps, opcode::loadu, opreg::mm0, opreg::rdx);
     builder.addAvxMoveOp(opreg::mm1, opreg::mm0);
     builder.addAvxUnaryOp(optype::xmmps, opcode::sqrt, opreg::mm2, opreg::mm1);
     builder.addAvxMemoryOp(optype::xmmps, opcode::storeu, opreg::mm2,
-        opreg::rdx, memflag::reg_imm8, 16);
+        {opreg::rdx, memflag::reg_imm8, 16});
     builder.printHexCode();
     builder.addReturn();
 
