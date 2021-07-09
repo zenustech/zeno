@@ -1054,8 +1054,8 @@
      },
      "params": {},
      "uipos": [
-      9671.77684753418,
-      72.30655883789063
+      9795.214347534182,
+      140.66593383789058
      ],
      "options": []
     },
@@ -1214,9 +1214,9 @@
     }
    },
    "view": {
-    "scale": 0.1677721600000001,
-    "trans_x": 835,
-    "trans_y": -209
+    "scale": 0.5120000000000002,
+    "trans_x": 4649,
+    "trans_y": -94
    }
   },
   "FLIPSimTemplate": {
@@ -2054,9 +2054,9 @@
     }
    },
    "view": {
-    "scale": 0.8000000000000005,
-    "trans_x": 5689,
-    "trans_y": -1638
+    "scale": 0.5120000000000001,
+    "trans_x": 1065,
+    "trans_y": -2036
    }
   },
   "makeCollision": {
@@ -4785,6 +4785,25 @@
    "inputs": [
     "prim1",
     "prim2",
+    "zfxCode",
+    "params",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim1",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesNeighborWrangle": {
+   "inputs": [
+    "prim1",
+    "prim2",
+    "radius",
     "zfxCode",
     "params",
     "SRC",
