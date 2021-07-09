@@ -9,6 +9,28 @@
 using std::cout;
 using std::endl;
 
+template <class T>
+struct copiable_unique_ptr : std::unique_ptr<T> {
+    using std::unique_ptr<T>::unique_ptr;
+    using std::unique_ptr<T>::operator=;
+
+    copiable_unique_ptr(std::unique_ptr<T> &&o)
+        : std::unique_ptr<T>(std::move(o)) {
+    }
+
+    copiable_unique_ptr(copiable_unique_ptr const &o)
+        : std::unique_ptr<T>(std::make_unique<T>(
+            static_cast<T const &>(*o))) {
+    }
+
+    operator std::unique_ptr<T> &() { return *this; }
+    operator std::unique_ptr<T> const &() const { return *this; }
+};
+
+
+template <class T>
+copiable_unique_ptr(std::unique_ptr<T> &&o) -> copiable_unique_ptr<T>;
+
 static inline char opchars[] = "+-*/%=";
 
 std::vector<std::string> tokenize(const char *cp) {
@@ -45,29 +67,40 @@ std::vector<std::string> tokenize(const char *cp) {
 }
 
 struct AST {
-    std::string token;
-    std::vector<AST *> args;
+    using Ptr = copiable_unique_ptr<AST>;
 
-    explicit AST(std::string const &token, std::vector<AST *> const &args = {})
-        : token(token), args(args) {}
+    std::string token;
+    std::vector<AST::Ptr> args;
+
+    explicit AST
+        ( std::string const &token_
+        , std::vector<AST::Ptr> const &args_ = {}
+        )
+        : token(std::move(token_))
+        , args(std::move(args_))
+        {}
 };
+
+template <class ...Ts>
+AST::Ptr make_ast(Ts &&...ts) {
+    return std::make_unique<AST>(ts...);
+}
 
 struct Parser {
     std::vector<std::string> tokens;
     typename std::vector<std::string>::iterator token;
-    std::vector<std::unique_ptr<AST>> asts;
+    std::vector<AST::Ptr> asts;
 
     Parser(std::vector<std::string> const &tokens_) : tokens(tokens_) {
         token = tokens.begin();
     }
 
-    void parse_atom() {
-        auto ast = std::make_unique<AST>(*token++);
-        asts.push_back(std::move(ast));
+    AST::Ptr parse_atom() {
+        return make_ast(*token++);
     }
 
-    void parse() {
-        parse_atom();
+    AST::Ptr parse() {
+        return parse_atom();
     }
 };
 
@@ -77,7 +110,7 @@ void print(AST *ast) {
     cout << ast->token;
     for (auto const &a: ast->args) {
         cout << ' ';
-        print(a);
+        print(a.get());
     }
     if (ast->args.size())
         cout << ')';
