@@ -101,6 +101,17 @@ AST::Ptr make_ast(Iter iter, std::vector<AST::Ptr> const &args = {}) {
     return std::make_unique<AST>(iter, args);
 }
 
+bool is_atom(std::string const &s) {
+    if (!s.size()) return false;
+    if (isdigit(s[0]) || s.size() > 1 && s[0] == '-' && isdigit(s[1])) {
+        return true;
+    }
+    if (isalpha(s[0])) {
+        return true;
+    }
+    return false;
+}
+
 struct Parser {
     std::vector<std::string> tokens;
     typename std::vector<std::string>::iterator token;
@@ -113,7 +124,7 @@ struct Parser {
     }
 
     AST::Ptr parse_atom(Iter iter) {
-        if (auto s = *iter; s.size()) {
+        if (auto s = *iter; is_atom(s)) {
             return make_ast(iter);
         }
         return nullptr;
@@ -127,10 +138,29 @@ struct Parser {
         return nullptr;
     }
 
+    AST::Ptr parse_factor(Iter iter) {
+        if (auto a = parse_atom(iter); a) {
+            return a;
+        }
+        if (auto ope = parse_operator(iter, {"+", "-"}); ope) {
+            if (auto rhs = parse_factor(ope->iter + 1); rhs) {
+                return make_ast(ope->iter, {std::move(rhs)});
+            }
+        }
+        if (auto ope = parse_operator(iter, {"("}); ope) {
+            if (auto rhs = parse_expr(ope->iter + 1); rhs) {
+                if (auto ket = parse_operator(rhs->iter, {")"}); ket) {
+                    return make_ast(ope->iter, {std::move(rhs)});
+                }
+            }
+        }
+        return nullptr;
+    }
+
     AST::Ptr parse_term(Iter iter) {
-        if (auto lhs = parse_atom(iter); lhs) {
+        if (auto lhs = parse_factor(iter); lhs) {
             while (1) if (auto ope = parse_operator(lhs->iter + 1, {"*", "/", "%"}); ope) {
-                if (auto rhs = parse_atom(ope->iter + 1); rhs) {
+                if (auto rhs = parse_factor(ope->iter + 1); rhs) {
                     lhs = make_ast(ope->iter, {std::move(lhs), std::move(rhs)});
                     lhs->iter = rhs->iter;
                 }
@@ -190,7 +220,7 @@ void print(AST *ast) {
 }
 
 int main() {
-    std::string code("pos = 1 + 3 * 2 + 1");
+    std::string code("pos = - 1");
     auto tokens = tokenize(code.c_str());
     Parser p(tokens);
     auto asts = p.parse();
