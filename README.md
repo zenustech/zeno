@@ -274,9 +274,9 @@ cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
 to enable them.
 
 ##### Known issues
-
-* The FastFLIP solver only work well with OpenVDB 7.1.3, and have bug in some
-specific scenes with OpenVDB 8.1.
+```diff
+- The FastFLIP solver we know work well with OpenVDB 7.2.3, and have problem with OpenVDB 8.1.
+```
 
 #### GMPM
 
