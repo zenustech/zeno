@@ -12,6 +12,18 @@
 using std::cout;
 using std::endl;
 
+template <int First, int Last, typename Lambda>
+inline constexpr bool static_for(Lambda const &f) {
+    if constexpr (First < Last) {
+        if (f(std::integral_constant<int, First>{})) {
+            return true;
+        } else {
+            return static_for<First + 1, Last>(f);
+        }
+    }
+    return false;
+}
+
 template <class T>
 struct copiable_unique_ptr : std::unique_ptr<T> {
     using std::unique_ptr<T>::unique_ptr;
@@ -249,6 +261,12 @@ void print(AST *ast) {
 
 /* IR statements */
 
+struct Statement;
+
+struct IRVisitor {
+    virtual void visit(Statement *stmt) = 0;
+};
+
 struct Statement {
     const int id;
 
@@ -258,12 +276,21 @@ struct Statement {
         : id(id_)
     {}
 
-    virtual std::string print() {
+    void accept(IRVisitor *visitor) {
+        visitor->visit(this);
+    }
+
+    virtual std::string print() const {
         return format("$%d = Statement");
     }
 };
 
-struct UnaryOpStmt : Statement {
+template <class T>
+struct Stmt : Statement {
+    using Statement::Statement;
+};
+
+struct UnaryOpStmt : Stmt<UnaryOpStmt> {
     std::string op;
     Statement *src;
 
@@ -272,12 +299,12 @@ struct UnaryOpStmt : Statement {
         , std::string op_
         , Statement *src_
         )
-        : Statement(id_)
+        : Stmt(id_)
         , op(op_)
         , src(src_)
     {}
 
-    virtual std::string print() override {
+    virtual std::string print() const override {
         return format(
             "$%d = UnaryOp [%s] $%d"
             , id
@@ -287,7 +314,7 @@ struct UnaryOpStmt : Statement {
     }
 };
 
-struct BinaryOpStmt : Statement {
+struct BinaryOpStmt : Stmt<BinaryOpStmt> {
     std::string op;
     Statement *lhs;
     Statement *rhs;
@@ -298,13 +325,13 @@ struct BinaryOpStmt : Statement {
         , Statement *lhs_
         , Statement *rhs_
         )
-        : Statement(id_)
+        : Stmt(id_)
         , op(op_)
         , lhs(lhs_)
         , rhs(rhs_)
     {}
 
-    virtual std::string print() override {
+    virtual std::string print() const override {
         return format(
             "$%d = BinaryOp [%s] $%d $%d"
             , id
@@ -315,7 +342,7 @@ struct BinaryOpStmt : Statement {
     }
 };
 
-struct AssignStmt : Statement {
+struct AssignStmt : Stmt<AssignStmt> {
     Statement *dst;
     Statement *src;
 
@@ -324,12 +351,12 @@ struct AssignStmt : Statement {
         , Statement *dst_
         , Statement *src_
         )
-        : Statement(id_)
+        : Stmt(id_)
         , dst(dst_)
         , src(src_)
     {}
 
-    virtual std::string print() override {
+    virtual std::string print() const override {
         return format(
             "$%d = Assign $%d $%d"
             , id
@@ -339,18 +366,18 @@ struct AssignStmt : Statement {
     }
 };
 
-struct SymbolStmt : Statement {
+struct SymbolStmt : Stmt<SymbolStmt> {
     std::string name;
 
     SymbolStmt
         ( int id_
         , std::string name_
         )
-        : Statement(id_)
+        : Stmt(id_)
         , name(name_)
     {}
 
-    virtual std::string print() override {
+    virtual std::string print() const override {
         return format(
             "$%d = Symbol [%s]"
             , id
@@ -359,18 +386,18 @@ struct SymbolStmt : Statement {
     }
 };
 
-struct LiterialStmt : Statement {
+struct LiterialStmt : Stmt<LiterialStmt> {
     std::string name;
 
     LiterialStmt
         ( int id_
         , std::string name_
         )
-        : Statement(id_)
+        : Stmt(id_)
         , name(name_)
     {}
 
-    virtual std::string print() override {
+    virtual std::string print() const override {
         return format(
             "$%d = Literial [%s]"
             , id
@@ -381,7 +408,7 @@ struct LiterialStmt : Statement {
 
 /* IR lowering */
 
-struct IRBuilder {
+struct IR {
     std::vector<std::unique_ptr<Statement>> stmts;
 
     template <class T, class ...Ts>
@@ -392,31 +419,46 @@ struct IRBuilder {
         stmts.push_back(std::move(stmt));
         return raw_ptr;
     }
+
+    void print() const {
+        for (auto const &s: stmts) {
+            cout << s->print() << endl;
+        }
+    }
+
+    void accept(IRVisitor *visitor) {
+        for (auto const &stmt: stmts) {
+            stmt->accept(visitor);
+        }
+    }
+
 };
 
-struct LowerAST : IRBuilder {
+struct LowerAST {
+    std::unique_ptr<IR> ir = std::make_unique<IR>();
+
     Statement *serialize(AST *ast) {
         if (0) {
 
         } else if (contains({"+", "-", "*", "/", "%"}, ast->token) && ast->args.size() == 2) {
             auto lhs = serialize(ast->args[0].get());
             auto rhs = serialize(ast->args[1].get());
-            return emplace_back<BinaryOpStmt>(ast->token, lhs, rhs);
+            return ir->emplace_back<BinaryOpStmt>(ast->token, lhs, rhs);
 
         } else if (contains({"+", "-"}, ast->token) && ast->args.size() == 1) {
             auto src = serialize(ast->args[0].get());
-            return emplace_back<UnaryOpStmt>(ast->token, src);
+            return ir->emplace_back<UnaryOpStmt>(ast->token, src);
 
         } else if (contains({"="}, ast->token) && ast->args.size() == 2) {
             auto dst = serialize(ast->args[0].get());
             auto src = serialize(ast->args[1].get());
-            return emplace_back<AssignStmt>(dst, src);
+            return ir->emplace_back<AssignStmt>(dst, src);
 
         } else if (is_symbolic_atom(ast->token) && ast->args.size() == 0) {
-            return emplace_back<SymbolStmt>(ast->token);
+            return ir->emplace_back<SymbolStmt>(ast->token);
 
         } else if (is_literial_atom(ast->token) && ast->args.size() == 0) {
-            return emplace_back<LiterialStmt>(ast->token);
+            return ir->emplace_back<LiterialStmt>(ast->token);
 
         } else {
             error("cannot lower AST at token: `%s` (%d args)\n",
@@ -428,7 +470,26 @@ struct LowerAST : IRBuilder {
 
 /* IR passes */
 
-struct IRVisitor {
+template <class T, class ...Ts>
+struct Visitor : IRVisitor {
+    virtual void visit(Statement *stmt) override {
+        static_for<0, sizeof...(Ts)>([this, stmt] (auto i) {
+            using S = std::tuple_element_t<i, std::tuple<Ts...>>;
+            auto p = dynamic_cast<S *>(stmt);
+            if (!p) return false;
+            reinterpret_cast<T *>(this)->visit(p);
+            return true;
+        });
+    }
+};
+
+struct DemoVisitor : Visitor
+    < DemoVisitor
+    , SymbolStmt
+    > {
+    void visit(SymbolStmt *stmt) {
+        printf("DemoVisitor got symbol: [%s]\n", stmt->name.c_str());
+    }
 };
 
 /* main body */
@@ -452,15 +513,15 @@ int main() {
         cout << endl;
     }
 
-    LowerAST lowerast;
+    LowerAST lower;
     for (auto const &a: asts) {
-        lowerast.serialize(a.get());
+        lower.serialize(a.get());
     }
-    auto stmts = std::move(lowerast.stmts);
+    auto ir = std::move(lower.ir);
+    ir->print();
 
-    for (auto const &s: stmts) {
-        cout << s->print() << endl;
-    }
+    DemoVisitor demo;
+    ir->accept(&demo);
 
     cout << "==============" << endl;
     return 0;
