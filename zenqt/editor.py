@@ -1544,15 +1544,6 @@ class NodeEditor(QWidget):
         self.button_delete.clicked.connect(self.deleteCurrScene)
 
     def on_switch_graph(self, name):
-        # if self.current_path is not None:
-        #     self.do_save(self.current_path)
-        # else:
-        #     path = self.getSaveFileName()
-        #     self.current_path = path
-        #     self.do_save(self.current_path)
-        # self.do_open(self.current_path)
-        # self.updateSubgraph()
-        # self.updateSubgraph()
         self.switchScene(name)
         self.initDescriptors()
         self.edit_graphname.setCurrentText(name)
@@ -1578,7 +1569,7 @@ class NodeEditor(QWidget):
                 'outputs': [],
                 'params': [],
                 'categories': ['layout'],
-            } 
+            },
         })
         self.setDescriptors(descs)
 
