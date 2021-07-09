@@ -148,7 +148,8 @@ struct Parser {
         if (auto ope = parse_operator(iter, {"("}); ope) {
             if (auto rhs = parse_expr(ope->iter); rhs) {
                 if (auto ket = parse_operator(rhs->iter, {")"}); ket) {
-                    return make_ast(ope->token, ket->iter, {std::move(rhs)});
+                    rhs->iter = ket->iter;
+                    return rhs;
                 }
             }
         }
@@ -216,7 +217,7 @@ void print(AST *ast) {
 }
 
 int main() {
-    std::string code("pos = 2 + x");
+    std::string code("pos = 1 + (2 + x*4) * 3");
     cout << code << endl;
 
     cout << "==============" << endl;
