@@ -64,6 +64,26 @@ template <class ...Ts>
 static char opchars[] = "+-*/%=()";
 static std::string opstrs[] = {"+", "-", "*", "/", "%", "=", "(", ")"};
 
+bool is_literial_atom(std::string const &s) {
+    if (!s.size()) return false;
+    if (isdigit(s[0]) || s.size() > 1 && s[0] == '-' && isdigit(s[1])) {
+        return true;
+    }
+    return false;
+}
+
+bool is_symbolic_atom(std::string const &s) {
+    if (!s.size()) return false;
+    if (isalpha(s[0])) {
+        return true;
+    }
+    return false;
+}
+
+bool is_atom(std::string const &s) {
+    return is_literial_atom(s) || is_symbolic_atom(s);
+}
+
 std::vector<std::string> tokenize(const char *cp) {
     std::vector<std::string> tokens;
     while (1) {
@@ -97,7 +117,7 @@ std::vector<std::string> tokenize(const char *cp) {
     return tokens;
 }
 
-/* ast parser */
+/* AST parser */
 
 using Iter = typename std::vector<std::string>::iterator;
 
@@ -121,26 +141,6 @@ struct AST {
 
 AST::Ptr make_ast(std::string const &token, Iter iter, std::vector<AST::Ptr> const &args = {}) {
     return std::make_unique<AST>(token, iter, args);
-}
-
-bool is_literial_atom(std::string const &s) {
-    if (!s.size()) return false;
-    if (isdigit(s[0]) || s.size() > 1 && s[0] == '-' && isdigit(s[1])) {
-        return true;
-    }
-    return false;
-}
-
-bool is_symbolic_atom(std::string const &s) {
-    if (!s.size()) return false;
-    if (isalpha(s[0])) {
-        return true;
-    }
-    return false;
-}
-
-bool is_atom(std::string const &s) {
-    return is_literial_atom(s) || is_symbolic_atom(s);
 }
 
 struct Parser {
@@ -247,7 +247,7 @@ void print(AST *ast) {
         cout << ')';
 }
 
-/* ast serializer */
+/* IR statements */
 
 struct Statement {
     const int id;
@@ -379,6 +379,8 @@ struct LiterialStmt : Statement {
     }
 };
 
+/* IR lowering */
+
 struct IRBuilder {
     std::vector<std::unique_ptr<Statement>> stmts;
 
@@ -390,7 +392,9 @@ struct IRBuilder {
         stmts.push_back(std::move(stmt));
         return raw_ptr;
     }
+};
 
+struct LowerAST : IRBuilder {
     Statement *serialize(AST *ast) {
         if (0) {
 
@@ -422,6 +426,11 @@ struct IRBuilder {
     }
 };
 
+/* IR passes */
+
+struct IRVisitor {
+};
+
 /* main body */
 
 int main() {
@@ -443,11 +452,11 @@ int main() {
         cout << endl;
     }
 
-    IRBuilder builder;
+    LowerAST lowerast;
     for (auto const &a: asts) {
-        builder.serialize(a.get());
+        lowerast.serialize(a.get());
     }
-    auto stmts = std::move(builder.stmts);
+    auto stmts = std::move(lowerast.stmts);
 
     for (auto const &s: stmts) {
         cout << s->print() << endl;
