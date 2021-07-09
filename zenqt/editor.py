@@ -1216,9 +1216,9 @@ class QDMGraphicsNode(QGraphicsItem):
         w = style['line_width']
         hw = w / 2
 
+        y = 0 if self.collapsed else self.height
         # title background
         pathTitle = QPainterPath()
-        y = 0 if self.collapsed else self.height
         rect = QRectF(0 + hw, y + hw, 203 - w, 36 - w)
         pathTitle.addRect(rect)
         painter.setPen(pen)
@@ -1226,11 +1226,17 @@ class QDMGraphicsNode(QGraphicsItem):
         painter.drawPath(pathTitle.simplified())
 
         pathTitle = QPainterPath()
-        y = 0 if self.collapsed else self.height
         rect = QRectF(204 + hw, y + hw, 36 - w, 36 - w)
         pathTitle.addRect(rect)
         painter.setPen(pen)
         painter.setBrush(QColor(style['title_color']))
+        painter.drawPath(pathTitle.simplified())
+
+        pathTitle = QPainterPath()
+        rect = QRectF(0, -42, 240, 42)
+        pathTitle.addRect(rect)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor('#638E77'))
         painter.drawPath(pathTitle.simplified())
 
         if not self.collapsed:
@@ -1259,8 +1265,6 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.collapsed = True
         self.collapse_button.update_svg()
-        for v in self.options.values():
-            v.hide()
         for v in self.params.values():
             v.hide()
         for v in self.inputs.values():
@@ -1281,8 +1285,6 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.collapsed = False
         self.collapse_button.update_svg()
-        for v in self.options.values():
-            v.show()
         for v in self.params.values():
             v.show()
         for v in self.inputs.values():
