@@ -5,6 +5,7 @@
 #include <cstring>
 #include <iostream>
 #include <memory>
+#include <set>
 
 using std::cout;
 using std::endl;
@@ -27,9 +28,13 @@ struct copiable_unique_ptr : std::unique_ptr<T> {
     operator std::unique_ptr<T> const &() const { return *this; }
 };
 
-
 template <class T>
 copiable_unique_ptr(std::unique_ptr<T> &&o) -> copiable_unique_ptr<T>;
+
+template <class T>
+bool contains(std::set<T> const &list, T const &value) {
+    return list.find(value) != list.end();
+}
 
 static inline char opchars[] = "+-*/%=";
 
@@ -67,24 +72,27 @@ std::vector<std::string> tokenize(const char *cp) {
     return tokens;
 }
 
+using Iter = typename std::vector<std::string>::iterator;
+
 struct AST {
     using Ptr = copiable_unique_ptr<AST>;
 
+    Iter iter;
     std::string token;
     std::vector<AST::Ptr> args;
 
     explicit AST
-        ( std::string const &token_
+        ( Iter iter_
         , std::vector<AST::Ptr> const &args_ = {}
         )
-        : token(std::move(token_))
+        : iter(std::move(iter_))
+        , token(*iter_)
         , args(std::move(args_))
         {}
 };
 
-template <class ...Ts>
-AST::Ptr make_ast(Ts &&...ts) {
-    return std::make_unique<AST>(ts...);
+AST::Ptr make_ast(Iter iter, std::vector<AST::Ptr> const &args = {}) {
+    return std::make_unique<AST>(iter, args);
 }
 
 struct Parser {
@@ -96,20 +104,41 @@ struct Parser {
         )
         : tokens(tokens_)
     {
-        token = tokens.begin();
     }
 
-    AST::Ptr parse_atom() {
-        auto id = *token++;
-        if (!id.size()) return nullptr;
-        return make_ast(id);
+    AST::Ptr parse_atom(Iter iter) {
+        if (auto s = *iter; s.size()) {
+            return make_ast(iter);
+        }
+        return nullptr;
+    }
+
+    AST::Ptr parse_operator(Iter iter, std::set<std::string> const &allows) {
+        if (auto s = *iter; contains(allows, s)) {
+            return make_ast(iter);
+        }
+        token--;
+        return nullptr;
+    }
+
+    AST::Ptr parse_stmt(Iter iter) {
+        if (auto lhs = parse_atom(iter); lhs) {
+            if (auto ope = parse_operator(lhs->iter + 1, {"="}); ope) {
+                if (auto rhs = parse_atom(ope->iter + 1); rhs) {
+                    return make_ast(ope->iter, {std::move(lhs), std::move(rhs)});
+                }
+            }
+        }
+        return nullptr;
     }
 
     auto parse() {
         std::vector<AST::Ptr> asts;
-        while (1) {
-            auto p = parse_atom();
+        Iter iter = tokens.begin();
+        while (iter != tokens.end()) {
+            auto p = parse_stmt(iter);
             if (!p) break;
+            iter = p->iter + 1;
             asts.push_back(std::move(p));
         }
         return asts;
