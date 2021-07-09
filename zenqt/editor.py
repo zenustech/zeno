@@ -19,7 +19,7 @@ CURR_VERSION = 'v1'
 MAX_STACK_LENGTH = 100
 
 style = {
-    'title_color': '#638e77',
+    'title_color': '#1e1e1e',
     'socket_connect_color': '#638e77',
     'socket_unconnect_color': '#4a4a4a',
     'title_text_color': '#FFFFFF',
@@ -1124,7 +1124,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.dummy_input_socket = s
         self.dummy_input_socket.hide()
 
-        w = style['node_width']
+        w = 240
         s = QDMGraphicsSocket(self)
         s.setPos(w + offset, h)
         s.setIsOutput(False)
@@ -1199,7 +1199,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.height = y
 
         self.title.setPos(HORI_MARGIN * 2, self.height)
-        self.collapse_button.setPos(HORI_MARGIN * 0.5, self.height + TEXT_HEIGHT * 0.16)
+        self.collapse_button.setPos(204, self.height + TEXT_HEIGHT * 0.16)
 
     def boundingRect(self):
         h = TEXT_HEIGHT if self.collapsed else self.height
@@ -1208,12 +1208,28 @@ class QDMGraphicsNode(QGraphicsItem):
     def paint(self, painter, styleOptions, widget=None):
         r = style['node_rounded_radius']
 
+        title_outline_color = '#787878'
+
+        pen = QPen(QColor(title_outline_color))
+        pen.setWidth(style['line_width'])
+        pen.setJoinStyle(Qt.MiterJoin)
+        w = style['line_width']
+        hw = w / 2
+
         # title background
         pathTitle = QPainterPath()
         y = 0 if self.collapsed else self.height
-        rect = QRectF(0, y, self.width, TEXT_HEIGHT)
+        rect = QRectF(0 + hw, y + hw, 203 - w, 36 - w)
         pathTitle.addRect(rect)
-        painter.setPen(Qt.NoPen)
+        painter.setPen(pen)
+        painter.setBrush(QColor(style['title_color']))
+        painter.drawPath(pathTitle.simplified())
+
+        pathTitle = QPainterPath()
+        y = 0 if self.collapsed else self.height
+        rect = QRectF(204 + hw, y + hw, 36 - w, 36 - w)
+        pathTitle.addRect(rect)
+        painter.setPen(pen)
         painter.setBrush(QColor(style['title_color']))
         painter.drawPath(pathTitle.simplified())
 
@@ -1257,7 +1273,7 @@ class QDMGraphicsNode(QGraphicsItem):
                 edge.updatePath()
 
         self.title.setPos(HORI_MARGIN * 2, 0)
-        self.collapse_button.setPos(HORI_MARGIN * 0.5, TEXT_HEIGHT * 0.16)
+        self.collapse_button.setPos(204, TEXT_HEIGHT * 0.16)
 
     def unfold(self):
         self.dummy_input_socket.hide()
@@ -1279,7 +1295,7 @@ class QDMGraphicsNode(QGraphicsItem):
                 edge.updatePath()
 
         self.title.setPos(HORI_MARGIN * 2, self.height)
-        self.collapse_button.setPos(HORI_MARGIN * 0.5, self.height + TEXT_HEIGHT * 0.16)
+        self.collapse_button.setPos(204, self.height + TEXT_HEIGHT * 0.16)
 
     def dump(self):
         node = self
