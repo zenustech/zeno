@@ -127,17 +127,27 @@ struct Parser {
         return nullptr;
     }
 
-    AST::Ptr parse_expr(Iter iter) {
+    AST::Ptr parse_term(Iter iter) {
         if (auto lhs = parse_atom(iter); lhs) {
-            while (1) {
-                if (auto ope = parse_operator(lhs->iter + 1, {"+", "-"}); ope) {
-                    if (auto rhs = parse_atom(iter); rhs) {
-                        lhs = make_ast(ope->iter, {std::move(lhs), std::move(rhs)});
-                    }
-                } else {
-                    break;
+            while (1) if (auto ope = parse_operator(lhs->iter + 1, {"*", "/", "%"}); ope) {
+                if (auto rhs = parse_atom(ope->iter + 1); rhs) {
+                    lhs = make_ast(ope->iter, {std::move(lhs), std::move(rhs)});
+                    lhs->iter = rhs->iter;
                 }
-            }
+            } else break;
+            return lhs;
+        }
+        return nullptr;
+    }
+
+    AST::Ptr parse_expr(Iter iter) {
+        if (auto lhs = parse_term(iter); lhs) {
+            while (1) if (auto ope = parse_operator(lhs->iter + 1, {"+", "-"}); ope) {
+                    if (auto rhs = parse_term(ope->iter + 1); rhs) {
+                        lhs = make_ast(ope->iter, {std::move(lhs), std::move(rhs)});
+                        lhs->iter = rhs->iter;
+                    }
+            } else break;
             return lhs;
         }
         return nullptr;
@@ -180,7 +190,7 @@ void print(AST *ast) {
 }
 
 int main() {
-    std::string code("pos = 1 * 3");
+    std::string code("pos = 1 + 3 * 2 + 1");
     auto tokens = tokenize(code.c_str());
     Parser p(tokens);
     auto asts = p.parse();
