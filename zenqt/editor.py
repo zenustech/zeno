@@ -45,7 +45,7 @@ style = {
     'socket_outline_width': 2,
     'node_rounded_radius': 6,
     'socket_radius': 8,
-    'node_width': 200,
+    'node_width': 240,
     'text_height': 23,
     'copy_offset_x': 100,
     'copy_offset_y': 100,
@@ -1240,24 +1240,16 @@ class QDMGraphicsNode(QGraphicsItem):
         painter.drawPath(pathTitle.simplified())
 
         if not self.collapsed:
+            pen = QPen(QColor('#4a4a4a'))
+            pen.setWidth(style['line_width'])
+            pen.setJoinStyle(Qt.MiterJoin)
             pathContent = QPainterPath()
-            rect = QRectF(0, 0, self.width, self.height)
-            pathContent.addRoundedRect(rect, r, r)
-            painter.setPen(Qt.NoPen)
+            rect = QRectF(hw + w, hw, self.width - w * 3, self.height - w)
+            pathContent.addRect(rect)
+            painter.setPen(pen)
             painter.setBrush(QColor(style['panel_color']))
             painter.drawPath(pathContent.simplified())
 
-
-            # outline
-            pathOutline = QPainterPath()
-            pathOutline.addRect(0, 0, self.width, self.height)
-            pathOutlineColor = 'selected_color' if self.isSelected() else 'line_color'
-            pen = QPen(QColor(style[pathOutlineColor]))
-            pen.setWidth(style['node_outline_width'])
-            pen.setJoinStyle(Qt.MiterJoin)
-            painter.setPen(pen)
-            painter.setBrush(Qt.NoBrush)
-            painter.drawPath(pathOutline.simplified())
 
     def collapse(self):
         self.dummy_input_socket.show()
