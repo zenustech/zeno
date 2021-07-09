@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <sys/mman.h>
 #include <vector>
+#include <tuple>
 
 /*
  * () ~ * + << <= == & ^ | && || ?: = ,
@@ -10,11 +11,11 @@
 
 namespace opcode {
     enum {
+        mov = 0x10,
         add = 0x58,
         sub = 0x5c,
         mul = 0x59,
         div = 0x5e,
-        mov = 0x10,
         sqrt = 0x51,
         loadu = 0x10,
         loada = 0x28,
@@ -54,7 +55,7 @@ namespace optype {
     };
 };
 
-class SIMDBuilder {
+class SIMDBuilder {   // requires AVX2
 private:
     std::vector<uint8_t> res;
 
@@ -87,6 +88,10 @@ public:
 
     void addUnaryOp(int type, int op, int dst, int src) {
         addBinaryOp(type, op, dst, 0, src);
+    }
+
+    void addMoveOp(int dst, int src) {
+        addBinaryOp(optype::xmmss, opcode::mov, dst, dst, src);
     }
 
     void addReturn() {
@@ -135,23 +140,31 @@ public:
         }
     }
 
-    void operator()() {
+    ExecutableInstance(ExecutableInstance const &) = delete;
+
+    inline void operator()() {
         auto entry = (void (*)())this->mem;
         entry();
     }
 
-    void operator()
+    inline std::tuple
+        < uintptr_t
+        , uintptr_t
+        , uintptr_t
+        > operator()
         ( uintptr_t rax
         , uintptr_t rcx
         , uintptr_t rdx
         ) {
         auto entry = (void (*)())this->mem;
-        asm (
-            "call *%6"
+        asm volatile (
+            "nop; nop; call *%6"
             : "=a" (rax), "=c" (rcx), "=d" (rdx)
-            : "a" (rax), "c" (rcx), "d" (rdx),
-            "r" (entry)
+            : "a" (rax), "c" (rcx), "d" (rdx)
+            , "" (entry)
+            : "cc", "memory"
             );
+        return {rax, rcx, rdx};
     }
 };
 
@@ -159,8 +172,9 @@ int main() {
     SIMDBuilder builder;
     builder.addMemoryOp(optype::xmmps, opcode::loadu, opreg::mm0,
         opreg::rdx, memflag::reg);
-    builder.addUnaryOp(optype::xmmps, opcode::sqrt, opreg::mm0, opreg::mm0);
-    builder.addMemoryOp(optype::xmmps, opcode::storeu, opreg::mm0,
+    builder.addMoveOp(opreg::mm1, opreg::mm0);
+    builder.addUnaryOp(optype::xmmps, opcode::sqrt, opreg::mm2, opreg::mm1);
+    builder.addMemoryOp(optype::xmmps, opcode::storeu, opreg::mm2,
         opreg::rdx, memflag::reg_imm8, 16);
     builder.printHexCode();
     builder.addReturn();
