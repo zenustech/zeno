@@ -1458,6 +1458,7 @@ class NodeEditor(QWidget):
         self.initDescriptors()
 
         self.newProgram()
+        self.current_scene_name = 'main'
 
     def clearScenes(self):
         self.scenes.clear()
@@ -1482,6 +1483,8 @@ class NodeEditor(QWidget):
         self.view.setScene(scene)
         self.edit_graphname.clear()
         self.edit_graphname.addItems(self.scenes.keys())
+        
+        
 
     @property
     def scene(self):
@@ -1552,11 +1555,10 @@ class NodeEditor(QWidget):
         #     self.do_save(self.current_path)
         # self.do_open(self.current_path)
         # self.updateSubgraph()
-        prog = self.dumpProgram()
-        self.reloadProgram(prog)
         # self.updateSubgraph()
         self.switchScene(name)
         self.edit_graphname.setCurrentText(name)
+        self.current_scene_name = name
         
 
     def on_new_graph(self):
@@ -1686,6 +1688,7 @@ class NodeEditor(QWidget):
             self.switchScene(name)
             self.scene.loadGraphEx(graph)
         self.initDescriptors()
+        self.updateSubgraph()
 
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
@@ -1786,6 +1789,11 @@ class NodeEditor(QWidget):
 
     def do_save(self, path):
         prog = self.dumpProgram()
+        self.reloadProgram(prog)
+        prog = self.dumpProgram()
+        self.reloadProgram(prog)
+        self.switchScene(self.current_scene_name)
+        self.edit_graphname.setCurrentText(self.current_scene_name)
         with open(path, 'w') as f:
             json.dump(prog, f, indent=1)
         for scene in self.scenes.values():
