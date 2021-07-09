@@ -42,11 +42,11 @@ bool contains(std::set<T> const &list, T const &value) {
     return list.find(value) != list.end();
 }
 
-static inline char opchars[] = "+-*/%=";
+static inline char opchars[] = "+-*/%=()";
 
 std::vector<std::string> tokenize(const char *cp) {
     std::vector<std::string> tokens;
-    while (true) {
+    while (1) {
         for (; *cp && isspace(*cp); cp++);
         if (!*cp)
             break;
@@ -65,12 +65,11 @@ std::vector<std::string> tokenize(const char *cp) {
 
         } else if (strchr(opchars, *cp)) {
             std::string res;
-            for (; strchr(opchars, *cp); cp++)
-                res += *cp;
+            res += *cp++;
             tokens.push_back(res);
 
         } else {
-            printf("unexpected token: `%c`", cp);
+            printf("unexpected character token: `%c`", *cp);
             break;
         }
     }
@@ -88,17 +87,18 @@ struct AST {
     std::vector<AST::Ptr> args;
 
     explicit AST
-        ( Iter iter_
+        ( std::string const &token_
+        , Iter iter_
         , std::vector<AST::Ptr> const &args_ = {}
         )
-        : iter(std::move(iter_))
-        , token(*iter_)
+        : token(std::move(token_))
+        , iter(std::move(iter_))
         , args(std::move(args_))
         {}
 };
 
-AST::Ptr make_ast(Iter iter, std::vector<AST::Ptr> const &args = {}) {
-    return std::make_unique<AST>(iter, args);
+AST::Ptr make_ast(std::string const &token, Iter iter, std::vector<AST::Ptr> const &args = {}) {
+    return std::make_unique<AST>(token, iter, args);
 }
 
 bool is_atom(std::string const &s) {
@@ -114,7 +114,6 @@ bool is_atom(std::string const &s) {
 
 struct Parser {
     std::vector<std::string> tokens;
-    typename std::vector<std::string>::iterator token;
 
     explicit Parser
         ( std::vector<std::string> const &tokens_
@@ -125,16 +124,15 @@ struct Parser {
 
     AST::Ptr parse_atom(Iter iter) {
         if (auto s = *iter; is_atom(s)) {
-            return make_ast(iter);
+            return make_ast(s, iter + 1);
         }
         return nullptr;
     }
 
     AST::Ptr parse_operator(Iter iter, std::set<std::string> const &allows) {
         if (auto s = *iter; contains(allows, s)) {
-            return make_ast(iter);
+            return make_ast(s, iter + 1);
         }
-        token--;
         return nullptr;
     }
 
@@ -143,14 +141,14 @@ struct Parser {
             return a;
         }
         if (auto ope = parse_operator(iter, {"+", "-"}); ope) {
-            if (auto rhs = parse_factor(ope->iter + 1); rhs) {
-                return make_ast(ope->iter, {std::move(rhs)});
+            if (auto rhs = parse_factor(ope->iter); rhs) {
+                return make_ast(ope->token, rhs->iter, {std::move(rhs)});
             }
         }
         if (auto ope = parse_operator(iter, {"("}); ope) {
-            if (auto rhs = parse_expr(ope->iter + 1); rhs) {
+            if (auto rhs = parse_expr(ope->iter); rhs) {
                 if (auto ket = parse_operator(rhs->iter, {")"}); ket) {
-                    return make_ast(ope->iter, {std::move(rhs)});
+                    return make_ast(ope->token, ket->iter, {std::move(rhs)});
                 }
             }
         }
@@ -159,10 +157,9 @@ struct Parser {
 
     AST::Ptr parse_term(Iter iter) {
         if (auto lhs = parse_factor(iter); lhs) {
-            while (1) if (auto ope = parse_operator(lhs->iter + 1, {"*", "/", "%"}); ope) {
-                if (auto rhs = parse_factor(ope->iter + 1); rhs) {
-                    lhs = make_ast(ope->iter, {std::move(lhs), std::move(rhs)});
-                    lhs->iter = rhs->iter;
+            while (1) if (auto ope = parse_operator(lhs->iter, {"*", "/", "%"}); ope) {
+                if (auto rhs = parse_factor(ope->iter); rhs) {
+                    lhs = make_ast(ope->token, rhs->iter, {std::move(lhs), std::move(rhs)});
                 }
             } else break;
             return lhs;
@@ -172,10 +169,9 @@ struct Parser {
 
     AST::Ptr parse_expr(Iter iter) {
         if (auto lhs = parse_term(iter); lhs) {
-            while (1) if (auto ope = parse_operator(lhs->iter + 1, {"+", "-"}); ope) {
-                    if (auto rhs = parse_term(ope->iter + 1); rhs) {
-                        lhs = make_ast(ope->iter, {std::move(lhs), std::move(rhs)});
-                        lhs->iter = rhs->iter;
+            while (1) if (auto ope = parse_operator(lhs->iter, {"+", "-"}); ope) {
+                    if (auto rhs = parse_term(ope->iter); rhs) {
+                        lhs = make_ast(ope->token, rhs->iter, {std::move(lhs), std::move(rhs)});
                     }
             } else break;
             return lhs;
@@ -184,10 +180,10 @@ struct Parser {
     }
 
     AST::Ptr parse_stmt(Iter iter) {
-        if (auto lhs = parse_expr(iter); lhs) {
-            if (auto ope = parse_operator(lhs->iter + 1, {"="}); ope) {
-                if (auto rhs = parse_expr(ope->iter + 1); rhs) {
-                    return make_ast(ope->iter, {std::move(lhs), std::move(rhs)});
+        if (auto lhs = parse_atom(iter); lhs) {
+            if (auto ope = parse_operator(lhs->iter, {"="}); ope) {
+                if (auto rhs = parse_expr(ope->iter); rhs) {
+                    return make_ast(ope->token, rhs->iter, {std::move(lhs), std::move(rhs)});
                 }
             }
         }
@@ -200,7 +196,7 @@ struct Parser {
         while (iter != tokens.end()) {
             auto p = parse_stmt(iter);
             if (!p) break;
-            iter = p->iter + 1;
+            iter = p->iter;
             asts.push_back(std::move(p));
         }
         return asts;
@@ -220,13 +216,24 @@ void print(AST *ast) {
 }
 
 int main() {
-    std::string code("pos = - 1");
+    std::string code("pos = 2 + x");
+    cout << code << endl;
+
+    cout << "==============" << endl;
     auto tokens = tokenize(code.c_str());
+    for (auto const &t: tokens) {
+        cout << t << ' ';
+    }
+    cout << endl;
+
+    cout << "==============" << endl;
     Parser p(tokens);
     auto asts = p.parse();
     for (auto const &a: asts) {
         print(a.get());
         cout << endl;
     }
+
+    cout << "==============" << endl;
     return 0;
 }
