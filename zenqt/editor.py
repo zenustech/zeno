@@ -223,7 +223,7 @@ class QDMGraphicsScene(QGraphicsScene):
                     if name not in nameList:
                         out.append((type, name, defl))
             return out
-            
+
         node = self.makeNodeBase(name)
         desc = self.descs[name]
         
@@ -366,6 +366,7 @@ class QDMGraphicsView(QGraphicsView):
         n = item.name
         if n in self.node_editor.scenes:
             self.node_editor.on_switch_graph(n)
+            self.scene().update()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
@@ -1457,6 +1458,7 @@ class NodeEditor(QWidget):
         self.initDescriptors()
 
         self.newProgram()
+        self.current_scene_name = 'main'
 
     def clearScenes(self):
         self.scenes.clear()
@@ -1477,9 +1479,12 @@ class NodeEditor(QWidget):
             self.scenes[name] = scene
         else:
             scene = self.scenes[name]
+        # self.updateSubgraph()
         self.view.setScene(scene)
         self.edit_graphname.clear()
         self.edit_graphname.addItems(self.scenes.keys())
+        
+        
 
     @property
     def scene(self):
@@ -1542,9 +1547,19 @@ class NodeEditor(QWidget):
         self.button_delete.clicked.connect(self.deleteCurrScene)
 
     def on_switch_graph(self, name):
+        # if self.current_path is not None:
+        #     self.do_save(self.current_path)
+        # else:
+        #     path = self.getSaveFileName()
+        #     self.current_path = path
+        #     self.do_save(self.current_path)
+        # self.do_open(self.current_path)
+        # self.updateSubgraph()
+        # self.updateSubgraph()
         self.switchScene(name)
-        self.initDescriptors()
         self.edit_graphname.setCurrentText(name)
+        self.current_scene_name = name
+        
 
     def on_new_graph(self):
         name = self.edit_graphname.currentText()
@@ -1574,6 +1589,21 @@ class NodeEditor(QWidget):
             } 
         })
         self.setDescriptors(descs)
+
+    def updateSubgraph(self):
+        subg_descs = self.getSubgraphDescs()
+        self.descs.update(subg_descs)
+        self.descs.update({
+            'Blackboard': {
+                'inputs': [],
+                'outputs': [],
+                'params': [],
+                'categories': ['layout'],
+            } 
+        })
+        self.setDescriptors(self.descs)
+        
+        
 
     def on_add(self):
         pos = QPointF(0, 0)
@@ -1647,8 +1677,18 @@ class NodeEditor(QWidget):
             print('Loading subgraph', name)
             self.switchScene(name)
             self.scene.loadGraphEx(graph)
-        self.switchScene('main')
         self.initDescriptors()
+        self.switchScene('main')
+        
+    def reloadProgram(self, prog):
+        self.setDescriptors(prog['descs'])
+        self.clearScenes()
+        for name, graph in prog['graph'].items():
+            print('Loading subgraph', name)
+            self.switchScene(name)
+            self.scene.loadGraphEx(graph)
+        self.initDescriptors()
+        self.updateSubgraph()
 
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
@@ -1749,6 +1789,11 @@ class NodeEditor(QWidget):
 
     def do_save(self, path):
         prog = self.dumpProgram()
+        self.reloadProgram(prog)
+        prog = self.dumpProgram()
+        self.reloadProgram(prog)
+        self.switchScene(self.current_scene_name)
+        self.edit_graphname.setCurrentText(self.current_scene_name)
         with open(path, 'w') as f:
             json.dump(prog, f, indent=1)
         for scene in self.scenes.values():
@@ -1760,7 +1805,9 @@ class NodeEditor(QWidget):
         self.importProgram(prog)
 
     def do_open(self, path):
+        
         with open(path, 'r') as f:
+            self.reloadPath = f
             prog = json.load(f)
         self.loadProgram(prog)
 

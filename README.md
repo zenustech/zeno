@@ -73,15 +73,13 @@ This enable you to make turing-equivalent programs that fit real-world problems.
 
 ![forloop.zsg](images/forloop.jpg "arts/forloop.zsg")
 
-## Unified
+## Simplicity
 
-Despite we already have many node systems today, but the are usually bound to
-specific softwares, e.g. Blender, Houdini, Unreal, etc.. These softwares usually
-already contains a lot of nodes and assumptions and thus hard to use for
-developers to extend it.
-What's more, a user who wrote a cloth simulation node for Blender cannot couple
-with a user who wrote a fluid simulation in Houdini.
-So, we want to create a unified framework customized for simulation with nodes.
+For those many outstanding systems with visual-programming abilities out there,
+one may have a hard time integrate new things into those systems, often due to their
+tight coupled design of data structures, as well as system archs. 
+Zeno adopts a highly decoupled design of things, making extending it becoming super-simple.
+
 Here's an example on how to add a ZENO node with its C++ API:
 
 ![demo_project/main.cpp](images/demo_project.png "demo_project/main.cpp")
@@ -93,16 +91,15 @@ doesn't provide any solvers, instead it allows users to **write their own nodes*
 using its C++ API.
 Here's some of the node libraries that have been implemented by our developers:
 
-- ZenoFX expression wrangler (by @archibate)
+- Z{f(x)} expression wrangler (by @archibate)
 - basic primitive ops (by @archibate)
 - basic OpenVDB ops (by @zhxx1987)
 - OpenVDB FLIP fluids (by @zhxx1987 and @ureternalreward)
-- Tree-code N-body (by @archibate)
 - Molocular Dynamics (by @victoriacity)
 - GPU MPM with CUDA (by @littlemine)
-- Bullet3 rigid solver (by @archibate)
-- Hypersonic air solver (by @Eydcao)
-- MPM Meshing (by @zhxx1987)
+- Bullet3 rigid solver (by @archibate and @zhxx1987)
+- Hypersonic air solver (by @Eydcao @zhxx1987)
+- MPM Mesher (by @zhxx1987)
 
 Loading these libraries would add corresponding functional nodes into ZENO,
 after which you can creating node graphs with them for simulation.
@@ -274,9 +271,9 @@ cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
 to enable them.
 
 ##### Known issues
-
-* The FastFLIP solver only work well with OpenVDB 7.1.3, and have bug in some
-specific scenes with OpenVDB 8.1.
+```diff
+- **The FastFLIP solver we know work well with OpenVDB 7.2.3, and have problem with OpenVDB 8.1.**
+```
 
 #### GMPM
 

@@ -1046,6 +1046,7 @@
        "867c997c-GetFluidStepDT",
        "step_dt"
       ],
+      "input1": null,
       "SRC": [
        "45f9d91a-makeCollision",
        "end"
@@ -1054,8 +1055,8 @@
      },
      "params": {},
      "uipos": [
-      9671.77684753418,
-      72.30655883789063
+      9838.183097534184,
+      164.10343383789058
      ],
      "options": []
     },
@@ -1214,9 +1215,9 @@
     }
    },
    "view": {
-    "scale": 0.1677721600000001,
-    "trans_x": 835,
-    "trans_y": -209
+    "scale": 0.5120000000000002,
+    "trans_x": 4650,
+    "trans_y": -63
    }
   },
   "FLIPSimTemplate": {
@@ -2054,9 +2055,9 @@
     }
    },
    "view": {
-    "scale": 0.8000000000000005,
-    "trans_x": 5689,
-    "trans_y": -1638
+    "scale": 0.6400000000000006,
+    "trans_x": 1107,
+    "trans_y": -2612
    }
   },
   "makeCollision": {
@@ -2788,9 +2789,9 @@
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": -140,
-    "trans_y": -28
+    "scale": 0.32768000000000014,
+    "trans_x": -417,
+    "trans_y": -110
    }
   }
  },
@@ -4785,6 +4786,25 @@
    "inputs": [
     "prim1",
     "prim2",
+    "zfxCode",
+    "params",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim1",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesNeighborWrangle": {
+   "inputs": [
+    "prim1",
+    "prim2",
+    "radius",
     "zfxCode",
     "params",
     "SRC",
