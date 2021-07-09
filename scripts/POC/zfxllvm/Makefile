@@ -1,5 +1,7 @@
 x=main
 
+o: x
+
 x: $x.exe Makefile
 	./$<
 	

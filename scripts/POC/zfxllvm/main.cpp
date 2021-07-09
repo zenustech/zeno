@@ -12,14 +12,28 @@ namespace opcode {
     enum {
         add = 0x58,
         sub = 0x5c,
+        mul = 0x59,
+        div = 0x5e,
         mov = 0x10,
+        sqrt = 0x51,
     };
 };
 
-auto make_inst(int op, int dst, int lhs, int rhs, bool is_ss) {
+namespace optype {
+    enum {
+        xmmps = 0xc0,
+        xmmpd = 0xc1,
+        xmmss = 0xc2,
+        xmmsd = 0xc3,
+        ymmps = 0xc4,
+        ymmpd = 0xc5,
+    };
+};
+
+auto make_inst(int op, int dst, int lhs, int rhs, int type) {
     std::vector<uint8_t> res;
     res.push_back(0xc5);
-    res.push_back(0xc0 | ~lhs << 3 | is_ss << 1);
+    res.push_back(type | ~lhs << 3);
     res.push_back(op);
     res.push_back(0xc0 | dst << 3 | lhs);
     return res;
@@ -33,7 +47,7 @@ auto print_inst(std::vector<uint8_t> const &inst) {
 }
 
 int main() {
-    auto insts = make_inst(opcode::sub, 0, 0, 0, false);
+    auto insts = make_inst(opcode::sqrt, 0, 0, 0, optype::xmmps);
     print_inst(insts);
 
     insts.push_back(0xc3);
