@@ -59,8 +59,8 @@ private:
     std::vector<uint8_t> res;
 
 public:
-    void addMemoryOp(int op, int val, int adr, int mflag, int type,
-        int adr2 = 0, int adr2shift = 0, int immadr = 0) {
+    void addMemoryOp(int type, int op, int val, int adr, int mflag,
+        int immadr = 0, int adr2 = 0, int adr2shift = 0) {
         res.push_back(0xc5);
         res.push_back(type | 0x38);
         res.push_back(op);
@@ -78,7 +78,7 @@ public:
         }
     }
 
-    void addMathOp(int op, int dst, int lhs, int rhs, int type) {
+    void addMathOp(int type, int op, int dst, int lhs, int rhs) {
         res.push_back(0xc5);
         res.push_back(type | ~lhs << 3);
         res.push_back(op);
@@ -135,17 +135,40 @@ public:
         auto entry = (void (*)())this->mem;
         entry();
     }
+
+    void operator()
+        ( uintptr_t rax
+        , uintptr_t rcx
+        , uintptr_t rdx
+        ) {
+        auto entry = (void (*)())this->mem;
+        asm (
+            "call *%6"
+            : "=a" (rax), "=c" (rcx), "=d" (rdx)
+            : "a" (rax), "c" (rcx), "d" (rdx),
+            "r" (entry)
+            );
+    }
 };
 
 int main() {
     SIMDBuilder builder;
-    builder.addMathOp(opcode::sqrt, 0, 0, 0, optype::xmmps);
-    //builder.addMemoryOp(opcode::loadu, opreg::mm0,
-    //    opreg::rax, memflag::reg, optype::xmmps);
+    //builder.addMathOp(optype::xmmps, opcode::sqrt, 0, 0, 0);
+    builder.addMemoryOp(optype::xmmps, opcode::loadu, opreg::mm0,
+        opreg::rax, memflag::reg);
+    builder.addMemoryOp(optype::xmmps, opcode::storeu, opreg::mm0,
+        opreg::rax, memflag::reg_imm8, 16);
     builder.printHexCode();
     builder.addReturn();
 
+    float arr[8];
+    arr[0] = 1.618;
+    arr[1] = 3.141;
+    arr[2] = 2.718;
+    arr[3] = 0.577;
+
     ExecutableInstance inst(builder.getResult());
+    inst((uintptr_t)arr, 0, 0);
 
     return 0;
 }
