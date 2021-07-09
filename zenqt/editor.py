@@ -193,12 +193,10 @@ class QDMGraphicsScene(QGraphicsScene):
             if name.lower() in key.lower():
                 yield key
 
-    def reloadNodes(self, nodes):
-        savedNodes = {}
-        for node in nodes:
-            savedNodes.update(node.dump())
-        for node in nodes:
-            node.remove()
+    def reloadNodes(self):
+        print('Reloading all nodes')
+        savedNodes = self.dumpGraph()
+        self.newGraph()
         self.loadGraph(savedNodes)
 
     def makeNodeBase(self, name):
@@ -1312,9 +1310,8 @@ class QDMGraphicsNode(QGraphicsItem):
                 edge.updatePath()
 
     def dump(self):
-        node = self
         inputs = {}
-        for name, socket in node.inputs.items():
+        for name, socket in self.inputs.items():
             assert not socket.isOutput
             data = None
             if socket.hasAnyEdge():
@@ -1323,53 +1320,52 @@ class QDMGraphicsNode(QGraphicsItem):
             inputs[name] = data
 
         params = {}
-        for name, param in node.params.items():
+        for name, param in self.params.items():
             value = param.getValue()
             params[name] = value
 
-        uipos = node.pos().x(), node.pos().y()
-        options = node.getOptions()
+        uipos = self.pos().x(), self.pos().y()
+        options = self.getOptions()
 
         data = {
-            'name': node.name,
+            'name': self.name,
             'inputs': inputs,
             'params': params,
             'uipos': uipos,
             'options': options,
         }
-        return {node.ident: data}
+        return {self.ident: data}
     
     def load(self, ident, data):
-        node = self
         name = data['name']
         inputs = data['inputs']
         params = data['params']
         posx, posy = data['uipos']
         options = data.get('options', [])
 
-        node.initSockets()
-        node.setIdent(ident)
-        node.setName(name)
-        node.setPos(posx, posy)
-        node.setOptions(options)
+        self.initSockets()
+        self.setIdent(ident)
+        self.setName(name)
+        self.setPos(posx, posy)
+        self.setOptions(options)
 
         for name, value in params.items():
-            if name not in node.params:
+            if name not in self.params:
                 print('no param named [{}] for [{}]'.format(
-                    name, nodes[ident]['name']))
+                    name, data['name']))
                 continue
-            param = node.params[name]
+            param = self.params[name]
             param.setValue(value)
 
         edges = []
         for name, input in inputs.items():
             if input is None:
                 continue
-            if name not in node.inputs:
+            if name not in self.inputs:
                 print('no input named [{}] for [{}]'.format(
-                    name, nodes[ident]['name']))
+                    name, data['name']))
                 continue
-            dest = node.inputs[name]
+            dest = self.inputs[name]
             edges.append((dest, input))
         return edges
 
@@ -1541,8 +1537,7 @@ class NodeEditor(QWidget):
     def on_switch_graph(self, name):
         self.switchScene(name)
         self.initDescriptors()
-        subg_nodes = [n for n in self.scene.nodes if 'is_subgraph' in n.desc]
-        self.scene.reloadNodes(subg_nodes)
+        self.scene.reloadNodes()
         self.edit_graphname.setCurrentText(name)
 
     def on_new_graph(self):
