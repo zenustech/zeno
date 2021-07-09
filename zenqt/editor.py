@@ -1115,7 +1115,7 @@ class QDMGraphicsNode(QGraphicsItem):
             button.setChecked(name in options)
 
     def initDummySockets(self):
-        h = - TEXT_HEIGHT / 2
+        h = TEXT_HEIGHT / 2
         offset = style['dummy_socket_offset']
         s = QDMGraphicsSocket(self)
         s.setPos(-offset, h)
@@ -1139,7 +1139,7 @@ class QDMGraphicsNode(QGraphicsItem):
             M = HORI_MARGIN * 0.2
             H = TEXT_HEIGHT * 0.9
             W = self.width / len(cond_keys)
-            rect = QRectF(W * i + M, -TEXT_HEIGHT * 2.3, W - M * 2, H)
+            rect = QRectF(W * i + M, -TEXT_HEIGHT * 1.3, W - M * 2, H)
             button.setGeometry(rect)
             button.setText(key)
             self.options[key] = button
@@ -1152,7 +1152,7 @@ class QDMGraphicsNode(QGraphicsItem):
         outputs = self.desc_outputs
         params = self.desc_params
 
-        y = self.height + TEXT_HEIGHT * 0.4
+        y = TEXT_HEIGHT * 0.4
 
         self.params.clear()
         for index, (type, name, defl) in enumerate(params):
@@ -1196,8 +1196,10 @@ class QDMGraphicsNode(QGraphicsItem):
 
         y = socket_start + max(len(inputs), len(outputs)) * TEXT_HEIGHT
 
-        y += TEXT_HEIGHT * 0.75
         self.height = y
+
+        self.title.setPos(HORI_MARGIN * 2, self.height)
+        self.collapse_button.setPos(HORI_MARGIN * 0.5, self.height + TEXT_HEIGHT * 0.16)
 
     def boundingRect(self):
         h = TEXT_HEIGHT if self.collapsed else self.height
@@ -1206,42 +1208,34 @@ class QDMGraphicsNode(QGraphicsItem):
     def paint(self, painter, styleOptions, widget=None):
         r = style['node_rounded_radius']
 
+        # title background
+        pathTitle = QPainterPath()
+        y = 0 if self.collapsed else self.height
+        rect = QRectF(0, y, self.width, TEXT_HEIGHT)
+        pathTitle.addRect(rect)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(style['title_color']))
+        painter.drawPath(pathTitle.simplified())
+
         if not self.collapsed:
             pathContent = QPainterPath()
-            rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
+            rect = QRectF(0, 0, self.width, self.height)
             pathContent.addRoundedRect(rect, r, r)
             painter.setPen(Qt.NoPen)
             painter.setBrush(QColor(style['panel_color']))
             painter.drawPath(pathContent.simplified())
 
-            # title round top
-            pathTitle = QPainterPath()
-            rect = QRectF(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
-            pathTitle.addRoundedRect(rect, r, r)
-            painter.setPen(Qt.NoPen)
-            painter.setBrush(QColor(style['title_color']))
-            painter.drawPath(pathTitle.simplified())
-            
-            # title direct bottom
-            pathTitle = QPainterPath()
-            rect = QRectF(0, -r, self.width, r)
-            pathTitle.addRect(rect)
-            painter.setPen(Qt.NoPen)
-            painter.setBrush(QColor(style['title_color']))
-            painter.drawPath(pathTitle.simplified())
 
-        pathOutline = QPainterPath()
-        h = TEXT_HEIGHT if self.collapsed else self.height
-        pathOutline.addRoundedRect(0, -TEXT_HEIGHT, self.width, h, r, r)
-        pathOutlineColor = 'selected_color' if self.isSelected() else 'line_color'
-        pen = QPen(QColor(style[pathOutlineColor]))
-        pen.setWidth(style['node_outline_width'])
-        painter.setPen(pen)
-        if not self.collapsed:
+            # outline
+            pathOutline = QPainterPath()
+            pathOutline.addRect(0, 0, self.width, self.height)
+            pathOutlineColor = 'selected_color' if self.isSelected() else 'line_color'
+            pen = QPen(QColor(style[pathOutlineColor]))
+            pen.setWidth(style['node_outline_width'])
+            pen.setJoinStyle(Qt.MiterJoin)
+            painter.setPen(pen)
             painter.setBrush(Qt.NoBrush)
-        else:
-            painter.setBrush(QColor(style['title_color']))
-        painter.drawPath(pathOutline.simplified())
+            painter.drawPath(pathOutline.simplified())
 
     def collapse(self):
         self.dummy_input_socket.show()
@@ -1262,6 +1256,9 @@ class QDMGraphicsNode(QGraphicsItem):
             for edge in socket.edges:
                 edge.updatePath()
 
+        self.title.setPos(HORI_MARGIN * 2, 0)
+        self.collapse_button.setPos(HORI_MARGIN * 0.5, TEXT_HEIGHT * 0.16)
+
     def unfold(self):
         self.dummy_input_socket.hide()
         self.dummy_output_socket.hide()
@@ -1280,6 +1277,9 @@ class QDMGraphicsNode(QGraphicsItem):
         for socket in self.outputs.values():
             for edge in socket.edges:
                 edge.updatePath()
+
+        self.title.setPos(HORI_MARGIN * 2, self.height)
+        self.collapse_button.setPos(HORI_MARGIN * 0.5, self.height + TEXT_HEIGHT * 0.16)
 
     def dump(self):
         node = self
