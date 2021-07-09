@@ -7,6 +7,8 @@
 #include <memory>
 #include <set>
 
+/* common utils */
+
 using std::cout;
 using std::endl;
 
@@ -42,7 +44,25 @@ bool contains(std::set<T> const &list, T const &value) {
     return list.find(value) != list.end();
 }
 
-static inline char opchars[] = "+-*/%=()";
+template <size_t BufSize = 4096, class ...Ts>
+std::string format(const char *fmt, Ts &&...ts) {
+    char buf[BufSize];
+    sprintf(buf, fmt, std::forward<Ts>(ts)...);
+    return buf;
+}
+
+template <class ...Ts>
+[[noreturn]] void error(const char *fmt, Ts &&...ts) {
+    printf("ERROR: ");
+    printf(fmt, std::forward<Ts>(ts)...);
+    putchar('\n');
+    exit(-1);
+}
+
+/* tokenizer */
+
+static char opchars[] = "+-*/%=()";
+static std::string opstrs[] = {"+", "-", "*", "/", "%", "=", "(", ")"};
 
 std::vector<std::string> tokenize(const char *cp) {
     std::vector<std::string> tokens;
@@ -69,13 +89,15 @@ std::vector<std::string> tokenize(const char *cp) {
             tokens.push_back(res);
 
         } else {
-            printf("unexpected character token: `%c`", *cp);
+            error("unexpected character token: `%c`", *cp);
             break;
         }
     }
     tokens.push_back("");  // EOF sign
     return tokens;
 }
+
+/* ast parser */
 
 using Iter = typename std::vector<std::string>::iterator;
 
@@ -216,6 +238,145 @@ void print(AST *ast) {
         cout << ')';
 }
 
+/* ast serializer */
+
+struct Statement {
+    int id;
+
+    virtual std::string print() {
+        return format("$%d = Statement");
+    }
+};
+
+struct UnaryOpStmt : Statement {
+    std::string op;
+    Statement *src;
+
+    UnaryOpStmt
+        ( std::string op_
+        , Statement *src_
+        )
+        : op(op_)
+        , src(src_)
+    {}
+
+    virtual std::string print() override {
+        return format(
+            "$%d = UnaryOp [%s] $%d"
+            , id
+            , op.c_str()
+            , src->id
+            );
+    }
+};
+
+struct BinaryOpStmt : Statement {
+    std::string op;
+    Statement *lhs;
+    Statement *rhs;
+
+    BinaryOpStmt
+        ( std::string op_
+        , Statement *lhs_
+        , Statement *rhs_
+        )
+        : op(op_)
+        , lhs(lhs_)
+        , rhs(rhs_)
+    {}
+
+    virtual std::string print() override {
+        return format(
+            "$%d = BinaryOp [%s] $%d $%d"
+            , id
+            , op.c_str()
+            , lhs->id
+            , rhs->id
+            );
+    }
+};
+
+struct AssignStmt : Statement {
+    Statement *dst;
+    Statement *src;
+
+    AssignStmt
+        ( Statement *dst_
+        , Statement *src_
+        )
+        : dst(dst_)
+        , src(src_)
+    {}
+
+    virtual std::string print() override {
+        return format(
+            "$%d = Assign $%d $%d"
+            , id
+            , dst->id
+            , src->id
+            );
+    }
+};
+
+struct IdentStmt : Statement {
+    std::string name;
+
+    IdentStmt
+        ( std::string name_
+        )
+        : name(name_)
+    {}
+
+    virtual std::string print() override {
+        return format(
+            "$%d = Ident [%s]"
+            , id
+            , name.c_str()
+            );
+    }
+};
+
+struct IRBuilder {
+    std::vector<std::unique_ptr<Statement>> stmts;
+
+    template <class T, class ...Ts>
+    T *emplace_back(Ts &&...ts) {
+        auto stmt = std::make_unique<T>(std::forward<Ts>(ts)...);
+        auto raw_ptr = stmt.get();
+        stmts.push_back(std::move(stmt));
+        return raw_ptr;
+    }
+
+    Statement *serialize(AST *ast) {
+        if (0) {
+
+        } else if (contains({"+", "-", "*", "/", "%"}, ast->token) && ast->args.size() == 2) {
+            auto lhs = serialize(ast->args[0].get());
+            auto rhs = serialize(ast->args[1].get());
+            return emplace_back<BinaryOpStmt>(ast->token, lhs, rhs);
+
+        } else if (contains({"+", "-"}, ast->token) && ast->args.size() == 1) {
+            auto src = serialize(ast->args[0].get());
+            return emplace_back<UnaryOpStmt>(ast->token, src);
+
+        } else if (contains({"="}, ast->token) && ast->args.size() == 2) {
+            auto dst = serialize(ast->args[0].get());
+            auto src = serialize(ast->args[1].get());
+            return emplace_back<AssignStmt>(dst, src);
+
+        } else if (is_atom(ast->token) && ast->args.size() == 0) {
+            return emplace_back<IdentStmt>(ast->token);
+
+        } else {
+            error("cannot lower AST at token: `%s` (with %d args)\n",
+                ast->token.c_str(), ast->args.size());
+            return nullptr;
+        }
+    }
+};
+
+/* main body */
+
 int main() {
     std::string code("pos = 1 + (2 + x*4) * 3");
     cout << code << endl;
@@ -228,11 +389,21 @@ int main() {
     cout << endl;
 
     cout << "==============" << endl;
-    Parser p(tokens);
-    auto asts = p.parse();
+    Parser parser(tokens);
+    auto asts = parser.parse();
     for (auto const &a: asts) {
         print(a.get());
         cout << endl;
+    }
+
+    IRBuilder builder;
+    for (auto const &a: asts) {
+        builder.serialize(a.get());
+    }
+    auto stmts = std::move(builder.stmts);
+
+    for (auto const &s: stmts) {
+        cout << s->print() << endl;
     }
 
     cout << "==============" << endl;
