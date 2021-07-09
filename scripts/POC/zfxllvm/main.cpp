@@ -54,66 +54,98 @@ namespace optype {
     };
 };
 
-auto make_rw_inst(int op, int val, int adr, int mflag, int type,
-    int adr2 = 0, int adr2shift = 0, int immadr = 0) {
+class SIMDBuilder {
+private:
     std::vector<uint8_t> res;
-    res.push_back(0xc5);
-    res.push_back(type | 0x38);
-    res.push_back(op);
-    res.push_back(mflag | val << 3 | adr);
-    if (mflag & memflag::reg_reg) {
-        res.push_back(adr2 | adr2shift << 6);
-    }
-    if (mflag & memflag::reg_imm8) {
-        res.push_back(immadr & 0xff);
-    } else if (mflag & memflag::reg_imm32) {
-        res.push_back(immadr & 0xff);
-        res.push_back(immadr >> 8 & 0xff);
-        res.push_back(immadr >> 16 & 0xff);
-        res.push_back(immadr >> 24 & 0xff);
-    }
-    return res;
-}
 
-auto make_inst(int op, int dst, int lhs, int rhs, int type) {
-    std::vector<uint8_t> res;
-    res.push_back(0xc5);
-    res.push_back(type | ~lhs << 3);
-    res.push_back(op);
-    res.push_back(0xc0 | dst << 3 | lhs);
-    return res;
-}
-
-auto print_inst(std::vector<uint8_t> const &inst) {
-    for (auto const &i: inst) {
-        printf("%02X", i);
+public:
+    void addMemoryOp(int op, int val, int adr, int mflag, int type,
+        int adr2 = 0, int adr2shift = 0, int immadr = 0) {
+        res.push_back(0xc5);
+        res.push_back(type | 0x38);
+        res.push_back(op);
+        res.push_back(mflag | val << 3 | adr);
+        if (mflag & memflag::reg_reg) {
+            res.push_back(adr2 | adr2shift << 6);
+        }
+        if (mflag & memflag::reg_imm8) {
+            res.push_back(immadr & 0xff);
+        } else if (mflag & memflag::reg_imm32) {
+            res.push_back(immadr & 0xff);
+            res.push_back(immadr >> 8 & 0xff);
+            res.push_back(immadr >> 16 & 0xff);
+            res.push_back(immadr >> 24 & 0xff);
+        }
     }
-    printf("\n");
-}
+
+    void addMathOp(int op, int dst, int lhs, int rhs, int type) {
+        res.push_back(0xc5);
+        res.push_back(type | ~lhs << 3);
+        res.push_back(op);
+        res.push_back(0xc0 | dst << 3 | lhs);
+    }
+
+    void addReturn() {
+        res.push_back(0xc3);
+    }
+
+    void printHexCode() const {
+        for (auto const &i: res) {
+            printf("%02X", i);
+        }
+        printf("\n");
+    }
+
+    auto const &getResult() const {
+        return res;
+    }
+};
+
+class ExecutableArena {
+protected:
+    uint8_t *mem;
+    size_t memsize;
+
+public:
+    explicit ExecutableArena(size_t memsize_) : memsize(memsize_) {
+        mem = (uint8_t *)mmap(NULL, memsize,
+            PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS,
+            -1, 0);
+        if (mem == MAP_FAILED) {
+            perror("mmap");
+            abort();
+        }
+    }
+
+    ~ExecutableArena() {
+        munmap(mem, memsize);
+    }
+};
+
+class ExecutableInstance : public ExecutableArena {
+public:
+    explicit ExecutableInstance(std::vector<uint8_t> const &insts)
+        : ExecutableArena((insts.size() + 4095) / 4096 * 4096) {
+        for (size_t i = 0; i < insts.size(); i++) {
+            mem[i] = insts[i];
+        }
+    }
+
+    void operator()() {
+        auto entry = (void (*)())this->mem;
+        entry();
+    }
+};
 
 int main() {
-    auto insts = make_inst(opcode::sqrt, 0, 0, 0, optype::xmmps);
-    //auto insts = make_rw_inst(opcode::loadu, opreg::mm0,
+    SIMDBuilder builder;
+    builder.addMathOp(opcode::sqrt, 0, 0, 0, optype::xmmps);
+    //builder.addMemoryOp(opcode::loadu, opreg::mm0,
     //    opreg::rax, memflag::reg, optype::xmmps);
-    print_inst(insts);
+    builder.printHexCode();
+    builder.addReturn();
 
-    insts.push_back(0xc3);
-    size_t memsize = (insts.size() + 4095) / 4096 * 4096;
-
-    uint8_t *mem = (uint8_t *)mmap(NULL, memsize,
-        PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS,
-        -1, 0);
-    if (mem == MAP_FAILED) {
-        perror("mmap");
-        return -1;
-    }
-    for (size_t i = 0; i < insts.size(); i++) {
-        mem[i] = insts[i];
-    }
-    auto entry = (void (*)())mem;
-    entry();
-
-    munmap(mem, memsize);
+    ExecutableInstance inst(builder.getResult());
 
     return 0;
 }
