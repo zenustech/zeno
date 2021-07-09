@@ -60,7 +60,7 @@ private:
     std::vector<uint8_t> res;
 
 public:
-    void addMemoryOp(int type, int op, int val, int adr, int mflag,
+    void addAvxMemoryOp(int type, int op, int val, int adr, int mflag,
         int immadr = 0, int adr2 = 0, int adr2shift = 0) {
         res.push_back(0xc5);
         res.push_back(type | 0x38);
@@ -79,19 +79,19 @@ public:
         }
     }
 
-    void addBinaryOp(int type, int op, int dst, int lhs, int rhs) {
+    void addAvxBinaryOp(int type, int op, int dst, int lhs, int rhs) {
         res.push_back(0xc5);
         res.push_back(type | ~lhs << 3);
         res.push_back(op);
         res.push_back(0xc0 | dst << 3 | lhs);
     }
 
-    void addUnaryOp(int type, int op, int dst, int src) {
-        addBinaryOp(type, op, dst, 0, src);
+    void addAvxUnaryOp(int type, int op, int dst, int src) {
+        addAvxBinaryOp(type, op, dst, 0, src);
     }
 
-    void addMoveOp(int dst, int src) {
-        addBinaryOp(optype::xmmss, opcode::mov, dst, dst, src);
+    void addAvxMoveOp(int dst, int src) {
+        addAvxBinaryOp(optype::xmmss, opcode::mov, dst, dst, src);
     }
 
     void addReturn() {
@@ -170,11 +170,11 @@ public:
 
 int main() {
     SIMDBuilder builder;
-    builder.addMemoryOp(optype::xmmps, opcode::loadu, opreg::mm0,
+    builder.addAvxMemoryOp(optype::xmmps, opcode::loadu, opreg::mm0,
         opreg::rdx, memflag::reg);
-    builder.addMoveOp(opreg::mm1, opreg::mm0);
-    builder.addUnaryOp(optype::xmmps, opcode::sqrt, opreg::mm2, opreg::mm1);
-    builder.addMemoryOp(optype::xmmps, opcode::storeu, opreg::mm2,
+    builder.addAvxMoveOp(opreg::mm1, opreg::mm0);
+    builder.addAvxUnaryOp(optype::xmmps, opcode::sqrt, opreg::mm2, opreg::mm1);
+    builder.addAvxMemoryOp(optype::xmmps, opcode::storeu, opreg::mm2,
         opreg::rdx, memflag::reg_imm8, 16);
     builder.printHexCode();
     builder.addReturn();

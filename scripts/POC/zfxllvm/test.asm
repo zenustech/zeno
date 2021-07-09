@@ -1,1 +1,1 @@
-vmovss xmm0, xmm1
+mov [edx], ecx
