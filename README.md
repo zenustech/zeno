@@ -211,45 +211,6 @@ IMPORTANT: In MSVC, Release mode must **always be active** when building ZENO, s
 run.bat
 ```
 
-## Install ZENO globally
-
-- Linux
-
-```bash
-make -C build install
-python setup.py install
-```
-
-- Windows
-
-```cmd
-python setup.py install
-```
-
-### Run ZENO after installation
-```cmd
-python -m zenqt
-```
-
-
-## Packing ZENO into binary release
-- Arch Linux
-
-```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
-make -C build -j8
-make -C build install
-./dist.sh
-# you will get /tmp/zeno-linux-20xx.x.x.tar.gz
-```
-
-- Windows
-
-First, download `zenv-windows-prebuilt.zip` from [this page](https://github.com/zenustech/binaries/releases).
-Second, extract it directly into project root.
-Then run `dist.bat` in project root.
-Finally, rename the `zenv` folder to `zeno-windows-20xx.x.x`, and archive it into `zeno-windows-20xx.x.x.zip`.
-
 
 ## ZENO Extensions
 
@@ -364,3 +325,25 @@ You may contact us via WeChat:
 * @zhxx1987: shinshinzhang
 
 * @archibate: tanh233
+
+
+# Maintainers' manual
+
+## Build binary release
+
+- Arch Linux
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
+make -C build -j8
+make -C build install
+./dist.sh
+# you will get /tmp/zeno-linux-20xx.x.x.tar.gz
+```
+
+- Windows
+
+First, download `zenv-windows-prebuilt.zip` from [this page](https://github.com/zenustech/binaries/releases).
+Second, extract it directly into project root.
+Then run `dist.bat` in project root.
+Finally, rename the `zenv` folder to `zeno-windows-20xx.x.x`, and archive it into `zeno-windows-20xx.x.x.zip`.
