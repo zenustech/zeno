@@ -1306,7 +1306,7 @@
      "width": 1481.2499999999982,
      "height": 643.75,
      "title": "Wrangle\u8282\u70b9",
-     "content": "\u8be5\u90e8\u5206\u4e3azeno\u7684zfx\u7279\u6027, wrangle\u63a5\u53d7\u4e00\u7ec4\u53c2\u6570\u5217\u8868(\u901a\u8fc7list\u4f20\u9012), \u4ee5\u53ca\u4e00\u4e2azfx\u811a\u672c\u4ee3\u7801,\n \u5e76\u884c\u5730\u5bf9\u5bf9\u8c61\u56fe\u5143\u65bd\u52a0\u9501\u5b9a\u4e49\u7684\u6570\u5b66\u8ba1\u7b97, \u8be5\u5e76\u884c\u6267\u884c\u53ef\u5728cpu\u548cgpu\u4e0a\u6267\u884c."
+     "content": "\u8be5\u90e8\u5206\u4e3azeno\u7684zfx\u7279\u6027, wrangle\u63a5\u53d7\u4e00\u7ec4\u53c2\u6570\u5217\u8868(\u901a\u8fc7list\u4f20\u9012), \u4ee5\u53ca\u4e00\u4e2azfx\u811a\u672c\u4ee3\u7801,\n \u5e76\u884c\u5730\u5bf9\u5bf9\u8c61\u56fe\u5143\u65bd\u52a0\u5b9a\u4e49\u7684\u6570\u5b66\u8ba1\u7b97, \u8be5\u5e76\u884c\u6267\u884c\u53ef\u5728cpu\u548cgpu\u4e0a\u6267\u884c."
     },
     "e51b42e5-Blackboard": {
      "name": "Blackboard",
@@ -1346,9 +1346,9 @@
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 5840,
-    "trans_y": 211
+    "scale": 1.5625,
+    "trans_x": 10643,
+    "trans_y": 1210
    }
   },
   "FLIPSimTemplate": {
