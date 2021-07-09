@@ -1,1 +1,1 @@
-yasm -fbin -mamd64 -l/dev/stdout -o/dev/null /dev/stdin
+yasm -felf -mamd64 -l/dev/stdout -o/dev/null /dev/stdin

@@ -1,6 +1,6 @@
 x=main
 
-o: x
+o: y x
 
 x: $x.exe Makefile
 	./$<
