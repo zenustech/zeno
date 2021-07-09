@@ -94,8 +94,8 @@ public:
     };
 
     void addAvxBroadcastLoadOp(int type, int val, MemoryAddress adr) {
-        res.push_back(0xc5);
-        res.push_back(type | 0x78);
+        res.push_back(0xc4);
+        res.push_back(0xe2);
         res.push_back(0x79 | type << 2 & 0x04);
         res.push_back(0x18 | type >> 2 & 0x01);
         adr.dump(res, val);
@@ -124,7 +124,7 @@ public:
         res.push_back(0xc5);
         res.push_back(type | ~lhs << 3);
         res.push_back(op);
-        res.push_back(0xc0 | dst << 3 | lhs);
+        res.push_back(0xc0 | dst << 3 | rhs);
     }
 
     void addAvxUnaryOp(int type, int op, int dst, int src) {
@@ -212,9 +212,10 @@ public:
 int main() {
     SIMDBuilder builder;
     builder.addAvxMemoryOp(optype::xmmps, opcode::loadu, opreg::mm0, opreg::rdx);
-    builder.addAvxMoveOp(opreg::mm1, opreg::mm0);
-    builder.addAvxUnaryOp(optype::xmmps, opcode::sqrt, opreg::mm2, opreg::mm1);
-    builder.addAvxMemoryOp(optype::xmmps, opcode::storeu, opreg::mm2,
+    builder.addAvxUnaryOp(optype::xmmps, opcode::sqrt, opreg::mm0, opreg::mm0);
+    builder.addAvxBroadcastLoadOp(optype::xmmss, opreg::mm1, opreg::rcx);
+    builder.addAvxBinaryOp(optype::xmmps, opcode::mul, opreg::mm0, opreg::mm0, opreg::mm1);
+    builder.addAvxMemoryOp(optype::xmmps, opcode::storeu, opreg::mm0,
         {opreg::rdx, memflag::reg_imm8, 16});
     builder.printHexCode();
     builder.addReturn();
@@ -224,9 +225,10 @@ int main() {
     arr[1] = 3.141f;
     arr[2] = 2.718f;
     arr[3] = 2.000f;
+    float scale = 0.500f;
 
     ExecutableInstance instance(builder.getResult());
-    instance(0, 0, (uintptr_t)arr.data());
+    instance(0, (uintptr_t)&scale, (uintptr_t)arr.data());
 
     printf("%f %f %f %f\n", arr[0], arr[1], arr[2], arr[3]);
     printf("%f %f %f %f\n", arr[4], arr[5], arr[6], arr[7]);
