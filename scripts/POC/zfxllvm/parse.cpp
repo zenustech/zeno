@@ -7,8 +7,22 @@
 #include <memory>
 #include <set>
 
+/* common utils */
+
 using std::cout;
 using std::endl;
+
+template <int First, int Last, typename Lambda>
+inline constexpr bool static_for(Lambda const &f) {
+    if constexpr (First < Last) {
+        if (f(std::integral_constant<int, First>{})) {
+            return true;
+        } else {
+            return static_for<First + 1, Last>(f);
+        }
+    }
+    return false;
+}
 
 template <class T>
 struct copiable_unique_ptr : std::unique_ptr<T> {
@@ -42,7 +56,45 @@ bool contains(std::set<T> const &list, T const &value) {
     return list.find(value) != list.end();
 }
 
-static inline char opchars[] = "+-*/%=()";
+template <size_t BufSize = 4096, class ...Ts>
+std::string format(const char *fmt, Ts &&...ts) {
+    char buf[BufSize];
+    sprintf(buf, fmt, std::forward<Ts>(ts)...);
+    return buf;
+}
+
+template <class ...Ts>
+[[noreturn]] void error(const char *fmt, Ts &&...ts) {
+    printf("ERROR: ");
+    printf(fmt, std::forward<Ts>(ts)...);
+    putchar('\n');
+    exit(-1);
+}
+
+/* tokenizer */
+
+static char opchars[] = "+-*/%=()";
+static std::string opstrs[] = {"+", "-", "*", "/", "%", "=", "(", ")"};
+
+bool is_literial_atom(std::string const &s) {
+    if (!s.size()) return false;
+    if (isdigit(s[0]) || s.size() > 1 && s[0] == '-' && isdigit(s[1])) {
+        return true;
+    }
+    return false;
+}
+
+bool is_symbolic_atom(std::string const &s) {
+    if (!s.size()) return false;
+    if (isalpha(s[0])) {
+        return true;
+    }
+    return false;
+}
+
+bool is_atom(std::string const &s) {
+    return is_literial_atom(s) || is_symbolic_atom(s);
+}
 
 std::vector<std::string> tokenize(const char *cp) {
     std::vector<std::string> tokens;
@@ -69,13 +121,15 @@ std::vector<std::string> tokenize(const char *cp) {
             tokens.push_back(res);
 
         } else {
-            printf("unexpected character token: `%c`", *cp);
+            error("unexpected character token: `%c`", *cp);
             break;
         }
     }
     tokens.push_back("");  // EOF sign
     return tokens;
 }
+
+/* AST parser */
 
 using Iter = typename std::vector<std::string>::iterator;
 
@@ -99,17 +153,6 @@ struct AST {
 
 AST::Ptr make_ast(std::string const &token, Iter iter, std::vector<AST::Ptr> const &args = {}) {
     return std::make_unique<AST>(token, iter, args);
-}
-
-bool is_atom(std::string const &s) {
-    if (!s.size()) return false;
-    if (isdigit(s[0]) || s.size() > 1 && s[0] == '-' && isdigit(s[1])) {
-        return true;
-    }
-    if (isalpha(s[0])) {
-        return true;
-    }
-    return false;
 }
 
 struct Parser {
@@ -216,6 +259,246 @@ void print(AST *ast) {
         cout << ')';
 }
 
+/* IR statements */
+
+struct Statement;
+
+struct IRVisitor {
+    virtual void visit(Statement *stmt) = 0;
+};
+
+struct Statement {
+    const int id;
+
+    explicit Statement
+        ( int id_
+        )
+        : id(id_)
+    {}
+
+    void accept(IRVisitor *visitor) {
+        visitor->visit(this);
+    }
+
+    virtual std::string print() const {
+        return format("$%d = Statement");
+    }
+};
+
+template <class T>
+struct Stmt : Statement {
+    using Statement::Statement;
+};
+
+struct UnaryOpStmt : Stmt<UnaryOpStmt> {
+    std::string op;
+    Statement *src;
+
+    UnaryOpStmt
+        ( int id_
+        , std::string op_
+        , Statement *src_
+        )
+        : Stmt(id_)
+        , op(op_)
+        , src(src_)
+    {}
+
+    virtual std::string print() const override {
+        return format(
+            "$%d = UnaryOp [%s] $%d"
+            , id
+            , op.c_str()
+            , src->id
+            );
+    }
+};
+
+struct BinaryOpStmt : Stmt<BinaryOpStmt> {
+    std::string op;
+    Statement *lhs;
+    Statement *rhs;
+
+    BinaryOpStmt
+        ( int id_
+        , std::string op_
+        , Statement *lhs_
+        , Statement *rhs_
+        )
+        : Stmt(id_)
+        , op(op_)
+        , lhs(lhs_)
+        , rhs(rhs_)
+    {}
+
+    virtual std::string print() const override {
+        return format(
+            "$%d = BinaryOp [%s] $%d $%d"
+            , id
+            , op.c_str()
+            , lhs->id
+            , rhs->id
+            );
+    }
+};
+
+struct AssignStmt : Stmt<AssignStmt> {
+    Statement *dst;
+    Statement *src;
+
+    AssignStmt
+        ( int id_
+        , Statement *dst_
+        , Statement *src_
+        )
+        : Stmt(id_)
+        , dst(dst_)
+        , src(src_)
+    {}
+
+    virtual std::string print() const override {
+        return format(
+            "$%d = Assign $%d $%d"
+            , id
+            , dst->id
+            , src->id
+            );
+    }
+};
+
+struct SymbolStmt : Stmt<SymbolStmt> {
+    std::string name;
+
+    SymbolStmt
+        ( int id_
+        , std::string name_
+        )
+        : Stmt(id_)
+        , name(name_)
+    {}
+
+    virtual std::string print() const override {
+        return format(
+            "$%d = Symbol [%s]"
+            , id
+            , name.c_str()
+            );
+    }
+};
+
+struct LiterialStmt : Stmt<LiterialStmt> {
+    std::string name;
+
+    LiterialStmt
+        ( int id_
+        , std::string name_
+        )
+        : Stmt(id_)
+        , name(name_)
+    {}
+
+    virtual std::string print() const override {
+        return format(
+            "$%d = Literial [%s]"
+            , id
+            , name.c_str()
+            );
+    }
+};
+
+/* IR lowering */
+
+struct IR {
+    std::vector<std::unique_ptr<Statement>> stmts;
+
+    template <class T, class ...Ts>
+    T *emplace_back(Ts &&...ts) {
+        auto id = stmts.size();
+        auto stmt = std::make_unique<T>(id, std::forward<Ts>(ts)...);
+        auto raw_ptr = stmt.get();
+        stmts.push_back(std::move(stmt));
+        return raw_ptr;
+    }
+
+    void print() const {
+        for (auto const &s: stmts) {
+            cout << s->print() << endl;
+        }
+    }
+
+    void accept(IRVisitor *visitor) {
+        for (auto const &stmt: stmts) {
+            stmt->accept(visitor);
+        }
+    }
+
+};
+
+struct LowerAST {
+    std::unique_ptr<IR> ir = std::make_unique<IR>();
+
+    Statement *serialize(AST *ast) {
+        if (0) {
+
+        } else if (contains({"+", "-", "*", "/", "%"}, ast->token) && ast->args.size() == 2) {
+            auto lhs = serialize(ast->args[0].get());
+            auto rhs = serialize(ast->args[1].get());
+            return ir->emplace_back<BinaryOpStmt>(ast->token, lhs, rhs);
+
+        } else if (contains({"+", "-"}, ast->token) && ast->args.size() == 1) {
+            auto src = serialize(ast->args[0].get());
+            return ir->emplace_back<UnaryOpStmt>(ast->token, src);
+
+        } else if (contains({"="}, ast->token) && ast->args.size() == 2) {
+            auto dst = serialize(ast->args[0].get());
+            auto src = serialize(ast->args[1].get());
+            return ir->emplace_back<AssignStmt>(dst, src);
+
+        } else if (is_symbolic_atom(ast->token) && ast->args.size() == 0) {
+            return ir->emplace_back<SymbolStmt>(ast->token);
+
+        } else if (is_literial_atom(ast->token) && ast->args.size() == 0) {
+            return ir->emplace_back<LiterialStmt>(ast->token);
+
+        } else {
+            error("cannot lower AST at token: `%s` (%d args)\n",
+                ast->token.c_str(), ast->args.size());
+            return nullptr;
+        }
+    }
+};
+
+/* IR passes */
+
+template <class T, class ...Ts>
+struct Visitor : IRVisitor {
+    virtual void visit(Statement *stmt) override {
+        static_for<0, sizeof...(Ts)>([this, stmt] (auto i) {
+            using S = std::tuple_element_t<i, std::tuple<Ts...>>;
+            auto p = dynamic_cast<S *>(stmt);
+            if (!p) return false;
+            reinterpret_cast<T *>(this)->visit(p);
+            return true;
+        });
+    }
+};
+
+struct DemoVisitor : Visitor
+    < DemoVisitor
+    , SymbolStmt
+    , LiterialStmt
+    > {
+    void visit(SymbolStmt *stmt) {
+        printf("DemoVisitor got symbol: [%s]\n", stmt->name.c_str());
+    }
+
+    void visit(LiterialStmt *stmt) {
+        printf("DemoVisitor got literial: [%s]\n", stmt->name.c_str());
+    }
+};
+
+/* main body */
+
 int main() {
     std::string code("pos = 1 + (2 + x*4) * 3");
     cout << code << endl;
@@ -228,12 +511,22 @@ int main() {
     cout << endl;
 
     cout << "==============" << endl;
-    Parser p(tokens);
-    auto asts = p.parse();
+    Parser parser(tokens);
+    auto asts = parser.parse();
     for (auto const &a: asts) {
         print(a.get());
         cout << endl;
     }
+
+    LowerAST lower;
+    for (auto const &a: asts) {
+        lower.serialize(a.get());
+    }
+    auto ir = std::move(lower.ir);
+    ir->print();
+
+    DemoVisitor demo;
+    ir->accept(&demo);
 
     cout << "==============" << endl;
     return 0;
