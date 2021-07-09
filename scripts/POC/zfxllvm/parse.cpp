@@ -15,6 +15,12 @@ struct copiable_unique_ptr : std::unique_ptr<T> {
     using std::unique_ptr<T>::unique_ptr;
     using std::unique_ptr<T>::operator=;
 
+    copiable_unique_ptr &operator=(copiable_unique_ptr const &o) {
+        std::unique_ptr<T>::operator=(std::unique_ptr<T>(
+            std::make_unique<T>(static_cast<T const &>(*o))));
+        return *this;
+    }
+
     copiable_unique_ptr(std::unique_ptr<T> &&o)
         : std::unique_ptr<T>(std::move(o)) {
     }
@@ -121,10 +127,26 @@ struct Parser {
         return nullptr;
     }
 
-    AST::Ptr parse_stmt(Iter iter) {
+    AST::Ptr parse_expr(Iter iter) {
         if (auto lhs = parse_atom(iter); lhs) {
+            while (1) {
+                if (auto ope = parse_operator(lhs->iter + 1, {"+", "-"}); ope) {
+                    if (auto rhs = parse_atom(iter); rhs) {
+                        lhs = make_ast(ope->iter, {std::move(lhs), std::move(rhs)});
+                    }
+                } else {
+                    break;
+                }
+            }
+            return lhs;
+        }
+        return nullptr;
+    }
+
+    AST::Ptr parse_stmt(Iter iter) {
+        if (auto lhs = parse_expr(iter); lhs) {
             if (auto ope = parse_operator(lhs->iter + 1, {"="}); ope) {
-                if (auto rhs = parse_atom(ope->iter + 1); rhs) {
+                if (auto rhs = parse_expr(ope->iter + 1); rhs) {
                     return make_ast(ope->iter, {std::move(lhs), std::move(rhs)});
                 }
             }
