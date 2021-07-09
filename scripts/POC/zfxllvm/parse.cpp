@@ -63,6 +63,7 @@ std::vector<std::string> tokenize(const char *cp) {
             break;
         }
     }
+    tokens.push_back("");  // EOF sign
     return tokens;
 }
 
@@ -89,18 +90,29 @@ AST::Ptr make_ast(Ts &&...ts) {
 struct Parser {
     std::vector<std::string> tokens;
     typename std::vector<std::string>::iterator token;
-    std::vector<AST::Ptr> asts;
 
-    Parser(std::vector<std::string> const &tokens_) : tokens(tokens_) {
+    explicit Parser
+        ( std::vector<std::string> const &tokens_
+        )
+        : tokens(tokens_)
+    {
         token = tokens.begin();
     }
 
     AST::Ptr parse_atom() {
-        return make_ast(*token++);
+        auto id = *token++;
+        if (!id.size()) return nullptr;
+        return make_ast(id);
     }
 
-    AST::Ptr parse() {
-        return parse_atom();
+    auto parse() {
+        std::vector<AST::Ptr> asts;
+        while (1) {
+            auto p = parse_atom();
+            if (!p) break;
+            asts.push_back(std::move(p));
+        }
+        return asts;
     }
 };
 
@@ -120,10 +132,10 @@ int main() {
     std::string code("pos = 1 * 3");
     auto tokens = tokenize(code.c_str());
     Parser p(tokens);
-    p.parse();
-    for (auto const &a: p.asts) {
+    auto asts = p.parse();
+    for (auto const &a: asts) {
         print(a.get());
+        cout << endl;
     }
-    cout << endl;
     return 0;
 }
