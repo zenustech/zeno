@@ -2649,7 +2649,8 @@
    "params": [],
    "categories": [
     "subgraph"
-   ]
+   ],
+   "is_subgraph": true
   },
   "add": {
    "inputs": [
@@ -2665,7 +2666,8 @@
    "params": [],
    "categories": [
     "subgraph"
-   ]
+   ],
+   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],

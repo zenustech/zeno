@@ -159,9 +159,11 @@ class QDMGraphicsScene(QGraphicsScene):
             node_edges = node.load(ident, data)
             edges.extend(node_edges)
             self.addNode(node)
-            nodesLut[ident] = node
             if select_all:
                 node.setSelected(True)
+
+        for node in self.nodes:
+            nodesLut[node.ident] = node
 
         for dest, (ident, name) in edges:
             if ident not in nodesLut:
@@ -190,6 +192,14 @@ class QDMGraphicsScene(QGraphicsScene):
         for key in self.descs.keys():
             if name.lower() in key.lower():
                 yield key
+
+    def reloadNodes(self, nodes):
+        savedNodes = {}
+        for node in nodes:
+            savedNodes.update(node.dump())
+        for node in nodes:
+            node.remove()
+        self.loadGraph(savedNodes)
 
     def makeNodeBase(self, name):
         ctor = globals().get('QDMGraphicsNode_' + name, QDMGraphicsNode)
@@ -225,19 +235,7 @@ class QDMGraphicsScene(QGraphicsScene):
             return out
 
         node = self.makeNodeBase(name)
-        desc = self.descs[name]
-        
-        '''
-        if name in dict(original_descs):
-            origin_desc = original_descs[name]
-            node.desc_inputs =  myunion(origin_desc['inputs'],desc['inputs'])
-            node.desc_outputs = myunion(origin_desc['outputs'],desc['outputs'])
-            node.desc_params =  myunion2(origin_desc['params'],desc['params'])
-        else:
-        '''
-        node.desc_inputs = desc['inputs']
-        node.desc_outputs = desc['outputs']
-        node.desc_params = desc['params']
+        node.desc = self.descs[name]
         return node
 
     def addNode(self, node):
@@ -1106,9 +1104,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.name = None
         self.ident = None
 
-        self.desc_inputs = []
-        self.desc_outputs = []
-        self.desc_params = []
+        self.desc = {'inputs': [], 'outputs': [], 'params': []}
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
@@ -1182,9 +1178,9 @@ class QDMGraphicsNode(QGraphicsItem):
         self.initDummySockets()
         self.initCondButtons()
 
-        inputs = self.desc_inputs
-        outputs = self.desc_outputs
-        params = self.desc_params
+        inputs = self.desc['inputs']
+        outputs = self.desc['outputs']
+        params = self.desc['params']
 
         y = self.height + TEXT_HEIGHT * 0.4
 
@@ -1478,7 +1474,6 @@ class NodeEditor(QWidget):
             self.scenes[name] = scene
         else:
             scene = self.scenes[name]
-        # self.updateSubgraph()
         self.view.setScene(scene)
         self.edit_graphname.clear()
         self.edit_graphname.addItems(self.scenes.keys())
@@ -1546,6 +1541,8 @@ class NodeEditor(QWidget):
     def on_switch_graph(self, name):
         self.switchScene(name)
         self.initDescriptors()
+        subg_nodes = [n for n in self.scene.nodes if 'is_subgraph' in n.desc]
+        self.scene.reloadNodes(subg_nodes)
         self.edit_graphname.setCurrentText(name)
 
     def on_new_graph(self):
@@ -1798,6 +1795,7 @@ class NodeEditor(QWidget):
             desc['outputs'] = suboutputs
             desc['params'] = []
             desc['categories'] = [subcategory]
+            desc['is_subgraph'] = True
             descs[name] = desc
         return descs
 
