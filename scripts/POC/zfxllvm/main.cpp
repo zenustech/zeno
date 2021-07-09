@@ -16,10 +16,10 @@ namespace opcode {
         div = 0x5e,
         mov = 0x10,
         sqrt = 0x51,
-        loadu = 0x11,
-        loada = 0x29,
-        storeu = 0x10,
-        storea = 0x28,
+        loadu = 0x10,
+        loada = 0x28,
+        storeu = 0x11,
+        storea = 0x29,
     };
 };
 
@@ -78,11 +78,15 @@ public:
         }
     }
 
-    void addMathOp(int type, int op, int dst, int lhs, int rhs) {
+    void addBinaryOp(int type, int op, int dst, int lhs, int rhs) {
         res.push_back(0xc5);
         res.push_back(type | ~lhs << 3);
         res.push_back(op);
         res.push_back(0xc0 | dst << 3 | lhs);
+    }
+
+    void addUnaryOp(int type, int op, int dst, int src) {
+        addBinaryOp(type, op, dst, 0, src);
     }
 
     void addReturn() {
@@ -153,22 +157,25 @@ public:
 
 int main() {
     SIMDBuilder builder;
-    //builder.addMathOp(optype::xmmps, opcode::sqrt, 0, 0, 0);
     builder.addMemoryOp(optype::xmmps, opcode::loadu, opreg::mm0,
-        opreg::rax, memflag::reg);
+        opreg::rdx, memflag::reg);
+    builder.addUnaryOp(optype::xmmps, opcode::sqrt, opreg::mm0, opreg::mm0);
     builder.addMemoryOp(optype::xmmps, opcode::storeu, opreg::mm0,
-        opreg::rax, memflag::reg_imm8, 16);
+        opreg::rdx, memflag::reg_imm8, 16);
     builder.printHexCode();
     builder.addReturn();
 
-    float arr[8];
-    arr[0] = 1.618;
-    arr[1] = 3.141;
-    arr[2] = 2.718;
-    arr[3] = 0.577;
+    std::vector<float> arr(8);
+    arr[0] = 1.618f;
+    arr[1] = 3.141f;
+    arr[2] = 2.718f;
+    arr[3] = 2.000f;
 
-    ExecutableInstance inst(builder.getResult());
-    inst((uintptr_t)arr, 0, 0);
+    ExecutableInstance instance(builder.getResult());
+    instance(0, 0, (uintptr_t)arr.data());
+
+    printf("%f %f %f %f\n", arr[0], arr[1], arr[2], arr[3]);
+    printf("%f %f %f %f\n", arr[4], arr[5], arr[6], arr[7]);
 
     return 0;
 }
