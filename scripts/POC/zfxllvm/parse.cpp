@@ -123,15 +123,24 @@ AST::Ptr make_ast(std::string const &token, Iter iter, std::vector<AST::Ptr> con
     return std::make_unique<AST>(token, iter, args);
 }
 
-bool is_atom(std::string const &s) {
+bool is_literial_atom(std::string const &s) {
     if (!s.size()) return false;
     if (isdigit(s[0]) || s.size() > 1 && s[0] == '-' && isdigit(s[1])) {
         return true;
     }
+    return false;
+}
+
+bool is_symbolic_atom(std::string const &s) {
+    if (!s.size()) return false;
     if (isalpha(s[0])) {
         return true;
     }
     return false;
+}
+
+bool is_atom(std::string const &s) {
+    return is_literial_atom(s) || is_symbolic_atom(s);
 }
 
 struct Parser {
@@ -241,7 +250,13 @@ void print(AST *ast) {
 /* ast serializer */
 
 struct Statement {
-    int id;
+    const int id;
+
+    explicit Statement
+        ( int id_
+        )
+        : id(id_)
+    {}
 
     virtual std::string print() {
         return format("$%d = Statement");
@@ -253,10 +268,12 @@ struct UnaryOpStmt : Statement {
     Statement *src;
 
     UnaryOpStmt
-        ( std::string op_
+        ( int id_
+        , std::string op_
         , Statement *src_
         )
-        : op(op_)
+        : Statement(id_)
+        , op(op_)
         , src(src_)
     {}
 
@@ -276,11 +293,13 @@ struct BinaryOpStmt : Statement {
     Statement *rhs;
 
     BinaryOpStmt
-        ( std::string op_
+        ( int id_
+        , std::string op_
         , Statement *lhs_
         , Statement *rhs_
         )
-        : op(op_)
+        : Statement(id_)
+        , op(op_)
         , lhs(lhs_)
         , rhs(rhs_)
     {}
@@ -301,10 +320,12 @@ struct AssignStmt : Statement {
     Statement *src;
 
     AssignStmt
-        ( Statement *dst_
+        ( int id_
+        , Statement *dst_
         , Statement *src_
         )
-        : dst(dst_)
+        : Statement(id_)
+        , dst(dst_)
         , src(src_)
     {}
 
@@ -318,18 +339,40 @@ struct AssignStmt : Statement {
     }
 };
 
-struct IdentStmt : Statement {
+struct SymbolStmt : Statement {
     std::string name;
 
-    IdentStmt
-        ( std::string name_
+    SymbolStmt
+        ( int id_
+        , std::string name_
         )
-        : name(name_)
+        : Statement(id_)
+        , name(name_)
     {}
 
     virtual std::string print() override {
         return format(
-            "$%d = Ident [%s]"
+            "$%d = Symbol [%s]"
+            , id
+            , name.c_str()
+            );
+    }
+};
+
+struct LiterialStmt : Statement {
+    std::string name;
+
+    LiterialStmt
+        ( int id_
+        , std::string name_
+        )
+        : Statement(id_)
+        , name(name_)
+    {}
+
+    virtual std::string print() override {
+        return format(
+            "$%d = Literial [%s]"
             , id
             , name.c_str()
             );
@@ -341,7 +384,8 @@ struct IRBuilder {
 
     template <class T, class ...Ts>
     T *emplace_back(Ts &&...ts) {
-        auto stmt = std::make_unique<T>(std::forward<Ts>(ts)...);
+        auto id = stmts.size();
+        auto stmt = std::make_unique<T>(id, std::forward<Ts>(ts)...);
         auto raw_ptr = stmt.get();
         stmts.push_back(std::move(stmt));
         return raw_ptr;
@@ -364,11 +408,14 @@ struct IRBuilder {
             auto src = serialize(ast->args[1].get());
             return emplace_back<AssignStmt>(dst, src);
 
-        } else if (is_atom(ast->token) && ast->args.size() == 0) {
-            return emplace_back<IdentStmt>(ast->token);
+        } else if (is_symbolic_atom(ast->token) && ast->args.size() == 0) {
+            return emplace_back<SymbolStmt>(ast->token);
+
+        } else if (is_literial_atom(ast->token) && ast->args.size() == 0) {
+            return emplace_back<LiterialStmt>(ast->token);
 
         } else {
-            error("cannot lower AST at token: `%s` (with %d args)\n",
+            error("cannot lower AST at token: `%s` (%d args)\n",
                 ast->token.c_str(), ast->args.size());
             return nullptr;
         }
