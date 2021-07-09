@@ -486,9 +486,14 @@ struct Visitor : IRVisitor {
 struct DemoVisitor : Visitor
     < DemoVisitor
     , SymbolStmt
+    , LiterialStmt
     > {
     void visit(SymbolStmt *stmt) {
         printf("DemoVisitor got symbol: [%s]\n", stmt->name.c_str());
+    }
+
+    void visit(LiterialStmt *stmt) {
+        printf("DemoVisitor got literial: [%s]\n", stmt->name.c_str());
     }
 };
 
