@@ -14,7 +14,7 @@ from zenutils import go, gen_unique_ident
 from zeno import launch
 
 from . import asset_path
-import copy
+
 CURR_VERSION = 'v1'
 MAX_STACK_LENGTH = 100
 
@@ -52,7 +52,7 @@ style = {
     'hori_margin': 9,
     'dummy_socket_offset': 15,
 }
-original_descs = launch.getDescriptors()
+
 class HistoryStack:
     def __init__(self, scene):
         self.scene = scene
@@ -197,10 +197,9 @@ class QDMGraphicsScene(QGraphicsScene):
         node.setName(name)
         return node
 
-    
-
     def makeNode(self, name):
         def myunion(list1, list2):
+            import copy
             out = copy.deepcopy(list1)
             if list2 is not None:
                 if out is None:
@@ -211,6 +210,7 @@ class QDMGraphicsScene(QGraphicsScene):
             return out
 
         def myunion2(param1, param2):
+            import copy
             out = copy.deepcopy(param1)
             nameList = []
             if out is not None:
@@ -227,15 +227,17 @@ class QDMGraphicsScene(QGraphicsScene):
         node = self.makeNodeBase(name)
         desc = self.descs[name]
         
+        '''
         if name in dict(original_descs):
             origin_desc = original_descs[name]
             node.desc_inputs =  myunion(origin_desc['inputs'],desc['inputs'])
             node.desc_outputs = myunion(origin_desc['outputs'],desc['outputs'])
             node.desc_params =  myunion2(origin_desc['params'],desc['params'])
-        else :
-            node.desc_inputs = desc['inputs']
-            node.desc_outputs = desc['outputs']
-            node.desc_params = desc['params']
+        else:
+        '''
+        node.desc_inputs = desc['inputs']
+        node.desc_outputs = desc['outputs']
+        node.desc_params = desc['params']
         return node
 
     def addNode(self, node):
@@ -1454,7 +1456,6 @@ class NodeEditor(QWidget):
 
         self.initExecute()
         self.initShortcuts()
-        self.initialized = False
         self.initDescriptors()
 
         self.newProgram()
@@ -1483,8 +1484,6 @@ class NodeEditor(QWidget):
         self.view.setScene(scene)
         self.edit_graphname.clear()
         self.edit_graphname.addItems(self.scenes.keys())
-        
-        
 
     @property
     def scene(self):
@@ -1575,9 +1574,6 @@ class NodeEditor(QWidget):
 
     def initDescriptors(self):
         descs = launch.getDescriptors()
-        if not self.initialized:
-            self.initialized = True
-
         subg_descs = self.getSubgraphDescs()
         descs.update(subg_descs)
         descs.update({
