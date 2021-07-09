@@ -1330,7 +1330,7 @@
      "width": 329.6875,
      "height": 814.0624999999999,
      "title": "FLIP\u89e3\u7b97\u8282\u70b9",
-     "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n     \u7ed9\u6211\u9700\u8981\u7684\u6570\u636e\n                \u6211\u5c31\u80fd\u9884\u6d4b\u4e0b\u4e00\u523b\u7684\u5f62\u6001\n                              \u4f60\u95ee\u6211 \u4e0b\u4e00\u523b\u7684\u4e0b\u4e00\u523b\u662f\u600e\u6837\u7684?\n                                                   \u6216\u8005\u8bf4\u540e\u6765\u7684\u540e\u6765?"
+     "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n     \u7ed9\u6211\u9700\u8981\u7684\u6570\u636e\n                \u6211\u5c31\u80fd\u9884\u6d4b\u4e0b\u4e00\u523b\u7684\u5f62\u6001\n                              \u4f60\u95ee\u6211 \u4e0b\u4e00\u523b\u7684\u4e0b\u4e00\u523b\u662f\u600e\u6837\u7684?\n                                                   \u6216\u8005\u8bf4\u540e\u6765\u7684\u540e\u6765?\n\n\n\n\n\u6211\u4e5f\u662f\u4e00\u4e2a\u5b98\u65b9\u5b50\u56fe, \u70b9\u8d5e\u53cc\u8fde\u8fdb\u5165."
     },
     "f91214d4-Blackboard": {
      "name": "Blackboard",
@@ -1346,9 +1346,9 @@
     }
    },
    "view": {
-    "scale": 0.2621440000000001,
-    "trans_x": 18308,
-    "trans_y": 999
+    "scale": 1.25,
+    "trans_x": 5840,
+    "trans_y": 211
    }
   },
   "FLIPSimTemplate": {
