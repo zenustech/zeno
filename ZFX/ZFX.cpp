@@ -18,8 +18,7 @@ int main() {
     ir->print();
 
     cout << "==============" << endl;
-    DemoVisitor demo;
-    demo.apply(ir.get());
+    apply_demo_visitor(ir.get());
     ir->print();
 
     cout << "==============" << endl;
