@@ -115,8 +115,8 @@ struct LowerAccess : Visitor<LowerAccess> {
     }
 
     void visit(SymbolStmt *stmt) {
-        loaders[stmt->id] = [](int regid) {
-            cout << "LOADING " << regid << endl;
+        loaders[stmt->id] = [stmt](int regid) {
+            cout << "LOADING SYMBOL " << stmt->name << " TO " << regid << endl;
         };
         ir->emplace_back<AsmAllocaStmt>
             ( stmt->name
@@ -124,6 +124,9 @@ struct LowerAccess : Visitor<LowerAccess> {
     }
 
     void visit(LiterialStmt *stmt) {
+        loaders[stmt->id] = [stmt](int regid) {
+            cout << "LOADING LITERIAL " << stmt->name << " TO " << regid << endl;
+        };
         ir->emplace_back<AsmConstStmt>
             ( stmt->name
             );
