@@ -1,34 +1,7 @@
 #include "IRVisitor.h"
 #include "Stmts.h"
 #include <map>
-
-struct LoaderCallbackBase {
-    virtual void operator()(int regid) const = 0;
-};
-
-template <class F>
-struct LoaderCallbackImpl : LoaderCallbackBase {
-    F f;
-    LoaderCallbackImpl(F const &f) : f(f) {}
-    virtual void operator()(int regid) const override {
-        f(regid);
-    }
-};
-
-struct LoaderCallback {
-    std::unique_ptr<LoaderCallbackBase> p;
-
-    LoaderCallback() = default;
-
-    template <class F>
-    LoaderCallback(F const &f)
-        : p(std::make_unique<LoaderCallbackImpl<F>>(f))
-    {}
-
-    void operator()(int regid) const {
-        (*p)(regid);
-    }
-};
+#include <functional>
 
 struct LowerAccess : Visitor<LowerAccess> {
     using visit_stmt_types = std::tuple
@@ -57,7 +30,7 @@ struct LowerAccess : Visitor<LowerAccess> {
     std::vector<RegInfo> regs{32};
     std::vector<int> memories;
     std::map<int, int> memories_lut;
-    std::map<int, LoaderCallback> loaders;
+    std::map<int, std::function<void(int)>> loaders;
 
     int temp_save(int regid, int stmtid) {
         for (int i = 0; i < memories.size(); i++) {
@@ -109,7 +82,7 @@ struct LowerAccess : Visitor<LowerAccess> {
         if (auto it = loaders.find(stmtid); it != loaders.end()) {
             it->second(regid);
         } else {
-            cout << format("missing load from $%d to r%d", stmtid, regid) << endl;
+            error("missing loader from $%d to r%d", stmtid, regid);
         }
         return regid;
     }
