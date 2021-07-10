@@ -22,6 +22,8 @@ public:
         }
     }
 
+    ExecutableArena(ExecutableArena const &) = delete;
+
     ~ExecutableArena() {
         munmap(mem, memsize);
     }
@@ -35,8 +37,6 @@ public:
             mem[i] = insts[i];
         }
     }
-
-    ExecutableInstance(ExecutableInstance const &) = delete;
 
     inline void operator()() {
         auto entry = (void (*)())this->mem;

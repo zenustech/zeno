@@ -1,6 +1,8 @@
 #include "assembler/SIMDBuilder.h"
 #include "assembler/Executable.h"
+#include "assembler/Assembler.h"
 #include "common.h"
+#include <map>
 
 #define ERROR_IF(x) do { \
     if (x) { \
@@ -11,6 +13,19 @@
 struct Assembler {
     int simdkind = optype::xmmps;
     std::unique_ptr<SIMDBuilder> builder = std::make_unique<SIMDBuilder>();
+
+    std::map<std::string, int> symtable;
+
+    Assembler() {
+        symtable["pos"] = 0; // debuggy
+    }
+
+    int lookup_symbol_offset(std::string const &sym) {
+        auto it = symtable.find(sym);
+        if (it == symtable.end())
+            error("undefined symbol `%s`", sym.c_str());
+        return it->second;
+    }
 
     void parse(std::string const &lines) {
         for (auto line: split_str(lines, '\n')) {
@@ -24,8 +39,7 @@ struct Assembler {
             } else if (cmd == "lds") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
-                auto sym = linesep[2];
-                auto offset = lookup_symbol_offset(sym);
+                auto offset = lookup_symbol_offset(linesep[2]);
                 builder->addRegularLoadOp(opreg::rax,
                     {opreg::rdx, memflag::reg_imm8, offset});
                 builder->addAvxMemoryOp(simdkind, opcode::loadu,
@@ -34,8 +48,7 @@ struct Assembler {
             } else if (cmd == "sts") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
-                auto sym = linesep[2];
-                auto offset = lookup_symbol_offset(sym);
+                auto offset = lookup_symbol_offset(linesep[2]);
                 builder->addRegularLoadOp(opreg::rax,
                     {opreg::rdx, memflag::reg_imm8, offset});
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
@@ -84,4 +97,15 @@ struct Assembler {
             }
         }
     }
+};
+
+ExecutableInstance assemble_program(std::string const &lines) {
+    Assembler assembler;
+    assembler.parse(lines);
+    auto const &insts = assembler.builder->getResult();
+    for (auto const &inst: insts) {
+        printf("%02X ", inst);
+    }
+    printf("\n");
+    return ExecutableInstance(insts);
 };

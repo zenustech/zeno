@@ -1,9 +1,10 @@
 #include "AST.h"
 #include "IR.h"
 #include "Visitors.h"
+#include "assembler/Assembler.h"
 
 int main() {
-    std::string code("pos = -x");
+    std::string code("pos = pos + 1");
     cout << code << endl;
 
     cout << "==============" << endl;
@@ -24,6 +25,9 @@ int main() {
     cout << "==============" << endl;
     auto assem = apply_emit_assembly(ir.get());
     cout << assem;
+
+    cout << "==============" << endl;
+    auto inst = assemble_program(assem);
 
     cout << "==============" << endl;
     return 0;
