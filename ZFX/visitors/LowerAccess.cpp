@@ -56,10 +56,8 @@ struct LowerAccess : Visitor<LowerAccess> {
             if (regs[i].last_used < regs[regid].last_used)
                 regid = i;
         }
-        if (regs[regid].curr_stmtid != -1) {
-            int memid = temp_save(regid, regs[regid].curr_stmtid);
-            ir->emplace_back<AsmMemoryStoreStmt>(memid, regid);
-        }
+        int memid = temp_save(regid, regs[regid].curr_stmtid);
+        ir->emplace_back<AsmMemoryStoreStmt>(memid, regid);
         return regid;
     }
 
