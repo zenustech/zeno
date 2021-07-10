@@ -1,14 +1,20 @@
 #pragma once
 
 #include "Statement.h"
+#include <map>
 
 struct IR {
     std::vector<std::unique_ptr<Statement>> stmts;
+    std::map<Statement *, Statement *> cloned;
+
+    IR() = default;
+    IR(IR const &ir) { *this = ir; }
 
     IR &operator=(IR const &ir) {
         stmts.clear();
         for (auto const &s: ir.stmts) {
-            push_clone_back(s.get());
+            auto stmt = s.get();
+            auto new_stmt = push_clone_back(stmt);
         }
         return *this;
     }
@@ -22,11 +28,19 @@ struct IR {
         return raw_ptr;
     }
 
-    Statement *push_clone_back(Statement const *stmt) {
+    Statement *push_clone_back(Statement const *stmt_) {
+        auto stmt = const_cast<Statement *>(stmt_);
+        if (auto it = cloned.find(stmt); it != cloned.end()) {
+            return it->second;
+        }
+        for (Statement *&field: stmt->fields()) {
+            field = push_clone_back(field);
+        }
         auto id = stmts.size();
         auto new_stmt = stmt->clone(id);
         auto raw_ptr = new_stmt.get();
         stmts.push_back(std::move(new_stmt));
+        cloned[stmt] = raw_ptr;
         return raw_ptr;
     }
 
