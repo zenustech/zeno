@@ -172,42 +172,50 @@ struct AsmAssignStmt : AsmStmt<AsmAssignStmt> {
     }
 };
 
-struct AsmConstStmt : AsmStmt<AsmConstStmt> {
+struct AsmLoadConstStmt : AsmStmt<AsmLoadConstStmt> {
+    int dst;
     std::string name;
 
-    AsmConstStmt
+    AsmLoadConstStmt
         ( int id_
+        , int dst_
         , std::string name_
         )
         : AsmStmt(id_)
+        , dst(dst_)
         , name(name_)
     {}
 
     virtual std::string print() const override {
         return format(
-            "$%d = AsmConst [%s]"
+            "$%d = AsmLoadConst r%d [%s]"
             , id
+            , dst
             , name.c_str()
             );
     }
 };
 
 
-struct AsmAllocaStmt : AsmStmt<AsmAllocaStmt> {
+struct AsmLoadSymbolStmt : AsmStmt<AsmLoadSymbolStmt> {
+    int dst;
     std::string name;
 
-    AsmAllocaStmt
+    AsmLoadSymbolStmt
         ( int id_
+        , int dst_
         , std::string name_
         )
         : AsmStmt(id_)
+        , dst(dst_)
         , name(name_)
     {}
 
     virtual std::string print() const override {
         return format(
-            "$%d = AsmAlloca [%s]"
+            "$%d = AsmLoadSymbol r%d [%s]"
             , id
+            , dst
             , name.c_str()
             );
     }

@@ -115,21 +115,21 @@ struct LowerAccess : Visitor<LowerAccess> {
     }
 
     void visit(SymbolStmt *stmt) {
-        loaders[stmt->id] = [stmt](int regid) {
-            cout << "LOADING SYMBOL " << stmt->name << " TO " << regid << endl;
+        loaders[stmt->id] = [this, stmt](int regid) {
+            ir->emplace_back<AsmLoadSymbolStmt>
+                ( regid
+                , stmt->name
+                );
         };
-        ir->emplace_back<AsmAllocaStmt>
-            ( stmt->name
-            );
     }
 
     void visit(LiterialStmt *stmt) {
-        loaders[stmt->id] = [stmt](int regid) {
-            cout << "LOADING LITERIAL " << stmt->name << " TO " << regid << endl;
+        loaders[stmt->id] = [this, stmt](int regid) {
+            ir->emplace_back<AsmLoadConstStmt>
+                ( regid
+                , stmt->name
+                );
         };
-        ir->emplace_back<AsmConstStmt>
-            ( stmt->name
-            );
     }
 
     void visit(BinaryOpStmt *stmt) {
