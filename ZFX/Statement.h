@@ -2,6 +2,10 @@
 
 #include "common.h"
 
+struct Statement;
+
+using StmtFields = std::vector<std::reference_wrapper<Statement *>>;
+
 struct Statement {
     int id;
 
@@ -10,8 +14,6 @@ struct Statement {
         )
         : id(id_)
     {}
-
-    using StmtFields = std::vector<std::reference_wrapper<Statement *>>;
 
     virtual std::string print() const = 0;
     virtual std::unique_ptr<Statement> clone(int newid) const = 0;

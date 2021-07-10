@@ -17,6 +17,6 @@ add_executable(ZFX
     Tokenizer.cpp
     Parser.cpp
     LowerAST.cpp
-    visitors/DemoVisitor.cpp
+    visitors/Clone.cpp
     )
 target_include_directories(ZFX PRIVATE .)

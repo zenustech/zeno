@@ -18,8 +18,9 @@ int main() {
     ir->print();
 
     cout << "==============" << endl;
-    apply_demo_visitor(ir.get());
-    ir->print();
+    auto new_ir = apply_clone(ir.get());
+    ir = nullptr;
+    new_ir->print();
 
     cout << "==============" << endl;
     return 0;
