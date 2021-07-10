@@ -2,10 +2,9 @@
 
 #include "common.h"
 
-using Iter = typename std::vector<std::string>::iterator;
-
 struct AST {
     using Ptr = copiable_unique_ptr<AST>;
+    using Iter = typename std::vector<std::string>::iterator;
 
     Iter iter;
     std::string token;
@@ -34,7 +33,7 @@ struct AST {
     }
 };
 
-inline AST::Ptr make_ast(std::string const &token, Iter iter, std::vector<AST::Ptr> const &args = {}) {
+inline AST::Ptr make_ast(std::string const &token, AST::Iter iter, std::vector<AST::Ptr> const &args = {}) {
     return std::make_unique<AST>(token, iter, args);
 }
 
