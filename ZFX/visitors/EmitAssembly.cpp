@@ -5,6 +5,9 @@
 struct EmitAssembly : Visitor<EmitAssembly> {
     using visit_stmt_types = std::tuple
         < AssignStmt
+        , BinaryOpStmt
+        , LiterialStmt
+        , SymbolStmt
         , Statement
         >;
 
@@ -16,11 +19,29 @@ struct EmitAssembly : Visitor<EmitAssembly> {
     }
 
     void visit(Statement *stmt) {
-        emit("Statement");
+        emit("; unexpected %s", typeid(*stmt).name());
+    }
+
+    void visit(LiterialStmt *stmt) {
+    }
+
+    void visit(BinaryOpStmt *stmt) {
+        const char *opcode = [](auto const &op) {
+            if (0) {
+            } else if (op == "+") { return "add";
+            } else if (op == "-") { return "sub";
+            } else if (op == "*") { return "mul";
+            } else if (op == "/") { return "div";
+            } else if (op == "%") { return "mod";
+            } else { error("invalid binary op `%s`", op.c_str());
+            }
+        }(stmt->op);
+        emit("%s %d %d %d", opcode,
+            stmt->id, stmt->lhs->id, stmt->rhs->id);
     }
 
     void visit(AssignStmt *stmt) {
-        emit("Assign");
+        emit("assign %d %d", stmt->src->id, stmt->dst->id);
     }
 };
 
