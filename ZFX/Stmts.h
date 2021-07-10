@@ -243,7 +243,7 @@ struct AsmBinaryOpStmt : AsmStmt<AsmBinaryOpStmt> {
 
     virtual std::string print() const override {
         return format(
-            "$%d = AsmBinaryOp [%s] r%d r%d r%d"
+            "$%d = AsmBinaryOp (%s) r%d r%d r%d"
             , id
             , op.c_str()
             , dst
@@ -269,10 +269,10 @@ struct AsmMemoryStoreStmt : AsmStmt<AsmMemoryStoreStmt> {
 
     virtual std::string print() const override {
         return format(
-            "$%d = AsmMemoryStore [%d] r%d"
+            "$%d = AsmMemoryStore r%d [%d]"
             , id
-            , mem
             , val
+            , mem
             );
     }
 };
@@ -293,10 +293,10 @@ struct AsmMemoryLoadStmt : AsmStmt<AsmMemoryLoadStmt> {
 
     virtual std::string print() const override {
         return format(
-            "$%d = AsmMemoryLoad [%d] r%d"
+            "$%d = AsmMemoryLoad r%d [%d]"
             , id
-            , mem
             , val
+            , mem
             );
     }
 };

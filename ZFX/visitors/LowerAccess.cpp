@@ -27,7 +27,7 @@ struct LowerAccess : Visitor<LowerAccess> {
         return ir->size();
     }
 
-    std::vector<RegInfo> regs{32};
+    std::vector<RegInfo> regs{2};
     std::vector<int> memories;
     std::map<int, int> memories_lut;
     std::map<int, std::function<void(int)>> loaders;

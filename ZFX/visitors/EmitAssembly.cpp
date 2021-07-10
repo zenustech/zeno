@@ -9,6 +9,8 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         , AsmAssignStmt
         , AsmLoadConstStmt
         , AsmLoadSymbolStmt
+        , AsmMemoryStoreStmt
+        , AsmMemoryLoadStmt
         , Statement
         >;
 
@@ -36,6 +38,14 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         }(stmt->op);
         emit("%s r%d r%d r%d", opcode,
             stmt->dst, stmt->lhs, stmt->rhs);
+    }
+
+    void visit(AsmMemoryStoreStmt *stmt) {
+        emit("st r%d [%d]", stmt->val, stmt->mem);
+    }
+
+    void visit(AsmMemoryLoadStmt *stmt) {
+        emit("ld r%d [%d]", stmt->val, stmt->mem);
     }
 
     void visit(AsmLoadSymbolStmt *stmt) {
