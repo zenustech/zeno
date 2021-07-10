@@ -18,12 +18,8 @@ int main() {
     ir->print();
 
     cout << "==============" << endl;
-    apply_resolve_assign(ir.get());
+    apply_demo_visitor(ir.get());
     ir->print();
-
-    cout << "==============" << endl;
-    auto assem = apply_emit_assembly(ir.get());
-    cout << assem;
 
     cout << "==============" << endl;
     return 0;
