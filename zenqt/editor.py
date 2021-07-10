@@ -515,23 +515,24 @@ class QDMGraphicsPath(QGraphicsPathItem):
             d = self.dstPos
             dist = d.x() - s.x()
             dist = max(100, dist, -dist) * BEZIER_FACTOR
+            m = self.magic
             if abs(s.x() - d.x()) > abs(s.y() - d.y()):
                 _x = 0
-                _y = self.magic
+                _y = m
             else:
-                _x = self.magic
+                _x = m
                 _y = 0
-            path = QPainterPath(QPointF(s.x() - _x, s.y() - _y))
+            path = QPainterPath(QPointF(s.x(), s.y() - m))
             path.cubicTo(
                 s.x() + dist - _x, s.y() - _y,
                 d.x() - dist - _x, d.y() - _y,
-                d.x() - _x, d.y() - _y
+                d.x(), d.y() - m
             )
-            path.lineTo(d.x() + _x, d.y() + _y)
+            path.lineTo(d.x(), d.y() + m)
             path.cubicTo(
                 d.x() - dist + _x, d.y() + _y,
                 s.x() + dist + _x, s.y() + _y,
-                s.x() + _x, s.y() + _y
+                s.x(), s.y() + m
             )
             path.closeSubpath()
         self.setPath(path)
