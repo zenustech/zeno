@@ -36,6 +36,33 @@ struct IR {
         return raw_ptr;
     }
 
+    struct Hole {
+        int id;
+        IR *ir;
+
+        Hole
+            ( int id_
+            , IR *ir_
+            )
+            : id(id_)
+            , ir(ir_)
+            {}
+
+        template <class T, class ...Ts>
+        T *place(Ts &&...ts) const {
+            auto stmt = std::make_unique<T>(id, std::forward<Ts>(ts)...);
+            auto raw_ptr = stmt.get();
+            ir->stmts[id] = std::move(stmt);
+            return raw_ptr;
+        }
+    };
+
+    Hole make_hole_back() {
+        int id = stmts.size();
+        stmts.push_back(nullptr);
+        return Hole(id, this);
+    }
+
     Statement *push_clone_back(Statement const *stmt_) {
         auto stmt = const_cast<Statement *>(stmt_);
         if (auto it = cloned.find(stmt); it != cloned.end()) {
@@ -54,7 +81,9 @@ struct IR {
 
     void print() const {
         for (auto const &s: stmts) {
-            cout << s->print() << endl;
+            if (s) {
+                cout << s->print() << endl;
+            }
         }
     }
 };

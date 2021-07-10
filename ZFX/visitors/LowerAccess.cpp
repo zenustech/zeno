@@ -31,6 +31,7 @@ struct LowerAccess : Visitor<LowerAccess> {
     std::vector<int> memories;
     std::map<int, int> memories_lut;
     std::map<int, std::function<void(int)>> loaders;
+    std::map<int, std::function<void()>> savers;
 
     int temp_save(int regid, int stmtid) {
         for (int i = 0; i < memories.size(); i++) {
@@ -56,8 +57,12 @@ struct LowerAccess : Visitor<LowerAccess> {
             if (regs[i].last_used < regs[regid].last_used)
                 regid = i;
         }
-        int memid = temp_save(regid, regs[regid].curr_stmtid);
-        ir->emplace_back<AsmMemoryStoreStmt>(memid, regid);
+        auto hole = ir->make_hole_back();
+        int old_stmtid = regs[regid].curr_stmtid;
+        savers[old_stmtid] = [this, hole, old_stmtid, regid]() {
+            int memid = temp_save(regid, old_stmtid);
+            hole.place<AsmMemoryStoreStmt>(memid, regid);
+        };
         return regid;
     }
 
@@ -70,6 +75,10 @@ struct LowerAccess : Visitor<LowerAccess> {
         }
         auto regid = alloc_register();
         regs[regid].curr_stmtid = stmtid;
+
+        if (auto it = savers.find(stmtid); it != savers.end()) {
+            it->second();
+        }
 
         if (auto it = memories_lut.find(stmtid); it != memories_lut.end()) {
             int memid = it->second;
