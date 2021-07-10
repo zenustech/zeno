@@ -147,3 +147,127 @@ struct LiterialStmt : Stmt<LiterialStmt> {
             );
     }
 };
+
+struct AsmAssignStmt : AsmStmt<AsmAssignStmt> {
+    int dst;
+    int src;
+
+    AsmAssignStmt
+        ( int id_
+        , int dst_
+        , int src_
+        )
+        : AsmStmt(id_)
+        , dst(dst_)
+        , src(src_)
+    {}
+
+    virtual std::string print() const override {
+        return format(
+            "$%d = AsmAssign r%d r%d"
+            , id
+            , dst
+            , src
+            );
+    }
+};
+
+struct AsmAllocaStmt : AsmStmt<AsmAllocaStmt> {
+    std::string name;
+
+    AsmAllocaStmt
+        ( int id_
+        , std::string name_
+        )
+        : AsmStmt(id_)
+        , name(name_)
+    {}
+
+    virtual std::string print() const override {
+        return format(
+            "$%d = AsmAlloca [%s]"
+            , id
+            , name.c_str()
+            );
+    }
+};
+
+struct AsmBinaryOpStmt : AsmStmt<AsmBinaryOpStmt> {
+    std::string op;
+    int dst;
+    int lhs;
+    int rhs;
+
+    AsmBinaryOpStmt
+        ( int id_
+        , std::string op_
+        , int dst_
+        , int lhs_
+        , int rhs_
+        )
+        : AsmStmt(id_)
+        , op(op_)
+        , dst(dst_)
+        , lhs(lhs_)
+        , rhs(rhs_)
+    {}
+
+    virtual std::string print() const override {
+        return format(
+            "$%d = AsmBinaryOp [%s] r%d r%d r%d"
+            , id
+            , op.c_str()
+            , dst
+            , lhs
+            , rhs
+            );
+    }
+};
+
+struct AsmMemoryStoreStmt : AsmStmt<AsmMemoryStoreStmt> {
+    int mem;
+    int val;
+
+    AsmMemoryStoreStmt
+        ( int id_
+        , int mem_
+        , int val_
+        )
+        : AsmStmt(id_)
+        , mem(mem_)
+        , val(val_)
+    {}
+
+    virtual std::string print() const override {
+        return format(
+            "$%d = AsmMemoryStore [%d] r%d"
+            , id
+            , mem
+            , val
+            );
+    }
+};
+
+struct AsmMemoryLoadStmt : AsmStmt<AsmMemoryLoadStmt> {
+    int mem;
+    int val;
+
+    AsmMemoryLoadStmt
+        ( int id_
+        , int mem_
+        , int val_
+        )
+        : AsmStmt(id_)
+        , mem(mem_)
+        , val(val_)
+    {}
+
+    virtual std::string print() const override {
+        return format(
+            "$%d = AsmMemoryLoad [%d] r%d"
+            , id
+            , mem
+            , val
+            );
+    }
+};

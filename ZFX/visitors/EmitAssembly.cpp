@@ -5,9 +5,7 @@
 struct EmitAssembly : Visitor<EmitAssembly> {
     using visit_stmt_types = std::tuple
         < AssignStmt
-        , BinaryOpStmt
-        , LiterialStmt
-        , SymbolStmt
+        , AsmBinaryOpStmt
         , Statement
         >;
 
@@ -19,18 +17,10 @@ struct EmitAssembly : Visitor<EmitAssembly> {
     }
 
     void visit(Statement *stmt) {
-        emit("; unexpected %s", typeid(*stmt).name());
+        emit("; unexpected `%s`", typeid(*stmt).name());
     }
 
-    void visit(SymbolStmt *stmt) {
-        emit("symbol %d %s", stmt->id, stmt->name.c_str());
-    }
-
-    void visit(LiterialStmt *stmt) {
-        emit("const %d %s", stmt->id, stmt->value.c_str());
-    }
-
-    void visit(BinaryOpStmt *stmt) {
+    void visit(AsmBinaryOpStmt *stmt) {
         const char *opcode = [](auto const &op) {
             if (0) {
             } else if (op == "+") { return "add";
@@ -42,11 +32,11 @@ struct EmitAssembly : Visitor<EmitAssembly> {
             }
         }(stmt->op);
         emit("%s %d %d %d", opcode,
-            stmt->id, stmt->lhs->id, stmt->rhs->id);
+            stmt->dst, stmt->lhs, stmt->rhs);
     }
 
-    void visit(AssignStmt *stmt) {
-        emit("mov %d %d", stmt->dst->id, stmt->src->id);
+    void visit(AsmAssignStmt *stmt) {
+        emit("mov %d %d", stmt->dst, stmt->src);
     }
 };
 

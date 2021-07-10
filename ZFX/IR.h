@@ -10,8 +10,16 @@ struct IR {
     IR() = default;
     IR(IR const &ir) { *this = ir; }
 
-    IR &operator=(IR const &ir) {
+    void clear() {
         stmts.clear();
+    }
+
+    size_t size() const {
+        return stmts.size();
+    }
+
+    IR &operator=(IR const &ir) {
+        clear();
         for (auto const &s: ir.stmts) {
             auto stmt = s.get();
             auto new_stmt = push_clone_back(stmt);

@@ -3,7 +3,7 @@
 #include "Visitors.h"
 
 int main() {
-    std::string code("pos = 1 + (2 + x*4) * 3");
+    std::string code("pos = 1");
     cout << code << endl;
 
     cout << "==============" << endl;

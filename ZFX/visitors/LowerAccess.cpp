@@ -1,9 +1,13 @@
 #include "IRVisitor.h"
 #include "Stmts.h"
+#include <map>
 
 struct LowerAccess : Visitor<LowerAccess> {
     using visit_stmt_types = std::tuple
         < AssignStmt
+        , BinaryOpStmt
+        , LiterialStmt
+        , SymbolStmt
         , Statement
         >;
 
@@ -13,8 +17,84 @@ struct LowerAccess : Visitor<LowerAccess> {
         ir->push_clone_back(stmt);
     }
 
+    struct RegInfo {
+        int last_used = -1;
+        int curr_stmtid = -1;
+    };
+
+    int now() const {
+        return ir->size();
+    }
+
+    std::vector<RegInfo> regs{32};
+    std::vector<int> memories;
+    std::map<int, int> memories_lut;
+
+    int temp_save(int regid, int stmtid) {
+        for (int i = 0; i < memories.size(); i++) {
+            if (memories[i] == -1) {
+                memories_lut[stmtid] = i;
+                memories[i] = stmtid;
+                return i;
+            }
+        }
+        int memid = memories.size();
+        memories_lut[stmtid] = memid;
+        memories.push_back(stmtid);
+        return memid;
+    }
+
+    int alloc_register() {
+        int regid = 0;
+        for (int i = 1; i < regs.size(); i++) {
+            if (regs[i].last_used < regs[regid].last_used)
+                regid = i;
+        }
+        if (regs[regid].curr_stmtid != -1) {
+            int memid = temp_save(regid, regs[regid].curr_stmtid);
+            ir->emplace_back<AsmMemoryStoreStmt>(memid, regid);
+        }
+        return regid;
+    }
+
+    int lookup(int stmtid) {
+        for (int i = 0; i < regs.size(); i++) {
+            if (regs[i].curr_stmtid == stmtid) {
+                regs[i].last_used = now();
+                return i;
+            }
+        }
+        auto regid = alloc_register();
+        regs[regid].curr_stmtid = stmtid;
+        auto it = memories_lut.find(stmtid);
+        if (it != memories_lut.end()) {
+            int memid = it->second;
+            memories[memid] = -1;
+            ir->emplace_back<AsmMemoryLoadStmt>(memid, regid);
+        }
+        return regid;
+    }
+
+    void visit(SymbolStmt *stmt) {
+        ir->emplace_back<AsmAllocaStmt>
+            ( stmt->name
+            );
+    }
+
+    void visit(BinaryOpStmt *stmt) {
+        ir->emplace_back<AsmBinaryOpStmt>
+            ( stmt->op
+            , lookup(stmt->id)
+            , lookup(stmt->lhs->id)
+            , lookup(stmt->rhs->id)
+            );
+    }
+
     void visit(AssignStmt *stmt) {
-        ir->push_clone_back(stmt);
+        ir->emplace_back<AsmAssignStmt>
+            ( lookup(stmt->dst->id)
+            , lookup(stmt->src->id)
+            );
     }
 };
 

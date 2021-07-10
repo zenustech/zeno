@@ -24,9 +24,18 @@ template <class T>
 struct Stmt : Statement {
     using Statement::Statement;
 
-    virtual std::unique_ptr<Statement> clone(int newid) const {
+    virtual std::unique_ptr<Statement> clone(int newid) const override {
         auto ret = std::make_unique<T>(static_cast<T const &>(*this));
         ret->id = newid;
         return ret;
+    }
+};
+
+template <class T>
+struct AsmStmt : Stmt<T> {
+    using Stmt<T>::Stmt;
+
+    virtual StmtFields fields() override {
+        return {};
     }
 };
