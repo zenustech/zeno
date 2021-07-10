@@ -18,5 +18,7 @@ add_executable(ZFX
     Parser.cpp
     LowerAST.cpp
     visitors/Clone.cpp
+    visitors/LowerAccess.cpp
+    visitors/EmitAssembly.cpp
     )
 target_include_directories(ZFX PRIVATE .)

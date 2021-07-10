@@ -18,9 +18,12 @@ int main() {
     ir->print();
 
     cout << "==============" << endl;
-    auto new_ir = apply_clone(ir.get());
-    ir = nullptr;
-    new_ir->print();
+    ir = apply_lower_access(ir.get());
+    ir->print();
+
+    cout << "==============" << endl;
+    auto assem = apply_emit_assembly(ir.get());
+    cout << assem;
 
     cout << "==============" << endl;
     return 0;

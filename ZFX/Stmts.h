@@ -123,63 +123,6 @@ struct SymbolStmt : Stmt<SymbolStmt> {
     }
 };
 
-struct GlobalStoreStmt : Stmt<GlobalStoreStmt> {
-    SymbolStmt *mem;
-    Statement *val;
-
-    GlobalStoreStmt
-        ( int id_
-        , SymbolStmt *mem_
-        , Statement *val_
-        )
-        : Stmt(id_)
-        , mem(mem_)
-        , val(val_)
-    {}
-
-    virtual StmtFields fields() override {
-        return {
-            (Statement *&)mem,
-            val,
-            };
-    }
-
-    virtual std::string print() const override {
-        return format(
-            "$%d = GlobalStore $%d $%d"
-            , id
-            , mem->id
-            , val->id
-            );
-    }
-};
-
-struct GlobalLoadStmt : Stmt<GlobalLoadStmt> {
-    SymbolStmt *mem;
-
-    virtual StmtFields fields() override {
-        return {
-            (Statement *&)mem,
-            };
-    }
-
-    GlobalLoadStmt
-        ( int id_
-        , SymbolStmt *mem_
-        )
-        : Stmt(id_)
-        , mem(mem_)
-    {}
-
-    virtual std::string print() const override {
-        return format(
-            "$%d = GlobalLoad $%d"
-            , id
-            , mem->id
-            );
-    }
-};
-
 struct LiterialStmt : Stmt<LiterialStmt> {
     std::string value;
 
