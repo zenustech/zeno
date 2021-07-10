@@ -21,6 +21,26 @@ struct Assembler {
             auto cmd = linesep[0];
             if (0) {
 
+            } else if (cmd == "lds") {
+                ERROR_IF(linesep.size() < 2);
+                auto dst = from_string<int>(linesep[1]);
+                auto sym = linesep[2];
+                auto offset = lookup_symbol_offset(sym);
+                builder->addRegularLoadOp(opreg::rax,
+                    {opreg::rdx, memflag::reg_imm8, offset});
+                builder->addAvxMemoryOp(simdkind, opcode::loadu,
+                    dst, opreg::rax);
+
+            } else if (cmd == "sts") {
+                ERROR_IF(linesep.size() < 2);
+                auto dst = from_string<int>(linesep[1]);
+                auto sym = linesep[2];
+                auto offset = lookup_symbol_offset(sym);
+                builder->addRegularLoadOp(opreg::rax,
+                    {opreg::rdx, memflag::reg_imm8, offset});
+                builder->addAvxMemoryOp(simdkind, opcode::storeu,
+                    dst, opreg::rax);
+
             } else if (cmd == "add") {
                 ERROR_IF(linesep.size() < 3);
                 auto dst = from_string<int>(linesep[1]);
