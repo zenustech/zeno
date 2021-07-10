@@ -7,6 +7,7 @@ add_executable(ZFX
 # ls *{,/*}.{h,cpp} | cat
 assembler/Assembler.cpp
 assembler/Executable.h
+assembler/Program.h
 assembler/SIMDBuilder.h
 AST.h
 common.h

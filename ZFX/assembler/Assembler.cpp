@@ -17,16 +17,15 @@ struct Assembler {
 
     std::map<std::string, int> symtable;
     std::map<std::string, int> consttable;
-    int constoffset = 0, symoffset = 0;
+    int constid = 0, symid = 0;
 
     int lookup_constant_offset(std::string const &expr) {
         auto it = consttable.find(expr);
         if (it != consttable.end())
             return it->second;
-        auto offset = constoffset;
-        constoffset += SIMDBuilder::scalarSizeOfType(simdkind);
-        consttable[expr] = offset;
-        return offset;
+        auto id = constid++;
+        consttable[expr] = id;
+        return id * SIMDBuilder::scalarSizeOfType(simdkind);
     }
 
     int lookup_symbol_offset(std::string const &sym) {
@@ -34,10 +33,9 @@ struct Assembler {
         if (it != symtable.end())
             return it->second;
         //error("undefined symbol `%s`", sym.c_str());
-        auto offset = symoffset;
-        symoffset += SIMDBuilder::sizeOfType(simdkind);
-        symtable[sym] = offset;
-        return offset;
+        auto id = symid++;
+        symtable[sym] = id;
+        return id * sizeof(void *);
     }
 
     void parse(std::string const &lines) {
@@ -118,14 +116,13 @@ struct Assembler {
         }
     }
 
-    void prepareConstants(std::vector<char> &constmem) const {
-        constmem.resize(constoffset);
-        auto fmem = (float *)constmem.data();
+    void prepareConstants(std::vector<float> &consts) const {
+        consts.resize(constid);
         for (auto const &[expr, id]: consttable) {
             float value = 0;
             if (!(std::stringstream(expr) >> value))
                 error("failed to parse literial constant `%s`", expr.c_str());
-            fmem[id] = value;
+            consts[id] = value;
         }
     }
 };
@@ -141,7 +138,7 @@ std::unique_ptr<Program> assemble_program(std::string const &lines) {
     auto prog = std::make_unique<Program>();
     prog->executable = std::make_unique<ExecutableInstance>(insts);
     prog->symtable = assembler.symtable;
-    assembler.prepareConstants(prog->constmem);
+    assembler.prepareConstants(prog->consts);
 
     return prog;
 };

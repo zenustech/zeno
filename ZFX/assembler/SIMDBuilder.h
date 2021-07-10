@@ -94,7 +94,7 @@ public:
         }
     };
 
-    static size_t scalarSizeOfType(int type) {
+    static constexpr size_t scalarSizeOfType(int type) {
         switch (type) {
         case optype::xmmps: return sizeof(float);
         case optype::xmmpd: return sizeof(double);
@@ -106,7 +106,7 @@ public:
         }
     }
 
-    static size_t sizeOfType(int type) {
+    static constexpr size_t sizeOfType(int type) {
         switch (type) {
         case optype::xmmps: return 4 * sizeof(float);
         case optype::xmmpd: return 2 * sizeof(double);
