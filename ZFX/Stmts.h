@@ -98,6 +98,30 @@ struct SymbolStmt : Stmt<SymbolStmt> {
     }
 };
 
+struct GlobalStoreStmt : Stmt<GlobalStoreStmt> {
+    SymbolStmt *mem;
+    Statement *val;
+
+    GlobalStoreStmt
+        ( int id_
+        , SymbolStmt *mem_
+        , Statement *val_
+        )
+        : Stmt(id_)
+        , mem(mem_)
+        , val(val_)
+    {}
+
+    virtual std::string print() const override {
+        return format(
+            "$%d = GlobalStore $%d $%d"
+            , id
+            , mem->id
+            , val->id
+            );
+    }
+};
+
 struct LiterialStmt : Stmt<LiterialStmt> {
     std::string value;
 

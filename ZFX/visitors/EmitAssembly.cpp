@@ -7,7 +7,7 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         < SymbolStmt
         , LiterialStmt
         , BinaryOpStmt
-        , AssignStmt
+        , GlobalStoreStmt
         >;
 
     std::stringstream oss;
@@ -25,10 +25,10 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         return format("%d", id);
     }
 
-    void visit(AssignStmt *stmt) {
-        emit("assign %s %s",
-            express(stmt->dst->id).c_str(),
-            express(stmt->src->id).c_str());
+    void visit(GlobalStoreStmt *stmt) {
+        emit("store %s %s",
+            express(stmt->mem->id).c_str(),
+            express(stmt->val->id).c_str());
     }
 
     void visit(BinaryOpStmt *stmt) {
