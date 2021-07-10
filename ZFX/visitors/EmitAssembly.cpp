@@ -23,7 +23,7 @@ struct EmitAssembly : Visitor<EmitAssembly> {
     }
 
     void visit(Statement *stmt) {
-        emit("; unexpected `%s`", typeid(*stmt).name());
+        emit("error unexpected `%s`", typeid(*stmt).name());
     }
 
     void visit(AsmUnaryOpStmt *stmt) {
@@ -34,7 +34,7 @@ struct EmitAssembly : Visitor<EmitAssembly> {
             } else { error("invalid unary op `%s`", op.c_str());
             }
         }(stmt->op);
-        emit("%s r%d r%d", opcode,
+        emit("%s %d %d", opcode,
             stmt->dst, stmt->src);
     }
 
@@ -49,28 +49,28 @@ struct EmitAssembly : Visitor<EmitAssembly> {
             } else { error("invalid binary op `%s`", op.c_str());
             }
         }(stmt->op);
-        emit("%s r%d r%d r%d", opcode,
+        emit("%s %d %d %d", opcode,
             stmt->dst, stmt->lhs, stmt->rhs);
     }
 
     void visit(AsmMemoryStoreStmt *stmt) {
-        emit("st r%d [%d]", stmt->val, stmt->mem);
+        emit("st %d %d", stmt->val, stmt->mem);
     }
 
     void visit(AsmMemoryLoadStmt *stmt) {
-        emit("ld r%d [%d]", stmt->val, stmt->mem);
+        emit("ld %d %d", stmt->val, stmt->mem);
     }
 
     void visit(AsmLoadSymbolStmt *stmt) {
-        emit("lds r%d [%s]", stmt->dst, stmt->name.c_str());
+        emit("lds %d %s", stmt->dst, stmt->name.c_str());
     }
 
     void visit(AsmLoadConstStmt *stmt) {
-        emit("ldi r%d #%s", stmt->dst, stmt->name.c_str());
+        emit("ldi %d %s", stmt->dst, stmt->name.c_str());
     }
 
     void visit(AsmAssignStmt *stmt) {
-        emit("mov r%d r%d", stmt->dst, stmt->src);
+        emit("mov %d %d", stmt->dst, stmt->src);
     }
 };
 
