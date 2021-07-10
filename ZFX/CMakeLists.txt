@@ -4,12 +4,6 @@ project(ZFX LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 
 add_executable(ZFX
-    ZFX.cpp
-    Tokenizer.cpp
-    Parser.cpp
-    LowerAST.cpp
-    visitors/DemoVisitor.cpp
-
     AST.h
     common.h
     IR.h
@@ -18,5 +12,12 @@ add_executable(ZFX
     Statement.h
     Stmts.h
     Visitors.h
+
+    ZFX.cpp
+    Tokenizer.cpp
+    Parser.cpp
+    LowerAST.cpp
+    visitors/DemoVisitor.cpp
+    visitors/EmitAssembly.cpp
     )
 target_include_directories(ZFX PRIVATE .)

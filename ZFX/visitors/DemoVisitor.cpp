@@ -12,7 +12,7 @@ struct DemoVisitor : Visitor<DemoVisitor> {
     }
 
     void visit(LiterialStmt *stmt) {
-        printf("DemoVisitor got literial: [%s]\n", stmt->name.c_str());
+        printf("DemoVisitor got literial: [%s]\n", stmt->value.c_str());
     }
 };
 

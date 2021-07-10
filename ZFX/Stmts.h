@@ -99,21 +99,21 @@ struct SymbolStmt : Stmt<SymbolStmt> {
 };
 
 struct LiterialStmt : Stmt<LiterialStmt> {
-    std::string name;
+    std::string value;
 
     LiterialStmt
         ( int id_
-        , std::string name_
+        , std::string value_
         )
         : Stmt(id_)
-        , name(name_)
+        , value(value_)
     {}
 
     virtual std::string print() const override {
         return format(
             "$%d = Literial [%s]"
             , id
-            , name.c_str()
+            , value.c_str()
             );
     }
 };
