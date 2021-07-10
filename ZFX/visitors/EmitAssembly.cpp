@@ -6,6 +6,9 @@ struct EmitAssembly : Visitor<EmitAssembly> {
     using visit_stmt_types = std::tuple
         < AssignStmt
         , AsmBinaryOpStmt
+        , AsmAssignStmt
+        , AsmLoadConstStmt
+        , AsmLoadSymbolStmt
         , Statement
         >;
 
@@ -33,6 +36,14 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         }(stmt->op);
         emit("%s %d %d %d", opcode,
             stmt->dst, stmt->lhs, stmt->rhs);
+    }
+
+    void visit(AsmLoadSymbolStmt *stmt) {
+        emit("lds %d %s", stmt->dst, stmt->name.c_str());
+    }
+
+    void visit(AsmLoadConstStmt *stmt) {
+        emit("ldi %d %s", stmt->dst, stmt->name.c_str());
     }
 
     void visit(AsmAssignStmt *stmt) {
