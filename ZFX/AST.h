@@ -37,3 +37,8 @@ struct AST {
 inline AST::Ptr make_ast(std::string const &token, Iter iter, std::vector<AST::Ptr> const &args = {}) {
     return std::make_unique<AST>(token, iter, args);
 }
+
+struct IR;
+
+std::vector<AST::Ptr> parse(std::string const &code);
+std::unique_ptr<IR> lower_ast(std::vector<AST::Ptr> asts);

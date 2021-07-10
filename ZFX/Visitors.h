@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IRVisitor.h"
+#include "Stmts.h"
 
 struct DemoVisitor : Visitor<DemoVisitor> {
     using visit_stmt_types = std::tuple

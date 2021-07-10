@@ -1,20 +1,22 @@
 #pragma once
 
 #include "Statement.h"
+#include "IR.h"
 
 struct IRVisitor {
-    virtual void visit(Statement *stmt) = 0;
-
-    void do_visit(IR *ir) {
+    virtual void apply(Statement *stmt) = 0;
+    void apply(IR *ir) {
         for (auto const &s: ir->stmts) {
-            visit(s.get());
+            apply(s.get());
         }
     }
 };
 
 template <class T>
 struct Visitor : IRVisitor {
-    virtual void visit(Statement *stmt) override {
+    using IRVisitor::apply;
+
+    virtual void apply(Statement *stmt) override {
         using visit_stmt_types = typename T::visit_stmt_types;
         static_for<0, std::tuple_size_v<visit_stmt_types>>
         ([this, stmt] (auto i) {

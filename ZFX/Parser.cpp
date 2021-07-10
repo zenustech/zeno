@@ -1,6 +1,5 @@
-#pragma once
-
 #include "AST.h"
+#include "Tokenizer.h"
 
 struct Parser {
     std::vector<std::string> tokens;
@@ -93,3 +92,9 @@ struct Parser {
         return asts;
     }
 };
+
+std::vector<AST::Ptr> parse(std::string const &code) {
+    auto tokens = tokenize(code.c_str());
+    Parser parser(tokens);
+    return parser.parse();
+}

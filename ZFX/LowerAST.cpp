@@ -1,5 +1,3 @@
-#pragma once
-
 #include "IR.h"
 #include "AST.h"
 #include "Stmts.h"
@@ -38,3 +36,11 @@ struct LowerAST {
         }
     }
 };
+
+std::unique_ptr<IR> lower_ast(std::vector<AST::Ptr> asts) {
+    LowerAST lower;
+    for (auto const &ast: asts) {
+        lower.serialize(ast.get());
+    }
+    return std::move(lower.ir);
+}
