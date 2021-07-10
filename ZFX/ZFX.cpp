@@ -1,7 +1,7 @@
 #include "AST.h"
 #include "IR.h"
 #include "Visitors.h"
-#include "assembler/Assembler.h"
+#include "assembler/Program.h"
 
 int main() {
     std::string code("pos = pos + 1");

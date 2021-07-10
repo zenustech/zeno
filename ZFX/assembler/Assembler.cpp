@@ -1,7 +1,8 @@
 #include "assembler/SIMDBuilder.h"
 #include "assembler/Executable.h"
-#include "assembler/Assembler.h"
+#include "assembler/Program.h"
 #include "common.h"
+#include <sstream>
 #include <map>
 
 #define ERROR_IF(x) do { \
@@ -116,13 +117,31 @@ struct Assembler {
             }
         }
     }
+
+    void prepareConstants(std::vector<char> &constmem) const {
+        constmem.resize(constoffset);
+        auto fmem = (float *)constmem.data();
+        for (auto const &[expr, id]: consttable) {
+            float value = 0;
+            if (!(std::stringstream(expr) >> value))
+                error("failed to parse literial constant `%s`", expr.c_str());
+            fmem[id] = value;
+        }
+    }
 };
 
-ExecutableInstance assemble_program(std::string const &lines) {
+std::unique_ptr<Program> assemble_program(std::string const &lines) {
     Assembler assembler;
     assembler.parse(lines);
     assembler.builder->addReturn();
+
     auto const &insts = assembler.builder->getResult();
     for (auto const &inst: insts) printf("%02X ", inst); printf("\n");
-    return ExecutableInstance(insts);
+
+    auto prog = std::make_unique<Program>();
+    prog->executable = std::make_unique<ExecutableInstance>(insts);
+    prog->symtable = assembler.symtable;
+    assembler.prepareConstants(prog->constmem);
+
+    return prog;
 };
