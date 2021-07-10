@@ -17,12 +17,16 @@ struct ResolveAssign : Visitor<ResolveAssign> {
     void visit(AssignStmt *stmt) {
         auto dstmem = dynamic_cast<SymbolStmt *>(stmt->dst);
         auto srcmem = dynamic_cast<SymbolStmt *>(stmt->src);
-        if (dstmem) {
+        if (srcmem && dstmem) {
+            auto tmp = ir->emplace_back<GlobalLoadStmt>(srcmem);
+            ir->emplace_back<GlobalStoreStmt>(dstmem, tmp);
+        } else if (dstmem) {
             ir->emplace_back<GlobalStoreStmt>(dstmem, stmt->src);
         } else if (srcmem) {
-            ir->emplace_back<GlobalLoadStmt>(srcmem, stmt->dst);
+            auto tmp = ir->emplace_back<GlobalLoadStmt>(srcmem);
+            ir->emplace_back<AssignStmt>(stmt->dst, tmp);
         } else {
-            ir->push_clone_back(stmt);
+            ir->emplace_back<AssignStmt>(stmt->dst, stmt->src);
         }
     }
 };
