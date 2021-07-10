@@ -22,7 +22,12 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         emit("; unexpected %s", typeid(*stmt).name());
     }
 
+    void visit(SymbolStmt *stmt) {
+        emit("symbol %d %s", stmt->id, stmt->name.c_str());
+    }
+
     void visit(LiterialStmt *stmt) {
+        emit("const %d %s", stmt->id, stmt->value.c_str());
     }
 
     void visit(BinaryOpStmt *stmt) {
@@ -41,7 +46,7 @@ struct EmitAssembly : Visitor<EmitAssembly> {
     }
 
     void visit(AssignStmt *stmt) {
-        emit("assign %d %d", stmt->src->id, stmt->dst->id);
+        emit("mov %d %d", stmt->dst->id, stmt->src->id);
     }
 };
 
