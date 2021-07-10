@@ -253,6 +253,34 @@ struct AsmBinaryOpStmt : AsmStmt<AsmBinaryOpStmt> {
     }
 };
 
+struct AsmUnaryOpStmt : AsmStmt<AsmUnaryOpStmt> {
+    std::string op;
+    int dst;
+    int src;
+
+    AsmUnaryOpStmt
+        ( int id_
+        , std::string op_
+        , int dst_
+        , int src_
+        )
+        : AsmStmt(id_)
+        , op(op_)
+        , dst(dst_)
+        , src(src_)
+    {}
+
+    virtual std::string print() const override {
+        return format(
+            "$%d = AsmUnaryOp (%s) r%d r%d"
+            , id
+            , op.c_str()
+            , dst
+            , src
+            );
+    }
+};
+
 struct AsmMemoryStoreStmt : AsmStmt<AsmMemoryStoreStmt> {
     int mem;
     int val;

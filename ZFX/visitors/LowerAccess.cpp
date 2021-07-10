@@ -6,6 +6,7 @@
 struct LowerAccess : Visitor<LowerAccess> {
     using visit_stmt_types = std::tuple
         < AssignStmt
+        , UnaryOpStmt
         , BinaryOpStmt
         , LiterialStmt
         , SymbolStmt
@@ -80,6 +81,7 @@ struct LowerAccess : Visitor<LowerAccess> {
             it->second();
         }
 
+        // think: what's the order? memories_lut or loaders first?
         if (auto it = memories_lut.find(stmtid); it != memories_lut.end()) {
             int memid = it->second;
             memories[memid] = -1;
@@ -108,6 +110,14 @@ struct LowerAccess : Visitor<LowerAccess> {
                 , stmt->name
                 );
         };
+    }
+
+    void visit(UnaryOpStmt *stmt) {
+        ir->emplace_back<AsmUnaryOpStmt>
+            ( stmt->op
+            , lookup(stmt->id)
+            , lookup(stmt->src->id)
+            );
     }
 
     void visit(BinaryOpStmt *stmt) {

@@ -68,6 +68,7 @@ struct IR {
         if (auto it = cloned.find(stmt); it != cloned.end()) {
             return it->second;
         }
+        // think: really necessary checking all dep stmts when clone?
         for (Statement *&field: stmt->fields()) {
             field = push_clone_back(field);
         }

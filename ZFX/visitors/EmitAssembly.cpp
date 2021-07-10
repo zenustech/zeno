@@ -25,6 +25,18 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         emit("; unexpected `%s`", typeid(*stmt).name());
     }
 
+    void visit(AsmUnaryOpStmt *stmt) {
+        const char *opcode = [](auto const &op) {
+            if (0) {
+            } else if (op == "+") { return "mov";
+            } else if (op == "-") { return "neg";
+            } else { error("invalid unary op `%s`", op.c_str());
+            }
+        }(stmt->op);
+        emit("%s r%d r%d", opcode,
+            stmt->dst, stmt->src);
+    }
+
     void visit(AsmBinaryOpStmt *stmt) {
         const char *opcode = [](auto const &op) {
             if (0) {
