@@ -25,7 +25,7 @@ struct Assembler {
             return it->second;
         auto id = constid++;
         consttable[expr] = id;
-        return id * SIMDBuilder::scalarSizeOfType(simdkind);
+        return id;
     }
 
     int lookup_symbol_offset(std::string const &sym) {
@@ -35,7 +35,7 @@ struct Assembler {
         //error("undefined symbol `%s`", sym.c_str());
         auto id = symid++;
         symtable[sym] = id;
-        return id * sizeof(void *);
+        return id;
     }
 
     void parse(std::string const &lines) {
@@ -50,14 +50,16 @@ struct Assembler {
             } else if (cmd == "ldi") {  // rcx points to an array of constants
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
-                auto offset = lookup_constant_offset(linesep[2]);
+                auto offset = lookup_constant_offset(
+                    linesep[2]) * SIMDBuilder::scalarSizeOfType(simdkind);
                 builder->addAvxBroadcastLoadOp(simdkind,
                     dst, {opreg::rcx, memflag::reg_imm8, offset});
 
             } else if (cmd == "lds") {  // rdx points to an array of pointers
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
-                auto offset = lookup_symbol_offset(linesep[2]);
+                auto offset = lookup_symbol_offset(
+                    linesep[2]) * sizeof(void *);
                 builder->addRegularLoadOp(opreg::rax,
                     {opreg::rdx, memflag::reg_imm8, offset});
                 builder->addAvxMemoryOp(simdkind, opcode::loadu,
