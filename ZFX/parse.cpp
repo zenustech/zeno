@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <tuple>
 #include <set>
 
 /* common utils */
@@ -470,11 +471,13 @@ struct LowerAST {
 
 /* IR passes */
 
-template <class T, class ...Ts>
+template <class T>
 struct Visitor : IRVisitor {
     virtual void visit(Statement *stmt) override {
-        static_for<0, sizeof...(Ts)>([this, stmt] (auto i) {
-            using S = std::tuple_element_t<i, std::tuple<Ts...>>;
+        using visit_stmt_types = typename T::visit_stmt_types;
+        static_for<0, std::tuple_size_v<visit_stmt_types>>
+        ([this, stmt] (auto i) {
+            using S = std::tuple_element_t<i, visit_stmt_types>;
             auto p = dynamic_cast<S *>(stmt);
             if (!p) return false;
             reinterpret_cast<T *>(this)->visit(p);
@@ -483,11 +486,12 @@ struct Visitor : IRVisitor {
     }
 };
 
-struct DemoVisitor : Visitor
-    < DemoVisitor
-    , SymbolStmt
-    , LiterialStmt
-    > {
+struct DemoVisitor : Visitor<DemoVisitor> {
+    using visit_stmt_types = std::tuple
+        < SymbolStmt
+        , LiterialStmt
+        >;
+
     void visit(SymbolStmt *stmt) {
         printf("DemoVisitor got symbol: [%s]\n", stmt->name.c_str());
     }
