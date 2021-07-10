@@ -16,6 +16,12 @@ struct UnaryOpStmt : Stmt<UnaryOpStmt> {
         , src(src_)
     {}
 
+    virtual StmtFields fields() override {
+        return {
+            src,
+            };
+    }
+
     virtual std::string print() const override {
         return format(
             "$%d = UnaryOp [%s] $%d"
@@ -43,6 +49,13 @@ struct BinaryOpStmt : Stmt<BinaryOpStmt> {
         , rhs(rhs_)
     {}
 
+    virtual StmtFields fields() override {
+        return {
+            lhs,
+            rhs,
+            };
+    }
+
     virtual std::string print() const override {
         return format(
             "$%d = BinaryOp [%s] $%d $%d"
@@ -68,6 +81,13 @@ struct AssignStmt : Stmt<AssignStmt> {
         , src(src_)
     {}
 
+    virtual StmtFields fields() override {
+        return {
+            dst,
+            src,
+            };
+    }
+
     virtual std::string print() const override {
         return format(
             "$%d = Assign $%d $%d"
@@ -88,6 +108,11 @@ struct SymbolStmt : Stmt<SymbolStmt> {
         : Stmt(id_)
         , name(name_)
     {}
+
+    virtual StmtFields fields() override {
+        return {
+            };
+    }
 
     virtual std::string print() const override {
         return format(
@@ -112,6 +137,13 @@ struct GlobalStoreStmt : Stmt<GlobalStoreStmt> {
         , val(val_)
     {}
 
+    virtual StmtFields fields() override {
+        return {
+            (Statement *&)mem,
+            val,
+            };
+    }
+
     virtual std::string print() const override {
         return format(
             "$%d = GlobalStore $%d $%d"
@@ -124,6 +156,12 @@ struct GlobalStoreStmt : Stmt<GlobalStoreStmt> {
 
 struct GlobalLoadStmt : Stmt<GlobalLoadStmt> {
     SymbolStmt *mem;
+
+    virtual StmtFields fields() override {
+        return {
+            (Statement *&)mem,
+            };
+    }
 
     GlobalLoadStmt
         ( int id_
@@ -152,6 +190,11 @@ struct LiterialStmt : Stmt<LiterialStmt> {
         : Stmt(id_)
         , value(value_)
     {}
+
+    virtual StmtFields fields() override {
+        return {
+            };
+    }
 
     virtual std::string print() const override {
         return format(

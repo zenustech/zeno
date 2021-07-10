@@ -11,11 +11,11 @@ struct Statement {
         : id(id_)
     {}
 
-    virtual std::string print() const {
-        return format("$%d = Statement");
-    }
+    using StmtFields = std::vector<std::reference_wrapper<Statement *>>;
 
+    virtual std::string print() const = 0;
     virtual std::unique_ptr<Statement> clone(int newid) const = 0;
+    virtual StmtFields fields() = 0;
 };
 
 template <class T>
