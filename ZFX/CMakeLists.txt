@@ -4,21 +4,24 @@ project(ZFX LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 
 add_executable(ZFX
-    AST.h
-    common.h
-    IR.h
-    IRVisitor.h
-    Lexical.h
-    Statement.h
-    Stmts.h
-    Visitors.h
-
-    ZFX.cpp
-    Tokenizer.cpp
-    Parser.cpp
-    LowerAST.cpp
-    visitors/Clone.cpp
-    visitors/LowerAccess.cpp
-    visitors/EmitAssembly.cpp
+# ls *{,/*}.{h,cpp} | cat
+assembler/Assembler.cpp
+assembler/Executable.h
+assembler/SIMDBuilder.h
+AST.h
+common.h
+IR.h
+IRVisitor.h
+Lexical.h
+LowerAST.cpp
+Parser.cpp
+Statement.h
+Stmts.h
+Tokenizer.cpp
+visitors/Clone.cpp
+visitors/EmitAssembly.cpp
+Visitors.h
+visitors/LowerAccess.cpp
+ZFX.cpp
     )
 target_include_directories(ZFX PRIVATE .)
