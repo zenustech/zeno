@@ -3,11 +3,17 @@
 #include <zeno/MeshObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
+#include <zeno/ZenoInc.h>
+
 namespace zeno {
 struct FLIPCreator : zeno::INode {
   virtual void apply() override {
 
     auto dx = std::get<float>(get_param("dx"));
+    if(has_input("Dx"))
+    {
+      dx = get_input("Dx")->as<NumericObject>()->get<float>();
+    }
     auto particles = zeno::IObject::make<VDBPointsGrid>();
     auto pressure = zeno::IObject::make<VDBFloatGrid>();
     auto rhsgrid = zeno::IObject::make<VDBFloatGrid>();
@@ -103,9 +109,10 @@ struct FLIPCreator : zeno::INode {
 
 static int defFLIPCreator = zeno::defNodeClass<FLIPCreator>(
     "SetFLIPWorld",
-    {/* inputs: */ {},
+    {/* inputs: */ {"Dx"},
      /* outputs: */
      {
+         
          "Particles", "Pressure", "Divergence", "CellFWeight", "PressureDOFID",
          "IsolatedCellDOF", "Velocity", "DeltaVelocity", "VelocitySnapshot",
          "PostAdvVelocity", "SolidVelocity", "VelocityWeights", "LiquidSDF",

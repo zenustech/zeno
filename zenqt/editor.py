@@ -158,11 +158,12 @@ class QDMGraphicsScene(QGraphicsScene):
             node = self.makeNode(name)
             node_edges = node.load(ident, data)
             edges.extend(node_edges)
-
             self.addNode(node)
-            nodesLut[ident] = node
             if select_all:
                 node.setSelected(True)
+
+        for node in self.nodes:
+            nodesLut[node.ident] = node
 
         for dest, (ident, name) in edges:
             if ident not in nodesLut:
@@ -192,6 +193,12 @@ class QDMGraphicsScene(QGraphicsScene):
             if name.lower() in key.lower():
                 yield key
 
+    def reloadNodes(self):
+        print('Reloading all nodes')
+        savedNodes = self.dumpGraph()
+        self.newGraph()
+        self.loadGraph(savedNodes)
+
     def makeNodeBase(self, name):
         ctor = globals().get('QDMGraphicsNode_' + name, QDMGraphicsNode)
         node = ctor()
@@ -199,11 +206,34 @@ class QDMGraphicsScene(QGraphicsScene):
         return node
 
     def makeNode(self, name):
+        def myunion(list1, list2):
+            import copy
+            out = copy.deepcopy(list1)
+            if list2 is not None:
+                if out is None:
+                    out = []
+                for e in list2:
+                    if e not in out:
+                        out.append(e)
+            return out
+
+        def myunion2(param1, param2):
+            import copy
+            out = copy.deepcopy(param1)
+            nameList = []
+            if out is not None:
+                for index, (type, name, defl) in enumerate(out):
+                    nameList.append(name)
+            if param2 is not None:
+                if out is None:
+                    out = []
+                for index, (type, name, defl) in enumerate(param2):
+                    if name not in nameList:
+                        out.append((type, name, defl))
+            return out
+
         node = self.makeNodeBase(name)
-        desc = self.descs[name]
-        node.desc_inputs = desc['inputs']
-        node.desc_outputs = desc['outputs']
-        node.desc_params = desc['params']
+        node.desc = self.descs[name]
         return node
 
     def addNode(self, node):
@@ -1092,9 +1122,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.name = None
         self.ident = None
 
-        self.desc_inputs = []
-        self.desc_outputs = []
-        self.desc_params = []
+        self.desc = {'inputs': [], 'outputs': [], 'params': []}
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
@@ -1168,9 +1196,9 @@ class QDMGraphicsNode(QGraphicsItem):
         self.initDummySockets()
         self.initCondButtons()
 
-        inputs = self.desc_inputs
-        outputs = self.desc_outputs
-        params = self.desc_params
+        inputs = self.desc['inputs']
+        outputs = self.desc['outputs']
+        params = self.desc['params']
 
         y = self.height + TEXT_HEIGHT * 0.4
 
@@ -1302,9 +1330,8 @@ class QDMGraphicsNode(QGraphicsItem):
                 edge.updatePath()
 
     def dump(self):
-        node = self
         inputs = {}
-        for name, socket in node.inputs.items():
+        for name, socket in self.inputs.items():
             assert not socket.isOutput
             data = None
             if socket.hasAnyEdge():
@@ -1313,53 +1340,52 @@ class QDMGraphicsNode(QGraphicsItem):
             inputs[name] = data
 
         params = {}
-        for name, param in node.params.items():
+        for name, param in self.params.items():
             value = param.getValue()
             params[name] = value
 
-        uipos = node.pos().x(), node.pos().y()
-        options = node.getOptions()
+        uipos = self.pos().x(), self.pos().y()
+        options = self.getOptions()
 
         data = {
-            'name': node.name,
+            'name': self.name,
             'inputs': inputs,
             'params': params,
             'uipos': uipos,
             'options': options,
         }
-        return {node.ident: data}
+        return {self.ident: data}
     
     def load(self, ident, data):
-        node = self
         name = data['name']
         inputs = data['inputs']
         params = data['params']
         posx, posy = data['uipos']
         options = data.get('options', [])
 
-        node.initSockets()
-        node.setIdent(ident)
-        node.setName(name)
-        node.setPos(posx, posy)
-        node.setOptions(options)
+        self.initSockets()
+        self.setIdent(ident)
+        self.setName(name)
+        self.setPos(posx, posy)
+        self.setOptions(options)
 
         for name, value in params.items():
-            if name not in node.params:
+            if name not in self.params:
                 print('no param named [{}] for [{}]'.format(
-                    name, nodes[ident]['name']))
+                    name, data['name']))
                 continue
-            param = node.params[name]
+            param = self.params[name]
             param.setValue(value)
 
         edges = []
         for name, input in inputs.items():
             if input is None:
                 continue
-            if name not in node.inputs:
+            if name not in self.inputs:
                 print('no input named [{}] for [{}]'.format(
-                    name, nodes[ident]['name']))
+                    name, data['name']))
                 continue
-            dest = node.inputs[name]
+            dest = self.inputs[name]
             edges.append((dest, input))
         return edges
 
@@ -1531,12 +1557,12 @@ class NodeEditor(QWidget):
     def on_switch_graph(self, name):
         self.switchScene(name)
         self.initDescriptors()
+        self.scene.reloadNodes()
         self.edit_graphname.setCurrentText(name)
 
     def on_new_graph(self):
         name = self.edit_graphname.currentText()
         self.on_switch_graph(name)
-        print('all subgraphs are:', list(self.scenes.keys()))
 
     def setDescriptors(self, descs):
         self.descs = descs
@@ -1555,7 +1581,7 @@ class NodeEditor(QWidget):
                 'outputs': [],
                 'params': [],
                 'categories': ['layout'],
-            } 
+            },
         })
         self.setDescriptors(descs)
 
@@ -1591,6 +1617,7 @@ class NodeEditor(QWidget):
             prog = {'graph': prog}
         if 'descs' not in prog:
             prog['descs'] = dict(self.descs)
+
         for name, graph in prog['graph'].items():
             if 'nodes' not in graph:
                 prog['graph'][name] = {
@@ -1630,8 +1657,8 @@ class NodeEditor(QWidget):
             print('Loading subgraph', name)
             self.switchScene(name)
             self.scene.loadGraphEx(graph)
-        self.switchScene('main')
         self.initDescriptors()
+        self.switchScene('main')
 
     def on_execute(self):
         nframes = int(self.edit_nframes.text())
@@ -1743,6 +1770,7 @@ class NodeEditor(QWidget):
         self.importProgram(prog)
 
     def do_open(self, path):
+        
         with open(path, 'r') as f:
             prog = json.load(f)
         self.loadProgram(prog)
@@ -1782,6 +1810,7 @@ class NodeEditor(QWidget):
             desc['outputs'] = suboutputs
             desc['params'] = []
             desc['categories'] = [subcategory]
+            desc['is_subgraph'] = True
             descs[name] = desc
         return descs
 

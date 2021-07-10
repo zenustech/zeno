@@ -5,13 +5,17 @@
 #include <zeno/NumericObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
-
+#include <zeno/ZenoInc.h>
 namespace zeno {
 
 struct CFL : zeno::INode {
   virtual void apply() override {
     auto velocity = get_input("Velocity")->as<VDBFloat3Grid>();
     float dx = std::get<float>(get_param("dx"));
+    if(has_input("Dx"))
+    {
+      dx = get_input("Dx")->as<NumericObject>()->get<float>();
+    }
     float dt = FLIP_vdb::cfl(velocity->m_grid);
     printf("CFL dt: %f\n", dt);
     auto out_dt = zeno::IObject::make<zeno::NumericObject>();
@@ -23,7 +27,7 @@ struct CFL : zeno::INode {
 
 static int defCFL =
     zeno::defNodeClass<CFL>("CFL_dt", {/* inputs: */ {
-                                           "Velocity",
+                                           "Velocity", "Dx",
                                        },
                                        /* outputs: */
                                        {

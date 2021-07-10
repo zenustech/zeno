@@ -7,6 +7,8 @@
 #include <openvdb/tools/VolumeToMesh.h>
 #include <zeno/VDBGrid.h>
 #include <omp.h>
+#include <zeno/ZenoInc.h>
+
 //#include <tl/function_ref.hpp>
 //openvdb::FloatGrid::Ptr grid = 
 //openvdb::tools::meshToSignedDistanceField<openvdb::FloatGrid>
@@ -18,6 +20,10 @@ namespace zeno {
 struct MeshToSDF : zeno::INode{
     virtual void apply() override {
     auto h = std::get<float>(get_param("voxel_size"));
+    if(has_input("Dx"))
+    {
+      h = get_input("Dx")->as<NumericObject>()->get<float>();
+    }
     auto mesh = get_input("mesh")->as<MeshObject>();
     auto result = zeno::IObject::make<VDBFloatGrid>();
     std::vector<openvdb::Vec3s> points;
@@ -49,7 +55,7 @@ struct MeshToSDF : zeno::INode{
 
 static int defMeshToSDF = zeno::defNodeClass<MeshToSDF>("MeshToSDF",
     { /* inputs: */ {
-        "mesh",
+        "mesh","Dx",
     }, /* outputs: */ {
         "sdf",
     }, /* params: */ {
@@ -64,6 +70,10 @@ static int defMeshToSDF = zeno::defNodeClass<MeshToSDF>("MeshToSDF",
 struct PrimitiveToSDF : zeno::INode{
     virtual void apply() override {
     auto h = std::get<float>(get_param("voxel_size"));
+    if(has_input("Dx"))
+    {
+      h = get_input("Dx")->as<NumericObject>()->get<float>();
+    }
     auto mesh = get_input("PrimitiveMesh")->as<PrimitiveObject>();
     auto result = zeno::IObject::make<VDBFloatGrid>();
     std::vector<openvdb::Vec3s> points;
@@ -95,7 +105,7 @@ struct PrimitiveToSDF : zeno::INode{
 
 static int defPrimitiveToSDF = zeno::defNodeClass<PrimitiveToSDF>("PrimitiveToSDF",
     { /* inputs: */ {
-        "PrimitiveMesh",
+        "PrimitiveMesh","Dx",
     }, /* outputs: */ {
         "sdf",
     }, /* params: */ {

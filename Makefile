@@ -1,4 +1,4 @@
-O=arts/testnbodyzfx.zsg
+O=arts/subgraph.zsg
 
 default: run
 

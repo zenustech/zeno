@@ -1,6 +1,8 @@
 #include <zeno/zeno.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/StringObject.h>
+#include <zeno/ZenoInc.h>
+
 //#include "../../Library/MnBase/Meta/Polymorphism.h"
 //openvdb::io::File(filename).write({grid});
 

@@ -3,6 +3,8 @@
 #include <zeno/MeshObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
+#include <zeno/ZenoInc.h>
+
 /*FLIP_vdb::particle_to_grid_collect_style(
         openvdb::points::PointDataGrid::Ptr particles,
         openvdb::Vec3fGrid::Ptr velocity,
@@ -17,6 +19,10 @@ namespace zeno {
 struct FLIP_P2G : zeno::INode {
   virtual void apply() override {
     auto dx = std::get<float>(get_param("dx"));
+    if(has_input("Dx"))
+    {
+      dx = get_input("Dx")->as<NumericObject>()->get<float>();
+    }
     auto Particles = get_input("Particles")->as<VDBPointsGrid>();
     auto VelGrid = get_input("Velocity")->as<VDBFloat3Grid>();
     auto PostP2GVelGrid = get_input("PostP2GVelocity")->as<VDBFloat3Grid>();
@@ -33,6 +39,7 @@ struct FLIP_P2G : zeno::INode {
 
 static int defFLIP_P2G =
     zeno::defNodeClass<FLIP_P2G>("FLIP_P2G", {/* inputs: */ {
+                                                  "Dx",
                                                   "Particles",
                                                   "Velocity",
                                                   "PostP2GVelocity",

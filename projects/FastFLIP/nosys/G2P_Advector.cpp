@@ -4,6 +4,8 @@
 #include <zeno/NumericObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
+#include <zeno/ZenoInc.h>
+
 // I finally decide put this P2G_Advector into FastFLIP, to reduce modularizing
 // effort..
 // static void Advect(float dt, openvdb::points::PointDataGrid::Ptr m_particles,
@@ -15,6 +17,10 @@ struct G2P_Advector : zeno::INode {
   virtual void apply() override {
     auto dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
     auto dx = std::get<float>(get_param("dx"));
+    if(has_input("Dx"))
+    {
+      dx = get_input("Dx")->as<NumericObject>()->get<float>();
+    }
     auto smoothness = std::get<float>(get_param("pic_smoothness"));
     auto RK_ORDER = std::get<int>(get_param("RK_ORDER"));
 
@@ -42,7 +48,7 @@ struct G2P_Advector : zeno::INode {
 
 static int defG2P_Advector = zeno::defNodeClass<G2P_Advector>(
     "G2P_Advector", {/* inputs: */ {
-                         "dt",
+                         "dt","Dx",
                          "Particles",
                          "Velocity",
                          "PostAdvVelocity",

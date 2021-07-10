@@ -2,47 +2,82 @@
  "graph": {
   "main": {
    "nodes": {
-    "275085a8-d3c6-11eb-8721-907841694de9-NumericInt": {
-     "name": "NumericInt",
+    "fd6a5cdc-PrimitiveRandomizeAttr": {
+     "name": "PrimitiveRandomizeAttr",
      "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "value": 3
-     },
-     "uipos": [
-      -711.25,
-      -26.25
-     ],
-     "options": []
-    },
-    "2d79a568-d3c6-11eb-8721-907841694de9-PrintNumeric": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "947a82e9-add",
-       "res"
+      "prim": [
+       "9bcf0a55-PrimitiveAddAttr",
+       "prim"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {
-      "hint": "PrintNumeric"
+      "attrName": "pos",
+      "min": -1.0,
+      "minY": -1.0,
+      "minZ": -1.0,
+      "max": 1.0,
+      "maxY": 1.0,
+      "maxZ": 1.0
      },
      "uipos": [
-      167.75,
-      61.5
+      682.8799999999999,
+      208.92000000000007
      ],
      "options": [
-      "OUT"
+      "ONCE"
      ]
     },
-    "29ebbbfd-negate": {
-     "name": "negate",
+    "5647df28-MakePrimitive": {
+     "name": "MakePrimitive",
      "inputs": {
-      "input1": [
-       "275085a8-d3c6-11eb-8721-907841694de9-NumericInt",
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      411.68,
+      229.96000000000004
+     ],
+     "options": [
+      "ONCE",
+      "collapsed"
+     ]
+    },
+    "9c42f535-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "1b9f2e90-PrimitiveResize",
+       "prim"
+      ],
+      "fillValue": null,
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "name": "pos",
+      "type": "float3"
+     },
+     "uipos": [
+      413.72,
+      311.92
+     ],
+     "options": [
+      "ONCE",
+      "collapsed"
+     ]
+    },
+    "1b9f2e90-PrimitiveResize": {
+     "name": "PrimitiveResize",
+     "inputs": {
+      "prim": [
+       "5647df28-MakePrimitive",
+       "prim"
+      ],
+      "size": [
+       "13273af4-NumericInt",
        "value"
       ],
       "SRC": null,
@@ -50,196 +85,247 @@
      },
      "params": {},
      "uipos": [
-      -419.75,
-      -91.25
+      413.44000000000005,
+      270.72
      ],
-     "options": []
+     "options": [
+      "ONCE",
+      "collapsed"
+     ]
     },
-    "947a82e9-add": {
-     "name": "add",
-     "inputs": {
-      "lhs": [
-       "29ebbbfd-negate",
-       "output1"
-      ],
-      "rhs": [
-       "9c921f22-NumericInt",
-       "value"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -126.25,
-      62.5
-     ],
-     "options": []
-    },
-    "9c921f22-NumericInt": {
+    "13273af4-NumericInt": {
      "name": "NumericInt",
      "inputs": {
       "SRC": null,
       "COND": null
      },
      "params": {
-      "value": 4
+      "value": 8192
      },
      "uipos": [
-      -420.0,
-      118.75
+      142.07999999999998,
+      197.11999999999995
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "edd1a362-ParticleParticleWrangle": {
+     "name": "ParticleParticleWrangle",
+     "inputs": {
+      "prim1": [
+       "fd6a5cdc-PrimitiveRandomizeAttr",
+       "prim"
+      ],
+      "prim2": [
+       "fd6a5cdc-PrimitiveRandomizeAttr",
+       "prim"
+      ],
+      "zfxCode": [
+       "0f1821eb-MakeMultilineString",
+       "value"
+      ],
+      "params": [
+       "4ac6e43b-AppendList",
+       "list"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      1004.1199999999999,
+      356.79999999999995
+     ],
+     "options": []
+    },
+    "0f1821eb-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": "dis = @pos:j - @pos\nacc = dis / pow(length(dis) + 0.01, 3)\n@vel += arg0 * 0.001 * acc"
+     },
+     "uipos": [
+      678.4000000000001,
+      566.4000000000002
+     ],
+     "options": []
+    },
+    "9bcf0a55-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "9c42f535-PrimitiveAddAttr",
+       "prim"
+      ],
+      "fillValue": null,
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "name": "vel",
+      "type": "float3"
+     },
+     "uipos": [
+      416.80000000000007,
+      354.4000000000001
+     ],
+     "options": [
+      "ONCE",
+      "collapsed"
+     ]
+    },
+    "50f117cf-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "a0608d4b-ParticlesNeighborWrangle",
+       "prim1"
+      ],
+      "zfxCode": [
+       "97230540-x",
+       "value"
+      ],
+      "params": [
+       "4ac6e43b-AppendList",
+       "list"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      1363.1999999999998,
+      347.20000000000005
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "97230540-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": "@pos += @vel * arg0"
+     },
+     "uipos": [
+      1320.1599999999994,
+      604.3600000000001
+     ],
+     "options": []
+    },
+    "518fab5d-GetFrameTime": {
+     "name": "GetFrameTime",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      1005.3000000000002,
+      159.3499999999999
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "4ac6e43b-AppendList": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "2506dd7f-EmptyList",
+       "list"
+      ],
+      "object": [
+       "518fab5d-GetFrameTime",
+       "time"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      1009.75,
+      267.85000000000036
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "2506dd7f-EmptyList": {
+     "name": "EmptyList",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      1008.0,
+      212.0
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "a0608d4b-ParticlesNeighborWrangle": {
+     "name": "ParticlesNeighborWrangle",
+     "inputs": {
+      "prim1": [
+       "fd6a5cdc-PrimitiveRandomizeAttr",
+       "prim"
+      ],
+      "prim2": [
+       "fd6a5cdc-PrimitiveRandomizeAttr",
+       "prim"
+      ],
+      "radius": [
+       "a66decc1-NumericFloat",
+       "value"
+      ],
+      "zfxCode": [
+       "0f1821eb-MakeMultilineString",
+       "value"
+      ],
+      "params": [
+       "4ac6e43b-AppendList",
+       "list"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      1016.3999999999996,
+      644.0
+     ],
+     "options": []
+    },
+    "a66decc1-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": 0.05
+     },
+     "uipos": [
+      694.1999999999998,
+      886.6000000000001
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1,
-    "trans_x": -723,
-    "trans_y": -177
-   }
-  },
-  "negate": {
-   "nodes": {
-    "f98ecd2c-d4b6-11eb-8809-907841694de9-NumericOperator": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "1df2f63e-d4b7-11eb-893e-907841694de9-SubInput",
-       "port"
-      ],
-      "rhs": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "op_type": "neg"
-     },
-     "uipos": [
-      -121.0,
-      -106.0
-     ],
-     "options": []
-    },
-    "1df2f63e-d4b7-11eb-893e-907841694de9-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "input1"
-     },
-     "uipos": [
-      -393.0,
-      -129.0
-     ],
-     "options": []
-    },
-    "22a99e1c-d4b7-11eb-893e-907841694de9-SubOutput": {
-     "name": "SubOutput",
-     "inputs": {
-      "port": [
-       "f98ecd2c-d4b6-11eb-8809-907841694de9-NumericOperator",
-       "ret"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "output1"
-     },
-     "uipos": [
-      129.0,
-      -57.0
-     ],
-     "options": []
-    }
-   },
-   "view": {
-    "scale": 1,
-    "trans_x": -577,
-    "trans_y": -329
-   }
-  },
-  "add": {
-   "nodes": {
-    "8cee7370-NumericOperator": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "c5e50d18-SubInput",
-       "port"
-      ],
-      "rhs": [
-       "be077106-SubInput",
-       "port"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "op_type": "add"
-     },
-     "uipos": [
-      -183.75,
-      -167.5
-     ],
-     "options": []
-    },
-    "c5e50d18-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "lhs"
-     },
-     "uipos": [
-      -466.25,
-      -208.75
-     ],
-     "options": []
-    },
-    "be077106-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "rhs"
-     },
-     "uipos": [
-      -461.25,
-      -8.75
-     ],
-     "options": []
-    },
-    "3c71e164-SubOutput": {
-     "name": "SubOutput",
-     "inputs": {
-      "port": [
-       "8cee7370-NumericOperator",
-       "ret"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "res"
-     },
-     "uipos": [
-      60.0,
-      -27.5
-     ],
-     "options": []
-    }
-   },
-   "view": {
-    "scale": 1,
-    "trans_x": -752,
-    "trans_y": -352
+    "scale": 1.25,
+    "trans_x": 541,
+    "trans_y": 633
    }
   }
  },
@@ -2635,39 +2721,6 @@
    "categories": [
     "particles"
    ]
-  },
-  "negate": {
-   "inputs": [
-    "input1",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "output1",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
-  },
-  "add": {
-   "inputs": [
-    "lhs",
-    "rhs",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "res",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],
