@@ -1,7 +1,7 @@
 #include "IR.h"
 #include "AST.h"
 #include "Stmts.h"
-#include "Tokenizer.h"
+#include "Lexical.h"
 
 struct LowerAST {
     std::unique_ptr<IR> ir = std::make_unique<IR>();

@@ -1,5 +1,5 @@
 #include "AST.h"
-#include "Tokenizer.h"
+#include "Lexical.h"
 
 struct Parser {
     std::vector<std::string> tokens;

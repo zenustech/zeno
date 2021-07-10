@@ -13,11 +13,14 @@ int main() {
         cout << endl;
     }
 
-    auto ir = lower_ast(asts);
+    cout << "==============" << endl;
+    auto ir = lower_ast(std::move(asts));
     ir->print();
 
+    cout << "==============" << endl;
     DemoVisitor demo;
     demo.apply(ir.get());
+    ir->print();
 
     cout << "==============" << endl;
     return 0;
