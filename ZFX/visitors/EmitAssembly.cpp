@@ -57,7 +57,7 @@ struct EmitAssembly : Visitor<EmitAssembly> {
 };
 
 std::string apply_emit_assembly(IR *ir) {
-    EmitAssembly emitter;
-    emitter.apply(ir);
-    return emitter.getResult();
+    EmitAssembly visitor;
+    visitor.apply(ir);
+    return visitor.getResult();
 }

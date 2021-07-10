@@ -18,6 +18,7 @@ add_executable(ZFX
     Parser.cpp
     LowerAST.cpp
     visitors/DemoVisitor.cpp
+    visitors/ResolveAssign.cpp
     visitors/EmitAssembly.cpp
     )
 target_include_directories(ZFX PRIVATE .)

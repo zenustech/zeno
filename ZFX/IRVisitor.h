@@ -5,6 +5,7 @@
 
 struct IRVisitor {
     virtual void apply(Statement *stmt) = 0;
+
     void apply(IR *ir) {
         for (auto const &s: ir->stmts) {
             apply(s.get());
