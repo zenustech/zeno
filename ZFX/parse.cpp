@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <cstring>
+#include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <set>
@@ -431,7 +432,6 @@ struct IR {
             stmt->accept(visitor);
         }
     }
-
 };
 
 struct LowerAST {
