@@ -54,11 +54,11 @@ struct EmitAssembly : Visitor<EmitAssembly> {
     }
 
     void visit(AsmMemoryStoreStmt *stmt) {
-        emit("st %d %d", stmt->val, stmt->mem);
+        emit("stm %d %d", stmt->val, stmt->mem);
     }
 
     void visit(AsmMemoryLoadStmt *stmt) {
-        emit("ld %d %d", stmt->val, stmt->mem);
+        emit("ldm %d %d", stmt->val, stmt->mem);
     }
 
     void visit(AsmLoadSymbolStmt *stmt) {

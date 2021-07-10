@@ -7,6 +7,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include <memory>
 #include <tuple>
 #include <set>
@@ -71,4 +72,40 @@ template <class ...Ts>
     printf(fmt, std::forward<Ts>(ts)...);
     putchar('\n');
     exit(-1);
+}
+
+template <class T>
+T from_string(std::string const &s) {
+    std::stringstream ss(s);
+    T t;
+    ss >> t;
+    return t;
+}
+
+template <class T, class S>
+static std::string join_str(std::vector<T> const &elms, S const &delim) {
+    std::stringstream ss;
+    auto p = elms.begin(), end = elms.end();
+    if (p != end)
+        ss << *p++;
+    for (; p != end; ++p) {
+        ss << delim << *p;
+    }
+    return ss.str();
+}
+
+static std::vector<std::string> split_str(std::string const &s, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream iss(s);
+    while (std::getline(iss, token, delimiter))
+        tokens.push_back(token);
+    return tokens;
+}
+
+template <class T>
+static inline std::string to_string(T const &value) {
+    std::stringstream ss;
+    ss << value;
+    return ss.str();
 }
