@@ -1,7 +1,7 @@
 #include "LowerAST.h"
 #include "Parser.h"
 #include "Tokenizer.h"
-#include "IRVisitor.h"
+#include "Visitors.h"
 
 int main() {
     std::string code("pos = 1 + (2 + x*4) * 3");
