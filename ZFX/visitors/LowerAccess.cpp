@@ -45,6 +45,10 @@ struct LowerAccess : Visitor<LowerAccess> {
     }
 
     int alloc_register() {
+        for (int i = 0; i < regs.size(); i++) {
+            if (regs[i].curr_stmtid == -1)
+                return i;
+        }
         int regid = 0;
         for (int i = 1; i < regs.size(); i++) {
             if (regs[i].last_used < regs[regid].last_used)
@@ -72,11 +76,18 @@ struct LowerAccess : Visitor<LowerAccess> {
             memories[memid] = -1;
             ir->emplace_back<AsmMemoryLoadStmt>(memid, regid);
         }
+        cout << format("please load $%d to r%d", stmtid, regid) << endl;
         return regid;
     }
 
     void visit(SymbolStmt *stmt) {
         ir->emplace_back<AsmAllocaStmt>
+            ( stmt->name
+            );
+    }
+
+    void visit(LiterialStmt *stmt) {
+        ir->emplace_back<AsmConstStmt>
             ( stmt->name
             );
     }
