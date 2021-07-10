@@ -6,6 +6,7 @@ struct EmitAssembly : Visitor<EmitAssembly> {
     using visit_stmt_types = std::tuple
         < AssignStmt
         , AsmBinaryOpStmt
+        , AsmUnaryOpStmt
         , AsmAssignStmt
         , AsmLoadConstStmt
         , AsmLoadSymbolStmt
