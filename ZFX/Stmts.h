@@ -122,6 +122,30 @@ struct GlobalStoreStmt : Stmt<GlobalStoreStmt> {
     }
 };
 
+struct GlobalLoadStmt : Stmt<GlobalLoadStmt> {
+    SymbolStmt *mem;
+    Statement *val;
+
+    GlobalLoadStmt
+        ( int id_
+        , SymbolStmt *mem_
+        , Statement *val_
+        )
+        : Stmt(id_)
+        , mem(mem_)
+        , val(val_)
+    {}
+
+    virtual std::string print() const override {
+        return format(
+            "$%d = GlobalLoad $%d $%d"
+            , id
+            , mem->id
+            , val->id
+            );
+    }
+};
+
 struct LiterialStmt : Stmt<LiterialStmt> {
     std::string value;
 

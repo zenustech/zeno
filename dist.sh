@@ -17,7 +17,7 @@ cp -d /usr/lib/ld-linux-x86-64.so.2 /usr/lib/ld-2.33.so /tmp/build/lib
 cp -rd `ls -d /usr/lib/python3.9/* | grep -v site-packages` /tmp/build/lib/python3.9
 cp -d /usr/bin/python{,3,3.9}{,-config} /tmp/build/bin
 /tmp/build/bin/python3.9 -m ensurepip
-https_proxy= python3.9 -m pip install -t /tmp/build/lib/python3.9 PyQt5 numpy
+https_proxy= python3.9 -m pip install -t /tmp/build/lib/python3.9 PySide2 numpy
 /tmp/build/bin/python3.9 setup.py install
 
 mv /tmp/build/{bin,.bin}

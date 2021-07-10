@@ -15,8 +15,14 @@ struct ResolveAssign : Visitor<ResolveAssign> {
     }
 
     void visit(AssignStmt *stmt) {
-        if (auto dstmem = dynamic_cast<SymbolStmt *>(stmt->dst); dstmem) {
+        auto dstmem = dynamic_cast<SymbolStmt *>(stmt->dst);
+        auto srcmem = dynamic_cast<SymbolStmt *>(stmt->src);
+        if (dstmem) {
             ir->emplace_back<GlobalStoreStmt>(dstmem, stmt->src);
+        } else if (srcmem) {
+            ir->emplace_back<GlobalLoadStmt>(srcmem, stmt->dst);
+        } else {
+            ir->push_clone_back(stmt);
         }
     }
 };
