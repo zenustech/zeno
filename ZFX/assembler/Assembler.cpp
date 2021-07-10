@@ -15,16 +15,28 @@ struct Assembler {
     std::unique_ptr<SIMDBuilder> builder = std::make_unique<SIMDBuilder>();
 
     std::map<std::string, int> symtable;
+    std::map<std::string, int> consttable;
+    int constoffset = 0, symoffset = 0;
 
-    Assembler() {
-        symtable["pos"] = 0; // debuggy
+    int lookup_constant_offset(std::string const &expr) {
+        auto it = consttable.find(expr);
+        if (it != consttable.end())
+            return it->second;
+        auto offset = constoffset;
+        constoffset += SIMDBuilder::scalarSizeOfType(simdkind);
+        consttable[expr] = offset;
+        return offset;
     }
 
     int lookup_symbol_offset(std::string const &sym) {
         auto it = symtable.find(sym);
-        if (it == symtable.end())
-            error("undefined symbol `%s`", sym.c_str());
-        return it->second;
+        if (it != symtable.end())
+            return it->second;
+        //error("undefined symbol `%s`", sym.c_str());
+        auto offset = symoffset;
+        symoffset += SIMDBuilder::sizeOfType(simdkind);
+        symtable[sym] = offset;
+        return offset;
     }
 
     void parse(std::string const &lines) {
@@ -36,7 +48,14 @@ struct Assembler {
             auto cmd = linesep[0];
             if (0) {
 
-            } else if (cmd == "lds") {
+            } else if (cmd == "ldi") {  // rcx points to an array of constants
+                ERROR_IF(linesep.size() < 2);
+                auto dst = from_string<int>(linesep[1]);
+                auto offset = lookup_constant_offset(linesep[2]);
+                builder->addAvxBroadcastLoadOp(simdkind,
+                    dst, {opreg::rcx, memflag::reg_imm8, offset});
+
+            } else if (cmd == "lds") {  // rdx points to an array of pointers
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto offset = lookup_symbol_offset(linesep[2]);
@@ -102,10 +121,8 @@ struct Assembler {
 ExecutableInstance assemble_program(std::string const &lines) {
     Assembler assembler;
     assembler.parse(lines);
+    assembler.builder->addReturn();
     auto const &insts = assembler.builder->getResult();
-    for (auto const &inst: insts) {
-        printf("%02X ", inst);
-    }
-    printf("\n");
+    for (auto const &inst: insts) printf("%02X ", inst); printf("\n");
     return ExecutableInstance(insts);
 };

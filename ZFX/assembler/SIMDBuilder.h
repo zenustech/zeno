@@ -94,6 +94,30 @@ public:
         }
     };
 
+    static size_t scalarSizeOfType(int type) {
+        switch (type) {
+        case optype::xmmps: return sizeof(float);
+        case optype::xmmpd: return sizeof(double);
+        case optype::xmmss: return sizeof(float);
+        case optype::xmmsd: return sizeof(double);
+        case optype::ymmps: return sizeof(float);
+        case optype::ymmpd: return sizeof(double);
+        default: return 0;
+        }
+    }
+
+    static size_t sizeOfType(int type) {
+        switch (type) {
+        case optype::xmmps: return 4 * sizeof(float);
+        case optype::xmmpd: return 2 * sizeof(double);
+        case optype::xmmss: return 1 * sizeof(float);
+        case optype::xmmsd: return 1 * sizeof(double);
+        case optype::ymmps: return 8 * sizeof(float);
+        case optype::ymmpd: return 4 * sizeof(double);
+        default: return 0;
+        }
+    }
+
     void addAvxBroadcastLoadOp(int type, int val, MemoryAddress adr) {
         res.push_back(0xc4);
         res.push_back(0xe2);
