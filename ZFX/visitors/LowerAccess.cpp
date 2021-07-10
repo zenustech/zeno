@@ -79,8 +79,6 @@ struct LowerAccess : Visitor<LowerAccess> {
 
         if (auto it = loaders.find(stmtid); it != loaders.end()) {
             it->second(regid);
-        } else {
-            error("missing loader from $%d to r%d", stmtid, regid);
         }
         return regid;
     }

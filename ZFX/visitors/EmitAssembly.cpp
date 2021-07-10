@@ -34,20 +34,20 @@ struct EmitAssembly : Visitor<EmitAssembly> {
             } else { error("invalid binary op `%s`", op.c_str());
             }
         }(stmt->op);
-        emit("%s %d %d %d", opcode,
+        emit("%s r%d r%d r%d", opcode,
             stmt->dst, stmt->lhs, stmt->rhs);
     }
 
     void visit(AsmLoadSymbolStmt *stmt) {
-        emit("lds %d %s", stmt->dst, stmt->name.c_str());
+        emit("lds r%d [%s]", stmt->dst, stmt->name.c_str());
     }
 
     void visit(AsmLoadConstStmt *stmt) {
-        emit("ldi %d %s", stmt->dst, stmt->name.c_str());
+        emit("ldi r%d #%s", stmt->dst, stmt->name.c_str());
     }
 
     void visit(AsmAssignStmt *stmt) {
-        emit("mov %d %d", stmt->dst, stmt->src);
+        emit("mov r%d r%d", stmt->dst, stmt->src);
     }
 };
 
