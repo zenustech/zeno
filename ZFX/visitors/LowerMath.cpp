@@ -13,7 +13,7 @@ struct LowerMath : Visitor<LowerMath> {
 
     std::map<Statement *, std::vector<Statement *>> replaces;
 
-    void visit(SymbolStmt *stmt) {
+    /*void visit(SymbolStmt *stmt) {
         if (stmt->is_temporary()) {
             auto &rep = replaces[stmt];
             for (int i = 0; i < stmt->dim; i++) {
@@ -28,7 +28,7 @@ struct LowerMath : Visitor<LowerMath> {
                     std::vector<int>{symid}));
             }
         }
-    }
+    }*/
 
     void visit(Statement *stmt) {
         ir->push_clone_back(stmt);

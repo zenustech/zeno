@@ -99,7 +99,6 @@ struct AssignStmt : Stmt<AssignStmt> {
 
 struct SymbolStmt : Stmt<SymbolStmt> {
     std::vector<int> symids;
-    int tmpid = -1;
 
     SymbolStmt
         ( int id_
@@ -110,7 +109,7 @@ struct SymbolStmt : Stmt<SymbolStmt> {
     {}
 
     bool is_temporary() const {
-        return symids.size() == 0 && dim != 0;
+        return symids.size() == 0;
     }
 
     virtual StmtFields fields() override {

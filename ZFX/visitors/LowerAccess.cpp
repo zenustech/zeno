@@ -103,7 +103,6 @@ struct LowerAccess : Visitor<LowerAccess> {
             if (stmt->is_temporary()) {
                 return;
             }
-
             if (stmt->symids.size() != 1) {
                 error("scalar expected on load, got %d-D vector",
                     stmt->symids.size());
