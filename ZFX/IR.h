@@ -61,18 +61,19 @@ struct IR {
 
     Hole make_hole_back() {
         int id = stmts.size();
-        stmts.push_back(nullptr);
+        stmts.push_back(std::make_unique<EmptyStmt>(id));
         return Hole(id, this);
     }
 
-    Statement *push_clone_back(Statement const *stmt_) {
+    Statement *push_clone_back(Statement const *stmt_, bool find_only = false) {
         auto stmt = const_cast<Statement *>(stmt_);
         if (auto it = cloned.find(stmt); it != cloned.end()) {
             return it->second;
         }
-        // think: really necessary checking all dep stmts when clone?
+        if (find_only)
+            return emplace_back<EmptyStmt>();
         for (Statement *&field: stmt->fields()) {
-            field = push_clone_back(field);
+            field = push_clone_back(field, true);
         }
         auto id = stmts.size();
         auto new_stmt = stmt->clone(id);
@@ -84,9 +85,7 @@ struct IR {
 
     void print() const {
         for (auto const &s: stmts) {
-            if (s) {
-                cout << s->print() << endl;
-            }
+            cout << s->print() << endl;
         }
     }
 };

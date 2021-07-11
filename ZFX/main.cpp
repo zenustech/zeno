@@ -6,7 +6,7 @@ static zfx::Compiler<zfx::x64::Program> compiler;
 int main() {
     std::string code("tmp = pos + 0.5");
     std::map<std::string, int> symdims;
-    symdims["pos"] = 1;
+    symdims["pos"] = 3;
 
     auto prog = compiler.compile(code, symdims);
 

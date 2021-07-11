@@ -19,7 +19,7 @@ struct Statement {
     {}
 
     std::string print() const {
-        return format("$%d <%d> : %s", id, dim, to_string().c_str());
+        return format("$%d <%d> %s", id, dim, to_string().c_str());
     }
 
     virtual std::string to_string() const = 0;
@@ -44,6 +44,25 @@ struct AsmStmt : Stmt<T> {
 
     virtual StmtFields fields() override {
         return {};
+    }
+};
+
+struct EmptyStmt : Stmt<EmptyStmt> {
+    explicit EmptyStmt
+        ( int id_
+        )
+        : Stmt(id_)
+    {}
+
+    virtual StmtFields fields() override {
+        return {
+            };
+    }
+
+    virtual std::string to_string() const override {
+        return format(
+            "Empty"
+            );
     }
 };
 

@@ -10,9 +10,7 @@ struct IRVisitor {
 
     void apply(IR *ir) {
         for (auto const &s: ir->stmts) {
-            if (s) {
-                apply(s.get());
-            }
+            apply(s.get());
         }
     }
 };
