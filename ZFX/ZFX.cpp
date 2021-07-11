@@ -42,7 +42,10 @@ std::tuple
     cout << assem;
 
     cout << "=== Assemble" << endl;
-    return assem;
+    return
+        { assem
+        , symbols
+        };
 }
 
 int main() {

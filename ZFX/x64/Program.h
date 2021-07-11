@@ -6,19 +6,12 @@
 struct Program {
     std::unique_ptr<ExecutableInstance> executable;
 
-    std::vector<float> locals;
     std::vector<float> consts;
+    std::vector<float> locals;
     std::vector<float *> chptrs;
 
-    void set_local_size(size_t size) {
+    void set_local_mem_size(size_t size) {
         locals.resize(size);
-    }
-
-    void set_constant(int i, float value) {
-        if (consts.size() < i + 1) {
-            consts.resize(i + 1);
-        }
-        consts[i] = value;
     }
 
     void set_channel_pointer(int i, float *ptr) {

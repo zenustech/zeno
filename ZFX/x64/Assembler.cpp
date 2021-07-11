@@ -14,6 +14,7 @@
 struct Assembler {
     int simdkind = optype::xmmps;
     std::unique_ptr<SIMDBuilder> builder = std::make_unique<SIMDBuilder>();
+    std::unique_ptr<Program> prog = std::make_unique<Program>();
 
     void parse(std::string const &lines) {
         for (auto line: split_str(lines, '\n')) {
@@ -25,34 +26,38 @@ struct Assembler {
             if (0) {
 
             } else if (cmd == "ldi") {  // rcx points to an array of constants
+                // yeah: we assumed simdkind to be xmmps in this branch
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
-                auto offset = from_string<int>(linesep[2]);
-                offset *= SIMDBuilder::scalarSizeOfType(simdkind);
+                auto value_expr = linesep[2];
+                float value = from_string<float>(value_expr);
+                int id = prog->consts.size();
+                int offset = id * sizeof(float);
+                prog->consts.push_back(value);
                 builder->addAvxBroadcastLoadOp(simdkind,
                     dst, {opreg::rcx, memflag::reg_imm8, offset});
 
             } else if (cmd == "ldl") {  // rbx points to an array of variables
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
-                auto offset = from_string<int>(linesep[2]);
-                offset *= SIMDBuilder::sizeOfType(simdkind);
+                auto id = from_string<int>(linesep[2]);
+                int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 builder->addAvxMemoryOp(simdkind, opcode::loadu,
                     dst, {opreg::rbx, memflag::reg_imm8, offset});
 
             } else if (cmd == "stl") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
-                auto offset = from_string<int>(linesep[2]);
-                offset *= SIMDBuilder::sizeOfType(simdkind);
+                auto id = from_string<int>(linesep[2]);
+                int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
-                    dst, {opreg::rcx, memflag::reg_imm8, offset});
+                    dst, {opreg::rbx, memflag::reg_imm8, offset});
 
             } else if (cmd == "ldg") {  // rdx points to an array of pointers
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
-                auto offset = from_string<int>(linesep[2]);
-                offset *= sizeof(void *);
+                auto id = from_string<int>(linesep[2]);
+                int offset = id * sizeof(void *);
                 builder->addRegularLoadOp(opreg::rax,
                     {opreg::rdx, memflag::reg_imm8, offset});
                 builder->addAvxMemoryOp(simdkind, opcode::loadu,
@@ -61,8 +66,8 @@ struct Assembler {
             } else if (cmd == "stg") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
-                auto offset = from_string<int>(linesep[2]);
-                offset *= sizeof(void *);
+                auto id = from_string<int>(linesep[2]);
+                int offset = id * sizeof(void *);
                 builder->addRegularLoadOp(opreg::rax,
                     {opreg::rdx, memflag::reg_imm8, offset});
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
@@ -110,19 +115,21 @@ struct Assembler {
                 error("bad assembly command `%s`", cmd.c_str());
             }
         }
+
+        builder->addReturn();
+        auto const &insts = builder->getResult();
+
+        printf("consts:");
+        for (auto const &val: prog->consts) printf(" %f", val); printf("\n");
+        printf("insts:");
+        for (auto const &inst: insts) printf(" %02X", inst); printf("\n");
+
+        prog->executable = std::make_unique<ExecutableInstance>(insts);
     }
 };
 
 std::unique_ptr<Program> assemble_program(std::string const &lines) {
     Assembler a;
     a.parse(lines);
-    a.builder->addReturn();
-
-    auto const &insts = a.builder->getResult();
-    for (auto const &inst: insts) printf("%02X ", inst); printf("\n");
-
-    auto prog = std::make_unique<Program>();
-    prog->executable = std::make_unique<ExecutableInstance>(insts);
-
-    return prog;
+    return std::move(a.prog);
 };
