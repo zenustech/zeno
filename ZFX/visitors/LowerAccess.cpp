@@ -101,10 +101,6 @@ struct LowerAccess : Visitor<LowerAccess> {
     void visit(SymbolStmt *stmt) {
         loaders[stmt->id] = [this, stmt](int regid) {
             if (stmt->is_temporary()) {
-                ir->emplace_back<AsmLocalLoadStmt>
-                    ( stmt->tmpid
-                    , regid
-                    );
                 return;
             }
 
@@ -149,7 +145,7 @@ struct LowerAccess : Visitor<LowerAccess> {
         if (auto dst = dynamic_cast<SymbolStmt *>(stmt->dst); dst) {
             if (dst->is_temporary()) {
                 ir->emplace_back<AsmLocalStoreStmt>
-                    ( dst->tmpid
+                    ( lookup(dst->id)
                     , lookup(stmt->src->id)
                     );
                 return;
