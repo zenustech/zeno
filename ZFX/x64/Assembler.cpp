@@ -38,7 +38,7 @@ struct Assembler {
                 int offset = id * sizeof(float);
                 prog->consts.push_back(value);
                 builder->addAvxBroadcastLoadOp(simdkind,
-                    dst, {opreg::rcx, memflag::reg_imm32, offset});
+                    dst, {opreg::rcx, memflag::reg_imm8, offset});
 
             } else if (cmd == "ldl") {  // rbx points to an array of variables
                 ERROR_IF(linesep.size() < 2);
@@ -58,7 +58,7 @@ struct Assembler {
                     prog->locals.resize(id + 1);
                 int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
-                    dst, {opreg::rbx, memflag::reg_imm32, offset});
+                    dst, {opreg::rbx, memflag::reg_imm8, offset});
 
             } else if (cmd == "ldg") {  // rdx points to an array of pointers
                 ERROR_IF(linesep.size() < 2);
@@ -68,7 +68,7 @@ struct Assembler {
                     prog->chptrs.resize(id + 1);
                 int offset = id * sizeof(void *);
                 builder->addRegularLoadOp(opreg::rax,
-                    {opreg::rdx, memflag::reg_imm32, offset});
+                    {opreg::rdx, memflag::reg_imm8, offset});
                 builder->addAvxMemoryOp(simdkind, opcode::loadu,
                     dst, opreg::rax);
 
@@ -80,7 +80,7 @@ struct Assembler {
                     prog->chptrs.resize(id + 1);
                 int offset = id * sizeof(void *);
                 builder->addRegularLoadOp(opreg::rax,
-                    {opreg::rdx, memflag::reg_imm32, offset});
+                    {opreg::rdx, memflag::reg_imm8, offset});
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
                     dst, opreg::rax);
 

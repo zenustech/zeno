@@ -81,6 +81,14 @@ public:
         {}
 
         void dump(std::vector<uint8_t> &res, int val) {
+            if (mflag & (memflag::reg_imm8 | memflag::reg_imm32)) {
+                mflag &= ~(memflag::reg_imm8 | memflag::reg_imm32);
+                if (-128 <= immadr && immadr <= 127) {
+                    mflag |= memflag::reg_imm8;
+                } else {
+                    mflag |= memflag::reg_imm32;
+                }
+            }
             res.push_back(mflag | val << 3 | adr);
             if (mflag & memflag::reg_reg) {
                 res.push_back(adr2 | adr2shift << 6);
