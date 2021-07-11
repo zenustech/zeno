@@ -2,9 +2,34 @@
 #include "AST.h"
 #include "Stmts.h"
 #include "Lexical.h"
+#include <map>
 
 struct LowerAST {
     std::unique_ptr<IR> ir = std::make_unique<IR>();
+
+    std::map<std::string, int> symbols;
+    std::map<std::string, int> constants;
+    int symid = 0, constid = 0;
+
+    int resolve_symbol(std::string const &sym) {
+        auto it = symbols.find(sym);
+        if (it != symbols.end()) {
+            return it->second;
+        }
+        auto id = symid++;
+        symbols[sym] = id;
+        return id;
+    }
+
+    int resolve_literial(std::string const &expr) {
+        auto it = constants.find(expr);
+        if (it != constants.end()) {
+            return it->second;
+        }
+        auto id = constid++;
+        constants[expr] = id;
+        return id;
+    }
 
     Statement *serialize(AST *ast) {
         if (0) {
