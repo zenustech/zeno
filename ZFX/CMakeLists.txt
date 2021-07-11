@@ -26,4 +26,5 @@ x64/Program.h
 x64/SIMDBuilder.h
 ZFX.cpp
     )
+target_compile_definitions(ZFX PRIVATE -DZFX_PRINT_IR)
 target_include_directories(ZFX PRIVATE .)

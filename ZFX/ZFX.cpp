@@ -45,6 +45,7 @@ std::tuple
     ir = apply_lower_math(ir.get());
 #ifdef ZFX_PRINT_IR
     ir->print();
+#endif
 
 #ifdef ZFX_PRINT_IR
     cout << "=== LowerAccess" << endl;
@@ -72,7 +73,7 @@ std::tuple
 }
 
 int main() {
-    std::string code("pos = pos + 1");
+    std::string code("pos = pos + 0.5");
     auto 
         [ assem
         , symbols

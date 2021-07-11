@@ -24,7 +24,7 @@ struct EmitAssembly : Visitor<EmitAssembly> {
     }
 
     void visit(Statement *stmt) {
-        emit("error unexpected `%s`", typeid(*stmt).name());
+        error("unexpected statement type `%s`", typeid(*stmt).name());
     }
 
     void visit(AsmUnaryOpStmt *stmt) {
