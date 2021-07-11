@@ -100,8 +100,16 @@ struct LowerAccess : Visitor<LowerAccess> {
 
     void visit(SymbolStmt *stmt) {
         loaders[stmt->id] = [this, stmt](int regid) {
+            if (stmt->is_temporary()) {
+                ir->emplace_back<AsmLocalLoadStmt>
+                    ( stmt->tmpid
+                    , regid
+                    );
+                return;
+            }
+
             if (stmt->symids.size() != 1) {
-                error("scalar expected, got %d-D vector",
+                error("scalar expected on load, got %d-D vector",
                     stmt->symids.size());
             }
             ir->emplace_back<AsmGlobalLoadStmt>
@@ -139,8 +147,15 @@ struct LowerAccess : Visitor<LowerAccess> {
 
     void visit(AssignStmt *stmt) {
         if (auto dst = dynamic_cast<SymbolStmt *>(stmt->dst); dst) {
+            if (dst->is_temporary()) {
+                ir->emplace_back<AsmLocalStoreStmt>
+                    ( dst->tmpid
+                    , lookup(stmt->src->id)
+                    );
+                return;
+            }
             if (dst->symids.size() != 1) {
-                error("scalar expected, got %d-D vector",
+                error("scalar expected on store, got %d-D vector",
                     dst->symids.size());
             }
             ir->emplace_back<AsmGlobalStoreStmt>

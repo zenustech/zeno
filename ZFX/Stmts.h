@@ -99,6 +99,7 @@ struct AssignStmt : Stmt<AssignStmt> {
 
 struct SymbolStmt : Stmt<SymbolStmt> {
     std::vector<int> symids;
+    int tmpid = -1;
 
     SymbolStmt
         ( int id_
