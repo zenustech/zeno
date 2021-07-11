@@ -93,7 +93,6 @@ struct LowerAccess : Visitor<LowerAccess> {
 
         if (auto it = locals_lut.find(stmtid); it != locals_lut.end()) {
             int memid = it->second;
-            printf("%d, %d???\n", memid, regid);
             ir->emplace_back<AsmLocalLoadStmt>(memid, regid);
             return regid;
         }
@@ -111,7 +110,6 @@ struct LowerAccess : Visitor<LowerAccess> {
                     stmt->symids.size());
             }
             stmt->symids[0] = lookup_temp(stmt->id);
-            printf("%d, %d!!!\n", stmt->symids[0], regid);
             ir->emplace_back<AsmLocalLoadStmt>
                 ( stmt->symids[0]
                 , regid
