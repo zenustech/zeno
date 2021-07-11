@@ -95,19 +95,14 @@ struct LowerAccess : Visitor<LowerAccess> {
 
     void visit(SymbolStmt *stmt) {
         loaders[stmt->id] = [this, stmt](int regid) {
-            ir->emplace_back<AsmGlobalLoadStmt>
-                ( memid
-                , regid
+            ir->emplace_back<AsmLoadSymbolStmt>
+                ( regid
+                , stmt->name
                 );
         };
     }
 
     void visit(LiterialStmt *stmt) {
-        if (auto it = memories_lut.find(stmtid); it != memories_lut.end()) {
-            int memid = it->second;
-            //memories[memid] = -1;  // really need free?
-            ir->emplace_back<AsmMemoryLoadStmt>(memid, regid);
-        }
         loaders[stmt->id] = [this, stmt](int regid) {
             ir->emplace_back<AsmLoadConstStmt>
                 ( regid
