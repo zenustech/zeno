@@ -104,7 +104,7 @@ struct LowerAccess : Visitor<LowerAccess> {
                 error("scalar expected on temp load, got %d-D vector",
                     stmt->symids.size());
             }
-            ir->emplace_back<AsmGlobalLoadStmt>
+            ir->emplace_back<AsmLocalLoadStmt>
                 ( stmt->symids[0]
                 , regid
                 );
@@ -157,7 +157,7 @@ struct LowerAccess : Visitor<LowerAccess> {
                     dst->symids.size());
             }
             ir->emplace_back<AsmLocalStoreStmt>
-                ( lookup(dst->id)
+                ( dst->symids[0]
                 , lookup(stmt->src->id)
                 );
             return;
