@@ -8,8 +8,7 @@ struct LowerAST {
     std::unique_ptr<IR> ir = std::make_unique<IR>();
 
     std::map<std::string, int> symbols;
-    std::map<std::string, int> constants;
-    int symid = 0, constid = 0;
+    int symid = 0;
 
     int resolve_symbol(std::string const &sym) {
         auto it = symbols.find(sym);
@@ -18,16 +17,6 @@ struct LowerAST {
         }
         auto id = symid++;
         symbols[sym] = id;
-        return id;
-    }
-
-    int resolve_literial(std::string const &expr) {
-        auto it = constants.find(expr);
-        if (it != constants.end()) {
-            return it->second;
-        }
-        auto id = constid++;
-        constants[expr] = id;
         return id;
     }
 
@@ -52,7 +41,7 @@ struct LowerAST {
             return ir->emplace_back<SymbolStmt>(resolve_symbol(ast->token));
 
         } else if (is_literial_atom(ast->token) && ast->args.size() == 0) {
-            return ir->emplace_back<LiterialStmt>(resolve_literial(ast->token));
+            return ir->emplace_back<LiterialStmt>(ast->token);
 
         } else {
             error("cannot lower AST at token: `%s` (%d args)\n",
@@ -60,10 +49,19 @@ struct LowerAST {
             return nullptr;
         }
     }
+
+    auto getSymbols() const {
+        std::vector<std::string> ret(symid);
+        for (auto const &[key, id]: symbols) {
+            ret[id] = key;
+        }
+        return ret;
+    }
 };
 
 std::tuple
     < std::unique_ptr<IR>
+    , std::vector<std::string>
     > lower_ast
     ( std::vector<AST::Ptr> asts
     ) {
@@ -71,7 +69,9 @@ std::tuple
     for (auto const &ast: asts) {
         lower.serialize(ast.get());
     }
+    auto symbols = lower.getSymbols();
     return
         { std::move(lower.ir)
+        , symbols
         };
 }

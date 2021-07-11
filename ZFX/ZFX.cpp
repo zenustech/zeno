@@ -1,10 +1,16 @@
 #include "LowerAST.h"
 #include "Visitors.h"
 #include "x64/Program.h"
+#include <sstream>
+#include <tuple>
 
-int main() {
-    std::string code("pos = pos + 1");
-    cout << "==============" << endl;
+std::tuple
+    < std::string
+    , std::vector<std::string>
+    > zfx_compile
+    ( std::string const &code
+    ) {
+    cout << "=== ZFX" << endl;
     cout << code << endl;
 
     cout << "=== Parse" << endl;
@@ -17,6 +23,7 @@ int main() {
     cout << "=== LowerAST" << endl;
     auto
         [ ir
+        , symbols
         ] = lower_ast
         ( std::move(asts)
         );
@@ -35,8 +42,24 @@ int main() {
     cout << assem;
 
     cout << "=== Assemble" << endl;
-    auto inst = assemble_program(assem);
+    return assem;
+}
 
-    cout << "==============" << endl;
+int main() {
+    std::string code("pos = pos + 1");
+    auto 
+        [ assem
+        , symbols
+        ] = zfx_compile
+        ( code
+        );
+
+    auto prog = assemble_program(assem);
+
+    prog->consts.clear();
+    prog->chptrs.clear();
+
+    (*prog)();
+
     return 0;
 }

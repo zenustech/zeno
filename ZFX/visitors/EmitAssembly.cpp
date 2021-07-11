@@ -71,7 +71,7 @@ struct EmitAssembly : Visitor<EmitAssembly> {
     }
 
     void visit(AsmLoadConstStmt *stmt) {
-        emit("ldi %d %d", stmt->dst, stmt->constid);
+        emit("ldi %d %s", stmt->dst, stmt->value.c_str());
     }
 
     void visit(AsmAssignStmt *stmt) {

@@ -122,7 +122,7 @@ struct LowerAccess : Visitor<LowerAccess> {
         loaders[stmt->id] = [this, stmt](int regid) {
             ir->emplace_back<AsmLoadConstStmt>
                 ( regid
-                , stmt->constid
+                , stmt->value
                 );
         };
     }

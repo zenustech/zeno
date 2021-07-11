@@ -2,11 +2,9 @@
 
 #include "common.h"
 #include "x64/Executable.h"
-#include <map>
 
 struct Program {
     std::unique_ptr<ExecutableInstance> executable;
-    std::map<std::string, int> symtable;
 
     std::vector<float> locals;
     std::vector<float> consts;
