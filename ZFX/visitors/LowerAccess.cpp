@@ -37,6 +37,16 @@ struct LowerAccess : Visitor<LowerAccess> {
     std::map<int, std::function<void(int)>> loaders;
     std::map<int, std::function<void()>> savers;
 
+    int lookup_temp(int stmtid) {
+        if (auto it = locals_lut.find(stmtid); it != locals_lut.end()) {
+            return it->second;
+        }
+        int memid = locals.size();
+        locals_lut[stmtid] = memid;
+        locals.push_back(stmtid);
+        return memid;
+    }
+
     int temp_save(int regid, int stmtid) {
         for (int i = 0; i < locals.size(); i++) {
             if (locals[i] == -1) {
@@ -104,6 +114,7 @@ struct LowerAccess : Visitor<LowerAccess> {
                 error("scalar expected on temp load, got %d-D vector",
                     stmt->symids.size());
             }
+            stmt->symids[0] = lookup_temp(stmt->id);
             ir->emplace_back<AsmLocalLoadStmt>
                 ( stmt->symids[0]
                 , regid
@@ -156,6 +167,7 @@ struct LowerAccess : Visitor<LowerAccess> {
                 error("scalar expected on temp store, got %d-D vector",
                     dst->symids.size());
             }
+            dst->symids[0] = lookup_temp(dst->id);
             ir->emplace_back<AsmLocalStoreStmt>
                 ( dst->symids[0]
                 , lookup(stmt->src->id)

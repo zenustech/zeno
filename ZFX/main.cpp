@@ -4,7 +4,7 @@
 static zfx::Compiler<zfx::x64::Program> compiler;
 
 int main() {
-    std::string code("tmp = pos + 0.5\npos = tmp + 3");
+    std::string code("tmp = pos + 0.5\npos = tmp + 2");
     std::map<std::string, int> symdims;
     symdims["pos"] = 1;
 
@@ -16,7 +16,7 @@ int main() {
 
     printf("result:");
     for (auto val: arr) printf(" %f", val);
-    printf("\n");
+    printf("\n");  // 3.5 4.5 5.5 6.5
 
     return 0;
 }

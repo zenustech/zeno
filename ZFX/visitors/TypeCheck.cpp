@@ -46,7 +46,7 @@ struct TypeCheck : Visitor<TypeCheck> {
             stmt->dst->dim = stmt->src->dim;
             if (auto dst = dynamic_cast<TempSymbolStmt *>(stmt->dst); dst) {
                 dst->symids.clear();
-                dst->symids.resize(dst->dim, 233);
+                dst->symids.resize(dst->dim, -1);
             }
         } else if (stmt->src->dim > 1 && stmt->dst->dim != stmt->src->dim) {
             error("dimension mismatch in assign: %d != %d",
