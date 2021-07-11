@@ -67,7 +67,7 @@ struct LowerAccess : Visitor<LowerAccess> {
         return regid;
     }
 
-    int lookup(int stmtid) {
+    int lookup(int stmtid, bool is_store = false) {
         for (int i = 0; i < regs.size(); i++) {
             if (regs[i].curr_stmtid == stmtid) {
                 regs[i].last_used = now();
@@ -76,6 +76,9 @@ struct LowerAccess : Visitor<LowerAccess> {
         }
         auto regid = alloc_register();
         regs[regid].curr_stmtid = stmtid;
+        if (is_store) {
+            return regid;
+        }
 
         // think: what's the order for consts? memories_lut or loaders first?
         if (auto it = memories_lut.find(stmtid); it != memories_lut.end()) {
@@ -114,7 +117,7 @@ struct LowerAccess : Visitor<LowerAccess> {
     void visit(UnaryOpStmt *stmt) {
         ir->emplace_back<AsmUnaryOpStmt>
             ( stmt->op
-            , lookup(stmt->id)
+            , lookup(stmt->id, true)
             , lookup(stmt->src->id)
             );
     }
@@ -122,7 +125,7 @@ struct LowerAccess : Visitor<LowerAccess> {
     void visit(BinaryOpStmt *stmt) {
         ir->emplace_back<AsmBinaryOpStmt>
             ( stmt->op
-            , lookup(stmt->id)
+            , lookup(stmt->id, true)
             , lookup(stmt->lhs->id)
             , lookup(stmt->rhs->id)
             );
@@ -130,7 +133,7 @@ struct LowerAccess : Visitor<LowerAccess> {
 
     void visit(AssignStmt *stmt) {
         ir->emplace_back<AsmAssignStmt>
-            ( lookup(stmt->dst->id)
+            ( lookup(stmt->dst->id, true)
             , lookup(stmt->src->id)
             );
     }
