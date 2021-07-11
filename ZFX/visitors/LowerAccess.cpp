@@ -12,6 +12,7 @@ struct LowerAccess : Visitor<LowerAccess> {
         , BinaryOpStmt
         , LiterialStmt
         , SymbolStmt
+        , TempSymbolStmt
         , Statement
         >;
 
@@ -30,7 +31,7 @@ struct LowerAccess : Visitor<LowerAccess> {
         return ir->size();
     }
 
-    std::vector<RegInfo> regs{2};
+    std::vector<RegInfo> regs{8};
     std::vector<int> locals;
     std::map<int, int> locals_lut;
     std::map<int, std::function<void(int)>> loaders;
@@ -82,7 +83,6 @@ struct LowerAccess : Visitor<LowerAccess> {
             return regid;
         }
 
-        // think: what's the order for consts? locals_lut or loaders first?
         if (auto it = locals_lut.find(stmtid); it != locals_lut.end()) {
             int memid = it->second;
             ir->emplace_back<AsmLocalLoadStmt>(memid, regid);
@@ -98,11 +98,21 @@ struct LowerAccess : Visitor<LowerAccess> {
         return regid;
     }
 
+    void visit(TempSymbolStmt *stmt) {
+        loaders[stmt->id] = [this, stmt](int regid) {
+            if (stmt->symids.size() != 1) {
+                error("scalar expected on temp load, got %d-D vector",
+                    stmt->symids.size());
+            }
+            ir->emplace_back<AsmGlobalLoadStmt>
+                ( stmt->symids[0]
+                , regid
+                );
+        };
+    }
+
     void visit(SymbolStmt *stmt) {
         loaders[stmt->id] = [this, stmt](int regid) {
-            if (stmt->is_temporary()) {
-                return;
-            }
             if (stmt->symids.size() != 1) {
                 error("scalar expected on load, got %d-D vector",
                     stmt->symids.size());
@@ -141,14 +151,18 @@ struct LowerAccess : Visitor<LowerAccess> {
     }
 
     void visit(AssignStmt *stmt) {
-        if (auto dst = dynamic_cast<SymbolStmt *>(stmt->dst); dst) {
-            if (dst->is_temporary()) {
-                ir->emplace_back<AsmLocalStoreStmt>
-                    ( lookup(dst->id)
-                    , lookup(stmt->src->id)
-                    );
-                return;
+        if (auto dst = dynamic_cast<TempSymbolStmt *>(stmt->dst); dst) {
+            if (dst->symids.size() != 1) {
+                error("scalar expected on temp store, got %d-D vector",
+                    dst->symids.size());
             }
+            ir->emplace_back<AsmLocalStoreStmt>
+                ( lookup(dst->id)
+                , lookup(stmt->src->id)
+                );
+            return;
+        }
+        if (auto dst = dynamic_cast<SymbolStmt *>(stmt->dst); dst) {
             if (dst->symids.size() != 1) {
                 error("scalar expected on store, got %d-D vector",
                     dst->symids.size());

@@ -108,10 +108,6 @@ struct SymbolStmt : Stmt<SymbolStmt> {
         , symids(symids_)
     {}
 
-    bool is_temporary() const {
-        return symids.size() == 0;
-    }
-
     virtual StmtFields fields() override {
         return {
             };
@@ -120,6 +116,34 @@ struct SymbolStmt : Stmt<SymbolStmt> {
     virtual std::string to_string() const override {
         return format(
             "Symbol [%s]"
+            , format_join(", ", "%d", symids).c_str()
+            );
+    }
+};
+
+struct TempSymbolStmt : Stmt<TempSymbolStmt> {
+    int tmpid;
+    std::vector<int> symids;
+
+    TempSymbolStmt
+        ( int id_
+        , int tmpid_
+        , std::vector<int> symids_
+        )
+        : Stmt(id_)
+        , tmpid(tmpid_)
+        , symids(symids_)
+    {}
+
+    virtual StmtFields fields() override {
+        return {
+            };
+    }
+
+    virtual std::string to_string() const override {
+        return format(
+            "TempSymbol %d [%s]"
+            , tmpid
             , format_join(", ", "%d", symids).c_str()
             );
     }

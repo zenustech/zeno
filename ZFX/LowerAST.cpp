@@ -30,6 +30,32 @@ struct LowerAST {
         return {};  // undefined for now, will be further defined in TypeCheck pass
     }
 
+    std::map<std::string, SymbolStmt *> globsyms;
+
+    SymbolStmt *emplace_global_symbol(std::string const &name) {
+        auto symids = resolve_symbol(name);
+        if (symids.size() == 0)
+            return nullptr;
+        if (auto it = globsyms.find(name); it != globsyms.end()) {
+            return it->second;
+        }
+        auto ret = ir->emplace_back<SymbolStmt>(symids);
+        globsyms[name] = ret;
+        return ret;
+    }
+
+    std::map<std::string, TempSymbolStmt *> tempsyms;
+    int tmpid = 0;
+
+    TempSymbolStmt *emplace_temporary_symbol(std::string const &name) {
+        if (auto it = tempsyms.find(name); it != tempsyms.end()) {
+            return it->second;
+        }
+        auto ret = ir->emplace_back<TempSymbolStmt>(tmpid++, std::vector<int>{});
+        tempsyms[name] = ret;
+        return ret;
+    }
+
     Statement *serialize(AST *ast) {
         if (0) {
 
@@ -48,7 +74,12 @@ struct LowerAST {
             return ir->emplace_back<AssignStmt>(dst, src);
 
         } else if (is_symbolic_atom(ast->token) && ast->args.size() == 0) {
-            return ir->emplace_back<SymbolStmt>(resolve_symbol(ast->token));
+            auto ret = emplace_global_symbol(ast->token);
+            if (ret != nullptr) {
+                return ret;
+            } else {
+                return emplace_temporary_symbol(ast->token);
+            }
 
         } else if (is_literial_atom(ast->token) && ast->args.size() == 0) {
             return ir->emplace_back<LiterialStmt>(ast->token);
