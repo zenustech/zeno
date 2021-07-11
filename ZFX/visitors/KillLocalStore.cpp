@@ -27,16 +27,19 @@ struct KillLocalStore : Visitor<KillLocalStore> {
     std::unique_ptr<IR> ir = std::make_unique<IR>();
 
     struct StoreRAII {
-        int reg = -1;
+        AsmLocalStoreStmt *stmt = nullptr;
         std::function<void()> dtor;
+        bool active = false;
 
         StoreRAII() = default;
-        ~StoreRAII() { dtor(); }
+        ~StoreRAII() { if (active) dtor(); }
+        StoreRAII(StoreRAII &&) = default;
+        StoreRAII(StoreRAII const &) = default;
         StoreRAII &operator=(StoreRAII const &) = default;
 
         template <class F>
-        StoreRAII(int reg, F const &dtor)
-            : reg(reg), dtor(dtor) {}
+        StoreRAII(AsmLocalStoreStmt *stmt, F const &dtor)
+            : stmt(stmt), dtor(dtor) {}
     };
 
     std::map<int, int> last_load;
@@ -44,22 +47,28 @@ struct KillLocalStore : Visitor<KillLocalStore> {
 
     void visit(AsmLocalLoadStmt *stmt) {
         if (auto it = storer.find(stmt->mem); it != storer.end()) {
-            storer.erase(it);
-            return;
+            it->second.active = true;
+            if (0) {
+                ir->emplace_back<AsmAssignStmt>(
+                    stmt->val, it->second.stmt->val);
+                storer.erase(it);
+            }
         }
         visit((Statement *)stmt);
     }
 
     void visit(AsmLocalStoreStmt *stmt) {
-        auto it = last_load.find(stmt->mem);
+        /*auto it = last_load.find(stmt->mem);
         if (it == last_load.end())
             return;
         if (stmt->id > it->second)
-            return;
+            return;*/
         auto hole = ir->make_hole_back();
-        storer[stmt->mem] = StoreRAII(stmt->val, [hole, stmt]() {
+        storer[stmt->mem] = StoreRAII(stmt, [hole, stmt]() {
+            printf("adding back %d\n", stmt->id);
             hole.place<AsmLocalStoreStmt>(stmt->mem, stmt->val);
         });
+        storer.at(stmt->mem).active = false;
     }
 
     void visit(Statement *stmt) {
@@ -73,6 +82,7 @@ std::unique_ptr<IR> apply_kill_local_store(IR *ir) {
     KillLocalStore visitor;
     visitor.last_load = gather.last_load;
     visitor.apply(ir);
+    visitor.storer.clear();
     return std::move(visitor.ir);
 }
 
