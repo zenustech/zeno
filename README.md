@@ -12,6 +12,10 @@ Open-source node system framework, to change your algorithmic code into useful t
 Integrated Toolbox, from volumetric geometry process tools (OpenVDB), to state-of-art, commercially robust, highly optimized physics solvers and visualization
 nodes, and various VFX and simulation solutions based on our nodes (provided by .zsg file in `arts/` folder).
 
+## Usage
+
+See [here](docs/getting_started.md) to start development with Zeno.
+
 ## Gallery
 
 ![robot hit water](images/crag_hit_water.gif)
