@@ -42,6 +42,7 @@ struct IR {
         int id;
         IR *ir;
 
+        Hole() = default;
         Hole
             ( int id_
             , IR *ir_

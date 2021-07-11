@@ -28,50 +28,52 @@ struct KillLocalStore : Visitor<KillLocalStore> {
 
     struct StoreRAII {
         AsmLocalStoreStmt *stmt = nullptr;
-        std::function<void()> dtor;
+        IR::Hole hole;
         bool active = false;
 
         StoreRAII() = default;
-        ~StoreRAII() { if (active) dtor(); }
         StoreRAII(StoreRAII &&) = default;
         StoreRAII(StoreRAII const &) = default;
         StoreRAII &operator=(StoreRAII const &) = default;
 
-        template <class F>
-        StoreRAII(AsmLocalStoreStmt *stmt, F const &dtor)
-            : stmt(stmt), dtor(dtor) {}
+        StoreRAII(AsmLocalStoreStmt *stmt, IR::Hole const &hole)
+            : stmt(stmt), hole(hole) {}
+
+        ~StoreRAII() {
+            if (active) {
+                hole.place<AsmLocalStoreStmt>(stmt->mem, stmt->val);
+            }
+        }
     };
 
     std::map<int, int> last_load;
-    std::map<int, StoreRAII> storer;
+    std::unique_ptr<StoreRAII> storer;
 
     void visit(AsmLocalLoadStmt *stmt) {
-        if (auto it = storer.find(stmt->mem); it != storer.end()) {
-            it->second.active = true;
-            if (0) {
-                ir->emplace_back<AsmAssignStmt>(
-                    stmt->val, it->second.stmt->val);
-                storer.erase(it);
-            }
+        if (storer->stmt->mem == stmt->mem) {
+            storer->active = false;
+            ir->emplace_back<AsmAssignStmt>(
+                stmt->val, storer->stmt->val);
+            storer = nullptr;
+
+        } else {
+            visit((Statement *)stmt);
         }
-        visit((Statement *)stmt);
     }
 
     void visit(AsmLocalStoreStmt *stmt) {
-        /*auto it = last_load.find(stmt->mem);
+        auto it = last_load.find(stmt->mem);
         if (it == last_load.end())
             return;
         if (stmt->id > it->second)
-            return;*/
+            return;
         auto hole = ir->make_hole_back();
-        storer[stmt->mem] = StoreRAII(stmt, [hole, stmt]() {
-            printf("adding back %d\n", stmt->id);
-            hole.place<AsmLocalStoreStmt>(stmt->mem, stmt->val);
-        });
-        storer.at(stmt->mem).active = false;
+        storer = std::make_unique<StoreRAII>(stmt, hole);
+        storer->active = true;
     }
 
     void visit(Statement *stmt) {
+        storer = nullptr;
         ir->push_clone_back(stmt);
     }
 };
@@ -82,7 +84,7 @@ std::unique_ptr<IR> apply_kill_local_store(IR *ir) {
     KillLocalStore visitor;
     visitor.last_load = gather.last_load;
     visitor.apply(ir);
-    visitor.storer.clear();
+    visitor.storer = nullptr;
     return std::move(visitor.ir);
 }
 
