@@ -96,6 +96,19 @@ struct LowerAccess : Visitor<LowerAccess> {
         return regid;
     }
 
+    std::map<std::string, int> symbols;
+    int symid = 0;
+
+    int lookup_symbol_id(std::string const &name) {
+        auto it = symbols.find(name);
+        if (it != symbols.end()) {
+            return it->second;
+        }
+        auto id = symid++;
+        symbols[name] = id;
+        return id;
+    }
+
     void visit(SymbolStmt *stmt) {
         loaders[stmt->id] = [this, stmt](int regid) {
             ir->emplace_back<AsmGlobalLoadStmt>
@@ -132,9 +145,9 @@ struct LowerAccess : Visitor<LowerAccess> {
     }
 
     void visit(AssignStmt *stmt) {
-        if (dynamic_cast<SymbolStmt *>(stmt->dst)) {
+        if (auto dst = dynamic_cast<SymbolStmt *>(stmt->dst); dst) {
             ir->emplace_back<AsmGlobalStoreStmt>
-                ( lookup_symbol_id(stmt->name)
+                ( lookup_symbol_id(dst->name)
                 , lookup(stmt->src->id)
                 );
             return;
