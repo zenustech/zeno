@@ -12,11 +12,13 @@ int main() {
     };
 
     std::map<std::string, int> symdims;
-    symdims["@pos"] = 1;
+    symdims["@pos"] = 3;
 
     auto prog = compiler.compile(code, symdims);
 
     float arr[4] = {1, 2, 3, 4};
+    float arr2[4] = {0, 0, 0, 0};
+    float arr3[4] = {0, 0, 0, 0};
 
     printf("expected:");
     for (auto val: arr) {
@@ -26,6 +28,8 @@ int main() {
     printf("\n");
 
     prog->set_channel_pointer("@pos", 0, arr);
+    prog->set_channel_pointer("@pos", 1, arr2);
+    prog->set_channel_pointer("@pos", 2, arr3);
     prog->execute();
 
     printf("result:");
