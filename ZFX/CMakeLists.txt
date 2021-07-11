@@ -11,6 +11,8 @@ IR.h
 IRVisitor.h
 Lexical.h
 LowerAST.cpp
+LowerAST.h
+main.cpp
 Parser.cpp
 Statement.h
 Stmts.h
@@ -25,6 +27,7 @@ x64/Executable.h
 x64/Program.h
 x64/SIMDBuilder.h
 ZFX.cpp
+ZFX.h
     )
 target_compile_definitions(ZFX PRIVATE -DZFX_PRINT_IR)
 target_include_directories(ZFX PRIVATE .)
