@@ -8,11 +8,11 @@ int main() {
     auto 
         [ assem
         , symbols
-        ] = zfx_compile
+        ] = compile_to_assembly
         ( code
         );
 
-    auto prog = assemble_program(assem);
+    auto prog = x64::assemble_program(assem);
 
     float arr[4] = {1, 2, 3, 4};
     prog->set_channel_pointer(0, arr);

@@ -5,7 +5,7 @@
 #include <sys/mman.h>
 #include <vector>
 
-namespace zfx {
+namespace zfx::x64 {
 
 class ExecutableArena {
 protected:

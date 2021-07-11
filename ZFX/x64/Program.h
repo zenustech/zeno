@@ -3,7 +3,7 @@
 #include "common.h"
 #include "x64/Executable.h"
 
-namespace zfx {
+namespace zfx::x64 {
 
 struct Program {
     std::unique_ptr<ExecutableInstance> executable;

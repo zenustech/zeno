@@ -7,7 +7,7 @@ namespace zfx {
 std::tuple
     < std::string
     , std::vector<std::string>
-    > zfx_compile
+    > compile_to_assembly
     ( std::string const &code
     ) {
 #ifdef ZFX_PRINT_IR

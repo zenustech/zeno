@@ -6,7 +6,7 @@
 #include <sys/mman.h>
 #include <vector>
 
-namespace zfx {
+namespace zfx::x64 {
 
 /*
  * () ~ * + << <= == & ^ | && || ?: = ,

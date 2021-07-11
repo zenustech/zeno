@@ -5,7 +5,7 @@
 #include <sstream>
 #include <map>
 
-namespace zfx {
+namespace zfx::x64 {
 
 #define ERROR_IF(x) do { \
     if (x) { \
