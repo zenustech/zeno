@@ -22,6 +22,7 @@ visitors/EmitAssembly.cpp
 Visitors.h
 visitors/LowerAccess.cpp
 visitors/LowerMath.cpp
+visitors/TypeCheck.cpp
 x64/Assembler.cpp
 x64/Executable.h
 x64/Program.h

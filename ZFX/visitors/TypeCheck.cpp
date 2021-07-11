@@ -6,6 +6,10 @@ namespace zfx {
 struct TypeCheck : Visitor<TypeCheck> {
     using visit_stmt_types = std::tuple
         < SymbolStmt
+        , LiterialStmt
+        , AssignStmt
+        , BinaryOpStmt
+        , UnaryOpStmt
         , Statement
         >;
 

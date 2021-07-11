@@ -24,10 +24,9 @@ struct UnaryOpStmt : Stmt<UnaryOpStmt> {
             };
     }
 
-    virtual std::string print() const override {
+    virtual std::string to_string() const override {
         return format(
-            "$%d = UnaryOp [%s] $%d"
-            , id
+            "UnaryOp [%s] $%d"
             , op.c_str()
             , src->id
             );
@@ -58,10 +57,9 @@ struct BinaryOpStmt : Stmt<BinaryOpStmt> {
             };
     }
 
-    virtual std::string print() const override {
+    virtual std::string to_string() const override {
         return format(
-            "$%d = BinaryOp [%s] $%d $%d"
-            , id
+            "BinaryOp [%s] $%d $%d"
             , op.c_str()
             , lhs->id
             , rhs->id
@@ -90,10 +88,9 @@ struct AssignStmt : Stmt<AssignStmt> {
             };
     }
 
-    virtual std::string print() const override {
+    virtual std::string to_string() const override {
         return format(
-            "$%d = Assign $%d $%d"
-            , id
+            "Assign $%d $%d"
             , dst->id
             , src->id
             );
@@ -116,10 +113,9 @@ struct SymbolStmt : Stmt<SymbolStmt> {
             };
     }
 
-    virtual std::string print() const override {
+    virtual std::string to_string() const override {
         return format(
-            "$%d = Symbol [%s]"
-            , id
+            "Symbol [%s]"
             , format_join(", ", "%d", symids).c_str()
             );
     }
@@ -141,10 +137,9 @@ struct LiterialStmt : Stmt<LiterialStmt> {
             };
     }
 
-    virtual std::string print() const override {
+    virtual std::string to_string() const override {
         return format(
-            "$%d = Literial [%s]"
-            , id
+            "Literial [%s]"
             , value.c_str()
             );
     }
@@ -164,10 +159,9 @@ struct AsmAssignStmt : AsmStmt<AsmAssignStmt> {
         , src(src_)
     {}
 
-    virtual std::string print() const override {
+    virtual std::string to_string() const override {
         return format(
-            "$%d = AsmAssign r%d r%d"
-            , id
+            "AsmAssign r%d r%d"
             , dst
             , src
             );
@@ -188,10 +182,9 @@ struct AsmLoadConstStmt : AsmStmt<AsmLoadConstStmt> {
         , value(value_)
     {}
 
-    virtual std::string print() const override {
+    virtual std::string to_string() const override {
         return format(
-            "$%d = AsmLoadConst r%d [%s]"
-            , id
+            "AsmLoadConst r%d [%s]"
             , dst
             , value.c_str()
             );
@@ -218,10 +211,9 @@ struct AsmBinaryOpStmt : AsmStmt<AsmBinaryOpStmt> {
         , rhs(rhs_)
     {}
 
-    virtual std::string print() const override {
+    virtual std::string to_string() const override {
         return format(
-            "$%d = AsmBinaryOp (%s) r%d r%d r%d"
-            , id
+            "AsmBinaryOp (%s) r%d r%d r%d"
             , op.c_str()
             , dst
             , lhs
@@ -247,10 +239,9 @@ struct AsmUnaryOpStmt : AsmStmt<AsmUnaryOpStmt> {
         , src(src_)
     {}
 
-    virtual std::string print() const override {
+    virtual std::string to_string() const override {
         return format(
-            "$%d = AsmUnaryOp (%s) r%d r%d"
-            , id
+            "AsmUnaryOp (%s) r%d r%d"
             , op.c_str()
             , dst
             , src
@@ -272,10 +263,9 @@ struct AsmLocalStoreStmt : AsmStmt<AsmLocalStoreStmt> {
         , val(val_)
     {}
 
-    virtual std::string print() const override {
+    virtual std::string to_string() const override {
         return format(
-            "$%d = AsmLocalStore r%d [%d]"
-            , id
+            "AsmLocalStore r%d [%d]"
             , val
             , mem
             );
@@ -296,10 +286,9 @@ struct AsmLocalLoadStmt : AsmStmt<AsmLocalLoadStmt> {
         , val(val_)
     {}
 
-    virtual std::string print() const override {
+    virtual std::string to_string() const override {
         return format(
-            "$%d = AsmLocalLoad r%d [%d]"
-            , id
+            "AsmLocalLoad r%d [%d]"
             , val
             , mem
             );
@@ -320,10 +309,9 @@ struct AsmGlobalStoreStmt : AsmStmt<AsmGlobalStoreStmt> {
         , val(val_)
     {}
 
-    virtual std::string print() const override {
+    virtual std::string to_string() const override {
         return format(
-            "$%d = AsmGlobalStore r%d [%d]"
-            , id
+            "AsmGlobalStore r%d [%d]"
             , val
             , mem
             );
@@ -344,10 +332,9 @@ struct AsmGlobalLoadStmt : AsmStmt<AsmGlobalLoadStmt> {
         , val(val_)
     {}
 
-    virtual std::string print() const override {
+    virtual std::string to_string() const override {
         return format(
-            "$%d = AsmGlobalLoad r%d [%d]"
-            , id
+            "AsmGlobalLoad r%d [%d]"
             , val
             , mem
             );

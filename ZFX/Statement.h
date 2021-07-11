@@ -10,6 +10,7 @@ using StmtFields = std::vector<std::reference_wrapper<Statement *>>;
 
 struct Statement {
     int id;
+    int dim;
 
     explicit Statement
         ( int id_
@@ -17,7 +18,11 @@ struct Statement {
         : id(id_)
     {}
 
-    virtual std::string print() const = 0;
+    std::string print() const {
+        return format("$%d <%d> : %s", id, dim, to_string().c_str());
+    }
+
+    virtual std::string to_string() const = 0;
     virtual std::unique_ptr<Statement> clone(int newid) const = 0;
     virtual StmtFields fields() = 0;
 };
