@@ -62,10 +62,16 @@ struct LowerAST {
     }
 };
 
-std::unique_ptr<IR> lower_ast(std::vector<AST::Ptr> asts) {
+std::tuple
+    < std::unique_ptr<IR>
+    > lower_ast
+    ( std::vector<AST::Ptr> asts
+    ) {
     LowerAST lower;
     for (auto const &ast: asts) {
         lower.serialize(ast.get());
     }
-    return std::move(lower.ir);
+    return
+        { std::move(lower.ir)
+        };
 }

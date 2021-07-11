@@ -1,5 +1,4 @@
-#include "AST.h"
-#include "IR.h"
+#include "LowerAST.h"
 #include "Visitors.h"
 #include "x64/Program.h"
 
@@ -16,7 +15,11 @@ int main() {
     }
 
     cout << "=== LowerAST" << endl;
-    auto ir = lower_ast(std::move(asts));
+    auto
+        [ ir
+        ] = lower_ast
+        ( std::move(asts)
+        );
     ir->print();
 
     cout << "=== LowerMath" << endl;
