@@ -2,6 +2,8 @@
 
 #include "common.h"
 
+namespace zfx {
+
 inline char opchars[] = "+-*/%=()";
 inline std::string opstrs[] = {"+", "-", "*", "/", "%", "=", "(", ")"};
 
@@ -26,3 +28,5 @@ inline bool is_atom(std::string const &s) {
 }
 
 std::vector<std::string> tokenize(const char *cp);
+
+}

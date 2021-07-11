@@ -1,6 +1,8 @@
 #include "IRVisitor.h"
 #include "Stmts.h"
 
+namespace zfx {
+
 struct LowerMath : Visitor<LowerMath> {
     using visit_stmt_types = std::tuple
         < Statement
@@ -17,4 +19,6 @@ std::unique_ptr<IR> apply_lower_math(IR *ir) {
     LowerMath visitor;
     visitor.apply(ir);
     return std::move(visitor.ir);
+}
+
 }

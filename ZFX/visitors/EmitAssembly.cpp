@@ -2,6 +2,8 @@
 #include "Stmts.h"
 #include <sstream>
 
+namespace zfx {
+
 struct EmitAssembly : Visitor<EmitAssembly> {
     using visit_stmt_types = std::tuple
         < AssignStmt
@@ -83,4 +85,6 @@ std::string apply_emit_assembly(IR *ir) {
     EmitAssembly visitor;
     visitor.apply(ir);
     return visitor.oss.str();
+}
+
 }

@@ -6,6 +6,8 @@
 #include <sys/mman.h>
 #include <vector>
 
+namespace zfx {
+
 /*
  * () ~ * + << <= == & ^ | && || ?: = ,
  */
@@ -175,3 +177,5 @@ public:
         return res;
     }
 };
+
+}

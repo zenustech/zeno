@@ -2,6 +2,8 @@
 
 #include "common.h"
 
+namespace zfx {
+
 struct Statement;
 
 using StmtFields = std::vector<std::reference_wrapper<Statement *>>;
@@ -39,3 +41,5 @@ struct AsmStmt : Stmt<T> {
         return {};
     }
 };
+
+}

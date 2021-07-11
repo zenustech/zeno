@@ -3,6 +3,8 @@
 #include "Statement.h"
 #include <map>
 
+namespace zfx {
+
 struct IR {
     std::vector<std::unique_ptr<Statement>> stmts;
     std::map<Statement *, Statement *> cloned;
@@ -88,3 +90,5 @@ struct IR {
         }
     }
 };
+
+}

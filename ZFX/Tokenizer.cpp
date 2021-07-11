@@ -1,5 +1,7 @@
 #include "Lexical.h"
 
+namespace zfx {
+
 std::vector<std::string> tokenize(const char *cp) {
     std::vector<std::string> tokens;
     while (1) {
@@ -31,4 +33,6 @@ std::vector<std::string> tokenize(const char *cp) {
     }
     tokens.push_back("");  // EOF sign
     return tokens;
+}
+
 }

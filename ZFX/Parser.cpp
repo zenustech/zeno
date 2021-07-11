@@ -1,6 +1,8 @@
 #include "AST.h"
 #include "Lexical.h"
 
+namespace zfx {
+
 struct Parser {
     std::vector<std::string> tokens;
 
@@ -97,4 +99,6 @@ std::vector<AST::Ptr> parse(std::string const &code) {
     auto tokens = tokenize(code.c_str());
     Parser parser(tokens);
     return parser.parse();
+}
+
 }

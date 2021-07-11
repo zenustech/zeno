@@ -3,6 +3,8 @@
 #include "common.h"
 #include "x64/Executable.h"
 
+namespace zfx {
+
 struct Program {
     std::unique_ptr<ExecutableInstance> executable;
 
@@ -26,3 +28,5 @@ struct Program {
 };
 
 std::unique_ptr<Program> assemble_program(std::string const &lines);
+
+}

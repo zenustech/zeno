@@ -4,6 +4,8 @@
 #include <sstream>
 #include <tuple>
 
+namespace zfx {
+
 std::tuple
     < std::string
     , std::vector<std::string>
@@ -72,7 +74,11 @@ std::tuple
         };
 }
 
+}
+
 int main() {
+    using namespace zfx;
+
     std::string code("pos = pos + 0.5");
     auto 
         [ assem

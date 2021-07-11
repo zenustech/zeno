@@ -3,6 +3,8 @@
 #include <map>
 #include <functional>
 
+namespace zfx {
+
 struct LowerAccess : Visitor<LowerAccess> {
     using visit_stmt_types = std::tuple
         < AssignStmt
@@ -163,4 +165,6 @@ std::unique_ptr<IR> apply_lower_access(IR *ir) {
     LowerAccess visitor;
     visitor.apply(ir);
     return std::move(visitor.ir);
+}
+
 }

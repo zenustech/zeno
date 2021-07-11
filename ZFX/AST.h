@@ -2,6 +2,8 @@
 
 #include "common.h"
 
+namespace zfx {
+
 struct AST {
     using Ptr = copiable_unique_ptr<AST>;
     using Iter = typename std::vector<std::string>::iterator;
@@ -38,3 +40,5 @@ inline AST::Ptr make_ast(std::string const &token, AST::Iter iter, std::vector<A
 }
 
 std::vector<AST::Ptr> parse(std::string const &code);
+
+}

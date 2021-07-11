@@ -5,6 +5,8 @@
 #include <sstream>
 #include <map>
 
+namespace zfx {
+
 #define ERROR_IF(x) do { \
     if (x) { \
         error("Assertion `%s` failed", #x); \
@@ -146,4 +148,6 @@ std::unique_ptr<Program> assemble_program(std::string const &lines) {
     Assembler a;
     a.parse(lines);
     return std::move(a.prog);
-};
+}
+
+}

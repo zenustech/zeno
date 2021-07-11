@@ -4,6 +4,8 @@
 #include "Lexical.h"
 #include <map>
 
+namespace zfx {
+
 struct LowerAST {
     std::unique_ptr<IR> ir = std::make_unique<IR>();
 
@@ -74,4 +76,6 @@ std::tuple
         { std::move(lower.ir)
         , symbols
         };
+}
+
 }

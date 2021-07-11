@@ -2,6 +2,8 @@
 
 #include "Statement.h"
 
+namespace zfx {
+
 struct UnaryOpStmt : Stmt<UnaryOpStmt> {
     std::string op;
     Statement *src;
@@ -351,3 +353,5 @@ struct AsmGlobalLoadStmt : AsmStmt<AsmGlobalLoadStmt> {
             );
     }
 };
+
+}

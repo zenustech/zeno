@@ -3,6 +3,8 @@
 #include "Statement.h"
 #include "IR.h"
 
+namespace zfx {
+
 struct IRVisitor {
     virtual void apply(Statement *stmt) = 0;
 
@@ -31,3 +33,5 @@ struct Visitor : IRVisitor {
         });
     }
 };
+
+}

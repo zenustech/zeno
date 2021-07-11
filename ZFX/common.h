@@ -12,6 +12,8 @@
 #include <tuple>
 #include <set>
 
+namespace zfx {
+
 using std::cout;
 using std::endl;
 
@@ -108,4 +110,6 @@ static inline std::string to_string(T const &value) {
     std::stringstream ss;
     ss << value;
     return ss.str();
+}
+
 }

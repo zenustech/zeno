@@ -5,6 +5,8 @@
 #include <sys/mman.h>
 #include <vector>
 
+namespace zfx {
+
 class ExecutableArena {
 protected:
     uint8_t *mem;
@@ -58,3 +60,5 @@ public:
             );
     }
 };
+
+}
