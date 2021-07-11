@@ -77,15 +77,14 @@ struct LowerAccess : Visitor<LowerAccess> {
         auto regid = alloc_register();
         regs[regid].curr_stmtid = stmtid;
 
-        if (auto it = savers.find(stmtid); it != savers.end()) {
-            it->second();
-        }
-
-        // think: what's the order? memories_lut or loaders first?
+        // think: what's the order for consts? memories_lut or loaders first?
         if (auto it = memories_lut.find(stmtid); it != memories_lut.end()) {
             int memid = it->second;
-            memories[memid] = -1;
             ir->emplace_back<AsmMemoryLoadStmt>(memid, regid);
+            if (auto it = savers.find(stmtid); it != savers.end()) {
+                it->second();
+            }
+            return regid;
         }
 
         if (auto it = loaders.find(stmtid); it != loaders.end()) {
@@ -96,14 +95,19 @@ struct LowerAccess : Visitor<LowerAccess> {
 
     void visit(SymbolStmt *stmt) {
         loaders[stmt->id] = [this, stmt](int regid) {
-            ir->emplace_back<AsmLoadSymbolStmt>
-                ( regid
-                , stmt->name
+            ir->emplace_back<AsmGlobalLoadStmt>
+                ( memid
+                , regid
                 );
         };
     }
 
     void visit(LiterialStmt *stmt) {
+        if (auto it = memories_lut.find(stmtid); it != memories_lut.end()) {
+            int memid = it->second;
+            //memories[memid] = -1;  // really need free?
+            ir->emplace_back<AsmMemoryLoadStmt>(memid, regid);
+        }
         loaders[stmt->id] = [this, stmt](int regid) {
             ir->emplace_back<AsmLoadConstStmt>
                 ( regid
