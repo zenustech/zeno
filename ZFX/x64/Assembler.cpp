@@ -128,6 +128,7 @@ struct Assembler {
         builder->addReturn();
         auto const &insts = builder->getResult();
 
+#ifdef ZFX_PRINT_IR
         printf("variables: %d slots\n", prog->locals.size());
         printf("channels: %d pointers\n", prog->chptrs.size());
         printf("consts:");
@@ -135,6 +136,7 @@ struct Assembler {
         printf("\ninsts:");
         for (auto const &inst: insts) printf(" %02X", inst);
         printf("\n");
+#endif
 
         prog->executable = std::make_unique<ExecutableInstance>(insts);
     }
