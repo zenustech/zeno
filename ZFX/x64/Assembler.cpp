@@ -26,13 +26,13 @@ struct Assembler {
             if (0) {
 
             } else if (cmd == "ldi") {  // rcx points to an array of constants
-                // yeah: we assumed simdkind to be xmmps in this branch
-                // todo: use template programming to be generic on this
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto value_expr = linesep[2];
                 float value = from_string<float>(value_expr);
                 int id = prog->consts.size();
+                // yeah: we assumed simdkind to be xmmps in this branch
+                // todo: use template programming to be generic on this
                 int offset = id * sizeof(float);
                 prog->consts.push_back(value);
                 builder->addAvxBroadcastLoadOp(simdkind,
@@ -128,10 +128,11 @@ struct Assembler {
         builder->addReturn();
         auto const &insts = builder->getResult();
 
+        printf("variables: %d slots\n", prog->locals.size());
+        printf("channels: %d pointers\n", prog->chptrs.size());
         printf("consts:");
         for (auto const &val: prog->consts) printf(" %f", val);
-        printf("\n");
-        printf("insts:");
+        printf("\ninsts:");
         for (auto const &inst: insts) printf(" %02X", inst);
         printf("\n");
 

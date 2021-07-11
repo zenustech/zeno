@@ -7,7 +7,7 @@ struct Program {
     std::unique_ptr<ExecutableInstance> executable;
 
     std::vector<float> consts;
-    std::vector<float> locals;
+    std::vector<std::array<float, 4>> locals;
     std::vector<float *> chptrs;
 
     void set_channel_pointer(int i, float *ptr) {
