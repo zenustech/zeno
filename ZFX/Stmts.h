@@ -101,14 +101,14 @@ struct AssignStmt : Stmt<AssignStmt> {
 };
 
 struct SymbolStmt : Stmt<SymbolStmt> {
-    int symid;
+    std::vector<int> symids;
 
     SymbolStmt
         ( int id_
-        , int symid_
+        , std::vector<int> symids_
         )
         : Stmt(id_)
-        , symid(symid_)
+        , symids(symids_)
     {}
 
     virtual StmtFields fields() override {
@@ -118,9 +118,9 @@ struct SymbolStmt : Stmt<SymbolStmt> {
 
     virtual std::string print() const override {
         return format(
-            "$%d = Symbol [%d]"
+            "$%d = Symbol [%s]"
             , id
-            , symid
+            , format_join(" ", "%d", symids)
             );
     }
 };

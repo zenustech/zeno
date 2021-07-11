@@ -5,10 +5,15 @@ namespace zfx {
 
 struct LowerMath : Visitor<LowerMath> {
     using visit_stmt_types = std::tuple
-        < Statement
+        < SymbolStmt
+        , Statement
         >;
 
     std::unique_ptr<IR> ir = std::make_unique<IR>();
+
+    void visit(SymbolStmt *stmt) {
+        ir->push_clone_back(stmt);
+    }
 
     void visit(Statement *stmt) {
         ir->push_clone_back(stmt);

@@ -68,6 +68,18 @@ std::string format(const char *fmt, Ts &&...ts) {
     return buf;
 }
 
+template <size_t BufSize = 4096, class T = void>
+std::string format_join(const char *sep,
+    const char *fmt, std::vector<T> const &ts) {
+    std::string res;
+    bool any = false;
+    for (auto t: ts) {
+        if (any) res += sep; else any = true;
+        res += format<BufSize, T>(fmt, std::move(t));
+    }
+    return res;
+}
+
 template <class ...Ts>
 [[noreturn]] void error(const char *fmt, Ts &&...ts) {
     printf("ERROR: ");

@@ -98,23 +98,14 @@ struct LowerAccess : Visitor<LowerAccess> {
         return regid;
     }
 
-    std::map<std::string, int> symbols;
-    int symid = 0;
-
-    int lookup_symbol_id(std::string const &name) {
-        auto it = symbols.find(name);
-        if (it != symbols.end()) {
-            return it->second;
-        }
-        auto id = symid++;
-        symbols[name] = id;
-        return id;
-    }
-
     void visit(SymbolStmt *stmt) {
         loaders[stmt->id] = [this, stmt](int regid) {
+            if (stmt->symids.size() != 1) {
+                error("scalar expected, got %d-D vector",
+                    stmt->symids.size());
+            }
             ir->emplace_back<AsmGlobalLoadStmt>
-                ( stmt->symid
+                ( stmt->symids[0]
                 , regid
                 );
         };
@@ -148,8 +139,12 @@ struct LowerAccess : Visitor<LowerAccess> {
 
     void visit(AssignStmt *stmt) {
         if (auto dst = dynamic_cast<SymbolStmt *>(stmt->dst); dst) {
+            if (dst->symids.size() != 1) {
+                error("scalar expected, got %d-D vector",
+                    dst->symids.size());
+            }
             ir->emplace_back<AsmGlobalStoreStmt>
-                ( dst->symid
+                ( dst->symids[0]
                 , lookup(stmt->src->id)
                 );
             return;

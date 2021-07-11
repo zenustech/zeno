@@ -9,6 +9,7 @@ std::tuple
     , std::vector<std::string>
     > compile_to_assembly
     ( std::string const &code
+    , std::map<std::string, int> symdims
     ) {
 #ifdef ZFX_PRINT_IR
     cout << "=== ZFX" << endl;

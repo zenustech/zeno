@@ -8,9 +8,10 @@ namespace zfx {
 
 std::tuple
     < std::unique_ptr<IR>
-    , std::vector<std::string>
+    , std::vector<std::pair<std::string, int>>
     > lower_ast
     ( std::vector<AST::Ptr> asts
+    , std::map<std::string, int> symdims
     );
 
     }

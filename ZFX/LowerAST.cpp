@@ -9,17 +9,23 @@ namespace zfx {
 struct LowerAST {
     std::unique_ptr<IR> ir = std::make_unique<IR>();
 
-    std::map<std::string, int> symbols;
+    std::map<std::string, int> symdims;
+    std::map<std::string, std::vector<int>> symbols;
     int symid = 0;
 
-    int resolve_symbol(std::string const &sym) {
-        auto it = symbols.find(sym);
-        if (it != symbols.end()) {
+    std::vector<int> resolve_symbol(std::string const &sym) {
+        if (auto it = symbols.find(sym); it != symbols.end()) {
             return it->second;
         }
-        auto id = symid++;
-        symbols[sym] = id;
-        return id;
+        if (auto it = symdims.find(sym); it != symdims.end()) {
+            auto dim = it->second;
+            auto &res = symbols[sym];
+            for (int i = 0; i < dim; i++) {
+                res.push_back(symid++);
+            }
+            return res;
+        }
+        error("undefined symbol `%s`", sym.c_str());
     }
 
     Statement *serialize(AST *ast) {
@@ -53,9 +59,11 @@ struct LowerAST {
     }
 
     auto getSymbols() const {
-        std::vector<std::string> ret(symid);
-        for (auto const &[key, id]: symbols) {
-            ret[id] = key;
+        std::vector<std::pair<std::string, int>> ret(symid);
+        for (auto const &[key, ids]: symbols) {
+            for (int i = 0; i < ids.size(); i++) {
+                ret[ids[i]] = std::make_pair(key, i);
+            }
         }
         return ret;
     }
@@ -63,9 +71,10 @@ struct LowerAST {
 
 std::tuple
     < std::unique_ptr<IR>
-    , std::vector<std::string>
+    , std::vector<std::pair<std::string, int>>
     > lower_ast
     ( std::vector<AST::Ptr> asts
+    , std::map<std::string, int> symdims
     ) {
     LowerAST lower;
     for (auto const &ast: asts) {

@@ -12,6 +12,7 @@ std::tuple
     , std::vector<std::string>
     > compile_to_assembly
     ( std::string const &code
+    , std::map<std::string, int> symdims
     );
 
 template <class Prog>
@@ -34,28 +35,35 @@ template <class Prog>
 struct Compiler {
     std::map<std::string, std::unique_ptr<Program<Prog>>> cache;
 
-    Program<Prog> *compile(std::string const &code) {
-        auto it = cache.find(code);
+    template <class ...Ts>
+    Program<Prog> *compile
+        ( std::string const &code
+        , std::map<std::string, int> const &symdims = {}
+        ) {
+        std::stringstream ss;
+        ss << code << "<EOF>";
+        for (auto const &[name, dim]: symdims) {
+            ss << ':' << name << '=' << dim;
+        }
+        auto key = ss.str();
+
+        auto it = cache.find(key);
         if (it != cache.end()) {
             return it->second.get();
         }
-        auto ptr = nocache_compile(code);
-        auto raw_ptr = ptr.get();
-        cache[code] = std::move(ptr);
-        return raw_ptr;
-    }
 
-    auto nocache_compile(std::string const &code) {
         auto 
             [ assem
             , symbols
             ] = compile_to_assembly
-            ( code
-            );
+            (code, std::forward<Ts>(ts)...);
         auto prog = std::make_unique<Program<Prog>>();
         prog->prog = Prog::assemble(assem);
         prog->symbols = symbols;
-        return prog;
+
+        auto raw_ptr = prog.get();
+        cache[key] = std::move(prog);
+        return raw_ptr;
     }
 };
 
