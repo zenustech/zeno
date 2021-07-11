@@ -5,10 +5,13 @@ static zfx::Compiler<zfx::x64::Program> compiler;
 
 int main() {
     std::string code("pos = pos + 0.5");
-    auto prog = compiler.compile(code);
+    std::map<std::string, int> symdims;
+    symdims["pos"] = 1;
+
+    auto prog = compiler.compile(code, symdims);
 
     float arr[4] = {1, 2, 3, 4};
-    prog->set_channel_pointer("pos", arr);
+    prog->set_channel_pointer("pos", 0, arr);
     prog->execute();
 
     printf("result:");

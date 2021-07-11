@@ -6,10 +6,10 @@ namespace zfx {
 
 std::tuple
     < std::string
-    , std::vector<std::string>
+    , std::vector<std::pair<std::string, int>>
     > compile_to_assembly
     ( std::string const &code
-    , std::map<std::string, int> symdims
+    , std::map<std::string, int> const &symdims
     ) {
 #ifdef ZFX_PRINT_IR
     cout << "=== ZFX" << endl;
@@ -35,6 +35,7 @@ std::tuple
         , symbols
         ] = lower_ast
         ( std::move(asts)
+        , symdims
         );
 #ifdef ZFX_PRINT_IR
     ir->print();

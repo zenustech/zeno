@@ -74,9 +74,10 @@ std::tuple
     , std::vector<std::pair<std::string, int>>
     > lower_ast
     ( std::vector<AST::Ptr> asts
-    , std::map<std::string, int> symdims
+    , std::map<std::string, int> const &symdims
     ) {
     LowerAST lower;
+    lower.symdims = symdims;
     for (auto const &ast: asts) {
         lower.serialize(ast.get());
     }

@@ -120,7 +120,7 @@ struct SymbolStmt : Stmt<SymbolStmt> {
         return format(
             "$%d = Symbol [%s]"
             , id
-            , format_join(" ", "%d", symids)
+            , format_join(", ", "%d", symids).c_str()
             );
     }
 };
