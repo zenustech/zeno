@@ -66,6 +66,14 @@ std::tuple
 #endif
 
 #ifdef ZFX_PRINT_IR
+    cout << "=== KillLocalStore" << endl;
+#endif
+    ir = apply_kill_local_store(ir.get());
+#ifdef ZFX_PRINT_IR
+    ir->print();
+#endif
+
+#ifdef ZFX_PRINT_IR
     cout << "=== EmitAssembly" << endl;
 #endif
     auto assem = apply_emit_assembly(ir.get());

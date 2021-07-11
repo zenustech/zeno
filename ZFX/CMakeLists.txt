@@ -21,6 +21,7 @@ Tokenizer.cpp
 visitors/Clone.cpp
 visitors/EmitAssembly.cpp
 Visitors.h
+visitors/KillLocalStore.cpp
 visitors/LowerAccess.cpp
 visitors/LowerMath.cpp
 visitors/TypeCheck.cpp
