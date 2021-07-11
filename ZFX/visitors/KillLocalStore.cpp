@@ -50,7 +50,7 @@ struct KillLocalStore : Visitor<KillLocalStore> {
     std::unique_ptr<StoreRAII> storer;
 
     void visit(AsmLocalLoadStmt *stmt) {
-        if (storer->stmt->mem == stmt->mem) {
+        if (storer && storer->stmt->mem == stmt->mem) {
             if (last_load.at(stmt->mem) == stmt->id)
                 storer->active = false;
             ir->emplace_back<AsmAssignStmt>(
