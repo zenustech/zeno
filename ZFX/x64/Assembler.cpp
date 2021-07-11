@@ -27,6 +27,7 @@ struct Assembler {
 
             } else if (cmd == "ldi") {  // rcx points to an array of constants
                 // yeah: we assumed simdkind to be xmmps in this branch
+                // todo: use template programming to be generic on this
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto value_expr = linesep[2];
@@ -41,6 +42,8 @@ struct Assembler {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
+                if (prog->locals.size() < id + 1)
+                    prog->locals.resize(id + 1);
                 int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 builder->addAvxMemoryOp(simdkind, opcode::loadu,
                     dst, {opreg::rbx, memflag::reg_imm8, offset});
@@ -49,6 +52,8 @@ struct Assembler {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
+                if (prog->locals.size() < id + 1)
+                    prog->locals.resize(id + 1);
                 int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
                     dst, {opreg::rbx, memflag::reg_imm8, offset});
@@ -57,6 +62,8 @@ struct Assembler {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
+                if (prog->chptrs.size() < id + 1)
+                    prog->chptrs.resize(id + 1);
                 int offset = id * sizeof(void *);
                 builder->addRegularLoadOp(opreg::rax,
                     {opreg::rdx, memflag::reg_imm8, offset});
@@ -67,6 +74,8 @@ struct Assembler {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
+                if (prog->chptrs.size() < id + 1)
+                    prog->chptrs.resize(id + 1);
                 int offset = id * sizeof(void *);
                 builder->addRegularLoadOp(opreg::rax,
                     {opreg::rdx, memflag::reg_imm8, offset});
@@ -120,9 +129,11 @@ struct Assembler {
         auto const &insts = builder->getResult();
 
         printf("consts:");
-        for (auto const &val: prog->consts) printf(" %f", val); printf("\n");
+        for (auto const &val: prog->consts) printf(" %f", val);
+        printf("\n");
         printf("insts:");
-        for (auto const &inst: insts) printf(" %02X", inst); printf("\n");
+        for (auto const &inst: insts) printf(" %02X", inst);
+        printf("\n");
 
         prog->executable = std::make_unique<ExecutableInstance>(insts);
     }

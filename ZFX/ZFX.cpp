@@ -59,10 +59,13 @@ int main() {
 
     auto prog = assemble_program(assem);
 
-    prog->consts.clear();
-    prog->chptrs.clear();
+    float arr[4] = {1, 2, 3, 4};
+    prog->set_channel_pointer(0, arr);
+    prog->execute();
 
-    (*prog)();
+    printf("result:");
+    for (auto val: arr) printf(" %f", val);
+    printf("\n");
 
     return 0;
 }

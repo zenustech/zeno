@@ -10,10 +10,6 @@ struct Program {
     std::vector<float> locals;
     std::vector<float *> chptrs;
 
-    void set_local_mem_size(size_t size) {
-        locals.resize(size);
-    }
-
     void set_channel_pointer(int i, float *ptr) {
         if (chptrs.size() < i + 1) {
             chptrs.resize(i + 1);
@@ -21,7 +17,7 @@ struct Program {
         chptrs[i] = ptr;
     }
 
-    void operator()() {
+    void execute() {
         auto rbx = locals.data();
         auto rcx = consts.data();
         auto rdx = chptrs.data();
