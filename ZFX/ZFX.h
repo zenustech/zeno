@@ -1,8 +1,9 @@
 #pragma once
 
 #include "common.h"
-#include <tuple>
 #include <algorithm>
+#include <tuple>
+#include <map>
 
 namespace zfx {
 
@@ -30,16 +31,32 @@ struct Program {
 };
 
 template <class Prog>
-auto compile_to(std::string const &code) {
-    auto 
-        [ assem
-        , symbols
-        ] = compile_to_assembly
-        ( code
-        );
-    auto prog = std::make_unique<Program<Prog>>();
-    prog->prog = Prog::assemble(assem);
-    prog->symbols = symbols;
-    return prog;
-}
+struct Compiler {
+    std::map<std::string, std::unique_ptr<Program<Prog>>> cache;
+
+    Program<Prog> *compile(std::string const &code) {
+        auto it = cache.find(code);
+        if (it != cache.end()) {
+            return it->second.get();
+        }
+        auto ptr = nocache_compile(code);
+        auto raw_ptr = ptr.get();
+        cache[code] = std::move(ptr);
+        return raw_ptr;
+    }
+
+    auto nocache_compile(std::string const &code) {
+        auto 
+            [ assem
+            , symbols
+            ] = compile_to_assembly
+            ( code
+            );
+        auto prog = std::make_unique<Program<Prog>>();
+        prog->prog = Prog::assemble(assem);
+        prog->symbols = symbols;
+        return prog;
+    }
+};
+
 }
