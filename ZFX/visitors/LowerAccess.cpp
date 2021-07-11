@@ -31,11 +31,10 @@ struct LowerAccess : Visitor<LowerAccess> {
         return ir->size();
     }
 
-    std::vector<RegInfo> regs{8};
+    std::vector<RegInfo> regs{3};  // seems need >= 3 to work
     std::vector<int> locals;
     std::map<int, int> locals_lut;
     std::map<int, std::function<void(int)>> loaders;
-    std::map<int, std::function<void()>> savers;
 
     int lookup_temp(int stmtid) {
         if (auto it = locals_lut.find(stmtid); it != locals_lut.end()) {
@@ -47,7 +46,7 @@ struct LowerAccess : Visitor<LowerAccess> {
         return memid;
     }
 
-    int temp_save(int regid, int stmtid) {
+    int temp_save_location(int regid, int stmtid) {
         for (int i = 0; i < locals.size(); i++) {
             if (locals[i] == -1) {
                 locals_lut[stmtid] = i;
@@ -71,12 +70,10 @@ struct LowerAccess : Visitor<LowerAccess> {
             if (regs[i].last_used < regs[regid].last_used)
                 regid = i;
         }
-        auto hole = ir->make_hole_back();
         int old_stmtid = regs[regid].curr_stmtid;
-        savers[old_stmtid] = [this, hole, old_stmtid, regid]() {
-            int memid = temp_save(regid, old_stmtid);
-            hole.place<AsmLocalStoreStmt>(memid, regid);
-        };
+        int memid = temp_save_location(regid, old_stmtid);
+        ir->emplace_back<AsmLocalStoreStmt>(memid, regid);
+        regs[regid].curr_stmtid = -1;
         return regid;
     }
 
@@ -89,16 +86,15 @@ struct LowerAccess : Visitor<LowerAccess> {
         }
         auto regid = alloc_register();
         regs[regid].curr_stmtid = stmtid;
+        regs[regid].last_used = now();
         if (is_store) {
             return regid;
         }
 
         if (auto it = locals_lut.find(stmtid); it != locals_lut.end()) {
             int memid = it->second;
+            printf("%d, %d???\n", memid, regid);
             ir->emplace_back<AsmLocalLoadStmt>(memid, regid);
-            if (auto it = savers.find(stmtid); it != savers.end()) {
-                it->second();
-            }
             return regid;
         }
 
@@ -115,6 +111,7 @@ struct LowerAccess : Visitor<LowerAccess> {
                     stmt->symids.size());
             }
             stmt->symids[0] = lookup_temp(stmt->id);
+            printf("%d, %d!!!\n", stmt->symids[0], regid);
             ir->emplace_back<AsmLocalLoadStmt>
                 ( stmt->symids[0]
                 , regid
@@ -145,17 +142,19 @@ struct LowerAccess : Visitor<LowerAccess> {
     }
 
     void visit(UnaryOpStmt *stmt) {
+        auto dstreg = lookup(stmt->id, true);
         ir->emplace_back<AsmUnaryOpStmt>
             ( stmt->op
-            , lookup(stmt->id, true)
+            , dstreg
             , lookup(stmt->src->id)
             );
     }
 
     void visit(BinaryOpStmt *stmt) {
+        auto dstreg = lookup(stmt->id, true);
         ir->emplace_back<AsmBinaryOpStmt>
             ( stmt->op
-            , lookup(stmt->id, true)
+            , dstreg
             , lookup(stmt->lhs->id)
             , lookup(stmt->rhs->id)
             );
@@ -185,8 +184,9 @@ struct LowerAccess : Visitor<LowerAccess> {
                 );
             return;
         }
+        auto dstreg = lookup(stmt->id, true);
         ir->emplace_back<AsmAssignStmt>
-            ( lookup(stmt->dst->id, true)
+            ( dstreg
             , lookup(stmt->src->id)
             );
     }

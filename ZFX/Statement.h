@@ -10,7 +10,7 @@ using StmtFields = std::vector<std::reference_wrapper<Statement *>>;
 
 struct Statement {
     int id;
-    int dim;
+    int dim = 0;
 
     explicit Statement
         ( int id_
