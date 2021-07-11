@@ -4,7 +4,6 @@
 #include <cstdlib>
 #include <sys/mman.h>
 #include <vector>
-#include <tuple>
 
 class ExecutableArena {
 protected:
@@ -43,23 +42,19 @@ public:
         entry();
     }
 
-    inline std::tuple
-        < uintptr_t
-        , uintptr_t
-        , uintptr_t
-        > operator()
+    inline void operator()
         ( uintptr_t rax
+        , uintptr_t rbx
         , uintptr_t rcx
         , uintptr_t rdx
         ) {
         auto entry = (void (*)())this->mem;
         asm volatile (
-            "call *%6"
-            : "=a" (rax), "=c" (rcx), "=d" (rdx)
-            : "a" (rax), "c" (rcx), "d" (rdx)
+            "call *%4"
+            :
+            : "a" (rax), "b" (rbx), "c" (rcx), "d" (rdx)
             , "" (entry)
             : "cc", "memory"
             );
-        return {rax, rcx, rdx};
     }
 };

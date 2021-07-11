@@ -8,8 +8,13 @@ struct Program {
     std::unique_ptr<ExecutableInstance> executable;
     std::map<std::string, int> symtable;
 
+    std::vector<float> locals;
     std::vector<float> consts;
     std::vector<float *> chptrs;
+
+    void set_local_size(size_t size) {
+        locals.resize(size);
+    }
 
     void set_constant(int i, float value) {
         if (consts.size() < i + 1) {
@@ -26,9 +31,10 @@ struct Program {
     }
 
     void operator()() {
+        auto rbx = locals.data();
         auto rcx = consts.data();
         auto rdx = chptrs.data();
-        (*executable)(0, (uintptr_t)rcx, (uintptr_t)rdx);
+        (*executable)(0, (uintptr_t)rbx, (uintptr_t)rcx, (uintptr_t)rdx);
     }
 };
 
