@@ -31,7 +31,7 @@ struct LowerAccess : Visitor<LowerAccess> {
         return ir->size();
     }
 
-    std::vector<RegInfo> regs{3};  // seems need >= 3 to work
+    std::vector<RegInfo> regs{8};  // seems need >= 3 to work
     std::vector<int> locals;
     std::map<int, int> locals_lut;
     std::map<int, std::function<void(int)>> loaders;
