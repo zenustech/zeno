@@ -112,7 +112,7 @@ struct LowerAccess : Visitor<LowerAccess> {
     void visit(SymbolStmt *stmt) {
         loaders[stmt->id] = [this, stmt](int regid) {
             ir->emplace_back<AsmGlobalLoadStmt>
-                ( lookup_symbol_id(stmt->name)
+                ( stmt->symid
                 , regid
                 );
         };
@@ -122,7 +122,7 @@ struct LowerAccess : Visitor<LowerAccess> {
         loaders[stmt->id] = [this, stmt](int regid) {
             ir->emplace_back<AsmLoadConstStmt>
                 ( regid
-                , stmt->name
+                , stmt->constid
                 );
         };
     }
@@ -147,7 +147,7 @@ struct LowerAccess : Visitor<LowerAccess> {
     void visit(AssignStmt *stmt) {
         if (auto dst = dynamic_cast<SymbolStmt *>(stmt->dst); dst) {
             ir->emplace_back<AsmGlobalStoreStmt>
-                ( lookup_symbol_id(dst->name)
+                ( dst->symid
                 , lookup(stmt->src->id)
                 );
             return;

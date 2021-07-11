@@ -24,10 +24,10 @@ struct LowerAST {
             return ir->emplace_back<AssignStmt>(dst, src);
 
         } else if (is_symbolic_atom(ast->token) && ast->args.size() == 0) {
-            return ir->emplace_back<SymbolStmt>(ast->token);
+            return ir->emplace_back<SymbolStmt>(resolve_symbol(ast->token));
 
         } else if (is_literial_atom(ast->token) && ast->args.size() == 0) {
-            return ir->emplace_back<LiterialStmt>(ast->token);
+            return ir->emplace_back<LiterialStmt>(resolve_literial(ast->token));
 
         } else {
             error("cannot lower AST at token: `%s` (%d args)\n",

@@ -99,14 +99,14 @@ struct AssignStmt : Stmt<AssignStmt> {
 };
 
 struct SymbolStmt : Stmt<SymbolStmt> {
-    std::string name;
+    int symid;
 
     SymbolStmt
         ( int id_
-        , std::string name_
+        , int symid_
         )
         : Stmt(id_)
-        , name(name_)
+        , symid(symid_)
     {}
 
     virtual StmtFields fields() override {
@@ -116,22 +116,22 @@ struct SymbolStmt : Stmt<SymbolStmt> {
 
     virtual std::string print() const override {
         return format(
-            "$%d = Symbol [%s]"
+            "$%d = Symbol [%d]"
             , id
-            , name.c_str()
+            , symid
             );
     }
 };
 
 struct LiterialStmt : Stmt<LiterialStmt> {
-    std::string name;
+    int constid;
 
     LiterialStmt
         ( int id_
-        , std::string name_
+        , int constid_
         )
         : Stmt(id_)
-        , name(name_)
+        , constid(constid_)
     {}
 
     virtual StmtFields fields() override {
@@ -141,9 +141,9 @@ struct LiterialStmt : Stmt<LiterialStmt> {
 
     virtual std::string print() const override {
         return format(
-            "$%d = Literial [%s]"
+            "$%d = Literial [%d]"
             , id
-            , name.c_str()
+            , constid
             );
     }
 };
@@ -174,24 +174,24 @@ struct AsmAssignStmt : AsmStmt<AsmAssignStmt> {
 
 struct AsmLoadConstStmt : AsmStmt<AsmLoadConstStmt> {
     int dst;
-    std::string name;
+    int constid;
 
     AsmLoadConstStmt
         ( int id_
         , int dst_
-        , std::string name_
+        , int constid_
         )
         : AsmStmt(id_)
         , dst(dst_)
-        , name(name_)
+        , constid(constid_)
     {}
 
     virtual std::string print() const override {
         return format(
-            "$%d = AsmLoadConst r%d [%s]"
+            "$%d = AsmLoadConst r%d [%d]"
             , id
             , dst
-            , name.c_str()
+            , constid
             );
     }
 };
