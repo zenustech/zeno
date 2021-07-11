@@ -46,7 +46,7 @@ struct Context {
 };
 
 enum class Opcode : int {
-    mov, add, sub, mul, div,
+    mov, add, sub, mul, div, neg,
     sin, cos, tan, atan, asin, acos,
     abs, floor, ceil, sqrt, exp, log,
     min, max, pow, atan2, mod,
@@ -103,6 +103,7 @@ struct Instruction {
         case Opcode::sub: z = x - y; break;
         case Opcode::mul: z = x * y; break;
         case Opcode::div: z = x / y; break;
+        case Opcode::neg: z = -x; break;
         case Opcode::sin: z = std::sin(x); break;
         case Opcode::cos: z = std::cos(x); break;
         case Opcode::tan: z = std::tan(x); break;
@@ -731,6 +732,9 @@ struct InitialPass {
             }
             auto dst = ops[ops.size() - 1];
             auto opinst = opchar_to_name(opcode);
+            if (opcode == "-" && args.size() == 1) {
+                opinst = "neg";
+            }
             oss << opinst << " " << dst;
             for (int i = 0; i < args.size(); i++) {
                 oss << " " << args[i];
