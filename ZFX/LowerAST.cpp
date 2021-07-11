@@ -20,12 +20,14 @@ struct LowerAST {
         if (auto it = symdims.find(sym); it != symdims.end()) {
             auto dim = it->second;
             auto &res = symbols[sym];
+            res.clear();
             for (int i = 0; i < dim; i++) {
                 res.push_back(symid++);
             }
             return res;
         }
-        error("undefined symbol `%s`", sym.c_str());
+        //error("undefined symbol `%s`", sym.c_str());
+        return {};  // undefined for now, will be further defined in TypeCheck pass
     }
 
     Statement *serialize(AST *ast) {
