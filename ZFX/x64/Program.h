@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common.h"
-#include "cpu/Executable.h"
+#include "x64/Executable.h"
 #include <map>
 
 struct Program {

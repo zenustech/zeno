@@ -5,10 +5,6 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_executable(ZFX
 # ls *{,/*}.{h,cpp} | cat
-assembler/Assembler.cpp
-assembler/Executable.h
-assembler/Program.h
-assembler/SIMDBuilder.h
 AST.h
 common.h
 IR.h
@@ -24,6 +20,10 @@ visitors/EmitAssembly.cpp
 Visitors.h
 visitors/LowerAccess.cpp
 visitors/LowerMath.cpp
+x64/Assembler.cpp
+x64/Executable.h
+x64/Program.h
+x64/SIMDBuilder.h
 ZFX.cpp
     )
 target_include_directories(ZFX PRIVATE .)

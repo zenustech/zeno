@@ -1,6 +1,6 @@
-#include "cpu/SIMDBuilder.h"
-#include "cpu/Executable.h"
-#include "cpu/Program.h"
+#include "x64/SIMDBuilder.h"
+#include "x64/Executable.h"
+#include "x64/Program.h"
 #include "common.h"
 #include <sstream>
 #include <map>
@@ -50,7 +50,7 @@ struct Assembler {
             } else if (cmd == "ldi") {  // rcx points to an array of constants
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
-                auto offset = lookup_constant_offset(
+                int offset = lookup_constant_offset(
                     linesep[2]) * SIMDBuilder::scalarSizeOfType(simdkind);
                 builder->addAvxBroadcastLoadOp(simdkind,
                     dst, {opreg::rcx, memflag::reg_imm8, offset});
@@ -58,8 +58,7 @@ struct Assembler {
             } else if (cmd == "lds") {  // rdx points to an array of pointers
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
-                auto offset = lookup_symbol_offset(
-                    linesep[2]) * sizeof(void *);
+                int offset = lookup_symbol_offset(linesep[2]) * sizeof(void *);
                 builder->addRegularLoadOp(opreg::rax,
                     {opreg::rdx, memflag::reg_imm8, offset});
                 builder->addAvxMemoryOp(simdkind, opcode::loadu,

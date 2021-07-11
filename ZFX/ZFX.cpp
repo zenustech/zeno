@@ -1,7 +1,7 @@
 #include "AST.h"
 #include "IR.h"
 #include "Visitors.h"
-#include "cpu/Program.h"
+#include "x64/Program.h"
 
 int main() {
     std::string code("pos = pos + 1");
@@ -19,12 +19,12 @@ int main() {
     auto ir = lower_ast(std::move(asts));
     ir->print();
 
-    cout << "=== LowerAccess" << endl;
-    ir = apply_lower_access(ir.get());
-    ir->print();
-
     cout << "=== LowerMath" << endl;
     ir = apply_lower_math(ir.get());
+    ir->print();
+
+    cout << "=== LowerAccess" << endl;
+    ir = apply_lower_access(ir.get());
     ir->print();
 
     cout << "=== EmitAssembly" << endl;
