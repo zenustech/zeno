@@ -15,29 +15,6 @@ struct Assembler {
     int simdkind = optype::xmmps;
     std::unique_ptr<SIMDBuilder> builder = std::make_unique<SIMDBuilder>();
 
-    std::map<std::string, int> symtable;
-    std::map<std::string, int> consttable;
-    int constid = 0, symid = 0;
-
-    int lookup_constant_offset(std::string const &expr) {
-        auto it = consttable.find(expr);
-        if (it != consttable.end())
-            return it->second;
-        auto id = constid++;
-        consttable[expr] = id;
-        return id;
-    }
-
-    int lookup_symbol_offset(std::string const &sym) {
-        auto it = symtable.find(sym);
-        if (it != symtable.end())
-            return it->second;
-        //error("undefined symbol `%s`", sym.c_str());
-        auto id = symid++;
-        symtable[sym] = id;
-        return id;
-    }
-
     void parse(std::string const &lines) {
         for (auto line: split_str(lines, '\n')) {
             if (!line.size()) continue;
@@ -50,24 +27,42 @@ struct Assembler {
             } else if (cmd == "ldi") {  // rcx points to an array of constants
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
-                int offset = lookup_constant_offset(
-                    linesep[2]) * SIMDBuilder::scalarSizeOfType(simdkind);
+                auto offset = from_string<int>(linesep[2]);
+                offset *= SIMDBuilder::scalarSizeOfType(simdkind);
                 builder->addAvxBroadcastLoadOp(simdkind,
                     dst, {opreg::rcx, memflag::reg_imm8, offset});
 
-            } else if (cmd == "lds") {  // rdx points to an array of pointers
+            } else if (cmd == "ldl") {  // rbx points to an array of variables
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
-                int offset = lookup_symbol_offset(linesep[2]) * sizeof(void *);
+                auto offset = from_string<int>(linesep[2]);
+                offset *= SIMDBuilder::sizeOfType(simdkind);
+                builder->addAvxMemoryOp(simdkind, opcode::loadu,
+                    dst, {opreg::rbx, memflag::reg_imm8, offset});
+
+            } else if (cmd == "stl") {
+                ERROR_IF(linesep.size() < 2);
+                auto dst = from_string<int>(linesep[1]);
+                auto offset = from_string<int>(linesep[2]);
+                offset *= SIMDBuilder::sizeOfType(simdkind);
+                builder->addAvxMemoryOp(simdkind, opcode::storeu,
+                    dst, {opreg::rcx, memflag::reg_imm8, offset});
+
+            } else if (cmd == "ldg") {  // rdx points to an array of pointers
+                ERROR_IF(linesep.size() < 2);
+                auto dst = from_string<int>(linesep[1]);
+                auto offset = from_string<int>(linesep[2]);
+                offset *= sizeof(void *);
                 builder->addRegularLoadOp(opreg::rax,
                     {opreg::rdx, memflag::reg_imm8, offset});
                 builder->addAvxMemoryOp(simdkind, opcode::loadu,
                     dst, opreg::rax);
 
-            } else if (cmd == "sts") {
+            } else if (cmd == "stg") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
-                auto offset = lookup_symbol_offset(linesep[2]);
+                auto offset = from_string<int>(linesep[2]);
+                offset *= sizeof(void *);
                 builder->addRegularLoadOp(opreg::rax,
                     {opreg::rdx, memflag::reg_imm8, offset});
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
@@ -116,30 +111,18 @@ struct Assembler {
             }
         }
     }
-
-    void prepareConstants(std::vector<float> &consts) const {
-        consts.resize(constid);
-        for (auto const &[expr, id]: consttable) {
-            float value = 0;
-            if (!(std::stringstream(expr) >> value))
-                error("failed to parse literial constant `%s`", expr.c_str());
-            consts[id] = value;
-        }
-    }
 };
 
 std::unique_ptr<Program> assemble_program(std::string const &lines) {
-    Assembler cpu;
-    cpu.parse(lines);
-    cpu.builder->addReturn();
+    Assembler a;
+    a.parse(lines);
+    a.builder->addReturn();
 
-    auto const &insts = cpu.builder->getResult();
+    auto const &insts = a.builder->getResult();
     for (auto const &inst: insts) printf("%02X ", inst); printf("\n");
 
     auto prog = std::make_unique<Program>();
     prog->executable = std::make_unique<ExecutableInstance>(insts);
-    prog->symtable = cpu.symtable;
-    cpu.prepareConstants(prog->consts);
 
     return prog;
 };
