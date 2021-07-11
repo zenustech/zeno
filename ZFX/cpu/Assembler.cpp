@@ -1,6 +1,6 @@
-#include "assembler/SIMDBuilder.h"
-#include "assembler/Executable.h"
-#include "assembler/Program.h"
+#include "cpu/SIMDBuilder.h"
+#include "cpu/Executable.h"
+#include "cpu/Program.h"
 #include "common.h"
 #include <sstream>
 #include <map>
@@ -130,17 +130,17 @@ struct Assembler {
 };
 
 std::unique_ptr<Program> assemble_program(std::string const &lines) {
-    Assembler assembler;
-    assembler.parse(lines);
-    assembler.builder->addReturn();
+    Assembler cpu;
+    cpu.parse(lines);
+    cpu.builder->addReturn();
 
-    auto const &insts = assembler.builder->getResult();
+    auto const &insts = cpu.builder->getResult();
     for (auto const &inst: insts) printf("%02X ", inst); printf("\n");
 
     auto prog = std::make_unique<Program>();
     prog->executable = std::make_unique<ExecutableInstance>(insts);
-    prog->symtable = assembler.symtable;
-    assembler.prepareConstants(prog->consts);
+    prog->symtable = cpu.symtable;
+    cpu.prepareConstants(prog->consts);
 
     return prog;
 };

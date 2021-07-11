@@ -23,6 +23,7 @@ visitors/Clone.cpp
 visitors/EmitAssembly.cpp
 Visitors.h
 visitors/LowerAccess.cpp
+visitors/LowerMath.cpp
 ZFX.cpp
     )
 target_include_directories(ZFX PRIVATE .)

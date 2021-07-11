@@ -1,32 +1,37 @@
 #include "AST.h"
 #include "IR.h"
 #include "Visitors.h"
-#include "assembler/Program.h"
+#include "cpu/Program.h"
 
 int main() {
     std::string code("pos = pos + 1");
+    cout << "==============" << endl;
     cout << code << endl;
 
-    cout << "==============" << endl;
+    cout << "=== Parse" << endl;
     auto asts = parse(code);
     for (auto const &a: asts) {
         a->print();
         cout << endl;
     }
 
-    cout << "==============" << endl;
+    cout << "=== LowerAST" << endl;
     auto ir = lower_ast(std::move(asts));
     ir->print();
 
-    cout << "==============" << endl;
+    cout << "=== LowerAccess" << endl;
     ir = apply_lower_access(ir.get());
     ir->print();
 
-    cout << "==============" << endl;
+    cout << "=== LowerMath" << endl;
+    ir = apply_lower_math(ir.get());
+    ir->print();
+
+    cout << "=== EmitAssembly" << endl;
     auto assem = apply_emit_assembly(ir.get());
     cout << assem;
 
-    cout << "==============" << endl;
+    cout << "=== Assemble" << endl;
     auto inst = assemble_program(assem);
 
     cout << "==============" << endl;
