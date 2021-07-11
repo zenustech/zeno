@@ -108,6 +108,10 @@ struct SymbolStmt : Stmt<SymbolStmt> {
         , symids(symids_)
     {}
 
+    bool is_temporary() const {
+        return symids.size() == 0 && dim != 0;
+    }
+
     virtual StmtFields fields() override {
         return {
             };

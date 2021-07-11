@@ -5,9 +5,9 @@ namespace zfx {
 
 struct TypeCheck : Visitor<TypeCheck> {
     using visit_stmt_types = std::tuple
-        < SymbolStmt
+        < AssignStmt
         , LiterialStmt
-        , AssignStmt
+        , SymbolStmt
         , BinaryOpStmt
         , UnaryOpStmt
         , Statement
@@ -15,19 +15,46 @@ struct TypeCheck : Visitor<TypeCheck> {
 
     std::unique_ptr<IR> ir = std::make_unique<IR>();
 
-    void visit(SymbolStmt *stmt) {
-        ir->push_clone_back(stmt);
+    void visit(Statement *stmt) {
     }
 
-    void visit(Statement *stmt) {
-        ir->push_clone_back(stmt);
+    void visit(SymbolStmt *stmt) {
+        stmt->dim = stmt->symids.size();
+    }
+
+    void visit(LiterialStmt *stmt) {
+        stmt->dim = 1;
+    }
+
+    void visit(UnaryOpStmt *stmt) {
+        stmt->dim = stmt->src->dim;
+    }
+
+    void visit(BinaryOpStmt *stmt) {
+        if (stmt->lhs->dim > 1 && stmt->rhs->dim > 1
+            && stmt->lhs->dim != stmt->rhs->dim) {
+            error("dimension mismatch in binary op: %d != %d",
+                stmt->lhs->dim, stmt->rhs->dim);
+        }
+        if (stmt->lhs->dim != 0 && stmt->rhs->dim != 0) {
+            stmt->dim = std::max(stmt->lhs->dim, stmt->rhs->dim);
+        }
+    }
+
+    void visit(AssignStmt *stmt) {
+        if (stmt->dst->dim == 0 && stmt->src->dim != 0) {
+            stmt->dst->dim = stmt->src->dim;
+        } else if (stmt->src->dim > 1 && stmt->dst->dim != stmt->src->dim) {
+            error("dimension mismatch in assign: %d != %d",
+                stmt->dst->dim, stmt->src->dim);
+        }
+        stmt->dim = stmt->dst->dim;
     }
 };
 
-std::unique_ptr<IR> apply_type_check(IR *ir) {
+void apply_type_check(IR *ir) {
     TypeCheck visitor;
     visitor.apply(ir);
-    return std::move(visitor.ir);
 }
 
 }

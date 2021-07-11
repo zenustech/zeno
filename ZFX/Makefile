@@ -1,3 +1,3 @@
 x:
-	make -Cbuild
+	make -Cbuild -j
 	build/ZFX

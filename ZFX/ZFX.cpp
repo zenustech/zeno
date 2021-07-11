@@ -44,7 +44,7 @@ std::tuple
 #ifdef ZFX_PRINT_IR
     cout << "=== TypeCheck" << endl;
 #endif
-    ir = apply_type_check(ir.get());
+    apply_type_check(ir.get());
 #ifdef ZFX_PRINT_IR
     ir->print();
 #endif
