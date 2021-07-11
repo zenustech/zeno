@@ -17,7 +17,7 @@ inline bool is_literial_atom(std::string const &s) {
 
 inline bool is_symbolic_atom(std::string const &s) {
     if (!s.size()) return false;
-    if (isalpha(s[0])) {
+    if (isalpha(s[0]) || strchr("_$@", s[0])) {
         return true;
     }
     return false;
