@@ -25,8 +25,8 @@ struct Program {
         auto rdx = chptrs.data();
         (*executable)(0, (uintptr_t)rbx, (uintptr_t)rcx, (uintptr_t)rdx);
     }
-};
 
-std::unique_ptr<Program> assemble_program(std::string const &lines);
+    static std::unique_ptr<Program> assemble(std::string const &lines);
+};
 
 }

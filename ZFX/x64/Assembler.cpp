@@ -144,7 +144,7 @@ struct Assembler {
     }
 };
 
-std::unique_ptr<Program> assemble_program(std::string const &lines) {
+std::unique_ptr<Program> Program::assemble(std::string const &lines) {
     Assembler a;
     a.parse(lines);
     return std::move(a.prog);
