@@ -167,7 +167,7 @@ public:
     }
 
     void addAvxMoveOp(int dst, int src) {
-        addAvxBinaryOp(optype::xmmss, opcode::mov, dst, dst, src);
+        addAvxBinaryOp(optype::xmmss, opcode::mov, dst, src, src);
     }
 
     void addReturn() {

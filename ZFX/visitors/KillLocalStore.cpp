@@ -37,7 +37,7 @@ struct KillLocalStore : Visitor<KillLocalStore> {
         StoreRAII &operator=(StoreRAII const &) = default;
 
         StoreRAII(AsmLocalStoreStmt *stmt, IR::Hole const &hole)
-            : stmt(stmt), hole(hole) {}
+            : stmt(stmt), hole(hole), active(true) {}
 
         ~StoreRAII() {
             if (active) {
@@ -51,7 +51,8 @@ struct KillLocalStore : Visitor<KillLocalStore> {
 
     void visit(AsmLocalLoadStmt *stmt) {
         if (storer->stmt->mem == stmt->mem) {
-            storer->active = false;
+            if (last_load.at(stmt->mem) == stmt->id)
+                storer->active = false;
             ir->emplace_back<AsmAssignStmt>(
                 stmt->val, storer->stmt->val);
             storer = nullptr;
@@ -69,7 +70,6 @@ struct KillLocalStore : Visitor<KillLocalStore> {
             return;
         auto hole = ir->make_hole_back();
         storer = std::make_unique<StoreRAII>(stmt, hole);
-        storer->active = true;
     }
 
     void visit(Statement *stmt) {
