@@ -196,31 +196,6 @@ struct AsmLoadConstStmt : AsmStmt<AsmLoadConstStmt> {
     }
 };
 
-
-struct AsmLoadSymbolStmt : AsmStmt<AsmLoadSymbolStmt> {
-    int dst;
-    std::string name;
-
-    AsmLoadSymbolStmt
-        ( int id_
-        , int dst_
-        , std::string name_
-        )
-        : AsmStmt(id_)
-        , dst(dst_)
-        , name(name_)
-    {}
-
-    virtual std::string print() const override {
-        return format(
-            "$%d = AsmLoadSymbol r%d [%s]"
-            , id
-            , dst
-            , name.c_str()
-            );
-    }
-};
-
 struct AsmBinaryOpStmt : AsmStmt<AsmBinaryOpStmt> {
     std::string op;
     int dst;
@@ -281,11 +256,11 @@ struct AsmUnaryOpStmt : AsmStmt<AsmUnaryOpStmt> {
     }
 };
 
-struct AsmMemoryStoreStmt : AsmStmt<AsmMemoryStoreStmt> {
+struct AsmLocalStoreStmt : AsmStmt<AsmLocalStoreStmt> {
     int mem;
     int val;
 
-    AsmMemoryStoreStmt
+    AsmLocalStoreStmt
         ( int id_
         , int mem_
         , int val_
@@ -297,7 +272,7 @@ struct AsmMemoryStoreStmt : AsmStmt<AsmMemoryStoreStmt> {
 
     virtual std::string print() const override {
         return format(
-            "$%d = AsmMemoryStore r%d [%d]"
+            "$%d = AsmLocalStore r%d [%d]"
             , id
             , val
             , mem
@@ -305,11 +280,11 @@ struct AsmMemoryStoreStmt : AsmStmt<AsmMemoryStoreStmt> {
     }
 };
 
-struct AsmMemoryLoadStmt : AsmStmt<AsmMemoryLoadStmt> {
+struct AsmLocalLoadStmt : AsmStmt<AsmLocalLoadStmt> {
     int mem;
     int val;
 
-    AsmMemoryLoadStmt
+    AsmLocalLoadStmt
         ( int id_
         , int mem_
         , int val_
@@ -321,7 +296,55 @@ struct AsmMemoryLoadStmt : AsmStmt<AsmMemoryLoadStmt> {
 
     virtual std::string print() const override {
         return format(
-            "$%d = AsmMemoryLoad r%d [%d]"
+            "$%d = AsmLocalLoad r%d [%d]"
+            , id
+            , val
+            , mem
+            );
+    }
+};
+
+struct AsmGlobalStoreStmt : AsmStmt<AsmGlobalStoreStmt> {
+    int mem;
+    int val;
+
+    AsmGlobalStoreStmt
+        ( int id_
+        , int mem_
+        , int val_
+        )
+        : AsmStmt(id_)
+        , mem(mem_)
+        , val(val_)
+    {}
+
+    virtual std::string print() const override {
+        return format(
+            "$%d = AsmGlobalStore r%d [%d]"
+            , id
+            , val
+            , mem
+            );
+    }
+};
+
+struct AsmGlobalLoadStmt : AsmStmt<AsmGlobalLoadStmt> {
+    int mem;
+    int val;
+
+    AsmGlobalLoadStmt
+        ( int id_
+        , int mem_
+        , int val_
+        )
+        : AsmStmt(id_)
+        , mem(mem_)
+        , val(val_)
+    {}
+
+    virtual std::string print() const override {
+        return format(
+            "$%d = AsmGlobalLoad r%d [%d]"
             , id
             , val
             , mem
