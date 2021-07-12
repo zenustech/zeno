@@ -17,9 +17,9 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
     std::unique_ptr<IR> ir = std::make_unique<IR>();
 
     void visit(FunctionCallStmt *stmt) {
-        //if (stmt->name == "mix") {
-            //stmt->;
-        //}
+        if (stmt->name == "mix") {
+            assert(stmt->size);
+        }
     }
 };
 

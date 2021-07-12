@@ -160,7 +160,11 @@ struct LowerAccess : Visitor<LowerAccess> {
     }
 
     void visit(FunctionCallStmt *stmt) {
-        if (stmt->args.size() == 1 && contains({"sqrt"}, stmt->name)) {
+        if (contains({"sqrt"}, stmt->name)) {
+            if (stmt->args.size() != 1) {
+                error("function `%s` takes exactly 1 argument",
+                    stmt->name.c_str());
+            }
             auto dstreg = lookup(stmt->id, true);
             ir->emplace_back<AsmUnaryOpStmt>
                 ( stmt->name
@@ -168,7 +172,7 @@ struct LowerAccess : Visitor<LowerAccess> {
                 , lookup(stmt->args[0]->id)
                 );
         } else {
-            error("invalid function call to `%s` with %d argument(s)",
+            error("invalid function name `%s` (with %d args)",
                 stmt->name.c_str(), stmt->args.size());
         }
     }
