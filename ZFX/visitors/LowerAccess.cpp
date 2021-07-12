@@ -10,6 +10,7 @@ struct LowerAccess : Visitor<LowerAccess> {
         < AssignStmt
         , UnaryOpStmt
         , BinaryOpStmt
+        , FunctionCallStmt
         , LiterialStmt
         , SymbolStmt
         , TempSymbolStmt
@@ -156,6 +157,20 @@ struct LowerAccess : Visitor<LowerAccess> {
             , lookup(stmt->lhs->id)
             , lookup(stmt->rhs->id)
             );
+    }
+
+    void visit(FunctionCallStmt *stmt) {
+        if (stmt->args.size() == 1 && contains({"sqrt"}, stmt->name)) {
+            auto dstreg = lookup(stmt->id, true);
+            ir->emplace_back<AsmUnaryOpStmt>
+                ( stmt->name
+                , dstreg
+                , lookup(stmt->args[0]->id)
+                );
+        } else {
+            error("invalid function call to `%s` with %d argument(s)",
+                stmt->name.c_str(), stmt->args.size());
+        }
     }
 
     void visit(AssignStmt *stmt) {

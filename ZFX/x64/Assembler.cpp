@@ -116,6 +116,13 @@ struct Assembler {
                 builder->addAvxBinaryOp(simdkind, opcode::div,
                     dst, lhs, rhs);
 
+            } else if (cmd == "sqrt") {
+                ERROR_IF(linesep.size() < 2);
+                auto dst = from_string<int>(linesep[1]);
+                auto src = from_string<int>(linesep[2]);
+                builder->addAvxUnaryOp(simdkind, opcode::sqrt,
+                    dst, src);
+
             } else if (cmd == "mov") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);

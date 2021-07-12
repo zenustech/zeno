@@ -34,6 +34,7 @@ struct EmitAssembly : Visitor<EmitAssembly> {
             if (0) {
             } else if (op == "+") { return "mov";
             } else if (op == "-") { return "neg";
+            } else if (op == "sqrt") { return "sqrt";
             } else { error("invalid unary op `%s`", op.c_str());
             }
         }(stmt->op);
