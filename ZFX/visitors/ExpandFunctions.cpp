@@ -9,6 +9,48 @@ namespace zfx {
     } \
 } while (0)
 
+struct Stm {
+    IR *ir = nullptr;
+    Statement *stmt = nullptr;
+
+    Stm() = default;
+
+    Stm(IR *ir_, Statement *stmt_)
+        : ir(ir_), stmt(stmt_) {}
+
+    operator Statement *&() {
+        return stmt;
+    }
+
+    operator Statement * const &() const {
+        return stmt;
+    }
+};
+
+Stm operator+(Stm const &lhs, Stm const &rhs) {
+    return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>("+", lhs.stmt, rhs.stmt)};
+}
+
+Stm operator-(Stm const &lhs, Stm const &rhs) {
+    return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>("-", lhs.stmt, rhs.stmt)};
+}
+
+Stm operator*(Stm const &lhs, Stm const &rhs) {
+    return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>("*", lhs.stmt, rhs.stmt)};
+}
+
+Stm operator/(Stm const &lhs, Stm const &rhs) {
+    return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>("/", lhs.stmt, rhs.stmt)};
+}
+
+Stm operator+(Stm const &src) {
+    return {src.ir, src.ir->emplace_back<UnaryOpStmt>("+", src.stmt)};
+}
+
+Stm operator-(Stm const &src) {
+    return {src.ir, src.ir->emplace_back<UnaryOpStmt>("-", src.stmt)};
+}
+
 struct ExpandFunctions : Visitor<ExpandFunctions> {
     using visit_stmt_types = std::tuple
         < FunctionCallStmt
@@ -23,14 +65,10 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
         } else if (name == "mix") {
             if (args.size() != 3)
                 error("function `%s` takes exactly 3 arguments", name.c_str());
-            auto x = ir->push_clone_back(args[0]);
-            auto y = ir->push_clone_back(args[1]);
-            auto f = ir->push_clone_back(args[2]);
-            // mix(x, y, a) = (y - x) * a + x
-            return ir->emplace_back<BinaryOpStmt>("+",
-                ir->emplace_back<BinaryOpStmt>("*",
-                    ir->emplace_back<BinaryOpStmt>("-", y, x),
-                    f), x);
+            Stm x(ir.get(), ir->push_clone_back(args[0]));
+            Stm y(ir.get(), ir->push_clone_back(args[1]));
+            Stm a(ir.get(), ir->push_clone_back(args[2]));
+            return (y - x) * a + x;
 
         } else if (name == "sqrt") {
             if (args.size() != 1)
