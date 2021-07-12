@@ -49,7 +49,7 @@ enum class Opcode : int {
     mov, add, sub, mul, div, neg,
     sin, cos, tan, atan, asin, acos,
     abs, floor, ceil, sqrt, exp, log,
-    min, max, pow, atan2, mod,
+    min, max, pow, atan2, mod, big, les
 };
 
 enum class OperandType : int {
@@ -121,6 +121,8 @@ struct Instruction {
         case Opcode::pow: z = std::pow(x, y); break;
         case Opcode::atan2: z = std::atan2(x, y); break;
         case Opcode::mod: z = std::fmod(x, y); break;
+        case Opcode::big: z = x>y?1.0f:0.0f; break;
+        case Opcode::les: z = x>y?0.0f:1.0f; break;
         }
         dst.set(ctx, z);
     }
@@ -866,7 +868,7 @@ struct UnfuncPass : TypeCheck {
             if (args.size() != 3) error("mix takes exactly 3 arguments\n");
             auto tmp = alloc_register();
             emit_op("sub", tmp, {args[1], args[0]});
-            emit_op("mul", dst, {tmp, args[2]});
+            emit_op("mul", tmp, {tmp, args[2]});
             emit_op("add", dst, {tmp, args[0]});
             return;
 
@@ -944,12 +946,25 @@ struct UnfuncPass : TypeCheck {
             return;
 
         } else if (opcode == "distance") {  // distance(x, y) = length(y - x)
-            if (args.size() != 1) error("distance takes exactly 2 arguments\n");
+            if (args.size() != 2) error("distance takes exactly 2 arguments\n");
             auto tmp = alloc_register();
             emit_op("sub", tmp, {args[1], args[0]});
             emit_op("length", dst, {tmp});
             return;
         }
+        // } else if (opcode == "big")
+        // {
+        //     if (args.size() != 2) error("big takes exactly 2 arguments\n");
+        //     auto tmp = alloc_register();
+        //     emit_op("big", tmp, {args[1], args[0]});
+        //     return;
+        // } else if (opcode == "les")
+        // {
+        //     if (args.size() != 2) error("les takes exactly 2 arguments\n");
+        //     auto tmp = alloc_register();
+        //     emit_op("les", tmp, {args[1], args[0]});
+        //     return;
+        // }
 
         oss << opcode << " " << dst;
         for (int i = 0; i < args.size(); i++) {

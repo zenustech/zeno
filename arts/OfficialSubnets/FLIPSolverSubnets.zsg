@@ -204,7 +204,8 @@
       -100.53750000000002
      ],
      "options": [
-      "ONCE"
+      "ONCE",
+      "VIEW"
      ]
     },
     "5e43cd2d-x": {
@@ -230,7 +231,8 @@
       208.89999999999992
      ],
      "options": [
-      "ONCE"
+      "ONCE",
+      "VIEW"
      ]
     },
     "667a7fc2-x": {
@@ -340,7 +342,9 @@
       7976.484778404228,
       965.9065217971812
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "eb8f9692-MakeMultilineString": {
      "name": "MakeMultilineString",
@@ -349,7 +353,7 @@
       "COND": null
      },
      "params": {
-      "value": "@pos.1 = @pos.1 - arg1*1.3*sin(arg0*4)\n\n@vel.1 = -1.3*sin(arg0*4)"
+      "value": "\n@pos.1 = @opos.1 + 3* sin(0.2*@opos.0 + 5*arg0)\n\n@vel.1 = 3*cos(0.2*@opos.0 +5*arg0)"
      },
      "uipos": [
       7645.566809654226,
@@ -368,8 +372,8 @@
      },
      "params": {},
      "uipos": [
-      6846.828528404224,
-      1056.2424592971784
+      7032.428528404223,
+      1063.9224592971786
      ],
      "options": []
     },
@@ -431,7 +435,7 @@
      },
      "params": {
       "x": 0.0,
-      "y": 0.0,
+      "y": 2.0,
       "z": 0.0
      },
      "uipos": [
@@ -528,8 +532,8 @@
       "name": "Tank1"
      },
      "uipos": [
-      2497.609374999998,
-      52.89062500000014
+      2494.409374999999,
+      128.0906250000001
      ],
      "options": []
     },
@@ -574,8 +578,8 @@
       "name": "StaticBoundary"
      },
      "uipos": [
-      2500.019531249998,
-      -230.94921874999991
+      2496.819531249998,
+      -110.14921874999992
      ],
      "options": []
     },
@@ -583,8 +587,8 @@
      "name": "PortalIn",
      "inputs": {
       "port": [
-       "b828a66f-PrimitiveAddAttr",
-       "prim"
+       "b011a7b2-PrimitiveBinaryOp",
+       "primOut"
       ],
       "SRC": null,
       "COND": null
@@ -672,8 +676,8 @@
      },
      "params": {},
      "uipos": [
-      7098.418860435474,
-      1215.7497835159268
+      7128.498860435475,
+      1223.429783515927
      ],
      "options": []
     },
@@ -719,7 +723,7 @@
        "port"
       ],
       "SRC": [
-       "b828a66f-PrimitiveAddAttr",
+       "b011a7b2-PrimitiveBinaryOp",
        "DST"
       ],
       "COND": null
@@ -1133,9 +1137,7 @@
       10516.249999999998,
       563.7499999999999
      ],
-     "options": [
-      "OUT"
-     ]
+     "options": []
     },
     "c49fb9e6-EndFrame": {
      "name": "EndFrame",
@@ -1155,9 +1157,7 @@
       10851.249999999998,
       714.9999999999999
      ],
-     "options": [
-      "OUT"
-     ]
+     "options": []
     },
     "c97d6709-RunAfterFrame": {
      "name": "RunAfterFrame",
@@ -1167,8 +1167,8 @@
      },
      "params": {},
      "uipos": [
-      10302.187499999998,
-      780.3124999999999
+      10240.747499999998,
+      772.6324999999999
      ],
      "options": []
     },
@@ -1222,13 +1222,13 @@
      "width": 2418.627929687499,
      "height": 1291.3574218749995,
      "title": "\u52a0\u8f7d\u573a\u666f",
-     "content": "\u8fd9\u91cc\u662f\u4e00\u4e9b\u521d\u59cb\u5316\u7684\u529f\u80fd, \u50cf\u662f\u8bfb\u53d6ObjMesh, \u628a\u4ed6\u4eec\u8f6c\u6362\u4e3aPrimitive, \u518d\u628a\u4ed6\u4eec\u8f6c\u6362\u4e3aSDF(\u7b26\u53f7\u8ddd\u79bb\u573a), \u7559\u7740\u5907\u7528"
+     "content": "\u8fd9\u91cc\u662f\u4e00\u4e9b\u8bbe\u7f6e\u573a\u666f\u7684\u529f\u80fd, \u50cf\u662f\u8bfb\u53d6ObjMesh, \u628a\u4ed6\u4eec\u8f6c\u6362\u4e3aPrimitive, \u518d\u628a\u4ed6\u4eec\u8f6c\u6362\u4e3aSDF(\u7b26\u53f7\u8ddd\u79bb\u573a), \u7559\u7740\u5907\u7528"
     },
     "f61865fe-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      -610.8499999999998,
-      -324.1718749999998
+      -594.0499999999998,
+      -316.1718749999998
      ],
      "special": true,
      "width": 389.45312499999994,
@@ -1239,14 +1239,14 @@
     "add52a80-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      2390.383085937499,
+      2389.5830859374983,
       -348.3972656249999
      ],
      "special": true,
      "width": 423.0267187500003,
      "height": 921.3698437499997,
      "title": "Portal\u8282\u70b9",
-     "content": "Portal\u7684\u597d\u5904\u662f\u5bf9\u4e00\u4e2a\u5bf9\u8c61\u521b\u5efa\u4e00\u4e2a\u4f20\u9001\u95e8(portalin), \u4efb\u4f55\u7528\u540c\u6837\u7684\u540d\u5b57\u7684PortalOut\u8282\u70b9, \u7b49\u4ef7\u4e8e\u76f4\u63a5\u8fde\u63a5\u4e86\u539f\u59cb\u5bf9\u8c61"
+     "content": "\u4f20\u9001\u95e8, \n                 \u65e0\u6211\u76f8\n                               \u65e0\u4ed6\u76f8\n                                             \u65e0\u4f17\u751f\u76f8\n                                                           \u5b9e\u4e3a\u4f20\u9001zeno\u7684\u5bf9\u76f8"
     },
     "963ce0ec-Blackboard": {
      "name": "Blackboard",
@@ -1343,12 +1343,73 @@
      "height": 595.3125,
      "title": "\u6587\u4ef6\u5199\u51fa\u8282\u70b9",
      "content": "\u5173\u952e\u5b57, \u6211\u53ea\u8ba4 {frame}"
+    },
+    "5efb981a-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "b828a66f-PrimitiveAddAttr",
+       "prim"
+      ],
+      "fillValue": null,
+      "SRC": [
+       "b828a66f-PrimitiveAddAttr",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {
+      "name": "opos",
+      "type": "float3"
+     },
+     "uipos": [
+      1140.0,
+      467.19999999999993
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "b011a7b2-PrimitiveBinaryOp": {
+     "name": "PrimitiveBinaryOp",
+     "inputs": {
+      "primA": [
+       "5efb981a-PrimitiveAddAttr",
+       "prim"
+      ],
+      "primB": [
+       "5efb981a-PrimitiveAddAttr",
+       "prim"
+      ],
+      "primOut": [
+       "5efb981a-PrimitiveAddAttr",
+       "prim"
+      ],
+      "SRC": [
+       "5efb981a-PrimitiveAddAttr",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {
+      "attrA": "pos",
+      "attrB": "opos",
+      "attrOut": "opos",
+      "op": "copyA"
+     },
+     "uipos": [
+      1493.6749999999995,
+      397.07500000000016
+     ],
+     "options": [
+      "ONCE"
+     ]
     }
    },
    "view": {
-    "scale": 1.5625,
-    "trans_x": 10643,
-    "trans_y": 1210
+    "scale": 1.0,
+    "trans_x": 6439,
+    "trans_y": 87
    }
   },
   "FLIPSimTemplate": {
@@ -2186,9 +2247,9 @@
     }
    },
    "view": {
-    "scale": 0.6400000000000006,
-    "trans_x": 1107,
-    "trans_y": -2612
+    "scale": 0.6400000000000001,
+    "trans_x": 456,
+    "trans_y": -2807
    }
   },
   "makeCollision": {
