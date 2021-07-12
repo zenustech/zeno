@@ -1206,61 +1206,41 @@ class QDMGraphicsNode(QGraphicsItem):
         return QRectF(0, -TEXT_HEIGHT, self.width, h).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-
         top = 42
         bottom = 36
 
         if self.isSelected():
-            pad = 12
-            rect = QRectF(-pad, -pad -top, self.width + pad * 2, self.height + pad * 2 + top + bottom)
-            painter.fillRect(rect, QColor('#FA6400'))
             pad = 10
             rect = QRectF(-pad, -pad -top, self.width + pad * 2, self.height + pad * 2 + top + bottom)
-            painter.fillRect(rect, QColor('#52331F'))
+            fillRect(painter, rect, '#52331F', 2, '#FA6400')
 
         r = style['node_rounded_radius']
 
         title_outline_color = '#787878'
 
-        pen = QPen(QColor(title_outline_color))
-        pen.setWidth(style['line_width'])
-        pen.setJoinStyle(Qt.MiterJoin)
         w = style['line_width']
         hw = w / 2
 
+        line_width = style['line_width']
+        line_color = title_outline_color
+
         y = 0 if self.collapsed else self.height
         # title background
-        pathTitle = QPainterPath()
         rect = QRectF(0 + hw, y + hw, 203 - w, 36 - w)
-        pathTitle.addRect(rect)
-        painter.setPen(pen)
-        painter.setBrush(QColor(style['title_color']))
-        painter.drawPath(pathTitle.simplified())
+        fillRect(painter, rect, style['title_color'], line_width, line_color)
 
-        pathTitle = QPainterPath()
+        # collpase button background
         rect = QRectF(204 + hw, y + hw, 36 - w, 36 - w)
-        pathTitle.addRect(rect)
-        painter.setPen(pen)
-        painter.setBrush(QColor(style['title_color']))
-        painter.drawPath(pathTitle.simplified())
+        fillRect(painter, rect, style['title_color'], line_width, line_color)
 
-        pathTitle = QPainterPath()
+        # button background
         rect = QRectF(0, -top, 240, top)
-        pathTitle.addRect(rect)
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor('#638E77'))
-        painter.drawPath(pathTitle.simplified())
+        fillRect(painter, rect, '#638E77')
 
+        # content panel background
         if not self.collapsed:
-            pen = QPen(QColor('#4a4a4a'))
-            pen.setWidth(style['line_width'])
-            pen.setJoinStyle(Qt.MiterJoin)
-            pathContent = QPainterPath()
             rect = QRectF(hw + w, hw, self.width - w * 3, self.height - w)
-            pathContent.addRect(rect)
-            painter.setPen(pen)
-            painter.setBrush(QColor(style['panel_color']))
-            painter.drawPath(pathContent.simplified())
+            fillRect(painter, rect, style['panel_color'], line_width, '#4a4a4a')
 
 
     def collapse(self):
@@ -1364,6 +1344,21 @@ class QDMGraphicsNode(QGraphicsItem):
             dest = node.inputs[name]
             edges.append((dest, input))
         return edges
+
+def fillRect(painter, rect, color, line_width=None, line_color=None):
+    if line_width:
+        pen = QPen(QColor(line_color))
+        pen.setWidth(line_width)
+        pen.setJoinStyle(Qt.MiterJoin)
+        painter.setPen(pen)
+    else:
+        painter.setPen(Qt.NoPen)
+
+    painter.setBrush(QColor(color))
+
+    pathTitle = QPainterPath()
+    pathTitle.addRect(rect)
+    painter.drawPath(pathTitle.simplified())
 
 
 class QDMFileMenu(QMenu):
