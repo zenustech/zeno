@@ -28,8 +28,19 @@ struct Parser {
     }
 
     AST::Ptr parse_factor(AST::Iter iter) {
-        if (auto a = parse_atom(iter); a) {
-            return a;
+        if (auto atm = parse_atom(iter); atm) {
+            if (auto bra = parse_operator(atm->iter, {"("}); bra) {
+                auto last_iter = bra->iter;
+                std::vector<AST::Ptr> args;
+                if (auto arg = parse_expr(last_iter); arg) {
+                    args.push_back(std::move(arg));
+                    last_iter = arg->iter;
+                }
+                if (auto ket = parse_operator(last_iter, {")"}); ket) {
+                    return make_ast(atm->token, ket->iter, args);
+                }
+            }
+            return atm;
         }
         if (auto ope = parse_operator(iter, {"+", "-"}); ope) {
             if (auto rhs = parse_factor(ope->iter); rhs) {
