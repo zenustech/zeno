@@ -5,7 +5,7 @@
 static zfx::Compiler<zfx::x64::Program> compiler;
 
 int main() {
-    std::string code("@pos = sqrt(@pos)");
+    std::string code("@pos = sqrt(@pos.x)");
     auto func = [](float pos) -> float {
         return std::sqrt(pos);
     };
