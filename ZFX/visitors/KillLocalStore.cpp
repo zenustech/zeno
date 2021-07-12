@@ -53,8 +53,9 @@ struct KillLocalStore : Visitor<KillLocalStore> {
         if (storer && storer->stmt->mem == stmt->mem) {
             if (last_load.at(stmt->mem) == stmt->id)
                 storer->active = false;
-            ir->emplace_back<AsmAssignStmt>(
-                stmt->val, storer->stmt->val);
+            if (stmt->val != storer->stmt->val)
+                ir->emplace_back<AsmAssignStmt>(
+                    stmt->val, storer->stmt->val);
             storer = nullptr;
 
         } else {

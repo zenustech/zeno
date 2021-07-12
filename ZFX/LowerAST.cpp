@@ -81,6 +81,9 @@ struct LowerAST {
                 return emplace_temporary_symbol(ast->token);
             }
 
+        } else if (is_literial_atom(ast->token) && ast->args.size() == 0) {
+            return ir->emplace_back<LiterialStmt>(ast->token);
+
         } else if (contains({"()"}, ast->token) && ast->args.size() >= 1) {
             auto func_name = ast->args[0]->token;
             std::vector<Statement *> func_args;
