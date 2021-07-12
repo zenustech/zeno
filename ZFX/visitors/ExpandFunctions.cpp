@@ -25,7 +25,35 @@ struct Stm {
     operator Statement * const &() const {
         return stmt;
     }
+
+    Statement *operator->() const {
+        return stmt;
+    }
+
+    Stm operator[](std::vector<int> const &indices) const {
+        auto const &src = *this;
+        return {src.ir, src.ir->emplace_back<VectorSwizzleStmt>(indices, src.stmt)};
+    }
+
+    Stm operator[](int index) const {
+        auto const &src = *this;
+        return {src.ir, src.ir->emplace_back<VectorSwizzleStmt>(std::vector<int>{index}, src.stmt)};
+    }
 };
+
+template <class ExpandFuncs>
+Stm stm(ExpandFuncs *that, std::string const &name, std::vector<Stm> const &args) {
+    ERROR_IF(args.size() == 0);
+    return {args[0].ir, that->emit_op(name, args)};
+}
+
+Stm stm(std::string const &op_name, Stm const &lhs, Stm const &rhs) {
+    return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>(op_name, lhs.stmt, rhs.stmt)};
+}
+
+Stm stm(std::string const &op_name, Stm const &src) {
+    return {src.ir, src.ir->emplace_back<UnaryOpStmt>(op_name, src.stmt)};
+}
 
 Stm operator+(Stm const &lhs, Stm const &rhs) {
     return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>("+", lhs.stmt, rhs.stmt)};
@@ -69,6 +97,30 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             Stm y(ir.get(), ir->push_clone_back(args[1]));
             Stm a(ir.get(), ir->push_clone_back(args[2]));
             return (y - x) * a + x;
+
+        } else if (name == "clamp") {
+            if (args.size() != 3)
+                error("function `%s` takes exactly 3 arguments", name.c_str());
+            Stm x(ir.get(), ir->push_clone_back(args[0]));
+            Stm a(ir.get(), ir->push_clone_back(args[1]));
+            Stm b(ir.get(), ir->push_clone_back(args[2]));
+            return stm("min", b, stm("max", a, x));
+
+        } else if (name == "dot") {
+            if (args.size() != 2)
+                error("function `%s` takes exactly 2 arguments", name.c_str());
+            Stm a(ir.get(), ir->push_clone_back(args[0]));
+            Stm b(ir.get(), ir->push_clone_back(args[1]));
+            ERROR_IF(!a->dim || !b->dim);
+            if (a->dim != b->dim) {
+                error("dimension mismatch for function `%s`: %d != %d",
+                    name.c_str(), a->dim, b->dim);
+            }
+            Stm ret = a[0] * b[0];
+            for (int i = 1; i < a->dim; i++) {
+                ret = ret + a[i] * b[i];
+            }
+            return ret;
 
         } else if (name == "sqrt") {
             if (args.size() != 1)

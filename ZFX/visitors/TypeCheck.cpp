@@ -50,8 +50,8 @@ struct TypeCheck : Visitor<TypeCheck> {
     void visit(BinaryOpStmt *stmt) {
         if (stmt->lhs->dim > 1 && stmt->rhs->dim > 1
             && stmt->lhs->dim != stmt->rhs->dim) {
-            error("dimension mismatch in binary op: %d != %d",
-                stmt->lhs->dim, stmt->rhs->dim);
+            error("dimension mismatch in binary `%s`: %d != %d",
+                stmt->op.c_str(), stmt->lhs->dim, stmt->rhs->dim);
         }
         ERROR_IF(stmt->lhs->dim == 0);
         ERROR_IF(stmt->rhs->dim == 0);
@@ -69,8 +69,8 @@ struct TypeCheck : Visitor<TypeCheck> {
             }
             ERROR_IF(arg->dim == 0);
             if (dim != 1 && arg->dim != 1 && arg->dim != dim) {
-                error("dimension mismatch in function call: %d != %d",
-                    dim, arg->dim);
+                error("dimension mismatch in element-wise function `%s`: %d != %d",
+                    stmt->name.c_str(), dim, arg->dim);
             } else if (arg->dim > dim)
                 dim = arg->dim;
         }

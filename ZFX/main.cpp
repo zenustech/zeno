@@ -5,9 +5,9 @@
 static zfx::Compiler<zfx::x64::Program> compiler;
 
 int main() {
-    std::string code("@pos = mix(@pos, 0, 0.5)");
+    std::string code("@pos = dot(@pos, @pos)");
     auto func = [](float pos) -> float {
-        return pos * 0.5;
+        return pos;
     };
 
     std::map<std::string, int> symdims;
