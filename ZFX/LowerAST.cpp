@@ -93,7 +93,7 @@ struct LowerAST {
             return ir->emplace_back<FunctionCallStmt>(func_name, func_args);
 
         } else if (contains({"."}, ast->token) && ast->args.size() == 2) {
-            auto expr = serialize(ast->args[0]);
+            auto expr = serialize(ast->args[0].get());
             auto swiz_expr = ast->args[1]->token;
             std::vector<int> swizzles;
             for (auto const &c: swiz_expr) {
@@ -109,7 +109,7 @@ struct LowerAST {
                     error("invalid swizzle character: `%c`", c);
                 }
             }
-            return ir->emplace_back<VectorSwizzleStmt>(expr, swizzles);
+            return ir->emplace_back<VectorSwizzleStmt>(swizzles, expr);
 
         } else {
             error("cannot lower AST at token: `%s` (%d args)\n",

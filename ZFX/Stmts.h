@@ -102,6 +102,36 @@ struct FunctionCallStmt : Stmt<FunctionCallStmt> {
     }
 };
 
+struct VectorSwizzleStmt : Stmt<VectorSwizzleStmt> {
+    std::vector<int> swizzles;
+    Statement *src;
+
+    VectorSwizzleStmt
+        ( int id_
+        , std::vector<int> const &swizzles_
+        , Statement *src_
+        )
+        : Stmt(id_)
+        , swizzles(swizzles_)
+        , src(src_)
+    {}
+
+    virtual StmtFields fields() override {
+        return {
+            src,
+            };
+    }
+
+    virtual std::string to_string() const override {
+        return format(
+            "VectorSwizzle [%s] $%d"
+            , format_join(", ", "%d", swizzles).c_str()
+            , src->id
+            );
+    }
+};
+
+
 struct AssignStmt : Stmt<AssignStmt> {
     Statement *dst;
     Statement *src;
