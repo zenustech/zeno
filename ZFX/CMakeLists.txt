@@ -20,6 +20,7 @@ Stmts.h
 Tokenizer.cpp
 visitors/Clone.cpp
 visitors/EmitAssembly.cpp
+visitors/ExpandFunctions.cpp
 Visitors.h
 visitors/KillLocalStore.cpp
 visitors/LowerAccess.cpp

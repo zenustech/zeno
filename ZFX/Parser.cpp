@@ -27,12 +27,29 @@ struct Parser {
         return nullptr;
     }
 
-    AST::Ptr parse_factor(AST::Iter iter) {
-        if (auto a = parse_atom(iter); a) {
-            return a;
+    AST::Ptr parse_compound(AST::Iter iter) {
+        if (auto atm = parse_atom(iter); atm) {
+            if (auto bra = parse_operator(atm->iter, {"("}); bra) {
+                auto last_iter = bra->iter;
+                std::vector<AST::Ptr> args;
+                args.push_back(std::move(atm));
+                while (1) if (auto arg = parse_expr(last_iter); arg) {
+                        args.push_back(std::move(arg));
+                        last_iter = arg->iter;
+                        if (auto sep = parse_operator(last_iter, {","}); sep) {
+                            last_iter = sep->iter;
+                        } else {
+                            break;
+                        }
+                } else break;
+                if (auto ket = parse_operator(last_iter, {")"}); ket) {
+                    return make_ast("()", ket->iter, args);
+                }
+            }
+            return atm;
         }
         if (auto ope = parse_operator(iter, {"+", "-"}); ope) {
-            if (auto rhs = parse_factor(ope->iter); rhs) {
+            if (auto rhs = parse_compound(ope->iter); rhs) {
                 return make_ast(ope->token, rhs->iter, {std::move(rhs)});
             }
         }
@@ -43,6 +60,18 @@ struct Parser {
                     return rhs;
                 }
             }
+        }
+        return nullptr;
+    }
+
+    AST::Ptr parse_factor(AST::Iter iter) {
+        if (auto comp = parse_compound(iter); comp) {
+            if (auto ope = parse_operator(comp->iter, {"."}); ope) {
+                if (auto atm = parse_atom(ope->iter); atm) {
+                    return make_ast(ope->token, atm->iter, {std::move(comp), std::move(atm)});
+                }
+            }
+            return comp;
         }
         return nullptr;
     }

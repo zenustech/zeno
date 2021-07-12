@@ -3,9 +3,22 @@
 
 namespace zfx {
 
+#define ERROR_IF(x) do { \
+    if (x) { \
+        error("`%s`", #x); \
+    } \
+} while (0)
+
 struct LowerMath : Visitor<LowerMath> {
     using visit_stmt_types = std::tuple
-        < SymbolStmt
+        < TempSymbolStmt
+        , SymbolStmt
+        , LiterialStmt
+        , UnaryOpStmt
+        , BinaryOpStmt
+        , FunctionCallStmt
+        , VectorSwizzleStmt
+        , AssignStmt
         , Statement
         >;
 
@@ -13,25 +26,96 @@ struct LowerMath : Visitor<LowerMath> {
 
     std::map<Statement *, std::vector<Statement *>> replaces;
 
-    /*void visit(SymbolStmt *stmt) {
-        if (stmt->is_temporary()) {
-            auto &rep = replaces[stmt];
-            for (int i = 0; i < stmt->dim; i++) {
-                rep.push_back(ir->emplace_back<SymbolStmt>(
-                    std::vector<int>{}));
-            }
-        } else {
-            auto &rep = replaces[stmt];
-            for (int i = 0; i < stmt->dim; i++) {
-                auto symid = stmt->symids[i];
-                rep.push_back(ir->emplace_back<SymbolStmt>(
-                    std::vector<int>{symid}));
-            }
+    Statement *replace(Statement *stmt, int i) {
+        auto const &rep = replaces.at(stmt);
+        return rep[i % rep.size()];
+    }
+
+    void visit(TempSymbolStmt *stmt) {
+        auto &rep = replaces[stmt];
+        rep.clear();
+        ERROR_IF(stmt->dim == 0);
+        for (int i = 0; i < stmt->dim; i++) {
+            rep.push_back(ir->emplace_back<TempSymbolStmt>(
+                stmt->tmpid, std::vector<int>{-1}));
         }
-    }*/
+    }
+
+    void visit(SymbolStmt *stmt) {
+        auto &rep = replaces[stmt];
+        rep.clear();
+        ERROR_IF(stmt->dim == 0);
+        for (int i = 0; i < stmt->dim; i++) {
+            auto symid = stmt->symids[i];
+            rep.push_back(ir->emplace_back<SymbolStmt>(
+                std::vector<int>{symid}));
+        }
+    }
+
+    void visit(UnaryOpStmt *stmt) {
+        auto &rep = replaces[stmt];
+        rep.clear();
+        ERROR_IF(stmt->dim == 0);
+        for (int i = 0; i < stmt->dim; i++) {
+            rep.push_back(ir->emplace_back<UnaryOpStmt>(
+                stmt->op, replace(stmt->src, i)));
+        }
+    }
+
+    void visit(BinaryOpStmt *stmt) {
+        auto &rep = replaces[stmt];
+        rep.clear();
+        ERROR_IF(stmt->dim == 0);
+        for (int i = 0; i < stmt->dim; i++) {
+            rep.push_back(ir->emplace_back<BinaryOpStmt>(
+                stmt->op, replace(stmt->lhs, i), replace(stmt->rhs, i)));
+        }
+    }
+
+    void visit(FunctionCallStmt *stmt) {
+        auto &rep = replaces[stmt];
+        rep.clear();
+        ERROR_IF(stmt->dim == 0);
+        for (int i = 0; i < stmt->dim; i++) {
+            std::vector<Statement *> args;
+            for (auto const &arg: stmt->args) {
+                args.push_back(replace(arg, i));
+            }
+            rep.push_back(ir->emplace_back<FunctionCallStmt>(
+                stmt->name, args));
+        }
+    }
+
+    void visit(VectorSwizzleStmt *stmt) {
+        auto &rep = replaces[stmt];
+        rep.clear();
+        ERROR_IF(stmt->dim == 0);
+        ERROR_IF(stmt->dim != stmt->swizzles.size());
+        for (int i = 0; i < stmt->dim; i++) {
+            auto s = stmt->swizzles[i];
+            rep.push_back(replace(stmt->src, s));
+        }
+    }
+
+    void visit(AssignStmt *stmt) {
+        auto &rep = replaces[stmt];
+        rep.clear();
+        ERROR_IF(stmt->dim == 0);
+        for (int i = 0; i < stmt->dim; i++) {
+            rep.push_back(ir->emplace_back<AssignStmt>(
+                replace(stmt->dst, i), replace(stmt->src, i)));
+        }
+    }
+
+    void visit(LiterialStmt *stmt) {
+        auto &rep = replaces[stmt];
+        rep.clear();
+        rep.push_back(ir->push_clone_back(stmt));
+    }
 
     void visit(Statement *stmt) {
-        ir->push_clone_back(stmt);
+        error("unexpected statement type to LowerMath: `%s`",
+            typeid(*stmt).name());
     }
 };
 

@@ -50,6 +50,22 @@ std::tuple
 #endif
 
 #ifdef ZFX_PRINT_IR
+    cout << "=== ExpandFunctions" << endl;
+#endif
+    ir = apply_expand_functions(ir.get());
+#ifdef ZFX_PRINT_IR
+    ir->print();
+#endif
+
+#ifdef ZFX_PRINT_IR
+    cout << "=== TypeCheck" << endl;
+#endif
+    apply_type_check(ir.get());
+#ifdef ZFX_PRINT_IR
+    ir->print();
+#endif
+
+#ifdef ZFX_PRINT_IR
     cout << "=== LowerMath" << endl;
 #endif
     ir = apply_lower_math(ir.get());

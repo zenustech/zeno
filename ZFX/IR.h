@@ -84,6 +84,10 @@ struct IR {
         return raw_ptr;
     }
 
+    void mark_replacement(Statement *old_stmt, Statement *new_stmt) {
+        cloned[old_stmt] = new_stmt;
+    }
+
     void print() const {
         for (auto const &s: stmts) {
             cout << s->print() << endl;

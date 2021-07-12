@@ -1,30 +1,45 @@
 #pragma once
 
 #include "common.h"
-#include "x64/Executable.h"
+#include <cstring>
 
 namespace zfx::x64 {
 
 struct Program {
-    std::unique_ptr<ExecutableInstance> executable;
+    float consts[4096];
+    uint8_t *mem = nullptr;
+    size_t memsize;
 
-    std::vector<float> consts;
-    std::vector<std::array<float, 4>> locals;
-    std::vector<float *> chptrs;
+    struct Context {
+        Program *prog;
+        float locals[4 * 128];
+        float *chptrs[128];
 
-    void set_channel_pointer(int i, float *ptr) {
-        if (chptrs.size() < i + 1) {
-            chptrs.resize(i + 1);
+        void execute() {
+            auto entry = (void (*)())prog->mem;
+            asm volatile (
+                "call *%0"
+                :
+                : "" (entry)
+                , "c" ((uintptr_t)(void *)prog->consts)
+                , "d" ((uintptr_t)(void *)chptrs)
+                , "b" ((uintptr_t)(void *)locals)
+                : "cc", "memory"
+                );
         }
-        chptrs[i] = ptr;
+
+        float *&channel_pointer(int chid) {
+            return chptrs[chid];
+        }
+    };
+
+    inline Context make_context() {
+        return {this};
     }
 
-    void execute() {
-        auto rbx = locals.data();
-        auto rcx = consts.data();
-        auto rdx = chptrs.data();
-        (*executable)(0, (uintptr_t)rbx, (uintptr_t)rcx, (uintptr_t)rdx);
-    }
+    Program() = default;
+    Program(Program const &) = delete;
+    ~Program();
 
     static std::unique_ptr<Program> assemble(std::string const &lines);
 };

@@ -67,6 +67,71 @@ struct BinaryOpStmt : Stmt<BinaryOpStmt> {
     }
 };
 
+struct FunctionCallStmt : Stmt<FunctionCallStmt> {
+    std::string name;
+    std::vector<Statement *> args;
+
+    FunctionCallStmt
+        ( int id_
+        , std::string name_
+        , std::vector<Statement *> const &args_
+        )
+        : Stmt(id_)
+        , name(name_)
+        , args(args_)
+    {}
+
+    virtual StmtFields fields() override {
+        StmtFields fies;
+        for (auto &arg: args) {
+            fies.emplace_back(arg);
+        }
+        return fies;
+    }
+
+    virtual std::string to_string() const override {
+        std::vector<int> argids;
+        for (auto const &arg: args) {
+            argids.push_back(arg->id);
+        }
+        return format(
+            "FunctionCall [%s] (%s)"
+            , name.c_str()
+            , format_join(", ", "$%d", argids).c_str()
+            );
+    }
+};
+
+struct VectorSwizzleStmt : Stmt<VectorSwizzleStmt> {
+    std::vector<int> swizzles;
+    Statement *src;
+
+    VectorSwizzleStmt
+        ( int id_
+        , std::vector<int> const &swizzles_
+        , Statement *src_
+        )
+        : Stmt(id_)
+        , swizzles(swizzles_)
+        , src(src_)
+    {}
+
+    virtual StmtFields fields() override {
+        return {
+            src,
+            };
+    }
+
+    virtual std::string to_string() const override {
+        return format(
+            "VectorSwizzle [%s] $%d"
+            , format_join(", ", "%d", swizzles).c_str()
+            , src->id
+            );
+    }
+};
+
+
 struct AssignStmt : Stmt<AssignStmt> {
     Statement *dst;
     Statement *src;
@@ -194,6 +259,10 @@ struct AsmAssignStmt : AsmStmt<AsmAssignStmt> {
             , src
             );
     }
+
+    virtual int affect_register() const override {
+        return src == dst ? -1 : dst;
+    }
 };
 
 struct AsmLoadConstStmt : AsmStmt<AsmLoadConstStmt> {
@@ -216,6 +285,10 @@ struct AsmLoadConstStmt : AsmStmt<AsmLoadConstStmt> {
             , dst
             , value.c_str()
             );
+    }
+
+    virtual int affect_register() const override {
+        return dst;
     }
 };
 
@@ -248,6 +321,10 @@ struct AsmBinaryOpStmt : AsmStmt<AsmBinaryOpStmt> {
             , rhs
             );
     }
+
+    virtual int affect_register() const override {
+        return dst;
+    }
 };
 
 struct AsmUnaryOpStmt : AsmStmt<AsmUnaryOpStmt> {
@@ -275,6 +352,10 @@ struct AsmUnaryOpStmt : AsmStmt<AsmUnaryOpStmt> {
             , src
             );
     }
+
+    virtual int affect_register() const override {
+        return dst;
+    }
 };
 
 struct AsmLocalStoreStmt : AsmStmt<AsmLocalStoreStmt> {
@@ -297,6 +378,10 @@ struct AsmLocalStoreStmt : AsmStmt<AsmLocalStoreStmt> {
             , val
             , mem
             );
+    }
+
+    virtual int affect_register() const override {
+        return -1;
     }
 };
 
@@ -321,6 +406,10 @@ struct AsmLocalLoadStmt : AsmStmt<AsmLocalLoadStmt> {
             , mem
             );
     }
+
+    virtual int affect_register() const override {
+        return val;
+    }
 };
 
 struct AsmGlobalStoreStmt : AsmStmt<AsmGlobalStoreStmt> {
@@ -344,6 +433,10 @@ struct AsmGlobalStoreStmt : AsmStmt<AsmGlobalStoreStmt> {
             , mem
             );
     }
+
+    virtual int affect_register() const override {
+        return -1;
+    }
 };
 
 struct AsmGlobalLoadStmt : AsmStmt<AsmGlobalLoadStmt> {
@@ -366,6 +459,10 @@ struct AsmGlobalLoadStmt : AsmStmt<AsmGlobalLoadStmt> {
             , val
             , mem
             );
+    }
+
+    virtual int affect_register() const override {
+        return val;
     }
 };
 
