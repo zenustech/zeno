@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include <cstring>
 
 namespace zfx::x64 {
 
@@ -13,14 +14,19 @@ struct Program {
         Program *prog;
         float buffer[8192];
 
+        Context(Program *prog_ = nullptr) {
+            prog = prog_;
+            memset(buffer, 0, sizeof(buffer));
+        }
+
         void execute() {
             auto entry = (void (*)())prog->mem;
             asm volatile (
                 "call *%1"
                 :
-                : "c" ((uintptr_t)(void *)prog->consts)
+                : "" (entry)
+                , "c" ((uintptr_t)(void *)prog->consts)
                 , "d" ((uintptr_t)(void *)buffer)
-                , "" (entry)
                 : "cc", "memory"
                 );
         }
@@ -30,7 +36,7 @@ struct Program {
         }
     };
 
-    Context make_context() {
+    inline Context make_context() {
         return {this};
     }
 

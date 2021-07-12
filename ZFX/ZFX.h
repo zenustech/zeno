@@ -20,21 +20,13 @@ struct Program {
     std::unique_ptr<Prog> prog;
     std::vector<std::pair<std::string, int>> symbols;
 
-    int channel_id(std::string const &name, int dim) {
+    int channel_id(std::string const &name, int dim) const {
         auto it = std::find(symbols.begin(), symbols.end(), std::pair{name, dim});
         return it - symbols.begin();
     }
 
-    decltype(auto) channel_pointer(int chid) {
-        return prog->channel_pointer(chid);
-    }
-
-    decltype(auto) channel_pointer(std::string const &name, int dim) {
-        return prog->channel_pointer(channel_id(name, dim));
-    }
-
-    void execute() {
-        prog->execute();
+    decltype(auto) make_context() {
+        return prog->make_context();
     }
 };
 

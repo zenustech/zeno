@@ -5,10 +5,9 @@
 static zfx::Compiler<zfx::x64::Program> compiler;
 
 int main() {
-    std::string code("tmp = @pos + 0.5\n@pos = tmp + 3.14 * tmp + 2.718 / (@pos * tmp + 1)");
+    std::string code("@pos = @pos + 0.5");
     auto func = [](float pos) -> float {
-        auto tmp = pos + 0.5f;
-        pos = tmp + 3.14f * tmp + 2.718f / (pos * tmp + 1);
+        pos = pos + 0.5;
         return pos;
     };
 
@@ -28,10 +27,12 @@ int main() {
     }
     printf("\n");
 
-    prog->channel_pointer("@pos", 0) = arr;
-    prog->channel_pointer("@pos", 1) = arr2;
-    prog->channel_pointer("@pos", 2) = arr3;
-    prog->execute();
+    auto ctx = prog->make_context();
+
+    ctx.channel_pointer(prog->channel_id("@pos", 0)) = arr;
+    ctx.channel_pointer(prog->channel_id("@pos", 1)) = arr2;
+    ctx.channel_pointer(prog->channel_id("@pos", 2)) = arr3;
+    ctx.execute();
 
     printf("result:");
     for (auto val: arr) {
