@@ -12,33 +12,34 @@ struct Program {
 
     struct Context {
         Program *prog;
-        float buffer[8192];
-
-        Context(Program *prog_ = nullptr) {
-            prog = prog_;
-            memset(buffer, 0, sizeof(buffer));
-        }
+        float locals[4 * 128];
+        float *chptrs[128];
 
         void execute() {
             auto entry = (void (*)())prog->mem;
             asm volatile (
-                "call *%1"
+                "call *%0"
                 :
                 : "" (entry)
                 , "c" ((uintptr_t)(void *)prog->consts)
-                , "d" ((uintptr_t)(void *)buffer)
+                , "d" ((uintptr_t)(void *)chptrs)
+                , "b" ((uintptr_t)(void *)locals)
                 : "cc", "memory"
                 );
         }
 
         float *&channel_pointer(int chid) {
-            return chid[(float **)(char *)buffer];
+            return chptrs[chid];
         }
     };
 
     inline Context make_context() {
         return {this};
     }
+
+    Program() = default;
+    Program(Program const &) = delete;
+    ~Program();
 
     static std::unique_ptr<Program> assemble(std::string const &lines);
 };

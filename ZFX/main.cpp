@@ -5,14 +5,14 @@
 static zfx::Compiler<zfx::x64::Program> compiler;
 
 int main() {
-    std::string code("@pos = @pos + 0.5");
+    std::string code("@pos = dot(@pos, @pos)");
     auto func = [](float pos) -> float {
         pos = pos + 0.5;
         return pos;
     };
 
     std::map<std::string, int> symdims;
-    symdims["@pos"] = 2;
+    symdims["@pos"] = 1;
 
     auto prog = compiler.compile(code, symdims);
 

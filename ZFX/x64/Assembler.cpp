@@ -164,4 +164,12 @@ std::unique_ptr<Program> Program::assemble(std::string const &lines) {
     return std::move(a.prog);
 }
 
+Program::~Program() {
+    if (mem) {
+        exec_page_free(mem, memsize);
+        mem = nullptr;
+        memsize = 0;
+    }
+}
+
 }
