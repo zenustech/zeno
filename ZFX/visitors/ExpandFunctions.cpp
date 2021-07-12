@@ -89,6 +89,10 @@ Stm stm_dot(Stm const &lhs, Stm const &rhs) {
     return ret;
 }
 
+Stm stm_cross(Stm const &lhs, Stm const &rhs) {
+    error("cross product unimplemented for now, sorry");
+}
+
 struct ExpandFunctions : Visitor<ExpandFunctions> {
     using visit_stmt_types = std::tuple
         < FunctionCallStmt
@@ -105,8 +109,6 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
         }
         return {args[0].ir, emit_op(name, argptrs)};
     }*/
-
-    std::set<Statement *> stm_cloned;
 
     Stm make_stm(Statement *stmt) {
         return {ir.get(), ir->push_clone_back(stmt)};
@@ -148,12 +150,27 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             ERROR_IF(args.size() != 2);
             auto x = make_stm(args[0]);
             auto y = make_stm(args[1]);
-            ERROR_IF(!x->dim || !y->dim && "dot");
+            ERROR_IF((!x->dim || !y->dim) && "dot");
             if (x->dim != y->dim) {
                 error("dimension mismatch for function `%s`: %d != %d",
                     name.c_str(), x->dim, y->dim);
             }
             return stm_dot(x, y);
+
+        } else if (name == "cross") {
+            ERROR_IF(args.size() != 2);
+            auto x = make_stm(args[0]);
+            auto y = make_stm(args[1]);
+            if (x->dim != 3 || y->dim != 3) {
+                error("`cross` requires two 3-D vectors, got %d-D and %d-D",
+                    x->dim, y->dim);
+            }
+            return stm_cross(x, y);
+
+        } else if (contains({"min", "max", "pow", "atan2"}, name)) {
+            ERROR_IF(args.size() != 1);
+            auto x = make_stm(args[0]);
+            return stm(name, x);
 
         } else if (contains({"sqrt", "sin", "cos", "tan", "asin", "acos",
             "atan", "exp", "log", "rsqrt", "floor", "ceil"}, name)) {
