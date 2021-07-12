@@ -16,6 +16,7 @@ struct LowerMath : Visitor<LowerMath> {
         , LiterialStmt
         , UnaryOpStmt
         , BinaryOpStmt
+        , FunctionCallStmt
         , AssignStmt
         , Statement
         >;
@@ -67,6 +68,20 @@ struct LowerMath : Visitor<LowerMath> {
         for (int i = 0; i < stmt->dim; i++) {
             rep.push_back(ir->emplace_back<BinaryOpStmt>(
                 stmt->op, replace(stmt->lhs, i), replace(stmt->rhs, i)));
+        }
+    }
+
+    void visit(FunctionCallStmt *stmt) {
+        auto &rep = replaces[stmt];
+        rep.clear();
+        ERROR_IF(stmt->dim == 0);
+        for (int i = 0; i < stmt->dim; i++) {
+            std::vector<Statement *> args;
+            for (auto const &arg: stmt->args) {
+                args.push_back(replace(arg, i));
+            }
+            rep.push_back(ir->emplace_back<FunctionCallStmt>(
+                stmt->name, args));
         }
     }
 
