@@ -91,24 +91,21 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
         if (0) {
 
         } else if (name == "mix") {
-            if (args.size() != 3)
-                error("function `%s` takes exactly 3 arguments", name.c_str());
+            ERROR_IF(args.size() != 3);
             Stm x(ir.get(), ir->push_clone_back(args[0]));
             Stm y(ir.get(), ir->push_clone_back(args[1]));
             Stm a(ir.get(), ir->push_clone_back(args[2]));
             return (y - x) * a + x;
 
         } else if (name == "clamp") {
-            if (args.size() != 3)
-                error("function `%s` takes exactly 3 arguments", name.c_str());
+            ERROR_IF(args.size() != 3);
             Stm x(ir.get(), ir->push_clone_back(args[0]));
             Stm a(ir.get(), ir->push_clone_back(args[1]));
             Stm b(ir.get(), ir->push_clone_back(args[2]));
             return stm("min", b, stm("max", a, x));
 
         } else if (name == "dot") {
-            if (args.size() != 2)
-                error("function `%s` takes exactly 2 arguments", name.c_str());
+            ERROR_IF(args.size() != 2);
             Stm a(ir.get(), ir->push_clone_back(args[0]));
             Stm b(ir.get(), ir->push_clone_back(args[1]));
             ERROR_IF(!a->dim || !b->dim);
@@ -122,10 +119,10 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             }
             return ret;
 
-        } else if (name == "sqrt") {
-            if (args.size() != 1)
-                error("function `%s` takes exactly 1 argument", name.c_str());
-            return ir->emplace_back<UnaryOpStmt>("sqrt", args[0]);
+        } else if (contains({"sqrt", "sin", "cos", "tan", "asin", "acos",
+            "atan", "exp", "log", "rsqrt", "floor", "ceil"}, name)) {
+            ERROR_IF(args.size() != 1);
+            return ir->emplace_back<UnaryOpStmt>(name, args[0]);
 
         } else {
             error("invalid function name `%s` (with %d args)", name.c_str(), args.size());

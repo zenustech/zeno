@@ -11,7 +11,7 @@ int main() {
     };
 
     std::map<std::string, int> symdims;
-    symdims["@pos"] = 1;
+    symdims["@pos"] = 2;
 
     auto prog = compiler.compile(code, symdims);
 
@@ -26,7 +26,7 @@ int main() {
     printf("\n");
 
     prog->channel_pointer("@pos", 0) = arr;
-    //prog->channel_pointer("@pos", 1) = arr2;
+    prog->channel_pointer("@pos", 1) = arr2;
     prog->execute();
 
     printf("result:");

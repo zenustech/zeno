@@ -60,21 +60,57 @@ struct TypeCheck : Visitor<TypeCheck> {
     }
 
     void visit(FunctionCallStmt *stmt) {
-        // scalar function
-        int dim = 0;
-        for (auto const &arg: stmt->args) {
-            if (dim == 0) {
-                dim = arg->dim;
-                continue;
+        stmt->dim = 0;
+
+        if (0) {
+
+        } else if (contains({"sqrt", "sin", "cos", "tan", "asin", "acos",
+            "atan", "exp", "log", "rsqrt", "floor", "ceil", "normalize"}, stmt->name)) {
+            if (stmt->args.size() != 3) {
+                error("function `%s` takes exactly 3 arguments", stmt->name.c_str());
             }
-            ERROR_IF(arg->dim == 0);
-            if (dim != 1 && arg->dim != 1 && arg->dim != dim) {
-                error("dimension mismatch in element-wise function `%s`: %d != %d",
-                    stmt->name.c_str(), dim, arg->dim);
-            } else if (arg->dim > dim)
-                dim = arg->dim;
+
+        } else if (contains({"min", "max", "pow", "atan2"}, stmt->name)) {
+            if (stmt->args.size() != 2) {
+                error("function `%s` takes exactly 2 arguments", stmt->name.c_str());
+            }
+
+        } else if (contains({"clamp", "mix"}, stmt->name)) {
+            if (stmt->args.size() != 3) {
+                error("function `%s` takes exactly 3 arguments", stmt->name.c_str());
+            }
+
+        } else if (contains({"dot", "distance"}, stmt->name)) {
+            if (stmt->args.size() != 2) {
+                error("function `%s` takes exactly 2 arguments", stmt->name.c_str());
+            }
+            stmt->dim = 1;
+
+        } else if (contains({"cross"}, stmt->name)) {
+            if (stmt->args.size() != 2) {
+                error("function `%s` takes exactly 2 arguments", stmt->name.c_str());
+            }
+            stmt->dim = 3;
+
+        } else {
+            error("invalid function name `%s` (with %d args)",
+                stmt->name.c_str(), stmt->args.size());
         }
-        stmt->dim = dim;
+
+        if (stmt->dim == 0) {
+            for (auto const &arg: stmt->args) {
+                ERROR_IF(arg->dim == 0);
+                if (stmt->dim == 0) {
+                    stmt->dim = arg->dim;
+                    continue;
+                }
+                if (stmt->dim != 1 && arg->dim != 1 && arg->dim != stmt->dim) {
+                    error("dimension mismatch in element-wise function `%s`: %d != %d",
+                        stmt->name.c_str(), stmt->dim, arg->dim);
+                } else if (arg->dim > stmt->dim)
+                    stmt->dim = arg->dim;
+            }
+        }
         visit((Statement *)stmt);
     }
 
