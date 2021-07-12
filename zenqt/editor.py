@@ -1506,7 +1506,7 @@ class NodeEditor(QWidget):
         self.edit_nframes.setValidator(validator)
         self.edit_nframes.move(20, 40)
         self.edit_nframes.resize(30, 30)
-        self.edit_nframes.setText('1')
+        self.edit_nframes.setText('100')
 
         self.button_execute = QPushButton('Execute', self)
         self.button_execute.move(60, 40)

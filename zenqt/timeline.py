@@ -140,7 +140,7 @@ class TimelineWidget(QWidget):
         self.editor = editor
         self.maxframe = self.editor.edit_nframes
         self.maxframe.textChanged.connect(self.maxframe_changed)
-        self.maxframe.setText(str(self.slider.maximum()))
+        self.maxframe_changed()
 
     def maxframe_changed(self):
         self.slider.setMaximum(int('0' + self.maxframe.text()))
