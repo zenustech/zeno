@@ -1,7 +1,5 @@
 #include "IRVisitor.h"
 #include "Stmts.h"
-#include <map>
-#include <functional>
 
 namespace zfx {
 
@@ -26,8 +24,6 @@ struct LowerAccess : Visitor<LowerAccess> {
         int last_used = -1;
         int curr_stmtid = -1;
     };
-
-    std::map<int, std::function<void(int)>> loaders;
 
     int lookup_temp(int stmtid) {
         return stmtid;
@@ -61,12 +57,10 @@ struct LowerAccess : Visitor<LowerAccess> {
     }
 
     void visit(LiterialStmt *stmt) {
-        loaders[stmt->id] = [this, stmt](int regid) {
-            ir->emplace_back<AsmLoadConstStmt>
-                ( regid
-                , stmt->value
-                );
-        };
+        ir->emplace_back<AsmLoadConstStmt>
+            ( lookup(stmt->id)
+            , stmt->value
+            );
     }
 
     void visit(UnaryOpStmt *stmt) {

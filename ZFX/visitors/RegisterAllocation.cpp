@@ -41,7 +41,9 @@ namespace ucla {
         interval.clear();
         active.clear();
         usage.clear();
-        used = decltype(used)();
+        for (int i = 0; i < NREGS; i++) {
+            used[i] = false;
+        }
         storage.clear();
         start.clear();
         end.clear();
@@ -191,19 +193,31 @@ struct RegisterAllocation : Visitor<RegisterAllocation> {
     std::unique_ptr<IR> ir;
 
     std::map<int, int> usage;
-    std::array<bool, NREGS> used;
+    std::array<int, NREGS> used;
     std::map<int, int> storage;
 
-    std::map<int, int> storer;
+    RegisterAllocation() {
+        for (int i = 0; i < NREGS; i++) {
+            used[i] = -1;
+        }
+    }
 
     void load(int stmtid, int &regid) {
-        regid = usage.at(regid);
-        used[regid] = true;
+        stmtid = regid;
+        regid = usage.at(stmtid);
+        if (used[regid] != -1 && used[regid] != stmtid) {
+            printf("load %d %d\n", regid, used[regid]);
+        }
+        used[regid] = stmtid;
     }
 
     void store(int stmtid, int &regid) {
+        stmtid = regid;
         regid = usage.at(stmtid);
-        used[regid] = true;
+        if (used[regid] != -1 && used[regid] != stmtid) {
+            printf("store %d %d\n", regid, used[regid]);
+        }
+        used[regid] = stmtid;
     }
 
     void visit(AsmAssignStmt *stmt) {
