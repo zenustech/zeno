@@ -104,6 +104,10 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             Stm b(ir.get(), ir->push_clone_back(args[2]));
             return stm("min", b, stm("max", a, x));
 
+        } else if (name == "length") {
+            ERROR_IF(args.size() != 1);
+            return stm("sqrt", Stm(ir.get(), emit_op("dot", {args[0], args[0]})));
+
         } else if (name == "dot") {
             ERROR_IF(args.size() != 2);
             Stm a(ir.get(), ir->push_clone_back(args[0]));

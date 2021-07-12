@@ -65,9 +65,9 @@ struct TypeCheck : Visitor<TypeCheck> {
         if (0) {
 
         } else if (contains({"sqrt", "sin", "cos", "tan", "asin", "acos",
-            "atan", "exp", "log", "rsqrt", "floor", "ceil", "normalize"}, stmt->name)) {
-            if (stmt->args.size() != 3) {
-                error("function `%s` takes exactly 3 arguments", stmt->name.c_str());
+            "atan", "exp", "log", "rsqrt", "floor", "ceil", "length", "normalize"}, stmt->name)) {
+            if (stmt->args.size() != 1) {
+                error("function `%s` takes exactly 1 argument", stmt->name.c_str());
             }
 
         } else if (contains({"min", "max", "pow", "atan2"}, stmt->name)) {
