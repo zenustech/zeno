@@ -27,76 +27,16 @@ struct LowerAccess : Visitor<LowerAccess> {
         int curr_stmtid = -1;
     };
 
-    int now() const {
-        return ir->size();
-    }
-
-    std::vector<RegInfo> regs{8};  // seems need >= 3 to work
-    std::vector<int> locals;
-    std::map<int, int> locals_lut;
     std::map<int, std::function<void(int)>> loaders;
 
     int lookup_temp(int stmtid) {
-        if (auto it = locals_lut.find(stmtid); it != locals_lut.end()) {
-            return it->second;
-        }
-        int memid = locals.size();
-        locals_lut[stmtid] = memid;
-        locals.push_back(stmtid);
-        return memid;
-    }
-
-    int temp_save_location(int regid, int stmtid) {
-        for (int i = 0; i < locals.size(); i++) {
-            if (locals[i] == -1) {
-                locals_lut[stmtid] = i;
-                locals[i] = stmtid;
-                return i;
-            }
-        }
-        int memid = locals.size();
-        locals_lut[stmtid] = memid;
-        locals.push_back(stmtid);
-        return memid;
-    }
-
-    int alloc_register() {
-        for (int i = 0; i < regs.size(); i++) {
-            if (regs[i].curr_stmtid == -1)
-                return i;
-        }
-        int regid = 0;
-        for (int i = 1; i < regs.size(); i++) {
-            if (regs[i].last_used < regs[regid].last_used)
-                regid = i;
-        }
-        int old_stmtid = regs[regid].curr_stmtid;
-        int memid = temp_save_location(regid, old_stmtid);
-        ir->emplace_back<AsmLocalStoreStmt>(memid, regid);
-        regs[regid].curr_stmtid = -1;
-        return regid;
+        return stmtid;
     }
 
     int lookup(int stmtid, bool is_store = false) {
-        for (int i = 0; i < regs.size(); i++) {
-            if (regs[i].curr_stmtid == stmtid) {
-                regs[i].last_used = now();
-                return i;
-            }
-        }
-        auto regid = alloc_register();
-        regs[regid].curr_stmtid = stmtid;
-        regs[regid].last_used = now();
-        if (is_store) {
+        int regid = stmtid;
+        if (is_store)
             return regid;
-        }
-
-        if (auto it = locals_lut.find(stmtid); it != locals_lut.end()) {
-            int memid = it->second;
-            ir->emplace_back<AsmLocalLoadStmt>(memid, regid);
-            return regid;
-        }
-
         if (auto it = loaders.find(stmtid); it != loaders.end()) {
             it->second(regid);
         }
