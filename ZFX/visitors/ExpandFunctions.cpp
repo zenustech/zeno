@@ -12,6 +12,7 @@ namespace zfx {
 struct ExpandFunctions : Visitor<ExpandFunctions> {
     using visit_stmt_types = std::tuple
         < FunctionCallStmt
+        , Statement
         >;
 
     std::unique_ptr<IR> ir = std::make_unique<IR>();
@@ -42,7 +43,12 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
     }
 
     void visit(FunctionCallStmt *stmt) {
-        emit_op(stmt->name, stmt->args);
+        auto new_stmt = emit_op(stmt->name, stmt->args);
+        ir->mark_replacement(stmt, new_stmt);
+    }
+
+    void visit(Statement *stmt) {
+        ir->push_clone_back(stmt);
     }
 };
 
