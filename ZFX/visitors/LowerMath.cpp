@@ -17,6 +17,7 @@ struct LowerMath : Visitor<LowerMath> {
         , UnaryOpStmt
         , BinaryOpStmt
         , FunctionCallStmt
+        , VectorSwizzleStmt
         , AssignStmt
         , Statement
         >;
@@ -82,6 +83,17 @@ struct LowerMath : Visitor<LowerMath> {
             }
             rep.push_back(ir->emplace_back<FunctionCallStmt>(
                 stmt->name, args));
+        }
+    }
+
+    void visit(VectorSwizzleStmt *stmt) {
+        auto &rep = replaces[stmt];
+        rep.clear();
+        ERROR_IF(stmt->dim == 0);
+        ERROR_IF(stmt->dim != stmt->swizzles.size());
+        for (int i = 0; i < stmt->dim; i++) {
+            auto s = stmt->swizzles[i];
+            rep.push_back(replace(stmt->src, s));
         }
     }
 

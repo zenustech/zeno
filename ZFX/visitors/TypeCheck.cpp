@@ -14,6 +14,7 @@ struct TypeCheck : Visitor<TypeCheck> {
         < AssignStmt
         , LiterialStmt
         , SymbolStmt
+        , VectorSwizzleStmt
         , FunctionCallStmt
         , BinaryOpStmt
         , UnaryOpStmt
@@ -74,6 +75,17 @@ struct TypeCheck : Visitor<TypeCheck> {
                 dim = arg->dim;
         }
         stmt->dim = dim;
+        visit((Statement *)stmt);
+    }
+
+    void visit(VectorSwizzleStmt *stmt) {
+        for (int s: stmt->swizzles) {
+            if (s >= stmt->src->dim) {
+                error("swizzle dimension out of range: %d >= %d",
+                    s, stmt->src->dim);
+            }
+        }
+        stmt->dim = stmt->swizzles.size();
         visit((Statement *)stmt);
     }
 
