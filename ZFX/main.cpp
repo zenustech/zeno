@@ -5,7 +5,7 @@
 static zfx::Compiler<zfx::x64::Program> compiler;
 
 int main() {
-    std::string code("@pos = length(@pos)");
+    std::string code("@pos = length(@pos - 0 * @pos)");
     auto func = [](float pos) -> float {
         return pos;
     };

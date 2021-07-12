@@ -41,12 +41,6 @@ struct Stm {
     }
 };
 
-template <class ExpandFuncs>
-Stm stm(ExpandFuncs *that, std::string const &name, std::vector<Stm> const &args) {
-    ERROR_IF(args.size() == 0);
-    return {args[0].ir, that->emit_op(name, args)};
-}
-
 Stm stm(std::string const &op_name, Stm const &lhs, Stm const &rhs) {
     return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>(op_name, lhs.stmt, rhs.stmt)};
 }
@@ -79,6 +73,22 @@ Stm operator-(Stm const &src) {
     return {src.ir, src.ir->emplace_back<UnaryOpStmt>("-", src.stmt)};
 }
 
+Stm stm_sqrlength(Stm const &src) {
+    Stm ret = src[0] * src[0];
+    for (int i = 1; i < src->dim; i++) {
+        ret = ret + src[i] * src[i];
+    }
+    return ret;
+}
+
+Stm stm_dot(Stm const &lhs, Stm const &rhs) {
+    Stm ret = lhs[0] * rhs[0];
+    for (int i = 1; i < lhs->dim; i++) {
+        ret = ret + lhs[i] * rhs[i];
+    }
+    return ret;
+}
+
 struct ExpandFunctions : Visitor<ExpandFunctions> {
     using visit_stmt_types = std::tuple
         < FunctionCallStmt
@@ -87,46 +97,69 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
 
     std::unique_ptr<IR> ir = std::make_unique<IR>();
 
+    /*Stm emit_stm(std::string const &name, std::vector<Stm> const &args) {
+        ERROR_IF(args.size() == 0);
+        std::vector<Statement *> argptrs;
+        for (auto const &arg: args) {
+            argptrs.push_back(arg);
+        }
+        return {args[0].ir, emit_op(name, argptrs)};
+    }*/
+
+    std::set<Statement *> stm_cloned;
+
+    Stm make_stm(Statement *stmt) {
+        return {ir.get(), ir->push_clone_back(stmt)};
+    }
+
     Statement *emit_op(std::string const &name, std::vector<Statement *> const &args) {
         if (0) {
 
         } else if (name == "mix") {
             ERROR_IF(args.size() != 3);
-            Stm x(ir.get(), ir->push_clone_back(args[0]));
-            Stm y(ir.get(), ir->push_clone_back(args[1]));
-            Stm a(ir.get(), ir->push_clone_back(args[2]));
+            auto x = make_stm(args[0]);
+            auto y = make_stm(args[1]);
+            auto a = make_stm(args[2]);
             return (y - x) * a + x;
 
         } else if (name == "clamp") {
             ERROR_IF(args.size() != 3);
-            Stm x(ir.get(), ir->push_clone_back(args[0]));
-            Stm a(ir.get(), ir->push_clone_back(args[1]));
-            Stm b(ir.get(), ir->push_clone_back(args[2]));
+            auto x = make_stm(args[0]);
+            auto a = make_stm(args[1]);
+            auto b = make_stm(args[2]);
             return stm("min", b, stm("max", a, x));
 
         } else if (name == "length") {
             ERROR_IF(args.size() != 1);
-            return stm("sqrt", Stm(ir.get(), emit_op("dot", {args[0], args[0]})));
+            auto x = make_stm(args[0]);
+            return stm("sqrt", stm_sqrlength(x));
 
-        } else if (name == "dot") {
+        } else if (name == "distance") {
             ERROR_IF(args.size() != 2);
-            Stm a(ir.get(), ir->push_clone_back(args[0]));
-            Stm b(ir.get(), ir->push_clone_back(args[1]));
-            ERROR_IF(!a->dim || !b->dim);
+            auto a = make_stm(args[0]);
+            auto b = make_stm(args[1]);
             if (a->dim != b->dim) {
                 error("dimension mismatch for function `%s`: %d != %d",
                     name.c_str(), a->dim, b->dim);
             }
-            Stm ret = a[0] * b[0];
-            for (int i = 1; i < a->dim; i++) {
-                ret = ret + a[i] * b[i];
+            return stm("sqrt", stm_sqrlength(a - b));
+
+        } else if (name == "dot") {
+            ERROR_IF(args.size() != 2);
+            auto x = make_stm(args[0]);
+            auto y = make_stm(args[1]);
+            ERROR_IF(!x->dim || !y->dim && "dot");
+            if (x->dim != y->dim) {
+                error("dimension mismatch for function `%s`: %d != %d",
+                    name.c_str(), x->dim, y->dim);
             }
-            return ret;
+            return stm_dot(x, y);
 
         } else if (contains({"sqrt", "sin", "cos", "tan", "asin", "acos",
             "atan", "exp", "log", "rsqrt", "floor", "ceil"}, name)) {
             ERROR_IF(args.size() != 1);
-            return ir->emplace_back<UnaryOpStmt>(name, args[0]);
+            auto x = make_stm(args[0]);
+            return stm(name, x);
 
         } else {
             error("invalid function name `%s` (with %d args)", name.c_str(), args.size());
