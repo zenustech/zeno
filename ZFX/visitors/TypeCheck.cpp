@@ -3,11 +3,18 @@
 
 namespace zfx {
 
+#define ERROR_IF(x) do { \
+    if (x) { \
+        error("`%s`", #x); \
+    } \
+} while (0)
+
 struct TypeCheck : Visitor<TypeCheck> {
     using visit_stmt_types = std::tuple
         < AssignStmt
         , LiterialStmt
         , SymbolStmt
+        , FunctionCallStmt
         , BinaryOpStmt
         , UnaryOpStmt
         , Statement
@@ -45,9 +52,28 @@ struct TypeCheck : Visitor<TypeCheck> {
             error("dimension mismatch in binary op: %d != %d",
                 stmt->lhs->dim, stmt->rhs->dim);
         }
-        if (stmt->lhs->dim != 0 && stmt->rhs->dim != 0) {
-            stmt->dim = std::max(stmt->lhs->dim, stmt->rhs->dim);
+        ERROR_IF(stmt->lhs->dim == 0);
+        ERROR_IF(stmt->rhs->dim == 0);
+        stmt->dim = std::max(stmt->lhs->dim, stmt->rhs->dim);
+        visit((Statement *)stmt);
+    }
+
+    void visit(FunctionCallStmt *stmt) {
+        // scalar function
+        int dim = 0;
+        for (auto const &arg: stmt->args) {
+            if (dim == 0) {
+                dim = arg->dim;
+                continue;
+            }
+            ERROR_IF(arg->dim == 0);
+            if (dim != 1 && arg->dim != 1 && arg->dim != dim) {
+                error("dimension mismatch in function call: %d != %d",
+                    dim, arg->dim);
+            } else if (arg->dim > dim)
+                dim = arg->dim;
         }
+        stmt->dim = dim;
         visit((Statement *)stmt);
     }
 
