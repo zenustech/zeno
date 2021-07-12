@@ -5,13 +5,13 @@
 static zfx::Compiler<zfx::x64::Program> compiler;
 
 int main() {
-    std::string code("@pos = sqrt(@pos.y)");
+    std::string code("@pos = mix(@pos, 0, 0.5)");
     auto func = [](float pos) -> float {
-        return std::sqrt(pos);
+        return pos * 0.5;
     };
 
     std::map<std::string, int> symdims;
-    symdims["@pos"] = 2;
+    symdims["@pos"] = 1;
 
     auto prog = compiler.compile(code, symdims);
 
@@ -26,7 +26,7 @@ int main() {
     printf("\n");
 
     prog->channel_pointer("@pos", 0) = arr;
-    prog->channel_pointer("@pos", 1) = arr2;
+    //prog->channel_pointer("@pos", 1) = arr2;
     prog->execute();
 
     printf("result:");
