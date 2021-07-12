@@ -34,40 +34,30 @@ struct LowerAccess : Visitor<LowerAccess> {
     }
 
     int lookup(int stmtid, bool is_store = false) {
-        int regid = stmtid;
-        if (is_store)
-            return regid;
-        if (auto it = loaders.find(stmtid); it != loaders.end()) {
-            it->second(regid);
-        }
-        return regid;
+        return stmtid;
     }
 
     void visit(TempSymbolStmt *stmt) {
-        loaders[stmt->id] = [this, stmt](int regid) {
-            if (stmt->symids.size() != 1) {
-                error("scalar expected on temp load, got %d-D vector",
-                    stmt->symids.size());
-            }
-            stmt->symids[0] = lookup_temp(stmt->id);
-            ir->emplace_back<AsmLocalLoadStmt>
-                ( stmt->symids[0]
-                , regid
-                );
-        };
+        if (stmt->symids.size() != 1) {
+            error("scalar expected on temp load, got %d-D vector",
+                stmt->symids.size());
+        }
+        stmt->symids[0] = lookup_temp(stmt->id);
+        ir->emplace_back<AsmLocalLoadStmt>
+            ( stmt->symids[0]
+            , lookup(stmt->id)
+            );
     }
 
     void visit(SymbolStmt *stmt) {
-        loaders[stmt->id] = [this, stmt](int regid) {
-            if (stmt->symids.size() != 1) {
-                error("scalar expected on load, got %d-D vector",
-                    stmt->symids.size());
-            }
-            ir->emplace_back<AsmGlobalLoadStmt>
-                ( stmt->symids[0]
-                , regid
-                );
-        };
+        if (stmt->symids.size() != 1) {
+            error("scalar expected on load, got %d-D vector",
+                stmt->symids.size());
+        }
+        ir->emplace_back<AsmGlobalLoadStmt>
+            ( stmt->symids[0]
+            , lookup(stmt->id)
+            );
     }
 
     void visit(LiterialStmt *stmt) {
