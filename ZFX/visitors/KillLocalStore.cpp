@@ -59,7 +59,8 @@ struct KillLocalStore : Visitor<KillLocalStore> {
             storer = nullptr;
 
         } else {
-            visit((Statement *)stmt);
+            storer = nullptr;
+            ir->push_clone_back(stmt);
         }
     }
 
