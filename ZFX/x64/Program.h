@@ -1,29 +1,37 @@
 #pragma once
 
 #include "common.h"
-#include "x64/Executable.h"
 
 namespace zfx::x64 {
 
 struct Program {
-    std::unique_ptr<ExecutableInstance> executable;
+    float consts[4096];
+    uint8_t *mem = nullptr;
+    size_t memsize;
 
-    std::vector<float> consts;
-    std::vector<std::array<float, 4>> locals;
-    std::vector<float *> chptrs;
+    struct Context {
+        Program *prog;
+        float buffer[8192];
 
-    float *&channel_pointer(int i) {
-        if (chptrs.size() < i + 1) {
-            chptrs.resize(i + 1);
+        void execute() {
+            auto entry = (void (*)())prog->mem;
+            asm volatile (
+                "call *%1"
+                :
+                : "c" ((uintptr_t)(void *)prog->consts)
+                , "d" ((uintptr_t)(void *)buffer)
+                , "" (entry)
+                : "cc", "memory"
+                );
         }
-        return chptrs[i];
-    }
 
-    void execute() {
-        auto rbx = locals.data();
-        auto rcx = consts.data();
-        auto rdx = chptrs.data();
-        (*executable)(0, (uintptr_t)rbx, (uintptr_t)rcx, (uintptr_t)rdx);
+        float *&channel_pointer(int chid) {
+            return chid[(float **)(char *)buffer];
+        }
+    };
+
+    Context make_context() {
+        return {this};
     }
 
     static std::unique_ptr<Program> assemble(std::string const &lines);

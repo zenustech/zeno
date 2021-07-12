@@ -18,6 +18,10 @@ struct Assembler {
     std::unique_ptr<SIMDBuilder> builder = std::make_unique<SIMDBuilder>();
     std::unique_ptr<Program> prog = std::make_unique<Program>();
 
+    std::vector<float> consts;
+    int nlocals = 0;
+    int nglobals = 0;
+
     void parse(std::string const &lines) {
         for (auto line: split_str(lines, '\n')) {
             if (!line.size()) continue;
@@ -32,11 +36,11 @@ struct Assembler {
                 auto dst = from_string<int>(linesep[1]);
                 auto value_expr = linesep[2];
                 float value = from_string<float>(value_expr);
-                int id = prog->consts.size();
+                int id = consts.size();
                 // yeah: we assumed simdkind to be xmmps in this branch
                 // todo: use template programming to be generic on this
                 int offset = id * sizeof(float);
-                prog->consts.push_back(value);
+                consts.push_back(value);
                 builder->addAvxBroadcastLoadOp(simdkind,
                     dst, {opreg::rcx, memflag::reg_imm8, offset});
 
@@ -44,8 +48,7 @@ struct Assembler {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
-                if (prog->locals.size() < id + 1)
-                    prog->locals.resize(id + 1);
+                nlocals = std::max(nlocals, id + 1);
                 int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 builder->addAvxMemoryOp(simdkind, opcode::loadu,
                     dst, {opreg::rbx, memflag::reg_imm8, offset});
@@ -54,9 +57,8 @@ struct Assembler {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
-                if (prog->locals.size() < id + 1)
-                    prog->locals.resize(id + 1);
                 int offset = id * SIMDBuilder::sizeOfType(simdkind);
+                nlocals = std::max(nlocals, id + 1);
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
                     dst, {opreg::rbx, memflag::reg_imm8, offset});
 
@@ -64,8 +66,7 @@ struct Assembler {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
-                if (prog->chptrs.size() < id + 1)
-                    prog->chptrs.resize(id + 1);
+                nglobals = std::max(nglobals, id + 1);
                 int offset = id * sizeof(void *);
                 builder->addRegularLoadOp(opreg::rax,
                     {opreg::rdx, memflag::reg_imm8, offset});
@@ -76,8 +77,7 @@ struct Assembler {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
-                if (prog->chptrs.size() < id + 1)
-                    prog->chptrs.resize(id + 1);
+                nglobals = std::max(nglobals, id + 1);
                 int offset = id * sizeof(void *);
                 builder->addRegularLoadOp(opreg::rax,
                     {opreg::rdx, memflag::reg_imm8, offset});
@@ -138,16 +138,23 @@ struct Assembler {
         auto const &insts = builder->getResult();
 
 #ifdef ZFX_PRINT_IR
-        printf("variables: %d slots\n", prog->locals.size());
-        printf("channels: %d pointers\n", prog->chptrs.size());
+        printf("variables: %d slots\n", nlocals);
+        printf("channels: %d pointers\n", nglobals);
         printf("consts:");
-        for (auto const &val: prog->consts) printf(" %f", val);
+        for (auto const &val: consts) printf(" %f", val);
         printf("\ninsts:");
         for (auto const &inst: insts) printf(" %02X", inst);
         printf("\n");
 #endif
 
-        prog->executable = std::make_unique<ExecutableInstance>(insts);
+        prog->memsize = (insts.size() + 4095) / 4096 * 4096;
+        prog->mem = exec_page_alloc(prog->memsize);
+        for (int i = 0; i < insts.size(); i++) {
+            prog->mem[i] = insts[i];
+        }
+        for (int i = 0; i < consts.size(); i++) {
+            prog->consts[i] = consts[i];
+        }
     }
 };
 
