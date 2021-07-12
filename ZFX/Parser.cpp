@@ -32,12 +32,19 @@ struct Parser {
             if (auto bra = parse_operator(atm->iter, {"("}); bra) {
                 auto last_iter = bra->iter;
                 std::vector<AST::Ptr> args;
+#if 1
+                args.push_back(std::move(atm));
+#endif
                 if (auto arg = parse_expr(last_iter); arg) {
                     args.push_back(std::move(arg));
                     last_iter = arg->iter;
                 }
                 if (auto ket = parse_operator(last_iter, {")"}); ket) {
+#if 1
+                    return make_ast("()", ket->iter, args);
+#else
                     return make_ast(atm->token, ket->iter, args);
+#endif
                 }
             }
             return atm;

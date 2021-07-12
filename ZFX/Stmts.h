@@ -67,6 +67,41 @@ struct BinaryOpStmt : Stmt<BinaryOpStmt> {
     }
 };
 
+struct FunctionCallStmt : Stmt<FunctionCallStmt> {
+    std::string name;
+    std::vector<Statement *> args;
+
+    FunctionCallStmt
+        ( int id_
+        , std::string name_
+        , std::vector<Statement *> const &args_
+        )
+        : Stmt(id_)
+        , name(name_)
+        , args(args_)
+    {}
+
+    virtual StmtFields fields() override {
+        StmtFields fies;
+        for (auto &arg: args) {
+            fies.emplace_back(arg);
+        }
+        return fies;
+    }
+
+    virtual std::string to_string() const override {
+        std::vector<int> argids;
+        for (auto const &arg: args) {
+            argids.push_back(arg->id);
+        }
+        return format(
+            "FunctionCall [%s] (%s)"
+            , name.c_str()
+            , format_join(", ", "$%d", argids).c_str()
+            );
+    }
+};
+
 struct AssignStmt : Stmt<AssignStmt> {
     Statement *dst;
     Statement *src;

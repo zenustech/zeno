@@ -81,8 +81,13 @@ struct LowerAST {
                 return emplace_temporary_symbol(ast->token);
             }
 
-        } else if (is_literial_atom(ast->token) && ast->args.size() == 0) {
-            return ir->emplace_back<LiterialStmt>(ast->token);
+        } else if (contains({"()"}, ast->token) && ast->args.size() >= 1) {
+            auto func_name = ast->args[0]->token;
+            std::vector<Statement *> func_args;
+            for (int i = 1; i < ast->args.size(); i++) {
+                func_args.push_back(serialize(ast->args[i].get()));
+            }
+            return ir->emplace_back<FunctionCallStmt>(func_name, func_args);
 
         } else {
             error("cannot lower AST at token: `%s` (%d args)\n",
