@@ -27,8 +27,8 @@ style = {
     'button_text_size': 10,
     'socket_text_size': 10,
     'param_text_size': 10,
-    'socket_text_color': '#FFFFFF',
-    'panel_color': '#282828',
+    'socket_text_color': '#787878',
+    'panel_color': '#1E1E1E',
     'blackboard_title_color': '#393939',
     'blackboard_panel_color': '#1B1B1B',
     'line_color': '#B0B0B0',
@@ -789,8 +789,10 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
 
         self.edit = QLineEdit()
         self.edit.setFont(font)
+        self.edit.setStyleSheet('background-color: #252525; color: #787878; border-style:outset')
         self.label = QLabel()
         self.label.setFont(font)
+        self.label.setStyleSheet('color: #787878')
 
         self.layout = QHBoxLayout()
         self.layout.addWidget(self.label)
