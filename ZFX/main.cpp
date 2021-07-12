@@ -13,7 +13,7 @@ int main() {
     };
 
     std::map<std::string, int> symdims;
-    symdims["@pos"] = 3;
+    symdims["@pos"] = 2;
 
     auto prog = compiler.compile(code, symdims);
 

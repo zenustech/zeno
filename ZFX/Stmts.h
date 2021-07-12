@@ -259,6 +259,10 @@ struct AsmAssignStmt : AsmStmt<AsmAssignStmt> {
             , src
             );
     }
+
+    virtual int affect_register() const override {
+        return src == dst ? -1 : dst;
+    }
 };
 
 struct AsmLoadConstStmt : AsmStmt<AsmLoadConstStmt> {
@@ -281,6 +285,10 @@ struct AsmLoadConstStmt : AsmStmt<AsmLoadConstStmt> {
             , dst
             , value.c_str()
             );
+    }
+
+    virtual int affect_register() const override {
+        return dst;
     }
 };
 
@@ -313,6 +321,10 @@ struct AsmBinaryOpStmt : AsmStmt<AsmBinaryOpStmt> {
             , rhs
             );
     }
+
+    virtual int affect_register() const override {
+        return dst;
+    }
 };
 
 struct AsmUnaryOpStmt : AsmStmt<AsmUnaryOpStmt> {
@@ -340,6 +352,10 @@ struct AsmUnaryOpStmt : AsmStmt<AsmUnaryOpStmt> {
             , src
             );
     }
+
+    virtual int affect_register() const override {
+        return dst;
+    }
 };
 
 struct AsmLocalStoreStmt : AsmStmt<AsmLocalStoreStmt> {
@@ -362,6 +378,10 @@ struct AsmLocalStoreStmt : AsmStmt<AsmLocalStoreStmt> {
             , val
             , mem
             );
+    }
+
+    virtual int affect_register() const override {
+        return -1;
     }
 };
 
@@ -386,6 +406,10 @@ struct AsmLocalLoadStmt : AsmStmt<AsmLocalLoadStmt> {
             , mem
             );
     }
+
+    virtual int affect_register() const override {
+        return val;
+    }
 };
 
 struct AsmGlobalStoreStmt : AsmStmt<AsmGlobalStoreStmt> {
@@ -409,6 +433,10 @@ struct AsmGlobalStoreStmt : AsmStmt<AsmGlobalStoreStmt> {
             , mem
             );
     }
+
+    virtual int affect_register() const override {
+        return -1;
+    }
 };
 
 struct AsmGlobalLoadStmt : AsmStmt<AsmGlobalLoadStmt> {
@@ -431,6 +459,10 @@ struct AsmGlobalLoadStmt : AsmStmt<AsmGlobalLoadStmt> {
             , val
             , mem
             );
+    }
+
+    virtual int affect_register() const override {
+        return val;
     }
 };
 
