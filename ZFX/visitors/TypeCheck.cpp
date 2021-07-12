@@ -16,18 +16,27 @@ struct TypeCheck : Visitor<TypeCheck> {
     std::unique_ptr<IR> ir = std::make_unique<IR>();
 
     void visit(Statement *stmt) {
+        if (stmt->dim == 0) {
+            if (dynamic_cast<TempSymbolStmt *>(stmt))
+                error("undefined variable $%d (used before assignment)", stmt->id);
+            else
+                error("statement $%d has unclear type", stmt->id);
+        }
     }
 
     void visit(SymbolStmt *stmt) {
         stmt->dim = stmt->symids.size();
+        visit((Statement *)stmt);
     }
 
     void visit(LiterialStmt *stmt) {
         stmt->dim = 1;
+        visit((Statement *)stmt);
     }
 
     void visit(UnaryOpStmt *stmt) {
         stmt->dim = stmt->src->dim;
+        visit((Statement *)stmt);
     }
 
     void visit(BinaryOpStmt *stmt) {
@@ -39,6 +48,7 @@ struct TypeCheck : Visitor<TypeCheck> {
         if (stmt->lhs->dim != 0 && stmt->rhs->dim != 0) {
             stmt->dim = std::max(stmt->lhs->dim, stmt->rhs->dim);
         }
+        visit((Statement *)stmt);
     }
 
     void visit(AssignStmt *stmt) {
@@ -53,6 +63,7 @@ struct TypeCheck : Visitor<TypeCheck> {
                 stmt->dst->dim, stmt->src->dim);
         }
         stmt->dim = stmt->dst->dim;
+        visit((Statement *)stmt);
     }
 };
 

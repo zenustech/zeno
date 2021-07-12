@@ -9,7 +9,7 @@ namespace zfx::x64 {
 
 #define ERROR_IF(x) do { \
     if (x) { \
-        error("Assertion `%s` failed", #x); \
+        error("`%s`", #x); \
     } \
 } while (0)
 
