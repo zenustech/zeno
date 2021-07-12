@@ -1,8 +1,13 @@
 #include "IRVisitor.h"
 #include "Stmts.h"
-#include <cassert>
 
 namespace zfx {
+
+#define ERROR_IF(x) do { \
+    if (x) { \
+        error("Assertion `%s` failed", #x); \
+    } \
+} while (0)
 
 struct LowerMath : Visitor<LowerMath> {
     using visit_stmt_types = std::tuple
@@ -27,7 +32,7 @@ struct LowerMath : Visitor<LowerMath> {
     void visit(TempSymbolStmt *stmt) {
         auto &rep = replaces[stmt];
         rep.clear();
-        assert(stmt->dim);
+        ERROR_IF(stmt->dim == 0);
         for (int i = 0; i < stmt->dim; i++) {
             rep.push_back(ir->emplace_back<TempSymbolStmt>(
                 stmt->tmpid, std::vector<int>{-1}));
@@ -37,7 +42,7 @@ struct LowerMath : Visitor<LowerMath> {
     void visit(SymbolStmt *stmt) {
         auto &rep = replaces[stmt];
         rep.clear();
-        assert(stmt->dim);
+        ERROR_IF(stmt->dim == 0);
         for (int i = 0; i < stmt->dim; i++) {
             auto symid = stmt->symids[i];
             rep.push_back(ir->emplace_back<SymbolStmt>(
@@ -48,7 +53,7 @@ struct LowerMath : Visitor<LowerMath> {
     void visit(UnaryOpStmt *stmt) {
         auto &rep = replaces[stmt];
         rep.clear();
-        assert(stmt->dim);
+        ERROR_IF(stmt->dim == 0);
         for (int i = 0; i < stmt->dim; i++) {
             rep.push_back(ir->emplace_back<UnaryOpStmt>(
                 stmt->op, replace(stmt->src, i)));
@@ -58,7 +63,7 @@ struct LowerMath : Visitor<LowerMath> {
     void visit(BinaryOpStmt *stmt) {
         auto &rep = replaces[stmt];
         rep.clear();
-        assert(stmt->dim);
+        ERROR_IF(stmt->dim == 0);
         for (int i = 0; i < stmt->dim; i++) {
             rep.push_back(ir->emplace_back<BinaryOpStmt>(
                 stmt->op, replace(stmt->lhs, i), replace(stmt->rhs, i)));
@@ -68,7 +73,7 @@ struct LowerMath : Visitor<LowerMath> {
     void visit(AssignStmt *stmt) {
         auto &rep = replaces[stmt];
         rep.clear();
-        assert(stmt->dim);
+        ERROR_IF(stmt->dim == 0);
         for (int i = 0; i < stmt->dim; i++) {
             rep.push_back(ir->emplace_back<AssignStmt>(
                 replace(stmt->dst, i), replace(stmt->src, i)));
