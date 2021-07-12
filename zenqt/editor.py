@@ -1206,6 +1206,18 @@ class QDMGraphicsNode(QGraphicsItem):
         return QRectF(0, -TEXT_HEIGHT, self.width, h).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
+
+        top = 42
+        bottom = 36
+
+        if self.isSelected():
+            pad = 12
+            rect = QRectF(-pad, -pad -top, self.width + pad * 2, self.height + pad * 2 + top + bottom)
+            painter.fillRect(rect, QColor('#FA6400'))
+            pad = 10
+            rect = QRectF(-pad, -pad -top, self.width + pad * 2, self.height + pad * 2 + top + bottom)
+            painter.fillRect(rect, QColor('#52331F'))
+
         r = style['node_rounded_radius']
 
         title_outline_color = '#787878'
@@ -1233,7 +1245,7 @@ class QDMGraphicsNode(QGraphicsItem):
         painter.drawPath(pathTitle.simplified())
 
         pathTitle = QPainterPath()
-        rect = QRectF(0, -42, 240, 42)
+        rect = QRectF(0, -top, 240, top)
         pathTitle.addRect(rect)
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor('#638E77'))
