@@ -25,8 +25,8 @@ int main() {
     }
     printf("\n");
 
-    prog->set_channel_pointer("@pos", 0, arr);
-    prog->set_channel_pointer("@pos", 1, arr2);
+    prog->channel_pointer("@pos", 0) = arr;
+    prog->channel_pointer("@pos", 1) = arr2;
     prog->execute();
 
     printf("result:");

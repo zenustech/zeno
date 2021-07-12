@@ -12,11 +12,11 @@ struct Program {
     std::vector<std::array<float, 4>> locals;
     std::vector<float *> chptrs;
 
-    void set_channel_pointer(int i, float *ptr) {
+    float *&channel_pointer(int i) {
         if (chptrs.size() < i + 1) {
             chptrs.resize(i + 1);
         }
-        chptrs[i] = ptr;
+        return chptrs[i];
     }
 
     void execute() {
