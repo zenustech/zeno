@@ -13,6 +13,7 @@ struct TypeCheck : Visitor<TypeCheck> {
     using visit_stmt_types = std::tuple
         < AssignStmt
         , LiterialStmt
+        , TempSymbolStmt
         , SymbolStmt
         , VectorSwizzleStmt
         , FunctionCallStmt
@@ -21,15 +22,13 @@ struct TypeCheck : Visitor<TypeCheck> {
         , Statement
         >;
 
-    std::unique_ptr<IR> ir = std::make_unique<IR>();
-
     void visit(Statement *stmt) {
         if (stmt->dim == 0) {
-            if (dynamic_cast<TempSymbolStmt *>(stmt))
-                error("undefined variable $%d (used before assignment)", stmt->id);
-            else
-                error("statement $%d has unclear type", stmt->id);
+            error("statement $%d has unclear type", stmt->id);
         }
+    }
+
+    void visit(TempSymbolStmt *stmt) {
     }
 
     void visit(SymbolStmt *stmt) {
@@ -141,9 +140,23 @@ struct TypeCheck : Visitor<TypeCheck> {
     }
 };
 
+struct CheckTempSymbols : Visitor<CheckTempSymbols> {
+    using visit_stmt_types = std::tuple
+        < TempSymbolStmt
+        >;
+
+    void visit(TempSymbolStmt *stmt) {
+        if (stmt->dim == 0) {
+            error("temporary symbol $%d used before assignment", stmt->id);
+        }
+    }
+};
+
 void apply_type_check(IR *ir) {
-    TypeCheck visitor;
-    visitor.apply(ir);
+    TypeCheck type_check;
+    TypeCheck check_temp_symbols;
+    type_check.apply(ir);
+    check_temp_symbols.apply(ir);
 }
 
 }
