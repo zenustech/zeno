@@ -4,7 +4,7 @@
 #include <array>
 #include <vector>
 
-#define NREGS 4
+#define NREGS 2
 
 struct Stmt {
     std::set<int> regs;
@@ -63,6 +63,7 @@ void alloc_register(Reg *i) {
 void transit_register(Reg *i, Reg *spill) {
     int newid = usage.at(spill);
     usage[i] = newid;
+    usage.erase(spill);
     printf("transit %d <- %d: %d\n", i->regid, spill->regid, newid);
 }
 
@@ -82,14 +83,15 @@ void linscan() {
         }
         if (active.size() == NREGS) {
             auto spill = *active.begin();
-            if (spill->endpoint() > i->endpoint()) {
-                transit_register(i, spill);
-                alloc_stack(spill);
-                active.erase(spill);
-                active.insert(i);
-            } else {
-                alloc_stack(i);
-            }
+            //if (spill->endpoint() > i->endpoint()) {
+            transit_register(i, spill);
+            alloc_stack(spill);
+            active.erase(spill);
+            active.insert(i);
+            //} else {
+                //printf("???\n");
+                //alloc_stack(i);
+            //}
         } else {
             alloc_register(i);
             active.insert(i);
@@ -100,9 +102,13 @@ void linscan() {
 int main() {
     stmts[0].regs = {0};
     stmts[1].regs = {1};
-    stmts[2].regs = {2, 0, 1};
-    stmts[3].regs = {3, 0, 1};
-    stmts[4].regs = {4, 0, 1};
+    stmts[2].regs = {2};
+    stmts[3].regs = {3};
+    stmts[4].regs = {4, 0};
+    stmts[5].regs = {5};
+    stmts[6].regs = {5};
+    stmts[6].regs = {6, 1};
+    stmts[7].regs = {7, 2};
 
     for (int i = 0; i < NREGS; i++) {
         freed_pool.insert(i);
