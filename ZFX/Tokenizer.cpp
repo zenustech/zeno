@@ -17,7 +17,7 @@ std::vector<std::string> tokenize(const char *cp) {
 
         } else if (isdigit(*cp) || *cp == '-' && isdigit(cp[1])) {
             std::string res;
-            for (; isdigit(*cp) || *cp && strchr(".e-", *cp); cp++)
+            for (; isdigit(*cp) || *cp == '.'; cp++)
                 res += *cp;
             tokens.push_back(res);
 
