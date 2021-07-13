@@ -8,7 +8,6 @@
 #include <zeno/vec.h>
 #include <zeno/zeno.h>
 #include <zeno/memory.h>
-
 namespace zeno {
 struct PrimitiveAOS {
   //hey, interesting...
@@ -161,7 +160,7 @@ struct PrimitiveObject : zeno::IObjectClone<PrimitiveObject> {
       if(a.second.index()==1){
         auto ch = a.first;
         #pragma omp parallel for
-        for(size_t i=0;i<m_size;i++)
+        for(long i=0;i<m_size;i++)
         {
           aosTwin.setValue(i, ch, std::get<std::vector<float>>(a.second)[i]);
         }
@@ -169,7 +168,7 @@ struct PrimitiveObject : zeno::IObjectClone<PrimitiveObject> {
       if(a.second.index()==0){
         auto ch = a.first;
         #pragma omp parallel for
-        for(size_t i=0;i<m_size;i++)
+        for(long i=0;i<m_size;i++)
         {
           aosTwin.setValue(i, ch, std::get<std::vector<zeno::vec3f>>(a.second)[i]);
         }
@@ -202,6 +201,7 @@ struct PrimitiveObject : zeno::IObjectClone<PrimitiveObject> {
 
     }
   }
+
 
 #ifndef ZEN_NOREFDLL
   ZENAPI virtual void dumpfile(std::string const &path) override;
