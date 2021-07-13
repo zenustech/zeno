@@ -68,7 +68,8 @@ struct TypeCheck : Visitor<TypeCheck> {
             stmt->dim = dim;
 
         } else if (contains({"sqrt", "sin", "cos", "tan", "asin", "acos",
-            "atan", "exp", "log", "rsqrt", "floor", "ceil", "length", "normalize"}, name)) {
+            "atan", "exp", "log", "rsqrt", "floor", "ceil", "abs",
+            "length", "normalize"}, name)) {
             if (stmt->args.size() != 1) {
                 error("function `%s` takes exactly 1 argument", name.c_str());
             }

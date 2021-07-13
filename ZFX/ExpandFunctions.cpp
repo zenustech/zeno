@@ -193,7 +193,7 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             return stm(name, x);
 
         } else if (contains({"sqrt", "sin", "cos", "tan", "asin", "acos",
-            "atan", "exp", "log", "rsqrt", "floor", "ceil"}, name)) {
+            "atan", "exp", "log", "rsqrt", "floor", "ceil", "abs"}, name)) {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
             return stm(name, x);
