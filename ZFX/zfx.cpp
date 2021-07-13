@@ -9,7 +9,7 @@ std::tuple
     , std::vector<std::pair<std::string, int>>
     > compile_to_assembly
     ( std::string const &code
-    , std::map<std::string, int> const &symdims
+    , Options const &options
     ) {
 #ifdef ZFX_PRINT_IR
     cout << "=== ZFX" << endl;
@@ -35,7 +35,7 @@ std::tuple
         , symbols
         ] = lower_ast
         ( std::move(asts)
-        , symdims
+        , options.symdims
         );
 #ifdef ZFX_PRINT_IR
     ir->print();

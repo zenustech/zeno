@@ -10,11 +10,11 @@ struct ParticlesWrangle : zeno::INode {
         auto pars = get_input<Particles>("pars");
         auto code = get_param<std::string>("code");
 
-        std::map<std::string, int> symdims;
+        zfx::Options opts;
         pars->foreach_attr([&] (auto const &key, auto &arr) {
-            symdims["@" + key] = arr.Dimension;
+            opts.define_symbol("@" + key, arr.Dimension);
         });
-        auto prog = compiler.compile(code, symdims);
+        auto prog = compiler.compile(code, opts);
 
         pars->foreach_attr([&] (auto const &key, auto &arr) {
             auto chids = prog->channel_ids("@" + key, arr.Dimension);

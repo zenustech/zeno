@@ -14,4 +14,4 @@ std::tuple
     , std::map<std::string, int> const &symdims
     );
 
-    }
+}

@@ -10,12 +10,26 @@
 
 namespace zfx {
 
+struct Options {
+    std::map<std::string, int> symdims;
+
+    void define_symbol(std::string const &name, int dimension) {
+        symdims[name] = dimension;
+    }
+
+    void dump(std::ostream &os) const {
+        for (auto const &[name, dim]: symdims) {
+            os << '/' << name << '/' << dim;
+        }
+    }
+};
+
 std::tuple
     < std::string
     , std::vector<std::pair<std::string, int>>
     > compile_to_assembly
     ( std::string const &code
-    , std::map<std::string, int> const &symdims
+    , Options const &options
     );
 
 template <class Prog>
@@ -49,13 +63,11 @@ struct Compiler {
 
     Program<Prog> *compile
         ( std::string const &code
-        , std::map<std::string, int> const &symdims
+        , Options const &options
         ) {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << code << "<EOF>";
-        for (auto const &[name, dim]: symdims) {
-            ss << '/' << name << '/' << dim;
-        }
+        options.dump(ss);
         auto key = ss.str();
 
         auto it = cache.find(key);
@@ -68,7 +80,7 @@ struct Compiler {
             , symbols
             ] = compile_to_assembly
             ( code
-            , symdims
+            , options
             );
         auto prog = std::make_unique<Program<Prog>>();
         prog->prog = Prog::assemble(assem);

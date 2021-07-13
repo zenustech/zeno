@@ -19,10 +19,9 @@ int main() {
     };
 #endif
 
-    std::map<std::string, int> symdims;
-    symdims["@pos"] = 1;
-
-    auto prog = compiler.compile(code, symdims);
+    zfx::Options opts;
+    opts.define_symbol("@pos", 1);
+    auto prog = compiler.compile(code, opts);
 
     float arr[4] = {1, 2, 3, 4};
     float arr2[4] = {2, 3, 4, 5};
