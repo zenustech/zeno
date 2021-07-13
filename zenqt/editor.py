@@ -1493,9 +1493,6 @@ class NodeEditor(QWidget):
         self.handleEnvironParams()
 
     def initShortcuts(self):
-        self.msgF5 = QShortcut(QKeySequence('F5'), self)
-        self.msgF5.activated.connect(self.on_execute)
-
         self.msgDel = QShortcut(QKeySequence('Del'), self)
         self.msgDel.activated.connect(self.on_delete)
 

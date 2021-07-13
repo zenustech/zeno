@@ -150,6 +150,8 @@ class TimelineWidget(QWidget):
     def initShortcuts(self):
         self.msgPlay = QShortcut(QKeySequence(Qt.Key_Space), self)
         self.msgPlay.activated.connect(lambda: self.player.changeWithTimeline())
+        self.msgRun = QShortcut(QKeySequence(Qt.Key_F5), self)
+        self.msgRun.activated.connect(self.on_execute)
 
         self.maxframe.textChanged.connect(self.maxframe_changed)
         self.maxframe_changed()
