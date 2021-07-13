@@ -1,4 +1,4 @@
-x=lscan
+x=ucla
 
 x: $x.exe Makefile
 	./$<
