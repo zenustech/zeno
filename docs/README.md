@@ -6,7 +6,9 @@ Zeno is an open-source framework for authentic physical simulations. [Learn more
 
 # Getting Started
 
-### [Installation for End-Users](./installation.md#Installation-for-End-Users)
+### [Installation for End-Users](./installation.md)
 
-### [Installation for Developers](./installation.md#Installation-for-Developers)
+### [Installation Developers](./development.md)
+
+### [ZENO Extensions](./extensions.md)
 
