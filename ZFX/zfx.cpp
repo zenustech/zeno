@@ -112,7 +112,7 @@ std::tuple
         auto dst = it->second;
         if (new_symbols.size() < dst + 1)
             new_symbols.resize(dst + 1);
-        new_symbols[dst] = std::pair(symbols[dst].second, symbols[i].second);
+        new_symbols[dst] = std::pair{symbols[dst].first, symbols[i].second};
     }
 
 #ifdef ZFX_PRINT_IR
