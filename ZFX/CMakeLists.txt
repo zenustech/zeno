@@ -23,7 +23,6 @@ visitors/EmitAssembly.cpp
 visitors/ExpandFunctions.cpp
 Visitors.h
 visitors/RegisterAllocation.cpp
-visitors/KillLocalStore.cpp
 visitors/LowerAccess.cpp
 visitors/LowerMath.cpp
 visitors/TypeCheck.cpp

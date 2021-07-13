@@ -255,12 +255,11 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
         >;
 
     std::unique_ptr<IR> ir = std::make_unique<IR>();
-    int begin_memid = 0;
 
     void touch(int operandid, int &regid) {
         if (regid >= NREGS) {
             printf("register spilled at %d\n", regid);
-            int memid = begin_memid + (regid - NREGS);
+            int memid = regid - NREGS;
             if (!operandid) {
                 int tmpid = NREGS;
                 ir->emplace_back<AsmLocalStoreStmt>(
@@ -334,7 +333,6 @@ void apply_register_allocation(IR *ir) {
     reassign.scanner = &scanner;
     reassign.apply(ir);
     FixupMemorySpill fixspill;
-    fixspill.begin_memid = ir->size();
     fixspill.apply(ir);
     *ir = *fixspill.ir;
 }
