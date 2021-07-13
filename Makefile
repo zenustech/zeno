@@ -1,4 +1,4 @@
-O=arts/subgraph.zsg
+O=arts/ZFXv2.zsg
 
 default: run
 

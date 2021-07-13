@@ -20,11 +20,11 @@ struct Array {
         return m_size;
     }
 
-    void resize(size_t size) const {
+    void resize(size_t size) {
         m_data.resize((size + ChunkSize - 1) / ChunkSize);
         for (size_t i = m_size; i < size; i++) {
             for (int j = 0; j < N; j++) {
-                at(i, j).T();
+                at(i, j) = T();
             }
         }
         m_size = size;

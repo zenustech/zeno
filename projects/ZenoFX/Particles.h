@@ -15,4 +15,18 @@ struct Particles : zeno::IObject {
             }, arr);
         }
     }
+
+    template <class T, size_t N>
+    auto &attr(std::string const &key) {
+        return std::get<Array<T, N>>(attrs.at(key));
+    }
+
+    template <class T, size_t N>
+    auto &add_attr(std::string const &key) {
+        if (auto it = attrs.find(key); it != attrs.end()) {
+            return std::get<Array<T, N>>(it->second);
+        }
+        attrs[key] = Array<T, N>();
+        return attr<T, N>(key);
+    }
 };
