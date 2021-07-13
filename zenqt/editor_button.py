@@ -38,39 +38,40 @@ class QDMGraphicsButton(QGraphicsProxyWidget):
         self.widget.setText(text)
 
 
-class QDMCollapseButton(QSvgWidget):
-    def __init__(self, parent=None):
-        super().__init__()
-        self.render = self.renderer()
+class QDMGraphicsCollapseButton(QGraphicsProxyWidget):
+    class QDMCollapseButton(QSvgWidget):
+        def __init__(self, parent=None):
+            super().__init__()
+            self.render = self.renderer()
+            self.setStyleSheet('background-color: {}'.format(style['title_color']))
 
-        self.setStyleSheet('background-color: {}'.format(style['title_color']))
+        def mousePressEvent(self, event):
+            super().mouseMoveEvent(event)
+            self.on_click()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.node = parent
+
+        self.widget = self.QDMCollapseButton(parent)
+        self.setWidget(self.widget)
+        self.widget.on_click = self.on_click
         self.update_svg()
 
-    def mousePressEvent(self, event):
-        super().mouseMoveEvent(event)
-        self.node.collapsed = not self.node.collapsed
+    def update_svg(self):
+        if self.node.collapsed:
+            self.widget.load(asset_path('collapse.svg'))
+        else:
+            self.widget.load(asset_path('unfold.svg'))
+        self.widget.render.setAspectRatioMode(Qt.KeepAspectRatio)
+
+    def on_click(self):
+        self.setCollapsed(not self.node.collapsed)
+
+    def setCollapsed(self, collapsed):
+        self.node.collapsed = collapsed
         if self.node.collapsed:
             self.node.collapse()
         else:
             self.node.unfold()
-
-    def update_svg(self):
-        if self.node.collapsed:
-            self.load(asset_path('collapse.svg'))
-        else:
-            self.load(asset_path('unfold.svg'))
-        self.render.setAspectRatioMode(Qt.KeepAspectRatio)
-
-
-class QDMGraphicsCollapseButton(QGraphicsProxyWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.widget = QDMCollapseButton(parent)
-        self.setWidget(self.widget)
-
-    def update_svg(self):
-        self.widget.update_svg()
-
-
+        self.update_svg()

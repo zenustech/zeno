@@ -65,7 +65,7 @@ class QDMGraphicsNode(QGraphicsItem):
 
     def setOptions(self, options):
         if 'collapsed' in options:
-            self.collapse()
+            self.collapse_button.setCollapsed(True)
         for name, button in self.options.items():
             button.setChecked(name in options)
 
@@ -202,8 +202,6 @@ class QDMGraphicsNode(QGraphicsItem):
         self.dummy_input_socket.show()
         self.dummy_output_socket.show()
 
-        self.collapsed = True
-        self.collapse_button.update_svg()
         for v in self.params.values():
             v.hide()
         for v in self.inputs.values():
@@ -222,8 +220,6 @@ class QDMGraphicsNode(QGraphicsItem):
         self.dummy_input_socket.hide()
         self.dummy_output_socket.hide()
 
-        self.collapsed = False
-        self.collapse_button.update_svg()
         for v in self.params.values():
             v.show()
         for v in self.inputs.values():
