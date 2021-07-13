@@ -259,7 +259,7 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
 
     void touch(int operandid, int &regid) {
         if (regid >= NREGS) {
-            printf("spilled at %d\n", regid);
+            printf("register spilled at %d\n", regid);
             int memid = begin_memid + (regid - NREGS);
             if (!operandid) {
                 int tmpid = NREGS;

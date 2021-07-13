@@ -1,5 +1,7 @@
 #include "IRVisitor.h"
 #include "Stmts.h"
+//#include <map>
+//#include <functional>
 
 namespace zfx {
 
@@ -25,16 +27,32 @@ struct LowerAccess : Visitor<LowerAccess> {
         int curr_stmtid = -1;
     };
 
+    std::map<int, int> usages;
+    int reg_top_id = 0;
+
+    int store(int stmtid) {
+        if (auto it = usages.find(stmtid); it != usages.end()) {
+            return it->second;
+        }
+        int regid = reg_top_id++;
+        usages[stmtid] = regid;
+        return regid;
+    }
+
+    int load(int stmtid) {
+        if (auto it = usages.find(stmtid); it != usages.end()) {
+            return it->second;
+        }
+        error("statement $%d used before assignment", stmtid);
+    }
+
     void visit(TempSymbolStmt *stmt) {
         if (stmt->symids.size() != 1) {
             error("scalar expected on temp load, got %d-D vector",
                 stmt->symids.size());
         }
-        stmt->symids[0] = stmt->id;
-        ir->emplace_back<AsmLocalLoadStmt>
-            ( stmt->symids[0]
-            , stmt->id
-            );
+        // let the RegisterAllocation pass to spill it to local memory:
+        store(stmt->id);
     }
 
     void visit(SymbolStmt *stmt) {
@@ -44,13 +62,13 @@ struct LowerAccess : Visitor<LowerAccess> {
         }
         ir->emplace_back<AsmGlobalLoadStmt>
             ( stmt->symids[0]
-            , stmt->id
+            , store(stmt->id)
             );
     }
 
     void visit(LiterialStmt *stmt) {
         ir->emplace_back<AsmLoadConstStmt>
-            ( stmt->id
+            ( store(stmt->id)
             , stmt->value
             );
     }
@@ -58,33 +76,21 @@ struct LowerAccess : Visitor<LowerAccess> {
     void visit(UnaryOpStmt *stmt) {
         ir->emplace_back<AsmUnaryOpStmt>
             ( stmt->op
-            , stmt->id
-            , stmt->src->id
+            , store(stmt->id)
+            , load(stmt->src->id)
             );
     }
 
     void visit(BinaryOpStmt *stmt) {
         ir->emplace_back<AsmBinaryOpStmt>
             ( stmt->op
-            , stmt->id
-            , stmt->lhs->id
-            , stmt->rhs->id
+            , store(stmt->id)
+            , load(stmt->lhs->id)
+            , load(stmt->rhs->id)
             );
     }
 
     void visit(AssignStmt *stmt) {
-        if (auto dst = dynamic_cast<TempSymbolStmt *>(stmt->dst); dst) {
-            if (dst->symids.size() != 1) {
-                error("scalar expected on temp store, got %d-D vector",
-                    dst->symids.size());
-            }
-            dst->symids[0] = dst->id;
-            ir->emplace_back<AsmLocalStoreStmt>
-                ( dst->symids[0]
-                , stmt->src->id
-                );
-            return;
-        }
         if (auto dst = dynamic_cast<SymbolStmt *>(stmt->dst); dst) {
             if (dst->symids.size() != 1) {
                 error("scalar expected on store, got %d-D vector",
@@ -92,13 +98,13 @@ struct LowerAccess : Visitor<LowerAccess> {
             }
             ir->emplace_back<AsmGlobalStoreStmt>
                 ( dst->symids[0]
-                , stmt->src->id
+                , load(stmt->src->id)
                 );
             return;
         }
         ir->emplace_back<AsmAssignStmt>
-            ( stmt->id
-            , stmt->src->id
+            ( store(stmt->dst->id)
+            , load(stmt->src->id)
             );
     }
 };
