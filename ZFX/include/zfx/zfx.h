@@ -44,8 +44,9 @@ struct Program {
     }
 
     int channel_id(std::string const &name, int dim) const {
-        auto it = std::find(symbols.begin(), symbols.end(), std::pair{name, dim});
-        return it - symbols.begin();
+        auto it = std::find(
+            symbols.begin(), symbols.end(), std::pair{name, dim});
+        return it != symbols.end() ? it - symbols.begin() : -1;
     }
 
     decltype(auto) make_context() {

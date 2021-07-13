@@ -34,8 +34,6 @@ int main() {
 
     auto ctx = prog->make_context();
 
-    printf("channel is %d\n", prog->channel_id("@vel", 0));
-
     memcpy(ctx.pointer(prog->channel_id("@pos", 0)), arr, sizeof(arr));
     ctx.execute();
     memcpy(arr, ctx.pointer(prog->channel_id("@pos", 0)), sizeof(arr));
