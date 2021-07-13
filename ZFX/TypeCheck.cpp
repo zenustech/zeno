@@ -69,7 +69,7 @@ struct TypeCheck : Visitor<TypeCheck> {
 
         } else if (contains({"sqrt", "sin", "cos", "tan", "asin", "acos",
             "atan", "exp", "log", "rsqrt", "floor", "ceil", "abs",
-            "length", "normalize"}, name)) {
+            "normalize"}, name)) {
             if (stmt->args.size() != 1) {
                 error("function `%s` takes exactly 1 argument", name.c_str());
             }
@@ -83,6 +83,12 @@ struct TypeCheck : Visitor<TypeCheck> {
             if (stmt->args.size() != 3) {
                 error("function `%s` takes exactly 3 arguments", name.c_str());
             }
+
+        } else if (contains({"length"}, name)) {
+            if (stmt->args.size() != 1) {
+                error("function `%s` takes exactly 1 argument", name.c_str());
+            }
+            stmt->dim = 1;
 
         } else if (contains({"dot", "distance"}, name)) {
             if (stmt->args.size() != 2) {

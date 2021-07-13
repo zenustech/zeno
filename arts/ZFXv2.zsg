@@ -128,7 +128,7 @@
       "COND": null
      },
      "params": {
-      "code": "@pos = @ps * 0.5"
+      "code": "@pos.xy = normalize(@pos.xy)"
      },
      "uipos": [
       281.0,
@@ -139,8 +139,8 @@
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": -189,
-    "trans_y": 213
+    "trans_x": 123,
+    "trans_y": 238
    }
   }
  },

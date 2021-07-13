@@ -101,7 +101,7 @@ struct Parser {
     }
 
     AST::Ptr parse_stmt(AST::Iter iter) {
-        if (auto lhs = parse_atom(iter); lhs) {
+        if (auto lhs = parse_factor(iter); lhs) {
             if (auto ope = parse_operator(lhs->iter, {"="}); ope) {
                 if (auto rhs = parse_expr(ope->iter); rhs) {
                     return make_ast(ope->token, rhs->iter, {std::move(lhs), std::move(rhs)});

@@ -99,11 +99,18 @@ struct LowerAccess : Visitor<LowerAccess> {
                 , load(stmt->src->id)
                 );
             return;
+
+        } else if (auto dst = dynamic_cast<TempSymbolStmt *>(stmt->dst); dst) {
+            ir->emplace_back<AsmAssignStmt>
+                ( store(stmt->dst->id)
+                , load(stmt->src->id)
+                );
+            return;
+
+        } else {
+            error("cannot assign to rvalue of statement type `%s`",
+                typeid(*stmt->dst).name());
         }
-        ir->emplace_back<AsmAssignStmt>
-            ( store(stmt->dst->id)
-            , load(stmt->src->id)
-            );
     }
 };
 

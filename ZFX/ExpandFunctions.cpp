@@ -156,6 +156,11 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             auto x = make_stm(args[0]);
             return stm("sqrt", stm_sqrlength(x));
 
+        } else if (name == "normalize") {
+            ERROR_IF(args.size() != 1);
+            auto x = make_stm(args[0]);
+            return x / stm("sqrt", stm_sqrlength(x));
+
         } else if (name == "distance") {
             ERROR_IF(args.size() != 2);
             auto a = make_stm(args[0]);
