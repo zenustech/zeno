@@ -16,7 +16,7 @@ struct ParticlesWrangle : zeno::INode {
         });
         auto prog = compiler.compile(code, symdims);
 
-        pars->foreach_attr([&prog] (auto const &key, auto &arr) {
+        pars->foreach_attr([&] (auto const &key, auto &arr) {
             std::vector<int> chids = prog->channel_ids("@" + key, arr.Dimension);
             for (int i = 0; i < arr.size(); i += prog->SimdWidth) {
                 auto ctx = prog->make_context();

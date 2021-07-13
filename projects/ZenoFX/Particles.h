@@ -5,11 +5,12 @@
 #include <string>
 
 struct Particles : zeno::IObject {
-    std::map<std::string, VariantArray> attrs;
+    std::map<std::string, VariantArray> m_attrs;
+    size_t m_size = 0;
 
     template <class F>
     void foreach_attr(F const &f) {
-        for (auto &[key, arr]: attrs) {
+        for (auto &[key, arr]: m_attrs) {
             std::visit([&key, &f](auto &arr) {
                 f(key, arr);
             }, arr);
@@ -18,15 +19,28 @@ struct Particles : zeno::IObject {
 
     template <class T, size_t N>
     auto &attr(std::string const &key) {
-        return std::get<Array<T, N>>(attrs.at(key));
+        return std::get<Array<T, N>>(m_attrs.at(key));
     }
 
     template <class T, size_t N>
     auto &add_attr(std::string const &key) {
-        if (auto it = attrs.find(key); it != attrs.end()) {
+        if (auto it = m_attrs.find(key); it != m_attrs.end()) {
             return std::get<Array<T, N>>(it->second);
         }
-        attrs[key] = Array<T, N>();
-        return attr<T, N>(key);
+        m_attrs[key] = Array<T, N>();
+        auto &ret = attr<T, N>(key);
+        ret.resize(m_size);
+        return ret;
+    }
+
+    size_t size() const {
+        return m_size;
+    }
+
+    void resize(size_t size) {
+        foreach_attr([&] (auto const &key, auto &arr) {
+            arr.resize(size);
+        });
+        m_size = size;
     }
 };

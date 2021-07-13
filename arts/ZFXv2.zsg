@@ -2,27 +2,126 @@
  "graph": {
   "main": {
    "nodes": {
-    "e3330d7a-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
+    "5091d709-ParticlesToPrimitive": {
+     "name": "ParticlesToPrimitive",
      "inputs": {
-      "pars": null,
+      "pars": [
+       "420fa29e-ParticlesFromPrimitive",
+       "pars"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      548.0,
+      317.6000000000001
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "420fa29e-ParticlesFromPrimitive": {
+     "name": "ParticlesFromPrimitive",
+     "inputs": {
+      "prim": [
+       "46e84ca1-Make2DGridPrimitive",
+       "prim"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      19.200000000000045,
+      319.99999999999994
+     ],
+     "options": []
+    },
+    "46e84ca1-Make2DGridPrimitive": {
+     "name": "Make2DGridPrimitive",
+     "inputs": {
+      "nx": [
+       "d4a13f31-NumericInt",
+       "value"
+      ],
+      "ny": null,
+      "sizeX": [
+       "97c86c9b-NumericVec3",
+       "vec3"
+      ],
+      "sizeY": [
+       "c2d96f9f-x",
+       "vec3"
+      ],
+      "scale": null,
+      "origin": null,
       "SRC": null,
       "COND": null
      },
      "params": {
-      "code": ""
+      "isCentered": 1
      },
      "uipos": [
-      536.0,
-      167.0
+      -298.4,
+      184.0
+     ],
+     "options": []
+    },
+    "d4a13f31-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": 32
+     },
+     "uipos": [
+      -548.0,
+      164.0
+     ],
+     "options": []
+    },
+    "97c86c9b-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "x": 2.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -550.4,
+      339.2
+     ],
+     "options": []
+    },
+    "c2d96f9f-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "x": 0.0,
+      "y": 2.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -776.8,
+      338.4000000000001
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": 0,
-    "trans_y": 0
+    "trans_x": -526,
+    "trans_y": 89
    }
   }
  },
@@ -671,6 +770,36 @@
    ],
    "categories": [
     "numeric"
+   ]
+  },
+  "ParticlesFromPrimitive": {
+   "inputs": [
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "pars",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesToPrimitive": {
+   "inputs": [
+    "pars",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
    ]
   },
   "ParticlesWrangle": {
