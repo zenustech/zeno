@@ -1493,44 +1493,23 @@ class NodeEditor(QWidget):
         self.handleEnvironParams()
 
     def initShortcuts(self):
-        self.msgF5 = QShortcut(QKeySequence('F5'), self)
-        self.msgF5.activated.connect(self.on_execute)
-
         self.msgDel = QShortcut(QKeySequence('Del'), self)
         self.msgDel.activated.connect(self.on_delete)
 
     def initExecute(self):
-        validator = QIntValidator()
-        validator.setBottom(0)
-        self.edit_nframes = QLineEdit(self)
-        self.edit_nframes.setValidator(validator)
-        self.edit_nframes.move(20, 40)
-        self.edit_nframes.resize(30, 30)
-        self.edit_nframes.setText('1')
-
-        self.button_execute = QPushButton('Execute', self)
-        self.button_execute.move(60, 40)
-        self.button_execute.resize(90, 30)
-        self.button_execute.clicked.connect(self.on_execute) 
-
-        self.button_kill = QPushButton('Kill', self)
-        self.button_kill.move(160, 40)
-        self.button_kill.resize(80, 30)
-        self.button_kill.clicked.connect(self.on_kill) 
-
         self.edit_graphname = QComboBox(self)
         self.edit_graphname.setEditable(True)
-        self.edit_graphname.move(270, 40)
+        self.edit_graphname.move(20, 40)
         self.edit_graphname.resize(130, 30)
         self.edit_graphname.textActivated.connect(self.on_switch_graph)
 
         self.button_new = QPushButton('New', self)
-        self.button_new.move(410, 40)
+        self.button_new.move(160, 40)
         self.button_new.resize(80, 30)
         self.button_new.clicked.connect(self.on_new_graph)
 
         self.button_delete = QPushButton('Delete', self)
-        self.button_delete.move(500, 40)
+        self.button_delete.move(250, 40)
         self.button_delete.resize(80, 30)
         self.button_delete.clicked.connect(self.deleteCurrScene)
 
