@@ -1,7 +1,7 @@
+#include "common.h"
 #include "x64/SIMDBuilder.h"
 #include "x64/Executable.h"
-#include "x64/Program.h"
-#include "common.h"
+#include <zfx/x64.h>
 #include <sstream>
 #include <map>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.h"
+#include <memory>
 #include <cstring>
 
 namespace zfx::x64 {

@@ -1,5 +1,5 @@
-#include "ZFX.h"
-#include "x64/Program.h"
+#include <zfx/zfx.h>
+#include <zfx/x64.h>
 #include <cmath>
 
 static zfx::Compiler<zfx::x64::Program> compiler;

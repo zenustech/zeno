@@ -1,6 +1,6 @@
 #include "LowerAST.h"
 #include "Visitors.h"
-#include "ZFX.h"
+#include <zfx/zfx.h>
 
 namespace zfx {
 
