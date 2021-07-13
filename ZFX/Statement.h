@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.h"
+#include <zfx/utils.h>
 
 namespace zfx {
 

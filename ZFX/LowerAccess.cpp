@@ -1,7 +1,5 @@
 #include "IRVisitor.h"
 #include "Stmts.h"
-//#include <map>
-//#include <functional>
 
 namespace zfx {
 

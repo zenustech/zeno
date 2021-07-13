@@ -7,9 +7,9 @@ set(CMAKE_CXX_STANDARD 17)
 add_library(ZFX
 # ls {,include/zfx/}*{,/*}.{h,cpp} | cat
 AST.h
-common.h
 EmitAssembly.cpp
 ExpandFunctions.cpp
+include/zfx/utils.h
 include/zfx/x64.h
 include/zfx/zfx.h
 IR.h
@@ -30,7 +30,7 @@ Visitors.h
 x64/Assembler.cpp
 x64/Executable.h
 x64/SIMDBuilder.h
-ZFX.cpp
+zfx.cpp
     )
 target_compile_definitions(ZFX PRIVATE -DZFX_PRINT_IR)
 target_include_directories(ZFX PUBLIC include)
