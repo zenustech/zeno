@@ -128,7 +128,7 @@
       "COND": null
      },
      "params": {
-      "code": "@pos.xy = normalize(@pos.xy)"
+      "code": "tmp = normalize(@pos.xy)\n@pos.yx = vec2(tmp.y, 0 - tmp.x)"
      },
      "uipos": [
       281.0,

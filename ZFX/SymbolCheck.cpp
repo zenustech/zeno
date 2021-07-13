@@ -16,19 +16,24 @@ struct SymbolCheck : Visitor<SymbolCheck> {
     }
 
     void visit(AssignStmt *stmt) {
+        check(stmt->src);
         if (auto dst = dynamic_cast<TempSymbolStmt *>(stmt->dst); dst) {
             defined.insert(dst->id);
         }
     }
 
+    void check(Statement *stmt) {
+        if (auto src = dynamic_cast<TempSymbolStmt *>(stmt); src) {
+            if (defined.find(src->id) == defined.end()) {
+                error("undefined symbol $%d referenced by $%d",
+                    src->id, stmt->id);
+            }
+        }
+    }
+
     void visit(Statement *stmt) {
         for (auto const &field: stmt->fields()) {
-            if (auto fie = dynamic_cast<TempSymbolStmt *>(field.get()); fie) {
-                if (defined.find(fie->id) == defined.end()) {
-                    error("undefined symbol $%d referenced by $%d",
-                        fie->id, stmt->id);
-                }
-            }
+            check(field.get());
         }
     }
 };
