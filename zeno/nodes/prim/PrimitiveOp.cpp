@@ -415,4 +415,39 @@ static int defPrimitivePrintAttr = zeno::defNodeClass<PrimitivePrintAttr>("Primi
     "primitive",
     }});
 
+
+struct PrimitivePack : zeno::INode
+{
+    virtual void apply() override {
+    auto prim = get_input("prim")->as<PrimitiveObject>();
+    prim->toAOS();
+    set_output_ref("prim", get_input_ref("prim"));
+  }
+};
+ZENDEFNODE(PrimitivePack, {
+    {"prim"},
+    {"prim"},
+    {},
+    {"primitive"},
+});
+
+struct PrimitiveUnPack : zeno::INode
+{
+    virtual void apply() override {
+    auto prim = get_input("prim")->as<PrimitiveObject>();
+    prim->toSOA();
+    set_output_ref("prim", get_input_ref("prim"));
+  }
+};
+ZENDEFNODE(PrimitiveUnPack, {
+    {"prim"},
+    {"prim"},
+    {},
+    {"primitive"},
+});
+
+
+
+
+
 }
