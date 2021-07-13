@@ -8,26 +8,25 @@ add_library(ZFX
 # ls {,include/zfx/}*{,/*}.{h,cpp} | cat
 AST.h
 common.h
+EmitAssembly.cpp
+ExpandFunctions.cpp
 include/zfx/x64.h
 include/zfx/zfx.h
 IR.h
 IRVisitor.h
 Lexical.h
+LowerAccess.cpp
 LowerAST.cpp
 LowerAST.h
+LowerMath.cpp
 main.cpp
 Parser.cpp
+RegisterAllocation.cpp
 Statement.h
 Stmts.h
 Tokenizer.cpp
-visitors/Clone.cpp
-visitors/EmitAssembly.cpp
-visitors/ExpandFunctions.cpp
+TypeCheck.cpp
 Visitors.h
-visitors/LowerAccess.cpp
-visitors/LowerMath.cpp
-visitors/RegisterAllocation.cpp
-visitors/TypeCheck.cpp
 x64/Assembler.cpp
 x64/Executable.h
 x64/SIMDBuilder.h
@@ -35,7 +34,6 @@ ZFX.cpp
     )
 target_compile_definitions(ZFX PRIVATE -DZFX_PRINT_IR)
 target_include_directories(ZFX PUBLIC include)
-target_include_directories(ZFX PRIVATE .)
 
 add_executable(ZFXtest main.cpp)
 target_link_libraries(ZFXtest ZFX)
