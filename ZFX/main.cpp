@@ -5,12 +5,19 @@
 static zfx::Compiler<zfx::x64::Program> compiler;
 
 int main() {
+#if 0
     std::string code("tmp = @pos + 0.5\n@pos = tmp + 3.14 * tmp + 2.718 / (@pos * tmp + 1)");
     auto func = [](float pos) -> float {
         auto tmp = pos + 0.5f;
         pos = tmp + 3.14f * tmp + 2.718f / (pos * tmp + 1);
         return pos;
     };
+#else
+    std::string code("tmp = @pos\n@pos = tmp");
+    auto func = [](float pos) -> float {
+        return pos;
+    };
+#endif
 
     std::map<std::string, int> symdims;
     symdims["@pos"] = 1;

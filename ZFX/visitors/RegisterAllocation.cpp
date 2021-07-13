@@ -3,7 +3,8 @@
 #include <set>
 #include <map>
 
-#define NREGS 8
+// let's left two regs for load/store from spilled memory:
+inline constexpr int NREGS = 8 - 2;
 
 namespace zfx {
 
@@ -48,6 +49,7 @@ struct UCLAScanner {
     std::set<int> freed_pool;
     std::set<int> used_pool;
     std::map<int, int> result;
+    int memsize = 0;
 
     void free_register(Reg *i) {
         int newid = usage.at(i);
@@ -71,7 +73,7 @@ struct UCLAScanner {
     }
 
     void alloc_stack(Reg *i) {
-        result[i->regid] = -1;
+        result[i->regid] = NREGS + memsize++;
     }
 
     void do_scan() {
@@ -198,44 +200,127 @@ struct ReassignRegisters : Visitor<ReassignRegisters> {
 
     UCLAScanner *scanner;
 
-    void touch(int stmtid, int &regid) {
+    void reassign(int &regid) {
         regid = scanner->lookup(regid);
     }
 
     void visit(AsmAssignStmt *stmt) {
-        touch(stmt->id, stmt->dst);
-        touch(stmt->id, stmt->src);
+        reassign(stmt->dst);
+        reassign(stmt->src);
     }
 
     void visit(AsmUnaryOpStmt *stmt) {
-        touch(stmt->id, stmt->dst);
-        touch(stmt->id, stmt->src);
+        reassign(stmt->dst);
+        reassign(stmt->src);
     }
 
     void visit(AsmBinaryOpStmt *stmt) {
-        touch(stmt->id, stmt->dst);
-        touch(stmt->id, stmt->lhs);
-        touch(stmt->id, stmt->rhs);
+        reassign(stmt->dst);
+        reassign(stmt->lhs);
+        reassign(stmt->rhs);
     }
 
     void visit(AsmLoadConstStmt *stmt) {
-        touch(stmt->id, stmt->dst);
+        reassign(stmt->dst);
     }
 
     void visit(AsmLocalLoadStmt *stmt) {
-        touch(stmt->id, stmt->val);
+        reassign(stmt->val);
     }
 
     void visit(AsmLocalStoreStmt *stmt) {
-        touch(stmt->id, stmt->val);
+        reassign(stmt->val);
     }
 
     void visit(AsmGlobalLoadStmt *stmt) {
-        touch(stmt->id, stmt->val);
+        reassign(stmt->val);
     }
 
     void visit(AsmGlobalStoreStmt *stmt) {
-        touch(stmt->id, stmt->val);
+        reassign(stmt->val);
+    }
+};
+
+struct FixupMemorySpill : Visitor<FixupMemorySpill> {
+    using visit_stmt_types = std::tuple
+        < AsmAssignStmt
+        , AsmUnaryOpStmt
+        , AsmBinaryOpStmt
+        , AsmLoadConstStmt
+        , AsmLocalLoadStmt
+        , AsmLocalStoreStmt
+        , AsmGlobalLoadStmt
+        , AsmGlobalStoreStmt
+        , Statement
+        >;
+
+    std::unique_ptr<IR> ir = std::make_unique<IR>();
+    int begin_memid = 0;
+
+    void touch(int operandid, int &regid) {
+        if (regid >= NREGS) {
+            printf("spilled at %d\n", regid);
+            int memid = begin_memid + (regid - NREGS);
+            if (!operandid) {
+                int tmpid = NREGS;
+                ir->emplace_back<AsmLocalStoreStmt>(
+                    memid, tmpid);
+                regid = tmpid;
+            } else {
+                int tmpid = NREGS + (operandid - 1);
+                ir->emplace_back<AsmLocalLoadStmt>(
+                    memid, tmpid);
+                regid = tmpid;
+            }
+        }
+    }
+
+    void visit(Statement *stmt) {
+        ir->push_clone_back(stmt);
+    }
+
+    void visit(AsmAssignStmt *stmt) {
+        touch(1, stmt->src);
+        visit((Statement *)stmt);
+        touch(0, stmt->dst);
+    }
+
+    void visit(AsmUnaryOpStmt *stmt) {
+        touch(1, stmt->src);
+        visit((Statement *)stmt);
+        touch(0, stmt->dst);
+    }
+
+    void visit(AsmBinaryOpStmt *stmt) {
+        touch(1, stmt->lhs);
+        touch(2, stmt->rhs);
+        visit((Statement *)stmt);
+        touch(0, stmt->dst);
+    }
+
+    void visit(AsmLoadConstStmt *stmt) {
+        visit((Statement *)stmt);
+        touch(0, stmt->dst);
+    }
+
+    void visit(AsmLocalLoadStmt *stmt) {
+        visit((Statement *)stmt);
+        touch(0, stmt->val);
+    }
+
+    void visit(AsmLocalStoreStmt *stmt) {
+        touch(1, stmt->val);
+        visit((Statement *)stmt);
+    }
+
+    void visit(AsmGlobalLoadStmt *stmt) {
+        visit((Statement *)stmt);
+        touch(0, stmt->val);
+    }
+
+    void visit(AsmGlobalStoreStmt *stmt) {
+        touch(1, stmt->val);
+        visit((Statement *)stmt);
     }
 };
 
@@ -248,6 +333,10 @@ void apply_register_allocation(IR *ir) {
     ReassignRegisters reassign;
     reassign.scanner = &scanner;
     reassign.apply(ir);
+    FixupMemorySpill fixspill;
+    fixspill.begin_memid = ir->size();
+    fixspill.apply(ir);
+    *ir = *fixspill.ir;
 }
 
 }

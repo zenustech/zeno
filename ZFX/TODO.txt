@@ -1,3 +1,4 @@
 KillUnreached
 MergeIdentical
+StripLocalMemory
 vec2, vec3, ...

@@ -25,23 +25,15 @@ struct LowerAccess : Visitor<LowerAccess> {
         int curr_stmtid = -1;
     };
 
-    int lookup_temp(int stmtid) {
-        return stmtid;
-    }
-
-    int lookup(int stmtid, bool is_store = false) {
-        return stmtid;
-    }
-
     void visit(TempSymbolStmt *stmt) {
         if (stmt->symids.size() != 1) {
             error("scalar expected on temp load, got %d-D vector",
                 stmt->symids.size());
         }
-        stmt->symids[0] = lookup_temp(stmt->id);
+        stmt->symids[0] = stmt->id;
         ir->emplace_back<AsmLocalLoadStmt>
             ( stmt->symids[0]
-            , lookup(stmt->id)
+            , stmt->id
             );
     }
 
@@ -52,33 +44,31 @@ struct LowerAccess : Visitor<LowerAccess> {
         }
         ir->emplace_back<AsmGlobalLoadStmt>
             ( stmt->symids[0]
-            , lookup(stmt->id)
+            , stmt->id
             );
     }
 
     void visit(LiterialStmt *stmt) {
         ir->emplace_back<AsmLoadConstStmt>
-            ( lookup(stmt->id)
+            ( stmt->id
             , stmt->value
             );
     }
 
     void visit(UnaryOpStmt *stmt) {
-        auto dstreg = lookup(stmt->id, true);
         ir->emplace_back<AsmUnaryOpStmt>
             ( stmt->op
-            , dstreg
-            , lookup(stmt->src->id)
+            , stmt->id
+            , stmt->src->id
             );
     }
 
     void visit(BinaryOpStmt *stmt) {
-        auto dstreg = lookup(stmt->id, true);
         ir->emplace_back<AsmBinaryOpStmt>
             ( stmt->op
-            , dstreg
-            , lookup(stmt->lhs->id)
-            , lookup(stmt->rhs->id)
+            , stmt->id
+            , stmt->lhs->id
+            , stmt->rhs->id
             );
     }
 
@@ -88,10 +78,10 @@ struct LowerAccess : Visitor<LowerAccess> {
                 error("scalar expected on temp store, got %d-D vector",
                     dst->symids.size());
             }
-            dst->symids[0] = lookup_temp(dst->id);
+            dst->symids[0] = dst->id;
             ir->emplace_back<AsmLocalStoreStmt>
                 ( dst->symids[0]
-                , lookup(stmt->src->id)
+                , stmt->src->id
                 );
             return;
         }
@@ -102,14 +92,13 @@ struct LowerAccess : Visitor<LowerAccess> {
             }
             ir->emplace_back<AsmGlobalStoreStmt>
                 ( dst->symids[0]
-                , lookup(stmt->src->id)
+                , stmt->src->id
                 );
             return;
         }
-        auto dstreg = lookup(stmt->id, true);
         ir->emplace_back<AsmAssignStmt>
-            ( dstreg
-            , lookup(stmt->src->id)
+            ( stmt->id
+            , stmt->src->id
             );
     }
 };
