@@ -13,8 +13,6 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         , AsmLoadConstStmt
         , AsmLocalStoreStmt
         , AsmLocalLoadStmt
-        , AsmGlobalStoreStmt
-        , AsmGlobalLoadStmt
         , Statement
         >;
 
@@ -57,20 +55,12 @@ struct EmitAssembly : Visitor<EmitAssembly> {
             stmt->dst, stmt->lhs, stmt->rhs);
     }
 
-    void visit(AsmGlobalStoreStmt *stmt) {
-        emit("stg %d %d", stmt->val, stmt->mem);
-    }
-
-    void visit(AsmGlobalLoadStmt *stmt) {
-        emit("ldg %d %d", stmt->val, stmt->mem);
-    }
-
     void visit(AsmLocalStoreStmt *stmt) {
-        emit("stl %d %d", stmt->val, stmt->mem);
+        emit("stm %d %d", stmt->val, stmt->mem);
     }
 
     void visit(AsmLocalLoadStmt *stmt) {
-        emit("ldl %d %d", stmt->val, stmt->mem);
+        emit("ldm %d %d", stmt->val, stmt->mem);
     }
 
     void visit(AsmLoadConstStmt *stmt) {
