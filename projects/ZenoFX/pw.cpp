@@ -95,6 +95,7 @@ struct ParticlesWrangle : zeno::INode {
         std::vector<Buffer> chs(prog->symbols.size());
         for (int i = 0; i < chs.size(); i++) {
             auto [name, dimid] = prog->symbols[i];
+            printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '@');
             Buffer iob;
             auto const &attr = prim->attr(name.substr(1));

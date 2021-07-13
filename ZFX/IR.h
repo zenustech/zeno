@@ -14,6 +14,7 @@ struct IR {
 
     void clear() {
         stmts.clear();
+        cloned.clear();
     }
 
     size_t size() const {

@@ -13,14 +13,14 @@ int main() {
         return pos;
     };
 #else
-    std::string code("");
+    std::string code("@pos.z = @pos.x");
     auto func = [](float pos) -> float {
         return pos + 1;
     };
 #endif
 
     zfx::Options opts;
-    opts.define_symbol("@pos", 1);
+    opts.define_symbol("@pos", 3);
     auto prog = compiler.compile(code, opts);
 
     float arr[4] = {1, 2, 3, 4};

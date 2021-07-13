@@ -97,13 +97,14 @@ struct GlobalLocalize : Visitor<GlobalLocalize> {
     }
 };
 
-std::unique_ptr<IR> apply_global_localize(IR *ir) {
+std::map<int, int> apply_global_localize(IR *ir) {
     ReassignGlobals reassign;
     reassign.apply(ir);
     GlobalLocalize visitor;
     visitor.nglobals = reassign.globals.size();
     visitor.apply(ir);
-    return std::move(visitor.ir);
+    *ir = *visitor.ir;
+    return reassign.globals;
 }
 
 }

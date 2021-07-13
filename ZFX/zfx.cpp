@@ -100,10 +100,20 @@ std::tuple
 #ifdef ZFX_PRINT_IR
     cout << "=== GlobalLocalize" << endl;
 #endif
-    ir = apply_global_localize(ir.get());
+    auto globals = apply_global_localize(ir.get());
 #ifdef ZFX_PRINT_IR
     ir->print();
 #endif
+    std::vector<std::pair<std::string, int>> new_symbols;
+    for (int i = 0; i < symbols.size(); i++) {
+        auto it = globals.find(i);
+        if (it == globals.end())
+            continue;
+        auto dst = it->second;
+        if (new_symbols.size() < dst + 1)
+            new_symbols.resize(dst + 1);
+        new_symbols[dst] = std::pair(symbols[dst].second, symbols[i].second);
+    }
 
 #ifdef ZFX_PRINT_IR
     cout << "=== EmitAssembly" << endl;
@@ -118,7 +128,7 @@ std::tuple
 #endif
     return
         { assem
-        , symbols
+        , new_symbols
         };
 }
 
