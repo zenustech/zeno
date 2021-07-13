@@ -2,42 +2,6 @@
  "graph": {
   "main": {
    "nodes": {
-    "5091d709-ParticlesToPrimitive": {
-     "name": "ParticlesToPrimitive",
-     "inputs": {
-      "pars": [
-       "4cb8a725-ParticlesWrangle",
-       "pars"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      548.0,
-      317.6000000000001
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
-    "420fa29e-ParticlesFromPrimitive": {
-     "name": "ParticlesFromPrimitive",
-     "inputs": {
-      "prim": [
-       "46e84ca1-Make2DGridPrimitive",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      19.200000000000045,
-      319.99999999999994
-     ],
-     "options": []
-    },
     "46e84ca1-Make2DGridPrimitive": {
      "name": "Make2DGridPrimitive",
      "inputs": {
@@ -117,30 +81,68 @@
      ],
      "options": []
     },
-    "4cb8a725-ParticlesWrangle": {
+    "e2e7d25d-ParticlesWrangle": {
      "name": "ParticlesWrangle",
      "inputs": {
-      "pars": [
-       "420fa29e-ParticlesFromPrimitive",
-       "pars"
+      "prim": [
+       "46e84ca1-Make2DGridPrimitive",
+       "prim"
+      ],
+      "zfxCode": [
+       "dacabede-MakeMultilineString",
+       "value"
+      ],
+      "params": [
+       "c80a5680-EmptyList",
+       "list"
       ],
       "SRC": null,
       "COND": null
      },
+     "params": {},
+     "uipos": [
+      4.479999999999999,
+      266.88000000000005
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "dacabede-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
      "params": {
-      "code": "@pos.x = @pos.x + 1\n@pos.x = @pos.x + 1"
+      "value": "@pos.y = @pos.x"
      },
      "uipos": [
-      281.0,
-      198.0
+      -240.63999999999996,
+      493.4399999999999
      ],
      "options": []
+    },
+    "c80a5680-EmptyList": {
+     "name": "EmptyList",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      14.079999999999998,
+      483.84000000000003
+     ],
+     "options": [
+      "collapsed"
+     ]
     }
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": 123,
-    "trans_y": 238
+    "trans_x": -803,
+    "trans_y": 533
    }
   }
  },
@@ -791,53 +793,19 @@
     "numeric"
    ]
   },
-  "ParticlesFromPrimitive": {
-   "inputs": [
-    "prim",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "pars",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
-  "ParticlesToPrimitive": {
-   "inputs": [
-    "pars",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "prim",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
   "ParticlesWrangle": {
    "inputs": [
-    "pars",
+    "prim",
+    "zfxCode",
+    "params",
     "SRC",
     "COND"
    ],
    "outputs": [
-    "pars",
+    "prim",
     "DST"
    ],
-   "params": [
-    [
-     "multiline_string",
-     "code",
-     ""
-    ]
-   ],
+   "params": [],
    "categories": [
     "zenofx"
    ]

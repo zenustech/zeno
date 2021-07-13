@@ -20,7 +20,7 @@ struct Assembler {
 
     std::vector<float> consts;
     int nlocals = 0;
-    int nglobals = 0;
+    //int nglobals = 0;
 
     void parse(std::string const &lines) {
         for (auto line: split_str(lines, '\n')) {
@@ -139,7 +139,7 @@ struct Assembler {
 
 #ifdef ZFX_PRINT_IR
         printf("variables: %d slots\n", nlocals);
-        printf("channels: %d pointers\n", nglobals);
+        //printf("channels: %d pointers\n", nglobals);
         printf("consts:");
         for (auto const &val: consts) printf(" %f", val);
         printf("\ninsts:");
