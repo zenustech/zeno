@@ -4,7 +4,7 @@ project(ZFX LANGUAGES C CXX)
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(ZFX
+add_library(ZFX
 # ls *{,/*}.{h,cpp} | cat
 AST.h
 common.h
@@ -13,7 +13,6 @@ IRVisitor.h
 Lexical.h
 LowerAST.cpp
 LowerAST.h
-main.cpp
 Parser.cpp
 Statement.h
 Stmts.h
@@ -34,4 +33,7 @@ ZFX.cpp
 ZFX.h
     )
 target_compile_definitions(ZFX PRIVATE -DZFX_PRINT_IR)
-target_include_directories(ZFX PRIVATE .)
+target_include_directories(ZFX PUBLIC .)
+
+add_executable(ZFXtest main.cpp)
+target_link_libraries(ZFXtest ZFX)

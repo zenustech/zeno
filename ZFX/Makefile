@@ -1,7 +1,7 @@
 x:
 	make -Cbuild -j
-	build/ZFX
+	build/ZFXtest
 
 d:
 	make -Cbuild -j
-	gdb build/ZFX -ex r
+	gdb build/ZFXtest -ex r
