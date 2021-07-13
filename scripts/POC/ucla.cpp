@@ -44,6 +44,8 @@ std::set<Reg *, inc_by_end> active;
 std::map<Reg *, int> usage;
 std::set<int> freed_pool;
 std::set<int> used_pool;
+//std::vector<std::pair<int, int>> logs;
+std::map<int, int> result;
 
 void free_register(Reg *i) {
     int newid = usage.at(i);
@@ -58,6 +60,8 @@ void alloc_register(Reg *i) {
     freed_pool.erase(newid);
     usage[i] = newid;
     printf("alloc %d: %d\n", i->regid, newid);
+    result[i->regid] = newid;
+    //logs.emplace_back(i->regid, newid);
 }
 
 void transit_register(Reg *i, Reg *spill) {
@@ -65,10 +69,14 @@ void transit_register(Reg *i, Reg *spill) {
     usage[i] = newid;
     usage.erase(spill);
     printf("transit %d <- %d: %d\n", i->regid, spill->regid, newid);
+    result[i->regid] = newid;
+    //logs.emplace_back(i->regid, newid);
 }
 
 void alloc_stack(Reg *i) {
     printf("alloc_stack %d\n", i->regid);
+    result[i->regid] = -1;
+    //logs.emplace_back(i->regid, -1);
 }
 
 void linscan() {
@@ -83,15 +91,14 @@ void linscan() {
         }
         if (active.size() == NREGS) {
             auto spill = *active.begin();
-            //if (spill->endpoint() > i->endpoint()) {
-            transit_register(i, spill);
-            alloc_stack(spill);
-            active.erase(spill);
-            active.insert(i);
-            //} else {
-                //printf("???\n");
-                //alloc_stack(i);
-            //}
+            if (spill->endpoint() > i->endpoint()) {
+                transit_register(i, spill);
+                alloc_stack(spill);
+                active.erase(spill);
+                active.insert(i);
+            } else {
+                alloc_stack(i);
+            }
         } else {
             alloc_register(i);
             active.insert(i);
@@ -115,18 +122,18 @@ int main() {
     }
 
     for (auto const &[stmtid, stmt]: stmts) {
+        printf("$%d :", stmtid);
+        for (auto const &regid: stmt.regs) {
+            printf(" r%d", regid);
+        }
+        printf("\n");
+    }
+
+    for (auto const &[stmtid, stmt]: stmts) {
         for (auto const &regid: stmt.regs) {
             regs[regid].regid = regid;
             regs[regid].stmts.insert(stmtid);
         }
-    }
-
-    for (auto const &[regid, reg]: regs) {
-        printf("r%d", regid);
-        for (auto const &stmtid: reg.stmts) {
-            printf(" s%d", stmtid);
-        }
-        printf("\n");
     }
 
     for (auto &[regid, reg]: regs) {
@@ -134,5 +141,23 @@ int main() {
     }
 
     linscan();
+
+    for (auto const &[src, dst]: result) {
+        printf("%d -> %d\n", src, dst);
+    }
+
+    for (auto &[stmtid, stmt]: stmts) {
+        printf("$%d :", stmtid);
+        for (auto &regid: stmt.regs) {
+            int newid = result.at(regid);
+            if (newid != -1) {
+                printf(" r%d", newid);
+            } else {
+                printf(" [%d]", regid);
+            }
+        }
+        printf("\n");
+    }
+
     return 0;
 }
