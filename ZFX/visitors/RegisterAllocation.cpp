@@ -50,16 +50,6 @@ namespace ucla {
         n = 0;
     }
 
-    void expire_old(int i) {
-        for (int j = 0; j < n; j++) {
-            if (end[j] >= start[i]) {
-                return;
-            }
-            active.erase(j);
-            printf("free register %d\n", j);
-        }
-    }
-
     int alloc_reg(int i) {
         int r;
         for (r = 0; r < NREGS; r++)
@@ -76,10 +66,22 @@ namespace ucla {
         used[spill] = false;
     }
 
+    void expire_old(int i) {
+        for (int j = 0; j < n; j++) {
+            if (end[j] >= start[i]) {
+                return;
+            }
+            free_reg(j);
+            active.erase(j);
+            printf("free register %d\n", j);
+        }
+    }
+
     void spill_at(int i) {
         int spill = *active.rbegin();
         if (end[spill] > end[i]) {
             free_reg(spill);
+            printf("transit %d -> %d\n", spill, i);
             int regid = alloc_reg(i);
             printf("need store %d\n", spill);
             storage[spill] = storage.size();
@@ -100,8 +102,11 @@ namespace ucla {
                 spill_at(i);
             } else {
                 int regid = alloc_reg(i);
+                printf("alloc for %d (%d)\n", i, active.size());
                 printf("$%d -> r%d\n", i, regid);
+                printf("before insert %d : %d\n", i, active.size());
                 active.insert(i);
+                printf("after insert %d : %d\n", i, active.size());
             }
         }
     }
