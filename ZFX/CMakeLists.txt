@@ -29,6 +29,7 @@ Parser.cpp
 RegisterAllocation.cpp
 Statement.h
 Stmts.h
+SymbolCheck.cpp
 Tokenizer.cpp
 TypeCheck.cpp
 Visitors.h

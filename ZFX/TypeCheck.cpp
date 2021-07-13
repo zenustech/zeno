@@ -150,23 +150,9 @@ struct TypeCheck : Visitor<TypeCheck> {
     }
 };
 
-struct CheckTempSymbols : Visitor<CheckTempSymbols> {
-    using visit_stmt_types = std::tuple
-        < TempSymbolStmt
-        >;
-
-    void visit(TempSymbolStmt *stmt) {
-        if (stmt->dim == 0) {
-            error("temporary symbol $%d used before assignment", stmt->id);
-        }
-    }
-};
-
 void apply_type_check(IR *ir) {
-    TypeCheck type_check;
-    TypeCheck check_temp_symbols;
-    type_check.apply(ir);
-    check_temp_symbols.apply(ir);
+    TypeCheck visitor;
+    visitor.apply(ir);
 }
 
 }

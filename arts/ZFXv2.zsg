@@ -128,7 +128,7 @@
       "COND": null
      },
      "params": {
-      "code": "@pos = @pos * 0.5"
+      "code": "@pos = @ps * 0.5"
      },
      "uipos": [
       281.0,
