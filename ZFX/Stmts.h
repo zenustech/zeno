@@ -220,6 +220,30 @@ struct SymbolStmt : Stmt<SymbolStmt> {
     }
 };
 
+struct ParamSymbolStmt : Stmt<ParamSymbolStmt> {
+    std::vector<int> symids;
+
+    ParamSymbolStmt
+        ( int id_
+        , std::vector<int> symids_
+        )
+        : Stmt(id_)
+        , symids(symids_)
+    {}
+
+    virtual StmtFields fields() override {
+        return {
+            };
+    }
+
+    virtual std::string to_string() const override {
+        return format(
+            "ParamSymbol [%s]"
+            , format_join(", ", "%d", symids).c_str()
+            );
+    }
+};
+
 struct TempSymbolStmt : Stmt<TempSymbolStmt> {
     int tmpid;
     std::vector<int> symids;

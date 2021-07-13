@@ -27,7 +27,27 @@ struct LowerAST {
             return res;
         }
         //error("undefined symbol `%s`", sym.c_str());
-        return {};  // undefined for now, will be further defined in TypeCheck pass
+        return {};  // undefined for now, will be further defined in TypeCheck
+    }
+
+    std::map<std::string, int> pardims;
+    std::map<std::string, std::vector<int>> params;
+    int parid = 0;
+
+    std::vector<int> resolve_param(std::string const &par) {
+        if (auto it = params.find(par); it != params.end()) {
+            return it->second;
+        }
+        if (auto it = pardims.find(par); it != pardims.end()) {
+            auto dim = it->second;
+            auto &res = params[par];
+            res.clear();
+            for (int i = 0; i < dim; i++) {
+                res.push_back(parid++);
+            }
+            return res;
+        }
+        return {};
     }
 
     std::map<std::string, SymbolStmt *> globsyms;
@@ -41,6 +61,20 @@ struct LowerAST {
         }
         auto ret = ir->emplace_back<SymbolStmt>(symids);
         globsyms[name] = ret;
+        return ret;
+    }
+
+    std::map<std::string, ParamSymbolStmt *> parasyms;
+
+    ParamSymbolStmt *emplace_param_symbol(std::string const &name) {
+        auto symids = resolve_param(name);
+        if (symids.size() == 0)
+            return nullptr;
+        if (auto it = parasyms.find(name); it != parasyms.end()) {
+            return it->second;
+        }
+        auto ret = ir->emplace_back<ParamSymbolStmt>(symids);
+        parasyms[name] = ret;
         return ret;
     }
 
@@ -74,12 +108,13 @@ struct LowerAST {
             return ir->emplace_back<AssignStmt>(dst, src);
 
         } else if (is_symbolic_atom(ast->token) && ast->args.size() == 0) {
-            auto ret = emplace_global_symbol(ast->token);
-            if (ret != nullptr) {
+            if (auto ret = emplace_global_symbol(ast->token); ret) {
                 return ret;
-            } else {
-                return emplace_temporary_symbol(ast->token);
             }
+            if (auto ret = emplace_param_symbol(ast->token); ret) {
+                return ret;
+            }
+            return emplace_temporary_symbol(ast->token);
 
         } else if (is_literial_atom(ast->token) && ast->args.size() == 0) {
             return ir->emplace_back<LiterialStmt>(ast->token);
@@ -120,24 +155,39 @@ struct LowerAST {
         }
         return ret;
     }
+
+    auto getParams() const {
+        std::vector<std::pair<std::string, int>> ret(parid);
+        for (auto const &[key, ids]: params) {
+            for (int i = 0; i < ids.size(); i++) {
+                ret[ids[i]] = std::make_pair(key, i);
+            }
+        }
+        return ret;
+    }
 };
 
 std::tuple
     < std::unique_ptr<IR>
     , std::vector<std::pair<std::string, int>>
+    , std::vector<std::pair<std::string, int>>
     > lower_ast
     ( std::vector<AST::Ptr> asts
     , std::map<std::string, int> const &symdims
+    , std::map<std::string, int> const &pardims
     ) {
     LowerAST lower;
     lower.symdims = symdims;
+    lower.pardims = pardims;
     for (auto const &ast: asts) {
         lower.serialize(ast.get());
     }
     auto symbols = lower.getSymbols();
+    auto params = lower.getParams();
     return
         { std::move(lower.ir)
         , symbols
+        , params
         };
 }
 

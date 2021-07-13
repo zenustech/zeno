@@ -13,15 +13,15 @@ int main() {
         return pos;
     };
 #else
-    std::string code("@pos.z = @pos.x + 1");
+    std::string code("@pos = @pos + $dt");
     auto func = [](float pos) -> float {
-        return pos + 1;
+        return pos;
     };
 #endif
 
     zfx::Options opts;
-    opts.define_symbol("@pos", 3);
-    opts.define_param("$pos", 3);
+    opts.define_symbol("@pos", 1);
+    opts.define_param("$dt", 1);
     auto prog = compiler.compile(code, opts);
 
     float arr[4] = {1, 2, 3, 4};
@@ -37,11 +37,11 @@ int main() {
 
     /*printf("%s\n", prog->symbols[0].first.c_str());
     printf("%d\n", prog->symbols[0].second);
-    printf("%d\n", prog->channel_id("@pos", 0));
-    printf("%d\n", prog->channel_id("@pos", 2));*/
-    memcpy(ctx.pointer(prog->channel_id("@pos", 0)), arr, sizeof(arr));
+    printf("%d\n", prog->symbol_id("@pos", 0));
+    printf("%d\n", prog->symbol_id("@pos", 2));*/
+    memcpy(&ctx.channel(prog->symbol_id("@pos", 0)), arr, sizeof(arr));
     ctx.execute();
-    memcpy(arr, ctx.pointer(prog->channel_id("@pos", 2)), sizeof(arr));
+    memcpy(arr, &ctx.channel(prog->symbol_id("@pos", 0)), sizeof(arr));
 
     printf("result:");
     for (auto val: arr) {

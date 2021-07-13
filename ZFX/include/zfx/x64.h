@@ -28,10 +28,14 @@ struct Program {
                 );
         }
 
-        float *pointer(int chid) {
-            return locals + SimdWidth * chid;
+        float &channel(int chid) {
+            return locals[SimdWidth * chid];
         }
     };
+
+    float &parameter(int parid) {
+        return consts[parid];
+    }
 
     inline Context make_context() {
         return {this};

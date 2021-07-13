@@ -14,6 +14,7 @@ struct TypeCheck : Visitor<TypeCheck> {
         < AssignStmt
         , LiterialStmt
         , TempSymbolStmt
+        , ParamSymbolStmt
         , SymbolStmt
         , VectorSwizzleStmt
         , VectorComposeStmt
@@ -30,6 +31,11 @@ struct TypeCheck : Visitor<TypeCheck> {
     }
 
     void visit(TempSymbolStmt *stmt) {
+    }
+
+    void visit(ParamSymbolStmt *stmt) {
+        stmt->dim = stmt->symids.size();
+        visit((Statement *)stmt);
     }
 
     void visit(SymbolStmt *stmt) {

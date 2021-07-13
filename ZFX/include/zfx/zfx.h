@@ -35,6 +35,7 @@ struct Options {
 std::tuple
     < std::string
     , std::vector<std::pair<std::string, int>>
+    , std::vector<std::pair<std::string, int>>
     > compile_to_assembly
     ( std::string const &code
     , Options const &options
@@ -44,6 +45,7 @@ template <class Prog>
 struct Program {
     std::unique_ptr<Prog> prog;
     std::vector<std::pair<std::string, int>> symbols;
+    std::vector<std::pair<std::string, int>> params;
 
     static inline constexpr size_t SimdWidth = Prog::SimdWidth;
 
@@ -51,10 +53,20 @@ struct Program {
         return symbols;
     }
 
-    int channel_id(std::string const &name, int dim) const {
+    auto const &get_params() const {
+        return symbols;
+    }
+
+    int symbol_id(std::string const &name, int dim) const {
         auto it = std::find(
             symbols.begin(), symbols.end(), std::pair{name, dim});
         return it != symbols.end() ? it - symbols.begin() : -1;
+    }
+
+    int param_id(std::string const &name, int dim) const {
+        auto it = std::find(
+            params.begin(), params.end(), std::pair{name, dim});
+        return it != params.end() ? it - params.begin() : -1;
     }
 
     decltype(auto) make_context() {
@@ -83,13 +95,15 @@ struct Compiler {
         auto 
             [ assem
             , symbols
+            , params
             ] = compile_to_assembly
             ( code
             , options
             );
         auto prog = std::make_unique<Program<Prog>>();
         prog->prog = Prog::assemble(assem);
-        prog->symbols = symbols;
+        prog->symbols = symbols;  // symbols are attributes in glsl
+        prog->params = params;  // params are uniforms in glsl
 
         auto raw_ptr = prog.get();
         cache[key] = std::move(prog);

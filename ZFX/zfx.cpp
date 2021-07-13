@@ -7,6 +7,7 @@ namespace zfx {
 std::tuple
     < std::string
     , std::vector<std::pair<std::string, int>>
+    , std::vector<std::pair<std::string, int>>
     > compile_to_assembly
     ( std::string const &code
     , Options const &options
@@ -33,9 +34,11 @@ std::tuple
     auto
         [ ir
         , symbols
+        , params
         ] = lower_ast
         ( std::move(asts)
         , options.symdims
+        , options.pardims
         );
 #ifdef ZFX_PRINT_IR
     ir->print();
@@ -129,6 +132,7 @@ std::tuple
     return
         { assem
         , new_symbols
+        , params
         };
 }
 
