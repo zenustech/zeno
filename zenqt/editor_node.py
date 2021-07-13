@@ -91,10 +91,9 @@ class QDMGraphicsNode(QGraphicsItem):
         cond_keys = ['OUT', 'MUTE', 'ONCE', 'VIEW']
         for i, key in enumerate(cond_keys):
             button = QDMGraphicsButton(self)
-            M = HORI_MARGIN * 0.2
-            H = TEXT_HEIGHT * 0.9
-            W = self.width / len(cond_keys)
-            rect = QRectF(W * i + M, -TEXT_HEIGHT * 1.3, W - M * 2, H)
+            M = HORI_MARGIN * 0.5
+            W = 38
+            rect = QRectF(W * i + M, -38, 34, 34)
             button.setGeometry(rect)
             button.setText(key)
             self.options[key] = button
