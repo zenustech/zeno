@@ -1,5 +1,6 @@
 #include "IRVisitor.h"
 #include "Stmts.h"
+#include <sstream>
 
 namespace zfx {
 
@@ -18,6 +19,7 @@ struct LowerMath : Visitor<LowerMath> {
         , BinaryOpStmt
         , FunctionCallStmt
         , VectorSwizzleStmt
+        , VectorComposeStmt
         , AssignStmt
         , Statement
         >;
@@ -83,6 +85,18 @@ struct LowerMath : Visitor<LowerMath> {
             }
             rep.push_back(ir->emplace_back<FunctionCallStmt>(
                 stmt->name, args));
+        }
+    }
+
+    void visit(VectorComposeStmt *stmt) {
+        auto &rep = replaces[stmt];
+        rep.clear();
+        ERROR_IF(stmt->dim == 0);
+        ERROR_IF(stmt->args.size() == 0);
+        for (int i = 0; i < stmt->dim; i++) {
+            auto arg = stmt->args[i % stmt->args.size()];
+            ERROR_IF(arg->dim != 1);
+            rep.push_back(replace(arg, 0));
         }
     }
 

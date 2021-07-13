@@ -97,17 +97,10 @@ struct LowerAST {
             auto swiz_expr = ast->args[1]->token;
             std::vector<int> swizzles;
             for (auto const &c: swiz_expr) {
-                if ('x' <= c && c <= 'z') {
-                    swizzles.push_back(c - 'x');
-                } else if (c == 'w') {
-                    swizzles.push_back(3);
-                } else if ('0' <= c && c <= '9') {
-                    swizzles.push_back(c - '0');
-                } else if ('a' <= c && c <= 'v') {
-                    swizzles.push_back(c - 'a' + 10);
-                } else {
+                int axis = swizzle_from_char(c);
+                if (axis == -1)
                     error("invalid swizzle character: `%c`", c);
-                }
+                swizzles.push_back(axis);
             }
             return ir->emplace_back<VectorSwizzleStmt>(swizzles, expr);
 

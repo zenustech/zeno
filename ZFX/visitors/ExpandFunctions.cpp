@@ -1,5 +1,6 @@
 #include "IRVisitor.h"
 #include "Stmts.h"
+#include <sstream>
 
 namespace zfx {
 
@@ -115,7 +116,26 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
     }
 
     Statement *emit_op(std::string const &name, std::vector<Statement *> const &args) {
-        if (0) {
+
+        if (name.substr(0, 3) == "vec" && name.size() == 4 && isdigit(name[0])) {
+            int dim = name[0] - '0';
+            int argdim = 0;
+            for (auto const &arg: args) {
+                argdim += arg->dim;
+            }
+            if (argdim != 1 || argdim != dim) {
+                error("`%s` expect 1 or %d components in arguments, got %d",
+                    name, dim, argdim);
+            }
+            std::vector<Statement *> retargs;
+            for (auto const &arg: args) {
+                auto retarg = ir->push_clone_back(arg);
+                for (int d = 0; d < arg->dim; d++) {
+                    retargs.push_back(ir->emplace_back<VectorSwizzleStmt>(
+                        std::vector<int>{d}, retarg));
+                }
+            }
+            return ir->emplace_back<VectorComposeStmt>(args);
 
         } else if (name == "mix") {
             ERROR_IF(args.size() != 3);

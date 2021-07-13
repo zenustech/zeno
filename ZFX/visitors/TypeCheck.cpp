@@ -60,40 +60,43 @@ struct TypeCheck : Visitor<TypeCheck> {
 
     void visit(FunctionCallStmt *stmt) {
         stmt->dim = 0;
+        auto const &name = stmt->name;
 
-        if (0) {
+        if (name.substr(0, 3) == "vec" && name.size() == 4 && isdigit(name[0])) {
+            int dim = name[0] - '0';
+            stmt->dim = dim;
 
         } else if (contains({"sqrt", "sin", "cos", "tan", "asin", "acos",
-            "atan", "exp", "log", "rsqrt", "floor", "ceil", "length", "normalize"}, stmt->name)) {
+            "atan", "exp", "log", "rsqrt", "floor", "ceil", "length", "normalize"}, name)) {
             if (stmt->args.size() != 1) {
-                error("function `%s` takes exactly 1 argument", stmt->name.c_str());
+                error("function `%s` takes exactly 1 argument", name.c_str());
             }
 
-        } else if (contains({"min", "max", "pow", "atan2"}, stmt->name)) {
+        } else if (contains({"min", "max", "pow", "atan2"}, name)) {
             if (stmt->args.size() != 2) {
-                error("function `%s` takes exactly 2 arguments", stmt->name.c_str());
+                error("function `%s` takes exactly 2 arguments", name.c_str());
             }
 
-        } else if (contains({"clamp", "mix"}, stmt->name)) {
+        } else if (contains({"clamp", "mix"}, name)) {
             if (stmt->args.size() != 3) {
-                error("function `%s` takes exactly 3 arguments", stmt->name.c_str());
+                error("function `%s` takes exactly 3 arguments", name.c_str());
             }
 
-        } else if (contains({"dot", "distance"}, stmt->name)) {
+        } else if (contains({"dot", "distance"}, name)) {
             if (stmt->args.size() != 2) {
-                error("function `%s` takes exactly 2 arguments", stmt->name.c_str());
+                error("function `%s` takes exactly 2 arguments", name.c_str());
             }
             stmt->dim = 1;
 
-        } else if (contains({"cross"}, stmt->name)) {
+        } else if (contains({"cross"}, name)) {
             if (stmt->args.size() != 2) {
-                error("function `%s` takes exactly 2 arguments", stmt->name.c_str());
+                error("function `%s` takes exactly 2 arguments", name.c_str());
             }
             stmt->dim = 3;
 
         } else {
             error("invalid function name `%s` (with %d args)",
-                stmt->name.c_str(), stmt->args.size());
+                name.c_str(), stmt->args.size());
         }
 
         if (stmt->dim == 0) {

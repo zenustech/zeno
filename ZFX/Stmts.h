@@ -131,6 +131,37 @@ struct VectorSwizzleStmt : Stmt<VectorSwizzleStmt> {
     }
 };
 
+struct VectorComposeStmt : Stmt<VectorComposeStmt> {
+    std::vector<Statement *> args;
+
+    VectorComposeStmt
+        ( int id_
+        , std::vector<Statement *> const &args_
+        )
+        : Stmt(id_)
+        , args(args_)
+    {}
+
+    virtual StmtFields fields() override {
+        StmtFields fies;
+        for (auto &arg: args) {
+            fies.emplace_back(arg);
+        }
+        return fies;
+    }
+
+    virtual std::string to_string() const override {
+        std::vector<int> argids;
+        for (auto const &arg: args) {
+            argids.push_back(arg->id);
+        }
+        return format(
+            "VectorCompose %d (%s)"
+            , dim
+            , format_join(", ", "$%d", argids).c_str()
+            );
+    }
+};
 
 struct AssignStmt : Stmt<AssignStmt> {
     Statement *dst;
