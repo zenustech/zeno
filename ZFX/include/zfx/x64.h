@@ -10,6 +10,8 @@ struct Program {
     uint8_t *mem = nullptr;
     size_t memsize;
 
+    static constexpr size_t SimdWidth = 4;
+
     struct Context {
         Program *prog;
         float locals[4 * 128];

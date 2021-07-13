@@ -23,6 +23,16 @@ struct Program {
     std::unique_ptr<Prog> prog;
     std::vector<std::pair<std::string, int>> symbols;
 
+    static inline constexpr size_t SimdWidth = Prog::SimdWidth;
+
+    std::vector<int> channel_ids(std::string const &name, int dim) const {
+        std::vector<int> res;
+        for (int i = 0; i < dim; i++) {
+            res.push_back(channel_id(name, i));
+        }
+        return res;
+    }
+
     int channel_id(std::string const &name, int dim) const {
         auto it = std::find(symbols.begin(), symbols.end(), std::pair{name, dim});
         return it - symbols.begin();
