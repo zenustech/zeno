@@ -16,9 +16,9 @@ class QDMGraphicsNode(QGraphicsItem):
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
 
-        self.collapse_button = QDMGraphicsCollapseButton(self)
-        self.collapse_button.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT * 0.84)
         self.collapsed = False
+        self.collapse_button = QDMGraphicsCollapseButton(self)
+        self.collapse_button.resize(28, 28)
 
         self.params = {}
         self.inputs = {}
@@ -154,7 +154,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.height = y
 
         self.title.setPos(HORI_MARGIN * 2, self.height)
-        self.collapse_button.setPos(204 + 10, self.height + 10)
+        self.collapse_button.setPos(204 + 4, self.height + 4)
 
     def boundingRect(self):
         h = TEXT_HEIGHT if self.collapsed else self.height
@@ -216,7 +216,7 @@ class QDMGraphicsNode(QGraphicsItem):
                 edge.updatePath()
 
         self.title.setPos(HORI_MARGIN * 2, 0)
-        self.collapse_button.setPos(204 + 10, 10)
+        self.collapse_button.setPos(204 + 4, 4)
 
     def unfold(self):
         self.dummy_input_socket.hide()
@@ -236,7 +236,7 @@ class QDMGraphicsNode(QGraphicsItem):
                 edge.updatePath()
 
         self.title.setPos(HORI_MARGIN * 2, self.height)
-        self.collapse_button.setPos(204 + 10, self.height + 10)
+        self.collapse_button.setPos(204 + 4, self.height + 4)
 
     def dump(self):
         node = self

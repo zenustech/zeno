@@ -42,16 +42,11 @@ class QDMCollapseButton(QSvgWidget):
     def __init__(self, parent=None):
         super().__init__()
         self.render = self.renderer()
-        self.load(asset_path('unfold.svg'))
-        # PySide2 >= 5.15
-        self.render.setAspectRatioMode(Qt.KeepAspectRatio)
 
         self.setStyleSheet('background-color: {}'.format(style['title_color']))
         self.node = parent
-    
-    def isChecked(self):
-        return self.collapseds
-    
+        self.update_svg()
+
     def mousePressEvent(self, event):
         super().mouseMoveEvent(event)
         self.node.collapsed = not self.node.collapsed
