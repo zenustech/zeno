@@ -11,8 +11,8 @@ struct ParticlesWrangle : zeno::INode {
         auto code = get_param<std::string>("code");
 
         std::map<std::string, int> symdims;
-        pars->foreach_attr([&symdims] (auto const &key, auto &arr) {
-            symdims[key] = arr.Dimension;
+        pars->foreach_attr([&] (auto const &key, auto &arr) {
+            symdims["@" + key] = arr.Dimension;
         });
         auto prog = compiler.compile(code, symdims);
 

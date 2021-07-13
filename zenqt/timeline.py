@@ -5,6 +5,7 @@ from PySide2.QtSvg import *
 
 from . import asset_path
 
+import os
 import zenvis
 
 
@@ -107,6 +108,8 @@ class TimelineWidget(QWidget):
         self.maxframe = QLineEdit(self)
         self.maxframe.setValidator(validator)
         self.maxframe.setText('100')
+        if os.environ.get('ZEN_OPEN'):
+            self.maxframe.setText('1')
         self.maxframe.setFixedWidth(40)
 
         self.button_execute = QPushButton('Run', self)

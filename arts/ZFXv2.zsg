@@ -6,7 +6,7 @@
      "name": "ParticlesToPrimitive",
      "inputs": {
       "pars": [
-       "420fa29e-ParticlesFromPrimitive",
+       "4cb8a725-ParticlesWrangle",
        "pars"
       ],
       "SRC": null,
@@ -116,12 +116,31 @@
       338.4000000000001
      ],
      "options": []
+    },
+    "4cb8a725-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "pars": [
+       "420fa29e-ParticlesFromPrimitive",
+       "pars"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "code": "@pos = @pos * 0.5"
+     },
+     "uipos": [
+      281.0,
+      198.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -526,
-    "trans_y": 89
+    "scale": 1.5625,
+    "trans_x": -189,
+    "trans_y": 213
    }
   }
  },
