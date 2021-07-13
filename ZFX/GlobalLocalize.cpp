@@ -49,10 +49,6 @@ struct ReassignGlobals : Visitor<ReassignGlobals> {
     void visit(AsmGlobalLoadStmt *stmt) {
         global(stmt->mem);
     }
-
-    void visit(AsmGlobalStoreStmt *stmt) {
-        global(stmt->mem);
-    }
 };
 
 struct GlobalLocalize : Visitor<GlobalLocalize> {

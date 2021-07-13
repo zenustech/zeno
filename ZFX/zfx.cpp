@@ -100,7 +100,7 @@ std::tuple
 #ifdef ZFX_PRINT_IR
     cout << "=== GlobalLocalize" << endl;
 #endif
-    apply_global_localize(ir.get());
+    ir = apply_global_localize(ir.get());
 #ifdef ZFX_PRINT_IR
     ir->print();
 #endif

@@ -14,6 +14,7 @@ add_library(ZFX
 AST.h
 EmitAssembly.cpp
 ExpandFunctions.cpp
+GlobalLocalize.cpp
 include/zfx/utils.h
 include/zfx/x64.h
 include/zfx/zfx.h

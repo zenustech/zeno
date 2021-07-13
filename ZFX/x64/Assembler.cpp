@@ -44,25 +44,25 @@ struct Assembler {
                 builder->addAvxBroadcastLoadOp(simdkind,
                     dst, {opreg::rcx, memflag::reg_imm8, offset});
 
-            } else if (cmd == "ldl") {  // rbx points to an array of variables
+            } else if (cmd == "ldm") {  // rdx points to an array of variables
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
                 nlocals = std::max(nlocals, id + 1);
                 int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 builder->addAvxMemoryOp(simdkind, opcode::loadu,
-                    dst, {opreg::rbx, memflag::reg_imm8, offset});
+                    dst, {opreg::rdx, memflag::reg_imm8, offset});
 
-            } else if (cmd == "stl") {
+            } else if (cmd == "stm") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
                 int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 nlocals = std::max(nlocals, id + 1);
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
-                    dst, {opreg::rbx, memflag::reg_imm8, offset});
+                    dst, {opreg::rdx, memflag::reg_imm8, offset});
 
-            } else if (cmd == "ldg") {  // rdx points to an array of pointers
+            /*} else if (cmd == "ldg") {  // rdx points to an array of pointers
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
@@ -82,7 +82,7 @@ struct Assembler {
                 builder->addRegularLoadOp(opreg::rax,
                     {opreg::rdx, memflag::reg_imm8, offset});
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
-                    dst, opreg::rax);
+                    dst, opreg::rax);*/
 
             } else if (cmd == "add") {
                 ERROR_IF(linesep.size() < 3);

@@ -24,8 +24,6 @@ int main() {
     auto prog = compiler.compile(code, opts);
 
     float arr[4] = {1, 2, 3, 4};
-    float arr2[4] = {2, 3, 4, 5};
-    float arr3[4] = {3, 4, 5, 6};
 
     printf("expected:");
     for (auto val: arr) {
@@ -36,10 +34,9 @@ int main() {
 
     auto ctx = prog->make_context();
 
-    ctx.channel_pointer(prog->channel_id("@pos", 0)) = arr;
-    ctx.channel_pointer(prog->channel_id("@pos", 1)) = arr2;
-    ctx.channel_pointer(prog->channel_id("@pos", 2)) = arr3;
+    memcpy(ctx.pointer(prog->channel_id("@pos", 0)), arr, sizeof(arr));
     ctx.execute();
+    memcpy(arr, ctx.pointer(prog->channel_id("@pos", 0)), sizeof(arr));
 
     printf("result:");
     for (auto val: arr) {

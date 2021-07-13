@@ -29,7 +29,7 @@ struct Program {
         }
 
         float *pointer(int chid) {
-            return locals[chid];
+            return &locals[chid];
         }
     };
 
