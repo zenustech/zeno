@@ -21,6 +21,7 @@ int main() {
 
     zfx::Options opts;
     opts.define_symbol("@pos", 3);
+    opts.define_param("$pos", 3);
     auto prog = compiler.compile(code, opts);
 
     float arr[4] = {1, 2, 3, 4};

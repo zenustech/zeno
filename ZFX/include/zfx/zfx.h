@@ -12,14 +12,22 @@ namespace zfx {
 
 struct Options {
     std::map<std::string, int> symdims;
+    std::map<std::string, int> pardims;
 
     void define_symbol(std::string const &name, int dimension) {
         symdims[name] = dimension;
     }
 
+    void define_param(std::string const &name, int dimension) {
+        pardims[name] = dimension;
+    }
+
     void dump(std::ostream &os) const {
         for (auto const &[name, dim]: symdims) {
             os << '/' << name << '/' << dim;
+        }
+        for (auto const &[name, dim]: pardims) {
+            os << '\\' << name << '\\' << dim;
         }
     }
 };
