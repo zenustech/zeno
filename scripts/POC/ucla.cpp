@@ -41,17 +41,29 @@ struct inc_by_end {
 
 std::set<Reg *, inc_by_start> interval;
 std::set<Reg *, inc_by_end> active;
+std::map<Reg *, int> usage;
+std::set<int> freed_pool;
+std::set<int> used_pool;
 
 void free_register(Reg *i) {
-    printf("free %d\n", i->regid);
+    int newid = usage.at(i);
+    used_pool.erase(newid);
+    freed_pool.insert(newid);
+    printf("free %d: %d\n", i->regid, newid);
 }
 
 void alloc_register(Reg *i) {
-    printf("alloc %d\n", i->regid);
+    int newid = *freed_pool.begin();
+    used_pool.insert(newid);
+    freed_pool.erase(newid);
+    usage[i] = newid;
+    printf("alloc %d: %d\n", i->regid, newid);
 }
 
 void transit_register(Reg *i, Reg *spill) {
-    printf("transit %d <- %d\n", i->regid, spill->regid);
+    int newid = usage.at(spill);
+    usage[i] = newid;
+    printf("transit %d <- %d: %d\n", i->regid, spill->regid, newid);
 }
 
 void alloc_stack(Reg *i) {
@@ -61,7 +73,7 @@ void alloc_stack(Reg *i) {
 void linscan() {
     active.clear();
     for (auto const &i: interval) {
-        for (auto const &j: active) {
+        for (auto const &j: std::set(active)) {
             if (j->endpoint() >= i->startpoint()) {
                 break;
             }
@@ -89,6 +101,12 @@ int main() {
     stmts[0].regs = {0};
     stmts[1].regs = {1};
     stmts[2].regs = {2, 0, 1};
+    stmts[3].regs = {3, 0, 1};
+    stmts[4].regs = {4, 0, 1};
+
+    for (int i = 0; i < NREGS; i++) {
+        freed_pool.insert(i);
+    }
 
     for (auto const &[stmtid, stmt]: stmts) {
         for (auto const &regid: stmt.regs) {
