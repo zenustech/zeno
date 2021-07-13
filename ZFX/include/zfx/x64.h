@@ -8,13 +8,13 @@ namespace zfx::x64 {
 struct Program {
     float consts[4096];
     uint8_t *mem = nullptr;
-    size_t memsize;
+    size_t memsize = 0;
 
     static constexpr size_t SimdWidth = 4;
 
     struct Context {
         Program *prog;
-        float locals[4 * 128];
+        float locals[SimdWidth * 128];
 
         void execute() {
             auto entry = (void (*)())prog->mem;
@@ -29,7 +29,7 @@ struct Program {
         }
 
         float *pointer(int chid) {
-            return &locals[chid];
+            return locals + SimdWidth * chid;
         }
     };
 

@@ -13,7 +13,7 @@ int main() {
         return pos;
     };
 #else
-    std::string code("tmp = vec2(@pos, 1)\n@pos = tmp.x + tmp.y");
+    std::string code("");
     auto func = [](float pos) -> float {
         return pos + 1;
     };
@@ -33,6 +33,8 @@ int main() {
     printf("\n");
 
     auto ctx = prog->make_context();
+
+    printf("channel is %d\n", prog->channel_id("@vel", 0));
 
     memcpy(ctx.pointer(prog->channel_id("@pos", 0)), arr, sizeof(arr));
     ctx.execute();
