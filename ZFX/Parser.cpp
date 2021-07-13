@@ -81,7 +81,7 @@ struct Parser {
             while (1) if (auto ope = parse_operator(lhs->iter, {"*", "/", "%"}); ope) {
                 if (auto rhs = parse_factor(ope->iter); rhs) {
                     lhs = make_ast(ope->token, rhs->iter, {std::move(lhs), std::move(rhs)});
-                }
+                } else break;
             } else break;
             return lhs;
         }
@@ -93,7 +93,7 @@ struct Parser {
             while (1) if (auto ope = parse_operator(lhs->iter, {"+", "-"}); ope) {
                     if (auto rhs = parse_term(ope->iter); rhs) {
                         lhs = make_ast(ope->token, rhs->iter, {std::move(lhs), std::move(rhs)});
-                    }
+                    } else break;
             } else break;
             return lhs;
         }

@@ -11,12 +11,14 @@ std::vector<std::string> tokenize(const char *cp) {
 
         if (isalpha(*cp) || strchr("_$@", *cp)) {
             std::string res;
+            res += *cp++;
             for (; isalnum(*cp) || *cp && strchr("_$@", *cp); cp++)
                 res += *cp;
             tokens.push_back(res);
 
         } else if (isdigit(*cp) || *cp == '-' && isdigit(cp[1])) {
             std::string res;
+            res += *cp++;
             for (; isdigit(*cp) || *cp == '.'; cp++)
                 res += *cp;
             tokens.push_back(res);
