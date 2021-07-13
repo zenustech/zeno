@@ -28,14 +28,11 @@ class QDMPlayButton(QSvgWidget):
         else:
             self.load(asset_path('play.svg'))
         self.render.setAspectRatioMode(Qt.KeepAspectRatio)
-
-    def changeWithTimeline(self):
-        self.change()
         self.timeline.value_changed()
 
     def mousePressEvent(self, event):
         super().mouseMoveEvent(event)
-        self.changeWithTimeline()
+        self.change()
 
 
 class QDMPrevNextButton(QSvgWidget):
@@ -105,6 +102,18 @@ class TimelineWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        validator = QIntValidator()
+        validator.setBottom(0)
+        self.maxframe = QLineEdit(self)
+        self.maxframe.setValidator(validator)
+        self.maxframe.setText('100')
+        self.maxframe.setFixedWidth(40)
+
+        self.button_execute = QPushButton('Run', self)
+        self.button_execute.setFixedWidth(40)
+        self.button_kill = QPushButton('Kill', self)
+        self.button_kill.setFixedWidth(40)
+
         self.label = QLabel('-')
         self.status = QLabel('-')
 
@@ -121,6 +130,9 @@ class TimelineWidget(QWidget):
         self.nextBtn = QDMNextButton(self)
 
         layout = QHBoxLayout()
+        layout.addWidget(self.maxframe)
+        layout.addWidget(self.button_execute)
+        layout.addWidget(self.button_kill)
         layout.addWidget(self.player)
         layout.addWidget(self.prevBtn)
         layout.addWidget(self.nextBtn)
@@ -134,13 +146,26 @@ class TimelineWidget(QWidget):
 
     def initShortcuts(self):
         self.msgPlay = QShortcut(QKeySequence(Qt.Key_Space), self)
-        self.msgPlay.activated.connect(lambda: self.player.changeWithTimeline())
+        self.msgPlay.activated.connect(lambda: self.player.change())
+        self.msgRun = QShortcut(QKeySequence(Qt.Key_F5), self)
+        self.msgRun.activated.connect(self.on_execute)
+
+        self.maxframe.textChanged.connect(self.maxframe_changed)
+        self.maxframe_changed()
+        self.button_kill.clicked.connect(self.on_kill)
+        self.button_execute.clicked.connect(self.on_execute)
+
+    def on_kill(self):
+        self.editor.on_kill()
+
+    def on_execute(self):
+        self.editor.on_execute()
+        self.slider.setValue(0)
+        self.start_play()
 
     def setEditor(self, editor):
         self.editor = editor
-        self.maxframe = self.editor.edit_nframes
-        self.maxframe.textChanged.connect(self.maxframe_changed)
-        self.maxframe.setText(str(self.slider.maximum()))
+        editor.edit_nframes = self.maxframe
 
     def maxframe_changed(self):
         self.slider.setMaximum(int('0' + self.maxframe.text()))
@@ -155,10 +180,15 @@ class TimelineWidget(QWidget):
         zenvis.status['next_frameid'] = self.slider.value()
         zenvis.status['playing'] = self.player.isChecked()
 
+    def start_play(self):
+        if not self.player.isChecked():
+            self.player.change()
+        self.value_changed()
+
     def stop_play(self):
         if self.player.isChecked():
             self.player.change()
-        zenvis.status['playing'] = False
+        self.value_changed()
 
     def get_status_string(self):
         fps = zenvis.status['render_fps']
