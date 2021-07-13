@@ -776,7 +776,8 @@ struct TypeCheck {
             if (it == typing.end()) {
                 error("cannot determine type of ", exp);
             }
-            return it->second;
+            return "f1";
+            //return it->second;
         }
 
         auto it = typing.find(exp);
@@ -788,6 +789,11 @@ struct TypeCheck {
 
     void op_promote_type(std::string const &dst,
         std::string const &opcode, std::vector<std::string> const &types) {
+        if(opcode==std::string("dot")||opcode==std::string("length")||opcode==std::string("distance"))
+        {
+            typing[dst] = "f1";
+            return;
+        }
         auto curtype = types[0];
         for (int i = 1; i < types.size(); i++) {
             auto const &type = types[i];
@@ -806,6 +812,7 @@ struct TypeCheck {
                 typing[dst] = promote_type(it->second, curtype);
             }
         }
+
     }
 
     void type_check(std::string const &lines) {
