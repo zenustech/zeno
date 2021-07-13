@@ -16,6 +16,7 @@ struct TypeCheck : Visitor<TypeCheck> {
         , TempSymbolStmt
         , SymbolStmt
         , VectorSwizzleStmt
+        , VectorComposeStmt
         , FunctionCallStmt
         , BinaryOpStmt
         , UnaryOpStmt
@@ -62,8 +63,8 @@ struct TypeCheck : Visitor<TypeCheck> {
         stmt->dim = 0;
         auto const &name = stmt->name;
 
-        if (name.substr(0, 3) == "vec" && name.size() == 4 && isdigit(name[0])) {
-            int dim = name[0] - '0';
+        if (name.substr(0, 3) == "vec" && name.size() == 4 && isdigit(name[3])) {
+            int dim = name[3] - '0';
             stmt->dim = dim;
 
         } else if (contains({"sqrt", "sin", "cos", "tan", "asin", "acos",
@@ -115,6 +116,12 @@ struct TypeCheck : Visitor<TypeCheck> {
         }
         visit((Statement *)stmt);
     }
+
+    void visit(VectorComposeStmt *stmt) {
+        stmt->dim = stmt->dimension;
+        visit((Statement *)stmt);
+    }
+
 
     void visit(VectorSwizzleStmt *stmt) {
         for (int s: stmt->swizzles) {

@@ -132,13 +132,16 @@ struct VectorSwizzleStmt : Stmt<VectorSwizzleStmt> {
 };
 
 struct VectorComposeStmt : Stmt<VectorComposeStmt> {
+    int dimension;
     std::vector<Statement *> args;
 
     VectorComposeStmt
         ( int id_
+        , int dimension_
         , std::vector<Statement *> const &args_
         )
         : Stmt(id_)
+        , dimension(dimension_)
         , args(args_)
     {}
 
@@ -157,7 +160,7 @@ struct VectorComposeStmt : Stmt<VectorComposeStmt> {
         }
         return format(
             "VectorCompose %d (%s)"
-            , dim
+            , dimension
             , format_join(", ", "$%d", argids).c_str()
             );
     }

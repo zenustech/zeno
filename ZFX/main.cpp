@@ -13,9 +13,9 @@ int main() {
         return pos;
     };
 #else
-    std::string code("tmp = @pos\n@pos = tmp");
+    std::string code("tmp = vec2(@pos, 1)\n@pos = tmp.x + tmp.y");
     auto func = [](float pos) -> float {
-        return pos;
+        return pos + 1;
     };
 #endif
 

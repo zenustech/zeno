@@ -117,15 +117,15 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
 
     Statement *emit_op(std::string const &name, std::vector<Statement *> const &args) {
 
-        if (name.substr(0, 3) == "vec" && name.size() == 4 && isdigit(name[0])) {
-            int dim = name[0] - '0';
+        if (name.substr(0, 3) == "vec" && name.size() == 4 && isdigit(name[3])) {
+            int dim = name[3] - '0';
             int argdim = 0;
             for (auto const &arg: args) {
                 argdim += arg->dim;
             }
-            if (argdim != 1 || argdim != dim) {
+            if (argdim != 1 && argdim != dim) {
                 error("`%s` expect 1 or %d components in arguments, got %d",
-                    name, dim, argdim);
+                    name.c_str(), dim, argdim);
             }
             std::vector<Statement *> retargs;
             for (auto const &arg: args) {
@@ -135,7 +135,7 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
                         std::vector<int>{d}, retarg));
                 }
             }
-            return ir->emplace_back<VectorComposeStmt>(args);
+            return ir->emplace_back<VectorComposeStmt>(dim, retargs);
 
         } else if (name == "mix") {
             ERROR_IF(args.size() != 3);
