@@ -39,7 +39,10 @@ int main() {
     float array[1] = {3.14f};
     size_t size = 1;
     float params[1];
-    void *args[] = {(void *)array, (void *)size, (void *)params};
+    void *arg1 = array;
+    void *arg2 = &size;
+    void *arg3 = params;
+    void *args[] = {&arg1, &arg2, &arg3};
     CU(cuLaunchKernel(function,
             1, 1, 1, 1, 1, 1,
             0, 0, args, 0));

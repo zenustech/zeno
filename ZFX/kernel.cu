@@ -1,4 +1,4 @@
-extern __device__ void zfx_wrangle_func(float *locals, float const *params);
+__device__ void zfx_wrangle_func(float *locals, float const *params);
 
 extern "C" __global__ void zfx_array_wrangle
     ( float *array
