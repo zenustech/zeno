@@ -10,7 +10,7 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         , AsmBinaryOpStmt
         , AsmUnaryOpStmt
         , AsmAssignStmt
-        , AsmLoadConstStmt
+        , AsmParamLoadStmt
         , AsmLocalStoreStmt
         , AsmLocalLoadStmt
         , Statement
@@ -63,8 +63,8 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         emit("ldm %d %d", stmt->val, stmt->mem);
     }
 
-    void visit(AsmLoadConstStmt *stmt) {
-        emit("ldi %d %s", stmt->dst, stmt->value.c_str());
+    void visit(AsmParamLoadStmt *stmt) {
+        emit("ldi %d %d", stmt->val, stmt->mem);
     }
 
     void visit(AsmAssignStmt *stmt) {
