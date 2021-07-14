@@ -1,28 +1,7 @@
-#if 0
-#include <stdio.h>
-__global__ void test() { printf("FuCK U NVIDIA!\n"); } int main(void) { test<<<1, 1>>>(); cudaDeviceSynchronize(); }
-#else
-
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <helper_math.h>
 #include <nvrtc_helper.h>
 #include <cassert>
 #include <cstdio>
 #include <cmath>
-
-struct NvrtcCubin {
-    char *data;
-    size_t size;
-
-    explicit NvrtcCubin(const char *source) {
-        compileSourceToCUBIN("<module>", source, 0, NULL, &data, &size, 0);
-    }
-
-    ~NvrtcCubin() {
-        delete data;
-    }
-};
 
 struct CudaFunction {
     CUfunction hfunc;
@@ -44,11 +23,13 @@ struct CudaFunction {
 };
 
 struct CudaModule {
-    NvrtcCubin cubin;
     CUmodule hmod;
+    char *data;
+    size_t size = 0;
 
-    explicit CudaModule(const char *source) : cubin(source) {
-        hmod = loadCUBIN(cubin.data, 0, NULL);
+    explicit CudaModule(const char *source) {
+        compileSourceToCUBIN("<module>", source, 0, NULL, &data, &size, 0);
+        hmod = loadCUBIN(data, 0, NULL);
     }
 
     CudaFunction getFunction(const char *name) {
@@ -58,15 +39,19 @@ struct CudaModule {
     }
 };
 
+__global__ void wrangler() {
+}
+
 int main(int argc, char **argv)
 {
-    CudaModule mod("extern \"C\" __global__ void kernel_func() { printf(\"FUCKING NVIDIA FUNC\\n\"); }");
+    CudaModule mod("extern \"C\" __global__ void callee() {"
+                   "printf(\"THIS IS A FUCKING NVIDIA FUNC\\n\"); }");
 
-    auto func = mod.getFunction("kernel_func");
-    func.launch();
+    auto callee = mod.getFunction("callee");
+    //printf("%s\n", typeid(callee.hfunc).name());
+    //callee.launch();
 
     checkCudaErrors(cuCtxSynchronize());
 
     return 0;
 }
-#endif
