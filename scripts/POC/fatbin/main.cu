@@ -37,7 +37,7 @@ static std::string ptx = R"(
 //
 
 .version 7.3
-.target sm_52
+.target sm_75
 .address_size 64
 
 	// .globl	caller
@@ -149,8 +149,11 @@ int main() {
 
     size_t codeSize;
     NVRTC(nvrtcGetPTXSize(prog, &codeSize));
-    char *code = new char[codeSize];
+    char *code = new char[codeSize + 1];
     NVRTC(nvrtcGetPTX(prog, code));
+
+    code[codeSize] = '\0';
+    printf("NVRTC got:\n%s\n", code);
 
     CUlinkState state;
     CU(cuLinkCreate(0, NULL, NULL, &state));
