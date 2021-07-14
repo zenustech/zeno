@@ -91,7 +91,7 @@ class QDMGraphicsNode(QGraphicsItem):
         cond_keys = ['OUT', 'MUTE', 'ONCE', 'VIEW']
         for i, key in enumerate(cond_keys):
             button = QDMGraphicsButton(self)
-            M = HORI_MARGIN * 0.5
+            M = HORI_MARGIN // 2
             W = 38
             rect = QRectF(W * i + M, -38, 34, 34)
             button.setGeometry(rect)
@@ -195,6 +195,11 @@ class QDMGraphicsNode(QGraphicsItem):
         # button background
         rect = QRectF(0, -top, 240, top)
         fillRect(painter, rect, '#638E77')
+
+        M = HORI_MARGIN // 2
+        W = 38
+        rect = QRectF(W * 4 + M, -38, 79, 34)
+        fillRect(painter, rect, '#376557')
 
         # content panel background
         if not self.collapsed:
