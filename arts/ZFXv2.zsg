@@ -115,7 +115,7 @@
       "COND": null
      },
      "params": {
-      "value": "@pos.z = @pos.x + $arg0"
+      "value": "@pos.z = $arg0"
      },
      "uipos": [
       -238.71999999999997,
@@ -153,14 +153,14 @@
        "FrameNum"
       ],
       "rhs": [
-       "439ca5fc-GetFramePortion",
-       "FramePortion"
+       "ed8a9f99-NumericFloat",
+       "value"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {
-      "op_type": "add"
+      "op_type": "div"
      },
      "uipos": [
       -450.56,
@@ -181,24 +181,47 @@
      ],
      "options": []
     },
-    "439ca5fc-GetFramePortion": {
-     "name": "GetFramePortion",
+    "ff25c3c5-PrintNumeric": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "0ba458ab-NumericOperator",
+       "ret"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "hint": "PrintNumeric"
+     },
+     "uipos": [
+      -140.79999999999998,
+      806.4000000000001
+     ],
+     "options": [
+      "OUT"
+     ]
+    },
+    "ed8a9f99-NumericFloat": {
+     "name": "NumericFloat",
      "inputs": {
       "SRC": null,
       "COND": null
      },
-     "params": {},
+     "params": {
+      "value": 100.0
+     },
      "uipos": [
-      -704.64,
-      796.1600000000001
+      -695.04,
+      798.0799999999999
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.5625,
-    "trans_x": -705,
-    "trans_y": 424
+    "scale": 1.25,
+    "trans_x": -866,
+    "trans_y": 280
    }
   }
  },
