@@ -57,7 +57,7 @@ struct Program {
     }
 
     auto const &get_params() const {
-        return symbols;
+        return params;
     }
 
     int symbol_id(std::string const &name, int dim) const {
@@ -78,6 +78,10 @@ struct Program {
 
     inline constexpr decltype(auto) make_context() {
         return prog->make_context();
+    }
+
+    inline decltype(auto) get_codegen_result() {
+        return prog->get_codegen_result();
     }
 };
 

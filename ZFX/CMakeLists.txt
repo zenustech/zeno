@@ -1,7 +1,11 @@
-cmake_minimum_required(VERSION 3.10)
-project(ZFX LANGUAGES C CXX)
+cmake_minimum_required(VERSION 3.12)
+project(ZFX LANGUAGES CXX)
+
+link_directories(/opt/cuda/lib64)
+include_directories(/opt/cuda/include)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CUDA_ARCHITECTURES 75)
 
 if (CMAKE_BUILD_TYPE EQUAL Debug)
     option(ZFX_PRINT_IR "Print IR for the ZFX compiler" OFF)
@@ -10,9 +14,10 @@ else()
 endif()
 
 add_library(ZFX
-# ls {,include/zfx/}*{,/*}.{h,cpp} | cat
+# ls {,include/zfx/}*{,/*}.{h,cpp} | grep -v main.cpp
 AST.h
 ConstParametrize.cpp
+cuda/Assembler.cpp
 EmitAssembly.cpp
 ExpandFunctions.cpp
 GlobalLocalize.cpp
@@ -44,5 +49,5 @@ if (ZFX_PRINT_IR)
 endif()
 target_include_directories(ZFX PUBLIC include)
 
-add_executable(ZFXtest main.cpp)
-target_link_libraries(ZFXtest ZFX)
+add_executable(ZFXtest cuda_main.cpp)
+target_link_libraries(ZFXtest PRIVATE ZFX cuda nvrtc)

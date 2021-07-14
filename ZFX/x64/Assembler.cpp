@@ -53,8 +53,8 @@ struct Assembler {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
-                int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 nlocals = std::max(nlocals, id + 1);
+                int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
                     dst, {opreg::rdx, memflag::reg_imm8, offset});
 
