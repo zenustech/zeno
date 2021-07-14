@@ -70,7 +70,7 @@ struct GraphicAxis : IGraphic {
     vec3f origin = vec3f(0, 0, 0);
 
     vec3f r = vec3f(0.8, 0.2, 0.2);
-    vec3f g = vec3f(0.2, 0.8, 0.2);
+    vec3f g = vec3f(0.2, 0.6, 0.2);
     vec3f b = vec3f(0.2, 0.2, 0.8);
 
     mem.push_back(origin);

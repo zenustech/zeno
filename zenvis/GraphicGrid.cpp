@@ -67,25 +67,26 @@ struct GraphicGrid : IGraphic {
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     std::vector<zeno::vec3f> mem;
     int bound = 5;
+    zeno::vec3f color(0.4f, 0.4f, 0.4f);
     for (int i = -bound; i <= bound; i++) {
       mem.push_back(vec3f(i, 0, -bound));
-      mem.push_back(vec3f(1, 1, 1));
+      mem.push_back(color);
       if (i != 0) {
         mem.push_back(vec3f(i, 0, bound));
       } else {
         mem.push_back(vec3f(0, 0, 0));
       }
-      mem.push_back(vec3f(1, 1, 1));
+      mem.push_back(color);
     }
     for (int i = -bound; i <= bound; i++) {
       mem.push_back(vec3f(-bound, 0, i));
-      mem.push_back(vec3f(1, 1, 1));
+      mem.push_back(color);
       if (i != 0) {
         mem.push_back(vec3f(bound, 0, i));
       } else {
         mem.push_back(vec3f(0, 0, 0));
       }
-      mem.push_back(vec3f(1, 1, 1));
+      mem.push_back(color);
     }
     vertex_count = mem.size() / 2;
     lines_count = vertex_count / 2;
