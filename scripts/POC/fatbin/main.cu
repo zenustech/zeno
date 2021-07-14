@@ -26,7 +26,7 @@
 } while (0)
 
 
-// PTX codes below is generic with the following command:
+// PTX codes below is generated with the following command:
 //   nvcc kernel.cu -ptx -arch=sm_75 -o kernel.ptx
 // may also add `--keep` to CMAKE_CUDA_FLAGS to obtain .ptx files in build/
 static std::string kernelCuPtx = R"(
@@ -186,7 +186,7 @@ int main() {
     CUmodule module = compileJITModule(dev, source, {kernelCuPtx});
 
     CUfunction function;
-    cuModuleGetFunction(&function, module, "caller");
+    CU(cuModuleGetFunction(&function, module, "caller"));
 
     CU(cuLaunchKernel(function,
             1, 1, 1, 1, 1, 1,
