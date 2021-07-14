@@ -18,7 +18,7 @@ struct Assembler {
     std::unique_ptr<SIMDBuilder> builder = std::make_unique<SIMDBuilder>();
     std::unique_ptr<Program> prog = std::make_unique<Program>();
 
-    std::vector<float> consts;
+    int nconsts = 0;
     int nlocals = 0;
     //int nglobals = 0;
 
@@ -34,13 +34,9 @@ struct Assembler {
             } else if (cmd == "ldi") {  // rcx points to an array of constants
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
-                auto value_expr = linesep[2];
-                float value = from_string<float>(value_expr);
-                int id = consts.size();
-                // yeah: we assumed simdkind to be xmmps in this branch
-                // todo: use template programming to be generic on this
-                int offset = id * sizeof(float);
-                consts.push_back(value);
+                auto id = from_string<int>(linesep[2]);
+                nconsts = std::max(nconsts, id + 1);
+                int offset = id * SIMDBuilder::scalarSizeOfType(simdkind);
                 builder->addAvxBroadcastLoadOp(simdkind,
                     dst, {opreg::rcx, memflag::reg_imm8, offset});
 
@@ -140,8 +136,7 @@ struct Assembler {
 #ifdef ZFX_PRINT_IR
         printf("variables: %d slots\n", nlocals);
         //printf("channels: %d pointers\n", nglobals);
-        printf("consts:");
-        for (auto const &val: consts) printf(" %f", val);
+        printf("consts: %d values\n", nconsts);
         printf("\ninsts:");
         for (auto const &inst: insts) printf(" %02X", inst);
         printf("\n");
@@ -151,9 +146,6 @@ struct Assembler {
         prog->mem = exec_page_alloc(prog->memsize);
         for (int i = 0; i < insts.size(); i++) {
             prog->mem[i] = insts[i];
-        }
-        for (int i = 0; i < consts.size(); i++) {
-            prog->consts[i] = consts[i];
         }
     }
 };

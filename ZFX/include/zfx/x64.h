@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <cstring>
+#include <sstream>
 
 namespace zfx::x64 {
 
@@ -33,11 +34,17 @@ struct Program {
         }
     };
 
+    void set_constants(std::vector<std::string> const &constants) {
+        for (int i = 0; i < constants.size(); i++) {
+            std::istringstream(constants[i]) >> consts[i];
+        }
+    }
+
     float &parameter(int parid) {
         return consts[parid];
     }
 
-    inline Context make_context() {
+    inline constexpr Context make_context() {
         return {this};
     }
 

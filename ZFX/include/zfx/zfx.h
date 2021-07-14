@@ -70,11 +70,11 @@ struct Program {
         return it != params.end() ? it - params.begin() : -1;
     }
 
-    decltype(auto) parameter(int parid) {
+    inline decltype(auto) parameter(int parid) {
         return prog->parameter(parid);
     }
 
-    decltype(auto) make_context() {
+    inline constexpr decltype(auto) make_context() {
         return prog->make_context();
     }
 };
@@ -110,6 +110,7 @@ struct Compiler {
         prog->prog = Prog::assemble(assem);
         prog->symbols = symbols;  // symbols are attributes in glsl
         prog->params = params;  // params are uniforms in glsl
+        prog->prog->set_constants(constants);
 
         auto raw_ptr = prog.get();
         cache[key] = std::move(prog);
