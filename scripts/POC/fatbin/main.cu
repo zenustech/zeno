@@ -85,6 +85,13 @@ int main() {
     CUmodule module;
     CU(cuModuleLoadData(&module, cubin));
 
+    CUfunction function;
+    cuModuleGetFunction(&function, module, "_Z6kernelv");
+
+    CU(cuLaunchKernel(function,
+            1, 1, 1, 1, 1, 1,
+            0, 0, NULL, 0));
+
     CU(cuCtxSynchronize());
 
     printf("done\n");
