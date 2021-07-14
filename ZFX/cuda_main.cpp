@@ -45,9 +45,9 @@ int main() {
     CU(cuMemcpyHtoD(d_array, h_array, sizeof(h_array)));
     CU(cuMemAlloc(&d_params, sizeof(h_params)));
     CU(cuMemcpyHtoD(d_params, h_params, sizeof(h_params)));
-    void *arg1 = (void *)&d_array;
+    void *arg1 = (void *)d_array;
     void *arg2 = (void *)size;
-    void *arg3 = (void *)&d_params;
+    void *arg3 = (void *)d_params;
     void *args[] = {&arg1, &arg2, &arg3};
     CU(cuLaunchKernel(function,
             1, 1, 1, 1, 1, 1,
