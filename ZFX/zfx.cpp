@@ -8,6 +8,7 @@ std::tuple
     < std::string
     , std::vector<std::pair<std::string, int>>
     , std::vector<std::pair<std::string, int>>
+    , std::vector<std::string>
     > compile_to_assembly
     ( std::string const &code
     , Options const &options
@@ -95,7 +96,10 @@ std::tuple
 #ifdef ZFX_PRINT_IR
     cout << "=== ConstParametrize" << endl;
 #endif
-    auto uniforms = apply_const_parametrize(ir.get());
+    auto
+        [ uniforms
+        , constants
+        ] = apply_const_parametrize(ir.get());
 #ifdef ZFX_PRINT_IR
     ir->print();
 #endif
@@ -150,7 +154,8 @@ std::tuple
     return
         { assem
         , new_symbols
-        , params
+        , new_params
+        , constants
         };
 }
 

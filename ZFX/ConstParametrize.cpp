@@ -29,7 +29,7 @@ struct ReassignParameters : Visitor<ReassignParameters> {
 struct ConstParametrize : Visitor<ConstParametrize> {
     using visit_stmt_types = std::tuple
         < AsmLoadConstStmt
-        , AsmParamLoadStmt
+        , Statement
         >;
 
     std::unique_ptr<IR> ir = std::make_unique<IR>();
@@ -76,7 +76,7 @@ std::pair
     *ir = *visitor.ir;
     return
         { reassign.uniforms
-        , visitors.getConstants()
+        , visitor.getConstants()
         };
 }
 
