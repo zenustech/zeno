@@ -148,11 +148,24 @@ struct Assembler {
             prog->mem[i] = insts[i];
         }
     }
+
+    void set_constants(std::vector<std::string> const &consts) {
+        for (int i = 0; i < consts.size(); i++) {
+            if (!(std::istringstream(consts[i]) >> prog->consts[i])) {
+                error("cannot parse literial constant `%s`",
+                    consts[i].c_str());
+            }
+        }
+    }
 };
 
-std::unique_ptr<Program> Program::assemble(std::string const &lines) {
+std::unique_ptr<Program> Program::assemble
+    ( std::string const &lines
+    , std::vector<std::string> const &consts
+    ) {
     Assembler a;
     a.parse(lines);
+    a.set_constants(consts);
     return std::move(a.prog);
 }
 

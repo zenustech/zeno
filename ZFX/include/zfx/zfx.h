@@ -107,10 +107,9 @@ struct Compiler {
             , options
             );
         auto prog = std::make_unique<Program<Prog>>();
-        prog->prog = Prog::assemble(assem);
+        prog->prog = Prog::assemble(assem, constants);
         prog->symbols = symbols;  // symbols are attributes in glsl
         prog->params = params;  // params are uniforms in glsl
-        prog->prog->set_constants(constants);
 
         auto raw_ptr = prog.get();
         cache[key] = std::move(prog);
