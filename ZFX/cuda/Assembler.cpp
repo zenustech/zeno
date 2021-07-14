@@ -54,7 +54,7 @@ struct CUDABuilder {
 
     std::string finish() {
         oss_head << "__device__ void zfx_wrangle_func";
-        oss_head << "(float *locals, float *params) {\n";
+        oss_head << "(float *locals, float const *params) {\n";
         oss << "}\n";
         if (maxregs) {
             oss_head << "float r0";

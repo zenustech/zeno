@@ -101,7 +101,7 @@ static CUmodule compileJITModule
     NVRTC(nvrtcGetPTX(prog, code));
     code[codeSize] = '\0';
 
-    //printf("nvrtc gives:\n%s\n", code);
+    printf("\n compilation result ---\n%s\n end result ---\n", code);
 
     CUlinkState state;
     CU(cuLinkCreate(0, NULL, NULL, &state));

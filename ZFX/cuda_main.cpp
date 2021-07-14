@@ -34,11 +34,15 @@ int main() {
         getAllPTXFilesUnder("."));
 
     CUfunction function;
-    CU(cuModuleGetFunction(&function, module, "caller"));
+    CU(cuModuleGetFunction(&function, module, "zfx_array_wrangle"));
 
+    float array[1] = {3.14f};
+    size_t size = 1;
+    float params[1];
+    void *args[] = {(void *)array, (void *)size, (void *)params};
     CU(cuLaunchKernel(function,
             1, 1, 1, 1, 1, 1,
-            0, 0, NULL, 0));
+            0, 0, args, 0));
 
     CU(cuCtxSynchronize());
 
