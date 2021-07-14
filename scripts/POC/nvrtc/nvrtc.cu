@@ -39,16 +39,16 @@ struct CudaModule {
     }
 };
 
-__global__ void wrangler() {
+__global__ void wrangler(void (*func)()) {
+    func();
 }
 
 int main(int argc, char **argv)
 {
-    CudaModule mod("extern \"C\" __global__ void callee() {"
+    CudaModule mod("extern \"C\" __device__ void callee() {"
                    "printf(\"THIS IS A FUCKING NVIDIA FUNC\\n\"); }");
 
     auto callee = mod.getFunction("callee");
-    //printf("%s\n", typeid(callee.hfunc).name());
     //callee.launch();
 
     checkCudaErrors(cuCtxSynchronize());
