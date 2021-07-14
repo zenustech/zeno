@@ -30,8 +30,8 @@ struct Program {
                 );
         }
 
-        float &channel(int chid) {
-            return locals[SimdWidth * chid];
+        float *channel(int chid) {
+            return locals + SimdWidth * chid;
         }
     };
 

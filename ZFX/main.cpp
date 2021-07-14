@@ -36,9 +36,9 @@ int main() {
     auto ctx = prog->make_context();
 
     prog->parameter(prog->param_id("$dt", 0)) = 3.14f;
-    memcpy(&ctx.channel(prog->symbol_id("@pos", 0)), arr, sizeof(arr));
+    memcpy(ctx.channel(prog->symbol_id("@pos", 0)), arr, sizeof(arr));
     ctx.execute();
-    memcpy(arr, &ctx.channel(prog->symbol_id("@pos", 0)), sizeof(arr));
+    memcpy(arr, ctx.channel(prog->symbol_id("@pos", 0)), sizeof(arr));
 
     printf("result:");
     for (auto val: arr) {

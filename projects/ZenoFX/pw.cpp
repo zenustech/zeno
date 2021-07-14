@@ -26,15 +26,28 @@ static void vectors_wrangle
     for (int i = 1; i < chs.size(); i++) {
         size = std::min(chs[i].count, size);
     }
+
     #pragma omp parallel for
-    for (int i = 0; i < size; i++) {
+    for (int i = 0; i < size - prog->SimdWidth + 1; i += prog->SimdWidth) {
         auto ctx = prog->make_context();
         for (int j = 0; j < chs.size(); j++) {
-            ctx.channel(j) = chs[j].base[chs[j].stride * i];
+            for (int k = 0; k < prog->SimdWidth; k++)
+                ctx.channel(j)[k] = chs[j].base[chs[j].stride * (i + k)];
         }
         ctx.execute();
         for (int j = 0; j < chs.size(); j++) {
-            chs[j].base[chs[j].stride * i] = ctx.channel(j);
+            for (int k = 0; k < prog->SimdWidth; k++)
+                 chs[j].base[chs[j].stride * (i + k)] = ctx.channel(j)[k];
+        }
+    }
+    for (int i = size / prog->SimdWidth * prog->SimdWidth; i < size; i++) {
+        auto ctx = prog->make_context();
+        for (int j = 0; j < chs.size(); j++) {
+            ctx.channel(j)[0] = chs[j].base[chs[j].stride * i];
+        }
+        ctx.execute();
+        for (int j = 0; j < chs.size(); j++) {
+            chs[j].base[chs[j].stride * i] = ctx.channel(j)[0];
         }
     }
 }
