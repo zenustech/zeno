@@ -10,11 +10,9 @@ extern "C" __global__ void zfx_array_wrangle
         ; i < nsize
         ; i += blockDim.x * gridDim.x
         ) {
-        printf("%d\n", i);
-        printf("%f\n", array[i]);
-        //float globals[1];
-        //globals[0] = array[i];
-        //zfx_wrangle_func(globals, params);
-        //array[i] = globals[0];
+        float globals[1];
+        globals[0] = array[i];
+        zfx_wrangle_func(globals, params);
+        array[i] = globals[0];
     }
 }

@@ -26,7 +26,8 @@ int main() {
 
     zfx::Options opts;
     opts.define_symbol("@pos", 1);
-    std::string zfxcode("@pos = 2.718");
+    opts.define_param("$dt", 1);
+    std::string zfxcode("@pos = $dt + 2.718");
     auto prog = compiler.compile(zfxcode, opts);
     auto source = prog->get_codegen_result();
 
@@ -38,7 +39,7 @@ int main() {
 
     float h_array[1] = {3.14f};
     CUdeviceptr d_array;
-    size_t size = 1;
+    size_t nsize = 1;
     float h_params[1] = {0.618f};
     CUdeviceptr d_params;
     CU(cuMemAlloc(&d_array, sizeof(h_array)));
@@ -46,7 +47,7 @@ int main() {
     CU(cuMemAlloc(&d_params, sizeof(h_params)));
     CU(cuMemcpyHtoD(d_params, h_params, sizeof(h_params)));
     void *arg1 = (void *)d_array;
-    void *arg2 = (void *)size;
+    void *arg2 = (void *)nsize;
     void *arg3 = (void *)d_params;
     void *args[] = {&arg1, &arg2, &arg3};
     CU(cuLaunchKernel(function,
@@ -54,6 +55,10 @@ int main() {
             0, 0, args, 0));
 
     CU(cuCtxSynchronize());
+    CU(cuMemcpyDtoH(h_array, d_array, sizeof(h_array)));
+    for (int i = 0; i < nsize; i++) {
+        printf("%f\n", h_array[i]);
+    }
 
     printf("done\n");
     return 0;
