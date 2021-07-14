@@ -31,31 +31,15 @@
     }                                                           \
   } while (0)
 
-void compileFileToCUBIN(char *filename, int argc, char **argv, char **cubinResult,
+void compileSourceToCUBIN(const char *filename, const char *source,
+                      int argc, char **argv, char **cubinResult,
                       size_t *cubinResultSize, int requiresCGheaders) {
-  std::ifstream inputFile(filename,
-                          std::ios::in | std::ios::binary | std::ios::ate);
-
-  if (!inputFile.is_open()) {
-    std::cerr << "\nerror: unable to open " << filename << " for reading!\n";
-    exit(1);
-  }
-
-  std::streampos pos = inputFile.tellg();
-  size_t inputSize = (size_t)pos;
-  char *memBlock = new char[inputSize + 1];
-
-  inputFile.seekg(0, std::ios::beg);
-  inputFile.read(memBlock, inputSize);
-  inputFile.close();
-  memBlock[inputSize] = '\x0';
-
   int numCompileOptions = 0;
 
   char *compileParams[2];
 
   int major = 0, minor = 0;
-  char deviceName[256];
+  //char deviceName[256];
 
   // Picks the best CUDA device available
   CUdevice cuDevice = findCudaDeviceDRV(argc, (const char **)argv);
@@ -121,7 +105,7 @@ void compileFileToCUBIN(char *filename, int argc, char **argv, char **cubinResul
   // compile
   nvrtcProgram prog;
   NVRTC_SAFE_CALL("nvrtcCreateProgram",
-                  nvrtcCreateProgram(&prog, memBlock, filename, 0, NULL, NULL));
+                  nvrtcCreateProgram(&prog, source, filename, 0, NULL, NULL));
 
   nvrtcResult res = nvrtcCompileProgram(prog, numCompileOptions, compileParams);
 
