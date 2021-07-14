@@ -45,7 +45,7 @@ __global__ void wrangler(void (*func)()) {
 
 int main(int argc, char **argv)
 {
-    CudaModule mod("extern \"C\" __device__ void callee() {"
+    CudaModule mod("extern \"C\" __global__ void callee() {"
                    "printf(\"THIS IS A FUCKING NVIDIA FUNC\\n\"); }");
 
     auto callee = mod.getFunction("callee");
