@@ -34,11 +34,11 @@ static void vectors_wrangle
             ctx.regtable[j] = pars[j];
         }*/
         for (int j = 0; j < chs.size(); j++) {
-            *ctx.pointer(j) = chs[j].base[chs[j].stride * i];
+            ctx.channel(j) = chs[j].base[chs[j].stride * i];
         }
         ctx.execute();
         for (int j = 0; j < chs.size(); j++) {
-            chs[j].base[chs[j].stride * i] = *ctx.pointer(j);
+            chs[j].base[chs[j].stride * i] = ctx.channel(j);
         }
     }
 }
@@ -59,7 +59,9 @@ struct ParticlesWrangle : zeno::INode {
             opts.define_symbol('@' + key, dim);
         }
 
-        /*auto params = get_input<zeno::ListObject>("params");
+        auto params = has_input("params") ?
+            get_input<zeno::ListObject>("params") :
+            std::make_shared<zeno::ListObject>();
         std::vector<float> pars;
         std::vector<std::string> parnames;
         for (int i = 0; i < params->arr.size(); i++) {
@@ -67,28 +69,24 @@ struct ParticlesWrangle : zeno::INode {
             std::ostringstream keyss; keyss << "arg" << i;
             auto key = keyss.str();
             auto par = dynamic_cast<zeno::NumericObject *>(obj.get());
-            oss << "define ";
-            std::visit([&] (auto const &v) {
+            auto dim = std::visit([&] (auto const &v) {
                 using T = std::decay_t<decltype(v)>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) {
-                    oss << "f3";
                     pars.push_back(v[0]);
                     pars.push_back(v[1]);
                     pars.push_back(v[2]);
-                    parnames.push_back(key + ".0");
-                    parnames.push_back(key + ".1");
-                    parnames.push_back(key + ".2");
+                    parnames.emplace_back(key, 0);
+                    parnames.emplace_back(key, 1);
+                    parnames.emplace_back(key, 2);
+                    return 3;
                 } else if constexpr (std::is_same_v<T, float>) {
-                    oss << "f1";
                     pars.push_back(v);
-                    parnames.push_back(key + ".0");
-                } else oss << "unknown";
+                    parnames.emplace_back(key, 0);
+                    return 1;
+                } else return 0;
             }, par->value);
-            oss << " " << key << '\n';
+            opts.define_param(key, dim);
         }
-        for (auto const &par: parnames) {
-            oss << "parname " << par << '\n';
-        }*/
 
         auto prog = compiler.compile(code, opts);
 

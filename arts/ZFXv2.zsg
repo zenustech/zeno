@@ -115,7 +115,7 @@
       "COND": null
      },
      "params": {
-      "value": "@pos.y = @pos.x"
+      "value": "@pos.z = @pos.x"
      },
      "uipos": [
       -240.63999999999996,
