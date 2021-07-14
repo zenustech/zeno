@@ -17,8 +17,8 @@ std::vector<std::string> getAllPTXFilesUnder(std::string const &dirpath) {
 
     for (auto const &entry: fs::directory_iterator(dirpath)) {
         auto path = entry.path();
-        printf("reading ptx file: %s\n", path.c_str());
         if (fs::path(path).extension() == ".ptx") {
+            printf("reading ptx file: %s\n", path.c_str());
             std::ifstream fin(path,
                 std::ios::in | std::ios::binary | std::ios::ate);
             if (!fin.is_open()) {

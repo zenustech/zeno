@@ -114,13 +114,15 @@ std::tuple
         new_params[dst] = std::pair{params[dst].first, params[i].second};
     }
 
+    if (options.arch_nregs != 0) {
 #ifdef ZFX_PRINT_IR
-    cout << "=== RegisterAllocation" << endl;
+        cout << "=== RegisterAllocation" << endl;
 #endif
-    apply_register_allocation(ir.get());
+        apply_register_allocation(ir.get(), options.arch_nregs);
 #ifdef ZFX_PRINT_IR
-    ir->print();
+        ir->print();
 #endif
+    }
 
 #ifdef ZFX_PRINT_IR
     cout << "=== GlobalLocalize" << endl;
