@@ -52,11 +52,12 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.label.setPlainText(name)
 
     def getCirclePos(self):
+        offset = 14
         basePos = self.node.pos() + self.pos()
         if self.isOutput:
-            return basePos + QPointF(self.node.width, 0)
+            return basePos + QPointF(self.node.width, 0) + QPointF(-offset, 0)
         else:
-            return basePos
+            return basePos + QPointF(offset, 0)
 
     def getCircleBounds(self):
         SOCKET_RADIUS = 3
