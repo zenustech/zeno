@@ -19,7 +19,7 @@ struct CUDABuilder {
     int maxregs = 0;
 
     void define(int dst) {
-        maxregs = std::max(maxregs, dst);
+        maxregs = std::max(maxregs, dst + 1);
     }
 
     void addAssign(int dst, int src) {
