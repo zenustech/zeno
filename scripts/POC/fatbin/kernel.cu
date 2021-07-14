@@ -1,7 +1,6 @@
-extern "C" __device__ void callee();
+extern __device__ int twice(int x);
 
 extern "C" __global__ void caller() {
-    printf("caller\n");
-    callee();
-    printf("caller\n");
+    int x = 233;
+    printf("twice(%d) = %d\n", x, twice(x));
 }
