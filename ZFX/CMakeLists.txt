@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(ZFX LANGUAGES C CXX)
+project(ZFX LANGUAGES C CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -10,7 +10,7 @@ else()
 endif()
 
 add_library(ZFX
-# ls {,include/zfx/}*{,/*}.{h,cpp} | cat
+# ls {,include/zfx/}*{,/*}.{h,cpp} | grep -v main.cpp
 AST.h
 ConstParametrize.cpp
 cuda/Assembler.cpp
@@ -45,5 +45,5 @@ if (ZFX_PRINT_IR)
 endif()
 target_include_directories(ZFX PUBLIC include)
 
-add_executable(ZFXtest main.cpp)
-target_link_libraries(ZFXtest ZFX)
+add_executable(ZFXtest cuda_main.cu)
+target_link_libraries(ZFXtest PRIVATE ZFX cuda nvrtc)

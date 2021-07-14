@@ -79,6 +79,10 @@ struct Program {
     inline constexpr decltype(auto) make_context() {
         return prog->make_context();
     }
+
+    inline decltype(auto) get_codegen_result() {
+        return prog->get_codegen_result();
+    }
 };
 
 template <class Prog>

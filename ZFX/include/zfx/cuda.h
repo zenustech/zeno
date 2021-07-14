@@ -14,6 +14,10 @@ struct Program {
         ( std::string const &lines
         , std::map<int, std::string> const &consts
         );
+
+    auto const &get_codegen_result() {
+        return code;
+    }
 };
 
 }
