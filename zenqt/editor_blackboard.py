@@ -103,7 +103,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
         r = style['node_rounded_radius']
 
         pathContent = QPainterPath()
-        rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
+        rect = QRect(0, -TEXT_HEIGHT, self.width, self.height)
         pathContent.addRoundedRect(rect, r, r)
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor(style['blackboard_panel_color']))
@@ -111,7 +111,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
 
         # title round top
         pathTitle = QPainterPath()
-        rect = QRectF(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
+        rect = QRect(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
         pathTitle.addRoundedRect(rect, r, r)
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor(style['blackboard_title_color']))
@@ -119,7 +119,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
         
         # title direct bottom
         pathTitle = QPainterPath()
-        rect = QRectF(0, -r, self.width, r)
+        rect = QRect(0, -r, self.width, r)
         pathTitle.addRect(rect)
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor(style['blackboard_title_color']))
@@ -127,7 +127,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
 
         if self.isSelected():
             pathOutline = QPainterPath()
-            rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
+            rect = QRect(0, -TEXT_HEIGHT, self.width, self.height)
             pathOutline.addRoundedRect(rect, r, r)
             pen = QPen(QColor(style['selected_color']))
             pen.setWidth(style['node_outline_width'])

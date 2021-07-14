@@ -93,7 +93,7 @@ class QDMGraphicsNode(QGraphicsItem):
             button = QDMGraphicsButton(self)
             M = HORI_MARGIN // 2
             W = 38
-            rect = QRectF(W * i + M, -38, 34, 34)
+            rect = QRect(W * i + M, -38, 34, 34)
             button.setGeometry(rect)
             button.setText(key)
             self.options[key] = button
@@ -111,7 +111,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.params.clear()
         for index, (type, name, defl) in enumerate(params):
             param = globals()['QDMGraphicsParam_' + type](self)
-            rect = QRectF(HORI_MARGIN, y, self.width - HORI_MARGIN * 2, 0)
+            rect = QRect(HORI_MARGIN, y, self.width - HORI_MARGIN * 2, 0)
             param.setGeometry(rect)
             param.setName(name)
             param.setDefault(defl)
@@ -170,7 +170,7 @@ class QDMGraphicsNode(QGraphicsItem):
         if self.isSelected():
             pad = 10
             h = 0 if self.collapsed else self.height
-            rect = QRectF(-pad, -pad -top, self.width + pad * 2, h + pad * 2 + top + bottom)
+            rect = QRect(-pad, -pad -top, self.width + pad * 2, h + pad * 2 + top + bottom)
             fillRect(painter, rect, '#52331F', 2, '#FA6400')
 
         r = style['node_rounded_radius']
@@ -185,25 +185,25 @@ class QDMGraphicsNode(QGraphicsItem):
 
         y = 0 if self.collapsed else self.height
         # title background
-        rect = QRectF(0 + hw, y + hw, 203 - w, 36 - w)
+        rect = QRect(0 + hw, y + hw, 203 - w, 36 - w)
         fillRect(painter, rect, style['title_color'], line_width, line_color)
 
         # collpase button background
-        rect = QRectF(204 + hw, y + hw, 36 - w, 36 - w)
+        rect = QRect(204 + hw, y + hw, 36 - w, 36 - w)
         fillRect(painter, rect, style['title_color'], line_width, line_color)
 
         # button background
-        rect = QRectF(0, -top, 240, top)
+        rect = QRect(0, -top, 240, top)
         fillRect(painter, rect, '#638E77')
 
         M = HORI_MARGIN // 2
         W = 38
-        rect = QRectF(W * 4 + M, -38, 79, 34)
+        rect = QRect(W * 4 + M, -38, 79, 34)
         fillRect(painter, rect, '#376557')
 
         # content panel background
         if not self.collapsed:
-            rect = QRectF(hw + w, hw, self.width - w * 3, self.height - w)
+            rect = QRect(hw + w, hw, self.width - w * 3, self.height - w)
             fillRect(painter, rect, style['panel_color'], line_width, '#4a4a4a')
 
 
