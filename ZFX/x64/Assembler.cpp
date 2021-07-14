@@ -18,9 +18,9 @@ struct Assembler {
     std::unique_ptr<SIMDBuilder> builder = std::make_unique<SIMDBuilder>();
     std::unique_ptr<Program> prog = std::make_unique<Program>();
 
-    std::vector<float> consts;
+    int nconsts = 0;
     int nlocals = 0;
-    int nglobals = 0;
+    //int nglobals = 0;
 
     void parse(std::string const &lines) {
         for (auto line: split_str(lines, '\n')) {
@@ -34,35 +34,31 @@ struct Assembler {
             } else if (cmd == "ldi") {  // rcx points to an array of constants
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
-                auto value_expr = linesep[2];
-                float value = from_string<float>(value_expr);
-                int id = consts.size();
-                // yeah: we assumed simdkind to be xmmps in this branch
-                // todo: use template programming to be generic on this
-                int offset = id * sizeof(float);
-                consts.push_back(value);
+                auto id = from_string<int>(linesep[2]);
+                nconsts = std::max(nconsts, id + 1);
+                int offset = id * SIMDBuilder::scalarSizeOfType(simdkind);
                 builder->addAvxBroadcastLoadOp(simdkind,
                     dst, {opreg::rcx, memflag::reg_imm8, offset});
 
-            } else if (cmd == "ldl") {  // rbx points to an array of variables
+            } else if (cmd == "ldm") {  // rdx points to an array of variables
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
                 nlocals = std::max(nlocals, id + 1);
                 int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 builder->addAvxMemoryOp(simdkind, opcode::loadu,
-                    dst, {opreg::rbx, memflag::reg_imm8, offset});
+                    dst, {opreg::rdx, memflag::reg_imm8, offset});
 
-            } else if (cmd == "stl") {
+            } else if (cmd == "stm") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
                 int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 nlocals = std::max(nlocals, id + 1);
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
-                    dst, {opreg::rbx, memflag::reg_imm8, offset});
+                    dst, {opreg::rdx, memflag::reg_imm8, offset});
 
-            } else if (cmd == "ldg") {  // rdx points to an array of pointers
+            /*} else if (cmd == "ldg") {  // rdx points to an array of pointers
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
@@ -82,7 +78,7 @@ struct Assembler {
                 builder->addRegularLoadOp(opreg::rax,
                     {opreg::rdx, memflag::reg_imm8, offset});
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
-                    dst, opreg::rax);
+                    dst, opreg::rax);*/
 
             } else if (cmd == "add") {
                 ERROR_IF(linesep.size() < 3);
@@ -139,10 +135,9 @@ struct Assembler {
 
 #ifdef ZFX_PRINT_IR
         printf("variables: %d slots\n", nlocals);
-        printf("channels: %d pointers\n", nglobals);
-        printf("consts:");
-        for (auto const &val: consts) printf(" %f", val);
-        printf("\ninsts:");
+        //printf("channels: %d pointers\n", nglobals);
+        printf("consts: %d values\n", nconsts);
+        printf("insts:");
         for (auto const &inst: insts) printf(" %02X", inst);
         printf("\n");
 #endif
@@ -152,15 +147,25 @@ struct Assembler {
         for (int i = 0; i < insts.size(); i++) {
             prog->mem[i] = insts[i];
         }
-        for (int i = 0; i < consts.size(); i++) {
-            prog->consts[i] = consts[i];
+    }
+
+    void set_constants(std::map<int, std::string> const &consts) {
+        for (auto const &[idx, expr]: consts) {
+            if (!(std::istringstream(expr) >> prog->consts[idx])) {
+                error("cannot parse literial constant `%s`",
+                    expr.c_str());
+            }
         }
     }
 };
 
-std::unique_ptr<Program> Program::assemble(std::string const &lines) {
+std::unique_ptr<Program> Program::assemble
+    ( std::string const &lines
+    , std::map<int, std::string> const &consts
+    ) {
     Assembler a;
     a.parse(lines);
+    a.set_constants(consts);
     return std::move(a.prog);
 }
 

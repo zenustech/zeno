@@ -12,8 +12,9 @@ namespace zfx {
 
 struct LowerMath : Visitor<LowerMath> {
     using visit_stmt_types = std::tuple
-        < TempSymbolStmt
-        , SymbolStmt
+        < SymbolStmt
+        , TempSymbolStmt
+        , ParamSymbolStmt
         , LiterialStmt
         , UnaryOpStmt
         , BinaryOpStmt
@@ -40,6 +41,17 @@ struct LowerMath : Visitor<LowerMath> {
         for (int i = 0; i < stmt->dim; i++) {
             rep.push_back(ir->emplace_back<TempSymbolStmt>(
                 stmt->tmpid, std::vector<int>{-1}));
+        }
+    }
+
+    void visit(ParamSymbolStmt *stmt) {
+        auto &rep = replaces[stmt];
+        rep.clear();
+        ERROR_IF(stmt->dim == 0);
+        for (int i = 0; i < stmt->dim; i++) {
+            auto symid = stmt->symids[i];
+            rep.push_back(ir->emplace_back<ParamSymbolStmt>(
+                std::vector<int>{symid}));
         }
     }
 

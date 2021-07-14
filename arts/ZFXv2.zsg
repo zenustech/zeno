@@ -2,42 +2,6 @@
  "graph": {
   "main": {
    "nodes": {
-    "5091d709-ParticlesToPrimitive": {
-     "name": "ParticlesToPrimitive",
-     "inputs": {
-      "pars": [
-       "4cb8a725-ParticlesWrangle",
-       "pars"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      548.0,
-      317.6000000000001
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
-    "420fa29e-ParticlesFromPrimitive": {
-     "name": "ParticlesFromPrimitive",
-     "inputs": {
-      "prim": [
-       "46e84ca1-Make2DGridPrimitive",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      19.200000000000045,
-      319.99999999999994
-     ],
-     "options": []
-    },
     "46e84ca1-Make2DGridPrimitive": {
      "name": "Make2DGridPrimitive",
      "inputs": {
@@ -75,11 +39,11 @@
       "COND": null
      },
      "params": {
-      "value": 32
+      "value": 3
      },
      "uipos": [
-      -548.0,
-      164.0
+      -540.0,
+      164.79999999999998
      ],
      "options": []
     },
@@ -117,30 +81,148 @@
      ],
      "options": []
     },
-    "4cb8a725-ParticlesWrangle": {
+    "e2e7d25d-ParticlesWrangle": {
      "name": "ParticlesWrangle",
      "inputs": {
-      "pars": [
-       "420fa29e-ParticlesFromPrimitive",
-       "pars"
+      "prim": [
+       "46e84ca1-Make2DGridPrimitive",
+       "prim"
+      ],
+      "zfxCode": [
+       "dacabede-MakeMultilineString",
+       "value"
+      ],
+      "params": [
+       "15a1a6f5-MakeSmallDict",
+       "dict"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      4.479999999999999,
+      266.88000000000005
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "dacabede-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": "@pos.z = $frame_id / 100"
+     },
+     "uipos": [
+      -238.71999999999997,
+      493.4399999999998
+     ],
+     "options": []
+    },
+    "0ba458ab-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "da7c6252-GetFrameNum",
+       "FrameNum"
+      ],
+      "rhs": [
+       "af3bd429-GetFramePortion",
+       "FramePortion"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {
-      "code": "tmp = normalize(@pos.xy)\n@pos.zxy = vec3(tmp.yx, sqrt(tmp.x))"
+      "op_type": "add"
      },
      "uipos": [
-      281.0,
-      198.0
+      -469.76,
+      673.4399999999999
+     ],
+     "options": []
+    },
+    "da7c6252-GetFrameNum": {
+     "name": "GetFrameNum",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      -714.2399999999999,
+      647.04
+     ],
+     "options": []
+    },
+    "ff25c3c5-PrintNumeric": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "0ba458ab-NumericOperator",
+       "ret"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "hint": "PrintNumeric"
+     },
+     "uipos": [
+      -140.79999999999998,
+      806.4000000000001
+     ],
+     "options": [
+      "OUT"
+     ]
+    },
+    "15a1a6f5-MakeSmallDict": {
+     "name": "MakeSmallDict",
+     "inputs": {
+      "obj0": [
+       "0ba458ab-NumericOperator",
+       "ret"
+      ],
+      "obj1": null,
+      "obj2": null,
+      "obj3": null,
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "name0": "frame_id",
+      "name1": "obj1",
+      "name2": "obj2",
+      "name3": "obj3"
+     },
+     "uipos": [
+      14.399999999999991,
+      481.6
+     ],
+     "options": []
+    },
+    "af3bd429-GetFramePortion": {
+     "name": "GetFramePortion",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      -712.8000000000001,
+      793.6000000000001
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.5625,
-    "trans_x": 123,
-    "trans_y": 238
+    "scale": 1.25,
+    "trans_x": -1209,
+    "trans_y": 162
    }
   }
  },
@@ -225,6 +307,35 @@
     "portal"
    ]
   },
+  "DictSize": {
+   "inputs": [
+    "dict",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "size",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "EmptyDict": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
   "EmptyList": {
    "inputs": [
     "SRC",
@@ -300,6 +411,22 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "ExtractDict": {
+   "inputs": [
+    "dict",
+    "key",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "object",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
    ]
   },
   "ExtractList": {
@@ -552,6 +679,45 @@
     "primitive"
    ]
   },
+  "MakeSmallDict": {
+   "inputs": [
+    "obj0",
+    "obj1",
+    "obj2",
+    "obj3",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name0",
+     "obj0"
+    ],
+    [
+     "string",
+     "name1",
+     "obj1"
+    ],
+    [
+     "string",
+     "name2",
+     "obj2"
+    ],
+    [
+     "string",
+     "name3",
+     "obj3"
+    ]
+   ],
+   "categories": [
+    "dict"
+   ]
+  },
   "MakeSmallList": {
    "inputs": [
     "obj0",
@@ -791,53 +957,19 @@
     "numeric"
    ]
   },
-  "ParticlesFromPrimitive": {
-   "inputs": [
-    "prim",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "pars",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
-  "ParticlesToPrimitive": {
-   "inputs": [
-    "pars",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "prim",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
   "ParticlesWrangle": {
    "inputs": [
-    "pars",
+    "prim",
+    "zfxCode",
+    "params",
     "SRC",
     "COND"
    ],
    "outputs": [
-    "pars",
+    "prim",
     "DST"
    ],
-   "params": [
-    [
-     "multiline_string",
-     "code",
-     ""
-    ]
-   ],
+   "params": [],
    "categories": [
     "zenofx"
    ]
@@ -1591,6 +1723,23 @@
    "params": [],
    "categories": [
     "numeric"
+   ]
+  },
+  "UpdateDict": {
+   "inputs": [
+    "dict",
+    "key",
+    "object",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
    ]
   },
   "WrangleBinaryOp": {

@@ -2,20 +2,21 @@
 
 #include <memory>
 #include <cstring>
+#include <string>
+#include <map>
 
 namespace zfx::x64 {
 
 struct Program {
-    float consts[4096];
     uint8_t *mem = nullptr;
-    size_t memsize;
+    size_t memsize = 0;
+    float consts[1024];
 
     static constexpr size_t SimdWidth = 4;
 
     struct Context {
         Program *prog;
-        float locals[4 * 128];
-        float *chptrs[128];
+        float locals[SimdWidth * 256];
 
         void execute() {
             auto entry = (void (*)())prog->mem;
@@ -24,18 +25,21 @@ struct Program {
                 :
                 : "" (entry)
                 , "c" ((uintptr_t)(void *)prog->consts)
-                , "d" ((uintptr_t)(void *)chptrs)
-                , "b" ((uintptr_t)(void *)locals)
+                , "d" ((uintptr_t)(void *)locals)
                 : "cc", "memory"
                 );
         }
 
-        float *&channel_pointer(int chid) {
-            return chptrs[chid];
+        float *channel(int chid) {
+            return locals + SimdWidth * chid;
         }
     };
 
-    inline Context make_context() {
+    float &parameter(int parid) {
+        return consts[parid];
+    }
+
+    inline constexpr Context make_context() {
         return {this};
     }
 
@@ -43,7 +47,10 @@ struct Program {
     Program(Program const &) = delete;
     ~Program();
 
-    static std::unique_ptr<Program> assemble(std::string const &lines);
+    static std::unique_ptr<Program> assemble
+        ( std::string const &lines
+        , std::map<int, std::string> const &consts
+        );
 };
 
 }

@@ -11,10 +11,17 @@ struct Particles : zeno::IObject {
     template <class F>
     void foreach_attr(F const &f) {
         for (auto &[key, arr]: m_attrs) {
-            std::visit([&key, &f](auto &arr) {
+            std::visit([&](auto &arr) {
                 f(key, arr);
             }, arr);
         }
+    }
+
+    template <class F>
+    void visit_attr(std::string const &key, F const &f) {
+        std::visit([&](auto &arr) {
+            f(arr);
+        }, m_attrs.at(key));
     }
 
     template <class T, size_t N>

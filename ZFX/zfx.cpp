@@ -7,9 +7,11 @@ namespace zfx {
 std::tuple
     < std::string
     , std::vector<std::pair<std::string, int>>
+    , std::vector<std::pair<std::string, int>>
+    , std::map<int, std::string>
     > compile_to_assembly
     ( std::string const &code
-    , std::map<std::string, int> const &symdims
+    , Options const &options
     ) {
 #ifdef ZFX_PRINT_IR
     cout << "=== ZFX" << endl;
@@ -33,9 +35,11 @@ std::tuple
     auto
         [ ir
         , symbols
+        , params
         ] = lower_ast
         ( std::move(asts)
-        , symdims
+        , options.symdims
+        , options.pardims
         );
 #ifdef ZFX_PRINT_IR
     ir->print();
@@ -90,12 +94,53 @@ std::tuple
 #endif
 
 #ifdef ZFX_PRINT_IR
-    cout << "=== RegisterAllocation" << endl;
+    cout << "=== ConstParametrize" << endl;
 #endif
-    apply_register_allocation(ir.get());
+    auto
+        [ uniforms
+        , constants
+        ] = apply_const_parametrize(ir.get());
 #ifdef ZFX_PRINT_IR
     ir->print();
 #endif
+    std::vector<std::pair<std::string, int>> new_params;
+    for (int i = 0; i < params.size(); i++) {
+        auto it = uniforms.find(i);
+        if (it == uniforms.end())
+            continue;
+        auto dst = it->second;
+        if (new_params.size() < dst + 1)
+            new_params.resize(dst + 1);
+        new_params[dst] = std::pair{params[dst].first, params[i].second};
+    }
+
+    if (options.arch_nregs != 0) {
+#ifdef ZFX_PRINT_IR
+        cout << "=== RegisterAllocation" << endl;
+#endif
+        apply_register_allocation(ir.get(), options.arch_nregs);
+#ifdef ZFX_PRINT_IR
+        ir->print();
+#endif
+    }
+
+#ifdef ZFX_PRINT_IR
+    cout << "=== GlobalLocalize" << endl;
+#endif
+    auto globals = apply_global_localize(ir.get());
+#ifdef ZFX_PRINT_IR
+    ir->print();
+#endif
+    std::vector<std::pair<std::string, int>> new_symbols;
+    for (int i = 0; i < symbols.size(); i++) {
+        auto it = globals.find(i);
+        if (it == globals.end())
+            continue;
+        auto dst = it->second;
+        if (new_symbols.size() < dst + 1)
+            new_symbols.resize(dst + 1);
+        new_symbols[dst] = std::pair{symbols[dst].first, symbols[i].second};
+    }
 
 #ifdef ZFX_PRINT_IR
     cout << "=== EmitAssembly" << endl;
@@ -110,7 +155,9 @@ std::tuple
 #endif
     return
         { assem
-        , symbols
+        , new_symbols
+        , new_params
+        , constants
         };
 }
 

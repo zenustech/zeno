@@ -3,13 +3,14 @@
 #include <set>
 #include <map>
 
-// let's left two regs for load/store from spilled memory:
-inline constexpr int NREGS = 8 - 2;
-
 namespace zfx {
 
 // http://web.cs.ucla.edu/~palsberg/course/cs132/linearscan.pdf
 struct UCLAScanner {
+    const int NREGS;
+
+    explicit UCLAScanner(int nregs) : NREGS(nregs) {}
+
     struct Stmt {
         std::set<int> regs;
     };
@@ -136,7 +137,7 @@ struct InspectRegisters : Visitor<InspectRegisters> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
-        , AsmLoadConstStmt
+        , AsmParamLoadStmt
         , AsmLocalLoadStmt
         , AsmLocalStoreStmt
         , AsmGlobalLoadStmt
@@ -165,8 +166,8 @@ struct InspectRegisters : Visitor<InspectRegisters> {
         touch(stmt->id, stmt->rhs);
     }
 
-    void visit(AsmLoadConstStmt *stmt) {
-        touch(stmt->id, stmt->dst);
+    void visit(AsmParamLoadStmt *stmt) {
+        touch(stmt->id, stmt->val);
     }
 
     void visit(AsmLocalLoadStmt *stmt) {
@@ -191,7 +192,7 @@ struct ReassignRegisters : Visitor<ReassignRegisters> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
-        , AsmLoadConstStmt
+        , AsmParamLoadStmt
         , AsmLocalLoadStmt
         , AsmLocalStoreStmt
         , AsmGlobalLoadStmt
@@ -220,8 +221,8 @@ struct ReassignRegisters : Visitor<ReassignRegisters> {
         reassign(stmt->rhs);
     }
 
-    void visit(AsmLoadConstStmt *stmt) {
-        reassign(stmt->dst);
+    void visit(AsmParamLoadStmt *stmt) {
+        reassign(stmt->val);
     }
 
     void visit(AsmLocalLoadStmt *stmt) {
@@ -246,13 +247,17 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
-        , AsmLoadConstStmt
+        , AsmParamLoadStmt
         , AsmLocalLoadStmt
         , AsmLocalStoreStmt
         , AsmGlobalLoadStmt
         , AsmGlobalStoreStmt
         , Statement
         >;
+
+    const int NREGS;
+
+    explicit FixupMemorySpill(int nregs) : NREGS(nregs) {}
 
     std::unique_ptr<IR> ir = std::make_unique<IR>();
 
@@ -297,9 +302,9 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
         touch(0, stmt->dst);
     }
 
-    void visit(AsmLoadConstStmt *stmt) {
+    void visit(AsmParamLoadStmt *stmt) {
         visit((Statement *)stmt);
-        touch(0, stmt->dst);
+        touch(0, stmt->val);
     }
 
     void visit(AsmLocalLoadStmt *stmt) {
@@ -323,8 +328,12 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
     }
 };
 
-void apply_register_allocation(IR *ir) {
-    UCLAScanner scanner;
+void apply_register_allocation(IR *ir, int nregs) {
+    nregs -= 2; // left two regs for load/store from spilled memory
+    if (nregs <= 2) {
+        error("no enough registers!\n");
+    }
+    UCLAScanner scanner(nregs);
     InspectRegisters inspect;
     inspect.scanner = &scanner;
     inspect.apply(ir);
@@ -332,7 +341,7 @@ void apply_register_allocation(IR *ir) {
     ReassignRegisters reassign;
     reassign.scanner = &scanner;
     reassign.apply(ir);
-    FixupMemorySpill fixspill;
+    FixupMemorySpill fixspill(nregs);
     fixspill.apply(ir);
     *ir = *fixspill.ir;
 }

@@ -10,35 +10,73 @@
 
 namespace zfx {
 
+struct Options {
+    std::map<std::string, int> symdims;
+    std::map<std::string, int> pardims;
+
+    void define_symbol(std::string const &name, int dimension) {
+        symdims[name] = dimension;
+    }
+
+    void define_param(std::string const &name, int dimension) {
+        pardims[name] = dimension;
+    }
+
+    void dump(std::ostream &os) const {
+        for (auto const &[name, dim]: symdims) {
+            os << '/' << name << '/' << dim;
+        }
+        for (auto const &[name, dim]: pardims) {
+            os << '\\' << name << '\\' << dim;
+        }
+    }
+
+    int arch_nregs = 8;
+};
+
 std::tuple
     < std::string
     , std::vector<std::pair<std::string, int>>
+    , std::vector<std::pair<std::string, int>>
+    , std::map<int, std::string>
     > compile_to_assembly
     ( std::string const &code
-    , std::map<std::string, int> const &symdims
+    , Options const &options
     );
 
 template <class Prog>
 struct Program {
     std::unique_ptr<Prog> prog;
     std::vector<std::pair<std::string, int>> symbols;
+    std::vector<std::pair<std::string, int>> params;
 
     static inline constexpr size_t SimdWidth = Prog::SimdWidth;
 
-    std::vector<int> channel_ids(std::string const &name, int dim) const {
-        std::vector<int> res;
-        for (int i = 0; i < dim; i++) {
-            res.push_back(channel_id(name, i));
-        }
-        return res;
+    auto const &get_symbols() const {
+        return symbols;
     }
 
-    int channel_id(std::string const &name, int dim) const {
-        auto it = std::find(symbols.begin(), symbols.end(), std::pair{name, dim});
-        return it - symbols.begin();
+    auto const &get_params() const {
+        return symbols;
     }
 
-    decltype(auto) make_context() {
+    int symbol_id(std::string const &name, int dim) const {
+        auto it = std::find(
+            symbols.begin(), symbols.end(), std::pair{name, dim});
+        return it != symbols.end() ? it - symbols.begin() : -1;
+    }
+
+    int param_id(std::string const &name, int dim) const {
+        auto it = std::find(
+            params.begin(), params.end(), std::pair{name, dim});
+        return it != params.end() ? it - params.begin() : -1;
+    }
+
+    inline decltype(auto) parameter(int parid) {
+        return prog->parameter(parid);
+    }
+
+    inline constexpr decltype(auto) make_context() {
         return prog->make_context();
     }
 };
@@ -49,13 +87,11 @@ struct Compiler {
 
     Program<Prog> *compile
         ( std::string const &code
-        , std::map<std::string, int> const &symdims
+        , Options const &options
         ) {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << code << "<EOF>";
-        for (auto const &[name, dim]: symdims) {
-            ss << '/' << name << '/' << dim;
-        }
+        options.dump(ss);
         auto key = ss.str();
 
         auto it = cache.find(key);
@@ -66,13 +102,16 @@ struct Compiler {
         auto 
             [ assem
             , symbols
+            , params
+            , constants
             ] = compile_to_assembly
             ( code
-            , symdims
+            , options
             );
         auto prog = std::make_unique<Program<Prog>>();
-        prog->prog = Prog::assemble(assem);
-        prog->symbols = symbols;
+        prog->prog = Prog::assemble(assem, constants);
+        prog->symbols = symbols;  // symbols are attributes in glsl
+        prog->params = params;  // params are uniforms in glsl
 
         auto raw_ptr = prog.get();
         cache[key] = std::move(prog);

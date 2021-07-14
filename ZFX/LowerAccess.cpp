@@ -1,5 +1,7 @@
 #include "IRVisitor.h"
 #include "Stmts.h"
+#include <functional>
+#include <map>
 
 namespace zfx {
 
@@ -11,6 +13,7 @@ struct LowerAccess : Visitor<LowerAccess> {
         , LiterialStmt
         , SymbolStmt
         , TempSymbolStmt
+        , ParamSymbolStmt
         , Statement
         >;
 
@@ -37,11 +40,53 @@ struct LowerAccess : Visitor<LowerAccess> {
         return regid;
     }
 
+    std::map<int, std::function<void()>> loaders;
+
     int load(int stmtid) {
+        if (auto it = loaders.find(stmtid); it != loaders.end()) {
+            it->second();
+        }
         if (auto it = usages.find(stmtid); it != usages.end()) {
             return it->second;
         }
         error("statement $%d used before assignment", stmtid);
+    }
+
+    void visit(SymbolStmt *stmt) {
+        if (stmt->symids.size() != 1) {
+            error("scalar expected on load, got %d-D vector",
+                stmt->symids.size());
+        }
+        store(stmt->id);
+        loaders[stmt->id] = [this, stmt]() {
+            ir->emplace_back<AsmGlobalLoadStmt>
+                ( stmt->symids[0]
+                , stmt->id
+                );
+        };
+    }
+
+    void visit(ParamSymbolStmt *stmt) {
+        if (stmt->symids.size() != 1) {
+            error("scalar expected on load, got %d-D vector",
+                stmt->symids.size());
+        }
+        store(stmt->id);
+        loaders[stmt->id] = [this, stmt]() {
+            ir->emplace_back<AsmParamLoadStmt>
+                ( stmt->symids[0]
+                , stmt->id
+                );
+        };
+    }
+
+    void visit(LiterialStmt *stmt) {
+        //loaders[stmt->id] = [this, &]() {
+        ir->emplace_back<AsmLoadConstStmt>
+            ( store(stmt->id)
+            , stmt->value
+            );
+        //};
     }
 
     void visit(TempSymbolStmt *stmt) {
@@ -51,24 +96,6 @@ struct LowerAccess : Visitor<LowerAccess> {
         }
         // let the RegisterAllocation pass to spill it to local memory:
         store(stmt->id);
-    }
-
-    void visit(SymbolStmt *stmt) {
-        if (stmt->symids.size() != 1) {
-            error("scalar expected on load, got %d-D vector",
-                stmt->symids.size());
-        }
-        ir->emplace_back<AsmGlobalLoadStmt>
-            ( stmt->symids[0]
-            , store(stmt->id)
-            );
-    }
-
-    void visit(LiterialStmt *stmt) {
-        ir->emplace_back<AsmLoadConstStmt>
-            ( store(stmt->id)
-            , stmt->value
-            );
     }
 
     void visit(UnaryOpStmt *stmt) {

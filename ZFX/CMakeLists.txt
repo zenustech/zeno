@@ -12,8 +12,10 @@ endif()
 add_library(ZFX
 # ls {,include/zfx/}*{,/*}.{h,cpp} | cat
 AST.h
+ConstParametrize.cpp
 EmitAssembly.cpp
 ExpandFunctions.cpp
+GlobalLocalize.cpp
 include/zfx/utils.h
 include/zfx/x64.h
 include/zfx/zfx.h
@@ -24,7 +26,6 @@ LowerAccess.cpp
 LowerAST.cpp
 LowerAST.h
 LowerMath.cpp
-main.cpp
 Parser.cpp
 RegisterAllocation.cpp
 Statement.h

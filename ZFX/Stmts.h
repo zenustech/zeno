@@ -220,6 +220,30 @@ struct SymbolStmt : Stmt<SymbolStmt> {
     }
 };
 
+struct ParamSymbolStmt : Stmt<ParamSymbolStmt> {
+    std::vector<int> symids;
+
+    ParamSymbolStmt
+        ( int id_
+        , std::vector<int> symids_
+        )
+        : Stmt(id_)
+        , symids(symids_)
+    {}
+
+    virtual StmtFields fields() override {
+        return {
+            };
+    }
+
+    virtual std::string to_string() const override {
+        return format(
+            "ParamSymbol [%s]"
+            , format_join(", ", "%d", symids).c_str()
+            );
+    }
+};
+
 struct TempSymbolStmt : Stmt<TempSymbolStmt> {
     int tmpid;
     std::vector<int> symids;
@@ -490,6 +514,33 @@ struct AsmGlobalLoadStmt : AsmStmt<AsmGlobalLoadStmt> {
     virtual std::string to_string() const override {
         return format(
             "AsmGlobalLoad r%d [%d]"
+            , val
+            , mem
+            );
+    }
+
+    virtual int affect_register() const override {
+        return val;
+    }
+};
+
+struct AsmParamLoadStmt : AsmStmt<AsmParamLoadStmt> {
+    int mem;
+    int val;
+
+    AsmParamLoadStmt
+        ( int id_
+        , int mem_
+        , int val_
+        )
+        : AsmStmt(id_)
+        , mem(mem_)
+        , val(val_)
+    {}
+
+    virtual std::string to_string() const override {
+        return format(
+            "AsmParamLoad r%d [%d]"
             , val
             , mem
             );
