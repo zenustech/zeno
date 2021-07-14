@@ -27,6 +27,8 @@ int main(int argc, char **argv)
     checkCudaErrors(cuLaunchKernel(kernel_addr, 1, 1, 1, 1, 1, 1,
         0, 0, args, 0));
 
+    checkCudaErrors(cuCtxSynchronize());
+
     return 0;
 }
 #endif
