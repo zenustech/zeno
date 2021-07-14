@@ -171,7 +171,7 @@ class QDMGraphicsNode(QGraphicsItem):
             pad = 10
             h = 0 if self.collapsed else self.height
             rect = QRect(-pad, -pad -top, self.width + pad * 2, h + pad * 2 + top + bottom)
-            fillRect(painter, rect, '#52331F', 2, '#FA6400')
+            fillRect(painter, rect, QColor(82,51,31, 150), 2, '#FA6400')
 
         r = style['node_rounded_radius']
 
