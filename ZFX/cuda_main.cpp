@@ -36,12 +36,18 @@ int main() {
     CUfunction function;
     CU(cuModuleGetFunction(&function, module, "zfx_array_wrangle"));
 
-    float array[1] = {3.14f};
+    float h_array[1] = {3.14f};
+    CUdeviceptr d_array;
     size_t size = 1;
-    float params[1];
-    void *arg1 = (void *)array;
+    float h_params[1] = {0.618f};
+    CUdeviceptr d_params;
+    CU(cuMemAlloc(&d_array, sizeof(h_array)));
+    CU(cuMemcpyHtoD(d_array, h_array, sizeof(h_array)));
+    CU(cuMemAlloc(&d_params, sizeof(h_params)));
+    CU(cuMemcpyHtoD(d_params, h_params, sizeof(h_params)));
+    void *arg1 = (void *)&d_array;
     void *arg2 = (void *)size;
-    void *arg3 = (void *)params;
+    void *arg3 = (void *)&d_params;
     void *args[] = {&arg1, &arg2, &arg3};
     CU(cuLaunchKernel(function,
             1, 1, 1, 1, 1, 1,
