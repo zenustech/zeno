@@ -524,4 +524,31 @@ struct AsmGlobalLoadStmt : AsmStmt<AsmGlobalLoadStmt> {
     }
 };
 
+struct AsmParamLoadStmt : AsmStmt<AsmParamLoadStmt> {
+    int mem;
+    int val;
+
+    AsmParamLoadStmt
+        ( int id_
+        , int mem_
+        , int val_
+        )
+        : AsmStmt(id_)
+        , mem(mem_)
+        , val(val_)
+    {}
+
+    virtual std::string to_string() const override {
+        return format(
+            "AsmParamLoad r%d [%d]"
+            , val
+            , mem
+            );
+    }
+
+    virtual int affect_register() const override {
+        return val;
+    }
+};
+
 }

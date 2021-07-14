@@ -13,6 +13,7 @@ struct LowerAccess : Visitor<LowerAccess> {
         , LiterialStmt
         , SymbolStmt
         , TempSymbolStmt
+        , ParamSymbolStmt
         , Statement
         >;
 
@@ -59,6 +60,20 @@ struct LowerAccess : Visitor<LowerAccess> {
         store(stmt->id);
         loaders[stmt->id] = [this, stmt]() {
             ir->emplace_back<AsmGlobalLoadStmt>
+                ( stmt->symids[0]
+                , stmt->id
+                );
+        };
+    }
+
+    void visit(ParamSymbolStmt *stmt) {
+        if (stmt->symids.size() != 1) {
+            error("scalar expected on load, got %d-D vector",
+                stmt->symids.size());
+        }
+        store(stmt->id);
+        loaders[stmt->id] = [this, stmt]() {
+            ir->emplace_back<AsmParamLoadStmt>
                 ( stmt->symids[0]
                 , stmt->id
                 );

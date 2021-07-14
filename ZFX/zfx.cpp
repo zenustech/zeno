@@ -93,6 +93,24 @@ std::tuple
 #endif
 
 #ifdef ZFX_PRINT_IR
+    cout << "=== ConstParametrize" << endl;
+#endif
+    auto uniforms = apply_const_parametrize(ir.get());
+#ifdef ZFX_PRINT_IR
+    ir->print();
+#endif
+    std::vector<std::pair<std::string, int>> new_params;
+    for (int i = 0; i < params.size(); i++) {
+        auto it = uniforms.find(i);
+        if (it == uniforms.end())
+            continue;
+        auto dst = it->second;
+        if (new_params.size() < dst + 1)
+            new_params.resize(dst + 1);
+        new_params[dst] = std::pair{params[dst].first, params[i].second};
+    }
+
+#ifdef ZFX_PRINT_IR
     cout << "=== RegisterAllocation" << endl;
 #endif
     apply_register_allocation(ir.get());
