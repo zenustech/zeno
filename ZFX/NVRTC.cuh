@@ -1,6 +1,7 @@
 #include <cuda.h>
 #include <nvrtc.h>
 #include <iostream>
+#include <cstring>
 #include <string>
 #include <vector>
 #include <cstdio>
@@ -12,7 +13,7 @@ namespace fs = std::filesystem;
 // PTX codes are generated with the following command:
 //   nvcc kernel.cu -ptx -arch=sm_75 -o kernel.ptx
 // may also add `--keep` to CMAKE_CUDA_FLAGS to obtain .ptx files in build/
-std::vector<std::string> getAllPTXFilesUnder(std::string const &dirpath) {
+static std::vector<std::string> getAllPTXFilesUnder(std::string const &dirpath) {
     std::vector<std::string> res;
 
     for (auto const &entry: fs::directory_iterator(dirpath)) {
@@ -61,7 +62,7 @@ std::vector<std::string> getAllPTXFilesUnder(std::string const &dirpath) {
     } \
 } while (0)
 
-CUmodule compileJITModule
+static CUmodule compileJITModule
     ( CUdevice dev
     , const char *source
     , std::vector<std::string> const &existingPtxs
@@ -125,6 +126,7 @@ CUmodule compileJITModule
 }
 
 
+#if 0
 int main() {
     CU(cuInit(0));
 
@@ -150,3 +152,4 @@ int main() {
 
     return 0;
 }
+#endif

@@ -1,4 +1,5 @@
 #include <cuda.h>
+#include "NVRTC.cuh"
 #include <zfx/zfx.h>
 #include <zfx/cuda.h>
 
@@ -27,9 +28,10 @@ int main() {
     opts.define_symbol("@pos", 1);
     std::string zfxcode("@pos = 2.718");
     auto prog = compiler.compile(zfxcode, opts);
-    auto cusrc = prog->get_codegen_result();
+    auto source = prog->get_codegen_result();
 
-    CUmodule module = compileJITModule(dev, source, getAllPTXFilesUnder("."));
+    CUmodule module = compileJITModule(dev, source.c_str(),
+        getAllPTXFilesUnder("."));
 
     CUfunction function;
     CU(cuModuleGetFunction(&function, module, "caller"));
