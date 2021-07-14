@@ -1,22 +1,29 @@
-#include <helper_cuda.h>
-#include <cuda_runtime.h>
 #include <cuda.h>
+#include <cuda_runtime.h>
+#include <string>
 #include <cstdio>
 
-#define checkCuErrors(x) do { \
+#define CU(x) do { \
     CUresult __res = (x); \
     if (__res != CUDA_SUCCESS) { \
         const char *__err; \
         cuGetErrorString(__res, &__err); \
-        printf("%s:%d: %s\n", __FILE__, __LINE__, __err); \
+        printf("%s:%d: %s: %s\n", __FILE__, __LINE__, #x, __err); \
         abort(); \
     } \
 } while (0)
 
 int main() {
-    CUlinkState state;
+    CU(cuInit(0));
 
-    checkCuErrors(cuLinkCreate(0, NULL, NULL, &state));
+    CUdevice dev;
+    CU(cuDeviceGet(&dev, 0));
+
+    CUcontext ctx;
+    CU(cuCtxCreate(&ctx, 0, dev));
+
+    CUlinkState state;
+    CU(cuLinkCreate(0, NULL, NULL, &state));
 
     std::string ptx = R"(
 //
@@ -68,14 +75,19 @@ int main() {
 
 }
     )";
-    checkCuErrors(cuLinkAddData(state, CU_JIT_INPUT_PTX, ptx.data(),
+    CU(cuLinkAddData(state, CU_JIT_INPUT_PTX, ptx.data(),
         ptx.size(), "kernel", 0, NULL, NULL));
 
     void *cubin;
     size_t cubinSize;
-    checkCuErrors(cuLinkComplete(state, &cubin, &cubinSize));
+    CU(cuLinkComplete(state, &cubin, &cubinSize));
 
-    checkCudaErrors(cudaDeviceSynchronize());
+    CUmodule module;
+    CU(cuModuleLoadData(&module, cubin));
+
+    CU(cuCtxSynchronize());
+
+    printf("done\n");
 
     return 0;
 }
