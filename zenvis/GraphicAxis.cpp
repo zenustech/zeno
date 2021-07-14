@@ -55,7 +55,7 @@ static string frag_code = R"(
 
 namespace zenvis {
 
-struct GraphicGrid : IGraphic {
+struct GraphicAxis : IGraphic {
   std::unique_ptr<Buffer> vbo;
   size_t vertex_count;
 
@@ -63,30 +63,31 @@ struct GraphicGrid : IGraphic {
   std::unique_ptr<Buffer> lines_ebo;
   size_t lines_count;
 
-  GraphicGrid() {
+  GraphicAxis() {
     vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     std::vector<zeno::vec3f> mem;
     int bound = 5;
-    for (int i = -bound; i <= bound; i++) {
-      mem.push_back(vec3f(i, 0, -bound));
-      mem.push_back(vec3f(1, 1, 1));
-      if (i != 0) {
-        mem.push_back(vec3f(i, 0, bound));
-      } else {
-        mem.push_back(vec3f(0, 0, 0));
-      }
-      mem.push_back(vec3f(1, 1, 1));
-    }
-    for (int i = -bound; i <= bound; i++) {
-      mem.push_back(vec3f(-bound, 0, i));
-      mem.push_back(vec3f(1, 1, 1));
-      if (i != 0) {
-        mem.push_back(vec3f(bound, 0, i));
-      } else {
-        mem.push_back(vec3f(0, 0, 0));
-      }
-      mem.push_back(vec3f(1, 1, 1));
-    }
+    vec3f origin = vec3f(0, 0, 0);
+
+    vec3f r = vec3f(0.8, 0.2, 0.2);
+    vec3f g = vec3f(0.2, 0.8, 0.2);
+    vec3f b = vec3f(0.2, 0.2, 0.8);
+
+    mem.push_back(origin);
+    mem.push_back(r);
+    mem.push_back(vec3f(bound, 0, 0));
+    mem.push_back(r);
+
+    mem.push_back(origin);
+    mem.push_back(g);
+    mem.push_back(vec3f(0, bound, 0));
+    mem.push_back(g);
+
+    mem.push_back(origin);
+    mem.push_back(b);
+    mem.push_back(vec3f(0, 0, bound));
+    mem.push_back(b);
+
     vertex_count = mem.size() / 2;
     lines_count = vertex_count / 2;
 
@@ -111,8 +112,8 @@ struct GraphicGrid : IGraphic {
 
 
 };
-std::unique_ptr<IGraphic> makeGraphicGrid() {
-  return std::make_unique<GraphicGrid>();
+std::unique_ptr<IGraphic> makeGraphicAxis() {
+  return std::make_unique<GraphicAxis>();
 }
 
 }

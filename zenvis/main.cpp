@@ -61,8 +61,10 @@ void set_program_uniforms(Program *pro) {
 
 static std::unique_ptr<VAO> vao;
 static std::unique_ptr<IGraphic> grid;
+static std::unique_ptr<IGraphic> axis;
 
 std::unique_ptr<IGraphic> makeGraphicGrid();
+std::unique_ptr<IGraphic> makeGraphicAxis();
 
 void initialize() {
   gladLoadGL();
@@ -75,6 +77,7 @@ void initialize() {
 
   vao = std::make_unique<VAO>();
   grid = makeGraphicGrid();
+  axis = makeGraphicAxis();
 }
 
 static void paint_graphics(void) {
@@ -82,6 +85,7 @@ static void paint_graphics(void) {
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   vao->bind();
   grid->draw();
+  axis->draw();
   for (auto const &[key, gra]: current_frame_data()->graphics) {
     gra->draw();
   }
