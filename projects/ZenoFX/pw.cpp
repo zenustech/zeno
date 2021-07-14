@@ -2,7 +2,7 @@
 #include <zeno/StringObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/NumericObject.h>
-#include <zeno/ListObject.h>
+#include <zeno/DictObject.h>
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
@@ -56,14 +56,12 @@ struct ParticlesWrangle : zeno::INode {
         }
 
         auto params = has_input("params") ?
-            get_input<zeno::ListObject>("params") :
-            std::make_shared<zeno::ListObject>();
+            get_input<zeno::DictObject>("params") :
+            std::make_shared<zeno::DictObject>();
         std::vector<float> parvals;
         std::vector<std::pair<std::string, int>> parnames;
-        for (int i = 0; i < params->arr.size(); i++) {
-            auto const &obj = params->arr[i];
-            std::ostringstream keyss; keyss << "arg" << i;
-            auto key = '$' + keyss.str();
+        for (auto const &[key_, obj]: params->lut) {
+            auto key = '$' + key_;
             auto par = dynamic_cast<zeno::NumericObject *>(obj.get());
             auto dim = std::visit([&] (auto const &v) {
                 using T = std::decay_t<decltype(v)>;

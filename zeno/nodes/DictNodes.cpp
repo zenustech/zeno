@@ -80,9 +80,9 @@ struct MakeSmallDict : zeno::INode {
             auto name = namess.str();
             if (!has_input(name)) break;
             auto obj = get_input(name);
-            namess.clear();
-            namess << "name" << i;
-            name = namess.str();
+            std::stringstream namess2;
+            namess2 << "name" << i;
+            name = namess2.str();
             name = get_param<std::string>(name);
             dict->lut[name] = std::move(obj);
         }

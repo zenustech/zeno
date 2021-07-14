@@ -93,8 +93,8 @@
        "value"
       ],
       "params": [
-       "b8907f4c-MakeSmallList",
-       "list"
+       "15a1a6f5-MakeSmallDict",
+       "dict"
       ],
       "SRC": null,
       "COND": null
@@ -115,33 +115,11 @@
       "COND": null
      },
      "params": {
-      "value": "@pos.z = $arg0"
+      "value": "@pos.z = $frame_id * 1"
      },
      "uipos": [
       -238.71999999999997,
       493.4399999999998
-     ],
-     "options": []
-    },
-    "b8907f4c-MakeSmallList": {
-     "name": "MakeSmallList",
-     "inputs": {
-      "obj0": [
-       "0ba458ab-NumericOperator",
-       "ret"
-      ],
-      "obj1": null,
-      "obj2": null,
-      "obj3": null,
-      "obj4": null,
-      "obj5": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      14.080000000000013,
-      487.68000000000006
      ],
      "options": []
     },
@@ -153,18 +131,18 @@
        "FrameNum"
       ],
       "rhs": [
-       "ed8a9f99-NumericFloat",
-       "value"
+       "af3bd429-GetFramePortion",
+       "FramePortion"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {
-      "op_type": "div"
+      "op_type": "add"
      },
      "uipos": [
-      -450.56,
-      679.04
+      -469.76,
+      673.4399999999999
      ],
      "options": []
     },
@@ -202,26 +180,49 @@
       "OUT"
      ]
     },
-    "ed8a9f99-NumericFloat": {
-     "name": "NumericFloat",
+    "15a1a6f5-MakeSmallDict": {
+     "name": "MakeSmallDict",
      "inputs": {
+      "obj0": [
+       "0ba458ab-NumericOperator",
+       "ret"
+      ],
+      "obj1": null,
+      "obj2": null,
+      "obj3": null,
       "SRC": null,
       "COND": null
      },
      "params": {
-      "value": 100.0
+      "name0": "frame_id",
+      "name1": "obj1",
+      "name2": "obj2",
+      "name3": "obj3"
      },
      "uipos": [
-      -695.04,
-      798.0799999999999
+      14.399999999999991,
+      481.6
+     ],
+     "options": []
+    },
+    "af3bd429-GetFramePortion": {
+     "name": "GetFramePortion",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      -712.8000000000001,
+      793.6000000000001
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -866,
-    "trans_y": 280
+    "trans_x": -701,
+    "trans_y": 509
    }
   }
  },
@@ -306,6 +307,35 @@
     "portal"
    ]
   },
+  "DictSize": {
+   "inputs": [
+    "dict",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "size",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "EmptyDict": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
   "EmptyList": {
    "inputs": [
     "SRC",
@@ -381,6 +411,22 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "ExtractDict": {
+   "inputs": [
+    "dict",
+    "key",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "object",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
    ]
   },
   "ExtractList": {
@@ -631,6 +677,45 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "MakeSmallDict": {
+   "inputs": [
+    "obj0",
+    "obj1",
+    "obj2",
+    "obj3",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name0",
+     "obj0"
+    ],
+    [
+     "string",
+     "name1",
+     "obj1"
+    ],
+    [
+     "string",
+     "name2",
+     "obj2"
+    ],
+    [
+     "string",
+     "name3",
+     "obj3"
+    ]
+   ],
+   "categories": [
+    "dict"
    ]
   },
   "MakeSmallList": {
@@ -1638,6 +1723,23 @@
    "params": [],
    "categories": [
     "numeric"
+   ]
+  },
+  "UpdateDict": {
+   "inputs": [
+    "dict",
+    "key",
+    "object",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
    ]
   },
   "WrangleBinaryOp": {
