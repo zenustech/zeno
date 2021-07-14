@@ -36,7 +36,7 @@ std::tuple
     < std::string
     , std::vector<std::pair<std::string, int>>
     , std::vector<std::pair<std::string, int>>
-    , std::vector<std::string>
+    , std::map<int, std::string>
     > compile_to_assembly
     ( std::string const &code
     , Options const &options

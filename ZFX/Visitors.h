@@ -12,7 +12,7 @@ std::unique_ptr<IR> apply_lower_math(IR *ir);
 std::unique_ptr<IR> apply_lower_access(IR *ir);
 std::pair
     < std::map<int, int>
-    , std::vector<std::string>
+    , std::map<int, std::string>
     > apply_const_parametrize(IR *ir);
 void apply_register_allocation(IR *ir);
 std::map<int, int> apply_global_localize(IR *ir);

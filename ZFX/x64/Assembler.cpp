@@ -137,7 +137,7 @@ struct Assembler {
         printf("variables: %d slots\n", nlocals);
         //printf("channels: %d pointers\n", nglobals);
         printf("consts: %d values\n", nconsts);
-        printf("\ninsts:");
+        printf("insts:");
         for (auto const &inst: insts) printf(" %02X", inst);
         printf("\n");
 #endif
@@ -149,11 +149,11 @@ struct Assembler {
         }
     }
 
-    void set_constants(std::vector<std::string> const &consts) {
-        for (int i = 0; i < consts.size(); i++) {
-            if (!(std::istringstream(consts[i]) >> prog->consts[i])) {
+    void set_constants(std::map<int, std::string> const &consts) {
+        for (auto const &[idx, expr]: consts) {
+            if (!(std::istringstream(expr) >> prog->consts[idx])) {
                 error("cannot parse literial constant `%s`",
-                    consts[i].c_str());
+                    expr.c_str());
             }
         }
     }
@@ -161,7 +161,7 @@ struct Assembler {
 
 std::unique_ptr<Program> Program::assemble
     ( std::string const &lines
-    , std::vector<std::string> const &consts
+    , std::map<int, std::string> const &consts
     ) {
     Assembler a;
     a.parse(lines);

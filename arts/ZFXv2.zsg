@@ -115,7 +115,7 @@
       "COND": null
      },
      "params": {
-      "value": "@pos.z = $frame_id * 1"
+      "value": "@pos.z = $frame_id / 100"
      },
      "uipos": [
       -238.71999999999997,

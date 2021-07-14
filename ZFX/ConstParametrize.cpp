@@ -41,7 +41,7 @@ struct ConstParametrize : Visitor<ConstParametrize> {
         if (auto it = constants.find(expr); it != constants.end()) {
             return it->second;
         }
-        int constid = constants.size();
+        int constid = nuniforms + constants.size();
         constants[expr] = constid;
         return constid;
     }
@@ -52,11 +52,11 @@ struct ConstParametrize : Visitor<ConstParametrize> {
 
     void visit(AsmLoadConstStmt *stmt) {
         int constid = lookup(stmt->value);
-        ir->emplace_back<AsmParamLoadStmt>(nuniforms + constid, stmt->dst);
+        ir->emplace_back<AsmParamLoadStmt>(constid, stmt->dst);
     }
 
     auto getConstants() const {
-        std::vector<std::string> res(constants.size());
+        std::map<int, std::string> res;
         for (auto const &[name, idx]: constants) {
             res[idx] = name;
         }
@@ -66,7 +66,7 @@ struct ConstParametrize : Visitor<ConstParametrize> {
 
 std::pair
     < std::map<int, int>
-    , std::vector<std::string>
+    , std::map<int, std::string>
     > apply_const_parametrize(IR *ir) {
     ReassignParameters reassign;
     reassign.apply(ir);

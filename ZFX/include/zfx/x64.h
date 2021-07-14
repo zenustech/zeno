@@ -2,7 +2,8 @@
 
 #include <memory>
 #include <cstring>
-#include <sstream>
+#include <string>
+#include <map>
 
 namespace zfx::x64 {
 
@@ -48,7 +49,7 @@ struct Program {
 
     static std::unique_ptr<Program> assemble
         ( std::string const &lines
-        , std::vector<std::string> const &consts
+        , std::map<int, std::string> const &consts
         );
 };
 

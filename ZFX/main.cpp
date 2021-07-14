@@ -13,9 +13,9 @@ int main() {
         return pos;
     };
 #else
-    std::string code("@pos = 2.718");
+    std::string code("@pos = $dt + 2.718");
     auto func = [](float pos) -> float {
-        return 2.718f;
+        return 3.14f + 2.718f;
     };
 #endif
 
