@@ -15,6 +15,7 @@ struct CUDABuilder {
     std::ostringstream oss;
     std::ostringstream oss_head;
     float consts[1024];
+    std::set<int> has_const;
 
     int maxregs = 0;
 
@@ -29,7 +30,10 @@ struct CUDABuilder {
 
     void addLoadConst(int dst, int id) {
         define(dst);
-        oss << "r" << dst << " = " << consts[id] << ";\n";
+        if (has_const.find(id) != has_const.end())
+            oss << "r" << dst << " = " << consts[id] << ";\n";
+        else
+            oss << "r" << dst << " = params[" << id << "];\n";
     }
 
     void addLoadLocal(int dst, int id) {
@@ -163,6 +167,7 @@ struct Assembler {
 
     void set_constants(std::map<int, std::string> const &consts) {
         for (auto const &[idx, expr]: consts) {
+            builder->has_const.insert(idx);
             if (!(std::istringstream(expr) >> builder->consts[idx])) {
                 error("cannot parse literial constant `%s`",
                     expr.c_str());
