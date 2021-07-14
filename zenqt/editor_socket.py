@@ -6,7 +6,7 @@ class QDMGraphicsSocket(QGraphicsItem):
 
         self.label = QGraphicsTextItem(self)
         self.label.setDefaultTextColor(QColor(style['socket_text_color']))
-        self.label.setPos(HORI_MARGIN, -TEXT_HEIGHT * 0.5)
+        self.label.setPos(HORI_MARGIN * 2, -TEXT_HEIGHT * 0.5)
         font = QFont()
         font.setPointSize(style['socket_text_size'])
         self.label.setFont(font)
@@ -44,7 +44,7 @@ class QDMGraphicsSocket(QGraphicsItem):
             option = document.defaultTextOption()
             option.setAlignment(Qt.AlignRight)
             document.setDefaultTextOption(option)
-            width = self.node.boundingRect().width() - HORI_MARGIN * 2
+            width = self.node.boundingRect().width() - HORI_MARGIN * 4
             self.label.setTextWidth(width)
 
     def setName(self, name):
@@ -59,11 +59,13 @@ class QDMGraphicsSocket(QGraphicsItem):
             return basePos
 
     def getCircleBounds(self):
+        SOCKET_RADIUS = 3
+        offset = 14
         if self.isOutput:
-            return (self.node.width - SOCKET_RADIUS, -SOCKET_RADIUS,
+            return (self.node.width - SOCKET_RADIUS - offset, -SOCKET_RADIUS,
                     2 * SOCKET_RADIUS, 2 * SOCKET_RADIUS)
         else:
-            return (-SOCKET_RADIUS, -SOCKET_RADIUS,
+            return (-SOCKET_RADIUS + offset, -SOCKET_RADIUS,
                     2 * SOCKET_RADIUS, 2 * SOCKET_RADIUS)
 
     def boundingRect(self):
@@ -75,9 +77,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         else:
             socket_color = 'socket_unconnect_color'
         painter.setBrush(QColor(style[socket_color]))
-        pen = QPen(QColor(style['line_color']))
-        pen.setWidth(style['socket_outline_width'])
-        painter.setPen(pen)
+        painter.setPen(Qt.NoPen)
         painter.drawEllipse(*self.getCircleBounds())
 
     def remove(self):
