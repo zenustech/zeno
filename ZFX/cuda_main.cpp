@@ -27,7 +27,7 @@ int main() {
     zfx::Options opts;
     opts.define_symbol("@pos", 1);
     opts.define_param("$dt", 1);
-    std::string zfxcode("@pos = $dt + 2.718");
+    std::string zfxcode("@pos = @pos + $dt + 2.718");
     auto prog = compiler.compile(zfxcode, opts);
     auto source = prog->get_codegen_result();
 
