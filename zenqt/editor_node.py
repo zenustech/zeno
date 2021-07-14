@@ -156,8 +156,12 @@ class QDMGraphicsNode(QGraphicsItem):
         self.collapse_button.setPos(204 + 4, self.height + 4)
 
     def boundingRect(self):
-        h = TEXT_HEIGHT if self.collapsed else self.height
-        return QRectF(0, -TEXT_HEIGHT, self.width, h).normalized()
+        top = 42
+        bottom = 36
+
+        h = 0 if self.collapsed else self.height
+        h += (top + bottom)
+        return QRectF(0, -top, self.width, h).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
         top = 42
@@ -165,7 +169,8 @@ class QDMGraphicsNode(QGraphicsItem):
 
         if self.isSelected():
             pad = 10
-            rect = QRectF(-pad, -pad -top, self.width + pad * 2, self.height + pad * 2 + top + bottom)
+            h = 0 if self.collapsed else self.height
+            rect = QRectF(-pad, -pad -top, self.width + pad * 2, h + pad * 2 + top + bottom)
             fillRect(painter, rect, '#52331F', 2, '#FA6400')
 
         r = style['node_rounded_radius']
