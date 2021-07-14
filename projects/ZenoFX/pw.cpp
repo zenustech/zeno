@@ -19,7 +19,6 @@ struct Buffer {
 static void vectors_wrangle
     ( zfx::Program<zfx::x64::Program> *prog
     , std::vector<Buffer> const &chs
-    //, std::vector<float> const &pars
     ) {
     if (chs.size() == 0)
         return;
@@ -30,9 +29,6 @@ static void vectors_wrangle
     #pragma omp parallel for
     for (int i = 0; i < size; i++) {
         auto ctx = prog->make_context();
-        /*for (int j = 0; j < pars.size(); j++) {
-            ctx.regtable[j] = pars[j];
-        }*/
         for (int j = 0; j < chs.size(); j++) {
             ctx.channel(j) = chs[j].base[chs[j].stride * i];
         }
@@ -62,25 +58,25 @@ struct ParticlesWrangle : zeno::INode {
         auto params = has_input("params") ?
             get_input<zeno::ListObject>("params") :
             std::make_shared<zeno::ListObject>();
-        std::vector<float> pars;
-        std::vector<std::string> parnames;
+        std::vector<float> parvals;
+        std::vector<std::pair<std::string, int>> parnames;
         for (int i = 0; i < params->arr.size(); i++) {
             auto const &obj = params->arr[i];
             std::ostringstream keyss; keyss << "arg" << i;
-            auto key = keyss.str();
+            auto key = '$' + keyss.str();
             auto par = dynamic_cast<zeno::NumericObject *>(obj.get());
             auto dim = std::visit([&] (auto const &v) {
                 using T = std::decay_t<decltype(v)>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) {
-                    pars.push_back(v[0]);
-                    pars.push_back(v[1]);
-                    pars.push_back(v[2]);
+                    parvals.push_back(v[0]);
+                    parvals.push_back(v[1]);
+                    parvals.push_back(v[2]);
                     parnames.emplace_back(key, 0);
                     parnames.emplace_back(key, 1);
                     parnames.emplace_back(key, 2);
                     return 3;
                 } else if constexpr (std::is_same_v<T, float>) {
-                    pars.push_back(v);
+                    parvals.push_back(v);
                     parnames.emplace_back(key, 0);
                     return 1;
                 } else return 0;
@@ -89,6 +85,16 @@ struct ParticlesWrangle : zeno::INode {
         }
 
         auto prog = compiler.compile(code, opts);
+
+        std::vector<float> pars(prog->params.size());
+        for (int i = 0; i < pars.size(); i++) {
+            auto [name, dimid] = prog->params[i];
+            printf("parameter %d: %s.%d\n", i, name.c_str(), dimid);
+            assert(name[0] == '$');
+            auto it = std::find(parnames, std::pair{name.substr(1), dimid});
+            auto value = parvals[it - parnames.begin()];
+            prog->parameter(prog->parameter_id(name, dimid)) = value;
+        }
 
         std::vector<Buffer> chs(prog->symbols.size());
         for (int i = 0; i < chs.size(); i++) {
@@ -104,7 +110,7 @@ struct ParticlesWrangle : zeno::INode {
             }, attr);
             chs[i] = iob;
         }
-        vectors_wrangle(prog, chs);//, pars);
+        vectors_wrangle(prog, chs);
 
         set_output("prim", std::move(prim));
     }
