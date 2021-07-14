@@ -13,6 +13,7 @@ add_library(ZFX
 # ls {,include/zfx/}*{,/*}.{h,cpp} | cat
 AST.h
 ConstParametrize.cpp
+cuda/Assembler.cpp
 EmitAssembly.cpp
 ExpandFunctions.cpp
 GlobalLocalize.cpp

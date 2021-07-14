@@ -57,7 +57,7 @@ struct Program {
     }
 
     auto const &get_params() const {
-        return symbols;
+        return params;
     }
 
     int symbol_id(std::string const &name, int dim) const {

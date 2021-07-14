@@ -22,6 +22,11 @@ struct CUDABuilder {
         maxregs = std::max(maxregs, dst);
     }
 
+    void addAssign(int dst, int src) {
+        define(dst);
+        oss << "r" << dst << " = r" << src << ";\n";
+    }
+
     void addLoadConst(int dst, int id) {
         define(dst);
         oss << "r" << dst << " = " << consts[id] << ";\n";
@@ -48,7 +53,7 @@ struct CUDABuilder {
     }
 
     std::string finish() {
-        oss_head << "__device__ void zfx_wrangle_func"
+        oss_head << "__device__ void zfx_wrangle_func";
         oss_head << "(float *locals, float *params) {\n";
         oss << "}\n";
         if (maxregs) {
@@ -63,7 +68,6 @@ struct CUDABuilder {
 };
 
 struct Assembler {
-    int simdkind = optype::xmmps;
     std::unique_ptr<CUDABuilder> builder = std::make_unique<CUDABuilder>();
     std::unique_ptr<Program> prog = std::make_unique<Program>();
 
@@ -175,9 +179,6 @@ std::unique_ptr<Program> Program::assemble
     a.set_constants(consts);
     a.parse(lines);
     return std::move(a.prog);
-}
-
-Program::~Program() {
 }
 
 }
