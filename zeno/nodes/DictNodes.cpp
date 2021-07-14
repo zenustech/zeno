@@ -24,7 +24,7 @@ ZENDEFNODE(DictSize, {
 struct ExtractDict : zeno::INode {
     virtual void apply() override {
         auto dict = get_input<zeno::DictObject>("dict");
-        auto key = get_input<zeno::StringObject>("key")->get<int>();
+        auto key = get_input<zeno::StringObject>("key")->get();
         auto obj = dict->lut.at(key);
         set_output("object", std::move(obj));
     }
@@ -56,7 +56,7 @@ ZENDEFNODE(EmptyDict, {
 struct UpdateDict : zeno::INode {
     virtual void apply() override {
         auto dict = get_input<zeno::DictObject>("dict");
-        auto key = get_input("key");
+        auto key = get_input<zeno::StringObject>("key")->get();
         auto obj = get_input("object");
         dict->lut[key] = std::move(obj);
         set_output("dict", get_input("dict"));
@@ -84,7 +84,7 @@ struct MakeSmallDict : zeno::INode {
             namess << "name" << i;
             name = namess.str();
             name = get_param<std::string>(name);
-            dict->lut.emplace_back(name, std::move(obj));
+            dict->lut[name] = std::move(obj);
         }
         set_output("dict", std::move(dict));
     }
