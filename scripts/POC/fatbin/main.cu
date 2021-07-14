@@ -123,17 +123,17 @@ int main() {
 
     const char *source = R"(
     extern "C" __device__ void callee() {
-        printf("callee");
+        printf("callee\n");
     }
     )";
 
-    char compileParam0[256];
-    sprintf(compileParam0, "--gpu-architecture=sm_%d%d", major, minor);
-    char *compileParams[] = {compileParam0};
+    char compileArchParam[256];
+    sprintf(compileArchParam, "--gpu-architecture=sm_%d%d", major, minor);
+    char *compileParams[] = {compileArchParam, "--device-c"};
 
     nvrtcProgram prog;
     nvrtcCreateProgram(&prog, source, "<nvrtc>", 0, NULL, NULL);
-    nvrtcResult res = nvrtcCompileProgram(prog, 1, compileParams);
+    nvrtcResult res = nvrtcCompileProgram(prog, 2, compileParams);
 
     size_t logSize;
     NVRTC(nvrtcGetProgramLogSize(prog, &logSize));
