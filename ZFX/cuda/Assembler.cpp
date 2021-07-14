@@ -1,11 +1,9 @@
-#include "SIMDBuilder.h"
-#include "Executable.h"
 #include <zfx/utils.h>
-#include <zfx/x64.h>
+#include <zfx/cuda.h>
 #include <sstream>
 #include <map>
 
-namespace zfx::x64 {
+namespace zfx::cuda {
 
 #define ERROR_IF(x) do { \
     if (x) { \
@@ -13,9 +11,60 @@ namespace zfx::x64 {
     } \
 } while (0)
 
+struct CUDABuilder {
+    std::ostringstream oss;
+    std::ostringstream oss_head;
+    float consts[1024];
+
+    int maxregs = 0;
+
+    void define(int dst) {
+        maxregs = std::max(maxregs, dst);
+    }
+
+    void addLoadConst(int dst, int id) {
+        define(dst);
+        oss << "r" << dst << " = " << consts[id] << ";\n";
+    }
+
+    void addLoadLocal(int dst, int id) {
+        define(dst);
+        oss << "r" << dst << " = locals[" << id << "];\n";
+    }
+
+    void addStoreLocal(int dst, int id) {
+        oss << "locals[" << id << "] = r" << dst << ";\n";
+    }
+
+    void addMath(const char *name, int dst, int lhs, int rhs) {
+        define(dst);
+        oss << "r" << dst << " = r" << lhs
+            << " " << name << " r" << rhs << ";\n";
+    }
+
+    void addMathFunc(const char *name, int dst, int src) {
+        define(dst);
+        oss << "r" << dst << " = " << name << "(r" << src << ");\n";
+    }
+
+    std::string finish() {
+        oss_head << "__device__ void zfx_wrangle_func"
+        oss_head << "(float *locals, float *params) {\n";
+        oss << "}\n";
+        if (maxregs) {
+            oss_head << "float r0";
+            for (int i = 1; i < maxregs; i++) {
+                oss_head << ", r" << i;
+            }
+            oss_head << ";\n";
+        }
+        return oss_head.str() + oss.str();
+    }
+};
+
 struct Assembler {
     int simdkind = optype::xmmps;
-    std::unique_ptr<SIMDBuilder> builder = std::make_unique<SIMDBuilder>();
+    std::unique_ptr<CUDABuilder> builder = std::make_unique<CUDABuilder>();
     std::unique_ptr<Program> prog = std::make_unique<Program>();
 
     int nconsts = 0;
@@ -31,127 +80,86 @@ struct Assembler {
             auto cmd = linesep[0];
             if (0) {
 
-            } else if (cmd == "ldi") {  // rcx points to an array of constants
+            } else if (cmd == "ldi") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
                 nconsts = std::max(nconsts, id + 1);
-                int offset = id * SIMDBuilder::scalarSizeOfType(simdkind);
-                builder->addAvxBroadcastLoadOp(simdkind,
-                    dst, {opreg::rcx, memflag::reg_imm8, offset});
+                builder->addLoadConst(dst, id);
 
-            } else if (cmd == "ldm") {  // rdx points to an array of variables
+            } else if (cmd == "ldm") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
                 nlocals = std::max(nlocals, id + 1);
-                int offset = id * SIMDBuilder::sizeOfType(simdkind);
-                builder->addAvxMemoryOp(simdkind, opcode::loadu,
-                    dst, {opreg::rdx, memflag::reg_imm8, offset});
+                builder->addLoadLocal(dst, id);
 
             } else if (cmd == "stm") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
                 nlocals = std::max(nlocals, id + 1);
-                int offset = id * SIMDBuilder::sizeOfType(simdkind);
-                builder->addAvxMemoryOp(simdkind, opcode::storeu,
-                    dst, {opreg::rdx, memflag::reg_imm8, offset});
-
-            /*} else if (cmd == "ldg") {  // rdx points to an array of pointers
-                ERROR_IF(linesep.size() < 2);
-                auto dst = from_string<int>(linesep[1]);
-                auto id = from_string<int>(linesep[2]);
-                nglobals = std::max(nglobals, id + 1);
-                int offset = id * sizeof(void *);
-                builder->addRegularLoadOp(opreg::rax,
-                    {opreg::rdx, memflag::reg_imm8, offset});
-                builder->addAvxMemoryOp(simdkind, opcode::loadu,
-                    dst, opreg::rax);
-
-            } else if (cmd == "stg") {
-                ERROR_IF(linesep.size() < 2);
-                auto dst = from_string<int>(linesep[1]);
-                auto id = from_string<int>(linesep[2]);
-                nglobals = std::max(nglobals, id + 1);
-                int offset = id * sizeof(void *);
-                builder->addRegularLoadOp(opreg::rax,
-                    {opreg::rdx, memflag::reg_imm8, offset});
-                builder->addAvxMemoryOp(simdkind, opcode::storeu,
-                    dst, opreg::rax);*/
+                builder->addStoreLocal(dst, id);
 
             } else if (cmd == "add") {
                 ERROR_IF(linesep.size() < 3);
                 auto dst = from_string<int>(linesep[1]);
                 auto lhs = from_string<int>(linesep[2]);
                 auto rhs = from_string<int>(linesep[3]);
-                builder->addAvxBinaryOp(simdkind, opcode::add,
-                    dst, lhs, rhs);
+                builder->addMath("+", dst, lhs, rhs);
 
             } else if (cmd == "sub") {
                 ERROR_IF(linesep.size() < 3);
                 auto dst = from_string<int>(linesep[1]);
                 auto lhs = from_string<int>(linesep[2]);
                 auto rhs = from_string<int>(linesep[3]);
-                builder->addAvxBinaryOp(simdkind, opcode::sub,
-                    dst, lhs, rhs);
+                builder->addMath("-", dst, lhs, rhs);
 
             } else if (cmd == "mul") {
                 ERROR_IF(linesep.size() < 3);
                 auto dst = from_string<int>(linesep[1]);
                 auto lhs = from_string<int>(linesep[2]);
                 auto rhs = from_string<int>(linesep[3]);
-                builder->addAvxBinaryOp(simdkind, opcode::mul,
-                    dst, lhs, rhs);
+                builder->addMath("*", dst, lhs, rhs);
 
             } else if (cmd == "div") {
                 ERROR_IF(linesep.size() < 3);
                 auto dst = from_string<int>(linesep[1]);
                 auto lhs = from_string<int>(linesep[2]);
                 auto rhs = from_string<int>(linesep[3]);
-                builder->addAvxBinaryOp(simdkind, opcode::div,
-                    dst, lhs, rhs);
+                builder->addMath("/", dst, lhs, rhs);
 
             } else if (cmd == "sqrt") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto src = from_string<int>(linesep[2]);
-                builder->addAvxUnaryOp(simdkind, opcode::sqrt,
-                    dst, src);
+                builder->addMathFunc("sqrt", dst, src);
 
             } else if (cmd == "mov") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto src = from_string<int>(linesep[2]);
-                builder->addAvxMoveOp(dst, src);
+                builder->addAssign(dst, src);
 
             } else {
                 error("bad assembly command `%s`", cmd.c_str());
             }
         }
 
-        builder->addReturn();
-        auto const &insts = builder->getResult();
+        auto code = builder->finish();
 
 #ifdef ZFX_PRINT_IR
-        printf("variables: %d slots\n", nlocals);
-        //printf("channels: %d pointers\n", nglobals);
-        printf("consts: %d values\n", nconsts);
-        printf("insts:");
-        for (auto const &inst: insts) printf(" %02X", inst);
+        printf("cuda code:\n");
+        printf("%s", code.c_str());
         printf("\n");
 #endif
 
-        prog->memsize = (insts.size() + 4095) / 4096 * 4096;
-        prog->mem = exec_page_alloc(prog->memsize);
-        for (int i = 0; i < insts.size(); i++) {
-            prog->mem[i] = insts[i];
-        }
+        prog->code = code;
     }
 
     void set_constants(std::map<int, std::string> const &consts) {
         for (auto const &[idx, expr]: consts) {
-            if (!(std::istringstream(expr) >> prog->consts[idx])) {
+            if (!(std::istringstream(expr) >> builder->consts[idx])) {
                 error("cannot parse literial constant `%s`",
                     expr.c_str());
             }
@@ -164,17 +172,12 @@ std::unique_ptr<Program> Program::assemble
     , std::map<int, std::string> const &consts
     ) {
     Assembler a;
-    a.parse(lines);
     a.set_constants(consts);
+    a.parse(lines);
     return std::move(a.prog);
 }
 
 Program::~Program() {
-    if (mem) {
-        exec_page_free(mem, memsize);
-        mem = nullptr;
-        memsize = 0;
-    }
 }
 
 }
