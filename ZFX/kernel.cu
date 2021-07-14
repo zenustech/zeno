@@ -5,7 +5,8 @@ extern "C" __global__ void zfx_array_wrangle
     , size_t nsize
     , float const *params
     ) {
-    for
+    printf("%d\n", nsize);
+    /*for
         ( int i = blockDim.x * blockIdx.x + threadIdx.x
         ; i < nsize
         ; i += blockDim.x * gridDim.x
@@ -14,5 +15,5 @@ extern "C" __global__ void zfx_array_wrangle
         globals[0] = array[i];
         zfx_wrangle_func(globals, params);
         array[i] = globals[0];
-    }
+    }*/
 }
