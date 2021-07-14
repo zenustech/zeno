@@ -91,9 +91,10 @@ struct ParticlesWrangle : zeno::INode {
             auto [name, dimid] = prog->params[i];
             printf("parameter %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '$');
-            auto it = std::find(parnames, std::pair{name.substr(1), dimid});
+            auto it = std::find(parnames.begin(),
+                parnames.end(), std::pair{name.substr(1), dimid});
             auto value = parvals[it - parnames.begin()];
-            prog->parameter(prog->parameter_id(name, dimid)) = value;
+            prog->parameter(prog->param_id(name, dimid)) = value;
         }
 
         std::vector<Buffer> chs(prog->symbols.size());

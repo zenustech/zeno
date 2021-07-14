@@ -93,7 +93,7 @@
        "value"
       ],
       "params": [
-       "c80a5680-EmptyList",
+       "b8907f4c-MakeSmallList",
        "list"
       ],
       "SRC": null,
@@ -115,34 +115,90 @@
       "COND": null
      },
      "params": {
-      "value": "@pos.z = @pos.x"
+      "value": "@pos.z = @pos.x + $arg0"
      },
      "uipos": [
-      -240.63999999999996,
-      493.4399999999999
+      -238.71999999999997,
+      493.4399999999998
      ],
      "options": []
     },
-    "c80a5680-EmptyList": {
-     "name": "EmptyList",
+    "b8907f4c-MakeSmallList": {
+     "name": "MakeSmallList",
+     "inputs": {
+      "obj0": [
+       "0ba458ab-NumericOperator",
+       "ret"
+      ],
+      "obj1": null,
+      "obj2": null,
+      "obj3": null,
+      "obj4": null,
+      "obj5": null,
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      14.080000000000013,
+      487.68000000000006
+     ],
+     "options": []
+    },
+    "0ba458ab-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "da7c6252-GetFrameNum",
+       "FrameNum"
+      ],
+      "rhs": [
+       "439ca5fc-GetFramePortion",
+       "FramePortion"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      -450.56,
+      679.04
+     ],
+     "options": []
+    },
+    "da7c6252-GetFrameNum": {
+     "name": "GetFrameNum",
      "inputs": {
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      14.079999999999998,
-      483.84000000000003
+      -714.2399999999999,
+      647.04
      ],
-     "options": [
-      "collapsed"
-     ]
+     "options": []
+    },
+    "439ca5fc-GetFramePortion": {
+     "name": "GetFramePortion",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      -704.64,
+      796.1600000000001
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": -803,
-    "trans_y": 533
+    "trans_x": -705,
+    "trans_y": 424
    }
   }
  },
