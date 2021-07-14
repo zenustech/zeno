@@ -70,6 +70,10 @@ struct Program {
         return it != params.end() ? it - params.begin() : -1;
     }
 
+    decltype(auto) parameter(int parid) {
+        return prog->parameter(parid);
+    }
+
     decltype(auto) make_context() {
         return prog->make_context();
     }

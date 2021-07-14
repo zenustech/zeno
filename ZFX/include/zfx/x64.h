@@ -6,15 +6,15 @@
 namespace zfx::x64 {
 
 struct Program {
-    float consts[4096];
     uint8_t *mem = nullptr;
     size_t memsize = 0;
+    float consts[1024];
 
     static constexpr size_t SimdWidth = 4;
 
     struct Context {
         Program *prog;
-        float locals[SimdWidth * 128];
+        float locals[SimdWidth * 256];
 
         void execute() {
             auto entry = (void (*)())prog->mem;

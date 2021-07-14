@@ -15,7 +15,7 @@ int main() {
 #else
     std::string code("@pos = @pos + $dt");
     auto func = [](float pos) -> float {
-        return pos;
+        return pos + 3.14f;
     };
 #endif
 
@@ -35,10 +35,7 @@ int main() {
 
     auto ctx = prog->make_context();
 
-    /*printf("%s\n", prog->symbols[0].first.c_str());
-    printf("%d\n", prog->symbols[0].second);
-    printf("%d\n", prog->symbol_id("@pos", 0));
-    printf("%d\n", prog->symbol_id("@pos", 2));*/
+    prog->parameter(prog->param_id("$dt", 0)) = 3.14f;
     memcpy(&ctx.channel(prog->symbol_id("@pos", 0)), arr, sizeof(arr));
     ctx.execute();
     memcpy(arr, &ctx.channel(prog->symbol_id("@pos", 0)), sizeof(arr));

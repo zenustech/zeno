@@ -26,7 +26,6 @@ LowerAccess.cpp
 LowerAST.cpp
 LowerAST.h
 LowerMath.cpp
-main.cpp
 Parser.cpp
 RegisterAllocation.cpp
 Statement.h
