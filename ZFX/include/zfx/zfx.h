@@ -30,6 +30,8 @@ struct Options {
             os << '\\' << name << '\\' << dim;
         }
     }
+
+    int arch_nregs = 8;
 };
 
 std::tuple

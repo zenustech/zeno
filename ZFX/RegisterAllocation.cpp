@@ -3,13 +3,14 @@
 #include <set>
 #include <map>
 
-// let's left two regs for load/store from spilled memory:
-inline constexpr int NREGS = 8 - 2;
-
 namespace zfx {
 
 // http://web.cs.ucla.edu/~palsberg/course/cs132/linearscan.pdf
 struct UCLAScanner {
+    const int NREGS;
+
+    explicit UCLAScanner(int nregs) : NREGS(nregs) {}
+
     struct Stmt {
         std::set<int> regs;
     };
@@ -254,6 +255,10 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
         , Statement
         >;
 
+    const int NREGS;
+
+    explicit FixupMemorySpill(int nregs) : NREGS(nregs) {}
+
     std::unique_ptr<IR> ir = std::make_unique<IR>();
 
     void touch(int operandid, int &regid) {
@@ -323,8 +328,12 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
     }
 };
 
-void apply_register_allocation(IR *ir) {
-    UCLAScanner scanner;
+void apply_register_allocation(IR *ir, int nregs) {
+    nregs -= 2; // left two regs for load/store from spilled memory
+    if (nregs <= 2) {
+        error("no enough registers!\n");
+    }
+    UCLAScanner scanner(nregs);
     InspectRegisters inspect;
     inspect.scanner = &scanner;
     inspect.apply(ir);
@@ -332,7 +341,7 @@ void apply_register_allocation(IR *ir) {
     ReassignRegisters reassign;
     reassign.scanner = &scanner;
     reassign.apply(ir);
-    FixupMemorySpill fixspill;
+    FixupMemorySpill fixspill(nregs);
     fixspill.apply(ir);
     *ir = *fixspill.ir;
 }
