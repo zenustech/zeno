@@ -2,6 +2,7 @@
 #include <zeno/DictObject.h>
 #include <zeno/StringObject.h>
 #include <zeno/NumericObject.h>
+#include <zeno/safe_at.h>
 
 
 struct DictSize : zeno::INode {
@@ -101,6 +102,41 @@ ZENDEFNODE(MakeSmallDict, {
     , {"string", "name1", "obj1"}
     , {"string", "name2", "obj2"}
     , {"string", "name3", "obj3"}
+    },
+    {"dict"},
+});
+
+
+struct ExtractSmallDict : zeno::INode {
+    virtual void apply() override {
+        auto dict = get_input<zeno::DictObject>("dict");
+        for (int i = 0; i < 4; i++) {
+            std::stringstream namess;
+            namess << "name" << i;
+            auto name = namess.str();
+            auto key = get_param<std::string>(name);
+            if (key.size() == 0) break;
+            auto obj = safe_at(dict->lut, key, "ExtractSmallDict key");
+            std::stringstream namess2;
+            namess2 << "obj" << i;
+            name = namess2.str();
+            set_output(name, std::move(obj));
+        }
+        set_output("dict", std::move(dict));
+    }
+};
+
+ZENDEFNODE(ExtractSmallDict, {
+    {"dict"},
+    { "obj0"
+    , "obj1"
+    , "obj2"
+    , "obj3"
+    },
+    { {"string", "name0", ""}
+    , {"string", "name1", ""}
+    , {"string", "name2", ""}
+    , {"string", "name3", ""}
     },
     {"dict"},
 });

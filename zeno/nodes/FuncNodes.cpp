@@ -7,9 +7,11 @@
 
 
 struct FuncBegin : zeno::INode {
-    zeno::FunctionObject::DictType m_args;
-
     virtual void apply() override {
+        set_output("FUNC", std::make_shared<zeno::ConditionObject>());
+    }
+
+    void update_arguments(zeno::FunctionObject::DictType const &callargs) {
         auto args = std::make_shared<zeno::DictObject>();
         if (has_input("extraArgs")) {
             auto extraArgs = get_input<zeno::DictObject>("extraArgs");
@@ -17,11 +19,10 @@ struct FuncBegin : zeno::INode {
                 args->lut[key] = ptr;
             }
         }
-        for (auto const &[key, ptr]: m_args) {
+        for (auto const &[key, ptr]: callargs) {
             args->lut[key] = ptr;
         }
         set_output("args", std::move(args));
-        set_output("FUNC", std::make_shared<zeno::ConditionObject>());
     }
 };
 
@@ -44,7 +45,7 @@ struct FuncEnd : zeno::ContextManagedNode {
         graph->applyNode(sn);
         auto func = std::make_shared<zeno::FunctionObject>();
         func->func = [this, fore] (zeno::FunctionObject::DictType const &args) {
-            fore->m_args = args;
+            fore->update_arguments(args);
             push_context();
             zeno::INode::doApply();
             pop_context();

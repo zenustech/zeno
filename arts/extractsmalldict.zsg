@@ -2,264 +2,12 @@
  "graph": {
   "main": {
    "nodes": {
-    "faf730a2-FuncBegin": {
-     "name": "FuncBegin",
-     "inputs": {
-      "extraArgs": [
-       "1ab0c658-MakeSmallDict",
-       "dict"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -431.52,
-      178.51999999999998
-     ],
-     "options": []
-    },
-    "f536a984-FuncEnd": {
-     "name": "FuncEnd",
-     "inputs": {
-      "rets": [
-       "e0dce237-MakeSmallDict",
-       "dict"
-      ],
-      "FUNC": [
-       "faf730a2-FuncBegin",
-       "FUNC"
-      ],
-      "SRC": [
-       "2adc7c5f-PrintNumeric",
-       "DST"
-      ],
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      675.8978125000002,
-      252.57968749999998
-     ],
-     "options": []
-    },
-    "7acea025-FuncCall": {
-     "name": "FuncCall",
-     "inputs": {
-      "function": [
-       "f536a984-FuncEnd",
-       "function"
-      ],
-      "args": [
-       "34f17ea0-MakeSmallDict",
-       "dict"
-      ],
-      "SRC": [
-       "cc9fd11a-PrintMessage",
-       "DST"
-      ],
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      1482.5648437499995,
-      203.8632812499999
-     ],
-     "options": []
-    },
-    "cc9fd11a-PrintMessage": {
-     "name": "PrintMessage",
-     "inputs": {
-      "SRC": [
-       "f536a984-FuncEnd",
-       "DST"
-      ],
-      "COND": null
-     },
-     "params": {
-      "message": "before call"
-     },
-     "uipos": [
-      948.5265624999996,
-      236.4140625
-     ],
-     "options": []
-    },
-    "f439cfcc-NumericInt": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "value": 40
-     },
-     "uipos": [
-      963.1171875000002,
-      448.12031249999984
-     ],
-     "options": []
-    },
-    "34f17ea0-MakeSmallDict": {
-     "name": "MakeSmallDict",
-     "inputs": {
-      "obj0": [
-       "f439cfcc-NumericInt",
-       "value"
-      ],
-      "obj1": null,
-      "obj2": null,
-      "obj3": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name0": "input",
-      "name1": "",
-      "name2": "",
-      "name3": ""
-     },
-     "uipos": [
-      1236.5296875000006,
-      411.93281250000007
-     ],
-     "options": []
-    },
-    "266d1c29-ExtractSmallDict": {
+    "f0f30f51-ExtractSmallDict": {
      "name": "ExtractSmallDict",
      "inputs": {
       "dict": [
-       "faf730a2-FuncBegin",
-       "args"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name0": "input",
-      "name1": "param",
-      "name2": "",
-      "name3": ""
-     },
-     "uipos": [
-      -167.99999999999994,
-      211.2
-     ],
-     "options": []
-    },
-    "2adc7c5f-PrintNumeric": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "266d1c29-ExtractSmallDict",
-       "obj0"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "hint": "input is"
-     },
-     "uipos": [
-      116.00000000000006,
-      195.19999999999993
-     ],
-     "options": []
-    },
-    "55e88e4b-NumericOperator": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "266d1c29-ExtractSmallDict",
-       "obj0"
-      ],
-      "rhs": [
-       "266d1c29-ExtractSmallDict",
-       "obj1"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "op_type": "add"
-     },
-     "uipos": [
-      164.0,
-      396.8
-     ],
-     "options": []
-    },
-    "1ab0c658-MakeSmallDict": {
-     "name": "MakeSmallDict",
-     "inputs": {
-      "obj0": [
-       "28744ac6-NumericInt",
-       "value"
-      ],
-      "obj1": null,
-      "obj2": null,
-      "obj3": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name0": "param",
-      "name1": "",
-      "name2": "",
-      "name3": ""
-     },
-     "uipos": [
-      -698.4,
-      192.0
-     ],
-     "options": []
-    },
-    "28744ac6-NumericInt": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "value": 2
-     },
-     "uipos": [
-      -967.2000000000003,
-      250.39999999999998
-     ],
-     "options": []
-    },
-    "e0dce237-MakeSmallDict": {
-     "name": "MakeSmallDict",
-     "inputs": {
-      "obj0": [
-       "55e88e4b-NumericOperator",
-       "ret"
-      ],
-      "obj1": null,
-      "obj2": null,
-      "obj3": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name0": "answer",
-      "name1": "",
-      "name2": "",
-      "name3": ""
-     },
-     "uipos": [
-      424.8,
-      412.8
-     ],
-     "options": []
-    },
-    "38d1942d-ExtractSmallDict": {
-     "name": "ExtractSmallDict",
-     "inputs": {
-      "dict": [
-       "7acea025-FuncCall",
-       "rets"
+       "63d5d035-MakeSmallDict",
+       "dict"
       ],
       "SRC": null,
       "COND": null
@@ -271,37 +19,77 @@
       "name3": ""
      },
      "uipos": [
-      1740.0,
-      192.0
+      750.0,
+      209.0
      ],
      "options": []
     },
-    "5a3274a1-PrintNumeric": {
+    "63d5d035-MakeSmallDict": {
+     "name": "MakeSmallDict",
+     "inputs": {
+      "obj0": [
+       "2465e4d7-NumericInt",
+       "value"
+      ],
+      "obj1": null,
+      "obj2": null,
+      "obj3": null,
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "name0": "answer",
+      "name1": "obj1",
+      "name2": "obj2",
+      "name3": "obj3"
+     },
+     "uipos": [
+      397.0,
+      204.0
+     ],
+     "options": []
+    },
+    "a903a319-PrintNumeric": {
      "name": "PrintNumeric",
      "inputs": {
       "value": [
-       "38d1942d-ExtractSmallDict",
+       "f0f30f51-ExtractSmallDict",
        "obj0"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {
-      "hint": "the answer is"
+      "hint": "PrintNumeric"
      },
      "uipos": [
-      1998.0,
-      257.0
+      1064.0,
+      303.0
      ],
      "options": [
       "OUT"
      ]
+    },
+    "2465e4d7-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": 42
+     },
+     "uipos": [
+      112.0,
+      323.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": 996,
-    "trans_y": -7
+    "scale": 1,
+    "trans_x": -24,
+    "trans_y": 9
    }
   }
  },
