@@ -92,17 +92,9 @@ struct MakeSmallDict : zeno::INode {
 };
 
 ZENDEFNODE(MakeSmallDict, {
-    { "obj0"
-    , "obj1"
-    , "obj2"
-    , "obj3"
-    },
+    {},
     {"dict"},
-    { {"string", "name0", ""}
-    , {"string", "name1", ""}
-    , {"string", "name2", ""}
-    , {"string", "name3", ""}
-    },
+    {},
     {"dict"},
 });
 
@@ -128,15 +120,7 @@ struct ExtractSmallDict : zeno::INode {
 
 ZENDEFNODE(ExtractSmallDict, {
     {"dict"},
-    { "obj0"
-    , "obj1"
-    , "obj2"
-    , "obj3"
-    },
-    { {"string", "name0", ""}
-    , {"string", "name1", ""}
-    , {"string", "name2", ""}
-    , {"string", "name3", ""}
-    },
+    {},
+    {},
     {"dict"},
 });

@@ -633,19 +633,22 @@ class QDMGraphicsSocket(QGraphicsItem):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.label = QGraphicsTextItem(self)
-        self.label.setDefaultTextColor(QColor(style['socket_text_color']))
-        self.label.setPos(HORI_MARGIN, -TEXT_HEIGHT * 0.5)
-        font = QFont()
-        font.setPointSize(style['socket_text_size'])
-        self.label.setFont(font)
-
         self.isOutput = False
         self.edges = set()
 
         self.node = parent
         self.name = None
         self.dummy = False
+
+        self.initLabel()
+
+    def initLabel(self):
+        self.label = QGraphicsTextItem(self)
+        self.label.setDefaultTextColor(QColor(style['socket_text_color']))
+        self.label.setPos(HORI_MARGIN, -TEXT_HEIGHT * 0.5)
+        font = QFont()
+        font.setPointSize(style['socket_text_size'])
+        self.label.setFont(font)
 
     def hasAnyEdge(self):
         return len(self.edges) != 0
@@ -1215,7 +1218,6 @@ class QDMGraphicsNode(QGraphicsItem):
         self.outputs.clear()
         for index, name in enumerate(outputs):
             socket = QDMGraphicsSocket(self)
-            index += len(params) + len(inputs)
             socket.setPos(0, y)
             socket.setName(name)
             socket.setIsOutput(True)
