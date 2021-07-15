@@ -2,8 +2,8 @@
  "graph": {
   "main": {
    "nodes": {
-    "63d5d035-MakeSmallDict": {
-     "name": "MakeSmallDict",
+    "63d5d035-MakeDict": {
+     "name": "MakeDict",
      "inputs": {
       "SRC": null,
       "COND": null,
@@ -43,7 +43,7 @@
      "name": "PrintNumeric",
      "inputs": {
       "value": [
-       "90d0aff3-ExtractSmallDict",
+       "90d0aff3-ExtractDict",
        "obj0"
       ],
       "SRC": null,
@@ -60,11 +60,11 @@
       "OUT"
      ]
     },
-    "90d0aff3-ExtractSmallDict": {
-     "name": "ExtractSmallDict",
+    "90d0aff3-ExtractDict": {
+     "name": "ExtractDict",
      "inputs": {
       "dict": [
-       "63d5d035-MakeSmallDict",
+       "63d5d035-MakeDict",
        "dict"
       ],
       "SRC": null,
@@ -85,8 +85,8 @@
    },
    "view": {
     "scale": 1.953125,
-    "trans_x": 322,
-    "trans_y": 419
+    "trans_x": 278,
+    "trans_y": 407
    }
   }
  },
@@ -183,6 +183,39 @@
    "params": [],
    "categories": [
     "portal"
+   ]
+  },
+  "DictGetItem": {
+   "inputs": [
+    "dict",
+    "key",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "object",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictSetItem": {
+   "inputs": [
+    "dict",
+    "key",
+    "object",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
    ]
   },
   "DictSize": {
@@ -294,12 +327,10 @@
   "ExtractDict": {
    "inputs": [
     "dict",
-    "key",
     "SRC",
     "COND"
    ],
    "outputs": [
-    "object",
     "DST"
    ],
    "params": [],
@@ -321,20 +352,6 @@
    "params": [],
    "categories": [
     "list"
-   ]
-  },
-  "ExtractSmallDict": {
-   "inputs": [
-    "dict",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "dict"
    ]
   },
   "FuncBegin": {
@@ -564,6 +581,20 @@
     "primitive"
    ]
   },
+  "MakeDict": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
   "MakeGCTest": {
    "inputs": [
     "SRC",
@@ -634,20 +665,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "MakeSmallDict": {
-   "inputs": [
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "dict",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "dict"
    ]
   },
   "MakeSmallList": {
@@ -1674,23 +1691,6 @@
    "params": [],
    "categories": [
     "numeric"
-   ]
-  },
-  "UpdateDict": {
-   "inputs": [
-    "dict",
-    "key",
-    "object",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "dict",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "dict"
    ]
   },
   "WrangleBinaryOp": {

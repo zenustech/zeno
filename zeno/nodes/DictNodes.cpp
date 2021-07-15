@@ -22,7 +22,7 @@ ZENDEFNODE(DictSize, {
 });
 
 
-struct ExtractDict : zeno::INode {
+struct DictGetItem : zeno::INode {
     virtual void apply() override {
         auto dict = get_input<zeno::DictObject>("dict");
         auto key = get_input<zeno::StringObject>("key")->get();
@@ -31,7 +31,7 @@ struct ExtractDict : zeno::INode {
     }
 };
 
-ZENDEFNODE(ExtractDict, {
+ZENDEFNODE(DictGetItem, {
     {"dict", "key"},
     {"object"},
     {},
@@ -54,7 +54,7 @@ ZENDEFNODE(EmptyDict, {
 });
 
 
-struct UpdateDict : zeno::INode {
+struct DictSetItem : zeno::INode {
     virtual void apply() override {
         auto dict = get_input<zeno::DictObject>("dict");
         auto key = get_input<zeno::StringObject>("key")->get();
@@ -64,7 +64,7 @@ struct UpdateDict : zeno::INode {
     }
 };
 
-ZENDEFNODE(UpdateDict, {
+ZENDEFNODE(DictSetItem, {
     {"dict", "key", "object"},
     {"dict"},
     {},
@@ -72,7 +72,7 @@ ZENDEFNODE(UpdateDict, {
 });
 
 
-struct MakeSmallDict : zeno::INode {
+struct MakeDict : zeno::INode {
     virtual void apply() override {
         auto inkeys = get_param<std::string>("_KEYS");
         auto keys = zeno::split_str(inkeys, '\n');
@@ -87,7 +87,7 @@ struct MakeSmallDict : zeno::INode {
     }
 };
 
-ZENDEFNODE(MakeSmallDict, {
+ZENDEFNODE(MakeDict, {
     {},
     {"dict"},
     {},
@@ -95,7 +95,7 @@ ZENDEFNODE(MakeSmallDict, {
 });
 
 
-struct ExtractSmallDict : zeno::INode {
+struct ExtractDict : zeno::INode {
     virtual void apply() override {
         auto inkeys = get_param<std::string>("_KEYS");
         auto keys = zeno::split_str(inkeys, '\n');
@@ -110,7 +110,7 @@ struct ExtractSmallDict : zeno::INode {
     }
 };
 
-ZENDEFNODE(ExtractSmallDict, {
+ZENDEFNODE(ExtractDict, {
     {"dict"},
     {},
     {},

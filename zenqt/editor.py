@@ -1294,8 +1294,9 @@ class QDMGraphicsNode(QGraphicsItem):
 
         for name, value in params.items():
             if name not in self.params:
-                print('no param named [{}] for [{}]'.format(
-                    name, data['name']))
+                if name not in ['_KEYS']:
+                    print('no param named [{}] for [{}]'.format(
+                        name, data['name']))
                 continue
             param = self.params[name]
             param.setValue(value)

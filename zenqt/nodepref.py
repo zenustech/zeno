@@ -159,7 +159,7 @@ class QDMGraphicsSocketEdiable(QDMGraphicsSocket):
                 sockets[new_name] = this
 
 
-class QDMGraphicsNode_MakeSmallDict(QDMGraphicsNode):
+class QDMGraphicsNode_MakeDict(QDMGraphicsNode):
     def __init__(self, parent=None):
         self.socket_keys = []
         super().__init__(parent)
@@ -229,7 +229,7 @@ class QDMGraphicsNode_MakeSmallDict(QDMGraphicsNode):
         return super().load(ident, data)
 
 
-class QDMGraphicsNode_ExtractSmallDict(QDMGraphicsNode):
+class QDMGraphicsNode_ExtractDict(QDMGraphicsNode):
     def __init__(self, parent=None):
         self.socket_keys = []
         super().__init__(parent)
