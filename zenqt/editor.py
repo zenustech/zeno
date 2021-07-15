@@ -650,9 +650,19 @@ class QDMGraphicsSocket(QGraphicsItem):
 
         self.initLabel()
 
+    class QDMGraphicsTextItem(QGraphicsTextItem):
+        def __init__(self, parent=None):
+            super().__init__(parent)
+            self.setDefaultTextColor(QColor(style['socket_text_color']))
+
+        def setAlignment(self, align):
+            document = self.document()
+            option = document.defaultTextOption()
+            option.setAlignment(Qt.AlignRight)
+            document.setDefaultTextOption(option)
+
     def initLabel(self):
-        self.label = QGraphicsTextItem(self)
-        self.label.setDefaultTextColor(QColor(style['socket_text_color']))
+        self.label = self.QDMGraphicsTextItem(self)
         self.label.setPos(HORI_MARGIN, -TEXT_HEIGHT * 0.5)
         font = QFont()
         font.setPointSize(style['socket_text_size'])
@@ -680,12 +690,10 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.isOutput = isOutput
 
         if isOutput:
-            document = self.label.document()
-            option = document.defaultTextOption()
-            option.setAlignment(Qt.AlignRight)
-            document.setDefaultTextOption(option)
-            width = self.node.boundingRect().width() - HORI_MARGIN * 2
-            self.label.setTextWidth(width)
+            self.label.setAlignment(Qt.AlignRight)
+            if hasattr(self.label, 'setTextWidth'):
+                width = self.node.boundingRect().width() - HORI_MARGIN * 2
+                self.label.setTextWidth(width)
 
     def setName(self, name):
         self.name = name
@@ -837,6 +845,9 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
         self.layout.addWidget(self.label)
         self.layout.addWidget(self.edit)
         self.layout.setContentsMargins(0, 0, 0, 0)
+
+    def setAlignment(self, align):
+        self.edit.setAlignment(align)
 
     def setName(self, name):
         self.name = name

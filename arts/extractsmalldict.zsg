@@ -20,7 +20,7 @@
       259.536
      ],
      "options": [],
-     "input_keys": [
+     "socket_keys": [
       "obj0"
      ]
     },
@@ -95,12 +95,29 @@
      "options": [
       "OUT"
      ]
+    },
+    "90d0aff3-ExtractSmallDict": {
+     "name": "ExtractSmallDict",
+     "inputs": {
+      "dict": null,
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "_KEYS": ""
+     },
+     "uipos": [
+      583.6800000000001,
+      495.104
+     ],
+     "options": [],
+     "socket_keys": []
     }
    },
    "view": {
     "scale": 1.953125,
-    "trans_x": 344,
-    "trans_y": 443
+    "trans_x": 422,
+    "trans_y": 736
    }
   }
  },
