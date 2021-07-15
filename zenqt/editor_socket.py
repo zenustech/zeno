@@ -18,9 +18,9 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.name = None
         self.dummy = False
 
-        self.offset = 12
-        self.text_offset = HORI_MARGIN * 2 - 5
-        self.label.setPos(self.text_offset, - style['socket_text_size'] * 1.2)
+        self.offset = 13
+        self.text_offset = HORI_MARGIN * 2 - 4
+        self.label.setPos(self.text_offset, - style['socket_text_size'] * 1.3)
 
     def hasAnyEdge(self):
         return len(self.edges) != 0
@@ -65,7 +65,7 @@ class QDMGraphicsSocket(QGraphicsItem):
     def getCircleBounds(self):
         SOCKET_RADIUS = 3
         if self.isOutput:
-            return (self.node.width - SOCKET_RADIUS - self.offset, -SOCKET_RADIUS,
+            return (self.node.width - SOCKET_RADIUS - self.offset - 1, -SOCKET_RADIUS,
                     2 * SOCKET_RADIUS, 2 * SOCKET_RADIUS)
         else:
             return (-SOCKET_RADIUS + self.offset, -SOCKET_RADIUS,
