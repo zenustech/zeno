@@ -39,48 +39,12 @@
      ],
      "options": []
     },
-    "adc3a8db-ExtractDict": {
-     "name": "ExtractDict",
-     "inputs": {
-      "dict": [
-       "63d5d035-MakeSmallDict",
-       "dict"
-      ],
-      "key": [
-       "fa204836-MakeString",
-       "value"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      531.456,
-      336.896
-     ],
-     "options": []
-    },
-    "fa204836-MakeString": {
-     "name": "MakeString",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "value": "obj0"
-     },
-     "uipos": [
-      272.384,
-      532.4799999999999
-     ],
-     "options": []
-    },
     "6c21664f-PrintNumeric": {
      "name": "PrintNumeric",
      "inputs": {
       "value": [
-       "adc3a8db-ExtractDict",
-       "object"
+       "90d0aff3-ExtractSmallDict",
+       "obj0"
       ],
       "SRC": null,
       "COND": null
@@ -99,7 +63,10 @@
     "90d0aff3-ExtractSmallDict": {
      "name": "ExtractSmallDict",
      "inputs": {
-      "dict": null,
+      "dict": [
+       "63d5d035-MakeSmallDict",
+       "dict"
+      ],
       "SRC": null,
       "COND": null
      },
@@ -107,8 +74,8 @@
       "_KEYS": "obj0"
      },
      "uipos": [
-      583.6800000000001,
-      495.104
+      509.9520000000001,
+      328.70400000000006
      ],
      "options": [],
      "socket_keys": [
@@ -118,8 +85,8 @@
    },
    "view": {
     "scale": 1.953125,
-    "trans_x": 413,
-    "trans_y": 794
+    "trans_x": 322,
+    "trans_y": 419
    }
   }
  },

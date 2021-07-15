@@ -97,20 +97,13 @@ ZENDEFNODE(MakeSmallDict, {
 
 struct ExtractSmallDict : zeno::INode {
     virtual void apply() override {
+        auto inkeys = get_param<std::string>("_KEYS");
+        auto keys = zeno::split_str(inkeys, '\n');
         auto dict = get_input<zeno::DictObject>("dict");
-        for (int i = 0; i < 4; i++) {
-            std::stringstream namess;
-            namess << "name" << i;
-            auto name = namess.str();
-            auto key = get_param<std::string>(name);
-            if (key.size() == 0) break;
+        for (auto const &key: keys) {
             auto obj = safe_at(dict->lut, key, "ExtractSmallDict key");
-            std::stringstream namess2;
-            namess2 << "obj" << i;
-            name = namess2.str();
-            set_output(name, std::move(obj));
+            set_output(key, std::move(obj));
         }
-        set_output("dict", std::move(dict));
     }
 };
 
