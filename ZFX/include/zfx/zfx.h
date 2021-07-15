@@ -15,7 +15,7 @@ struct Options {
     bool global_localize = true;
     int arch_maxregs = 8;
 
-    Options() = default;
+    //Options() = default;
 
     static constexpr struct {} for_x64{};
     Options(decltype(for_x64))

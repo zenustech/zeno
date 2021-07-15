@@ -25,7 +25,7 @@ int main() {
     zfx::Compiler compiler;
     zfx::cuda::Assembler assembler;
 
-    zfx::Options opts;
+    zfx::Options opts(zfx::Options::for_cuda);
     opts.define_symbol("@pos", 1);
     opts.define_param("$dt", 1);
     std::string zfxcode("@pos = @pos + $dt + 2.718");

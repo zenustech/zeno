@@ -28,21 +28,18 @@ struct CUDABuilder {
         oss << "r" << dst << " = r" << src << ";\n";
     }
 
-    void addLoadConst(int dst, int id) {
+    void addLoadLiterial(int dst, std::string const &expr) {
         define(dst);
-        if (has_const.find(id) != has_const.end())
-            oss << "r" << dst << " = " << consts[id] << ";\n";
-        else
-            oss << "r" << dst << " = params[" << id << "];\n";
+        oss << "r" << dst << " = " << expr << ";\n";
     }
 
-    void addLoadLocal(int dst, int id) {
+    void addLoadArray(int val, std::string const &mem, int id) {
         define(dst);
-        oss << "r" << dst << " = locals[" << id << "];\n";
+        oss << "r" << val << " = " << mem << "[" << id << "];\n";
     }
 
-    void addStoreLocal(int dst, int id) {
-        oss << "locals[" << id << "] = r" << dst << ";\n";
+    void addStoreArray(int val, std::string const &mem, int id) {
+        oss << mem << "[" << id << "] = r" << val << ";\n";
     }
 
     void addMath(const char *name, int dst, int lhs, int rhs) {
@@ -76,8 +73,9 @@ struct ImplAssembler {
     std::string code;
 
     int nconsts = 0;
+    int nparams = 0;
     int nlocals = 0;
-    //int nglobals = 0;
+    int nglobals = 0;
 
     void parse(std::string const &lines) {
         for (auto line: split_str(lines, '\n')) {
@@ -91,23 +89,44 @@ struct ImplAssembler {
             } else if (cmd == "ldi") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
-                auto id = from_string<int>(linesep[2]);
+                auto expr = linesep[2];
                 nconsts = std::max(nconsts, id + 1);
-                builder->addLoadConst(dst, id);
+                builder->addLoadLiterial(dst, expr);
 
-            } else if (cmd == "ldm") {
+            } else if (cmd == "ldp") {
+                ERROR_IF(linesep.size() < 2);
+                auto dst = from_string<int>(linesep[1]);
+                auto id = from_string<int>(linesep[2]);
+                nparams = std::max(nparams, id + 1);
+                builder->addLoadArray(dst, "params", id);
+
+            } else if (cmd == "ldl") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
                 nlocals = std::max(nlocals, id + 1);
-                builder->addLoadLocal(dst, id);
+                builder->addLoadArray(dst, "locals", id);
 
-            } else if (cmd == "stm") {
+            } else if (cmd == "stl") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
                 nlocals = std::max(nlocals, id + 1);
-                builder->addStoreLocal(dst, id);
+                builder->addStoreArray(dst, "locals", id);
+
+            } else if (cmd == "ldg") {
+                ERROR_IF(linesep.size() < 2);
+                auto dst = from_string<int>(linesep[1]);
+                auto id = from_string<int>(linesep[2]);
+                nlocals = std::max(nlocals, id + 1);
+                builder->addLoadArray(dst, "globals", id);
+
+            } else if (cmd == "stg") {
+                ERROR_IF(linesep.size() < 2);
+                auto dst = from_string<int>(linesep[1]);
+                auto id = from_string<int>(linesep[2]);
+                nlocals = std::max(nlocals, id + 1);
+                builder->addStoreArray(dst, "globals", id);
 
             } else if (cmd == "add") {
                 ERROR_IF(linesep.size() < 3);
