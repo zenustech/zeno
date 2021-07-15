@@ -74,7 +74,7 @@ std::map<int, std::string> apply_const_parametrize(IR *ir, int nuniforms) {
     ConstParametrize visitor;
     visitor.nuniforms = nuniforms;
     visitor.apply(ir);
-    ir = *visitor.ir;
+    *ir = *visitor.ir;
     return visitor.getConstants();
 }
 

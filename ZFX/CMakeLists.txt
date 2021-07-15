@@ -20,7 +20,6 @@ add_library(ZFX
 # ls {,include/zfx/}*{,/*}.{h,cpp} | grep -v main.cpp
 AST.h
 ConstParametrize.cpp
-cuda/Assembler.cpp
 EmitAssembly.cpp
 ExpandFunctions.cpp
 GlobalLocalize.cpp

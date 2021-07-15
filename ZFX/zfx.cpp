@@ -93,12 +93,9 @@ std::tuple
 #endif
 
 #ifdef ZFX_PRINT_IR
-    cout << "=== ConstParametrize" << endl;
+    cout << "=== ReassignParameters" << endl;
 #endif
-    auto
-        [ uniforms
-        , constants
-        ] = apply_const_parametrize(ir.get());
+    auto uniforms = apply_reassign_parameters(ir.get());
 #ifdef ZFX_PRINT_IR
     ir->print();
 #endif
@@ -113,10 +110,10 @@ std::tuple
         new_params[dst] = std::pair{params[dst].first, params[i].second};
     }
 
-    std::ostringstream constoss;
+    /*std::ostringstream constoss;
     for (auto const &[idx, expr]: constants) {
         constoss << "const " << idx << " " << expr << "\n";
-    }
+    }*/
 
     if (options.arch_nregs != 0) {
 #ifdef ZFX_PRINT_IR
@@ -129,9 +126,9 @@ std::tuple
     }
 
 #ifdef ZFX_PRINT_IR
-    cout << "=== GlobalLocalize" << endl;
+    cout << "=== ReassignGlobals" << endl;
 #endif
-    auto globals = apply_global_localize(ir.get());
+    auto globals = apply_reassign_globals(ir.get());
 #ifdef ZFX_PRINT_IR
     ir->print();
 #endif
@@ -150,7 +147,6 @@ std::tuple
     cout << "=== EmitAssembly" << endl;
 #endif
     auto assem = apply_emit_assembly(ir.get());
-    assem += constoss.str();
 #ifdef ZFX_PRINT_IR
     cout << assem;
 #endif
