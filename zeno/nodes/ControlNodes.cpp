@@ -92,7 +92,40 @@ ZENDEFNODE(BreakFor, {
 });
 
 
-/*** Start Of - ZHXX Control Flow ***/
+struct IfElse : zeno::INode {
+    static bool evaluate_condition(zeno::IObject *cond) {
+        if (auto num = dynamic_cast<zeno::NumericObject *>(cond); num) {
+            return std::visit([] (auto const &v) {
+                return (bool)v;
+            }, num->value);
+        } else if (auto con = dynamic_cast<zeno::ConditionObject *>(cond); con) {
+            return (bool)con;
+        } else {
+            printf("invalid input of IfElse::cond to be evaluated as boolean\n");
+            abort();
+        }
+    }
+
+    virtual void doApply() override {
+        requireInput("cond");
+        auto cond = get_input("cond");
+        evaluate_condition(cond.get());
+
+        coreApply();
+    }
+
+    virtual void apply() override {}
+};
+
+ZENDEFNODE(IfElse, {
+    {"cond", "then", "else"},
+    {"result"},
+    {},
+    {"control"},
+});
+
+
+/*** Start Of - ZHXX Control Flow ***
 
 struct IF : zeno::INode {
 
@@ -237,7 +270,7 @@ ZENDEFNODE(ConditionedDo, {
     {"control"},
 });
 
-/*** End Of - ZHXX Control Flow ***/
+*** End Of - ZHXX Control Flow ***/
 
 
 
