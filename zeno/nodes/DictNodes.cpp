@@ -78,8 +78,10 @@ struct MakeSmallDict : zeno::INode {
         auto keys = zeno::split_str(inkeys, '\n');
         auto dict = std::make_shared<zeno::DictObject>();
         for (auto const &key: keys) {
-            auto obj = get_input(key);
-            dict->lut[key] = std::move(obj);
+            if (has_input(key)) {
+                auto obj = get_input(key);
+                dict->lut[key] = std::move(obj);
+            }
         }
         set_output("dict", std::move(dict));
     }

@@ -164,9 +164,9 @@ class QDMGraphicsScene(QGraphicsScene):
             if select_all:
                 node.setSelected(True)
 
-        self.loadEdges(edges, select_all)
+        """self.loadEdges(edges, select_all)
 
-    def loadEdges(self, edges, select_all=False):
+    def loadEdges(self, edges, select_all=False):"""
         nodesLut = {}
 
         for node in self.nodes:
@@ -1225,10 +1225,10 @@ class QDMGraphicsNode(QGraphicsItem):
         return self.ident, data
 
     def reloadSockets(self):
-        ident, data = self.dump()
+        edges = self.saveEdges()
         self.resetSockets()
-        edges = self.load(ident, data)
-        self.scene().loadEdges(edges)
+        self.initSockets()
+        self.restoreEdges(edges)
     
     def load(self, ident, data):
         name = data['name']
