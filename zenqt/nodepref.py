@@ -146,8 +146,7 @@ class QDMGraphicsSocketEdiable(QDMGraphicsSocket):
         self.label.setPlainText = self.label.setValue
         self.label.getPlainText = self.label.getValue
 
-        if hasattr(self.label.edit, 'editingFinished'):
-            self.label.edit.textChanged.connect(self.name_changed)
+        self.label.edit.editingFinished.connect(self.name_changed)
 
     def name_changed(self):
         old_name = self.name
