@@ -1,0 +1,2093 @@
+{
+ "graph": {
+  "main": {
+   "nodes": {
+    "8727e0d5-EndBranch": {
+     "name": "EndBranch",
+     "inputs": {
+      "BranchIn": [
+       "a13c75c3-TrueBranch",
+       "Branch"
+      ],
+      "SRC": [
+       "e5de4812-BreakFor",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      1102.8652343749998,
+      -550.1874999999998
+     ],
+     "options": []
+    },
+    "bd8ae7fe-x": {
+     "name": "EndBranch",
+     "inputs": {
+      "BranchIn": [
+       "a6050b4c-FalseBranch",
+       "Branch"
+      ],
+      "SRC": [
+       "25d9662c-x",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      963.2558593750002,
+      -186.1249999999999
+     ],
+     "options": []
+    },
+    "25d9662c-x": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "f4b1a579-x",
+       "value"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "hint": "PrintNumeric"
+     },
+     "uipos": [
+      622.3683593750004,
+      -56.937499999999716
+     ],
+     "options": []
+    },
+    "f4b1a579-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       "a6050b4c-FalseBranch",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {
+      "value": 2
+     },
+     "uipos": [
+      347.49335937499995,
+      -95.18749999999986
+     ],
+     "options": []
+    },
+    "2020d86d-ConditionedDo": {
+     "name": "ConditionedDo",
+     "inputs": {
+      "True": [
+       "8727e0d5-EndBranch",
+       "Branch"
+      ],
+      "False": [
+       "bd8ae7fe-x",
+       "Branch"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      1553.0152343749999,
+      -153.87499999999963
+     ],
+     "options": []
+    },
+    "4fe509c4-BeginFor": {
+     "name": "BeginFor",
+     "inputs": {
+      "count": [
+       "8ab2f634-NumericInt",
+       "value"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      -1604.7822265625002,
+      325.7996093749999
+     ],
+     "options": []
+    },
+    "55f7c49d-EndFor": {
+     "name": "EndFor",
+     "inputs": {
+      "FOR": [
+       "4fe509c4-BeginFor",
+       "FOR"
+      ],
+      "SRC": [
+       "2020d86d-ConditionedDo",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      2270.7998046875,
+      567.2294921875003
+     ],
+     "options": [
+      "OUT"
+     ]
+    },
+    "8ab2f634-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": 10
+     },
+     "uipos": [
+      -1958.7625,
+      107.68750000000003
+     ],
+     "options": []
+    },
+    "4b25d446-PrintNumeric": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "4fe509c4-BeginFor",
+       "index"
+      ],
+      "SRC": [
+       "4fe509c4-BeginFor",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {
+      "hint": "index"
+     },
+     "uipos": [
+      -1144.5671874999998,
+      17.928710937499957
+     ],
+     "options": []
+    },
+    "5f89f79b-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "4fe509c4-BeginFor",
+       "index"
+      ],
+      "rhs": [
+       "20fdd8f4-NumericInt",
+       "value"
+      ],
+      "SRC": [
+       "4b25d446-PrintNumeric",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {
+      "op_type": "cmpge"
+     },
+     "uipos": [
+      -540.68828125,
+      -331.88847656249976
+     ],
+     "options": []
+    },
+    "20fdd8f4-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": 5
+     },
+     "uipos": [
+      -974.8865234374997,
+      -244.54179687499996
+     ],
+     "options": []
+    },
+    "e5de4812-BreakFor": {
+     "name": "BreakFor",
+     "inputs": {
+      "FOR": [
+       "4fe509c4-BeginFor",
+       "FOR"
+      ],
+      "SRC": [
+       "a13c75c3-TrueBranch",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      594.5777343749999,
+      -398.6624999999999
+     ],
+     "options": []
+    },
+    "a13c75c3-TrueBranch": {
+     "name": "TrueBranch",
+     "inputs": {
+      "condition": [
+       "5f89f79b-NumericOperator",
+       "ret"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      19.677734375,
+      -553.1249999999998
+     ],
+     "options": []
+    },
+    "a6050b4c-FalseBranch": {
+     "name": "FalseBranch",
+     "inputs": {
+      "condition": [
+       "5f89f79b-NumericOperator",
+       "ret"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      83.740234375,
+      -235.93749999999974
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1.0000000000000002,
+    "trans_x": -2079,
+    "trans_y": -34
+   }
+  }
+ },
+ "views": {},
+ "descs": {
+  "AppendList": {
+   "inputs": [
+    "list",
+    "object",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "list",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "BeginFor": {
+   "inputs": [
+    "count",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "index",
+    "FOR",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BeginForEach": {
+   "inputs": [
+    "list",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "object",
+    "index",
+    "FOR",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BreakFor": {
+   "inputs": [
+    "FOR",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CachedOnce": {
+   "inputs": [
+    "input",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "output",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "Clone": {
+   "inputs": [
+    "object",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "newObject",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "ConditionedDo": {
+   "inputs": [
+    "True",
+    "False",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "DictSize": {
+   "inputs": [
+    "dict",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "size",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "EmptyDict": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "EmptyList": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "list",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "EndBranch": {
+   "inputs": [
+    "BranchIn",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "Branch",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "EndFor": {
+   "inputs": [
+    "FOR",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "EndFrame": {
+   "inputs": [
+    "chain",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "fileio"
+   ]
+  },
+  "EndIF": {
+   "inputs": [
+    "IF",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "ExportPath": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "path",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "ext",
+     "zpm"
+    ]
+   ],
+   "categories": [
+    "fileio"
+   ]
+  },
+  "ExportPrimitive": {
+   "inputs": [
+    "prim",
+    "path",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ExtractDict": {
+   "inputs": [
+    "dict",
+    "key",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "object",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "ExtractList": {
+   "inputs": [
+    "list",
+    "index",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "object",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "FalseBranch": {
+   "inputs": [
+    "condition",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "Branch",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "FuncBegin": {
+   "inputs": [
+    "extraArgs",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "args",
+    "FUNC",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "FuncCall": {
+   "inputs": [
+    "function",
+    "args",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "rets",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "FuncEnd": {
+   "inputs": [
+    "rets",
+    "FUNC",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "function",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "GetFrameNum": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "FrameNum",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetFramePortion": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "FramePortion",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetFrameTime": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "time",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetFrameTimeElapsed": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "time",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetTime": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "time",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "IF": {
+   "inputs": [
+    "condition",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "Then",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "ImportObjPrimitive": {
+   "inputs": [
+    "path",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ImportPrimitive": {
+   "inputs": [
+    "path",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "IntegrateFrameTime": {
+   "inputs": [
+    "desired_dt",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "actual_dt",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "min_scale",
+     "0.0001"
+    ]
+   ],
+   "categories": [
+    "frame"
+   ]
+  },
+  "ListLength": {
+   "inputs": [
+    "list",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "length",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "Make2DGridPrimitive": {
+   "inputs": [
+    "nx",
+    "ny",
+    "sizeX",
+    "sizeY",
+    "scale",
+    "origin",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "isCentered",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeGCTest": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "value",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "value",
+     "42"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "MakeMultilineString": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "value",
+    "DST"
+   ],
+   "params": [
+    [
+     "multiline_string",
+     "value",
+     ""
+    ]
+   ],
+   "categories": [
+    "fileio"
+   ]
+  },
+  "MakeOrthonormalBase": {
+   "inputs": [
+    "normal",
+    "tangent",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "normal",
+    "tangent",
+    "bitangent",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "mathematica"
+   ]
+  },
+  "MakePrimitive": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeSmallDict": {
+   "inputs": [
+    "obj0",
+    "obj1",
+    "obj2",
+    "obj3",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name0",
+     "obj0"
+    ],
+    [
+     "string",
+     "name1",
+     "obj1"
+    ],
+    [
+     "string",
+     "name2",
+     "obj2"
+    ],
+    [
+     "string",
+     "name3",
+     "obj3"
+    ]
+   ],
+   "categories": [
+    "dict"
+   ]
+  },
+  "MakeSmallList": {
+   "inputs": [
+    "obj0",
+    "obj1",
+    "obj2",
+    "obj3",
+    "obj4",
+    "obj5",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "list",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "MakeString": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "value",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "value",
+     ""
+    ]
+   ],
+   "categories": [
+    "fileio"
+   ]
+  },
+  "MakeVisualAABBPrimitive": {
+   "inputs": [
+    "boundMin",
+    "boundMax",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "connType",
+     "2"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "NumericFloat": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "value",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "value",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericInt": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "value",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "value",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericInterpolation": {
+   "inputs": [
+    "src",
+    "srcMin",
+    "srcMax",
+    "dstMin",
+    "dstMax",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "dst",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "isClamped",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericOperator": {
+   "inputs": [
+    "lhs",
+    "rhs",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "ret",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "op_type",
+     "copy"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericVec2": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "vec2",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericVec3": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "vec3",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericVec4": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "vec4",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ],
+    [
+     "float",
+     "w",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "PlaneProjectPrimitive2DAABB": {
+   "inputs": [
+    "origin",
+    "normal",
+    "tangent",
+    "bitangent",
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "boundMin2D",
+    "boundMax2D",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "mathematica"
+   ]
+  },
+  "PortalIn": {
+   "inputs": [
+    "port",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "RenameMe!"
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "PortalOut": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "port",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "RenameMe!"
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "PrimitiveAddAttr": {
+   "inputs": [
+    "prim",
+    "fillValue",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "string",
+     "type",
+     "float3"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveBinaryOp": {
+   "inputs": [
+    "primA",
+    "primB",
+    "primOut",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "primOut",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrB",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copyA"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveCalcNormal": {
+   "inputs": [
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveClearConnect": {
+   "inputs": [
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveFillAttr": {
+   "inputs": [
+    "prim",
+    "value",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveGetSize": {
+   "inputs": [
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "size",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveHalfBinaryOp": {
+   "inputs": [
+    "primA",
+    "valueB",
+    "primOut",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "primOut",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copyA"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveMerge": {
+   "inputs": [
+    "listPrim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveMix": {
+   "inputs": [
+    "primA",
+    "primB",
+    "primOut",
+    "coef",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "primOut",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrB",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitivePrintAttr": {
+   "inputs": [
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveRandomizeAttr": {
+   "inputs": [
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ],
+    [
+     "float",
+     "min",
+     "-1"
+    ],
+    [
+     "float",
+     "minY",
+     "-1"
+    ],
+    [
+     "float",
+     "minZ",
+     "-1"
+    ],
+    [
+     "float",
+     "max",
+     "1"
+    ],
+    [
+     "float",
+     "maxY",
+     "1"
+    ],
+    [
+     "float",
+     "maxZ",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveReduction": {
+   "inputs": [
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "result",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attr",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "avg"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveResize": {
+   "inputs": [
+    "prim",
+    "size",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveShade": {
+   "inputs": [
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "shade",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "primtype",
+     "points"
+    ],
+    [
+     "string",
+     "vertpath",
+     "assets/particles.vert"
+    ],
+    [
+     "string",
+     "fragpath",
+     "assets/particles.frag"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "PrimitiveSimpleLines": {
+   "inputs": [
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSimplePoints": {
+   "inputs": [
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSimpleQuads": {
+   "inputs": [
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSimpleTris": {
+   "inputs": [
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSplitEdges": {
+   "inputs": [
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveUnaryOp": {
+   "inputs": [
+    "primA",
+    "primOut",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "primOut",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copy"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveWrangle": {
+   "inputs": [
+    "prim0",
+    "prim1",
+    "prim2",
+    "prim3",
+    "wrangle",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim0",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrintMessage": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "hello"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "PrintNumeric": {
+   "inputs": [
+    "value",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "hint",
+     "PrintNumeric"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "Route": {
+   "inputs": [
+    "input",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "output",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "RunAfterFrame": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "cond",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "RunBeforeFrame": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "cond",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "RunOnce": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "cond",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "SetFrameTime": {
+   "inputs": [
+    "time",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "SubCategory": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "subgraph"
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubInput": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "port",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "input1"
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubOutput": {
+   "inputs": [
+    "port",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "output1"
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "Subgraph": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "DoNotUseThisNodeDirectly"
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "TransformPrimitive": {
+   "inputs": [
+    "prim",
+    "translation",
+    "eulerXYZ",
+    "quatRotation",
+    "scaling",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "outPrim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "TrueBranch": {
+   "inputs": [
+    "condition",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "Branch",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "UnpackNumericVec": {
+   "inputs": [
+    "vec",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "X",
+    "Y",
+    "Z",
+    "W",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "UpdateDict": {
+   "inputs": [
+    "dict",
+    "key",
+    "object",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "WrangleBinaryOp": {
+   "inputs": [
+    "lhs",
+    "rhs",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "res",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "opName",
+     "add"
+    ]
+   ],
+   "categories": [
+    "wrangler"
+   ]
+  },
+  "WrangleImmed": {
+   "inputs": [
+    "value",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "res",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "wrangler"
+   ]
+  },
+  "WrangleLoad": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "res",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "primId",
+     "0"
+    ],
+    [
+     "string",
+     "attrName",
+     "pos"
+    ]
+   ],
+   "categories": [
+    "wrangler"
+   ]
+  },
+  "WrangleStore": {
+   "inputs": [
+    "val",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "res",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "primId",
+     "0"
+    ],
+    [
+     "string",
+     "attrName",
+     "pos"
+    ]
+   ],
+   "categories": [
+    "wrangler"
+   ]
+  },
+  "WrangleTernaryOp": {
+   "inputs": [
+    "lhs",
+    "mhs",
+    "rhs",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "res",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "opName",
+     "vec"
+    ]
+   ],
+   "categories": [
+    "wrangler"
+   ]
+  },
+  "WrangleUnaryOp": {
+   "inputs": [
+    "lhs",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "res",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "opName",
+     "neg"
+    ]
+   ],
+   "categories": [
+    "wrangler"
+   ]
+  },
+  "Blackboard": {
+   "inputs": [],
+   "outputs": [],
+   "params": [],
+   "categories": [
+    "layout"
+   ]
+  }
+ },
+ "version": "v1"
+}

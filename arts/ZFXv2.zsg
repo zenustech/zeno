@@ -39,11 +39,11 @@
       "COND": null
      },
      "params": {
-      "value": 32
+      "value": 3
      },
      "uipos": [
-      -548.0,
-      164.0
+      -540.0,
+      164.79999999999998
      ],
      "options": []
     },
@@ -195,9 +195,9 @@
      },
      "params": {
       "name0": "frame_id",
-      "name1": "obj1",
-      "name2": "obj2",
-      "name3": "obj3"
+      "name1": "",
+      "name2": "",
+      "name3": ""
      },
      "uipos": [
       14.399999999999991,
@@ -221,8 +221,8 @@
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -701,
-    "trans_y": 509
+    "trans_x": -1213,
+    "trans_y": 207
    }
   }
  },
@@ -270,6 +270,20 @@
     "object",
     "index",
     "FOR",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BreakFor": {
+   "inputs": [
+    "FOR",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
     "DST"
    ],
    "params": [],
@@ -445,6 +459,93 @@
     "list"
    ]
   },
+  "ExtractSmallDict": {
+   "inputs": [
+    "dict",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "obj0",
+    "obj1",
+    "obj2",
+    "obj3",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name0",
+     ""
+    ],
+    [
+     "string",
+     "name1",
+     ""
+    ],
+    [
+     "string",
+     "name2",
+     ""
+    ],
+    [
+     "string",
+     "name3",
+     ""
+    ]
+   ],
+   "categories": [
+    "dict"
+   ]
+  },
+  "FuncBegin": {
+   "inputs": [
+    "extraArgs",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "args",
+    "FUNC",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "FuncCall": {
+   "inputs": [
+    "function",
+    "args",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "rets",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "FuncEnd": {
+   "inputs": [
+    "rets",
+    "FUNC",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "function",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
   "GetFrameNum": {
    "inputs": [
     "SRC",
@@ -513,6 +614,23 @@
    "params": [],
    "categories": [
     "frame"
+   ]
+  },
+  "IfElse": {
+   "inputs": [
+    "true",
+    "false",
+    "cond",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "result",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
    ]
   },
   "ImportObjPrimitive": {
@@ -620,7 +738,7 @@
     [
      "int",
      "value",
-     "0"
+     "42"
     ]
    ],
    "categories": [
@@ -1517,6 +1635,25 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "PrintMessage": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "hello"
+    ]
+   ],
+   "categories": [
+    "debug"
    ]
   },
   "PrintNumeric": {

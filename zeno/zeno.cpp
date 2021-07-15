@@ -72,12 +72,20 @@ ZENAPI bool INode::checkApplyCondition() {
 
 ZENAPI void INode::doApply() {
     for (auto const &[ds, bound]: inputBounds) {
-        auto [sn, ss] = bound;
-        graph->applyNode(sn);
-        auto ref = graph->getNodeOutput(sn, ss);
-        inputs[ds] = ref;
+        requireInput(ds);
     }
 
+    coreApply();
+}
+
+ZENAPI void INode::requireInput(std::string const &ds) {
+    auto [sn, ss] = inputBounds.at(ds);
+    graph->applyNode(sn);
+    auto ref = graph->getNodeOutput(sn, ss);
+    inputs[ds] = ref;
+}
+
+ZENAPI void INode::coreApply() {
     if (checkApplyCondition()) {
         apply();
     }

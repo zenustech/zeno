@@ -64,20 +64,18 @@ struct ConstParametrize : Visitor<ConstParametrize> {
     }
 };
 
-std::pair
-    < std::map<int, int>
-    , std::map<int, std::string>
-    > apply_const_parametrize(IR *ir) {
+std::map<int, int> apply_reassign_parameters(IR *ir) {
     ReassignParameters reassign;
     reassign.apply(ir);
+    return reassign.uniforms;
+}
+
+std::map<int, std::string> apply_const_parametrize(IR *ir, int nuniforms) {
     ConstParametrize visitor;
-    visitor.nuniforms = reassign.uniforms.size();
+    visitor.nuniforms = nuniforms;
     visitor.apply(ir);
     *ir = *visitor.ir;
-    return
-        { reassign.uniforms
-        , visitor.getConstants()
-        };
+    return visitor.getConstants();
 }
 
 }

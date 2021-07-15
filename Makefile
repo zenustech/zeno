@@ -1,4 +1,4 @@
-O=arts/ZFXv2.zsg
+O=arts/extractsmalldict.zsg
 
 default: run
 
@@ -7,6 +7,10 @@ dist: all
 	./dist.sh
 
 all:
+	cmake -B build
+	make -C build -j `python -c 'from multiprocessing import cpu_count; print(cpu_count() * 2)'`
+
+release_all:
 	cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
 	make -C build -j `python -c 'from multiprocessing import cpu_count; print(cpu_count() * 2)'`
 

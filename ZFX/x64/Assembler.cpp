@@ -13,10 +13,10 @@ namespace zfx::x64 {
     } \
 } while (0)
 
-struct Assembler {
+struct ImplAssembler {
     int simdkind = optype::xmmps;
     std::unique_ptr<SIMDBuilder> builder = std::make_unique<SIMDBuilder>();
-    std::unique_ptr<Program> prog = std::make_unique<Program>();
+    std::unique_ptr<Executable> exec = std::make_unique<Executable>();
 
     int nconsts = 0;
     int nlocals = 0;
@@ -29,9 +29,16 @@ struct Assembler {
             auto linesep = split_str(line, ' ');
             ERROR_IF(linesep.size() < 1);
             auto cmd = linesep[0];
-            if (0) {
+            if (cmd == "const") {
+                ERROR_IF(linesep.size() < 2);
+                auto id = from_string<int>(linesep[1]);
+                auto expr = linesep[2];
+                if (!(std::istringstream(expr) >> exec->consts[id])) {
+                    error("cannot parse literial constant `%s`",
+                        expr.c_str());
+                }
 
-            } else if (cmd == "ldi") {  // rcx points to an array of constants
+            } else if (cmd == "ldp") {  // rcx points to an array of constants
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
@@ -40,7 +47,7 @@ struct Assembler {
                 builder->addAvxBroadcastLoadOp(simdkind,
                     dst, {opreg::rcx, memflag::reg_imm8, offset});
 
-            } else if (cmd == "ldm") {  // rdx points to an array of variables
+            } else if (cmd == "ldl") {  // rdx points to an array of variables
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
@@ -49,12 +56,12 @@ struct Assembler {
                 builder->addAvxMemoryOp(simdkind, opcode::loadu,
                     dst, {opreg::rdx, memflag::reg_imm8, offset});
 
-            } else if (cmd == "stm") {
+            } else if (cmd == "stl") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
-                int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 nlocals = std::max(nlocals, id + 1);
+                int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
                     dst, {opreg::rdx, memflag::reg_imm8, offset});
 
@@ -142,34 +149,23 @@ struct Assembler {
         printf("\n");
 #endif
 
-        prog->memsize = (insts.size() + 4095) / 4096 * 4096;
-        prog->mem = exec_page_alloc(prog->memsize);
+        exec->memsize = (insts.size() + 4095) / 4096 * 4096;
+        exec->mem = exec_page_alloc(exec->memsize);
         for (int i = 0; i < insts.size(); i++) {
-            prog->mem[i] = insts[i];
-        }
-    }
-
-    void set_constants(std::map<int, std::string> const &consts) {
-        for (auto const &[idx, expr]: consts) {
-            if (!(std::istringstream(expr) >> prog->consts[idx])) {
-                error("cannot parse literial constant `%s`",
-                    expr.c_str());
-            }
+            exec->mem[i] = insts[i];
         }
     }
 };
 
-std::unique_ptr<Program> Program::assemble
+std::unique_ptr<Executable> Executable::assemble
     ( std::string const &lines
-    , std::map<int, std::string> const &consts
     ) {
-    Assembler a;
+    ImplAssembler a;
     a.parse(lines);
-    a.set_constants(consts);
-    return std::move(a.prog);
+    return std::move(a.exec);
 }
 
-Program::~Program() {
+Executable::~Executable() {
     if (mem) {
         exec_page_free(mem, memsize);
         mem = nullptr;

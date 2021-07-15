@@ -97,14 +97,17 @@ struct GlobalLocalize : Visitor<GlobalLocalize> {
     }
 };
 
-std::map<int, int> apply_global_localize(IR *ir) {
-    ReassignGlobals reassign;
-    reassign.apply(ir);
+std::map<int, int> apply_reassign_globals(IR *ir) {
+    ReassignGlobals visitor;
+    visitor.apply(ir);
+    return visitor.globals;
+}
+
+void apply_global_localize(IR *ir, int nglobals) {
     GlobalLocalize visitor;
-    visitor.nglobals = reassign.globals.size();
+    visitor.nglobals = nglobals;
     visitor.apply(ir);
     *ir = *visitor.ir;
-    return reassign.globals;
 }
 
 }

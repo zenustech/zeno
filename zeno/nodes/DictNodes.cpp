@@ -2,6 +2,7 @@
 #include <zeno/DictObject.h>
 #include <zeno/StringObject.h>
 #include <zeno/NumericObject.h>
+#include <zeno/safe_at.h>
 
 
 struct DictSize : zeno::INode {
@@ -73,34 +74,49 @@ ZENDEFNODE(UpdateDict, {
 
 struct MakeSmallDict : zeno::INode {
     virtual void apply() override {
+        auto inkeys = get_param<std::string>("_KEYS");
+        auto keys = zeno::split_str(inkeys, '\n');
         auto dict = std::make_shared<zeno::DictObject>();
-        for (int i = 0; i < 4; i++) {
-            std::stringstream namess;
-            namess << "obj" << i;
-            auto name = namess.str();
-            if (!has_input(name)) break;
-            auto obj = get_input(name);
-            std::stringstream namess2;
-            namess2 << "name" << i;
-            name = namess2.str();
-            name = get_param<std::string>(name);
-            dict->lut[name] = std::move(obj);
+        for (auto const &key: keys) {
+            if (has_input(key)) {
+                auto obj = get_input(key);
+                dict->lut[key] = std::move(obj);
+            }
         }
         set_output("dict", std::move(dict));
     }
 };
 
 ZENDEFNODE(MakeSmallDict, {
-    { "obj0"
-    , "obj1"
-    , "obj2"
-    , "obj3"
-    },
+    {},
     {"dict"},
-    { {"string", "name0", "obj0"}
-    , {"string", "name1", "obj1"}
-    , {"string", "name2", "obj2"}
-    , {"string", "name3", "obj3"}
-    },
+    {},
+    {"dict"},
+});
+
+
+struct ExtractSmallDict : zeno::INode {
+    virtual void apply() override {
+        auto dict = get_input<zeno::DictObject>("dict");
+        for (int i = 0; i < 4; i++) {
+            std::stringstream namess;
+            namess << "name" << i;
+            auto name = namess.str();
+            auto key = get_param<std::string>(name);
+            if (key.size() == 0) break;
+            auto obj = safe_at(dict->lut, key, "ExtractSmallDict key");
+            std::stringstream namess2;
+            namess2 << "obj" << i;
+            name = namess2.str();
+            set_output(name, std::move(obj));
+        }
+        set_output("dict", std::move(dict));
+    }
+};
+
+ZENDEFNODE(ExtractSmallDict, {
+    {"dict"},
+    {},
+    {},
     {"dict"},
 });

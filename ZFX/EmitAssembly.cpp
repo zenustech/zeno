@@ -10,9 +10,12 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         , AsmBinaryOpStmt
         , AsmUnaryOpStmt
         , AsmAssignStmt
+        , AsmLoadConstStmt
         , AsmParamLoadStmt
         , AsmLocalStoreStmt
         , AsmLocalLoadStmt
+        , AsmGlobalStoreStmt
+        , AsmGlobalLoadStmt
         , Statement
         >;
 
@@ -27,12 +30,32 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         error("unexpected statement type `%s`", typeid(*stmt).name());
     }
 
+    static inline std::set<std::string> maths =
+        { "sqrt"
+        , "sin"
+        , "cos"
+        , "tan"
+        , "asin"
+        , "acos"
+        , "atan"
+        , "exp"
+        , "log"
+        , "floor"
+        , "ceil"
+        , "abs"
+        , "rsqrt"
+        , "min"
+        , "max"
+        , "pow"
+        , "atan2"
+        };
+
     void visit(AsmUnaryOpStmt *stmt) {
         const char *opcode = [](auto const &op) {
             if (0) {
             } else if (op == "+") { return "mov";
             } else if (op == "-") { return "neg";
-            } else if (op == "sqrt") { return "sqrt";
+            } else if (contains(maths, op)) { return op.c_str();
             } else { error("invalid unary op `%s`", op.c_str());
             }
         }(stmt->op);
@@ -48,6 +71,7 @@ struct EmitAssembly : Visitor<EmitAssembly> {
             } else if (op == "*") { return "mul";
             } else if (op == "/") { return "div";
             } else if (op == "%") { return "mod";
+            } else if (contains(maths, op)) { return op.c_str();
             } else { error("invalid binary op `%s`", op.c_str());
             }
         }(stmt->op);
@@ -55,16 +79,28 @@ struct EmitAssembly : Visitor<EmitAssembly> {
             stmt->dst, stmt->lhs, stmt->rhs);
     }
 
+    void visit(AsmGlobalStoreStmt *stmt) {
+        emit("stg %d %d", stmt->val, stmt->mem);
+    }
+
+    void visit(AsmGlobalLoadStmt *stmt) {
+        emit("ldg %d %d", stmt->val, stmt->mem);
+    }
+
     void visit(AsmLocalStoreStmt *stmt) {
-        emit("stm %d %d", stmt->val, stmt->mem);
+        emit("stl %d %d", stmt->val, stmt->mem);
     }
 
     void visit(AsmLocalLoadStmt *stmt) {
-        emit("ldm %d %d", stmt->val, stmt->mem);
+        emit("ldl %d %d", stmt->val, stmt->mem);
     }
 
     void visit(AsmParamLoadStmt *stmt) {
-        emit("ldi %d %d", stmt->val, stmt->mem);
+        emit("ldp %d %d", stmt->val, stmt->mem);
+    }
+
+    void visit(AsmLoadConstStmt *stmt) {
+        emit("ldi %d %s", stmt->dst, stmt->value.c_str());
     }
 
     void visit(AsmAssignStmt *stmt) {

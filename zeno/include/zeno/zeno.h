@@ -97,6 +97,8 @@ public:
 
 protected:
     ZENAPI bool checkApplyCondition();
+    ZENAPI void requireInput(std::string const &ds);
+    ZENAPI void coreApply();
 
     ZENAPI virtual void complete();
     ZENAPI virtual void apply() = 0;

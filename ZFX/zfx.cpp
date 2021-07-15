@@ -8,7 +8,6 @@ std::tuple
     < std::string
     , std::vector<std::pair<std::string, int>>
     , std::vector<std::pair<std::string, int>>
-    , std::map<int, std::string>
     > compile_to_assembly
     ( std::string const &code
     , Options const &options
@@ -94,12 +93,9 @@ std::tuple
 #endif
 
 #ifdef ZFX_PRINT_IR
-    cout << "=== ConstParametrize" << endl;
+    cout << "=== ReassignParameters" << endl;
 #endif
-    auto
-        [ uniforms
-        , constants
-        ] = apply_const_parametrize(ir.get());
+    auto uniforms = apply_reassign_parameters(ir.get());
 #ifdef ZFX_PRINT_IR
     ir->print();
 #endif
@@ -114,18 +110,34 @@ std::tuple
         new_params[dst] = std::pair{params[dst].first, params[i].second};
     }
 
+    std::ostringstream oss_end;
+    if (options.const_parametrize) {
 #ifdef ZFX_PRINT_IR
-    cout << "=== RegisterAllocation" << endl;
+        cout << "=== ConstParametrize" << endl;
 #endif
-    apply_register_allocation(ir.get());
+        auto constants = apply_const_parametrize(ir.get(), uniforms.size());
 #ifdef ZFX_PRINT_IR
-    ir->print();
+        ir->print();
 #endif
+        for (auto const &[idx, expr]: constants) {
+            oss_end << "const " << idx << " " << expr << "\n";
+        }
+    }
+
+    if (options.arch_maxregs != 0) {
+#ifdef ZFX_PRINT_IR
+        cout << "=== RegisterAllocation" << endl;
+#endif
+        apply_register_allocation(ir.get(), options.arch_maxregs);
+#ifdef ZFX_PRINT_IR
+        ir->print();
+#endif
+    }
 
 #ifdef ZFX_PRINT_IR
-    cout << "=== GlobalLocalize" << endl;
+    cout << "=== ReassignGlobals" << endl;
 #endif
-    auto globals = apply_global_localize(ir.get());
+    auto globals = apply_reassign_globals(ir.get());
 #ifdef ZFX_PRINT_IR
     ir->print();
 #endif
@@ -140,10 +152,21 @@ std::tuple
         new_symbols[dst] = std::pair{symbols[dst].first, symbols[i].second};
     }
 
+    if (options.global_localize) {
+#ifdef ZFX_PRINT_IR
+        cout << "=== GlobalLocalize" << endl;
+#endif
+        apply_global_localize(ir.get(), globals.size());
+#ifdef ZFX_PRINT_IR
+        ir->print();
+#endif
+    }
+
 #ifdef ZFX_PRINT_IR
     cout << "=== EmitAssembly" << endl;
 #endif
     auto assem = apply_emit_assembly(ir.get());
+    assem = oss_end.str() + assem;
 #ifdef ZFX_PRINT_IR
     cout << assem;
 #endif
@@ -155,7 +178,6 @@ std::tuple
         { assem
         , new_symbols
         , new_params
-        , constants
         };
 }
 

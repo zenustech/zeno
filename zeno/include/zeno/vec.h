@@ -62,6 +62,14 @@ template <size_t N, class T> struct vec : std::array<T, N> {
     }
     return res;
   }
+
+  explicit operator bool() const {
+    bool ret = false;
+    for (size_t i = 0; i < N; i++) {
+      ret = ret || (bool)(*this)[i];
+    }
+    return ret;
+  }
 };
 
 /* type traits */

@@ -25,13 +25,14 @@ class MainWindow(QWidget):
         super().__init__(parent)
 
         self.setWindowTitle('ZENO Qt Editor')
-        self.setGeometry(200, 200, 1200, 1000)
+        self.setGeometry(0, 0, 1200, 1000)
+        #self.setGeometry(0, 0, 800, 1000)
 
         scrn_size = QDesktopWidget().geometry()
         self_size = self.geometry()
-        self.move(
-                (scrn_size.width() - self_size.width()) // 2,
-                (scrn_size.height() - self_size.height()) // 2)
+        #self.move(
+                #(scrn_size.width() - self_size.width()) // 2,
+                #(scrn_size.height() - self_size.height()) // 2)
 
         self.viewportTimeline = ViewportTimeline()
         self.editor = NodeEditor()

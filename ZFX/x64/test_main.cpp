@@ -2,7 +2,8 @@
 #include <zfx/x64.h>
 #include <cmath>
 
-static zfx::Compiler<zfx::x64::Program> compiler;
+static zfx::Compiler compiler;
+static zfx::x64::Assembler assembler;
 
 int main() {
 #if 0
@@ -19,10 +20,11 @@ int main() {
     };
 #endif
 
-    zfx::Options opts;
+    zfx::Options opts(zfx::Options::for_x64);
     opts.define_symbol("@pos", 1);
     opts.define_param("$dt", 1);
     auto prog = compiler.compile(code, opts);
+    auto exec = assembler.assemble(prog->assembly);
 
     float arr[4] = {1, 2, 3, 4};
 
@@ -33,12 +35,12 @@ int main() {
     }
     printf("\n");
 
-    auto ctx = prog->make_context();
+    auto ctx = exec->make_context();
 
-    prog->parameter(prog->param_id("$dt", 0)) = 3.14f;
-    memcpy(&ctx.channel(prog->symbol_id("@pos", 0)), arr, sizeof(arr));
+    exec->parameter(prog->param_id("$dt", 0)) = 3.14f;
+    memcpy(ctx.channel(prog->symbol_id("@pos", 0)), arr, sizeof(arr));
     ctx.execute();
-    memcpy(arr, &ctx.channel(prog->symbol_id("@pos", 0)), sizeof(arr));
+    memcpy(arr, ctx.channel(prog->symbol_id("@pos", 0)), sizeof(arr));
 
     printf("result:");
     for (auto val: arr) {

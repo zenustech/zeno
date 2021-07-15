@@ -25,6 +25,21 @@ struct MakeGCTest : zeno::INode {
 ZENDEFNODE(MakeGCTest, {
     {},
     {"value"},
-    {{"int", "value", "0"}},
+    {{"int", "value", "42"}},
+    {"debug"},
+});
+
+
+struct PrintMessage : zeno::INode {
+    virtual void apply() override {
+        auto message = get_param<std::string>("message");
+        printf("%s\n", message.c_str());
+    }
+};
+
+ZENDEFNODE(PrintMessage, {
+    {},
+    {},
+    {{"string", "message", "hello"}},
     {"debug"},
 });

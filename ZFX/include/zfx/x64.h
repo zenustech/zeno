@@ -7,7 +7,7 @@
 
 namespace zfx::x64 {
 
-struct Program {
+struct Executable {
     uint8_t *mem = nullptr;
     size_t memsize = 0;
     float consts[1024];
@@ -15,42 +15,54 @@ struct Program {
     static constexpr size_t SimdWidth = 4;
 
     struct Context {
-        Program *prog;
+        Executable *exec;
         float locals[SimdWidth * 256];
 
         void execute() {
-            auto entry = (void (*)())prog->mem;
             asm volatile (
-                "call *%0"
+                "call *(%%rax)"
                 :
-                : "" (entry)
-                , "c" ((uintptr_t)(void *)prog->consts)
-                , "d" ((uintptr_t)(void *)locals)
+                : "a" (&exec->mem)
+                , "c" ((uintptr_t)(void *)&exec->consts[0])
+                , "d" ((uintptr_t)(void *)&locals[0])
                 : "cc", "memory"
                 );
         }
 
-        float &channel(int chid) {
-            return locals[SimdWidth * chid];
+        float *channel(int chid) {
+            return locals + SimdWidth * chid;
         }
     };
 
-    float &parameter(int parid) {
+    inline float &parameter(int parid) {
         return consts[parid];
     }
 
-    inline constexpr Context make_context() {
+    inline Context make_context() {
         return {this};
     }
 
-    Program() = default;
-    Program(Program const &) = delete;
-    ~Program();
+    Executable() = default;
+    Executable(Executable const &) = delete;
+    ~Executable();
 
-    static std::unique_ptr<Program> assemble
+    static std::unique_ptr<Executable> assemble
         ( std::string const &lines
-        , std::map<int, std::string> const &consts
         );
+};
+
+struct Assembler {
+    std::map<std::string, std::unique_ptr<Executable>> cache;
+
+    Executable *assemble(std::string const &lines) {
+        if (auto it = cache.find(lines); it != cache.end()) {
+            return it->second.get();
+        }
+        auto prog = Executable::assemble(lines);
+        auto raw_ptr = prog.get();
+        cache[lines] = std::move(prog);
+        return raw_ptr;
+    }
 };
 
 }
