@@ -101,7 +101,10 @@ struct ExtractSmallDict : zeno::INode {
         auto keys = zeno::split_str(inkeys, '\n');
         auto dict = get_input<zeno::DictObject>("dict");
         for (auto const &key: keys) {
-            auto obj = safe_at(dict->lut, key, "ExtractSmallDict key");
+            auto it = dict->lut.find(key);
+            if (it == dict->lut.end())
+                continue;
+            auto obj = it->second;
             set_output(key, std::move(obj));
         }
     }
