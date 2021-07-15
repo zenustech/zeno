@@ -20,7 +20,7 @@ int main() {
     };
 #endif
 
-    zfx::Options opts;
+    zfx::Options opts(zfx::Options::for_x64);
     opts.define_symbol("@pos", 1);
     opts.define_param("$dt", 1);
     auto prog = compiler.compile(code, opts);

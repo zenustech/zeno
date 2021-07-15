@@ -11,11 +11,28 @@
 namespace zfx {
 
 struct Options {
-    std::map<std::string, int> symdims;
-    std::map<std::string, int> pardims;
     bool const_parametrize = true;
     bool global_localize = true;
     int arch_maxregs = 8;
+
+    Options() = default;
+
+    static constexpr struct {} for_x64{};
+    Options(decltype(for_x64))
+        : const_parametrize(true)
+        , global_localize(true)
+        , arch_maxregs(8)
+    {}
+
+    static constexpr struct {} for_cuda{};
+    Options(decltype(for_cuda))
+        : const_parametrize(false)
+        , global_localize(false)
+        , arch_maxregs(0)
+    {}
+
+    std::map<std::string, int> symdims;
+    std::map<std::string, int> pardims;
 
     void define_symbol(std::string const &name, int dimension) {
         symdims[name] = dimension;
