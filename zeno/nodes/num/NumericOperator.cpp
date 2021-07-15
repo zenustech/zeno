@@ -123,6 +123,16 @@ struct NumericOperator : zeno::INode {
         if (has_input("rhs")) {
             auto rhs = get_input<zeno::NumericObject>("rhs");
             if(op == "set") lhs->value = rhs->value;
+            
+            if (lhs->value.index() == 1 && rhs->value.index() == 1){
+                if(op == "beq") ret->value = (std::get<float>(lhs->value)>=std::get<float>(rhs->value))?(int)1:(int)0;
+                if(op == "leq") ret->value = (std::get<float>(lhs->value)<=std::get<float>(rhs->value))?(int)1:(int)0;
+            }
+            if (lhs->value.index() == 0 && rhs->value.index() == 0){
+                if(op == "beq") ret->value = (std::get<int>(lhs->value)>=std::get<int>(rhs->value))?(int)1:(int)0;
+                if(op == "leq") ret->value = (std::get<int>(lhs->value)<=std::get<int>(rhs->value))?(int)1:(int)0;
+            }
+            
             std::visit([op, &ret](auto const &lhs, auto const &rhs) {
 
                 if (op == "copy") ret->value = lhs;
