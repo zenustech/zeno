@@ -132,7 +132,8 @@ class QDMGraphicsScene(QGraphicsScene):
         if input_nodes == None:
             input_nodes = self.nodes
         for node in input_nodes:
-            nodes.update(node.dump())
+            ident, data = node.dump()
+            nodes[ident] = data
         return nodes
 
     def newGraph(self):
@@ -150,7 +151,6 @@ class QDMGraphicsScene(QGraphicsScene):
 
     def loadGraph(self, nodes, select_all=False):
         edges = []
-        nodesLut = {}
 
         for ident, data in nodes.items():
             name = data['name']
@@ -163,6 +163,11 @@ class QDMGraphicsScene(QGraphicsScene):
             self.addNode(node)
             if select_all:
                 node.setSelected(True)
+
+        self.loadEdges(edges, select_all)
+
+    def loadEdges(self, edges, select_all=False):
+        nodesLut = {}
 
         for node in self.nodes:
             nodesLut[node.ident] = node
@@ -1217,7 +1222,13 @@ class QDMGraphicsNode(QGraphicsItem):
             'uipos': uipos,
             'options': options,
         }
-        return {self.ident: data}
+        return self.ident, data
+
+    def reloadSockets(self):
+        ident, data = self.dump()
+        self.resetSockets()
+        edges = self.load(ident, data)
+        self.scene().loadEdges(edges)
     
     def load(self, ident, data):
         name = data['name']

@@ -7,9 +7,12 @@
      "inputs": {
       "SRC": null,
       "COND": null,
-      "obj0": null,
+      "obj0": [
+       "bd907faf-NumericInt",
+       "value"
+      ],
       "obj1": null,
-      "obj2asas": null
+      "obj2": null
      },
      "params": {},
      "uipos": [

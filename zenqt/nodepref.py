@@ -114,7 +114,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
             'title': self.title.toPlainText(),
             'content': self.content.toPlainText(),
         }
-        return {self.ident: data}
+        return self.ident, data
     
     def load(self, ident, data):
         name = data['name']
@@ -209,20 +209,17 @@ class QDMGraphicsNode_MakeSmallDict(QDMGraphicsNode):
 
     def add_new_key(self):
         self.input_keys.append('obj{}'.format(len(self.input_keys)))
-        self.resetSockets()
-        self.initSockets()
+        self.reloadSockets()
 
     def del_last_key(self):
         if len(self.input_keys):
             self.input_keys.pop()
-            self.resetSockets()
-            self.initSockets()
+            self.reloadSockets()
 
     def dump(self):
-        idata = super().dump()
-        data = idata[self.ident]
+        ident, data = super().dump()
         data['input_keys'] = tuple(self.input_keys)
-        return idata
+        return ident, data
 
     def load(self, ident, data):
         if 'input_keys' in data:
