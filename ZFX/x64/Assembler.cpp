@@ -29,11 +29,11 @@ struct ImplAssembler {
             auto linesep = split_str(line, ' ');
             ERROR_IF(linesep.size() < 1);
             auto cmd = linesep[0];
-            } else if (cmd == "const") {
+            if (cmd == "const") {
                 ERROR_IF(linesep.size() < 2);
                 auto id = from_string<int>(linesep[1]);
                 auto expr = linesep[2];
-                if (!(std::istringstream(expr) >> exec->consts[idx])) {
+                if (!(std::istringstream(expr) >> exec->consts[id])) {
                     error("cannot parse literial constant `%s`",
                         expr.c_str());
                 }
