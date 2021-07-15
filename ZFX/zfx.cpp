@@ -8,7 +8,6 @@ std::tuple
     < std::string
     , std::vector<std::pair<std::string, int>>
     , std::vector<std::pair<std::string, int>>
-    , std::map<int, std::string>
     > compile_to_assembly
     ( std::string const &code
     , Options const &options
@@ -114,6 +113,11 @@ std::tuple
         new_params[dst] = std::pair{params[dst].first, params[i].second};
     }
 
+    std::ostringstream constoss;
+    for (auto const &[idx, expr]: constants) {
+        constoss << "const " << idx << " " << expr << "\n";
+    }
+
     if (options.arch_nregs != 0) {
 #ifdef ZFX_PRINT_IR
         cout << "=== RegisterAllocation" << endl;
@@ -146,6 +150,7 @@ std::tuple
     cout << "=== EmitAssembly" << endl;
 #endif
     auto assem = apply_emit_assembly(ir.get());
+    assem += constoss.str();
 #ifdef ZFX_PRINT_IR
     cout << assem;
 #endif
@@ -157,7 +162,6 @@ std::tuple
         { assem
         , new_symbols
         , new_params
-        , constants
         };
 }
 

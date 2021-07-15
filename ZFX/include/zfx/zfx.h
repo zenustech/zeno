@@ -13,6 +13,7 @@ namespace zfx {
 struct Options {
     std::map<std::string, int> symdims;
     std::map<std::string, int> pardims;
+    int arch_nregs = 8;
 
     void define_symbol(std::string const &name, int dimension) {
         symdims[name] = dimension;
@@ -29,28 +30,23 @@ struct Options {
         for (auto const &[name, dim]: pardims) {
             os << '\\' << name << '\\' << dim;
         }
+        os << '|' << arch_nregs;
     }
-
-    int arch_nregs = 8;
 };
 
 std::tuple
     < std::string
     , std::vector<std::pair<std::string, int>>
     , std::vector<std::pair<std::string, int>>
-    , std::map<int, std::string>
     > compile_to_assembly
     ( std::string const &code
     , Options const &options
     );
 
-template <class Prog>
 struct Program {
-    std::unique_ptr<Prog> prog;
     std::vector<std::pair<std::string, int>> symbols;
     std::vector<std::pair<std::string, int>> params;
-
-    static inline constexpr size_t SimdWidth = Prog::SimdWidth;
+    std::string assembly;
 
     auto const &get_symbols() const {
         return symbols;
@@ -71,25 +67,12 @@ struct Program {
             params.begin(), params.end(), std::pair{name, dim});
         return it != params.end() ? it - params.begin() : -1;
     }
-
-    inline decltype(auto) parameter(int parid) {
-        return prog->parameter(parid);
-    }
-
-    inline constexpr decltype(auto) make_context() {
-        return prog->make_context();
-    }
-
-    inline decltype(auto) get_codegen_result() {
-        return prog->get_codegen_result();
-    }
 };
 
-template <class Prog>
 struct Compiler {
-    std::map<std::string, std::unique_ptr<Program<Prog>>> cache;
+    std::map<std::string, std::unique_ptr<Program>> cache;
 
-    Program<Prog> *compile
+    Program *compile
         ( std::string const &code
         , Options const &options
         ) {
@@ -104,18 +87,17 @@ struct Compiler {
         }
 
         auto 
-            [ assem
+            [ assembly
             , symbols
             , params
-            , constants
             ] = compile_to_assembly
             ( code
             , options
             );
-        auto prog = std::make_unique<Program<Prog>>();
-        prog->prog = Prog::assemble(assem, constants);
-        prog->symbols = symbols;  // symbols are attributes in glsl
-        prog->params = params;  // params are uniforms in glsl
+        auto prog = std::make_unique<Program>();
+        prog->assembly = assembly;
+        prog->symbols = symbols;
+        prog->params = params;
 
         auto raw_ptr = prog.get();
         cache[key] = std::move(prog);

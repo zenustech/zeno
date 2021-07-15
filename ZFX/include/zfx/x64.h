@@ -7,7 +7,7 @@
 
 namespace zfx::x64 {
 
-struct Program {
+struct Executable {
     uint8_t *mem = nullptr;
     size_t memsize = 0;
     float consts[1024];
@@ -15,16 +15,16 @@ struct Program {
     static constexpr size_t SimdWidth = 4;
 
     struct Context {
-        Program *prog;
+        Executable *exec;
         float locals[SimdWidth * 256];
 
         void execute() {
-            auto entry = (void (*)())prog->mem;
+            auto entry = (void (*)())exec->mem;
             asm volatile (
                 "call *%0"
                 :
                 : "" (entry)
-                , "c" ((uintptr_t)(void *)prog->consts)
+                , "c" ((uintptr_t)(void *)exec->consts)
                 , "d" ((uintptr_t)(void *)locals)
                 : "cc", "memory"
                 );
@@ -35,22 +35,35 @@ struct Program {
         }
     };
 
-    float &parameter(int parid) {
+    inline float &parameter(int parid) {
         return consts[parid];
     }
 
-    inline constexpr Context make_context() {
+    inline Context make_context() {
         return {this};
     }
 
-    Program() = default;
-    Program(Program const &) = delete;
-    ~Program();
+    Executable() = default;
+    Executable(Executable const &) = delete;
+    ~Executable();
 
-    static std::unique_ptr<Program> assemble
+    static std::unique_ptr<Executable> assemble
         ( std::string const &lines
-        , std::map<int, std::string> const &consts
         );
+};
+
+struct Assembler {
+    std::map<std::string, std::unique_ptr<Executable>> cache;
+
+    Executable *assemble(std::string const &lines) {
+        if (auto it = cache.find(lines); it != cache.end()) {
+            return it->second.get();
+        }
+        auto prog = Executable::assemble(lines);
+        auto raw_ptr = prog.get();
+        cache[lines] = std::move(prog);
+        return raw_ptr;
+    }
 };
 
 }
