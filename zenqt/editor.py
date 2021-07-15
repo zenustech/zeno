@@ -1224,6 +1224,44 @@ class QDMGraphicsNode(QGraphicsItem):
         }
         return self.ident, data
 
+    def saveEdges(self):
+        inputs = {}
+        for name, socket in self.inputs.items():
+            res = []
+            for e in socket.edges:
+                res.append((e.srcSocket.node.ident, e.srcSocket.name))
+            inputs[name] = res
+        outputs = {}
+        for name, socket in self.outputs.items():
+            res = []
+            for e in socket.edges:
+                res.append((e.dstSocket.node.ident, e.dstSocket.name))
+            outputs[name] = res
+        return inputs, outputs
+
+    def restoreEdges(self, saved):
+        nodesLut = {}
+        for node in self.scene().nodes:
+            nodesLut[node.ident] = node
+
+        inputs, outputs = saved
+        for name, socket in self.inputs.items():
+            if name in inputs:
+                for sn, ss in inputs[name]:
+                    if sn in nodesLut:
+                        node = nodesLut[sn]
+                        if ss in node.outputs:
+                            source = node.outputs[ss]
+                            self.scene().addEdge(source, socket)
+        for name, socket in self.outputs.items():
+            if name in outputs:
+                for dn, ds in outputs[name]:
+                    if dn in nodesLut:
+                        node = nodesLut[dn]
+                        if ds in node.inputs:
+                            dest = node.inputs[ds]
+                            self.scene().addEdge(socket, dest)
+
     def reloadSockets(self):
         edges = self.saveEdges()
         self.resetSockets()
