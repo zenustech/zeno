@@ -74,7 +74,7 @@ ZENDEFNODE(EndFor, {
 });
 
 
-struct BreakFor : ContextManagedNode {
+struct BreakFor : zeno::INode {
     virtual void doApply() override {
         auto [sn, ss] = inputBounds.at("FOR");
         auto fore = dynamic_cast<IBeginFor *>(graph->nodes.at(sn).get());
@@ -113,7 +113,7 @@ ZENDEFNODE(IF, {
     {"control"},
 });
 
-struct EndIF : ContextManagedNode {
+struct EndIF : zeno::ContextManagedNode {
     virtual void doApply() override {
         auto [sn, ss] = inputBounds.at("IF");
         auto true_exp = dynamic_cast<IF *>(graph->nodes.at(sn).get());
@@ -184,7 +184,7 @@ ZENDEFNODE(FalseBranch, {
     {"control"},
 });
 
-struct EndBranch : ContextManagedNode {
+struct EndBranch : zeno::ContextManagedNode {
     virtual void doApply() override {
         auto [sn, ss] = inputBounds.at("BranchIn");
         auto exec = dynamic_cast<IBranch *>(graph->nodes.at(sn).get());
@@ -209,7 +209,7 @@ ZENDEFNODE(EndBranch, {
 });
 
 
-struct ConditionedDo : ContextManagedNode {
+struct ConditionedDo : zeno::INode {
     bool m_which;
     virtual void doApply() override {
         

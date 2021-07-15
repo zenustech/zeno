@@ -84,6 +84,12 @@ struct NumericOperator : zeno::INode {
     _PER_OP2(^, xor)
     _PER_OP2(>>, shr)
     _PER_OP2(<<, shl)
+    _PER_OP2(>=, cmpge)
+    _PER_OP2(<=, cmple)
+    _PER_OP2(>, cmpgt)
+    _PER_OP2(<, cmplt)
+    _PER_OP2(!=, cmpne)
+    _PER_OP2(==, cmpeq)
 
     _PER_OP1(+, pos)
     _PER_OP1(-, neg)
@@ -124,14 +130,14 @@ struct NumericOperator : zeno::INode {
             auto rhs = get_input<zeno::NumericObject>("rhs");
             if(op == "set") lhs->value = rhs->value;
             
-            if (lhs->value.index() == 1 && rhs->value.index() == 1){
+            /*if (lhs->value.index() == 1 && rhs->value.index() == 1){
                 if(op == "beq") ret->value = (std::get<float>(lhs->value)>=std::get<float>(rhs->value))?(int)1:(int)0;
                 if(op == "leq") ret->value = (std::get<float>(lhs->value)<=std::get<float>(rhs->value))?(int)1:(int)0;
             }
             if (lhs->value.index() == 0 && rhs->value.index() == 0){
                 if(op == "beq") ret->value = (std::get<int>(lhs->value)>=std::get<int>(rhs->value))?(int)1:(int)0;
                 if(op == "leq") ret->value = (std::get<int>(lhs->value)<=std::get<int>(rhs->value))?(int)1:(int)0;
-            }
+            }*/
             
             std::visit([op, &ret](auto const &lhs, auto const &rhs) {
 
@@ -153,6 +159,12 @@ struct NumericOperator : zeno::INode {
     _PER_OP(max)
     _PER_OP(min)
     _PER_OP(fmod)
+    _PER_OP(cmpge)
+    _PER_OP(cmple)
+    _PER_OP(cmpgt)
+    _PER_OP(cmplt)
+    _PER_OP(cmpne)
+    _PER_OP(cmpeq)
                 else std::cout << "Bad binary op name: " << op << std::endl;
 #undef _PER_OP
 
