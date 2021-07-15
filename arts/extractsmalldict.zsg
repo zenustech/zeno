@@ -20,7 +20,13 @@
       269.52,
       260.56
      ],
-     "options": []
+     "options": [],
+     "input_keys": [
+      "obj0",
+      "obj2ss",
+      "obj1s",
+      "obj3s"
+     ]
     },
     "bd907faf-NumericInt": {
      "name": "NumericInt",

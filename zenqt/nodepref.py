@@ -52,13 +52,13 @@ class QDMGraphicsNode_MakeSmallDict(QDMGraphicsNode):
 
             self.height += TEXT_HEIGHT
 
-        """button = QDMGraphicsButton(self)
+        button = QDMGraphicsButton(self)
         M = HORI_MARGIN * 0.2
         H = TEXT_HEIGHT * 0.9
-        W = self.width / len(cond_keys)
-        rect = QRectF(W * i + M, -TEXT_HEIGHT * 2.3, W - M * 2, H)
+        W = self.width / 2
+        rect = QRectF(M, -TEXT_HEIGHT * 2.3, W - M * 2, H)
         button.setGeometry(rect)
-        button.setText(key)"""
+        button.setText('new')
 
         self.height += TEXT_HEIGHT * 1.5
 
@@ -69,7 +69,8 @@ class QDMGraphicsNode_MakeSmallDict(QDMGraphicsNode):
         return idata
 
     def load(self, ident, data):
-        self.input_keys = data['input_keys']
+        if 'input_keys' in data:
+            self.input_keys = list(data['input_keys'])
 
         """self.input_keys.clear()
         for key in data['inputs'].keys():
