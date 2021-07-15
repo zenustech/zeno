@@ -35,11 +35,11 @@ jobs:
       with:
         python-version: ${{ matrix.python }}
 
-    - uses: actions/cache@v2
-      with:
-        key: ${{matrix.os}}-${{matrix.python}}-${{env.BUILD_TYPE}}-${{hashFiles('**/CMakeLists.txt')}}
-        path: |
-          ${{github.workspace}}/build
+    #- uses: actions/cache@v2
+      #with:
+        #key: ${{matrix.os}}-${{matrix.python}}-${{env.BUILD_TYPE}}-${{hashFiles('**/CMakeLists.txt')}}
+        #path: |
+          #${{github.workspace}}/build
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ${{matrix.options}}
