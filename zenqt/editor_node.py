@@ -11,8 +11,8 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor(style['title_text_color']))
-        self.title.setPos(HORI_MARGIN * 2, -TEXT_HEIGHT)
         font = QFont()
+        font.setWeight(QFont.DemiBold)
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
 
@@ -150,7 +150,7 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.height = y
 
-        self.title.setPos(HORI_MARGIN * 2, self.height)
+        self.title.setPos(HORI_MARGIN * 0.8, self.height)
         self.collapse_button.setPos(204 + 4, self.height + 4)
 
     def boundingRect(self):
@@ -220,7 +220,7 @@ class QDMGraphicsNode(QGraphicsItem):
             for edge in socket.edges:
                 edge.updatePath()
 
-        self.title.setPos(HORI_MARGIN * 2, 0)
+        self.title.setPos(HORI_MARGIN * 0.8, 0)
         self.collapse_button.setPos(204 + 4, 4)
 
     def unfold(self):
@@ -238,7 +238,7 @@ class QDMGraphicsNode(QGraphicsItem):
             for edge in socket.edges:
                 edge.updatePath()
 
-        self.title.setPos(HORI_MARGIN * 2, self.height)
+        self.title.setPos(HORI_MARGIN * 0.8, self.height)
         self.collapse_button.setPos(204 + 4, self.height + 4)
 
     def dump(self):

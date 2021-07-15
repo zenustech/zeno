@@ -58,9 +58,10 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
 
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor(style['title_text_color']))
-        self.title.setPos(HORI_MARGIN * 2, -TEXT_HEIGHT)
+        self.title.setPos(HORI_MARGIN, -TEXT_HEIGHT * 1.2)
         self.title.setTextInteractionFlags(Qt.TextEditorInteraction)
         font = QFont()
+        font.setWeight(QFont.DemiBold)
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
 
