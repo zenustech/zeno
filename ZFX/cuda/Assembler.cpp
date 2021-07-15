@@ -25,40 +25,43 @@ struct CUDABuilder {
 
     void addAssign(int dst, int src) {
         define(dst);
-        oss << "r" << dst << " = r" << src << ";\n";
+        oss << "    r" << dst << " = r" << src << ";\n";
     }
 
     void addLoadLiterial(int dst, std::string const &expr) {
         define(dst);
-        oss << "r" << dst << " = " << expr << ";\n";
+        oss << "    r" << dst << " = " << expr << ";\n";
     }
 
     void addLoadArray(int val, std::string const &mem, int id) {
-        define(dst);
-        oss << "r" << val << " = " << mem << "[" << id << "];\n";
+        define(val);
+        oss << "    r" << val << " = " << mem << "[" << id << "];\n";
     }
 
     void addStoreArray(int val, std::string const &mem, int id) {
-        oss << mem << "[" << id << "] = r" << val << ";\n";
+        oss << "    " << mem << "[" << id << "] = r" << val << ";\n";
     }
 
     void addMath(const char *name, int dst, int lhs, int rhs) {
         define(dst);
-        oss << "r" << dst << " = r" << lhs
+        oss << "    r" << dst << " = r" << lhs
             << " " << name << " r" << rhs << ";\n";
     }
 
     void addMathFunc(const char *name, int dst, int src) {
         define(dst);
-        oss << "r" << dst << " = " << name << "(r" << src << ");\n";
+        oss << "    r" << dst << " = " << name << "(r" << src << ");\n";
     }
 
-    std::string finish() {
+    std::string finish(int nlocals) {
         oss_head << "__device__ void zfx_wrangle_func";
-        oss_head << "(float *locals, float const *params) {\n";
+        oss_head << "(float *globals, float const *params) {\n";
         oss << "}\n";
+        if (nlocals) {
+            oss_head << "    float locals[" << nlocals << "];";
+        }
         if (maxregs) {
-            oss_head << "float r0";
+            oss_head << "    float r0";
             for (int i = 1; i < maxregs; i++) {
                 oss_head << ", r" << i;
             }
@@ -72,7 +75,6 @@ struct ImplAssembler {
     std::unique_ptr<CUDABuilder> builder = std::make_unique<CUDABuilder>();
     std::string code;
 
-    int nconsts = 0;
     int nparams = 0;
     int nlocals = 0;
     int nglobals = 0;
@@ -90,7 +92,6 @@ struct ImplAssembler {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto expr = linesep[2];
-                nconsts = std::max(nconsts, id + 1);
                 builder->addLoadLiterial(dst, expr);
 
             } else if (cmd == "ldp") {
@@ -118,14 +119,14 @@ struct ImplAssembler {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
-                nlocals = std::max(nlocals, id + 1);
+                nglobals = std::max(nglobals, id + 1);
                 builder->addLoadArray(dst, "globals", id);
 
             } else if (cmd == "stg") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
-                nlocals = std::max(nlocals, id + 1);
+                nglobals = std::max(nglobals, id + 1);
                 builder->addStoreArray(dst, "globals", id);
 
             } else if (cmd == "add") {
@@ -173,9 +174,12 @@ struct ImplAssembler {
             }
         }
 
-        code = builder->finish();
+        code = builder->finish(nlocals);
 
 #ifdef ZFX_PRINT_IR
+        printf("params: %d\n", nparams);
+        printf("locals: %d\n", nlocals);
+        printf("globals: %d\n", nglobals);
         printf("cuda code:\n");
         printf("%s", code.c_str());
         printf("\n");
