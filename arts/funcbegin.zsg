@@ -25,39 +25,20 @@
        "FUNC"
       ],
       "SRC": [
-       "614f1ff8-PrintNumeric",
+       "c79cee01-PrintMessage",
        "DST"
       ],
       "COND": null
      },
      "params": {},
      "uipos": [
-      589.4400000000002,
-      211.20000000000002
+      436.6400000000001,
+      218.40000000000003
      ],
      "options": []
     },
-    "614f1ff8-PrintNumeric": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "e6b5c0e0-NumericInt",
-       "value"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "hint": "PrintNumeric"
-     },
-     "uipos": [
-      302.88,
-      183.2
-     ],
-     "options": []
-    },
-    "e6b5c0e0-NumericInt": {
-     "name": "NumericInt",
+    "c79cee01-PrintMessage": {
+     "name": "PrintMessage",
      "inputs": {
       "SRC": [
        "faf730a2-FuncBegin",
@@ -66,19 +47,60 @@
       "COND": null
      },
      "params": {
-      "value": 42
+      "message": "world"
      },
      "uipos": [
-      31.519999999999996,
-      203.35999999999996
+      111.19999999999999,
+      202.40000000000003
+     ],
+     "options": []
+    },
+    "7acea025-FuncCall": {
+     "name": "FuncCall",
+     "inputs": {
+      "function": [
+       "f536a984-FuncEnd",
+       "function"
+      ],
+      "args": null,
+      "SRC": [
+       "cc9fd11a-PrintMessage",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      1017.6000000000003,
+      237.5999999999999
+     ],
+     "options": [
+      "OUT"
+     ]
+    },
+    "cc9fd11a-PrintMessage": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "f536a984-FuncEnd",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {
+      "message": "hello"
+     },
+     "uipos": [
+      704.7999999999998,
+      240.8
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": 291,
-    "trans_y": 4
+    "trans_x": 319,
+    "trans_y": -9
    }
   }
  },
@@ -314,7 +336,23 @@
    ],
    "params": [],
    "categories": [
-    "control"
+    "functional"
+   ]
+  },
+  "FuncCall": {
+   "inputs": [
+    "function",
+    "args",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "rets",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "functional"
    ]
   },
   "FuncEnd": {
@@ -325,11 +363,12 @@
     "COND"
    ],
    "outputs": [
+    "function",
     "DST"
    ],
    "params": [],
    "categories": [
-    "control"
+    "functional"
    ]
   },
   "GetFrameNum": {
@@ -507,7 +546,7 @@
     [
      "int",
      "value",
-     "0"
+     "42"
     ]
    ],
    "categories": [
@@ -1387,6 +1426,25 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "PrintMessage": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "hello"
+    ]
+   ],
+   "categories": [
+    "debug"
    ]
   },
   "PrintNumeric": {

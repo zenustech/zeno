@@ -71,13 +71,16 @@ ZENDEFNODE(FuncEnd, {
 
 struct FuncCall : zeno::ContextManagedNode {
     virtual void apply() override {
-        auto func = get_input<zeno::FunctionObject>("func");
+        auto func = get_input<zeno::FunctionObject>("function");
 
         zeno::FunctionObject::DictType args{};
-        if (has_input("args") {
-            auto fargs = get_input<zeno::DictObject>("args");
-            args = fargs->lut;
+        if (has_input("args")) {
+            args = get_input<zeno::DictObject>("args")->lut;
         }
+
+        auto rets = std::make_shared<zeno::DictObject>();
+        rets->lut = func->call(args);
+        set_output("rets", std::move(rets));
     }
 };
 
