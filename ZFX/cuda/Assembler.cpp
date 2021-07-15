@@ -71,9 +71,9 @@ struct CUDABuilder {
     }
 };
 
-struct Assembler {
+struct ImplAssembler {
     std::unique_ptr<CUDABuilder> builder = std::make_unique<CUDABuilder>();
-    std::unique_ptr<Program> prog = std::make_unique<Program>();
+    std::string code;
 
     int nconsts = 0;
     int nlocals = 0;
@@ -154,15 +154,13 @@ struct Assembler {
             }
         }
 
-        auto code = builder->finish();
+        code = builder->finish();
 
 #ifdef ZFX_PRINT_IR
         printf("cuda code:\n");
         printf("%s", code.c_str());
         printf("\n");
 #endif
-
-        prog->code = code;
     }
 
     void set_constants(std::map<int, std::string> const &consts) {
@@ -176,12 +174,12 @@ struct Assembler {
     }
 };
 
-std::unique_ptr<Program> Program::assemble
+std::string Assembler::impl_assemble
     ( std::string const &lines
     ) {
-    Assembler a;
+    ImplAssembler a;
     a.parse(lines);
-    return std::move(a.prog);
+    return a.code;
 }
 
 }

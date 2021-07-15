@@ -69,6 +69,10 @@ struct Program {
     std::vector<std::pair<std::string, int>> params;
     std::string assembly;
 
+    auto const &get_assembly() const {
+        return symbols;
+    }
+
     auto const &get_symbols() const {
         return symbols;
     }

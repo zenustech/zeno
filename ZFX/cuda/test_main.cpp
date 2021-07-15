@@ -22,16 +22,17 @@ int main() {
     CUcontext ctx;
     CU(cuCtxCreate(&ctx, 0, dev));
 
-    zfx::Compiler<zfx::cuda::Program> compiler;
+    zfx::Compiler compiler;
+    zfx::cuda::Assembler assembler;
 
     zfx::Options opts;
     opts.define_symbol("@pos", 1);
     opts.define_param("$dt", 1);
     std::string zfxcode("@pos = @pos + $dt + 2.718");
     auto prog = compiler.compile(zfxcode, opts);
-    auto source = prog->get_codegen_result();
+    auto jitcode = assembler.assemble(prog->assembly);
 
-    CUmodule module = compileJITModule(dev, source.c_str(),
+    CUmodule module = compileJITModule(dev, jitcode.c_str(),
         getAllPTXFilesUnder("."));
 
     CUfunction function;

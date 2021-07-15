@@ -7,15 +7,27 @@
 
 namespace zfx::cuda {
 
-struct Program {
+struct Executable {
     std::string code;
 
-    static std::unique_ptr<Program> assemble
+    auto const &get_cuda_source() {
+        return code;
+    }
+};
+
+struct Assembler {
+    std::map<std::string, std::string> cache;
+
+    static std::string impl_assemble
         ( std::string const &lines
-        , std::map<int, std::string> const &consts
         );
 
-    auto const &get_codegen_result() {
+    std::string assemble(std::string const &lines) {
+        if (auto it = cache.find(lines); it != cache.end()) {
+            return it->second;
+        }
+        auto code = impl_assemble(lines);
+        cache[lines] = code;
         return code;
     }
 };
