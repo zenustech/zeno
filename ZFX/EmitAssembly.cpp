@@ -14,6 +14,8 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         , AsmParamLoadStmt
         , AsmLocalStoreStmt
         , AsmLocalLoadStmt
+        , AsmGlobalStoreStmt
+        , AsmGlobalLoadStmt
         , Statement
         >;
 

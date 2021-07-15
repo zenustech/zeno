@@ -38,7 +38,7 @@ struct ImplAssembler {
                         expr.c_str());
                 }
 
-            } else if (cmd == "ldi") {  // rcx points to an array of constants
+            } else if (cmd == "ldp") {  // rcx points to an array of constants
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
@@ -47,7 +47,7 @@ struct ImplAssembler {
                 builder->addAvxBroadcastLoadOp(simdkind,
                     dst, {opreg::rcx, memflag::reg_imm8, offset});
 
-            } else if (cmd == "ldm") {  // rdx points to an array of variables
+            } else if (cmd == "ldl") {  // rdx points to an array of variables
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
@@ -56,7 +56,7 @@ struct ImplAssembler {
                 builder->addAvxMemoryOp(simdkind, opcode::loadu,
                     dst, {opreg::rdx, memflag::reg_imm8, offset});
 
-            } else if (cmd == "stm") {
+            } else if (cmd == "stl") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);

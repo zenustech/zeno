@@ -13,7 +13,9 @@ namespace zfx {
 struct Options {
     std::map<std::string, int> symdims;
     std::map<std::string, int> pardims;
-    int arch_nregs = 8;
+    bool const_parametrize = true;
+    bool global_localize = true;
+    int arch_maxregs = 8;
 
     void define_symbol(std::string const &name, int dimension) {
         symdims[name] = dimension;
@@ -30,7 +32,9 @@ struct Options {
         for (auto const &[name, dim]: pardims) {
             os << '\\' << name << '\\' << dim;
         }
-        os << '|' << arch_nregs;
+        os << '|' << const_parametrize;
+        os << '|' << global_localize;
+        os << '|' << arch_maxregs;
     }
 };
 
