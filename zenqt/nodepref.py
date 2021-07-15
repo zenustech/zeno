@@ -141,7 +141,7 @@ class QDMGraphicsSocketEdiable(QDMGraphicsSocket):
     def initLabel(self):
         self.label = QDMGraphicsParam_string(self)
         rect = QRectF(HORI_MARGIN, -TEXT_HEIGHT * 0.5,
-            self.node.width - HORI_MARGIN * 2, 0)
+            self.node.width - HORI_MARGIN * 3, 0)
         self.label.setGeometry(rect)
         self.label.setPlainText = self.label.setValue
         self.label.getPlainText = self.label.getValue

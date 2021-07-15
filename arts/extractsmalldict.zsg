@@ -104,20 +104,22 @@
       "COND": null
      },
      "params": {
-      "_KEYS": ""
+      "_KEYS": "obj0"
      },
      "uipos": [
       583.6800000000001,
       495.104
      ],
      "options": [],
-     "socket_keys": []
+     "socket_keys": [
+      "obj0"
+     ]
     }
    },
    "view": {
     "scale": 1.953125,
-    "trans_x": 422,
-    "trans_y": 736
+    "trans_x": 413,
+    "trans_y": 794
    }
   }
  },
