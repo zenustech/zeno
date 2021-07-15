@@ -78,7 +78,7 @@ struct BreakFor : zeno::INode {
     virtual void doApply() override {
         auto [sn, ss] = inputBounds.at("FOR");
         auto fore = dynamic_cast<IBeginFor *>(graph->nodes.at(sn).get());
-        fore->setBreak(true);
+        fore->setBreak(true);  // will still keep going the rest of loop body?
     }
 
     virtual void apply() override {}
@@ -91,6 +91,8 @@ ZENDEFNODE(BreakFor, {
     {"control"},
 });
 
+
+/*** Start Of - ZHXX Control Flow ***/
 
 struct IF : zeno::INode {
 
@@ -234,6 +236,8 @@ ZENDEFNODE(ConditionedDo, {
     {},
     {"control"},
 });
+
+/*** End Of - ZHXX Control Flow ***/
 
 
 
