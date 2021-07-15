@@ -178,10 +178,8 @@ struct Assembler {
 
 std::unique_ptr<Program> Program::assemble
     ( std::string const &lines
-    , std::map<int, std::string> const &consts
     ) {
     Assembler a;
-    a.set_constants(consts);
     a.parse(lines);
     return std::move(a.prog);
 }
