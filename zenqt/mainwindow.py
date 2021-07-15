@@ -8,6 +8,18 @@ from .editor import NodeEditor
 
 from . import asset_path
 
+class ViewportTimeline(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.viewport = ViewportWidget()
+        self.timeline = TimelineWidget()
+
+        self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.addWidget(self.viewport)
+        self.layout.addWidget(self.timeline)
+        self.setLayout(self.layout)
+
 class MainWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -21,25 +33,20 @@ class MainWindow(QWidget):
                 (scrn_size.width() - self_size.width()) // 2,
                 (scrn_size.height() - self_size.height()) // 2)
 
+        self.viewportTimeline = ViewportTimeline()
         self.editor = NodeEditor()
-        self.viewport = ViewportWidget()
-        self.timeline = TimelineWidget()
+
+        self.timeline = self.viewportTimeline.timeline
+        self.viewport = self.viewportTimeline.viewport
         self.timeline.setEditor(self.editor)
 
-        #self.upsplit = QSplitter(Qt.Horizontal)
-        #self.upsplit.addWidget(self.viewport)
-        #self.upsplit.addWidget(QWidget())
-        #self.upsplit.setStretchFactor(1, 1)
-
         self.mainsplit = QSplitter(Qt.Vertical)
-        self.mainsplit.addWidget(self.viewport)
+        self.mainsplit.addWidget(self.viewportTimeline)
         self.mainsplit.addWidget(self.editor)
-        self.mainsplit.setStretchFactor(0, -4)
 
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addWidget(self.mainsplit)
-        self.layout.addWidget(self.timeline)
         self.setLayout(self.layout)
 
         self.setWindowIcon(QIcon(asset_path('logo.ico')))
