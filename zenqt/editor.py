@@ -724,17 +724,17 @@ class QDMGraphicsButton(QGraphicsProxyWidget):
             font = QFont()
             font.setPointSize(style['button_text_size'])
             self.setFont(font)
+            self.setAlignment(Qt.AlignCenter)
 
         def mousePressEvent(self, event):
-            self.on_click()
+            self.parent.on_click()
             super().mousePressEvent(event)
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.widget = self.QDMLabel()
-        self.widget.setAlignment(Qt.AlignCenter)
-        self.widget.on_click = self.on_click
+        self.widget.parent = self
         self.setWidget(self.widget)
         self.setChecked(False)
 
