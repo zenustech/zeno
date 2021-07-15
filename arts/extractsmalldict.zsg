@@ -7,25 +7,20 @@
      "inputs": {
       "SRC": null,
       "COND": null,
-      "obj0": [
-       "bd907faf-NumericInt",
-       "value"
-      ],
-      "obj2ss": null,
-      "obj1s": null,
-      "obj3s": null
+      "obj0": null,
+      "obj1": null,
+      "obj2asas": null
      },
      "params": {},
      "uipos": [
-      269.52,
-      260.56
+      267.984,
+      259.53600000000006
      ],
      "options": [],
      "input_keys": [
       "obj0",
-      "obj2ss",
-      "obj1s",
-      "obj3s"
+      "obj1",
+      "obj2"
      ]
     },
     "bd907faf-NumericInt": {
