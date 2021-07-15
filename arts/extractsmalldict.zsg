@@ -10,20 +10,18 @@
       "obj0": [
        "bd907faf-NumericInt",
        "value"
-      ],
-      "obj1": null,
-      "obj2": null
+      ]
      },
-     "params": {},
+     "params": {
+      "_KEYS": "obj0"
+     },
      "uipos": [
-      267.984,
-      259.53600000000006
+      269.0080000000001,
+      259.536
      ],
      "options": [],
      "input_keys": [
-      "obj0",
-      "obj1",
-      "obj2"
+      "obj0"
      ]
     },
     "bd907faf-NumericInt": {
@@ -40,12 +38,69 @@
       287.23199999999997
      ],
      "options": []
+    },
+    "adc3a8db-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "63d5d035-MakeSmallDict",
+       "dict"
+      ],
+      "key": [
+       "fa204836-MakeString",
+       "value"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      531.456,
+      336.896
+     ],
+     "options": []
+    },
+    "fa204836-MakeString": {
+     "name": "MakeString",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": "obj0"
+     },
+     "uipos": [
+      272.384,
+      532.4799999999999
+     ],
+     "options": []
+    },
+    "6c21664f-PrintNumeric": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "adc3a8db-ExtractDict",
+       "object"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "hint": "PrintNumeric"
+     },
+     "uipos": [
+      771.5839999999998,
+      385.536
+     ],
+     "options": [
+      "OUT"
+     ]
     }
    },
    "view": {
     "scale": 1.953125,
-    "trans_x": -61,
-    "trans_y": 437
+    "trans_x": 344,
+    "trans_y": 443
    }
   }
  },

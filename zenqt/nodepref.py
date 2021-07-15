@@ -219,6 +219,7 @@ class QDMGraphicsNode_MakeSmallDict(QDMGraphicsNode):
     def dump(self):
         ident, data = super().dump()
         data['input_keys'] = tuple(self.input_keys)
+        data['params']['_KEYS'] = '\n'.join(self.input_keys)
         return ident, data
 
     def load(self, ident, data):
