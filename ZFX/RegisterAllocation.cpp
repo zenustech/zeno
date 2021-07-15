@@ -137,6 +137,7 @@ struct InspectRegisters : Visitor<InspectRegisters> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
+        , AsmLoadConstStmt
         , AsmParamLoadStmt
         , AsmLocalLoadStmt
         , AsmLocalStoreStmt
@@ -166,6 +167,10 @@ struct InspectRegisters : Visitor<InspectRegisters> {
         touch(stmt->id, stmt->rhs);
     }
 
+    void visit(AsmLoadConstStmt *stmt) {
+        touch(stmt->id, stmt->dst);
+    }
+
     void visit(AsmParamLoadStmt *stmt) {
         touch(stmt->id, stmt->val);
     }
@@ -192,6 +197,7 @@ struct ReassignRegisters : Visitor<ReassignRegisters> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
+        , AsmLoadConstStmt
         , AsmParamLoadStmt
         , AsmLocalLoadStmt
         , AsmLocalStoreStmt
@@ -221,6 +227,10 @@ struct ReassignRegisters : Visitor<ReassignRegisters> {
         reassign(stmt->rhs);
     }
 
+    void visit(AsmLoadConstStmt *stmt) {
+        reassign(stmt->dst);
+    }
+
     void visit(AsmParamLoadStmt *stmt) {
         reassign(stmt->val);
     }
@@ -247,6 +257,7 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
+        , AsmLoadConstStmt
         , AsmParamLoadStmt
         , AsmLocalLoadStmt
         , AsmLocalStoreStmt
@@ -298,6 +309,11 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
     void visit(AsmBinaryOpStmt *stmt) {
         touch(1, stmt->lhs);
         touch(2, stmt->rhs);
+        visit((Statement *)stmt);
+        touch(0, stmt->dst);
+    }
+
+    void visit(AsmLoadConstStmt *stmt) {
         visit((Statement *)stmt);
         touch(0, stmt->dst);
     }
