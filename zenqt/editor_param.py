@@ -39,7 +39,7 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
         self.layout = QHBoxLayout()
         self.layout.addWidget(self.label)
         self.layout.addWidget(self.edit)
-        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setContentsMargins(HORI_MARGIN, 0, 0, 0)
 
     def setName(self, name):
         self.name = name

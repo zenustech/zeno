@@ -6,7 +6,6 @@ class QDMGraphicsSocket(QGraphicsItem):
 
         self.label = QGraphicsTextItem(self)
         self.label.setDefaultTextColor(QColor(style['socket_text_color']))
-        self.label.setPos(HORI_MARGIN * 2, -TEXT_HEIGHT * 0.5)
         font = QFont()
         font.setPointSize(style['socket_text_size'])
         font.setWeight(QFont.DemiBold)
@@ -18,6 +17,10 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.node = parent
         self.name = None
         self.dummy = False
+
+        self.offset = 12
+        self.text_offset = HORI_MARGIN * 2 - 5
+        self.label.setPos(self.text_offset, - style['socket_text_size'] * 1.2)
 
     def hasAnyEdge(self):
         return len(self.edges) != 0
@@ -45,7 +48,7 @@ class QDMGraphicsSocket(QGraphicsItem):
             option = document.defaultTextOption()
             option.setAlignment(Qt.AlignRight)
             document.setDefaultTextOption(option)
-            width = self.node.boundingRect().width() - HORI_MARGIN * 4
+            width = self.node.boundingRect().width() - self.text_offset * 2
             self.label.setTextWidth(width)
 
     def setName(self, name):
@@ -53,21 +56,19 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.label.setPlainText(name)
 
     def getCirclePos(self):
-        offset = 14
         basePos = self.node.pos() + self.pos()
         if self.isOutput:
-            return basePos + QPointF(self.node.width, 0) + QPointF(-offset, 0)
+            return basePos + QPointF(self.node.width, 0) + QPointF(-self.offset, 0)
         else:
-            return basePos + QPointF(offset, 0)
+            return basePos + QPointF(self.offset, 0)
 
     def getCircleBounds(self):
         SOCKET_RADIUS = 3
-        offset = 14
         if self.isOutput:
-            return (self.node.width - SOCKET_RADIUS - offset, -SOCKET_RADIUS,
+            return (self.node.width - SOCKET_RADIUS - self.offset, -SOCKET_RADIUS,
                     2 * SOCKET_RADIUS, 2 * SOCKET_RADIUS)
         else:
-            return (-SOCKET_RADIUS + offset, -SOCKET_RADIUS,
+            return (-SOCKET_RADIUS + self.offset, -SOCKET_RADIUS,
                     2 * SOCKET_RADIUS, 2 * SOCKET_RADIUS)
 
     def boundingRect(self):

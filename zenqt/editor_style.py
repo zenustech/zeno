@@ -5,7 +5,7 @@ style = {
     'title_text_color': '#787878',
     'title_text_size': 14,
     'button_text_size': 10,
-    'socket_text_size': 10,
+    'socket_text_size': 14,
     'param_text_size': 14,
     'socket_text_color': '#787878',
     'panel_color': '#1E1E1E',

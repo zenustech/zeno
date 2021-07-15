@@ -123,6 +123,8 @@ class QDMGraphicsNode(QGraphicsItem):
 
         socket_start = y + TEXT_HEIGHT * style['output_shift']
 
+        socket_offset = 24
+
         self.inputs.clear()
         for index, name in enumerate(inputs):
             socket = QDMGraphicsSocket(self)
@@ -130,11 +132,11 @@ class QDMGraphicsNode(QGraphicsItem):
             socket.setName(name)
             socket.setIsOutput(False)
             self.inputs[name] = socket
-            y += TEXT_HEIGHT
+            y += socket_offset
 
         y = socket_start
         if len(inputs) > len(outputs):
-            y += (len(inputs) - len(outputs)) * TEXT_HEIGHT
+            y += (len(inputs) - len(outputs)) * socket_offset
 
         self.outputs.clear()
         for index, name in enumerate(outputs):
@@ -144,7 +146,7 @@ class QDMGraphicsNode(QGraphicsItem):
             socket.setName(name)
             socket.setIsOutput(True)
             self.outputs[name] = socket
-            y += TEXT_HEIGHT
+            y += socket_offset
 
         y = socket_start + max(len(inputs), len(outputs)) * TEXT_HEIGHT
 
