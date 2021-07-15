@@ -16,8 +16,8 @@ class EditorTimeline(QWidget):
 
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.addWidget(self.editor)
         self.layout.addWidget(self.timeline)
+        self.layout.addWidget(self.editor)
         self.setLayout(self.layout)
 
 class MainWindow(QWidget):
