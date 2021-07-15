@@ -1,7 +1,6 @@
 from .editor import *
 
 def fillRect(painter, rect, color, line_width=None, line_color=None):
-    painter.setPen(Qt.NoPen)
     if line_width:
         painter.fillRect(rect, QColor(line_color))
 
@@ -12,6 +11,19 @@ def fillRect(painter, rect, color, line_width=None, line_color=None):
     else:
         painter.fillRect(rect, QColor(color))
 
+def fillRectOld(painter, rect, color, line_width=None, line_color=None):
+    if line_width:
+        pen = QPen(QColor(line_color))
+        pen.setWidth(line_width)
+        pen.setJoinStyle(Qt.MiterJoin)
+        painter.setPen(pen)
+    else:
+        painter.setPen(Qt.NoPen)
+
+    painter.setBrush(QColor(color))
+    pathTitle = QPainterPath()
+    pathTitle.addRect(rect)
+    painter.drawPath(pathTitle.simplified())
 
 MAX_STACK_LENGTH = 100
 
