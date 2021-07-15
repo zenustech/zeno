@@ -46,7 +46,7 @@ class QDMGraphicsCollapseButton(QGraphicsProxyWidget):
         def __init__(self, parent=None):
             super().__init__()
             self.render = self.renderer()
-            self.setStyleSheet('background-color: {}'.format(style['title_color']))
+            self.setStyleSheet('background-color: transparent')
 
         def mousePressEvent(self, event):
             self.on_click()

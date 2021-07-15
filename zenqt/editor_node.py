@@ -153,7 +153,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.height = y
 
         self.title.setPos(HORI_MARGIN * 0.8, self.height)
-        self.collapse_button.setPos(204 + 4, self.height + 4)
+        self.collapse_button.setPos(204 + 6, self.height + 4)
 
     def boundingRect(self):
         top = 42
@@ -185,11 +185,11 @@ class QDMGraphicsNode(QGraphicsItem):
 
         y = 0 if self.collapsed else self.height
         # title background
-        rect = QRect(0 + hw, y + hw, 203 - w, 36 - w)
+        rect = QRect(0, y + hw, 206, 36 - w)
         fillRect(painter, rect, style['title_color'], line_width, line_color)
 
         # collpase button background
-        rect = QRect(204 + hw, y + hw, 36 - w, 36 - w)
+        rect = QRect(206 + hw, y + hw, 36 - w, 36 - w)
         fillRect(painter, rect, style['title_color'], line_width, line_color)
 
         # button background
@@ -203,7 +203,7 @@ class QDMGraphicsNode(QGraphicsItem):
 
         # content panel background
         if not self.collapsed:
-            rect = QRect(hw + w, hw, self.width - w * 3, self.height - w)
+            rect = QRect(hw + w, hw, self.width - w * 3, self.height - 1)
             fillRect(painter, rect, style['panel_color'], line_width, '#4a4a4a')
 
 
@@ -223,7 +223,7 @@ class QDMGraphicsNode(QGraphicsItem):
                 edge.updatePath()
 
         self.title.setPos(HORI_MARGIN * 0.8, 0)
-        self.collapse_button.setPos(204 + 4, 4)
+        self.collapse_button.setPos(204 + 6, 4)
 
     def unfold(self):
         self.dummy_input_socket.hide()
@@ -241,7 +241,7 @@ class QDMGraphicsNode(QGraphicsItem):
                 edge.updatePath()
 
         self.title.setPos(HORI_MARGIN * 0.8, self.height)
-        self.collapse_button.setPos(204 + 4, self.height + 4)
+        self.collapse_button.setPos(204 + 6, self.height + 4)
 
     def dump(self):
         node = self
