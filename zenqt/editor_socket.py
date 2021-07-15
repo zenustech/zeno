@@ -72,7 +72,10 @@ class QDMGraphicsSocket(QGraphicsItem):
                     2 * SOCKET_RADIUS, 2 * SOCKET_RADIUS)
 
     def boundingRect(self):
-        return QRectF(*self.getCircleBounds()).normalized()
+        b = self.getCircleBounds()
+        offset = 2
+        return QRectF(b[0] - offset, b[1] - offset,
+                b[2] + offset * 2, b[3] + offset * 2).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
         if self.hasAnyEdge() or self.dummy:
