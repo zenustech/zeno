@@ -658,8 +658,8 @@
       "dx": 0.04
      },
      "uipos": [
-      5923.013557684416,
-      29.726262235640547
+      5901.040901434416,
+      17.51923098564056
      ],
      "options": [
       "ONCE"
@@ -1058,8 +1058,8 @@
      },
      "params": {},
      "uipos": [
-      9892.623097534182,
-      189.30343383789062
+      9895.339161987307,
+      168.58199829101562
      ],
      "options": []
     },
@@ -1134,8 +1134,8 @@
       "path": "/home/dilei/Desktop/animatedResult/result.{frame}.vdb"
      },
      "uipos": [
-      10516.249999999998,
-      563.7499999999999
+      10502.25,
+      615.75
      ],
      "options": []
     },
@@ -1154,8 +1154,8 @@
      },
      "params": {},
      "uipos": [
-      10851.249999999998,
-      714.9999999999999
+      11000.05,
+      723.0
      ],
      "options": []
     },
@@ -1407,9 +1407,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": 6439,
-    "trans_y": 87
+    "scale": 0.8,
+    "trans_x": 12870,
+    "trans_y": 592
    }
   },
   "FLIPSimTemplate": {
@@ -1706,8 +1706,8 @@
       "name": "step_dt"
      },
      "uipos": [
-      2102.2595646470895,
-      -3531.614128902547
+      2116.259564647089,
+      -3594.6141289025472
      ],
      "options": [
       "collapsed"
@@ -1804,8 +1804,8 @@
       "name": "step_dt"
      },
      "uipos": [
-      2927.1265777140898,
-      -1973.4571108370978
+      2659.9390777140893,
+      -1926.5821108370976
      ],
      "options": []
     },
@@ -2210,8 +2210,8 @@
       "name": "end"
      },
      "uipos": [
-      10940.624999999993,
-      -2337.4999999999977
+      10905.399399999995,
+      -2321.333599999999
      ],
      "options": []
     },
@@ -2240,16 +2240,16 @@
       "name": "dt"
      },
      "uipos": [
-      2629.687499999997,
-      -1878.124999999998
+      2135.937499999997,
+      -1890.624999999998
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.6400000000000001,
-    "trans_x": 456,
-    "trans_y": -2807
+    "scale": 1.25,
+    "trans_x": 12980,
+    "trans_y": -3178
    }
   },
   "makeCollision": {
@@ -2813,9 +2813,9 @@
     }
    },
    "view": {
-    "scale": 0.8000000000000002,
-    "trans_x": 429,
-    "trans_y": 8
+    "scale": 0.32768000000000014,
+    "trans_x": -395,
+    "trans_y": -162
    }
   },
   "GetFluidStepDT": {
@@ -3076,6 +3076,20 @@
     "object",
     "index",
     "FOR",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BreakFor": {
+   "inputs": [
+    "FOR",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
     "DST"
    ],
    "params": [],
@@ -3451,6 +3465,21 @@
     "CompressibleFlow"
    ]
   },
+  "ConditionedDo": {
+   "inputs": [
+    "True",
+    "False",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
   "CutCellWeight": {
    "inputs": [
     "LiquidSDF",
@@ -3482,6 +3511,35 @@
     "CompressibleFlow"
    ]
   },
+  "DictSize": {
+   "inputs": [
+    "dict",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "size",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "EmptyDict": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
   "EmptyList": {
    "inputs": [
     "SRC",
@@ -3494,6 +3552,21 @@
    "params": [],
    "categories": [
     "list"
+   ]
+  },
+  "EndBranch": {
+   "inputs": [
+    "BranchIn",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "Branch",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
    ]
   },
   "EndFor": {
@@ -3522,6 +3595,20 @@
    "params": [],
    "categories": [
     "fileio"
+   ]
+  },
+  "EndIF": {
+   "inputs": [
+    "IF",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
    ]
   },
   "EquationOfStateConfig": {
@@ -3669,6 +3756,22 @@
     "openvdb"
    ]
   },
+  "ExtractDict": {
+   "inputs": [
+    "dict",
+    "key",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "object",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
   "ExtractList": {
    "inputs": [
     "list",
@@ -3725,6 +3828,21 @@
    ],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "FalseBranch": {
+   "inputs": [
+    "condition",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "Branch",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
    ]
   },
   "FieldAddVector": {
@@ -4092,6 +4210,21 @@
     "GPUMPM"
    ]
   },
+  "IF": {
+   "inputs": [
+    "condition",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "Then",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
   "ImportObjMesh": {
    "inputs": [
     "path",
@@ -4436,6 +4569,45 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "MakeSmallDict": {
+   "inputs": [
+    "obj0",
+    "obj1",
+    "obj2",
+    "obj3",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name0",
+     "obj0"
+    ],
+    [
+     "string",
+     "name1",
+     "obj1"
+    ],
+    [
+     "string",
+     "name2",
+     "obj2"
+    ],
+    [
+     "string",
+     "name3",
+     "obj3"
+    ]
+   ],
+   "categories": [
+    "dict"
    ]
   },
   "MakeSmallList": {
@@ -6426,6 +6598,21 @@
     "primitive"
    ]
   },
+  "TrueBranch": {
+   "inputs": [
+    "condition",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "Branch",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
   "UnpackNumericVec": {
    "inputs": [
     "vec",
@@ -6442,6 +6629,23 @@
    "params": [],
    "categories": [
     "numeric"
+   ]
+  },
+  "UpdateDict": {
+   "inputs": [
+    "dict",
+    "key",
+    "object",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
    ]
   },
   "VDBRenormalizeSDF": {
