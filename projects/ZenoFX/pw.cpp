@@ -7,7 +7,8 @@
 #include <zfx/x64.h>
 #include <cassert>
 
-static zfx::Compiler<zfx::x64::Program> compiler;
+static zfx::Compiler compiler;
+static zfx::x64::Assembler assembler;
 
 struct Buffer {
     float *base = nullptr;
@@ -17,7 +18,7 @@ struct Buffer {
 };
 
 static void vectors_wrangle
-    ( zfx::Program<zfx::x64::Program> *prog
+    ( zfx::x64::Executable *exec
     , std::vector<Buffer> const &chs
     ) {
     if (chs.size() == 0)
@@ -28,20 +29,20 @@ static void vectors_wrangle
     }
 
     #pragma omp parallel for
-    for (int i = 0; i < size - prog->SimdWidth + 1; i += prog->SimdWidth) {
-        auto ctx = prog->make_context();
+    for (int i = 0; i < size - exec->SimdWidth + 1; i += exec->SimdWidth) {
+        auto ctx = exec->make_context();
         for (int j = 0; j < chs.size(); j++) {
-            for (int k = 0; k < prog->SimdWidth; k++)
+            for (int k = 0; k < exec->SimdWidth; k++)
                 ctx.channel(j)[k] = chs[j].base[chs[j].stride * (i + k)];
         }
         ctx.execute();
         for (int j = 0; j < chs.size(); j++) {
-            for (int k = 0; k < prog->SimdWidth; k++)
+            for (int k = 0; k < exec->SimdWidth; k++)
                  chs[j].base[chs[j].stride * (i + k)] = ctx.channel(j)[k];
         }
     }
-    for (int i = size / prog->SimdWidth * prog->SimdWidth; i < size; i++) {
-        auto ctx = prog->make_context();
+    for (int i = size / exec->SimdWidth * exec->SimdWidth; i < size; i++) {
+        auto ctx = exec->make_context();
         for (int j = 0; j < chs.size(); j++) {
             ctx.channel(j)[0] = chs[j].base[chs[j].stride * i];
         }
@@ -57,7 +58,7 @@ struct ParticlesWrangle : zeno::INode {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
-        zfx::Options opts;
+        zfx::Options opts(zfx::Options::for_x64);
         for (auto const &[key, attr]: prim->m_attrs) {
             int dim = std::visit([] (auto const &v) {
                 using T = std::decay_t<decltype(v[0])>;
@@ -96,6 +97,7 @@ struct ParticlesWrangle : zeno::INode {
         }
 
         auto prog = compiler.compile(code, opts);
+        auto exec = assembler.assemble(prog->assembly);
 
         std::vector<float> pars(prog->params.size());
         for (int i = 0; i < pars.size(); i++) {
@@ -106,7 +108,7 @@ struct ParticlesWrangle : zeno::INode {
                 parnames.end(), std::pair{name, dimid});
             auto value = parvals.at(it - parnames.begin());
             printf("(valued %f)\n", value);
-            prog->parameter(prog->param_id(name, dimid)) = value;
+            exec->parameter(prog->param_id(name, dimid)) = value;
         }
 
         std::vector<Buffer> chs(prog->symbols.size());
@@ -123,7 +125,7 @@ struct ParticlesWrangle : zeno::INode {
             }, attr);
             chs[i] = iob;
         }
-        vectors_wrangle(prog, chs);
+        vectors_wrangle(exec, chs);
 
         set_output("prim", std::move(prim));
     }

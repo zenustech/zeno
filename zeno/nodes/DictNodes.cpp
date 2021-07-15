@@ -98,10 +98,10 @@ ZENDEFNODE(MakeSmallDict, {
     , "obj3"
     },
     {"dict"},
-    { {"string", "name0", "obj0"}
-    , {"string", "name1", "obj1"}
-    , {"string", "name2", "obj2"}
-    , {"string", "name3", "obj3"}
+    { {"string", "name0", ""}
+    , {"string", "name1", ""}
+    , {"string", "name2", ""}
+    , {"string", "name3", ""}
     },
     {"dict"},
 });
