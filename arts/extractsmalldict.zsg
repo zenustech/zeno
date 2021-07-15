@@ -2,75 +2,29 @@
  "graph": {
   "main": {
    "nodes": {
-    "f0f30f51-ExtractSmallDict": {
-     "name": "ExtractSmallDict",
-     "inputs": {
-      "dict": [
-       "63d5d035-MakeSmallDict",
-       "dict"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name0": "answer",
-      "name1": "",
-      "name2": "",
-      "name3": ""
-     },
-     "uipos": [
-      750.0,
-      209.0
-     ],
-     "options": []
-    },
     "63d5d035-MakeSmallDict": {
      "name": "MakeSmallDict",
      "inputs": {
+      "SRC": null,
+      "COND": null,
       "obj0": [
-       "2465e4d7-NumericInt",
+       "bd907faf-NumericInt",
        "value"
-      ],
-      "obj1": null,
-      "obj2": null,
-      "obj3": null,
-      "SRC": null,
-      "COND": null
+      ]
      },
      "params": {
-      "name0": "answer",
-      "name1": "obj1",
-      "name2": "obj2",
-      "name3": "obj3"
+      "_KEYS": "obj0"
      },
      "uipos": [
-      397.0,
-      204.0
+      269.0080000000001,
+      259.536
      ],
-     "options": []
-    },
-    "a903a319-PrintNumeric": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "f0f30f51-ExtractSmallDict",
-       "obj0"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "hint": "PrintNumeric"
-     },
-     "uipos": [
-      1064.0,
-      303.0
-     ],
-     "options": [
-      "OUT"
+     "options": [],
+     "input_keys": [
+      "obj0"
      ]
     },
-    "2465e4d7-NumericInt": {
+    "bd907faf-NumericInt": {
      "name": "NumericInt",
      "inputs": {
       "SRC": null,
@@ -80,16 +34,73 @@
       "value": 42
      },
      "uipos": [
-      112.0,
-      323.0
+      6.1440000000000055,
+      287.23199999999997
      ],
      "options": []
+    },
+    "adc3a8db-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "63d5d035-MakeSmallDict",
+       "dict"
+      ],
+      "key": [
+       "fa204836-MakeString",
+       "value"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      531.456,
+      336.896
+     ],
+     "options": []
+    },
+    "fa204836-MakeString": {
+     "name": "MakeString",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": "obj0"
+     },
+     "uipos": [
+      272.384,
+      532.4799999999999
+     ],
+     "options": []
+    },
+    "6c21664f-PrintNumeric": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "adc3a8db-ExtractDict",
+       "object"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "hint": "PrintNumeric"
+     },
+     "uipos": [
+      771.5839999999998,
+      385.536
+     ],
+     "options": [
+      "OUT"
+     ]
     }
    },
    "view": {
-    "scale": 1,
-    "trans_x": -24,
-    "trans_y": 9
+    "scale": 1.953125,
+    "trans_x": 344,
+    "trans_y": 443
    }
   }
  },
@@ -188,21 +199,6 @@
     "portal"
    ]
   },
-  "ConditionedDo": {
-   "inputs": [
-    "True",
-    "False",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "control"
-   ]
-  },
   "DictSize": {
    "inputs": [
     "dict",
@@ -246,21 +242,6 @@
     "list"
    ]
   },
-  "EndBranch": {
-   "inputs": [
-    "BranchIn",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "Branch",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "control"
-   ]
-  },
   "EndFor": {
    "inputs": [
     "FOR",
@@ -287,20 +268,6 @@
    "params": [],
    "categories": [
     "fileio"
-   ]
-  },
-  "EndIF": {
-   "inputs": [
-    "IF",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "control"
    ]
   },
   "ExportPath": {
@@ -377,51 +344,11 @@
     "COND"
    ],
    "outputs": [
-    "obj0",
-    "obj1",
-    "obj2",
-    "obj3",
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "name0",
-     ""
-    ],
-    [
-     "string",
-     "name1",
-     ""
-    ],
-    [
-     "string",
-     "name2",
-     ""
-    ],
-    [
-     "string",
-     "name3",
-     ""
-    ]
-   ],
-   "categories": [
-    "dict"
-   ]
-  },
-  "FalseBranch": {
-   "inputs": [
-    "condition",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "Branch",
     "DST"
    ],
    "params": [],
    "categories": [
-    "control"
+    "dict"
    ]
   },
   "FuncBegin": {
@@ -542,14 +469,16 @@
     "frame"
    ]
   },
-  "IF": {
+  "IfElse": {
    "inputs": [
-    "condition",
+    "true",
+    "false",
+    "cond",
     "SRC",
     "COND"
    ],
    "outputs": [
-    "Then",
+    "result",
     "DST"
    ],
    "params": [],
@@ -723,10 +652,6 @@
   },
   "MakeSmallDict": {
    "inputs": [
-    "obj0",
-    "obj1",
-    "obj2",
-    "obj3",
     "SRC",
     "COND"
    ],
@@ -734,28 +659,7 @@
     "dict",
     "DST"
    ],
-   "params": [
-    [
-     "string",
-     "name0",
-     "obj0"
-    ],
-    [
-     "string",
-     "name1",
-     "obj1"
-    ],
-    [
-     "string",
-     "name2",
-     "obj2"
-    ],
-    [
-     "string",
-     "name3",
-     "obj3"
-    ]
-   ],
+   "params": [],
    "categories": [
     "dict"
    ]
@@ -997,6 +901,23 @@
    ],
    "categories": [
     "numeric"
+   ]
+  },
+  "ParticlesWrangle": {
+   "inputs": [
+    "prim",
+    "zfxCode",
+    "params",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
    ]
   },
   "PlaneProjectPrimitive2DAABB": {
@@ -1749,21 +1670,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "TrueBranch": {
-   "inputs": [
-    "condition",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "Branch",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "control"
    ]
   },
   "UnpackNumericVec": {
