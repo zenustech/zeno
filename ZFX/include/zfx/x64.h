@@ -19,13 +19,12 @@ struct Executable {
         float locals[SimdWidth * 256];
 
         void execute() {
-            auto entry = (void (*)())exec->mem;
             asm volatile (
-                "call *%0"
+                "call *(%%rax)"
                 :
-                : "" (entry)
-                , "c" ((uintptr_t)(void *)exec->consts)
-                , "d" ((uintptr_t)(void *)locals)
+                : "a" (&exec->mem)
+                , "c" ((uintptr_t)(void *)&exec->consts[0])
+                , "d" ((uintptr_t)(void *)&locals[0])
                 : "cc", "memory"
                 );
         }

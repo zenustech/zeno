@@ -277,6 +277,20 @@
     "control"
    ]
   },
+  "BreakFor": {
+   "inputs": [
+    "FOR",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
   "CachedOnce": {
    "inputs": [
     "input",
@@ -445,6 +459,93 @@
     "list"
    ]
   },
+  "ExtractSmallDict": {
+   "inputs": [
+    "dict",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "obj0",
+    "obj1",
+    "obj2",
+    "obj3",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name0",
+     ""
+    ],
+    [
+     "string",
+     "name1",
+     ""
+    ],
+    [
+     "string",
+     "name2",
+     ""
+    ],
+    [
+     "string",
+     "name3",
+     ""
+    ]
+   ],
+   "categories": [
+    "dict"
+   ]
+  },
+  "FuncBegin": {
+   "inputs": [
+    "extraArgs",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "args",
+    "FUNC",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "FuncCall": {
+   "inputs": [
+    "function",
+    "args",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "rets",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "FuncEnd": {
+   "inputs": [
+    "rets",
+    "FUNC",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "function",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
   "GetFrameNum": {
    "inputs": [
     "SRC",
@@ -513,6 +614,23 @@
    "params": [],
    "categories": [
     "frame"
+   ]
+  },
+  "IfElse": {
+   "inputs": [
+    "true",
+    "false",
+    "cond",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "result",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
    ]
   },
   "ImportObjPrimitive": {
@@ -620,7 +738,7 @@
     [
      "int",
      "value",
-     "0"
+     "42"
     ]
    ],
    "categories": [
@@ -1517,6 +1635,25 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "PrintMessage": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "hello"
+    ]
+   ],
+   "categories": [
+    "debug"
    ]
   },
   "PrintNumeric": {
