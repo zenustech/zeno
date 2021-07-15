@@ -2,38 +2,7 @@
 #include <zeno/ListObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/ConditionObject.h>
-#include <cassert>
-
-
-template <class F>
-struct RAII {
-    F dtor;
-    RAII(F &&dtor) : dtor(dtor) {}
-    ~RAII() { dtor(); }
-};
-
-
-struct ContextManagedNode : zeno::INode {
-    std::unique_ptr<zeno::Context> m_ctx = nullptr;
-
-    void push_context() {
-        assert(!m_ctx);
-        m_ctx = std::move(graph->ctx);
-        graph->ctx = std::make_unique<zeno::Context>(*m_ctx);
-    }
-
-    void pop_context() {
-        assert(m_ctx);
-        graph->ctx = std::move(m_ctx);
-    }
-
-    auto scoped_push_context() {
-        push_context();
-        return RAII([this]() {
-            pop_context();
-        });
-    }
-};
+#include <zeno/ContextManaged.h>
 
 
 struct IBeginFor : zeno::INode {
@@ -72,7 +41,7 @@ ZENDEFNODE(BeginFor, {
 });
 
 
-struct EndFor : ContextManagedNode {
+struct EndFor : zeno::ContextManagedNode {
     virtual void doApply() override {
         auto [sn, ss] = inputBounds.at("FOR");
         auto fore = dynamic_cast<IBeginFor *>(graph->nodes.at(sn).get());

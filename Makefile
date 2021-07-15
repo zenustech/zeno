@@ -1,4 +1,4 @@
-O=arts/ZFXv2.zsg
+O=arts/funcbegin.zsg
 
 default: run
 

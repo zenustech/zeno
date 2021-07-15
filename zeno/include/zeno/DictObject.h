@@ -1,8 +1,9 @@
 #pragma once
 
 #include <zeno/zeno.h>
-#include <vector>
 #include <memory>
+#include <string>
+#include <map>
 
 namespace zeno {
 
