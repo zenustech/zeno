@@ -33,7 +33,7 @@ int main() {
     auto jitcode = assembler.assemble(prog->assembly);
 
     CUmodule module = compileJITModule(dev, jitcode.c_str(),
-        getAllPTXFilesUnder("."));
+        getAllPTXFilesUnder("cuda/"));
 
     CUfunction function;
     CU(cuModuleGetFunction(&function, module, "zfx_array_wrangle"));
