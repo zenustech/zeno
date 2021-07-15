@@ -109,7 +109,15 @@ struct IfElse : zeno::INode {
     virtual void doApply() override {
         requireInput("cond");
         auto cond = get_input("cond");
-        evaluate_condition(cond.get());
+        if (has_option("MUTE")) {
+            requireInput("true");
+        } else if (evaluate_condition(cond.get())) {
+            requireInput("true");
+            set_output("true", get_input("true"));
+        } else {
+            requireInput("false");
+            set_output("false", get_input("false"));
+        }
 
         coreApply();
     }
@@ -118,7 +126,7 @@ struct IfElse : zeno::INode {
 };
 
 ZENDEFNODE(IfElse, {
-    {"cond", "then", "else"},
+    {"true", "false", "cond"},
     {"result"},
     {},
     {"control"},

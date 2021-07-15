@@ -1,4 +1,4 @@
-O=arts/funcbegin.zsg
+O=arts/testifelse.zsg
 
 default: run
 
