@@ -39,5 +39,5 @@ ZENDEFNODE(PlaneProjectPrimitive2DAABB, {
     {"origin", "normal", "tangent", "bitangent", "prim"},
     {"boundMin2D", "boundMax2D"},
     {},
-    {"mathematica"},
+    {"math"},
 });

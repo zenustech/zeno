@@ -32,7 +32,7 @@ ZENDEFNODE(MakeOrthonormalBase, {
     {"normal", "tangent"},
     {"normal", "tangent", "bitangent"},
     {},
-    {"mathematica"},
+    {"math"},
 });
 
 
