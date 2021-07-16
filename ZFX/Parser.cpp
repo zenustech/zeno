@@ -38,12 +38,13 @@ struct Parser {
                         last_iter = arg->iter;
                         if (auto sep = parse_operator(last_iter, {","}); sep) {
                             last_iter = sep->iter;
-                        } else {
-                            break;
-                        }
+                        } else break;
                 } else break;
                 if (auto ket = parse_operator(last_iter, {")"}); ket) {
                     return make_ast("()", ket->iter, args);
+                } else {
+                    error("`)` expected at the end of argument list, got `%s`",
+                        last_iter->c_str());
                 }
             }
             return atm;
@@ -69,7 +70,8 @@ struct Parser {
             if (auto ope = parse_operator(comp->iter, {"."}); ope) {
                 if (auto atm = parse_atom(ope->iter); atm) {
                     return make_ast(ope->token, atm->iter, {std::move(comp), std::move(atm)});
-                }
+                } else error("`%s` expecting swizzle expression, got `%s`",
+                    comp->iter->c_str(), ope->iter->c_str());
             }
             return comp;
         }
@@ -81,7 +83,8 @@ struct Parser {
             while (1) if (auto ope = parse_operator(lhs->iter, {"*", "/", "%"}); ope) {
                 if (auto rhs = parse_factor(ope->iter); rhs) {
                     lhs = make_ast(ope->token, rhs->iter, {std::move(lhs), std::move(rhs)});
-                } else break;
+                    } else error("`%s` expecting rhs, got `%s`",
+                        lhs->iter->c_str(), ope->iter->c_str());
             } else break;
             return lhs;
         }
@@ -93,7 +96,8 @@ struct Parser {
             while (1) if (auto ope = parse_operator(lhs->iter, {"+", "-"}); ope) {
                     if (auto rhs = parse_term(ope->iter); rhs) {
                         lhs = make_ast(ope->token, rhs->iter, {std::move(lhs), std::move(rhs)});
-                    } else break;
+                    } else error("`%s` expecting rhs, got `%s`",
+                        lhs->iter->c_str(), ope->iter->c_str());
             } else break;
             return lhs;
         }
@@ -105,7 +109,13 @@ struct Parser {
             if (auto ope = parse_operator(lhs->iter, {"="}); ope) {
                 if (auto rhs = parse_expr(ope->iter); rhs) {
                     return make_ast(ope->token, rhs->iter, {std::move(lhs), std::move(rhs)});
+                } else {
+                    error("rhs expected in assign statement, got `%s`",
+                        ope->iter->c_str());
                 }
+            } else {
+                error("`=` expected in statement, got `%s`",
+                    lhs->iter->c_str());
             }
         }
         return nullptr;

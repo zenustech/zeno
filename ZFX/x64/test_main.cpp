@@ -13,8 +13,13 @@ int main() {
         pos = tmp + 3.14f * tmp + 2.718f / (pos * tmp + 1);
         return pos;
     };
-#else
+#elif 0
     std::string code("@pos = $dt + 2.718");
+    auto func = [](float pos) -> float {
+        return 3.14f + 2.718f;
+    };
+#else
+    std::string code("@pos = func($dt, 1 - 2)");
     auto func = [](float pos) -> float {
         return 3.14f + 2.718f;
     };
@@ -26,7 +31,7 @@ int main() {
     auto prog = compiler.compile(code, opts);
     auto exec = assembler.assemble(prog->assembly);
 
-    float arr[4] = {1, 2, 3, 4};
+    /*float arr[4] = {1, 2, 3, 4};
 
     printf("expected:");
     for (auto val: arr) {
@@ -46,7 +51,7 @@ int main() {
     for (auto val: arr) {
         printf(" %f", val);
     }
-    printf("\n");
+    printf("\n");*/
 
     return 0;
 }
