@@ -39,7 +39,7 @@
       "COND": null
      },
      "params": {
-      "voxel_size": 0.04,
+      "voxel_size": 0.02,
       "type": "vertex"
      },
      "uipos": [
@@ -92,8 +92,8 @@
      },
      "params": {},
      "uipos": [
-      -8.799999999999997,
-      -11.200000000000003
+      -63.19999999999999,
+      8.0
      ],
      "options": []
     },
@@ -234,9 +234,7 @@
       1657.35,
       406.1000000000001
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "a62c8084-MakeDict": {
      "name": "MakeDict",
@@ -259,21 +257,21 @@
      "inputs": {
       "SRC": null,
       "COND": null,
-      "obj0": [
-       "1b1607e4-NumericFloat",
-       "value"
+      "diff": [
+       "b6ab8e8e-NumericInterpolation",
+       "dst"
       ]
      },
      "params": {
-      "_KEYS": "obj0"
+      "_KEYS": "diff"
      },
      "uipos": [
-      229.79999999999995,
-      519.3999999999999
+      225.0,
+      523.3999999999997
      ],
      "options": [],
      "socket_keys": [
-      "obj0"
+      "diff"
      ]
     },
     "e63c673d-MakeMultilineString": {
@@ -337,16 +335,148 @@
       "value": 0.2
      },
      "uipos": [
-      -12.0,
-      579.0
+      -339.0,
+      785.0
+     ],
+     "options": []
+    },
+    "a12a6701-SDFToPoly": {
+     "name": "SDFToPoly",
+     "inputs": {
+      "SDF": [
+       "3fb9f241-VDBWrangle",
+       "grid"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "isoValue": 0.0,
+      "adaptivity": 0.0
+     },
+     "uipos": [
+      785.9125000000004,
+      125.06562500000007
+     ],
+     "options": []
+    },
+    "ec49fc20-x": {
+     "name": "PrimitiveCalcNormal",
+     "inputs": {
+      "prim": [
+       "a12a6701-SDFToPoly",
+       "Mesh"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      1027.1999999999998,
+      171.20000000000005
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "b6ab8e8e-NumericInterpolation": {
+     "name": "NumericInterpolation",
+     "inputs": {
+      "src": [
+       "3d37a375-GetFrameNum",
+       "FrameNum"
+      ],
+      "srcMin": [
+       "8468b32f-NumericInt",
+       "value"
+      ],
+      "srcMax": [
+       "87e9a81e-x",
+       "value"
+      ],
+      "dstMin": [
+       "4d94c0e5-x",
+       "value"
+      ],
+      "dstMax": [
+       "1b1607e4-NumericFloat",
+       "value"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "isClamped": 0
+     },
+     "uipos": [
+      -52.0,
+      576.0
+     ],
+     "options": []
+    },
+    "4d94c0e5-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": -0.2
+     },
+     "uipos": [
+      -343.0,
+      602.0
+     ],
+     "options": []
+    },
+    "8468b32f-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": 0
+     },
+     "uipos": [
+      -566.0,
+      627.0
+     ],
+     "options": []
+    },
+    "87e9a81e-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": 10
+     },
+     "uipos": [
+      -564.0,
+      804.0
+     ],
+     "options": []
+    },
+    "3d37a375-GetFrameNum": {
+     "name": "GetFrameNum",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      -340.0,
+      452.0
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -413,
-    "trans_y": 369
+    "trans_x": -883,
+    "trans_y": 432
    }
   },
   "SlicePlaneForPrimitive": {
