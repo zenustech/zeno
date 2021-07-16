@@ -22,10 +22,10 @@ SPMasked<SPFloatGrid<N>> dens;
 
 void initFunc() {
     #pragma omp parallel for
-    for (int z = 0; z < N; z++) {
-        for (int y = 0; y < N; y++) {
-            for (int x = 0; x < N; x++) {
-                float acc = dens.get(x, y, z);
+    for (int z = 0; z < N; z += dens.MaskScale) {
+        for (int y = 0; y < N; y += dens.MaskScale) {
+            for (int x = 0; x < N; x += dens.MaskScale) {
+                dens.activate(x, y, z);
             }
         }
     }
@@ -70,5 +70,6 @@ int main(int argc, char **argv) {
     glutIdleFunc(idleFunc);
     glutDisplayFunc(displayFunc);
     glutKeyboardFunc(keyboardFunc);
+    initFunc();
     glutMainLoop();
 }

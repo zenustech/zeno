@@ -258,6 +258,7 @@ struct SPMasked : Grid {
     using typename Grid::ValueType;
 
     SPActivationMask<Resolution> m_mask;
+    static constexpr auto MaskScale = SPActivationMask<Resolution>::MaskScale;
 
     bool is_active(size_t i, size_t j, size_t k) const {
         return m_mask.is_active(i, j, k);
@@ -285,7 +286,7 @@ struct SPMasked : Grid {
     }
 };
 
-template <class Grid>
+/*template <class Grid>
 struct SPBitmasked : SPMasked<Grid> {
     static constexpr auto Resolution = Grid::Resolution;
     using typename Grid::ValueType;
@@ -318,6 +319,6 @@ struct SPBitmasked : SPMasked<Grid> {
         activate(i, j, k);
         return Grid::set(i, j, k, value);
     }
-};
+};*/
 
 }
