@@ -157,6 +157,9 @@ class QDMGraphicsSocketEdiable(QDMGraphicsSocket):
             if sockets.get(old_name) is self:
                 this = sockets.pop(old_name)
                 sockets[new_name] = this
+            if old_name in self.node.socket_keys:
+                idx = self.node.socket_keys.index(old_name)
+                self.node.socket_keys[idx] = new_name
 
 
 class QDMGraphicsNode_MakeDict(QDMGraphicsNode):

@@ -259,7 +259,7 @@
      "inputs": {
       "SRC": null,
       "COND": null,
-      "diff": [
+      "obj0": [
        "1b1607e4-NumericFloat",
        "value"
       ]
@@ -344,9 +344,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -492,
-    "trans_y": 198
+    "scale": 1.25,
+    "trans_x": -413,
+    "trans_y": 369
    }
   },
   "SlicePlaneForPrimitive": {
