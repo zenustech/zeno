@@ -17,9 +17,9 @@
 
 int main(void)
 {
-    auto r = range(2, 15);
-    auto s = slice(r, 2, 10, 3);
-    for (auto [i, j]: zip(r, s)) {
+    auto r = bate::iter::range(2, 15);
+    auto s = bate::iter::slice(r, 2, 10, 3);
+    for (auto [i, j]: bate::iter::zip(r, s)) {
         show(i);
         show(j);
     }

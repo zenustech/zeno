@@ -9,7 +9,7 @@
 #include <tuple>
 #include <set>
 
-namespace archibate {
+namespace bate::common {
 
 using std::cout;
 using std::endl;
@@ -120,5 +120,29 @@ static inline std::string to_string(T const &value) {
     ss << value;
     return ss.str();
 }
+
+class strbuild {
+  std::stringstream ss;
+
+public:
+  strbuild() = default;
+  strbuild(std::string const &str) : ss(str) {}
+
+  operator std::string() const {
+    return ss.str();
+  }
+
+  template <class T>
+  strbuild &operator<<(T const &value) {
+    ss << value;
+    return *this;
+  }
+
+  template <class T>
+  strbuild &operator>>(T &value) {
+    ss >> value;
+    return *this;
+  }
+};
 
 }

@@ -2,7 +2,7 @@
 #include <cstring>
 #include <sys/mman.h>
 
-namespace spgrid {
+namespace bate::spgrid {
 
 static_assert(sizeof(void *) == 8, "SPGrid requies 64-bit architecture");
 

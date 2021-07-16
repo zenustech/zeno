@@ -1,6 +1,8 @@
 #include <type_traits>
 #include <tuple>
 
+namespace bate::iter {
+
 struct null_iterator {
     template <class T>
     bool operator!=(T const &other) const {
@@ -216,3 +218,5 @@ struct zip : iterator_base<zip<Ts...>> {
         return _get(std::make_index_sequence<sizeof...(Ts)>());
     }
 };
+
+}
