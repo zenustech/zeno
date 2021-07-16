@@ -25,7 +25,10 @@ void initFunc() {
     for (int z = 0; z < N; z++) {
         for (int y = 0; y < N; y++) {
             for (int x = 0; x < N; x++) {
-                float val = float(x) / N;
+                float fx = float(x) / N * 2 - 1;
+                float fy = float(y) / N * 2 - 1;
+                float fz = float(z) / N * 2 - 1;
+                float val = fx * fx + fy * fy + fz * fz;
                 dens.set(x, y, z, val);
             }
         }

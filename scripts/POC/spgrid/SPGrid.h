@@ -274,6 +274,10 @@ struct SPMasked : Grid {
         m_mask.deactivate(i, j, k);
     }
 
+    ValueType direct_get(size_t i, size_t j, size_t k) const {
+        return Grid::get(i, j, k);
+    }
+
     ValueType get(size_t i, size_t j, size_t k) const {
         if (is_active(i, j, k)) {
             return Grid::get(i, j, k);
