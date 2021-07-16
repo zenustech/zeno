@@ -2,7 +2,7 @@
 Node Editor UI
 '''
 
-import os
+import os, time
 import json
 
 from PySide2.QtWidgets import *
@@ -1396,6 +1396,21 @@ class NodeEditor(QWidget):
 
         self.newProgram()
 
+        self.startTimer(1000 * 30)
+
+    def timerEvent(self, event):
+        self.auto_save()
+        super().timerEvent(event)
+
+    def auto_save(self):
+        if any(map(lambda s: s.contentChanged, self.scenes.values())):
+            dir_path = '.auto_save'
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+            file_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
+            path = dir_path + os.sep + file_name
+            self.do_save(path, auto_save=True)
+
     def clearScenes(self):
         self.scenes.clear()
 
@@ -1661,12 +1676,13 @@ class NodeEditor(QWidget):
             self.scene.loadGraph(new_nodes, select_all=True)
             self.scene.record()
 
-    def do_save(self, path):
+    def do_save(self, path, auto_save=False):
         prog = self.dumpProgram()
         with open(path, 'w') as f:
             json.dump(prog, f, indent=1)
-        for scene in self.scenes.values():
-            scene.setContentChanged(False)
+        if not auto_save:
+            for scene in self.scenes.values():
+                scene.setContentChanged(False)
 
     def do_import(self, path):
         with open(path, 'r') as f:
