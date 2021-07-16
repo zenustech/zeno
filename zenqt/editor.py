@@ -125,7 +125,7 @@ class QDMGraphicsScene(QGraphicsScene):
         return self.editor.cates
 
     def setContentChanged(self, flag):
-        self.contentChanged = flag
+        self.contentChanged = 2 if flag else 0
 
     def dumpGraph(self, input_nodes=None):
         nodes = {}
@@ -1416,8 +1416,8 @@ class NodeEditor(QWidget):
         super().timerEvent(event)
 
     def auto_save(self):
-        if any(map(lambda s: s.contentChanged, self.scenes.values())):
-            dir_path = '.auto_save'
+        if any(s.contentChanged for s in self.scenes.values()):
+            dir_path = '/tmp/autosave'
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
             file_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
