@@ -37,52 +37,104 @@ inline bool operator==(T const &other, null_iterator) {
 
 inline constexpr null_iterator npos{};
 
+template <class D, class T>
+struct iterator_base {
+    inline D const &begin() const {
+        return *static_cast<D const *>(this);
+    }
+
+    inline auto end() const {
+        return npos;
+    }
+
+    template <class _ = void>
+    [[noreturn]] void next() {
+        static_assert(sizeof(_), "next() not implemented");
+    }
+
+    template <class _ = void>
+    [[noreturn]] void prev() {
+        static_assert(sizeof(_), "prev() not implemented");
+    }
+
+    template <class _ = void>
+    [[noreturn]] bool eof() const {
+        static_assert(sizeof(_), "eof() not implemented");
+    }
+
+    template <class _ = void>
+    [[noreturn]] T const &get() const {
+        static_assert(sizeof(_), "get() not implemented");
+    }
+
+    template <class = void>
+    T &get() {
+        return const_cast<D const *>(static_cast<D *>(this))->get();
+    }
+
+    template <class = void>
+    D &operator++() {
+        static_cast<D *>(this)->next();
+        return *static_cast<D *>(this);
+    }
+
+    template <class = void>
+    D &operator--() {
+        static_cast<D *>(this)->prev();
+        return *static_cast<D *>(this);
+    }
+
+    template <class = void>
+    operator bool() const {
+        return static_cast<D const *>(this)->eof();
+    }
+
+    template <class = void>
+    decltype(auto) operator*() const {
+        return static_cast<D const *>(this)->get();
+    }
+
+    template <class = void>
+    decltype(auto) operator*() {
+        return static_cast<D *>(this)->get();
+    }
+};
+
 template <class T>
-struct range {
-    T m_begin;
+struct range : iterator_base<range<T>, T> {
+    T m_now;
     T m_end;
 
     range
-        ( T const &begin_
+        ( T const &now_
         , T const &end_
         )
-    : m_begin(begin_)
+    : m_now(now_)
     , m_end(end_)
     {}
 
-    struct iterator : std::iterator<std::forward_iterator_tag, T> {
-        T m_now;
-        T m_end;
+    void next() {
+        m_now++;
+    }
 
-        iterator
-            ( T const &now_
-            , T const &end_
-            )
-        : m_now(now_)
-        , m_end(end_)
+    bool eof() const {
+        return m_now != m_end;
+    }
+
+    T const &get() const {
+        return m_now;
+    }
+};
+
+template <class T>
+struct slice {
+    T t;
+
+    slice
+        ( T const &t
+        )
+        : t(t)
         {}
-
-        iterator &operator++() {
-            m_now++;
-            return *this;
-        }
-
-        operator bool() const {
-            return m_now != m_end;
-        }
-
-        T const &operator*() const {
-            return m_now;
-        }
-    };
-
-    iterator begin() const {
-        return iterator{m_begin, m_end};
-    }
-
-    auto end() const {
-        return npos;
-    }
 };
 
 
