@@ -118,8 +118,8 @@
      "name": "VdbSlice",
      "inputs": {
       "vdbGrid": [
-       "7ce3a616-PrimitiveToSDF",
-       "sdf"
+       "3fb9f241-VDBWrangle",
+       "grid"
       ],
       "channelName": [
        "616c5725-MakeString",
@@ -203,7 +203,7 @@
       "COND": null
      },
      "params": {
-      "value": 32
+      "value": 128
      },
      "uipos": [
       1198.3499999999997,
@@ -258,17 +258,23 @@
      "name": "MakeDict",
      "inputs": {
       "SRC": null,
-      "COND": null
+      "COND": null,
+      "diff": [
+       "1b1607e4-NumericFloat",
+       "value"
+      ]
      },
      "params": {
-      "_KEYS": ""
+      "_KEYS": "obj0"
      },
      "uipos": [
-      222.79999999999995,
-      544.3999999999999
+      229.79999999999995,
+      519.3999999999999
      ],
      "options": [],
-     "socket_keys": []
+     "socket_keys": [
+      "obj0"
+     ]
     },
     "e63c673d-MakeMultilineString": {
      "name": "MakeMultilineString",
@@ -277,7 +283,7 @@
       "COND": null
      },
      "params": {
-      "value": ""
+      "value": "@val += $diff"
      },
      "uipos": [
       -15.200000000000017,
@@ -292,7 +298,7 @@
       "COND": null
      },
      "params": {
-      "value": "@clr.x = @sdf + 0.5"
+      "value": "@clr = @sdf * vec3(1, -1, 0) * 4"
      },
      "uipos": [
       1680.8,
@@ -320,12 +326,27 @@
       412.0
      ],
      "options": []
+    },
+    "1b1607e4-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": 0.2
+     },
+     "uipos": [
+      -12.0,
+      579.0
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": 601,
-    "trans_y": 273
+    "trans_x": -492,
+    "trans_y": 198
    }
   },
   "SlicePlaneForPrimitive": {
