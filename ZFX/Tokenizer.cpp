@@ -25,7 +25,9 @@ std::vector<std::string> tokenize(const char *cp) {
 
         } else if (strchr(opchars, *cp)) {
             std::string res;
-            res += *cp++;
+            do {
+                res += *cp++;
+            } while (contains(opstrs, res + *cp));
             tokens.push_back(res);
 
         } else {
