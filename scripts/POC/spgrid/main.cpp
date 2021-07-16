@@ -8,19 +8,52 @@
 #include <array>
 #include <cassert>
 #include <omp.h>
-#include "iterator_utils.h"
 #include "common_utils.h"
+#include "iterator_utils.h"
+#include <GL/gl.h>
+#include <GL/glut.h>
+//#include "SPGrid.h"
 
-#define show(x) (std::cout << #x "=" << (x) << std::endl)
+#define NX 256
+#define NY 256
+float pixels[NX * NY];
+//SPFloatGrid<512> dens;
 
-
-
-int main(void)
-{
-    auto r = bate::iter::range(2, 15);
-    auto s = bate::iter::slice(r, 2, 10, 3);
-    for (auto [i, j]: bate::iter::zip(r, s)) {
-        show(i);
-        show(j);
+void displayFunc() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    /*glBegin(GL_TRIANGLES);
+    glVertex3f( -0.5 , -0.5 , 0.0);
+    glVertex3f( 0.5  ,  0.0 , 0.0);
+    glVertex3f( 0.0  ,  0.5 , 0.0);
+    glEnd();*/
+    #pragma omp parallel for
+    for (int y = 0; y < NY; y++) {
+        for (int x = 0; x < NX; x++) {
+            float acc = (float)y / NY;
+            pixels[y * NX + x] = acc;
+        }
     }
+    glDrawPixels(NX, NY, GL_RED, GL_FLOAT, pixels);
+    glFlush();
+}
+
+void idleFunc() {
+    glutPostRedisplay();
+}
+
+void keyboardFunc(unsigned char key, int x, int y) {
+    if (key == 27)
+        exit(0);
+}
+
+int main(int argc, char **argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DEPTH | GLUT_SINGLE | GLUT_RGBA);
+    glutInitWindowPosition(100, 100);
+    glutInitWindowSize(NX, NY);
+    glutCreateWindow("GLUT Window");
+    glutIdleFunc(idleFunc);
+    glutDisplayFunc(displayFunc);
+    glutKeyboardFunc(keyboardFunc);
+    glutMainLoop();
 }
