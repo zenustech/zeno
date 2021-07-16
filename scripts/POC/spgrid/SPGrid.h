@@ -170,7 +170,7 @@ struct SPTypedGrid : SPGrid<NRes, NChannels, sizeof(T)> {
         return ret;
     }
 
-    void set(size_t i, size_t j, size_t k, T const &val) const {
+    void set(size_t i, size_t j, size_t k, ValueType const &val) const {
         for (size_t c = 0; c < NChannels; c++) {
             at(c, i, j, k) = val[c];
         }

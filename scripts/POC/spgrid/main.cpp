@@ -37,57 +37,56 @@ void initFunc() {
     for (int z = 0; z < N; z++) {
         for (int y = 0; y < N; y++) {
             for (int x = 0; x < N; x++) {
-                float fx = float(x) / N * 2 - 1;
-                float fy = float(y) / N * 2 - 1;
-                float fz = float(z) / N * 2 - 1;
-                float val = fx * fx + fy * fy + fz * fz;
-                if (val < 1.0f)
-                    dens.set(x, y, z, val);
+                rho.set(x, y, z, 1.f);
+                vel.set(x, y, z, {0.f, 0.f, 0.f, 0.f});
             }
         }
     }
 }
 
+float f_eq(int x, int y, int z, int q) {
+    float m = rho.at(x, y, z);
+    auto [vx, vy, vz, vw] = vel.get(x, y, z);
+    float eu = vx * directions[q][0]
+        + vy * directions[q][1] + vz * directions[q][2];
+    float uv = vx * vx + vy * vy + vz * vz;
+    float term = 1.f + 3.f * eu + 4.5f * eu * eu - 1.5f * uv;
+    float feq = weights[q] * m * term;
+    return feq;
+}
+
 void stepFunc() {
     #pragma omp parallel for
-    for (int zz = 0; zz < N; zz += dens.MaskScale) {
-        for (int yy = 0; yy < N; yy += dens.MaskScale) {
-            for (int xx = 0; xx < N; xx += dens.MaskScale) {
-                if (!dens.is_active(xx, yy, zz))
-                    continue;
-                for (int z = zz; z < zz + dens.MaskScale; z++) {
-                    for (int y = yy; y < yy + dens.MaskScale; y++) {
-                        for (int x = xx; x < xx + dens.MaskScale; x++) {
-                            auto ax = dens.direct_get(x + 1, y, z);
-                            auto ay = dens.direct_get(x, y + 1, z);
-                            auto az = dens.direct_get(x, y, z + 1);
-                            auto bx = dens.direct_get(x - 1, y, z);
-                            auto by = dens.direct_get(x, y - 1, z);
-                            auto bz = dens.direct_get(x, y, z - 1);
-                            auto co = dens.direct_get(x, y, z);
-                            auto val = ax + ay + az + bx + by + bz;
-                            val *= 1 / 6.f;
-                            dens_tmp.set(x, y, z, val);
-                        }
-                    }
+    for (int z = 0; z < N; z++) {
+        for (int y = 0; y < N; y++) {
+            for (int x = 0; x < N; x++) {
+                for (int q = 0; q < 15; q++) {
+                    int mdx = (x - directions[q][0] + N) % N;
+                    int mdy = (y - directions[q][1] + N) % N;
+                    int mdz = (z - directions[q][2] + N) % N;
+                    f_new.at(q, x, y, z) = f_old.at(q, mdx, mdy, mdz)
+                        * (1.f - inv_tau) + f_eq(mdx, mdy, mdz, q) * inv_tau;
                 }
             }
         }
     }
     #pragma omp parallel for
-    for (int zz = 0; zz < N; zz += dens.MaskScale) {
-        for (int yy = 0; yy < N; yy += dens.MaskScale) {
-            for (int xx = 0; xx < N; xx += dens.MaskScale) {
-                if (!dens.is_active(xx, yy, zz))
-                    continue;
-                for (int z = zz; z < zz + dens.MaskScale; z++) {
-                    for (int y = yy; y < yy + dens.MaskScale; y++) {
-                        for (int x = xx; x < xx + dens.MaskScale; x++) {
-                            auto val = dens_tmp.get(x, y, z);
-                            dens.direct_set(x, y, z, val);
-                        }
-                    }
+    for (int z = 0; z < N; z++) {
+        for (int y = 0; y < N; y++) {
+            for (int x = 0; x < N; x++) {
+                float m = 0.f;
+                float vx = 0.f, vy = 0.f, vz = 0.f;
+                for (int q = 0; q < 15; q++) {
+                    float f = f_new.at(q, x, y, z);
+                    vx += f * directions[q][0];
+                    vy += f * directions[q][1];
+                    vz += f * directions[q][2];
+                    m += f;
                 }
+                float mscale = 1 / std::max(m, 1e-6f);
+                vx /= mscale; vy /= mscale; vz /= mscale;
+                rho.set(x, y, z, m);
+                vel.set(x, y, z, {vx, vy, vz, 0.f});
             }
         }
     }
@@ -98,10 +97,9 @@ void renderFunc() {
     #pragma omp parallel for
     for (int y = 0; y < N; y++) {
         for (int x = 0; x < N; x++) {
-            float acc = dens.get(x, y, z);
-            //int v = *(int *)dens.pointer(0, x, y, z);
-            //if (v) printf("%x\n", v);
-            pixels[y * N + x] = acc;
+            auto [vx, vy, vz, vw] = vel.get(x, y, z);
+            float val = std::sqrt(vx * vx + vy * vy + vz * vz);
+            pixels[y * N + x] = val;
         }
     }
 }
