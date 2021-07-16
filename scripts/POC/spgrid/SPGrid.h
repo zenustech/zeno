@@ -41,6 +41,24 @@ static void deallocate(void *ptr, size_t size) {
 #endif
 }
 
+static void reloadPage(void *ptr) {
+#if defined(_WIN32)
+    ::VirtualAllocEx(GetCurrentProcess(), ptr,
+        4096, MEM_COMMIT, PAGE_READWRITE);
+#else
+    ::mmap(ptr, 4096, PROT_READ | PROT_WRITE,
+        MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+#endif
+}
+
+static void unloadPage(void *ptr) {
+#if defined(_WIN32)
+    ::VirtualFreeEx(GetCurrentProcess(), ptr, 4096, MEM_DECOMMIT);
+#else
+    ::munmap(ptr, 4096);
+#endif
+}
+
 
 static constexpr size_t expandbits3d(size_t v) {
     v = (v * 0x0000000100000001ul) & 0xFFFF00000000FFFFul;
@@ -221,15 +239,15 @@ struct SPActivationMask {
 
     SPBooleanGrid<NRes / NScale> m_grid;
 
-    bool is_active(size_t i, size_t j, size_t k) {
+    bool is_active(size_t i, size_t j, size_t k) const {
         return m_grid.get(i / NScale, j / NScale, k / NScale);
     }
 
-    void activate(size_t i, size_t j, size_t k) {
+    void activate(size_t i, size_t j, size_t k) const {
         m_grid.set_true(i / NScale, j / NScale, k / NScale);
     }
 
-    void deactivate(size_t i, size_t j, size_t k) {
+    void deactivate(size_t i, size_t j, size_t k) const {
         m_grid.set_false(i / NScale, j / NScale, k / NScale);
     }
 };
@@ -241,28 +259,63 @@ struct SPMasked : Grid {
 
     SPActivationMask<Resolution> m_mask;
 
-    bool is_active(size_t i, size_t j, size_t k) {
+    bool is_active(size_t i, size_t j, size_t k) const {
         return m_mask.is_active(i, j, k);
     }
 
-    void activate(size_t i, size_t j, size_t k) {
-        return m_mask.activate(i, j, k);
+    void activate(size_t i, size_t j, size_t k) const {
+        m_mask.activate(i, j, k);
     }
 
-    void deactivate(size_t i, size_t j, size_t k) {
-        return m_mask.deactivate(i, j, k);
+    void deactivate(size_t i, size_t j, size_t k) const {
+        m_mask.deactivate(i, j, k);
     }
 
-    ValueType get(size_t i, size_t j, size_t k) {
-        if (m_mask.is_active(i, j, k)) {
+    ValueType get(size_t i, size_t j, size_t k) const {
+        if (is_active(i, j, k)) {
             return Grid::get(i, j, k);
         } else {
             return ValueType{};
         }
     }
 
-    void set(size_t i, size_t j, size_t k, ValueType value) {
-        m_mask.activate(i, j, k);
+    void set(size_t i, size_t j, size_t k, ValueType value) const {
+        activate(i, j, k);
+        return Grid::set(i, j, k, value);
+    }
+};
+
+template <class Grid>
+struct SPBitmasked : SPMasked<Grid> {
+    static constexpr auto Resolution = Grid::Resolution;
+    using typename Grid::ValueType;
+
+    SPBooleanGrid<Resolution> m_bitmask;
+
+    bool is_active(size_t i, size_t j, size_t k) const {
+        return SPMasked<Grid>::is_active(i, j, k) && m_bitmask.get(i, j, k);
+    }
+
+    void activate(size_t i, size_t j, size_t k) const {
+        SPMasked<Grid>::activate(i, j, k);
+        m_bitmask.set_true(i, j, k);
+    }
+
+    void deactivate(size_t i, size_t j, size_t k) const {
+        SPMasked<Grid>::deactivate(i, j, k);
+        m_bitmask.set_false(i, j, k);
+    }
+
+    ValueType get(size_t i, size_t j, size_t k) const {
+        if (is_active(i, j, k)) {
+            return Grid::get(i, j, k);
+        } else {
+            return ValueType{};
+        }
+    }
+
+    void set(size_t i, size_t j, size_t k, ValueType value) const {
+        activate(i, j, k);
         return Grid::set(i, j, k, value);
     }
 };

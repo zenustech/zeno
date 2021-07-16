@@ -16,9 +16,20 @@
 
 using namespace bate::spgrid;
 
-#define N 128
+#define N 64
 float pixels[N * N];
 SPMasked<SPFloatGrid<N>> dens;
+
+void initFunc() {
+    #pragma omp parallel for
+    for (int z = 0; z < N; z++) {
+        for (int y = 0; y < N; y++) {
+            for (int x = 0; x < N; x++) {
+                float acc = dens.get(x, y, z);
+            }
+        }
+    }
+}
 
 void displayFunc() {
     glClear(GL_COLOR_BUFFER_BIT);
