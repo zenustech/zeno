@@ -52,6 +52,9 @@ struct Parser {
         if (auto ope = parse_operator(iter, {"+", "-"}); ope) {
             if (auto rhs = parse_compound(ope->iter); rhs) {
                 return make_ast(ope->token, rhs->iter, {std::move(rhs)});
+            } else {
+                error("expression expected after unary `%s`, got `%s`",
+                    iter->c_str(), ope->iter->c_str());
             }
         }
         if (auto ope = parse_operator(iter, {"("}); ope) {
@@ -59,7 +62,13 @@ struct Parser {
                 if (auto ket = parse_operator(rhs->iter, {")"}); ket) {
                     rhs->iter = ket->iter;
                     return rhs;
+                } else {
+                    error("`)` expected to match the `(`, got `%s`",
+                        rhs->iter->c_str());
                 }
+            } else {
+                error("expression expected after `(`, got `%s`",
+                    ope->iter->c_str());
             }
         }
         return nullptr;
