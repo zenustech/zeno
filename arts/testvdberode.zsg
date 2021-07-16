@@ -332,7 +332,7 @@
       "COND": null
      },
      "params": {
-      "value": 0.2
+      "value": 0.1
      },
      "uipos": [
       -339.0,
@@ -421,7 +421,7 @@
       "COND": null
      },
      "params": {
-      "value": -0.2
+      "value": -0.1
      },
      "uipos": [
       -343.0,
@@ -451,7 +451,7 @@
       "COND": null
      },
      "params": {
-      "value": 10
+      "value": 50
      },
      "uipos": [
       -564.0,
@@ -474,9 +474,9 @@
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -883,
-    "trans_y": 432
+    "scale": 1.0,
+    "trans_x": 569,
+    "trans_y": 227
    }
   },
   "SlicePlaneForPrimitive": {
