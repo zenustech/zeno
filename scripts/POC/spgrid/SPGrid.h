@@ -1,4 +1,6 @@
 #include <array>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <sys/mman.h>
 
@@ -7,8 +9,14 @@ namespace bate::spgrid {
 static_assert(sizeof(void *) == 8, "SPGrid requies 64-bit architecture");
 
 static void *allocate(size_t size) {
-    return ::mmap(0, size, PROT_READ | PROT_WRITE,
+    printf("SPGrid allocate size = %zd\n", size);
+    void *ptr = ::mmap(nullptr, size, PROT_READ | PROT_WRITE,
         MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+    if (ptr == MAP_FAILED) {
+        perror("mmap");
+        abort();
+    }
+    return ptr;
 }
 
 static void deallocate(void *ptr, size_t size) {
@@ -66,7 +74,7 @@ struct SPLayout<1, 4> {
 };
 
 template <>
-struct SPLayout<0, 0> {
+struct SPLayout<1, 0> {
     static size_t linearize(size_t c, size_t i, size_t j, size_t k) {
         size_t t = ((i >> 3) & 3) | ((j & 31) << 2) | ((k & 31) << 7);
         size_t m = morton3d(i >> 5, j >> 5, k >> 5);
@@ -83,35 +91,41 @@ template <size_t NRes, size_t NChannels, size_t NElmsize>
 struct SPGrid {
     using LayoutClass = SPLayout<NChannels, NElmsize>;
 
-    void *ptr;
-    static constexpr size_t size =
+    void *m_ptr;
+    static constexpr size_t Resolution = NRes;
+    static constexpr size_t NumChannels = NChannels;
+    static constexpr size_t ElementSize = NElmsize;
+    static constexpr size_t MemorySize =
+        NElmsize == 0 ?
+        NRes * NRes * NRes * NChannels / 8 :
         NRes * NRes * NRes * NChannels * NElmsize;
 
     SPGrid() {
-        ptr = allocate(size);
+        m_ptr = allocate(MemorySize);
     }
+    SPGrid(SPGrid const &) = delete;
 
     void *pointer(size_t c, size_t i, size_t j, size_t k) const {
         size_t offset = LayoutClass::linearize(c, i, j, k);
-        return static_cast<void *>(static_cast<char *>(ptr) + offset);
+        return static_cast<void *>(static_cast<char *>(m_ptr) + offset);
     }
 
     ~SPGrid() {
-        deallocate(ptr, size);
-        ptr = nullptr;
+        deallocate(m_ptr, MemorySize);
+        m_ptr = nullptr;
     }
 };
 
 template <size_t NRes, size_t NChannels, typename T>
 struct SPTypedGrid : SPGrid<NRes, NChannels, sizeof(T)> {
-    using ValType = std::array<T, NChannels>;
+    using ValueType = std::array<T, NChannels>;
 
     T &at(size_t c, size_t i, size_t j, size_t k) const {
         return *(T *)this->pointer(c, i, j, k);
     }
 
     auto get(size_t i, size_t j, size_t k) const {
-        ValType ret;
+        ValueType ret;
         for (size_t c = 0; c < NChannels; c++) {
             ret[c] = at(c, i, j, k);
         }
@@ -127,10 +141,14 @@ struct SPTypedGrid : SPGrid<NRes, NChannels, sizeof(T)> {
 
 template <size_t NRes, typename T>
 struct SPTypedGrid<NRes, 1, T> : SPGrid<NRes, 1, sizeof(T)> {
-    using ValType = T;
+    using ValueType = T;
 
     T &at(size_t i, size_t j, size_t k) const {
         return *(T *)this->pointer(0, i, j, k);
+    }
+
+    T &at(size_t c, size_t i, size_t j, size_t k) const {
+        return at(i, j, k);
     }
 
     auto get(size_t i, size_t j, size_t k) const {
@@ -152,29 +170,82 @@ using SPFloat16Grid = SPTypedGrid<NRes, 16, float>;
 
 template <size_t NRes>
 struct SPBooleanGrid : SPGrid<NRes, 1, 0> {
-    using ValType = bool;
+    using ValueType = bool;
 
-    unsigned char &uchar_at(size_t i, size_t j, size_t k) {
+    unsigned char &uchar_at(size_t i, size_t j, size_t k) const {
         return *(unsigned char *)this->pointer(0, i, j, k);
     }
 
-    bool get(size_t i, size_t j, size_t k) {
-        return uchar_at(i, j, k) & (1 << (i & 7));
+    bool get(size_t i, size_t j, size_t k) const {
+        return (uchar_at(i, j, k) & (1 << (i & 7))) != 0;
     }
 
-    void set_true(size_t i, size_t j, size_t k) {
+    void set_true(size_t i, size_t j, size_t k) const {
         uchar_at(i, j, k) |= (1 << (i & 7));
     }
 
-    void set_false(size_t i, size_t j, size_t k) {
+    void set_false(size_t i, size_t j, size_t k) const {
         uchar_at(i, j, k) &= ~(1 << (i & 7));
     }
 
-    void set(size_t i, size_t j, size_t k, bool value) {
+    void set(size_t i, size_t j, size_t k, bool value) const {
         if (value)
             set_true(i, j, k);
         else
             set_false(i, j, k);
+    }
+};
+
+template <size_t NRes, size_t NScale = 16>
+struct SPActivationMask {
+    static constexpr auto Resolution = NRes;
+    static constexpr auto MaskScale = NScale;
+
+    SPBooleanGrid<NRes / NScale> m_grid;
+
+    bool is_active(size_t i, size_t j, size_t k) {
+        return m_grid.get(i / NScale, j / NScale, k / NScale);
+    }
+
+    void activate(size_t i, size_t j, size_t k) {
+        m_grid.set_true(i / NScale, j / NScale, k / NScale);
+    }
+
+    void deactivate(size_t i, size_t j, size_t k) {
+        m_grid.set_false(i / NScale, j / NScale, k / NScale);
+    }
+};
+
+template <class Grid>
+struct SPMasked : Grid {
+    static constexpr auto Resolution = Grid::Resolution;
+    using typename Grid::ValueType;
+
+    SPActivationMask<Resolution> m_mask;
+
+    bool is_active(size_t i, size_t j, size_t k) {
+        return m_mask.is_active(i, j, k);
+    }
+
+    void activate(size_t i, size_t j, size_t k) {
+        return m_mask.activate(i, j, k);
+    }
+
+    void deactivate(size_t i, size_t j, size_t k) {
+        return m_mask.deactivate(i, j, k);
+    }
+
+    ValueType get(size_t i, size_t j, size_t k) {
+        if (m_mask.is_active(i, j, k)) {
+            return Grid::get(i, j, k);
+        } else {
+            return ValueType{};
+        }
+    }
+
+    void set(size_t i, size_t j, size_t k, ValueType value) {
+        m_mask.activate(i, j, k);
+        return Grid::set(i, j, k, value);
     }
 };
 
