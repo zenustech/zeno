@@ -1510,9 +1510,7 @@ class NodeEditor(QWidget):
         self.view.contextMenu(pos)
 
     def shortcut_add(self):
-        w = self.rect().width()
-        h = self.rect().height()
-        pos = QPoint(w / 2, h / 2)
+        pos = self.view.mapFromGlobal(QCursor.pos())
         self.view.contextMenu(pos)
 
     def on_kill(self):
