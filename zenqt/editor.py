@@ -361,7 +361,18 @@ class QDMGraphicsView(QGraphicsView):
         node.initSockets()
         node.setPos(self.lastContextMenuPos)
         self.scene().addNode(node)
+        self.autoConnectSpecialNode(node)
         self.scene().record()
+
+    def autoConnectSpecialNode(self, node):
+        if node.name in ['BeginFor', 'BeginForEach']:
+            new_node = self.scene().makeNode('EndFor')
+            new_node.initSockets()
+            new_node.setPos(self.lastContextMenuPos + QPointF(300, 0))
+            self.scene().addNode(new_node)
+            src = node.outputs['FOR']
+            dst = new_node.inputs['FOR']
+            self.addEdge(src, dst)
 
     def mouseDoubleClickEvent(self, event):
         itemList = self.scene().selectedItems()
