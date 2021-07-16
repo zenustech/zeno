@@ -196,9 +196,55 @@ struct slice : iterator_base<slice<T>> {
 };
 
 
+template <class ...Ts>
+struct zip : iterator_base<zip<Ts...>> {
+    using value_type = std::tuple<typename Ts::value_type...>;
+
+    std::tuple<Ts...> m_iters;
+
+    explicit zip
+        ( Ts const &...iters
+        )
+        : m_iters(iters...)
+        {}
+
+    template <size_t ...Inds>
+    void _next(std::index_sequence<Inds...>, int skip) {
+        ((std::get<Inds>(m_iters) += skip), ...);
+    }
+
+    void next(int skip) {
+        return _next(std::make_index_sequence<sizeof...(Ts)>(), skip);
+    }
+
+    template <size_t ...Inds>
+    bool _alive(std::index_sequence<Inds...>) const {
+        return (bool(std::get<Inds>(m_iters)) && ... && (sizeof...(Ts) != 0));
+    }
+
+    bool alive() const {
+        return _alive(std::make_index_sequence<sizeof...(Ts)>());
+    }
+
+    template <size_t ...Inds>
+    auto _get(std::index_sequence<Inds...>) const {
+        return value_type(std::get<Inds>(m_iters)...);
+    }
+
+    auto get() const {
+        return _get(std::make_index_sequence<sizeof...(Ts)>());
+    }
+};
+
+
+
 int main(void)
 {
     auto r = range(2, 15);
     auto s = slice(r, 2, 10, 3);
-    for (auto i: s) show(i);
+    auto z = zip(s, r);
+    for (auto [i, j]: z) {
+        show(i);
+        show(j);
+    }
 }
