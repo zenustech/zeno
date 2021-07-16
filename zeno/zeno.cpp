@@ -107,7 +107,7 @@ ZENAPI bool INode::has_option(std::string const &id) const {
 }
 
 ZENAPI bool INode::has_input(std::string const &id) const {
-    return inputs.find(id) != inputs.end();
+    return inputBounds.find(id) != inputBounds.end();
 }
 
 ZENAPI std::shared_ptr<IObject> INode::get_input(std::string const &id) const {
