@@ -42,5 +42,26 @@ static int defVDBRenormalizeSDF = zeno::defNodeClass<VDBRenormalizeSDF>("VDBReno
      "openvdb",
      }});
 
+struct  VDBDilateTopo : zeno::INode {
+  virtual void apply() override {
+
+    auto inoutSDF = get_input<zeno::VDBGrid>("inField");
+    auto layers = get_input("layers")->as<zeno::NumericObject>()->get<int>();
+    inoutSDF->dilateTopo(layers);
+    set_output("oField", std::move(inoutSDF));
+  }
+};
+
+static int defVDBDilateTopo = zeno::defNodeClass<VDBDilateTopo>("VDBDilateTopo",
+     { /* inputs: */ {
+     "inField", "layers", 
+     }, /* outputs: */ {
+       "oField"
+     }, /* params: */ {
+     }, /* category: */ {
+     "openvdb",
+     }});
+
+
 
 }

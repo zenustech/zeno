@@ -3,11 +3,11 @@
 #include <vector>
 #include <zeno/zeno.h>
 
-//#include <openvdb/points/PointCount.h>
-//#include <openvdb/tree/LeafManager.h>
-//#include <openvdb/points/PointAdvect.h>
-//#include <openvdb/tools/Morphology.h>
-//#include <openvdb/tools/MeshToVolume.h>
+#include <openvdb/points/PointCount.h>
+#include <openvdb/tree/LeafManager.h>
+#include <openvdb/points/PointAdvect.h>
+#include <openvdb/tools/Morphology.h>
+#include <openvdb/tools/MeshToVolume.h>
 #include <openvdb/openvdb.h>
 #include <openvdb/points/PointCount.h>
 #include <string.h>
@@ -55,11 +55,11 @@ struct VDBGrid : zeno::IObject {
 
   // using GeneralVdbGrid = variant<typename SomeGrid::Ptr, >;
   // virtual GeneralVdbGrid getGrid() = 0;
-
   virtual openvdb::CoordBBox evalActiveVoxelBoundingBox() = 0;
   virtual openvdb::Vec3d indexToWorld(openvdb::Coord &c) = 0;
   virtual openvdb::Vec3d worldToIndex(openvdb::Vec3d &c) = 0;
   virtual std::string getType() { return std::string(); }
+  virtual void dilateTopo(int l) =0;
 };
 
 template <typename GridT>
@@ -94,6 +94,12 @@ struct VDBGridWrapper : VDBGrid {
   virtual void
   setTransform(openvdb::math::Transform::Ptr const &trans) override {
     m_grid->setTransform(trans);
+  }
+  virtual void
+  dilateTopo(int l) override {
+    openvdb::tools::dilateActiveValues(
+      m_grid->tree(), l,
+      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
   }
 
   virtual std::string getType() {
