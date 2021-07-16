@@ -17,23 +17,29 @@ struct Buffer {
     int which = 0;
 };
 
-template <class Tree>
-void vdb_wrangle(zfx::x64::Executable *exec, Tree &tree) {
-    auto wrangler = [&](openvdb::Vec3fTree::LeafNodeType &leaf, openvdb::Index leafpos) {
+template <class GridPtr>
+void vdb_wrangle(zfx::x64::Executable *exec, GridPtr &grid) {
+    auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
         for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
-            iter.modifyValue([&](openvdb::Vec3f &v) {
+            iter.modifyValue([&](auto &v) {
                 auto ctx = exec->make_context();
-                ctx.channel(0)[0] = v[0];
-                ctx.channel(1)[0] = v[1];
-                ctx.channel(2)[0] = v[2];
-                ctx.execute();
-                v[0] = ctx.channel(0)[0];
-                v[1] = ctx.channel(1)[0];
-                v[2] = ctx.channel(2)[0];
+                if constexpr (std::is_same_v<std::decay_t<decltype(v)>, openvdb::Vec3f>) {
+                    ctx.channel(0)[0] = v[0];
+                    ctx.channel(1)[0] = v[1];
+                    ctx.channel(2)[0] = v[2];
+                    ctx.execute();
+                    v[0] = ctx.channel(0)[0];
+                    v[1] = ctx.channel(1)[0];
+                    v[2] = ctx.channel(2)[0];
+                } else {
+                    ctx.channel(0)[0] = v;
+                    ctx.execute();
+                    v = ctx.channel(0)[0];
+                }
             });
         }
     };
-    auto velman = openvdb::tree::LeafManager<Tree>(tree);
+    auto velman = openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>>(grid->tree());
     velman.foreach(wrangler);
 }
 
@@ -94,9 +100,9 @@ struct VDBWrangle : zeno::INode {
         }
 
         if (auto p = dynamic_cast<zeno::VDBFloatGrid *>(grid.get()))
-            vdb_wrangle(exec, p->m_grid->tree());
+            vdb_wrangle(exec, p->m_grid);
         else if (auto p = dynamic_cast<zeno::VDBFloat3Grid *>(grid.get()))
-            vdb_wrangle(exec, p->m_grid->tree());
+            vdb_wrangle(exec, p->m_grid);
 
         set_output("grid", std::move(grid));
     }
