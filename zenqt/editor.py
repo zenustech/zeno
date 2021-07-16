@@ -14,7 +14,6 @@ from zenutils import go, gen_unique_ident
 from zeno import launch
 
 from . import asset_path
-from .editor_utils import *
 
 CURR_VERSION = 'v1'
 MAX_STACK_LENGTH = 100
@@ -315,6 +314,7 @@ class QDMGraphicsView(QGraphicsView):
                 edit.menu.removeAction(act)
         pattern = edit.text()
         keys = self.scene().descs.keys()
+        from .utils import fuzzy_search
         matched = fuzzy_search(pattern, keys)
         for key in matched:
             edit.menu.addAction(key)
