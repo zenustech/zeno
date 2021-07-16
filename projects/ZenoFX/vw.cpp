@@ -18,7 +18,7 @@ struct Buffer {
 };
 
 template <class Tree>
-void vdb_wrangle(zfx::x64::Executable *exec, Tree const &tree) {
+void vdb_wrangle(zfx::x64::Executable *exec, Tree &tree) {
     auto wrangler = [&](openvdb::Vec3fTree::LeafNodeType &leaf, openvdb::Index leafpos) {
         for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
             iter.modifyValue([&](openvdb::Vec3f &v) {
@@ -43,13 +43,13 @@ struct VDBWrangle : zeno::INode {
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
         zfx::Options opts(zfx::Options::for_x64);
-        if (dynamic_cast<VDBFloatGrid *>(grid))
+        if (dynamic_cast<zeno::VDBFloatGrid *>(grid.get()))
             opts.define_symbol("@val", 1);
-        else if (dynamic_cast<VDBFloat3Grid *>(grid))
+        else if (dynamic_cast<zeno::VDBFloat3Grid *>(grid.get()))
             opts.define_symbol("@val", 3);
         else
-            print("unexpected vdb grid type");
-        opts.no_reassign_channels = true;
+            printf("unexpected vdb grid type");
+        opts.reassign_channels = false;
 
         auto params = has_input("params") ?
             get_input<zeno::DictObject>("params") :
@@ -93,9 +93,9 @@ struct VDBWrangle : zeno::INode {
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
 
-        if (auto p = dynamic_cast<VDBFloatGrid *>(grid))
+        if (auto p = dynamic_cast<zeno::VDBFloatGrid *>(grid.get()))
             vdb_wrangle(exec, p->m_grid->tree());
-        else if (auto p = dynamic_cast<VDBFloat3Grid *>(grid))
+        else if (auto p = dynamic_cast<zeno::VDBFloat3Grid *>(grid.get()))
             vdb_wrangle(exec, p->m_grid->tree());
 
         set_output("grid", std::move(grid));
