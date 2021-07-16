@@ -14,6 +14,7 @@ from zenutils import go, gen_unique_ident
 from zeno import launch
 
 from . import asset_path
+from .editor_utils import *
 
 CURR_VERSION = 'v1'
 MAX_STACK_LENGTH = 100
@@ -195,11 +196,6 @@ class QDMGraphicsScene(QGraphicsScene):
         self.addItem(edge)
         return edge
 
-    def searchNode(self, name):
-        for key in self.descs.keys():
-            if name.lower() in key.lower():
-                yield key
-
     def reloadNodes(self):
         print('Reloading all nodes')
         savedNodes = self.dumpGraph()
@@ -318,7 +314,9 @@ class QDMGraphicsView(QGraphicsView):
             if not isinstance(act, QWidgetAction):
                 edit.menu.removeAction(act)
         pattern = edit.text()
-        for key in self.scene().searchNode(pattern):
+        keys = self.scene().descs.keys()
+        matched = fuzzy_search(pattern, keys)
+        for key in matched:
             edit.menu.addAction(key)
 
     def getCategoryActions(self):
