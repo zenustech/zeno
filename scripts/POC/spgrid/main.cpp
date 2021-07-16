@@ -18,7 +18,7 @@ using namespace bate::spgrid;
 
 #define N 256
 float pixels[N * N];
-SPFloatGrid<N> dens;
+SPMasked<SPFloatGrid<N>> dens;
 
 void initFunc() {
     #pragma omp parallel for
@@ -29,7 +29,19 @@ void initFunc() {
                 float fy = float(y) / N * 2 - 1;
                 float fz = float(z) / N * 2 - 1;
                 float val = fx * fx + fy * fy + fz * fz;
-                dens.set(x, y, z, val);
+                if (val < 1.0f)
+                    dens.set(x, y, z, val);
+            }
+        }
+    }
+}
+
+void stepFunc() {
+    #pragma omp parallel for
+    for (int z = 0; z < N; z++) {
+        for (int y = 0; y < N; y++) {
+            for (int x = 0; x < N; x++) {
+                dens.get(x, y, z);
             }
         }
     }
@@ -37,11 +49,6 @@ void initFunc() {
 
 void displayFunc() {
     glClear(GL_COLOR_BUFFER_BIT);
-    /*glBegin(GL_TRIANGLES);
-    glVertex3f( -0.5 , -0.5 , 0.0);
-    glVertex3f( 0.5  ,  0.0 , 0.0);
-    glVertex3f( 0.0  ,  0.5 , 0.0);
-    glEnd();*/
 
     int z = N / 2;
     #pragma omp parallel for

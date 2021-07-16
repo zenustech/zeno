@@ -278,6 +278,10 @@ struct SPMasked : Grid {
         return Grid::get(i, j, k);
     }
 
+    ValueType direct_set(size_t i, size_t j, size_t k) const {
+        return Grid::set(i, j, k);
+    }
+
     ValueType get(size_t i, size_t j, size_t k) const {
         if (is_active(i, j, k)) {
             return Grid::get(i, j, k);
