@@ -2,13 +2,13 @@ cmake_minimum_required(VERSION 3.12)
 project(ZFX LANGUAGES CXX)
 
 option(ZFX_ENABLE_CUDA "Build ZFX with CUDA support" OFF)
-if (ZFX_ENABLE_CUDA)
-    link_directories(/opt/cuda/lib64)
-    include_directories(/opt/cuda/include)
+if (ZFX_ENABLE_CUDA)  # WXL may need turn ON this
+    link_directories(/opt/cuda/lib64)  # WXL may need change this
+    include_directories(/opt/cuda/include)  # WXL may need change this
+    set(CMAKE_CUDA_ARCHITECTURES 75)  # WXL may need change this
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CUDA_ARCHITECTURES 75)
 
 if (CMAKE_BUILD_TYPE EQUAL Debug)
     option(ZFX_PRINT_IR "Print IR for the ZFX compiler" OFF)
