@@ -165,25 +165,29 @@ struct slice : iterator_base<slice<T>> {
     using value_type = typename T::value_type;
 
     T m_iter;
-    value_type m_begin;
-    value_type m_end;
+    int m_now;
+    int m_end;
+    int m_skip;
 
     slice
         ( T const &iter
-        , value_type const &begin_
-        , value_type const &end_
+        , int begin_
+        , int end_
+        , int skip_ = 1
         )
         : m_iter(iter)
-        , m_begin(begin_)
+        , m_now(begin_)
         , m_end(end_)
+        , m_skip(skip_)
         {}
 
     void next(int skip) {
-        m_iter += skip;
+        m_now += skip * m_skip;
+        m_iter += skip * m_skip;
     }
 
     bool alive() const {
-        return m_iter;
+        return m_iter && m_now < m_end;
     }
 
     auto get() const {
@@ -195,6 +199,6 @@ struct slice : iterator_base<slice<T>> {
 int main(void)
 {
     auto r = range(2, 15);
-    auto s = slice(r, 2, 4);
+    auto s = slice(r, 2, 10, 3);
     for (auto i: s) show(i);
 }
