@@ -21,14 +21,15 @@ float pixels[N * N];
 SPFloatGrid<N> dens;
 
 void initFunc() {
-    /*#pragma omp parallel for
-    for (int z = 0; z < N; z += dens.MaskScale) {
-        for (int y = 0; y < N; y += dens.MaskScale) {
-            for (int x = 0; x < N; x += dens.MaskScale) {
-                dens.activate(x, y, z);
+    #pragma omp parallel for
+    for (int z = 0; z < N; z++) {
+        for (int y = 0; y < N; y++) {
+            for (int x = 0; x < N; x++) {
+                float val = float(x) / N;
+                dens.set(x, y, z, val);
             }
         }
-    }*/
+    }
 }
 
 void displayFunc() {
