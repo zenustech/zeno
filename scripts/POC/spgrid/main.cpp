@@ -1,3 +1,4 @@
+#include <type_traits>
 #include <iostream>
 #include <cstring>
 #include <cmath>
@@ -37,10 +38,12 @@ inline bool operator==(T const &other, null_iterator) {
 
 inline constexpr null_iterator npos{};
 
-template <class D>
+template <class T>
 struct iterator_base {
-    inline D const &begin() const {
-        return *reinterpret_cast<D const *>(this);
+    //static_assert(std::is_base_of_v<iterator_base, T>);
+
+    inline T const &begin() const {
+        return *reinterpret_cast<T const *>(this);
     }
 
     inline auto end() const {
@@ -48,54 +51,87 @@ struct iterator_base {
     }
 
     template <class _ = void>
-    [[noreturn]] void next() {
-        static_assert(sizeof(_), "next() not implemented");
+    void next(int skip) {
+        static_assert(sizeof(_), "next(int) not implemented");
     }
 
     template <class _ = void>
-    [[noreturn]] void prev() {
-        static_assert(sizeof(_), "prev() not implemented");
+    void prev(int skip) {
+        static_assert(sizeof(_), "prev(int) not implemented");
     }
 
     template <class _ = void>
-    [[noreturn]] bool eof() const {
+    void eof() const {
         static_assert(sizeof(_), "eof() not implemented");
     }
 
     template <class _ = void>
-    [[noreturn]] auto const &get() const {
+    void get() const {
         static_assert(sizeof(_), "get() not implemented");
     }
 
     inline auto &get() {
-        return const_cast<D const *>(reinterpret_cast<D *>(this))->get();
+        return const_cast<T const *>(reinterpret_cast<T *>(this))->get();
     }
 
-    inline D &operator++() {
-        reinterpret_cast<D *>(this)->next();
-        return *reinterpret_cast<D *>(this);
+    inline T &operator++() {
+        that()->next(1);
+        return *that();
     }
 
-    inline D &operator--() {
-        reinterpret_cast<D *>(this)->prev();
-        return *reinterpret_cast<D *>(this);
+    inline T &operator--() {
+        that()->prev(1);
+        return *that();
+    }
+
+    inline T operator++(int) {
+        auto old = *that();
+        that()->next(1);
+        return old;
+    }
+
+    inline T operator--(int) {
+        auto old = *that();
+        that()->prev(1);
+        return old;
+    }
+
+    inline T &operator+=(int skip) {
+        that()->next(skip);
+        return *that();
+    }
+
+    inline T &operator-=(int skip) {
+        that()->prev(skip);
+        return *that();
     }
 
     inline operator bool() const {
-        return reinterpret_cast<D const *>(this)->eof();
+        return that()->alive();
     }
 
     inline decltype(auto) operator*() const {
-        return reinterpret_cast<D const *>(this)->get();
+        return that()->get();
     }
 
     inline decltype(auto) operator*() {
-        return reinterpret_cast<D *>(this)->get();
+        return that()->get();
+    }
+
+private:
+    T *that() {
+        return reinterpret_cast<T *>(this);
+    }
+
+    T const *that() const {
+        return reinterpret_cast<T const *>(this);
     }
 };
 
 template <class T>
 struct range : iterator_base<range<T>> {
+    using value_type = T;
+
     T m_now;
     T m_end;
 
@@ -107,46 +143,58 @@ struct range : iterator_base<range<T>> {
     , m_end(end_)
     {}
 
-    void next() {
-        m_now++;
+    void next(int skip) {
+        m_now += skip;
     }
 
-    bool eof() const {
-        return m_now != m_end;
+    void prev(int skip) {
+        m_now -= skip;
     }
 
-    T const &get() const {
+    bool alive() const {
+        return m_now < m_end;
+    }
+
+    value_type const &get() const {
         return m_now;
     }
 };
 
 template <class T>
-struct slice {
-    T t;
+struct slice : iterator_base<slice<T>> {
+    using value_type = typename T::value_type;
+
+    T m_iter;
+    value_type m_begin;
+    value_type m_end;
 
     slice
-        ( T const &t
+        ( T const &iter
+        , value_type const &begin_
+        , value_type const &end_
         )
-        : t(t)
+        : m_iter(iter)
+        , m_begin(begin_)
+        , m_end(end_)
         {}
 
-    void next() {
-        t++;
+    void next(int skip) {
+        m_iter += skip;
     }
 
-    bool eof() const {
-        return t;
+    bool alive() const {
+        return m_iter;
     }
 
-    T const &get() const {
-        return *t;
+    auto get() const {
+        return *m_iter;
     }
 };
 
 
 int main(void)
 {
-    auto r = range(2, 4);
-    //for (auto it = r.begin(); it; ++it) show(*it);
-    for (auto i: r) show(i);
+    auto r = range(2, 15);
+    auto s = slice(r, 2, 4);
+    for (auto i: s) show(i);
 }
