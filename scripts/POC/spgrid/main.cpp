@@ -16,9 +16,11 @@
 
 using namespace bate::spgrid;
 
+#define ITV 0
 #define N 256
 float pixels[N * N];
 SPMasked<SPFloatGrid<N>> dens;
+SPFloatGrid<N> dens_tmp;
 
 void initFunc() {
     #pragma omp parallel for
@@ -38,18 +40,50 @@ void initFunc() {
 
 void stepFunc() {
     #pragma omp parallel for
-    for (int z = 0; z < N; z++) {
-        for (int y = 0; y < N; y++) {
-            for (int x = 0; x < N; x++) {
-                dens.get(x, y, z);
+    for (int zz = 0; zz < N; zz += dens.MaskScale) {
+        for (int yy = 0; yy < N; yy += dens.MaskScale) {
+            for (int xx = 0; xx < N; xx += dens.MaskScale) {
+                if (!dens.is_active(xx, yy, zz))
+                    continue;
+                for (int z = zz; z < zz + dens.MaskScale; z++) {
+                    for (int y = yy; y < yy + dens.MaskScale; y++) {
+                        for (int x = xx; x < xx + dens.MaskScale; x++) {
+                            auto ax = dens.direct_get(x + 1, y, z);
+                            auto ay = dens.direct_get(x, y + 1, z);
+                            auto az = dens.direct_get(x, y, z + 1);
+                            auto bx = dens.direct_get(x - 1, y, z);
+                            auto by = dens.direct_get(x, y - 1, z);
+                            auto bz = dens.direct_get(x, y, z - 1);
+                            auto co = dens.direct_get(x, y, z);
+                            auto val = ax + ay + az + bx + by + bz;
+                            val *= 1 / 6.f;
+                            dens_tmp.set(x, y, z, val);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    #pragma omp parallel for
+    for (int zz = 0; zz < N; zz += dens.MaskScale) {
+        for (int yy = 0; yy < N; yy += dens.MaskScale) {
+            for (int xx = 0; xx < N; xx += dens.MaskScale) {
+                if (!dens.is_active(xx, yy, zz))
+                    continue;
+                for (int z = zz; z < zz + dens.MaskScale; z++) {
+                    for (int y = yy; y < yy + dens.MaskScale; y++) {
+                        for (int x = xx; x < xx + dens.MaskScale; x++) {
+                            auto val = dens_tmp.get(x, y, z);
+                            dens.direct_set(x, y, z, val);
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-void displayFunc() {
-    glClear(GL_COLOR_BUFFER_BIT);
-
+void renderFunc() {
     int z = N / 2;
     #pragma omp parallel for
     for (int y = 0; y < N; y++) {
@@ -60,13 +94,19 @@ void displayFunc() {
             pixels[y * N + x] = acc;
         }
     }
+}
 
+void displayFunc() {
+    glClear(GL_COLOR_BUFFER_BIT);
     glDrawPixels(N, N, GL_RED, GL_FLOAT, pixels);
     glFlush();
 }
 
-void idleFunc() {
+void timerFunc(int unused) {
+    stepFunc();
+    renderFunc();
     glutPostRedisplay();
+    glutTimerFunc(ITV, timerFunc, 0);
 }
 
 void keyboardFunc(unsigned char key, int x, int y) {
@@ -80,9 +120,10 @@ int main(int argc, char **argv) {
     glutInitWindowPosition(100, 100);
     glutInitWindowSize(N, N);
     glutCreateWindow("GLUT Window");
-    //glutIdleFunc(idleFunc);
     glutDisplayFunc(displayFunc);
     glutKeyboardFunc(keyboardFunc);
     initFunc();
+    renderFunc();
+    glutTimerFunc(ITV, timerFunc, 0);
     glutMainLoop();
 }

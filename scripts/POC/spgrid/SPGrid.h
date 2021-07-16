@@ -278,8 +278,8 @@ struct SPMasked : Grid {
         return Grid::get(i, j, k);
     }
 
-    ValueType direct_set(size_t i, size_t j, size_t k) const {
-        return Grid::set(i, j, k);
+    void direct_set(size_t i, size_t j, size_t k, ValueType value) const {
+        return Grid::set(i, j, k, value);
     }
 
     ValueType get(size_t i, size_t j, size_t k) const {
