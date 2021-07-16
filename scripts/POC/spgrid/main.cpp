@@ -16,11 +16,21 @@
 
 using namespace bate::spgrid;
 
-#define ITV 0
+#define ITV 200
 #define N 256
 float pixels[N * N];
-SPMasked<SPFloatGrid<N>> dens;
-SPFloatGrid<N> dens_tmp;
+
+SPFloat16Grid<N> f_old;
+SPFloat16Grid<N> f_new;
+SPFloatGrid<N> rho;
+SPFloat4Grid<N> vel;
+
+const float niu = 0.005f;
+const float tau = 3.f * niu + 0.5f;
+const float inv_tau = 1.f / tau;
+
+std::array<int, 3> directions[] = {{0,0,0},{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},{1,-1,1},{-1,1,-1},{-1,1,1},{1,-1,-1}};
+float weights[] = {2.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f,1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f};
 
 void initFunc() {
     #pragma omp parallel for

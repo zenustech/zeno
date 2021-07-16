@@ -234,7 +234,7 @@ struct SPBooleanGrid : SPGrid<NRes, 1, 0> {
     }
 };
 
-template <size_t NRes, size_t NScale = 16>
+template <size_t NRes, size_t NScale = 8>
 struct SPActivationMask {
     static constexpr auto Resolution = NRes;
     static constexpr auto MaskScale = NScale;
