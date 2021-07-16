@@ -5,7 +5,10 @@
 namespace zfx {
 
 inline char opchars[] = "+-*/%=(),.";
-inline std::string opstrs[] = {"+", "-", "*", "/", "%", "=", "(", ")", ",", "."};
+inline std::set<std::string> opstrs = {
+    "+", "-", "*", "/", "%", "=", "(", ")", ",", ".",
+    "+=", "-=", "*=", "/=", "%=",
+    };
 
 inline bool is_literial_atom(std::string const &s) {
     if (!s.size()) return false;

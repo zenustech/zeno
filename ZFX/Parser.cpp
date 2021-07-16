@@ -115,7 +115,8 @@ struct Parser {
 
     AST::Ptr parse_stmt(AST::Iter iter) {
         if (auto lhs = parse_factor(iter); lhs) {
-            if (auto ope = parse_operator(lhs->iter, {"="}); ope) {
+            if (auto ope = parse_operator(lhs->iter, {"=",
+                "+=", "-=", "*=", "/=", "%="}); ope) {
                 if (auto rhs = parse_expr(ope->iter); rhs) {
                     return make_ast(ope->token, rhs->iter, {std::move(lhs), std::move(rhs)});
                 } else {
@@ -123,7 +124,7 @@ struct Parser {
                         ope->iter->c_str());
                 }
             } else {
-                error("`=` expected in statement, got `%s`",
+                error("`=` or `+=` series expected in statement, got `%s`",
                     lhs->iter->c_str());
             }
         }
