@@ -195,11 +195,6 @@ class QDMGraphicsScene(QGraphicsScene):
         self.addItem(edge)
         return edge
 
-    def searchNode(self, name):
-        for key in self.descs.keys():
-            if name.lower() in key.lower():
-                yield key
-
     def reloadNodes(self):
         print('Reloading all nodes')
         savedNodes = self.dumpGraph()
@@ -318,7 +313,10 @@ class QDMGraphicsView(QGraphicsView):
             if not isinstance(act, QWidgetAction):
                 edit.menu.removeAction(act)
         pattern = edit.text()
-        for key in self.scene().searchNode(pattern):
+        keys = self.scene().descs.keys()
+        from .utils import fuzzy_search
+        matched = fuzzy_search(pattern, keys)
+        for key in matched:
             edit.menu.addAction(key)
 
     def getCategoryActions(self):
