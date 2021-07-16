@@ -227,11 +227,11 @@ struct zip : iterator_base<zip<Ts...>> {
     }
 
     template <size_t ...Inds>
-    auto _get(std::index_sequence<Inds...>) const {
-        return value_type(std::get<Inds>(m_iters)...);
+    decltype(auto) _get(std::index_sequence<Inds...>) const {
+        return value_type(*std::get<Inds>(m_iters)...);
     }
 
-    auto get() const {
+    decltype(auto) get() const {
         return _get(std::make_index_sequence<sizeof...(Ts)>());
     }
 };
@@ -241,10 +241,8 @@ struct zip : iterator_base<zip<Ts...>> {
 int main(void)
 {
     auto r = range(2, 15);
-    auto s = slice(r, 2, 10, 3);
-    auto z = zip(s, r);
-    for (auto [i, j]: z) {
+    auto z = zip(r);
+    for (auto [i]: z) {
         show(i);
-        show(j);
     }
 }
