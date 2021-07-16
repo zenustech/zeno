@@ -39,6 +39,3 @@ outputs/
 # binary folders
 /zeno/lib/
 /zenv/
-
-# auto save folders
-.auto_save/ 

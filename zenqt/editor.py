@@ -1718,7 +1718,6 @@ class NodeEditor(QWidget):
         self.importProgram(prog)
 
     def do_open(self, path):
-        
         with open(path, 'r') as f:
             prog = json.load(f)
         self.loadProgram(prog)
