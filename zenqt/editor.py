@@ -1454,6 +1454,9 @@ class NodeEditor(QWidget):
         self.msgDel = QShortcut(QKeySequence('Del'), self)
         self.msgDel.activated.connect(self.on_delete)
 
+        self.msgAdd = QShortcut(QKeySequence('Tab'), self)
+        self.msgAdd.activated.connect(self.shortcut_add)
+
     def initExecute(self):
         self.edit_graphname = QComboBox(self)
         self.edit_graphname.setEditable(True)
@@ -1504,6 +1507,10 @@ class NodeEditor(QWidget):
 
     def on_add(self):
         pos = QPointF(0, 0)
+        self.view.contextMenu(pos)
+
+    def shortcut_add(self):
+        pos = self.view.mapFromGlobal(QCursor.pos())
         self.view.contextMenu(pos)
 
     def on_kill(self):
