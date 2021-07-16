@@ -1,3 +1,4 @@
+#include <type_traits>
 #include <iostream>
 #include <cstring>
 #include <cmath>
@@ -6,188 +7,123 @@
 #include <vector>
 #include <array>
 #include <cassert>
-#include <sys/mman.h>
 #include <omp.h>
+#include "common_utils.h"
+#include "iterator_utils.h"
+#include <GL/gl.h>
+#include <GL/glut.h>
+#include "SPGrid.h"
 
-using std::cout;
-using std::endl;
-#define show(x) (cout << #x "=" << (x) << endl)
+using namespace bate::spgrid;
 
-namespace spgrid {
+#define ITV 0
+#define N 256
+float pixels[N * N];
+SPMasked<SPFloatGrid<N>> dens;
+SPFloatGrid<N> dens_tmp;
 
-static_assert(sizeof(void *) == 8, "SPGrid requies 64-bit architecture");
-
-static void *allocate(size_t size) {
-    return ::mmap(0, size, PROT_READ | PROT_WRITE,
-        MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
-}
-
-static void deallocate(void *ptr, size_t size) {
-    ::munmap(ptr, size);
-}
-
-
-static constexpr size_t expandbits3d(size_t v) {
-    v = (v * 0x0000000100000001ul) & 0xFFFF00000000FFFFul;
-    v = (v * 0x0000000000010001ul) & 0x00FF0000FF0000FFul;
-    v = (v * 0x0000000000000101ul) & 0xF00F00F00F00F00Ful;
-    v = (v * 0x0000000000000011ul) & 0x30C30C30C30C30C3ul;
-    v = (v * 0x0000000000000005ul) & 0x4924924949249249ul;
-    return v;
-}
-
-static constexpr size_t morton3d(size_t x, size_t y, size_t z) {
-    x = expandbits3d(x);
-    y = expandbits3d(y);
-    z = expandbits3d(z);
-    return x | (y << 1) | (z << 2);
-}
-
-
-template <size_t NChannels, size_t NElmsize>
-struct SPLayout {
-};
-
-template <>
-struct SPLayout<16, 4> {
-    static size_t linearize(size_t c, size_t i, size_t j, size_t k) {
-        size_t t = (i & 3) | ((j & 3) << 2) | ((k & 3) << 4) | ((c & 15) << 6);
-        size_t m = morton3d(i >> 2, j >> 2, k >> 2);
-        return (t << 2) | (m << 12);
-    }
-};
-
-template <>
-struct SPLayout<4, 4> {
-    static size_t linearize(size_t c, size_t i, size_t j, size_t k) {
-        size_t t = (i & 7) | ((j & 7) << 3) | ((k & 3) << 6) | ((c & 3) << 8);
-        size_t m = morton3d(i >> 3, j >> 3, k >> 2);
-        t = (t << 2) | (m << 12);
-        show(t);
-        return t;
-    }
-};
-
-template <>
-struct SPLayout<1, 4> {
-    static size_t linearize(size_t c, size_t i, size_t j, size_t k) {
-        size_t t = (i & 15) | ((j & 7) << 4) | ((k & 7) << 7);
-        size_t m = morton3d(i >> 4, j >> 3, k >> 3);
-        return (t << 2) | (m << 12);
-    }
-};
-
-template <>
-struct SPLayout<0, 0> {
-    static size_t linearize(size_t c, size_t i, size_t j, size_t k) {
-        size_t t = ((i >> 3) & 3) | ((j & 31) << 2) | ((k & 31) << 7);
-        size_t m = morton3d(i >> 5, j >> 5, k >> 5);
-        return t | (m << 12);
-    }
-
-    static size_t bit_linearize(size_t c, size_t i, size_t j, size_t k) {
-        return i & 7;
-    }
-};
-
-
-template <size_t NRes, size_t NChannels, size_t NElmsize>
-struct SPGrid {
-    using LayoutClass = SPLayout<NChannels, NElmsize>;
-
-    void *ptr;
-    static constexpr size_t size =
-        NRes * NRes * NRes * NChannels * NElmsize;
-
-    SPGrid() {
-        ptr = allocate(size);
-    }
-
-    void *pointer(size_t c, size_t i, size_t j, size_t k) const {
-        size_t offset = LayoutClass::linearize(c, i, j, k);
-        return static_cast<void *>(static_cast<char *>(ptr) + offset);
-    }
-
-    ~SPGrid() {
-        deallocate(ptr, size);
-        ptr = nullptr;
-    }
-};
-
-template <size_t NRes, size_t NChannels, typename T>
-struct SPTypedGrid : SPGrid<NRes, NChannels, sizeof(T)> {
-    using ValType = std::array<T, NChannels>;
-
-    T &at(size_t c, size_t i, size_t j, size_t k) const {
-        return *(T *)this->pointer(c, i, j, k);
-    }
-
-    auto get(size_t i, size_t j, size_t k) const {
-        ValType ret;
-        for (size_t c = 0; c < NChannels; c++) {
-            ret[c] = at(c, i, j, k);
-        }
-        return ret;
-    }
-
-    void set(size_t i, size_t j, size_t k, ValType const &val) const {
-        for (size_t c = 0; c < NChannels; c++) {
-            at(c, i, j, k) = val[c];
+void initFunc() {
+    #pragma omp parallel for
+    for (int z = 0; z < N; z++) {
+        for (int y = 0; y < N; y++) {
+            for (int x = 0; x < N; x++) {
+                float fx = float(x) / N * 2 - 1;
+                float fy = float(y) / N * 2 - 1;
+                float fz = float(z) / N * 2 - 1;
+                float val = fx * fx + fy * fy + fz * fz;
+                if (val < 1.0f)
+                    dens.set(x, y, z, val);
+            }
         }
     }
-};
+}
 
-template <size_t NRes, typename T>
-struct SPTypedGrid<NRes, 1, T> : SPGrid<NRes, 1, sizeof(T)> {
-    using ValType = T;
-
-    T &at(size_t i, size_t j, size_t k) const {
-        return *(T *)this->pointer(0, i, j, k);
+void stepFunc() {
+    #pragma omp parallel for
+    for (int zz = 0; zz < N; zz += dens.MaskScale) {
+        for (int yy = 0; yy < N; yy += dens.MaskScale) {
+            for (int xx = 0; xx < N; xx += dens.MaskScale) {
+                if (!dens.is_active(xx, yy, zz))
+                    continue;
+                for (int z = zz; z < zz + dens.MaskScale; z++) {
+                    for (int y = yy; y < yy + dens.MaskScale; y++) {
+                        for (int x = xx; x < xx + dens.MaskScale; x++) {
+                            auto ax = dens.direct_get(x + 1, y, z);
+                            auto ay = dens.direct_get(x, y + 1, z);
+                            auto az = dens.direct_get(x, y, z + 1);
+                            auto bx = dens.direct_get(x - 1, y, z);
+                            auto by = dens.direct_get(x, y - 1, z);
+                            auto bz = dens.direct_get(x, y, z - 1);
+                            auto co = dens.direct_get(x, y, z);
+                            auto val = ax + ay + az + bx + by + bz;
+                            val *= 1 / 6.f;
+                            dens_tmp.set(x, y, z, val);
+                        }
+                    }
+                }
+            }
+        }
     }
-
-    auto get(size_t i, size_t j, size_t k) const {
-        return at(i, j, k);
+    #pragma omp parallel for
+    for (int zz = 0; zz < N; zz += dens.MaskScale) {
+        for (int yy = 0; yy < N; yy += dens.MaskScale) {
+            for (int xx = 0; xx < N; xx += dens.MaskScale) {
+                if (!dens.is_active(xx, yy, zz))
+                    continue;
+                for (int z = zz; z < zz + dens.MaskScale; z++) {
+                    for (int y = yy; y < yy + dens.MaskScale; y++) {
+                        for (int x = xx; x < xx + dens.MaskScale; x++) {
+                            auto val = dens_tmp.get(x, y, z);
+                            dens.direct_set(x, y, z, val);
+                        }
+                    }
+                }
+            }
+        }
     }
+}
 
-    void set(size_t i, size_t j, size_t k, ValType const &val) const {
-        at(i, j, k) = val;
+void renderFunc() {
+    int z = N / 2;
+    #pragma omp parallel for
+    for (int y = 0; y < N; y++) {
+        for (int x = 0; x < N; x++) {
+            float acc = dens.get(x, y, z);
+            //int v = *(int *)dens.pointer(0, x, y, z);
+            //if (v) printf("%x\n", v);
+            pixels[y * N + x] = acc;
+        }
     }
-};
+}
 
+void displayFunc() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glDrawPixels(N, N, GL_RED, GL_FLOAT, pixels);
+    glFlush();
+}
 
-template <size_t NRes>
-using SPFloatGrid = SPTypedGrid<NRes, 1, float>;
-template <size_t NRes>
-using SPFloat4Grid = SPTypedGrid<NRes, 4, float>;
-template <size_t NRes>
-using SPFloat16Grid = SPTypedGrid<NRes, 16, float>;
+void timerFunc(int unused) {
+    stepFunc();
+    renderFunc();
+    glutPostRedisplay();
+    glutTimerFunc(ITV, timerFunc, 0);
+}
 
-template <size_t NRes>
-struct SPBooleanGrid : SPGrid<NRes, 1, 0> {
-    using ValType = bool;
+void keyboardFunc(unsigned char key, int x, int y) {
+    if (key == 27)
+        exit(0);
+}
 
-    unsigned char &uchar_at(size_t i, size_t j, size_t k) {
-        return *(unsigned char *)this->pointer(0, i, j, k);
-    }
-
-    bool get(size_t i, size_t j, size_t k) {
-        return uchar_at(i, j, k) & (1 << (i & 7));
-    }
-
-    void set_true(size_t i, size_t j, size_t k) {
-        uchar_at(i, j, k) |= (1 << (i & 7));
-    }
-
-    void set_false(size_t i, size_t j, size_t k) {
-        uchar_at(i, j, k) &= ~(1 << (i & 7));
-    }
-
-    void set(size_t i, size_t j, size_t k, bool value) {
-        if (value)
-            set_true(i, j, k);
-        else
-            set_false(i, j, k);
-    }
-};
-
+int main(int argc, char **argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DEPTH | GLUT_SINGLE | GLUT_RGBA);
+    glutInitWindowPosition(100, 100);
+    glutInitWindowSize(N, N);
+    glutCreateWindow("GLUT Window");
+    glutDisplayFunc(displayFunc);
+    glutKeyboardFunc(keyboardFunc);
+    initFunc();
+    renderFunc();
+    glutTimerFunc(ITV, timerFunc, 0);
+    glutMainLoop();
 }
