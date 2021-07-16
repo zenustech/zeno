@@ -16,19 +16,19 @@
 
 using namespace bate::spgrid;
 
-#define N 64
+#define N 256
 float pixels[N * N];
-SPMasked<SPFloatGrid<N>> dens;
+SPFloatGrid<N> dens;
 
 void initFunc() {
-    #pragma omp parallel for
+    /*#pragma omp parallel for
     for (int z = 0; z < N; z += dens.MaskScale) {
         for (int y = 0; y < N; y += dens.MaskScale) {
             for (int x = 0; x < N; x += dens.MaskScale) {
                 dens.activate(x, y, z);
             }
         }
-    }
+    }*/
 }
 
 void displayFunc() {
@@ -44,6 +44,8 @@ void displayFunc() {
     for (int y = 0; y < N; y++) {
         for (int x = 0; x < N; x++) {
             float acc = dens.get(x, y, z);
+            //int v = *(int *)dens.pointer(0, x, y, z);
+            //if (v) printf("%x\n", v);
             pixels[y * N + x] = acc;
         }
     }
@@ -67,7 +69,7 @@ int main(int argc, char **argv) {
     glutInitWindowPosition(100, 100);
     glutInitWindowSize(N, N);
     glutCreateWindow("GLUT Window");
-    glutIdleFunc(idleFunc);
+    //glutIdleFunc(idleFunc);
     glutDisplayFunc(displayFunc);
     glutKeyboardFunc(keyboardFunc);
     initFunc();

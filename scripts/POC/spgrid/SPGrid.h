@@ -143,6 +143,7 @@ struct SPGrid {
 
     void *pointer(size_t c, size_t i, size_t j, size_t k) const {
         size_t offset = LayoutClass::linearize(c, i, j, k);
+        offset = i + j * NRes + k * NRes * NRes;
         return static_cast<void *>(static_cast<char *>(m_ptr) + offset);
     }
 

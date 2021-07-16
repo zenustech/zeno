@@ -1,5 +1,5 @@
 x:
-	g++ -fopenmp -lGL -lGLU -lglut -std=c++17 main.cpp
+	g++ -O3 -fopenmp -lGL -lGLU -lglut -std=c++17 main.cpp
 	./a.out
 
 d:
