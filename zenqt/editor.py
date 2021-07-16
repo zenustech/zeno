@@ -1454,7 +1454,7 @@ class NodeEditor(QWidget):
         self.msgDel = QShortcut(QKeySequence('Del'), self)
         self.msgDel.activated.connect(self.on_delete)
 
-        self.msgAdd = QShortcut(QKeySequence('shift+a'), self)
+        self.msgAdd = QShortcut(QKeySequence('Tab'), self)
         self.msgAdd.activated.connect(self.shortcut_add)
 
     def initExecute(self):
