@@ -40,3 +40,5 @@ outputs/
 /zeno/lib/
 /zenv/
 
+# auto save folders
+.auto_save/ 

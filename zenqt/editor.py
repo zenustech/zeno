@@ -2,7 +2,7 @@
 Node Editor UI
 '''
 
-import os
+import os, time
 import json
 
 from PySide2.QtWidgets import *
@@ -1409,6 +1409,29 @@ class NodeEditor(QWidget):
 
         self.newProgram()
 
+        self.startTimer(1000 * 10)
+
+    def timerEvent(self, event):
+        self.auto_save()
+        super().timerEvent(event)
+
+    def auto_save(self):
+        if any(s.contentChanged is True for s in self.scenes.values()):
+            dir_path = '/tmp/autosave'
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+            file_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
+            file_name += '.zsg'
+            path = os.path.join(dir_path, file_name)
+            print('auto saving to', path)
+            self.do_save(path, auto_save=True)
+            for s in self.scenes.values():
+                if s.contentChanged:
+                    # True for not autosaved, not manualsaved
+                    # 'AUTOSAVED' for not manualsaved, autosaved
+                    # False for manualsaved, autosaved
+                    s.contentChanged = 'AUTOSAVED'
+
     def clearScenes(self):
         self.scenes.clear()
 
@@ -1681,12 +1704,13 @@ class NodeEditor(QWidget):
             self.scene.loadGraph(new_nodes, select_all=True)
             self.scene.record()
 
-    def do_save(self, path):
+    def do_save(self, path, auto_save=False):
         prog = self.dumpProgram()
         with open(path, 'w') as f:
             json.dump(prog, f, indent=1)
-        for scene in self.scenes.values():
-            scene.setContentChanged(False)
+        if not auto_save:
+            for scene in self.scenes.values():
+                scene.setContentChanged(False)
 
     def do_import(self, path):
         with open(path, 'r') as f:
