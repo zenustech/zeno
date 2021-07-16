@@ -110,7 +110,7 @@ void stepFunc() {
         }
     }
     #pragma omp parallel for
-    for (int z = 0; z < N; z++) {
+    for (int z = 1; z < N - 1; z++) {
         for (int x = 0; x < N; x++) {
             vel.set(x, 0, z, {0.f, 0.f, 0.f, 0.f});
             for (int q = 0; q < 15; q++) {
@@ -126,8 +126,9 @@ void stepFunc() {
             }
         }
     }
+    return;
     #pragma omp parallel for
-    for (int y = 0; y < N; y++) {
+    for (int y = 1; y < N - 1; y++) {
         for (int x = 0; x < N; x++) {
             vel.set(x, y, 0, {0.f, 0.f, 0.f, 0.f});
             for (int q = 0; q < 15; q++) {

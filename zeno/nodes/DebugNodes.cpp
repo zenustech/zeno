@@ -43,3 +43,18 @@ ZENDEFNODE(PrintMessage, {
     {{"string", "message", "hello"}},
     {"debug"},
 });
+
+
+struct ExitProcess : zeno::INode {
+    virtual void apply() override {
+        int status = get_param<int>("status");
+        exit(status);
+    }
+};
+
+ZENDEFNODE(ExitProcess, {
+    {},
+    {},
+    {{"int", "status", "-1"}},
+    {"debug"},
+});
