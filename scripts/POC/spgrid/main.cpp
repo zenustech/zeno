@@ -16,8 +16,8 @@
 
 using namespace bate::spgrid;
 
-#define ITV 100
-#define N 64
+#define ITV 500
+#define N 128
 float pixels[N * N];
 
 SPFloat16Grid<N> f_old;
@@ -56,6 +56,7 @@ float f_eq(int x, int y, int z, int q) {
 }
 
 void stepFunc() {
+    printf("step\n");
     #pragma omp parallel for
     for (int z = 0; z < N; z++) {
         for (int y = 0; y < N; y++) {
@@ -78,18 +79,20 @@ void stepFunc() {
                 float vx = 0.f, vy = 0.f, vz = 0.f;
                 for (int q = 0; q < 15; q++) {
                     float f = f_new.at(q, x, y, z);
+                    f_old.at(q, x, y, z) = f;
                     vx += f * directions[q][0];
                     vy += f * directions[q][1];
                     vz += f * directions[q][2];
                     m += f;
                 }
-                float mscale = 1 / std::max(m, 1e-6f);
+                float mscale = 1.f / std::max(m, 1e-6f);
                 vx /= mscale; vy /= mscale; vz /= mscale;
                 rho.set(x, y, z, m);
                 vel.set(x, y, z, {vx, vy, vz, 0.f});
             }
         }
     }
+    #pragma omp parallel for
     for (int z = 0; z < N; z++) {
         for (int y = 0; y < N; y++) {
             vel.set(0, y, z, {0.1f, 0.f, 0.f, 0.f});
@@ -106,6 +109,41 @@ void stepFunc() {
             }
         }
     }
+    return;
+    #pragma omp parallel for
+    for (int z = 0; z < N; z++) {
+        for (int x = 0; x < N; x++) {
+            vel.set(x, 0, z, {0.f, 0.f, 0.f, 0.f});
+            for (int q = 0; q < 15; q++) {
+                f_old.at(q, x, 0, z) =
+                    f_eq(q, x, 0, z) - f_eq(q, x, 1, z)
+                    + f_old.at(q, x, 1, z);
+            }
+            vel.set(x, N - 1, z, {0.f, 0.f, 0.f, 0.f});
+            for (int q = 0; q < 15; q++) {
+                f_old.at(q, x, N - 1, z) =
+                    f_eq(q, x, N - 1, z) - f_eq(q, x, N - 2, z)
+                    + f_old.at(q, x, N - 2, z);
+            }
+        }
+    }
+    #pragma omp parallel for
+    for (int y = 0; y < N; y++) {
+        for (int x = 0; x < N; x++) {
+            vel.set(x, y, 0, {0.f, 0.f, 0.f, 0.f});
+            for (int q = 0; q < 15; q++) {
+                f_old.at(q, x, y, 0) =
+                    f_eq(q, x, y, 0) - f_eq(q, x, y, 1)
+                    + f_old.at(q, x, y, 1);
+            }
+            vel.set(x, y, N - 1, {0.f, 0.f, 0.f, 0.f});
+            for (int q = 0; q < 15; q++) {
+                f_old.at(q, x, y, N - 1) =
+                    f_eq(q, x, y, N - 1) - f_eq(q, x, y, N - 2)
+                    + f_old.at(q, x, y, N - 2);
+            }
+        }
+    }
 }
 
 void renderFunc() {
@@ -115,7 +153,7 @@ void renderFunc() {
         for (int x = 0; x < N; x++) {
             auto [vx, vy, vz, vw] = vel.get(x, y, z);
             float val = std::sqrt(vx * vx + vy * vy + vz * vz);
-            pixels[y * N + x] = val;
+            pixels[y * N + x] = val * 8000.f;
         }
     }
 }
