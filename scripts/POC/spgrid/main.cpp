@@ -16,8 +16,8 @@
 
 using namespace bate::spgrid;
 
-#define ITV 500
-#define N 128
+#define ITV 00
+#define N 64
 float pixels[N * N];
 
 SPFloat16Grid<N> f_old;
@@ -44,7 +44,7 @@ void initFunc() {
     }
 }
 
-float f_eq(int x, int y, int z, int q) {
+float f_eq(int q, int x, int y, int z) {
     float m = rho.at(x, y, z);
     auto [vx, vy, vz, vw] = vel.get(x, y, z);
     float eu = vx * directions[q][0]
@@ -66,7 +66,7 @@ void stepFunc() {
                     int mdy = (y - directions[q][1] + N) % N;
                     int mdz = (z - directions[q][2] + N) % N;
                     f_new.at(q, x, y, z) = f_old.at(q, mdx, mdy, mdz)
-                        * (1.f - inv_tau) + f_eq(mdx, mdy, mdz, q) * inv_tau;
+                        * (1.f - inv_tau) + f_eq(q, mdx, mdy, mdz) * inv_tau;
                 }
             }
         }
@@ -109,7 +109,6 @@ void stepFunc() {
             }
         }
     }
-    return;
     #pragma omp parallel for
     for (int z = 0; z < N; z++) {
         for (int x = 0; x < N; x++) {
