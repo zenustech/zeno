@@ -56,11 +56,6 @@ struct iterator_base {
     }
 
     template <class _ = void>
-    void prev(int skip) {
-        static_assert(sizeof(_), "prev(int) not implemented");
-    }
-
-    template <class _ = void>
     void eof() const {
         static_assert(sizeof(_), "eof() not implemented");
     }
@@ -80,7 +75,7 @@ struct iterator_base {
     }
 
     inline T &operator--() {
-        that()->prev(1);
+        that()->next(-1);
         return *that();
     }
 
@@ -92,7 +87,7 @@ struct iterator_base {
 
     inline T operator--(int) {
         auto old = *that();
-        that()->prev(1);
+        that()->next(-1);
         return old;
     }
 
@@ -102,7 +97,7 @@ struct iterator_base {
     }
 
     inline T &operator-=(int skip) {
-        that()->prev(skip);
+        that()->next(-skip);
         return *that();
     }
 
@@ -128,27 +123,26 @@ private:
     }
 };
 
-template <class T>
+template <class T = int>
 struct range : iterator_base<range<T>> {
     using value_type = T;
 
     T m_now;
     T m_end;
+    T m_skip;
 
     range
         ( T const &now_
         , T const &end_
+        , T const &skip_ = T(1)
         )
     : m_now(now_)
     , m_end(end_)
+    , m_skip(skip_)
     {}
 
     void next(int skip) {
-        m_now += skip;
-    }
-
-    void prev(int skip) {
-        m_now -= skip;
+        m_now += skip * m_skip;
     }
 
     bool alive() const {
@@ -241,8 +235,9 @@ struct zip : iterator_base<zip<Ts...>> {
 int main(void)
 {
     auto r = range(2, 15);
-    auto z = zip(r);
-    for (auto [i]: z) {
+    auto s = slice(r, 2, 10, 3);
+    for (auto [i, j]: zip(r, s)) {
         show(i);
+        show(j);
     }
 }
