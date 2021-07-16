@@ -13,6 +13,7 @@ namespace zfx {
 struct Options {
     bool const_parametrize = true;
     bool global_localize = true;
+    bool reassign_channels = true;
     int arch_maxregs = 8;
 
     //Options() = default;
@@ -51,6 +52,7 @@ struct Options {
         }
         os << '|' << const_parametrize;
         os << '|' << global_localize;
+        os << '|' << reassign_channels;
         os << '|' << arch_maxregs;
     }
 };

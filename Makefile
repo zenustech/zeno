@@ -1,4 +1,4 @@
-O=arts/extractsmalldict.zsg
+O=arts/testvdberode.zsg
 
 default: run
 

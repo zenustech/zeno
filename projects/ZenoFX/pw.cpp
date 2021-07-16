@@ -66,6 +66,7 @@ struct ParticlesWrangle : zeno::INode {
                 else if constexpr (std::is_same_v<T, float>) return 1;
                 else return 0;
             }, attr);
+            printf("define symbol: @%s dim %d\n", key.c_str(), dim);
             opts.define_symbol('@' + key, dim);
         }
 
@@ -93,6 +94,7 @@ struct ParticlesWrangle : zeno::INode {
                     return 1;
                 } else return 0;
             }, par->value);
+            printf("define param: %s dim %d\n", key.c_str(), dim);
             opts.define_param(key, dim);
         }
 
