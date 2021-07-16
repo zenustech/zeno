@@ -2,7 +2,13 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#if defined(_WIN32)
+#include <windows.h>
+#include <psapi.h>
+#include <tchar.h>
+#else
 #include <sys/mman.h>
+#endif
 
 namespace bate::spgrid {
 
@@ -10,17 +16,29 @@ static_assert(sizeof(void *) == 8, "SPGrid requies 64-bit architecture");
 
 static void *allocate(size_t size) {
     printf("SPGrid allocate size = %zd\n", size);
+#if defined(_WIN32)
+    void *ptr = ::VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_READWRITE);
+    if (!ptr) {
+        printf("VirtualAlloc failed!\n");
+        exit(-1);
+    }
+#else
     void *ptr = ::mmap(nullptr, size, PROT_READ | PROT_WRITE,
         MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
     if (ptr == MAP_FAILED) {
         perror("mmap");
         abort();
     }
+#endif
     return ptr;
 }
 
 static void deallocate(void *ptr, size_t size) {
+#if defined(_WIN32)
+    ::VirtualFree(ptr, 0, MEM_RELEASE);
+#else
     ::munmap(ptr, size);
+#endif
 }
 
 
