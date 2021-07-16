@@ -14,8 +14,6 @@ namespace zfx::cuda {
 struct CUDABuilder {
     std::ostringstream oss;
     std::ostringstream oss_head;
-    float consts[1024];
-    std::set<int> has_const;
 
     int maxregs = 0;
 
@@ -53,6 +51,12 @@ struct CUDABuilder {
         oss << "    r" << dst << " = " << name << "(r" << src << ");\n";
     }
 
+    void addMathFunc(const char *name, int dst, int lhs, int rhs) {
+        define(dst);
+        oss << "    r" << dst << " = " << name << "(r" << lhs
+            << ", r" << rhs << ");\n";
+    }
+
     std::string finish(int nlocals) {
         oss_head << "__device__ void zfx_wrangle_func";
         oss_head << "(float *globals, float const *params) {\n";
@@ -78,6 +82,38 @@ struct ImplAssembler {
     int nparams = 0;
     int nlocals = 0;
     int nglobals = 0;
+
+    static inline std::set<std::string> unary_maths =
+        { "sqrt"
+        , "sin"
+        , "cos"
+        , "tan"
+        , "asin"
+        , "acos"
+        , "atan"
+        , "exp"
+        , "log"
+        , "floor"
+        , "ceil"
+        , "abs"
+        , "rsqrt"
+        };
+
+    static inline std::set<std::string> binary_maths =
+        { "min"
+        , "max"
+        , "pow"
+        , "atan2"
+        , "mod"
+        };
+
+    static auto wrapup_function(std::string name) {
+        name += 'f';
+        if (contains({"min", "max", "abs", "mod"}, name)) {
+            name = 'f' + name;
+        }
+        return name;
+    }
 
     void parse(std::string const &lines) {
         for (auto line: split_str(lines, '\n')) {
@@ -157,11 +193,21 @@ struct ImplAssembler {
                 auto rhs = from_string<int>(linesep[3]);
                 builder->addMath("/", dst, lhs, rhs);
 
-            } else if (cmd == "sqrt") {
+            } else if (contains(unary_maths, cmd)) {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto src = from_string<int>(linesep[2]);
-                builder->addMathFunc("sqrt", dst, src);
+                auto op = wrapup_function(cmd);
+                builder->addMathFunc(op.c_str(), dst, src);
+
+            } else if (contains(binary_maths, cmd)) {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                auto op = wrapup_function(cmd);
+                builder->addMathFunc(op.c_str(), dst, lhs, rhs);
+
 
             } else if (cmd == "mov") {
                 ERROR_IF(linesep.size() < 2);
@@ -184,16 +230,6 @@ struct ImplAssembler {
         printf("%s", code.c_str());
         printf("\n");
 #endif
-    }
-
-    void set_constants(std::map<int, std::string> const &consts) {
-        for (auto const &[idx, expr]: consts) {
-            builder->has_const.insert(idx);
-            if (!(std::istringstream(expr) >> builder->consts[idx])) {
-                error("cannot parse literial constant `%s`",
-                    expr.c_str());
-            }
-        }
     }
 };
 

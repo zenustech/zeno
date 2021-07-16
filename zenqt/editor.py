@@ -53,6 +53,7 @@ style = {
     'dummy_socket_offset': 15,
 }
 
+
 class HistoryStack:
     def __init__(self, scene):
         self.scene = scene
@@ -95,6 +96,7 @@ class HistoryStack:
             self.stack = self.stack[1:]
             self.current_pointer = MAX_STACK_LENGTH
 
+
 class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -130,7 +132,8 @@ class QDMGraphicsScene(QGraphicsScene):
         if input_nodes == None:
             input_nodes = self.nodes
         for node in input_nodes:
-            nodes.update(node.dump())
+            ident, data = node.dump()
+            nodes[ident] = data
         return nodes
 
     def newGraph(self):
@@ -148,7 +151,6 @@ class QDMGraphicsScene(QGraphicsScene):
 
     def loadGraph(self, nodes, select_all=False):
         edges = []
-        nodesLut = {}
 
         for ident, data in nodes.items():
             name = data['name']
@@ -161,6 +163,11 @@ class QDMGraphicsScene(QGraphicsScene):
             self.addNode(node)
             if select_all:
                 node.setSelected(True)
+
+        """self.loadEdges(edges, select_all)
+
+    def loadEdges(self, edges, select_all=False):"""
+        nodesLut = {}
 
         for node in self.nodes:
             nodesLut[node.ident] = node
@@ -289,6 +296,7 @@ class QDMGraphicsView(QGraphicsView):
 
         self.dragingEdge = None
         self.lastContextMenuPos = None
+        self.needReloadNodes = False
 
         self.node_editor = parent
 
@@ -633,19 +641,32 @@ class QDMGraphicsSocket(QGraphicsItem):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.label = QGraphicsTextItem(self)
-        self.label.setDefaultTextColor(QColor(style['socket_text_color']))
-        self.label.setPos(HORI_MARGIN, -TEXT_HEIGHT * 0.5)
-        font = QFont()
-        font.setPointSize(style['socket_text_size'])
-        self.label.setFont(font)
-
         self.isOutput = False
         self.edges = set()
 
         self.node = parent
         self.name = None
         self.dummy = False
+
+        self.initLabel()
+
+    class QDMGraphicsTextItem(QGraphicsTextItem):
+        def __init__(self, parent=None):
+            super().__init__(parent)
+            self.setDefaultTextColor(QColor(style['socket_text_color']))
+
+        def setAlignment(self, align):
+            document = self.document()
+            option = document.defaultTextOption()
+            option.setAlignment(Qt.AlignRight)
+            document.setDefaultTextOption(option)
+
+    def initLabel(self):
+        self.label = self.QDMGraphicsTextItem(self)
+        self.label.setPos(HORI_MARGIN, -TEXT_HEIGHT * 0.5)
+        font = QFont()
+        font.setPointSize(style['socket_text_size'])
+        self.label.setFont(font)
 
     def hasAnyEdge(self):
         return len(self.edges) != 0
@@ -669,12 +690,10 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.isOutput = isOutput
 
         if isOutput:
-            document = self.label.document()
-            option = document.defaultTextOption()
-            option.setAlignment(Qt.AlignRight)
-            document.setDefaultTextOption(option)
-            width = self.node.boundingRect().width() - HORI_MARGIN * 2
-            self.label.setTextWidth(width)
+            self.label.setAlignment(Qt.AlignRight)
+            if hasattr(self.label, 'setTextWidth'):
+                width = self.node.boundingRect().width() - HORI_MARGIN * 2
+                self.label.setTextWidth(width)
 
     def setName(self, name):
         self.name = name
@@ -721,17 +740,17 @@ class QDMGraphicsButton(QGraphicsProxyWidget):
             font = QFont()
             font.setPointSize(style['button_text_size'])
             self.setFont(font)
+            self.setAlignment(Qt.AlignCenter)
 
         def mousePressEvent(self, event):
-            self.on_click()
+            self.parent.on_click()
             super().mousePressEvent(event)
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.widget = self.QDMLabel()
-        self.widget.setAlignment(Qt.AlignCenter)
-        self.widget.on_click = self.on_click
+        self.widget.parent = self
         self.setWidget(self.widget)
         self.setChecked(False)
 
@@ -826,6 +845,9 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
         self.layout.addWidget(self.label)
         self.layout.addWidget(self.edit)
         self.layout.setContentsMargins(0, 0, 0, 0)
+
+    def setAlignment(self, align):
+        self.edit.setAlignment(align)
 
     def setName(self, name):
         self.name = name
@@ -944,145 +966,11 @@ class QDMGraphicsParam_multiline_string(QDMGraphicsParam):
         return str(self.edit.toPlainText())
 
 
-class QDMGraphicsNode_Blackboard(QGraphicsItem):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.setZValue(-2)
-
-        self.setFlag(QGraphicsItem.ItemIsMovable)
-        self.setFlag(QGraphicsItem.ItemIsSelectable)
-
-        self.width = style['node_width']
-        self.height = 150
-
-        self.title = QGraphicsTextItem(self)
-        self.title.setDefaultTextColor(QColor(style['title_text_color']))
-        self.title.setPos(HORI_MARGIN * 2, -TEXT_HEIGHT)
-        self.title.setTextInteractionFlags(Qt.TextEditorInteraction)
-        font = QFont()
-        font.setPointSize(style['title_text_size'])
-        self.title.setFont(font)
-
-        self.content = QGraphicsTextItem(self)
-        self.content.setDefaultTextColor(QColor(style['title_text_color']))
-        self.content.setPos(HORI_MARGIN, HORI_MARGIN)
-        self.content.setTextInteractionFlags(Qt.TextEditorInteraction)
-        self.content.setFont(font)
-
-        self.helper = QDMGraphicsBlackboardResizeHelper(self)
-        self.setWidthHeight(self.width, self.height)
-
-        self.name = None
-        self.ident = None
-
-    def mouseMoveEvent(self, event):
-        super().mouseMoveEvent(event)
-        self.scene().moved = True
-
-    def remove(self):
-        self.scene().nodes.remove(self)
-        self.scene().removeItem(self)
-
-    def setIdent(self, ident):
-        self.ident = ident
-
-    def setName(self, name):
-        if self.ident is None:
-            self.ident = gen_unique_ident(name)
-        self.name = name
-        self.title.setPlainText(name)
-
-    def initSockets(self):
-        pass
-
-    def boundingRect(self):
-        return QRectF(0, -TEXT_HEIGHT, self.width, self.height).normalized()
-
-    def paint(self, painter, styleOptions, widget=None):
-        r = style['node_rounded_radius']
-
-        pathContent = QPainterPath()
-        rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
-        pathContent.addRoundedRect(rect, r, r)
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['blackboard_panel_color']))
-        painter.drawPath(pathContent.simplified())
-
-        # title round top
-        pathTitle = QPainterPath()
-        rect = QRectF(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
-        pathTitle.addRoundedRect(rect, r, r)
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['blackboard_title_color']))
-        painter.drawPath(pathTitle.simplified())
-        
-        # title direct bottom
-        pathTitle = QPainterPath()
-        rect = QRectF(0, -r, self.width, r)
-        pathTitle.addRect(rect)
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(style['blackboard_title_color']))
-        painter.drawPath(pathTitle.simplified())
-
-        if self.isSelected():
-            pathOutline = QPainterPath()
-            rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
-            pathOutline.addRoundedRect(rect, r, r)
-            pen = QPen(QColor(style['selected_color']))
-            pen.setWidth(style['node_outline_width'])
-            painter.setPen(pen)
-            painter.setBrush(Qt.NoBrush)
-            painter.drawPath(pathOutline.simplified())
-
-    def setWidthHeight(self, width, height):
-        width = max(width, style['node_width'])
-        height = max(height, 150)
-        self.width = width
-        self.height = height
-        self.helper.setPos(width, height - TEXT_HEIGHT)
-
-        rect = QRectF(HORI_MARGIN, HORI_MARGIN, self.width - HORI_MARGIN * 2,
-            self.height - TEXT_HEIGHT - HORI_MARGIN * 2)
-        self.content.setTextWidth(self.width - HORI_MARGIN * 2)
-
-    def dump(self):
-        uipos = self.pos().x(), self.pos().y()
-        data = {
-            'name': self.name,
-            'uipos': uipos,
-            'special': True,
-            'width': self.width,
-            'height': self.height,
-            'title': self.title.toPlainText(),
-            'content': self.content.toPlainText(),
-        }
-        return {self.ident: data}
-    
-    def load(self, ident, data):
-        name = data['name']
-        posx, posy = data['uipos']
-
-        self.initSockets()
-        self.setIdent(ident)
-        self.setName(name)
-        self.setPos(posx, posy)
-        self.setWidthHeight(data['width'], data['height'])
-
-        self.title.setPlainText(data['title'])
-        self.content.setPlainText(data['content'])
-
-        edges = []
-        return edges
-
 class QDMGraphicsNode(QGraphicsItem):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFlag(QGraphicsItem.ItemIsMovable)
         self.setFlag(QGraphicsItem.ItemIsSelectable)
-
-        self.width = style['node_width']
-        self.height = 0
 
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor(style['title_text_color']))
@@ -1094,15 +982,16 @@ class QDMGraphicsNode(QGraphicsItem):
         self.collapse_button = QDMGraphicsCollapseButton(self)
         self.collapse_button.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT * 0.84)
         self.collapsed = False
+        self.name = None
+        self.ident = None
+        self.desc = {'inputs': [], 'outputs': [], 'params': []}
 
+        self.width = style['node_width']
+        self.height = 0
         self.params = {}
         self.inputs = {}
         self.outputs = {}
         self.options = {}
-        self.name = None
-        self.ident = None
-
-        self.desc = {'inputs': [], 'outputs': [], 'params': []}
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
@@ -1172,6 +1061,17 @@ class QDMGraphicsNode(QGraphicsItem):
             button.setText(key)
             self.options[key] = button
 
+    def resetSockets(self):
+        self.height = 0
+        for param in list(self.params.values()):
+            self.scene().removeItem(param)
+        for input in list(self.inputs.values()):
+            input.remove()
+            self.scene().removeItem(input)
+        for output in list(self.outputs.values()):
+            output.remove()
+            self.scene().removeItem(output)
+
     def initSockets(self):
         self.initDummySockets()
         self.initCondButtons()
@@ -1215,7 +1115,6 @@ class QDMGraphicsNode(QGraphicsItem):
         self.outputs.clear()
         for index, name in enumerate(outputs):
             socket = QDMGraphicsSocket(self)
-            index += len(params) + len(inputs)
             socket.setPos(0, y)
             socket.setName(name)
             socket.setIsOutput(True)
@@ -1334,7 +1233,51 @@ class QDMGraphicsNode(QGraphicsItem):
             'uipos': uipos,
             'options': options,
         }
-        return {self.ident: data}
+        return self.ident, data
+
+    def saveEdges(self):
+        inputs = {}
+        for name, socket in self.inputs.items():
+            res = []
+            for e in socket.edges:
+                res.append((e.srcSocket.node.ident, e.srcSocket.name))
+            inputs[name] = res
+        outputs = {}
+        for name, socket in self.outputs.items():
+            res = []
+            for e in socket.edges:
+                res.append((e.dstSocket.node.ident, e.dstSocket.name))
+            outputs[name] = res
+        return inputs, outputs
+
+    def restoreEdges(self, saved):
+        nodesLut = {}
+        for node in self.scene().nodes:
+            nodesLut[node.ident] = node
+
+        inputs, outputs = saved
+        for name, socket in self.inputs.items():
+            if name in inputs:
+                for sn, ss in inputs[name]:
+                    if sn in nodesLut:
+                        node = nodesLut[sn]
+                        if ss in node.outputs:
+                            source = node.outputs[ss]
+                            self.scene().addEdge(source, socket)
+        for name, socket in self.outputs.items():
+            if name in outputs:
+                for dn, ds in outputs[name]:
+                    if dn in nodesLut:
+                        node = nodesLut[dn]
+                        if ds in node.inputs:
+                            dest = node.inputs[ds]
+                            self.scene().addEdge(socket, dest)
+
+    def reloadSockets(self):
+        edges = self.saveEdges()
+        self.resetSockets()
+        self.initSockets()
+        self.restoreEdges(edges)
     
     def load(self, ident, data):
         name = data['name']
@@ -1351,8 +1294,9 @@ class QDMGraphicsNode(QGraphicsItem):
 
         for name, value in params.items():
             if name not in self.params:
-                print('no param named [{}] for [{}]'.format(
-                    name, data['name']))
+                if name not in ['_KEYS']:
+                    print('no param named [{}] for [{}]'.format(
+                        name, data['name']))
                 continue
             param = self.params[name]
             param.setValue(value)
@@ -1391,6 +1335,7 @@ class QDMFileMenu(QMenu):
             action = QAction(name, self)
             action.setShortcut(shortcut)
             self.addAction(action)
+
 
 class QDMEditMenu(QMenu):
     def __init__(self):

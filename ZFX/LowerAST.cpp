@@ -107,6 +107,14 @@ struct LowerAST {
             auto src = serialize(ast->args[1].get());
             return ir->emplace_back<AssignStmt>(dst, src);
 
+        } else if (contains({"+=", "-=", "*=", "/=", "%="},
+            ast->token) && ast->args.size() == 2) {
+            auto dst = serialize(ast->args[0].get());
+            auto src = serialize(ast->args[1].get());
+            auto val = ir->emplace_back<BinaryOpStmt>(ast->token.substr(
+                0, ast->token.size() - 1), dst, src);
+            return ir->emplace_back<AssignStmt>(dst, val);
+
         } else if (is_symbolic_atom(ast->token) && ast->args.size() == 0) {
             if (auto ret = emplace_global_symbol(ast->token); ret) {
                 return ret;

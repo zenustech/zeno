@@ -39,5 +39,14 @@ T const &safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) 
   return it->second;
 }
 
+static inline auto split_str(std::string const &s, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream iss(s);
+    while (std::getline(iss, token, delimiter))
+        tokens.push_back(token);
+    return tokens;
+}
+
 
 }

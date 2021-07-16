@@ -22,7 +22,7 @@ ZENDEFNODE(DictSize, {
 });
 
 
-struct ExtractDict : zeno::INode {
+struct DictGetItem : zeno::INode {
     virtual void apply() override {
         auto dict = get_input<zeno::DictObject>("dict");
         auto key = get_input<zeno::StringObject>("key")->get();
@@ -31,7 +31,7 @@ struct ExtractDict : zeno::INode {
     }
 };
 
-ZENDEFNODE(ExtractDict, {
+ZENDEFNODE(DictGetItem, {
     {"dict", "key"},
     {"object"},
     {},
@@ -54,7 +54,7 @@ ZENDEFNODE(EmptyDict, {
 });
 
 
-struct UpdateDict : zeno::INode {
+struct DictSetItem : zeno::INode {
     virtual void apply() override {
         auto dict = get_input<zeno::DictObject>("dict");
         auto key = get_input<zeno::StringObject>("key")->get();
@@ -64,7 +64,7 @@ struct UpdateDict : zeno::INode {
     }
 };
 
-ZENDEFNODE(UpdateDict, {
+ZENDEFNODE(DictSetItem, {
     {"dict", "key", "object"},
     {"dict"},
     {},
@@ -72,71 +72,47 @@ ZENDEFNODE(UpdateDict, {
 });
 
 
-struct MakeSmallDict : zeno::INode {
+struct MakeDict : zeno::INode {
     virtual void apply() override {
+        auto inkeys = get_param<std::string>("_KEYS");
+        auto keys = zeno::split_str(inkeys, '\n');
         auto dict = std::make_shared<zeno::DictObject>();
-        for (int i = 0; i < 4; i++) {
-            std::stringstream namess;
-            namess << "obj" << i;
-            auto name = namess.str();
-            if (!has_input(name)) break;
-            auto obj = get_input(name);
-            std::stringstream namess2;
-            namess2 << "name" << i;
-            name = namess2.str();
-            name = get_param<std::string>(name);
-            dict->lut[name] = std::move(obj);
+        for (auto const &key: keys) {
+            if (has_input(key)) {
+                auto obj = get_input(key);
+                dict->lut[key] = std::move(obj);
+            }
         }
         set_output("dict", std::move(dict));
     }
 };
 
-ZENDEFNODE(MakeSmallDict, {
-    { "obj0"
-    , "obj1"
-    , "obj2"
-    , "obj3"
-    },
+ZENDEFNODE(MakeDict, {
+    {},
     {"dict"},
-    { {"string", "name0", ""}
-    , {"string", "name1", ""}
-    , {"string", "name2", ""}
-    , {"string", "name3", ""}
-    },
+    {},
     {"dict"},
 });
 
 
-struct ExtractSmallDict : zeno::INode {
+struct ExtractDict : zeno::INode {
     virtual void apply() override {
+        auto inkeys = get_param<std::string>("_KEYS");
+        auto keys = zeno::split_str(inkeys, '\n');
         auto dict = get_input<zeno::DictObject>("dict");
-        for (int i = 0; i < 4; i++) {
-            std::stringstream namess;
-            namess << "name" << i;
-            auto name = namess.str();
-            auto key = get_param<std::string>(name);
-            if (key.size() == 0) break;
-            auto obj = safe_at(dict->lut, key, "ExtractSmallDict key");
-            std::stringstream namess2;
-            namess2 << "obj" << i;
-            name = namess2.str();
-            set_output(name, std::move(obj));
+        for (auto const &key: keys) {
+            auto it = dict->lut.find(key);
+            if (it == dict->lut.end())
+                continue;
+            auto obj = it->second;
+            set_output(key, std::move(obj));
         }
-        set_output("dict", std::move(dict));
     }
 };
 
-ZENDEFNODE(ExtractSmallDict, {
+ZENDEFNODE(ExtractDict, {
     {"dict"},
-    { "obj0"
-    , "obj1"
-    , "obj2"
-    , "obj3"
-    },
-    { {"string", "name0", ""}
-    , {"string", "name1", ""}
-    , {"string", "name2", ""}
-    , {"string", "name3", ""}
-    },
+    {},
+    {},
     {"dict"},
 });
