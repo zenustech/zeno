@@ -1408,7 +1408,8 @@ class NodeEditor(QWidget):
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
             file_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
-            path = dir_path + os.sep + file_name
+            path = os.path.join(dir_path, file_name)
+            print('auto saving to', path)
             self.do_save(path, auto_save=True)
 
     def clearScenes(self):
