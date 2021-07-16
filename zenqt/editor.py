@@ -195,11 +195,6 @@ class QDMGraphicsScene(QGraphicsScene):
         self.addItem(edge)
         return edge
 
-    def searchNode(self, name):
-        for key in self.descs.keys():
-            if name.lower() in key.lower():
-                yield key
-
     def reloadNodes(self):
         print('Reloading all nodes')
         savedNodes = self.dumpGraph()
@@ -318,7 +313,10 @@ class QDMGraphicsView(QGraphicsView):
             if not isinstance(act, QWidgetAction):
                 edit.menu.removeAction(act)
         pattern = edit.text()
-        for key in self.scene().searchNode(pattern):
+        keys = self.scene().descs.keys()
+        from .utils import fuzzy_search
+        matched = fuzzy_search(pattern, keys)
+        for key in matched:
             edit.menu.addAction(key)
 
     def getCategoryActions(self):
@@ -361,7 +359,22 @@ class QDMGraphicsView(QGraphicsView):
         node.initSockets()
         node.setPos(self.lastContextMenuPos)
         self.scene().addNode(node)
+        self.autoConnectSpecialNode(node)
         self.scene().record()
+
+    def autoConnectSpecialNode(self, node):
+        def connectWith(new_name, sock_name):
+            new_node = self.scene().makeNode(new_name)
+            new_node.initSockets()
+            new_node.setPos(self.lastContextMenuPos + QPointF(300, 0))
+            self.scene().addNode(new_node)
+            src = node.outputs[sock_name]
+            dst = new_node.inputs[sock_name]
+            self.addEdge(src, dst)
+        if node.name in ['BeginFor', 'BeginForEach']:
+            connectWith('EndFor', 'FOR')
+        elif node.name == 'FuncBegin':
+            connectWith('FuncEnd', 'FUNC')
 
     def mouseDoubleClickEvent(self, event):
         itemList = self.scene().selectedItems()

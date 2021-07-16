@@ -193,7 +193,7 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             return stm_cross(x, y);
 
         } else if (contains({"min", "max", "pow", "atan2"}, name)) {
-            ERROR_IF(args.size() != 1);
+            ERROR_IF(args.size() != 2);
             auto x = make_stm(args[0]);
             return stm(name, x);
 

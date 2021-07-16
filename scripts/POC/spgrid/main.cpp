@@ -1,3 +1,4 @@
+#include <type_traits>
 #include <iostream>
 #include <cstring>
 #include <cmath>
@@ -6,188 +7,185 @@
 #include <vector>
 #include <array>
 #include <cassert>
-#include <sys/mman.h>
 #include <omp.h>
+#include "common_utils.h"
+#include "iterator_utils.h"
+#include <GL/gl.h>
+#include <GL/glut.h>
+#include "SPGrid.h"
 
-using std::cout;
-using std::endl;
-#define show(x) (cout << #x "=" << (x) << endl)
+using namespace bate::spgrid;
 
-namespace spgrid {
+#define ITV 00
+#define N 64
+float pixels[N * N];
 
-static_assert(sizeof(void *) == 8, "SPGrid requies 64-bit architecture");
+SPFloat16Grid<N> f_old;
+SPFloat16Grid<N> f_new;
+SPFloatGrid<N> rho;
+SPFloat4Grid<N> vel;
 
-static void *allocate(size_t size) {
-    return ::mmap(0, size, PROT_READ | PROT_WRITE,
-        MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
-}
+const float niu = 0.005f;
+const float tau = 3.f * niu + 0.5f;
+const float inv_tau = 1.f / tau;
 
-static void deallocate(void *ptr, size_t size) {
-    ::munmap(ptr, size);
-}
+std::array<int, 3> directions[] = {{0,0,0},{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},{1,-1,1},{-1,1,-1},{-1,1,1},{1,-1,-1}};
+float weights[] = {2.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f,1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f};
 
-
-static constexpr size_t expandbits3d(size_t v) {
-    v = (v * 0x0000000100000001ul) & 0xFFFF00000000FFFFul;
-    v = (v * 0x0000000000010001ul) & 0x00FF0000FF0000FFul;
-    v = (v * 0x0000000000000101ul) & 0xF00F00F00F00F00Ful;
-    v = (v * 0x0000000000000011ul) & 0x30C30C30C30C30C3ul;
-    v = (v * 0x0000000000000005ul) & 0x4924924949249249ul;
-    return v;
-}
-
-static constexpr size_t morton3d(size_t x, size_t y, size_t z) {
-    x = expandbits3d(x);
-    y = expandbits3d(y);
-    z = expandbits3d(z);
-    return x | (y << 1) | (z << 2);
-}
-
-
-template <size_t NChannels, size_t NElmsize>
-struct SPLayout {
-};
-
-template <>
-struct SPLayout<16, 4> {
-    static size_t linearize(size_t c, size_t i, size_t j, size_t k) {
-        size_t t = (i & 3) | ((j & 3) << 2) | ((k & 3) << 4) | ((c & 15) << 6);
-        size_t m = morton3d(i >> 2, j >> 2, k >> 2);
-        return (t << 2) | (m << 12);
-    }
-};
-
-template <>
-struct SPLayout<4, 4> {
-    static size_t linearize(size_t c, size_t i, size_t j, size_t k) {
-        size_t t = (i & 7) | ((j & 7) << 3) | ((k & 3) << 6) | ((c & 3) << 8);
-        size_t m = morton3d(i >> 3, j >> 3, k >> 2);
-        t = (t << 2) | (m << 12);
-        show(t);
-        return t;
-    }
-};
-
-template <>
-struct SPLayout<1, 4> {
-    static size_t linearize(size_t c, size_t i, size_t j, size_t k) {
-        size_t t = (i & 15) | ((j & 7) << 4) | ((k & 7) << 7);
-        size_t m = morton3d(i >> 4, j >> 3, k >> 3);
-        return (t << 2) | (m << 12);
-    }
-};
-
-template <>
-struct SPLayout<0, 0> {
-    static size_t linearize(size_t c, size_t i, size_t j, size_t k) {
-        size_t t = ((i >> 3) & 3) | ((j & 31) << 2) | ((k & 31) << 7);
-        size_t m = morton3d(i >> 5, j >> 5, k >> 5);
-        return t | (m << 12);
-    }
-
-    static size_t bit_linearize(size_t c, size_t i, size_t j, size_t k) {
-        return i & 7;
-    }
-};
-
-
-template <size_t NRes, size_t NChannels, size_t NElmsize>
-struct SPGrid {
-    using LayoutClass = SPLayout<NChannels, NElmsize>;
-
-    void *ptr;
-    static constexpr size_t size =
-        NRes * NRes * NRes * NChannels * NElmsize;
-
-    SPGrid() {
-        ptr = allocate(size);
-    }
-
-    void *pointer(size_t c, size_t i, size_t j, size_t k) const {
-        size_t offset = LayoutClass::linearize(c, i, j, k);
-        return static_cast<void *>(static_cast<char *>(ptr) + offset);
-    }
-
-    ~SPGrid() {
-        deallocate(ptr, size);
-        ptr = nullptr;
-    }
-};
-
-template <size_t NRes, size_t NChannels, typename T>
-struct SPTypedGrid : SPGrid<NRes, NChannels, sizeof(T)> {
-    using ValType = std::array<T, NChannels>;
-
-    T &at(size_t c, size_t i, size_t j, size_t k) const {
-        return *(T *)this->pointer(c, i, j, k);
-    }
-
-    auto get(size_t i, size_t j, size_t k) const {
-        ValType ret;
-        for (size_t c = 0; c < NChannels; c++) {
-            ret[c] = at(c, i, j, k);
-        }
-        return ret;
-    }
-
-    void set(size_t i, size_t j, size_t k, ValType const &val) const {
-        for (size_t c = 0; c < NChannels; c++) {
-            at(c, i, j, k) = val[c];
+void initFunc() {
+    #pragma omp parallel for
+    for (int z = 0; z < N; z++) {
+        for (int y = 0; y < N; y++) {
+            for (int x = 0; x < N; x++) {
+                rho.set(x, y, z, 1.f);
+                vel.set(x, y, z, {0.f, 0.f, 0.f, 0.f});
+            }
         }
     }
-};
+}
 
-template <size_t NRes, typename T>
-struct SPTypedGrid<NRes, 1, T> : SPGrid<NRes, 1, sizeof(T)> {
-    using ValType = T;
+float f_eq(int q, int x, int y, int z) {
+    float m = rho.at(x, y, z);
+    auto [vx, vy, vz, vw] = vel.get(x, y, z);
+    float eu = vx * directions[q][0]
+        + vy * directions[q][1] + vz * directions[q][2];
+    float uv = vx * vx + vy * vy + vz * vz;
+    float term = 1.f + 3.f * eu + 4.5f * eu * eu - 1.5f * uv;
+    float feq = weights[q] * m * term;
+    return feq;
+}
 
-    T &at(size_t i, size_t j, size_t k) const {
-        return *(T *)this->pointer(0, i, j, k);
+void stepFunc() {
+    printf("step\n");
+    #pragma omp parallel for
+    for (int z = 0; z < N; z++) {
+        for (int y = 0; y < N; y++) {
+            for (int x = 0; x < N; x++) {
+                for (int q = 0; q < 15; q++) {
+                    int mdx = (x - directions[q][0] + N) % N;
+                    int mdy = (y - directions[q][1] + N) % N;
+                    int mdz = (z - directions[q][2] + N) % N;
+                    f_new.at(q, x, y, z) = f_old.at(q, mdx, mdy, mdz)
+                        * (1.f - inv_tau) + f_eq(q, mdx, mdy, mdz) * inv_tau;
+                }
+            }
+        }
     }
-
-    auto get(size_t i, size_t j, size_t k) const {
-        return at(i, j, k);
+    #pragma omp parallel for
+    for (int z = 0; z < N; z++) {
+        for (int y = 0; y < N; y++) {
+            for (int x = 0; x < N; x++) {
+                float m = 0.f;
+                float vx = 0.f, vy = 0.f, vz = 0.f;
+                for (int q = 0; q < 15; q++) {
+                    float f = f_new.at(q, x, y, z);
+                    f_old.at(q, x, y, z) = f;
+                    vx += f * directions[q][0];
+                    vy += f * directions[q][1];
+                    vz += f * directions[q][2];
+                    m += f;
+                }
+                float mscale = 1.f / std::max(m, 1e-6f);
+                vx /= mscale; vy /= mscale; vz /= mscale;
+                rho.set(x, y, z, m);
+                vel.set(x, y, z, {vx, vy, vz, 0.f});
+            }
+        }
     }
-
-    void set(size_t i, size_t j, size_t k, ValType const &val) const {
-        at(i, j, k) = val;
+    #pragma omp parallel for
+    for (int z = 0; z < N; z++) {
+        for (int y = 0; y < N; y++) {
+            vel.set(0, y, z, {0.1f, 0.f, 0.f, 0.f});
+            for (int q = 0; q < 15; q++) {
+                f_old.at(q, 0, y, z) =
+                    f_eq(q, 0, y, z) - f_eq(q, 1, y, z)
+                    + f_old.at(q, 1, y, z);
+            }
+            vel.set(N - 1, y, z, vel.get(N - 2, y, z));
+            for (int q = 0; q < 15; q++) {
+                f_old.at(q, N - 1, y, z) =
+                    f_eq(q, N - 1, y, z) - f_eq(q, N - 2, y, z)
+                    + f_old.at(q, N - 2, y, z);
+            }
+        }
     }
-};
-
-
-template <size_t NRes>
-using SPFloatGrid = SPTypedGrid<NRes, 1, float>;
-template <size_t NRes>
-using SPFloat4Grid = SPTypedGrid<NRes, 4, float>;
-template <size_t NRes>
-using SPFloat16Grid = SPTypedGrid<NRes, 16, float>;
-
-template <size_t NRes>
-struct SPBooleanGrid : SPGrid<NRes, 1, 0> {
-    using ValType = bool;
-
-    unsigned char &uchar_at(size_t i, size_t j, size_t k) {
-        return *(unsigned char *)this->pointer(0, i, j, k);
+    #pragma omp parallel for
+    for (int z = 1; z < N - 1; z++) {
+        for (int x = 0; x < N; x++) {
+            vel.set(x, 0, z, {0.f, 0.f, 0.f, 0.f});
+            for (int q = 0; q < 15; q++) {
+                f_old.at(q, x, 0, z) =
+                    f_eq(q, x, 0, z) - f_eq(q, x, 1, z)
+                    + f_old.at(q, x, 1, z);
+            }
+            vel.set(x, N - 1, z, {0.f, 0.f, 0.f, 0.f});
+            for (int q = 0; q < 15; q++) {
+                f_old.at(q, x, N - 1, z) =
+                    f_eq(q, x, N - 1, z) - f_eq(q, x, N - 2, z)
+                    + f_old.at(q, x, N - 2, z);
+            }
+        }
     }
-
-    bool get(size_t i, size_t j, size_t k) {
-        return uchar_at(i, j, k) & (1 << (i & 7));
+    return;
+    #pragma omp parallel for
+    for (int y = 1; y < N - 1; y++) {
+        for (int x = 0; x < N; x++) {
+            vel.set(x, y, 0, {0.f, 0.f, 0.f, 0.f});
+            for (int q = 0; q < 15; q++) {
+                f_old.at(q, x, y, 0) =
+                    f_eq(q, x, y, 0) - f_eq(q, x, y, 1)
+                    + f_old.at(q, x, y, 1);
+            }
+            vel.set(x, y, N - 1, {0.f, 0.f, 0.f, 0.f});
+            for (int q = 0; q < 15; q++) {
+                f_old.at(q, x, y, N - 1) =
+                    f_eq(q, x, y, N - 1) - f_eq(q, x, y, N - 2)
+                    + f_old.at(q, x, y, N - 2);
+            }
+        }
     }
+}
 
-    void set_true(size_t i, size_t j, size_t k) {
-        uchar_at(i, j, k) |= (1 << (i & 7));
+void renderFunc() {
+    int z = N / 2;
+    #pragma omp parallel for
+    for (int y = 0; y < N; y++) {
+        for (int x = 0; x < N; x++) {
+            auto [vx, vy, vz, vw] = vel.get(x, y, z);
+            float val = std::sqrt(vx * vx + vy * vy + vz * vz);
+            pixels[y * N + x] = val * 8000.f;
+        }
     }
+}
 
-    void set_false(size_t i, size_t j, size_t k) {
-        uchar_at(i, j, k) &= ~(1 << (i & 7));
-    }
+void displayFunc() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glDrawPixels(N, N, GL_RED, GL_FLOAT, pixels);
+    glFlush();
+}
 
-    void set(size_t i, size_t j, size_t k, bool value) {
-        if (value)
-            set_true(i, j, k);
-        else
-            set_false(i, j, k);
-    }
-};
+void timerFunc(int unused) {
+    stepFunc();
+    renderFunc();
+    glutPostRedisplay();
+    glutTimerFunc(ITV, timerFunc, 0);
+}
 
+void keyboardFunc(unsigned char key, int x, int y) {
+    if (key == 27)
+        exit(0);
+}
+
+int main(int argc, char **argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DEPTH | GLUT_SINGLE | GLUT_RGBA);
+    glutInitWindowPosition(100, 100);
+    glutInitWindowSize(N, N);
+    glutCreateWindow("GLUT Window");
+    glutDisplayFunc(displayFunc);
+    glutKeyboardFunc(keyboardFunc);
+    initFunc();
+    renderFunc();
+    glutTimerFunc(ITV, timerFunc, 0);
+    glutMainLoop();
 }

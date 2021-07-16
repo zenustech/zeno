@@ -14,39 +14,24 @@ int main() {
         return pos;
     };
 #else
-    std::string code("@pos += $dt");
-    auto func = [](float pos) -> float {
-        return pos + 3.14f;
-    };
+    std::string code("@pos.x += @clr");
 #endif
 
     zfx::Options opts(zfx::Options::for_x64);
-    opts.define_symbol("@pos", 1);
-    opts.define_param("$dt", 1);
+    opts.define_symbol("@pos", 3);
+    opts.define_symbol("@clr", 1);
     auto prog = compiler.compile(code, opts);
     auto exec = assembler.assemble(prog->assembly);
 
-    float arr[4] = {1, 2, 3, 4};
-
-    printf("expected:");
-    for (auto val: arr) {
-        val = func(val);
-        printf(" %f", val);
+    for (auto const &[key, dim]: prog->symbols) {
+        printf("%s.%d\n", key.c_str(), dim);
     }
-    printf("\n");
 
     auto ctx = exec->make_context();
-
-    exec->parameter(prog->param_id("$dt", 0)) = 3.14f;
-    memcpy(ctx.channel(prog->symbol_id("@pos", 0)), arr, sizeof(arr));
+    ctx.channel(prog->symbol_id("@pos", 0))[0] = 1.f;
+    ctx.channel(prog->symbol_id("@clr", 0))[0] = 2.f;
     ctx.execute();
-    memcpy(arr, ctx.channel(prog->symbol_id("@pos", 0)), sizeof(arr));
-
-    printf("result:");
-    for (auto val: arr) {
-        printf(" %f", val);
-    }
-    printf("\n");
+    printf("new_pos = %f\n", ctx.channel(prog->symbol_id("@pos", 0))[0]);
 
     return 0;
 }
