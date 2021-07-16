@@ -16,8 +16,8 @@
 
 using namespace bate::spgrid;
 
-#define ITV 200
-#define N 256
+#define ITV 100
+#define N 64
 float pixels[N * N];
 
 SPFloat16Grid<N> f_old;
@@ -87,6 +87,22 @@ void stepFunc() {
                 vx /= mscale; vy /= mscale; vz /= mscale;
                 rho.set(x, y, z, m);
                 vel.set(x, y, z, {vx, vy, vz, 0.f});
+            }
+        }
+    }
+    for (int z = 0; z < N; z++) {
+        for (int y = 0; y < N; y++) {
+            vel.set(0, y, z, {0.1f, 0.f, 0.f, 0.f});
+            for (int q = 0; q < 15; q++) {
+                f_old.at(q, 0, y, z) =
+                    f_eq(q, 0, y, z) - f_eq(q, 1, y, z)
+                    + f_old.at(q, 1, y, z);
+            }
+            vel.set(N - 1, y, z, vel.get(N - 2, y, z));
+            for (int q = 0; q < 15; q++) {
+                f_old.at(q, N - 1, y, z) =
+                    f_eq(q, N - 1, y, z) - f_eq(q, N - 2, y, z)
+                    + f_old.at(q, N - 2, y, z);
             }
         }
     }
