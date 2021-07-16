@@ -14,11 +14,11 @@ int main() {
         return pos;
     };
 #else
-    std::string code("@pos.x = @clr");
+    std::string code("@pos.x += @clr");
 #endif
 
     zfx::Options opts(zfx::Options::for_x64);
-    opts.define_symbol("@pos", 1);
+    opts.define_symbol("@pos", 3);
     opts.define_symbol("@clr", 1);
     auto prog = compiler.compile(code, opts);
     auto exec = assembler.assemble(prog->assembly);
