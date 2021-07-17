@@ -4,3 +4,6 @@
 [submodule "projects/Euler/Hades"]
 	path = projects/Euler/Hades
 	url = https://github.com/zensim-dev/hades.git
+[submodule "ZFX/version2"]
+	path = ZFX/vectorclass
+	url = https://github.com/vectorclass/version2.git
