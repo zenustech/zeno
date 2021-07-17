@@ -42,21 +42,6 @@ __global__ void fuck() {
     printf("FUCK NVIDIA\n");
 }
 
-#define GOSTUB(name, gx, gy, gz, bx, by, bz) \
-    __host__ void name( \
-        dim3 grid_dim = {gx, gy, gz}, dim3 block_dim = {bx, by, bz}) { \
-        golaunch<<<grid_dim, block_dim>>> \
-        (*this, [] __device__ (auto that, auto &&...ts) { \
-            that.name(std::forward(ts)...); \
-        }); \
-    }
-
-#define CUSTUB(name) \
-        golaunch<<<GridDim{}, BlockDim{}>>> \
-        (*this, [] __device__ (auto that) { \
-            that.name<GridDim, BlockDim>(); \
-        });
-
 template <int X = 1, int Y = 1, int Z = 1>
 struct Dim {
     static constexpr int x = X;
@@ -68,10 +53,10 @@ struct Dim {
     }
 };
 
-template <class T, class F>
-__global__ void golaunch(T t, F f) {
+template <class T, class F, class ...Ts>
+__global__ void golaunch(T t, F f, Ts &&...ts) {
     printf("FUCK\n");
-    f(&t);
+    f(&t, std::forward<Ts>(ts)...);
 }
 
 struct lbm {
@@ -80,13 +65,13 @@ struct lbm {
     static inline const float inv_tau = 1.f / tau;
 
     volume<float4> vel;
-    //volume<float[16]> f_new;
-    //volume<float[16]> f_old;
+    volume<float[16]> f_new;
+    volume<float[16]> f_old;
 
     void allocate() {
         vel.allocate();
-        //f_new.allocate();
-        //f_old.allocate();
+        f_new.allocate();
+        f_old.allocate();
     }
 
     __device__ float f_eq(int q, int x, int y, int z) {
@@ -105,12 +90,15 @@ struct lbm {
         }
     }
 
-    __host__ void initialize() {
-        golaunch<<<1, 1>>>
-        (*this, [] __device__ (auto *that) {
-            that->_initialize();
-        });
+#define GOSTUB(name) \
+    template <class ...Ts> \
+    __host__ void name(Ts &&...ts) { \
+        golaunch<<<1, 1>>> \
+        (*this, [] __device__ (auto *that, auto &&...ts) { \
+            that->_##name(std::forward(ts)...); \
+        }, std::forward<Ts>(ts)...); \
     }
+    GOSTUB(initialize);
 
     /*__device__ void substep1() {
         for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
