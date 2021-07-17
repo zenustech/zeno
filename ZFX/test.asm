@@ -1,1 +1,6 @@
-vmovups xmm2, [rbp]
+call [rdx + 2]
+mov eax, [rdx + 2]
+call [rdx + rax]
+mov eax, [rdx + rax]
+call [rdx]
+mov eax, [rdx]

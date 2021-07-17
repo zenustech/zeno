@@ -80,7 +80,7 @@ public:
         , adr2shift(adr2shift)
         {}
 
-        void dump(std::vector<uint8_t> &res, int val) {
+        void dump(std::vector<uint8_t> &res, int val, int flag = 0) {
             if (mflag & (memflag::reg_imm8 | memflag::reg_imm32)) {
                 mflag &= ~(memflag::reg_imm8 | memflag::reg_imm32);
                 if (-128 <= immadr && immadr <= 127) {
@@ -89,7 +89,7 @@ public:
                     mflag |= memflag::reg_imm32;
                 }
             }
-            int flag = mflag | val << 3 | adr;
+            flag |= mflag | val << 3 | adr;
             if (adr == opreg::rsp)
                 flag |= 0x10;
             if (adr == opreg::rbp)
@@ -160,6 +160,18 @@ public:
         res.push_back(0x48);
         res.push_back(0x89);
         adr.dump(res, val);
+    }
+
+    void addAdjStackTop(int imm_add) {
+        res.push_back(0x48);
+        res.push_back(0x83);
+        res.push_back(0xc4);
+        res.push_back(imm_add);
+    }
+
+    void addCallOp(MemoryAddress adr) {
+        res.push_back(0xff);
+        adr.dump(res, 0, 1);
     }
 
     void addAvxBinaryOp(int type, int op, int dst, int lhs, int rhs) {

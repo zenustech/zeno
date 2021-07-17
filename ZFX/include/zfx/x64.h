@@ -11,6 +11,7 @@ struct Executable {
     uint8_t *mem = nullptr;
     size_t memsize = 0;
     float consts[1024];
+    void **functable;
 
     static constexpr size_t SimdWidth = 4;
 
@@ -20,9 +21,10 @@ struct Executable {
 
         void execute() {
             asm volatile (
-                "call *(%%rax)"
+                "call *(%%rax)"  // why `call *%%rax` doesn't work..
                 :
-                : "a" (&exec->mem)
+                : "a" ((uintptr_t)(void *)&exec->mem)
+                , "b" ((uintptr_t)(void *)exec->functable)
                 , "c" ((uintptr_t)(void *)&exec->consts[0])
                 , "d" ((uintptr_t)(void *)&locals[0])
                 : "cc", "memory"

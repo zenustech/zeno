@@ -39,7 +39,8 @@ struct ImplAssembler {
                         expr.c_str());
                 }
 
-            } else if (cmd == "ldp") {  // rcx points to an array of constants
+            } else if (cmd == "ldp") {
+                // rcx points to an array of constants
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
@@ -48,7 +49,8 @@ struct ImplAssembler {
                 builder->addAvxBroadcastLoadOp(simdkind,
                     dst, {opreg::rcx, memflag::reg_imm8, offset});
 
-            } else if (cmd == "ldl") {  // rdx points to an array of variables
+            } else if (cmd == "ldl") {
+                // rdx points to an array of variables
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
@@ -66,7 +68,8 @@ struct ImplAssembler {
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
                     dst, {opreg::rdx, memflag::reg_imm8, offset});
 
-            /*} else if (cmd == "ldg") {  // rdx points to an array of pointers
+            /*} else if (cmd == "ldg") {
+                // rdx points to an array of pointers
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
@@ -134,11 +137,20 @@ struct ImplAssembler {
                 builder->addAvxMoveOp(dst, src);
 
             } else if (cmd == "sin") {
+                // rbx points to an array of function pointers
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto src = from_string<int>(linesep[2]);
-                /*builder->addAvxFuncCall(simdkind, 
-                    dst, src);*/
+                int size = SIMDBuilder::sizeOfType(simdkind);
+                builder->addAdjStackTop(-size);
+                builder->addAvxMemoryOp(simdkind, opcode::storeu,
+                    src, opreg::rsp);
+                int id = 0;  // todo: find in funcnames
+                int offset = id * sizeof(void *);
+                builder->addCallOp({opreg::rbx, memflag::reg_imm8, offset});
+                builder->addAvxMemoryOp(simdkind, opcode::loadu,
+                    dst, opreg::rsp);
+                builder->addAdjStackTop(+size);
 
             } else {
                 error("bad assembly command `%s`", cmd.c_str());

@@ -14,7 +14,7 @@ int main() {
         return pos;
     };
 #else
-    std::string code("@pos.x += @clr");
+    std::string code("@pos.x = sin(@clr)");
 #endif
 
     zfx::Options opts(zfx::Options::for_x64);
