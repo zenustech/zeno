@@ -14,8 +14,8 @@
      },
      "params": {},
      "uipos": [
-      -727.6554687499995,
-      -2779.0161132812486
+      -698.8554687499995,
+      -2747.416113281248
      ],
      "options": [
       "ONCE"
@@ -28,11 +28,11 @@
       "COND": null
      },
      "params": {
-      "value": "SIGGRAPH"
+      "value": "this is zeno"
      },
      "uipos": [
-      -1042.071875,
-      -2758.5000000000005
+      -1119.511875,
+      -2742.98
      ],
      "options": []
     },
@@ -41,7 +41,7 @@
      "inputs": {
       "prim": [
        "1d9489c4-zelloWorld",
-       "worldArt"
+       "3Dword"
       ],
       "zfxCode": [
        "e2d3eb63-MakeMultilineString",
@@ -56,8 +56,8 @@
      },
      "params": {},
      "uipos": [
-      248.85000000000005,
-      -2657.4999999999995
+      655.85,
+      -2593.5
      ],
      "options": [
       "VIEW"
@@ -173,9 +173,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -1082,
-    "trans_y": -2875
+    "scale": 1.0000000000000007,
+    "trans_x": -1312,
+    "trans_y": -2937
    }
   },
   "addRigid": {
@@ -450,12 +450,27 @@
       -1064.062499999999
      ],
      "options": []
+    },
+    "c465ac21-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "name": "Utils"
+     },
+     "uipos": [
+      -6112.799999999999,
+      -1343.2000000000003
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": -3598,
-    "trans_y": -880
+    "scale": 1.0000000000000002,
+    "trans_x": -5995,
+    "trans_y": -1476
    }
   },
   "GetRigidSamplePos": {
@@ -2328,221 +2343,8 @@
       "path": "assets/letters/K.obj"
      },
      "uipos": [
-      1499.7011985778795,
-      783.5327911376951
-     ],
-     "options": []
-    },
-    "9360e9e6-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      6.1533203125,
-      1577.1472167968743
-     ],
-     "options": []
-    },
-    "e0ed435b-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      4917.250560760494,
-      465.78074645996094
-     ],
-     "options": []
-    },
-    "8381ade8-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      1898.4219017028795,
-      2638.2698516845694
-     ],
-     "options": []
-    },
-    "f0a69df5-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "ea5a4080-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "69b83873-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "2dbece9d-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "5c23b26e-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      2308.8164329528795,
-      1978.5393829345696
-     ],
-     "options": []
-    },
-    "3f0fee0d-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "31289adb-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3462.8560295104953,
-      183.03953552246094
-     ],
-     "options": []
-    },
-    "dcaf6759-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "9c31ce1d-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3351.5767326354953,
-      1944.776596069335
-     ],
-     "options": []
-    },
-    "9da73f1e-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -316.67382812499966,
-      2622.467529296874
-     ],
-     "options": []
-    },
-    "3d7579c0-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "0fa17a8d-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "8381ade8-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "c31f3de8-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "efe48571-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      2279.4219017028795,
-      2652.2698516845694
-     ],
-     "options": []
-    },
-    "739106c4-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "7bffaf10-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3322.1822013854953,
-      2618.507064819335
-     ],
-     "options": []
-    },
-    "649e195f-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -205.39453125,
-      860.7304687499998
-     ],
-     "options": []
-    },
-    "8701d907-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      25.567382812500057,
-      502.5898437499999
+      242.41572284698418,
+      -19.732929468154452
      ],
      "options": []
     },
@@ -2556,76 +2358,8 @@
       "path": "assets/letters/A.obj"
      },
      "uipos": [
-      -441.0,
-      -20.0
-     ],
-     "options": []
-    },
-    "3fad9cd9-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      74.0,
-      245.0
-     ],
-     "options": []
-    },
-    "657a16f4-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      -42.279296875,
-      1834.7370605468743
-     ],
-     "options": []
-    },
-    "662f0e85-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "fd6026fe-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      1678.4219017028795,
-      2554.2698516845694
-     ],
-     "options": []
-    },
-    "26c3c62b-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      39.60546875,
-      746.7304687499998
+      -1143.0000000000005,
+      -354.2
      ],
      "options": []
     },
@@ -2637,139 +2371,16 @@
        "list"
       ],
       "object": [
-       "0e844682-x",
-       "prim"
+       "ca9853e9-x",
+       "mesh"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      2906.4633278560605,
-      1065.84024020195
-     ],
-     "options": []
-    },
-    "6fda93b4-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "298451d2-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "7dfccc0e-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "56834e5c-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "5d805793-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      2390.7011985778795,
-      890.5327911376951
-     ],
-     "options": []
-    },
-    "225ab4c6-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      1971.2490501403795,
-      1534.9495391845696
-     ],
-     "options": []
-    },
-    "cbf2ffde-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "b8981f3f-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      2682.6631126403795,
-      697.3921661376951
-     ],
-     "options": []
-    },
-    "39606ff4-x": {
-     "name": "AppendList",
-     "inputs": {
-      "list": [
-       "48b90102-x",
-       "list"
-      ],
-      "object": [
-       "46af047e-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      4632.780592412946,
-      914.7099425411252
-     ],
-     "options": []
-    },
-    "3e9faf2e-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      1726.24905014038,
-      1648.9495391845696
-     ],
-     "options": []
-    },
-    "9345ec85-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      2039.0957298278795,
-      202.8023223876953
+      892.4782602500907,
+      -42.43362359046887
      ],
      "options": []
     },
@@ -2783,25 +2394,8 @@
       "path": "assets/letters/B.obj"
      },
      "uipos": [
-      -484.4326171875,
-      409.5898437499999
-     ],
-     "options": []
-    },
-    "711cb886-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "7383830c-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3671.0288810729953,
-      1267.359848022461
+      -1164.782558441162,
+      -152.2661018371582
      ],
      "options": []
     },
@@ -2813,63 +2407,16 @@
        "list"
       ],
       "object": [
-       "1eacf9e9-x",
-       "prim"
+       "eb03c37e-x",
+       "mesh"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      1000.4687499999982,
-      1613.1249999999995
-     ],
-     "options": []
-    },
-    "3e143523-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "d3713fc8-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "8701d907-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "1989a162-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "9f5c690c-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      406.5673828125,
-      516.5898437499999
-     ],
-     "options": []
-    },
-    "362aa707-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      44.60546875,
-      918.7304687499998
+      -445.99162369966604,
+      935.0057503581052
      ],
      "options": []
     },
@@ -2883,322 +2430,8 @@
       "path": "assets/letters/N.obj"
      },
      "uipos": [
-      1417.8164329528795,
-      1871.5393829345696
-     ],
-     "options": []
-    },
-    "5a4b59e9-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      5162.250560760494,
-      351.78074645996094
-     ],
-     "options": []
-    },
-    "66e8aa95-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      5096.234935760495,
-      920.5307464599608
-     ],
-     "options": []
-    },
-    "3e6f215f-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      1995.6631126403795,
-      632.3921661376951
-     ],
-     "options": []
-    },
-    "1c39999b-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      1721.2685813903795,
-      1420.122634887695
-     ],
-     "options": []
-    },
-    "0a48afec-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "5c6a4d1d-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      2628.8545188903795,
-      2273.6800079345694
-     ],
-     "options": []
-    },
-    "2fb0b1f3-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "3d39e25f-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      4369.856029510495,
-      332.03953552246094
-     ],
-     "options": []
-    },
-    "ee799425-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "ec367301-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "7aff4389-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "13994a84-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "2a2b2ce1-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      4034.4614982604953,
-      954.7700042724609
-     ],
-     "options": []
-    },
-    "e4d59408-x": {
-     "name": "AppendList",
-     "inputs": {
-      "list": [
-       "13f897f6-x",
-       "list"
-      ],
-      "object": [
-       "d5190dae-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      4658.780592412946,
-      2042.7099425411252
-     ],
-     "options": []
-    },
-    "11ede810-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      3590.6148185729953,
-      2444.917221069335
-     ],
-     "options": []
-    },
-    "8e1c3ff5-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "101bebcc-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      5783.234935760495,
-      985.5307464599608
-     ],
-     "options": []
-    },
-    "18e70be9-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      69.0,
-      73.0
-     ],
-     "options": []
-    },
-    "37091916-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      1941.8545188903795,
-      2208.6800079345694
-     ],
-     "options": []
-    },
-    "9f5c690c-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      30.567382812500057,
-      674.5898437499999
-     ],
-     "options": []
-    },
-    "3a49fb5c-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "e2101a22-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "cb6478e7-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "5bffbbb4-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "9360e9e6-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      382.1533203125,
-      1419.1472167968743
-     ],
-     "options": []
-    },
-    "cb281dfe-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -287.279296875,
-      1948.7370605468743
-     ],
-     "options": []
-    },
-    "b3860c58-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "cdae9b2b-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      1721.85451889038,
-      2124.6800079345694
+      160.53095722198418,
+      1068.2736623287205
      ],
      "options": []
     },
@@ -3212,161 +2445,8 @@
       "path": "assets/letters/S.obj"
      },
      "uipos": [
-      3143.4614982604953,
-      847.7700042724609
-     ],
-     "options": []
-    },
-    "aabcaa2b-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      1696.8545188903795,
-      2322.6800079345694
-     ],
-     "options": []
-    },
-    "fea74801-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      3576.5767326354953,
-      2200.776596069335
-     ],
-     "options": []
-    },
-    "2b62bb18-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      3326.5767326354953,
-      2142.776596069335
-     ],
-     "options": []
-    },
-    "760b9443-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "2afd4f1a-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -151.0,
-      -11.0
-     ],
-     "options": []
-    },
-    "fcbbf32c-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "9c7b5c54-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "5d0ea8f6-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "9da73f1e-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "cf18f1aa-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      309.326171875,
-      2522.467529296874
-     ],
-     "options": []
-    },
-    "1f69bfb3-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      3370.0093498229953,
-      1713.186752319335
-     ],
-     "options": []
-    },
-    "1eacf9e9-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "3a49fb5c-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      688.1533203125,
-      1470.1472167968743
-     ],
-     "options": []
-    },
-    "26ebb2b3-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "68cdebfc-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      1751.2490501403795,
-      1450.9495391845696
+      1460.4917567372313,
+      -147.20846831798463
      ],
      "options": []
     },
@@ -3378,127 +2458,16 @@
        "list"
       ],
       "object": [
-       "3e89f149-x",
-       "prim"
+       "2e8a032d-x",
+       "mesh"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      1001.7187499999982,
-      1316.8749999999995
-     ],
-     "options": []
-    },
-    "c9ef1445-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "5326dce7-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "5d128d92-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "c7c4d3fc-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "4e110467-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      352.7587890625,
-      2092.877685546874
-     ],
-     "options": []
-    },
-    "338f7866-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      2044.0957298278795,
-      374.8023223876953
-     ],
-     "options": []
-    },
-    "967f48bf-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "e92a1ae2-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "3672d7a8-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "1f69bfb3-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "a63ce6f1-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3996.0093498229953,
-      1613.186752319335
-     ],
-     "options": []
-    },
-    "1fbbfc45-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      3639.4234123229953,
-      696.6293792724609
-     ],
-     "options": []
-    },
-    "cf8098e0-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      3437.8560295104953,
-      381.03953552246094
+      -444.74162369966604,
+      638.7557503581043
      ],
      "options": []
     },
@@ -3510,127 +2479,16 @@
        "list"
       ],
       "object": [
-       "2f5db0a7-x",
-       "prim"
+       "68cdebfc-x",
+       "mesh"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      2929.4633278560605,
-      1639.84024020195
-     ],
-     "options": []
-    },
-    "20c1d0a3-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      -37.279296875,
-      2006.7370605468743
-     ],
-     "options": []
-    },
-    "f335cedf-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "5beb49f5-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      2027.2685813903795,
-      1203.122634887695
-     ],
-     "options": []
-    },
-    "ea5a4080-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "5f709e49-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      1988.8164329528795,
-      1861.5393829345696
-     ],
-     "options": []
-    },
-    "0a2ea6c9-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "cfcd0e57-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "9345ec85-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "e4adfb1c-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "338f7866-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      2420.0957298278795,
-      216.8023223876953
-     ],
-     "options": []
-    },
-    "10c5fb25-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "94064420-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "225ab4c6-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "3e9faf2e-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "c030c2fc-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      2352.2490501403795,
-      1548.9495391845696
+      915.4782602500907,
+      531.566376409532
      ],
      "options": []
     },
@@ -3644,50 +2502,8 @@
       "path": "assets/letters/H.obj"
      },
      "uipos": [
-      -581.673828125,
-      2415.467529296874
-     ],
-     "options": []
-    },
-    "63075ad9-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "01da7f19-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      2653.2685813903795,
-      1371.122634887695
-     ],
-     "options": []
-    },
-    "ed5d502f-x": {
-     "name": "AppendList",
-     "inputs": {
-      "list": [
-       "b6a0d9a5-x",
-       "list"
-      ],
-      "object": [
-       "8e1c3ff5-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      6247.410063238145,
-      835.7803465938614
+      -1160.4660985469816,
+      2001.1759674549094
      ],
      "options": []
     },
@@ -3699,24 +2515,7 @@
        "list"
       ],
       "object": [
-       "f9904cc8-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      986.7187499999982,
-      1956.8749999999995
-     ],
-     "options": []
-    },
-    "dc26d7e7-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "2e576fcc-x",
+       "665ad6a0-x",
        "mesh"
       ],
       "SRC": null,
@@ -3724,25 +2523,8 @@
      },
      "params": {},
      "uipos": [
-      -248.24121093749966,
-      1994.8776855468739
-     ],
-     "options": []
-    },
-    "42e72f9d-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "eb03c37e-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -218.8466796875,
-      1321.1472167968743
+      -459.74162369966604,
+      1278.7557503581052
      ],
      "options": []
     },
@@ -3756,8 +2538,8 @@
       "path": "assets/letters/T.obj"
      },
      "uipos": [
-      3100.0288810729953,
-      1277.359848022461
+      1417.0591395497313,
+      282.3813754320154
      ],
      "options": []
     },
@@ -3771,29 +2553,8 @@
       "path": "assets/letters/G.obj"
      },
      "uipos": [
-      -538.2412109375,
-      1985.8776855468739
-     ],
-     "options": []
-    },
-    "243e53da-x": {
-     "name": "AppendList",
-     "inputs": {
-      "list": [
-       "c2236010-x",
-       "list"
-      ],
-      "object": [
-       "2fb0b1f3-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      4621.780592412946,
-      423.7099425411252
+      -1120.7834813594814,
+      1572.8361237049096
      ],
      "options": []
     },
@@ -3805,24 +2566,7 @@
        "list"
       ],
       "object": [
-       "c35679ef-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      1050.4687499999982,
-      654.3749999999995
-     ],
-     "options": []
-    },
-    "7383830c-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "1993f8bc-x",
+       "e7242398-x",
        "mesh"
       ],
       "SRC": null,
@@ -3830,249 +2574,8 @@
      },
      "params": {},
      "uipos": [
-      3390.0288810729953,
-      1286.359848022461
-     ],
-     "options": []
-    },
-    "dc16eda9-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "dcaf6759-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3632.5767326354953,
-      1925.776596069335
-     ],
-     "options": []
-    },
-    "5c39750a-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "8c126db7-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3395.0093498229953,
-      1515.186752319335
-     ],
-     "options": []
-    },
-    "101bebcc-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "75757be6-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "66e8aa95-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "1df1e7c0-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "902b4db0-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      5477.234935760495,
-      934.5307464599608
-     ],
-     "options": []
-    },
-    "80cc222b-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "ca9853e9-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      1789.7011985778795,
-      792.5327911376951
-     ],
-     "options": []
-    },
-    "429c574a-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      1971.2685813903795,
-      1478.122634887695
-     ],
-     "options": []
-    },
-    "322e9ccc-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      5167.250560760494,
-      523.7807464599609
-     ],
-     "options": []
-    },
-    "08df6569-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "acfb95a4-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "26c3c62b-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "649e195f-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "362aa707-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      420.60546875,
-      760.7304687499998
-     ],
-     "options": []
-    },
-    "8a68a32c-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "a20667b7-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "18e70be9-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "213b662e-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "3fad9cd9-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      450.0,
-      87.0
-     ],
-     "options": []
-    },
-    "e3742a97-x": {
-     "name": "ReadObjMesh",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "path": "assets/letters/Y.obj"
-     },
-     "uipos": [
-      4652.250560760494,
-      258.78074645996094
-     ],
-     "options": []
-    },
-    "0390c53a-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "2e8a032d-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -223.8271484375,
-      1092.3203124999998
-     ],
-     "options": []
-    },
-    "cf18f1aa-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      -66.673828125,
-      2680.467529296874
-     ],
-     "options": []
-    },
-    "9c7b5c54-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "53a8aba9-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -10.673828125,
-      2405.467529296874
+      -395.99162369966604,
+      -23.74424964189575
      ],
      "options": []
     },
@@ -4086,46 +2589,8 @@
       "path": "assets/letters/J.obj"
      },
      "uipos": [
-      1485.6631126403795,
-      539.3921661376951
-     ],
-     "options": []
-    },
-    "4ec744d1-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "fb14dd46-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -180.39453125,
-      662.7304687499998
-     ],
-     "options": []
-    },
-    "34f1bd82-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "6524ee0e-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      4297.028881072995,
-      1359.065902709961
+      228.37763690948395,
+      -263.87355446815445
      ],
      "options": []
     },
@@ -4139,131 +2604,8 @@
       "path": "assets/letters/V.obj"
      },
      "uipos": [
-      3061.5767326354953,
-      1935.776596069335
-     ],
-     "options": []
-    },
-    "efe48571-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      1903.4219017028795,
-      2810.2698516845694
-     ],
-     "options": []
-    },
-    "3e89f149-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "efb1cde1-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      683.1728515625,
-      1241.3203124999998
-     ],
-     "options": []
-    },
-    "e5e902ac-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "dc16eda9-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "55232d44-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "2b62bb18-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "fea74801-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3952.5767326354953,
-      2042.776596069335
-     ],
-     "options": []
-    },
-    "e4adfb1c-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      1794.0957298278795,
-      316.8023223876953
-     ],
-     "options": []
-    },
-    "a63ce6f1-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      3620.0093498229953,
-      1771.186752319335
-     ],
-     "options": []
-    },
-    "4c6cdc81-x": {
-     "name": "AppendList",
-     "inputs": {
-      "list": [
-       "e4d59408-x",
-       "list"
-      ],
-      "object": [
-       "150a16ce-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      4648.530592412947,
-      2429.7099425411257
+      1378.6069911122313,
+      940.7981234788895
      ],
      "options": []
     },
@@ -4275,46 +2617,16 @@
        "list"
       ],
       "object": [
-       "f4b6e77d-x",
-       "prim"
+       "2afd4f1a-x",
+       "mesh"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      1050.4687499999984,
-      250.6249999999995
-     ],
-     "options": []
-    },
-    "10350eec-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "9817bda3-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "5a4b59e9-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "e0ed435b-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "322e9ccc-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      5543.250560760494,
-      365.78074645996094
+      -395.66934758424827,
+      -346.3689511418338
      ],
      "options": []
     },
@@ -4328,25 +2640,8 @@
       "path": "assets/letters/U.obj"
      },
      "uipos": [
-      3144.0093498229953,
-      1505.186752319335
-     ],
-     "options": []
-    },
-    "f5d9b12a-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "5de0bc29-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      2056.6631126403795,
-      529.3921661376951
+      1461.0396082997313,
+      510.20827972888947
      ],
      "options": []
     },
@@ -4360,165 +2655,8 @@
       "path": "assets/letters/D.obj"
      },
      "uipos": [
-      -513.8271484375,
-      1083.3203124999998
-     ],
-     "options": []
-    },
-    "5f709e49-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "e1f0db51-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      1707.8164329528795,
-      1880.5393829345696
-     ],
-     "options": []
-    },
-    "8cfc9537-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -248.8271484375,
-      1290.3203124999998
-     ],
-     "options": []
-    },
-    "b4828217-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "e37b1270-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "605a3da6-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "288a2459-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "2c43ba48-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3923.1822013854953,
-      2716.507064819335
-     ],
-     "options": []
-    },
-    "c35679ef-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "3e143523-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      712.5673828125,
-      567.5898437499999
-     ],
-     "options": []
-    },
-    "288a2459-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      3297.1822013854953,
-      2816.507064819335
-     ],
-     "options": []
-    },
-    "574d9ec6-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "f0a69df5-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      2614.8164329528795,
-      2029.5393829345696
-     ],
-     "options": []
-    },
-    "5bffbbb4-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -243.84667968749966,
-      1519.1472167968743
-     ],
-     "options": []
-    },
-    "cb6478e7-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      1.1533203125,
-      1405.1472167968743
+      -1097.6194188594816,
+      669.0287506580354
      ],
      "options": []
     },
@@ -4530,194 +2668,7 @@
        "list"
       ],
       "object": [
-       "45861289-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      2824.4115700435614,
-      2865.341216764451
-     ],
-     "options": []
-    },
-    "5d128d92-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      -28.2412109375,
-      2078.877685546874
-     ],
-     "options": []
-    },
-    "7dfccc0e-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      2009.7011985778795,
-      876.5327911376951
-     ],
-     "options": []
-    },
-    "69b83873-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      1927.8164329528795,
-      1964.5393829345696
-     ],
-     "options": []
-    },
-    "2f5db0a7-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "10c5fb25-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      2658.2490501403795,
-      1599.9495391845696
-     ],
-     "options": []
-    },
-    "62140677-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      2000.6631126403795,
-      804.3921661376951
-     ],
-     "options": []
-    },
-    "3d39e25f-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "15b01884-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "b3a82217-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "cf8098e0-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "ee402556-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      4063.8560295104953,
-      281.03953552246094
-     ],
-     "options": []
-    },
-    "2a2b2ce1-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      3658.4614982604953,
-      1112.770004272461
-     ],
-     "options": []
-    },
-    "c7c4d3fc-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -273.2412109375,
-      2192.877685546874
-     ],
-     "options": []
-    },
-    "56834e5c-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      1764.7011985778795,
-      990.5327911376951
-     ],
-     "options": []
-    },
-    "5ce8f482-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "665ad6a0-x",
+       "fd6026fe-x",
        "mesh"
       ],
       "SRC": null,
@@ -4725,55 +2676,8 @@
      },
      "params": {},
      "uipos": [
-      -262.279296875,
-      1750.7370605468743
-     ],
-     "options": []
-    },
-    "5c35bd15-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      1750.6631126403795,
-      746.3921661376951
-     ],
-     "options": []
-    },
-    "6322286a-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "33bfdb09-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "1fbbfc45-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "ed99305c-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "efc0ade6-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      4020.4234123229953,
-      710.6293792724609
+      810.4265024375916,
+      1757.067352972032
      ],
      "options": []
     },
@@ -4787,25 +2691,8 @@
       "path": "assets/letters/I.obj"
      },
      "uipos": [
-      1529.0957298278795,
-      109.80232238769531
-     ],
-     "options": []
-    },
-    "69752a78-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "edb55128-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3433.4614982604953,
-      856.7700042724609
+      273.06025409698395,
+      -693.4633982181545
      ],
      "options": []
     },
@@ -4819,29 +2706,8 @@
       "path": "assets/letters/F.obj"
      },
      "uipos": [
-      -552.279296875,
-      1741.7370605468743
-     ],
-     "options": []
-    },
-    "e788b69e-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "08df6569-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      726.60546875,
-      811.7304687499998
+      -1134.8215672969814,
+      1328.6954987049103
      ],
      "options": []
     },
@@ -4855,46 +2721,8 @@
       "path": "assets/letters/X.obj"
      },
      "uipos": [
-      3032.1822013854953,
-      2609.507064819335
-     ],
-     "options": []
-    },
-    "13994a84-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      3408.4614982604953,
-      1054.770004272461
-     ],
-     "options": []
-    },
-    "b6a0d9a5-x": {
-     "name": "AppendList",
-     "inputs": {
-      "list": [
-       "a7dc73af-x",
-       "list"
-      ],
-      "object": [
-       "3d35620d-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      6268.660063238144,
-      400.7803465938614
+      1349.2124598622313,
+      1614.52859222889
      ],
      "options": []
     },
@@ -4906,118 +2734,16 @@
        "list"
       ],
       "object": [
-       "574d9ec6-x",
-       "prim"
+       "e1f0db51-x",
+       "mesh"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      2885.4633278560605,
-      2009.84024020195
-     ],
-     "options": []
-    },
-    "01da7f19-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "f335cedf-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "42b2e1c6-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "1c39999b-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "429c574a-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      2347.2685813903795,
-      1320.122634887695
-     ],
-     "options": []
-    },
-    "15b01884-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "3f0fee0d-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3743.8560295104953,
-      164.03953552246094
-     ],
-     "options": []
-    },
-    "e8ba9844-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "967f48bf-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      4302.009349822995,
-      1664.186752319335
-     ],
-     "options": []
-    },
-    "5c23b26e-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      1932.8164329528795,
-      2136.5393829345694
-     ],
-     "options": []
-    },
-    "ec367301-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "69752a78-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3714.4614982604953,
-      837.7700042724609
+      871.4782602500907,
+      901.566376409532
      ],
      "options": []
     },
@@ -5031,148 +2757,8 @@
       "path": "assets/letters/W.obj"
      },
      "uipos": [
-      3075.6148185729953,
-      2179.917221069335
-     ],
-     "options": []
-    },
-    "e265dab5-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      3365.0288810729953,
-      1484.359848022461
-     ],
-     "options": []
-    },
-    "f9904cc8-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "ac17abb7-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      644.720703125,
-      1899.7370605468743
-     ],
-     "options": []
-    },
-    "5beb49f5-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "9290cd1d-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      1746.2685813903795,
-      1222.122634887695
-     ],
-     "options": []
-    },
-    "518daced-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      3615.0288810729953,
-      1542.359848022461
-     ],
-     "options": []
-    },
-    "902b4db0-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      5101.234935760495,
-      1092.530746459961
-     ],
-     "options": []
-    },
-    "e37b1270-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "739106c4-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3603.1822013854953,
-      2599.507064819335
-     ],
-     "options": []
-    },
-    "e9d9ed47-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "a5b3e1a0-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      4876.234935760495,
-      836.5307464599608
-     ],
-     "options": []
-    },
-    "ed99305c-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      3394.4234123229953,
-      810.6293792724609
+      1364.6450770497304,
+      1250.93874847889
      ],
      "options": []
     },
@@ -5186,292 +2772,8 @@
       "path": "assets/letters/Q.obj"
      },
      "uipos": [
-      3172.8560295104953,
-      174.03953552246094
-     ],
-     "options": []
-    },
-    "9817bda3-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "ed71231e-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      5223.250560760494,
-      248.78074645996094
-     ],
-     "options": []
-    },
-    "45861289-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "3d7579c0-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      2585.4219017028795,
-      2703.2698516845694
-     ],
-     "options": []
-    },
-    "efc0ade6-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      3644.4234123229953,
-      868.6293792724609
-     ],
-     "options": []
-    },
-    "33bfdb09-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "a47b2877-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3700.4234123229953,
-      593.6293792724609
-     ],
-     "options": []
-    },
-    "0e844682-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "6fda93b4-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      2672.287136077879,
-      975.1021270751951
-     ],
-     "options": []
-    },
-    "ee402556-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      3687.8560295104953,
-      439.03953552246094
-     ],
-     "options": []
-    },
-    "55232d44-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      3571.5767326354953,
-      2028.776596069335
-     ],
-     "options": []
-    },
-    "5de0bc29-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "f1c0028d-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      1775.6631126403795,
-      548.3921661376951
-     ],
-     "options": []
-    },
-    "a7dc73af-x": {
-     "name": "AppendList",
-     "inputs": {
-      "list": [
-       "4c6cdc81-x",
-       "list"
-      ],
-      "object": [
-       "0ba9f5e7-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      4609.927076787948,
-      2855.9599425411257
-     ],
-     "options": []
-    },
-    "1989a162-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -219.4326171875,
-      616.5898437499999
-     ],
-     "options": []
-    },
-    "5d0ea8f6-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      -71.673828125,
-      2508.467529296874
-     ],
-     "options": []
-    },
-    "605a3da6-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      3542.1822013854953,
-      2702.507064819335
-     ],
-     "options": []
-    },
-    "94064420-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "26ebb2b3-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      2032.2490501403795,
-      1431.9495391845696
-     ],
-     "options": []
-    },
-    "6524ee0e-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "711cb886-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "46a932b6-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "e265dab5-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "518daced-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3991.0288810729953,
-      1384.359848022461
-     ],
-     "options": []
-    },
-    "f4b6e77d-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "8a68a32c-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      756.0,
-      138.0
+      1490.8862879872304,
+      -821.9389370679846
      ],
      "options": []
     },
@@ -5483,16 +2785,16 @@
        "list"
       ],
       "object": [
-       "0a48afec-x",
-       "prim"
+       "cdae9b2b-x",
+       "mesh"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      2887.4633278560605,
-      2346.84024020195
+      873.4782602500907,
+      1238.566376409532
      ],
      "options": []
     },
@@ -5504,16 +2806,16 @@
        "list"
       ],
       "object": [
-       "63075ad9-x",
-       "prim"
+       "9290cd1d-x",
+       "mesh"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      2907.4633278560605,
-      1374.84024020195
+      893.4782602500907,
+      266.56637640953113
      ],
      "options": []
     },
@@ -5527,110 +2829,8 @@
       "path": "assets/letters/C.obj"
      },
      "uipos": [
-      -470.39453125,
-      653.7304687499998
-     ],
-     "options": []
-    },
-    "1cc04d44-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      -3.8271484375,
-      1176.3203124999998
-     ],
-     "options": []
-    },
-    "5d805793-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      2014.7011985778795,
-      1048.532791137695
-     ],
-     "options": []
-    },
-    "46af047e-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "ee799425-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      4340.461498260495,
-      1005.7700042724609
-     ],
-     "options": []
-    },
-    "5c6a4d1d-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "c27fafad-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "37091916-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "aabcaa2b-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "f2994860-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      2322.8545188903795,
-      2222.6800079345694
-     ],
-     "options": []
-    },
-    "c27fafad-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "b3860c58-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      2002.8545188903795,
-      2105.6800079345694
+      -1165.4368016719814,
+      143.18890690803528
      ],
      "options": []
     },
@@ -5642,147 +2842,16 @@
        "list"
       ],
       "object": [
-       "98aa6bb7-x",
-       "prim"
+       "8052b1f2-x",
+       "mesh"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      930.4687499999982,
-      2631.875
-     ],
-     "options": []
-    },
-    "298451d2-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "80cc222b-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      2070.7011985778795,
-      773.5327911376951
-     ],
-     "options": []
-    },
-    "3d086302-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "ffaedcb5-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3646.6148185729953,
-      2169.917221069335
-     ],
-     "options": []
-    },
-    "7aff4389-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      3653.4614982604953,
-      940.7700042724609
-     ],
-     "options": []
-    },
-    "98aa6bb7-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "fcbbf32c-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      615.326171875,
-      2573.467529296874
-     ],
-     "options": []
-    },
-    "c7fd7364-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "0a2ea6c9-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      2726.0957298278795,
-      267.8023223876953
-     ],
-     "options": []
-    },
-    "48b90102-x": {
-     "name": "AppendList",
-     "inputs": {
-      "list": [
-       "243e53da-x",
-       "list"
-      ],
-      "object": [
-       "25ea9464-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      4681.780592412946,
-      608.7099425411252
-     ],
-     "options": []
-    },
-    "f2994860-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      1946.8545188903795,
-      2380.6800079345694
+      -515.991623699666,
+      1953.7557503581052
      ],
      "options": []
     },
@@ -5796,63 +2865,8 @@
       "path": "assets/letters/L.obj"
      },
      "uipos": [
-      1456.2685813903795,
-      1213.122634887695
-     ],
-     "options": []
-    },
-    "53a8aba9-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "8052b1f2-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -291.673828125,
-      2424.467529296874
-     ],
-     "options": []
-    },
-    "b3a82217-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      3682.8560295104953,
-      267.03953552246094
-     ],
-     "options": []
-    },
-    "26e4ba2a-x": {
-     "name": "AppendList",
-     "inputs": {
-      "list": [
-       "39606ff4-x",
-       "list"
-      ],
-      "object": [
-       "34f1bd82-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      4651.780592412946,
-      1297.7099425411252
+      198.98310565948418,
+      409.85691428184555
      ],
      "options": []
     },
@@ -5864,129 +2878,16 @@
        "list"
       ],
       "object": [
-       "cbf2ffde-x",
-       "prim"
+       "f1c0028d-x",
+       "mesh"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      2905.4633278560605,
-      752.8402402019501
-     ],
-     "options": []
-    },
-    "213b662e-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -176.0,
-      187.0
-     ],
-     "options": []
-    },
-    "4e110467-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      -23.2412109375,
-      2250.877685546874
-     ],
-     "options": []
-    },
-    "c030c2fc-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      1976.2490501403795,
-      1706.9495391845696
-     ],
-     "options": []
-    },
-    "ac17abb7-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "ac00ffc2-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "657a16f4-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "cb281dfe-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "20c1d0a3-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      338.720703125,
-      1848.7370605468743
-     ],
-     "options": []
-    },
-    "a5b3e1a0-x": {
-     "name": "ReadObjMesh",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "path": "assets/letters/Z.obj"
-     },
-     "uipos": [
-      4675.234935760494,
-      812.5307464599609
-     ],
-     "options": []
-    },
-    "1df1e7c0-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      4851.234935760495,
-      1034.530746459961
+      891.4782602500907,
+      -355.43362359046887
      ],
      "options": []
     },
@@ -6000,148 +2901,8 @@
       "path": "assets/letters/E.obj"
      },
      "uipos": [
-      -508.8466796875,
-      1312.1472167968743
-     ],
-     "options": []
-    },
-    "d5190dae-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "e5e902ac-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      4258.576732635495,
-      2093.776596069335
-     ],
-     "options": []
-    },
-    "c31f3de8-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      1653.42190170288,
-      2752.2698516845694
-     ],
-     "options": []
-    },
-    "ac00ffc2-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "5ce8f482-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      18.720703125,
-      1731.7370605468743
-     ],
-     "options": []
-    },
-    "ed71231e-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "e3742a97-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      4942.250560760494,
-      267.78074645996094
-     ],
-     "options": []
-    },
-    "f26c5e10-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      3340.6148185729953,
-      2386.917221069335
-     ],
-     "options": []
-    },
-    "a47b2877-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "984b95e5-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3419.4234123229953,
-      612.6293792724609
-     ],
-     "options": []
-    },
-    "cfcd0e57-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "8d3dd328-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      2100.0957298278795,
-      99.80232238769531
-     ],
-     "options": []
-    },
-    "46a932b6-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      3610.0288810729953,
-      1370.359848022461
+      -1091.3889501094816,
+      899.1056549549103
      ],
      "options": []
     },
@@ -6155,85 +2916,8 @@
       "path": "assets/letters/P.obj"
      },
      "uipos": [
-      1388.4219017028795,
-      2545.2698516845694
-     ],
-     "options": []
-    },
-    "5326dce7-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "dc26d7e7-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      32.7587890625,
-      1975.8776855468739
-     ],
-     "options": []
-    },
-    "efb1cde1-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "7a63548c-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "1cc04d44-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "8cfc9537-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "f1c02eae-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      377.1728515625,
-      1190.3203124999998
-     ],
-     "options": []
-    },
-    "d4cb637e-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "3d086302-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "23a6d768-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "f26c5e10-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "11ede810-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3966.6148185729953,
-      2286.917221069335
+      131.13642597198418,
+      1742.0041310787205
      ],
      "options": []
     },
@@ -6245,24 +2929,7 @@
        "list"
       ],
       "object": [
-       "f1b96e87-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      982.9687499999982,
-      2236.875
-     ],
-     "options": []
-    },
-    "8d3dd328-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "893dcd48-x",
+       "2e576fcc-x",
        "mesh"
       ],
       "SRC": null,
@@ -6270,101 +2937,8 @@
      },
      "params": {},
      "uipos": [
-      1819.0957298278795,
-      118.80232238769531
-     ],
-     "options": []
-    },
-    "3ad517c5-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "e7242398-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -194.4326171875,
-      418.5898437499999
-     ],
-     "options": []
-    },
-    "f1b96e87-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "c9ef1445-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      658.7587890625,
-      2143.877685546874
-     ],
-     "options": []
-    },
-    "7a63548c-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "0390c53a-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      57.1728515625,
-      1073.3203124999998
-     ],
-     "options": []
-    },
-    "13f897f6-x": {
-     "name": "AppendList",
-     "inputs": {
-      "list": [
-       "26e4ba2a-x",
-       "list"
-      ],
-      "object": [
-       "e8ba9844-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      4680.780592412946,
-      1613.7099425411252
-     ],
-     "options": []
-    },
-    "a20667b7-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "760b9443-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      130.0,
-      -30.0
+      -463.49162369966604,
+      1558.7557503581052
      ],
      "options": []
     },
@@ -6378,46 +2952,8 @@
       "path": "assets/letters/R.obj"
      },
      "uipos": [
-      3129.4234123229953,
-      603.6293792724609
-     ],
-     "options": []
-    },
-    "42b2e1c6-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      1966.2685813903795,
-      1306.122634887695
-     ],
-     "options": []
-    },
-    "3d35620d-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "10350eec-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      5849.250560760494,
-      416.78074645996094
+      1446.4536707997313,
+      -391.3490933179846
      ],
      "options": []
     },
@@ -6431,42 +2967,8 @@
       "path": "assets/letters/M.obj"
      },
      "uipos": [
-      1461.2490501403795,
-      1441.9495391845696
-     ],
-     "options": []
-    },
-    "acfb95a4-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "4ec744d1-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      100.60546875,
-      643.7304687499998
-     ],
-     "options": []
-    },
-    "23a6d768-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      3585.6148185729953,
-      2272.917221069335
+      203.96357440948418,
+      638.6838185787205
      ],
      "options": []
     },
@@ -6480,80 +2982,8 @@
       "path": "assets/letters/O.obj"
      },
      "uipos": [
-      1431.8545188903795,
-      2115.6800079345694
-     ],
-     "options": []
-    },
-    "2dbece9d-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 1.5707963,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      1682.8164329528795,
-      2078.5393829345694
-     ],
-     "options": []
-    },
-    "e92a1ae2-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "5c39750a-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3676.0093498229953,
-      1496.186752319335
-     ],
-     "options": []
-    },
-    "d3713fc8-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "3ad517c5-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      86.5673828125,
-      399.5898437499999
-     ],
-     "options": []
-    },
-    "25ea9464-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "6322286a-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      4326.423412322995,
-      761.6293792724609
+      174.56904315948418,
+      1312.4142873287196
      ],
      "options": []
     },
@@ -6565,106 +2995,8 @@
      },
      "params": {},
      "uipos": [
-      -1028.1430053710928,
-      -408.82995605468733
-     ],
-     "options": []
-    },
-    "b8981f3f-x": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "f5d9b12a-x",
-       "RecenteredPrim"
-      ],
-      "translation": [
-       "3e6f215f-x",
-       "vec3"
-      ],
-      "eulerXYZ": [
-       "5c35bd15-x",
-       "vec3"
-      ],
-      "quatRotation": null,
-      "scaling": [
-       "62140677-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      2376.6631126403795,
-      646.3921661376951
-     ],
-     "options": []
-    },
-    "2c43ba48-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      3547.1822013854953,
-      2874.507064819335
-     ],
-     "options": []
-    },
-    "3672d7a8-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.8,
-      "z": 0.0
-     },
-     "uipos": [
-      3615.0093498229953,
-      1599.186752319335
-     ],
-     "options": []
-    },
-    "ffaedcb5-x": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "b8155a2f-x",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      3365.6148185729953,
-      2188.917221069335
-     ],
-     "options": []
-    },
-    "e2101a22-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "42e72f9d-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      62.1533203125,
-      1302.1472167968743
+      -1250.5805053710928,
+      -515.7674560546873
      ],
      "options": []
     },
@@ -6676,16 +3008,16 @@
        "list"
       ],
       "object": [
-       "e788b69e-x",
-       "prim"
+       "fb14dd46-x",
+       "mesh"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      1021.7187499999982,
-      966.8749999999995
+      -476.621506512166,
+      267.3934456706042
      ],
      "options": []
     },
@@ -6697,128 +3029,16 @@
        "list"
       ],
       "object": [
-       "c7fd7364-x",
-       "prim"
+       "893dcd48-x",
+       "mesh"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      2982.4633278560605,
-      316.8402402019501
-     ],
-     "options": []
-    },
-    "0ba9f5e7-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "b4828217-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      4229.182201385495,
-      2767.507064819335
-     ],
-     "options": []
-    },
-    "150a16ce-x": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "d4cb637e-x",
-       "outPrim"
-      ],
-      "fillValue": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
-     "uipos": [
-      4272.614818572995,
-      2337.917221069335
-     ],
-     "options": []
-    },
-    "f1c02eae-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.04,
-      "y": 0.04,
-      "z": 0.04
-     },
-     "uipos": [
-      1.1728515625,
-      1348.3203124999998
-     ],
-     "options": []
-    },
-    "0fa17a8d-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "662f0e85-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      1959.4219017028795,
-      2535.2698516845694
-     ],
-     "options": []
-    },
-    "75757be6-x": {
-     "name": "ReCenterPrim",
-     "inputs": {
-      "PrimIn": [
-       "e9d9ed47-x",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      5157.234935760495,
-      817.5307464599608
-     ],
-     "options": []
-    },
-    "849f8a1e-SubOutput": {
-     "name": "SubOutput",
-     "inputs": {
-      "port": [
-       "ed5d502f-x",
-       "list"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "AToZLetters"
-     },
-     "uipos": [
-      6640.0,
-      975.0
+      801.5852548789969,
+      -713.947585382461
      ],
      "options": []
     },
@@ -6832,16 +3052,396 @@
       "name": "zelloWorld"
      },
      "uipos": [
-      -1084.1411537170409,
-      -750.3685104370113
+      -1220.672403717041,
+      -699.2747604370113
+     ],
+     "options": []
+    },
+    "0c23263d-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "c2236010-x",
+       "list"
+      ],
+      "object": [
+       "31289adb-x",
+       "mesh"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      2059.7780086708035,
+      -898.9322932147961
+     ],
+     "options": []
+    },
+    "980172f9-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "322e1e79-x",
+       "list"
+      ],
+      "object": [
+       "edb55128-x",
+       "mesh"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      2150.6710140418973,
+      -227.41833142280439
+     ],
+     "options": []
+    },
+    "709e4ee4-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "995d66fa-x",
+       "list"
+      ],
+      "object": [
+       "b8155a2f-x",
+       "mesh"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      2133.2335140418973,
+      1052.0191685771956
+     ],
+     "options": []
+    },
+    "61e2c617-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "8162cde0-x",
+       "list"
+      ],
+      "object": [
+       "8c126db7-x",
+       "mesh"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      2173.6710140418973,
+      346.5816685771956
+     ],
+     "options": []
+    },
+    "8162cde0-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "980172f9-x",
+       "list"
+      ],
+      "object": [
+       "1993f8bc-x",
+       "mesh"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      2151.6710140418973,
+      81.58166857719561
+     ],
+     "options": []
+    },
+    "379aedfc-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "709e4ee4-x",
+       "list"
+      ],
+      "object": [
+       "7bffaf10-x",
+       "mesh"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      2068.619256229398,
+      1572.0826451396956
+     ],
+     "options": []
+    },
+    "995d66fa-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "61e2c617-x",
+       "list"
+      ],
+      "object": [
+       "9c31ce1d-x",
+       "mesh"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      2129.6710140418973,
+      716.5816685771956
+     ],
+     "options": []
+    },
+    "322e1e79-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "0c23263d-x",
+       "list"
+      ],
+      "object": [
+       "984b95e5-x",
+       "mesh"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      2149.6710140418973,
+      -540.4183314228046
+     ],
+     "options": []
+    },
+    "e9a5fd1c-x": {
+     "name": "ReadObjMesh",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "path": "assets/letters/Z.obj"
+     },
+     "uipos": [
+      2573.858165085314,
+      -556.2607210874548
+     ],
+     "options": []
+    },
+    "671c266c-x": {
+     "name": "ReadObjMesh",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "path": "assets/letters/Y.obj"
+     },
+     "uipos": [
+      2618.040782272814,
+      -929.8505648374546
+     ],
+     "options": []
+    },
+    "3ed194d1-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "d118ae1b-x",
+       "list"
+      ],
+      "object": [
+       "e9a5fd1c-x",
+       "mesh"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      2956.8948442649803,
+      -596.8863556766499
+     ],
+     "options": []
+    },
+    "d118ae1b-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "379aedfc-x",
+       "list"
+      ],
+      "object": [
+       "671c266c-x",
+       "mesh"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      2876.376838893886,
+      -886.9628174686418
+     ],
+     "options": []
+    },
+    "c7dbea57-BeginForEach": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "3ed194d1-x",
+       "list"
+      ],
+      "SRC": [
+       "1c4f10e2-EmptyList",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      4076.5624999999973,
+      339.68749999999966
+     ],
+     "options": []
+    },
+    "4d6cf18b-EndFor": {
+     "name": "EndFor",
+     "inputs": {
+      "FOR": [
+       "c7dbea57-BeginForEach",
+       "FOR"
+      ],
+      "SRC": [
+       "4029c498-AppendList",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      5871.062499999997,
+      695.7874999999996
+     ],
+     "options": []
+    },
+    "ab558e2f-MeshToPrimitive": {
+     "name": "MeshToPrimitive",
+     "inputs": {
+      "mesh": [
+       "c7dbea57-BeginForEach",
+       "object"
+      ],
+      "SRC": [
+       "c7dbea57-BeginForEach",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      4362.387499999996,
+      484.0125000000003
+     ],
+     "options": []
+    },
+    "1c4f10e2-EmptyList": {
+     "name": "EmptyList",
+     "inputs": {
+      "SRC": [
+       "3ed194d1-x",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      3723.75,
+      576.0
+     ],
+     "options": []
+    },
+    "4029c498-AppendList": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "1c4f10e2-EmptyList",
+       "list"
+      ],
+      "object": [
+       "d78d8791-PrimitiveAddAttr",
+       "prim"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      5377.812500000001,
+      711.8749999999999
+     ],
+     "options": []
+    },
+    "d78d8791-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "ab558e2f-MeshToPrimitive",
+       "prim"
+      ],
+      "fillValue": null,
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "name": "clr",
+      "type": "float3"
+     },
+     "uipos": [
+      4894.687500000001,
+      550.6249999999997
+     ],
+     "options": []
+    },
+    "f06c8537-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "4029c498-AppendList",
+       "list"
+      ],
+      "SRC": [
+       "4d6cf18b-EndFor",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {
+      "name": "AToZ"
+     },
+     "uipos": [
+      6460.39535522461,
+      930.0988388061523
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.08589934592000006,
-    "trans_x": -195,
-    "trans_y": -54
+    "scale": 0.13421772800000006,
+    "trans_x": -248,
+    "trans_y": -214
    }
   },
   "zelloWorld": {
@@ -6874,7 +3474,7 @@
       ],
       "AZmesh": [
        "b71bac77-x",
-       "AToZLetters"
+       "AToZ"
       ],
       "spacing": [
        "ce0882a1-x",
@@ -6885,8 +3485,8 @@
      },
      "params": {},
      "uipos": [
-      -712.0,
-      -2863.0
+      -723.0,
+      -2866.0
      ],
      "options": [
       "ONCE"
@@ -6896,16 +3496,16 @@
      "name": "ReCenterPrim",
      "inputs": {
       "PrimIn": [
-       "ab080be8-x",
-       "prim"
+       "57d48189-SDFToPoly",
+       "Mesh"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      2115.5679999999998,
-      -2643.9519999999993
+      2194.5679999999993,
+      -2591.9519999999993
      ],
      "options": []
     },
@@ -6925,8 +3525,8 @@
      },
      "params": {},
      "uipos": [
-      209.0,
-      -2723.0
+      213.8,
+      -2691.0000000000005
      ],
      "options": []
     },
@@ -6966,8 +3566,8 @@
      },
      "params": {},
      "uipos": [
-      -1177.2441082000723,
-      -2846.263147354124
+      -1206.1041082000722,
+      -2848.153147354124
      ],
      "options": [
       "ONCE"
@@ -6988,8 +3588,8 @@
      },
      "params": {},
      "uipos": [
-      1821.3999999999996,
-      -2680.6000000000004
+      1719.3999999999996,
+      -2730.6000000000004
      ],
      "options": []
     },
@@ -7090,8 +3690,8 @@
      },
      "params": {},
      "uipos": [
-      525.0,
-      -2789.0
+      531.4,
+      -2755.3999999999996
      ],
      "options": []
     },
@@ -7129,26 +3729,152 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "b318901f-x",
-       "RecenteredPrim"
+       "9be21252-PrimitiveAddAttr",
+       "prim"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {
-      "name": "worldArt"
+      "name": "3Dword"
      },
      "uipos": [
-      2435.2000000000003,
-      -2620.1600000000008
+      3199.800000000001,
+      -2602.960000000001
+     ],
+     "options": []
+    },
+    "f4044609-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "ab080be8-x",
+       "prim"
+      ],
+      "translation": [
+       "11350bed-NumericOperator",
+       "ret"
+      ],
+      "eulerXYZ": null,
+      "quatRotation": null,
+      "scaling": null,
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      2613.6000000000004,
+      -2619.5999999999995
+     ],
+     "options": []
+    },
+    "4b4b2595-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.8,
+      "z": 0.0
+     },
+     "uipos": [
+      2071.6000000000004,
+      -2268.0
+     ],
+     "options": []
+    },
+    "9b18fb4f-PrimitiveToSDF": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "ab080be8-x",
+       "prim"
+      ],
+      "Dx": null,
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "voxel_size": 0.1,
+      "type": "vertex"
+     },
+     "uipos": [
+      1730.0,
+      -2555.0
+     ],
+     "options": []
+    },
+    "57d48189-SDFToPoly": {
+     "name": "SDFToPoly",
+     "inputs": {
+      "SDF": [
+       "9b18fb4f-PrimitiveToSDF",
+       "sdf"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "isoValue": 0.0,
+      "adaptivity": 0.0
+     },
+     "uipos": [
+      1968.0,
+      -2533.0
+     ],
+     "options": []
+    },
+    "9be21252-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "f4044609-TransformPrimitive",
+       "outPrim"
+      ],
+      "fillValue": null,
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "name": "clr",
+      "type": "float3"
+     },
+     "uipos": [
+      2916.0,
+      -2483.0
+     ],
+     "options": []
+    },
+    "11350bed-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "4b4b2595-NumericVec3",
+       "vec3"
+      ],
+      "rhs": [
+       "b318901f-x",
+       "MassCenter"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "op_type": "sub"
+     },
+     "uipos": [
+      2381.0,
+      -2347.0
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -1650,
-    "trans_y": -3180
+    "scale": 1.5625,
+    "trans_x": -1349,
+    "trans_y": -2530
    }
   }
  },
@@ -11192,7 +7918,7 @@
    ],
    "params": [],
    "categories": [
-    "subgraph"
+    "Utils"
    ],
    "is_subgraph": true
   },
@@ -11311,7 +8037,7 @@
     "COND"
    ],
    "outputs": [
-    "AToZLetters",
+    "AToZ",
     "DST"
    ],
    "params": [],
@@ -11327,7 +8053,7 @@
     "COND"
    ],
    "outputs": [
-    "worldArt",
+    "3Dword",
     "DST"
    ],
    "params": [],
