@@ -69,7 +69,7 @@ struct LBM {
     volume<float4> vel;
     volume_soa<float, 16> f_new;
     volume_soa<float, 16> f_old;
-    volume<uint8_t> mask;
+    //volume<uint8_t> mask;
 
     void allocate() {
         vel.allocate();
@@ -173,11 +173,11 @@ __global__ void applybc1(LBM lbm) {
         lbm.vel.at(0, y, z).y = 0.f;
         lbm.vel.at(0, y, z).z = 0.f;
         for (int q = 0; q < 15; q++) {
-            lbm.f_old.at(q, 0, y, z) = lbm.f_eq(q, 0, y, z);
+            lbm.f_old.at(q, 0, y, z) = lbm.f_eq(q, 0, y, z) - lbm.f_eq(q, 1, y, z) + lbm.f_old.at(q, 1, y, z);
         }
         lbm.vel.at(NX - 1, y, z) = lbm.vel.at(NX - 2, y, z);
         for (int q = 0; q < 15; q++) {
-            lbm.f_old.at(q, NX - 1, y, z) = lbm.f_eq(q, NX - 1, y, z);
+            lbm.f_old.at(q, NX - 1, y, z) = lbm.f_eq(q, NX - 1, y, z) - lbm.f_eq(q, NX - 2, y, z) + lbm.f_old.at(q, NX - 2, y, z);
         }
     }
 }
@@ -189,14 +189,14 @@ __global__ void applybc2(LBM lbm) {
         lbm.vel.at(x, 0, z).y = 0.f;
         lbm.vel.at(x, 0, z).z = 0.f;
         for (int q = 0; q < 15; q++) {
-            lbm.f_old.at(q, x, 0, z) = lbm.f_eq(q, x, 0, z);
+            lbm.f_old.at(q, x, 0, z) = lbm.f_eq(q, x, 0, z) - lbm.f_eq(q, x, 1, z) + lbm.f_old.at(q, x, 1, z);
         }
         lbm.vel.at(x, NY - 1, z) = lbm.vel.at(x, NY - 2, z);
         lbm.vel.at(x, NY - 1, z).x = 0.f;
         lbm.vel.at(x, NY - 1, z).y = 0.f;
         lbm.vel.at(x, NY - 1, z).z = 0.f;
         for (int q = 0; q < 15; q++) {
-            lbm.f_old.at(q, x, NY - 1, z) = lbm.f_eq(q, x, NY - 1, z);
+            lbm.f_old.at(q, x, NY - 1, z) = lbm.f_eq(q, x, NY - 1, z) - lbm.f_eq(q, x, NY - 2, z) + lbm.f_old.at(q, x, NY - 2, z);
         }
     }
 }
@@ -208,14 +208,14 @@ __global__ void applybc3(LBM lbm) {
         lbm.vel.at(x, y, 0).y = 0.f;
         lbm.vel.at(x, y, 0).z = 0.f;
         for (int q = 0; q < 15; q++) {
-            lbm.f_old.at(q, x, y, 0) = lbm.f_eq(q, x, y, 0);
+            lbm.f_old.at(q, x, y, 0) = lbm.f_eq(q, x, y, 0) - lbm.f_eq(q, x, y, 1) + lbm.f_old.at(q, x, y, 1);
         }
         lbm.vel.at(x, y, NZ - 1) = lbm.vel.at(x, y, NZ - 2);
         lbm.vel.at(x, y, NZ - 1).x = 0.f;
         lbm.vel.at(x, y, NZ - 1).y = 0.f;
         lbm.vel.at(x, y, NZ - 1).z = 0.f;
         for (int q = 0; q < 15; q++) {
-            lbm.f_old.at(q, x, y, NZ - 1) = lbm.f_eq(q, x, y, NZ - 1);
+            lbm.f_old.at(q, x, y, NZ - 1) = lbm.f_eq(q, x, y, NZ - 1) - lbm.f_eq(q, x, y, NZ - 2) + lbm.f_old.at(q, x, y, NZ - 2);
         }
     }
 }
