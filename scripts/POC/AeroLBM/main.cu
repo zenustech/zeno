@@ -58,6 +58,8 @@ struct volume {
 static inline __constant__ const int directions[][3] = {{0,0,0},{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},{1,-1,1},{-1,1,-1},{-1,1,1},{1,-1,-1}};
 static inline __constant__ const float weights[] = {2.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f,1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f};
 
+static_assert(sizeof(weights) / sizeof(weights[0]) == 15);
+
 static inline const float niu = 0.005f;
 static inline const float tau = 3.f * niu + 0.5f;
 static inline const float inv_tau = 1.f / tau;
@@ -84,9 +86,19 @@ struct LBM {
     }
 };
 
-__global__ void initialize(LBM lbm) {
+__global__ void initialize1(LBM lbm) {
     for (GSL(z, 0, N)) for (GSL(y, 0, N)) for (GSL(x, 0, N)) {
         lbm.vel.at(x, y, z) = make_float4(0.f, 0.f, 0.f, 1.f);
+    }
+}
+
+__global__ void initialize2(LBM lbm) {
+    for (GSL(z, 0, N)) for (GSL(y, 0, N)) for (GSL(x, 0, N)) {
+        for (int q = 0; q < 15; q++) {
+            float f = lbm.f_eq(q, x, y, z);
+            lbm.f_new.at(q, x, y, z) = f;
+            lbm.f_old.at(q, x, y, z) = f;
+        }
     }
 }
 
@@ -126,14 +138,17 @@ __global__ void substep2(LBM lbm) {
 }
 
 __global__ void applybc1(LBM lbm) {
-    //for (GSL(z, 1, N - 1)) for (GSL(y, 1, N - 1)) {
-    for (GSL(z, 0, N)) for (GSL(y, 0, N)) {
+    for (GSL(z, 1, N - 1)) for (GSL(y, 1, N - 1)) {
+    //for (GSL(z, 0, N)) for (GSL(y, 0, N)) {
         xyz(lbm.vel.at(0, y, z)) = make_float3(0.1f, 0.f, 0.f);
+        lbm.vel.at(0, y, z).w = lbm.vel.at(1, y, z).w;
+        //lbm.vel.at(0, y, z).w = 1.0f;
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, 0, y, z) =
                 lbm.f_eq(q, 0, y, z) - lbm.f_eq(q, 1, y, z)
                 + lbm.f_old.at(q, 1, y, z);
         }
+        lbm.vel.at(N - 1, y, z).w = lbm.vel.at(N - 2, y, z).w;
         xyz(lbm.vel.at(N - 1, y, z)) = xyz(lbm.vel.at(N - 2, y, z));
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, N - 1, y, z) =
@@ -146,12 +161,14 @@ __global__ void applybc1(LBM lbm) {
 __global__ void applybc2(LBM lbm) {
     for (GSL(z, 0, N)) for (GSL(x, 0, N)) {
         xyz(lbm.vel.at(x, 0, z)) = make_float3(0.f, 0.f, 0.f);
+        lbm.vel.at(x, 0, z).w = lbm.vel.at(x, 1, z).w;
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, x, 0, z) =
                 lbm.f_eq(q, x, 0, z) - lbm.f_eq(q, x, 1, z)
                 + lbm.f_old.at(q, x, 1, z);
         }
         xyz(lbm.vel.at(x, N - 1, z)) = make_float3(0.f, 0.f, 0.f);
+        lbm.vel.at(x, N - 1, z).w = lbm.vel.at(x, N - 2, z).w;
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, x, N - 1, z) =
                 lbm.f_eq(q, x, N - 1, z) - lbm.f_eq(q, x, N - 2, z)
@@ -163,12 +180,14 @@ __global__ void applybc2(LBM lbm) {
 __global__ void applybc3(LBM lbm) {
     for (GSL(y, 0, N)) for (GSL(x, 0, N)) {
         xyz(lbm.vel.at(x, y, 0)) = make_float3(0.f, 0.f, 0.f);
+        lbm.vel.at(x, y, 0).w = lbm.vel.at(x, y, 0).w;
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, x, y, 0) =
                 lbm.f_eq(q, x, y, 0) - lbm.f_eq(q, x, y, 1)
                 + lbm.f_old.at(q, x, y, 1);
         }
         xyz(lbm.vel.at(x, y, N - 1)) = make_float3(0.f, 0.f, 0.f);
+        lbm.vel.at(x, y, N - 1).w = lbm.vel.at(x, y, N - 2).w;
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, x, y, N - 1) =
                 lbm.f_eq(q, x, y, N - 1) - lbm.f_eq(q, x, y, N - 2)
@@ -189,7 +208,8 @@ float *pixels;
 void initFunc() {
     lbm.allocate();
     checkCudaErrors(cudaMallocManaged(&pixels, N * N * sizeof(float)));
-    initialize<<<dim3(N / 8, N / 8, N / 8), dim3(8, 8, 8)>>>(lbm);
+    initialize1<<<dim3(N / 8, N / 8, N / 8), dim3(8, 8, 8)>>>(lbm);
+    initialize2<<<dim3(N / 8, N / 8, N / 8), dim3(8, 8, 8)>>>(lbm);
 }
 
 void stepFunc() {
@@ -206,8 +226,8 @@ __global__ void render(float *pixels, LBM lbm) {
         //float val = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
         //float val = 4.f * sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
         //float val = 400.f * sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-        float val = v.x * 40.f;
-        //float val = v.w * 0.3f;
+        //float val = v.x * 40.f;
+        float val = v.w * 0.3f;
         pixels[y * N + x] = val;
     }
 }
