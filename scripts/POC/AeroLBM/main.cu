@@ -121,7 +121,7 @@ struct xyz {
 };
 
 __global__ void applybc1(LBM lbm) {
-    for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
+    for (GSL(z, N)) for (GSL(y, N)) {
         xyz(lbm.vel.at(0, y, z)) = make_float3(0.1f, 0.f, 0.f);
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, 0, y, z) =
@@ -149,13 +149,14 @@ void initFunc() {
 void stepFunc() {
     substep1<<<dim3(N / 8, N / 8, N / 8), dim3(8, 8, 8)>>>(lbm);
     substep2<<<dim3(N / 8, N / 8, N / 8), dim3(8, 8, 8)>>>(lbm);
+    applybc1<<<dim3(1, N / 16, N / 16), dim3(1, 16, 16)>>>(lbm);
 }
 
 __global__ void render(float *pixels, LBM lbm) {
     for (GSL(y, N)) for (GSL(x, N)) {
-        float4 v = lbm.vel.at(0, 0, 0);
+        float4 v = lbm.vel.at(x, y, N / 2);
         float val = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-        pixels[y * N + x] = val;
+        pixels[y * N + x] = 0.0f + val * 400.f;
     }
 }
 
