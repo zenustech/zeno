@@ -68,10 +68,10 @@ struct Dim {
     }
 };
 
-template <class T, class F, class ...Ts>
-__global__ void golaunch(T that, F func, Ts &&...ts) {
+template <class T, class F>
+__global__ void golaunch(T t, F f) {
     printf("FUCK\n");
-    func(that, std::forward<Ts>(ts)...);
+    f(&t);
 }
 
 struct lbm {
@@ -99,22 +99,17 @@ struct lbm {
         return feq;
     }
 
-    template <class GridDim, class BlockDim>
-    __host__ void initialize() {
-#ifndef __CUDA_ARCH__
-        printf("host!\n");
-        golaunch<<<dim3{1, 1, 1}, dim3{1, 1, 1}>>>
-        ([] __device__ (auto that) {
-            printf("!!\n");
-            //that.initialize<GridDim, BlockDim>();
-        });
-#else
-        /*printf("!!!\n");
+    __device__ void _initialize() {
         for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
-            //vel.at(x, y, z) = make_float4(0.f, 0.f, 0.f, 1.f);
-            vel.at(x, y, z) = make_float4(0.f, 0.f, float(x) / N, 1.f);
-        }*/
-#endif
+            vel.at(x, y, z).w = float(x) / N;
+        }
+    }
+
+    __host__ void initialize() {
+        golaunch<<<1, 1>>>
+        (*this, [] __device__ (auto *that) {
+            that->_initialize();
+        });
     }
 
     /*__device__ void substep1() {
@@ -157,14 +152,15 @@ int main(void)
     lbm lbm;
     lbm.allocate();
 
-    lbm.initialize<Dim<1, 1, 1>, Dim<1, 1, 1>>();
+    lbm.initialize();
 
     checkCudaErrors(cudaDeviceSynchronize());
 
     for (int i = 0; i < N; i++) {
-        float4 v = lbm.vel.at(i, 0, 0);
-        float vn = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-        printf("%f\n", vn);
+        //float4 v = lbm.vel.at(i, 0, 0);
+        //float vn = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+        float val = lbm.vel.at(i, 0, 0).w;
+        printf("%f\n", val);
     }
 
     return 0;
