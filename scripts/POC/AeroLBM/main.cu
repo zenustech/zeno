@@ -6,8 +6,8 @@
 #include <GL/glut.h>
 
 #define NX 256
-#define NY 64
-#define NZ 64
+#define NY 128
+#define NZ 128
 
 template <class T>
 struct xyz {
@@ -208,10 +208,10 @@ __global__ void applybc3(LBM lbm) {
 
 __global__ void applybc4(LBM lbm) {
     for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
-        float fx = x * 8.f / NX - 1.f;
+        float fx = x * 4.f / NX - 1.f;
         float fy = y * 2.f / NY - 1.f;
         float fz = z * 2.f / NZ - 1.f;
-        if (fx * fx + fy * fy + fz * fz >= .08f) {
+        if (fx * fx + fy * fy + fz * fz >= .065f) {
             continue;
         }
         lbm.vel.at(x, y, z).x = 0.f;
