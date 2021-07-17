@@ -56,7 +56,7 @@ float f_eq(int q, int x, int y, int z) {
 }
 
 void stepFunc() {
-    printf("step\n");
+    static int counter; printf("step %d\n", counter++);
     #pragma omp parallel for
     for (int z = 0; z < N; z++) {
         for (int y = 0; y < N; y++) {
@@ -92,6 +92,7 @@ void stepFunc() {
             }
         }
     }
+    return;
     #pragma omp parallel for
     for (int z = 0; z < N; z++) {
         for (int y = 0; y < N; y++) {
@@ -126,7 +127,6 @@ void stepFunc() {
             }
         }
     }
-    return;
     #pragma omp parallel for
     for (int y = 1; y < N - 1; y++) {
         for (int x = 0; x < N; x++) {
