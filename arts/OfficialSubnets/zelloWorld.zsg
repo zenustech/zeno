@@ -14,8 +14,8 @@
      },
      "params": {},
      "uipos": [
-      -698.8554687499995,
-      -2747.416113281248
+      -820.7304687499997,
+      -2761.4786132812483
      ],
      "options": [
       "ONCE"
@@ -31,151 +31,35 @@
       "value": "this is zeno"
      },
      "uipos": [
-      -1119.511875,
-      -2742.98
+      -1136.6993749999997,
+      -2772.6675
      ],
      "options": []
     },
-    "83d342c6-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
+    "5250a410-FlashRender": {
+     "name": "FlashRender",
      "inputs": {
       "prim": [
        "1d9489c4-zelloWorld",
        "3Dword"
       ],
-      "zfxCode": [
-       "e2d3eb63-MakeMultilineString",
-       "value"
-      ],
-      "params": [
-       "5771518c-MakeDict",
-       "dict"
-      ],
       "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      655.85,
-      -2593.5
+      -475.4046874999999,
+      -2760.370312499999
      ],
      "options": [
       "VIEW"
      ]
-    },
-    "e2d3eb63-MakeMultilineString": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "value": "@clr.xyz = vec3($a,$a,$a)"
-     },
-     "uipos": [
-      -277.60624999999993,
-      -2548.8718750000003
-     ],
-     "options": []
-    },
-    "5771518c-MakeDict": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": null,
-      "COND": null,
-      "a": [
-       "ad5b57dc-NumericOperator",
-       "ret"
-      ]
-     },
-     "params": {
-      "_KEYS": "a"
-     },
-     "uipos": [
-      300.69999999999993,
-      -2295.700000000001
-     ],
-     "options": [],
-     "socket_keys": [
-      "a"
-     ]
-    },
-    "13175da1-GetTime": {
-     "name": "GetTime",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -533.7000000000003,
-      -2405.6999999999994
-     ],
-     "options": []
-    },
-    "ad5b57dc-NumericOperator": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "7026c073-NumericOperator",
-       "ret"
-      ],
-      "rhs": null,
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "op_type": "sin"
-     },
-     "uipos": [
-      7.099999999999852,
-      -2331.6999999999994
-     ],
-     "options": []
-    },
-    "7026c073-NumericOperator": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "13175da1-GetTime",
-       "time"
-      ],
-      "rhs": [
-       "283be1fb-NumericFloat",
-       "value"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "op_type": "mul"
-     },
-     "uipos": [
-      -250.00000000000006,
-      -2328.7500000000005
-     ],
-     "options": []
-    },
-    "283be1fb-NumericFloat": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "value": 5.0
-     },
-     "uipos": [
-      -526.25,
-      -2258.7500000000005
-     ],
-     "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000007,
-    "trans_x": -1312,
-    "trans_y": -2937
+    "scale": 0.6400000000000001,
+    "trans_x": -843,
+    "trans_y": -1942
    }
   },
   "addRigid": {
@@ -3872,9 +3756,202 @@
     }
    },
    "view": {
-    "scale": 1.5625,
-    "trans_x": -1349,
-    "trans_y": -2530
+    "scale": 0.5120000000000003,
+    "trans_x": -337,
+    "trans_y": -1381
+   }
+  },
+  "FlashRender": {
+   "nodes": {
+    "ad8f7474-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": 5.0
+     },
+     "uipos": [
+      -426.25,
+      -2158.7500000000005
+     ],
+     "options": []
+    },
+    "408b7abf-x": {
+     "name": "GetTime",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      -433.7000000000003,
+      -2305.6999999999994
+     ],
+     "options": []
+    },
+    "0c433790-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": null,
+      "COND": null,
+      "a": [
+       "3dac27e6-x",
+       "ret"
+      ]
+     },
+     "params": {
+      "_KEYS": "a"
+     },
+     "uipos": [
+      400.69999999999993,
+      -2195.700000000001
+     ],
+     "options": [],
+     "socket_keys": [
+      "a"
+     ]
+    },
+    "3dac27e6-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "14a1e468-x",
+       "ret"
+      ],
+      "rhs": null,
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "op_type": "sin"
+     },
+     "uipos": [
+      107.09999999999985,
+      -2231.6999999999994
+     ],
+     "options": []
+    },
+    "b43c6f1e-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": "@clr.xyz = vec3($a,$a,$a)"
+     },
+     "uipos": [
+      -177.60624999999993,
+      -2448.8718750000003
+     ],
+     "options": []
+    },
+    "14a1e468-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "408b7abf-x",
+       "time"
+      ],
+      "rhs": [
+       "ad8f7474-x",
+       "value"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      -150.00000000000006,
+      -2228.7500000000005
+     ],
+     "options": []
+    },
+    "895a3960-x": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "9f8d6d98-SubInput",
+       "port"
+      ],
+      "zfxCode": [
+       "b43c6f1e-x",
+       "value"
+      ],
+      "params": [
+       "0c433790-x",
+       "dict"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      755.85,
+      -2493.5
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "dbb31ee0-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "name": "zelloWorld"
+     },
+     "uipos": [
+      -320.3124999999998,
+      -2640.624999999998
+     ],
+     "options": []
+    },
+    "9f8d6d98-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "name": "prim"
+     },
+     "uipos": [
+      269.0,
+      -2568.0
+     ],
+     "options": []
+    },
+    "74318034-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "895a3960-x",
+       "DST"
+      ],
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "name": "end"
+     },
+     "uipos": [
+      1132.0,
+      -2385.0
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1.0,
+    "trans_x": 555,
+    "trans_y": -2665
    }
   }
  },
@@ -8054,6 +8131,22 @@
    ],
    "outputs": [
     "3Dword",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zelloWorld"
+   ],
+   "is_subgraph": true
+  },
+  "FlashRender": {
+   "inputs": [
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "end",
     "DST"
    ],
    "params": [],
