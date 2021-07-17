@@ -23,32 +23,6 @@ struct PrimitiveObject : zeno::IObjectClone<PrimitiveObject> {
   std::vector<zeno::vec3i> tris;
   std::vector<zeno::vec4i> quads;
 
-  void copy(PrimitiveObject* prim)
-  {
-    
-    for (auto const &[key, varr]: prim->m_attrs) {
-        std::visit([&](auto const &arr) {
-            using T = std::decay_t<decltype(arr[0])>;
-            auto &outarr = add_attr<T>(key);
-            for (auto const &val: arr) {
-                outarr.push_back(val);
-            }
-        }, varr);
-    }
-    for (auto const &idx: prim->points) {
-        points.push_back(idx);
-    }
-    for (auto const &idx: prim->lines) {
-        lines.push_back(idx);
-    }
-    for (auto const &idx: prim->tris) {
-        tris.push_back(idx);
-    }
-    for (auto const &idx: prim->quads) {
-        quads.push_back(idx);
-    }
-    resize(prim->size());
-  }
 #ifndef ZEN_NOREFDLL
   ZENAPI virtual void dumpfile(std::string const &path) override;
 #else
