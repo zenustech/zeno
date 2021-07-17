@@ -159,8 +159,8 @@ void upper(DOM<X * 2, Y * 2> hi, DOM<X, Y> lo) {
 
 #define NX 512
 #define NY 512
-DOM<NX / 1, NY / 1> dom;
-DOM<NX / 2, NY / 2> dom2;
+DOM<NX / 4, NY / 4> dom;
+DOM<NX / 8, NY / 8> dom2;
 float *pixels;
 
 void initFunc() {
@@ -174,8 +174,9 @@ void initFunc() {
 void stepFunc() {
     substep(dom);
     lower(dom, dom2);
-    //substep(dom2);
+    substep(dom2);
     upper(dom, dom2);
+    counter++;
     counter++;
 }
 
