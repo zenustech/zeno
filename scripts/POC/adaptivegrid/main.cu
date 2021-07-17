@@ -112,7 +112,6 @@ void substep(DOM<X, Y> dom) {
     substep2<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(dom);
     float height = 1.0f * sinf(counter * 0.08f);
     substep3<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(dom, height);
-    counter++;
 }
 
 #define NX 512
@@ -132,6 +131,7 @@ void initFunc() {
 void stepFunc() {
     substep(dom);
     substep(dom2);
+    counter++;
 }
 
 template <int X, int Y>
