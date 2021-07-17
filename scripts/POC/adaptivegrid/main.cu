@@ -48,6 +48,7 @@ struct DOM {
     void allocate() {
         pos.allocate();
         vel.allocate();
+        mask.allocate();
     }
 
     __device__ float laplacian(int i, int j) const {
@@ -60,6 +61,13 @@ __global__ void initialize1(DOM dom) {
     for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
         dom.vel.at(x, y) = 0.f;
         dom.pos.at(x, y) = 0.f;
+        dom.mask.at(x, y) = 0;
+        float fx = x * 2.f / NX - 1.f;
+        float fy = y * 2.f / NY - 1.f;
+        float f2 = fx * fx + fy * fy;
+        if (f2 < 0.1f || x == 0 || x == NX - 1 || y == 0 || y == NY - 1) {
+            dom.mask.at(x, y) = 1;
+        }
     }
 }
 
@@ -69,6 +77,8 @@ void initialize(DOM dom) {
 
 __global__ void substep1(DOM dom) {
     for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
+        if (dom.mask.at(x, y) != 0)
+            continue;
         float acc = ka * dom.laplacian(x, y) - ga * dom.vel.at(x, y);
         dom.vel.at(x, y) += acc * dt;
     }
@@ -80,9 +90,23 @@ __global__ void substep2(DOM dom) {
     }
 }
 
+__global__ void substep3(DOM dom, float height) {
+    for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
+        float fx = x * 2.f / NX - .25f;
+        float fy = y * 2.f / NY - .25f;
+        float f2 = fx * fx + fy * fy;
+        if (f2 < 0.01f) {
+            dom.pos.at(x, y) = height;
+        }
+    }
+}
+
 void substep(DOM dom) {
     substep1<<<dim3(NX / 16, NY / 16, 1), dim3(16, 16, 1)>>>(dom);
     substep2<<<dim3(NX / 16, NY / 16, 1), dim3(16, 16, 1)>>>(dom);
+    static int counter = 0;
+    float height = 1.0f * sinf(counter++ * 0.08f);
+    substep3<<<dim3(NX / 16, NY / 16, 1), dim3(16, 16, 1)>>>(dom, height);
 }
 
 DOM dom;
@@ -100,7 +124,7 @@ void stepFunc() {
 
 __global__ void render(float *pixels, DOM dom) {
     for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
-        pixels[y * NX + x] = 0.5f + dom.pos.at(x, y);
+        pixels[y * NX + x] = 0.5f + 0.5f * dom.pos.at(x, y);
     }
 }
 
@@ -118,7 +142,7 @@ void displayFunc() {
     glFlush();
 }
 
-#define ITV 100
+#define ITV 10
 void timerFunc(int unused) {
     stepFunc();
     renderFunc();
