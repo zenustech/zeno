@@ -36,7 +36,6 @@ struct volume {
 
 static inline const float ka = 2.0f;
 static inline const float ga = 0.2f;
-static inline const float dt = 0.01f;
 
 template <int X, int Y>
 struct DOM {
@@ -87,6 +86,7 @@ void initialize(DOM<X, Y> dom, int type) {
 template <int X, int Y>
 __global__ void substep1(DOM<X, Y> dom) {
     for (GSL(y, 0, Y)) for (GSL(x, 0, X)) {
+        auto const dt = 5.f / X;
         if (!dom.active.at(x, y)) continue;
         if (dom.mask.at(x, y) != 0)
             continue;
@@ -98,6 +98,7 @@ __global__ void substep1(DOM<X, Y> dom) {
 template <int X, int Y>
 __global__ void substep2(DOM<X, Y> dom) {
     for (GSL(y, 0, Y)) for (GSL(x, 0, X)) {
+        auto const dt = 5.f / X;
         if (!dom.active.at(x, y)) continue;
         dom.pos.at(x, y) += dom.vel.at(x, y) * dt;
     }
@@ -128,7 +129,7 @@ template <int X, int Y>
 __global__ void upper1(volume<X * 2, Y * 2> hi, volume<X, Y> lo,
     volume<X * 2, Y * 2, uint8_t> hi_active, volume<X, Y, uint8_t> lo_active) {
     for (GSL(y, 0, Y)) for (GSL(x, 0, X)) {
-        if (!lo_active.at(x, y) || !hi_active.at(x, y)) continue;
+        if (!lo_active.at(x, y) || !hi_active.at(x * 2, y * 2)) continue;
         float val = lo.at(x, y);
         for (int dy = 0; dy < 2; dy++) for (int dx = 0; dx < 2; dx++) {
             hi.at(x * 2 + dx, y * 2 + dy) = val;
@@ -147,7 +148,7 @@ template <int X, int Y>
 __global__ void lower1(volume<X * 2, Y * 2> hi, volume<X, Y> lo,
     volume<X * 2, Y * 2, uint8_t> hi_active, volume<X, Y, uint8_t> lo_active) {
     for (GSL(y, 0, Y)) for (GSL(x, 0, X)) {
-        if (!lo_active.at(x, y) || !hi_active.at(x, y)) continue;
+        if (!lo_active.at(x, y) || !hi_active.at(x * 2, y * 2)) continue;
         float val = 0.f;
         for (int dy = 0; dy < 2; dy++) for (int dx = 0; dx < 2; dx++) {
             val += hi.at(x * 2 + dx, y * 2 + dy);
@@ -177,8 +178,8 @@ void upper(DOM<X * 2, Y * 2> hi, DOM<X, Y> lo) {
 
 #define NX 512
 #define NY 512
-DOM<NX / 4, NY / 4> dom;
-DOM<NX / 8, NY / 8> dom2;
+DOM<NX / 1, NY / 1> dom;
+DOM<NX / 2, NY / 2> dom2;
 float *pixels;
 
 void initFunc() {
@@ -190,6 +191,7 @@ void initFunc() {
 }
 
 void stepFunc() {
+    substep(dom);
     substep(dom);
     lower(dom, dom2);
     substep(dom2);
@@ -228,7 +230,7 @@ void displayFunc() {
     glFlush();
 }
 
-#define ITV 3
+#define ITV 2
 void timerFunc(int unused) {
     stepFunc();
     renderFunc();
