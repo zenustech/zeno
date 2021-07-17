@@ -29,9 +29,9 @@ struct volume {
     }
 };
 
-#define GSL(x, nx) \
-    int x = blockDim.x * blockIdx.x + threadIdx.x; \
-    x < nx; x += blockDim.x * gridDim.x
+#define GSL(x, start, end) \
+    int x = (start) + blockDim.x * blockIdx.x + threadIdx.x; \
+    x < (end); x += blockDim.x * gridDim.x
 
 
 static inline __constant__ const int directions[][3] = {{0,0,0},{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},{1,-1,1},{-1,1,-1},{-1,1,1},{1,-1,-1}};
@@ -64,13 +64,13 @@ struct LBM {
 };
 
 __global__ void initialize(LBM lbm) {
-    for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
+    for (GSL(z, 0, N)) for (GSL(y, 0, N)) for (GSL(x, 0, N)) {
         lbm.vel.at(x, y, z) = make_float4(0.f, 0.f, 0.f, 1.f);
     }
 }
 
 __global__ void substep1(LBM lbm) {
-    for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
+    for (GSL(z, 1, N - 1)) for (GSL(y, 1, N - 1)) for (GSL(x, 1, N - 1)) {
         for (int q = 0; q < 15; q++) {
             int mdx = (x - directions[q][0] + N) % N;
             int mdy = (y - directions[q][1] + N) % N;
@@ -82,7 +82,7 @@ __global__ void substep1(LBM lbm) {
 }
 
 __global__ void substep2(LBM lbm) {
-    for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
+    for (GSL(z, 1, N - 1)) for (GSL(y, 1, N - 1)) for (GSL(x, 1, N - 1)) {
         float m = 0.f;
         float vx = 0.f, vy = 0.f, vz = 0.f;
         for (int q = 0; q < 15; q++) {
@@ -121,8 +121,8 @@ struct xyz {
 };
 
 __global__ void applybc1(LBM lbm) {
-    for (GSL(z, N)) for (GSL(y, N)) {
-        xyz(lbm.vel.at(0, y, z)) = make_float3(0.1f, 0.f, 0.f);
+    for (GSL(z, 0, N)) for (GSL(y, 0, N)) {
+        /*xyz(lbm.vel.at(0, y, z)) = make_float3(0.1f, 0.f, 0.f);
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, 0, y, z) =
                 lbm.f_eq(q, 0, y, z) - lbm.f_eq(q, 1, y, z)
@@ -133,7 +133,9 @@ __global__ void applybc1(LBM lbm) {
             lbm.f_old.at(q, N - 1, y, z) =
                 lbm.f_eq(q, N - 1, y, z) - lbm.f_eq(q, N - 2, y, z)
                 + lbm.f_old.at(q, N - 2, y, z);
-        }
+        }*/
+        xyz(lbm.vel.at(4, y, z)) = make_float3(0.1f, 0.f, 0.f);
+        lbm.vel.at(4, y, z).w = 1.f;
     }
 }
 
@@ -153,7 +155,7 @@ void stepFunc() {
 }
 
 __global__ void render(float *pixels, LBM lbm) {
-    for (GSL(y, N)) for (GSL(x, N)) {
+    for (GSL(y, 0, N)) for (GSL(x, 0, N)) {
         float4 v = lbm.vel.at(x, y, N / 2);
         float val = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
         pixels[y * N + x] = 0.0f + val * 400.f;
