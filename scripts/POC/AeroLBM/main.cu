@@ -3,10 +3,9 @@
 #include <cassert>
 #include <cstdio>
 #include <cmath>
+#include <GL/glut.h>
 
-
-
-#define N 8
+#define N 64
 
 template <class T>
 struct volume {
@@ -42,7 +41,7 @@ static inline const float niu = 0.005f;
 static inline const float tau = 3.f * niu + 0.5f;
 static inline const float inv_tau = 1.f / tau;
 
-struct lbm {
+struct LBM {
     volume<float4> vel;
     volume<float[16]> f_new;
     volume<float[16]> f_old;
@@ -64,13 +63,13 @@ struct lbm {
     }
 };
 
-__global__ void initialize(lbm lbm) {
+__global__ void initialize(LBM lbm) {
     for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
-        lbm.vel.at(x, y, z).w = float(x) / N;
+        lbm.vel.at(x, y, z) = make_float4(0.f, 0.f, 0.f, 1.f);
     }
 }
 
-__global__ void substep1(lbm lbm) {
+__global__ void substep1(LBM lbm) {
     for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
         for (int q = 0; q < 15; q++) {
             int mdx = (x - directions[q][0] + N) % N;
@@ -82,7 +81,7 @@ __global__ void substep1(lbm lbm) {
     }
 }
 
-__global__ void substep2(lbm lbm) {
+__global__ void substep2(LBM lbm) {
     for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
         float m = 0.f;
         float vx = 0.f, vy = 0.f, vz = 0.f;
@@ -101,34 +100,40 @@ __global__ void substep2(lbm lbm) {
 }
 
 
+LBM lbm;
+float *pixels;
 
-int main(void)
-{
-    lbm lbm;
+void initFunc() {
     lbm.allocate();
-
+    checkCudaErrors(cudaMallocManaged(&pixels, N * N * sizeof(float)));
     initialize<<<dim3(N / 8, N / 8, N / 8), dim3(8, 8, 8)>>>(lbm);
-
-    checkCudaErrors(cudaDeviceSynchronize());
-
-    for (int i = 0; i < N; i++) {
-        //float4 v = lbm.vel.at(i, 0, 0);
-        //float vn = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-        float val = lbm.vel.at(i, 0, 0).w;
-        printf("%f\n", val);
-    }
-
-    return 0;
 }
 
+void stepFunc() {
+    substep1<<<dim3(N / 8, N / 8, N / 8), dim3(8, 8, 8)>>>(lbm);
+    substep2<<<dim3(N / 8, N / 8, N / 8), dim3(8, 8, 8)>>>(lbm);
+}
 
-/*
+__global__ void render(float *pixels, LBM lbm) {
+    for (GSL(y, N)) for (GSL(x, N)) {
+        float4 v = lbm.vel.at(0, 0, 0);
+        float val = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+        pixels[y * N + x] = val;
+    }
+}
+
+void renderFunc() {
+    render<<<dim3(N / 16, N / 16, 1), dim3(16, 16, 1)>>>(pixels, lbm);
+    checkCudaErrors(cudaDeviceSynchronize());
+}
+
 void displayFunc() {
     glClear(GL_COLOR_BUFFER_BIT);
     glDrawPixels(N, N, GL_RED, GL_FLOAT, pixels);
     glFlush();
 }
 
+#define ITV 100
 void timerFunc(int unused) {
     stepFunc();
     renderFunc();
@@ -154,4 +159,3 @@ int main(int argc, char **argv) {
     glutTimerFunc(ITV, timerFunc, 0);
     glutMainLoop();
 }
-*/
