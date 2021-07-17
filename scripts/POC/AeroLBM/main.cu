@@ -35,9 +35,17 @@ static inline __constant__ const int directions[][3] = {{0,0,0},{1,0,0},{-1,0,0}
 static inline __constant__ const float weights[] = {2.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f,1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f};
 
 template <class T, class F, class ...Ts>
-__global__ void go(T that, F func, Ts &&...ts) {
+__global__ void golaunch(T that, F func, Ts &&...ts) {
     func(that, std::forward<Ts>(ts)...);
 }
+
+#define GOSTUB(name) \
+    __host__ void name(dim3 grid_dim, dim3 block_dim) { \
+        golaunch<<<grid_dim, block_dim>>> \
+        (*this, [] __device__ (auto that, auto &&...ts) { \
+            that.name(std::forward(ts)...); \
+        }); \
+    }
 
 struct lbm {
     static inline const float niu = 0.005f;
@@ -72,13 +80,7 @@ struct lbm {
             }
         }
     }
-
-    __host__ void initialize(dim3 grid_dim, dim3 block_dim) {
-        go<<<grid_dim, block_dim>>>
-        (*this, [] __device__ (auto that, auto &&...ts) {
-            that.initialize(std::forward(ts)...);
-        });
-    }
+    GOSTUB(initialize);
 
     /*int mdx = (x - directions[q][0] + N) % N;
     int mdy = (y - directions[q][1] + N) % N;
