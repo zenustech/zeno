@@ -132,7 +132,7 @@ __global__ void substep2(LBM lbm) {
             m += f;
         }
         float mscale = 1.f / fmaxf(m, 1e-6f);
-        vx /= mscale; vy /= mscale; vz /= mscale;
+        vx *= mscale; vy *= mscale; vz *= mscale;
         lbm.vel.at(x, y, z) = make_float4(vx, vy, vz, m);
     }
 }
@@ -226,8 +226,8 @@ __global__ void render(float *pixels, LBM lbm) {
         //float val = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
         //float val = 4.f * sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
         //float val = 400.f * sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-        //float val = v.x * 40.f;
-        float val = v.w * 0.3f;
+        float val = v.x * 40.f;
+        //float val = v.w * 0.3f;
         pixels[y * N + x] = val;
     }
 }
