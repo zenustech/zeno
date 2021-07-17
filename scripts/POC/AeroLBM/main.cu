@@ -99,6 +99,43 @@ __global__ void substep2(LBM lbm) {
     }
 }
 
+template <class T>
+struct xyz {
+    T t;
+    __host__ __device__ xyz(T &t) : t(t) {
+    }
+
+    __host__ __device__ xyz &operator=(float3 const &r) {
+        t.x = r.x;
+        t.y = r.y;
+        t.z = r.z;
+        return *this;
+    }
+
+    __host__ __device__ xyz &operator=(xyz const &r) {
+        t.x = r.t.x;
+        t.y = r.t.y;
+        t.z = r.t.z;
+        return *this;
+    }
+};
+
+__global__ void applybc1(LBM lbm) {
+    for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
+        xyz(lbm.vel.at(0, y, z)) = make_float3(0.1f, 0.f, 0.f);
+        for (int q = 0; q < 15; q++) {
+            lbm.f_old.at(q, 0, y, z) =
+                lbm.f_eq(q, 0, y, z) - lbm.f_eq(q, 1, y, z)
+                + lbm.f_old.at(q, 1, y, z);
+        }
+        xyz(lbm.vel.at(N - 1, y, z)) = xyz(lbm.vel.at(N - 2, y, z));
+        for (int q = 0; q < 15; q++) {
+            lbm.f_old.at(q, N - 1, y, z) =
+                lbm.f_eq(q, N - 1, y, z) - lbm.f_eq(q, N - 2, y, z)
+                + lbm.f_old.at(q, N - 2, y, z);
+        }
+    }
+}
 
 LBM lbm;
 float *pixels;
