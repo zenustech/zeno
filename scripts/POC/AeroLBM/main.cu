@@ -140,10 +140,10 @@ __global__ void substep2(LBM lbm) {
 }
 
 __global__ void applybc1(LBM lbm) {
-    //for (GSL(z, 1, NZ - 1)) for (GSL(y, 1, NY - 1)) {
-    for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) {
+    for (GSL(z, 1, NZ - 1)) for (GSL(y, 1, NY - 1)) {
+    //for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) {
         lbm.vel.at(0, y, z) = lbm.vel.at(1, y, z);
-        lbm.vel.at(0, y, z).x = 0.1f;
+        lbm.vel.at(0, y, z).x = 0.15f;
         lbm.vel.at(0, y, z).y = 0.f;
         lbm.vel.at(0, y, z).z = 0.f;
         for (int q = 0; q < 15; q++) {
@@ -207,10 +207,13 @@ __global__ void applybc3(LBM lbm) {
 }
 
 __global__ void applybc4(LBM lbm) {
-    for (GSL(z, NZ * 3 / 8, NZ * 5 / 8))
-    for (GSL(y, NY * 3 / 8, NY * 5 / 8))
-    for (GSL(x, NX * 3 / 32, NX * 5 / 32))
-    {
+    for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
+        float fx = x * 8.f / NX - 1.f;
+        float fy = y * 2.f / NY - 1.f;
+        float fz = z * 2.f / NZ - 1.f;
+        if (fx * fx + fy * fy + fz * fz >= .08f) {
+            continue;
+        }
         lbm.vel.at(x, y, z).x = 0.f;
         lbm.vel.at(x, y, z).y = 0.f;
         lbm.vel.at(x, y, z).z = 0.f;
@@ -233,7 +236,7 @@ void stepFunc() {
     applybc1<<<dim3(1, NY / 16, NZ / 16), dim3(1, 16, 16)>>>(lbm);
     applybc2<<<dim3(NX / 16, 1, NZ / 16), dim3(16, 1, 16)>>>(lbm);
     applybc3<<<dim3(NX / 16, NY / 16, 1), dim3(16, 16, 1)>>>(lbm);
-    applybc4<<<dim3(NX / 32, NY / 32, NZ / 32), dim3(8, 8, 8)>>>(lbm);
+    applybc4<<<dim3(NX / 16, NY / 16, NZ / 16), dim3(8, 8, 8)>>>(lbm);
 }
 
 __global__ void render(float *pixels, LBM lbm) {
