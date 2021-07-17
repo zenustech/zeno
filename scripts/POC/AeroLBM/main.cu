@@ -5,30 +5,9 @@
 #include <cmath>
 #include <GL/glut.h>
 
-#define NX 256
+#define NX 512
 #define NY 128
 #define NZ 128
-
-template <class T>
-struct xyz {
-    T t;
-    __host__ __device__ xyz(T &t) : t(t) {
-    }
-
-    __host__ __device__ xyz &operator=(float3 const &r) {
-        t.x = r.x;
-        t.y = r.y;
-        t.z = r.z;
-        return *this;
-    }
-
-    __host__ __device__ xyz &operator=(xyz const &r) {
-        t.x = r.t.x;
-        t.y = r.t.y;
-        t.z = r.t.z;
-        return *this;
-    }
-};
 
 template <class T>
 struct volume {
@@ -52,6 +31,24 @@ struct volume {
     }
 };
 
+template <class T, int N>
+struct volume_soa {
+    T *grid;
+
+    void allocate() {
+        size_t size = NX * NY * NZ * N;
+        checkCudaErrors(cudaMallocManaged(&grid, size * sizeof(T)));
+    }
+
+    void free() {
+        checkCudaErrors(cudaFree(grid));
+    }
+
+    __host__ __device__ T &at(int c, int i, int j, int k) const {
+        return grid[i + j * NX + k * NX * NY + c * NX * NY * NZ];
+    }
+};
+
 #define GSL(_, start, end) \
     int _ = (start) + blockDim._ * blockIdx._ + threadIdx._; \
     _ < (end); _ += blockDim._ * gridDim._
@@ -68,8 +65,8 @@ static inline const float inv_tau = 1.f / tau;
 
 struct LBM {
     volume<float4> vel;
-    volume<float[16]> f_new;
-    volume<float[16]> f_old;
+    volume_soa<float, 16> f_new;
+    volume_soa<float, 16> f_old;
 
     void allocate() {
         vel.allocate();
@@ -208,7 +205,7 @@ __global__ void applybc3(LBM lbm) {
 
 __global__ void applybc4(LBM lbm) {
     for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
-        float fx = x * 4.f / NX - 1.f;
+        float fx = x * 2.f / NY - 1.f;
         float fy = y * 2.f / NY - 1.f;
         float fz = z * 2.f / NZ - 1.f;
         if (fx * fx + fy * fy + fz * fz >= .065f) {
