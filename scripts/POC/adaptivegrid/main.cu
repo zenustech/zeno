@@ -200,23 +200,23 @@ void stepFunc() {
 }
 
 template <int X, int Y>
-__global__ void render1(float *pixels, DOM<X, Y> dom) {
+__global__ void render1(float *pixels, DOM<X, Y> dom, float scale) {
     for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
-        float val = dom.pos.at(x * X / NX, y * Y / NY);
+        float val = dom.pos.at(x * X / NX, y * Y / NY) * scale;
         pixels[y * NX + x] = 0.5f + 0.5f * val;
     }
 }
 
 template <int X, int Y>
-void render(float *pixels, DOM<X, Y> dom) {
-    render1<<<dim3(NX / 16, NY / 16, 1), dim3(16, 16, 1)>>>(pixels, dom);
+void render(float *pixels, DOM<X, Y> dom, float scale) {
+    render1<<<dim3(NX / 16, NY / 16, 1), dim3(16, 16, 1)>>>(pixels, dom, scale);
 }
 
 void renderFunc() {
     if (counter % 200 < 100) {
-        render(pixels, dom);
+        render(pixels, dom, 1.f);
     } else {
-        render(pixels, dom2);
+        render(pixels, dom2, 1.f);
     }
     checkCudaErrors(cudaDeviceSynchronize());
     /*printf("03:%f\n", pixels[0 * N + 3]);
