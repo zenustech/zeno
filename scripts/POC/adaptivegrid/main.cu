@@ -7,7 +7,7 @@
 
 static int counter = 0;
 
-template <int X, int Y, class T>
+template <int X, int Y, class T = float>
 struct volume {
     T *grid;
 
@@ -136,7 +136,7 @@ __global__ void lower1(volume<X * 2, Y * 2> hi, volume<X, Y> lo) {
         for (int dy = 0; dy < 2; dy++) for (int dx = 0; dx < 2; dx++) {
             val += hi.at(x * 2 + dx, y * 2 + dy);
         }
-        lo.at(x, y) = val;
+        lo.at(x, y) = val * 0.25f;
     }
 }
 
@@ -147,20 +147,20 @@ void lower(volume<X * 2, Y * 2> hi, volume<X, Y> lo) {
 
 template <int X, int Y>
 void lower(DOM<X * 2, Y * 2> hi, DOM<X, Y> lo) {
-    lower(hi.pos, hi.pos);
-    lower(hi.vel, hi.vel);
+    lower(hi.pos, lo.pos);
+    lower(hi.vel, lo.vel);
 }
 
 template <int X, int Y>
 void upper(DOM<X * 2, Y * 2> hi, DOM<X, Y> lo) {
-    upper(hi.pos, hi.pos);
-    upper(hi.vel, hi.vel);
+    upper(hi.pos, lo.pos);
+    upper(hi.vel, lo.vel);
 }
 
 #define NX 512
 #define NY 512
-DOM<NX / 4, NY / 4> dom;
-DOM<NX / 8, NY / 8> dom2;
+DOM<NX / 1, NY / 1> dom;
+DOM<NX / 2, NY / 2> dom2;
 float *pixels;
 
 void initFunc() {
@@ -174,7 +174,7 @@ void initFunc() {
 void stepFunc() {
     substep(dom);
     lower(dom, dom2);
-    substep(dom2);
+    //substep(dom2);
     upper(dom, dom2);
     counter++;
 }
