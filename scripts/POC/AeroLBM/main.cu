@@ -38,32 +38,11 @@ struct volume {
 static inline __constant__ const int directions[][3] = {{0,0,0},{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},{1,-1,1},{-1,1,-1},{-1,1,1},{1,-1,-1}};
 static inline __constant__ const float weights[] = {2.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f,1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f};
 
-__global__ void fuck() {
-    printf("FUCK NVIDIA\n");
-}
-
-template <int X = 1, int Y = 1, int Z = 1>
-struct Dim {
-    static constexpr int x = X;
-    static constexpr int y = Y;
-    static constexpr int z = Z;
-
-    operator dim3() const {
-        return {x, y, z};
-    }
-};
-
-template <class T, class F, class ...Ts>
-__global__ void golaunch(T t, F f, Ts &&...ts) {
-    printf("FUCK\n");
-    f(&t, std::forward<Ts>(ts)...);
-}
+static inline const float niu = 0.005f;
+static inline const float tau = 3.f * niu + 0.5f;
+static inline const float inv_tau = 1.f / tau;
 
 struct lbm {
-    static inline const float niu = 0.005f;
-    static inline const float tau = 3.f * niu + 0.5f;
-    static inline const float inv_tau = 1.f / tau;
-
     volume<float4> vel;
     volume<float[16]> f_new;
     volume<float[16]> f_old;
@@ -83,55 +62,43 @@ struct lbm {
         float feq = weights[q] * v.w * term;
         return feq;
     }
-
-    __device__ void _initialize() {
-        for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
-            vel.at(x, y, z).w = float(x) / N;
-        }
-    }
-
-#define GOSTUB(name) \
-    template <class ...Ts> \
-    __host__ void name(Ts &&...ts) { \
-        golaunch<<<1, 1>>> \
-        (*this, [] __device__ (auto *that, auto &&...ts) { \
-            that->_##name(std::forward(ts)...); \
-        }, std::forward<Ts>(ts)...); \
-    }
-    GOSTUB(initialize);
-
-    /*__device__ void substep1() {
-        for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
-            for (int q = 0; q < 15; q++) {
-                int mdx = (x - directions[q][0] + N) % N;
-                int mdy = (y - directions[q][1] + N) % N;
-                int mdz = (z - directions[q][2] + N) % N;
-                f_new.at(q, x, y, z) = f_old.at(q, mdx, mdy, mdz)
-                    * (1.f - inv_tau) + f_eq(q, mdx, mdy, mdz) * inv_tau;
-            }
-        }
-    }
-    GOSTUB(substep1, N / 8, N / 8, N / 8, 8, 8, 8);
-
-    __device__ void substep2() {
-        for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
-            float m = 0.f;
-            float vx = 0.f, vy = 0.f, vz = 0.f;
-            for (int q = 0; q < 15; q++) {
-                float f = f_new.at(q, x, y, z);
-                f_old.at(q, x, y, z) = f;
-                vx += f * directions[q][0];
-                vy += f * directions[q][1];
-                vz += f * directions[q][2];
-                m += f;
-            }
-            float mscale = 1.f / fmaxf(m, 1e-6f);
-            vx /= mscale; vy /= mscale; vz /= mscale;
-            vel.at(x, y, z) = make_float4(vx, vy, vz, m);
-        }
-    }
-    GOSTUB(substep2, N / 8, N / 8, N / 8, 8, 8, 8);*/
 };
+
+__global__ void initialize(lbm lbm) {
+    for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
+        lbm.vel.at(x, y, z).w = float(x) / N;
+    }
+}
+
+__global__ void substep1(lbm lbm) {
+    for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
+        for (int q = 0; q < 15; q++) {
+            int mdx = (x - directions[q][0] + N) % N;
+            int mdy = (y - directions[q][1] + N) % N;
+            int mdz = (z - directions[q][2] + N) % N;
+            lbm.f_new.at(q, x, y, z) = lbm.f_old.at(q, mdx, mdy, mdz)
+                * (1.f - inv_tau) + lbm.f_eq(q, mdx, mdy, mdz) * inv_tau;
+        }
+    }
+}
+
+__global__ void substep2(lbm lbm) {
+    for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
+        float m = 0.f;
+        float vx = 0.f, vy = 0.f, vz = 0.f;
+        for (int q = 0; q < 15; q++) {
+            float f = lbm.f_new.at(q, x, y, z);
+            lbm.f_old.at(q, x, y, z) = f;
+            vx += f * directions[q][0];
+            vy += f * directions[q][1];
+            vz += f * directions[q][2];
+            m += f;
+        }
+        float mscale = 1.f / fmaxf(m, 1e-6f);
+        vx /= mscale; vy /= mscale; vz /= mscale;
+        lbm.vel.at(x, y, z) = make_float4(vx, vy, vz, m);
+    }
+}
 
 
 
@@ -140,7 +107,7 @@ int main(void)
     lbm lbm;
     lbm.allocate();
 
-    lbm.initialize();
+    initialize<<<dim3(N / 8, N / 8, N / 8), dim3(8, 8, 8)>>>(lbm);
 
     checkCudaErrors(cudaDeviceSynchronize());
 
