@@ -43,11 +43,13 @@ struct DOM {
     volume<X, Y, float> pos;
     volume<X, Y, float> vel;
     volume<X, Y, uint8_t> mask;
+    volume<X, Y, uint8_t> active;
 
     void allocate() {
         pos.allocate();
         vel.allocate();
         mask.allocate();
+        active.allocate();
     }
 
     __device__ float laplacian(int i, int j) const {
@@ -58,7 +60,7 @@ struct DOM {
 };
 
 template <int X, int Y>
-__global__ void initialize1(DOM<X, Y> dom) {
+__global__ void initialize1(DOM<X, Y> dom, int type) {
     for (GSL(y, 0, Y)) for (GSL(x, 0, X)) {
         dom.vel.at(x, y) = 0.f;
         dom.pos.at(x, y) = 0.f;
@@ -69,17 +71,23 @@ __global__ void initialize1(DOM<X, Y> dom) {
         if (f2 < 0.1f || x == 0 || x == X - 1 || y == 0 || y == Y - 1) {
             dom.mask.at(x, y) = 1;
         }
+        if (type == 0) {  // hi grid
+            dom.active.at(x, y) = (fx < +0.05f);
+        } else {  // lo grid
+            dom.active.at(x, y) = (fx > -0.05f);
+        }
     }
 }
 
 template <int X, int Y>
-void initialize(DOM<X, Y> dom) {
-    initialize1<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(dom);
+void initialize(DOM<X, Y> dom, int type) {
+    initialize1<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(dom, type);
 }
 
 template <int X, int Y>
 __global__ void substep1(DOM<X, Y> dom) {
     for (GSL(y, 0, Y)) for (GSL(x, 0, X)) {
+        if (!dom.active.at(x, y)) continue;
         if (dom.mask.at(x, y) != 0)
             continue;
         float acc = ka * dom.laplacian(x, y) - ga * dom.vel.at(x, y);
@@ -90,6 +98,7 @@ __global__ void substep1(DOM<X, Y> dom) {
 template <int X, int Y>
 __global__ void substep2(DOM<X, Y> dom) {
     for (GSL(y, 0, Y)) for (GSL(x, 0, X)) {
+        if (!dom.active.at(x, y)) continue;
         dom.pos.at(x, y) += dom.vel.at(x, y) * dt;
     }
 }
@@ -97,6 +106,7 @@ __global__ void substep2(DOM<X, Y> dom) {
 template <int X, int Y>
 __global__ void substep3(DOM<X, Y> dom, float height) {
     for (GSL(y, 0, Y)) for (GSL(x, 0, X)) {
+        if (!dom.active.at(x, y)) continue;
         float fx = x * 2.f / X - .25f;
         float fy = y * 2.f / Y - .25f;
         float f2 = fx * fx + fy * fy;
@@ -115,8 +125,10 @@ void substep(DOM<X, Y> dom) {
 }
 
 template <int X, int Y>
-__global__ void upper1(volume<X * 2, Y * 2> hi, volume<X, Y> lo) {
+__global__ void upper1(volume<X * 2, Y * 2> hi, volume<X, Y> lo,
+    volume<X * 2, Y * 2, uint8_t> hi_active, volume<X, Y, uint8_t> lo_active) {
     for (GSL(y, 0, Y)) for (GSL(x, 0, X)) {
+        if (!lo_active.at(x, y) || !hi_active.at(x, y)) continue;
         float val = lo.at(x, y);
         for (int dy = 0; dy < 2; dy++) for (int dx = 0; dx < 2; dx++) {
             hi.at(x * 2 + dx, y * 2 + dy) = val;
@@ -125,13 +137,17 @@ __global__ void upper1(volume<X * 2, Y * 2> hi, volume<X, Y> lo) {
 }
 
 template <int X, int Y>
-void upper(volume<X * 2, Y * 2> hi, volume<X, Y> lo) {
-    upper1<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(hi, lo);
+void upper(volume<X * 2, Y * 2> hi, volume<X, Y> lo,
+    volume<X * 2, Y * 2, uint8_t> hi_active, volume<X, Y, uint8_t> lo_active) {
+    upper1<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(hi, lo,
+        hi_active, lo_active);
 }
 
 template <int X, int Y>
-__global__ void lower1(volume<X * 2, Y * 2> hi, volume<X, Y> lo) {
+__global__ void lower1(volume<X * 2, Y * 2> hi, volume<X, Y> lo,
+    volume<X * 2, Y * 2, uint8_t> hi_active, volume<X, Y, uint8_t> lo_active) {
     for (GSL(y, 0, Y)) for (GSL(x, 0, X)) {
+        if (!lo_active.at(x, y) || !hi_active.at(x, y)) continue;
         float val = 0.f;
         for (int dy = 0; dy < 2; dy++) for (int dx = 0; dx < 2; dx++) {
             val += hi.at(x * 2 + dx, y * 2 + dy);
@@ -141,20 +157,22 @@ __global__ void lower1(volume<X * 2, Y * 2> hi, volume<X, Y> lo) {
 }
 
 template <int X, int Y>
-void lower(volume<X * 2, Y * 2> hi, volume<X, Y> lo) {
-    lower1<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(hi, lo);
+void lower(volume<X * 2, Y * 2> hi, volume<X, Y> lo,
+    volume<X * 2, Y * 2, uint8_t> hi_active, volume<X, Y, uint8_t> lo_active) {
+    lower1<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(hi, lo,
+        hi_active, lo_active);
 }
 
 template <int X, int Y>
 void lower(DOM<X * 2, Y * 2> hi, DOM<X, Y> lo) {
-    lower(hi.pos, lo.pos);
-    lower(hi.vel, lo.vel);
+    lower(hi.pos, lo.pos, hi.active, lo.active);
+    lower(hi.vel, lo.vel, hi.active, lo.active);
 }
 
 template <int X, int Y>
 void upper(DOM<X * 2, Y * 2> hi, DOM<X, Y> lo) {
-    upper(hi.pos, lo.pos);
-    upper(hi.vel, lo.vel);
+    upper(hi.pos, lo.pos, hi.active, lo.active);
+    upper(hi.vel, lo.vel, hi.active, lo.active);
 }
 
 #define NX 512
@@ -167,8 +185,8 @@ void initFunc() {
     checkCudaErrors(cudaMallocManaged(&pixels, NX * NY * sizeof(float)));
     dom.allocate();
     dom2.allocate();
-    initialize(dom);
-    initialize(dom2);
+    initialize(dom, 0);
+    initialize(dom2, 1);
 }
 
 void stepFunc() {
@@ -176,7 +194,6 @@ void stepFunc() {
     lower(dom, dom2);
     substep(dom2);
     upper(dom, dom2);
-    counter++;
     counter++;
 }
 
@@ -211,7 +228,7 @@ void displayFunc() {
     glFlush();
 }
 
-#define ITV 5
+#define ITV 3
 void timerFunc(int unused) {
     stepFunc();
     renderFunc();
