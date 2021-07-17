@@ -1,6 +1,5 @@
 #include "SIMDBuilder.h"
 #include "Executable.h"
-//#include "SIMDMath.h"
 #include <zfx/utils.h>
 #include <zfx/x64.h>
 #include <sstream>
@@ -13,6 +12,18 @@ namespace zfx::x64 {
         error("`%s`", #x); \
     } \
 } while (0)
+
+static void *global_func_table[] =
+    { NULL // TODO: fill them with vectorclass library func ptrs
+    , NULL
+    , NULL
+    };
+
+static std::vector<std::string> funcnames =
+    { "sin"
+    , "cos"
+    , "tan"
+    };
 
 struct ImplAssembler {
     int simdkind = optype::xmmps;
@@ -136,7 +147,9 @@ struct ImplAssembler {
                 auto src = from_string<int>(linesep[2]);
                 builder->addAvxMoveOp(dst, src);
 
-            } else if (cmd == "sin") {
+            } else if (auto it = std::find(
+                funcnames.begin(), funcnames.end(), cmd);
+                it != funcnames.end()) {
                 // rbx points to an array of function pointers
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
@@ -145,7 +158,7 @@ struct ImplAssembler {
                 builder->addAdjStackTop(-size);
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
                     src, opreg::rsp);
-                int id = 0;  // todo: find in funcnames
+                int id = it - funcnames.begin();
                 int offset = id * sizeof(void *);
                 builder->addCallOp({opreg::rbx, memflag::reg_imm8, offset});
                 builder->addAvxMemoryOp(simdkind, opcode::loadu,
@@ -169,6 +182,7 @@ struct ImplAssembler {
         printf("\n");
 #endif
 
+        exec->functable = global_func_table;
         exec->memsize = (insts.size() + 4095) / 4096 * 4096;
         exec->mem = exec_page_alloc(exec->memsize);
         for (int i = 0; i < insts.size(); i++) {
