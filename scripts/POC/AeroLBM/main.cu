@@ -24,6 +24,10 @@ struct volume {
     __host__ __device__ T &at(int i, int j, int k) const {
         return grid[i + j * N + k * N * N];
     }
+
+    __host__ __device__ auto &at(int c, int i, int j, int k) const {
+        return at(i, j, k)[c];
+    }
 };
 
 #define GSL(x, nx) \
@@ -34,59 +38,116 @@ struct volume {
 static inline __constant__ const int directions[][3] = {{0,0,0},{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},{1,-1,1},{-1,1,-1},{-1,1,1},{1,-1,-1}};
 static inline __constant__ const float weights[] = {2.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f,1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f};
 
-template <class T, class F, class ...Ts>
-__global__ void golaunch(T that, F func, Ts &&...ts) {
-    func(that, std::forward<Ts>(ts)...);
+__global__ void fuck() {
+    printf("FUCK NVIDIA\n");
 }
 
-#define GOSTUB(name) \
-    __host__ void name(dim3 grid_dim, dim3 block_dim) { \
+#define GOSTUB(name, gx, gy, gz, bx, by, bz) \
+    __host__ void name( \
+        dim3 grid_dim = {gx, gy, gz}, dim3 block_dim = {bx, by, bz}) { \
         golaunch<<<grid_dim, block_dim>>> \
         (*this, [] __device__ (auto that, auto &&...ts) { \
             that.name(std::forward(ts)...); \
         }); \
     }
 
+#define CUSTUB(name) \
+        golaunch<<<GridDim{}, BlockDim{}>>> \
+        (*this, [] __device__ (auto that) { \
+            that.name<GridDim, BlockDim>(); \
+        });
+
+template <int X = 1, int Y = 1, int Z = 1>
+struct Dim {
+    static constexpr int x = X;
+    static constexpr int y = Y;
+    static constexpr int z = Z;
+
+    operator dim3() const {
+        return {x, y, z};
+    }
+};
+
+template <class T, class F, class ...Ts>
+__global__ void golaunch(T that, F func, Ts &&...ts) {
+    printf("FUCK\n");
+    func(that, std::forward<Ts>(ts)...);
+}
+
 struct lbm {
     static inline const float niu = 0.005f;
     static inline const float tau = 3.f * niu + 0.5f;
     static inline const float inv_tau = 1.f / tau;
 
-    volume<float> rho;
     volume<float4> vel;
+    //volume<float[16]> f_new;
+    //volume<float[16]> f_old;
 
     void allocate() {
-        rho.allocate();
         vel.allocate();
+        //f_new.allocate();
+        //f_old.allocate();
     }
 
     __device__ float f_eq(int q, int x, int y, int z) {
-        float m = rho.at(x, y, z);
         float4 v = vel.at(x, y, z);
         float eu = v.x * directions[q][0]
             + v.y * directions[q][1] + v.z * directions[q][2];
         float uv = v.x * v.x + v.y * v.y + v.z * v.z;
         float term = 1.f + 3.f * eu + 4.5f * eu * eu - 1.5f * uv;
-        float feq = weights[q] * m * term;
+        float feq = weights[q] * v.w * term;
         return feq;
     }
 
-    __device__ void initialize() {
-        for (GSL(z, N)) {
-            for (GSL(y, N)) {
-                for (GSL(x, N)) {
-                    rho.at(x, y, z) = float(x) / N;
-                }
+    template <class GridDim, class BlockDim>
+    __host__ void initialize() {
+#ifndef __CUDA_ARCH__
+        printf("host!\n");
+        golaunch<<<dim3{1, 1, 1}, dim3{1, 1, 1}>>>
+        ([] __device__ (auto that) {
+            printf("!!\n");
+            //that.initialize<GridDim, BlockDim>();
+        });
+#else
+        /*printf("!!!\n");
+        for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
+            //vel.at(x, y, z) = make_float4(0.f, 0.f, 0.f, 1.f);
+            vel.at(x, y, z) = make_float4(0.f, 0.f, float(x) / N, 1.f);
+        }*/
+#endif
+    }
+
+    /*__device__ void substep1() {
+        for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
+            for (int q = 0; q < 15; q++) {
+                int mdx = (x - directions[q][0] + N) % N;
+                int mdy = (y - directions[q][1] + N) % N;
+                int mdz = (z - directions[q][2] + N) % N;
+                f_new.at(q, x, y, z) = f_old.at(q, mdx, mdy, mdz)
+                    * (1.f - inv_tau) + f_eq(q, mdx, mdy, mdz) * inv_tau;
             }
         }
     }
-    GOSTUB(initialize);
+    GOSTUB(substep1, N / 8, N / 8, N / 8, 8, 8, 8);
 
-    /*int mdx = (x - directions[q][0] + N) % N;
-    int mdy = (y - directions[q][1] + N) % N;
-    int mdz = (z - directions[q][2] + N) % N;
-    f_new.at(q, x, y, z) = f_old.at(q, mdx, mdy, mdz)
-        * (1.f - inv_tau) + f_eq(q, mdx, mdy, mdz) * inv_tau;*/
+    __device__ void substep2() {
+        for (GSL(z, N)) for (GSL(y, N)) for (GSL(x, N)) {
+            float m = 0.f;
+            float vx = 0.f, vy = 0.f, vz = 0.f;
+            for (int q = 0; q < 15; q++) {
+                float f = f_new.at(q, x, y, z);
+                f_old.at(q, x, y, z) = f;
+                vx += f * directions[q][0];
+                vy += f * directions[q][1];
+                vz += f * directions[q][2];
+                m += f;
+            }
+            float mscale = 1.f / fmaxf(m, 1e-6f);
+            vx /= mscale; vy /= mscale; vz /= mscale;
+            vel.at(x, y, z) = make_float4(vx, vy, vz, m);
+        }
+    }
+    GOSTUB(substep2, N / 8, N / 8, N / 8, 8, 8, 8);*/
 };
 
 
@@ -96,12 +157,14 @@ int main(void)
     lbm lbm;
     lbm.allocate();
 
-    lbm.initialize(dim3(1, 1, 1), dim3(1, 1, 1));
+    lbm.initialize<Dim<1, 1, 1>, Dim<1, 1, 1>>();
 
     checkCudaErrors(cudaDeviceSynchronize());
 
     for (int i = 0; i < N; i++) {
-        printf("%f\n", lbm.rho.at(i, 0, 0));
+        float4 v = lbm.vel.at(i, 0, 0);
+        float vn = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+        printf("%f\n", vn);
     }
 
     return 0;
