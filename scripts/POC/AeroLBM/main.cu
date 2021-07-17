@@ -63,15 +63,20 @@ struct lbm {
         return feq;
     }
 
-    __host__ void initialize(dim3 grid_dim, dim3 block_dim) {
-        go<<<grid_dim, block_dim>>>(*this, [] __device__ (lbm that) {
+    __device__ void initialize() {
         for (GSL(z, N)) {
             for (GSL(y, N)) {
                 for (GSL(x, N)) {
-                    that.rho.at(x, y, z) = float(x) / N;
+                    rho.at(x, y, z) = float(x) / N;
                 }
             }
         }
+    }
+
+    __host__ void initialize(dim3 grid_dim, dim3 block_dim) {
+        go<<<grid_dim, block_dim>>>
+        (*this, [] __device__ (auto that, auto &&...ts) {
+            that.initialize(std::forward(ts)...);
         });
     }
 
