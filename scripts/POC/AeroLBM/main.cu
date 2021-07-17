@@ -9,25 +9,26 @@ const float niu = 0.005f;
 const float tau = 3.f * niu + 0.5f;
 const float inv_tau = 1.f / tau;
 
-int directions[][3] = {{0,0,0},{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},{1,-1,1},{-1,1,-1},{-1,1,1},{1,-1,-1}};
-float weights[] = {2.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f,1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f};
+__constant__ int directions[][3] = {{0,0,0},{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},{1,-1,1},{-1,1,-1},{-1,1,1},{1,-1,-1}};
+__constant__ float weights[] = {2.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f,1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f};
 
 
 #define N 8
 
+template <class T>
 struct volume {
-    float *grid;
+    T *grid;
 
     void allocate() {
         size_t size = N * N * N;
-        checkCudaErrors(cudaMallocManaged(&grid, size * sizeof(float)));
+        checkCudaErrors(cudaMallocManaged(&grid, size * sizeof(T)));
     }
 
     void free() {
         checkCudaErrors(cudaFree(grid));
     }
 
-    __host__ __device__ float &at(int i, int j, int k) const {
+    __host__ __device__ T &at(int i, int j, int k) const {
         return grid[i + j * N + k * N * N];
     }
 };
@@ -36,7 +37,21 @@ struct volume {
     int x = blockDim.x * blockIdx.x + threadIdx.x; \
     x < nx; x += blockDim.x * gridDim.x
 
-__global__ void fill(volume vol) {
+
+__device__ float f_eq(volume<float> rho,
+    volume<float4> vel, int q, int x, int y, int z) {
+    float m = rho.at(x, y, z);
+    float4 v = vel.at(x, y, z);
+    float eu = v.x * directions[q][0]
+        + v.y * directions[q][1] + v.z * directions[q][2];
+    float uv = v.x * v.x + v.y * v.y + v.z * v.z;
+    float term = 1.f + 3.f * eu + 4.5f * eu * eu - 1.5f * uv;
+    float feq = weights[q] * m * term;
+    return feq;
+}
+
+
+__global__ void fill(volume<float> vol) {
     for (GSL(z, N)) {
         for (GSL(y, N)) {
             for (GSL(x, N)) {
@@ -49,7 +64,7 @@ __global__ void fill(volume vol) {
 
 int main(void)
 {
-    volume vol;
+    volume<float> vol;
     vol.allocate();
 
     fill<<<dim3(1, 1, 1), dim3(1, 1, 1)>>>(vol);
