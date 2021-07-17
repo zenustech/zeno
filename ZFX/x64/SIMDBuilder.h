@@ -32,7 +32,7 @@ namespace opreg {
         mm0, mm1, mm2, mm3, mm4, mm5, mm6, mm7,
     };
     enum {
-        rax, rcx, rdx, rbx,
+        rax, rcx, rdx, rbx, rsp, rbp, rsi, rdi,
     };
 };
 
@@ -89,7 +89,14 @@ public:
                     mflag |= memflag::reg_imm32;
                 }
             }
-            res.push_back(mflag | val << 3 | adr);
+            int flag = mflag | val << 3 | adr;
+            if (adr == opreg::rsp)
+                flag |= 0x10;
+            if (adr == opreg::rbp)
+                flag |= memflag::reg_imm8;
+            res.push_back(flag);
+            if (adr == opreg::rsp)
+                res.push_back(0x24);
             if (mflag & memflag::reg_reg) {
                 res.push_back(adr2 | adr2shift << 6);
             }
@@ -167,6 +174,7 @@ public:
     }
 
     void addAvxMoveOp(int dst, int src) {
+        // todo: this can be optimized from vmovss to vmovups
         addAvxBinaryOp(optype::xmmss, opcode::mov, dst, src, src);
     }
 

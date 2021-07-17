@@ -1,5 +1,6 @@
 #include "SIMDBuilder.h"
 #include "Executable.h"
+//#include "SIMDMath.h"
 #include <zfx/utils.h>
 #include <zfx/x64.h>
 #include <sstream>
@@ -131,6 +132,13 @@ struct ImplAssembler {
                 auto dst = from_string<int>(linesep[1]);
                 auto src = from_string<int>(linesep[2]);
                 builder->addAvxMoveOp(dst, src);
+
+            } else if (cmd == "sin") {
+                ERROR_IF(linesep.size() < 2);
+                auto dst = from_string<int>(linesep[1]);
+                auto src = from_string<int>(linesep[2]);
+                /*builder->addAvxFuncCall(simdkind, 
+                    dst, src);*/
 
             } else {
                 error("bad assembly command `%s`", cmd.c_str());

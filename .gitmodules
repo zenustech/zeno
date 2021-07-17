@@ -5,5 +5,5 @@
 	path = projects/Euler/Hades
 	url = https://github.com/zensim-dev/hades.git
 [submodule "ZFX/version2"]
-	path = ZFX/vectorclass
+	path = ZFX/x64/vectorclass
 	url = https://github.com/vectorclass/version2.git

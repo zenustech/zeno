@@ -1,1 +1,1 @@
-vmovss xmm0, xmm0, xmm1
+vmovups xmm2, [rbp]
