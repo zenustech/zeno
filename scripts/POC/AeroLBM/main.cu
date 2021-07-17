@@ -8,6 +8,27 @@
 #define N 64
 
 template <class T>
+struct xyz {
+    T t;
+    __host__ __device__ xyz(T &t) : t(t) {
+    }
+
+    __host__ __device__ xyz &operator=(float3 const &r) {
+        t.x = r.x;
+        t.y = r.y;
+        t.z = r.z;
+        return *this;
+    }
+
+    __host__ __device__ xyz &operator=(xyz const &r) {
+        t.x = r.t.x;
+        t.y = r.t.y;
+        t.z = r.t.z;
+        return *this;
+    }
+};
+
+template <class T>
 struct volume {
     T *grid;
 
@@ -70,8 +91,12 @@ __global__ void initialize(LBM lbm) {
 }
 
 __global__ void substep1(LBM lbm) {
-    for (GSL(z, 1, N - 1)) for (GSL(y, 1, N - 1)) for (GSL(x, 1, N - 1)) {
+    //for (GSL(z, 1, N - 1)) for (GSL(y, 1, N - 1)) for (GSL(x, 1, N - 1)) {
+    for (GSL(z, 0, N)) for (GSL(y, 0, N)) for (GSL(x, 0, N)) {
         for (int q = 0; q < 15; q++) {
+            //int mdx = x - directions[q][0];
+            //int mdy = y - directions[q][1];
+            //int mdz = z - directions[q][2];
             int mdx = (x - directions[q][0] + N) % N;
             int mdy = (y - directions[q][1] + N) % N;
             int mdz = (z - directions[q][2] + N) % N;
@@ -82,7 +107,8 @@ __global__ void substep1(LBM lbm) {
 }
 
 __global__ void substep2(LBM lbm) {
-    for (GSL(z, 1, N - 1)) for (GSL(y, 1, N - 1)) for (GSL(x, 1, N - 1)) {
+    //for (GSL(z, 1, N - 1)) for (GSL(y, 1, N - 1)) for (GSL(x, 1, N - 1)) {
+    for (GSL(z, 0, N)) for (GSL(y, 0, N)) for (GSL(x, 0, N)) {
         float m = 0.f;
         float vx = 0.f, vy = 0.f, vz = 0.f;
         for (int q = 0; q < 15; q++) {
@@ -99,30 +125,10 @@ __global__ void substep2(LBM lbm) {
     }
 }
 
-template <class T>
-struct xyz {
-    T t;
-    __host__ __device__ xyz(T &t) : t(t) {
-    }
-
-    __host__ __device__ xyz &operator=(float3 const &r) {
-        t.x = r.x;
-        t.y = r.y;
-        t.z = r.z;
-        return *this;
-    }
-
-    __host__ __device__ xyz &operator=(xyz const &r) {
-        t.x = r.t.x;
-        t.y = r.t.y;
-        t.z = r.t.z;
-        return *this;
-    }
-};
-
 __global__ void applybc1(LBM lbm) {
-    for (GSL(z, 0, N)) for (GSL(y, 0, N)) {
-        /*xyz(lbm.vel.at(0, y, z)) = make_float3(0.1f, 0.f, 0.f);
+    for (GSL(z, 1, N - 1)) for (GSL(y, 1, N - 1)) {
+    //for (GSL(z, 0, N)) for (GSL(y, 0, N)) {
+        xyz(lbm.vel.at(0, y, z)) = make_float3(0.1f, 0.f, 0.f);
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, 0, y, z) =
                 lbm.f_eq(q, 0, y, z) - lbm.f_eq(q, 1, y, z)
@@ -133,9 +139,41 @@ __global__ void applybc1(LBM lbm) {
             lbm.f_old.at(q, N - 1, y, z) =
                 lbm.f_eq(q, N - 1, y, z) - lbm.f_eq(q, N - 2, y, z)
                 + lbm.f_old.at(q, N - 2, y, z);
-        }*/
-        xyz(lbm.vel.at(4, y, z)) = make_float3(0.1f, 0.f, 0.f);
-        lbm.vel.at(4, y, z).w = 1.f;
+        }
+    }
+}
+
+__global__ void applybc2(LBM lbm) {
+    for (GSL(z, 0, N)) for (GSL(x, 0, N)) {
+        xyz(lbm.vel.at(x, 0, z)) = make_float3(0.1f, 0.f, 0.f);
+        for (int q = 0; q < 15; q++) {
+            lbm.f_old.at(q, x, 0, z) =
+                lbm.f_eq(q, x, 0, z) - lbm.f_eq(q, x, 1, z)
+                + lbm.f_old.at(q, x, 1, z);
+        }
+        xyz(lbm.vel.at(x, N - 1, z)) = xyz(lbm.vel.at(x, N - 2, z));
+        for (int q = 0; q < 15; q++) {
+            lbm.f_old.at(q, x, N - 1, z) =
+                lbm.f_eq(q, x, N - 1, z) - lbm.f_eq(q, x, N - 2, z)
+                + lbm.f_old.at(q, x, N - 2, z);
+        }
+    }
+}
+
+__global__ void applybc3(LBM lbm) {
+    for (GSL(y, 0, N)) for (GSL(x, 0, N)) {
+        xyz(lbm.vel.at(x, y, 0)) = make_float3(0.1f, 0.f, 0.f);
+        for (int q = 0; q < 15; q++) {
+            lbm.f_old.at(q, x, y, 0) =
+                lbm.f_eq(q, x, y, 0) - lbm.f_eq(q, x, y, 1)
+                + lbm.f_old.at(q, x, y, 1);
+        }
+        xyz(lbm.vel.at(x, y, N - 1)) = xyz(lbm.vel.at(x, y, N - 2));
+        for (int q = 0; q < 15; q++) {
+            lbm.f_old.at(q, x, y, N - 1) =
+                lbm.f_eq(q, x, y, N - 1) - lbm.f_eq(q, x, y, N - 2)
+                + lbm.f_old.at(q, x, y, N - 2);
+        }
     }
 }
 
@@ -152,13 +190,18 @@ void stepFunc() {
     substep1<<<dim3(N / 8, N / 8, N / 8), dim3(8, 8, 8)>>>(lbm);
     substep2<<<dim3(N / 8, N / 8, N / 8), dim3(8, 8, 8)>>>(lbm);
     applybc1<<<dim3(1, N / 16, N / 16), dim3(1, 16, 16)>>>(lbm);
+    applybc2<<<dim3(N / 16, 1, N / 16), dim3(16, 1, 16)>>>(lbm);
+    applybc3<<<dim3(N / 16, N / 16, 1), dim3(16, 16, 1)>>>(lbm);
 }
 
 __global__ void render(float *pixels, LBM lbm) {
     for (GSL(y, 0, N)) for (GSL(x, 0, N)) {
         float4 v = lbm.vel.at(x, y, N / 2);
-        float val = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-        pixels[y * N + x] = 0.0f + val * 400.f;
+        //float val = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+        //float val = 4.f * sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+        //float val = 400.f * sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+        float val = v.w * 0.3f;
+        pixels[y * N + x] = val;
     }
 }
 
