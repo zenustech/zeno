@@ -50,9 +50,9 @@ struct volume {
     }
 };
 
-#define GSL(x, start, end) \
-    int x = (start) + blockDim.x * blockIdx.x + threadIdx.x; \
-    x < (end); x += blockDim.x * gridDim.x
+#define GSL(_, start, end) \
+    int _ = (start) + blockDim._ * blockIdx._ + threadIdx._; \
+    _ < (end); _ += blockDim._ * gridDim._
 
 
 static inline __constant__ const int directions[][3] = {{0,0,0},{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},{1,-1,1},{-1,1,-1},{-1,1,1},{1,-1,-1}};
@@ -126,8 +126,8 @@ __global__ void substep2(LBM lbm) {
 }
 
 __global__ void applybc1(LBM lbm) {
-    for (GSL(z, 1, N - 1)) for (GSL(y, 1, N - 1)) {
-    //for (GSL(z, 0, N)) for (GSL(y, 0, N)) {
+    //for (GSL(z, 1, N - 1)) for (GSL(y, 1, N - 1)) {
+    for (GSL(z, 0, N)) for (GSL(y, 0, N)) {
         xyz(lbm.vel.at(0, y, z)) = make_float3(0.1f, 0.f, 0.f);
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, 0, y, z) =
@@ -145,13 +145,13 @@ __global__ void applybc1(LBM lbm) {
 
 __global__ void applybc2(LBM lbm) {
     for (GSL(z, 0, N)) for (GSL(x, 0, N)) {
-        xyz(lbm.vel.at(x, 0, z)) = make_float3(0.1f, 0.f, 0.f);
+        xyz(lbm.vel.at(x, 0, z)) = make_float3(0.f, 0.f, 0.f);
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, x, 0, z) =
                 lbm.f_eq(q, x, 0, z) - lbm.f_eq(q, x, 1, z)
                 + lbm.f_old.at(q, x, 1, z);
         }
-        xyz(lbm.vel.at(x, N - 1, z)) = xyz(lbm.vel.at(x, N - 2, z));
+        xyz(lbm.vel.at(x, N - 1, z)) = make_float3(0.f, 0.f, 0.f);
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, x, N - 1, z) =
                 lbm.f_eq(q, x, N - 1, z) - lbm.f_eq(q, x, N - 2, z)
@@ -162,18 +162,24 @@ __global__ void applybc2(LBM lbm) {
 
 __global__ void applybc3(LBM lbm) {
     for (GSL(y, 0, N)) for (GSL(x, 0, N)) {
-        xyz(lbm.vel.at(x, y, 0)) = make_float3(0.1f, 0.f, 0.f);
+        xyz(lbm.vel.at(x, y, 0)) = make_float3(0.f, 0.f, 0.f);
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, x, y, 0) =
                 lbm.f_eq(q, x, y, 0) - lbm.f_eq(q, x, y, 1)
                 + lbm.f_old.at(q, x, y, 1);
         }
-        xyz(lbm.vel.at(x, y, N - 1)) = xyz(lbm.vel.at(x, y, N - 2));
+        xyz(lbm.vel.at(x, y, N - 1)) = make_float3(0.f, 0.f, 0.f);
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, x, y, N - 1) =
                 lbm.f_eq(q, x, y, N - 1) - lbm.f_eq(q, x, y, N - 2)
                 + lbm.f_old.at(q, x, y, N - 2);
         }
+    }
+}
+
+__global__ void applybc4(LBM lbm) {
+    //for (GSL(z, 1, N - 1)) for (GSL(y, 1, N - 1)) for (GSL(x, 1, N - 1)) {
+    for (GSL(z, 0, N)) for (GSL(y, 0, N)) for (GSL(x, 0, N)) {
     }
 }
 
@@ -200,7 +206,8 @@ __global__ void render(float *pixels, LBM lbm) {
         //float val = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
         //float val = 4.f * sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
         //float val = 400.f * sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-        float val = v.w * 0.3f;
+        float val = v.x * 40.f;
+        //float val = v.w * 0.3f;
         pixels[y * N + x] = val;
     }
 }
@@ -208,6 +215,9 @@ __global__ void render(float *pixels, LBM lbm) {
 void renderFunc() {
     render<<<dim3(N / 16, N / 16, 1), dim3(16, 16, 1)>>>(pixels, lbm);
     checkCudaErrors(cudaDeviceSynchronize());
+    printf("03:%f\n", pixels[0 * N + 3]);
+    printf("30:%f\n", pixels[3 * N + 0]);
+    printf("33:%f\n", pixels[3 * N + 3]);
 }
 
 void displayFunc() {
