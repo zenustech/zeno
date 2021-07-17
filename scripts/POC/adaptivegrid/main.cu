@@ -114,10 +114,53 @@ void substep(DOM<X, Y> dom) {
     substep3<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(dom, height);
 }
 
+template <int X, int Y>
+__global__ void upper1(volume<X * 2, Y * 2> hi, volume<X, Y> lo) {
+    for (GSL(y, 0, Y)) for (GSL(x, 0, X)) {
+        float val = lo.at(x, y);
+        for (int dy = 0; dy < 2; dy++) for (int dx = 0; dx < 2; dx++) {
+            hi.at(x * 2 + dx, y * 2 + dy) = val;
+        }
+    }
+}
+
+template <int X, int Y>
+void upper(volume<X * 2, Y * 2> hi, volume<X, Y> lo) {
+    upper1<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(hi, lo);
+}
+
+template <int X, int Y>
+__global__ void lower1(volume<X * 2, Y * 2> hi, volume<X, Y> lo) {
+    for (GSL(y, 0, Y)) for (GSL(x, 0, X)) {
+        float val = 0.f;
+        for (int dy = 0; dy < 2; dy++) for (int dx = 0; dx < 2; dx++) {
+            val += hi.at(x * 2 + dx, y * 2 + dy);
+        }
+        lo.at(x, y) = val;
+    }
+}
+
+template <int X, int Y>
+void lower(volume<X * 2, Y * 2> hi, volume<X, Y> lo) {
+    lower1<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(hi, lo);
+}
+
+template <int X, int Y>
+void lower(DOM<X * 2, Y * 2> hi, DOM<X, Y> lo) {
+    lower(hi.pos, hi.pos);
+    lower(hi.vel, hi.vel);
+}
+
+template <int X, int Y>
+void upper(DOM<X * 2, Y * 2> hi, DOM<X, Y> lo) {
+    upper(hi.pos, hi.pos);
+    upper(hi.vel, hi.vel);
+}
+
 #define NX 512
 #define NY 512
-DOM<NX, NY> dom;
-DOM<NX / 2, NY / 2> dom2;
+DOM<NX / 4, NY / 4> dom;
+DOM<NX / 8, NY / 8> dom2;
 float *pixels;
 
 void initFunc() {
@@ -130,7 +173,9 @@ void initFunc() {
 
 void stepFunc() {
     substep(dom);
+    lower(dom, dom2);
     substep(dom2);
+    upper(dom, dom2);
     counter++;
 }
 
