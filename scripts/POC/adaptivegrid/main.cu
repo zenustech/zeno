@@ -5,15 +5,12 @@
 #include <cmath>
 #include <GL/glut.h>
 
-#define NX 512
-#define NY 512
-
-template <class T>
+template <int X, int Y, class T>
 struct volume {
     T *grid;
 
     void allocate() {
-        size_t size = NX * NY;
+        size_t size = X * Y;
         checkCudaErrors(cudaMallocManaged(&grid, size * sizeof(T)));
     }
 
@@ -22,7 +19,7 @@ struct volume {
     }
 
     __host__ __device__ T &at(int i, int j) const {
-        return grid[i + j * NX];
+        return grid[i + j * X];
     }
 
     __host__ __device__ auto &at(int c, int i, int j) const {
@@ -40,10 +37,11 @@ static inline const float ga = 0.2f;
 static inline const float dx = 0.02f;
 static inline const float dt = 0.01f;
 
+template <int X, int Y>
 struct DOM {
-    volume<float> pos;
-    volume<float> vel;
-    volume<uint8_t> mask;
+    volume<X, Y, float> pos;
+    volume<X, Y, float> vel;
+    volume<X, Y, uint8_t> mask;
 
     void allocate() {
         pos.allocate();
@@ -57,26 +55,29 @@ struct DOM {
     }
 };
 
-__global__ void initialize1(DOM dom) {
-    for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
+template <int X, int Y>
+__global__ void initialize1(DOM<X, Y> dom) {
+    for (GSL(y, 0, Y)) for (GSL(x, 0, X)) {
         dom.vel.at(x, y) = 0.f;
         dom.pos.at(x, y) = 0.f;
         dom.mask.at(x, y) = 0;
-        float fx = x * 2.f / NX - 1.f;
-        float fy = y * 2.f / NY - 1.f;
+        float fx = x * 2.f / X - 1.f;
+        float fy = y * 2.f / Y - 1.f;
         float f2 = fx * fx + fy * fy;
-        if (f2 < 0.1f || x == 0 || x == NX - 1 || y == 0 || y == NY - 1) {
+        if (f2 < 0.1f || x == 0 || x == X - 1 || y == 0 || y == Y - 1) {
             dom.mask.at(x, y) = 1;
         }
     }
 }
 
-void initialize(DOM dom) {
-    initialize1<<<dim3(NX / 16, NY / 16, 1), dim3(16, 16, 1)>>>(dom);
+template <int X, int Y>
+void initialize(DOM<X, Y> dom) {
+    initialize1<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(dom);
 }
 
-__global__ void substep1(DOM dom) {
-    for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
+template <int X, int Y>
+__global__ void substep1(DOM<X, Y> dom) {
+    for (GSL(y, 0, Y)) for (GSL(x, 0, X)) {
         if (dom.mask.at(x, y) != 0)
             continue;
         float acc = ka * dom.laplacian(x, y) - ga * dom.vel.at(x, y);
@@ -84,16 +85,18 @@ __global__ void substep1(DOM dom) {
     }
 }
 
-__global__ void substep2(DOM dom) {
-    for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
+template <int X, int Y>
+__global__ void substep2(DOM<X, Y> dom) {
+    for (GSL(y, 0, Y)) for (GSL(x, 0, X)) {
         dom.pos.at(x, y) += dom.vel.at(x, y) * dt;
     }
 }
 
-__global__ void substep3(DOM dom, float height) {
-    for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
-        float fx = x * 2.f / NX - .25f;
-        float fy = y * 2.f / NY - .25f;
+template <int X, int Y>
+__global__ void substep3(DOM<X, Y> dom, float height) {
+    for (GSL(y, 0, Y)) for (GSL(x, 0, X)) {
+        float fx = x * 2.f / X - .25f;
+        float fy = y * 2.f / Y - .25f;
         float f2 = fx * fx + fy * fy;
         if (f2 < 0.01f) {
             dom.pos.at(x, y) = height;
@@ -101,15 +104,18 @@ __global__ void substep3(DOM dom, float height) {
     }
 }
 
-void substep(DOM dom) {
-    substep1<<<dim3(NX / 16, NY / 16, 1), dim3(16, 16, 1)>>>(dom);
-    substep2<<<dim3(NX / 16, NY / 16, 1), dim3(16, 16, 1)>>>(dom);
+template <int X, int Y>
+void substep(DOM<X, Y> dom) {
+    substep1<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(dom);
+    substep2<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(dom);
     static int counter = 0;
     float height = 1.0f * sinf(counter++ * 0.08f);
-    substep3<<<dim3(NX / 16, NY / 16, 1), dim3(16, 16, 1)>>>(dom, height);
+    substep3<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(dom, height);
 }
 
-DOM dom;
+#define NX 512
+#define NY 512
+DOM<NX, NY> dom;
 float *pixels;
 
 void initFunc() {
@@ -122,9 +128,11 @@ void stepFunc() {
     substep(dom);
 }
 
-__global__ void render(float *pixels, DOM dom) {
+template <int X, int Y>
+__global__ void render(float *pixels, DOM<X, Y> dom) {
     for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
-        pixels[y * NX + x] = 0.5f + 0.5f * dom.pos.at(x, y);
+        float val = dom.pos.at(x * X / NX, y * Y / NY);
+        pixels[y * NX + x] = 0.5f + 0.5f * val;
     }
 }
 
