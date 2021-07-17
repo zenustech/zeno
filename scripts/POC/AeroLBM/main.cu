@@ -138,10 +138,10 @@ __global__ void substep2(LBM lbm) {
 }
 
 __global__ void applybc1(LBM lbm) {
-    for (GSL(z, 1, N - 1)) for (GSL(y, 1, N - 1)) {
-    //for (GSL(z, 0, N)) for (GSL(y, 0, N)) {
+    //for (GSL(z, 1, N - 1)) for (GSL(y, 1, N - 1)) {
+    for (GSL(z, 0, N)) for (GSL(y, 0, N)) {
         lbm.vel.at(0, y, z) = lbm.vel.at(1, y, z);
-        lbm.vel.at(0, y, z).x = .1f;
+        lbm.vel.at(0, y, z).x = 0.1f;
         lbm.vel.at(0, y, z).y = 0.f;
         lbm.vel.at(0, y, z).z = 0.f;
         for (int q = 0; q < 15; q++) {
@@ -206,7 +206,13 @@ __global__ void applybc3(LBM lbm) {
 
 __global__ void applybc4(LBM lbm) {
     //for (GSL(z, 1, N - 1)) for (GSL(y, 1, N - 1)) for (GSL(x, 1, N - 1)) {
-    for (GSL(z, 0, N)) for (GSL(y, 0, N)) for (GSL(x, 0, N)) {
+    for (GSL(z, N * 3 / 8, N * 5 / 8))
+    for (GSL(y, N * 3 / 8, N * 5 / 8))
+    for (GSL(x, N * 1 / 8, N * 3 / 8))
+    {
+        lbm.vel.at(x, y, z).x = 0.f;
+        lbm.vel.at(x, y, z).y = 0.f;
+        lbm.vel.at(x, y, z).z = 0.f;
     }
 }
 
@@ -226,6 +232,7 @@ void stepFunc() {
     applybc1<<<dim3(1, N / 16, N / 16), dim3(1, 16, 16)>>>(lbm);
     applybc2<<<dim3(N / 16, 1, N / 16), dim3(16, 1, 16)>>>(lbm);
     applybc3<<<dim3(N / 16, N / 16, 1), dim3(16, 16, 1)>>>(lbm);
+    applybc4<<<dim3(N / 32, N / 32, N / 32), dim3(8, 8, 8)>>>(lbm);
 }
 
 __global__ void render(float *pixels, LBM lbm) {
@@ -242,9 +249,9 @@ __global__ void render(float *pixels, LBM lbm) {
 void renderFunc() {
     render<<<dim3(N / 16, N / 16, 1), dim3(16, 16, 1)>>>(pixels, lbm);
     checkCudaErrors(cudaDeviceSynchronize());
-    printf("03:%f\n", pixels[0 * N + 3]);
+    /*printf("03:%f\n", pixels[0 * N + 3]);
     printf("30:%f\n", pixels[3 * N + 0]);
-    printf("33:%f\n", pixels[3 * N + 3]);
+    printf("33:%f\n", pixels[3 * N + 3]);*/
 }
 
 void displayFunc() {
