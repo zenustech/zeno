@@ -1,3 +1,4 @@
+// https://www.slideserve.com/lars/3d-simulation-of-particle-motion-in-lid-driven-cavity-flow-by-mrt-lbm
 #include "helper_cuda.h"
 #include "helper_math.h"
 #include <cassert>
@@ -5,9 +6,9 @@
 #include <cmath>
 #include <GL/glut.h>
 
-#define NX 512
-#define NY 128
-#define NZ 128
+#define NX 256
+#define NY 64
+#define NZ 64
 
 template <class T>
 struct volume {
@@ -56,6 +57,7 @@ struct volume_soa {
 
 static inline __constant__ const int directions[][3] = {{0,0,0},{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},{1,-1,1},{-1,1,-1},{-1,1,1},{1,-1,-1}};
 static inline __constant__ const float weights[] = {2.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f,1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f};
+static inline __constant__ const int inverse_index[] = {0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13};
 
 static_assert(sizeof(weights) / sizeof(weights[0]) == 15);
 
@@ -67,6 +69,7 @@ struct LBM {
     volume<float4> vel;
     volume_soa<float, 16> f_new;
     volume_soa<float, 16> f_old;
+    //volume<uint8_t> mask;
 
     void allocate() {
         vel.allocate();
@@ -117,6 +120,30 @@ __global__ void substep1(LBM lbm) {
     }
 }
 
+/*__global__ void substep11(LBM lbm) {
+    for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
+        self.feq
+    }
+}
+
+__global__ void substep12(LBM lbm) {
+    //for (GSL(z, 1, NZ - 1)) for (GSL(y, 1, NY - 1)) for (GSL(x, 1, NX - 1)) {
+    for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
+        for (int q = 0; q < 15; q++) {
+            //int mdx = x - directions[q][0];
+            //int mdy = y - directions[q][1];
+            //int mdz = z - directions[q][2];
+            int mdx = (x - directions[q][0] + NX) % NX;
+            int mdy = (y - directions[q][1] + NY) % NY;
+            int mdz = (z - directions[q][2] + NZ) % NZ;
+            [[maybe_unused]] int iq = inverse_index[q];
+            lbm.f_new.at(q, x, y, z) = lbm.f_old.at(q, mdx, mdy, mdz);
+            //lbm.f_new.at(q, x, y, z) = lbm.f_old.at(q, mdx, mdy, mdz)
+                // * (1.f - inv_tau) + lbm.f_eq(q, mdx, mdy, mdz) * inv_tau;
+        }
+    }
+}*/
+
 __global__ void substep2(LBM lbm) {
     //for (GSL(z, 1, NZ - 1)) for (GSL(y, 1, NY - 1)) for (GSL(x, 1, NX - 1)) {
     for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
@@ -136,6 +163,8 @@ __global__ void substep2(LBM lbm) {
     }
 }
 
+//__device__ void applybc(LBM lbm, at
+
 __global__ void applybc1(LBM lbm) {
     for (GSL(z, 1, NZ - 1)) for (GSL(y, 1, NY - 1)) {
     //for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) {
@@ -144,15 +173,11 @@ __global__ void applybc1(LBM lbm) {
         lbm.vel.at(0, y, z).y = 0.f;
         lbm.vel.at(0, y, z).z = 0.f;
         for (int q = 0; q < 15; q++) {
-            lbm.f_old.at(q, 0, y, z) =
-                lbm.f_eq(q, 0, y, z) - lbm.f_eq(q, 1, y, z)
-                + lbm.f_old.at(q, 1, y, z);
+            lbm.f_old.at(q, 0, y, z) = lbm.f_eq(q, 0, y, z) - lbm.f_eq(q, 1, y, z) + lbm.f_old.at(q, 1, y, z);
         }
         lbm.vel.at(NX - 1, y, z) = lbm.vel.at(NX - 2, y, z);
         for (int q = 0; q < 15; q++) {
-            lbm.f_old.at(q, NX - 1, y, z) =
-                lbm.f_eq(q, NX - 1, y, z) - lbm.f_eq(q, NX - 2, y, z)
-                + lbm.f_old.at(q, NX - 2, y, z);
+            lbm.f_old.at(q, NX - 1, y, z) = lbm.f_eq(q, NX - 1, y, z) - lbm.f_eq(q, NX - 2, y, z) + lbm.f_old.at(q, NX - 2, y, z);
         }
     }
 }
@@ -164,18 +189,14 @@ __global__ void applybc2(LBM lbm) {
         lbm.vel.at(x, 0, z).y = 0.f;
         lbm.vel.at(x, 0, z).z = 0.f;
         for (int q = 0; q < 15; q++) {
-            lbm.f_old.at(q, x, 0, z) =
-                lbm.f_eq(q, x, 0, z) - lbm.f_eq(q, x, 1, z)
-                + lbm.f_old.at(q, x, 1, z);
+            lbm.f_old.at(q, x, 0, z) = lbm.f_eq(q, x, 0, z) - lbm.f_eq(q, x, 1, z) + lbm.f_old.at(q, x, 1, z);
         }
         lbm.vel.at(x, NY - 1, z) = lbm.vel.at(x, NY - 2, z);
         lbm.vel.at(x, NY - 1, z).x = 0.f;
         lbm.vel.at(x, NY - 1, z).y = 0.f;
         lbm.vel.at(x, NY - 1, z).z = 0.f;
         for (int q = 0; q < 15; q++) {
-            lbm.f_old.at(q, x, NY - 1, z) =
-                lbm.f_eq(q, x, NY - 1, z) - lbm.f_eq(q, x, NY - 2, z)
-                + lbm.f_old.at(q, x, NY - 2, z);
+            lbm.f_old.at(q, x, NY - 1, z) = lbm.f_eq(q, x, NY - 1, z) - lbm.f_eq(q, x, NY - 2, z) + lbm.f_old.at(q, x, NY - 2, z);
         }
     }
 }
@@ -187,18 +208,14 @@ __global__ void applybc3(LBM lbm) {
         lbm.vel.at(x, y, 0).y = 0.f;
         lbm.vel.at(x, y, 0).z = 0.f;
         for (int q = 0; q < 15; q++) {
-            lbm.f_old.at(q, x, y, 0) =
-                lbm.f_eq(q, x, y, 0) - lbm.f_eq(q, x, y, 1)
-                + lbm.f_old.at(q, x, y, 1);
+            lbm.f_old.at(q, x, y, 0) = lbm.f_eq(q, x, y, 0) - lbm.f_eq(q, x, y, 1) + lbm.f_old.at(q, x, y, 1);
         }
         lbm.vel.at(x, y, NZ - 1) = lbm.vel.at(x, y, NZ - 2);
         lbm.vel.at(x, y, NZ - 1).x = 0.f;
         lbm.vel.at(x, y, NZ - 1).y = 0.f;
         lbm.vel.at(x, y, NZ - 1).z = 0.f;
         for (int q = 0; q < 15; q++) {
-            lbm.f_old.at(q, x, y, NZ - 1) =
-                lbm.f_eq(q, x, y, NZ - 1) - lbm.f_eq(q, x, y, NZ - 2)
-                + lbm.f_old.at(q, x, y, NZ - 2);
+            lbm.f_old.at(q, x, y, NZ - 1) = lbm.f_eq(q, x, y, NZ - 1) - lbm.f_eq(q, x, y, NZ - 2) + lbm.f_old.at(q, x, y, NZ - 2);
         }
     }
 }
@@ -214,6 +231,17 @@ __global__ void applybc4(LBM lbm) {
         lbm.vel.at(x, y, z).x = 0.f;
         lbm.vel.at(x, y, z).y = 0.f;
         lbm.vel.at(x, y, z).z = 0.f;
+    }
+}
+
+__global__ void render(float *pixels, LBM lbm) {
+    for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
+        float4 v = lbm.vel.at(x, y, NZ / 2);
+        //float val = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+        float val = 4.f * sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+        //float val = v.x * 4.f;
+        //float val = v.w * 0.3f;
+        pixels[y * NX + x] = val;
     }
 }
 
@@ -234,17 +262,6 @@ void stepFunc() {
     applybc2<<<dim3(NX / 16, 1, NZ / 16), dim3(16, 1, 16)>>>(lbm);
     applybc3<<<dim3(NX / 16, NY / 16, 1), dim3(16, 16, 1)>>>(lbm);
     applybc4<<<dim3(NX / 16, NY / 16, NZ / 16), dim3(8, 8, 8)>>>(lbm);
-}
-
-__global__ void render(float *pixels, LBM lbm) {
-    for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
-        float4 v = lbm.vel.at(x, y, NZ / 2);
-        //float val = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-        float val = 4.f * sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-        //float val = v.x * 4.f;
-        //float val = v.w * 0.3f;
-        pixels[y * NX + x] = val;
-    }
 }
 
 void renderFunc() {
