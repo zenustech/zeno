@@ -142,6 +142,8 @@ __global__ void applybc1(LBM lbm) {
     //for (GSL(z, 0, N)) for (GSL(y, 0, N)) {
         lbm.vel.at(0, y, z) = lbm.vel.at(1, y, z);
         lbm.vel.at(0, y, z).x = .1f;
+        lbm.vel.at(0, y, z).y = 0.f;
+        lbm.vel.at(0, y, z).z = 0.f;
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, 0, y, z) =
                 lbm.f_eq(q, 0, y, z) - lbm.f_eq(q, 1, y, z)
@@ -159,12 +161,18 @@ __global__ void applybc1(LBM lbm) {
 __global__ void applybc2(LBM lbm) {
     for (GSL(z, 0, N)) for (GSL(x, 0, N)) {
         lbm.vel.at(x, 0, z) = lbm.vel.at(x, 1, z);
+        lbm.vel.at(x, 0, z).x = 0.f;
+        lbm.vel.at(x, 0, z).y = 0.f;
+        lbm.vel.at(x, 0, z).z = 0.f;
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, x, 0, z) =
                 lbm.f_eq(q, x, 0, z) - lbm.f_eq(q, x, 1, z)
                 + lbm.f_old.at(q, x, 1, z);
         }
         lbm.vel.at(x, N - 1, z) = lbm.vel.at(x, N - 2, z);
+        lbm.vel.at(x, N - 1, z).x = 0.f;
+        lbm.vel.at(x, N - 1, z).y = 0.f;
+        lbm.vel.at(x, N - 1, z).z = 0.f;
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, x, N - 1, z) =
                 lbm.f_eq(q, x, N - 1, z) - lbm.f_eq(q, x, N - 2, z)
@@ -175,15 +183,19 @@ __global__ void applybc2(LBM lbm) {
 
 __global__ void applybc3(LBM lbm) {
     for (GSL(y, 0, N)) for (GSL(x, 0, N)) {
-        xyz(lbm.vel.at(x, y, 0)) = make_float3(0.f, 0.f, 0.f);
-        lbm.vel.at(x, y, 0).w = lbm.vel.at(x, y, 0).w;
+        lbm.vel.at(x, y, 0) = lbm.vel.at(x, y, 1);
+        lbm.vel.at(x, y, 0).x = 0.f;
+        lbm.vel.at(x, y, 0).y = 0.f;
+        lbm.vel.at(x, y, 0).z = 0.f;
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, x, y, 0) =
                 lbm.f_eq(q, x, y, 0) - lbm.f_eq(q, x, y, 1)
                 + lbm.f_old.at(q, x, y, 1);
         }
-        xyz(lbm.vel.at(x, y, N - 1)) = make_float3(0.f, 0.f, 0.f);
-        lbm.vel.at(x, y, N - 1).w = lbm.vel.at(x, y, N - 2).w;
+        lbm.vel.at(x, y, N - 1) = lbm.vel.at(x, y, N - 2);
+        lbm.vel.at(x, y, N - 1).x = 0.f;
+        lbm.vel.at(x, y, N - 1).y = 0.f;
+        lbm.vel.at(x, y, N - 1).z = 0.f;
         for (int q = 0; q < 15; q++) {
             lbm.f_old.at(q, x, y, N - 1) =
                 lbm.f_eq(q, x, y, N - 1) - lbm.f_eq(q, x, y, N - 2)
@@ -241,7 +253,7 @@ void displayFunc() {
     glFlush();
 }
 
-#define ITV 100
+#define ITV 0
 void timerFunc(int unused) {
     stepFunc();
     renderFunc();
