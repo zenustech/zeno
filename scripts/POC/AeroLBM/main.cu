@@ -34,9 +34,9 @@ struct volume {
 static inline __constant__ const int directions[][3] = {{0,0,0},{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},{1,-1,1},{-1,1,-1},{-1,1,1},{1,-1,-1}};
 static inline __constant__ const float weights[] = {2.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f,1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f};
 
-template <class F>
-__global__ void thatcall(F that) {
-    that();
+template <class T, class F, class ...Ts>
+__global__ void go(T that, F func, Ts &&...ts) {
+    func(that, std::forward<Ts>(ts)...);
 }
 
 struct lbm {
@@ -64,11 +64,11 @@ struct lbm {
     }
 
     __host__ void initialize(dim3 grid_dim, dim3 block_dim) {
-        thatcall<<<grid_dim, block_dim>>>([this] __device__ () {
+        go<<<grid_dim, block_dim>>>(*this, [] __device__ (lbm that) {
         for (GSL(z, N)) {
             for (GSL(y, N)) {
                 for (GSL(x, N)) {
-                    rho.at(x, y, z) = float(x) / N;
+                    that.rho.at(x, y, z) = float(x) / N;
                 }
             }
         }
