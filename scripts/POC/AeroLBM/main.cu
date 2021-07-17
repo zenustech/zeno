@@ -34,9 +34,9 @@ struct volume {
 static inline __constant__ const int directions[][3] = {{0,0,0},{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},{1,-1,1},{-1,1,-1},{-1,1,1},{1,-1,-1}};
 static inline __constant__ const float weights[] = {2.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f,1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f};
 
-template <class T>
-__global__ void _that_initialize(T that) {
-    that._initialize();
+template <class F>
+__global__ void thatcall(F that) {
+    that();
 }
 
 struct lbm {
@@ -63,7 +63,8 @@ struct lbm {
         return feq;
     }
 
-    __device__ void _initialize() {
+    __host__ void initialize(dim3 grid_dim, dim3 block_dim) {
+        thatcall<<<grid_dim, block_dim>>>([this] __device__ () {
         for (GSL(z, N)) {
             for (GSL(y, N)) {
                 for (GSL(x, N)) {
@@ -71,10 +72,7 @@ struct lbm {
                 }
             }
         }
-    }
-
-    void initialize(dim3 grid_dim, dim3 block_dim) {
-        _that_initialize<<<grid_dim, block_dim>>>(*this);
+        });
     }
 
     /*int mdx = (x - directions[q][0] + N) % N;

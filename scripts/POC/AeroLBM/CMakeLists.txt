@@ -3,6 +3,7 @@ project(LBMSolver LANGUAGES CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_ARCHITECTURES 75)
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --extended-lambda")
 
 add_executable(LBMSolver)
 target_sources(LBMSolver PRIVATE main.cu)
