@@ -5,6 +5,8 @@
 #include <cmath>
 #include <GL/glut.h>
 
+static int counter = 0;
+
 template <int X, int Y, class T>
 struct volume {
     T *grid;
@@ -34,7 +36,6 @@ struct volume {
 
 static inline const float ka = 2.0f;
 static inline const float ga = 0.2f;
-static inline const float dx = 0.02f;
 static inline const float dt = 0.01f;
 
 template <int X, int Y>
@@ -50,6 +51,7 @@ struct DOM {
     }
 
     __device__ float laplacian(int i, int j) const {
+        auto const dx = 10.f / X;
         return (-4 * pos.at(i, j) + pos.at(i, j - 1) + pos.at(i, j + 1)
             + pos.at(i + 1, j) + pos.at(i - 1, j)) / (4 * dx * dx);
     }
@@ -108,36 +110,49 @@ template <int X, int Y>
 void substep(DOM<X, Y> dom) {
     substep1<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(dom);
     substep2<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(dom);
-    static int counter = 0;
-    float height = 1.0f * sinf(counter++ * 0.08f);
+    float height = 1.0f * sinf(counter * 0.08f);
     substep3<<<dim3(X / 16, Y / 16, 1), dim3(16, 16, 1)>>>(dom, height);
+    counter++;
 }
 
 #define NX 512
 #define NY 512
 DOM<NX, NY> dom;
+DOM<NX / 2, NY / 2> dom2;
 float *pixels;
 
 void initFunc() {
     checkCudaErrors(cudaMallocManaged(&pixels, NX * NY * sizeof(float)));
     dom.allocate();
+    dom2.allocate();
     initialize(dom);
+    initialize(dom2);
 }
 
 void stepFunc() {
     substep(dom);
+    substep(dom2);
 }
 
 template <int X, int Y>
-__global__ void render(float *pixels, DOM<X, Y> dom) {
+__global__ void render1(float *pixels, DOM<X, Y> dom) {
     for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
         float val = dom.pos.at(x * X / NX, y * Y / NY);
         pixels[y * NX + x] = 0.5f + 0.5f * val;
     }
 }
 
+template <int X, int Y>
+void render(float *pixels, DOM<X, Y> dom) {
+    render1<<<dim3(NX / 16, NY / 16, 1), dim3(16, 16, 1)>>>(pixels, dom);
+}
+
 void renderFunc() {
-    render<<<dim3(NX / 16, NY / 16, 1), dim3(16, 16, 1)>>>(pixels, dom);
+    if (counter % 200 < 100) {
+        render(pixels, dom);
+    } else {
+        render(pixels, dom2);
+    }
     checkCudaErrors(cudaDeviceSynchronize());
     /*printf("03:%f\n", pixels[0 * N + 3]);
     printf("30:%f\n", pixels[3 * NX + 0]);
@@ -150,7 +165,7 @@ void displayFunc() {
     glFlush();
 }
 
-#define ITV 10
+#define ITV 5
 void timerFunc(int unused) {
     stepFunc();
     renderFunc();
