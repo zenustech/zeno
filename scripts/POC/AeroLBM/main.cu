@@ -155,7 +155,7 @@ void synchi2lo(LBM<NX*2, NY*2, NZ*2> hi, LBM<NX, NY, NZ> lo) {
 
 template <int NX, int NY, int NZ, class T>
 __device__ auto trilerp(T const &t, int x, int y, int z, int dx, int dy, int dz) {
-    float c0 = 0.25f;
+    float c0 = 0.85f;
     float c1 = 1.f - c0;
     float x0 = dx ? c1 : c0;
     float x1 = dx ? c0 : c1;
@@ -364,14 +364,16 @@ void substep(LBM<NX, NY, NZ> lbm) {
     applybc4<<<dim3(NX / 16, NY / 16, NZ / 16), dim3(8, 8, 8)>>>(lbm);
 }
 
-#define NNX 256
-#define NNY 64
-#define NNZ 64
+#define NNX 512
+#define NNY 128
+#define NNZ 128
 
 template <int NX, int NY, int NZ>
 __global__ void render1(float *pixels, LBM<NX, NY, NZ> lbm, int chan) {
     for (GSL(y, 0, NNY)) for (GSL(x, 0, NNX)) {
-        float4 v = lbm.vel.at(x * NX / NNX, y * NY / NNY, NZ / 2);
+        float4 v = trilerp<NX, NY, NZ>([&] (auto x, auto y, auto z) {
+                return lbm.vel.at(x, y, z);
+        }, x * NX / NNX, y * NY / NNY, NZ / 2, x * (NNX / NX), y % (NNY / NY), 0);
         //float val = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
         //float val = 4.f * sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
         //float val = v.x * 4.f;
@@ -385,8 +387,8 @@ void render(float *pixels, LBM<NX, NY, NZ> lbm, int chan) {
     render1<<<dim3(NNX / 16, NNY / 16, 1), dim3(16, 16, 1)>>>(pixels, lbm, chan);
 }
 
-LBM<NNX, NNY, NNZ> lbm;
-LBM<NNX/2, NNY/2, NNZ/2> lbm2;
+LBM<NNX/2, NNY/2, NNZ/2> lbm;
+LBM<NNX/4, NNY/4, NNZ/4> lbm2;
 float *pixels;
 
 void initFunc() {
@@ -417,7 +419,7 @@ void displayFunc() {
     glFlush();
 }
 
-#define ITV 10
+#define ITV 20
 void timerFunc(int unused) {
     renderFunc();
     glutPostRedisplay();
