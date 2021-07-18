@@ -9,7 +9,6 @@ struct IBeginFor : zeno::INode {
     bool is_break;
     virtual bool isContinue() const = 0;
     virtual void update() = 0;
-    virtual void setBreak(bool b) =0;
 };
 
 
@@ -17,12 +16,8 @@ struct BeginFor : IBeginFor {
     int m_index;
     int m_count;
     
-    
     virtual bool isContinue() const override {
         return m_index < m_count && !is_break;
-    }
-    virtual void setBreak(bool b) override {
-        is_break = true;
     }
     virtual void apply() override {
         m_index = 0;
@@ -79,7 +74,7 @@ struct BreakFor : zeno::INode {
     virtual void doApply() override {
         auto [sn, ss] = inputBounds.at("FOR");
         auto fore = dynamic_cast<IBeginFor *>(graph->nodes.at(sn).get());
-        fore->setBreak(true);  // will still keep going the rest of loop body?
+        fore->is_break = true;  // will still keep going the rest of loop body?
     }
 
     virtual void apply() override {}
@@ -291,9 +286,6 @@ ZENDEFNODE(ConditionedDo, {
 struct BeginForEach : IBeginFor {
     int m_index;
     std::shared_ptr<zeno::ListObject> m_list;
-    virtual void setBreak(bool b) override {
-        is_break = true;
-    }
     virtual bool isContinue() const override {
         return m_index < m_list->arr.size() && !is_break;
     }
