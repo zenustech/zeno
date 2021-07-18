@@ -1,4 +1,4 @@
-x=ucla
+x=math
 
 x: $x.exe Makefile
 	./$<
