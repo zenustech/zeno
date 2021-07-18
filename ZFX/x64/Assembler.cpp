@@ -142,7 +142,7 @@ struct ImplAssembler {
                 it != funcnames.end()) {
                 // rbx points to an array of function pointers
                 ERROR_IF(linesep.size() < 2);
-                if (linesep.size() == 2) {
+                if (linesep.size() == 3) {
                     auto dst = from_string<int>(linesep[1]);
                     auto src = from_string<int>(linesep[2]);
                     int size = SIMDBuilder::sizeOfType(simdkind);

@@ -14,7 +14,7 @@ int main() {
         return pos;
     };
 #else
-    std::string code("@pos.x = max(@clr, 0)");
+    std::string code("@pos.x = sin(@clr)");
 #endif
 
     zfx::Options opts(zfx::Options::for_x64);
@@ -29,7 +29,7 @@ int main() {
 
     auto ctx = exec->make_context();
     ctx.channel(prog->symbol_id("@pos", 0))[0] = 1.f;
-    ctx.channel(prog->symbol_id("@clr", 0))[0] = 2.f;
+    ctx.channel(prog->symbol_id("@clr", 0))[0] = 3.14f;
     ctx.execute();
     printf("new_pos = %f\n", ctx.channel(prog->symbol_id("@pos", 0))[0]);
 
