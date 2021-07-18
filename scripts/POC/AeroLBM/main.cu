@@ -117,6 +117,23 @@ void initialize(LBM<NX, NY, NZ> lbm, int type) {
 }
 
 template <int NX, int NY, int NZ>
+__global__ void synchi2lo1(LBM<NX*2, NY*2, NZ*2> hi, LBM<NX, NY, NZ> lo) {
+    for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
+        if (!hi.active.at(x * 2, y * 2, z * 2) || !lo.active.at(x, y, z)) continue;
+        float4 vel = make_float4(0.f);
+        for (int dz = 0; dz < 2; dz++) for (int dy = 0; dy < 2; dy++) for (int dx = 0; dx < 2; dx++) {
+            vel += hi.vel.at(x * 2 + dx, y * 2 + dy, z * 2 + dz);
+        }
+        lo.vel.at(x, y, z) = vel;
+    }
+}
+
+template <int NX, int NY, int NZ>
+void synchi2lo(LBM<NX*2, NY*2, NZ*2> hi, LBM<NX, NY, NZ> lo) {
+    synchi2lo1<<<dim3(NX / 8, NY / 8, NZ / 8), dim3(8, 8, 8)>>>(hi, lo);
+}
+
+template <int NX, int NY, int NZ>
 __global__ void substep1(LBM<NX, NY, NZ> lbm) {
     //for (GSL(z, 1, NZ - 1)) for (GSL(y, 1, NY - 1)) for (GSL(x, 1, NX - 1)) {
     for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
@@ -255,31 +272,6 @@ __global__ void applybc4(LBM<NX, NY, NZ> lbm) {
     }
 }
 
-#define NNX 256
-#define NNY 64
-#define NNZ 64
-
-template <int NX, int NY, int NZ>
-__global__ void render(float *pixels, LBM<NX, NY, NZ> lbm) {
-    for (GSL(y, 0, NNY)) for (GSL(x, 0, NNX)) {
-        float4 v = lbm.vel.at(x * NNX / NX, y * NNY / NY, NZ / 2);
-        //float val = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-        float val = 4.f * sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-        //float val = v.x * 4.f;
-        //float val = v.w * 0.3f;
-        pixels[y * NNX + x] = val;
-    }
-}
-
-LBM<NNX, NNY, NNZ> lbm;
-float *pixels;
-
-void initFunc() {
-    lbm.allocate();
-    checkCudaErrors(cudaMallocManaged(&pixels, NNX * NNY * sizeof(float)));
-    initialize(lbm);
-}
-
 template <int NX, int NY, int NZ>
 void substep(LBM<NX, NY, NZ> lbm) {
     substep1<<<dim3(NX / 8, NY / 8, NZ / 8), dim3(8, 8, 8)>>>(lbm);
@@ -290,18 +282,52 @@ void substep(LBM<NX, NY, NZ> lbm) {
     applybc4<<<dim3(NX / 16, NY / 16, NZ / 16), dim3(8, 8, 8)>>>(lbm);
 }
 
+#define NNX 256
+#define NNY 64
+#define NNZ 64
+
+template <int NX, int NY, int NZ>
+__global__ void render1(float *pixels, LBM<NX, NY, NZ> lbm, int chan) {
+    for (GSL(y, 0, NNY)) for (GSL(x, 0, NNX)) {
+        float4 v = lbm.vel.at(x * NX / NNX, y * NY / NNY, NZ / 2);
+        //float val = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+        float val = 4.f * sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+        //float val = v.x * 4.f;
+        //float val = v.w * 0.3f;
+        pixels[(y * NNX + x) * 4 + chan] = val;
+    }
+}
+
+template <int NX, int NY, int NZ>
+void render(float *pixels, LBM<NX, NY, NZ> lbm, int chan) {
+    render1<<<dim3(NNX / 16, NNY / 16, 1), dim3(16, 16, 1)>>>(pixels, lbm, chan);
+}
+
+LBM<NNX, NNY, NNZ> lbm;
+LBM<NNX/2, NNY/2, NNZ/2> lbm2;
+float *pixels;
+
+void initFunc() {
+    checkCudaErrors(cudaMallocManaged(&pixels, 4 * NNX * NNY * sizeof(float)));
+    lbm.allocate();
+    initialize(lbm, 0);
+    lbm2.allocate();
+    initialize(lbm2, 1);
+}
+
 void renderFunc() {
     substep(lbm);
-    render<<<dim3(NNX / 16, NNY / 16, 1), dim3(16, 16, 1)>>>(pixels, lbm);
+    synchi2lo(lbm, lbm2);
+    substep(lbm2);
+
+    render(pixels, lbm, 0);
+    render(pixels, lbm2, 1);
     checkCudaErrors(cudaDeviceSynchronize());
-    /*printf("03:%f\n", pixels[0 * N + 3]);
-    printf("30:%f\n", pixels[3 * NX + 0]);
-    printf("33:%f\n", pixels[3 * NX + 3]);*/
 }
 
 void displayFunc() {
     glClear(GL_COLOR_BUFFER_BIT);
-    glDrawPixels(NNX, NNY, GL_RED, GL_FLOAT, pixels);
+    glDrawPixels(NNX, NNY, GL_RGBA, GL_FLOAT, pixels);
     glFlush();
 }
 
