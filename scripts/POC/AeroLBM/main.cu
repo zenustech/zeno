@@ -53,7 +53,7 @@ struct volume_soa {
 
 static inline __constant__ const int directions[][3] = {{0,0,0},{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},{1,-1,1},{-1,1,-1},{-1,1,1},{1,-1,-1}};
 static inline __constant__ const float weights[] = {2.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f,1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f};
-static inline __constant__ const int inverse_index[] = {0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13};
+//static inline __constant__ const int inverse_index[] = {0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13};
 
 static_assert(sizeof(weights) / sizeof(weights[0]) == 15);
 
@@ -66,12 +66,13 @@ struct LBM {
     volume<NX, NY, NZ, float4> vel;
     volume_soa<NX, NY, NZ, float, 16> f_new;
     volume_soa<NX, NY, NZ, float, 16> f_old;
-    //volume<uint8_t> mask;
+    volume<NX, NY, NZ, uint8_t> active;
 
     void allocate() {
         vel.allocate();
         f_new.allocate();
         f_old.allocate();
+        active.allocate();
     }
 
     __device__ float f_eq(int q, int x, int y, int z) {
@@ -86,9 +87,15 @@ struct LBM {
 };
 
 template <int NX, int NY, int NZ>
-__global__ void initialize1(LBM<NX, NY, NZ> lbm) {
+__global__ void initialize1(LBM<NX, NY, NZ> lbm, int type) {
     for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
         lbm.vel.at(x, y, z) = make_float4(0.f, 0.f, 0.f, 1.f);
+        lbm.active.at(x, y, z) = 0;
+        if (type == 0) {  // hires grid
+            if (x < NX / 2 + 4) lbm.active.at(x, y, z) = 1;
+        } else if (type == 1) {  // lores grid
+            if (x > NX / 2 - 2) lbm.active.at(x, y, z) = 1;
+        }
     }
 }
 
@@ -104,8 +111,8 @@ __global__ void initialize2(LBM<NX, NY, NZ> lbm) {
 }
 
 template <int NX, int NY, int NZ>
-void initialize(LBM<NX, NY, NZ> lbm) {
-    initialize1<<<dim3(NX / 8, NY / 8, NZ / 8), dim3(8, 8, 8)>>>(lbm);
+void initialize(LBM<NX, NY, NZ> lbm, int type) {
+    initialize1<<<dim3(NX / 8, NY / 8, NZ / 8), dim3(8, 8, 8)>>>(lbm, type);
     initialize2<<<dim3(NX / 8, NY / 8, NZ / 8), dim3(8, 8, 8)>>>(lbm);
 }
 
@@ -113,6 +120,7 @@ template <int NX, int NY, int NZ>
 __global__ void substep1(LBM<NX, NY, NZ> lbm) {
     //for (GSL(z, 1, NZ - 1)) for (GSL(y, 1, NY - 1)) for (GSL(x, 1, NX - 1)) {
     for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
+        if (!lbm.active.at(x, y, z)) continue;
         for (int q = 0; q < 15; q++) {
             //int mdx = x - directions[q][0];
             //int mdy = y - directions[q][1];
@@ -154,6 +162,7 @@ template <int NX, int NY, int NZ>
 __global__ void substep2(LBM<NX, NY, NZ> lbm) {
     //for (GSL(z, 1, NZ - 1)) for (GSL(y, 1, NY - 1)) for (GSL(x, 1, NX - 1)) {
     for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
+        if (!lbm.active.at(x, y, z)) continue;
         float m = 0.f;
         float vx = 0.f, vy = 0.f, vz = 0.f;
         for (int q = 0; q < 15; q++) {
@@ -233,6 +242,7 @@ __global__ void applybc3(LBM<NX, NY, NZ> lbm) {
 template <int NX, int NY, int NZ>
 __global__ void applybc4(LBM<NX, NY, NZ> lbm) {
     for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
+        if (!lbm.active.at(x, y, z)) continue;
         float fx = x * 2.f / NY - 1.f;
         float fy = y * 2.f / NY - 1.f;
         float fz = z * 2.f / NZ - 1.f;
