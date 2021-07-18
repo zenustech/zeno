@@ -323,6 +323,7 @@ void renderFunc() {
     render(pixels, lbm, 0);
     render(pixels, lbm2, 1);
     checkCudaErrors(cudaDeviceSynchronize());
+    printf("%f\n", pixels[(NNY / 2 * NNX + NNX * 3 / 4) * 4 + 1]);
 }
 
 void displayFunc() {
