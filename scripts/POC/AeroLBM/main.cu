@@ -6,11 +6,7 @@
 #include <cmath>
 #include <GL/glut.h>
 
-#define NX 256
-#define NY 64
-#define NZ 64
-
-template <class T>
+template <int NX, int NY, int NZ, class T>
 struct volume {
     T *grid;
 
@@ -32,7 +28,7 @@ struct volume {
     }
 };
 
-template <class T, int N>
+template <int NX, int NY, int NZ, class T, int N>
 struct volume_soa {
     T *grid;
 
@@ -65,10 +61,11 @@ static inline const float niu = 0.005f;
 static inline const float tau = 3.f * niu + 0.5f;
 static inline const float inv_tau = 1.f / tau;
 
+template <int NX, int NY, int NZ>
 struct LBM {
-    volume<float4> vel;
-    volume_soa<float, 16> f_new;
-    volume_soa<float, 16> f_old;
+    volume<NX, NY, NZ, float4> vel;
+    volume_soa<NX, NY, NZ, float, 16> f_new;
+    volume_soa<NX, NY, NZ, float, 16> f_old;
     //volume<uint8_t> mask;
 
     void allocate() {
@@ -88,13 +85,15 @@ struct LBM {
     }
 };
 
-__global__ void initialize1(LBM lbm) {
+template <int NX, int NY, int NZ>
+__global__ void initialize1(LBM<NX, NY, NZ> lbm) {
     for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
         lbm.vel.at(x, y, z) = make_float4(0.f, 0.f, 0.f, 1.f);
     }
 }
 
-__global__ void initialize2(LBM lbm) {
+template <int NX, int NY, int NZ>
+__global__ void initialize2(LBM<NX, NY, NZ> lbm) {
     for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
         for (int q = 0; q < 15; q++) {
             float f = lbm.f_eq(q, x, y, z);
@@ -104,7 +103,14 @@ __global__ void initialize2(LBM lbm) {
     }
 }
 
-__global__ void substep1(LBM lbm) {
+template <int NX, int NY, int NZ>
+void initialize(LBM<NX, NY, NZ> lbm) {
+    initialize1<<<dim3(NX / 8, NY / 8, NZ / 8), dim3(8, 8, 8)>>>(lbm);
+    initialize2<<<dim3(NX / 8, NY / 8, NZ / 8), dim3(8, 8, 8)>>>(lbm);
+}
+
+template <int NX, int NY, int NZ>
+__global__ void substep1(LBM<NX, NY, NZ> lbm) {
     //for (GSL(z, 1, NZ - 1)) for (GSL(y, 1, NY - 1)) for (GSL(x, 1, NX - 1)) {
     for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
         for (int q = 0; q < 15; q++) {
@@ -144,7 +150,8 @@ __global__ void substep12(LBM lbm) {
     }
 }*/
 
-__global__ void substep2(LBM lbm) {
+template <int NX, int NY, int NZ>
+__global__ void substep2(LBM<NX, NY, NZ> lbm) {
     //for (GSL(z, 1, NZ - 1)) for (GSL(y, 1, NY - 1)) for (GSL(x, 1, NX - 1)) {
     for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
         float m = 0.f;
@@ -165,7 +172,8 @@ __global__ void substep2(LBM lbm) {
 
 //__device__ void applybc(LBM lbm, at
 
-__global__ void applybc1(LBM lbm) {
+template <int NX, int NY, int NZ>
+__global__ void applybc1(LBM<NX, NY, NZ> lbm) {
     for (GSL(z, 1, NZ - 1)) for (GSL(y, 1, NY - 1)) {
     //for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) {
         lbm.vel.at(0, y, z) = lbm.vel.at(1, y, z);
@@ -182,7 +190,8 @@ __global__ void applybc1(LBM lbm) {
     }
 }
 
-__global__ void applybc2(LBM lbm) {
+template <int NX, int NY, int NZ>
+__global__ void applybc2(LBM<NX, NY, NZ> lbm) {
     for (GSL(z, 0, NZ)) for (GSL(x, 0, NX)) {
         lbm.vel.at(x, 0, z) = lbm.vel.at(x, 1, z);
         lbm.vel.at(x, 0, z).x = 0.f;
@@ -201,7 +210,8 @@ __global__ void applybc2(LBM lbm) {
     }
 }
 
-__global__ void applybc3(LBM lbm) {
+template <int NX, int NY, int NZ>
+__global__ void applybc3(LBM<NX, NY, NZ> lbm) {
     for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
         lbm.vel.at(x, y, 0) = lbm.vel.at(x, y, 1);
         lbm.vel.at(x, y, 0).x = 0.f;
@@ -220,7 +230,8 @@ __global__ void applybc3(LBM lbm) {
     }
 }
 
-__global__ void applybc4(LBM lbm) {
+template <int NX, int NY, int NZ>
+__global__ void applybc4(LBM<NX, NY, NZ> lbm) {
     for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
         float fx = x * 2.f / NY - 1.f;
         float fy = y * 2.f / NY - 1.f;
@@ -234,28 +245,33 @@ __global__ void applybc4(LBM lbm) {
     }
 }
 
-__global__ void render(float *pixels, LBM lbm) {
-    for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
-        float4 v = lbm.vel.at(x, y, NZ / 2);
+#define NNX 256
+#define NNY 64
+#define NNZ 64
+
+template <int NX, int NY, int NZ>
+__global__ void render(float *pixels, LBM<NX, NY, NZ> lbm) {
+    for (GSL(y, 0, NNY)) for (GSL(x, 0, NNX)) {
+        float4 v = lbm.vel.at(x * NNX / NX, y * NNY / NY, NZ / 2);
         //float val = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
         float val = 4.f * sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
         //float val = v.x * 4.f;
         //float val = v.w * 0.3f;
-        pixels[y * NX + x] = val;
+        pixels[y * NNX + x] = val;
     }
 }
 
-LBM lbm;
+LBM<NNX, NNY, NNZ> lbm;
 float *pixels;
 
 void initFunc() {
     lbm.allocate();
-    checkCudaErrors(cudaMallocManaged(&pixels, NX * NY * sizeof(float)));
-    initialize1<<<dim3(NX / 8, NY / 8, NZ / 8), dim3(8, 8, 8)>>>(lbm);
-    initialize2<<<dim3(NX / 8, NY / 8, NZ / 8), dim3(8, 8, 8)>>>(lbm);
+    checkCudaErrors(cudaMallocManaged(&pixels, NNX * NNY * sizeof(float)));
+    initialize(lbm);
 }
 
-void stepFunc() {
+template <int NX, int NY, int NZ>
+void substep(LBM<NX, NY, NZ> lbm) {
     substep1<<<dim3(NX / 8, NY / 8, NZ / 8), dim3(8, 8, 8)>>>(lbm);
     substep2<<<dim3(NX / 8, NY / 8, NZ / 8), dim3(8, 8, 8)>>>(lbm);
     applybc1<<<dim3(1, NY / 16, NZ / 16), dim3(1, 16, 16)>>>(lbm);
@@ -265,7 +281,8 @@ void stepFunc() {
 }
 
 void renderFunc() {
-    render<<<dim3(NX / 16, NY / 16, 1), dim3(16, 16, 1)>>>(pixels, lbm);
+    substep(lbm);
+    render<<<dim3(NNX / 16, NNY / 16, 1), dim3(16, 16, 1)>>>(pixels, lbm);
     checkCudaErrors(cudaDeviceSynchronize());
     /*printf("03:%f\n", pixels[0 * N + 3]);
     printf("30:%f\n", pixels[3 * NX + 0]);
@@ -274,13 +291,12 @@ void renderFunc() {
 
 void displayFunc() {
     glClear(GL_COLOR_BUFFER_BIT);
-    glDrawPixels(NX, NY, GL_RED, GL_FLOAT, pixels);
+    glDrawPixels(NNX, NNY, GL_RED, GL_FLOAT, pixels);
     glFlush();
 }
 
 #define ITV 0
 void timerFunc(int unused) {
-    stepFunc();
     renderFunc();
     glutPostRedisplay();
     glutTimerFunc(ITV, timerFunc, 0);
@@ -295,7 +311,7 @@ int main(int argc, char **argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DEPTH | GLUT_SINGLE | GLUT_RGBA);
     glutInitWindowPosition(100, 100);
-    glutInitWindowSize(NX, NY);
+    glutInitWindowSize(NNX, NNY);
     glutCreateWindow("GLUT Window");
     glutDisplayFunc(displayFunc);
     glutKeyboardFunc(keyboardFunc);
