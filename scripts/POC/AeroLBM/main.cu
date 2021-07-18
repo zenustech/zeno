@@ -92,9 +92,9 @@ __global__ void initialize1(LBM<NX, NY, NZ> lbm, int type) {
         lbm.vel.at(x, y, z) = make_float4(0.f, 0.f, 0.f, 1.f);
         lbm.active.at(x, y, z) = 0;
         if (type == 0) {  // hires grid
-            if (x > NX / 2 - 2) lbm.active.at(x, y, z) = 1;
+            if (x >= NX / 2 - 2) lbm.active.at(x, y, z) = 1;
         } else if (type == 1) {  // lores grid
-            if (x < NX / 2 + 1) lbm.active.at(x, y, z) = 1;
+            if (x <= NX / 2) lbm.active.at(x, y, z) = 1;
         }
     }
 }
@@ -142,6 +142,37 @@ template <int NX, int NY, int NZ>
 void synchi2lo(LBM<NX*2, NY*2, NZ*2> hi, LBM<NX, NY, NZ> lo) {
     synchi2lo1<<<dim3(NX / 8, NY / 8, NZ / 8), dim3(8, 8, 8)>>>(hi, lo);
     synchi2lo2<<<dim3(NX / 8, NY / 8, NZ / 8), dim3(8, 8, 8)>>>(hi, lo);
+}
+
+template <int NX, int NY, int NZ>
+__global__ void synclo2hi1(LBM<NX*2, NY*2, NZ*2> hi, LBM<NX, NY, NZ> lo) {
+    for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
+        if (!hi.active.at(x * 2, y * 2, z * 2) || !lo.active.at(x, y, z)) continue;
+        for (int dz = 0; dz < 2; dz++) for (int dy = 0; dy < 2; dy++) for (int dx = 0; dx < 2; dx++) {
+            hi.vel.at(x * 2 + dx, y * 2 + dy, z * 2 + dz) = lo.vel.at(x, y, z);
+            for (int q = 0; q < 15; q++) {
+                hi.f_old.at(q, x * 2 + dx, y * 2 + dy, z * 2 + dz) = lo.f_old.at(q, x, y, z);
+            }
+        }
+    }
+}
+
+template <int NX, int NY, int NZ>
+__global__ void synclo2hi2(LBM<NX*2, NY*2, NZ*2> hi, LBM<NX, NY, NZ> lo) {
+    for (GSL(z, 0, NZ*2)) for (GSL(y, 0, NY*2)) for (GSL(x, 0, NX*2)) {
+        if (!lo.active.at(x / 2, y / 2, z / 2) || !hi.active.at(x, y, z)) continue;
+        for (int q = 0; q < 15; q++) {
+            auto l = hi.f_eq(q, x - 2, y, z) - hi.f_old.at(q, x - 2, y, z);
+            auto r = hi.f_eq(q, x - 1, y, z) - hi.f_old.at(q, x - 1, y, z);
+            hi.f_old.at(q, x, y, z) = hi.f_eq(q, x, y, z) - (l + r) * 0.5f;
+        }
+    }
+}
+
+template <int NX, int NY, int NZ>
+void synclo2hi(LBM<NX*2, NY*2, NZ*2> hi, LBM<NX, NY, NZ> lo) {
+    synclo2hi1<<<dim3(NX / 8, NY / 8, NZ / 8), dim3(8, 8, 8)>>>(hi, lo);
+    synclo2hi2<<<dim3(NX*2 / 8, NY*2 / 8, NZ*2 / 8), dim3(8, 8, 8)>>>(hi, lo);
 }
 
 template <int NX, int NY, int NZ>
@@ -327,10 +358,11 @@ void initFunc() {
 }
 
 void renderFunc() {
-    substep(lbm);
-    substep(lbm);
-    synchi2lo(lbm, lbm2);
+    //synchi2lo(lbm, lbm2);
     substep(lbm2);
+    synclo2hi(lbm, lbm2);
+    substep(lbm);
+    substep(lbm);
 
     render(pixels, lbm, 0);
     render(pixels, lbm2, 1);
