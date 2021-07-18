@@ -54,11 +54,17 @@ float myexp(float x) {
     t *= k * (0.949f/4);
     r += t;
     r = 0.99984f + k * r;
-    //r = expf(k);
     r *= etable[i];
     if (x < 0)
         r = 1.f / r;
     return r;
+}
+
+float mysin(float x) {
+    float y = M_PI - fmod(x, M_PI*2);
+    float z = fabs(y);
+    float r = sinf(z);
+    return y > 0 ? r : -r;
 }
 
 int main()
@@ -69,7 +75,13 @@ int main()
     printf("%f\n", myexp(-3.14f));
     printf("%f\n", expf(3.14f));
     printf("%f\n", myexp(3.14f));*/
-    float x, a, b, d2;
+    printf("%f\n", sinf(1.14f));
+    printf("%f\n", mysin(1.14f));
+    printf("%f\n", sinf(-0.14f));
+    printf("%f\n", mysin(-0.14f));
+    printf("%f\n", sinf(5.14f));
+    printf("%f\n", mysin(5.14f));
+    /*float x, a, b, d2;
     d2 = 0.f;
     for (x = 0.5f; x < 50.14f; x *= 1.2f) {
         a = mylog(x);
@@ -87,7 +99,7 @@ int main()
         //printf("%f %f %f\n", a, b, d);
         d2 += d * d;
     }
-    printf("exp stddev=%f\n", sqrtf(d2));
+    printf("exp stddev=%f\n", sqrtf(d2));*/
     return 0;
 }
 
