@@ -195,7 +195,8 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
         } else if (contains({"min", "max", "pow", "atan2"}, name)) {
             ERROR_IF(args.size() != 2);
             auto x = make_stm(args[0]);
-            return stm(name, x);
+            auto y = make_stm(args[1]);
+            return stm(name, x, y);
 
         } else if (contains({"sqrt", "sin", "cos", "tan", "asin", "acos",
             "atan", "exp", "log", "rsqrt", "floor", "ceil", "abs"}, name)) {

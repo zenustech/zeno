@@ -25,6 +25,7 @@ namespace zfx::x64 {
     DEF_FN2(min)
     DEF_FN2(max)
     DEF_FN2(atan2)
+    DEF_FN2(pow)
 #undef DEF_FN1
 #undef DEF_FN2
 
@@ -45,6 +46,7 @@ namespace zfx::x64 {
         DEF_FN2(min)
         DEF_FN2(max)
         DEF_FN2(atan2)
+        DEF_FN2(pow)
 #undef DEF_FN1
 #undef DEF_FN2
     };
@@ -66,6 +68,7 @@ namespace zfx::x64 {
         DEF_FN2(min)
         DEF_FN2(max)
         DEF_FN2(atan2)
+        DEF_FN2(pow)
 #undef DEF_FN1
 #undef DEF_FN2
     };
