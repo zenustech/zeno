@@ -22,7 +22,7 @@ outputs/
 # vim files
 .*.swp
 .*.un~
-/tags
+tags
 *~
 
 # msvc files

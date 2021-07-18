@@ -1,6 +1,3 @@
-call [rdx + 2]
-mov eax, [rdx + 2]
-call [rdx + rax]
-mov eax, [rdx + rax]
-call [rdx]
-mov eax, [rdx]
+; vim: ft=nasm
+vmovups [rsp + 1], xmm0
+call [rbx + 1]

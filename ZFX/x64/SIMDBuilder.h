@@ -90,8 +90,8 @@ public:
                 }
             }
             flag |= mflag | val << 3 | adr;
-            if (adr == opreg::rsp)
-                flag |= 0x10;
+            //if (adr == opreg::rsp)
+                //flag |= 0x10;
             if (adr == opreg::rbp)
                 flag |= memflag::reg_imm8;
             res.push_back(flag);
@@ -171,7 +171,7 @@ public:
 
     void addCallOp(MemoryAddress adr) {
         res.push_back(0xff);
-        adr.dump(res, 0, 1);
+        adr.dump(res, 0, 0x10);
     }
 
     void addAvxBinaryOp(int type, int op, int dst, int lhs, int rhs) {
