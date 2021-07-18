@@ -23,6 +23,7 @@ outputs/
 .*.swp
 .*.un~
 tags
+compile_commands.json
 *~
 
 # msvc files
