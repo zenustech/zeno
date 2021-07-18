@@ -120,11 +120,16 @@ template <int NX, int NY, int NZ>
 __global__ void synchi2lo1(LBM<NX*2, NY*2, NZ*2> hi, LBM<NX, NY, NZ> lo) {
     for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
         if (!hi.active.at(x * 2, y * 2, z * 2) || !lo.active.at(x, y, z)) continue;
-        float4 vel = make_float4(0.f);
         for (int dz = 0; dz < 2; dz++) for (int dy = 0; dy < 2; dy++) for (int dx = 0; dx < 2; dx++) {
-            vel += hi.vel.at(x * 2 + dx, y * 2 + dy, z * 2 + dz);
+            lo.vel.at(x, y, z) += hi.vel.at(x * 2 + dx, y * 2 + dy, z * 2 + dz);
+            for (int q = 0; q < 15; q++) {
+                lo.f_old.at(q, x, y, z) += hi.f_old.at(q, x * 2 + dx, y * 2 + dy, z * 2 + dz);
+            }
         }
-        lo.vel.at(x, y, z) = vel / 8.f;
+        lo.vel.at(x, y, z) /= 8.f;
+        for (int q = 0; q < 15; q++) {
+            lo.f_old.at(q, x, y, z) /= 8.f;
+        }
     }
 }
 
@@ -164,7 +169,7 @@ __global__ void synclo2hi2(LBM<NX*2, NY*2, NZ*2> hi, LBM<NX, NY, NZ> lo) {
         for (int q = 0; q < 15; q++) {
             auto l = hi.f_eq(q, x - 2, y, z) - hi.f_old.at(q, x - 2, y, z);
             auto r = hi.f_eq(q, x - 1, y, z) - hi.f_old.at(q, x - 1, y, z);
-            hi.f_old.at(q, x, y, z) = hi.f_eq(q, x, y, z) - (l + r) * 0.5f;
+            hi.f_old.at(q, x, y, z) = hi.f_eq(q, x, y, z) - l;
         }
     }
 }
@@ -333,9 +338,9 @@ __global__ void render1(float *pixels, LBM<NX, NY, NZ> lbm, int chan) {
     for (GSL(y, 0, NNY)) for (GSL(x, 0, NNX)) {
         float4 v = lbm.vel.at(x * NX / NNX, y * NY / NNY, NZ / 2);
         //float val = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-        float val = 4.f * sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+        //float val = 4.f * sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
         //float val = v.x * 4.f;
-        //float val = v.w * 0.3f;
+        float val = v.w * 0.5f;
         pixels[(y * NNX + x) * 4 + chan] = val;
     }
 }
@@ -358,7 +363,7 @@ void initFunc() {
 }
 
 void renderFunc() {
-    //synchi2lo(lbm, lbm2);
+    synchi2lo(lbm, lbm2);
     substep(lbm2);
     synclo2hi(lbm, lbm2);
     substep(lbm);
@@ -377,7 +382,7 @@ void displayFunc() {
     glFlush();
 }
 
-#define ITV 0
+#define ITV 10
 void timerFunc(int unused) {
     renderFunc();
     glutPostRedisplay();
