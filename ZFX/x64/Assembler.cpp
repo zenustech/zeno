@@ -142,23 +142,48 @@ struct ImplAssembler {
                 it != funcnames.end()) {
                 // rbx points to an array of function pointers
                 ERROR_IF(linesep.size() < 2);
-                auto dst = from_string<int>(linesep[1]);
-                auto src = from_string<int>(linesep[2]);
-                int size = SIMDBuilder::sizeOfType(simdkind);
-                builder->addAdjStackTop(-size);
-                builder->addAvxMemoryOp(simdkind, opcode::storeu,
-                    src, opreg::rsp);
-                builder->addRegularMoveOp(opreg::rdi, opreg::rsp);
-                int id = it - funcnames.begin();
-                int offset = id * sizeof(void *);
-                builder->addPushReg(opreg::rcx);
-                builder->addPushReg(opreg::rdx);
-                builder->addCallOp({opreg::rbx, memflag::reg_imm8, offset});
-                builder->addPopReg(opreg::rdx);
-                builder->addPopReg(opreg::rcx);
-                builder->addAvxMemoryOp(simdkind, opcode::loadu,
-                    dst, opreg::rsp);
-                builder->addAdjStackTop(size);
+                if (linesep.size() == 2) {
+                    auto dst = from_string<int>(linesep[1]);
+                    auto src = from_string<int>(linesep[2]);
+                    int size = SIMDBuilder::sizeOfType(simdkind);
+                    builder->addAdjStackTop(-size);
+                    builder->addAvxMemoryOp(simdkind, opcode::storeu,
+                        src, opreg::rsp);
+                    builder->addRegularMoveOp(opreg::rdi, opreg::rsp);
+                    int id = it - funcnames.begin();
+                    int offset = id * sizeof(void *);
+                    builder->addPushReg(opreg::rcx);
+                    builder->addPushReg(opreg::rdx);
+                    builder->addCallOp({opreg::rbx, memflag::reg_imm8, offset});
+                    builder->addPopReg(opreg::rdx);
+                    builder->addPopReg(opreg::rcx);
+                    builder->addAvxMemoryOp(simdkind, opcode::loadu,
+                        dst, opreg::rsp);
+                    builder->addAdjStackTop(size);
+                } else {
+                    auto dst = from_string<int>(linesep[1]);
+                    auto lhs = from_string<int>(linesep[2]);
+                    auto rhs = from_string<int>(linesep[3]);
+                    int size = SIMDBuilder::sizeOfType(simdkind);
+                    builder->addAdjStackTop(-size);
+                    builder->addAvxMemoryOp(simdkind, opcode::storeu,
+                        rhs, opreg::rsp);
+                    builder->addRegularMoveOp(opreg::rsi, opreg::rsp);
+                    builder->addAdjStackTop(-size);
+                    builder->addAvxMemoryOp(simdkind, opcode::storeu,
+                        lhs, opreg::rsp);
+                    builder->addRegularMoveOp(opreg::rdi, opreg::rsp);
+                    int id = it - funcnames.begin();
+                    int offset = id * sizeof(void *);
+                    builder->addPushReg(opreg::rcx);
+                    builder->addPushReg(opreg::rdx);
+                    builder->addCallOp({opreg::rbx, memflag::reg_imm8, offset});
+                    builder->addPopReg(opreg::rdx);
+                    builder->addPopReg(opreg::rcx);
+                    builder->addAvxMemoryOp(simdkind, opcode::loadu,
+                        dst, opreg::rsp);
+                    builder->addAdjStackTop(size * 2);
+                }
 
             } else {
                 error("bad assembly command `%s`", cmd.c_str());
