@@ -115,7 +115,7 @@
       "COND": null
      },
      "params": {
-      "value": "@pos.z = sin($frame_id / 100)"
+      "value": "@pos.z = sin($frame_id / 10)"
      },
      "uipos": [
       -238.71999999999997,
@@ -217,9 +217,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -1012,
-    "trans_y": 779
+    "scale": 1.25,
+    "trans_x": -883,
+    "trans_y": 298
    }
   }
  },
@@ -241,32 +241,21 @@
     "list"
    ]
   },
-  "AssembleSolvePPE": {
+  "ApplyForce": {
    "inputs": [
-    "dt",
-    "Dx",
-    "LiquidSDF",
-    "ExtractedLiquidSDF",
-    "Divergence",
-    "Pressure",
-    "CellFWeight",
-    "Velocity",
-    "SolidVelocity",
+    "prim",
+    "forcefield",
+    "boxlength",
     "SRC",
     "COND"
    ],
    "outputs": [
+    "prim",
     "DST"
    ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.0"
-    ]
-   ],
+   "params": [],
    "categories": [
-    "FLIPSolver"
+    "Molecular"
    ]
   },
   "BeginFor": {
@@ -564,28 +553,6 @@
     "Rigid"
    ]
   },
-  "CFL_dt": {
-   "inputs": [
-    "Velocity",
-    "Dx",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "cfl_dt",
-    "DST"
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.0"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
-   ]
-  },
   "CachedOnce": {
    "inputs": [
     "input",
@@ -646,22 +613,6 @@
    ],
    "categories": [
     "openvdb"
-   ]
-  },
-  "CutCellWeight": {
-   "inputs": [
-    "LiquidSDF",
-    "SolidSDF",
-    "FaceWeight",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "FLIPSolver"
    ]
   },
   "DictGetItem": {
@@ -897,78 +848,23 @@
     "list"
    ]
   },
-  "FLIPApplyBoundary": {
+  "ForceField": {
    "inputs": [
-    "Particles",
-    "DynaSolid_SDF",
-    "StatSolid_SDF",
+    "nonbond",
+    "coulomb",
+    "bonded",
+    "external",
+    "mass",
     "SRC",
     "COND"
    ],
    "outputs": [
+    "forcefield",
     "DST"
    ],
    "params": [],
    "categories": [
-    "FLIPSolver"
-   ]
-  },
-  "FLIP_P2G": {
-   "inputs": [
-    "Dx",
-    "Particles",
-    "Velocity",
-    "PostP2GVelocity",
-    "VelocityWeights",
-    "LiquidSDF",
-    "ExtractedLiquidSDF",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.01 0.0"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
-   ]
-  },
-  "FieldAddVector": {
-   "inputs": [
-    "invec3",
-    "Velocity",
-    "FieldWeight",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "FLIPSolver"
-   ]
-  },
-  "FluidReseed": {
-   "inputs": [
-    "Particles",
-    "LiquidSDF",
-    "FluidVel",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "FLIPSolver"
+    "Molecular"
    ]
   },
   "FuncBegin": {
@@ -1017,84 +913,6 @@
    "params": [],
    "categories": [
     "functional"
-   ]
-  },
-  "G2PAdvectorSheetty": {
-   "inputs": [
-    "dt",
-    "Dx",
-    "Particles",
-    "Velocity",
-    "LiquidSDF",
-    "PostAdvVelocity",
-    "SolidSDF",
-    "SolidVelocity",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.01 0.0"
-    ],
-    [
-     "int",
-     "RK_ORDER",
-     "1 1 4"
-    ],
-    [
-     "float",
-     "pic_smoothness",
-     "0.1 0.0 1.0"
-    ],
-    [
-     "int",
-     "surface_size",
-     "4 0 8"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
-   ]
-  },
-  "G2P_Advector": {
-   "inputs": [
-    "dt",
-    "Dx",
-    "Particles",
-    "Velocity",
-    "PostAdvVelocity",
-    "SolidSDF",
-    "SolidVelocity",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.01 0.0"
-    ],
-    [
-     "int",
-     "RK_ORDER",
-     "1 1 4"
-    ],
-    [
-     "float",
-     "pic_smoothness",
-     "0.02 0.0 1.0"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
    ]
   },
   "GeoVertexVel": {
@@ -1313,6 +1131,22 @@
     "openvdb"
    ]
   },
+  "InitializeSystem": {
+   "inputs": [
+    "prim",
+    "boxlength",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Molecular"
+   ]
+  },
   "IntegrateFrameTime": {
    "inputs": [
     "desired_dt",
@@ -1332,6 +1166,38 @@
    ],
    "categories": [
     "frame"
+   ]
+  },
+  "KineticEnergy": {
+   "inputs": [
+    "prim",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "kinetic energy",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Molecular"
+   ]
+  },
+  "LennardJones": {
+   "inputs": [
+    "rcut",
+    "sigma",
+    "epsilon",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "lennard-jones",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Molecular"
    ]
   },
   "ListLength": {
@@ -1842,75 +1708,6 @@
     "numeric"
    ]
   },
-  "ParticleAddDV": {
-   "inputs": [
-    "Particles",
-    "dv",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "channel",
-     "vel"
-    ],
-    [
-     "float",
-     "vx",
-     "0.0"
-    ],
-    [
-     "float",
-     "vy",
-     "0.0"
-    ],
-    [
-     "float",
-     "vz",
-     "0.0"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
-   ]
-  },
-  "ParticleEmitter": {
-   "inputs": [
-    "Particles",
-    "ShapeSDF",
-    "VelocityVolume",
-    "LiquidSDF",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [
-    [
-     "float",
-     "vx",
-     "0.0"
-    ],
-    [
-     "float",
-     "vy",
-     "0.0"
-    ],
-    [
-     "float",
-     "vz",
-     "0.0"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
-   ]
-  },
   "ParticlesToPrimitive": {
    "inputs": [
     "pars",
@@ -1941,6 +1738,22 @@
    "params": [],
    "categories": [
     "zenofx"
+   ]
+  },
+  "PeriodicBoundary": {
+   "inputs": [
+    "prims",
+    "boxlength",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "prims",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Molecular"
    ]
   },
   "PlaneProjectPrimitive2DAABB": {
@@ -2017,6 +1830,23 @@
    ],
    "categories": [
     "portal"
+   ]
+  },
+  "PotentialEnergy": {
+   "inputs": [
+    "prim",
+    "forcefield",
+    "boxlength",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "potential energy",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Molecular"
    ]
   },
   "PrimToVDBPointDataGrid": {
@@ -2652,29 +2482,6 @@
     "numeric"
    ]
   },
-  "PushOutLiquidSDF": {
-   "inputs": [
-    "Dx",
-    "LiquidSDF",
-    "SolidSDF",
-    "ExtractedLiquidSDF",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.0"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
-   ]
-  },
   "RandomParticles": {
    "inputs": [
     "SRC",
@@ -2783,33 +2590,6 @@
    "params": [],
    "categories": [
     "openvdb"
-   ]
-  },
-  "RigidGetPressureForce": {
-   "inputs": [
-    "dt",
-    "MassCenter",
-    "Rigid",
-    "Pressure",
-    "CellFWeight",
-    "LiquidSDF",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "TotalForceImpulse",
-    "TotalTorcImpulse",
-    "DST"
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.0"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
    ]
   },
   "RigidVelToPrimitive": {
@@ -2930,41 +2710,27 @@
     "openvdb"
    ]
   },
-  "SetFLIPWorld": {
+  "ScaleVelocity": {
    "inputs": [
-    "Dx",
+    "prim",
+    "temperature",
     "SRC",
     "COND"
    ],
    "outputs": [
-    "Particles",
-    "Pressure",
-    "Divergence",
-    "CellFWeight",
-    "PressureDOFID",
-    "IsolatedCellDOF",
-    "Velocity",
-    "DeltaVelocity",
-    "VelocitySnapshot",
-    "PostAdvVelocity",
-    "SolidVelocity",
-    "VelocityWeights",
-    "LiquidSDF",
-    "LiquidSDFSnapshot",
-    "ExtractedLiquidSDF",
-    "ErodedLiquidSDF",
-    "SolidSDF",
+    "prim",
+    "kinetic energy",
     "DST"
    ],
    "params": [
     [
      "float",
-     "dx",
-     "0.08 0"
+     "rel_error_to_scale",
+     "0.05"
     ]
    ],
    "categories": [
-    "FLIPSolver"
+    "Molecular"
    ]
   },
   "SetFrameTime": {
@@ -3003,31 +2769,32 @@
     "particles"
    ]
   },
-  "SprayParticles": {
+  "SimulationBox": {
    "inputs": [
-    "TrianglePrim",
-    "Dx",
+    "prim",
     "SRC",
     "COND"
    ],
    "outputs": [
-    "particles",
+    "prim",
+    "boxlength",
+    "n_particles",
     "DST"
    ],
    "params": [
     [
      "float",
-     "dx",
-     "0.01"
+     "boxlength",
+     "1"
     ],
     [
-     "string",
-     "channel",
-     "vel"
+     "int",
+     "n_particles",
+     "128"
     ]
    ],
    "categories": [
-    "primitive"
+    "Molecular"
    ]
   },
   "StringToMesh": {
@@ -3124,34 +2891,6 @@
    ],
    "categories": [
     "subgraph"
-   ]
-  },
-  "SubtractPressureGradient": {
-   "inputs": [
-    "dt",
-    "Dx",
-    "LiquidSDF",
-    "SolidSDF",
-    "ExtractedLiquidSDF",
-    "Pressure",
-    "CellFWeight",
-    "Velocity",
-    "SolidVelocity",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.0"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
    ]
   },
   "TransformMesh": {
@@ -3265,26 +3004,6 @@
    "params": [],
    "categories": [
     "zenofx"
-   ]
-  },
-  "Vec3FieldExtrapolate": {
-   "inputs": [
-    "Field",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [
-    [
-     "int",
-     "NumIterates",
-     "1"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
    ]
   },
   "WrangleBinaryOp": {
@@ -3417,26 +3136,6 @@
    ],
    "categories": [
     "wrangler"
-   ]
-  },
-  "WriteBgeo": {
-   "inputs": [
-    "data",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "particles"
    ]
   },
   "WriteObjMesh": {

@@ -58,7 +58,7 @@ DEF_FN2(pow)
     FuncTable() {
         // we have to assign funcptrs at runtime to prevent dll relocation
         for (int i = 0; i < funcnames.size(); i++) {
-#define DEF_FN1(name) printf("%p", (void *)func_##name); funcptrs.push_back((void *)func_##name);
+#define DEF_FN1(name) funcptrs.push_back((void *)func_##name);
 #define DEF_FN2(name) DEF_FN1(name)
 DEF_FN1(sin)
 DEF_FN1(cos)
