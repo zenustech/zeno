@@ -2,6 +2,7 @@
 #include "Executable.h"
 #include <zfx/utils.h>
 #include <zfx/x64.h>
+#include <algorithm>
 #include <sstream>
 #include <map>
 
