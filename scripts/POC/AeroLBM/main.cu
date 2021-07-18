@@ -92,9 +92,9 @@ __global__ void initialize1(LBM<NX, NY, NZ> lbm, int type) {
         lbm.vel.at(x, y, z) = make_float4(0.f, 0.f, 0.f, 1.f);
         lbm.active.at(x, y, z) = 0;
         if (type == 0) {  // hires grid
-            if (x < NX / 2 + 4) lbm.active.at(x, y, z) = 1;
-        } else if (type == 1) {  // lores grid
             if (x > NX / 2 - 2) lbm.active.at(x, y, z) = 1;
+        } else if (type == 1) {  // lores grid
+            if (x < NX / 2 + 1) lbm.active.at(x, y, z) = 1;
         }
     }
 }
