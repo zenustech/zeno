@@ -153,11 +153,8 @@ void synchi2lo(LBM<NX*2, NY*2, NZ*2> hi, LBM<NX, NY, NZ> lo) {
     //synchi2lo2<<<dim3(NX / 8, NY / 8, NZ / 8), dim3(8, 8, 8)>>>(hi, lo);
 }
 
-template <class T>
+template <int NX, int NY, int NZ, class T>
 __device__ auto trilerp(T const &t, int x, int y, int z, int dx, int dy, int dz) {
-    if (!dx) x--;
-    if (!dy) y--;
-    if (!dz) z--;
     float c0 = 0.25f;
     float c1 = 1.f - c0;
     float x0 = dx ? c1 : c0;
@@ -166,14 +163,21 @@ __device__ auto trilerp(T const &t, int x, int y, int z, int dx, int dy, int dz)
     float y1 = dy ? c0 : c1;
     float z0 = dz ? c1 : c0;
     float z1 = dz ? c0 : c1;
+    int x_ = x, y_ = y, z_ = z;
+    if (x_ < NX - 1) x_++;
+    if (y_ < NY - 1) y_++;
+    if (z_ < NZ - 1) z_++;
+    if (!dx && x > 0) x--;
+    if (!dy && y > 0) y--;
+    if (!dz && z > 0) z--;
     return x0 * y0 * z0 * t(x, y, z)
-         + x0 * y0 * z1 * t(x, y, z + 1)
-         + x0 * y1 * z0 * t(x, y + 1, z)
-         + x0 * y1 * z1 * t(x, y + 1, z + 1)
-         + x1 * y0 * z0 * t(x + 1, y, z)
-         + x1 * y0 * z1 * t(x + 1, y, z + 1)
-         + x1 * y1 * z0 * t(x + 1, y + 1, z)
-         + x1 * y1 * z1 * t(x + 1, y + 1, z + 1);
+         + x0 * y0 * z1 * t(x, y, z_)
+         + x0 * y1 * z0 * t(x, y_, z)
+         + x0 * y1 * z1 * t(x, y_, z_)
+         + x1 * y0 * z0 * t(x_, y, z)
+         + x1 * y0 * z1 * t(x_, y, z_)
+         + x1 * y1 * z0 * t(x_, y_, z)
+         + x1 * y1 * z1 * t(x_, y_, z_);
 }
 
 template <int NX, int NY, int NZ>
@@ -181,11 +185,11 @@ __global__ void synclo2hi1(LBM<NX*2, NY*2, NZ*2> hi, LBM<NX, NY, NZ> lo) {
     for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
         if (!hi.active.at(x * 2, y * 2, z * 2) || !lo.active.at(x, y, z)) continue;
         for (int dz = 0; dz < 2; dz++) for (int dy = 0; dy < 2; dy++) for (int dx = 0; dx < 2; dx++) {
-            hi.vel.at(x * 2 + dx, y * 2 + dy, z * 2 + dz) = trilerp(
+            hi.vel.at(x * 2 + dx, y * 2 + dy, z * 2 + dz) = trilerp<NX, NY, NZ>(
                     [&](auto x, auto y, auto z) { return lo.vel.at(x, y, z); },
                     x, y, z, dx, dy, dz);
             for (int q = 0; q < 15; q++) {
-                hi.f_old.at(q, x * 2 + dx, y * 2 + dy, z * 2 + dz) = trilerp(
+                hi.f_old.at(q, x * 2 + dx, y * 2 + dy, z * 2 + dz) = trilerp<NX, NY, NZ>(
                     [&](auto x, auto y, auto z) { return lo.f_old.at(q, x, y, z); },
                     x, y, z, dx, dy, dz);
             }
