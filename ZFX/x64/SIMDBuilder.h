@@ -162,6 +162,12 @@ public:
         adr.dump(res, val);
     }
 
+    void addRegularMoveOp(int dst, int src) {
+        res.push_back(0x48);
+        res.push_back(0x89);
+        res.push_back(0xc0 | dst | src << 3);
+    }
+
     void addAdjStackTop(int imm_add) {
         res.push_back(0x48);
         res.push_back(0x83);
@@ -188,6 +194,14 @@ public:
     void addAvxMoveOp(int dst, int src) {
         // todo: this can be optimized from vmovss to vmovups
         addAvxBinaryOp(optype::xmmss, opcode::mov, dst, src, src);
+    }
+
+    void addPushReg(int reg) {
+        res.push_back(0x50 | reg);
+    }
+
+    void addPopReg(int reg) {
+        res.push_back(0x58 | reg);
     }
 
     void addReturn() {

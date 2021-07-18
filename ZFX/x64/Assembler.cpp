@@ -148,12 +148,17 @@ struct ImplAssembler {
                 builder->addAdjStackTop(-size);
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
                     src, opreg::rsp);
+                builder->addRegularMoveOp(opreg::rdi, opreg::rsp);
                 int id = it - funcnames.begin();
                 int offset = id * sizeof(void *);
+                builder->addPushReg(opreg::rcx);
+                builder->addPushReg(opreg::rdx);
                 builder->addCallOp({opreg::rbx, memflag::reg_imm8, offset});
+                builder->addPopReg(opreg::rdx);
+                builder->addPopReg(opreg::rcx);
                 builder->addAvxMemoryOp(simdkind, opcode::loadu,
                     dst, opreg::rsp);
-                builder->addAdjStackTop(+size);
+                builder->addAdjStackTop(size);
 
             } else {
                 error("bad assembly command `%s`", cmd.c_str());
