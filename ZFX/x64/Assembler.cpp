@@ -1,5 +1,6 @@
 #include "SIMDBuilder.h"
 #include "Executable.h"
+#include "FuncTable.h"
 #include <zfx/utils.h>
 #include <zfx/x64.h>
 #include <algorithm>
@@ -13,18 +14,6 @@ namespace zfx::x64 {
         error("`%s`", #x); \
     } \
 } while (0)
-
-static void *global_func_table[] =
-    { NULL // TODO: fill them with vectorclass library func ptrs
-    , NULL
-    , NULL
-    };
-
-static std::vector<std::string> funcnames =
-    { "sin"
-    , "cos"
-    , "tan"
-    };
 
 struct ImplAssembler {
     int simdkind = optype::xmmps;
