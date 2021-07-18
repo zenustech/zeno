@@ -6,6 +6,7 @@
 
 
 struct IBeginFor : zeno::INode {
+    bool is_break;
     virtual bool isContinue() const = 0;
     virtual void update() = 0;
     virtual void setBreak(bool b) =0;
@@ -15,7 +16,7 @@ struct IBeginFor : zeno::INode {
 struct BeginFor : IBeginFor {
     int m_index;
     int m_count;
-    bool is_break;
+    
     
     virtual bool isContinue() const override {
         return m_index < m_count && !is_break;
@@ -291,14 +292,15 @@ struct BeginForEach : IBeginFor {
     int m_index;
     std::shared_ptr<zeno::ListObject> m_list;
     virtual void setBreak(bool b) override {
-        
+        is_break = true;
     }
     virtual bool isContinue() const override {
-        return m_index < m_list->arr.size();
+        return m_index < m_list->arr.size() && !is_break;
     }
 
     virtual void apply() override {
         m_index = 0;
+        is_break = false;
         m_list = get_input<zeno::ListObject>("list");
         set_output("FOR", std::make_shared<zeno::ConditionObject>());
     }
