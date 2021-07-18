@@ -124,13 +124,24 @@ __global__ void synchi2lo1(LBM<NX*2, NY*2, NZ*2> hi, LBM<NX, NY, NZ> lo) {
         for (int dz = 0; dz < 2; dz++) for (int dy = 0; dy < 2; dy++) for (int dx = 0; dx < 2; dx++) {
             vel += hi.vel.at(x * 2 + dx, y * 2 + dy, z * 2 + dz);
         }
-        lo.vel.at(x, y, z) = vel;
+        lo.vel.at(x, y, z) = vel / 8.f;
+    }
+}
+
+template <int NX, int NY, int NZ>
+__global__ void synchi2lo2(LBM<NX*2, NY*2, NZ*2> hi, LBM<NX, NY, NZ> lo) {
+    for (GSL(z, 0, NZ)) for (GSL(y, 0, NY)) for (GSL(x, 0, NX)) {
+        if (!hi.active.at(x * 2, y * 2, z * 2) || !lo.active.at(x, y, z)) continue;
+        for (int q = 0; q < 15; q++) {
+            lo.f_old.at(q, x, y, z) = lo.f_eq(q, x, y, z) - lo.f_eq(q, x - 1, y, z) + lo.f_old.at(q, x - 1, y, z);
+        }
     }
 }
 
 template <int NX, int NY, int NZ>
 void synchi2lo(LBM<NX*2, NY*2, NZ*2> hi, LBM<NX, NY, NZ> lo) {
     synchi2lo1<<<dim3(NX / 8, NY / 8, NZ / 8), dim3(8, 8, 8)>>>(hi, lo);
+    synchi2lo2<<<dim3(NX / 8, NY / 8, NZ / 8), dim3(8, 8, 8)>>>(hi, lo);
 }
 
 template <int NX, int NY, int NZ>
@@ -317,13 +328,15 @@ void initFunc() {
 
 void renderFunc() {
     substep(lbm);
+    substep(lbm);
     synchi2lo(lbm, lbm2);
     substep(lbm2);
 
     render(pixels, lbm, 0);
     render(pixels, lbm2, 1);
     checkCudaErrors(cudaDeviceSynchronize());
-    printf("%f\n", pixels[(NNY / 2 * NNX + NNX * 3 / 4) * 4 + 1]);
+    printf("R:%f\n", pixels[(NNY / 2 * NNX + NNX * 1 / 4) * 4 + 0]);
+    printf("G:%f\n", pixels[(NNY / 2 * NNX + NNX * 3 / 4) * 4 + 1]);
 }
 
 void displayFunc() {
