@@ -19,6 +19,7 @@ struct ImplAssembler {
     int simdkind = optype::xmmps;
     std::unique_ptr<SIMDBuilder> builder = std::make_unique<SIMDBuilder>();
     std::unique_ptr<Executable> exec = std::make_unique<Executable>();
+    static inline std::unique_ptr<FuncTable> functable;
 
     int nconsts = 0;
     int nlocals = 0;
@@ -138,8 +139,8 @@ struct ImplAssembler {
                 builder->addAvxMoveOp(dst, src);
 
             } else if (auto it = std::find(
-                funcnames.begin(), funcnames.end(), cmd);
-                it != funcnames.end()) {
+                FuncTable::funcnames.begin(), FuncTable::funcnames.end(), cmd);
+                it != FuncTable::funcnames.end()) {
                 // rbx points to an array of function pointers
                 ERROR_IF(linesep.size() < 2);
                 if (linesep.size() == 3) {
@@ -150,7 +151,7 @@ struct ImplAssembler {
                     builder->addAvxMemoryOp(simdkind, opcode::storeu,
                         src, opreg::rsp);
                     builder->addRegularMoveOp(opreg::rdi, opreg::rsp);
-                    int id = it - funcnames.begin();
+                    int id = it - FuncTable::funcnames.begin();
                     int offset = id * sizeof(void *);
                     builder->addPushReg(opreg::rcx);
                     builder->addPushReg(opreg::rdx);
@@ -173,7 +174,7 @@ struct ImplAssembler {
                     builder->addAvxMemoryOp(simdkind, opcode::storeu,
                         lhs, opreg::rsp);
                     builder->addRegularMoveOp(opreg::rdi, opreg::rsp);
-                    int id = it - funcnames.begin();
+                    int id = it - FuncTable::funcnames.begin();
                     int offset = id * sizeof(void *);
                     builder->addPushReg(opreg::rcx);
                     builder->addPushReg(opreg::rdx);
@@ -202,7 +203,9 @@ struct ImplAssembler {
         printf("\n");
 #endif
 
-        exec->functable = global_func_table;
+        if (!functable)
+            functable = std::make_unique<FuncTable>();
+        exec->functable = functable->funcptrs.data();
         exec->memsize = (insts.size() + 4095) / 4096 * 4096;
         exec->mem = exec_page_alloc(exec->memsize);
         for (int i = 0; i < insts.size(); i++) {
