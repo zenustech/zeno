@@ -11,8 +11,8 @@
 namespace zfx::x64 {
 
 struct FuncTable {
-#define DEF_FN1(name) static void func_##name(vcl::Vec4f &x) { x = vcl::name(x); }
-#define DEF_FN2(name) static void func_##name(vcl::Vec4f &x, vcl::Vec4f &y) { x = vcl::name(x, y); }
+#define DEF_FN1(name) static void func_##name(vcl::Vec4f &x) { printf(#name"\n"); return; x = vcl::name(x); }
+#define DEF_FN2(name) static void func_##name(vcl::Vec4f &x, vcl::Vec4f &y) { printf(#name"\n"); x = vcl::name(x, y); }
 DEF_FN1(sin)
 DEF_FN1(cos)
 DEF_FN1(tan)

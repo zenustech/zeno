@@ -11,7 +11,7 @@ struct Executable {
     uint8_t *mem = nullptr;
     size_t memsize = 0;
     float consts[1024];
-    void **functable;
+    void **functable = nullptr;
 
     static constexpr size_t SimdWidth = 4;
 

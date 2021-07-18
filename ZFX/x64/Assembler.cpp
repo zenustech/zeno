@@ -196,7 +196,6 @@ struct ImplAssembler {
 
 #ifdef ZFX_PRINT_IR
         printf("variables: %d slots\n", nlocals);
-        //printf("channels: %d pointers\n", nglobals);
         printf("consts: %d values\n", nconsts);
         printf("insts:");
         for (auto const &inst: insts) printf(" %02X", inst);
@@ -206,6 +205,13 @@ struct ImplAssembler {
         if (!functable)
             functable = std::make_unique<FuncTable>();
         exec->functable = functable->funcptrs.data();
+        /*******/
+        auto func = (void(*)(float *))exec->functable[0];
+        float arr[4] = {0.1f, 3.14f, 0.0f, 1.6f};
+        printf("callin\n");
+        func(arr);
+        printf("callout %f %f %f %f\n", arr[0], arr[1], arr[2], arr[3]);
+        /*******/
         exec->memsize = (insts.size() + 4095) / 4096 * 4096;
         exec->mem = exec_page_alloc(exec->memsize);
         for (int i = 0; i < insts.size(); i++) {
