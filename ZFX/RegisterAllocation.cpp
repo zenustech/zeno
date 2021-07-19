@@ -141,6 +141,7 @@ struct InspectRegisters : Visitor<InspectRegisters> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
+        , AsmFuncCallStmt
         , AsmLoadConstStmt
         , AsmParamLoadStmt
         , AsmLocalLoadStmt
@@ -169,6 +170,13 @@ struct InspectRegisters : Visitor<InspectRegisters> {
         touch(stmt->id, stmt->dst);
         touch(stmt->id, stmt->lhs);
         touch(stmt->id, stmt->rhs);
+    }
+
+    void visit(AsmFuncCallStmt *stmt) {
+        touch(stmt->id, stmt->dst);
+        for (auto const &arg: stmt->args) {
+            touch(stmt->id, arg);
+        }
     }
 
     void visit(AsmLoadConstStmt *stmt) {
@@ -201,6 +209,7 @@ struct ReassignRegisters : Visitor<ReassignRegisters> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
+        , AsmFuncCallStmt
         , AsmLoadConstStmt
         , AsmParamLoadStmt
         , AsmLocalLoadStmt
@@ -229,6 +238,13 @@ struct ReassignRegisters : Visitor<ReassignRegisters> {
         reassign(stmt->dst);
         reassign(stmt->lhs);
         reassign(stmt->rhs);
+    }
+
+    void visit(AsmFuncCallStmt *stmt) {
+        reassign(stmt->dst);
+        for (auto &arg: stmt->args) {
+            reassign(arg);
+        }
     }
 
     void visit(AsmLoadConstStmt *stmt) {
@@ -261,6 +277,7 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
+        , AsmFuncCallStmt
         , AsmLoadConstStmt
         , AsmParamLoadStmt
         , AsmLocalLoadStmt
@@ -313,6 +330,14 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
     void visit(AsmBinaryOpStmt *stmt) {
         touch(1, stmt->lhs);
         touch(2, stmt->rhs);
+        visit((Statement *)stmt);
+        touch(0, stmt->dst);
+    }
+
+    void visit(AsmFuncCallStmt *stmt) {
+        for (int i = 0; i < stmt->args.size(); i++) {
+            touch(i + 1, stmt->args[i]);
+        }
         visit((Statement *)stmt);
         touch(0, stmt->dst);
     }
