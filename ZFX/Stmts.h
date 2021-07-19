@@ -573,6 +573,37 @@ struct AsmUnaryOpStmt : AsmStmt<AsmUnaryOpStmt> {
     }
 };
 
+struct AsmFuncCallStmt : AsmStmt<AsmFuncCallStmt> {
+    std::string name;
+    int dst;
+    std::vector<int> args;
+
+    AsmFuncCallStmt
+        ( int id_
+        , std::string name_
+        , int dst_
+        , std::vector<int> const &args_
+        )
+        : AsmStmt(id_)
+        , name(name_)
+        , dst(dst_)
+        , args(args_)
+    {}
+
+    virtual std::string to_string() const override {
+        return format(
+            "AsmFuncCall [%s] r%d (%s)"
+            , name.c_str()
+            , dst
+            , format_join(", ", "r%d", args).c_str()
+            );
+    }
+
+    virtual int affect_register() const override {
+        return dst;
+    }
+};
+
 struct AsmLocalStoreStmt : AsmStmt<AsmLocalStoreStmt> {
     int mem;
     int val;

@@ -45,6 +45,12 @@ inline Stm stm(std::string const &op_name, Stm const &src) {
     return {src.ir, src.ir->emplace_back<UnaryOpStmt>(op_name, src.stmt)};
 }
 
+inline Stm stm_func(std::string const &op_name, std::vector<Stm> const &args) {
+    std::vector<Statement *> argptrs;
+    for (auto const &p: args) argptrs.push_back(p);
+    return {args[0].ir, args[0].ir->emplace_back<FunctionCallStmt>(op_name, argptrs)};
+}
+
 inline Stm operator+(Stm const &lhs, Stm const &rhs) {
     return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>("+", lhs.stmt, rhs.stmt)};
 }
