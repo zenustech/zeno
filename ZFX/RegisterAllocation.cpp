@@ -346,11 +346,6 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
         touch(1, stmt->val);
         visit((Statement *)stmt);
     }
-
-    void visit(AsmGotoIfStmt *stmt) {
-        touch(1, stmt->cond);
-        visit((Statement *)stmt);
-    }
 };
 
 void apply_register_allocation(IR *ir, int nregs) {

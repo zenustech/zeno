@@ -16,6 +16,10 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         , AsmLocalLoadStmt
         , AsmGlobalStoreStmt
         , AsmGlobalLoadStmt
+        , AsmIfStmt
+        , AsmElseIfStmt
+        , AsmElseStmt
+        , AsmEndIfStmt
         , Statement
         >;
 
@@ -105,6 +109,22 @@ struct EmitAssembly : Visitor<EmitAssembly> {
 
     void visit(AsmAssignStmt *stmt) {
         emit("mov %d %d", stmt->dst, stmt->src);
+    }
+
+    void visit(AsmIfStmt *stmt) {
+        emit(".if %d", stmt->cond);
+    }
+
+    void visit(AsmElseIfStmt *stmt) {
+        emit(".elseif %d", stmt->cond);
+    }
+
+    void visit(AsmElseStmt *stmt) {
+        emit(".else");
+    }
+
+    void visit(AsmEndIfStmt *stmt) {
+        emit(".endif");
     }
 };
 
