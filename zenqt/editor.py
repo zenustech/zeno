@@ -757,7 +757,7 @@ class QDMGraphicsButton(QGraphicsItem):
 
     def initLabel(self):
         self.label = QGraphicsTextItem(self)
-        self.label.setPos(0, -TEXT_HEIGHT * 0.45)
+        self.label.setPos(0, - TEXT_HEIGHT * 0.1)
         font = QFont()
         font.setPointSize(style['socket_text_size'])
         self.label.setFont(font)
@@ -772,7 +772,7 @@ class QDMGraphicsButton(QGraphicsItem):
         self.label.setPlainText(name)
 
     def getCircleBounds(self):
-        return (0, -SOCKET_RADIUS, self._width, self._height)
+        return (0, 0, self._width, self._height)
 
     def boundingRect(self):
         return QRectF(*self.getCircleBounds()).normalized()
@@ -792,9 +792,20 @@ class QDMGraphicsButton(QGraphicsItem):
         self._height = height
         self.label.setTextWidth(width)
 
+    def on_click(self):
+        self.setChecked(not self.checked)
+
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
-        self.setChecked(not self.checked)
+        self.on_click()
+
+    def setGeometry(self, rect):
+        x = rect.x()
+        y = rect.y()
+        w = rect.width()
+        h = rect.height()
+        self.setPos(x, y)
+        self.setWidthHeight(w, h)
 
 class QDMGraphicsCollapseButton(QGraphicsSvgItem):
     def __init__(self, parent):
@@ -1067,7 +1078,7 @@ class QDMGraphicsNode(QGraphicsItem):
             M = HORI_MARGIN * 0.2
             H = TEXT_HEIGHT * 0.9
             W = self.width / len(cond_keys)
-            button.setPos(W * i + M, -TEXT_HEIGHT * 1.8)
+            button.setPos(W * i + M, -TEXT_HEIGHT * 2.3)
             button.setWidthHeight(W - M * 2, H)
             button.setText(key)
             self.options[key] = button
