@@ -13,6 +13,7 @@ namespace zfx {
 struct Options {
     bool const_parametrize = true;
     bool global_localize = true;
+    bool demote_math_funcs = true;
     int arch_maxregs = 8;
 
     bool reassign_channels = true;
@@ -23,6 +24,7 @@ struct Options {
     Options(decltype(for_x64))
         : const_parametrize(true)
         , global_localize(true)
+        , demote_math_funcs(true)
         , arch_maxregs(8)
     {}
 
@@ -30,6 +32,7 @@ struct Options {
     Options(decltype(for_cuda))
         : const_parametrize(false)
         , global_localize(false)
+        , demote_math_funcs(false)
         , arch_maxregs(0)
     {}
 

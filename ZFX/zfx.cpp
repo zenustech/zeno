@@ -92,6 +92,16 @@ std::tuple
     ir->print();
 #endif
 
+    if (options.demote_math_funcs) {
+#ifdef ZFX_PRINT_IR
+        cout << "=== MathFunctions" << endl;
+#endif
+        ir = apply_math_functions(ir.get());
+#ifdef ZFX_PRINT_IR
+        ir->print();
+#endif
+    }
+
 #ifdef ZFX_PRINT_IR
     cout << "=== LowerAccess" << endl;
 #endif
