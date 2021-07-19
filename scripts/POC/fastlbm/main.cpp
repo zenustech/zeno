@@ -130,7 +130,11 @@ void apply_bc() {
         vely[p] = 0.0f;
         //fixup_bc(x, y, x + 1, y);
     }
-    for (int y = 0; y < NY; y++) for (int x = NX - 1; x < NX; x++) {
+    for (int y = 0; y < NY; y++) for (int x = NX - 2; x < NX - 1; x++) {
+        int p = y * NX + x;
+        int pm = y * NX + x + 1;
+        velx[p] = velx[pm];
+        vely[p] = vely[pm];
     }
     for (int y = 1; y < 2; y++) for (int x = 0; x < NX; x++) {
         int p = y * NX + x;

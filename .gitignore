@@ -15,6 +15,7 @@ cmake-build-*/
 *.lib
 *.dylib
 *.pyd
+a.out
 
 # output files
 outputs/
