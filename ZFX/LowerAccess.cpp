@@ -33,16 +33,12 @@ struct LowerAccess : Visitor<LowerAccess> {
         int curr_stmtid = -1;
     };
 
-    std::map<int, int> usages;
+    std::set<int> usages;
     int reg_top_id = 0;
 
     int store(int stmtid) {
-        if (auto it = usages.find(stmtid); it != usages.end()) {
-            return it->second;
-        }
-        int regid = stmtid;//reg_top_id++;//TODO: simplify this
-        usages[stmtid] = regid;
-        return regid;
+        usages.insert(stmtid);
+        return stmtid;
     }
 
     std::map<int, std::function<void()>> loaders;
@@ -52,7 +48,7 @@ struct LowerAccess : Visitor<LowerAccess> {
             it->second();
         }
         if (auto it = usages.find(stmtid); it != usages.end()) {
-            return it->second;
+            return stmtid;
         }
         error("statement $%d used before assignment", stmtid);
     }
