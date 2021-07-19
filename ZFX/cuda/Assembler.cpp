@@ -58,11 +58,11 @@ struct CUDABuilder {
     }
 
     void addIf(int cond) {
-        oss << "    if (" << cond << ") {\n";
+        oss << "    if (r" << cond << ") {\n";
     }
 
     void addElseIf(int cond) {
-        oss << "    } else if (" << cond << ") {\n";
+        oss << "    } else if (r" << cond << ") {\n";
     }
 
     void addElse() {
