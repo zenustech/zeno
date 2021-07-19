@@ -20,8 +20,8 @@ struct LowerControl : Visitor<LowerControl> {
     std::stack<std::function<void(Statement *)>> if_callbacks;
 
     void visit(FrontendIfStmt *stmt) {
-        auto hole = ir->make_hole_back();
         auto cond = ir->push_clone_back(stmt->cond);
+        auto hole = ir->make_hole_back();
         if_callbacks.push([=] (Statement *target) {
             hole.place<GotoIfStmt>(cond, target);
         });
@@ -33,8 +33,8 @@ struct LowerControl : Visitor<LowerControl> {
         }
         auto &callback = if_callbacks.top();
         callback(stmt);
-        auto hole = ir->make_hole_back();
         auto cond = ir->push_clone_back(stmt->cond);
+        auto hole = ir->make_hole_back();
         callback = [=] (Statement *target) {
             hole.place<GotoIfStmt>(cond, target);
         };
@@ -45,7 +45,8 @@ struct LowerControl : Visitor<LowerControl> {
             error("`else` without matching `if` at $%d", stmt->id);
         }
         auto &callback = if_callbacks.top();
-        callback(stmt);
+        auto label = ir->emplace_back<NoOperationStmt>();
+        callback(label);
         auto hole = ir->make_hole_back();
         callback = [=] (Statement *target) {
             hole.place<GotoStmt>(target);
@@ -57,7 +58,8 @@ struct LowerControl : Visitor<LowerControl> {
             error("`endif` without matching `if` at $%d", stmt->id);
         }
         auto callback = if_callbacks.top(); if_callbacks.pop();
-        callback(stmt);
+        auto label = ir->emplace_back<NoOperationStmt>();
+        callback(label);
     }
 
     void visit(Statement *stmt) {

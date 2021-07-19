@@ -4,6 +4,25 @@
 
 namespace zfx {
 
+struct NoOperationStmt : Stmt<NoOperationStmt> {
+    NoOperationStmt
+        ( int id_
+        )
+        : Stmt(id_)
+    {}
+
+    virtual StmtFields fields() override {
+        return {
+            };
+    }
+
+    virtual std::string to_string() const override {
+        return format(
+            "NoOperation"
+            );
+    }
+};
+
 struct UnaryOpStmt : Stmt<UnaryOpStmt> {
     std::string op;
     Statement *src;
