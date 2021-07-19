@@ -37,6 +37,7 @@ LowerMath.cpp
 MathFunctions.cpp
 Parser.cpp
 RegisterAllocation.cpp
+SaveMathRegisters.cpp
 Statement.h
 Stmts.h
 SymbolCheck.cpp

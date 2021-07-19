@@ -348,7 +348,7 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
     }
 };
 
-void apply_register_allocation(IR *ir, int nregs) {
+std::map<int, std::pair<int, int>> apply_register_allocation(IR *ir, int nregs) {
     nregs -= 2; // left two regs for load/store from spilled memory
     if (nregs <= 2) {
         error("no enough registers!\n");
@@ -364,6 +364,11 @@ void apply_register_allocation(IR *ir, int nregs) {
     FixupMemorySpill fixspill(nregs);
     fixspill.apply(ir);
     *ir = *fixspill.ir;
+    std::map<int, std::pair<int, int>> regusage;
+    for (auto const &[key, regptr]: scanner.regs) {
+        regusage[key] = std::make_pair(regptr.startpoint(), regptr.endpoint());
+    }
+    return regusage;
 }
 
 }
