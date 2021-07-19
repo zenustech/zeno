@@ -19,6 +19,9 @@ struct LowerAccess : Visitor<LowerAccess> {
         , FrontendElseIfStmt
         , FrontendElseStmt
         , FrontendEndIfStmt
+        , GofromStmt
+        , GotoIfStmt
+        , GotoStmt
         , Statement
         >;
 
@@ -40,8 +43,8 @@ struct LowerAccess : Visitor<LowerAccess> {
         if (auto it = usages.find(stmtid); it != usages.end()) {
             return it->second;
         }
-        int regid = reg_top_id++;
-        usages[stmtid] = regid;
+        int regid = stmtid;
+        usages[stmtid] = reg_top_id++;
         return regid;
     }
 
@@ -75,6 +78,21 @@ struct LowerAccess : Visitor<LowerAccess> {
 
     void visit(FrontendEndIfStmt *stmt) {
         ir->emplace_back<AsmEndIfStmt>();
+    }
+
+    void visit(GotoStmt *stmt) {
+        ir->push_clone_back(stmt);
+    }
+
+    void visit(GotoIfStmt *stmt) {
+        auto new_stmt = ir->emplace_back<AsmGotoIfStmt>
+                ( load(stmt->cond->id)
+                );
+        ir->mark_replacement(stmt, new_stmt);
+    }
+
+    void visit(GofromStmt *stmt) {
+        ir->push_clone_back(stmt);
     }
 
     void visit(SymbolStmt *stmt) {

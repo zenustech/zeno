@@ -422,7 +422,7 @@ struct GotoIfStmt : CtrlStmt<GotoIfStmt> {
 
     virtual std::string to_string() const override {
         return format(
-            "-> GotoIf $%d"
+            "<- GotoIf $%d"
             , cond->id
             );
     }
@@ -782,6 +782,29 @@ struct AsmEndIfStmt : AsmStmt<AsmEndIfStmt> {
     virtual std::string to_string() const override {
         return format(
             "AsmEndIf"
+            );
+    }
+
+    virtual int affect_register() const override {
+        return -1;
+    }
+};
+
+struct AsmGotoIfStmt : AsmStmt<AsmGotoIfStmt> {
+    int cond;
+
+    AsmGotoIfStmt
+        ( int id_
+        , int cond_
+        )
+        : AsmStmt(id_)
+        , cond(cond_)
+    {}
+
+    virtual std::string to_string() const override {
+        return format(
+            "<- AsmGotoIf r%d"
+            , cond
             );
     }
 

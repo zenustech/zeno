@@ -128,7 +128,11 @@ struct UCLAScanner {
     }
 
     int lookup(int regid) {
-        return result.at(regid);
+        if (auto it = result.find(regid); it != result.end()) {
+            return it->second;
+        }
+        error("r%d not found when allocating registers", regid);
+        return -1;
     }
 };
 
@@ -340,6 +344,11 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
 
     void visit(AsmGlobalStoreStmt *stmt) {
         touch(1, stmt->val);
+        visit((Statement *)stmt);
+    }
+
+    void visit(AsmGotoIfStmt *stmt) {
+        touch(1, stmt->cond);
         visit((Statement *)stmt);
     }
 };
