@@ -53,6 +53,7 @@ void initialize() {
 }
 
 void compute_macro() {
+#pragma omp parallel for
     for (int y = 0; y < NY; y++) for (int x = 0; x < NX; x++) {
         int p = y * NX + x;
         float m = 0.f;
@@ -74,6 +75,7 @@ void compute_macro() {
 }
 
 void do_collide() {
+#pragma omp parallel for
     for (int y = 0; y < NY; y++) for (int x = 0; x < NX; x++) {
         int p = y * NX + x;
         for (int q = 0; q < 9; q++) {
@@ -132,6 +134,7 @@ void apply_bc() {
 float pixels[NX * NY];
 
 void do_render() {
+#pragma omp parallel for
     for (int y = 0; y < NY; y++) for (int x = 0; x < NX; x++) {
         int p = y * NX + x;
         float u = velx[p];
@@ -150,11 +153,13 @@ void initFunc() {
 }
 
 void renderFunc() {
-    do_collide();
-    do_stream();
-    compute_macro();
+    for (int s = 0; s < 20; s++) {
+        do_collide();
+        do_stream();
+        compute_macro();
+        apply_bc();
+    }
     do_render();
-    apply_bc();
 }
 
 void displayFunc() {
@@ -163,7 +168,7 @@ void displayFunc() {
     glFlush();
 }
 
-#define ITV 20
+#define ITV 1
 void timerFunc(int unused) {
     (void)unused;
     renderFunc();
