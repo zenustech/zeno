@@ -1,6 +1,7 @@
 #include "IRVisitor.h"
 #include "Stmts.h"
 #include <sstream>
+#include "StmHelper.h"
 
 namespace zfx {
 
@@ -9,60 +10,6 @@ namespace zfx {
         error("`%s`", #x); \
     } \
 } while (0)
-
-struct Stm {
-    IR *ir = nullptr;
-    Statement *stmt = nullptr;
-
-    Stm() = default;
-
-    Stm(IR *ir_, Statement *stmt_)
-        : ir(ir_), stmt(stmt_) {}
-
-    operator Statement *&() {
-        return stmt;
-    }
-
-    operator Statement * const &() const {
-        return stmt;
-    }
-
-    Statement *operator->() const {
-        return stmt;
-    }
-};
-
-Stm stm(std::string const &op_name, Stm const &lhs, Stm const &rhs) {
-    return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>(op_name, lhs.stmt, rhs.stmt)};
-}
-
-Stm stm(std::string const &op_name, Stm const &src) {
-    return {src.ir, src.ir->emplace_back<UnaryOpStmt>(op_name, src.stmt)};
-}
-
-Stm operator+(Stm const &lhs, Stm const &rhs) {
-    return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>("+", lhs.stmt, rhs.stmt)};
-}
-
-Stm operator-(Stm const &lhs, Stm const &rhs) {
-    return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>("-", lhs.stmt, rhs.stmt)};
-}
-
-Stm operator*(Stm const &lhs, Stm const &rhs) {
-    return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>("*", lhs.stmt, rhs.stmt)};
-}
-
-Stm operator/(Stm const &lhs, Stm const &rhs) {
-    return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>("/", lhs.stmt, rhs.stmt)};
-}
-
-Stm operator+(Stm const &src) {
-    return {src.ir, src.ir->emplace_back<UnaryOpStmt>("+", src.stmt)};
-}
-
-Stm operator-(Stm const &src) {
-    return {src.ir, src.ir->emplace_back<UnaryOpStmt>("-", src.stmt)};
-}
 
 struct MathFunctions : Visitor<MathFunctions> {
     using visit_stmt_types = std::tuple
