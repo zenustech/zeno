@@ -43,8 +43,8 @@ struct LowerAccess : Visitor<LowerAccess> {
         if (auto it = usages.find(stmtid); it != usages.end()) {
             return it->second;
         }
-        int regid = stmtid;
-        usages[stmtid] = reg_top_id++;
+        int regid = stmtid;//reg_top_id++;//TODO: simplify this
+        usages[stmtid] = regid;
         return regid;
     }
 

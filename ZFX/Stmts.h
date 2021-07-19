@@ -790,7 +790,7 @@ struct AsmEndIfStmt : AsmStmt<AsmEndIfStmt> {
     }
 };
 
-struct AsmGotoIfStmt : AsmStmt<AsmGotoIfStmt> {
+/*struct AsmGotoIfStmt : AsmStmt<AsmGotoIfStmt> {
     int cond;
 
     AsmGotoIfStmt
@@ -812,5 +812,55 @@ struct AsmGotoIfStmt : AsmStmt<AsmGotoIfStmt> {
         return -1;
     }
 };
+
+struct AsmJumpStmt : AsmStmt<AsmJumpStmt> {
+    int target;
+
+    AsmJumpStmt
+        ( int id_
+        , int target_
+        )
+        : AsmStmt(id_)
+        , target(target_)
+    {}
+
+    virtual std::string to_string() const override {
+        return format(
+            "AsmJump -> $%d"
+            , target
+            );
+    }
+
+    virtual int affect_register() const override {
+        return -1;
+    }
+};
+
+struct AsmJumpIfStmt : AsmStmt<AsmJumpIfStmt> {
+    int cond;
+    int target;
+
+    AsmGotoIfStmt
+        ( int id_
+        , int cond_
+        , int target_
+        )
+        : AsmStmt(id_)
+        , cond(cond_)
+        , target(target_)
+    {}
+
+    virtual std::string to_string() const override {
+        return format(
+            "AsmJumpIf r%d -> $%d"
+            , cond
+            , target
+            );
+    }
+
+    virtual int affect_register() const override {
+        return -1;
+    }
+};*/
 
 }
