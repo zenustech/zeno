@@ -1,6 +1,7 @@
 #include "IRVisitor.h"
 #include "Stmts.h"
 #include <functional>
+#include <variant>
 #include <map>
 
 namespace zfx {
@@ -14,16 +15,16 @@ struct LowerAccess : Visitor<LowerAccess> {
         , SymbolStmt
         , TempSymbolStmt
         , ParamSymbolStmt
+        , FrontendIfStmt
+        , FrontendElseIfStmt
+        , FrontendElseStmt
+        , FrontendEndIfStmt
         , Statement
         >;
 
     std::unique_ptr<IR> ir = std::make_unique<IR>();
 
     void visit(Statement *stmt) {
-        if (stmt->is_control_stmt()) {
-            ir->push_clone_back(stmt);
-            return;
-        }
         error("unexpected statement type `%s`", typeid(*stmt).name());
     }
 
@@ -54,6 +55,26 @@ struct LowerAccess : Visitor<LowerAccess> {
             return it->second;
         }
         error("statement $%d used before assignment", stmtid);
+    }
+
+    void visit(FrontendIfStmt *stmt) {
+        ir->emplace_back<AsmIfStmt>
+                ( load(stmt->cond->id)
+                );
+    }
+
+    void visit(FrontendElseIfStmt *stmt) {
+        ir->emplace_back<AsmElseIfStmt>
+                ( load(stmt->cond->id)
+                );
+    }
+
+    void visit(FrontendElseStmt *stmt) {
+        ir->emplace_back<AsmElseStmt>();
+    }
+
+    void visit(FrontendEndIfStmt *stmt) {
+        ir->emplace_back<AsmEndIfStmt>();
     }
 
     void visit(SymbolStmt *stmt) {

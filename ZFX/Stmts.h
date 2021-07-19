@@ -708,4 +708,86 @@ struct AsmParamLoadStmt : AsmStmt<AsmParamLoadStmt> {
     }
 };
 
+struct AsmIfStmt : AsmStmt<AsmIfStmt> {
+    int cond;
+
+    AsmIfStmt
+        ( int id_
+        , int cond_
+        )
+        : AsmStmt(id_)
+        , cond(cond_)
+    {}
+
+    virtual std::string to_string() const override {
+        return format(
+            "AsmIf r%d"
+            , cond
+            );
+    }
+
+    virtual int affect_register() const override {
+        return -1;
+    }
+};
+
+struct AsmElseIfStmt : AsmStmt<AsmElseIfStmt> {
+    int cond;
+
+    AsmElseIfStmt
+        ( int id_
+        , int cond_
+        )
+        : AsmStmt(id_)
+        , cond(cond_)
+    {}
+
+    virtual std::string to_string() const override {
+        return format(
+            "AsmElseIf r%d"
+            , cond
+            );
+    }
+
+    virtual int affect_register() const override {
+        return -1;
+    }
+};
+
+struct AsmElseStmt : AsmStmt<AsmElseStmt> {
+    AsmElseStmt
+        ( int id_
+        )
+        : AsmStmt(id_)
+    {}
+
+    virtual std::string to_string() const override {
+        return format(
+            "AsmElse"
+            );
+    }
+
+    virtual int affect_register() const override {
+        return -1;
+    }
+};
+
+struct AsmEndIfStmt : AsmStmt<AsmEndIfStmt> {
+    AsmEndIfStmt
+        ( int id_
+        )
+        : AsmStmt(id_)
+    {}
+
+    virtual std::string to_string() const override {
+        return format(
+            "AsmEndIf"
+            );
+    }
+
+    virtual int affect_register() const override {
+        return -1;
+    }
+};
+
 }
