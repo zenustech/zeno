@@ -7,7 +7,7 @@
 #include "zensim/simulation/sparsity/SparsityOp.hpp"
 #include "zensim/tpls/fmt/color.h"
 #include "zensim/tpls/fmt/format.h"
-
+#include <zeno/NumericObject.h>
 namespace zeno {
 
 struct GridFromPartition : zeno::INode {
@@ -19,7 +19,10 @@ struct GridFromPartition : zeno::INode {
     auto cnt =
         zs::match([](auto &partition) { return partition.size(); })(partition);
     auto dx = std::get<float>(get_param("dx"));
-
+    if(has_input("Dx"))
+    {
+      dx = get_input("Dx")->as<NumericObject>()->get<float>();
+    }
     // auto grid = zeno::IObject::make<ZenoGrid>();
     auto &grid = get_input("ZSGrid")->as<ZenoGrid>()->get();
     using GridT = zs::GridBlocks<zs::GridBlock<zs::dat32, 3, 2, 2>>;
@@ -33,7 +36,7 @@ struct GridFromPartition : zeno::INode {
 
     auto cudaPol = zs::cuda_exec().device(0);
     cudaPol(
-        {(std::size_t)cnt, (std::size_t)GridT::block_t::space},
+        {(std::size_t)cnt, (std::size_t)GridT::block_t::space()},
         zs::CleanGridBlocks{zs::wrapv<zs::execspace_e::cuda>{}, gridblocks});
     // fmt::print("{} grid blocks from partition\n", cnt);
 
@@ -44,7 +47,7 @@ struct GridFromPartition : zeno::INode {
 };
 
 static int defGridFromPartition = zeno::defNodeClass<GridFromPartition>(
-    "GridFromPartition", {/* inputs: */ {"ZSGrid", "ZSPartition"},
+    "GridFromPartition", {/* inputs: */ {"ZSGrid", "ZSPartition", "Dx"},
                           /* outputs: */ {},
                           /* params: */ {{"float", "dx", "1"}},
                           /* category: */ {"GPUMPM"}});
