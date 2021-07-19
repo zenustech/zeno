@@ -397,7 +397,7 @@ struct GotoStmt : CtrlStmt<GotoStmt> {
 
     virtual StmtFields fields() override {
         return {
-            // no `target,` because it's not a variable but just a location
+            target
             };
     }
 
@@ -426,6 +426,7 @@ struct GotoIfStmt : CtrlStmt<GotoStmt> {
     virtual StmtFields fields() override {
         return {
             cond,
+            target,
             };
     }
 

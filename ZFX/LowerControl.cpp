@@ -21,7 +21,8 @@ struct LowerControl : Visitor<LowerControl> {
 
     void visit(FrontendIfStmt *stmt) {
         auto hole = ir->make_hole_back();
-        if_callbacks.push([hole, cond = stmt->cond] (Statement *target) {
+        auto cond = ir->push_clone_back(stmt->cond);
+        if_callbacks.push([=] (Statement *target) {
             hole.place<GotoIfStmt>(cond, target);
         });
     }
@@ -33,7 +34,8 @@ struct LowerControl : Visitor<LowerControl> {
         auto &callback = if_callbacks.top();
         callback(stmt);
         auto hole = ir->make_hole_back();
-        callback = [hole, cond = stmt->cond] (Statement *target) {
+        auto cond = ir->push_clone_back(stmt->cond);
+        callback = [=] (Statement *target) {
             hole.place<GotoIfStmt>(cond, target);
         };
     }
@@ -61,11 +63,19 @@ struct LowerControl : Visitor<LowerControl> {
     void visit(Statement *stmt) {
         ir->push_clone_back(stmt);
     }
+
+    void finish() {
+        if (if_callbacks.size()) {
+            error("not terminated `if` block (remain %d levels)",
+                    if_callbacks.size());
+        }
+    }
 };
 
 std::unique_ptr<IR> apply_lower_control(IR *ir) {
     LowerControl visitor;
     visitor.apply(ir);
+    visitor.finish();
     return std::move(visitor.ir);
 }
 
