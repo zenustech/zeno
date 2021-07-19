@@ -21,7 +21,7 @@ struct Executable {
 
         void execute() {
             asm volatile (
-                "call *(%%rax)"  // why `call *%%rax` doesn't work..
+                "call *(%%rax)"  // why `call *%%rax` gives CE...
                 :
                 : "a" ((uintptr_t)(void *)&exec->mem)
                 , "b" ((uintptr_t)(void *)exec->functable)

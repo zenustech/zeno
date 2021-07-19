@@ -58,11 +58,9 @@ namespace optype {
     };
 };
 
-class SIMDBuilder {   // requires AVX2
-private:
+struct SIMDBuilder {   // requires AVX2
     std::vector<uint8_t> res;
 
-public:
     struct MemoryAddress {
         int adr, mflag, immadr, adr2, adr2shift;
 
