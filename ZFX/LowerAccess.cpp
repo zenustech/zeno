@@ -20,6 +20,10 @@ struct LowerAccess : Visitor<LowerAccess> {
     std::unique_ptr<IR> ir = std::make_unique<IR>();
 
     void visit(Statement *stmt) {
+        if (stmt->is_control_stmt()) {
+            ir->push_clone_back(stmt);
+            return;
+        }
         error("unexpected statement type `%s`", typeid(*stmt).name());
     }
 

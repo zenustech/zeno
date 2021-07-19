@@ -32,6 +32,7 @@ Lexical.h
 LowerAccess.cpp
 LowerAST.cpp
 LowerAST.h
+LowerControl.cpp
 LowerMath.cpp
 Parser.cpp
 RegisterAllocation.cpp

@@ -21,8 +21,8 @@ struct LowerControl : Visitor<LowerControl> {
 
     void visit(FrontendIfStmt *stmt) {
         auto hole = ir->make_hole_back();
-        if_callbacks.push([=] (Statement *target) {
-            hole.place<GotoStmt>(target);  // todo: GotoIfStmt
+        if_callbacks.push([hole, cond = stmt->cond] (Statement *target) {
+            hole.place<GotoIfStmt>(cond, target);
         });
     }
 
@@ -33,8 +33,8 @@ struct LowerControl : Visitor<LowerControl> {
         auto &callback = if_callbacks.top();
         callback(stmt);
         auto hole = ir->make_hole_back();
-        callback = [=] (Statement *target) {
-            hole.place<GotoStmt>(target);  // todo: GotoIfStmt
+        callback = [hole, cond = stmt->cond] (Statement *target) {
+            hole.place<GotoIfStmt>(cond, target);
         };
     }
 

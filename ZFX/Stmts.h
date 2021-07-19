@@ -387,18 +387,52 @@ struct FrontendEndIfStmt : CtrlStmt<FrontendEndIfStmt> {
 struct GotoStmt : CtrlStmt<GotoStmt> {
     Statement *target;
 
-    AsmGotoStmt
+    GotoStmt
         ( int id_
-        , Statement *target
+        , Statement *target_
         )
-        : AsmStmt(id_)
+        : CtrlStmt(id_)
         , target(target_)
     {}
 
+    virtual StmtFields fields() override {
+        return {
+            // no `target,` because it's not a variable but just a location
+            };
+    }
+
     virtual std::string to_string() const override {
         return format(
-            "Goto $%d"
+            "Goto -> $%d"
             , target->id
+            );
+    }
+};
+
+struct GotoIfStmt : CtrlStmt<GotoStmt> {
+    Statement *cond;
+    Statement *target;
+
+    GotoIfStmt
+        ( int id_
+        , Statement *cond_
+        , Statement *target_
+        )
+        : CtrlStmt(id_)
+        , cond(cond_)
+        , target(target_)
+    {}
+
+    virtual StmtFields fields() override {
+        return {
+            cond,
+            };
+    }
+
+    virtual std::string to_string() const override {
+        return format(
+            "GotoIf $%d -> $%d"
+            , cond->id, target->id
             );
     }
 };
