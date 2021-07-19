@@ -114,7 +114,16 @@ struct Parser {
     }
 
     AST::Ptr parse_stmt(AST::Iter iter) {
-        if (auto lhs = parse_factor(iter); lhs) {
+        if (auto ope = parse_operator(iter, {"if", "elif"}); ope) {
+            if (auto cond = parse_expr(ope->iter)) {
+                return make_ast(ope->token, cond->iter, {std::move(cond)});
+            } else {
+                error("`%s` expecting condition, got `%s`",
+                        iter->c_str(), ope->iter->c_str());
+            }
+        } else if (auto ope = parse_operator(iter, {"endif"}); ope) {
+            return make_ast(ope->token, ope->iter);
+        } else if (auto lhs = parse_factor(iter); lhs) {
             if (auto ope = parse_operator(lhs->iter, {"=",
                 "+=", "-=", "*=", "/=", "%="}); ope) {
                 if (auto rhs = parse_expr(ope->iter); rhs) {

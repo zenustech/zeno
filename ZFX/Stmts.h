@@ -296,6 +296,94 @@ struct LiterialStmt : Stmt<LiterialStmt> {
     }
 };
 
+struct FrontendIfStmt : CtrlStmt<FrontendIfStmt> {
+    Statement *cond;
+
+    FrontendIfStmt
+        ( int id_
+        , Statement *cond_
+        )
+        : CtrlStmt(id_)
+        , cond(cond_)
+    {}
+
+    virtual StmtFields fields() override {
+        return {
+            cond,
+            };
+    }
+
+    virtual std::string to_string() const override {
+        return format(
+            "FrontendIf $%d"
+            , cond->id
+            );
+    }
+};
+
+struct FrontendElseIfStmt : CtrlStmt<FrontendElseIfStmt> {
+    Statement *cond;
+
+    FrontendElseIfStmt
+        ( int id_
+        , Statement *cond_
+        )
+        : CtrlStmt(id_)
+        , cond(cond_)
+    {}
+
+    virtual StmtFields fields() override {
+        return {
+            cond,
+            };
+    }
+
+    virtual std::string to_string() const override {
+        return format(
+            "FrontendElseIf $%d"
+            , cond->id
+            );
+    }
+};
+
+struct FrontendElseStmt : CtrlStmt<FrontendElseStmt> {
+    FrontendElseStmt
+        ( int id_
+        )
+        : CtrlStmt(id_)
+    {}
+
+    virtual StmtFields fields() override {
+        return {
+            };
+    }
+
+    virtual std::string to_string() const override {
+        return format(
+            "FrontendElse"
+            );
+    }
+};
+
+struct FrontendEndIfStmt : CtrlStmt<FrontendEndIfStmt> {
+    FrontendEndIfStmt
+        ( int id_
+        )
+        : CtrlStmt(id_)
+    {}
+
+    virtual StmtFields fields() override {
+        return {
+            };
+    }
+
+    virtual std::string to_string() const override {
+        return format(
+            "FrontendEndIf"
+            );
+    }
+};
+
 struct AsmAssignStmt : AsmStmt<AsmAssignStmt> {
     int dst;
     int src;

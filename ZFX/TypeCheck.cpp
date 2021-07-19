@@ -25,7 +25,7 @@ struct TypeCheck : Visitor<TypeCheck> {
         >;
 
     void visit(Statement *stmt) {
-        if (stmt->dim == 0) {
+        if (!stmt->is_control_stmt() && stmt->dim == 0) {
             error("statement $%d has unclear type", stmt->id);
         }
     }

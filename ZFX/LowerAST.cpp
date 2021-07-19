@@ -115,6 +115,13 @@ struct LowerAST {
                 0, ast->token.size() - 1), dst, src);
             return ir->emplace_back<AssignStmt>(dst, val);
 
+        } else if (contains({"if"}, ast->token) && ast->args.size() == 1) {
+            auto cond = serialize(ast->args[0].get());
+            return ir->emplace_back<FrontendIfStmt>(cond);
+
+        } else if (contains({"endif"}, ast->token)) {
+            return ir->emplace_back<FrontendEndIfStmt>();
+
         } else if (is_symbolic_atom(ast->token) && ast->args.size() == 0) {
             if (auto ret = emplace_global_symbol(ast->token); ret) {
                 return ret;

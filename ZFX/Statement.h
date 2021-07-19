@@ -25,6 +25,7 @@ struct Statement {
     virtual std::string to_string() const = 0;
     virtual std::unique_ptr<Statement> clone(int newid) const = 0;
     virtual int affect_register() const = 0;
+    virtual bool is_control_stmt() const = 0;
     virtual StmtFields fields() = 0;
 };
 
@@ -40,6 +41,19 @@ struct Stmt : Statement {
 
     virtual int affect_register() const override {
         return -1;
+    }
+
+    virtual bool is_control_stmt() const override {
+        return false;
+    }
+};
+
+template <class T>
+struct CtrlStmt : Stmt<T> {
+    using Stmt<T>::Stmt;
+
+    virtual bool is_control_stmt() const override {
+        return true;
     }
 };
 

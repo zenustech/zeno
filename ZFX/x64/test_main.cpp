@@ -14,7 +14,11 @@ int main() {
         return pos;
     };
 #else
-    std::string code("@pos.x = atan2(@pos.x, @clr)");
+    std::string code(R"(
+if 1
+@pos.x = atan2(@pos.x, @clr)
+endif
+)");
 #endif
 
     zfx::Options opts(zfx::Options::for_x64);

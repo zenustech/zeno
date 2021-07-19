@@ -6,7 +6,7 @@ namespace zfx {
 
 #define ERROR_IF(x) do { \
     if (x) { \
-        error("`%s`", #x); \
+        error("%s:%d: `%s`", __FILE__, __LINE__, #x); \
     } \
 } while (0)
 
@@ -140,6 +140,10 @@ struct LowerMath : Visitor<LowerMath> {
     }
 
     void visit(Statement *stmt) {
+        if (stmt->is_control_stmt()) {
+            ir->push_clone_back(stmt);
+            return;
+        }
         error("unexpected statement type to LowerMath: `%s`",
             typeid(*stmt).name());
     }
