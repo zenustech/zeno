@@ -57,6 +57,22 @@ struct CUDABuilder {
             << ", r" << rhs << ");\n";
     }
 
+    void addIf(int cond) {
+        oss << "    if (" << cond << ") {\n";
+    }
+
+    void addElseIf(int cond) {
+        oss << "    } else if (" << cond << ") {\n";
+    }
+
+    void addElse() {
+        oss << "    } else {\n";
+    }
+
+    void addEndIf() {
+        oss << "    }\n";
+    }
+
     std::string finish(int nlocals) {
         oss_head << "__device__ void zfx_wrangle_func";
         oss_head << "(float *globals, float const *params) {\n";
@@ -214,6 +230,22 @@ struct ImplAssembler {
                 auto dst = from_string<int>(linesep[1]);
                 auto src = from_string<int>(linesep[2]);
                 builder->addAssign(dst, src);
+
+            } else if (cmd == ".if") {
+                ERROR_IF(linesep.size() < 1);
+                auto cond = from_string<int>(linesep[1]);
+                builder->addIf(cond);
+
+            } else if (cmd == ".elseif") {
+                ERROR_IF(linesep.size() < 1);
+                auto cond = from_string<int>(linesep[1]);
+                builder->addElseIf(cond);
+
+            } else if (cmd == ".else") {
+                builder->addElse();
+
+            } else if (cmd == ".endif") {
+                builder->addEndIf();
 
             } else {
                 error("bad assembly command `%s`", cmd.c_str());
