@@ -146,10 +146,20 @@ std::tuple
 #ifdef ZFX_PRINT_IR
         cout << "=== RegisterAllocation" << endl;
 #endif
-        apply_register_allocation(ir.get(), options.arch_maxregs);
+        auto regusage = apply_register_allocation(ir.get(), options.arch_maxregs);
 #ifdef ZFX_PRINT_IR
         ir->print();
 #endif
+
+        if (options.save_math_registers) {
+#ifdef ZFX_PRINT_IR
+            cout << "=== SaveMathRegisters" << endl;
+#endif
+            ir = apply_save_math_registers(ir.get(), regusage);
+#ifdef ZFX_PRINT_IR
+            ir->print();
+#endif
+        }
     }
 
     // TODO: if (options.reassign_globals)

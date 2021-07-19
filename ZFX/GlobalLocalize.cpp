@@ -9,6 +9,8 @@ struct ReassignGlobals : Visitor<ReassignGlobals> {
     using visit_stmt_types = std::tuple
         < AsmGlobalLoadStmt
         , AsmGlobalStoreStmt
+        , AsmLocalLoadStmt
+        , AsmLocalStoreStmt
         >;
 
     std::map<int, int> globals;

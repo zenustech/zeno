@@ -141,6 +141,7 @@ struct InspectRegisters : Visitor<InspectRegisters> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
+        , AsmFuncCallStmt
         , AsmLoadConstStmt
         , AsmParamLoadStmt
         , AsmLocalLoadStmt
@@ -169,6 +170,13 @@ struct InspectRegisters : Visitor<InspectRegisters> {
         touch(stmt->id, stmt->dst);
         touch(stmt->id, stmt->lhs);
         touch(stmt->id, stmt->rhs);
+    }
+
+    void visit(AsmFuncCallStmt *stmt) {
+        touch(stmt->id, stmt->dst);
+        for (auto const &arg: stmt->args) {
+            touch(stmt->id, arg);
+        }
     }
 
     void visit(AsmLoadConstStmt *stmt) {
@@ -201,6 +209,7 @@ struct ReassignRegisters : Visitor<ReassignRegisters> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
+        , AsmFuncCallStmt
         , AsmLoadConstStmt
         , AsmParamLoadStmt
         , AsmLocalLoadStmt
@@ -229,6 +238,13 @@ struct ReassignRegisters : Visitor<ReassignRegisters> {
         reassign(stmt->dst);
         reassign(stmt->lhs);
         reassign(stmt->rhs);
+    }
+
+    void visit(AsmFuncCallStmt *stmt) {
+        reassign(stmt->dst);
+        for (auto &arg: stmt->args) {
+            reassign(arg);
+        }
     }
 
     void visit(AsmLoadConstStmt *stmt) {
@@ -261,6 +277,7 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
+        , AsmFuncCallStmt
         , AsmLoadConstStmt
         , AsmParamLoadStmt
         , AsmLocalLoadStmt
@@ -317,6 +334,14 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
         touch(0, stmt->dst);
     }
 
+    void visit(AsmFuncCallStmt *stmt) {
+        for (int i = 0; i < stmt->args.size(); i++) {
+            touch(i + 1, stmt->args[i]);
+        }
+        visit((Statement *)stmt);
+        touch(0, stmt->dst);
+    }
+
     void visit(AsmLoadConstStmt *stmt) {
         visit((Statement *)stmt);
         touch(0, stmt->dst);
@@ -348,7 +373,7 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
     }
 };
 
-void apply_register_allocation(IR *ir, int nregs) {
+std::map<int, std::vector<std::pair<int, int>>> apply_register_allocation(IR *ir, int nregs) {
     nregs -= 2; // left two regs for load/store from spilled memory
     if (nregs <= 2) {
         error("no enough registers!\n");
@@ -364,6 +389,12 @@ void apply_register_allocation(IR *ir, int nregs) {
     FixupMemorySpill fixspill(nregs);
     fixspill.apply(ir);
     *ir = *fixspill.ir;
+    std::map<int, std::vector<std::pair<int, int>>> usage;
+    for (auto const &[regid, regptr]: scanner.regs) {
+        auto newid = scanner.lookup(regid);
+        usage[newid].push_back(std::make_pair(regptr.startpoint(), regptr.endpoint()));
+    }
+    return usage;
 }
 
 }

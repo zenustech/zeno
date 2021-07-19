@@ -113,13 +113,13 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             ERROR_IF(args.size() != 2);
             auto x = make_stm(args[0]);
             auto y = make_stm(args[1]);
-            return stm(name, x, y);
+            return stm_func(name, {x, y});
 
         } else if (contains({"sqrt", "sin", "cos", "tan", "asin", "acos",
             "atan", "exp", "log", "rsqrt", "floor", "ceil", "abs"}, name)) {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
-            return stm(name, x);
+            return stm_func(name, {x});
 
         } else {
             error("invalid function name `%s` (with %d args)", name.c_str(), args.size());

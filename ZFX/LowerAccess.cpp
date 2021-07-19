@@ -11,6 +11,7 @@ struct LowerAccess : Visitor<LowerAccess> {
         < AssignStmt
         , UnaryOpStmt
         , BinaryOpStmt
+        , FunctionCallStmt
         , LiterialStmt
         , SymbolStmt
         , TempSymbolStmt
@@ -133,6 +134,18 @@ struct LowerAccess : Visitor<LowerAccess> {
             , store(stmt->id)
             , load(stmt->lhs->id)
             , load(stmt->rhs->id)
+            );
+    }
+
+    void visit(FunctionCallStmt *stmt) {
+        std::vector<int> argloaded;
+        for (auto const &arg: stmt->args) {
+            argloaded.push_back(load(arg->id));
+        }
+        ir->emplace_back<AsmFuncCallStmt>
+            ( stmt->name
+            , store(stmt->id)
+            , argloaded
             );
     }
 

@@ -15,7 +15,7 @@ int main() {
     };
 #else
     std::string code(R"(
-@pos.x = sin(@clr)
+@pos.x = 0 * sin(@clr)
 )");
 #endif
 
