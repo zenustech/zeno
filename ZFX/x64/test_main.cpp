@@ -17,6 +17,10 @@ int main() {
     std::string code(R"(
 if 1
 @pos.x = atan2(@pos.x, @clr)
+else
+@pos.y = 1
+elseif 3
+@pos.y = 1
 endif
 )");
 #endif

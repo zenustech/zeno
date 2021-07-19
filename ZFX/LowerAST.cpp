@@ -123,7 +123,10 @@ struct LowerAST {
             auto cond = serialize(ast->args[0].get());
             return ir->emplace_back<FrontendElseIfStmt>(cond);
 
-        } else if (contains({"endif"}, ast->token)) {
+        } else if (contains({"else"}, ast->token) && ast->args.size() == 0) {
+            return ir->emplace_back<FrontendElseStmt>();
+
+        } else if (contains({"endif"}, ast->token) && ast->args.size() == 0) {
             return ir->emplace_back<FrontendEndIfStmt>();
 
         } else if (is_symbolic_atom(ast->token) && ast->args.size() == 0) {

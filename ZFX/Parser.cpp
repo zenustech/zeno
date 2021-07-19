@@ -118,10 +118,10 @@ struct Parser {
             if (auto cond = parse_expr(ope->iter)) {
                 return make_ast(ope->token, cond->iter, {std::move(cond)});
             } else {
-                error("`%s` expecting condition, got `%s`",
+                error("`%s` is expecting condition, got `%s`",
                         iter->c_str(), ope->iter->c_str());
             }
-        } else if (auto ope = parse_operator(iter, {"endif"}); ope) {
+        } else if (auto ope = parse_operator(iter, {"else", "endif"}); ope) {
             return make_ast(ope->token, ope->iter);
         } else if (auto lhs = parse_factor(iter); lhs) {
             if (auto ope = parse_operator(lhs->iter, {"=",
