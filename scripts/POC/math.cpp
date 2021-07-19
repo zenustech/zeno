@@ -63,7 +63,17 @@ float myexp(float x) {
 float mysin(float x) {
     float y = M_PI - fmod(x, M_PI*2);
     float z = fabs(y);
-    float r = sinf(z);
+    float z2 = z * z;
+    float r = 1.f;
+    float t = z2 * (1.f/6);
+    r -= t;
+    t *= z2 * (1.f/20);
+    r += t;
+    t *= z2 * (1.f/48);
+    r -= t;
+    t *= z2 * (1.f/72);
+    r += t;
+    r *= z;
     return y > 0 ? r : -r;
 }
 
@@ -75,8 +85,8 @@ int main()
     printf("%f\n", myexp(-3.14f));
     printf("%f\n", expf(3.14f));
     printf("%f\n", myexp(3.14f));*/
-    printf("%f\n", sinf(1.14f));
-    printf("%f\n", mysin(1.14f));
+    printf("%f\n", sinf(0.52f));
+    printf("%f\n", mysin(0.54f));
     printf("%f\n", sinf(-0.14f));
     printf("%f\n", mysin(-0.14f));
     printf("%f\n", sinf(5.14f));
