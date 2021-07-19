@@ -316,36 +316,6 @@
      ],
      "options": []
     },
-    "ae1dc917-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "81bd1750-PortalOut",
-       "port"
-      ],
-      "zfxCode": [
-       "eb8f9692-MakeMultilineString",
-       "value"
-      ],
-      "params": [
-       "82ebaa4b-AppendList",
-       "list"
-      ],
-      "SRC": [
-       "82ebaa4b-AppendList",
-       "DST"
-      ],
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      7976.484778404228,
-      965.9065217971812
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
     "eb8f9692-MakeMultilineString": {
      "name": "MakeMultilineString",
      "inputs": {
@@ -353,51 +323,11 @@
       "COND": null
      },
      "params": {
-      "value": "\n@pos.1 = @opos.1 + 3* sin(0.2*@opos.0 + 5*arg0)\n\n@vel.1 = 3*cos(0.2*@opos.0 +5*arg0)"
+      "value": "@pos.y = @opos.y + 3*sin(0.2*@opos.x + 2*$time)\n\n@vel.y = 6*cos(0.2*@opos.x +2*$time)"
      },
      "uipos": [
-      7645.566809654226,
-      1007.6369905471817
-     ],
-     "options": []
-    },
-    "ea3490aa-EmptyList": {
-     "name": "EmptyList",
-     "inputs": {
-      "SRC": [
-       "867c997c-GetFluidStepDT",
-       "DST"
-      ],
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      7032.428528404223,
-      1063.9224592971786
-     ],
-     "options": []
-    },
-    "9334d5a2-AppendList": {
-     "name": "AppendList",
-     "inputs": {
-      "list": [
-       "ea3490aa-EmptyList",
-       "list"
-      ],
-      "object": [
-       "254eb13a-GetTime",
-       "time"
-      ],
-      "SRC": [
-       "254eb13a-GetTime",
-       "DST"
-      ],
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      7405.598059654228,
-      1174.2932405471802
+      7267.616809654225,
+      970.4369905471814
      ],
      "options": []
     },
@@ -441,30 +371,6 @@
      "uipos": [
       -582.0,
       650.0
-     ],
-     "options": []
-    },
-    "82ebaa4b-AppendList": {
-     "name": "AppendList",
-     "inputs": {
-      "list": [
-       "9334d5a2-AppendList",
-       "list"
-      ],
-      "object": [
-       "e9cedb10-PortalOut",
-       "port"
-      ],
-      "SRC": [
-       "9334d5a2-AppendList",
-       "DST"
-      ],
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      7650.3207159042295,
-      1302.9690217971802
      ],
      "options": []
     },
@@ -668,16 +574,13 @@
     "254eb13a-GetTime": {
      "name": "GetTime",
      "inputs": {
-      "SRC": [
-       "ea3490aa-EmptyList",
-       "DST"
-      ],
+      "SRC": null,
       "COND": null
      },
      "params": {},
      "uipos": [
-      7128.498860435475,
-      1223.429783515927
+      7108.498860435475,
+      1304.6797835159268
      ],
      "options": []
     },
@@ -691,8 +594,8 @@
       "name": "waveGen"
      },
      "uipos": [
-      7375.231665611264,
-      967.4996614456164
+      7505.231665611264,
+      998.4796614456162
      ],
      "options": []
     },
@@ -785,21 +688,6 @@
      "uipos": [
       3924.0,
       -21.0
-     ],
-     "options": []
-    },
-    "e9cedb10-PortalOut": {
-     "name": "PortalOut",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "step_dt"
-     },
-     "uipos": [
-      7358.614990234376,
-      1354.10498046875
      ],
      "options": []
     },
@@ -1176,7 +1064,7 @@
      "name": "makeCollision",
      "inputs": {
       "dynamicShape": [
-       "ae1dc917-ParticlesWrangle",
+       "be1f0ad7-ParticlesWrangle",
        "prim"
       ],
       "StaticSDF": [
@@ -1299,8 +1187,8 @@
     "d266dd89-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      6833.783499999999,
-      868.0079999999996
+      6835.673499999997,
+      862.1499999999996
      ],
      "special": true,
      "width": 1481.2499999999982,
@@ -1404,12 +1292,64 @@
      "options": [
       "ONCE"
      ]
+    },
+    "c0a65757-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": null,
+      "COND": null,
+      "time": [
+       "254eb13a-GetTime",
+       "time"
+      ]
+     },
+     "params": {
+      "_KEYS": "time"
+     },
+     "uipos": [
+      7653.75,
+      1243.7500000000002
+     ],
+     "options": [],
+     "socket_keys": [
+      "time"
+     ]
+    },
+    "be1f0ad7-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "81bd1750-PortalOut",
+       "port"
+      ],
+      "zfxCode": [
+       "eb8f9692-MakeMultilineString",
+       "value"
+      ],
+      "params": [
+       "c0a65757-MakeDict",
+       "dict"
+      ],
+      "SRC": [
+       "867c997c-GetFluidStepDT",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      7969.0,
+      1065.0
+     ],
+     "options": [
+      "VIEW"
+     ]
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": 12870,
-    "trans_y": 592
+    "scale": 1.953125,
+    "trans_x": 8721,
+    "trans_y": 1000
    }
   },
   "FLIPSimTemplate": {
@@ -2248,8 +2188,8 @@
    },
    "view": {
     "scale": 1.25,
-    "trans_x": 12980,
-    "trans_y": -3178
+    "trans_x": 12093,
+    "trans_y": -3175
    }
   },
   "makeCollision": {
@@ -3465,21 +3405,6 @@
     "CompressibleFlow"
    ]
   },
-  "ConditionedDo": {
-   "inputs": [
-    "True",
-    "False",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "control"
-   ]
-  },
   "CutCellWeight": {
    "inputs": [
     "LiquidSDF",
@@ -3509,6 +3434,39 @@
    "params": [],
    "categories": [
     "CompressibleFlow"
+   ]
+  },
+  "DictGetItem": {
+   "inputs": [
+    "dict",
+    "key",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "object",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictSetItem": {
+   "inputs": [
+    "dict",
+    "key",
+    "object",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
    ]
   },
   "DictSize": {
@@ -3554,21 +3512,6 @@
     "list"
    ]
   },
-  "EndBranch": {
-   "inputs": [
-    "BranchIn",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "Branch",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "control"
-   ]
-  },
   "EndFor": {
    "inputs": [
     "FOR",
@@ -3597,63 +3540,8 @@
     "fileio"
    ]
   },
-  "EndIF": {
+  "ExitProcess": {
    "inputs": [
-    "IF",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "control"
-   ]
-  },
-  "EquationOfStateConfig": {
-   "inputs": [
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "Model",
-    "DST"
-   ],
-   "params": [
-    [
-     "float",
-     "density",
-     "1e3"
-    ],
-    [
-     "float",
-     "volume",
-     "1"
-    ],
-    [
-     "float",
-     "bulk_modulus",
-     "1e4"
-    ],
-    [
-     "float",
-     "gamma",
-     "7"
-    ],
-    [
-     "float",
-     "viscosity",
-     "0.01"
-    ]
-   ],
-   "categories": [
-    "constitutive_model"
-   ]
-  },
-  "ExpandPartition": {
-   "inputs": [
-    "ZSPartition",
     "SRC",
     "COND"
    ],
@@ -3663,17 +3551,12 @@
    "params": [
     [
      "int",
-     "lo",
-     "0"
-    ],
-    [
-     "int",
-     "hi",
-     "1"
+     "status",
+     "-1"
     ]
    ],
    "categories": [
-    "GPUMPM"
+    "debug"
    ]
   },
   "ExportObjMesh": {
@@ -3759,12 +3642,10 @@
   "ExtractDict": {
    "inputs": [
     "dict",
-    "key",
     "SRC",
     "COND"
    ],
    "outputs": [
-    "object",
     "DST"
    ],
    "params": [],
@@ -3830,21 +3711,6 @@
     "FLIPSolver"
    ]
   },
-  "FalseBranch": {
-   "inputs": [
-    "condition",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "Branch",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "control"
-   ]
-  },
   "FieldAddVector": {
    "inputs": [
     "invec3",
@@ -3859,41 +3725,6 @@
    "params": [],
    "categories": [
     "FLIPSolver"
-   ]
-  },
-  "FixedCorotatedConfig": {
-   "inputs": [
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "Model",
-    "DST"
-   ],
-   "params": [
-    [
-     "float",
-     "density",
-     "1e3"
-    ],
-    [
-     "float",
-     "volume",
-     "1"
-    ],
-    [
-     "float",
-     "youngs_modulus",
-     "1e4"
-    ],
-    [
-     "float",
-     "poisson_ratio",
-     "0.4"
-    ]
-   ],
-   "categories": [
-    "constitutive_model"
    ]
   },
   "FluidReseed": {
@@ -3931,22 +3762,52 @@
     "Molecular"
    ]
   },
-  "G2P": {
+  "FuncBegin": {
    "inputs": [
-    "dt",
-    "ZSModel",
-    "ZSParticles",
-    "ZSGrid",
-    "ZSPartition",
+    "extraArgs",
     "SRC",
     "COND"
    ],
    "outputs": [
+    "args",
+    "FUNC",
     "DST"
    ],
    "params": [],
    "categories": [
-    "simulation"
+    "functional"
+   ]
+  },
+  "FuncCall": {
+   "inputs": [
+    "function",
+    "args",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "rets",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "FuncEnd": {
+   "inputs": [
+    "rets",
+    "FUNC",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "function",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "functional"
    ]
   },
   "G2PAdvectorSheetty": {
@@ -4166,58 +4027,16 @@
     "openvdb"
    ]
   },
-  "GridFromPartition": {
+  "IfElse": {
    "inputs": [
-    "ZSGrid",
-    "ZSPartition",
+    "true",
+    "false",
+    "cond",
     "SRC",
     "COND"
    ],
    "outputs": [
-    "DST"
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "1"
-    ]
-   ],
-   "categories": [
-    "GPUMPM"
-   ]
-  },
-  "GridUpdate": {
-   "inputs": [
-    "dt",
-    "ZSPartition",
-    "ZSGrid",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "MaxVelSqr",
-    "DST"
-   ],
-   "params": [
-    [
-     "float",
-     "gravity",
-     "-9.8"
-    ]
-   ],
-   "categories": [
-    "GPUMPM"
-   ]
-  },
-  "IF": {
-   "inputs": [
-    "condition",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "Then",
+    "result",
     "DST"
    ],
    "params": [],
@@ -4434,6 +4253,20 @@
     "CompressibleFlow"
    ]
   },
+  "MakeDict": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
   "MakeGCTest": {
    "inputs": [
     "SRC",
@@ -4447,36 +4280,11 @@
     [
      "int",
      "value",
-     "0"
+     "42"
     ]
    ],
    "categories": [
     "debug"
-   ]
-  },
-  "MakeGrid": {
-   "inputs": [
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "ZSGrid",
-    "DST"
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "1"
-    ],
-    [
-     "int",
-     "count",
-     "1"
-    ]
-   ],
-   "categories": [
-    "GPUMPM"
    ]
   },
   "MakeMPMMehser": {
@@ -4534,27 +4342,7 @@
    ],
    "params": [],
    "categories": [
-    "mathematica"
-   ]
-  },
-  "MakePartition": {
-   "inputs": [
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "ZSPartition",
-    "DST"
-   ],
-   "params": [
-    [
-     "int",
-     "count",
-     "1"
-    ]
-   ],
-   "categories": [
-    "GPUMPM"
+    "math"
    ]
   },
   "MakePrimitive": {
@@ -4569,45 +4357,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "MakeSmallDict": {
-   "inputs": [
-    "obj0",
-    "obj1",
-    "obj2",
-    "obj3",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "dict",
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "name0",
-     "obj0"
-    ],
-    [
-     "string",
-     "name1",
-     "obj1"
-    ],
-    [
-     "string",
-     "name2",
-     "obj2"
-    ],
-    [
-     "string",
-     "name3",
-     "obj3"
-    ]
-   ],
-   "categories": [
-    "dict"
    ]
   },
   "MakeSmallList": {
@@ -5023,60 +4772,6 @@
     "numeric"
    ]
   },
-  "OutputZensimParticles": {
-   "inputs": [
-    "ZensimParticles",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "ZensimGeometry"
-   ]
-  },
-  "P2G": {
-   "inputs": [
-    "dt",
-    "ZSModel",
-    "ZSParticles",
-    "ZSGrid",
-    "ZSPartition",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "simulation"
-   ]
-  },
-  "PairZensimParticles": {
-   "inputs": [
-    "ZSParticlesA",
-    "ZSParticlesB",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "ZensimParticleList",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "ZensimGeometry"
-   ]
-  },
   "ParticleAddDV": {
    "inputs": [
     "Particles",
@@ -5248,7 +4943,7 @@
    ],
    "params": [],
    "categories": [
-    "mathematica"
+    "math"
    ]
   },
   "PolyDuplicate": {
@@ -5918,6 +5613,25 @@
     "primitive"
    ]
   },
+  "PrintMessage": {
+   "inputs": [
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "hello"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
   "PrintNumeric": {
    "inputs": [
     "value",
@@ -6069,22 +5783,6 @@
    "params": [],
    "categories": [
     "openvdb"
-   ]
-  },
-  "ResolveBoundaryOnGrid": {
-   "inputs": [
-    "ZSPartition",
-    "ZSGrid",
-    "ZSBoundary",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "GPUMPM"
    ]
   },
   "RigidGetPressureForce": {
@@ -6356,32 +6054,6 @@
     "Molecular"
    ]
   },
-  "SpatialPartitionForParticles": {
-   "inputs": [
-    "ZSPartition",
-    "ZSParticles",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "1"
-    ],
-    [
-     "int",
-     "block_side_length",
-     "4"
-    ]
-   ],
-   "categories": [
-    "GPUMPM"
-   ]
-  },
   "SprayParticles": {
    "inputs": [
     "TrianglePrim",
@@ -6407,6 +6079,24 @@
    ],
    "categories": [
     "primitive"
+   ]
+  },
+  "StringToMesh": {
+   "inputs": [
+    "string",
+    "AZmesh",
+    "spacing",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "StringMeshList",
+    "SpacingList",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zelloWorld"
    ]
   },
   "SubCategory": {
@@ -6515,52 +6205,6 @@
     "FLIPSolver"
    ]
   },
-  "ToParticleObject": {
-   "inputs": [
-    "ZSParticles",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "pars",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "ZensimGeometry"
-   ]
-  },
-  "ToZensimLevelSet": {
-   "inputs": [
-    "VDBFloatGrid",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "ZSLevelSet",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "GPUMPM"
-   ]
-  },
-  "ToZensimParticles": {
-   "inputs": [
-    "ZSModel",
-    "ParticleObject",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "ZensimParticles",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "ZensimGeometry"
-   ]
-  },
   "TransformMesh": {
    "inputs": [
     "mesh",
@@ -6598,21 +6242,6 @@
     "primitive"
    ]
   },
-  "TrueBranch": {
-   "inputs": [
-    "condition",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "Branch",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "control"
-   ]
-  },
   "UnpackNumericVec": {
    "inputs": [
     "vec",
@@ -6631,21 +6260,20 @@
     "numeric"
    ]
   },
-  "UpdateDict": {
+  "VDBDilateTopo": {
    "inputs": [
-    "dict",
-    "key",
-    "object",
+    "inField",
+    "layers",
     "SRC",
     "COND"
    ],
    "outputs": [
-    "dict",
+    "oField",
     "DST"
    ],
    "params": [],
    "categories": [
-    "dict"
+    "openvdb"
    ]
   },
   "VDBRenormalizeSDF": {
@@ -6671,6 +6299,23 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "VDBWrangle": {
+   "inputs": [
+    "grid",
+    "zfxCode",
+    "params",
+    "SRC",
+    "COND"
+   ],
+   "outputs": [
+    "grid",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
    ]
   },
   "Vec3FieldExtrapolate": {
@@ -6903,27 +6548,6 @@
    ],
    "categories": [
     "openvdb"
-   ]
-  },
-  "ZensimBoundary": {
-   "inputs": [
-    "ZSLevelSet",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "ZSBoundary",
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "type",
-     "sticky"
-    ]
-   ],
-   "categories": [
-    "GPUMPM"
    ]
   },
   "makeCompressibleSim": {
