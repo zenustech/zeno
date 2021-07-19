@@ -745,43 +745,56 @@ class QDMGraphicsSocket(QGraphicsItem):
         for edge in list(self.edges):
             edge.remove()
 
-
-class QDMGraphicsButton(QGraphicsProxyWidget):
-    class QDMLabel(QLabel):
-        def __init__(self):
-            super().__init__()
-            font = QFont()
-            font.setPointSize(style['button_text_size'])
-            self.setFont(font)
-            self.setAlignment(Qt.AlignCenter)
-
-        def mousePressEvent(self, event):
-            self.parent.on_click()
-            super().mousePressEvent(event)
-
-    def __init__(self, parent=None):
+class QDMGraphicsButton(QGraphicsItem):
+    def __init__(self, parent):
         super().__init__(parent)
 
-        self.widget = self.QDMLabel()
-        self.widget.parent = self
-        self.setWidget(self.widget)
+        self.node = parent
+        self.name = None
+
+        self.initLabel()
         self.setChecked(False)
 
-    def on_click(self):
-        self.setChecked(not self.checked)
+    def initLabel(self):
+        self.label = QGraphicsTextItem(self)
+        self.label.setPos(0, -TEXT_HEIGHT * 0.45)
+        font = QFont()
+        font.setPointSize(style['socket_text_size'])
+        self.label.setFont(font)
+
+        document = self.label.document()
+        option = document.defaultTextOption()
+        option.setAlignment(Qt.AlignCenter)
+        document.setDefaultTextOption(option)
+
+    def setText(self, name):
+        self.name = name
+        self.label.setPlainText(name)
+
+    def getCircleBounds(self):
+        return (0, -SOCKET_RADIUS, self._width, self._height)
+
+    def boundingRect(self):
+        return QRectF(*self.getCircleBounds()).normalized()
+
+    def paint(self, painter, styleOptions, widget=None):
+        button_color = 'button_selected_color' if self.checked else 'button_color'
+        painter.fillRect(*self.getCircleBounds(), QColor(style[button_color]))
 
     def setChecked(self, checked):
         self.checked = checked
-        if self.checked:
-            self.widget.setStyleSheet('background-color: {}; color: {}'.format(
-                style['button_selected_color'], style['button_selected_text_color']))
-        else:
-            self.widget.setStyleSheet('background-color: {}; color: {}'.format(
-                style['button_color'], style['button_text_color']))
 
-    def setText(self, text):
-        self.widget.setText(text)
+        text_color = 'button_selected_text_color' if self.checked else 'button_text_color'
+        self.label.setDefaultTextColor(QColor(style[text_color]))
 
+    def setWidthHeight(self, width, height):
+        self._width = width
+        self._height = height
+        self.label.setTextWidth(width)
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        self.setChecked(not self.checked)
 
 class QDMCollapseButton(QSvgWidget):
     def __init__(self, parent=None):
@@ -1072,8 +1085,8 @@ class QDMGraphicsNode(QGraphicsItem):
             M = HORI_MARGIN * 0.2
             H = TEXT_HEIGHT * 0.9
             W = self.width / len(cond_keys)
-            rect = QRectF(W * i + M, -TEXT_HEIGHT * 2.3, W - M * 2, H)
-            button.setGeometry(rect)
+            button.setPos(W * i + M, -TEXT_HEIGHT * 1.8)
+            button.setWidthHeight(W - M * 2, H)
             button.setText(key)
             self.options[key] = button
 
