@@ -9,6 +9,7 @@
 float velx[NX * NY];
 float vely[NX * NY];
 float mass[NX * NY];
+int mask[NX * NY];
 
 float f_old[9][NX * NY];
 float f_new[9][NX * NY];
@@ -18,6 +19,7 @@ int dely[9];
 
 int dirx[9] = {1,0,-1,0,1,-1,-1,1,0};
 int diry[9] = {0,1,0,-1,1,1,-1,-1,0};
+int inverse_index[9] = {2,3,0,1,6,7,4,5,8};
 float weis[9] = {1.0/9.0,1.0/9.0,1.0/9.0,1.0/9.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0,4.0/9.0};
 
 const float niu = 0.01f;
@@ -38,8 +40,16 @@ void initialize() {
     for (int y = 0; y < NY; y++) for (int x = 0; x < NX; x++) {
         int p = y * NX + x;
         mass[p] = 1.f;
-        velx[p] = 0.f;
+        velx[p] = 0.1f;
         vely[p] = 0.f;
+        if (x == 0 || y == 0 || x == NX - 1 || y == NY - 1) {
+            mask[p] = 1;
+        }
+        int dx = x - NY * 3 / 4;
+        int dy = y - NY / 2;
+        if (dx * dx + dy * dy < NY * NY / 50) {
+            //mask[p] = 0;
+        }
     }
     for (int y = 0; y < NY; y++) for (int x = 0; x < NX; x++) {
         int p = y * NX + x;
@@ -56,6 +66,7 @@ void compute_macro() {
 #pragma omp parallel for
     for (int y = 0; y < NY; y++) for (int x = 0; x < NX; x++) {
         int p = y * NX + x;
+        if (mask[p] > 0) continue;
         float m = 0.f;
         float u = 0.f;
         float v = 0.f;
@@ -78,6 +89,7 @@ void do_collide() {
 #pragma omp parallel for
     for (int y = 0; y < NY; y++) for (int x = 0; x < NX; x++) {
         int p = y * NX + x;
+        if (mask[p] > 0) continue;
         for (int q = 0; q < 9; q++) {
             int ps = (y + dely[q]) % NY * NX + (x + delx[q]) % NX;
             f_new[q][ps] = f_old[q][ps] * (1.f - inv_tau) + f_eq(q, p) * inv_tau;
@@ -88,8 +100,8 @@ void do_collide() {
 void do_stream() {
     memcpy(f_old, f_new, sizeof(f_new));
     for (int q = 0; q < 9; q++) {
-        delx[q] = (delx[q] + dirx[q] + NX) % NX;
-        dely[q] = (dely[q] + diry[q] + NY) % NY;
+        delx[q] = (delx[q] - dirx[q] + NX) % NX;
+        dely[q] = (dely[q] - diry[q] + NY) % NY;
     }
 }
 
@@ -104,30 +116,44 @@ void fixup_bc(int x, int y, int xm, int ym) {
     mass[p] = mass[pm];
 }
 
+void bounce_bc(int x, int y, int q) {
+    int ps = ((y + dely[q]) % NY) * NX + (x + delx[q]) % NX;
+    int iq = inverse_index[q];
+    int iqs = ((y + dely[iq]) % NY) * NX + (x + delx[iq]) % NX;
+    f_old[q][ps] = f_old[iq][iqs];
+}
+
 void apply_bc() {
     for (int y = 0; y < NY; y++) for (int x = 0; x < 1; x++) {
         int p = y * NX + x;
         velx[p] = 0.1f;
         vely[p] = 0.0f;
-        fixup_bc(x, y, x + 1, y);
+        //fixup_bc(x, y, x + 1, y);
     }
     for (int y = 0; y < NY; y++) for (int x = NX - 1; x < NX; x++) {
-        int p = y * NX + x;
-        velx[p] = 0.0f;
-        vely[p] = 0.0f;
-        fixup_bc(x, y, x - 1, y);
     }
-    for (int y = 0; y < 1; y++) for (int x = 0; x < 1; x++) {
+    for (int y = 1; y < 2; y++) for (int x = 0; x < NX; x++) {
         int p = y * NX + x;
         velx[p] = 0.0f;
         vely[p] = 0.0f;
-        fixup_bc(x, y, x, y + 1);
+        bounce_bc(x, y, 1);
     }
-    for (int y = NY - 1; y < NY; y++) for (int x = 0; x < NX; x++) {
+    for (int y = NY - 2; y < NY - 1; y++) for (int x = 0; x < NX; x++) {
         int p = y * NX + x;
         velx[p] = 0.0f;
         vely[p] = 0.0f;
-        fixup_bc(x, y, x, y - 1);
+        bounce_bc(x, y, 3);
+    }
+#pragma omp parallel for
+    for (int y = 0; y < NY; y++) for (int x = 0; x < NX; x++) {
+        int p = y * NX + x;
+        int dx = x - NY * 3 / 4;
+        int dy = y - NY / 2;
+        if (dx * dx + dy * dy < NY * NY / 50) {
+            velx[p] = 0.0f;
+            vely[p] = 0.0f;
+            //fixup_bc(x, y, x + (dx > 0 ? 1 : -1), y + (dy > 0 ? 1 : -1));
+        }
     }
 }
 
@@ -141,8 +167,8 @@ void do_render() {
         float v = vely[p];
         float m = mass[p];
         (void)u, (void)v, (void)m;
-        //float c = 4.f * sqrtf(u * u + v * v);
-        float c = .5f * m;
+        float c = 4.f * sqrtf(u * u + v * v);
+        //float c = .5f * m;
         pixels[p] = c;
     }
     printf("%f\n", pixels[3 * NX + 3]);
@@ -153,7 +179,7 @@ void initFunc() {
 }
 
 void renderFunc() {
-    for (int s = 0; s < 20; s++) {
+    for (int s = 0; s < 30; s++) {
         do_collide();
         do_stream();
         compute_macro();
@@ -168,7 +194,7 @@ void displayFunc() {
     glFlush();
 }
 
-#define ITV 1
+#define ITV 0
 void timerFunc(int unused) {
     (void)unused;
     renderFunc();
