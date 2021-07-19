@@ -45,6 +45,14 @@ std::tuple
 #endif
 
 #ifdef ZFX_PRINT_IR
+    cout << "=== ControlCheck" << endl;
+#endif
+    apply_control_check(ir.get());
+#ifdef ZFX_PRINT_IR
+    ir->print();
+#endif
+
+#ifdef ZFX_PRINT_IR
     cout << "=== SymbolCheck" << endl;
 #endif
     apply_symbol_check(ir.get());

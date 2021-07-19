@@ -384,7 +384,7 @@ struct FrontendEndIfStmt : CtrlStmt<FrontendEndIfStmt> {
     }
 };
 
-struct GotoStmt : CtrlStmt<GotoStmt> {
+/*struct GotoStmt : CtrlStmt<GotoStmt> {
     GotoStmt
         ( int id_
         )
@@ -451,7 +451,7 @@ struct GofromStmt : CtrlStmt<GofromStmt> {
             , from->id
             );
     }
-};
+};*/
 
 struct AsmAssignStmt : AsmStmt<AsmAssignStmt> {
     int dst;

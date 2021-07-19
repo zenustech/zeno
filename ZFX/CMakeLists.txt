@@ -20,6 +20,7 @@ add_library(ZFX SHARED
 # ls {,include/zfx/}*{,/*}.{h,cpp} | grep -v main.cpp
 AST.h
 ConstParametrize.cpp
+ControlCheck.cpp
 EmitAssembly.cpp
 ExpandFunctions.cpp
 GlobalLocalize.cpp

@@ -5,6 +5,7 @@
 
 namespace zfx {
 
+void apply_control_check(IR *ir);
 void apply_symbol_check(IR *ir);
 void apply_type_check(IR *ir);
 std::unique_ptr<IR> apply_expand_functions(IR *ir);
