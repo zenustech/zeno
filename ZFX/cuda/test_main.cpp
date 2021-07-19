@@ -28,7 +28,11 @@ int main() {
     zfx::Options opts(zfx::Options::for_cuda);
     opts.define_symbol("@pos", 1);
     opts.define_param("$dt", 1);
-    std::string zfxcode("@pos = sin(@pos + $dt + 2.718)");
+    std::string zfxcode(R"(
+if (1)
+@pos = sin(@pos + $dt + 2.718)
+endif
+)");
     auto prog = compiler.compile(zfxcode, opts);
     auto jitcode = assembler.assemble(prog->assembly);
 
