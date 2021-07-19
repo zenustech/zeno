@@ -119,6 +119,10 @@ struct LowerAST {
             auto cond = serialize(ast->args[0].get());
             return ir->emplace_back<FrontendIfStmt>(cond);
 
+        } else if (contains({"elseif"}, ast->token) && ast->args.size() == 1) {
+            auto cond = serialize(ast->args[0].get());
+            return ir->emplace_back<FrontendElseIfStmt>(cond);
+
         } else if (contains({"endif"}, ast->token)) {
             return ir->emplace_back<FrontendEndIfStmt>();
 

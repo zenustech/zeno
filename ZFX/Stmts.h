@@ -384,6 +384,25 @@ struct FrontendEndIfStmt : CtrlStmt<FrontendEndIfStmt> {
     }
 };
 
+struct GotoStmt : CtrlStmt<GotoStmt> {
+    Statement *target;
+
+    AsmGotoStmt
+        ( int id_
+        , Statement *target
+        )
+        : AsmStmt(id_)
+        , target(target_)
+    {}
+
+    virtual std::string to_string() const override {
+        return format(
+            "Goto $%d"
+            , target->id
+            );
+    }
+};
+
 struct AsmAssignStmt : AsmStmt<AsmAssignStmt> {
     int dst;
     int src;

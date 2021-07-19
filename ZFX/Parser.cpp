@@ -114,7 +114,7 @@ struct Parser {
     }
 
     AST::Ptr parse_stmt(AST::Iter iter) {
-        if (auto ope = parse_operator(iter, {"if", "elif"}); ope) {
+        if (auto ope = parse_operator(iter, {"if", "elseif"}); ope) {
             if (auto cond = parse_expr(ope->iter)) {
                 return make_ast(ope->token, cond->iter, {std::move(cond)});
             } else {

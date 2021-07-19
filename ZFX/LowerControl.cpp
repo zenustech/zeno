@@ -1,6 +1,7 @@
 #include "IRVisitor.h"
 #include "Stmts.h"
 #include <functional>
+#include <stack>
 #include <map>
 
 namespace zfx {
@@ -16,12 +17,45 @@ struct LowerControl : Visitor<LowerControl> {
 
     std::unique_ptr<IR> ir = std::make_unique<IR>();
 
+    std::stack<std::function<void(Statement *)>> if_callbacks;
+
     void visit(FrontendIfStmt *stmt) {
-        ir->push_clone_back(stmt);
+        auto hole = ir->make_hole_back();
+        if_callbacks.push([=] (Statement *target) {
+            hole.place<GotoStmt>(target);  // todo: GotoIfStmt
+        });
+    }
+
+    void visit(FrontendElseIfStmt *stmt) {
+        if (!if_callbacks.size()) {
+            error("`elseif` without matching `if` at $%d", stmt->id);
+        }
+        auto &callback = if_callbacks.top();
+        callback(stmt);
+        auto hole = ir->make_hole_back();
+        callback = [=] (Statement *target) {
+            hole.place<GotoStmt>(target);  // todo: GotoIfStmt
+        };
+    }
+
+    void visit(FrontendElseStmt *stmt) {
+        if (!if_callbacks.size()) {
+            error("`else` without matching `if` at $%d", stmt->id);
+        }
+        auto &callback = if_callbacks.top();
+        callback(stmt);
+        auto hole = ir->make_hole_back();
+        callback = [=] (Statement *target) {
+            hole.place<GotoStmt>(target);
+        };
     }
 
     void visit(FrontendEndIfStmt *stmt) {
-        ir->push_clone_back(stmt);
+        if (!if_callbacks.size()) {
+            error("`endif` without matching `if` at $%d", stmt->id);
+        }
+        auto callback = if_callbacks.top(); if_callbacks.pop();
+        callback(stmt);
     }
 
     void visit(Statement *stmt) {

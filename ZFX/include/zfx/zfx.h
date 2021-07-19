@@ -13,8 +13,10 @@ namespace zfx {
 struct Options {
     bool const_parametrize = true;
     bool global_localize = true;
-    bool reassign_channels = true;
+    bool demote_control_flow = true;
     int arch_maxregs = 8;
+
+    bool reassign_channels = true;
 
     //Options() = default;
 
@@ -22,6 +24,7 @@ struct Options {
     Options(decltype(for_x64))
         : const_parametrize(true)
         , global_localize(true)
+        , demote_control_flow(true)
         , arch_maxregs(8)
     {}
 
@@ -29,6 +32,7 @@ struct Options {
     Options(decltype(for_cuda))
         : const_parametrize(false)
         , global_localize(false)
+        , demote_control_flow(false)
         , arch_maxregs(0)
     {}
 

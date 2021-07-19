@@ -92,6 +92,16 @@ std::tuple
     ir->print();
 #endif
 
+    if (options.demote_control_flow) {
+#ifdef ZFX_PRINT_IR
+        cout << "=== LowerControl" << endl;
+#endif
+        ir = apply_lower_control(ir.get());
+#ifdef ZFX_PRINT_IR
+        ir->print();
+#endif
+    }
+
 #ifdef ZFX_PRINT_IR
     cout << "=== ReassignParameters" << endl;
 #endif
@@ -134,6 +144,7 @@ std::tuple
 #endif
     }
 
+    // TODO: if (options.reassign_globals)
 #ifdef ZFX_PRINT_IR
     cout << "=== ReassignGlobals" << endl;
 #endif
