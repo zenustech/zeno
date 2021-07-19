@@ -17,49 +17,42 @@ struct LowerControl : Visitor<LowerControl> {
 
     std::unique_ptr<IR> ir = std::make_unique<IR>();
 
-    std::stack<std::function<void(Statement *)>> if_callbacks;
+    std::stack<Statement *> sources;
 
     void visit(FrontendIfStmt *stmt) {
         auto cond = ir->push_clone_back(stmt->cond);
-        auto hole = ir->make_hole_back();
-        if_callbacks.push([=] (Statement *target) {
-            hole.place<GotoIfStmt>(cond, target);
-        });
+        auto source = ir->emplace_back<GotoIfStmt>(cond);
+        sources.push(source);
     }
 
     void visit(FrontendElseIfStmt *stmt) {
-        if (!if_callbacks.size()) {
+        if (!sources.size()) {
             error("`elseif` without matching `if` at $%d", stmt->id);
         }
-        auto &callback = if_callbacks.top();
-        callback(stmt);
+        auto &source = sources.top();
+        if (!dynamic_cast<GotoIfStmt *>(source)) {
+            error("no `elseif` allowed after `else` at $%d", stmt->id);
+        }
+        ir->emplace_back<GofromStmt>(source);
         auto cond = ir->push_clone_back(stmt->cond);
-        auto hole = ir->make_hole_back();
-        callback = [=] (Statement *target) {
-            hole.place<GotoIfStmt>(cond, target);
-        };
+        source = ir->emplace_back<GotoIfStmt>(cond);
     }
 
     void visit(FrontendElseStmt *stmt) {
-        if (!if_callbacks.size()) {
+        if (!sources.size()) {
             error("`else` without matching `if` at $%d", stmt->id);
         }
-        auto &callback = if_callbacks.top();
-        auto label = ir->emplace_back<NoOperationStmt>();
-        callback(label);
-        auto hole = ir->make_hole_back();
-        callback = [=] (Statement *target) {
-            hole.place<GotoStmt>(target);
-        };
+        auto &source = sources.top();
+        ir->emplace_back<GofromStmt>(source);
+        source = ir->emplace_back<GotoStmt>();
     }
 
     void visit(FrontendEndIfStmt *stmt) {
-        if (!if_callbacks.size()) {
+        if (!sources.size()) {
             error("`endif` without matching `if` at $%d", stmt->id);
         }
-        auto callback = if_callbacks.top(); if_callbacks.pop();
-        auto label = ir->emplace_back<NoOperationStmt>();
-        callback(label);
+        auto source = sources.top(); sources.pop();
+        ir->emplace_back<GofromStmt>(source);
     }
 
     void visit(Statement *stmt) {
@@ -67,9 +60,9 @@ struct LowerControl : Visitor<LowerControl> {
     }
 
     void finish() {
-        if (if_callbacks.size()) {
+        if (sources.size()) {
             error("not terminated `if` block (remain %d levels)",
-                    if_callbacks.size());
+                    sources.size());
         }
     }
 };

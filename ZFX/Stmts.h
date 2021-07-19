@@ -4,25 +4,6 @@
 
 namespace zfx {
 
-struct NoOperationStmt : Stmt<NoOperationStmt> {
-    NoOperationStmt
-        ( int id_
-        )
-        : Stmt(id_)
-    {}
-
-    virtual StmtFields fields() override {
-        return {
-            };
-    }
-
-    virtual std::string to_string() const override {
-        return format(
-            "NoOperation"
-            );
-    }
-};
-
 struct UnaryOpStmt : Stmt<UnaryOpStmt> {
     std::string op;
     Statement *src;
@@ -404,55 +385,70 @@ struct FrontendEndIfStmt : CtrlStmt<FrontendEndIfStmt> {
 };
 
 struct GotoStmt : CtrlStmt<GotoStmt> {
-    Statement *target;
-
     GotoStmt
         ( int id_
-        , Statement *target_
         )
         : CtrlStmt(id_)
-        , target(target_)
     {}
 
     virtual StmtFields fields() override {
         return {
-            target
             };
     }
 
     virtual std::string to_string() const override {
         return format(
-            "Goto -> $%d"
-            , target->id
+            "-> Goto"
             );
     }
 };
 
-struct GotoIfStmt : CtrlStmt<GotoStmt> {
+struct GotoIfStmt : CtrlStmt<GotoIfStmt> {
     Statement *cond;
-    Statement *target;
 
     GotoIfStmt
         ( int id_
         , Statement *cond_
-        , Statement *target_
         )
         : CtrlStmt(id_)
         , cond(cond_)
-        , target(target_)
     {}
 
     virtual StmtFields fields() override {
         return {
             cond,
-            target,
             };
     }
 
     virtual std::string to_string() const override {
         return format(
-            "GotoIf $%d -> $%d"
-            , cond->id, target->id
+            "-> GotoIf $%d"
+            , cond->id
+            );
+    }
+};
+
+struct GofromStmt : CtrlStmt<GofromStmt> {
+    Statement *from;
+
+    GofromStmt
+        ( int id_
+        , Statement *from_
+        )
+        : CtrlStmt(id_)
+        , from(from_)
+    {}
+
+    virtual StmtFields fields() override {
+        return {
+            from,
+            };
+    }
+
+    virtual std::string to_string() const override {
+        return format(
+            "Gofrom <- $%d"
+            , from->id
             );
     }
 };
