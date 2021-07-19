@@ -9,6 +9,7 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         < AssignStmt
         , AsmBinaryOpStmt
         , AsmUnaryOpStmt
+        , AsmFuncCallStmt
         , AsmAssignStmt
         , AsmLoadConstStmt
         , AsmParamLoadStmt
@@ -54,12 +55,16 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         , "atan2"
         };
 
+    void visit(AsmFuncCallStmt *stmt) {
+        emit("%s %d %s", stmt->name.c_str(), stmt->dst,
+            format_join(" ", "%d", stmt->args).c_str());
+    }
+
     void visit(AsmUnaryOpStmt *stmt) {
         const char *opcode = [](auto const &op) {
             if (0) {
             } else if (op == "+") { return "mov";
             } else if (op == "-") { return "neg";
-            } else if (contains(maths, op)) { return op.c_str();
             } else { error("invalid unary op `%s`", op.c_str());
             }
         }(stmt->op);
@@ -75,7 +80,6 @@ struct EmitAssembly : Visitor<EmitAssembly> {
             } else if (op == "*") { return "mul";
             } else if (op == "/") { return "div";
             } else if (op == "%") { return "mod";
-            } else if (contains(maths, op)) { return op.c_str();
             } else { error("invalid binary op `%s`", op.c_str());
             }
         }(stmt->op);

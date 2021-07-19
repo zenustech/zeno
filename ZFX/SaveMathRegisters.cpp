@@ -8,8 +8,7 @@ namespace zfx {
 
 struct SaveMathRegisters : Visitor<SaveMathRegisters> {
     using visit_stmt_types = std::tuple
-        < AsmUnaryOpStmt
-        , AsmBinaryOpStmt
+        < AsmFuncCallStmt
         , Statement
         >;
 
