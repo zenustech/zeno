@@ -15,9 +15,7 @@ int main() {
     };
 #else
     std::string code(R"(
-if 1
-@pos.x = atan2(@pos.x, @clr)
-endif
+@pos.x = sin(@clr)
 )");
 #endif
 

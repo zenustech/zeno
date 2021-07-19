@@ -13,7 +13,8 @@ namespace zfx {
 
 struct MathFunctions : Visitor<MathFunctions> {
     using visit_stmt_types = std::tuple
-        < FunctionCallStmt
+        < UnaryOpStmt
+        , BinaryOpStmt
         , Statement
         >;
 
@@ -58,12 +59,15 @@ struct MathFunctions : Visitor<MathFunctions> {
             return r;
 
         } else {
-            error("invalid function name `%s` (with %d args)", name.c_str(), args.size());
+            return nullptr;
         }
     }
 
-    void visit(FunctionCallStmt *stmt) {
-        auto new_stmt = emit_op(stmt->name, stmt->args);
+    void visit(UnaryOpStmt *stmt) {
+        auto new_stmt = emit_op(stmt->op, {stmt->src});
+        if (!new_stmt) {
+            return visit((Statement *)stmt);
+        }
         ir->mark_replacement(stmt, new_stmt);
     }
 
