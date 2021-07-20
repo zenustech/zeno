@@ -68,7 +68,7 @@ struct ResolveBoundaryOnGrid : zeno::INode {
           // fmt::print("projecting {} grid blocks\n", partition.size());
           using Grid = zs::remove_cvref_t<decltype(grid)>;
           cudaPol({(std::size_t)partition.size(),
-                   (std::size_t)Grid::block_t::space},
+                   (std::size_t)Grid::block_t::space()},
                   zs::ApplyBoundaryConditionOnGridBlocks{
                       zs::wrapv<zs::execspace_e::cuda>{}, collider, partition,
                       grid});

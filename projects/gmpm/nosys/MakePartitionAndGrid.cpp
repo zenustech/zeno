@@ -1,7 +1,7 @@
 #include "../ZensimContainer.h"
 #include "../ZensimGeometry.h"
 #include "../ZensimObject.h"
-
+#include <zeno/NumericObject.h>
 namespace zeno {
 
 struct MakePartition : zeno::INode {
@@ -24,6 +24,10 @@ static int defMakePartition = zeno::defNodeClass<MakePartition>(
 struct MakeGrid : zeno::INode {
   void apply() override {
     auto dx = std::get<float>(get_param("dx"));
+    if(has_input("Dx"))
+    {
+      dx = get_input("Dx")->as<NumericObject>()->get<float>();
+    }
     auto cnt = std::get<int>(get_param("count"));
     using GridT = zs::GridBlocks<zs::GridBlock<zs::dat32, 3, 2, 2>>;
     GridT gridblocks{dx, cnt, zs::memsrc_e::um, 0};
@@ -35,7 +39,7 @@ struct MakeGrid : zeno::INode {
 };
 
 static int defMakeGrid = zeno::defNodeClass<MakeGrid>(
-    "MakeGrid", {/* inputs: */ {},
+    "MakeGrid", {/* inputs: */ {"Dx"},
                  /* outputs: */ {"ZSGrid"},
                  /* params: */ {{"float", "dx", "1"}, {"int", "count", "1"}},
                  /* category: */ {"GPUMPM"}});
