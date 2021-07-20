@@ -13,7 +13,7 @@ struct ParamMaxCounter : Visitor<ParamMaxCounter> {
     int nuniforms = 0;
 
     void visit(AsmParamLoadStmt *stmt) {
-        nuniforms = std::max(nuniforms, stmt->mem);
+        nuniforms = std::max(nuniforms, stmt->mem + 1);
     }
 };
 

@@ -14,11 +14,11 @@ struct GlobalMaxCounter : Visitor<GlobalMaxCounter> {
     int nglobals = 0;
 
     void visit(AsmGlobalLoadStmt *stmt) {
-        nglobals = std::max(nglobals, stmt->mem);
+        nglobals = std::max(nglobals, stmt->mem + 1);
     }
 
     void visit(AsmGlobalStoreStmt *stmt) {
-        nglobals = std::max(nglobals, stmt->mem);
+        nglobals = std::max(nglobals, stmt->mem + 1);
     }
 };
 
