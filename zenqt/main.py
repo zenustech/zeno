@@ -4,7 +4,7 @@ from PySide2.QtWidgets import *
 
 import sys
 
-from .mainwindow import MainWindow
+from .window import MainWindow
 from .utils import asset_path
 
 
