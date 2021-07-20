@@ -13,12 +13,12 @@ from PySide2.QtSvg import *
 from zenutils import go, gen_unique_ident
 from zeno import launch
 
-from .. import asset_path
+from ..utils import asset_path
 
 CURR_VERSION = 'v1'
 MAX_STACK_LENGTH = 100
 
-from ._editor_misc import *
+from .misc import *
 
 
 class QDMGraphicsScene(QGraphicsScene):
@@ -409,11 +409,10 @@ SOCKET_RADIUS = style['socket_radius']
 BEZIER_FACTOR = 0.5
 
 
-from ._editor_edge import *
-from ._editor_blackboard import *
-from ._editor_param import *
-from ._editor_node_misc import *
-from ._editor_node import *
-from ._editor_nodeeditor import *
-
-from .nodepref import *
+from .edge import *
+from .blackboard import *
+from .param import *
+from .socket import *
+from .node import *
+from .window import *
+from .makedict import *

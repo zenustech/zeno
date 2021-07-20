@@ -6,7 +6,7 @@ from .viewport import ViewportWidget
 from .timeline import TimelineWidget
 from .editor import NodeEditor
 
-from . import asset_path
+from .utils import asset_path
 
 class EditorTimeline(QWidget):
     def __init__(self, parent=None):
