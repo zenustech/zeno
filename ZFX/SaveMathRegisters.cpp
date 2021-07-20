@@ -21,7 +21,7 @@ struct SaveMathRegisters : Visitor<SaveMathRegisters> {
         std::stack<std::function<void()>> callbacks;
         for (auto const &[regid, reginfo]: regusage) {
             bool found = false;
-            for (auto const &[beg, end]: reginfo) {
+            for (auto const &[beg, end]: reginfo) {  // TODO: this sounds O(N*N), optimize it with lut
                 if (beg < stmt->id && end > stmt->id) {
                     found = true;
                     break;

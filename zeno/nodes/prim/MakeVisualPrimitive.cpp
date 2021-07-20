@@ -48,10 +48,10 @@ struct MakeVisualAABBPrimitive : INode {
             prim->lines[11] = vec2i(3, 7);
         } else if (connType == 3) {
             prim->tris.resize(12);
-            // TODO
+            // TODO: impl triface aabb
         } else if (connType == 4) {
             prim->quads.resize(6);
-            // TODO
+            // TODO: impl quadface aabb
         }
 
         set_output("prim", std::move(prim));

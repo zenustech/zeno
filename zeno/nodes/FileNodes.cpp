@@ -32,9 +32,9 @@ ZENDEFNODE(MakeMultilineString, {
     {"fileio"},
 });
 
-static int objid = 0;
+/*static int objid = 0;
 
-struct ExportPath : zeno::INode {  // TODO: deprecated
+struct ExportPath : zeno::INode {  // deprecated
     virtual void apply() override {
         char buf[100];
         auto ext = get_param<std::string>("ext");
@@ -59,7 +59,7 @@ ZENDEFNODE(ExportPath, {
     {"fileio"},
 });
 
-struct EndFrame : zeno::INode {  // TODO: deprecated
+struct EndFrame : zeno::INode {  // deprecated
     virtual void apply() override {
         char buf[100];
         sprintf(buf, "%06d", zeno::state.frameid);
@@ -79,4 +79,4 @@ ZENDEFNODE(EndFrame, {
     {},
     {},
     {"fileio"},
-});
+});*/

@@ -3,14 +3,15 @@ import tempfile
 import threading
 import atexit
 import shutil
+import subprocess
+import json
+import sys
 import os
-from . import run
 from multiprocessing import Process
 
 
 g_proc = None
 g_iopath = None
-g_lock = threading.Lock()
 
 
 def killProcess():
@@ -18,24 +19,9 @@ def killProcess():
     if g_proc is None:
         print('worker process is not running')
         return
-    g_proc.terminate()
+    g_proc.kill()
     g_proc = None
     print('worker process killed')
-
-
-def _launch_mproc(func, *args):
-    global g_proc
-    if g_proc is not None:
-        killProcess()
-    if os.environ.get('ZEN_SPROC'):
-        func(*args)
-    else:
-        g_proc = Process(target=func, args=tuple(args), daemon=True)
-        g_proc.start()
-        g_proc.join()
-        if g_proc is not None:
-            print('worker processed exited with', g_proc.exitcode)
-        g_proc = None
 
 
 @atexit.register
@@ -47,16 +33,33 @@ def cleanIOPath():
         shutil.rmtree(iopath, ignore_errors=True)
 
 
-def launchScene(scene, nframes):
+def launchProgram(prog, nframes):
     global g_iopath
+    global g_proc
+    killProcess()
     cleanIOPath()
     g_iopath = tempfile.mkdtemp(prefix='zenvis-')
     print('IOPath:', g_iopath)
-    _launch_mproc(run.runScene, scene, nframes, g_iopath)
+    if os.environ.get('ZEN_USEFORK'):
+        from . import run
+        _launch_mproc(run.runScene, prog['graph'], nframes, g_iopath)
+    else:
+        filepath = os.path.join(g_iopath, 'prog.zsg')
+        with open(filepath, 'w') as f:
+            json.dump(prog, f)
+        g_proc = subprocess.Popen([sys.executable, '-m', 'zeno', filepath, str(nframes), g_iopath])
+        retcode = g_proc.wait()
+        if retcode != 0:
+            print('zeno program exited with error code:', retcode)
 
 
 def getDescriptors():
-    descs = run.dumpDescriptors()
+    if os.environ.get('ZEN_USEFORK'):
+        from . import run
+        descs = run.dumpDescriptors()
+    else:
+        descs = subprocess.check_output([sys.executable, '-m', 'zeno', '--dump-descs'])
+        descs = descs.split(b'==<DESCS>==')[1].decode()
     descs = descs.splitlines()
     descs = [parse_descriptor_line(line) for line in descs if line.startswith('DESC:')]
     descs = {name: desc for name, desc in descs}
@@ -92,6 +95,6 @@ def parse_descriptor_line(line):
 
 __all__ = [
     'getDescriptors',
-    'launchScene',
+    'launchProgram',
     'killProcess',
 ]

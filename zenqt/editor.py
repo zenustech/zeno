@@ -416,5 +416,4 @@ from ._editor_node_misc import *
 from ._editor_node import *
 from ._editor_nodeeditor import *
 
-
 from .nodepref import *
