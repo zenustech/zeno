@@ -22,7 +22,7 @@ def runScene(graphs, nframes, iopath):
         if 'special' in data:
             continue
         options = data['options']
-        if 'OUT' in options or 'VIEW' in options:
+        if 'VIEW' in options:
             applies.append(ident)
 
     core.switchGraph('main')
