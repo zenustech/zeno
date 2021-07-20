@@ -50,11 +50,11 @@ ZENAPI void INode::doComplete() {
 ZENAPI void INode::complete() {}
 
 ZENAPI bool INode::checkApplyCondition() {
-    if (has_input("COND")) {  // TODO: deprecate COND
+    /*if (has_input("COND")) {  // deprecated
         auto cond = get_input<zeno::ConditionObject>("COND");
         if (!cond->get())
             return false;
-    }
+    }*/
 
     if (has_option("ONCE")) {
         if (zeno::state.frameid != 0)
@@ -236,7 +236,7 @@ ZENAPI Descriptor::Descriptor(
   std::vector<std::string> const &categories)
   : inputs(inputs), outputs(outputs), params(params), categories(categories) {
     this->inputs.push_back("SRC");
-    this->inputs.push_back("COND");  // TODO: deprecate COND
+    //this->inputs.push_back("COND");  // deprecated
     this->outputs.push_back("DST");
 }
 

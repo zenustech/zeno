@@ -3,7 +3,7 @@
 #include <zeno/ConditionObject.h>
 #include <zeno/GlobalState.h>
 
-struct RunOnce : zeno::INode {  // TODO: deprecated
+/*struct RunOnce : zeno::INode {  // deprecated
     virtual void apply() override {
         bool yes = zeno::state.substepid == 0;
         auto obj = std::make_shared<zeno::ConditionObject>();
@@ -19,7 +19,7 @@ ZENDEFNODE(RunOnce, {
     {"frame"},
 });
 
-struct RunAfterFrame : zeno::INode {  // TODO: deprecated
+struct RunAfterFrame : zeno::INode {  // deprecated
     virtual void apply() override {
         bool yes = zeno::state.has_frame_completed || !zeno::state.time_step_integrated;
         auto obj = std::make_shared<zeno::ConditionObject>();
@@ -35,7 +35,7 @@ ZENDEFNODE(RunAfterFrame, {
     {"frame"},
 });
 
-struct RunBeforeFrame : zeno::INode {  // TODO: deprecated
+struct RunBeforeFrame : zeno::INode {  // deprecated
     virtual void apply() override {
         bool yes = !zeno::state.has_substep_executed;
         auto obj = std::make_shared<zeno::ConditionObject>();
@@ -49,7 +49,7 @@ ZENDEFNODE(RunBeforeFrame, {
     {"cond"},
     {},
     {"frame"},
-});
+});*/
 
 
 struct SetFrameTime : zeno::INode {
