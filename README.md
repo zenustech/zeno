@@ -251,16 +251,17 @@ to enable it.
 
 #### ZenoFX
 
-You need to update git submodules before building @archibate's ZenoFX.
-To do so:
-```bash
-git submodule update --init --recursive
-```
-Then:
+You need to turn on two flags to enable ZenoFX build:
 ```bash
 cmake -B build -DZENO_BUILD_ZFX:BOOL=ON -DEXTENSION_ZenoFX:BOOL=ON
 ```
 to enable it.
+
+Use:
+```bash
+cmake -B build -DZENO_BUILD_ZFX:BOOL=ON -DEXTENSION_ZenoFX:BOOL=ON -DZFX_ENABLE_CUDA:BOOL=ON
+```
+if you want to enable CUDA support for ZFX.
 
 #### Major dependencies
 
@@ -268,6 +269,7 @@ Building them require some dependencies:
 
 - ZenoFX (ZFX expression wrangler)
   - OpenMP (optional)
+  - CUDA driver API (optional)
 
 - Rigid (bullet3 rigid dynamics)
   - no dependencies!
