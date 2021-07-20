@@ -15,6 +15,7 @@ struct MathFunctions : Visitor<MathFunctions> {
     using visit_stmt_types = std::tuple
         < UnaryOpStmt
         , BinaryOpStmt
+        , FunctionCallStmt
         , Statement
         >;
 
@@ -41,12 +42,24 @@ struct MathFunctions : Visitor<MathFunctions> {
     Statement *emit_op(std::string const &name, std::vector<Statement *> const &args) {
         if (0) {
 
-        } else if (name == "sin") {
+        } else if (name == "-" && args.size() == 1) {
+            ERROR_IF(args.size() != 1);
+            auto x = make_stm(args[0]);
+            auto mask = stm_const(-0.f);
+            return stm("xor", x, mask);
+
+        } else if (name == "abs") {
+            ERROR_IF(args.size() != 1);
+            auto x = make_stm(args[0]);
+            auto mask = stm_const(-0.f);
+            return stm("andnot", x, mask);
+
+        } else if (name == "fsin") {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
             auto z = x;
             auto z2 = z * z;
-            auto r = stm_const(1);
+            auto r = stm_const(1.f);
             auto t = z2 * stm_const(1.f / 6);
             r = r - t;
             t = z2 * stm_const(1.f / 20) * t;
@@ -58,6 +71,17 @@ struct MathFunctions : Visitor<MathFunctions> {
             r = r * z;
             return r;
 
+        /* todo: also add fast exp
+//    http://martin.ankerl.com/2007/10/04/optimized-pow-approximation-for-java-and-c-c/
+//    快速的指数运算，精度一般
+inline __m128 _mm_fexp_ps(__m128 x)
+{
+    __m128i T = _mm_cvtps_epi32(_mm_add_ps(_mm_mul_ps(x, _mm_set1_ps(1512775)), _mm_set1_ps(1072632447)));
+    __m128i TL = _mm_unpacklo_epi32(_mm_setzero_si128(), T);
+    __m128i TH = _mm_unpackhi_epi32(_mm_setzero_si128(), T);
+    return _mm_movelh_ps(_mm_cvtpd_ps(_mm_castsi128_pd(TL)), _mm_cvtpd_ps(_mm_castsi128_pd(TH)));
+}*/
+
         } else {
             return nullptr;
         }
@@ -65,6 +89,22 @@ struct MathFunctions : Visitor<MathFunctions> {
 
     void visit(UnaryOpStmt *stmt) {
         auto new_stmt = emit_op(stmt->op, {stmt->src});
+        if (!new_stmt) {
+            return visit((Statement *)stmt);
+        }
+        ir->mark_replacement(stmt, new_stmt);
+    }
+
+    void visit(BinaryOpStmt *stmt) {
+        auto new_stmt = emit_op(stmt->op, {stmt->lhs, stmt->rhs});
+        if (!new_stmt) {
+            return visit((Statement *)stmt);
+        }
+        ir->mark_replacement(stmt, new_stmt);
+    }
+
+    void visit(FunctionCallStmt *stmt) {
+        auto new_stmt = emit_op(stmt->name, stmt->args);
         if (!new_stmt) {
             return visit((Statement *)stmt);
         }

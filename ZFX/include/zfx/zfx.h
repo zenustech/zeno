@@ -13,7 +13,7 @@ namespace zfx {
 struct Options {
     bool const_parametrize = true;
     bool global_localize = true;
-    bool demote_math_funcs = false;
+    bool demote_math_funcs = true;
     bool save_math_registers = true;
     int arch_maxregs = 8;
 
@@ -25,7 +25,7 @@ struct Options {
     Options(decltype(for_x64))
         : const_parametrize(true)
         , global_localize(true)
-        , demote_math_funcs(false)
+        , demote_math_funcs(true)
         , save_math_registers(true)
         , arch_maxregs(8)
     {}

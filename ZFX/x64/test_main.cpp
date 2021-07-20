@@ -15,7 +15,7 @@ int main() {
     };
 #else
     std::string code(R"(
-@pos.x = floor(@clr)
+@pos.x = -@clr
 )");
 #endif
 

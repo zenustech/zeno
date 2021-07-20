@@ -65,7 +65,7 @@ struct EmitAssembly : Visitor<EmitAssembly> {
             if (0) {
             } else if (op == "+") { return "mov";
             } else if (op == "-") { return "neg";
-            } else { error("invalid unary op `%s`", op.c_str());
+            } else { return op.c_str();
             }
         }(stmt->op);
         emit("%s %d %d", opcode,
@@ -80,7 +80,7 @@ struct EmitAssembly : Visitor<EmitAssembly> {
             } else if (op == "*") { return "mul";
             } else if (op == "/") { return "div";
             } else if (op == "%") { return "mod";
-            } else { error("invalid binary op `%s`", op.c_str());
+            } else { return op.c_str();
             }
         }(stmt->op);
         emit("%s %d %d %d", opcode,
