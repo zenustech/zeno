@@ -5,6 +5,18 @@
 
 namespace zfx {
 
+struct ParamMaxCounter : Visitor<ParamMaxCounter> {
+    using visit_stmt_types = std::tuple
+        < AsmParamLoadStmt
+        >;
+
+    int nuniforms = 0;
+
+    void visit(AsmParamLoadStmt *stmt) {
+        nuniforms = std::max(nuniforms, stmt->mem);
+    }
+};
+
 struct ReassignParameters : Visitor<ReassignParameters> {
     using visit_stmt_types = std::tuple
         < AsmParamLoadStmt
@@ -70,9 +82,11 @@ std::map<int, int> apply_reassign_parameters(IR *ir) {
     return reassign.uniforms;
 }
 
-std::map<int, std::string> apply_const_parametrize(IR *ir, int nuniforms) {
+std::map<int, std::string> apply_const_parametrize(IR *ir) {
+    ParamMaxCounter counter;
+    counter.apply(ir);
     ConstParametrize visitor;
-    visitor.nuniforms = nuniforms;
+    visitor.nuniforms = counter.nuniforms;
     visitor.apply(ir);
     *ir = *visitor.ir;
     return visitor.getConstants();

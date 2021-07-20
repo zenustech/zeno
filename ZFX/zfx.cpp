@@ -110,23 +110,25 @@ std::tuple
     ir->print();
 #endif
 
-    // TODO: if (options.reassign_params)
+    if (options.reassign_parameters) {
 #ifdef ZFX_PRINT_IR
-    cout << "=== ReassignParameters" << endl;
+        cout << "=== ReassignParameters" << endl;
 #endif
-    auto uniforms = apply_reassign_parameters(ir.get());
+        auto uniforms = apply_reassign_parameters(ir.get());
 #ifdef ZFX_PRINT_IR
-    ir->print();
+        ir->print();
 #endif
-    std::vector<std::pair<std::string, int>> new_params;
-    for (int i = 0; i < params.size(); i++) {
-        auto it = uniforms.find(i);
-        if (it == uniforms.end())
-            continue;
-        auto dst = it->second;
-        if (new_params.size() < dst + 1)
-            new_params.resize(dst + 1);
-        new_params[dst] = params[i];
+        std::vector<std::pair<std::string, int>> new_params;
+        for (int i = 0; i < params.size(); i++) {
+            auto it = uniforms.find(i);
+            if (it == uniforms.end())
+                continue;
+            auto dst = it->second;
+            if (new_params.size() < dst + 1)
+                new_params.resize(dst + 1);
+            new_params[dst] = params[i];
+        }
+        params = new_params;
     }
 
     std::ostringstream oss_end;
@@ -134,7 +136,7 @@ std::tuple
 #ifdef ZFX_PRINT_IR
         cout << "=== ConstParametrize" << endl;
 #endif
-        auto constants = apply_const_parametrize(ir.get(), uniforms.size());
+        auto constants = apply_const_parametrize(ir.get());
 #ifdef ZFX_PRINT_IR
         ir->print();
 #endif
@@ -163,30 +165,32 @@ std::tuple
         }
     }
 
-    // TODO: if (options.reassign_globals)
+    if (options.reassign_channels) {
 #ifdef ZFX_PRINT_IR
-    cout << "=== ReassignGlobals" << endl;
+        cout << "=== ReassignGlobals" << endl;
 #endif
-    auto globals = apply_reassign_globals(ir.get());
+        auto globals = apply_reassign_globals(ir.get());
 #ifdef ZFX_PRINT_IR
-    ir->print();
+        ir->print();
 #endif
-    std::vector<std::pair<std::string, int>> new_symbols;
-    for (int i = 0; i < symbols.size(); i++) {
-        auto it = globals.find(i);
-        if (it == globals.end())
-            continue;
-        auto dst = it->second;
-        if (new_symbols.size() < dst + 1)
-            new_symbols.resize(dst + 1);
-        new_symbols[dst] = symbols[i];
+        std::vector<std::pair<std::string, int>> new_symbols;
+        for (int i = 0; i < symbols.size(); i++) {
+            auto it = globals.find(i);
+            if (it == globals.end())
+                continue;
+            auto dst = it->second;
+            if (new_symbols.size() < dst + 1)
+                new_symbols.resize(dst + 1);
+            new_symbols[dst] = symbols[i];
+        }
+        symbols = new_symbols;
     }
 
     if (options.global_localize) {
 #ifdef ZFX_PRINT_IR
         cout << "=== GlobalLocalize" << endl;
 #endif
-        apply_global_localize(ir.get(), globals.size());
+        apply_global_localize(ir.get());
 #ifdef ZFX_PRINT_IR
         ir->print();
 #endif
@@ -206,8 +210,8 @@ std::tuple
 #endif
     return
         { assem
-        , new_symbols
-        , new_params
+        , symbols
+        , params
         };
 }
 

@@ -5,6 +5,23 @@
 
 namespace zfx {
 
+struct GlobalMaxCounter : Visitor<GlobalMaxCounter> {
+    using visit_stmt_types = std::tuple
+        < AsmGlobalLoadStmt
+        , AsmGlobalStoreStmt
+        >;
+
+    int nglobals = 0;
+
+    void visit(AsmGlobalLoadStmt *stmt) {
+        nglobals = std::max(nglobals, stmt->mem);
+    }
+
+    void visit(AsmGlobalStoreStmt *stmt) {
+        nglobals = std::max(nglobals, stmt->mem);
+    }
+};
+
 struct ReassignGlobals : Visitor<ReassignGlobals> {
     using visit_stmt_types = std::tuple
         < AsmGlobalLoadStmt
@@ -105,9 +122,11 @@ std::map<int, int> apply_reassign_globals(IR *ir) {
     return visitor.globals;
 }
 
-void apply_global_localize(IR *ir, int nglobals) {
+void apply_global_localize(IR *ir) {
+    GlobalMaxCounter counter;
+    counter.apply(ir);
     GlobalLocalize visitor;
-    visitor.nglobals = nglobals;
+    visitor.nglobals = counter.nglobals;
     visitor.apply(ir);
     *ir = *visitor.ir;
 }

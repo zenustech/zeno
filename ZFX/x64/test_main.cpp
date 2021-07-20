@@ -22,6 +22,7 @@ int main() {
     zfx::Options opts(zfx::Options::for_x64);
     opts.define_symbol("@pos", 3);
     opts.define_symbol("@clr", 1);
+    //opts.reassign_channels = false;
     auto prog = compiler.compile(code, opts);
     auto exec = assembler.assemble(prog->assembly);
 
