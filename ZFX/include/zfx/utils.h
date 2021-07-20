@@ -80,12 +80,18 @@ std::string format_join(const char *sep,
     return res;
 }
 
-template <class ...Ts>
+class Exception : public std::exception {
+private:
+  std::string msg;
+public:
+  Exception(std::string const &msg_) noexcept : msg(msg_) {}
+  ~Exception() noexcept = default;
+  char const *what() const noexcept { return msg.c_str(); }
+};
+
+template <class E = Exception, class ...Ts>
 [[noreturn]] void error(const char *fmt, Ts &&...ts) {
-    printf("ERROR: ");
-    printf(fmt, std::forward<Ts>(ts)...);
-    putchar('\n');
-    exit(-1);
+    throw E(format(fmt, std::forward<Ts>(ts)...));
 }
 
 template <class T>
