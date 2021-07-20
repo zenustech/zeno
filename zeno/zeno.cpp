@@ -57,7 +57,12 @@ ZENAPI bool INode::checkApplyCondition() {
     }*/
 
     if (has_option("ONCE")) {
-        if (zeno::state.frameid != 0)
+        if (!zeno::state.isFirstFrame() || !zeno::state.isOneSubstep())
+            return false;
+    }
+
+    if (has_option("PREP")) {
+        if (!zeno::state.isOneSubstep())
             return false;
     }
 

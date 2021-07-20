@@ -3,7 +3,7 @@ target_include_directories(ZenoFXlib PRIVATE .)
 
 find_package(zeno REQUIRED)
 target_link_libraries(ZenoFXlib PRIVATE zeno ZFX)
-target_sources(ZenoFXlib PRIVATE pw.cpp)
+target_sources(ZenoFXlib PRIVATE pw.cpp pnw.cpp)
 
 option(ZENOFX_ENABLE_OPENVDB "Enable Volume Wranglers in ZenoFX" ON)
 if (ZENOFX_ENABLE_OPENVDB)

@@ -272,7 +272,7 @@ Building them require some dependencies:
   - CUDA driver API (optional)
 
 - Rigid (bullet3 rigid dynamics)
-  - no dependencies!
+  - OpenMP
 
 - ZMS (molocular dynamics)
   - OpenMP (optional)

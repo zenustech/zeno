@@ -97,7 +97,7 @@ class NodeEditor(QWidget):
             file_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
             file_name += '.zsg'
             path = os.path.join(dir_path, file_name)
-            print('auto saving to', path)
+            #print('auto saving to', path)
             self.do_save(path, auto_save=True)
             for s in self.scenes.values():
                 if s.contentChanged:

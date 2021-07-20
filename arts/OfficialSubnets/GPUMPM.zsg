@@ -18,19 +18,18 @@
        "data"
       ],
       "Dx": [
-       "df8dc561-NumericFloat",
-       "value"
+       "4bb2bf1c-x",
+       "port"
       ],
       "SRC": [
        "13ca27dc-MeshToSDF",
        "DST"
-      ],
-      "COND": null
+      ]
      },
      "params": {},
      "uipos": [
-      755.3273046875001,
-      549.6094921874999
+      -1752.8990747070297,
+      1319.3315380859367
      ],
      "options": [
       "ONCE"
@@ -44,19 +43,21 @@
        "mesh"
       ],
       "Dx": [
-       "df8dc561-NumericFloat",
-       "value"
+       "9d3b2d93-PortalOut",
+       "port"
       ],
-      "SRC": null,
-      "COND": null
+      "SRC": [
+       "df8dc561-NumericFloat",
+       "DST"
+      ]
      },
      "params": {
       "voxel_size": 0.2,
       "type": "center"
      },
      "uipos": [
-      -234.50878906249898,
-      -33.21191406249994
+      -2967.6115844726532,
+      1255.8989990234368
      ],
      "options": [
       "ONCE"
@@ -65,32 +66,31 @@
     "76349f99-FixedCorotatedConfig": {
      "name": "FixedCorotatedConfig",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
-      "density": 10000.0,
-      "volume": 1e-06,
-      "youngs_modulus": 10000.0,
+      "density": 110000.0,
+      "volume": 0.001,
+      "youngs_modulus": 20000000.0,
       "poisson_ratio": 0.4
      },
      "uipos": [
-      -46.74316406249892,
-      398.6943359375
+      -2432.1709594726535,
+      1289.2708740234366
      ],
      "options": [
-      "ONCE"
+      "ONCE",
+      "collapsed"
      ]
     },
     "03be1c4f-MakeVDBGrid": {
      "name": "MakeVDBGrid",
      "inputs": {
       "Dx": [
-       "df8dc561-NumericFloat",
-       "value"
+       "4bb2bf1c-x",
+       "port"
       ],
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "dx": 0.02,
@@ -99,30 +99,8 @@
       "name": "Rename!"
      },
      "uipos": [
-      -142.9931640624988,
-      647.8076171875001
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "fb7c5bc4-ToMPMBoundary": {
-     "name": "ToMPMBoundary",
-     "inputs": {
-      "BoundarySDF": [
-       "90eba12c-MeshToSDF",
-       "sdf"
-      ],
-      "SRC": [
-       "824b4f4c-ToMaterialPoints",
-       "DST"
-      ],
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      1062.8124999999989,
-      305.5517578125
+      -2230.5303344726535,
+      1383.1966552734366
      ],
      "options": [
       "ONCE"
@@ -131,15 +109,17 @@
     "abe22816-ReadObjMesh": {
      "name": "ReadObjMesh",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": [
+       "824b4f4c-ToMaterialPoints",
+       "DST"
+      ]
      },
      "params": {
-      "path": "/home/dilei/Codes/zeno/assets/bowl.obj"
+      "path": "/home/dilei/Codes/zeno/assets/humannose.obj"
      },
      "uipos": [
-      -98.032226562499,
-      -354.4775390625
+      -990.4394531249984,
+      430.8740234374995
      ],
      "options": [
       "ONCE"
@@ -153,19 +133,18 @@
        "mesh"
       ],
       "Dx": [
-       "df8dc561-NumericFloat",
-       "value"
+       "d35a584e-x",
+       "port"
       ],
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "voxel_size": 0.2,
       "type": "center"
      },
      "uipos": [
-      652.4755859375006,
-      -48.52050781249977
+      -598.4433593749991,
+      595.5498046874995
      ],
      "options": [
       "ONCE"
@@ -178,21 +157,15 @@
        "d606323f-IntegrateFrameTime",
        "actual_dt"
       ],
-      "inZSBoundary": [
-       "fb7c5bc4-ToMPMBoundary",
-       "ZSBoundary"
-      ],
+      "inZSBoundary": null,
       "inMaterialPoints": [
-       "824b4f4c-ToMaterialPoints",
-       "MaterialPoints"
+       "e45f420d-x",
+       "list"
       ],
-      "inModel": [
-       "76349f99-FixedCorotatedConfig",
-       "Model"
-      ],
+      "inModel": null,
       "Dx": [
-       "df8dc561-NumericFloat",
-       "value"
+       "5f49f186-x",
+       "port"
       ],
       "partition": [
        "e773d6b2-makeSPGrid",
@@ -205,13 +178,12 @@
       "SRC": [
        "d606323f-IntegrateFrameTime",
        "DST"
-      ],
-      "COND": null
+      ]
      },
      "params": {},
      "uipos": [
-      3308.6515624999993,
-      515.5902343750003
+      3307.4015624999993,
+      514.3402343750004
      ],
      "options": []
     },
@@ -225,13 +197,12 @@
       "SRC": [
        "0ba73fc1-NumericFloat",
        "DST"
-      ],
-      "COND": null
+      ]
      },
      "params": {},
      "uipos": [
-      1701.8876953125005,
-      189.50195312500009
+      1751.8876953125005,
+      144.1894531250001
      ],
      "options": [
       "ONCE"
@@ -247,8 +218,7 @@
       "SRC": [
        "675cd653-CFLdt",
        "DST"
-      ],
-      "COND": null
+      ]
      },
      "params": {
       "min_scale": 0.0001
@@ -263,8 +233,8 @@
      "name": "CFLdt",
      "inputs": {
       "dx": [
-       "df8dc561-NumericFloat",
-       "value"
+       "c4858459-x",
+       "port"
       ],
       "vmax": [
        "11f0c602-PortalOut",
@@ -277,8 +247,7 @@
       "SRC": [
        "39f60d4e-SetFrameTime",
        "DST"
-      ],
-      "COND": null
+      ]
      },
      "params": {},
      "uipos": [
@@ -290,8 +259,7 @@
     "11f0c602-PortalOut": {
      "name": "PortalOut",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "vmax"
@@ -300,13 +268,14 @@
       1977.7656250000005,
       52.54687500000001
      ],
-     "options": []
+     "options": [
+      "collapsed"
+     ]
     },
     "2f1cdded-NumericFloat": {
      "name": "NumericFloat",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "value": 0.001
@@ -315,7 +284,9 @@
       1951.9531250000005,
       122.703125
      ],
-     "options": []
+     "options": [
+      "collapsed"
+     ]
     },
     "f7ba96bf-PortalIn": {
      "name": "PortalIn",
@@ -324,15 +295,14 @@
        "0ba73fc1-NumericFloat",
        "value"
       ],
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "vmax"
      },
      "uipos": [
-      1801.7353515625,
-      644.8300781250005
+      1862.9853515625,
+      369.83007812500045
      ],
      "options": []
     },
@@ -350,8 +320,7 @@
       "SRC": [
        "8060626b-MPMStepDt",
        "DST"
-      ],
-      "COND": null
+      ]
      },
      "params": {
       "op_type": "set"
@@ -365,8 +334,7 @@
     "6572d175-PortalOut": {
      "name": "PortalOut",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "vmax"
@@ -387,8 +355,7 @@
       "SRC": [
        "3582d317-NumericOperator",
        "DST"
-      ],
-      "COND": null
+      ]
      },
      "params": {
       "hint": "MaxVel"
@@ -404,15 +371,14 @@
     "6f4b683b-ReadObjMesh": {
      "name": "ReadObjMesh",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
-      "path": "/home/dilei/Codes/zeno/assets/Pig_Head.obj"
+      "path": "/home/dilei/Codes/zeno/assets/cottonswab.obj"
      },
      "uipos": [
-      -670.8070312499998,
-      -45.12578125000002
+      -3507.5199829101543,
+      1146.6343505859368
      ],
      "options": [
       "ONCE"
@@ -422,17 +388,16 @@
      "name": "NumericFloat",
      "inputs": {
       "SRC": [
-       "fb7c5bc4-ToMPMBoundary",
+       "e45f420d-x",
        "DST"
-      ],
-      "COND": null
+      ]
      },
      "params": {
       "value": 0.0001
      },
      "uipos": [
-      1405.3251953124993,
-      439.166015625
+      1366.6142578124993,
+      312.01757812500006
      ],
      "options": [
       "ONCE"
@@ -445,8 +410,7 @@
        "d606323f-IntegrateFrameTime",
        "actual_dt"
       ],
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "hint": "step_dt"
@@ -469,8 +433,7 @@
       "SRC": [
        "3582d317-NumericOperator",
        "DST"
-      ],
-      "COND": null
+      ]
      },
      "params": {},
      "uipos": [
@@ -484,8 +447,7 @@
     "10f9a43c-NumericFloat": {
      "name": "NumericFloat",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "value": 0.03
@@ -499,17 +461,18 @@
     "c63d4307-NumericFloat": {
      "name": "NumericFloat",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "value": 0.0
      },
      "uipos": [
-      1198.0781250000002,
-      -73.578125
+      1186.515625,
+      22.921874999999915
      ],
-     "options": []
+     "options": [
+      "collapsed"
+     ]
     },
     "a0ca88fd-x": {
      "name": "PrintNumeric",
@@ -518,8 +481,7 @@
        "675cd653-CFLdt",
        "desired_dt"
       ],
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "hint": "cfldt"
@@ -532,41 +494,6 @@
       "OUT"
      ]
     },
-    "b2c76522-EndFrame": {
-     "name": "EndFrame",
-     "inputs": {
-      "chain": null,
-      "SRC": [
-       "4f7a53d4-ParticlesToPrimitive",
-       "DST"
-      ],
-      "COND": [
-       "83fcbe0f-RunAfterFrame",
-       "cond"
-      ]
-     },
-     "params": {},
-     "uipos": [
-      5875.000000000001,
-      1239.0624999999993
-     ],
-     "options": [
-      "OUT"
-     ]
-    },
-    "83fcbe0f-RunAfterFrame": {
-     "name": "RunAfterFrame",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      4690.625,
-      1315.6249999999998
-     ],
-     "options": []
-    },
     "5b4a8a30-ToParticleObject": {
      "name": "ToParticleObject",
      "inputs": {
@@ -577,16 +504,12 @@
       "SRC": [
        "31391116-SetFrameTime",
        "DST"
-      ],
-      "COND": [
-       "83fcbe0f-RunAfterFrame",
-       "cond"
       ]
      },
      "params": {},
      "uipos": [
-      5245.703124999999,
-      988.6718750000002
+      5159.453124999999,
+      1003.6718750000002
      ],
      "options": []
     },
@@ -597,60 +520,423 @@
        "5b4a8a30-ToParticleObject",
        "pars"
       ],
-      "SRC": null,
-      "COND": [
-       "83fcbe0f-RunAfterFrame",
-       "cond"
-      ]
+      "SRC": null
      },
      "params": {},
      "uipos": [
-      5564.843749999999,
-      1098.4375000000002
+      5558.081249999999,
+      1090.9625000000003
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "df8dc561-NumericFloat": {
      "name": "NumericFloat",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
-      "value": 0.02
+      "value": 0.2
      },
      "uipos": [
-      -762.4999999999995,
-      282.81249999999994
+      -3903.9642333984357,
+      1537.3565673828116
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "e773d6b2-makeSPGrid": {
      "name": "makeSPGrid",
      "inputs": {
       "dx": [
-       "df8dc561-NumericFloat",
-       "value"
+       "3e9548d6-x",
+       "port"
       ],
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {},
      "uipos": [
-      2810.758398437498,
-      684.7771484374996
+      2577.633398437498,
+      646.6521484374995
      ],
      "options": [
       "ONCE"
      ]
+    },
+    "c96b6be9-x": {
+     "name": "ToMaterialPoints",
+     "inputs": {
+      "emitterSDF": [
+       "90eba12c-MeshToSDF",
+       "sdf"
+      ],
+      "model": [
+       "9c753db5-x",
+       "Model"
+      ],
+      "currentSDF": [
+       "fecb8f19-x",
+       "data"
+      ],
+      "Dx": [
+       "61bfceb4-x",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -150.9549218749993,
+      677.9688671874998
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "fecb8f19-x": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": null,
+      "SRC": null
+     },
+     "params": {
+      "dx": 0.02,
+      "type": "float",
+      "structure": "Centered",
+      "name": "Rename!"
+     },
+     "uipos": [
+      -830.3417968749983,
+      834.4833984374994
+     ],
+     "options": [
+      "ONCE",
+      "collapsed"
+     ]
+    },
+    "9c753db5-x": {
+     "name": "FixedCorotatedConfig",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "density": 1100.0,
+      "volume": 0.001,
+      "youngs_modulus": 200000.0,
+      "poisson_ratio": 0.4
+     },
+     "uipos": [
+      -923.3261718749983,
+      788.9951171874994
+     ],
+     "options": [
+      "ONCE",
+      "collapsed"
+     ]
+    },
+    "527f8f37-EmptyList": {
+     "name": "EmptyList",
+     "inputs": {
+      "SRC": [
+       "c96b6be9-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      183.23730468750068,
+      789.5312499999993
+     ],
+     "options": []
+    },
+    "095364fd-AppendList": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "527f8f37-EmptyList",
+       "list"
+      ],
+      "object": [
+       "824b4f4c-ToMaterialPoints",
+       "MaterialPoints"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      655.3125000000001,
+      832.1874999999995
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "e45f420d-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "095364fd-AppendList",
+       "list"
+      ],
+      "object": [
+       "c96b6be9-x",
+       "MaterialPoints"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      1037.1875000000002,
+      699.6875000000001
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "388a85ea-x": {
+     "name": "ParticlesToPrimitive",
+     "inputs": {
+      "pars": [
+       "87c49122-x",
+       "pars"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      6550.26875,
+      1170.6500000000005
+     ],
+     "options": []
+    },
+    "87c49122-x": {
+     "name": "ToParticleObject",
+     "inputs": {
+      "ZSParticles": [
+       "c96b6be9-x",
+       "MaterialPoints"
+      ],
+      "SRC": [
+       "3c3d2f99-PrimitiveAddAttr",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      6203.515624999999,
+      1218.359375
+     ],
+     "options": []
+    },
+    "3c3d2f99-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "4f7a53d4-ParticlesToPrimitive",
+       "prim"
+      ],
+      "fillValue": [
+       "9af7c14e-NumericVec3",
+       "vec3"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "name": "clr",
+      "type": "float3"
+     },
+     "uipos": [
+      5835.937499999997,
+      1182.812499999999
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "9d3b2d93-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      -3336.0488891601544,
+      1361.557006835937
+     ],
+     "options": []
+    },
+    "d35a584e-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      -1253.442382812499,
+      524.6093749999998
+     ],
+     "options": []
+    },
+    "61bfceb4-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      -753.0517578124997,
+      917.3828124999994
+     ],
+     "options": []
+    },
+    "4bb2bf1c-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      -2564.193420410155,
+      1467.9827880859366
+     ],
+     "options": []
+    },
+    "c4858459-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      2068.749999999999,
+      81.25000000000023
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "3e9548d6-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      2259.999999999998,
+      707.4999999999999
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "5f49f186-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      2785.312499999998,
+      567.1875
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "7c281c28-x": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "388a85ea-x",
+       "prim"
+      ],
+      "fillValue": [
+       "88158604-x",
+       "vec3"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "name": "clr",
+      "type": "float3"
+     },
+     "uipos": [
+      6899.687499999997,
+      1136.2499999999993
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "b5430652-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "df8dc561-NumericFloat",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "name": "Dx"
+     },
+     "uipos": [
+      -3587.7200317382785,
+      1541.322021484374
+     ],
+     "options": []
+    },
+    "9af7c14e-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 1.0,
+      "y": 1.0,
+      "z": 1.0
+     },
+     "uipos": [
+      5535.937499999993,
+      1457.8124999999982
+     ],
+     "options": []
+    },
+    "88158604-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 0.9,
+      "y": 0.46,
+      "z": 0.6
+     },
+     "uipos": [
+      6539.062499999994,
+      1396.8749999999984
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.3276800000000002,
-    "trans_x": 687,
-    "trans_y": -90
+    "scale": 0.2621440000000001,
+    "trans_x": -934,
+    "trans_y": 73
    }
   },
   "ToMaterialPoints": {
@@ -658,8 +944,7 @@
     "a46bf6fb-SubCategory": {
      "name": "SubCategory",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "GPUMPM"
@@ -673,8 +958,7 @@
     "b5fe71a0-SubInput": {
      "name": "SubInput",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "emitterSDF"
@@ -688,8 +972,7 @@
     "7a732c41-SubInput": {
      "name": "SubInput",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "model"
@@ -716,8 +999,7 @@
        "017e6e36-SubInput",
        "port"
       ],
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "vx": 0.0,
@@ -725,8 +1007,8 @@
       "vz": 0.0
      },
      "uipos": [
-      534.4210937500002,
-      130.1375
+      504.36509375000014,
+      -9.230500000000063
      ],
      "options": []
     },
@@ -740,8 +1022,7 @@
       "SRC": [
        "b5fe71a0-SubInput",
        "DST"
-      ],
-      "COND": null
+      ]
      },
      "params": {
       "dx": 0.02,
@@ -758,15 +1039,14 @@
     "017e6e36-SubInput": {
      "name": "SubInput",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "currentSDF"
      },
      "uipos": [
-      -614.6874999999999,
-      278.74999999999994
+      -616.6875,
+      287.75
      ],
      "options": []
     },
@@ -777,8 +1057,7 @@
        "93d88e4b-MakeVDBGrid",
        "data"
       ],
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "EmittedPoints"
@@ -799,28 +1078,26 @@
       "SRC": [
        "6345ebe3-ParticleEmitter",
        "DST"
-      ],
-      "COND": null
+      ]
      },
      "params": {},
      "uipos": [
-      902.6171875000005,
-      46.62109375
+      835.6171875000005,
+      23.62109375
      ],
      "options": []
     },
     "d50c81cb-PortalOut": {
      "name": "PortalOut",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "EmittedPoints"
      },
      "uipos": [
-      547.8164062500003,
-      -69.8984375
+      534.8164062500005,
+      -222.8984375
      ],
      "options": []
     },
@@ -838,13 +1115,12 @@
       "SRC": [
        "2de52aaa-GetVDBPoints",
        "DST"
-      ],
-      "COND": null
+      ]
      },
      "params": {},
      "uipos": [
-      1230.4281249999997,
-      235.66953125000003
+      1201.628125,
+      172.94953125
      ],
      "options": []
     },
@@ -855,8 +1131,7 @@
        "5ed0b7ae-ToZensimParticles",
        "ZensimParticles"
       ],
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "MaterialPoints"
@@ -870,8 +1145,7 @@
     "362f785b-SubInput": {
      "name": "SubInput",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "Dx"
@@ -884,9 +1158,9 @@
     }
    },
    "view": {
-    "scale": 0.6400000000000001,
-    "trans_x": -705,
-    "trans_y": -121
+    "scale": 1.25,
+    "trans_x": -209,
+    "trans_y": -48
    }
   },
   "MPMStepDt": {
@@ -894,8 +1168,7 @@
     "241a16f7-SubInput": {
      "name": "SubInput",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "indt"
@@ -909,8 +1182,7 @@
     "e17923c0-SubCategory": {
      "name": "SubCategory",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "GPUMPM"
@@ -924,8 +1196,7 @@
     "79dbd6e9-SubInput": {
      "name": "SubInput",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "inZSBoundary"
@@ -939,8 +1210,7 @@
     "0290be93-SubInput": {
      "name": "SubInput",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "inMaterialPoints"
@@ -954,8 +1224,7 @@
     "054c81de-SubInput": {
      "name": "SubInput",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "inModel"
@@ -992,8 +1261,7 @@
       "SRC": [
        "9500d962-GridFromPartition",
        "DST"
-      ],
-      "COND": null
+      ]
      },
      "params": {},
      "uipos": [
@@ -1017,8 +1285,7 @@
        "2573806b-SubInput",
        "port"
       ],
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "dx": 0.02,
@@ -1040,8 +1307,7 @@
       "SRC": [
        "9e5d1906-SpatialPartitionForParticles",
        "DST"
-      ],
-      "COND": null
+      ]
      },
      "params": {
       "lo": 0,
@@ -1071,8 +1337,7 @@
       "SRC": [
        "b1ca50c0-ExpandPartition",
        "DST"
-      ],
-      "COND": null
+      ]
      },
      "params": {
       "dx": 0.02
@@ -1101,8 +1366,7 @@
       "SRC": [
        "b29e8720-P2G",
        "DST"
-      ],
-      "COND": null
+      ]
      },
      "params": {
       "gravity": -9.8
@@ -1122,8 +1386,7 @@
        "79dbd6e9-SubInput",
        "port"
       ],
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {},
      "uipos": [
@@ -1158,8 +1421,7 @@
       "SRC": [
        "1b54fc0a-GridUpdate",
        "DST"
-      ],
-      "COND": null
+      ]
      },
      "params": {},
      "uipos": [
@@ -1175,8 +1437,7 @@
        "5dce2eb9-G2P",
        "DST"
       ],
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "end"
@@ -1194,8 +1455,7 @@
        "1b54fc0a-GridUpdate",
        "MaxVelSqr"
       ],
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "maxVel"
@@ -1209,8 +1469,7 @@
     "2573806b-SubInput": {
      "name": "SubInput",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "Dx"
@@ -1224,8 +1483,7 @@
     "726338f7-SubInput": {
      "name": "SubInput",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "partition"
@@ -1239,23 +1497,22 @@
     "ee30ae71-SubInput": {
      "name": "SubInput",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "grid"
      },
      "uipos": [
-      -1045.0,
-      -264.9999999999999
+      -993.4375000000001,
+      -299.37499999999983
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.6400000000000006,
-    "trans_x": 1242,
-    "trans_y": -481
+    "scale": 0.6400000000000001,
+    "trans_x": -898,
+    "trans_y": -435
    }
   },
   "ToMPMBoundary": {
@@ -1553,14 +1810,6 @@
     "trans_y": -29
    }
   },
-  "MaterialPoints": {
-   "nodes": {},
-   "view": {
-    "scale": 0.0007922816251426447,
-    "trans_x": 0,
-    "trans_y": 0
-   }
-  },
   "makeSPGrid": {
    "nodes": {
     "2d702fb4-MakeGrid": {
@@ -1683,8 +1932,7 @@
    "inputs": [
     "list",
     "object",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "list",
@@ -1700,8 +1948,7 @@
     "prim",
     "forcefield",
     "boxlength",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -1723,8 +1970,7 @@
     "CellFWeight",
     "Velocity",
     "SolidVelocity",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -1743,8 +1989,7 @@
   "BeginFor": {
    "inputs": [
     "count",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "index",
@@ -1759,8 +2004,7 @@
   "BeginForEach": {
    "inputs": [
     "list",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "object",
@@ -1776,8 +2020,7 @@
   "BreakFor": {
    "inputs": [
     "FOR",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -1791,8 +2034,7 @@
    "inputs": [
     "transFirst",
     "transSecond",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "trans",
@@ -1808,8 +2050,7 @@
     "compound",
     "childShape",
     "trans",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "compound",
@@ -1823,8 +2064,7 @@
   "BulletExtractTransform": {
    "inputs": [
     "trans",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "origin",
@@ -1839,8 +2079,7 @@
   "BulletGetObjMotion": {
    "inputs": [
     "object",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "linearVel",
@@ -1855,8 +2094,7 @@
   "BulletGetObjTransform": {
    "inputs": [
     "object",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "trans",
@@ -1870,8 +2108,7 @@
   "BulletMakeBoxShape": {
    "inputs": [
     "v3size",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "shape",
@@ -1884,8 +2121,7 @@
   },
   "BulletMakeCompoundShape": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "compound",
@@ -1899,8 +2135,7 @@
   "BulletMakeConvexHullShape": {
    "inputs": [
     "triMesh",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "shape",
@@ -1916,8 +2151,7 @@
     "shape",
     "trans",
     "mass",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "object",
@@ -1931,8 +2165,7 @@
   "BulletMakeSphereShape": {
    "inputs": [
     "radius",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "shape",
@@ -1947,8 +2180,7 @@
    "inputs": [
     "origin",
     "rotation",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "trans",
@@ -1961,8 +2193,7 @@
   },
   "BulletMakeWorld": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "world",
@@ -1978,8 +2209,7 @@
     "object",
     "ForceImpulse",
     "TorqueImpulse",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -1993,8 +2223,7 @@
    "inputs": [
     "world",
     "gravity",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2008,8 +2237,7 @@
    "inputs": [
     "world",
     "dt",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2023,8 +2251,7 @@
    "inputs": [
     "world",
     "object",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "world",
@@ -2039,8 +2266,7 @@
    "inputs": [
     "Velocity",
     "Dx",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "cfl_dt",
@@ -2060,8 +2286,7 @@
   "CachedOnce": {
    "inputs": [
     "input",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "output",
@@ -2075,8 +2300,7 @@
   "Clone": {
    "inputs": [
     "object",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "newObject",
@@ -2091,8 +2315,7 @@
    "inputs": [
     "FieldA",
     "FieldB",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "FieldOut",
@@ -2125,8 +2348,7 @@
     "simParam",
     "RK_Order",
     "dt",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "outFlowData",
@@ -2143,8 +2365,7 @@
     "simParam",
     "RK_Order",
     "dt",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "outFlowData",
@@ -2160,8 +2381,7 @@
     "LiquidSDF",
     "SolidSDF",
     "FaceWeight",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2174,8 +2394,7 @@
   "DenseFieldToVDB": {
    "inputs": [
     "inDenseField",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "VDBField",
@@ -2190,8 +2409,7 @@
    "inputs": [
     "dict",
     "key",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "object",
@@ -2207,8 +2425,7 @@
     "dict",
     "key",
     "object",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "dict",
@@ -2222,8 +2439,7 @@
   "DictSize": {
    "inputs": [
     "dict",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "size",
@@ -2236,8 +2452,7 @@
   },
   "EmptyDict": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "dict",
@@ -2250,8 +2465,7 @@
   },
   "EmptyList": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "list",
@@ -2265,8 +2479,7 @@
   "EndFor": {
    "inputs": [
     "FOR",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2276,24 +2489,9 @@
     "control"
    ]
   },
-  "EndFrame": {
-   "inputs": [
-    "chain",
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "fileio"
-   ]
-  },
   "EquationOfStateConfig": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "Model",
@@ -2332,8 +2530,7 @@
   },
   "ExitProcess": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2352,8 +2549,7 @@
   "ExpandPartition": {
    "inputs": [
     "ZSPartition",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2378,8 +2574,7 @@
    "inputs": [
     "mesh",
     "path",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2393,8 +2588,7 @@
    "inputs": [
     "pars",
     "path",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2404,32 +2598,11 @@
     "particles"
    ]
   },
-  "ExportPath": {
-   "inputs": [
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "path",
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "ext",
-     "zpm"
-    ]
-   ],
-   "categories": [
-    "fileio"
-   ]
-  },
   "ExportPrimitive": {
    "inputs": [
     "prim",
     "path",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2443,8 +2616,7 @@
    "inputs": [
     "data",
     "path",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2457,8 +2629,7 @@
   "ExtractDict": {
    "inputs": [
     "dict",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2472,8 +2643,7 @@
    "inputs": [
     "list",
     "index",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "object",
@@ -2489,8 +2659,7 @@
     "Particles",
     "DynaSolid_SDF",
     "StatSolid_SDF",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2509,8 +2678,7 @@
     "VelocityWeights",
     "LiquidSDF",
     "ExtractedLiquidSDF",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2531,8 +2699,7 @@
     "invec3",
     "Velocity",
     "FieldWeight",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2544,8 +2711,7 @@
   },
   "FixedCorotatedConfig": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "Model",
@@ -2582,8 +2748,7 @@
     "Particles",
     "LiquidSDF",
     "FluidVel",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2600,8 +2765,7 @@
     "bonded",
     "external",
     "mass",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "forcefield",
@@ -2615,8 +2779,7 @@
   "FuncBegin": {
    "inputs": [
     "extraArgs",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "args",
@@ -2632,8 +2795,7 @@
    "inputs": [
     "function",
     "args",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "rets",
@@ -2648,8 +2810,7 @@
    "inputs": [
     "rets",
     "FUNC",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "function",
@@ -2667,8 +2828,7 @@
     "ZSParticles",
     "ZSGrid",
     "ZSPartition",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2688,8 +2848,7 @@
     "PostAdvVelocity",
     "SolidSDF",
     "SolidVelocity",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2729,8 +2888,7 @@
     "PostAdvVelocity",
     "SolidSDF",
     "SolidVelocity",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2761,8 +2919,7 @@
     "dt",
     "TargetMesh",
     "OriginMesh",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "MeshVel",
@@ -2776,8 +2933,7 @@
   "GetDenseField": {
    "inputs": [
     "inSolverData",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "outDenseField",
@@ -2796,8 +2952,7 @@
   },
   "GetFrameNum": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "FrameNum",
@@ -2810,8 +2965,7 @@
   },
   "GetFramePortion": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "FramePortion",
@@ -2824,8 +2978,7 @@
   },
   "GetFrameTime": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "time",
@@ -2838,8 +2991,7 @@
   },
   "GetFrameTimeElapsed": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "time",
@@ -2852,8 +3004,7 @@
   },
   "GetTime": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "time",
@@ -2867,8 +3018,7 @@
   "GetVDBBound": {
    "inputs": [
     "vdbGrid",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "bmin",
@@ -2883,8 +3033,7 @@
   "GetVDBPoints": {
    "inputs": [
     "grid",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "pars",
@@ -2900,8 +3049,7 @@
     "ZSGrid",
     "ZSPartition",
     "Dx",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -2922,8 +3070,7 @@
     "dt",
     "ZSPartition",
     "ZSGrid",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "MaxVelSqr",
@@ -2945,8 +3092,7 @@
     "true",
     "false",
     "cond",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "result",
@@ -2960,8 +3106,7 @@
   "ImportObjMesh": {
    "inputs": [
     "path",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "mesh",
@@ -2975,8 +3120,7 @@
   "ImportObjPrimitive": {
    "inputs": [
     "path",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -2990,8 +3134,7 @@
   "ImportParticles": {
    "inputs": [
     "path",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "pars",
@@ -3005,8 +3148,7 @@
   "ImportPrimitive": {
    "inputs": [
     "path",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -3020,8 +3162,7 @@
   "ImportVDBGrid": {
    "inputs": [
     "path",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "data",
@@ -3042,8 +3183,7 @@
    "inputs": [
     "prim",
     "boxlength",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -3057,8 +3197,7 @@
   "IntegrateFrameTime": {
    "inputs": [
     "desired_dt",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "actual_dt",
@@ -3078,8 +3217,7 @@
   "KineticEnergy": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "kinetic energy",
@@ -3095,8 +3233,7 @@
     "rcut",
     "sigma",
     "epsilon",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "lennard-jones",
@@ -3110,8 +3247,7 @@
   "ListLength": {
    "inputs": [
     "list",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "length",
@@ -3130,8 +3266,39 @@
     "sizeY",
     "scale",
     "origin",
-    "SRC",
-    "COND"
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "isCentered",
+     "0"
+    ],
+    [
+     "int",
+     "hasFaces",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "Make3DGridPrimitive": {
+   "inputs": [
+    "nx",
+    "ny",
+    "nz",
+    "sizeX",
+    "sizeY",
+    "sizeZ",
+    "scale",
+    "origin",
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -3154,8 +3321,7 @@
     "bmax",
     "dx",
     "q_amb",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "CompressibleFlow",
@@ -3168,8 +3334,7 @@
   },
   "MakeDict": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "dict",
@@ -3182,8 +3347,7 @@
   },
   "MakeGCTest": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "value",
@@ -3203,8 +3367,7 @@
   "MakeGrid": {
    "inputs": [
     "Dx",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "ZSGrid",
@@ -3234,8 +3397,7 @@
     "start",
     "end",
     "edge_stretch",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "MPMMehser",
@@ -3248,8 +3410,7 @@
   },
   "MakeMultilineString": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "value",
@@ -3270,8 +3431,7 @@
    "inputs": [
     "normal",
     "tangent",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "normal",
@@ -3286,8 +3446,7 @@
   },
   "MakePartition": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "ZSPartition",
@@ -3306,8 +3465,7 @@
   },
   "MakePrimitive": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -3326,8 +3484,7 @@
     "obj3",
     "obj4",
     "obj5",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "list",
@@ -3340,8 +3497,7 @@
   },
   "MakeString": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "value",
@@ -3361,8 +3517,7 @@
   "MakeVDBGrid": {
    "inputs": [
     "Dx",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "data",
@@ -3398,8 +3553,7 @@
    "inputs": [
     "inFlowData",
     "simParam",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "outFlowData",
@@ -3414,8 +3568,7 @@
    "inputs": [
     "boundMin",
     "boundMax",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -3436,8 +3589,7 @@
    "inputs": [
     "copyFrom",
     "copyTo",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -3452,8 +3604,7 @@
     "meshA",
     "meshB",
     "coef",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "mesh",
@@ -3467,8 +3618,7 @@
   "MeshToPrimitive": {
    "inputs": [
     "mesh",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -3483,8 +3633,7 @@
    "inputs": [
     "mesh",
     "Dx",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "sdf",
@@ -3510,8 +3659,7 @@
    "inputs": [
     "Mesher",
     "frameNumber",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "FramePrimitive",
@@ -3526,8 +3674,7 @@
    "inputs": [
     "ini_pars",
     "dt",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "pars",
@@ -3556,8 +3703,7 @@
   },
   "NumericFloat": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "value",
@@ -3576,8 +3722,7 @@
   },
   "NumericInt": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "value",
@@ -3601,8 +3746,7 @@
     "srcMax",
     "dstMin",
     "dstMax",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "dst",
@@ -3623,8 +3767,7 @@
    "inputs": [
     "lhs",
     "rhs",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "ret",
@@ -3643,8 +3786,7 @@
   },
   "NumericVec2": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "vec2",
@@ -3668,8 +3810,7 @@
   },
   "NumericVec3": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "vec3",
@@ -3698,8 +3839,7 @@
   },
   "NumericVec4": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "vec4",
@@ -3734,8 +3874,7 @@
   "OutputZensimParticles": {
    "inputs": [
     "ZensimParticles",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -3758,8 +3897,7 @@
     "ZSParticles",
     "ZSGrid",
     "ZSPartition",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -3773,8 +3911,7 @@
    "inputs": [
     "ZSParticlesA",
     "ZSParticlesB",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "ZensimParticleList",
@@ -3789,8 +3926,7 @@
    "inputs": [
     "Particles",
     "dv",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -3827,8 +3963,7 @@
     "ShapeSDF",
     "VelocityVolume",
     "LiquidSDF",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -3860,8 +3995,7 @@
     "prim2",
     "zfxCode",
     "params",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim1",
@@ -3879,8 +4013,7 @@
     "radius",
     "zfxCode",
     "params",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim1",
@@ -3894,8 +4027,7 @@
   "ParticlesToPrimitive": {
    "inputs": [
     "pars",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -3911,8 +4043,7 @@
     "prim",
     "zfxCode",
     "params",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -3927,8 +4058,7 @@
    "inputs": [
     "prims",
     "boxlength",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prims",
@@ -3946,8 +4076,7 @@
     "tangent",
     "bitangent",
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "boundMin2D",
@@ -3963,8 +4092,7 @@
    "inputs": [
     "Mesh",
     "Particles",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "Meshes",
@@ -3978,8 +4106,7 @@
   "PortalIn": {
    "inputs": [
     "port",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -3997,8 +4124,7 @@
   },
   "PortalOut": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "port",
@@ -4020,8 +4146,7 @@
     "prim",
     "forcefield",
     "boxlength",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "potential energy",
@@ -4036,8 +4161,7 @@
    "inputs": [
     "ParticleGeo",
     "Dx",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "Particles",
@@ -4058,8 +4182,7 @@
    "inputs": [
     "prim",
     "fillValue",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -4086,8 +4209,7 @@
     "primA",
     "primB",
     "primOut",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "primOut",
@@ -4122,8 +4244,7 @@
   "PrimitiveCalcNormal": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -4137,8 +4258,7 @@
   "PrimitiveClearConnect": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -4152,8 +4272,7 @@
   "PrimitiveConvexDecomposition": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "listPrim",
@@ -4168,8 +4287,7 @@
    "inputs": [
     "prim",
     "value",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -4189,8 +4307,7 @@
   "PrimitiveGetSize": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "size",
@@ -4206,8 +4323,7 @@
     "primA",
     "valueB",
     "primOut",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "primOut",
@@ -4237,8 +4353,7 @@
   "PrimitiveMerge": {
    "inputs": [
     "listPrim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -4255,8 +4370,7 @@
     "primB",
     "primOut",
     "coef",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "primOut",
@@ -4286,8 +4400,7 @@
   "PrimitivePrintAttr": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -4307,8 +4420,7 @@
   "PrimitiveRandomizeAttr": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -4358,8 +4470,7 @@
   "PrimitiveReduction": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "result",
@@ -4385,8 +4496,7 @@
    "inputs": [
     "prim",
     "size",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -4400,8 +4510,7 @@
   "PrimitiveShade": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "shade",
@@ -4431,8 +4540,7 @@
   "PrimitiveSimpleLines": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -4446,8 +4554,7 @@
   "PrimitiveSimplePoints": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -4461,8 +4568,7 @@
   "PrimitiveSimpleQuads": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -4476,8 +4582,7 @@
   "PrimitiveSimpleTris": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -4491,8 +4596,7 @@
   "PrimitiveSplitEdges": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -4506,8 +4610,7 @@
   "PrimitiveToBulletMesh": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "mesh",
@@ -4521,8 +4624,7 @@
   "PrimitiveToMesh": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "mesh",
@@ -4536,8 +4638,7 @@
   "PrimitiveToParticles": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "pars",
@@ -4552,8 +4653,7 @@
    "inputs": [
     "PrimitiveMesh",
     "Dx",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "sdf",
@@ -4579,8 +4679,7 @@
    "inputs": [
     "primA",
     "primOut",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "primOut",
@@ -4614,8 +4713,7 @@
     "prim2",
     "prim3",
     "wrangle",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim0",
@@ -4628,8 +4726,7 @@
   },
   "PrintMessage": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -4648,8 +4745,7 @@
   "PrintNumeric": {
    "inputs": [
     "value",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -4671,8 +4767,7 @@
     "LiquidSDF",
     "SolidSDF",
     "ExtractedLiquidSDF",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -4690,8 +4785,7 @@
   },
   "RandomParticles": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "pars",
@@ -4720,8 +4814,7 @@
   },
   "ReadObjMesh": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "mesh",
@@ -4740,8 +4833,7 @@
   },
   "ReadParticles": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "pars",
@@ -4760,8 +4852,7 @@
   },
   "ReadVDBGrid": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "data",
@@ -4787,8 +4878,7 @@
    "inputs": [
     "resampleTo",
     "resampleFrom",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -4803,8 +4893,7 @@
     "ZSPartition",
     "ZSGrid",
     "ZSBoundary",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -4822,8 +4911,7 @@
     "Pressure",
     "CellFWeight",
     "LiquidSDF",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "TotalForceImpulse",
@@ -4847,8 +4935,7 @@
     "centroid",
     "linearVel",
     "angularVel",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -4862,8 +4949,7 @@
   "Route": {
    "inputs": [
     "input",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "output",
@@ -4874,53 +4960,10 @@
     "portal"
    ]
   },
-  "RunAfterFrame": {
-   "inputs": [
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "cond",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "frame"
-   ]
-  },
-  "RunBeforeFrame": {
-   "inputs": [
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "cond",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "frame"
-   ]
-  },
-  "RunOnce": {
-   "inputs": [
-    "SRC",
-    "COND"
-   ],
-   "outputs": [
-    "cond",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "frame"
-   ]
-  },
   "SDFToPoly": {
    "inputs": [
     "SDF",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "Mesh",
@@ -4947,8 +4990,7 @@
     "prim",
     "vdbGrid",
     "primAttr",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -4963,8 +5005,7 @@
    "inputs": [
     "prim",
     "temperature",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -4985,8 +5026,7 @@
   "SetFLIPWorld": {
    "inputs": [
     "Dx",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "Particles",
@@ -5022,8 +5062,7 @@
   "SetFrameTime": {
    "inputs": [
     "time",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -5037,8 +5076,7 @@
    "inputs": [
     "ParticleGeo",
     "Dx",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "Particles",
@@ -5058,8 +5096,7 @@
   "SimulationBox": {
    "inputs": [
     "prim",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "prim",
@@ -5088,8 +5125,7 @@
     "ZSPartition",
     "ZSParticles",
     "Dx",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -5114,8 +5150,7 @@
    "inputs": [
     "TrianglePrim",
     "Dx",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "particles",
@@ -5142,8 +5177,7 @@
     "string",
     "AZmesh",
     "spacing",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "StringMeshList",
@@ -5157,8 +5191,7 @@
   },
   "SubCategory": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -5176,8 +5209,7 @@
   },
   "SubInput": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "port",
@@ -5197,8 +5229,7 @@
   "SubOutput": {
    "inputs": [
     "port",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -5216,8 +5247,7 @@
   },
   "Subgraph": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -5244,8 +5274,7 @@
     "CellFWeight",
     "Velocity",
     "SolidVelocity",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -5264,8 +5293,7 @@
   "ToParticleObject": {
    "inputs": [
     "ZSParticles",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "pars",
@@ -5279,8 +5307,7 @@
   "ToZensimLevelSet": {
    "inputs": [
     "VDBFloatGrid",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "ZSLevelSet",
@@ -5295,8 +5322,7 @@
    "inputs": [
     "ZSModel",
     "ParticleObject",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "ZensimParticles",
@@ -5313,8 +5339,7 @@
     "translate",
     "rotate",
     "scaling",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "mesh",
@@ -5332,8 +5357,7 @@
     "eulerXYZ",
     "quatRotation",
     "scaling",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "outPrim",
@@ -5347,8 +5371,7 @@
   "UnpackNumericVec": {
    "inputs": [
     "vec",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "X",
@@ -5366,8 +5389,7 @@
    "inputs": [
     "inField",
     "layers",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "oField",
@@ -5381,8 +5403,7 @@
   "VDBRenormalizeSDF": {
    "inputs": [
     "inoutSDF",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -5408,8 +5429,7 @@
     "grid",
     "zfxCode",
     "params",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "grid",
@@ -5423,8 +5443,7 @@
   "Vec3FieldExtrapolate": {
    "inputs": [
     "Field",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -5444,8 +5463,7 @@
    "inputs": [
     "lhs",
     "rhs",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "res",
@@ -5465,8 +5483,7 @@
   "WrangleImmed": {
    "inputs": [
     "value",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "res",
@@ -5479,8 +5496,7 @@
   },
   "WrangleLoad": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "res",
@@ -5505,8 +5521,7 @@
   "WrangleStore": {
    "inputs": [
     "val",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "res",
@@ -5533,8 +5548,7 @@
     "lhs",
     "mhs",
     "rhs",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "res",
@@ -5554,8 +5568,7 @@
   "WrangleUnaryOp": {
    "inputs": [
     "lhs",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "res",
@@ -5575,8 +5588,7 @@
   "WriteBgeo": {
    "inputs": [
     "data",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -5595,8 +5607,7 @@
   "WriteObjMesh": {
    "inputs": [
     "mesh",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -5615,8 +5626,7 @@
   "WriteParticles": {
    "inputs": [
     "pars",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -5635,8 +5645,7 @@
   "WriteVDBGrid": {
    "inputs": [
     "data",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -5655,8 +5664,7 @@
   "ZensimBoundary": {
    "inputs": [
     "ZSLevelSet",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "ZSBoundary",
@@ -5676,8 +5684,7 @@
   "makeCompressibleSim": {
    "inputs": [
     "inFlowData",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "outFlowData",
@@ -5695,8 +5702,7 @@
     "model",
     "currentSDF",
     "Dx",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "MaterialPoints",
@@ -5717,8 +5723,7 @@
     "Dx",
     "partition",
     "grid",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "end",
@@ -5734,8 +5739,7 @@
   "ToMPMBoundary": {
    "inputs": [
     "BoundarySDF",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "ZSBoundary",
@@ -5752,8 +5756,7 @@
     "dx",
     "vmax",
     "defalutDt",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "desired_dt",
@@ -5767,8 +5770,7 @@
   },
   "MaterialPoints": {
    "inputs": [
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "DST"
@@ -5782,8 +5784,7 @@
   "makeSPGrid": {
    "inputs": [
     "dx",
-    "SRC",
-    "COND"
+    "SRC"
    ],
    "outputs": [
     "grid",
