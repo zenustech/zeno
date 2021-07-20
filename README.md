@@ -249,11 +249,24 @@ cmake -B build -DEXTENSION_gmpm:BOOL=ON
 ```
 to enable it.
 
+#### ZenoFX
+
+You need to update git submodules before building @archibate's ZenoFX.
+To do so:
+```bash
+git submodule update --init --recursive
+```
+Then:
+```bash
+cmake -B build -DZENO_BUILD_ZFX:BOOL=ON -DEXTENSION_ZenoFX:BOOL=ON
+```
+to enable it.
+
 #### Major dependencies
 
 Building them require some dependencies:
 
-- ZFX (ZenoFX expression wrangler)
+- ZenoFX (ZFX expression wrangler)
   - OpenMP (optional)
 
 - Rigid (bullet3 rigid dynamics)
