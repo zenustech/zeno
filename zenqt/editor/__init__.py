@@ -13,7 +13,7 @@ from PySide2.QtSvg import *
 from zenutils import go, gen_unique_ident
 from zeno import launch
 
-from . import asset_path
+from .. import asset_path
 
 CURR_VERSION = 'v1'
 MAX_STACK_LENGTH = 100

@@ -1,4 +1,4 @@
-from .editor import *
+from . import *
 
 style = {
     'title_color': '#638e77',
