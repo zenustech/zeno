@@ -22,11 +22,11 @@ struct Buffer {
 struct HashGrid {
     float inv_radius;
     float radius_squared;
-    zeno::vec3f *pos_data;
+    zeno::vec3f const *pos_data;
 
     using CoordType = std::tuple<int, int, int>;
-    std::array<std::vector<int>, 1024> table;
-    
+    std::array<std::vector<int>, 4096> table;
+
     int hash(int x, int y, int z) {
         return ((73856093 * x) ^ (19349663 * y) ^ (83492791 * z)) % table.size();
     }
@@ -38,7 +38,7 @@ struct HashGrid {
 
         radius_squared = radius * radius;
         inv_radius = 1.f / radius;
-        pos_data = const_cast<zeno::vec3f *>(pos.data());
+        pos_data = pos.data();
 
         for (int i = 0; i < pos.size(); i++) {
             auto coor = zeno::toint(zeno::floor(pos[i] * inv_radius));
@@ -51,7 +51,7 @@ struct HashGrid {
     void iter_neighbors(zeno::vec3f const &pos, F const &f) {
         auto coor = zeno::toint(zeno::floor(pos * inv_radius));
         auto key = hash(coor[0], coor[1], coor[2]);
-        for (auto pid: table[key]) {
+        for (int pid: table[key]) {
             auto dist = pos_data[pid] - pos;
             auto dis2 = zeno::dot(dist, dist);
             if (dis2 <= radius_squared) {
@@ -170,7 +170,7 @@ struct ParticlesNeighborWrangle : zeno::INode {
             assert(name[0] == '@');
             Buffer iob;
             zeno::PrimitiveObject *primPtr;
-            if (name[0] == '@') {
+            if (name[1] == '@') {
                 name = name.substr(2);
                 primPtr = primNei.get();
                 iob.which = 0;
@@ -188,7 +188,7 @@ struct ParticlesNeighborWrangle : zeno::INode {
             chs[i] = iob;
         }
 
-        std::unique_ptr<HashGrid> hashgrid;
+        auto hashgrid = std::make_unique<HashGrid>();
         hashgrid->build(primNei->attr<zeno::vec3f>("pos"), radius);
         vectors_wrangle(exec, chs, prim->attr<zeno::vec3f>("pos"), hashgrid.get());
 
