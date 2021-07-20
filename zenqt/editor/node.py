@@ -88,7 +88,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.dummy_output_socket.hide()
 
     def initCondButtons(self):
-        cond_keys = ['OUT', 'MUTE', 'ONCE', 'VIEW']
+        cond_keys = ['ONCE', 'PREP', 'MUTE', 'VIEW']
         for i, key in enumerate(cond_keys):
             button = QDMGraphicsButton(self)
             M = HORI_MARGIN * 0.2
