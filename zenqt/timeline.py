@@ -3,7 +3,7 @@ from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 from PySide2.QtSvg import *
 
-from . import asset_path
+from .utils import asset_path
 
 import os
 import zenvis
