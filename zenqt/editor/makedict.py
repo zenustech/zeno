@@ -170,11 +170,4 @@ class QDMGraphicsNode_ExtractDict(QDMGraphicsNode):
         return super().load(ident, data)
 
 
-
-
-
-
-
-
-
-
+from . import *

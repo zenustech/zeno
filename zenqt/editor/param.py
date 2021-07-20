@@ -154,3 +154,6 @@ class QDMGraphicsParam_multiline_string(QDMGraphicsParam):
 
     def getValue(self):
         return str(self.edit.toPlainText())
+
+
+from . import *
