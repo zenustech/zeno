@@ -54,7 +54,7 @@ struct MathFunctions : Visitor<MathFunctions> {
             auto mask = stm_const(-0.f);
             return stm("andnot", x, mask);
 
-        } else if (name == "fsin") {
+        /*} else if (name == "fsin") {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
             auto z = x;
@@ -69,7 +69,7 @@ struct MathFunctions : Visitor<MathFunctions> {
             t = z2 * stm_const(1.f / 72) * t;
             r = r + t;
             r = r * z;
-            return r;
+            return r;*/
 
         /* todo: also add fast exp
 //    http://martin.ankerl.com/2007/10/04/optimized-pow-approximation-for-java-and-c-c/

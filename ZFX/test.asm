@@ -19,3 +19,7 @@ vandps xmm0, xmm0, xmm0
 vandnps xmm0, xmm0, xmm0
 vorps xmm0, xmm0, xmm0
 vxorps xmm0, xmm0, xmm0
+pxor xmm0, xmm0
+por xmm0, xmm0
+pandn xmm0, xmm0
+pand xmm0, xmm0
