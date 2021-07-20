@@ -345,12 +345,18 @@ class NodeEditor(QWidget):
             self.scene.redo()
 
         elif name == 'Copy':
-            itemList = self.scene.selectedItems()
-            itemList = [n for n in itemList if isinstance(n, QDMGraphicsNode)]
-            nodes = self.scene.dumpGraph(itemList)
-            self.clipboard = nodes
+            self.do_copy()
 
         elif name == 'Paste':
+            self.do_paste()
+
+    def do_copy(self):
+        itemList = self.scene.selectedItems()
+        itemList = [n for n in itemList if isinstance(n, QDMGraphicsNode)]
+        nodes = self.scene.dumpGraph(itemList)
+        self.clipboard = nodes
+
+    def do_paste(self):
             if self.clipboard is None:
                 return
             itemList = self.scene.selectedItems()
@@ -361,9 +367,8 @@ class NodeEditor(QWidget):
             for nid in nodes:
                 nid_map[nid] = gen_unique_ident()
             new_nodes = {}
-            v = self.view
-            pos = v.mapToScene(v.mapFromGlobal(QCursor.pos()))
-            coors = (n['uipos'] for n in nodes.values())
+            pos = self.view.mapToScene(self.view.mapFromGlobal(QCursor.pos()))
+            coors = [n['uipos'] for n in nodes.values()]
             min_x = min(x for x, y in coors)
             min_y = min(y for x, y in coors)
             max_x = max(x for x, y in coors)
