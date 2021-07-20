@@ -31,6 +31,22 @@
       -61.440000000000005
      ],
      "options": []
+    },
+    "03f81695-ThisWontFuckCpp": {
+     "name": "ThisWontFuckCpp",
+     "inputs": {
+      "prim": [
+       "e957ba1a-MakePrimitive",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -87.03999999999998,
+      66.048
+     ],
+     "options": []
     }
    },
    "view": {
@@ -1533,6 +1549,20 @@
    ],
    "categories": [
     "subgraph"
+   ]
+  },
+  "ThisWontFuckCpp": {
+   "inputs": [
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "debug"
    ]
   },
   "TransformPrimitive": {
