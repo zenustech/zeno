@@ -1,4 +1,4 @@
-O=arts/ZFXv2.zsg
+O=arts/make3dgrid.zsg
 
 default: run
 

@@ -60,7 +60,7 @@
       "SRC": null
      },
      "params": {
-      "value": 32
+      "value": 16
      },
      "uipos": [
       27.359999999999985,
@@ -99,12 +99,70 @@
       579.2000000000002
      ],
      "options": []
+    },
+    "2752e755-ParticlesNeighborWrangle": {
+     "name": "ParticlesNeighborWrangle",
+     "inputs": {
+      "prim": [
+       "b890f2d5-Make3DGridPrimitive",
+       "prim"
+      ],
+      "primNei": [
+       "b890f2d5-Make3DGridPrimitive",
+       "prim"
+      ],
+      "zfxCode": null,
+      "params": [
+       "5383a897-MakeDict",
+       "dict"
+      ],
+      "radius": [
+       "e32cfba7-NumericFloat",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      683.2,
+      259.2
+     ],
+     "options": []
+    },
+    "5383a897-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "_KEYS": ""
+     },
+     "uipos": [
+      432.79999999999995,
+      520.0000000000001
+     ],
+     "options": [],
+     "socket_keys": []
+    },
+    "e32cfba7-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.1
+     },
+     "uipos": [
+      694.4000000000001,
+      500.0
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -333,
-    "trans_y": 6
+    "trans_x": 129,
+    "trans_y": 279
    }
   }
  },
@@ -1196,6 +1254,24 @@
    ],
    "categories": [
     "numeric"
+   ]
+  },
+  "ParticlesNeighborWrangle": {
+   "inputs": [
+    "prim",
+    "primNei",
+    "zfxCode",
+    "params",
+    "radius",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
    ]
   },
   "ParticlesToPrimitive": {

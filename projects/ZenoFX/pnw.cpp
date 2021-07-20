@@ -6,6 +6,8 @@
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
+#include <tuple>
+#include <unordered_map>
 
 static zfx::Compiler compiler;
 static zfx::x64::Assembler assembler;
@@ -17,39 +19,76 @@ struct Buffer {
     int which = 0;
 };
 
-static void vectors_wrangle
-    ( zfx::x64::Executable *exec
-    , std::vector<Buffer> const &chs
-    ) {
-    if (chs.size() == 0)
-        return;
-    size_t size = 0;
-    for (int i = 1; i < chs.size(); i++) {
-        if (chs[i].which == 0)
-            size = size == 0 ? chs[i].count : std::min(chs[i].count, size);
+struct HashGrid {
+    float inv_radius;
+    float radius_squared;
+    zeno::vec3f *pos_data;
+
+    using CoordType = std::tuple<int, int, int>;
+    std::array<std::vector<int>, 1024> table;
+    
+    int hash(int x, int y, int z) {
+        return ((73856093 * x) ^ (19349663 * y) ^ (83492791 * z)) % table.size();
     }
 
-    #pragma omp parallel for
-    for (int i = 0; i < size; i++) {
-        auto ctx = exec->make_context();
-        std::vector<int> neighbors;
-        for (int j: neighbors) {
-            for (int j = 0; j < chs.size(); j++) {
-                ctx.channel(j)[0] = chs[j].base[chs[j].stride * i];
-            }
-            ctx.execute();
-            for (int j = 0; j < chs.size(); j++) {
-                chs[j].base[chs[j].stride * i] = ctx.channel(j)[0];
+    void build(std::vector<zeno::vec3f> const &pos, float radius) {
+        for (auto &ent: table) {
+            ent.clear();
+        }
+
+        radius_squared = radius * radius;
+        inv_radius = 1.f / radius;
+        pos_data = const_cast<zeno::vec3f *>(pos.data());
+
+        for (int i = 0; i < pos.size(); i++) {
+            auto coor = zeno::toint(zeno::floor(pos[i] * inv_radius));
+            auto key = hash(coor[0], coor[1], coor[2]);
+            table[key].push_back(i);
+        }
+    }
+
+    template <class F>
+    void iter_neighbors(zeno::vec3f const &pos, F const &f) {
+        auto coor = zeno::toint(zeno::floor(pos * inv_radius));
+        auto key = hash(coor[0], coor[1], coor[2]);
+        for (auto pid: table[key]) {
+            auto dist = pos_data[pid] - pos;
+            auto dis2 = zeno::dot(dist, dist);
+            if (dis2 <= radius_squared) {
+                f(pid);
             }
         }
     }
-}
+};
 
-static void build_neighbor_list
-    ( std::vector<zeno::vec3f> const &posi
-    , std::vector<zeno::vec3f> const &posj
-    , std::vector<int> &res
+static void vectors_wrangle
+    ( zfx::x64::Executable *exec
+    , std::vector<Buffer> const &chs
+    , std::vector<zeno::vec3f> const &pos
+    , HashGrid *hashgrid
     ) {
+    if (chs.size() == 0)
+        return;
+
+    #pragma omp parallel for
+    for (int i = 0; i < pos.size(); i++) {
+        auto ctx = exec->make_context();
+        for (int k = 0; k < chs.size(); k++) {
+            if (!chs[k].which)
+                ctx.channel(k)[0] = chs[k].base[chs[k].stride * i];
+        }
+        hashgrid->iter_neighbors(pos[i], [&] (int pid) {
+            for (int k = 0; k < chs.size(); k++) {
+                if (chs[k].which)
+                    ctx.channel(k)[0] = chs[k].base[chs[k].stride * i];
+            }
+            ctx.execute();
+        });
+        for (int k = 0; k < chs.size(); k++) {
+            if (!chs[k].which)
+                chs[k].base[chs[k].stride * i] = ctx.channel(k)[0];
+        }
+    }
 }
 
 struct ParticlesNeighborWrangle : zeno::INode {
@@ -57,6 +96,7 @@ struct ParticlesNeighborWrangle : zeno::INode {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto primNei = get_input<zeno::PrimitiveObject>("primNei");
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
+        auto radius = get_input<zeno::NumericObject>("radius")->get<float>();
 
         zfx::Options opts(zfx::Options::for_x64);
         for (auto const &[key, attr]: prim->m_attrs) {
@@ -147,14 +187,17 @@ struct ParticlesNeighborWrangle : zeno::INode {
             }, attr);
             chs[i] = iob;
         }
-        vectors_wrangle(exec, chs);
+
+        std::unique_ptr<HashGrid> hashgrid;
+        hashgrid->build(primNei->attr<zeno::vec3f>("pos"), radius);
+        vectors_wrangle(exec, chs, prim->attr<zeno::vec3f>("pos"), hashgrid.get());
 
         set_output("prim", std::move(prim));
     }
 };
 
 ZENDEFNODE(ParticlesNeighborWrangle, {
-    {"prim", "primNei", "zfxCode", "params"},
+    {"prim", "primNei", "zfxCode", "params", "radius"},
     {"prim"},
     {},
     {"zenofx"},

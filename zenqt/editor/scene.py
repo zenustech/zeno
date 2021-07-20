@@ -261,7 +261,6 @@ class QDMGraphicsView(QGraphicsView):
                 edit.menu.removeAction(act)
         pattern = edit.text()
         keys = self.scene().descs.keys()
-        from .utils import fuzzy_search
         matched = fuzzy_search(pattern, keys)
         for key in matched:
             edit.menu.addAction(key)
