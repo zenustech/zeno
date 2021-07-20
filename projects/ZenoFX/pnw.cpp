@@ -23,32 +23,24 @@ static void vectors_wrangle
     ) {
     if (chs.size() == 0)
         return;
-    size_t size = chs[0].count;
+    size_t size = 0;
     for (int i = 1; i < chs.size(); i++) {
-        size = std::min(chs[i].count, size);
+        if (chs[i].which == 0)
+            size = size == 0 ? chs[i].count : std::min(chs[i].count, size);
     }
 
     #pragma omp parallel for
-    for (int i = 0; i < size - exec->SimdWidth + 1; i += exec->SimdWidth) {
+    for (int i = 0; i < size; i++) {
         auto ctx = exec->make_context();
-        for (int j = 0; j < chs.size(); j++) {
-            for (int k = 0; k < exec->SimdWidth; k++)
-                ctx.channel(j)[k] = chs[j].base[chs[j].stride * (i + k)];
-        }
-        ctx.execute();
-        for (int j = 0; j < chs.size(); j++) {
-            for (int k = 0; k < exec->SimdWidth; k++)
-                 chs[j].base[chs[j].stride * (i + k)] = ctx.channel(j)[k];
-        }
-    }
-    for (int i = size / exec->SimdWidth * exec->SimdWidth; i < size; i++) {
-        auto ctx = exec->make_context();
-        for (int j = 0; j < chs.size(); j++) {
-            ctx.channel(j)[0] = chs[j].base[chs[j].stride * i];
-        }
-        ctx.execute();
-        for (int j = 0; j < chs.size(); j++) {
-            chs[j].base[chs[j].stride * i] = ctx.channel(j)[0];
+        std::vector<int> neighbors;
+        for (int j: neighbors) {
+            for (int j = 0; j < chs.size(); j++) {
+                ctx.channel(j)[0] = chs[j].base[chs[j].stride * i];
+            }
+            ctx.execute();
+            for (int j = 0; j < chs.size(); j++) {
+                chs[j].base[chs[j].stride * i] = ctx.channel(j)[0];
+            }
         }
     }
 }
@@ -136,13 +128,17 @@ struct ParticlesNeighborWrangle : zeno::INode {
             auto [name, dimid] = prog->symbols[i];
             printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '@');
-            name = name.substr(1);
-            auto primPtr = prim.get();
-            if (name[0] == '@') {
-                primPtr = primNei.get();
-                name = name.substr(1);
-            }
             Buffer iob;
+            zeno::PrimitiveObject *primPtr;
+            if (name[0] == '@') {
+                name = name.substr(2);
+                primPtr = primNei.get();
+                iob.which = 0;
+            } else {
+                name = name.substr(1);
+                primPtr = prim.get();
+                iob.which = 1;
+            }
             auto const &attr = primPtr->attr(name);
             std::visit([&, dimid_ = dimid] (auto const &arr) {
                 iob.base = (float *)arr.data() + dimid_;

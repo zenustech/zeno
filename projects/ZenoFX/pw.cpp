@@ -14,7 +14,6 @@ struct Buffer {
     float *base = nullptr;
     size_t count = 0;
     size_t stride = 0;
-    int which = 0;
 };
 
 static void vectors_wrangle
