@@ -5,6 +5,7 @@
 #include "ZensimGeometry.h"
 #include "ZensimModel.h"
 
+#include <zeno/ListObject.h>
 #include <zeno/zeno.h>
 
 namespace zeno {

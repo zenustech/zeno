@@ -69,6 +69,7 @@ struct ToZensimParticles : zeno::INode {
             }
           })(model, outParticles->get());
     }
+    outParticles->model = model;
     fmt::print(fg(fmt::color::cyan), "done executing ToZensimParticles\n");
     set_output("ZensimParticles", outParticles);
   }
