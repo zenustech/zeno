@@ -19,7 +19,8 @@ def killProcess():
     if g_proc is None:
         print('worker process is not running')
         return
-    g_proc.kill()
+    g_proc.terminate()
+    #g_proc.kill()
     g_proc = None
     print('worker process killed')
 
@@ -33,6 +34,21 @@ def cleanIOPath():
         shutil.rmtree(iopath, ignore_errors=True)
 
 
+def _launch_mproc(func, *args):
+    global g_proc
+    if g_proc is not None:
+        killProcess()
+    if os.environ.get('ZEN_SPROC'):
+        func(*args)
+    else:
+        g_proc = Process(target=func, args=tuple(args), daemon=True)
+        g_proc.start()
+        g_proc.join()
+        if g_proc is not None:
+            print('worker processed exited with', g_proc.exitcode)
+        g_proc = None
+
+
 def launchProgram(prog, nframes):
     global g_iopath
     global g_proc
@@ -40,7 +56,7 @@ def launchProgram(prog, nframes):
     cleanIOPath()
     g_iopath = tempfile.mkdtemp(prefix='zenvis-')
     print('IOPath:', g_iopath)
-    if os.environ.get('ZEN_USEFORK'):
+    if os.environ.get('ZEN_USEFORK') or os.environ.get('ZEN_SPROC'):
         from . import run
         _launch_mproc(run.runScene, prog['graph'], nframes, g_iopath)
     else:
