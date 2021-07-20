@@ -7,7 +7,6 @@ import subprocess
 import json
 import sys
 import os
-from . import run
 from multiprocessing import Process
 
 
@@ -20,7 +19,7 @@ def killProcess():
     if g_proc is None:
         print('worker process is not running')
         return
-    g_proc.terminate()
+    g_proc.kill()
     g_proc = None
     print('worker process killed')
 
@@ -36,18 +35,31 @@ def cleanIOPath():
 
 def launchProgram(prog, nframes):
     global g_iopath
+    global g_proc
+    killProcess()
     cleanIOPath()
     g_iopath = tempfile.mkdtemp(prefix='zenvis-')
     print('IOPath:', g_iopath)
-    #_launch_mproc(run.runScene, prog['graph'], nframes, g_iopath)
-    filepath = os.path.join(g_iopath, 'prog.zsg')
-    with open(filepath, 'w') as f:
-        json.dump(prog, f)
-    subprocess.check_call([sys.executable, '-m', 'zeno', filepath, str(nframes), g_iopath])
+    if os.environ.get('ZEN_USEFORK'):
+        from . import run
+        _launch_mproc(run.runScene, prog['graph'], nframes, g_iopath)
+    else:
+        filepath = os.path.join(g_iopath, 'prog.zsg')
+        with open(filepath, 'w') as f:
+            json.dump(prog, f)
+        g_proc = subprocess.Popen([sys.executable, '-m', 'zeno', filepath, str(nframes), g_iopath])
+        retcode = g_proc.wait()
+        if retcode != 0:
+            print('zeno program exited with error code:', retcode)
 
 
 def getDescriptors():
-    descs = run.dumpDescriptors()
+    if os.environ.get('ZEN_USEFORK'):
+        from . import run
+        descs = run.dumpDescriptors()
+    else:
+        descs = subprocess.check_output([sys.executable, '-m', 'zeno', '--dump-descs'])
+        descs = descs.split(b'==<DESCS>==')[1].decode()
     descs = descs.splitlines()
     descs = [parse_descriptor_line(line) for line in descs if line.startswith('DESC:')]
     descs = {name: desc for name, desc in descs}
