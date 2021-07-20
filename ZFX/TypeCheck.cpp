@@ -73,14 +73,37 @@ struct TypeCheck : Visitor<TypeCheck> {
             int dim = name[3] - '0';
             stmt->dim = dim;
 
-        } else if (contains({"sqrt", "sin", "cos", "tan", "asin", "acos",
-            "atan", "exp", "log", "rsqrt", "floor", "ceil", "abs",
-            "normalize"}, name)) {
+        } else if (contains({
+                    "sqrt",
+                    "sin",
+                    "cos",
+                    "tan",
+                    "asin",
+                    "acos",
+                    "atan",
+                    "exp",
+                    "log",
+                    "rsqrt",
+                    "floor",
+                    "ceil",
+                    "round",
+                    "abs",
+                    "not",
+            }, name)) {
             if (stmt->args.size() != 1) {
                 error("function `%s` takes exactly 1 argument", name.c_str());
             }
 
-        } else if (contains({"min", "max", "pow", "atan2"}, name)) {
+        } else if (contains({
+                    "min",
+                    "max",
+                    "pow",
+                    "atan2",
+                    "and",
+                    "andnot",
+                    "or",
+                    "xor",
+            }, name)) {
             if (stmt->args.size() != 2) {
                 error("function `%s` takes exactly 2 arguments", name.c_str());
             }
@@ -88,6 +111,11 @@ struct TypeCheck : Visitor<TypeCheck> {
         } else if (contains({"clamp", "mix"}, name)) {
             if (stmt->args.size() != 3) {
                 error("function `%s` takes exactly 3 arguments", name.c_str());
+            }
+
+        } else if (contains({"normalize"}, name)) {
+            if (stmt->args.size() != 1) {
+                error("function `%s` takes exactly 1 argument", name.c_str());
             }
 
         } else if (contains({"length"}, name)) {

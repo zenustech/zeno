@@ -109,20 +109,12 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             }
             return stm_cross(x, y);
 
-        } else if (contains({"min", "max", "pow", "atan2"}, name)) {
-            ERROR_IF(args.size() != 2);
-            auto x = make_stm(args[0]);
-            auto y = make_stm(args[1]);
-            return stm_func(name, {x, y});
-
-        } else if (contains({"sqrt", "sin", "cos", "tan", "asin", "acos",
-            "atan", "exp", "log", "rsqrt", "floor", "ceil", "abs"}, name)) {
-            ERROR_IF(args.size() != 1);
-            auto x = make_stm(args[0]);
-            return stm_func(name, {x});
-
         } else {
-            error("invalid function name `%s` (with %d args)", name.c_str(), args.size());
+            std::vector<Stm> argstms;
+            for (auto const &x: args) {
+                argstms.emplace_back(make_stm(x));
+            }
+            return stm_func(name, argstms);
         }
     }
 
