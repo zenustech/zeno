@@ -1,4 +1,4 @@
-O=arts/testpreptag.zsg
+O=arts/make3dgrid.zsg
 
 default: run
 
