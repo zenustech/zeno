@@ -22,6 +22,11 @@ struct GlobalState {
         return !has_substep_executed;
     }
 
+    inline bool isOneSubstep() const {
+        return (time_step_integrated && has_frame_completed)
+            || (!has_substep_executed && !time_step_integrated);
+    }
+
     inline bool isFirstFrame() const {
         return substepid == 0;
     }
