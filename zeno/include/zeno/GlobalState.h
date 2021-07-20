@@ -14,6 +14,18 @@ struct GlobalState {
     bool has_substep_executed = false;
     bool time_step_integrated = false;
 
+    inline bool isAfterFrame() const {
+        return has_frame_completed || !time_step_integrated;
+    }
+
+    inline bool isBeforeFrame() const {
+        return !has_substep_executed;
+    }
+
+    inline bool isFirstFrame() const {
+        return substepid == 0;
+    }
+
     ZENAPI bool substepBegin();
     ZENAPI void substepEnd();
     ZENAPI void frameBegin();
