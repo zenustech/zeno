@@ -19,6 +19,12 @@ namespace opcode {
         sub = 0x5c,
         mul = 0x59,
         div = 0x5e,
+        min = 0x5d,
+        max = 0x5f,
+        bit_and = 0x54,
+        bit_andnot = 0x55,
+        bit_or = 0x56,
+        bit_xor = 0x57,
         sqrt = 0x51,
         loadu = 0x10,
         loada = 0x28,
@@ -141,6 +147,15 @@ struct SIMDBuilder {   // requires AVX2
         adr.dump(res, val);
     }
 
+    void addAvxRoundOp(int type, int dst, int src, int opid) {
+        res.push_back(0xc4);
+        res.push_back(0xe3);
+        res.push_back(0x79 | type << 2 & 0x04);
+        res.push_back(0x08 | type >> 2 & 0x01);
+        res.push_back(0xc0 | dst << 3 | src);
+        res.push_back(opid);
+    }
+
     void addAvxMemoryOp(int type, int op, int val, MemoryAddress adr) {
         res.push_back(0xc5);
         res.push_back(type | 0x38);
@@ -189,9 +204,8 @@ struct SIMDBuilder {   // requires AVX2
         addAvxBinaryOp(type, op, dst, 0, src);
     }
 
-    void addAvxMoveOp(int dst, int src) {
-        // todo: this can be optimized from vmovss to vmovups
-        addAvxBinaryOp(optype::xmmss, opcode::mov, dst, src, src);
+    void addAvxMoveOp(int type, int dst, int src) {
+        addAvxBinaryOp(opcode::loadu, opcode::mov, dst, opreg::mm0, src);
     }
 
     void addPushReg(int reg) {

@@ -15,7 +15,7 @@ int main() {
     };
 #else
     std::string code(R"(
-@pos.x = 0 * sin(@clr)
+@pos.x = floor(@clr)
 )");
 #endif
 
@@ -30,8 +30,8 @@ int main() {
     }
 
     auto ctx = exec->make_context();
-    ctx.channel(prog->symbol_id("@pos", 0))[0] = 1.f;
-    ctx.channel(prog->symbol_id("@clr", 0))[0] = 2.f;
+    ctx.channel(prog->symbol_id("@pos", 0))[0] = 1.414f;
+    ctx.channel(prog->symbol_id("@clr", 0))[0] = 2.718f;
     ctx.execute();
     printf("new_pos = %f\n", ctx.channel(prog->symbol_id("@pos", 0))[0]);
 

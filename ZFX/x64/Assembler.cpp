@@ -125,6 +125,54 @@ struct ImplAssembler {
                 builder->addAvxBinaryOp(simdkind, opcode::div,
                     dst, lhs, rhs);
 
+            } else if (cmd == "min") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::min,
+                    dst, lhs, rhs);
+
+            } else if (cmd == "max") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::max,
+                    dst, lhs, rhs);
+
+            } else if (cmd == "and") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::bit_and,
+                    dst, lhs, rhs);
+
+            } else if (cmd == "andnot") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::bit_andnot,
+                    dst, lhs, rhs);
+
+            } else if (cmd == "or") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::bit_or,
+                    dst, lhs, rhs);
+
+            } else if (cmd == "xor") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::bit_xor,
+                    dst, lhs, rhs);
+
             } else if (cmd == "sqrt") {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
@@ -136,7 +184,25 @@ struct ImplAssembler {
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto src = from_string<int>(linesep[2]);
-                builder->addAvxMoveOp(dst, src);
+                builder->addAvxMoveOp(simdkind, dst, src);
+
+            } else if (cmd == "round") {
+                ERROR_IF(linesep.size() < 2);
+                auto dst = from_string<int>(linesep[1]);
+                auto src = from_string<int>(linesep[2]);
+                builder->addAvxRoundOp(simdkind, dst, src, 0 + 8);
+
+            } else if (cmd == "floor") {
+                ERROR_IF(linesep.size() < 2);
+                auto dst = from_string<int>(linesep[1]);
+                auto src = from_string<int>(linesep[2]);
+                builder->addAvxRoundOp(simdkind, dst, src, 1 + 8);
+
+            } else if (cmd == "ceil") {
+                ERROR_IF(linesep.size() < 2);
+                auto dst = from_string<int>(linesep[1]);
+                auto src = from_string<int>(linesep[2]);
+                builder->addAvxRoundOp(simdkind, dst, src, 2 + 8);
 
             } else if (auto it = std::find(
                 FuncTable::funcnames.begin(), FuncTable::funcnames.end(), cmd);
