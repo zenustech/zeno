@@ -110,6 +110,7 @@ std::tuple
     ir->print();
 #endif
 
+    // TODO: if (options.reassign_params)
 #ifdef ZFX_PRINT_IR
     cout << "=== ReassignParameters" << endl;
 #endif

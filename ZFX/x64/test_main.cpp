@@ -15,7 +15,7 @@ int main() {
     };
 #else
     std::string code(R"(
-@pos.x = -@clr
+@pos.x = andnot(-0, @clr)
 )");
 #endif
 

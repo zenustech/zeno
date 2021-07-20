@@ -2,6 +2,7 @@
 #include "Stmts.h"
 #include <sstream>
 #include "StmHelper.h"
+#include <cmath>
 
 namespace zfx {
 
@@ -46,13 +47,13 @@ struct MathFunctions : Visitor<MathFunctions> {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
             auto mask = stm_const(-0.f);
-            return stm("xor", x, mask);
+            return stm("xor", mask, x);
 
         } else if (name == "abs") {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
             auto mask = stm_const(-0.f);
-            return stm("andnot", x, mask);
+            return stm("andnot", mask, x);
 
         /*} else if (name == "fsin") {
             ERROR_IF(args.size() != 1);

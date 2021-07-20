@@ -25,8 +25,7 @@ struct SymbolCheck : Visitor<SymbolCheck> {
     void check(Statement *stmt) {
         if (auto src = dynamic_cast<TempSymbolStmt *>(stmt); src) {
             if (defined.find(src->id) == defined.end()) {
-                error("undefined symbol $%d referenced by $%d",
-                    src->id, stmt->id);
+                error("undefined symbol at $%d", src->id);
             }
         }
     }
