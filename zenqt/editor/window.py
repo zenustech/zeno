@@ -363,10 +363,13 @@ class NodeEditor(QWidget):
             new_nodes = {}
             v = self.view
             pos = v.mapToScene(v.mapFromGlobal(QCursor.pos()))
-            min_x = min(map(lambda n: n['uipos'][0], nodes.values()))
-            min_y = min(map(lambda n: n['uipos'][1], nodes.values()))
-            offset_x = pos.x() - min_x
-            offset_y = pos.y() - min_y
+            coors = (n['uipos'] for n in nodes.values())
+            min_x = min(x for x, y in coors)
+            min_y = min(y for x, y in coors)
+            max_x = max(x for x, y in coors)
+            max_y = max(y for x, y in coors)
+            offset_x = pos.x() - (min_x + max_x) / 2
+            offset_y = pos.y() - (min_y + max_y) / 2
             for nid, n in nodes.items():
                 x, y = n['uipos']
                 n['uipos'] = (x + offset_x, y + offset_y)
