@@ -361,9 +361,15 @@ class NodeEditor(QWidget):
             for nid in nodes:
                 nid_map[nid] = gen_unique_ident()
             new_nodes = {}
+            v = self.view
+            pos = v.mapToScene(v.mapFromGlobal(QCursor.pos()))
+            min_x = min(map(lambda n: n['uipos'][0], nodes.values()))
+            min_y = min(map(lambda n: n['uipos'][1], nodes.values()))
+            offset_x = pos.x() - min_x
+            offset_y = pos.y() - min_y
             for nid, n in nodes.items():
                 x, y = n['uipos']
-                n['uipos'] = (x + style['copy_offset_x'], y + style['copy_offset_y'])
+                n['uipos'] = (x + offset_x, y + offset_y)
                 inputs = n['inputs']
                 for name, info in inputs.items():
                     if info == None:
