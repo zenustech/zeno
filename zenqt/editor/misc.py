@@ -1,5 +1,8 @@
 from . import *
 
+CURR_VERSION = 'v1'
+MAX_STACK_LENGTH = 100
+
 style = {
     'title_color': '#638e77',
     'socket_connect_color': '#638e77',
@@ -35,101 +38,8 @@ style = {
     'dummy_socket_offset': 15,
 }
 
+TEXT_HEIGHT = style['text_height']
+HORI_MARGIN = style['hori_margin']
+SOCKET_RADIUS = style['socket_radius']
+BEZIER_FACTOR = 0.5
 
-class HistoryStack:
-    def __init__(self, scene):
-        self.scene = scene
-        self.init_state()
-    
-    def init_state(self):
-        self.current_pointer = -1
-        self.stack = []
-
-    def undo(self):
-        # can not undo at stack bottom
-        if self.current_pointer == 0:
-            return
-
-        self.current_pointer -= 1
-        current_scene = self.stack[self.current_pointer]
-        self.scene.newGraph()
-        self.scene.loadGraph(current_scene)
-
-    def redo(self):
-        # can not redo at stack top
-        if self.current_pointer == len(self.stack) - 1:
-            return
-
-        self.current_pointer += 1
-        current_scene = self.stack[self.current_pointer]
-        self.scene.newGraph()
-        self.scene.loadGraph(current_scene)
-    
-    def record(self):
-        if self.current_pointer != len(self.stack) - 1:
-            self.stack = self.stack[:self.current_pointer + 1]
-
-        nodes = self.scene.dumpGraph()
-        self.stack.append(nodes)
-        self.current_pointer += 1
-
-        # limit the stack length
-        if self.current_pointer > MAX_STACK_LENGTH:
-            self.stack = self.stack[1:]
-            self.current_pointer = MAX_STACK_LENGTH
-
-
-class QDMSearchLineEdit(QLineEdit):
-    def __init__(self, menu, view):
-        super().__init__(menu)
-        self.menu = menu
-        self.view = view
-        self.wact = QWidgetAction(self.menu)
-        self.wact.setDefaultWidget(self)
-        self.menu.addAction(self.wact)
-
-
-class QDMFileMenu(QMenu):
-    def __init__(self):
-        super().__init__()
-
-        self.setTitle('&File')
-
-        acts = [
-                ('&New', QKeySequence.New),
-                ('&Open', QKeySequence.Open),
-                ('&Save', QKeySequence.Save),
-                ('&Import', 'ctrl+shift+o'),
-                ('Save &as', QKeySequence.SaveAs),
-        ]
-
-        for name, shortcut in acts:
-            if not name:
-                self.addSeparator()
-                continue
-            action = QAction(name, self)
-            action.setShortcut(shortcut)
-            self.addAction(action)
-
-
-class QDMEditMenu(QMenu):
-    def __init__(self):
-        super().__init__()
-
-        self.setTitle('&Edit')
-
-        acts = [
-                ('Undo', QKeySequence.Undo),
-                ('Redo', QKeySequence.Redo),
-                (None, None),
-                ('Copy', QKeySequence.Copy),
-                ('Paste', QKeySequence.Paste),
-        ]
-        
-        for name, shortcut in acts:
-            if not name:
-                self.addSeparator()
-                continue
-            action = QAction(name, self)
-            action.setShortcut(shortcut)
-            self.addAction(action)

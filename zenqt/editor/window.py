@@ -1,6 +1,52 @@
 from . import *
 
 
+class QDMFileMenu(QMenu):
+    def __init__(self):
+        super().__init__()
+
+        self.setTitle('&File')
+
+        acts = [
+                ('&New', QKeySequence.New),
+                ('&Open', QKeySequence.Open),
+                ('&Save', QKeySequence.Save),
+                ('&Import', 'ctrl+shift+o'),
+                ('Save &as', QKeySequence.SaveAs),
+        ]
+
+        for name, shortcut in acts:
+            if not name:
+                self.addSeparator()
+                continue
+            action = QAction(name, self)
+            action.setShortcut(shortcut)
+            self.addAction(action)
+
+
+class QDMEditMenu(QMenu):
+    def __init__(self):
+        super().__init__()
+
+        self.setTitle('&Edit')
+
+        acts = [
+                ('Undo', QKeySequence.Undo),
+                ('Redo', QKeySequence.Redo),
+                (None, None),
+                ('Copy', QKeySequence.Copy),
+                ('Paste', QKeySequence.Paste),
+        ]
+        
+        for name, shortcut in acts:
+            if not name:
+                self.addSeparator()
+                continue
+            action = QAction(name, self)
+            action.setShortcut(shortcut)
+            self.addAction(action)
+
+
 class NodeEditor(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
