@@ -20,8 +20,7 @@ struct SpatialPartitionForParticles : zeno::INode {
     auto &partition = get_input("ZSPartition")->as<ZenoPartition>()->get();
 
     auto dx = std::get<float>(get_param("dx"));
-    if(has_input("Dx"))
-    {
+    if (has_input("Dx")) {
       dx = get_input("Dx")->as<NumericObject>()->get<float>();
     }
     auto blocklen = std::get<int>(get_param("block_side_length"));
@@ -68,7 +67,7 @@ struct SpatialPartitionForParticles : zeno::INode {
 static int defSpatialPartitionForParticles = zeno::defNodeClass<
     SpatialPartitionForParticles>(
     "SpatialPartitionForParticles",
-    {/* inputs: */ {"ZSPartition", "ZSParticles","Dx"},
+    {/* inputs: */ {"ZSPartition", "ZSParticles", "Dx"},
      /* outputs: */ {},
      /* params: */ {{"float", "dx", "1"}, {"int", "block_side_length", "4"}},
      /* category: */ {"GPUMPM"}});
