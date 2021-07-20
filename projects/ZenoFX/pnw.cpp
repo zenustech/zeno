@@ -53,9 +53,17 @@ static void vectors_wrangle
     }
 }
 
-struct ParticlesWrangle : zeno::INode {
+static void build_neighbor_list
+    ( std::vector<zeno::vec3f> const &posi
+    , std::vector<zeno::vec3f> const &posj
+    , std::vector<int> &res
+    ) {
+}
+
+struct ParticlesNeighborWrangle : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto primNei = get_input<zeno::PrimitiveObject>("primNei");
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
         zfx::Options opts(zfx::Options::for_x64);
@@ -68,6 +76,16 @@ struct ParticlesWrangle : zeno::INode {
             }, attr);
             printf("define symbol: @%s dim %d\n", key.c_str(), dim);
             opts.define_symbol('@' + key, dim);
+        }
+        for (auto const &[key, attr]: primNei->m_attrs) {
+            int dim = std::visit([] (auto const &v) {
+                using T = std::decay_t<decltype(v[0])>;
+                if constexpr (std::is_same_v<T, zeno::vec3f>) return 3;
+                else if constexpr (std::is_same_v<T, float>) return 1;
+                else return 0;
+            }, attr);
+            printf("define symbol: @@%s dim %d\n", key.c_str(), dim);
+            opts.define_symbol("@@" + key, dim);
         }
 
         auto params = has_input("params") ?
@@ -118,8 +136,14 @@ struct ParticlesWrangle : zeno::INode {
             auto [name, dimid] = prog->symbols[i];
             printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '@');
+            name = name.substr(1);
+            auto primPtr = prim.get();
+            if (name[0] == '@') {
+                primPtr = primNei.get();
+                name = name.substr(1);
+            }
             Buffer iob;
-            auto const &attr = prim->attr(name.substr(1));
+            auto const &attr = primPtr->attr(name);
             std::visit([&, dimid_ = dimid] (auto const &arr) {
                 iob.base = (float *)arr.data() + dimid_;
                 iob.count = arr.size();
@@ -133,8 +157,8 @@ struct ParticlesWrangle : zeno::INode {
     }
 };
 
-ZENDEFNODE(ParticlesWrangle, {
-    {"prim", "zfxCode", "params"},
+ZENDEFNODE(ParticlesNeighborWrangle, {
+    {"prim", "primNei", "zfxCode", "params"},
     {"prim"},
     {},
     {"zenofx"},
