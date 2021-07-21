@@ -177,7 +177,6 @@ class QDMGraphicsButton(QGraphicsItem):
         self.setChecked(not self.checked)
 
     def mousePressEvent(self, event):
-        super().mousePressEvent(event)
         self.on_click()
 
     def setGeometry(self, rect):
@@ -204,7 +203,6 @@ class QDMGraphicsCollapseButton(QGraphicsSvgItem):
         self.setSharedRenderer(self._renderer)
 
     def mousePressEvent(self, event):
-        super().mouseMoveEvent(event)
         self.node.collapsed = not self.node.collapsed
         if self.node.collapsed:
             self.node.collapse()

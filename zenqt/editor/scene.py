@@ -370,6 +370,7 @@ class QDMGraphicsView(QGraphicsView):
                     self.dragingEdge = edge
                     self.scene().addItem(edge)
                     self.scene().update()
+                    return
 
             else:
                 item = self.itemAt(event.pos())
@@ -381,6 +382,7 @@ class QDMGraphicsView(QGraphicsView):
                 self.dragingEdge = None
                 if isinstance(item, QDMGraphicsSocket):
                     self.scene().record()
+                    return
 
         super().mousePressEvent(event)
 
