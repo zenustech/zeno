@@ -7,7 +7,7 @@ namespace zeno {
 struct HeatmapObject : zeno::IObject {
     std::vector<zeno::vec3f> colors;
 
-    zeno::vec3f interp(float x) {
+    zeno::vec3f interp(float x) const {
         x = zeno::clamp(x, 0, 1) * colors.size();
         int i = (int)zeno::floor(x);
         i = zeno::clamp(i, 0, colors.size() - 2);
@@ -55,10 +55,9 @@ struct PrimitiveColorByHeatmap : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto heatmap = get_input<HeatmapObject>("heatmap");
-        auto srcAttr = get_param<std::string>("srcAttr");
-        auto colorAttr = get_param<std::string>("colorAttr");
-        auto &clr = prim->add_attr<zeno::vec3f>(colorAttr);
-        auto &src = prim->attr<float>(srcAttr);
+        auto attrName = get_param<std::string>("attrName");
+        auto &clr = prim->add_attr<zeno::vec3f>("clr");
+        auto &src = prim->attr<float>(attrName);
 
         for (int i = 0; i < src.size(); i++) {
             clr[i] = heatmap->interp(src[i]);
@@ -74,8 +73,7 @@ ZENDEFNODE(PrimitiveColorByHeatmap,
         }, /* outputs: */ {
         "prim",
         }, /* params: */ {
-        {"string", "srcAttr", "rho"},
-        {"string", "colorAttr", "clr"},
+        {"string", "attrName", "rho"},
         }, /* category: */ {
         "visualize",
         }});

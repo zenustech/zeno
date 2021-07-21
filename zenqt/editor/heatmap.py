@@ -1,34 +1,35 @@
 from . import *
 
 
-'''
+class QDMGraphicsColorRamp(QGraphicsItem):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.rect = QRectF()
+
+    def setGeometry(self, rect):
+        self.rect = rect
+
+    def boundingRect(self):
+        return self.rect.normalized()
+
+    def paint(self, painter, styleOptions, widget=None):
+        painter.setPen(QPen(Qt.red, 1, Qt.SolidLine))
+        painter.drawEllipse(0, 0, 100, 100)
+
+
 class QDMGraphicsNode_MakeHeatmap(QDMGraphicsNode):
     def __init__(self, parent=None):
-        self.socket_keys = []
+        self.color_ramps = []
         super().__init__(parent)
 
     def initSockets(self):
         super().initSockets()
-        self.height -= TEXT_HEIGHT * 0.75
+        self.height -= TEXT_HEIGHT * 0.7
 
-        for key in self.socket_keys:
-            """param = QDMGraphicsParam_string(self)
-            rect = QRectF(HORI_MARGIN, self.height,
-                self.width - HORI_MARGIN * 2, 0)
-            param.setGeometry(rect)
-            param.setName('')
-            param.setDefault('this is {}'.format(index))
-            self.params['name{}'.format(index)] = param"""
-
-            socket = QDMGraphicsSocketEdiable(self)
-            socket.setPos(0, self.height + TEXT_HEIGHT * 0.5)
-            socket.setName(key)
-            socket.setIsOutput(False)
-            self.inputs[socket.name] = socket
-
-            self.height += TEXT_HEIGHT
-
-        self.height += TEXT_HEIGHT * 0.4
+        self.colorramp = QDMGraphicsColorRamp(self)
+        rect = QRectF(0, HORI_MARGIN,
+                self.width - 2 * HORI_MARGIN, TEXT_HEIGHT)
+        self.colorramp.setGeometry(rect)
 
         if not hasattr(self, 'add_button'):
             self.add_button = QDMGraphicsButton(self)
@@ -37,7 +38,7 @@ class QDMGraphicsNode_MakeHeatmap(QDMGraphicsNode):
             W - HORI_MARGIN, TEXT_HEIGHT)
         self.add_button.setGeometry(rect)
         self.add_button.setText('+')
-        self.add_button.on_click = self.add_new_key
+        self.add_button.on_click = self.on_add
 
         if not hasattr(self, 'del_button'):
             self.del_button = QDMGraphicsButton(self)
@@ -45,29 +46,26 @@ class QDMGraphicsNode_MakeHeatmap(QDMGraphicsNode):
             W - HORI_MARGIN, TEXT_HEIGHT)
         self.del_button.setGeometry(rect)
         self.del_button.setText('-')
-        self.del_button.on_click = self.del_last_key
+        self.del_button.on_click = self.on_del
         self.height += TEXT_HEIGHT
 
         self.height += TEXT_HEIGHT * 1.5
 
-    def add_new_key(self):
-        self.socket_keys.append('obj{}'.format(len(self.socket_keys)))
-        self.reloadSockets()
+    def on_add(self):
+        pass
 
-    def del_last_key(self):
-        if len(self.socket_keys):
-            self.socket_keys.pop()
-            self.reloadSockets()
+    def on_del(self):
+        pass
 
     def dump(self):
         ident, data = super().dump()
-        data['socket_keys'] = tuple(self.socket_keys)
-        data['params']['_KEYS'] = '\n'.join(self.socket_keys)
+        data['color_ramps'] = tuple(self.color_ramps)
+        data['params']['_RAMPS'] = '\n'.join(
+                f'{r} {g} {b}' for f, r, g, b in self.color_ramps)
         return ident, data
 
     def load(self, ident, data):
-        if 'socket_keys' in data:
-            self.socket_keys = list(data['socket_keys'])
+        if 'color_ramps' in data:
+            self.color_ramps = list(data['color_ramps'])
 
         return super().load(ident, data)
-'''
