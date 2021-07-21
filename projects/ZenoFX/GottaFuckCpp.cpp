@@ -3,15 +3,15 @@
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 
-struct Buffer {
+struct BBuffer {
     size_t x[4];
 };
 
 struct GottaFuckCpp : zeno::INode {
     virtual void apply() override {
         set_output("prim", std::make_shared<zeno::PrimitiveObject>());
-        std::vector<Buffer> chs(1);
-        chs[0] = Buffer();
+        std::vector<BBuffer> chs(1);
+        chs[0] = BBuffer();
     }
 };
 

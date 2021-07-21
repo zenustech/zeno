@@ -1,4 +1,5 @@
 #include <zeno/zeno.h>
+///tatssdtjkl THIS FUCKING FILE RUINED GOTTAFUCKCPP.CPP
 #include <zeno/StringObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/NumericObject.h>
