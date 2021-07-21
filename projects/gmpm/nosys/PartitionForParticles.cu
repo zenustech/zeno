@@ -32,6 +32,13 @@ struct SpatialPartitionForParticles : zeno::INode {
       auto &list = get_input("ZSParticles")->as<ZenoParticleList>()->get();
       parObjPtrs.insert(parObjPtrs.end(), list.begin(), list.end());
     }
+    else if (get_input("ZSParticles")->as<ListObject>()) {
+      auto &objSharedPtrLists = *get_input("ZSParticles")->as<ListObject>();
+      for (auto &&objSharedPtr : objSharedPtrLists.arr)
+        if (auto ptr = dynamic_cast<ZenoParticles *>(objSharedPtr.get());
+            ptr != nullptr)
+          parObjPtrs.push_back(ptr);
+    }
 
     std::size_t cnt = 0;
     zs::MemoryHandle mh;
