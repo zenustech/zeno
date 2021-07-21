@@ -140,4 +140,44 @@ ZENDEFNODE(Make3DGridPrimitive,
         "primitive",
         }});
 
+struct MakeCubePrimitive : INode {
+    virtual void apply() override {
+        float spacing = get_input<NumericObject>("spacing")->get<float>();
+        size_t nx = get_input<NumericObject>("nx")->get<int>();
+        size_t ny = has_input("ny") ?
+            get_input<NumericObject>("ny")->get<int>() : nx;
+        size_t nz = has_input("nz") ?
+            get_input<NumericObject>("nz")->get<int>() : nx;
+
+        vec3f o = has_input("origin") ?
+            get_input<NumericObject>("origin")->get<vec3f>() : vec3f(0);
+    
+    auto prim = std::make_shared<PrimitiveObject>();
+    prim->resize(nx * ny * nz);
+    auto &pos = prim->add_attr<vec3f>("pos");
+#pragma omp parallel for
+    // for (size_t y = 0; y < ny; y++) {
+    //     for (size_t x = 0; x < nx; x++) {
+    for (int index = 0; index < nx * ny * nz; index++) {
+      int x = index % nx;
+      int y = index / nx % ny;
+      int z = index / nx / ny;
+      vec3f p = o + vec3f(x * spacing, y * spacing, z * spacing);
+      pos[index] = p;
+      // }
+    }
+    set_output("prim", std::move(prim));
+  }
+};
+
+ZENDEFNODE(MakeCubePrimitive,
+        { /* inputs: */ {
+        "spacing", "nx", "ny", "nz", "origin",
+        }, /* outputs: */ {
+        "prim",
+        }, /* params: */ {
+        {},
+        }, /* category: */ {
+        "primitive",
+        }});
 } // namespace zeno

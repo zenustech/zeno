@@ -64,7 +64,7 @@ if (ZENO_BUILD_EXTENSIONS)
     add_subdirectory(projects)
 endif()
 
-option(ZENO_BUILD_ZFX "Build ZFX module for Zeno" OFF)
+option(ZENO_BUILD_ZFX "Build ZFX module for Zeno" ON)
 if (ZENO_BUILD_ZFX)
     add_subdirectory(ZFX)
 endif()
