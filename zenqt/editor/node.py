@@ -132,7 +132,7 @@ class QDMGraphicsNode(QGraphicsItem):
         else:
             y += TEXT_HEIGHT * 0.4
 
-        socket_start = y + TEXT_HEIGHT * style['output_shift']
+        socket_start = y
 
         self.inputs.clear()
         for index, name in enumerate(inputs):
