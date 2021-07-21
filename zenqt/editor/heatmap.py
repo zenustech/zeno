@@ -48,6 +48,9 @@ class QDMGraphicsColorRamp(QGraphicsItem):
             super().mouseReleaseEvent(event)
             self.incX(event.pos().x())
 
+        def remove(self):
+            self.parent.removeRamp(self)
+
     def __init__(self, parent):
         super().__init__(parent)
         self.rect = QRectF()
@@ -55,9 +58,37 @@ class QDMGraphicsColorRamp(QGraphicsItem):
 
         self.draggers = []
 
+    def mousePressEvent(self, event):
+        f = event.pos().x()
+        if 0 <= f <= self.rect.width():
+            f /= self.rect.width()
+            self.addRampAt(f)
+
+    def sortRamps(self):
+        print(self.ramps)
+        self.ramps.sort(key=lambda x: x[0])
+        print(self.ramps)
+
+    def removeRamp(self, dragger):
+        index = self.draggers.index(dragger)
+        del self.ramps[index]
+        self.initDraggers()
+
+    def addRampAt(self, fac):
+        print('add at', fac)
+        self.sortRamps()
+        for i, (oldf, rgb) in enumerate(list(self.ramps)):
+            if fac >= oldf:
+                rgb = (0, 0, 0)
+                new_ramp = (fac, rgb)
+                self.ramps.insert(i, new_ramp)
+                break
+        self.initDraggers()
+
     def initDraggers(self):
         for dragger in self.draggers:
             self.scene().removeItem(dragger)
+        self.draggers.clear()
         for f, rgb in self.ramps:
             dragger = self.QDMGraphicsRampDragger(self)
             dragger.setX(f * self.rect.width())
@@ -113,37 +144,13 @@ class QDMGraphicsNode_MakeHeatmap(QDMGraphicsNode):
         self.colorramp.initDraggers()
         self.height += TEXT_HEIGHT * 1.5
 
-        if not hasattr(self, 'add_button'):
-            self.add_button = QDMGraphicsButton(self)
-        W = self.width / 4
-        rect = QRectF(HORI_MARGIN, self.height,
-            W - HORI_MARGIN, TEXT_HEIGHT)
-        self.add_button.setGeometry(rect)
-        self.add_button.setText('+')
-        self.add_button.on_click = self.on_add
-
-        if not hasattr(self, 'del_button'):
-            self.del_button = QDMGraphicsButton(self)
-        rect = QRectF(HORI_MARGIN + W, self.height,
-            W - HORI_MARGIN, TEXT_HEIGHT)
-        self.del_button.setGeometry(rect)
-        self.del_button.setText('-')
-        self.del_button.on_click = self.on_del
-        self.height += TEXT_HEIGHT
-
         self.height += TEXT_HEIGHT * 1.5
-
-    def on_add(self):
-        pass
-
-    def on_del(self):
-        pass
 
     def dump(self):
         ident, data = super().dump()
         data['color_ramps'] = tuple(self.color_ramps)
         data['params']['_RAMPS'] = '\n'.join(
-                f'{r} {g} {b}' for f, (r, g, b) in self.color_ramps)
+                f'{f} {r} {g} {b}' for f, (r, g, b) in self.color_ramps)
         return ident, data
 
     def load(self, ident, data):
