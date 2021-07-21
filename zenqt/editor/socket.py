@@ -5,7 +5,7 @@ class QDMGraphicsSocket(QGraphicsItem):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.label = QGraphicsTextItem(self)
+        self.label = QGraphicsTextItem(parent)
         self.label.setDefaultTextColor(QColor(style['socket_text_color']))
         font = QFont()
         font.setPointSize(style['socket_text_size'])
@@ -20,10 +20,13 @@ class QDMGraphicsSocket(QGraphicsItem):
 
         self.offset = 13
         self.text_offset = HORI_MARGIN * 2 - 2
-        self.label.setPos(self.text_offset, - style['socket_text_size'] * 1.3)
 
         self._hover = False
         self.setAcceptHoverEvents(True)
+    
+    def setPos(self, x, y):
+        super().setPos(x, y)
+        self.label.setPos(self.text_offset, y - style['socket_text_size'] * 1.3)
 
     def hoverMoveEvent(self, event):
         self._hover = True
