@@ -228,14 +228,47 @@
      },
      "params": {
       "nres": 1024,
-      "_RAMPS": ""
+      "_RAMPS": "0 0 0\n1 0 0\n1 1 0\n1 1 1"
      },
      "uipos": [
       1273.0,
       511.0
      ],
      "options": [],
-     "color_ramps": []
+     "color_ramps": [
+      [
+       0.0,
+       [
+        0,
+        0,
+        0
+       ]
+      ],
+      [
+       0.5,
+       [
+        1,
+        0,
+        0
+       ]
+      ],
+      [
+       0.9,
+       [
+        1,
+        1,
+        0
+       ]
+      ],
+      [
+       1.0,
+       [
+        1,
+        1,
+        1
+       ]
+      ]
+     ]
     },
     "f3d617e0-PrimitiveColorByHeatmap": {
      "name": "PrimitiveColorByHeatmap",
@@ -264,8 +297,8 @@
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": 1381,
-    "trans_y": 848
+    "trans_x": 1456,
+    "trans_y": 619
    }
   }
  },
@@ -792,11 +825,6 @@
      "int",
      "nres",
      "1024"
-    ],
-    [
-     "string",
-     "_RAMPS",
-     "0 0 0.8 0.8 0.8 1"
     ]
    ],
    "categories": [

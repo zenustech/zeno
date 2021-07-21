@@ -45,7 +45,7 @@ ZENDEFNODE(MakeHeatmap,
         "heatmap",
         }, /* params: */ {
         {"int", "nres", "1024"},
-        {"string", "_RAMPS", "0 0 0.8 0.8 0.8 1"},
+        //{"string", "_RAMPS", "0 0 0.8 0.8 0.8 1"},
         }, /* category: */ {
         "visualize",
         }});

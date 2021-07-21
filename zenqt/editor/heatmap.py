@@ -2,15 +2,76 @@ from . import *
 
 
 class QDMGraphicsColorRamp(QGraphicsItem):
-    def __init__(self, parent=None):
+    class QDMGraphicsRampDragger(QGraphicsItem):
+        def __init__(self, parent):
+            super().__init__(parent)
+            self.setFlag(QGraphicsItem.ItemIsSelectable)
+            self.parent = parent
+
+        @property
+        def width(self):
+            return style['ramp_width']
+
+        @property
+        def height(self):
+            return self.parent.rect.height()
+
+        def boundingRect(self):
+            return QRectF(-self.width / 2, 0, self.width, self.height)
+
+        def paint(self, painter, styleOptions, widget=None):
+            pen = QPen()
+            color = style['selected_color'] if self.isSelected() else style['line_color']
+            pen.setColor(QColor(color))
+            pen.setWidth(style['ramp_outline_width'])
+            painter.setPen(pen)
+            painter.setBrush(Qt.NoBrush)
+            painter.drawRect(-self.width / 2, 0, self.width, self.height)
+
+        def setX(self, x):
+            x = max(0, min(self.parent.rect.width(), x))
+            self.setPos(x, 0)
+
+        def incX(self, dx):
+            self.setX(self.pos().x() + dx)
+
+        def mousePressEvent(self, event):
+            self.incX(event.pos().x())
+            super().mousePressEvent(event)
+
+        def mouseMoveEvent(self, event):
+            self.incX(event.pos().x())
+            super().mouseMoveEvent(event)
+
+        def mouseReleaseEvent(self, event):
+            self.incX(event.pos().x())
+            super().mouseReleaseEvent(event)
+
+    def __init__(self, parent):
         super().__init__(parent)
         self.rect = QRectF()
-        self.ramps = [
-                (0.0, (0, 0, 0)),
-                (0.5, (1, 0, 0)),
-                (0.9, (1, 1, 0)),
-                (1.0, (1, 1, 1)),
-        ]
+        self.parent = parent
+
+        self.draggers = []
+
+    def initDraggers(self):
+        for dragger in self.draggers:
+            self.scene().removeItem(dragger)
+        for f, rgb in self.ramps:
+            dragger = self.QDMGraphicsRampDragger(self)
+            dragger.setX(f * self.rect.width())
+            self.draggers.append(dragger)
+
+    def updateRamps(self):
+        for i, dragger in enumerate(self.draggers):
+            f = self.dragger.pos().x()
+            f = max(0, min(1, f / self.rect.width()))
+            _, rgb = self.ramps[i]
+            self.ramps[i] = f, rgb
+
+    @property
+    def ramps(self):
+        return self.parent.color_ramps
 
     def setGeometry(self, rect):
         self.setPos(rect.x(), rect.y())
@@ -31,7 +92,12 @@ class QDMGraphicsColorRamp(QGraphicsItem):
 
 class QDMGraphicsNode_MakeHeatmap(QDMGraphicsNode):
     def __init__(self, parent=None):
-        self.color_ramps = []
+        self.color_ramps = [
+                (0.0, (0, 0, 0)),
+                (0.5, (1, 0, 0)),
+                (0.9, (1, 1, 0)),
+                (1.0, (1, 1, 1)),
+        ]
         super().__init__(parent)
 
     def initSockets(self):
@@ -42,6 +108,7 @@ class QDMGraphicsNode_MakeHeatmap(QDMGraphicsNode):
         rect = QRectF(HORI_MARGIN, self.height,
                 self.width - 2 * HORI_MARGIN, TEXT_HEIGHT)
         self.colorramp.setGeometry(rect)
+        self.colorramp.initDraggers()
         self.height += TEXT_HEIGHT * 1.5
 
         if not hasattr(self, 'add_button'):
