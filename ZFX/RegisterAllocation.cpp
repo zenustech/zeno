@@ -1,5 +1,6 @@
 #include "IRVisitor.h"
 #include "Stmts.h"
+#include <cassert>
 #include <set>
 #include <map>
 
@@ -56,6 +57,7 @@ struct UCLAScanner {
         int newid = usage.at(i);
         used_pool.erase(newid);
         freed_pool.insert(newid);
+        usage.erase(i);
     }
 
     void alloc_register(Reg *i) {
@@ -67,9 +69,11 @@ struct UCLAScanner {
     }
 
     void transit_register(Reg *i, Reg *spill) {
+        assert(i != spill);
         int newid = usage.at(spill);
         usage[i] = newid;
         usage.erase(spill);
+        assert(result.find(i->regid) == result.end());
         result[i->regid] = newid;
     }
 
@@ -90,14 +94,17 @@ struct UCLAScanner {
             if (active.size() == NREGS) {
                 auto spill = *active.begin();
                 if (spill->endpoint() > i->endpoint()) {
+                    printf("transit!\n");
                     transit_register(i, spill);
                     alloc_stack(spill);
                     active.erase(spill);
                     active.insert(i);
                 } else {
+                    printf("alloc!\n");
                     alloc_stack(i);
                 }
             } else {
+                printf("allocins!\n");
                 alloc_register(i);
                 active.insert(i);
             }

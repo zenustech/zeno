@@ -15,12 +15,13 @@ int main() {
     };
 #else
     std::string code(R"(
-@pos = 0.5 + @pos + @pos
+@clr = 0.5 + @pos + @pos
 )");
 #endif
 
     zfx::Options opts(zfx::Options::for_x64);
     opts.define_symbol("@pos", 3);
+    opts.define_symbol("@clr", 3);
     //opts.reassign_channels = false;
     auto prog = compiler.compile(code, opts);
     auto exec = assembler.assemble(prog->assembly);
@@ -34,9 +35,9 @@ int main() {
     ctx.channel(prog->symbol_id("@pos", 1))[0] = 1.0f;
     ctx.channel(prog->symbol_id("@pos", 2))[0] = 1.0f;
     ctx.execute();
-    printf("new_pos.x = %f\n", ctx.channel(prog->symbol_id("@pos", 0))[0]);
-    printf("new_pos.y = %f\n", ctx.channel(prog->symbol_id("@pos", 1))[0]);
-    printf("new_pos.z = %f\n", ctx.channel(prog->symbol_id("@pos", 2))[0]);
+    printf("clr.x = %f\n", ctx.channel(prog->symbol_id("@clr", 0))[0]);
+    printf("clr.y = %f\n", ctx.channel(prog->symbol_id("@clr", 1))[0]);
+    printf("clr.z = %f\n", ctx.channel(prog->symbol_id("@clr", 2))[0]);
 
     return 0;
 }
