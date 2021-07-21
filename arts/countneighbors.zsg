@@ -228,13 +228,14 @@
      },
      "params": {
       "nres": 1024,
-      "_RAMPS": "0 0 0.8 0.8 0.8 1.0"
+      "_RAMPS": ""
      },
      "uipos": [
       1273.0,
       511.0
      ],
-     "options": []
+     "options": [],
+     "color_ramps": []
     },
     "f3d617e0-PrimitiveColorByHeatmap": {
      "name": "PrimitiveColorByHeatmap",
@@ -264,8 +265,8 @@
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": 1737,
-    "trans_y": 355
+    "trans_x": 1617,
+    "trans_y": 851
    }
   }
  },
@@ -1276,13 +1277,8 @@
    "params": [
     [
      "string",
-     "srcAttr",
+     "attrName",
      "rho"
-    ],
-    [
-     "string",
-     "colorAttr",
-     "clr"
     ]
    ],
    "categories": [

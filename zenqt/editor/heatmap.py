@@ -7,14 +7,15 @@ class QDMGraphicsColorRamp(QGraphicsItem):
         self.rect = QRectF()
 
     def setGeometry(self, rect):
-        self.rect = rect
+        self.setPos(rect.x(), rect.y())
+        self.rect = QRectF(rect)
 
     def boundingRect(self):
-        return self.rect.normalized()
+        return QRectF(0, 0, self.rect.width(), self.rect.height())
 
     def paint(self, painter, styleOptions, widget=None):
         painter.setPen(QPen(Qt.red, 1, Qt.SolidLine))
-        painter.drawEllipse(0, 0, 100, 100)
+        painter.drawRect(0, 0, self.rect.width(), TEXT_HEIGHT)
 
 
 class QDMGraphicsNode_MakeHeatmap(QDMGraphicsNode):
@@ -27,9 +28,10 @@ class QDMGraphicsNode_MakeHeatmap(QDMGraphicsNode):
         self.height -= TEXT_HEIGHT * 0.7
 
         self.colorramp = QDMGraphicsColorRamp(self)
-        rect = QRectF(0, HORI_MARGIN,
+        rect = QRectF(HORI_MARGIN, self.height,
                 self.width - 2 * HORI_MARGIN, TEXT_HEIGHT)
         self.colorramp.setGeometry(rect)
+        self.height += TEXT_HEIGHT * 1.5
 
         if not hasattr(self, 'add_button'):
             self.add_button = QDMGraphicsButton(self)
