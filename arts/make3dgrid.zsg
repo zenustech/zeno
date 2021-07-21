@@ -10,10 +10,7 @@
        "value"
       ],
       "ny": null,
-      "nz": [
-       "8a6d1fc7-x",
-       "value"
-      ],
+      "nz": null,
       "sizeX": [
        "2937e4ff-NumericVec3",
        "vec3"
@@ -93,7 +90,7 @@
      "params": {
       "x": 0.0,
       "y": 0.0,
-      "z": 0.0
+      "z": 1.0
      },
      "uipos": [
       -494.40624999999983,
@@ -108,10 +105,7 @@
        "19702d93-PrimitiveAddAttr",
        "prim"
       ],
-      "primNei": [
-       "30f05fa0-Clone",
-       "newObject"
-      ],
+      "primNei": null,
       "zfxCode": [
        "f33b7e3a-MakeMultilineString",
        "value"
@@ -128,8 +122,8 @@
      },
      "params": {},
      "uipos": [
-      966.403125,
-      286.54374999999993
+      966.4031249999999,
+      285.9037499999999
      ],
      "options": [
       "VIEW"
@@ -170,7 +164,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@pos.z += 0.1"
+      "value": "@clr += 0.02 + @clr"
      },
      "uipos": [
       618.6093750000001,
@@ -211,28 +205,12 @@
       197.0
      ],
      "options": []
-    },
-    "30f05fa0-Clone": {
-     "name": "Clone",
-     "inputs": {
-      "object": [
-       "19702d93-PrimitiveAddAttr",
-       "prim"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      708.0,
-      409.6
-     ],
-     "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": 140,
-    "trans_y": 242
+    "trans_x": 19,
+    "trans_y": -127
    }
   }
  },
@@ -1715,20 +1693,6 @@
    ],
    "categories": [
     "subgraph"
-   ]
-  },
-  "ThisWontFuckCpp": {
-   "inputs": [
-    "prim",
-    "SRC"
-   ],
-   "outputs": [
-    "prim",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "debug"
    ]
   },
   "TransformPrimitive": {

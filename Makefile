@@ -1,4 +1,4 @@
-O=arts/make3dgrid.zsg
+O=arts/testpwbug.zsg
 
 default: run
 
