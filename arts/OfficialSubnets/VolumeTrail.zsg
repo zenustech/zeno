@@ -2,301 +2,265 @@
  "graph": {
   "main": {
    "nodes": {
-    "828aacd6-MakeCompressibleFlow": {
-     "name": "MakeCompressibleFlow",
+    "2f1af806-VolumeTrail": {
+     "name": "VolumeTrail",
      "inputs": {
-      "bmin": [
-       "ff1c4d41-NumericVec3",
-       "vec3"
-      ],
-      "bmax": [
-       "2e190406-NumericVec3",
-       "vec3"
-      ],
-      "dx": [
-       "66adc2d4-NumericFloat",
+      "dt": [
+       "55744ef0-x",
        "value"
       ],
-      "q_amb": [
-       "755d5506-MakeString",
+      "maxLen": null,
+      "startPoints": [
+       "d45fd178-PrimitiveAddAttr",
+       "prim"
+      ],
+      "vecField": [
+       "31671cef-MakeVDBGrid",
+       "data"
+      ],
+      "steps": [
+       "ae771673-NumericInt",
        "value"
       ],
       "SRC": [
-       "e9bfc6eb-SetFrameTime",
+       "7b92b134-FLIP_P2G",
        "DST"
       ]
      },
      "params": {},
      "uipos": [
-      127.40000000000003,
-      122.39999999999998
+      1684.0,
+      170.0
      ],
      "options": [
-      "ONCE"
+      "VIEW"
      ]
     },
-    "ff1c4d41-NumericVec3": {
+    "b2af3bfc-ReadObjMesh": {
+     "name": "ReadObjMesh",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "path": "assets/Pig_Head.obj"
+     },
+     "uipos": [
+      -843.0,
+      -26.0
+     ],
+     "options": []
+    },
+    "6fa84231-MeshToPrimitive": {
+     "name": "MeshToPrimitive",
+     "inputs": {
+      "mesh": [
+       "b2af3bfc-ReadObjMesh",
+       "mesh"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -605.0,
+      -7.0
+     ],
+     "options": []
+    },
+    "d45fd178-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "6fa84231-MeshToPrimitive",
+       "prim"
+      ],
+      "fillValue": [
+       "840f03fc-NumericVec3",
+       "vec3"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "name": "vel",
+      "type": "float3"
+     },
+     "uipos": [
+      -276.5775000000001,
+      49.4375
+     ],
+     "options": []
+    },
+    "840f03fc-NumericVec3": {
      "name": "NumericVec3",
      "inputs": {
       "SRC": null
      },
      "params": {
-      "x": -0.5,
-      "y": -0.5,
-      "z": -0.5
+      "x": 1.0,
+      "y": 0.0,
+      "z": 0.0
      },
      "uipos": [
-      -240.64999999999986,
-      -132.14999999999998
+      -596.2,
+      152.07999999999993
      ],
      "options": []
     },
-    "2e190406-NumericVec3": {
-     "name": "NumericVec3",
+    "7b92b134-FLIP_P2G": {
+     "name": "FLIP_P2G",
      "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "x": 0.5,
-      "y": 0.5,
-      "z": 0.5
-     },
-     "uipos": [
-      -392.8000000000002,
-      39.39999999999998
-     ],
-     "options": []
-    },
-    "66adc2d4-NumericFloat": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": 0.01
-     },
-     "uipos": [
-      -245.75,
-      165.0
-     ],
-     "options": []
-    },
-    "755d5506-MakeString": {
-     "name": "MakeString",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "1.0  1.0  0.0  0.0  0.0"
-     },
-     "uipos": [
-      -160.25,
-      364.00000000000006
-     ],
-     "options": []
-    },
-    "7a07f0f5-WriteVDBGrid": {
-     "name": "WriteVDBGrid",
-     "inputs": {
-      "data": [
-       "d709f6dd-DenseFieldToVDB",
-       "VDBField"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "path": "/home/dilei/result.{frame:05d}.vdb"
-     },
-     "uipos": [
-      3870.3275,
-      738.9849999999998
-     ],
-     "options": [
-      "PREP"
-     ]
-    },
-    "5342a7f2-makeCompressibleSim": {
-     "name": "makeCompressibleSim",
-     "inputs": {
-      "inFlowData": [
-       "828aacd6-MakeCompressibleFlow",
-       "CompressibleFlow"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      388.0999999999999,
-      212.19999999999993
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "310b3cbe-MakeVelocityPressure": {
-     "name": "MakeVelocityPressure",
-     "inputs": {
-      "inFlowData": [
-       "5342a7f2-makeCompressibleSim",
-       "outFlowData"
-      ],
-      "simParam": [
-       "5342a7f2-makeCompressibleSim",
-       "SimParam"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      812.520166015625,
-      140.440380859375
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "eb1ee422-NumericFloat": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": 0.0
-     },
-     "uipos": [
-      -965.0825683593754,
-      210.33803710937497
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "e9bfc6eb-SetFrameTime": {
-     "name": "SetFrameTime",
-     "inputs": {
-      "time": [
-       "eb1ee422-NumericFloat",
+      "Dx": [
+       "f06cbed3-NumericFloat",
        "value"
       ],
-      "SRC": [
-       "eb1ee422-NumericFloat",
-       "DST"
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -562.5502929687502,
-      324.82348632812506
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "06eb85b4-PortalIn": {
-     "name": "PortalIn",
-     "inputs": {
-      "port": [
-       "5342a7f2-makeCompressibleSim",
-       "SimParam"
+      "Particles": [
+       "484ec17e-PrimToVDBPointDataGrid",
+       "Particles"
+      ],
+      "Velocity": [
+       "31671cef-MakeVDBGrid",
+       "data"
+      ],
+      "PostP2GVelocity": [
+       "31671cef-MakeVDBGrid",
+       "data"
+      ],
+      "VelocityWeights": [
+       "33862b20-x",
+       "data"
+      ],
+      "LiquidSDF": [
+       "fbe833f1-x",
+       "data"
+      ],
+      "ExtractedLiquidSDF": [
+       "fbe833f1-x",
+       "data"
       ],
       "SRC": null
      },
      "params": {
-      "name": "SimParam"
+      "dx": 0.05
      },
      "uipos": [
-      662.25,
-      450.0
+      794.0,
+      290.0
      ],
      "options": []
     },
-    "a5571573-PortalIn": {
-     "name": "PortalIn",
+    "484ec17e-PrimToVDBPointDataGrid": {
+     "name": "PrimToVDBPointDataGrid",
      "inputs": {
-      "port": [
-       "310b3cbe-MakeVelocityPressure",
-       "outFlowData"
+      "ParticleGeo": [
+       "d45fd178-PrimitiveAddAttr",
+       "prim"
       ],
-      "SRC": null
-     },
-     "params": {
-      "name": "flowData"
-     },
-     "uipos": [
-      1106.5,
-      458.75
-     ],
-     "options": []
-    },
-    "20c940aa-IntegrateFrameTime": {
-     "name": "IntegrateFrameTime",
-     "inputs": {
-      "desired_dt": [
-       "c47db3b6-NumericFloat",
+      "Dx": [
+       "f06cbed3-NumericFloat",
        "value"
       ],
-      "SRC": [
-       "310b3cbe-MakeVelocityPressure",
-       "DST"
-      ]
+      "SRC": null
      },
      "params": {
-      "min_scale": 0.0001
+      "dx": 0.0
      },
      "uipos": [
-      1381.0,
-      15.000000000000057
+      -31.0,
+      134.0
      ],
      "options": []
     },
-    "c47db3b6-NumericFloat": {
+    "f06cbed3-NumericFloat": {
      "name": "NumericFloat",
      "inputs": {
       "SRC": null
      },
      "params": {
-      "value": 0.001
+      "value": 0.1
      },
      "uipos": [
-      1024.5,
-      -98.25
+      -769.3124999999998,
+      483.2499999999999
      ],
      "options": []
     },
-    "c70da73a-NumericInt": {
+    "31671cef-MakeVDBGrid": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "f06cbed3-NumericFloat",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "dx": 0.01,
+      "type": "float3",
+      "structure": "Staggered",
+      "name": "Rename!"
+     },
+     "uipos": [
+      47.0,
+      322.0
+     ],
+     "options": []
+    },
+    "33862b20-x": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "f06cbed3-NumericFloat",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "dx": 0.01,
+      "type": "float3",
+      "structure": "Staggered",
+      "name": "Rename!"
+     },
+     "uipos": [
+      102.0,
+      558.0
+     ],
+     "options": []
+    },
+    "fbe833f1-x": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "f06cbed3-NumericFloat",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "dx": 0.01,
+      "type": "float",
+      "structure": "Centered",
+      "name": "Rename!"
+     },
+     "uipos": [
+      489.0,
+      697.0
+     ],
+     "options": []
+    },
+    "ae771673-NumericInt": {
      "name": "NumericInt",
      "inputs": {
       "SRC": null
      },
      "params": {
-      "value": 1
+      "value": 3
      },
      "uipos": [
-      1611.5312500000005,
-      -123.65625000000006
+      1165.75,
+      506.25
      ],
      "options": []
     },
-    "6c95f9c1-SetFrameTime": {
-     "name": "SetFrameTime",
-     "inputs": {
-      "time": [
-       "e1a91297-NumericFloat",
-       "value"
-      ],
-      "SRC": [
-       "e88528b1-MakeVelocityPressure",
-       "DST"
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2869.9375,
-      630.8749999999998
-     ],
-     "options": []
-    },
-    "e1a91297-NumericFloat": {
+    "55744ef0-x": {
      "name": "NumericFloat",
      "inputs": {
       "SRC": null
@@ -305,536 +269,282 @@
       "value": 0.01
      },
      "uipos": [
-      2553.171875,
-      311.9374999999998
+      1179.5625,
+      30.5
      ],
      "options": []
     },
-    "32ad0bf1-GetDenseField": {
-     "name": "GetDenseField",
+    "382663a2-PrimitiveGetSize": {
+     "name": "PrimitiveGetSize",
      "inputs": {
-      "inSolverData": [
-       "e88528b1-MakeVelocityPressure",
-       "outFlowData"
-      ],
-      "SRC": [
-       "6c95f9c1-SetFrameTime",
-       "DST"
-      ]
-     },
-     "params": {
-      "FieldName": "rho"
-     },
-     "uipos": [
-      3256.9375,
-      571.1249999999998
-     ],
-     "options": [
-      "PREP"
-     ]
-    },
-    "d709f6dd-DenseFieldToVDB": {
-     "name": "DenseFieldToVDB",
-     "inputs": {
-      "inDenseField": [
-       "32ad0bf1-GetDenseField",
-       "outDenseField"
+      "prim": [
+       "2f1af806-VolumeTrail",
+       "VolumeTrails"
       ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      3560.4375,
-      670.6249999999998
+      2109.0,
+      325.0
+     ],
+     "options": []
+    },
+    "182ec64a-PrintNumeric": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "382663a2-PrimitiveGetSize",
+       "size"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "hint": "PrintNumeric"
+     },
+     "uipos": [
+      2430.0,
+      384.0
      ],
      "options": [
-      "PREP"
+      "VIEW"
      ]
-    },
-    "93e60d53-AdvanceCompressible": {
-     "name": "AdvanceCompressible",
-     "inputs": {
-      "RK_Order": [
-       "c70da73a-NumericInt",
-       "value"
-      ],
-      "dt": [
-       "20c940aa-IntegrateFrameTime",
-       "actual_dt"
-      ],
-      "simParam": [
-       "5342a7f2-makeCompressibleSim",
-       "SimParam"
-      ],
-      "flowData": [
-       "310b3cbe-MakeVelocityPressure",
-       "outFlowData"
-      ],
-      "SRC": [
-       "20c940aa-IntegrateFrameTime",
-       "DST"
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2006.2424999999985,
-      200.6396249999998
-     ],
-     "options": []
-    },
-    "e88528b1-MakeVelocityPressure": {
-     "name": "MakeVelocityPressure",
-     "inputs": {
-      "inFlowData": [
-       "93e60d53-AdvanceCompressible",
-       "oFlowData"
-      ],
-      "simParam": [
-       "5342a7f2-makeCompressibleSim",
-       "SimParam"
-      ],
-      "SRC": [
-       "93e60d53-AdvanceCompressible",
-       "DST"
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2413.3999999999996,
-      559.2
-     ],
-     "options": []
     }
    },
    "view": {
-    "scale": 0.8000000000000002,
-    "trans_x": 1702,
-    "trans_y": 104
+    "scale": 1.0000000000000002,
+    "trans_x": 293,
+    "trans_y": -97
    }
   },
-  "makeCompressibleVolume": {
+  "VolumeTrail": {
    "nodes": {
-    "a8f83abe-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "name": "box"
-     },
-     "uipos": [
-      -422.0,
-      -187.0
-     ],
-     "options": []
-    },
-    "2c6ae652-TransformPrimitive": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "a8f83abe-SubInput",
-       "port"
-      ],
-      "translation": [
-       "4052aecc-SubInput",
-       "port"
-      ],
-      "eulerXYZ": null,
-      "quatRotation": null,
-      "scaling": [
-       "5fb5629e-SubInput",
-       "port"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      37.0,
-      -18.0
-     ],
-     "options": []
-    },
-    "4052aecc-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "name": "center"
-     },
-     "uipos": [
-      -398.0,
-      10.0
-     ],
-     "options": []
-    },
-    "5fb5629e-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "name": "size"
-     },
-     "uipos": [
-      -381.0,
-      198.0
-     ],
-     "options": []
-    },
-    "57e9d26c-PrimitiveReduction": {
-     "name": "PrimitiveReduction",
-     "inputs": {
-      "prim": [
-       "2c6ae652-TransformPrimitive",
-       "outPrim"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "attr": "pos",
-      "op": "min"
-     },
-     "uipos": [
-      560.0,
-      -7.0
-     ],
-     "options": []
-    },
-    "31c2364b-PrimitiveReduction": {
-     "name": "PrimitiveReduction",
-     "inputs": {
-      "prim": [
-       "2c6ae652-TransformPrimitive",
-       "outPrim"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "attr": "pos",
-      "op": "max"
-     },
-     "uipos": [
-      563.0,
-      226.0
-     ],
-     "options": []
-    },
-    "7a7a7ae0-MakeCompressibleFlow": {
-     "name": "MakeCompressibleFlow",
-     "inputs": {
-      "bmin": [
-       "57e9d26c-PrimitiveReduction",
-       "result"
-      ],
-      "bmax": [
-       "31c2364b-PrimitiveReduction",
-       "result"
-      ],
-      "dx": [
-       "86d10420-SubInput",
-       "port"
-      ],
-      "q_amb": [
-       "5212fb22-SubInput",
-       "port"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      1249.0,
-      175.0
-     ],
-     "options": []
-    },
-    "86d10420-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "name": "dx"
-     },
-     "uipos": [
-      514.0,
-      470.0
-     ],
-     "options": []
-    },
-    "5212fb22-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "name": "q_amb"
-     },
-     "uipos": [
-      976.0,
-      446.0
-     ],
-     "options": []
-    },
-    "0adcc6a6-SubOutput": {
-     "name": "SubOutput",
-     "inputs": {
-      "port": [
-       "7a7a7ae0-MakeCompressibleFlow",
-       "CompressibleFlow"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "name": "CompressibleFlow"
-     },
-     "uipos": [
-      1617.0,
-      283.0
-     ],
-     "options": []
-    },
-    "cd75ce50-SubCategory": {
+    "88e06100-SubCategory": {
      "name": "SubCategory",
      "inputs": {
       "SRC": null
      },
      "params": {
-      "name": "CompressibleFlow"
+      "name": "Visualization"
      },
      "uipos": [
-      -108.37499999999977,
-      -324.31249999999994
-     ],
-     "options": []
-    }
-   },
-   "view": {
-    "scale": 1,
-    "trans_x": 0,
-    "trans_y": 0
-   }
-  },
-  "AdvanceCompressible": {
-   "nodes": {
-    "ab396639-CompressibleAdvection": {
-     "name": "CompressibleAdvection",
-     "inputs": {
-      "inFlowData": [
-       "31ebffab-SubInput",
-       "port"
-      ],
-      "simParam": [
-       "0b2403b5-SubInput",
-       "port"
-      ],
-      "RK_Order": [
-       "2e404655-BeginFor",
-       "index"
-      ],
-      "dt": [
-       "20797237-SubInput",
-       "port"
-      ],
-      "SRC": [
-       "2e404655-BeginFor",
-       "DST"
-      ],
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      1057.0312499999998,
-      11.328125000000057
+      285.19999999999993,
+      76.0
      ],
      "options": []
     },
-    "50c47a70-CompressibleProjection": {
-     "name": "CompressibleProjection",
-     "inputs": {
-      "inFlowData": [
-       "ab396639-CompressibleAdvection",
-       "outFlowData"
-      ],
-      "simParam": [
-       "0b2403b5-SubInput",
-       "port"
-      ],
-      "RK_Order": [
-       "308e4086-NumericInt",
-       "value"
-      ],
-      "dt": [
-       "20797237-SubInput",
-       "port"
-      ],
-      "SRC": [
-       "ef95c143-EndFor",
-       "DST"
-      ],
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      1903.75,
-      360.0
-     ],
-     "options": []
-    },
-    "2e404655-BeginFor": {
-     "name": "BeginFor",
-     "inputs": {
-      "count": [
-       "0aba2a07-SubInput",
-       "port"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      583.7499999999999,
-      -116.87499999999996
-     ],
-     "options": []
-    },
-    "ef95c143-EndFor": {
-     "name": "EndFor",
-     "inputs": {
-      "FOR": [
-       "2e404655-BeginFor",
-       "FOR"
-      ],
-      "SRC": [
-       "ab396639-CompressibleAdvection",
-       "DST"
-      ],
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      1437.5624999999993,
-      -54.15625000000006
-     ],
-     "options": []
-    },
-    "0aba2a07-SubInput": {
+    "28572572-SubInput": {
      "name": "SubInput",
      "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "RK_Order"
-     },
-     "uipos": [
-      77.50000000000011,
-      -111.24999999999994
-     ],
-     "options": []
-    },
-    "20797237-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
       "name": "dt"
      },
      "uipos": [
-      100.0,
-      75.0
+      306.0,
+      262.0
      ],
      "options": []
     },
-    "0b2403b5-SubInput": {
+    "23514a7d-SubInput": {
      "name": "SubInput",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
-      "name": "simParam"
+      "name": "maxLen"
      },
      "uipos": [
-      136.2499999999999,
-      278.7499999999998
+      229.0,
+      348.0
      ],
      "options": []
     },
-    "31ebffab-SubInput": {
+    "6d458753-SubInput": {
      "name": "SubInput",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
-      "name": "flowData"
+      "name": "startPoints"
      },
      "uipos": [
-      100.25000000000011,
-      575.6982421874998
+      -1099.9843749999998,
+      256.32812500000017
      ],
      "options": []
     },
-    "e9d8ee6b-SubOutput": {
+    "b8dfa887-PrimitiveGetSize": {
+     "name": "PrimitiveGetSize",
+     "inputs": {
+      "prim": [
+       "ef1bda4f-PrimitiveAddAttr",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      180.3125000000001,
+      643.875
+     ],
+     "options": []
+    },
+    "7ea13b64-TraceOneStep": {
+     "name": "TraceOneStep",
+     "inputs": {
+      "prim": [
+       "ef1bda4f-PrimitiveAddAttr",
+       "prim"
+      ],
+      "dt": [
+       "28572572-SubInput",
+       "port"
+      ],
+      "size": [
+       "b8dfa887-PrimitiveGetSize",
+       "size"
+      ],
+      "steps": [
+       "f0cb99ed-SubInput",
+       "port"
+      ],
+      "maxlength": [
+       "23514a7d-SubInput",
+       "port"
+      ],
+      "vecField": [
+       "66b0a261-SubInput",
+       "port"
+      ],
+      "SRC": [
+       "1a42c441-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1139.75,
+      251.0
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "66b0a261-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "vecField"
+     },
+     "uipos": [
+      286.5,
+      453.5
+     ],
+     "options": []
+    },
+    "dfc07716-SubOutput": {
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "50c47a70-CompressibleProjection",
-       "outFlowData"
+       "7ea13b64-TraceOneStep",
+       "prim"
       ],
-      "SRC": [
-       "50c47a70-CompressibleProjection",
-       "DST"
-      ],
-      "COND": null
+      "SRC": null
      },
      "params": {
-      "name": "oFlowData"
+      "name": "VolumeTrails"
      },
      "uipos": [
-      2875.1806640625,
-      893.2919921874998
+      1921.5,
+      484.5
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "f0cb99ed-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "steps"
+     },
+     "uipos": [
+      696.0,
+      87.63750000000005
      ],
      "options": []
     },
-    "00a98bfd-SubCategory": {
-     "name": "SubCategory",
+    "374c102a-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "prim": [
+       "6d458753-SubInput",
+       "port"
+      ],
+      "fillValue": null,
+      "SRC": null
      },
      "params": {
-      "name": "CompressibleFlow"
+      "name": "vel",
+      "type": "float3"
      },
      "uipos": [
-      123.93203124999994,
-      -243.3406249999999
+      -777.4999999999998,
+      158.00000000000006
      ],
      "options": []
     },
-    "308e4086-NumericInt": {
-     "name": "NumericInt",
+    "ef1bda4f-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "prim": [
+       "374c102a-PrimitiveAddAttr",
+       "prim"
+      ],
+      "fillValue": null,
+      "SRC": null
      },
      "params": {
-      "value": 0
+      "name": "length",
+      "type": "float"
      },
      "uipos": [
-      1517.4375000000002,
-      501.62499999999994
+      -465.82812499999983,
+      143.45312500000028
      ],
      "options": []
+    },
+    "1a42c441-x": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "b8dfa887-PrimitiveGetSize",
+       "size"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "hint": "PrintNumeric"
+     },
+     "uipos": [
+      771.1749999999994,
+      708.3499999999996
+     ],
+     "options": [
+      "VIEW"
+     ]
     }
    },
    "view": {
-    "scale": 1,
-    "trans_x": 0,
-    "trans_y": 0
+    "scale": 0.8,
+    "trans_x": -93,
+    "trans_y": 15
    }
   }
  },
@@ -2301,25 +2011,6 @@
     "GPUMPM"
    ]
   },
-  "MakeHeatmap": {
-   "inputs": [
-    "SRC"
-   ],
-   "outputs": [
-    "heatmap",
-    "DST"
-   ],
-   "params": [
-    [
-     "int",
-     "nres",
-     "1024"
-    ]
-   ],
-   "categories": [
-    "visualize"
-   ]
-  },
   "MakeMPMMehser": {
    "inputs": [
     "pathPreFix",
@@ -3198,27 +2889,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "PrimitiveColorByHeatmap": {
-   "inputs": [
-    "prim",
-    "heatmap",
-    "SRC"
-   ],
-   "outputs": [
-    "prim",
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "attrName",
-     "rho"
-    ]
-   ],
-   "categories": [
-    "visualize"
    ]
   },
   "PrimitiveConvexDecomposition": {
@@ -4651,40 +4321,22 @@
     "CompressibleFlow"
    ]
   },
-  "makeCompressibleVolume": {
+  "VolumeTrail": {
    "inputs": [
-    "box",
-    "center",
-    "size",
-    "dx",
-    "q_amb",
-    "SRC"
-   ],
-   "outputs": [
-    "CompressibleFlow",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
-   ],
-   "is_subgraph": true
-  },
-  "AdvanceCompressible": {
-   "inputs": [
-    "RK_Order",
     "dt",
-    "simParam",
-    "flowData",
+    "maxLen",
+    "startPoints",
+    "vecField",
+    "steps",
     "SRC"
    ],
    "outputs": [
-    "oFlowData",
+    "VolumeTrails",
     "DST"
    ],
    "params": [],
    "categories": [
-    "CompressibleFlow"
+    "Visualization"
    ],
    "is_subgraph": true
   },
