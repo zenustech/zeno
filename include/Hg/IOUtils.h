@@ -31,6 +31,11 @@ static std::string file_get_content(std::string const &path) {
   return content;
 }
 
+static bool file_exists(std::string const &path) {
+  std::ifstream fin(path);
+  return (bool)fin;
+}
+
 static void *c_load_file_as_raw_ptr(char const *filename, size_t size) {
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
