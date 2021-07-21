@@ -27,7 +27,7 @@ struct GlobalState {
             || (!has_substep_executed && !time_step_integrated);
     }
 
-    inline bool isFirstFrame() const {
+    inline bool isFirstSubstep() const {
         return substepid == 0;
     }
 

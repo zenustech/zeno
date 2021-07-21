@@ -57,7 +57,7 @@ ZENAPI bool INode::checkApplyCondition() {
     }*/
 
     if (has_option("ONCE")) {
-        if (!zeno::state.isFirstFrame() || !zeno::state.isOneSubstep())
+        if (!zeno::state.isFirstSubstep())
             return false;
     }
 
@@ -96,9 +96,10 @@ ZENAPI void INode::coreApply() {
     }
 
     if (has_option("VIEW")) {
-        if (state.has_substep_executed) {
+        if (!state.isOneSubstep())  // no duplicate view when multi-substep used
             return;
-        }
+        if (!graph->isViewed)  // VIEW subnodes only if subgraph is VIEW'ed
+            return;
         auto desc = nodeClass->desc.get();
         auto id = desc->outputs[0];
         auto obj = safe_at(outputs, id, "output");

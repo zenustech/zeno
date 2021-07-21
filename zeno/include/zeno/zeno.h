@@ -233,6 +233,8 @@ struct Graph {
 
     std::unique_ptr<Context> ctx;
 
+    bool isViewed = true;
+
     ZENAPI Graph();
     ZENAPI ~Graph();
 
