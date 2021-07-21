@@ -32,7 +32,7 @@ struct PrimitiveShade : zeno::INode {
     shade->fragpath = get_param<std::string>("fragpath");
     shade->primtype = get_param<std::string>("primtype");
 
-    set_output_ref("shade", std::move(shade));
+    set_output("shade", std::move(shade));
   }
 };
 

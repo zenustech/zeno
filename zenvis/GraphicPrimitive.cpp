@@ -26,7 +26,7 @@ struct GraphicPrimitive : IGraphic {
   std::unique_ptr<Buffer> tris_ebo;
   size_t tris_count;
 
-  std::vector<std::unique_ptr<Texture>> textures;
+  //std::vector<std::unique_ptr<Texture>> textures;
 
   GraphicPrimitive
     ( zeno::PrimitiveObject *prim
@@ -91,13 +91,13 @@ struct GraphicPrimitive : IGraphic {
         points_prog = get_points_program(path);
     }
 
-    load_textures(path);
+    //load_textures(path);
   }
 
   virtual void draw() override {
-    for (int id = 0; id < textures.size(); id++) {
+    /*for (int id = 0; id < textures.size(); id++) {
         textures[id]->bind_to(id);
-    }
+    }*/
 
     vbo->bind();
     vbo->attribute(/*index=*/0,
@@ -153,7 +153,7 @@ struct GraphicPrimitive : IGraphic {
     vbo->unbind();
   }
 
-  void load_textures(std::string const &path) {
+  /*void load_textures(std::string const &path) {
       for (int id = 0; id < 8; id++) {
           std::ostringstream ss;
           if (!(ss << path << "." << id << ".png"))
@@ -165,7 +165,7 @@ struct GraphicPrimitive : IGraphic {
           tex->load(texpath.c_str());
           textures.push_back(std::move(tex));
       }
-  }
+  }*/
 
   Program *get_points_program(std::string const &path) {
     auto vert = hg::file_get_content(path + ".points.vert");
