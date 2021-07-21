@@ -7,6 +7,8 @@
 #include <zfx/x64.h>
 #include <cassert>
 
+namespace {
+
 static zfx::Compiler compiler;
 static zfx::x64::Assembler assembler;
 
@@ -138,3 +140,5 @@ ZENDEFNODE(ParticlesWrangle, {
     {},
     {"zenofx"},
 });
+
+}

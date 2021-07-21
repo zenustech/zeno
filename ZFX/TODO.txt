@@ -1,4 +1,6 @@
+OutOfOrderOptimize
+NoReluctantLoad
 KillUnreached
 MergeIdentical
-StripLocalMemory
-vec2, vec3, ...
+MergeLocalStorage
+refactor zsg file format

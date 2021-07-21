@@ -24,16 +24,16 @@ style = {
     'button_selected_color': '#449922',
     'button_selected_text_color': '#333333',
     'output_shift': 1,
+    'ramp_width': 10,
 
     'line_width': 3,
+    'ramp_outline_width': 2,
     'node_outline_width': 2,
     'socket_outline_width': 2,
     'node_rounded_radius': 6,
     'socket_radius': 8,
     'node_width': 240,
     'text_height': 23,
-    'copy_offset_x': 100,
-    'copy_offset_y': 100,
     'hori_margin': 9,
     'dummy_socket_offset': 15,
 }
@@ -42,6 +42,7 @@ TEXT_HEIGHT = style['text_height']
 HORI_MARGIN = style['hori_margin']
 SOCKET_RADIUS = style['socket_radius']
 BEZIER_FACTOR = 0.5
+
 
 def fillRect(painter, rect, color, line_width=None, line_color=None):
     if line_width:
@@ -69,3 +70,4 @@ def fillRectOld(painter, rect, color, line_width=None, line_color=None):
     painter.drawPath(pathTitle.simplified())
 
 from . import *
+

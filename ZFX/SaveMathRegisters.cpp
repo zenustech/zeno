@@ -15,25 +15,16 @@ struct SaveMathRegisters : Visitor<SaveMathRegisters> {
     std::unique_ptr<IR> ir = std::make_unique<IR>();
 
     size_t minaddr = 0;
-    std::map<int, std::vector<std::pair<int, int>>> regusage;
+    int nregs = 0;
 
     void visit(AsmFuncCallStmt *stmt) {
         std::stack<std::function<void()>> callbacks;
-        for (auto const &[regid, reginfo]: regusage) {
-            bool found = false;
-            for (auto const &[beg, end]: reginfo) {  // TODO: this sounds O(N*N), optimize it with lut
-                if (beg < stmt->id && end > stmt->id) {
-                    found = true;
-                    break;
-                }
-            }
-            if (found) {
-                int addr = minaddr + regid;
-                ir->emplace_back<AsmLocalStoreStmt>(addr, regid);
-                callbacks.push([ir_ = ir.get(), regid_ = regid, addr_ = addr] () {
-                    ir_->emplace_back<AsmLocalLoadStmt>(addr_, regid_);
-                });
-            }
+        for (int regid = 0; regid < nregs; regid++) {
+            int addr = minaddr + regid;
+            ir->emplace_back<AsmLocalStoreStmt>(addr, regid);
+            callbacks.push([=]() {
+                ir->emplace_back<AsmLocalLoadStmt>(addr, regid);
+            });
         }
         visit((Statement *)stmt);
         while (callbacks.size()) {
@@ -47,12 +38,9 @@ struct SaveMathRegisters : Visitor<SaveMathRegisters> {
     }
 };
 
-std::unique_ptr<IR> apply_save_math_registers
-    ( IR *ir
-    , std::map<int, std::vector<std::pair<int, int>>> const &usage
-    ) {
+std::unique_ptr<IR> apply_save_math_registers(IR *ir, int nregs) {
     SaveMathRegisters visitor;
-    visitor.regusage = usage;
+    visitor.nregs = nregs;
     visitor.minaddr = ir->size() * 50;
     visitor.apply(ir);
     return std::move(visitor.ir);

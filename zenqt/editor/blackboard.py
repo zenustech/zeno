@@ -177,5 +177,3 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
         edges = []
         return edges
 
-
-from . import *

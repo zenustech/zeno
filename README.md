@@ -6,6 +6,9 @@ Open-source node system framework, to change your algorithmic code into useful t
 
 ![rigid3.zsg](images/rigid3.jpg "arts/rigid3.zsg")
 
+ZENO is an OpenSource, Node based 3D system able to produce cinematic physics effects at High Efficiency, it was designed for large scale simulations and has been tested on complex setups.
+Aside of its simulation Tools, ZENO provides necessary visualization nodes for users to import and run simulations if you feel that the current software you are using is too slow.
+
 
 ## Features
 
@@ -16,14 +19,15 @@ nodes, and various VFX and simulation solutions based on our nodes (provided by 
 
 ![robot hit water](images/crag_hit_water.gif)
 
-
 ![SuperSonic Flow](images/shock.gif)
 
+<!--
 ## ZenCompute (@littlemine)
 
 Open-source code development framework to easily develop high-performance physical simulation code that both run on cpu and gpu with out too much effort. Now intergrated into ZENO.
 
 [![ZenCompute development framework](images/zencompute.png)](https://github.com/zenustech/zpc)
+-->
 
 
 # Motivation

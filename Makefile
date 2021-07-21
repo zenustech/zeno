@@ -1,4 +1,4 @@
-O=arts/testpreptag.zsg
+O=arts/countneighbors.zsg
 
 default: run
 

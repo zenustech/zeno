@@ -293,5 +293,3 @@ class QDMGraphicsCollapseButton(QGraphicsSvgItem):
     def paint(self, painter, styleOptions, widget=None):
         self.renderer().render(painter, self.boundingRect())
 
-
-from . import *

@@ -336,7 +336,7 @@ class QDMGraphicsNode(QGraphicsItem):
 
         for name, value in params.items():
             if name not in self.params:
-                if name not in ['_KEYS']:
+                if not name.startswith('_'):
                     print('no param named [{}] for [{}]'.format(
                         name, data['name']))
                 continue
@@ -355,5 +355,3 @@ class QDMGraphicsNode(QGraphicsItem):
             edges.append((dest, input))
         return edges
 
-
-from . import *

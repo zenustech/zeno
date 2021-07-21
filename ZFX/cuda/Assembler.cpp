@@ -110,6 +110,7 @@ struct ImplAssembler {
         , "exp"
         , "log"
         , "floor"
+        , "round"
         , "ceil"
         , "abs"
         , "rsqrt"
