@@ -8,7 +8,7 @@ style = {
     'socket_connect_color': '#638e77',
     'socket_unconnect_color': '#4a4a4a',
     'title_text_color': '#FFFFFF',
-    'title_text_size': 10,
+    'title_text_size': 14,
     'button_text_size': 10,
     'socket_text_size': 10,
     'param_text_size': 10,

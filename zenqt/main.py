@@ -12,6 +12,8 @@ def main():
     app = QApplication(sys.argv)
     font_file_path = asset_path('SourceSansPro-Regular.ttf')
     QFontDatabase().addApplicationFont(font_file_path)
+    font_file_path = asset_path('SourceSansPro-SemiBold.ttf')
+    QFontDatabase().addApplicationFont(font_file_path)
     app.setFont(QFont('Source Sans Pro'))
     win = MainWindow()
     win.show()

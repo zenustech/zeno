@@ -19,7 +19,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.name = None
 
         self.offset = 13
-        self.text_offset = HORI_MARGIN * 2 - 4
+        self.text_offset = HORI_MARGIN * 2 - 2
         self.label.setPos(self.text_offset, - style['socket_text_size'] * 1.3)
 
     def hasAnyEdge(self):
@@ -221,7 +221,6 @@ class QDMGraphicsTopButton(QGraphicsSvgItem):
     def setChecked(self, checked):
         self.checked = checked
 
-
     def setWidthHeight(self, width, height):
         self._width = width
         self._height = height
@@ -244,7 +243,6 @@ class QDMGraphicsTopButton(QGraphicsSvgItem):
     def update_svg(self):
         if self.checked:
             self._renderer.load(asset_path(self.svg_active_path))
-
         else:
             self._renderer.load(asset_path(self.svg_mute_path))
 
