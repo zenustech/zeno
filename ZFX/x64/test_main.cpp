@@ -16,7 +16,7 @@ int main() {
 #else
     int n = 2;
     std::string code(R"(
-@clr = 0.5 + @pos + @pos
+@clr = 0.5 + sin(@pos)
 )");
 #endif
 
