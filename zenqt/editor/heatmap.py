@@ -84,7 +84,6 @@ class QDMGraphicsColorRamp(QGraphicsItem):
         else:
             rf, rrgb = lf, lrgb
         intf = (fac - lf) / (rf - lf)
-        print(i, lrgb, rrgb)
         rgb = tuple((1 - intf) * l + intf * r for l, r in zip(lrgb, rrgb))
         new_ramp = (fac, rgb)
         self.ramps.insert(i, new_ramp)
