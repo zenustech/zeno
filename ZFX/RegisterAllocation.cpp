@@ -89,6 +89,7 @@ struct UCLAScanner {
                     break;
                 }
                 active.erase(j);
+                printf("free %d: %d cuz %d\n", j->regid, lookup(j->regid), j->endpoint());
                 free_register(j);
             }
             if (active.size() == NREGS) {
