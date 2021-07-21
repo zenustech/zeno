@@ -43,5 +43,15 @@ HORI_MARGIN = style['hori_margin']
 SOCKET_RADIUS = style['socket_radius']
 BEZIER_FACTOR = 0.5
 
+def fillRect(painter, rect, color, line_width=None, line_color=None):
+    if line_width:
+        painter.fillRect(rect, QColor(line_color))
+
+        w = line_width
+        r = rect
+        content_rect = QRect(r.x() + w, r.y() + w, r.width() - w * 2, r.height() - w * 2)
+        painter.fillRect(content_rect, QColor(color))
+    else:
+        painter.fillRect(rect, QColor(color))
 
 from . import *

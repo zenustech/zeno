@@ -10,7 +10,6 @@ class QDMGraphicsSocket(QGraphicsItem):
 
         self.node = parent
         self.name = None
-        self.dummy = False
 
         self.initLabel()
 
@@ -82,7 +81,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         return QRectF(*self.getCircleBounds()).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-        if self.hasAnyEdge() or self.dummy:
+        if self.hasAnyEdge():
             socket_color = 'socket_connect_color'
         else:
             socket_color = 'socket_unconnect_color'
@@ -95,6 +94,41 @@ class QDMGraphicsSocket(QGraphicsItem):
     def remove(self):
         for edge in list(self.edges):
             edge.remove()
+
+
+class QDMGraphicsDummySocket(QGraphicsItem):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.isOutput = False
+        self.node = parent
+
+    def setIsOutput(self, isOutput):
+        self.isOutput = isOutput
+
+    def getCirclePos(self):
+        basePos = self.node.pos()
+        offset = 3
+        if not self.isOutput:
+            return basePos + QPointF(-offset, 0)
+        else:
+            return basePos + QPointF(self.node.width + offset, 0)
+
+    def getCircleBounds(self):
+        h = 40
+        w = 5
+        offset = 1
+        if not self.isOutput:
+            return QRectF(-w -offset, - (h // 2), w, h)
+        else:
+            return QRectF(self.node.width + offset, - (h // 2), w, h)
+
+    def boundingRect(self):
+        return self.getCircleBounds().normalized()
+
+    def paint(self, painter, styleOptions, widget=None):
+        rect = self.getCircleBounds()
+        fillRect(painter, rect, '#4D4D4D')
 
 
 class QDMGraphicsButton(QGraphicsItem):
