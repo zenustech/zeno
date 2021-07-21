@@ -222,8 +222,10 @@ class QDMGraphicsNode(QGraphicsItem):
             v.hide()
         for v in self.inputs.values():
             v.hide()
+            v.label.hide()
         for v in self.outputs.values():
             v.hide()
+            v.label.hide()
 
         for socket in self.outputs.values():
             for edge in socket.edges:
@@ -242,8 +244,10 @@ class QDMGraphicsNode(QGraphicsItem):
             v.show()
         for v in self.inputs.values():
             v.show()
+            v.label.show()
         for v in self.outputs.values():
             v.show()
+            v.label.show()
 
         for socket in self.outputs.values():
             for edge in socket.edges:
