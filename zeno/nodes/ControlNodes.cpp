@@ -53,11 +53,16 @@ struct EndFor : zeno::ContextManagedNode {
             abort();
         }
         graph->applyNode(sn);
+        std::unique_ptr<zeno::Context> old_ctx = nullptr;
         while (fore->isContinue()) {
             fore->update();
             push_context();
             zeno::INode::doApply();
-            pop_context();
+            old_ctx = pop_context();
+        }
+        if (old_ctx) {
+            graph->ctx->mergeVisited(*old_ctx);
+            old_ctx = nullptr;
         }
     }
 

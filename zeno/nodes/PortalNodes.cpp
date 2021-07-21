@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/GlobalState.h>
+#include <zeno/ConditionObject.h>
 
 struct PortalIn : zeno::INode {
     virtual void complete() override {
@@ -44,6 +45,8 @@ struct Route : zeno::INode {
         if (has_input("input")) {
             auto obj = get_input("input");
             set_output("output", std::move(obj));
+        } else {
+            set_output("output", std::make_shared<zeno::ConditionObject>());
         }
     }
 };

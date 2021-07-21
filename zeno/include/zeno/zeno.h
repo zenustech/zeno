@@ -211,6 +211,10 @@ struct Session;
 struct Context {
     std::set<std::string> visited;
 
+    inline void mergeVisited(Context const &other) {
+        visited.insert(other.visited.begin(), other.visited.end());
+    }
+
     ZENAPI Context();
     ZENAPI Context(Context const &other);
     ZENAPI ~Context();

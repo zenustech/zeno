@@ -16,15 +16,11 @@ struct ContextManagedNode : INode {
         graph->ctx = std::make_unique<Context>(*m_ctx);
     }
 
-    void pop_context() {
+    std::unique_ptr<Context> pop_context() {
         assert(m_ctx);
+        auto old_ctx = std::move(graph->ctx);
         graph->ctx = std::move(m_ctx);
-    }
-
-    void pop_context_with_merge() {
-        assert(m_ctx);
-        graph->ctx->visited.merge(m_ctx->visited);
-        graph->ctx = std::move(m_ctx);
+        return old_ctx;
     }
 };
 
