@@ -22,6 +22,17 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.text_offset = HORI_MARGIN * 2 - 2
         self.label.setPos(self.text_offset, - style['socket_text_size'] * 1.3)
 
+        self._hover = False
+        self.setAcceptHoverEvents(True)
+
+    def hoverMoveEvent(self, event):
+        self._hover = True
+        self.update()
+
+    def hoverLeaveEvent(self, event):
+        self._hover = False
+        self.update()
+
     def hasAnyEdge(self):
         return len(self.edges) != 0
 
@@ -78,7 +89,7 @@ class QDMGraphicsSocket(QGraphicsItem):
                 b[2] + offset * 2, b[3] + offset * 2).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-        if self.hasAnyEdge():
+        if self.hasAnyEdge() or self._hover:
             self.label.setDefaultTextColor(QColor(style['socket_connect_color']))
             socket_color = 'socket_connect_color'
         else:
