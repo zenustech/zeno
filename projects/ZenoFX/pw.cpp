@@ -1,5 +1,4 @@
 #include <zeno/zeno.h>
-///tatssdtjkl THIS FUCKING FILE RUINED GOTTAFUCKCPP.CPP
 #include <zeno/StringObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/NumericObject.h>
@@ -7,6 +6,8 @@
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
+
+namespace {
 
 static zfx::Compiler compiler;
 static zfx::x64::Assembler assembler;
@@ -51,6 +52,8 @@ static void vectors_wrangle
             chs[j].base[chs[j].stride * i] = ctx.channel(j)[0];
         }
     }
+}
+
 }
 
 struct ParticlesWrangle : zeno::INode {

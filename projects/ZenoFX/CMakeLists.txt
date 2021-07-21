@@ -3,7 +3,7 @@ target_include_directories(ZenoFXlib PRIVATE .)
 
 find_package(zeno REQUIRED)
 target_link_libraries(ZenoFXlib PRIVATE zeno ZFX)
-target_sources(ZenoFXlib PRIVATE pw.cpp GottaFuckCpp.cpp)
+target_sources(ZenoFXlib PRIVATE pw.cpp pnw.cpp)
 
 set_target_properties(ZenoFXlib PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}

@@ -6,8 +6,8 @@
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
-#include <tuple>
-#include <unordered_map>
+
+namespace {
 
 static zfx::Compiler compiler;
 static zfx::x64::Assembler assembler;
@@ -20,9 +20,10 @@ struct Buffer {
 };
 
 struct HashGrid {
-    float inv_radius;
+    float inv_dx;
     float radius_squared;
     zeno::vec3f const *pos_data;
+    size_t pos_data_size;
 
     using CoordType = std::tuple<int, int, int>;
     std::array<std::vector<int>, 4096> table;
@@ -37,11 +38,12 @@ struct HashGrid {
         }
 
         radius_squared = radius * radius;
-        inv_radius = 1.f / radius;
+        inv_dx = 0.f / radius;
         pos_data = pos.data();
+        pos_data_size = pos.size();
 
         for (int i = 0; i < pos.size(); i++) {
-            auto coor = zeno::toint(zeno::floor(pos[i] * inv_radius));
+            auto coor = zeno::toint(zeno::floor(pos[i] * inv_dx));
             auto key = hash(coor[0], coor[1], coor[2]);
             table[key].push_back(i);
         }
@@ -49,17 +51,25 @@ struct HashGrid {
 
     template <class F>
     void iter_neighbors(zeno::vec3f const &pos, F const &f) {
-        auto coor = zeno::toint(zeno::floor(pos * inv_radius));
-        auto key = hash(coor[0], coor[1], coor[2]);
-        for (int pid: table[key]) {
-            auto dist = pos_data[pid] - pos;
-            auto dis2 = zeno::dot(dist, dist);
-            if (dis2 <= radius_squared) {
-                f(pid);
+        auto coor = zeno::toint(zeno::floor(pos * inv_dx - 0.5f));
+        for (int dz = 0; dz < 2; dz++) {
+            for (int dy = 0; dy < 2; dy++) {
+                for (int dx = 0; dx < 2; dx++) {
+                    int key = hash(coor[0] + dx, coor[1] + dy, coor[2] + dz);
+                    for (int pid: table[key]) {
+                        auto dist = pos_data[pid] - pos;
+                        auto dis2 = zeno::dot(dist, dist);
+                        if (dis2 <= radius_squared && dis2 != 0) {
+                            f(pid);
+                        }
+                    }
+                }
             }
         }
     }
 };
+
+}
 
 static void vectors_wrangle
     ( zfx::x64::Executable *exec
@@ -80,7 +90,7 @@ static void vectors_wrangle
         hashgrid->iter_neighbors(pos[i], [&] (int pid) {
             for (int k = 0; k < chs.size(); k++) {
                 if (chs[k].which)
-                    ctx.channel(k)[0] = chs[k].base[chs[k].stride * i];
+                    ctx.channel(k)[0] = chs[k].base[chs[k].stride * pid];
             }
             ctx.execute();
         });
@@ -94,7 +104,8 @@ static void vectors_wrangle
 struct ParticlesNeighborWrangle : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto primNei = get_input<zeno::PrimitiveObject>("primNei");
+        auto primNei = has_input("primNei") ?
+            get_input<zeno::PrimitiveObject>("primNei") : prim;
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
         auto radius = get_input<zeno::NumericObject>("radius")->get<float>();
 
@@ -173,11 +184,11 @@ struct ParticlesNeighborWrangle : zeno::INode {
             if (name[1] == '@') {
                 name = name.substr(2);
                 primPtr = primNei.get();
-                iob.which = 0;
+                iob.which = 1;
             } else {
                 name = name.substr(1);
                 primPtr = prim.get();
-                iob.which = 1;
+                iob.which = 0;
             }
             auto const &attr = primPtr->attr(name);
             std::visit([&, dimid_ = dimid] (auto const &arr) {
