@@ -61,6 +61,7 @@ struct EndFor : zeno::ContextManagedNode {
             old_ctx = pop_context();
         }
         if (old_ctx) {
+            // auto-valid the nodes in last iteration when refered from outside
             graph->ctx->mergeVisited(*old_ctx);
             old_ctx = nullptr;
         }

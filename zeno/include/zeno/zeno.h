@@ -55,15 +55,15 @@ struct IObject {
     using Ptr = std::unique_ptr<IObject>;
 
     template <class T>
-    [[deprecated("std::make_shared<T>")]]
+    [[deprecated("use std::make_shared<T>")]]
     static std::shared_ptr<T> make() { return std::make_shared<T>(); }
 
     template <class T>
-    [[deprecated("dynamic_cast<T *>")]]
+    [[deprecated("use dynamic_cast<T *>")]]
     T *as() { return dynamic_cast<T *>(this); }
 
     template <class T>
-    [[deprecated("dynamic_cast<const T *>")]]
+    [[deprecated("use dynamic_cast<const T *>")]]
     const T *as() const { return dynamic_cast<const T *>(this); }
 };
 
@@ -110,12 +110,12 @@ protected:
     ZENAPI void set_output(std::string const &id,
         std::shared_ptr<IObject> &&obj);
 
-    [[deprecated("get_input")]]
+    [[deprecated("use get_input")]]
     std::shared_ptr<IObject> get_input_ref(std::string const &id) const {
         return get_input(id);
     }
 
-    [[deprecated("set_output")]]
+    [[deprecated("use set_output")]]
     void set_output_ref(std::string const &id,
         std::shared_ptr<IObject> &&obj) {
         set_output(id, std::move(obj));
@@ -133,7 +133,7 @@ protected:
 
 
     template <class T>
-    [[deprecated("set_output")]]
+    [[deprecated("use set_output")]]
     T *new_member(std::string const &id) {
         auto obj = std::make_shared<T>();
         auto obj_ptr = obj.get();
@@ -142,7 +142,7 @@ protected:
     }
 
     template <class T>
-    [[deprecated("set_output(id, std::move(obj))")]]
+    [[deprecated("use set_output(id, std::move(obj))")]]
     void set_output(std::string const &id,
         std::shared_ptr<T> &obj) {
         set_output(id, std::move(obj));
@@ -281,7 +281,7 @@ inline int defNodeClass(F const &ctor, std::string const &id, Descriptor const &
 }
 
 template <class T>
-[[deprecated("ZENDEFNODE(T, ...)")]]
+[[deprecated("use ZENDEFNODE(T, ...)")]]
 inline int defNodeClass(std::string const &id, Descriptor const &desc = {}) {
     return getSession().defNodeClass(std::make_unique<T>, id, desc);
 }
