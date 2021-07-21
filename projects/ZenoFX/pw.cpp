@@ -54,8 +54,6 @@ static void vectors_wrangle
     }
 }
 
-}
-
 struct ParticlesWrangle : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
@@ -142,3 +140,5 @@ ZENDEFNODE(ParticlesWrangle, {
     {},
     {"zenofx"},
 });
+
+}

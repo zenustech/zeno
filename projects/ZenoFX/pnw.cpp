@@ -69,8 +69,6 @@ struct HashGrid {
     }
 };
 
-}
-
 static void vectors_wrangle
     ( zfx::x64::Executable *exec
     , std::vector<Buffer> const &chs
@@ -213,3 +211,5 @@ ZENDEFNODE(ParticlesNeighborWrangle, {
     {},
     {"zenofx"},
 });
+
+}
