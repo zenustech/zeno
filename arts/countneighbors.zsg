@@ -110,10 +110,7 @@
        "f33b7e3a-MakeMultilineString",
        "value"
       ],
-      "params": [
-       "5383a897-MakeDict",
-       "dict"
-      ],
+      "params": null,
       "radius": [
        "e32cfba7-NumericFloat",
        "value"
@@ -125,24 +122,7 @@
       966.4031249999999,
       285.9037499999999
      ],
-     "options": [
-      "VIEW"
-     ]
-    },
-    "5383a897-MakeDict": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "_KEYS": ""
-     },
-     "uipos": [
-      364.44062499999995,
-      213.35937500000023
-     ],
-     "options": [],
-     "socket_keys": []
+     "options": []
     },
     "e32cfba7-NumericFloat": {
      "name": "NumericFloat",
@@ -153,8 +133,8 @@
       "value": 0.101
      },
      "uipos": [
-      592.2968750000001,
-      476.490625
+      541.296875,
+      353.490625
      ],
      "options": []
     },
@@ -164,7 +144,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@clr += 0.02 + @clr"
+      "value": "@clr += 0.03 + @clr * 0.8"
      },
      "uipos": [
       618.6093750000001,
@@ -205,12 +185,49 @@
       197.0
      ],
      "options": []
+    },
+    "1f74dc87-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "2752e755-ParticlesNeighborWrangle",
+       "prim"
+      ],
+      "zfxCode": [
+       "3aeea543-x",
+       "value"
+      ],
+      "params": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      1251.84,
+      285.4400000000001
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "3aeea543-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "@clr = 1 - @clr"
+     },
+     "uipos": [
+      974.0,
+      577.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 244,
-    "trans_y": 74
+    "scale": 1.0,
+    "trans_x": 13,
+    "trans_y": -207
    }
   }
  },
