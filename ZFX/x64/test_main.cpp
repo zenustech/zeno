@@ -14,13 +14,14 @@ int main() {
         return pos;
     };
 #else
-    int n = 4;
+    int n = 2;
     std::string code(R"(
 @clr = 0.5 + @pos + @pos
 )");
 #endif
 
     zfx::Options opts(zfx::Options::for_x64);
+    opts.arch_maxregs = 5;
     opts.define_symbol("@pos", n);
     opts.define_symbol("@clr", n);
     //opts.reassign_channels = false;
@@ -33,11 +34,11 @@ int main() {
 
     auto ctx = exec->make_context();
     for (int i = 0; i < n; i++) {
-        ctx.channel(prog->symbol_id("@pos", n))[0] = 1.0f;
+        ctx.channel(prog->symbol_id("@pos", i))[0] = 1.0f;
     }
     ctx.execute();
     for (int i = 0; i < n; i++) {
-        printf("%f\n", ctx.channel(prog->symbol_id("@clr", n))[0]);
+        printf("%f\n", ctx.channel(prog->symbol_id("@clr", i))[0]);
     }
 
     return 0;
