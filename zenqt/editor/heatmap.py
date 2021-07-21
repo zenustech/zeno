@@ -5,6 +5,12 @@ class QDMGraphicsColorRamp(QGraphicsItem):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.rect = QRectF()
+        self.ramps = [
+                (0.0, (0, 0, 0)),
+                (0.5, (1, 0, 0)),
+                (0.9, (1, 1, 0)),
+                (1.0, (1, 1, 1)),
+        ]
 
     def setGeometry(self, rect):
         self.setPos(rect.x(), rect.y())
@@ -16,10 +22,8 @@ class QDMGraphicsColorRamp(QGraphicsItem):
     def paint(self, painter, styleOptions, widget=None):
         painter.setPen(Qt.NoPen)
         grad = QLinearGradient(0, 0, self.rect.width(), 0)
-        grad.setColorAt(0.0, Qt.black)
-        grad.setColorAt(0.5, Qt.red)
-        grad.setColorAt(0.9, Qt.yellow)
-        grad.setColorAt(1.0, Qt.white)
+        for f, (r, g, b) in self.ramps:
+            grad.setColorAt(f, QColor(int(r * 255), int(g * 255), int(b * 255)))
         brush = QBrush(grad)
         painter.setBrush(brush)
         painter.drawRect(0, 0, self.rect.width(), TEXT_HEIGHT)
@@ -70,7 +74,7 @@ class QDMGraphicsNode_MakeHeatmap(QDMGraphicsNode):
         ident, data = super().dump()
         data['color_ramps'] = tuple(self.color_ramps)
         data['params']['_RAMPS'] = '\n'.join(
-                f'{r} {g} {b}' for f, r, g, b in self.color_ramps)
+                f'{r} {g} {b}' for f, (r, g, b) in self.color_ramps)
         return ident, data
 
     def load(self, ident, data):
