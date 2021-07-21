@@ -26,6 +26,10 @@ int main() {
     zfx::cuda::Assembler assembler;
 
     zfx::Options opts(zfx::Options::for_cuda);
+    // wxl: reassign (making var refs compact) gives better performance,
+    // but make specifying harder, may disable them if necessary:
+    opts.reassign_channels = false;
+    opts.reassign_parameters = false;
     opts.define_symbol("@pos", 1);
     opts.define_param("$dt", 1);
     std::string zfxcode(R"(
