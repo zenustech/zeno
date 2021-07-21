@@ -6,19 +6,21 @@
 
 
 struct IBeginFor : zeno::INode {
-    bool is_break;
+    bool is_break = false;
+
     virtual bool isContinue() const = 0;
     virtual void update() = 0;
 };
 
 
 struct BeginFor : IBeginFor {
-    int m_index;
-    int m_count;
+    int m_index = 0;
+    int m_count = 0;
     
     virtual bool isContinue() const override {
         return m_index < m_count && !is_break;
     }
+
     virtual void apply() override {
         m_index = 0;
         is_break = false;
@@ -51,11 +53,16 @@ struct EndFor : zeno::ContextManagedNode {
             abort();
         }
         graph->applyNode(sn);
+        std::unique_ptr<zeno::Context> old_ctx = nullptr;
         while (fore->isContinue()) {
             fore->update();
             push_context();
             zeno::INode::doApply();
-            pop_context();
+            old_ctx = pop_context();
+        }
+        if (old_ctx) {
+            graph->ctx->mergeVisited(*old_ctx);
+            old_ctx = nullptr;
         }
     }
 
@@ -284,8 +291,9 @@ ZENDEFNODE(ConditionedDo, {
 
 
 struct BeginForEach : IBeginFor {
-    int m_index;
+    int m_index = 0;
     std::shared_ptr<zeno::ListObject> m_list;
+
     virtual bool isContinue() const override {
         return m_index < m_list->arr.size() && !is_break;
     }

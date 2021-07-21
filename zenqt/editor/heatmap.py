@@ -153,9 +153,10 @@ class QDMGraphicsNode_MakeHeatmap(QDMGraphicsNode):
 
     def dump(self):
         ident, data = super().dump()
-        data['color_ramps'] = tuple(self.color_ramps)
-        data['params']['_RAMPS'] = '\n'.join(
-                f'{f} {r} {g} {b}' for f, (r, g, b) in self.color_ramps)
+        ramps = tuple(sorted(self.color_ramps, key=lambda x: x[0]))
+        data['color_ramps'] = tuple(ramps)
+        data['params']['_RAMPS'] = f'{len(ramps)}' + ''.join(
+                f'\n{f} {r} {g} {b}' for f, (r, g, b) in ramps)
         return ident, data
 
     def load(self, ident, data):

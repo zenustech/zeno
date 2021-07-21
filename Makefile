@@ -1,4 +1,4 @@
-O=arts/countneighbors.zsg
+O=arts/testforloopover.zsg
 
 default: run
 

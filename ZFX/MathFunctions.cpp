@@ -46,7 +46,7 @@ struct MathFunctions : Visitor<MathFunctions> {
         } else if (name == "-" && args.size() == 1) {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
-            auto mask = stm_const(-0.f);
+            auto mask = stm_const(-0.f); // 0x80000000
             return stm("xor", mask, x);
 
         } else if (name == "abs") {

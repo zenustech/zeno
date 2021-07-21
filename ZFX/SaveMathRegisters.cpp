@@ -20,6 +20,8 @@ struct SaveMathRegisters : Visitor<SaveMathRegisters> {
     void visit(AsmFuncCallStmt *stmt) {
         std::stack<std::function<void()>> callbacks;
         for (int regid = 0; regid < nregs; regid++) {
+            if (regid == stmt->dst)
+                continue;
             int addr = minaddr + regid;
             ir->emplace_back<AsmLocalStoreStmt>(addr, regid);
             callbacks.push([=]() {
