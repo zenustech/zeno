@@ -61,6 +61,7 @@ struct UCLAScanner {
     }
 
     void alloc_register(Reg *i) {
+        assert(freed_pool.size());
         int newid = *freed_pool.begin();
         used_pool.insert(newid);
         freed_pool.erase(newid);
@@ -108,6 +109,7 @@ struct UCLAScanner {
                 printf("allocins!\n");
                 alloc_register(i);
                 active.insert(i);
+                printf("insert %p %zd\n", i, active.size());
             }
         }
     }
