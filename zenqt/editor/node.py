@@ -85,7 +85,7 @@ class QDMGraphicsNode(QGraphicsItem):
     def initCondButtons(self):
         cond_keys = ['ONCE', 'PREP', 'MUTE', 'VIEW']
         for i, key in enumerate(cond_keys):
-            button = QDMGraphicsButton(self)
+            button = QDMGraphicsTopButton(self)
             M = HORI_MARGIN // 2
             W = 38
             rect = QRect(W * i + M, -38, 34, 34)

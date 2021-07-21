@@ -188,6 +188,70 @@ class QDMGraphicsButton(QGraphicsItem):
         self.setWidthHeight(w, h)
 
 
+class QDMGraphicsTopButton(QGraphicsSvgItem):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.node = parent
+        self.name = None
+
+        self._renderer = QSvgRenderer(asset_path('unfold.svg'))
+        self._renderer.setAspectRatioMode(Qt.KeepAspectRatio)
+        self.setSharedRenderer(self._renderer)
+
+        self.setChecked(False)
+
+    def setText(self, name):
+        self.name = name
+        self.svg_active_path = 'node-button/' + name + '-active.svg'
+        self.svg_mute_path = 'node-button/' + name + '-mute.svg'
+
+    def getCircleBounds(self):
+        return (0, 0, self._width, self._height)
+
+    def boundingRect(self):
+        return QRectF(*self.getCircleBounds()).normalized()
+
+    def paint(self, painter, styleOptions, widget=None):
+        button_color = '#376557'
+        painter.fillRect(*self.getCircleBounds(), QColor(button_color))
+        self.update_svg()
+        self.renderer().render(painter, self.boundingRect())
+
+    def setChecked(self, checked):
+        self.checked = checked
+
+
+    def setWidthHeight(self, width, height):
+        self._width = width
+        self._height = height
+
+    def on_click(self):
+        self.setChecked(not self.checked)
+
+    def mousePressEvent(self, event):
+        self.on_click()
+        self.update()
+
+    def setGeometry(self, rect):
+        x = rect.x()
+        y = rect.y()
+        w = rect.width()
+        h = rect.height()
+        self.setPos(x, y)
+        self.setWidthHeight(w, h)
+
+    def update_svg(self):
+        if self.checked:
+            self._renderer.load(asset_path(self.svg_active_path))
+
+        else:
+            self._renderer.load(asset_path(self.svg_mute_path))
+
+        self._renderer.setViewBox(QRectF(-5, -5, 34, 34))
+        self._renderer.setAspectRatioMode(Qt.KeepAspectRatio)
+
+
 class QDMGraphicsCollapseButton(QGraphicsSvgItem):
     def __init__(self, parent):
         super().__init__(parent)
