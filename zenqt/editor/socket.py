@@ -5,31 +5,22 @@ class QDMGraphicsSocket(QGraphicsItem):
     def __init__(self, parent):
         super().__init__(parent)
 
+        self.label = QGraphicsTextItem(self)
+        self.label.setDefaultTextColor(QColor(style['socket_text_color']))
+        font = QFont()
+        font.setPointSize(style['socket_text_size'])
+        font.setWeight(QFont.DemiBold)
+        self.label.setFont(font)
+
         self.isOutput = False
         self.edges = set()
 
         self.node = parent
         self.name = None
 
-        self.initLabel()
-
-    class QDMGraphicsTextItem(QGraphicsTextItem):
-        def __init__(self, parent=None):
-            super().__init__(parent)
-            self.setDefaultTextColor(QColor(style['socket_text_color']))
-
-        def setAlignment(self, align):
-            document = self.document()
-            option = document.defaultTextOption()
-            option.setAlignment(Qt.AlignRight)
-            document.setDefaultTextOption(option)
-
-    def initLabel(self):
-        self.label = self.QDMGraphicsTextItem(self)
-        self.label.setPos(HORI_MARGIN, -TEXT_HEIGHT * 0.5)
-        font = QFont()
-        font.setPointSize(style['socket_text_size'])
-        self.label.setFont(font)
+        self.offset = 13
+        self.text_offset = HORI_MARGIN * 2 - 4
+        self.label.setPos(self.text_offset, - style['socket_text_size'] * 1.3)
 
     def hasAnyEdge(self):
         return len(self.edges) != 0
@@ -53,10 +44,12 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.isOutput = isOutput
 
         if isOutput:
-            self.label.setAlignment(Qt.AlignRight)
-            if hasattr(self.label, 'setTextWidth'):
-                width = self.node.boundingRect().width() - HORI_MARGIN * 2
-                self.label.setTextWidth(width)
+            document = self.label.document()
+            option = document.defaultTextOption()
+            option.setAlignment(Qt.AlignRight)
+            document.setDefaultTextOption(option)
+            width = self.node.boundingRect().width() - self.text_offset * 2
+            self.label.setTextWidth(width)
 
     def setName(self, name):
         self.name = name
@@ -65,20 +58,24 @@ class QDMGraphicsSocket(QGraphicsItem):
     def getCirclePos(self):
         basePos = self.node.pos() + self.pos()
         if self.isOutput:
-            return basePos + QPointF(self.node.width, 0)
+            return basePos + QPointF(self.node.width, 0) + QPointF(-self.offset, 0)
         else:
-            return basePos
+            return basePos + QPointF(self.offset, 0)
 
     def getCircleBounds(self):
+        SOCKET_RADIUS = 3
         if self.isOutput:
-            return (self.node.width - SOCKET_RADIUS, -SOCKET_RADIUS,
+            return (self.node.width - SOCKET_RADIUS - self.offset - 1, -SOCKET_RADIUS,
                     2 * SOCKET_RADIUS, 2 * SOCKET_RADIUS)
         else:
-            return (-SOCKET_RADIUS, -SOCKET_RADIUS,
+            return (-SOCKET_RADIUS + self.offset, -SOCKET_RADIUS,
                     2 * SOCKET_RADIUS, 2 * SOCKET_RADIUS)
 
     def boundingRect(self):
-        return QRectF(*self.getCircleBounds()).normalized()
+        b = self.getCircleBounds()
+        offset = 2
+        return QRectF(b[0] - offset, b[1] - offset,
+                b[2] + offset * 2, b[3] + offset * 2).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
         if self.hasAnyEdge():
@@ -86,9 +83,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         else:
             socket_color = 'socket_unconnect_color'
         painter.setBrush(QColor(style[socket_color]))
-        pen = QPen(QColor(style['line_color']))
-        pen.setWidth(style['socket_outline_width'])
-        painter.setPen(pen)
+        painter.setPen(Qt.NoPen)
         painter.drawEllipse(*self.getCircleBounds())
 
     def remove(self):
