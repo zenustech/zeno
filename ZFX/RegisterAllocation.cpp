@@ -35,13 +35,17 @@ struct UCLAScanner {
 
     struct inc_by_start {
         bool operator()(Reg *l, Reg *r) const {
-            return l->startpoint() < r->startpoint();
+            auto lsp = l->startpoint();
+            auto rsp = r->startpoint();
+            return lsp == rsp ? l < r : lsp < rsp;
         }
     };
 
     struct inc_by_end {
         bool operator()(Reg *l, Reg *r) const {
-            return l->endpoint() < r->endpoint();
+            auto lep = l->endpoint();
+            auto rep = r->endpoint();
+            return lep == rep ? l < r : lep < rep;
         }
     };
 
