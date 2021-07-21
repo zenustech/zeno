@@ -94,26 +94,26 @@ struct UCLAScanner {
                     break;
                 }
                 active.erase(j);
-                printf("free %d: %d cuz %d\n", j->regid, lookup(j->regid), j->endpoint());
+                //printf("free %d: %d cuz %d\n", j->regid, lookup(j->regid), j->endpoint());
                 free_register(j);
             }
             if (active.size() == NREGS) {
                 auto spill = *active.begin();
                 if (spill->endpoint() > i->endpoint()) {
-                    printf("transit!\n");
+                    //printf("transit!\n");
                     transit_register(i, spill);
                     alloc_stack(spill);
                     active.erase(spill);
                     active.insert(i);
                 } else {
-                    printf("alloc!\n");
+                    //printf("alloc!\n");
                     alloc_stack(i);
                 }
             } else {
-                printf("allocins!\n");
+                //printf("allocins!\n");
                 alloc_register(i);
                 active.insert(i);
-                printf("insert %p %zd\n", i, active.size());
+                //printf("insert %p %zd\n", i, active.size());
             }
         }
     }
@@ -309,7 +309,7 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
 
     void touch(int operandid, int &regid) {
         if (regid >= NREGS) {
-            printf("register spilled at %d\n", regid);
+            //printf("register spilled at %d\n", regid);
             int memid = regid - NREGS;
             if (!operandid) {
                 int tmpid = NREGS;
