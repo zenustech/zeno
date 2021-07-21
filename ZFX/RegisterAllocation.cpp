@@ -1,5 +1,7 @@
 #include "IRVisitor.h"
 #include "Stmts.h"
+#include <functional>
+#include <optional>
 #include <cassert>
 #include <set>
 #include <map>
@@ -98,15 +100,15 @@ struct UCLAScanner {
                 free_register(j);
             }
             if (active.size() == NREGS) {
-                auto spill = *active.begin();
+                auto spill = *active.rbegin();
                 if (spill->endpoint() > i->endpoint()) {
-                    printf("transit!\n");
+                    printf("transit %d <- %d!\n", i->regid, spill->regid);
                     transit_register(i, spill);
                     alloc_stack(spill);
                     active.erase(spill);
                     active.insert(i);
                 } else {
-                    printf("alloc!\n");
+                    printf("allocdirectly!\n");
                     alloc_stack(i);
                 }
             } else {
@@ -307,22 +309,31 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
 
     std::unique_ptr<IR> ir = std::make_unique<IR>();
 
-    void touch(int operandid, int &regid) {
+    struct call_on_dtor : std::function<void()> {
+        using std::function<void()>::function;
+        call_on_dtor(call_on_dtor const &) = delete;
+        ~call_on_dtor() { (*this)(); }
+    };
+
+    std::optional<call_on_dtor> touch(int operandid, int &regid) {
         if (regid >= NREGS) {
             printf("register spilled at %d\n", regid);
             int memid = regid - NREGS;
             if (!operandid) {
                 int tmpid = NREGS;
-                ir->emplace_back<AsmLocalStoreStmt>(
-                    memid, tmpid);
                 regid = tmpid;
+                return [=] () {
+                    ir->emplace_back<AsmLocalStoreStmt>(
+                        memid, tmpid);
+                };
             } else {
                 int tmpid = NREGS + (operandid - 1);
+                regid = tmpid;
                 ir->emplace_back<AsmLocalLoadStmt>(
                     memid, tmpid);
-                regid = tmpid;
             }
         }
+        return std::nullopt;
     }
 
     void visit(Statement *stmt) {
@@ -331,44 +342,44 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
 
     void visit(AsmAssignStmt *stmt) {
         touch(1, stmt->src);
+        auto _ = touch(0, stmt->dst);
         visit((Statement *)stmt);
-        touch(0, stmt->dst);
     }
 
     void visit(AsmUnaryOpStmt *stmt) {
         touch(1, stmt->src);
+        auto _ = touch(0, stmt->dst);
         visit((Statement *)stmt);
-        touch(0, stmt->dst);
     }
 
     void visit(AsmBinaryOpStmt *stmt) {
         touch(1, stmt->lhs);
         touch(2, stmt->rhs);
+        auto _ = touch(0, stmt->dst);
         visit((Statement *)stmt);
-        touch(0, stmt->dst);
     }
 
     void visit(AsmFuncCallStmt *stmt) {
         for (int i = 0; i < stmt->args.size(); i++) {
             touch(i + 1, stmt->args[i]);
         }
+        auto _ = touch(0, stmt->dst);
         visit((Statement *)stmt);
-        touch(0, stmt->dst);
     }
 
     void visit(AsmLoadConstStmt *stmt) {
+        auto _ = touch(0, stmt->dst);
         visit((Statement *)stmt);
-        touch(0, stmt->dst);
     }
 
     void visit(AsmParamLoadStmt *stmt) {
+        auto _ = touch(0, stmt->val);
         visit((Statement *)stmt);
-        touch(0, stmt->val);
     }
 
     void visit(AsmLocalLoadStmt *stmt) {
+        auto _ = touch(0, stmt->val);
         visit((Statement *)stmt);
-        touch(0, stmt->val);
     }
 
     void visit(AsmLocalStoreStmt *stmt) {
@@ -377,8 +388,8 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
     }
 
     void visit(AsmGlobalLoadStmt *stmt) {
+        auto _ = touch(0, stmt->val);
         visit((Statement *)stmt);
-        touch(0, stmt->val);
     }
 
     void visit(AsmGlobalStoreStmt *stmt) {
@@ -405,8 +416,10 @@ std::map<int, std::vector<std::pair<int, int>>> apply_register_allocation(IR *ir
     *ir = *fixspill.ir;
     std::map<int, std::vector<std::pair<int, int>>> usage;
     for (auto const &[regid, regptr]: scanner.regs) {
-        auto newid = scanner.lookup(regid);
-        usage[newid].push_back(std::make_pair(regptr.startpoint(), regptr.endpoint()));
+        if (regid < nregs) {
+            auto newid = scanner.lookup(regid);
+            usage[newid].push_back(std::make_pair(regptr.startpoint(), regptr.endpoint()));
+        }
     }
     return usage;
 }
