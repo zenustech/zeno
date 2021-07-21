@@ -16,7 +16,7 @@ else()
     option(ZFX_PRINT_IR "Print IR for the ZFX compiler" ON)
 endif()
 
-add_library(ZFX SHARED
+add_library(ZFX STATIC
 # ls {,include/zfx/}*{,/*}.{h,cpp} | grep -v main.cpp
 AST.h
 ConstParametrize.cpp

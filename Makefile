@@ -1,4 +1,4 @@
-O=arts/testpwbug.zsg
+O=arts/countneighbors.zsg
 
 default: run
 
