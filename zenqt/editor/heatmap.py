@@ -65,9 +65,7 @@ class QDMGraphicsColorRamp(QGraphicsItem):
             self.addRampAt(f)
 
     def sortRamps(self):
-        print(self.ramps)
         self.ramps.sort(key=lambda x: x[0])
-        print(self.ramps)
 
     def removeRamp(self, dragger):
         index = self.draggers.index(dragger)
@@ -75,15 +73,23 @@ class QDMGraphicsColorRamp(QGraphicsItem):
         self.initDraggers()
 
     def addRampAt(self, fac):
-        print('add at', fac)
         self.sortRamps()
-        for i, (oldf, rgb) in enumerate(list(self.ramps)):
-            if fac >= oldf:
-                rgb = (0, 0, 0)
-                new_ramp = (fac, rgb)
-                self.ramps.insert(i, new_ramp)
+        for i, (lf, lrgb) in reversed(list(enumerate(self.ramps))):
+            if fac >= lf:
                 break
+        else:
+            return
+        if len(self.ramps) > i + 1:
+            rf, rrgb = self.ramps[i + 1]
+        else:
+            rf, rrgb = lf, lrgb
+        intf = (fac - lf) / (rf - lf)
+        print(i, lrgb, rrgb)
+        rgb = tuple((1 - intf) * l + intf * r for l, r in zip(lrgb, rrgb))
+        new_ramp = (fac, rgb)
+        self.ramps.insert(i, new_ramp)
         self.initDraggers()
+        self.draggers[i].setSelected(True)
 
     def initDraggers(self):
         for dragger in self.draggers:

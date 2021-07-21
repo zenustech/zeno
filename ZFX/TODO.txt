@@ -3,4 +3,4 @@ NoReluctantLoad
 KillUnreached
 MergeIdentical
 MergeLocalStorage
-vec2, vec3, ...
+refactor zsg file format

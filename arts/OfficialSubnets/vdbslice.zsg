@@ -922,7 +922,7 @@
      "COND": null
     },
     "params": {
-     "name": "visualization"
+     "name": "visualize"
     },
     "uipos": [
      86.0,
@@ -4645,7 +4645,7 @@
    ],
    "params": [],
    "categories": [
-    "visualization"
+    "visualize"
    ]
   }
  }
