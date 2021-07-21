@@ -22,5 +22,6 @@ from .socket import *
 from .node import *
 from .blackboard import *
 from .makedict import *
+from .heatmap import *
 from .scene import *
 from .window import *

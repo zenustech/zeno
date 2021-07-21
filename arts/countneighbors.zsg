@@ -144,7 +144,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@clr += 0.03 + @clr * 0.8"
+      "value": "@rho += 0.03 + @rho * 0.8"
      },
      "uipos": [
       618.6093750000001,
@@ -163,8 +163,8 @@
       "SRC": null
      },
      "params": {
-      "name": "clr",
-      "type": "float3"
+      "name": "rho",
+      "type": "float"
      },
      "uipos": [
       111.24999999999997,
@@ -205,9 +205,7 @@
       1251.84,
       285.4400000000001
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "3aeea543-x": {
      "name": "MakeMultilineString",
@@ -215,19 +213,59 @@
       "SRC": null
      },
      "params": {
-      "value": "@clr = 1 - @clr"
+      "value": "@rho = 1 - @rho"
      },
      "uipos": [
       974.0,
       577.0
      ],
      "options": []
+    },
+    "8c6917d0-MakeHeatmap": {
+     "name": "MakeHeatmap",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "nres": 1024,
+      "_RAMPS": "0 0 0.8 0.8 0.8 1.0"
+     },
+     "uipos": [
+      1273.0,
+      511.0
+     ],
+     "options": []
+    },
+    "f3d617e0-PrimitiveColorByHeatmap": {
+     "name": "PrimitiveColorByHeatmap",
+     "inputs": {
+      "prim": [
+       "1f74dc87-ParticlesWrangle",
+       "prim"
+      ],
+      "heatmap": [
+       "8c6917d0-MakeHeatmap",
+       "heatmap"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "srcAttr": "rho",
+      "colorAttr": "clr"
+     },
+     "uipos": [
+      1596.0,
+      328.0
+     ],
+     "options": [
+      "VIEW"
+     ]
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": 13,
-    "trans_y": -207
+    "scale": 1.5625,
+    "trans_x": 1737,
+    "trans_y": 355
    }
   }
  },
@@ -741,6 +779,30 @@
     "debug"
    ]
   },
+  "MakeHeatmap": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "heatmap",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "nres",
+     "1024"
+    ],
+    [
+     "string",
+     "_RAMPS",
+     "0 0 0.8 0.8 0.8 1"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
   "MakeMultilineString": {
    "inputs": [
     "SRC"
@@ -1199,6 +1261,32 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "PrimitiveColorByHeatmap": {
+   "inputs": [
+    "prim",
+    "heatmap",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "srcAttr",
+     "rho"
+    ],
+    [
+     "string",
+     "colorAttr",
+     "clr"
+    ]
+   ],
+   "categories": [
+    "visualize"
    ]
   },
   "PrimitiveFillAttr": {
