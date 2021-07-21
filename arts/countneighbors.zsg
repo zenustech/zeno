@@ -251,8 +251,7 @@
       "SRC": null
      },
      "params": {
-      "srcAttr": "rho",
-      "colorAttr": "clr"
+      "attrName": "rho"
      },
      "uipos": [
       1596.0,
@@ -265,8 +264,8 @@
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": 1617,
-    "trans_y": 851
+    "trans_x": 1381,
+    "trans_y": 848
    }
   }
  },

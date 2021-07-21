@@ -14,7 +14,14 @@ class QDMGraphicsColorRamp(QGraphicsItem):
         return QRectF(0, 0, self.rect.width(), self.rect.height())
 
     def paint(self, painter, styleOptions, widget=None):
-        painter.setPen(QPen(Qt.red, 1, Qt.SolidLine))
+        painter.setPen(Qt.NoPen)
+        grad = QLinearGradient(0, 0, self.rect.width(), 0)
+        grad.setColorAt(0.0, Qt.black)
+        grad.setColorAt(0.5, Qt.red)
+        grad.setColorAt(0.9, Qt.yellow)
+        grad.setColorAt(1.0, Qt.white)
+        brush = QBrush(grad)
+        painter.setBrush(brush)
         painter.drawRect(0, 0, self.rect.width(), TEXT_HEIGHT)
 
 
