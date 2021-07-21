@@ -5,7 +5,7 @@ MAX_STACK_LENGTH = 100
 
 style = {
     'title_color': '#1e1e1e',
-    'socket_connect_color': '#638e77',
+    'socket_connect_color': '#DDDDDD',
     'socket_unconnect_color': '#4a4a4a',
     'title_text_color': '#787878',
     'title_text_size': 14,

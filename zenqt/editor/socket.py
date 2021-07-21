@@ -79,8 +79,10 @@ class QDMGraphicsSocket(QGraphicsItem):
 
     def paint(self, painter, styleOptions, widget=None):
         if self.hasAnyEdge():
+            self.label.setDefaultTextColor(QColor(style['socket_connect_color']))
             socket_color = 'socket_connect_color'
         else:
+            self.label.setDefaultTextColor(QColor(style['socket_text_color']))
             socket_color = 'socket_unconnect_color'
         painter.setBrush(QColor(style[socket_color]))
         painter.setPen(Qt.NoPen)
