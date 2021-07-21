@@ -8,13 +8,6 @@
 namespace zeno {
 
 struct ContextManagedNode : INode {
-    template <class F>
-    struct RAII {
-        F dtor;
-        RAII(F &&dtor) : dtor(dtor) {}
-        ~RAII() { dtor(); }
-    };
-
     std::unique_ptr<Context> m_ctx = nullptr;
 
     void push_context() {
@@ -28,11 +21,10 @@ struct ContextManagedNode : INode {
         graph->ctx = std::move(m_ctx);
     }
 
-    auto scoped_push_context() {
-        push_context();
-        return RAII([this]() {
-            pop_context();
-        });
+    void pop_context_with_merge() {
+        assert(m_ctx);
+        graph->ctx->visited.merge(m_ctx->visited);
+        graph->ctx = std::move(m_ctx);
     }
 };
 
