@@ -348,5 +348,3 @@ class QDMGraphicsNode(QGraphicsItem):
             edges.append((dest, input))
         return edges
 
-
-from . import *

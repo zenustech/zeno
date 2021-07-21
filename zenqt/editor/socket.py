@@ -182,5 +182,3 @@ class QDMGraphicsCollapseButton(QGraphicsSvgItem):
         else:
             self.node.unfold()
 
-
-from . import *

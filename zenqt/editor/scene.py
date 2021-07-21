@@ -435,5 +435,3 @@ class QDMGraphicsView(QGraphicsView):
         self.scene().addEdge(src, dst)
         return True
 
-
-from . import *

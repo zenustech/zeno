@@ -109,5 +109,3 @@ class QDMGraphicsEdge(QDMGraphicsPath):
 
         self.scene().removeItem(self)
 
-
-from . import *

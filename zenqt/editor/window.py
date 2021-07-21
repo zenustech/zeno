@@ -449,5 +449,3 @@ class NodeEditor(QWidget):
             descs[name] = desc
         return descs
 
-
-from . import *
