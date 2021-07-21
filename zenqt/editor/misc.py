@@ -25,6 +25,8 @@ style = {
     'button_selected_text_color': '#333333',
     'output_shift': 1,
     'ramp_width': 10,
+    'button_svg_size': 34,
+    'button_svg_offset_y': 38,
 
     'line_width': 3,
     'ramp_outline_width': 2,

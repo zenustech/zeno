@@ -88,7 +88,9 @@ class QDMGraphicsNode(QGraphicsItem):
             button = QDMGraphicsTopButton(self)
             M = HORI_MARGIN // 2
             W = 38
-            rect = QRect(W * i + M, -38, 34, 34)
+            R = style['button_svg_size']
+            H = style['button_svg_offset_y']
+            rect = QRect(W * i + M, -H, R, R)
             button.setGeometry(rect)
             button.setText(key)
             self.options[key] = button
