@@ -4,15 +4,15 @@ CURR_VERSION = 'v1'
 MAX_STACK_LENGTH = 100
 
 style = {
-    'title_color': '#638e77',
+    'title_color': '#1e1e1e',
     'socket_connect_color': '#638e77',
     'socket_unconnect_color': '#4a4a4a',
-    'title_text_color': '#FFFFFF',
+    'title_text_color': '#787878',
     'title_text_size': 14,
     'button_text_size': 10,
-    'socket_text_size': 10,
-    'param_text_size': 10,
-    'socket_text_color': '#FFFFFF',
+    'socket_text_size': 14,
+    'param_text_size': 14,
+    'socket_text_color': '#787878',
     'panel_color': '#282828',
     'blackboard_title_color': '#393939',
     'blackboard_panel_color': '#1B1B1B',

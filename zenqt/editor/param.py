@@ -29,13 +29,19 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
 
         self.edit = QLineEdit()
         self.edit.setFont(font)
+        self.edit.setStyleSheet('background-color: #252525; color: #787878; border-style:outset')
+
+        font = QFont()
+        font.setPointSize(style['param_text_size'])
+        font.setWeight(QFont.DemiBold)
         self.label = QLabel()
         self.label.setFont(font)
+        self.label.setStyleSheet('color: #787878')
 
         self.layout = QHBoxLayout()
         self.layout.addWidget(self.label)
         self.layout.addWidget(self.edit)
-        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setContentsMargins(HORI_MARGIN, 0, 0, 0)
 
     def setAlignment(self, align):
         self.edit.setAlignment(align)
