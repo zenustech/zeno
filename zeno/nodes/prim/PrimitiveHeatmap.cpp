@@ -21,18 +21,35 @@ struct MakeHeatmap : zeno::INode {
         auto nres = get_param<int>("nres");
         auto ramps = get_param<std::string>("_RAMPS");
         std::stringstream ss(ramps);
-        zeno::vec3f begClr, endClr;
-        ss >> begClr[0];
-        ss >> begClr[1];
-        ss >> begClr[2];
-        ss >> endClr[0];
-        ss >> endClr[1];
-        ss >> endClr[2];
+        std::vector<std::pair<float, zeno::vec3f>> colors;
+        int count;
+        ss >> count;
+        for (int i = 0; i < count; i++) {
+            float f = 0.f, x = 0.f, y = 0.f, z = 0.f;
+            ss >> f >> x >> y >> z;
+            //printf("%f %f %f %f\n", f, x, y, z);
+            colors.emplace_back(
+                    f, zeno::vec3f(x, y, z));
+        }
 
         auto heatmap = std::make_shared<HeatmapObject>();
         for (int i = 0; i < nres; i++) {
             float fac = i * (1.f / nres);
-            zeno::vec3f clr = zeno::mix(begClr, endClr, fac);
+            zeno::vec3f clr;
+            for (int j = 0; j < colors.size(); j++) {
+                auto [f, rgb] = colors[j];
+                if (f >= fac) {
+                    if (j != 0) {
+                        auto [last_f, last_rgb] = colors[j - 1];
+                        auto intfac = (fac - last_f) / (f - last_f);
+                        //printf("%f %f %f %f\n", fac, last_f, f, intfac);
+                        clr = zeno::mix(last_rgb, rgb, intfac);
+                    } else {
+                        clr = rgb;
+                    }
+                    break;
+                }
+            }
             heatmap->colors.push_back(clr);
         }
         set_output("heatmap", std::move(heatmap));
