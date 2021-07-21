@@ -9,13 +9,12 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor(style['title_text_color']))
-        self.title.setPos(HORI_MARGIN * 2, -TEXT_HEIGHT)
         font = QFont()
+        font.setWeight(QFont.DemiBold)
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
 
         self.collapse_button = QDMGraphicsCollapseButton(self)
-        self.collapse_button.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT * 0.84)
         self.collapsed = False
         self.name = None
         self.ident = None
@@ -76,7 +75,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.dummy_input_socket = s
         self.dummy_input_socket.hide()
 
-        w = 240
+        w = style['node_width']
         s = QDMGraphicsDummySocket(self)
         s.setPos(0, 0)
         s.setIsOutput(True)
@@ -87,11 +86,10 @@ class QDMGraphicsNode(QGraphicsItem):
         cond_keys = ['ONCE', 'PREP', 'MUTE', 'VIEW']
         for i, key in enumerate(cond_keys):
             button = QDMGraphicsButton(self)
-            M = HORI_MARGIN * 0.2
-            H = TEXT_HEIGHT * 0.9
-            W = self.width / len(cond_keys)
-            button.setPos(W * i + M, -TEXT_HEIGHT * 2.3)
-            button.setWidthHeight(W - M * 2, H)
+            M = HORI_MARGIN // 2
+            W = 38
+            rect = QRect(W * i + M, -38, 34, 34)
+            button.setGeometry(rect)
             button.setText(key)
             self.options[key] = button
 
@@ -111,12 +109,12 @@ class QDMGraphicsNode(QGraphicsItem):
         outputs = self.desc['outputs']
         params = self.desc['params']
 
-        y = self.height + TEXT_HEIGHT * 0.4
+        y = TEXT_HEIGHT * 0.4
 
         self.params.clear()
         for index, (type, name, defl) in enumerate(params):
             param = globals()['QDMGraphicsParam_' + type](self)
-            rect = QRectF(HORI_MARGIN, y, self.width - HORI_MARGIN * 2, 0)
+            rect = QRect(HORI_MARGIN, y, self.width - HORI_MARGIN * 2, 0)
             param.setGeometry(rect)
             param.setName(name)
             param.setDefault(defl)
@@ -129,6 +127,7 @@ class QDMGraphicsNode(QGraphicsItem):
             y += TEXT_HEIGHT * 0.4
 
         socket_start = y
+        socket_offset = 24
 
         self.inputs.clear()
         for index, name in enumerate(inputs):
@@ -137,69 +136,79 @@ class QDMGraphicsNode(QGraphicsItem):
             socket.setName(name)
             socket.setIsOutput(False)
             self.inputs[name] = socket
-            y += TEXT_HEIGHT
+            y += socket_offset
 
         y = socket_start
         if len(inputs) > len(outputs):
-            y += (len(inputs) - len(outputs)) * TEXT_HEIGHT
+            y += (len(inputs) - len(outputs)) * socket_offset
 
         self.outputs.clear()
         for index, name in enumerate(outputs):
             socket = QDMGraphicsSocket(self)
+            index += len(params) + len(inputs)
             socket.setPos(0, y)
             socket.setName(name)
             socket.setIsOutput(True)
             self.outputs[name] = socket
-            y += TEXT_HEIGHT
+            y += socket_offset
 
         y = socket_start + max(len(inputs), len(outputs)) * TEXT_HEIGHT
 
-        y += TEXT_HEIGHT * 0.75
         self.height = y
 
+        self.title.setPos(HORI_MARGIN * 0.8, self.height)
+        self.collapse_button.setPos(204 + 6, self.height + 4)
+
     def boundingRect(self):
-        h = TEXT_HEIGHT if self.collapsed else self.height
-        return QRectF(0, -TEXT_HEIGHT, self.width, h).normalized()
+        top = 42
+        bottom = 36
+
+        h = 0 if self.collapsed else self.height
+        h += (top + bottom)
+        return QRectF(0, -top, self.width, h).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
+        top = 42
+        bottom = 36
+
+        if self.isSelected():
+            pad = 10
+            h = 0 if self.collapsed else self.height
+            rect = QRect(-pad, -pad -top, self.width + pad * 2, h + pad * 2 + top + bottom)
+            fillRectOld(painter, rect, QColor(82,51,31, 150), 2, '#FA6400')
+
         r = style['node_rounded_radius']
 
-        if not self.collapsed:
-            pathContent = QPainterPath()
-            rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
-            pathContent.addRoundedRect(rect, r, r)
-            painter.setPen(Qt.NoPen)
-            painter.setBrush(QColor(style['panel_color']))
-            painter.drawPath(pathContent.simplified())
+        title_outline_color = '#787878'
 
-            # title round top
-            pathTitle = QPainterPath()
-            rect = QRectF(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
-            pathTitle.addRoundedRect(rect, r, r)
-            painter.setPen(Qt.NoPen)
-            painter.setBrush(QColor(style['title_color']))
-            painter.drawPath(pathTitle.simplified())
-            
-            # title direct bottom
-            pathTitle = QPainterPath()
-            rect = QRectF(0, -r, self.width, r)
-            pathTitle.addRect(rect)
-            painter.setPen(Qt.NoPen)
-            painter.setBrush(QColor(style['title_color']))
-            painter.drawPath(pathTitle.simplified())
+        w = style['line_width']
+        hw = w / 2
 
-        pathOutline = QPainterPath()
-        h = TEXT_HEIGHT if self.collapsed else self.height
-        pathOutline.addRoundedRect(0, -TEXT_HEIGHT, self.width, h, r, r)
-        pathOutlineColor = 'selected_color' if self.isSelected() else 'line_color'
-        pen = QPen(QColor(style[pathOutlineColor]))
-        pen.setWidth(style['node_outline_width'])
-        painter.setPen(pen)
+        line_width = style['line_width']
+        line_color = title_outline_color
+
+        y = 0 if self.collapsed else self.height
+        # title background
+        rect = QRect(0, y + hw, 206, 36 - w)
+        fillRect(painter, rect, style['title_color'], line_width, line_color)
+
+        # collpase button background
+        rect = QRect(206 + hw, y + hw, 36 - w, 36 - w)
+        fillRect(painter, rect, style['title_color'], line_width, line_color)
+
+        # button background
+        rect = QRect(0, -top, 240, top)
+        fillRect(painter, rect, '#638E77')
+
+        M = HORI_MARGIN // 2
+        W = 38
+        rect = QRect(W * 4 + M, -38, 79, 34)
+        fillRect(painter, rect, '#376557')
+
+        # content panel background
         if not self.collapsed:
-            painter.setBrush(Qt.NoBrush)
-        else:
-            painter.setBrush(QColor(style['title_color']))
-        painter.drawPath(pathOutline.simplified())
+            rect = QRect(hw + w, hw, self.width - w * 3, self.height - 1)
+            fillRect(painter, rect, style['panel_color'], line_width, '#4a4a4a')
 
     def collapse(self):
         self.dummy_input_socket.show()
@@ -207,8 +216,6 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.collapsed = True
         self.collapse_button.update_svg(self.collapsed)
-        for v in self.options.values():
-            v.hide()
         for v in self.params.values():
             v.hide()
         for v in self.inputs.values():
@@ -219,6 +226,9 @@ class QDMGraphicsNode(QGraphicsItem):
         for socket in self.outputs.values():
             for edge in socket.edges:
                 edge.updatePath()
+
+        self.title.setPos(HORI_MARGIN * 0.8, 0)
+        self.collapse_button.setPos(204 + 6, 4)
 
     def unfold(self):
         self.dummy_input_socket.hide()
@@ -226,8 +236,6 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.collapsed = False
         self.collapse_button.update_svg(self.collapsed)
-        for v in self.options.values():
-            v.show()
         for v in self.params.values():
             v.show()
         for v in self.inputs.values():
@@ -238,6 +246,9 @@ class QDMGraphicsNode(QGraphicsItem):
         for socket in self.outputs.values():
             for edge in socket.edges:
                 edge.updatePath()
+
+        self.title.setPos(HORI_MARGIN * 0.8, self.height)
+        self.collapse_button.setPos(204 + 6, self.height + 4)
 
     def dump(self):
         inputs = {}

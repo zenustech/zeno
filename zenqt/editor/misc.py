@@ -30,7 +30,7 @@ style = {
     'socket_outline_width': 2,
     'node_rounded_radius': 6,
     'socket_radius': 8,
-    'node_width': 200,
+    'node_width': 240,
     'text_height': 23,
     'copy_offset_x': 100,
     'copy_offset_y': 100,
@@ -53,5 +53,19 @@ def fillRect(painter, rect, color, line_width=None, line_color=None):
         painter.fillRect(content_rect, QColor(color))
     else:
         painter.fillRect(rect, QColor(color))
+
+def fillRectOld(painter, rect, color, line_width=None, line_color=None):
+    if line_width:
+        pen = QPen(QColor(line_color))
+        pen.setWidth(line_width)
+        pen.setJoinStyle(Qt.MiterJoin)
+        painter.setPen(pen)
+    else:
+        painter.setPen(Qt.NoPen)
+
+    painter.setBrush(QColor(color))
+    pathTitle = QPainterPath()
+    pathTitle.addRect(rect)
+    painter.drawPath(pathTitle.simplified())
 
 from . import *
