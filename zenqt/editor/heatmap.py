@@ -34,18 +34,19 @@ class QDMGraphicsColorRamp(QGraphicsItem):
 
         def incX(self, dx):
             self.setX(self.pos().x() + dx)
+            self.parent.updateRamps()
 
         def mousePressEvent(self, event):
-            self.incX(event.pos().x())
             super().mousePressEvent(event)
+            self.incX(event.pos().x())
 
         def mouseMoveEvent(self, event):
-            self.incX(event.pos().x())
             super().mouseMoveEvent(event)
+            self.incX(event.pos().x())
 
         def mouseReleaseEvent(self, event):
-            self.incX(event.pos().x())
             super().mouseReleaseEvent(event)
+            self.incX(event.pos().x())
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -64,10 +65,11 @@ class QDMGraphicsColorRamp(QGraphicsItem):
 
     def updateRamps(self):
         for i, dragger in enumerate(self.draggers):
-            f = self.dragger.pos().x()
+            f = dragger.pos().x()
             f = max(0, min(1, f / self.rect.width()))
             _, rgb = self.ramps[i]
             self.ramps[i] = f, rgb
+        self.update()
 
     @property
     def ramps(self):
