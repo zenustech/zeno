@@ -31,7 +31,7 @@
       "SRC": null
      },
      "params": {
-      "isCentered": 0
+      "isCentered": 1
      },
      "uipos": [
       -201.4062499999999,
@@ -93,7 +93,7 @@
      "params": {
       "x": 0.0,
       "y": 0.0,
-      "z": 1.0
+      "z": 0.0
      },
      "uipos": [
       -494.40624999999983,
@@ -108,7 +108,10 @@
        "19702d93-PrimitiveAddAttr",
        "prim"
       ],
-      "primNei": null,
+      "primNei": [
+       "30f05fa0-Clone",
+       "newObject"
+      ],
       "zfxCode": [
        "f33b7e3a-MakeMultilineString",
        "value"
@@ -153,7 +156,7 @@
       "SRC": null
      },
      "params": {
-      "value": 0.1
+      "value": 0.101
      },
      "uipos": [
       592.2968750000001,
@@ -167,7 +170,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@pos.z += 0.05"
+      "value": "@pos.z += 0.1"
      },
      "uipos": [
       618.6093750000001,
@@ -208,12 +211,28 @@
       197.0
      ],
      "options": []
+    },
+    "30f05fa0-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "19702d93-PrimitiveAddAttr",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      708.0,
+      409.6
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -137,
-    "trans_y": 390
+    "trans_x": 140,
+    "trans_y": 242
    }
   }
  },

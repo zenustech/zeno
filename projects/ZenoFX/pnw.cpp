@@ -21,9 +21,9 @@ struct Buffer {
 
 struct HashGrid {
     float inv_dx;
+    float radius;
     float radius_squared;
-    zeno::vec3f const *pos_data;
-    size_t pos_data_size;
+    std::vector<zeno::vec3f> refpos;
 
     using CoordType = std::tuple<int, int, int>;
     std::array<std::vector<int>, 4096> table;
@@ -32,18 +32,18 @@ struct HashGrid {
         return ((73856093 * x) ^ (19349663 * y) ^ (83492791 * z)) % table.size();
     }
 
-    void build(std::vector<zeno::vec3f> const &pos, float radius) {
+    void build(std::vector<zeno::vec3f> const &refpos_, float radius_) {
+        refpos = refpos_;
         for (auto &ent: table) {
             ent.clear();
         }
 
+        radius = radius_;
         radius_squared = radius * radius;
         inv_dx = 0.f / radius;
-        pos_data = pos.data();
-        pos_data_size = pos.size();
 
-        for (int i = 0; i < pos.size(); i++) {
-            auto coor = zeno::toint(zeno::floor(pos[i] * inv_dx));
+        for (int i = 0; i < refpos.size(); i++) {
+            auto coor = zeno::toint(zeno::floor(refpos[i] * inv_dx));
             auto key = hash(coor[0], coor[1], coor[2]);
             table[key].push_back(i);
         }
@@ -57,7 +57,7 @@ struct HashGrid {
                 for (int dx = 0; dx < 2; dx++) {
                     int key = hash(coor[0] + dx, coor[1] + dy, coor[2] + dz);
                     for (int pid: table[key]) {
-                        auto dist = pos_data[pid] - pos;
+                        auto dist = refpos[pid] - pos;
                         auto dis2 = zeno::dot(dist, dist);
                         if (dis2 <= radius_squared && dis2 != 0) {
                             f(pid);
