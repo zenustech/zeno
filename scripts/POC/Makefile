@@ -1,4 +1,4 @@
-x=math
+x=anycontainer
 
 x: $x.exe Makefile
 	./$<
