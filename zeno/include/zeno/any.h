@@ -4,9 +4,9 @@
 
 namespace zeno {
 
-template <class T>
+/*template <class T>
 struct shared_any_traits {
-};
+};*/
 
 class shared_any {
     struct _AnyBase {
