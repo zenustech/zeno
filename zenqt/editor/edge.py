@@ -53,7 +53,7 @@ class QDMGraphicsTempEdge(QDMGraphicsPath):
 
     def setItem(self, item):
         self.item = item
-        item.edges.add(self)
+        item.temp_edge_connected = True
 
     def setEndPos(self, pos):
         self.endPos = pos
@@ -67,7 +67,7 @@ class QDMGraphicsTempEdge(QDMGraphicsPath):
         super().updatePath()
 
     def disconnect(self):
-        self.item.edges.remove(self)
+        self.item.temp_edge_connected = False
 
 
 class QDMGraphicsEdge(QDMGraphicsPath):
