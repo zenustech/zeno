@@ -13,6 +13,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.dummy = False
 
         self.initLabel()
+        self.socket_offset = 8
 
     class QDMGraphicsTextItem(QGraphicsTextItem):
         def __init__(self, parent=None):
@@ -65,17 +66,17 @@ class QDMGraphicsSocket(QGraphicsItem):
 
     def getCirclePos(self):
         basePos = self.node.pos() + self.pos()
-        if self.isOutput:
-            return basePos + QPointF(self.node.width, 0)
+        if not self.isOutput:
+            return basePos + QPointF(self.socket_offset, 0)
         else:
-            return basePos
+            return basePos + QPointF(self.node.width, 0) + QPointF(-self.socket_offset, 0)
 
     def getCircleBounds(self):
-        if self.isOutput:
-            return (self.node.width - SOCKET_RADIUS, -SOCKET_RADIUS,
+        if not self.isOutput:
+            return (-SOCKET_RADIUS + self.socket_offset, -SOCKET_RADIUS,
                     2 * SOCKET_RADIUS, 2 * SOCKET_RADIUS)
         else:
-            return (-SOCKET_RADIUS, -SOCKET_RADIUS,
+            return (self.node.width - SOCKET_RADIUS - self.socket_offset, -SOCKET_RADIUS,
                     2 * SOCKET_RADIUS, 2 * SOCKET_RADIUS)
 
     def boundingRect(self):
@@ -87,9 +88,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         else:
             socket_color = 'socket_unconnect_color'
         painter.setBrush(QColor(style[socket_color]))
-        pen = QPen(QColor(style['line_color']))
-        pen.setWidth(style['socket_outline_width'])
-        painter.setPen(pen)
+        painter.setPen(Qt.NoPen)
         painter.drawEllipse(*self.getCircleBounds())
 
     def remove(self):
