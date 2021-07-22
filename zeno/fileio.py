@@ -10,6 +10,7 @@ def isIOPathChanged():
     g_lastiopath = launch.g_iopath
     return res
 
+
 def getFrameFiles(frameid):
     if launch.g_iopath is None:
         return ()
