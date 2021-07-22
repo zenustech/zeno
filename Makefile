@@ -1,4 +1,4 @@
-O=arts/testforloopover.zsg
+O=arts/testheatmap.zsg
 
 default: run
 
