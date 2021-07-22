@@ -210,6 +210,8 @@ struct SIMDBuilder {   // requires AVX2
     }
 
     void addCallOp(MemoryAddress adr) {
+        if (adr.adr & 0x08)
+            res.push_back(0x41);
         res.push_back(0xff);
         adr.dump(res, 0, 0x10);
     }
