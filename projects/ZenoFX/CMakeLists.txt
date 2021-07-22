@@ -9,6 +9,7 @@ option(ZENOFX_ENABLE_OPENVDB "Enable OpenVDB wrangler support in ZenoFX" ON)
 if (ZENOFX_ENABLE_OPENVDB)
     target_sources(ZenoFXlib PRIVATE vw.cpp)
     target_include_directories(ZenoFXlib PRIVATE ../zenvdb/include)
+    target_link_libraries(ZenoFXlib PRIVATE openvdb)
 endif()
 
 set_target_properties(ZenoFXlib PROPERTIES
