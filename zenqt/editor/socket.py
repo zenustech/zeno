@@ -13,16 +13,16 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.dummy = False
 
         self.setAcceptHoverEvents(True)
-        self._hover = False
+        self.hovered = False
 
         self.initLabel()
 
     def hoverEnterEvent(self, event):
-        self._hover = True
+        self.hovered = True
         self.update()
 
     def hoverLeaveEvent(self, event):
-        self._hover = False
+        self.hovered = False
         self.update()
 
     class QDMGraphicsTextItem(QGraphicsTextItem):
@@ -93,7 +93,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         return QRectF(*self.getCircleBounds()).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-        if self.hasAnyEdge() or self._hover:
+        if self.hasAnyEdge() or self.hovered:
             socket_color = 'socket_connect_color'
         else:
             socket_color = 'socket_unconnect_color'
