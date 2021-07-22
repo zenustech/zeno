@@ -69,7 +69,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         if not self.isOutput:
             return basePos + QPointF(self.socket_offset, 0)
         else:
-            return basePos + QPointF(self.node.width, 0) + QPointF(-self.socket_offset, 0)
+            return basePos + QPointF(self.node.width - self.socket_offset, 0)
 
     def getCircleBounds(self):
         if not self.isOutput:
@@ -180,4 +180,3 @@ class QDMGraphicsCollapseButton(QGraphicsSvgItem):
             self.node.collapse()
         else:
             self.node.unfold()
-
