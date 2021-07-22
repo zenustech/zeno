@@ -10,241 +10,44 @@
        "value"
       ],
       "maxLen": null,
-      "startPoints": [
-       "d45fd178-PrimitiveAddAttr",
-       "prim"
-      ],
       "vecField": [
-       "31671cef-MakeVDBGrid",
+       "548d12d0-ReadVDBGrid",
        "data"
       ],
       "steps": [
        "ae771673-NumericInt",
        "value"
       ],
-      "SRC": [
-       "7b92b134-FLIP_P2G",
-       "DST"
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1684.0,
-      170.0
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
-    "b2af3bfc-ReadObjMesh": {
-     "name": "ReadObjMesh",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "path": "assets/Pig_Head.obj"
-     },
-     "uipos": [
-      -843.0,
-      -26.0
-     ],
-     "options": []
-    },
-    "6fa84231-MeshToPrimitive": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "b2af3bfc-ReadObjMesh",
-       "mesh"
+      "ny": [
+       "0421c0d0-NumericInt",
+       "value"
       ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -605.0,
-      -7.0
-     ],
-     "options": []
-    },
-    "d45fd178-PrimitiveAddAttr": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "6fa84231-MeshToPrimitive",
-       "prim"
+      "nx": [
+       "0421c0d0-NumericInt",
+       "value"
       ],
-      "fillValue": [
-       "840f03fc-NumericVec3",
+      "size": [
+       "caa26652-NumericFloat",
+       "value"
+      ],
+      "dir": [
+       "82f5c510-NumericInt",
+       "value"
+      ],
+      "center": [
+       "0bbbe5a1-NumericVec3",
        "vec3"
       ],
       "SRC": null
      },
-     "params": {
-      "name": "vel",
-      "type": "float3"
-     },
+     "params": {},
      "uipos": [
-      -276.5775000000001,
-      49.4375
+      886.8009765624995,
+      -41.969921874999855
      ],
-     "options": []
-    },
-    "840f03fc-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "x": 1.0,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -596.2,
-      152.07999999999993
-     ],
-     "options": []
-    },
-    "7b92b134-FLIP_P2G": {
-     "name": "FLIP_P2G",
-     "inputs": {
-      "Dx": [
-       "f06cbed3-NumericFloat",
-       "value"
-      ],
-      "Particles": [
-       "484ec17e-PrimToVDBPointDataGrid",
-       "Particles"
-      ],
-      "Velocity": [
-       "31671cef-MakeVDBGrid",
-       "data"
-      ],
-      "PostP2GVelocity": [
-       "31671cef-MakeVDBGrid",
-       "data"
-      ],
-      "VelocityWeights": [
-       "33862b20-x",
-       "data"
-      ],
-      "LiquidSDF": [
-       "fbe833f1-x",
-       "data"
-      ],
-      "ExtractedLiquidSDF": [
-       "fbe833f1-x",
-       "data"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "dx": 0.05
-     },
-     "uipos": [
-      794.0,
-      290.0
-     ],
-     "options": []
-    },
-    "484ec17e-PrimToVDBPointDataGrid": {
-     "name": "PrimToVDBPointDataGrid",
-     "inputs": {
-      "ParticleGeo": [
-       "d45fd178-PrimitiveAddAttr",
-       "prim"
-      ],
-      "Dx": [
-       "f06cbed3-NumericFloat",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "dx": 0.0
-     },
-     "uipos": [
-      -31.0,
-      134.0
-     ],
-     "options": []
-    },
-    "f06cbed3-NumericFloat": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": 0.1
-     },
-     "uipos": [
-      -769.3124999999998,
-      483.2499999999999
-     ],
-     "options": []
-    },
-    "31671cef-MakeVDBGrid": {
-     "name": "MakeVDBGrid",
-     "inputs": {
-      "Dx": [
-       "f06cbed3-NumericFloat",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "dx": 0.01,
-      "type": "float3",
-      "structure": "Staggered",
-      "name": "Rename!"
-     },
-     "uipos": [
-      47.0,
-      322.0
-     ],
-     "options": []
-    },
-    "33862b20-x": {
-     "name": "MakeVDBGrid",
-     "inputs": {
-      "Dx": [
-       "f06cbed3-NumericFloat",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "dx": 0.01,
-      "type": "float3",
-      "structure": "Staggered",
-      "name": "Rename!"
-     },
-     "uipos": [
-      102.0,
-      558.0
-     ],
-     "options": []
-    },
-    "fbe833f1-x": {
-     "name": "MakeVDBGrid",
-     "inputs": {
-      "Dx": [
-       "f06cbed3-NumericFloat",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "dx": 0.01,
-      "type": "float",
-      "structure": "Centered",
-      "name": "Rename!"
-     },
-     "uipos": [
-      489.0,
-      697.0
-     ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "ae771673-NumericInt": {
      "name": "NumericInt",
@@ -255,8 +58,8 @@
       "value": 3
      },
      "uipos": [
-      1165.75,
-      506.25
+      85.4990234375004,
+      322.73925781250006
      ],
      "options": []
     },
@@ -269,52 +72,211 @@
       "value": 0.01
      },
      "uipos": [
-      1179.5625,
-      30.5
+      85.60253906250043,
+      181.14941406249994
      ],
      "options": []
     },
-    "382663a2-PrimitiveGetSize": {
-     "name": "PrimitiveGetSize",
+    "548d12d0-ReadVDBGrid": {
+     "name": "ReadVDBGrid",
      "inputs": {
-      "prim": [
-       "2f1af806-VolumeTrail",
-       "VolumeTrails"
+      "SRC": null
+     },
+     "params": {
+      "type": "float3",
+      "path": "assets/smokevel.{frame%10+46}.vdb"
+     },
+     "uipos": [
+      -1186.400634765624,
+      150.9544677734376
+     ],
+     "options": []
+    },
+    "0421c0d0-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 256
+     },
+     "uipos": [
+      34.514648437500455,
+      -68.21386718749984
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "0bbbe5a1-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 0.8,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -120.98535156249955,
+      -31.026367187499844
+     ],
+     "options": [
+      "PREP",
+      "collapsed"
+     ]
+    },
+    "caa26652-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 3.0
+     },
+     "uipos": [
+      -123.17285156249997,
+      -0.9013671874999574
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "82f5c510-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 3
+     },
+     "uipos": [
+      65.57714843750048,
+      12.411132812500043
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "ea321857-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 1
+     },
+     "uipos": [
+      -22.934326171875746,
+      641.0031616210939
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "551e5ca0-x": {
+     "name": "VolumeTrail",
+     "inputs": {
+      "dt": [
+       "55744ef0-x",
+       "value"
+      ],
+      "maxLen": null,
+      "vecField": [
+       "548d12d0-ReadVDBGrid",
+       "data"
+      ],
+      "steps": [
+       "ae771673-NumericInt",
+       "value"
+      ],
+      "ny": [
+       "744b2114-x",
+       "value"
+      ],
+      "nx": [
+       "744b2114-x",
+       "value"
+      ],
+      "size": [
+       "8f8068f2-x",
+       "value"
+      ],
+      "dir": [
+       "ea321857-x",
+       "value"
+      ],
+      "center": [
+       "76b013ab-x",
+       "vec3"
       ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      2109.0,
-      325.0
-     ],
-     "options": []
-    },
-    "182ec64a-PrintNumeric": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "382663a2-PrimitiveGetSize",
-       "size"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "hint": "PrintNumeric"
-     },
-     "uipos": [
-      2430.0,
-      384.0
+      870.2924316406247,
+      511.1426147460935
      ],
      "options": [
       "VIEW"
      ]
+    },
+    "76b013ab-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -23.758544921875043,
+      770.6310913085946
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "744b2114-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 128
+     },
+     "uipos": [
+      -143.95678710937486,
+      691.6281616210939
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "8f8068f2-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 3.0
+     },
+     "uipos": [
+      -146.99194335937588,
+      721.2961303710939
+     ],
+     "options": [
+      "collapsed"
+     ]
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": 293,
-    "trans_y": -97
+    "scale": 0.40960000000000013,
+    "trans_x": -522,
+    "trans_y": -130
    }
   },
   "VolumeTrail": {
@@ -342,8 +304,8 @@
       "name": "dt"
      },
      "uipos": [
-      306.0,
-      262.0
+      306.00000000000006,
+      251.06250000000006
      ],
      "options": []
     },
@@ -356,22 +318,8 @@
       "name": "maxLen"
      },
      "uipos": [
-      229.0,
-      348.0
-     ],
-     "options": []
-    },
-    "6d458753-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "name": "startPoints"
-     },
-     "uipos": [
-      -1099.9843749999998,
-      256.32812500000017
+      -74.51562499999996,
+      337.84375000000006
      ],
      "options": []
     },
@@ -386,8 +334,8 @@
      },
      "params": {},
      "uipos": [
-      180.3125000000001,
-      643.875
+      149.06250000000017,
+      664.1875
      ],
      "options": []
     },
@@ -410,10 +358,7 @@
        "f0cb99ed-SubInput",
        "port"
       ],
-      "maxlength": [
-       "23514a7d-SubInput",
-       "port"
-      ],
+      "maxlength": null,
       "vecField": [
        "66b0a261-SubInput",
        "port"
@@ -428,9 +373,7 @@
       1139.75,
       251.0
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "66b0a261-SubInput": {
      "name": "SubInput",
@@ -441,8 +384,8 @@
       "name": "vecField"
      },
      "uipos": [
-      286.5,
-      453.5
+      281.81250000000006,
+      459.75
      ],
      "options": []
     },
@@ -450,7 +393,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "7ea13b64-TraceOneStep",
+       "b3730f0d-x",
        "prim"
       ],
       "SRC": null
@@ -459,12 +402,10 @@
       "name": "VolumeTrails"
      },
      "uipos": [
-      1921.5,
-      484.5
+      2547.640625,
+      449.8125000000001
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "f0cb99ed-SubInput": {
      "name": "SubInput",
@@ -484,8 +425,8 @@
      "name": "PrimitiveAddAttr",
      "inputs": {
       "prim": [
-       "6d458753-SubInput",
-       "port"
+       "041cd441-PrimitiveAddAttr",
+       "prim"
       ],
       "fillValue": null,
       "SRC": null
@@ -495,8 +436,8 @@
       "type": "float3"
      },
      "uipos": [
-      -777.4999999999998,
-      158.00000000000006
+      -864.3499999999998,
+      78.40000000000006
      ],
      "options": []
     },
@@ -533,8 +474,197 @@
       "hint": "PrintNumeric"
      },
      "uipos": [
-      771.1749999999994,
-      708.3499999999996
+      766.4874999999994,
+      717.7249999999996
+     ],
+     "options": []
+    },
+    "041cd441-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "4f95e8a6-x",
+       "AxesAlignedPoints"
+      ],
+      "fillValue": null,
+      "SRC": null
+     },
+     "params": {
+      "name": "clr",
+      "type": "float3"
+     },
+     "uipos": [
+      -1193.5749999999996,
+      78.0374999999998
+     ],
+     "options": []
+    },
+    "4f95e8a6-x": {
+     "name": "AxesAlignedPoints",
+     "inputs": {
+      "center": [
+       "9e95de9c-x",
+       "port"
+      ],
+      "size": [
+       "747cf058-x",
+       "port"
+      ],
+      "nx": [
+       "6ca981d6-x",
+       "port"
+      ],
+      "ny": [
+       "a0a41f2c-x",
+       "port"
+      ],
+      "dir": [
+       "7e7675ca-x",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -1738.0,
+      45.24999999999997
+     ],
+     "options": []
+    },
+    "a0a41f2c-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "ny"
+     },
+     "uipos": [
+      -2567.312622070313,
+      -206.92346191406253
+     ],
+     "options": []
+    },
+    "6ca981d6-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "nx"
+     },
+     "uipos": [
+      -2393.312622070313,
+      -364.61096191406256
+     ],
+     "options": []
+    },
+    "747cf058-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "size"
+     },
+     "uipos": [
+      -2654.700122070312,
+      50.80153808593735
+     ],
+     "options": []
+    },
+    "7e7675ca-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "dir"
+     },
+     "uipos": [
+      -2541.749877929688,
+      210.86096191406256
+     ],
+     "options": []
+    },
+    "9e95de9c-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "center"
+     },
+     "uipos": [
+      -2521.875,
+      -54.6875
+     ],
+     "options": []
+    },
+    "df812255-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "Visualization"
+     },
+     "uipos": [
+      -2256.2499999999986,
+      -585.9374999999995
+     ],
+     "options": []
+    },
+    "5400e73a-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "@clr=abs(@vel)/5"
+     },
+     "uipos": [
+      1591.7202148437505,
+      45.772998046875045
+     ],
+     "options": []
+    },
+    "041f8a1b-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "_KEYS": ""
+     },
+     "uipos": [
+      1734.9744750976565,
+      487.15852050781245
+     ],
+     "options": [],
+     "socket_keys": []
+    },
+    "b3730f0d-x": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "7ea13b64-TraceOneStep",
+       "prim"
+      ],
+      "zfxCode": [
+       "5400e73a-x",
+       "value"
+      ],
+      "params": [
+       "041f8a1b-x",
+       "dict"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      2166.4829101562505,
+      248.7477294921875
      ],
      "options": [
       "VIEW"
@@ -542,9 +672,1065 @@
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": -93,
-    "trans_y": 15
+    "scale": 0.2097152000000002,
+    "trans_x": -661,
+    "trans_y": -202
+   }
+  },
+  "SlicePlaneForPrimitive": {
+   "nodes": {
+    "ad47c4af-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "338a4c53-x",
+       "bitangent"
+      ],
+      "rhs": [
+       "c2dd3175-x",
+       "Y"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      939.1993370056147,
+      387.3151779174808
+     ],
+     "options": []
+    },
+    "b29108d4-x": {
+     "name": "PlaneProjectPrimitive2DAABB",
+     "inputs": {
+      "origin": [
+       "4c1e34b1-x",
+       "port"
+      ],
+      "normal": [
+       "338a4c53-x",
+       "normal"
+      ],
+      "tangent": [
+       "338a4c53-x",
+       "tangent"
+      ],
+      "bitangent": [
+       "338a4c53-x",
+       "bitangent"
+      ],
+      "prim": [
+       "7287ecce-SubInput",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      439.46496200561467,
+      -300.1691970825191
+     ],
+     "options": []
+    },
+    "d0365d37-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "338a4c53-x",
+       "bitangent"
+      ],
+      "rhs": [
+       "e534fac3-x",
+       "Y"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      939.9493370056147,
+      -68.18482208251919
+     ],
+     "options": []
+    },
+    "c2dd3175-x": {
+     "name": "UnpackNumericVec",
+     "inputs": {
+      "vec": [
+       "d94df16d-x",
+       "ret"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      682.1993370056151,
+      195.31517791748092
+     ],
+     "options": []
+    },
+    "4c1e34b1-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "origin"
+     },
+     "uipos": [
+      166.5118370056157,
+      -125.30982208251953
+     ],
+     "options": []
+    },
+    "2c8234d6-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "57fdf449-x",
+       "ret"
+      ],
+      "rhs": [
+       "d0365d37-x",
+       "ret"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      1174.9493370056143,
+      -115.68482208251919
+     ],
+     "options": []
+    },
+    "c91f467c-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "2c8234d6-x",
+       "ret"
+      ],
+      "rhs": [
+       "4c1e34b1-x",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      1436.5743370056146,
+      54.377677917480696
+     ],
+     "options": []
+    },
+    "57fdf449-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "338a4c53-x",
+       "tangent"
+      ],
+      "rhs": [
+       "e534fac3-x",
+       "X"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      942.9493370056147,
+      -303.4348220825191
+     ],
+     "options": []
+    },
+    "e534fac3-x": {
+     "name": "UnpackNumericVec",
+     "inputs": {
+      "vec": [
+       "b29108d4-x",
+       "boundMin2D"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      701.1993370056147,
+      -398.43482208251896
+     ],
+     "options": []
+    },
+    "9d105929-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "338a4c53-x",
+       "tangent"
+      ],
+      "rhs": [
+       "c2dd3175-x",
+       "X"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      937.1993370056147,
+      165.31517791748092
+     ],
+     "options": []
+    },
+    "13ddcebc-x": {
+     "name": "Make2DGridPrimitive",
+     "inputs": {
+      "nx": [
+       "516794b7-SubInput",
+       "port"
+      ],
+      "ny": null,
+      "sizeX": [
+       "9d105929-x",
+       "ret"
+      ],
+      "sizeY": [
+       "ad47c4af-x",
+       "ret"
+      ],
+      "scale": null,
+      "origin": [
+       "c91f467c-x",
+       "ret"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "isCentered": 0,
+      "hasFaces": 1
+     },
+     "uipos": [
+      1682.3692588806148,
+      -184.57398223876942
+     ],
+     "options": []
+    },
+    "eee1f980-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "mathematica"
+     },
+     "uipos": [
+      -68.55066299438533,
+      28.815177917480696
+     ],
+     "options": []
+    },
+    "d94df16d-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "b29108d4-x",
+       "boundMax2D"
+      ],
+      "rhs": [
+       "b29108d4-x",
+       "boundMin2D"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "sub"
+     },
+     "uipos": [
+      692.2891807556147,
+      -158.0481033325193
+     ],
+     "options": []
+    },
+    "338a4c53-x": {
+     "name": "MakeOrthonormalBase",
+     "inputs": {
+      "normal": [
+       "e0abc473-SubInput",
+       "port"
+      ],
+      "tangent": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      174.15246200561478,
+      -405.7629470825194
+     ],
+     "options": []
+    },
+    "750c7369-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "dd3a81c6-PrimitiveClearConnect",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "name": "primPlane"
+     },
+     "uipos": [
+      2275.329337005614,
+      87.01517791748046
+     ],
+     "options": []
+    },
+    "e0abc473-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "normal"
+     },
+     "uipos": [
+      -89.84292984008744,
+      -535.575477600097
+     ],
+     "options": []
+    },
+    "7287ecce-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "primIn"
+     },
+     "uipos": [
+      -72.71792984008721,
+      -284.5754776000971
+     ],
+     "options": []
+    },
+    "dd3a81c6-PrimitiveClearConnect": {
+     "name": "PrimitiveClearConnect",
+     "inputs": {
+      "prim": [
+       "13ddcebc-x",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      1962.4320701599127,
+      43.97452239990281
+     ],
+     "options": [
+      "MUTE"
+     ]
+    },
+    "516794b7-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "resolution"
+     },
+     "uipos": [
+      1412.0,
+      -208.0
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 0.6400000000000001,
+    "trans_x": 524,
+    "trans_y": -130
+   }
+  },
+  "VdbSlice": {
+   "nodes": {
+    "9cc9d518-x": {
+     "name": "MakeVisualAABBPrimitive",
+     "inputs": {
+      "boundMin": [
+       "0b388123-x",
+       "bmin"
+      ],
+      "boundMax": [
+       "0b388123-x",
+       "bmax"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "connType": 2
+     },
+     "uipos": [
+      -319.15644775390604,
+      -237.89221252441362
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "7a2aaf6c-x": {
+     "name": "SlicePlaneForPrimitive",
+     "inputs": {
+      "origin": [
+       "39620337-x",
+       "port"
+      ],
+      "normal": [
+       "99c0a7fa-x",
+       "port"
+      ],
+      "primIn": [
+       "9cc9d518-x",
+       "prim"
+      ],
+      "resolution": [
+       "98b29670-SubInput",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      198.0,
+      -309.0
+     ],
+     "options": []
+    },
+    "0b388123-x": {
+     "name": "GetVDBBound",
+     "inputs": {
+      "vdbGrid": [
+       "876fa589-SubInput",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -622.7878540039057,
+      -179.5541656494138
+     ],
+     "options": []
+    },
+    "876fa589-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "vdbGrid"
+     },
+     "uipos": [
+      -876.0,
+      -242.39999999999998
+     ],
+     "options": []
+    },
+    "9835f6db-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "e7348324-SampleVDBToPrimitive",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "name": "slicePrim"
+     },
+     "uipos": [
+      948.0,
+      -183.0
+     ],
+     "options": []
+    },
+    "da10d330-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "visualization"
+     },
+     "uipos": [
+      86.0,
+      -39.0
+     ],
+     "options": []
+    },
+    "e7348324-SampleVDBToPrimitive": {
+     "name": "SampleVDBToPrimitive",
+     "inputs": {
+      "prim": [
+       "7a2aaf6c-x",
+       "primPlane"
+      ],
+      "vdbGrid": [
+       "876fa589-SubInput",
+       "port"
+      ],
+      "primAttr": [
+       "5b4a2f1f-SubInput",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      705.0,
+      -160.0
+     ],
+     "options": []
+    },
+    "5b4a2f1f-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "channelName"
+     },
+     "uipos": [
+      452.0,
+      -30.0
+     ],
+     "options": []
+    },
+    "39620337-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "origin"
+     },
+     "uipos": [
+      -99.0,
+      -455.0
+     ],
+     "options": []
+    },
+    "99c0a7fa-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "normal"
+     },
+     "uipos": [
+      -85.0,
+      -282.0
+     ],
+     "options": []
+    },
+    "98b29670-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "resolution"
+     },
+     "uipos": [
+      195.0,
+      -502.0
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1.0000000000000007,
+    "trans_x": -410,
+    "trans_y": -487
+   }
+  },
+  "AxesAlignedPoints": {
+   "nodes": {
+    "811e381f-x": {
+     "name": "Make2DGridPrimitive",
+     "inputs": {
+      "nx": [
+       "3d1519e7-SubInput",
+       "port"
+      ],
+      "ny": [
+       "c5d2c17a-x",
+       "port"
+      ],
+      "sizeX": [
+       "945b5f90-NumericVec3",
+       "vec3"
+      ],
+      "sizeY": [
+       "0cd339cc-x",
+       "vec3"
+      ],
+      "scale": [
+       "c81cebb4-x",
+       "port"
+      ],
+      "origin": [
+       "c61dc9bf-NumericVec3",
+       "vec3"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "isCentered": 1,
+      "hasFaces": 0
+     },
+     "uipos": [
+      1651.2939453124998,
+      -200.0256347656249
+     ],
+     "options": []
+    },
+    "f30d62de-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "center"
+     },
+     "uipos": [
+      1628.083251953125,
+      365.61157226562506
+     ],
+     "options": []
+    },
+    "c81cebb4-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "size"
+     },
+     "uipos": [
+      -1089.6494628906246,
+      -31.504736328124977
+     ],
+     "options": []
+    },
+    "e7503bc9-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "Visualization"
+     },
+     "uipos": [
+      -1584.0119628906243,
+      -508.29223632812483
+     ],
+     "options": []
+    },
+    "c61dc9bf-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -768.5119628906245,
+      -68.917236328125
+     ],
+     "options": []
+    },
+    "3d1519e7-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "nx"
+     },
+     "uipos": [
+      -870.4494628906245,
+      -439.1047363281249
+     ],
+     "options": []
+    },
+    "c5d2c17a-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "ny"
+     },
+     "uipos": [
+      -894.4494628906245,
+      -311.1047363281249
+     ],
+     "options": []
+    },
+    "945b5f90-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 1.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -862.4494628906245,
+      -324.1047363281249
+     ],
+     "options": []
+    },
+    "0cd339cc-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 0.0,
+      "y": 1.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -931.4494628906245,
+      -297.1047363281249
+     ],
+     "options": []
+    },
+    "448ccddc-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "811e381f-x",
+       "prim"
+      ],
+      "translation": [
+       "f30d62de-x",
+       "port"
+      ],
+      "eulerXYZ": [
+       "3f1dcd49-IfElse",
+       "result"
+      ],
+      "quatRotation": null,
+      "scaling": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      2238.4375,
+      414.3749999999999
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "a641c9d9-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "bac9b3e9-x",
+       "port"
+      ],
+      "rhs": [
+       "8533deed-NumericInt",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "cmpeq"
+     },
+     "uipos": [
+      1375.0,
+      797.5
+     ],
+     "options": []
+    },
+    "3f1dcd49-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "651e34f7-NumericVec3",
+       "vec3"
+      ],
+      "false": [
+       "de83958d-x",
+       "result"
+      ],
+      "cond": [
+       "a641c9d9-NumericOperator",
+       "ret"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      1838.75,
+      697.5
+     ],
+     "options": []
+    },
+    "651e34f7-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      1332.5,
+      455.0
+     ],
+     "options": []
+    },
+    "8533deed-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 1
+     },
+     "uipos": [
+      968.75,
+      1047.5
+     ],
+     "options": []
+    },
+    "de83958d-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "cd0aa90f-x",
+       "vec3"
+      ],
+      "false": [
+       "95a6c7ef-x",
+       "result"
+      ],
+      "cond": [
+       "c865ee0e-x",
+       "ret"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      1062.5,
+      606.25
+     ],
+     "options": []
+    },
+    "c865ee0e-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "bac9b3e9-x",
+       "port"
+      ],
+      "rhs": [
+       "24fbda58-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "cmpeq"
+     },
+     "uipos": [
+      571.25,
+      718.75
+     ],
+     "options": []
+    },
+    "24fbda58-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 2
+     },
+     "uipos": [
+      85.0,
+      908.75
+     ],
+     "options": []
+    },
+    "cd0aa90f-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 1.57079632679,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      670.0,
+      456.25
+     ],
+     "options": []
+    },
+    "95a6c7ef-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "d078f909-x",
+       "vec3"
+      ],
+      "false": [
+       "83756fbe-x",
+       "vec3"
+      ],
+      "cond": [
+       "fa9b1dee-x",
+       "ret"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      382.5,
+      532.5
+     ],
+     "options": []
+    },
+    "fa9b1dee-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "bac9b3e9-x",
+       "port"
+      ],
+      "rhs": [
+       "3d0887b1-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "cmpeq"
+     },
+     "uipos": [
+      22.5,
+      558.75
+     ],
+     "options": []
+    },
+    "bac9b3e9-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "dir"
+     },
+     "uipos": [
+      -1128.2617187499995,
+      189.49218750000023
+     ],
+     "options": []
+    },
+    "3d0887b1-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 3
+     },
+     "uipos": [
+      -463.75,
+      748.75
+     ],
+     "options": []
+    },
+    "d078f909-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 0.0,
+      "y": 1.57079632679,
+      "z": 0.0
+     },
+     "uipos": [
+      -248.75,
+      345.0
+     ],
+     "options": []
+    },
+    "83756fbe-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -317.5,
+      457.5
+     ],
+     "options": []
+    },
+    "47de09c3-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "448ccddc-TransformPrimitive",
+       "outPrim"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "name": "AxesAlignedPoints"
+     },
+     "uipos": [
+      2952.093505859375,
+      496.314697265625
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 0.4096000000000006,
+    "trans_x": 576,
+    "trans_y": -88
    }
   }
  },
@@ -2011,6 +3197,25 @@
     "GPUMPM"
    ]
   },
+  "MakeHeatmap": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "heatmap",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "nres",
+     "1024"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
   "MakeMPMMehser": {
    "inputs": [
     "pathPreFix",
@@ -2889,6 +4094,27 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "PrimitiveColorByHeatmap": {
+   "inputs": [
+    "prim",
+    "heatmap",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "rho"
+    ]
+   ],
+   "categories": [
+    "visualize"
    ]
   },
   "PrimitiveConvexDecomposition": {
@@ -4325,13 +5551,73 @@
    "inputs": [
     "dt",
     "maxLen",
-    "startPoints",
     "vecField",
     "steps",
+    "ny",
+    "nx",
+    "size",
+    "dir",
+    "center",
     "SRC"
    ],
    "outputs": [
     "VolumeTrails",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Visualization"
+   ],
+   "is_subgraph": true
+  },
+  "SlicePlaneForPrimitive": {
+   "inputs": [
+    "origin",
+    "normal",
+    "primIn",
+    "resolution",
+    "SRC"
+   ],
+   "outputs": [
+    "primPlane",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "mathematica"
+   ],
+   "is_subgraph": true
+  },
+  "VdbSlice": {
+   "inputs": [
+    "vdbGrid",
+    "channelName",
+    "origin",
+    "normal",
+    "resolution",
+    "SRC"
+   ],
+   "outputs": [
+    "slicePrim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "visualization"
+   ],
+   "is_subgraph": true
+  },
+  "AxesAlignedPoints": {
+   "inputs": [
+    "center",
+    "size",
+    "nx",
+    "ny",
+    "dir",
+    "SRC"
+   ],
+   "outputs": [
+    "AxesAlignedPoints",
     "DST"
    ],
    "params": [],
