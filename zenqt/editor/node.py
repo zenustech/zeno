@@ -206,11 +206,16 @@ class QDMGraphicsNode(QGraphicsItem):
         painter.drawPath(pathOutline.simplified())
 
     def collapse(self):
+        for v in self.childItems():
+            v.hide()
+
         self.dummy_input_socket.show()
         self.dummy_output_socket.show()
+        self.collapse_button.show()
 
         self.collapsed = True
         self.collapse_button.update_svg(self.collapsed)
+        '''
         for v in self.options.values():
             v.hide()
         for v in self.params.values():
@@ -219,6 +224,7 @@ class QDMGraphicsNode(QGraphicsItem):
             v.hide()
         for v in self.outputs.values():
             v.hide()
+        '''
 
         for socket in self.outputs.values():
             for edge in socket.edges:

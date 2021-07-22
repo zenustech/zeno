@@ -10,7 +10,6 @@
 #include <array>
 #include <map>
 #include <set>
-#include <zeno/any.h>
 
 
 #ifdef _MSC_VER
@@ -45,12 +44,12 @@ struct IObject {
     ZENAPI IObject();
     ZENAPI virtual ~IObject();
 
-    ZENAPI virtual shared_any clone() const;
+    ZENAPI virtual std::shared_ptr<IObject> clone() const;
     ZENAPI virtual bool assign(IObject *other);
     ZENAPI virtual void dumpfile(std::string const &path);
 #else
     virtual ~IObject() = default;
-    virtual shared_any clone() const { return nullptr; }
+    virtual std::shared_ptr<IObject> clone() const { return nullptr; }
     virtual bool assign(IObject *other) { return false; }
     virtual void dumpfile(std::string const &path) {}
 #endif
@@ -72,7 +71,7 @@ struct IObject {
 
 template <class Derived, class Base = IObject>
 struct IObjectClone : Base {
-    virtual shared_any clone() const {
+    virtual std::shared_ptr<IObject> clone() const {
         return std::make_shared<Derived>(static_cast<Derived const &>(*this));
     }
 
@@ -96,8 +95,8 @@ public:
 
     std::string myname;
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
-    std::map<std::string, shared_any> inputs;
-    std::map<std::string, shared_any> outputs;
+    std::map<std::string, std::shared_ptr<IObject>> inputs;
+    std::map<std::string, std::shared_ptr<IObject>> outputs;
     std::map<std::string, IValue> params;
     std::set<std::string> options;
 
@@ -118,18 +117,18 @@ protected:
     ZENAPI bool has_option(std::string const &id) const;
     ZENAPI bool has_input(std::string const &id) const;
     ZENAPI IValue get_param(std::string const &id) const;
-    ZENAPI shared_any get_input(std::string const &id) const;
+    ZENAPI std::shared_ptr<IObject> get_input(std::string const &id) const;
     ZENAPI void set_output(std::string const &id,
-        shared_any &&obj);
+        std::shared_ptr<IObject> &&obj);
 
     [[deprecated("use get_input")]]
-    shared_any get_input_ref(std::string const &id) const {
+    std::shared_ptr<IObject> get_input_ref(std::string const &id) const {
         return get_input(id);
     }
 
     [[deprecated("use set_output")]]
     void set_output_ref(std::string const &id,
-        shared_any &&obj) {
+        std::shared_ptr<IObject> &&obj) {
         set_output(id, std::move(obj));
     }
 
@@ -237,11 +236,11 @@ struct Graph {
 
     std::map<std::string, std::unique_ptr<INode>> nodes;
 
-    std::map<std::string, shared_any> subInputs;
-    std::map<std::string, shared_any> subOutputs;
+    std::map<std::string, std::shared_ptr<IObject>> subInputs;
+    std::map<std::string, std::shared_ptr<IObject>> subOutputs;
 
     std::map<std::string, std::string> portalIns;
-    std::map<std::string, shared_any> portals;
+    std::map<std::string, std::shared_ptr<IObject>> portals;
 
     std::unique_ptr<Context> ctx;
 
@@ -261,7 +260,7 @@ struct Graph {
         IValue const &val);
     ZENAPI void setNodeOptions(std::string const &id,
             std::set<std::string> const &opts);
-    ZENAPI shared_any const &getNodeOutput(
+    ZENAPI std::shared_ptr<IObject> const &getNodeOutput(
         std::string const &sn, std::string const &ss) const;
 };
 
