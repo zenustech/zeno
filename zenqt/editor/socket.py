@@ -13,7 +13,6 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.dummy = False
 
         self.initLabel()
-        self.socket_offset = 8
 
     class QDMGraphicsTextItem(QGraphicsTextItem):
         def __init__(self, parent=None):
@@ -67,16 +66,16 @@ class QDMGraphicsSocket(QGraphicsItem):
     def getCirclePos(self):
         basePos = self.node.pos() + self.pos()
         if not self.isOutput:
-            return basePos + QPointF(self.socket_offset, 0)
+            return basePos + QPointF(styles['socket_offset'], 0)
         else:
-            return basePos + QPointF(self.node.width, 0) + QPointF(-self.socket_offset, 0)
+            return basePos + QPointF(self.node.width, 0) + QPointF(-styles['socket_offset'], 0)
 
     def getCircleBounds(self):
         if not self.isOutput:
-            return (-SOCKET_RADIUS + self.socket_offset, -SOCKET_RADIUS,
+            return (-SOCKET_RADIUS + styles['socket_offset'], -SOCKET_RADIUS,
                     2 * SOCKET_RADIUS, 2 * SOCKET_RADIUS)
         else:
-            return (self.node.width - SOCKET_RADIUS - self.socket_offset, -SOCKET_RADIUS,
+            return (self.node.width - SOCKET_RADIUS - styles['socket_offset'], -SOCKET_RADIUS,
                     2 * SOCKET_RADIUS, 2 * SOCKET_RADIUS)
 
     def boundingRect(self):

@@ -32,6 +32,7 @@ style = {
     'socket_outline_width': 2,
     'node_rounded_radius': 6,
     'socket_radius': 3,
+    'socket_offset': 8,
     'node_width': 200,
     'text_height': 23,
     'hori_margin': 9,
