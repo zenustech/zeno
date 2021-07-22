@@ -108,7 +108,7 @@ class QDMGraphicsDummySocket(QGraphicsItem):
 
     def getCirclePos(self):
         basePos = self.node.pos()
-        offset = 3
+        offset = style['dummy_socket_offset']
         if not self.isOutput:
             return basePos + QPointF(-offset, 0)
         else:
@@ -117,7 +117,7 @@ class QDMGraphicsDummySocket(QGraphicsItem):
     def getCircleBounds(self):
         h = style['dummy_socket_height']
         w = style['dummy_socket_width']
-        offset = 1
+        offset = style['dummy_socket_offset'] // 2
         if not self.isOutput:
             return QRectF(-w -offset, - (h // 2), w, h)
         else:
@@ -128,7 +128,7 @@ class QDMGraphicsDummySocket(QGraphicsItem):
 
     def paint(self, painter, styleOptions, widget=None):
         rect = self.getCircleBounds()
-        fillRect(painter, rect, '#4D4D4D')
+        fillRect(painter, rect, style['dummy_socket_color'])
 
 
 class QDMGraphicsButton(QGraphicsItem):

@@ -37,7 +37,8 @@ style = {
     'node_width': 200,
     'text_height': 23,
     'hori_margin': 9,
-    'dummy_socket_offset': 15,
+    'dummy_socket_offset': 3,
+    'dummy_socket_color': '#4D4D4D',
 }
 
 TEXT_HEIGHT = style['text_height']
