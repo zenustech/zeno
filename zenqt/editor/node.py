@@ -212,6 +212,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.dummy_input_socket.show()
         self.dummy_output_socket.show()
         self.collapse_button.show()
+        self.title.show()
 
         self.collapsed = True
         self.collapse_button.update_svg(self.collapsed)
@@ -233,6 +234,9 @@ class QDMGraphicsNode(QGraphicsItem):
     def unfold(self):
         self.dummy_input_socket.hide()
         self.dummy_output_socket.hide()
+
+        for v in self.childItems():
+            v.show()
 
         self.collapsed = False
         self.collapse_button.update_svg(self.collapsed)
