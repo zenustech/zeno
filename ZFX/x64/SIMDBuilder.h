@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstdint>
-#include <sys/mman.h>
 #include <vector>
 
 namespace zfx::x64 {

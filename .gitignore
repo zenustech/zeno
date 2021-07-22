@@ -41,3 +41,5 @@ compile_commands.json
 # binary folders
 /zeno/lib/
 /zenv/
+zeno-windows-*
+zeno-linux-*
