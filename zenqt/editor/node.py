@@ -85,12 +85,13 @@ class QDMGraphicsNode(QGraphicsItem):
     def initCondButtons(self):
         cond_keys = ['ONCE', 'PREP', 'MUTE', 'VIEW']
         for i, key in enumerate(cond_keys):
-            button = QDMGraphicsButton(self)
-            M = HORI_MARGIN * 0.2
-            H = TEXT_HEIGHT * 0.9
-            W = self.width / len(cond_keys)
-            button.setPos(W * i + M, -TEXT_HEIGHT * 2.3)
-            button.setWidthHeight(W - M * 2, H)
+            button = QDMGraphicsTopButton(self)
+            m = HORI_MARGIN // 2
+            s = style['button_svg_size']
+            offset_x = style['button_svg_offset_x']
+            offset_y = style['button_svg_offset_y']
+            rect = QRect(offset_x * i + m, -offset_y, s, s)
+            button.setGeometry(rect)
             button.setText(key)
             self.options[key] = button
 
