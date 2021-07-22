@@ -61,7 +61,7 @@ struct ImportObjPrimitive : zeno::INode {
     }
 };
 
-static int defImportObjPrimitive = zeno::defNodeClass<ImportObjPrimitive>("ImportObjPrimitive",
+ZENDEFNODE(ImportObjPrimitive,
         { /* inputs: */ {
         "path",
         }, /* outputs: */ {

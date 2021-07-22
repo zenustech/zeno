@@ -12,11 +12,11 @@ namespace zeno {
 struct MakePrimitive : zeno::INode {
   virtual void apply() override {
     auto prim = std::make_shared<PrimitiveObject>();
-    set_output("prim", prim);
+    set_output("prim", std::move(prim));
   }
 };
 
-static int defMakePrimitive = zeno::defNodeClass<MakePrimitive>("MakePrimitive",
+ZENDEFNODE(MakePrimitive,
     { /* inputs: */ {
     }, /* outputs: */ {
     "prim",
@@ -31,11 +31,11 @@ struct PrimitiveGetSize : zeno::INode {
     auto prim = get_input<PrimitiveObject>("prim");
     auto size = std::make_shared<NumericObject>();
     size->set<int>(prim->size());
-    set_output("size", size);
+    set_output("size", std::move(size));
   }
 };
 
-static int defPrimitiveGetSize = zeno::defNodeClass<PrimitiveGetSize>("PrimitiveGetSize",
+ZENDEFNODE(PrimitiveGetSize,
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
@@ -56,7 +56,7 @@ struct PrimitiveResize : zeno::INode {
   }
 };
 
-static int defPrimitiveResize = zeno::defNodeClass<PrimitiveResize>("PrimitiveResize",
+ZENDEFNODE(PrimitiveResize,
     { /* inputs: */ {
     "prim",
     "size",
@@ -98,7 +98,7 @@ struct PrimitiveAddAttr : zeno::INode {
   }
 };
 
-static int defPrimitiveAddAttr = zeno::defNodeClass<PrimitiveAddAttr>("PrimitiveAddAttr",
+ZENDEFNODE(PrimitiveAddAttr,
     { /* inputs: */ {
     "prim","fillValue",
     }, /* outputs: */ {

@@ -22,7 +22,7 @@ struct PrimitiveSimplePoints : zeno::INode {
   }
 };
 
-static int defPrimitiveSimplePoints = zeno::defNodeClass<PrimitiveSimplePoints>("PrimitiveSimplePoints",
+ZENDEFNODE(PrimitiveSimplePoints,
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
@@ -46,7 +46,7 @@ struct PrimitiveSimpleLines : zeno::INode {
   }
 };
 
-static int defPrimitiveSimpleLines = zeno::defNodeClass<PrimitiveSimpleLines>("PrimitiveSimpleLines",
+ZENDEFNODE(PrimitiveSimpleLines,
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
@@ -70,7 +70,7 @@ struct PrimitiveSimpleTris : zeno::INode {
   }
 };
 
-static int defPrimitiveSimpleTris = zeno::defNodeClass<PrimitiveSimpleTris>("PrimitiveSimpleTris",
+ZENDEFNODE(PrimitiveSimpleTris,
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
@@ -94,7 +94,7 @@ struct PrimitiveSimpleQuads : zeno::INode {
   }
 };
 
-static int defPrimitiveSimpleQuads = zeno::defNodeClass<PrimitiveSimpleQuads>("PrimitiveSimpleQuads",
+ZENDEFNODE(PrimitiveSimpleQuads,
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
@@ -117,7 +117,7 @@ struct PrimitiveClearConnect : zeno::INode {
   }
 };
 
-static int defPrimitiveClearConnect = zeno::defNodeClass<PrimitiveClearConnect>("PrimitiveClearConnect",
+ZENDEFNODE(PrimitiveClearConnect,
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {
