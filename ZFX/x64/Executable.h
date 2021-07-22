@@ -2,23 +2,49 @@
 
 #include <cstdio>
 #include <cstdlib>
+#if defined(_WIN32)
+#include <windows.h>
+#else
 #include <sys/mman.h>
+#endif
 
 namespace zfx::x64 {
 
-uint8_t *exec_page_alloc(size_t memsize) {
-    uint8_t *mem = (uint8_t *)mmap(NULL, memsize,
-        PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS,
-        -1, 0);
-    if (mem == MAP_FAILED) {
+uint8_t *exec_page_allocate(size_t size) {
+#if defined(_WIN32)
+    void *ptr = VirtualAlloc(nullptr, size, MEM_RESERVE,
+            PAGE_READWRITE);
+    if (!ptr) {
+        printf("VirtualAlloc failed!\n");
+        abort();
+    }
+#else
+    void *ptr = mmap(nullptr, size,
+            PROT_READ | PROT_WRITE | PROT_EXEC,
+            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (ptr == MAP_FAILED) {
         perror("mmap");
         abort();
     }
-    return mem;
+#endif
+    return ptr;
 }
 
-void exec_page_free(uint8_t *mem, size_t memsize) {
-    munmap(mem, memsize);
+void exec_page_mark_executable(uint8_t *ptr, size_t size) {
+#if defined(_WIN32)
+    DWORD dummy;
+    VirtualProtect(ptr, size, PAGE_EXECUTE_READ, &dummy);
+#else
+// https://stackoverflow.com/questions/40936534/how-to-alloc-a-executable-memory-buffer
+#endif
+}
+
+void exec_page_free(uint8_t *ptr, size_t size) {
+#if defined(_WIN32)
+    VirtualFree(ptr, 0, MEM_RELEASE);
+#else
+    munmap(ptr, size);
+#endif
 }
 
 }

@@ -272,10 +272,11 @@ struct ImplAssembler {
             functable = std::make_unique<FuncTable>();
         exec->functable = functable->funcptrs.data();
         exec->memsize = (insts.size() + 4095) / 4096 * 4096;
-        exec->mem = exec_page_alloc(exec->memsize);
+        exec->mem = exec_page_allocate(exec->memsize);
         for (int i = 0; i < insts.size(); i++) {
             exec->mem[i] = insts[i];
         }
+        exec_page_mark_executable(exec->mem, exec->memsize);
     }
 };
 
