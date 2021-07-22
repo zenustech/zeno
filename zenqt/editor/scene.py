@@ -358,7 +358,7 @@ class QDMGraphicsView(QGraphicsView):
                 item = self.itemAt(event.pos())
                 if isinstance(item, QDMGraphicsSocket.QDMGraphicsTextItem):
                     item = item.parent
-                if isinstance(item, QDMGraphicsSocket) and not item.dummy:
+                if isinstance(item, QDMGraphicsSocket):
                     if not item.isOutput and len(item.edges):
                         srcItem = item.getTheOnlyEdge().srcSocket
                         item.removeAllEdges()
