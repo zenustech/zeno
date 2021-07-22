@@ -131,8 +131,12 @@ class QDMGraphicsParam_multiline_string(QDMGraphicsParam):
         self.edit = self.QDMPlainTextEdit()
         self.edit.parent = self
         self.edit.setFont(font)
-        self.edit.setStyleSheet('background-color: {}; color: {}'.format(
-            style['button_color'], style['button_text_color']))
+        from zenutils import os_name
+        if os_name == 'win32':  # the stupid win seems doesn't support background-color
+            self.edit.setStyleSheet('background-color: white; color: black')
+        else:
+            self.edit.setStyleSheet('background-color: {}; color: {}'.format(
+                style['button_color'], style['button_text_color']))
 
         self.label = QLabel()
         self.label.setFont(font)
