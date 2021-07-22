@@ -1,6 +1,6 @@
-O=arts/testforloopover.zsg
+O=arts/ready/HACD.zsg
 
-default: run
+default: clean_run
 
 dist: all
 	make -C build install
@@ -26,6 +26,9 @@ test: all
 	build/tests/zentest
 
 run: all
+	ZEN_OPEN=$O ./run.sh
+
+clean_run:
 	ZEN_OPEN=$O ./run.sh
 
 debug: debug_all

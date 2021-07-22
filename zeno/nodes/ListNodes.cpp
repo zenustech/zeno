@@ -2,6 +2,7 @@
 #include <zeno/ListObject.h>
 #include <zeno/NumericObject.h>
 
+namespace zeno {
 
 struct ListLength : zeno::INode {
     virtual void apply() override {
@@ -90,3 +91,14 @@ ZENDEFNODE(MakeSmallList, {
     {},
     {"list"},
 });
+
+ZENAPI void ListObject::dumpfile(std::string const &path) {
+    for (int i = 0; i < arr.size(); i++) {
+        auto const &obj = arr[i];
+        std::stringstream ss;
+        ss << path << "." << i;
+        obj->dumpfile(ss.str());
+    }
+}
+
+}

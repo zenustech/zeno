@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/NumericObject.h>
 
+namespace {
 
 struct NumericInt : zeno::INode {
     virtual void apply() override {
@@ -90,3 +91,5 @@ ZENDEFNODE(NumericVec4, {
      {"float", "z", "0"}, {"float", "w", "0"}},
     {"numeric"},
 });
+
+}

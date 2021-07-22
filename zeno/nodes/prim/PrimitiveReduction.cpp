@@ -42,25 +42,26 @@ static T prim_reduce(PrimitiveObject *prim, std::string channel, std::string typ
 		}
         return total;
     }
+    return T(0);
 }
 
 
 struct PrimitiveReduction : zeno::INode {
     virtual void apply() override{
-        auto prim = get_input("prim")->as<PrimitiveObject>();
+        auto prim = get_input<PrimitiveObject>("prim");
         auto attrToReduce = std::get<std::string>(get_param("attr"));
         auto op = std::get<std::string>(get_param("op"));
         zeno::NumericValue result;
         if (prim->attr_is<zeno::vec3f>(attrToReduce))
-            result = prim_reduce<zeno::vec3f>(prim, attrToReduce, op);
+            result = prim_reduce<zeno::vec3f>(prim.get(), attrToReduce, op);
         else 
-            result = prim_reduce<float>(prim, attrToReduce, op);
-        auto out = zeno::IObject::make<zeno::NumericObject>();
+            result = prim_reduce<float>(prim.get(), attrToReduce, op);
+        auto out = std::make_shared<zeno::NumericObject>();
         out->set(result);
-        set_output("result", out);
+        set_output("result", std::move(out));
     }
 };
-static int defPrimitiveReduction = zeno::defNodeClass<PrimitiveReduction>("PrimitiveReduction",
+ZENDEFNODE(PrimitiveReduction,
     { /* inputs: */ {
     "prim",
     }, /* outputs: */ {

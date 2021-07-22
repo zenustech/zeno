@@ -2,6 +2,7 @@
 #include <zeno/NumericObject.h>
 #include <cstdio>
 
+namespace {
 
 struct NumericInterpolation : zeno::INode {
     template <class T1, class T2, class T3, class Void = void>
@@ -82,3 +83,5 @@ ZENDEFNODE(NumericInterpolation, {
     {{"int", "isClamped", "0"}},
     {"numeric"},
 });
+
+}
