@@ -158,9 +158,13 @@ ZENAPI void Graph::applyNode(std::string const &id) {
         return;
     }
     ctx->visited.insert(id);
+#ifdef ZENO_DETAILED_LOG
     printf("+ %s\n", id.c_str());
+#endif
     safe_at(nodes, id, "node")->doApply();
+#ifdef ZENO_DETAILED_LOG
     printf("- %s\n", id.c_str());
+#endif
 }
 
 ZENAPI void Graph::applyNodes(std::vector<std::string> const &ids) {
