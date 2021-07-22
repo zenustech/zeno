@@ -10,7 +10,7 @@
 
 namespace zfx::x64 {
 
-uint8_t *exec_page_allocate(size_t size) {
+void *exec_page_allocate(size_t size) {
 #if defined(_WIN32)
     void *ptr = VirtualAlloc(nullptr, size, MEM_RESERVE,
             PAGE_READWRITE);
@@ -30,7 +30,7 @@ uint8_t *exec_page_allocate(size_t size) {
     return ptr;
 }
 
-void exec_page_mark_executable(uint8_t *ptr, size_t size) {
+void exec_page_mark_executable(void *ptr, size_t size) {
 #if defined(_WIN32)
     DWORD dummy;
     VirtualProtect(ptr, size, PAGE_EXECUTE_READ, &dummy);
@@ -39,7 +39,7 @@ void exec_page_mark_executable(uint8_t *ptr, size_t size) {
 #endif
 }
 
-void exec_page_free(uint8_t *ptr, size_t size) {
+void exec_page_free(void *ptr, size_t size) {
 #if defined(_WIN32)
     VirtualFree(ptr, 0, MEM_RELEASE);
 #else

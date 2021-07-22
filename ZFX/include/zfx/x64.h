@@ -20,10 +20,10 @@ struct Executable {
         float locals[SimdWidth * 256];
 
         void execute() {
-            uintptr_t rax_val((void *)&exec->mem);
-            uintptr_t rdx_val((void *)exec->functable);
-            uintptr_t rsi_val((void *)&exec->consts[0]);
-            uintptr_t rdi_val((void *)&locals[0]);
+            auto rax_val = (uintptr_t)(void *)&exec->mem;
+            auto rdx_val = (uintptr_t)(void *)exec->functable;
+            auto rsi_val = (uintptr_t)(void *)&exec->consts[0];
+            auto rdi_val = (uintptr_t)(void *)&locals[0];
 #if defined(_MSC_VER)
             __asm {
                 mov rax, rax_val
