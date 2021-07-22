@@ -114,7 +114,7 @@ struct SIMDBuilder {   // requires AVX2
                     mflag |= memflag::reg_imm32;
                 }
             }
-            flag |= mflag | val << 3 | adr;
+            flag |= mflag | val << 3 & 0x38 | adr;
             //if (adr == opreg::rsp)
                 //flag |= 0x10;
             if (adr == opreg::rbp)
@@ -199,7 +199,7 @@ struct SIMDBuilder {   // requires AVX2
     void addRegularMoveOp(int dst, int src) {
         res.push_back(0x48 | dst >> 3 | src >> 1 & 0x04);
         res.push_back(0x89);
-        res.push_back(0xc0 | dst | src << 3);
+        res.push_back(0xc0 | dst & 0x07 | src << 3 & 0x38);
     }
 
     void addAdjStackTop(int imm_add) {
