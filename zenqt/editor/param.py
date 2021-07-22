@@ -29,6 +29,10 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
 
         self.edit = QLineEdit()
         self.edit.setFont(font)
+
+        font = QFont()
+        font.setPointSize(style['param_text_size'])
+        font.setWeight(QFont.DemiBold)
         self.label = QLabel()
         self.label.setFont(font)
 

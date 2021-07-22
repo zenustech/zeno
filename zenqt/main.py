@@ -10,9 +10,17 @@ from .utils import asset_path
 
 def main():
     app = QApplication(sys.argv)
-    font_file_path = asset_path('SourceSansPro-Regular.ttf')
-    QFontDatabase().addApplicationFont(font_file_path)
+    load_font()
     app.setFont(QFont('Source Sans Pro'))
     win = MainWindow()
     win.show()
     return app.exec_()
+
+def load_font():
+    font_file_names = [
+        'SourceSansPro-Regular.ttf',
+        'SourceSansPro-SemiBold.ttf',
+    ]
+    for name in font_file_names:
+        font_file_path = asset_path(name)
+        QFontDatabase().addApplicationFont(font_file_path)

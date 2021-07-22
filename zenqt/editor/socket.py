@@ -41,6 +41,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.label = self.QDMGraphicsTextItem(self)
         self.label.setPos(HORI_MARGIN, -TEXT_HEIGHT * 0.5)
         font = QFont()
+        font.setWeight(QFont.DemiBold)
         font.setPointSize(style['socket_text_size'])
         self.label.setFont(font)
 
