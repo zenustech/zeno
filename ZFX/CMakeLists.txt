@@ -9,6 +9,9 @@ if (ZFX_ENABLE_CUDA)  # WXL may need turn ON this
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-security")
+endif()
 
 if (CMAKE_BUILD_TYPE EQUAL Debug)
     option(ZFX_PRINT_IR "Print IR for the ZFX compiler" OFF)

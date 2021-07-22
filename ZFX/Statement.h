@@ -27,6 +27,7 @@ struct Statement {
     virtual int affect_register() const = 0;
     virtual bool is_control_stmt() const = 0;
     virtual StmtFields fields() = 0;
+    virtual ~Statement() = default;
 };
 
 template <class T>
