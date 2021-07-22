@@ -52,12 +52,12 @@ static void readobj(
 
 struct ImportObjPrimitive : zeno::INode {
     virtual void apply() override {
-        auto path = get_input("path")->as<zeno::StringObject>();
-        auto prim = zeno::IObject::make<zeno::PrimitiveObject>();
+        auto path = get_input<zeno::StringObject>("path");
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto &pos = prim->add_attr<zeno::vec3f>("pos");
         readobj(pos, prim->tris, path->get().c_str());
         prim->resize(pos.size());
-        set_output("prim", prim);
+        set_output("prim", std::move(prim));
     }
 };
 

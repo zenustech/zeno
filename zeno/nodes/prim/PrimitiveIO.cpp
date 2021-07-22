@@ -13,9 +13,9 @@ namespace zeno {
 
 struct ExportPrimitive : zeno::INode {
   virtual void apply() override {
-    auto path = get_input("path")->as<StringObject>();
-    auto prim = get_input("prim")->as<PrimitiveObject>();
-    writezpm(prim, path->get().c_str());
+    auto path = get_input<StringObject>("path")->get();
+    auto prim = get_input<PrimitiveObject>("prim");
+    writezpm(prim.get(), path.c_str());
   }
 };
 
@@ -32,8 +32,8 @@ static int defExportPrimitive = zeno::defNodeClass<ExportPrimitive>("ExportPrimi
 
 struct ImportPrimitive : zeno::INode {
   virtual void apply() override {
-    auto path = get_input("path")->as<StringObject>();
-    auto prim = zeno::IObject::make<PrimitiveObject>();
+    auto path = get_input<StringObject>("path");
+    auto prim = std::make_shared<PrimitiveObject>();
     readzpm(prim.get(), path->get().c_str());
     set_output("prim", prim);
   }
