@@ -374,6 +374,7 @@ class QDMGraphicsView(QGraphicsView):
             else:
                 item = self.itemAt(event.pos())
                 edge = self.dragingEdge
+                edge.disconnect()
                 if isinstance(item, QDMGraphicsSocket):
                     self.addEdge(edge.item, item)
                 self.scene().removeItem(edge)
