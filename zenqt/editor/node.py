@@ -216,16 +216,6 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.collapsed = True
         self.collapse_button.update_svg(self.collapsed)
-        '''
-        for v in self.options.values():
-            v.hide()
-        for v in self.params.values():
-            v.hide()
-        for v in self.inputs.values():
-            v.hide()
-        for v in self.outputs.values():
-            v.hide()
-        '''
 
         for socket in self.outputs.values():
             for edge in socket.edges:
@@ -240,14 +230,6 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.collapsed = False
         self.collapse_button.update_svg(self.collapsed)
-        for v in self.options.values():
-            v.show()
-        for v in self.params.values():
-            v.show()
-        for v in self.inputs.values():
-            v.show()
-        for v in self.outputs.values():
-            v.show()
 
         for socket in self.outputs.values():
             for edge in socket.edges:

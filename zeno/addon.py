@@ -40,7 +40,7 @@ def loadAutoloads():
     while paths:
         for path in list(paths):
             try:
-                print('[      ] [{}]'.format(path))
+                #print('[      ] [{}]'.format(path))
                 ctypes.cdll.LoadLibrary(path)
                 paths.remove(path)
             except OSError:
