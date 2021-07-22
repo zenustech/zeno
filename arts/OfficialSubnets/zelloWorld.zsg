@@ -13,8 +13,8 @@
      },
      "params": {},
      "uipos": [
-      -931.6679687499995,
-      -2812.103613281248
+      -1107.9179687499995,
+      -2960.853613281248
      ],
      "options": [
       "ONCE"
@@ -26,13 +26,15 @@
       "SRC": null
      },
      "params": {
-      "value": "this is zeno"
+      "value": "zello world"
      },
      "uipos": [
-      -1416.3868749999995,
-      -2874.23
+      -1378.8868749999992,
+      -2982.9799999999996
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "5250a410-FlashRender": {
      "name": "FlashRender",
@@ -45,8 +47,8 @@
      },
      "params": {},
      "uipos": [
-      -473.84218749999997,
-      -2760.370312499999
+      -833.8421874999999,
+      -2960.3703124999993
      ],
      "options": [
       "VIEW"
@@ -55,8 +57,8 @@
    },
    "view": {
     "scale": 0.8,
-    "trans_x": -1143,
-    "trans_y": -2505
+    "trans_x": -1342,
+    "trans_y": -2501
    }
   },
   "addRigid": {
@@ -3870,7 +3872,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@rho=sin((@rho-$min)/($max-$min)+$time)"
+      "value": "@rho=abs(sin((@rho-$min)/($max-$min)+$time))"
      },
      "uipos": [
       1431.4238281249984,
@@ -3936,8 +3938,8 @@
    },
    "view": {
     "scale": 0.8,
-    "trans_x": 1466,
-    "trans_y": -2159
+    "trans_x": 1397,
+    "trans_y": -2105
    }
   }
  },
