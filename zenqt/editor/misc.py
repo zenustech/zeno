@@ -35,11 +35,24 @@ style = {
     'node_rounded_radius': 6,
     'socket_radius': 3,
     'socket_offset': 8,
-    'node_width': 200,
+    'node_width': 240,
     'text_height': 23,
     'hori_margin': 9,
     'dummy_socket_offset': 3,
     'dummy_socket_color': '#4D4D4D',
+    'top_button_color': '#376557',
+    'button_svg_size': 34,
+    'button_svg_offset_x': 38,
+    'button_svg_offset_y': 38,
+    'button_svg_padding': 4,
+
+    'node_title_width': 204,
+    'node_title_height': 36,
+    'node_collpase_width': 36,
+    'node_top_bat_height': 42,
+    'title_outline_color': '#787878',
+    'panel_outline_color': '#4A4A4A',
+    'gap': 1,
 }
 
 TEXT_HEIGHT = style['text_height']

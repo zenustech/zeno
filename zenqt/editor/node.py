@@ -9,13 +9,11 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.title = QGraphicsTextItem(self)
         self.title.setDefaultTextColor(QColor(style['title_text_color']))
-        self.title.setPos(HORI_MARGIN * 2, -TEXT_HEIGHT)
         font = QFont()
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
 
         self.collapse_button = QDMGraphicsCollapseButton(self)
-        self.collapse_button.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT * 0.84)
         self.collapsed = False
         self.name = None
         self.ident = None
@@ -127,7 +125,7 @@ class QDMGraphicsNode(QGraphicsItem):
         else:
             y += TEXT_HEIGHT * 0.4
 
-        socket_start = y + TEXT_HEIGHT * style['output_shift']
+        socket_start = y
 
         self.inputs.clear()
         for index, name in enumerate(inputs):
@@ -156,49 +154,52 @@ class QDMGraphicsNode(QGraphicsItem):
         y += TEXT_HEIGHT * 0.75
         self.height = y
 
+        self.title.setPos(HORI_MARGIN * 0.8, self.height)
+        pad = style['button_svg_padding']
+        self.collapse_button.setPos(style['node_title_width'] + pad, self.height + pad)
+
     def boundingRect(self):
         h = TEXT_HEIGHT if self.collapsed else self.height
         return QRectF(0, -TEXT_HEIGHT, self.width, h).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-        r = style['node_rounded_radius']
+        gap = style['gap']
 
+        w = style['line_width']
+        hw = w / 2
+
+        line_width = style['line_width']
+        line_color = style['title_outline_color']
+
+        y = 0 if self.collapsed else self.height
+        # title background
+        rect = QRect(0, y + gap, style['node_title_width'] - gap, style['node_title_height'])
+        fillRect(painter, rect, style['title_color'], line_width, line_color)
+
+        # collpase button background
+        rect = QRect(style['node_title_width'], y + gap,
+                    style['node_collpase_width'], style['node_title_height'])
+        fillRect(painter, rect, style['title_color'], line_width, line_color)
+
+        # button background
+        top = style['node_top_bat_height']
+        node_width = style['node_width']
+        rect = QRect(0, -top, node_width, top)
+        fillRect(painter, rect, style['title_color'])
+
+        M = HORI_MARGIN // 2
+        s = style['button_svg_size']
+        offset_x = style['button_svg_offset_x']
+        offset_y = style['button_svg_offset_y']
+        x = offset_x * 4 + M
+        rect_w = node_width - x - M
+        rect = QRect(x, -offset_y, rect_w, s)
+        fillRect(painter, rect, style['top_button_color'])
+
+        # content panel background
         if not self.collapsed:
-            pathContent = QPainterPath()
-            rect = QRectF(0, -TEXT_HEIGHT, self.width, self.height)
-            pathContent.addRoundedRect(rect, r, r)
-            painter.setPen(Qt.NoPen)
-            painter.setBrush(QColor(style['panel_color']))
-            painter.drawPath(pathContent.simplified())
-
-            # title round top
-            pathTitle = QPainterPath()
-            rect = QRectF(0, -TEXT_HEIGHT, self.width, TEXT_HEIGHT)
-            pathTitle.addRoundedRect(rect, r, r)
-            painter.setPen(Qt.NoPen)
-            painter.setBrush(QColor(style['title_color']))
-            painter.drawPath(pathTitle.simplified())
-            
-            # title direct bottom
-            pathTitle = QPainterPath()
-            rect = QRectF(0, -r, self.width, r)
-            pathTitle.addRect(rect)
-            painter.setPen(Qt.NoPen)
-            painter.setBrush(QColor(style['title_color']))
-            painter.drawPath(pathTitle.simplified())
-
-        pathOutline = QPainterPath()
-        h = TEXT_HEIGHT if self.collapsed else self.height
-        pathOutline.addRoundedRect(0, -TEXT_HEIGHT, self.width, h, r, r)
-        pathOutlineColor = 'selected_color' if self.isSelected() else 'line_color'
-        pen = QPen(QColor(style[pathOutlineColor]))
-        pen.setWidth(style['node_outline_width'])
-        painter.setPen(pen)
-        if not self.collapsed:
-            painter.setBrush(Qt.NoBrush)
-        else:
-            painter.setBrush(QColor(style['title_color']))
-        painter.drawPath(pathOutline.simplified())
+            rect = QRect(hw + w, hw, self.width - w * 3, self.height - gap)
+            fillRect(painter, rect, style['panel_color'], line_width, style['panel_outline_color'])
 
     def collapse(self):
         self.dummy_input_socket.show()
@@ -219,6 +220,10 @@ class QDMGraphicsNode(QGraphicsItem):
             for edge in socket.edges:
                 edge.updatePath()
 
+        self.title.setPos(HORI_MARGIN * 0.8, 0)
+        pad = style['button_svg_padding']
+        self.collapse_button.setPos(style['node_title_width'] + pad, pad)
+
     def unfold(self):
         self.dummy_input_socket.hide()
         self.dummy_output_socket.hide()
@@ -237,6 +242,10 @@ class QDMGraphicsNode(QGraphicsItem):
         for socket in self.outputs.values():
             for edge in socket.edges:
                 edge.updatePath()
+
+        self.title.setPos(HORI_MARGIN * 0.8, self.height)
+        pad = style['button_svg_padding']
+        self.collapse_button.setPos(style['node_title_width'] + pad, self.height + pad)
 
     def dump(self):
         inputs = {}
