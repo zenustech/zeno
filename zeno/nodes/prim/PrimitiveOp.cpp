@@ -35,8 +35,8 @@ struct UnaryOperator {
 
 struct PrimitiveUnaryOp : zeno::INode {
   virtual void apply() override {
-    auto primA = get_input("primA")->as<PrimitiveObject>();
-    auto primOut = get_input("primOut")->as<PrimitiveObject>();
+    auto primA = get_input<PrimitiveObject>("primA");
+    auto primOut = get_input<PrimitiveObject>("primOut");
     auto attrA = std::get<std::string>(get_param("attrA"));
     auto attrOut = std::get<std::string>(get_param("attrOut"));
     auto op = std::get<std::string>(get_param("op"));
@@ -69,11 +69,11 @@ struct PrimitiveUnaryOp : zeno::INode {
         }
     }, arrOut, arrA);
 
-    set_output_ref("primOut", get_input_ref("primOut"));
+    set_output("primOut", get_input("primOut"));
   }
 };
 
-static int defPrimitiveUnaryOp = zeno::defNodeClass<PrimitiveUnaryOp>("PrimitiveUnaryOp",
+ZENDEFNODE(PrimitiveUnaryOp,
     { /* inputs: */ {
     "primA",
     "primOut",
@@ -107,9 +107,9 @@ struct BinaryOperator {
 
 struct PrimitiveBinaryOp : zeno::INode {
   virtual void apply() override {
-    auto primA = get_input("primA")->as<PrimitiveObject>();
-    auto primB = get_input("primB")->as<PrimitiveObject>();
-    auto primOut = get_input("primOut")->as<PrimitiveObject>();
+    auto primA = get_input<PrimitiveObject>("primA");
+    auto primB = get_input<PrimitiveObject>("primB");
+    auto primOut = get_input<PrimitiveObject>("primOut");
     auto attrA = std::get<std::string>(get_param("attrA"));
     auto attrB = std::get<std::string>(get_param("attrB"));
     auto attrOut = std::get<std::string>(get_param("attrOut"));
@@ -151,11 +151,11 @@ struct PrimitiveBinaryOp : zeno::INode {
         }
     }, arrOut, arrA, arrB);
 
-    set_output_ref("primOut", get_input_ref("primOut"));
+    set_output("primOut", get_input("primOut"));
   }
 };
 
-static int defPrimitiveBinaryOp = zeno::defNodeClass<PrimitiveBinaryOp>("PrimitiveBinaryOp",
+ZENDEFNODE(PrimitiveBinaryOp,
     { /* inputs: */ {
     "primA",
     "primB",
@@ -174,16 +174,16 @@ static int defPrimitiveBinaryOp = zeno::defNodeClass<PrimitiveBinaryOp>("Primiti
 
 struct PrimitiveMix : zeno::INode {
     virtual void apply() override{
-        auto primA = get_input("primA")->as<PrimitiveObject>();
-        auto primB = get_input("primB")->as<PrimitiveObject>();
-        auto primOut = get_input("primOut")->as<PrimitiveObject>();
+        auto primA = get_input<PrimitiveObject>("primA");
+        auto primB = get_input<PrimitiveObject>("primB");
+        auto primOut = get_input<PrimitiveObject>("primOut");
         auto attrA = std::get<std::string>(get_param("attrA"));
         auto attrB = std::get<std::string>(get_param("attrB"));
         auto attrOut = std::get<std::string>(get_param("attrOut"));
         auto const &arrA = primA->attr(attrA);
         auto const &arrB = primB->attr(attrB);
         auto &arrOut = primOut->attr(attrOut);
-        auto coef = get_input("coef")->as<zeno::NumericObject>()->get<float>();
+        auto coef = get_input<zeno::NumericObject>("coef")->get<float>();
         
         std::visit([coef](auto &arrA, auto &arrB, auto &arrOut) {
           if constexpr (std::is_same_v<decltype(arrA), decltype(arrB)> && std::is_same_v<decltype(arrA), decltype(arrOut)>) {
@@ -193,10 +193,10 @@ struct PrimitiveMix : zeno::INode {
             }
           }
         }, arrA, arrB, arrOut);
-        set_output_ref("primOut", get_input_ref("primOut"));
+        set_output("primOut", get_input("primOut"));
     }
 };
-static int defPrimitiveMix = zeno::defNodeClass<PrimitiveMix>("PrimitiveMix",
+ZENDEFNODE(PrimitiveMix,
     { /* inputs: */ {
     "primA",
     "primB",
@@ -232,14 +232,14 @@ struct HalfBinaryOperator {
 
 struct PrimitiveHalfBinaryOp : zeno::INode {
   virtual void apply() override {
-    auto primA = get_input("primA")->as<PrimitiveObject>();
-    auto primOut = get_input("primOut")->as<PrimitiveObject>();
+    auto primA = get_input<PrimitiveObject>("primA");
+    auto primOut = get_input<PrimitiveObject>("primOut");
     auto attrA = std::get<std::string>(get_param("attrA"));
     auto attrOut = std::get<std::string>(get_param("attrOut"));
     auto op = std::get<std::string>(get_param("op"));
     auto const &arrA = primA->attr(attrA);
     auto &arrOut = primOut->attr(attrOut);
-    auto const &valB = get_input("valueB")->as<NumericObject>()->value;
+    auto const &valB = get_input<NumericObject>("valueB")->value;
     std::visit([op](auto &arrOut, auto const &arrA, auto const &valB) {
         if constexpr (is_decay_same_v<decltype(arrOut[0]),
             zeno::is_vec_promotable_t<decltype(arrA[0]), decltype(valB)>>) {
@@ -274,11 +274,11 @@ struct PrimitiveHalfBinaryOp : zeno::INode {
         }
     }, arrOut, arrA, valB);
 
-    set_output_ref("primOut", get_input_ref("primOut"));
+    set_output("primOut", get_input("primOut"));
   }
 };
 
-static int defPrimitiveHalfBinaryOp = zeno::defNodeClass<PrimitiveHalfBinaryOp>("PrimitiveHalfBinaryOp",
+ZENDEFNODE(PrimitiveHalfBinaryOp,
     { /* inputs: */ {
     "primA",
     "valueB",
@@ -294,8 +294,8 @@ static int defPrimitiveHalfBinaryOp = zeno::defNodeClass<PrimitiveHalfBinaryOp>(
     }});
 struct PrimitiveFillAttr : zeno::INode {
   virtual void apply() override {
-    auto prim = get_input("prim")->as<PrimitiveObject>();
-    auto const &value = get_input("value")->as<NumericObject>()->value;
+    auto prim = get_input<PrimitiveObject>("prim");
+    auto const &value = get_input<NumericObject>("value")->value;
     auto attrName = std::get<std::string>(get_param("attrName"));
     auto &arr = prim->attr(attrName);
     std::visit([](auto &arr, auto const &value) {
@@ -309,7 +309,7 @@ struct PrimitiveFillAttr : zeno::INode {
         }
     }, arr, value);
 
-    set_output_ref("prim", get_input_ref("prim"));
+    set_output("prim", get_input("prim"));
   }
 };
 
@@ -328,7 +328,7 @@ ZENDEFNODE(PrimitiveFillAttr,
 
 struct PrimitiveRandomizeAttr : zeno::INode {
   virtual void apply() override {
-    auto prim = get_input("prim")->as<PrimitiveObject>();
+    auto prim = get_input<PrimitiveObject>("prim");
     auto min = std::get<float>(get_param("min"));
     auto minY = std::get<float>(get_param("minY"));
     auto minZ = std::get<float>(get_param("minZ"));
@@ -350,7 +350,7 @@ struct PrimitiveRandomizeAttr : zeno::INode {
         }
     }, arr);
 
-    set_output_ref("prim", get_input_ref("prim"));
+    set_output("prim", get_input("prim"));
   }
 };
 
@@ -383,7 +383,7 @@ void print_cout(zeno::vec3f const &a) {
 
 struct PrimitivePrintAttr : zeno::INode {
   virtual void apply() override {
-    auto prim = get_input("prim")->as<PrimitiveObject>();
+    auto prim = get_input<PrimitiveObject>("prim");
     auto attrName = std::get<std::string>(get_param("attrName"));
     auto const &arr = prim->attr(attrName);
     std::visit([attrName](auto const &arr) {
@@ -397,7 +397,7 @@ struct PrimitivePrintAttr : zeno::INode {
         printf("\n");
     }, arr);
 
-    set_output_ref("prim", get_input_ref("prim"));
+    set_output("prim", get_input("prim"));
   }
 };
 

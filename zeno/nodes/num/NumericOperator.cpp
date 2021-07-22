@@ -128,7 +128,9 @@ struct NumericOperator : zeno::INode {
         
         if (has_input("rhs")) {
             auto rhs = get_input<zeno::NumericObject>("rhs");
-            if(op == "set") lhs->value = rhs->value; // TODO: make zhxx happy
+            //if(op == "set") lhs->value = rhs->value;
+            //// ZHXX: use the `Assign` node in portal category instead
+            //// it's universal and not only to NumericObject
             
             /*if (lhs->value.index() == 1 && rhs->value.index() == 1){
                 if(op == "beq") ret->value = (std::get<float>(lhs->value)>=std::get<float>(rhs->value))?(int)1:(int)0;
