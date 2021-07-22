@@ -21,15 +21,15 @@ struct Executable {
 
         void execute() {
             uintptr_t rax_val((void *)&exec->mem);
-            uintptr_t rbx_val((void *)exec->functable);
-            uintptr_t rcx_val((void *)&exec->consts[0]);
-            uintptr_t rdx_val((void *)&locals[0]);
+            uintptr_t rdx_val((void *)exec->functable);
+            uintptr_t rsi_val((void *)&exec->consts[0]);
+            uintptr_t rdi_val((void *)&locals[0]);
 #if defined(_MSC_VER)
             __asm {
                 mov rax, rax_val
-                mov rbx, rbx_val
-                mov rcx, rcx_val
                 mov rdx, rdx_val
+                mov rsi, rsi_val
+                mov rdi, rdi_val
                 call [rax]
             }
 #else
@@ -37,9 +37,9 @@ struct Executable {
                 "call *(%%rax)"  // why `call *%%rax` gives CE...
                 :
                 : "a" (rax_val)
-                , "b" (rbx_val)
-                , "c" (rcx_val)
                 , "d" (rdx_val)
+                , "S" (rsi_val)
+                , "D" (rdi_val)
                 : "cc", "memory"
                 );
 #endif
