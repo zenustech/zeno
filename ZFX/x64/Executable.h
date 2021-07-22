@@ -12,7 +12,7 @@ namespace zfx::x64 {
 
 void *exec_page_allocate(size_t size) {
 #if defined(_WIN32)
-    void *ptr = VirtualAlloc(nullptr, size, MEM_RESERVE,
+    void *ptr = VirtualAlloc(nullptr, size, MEM_COMMIT,
             PAGE_READWRITE);
     if (!ptr) {
         printf("VirtualAlloc failed!\n");

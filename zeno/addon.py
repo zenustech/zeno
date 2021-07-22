@@ -19,6 +19,7 @@ def getAutoloadDir():
 
 def loadAutoloads():
     dir = getAutoloadDir()
+    print('loading addons from', dir)
     if not os.path.isdir(dir):
         return
 
@@ -39,7 +40,7 @@ def loadAutoloads():
     while paths:
         for path in list(paths):
             try:
-                #print('[      ] [{}]'.format(path))
+                print('[      ] [{}]'.format(path))
                 ctypes.cdll.LoadLibrary(path)
                 paths.remove(path)
             except OSError:

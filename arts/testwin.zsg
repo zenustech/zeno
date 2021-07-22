@@ -2,302 +2,178 @@
  "graph": {
   "main": {
    "nodes": {
-    "0b4f2a3e-d232-11eb-a372-907841694de9-MakeString": {
-     "name": "MakeString",
+    "03687079-Make3DGridPrimitive": {
+     "name": "Make3DGridPrimitive",
      "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "assets/monkey.obj"
-     },
-     "uipos": [
-      -921.0,
-      -29.0
-     ],
-     "options": []
-    },
-    "12693e86-d232-11eb-a372-907841694de9-ImportObjPrimitive": {
-     "name": "ImportObjPrimitive",
-     "inputs": {
-      "path": [
-       "0b4f2a3e-d232-11eb-a372-907841694de9-MakeString",
+      "nx": [
+       "dda1f37a-NumericInt",
        "value"
       ],
+      "ny": null,
+      "nz": null,
+      "sizeX": null,
+      "sizeY": null,
+      "sizeZ": null,
+      "scale": null,
+      "origin": null,
       "SRC": null
      },
-     "params": {},
+     "params": {
+      "isCentered": 1
+     },
      "uipos": [
-      -670.0,
-      16.0
+      -253.0,
+      -77.0
      ],
      "options": []
     },
-    "bc79e306-d234-11eb-99df-907841694de9-PrimitiveFillAttr": {
-     "name": "PrimitiveFillAttr",
+    "dda1f37a-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 32
+     },
+     "uipos": [
+      -536.0,
+      -19.0
+     ],
+     "options": []
+    },
+    "c96de2f5-MakeHeatmap": {
+     "name": "MakeHeatmap",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "nres": 1024,
+      "_RAMPS": "4\n0.0 0 0 0\n0.5 1 0 0\n0.9 1 1 0\n1.0 1 1 1"
+     },
+     "uipos": [
+      -247.2,
+      282.4
+     ],
+     "options": [],
+     "color_ramps": [
+      [
+       0.0,
+       [
+        0,
+        0,
+        0
+       ]
+      ],
+      [
+       0.5,
+       [
+        1,
+        0,
+        0
+       ]
+      ],
+      [
+       0.9,
+       [
+        1,
+        1,
+        0
+       ]
+      ],
+      [
+       1.0,
+       [
+        1,
+        1,
+        1
+       ]
+      ]
+     ]
+    },
+    "3e28a662-PrimitiveColorByHeatmap": {
+     "name": "PrimitiveColorByHeatmap",
      "inputs": {
       "prim": [
-       "a7071344-d235-11eb-a5ad-907841694de9-PrimitiveAddAttr",
+       "989599a4-ParticlesWrangle",
        "prim"
       ],
-      "value": [
-       "156bb4fc-d236-11eb-bc62-907841694de9-NumericOperator",
-       "ret"
+      "heatmap": [
+       "c96de2f5-MakeHeatmap",
+       "heatmap"
       ],
-      "SRC": [
-       "7f6b9fe8-d236-11eb-bc62-907841694de9-PrintNumeric",
-       "DST"
-      ]
+      "SRC": null
      },
      "params": {
-      "attrName": "clr"
+      "attrName": "rho"
      },
      "uipos": [
-      1129.5761718749995,
-      99.96875000000004
+      635.2000000000003,
+      56.000000000000014
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
-    "96b9f0a6-d235-11eb-a5ad-907841694de9-NumericRandom": {
-     "name": "NumericRandom",
-     "inputs": {
-      "SRC": [
-       "3c7b6756-BeginForEach",
-       "DST"
-      ]
-     },
-     "params": {
-      "dim": 3
-     },
-     "uipos": [
-      128.7636718749998,
-      419.34374999999994
-     ],
-     "options": []
-    },
-    "a7071344-d235-11eb-a5ad-907841694de9-PrimitiveAddAttr": {
+    "5fde9d0e-PrimitiveAddAttr": {
      "name": "PrimitiveAddAttr",
      "inputs": {
       "prim": [
-       "3c7b6756-BeginForEach",
-       "object"
+       "03687079-Make3DGridPrimitive",
+       "prim"
       ],
       "fillValue": null,
       "SRC": null
      },
      "params": {
-      "name": "clr",
-      "type": "float3"
+      "name": "rho",
+      "type": "float"
      },
      "uipos": [
-      605.7636718749998,
-      -73.65624999999994
+      43.19999999999996,
+      -28.799999999999983
      ],
      "options": []
     },
-    "10e2b39a-d236-11eb-bc62-907841694de9-NumericOperator": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "1b016358-d236-11eb-bc62-907841694de9-NumericFloat",
-       "value"
-      ],
-      "rhs": [
-       "96b9f0a6-d235-11eb-a5ad-907841694de9-NumericRandom",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "op_type": "mul"
-     },
-     "uipos": [
-      378.7636718749998,
-      338.34374999999994
-     ],
-     "options": []
-    },
-    "156bb4fc-d236-11eb-bc62-907841694de9-NumericOperator": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "1b016358-d236-11eb-bc62-907841694de9-NumericFloat",
-       "value"
-      ],
-      "rhs": [
-       "10e2b39a-d236-11eb-bc62-907841694de9-NumericOperator",
-       "ret"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "op_type": "add"
-     },
-     "uipos": [
-      618.0136718749997,
-      203.59374999999991
-     ],
-     "options": []
-    },
-    "1b016358-d236-11eb-bc62-907841694de9-NumericFloat": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": 0.5
-     },
-     "uipos": [
-      133.01367187499983,
-      187.59374999999991
-     ],
-     "options": []
-    },
-    "7f6b9fe8-d236-11eb-bc62-907841694de9-PrintNumeric": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "156bb4fc-d236-11eb-bc62-907841694de9-NumericOperator",
-       "ret"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "hint": "Cluster Color"
-     },
-     "uipos": [
-      876.0625000000001,
-      141.43750000000006
-     ],
-     "options": []
-    },
-    "bfd03644-d258-11eb-b087-907841694de9-PrimitiveCalcNormal": {
-     "name": "PrimitiveCalcNormal",
+    "989599a4-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       "cabb4030-d258-11eb-b087-907841694de9-PrimitiveSplitEdges",
+       "5fde9d0e-PrimitiveAddAttr",
        "prim"
       ],
+      "zfxCode": [
+       "f7eef71d-MakeMultilineString",
+       "value"
+      ],
+      "params": null,
       "SRC": null
      },
      "params": {},
      "uipos": [
-      1689.0999999999985,
-      188.24999999999977
+      359.20000000000005,
+      -10.4
      ],
      "options": []
     },
-    "cabb4030-d258-11eb-b087-907841694de9-PrimitiveSplitEdges": {
-     "name": "PrimitiveSplitEdges",
-     "inputs": {
-      "prim": [
-       "bc79e306-d234-11eb-99df-907841694de9-PrimitiveFillAttr",
-       "prim"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      1434.6499999999987,
-      182.44999999999982
-     ],
-     "options": []
-    },
-    "3c7b6756-BeginForEach": {
-     "name": "BeginForEach",
-     "inputs": {
-      "list": [
-       "5db02266-EmptyList",
-       "list"
-      ],
-      "SRC": [
-       "5db02266-EmptyList",
-       "DST"
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -176.0,
-      140.0
-     ],
-     "options": []
-    },
-    "6cf96c42-EndFor": {
-     "name": "EndFor",
-     "inputs": {
-      "FOR": [
-       "3c7b6756-BeginForEach",
-       "FOR"
-      ],
-      "SRC": [
-       "269948fa-AppendList",
-       "DST"
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2261.0,
-      274.0
-     ],
-     "options": []
-    },
-    "269948fa-AppendList": {
-     "name": "AppendList",
-     "inputs": {
-      "list": [
-       "5db02266-EmptyList",
-       "list"
-      ],
-      "object": [
-       "bfd03644-d258-11eb-b087-907841694de9-PrimitiveCalcNormal",
-       "prim"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      1979.0,
-      122.0
-     ],
-     "options": []
-    },
-    "5db02266-EmptyList": {
-     "name": "EmptyList",
+    "f7eef71d-MakeMultilineString": {
+     "name": "MakeMultilineString",
      "inputs": {
       "SRC": null
      },
-     "params": {},
+     "params": {
+      "value": ""
+     },
      "uipos": [
-      -436.0413374999994,
-      97.51834375000004
+      47.80000000000001,
+      224.0
      ],
      "options": []
-    },
-    "12242518-Route": {
-     "name": "Route",
-     "inputs": {
-      "input": [
-       "5db02266-EmptyList",
-       "list"
-      ],
-      "SRC": [
-       "6cf96c42-EndFor",
-       "DST"
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2520.0,
-      251.0
-     ],
-     "options": [
-      "VIEW"
-     ]
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 2282,
-    "trans_y": -123
+    "scale": 1.0,
+    "trans_x": -621,
+    "trans_y": -56
    }
   }
  },
