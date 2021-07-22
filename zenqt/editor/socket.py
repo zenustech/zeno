@@ -255,7 +255,7 @@ class QDMGraphicsTopButton(QGraphicsSvgItem):
         return QRectF(*self.getCircleBounds()).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-        button_color = '#376557'
+        button_color = style['top_button_color']
         painter.fillRect(*self.getCircleBounds(), QColor(button_color))
         self.update_svg()
         self.renderer().render(painter, self.boundingRect())
@@ -288,6 +288,9 @@ class QDMGraphicsTopButton(QGraphicsSvgItem):
         else:
             self._renderer.load(asset_path(self.svg_mute_path))
 
-        self._renderer.setViewBox(QRectF(-5, -5, 34, 34))
+        s = style['top_svg_size']
+        p = style['top_svg_padding']
+
+        self._renderer.setViewBox(QRectF(-p, -p, s + p * 2, s + p * 2))
         self._renderer.setAspectRatioMode(Qt.KeepAspectRatio)
 

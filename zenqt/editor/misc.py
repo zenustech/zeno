@@ -43,6 +43,9 @@ style = {
     'hori_margin': 9,
     'dummy_socket_offset': 3,
     'dummy_socket_color': '#4D4D4D',
+    'top_button_color': '#376557',
+    'top_svg_size': 24,
+    'top_svg_padding': 5,
 }
 
 TEXT_HEIGHT = style['text_height']
