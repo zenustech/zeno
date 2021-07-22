@@ -5,6 +5,7 @@
 #include <zeno/ContextManaged.h>
 #include <cassert>
 
+namespace {
 
 struct FuncBegin : zeno::INode {
     virtual void apply() override {
@@ -92,3 +93,4 @@ ZENDEFNODE(FuncCall, {
     {"functional"},
 });
 
+}

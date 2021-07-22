@@ -4,6 +4,7 @@
 #include <zeno/ConditionObject.h>
 #include <zeno/ContextManaged.h>
 
+namespace zeno {
 
 struct IBeginFor : zeno::INode {
     bool is_break = false;
@@ -346,3 +347,5 @@ ZENDEFNODE(CachedOnce, {
     {},
     {"control"},
 });
+
+}

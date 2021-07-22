@@ -1,4 +1,4 @@
-O=arts/testheatmap.zsg
+O=arts/HACD.zsg
 
 default: run
 

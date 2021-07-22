@@ -158,9 +158,9 @@ ZENAPI void Graph::applyNode(std::string const &id) {
         return;
     }
     ctx->visited.insert(id);
-    //printf("+ %s\n", id.c_str());
+    printf("+ %s\n", id.c_str());
     safe_at(nodes, id, "node")->doApply();
-    //printf("- %s\n", id.c_str());
+    printf("- %s\n", id.c_str());
 }
 
 ZENAPI void Graph::applyNodes(std::vector<std::string> const &ids) {

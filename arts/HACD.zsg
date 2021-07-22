@@ -1,1 +1,2861 @@
-{"c8b6030c-d22f-11eb-a424-907841694de9-PrimitiveConvexDecomposition": {"name": "PrimitiveConvexDecomposition", "inputs": {"prim": ["12693e86-d232-11eb-a372-907841694de9-ImportObjPrimitive", "prim"], "SRC": null, "COND": null}, "params": {}, "uipos": [-412.0, -63.0], "options": []}, "d1b8bc38-d22f-11eb-a424-907841694de9-ExportPrimitive": {"name": "ExportPrimitive", "inputs": {"prim": ["fb320bc6-d231-11eb-a372-907841694de9-Route", "output"], "path": ["d7f69854-d22f-11eb-a424-907841694de9-ExportPath", "path"], "SRC": null, "COND": null}, "params": {}, "uipos": [2890.789489746093, 506.0605468749999], "options": []}, "d7f69854-d22f-11eb-a424-907841694de9-ExportPath": {"name": "ExportPath", "inputs": {"SRC": ["fb320bc6-d231-11eb-a372-907841694de9-Route", "output"], "COND": null}, "params": {"ext": "zpm"}, "uipos": [2644.789489746093, 612.0605468749999], "options": []}, "14a8afd0-d230-11eb-a424-907841694de9-EndFrame": {"name": "EndFrame", "inputs": {"chain": ["d1b8bc38-d22f-11eb-a424-907841694de9-ExportPrimitive", "DST"], "SRC": null, "COND": null}, "params": {}, "uipos": [3144.789489746093, 582.0605468749999], "options": ["OUT"]}, "fb320bc6-d231-11eb-a372-907841694de9-Route": {"name": "Route", "inputs": {"input": ["bfd03644-d258-11eb-b087-907841694de9-PrimitiveCalcNormal", "prim"], "SRC": null, "COND": null}, "params": {}, "uipos": [2387.469177246093, 506.2978515624999], "options": []}, "0b4f2a3e-d232-11eb-a372-907841694de9-MakeString": {"name": "MakeString", "inputs": {"SRC": null, "COND": null}, "params": {"value": "assets/monkey.obj"}, "uipos": [-921.0, -29.0], "options": []}, "12693e86-d232-11eb-a372-907841694de9-ImportObjPrimitive": {"name": "ImportObjPrimitive", "inputs": {"path": ["0b4f2a3e-d232-11eb-a372-907841694de9-MakeString", "value"], "SRC": null, "COND": null}, "params": {}, "uipos": [-670.0, 16.0], "options": []}, "bc79e306-d234-11eb-99df-907841694de9-PrimitiveFillAttr": {"name": "PrimitiveFillAttr", "inputs": {"prim": ["a7071344-d235-11eb-a5ad-907841694de9-PrimitiveAddAttr", "prim"], "value": ["156bb4fc-d236-11eb-bc62-907841694de9-NumericOperator", "ret"], "SRC": ["7f6b9fe8-d236-11eb-bc62-907841694de9-PrintNumeric", "DST"], "COND": null}, "params": {"attrName": "clr"}, "uipos": [1129.5761718749995, 99.96875000000004], "options": []}, "c5738674-d234-11eb-99df-907841694de9-Route": {"name": "Route", "inputs": {"input": ["c8b6030c-d22f-11eb-a424-907841694de9-PrimitiveConvexDecomposition", "listPrim"], "SRC": null, "COND": null}, "params": {}, "uipos": [-147.70703125000006, 38.18066406250006], "options": []}, "96b9f0a6-d235-11eb-a5ad-907841694de9-NumericRandom": {"name": "NumericRandom", "inputs": {"SRC": ["c5738674-d234-11eb-99df-907841694de9-Route", "output"], "COND": null}, "params": {"dim": 3}, "uipos": [128.7636718749998, 419.34374999999994], "options": []}, "a7071344-d235-11eb-a5ad-907841694de9-PrimitiveAddAttr": {"name": "PrimitiveAddAttr", "inputs": {"prim": ["c5738674-d234-11eb-99df-907841694de9-Route", "output"], "SRC": null, "COND": null}, "params": {"name": "clr", "type": "float3"}, "uipos": [605.7636718749998, -73.65624999999994], "options": []}, "10e2b39a-d236-11eb-bc62-907841694de9-NumericOperator": {"name": "NumericOperator", "inputs": {"lhs": ["1b016358-d236-11eb-bc62-907841694de9-NumericFloat", "value"], "rhs": ["96b9f0a6-d235-11eb-a5ad-907841694de9-NumericRandom", "value"], "SRC": null, "COND": null}, "params": {"op_type": "mul"}, "uipos": [378.7636718749998, 338.34374999999994], "options": []}, "156bb4fc-d236-11eb-bc62-907841694de9-NumericOperator": {"name": "NumericOperator", "inputs": {"lhs": ["1b016358-d236-11eb-bc62-907841694de9-NumericFloat", "value"], "rhs": ["10e2b39a-d236-11eb-bc62-907841694de9-NumericOperator", "ret"], "SRC": null, "COND": null}, "params": {"op_type": "add"}, "uipos": [618.0136718749997, 203.59374999999991], "options": []}, "1b016358-d236-11eb-bc62-907841694de9-NumericFloat": {"name": "NumericFloat", "inputs": {"SRC": null, "COND": null}, "params": {"value": 0.5}, "uipos": [133.01367187499983, 187.59374999999991], "options": []}, "7f6b9fe8-d236-11eb-bc62-907841694de9-PrintNumeric": {"name": "PrintNumeric", "inputs": {"value": ["156bb4fc-d236-11eb-bc62-907841694de9-NumericOperator", "ret"], "SRC": null, "COND": null}, "params": {"hint": "Cluster Color"}, "uipos": [876.0625000000001, 141.43750000000006], "options": []}, "b36ee5c6-d258-11eb-b087-907841694de9-Route": {"name": "Route", "inputs": {"input": ["bc79e306-d234-11eb-99df-907841694de9-PrimitiveFillAttr", "prim"], "SRC": null, "COND": null}, "params": {}, "uipos": [1389.0, 210.0], "options": []}, "bfd03644-d258-11eb-b087-907841694de9-PrimitiveCalcNormal": {"name": "PrimitiveCalcNormal", "inputs": {"prim": ["cabb4030-d258-11eb-b087-907841694de9-PrimitiveSplitEdges", "prim"], "SRC": null, "COND": null}, "params": {}, "uipos": [1899.0999999999988, 243.2499999999998], "options": []}, "cabb4030-d258-11eb-b087-907841694de9-PrimitiveSplitEdges": {"name": "PrimitiveSplitEdges", "inputs": {"prim": ["b36ee5c6-d258-11eb-b087-907841694de9-Route", "output"], "SRC": null, "COND": null}, "params": {}, "uipos": [1644.649999999999, 237.44999999999985], "options": []}}
+{
+ "graph": {
+  "main": {
+   "nodes": {
+    "c8b6030c-d22f-11eb-a424-907841694de9-PrimitiveConvexDecomposition": {
+     "name": "PrimitiveConvexDecomposition",
+     "inputs": {
+      "prim": [
+       "12693e86-d232-11eb-a372-907841694de9-ImportObjPrimitive",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -412.0,
+      -63.0
+     ],
+     "options": []
+    },
+    "0b4f2a3e-d232-11eb-a372-907841694de9-MakeString": {
+     "name": "MakeString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "assets/monkey.obj"
+     },
+     "uipos": [
+      -921.0,
+      -29.0
+     ],
+     "options": []
+    },
+    "12693e86-d232-11eb-a372-907841694de9-ImportObjPrimitive": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       "0b4f2a3e-d232-11eb-a372-907841694de9-MakeString",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -670.0,
+      16.0
+     ],
+     "options": []
+    },
+    "bc79e306-d234-11eb-99df-907841694de9-PrimitiveFillAttr": {
+     "name": "PrimitiveFillAttr",
+     "inputs": {
+      "prim": [
+       "a7071344-d235-11eb-a5ad-907841694de9-PrimitiveAddAttr",
+       "prim"
+      ],
+      "value": [
+       "156bb4fc-d236-11eb-bc62-907841694de9-NumericOperator",
+       "ret"
+      ],
+      "SRC": [
+       "7f6b9fe8-d236-11eb-bc62-907841694de9-PrintNumeric",
+       "DST"
+      ]
+     },
+     "params": {
+      "attrName": "clr"
+     },
+     "uipos": [
+      1129.5761718749995,
+      99.96875000000004
+     ],
+     "options": []
+    },
+    "96b9f0a6-d235-11eb-a5ad-907841694de9-NumericRandom": {
+     "name": "NumericRandom",
+     "inputs": {
+      "SRC": [
+       "3c7b6756-BeginForEach",
+       "DST"
+      ]
+     },
+     "params": {
+      "dim": 3
+     },
+     "uipos": [
+      128.7636718749998,
+      419.34374999999994
+     ],
+     "options": []
+    },
+    "a7071344-d235-11eb-a5ad-907841694de9-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "3c7b6756-BeginForEach",
+       "object"
+      ],
+      "fillValue": null,
+      "SRC": null
+     },
+     "params": {
+      "name": "clr",
+      "type": "float3"
+     },
+     "uipos": [
+      605.7636718749998,
+      -73.65624999999994
+     ],
+     "options": []
+    },
+    "10e2b39a-d236-11eb-bc62-907841694de9-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "1b016358-d236-11eb-bc62-907841694de9-NumericFloat",
+       "value"
+      ],
+      "rhs": [
+       "96b9f0a6-d235-11eb-a5ad-907841694de9-NumericRandom",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      378.7636718749998,
+      338.34374999999994
+     ],
+     "options": []
+    },
+    "156bb4fc-d236-11eb-bc62-907841694de9-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "1b016358-d236-11eb-bc62-907841694de9-NumericFloat",
+       "value"
+      ],
+      "rhs": [
+       "10e2b39a-d236-11eb-bc62-907841694de9-NumericOperator",
+       "ret"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      618.0136718749997,
+      203.59374999999991
+     ],
+     "options": []
+    },
+    "1b016358-d236-11eb-bc62-907841694de9-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.5
+     },
+     "uipos": [
+      133.01367187499983,
+      187.59374999999991
+     ],
+     "options": []
+    },
+    "7f6b9fe8-d236-11eb-bc62-907841694de9-PrintNumeric": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "156bb4fc-d236-11eb-bc62-907841694de9-NumericOperator",
+       "ret"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "hint": "Cluster Color"
+     },
+     "uipos": [
+      876.0625000000001,
+      141.43750000000006
+     ],
+     "options": []
+    },
+    "bfd03644-d258-11eb-b087-907841694de9-PrimitiveCalcNormal": {
+     "name": "PrimitiveCalcNormal",
+     "inputs": {
+      "prim": [
+       "cabb4030-d258-11eb-b087-907841694de9-PrimitiveSplitEdges",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      1689.0999999999985,
+      188.24999999999977
+     ],
+     "options": []
+    },
+    "cabb4030-d258-11eb-b087-907841694de9-PrimitiveSplitEdges": {
+     "name": "PrimitiveSplitEdges",
+     "inputs": {
+      "prim": [
+       "bc79e306-d234-11eb-99df-907841694de9-PrimitiveFillAttr",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      1434.6499999999987,
+      182.44999999999982
+     ],
+     "options": []
+    },
+    "3c7b6756-BeginForEach": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "c8b6030c-d22f-11eb-a424-907841694de9-PrimitiveConvexDecomposition",
+       "listPrim"
+      ],
+      "SRC": [
+       "5db02266-EmptyList",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -176.0,
+      140.0
+     ],
+     "options": []
+    },
+    "6cf96c42-EndFor": {
+     "name": "EndFor",
+     "inputs": {
+      "FOR": [
+       "3c7b6756-BeginForEach",
+       "FOR"
+      ],
+      "SRC": [
+       "269948fa-AppendList",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2261.0,
+      274.0
+     ],
+     "options": []
+    },
+    "269948fa-AppendList": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "5db02266-EmptyList",
+       "list"
+      ],
+      "object": [
+       "bfd03644-d258-11eb-b087-907841694de9-PrimitiveCalcNormal",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      1979.0,
+      122.0
+     ],
+     "options": []
+    },
+    "5db02266-EmptyList": {
+     "name": "EmptyList",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -426.2109374999993,
+      113.90234375
+     ],
+     "options": []
+    },
+    "12242518-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "5db02266-EmptyList",
+       "list"
+      ],
+      "SRC": [
+       "6cf96c42-EndFor",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2520.0,
+      251.0
+     ],
+     "options": [
+      "VIEW"
+     ]
+    }
+   },
+   "view": {
+    "scale": 1.25,
+    "trans_x": 2237,
+    "trans_y": -7
+   }
+  }
+ },
+ "views": {},
+ "descs": {
+  "AppendList": {
+   "inputs": [
+    "list",
+    "object",
+    "SRC"
+   ],
+   "outputs": [
+    "list",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "AssembleSolvePPE": {
+   "inputs": [
+    "dt",
+    "Dx",
+    "LiquidSDF",
+    "ExtractedLiquidSDF",
+    "Divergence",
+    "Pressure",
+    "CellFWeight",
+    "Velocity",
+    "SolidVelocity",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "BeginFor": {
+   "inputs": [
+    "count",
+    "SRC"
+   ],
+   "outputs": [
+    "index",
+    "FOR",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BeginForEach": {
+   "inputs": [
+    "list",
+    "SRC"
+   ],
+   "outputs": [
+    "object",
+    "index",
+    "FOR",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BreakFor": {
+   "inputs": [
+    "FOR",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BulletComposeTransform": {
+   "inputs": [
+    "transFirst",
+    "transSecond",
+    "SRC"
+   ],
+   "outputs": [
+    "trans",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletCompoundAddChild": {
+   "inputs": [
+    "compound",
+    "childShape",
+    "trans",
+    "SRC"
+   ],
+   "outputs": [
+    "compound",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletExtractTransform": {
+   "inputs": [
+    "trans",
+    "SRC"
+   ],
+   "outputs": [
+    "origin",
+    "rotation",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletGetObjMotion": {
+   "inputs": [
+    "object",
+    "SRC"
+   ],
+   "outputs": [
+    "linearVel",
+    "angularVel",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletGetObjTransform": {
+   "inputs": [
+    "object",
+    "SRC"
+   ],
+   "outputs": [
+    "trans",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeBoxShape": {
+   "inputs": [
+    "v3size",
+    "SRC"
+   ],
+   "outputs": [
+    "shape",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeCompoundShape": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "compound",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeConvexHullShape": {
+   "inputs": [
+    "triMesh",
+    "SRC"
+   ],
+   "outputs": [
+    "shape",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeObject": {
+   "inputs": [
+    "shape",
+    "trans",
+    "mass",
+    "SRC"
+   ],
+   "outputs": [
+    "object",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeSphereShape": {
+   "inputs": [
+    "radius",
+    "SRC"
+   ],
+   "outputs": [
+    "shape",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeTransform": {
+   "inputs": [
+    "origin",
+    "rotation",
+    "SRC"
+   ],
+   "outputs": [
+    "trans",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeWorld": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "world",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletObjectApplyForce": {
+   "inputs": [
+    "object",
+    "ForceImpulse",
+    "TorqueImpulse",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletSetWorldGravity": {
+   "inputs": [
+    "world",
+    "gravity",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletStepWorld": {
+   "inputs": [
+    "world",
+    "dt",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletWorldAddObject": {
+   "inputs": [
+    "world",
+    "object",
+    "SRC"
+   ],
+   "outputs": [
+    "world",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "CFL_dt": {
+   "inputs": [
+    "Velocity",
+    "Dx",
+    "SRC"
+   ],
+   "outputs": [
+    "cfl_dt",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "CachedOnce": {
+   "inputs": [
+    "input",
+    "SRC"
+   ],
+   "outputs": [
+    "output",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "Clone": {
+   "inputs": [
+    "object",
+    "SRC"
+   ],
+   "outputs": [
+    "newObject",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "CombineVDB": {
+   "inputs": [
+    "FieldA",
+    "FieldB",
+    "SRC"
+   ],
+   "outputs": [
+    "FieldOut",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "MultiplierA",
+     "1"
+    ],
+    [
+     "float",
+     "MultiplierB",
+     "1"
+    ],
+    [
+     "string",
+     "OpType",
+     "CSGUnion"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "CutCellWeight": {
+   "inputs": [
+    "LiquidSDF",
+    "SolidSDF",
+    "FaceWeight",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "DictGetItem": {
+   "inputs": [
+    "dict",
+    "key",
+    "SRC"
+   ],
+   "outputs": [
+    "object",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictSetItem": {
+   "inputs": [
+    "dict",
+    "key",
+    "object",
+    "SRC"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictSize": {
+   "inputs": [
+    "dict",
+    "SRC"
+   ],
+   "outputs": [
+    "size",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "EmptyDict": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "EmptyList": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "list",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "EndFor": {
+   "inputs": [
+    "FOR",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "ExitProcess": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "status",
+     "-1"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "ExportVDBGrid": {
+   "inputs": [
+    "data",
+    "path",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "ExportZpmPrimitive": {
+   "inputs": [
+    "prim",
+    "path",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ExtractDict": {
+   "inputs": [
+    "dict",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "ExtractList": {
+   "inputs": [
+    "list",
+    "index",
+    "SRC"
+   ],
+   "outputs": [
+    "object",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "FLIPApplyBoundary": {
+   "inputs": [
+    "Particles",
+    "DynaSolid_SDF",
+    "StatSolid_SDF",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "FLIP_P2G": {
+   "inputs": [
+    "Dx",
+    "Particles",
+    "Velocity",
+    "PostP2GVelocity",
+    "VelocityWeights",
+    "LiquidSDF",
+    "ExtractedLiquidSDF",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.01 0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "FieldAddVector": {
+   "inputs": [
+    "invec3",
+    "Velocity",
+    "FieldWeight",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "FluidReseed": {
+   "inputs": [
+    "Particles",
+    "LiquidSDF",
+    "FluidVel",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "FuncBegin": {
+   "inputs": [
+    "extraArgs",
+    "SRC"
+   ],
+   "outputs": [
+    "args",
+    "FUNC",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "FuncCall": {
+   "inputs": [
+    "function",
+    "args",
+    "SRC"
+   ],
+   "outputs": [
+    "rets",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "FuncEnd": {
+   "inputs": [
+    "rets",
+    "FUNC",
+    "SRC"
+   ],
+   "outputs": [
+    "function",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "functional"
+   ]
+  },
+  "G2PAdvectorSheetty": {
+   "inputs": [
+    "dt",
+    "Dx",
+    "Particles",
+    "Velocity",
+    "LiquidSDF",
+    "PostAdvVelocity",
+    "SolidSDF",
+    "SolidVelocity",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.01 0.0"
+    ],
+    [
+     "int",
+     "RK_ORDER",
+     "1 1 4"
+    ],
+    [
+     "float",
+     "pic_smoothness",
+     "0.1 0.0 1.0"
+    ],
+    [
+     "int",
+     "surface_size",
+     "4 0 8"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "G2P_Advector": {
+   "inputs": [
+    "dt",
+    "Dx",
+    "Particles",
+    "Velocity",
+    "PostAdvVelocity",
+    "SolidSDF",
+    "SolidVelocity",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.01 0.0"
+    ],
+    [
+     "int",
+     "RK_ORDER",
+     "1 1 4"
+    ],
+    [
+     "float",
+     "pic_smoothness",
+     "0.02 0.0 1.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "GetFrameNum": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "FrameNum",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetFramePortion": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "FramePortion",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetFrameTime": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "time",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetFrameTimeElapsed": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "time",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetTime": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "time",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "GetVDBBound": {
+   "inputs": [
+    "vdbGrid",
+    "SRC"
+   ],
+   "outputs": [
+    "bmin",
+    "bmax",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "GetVDBPoints": {
+   "inputs": [
+    "grid",
+    "SRC"
+   ],
+   "outputs": [
+    "pars",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "IfElse": {
+   "inputs": [
+    "true",
+    "false",
+    "cond",
+    "SRC"
+   ],
+   "outputs": [
+    "result",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "ImportObjPrimitive": {
+   "inputs": [
+    "path",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "ImportVDBGrid": {
+   "inputs": [
+    "path",
+    "SRC"
+   ],
+   "outputs": [
+    "data",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "type",
+     "float"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "ImportZpmPrimitive": {
+   "inputs": [
+    "path",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "IntegrateFrameTime": {
+   "inputs": [
+    "desired_dt",
+    "SRC"
+   ],
+   "outputs": [
+    "actual_dt",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "min_scale",
+     "0.0001"
+    ]
+   ],
+   "categories": [
+    "frame"
+   ]
+  },
+  "ListLength": {
+   "inputs": [
+    "list",
+    "SRC"
+   ],
+   "outputs": [
+    "length",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "Make2DGridPrimitive": {
+   "inputs": [
+    "nx",
+    "ny",
+    "sizeX",
+    "sizeY",
+    "scale",
+    "origin",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "isCentered",
+     "0"
+    ],
+    [
+     "int",
+     "hasFaces",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "Make3DGridPrimitive": {
+   "inputs": [
+    "nx",
+    "ny",
+    "nz",
+    "sizeX",
+    "sizeY",
+    "sizeZ",
+    "scale",
+    "origin",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "isCentered",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeDict": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "dict",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "MakeGCTest": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "value",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "value",
+     "42"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "MakeHeatmap": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "heatmap",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "nres",
+     "1024"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "MakeMultilineString": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "value",
+    "DST"
+   ],
+   "params": [
+    [
+     "multiline_string",
+     "value",
+     ""
+    ]
+   ],
+   "categories": [
+    "fileio"
+   ]
+  },
+  "MakeOrthonormalBase": {
+   "inputs": [
+    "normal",
+    "tangent",
+    "SRC"
+   ],
+   "outputs": [
+    "normal",
+    "tangent",
+    "bitangent",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
+  "MakePrimitive": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "MakeSmallList": {
+   "inputs": [
+    "obj0",
+    "obj1",
+    "obj2",
+    "obj3",
+    "obj4",
+    "obj5",
+    "SRC"
+   ],
+   "outputs": [
+    "list",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "list"
+   ]
+  },
+  "MakeString": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "value",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "value",
+     ""
+    ]
+   ],
+   "categories": [
+    "fileio"
+   ]
+  },
+  "MakeVDBGrid": {
+   "inputs": [
+    "Dx",
+    "SRC"
+   ],
+   "outputs": [
+    "data",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.01"
+    ],
+    [
+     "string",
+     "type",
+     "float"
+    ],
+    [
+     "string",
+     "structure",
+     "Centered"
+    ],
+    [
+     "string",
+     "name",
+     "Rename!"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "MakeVisualAABBPrimitive": {
+   "inputs": [
+    "boundMin",
+    "boundMax",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "connType",
+     "2"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "MeshToSDF": {
+   "inputs": [
+    "mesh",
+    "Dx",
+    "SRC"
+   ],
+   "outputs": [
+    "sdf",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "voxel_size",
+     "0.08 0"
+    ],
+    [
+     "string",
+     "type",
+     "vertex"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "NumericFloat": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "value",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "value",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericInt": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "value",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "value",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericInterpolation": {
+   "inputs": [
+    "src",
+    "srcMin",
+    "srcMax",
+    "dstMin",
+    "dstMax",
+    "SRC"
+   ],
+   "outputs": [
+    "dst",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "isClamped",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericOperator": {
+   "inputs": [
+    "lhs",
+    "rhs",
+    "SRC"
+   ],
+   "outputs": [
+    "ret",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "op_type",
+     "copy"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericRandom": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "value",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "dim",
+     "1"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericVec2": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "vec2",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericVec3": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "vec3",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericVec4": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "vec4",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ],
+    [
+     "float",
+     "w",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "ParticleAddDV": {
+   "inputs": [
+    "Particles",
+    "dv",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "channel",
+     "vel"
+    ],
+    [
+     "float",
+     "vx",
+     "0.0"
+    ],
+    [
+     "float",
+     "vy",
+     "0.0"
+    ],
+    [
+     "float",
+     "vz",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "ParticleEmitter": {
+   "inputs": [
+    "Particles",
+    "ShapeSDF",
+    "VelocityVolume",
+    "LiquidSDF",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "vx",
+     "0.0"
+    ],
+    [
+     "float",
+     "vy",
+     "0.0"
+    ],
+    [
+     "float",
+     "vz",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "ParticlesNeighborWrangle": {
+   "inputs": [
+    "prim",
+    "primNei",
+    "zfxCode",
+    "params",
+    "radius",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesWrangle": {
+   "inputs": [
+    "prim",
+    "zfxCode",
+    "params",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "PlaneProjectPrimitive2DAABB": {
+   "inputs": [
+    "origin",
+    "normal",
+    "tangent",
+    "bitangent",
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "boundMin2D",
+    "boundMax2D",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "math"
+   ]
+  },
+  "PortalIn": {
+   "inputs": [
+    "port",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "RenameMe!"
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "PortalOut": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "port",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "RenameMe!"
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
+  "PrimToVDBPointDataGrid": {
+   "inputs": [
+    "ParticleGeo",
+    "Dx",
+    "SRC"
+   ],
+   "outputs": [
+    "Particles",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "PrimitiveAddAttr": {
+   "inputs": [
+    "prim",
+    "fillValue",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "string",
+     "type",
+     "float3"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveCalcNormal": {
+   "inputs": [
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveClearConnect": {
+   "inputs": [
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveColorByHeatmap": {
+   "inputs": [
+    "prim",
+    "heatmap",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "rho"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "PrimitiveConvexDecomposition": {
+   "inputs": [
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "listPrim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "PrimitiveFillAttr": {
+   "inputs": [
+    "prim",
+    "value",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveGetSize": {
+   "inputs": [
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "size",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveMerge": {
+   "inputs": [
+    "listPrim",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitivePrintAttr": {
+   "inputs": [
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveRandomizeAttr": {
+   "inputs": [
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrName",
+     "pos"
+    ],
+    [
+     "float",
+     "min",
+     "-1"
+    ],
+    [
+     "float",
+     "minY",
+     "-1"
+    ],
+    [
+     "float",
+     "minZ",
+     "-1"
+    ],
+    [
+     "float",
+     "max",
+     "1"
+    ],
+    [
+     "float",
+     "maxY",
+     "1"
+    ],
+    [
+     "float",
+     "maxZ",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveReduction": {
+   "inputs": [
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "result",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attr",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "avg"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveResize": {
+   "inputs": [
+    "prim",
+    "size",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveShade": {
+   "inputs": [
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "shade",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "primtype",
+     "points"
+    ],
+    [
+     "string",
+     "vertpath",
+     "assets/particles.vert"
+    ],
+    [
+     "string",
+     "fragpath",
+     "assets/particles.frag"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "PrimitiveSimpleLines": {
+   "inputs": [
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSimplePoints": {
+   "inputs": [
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSimpleQuads": {
+   "inputs": [
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSimpleTris": {
+   "inputs": [
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveSplitEdges": {
+   "inputs": [
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveToBulletMesh": {
+   "inputs": [
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "mesh",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "PrimitiveToSDF": {
+   "inputs": [
+    "PrimitiveMesh",
+    "Dx",
+    "SRC"
+   ],
+   "outputs": [
+    "sdf",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "voxel_size",
+     "0.08 0"
+    ],
+    [
+     "string",
+     "type",
+     "vertex"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "PrintMessage": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "hello"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "PrintNumeric": {
+   "inputs": [
+    "value",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "hint",
+     "PrintNumeric"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "PushOutLiquidSDF": {
+   "inputs": [
+    "Dx",
+    "LiquidSDF",
+    "SolidSDF",
+    "ExtractedLiquidSDF",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "ReadVDBGrid": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "data",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "type",
+     "float"
+    ],
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "ResampleVDBGrid": {
+   "inputs": [
+    "resampleTo",
+    "resampleFrom",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "RigidGetPressureForce": {
+   "inputs": [
+    "dt",
+    "MassCenter",
+    "Rigid",
+    "Pressure",
+    "CellFWeight",
+    "LiquidSDF",
+    "SRC"
+   ],
+   "outputs": [
+    "TotalForceImpulse",
+    "TotalTorcImpulse",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "RigidVelToPrimitive": {
+   "inputs": [
+    "prim",
+    "centroid",
+    "linearVel",
+    "angularVel",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "Route": {
+   "inputs": [
+    "input",
+    "SRC"
+   ],
+   "outputs": [
+    "output",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "SDFToPoly": {
+   "inputs": [
+    "SDF",
+    "SRC"
+   ],
+   "outputs": [
+    "Mesh",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "isoValue",
+     "0"
+    ],
+    [
+     "float",
+     "adaptivity",
+     "0"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "SampleVDBToPrimitive": {
+   "inputs": [
+    "prim",
+    "vdbGrid",
+    "primAttr",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "SetFLIPWorld": {
+   "inputs": [
+    "Dx",
+    "SRC"
+   ],
+   "outputs": [
+    "Particles",
+    "Pressure",
+    "Divergence",
+    "CellFWeight",
+    "PressureDOFID",
+    "IsolatedCellDOF",
+    "Velocity",
+    "DeltaVelocity",
+    "VelocitySnapshot",
+    "PostAdvVelocity",
+    "SolidVelocity",
+    "VelocityWeights",
+    "LiquidSDF",
+    "LiquidSDFSnapshot",
+    "ExtractedLiquidSDF",
+    "ErodedLiquidSDF",
+    "SolidSDF",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.08 0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "SetFrameTime": {
+   "inputs": [
+    "time",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "frame"
+   ]
+  },
+  "SetVDBPointDataGrid": {
+   "inputs": [
+    "ParticleGeo",
+    "Dx",
+    "SRC"
+   ],
+   "outputs": [
+    "Particles",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "particles"
+   ]
+  },
+  "SprayParticles": {
+   "inputs": [
+    "TrianglePrim",
+    "Dx",
+    "SRC"
+   ],
+   "outputs": [
+    "particles",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.01"
+    ],
+    [
+     "string",
+     "channel",
+     "vel"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "SubCategory": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "subgraph"
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubInput": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "port",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "input1"
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubOutput": {
+   "inputs": [
+    "port",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "output1"
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "Subgraph": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "DoNotUseThisNodeDirectly"
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubtractPressureGradient": {
+   "inputs": [
+    "dt",
+    "Dx",
+    "LiquidSDF",
+    "SolidSDF",
+    "ExtractedLiquidSDF",
+    "Pressure",
+    "CellFWeight",
+    "Velocity",
+    "SolidVelocity",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.0"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "TraceOneStep": {
+   "inputs": [
+    "prim",
+    "dt",
+    "size",
+    "steps",
+    "maxlength",
+    "vecField",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "TransformPrimitive": {
+   "inputs": [
+    "prim",
+    "translation",
+    "eulerXYZ",
+    "quatRotation",
+    "scaling",
+    "SRC"
+   ],
+   "outputs": [
+    "outPrim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "UnpackNumericVec": {
+   "inputs": [
+    "vec",
+    "SRC"
+   ],
+   "outputs": [
+    "X",
+    "Y",
+    "Z",
+    "W",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "VDBDilateTopo": {
+   "inputs": [
+    "inField",
+    "layers",
+    "SRC"
+   ],
+   "outputs": [
+    "oField",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBRenormalizeSDF": {
+   "inputs": [
+    "inoutSDF",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "method",
+     "1oUpwind"
+    ],
+    [
+     "int",
+     "iterations",
+     "4"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "Vec3FieldExtrapolate": {
+   "inputs": [
+    "Field",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "NumIterates",
+     "1"
+    ]
+   ],
+   "categories": [
+    "FLIPSolver"
+   ]
+  },
+  "WriteBgeo": {
+   "inputs": [
+    "data",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "particles"
+   ]
+  },
+  "WriteVDBGrid": {
+   "inputs": [
+    "data",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "Blackboard": {
+   "inputs": [],
+   "outputs": [],
+   "params": [],
+   "categories": [
+    "layout"
+   ]
+  }
+ },
+ "version": "v1"
+}

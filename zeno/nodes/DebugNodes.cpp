@@ -2,6 +2,7 @@
 #include <zeno/NumericObject.h>
 #include <cstdio>
 
+namespace {
 
 struct GCTest : zeno::NumericObject {
     GCTest() {
@@ -58,3 +59,5 @@ ZENDEFNODE(ExitProcess, {
     {{"int", "status", "-1"}},
     {"debug"},
 });
+
+}
