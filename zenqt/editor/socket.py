@@ -14,6 +14,7 @@ class QDMGraphicsSocket(QGraphicsItem):
 
         self.setAcceptHoverEvents(True)
         self.hovered = False
+        self.temp_edge_connected = False
 
         self.initLabel()
 
@@ -97,7 +98,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         return QRectF(*self.getCircleBounds()).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-        if self.hasAnyEdge() or self.hovered:
+        if self.hasAnyEdge() or self.hovered or self.temp_edge_connected:
             socket_color = 'socket_connect_color'
         else:
             socket_color = 'socket_unconnect_color'
