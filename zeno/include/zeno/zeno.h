@@ -45,10 +45,12 @@ struct IObject {
     ZENAPI virtual ~IObject();
 
     ZENAPI virtual std::shared_ptr<IObject> clone() const;
+    ZENAPI virtual bool assign(IObject *other);
     ZENAPI virtual void dumpfile(std::string const &path);
 #else
     virtual ~IObject() = default;
     virtual std::shared_ptr<IObject> clone() const { return nullptr; }
+    virtual bool assign(IObject *other) { return false; }
     virtual void dumpfile(std::string const &path) {}
 #endif
 
@@ -71,6 +73,15 @@ template <class Derived, class Base = IObject>
 struct IObjectClone : Base {
     virtual std::shared_ptr<IObject> clone() const {
         return std::make_shared<Derived>(static_cast<Derived const &>(*this));
+    }
+
+    virtual bool assign(IObject *other) {
+        auto src = dynamic_cast<Derived *>(other);
+        if (!src)
+            return false;
+        auto dst = static_cast<Derived *>(this);
+        *dst = *src;
+        return true;
     }
 };
 

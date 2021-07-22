@@ -6,7 +6,6 @@ namespace {
 
 struct NumericOperator : zeno::INode {
 
-
     template <class T, class ...>
     using _left_t = T;
 
@@ -129,7 +128,7 @@ struct NumericOperator : zeno::INode {
         
         if (has_input("rhs")) {
             auto rhs = get_input<zeno::NumericObject>("rhs");
-            if(op == "set") lhs->value = rhs->value;
+            if(op == "set") lhs->value = rhs->value; // TODO: make zhxx happy
             
             /*if (lhs->value.index() == 1 && rhs->value.index() == 1){
                 if(op == "beq") ret->value = (std::get<float>(lhs->value)>=std::get<float>(rhs->value))?(int)1:(int)0;

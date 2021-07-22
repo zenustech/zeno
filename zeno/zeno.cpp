@@ -25,6 +25,10 @@ ZENAPI std::shared_ptr<IObject> IObject::clone() const {
     return nullptr;
 }
 
+ZENAPI bool IObject::assign(IObject *other) {
+    return false;
+}
+
 ZENAPI void IObject::dumpfile(std::string const &path) {
 }
 
