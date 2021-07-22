@@ -12,12 +12,24 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.name = None
         self.dummy = False
 
+        self.setAcceptHoverEvents(True)
+        self.hovered = False
+
         self.initLabel()
 
+    def hoverEnterEvent(self, event):
+        self.hovered = True
+        self.update()
+
+    def hoverLeaveEvent(self, event):
+        self.hovered = False
+        self.update()
+
     class QDMGraphicsTextItem(QGraphicsTextItem):
-        def __init__(self, parent=None):
+        def __init__(self, parent):
             super().__init__(parent)
             self.setDefaultTextColor(QColor(style['socket_text_color']))
+            self.parent = parent
 
         def setAlignment(self, align):
             document = self.document()
@@ -54,10 +66,13 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.isOutput = isOutput
 
         if isOutput:
-            self.label.setAlignment(Qt.AlignRight)
-            if hasattr(self.label, 'setTextWidth'):
-                width = self.node.boundingRect().width() - HORI_MARGIN * 2
-                self.label.setTextWidth(width)
+            rect = self.label.boundingRect()
+            x = self.node.boundingRect().width() - rect.width() - HORI_MARGIN
+            self.label.setPos(x, self.label.pos().y())
+            #self.label.setAlignment(Qt.AlignRight)
+            #if hasattr(self.label, 'setTextWidth'):
+                #width = self.node.boundingRect().width() - HORI_MARGIN * 2
+                #self.label.setTextWidth(width)
 
     def setName(self, name):
         self.name = name
@@ -82,7 +97,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         return QRectF(*self.getCircleBounds()).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-        if self.hasAnyEdge() or self.dummy:
+        if self.hasAnyEdge() or self.hovered:
             socket_color = 'socket_connect_color'
         else:
             socket_color = 'socket_unconnect_color'
