@@ -25,6 +25,8 @@ style = {
     'button_selected_text_color': '#333333',
     'output_shift': 1,
     'ramp_width': 10,
+    'dummy_socket_width': 5,
+    'dummy_socket_height': 40,
 
     'line_width': 3,
     'ramp_outline_width': 2,
@@ -42,4 +44,15 @@ TEXT_HEIGHT = style['text_height']
 HORI_MARGIN = style['hori_margin']
 SOCKET_RADIUS = style['socket_radius']
 BEZIER_FACTOR = 0.5
+
+def fillRect(painter, rect, color, line_width=None, line_color=None):
+    if line_width:
+        painter.fillRect(rect, QColor(line_color))
+
+        w = line_width
+        r = rect
+        content_rect = QRect(r.x() + w, r.y() + w, r.width() - w * 2, r.height() - w * 2)
+        painter.fillRect(content_rect, QColor(color))
+    else:
+        painter.fillRect(rect, QColor(color))
 

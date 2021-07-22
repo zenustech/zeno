@@ -356,7 +356,7 @@ class QDMGraphicsView(QGraphicsView):
 
             if self.dragingEdge is None:
                 item = self.itemAt(event.pos())
-                if isinstance(item, QDMGraphicsSocket) and not item.dummy:
+                if isinstance(item, QDMGraphicsSocket):
                     if not item.isOutput and len(item.edges):
                         srcItem = item.getTheOnlyEdge().srcSocket
                         item.removeAllEdges()

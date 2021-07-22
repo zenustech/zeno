@@ -70,20 +70,15 @@ class QDMGraphicsNode(QGraphicsItem):
             button.setChecked(name in options)
 
     def initDummySockets(self):
-        h = - TEXT_HEIGHT / 2
-        offset = style['dummy_socket_offset']
-        s = QDMGraphicsSocket(self)
-        s.setPos(-offset, h)
+        s = QDMGraphicsDummySocket(self)
+        s.setPos(0, 0)
         s.setIsOutput(False)
-        s.dummy = True
         self.dummy_input_socket = s
         self.dummy_input_socket.hide()
 
-        w = style['node_width']
-        s = QDMGraphicsSocket(self)
-        s.setPos(w + offset, h)
-        s.setIsOutput(False)
-        s.dummy = True
+        s = QDMGraphicsDummySocket(self)
+        s.setPos(0, 0)
+        s.setIsOutput(True)
         self.dummy_output_socket = s
         self.dummy_output_socket.hide()
 
