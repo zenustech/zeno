@@ -185,19 +185,19 @@ struct SIMDBuilder {   // requires AVX2
     }
 
     void addRegularLoadOp(int val, MemoryAddress adr) {
-        res.push_back(0x48);
+        res.push_back(0x48 | val >> 3);
         res.push_back(0x8b);
         adr.dump(res, val);
     }
 
     void addRegularStoreOp(int val, MemoryAddress adr) {
-        res.push_back(0x48);
+        res.push_back(0x48 | val >> 3);
         res.push_back(0x89);
         adr.dump(res, val);
     }
 
     void addRegularMoveOp(int dst, int src) {
-        res.push_back(0x48);
+        res.push_back(0x48 | dst >> 3 | src >> 1 & 0x04);
         res.push_back(0x89);
         res.push_back(0xc0 | dst | src << 3);
     }
