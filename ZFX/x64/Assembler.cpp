@@ -17,13 +17,6 @@ namespace zfx::x64 {
 
 struct ImplAssembler {
     int simdkind = optype::xmmps;
-#if defined(_WIN32)
-    int arg1_reg = opreg::rcx;
-    int arg2_reg = opreg::rdx;
-#else
-    int arg1_reg = opreg::rdi;
-    int arg2_reg = opreg::rsi;
-#endif
 
     std::unique_ptr<SIMDBuilder> builder = std::make_unique<SIMDBuilder>();
     std::unique_ptr<Executable> exec = std::make_unique<Executable>();
@@ -57,7 +50,7 @@ struct ImplAssembler {
                 nconsts = std::max(nconsts, id + 1);
                 int offset = id * SIMDBuilder::scalarSizeOfType(simdkind);
                 builder->addAvxBroadcastLoadOp(simdkind,
-                    dst, {arg2_reg, memflag::reg_imm8, offset});
+                    dst, { opreg::a2, memflag::reg_imm8, offset});
 
             } else if (cmd == "ldl") {
                 // rdi points to an array of variables
@@ -67,7 +60,7 @@ struct ImplAssembler {
                 nlocals = std::max(nlocals, id + 1);
                 int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 builder->addAvxMemoryOp(simdkind, opcode::loadu,
-                    dst, {arg1_reg, memflag::reg_imm8, offset});
+                    dst, {opreg::a1, memflag::reg_imm8, offset});
 
             } else if (cmd == "stl") {
                 ERROR_IF(linesep.size() < 2);
@@ -76,7 +69,7 @@ struct ImplAssembler {
                 nlocals = std::max(nlocals, id + 1);
                 int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
-                    dst, {arg1_reg, memflag::reg_imm8, offset});
+                    dst, {opreg::a1, memflag::reg_imm8, offset});
 
             /*} else if (cmd == "ldg") {
                 // rdx points to an array of pointers
@@ -220,44 +213,48 @@ struct ImplAssembler {
                 if (linesep.size() == 3) {
                     auto dst = from_string<int>(linesep[1]);
                     auto src = from_string<int>(linesep[2]);
-                    builder->addPushReg(arg2_reg);
-                    builder->addPushReg(arg1_reg);
+                    builder->addPushReg(opreg::a3);
+                    builder->addPushReg(opreg::a2);
+                    builder->addPushReg(opreg::a1);
                     int size = SIMDBuilder::sizeOfType(simdkind);
                     builder->addAdjStackTop(-size);
                     builder->addAvxMemoryOp(simdkind, opcode::storeu,
                         src, opreg::rsp);
-                    builder->addRegularMoveOp(arg1_reg, opreg::rsp);
+                    builder->addRegularMoveOp(opreg::a1, opreg::rsp);
                     int id = it - FuncTable::funcnames.begin();
                     int offset = id * sizeof(void *);
-                    builder->addCallOp({opreg::rdx, memflag::reg_imm8, offset});
+                    builder->addCallOp({opreg::a3, memflag::reg_imm8, offset});
                     builder->addAvxMemoryOp(simdkind, opcode::loadu,
                         dst, opreg::rsp);
                     builder->addAdjStackTop(size);
-                    builder->addPopReg(arg1_reg);
-                    builder->addPopReg(arg2_reg);
+                    builder->addPopReg(opreg::a1);
+                    builder->addPopReg(opreg::a2);
+                    builder->addPopReg(opreg::a3);
                 } else {
                     auto dst = from_string<int>(linesep[1]);
                     auto lhs = from_string<int>(linesep[2]);
                     auto rhs = from_string<int>(linesep[3]);
-                    builder->addPushReg(arg2_reg);
-                    builder->addPushReg(arg1_reg);
+                    builder->addPushReg(opreg::a3);
+                    builder->addPushReg(opreg::a2);
+                    builder->addPushReg(opreg::a1);
                     int size = SIMDBuilder::sizeOfType(simdkind);
                     builder->addAdjStackTop(-size);
                     builder->addAvxMemoryOp(simdkind, opcode::storeu,
                         rhs, opreg::rsp);
-                    builder->addRegularMoveOp(arg2_reg, opreg::rsp);
+                    builder->addRegularMoveOp(opreg::a2, opreg::rsp);
                     builder->addAdjStackTop(-size);
                     builder->addAvxMemoryOp(simdkind, opcode::storeu,
                         lhs, opreg::rsp);
-                    builder->addRegularMoveOp(arg1_reg, opreg::rsp);
+                    builder->addRegularMoveOp(opreg::a1, opreg::rsp);
                     int id = it - FuncTable::funcnames.begin();
                     int offset = id * sizeof(void *);
-                    builder->addCallOp({opreg::rbx, memflag::reg_imm8, offset});
+                    builder->addCallOp({opreg::a3, memflag::reg_imm8, offset});
                     builder->addAvxMemoryOp(simdkind, opcode::loadu,
                         dst, opreg::rsp);
                     builder->addAdjStackTop(size * 2);
-                    builder->addPopReg(arg1_reg);
-                    builder->addPopReg(arg2_reg);
+                    builder->addPopReg(opreg::a1);
+                    builder->addPopReg(opreg::a2);
+                    builder->addPopReg(opreg::a3);
                 }
 
             } else {

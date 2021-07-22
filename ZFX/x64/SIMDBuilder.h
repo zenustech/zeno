@@ -38,7 +38,29 @@ namespace opreg {
     };
     enum {
         rax, rcx, rdx, rbx, rsp, rbp, rsi, rdi,
+        r8, r9, r10, r11, r12, r13, r14, r15,
     };
+
+    // Linux: https://stackoverflow.com/questions/18024672/what-registers-are-preserved-through-a-linux-x86-64-function-call
+    // Windows: https://docs.microsoft.com/en-us/cpp/build/x64-calling-convention?view=msvc-160#parameter-passing
+    // TL;DR: Linux use RDI, RSI, RDX, RCX, R8, R9; Windows use RCX, RDX, R8, R9
+#if defined(_WIN32)
+    enum {
+        a1 = rcx,
+        a2 = rdx,
+        a3 = r8,
+        a4 = r9,
+    };
+#else
+    enum {
+        a1 = rdi,
+        a2 = rsi,
+        a3 = rdx,
+        a4 = rcx,
+        a5 = r8,
+        a6 = r9,
+};
+#endif
 };
 
 namespace memflag {

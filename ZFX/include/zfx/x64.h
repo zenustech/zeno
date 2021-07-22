@@ -20,27 +20,8 @@ struct Executable {
         float locals[SimdWidth * 256];
 
         void execute() {
-            // Linux: https://stackoverflow.com/questions/18024672/what-registers-are-preserved-through-a-linux-x86-64-function-call
-            // Windows: https://docs.microsoft.com/en-us/cpp/build/x64-calling-convention?view=msvc-160#parameter-passing
-            // TL;DR: Linux use RDI, RSI, RDX, RCX, R8, R9; Windows use RCX, RDX, R8, R9
-#if defined(_WIN32)
-            auto entry = (void(*)(void *, void *))exec->mem;
-            entry((void*)&locals[0], (void*)&exec->consts[0]);
-#else
-            auto rax_val = (uintptr_t)(void*)&exec->mem;
-            auto rbx_val = (uintptr_t)(void*)exec->functable;
-            auto rsi_val = (uintptr_t)(void*)&exec->consts[0];
-            auto rdi_val = (uintptr_t)(void*)&locals[0];
-            asm volatile (
-                "call *(%%rax)"  // why `call *%%rax` gives CE...
-                :
-                : "a" (rax_val)
-                , "b" (rbx_val)
-                , "S" (rsi_val)
-                , "D" (rdi_val)
-                : "cc", "memory"
-                );
-#endif
+            auto entry = (void(*)(void *, void *, void *))exec->mem;
+            entry((void *)locals, (void *)exec->consts, (void *)exec->functable);
         }
 
         float *channel(int chid) {
