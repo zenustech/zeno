@@ -229,3 +229,10 @@ class QDMGraphicsCollapseButton(QGraphicsSvgItem):
             self.node.collapse()
         else:
             self.node.unfold()
+
+    def boundingRect(self):
+        size = style['collapse_svg_size']
+        return QRectF(0, 0, size, size)
+
+    def paint(self, painter, styleOptions, widget=None):
+        self.renderer().render(painter, self.boundingRect())
