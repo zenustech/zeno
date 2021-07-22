@@ -13,8 +13,8 @@
      },
      "params": {},
      "uipos": [
-      -1025.4179687499995,
-      -2814.6036132812483
+      -931.6679687499995,
+      -2812.103613281248
      ],
      "options": [
       "ONCE"
@@ -45,7 +45,7 @@
      },
      "params": {},
      "uipos": [
-      -475.4046874999999,
+      -473.84218749999997,
       -2760.370312499999
      ],
      "options": [
@@ -54,9 +54,9 @@
     }
    },
    "view": {
-    "scale": 0.6400000000000001,
-    "trans_x": -905,
-    "trans_y": -1986
+    "scale": 0.8,
+    "trans_x": -1143,
+    "trans_y": -2505
    }
   },
   "addRigid": {
@@ -3590,79 +3590,6 @@
   },
   "FlashRender": {
    "nodes": {
-    "408b7abf-x": {
-     "name": "GetTime",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -50.88750000000039,
-      -2102.5749999999994
-     ],
-     "options": []
-    },
-    "0c433790-x": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": null,
-      "time": [
-       "408b7abf-x",
-       "time"
-      ]
-     },
-     "params": {
-      "_KEYS": "time"
-     },
-     "uipos": [
-      402.2624999999999,
-      -2217.575000000001
-     ],
-     "options": [],
-     "socket_keys": [
-      "time"
-     ]
-    },
-    "b43c6f1e-x": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "@clr.xyz = sin(3*$time)"
-     },
-     "uipos": [
-      -207.60624999999993,
-      -2448.8718750000007
-     ],
-     "options": []
-    },
-    "895a3960-x": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "9f8d6d98-SubInput",
-       "port"
-      ],
-      "zfxCode": [
-       "b43c6f1e-x",
-       "value"
-      ],
-      "params": [
-       "0c433790-x",
-       "dict"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      755.85,
-      -2493.5
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
     "dbb31ee0-SubCategory": {
      "name": "SubCategory",
      "inputs": {
@@ -3686,8 +3613,8 @@
       "name": "prim"
      },
      "uipos": [
-      -57.68749999999994,
-      -2678.8125
+      -162.37499999999994,
+      -2714.7500000000005
      ],
      "options": []
     },
@@ -3695,8 +3622,8 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "895a3960-x",
-       "DST"
+       "81e2ad37-PrimitiveColorByHeatmap",
+       "prim"
       ],
       "SRC": null
      },
@@ -3704,16 +3631,313 @@
       "name": "end"
      },
      "uipos": [
-      1132.0,
-      -2385.0
+      3106.285156249998,
+      -2256.1867187499993
      ],
      "options": []
+    },
+    "09e7828f-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "9f8d6d98-SubInput",
+       "port"
+      ],
+      "fillValue": null,
+      "SRC": null
+     },
+     "params": {
+      "name": "rho",
+      "type": "float"
+     },
+     "uipos": [
+      446.6875000000002,
+      -2709.9375
+     ],
+     "options": []
+    },
+    "0dd8c4e3-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "09e7828f-PrimitiveAddAttr",
+       "prim"
+      ],
+      "zfxCode": [
+       "a44fbe99-MakeMultilineString",
+       "value"
+      ],
+      "params": [
+       "46a8c37b-MakeDict",
+       "dict"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      1219.1210937500002,
+      -2387.9375000000005
+     ],
+     "options": []
+    },
+    "a44fbe99-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "@rho=@pos.x"
+     },
+     "uipos": [
+      537.6328125000007,
+      -2464.187500000001
+     ],
+     "options": []
+    },
+    "46a8c37b-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": null,
+      "time": [
+       "a9c53a5b-GetTime",
+       "time"
+      ]
+     },
+     "params": {
+      "_KEYS": "time"
+     },
+     "uipos": [
+      786.3125000000006,
+      -2152.1249999999995
+     ],
+     "options": [],
+     "socket_keys": [
+      "time"
+     ]
+    },
+    "81e2ad37-PrimitiveColorByHeatmap": {
+     "name": "PrimitiveColorByHeatmap",
+     "inputs": {
+      "prim": [
+       "68b4f408-x",
+       "prim"
+      ],
+      "heatmap": [
+       "2ee2377f-MakeHeatmap",
+       "heatmap"
+      ],
+      "min": null,
+      "max": null,
+      "SRC": null
+     },
+     "params": {
+      "attrName": "rho"
+     },
+     "uipos": [
+      2809.875,
+      -2399.0625
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "6234ab11-PrimitiveReduction": {
+     "name": "PrimitiveReduction",
+     "inputs": {
+      "prim": [
+       "0dd8c4e3-ParticlesWrangle",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "attr": "rho",
+      "op": "max"
+     },
+     "uipos": [
+      1661.7031250000002,
+      -2259.4843749999995
+     ],
+     "options": []
+    },
+    "c5899497-x": {
+     "name": "PrimitiveReduction",
+     "inputs": {
+      "prim": [
+       "0dd8c4e3-ParticlesWrangle",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "attr": "rho",
+      "op": "min"
+     },
+     "uipos": [
+      1679.6993750000004,
+      -2674.88625
+     ],
+     "options": []
+    },
+    "a9c53a5b-GetTime": {
+     "name": "GetTime",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      275.8125,
+      -2107.875
+     ],
+     "options": []
+    },
+    "2ee2377f-MakeHeatmap": {
+     "name": "MakeHeatmap",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "nres": 1024,
+      "_RAMPS": "7\n0 1 0 0\n0.12637362637362637 1 0.6208791208791209 0\n0.2692307692307692 1 1 0\n0.4494505494505495 0 1 0\n0.6208791208791209 0 1 1\n0.7802197802197802 0 0 1\n1 1 0 1"
+     },
+     "uipos": [
+      1895.0,
+      -2093.0
+     ],
+     "options": [],
+     "color_ramps": [
+      [
+       0,
+       [
+        1,
+        0,
+        0
+       ]
+      ],
+      [
+       0.12637362637362637,
+       [
+        1,
+        0.6208791208791209,
+        0
+       ]
+      ],
+      [
+       0.2692307692307692,
+       [
+        1,
+        1,
+        0
+       ]
+      ],
+      [
+       0.4494505494505495,
+       [
+        0,
+        1,
+        0
+       ]
+      ],
+      [
+       0.6208791208791209,
+       [
+        0,
+        1,
+        1
+       ]
+      ],
+      [
+       0.7802197802197802,
+       [
+        0,
+        0,
+        1
+       ]
+      ],
+      [
+       1,
+       [
+        1,
+        0,
+        1
+       ]
+      ]
+     ]
+    },
+    "33559233-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "@rho=sin((@rho-$min)/($max-$min)+$time)"
+     },
+     "uipos": [
+      1431.4238281249984,
+      -2616.7382812499986
+     ],
+     "options": []
+    },
+    "68b4f408-x": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "0dd8c4e3-ParticlesWrangle",
+       "prim"
+      ],
+      "zfxCode": [
+       "33559233-x",
+       "value"
+      ],
+      "params": [
+       "9203e617-x",
+       "dict"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      2326.310546874999,
+      -2463.808593749999
+     ],
+     "options": []
+    },
+    "9203e617-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": null,
+      "min": [
+       "c5899497-x",
+       "result"
+      ],
+      "max": [
+       "6234ab11-PrimitiveReduction",
+       "result"
+      ],
+      "time": [
+       "a9c53a5b-GetTime",
+       "time"
+      ]
+     },
+     "params": {
+      "_KEYS": "min\nmax\ntime"
+     },
+     "uipos": [
+      2049.9999999999995,
+      -2413.7499999999995
+     ],
+     "options": [],
+     "socket_keys": [
+      "min",
+      "max",
+      "time"
+     ]
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -438,
-    "trans_y": -1508
+    "scale": 0.8,
+    "trans_x": 1466,
+    "trans_y": -2159
    }
   }
  },
@@ -6103,6 +6327,8 @@
    "inputs": [
     "prim",
     "heatmap",
+    "min",
+    "max",
     "SRC"
    ],
    "outputs": [
