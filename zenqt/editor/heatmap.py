@@ -1,7 +1,22 @@
 from . import *
 
 
-class QDMGraphicsRampDragger(QGraphicsItem):
+
+class QDMGraphicsItemNoDragThrough(QGraphicsItem):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setAcceptHoverEvents(True)
+
+    def hoverEnterEvent(self, event):
+        self.parentItem().setFlag(QGraphicsItem.ItemIsMovable, False)
+        super().hoverEnterEvent(event)
+
+    def hoverLeaveEvent(self, event):
+        self.parentItem().setFlag(QGraphicsItem.ItemIsMovable, True)
+        super().hoverLeaveEvent(event)
+
+
+class QDMGraphicsRampDragger(QDMGraphicsItemNoDragThrough):
     def __init__(self, parent):
         super().__init__(parent)
         self.setFlag(QGraphicsItem.ItemIsMovable)
@@ -75,7 +90,7 @@ class QDMGraphicsRampDragger(QGraphicsItem):
             self.parent.removeRamp(self)
 
 
-class QDMGraphicsColorChannel(QGraphicsItem):
+class QDMGraphicsColorChannel(QDMGraphicsItemNoDragThrough):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
@@ -110,21 +125,13 @@ class QDMGraphicsColorChannel(QGraphicsItem):
         painter.drawRect(0, 0, self.rect.width(), self.rect.height())
 
 
-class QDMGraphicsColorRamp(QGraphicsItem):
+class QDMGraphicsColorRamp(QDMGraphicsItemNoDragThrough):
     def __init__(self, parent):
         super().__init__(parent)
         self.rect = QRectF()
         self.parent = parent
 
         self.draggers = []
-
-        self.setAcceptHoverEvents(True)
-
-    def hoverEnterEvent(self, event):
-        self.parent.setFlag(QGraphicsItem.ItemIsMovable, False)
-
-    def hoverLeaveEvent(self, event):
-        self.parent.setFlag(QGraphicsItem.ItemIsMovable, True)
 
     def mousePressEvent(self, event):
         f = event.pos().x()
