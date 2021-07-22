@@ -49,7 +49,12 @@ class QDMGraphicsRampDragger(QGraphicsItem):
         self.parent.updateRamps()
 
     def setSelected(self, selected):
+        super().setSelected(selected)
         self.selected = selected
+
+    def mouseDoubleClickEvent(self, event):
+        super().mouseDoubleClickEvent(event)
+        self.remove()
 
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
@@ -113,6 +118,14 @@ class QDMGraphicsColorRamp(QGraphicsItem):
 
         self.draggers = []
 
+        self.setAcceptHoverEvents(True)
+
+    def hoverEnterEvent(self, event):
+        self.parent.setFlag(QGraphicsItem.ItemIsMovable, False)
+
+    def hoverLeaveEvent(self, event):
+        self.parent.setFlag(QGraphicsItem.ItemIsMovable, True)
+
     def mousePressEvent(self, event):
         f = event.pos().x()
         if 0 <= f <= self.rect.width():
@@ -158,7 +171,8 @@ class QDMGraphicsColorRamp(QGraphicsItem):
         new_ramp = (fac, rgb)
         self.ramps.insert(i, new_ramp)
         self.initDraggers()
-        self.draggers[i].setSelected(True)
+        dragger = self.draggers[i]
+        self.updateRampSelection(dragger)
 
     def initDraggers(self):
         for dragger in self.draggers:

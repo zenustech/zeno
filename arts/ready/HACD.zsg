@@ -308,6 +308,55 @@
      "options": [
       "VIEW"
      ]
+    },
+    "673243ed-MakeHeatmap": {
+     "name": "MakeHeatmap",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "nres": 1024,
+      "_RAMPS": "4\n0.0 0 0 0\n0.5 1 0 0\n0.9 1 1 0\n1.0 1 1 1"
+     },
+     "uipos": [
+      2325.6,
+      90.4
+     ],
+     "options": [],
+     "color_ramps": [
+      [
+       0.0,
+       [
+        0,
+        0,
+        0
+       ]
+      ],
+      [
+       0.5,
+       [
+        1,
+        0,
+        0
+       ]
+      ],
+      [
+       0.9,
+       [
+        1,
+        1,
+        0
+       ]
+      ],
+      [
+       1.0,
+       [
+        1,
+        1,
+        1
+       ]
+      ]
+     ]
     }
    },
    "view": {
@@ -359,6 +408,21 @@
    ],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "Assign": {
+   "inputs": [
+    "dst",
+    "src",
+    "SRC"
+   ],
+   "outputs": [
+    "dst",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "portal"
    ]
   },
   "BeginFor": {
@@ -670,20 +734,6 @@
    "params": [],
    "categories": [
     "control"
-   ]
-  },
-  "Clone": {
-   "inputs": [
-    "object",
-    "SRC"
-   ],
-   "outputs": [
-    "newObject",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "portal"
    ]
   },
   "CombineVDB": {
@@ -1944,6 +1994,43 @@
     "primitive"
    ]
   },
+  "PrimitiveBinaryOp": {
+   "inputs": [
+    "primA",
+    "primB",
+    "primOut",
+    "SRC"
+   ],
+   "outputs": [
+    "primOut",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrB",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copyA"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveCalcNormal": {
    "inputs": [
     "prim",
@@ -2042,6 +2129,38 @@
     "primitive"
    ]
   },
+  "PrimitiveHalfBinaryOp": {
+   "inputs": [
+    "primA",
+    "valueB",
+    "primOut",
+    "SRC"
+   ],
+   "outputs": [
+    "primOut",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copyA"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveMerge": {
    "inputs": [
     "listPrim",
@@ -2052,6 +2171,39 @@
     "DST"
    ],
    "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveMix": {
+   "inputs": [
+    "primA",
+    "primB",
+    "primOut",
+    "coef",
+    "SRC"
+   ],
+   "outputs": [
+    "primOut",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrB",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ]
+   ],
    "categories": [
     "primitive"
    ]
@@ -2304,6 +2456,37 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "PrimitiveUnaryOp": {
+   "inputs": [
+    "primA",
+    "primOut",
+    "SRC"
+   ],
+   "outputs": [
+    "primOut",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copy"
+    ]
+   ],
+   "categories": [
+    "primitive"
    ]
   },
   "PrintMessage": {
@@ -2789,6 +2972,22 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "VDBWrangle": {
+   "inputs": [
+    "grid",
+    "zfxCode",
+    "params",
+    "SRC"
+   ],
+   "outputs": [
+    "grid",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
    ]
   },
   "Vec3FieldExtrapolate": {
