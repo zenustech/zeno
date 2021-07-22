@@ -197,6 +197,12 @@ ZENAPI void Session::_defNodeClass(std::string const &id, std::unique_ptr<INodeC
     nodeClasses[id] = std::move(cls);
 }
 
+ZENAPI INodeClass::INodeClass(Descriptor const &desc)
+        : desc(std::make_unique<Descriptor>(desc)) {
+}
+
+ZENAPI INodeClass::~INodeClass() = default;
+
 ZENAPI void Session::switchGraph(std::string const &name) {
     if (graphs.find(name) == graphs.end()) {
         auto subg = std::make_unique<zeno::Graph>();

@@ -90,7 +90,7 @@ public:
     std::set<std::string> options;
 
     ZENAPI INode();
-    ZENAPI ~INode();
+    ZENAPI virtual ~INode();
 
     ZENAPI void doComplete();
     ZENAPI virtual void doApply();
@@ -188,8 +188,8 @@ struct Descriptor {
 struct INodeClass {
     std::unique_ptr<Descriptor> desc;
 
-    INodeClass(Descriptor const &desc)
-        : desc(std::make_unique<Descriptor>(desc)) {}
+    ZENAPI INodeClass(Descriptor const &desc);
+    ZENAPI virtual ~INodeClass();
 
     virtual std::unique_ptr<INode> new_instance() const = 0;
 };
