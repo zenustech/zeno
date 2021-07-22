@@ -37,22 +37,11 @@ class QDMGraphicsSocket(QGraphicsItem):
             document.setDefaultTextOption(option)
 
     def initLabel(self):
-        self.label = self.QDMGraphicsTextItem(self.node)
+        self.label = self.QDMGraphicsTextItem(self)
+        self.label.setPos(HORI_MARGIN, -TEXT_HEIGHT * 0.5)
         font = QFont()
         font.setPointSize(style['socket_text_size'])
         self.label.setFont(font)
-
-    def setPos(self, x, y):
-        super().setPos(x, y)
-        self.label.setPos(HORI_MARGIN, y - TEXT_HEIGHT * 0.5)
-
-    def show(self):
-        super().show()
-        self.label.show()
-
-    def hide(self):
-        super().hide()
-        self.label.hide()
 
     def hasAnyEdge(self):
         return len(self.edges) != 0
