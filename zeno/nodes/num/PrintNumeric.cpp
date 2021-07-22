@@ -9,6 +9,7 @@ static inline double drand48() {
 }
 #endif
 
+namespace {
 
 struct PrintNumeric : zeno::INode {
     template <class T>
@@ -49,3 +50,5 @@ ZENDEFNODE(PrintNumeric, {
     {{"string", "hint", "PrintNumeric"}},
     {"numeric"},
 });
+
+}

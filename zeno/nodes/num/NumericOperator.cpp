@@ -2,6 +2,7 @@
 #include <zeno/NumericObject.h>
 #include <iostream>
 
+namespace {
 
 struct NumericOperator : zeno::INode {
 
@@ -209,3 +210,5 @@ ZENDEFNODE(NumericOperator, {
     {{"string", "op_type", "copy"}},
     {"numeric"},
 });
+
+}
