@@ -153,79 +153,6 @@
      ],
      "options": []
     },
-    "8c6917d0-MakeHeatmap": {
-     "name": "MakeHeatmap",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "nres": 1024,
-      "_RAMPS": "7\n0.08571428571428646 0.4590163934426228 0.4590163934426228 0.4590163934426228\n0.33186813186813235 0.2499999999999999 0.2499999999999999 0.2499999999999999\n0.4989010989010999 1 1 1\n0.5824175824175825 0.759493670886078 0.759493670886078 0.759493670886078\n0.6879120879120881 0 0 0\n0.8021978021978022 0.40208488458674574 0.40208488458674574 0.40208488458674574\n0.9428571428571436 0.205479452054795 0.205479452054795 0.205479452054795"
-     },
-     "uipos": [
-      1273.0,
-      511.0
-     ],
-     "options": [],
-     "color_ramps": [
-      [
-       0.08571428571428646,
-       [
-        0.4590163934426228,
-        0.4590163934426228,
-        0.4590163934426228
-       ]
-      ],
-      [
-       0.33186813186813235,
-       [
-        0.2499999999999999,
-        0.2499999999999999,
-        0.2499999999999999
-       ]
-      ],
-      [
-       0.4989010989010999,
-       [
-        1,
-        1,
-        1
-       ]
-      ],
-      [
-       0.5824175824175825,
-       [
-        0.759493670886078,
-        0.759493670886078,
-        0.759493670886078
-       ]
-      ],
-      [
-       0.6879120879120881,
-       [
-        0,
-        0,
-        0
-       ]
-      ],
-      [
-       0.8021978021978022,
-       [
-        0.40208488458674574,
-        0.40208488458674574,
-        0.40208488458674574
-       ]
-      ],
-      [
-       0.9428571428571436,
-       [
-        0.205479452054795,
-        0.205479452054795,
-        0.205479452054795
-       ]
-      ]
-     ]
-    },
     "f3d617e0-PrimitiveColorByHeatmap": {
      "name": "PrimitiveColorByHeatmap",
      "inputs": {
@@ -234,7 +161,7 @@
        "prim"
       ],
       "heatmap": [
-       "8c6917d0-MakeHeatmap",
+       "540ddef4-MakeHeatmap",
        "heatmap"
       ],
       "SRC": null
@@ -249,12 +176,61 @@
      "options": [
       "VIEW"
      ]
+    },
+    "540ddef4-MakeHeatmap": {
+     "name": "MakeHeatmap",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "nres": 1024,
+      "_RAMPS": "4\n0.0 0 0 0\n0.5 1 0 0\n0.9 1 1 0\n1.0 1 1 1"
+     },
+     "uipos": [
+      1275.2,
+      536.0
+     ],
+     "options": [],
+     "color_ramps": [
+      [
+       0.0,
+       [
+        0,
+        0,
+        0
+       ]
+      ],
+      [
+       0.5,
+       [
+        1,
+        0,
+        0
+       ]
+      ],
+      [
+       0.9,
+       [
+        1,
+        1,
+        0
+       ]
+      ],
+      [
+       1.0,
+       [
+        1,
+        1,
+        1
+       ]
+      ]
+     ]
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": 1094,
-    "trans_y": 584
+    "trans_x": 1062,
+    "trans_y": 379
    }
   }
  },
@@ -273,6 +249,22 @@
    "params": [],
    "categories": [
     "list"
+   ]
+  },
+  "ApplyForce": {
+   "inputs": [
+    "prim",
+    "forcefield",
+    "boxlength",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Molecular"
    ]
   },
   "BeginFor": {
@@ -317,6 +309,238 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "BulletComposeTransform": {
+   "inputs": [
+    "transFirst",
+    "transSecond",
+    "SRC"
+   ],
+   "outputs": [
+    "trans",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletCompoundAddChild": {
+   "inputs": [
+    "compound",
+    "childShape",
+    "trans",
+    "SRC"
+   ],
+   "outputs": [
+    "compound",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletExtractTransform": {
+   "inputs": [
+    "trans",
+    "SRC"
+   ],
+   "outputs": [
+    "origin",
+    "rotation",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletGetObjMotion": {
+   "inputs": [
+    "object",
+    "SRC"
+   ],
+   "outputs": [
+    "linearVel",
+    "angularVel",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletGetObjTransform": {
+   "inputs": [
+    "object",
+    "SRC"
+   ],
+   "outputs": [
+    "trans",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeBoxShape": {
+   "inputs": [
+    "v3size",
+    "SRC"
+   ],
+   "outputs": [
+    "shape",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeCompoundShape": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "compound",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeConvexHullShape": {
+   "inputs": [
+    "triMesh",
+    "SRC"
+   ],
+   "outputs": [
+    "shape",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeObject": {
+   "inputs": [
+    "shape",
+    "trans",
+    "mass",
+    "SRC"
+   ],
+   "outputs": [
+    "object",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeSphereShape": {
+   "inputs": [
+    "radius",
+    "SRC"
+   ],
+   "outputs": [
+    "shape",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeTransform": {
+   "inputs": [
+    "origin",
+    "rotation",
+    "SRC"
+   ],
+   "outputs": [
+    "trans",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeWorld": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "world",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletObjectApplyForce": {
+   "inputs": [
+    "object",
+    "ForceImpulse",
+    "TorqueImpulse",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletSetWorldGravity": {
+   "inputs": [
+    "world",
+    "gravity",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletStepWorld": {
+   "inputs": [
+    "world",
+    "dt",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletWorldAddObject": {
+   "inputs": [
+    "world",
+    "object",
+    "SRC"
+   ],
+   "outputs": [
+    "world",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
    ]
   },
   "CachedOnce": {
@@ -449,7 +673,35 @@
     "debug"
    ]
   },
-  "ExportPrimitive": {
+  "ExportObjMesh": {
+   "inputs": [
+    "mesh",
+    "path",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "trimesh"
+   ]
+  },
+  "ExportParticles": {
+   "inputs": [
+    "pars",
+    "path",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "particles"
+   ]
+  },
+  "ExportZpmPrimitive": {
    "inputs": [
     "prim",
     "path",
@@ -489,6 +741,24 @@
    "params": [],
    "categories": [
     "list"
+   ]
+  },
+  "ForceField": {
+   "inputs": [
+    "nonbond",
+    "coulomb",
+    "bonded",
+    "external",
+    "mass",
+    "SRC"
+   ],
+   "outputs": [
+    "forcefield",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Molecular"
    ]
   },
   "FuncBegin": {
@@ -534,6 +804,22 @@
    "params": [],
    "categories": [
     "functional"
+   ]
+  },
+  "GeoVertexVel": {
+   "inputs": [
+    "dt",
+    "TargetMesh",
+    "OriginMesh",
+    "SRC"
+   ],
+   "outputs": [
+    "MeshVel",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "trimesh"
    ]
   },
   "GetFrameNum": {
@@ -617,6 +903,20 @@
     "control"
    ]
   },
+  "ImportObjMesh": {
+   "inputs": [
+    "path",
+    "SRC"
+   ],
+   "outputs": [
+    "mesh",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "trimesh"
+   ]
+  },
   "ImportObjPrimitive": {
    "inputs": [
     "path",
@@ -631,7 +931,21 @@
     "primitive"
    ]
   },
-  "ImportPrimitive": {
+  "ImportParticles": {
+   "inputs": [
+    "path",
+    "SRC"
+   ],
+   "outputs": [
+    "pars",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "particles"
+   ]
+  },
+  "ImportZpmPrimitive": {
    "inputs": [
     "path",
     "SRC"
@@ -643,6 +957,21 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "InitializeSystem": {
+   "inputs": [
+    "prim",
+    "boxlength",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Molecular"
    ]
   },
   "IntegrateFrameTime": {
@@ -663,6 +992,36 @@
    ],
    "categories": [
     "frame"
+   ]
+  },
+  "KineticEnergy": {
+   "inputs": [
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "kinetic energy",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Molecular"
+   ]
+  },
+  "LennardJones": {
+   "inputs": [
+    "rcut",
+    "sigma",
+    "epsilon",
+    "SRC"
+   ],
+   "outputs": [
+    "lennard-jones",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Molecular"
    ]
   },
   "ListLength": {
@@ -895,6 +1254,81 @@
     "visualize"
    ]
   },
+  "MeshCopy": {
+   "inputs": [
+    "copyFrom",
+    "copyTo",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "trimesh"
+   ]
+  },
+  "MeshMix": {
+   "inputs": [
+    "meshA",
+    "meshB",
+    "coef",
+    "SRC"
+   ],
+   "outputs": [
+    "mesh",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "trimesh"
+   ]
+  },
+  "MeshToPrimitive": {
+   "inputs": [
+    "mesh",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "NBodySolver": {
+   "inputs": [
+    "ini_pars",
+    "dt",
+    "SRC"
+   ],
+   "outputs": [
+    "pars",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "r0",
+     "0.02"
+    ],
+    [
+     "float",
+     "G",
+     "-10.0"
+    ],
+    [
+     "float",
+     "M",
+     "0.001"
+    ]
+   ],
+   "categories": [
+    "particles"
+   ]
+  },
   "NumericFloat": {
    "inputs": [
     "SRC"
@@ -1083,6 +1517,20 @@
     "zenofx"
    ]
   },
+  "ParticlesToPrimitive": {
+   "inputs": [
+    "pars",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "ParticlesWrangle": {
    "inputs": [
     "prim",
@@ -1097,6 +1545,21 @@
    "params": [],
    "categories": [
     "zenofx"
+   ]
+  },
+  "PeriodicBoundary": {
+   "inputs": [
+    "prims",
+    "boxlength",
+    "SRC"
+   ],
+   "outputs": [
+    "prims",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Molecular"
    ]
   },
   "PlaneProjectPrimitive2DAABB": {
@@ -1116,6 +1579,21 @@
    "params": [],
    "categories": [
     "math"
+   ]
+  },
+  "PolyDuplicate": {
+   "inputs": [
+    "Mesh",
+    "Particles",
+    "SRC"
+   ],
+   "outputs": [
+    "Meshes",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "trimesh"
    ]
   },
   "PortalIn": {
@@ -1156,6 +1634,22 @@
     "portal"
    ]
   },
+  "PotentialEnergy": {
+   "inputs": [
+    "prim",
+    "forcefield",
+    "boxlength",
+    "SRC"
+   ],
+   "outputs": [
+    "potential energy",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Molecular"
+   ]
+  },
   "PrimitiveAddAttr": {
    "inputs": [
     "prim",
@@ -1176,43 +1670,6 @@
      "string",
      "type",
      "float3"
-    ]
-   ],
-   "categories": [
-    "primitive"
-   ]
-  },
-  "PrimitiveBinaryOp": {
-   "inputs": [
-    "primA",
-    "primB",
-    "primOut",
-    "SRC"
-   ],
-   "outputs": [
-    "primOut",
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "attrA",
-     "pos"
-    ],
-    [
-     "string",
-     "attrB",
-     "pos"
-    ],
-    [
-     "string",
-     "attrOut",
-     "pos"
-    ],
-    [
-     "string",
-     "op",
-     "copyA"
     ]
    ],
    "categories": [
@@ -1268,25 +1725,18 @@
     "visualize"
    ]
   },
-  "PrimitiveFillAttr": {
+  "PrimitiveConvexDecomposition": {
    "inputs": [
     "prim",
-    "value",
     "SRC"
    ],
    "outputs": [
-    "prim",
+    "listPrim",
     "DST"
    ],
-   "params": [
-    [
-     "string",
-     "attrName",
-     "pos"
-    ]
-   ],
+   "params": [],
    "categories": [
-    "primitive"
+    "Rigid"
    ]
   },
   "PrimitiveGetSize": {
@@ -1303,38 +1753,6 @@
     "primitive"
    ]
   },
-  "PrimitiveHalfBinaryOp": {
-   "inputs": [
-    "primA",
-    "valueB",
-    "primOut",
-    "SRC"
-   ],
-   "outputs": [
-    "primOut",
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "attrA",
-     "pos"
-    ],
-    [
-     "string",
-     "attrOut",
-     "pos"
-    ],
-    [
-     "string",
-     "op",
-     "copyA"
-    ]
-   ],
-   "categories": [
-    "primitive"
-   ]
-  },
   "PrimitiveMerge": {
    "inputs": [
     "listPrim",
@@ -1345,109 +1763,6 @@
     "DST"
    ],
    "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
-  "PrimitiveMix": {
-   "inputs": [
-    "primA",
-    "primB",
-    "primOut",
-    "coef",
-    "SRC"
-   ],
-   "outputs": [
-    "primOut",
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "attrA",
-     "pos"
-    ],
-    [
-     "string",
-     "attrB",
-     "pos"
-    ],
-    [
-     "string",
-     "attrOut",
-     "pos"
-    ]
-   ],
-   "categories": [
-    "primitive"
-   ]
-  },
-  "PrimitivePrintAttr": {
-   "inputs": [
-    "prim",
-    "SRC"
-   ],
-   "outputs": [
-    "prim",
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "attrName",
-     "pos"
-    ]
-   ],
-   "categories": [
-    "primitive"
-   ]
-  },
-  "PrimitiveRandomizeAttr": {
-   "inputs": [
-    "prim",
-    "SRC"
-   ],
-   "outputs": [
-    "prim",
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "attrName",
-     "pos"
-    ],
-    [
-     "float",
-     "min",
-     "-1"
-    ],
-    [
-     "float",
-     "minY",
-     "-1"
-    ],
-    [
-     "float",
-     "minZ",
-     "-1"
-    ],
-    [
-     "float",
-     "max",
-     "1"
-    ],
-    [
-     "float",
-     "maxY",
-     "1"
-    ],
-    [
-     "float",
-     "maxZ",
-     "1"
-    ]
-   ],
    "categories": [
     "primitive"
    ]
@@ -1592,48 +1907,41 @@
     "primitive"
    ]
   },
-  "PrimitiveUnaryOp": {
+  "PrimitiveToBulletMesh": {
    "inputs": [
-    "primA",
-    "primOut",
+    "prim",
     "SRC"
    ],
    "outputs": [
-    "primOut",
+    "mesh",
     "DST"
    ],
-   "params": [
-    [
-     "string",
-     "attrA",
-     "pos"
-    ],
-    [
-     "string",
-     "attrOut",
-     "pos"
-    ],
-    [
-     "string",
-     "op",
-     "copy"
-    ]
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "PrimitiveToMesh": {
+   "inputs": [
+    "prim",
+    "SRC"
    ],
+   "outputs": [
+    "mesh",
+    "DST"
+   ],
+   "params": [],
    "categories": [
     "primitive"
    ]
   },
-  "PrimitiveWrangle": {
+  "PrimitiveToParticles": {
    "inputs": [
-    "prim0",
-    "prim1",
-    "prim2",
-    "prim3",
-    "wrangle",
+    "prim",
     "SRC"
    ],
    "outputs": [
-    "prim0",
+    "pars",
     "DST"
    ],
    "params": [],
@@ -1678,6 +1986,90 @@
     "numeric"
    ]
   },
+  "RandomParticles": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "pars",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "count",
+     "1 0"
+    ],
+    [
+     "float",
+     "Prange",
+     "1 0"
+    ],
+    [
+     "float",
+     "Vrange",
+     "1 0"
+    ]
+   ],
+   "categories": [
+    "particles"
+   ]
+  },
+  "ReadObjMesh": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "mesh",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "trimesh"
+   ]
+  },
+  "ReadParticles": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "pars",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "particles"
+   ]
+  },
+  "RigidVelToPrimitive": {
+   "inputs": [
+    "prim",
+    "centroid",
+    "linearVel",
+    "angularVel",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
   "Route": {
    "inputs": [
     "input",
@@ -1692,6 +2084,28 @@
     "portal"
    ]
   },
+  "ScaleVelocity": {
+   "inputs": [
+    "prim",
+    "temperature",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "kinetic energy",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "rel_error_to_scale",
+     "0.05"
+    ]
+   ],
+   "categories": [
+    "Molecular"
+   ]
+  },
   "SetFrameTime": {
    "inputs": [
     "time",
@@ -1703,6 +2117,50 @@
    "params": [],
    "categories": [
     "frame"
+   ]
+  },
+  "SimulationBox": {
+   "inputs": [
+    "prim",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "boxlength",
+    "n_particles",
+    "DST"
+   ],
+   "params": [
+    [
+     "float",
+     "boxlength",
+     "1"
+    ],
+    [
+     "int",
+     "n_particles",
+     "128"
+    ]
+   ],
+   "categories": [
+    "Molecular"
+   ]
+  },
+  "StringToMesh": {
+   "inputs": [
+    "string",
+    "AZmesh",
+    "spacing",
+    "SRC"
+   ],
+   "outputs": [
+    "StringMeshList",
+    "SpacingList",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zelloWorld"
    ]
   },
   "SubCategory": {
@@ -1779,6 +2237,23 @@
     "subgraph"
    ]
   },
+  "TransformMesh": {
+   "inputs": [
+    "mesh",
+    "translate",
+    "rotate",
+    "scaling",
+    "SRC"
+   ],
+   "outputs": [
+    "mesh",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "trimesh"
+   ]
+  },
   "TransformPrimitive": {
    "inputs": [
     "prim",
@@ -1814,130 +2289,42 @@
     "numeric"
    ]
   },
-  "WrangleBinaryOp": {
+  "WriteObjMesh": {
    "inputs": [
-    "lhs",
-    "rhs",
+    "mesh",
     "SRC"
    ],
    "outputs": [
-    "res",
     "DST"
    ],
    "params": [
     [
      "string",
-     "opName",
-     "add"
+     "path",
+     ""
     ]
    ],
    "categories": [
-    "wrangler"
+    "trimesh"
    ]
   },
-  "WrangleImmed": {
+  "WriteParticles": {
    "inputs": [
-    "value",
+    "pars",
     "SRC"
    ],
    "outputs": [
-    "res",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "wrangler"
-   ]
-  },
-  "WrangleLoad": {
-   "inputs": [
-    "SRC"
-   ],
-   "outputs": [
-    "res",
-    "DST"
-   ],
-   "params": [
-    [
-     "int",
-     "primId",
-     "0"
-    ],
-    [
-     "string",
-     "attrName",
-     "pos"
-    ]
-   ],
-   "categories": [
-    "wrangler"
-   ]
-  },
-  "WrangleStore": {
-   "inputs": [
-    "val",
-    "SRC"
-   ],
-   "outputs": [
-    "res",
-    "DST"
-   ],
-   "params": [
-    [
-     "int",
-     "primId",
-     "0"
-    ],
-    [
-     "string",
-     "attrName",
-     "pos"
-    ]
-   ],
-   "categories": [
-    "wrangler"
-   ]
-  },
-  "WrangleTernaryOp": {
-   "inputs": [
-    "lhs",
-    "mhs",
-    "rhs",
-    "SRC"
-   ],
-   "outputs": [
-    "res",
     "DST"
    ],
    "params": [
     [
      "string",
-     "opName",
-     "vec"
+     "path",
+     ""
     ]
    ],
    "categories": [
-    "wrangler"
-   ]
-  },
-  "WrangleUnaryOp": {
-   "inputs": [
-    "lhs",
-    "SRC"
-   ],
-   "outputs": [
-    "res",
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "opName",
-     "neg"
-    ]
-   ],
-   "categories": [
-    "wrangler"
+    "particles"
    ]
   },
   "Blackboard": {
