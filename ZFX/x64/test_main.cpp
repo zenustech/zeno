@@ -16,12 +16,11 @@ int main() {
 #else
     int n = 2;
     std::string code(R"(
-@clr = 0.5 + sin(@pos)
+@clr = @pos + 1
 )");
 #endif
 
     zfx::Options opts(zfx::Options::for_x64);
-    opts.arch_maxregs = 5;
     opts.define_symbol("@pos", n);
     opts.define_symbol("@clr", n);
     //opts.reassign_channels = false;
@@ -37,6 +36,7 @@ int main() {
         ctx.channel(prog->symbol_id("@pos", i))[0] = 1.0f;
     }
     ctx.execute();
+    printf("%f\n", ctx.channel(2)[0]);
     for (int i = 0; i < n; i++) {
         printf("%f\n", ctx.channel(prog->symbol_id("@clr", i))[0]);
     }
