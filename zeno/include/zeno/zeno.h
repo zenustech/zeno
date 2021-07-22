@@ -45,10 +45,12 @@ struct IObject {
     ZENAPI virtual ~IObject();
 
     ZENAPI virtual std::shared_ptr<IObject> clone() const;
+    ZENAPI virtual bool assign(IObject *other);
     ZENAPI virtual void dumpfile(std::string const &path);
 #else
     virtual ~IObject() = default;
     virtual std::shared_ptr<IObject> clone() const { return nullptr; }
+    virtual bool assign(IObject *other) { return false; }
     virtual void dumpfile(std::string const &path) {}
 #endif
 
@@ -72,6 +74,15 @@ struct IObjectClone : Base {
     virtual std::shared_ptr<IObject> clone() const {
         return std::make_shared<Derived>(static_cast<Derived const &>(*this));
     }
+
+    virtual bool assign(IObject *other) {
+        auto src = dynamic_cast<Derived *>(other);
+        if (!src)
+            return false;
+        auto dst = static_cast<Derived *>(this);
+        *dst = *src;
+        return true;
+    }
 };
 
 struct Graph;
@@ -90,7 +101,7 @@ public:
     std::set<std::string> options;
 
     ZENAPI INode();
-    ZENAPI ~INode();
+    ZENAPI virtual ~INode();
 
     ZENAPI void doComplete();
     ZENAPI virtual void doApply();
@@ -188,8 +199,8 @@ struct Descriptor {
 struct INodeClass {
     std::unique_ptr<Descriptor> desc;
 
-    INodeClass(Descriptor const &desc)
-        : desc(std::make_unique<Descriptor>(desc)) {}
+    ZENAPI INodeClass(Descriptor const &desc);
+    ZENAPI virtual ~INodeClass();
 
     virtual std::unique_ptr<INode> new_instance() const = 0;
 };

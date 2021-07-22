@@ -356,6 +356,8 @@ class QDMGraphicsView(QGraphicsView):
 
             if self.dragingEdge is None:
                 item = self.itemAt(event.pos())
+                if isinstance(item, QDMGraphicsSocket.QDMGraphicsTextItem):
+                    item = item.parent
                 if isinstance(item, QDMGraphicsSocket) and not item.dummy:
                     if not item.isOutput and len(item.edges):
                         srcItem = item.getTheOnlyEdge().srcSocket
@@ -373,6 +375,8 @@ class QDMGraphicsView(QGraphicsView):
 
             else:
                 item = self.itemAt(event.pos())
+                if isinstance(item, QDMGraphicsSocket.QDMGraphicsTextItem):
+                    item = item.parent
                 edge = self.dragingEdge
                 edge.disconnect()
                 if isinstance(item, QDMGraphicsSocket):

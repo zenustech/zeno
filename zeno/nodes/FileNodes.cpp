@@ -5,6 +5,8 @@
 #include <iostream>
 #include <fstream>
 
+namespace {
+
 namespace fs = zeno::fs;
 
 struct MakeString : zeno::INode {
@@ -80,3 +82,5 @@ ZENDEFNODE(EndFrame, {
     {},
     {"fileio"},
 });*/
+
+}

@@ -11,7 +11,7 @@ namespace zeno {
 
 struct PrimitiveMerge : zeno::INode {
   virtual void apply() override {
-    auto list = get_input("listPrim")->as<ListObject>();
+    auto list = get_input<ListObject>("listPrim");
     auto outprim = std::make_shared<PrimitiveObject>();
 
     size_t len = 0;
@@ -19,9 +19,9 @@ struct PrimitiveMerge : zeno::INode {
         auto prim = dynamic_cast<PrimitiveObject *>(obj.get());
         assert(prim);
         for (auto const &[key, varr]: prim->m_attrs) {
-            std::visit([&outprim, &key, &len](auto const &arr) {
+            std::visit([&, key_ = key](auto const &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
-                auto &outarr = outprim->add_attr<T>(key);
+                auto &outarr = outprim->add_attr<T>(key_);
                 for (auto const &val: arr) {
                     outarr.push_back(val);
                 }

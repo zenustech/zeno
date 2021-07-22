@@ -1,6 +1,8 @@
 #include <zeno/zeno.h>
 #include <zeno/NumericObject.h>
 
+namespace {
+
 using namespace zeno;
 
 struct MakeOrthonormalBase : INode {
@@ -63,4 +65,34 @@ ZENDEFNODE(UnpackNumericVec, {
     {"X", "Y", "Z", "W"},
     {},
     {"numeric"},
+}); // TODO: add PackNumericVec too.
+
+
+struct NumericRandom : INode {
+    virtual void apply() override {
+        auto value = std::make_shared<NumericObject>();
+        auto dim = get_param<int>("dim");
+        if (dim == 1) {
+            value->set(float(drand48()));
+        } else if (dim == 2) {
+            value->set(zeno::vec2f(drand48(), drand48()));
+        } else if (dim == 3) {
+            value->set(zeno::vec3f(drand48(), drand48(), drand48()));
+        } else if (dim == 4) {
+            value->set(zeno::vec4f(drand48(), drand48(), drand48(), drand48()));
+        } else {
+            printf("invalid dim for NumericRandom: %d\n", dim);
+        }
+        set_output("value", std::move(value));
+    }
+};
+
+ZENDEFNODE(NumericRandom, {
+    {},
+    {"value"},
+    {{"int", "dim", "1"}},
+    {"numeric"},
 });
+
+
+}
