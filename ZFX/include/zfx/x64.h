@@ -20,15 +20,29 @@ struct Executable {
         float locals[SimdWidth * 256];
 
         void execute() {
+            uintptr_t rax_val((void *)&exec->mem);
+            uintptr_t rbx_val((void *)exec->functable);
+            uintptr_t rcx_val((void *)&exec->consts[0]);
+            uintptr_t rdx_val((void *)&locals[0]);
+#if defined(_MSC_VER)
+            __asm {
+                mov rax, rax_val
+                mov rbx, rbx_val
+                mov rcx, rcx_val
+                mov rdx, rdx_val
+                call [rax]
+            }
+#else
             asm volatile (
                 "call *(%%rax)"  // why `call *%%rax` gives CE...
                 :
-                : "a" ((uintptr_t)(void *)&exec->mem)
-                , "b" ((uintptr_t)(void *)exec->functable)
-                , "c" ((uintptr_t)(void *)&exec->consts[0])
-                , "d" ((uintptr_t)(void *)&locals[0])
+                : "a" (rax_val)
+                , "b" (rbx_val)
+                , "c" (rcx_val)
+                , "d" (rdx_val)
                 : "cc", "memory"
                 );
+#endif
         }
 
         float *channel(int chid) {
