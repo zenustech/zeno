@@ -26,9 +26,10 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.update()
 
     class QDMGraphicsTextItem(QGraphicsTextItem):
-        def __init__(self, parent=None):
+        def __init__(self, parent):
             super().__init__(parent)
             self.setDefaultTextColor(QColor(style['socket_text_color']))
+            self.parent = parent
 
         def setAlignment(self, align):
             document = self.document()
@@ -65,10 +66,13 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.isOutput = isOutput
 
         if isOutput:
-            self.label.setAlignment(Qt.AlignRight)
-            if hasattr(self.label, 'setTextWidth'):
-                width = self.node.boundingRect().width() - HORI_MARGIN * 2
-                self.label.setTextWidth(width)
+            rect = self.label.boundingRect()
+            x = self.node.boundingRect().width() - rect.width() - HORI_MARGIN
+            self.label.setPos(x, self.label.pos().y())
+            #self.label.setAlignment(Qt.AlignRight)
+            #if hasattr(self.label, 'setTextWidth'):
+                #width = self.node.boundingRect().width() - HORI_MARGIN * 2
+                #self.label.setTextWidth(width)
 
     def setName(self, name):
         self.name = name
