@@ -47,8 +47,10 @@ namespace opreg {
 #if defined(_WIN32)
     enum {
         a1 = rcx,
-        a2 = rdx,
-        a3 = r8,
+        a3 = rdx,
+        a2 = r8,
+        //a2 = rdx,
+        //a3 = r8,
         a4 = r9,
     };
 #else
@@ -59,7 +61,7 @@ namespace opreg {
         a4 = rcx,
         a5 = r8,
         a6 = r9,
-};
+    };
 #endif
 };
 
@@ -232,11 +234,15 @@ struct SIMDBuilder {   // requires AVX2
     }
 
     void addPushReg(int reg) {
-        res.push_back(0x50 | reg);
+        if (reg & 0x08)
+            res.push_back(0x41);
+        res.push_back(0x50 | reg & 0x7);
     }
 
     void addPopReg(int reg) {
-        res.push_back(0x58 | reg);
+        if (reg & 0x08)
+            res.push_back(0x41);
+        res.push_back(0x58 | reg & 0x7);
     }
 
     void addReturn() {
