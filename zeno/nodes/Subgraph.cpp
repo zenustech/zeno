@@ -43,6 +43,9 @@ struct Subgraph : zeno::INode {
         auto subg = graph->sess->graphs.at(name).get();
         assert(subg->sess == graph->sess);
 
+        // VIEW subnodes only if subgraph is VIEW'ed
+        subg->isViewed = has_option("VIEW");
+
         for (auto const &[key, obj]: inputs) {
             subg->subInputs[key] = obj;
         }

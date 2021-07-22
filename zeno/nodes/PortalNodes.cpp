@@ -72,9 +72,22 @@ struct Clone : zeno::INode {
     }
 };
 
-ZENDEFNODE(Clone, {
-    {"object"},
-    {"newObject"},
+struct Assign : zeno::INode {
+    virtual void apply() override {
+        auto src = get_input("src");
+        auto dst = get_input("dst");
+        bool succ = dst->assign(src.get());
+        if (!succ) {
+            printf("ERROR: requested object doesn't support assign or type mismatch\n");
+            return;
+        }
+        set_output("dst", std::move(dst));
+    }
+};
+
+ZENDEFNODE(Assign, {
+    {"dst", "src"},
+    {"dst"},
     {},
     {"portal"},
 });

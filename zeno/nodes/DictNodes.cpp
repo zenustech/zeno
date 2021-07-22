@@ -4,6 +4,7 @@
 #include <zeno/NumericObject.h>
 #include <zeno/safe_at.h>
 
+namespace {
 
 struct DictSize : zeno::INode {
     virtual void apply() override {
@@ -116,3 +117,5 @@ ZENDEFNODE(ExtractDict, {
     {},
     {"dict"},
 });
+
+}

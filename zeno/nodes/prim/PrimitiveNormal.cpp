@@ -11,7 +11,7 @@ namespace zeno {
 
 struct PrimitiveCalcNormal : zeno::INode {
   virtual void apply() override {
-    auto prim = get_input("prim")->as<PrimitiveObject>();
+    auto prim = get_input<PrimitiveObject>("prim");
 
     auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
     auto &pos = prim->attr<zeno::vec3f>("pos");
@@ -30,7 +30,7 @@ struct PrimitiveCalcNormal : zeno::INode {
         nrm[i] = zeno::normalize(nrm[i]);
     }
 
-    set_output_ref("prim", get_input_ref("prim"));
+    set_output("prim", get_input("prim"));
   }
 };
 
@@ -43,7 +43,7 @@ ZENDEFNODE(PrimitiveCalcNormal, {
 
 struct PrimitiveSplitEdges : zeno::INode {
   virtual void apply() override {
-    auto prim = get_input("prim")->as<PrimitiveObject>();
+    auto prim = get_input<PrimitiveObject>("prim");
 
     for (auto &[_, arr]: prim->m_attrs) {
         std::visit([&prim](auto &arr) {
@@ -63,7 +63,7 @@ struct PrimitiveSplitEdges : zeno::INode {
         prim->tris[i] = zeno::vec3i(i * 3 + 0, i * 3 + 1, i * 3 + 2);
     }
 
-    set_output_ref("prim", get_input_ref("prim"));
+    set_output("prim", get_input("prim"));
   }
 };
 

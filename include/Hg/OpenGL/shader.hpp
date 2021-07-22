@@ -6,7 +6,7 @@ namespace hg::OpenGL {
     GLuint sha;
     GLuint target{GL_ARRAY_BUFFER};
 
-    Shader(GLuint type) : target(target) { CHECK_GL(sha = glCreateShader(type)); }
+    Shader(GLuint type) { CHECK_GL(sha = glCreateShader(type)); }
 
     ~Shader() { CHECK_GL(glDeleteShader(sha)); }
 

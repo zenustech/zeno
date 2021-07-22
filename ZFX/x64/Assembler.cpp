@@ -42,24 +42,24 @@ struct ImplAssembler {
                 }
 
             } else if (cmd == "ldp") {
-                // rcx points to an array of constants
+                // rsi points to an array of constants
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
                 nconsts = std::max(nconsts, id + 1);
                 int offset = id * SIMDBuilder::scalarSizeOfType(simdkind);
                 builder->addAvxBroadcastLoadOp(simdkind,
-                    dst, {opreg::rcx, memflag::reg_imm8, offset});
+                    dst, {opreg::rsi, memflag::reg_imm8, offset});
 
             } else if (cmd == "ldl") {
-                // rdx points to an array of variables
+                // rdi points to an array of variables
                 ERROR_IF(linesep.size() < 2);
                 auto dst = from_string<int>(linesep[1]);
                 auto id = from_string<int>(linesep[2]);
                 nlocals = std::max(nlocals, id + 1);
                 int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 builder->addAvxMemoryOp(simdkind, opcode::loadu,
-                    dst, {opreg::rdx, memflag::reg_imm8, offset});
+                    dst, {opreg::rdi, memflag::reg_imm8, offset});
 
             } else if (cmd == "stl") {
                 ERROR_IF(linesep.size() < 2);
@@ -68,7 +68,7 @@ struct ImplAssembler {
                 nlocals = std::max(nlocals, id + 1);
                 int offset = id * SIMDBuilder::sizeOfType(simdkind);
                 builder->addAvxMemoryOp(simdkind, opcode::storeu,
-                    dst, {opreg::rdx, memflag::reg_imm8, offset});
+                    dst, {opreg::rdi, memflag::reg_imm8, offset});
 
             /*} else if (cmd == "ldg") {
                 // rdx points to an array of pointers
@@ -207,11 +207,14 @@ struct ImplAssembler {
             } else if (auto it = std::find(
                 FuncTable::funcnames.begin(), FuncTable::funcnames.end(), cmd);
                 it != FuncTable::funcnames.end()) {
-                // rbx points to an array of function pointers
+                // rdx points to an array of function pointers
                 ERROR_IF(linesep.size() < 2);
                 if (linesep.size() == 3) {
                     auto dst = from_string<int>(linesep[1]);
                     auto src = from_string<int>(linesep[2]);
+                    builder->addPushReg(opreg::rsi);
+                    builder->addPushReg(opreg::rdi);
+                    builder->addPushReg(opreg::rdx);
                     int size = SIMDBuilder::sizeOfType(simdkind);
                     builder->addAdjStackTop(-size);
                     builder->addAvxMemoryOp(simdkind, opcode::storeu,
@@ -219,18 +222,20 @@ struct ImplAssembler {
                     builder->addRegularMoveOp(opreg::rdi, opreg::rsp);
                     int id = it - FuncTable::funcnames.begin();
                     int offset = id * sizeof(void *);
-                    builder->addPushReg(opreg::rcx);
-                    builder->addPushReg(opreg::rdx);
-                    builder->addCallOp({opreg::rbx, memflag::reg_imm8, offset});
-                    builder->addPopReg(opreg::rdx);
-                    builder->addPopReg(opreg::rcx);
+                    builder->addCallOp({opreg::rdx, memflag::reg_imm8, offset});
                     builder->addAvxMemoryOp(simdkind, opcode::loadu,
                         dst, opreg::rsp);
                     builder->addAdjStackTop(size);
+                    builder->addPopReg(opreg::rdx);
+                    builder->addPopReg(opreg::rdi);
+                    builder->addPopReg(opreg::rsi);
                 } else {
                     auto dst = from_string<int>(linesep[1]);
                     auto lhs = from_string<int>(linesep[2]);
                     auto rhs = from_string<int>(linesep[3]);
+                    builder->addPushReg(opreg::rsi);
+                    builder->addPushReg(opreg::rdi);
+                    builder->addPushReg(opreg::rdx);
                     int size = SIMDBuilder::sizeOfType(simdkind);
                     builder->addAdjStackTop(-size);
                     builder->addAvxMemoryOp(simdkind, opcode::storeu,
@@ -242,14 +247,13 @@ struct ImplAssembler {
                     builder->addRegularMoveOp(opreg::rdi, opreg::rsp);
                     int id = it - FuncTable::funcnames.begin();
                     int offset = id * sizeof(void *);
-                    builder->addPushReg(opreg::rcx);
-                    builder->addPushReg(opreg::rdx);
                     builder->addCallOp({opreg::rbx, memflag::reg_imm8, offset});
-                    builder->addPopReg(opreg::rdx);
-                    builder->addPopReg(opreg::rcx);
                     builder->addAvxMemoryOp(simdkind, opcode::loadu,
                         dst, opreg::rsp);
                     builder->addAdjStackTop(size * 2);
+                    builder->addPopReg(opreg::rdx);
+                    builder->addPopReg(opreg::rdi);
+                    builder->addPopReg(opreg::rsi);
                 }
 
             } else {
@@ -272,10 +276,11 @@ struct ImplAssembler {
             functable = std::make_unique<FuncTable>();
         exec->functable = functable->funcptrs.data();
         exec->memsize = (insts.size() + 4095) / 4096 * 4096;
-        exec->mem = exec_page_alloc(exec->memsize);
+        exec->mem = (uint8_t *)exec_page_allocate(exec->memsize);
         for (int i = 0; i < insts.size(); i++) {
             exec->mem[i] = insts[i];
         }
+        exec_page_mark_executable(exec->mem, exec->memsize);
     }
 };
 

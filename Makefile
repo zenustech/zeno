@@ -1,4 +1,4 @@
-O=arts/testforloopover.zsg
+O=arts/ready/HACD.zsg
 
 default: run
 

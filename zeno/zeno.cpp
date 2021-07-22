@@ -25,6 +25,10 @@ ZENAPI std::shared_ptr<IObject> IObject::clone() const {
     return nullptr;
 }
 
+ZENAPI bool IObject::assign(IObject *other) {
+    return false;
+}
+
 ZENAPI void IObject::dumpfile(std::string const &path) {
 }
 
@@ -57,7 +61,7 @@ ZENAPI bool INode::checkApplyCondition() {
     }*/
 
     if (has_option("ONCE")) {
-        if (!zeno::state.isFirstFrame() || !zeno::state.isOneSubstep())
+        if (!zeno::state.isFirstSubstep())
             return false;
     }
 
@@ -96,9 +100,10 @@ ZENAPI void INode::coreApply() {
     }
 
     if (has_option("VIEW")) {
-        if (state.has_substep_executed) {
+        if (!state.isOneSubstep())  // no duplicate view when multi-substep used
             return;
-        }
+        if (!graph->isViewed)  // VIEW subnodes only if subgraph is VIEW'ed
+            return;
         auto desc = nodeClass->desc.get();
         auto id = desc->outputs[0];
         auto obj = safe_at(outputs, id, "output");
@@ -157,9 +162,13 @@ ZENAPI void Graph::applyNode(std::string const &id) {
         return;
     }
     ctx->visited.insert(id);
-    //printf("+ %s\n", id.c_str());
+#ifdef ZENO_DETAILED_LOG
+    printf("+ %s\n", id.c_str());
+#endif
     safe_at(nodes, id, "node")->doApply();
-    //printf("- %s\n", id.c_str());
+#ifdef ZENO_DETAILED_LOG
+    printf("- %s\n", id.c_str());
+#endif
 }
 
 ZENAPI void Graph::applyNodes(std::vector<std::string> const &ids) {
@@ -195,6 +204,12 @@ ZENAPI Session::~Session() = default;
 ZENAPI void Session::_defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls) {
     nodeClasses[id] = std::move(cls);
 }
+
+ZENAPI INodeClass::INodeClass(Descriptor const &desc)
+        : desc(std::make_unique<Descriptor>(desc)) {
+}
+
+ZENAPI INodeClass::~INodeClass() = default;
 
 ZENAPI void Session::switchGraph(std::string const &name) {
     if (graphs.find(name) == graphs.end()) {
