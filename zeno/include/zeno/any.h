@@ -4,14 +4,10 @@
 
 namespace zeno {
 
-/*template <class T>
-struct shared_any_traits {
-};*/
-
 class shared_any {
     struct _AnyBase {
         virtual std::shared_ptr<_AnyBase> clone() const = 0;
-        virtual bool assign(_AnyBase const *) = 0;
+        virtual bool assign(_AnyBase const *b) = 0;
         virtual ~_AnyBase() = default;
     };
 
@@ -33,72 +29,18 @@ class shared_any {
         }
     };
 
-    /*template <class T, class = void>
-    struct _AnyIface : _AnyBase {
-        virtual T const &get() const = 0;
-
-        virtual std::shared_ptr<_AnyBase> clone() const {
-            return std::make_shared<_AnyImpl<T>>(get());
-        }
-
-        virtual bool assign(_AnyBase const *b) {
-            auto p = dynamic_cast<_AnyImpl<T> const *>(b);
-            if (!p) return false;
-            const_cast<T &>(get()) = p->t;
-            return true;
-        }
-    };
-
-    template <class T, class = void>
-    struct _AnyImpl : _AnyIface<T> {
-        T t;
-
-        _AnyImpl(T const &t) : t(t) {}
-
-        virtual T const &get() const {
-            return t;
-        }
-    };
-
-    template <class T>
-    struct _AnyImpl<T, std::void_t<
-            typename shared_any_traits<T>::base
-        >> : _AnyIface<T>
-           , _AnyIface<typename shared_any_traits<T>::base>
-    {
-        T t;
-
-        _AnyImpl(T const &t) : t(t) {}
-
-        virtual T const &get() const {
-            return t;
-        }
-
-        virtual std::shared_ptr<_AnyBase> clone() const {
-            return std::make_shared<_AnyImpl<T>>(t);
-        }
-
-        virtual bool assign(_AnyBase const *b) {
-            auto p = dynamic_cast<_AnyImpl<T> const *>(b);
-            if (!p) return false;
-            t = p->t;
-            return true;
-        }
-    };*/
-
     std::shared_ptr<_AnyBase> m_ptr;
 
+    shared_any(std::shared_ptr<_AnyBase> ptr)
+        : m_ptr(ptr) {}
+
 public:
-    shared_any() : m_ptr(nullptr) {}
     ~shared_any() = default;
+    shared_any() : m_ptr(nullptr) {}
+    shared_any(std::nullptr_t) : m_ptr(nullptr) {}
     shared_any(shared_any &&a) = default;
     shared_any(shared_any const &a)
         : m_ptr(a.m_ptr)
-    {}
-
-    template <class T>
-    shared_any(T const &t)
-        : m_ptr(std::make_shared<_AnyImpl<T>>(t))
     {}
 
     shared_any &operator=(std::nullptr_t) {
@@ -123,14 +65,12 @@ public:
         return *cast<T>();
     }
 
-    template <class T>
-    shared_any &operator=(T const &t) {
-        emplace<T>(t);
-        return *this;
-    }
-
     void assign(shared_any const &a) const {
         m_ptr->assign(a.m_ptr.get());
+    }
+
+    shared_any clone() const {
+        return {m_ptr->clone()};
     }
 
     template <class T, class ...Ts>

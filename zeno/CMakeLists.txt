@@ -1,4 +1,4 @@
-file(GLOB ZENO_SOURCE *.cpp nodes/*.cpp nodes/*/*.cpp include/*/*.h)
+file(GLOB ZENO_SOURCE *.cpp include/*/*.h)# nodes/*.cpp nodes/*/*.cpp)
 add_library(zeno SHARED ${ZENO_SOURCE})
 if (UNIX)
 	target_link_libraries(zeno PRIVATE stdc++fs)  # for Ubuntu 18.04 <experimental/filesystem>
