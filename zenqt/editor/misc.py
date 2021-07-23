@@ -27,6 +27,7 @@ style = {
     'ramp_width': 10,
     'dummy_socket_width': 5,
     'dummy_socket_height': 40,
+    'collapse_svg_size': 28,
 
     'line_width': 3,
     'ramp_outline_width': 2,
