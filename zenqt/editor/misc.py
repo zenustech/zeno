@@ -30,6 +30,7 @@ style = {
     'button_svg_size': 34,
     'button_svg_offset_x': 38,
     'button_svg_offset_y': 38,
+    'collapse_svg_size': 28,
 
     'line_width': 3,
     'ramp_outline_width': 2,
