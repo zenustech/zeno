@@ -8,7 +8,7 @@ struct SubInput : zeno::INode {
     virtual void apply() override {
         auto name = get_param<std::string>("name");
         auto obj = zeno::safe_at(graph->subInputs, name, "subinput");
-        set_output("port", std::move(obj));
+        _set_output("port", std::move(obj));
     }
 };
 
@@ -23,7 +23,7 @@ ZENDEFNODE(SubInput, {
 struct SubOutput : zeno::INode {
     virtual void apply() override {
         auto name = get_param<std::string>("name");
-        auto obj = get_input("port");
+        auto obj = _get_input("port");
         graph->subOutputs[name] = std::move(obj);
     }
 };
@@ -60,7 +60,7 @@ struct Subgraph : zeno::INode {
         subg->applyNodes(applies);
 
         for (auto &[key, obj]: subg->subOutputs) {
-            set_output(key, std::move(obj));
+            _set_output(key, std::move(obj));
         }
 
         subg->subInputs.clear();
