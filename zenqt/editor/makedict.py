@@ -145,12 +145,12 @@ class QDMGraphicsNode_MakeDict(QDMGraphicsNode):
 
     def add_new_key(self):
         self.socket_keys.append('obj{}'.format(len(self.socket_keys)))
-        self.reloadSockets()
+        self.reloadUI()
 
     def del_last_key(self):
         if len(self.socket_keys):
             self.socket_keys.pop()
-            self.reloadSockets()
+            self.reloadUI()
 
     def dump(self):
         ident, data = super().dump()
@@ -215,12 +215,12 @@ class QDMGraphicsNode_ExtractDict(QDMGraphicsNode):
 
     def add_new_key(self):
         self.socket_keys.append('obj{}'.format(len(self.socket_keys)))
-        self.reloadSockets()
+        self.reloadUI()
 
     def del_last_key(self):
         if len(self.socket_keys):
             self.socket_keys.pop()
-            self.reloadSockets()
+            self.reloadUI()
 
     def dump(self):
         ident, data = super().dump()

@@ -93,7 +93,7 @@ class QDMGraphicsNode(QGraphicsItem):
             button.setText(key)
             self.options[key] = button
 
-    def resetSockets(self):
+    def resetUI(self):
         self.height = 0
         for param in list(self.params.values()):
             self.scene().removeItem(param)
@@ -309,10 +309,10 @@ class QDMGraphicsNode(QGraphicsItem):
                             dest = node.inputs[ds]
                             self.scene().addEdge(socket, dest)
 
-    def reloadSockets(self):
+    def reloadUI(self):
         edges = self.saveEdges()
-        self.resetSockets()
-        self.initSockets()
+        self.resetUI()
+        self.initUI()
         self.restoreEdges(edges)
     
     def load(self, ident, data):
