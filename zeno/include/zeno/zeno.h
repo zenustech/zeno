@@ -127,13 +127,13 @@ protected:
         return {_get_input(id)};
     }
 
-    //[[deprecated("use shared_any::make instead of std::make_shared<T>")]]
+    [[deprecated("use zeno::make_shared<T> instead of std::make_shared<T>")]]
     ZENAPI void set_output(std::string const &id,
         std::shared_ptr<IObject> &&obj) {
         _set_output(id, shared_any::make<std::shared_ptr<IObject>>(obj));
     }
 
-    //[[deprecated("use shared_any::make instead of std::make_shared<T>")]]
+    [[deprecated("use zeno::make_shared<T> instead of std::make_shared<T>")]]
     auto get_input(std::string const &id) const {
         return _get_input(id).get<std::shared_ptr<IObject>>();
     }

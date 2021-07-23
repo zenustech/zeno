@@ -14,6 +14,16 @@ struct poly_base_of<T, std::void_t<typename T::poly_base>> : std::true_type {
     using type = typename T::poly_base;
 };
 
+template <class T, class = void>
+struct has_assign : std::false_type {
+};
+
+template <class T>
+struct has_assign<T,
+    std::void_t<decltype(std::declval<T &>() = std::declval<T>())>>
+    : std::true_type {
+};
+
 class shared_any {
     struct _AnyBase {
         virtual std::shared_ptr<_AnyBase> clone() const = 0;
@@ -40,7 +50,7 @@ class shared_any {
         }
     };
 
-    template <class T>
+    template <class T, class = void>
     struct _AnyPtr : std::unique_ptr<T> {
         using std::unique_ptr<T>::unique_ptr;
         using std::unique_ptr<T>::operator=;
@@ -178,15 +188,11 @@ public:
     }
 };
 
-template <class T, class ...Ts>
-inline shared_any make_shared(Ts &&...ts) {
-    return shared_any::make<T, Ts...>(std::forward<Ts>(ts)...);
-}
-
 template <class T>
-struct shared_cast {
+class shared_cast {
     shared_any m_any;
 
+public:
     shared_cast() : m_any(nullptr) {}
     shared_cast(shared_any const &a) {
         *this = a;
@@ -216,9 +222,30 @@ struct shared_cast {
         return *get();
     }
 
+    operator shared_any() const {
+        return m_any;
+    }
+
     operator bool() const {
         return (bool)m_any;
     }
+
+    template <class ...Ts>
+    void emplace(Ts &&...ts) {
+        m_any = shared_any::make<T>(std::forward<Ts>(ts)...);
+    }
+
+    template <class ...Ts>
+    static shared_cast make(Ts &&...ts) {
+        shared_cast c;
+        c.emplace<Ts...>(std::forward<Ts>(ts)...);
+        return c;
+    }
 };
+
+template <class T, class ...Ts>
+inline shared_cast<T> make_shared(Ts &&...ts) {
+    return shared_cast<T>::template make<Ts...>(std::forward<Ts>(ts)...);
+}
 
 }

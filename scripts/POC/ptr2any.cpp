@@ -6,9 +6,7 @@ using namespace zeno;
 struct IObject {
     using poly_base = IObject;
 
-    virtual void hello() const {
-        printf("IObject\n");
-    }
+    virtual void hello() const {}
 };
 
 struct DemoObject : IObject {
@@ -17,10 +15,15 @@ struct DemoObject : IObject {
     }
 };
 
+struct TestObject : IObject {
+    virtual void hello() const {
+        printf("TestObject\n");
+    }
+};
+
 int main() {
     auto x = make_shared<DemoObject>();
-    auto p = shared_cast<IObject>(x);
-    p->hello();
+    auto y = make_shared<TestObject>();
     return 0;
 }
 
