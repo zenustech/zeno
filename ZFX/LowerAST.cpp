@@ -81,12 +81,16 @@ struct LowerAST {
     std::map<std::string, TempSymbolStmt *> tempsyms;
     int tmpid = 0;
 
+    std::map<int, std::string> temporaries;
+
     TempSymbolStmt *emplace_temporary_symbol(std::string const &name) {
         if (auto it = tempsyms.find(name); it != tempsyms.end()) {
             return it->second;
         }
-        auto ret = ir->emplace_back<TempSymbolStmt>(tmpid++, std::vector<int>{});
+        auto id = tmpid++;
+        auto ret = ir->emplace_back<TempSymbolStmt>(id, std::vector<int>{});
         tempsyms[name] = ret;
+        temporaries[id] = name;
         return ret;
     }
 
@@ -193,6 +197,7 @@ std::tuple
     < std::unique_ptr<IR>
     , std::vector<std::pair<std::string, int>>
     , std::vector<std::pair<std::string, int>>
+    , std::map<int, std::string>
     > lower_ast
     ( std::vector<AST::Ptr> asts
     , std::map<std::string, int> const &symdims
@@ -206,10 +211,12 @@ std::tuple
     }
     auto symbols = lower.getSymbols();
     auto params = lower.getParams();
+    auto temporaries = lower.temporaries;
     return
         { std::move(lower.ir)
         , symbols
         , params
+        , temporaries
         };
 }
 

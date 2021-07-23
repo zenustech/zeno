@@ -323,6 +323,8 @@ class QDMGraphicsView(QGraphicsView):
             connectWith('FuncEnd', 'FUNC')
 
     def mouseDoubleClickEvent(self, event):
+        super().mouseDoubleClickEvent(event)
+
         itemList = self.scene().selectedItems()
         itemList = [n for n in itemList if isinstance(n, QDMGraphicsNode)]
         if len(itemList) != 1:

@@ -27,12 +27,14 @@ static T prim_reduce(PrimitiveObject *prim, std::string channel, std::string typ
 		for (int i = 1; i < temp.size(); i++) {
 			total = zeno::max(total, temp[i]);
 		}
+        return total;   
     }
     if(type==std::string("min")){
 		T total = temp[0];
 		for (int i = 1; i < temp.size(); i++) {
 			total = zeno::min(total, temp[i]);
 		}
+        return total;
     }
     if(type==std::string("absmax"))
     {

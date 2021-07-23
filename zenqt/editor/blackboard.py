@@ -39,10 +39,12 @@ class QDMGraphicsBlackboardResizeHelper(QGraphicsItem):
 
     def hoverEnterEvent(self, event):
         self.node.setFlag(QGraphicsItem.ItemIsMovable, False)
+        super().hoverEnterEvent(event)
         self.setCursor(Qt.SizeFDiagCursor)
 
     def hoverLeaveEvent(self, event):
         self.node.setFlag(QGraphicsItem.ItemIsMovable, True)
+        super().hoverLeaveEvent(event)
         self.setCursor(Qt.ArrowCursor)
 
 

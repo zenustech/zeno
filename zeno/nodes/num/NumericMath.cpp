@@ -3,6 +3,12 @@
 
 namespace {
 
+#ifdef _MSC_VER
+static inline double drand48() {
+	return rand() / (double)RAND_MAX;
+}
+#endif
+
 using namespace zeno;
 
 struct MakeOrthonormalBase : INode {

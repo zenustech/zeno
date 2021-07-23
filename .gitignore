@@ -36,8 +36,10 @@ compile_commands.json
 *.ilk
 *.manifest
 *.exp
-/CMakeSettings.json
+CMakeSettings.json
 
 # binary folders
 /zeno/lib/
 /zenv/
+zeno-windows-*
+zeno-linux-*

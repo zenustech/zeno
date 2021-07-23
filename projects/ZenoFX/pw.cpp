@@ -60,6 +60,7 @@ struct ParticlesWrangle : zeno::INode {
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
         zfx::Options opts(zfx::Options::for_x64);
+        opts.detect_new_symbols = true;
         for (auto const &[key, attr]: prim->m_attrs) {
             int dim = std::visit([] (auto const &v) {
                 using T = std::decay_t<decltype(v[0])>;
@@ -101,6 +102,22 @@ struct ParticlesWrangle : zeno::INode {
 
         auto prog = compiler.compile(code, opts);
         auto exec = assembler.assemble(prog->assembly);
+
+        for (auto const &[name, dim]: prog->newsyms) {
+            printf("auto-defined new attribute: %s with dim %d\n",
+                    name.c_str(), dim);
+            assert(name[0] == '@');
+            auto key = name.substr(1);
+            if (dim == 3) {
+                prim->add_attr<zeno::vec3f>(key);
+            } else if (dim == 1) {
+                prim->add_attr<float>(key);
+            } else {
+                printf("ERROR: bad attribute dimension for primitive: %d\n",
+                    dim);
+                abort();
+            }
+        }
 
         std::vector<float> pars(prog->params.size());
         for (int i = 0; i < pars.size(); i++) {

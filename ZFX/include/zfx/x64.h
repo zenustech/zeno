@@ -20,15 +20,8 @@ struct Executable {
         float locals[SimdWidth * 256];
 
         void execute() {
-            asm volatile (
-                "call *(%%rax)"  // why `call *%%rax` gives CE...
-                :
-                : "a" ((uintptr_t)(void *)&exec->mem)
-                , "b" ((uintptr_t)(void *)exec->functable)
-                , "c" ((uintptr_t)(void *)&exec->consts[0])
-                , "d" ((uintptr_t)(void *)&locals[0])
-                : "cc", "memory"
-                );
+            auto entry = (void(*)(void *, void *, void *))exec->mem;
+            entry((void *)locals, (void *)exec->consts, (void *)exec->functable);
         }
 
         float *channel(int chid) {
