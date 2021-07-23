@@ -19,6 +19,7 @@ from .misc import *
 from .edge import *
 from .param import *
 from .socket import *
+from .button import *
 from .node import *
 from .blackboard import *
 from .makedict import *

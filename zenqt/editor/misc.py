@@ -27,6 +27,10 @@ style = {
     'ramp_width': 10,
     'dummy_socket_width': 5,
     'dummy_socket_height': 40,
+    'button_svg_size': 34,
+    'button_svg_offset_x': 38,
+    'button_svg_offset_y': 38,
+    'collapse_svg_size': 28,
 
     'line_width': 3,
     'ramp_outline_width': 2,
@@ -52,6 +56,8 @@ style = {
     'node_top_bat_height': 42,
     'title_outline_color': '#787878',
     'panel_outline_color': '#4A4A4A',
+    'top_svg_size': 24,
+    'top_svg_padding': 5,
     'gap': 1,
 }
 
