@@ -41,21 +41,21 @@ class shared_any {
     };
 
     template <class T>
-    struct copiable_unique_ptr : std::unique_ptr<T> {
+    struct _AnyPtr : std::unique_ptr<T> {
         using std::unique_ptr<T>::unique_ptr;
         using std::unique_ptr<T>::operator=;
 
-        copiable_unique_ptr &operator=(copiable_unique_ptr const &o) {
+        _AnyPtr &operator=(_AnyPtr const &o) {
             std::unique_ptr<T>::operator=(std::unique_ptr<T>(
                 std::make_unique<T>(static_cast<T const &>(*o))));
             return *this;
         }
 
-        copiable_unique_ptr(std::unique_ptr<T> &&o)
+        _AnyPtr(std::unique_ptr<T> &&o)
             : std::unique_ptr<T>(std::move(o)) {
         }
 
-        copiable_unique_ptr(copiable_unique_ptr const &o)
+        _AnyPtr(_AnyPtr const &o)
             : std::unique_ptr<T>(std::make_unique<T>(
                 static_cast<T const &>(*o))) {
         }
@@ -65,9 +65,9 @@ class shared_any {
     };
 
     template <class T>
-    struct _AnyImpl<copiable_unique_ptr<T>,
+    struct _AnyImpl<_AnyPtr<T>,
         std::void_t<typename poly_base_of<T>::type>> : _AnyBase {
-        using P = copiable_unique_ptr<typename poly_base_of<T>::type>;
+        using P = _AnyPtr<typename poly_base_of<T>::type>;
 
         P t;
 
@@ -112,7 +112,7 @@ public:
 
     template <class T, std::enable_if_t<poly_base_of<T>::value, int> = 0>
     T *cast() const {
-        using P = copiable_unique_ptr<typename poly_base_of<T>::type>;
+        using P = _AnyPtr<typename poly_base_of<T>::type>;
         auto p = dynamic_cast<_AnyImpl<P> *>(m_ptr.get());
         if (!p) return nullptr;
         auto q = p->t.get();
@@ -128,7 +128,7 @@ public:
 
     template <class T, std::enable_if_t<poly_base_of<T>::value, int> = 0>
     T *unsafe_cast() const {
-        using P = copiable_unique_ptr<typename poly_base_of<T>::type>;
+        using P = _AnyPtr<typename poly_base_of<T>::type>;
         auto p = static_cast<_AnyImpl<P> *>(m_ptr.get());
         return static_cast<T *>(p->t.get());
     }
@@ -165,7 +165,7 @@ public:
     template <class T, class ...Ts,
              std::enable_if_t<poly_base_of<T>::value, int> = 0>
     void emplace(Ts &&...ts) {
-        using P = copiable_unique_ptr<typename poly_base_of<T>::type>;
+        using P = _AnyPtr<typename poly_base_of<T>::type>;
         m_ptr = std::make_shared<_AnyImpl<P>>(
                 std::make_unique<T>(std::forward<Ts>(ts)...));
     }
@@ -177,6 +177,11 @@ public:
         return a;
     }
 };
+
+template <class T, class ...Ts>
+inline shared_any make_shared(Ts &&...ts) {
+    return shared_any::make<T, Ts...>(std::forward<Ts>(ts)...);
+}
 
 template <class T>
 struct shared_cast {
@@ -196,6 +201,7 @@ struct shared_cast {
             m_any = nullptr;
         else
             m_any = a;
+        return *this;
     }
 
     T *get() const {
