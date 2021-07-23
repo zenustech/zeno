@@ -478,6 +478,10 @@ struct AsmAssignStmt : AsmStmt<AsmAssignStmt> {
     virtual int affect_register() const override {
         return src == dst ? -1 : dst;
     }
+
+    virtual std::vector<int> source_registers() const override {
+        return {src};
+    }
 };
 
 struct AsmLoadConstStmt : AsmStmt<AsmLoadConstStmt> {
@@ -504,6 +508,10 @@ struct AsmLoadConstStmt : AsmStmt<AsmLoadConstStmt> {
 
     virtual int affect_register() const override {
         return dst;
+    }
+
+    virtual std::vector<int> source_registers() const override {
+        return {};
     }
 };
 
@@ -540,6 +548,10 @@ struct AsmBinaryOpStmt : AsmStmt<AsmBinaryOpStmt> {
     virtual int affect_register() const override {
         return dst;
     }
+
+    virtual std::vector<int> source_registers() const override {
+        return {lhs, rhs};
+    }
 };
 
 struct AsmUnaryOpStmt : AsmStmt<AsmUnaryOpStmt> {
@@ -570,6 +582,10 @@ struct AsmUnaryOpStmt : AsmStmt<AsmUnaryOpStmt> {
 
     virtual int affect_register() const override {
         return dst;
+    }
+
+    virtual std::vector<int> source_registers() const override {
+        return {src};
     }
 };
 
@@ -602,6 +618,10 @@ struct AsmFuncCallStmt : AsmStmt<AsmFuncCallStmt> {
     virtual int affect_register() const override {
         return dst;
     }
+
+    virtual std::vector<int> source_registers() const override {
+        return args;
+    }
 };
 
 struct AsmLocalStoreStmt : AsmStmt<AsmLocalStoreStmt> {
@@ -628,6 +648,10 @@ struct AsmLocalStoreStmt : AsmStmt<AsmLocalStoreStmt> {
 
     virtual int affect_register() const override {
         return -1;
+    }
+
+    virtual std::vector<int> source_registers() const override {
+        return {val};
     }
 };
 
@@ -656,6 +680,10 @@ struct AsmLocalLoadStmt : AsmStmt<AsmLocalLoadStmt> {
     virtual int affect_register() const override {
         return val;
     }
+
+    virtual std::vector<int> source_registers() const override {
+        return {};
+    }
 };
 
 struct AsmGlobalStoreStmt : AsmStmt<AsmGlobalStoreStmt> {
@@ -682,6 +710,10 @@ struct AsmGlobalStoreStmt : AsmStmt<AsmGlobalStoreStmt> {
 
     virtual int affect_register() const override {
         return -1;
+    }
+
+    virtual std::vector<int> source_registers() const override {
+        return {val};
     }
 };
 
@@ -710,6 +742,10 @@ struct AsmGlobalLoadStmt : AsmStmt<AsmGlobalLoadStmt> {
     virtual int affect_register() const override {
         return val;
     }
+
+    virtual std::vector<int> source_registers() const override {
+        return {};
+    }
 };
 
 struct AsmParamLoadStmt : AsmStmt<AsmParamLoadStmt> {
@@ -737,6 +773,10 @@ struct AsmParamLoadStmt : AsmStmt<AsmParamLoadStmt> {
     virtual int affect_register() const override {
         return val;
     }
+
+    virtual std::vector<int> source_registers() const override {
+        return {};
+    }
 };
 
 struct AsmIfStmt : AsmStmt<AsmIfStmt> {
@@ -759,6 +799,10 @@ struct AsmIfStmt : AsmStmt<AsmIfStmt> {
 
     virtual int affect_register() const override {
         return -1;
+    }
+
+    virtual std::vector<int> source_registers() const override {
+        return {cond};
     }
 };
 
@@ -783,6 +827,10 @@ struct AsmElseIfStmt : AsmStmt<AsmElseIfStmt> {
     virtual int affect_register() const override {
         return -1;
     }
+
+    virtual std::vector<int> source_registers() const override {
+        return {cond};
+    }
 };
 
 struct AsmElseStmt : AsmStmt<AsmElseStmt> {
@@ -801,6 +849,10 @@ struct AsmElseStmt : AsmStmt<AsmElseStmt> {
     virtual int affect_register() const override {
         return -1;
     }
+
+    virtual std::vector<int> source_registers() const override {
+        return {};
+    }
 };
 
 struct AsmEndIfStmt : AsmStmt<AsmEndIfStmt> {
@@ -818,6 +870,10 @@ struct AsmEndIfStmt : AsmStmt<AsmEndIfStmt> {
 
     virtual int affect_register() const override {
         return -1;
+    }
+
+    virtual std::vector<int> source_registers() const override {
+        return {};
     }
 };
 

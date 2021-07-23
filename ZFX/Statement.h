@@ -24,10 +24,19 @@ struct Statement {
 
     virtual std::string to_string() const = 0;
     virtual std::unique_ptr<Statement> clone(int newid) const = 0;
-    virtual int affect_register() const = 0;
-    virtual bool is_control_stmt() const = 0;
     virtual StmtFields fields() = 0;
     virtual ~Statement() = default;
+
+    virtual bool is_control_stmt() const {
+        return false;
+    }
+
+    virtual int affect_register() const {
+        return -1;
+    }
+    virtual std::vector<int> source_registers() const {
+        return {};
+    }
 };
 
 template <class T>
@@ -38,14 +47,6 @@ struct Stmt : Statement {
         auto ret = std::make_unique<T>(static_cast<T const &>(*this));
         ret->id = newid;
         return ret;
-    }
-
-    virtual int affect_register() const override {
-        return -1;
-    }
-
-    virtual bool is_control_stmt() const override {
-        return false;
     }
 };
 
