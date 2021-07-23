@@ -35,8 +35,6 @@ class QDMGraphicsTopButton(QGraphicsSvgItem):
         self._renderer.setAspectRatioMode(Qt.KeepAspectRatio)
         self.setSharedRenderer(self._renderer)
 
-        self.setChecked(False)
-
     def setText(self, name):
         self.name = name
         self.svg_active_path = 'node-button/' + name + '-active.svg'
@@ -51,11 +49,12 @@ class QDMGraphicsTopButton(QGraphicsSvgItem):
     def paint(self, painter, styleOptions, widget=None):
         button_color = style['top_button_color']
         painter.fillRect(*self.getCircleBounds(), QColor(button_color))
-        self.update_svg()
         self.renderer().render(painter, self.boundingRect())
 
     def setChecked(self, checked):
         self.checked = checked
+        self.update_svg()
+        self.update()
 
     def setWidthHeight(self, width, height):
         self._width = width
@@ -66,7 +65,6 @@ class QDMGraphicsTopButton(QGraphicsSvgItem):
 
     def mousePressEvent(self, event):
         self.on_click()
-        self.update()
 
     def setGeometry(self, rect):
         x = rect.x()
