@@ -62,26 +62,18 @@ ZENDEFNODE(Route, {
 
 struct Clone : zeno::INode {
     virtual void apply() override {
-        auto obj = get_input("object");
-        auto newobj = obj->clone();
-        if (!newobj) {
-            printf("ERROR: requested object doesn't support clone\n");
-            return;
-        }
-        set_output("newObject", std::move(newobj));
+        auto obj = _get_input("object");
+        auto newobj = obj.clone();
+        _set_output("newObject", std::move(newobj));
     }
 };
 
 struct Assign : zeno::INode {
     virtual void apply() override {
-        auto src = get_input("src");
-        auto dst = get_input("dst");
-        bool succ = dst->assign(src.get());
-        if (!succ) {
-            printf("ERROR: requested object doesn't support assign or type mismatch\n");
-            return;
-        }
-        set_output("dst", std::move(dst));
+        auto src = _get_input("src");
+        auto dst = _get_input("dst");
+        dst.assign(src);
+        _set_output("dst", std::move(dst));
     }
 };
 
