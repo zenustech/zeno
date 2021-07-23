@@ -8,6 +8,7 @@ std::tuple
     < std::string
     , std::vector<std::pair<std::string, int>>
     , std::vector<std::pair<std::string, int>>
+    , std::map<std::string, int>
     > compile_to_assembly
     ( std::string const &code
     , Options const &options
@@ -35,6 +36,7 @@ std::tuple
         [ ir
         , symbols
         , params
+        , temporaries
         ] = lower_ast
         ( std::move(asts)
         , options.symdims
@@ -68,6 +70,18 @@ std::tuple
     ir->print();
 #endif
 
+    std::map<std::string, int> newsyms;
+    if (options.detect_new_symbols) {
+#ifdef ZFX_PRINT_IR
+        cout << "=== DetectNewSymbols" << endl;
+#endif
+        newsyms = apply_detect_new_symbols(
+                ir.get(), temporaries, symbols);
+#ifdef ZFX_PRINT_IR
+        ir->print();
+#endif
+    }
+
 #ifdef ZFX_PRINT_IR
     cout << "=== ExpandFunctions" << endl;
 #endif
@@ -94,9 +108,9 @@ std::tuple
 
     if (options.demote_math_funcs) {
 #ifdef ZFX_PRINT_IR
-        cout << "=== MathFunctions" << endl;
+        cout << "=== DemoteMathFuncs" << endl;
 #endif
-        ir = apply_math_functions(ir.get());
+        ir = apply_demote_math_funcs(ir.get());
 #ifdef ZFX_PRINT_IR
         ir->print();
 #endif
@@ -149,7 +163,8 @@ std::tuple
 #ifdef ZFX_PRINT_IR
         cout << "=== RegisterAllocation" << endl;
 #endif
-        apply_register_allocation(ir.get(), options.arch_maxregs);
+        int memsize = apply_register_allocation(ir.get(),
+                options.arch_maxregs);
 #ifdef ZFX_PRINT_IR
         ir->print();
 #endif
@@ -158,7 +173,8 @@ std::tuple
 #ifdef ZFX_PRINT_IR
             cout << "=== SaveMathRegisters" << endl;
 #endif
-            ir = apply_save_math_registers(ir.get(), options.arch_maxregs);
+            ir = apply_save_math_registers(ir.get(),
+                    options.arch_maxregs, memsize);
 #ifdef ZFX_PRINT_IR
             ir->print();
 #endif
@@ -212,6 +228,7 @@ std::tuple
         { assem
         , symbols
         , params
+        , newsyms
         };
 }
 

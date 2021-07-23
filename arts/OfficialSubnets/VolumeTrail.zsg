@@ -35,15 +35,19 @@
        "value"
       ],
       "center": [
-       "0bbbe5a1-NumericVec3",
-       "vec3"
+       "48703877-NumericOperator",
+       "ret"
+      ],
+      "heatmap": [
+       "f416fd5c-MakeHeatmap",
+       "heatmap"
       ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      886.8009765624995,
-      -41.969921874999855
+      1063.0509765624993,
+      -61.96992187499984
      ],
      "options": [
       "VIEW"
@@ -55,13 +59,15 @@
       "SRC": null
      },
      "params": {
-      "value": 3
+      "value": 7
      },
      "uipos": [
       85.4990234375004,
       322.73925781250006
      ],
-     "options": []
+     "options": [
+      "collapsed"
+     ]
     },
     "55744ef0-x": {
      "name": "NumericFloat",
@@ -72,10 +78,12 @@
       "value": 0.01
      },
      "uipos": [
-      85.60253906250043,
-      181.14941406249994
+      95.36816406250037,
+      196.77441406249994
      ],
-     "options": []
+     "options": [
+      "collapsed"
+     ]
     },
     "548d12d0-ReadVDBGrid": {
      "name": "ReadVDBGrid",
@@ -84,11 +92,11 @@
      },
      "params": {
       "type": "float3",
-      "path": "assets/smokevel.{frame%10+46}.vdb"
+      "path": "assets/smoke/smoke.{frame%20+30}.vdb"
      },
      "uipos": [
-      -1186.400634765624,
-      150.9544677734376
+      -1378.197509765624,
+      210.7200927734376
      ],
      "options": []
     },
@@ -98,11 +106,11 @@
       "SRC": null
      },
      "params": {
-      "value": 256
+      "value": 64
      },
      "uipos": [
-      34.514648437500455,
-      -68.21386718749984
+      114.59277343750038,
+      -72.12011718749983
      ],
      "options": [
       "collapsed"
@@ -114,13 +122,13 @@
       "SRC": null
      },
      "params": {
-      "x": 0.8,
+      "x": 0.01,
       "y": 0.0,
       "z": 0.0
      },
      "uipos": [
-      -120.98535156249955,
-      -31.026367187499844
+      -572.9384765624995,
+      -9.698242187499972
      ],
      "options": [
       "PREP",
@@ -133,11 +141,11 @@
       "SRC": null
      },
      "params": {
-      "value": 3.0
+      "value": 5.0
      },
      "uipos": [
-      -123.17285156249997,
-      -0.9013671874999574
+      -499.96972656249983,
+      317.61425781249994
      ],
      "options": [
       "collapsed"
@@ -152,8 +160,8 @@
       "value": 3
      },
      "uipos": [
-      65.57714843750048,
-      12.411132812500043
+      75.34277343750048,
+      -30.557617187499925
      ],
      "options": [
       "collapsed"
@@ -168,8 +176,8 @@
       "value": 1
      },
      "uipos": [
-      -22.934326171875746,
-      641.0031616210939
+      -48.99682617187573,
+      588.3937866210939
      ],
      "options": [
       "collapsed"
@@ -200,7 +208,7 @@
        "value"
       ],
       "size": [
-       "8f8068f2-x",
+       "caa26652-NumericFloat",
        "value"
       ],
       "dir": [
@@ -211,12 +219,16 @@
        "76b013ab-x",
        "vec3"
       ],
+      "heatmap": [
+       "f416fd5c-MakeHeatmap",
+       "heatmap"
+      ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      870.2924316406247,
-      511.1426147460935
+      1065.2924316406247,
+      493.6426147460934
      ],
      "options": [
       "VIEW"
@@ -233,8 +245,8 @@
       "z": 0.0
      },
      "uipos": [
-      -23.758544921875043,
-      770.6310913085946
+      -33.524169921875014,
+      743.2873413085946
      ],
      "options": [
       "collapsed"
@@ -246,27 +258,106 @@
       "SRC": null
      },
      "params": {
-      "value": 128
+      "value": 64
      },
      "uipos": [
-      -143.95678710937486,
-      691.6281616210939
+      -141.7692871093749,
+      675.034411621094
      ],
      "options": [
       "collapsed"
      ]
     },
-    "8f8068f2-x": {
-     "name": "NumericFloat",
+    "f416fd5c-MakeHeatmap": {
+     "name": "MakeHeatmap",
      "inputs": {
       "SRC": null
      },
      "params": {
-      "value": 3.0
+      "nres": 1024,
+      "_RAMPS": "5\n0 0 0 1\n0.1975824175824178 0 1 1\n0.4780219780219783 0 1 0\n0.7079670329670328 1 1 0\n1 1 0 0"
      },
      "uipos": [
-      -146.99194335937588,
-      721.2961303710939
+      608.8781249999998,
+      265.49687499999993
+     ],
+     "options": [],
+     "color_ramps": [
+      [
+       0,
+       [
+        0,
+        0,
+        1
+       ]
+      ],
+      [
+       0.1975824175824178,
+       [
+        0,
+        1,
+        1
+       ]
+      ],
+      [
+       0.4780219780219783,
+       [
+        0,
+        1,
+        0
+       ]
+      ],
+      [
+       0.7079670329670328,
+       [
+        1,
+        1,
+        0
+       ]
+      ],
+      [
+       1,
+       [
+        1,
+        0,
+        0
+       ]
+      ]
+     ]
+    },
+    "48703877-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "0bbbe5a1-NumericVec3",
+       "vec3"
+      ],
+      "rhs": [
+       "e0c6ec1d-GetFrameNum",
+       "FrameNum"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      -231.24999999999997,
+      85.70312499999993
+     ],
+     "options": [
+      "collapsed"
+     ]
+    },
+    "e0c6ec1d-GetFrameNum": {
+     "name": "GetFrameNum",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -530.0,
+      47.5
      ],
      "options": [
       "collapsed"
@@ -274,9 +365,9 @@
     }
    },
    "view": {
-    "scale": 0.40960000000000013,
-    "trans_x": -522,
-    "trans_y": -130
+    "scale": 0.5120000000000003,
+    "trans_x": -577,
+    "trans_y": 113
    }
   },
   "VolumeTrail": {
@@ -370,8 +461,8 @@
      },
      "params": {},
      "uipos": [
-      1139.75,
-      251.0
+      969.7500000000002,
+      244.7500000000001
      ],
      "options": []
     },
@@ -393,7 +484,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "b3730f0d-x",
+       "68cd912e-PrimitiveColorByHeatmap",
        "prim"
       ],
       "SRC": null
@@ -402,8 +493,8 @@
       "name": "VolumeTrails"
      },
      "uipos": [
-      2547.640625,
-      449.8125000000001
+      2881.390624999999,
+      407.31250000000017
      ],
      "options": []
     },
@@ -416,8 +507,8 @@
       "name": "steps"
      },
      "uipos": [
-      696.0,
-      87.63750000000005
+      416.0000000000002,
+      76.3875000000001
      ],
      "options": []
     },
@@ -436,8 +527,8 @@
       "type": "float3"
      },
      "uipos": [
-      -864.3499999999998,
-      78.40000000000006
+      -871.8499999999997,
+      77.15000000000006
      ],
      "options": []
     },
@@ -621,7 +712,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@clr=abs(@vel)/5"
+      "value": "@speed = length(@vel)"
      },
      "uipos": [
       1591.7202148437505,
@@ -638,8 +729,8 @@
       "_KEYS": ""
      },
      "uipos": [
-      1734.9744750976565,
-      487.15852050781245
+      1554.9744750976568,
+      477.1585205078124
      ],
      "options": [],
      "socket_keys": []
@@ -648,7 +739,7 @@
      "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       "7ea13b64-TraceOneStep",
+       "0ebcf8f7-PrimitiveAddAttr",
        "prim"
       ],
       "zfxCode": [
@@ -663,18 +754,120 @@
      },
      "params": {},
      "uipos": [
-      2166.4829101562505,
-      248.7477294921875
+      1930.23291015625,
+      288.7477294921874
+     ],
+     "options": []
+    },
+    "0ebcf8f7-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "7ea13b64-TraceOneStep",
+       "prim"
+      ],
+      "fillValue": null,
+      "SRC": null
+     },
+     "params": {
+      "name": "speed",
+      "type": "float"
+     },
+     "uipos": [
+      1269.9999999999984,
+      269.9999999999997
+     ],
+     "options": []
+    },
+    "68cd912e-PrimitiveColorByHeatmap": {
+     "name": "PrimitiveColorByHeatmap",
+     "inputs": {
+      "prim": [
+       "b3730f0d-x",
+       "prim"
+      ],
+      "heatmap": [
+       "397460cb-SubInput",
+       "port"
+      ],
+      "min": [
+       "da2baddd-PrimitiveReduction",
+       "result"
+      ],
+      "max": [
+       "87fec147-x",
+       "result"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "attrName": "speed"
+     },
+     "uipos": [
+      2609.649999999998,
+      316.49999999999966
      ],
      "options": [
       "VIEW"
      ]
+    },
+    "da2baddd-PrimitiveReduction": {
+     "name": "PrimitiveReduction",
+     "inputs": {
+      "prim": [
+       "b3730f0d-x",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "attr": "speed",
+      "op": "min"
+     },
+     "uipos": [
+      2228.7499999999986,
+      171.25
+     ],
+     "options": []
+    },
+    "87fec147-x": {
+     "name": "PrimitiveReduction",
+     "inputs": {
+      "prim": [
+       "b3730f0d-x",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "attr": "speed",
+      "op": "max"
+     },
+     "uipos": [
+      2229.9999999999986,
+      516.2499999999995
+     ],
+     "options": []
+    },
+    "397460cb-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "heatmap"
+     },
+     "uipos": [
+      1824.9999999999982,
+      612.3499999999995
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.2097152000000002,
-    "trans_x": -661,
-    "trans_y": -202
+    "scale": 0.2621440000000001,
+    "trans_x": 7,
+    "trans_y": -126
    }
   },
   "SlicePlaneForPrimitive": {
@@ -1082,9 +1275,7 @@
       -319.15644775390604,
       -237.89221252441362
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "7a2aaf6c-x": {
      "name": "SlicePlaneForPrimitive",
@@ -1258,9 +1449,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000007,
-    "trans_x": -410,
-    "trans_y": -487
+    "scale": 1.0,
+    "trans_x": -752,
+    "trans_y": -423
    }
   },
   "AxesAlignedPoints": {
@@ -1794,6 +1985,21 @@
     "FLIPSolver"
    ]
   },
+  "Assign": {
+   "inputs": [
+    "dst",
+    "src",
+    "SRC"
+   ],
+   "outputs": [
+    "dst",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
   "BeginFor": {
    "inputs": [
     "count",
@@ -2105,20 +2311,6 @@
     "control"
    ]
   },
-  "Clone": {
-   "inputs": [
-    "object",
-    "SRC"
-   ],
-   "outputs": [
-    "newObject",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "portal"
-   ]
-  },
   "CombineVDB": {
    "inputs": [
     "FieldA",
@@ -2406,20 +2598,6 @@
     "particles"
    ]
   },
-  "ExportPrimitive": {
-   "inputs": [
-    "prim",
-    "path",
-    "SRC"
-   ],
-   "outputs": [
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
   "ExportVDBGrid": {
    "inputs": [
     "data",
@@ -2432,6 +2610,20 @@
    "params": [],
    "categories": [
     "openvdb"
+   ]
+  },
+  "ExportZpmPrimitive": {
+   "inputs": [
+    "prim",
+    "path",
+    "SRC"
+   ],
+   "outputs": [
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "ExtractDict": {
@@ -2953,20 +3145,6 @@
     "particles"
    ]
   },
-  "ImportPrimitive": {
-   "inputs": [
-    "path",
-    "SRC"
-   ],
-   "outputs": [
-    "prim",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
   "ImportVDBGrid": {
    "inputs": [
     "path",
@@ -2985,6 +3163,20 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "ImportZpmPrimitive": {
+   "inputs": [
+    "path",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "InitializeSystem": {
@@ -3611,6 +3803,25 @@
     "numeric"
    ]
   },
+  "NumericRandom": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "value",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "dim",
+     "1"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
   "NumericVec2": {
    "inputs": [
     "SRC"
@@ -4100,6 +4311,8 @@
    "inputs": [
     "prim",
     "heatmap",
+    "min",
+    "max",
     "SRC"
    ],
    "outputs": [
@@ -4550,24 +4763,6 @@
      "copy"
     ]
    ],
-   "categories": [
-    "primitive"
-   ]
-  },
-  "PrimitiveWrangle": {
-   "inputs": [
-    "prim0",
-    "prim1",
-    "prim2",
-    "prim3",
-    "wrangle",
-    "SRC"
-   ],
-   "outputs": [
-    "prim0",
-    "DST"
-   ],
-   "params": [],
    "categories": [
     "primitive"
    ]
@@ -5291,6 +5486,22 @@
     "openvdb"
    ]
   },
+  "VDBWrangle": {
+   "inputs": [
+    "grid",
+    "zfxCode",
+    "params",
+    "SRC"
+   ],
+   "outputs": [
+    "grid",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
   "Vec3FieldExtrapolate": {
    "inputs": [
     "Field",
@@ -5308,132 +5519,6 @@
    ],
    "categories": [
     "FLIPSolver"
-   ]
-  },
-  "WrangleBinaryOp": {
-   "inputs": [
-    "lhs",
-    "rhs",
-    "SRC"
-   ],
-   "outputs": [
-    "res",
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "opName",
-     "add"
-    ]
-   ],
-   "categories": [
-    "wrangler"
-   ]
-  },
-  "WrangleImmed": {
-   "inputs": [
-    "value",
-    "SRC"
-   ],
-   "outputs": [
-    "res",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "wrangler"
-   ]
-  },
-  "WrangleLoad": {
-   "inputs": [
-    "SRC"
-   ],
-   "outputs": [
-    "res",
-    "DST"
-   ],
-   "params": [
-    [
-     "int",
-     "primId",
-     "0"
-    ],
-    [
-     "string",
-     "attrName",
-     "pos"
-    ]
-   ],
-   "categories": [
-    "wrangler"
-   ]
-  },
-  "WrangleStore": {
-   "inputs": [
-    "val",
-    "SRC"
-   ],
-   "outputs": [
-    "res",
-    "DST"
-   ],
-   "params": [
-    [
-     "int",
-     "primId",
-     "0"
-    ],
-    [
-     "string",
-     "attrName",
-     "pos"
-    ]
-   ],
-   "categories": [
-    "wrangler"
-   ]
-  },
-  "WrangleTernaryOp": {
-   "inputs": [
-    "lhs",
-    "mhs",
-    "rhs",
-    "SRC"
-   ],
-   "outputs": [
-    "res",
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "opName",
-     "vec"
-    ]
-   ],
-   "categories": [
-    "wrangler"
-   ]
-  },
-  "WrangleUnaryOp": {
-   "inputs": [
-    "lhs",
-    "SRC"
-   ],
-   "outputs": [
-    "res",
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "opName",
-     "neg"
-    ]
-   ],
-   "categories": [
-    "wrangler"
    ]
   },
   "WriteBgeo": {
@@ -5558,6 +5643,7 @@
     "size",
     "dir",
     "center",
+    "heatmap",
     "SRC"
    ],
    "outputs": [

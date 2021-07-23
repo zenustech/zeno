@@ -1,4 +1,4 @@
-x=anycontainer
+x=ptr2any
 
 x: $x.exe Makefile
 	./$<

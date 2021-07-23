@@ -1,4 +1,4 @@
-O=arts/ready/HACD.zsg
+O=arts/ZFXv2.zsg
 
 default: run
 

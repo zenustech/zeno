@@ -1,95 +1,17 @@
+#pragma once
+
 #include <memory>
-#include <cstdio>
 
-class unique_any {
-    struct _AnyBase {
-        virtual std::unique_ptr<_AnyBase> clone() const = 0;
-        virtual bool assign(_AnyBase const *b) = 0;
-        virtual ~_AnyBase() = default;
-    };
+namespace zeno {
 
-    template <class T>
-    struct _AnyImpl : _AnyBase {
-        T t;
-
-        _AnyImpl(T const &t) : t(t) {}
-
-        virtual std::unique_ptr<_AnyBase> clone() const {
-            return std::make_unique<_AnyImpl<T>>(t);
-        }
-
-        virtual bool assign(_AnyBase const *b) {
-            auto p = dynamic_cast<_AnyImpl<T> const *>(b);
-            if (!p) return false;
-            t = p->t;
-            return true;
-        }
-    };
-
-    std::unique_ptr<_AnyBase> m_ptr;
-
-public:
-    unique_any() : m_ptr(nullptr) {}
-    ~unique_any() = default;
-    unique_any(unique_any &&a) = default;
-    unique_any(unique_any const &a)
-        : m_ptr(a.m_ptr->clone())
-    {}
-
-    template <class T>
-    unique_any(T const &t)
-        : m_ptr(std::make_unique<_AnyImpl<T>>(t))
-    {}
-
-    unique_any &operator=(std::nullptr_t) {
-        m_ptr = nullptr;
-        return *this;
-    }
-
-    unique_any &operator=(unique_any const &a) {
-        m_ptr = a.m_ptr->clone();
-        return *this;
-    }
-
-    template <class T>
-    T *cast() const {
-        auto p = dynamic_cast<_AnyImpl<T> *>(m_ptr.get());
-        if (!p) return nullptr;
-        return &p->t;
-    }
-
-    template <class T>
-    T &get() const {
-        return *cast<T>();
-    }
-
-    template <class T>
-    unique_any &operator=(T const &t) {
-        emplace<T>(t);
-        return *this;
-    }
-
-    void assign(unique_any const &a) const {
-        m_ptr->assign(a.m_ptr.get());
-    }
-
-    template <class T, class ...Ts>
-    void emplace(Ts &&...ts) {
-        m_ptr = std::make_unique<_AnyImpl<T>>(std::forward<Ts>(ts)...);
-    }
-
-    template <class T, class ...Ts>
-    static unique_any make(Ts &&...ts) {
-        unique_any a;
-        a.emplace<T>(std::forward<Ts>(ts)...);
-        return a;
-    }
-};
+/*template <class T>
+struct shared_any_traits {
+};*/
 
 class shared_any {
     struct _AnyBase {
         virtual std::shared_ptr<_AnyBase> clone() const = 0;
-        virtual bool assign(_AnyBase const *b) = 0;
+        virtual bool assign(_AnyBase const *) = 0;
         virtual ~_AnyBase() = default;
     };
 
@@ -110,6 +32,59 @@ class shared_any {
             return true;
         }
     };
+
+    /*template <class T, class = void>
+    struct _AnyIface : _AnyBase {
+        virtual T const &get() const = 0;
+
+        virtual std::shared_ptr<_AnyBase> clone() const {
+            return std::make_shared<_AnyImpl<T>>(get());
+        }
+
+        virtual bool assign(_AnyBase const *b) {
+            auto p = dynamic_cast<_AnyImpl<T> const *>(b);
+            if (!p) return false;
+            const_cast<T &>(get()) = p->t;
+            return true;
+        }
+    };
+
+    template <class T, class = void>
+    struct _AnyImpl : _AnyIface<T> {
+        T t;
+
+        _AnyImpl(T const &t) : t(t) {}
+
+        virtual T const &get() const {
+            return t;
+        }
+    };
+
+    template <class T>
+    struct _AnyImpl<T, std::void_t<
+            typename shared_any_traits<T>::base
+        >> : _AnyIface<T>
+           , _AnyIface<typename shared_any_traits<T>::base>
+    {
+        T t;
+
+        _AnyImpl(T const &t) : t(t) {}
+
+        virtual T const &get() const {
+            return t;
+        }
+
+        virtual std::shared_ptr<_AnyBase> clone() const {
+            return std::make_shared<_AnyImpl<T>>(t);
+        }
+
+        virtual bool assign(_AnyBase const *b) {
+            auto p = dynamic_cast<_AnyImpl<T> const *>(b);
+            if (!p) return false;
+            t = p->t;
+            return true;
+        }
+    };*/
 
     std::shared_ptr<_AnyBase> m_ptr;
 
@@ -171,10 +146,4 @@ public:
     }
 };
 
-int main() {
-    shared_any a = 32;
-    printf("%d\n", a.get<int>());
-    a = 32.1f;
-    printf("%f\n", a.get<float>());
-    return 0;
 }

@@ -2,22 +2,6 @@
  "graph": {
   "main": {
    "nodes": {
-    "c8b6030c-d22f-11eb-a424-907841694de9-PrimitiveConvexDecomposition": {
-     "name": "PrimitiveConvexDecomposition",
-     "inputs": {
-      "prim": [
-       "12693e86-d232-11eb-a372-907841694de9-ImportObjPrimitive",
-       "prim"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -412.0,
-      -63.0
-     ],
-     "options": []
-    },
     "0b4f2a3e-d232-11eb-a372-907841694de9-MakeString": {
      "name": "MakeString",
      "inputs": {
@@ -222,7 +206,7 @@
      "name": "BeginForEach",
      "inputs": {
       "list": [
-       "c8b6030c-d22f-11eb-a424-907841694de9-PrimitiveConvexDecomposition",
+       "4b5a63b7-PrimitiveConvexDecomposition",
        "listPrim"
       ],
       "SRC": [
@@ -283,8 +267,8 @@
      },
      "params": {},
      "uipos": [
-      -426.2109374999993,
-      113.90234375
+      -436.0413374999994,
+      97.51834375000004
      ],
      "options": []
     },
@@ -309,60 +293,27 @@
       "VIEW"
      ]
     },
-    "673243ed-MakeHeatmap": {
-     "name": "MakeHeatmap",
+    "4b5a63b7-PrimitiveConvexDecomposition": {
+     "name": "PrimitiveConvexDecomposition",
      "inputs": {
+      "prim": [
+       "12693e86-d232-11eb-a372-907841694de9-ImportObjPrimitive",
+       "prim"
+      ],
       "SRC": null
      },
-     "params": {
-      "nres": 1024,
-      "_RAMPS": "4\n0.0 0 0 0\n0.5 1 0 0\n0.9 1 1 0\n1.0 1 1 1"
-     },
+     "params": {},
      "uipos": [
-      2325.6,
-      90.4
+      -426.40000000000003,
+      -46.39999999999999
      ],
-     "options": [],
-     "color_ramps": [
-      [
-       0.0,
-       [
-        0,
-        0,
-        0
-       ]
-      ],
-      [
-       0.5,
-       [
-        1,
-        0,
-        0
-       ]
-      ],
-      [
-       0.9,
-       [
-        1,
-        1,
-        0
-       ]
-      ],
-      [
-       1.0,
-       [
-        1,
-        1,
-        1
-       ]
-      ]
-     ]
+     "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": 2237,
-    "trans_y": -7
+    "trans_x": -921,
+    "trans_y": -271
    }
   }
  },
@@ -2063,6 +2014,8 @@
    "inputs": [
     "prim",
     "heatmap",
+    "min",
+    "max",
     "SRC"
    ],
    "outputs": [

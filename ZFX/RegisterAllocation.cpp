@@ -315,10 +315,13 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
         ~call_on_dtor() { (*this)(); }
     };
 
+    int memsize = 0;
+
     std::optional<call_on_dtor> touch(int operandid, int &regid) {
         if (regid >= NREGS) {
             //printf("register spilled at %d\n", regid);
             int memid = regid - NREGS;
+            memsize = std::max(memsize, memid + 1);
             if (!operandid) {
                 int tmpid = NREGS;
                 regid = tmpid;
@@ -398,7 +401,7 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
     }
 };
 
-void apply_register_allocation(IR *ir, int nregs) {
+int apply_register_allocation(IR *ir, int nregs) {
     nregs -= 2; // left two regs for load/store from spilled memory
     if (nregs <= 2) {
         error("no enough registers!\n");
@@ -414,6 +417,7 @@ void apply_register_allocation(IR *ir, int nregs) {
     FixupMemorySpill fixspill(nregs);
     fixspill.apply(ir);
     *ir = *fixspill.ir;
+    return fixspill.memsize;
 }
 
 }

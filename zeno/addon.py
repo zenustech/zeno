@@ -19,6 +19,7 @@ def getAutoloadDir():
 
 def loadAutoloads():
     dir = getAutoloadDir()
+    print('loading addons from', dir)
     if not os.path.isdir(dir):
         return
 
