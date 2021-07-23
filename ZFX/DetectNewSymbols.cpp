@@ -3,13 +3,13 @@
 
 namespace zfx {
 
-struct DetectNewChannels : Visitor<DetectNewChannels> {
+struct DetectNewSymbols : Visitor<DetectNewSymbols> {
     using visit_stmt_types = std::tuple
         < TempSymbolStmt
         >;
 
     std::map<int, std::string> const &temps;
-    DetectNewChannels(std::map<int, std::string> const &temps)
+    DetectNewSymbols(std::map<int, std::string> const &temps)
         : temps(temps) {}
 
     std::map<std::string, int> tempdims;
@@ -27,7 +27,7 @@ struct DetectNewChannels : Visitor<DetectNewChannels> {
     }
 };
 
-struct AppendNewChannels : Visitor<AppendNewChannels> {
+struct AppendNewSymbols : Visitor<AppendNewSymbols> {
     using visit_stmt_types = std::tuple
         < TempSymbolStmt
         , Statement
@@ -37,7 +37,7 @@ struct AppendNewChannels : Visitor<AppendNewChannels> {
     std::map<std::string, int> const &tempdims;
     std::vector<std::pair<std::string, int>> &symbols;
 
-    AppendNewChannels(
+    AppendNewSymbols(
         std::map<int, std::string> const &temps,
         std::map<std::string, int> const &tempdims,
         std::vector<std::pair<std::string, int>> &symbols)
@@ -71,12 +71,12 @@ struct AppendNewChannels : Visitor<AppendNewChannels> {
     }
 };
 
-std::map<std::string, int> apply_detect_new_channels(IR *ir,
+std::map<std::string, int> apply_detect_new_symbols(IR *ir,
         std::map<int, std::string> const &temps,
         std::vector<std::pair<std::string, int>> &symbols) {
-    DetectNewChannels detector(temps);
+    DetectNewSymbols detector(temps);
     detector.apply(ir);
-    AppendNewChannels visitor(temps, detector.tempdims, symbols);
+    AppendNewSymbols visitor(temps, detector.tempdims, symbols);
     visitor.apply(ir);
     *ir = *visitor.ir;
     return detector.tempdims;

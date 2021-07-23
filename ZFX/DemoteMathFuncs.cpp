@@ -12,7 +12,7 @@ namespace zfx {
     } \
 } while (0)
 
-struct MathFunctions : Visitor<MathFunctions> {
+struct DemoteMathFuncs : Visitor<DemoteMathFuncs> {
     using visit_stmt_types = std::tuple
         < UnaryOpStmt
         , BinaryOpStmt
@@ -117,8 +117,8 @@ inline __m128 _mm_fexp_ps(__m128 x)
     }
 };
 
-std::unique_ptr<IR> apply_math_functions(IR *ir) {
-    MathFunctions visitor;
+std::unique_ptr<IR> apply_demote_math_funcs(IR *ir) {
+    DemoteMathFuncs visitor;
     visitor.apply(ir);
     return std::move(visitor.ir);
 }

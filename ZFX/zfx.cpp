@@ -71,11 +71,11 @@ std::tuple
 #endif
 
     std::map<std::string, int> newsyms;
-    if (options.detect_new_channels) {
+    if (options.detect_new_symbols) {
 #ifdef ZFX_PRINT_IR
-        cout << "=== DetectNewChannels" << endl;
+        cout << "=== DetectNewSymbols" << endl;
 #endif
-        newsyms = apply_detect_new_channels(
+        newsyms = apply_detect_new_symbols(
                 ir.get(), temporaries, symbols);
 #ifdef ZFX_PRINT_IR
         ir->print();
@@ -108,9 +108,9 @@ std::tuple
 
     if (options.demote_math_funcs) {
 #ifdef ZFX_PRINT_IR
-        cout << "=== MathFunctions" << endl;
+        cout << "=== DemoteMathFuncs" << endl;
 #endif
-        ir = apply_math_functions(ir.get());
+        ir = apply_demote_math_funcs(ir.get());
 #ifdef ZFX_PRINT_IR
         ir->print();
 #endif

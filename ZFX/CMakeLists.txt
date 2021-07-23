@@ -24,7 +24,8 @@ add_library(ZFX STATIC
 AST.h
 ConstParametrize.cpp
 ControlCheck.cpp
-DetectNewChannels.cpp
+DemoteMathFuncs.cpp
+DetectNewSymbols.cpp
 EmitAssembly.cpp
 ExpandFunctions.cpp
 ReassignGlobals.cpp
@@ -40,7 +41,6 @@ LowerAccess.cpp
 LowerAST.cpp
 LowerAST.h
 LowerMath.cpp
-MathFunctions.cpp
 Parser.cpp
 RegisterAllocation.cpp
 SaveMathRegisters.cpp

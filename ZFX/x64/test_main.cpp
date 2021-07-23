@@ -21,13 +21,16 @@ int main() {
 #endif
 
     zfx::Options opts(zfx::Options::for_x64);
-    opts.detect_new_channels = true;
+    opts.detect_new_symbols = true;
     opts.define_symbol("@pos", n);
     auto prog = compiler.compile(code, opts);
     auto exec = assembler.assemble(prog->assembly);
 
     for (auto const &[key, dim]: prog->symbols) {
         printf("%s.%d\n", key.c_str(), dim);
+    }
+    for (auto const &[key, dim]: prog->newsyms) {
+        printf("new symbol %s with dim %d\n", key.c_str(), dim);
     }
 
     auto ctx = exec->make_context();
