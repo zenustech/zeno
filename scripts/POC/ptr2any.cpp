@@ -18,7 +18,7 @@ struct DemoObject : IObject {
 
 int main() {
     auto x = shared_any::make<DemoObject>();
-    auto p = x.cast<DemoObject>();
+    auto p = x.cast<IObject>();
     printf("%p\n", p);
     return 0;
 }
