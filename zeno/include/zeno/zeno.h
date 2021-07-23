@@ -122,6 +122,11 @@ protected:
     ZENAPI void _set_output(std::string const &id,
         shared_any obj);
 
+    template <class T>
+    shared_cast<T> _get_input(std::string const &id) const {
+        return {_get_input(id)};
+    }
+
     //[[deprecated("use shared_any::make instead of std::make_shared<T>")]]
     ZENAPI void set_output(std::string const &id,
         std::shared_ptr<IObject> &&obj) {

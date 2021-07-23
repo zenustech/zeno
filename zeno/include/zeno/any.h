@@ -35,8 +35,9 @@ class shared_any {
         : m_ptr(ptr) {}
 
 public:
-    ~shared_any() = default;
     shared_any(std::nullptr_t = nullptr) : m_ptr(nullptr) {}
+    ~shared_any() = default;
+
     shared_any(shared_any &&a) = default;
     shared_any(shared_any const &a)
         : m_ptr(a.m_ptr)
@@ -60,8 +61,18 @@ public:
     }
 
     template <class T>
+    T *unsafe_cast() const {
+        auto p = static_cast<_AnyImpl<T> *>(m_ptr.get());
+        return &p->t;
+    }
+
+    template <class T>
     T &get() const {
         return *cast<T>();
+    }
+
+    operator bool() const {
+        return (bool)m_ptr;
     }
 
     void assign(shared_any const &a) const {
@@ -82,6 +93,43 @@ public:
         shared_any a;
         a.emplace<T>(std::forward<Ts>(ts)...);
         return a;
+    }
+};
+
+template <class T>
+struct shared_cast {
+    shared_any m_any;
+
+    shared_cast() : m_any(nullptr) {}
+    shared_cast(shared_any const &a) {
+        *this = a;
+    }
+
+    shared_cast(shared_cast &&a) = default;
+    shared_cast(shared_cast const &a) = default;
+    ~shared_cast() = default;
+
+    shared_cast &operator=(shared_any const &a) {
+        if (!a.cast<T>())
+            m_any = nullptr;
+        else
+            m_any = a;
+    }
+
+    T *get() const {
+        return m_any.unsafe_cast<T>();
+    }
+
+    T *operator->() const {
+        return get();
+    }
+
+    T &operator*() const {
+        return *get();
+    }
+
+    operator bool() const {
+        return (bool)m_any;
     }
 };
 
