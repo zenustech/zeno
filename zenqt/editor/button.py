@@ -37,6 +37,7 @@ class QDMGraphicsTopButton(QGraphicsSvgItem):
 
         self.node = parent
         self.name = None
+        self.checked = False
 
         self._renderer = QSvgRenderer(asset_path('unfold.svg'))
         self._renderer.setAspectRatioMode(Qt.KeepAspectRatio)
@@ -46,6 +47,7 @@ class QDMGraphicsTopButton(QGraphicsSvgItem):
         self.name = name
         self.svg_active_path = 'node-button/' + name + '-active.svg'
         self.svg_mute_path = 'node-button/' + name + '-mute.svg'
+        self.update_svg()
 
     def getCircleBounds(self):
         return (0, 0, self._width, self._height)
