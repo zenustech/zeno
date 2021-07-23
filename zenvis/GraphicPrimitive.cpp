@@ -47,8 +47,15 @@ struct GraphicPrimitive : IGraphic {
     if (!prim->has_attr("nrm")) {
         auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
 
-        for (size_t i = 0; i < nrm.size(); i++) {
-            nrm[i] = zeno::vec3f(1 / zeno::sqrt(3.0f));
+        if (prim->has_attr("rad")) {
+            auto &rad = prim->attr<float>("rad");
+            for (size_t i = 0; i < nrm.size(); i++) {
+                nrm[i] = zeno::vec3f(rad[i]);
+            }
+        } else {
+            for (size_t i = 0; i < nrm.size(); i++) {
+                nrm[i] = zeno::vec3f(1 / zeno::sqrt(3.0f));
+            }
         }
     }
     auto const &pos = prim->attr<zeno::vec3f>("pos");
