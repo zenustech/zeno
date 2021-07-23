@@ -1,6 +1,71 @@
 from . import *
 
 
+class QDMGraphicsTextButton(QGraphicsItem):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.node = parent
+        self.name = None
+
+        self.initLabel()
+        self.setChecked(False)
+
+    def initLabel(self):
+        self.label = QGraphicsTextItem(self)
+        self.label.setPos(0, - TEXT_HEIGHT * 0.1)
+        font = QFont()
+        font.setPointSize(style['socket_text_size'])
+        self.label.setFont(font)
+
+        document = self.label.document()
+        option = document.defaultTextOption()
+        option.setAlignment(Qt.AlignCenter)
+        document.setDefaultTextOption(option)
+
+    def setText(self, name):
+        self.name = name
+        self.label.setPlainText(name)
+
+    def getCircleBounds(self):
+        return (0, 0, self._width, self._height)
+
+    def boundingRect(self):
+        return QRectF(*self.getCircleBounds()).normalized()
+
+    def paint(self, painter, styleOptions, widget=None):
+        button_color = 'button_selected_color' if self.checked else 'button_color'
+        painter.fillRect(*self.getCircleBounds(), QColor(style[button_color]))
+
+    def setChecked(self, checked):
+        self.checked = checked
+
+        text_color = 'button_selected_text_color' if self.checked else 'button_text_color'
+        self.label.setDefaultTextColor(QColor(style[text_color]))
+
+    def setWidthHeight(self, width, height):
+        self._width = width
+        self._height = height
+        self.label.setTextWidth(width)
+
+    def on_click(self):
+        self.setChecked(not self.checked)
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        self.on_click()
+
+    def setGeometry(self, rect):
+        x = rect.x()
+        y = rect.y()
+        w = rect.width()
+        h = rect.height()
+        self.setPos(x, y)
+        self.setWidthHeight(w, h)
+
+
+
+
 
 class QDMGraphicsSocketEdiable(QDMGraphicsSocket):
     def __init__(self, parent=None):
@@ -59,7 +124,7 @@ class QDMGraphicsNode_MakeDict(QDMGraphicsNode):
         self.height += TEXT_HEIGHT * 0.4
 
         if not hasattr(self, 'add_button'):
-            self.add_button = QDMGraphicsButton(self)
+            self.add_button = QDMGraphicsTextButton(self)
         W = self.width / 4
         rect = QRectF(HORI_MARGIN, self.height,
             W - HORI_MARGIN, TEXT_HEIGHT)
@@ -68,7 +133,7 @@ class QDMGraphicsNode_MakeDict(QDMGraphicsNode):
         self.add_button.on_click = self.add_new_key
 
         if not hasattr(self, 'del_button'):
-            self.del_button = QDMGraphicsButton(self)
+            self.del_button = QDMGraphicsTextButton(self)
         rect = QRectF(HORI_MARGIN + W, self.height,
             W - HORI_MARGIN, TEXT_HEIGHT)
         self.del_button.setGeometry(rect)
@@ -129,7 +194,7 @@ class QDMGraphicsNode_ExtractDict(QDMGraphicsNode):
         self.height += TEXT_HEIGHT * 0.4
 
         if not hasattr(self, 'add_button'):
-            self.add_button = QDMGraphicsButton(self)
+            self.add_button = QDMGraphicsTextButton(self)
         W = self.width / 4
         rect = QRectF(HORI_MARGIN, self.height,
             W - HORI_MARGIN, TEXT_HEIGHT)
@@ -138,7 +203,7 @@ class QDMGraphicsNode_ExtractDict(QDMGraphicsNode):
         self.add_button.on_click = self.add_new_key
 
         if not hasattr(self, 'del_button'):
-            self.del_button = QDMGraphicsButton(self)
+            self.del_button = QDMGraphicsTextButton(self)
         rect = QRectF(HORI_MARGIN + W, self.height,
             W - HORI_MARGIN, TEXT_HEIGHT)
         self.del_button.setGeometry(rect)
