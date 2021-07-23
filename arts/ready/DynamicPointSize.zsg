@@ -2,158 +2,156 @@
  "graph": {
   "main": {
    "nodes": {
-    "b890f2d5-Make3DGridPrimitive": {
-     "name": "Make3DGridPrimitive",
-     "inputs": {
-      "nx": [
-       "298563e8-NumericInt",
-       "value"
-      ],
-      "ny": null,
-      "nz": null,
-      "sizeX": null,
-      "sizeY": null,
-      "sizeZ": null,
-      "scale": null,
-      "origin": null,
-      "SRC": null
-     },
-     "params": {
-      "isCentered": 1
-     },
-     "uipos": [
-      905.9374999999997,
-      177.25781249999994
-     ],
-     "options": []
-    },
-    "298563e8-NumericInt": {
+    "9a345514-NumericInt": {
      "name": "NumericInt",
      "inputs": {
       "SRC": null
      },
      "params": {
-      "value": 32
+      "value": 16
      },
      "uipos": [
-      601.9537499999998,
-      156.73937499999994
+      495.4000000000001,
+      227.60000000000002
      ],
      "options": []
     },
-    "1f74dc87-ParticlesWrangle": {
+    "ef4ec533-ParticlesWrangle": {
      "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       "b890f2d5-Make3DGridPrimitive",
+       "730549a0-Make2DGridPrimitive",
        "prim"
       ],
       "zfxCode": [
-       "3aeea543-x",
+       "3e5f8949-MakeMultilineString",
        "value"
       ],
-      "params": null,
+      "params": [
+       "ed95e8b4-MakeDict",
+       "dict"
+      ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      1251.84,
-      285.4400000000001
-     ],
-     "options": []
-    },
-    "3aeea543-x": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "@rho = @pos.x + 0.5"
-     },
-     "uipos": [
-      974.0,
-      577.0
-     ],
-     "options": []
-    },
-    "f3d617e0-PrimitiveColorByHeatmap": {
-     "name": "PrimitiveColorByHeatmap",
-     "inputs": {
-      "prim": [
-       "1f74dc87-ParticlesWrangle",
-       "prim"
-      ],
-      "heatmap": [
-       "540ddef4-MakeHeatmap",
-       "heatmap"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "attrName": "rho"
-     },
-     "uipos": [
-      1596.0,
-      328.0
+      1014.4000000000001,
+      228.8
      ],
      "options": [
       "VIEW"
      ]
     },
-    "540ddef4-MakeHeatmap": {
-     "name": "MakeHeatmap",
+    "3e5f8949-MakeMultilineString": {
+     "name": "MakeMultilineString",
      "inputs": {
       "SRC": null
      },
      "params": {
-      "nres": 1024,
-      "_RAMPS": "4\n0.0 0 0 0\n0.5 1 0 0\n0.9 1 1 0\n1.0 1 1 1"
+      "value": "@rad = mix(2, 12, 0.5 + 0.5 * sin(@pos.x + $frame_id / 10))"
      },
      "uipos": [
-      1275.2,
-      536.0
+      1022.3999999999999,
+      436.00000000000006
+     ],
+     "options": []
+    },
+    "730549a0-Make2DGridPrimitive": {
+     "name": "Make2DGridPrimitive",
+     "inputs": {
+      "nx": [
+       "9a345514-NumericInt",
+       "value"
+      ],
+      "ny": null,
+      "sizeX": null,
+      "sizeY": null,
+      "scale": null,
+      "origin": null,
+      "SRC": null
+     },
+     "params": {
+      "isCentered": 0,
+      "hasFaces": 0
+     },
+     "uipos": [
+      753.5999999999999,
+      229.60000000000002
+     ],
+     "options": []
+    },
+    "ed95e8b4-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": null,
+      "frame_id": [
+       "67dbf542-NumericOperator",
+       "ret"
+      ]
+     },
+     "params": {
+      "_KEYS": "frame_id"
+     },
+     "uipos": [
+      747.1999999999999,
+      568.8000000000001
      ],
      "options": [],
-     "color_ramps": [
-      [
-       0.0,
-       [
-        0,
-        0,
-        0
-       ]
-      ],
-      [
-       0.5,
-       [
-        1,
-        0,
-        0
-       ]
-      ],
-      [
-       0.9,
-       [
-        1,
-        1,
-        0
-       ]
-      ],
-      [
-       1.0,
-       [
-        1,
-        1,
-        1
-       ]
-      ]
+     "socket_keys": [
+      "frame_id"
      ]
+    },
+    "5e432964-GetFrameNum": {
+     "name": "GetFrameNum",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      354.4000000000002,
+      623.1999999999998
+     ],
+     "options": []
+    },
+    "67dbf542-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "5e432964-GetFrameNum",
+       "FrameNum"
+      ],
+      "rhs": [
+       "b551dbbc-GetFrameTime",
+       "time"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      580.0,
+      772.8000000000001
+     ],
+     "options": []
+    },
+    "b551dbbc-GetFrameTime": {
+     "name": "GetFrameTime",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      334.4000000000001,
+      808.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.8000000000000002,
-    "trans_x": 181,
-    "trans_y": 118
+    "scale": 1.25,
+    "trans_x": 474,
+    "trans_y": 377
    }
   }
  },

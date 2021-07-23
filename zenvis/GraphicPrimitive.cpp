@@ -50,11 +50,15 @@ struct GraphicPrimitive : IGraphic {
         if (prim->has_attr("rad")) {
             auto &rad = prim->attr<float>("rad");
             for (size_t i = 0; i < nrm.size(); i++) {
-                nrm[i] = zeno::vec3f(rad[i]);
+                nrm[i] = zeno::vec3f(rad[i], 0.0f, 0.0f);
+            }
+        } else if (prim->tris.size()) {
+            for (size_t i = 0; i < nrm.size(); i++) {
+                nrm[i] = zeno::vec3f(1 / zeno::sqrt(3.0f));
             }
         } else {
             for (size_t i = 0; i < nrm.size(); i++) {
-                nrm[i] = zeno::vec3f(1 / zeno::sqrt(3.0f));
+                nrm[i] = zeno::vec3f(5.0f, 0.0f, 0.0f);
             }
         }
     }
@@ -189,18 +193,22 @@ uniform mat4 mProj;
 
 attribute vec3 vPosition;
 attribute vec3 vColor;
+attribute vec3 vNormal;
 
 varying vec3 position;
 varying vec3 color;
+varying float radius;
 
 void main()
 {
   position = vPosition;
   color = vColor;
+  radius = vNormal.x;
 
   gl_Position = mVP * vec4(position, 1.0);
-  gl_PointSize = 5.0;
-}\n";
+  gl_PointSize = radius;
+}
+)";
     }
     if (frag.size() == 0) {
       frag = R"(
