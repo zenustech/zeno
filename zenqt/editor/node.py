@@ -29,7 +29,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.options = {}
 
         self.initDummySockets()
-        self.initCondButtons()
+        self.initTopButtons()
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
@@ -82,7 +82,7 @@ class QDMGraphicsNode(QGraphicsItem):
         self.dummy_output_socket = s
         self.dummy_output_socket.hide()
 
-    def initCondButtons(self):
+    def initTopButtons(self):
         cond_keys = ['ONCE', 'PREP', 'MUTE', 'VIEW']
         for i, key in enumerate(cond_keys):
             button = QDMGraphicsTopButton(self)
