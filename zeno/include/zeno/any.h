@@ -1,8 +1,18 @@
 #pragma once
 
-#include <memory>
+#include <zeno/memory.h>
 
 namespace zeno {
+
+template <class T, class = void>
+struct poly_base_of {
+    using type = T;
+};
+
+template <class T>
+struct poly_base_of<T, std::void_t<typename T::poly_base>> {
+    using type = typename T::poly_base;
+};
 
 class shared_any {
     struct _AnyBase {
@@ -23,6 +33,26 @@ class shared_any {
 
         virtual bool assign(_AnyBase const *b) {
             auto p = dynamic_cast<_AnyImpl<T> const *>(b);
+            if (!p) return false;
+            t = p->t;
+            return true;
+        }
+    };
+
+    template <class T>
+    struct _AnyImpl<copiable_unique_ptr<T>> : _AnyBase {
+        using P = copiable_unique_ptr<typename poly_base_of<T>::type>;
+
+        P t;
+
+        _AnyImpl(P const &t) : t(t) {}
+
+        virtual std::shared_ptr<_AnyBase> clone() const {
+            return std::make_shared<_AnyImpl<P>>(t);
+        }
+
+        virtual bool assign(_AnyBase const *b) {
+            auto p = dynamic_cast<_AnyImpl<P> const *>(b);
             if (!p) return false;
             t = p->t;
             return true;
@@ -51,6 +81,14 @@ public:
     shared_any &operator=(shared_any const &a) {
         m_ptr = a.m_ptr;
         return *this;
+    }
+
+    template <class T>
+    T *poly_cast() const {
+        using P = copiable_unique_ptr<typename poly_base_of<T>::type>;
+        auto p = dynamic_cast<_AnyImpl<P> *>(m_ptr.get());
+        if (!p) return nullptr;
+        return dynamic_cast<T *>(p->t.get());
     }
 
     template <class T>
