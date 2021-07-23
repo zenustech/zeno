@@ -36,8 +36,7 @@ class shared_any {
 
 public:
     ~shared_any() = default;
-    shared_any() : m_ptr(nullptr) {}
-    shared_any(std::nullptr_t) : m_ptr(nullptr) {}
+    shared_any(std::nullptr_t = nullptr) : m_ptr(nullptr) {}
     shared_any(shared_any &&a) = default;
     shared_any(shared_any const &a)
         : m_ptr(a.m_ptr)

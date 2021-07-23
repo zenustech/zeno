@@ -43,8 +43,7 @@ ZENDEFNODE(PortalOut, {
 struct Route : zeno::INode {
     virtual void apply() override {
         if (has_input("input")) {
-            auto obj = get_input("input");
-            set_output("output", std::move(obj));
+            _set_output("output", _get_input("input"));
         } else {
             set_output("output", std::make_shared<zeno::ConditionObject>());
         }

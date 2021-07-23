@@ -118,22 +118,29 @@ protected:
     ZENAPI bool has_option(std::string const &id) const;
     ZENAPI bool has_input(std::string const &id) const;
     ZENAPI IValue get_param(std::string const &id) const;
-    ZENAPI shared_any get_input(std::string const &id) const;
-    ZENAPI void set_output(std::string const &id,
-        shared_any &&obj);
+    ZENAPI shared_any const &_get_input(std::string const &id) const;
+    ZENAPI void _set_output(std::string const &id,
+        shared_any obj);
 
-    [[deprecated("use get_input")]]
-    shared_any get_input_ref(std::string const &id) const {
-        return get_input(id);
+    //[[deprecated("use shared_any::make instead of std::make_shared<T>")]]
+    ZENAPI void set_output(std::string const &id,
+        std::shared_ptr<IObject> &&obj) {
+        _set_output(id, shared_any::make<std::shared_ptr<IObject>>(obj));
+    }
+
+    //[[deprecated("use shared_any::make instead of std::make_shared<T>")]]
+    auto get_input(std::string const &id) const {
+        return _get_input(id).get<std::shared_ptr<IObject>>();
     }
 
     [[deprecated("use set_output")]]
     void set_output_ref(std::string const &id,
-        shared_any &&obj) {
+        std::shared_ptr<IObject> &&obj) {
         set_output(id, std::move(obj));
     }
 
     template <class T>
+    //[[deprecated("use shared_any::make instead of std::make_shared<T>")]]
     std::shared_ptr<T> get_input(std::string const &id) const {
         return std::dynamic_pointer_cast<T>(get_input(id));
     }

@@ -72,7 +72,7 @@ ZENAPI bool INode::checkApplyCondition() {
 
     if (has_option("MUTE")) {
         auto desc = nodeClass->desc.get();
-        set_output(desc->outputs[0], get_input(desc->inputs[0]));
+        _set_output(desc->outputs[0], _get_input(desc->inputs[0]));
         return false;
     }
 
@@ -107,8 +107,10 @@ ZENAPI void INode::coreApply() {
         auto desc = nodeClass->desc.get();
         auto id = desc->outputs[0];
         auto obj = safe_at(outputs, id, "output");
-        auto path = Visualization::exportPath();
-        obj->dumpfile(path);
+        if (auto p = obj.cast<std::shared_ptr<IObject>>(); p) {
+            auto path = Visualization::exportPath();
+            (*p)->dumpfile(path);
+        }
     }
 }
 
@@ -120,7 +122,7 @@ ZENAPI bool INode::has_input(std::string const &id) const {
     return inputBounds.find(id) != inputBounds.end();
 }
 
-ZENAPI std::shared_ptr<IObject> INode::get_input(std::string const &id) const {
+ZENAPI shared_any const &INode::_get_input(std::string const &id) const {
     return safe_at(inputs, id, "input");
 }
 
@@ -128,11 +130,11 @@ ZENAPI IValue INode::get_param(std::string const &id) const {
     return safe_at(params, id, "param");
 }
 
-ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
+ZENAPI void INode::_set_output(std::string const &id, shared_any obj) {
     outputs[id] = std::move(obj);
 }
 
-ZENAPI std::shared_ptr<IObject> const &Graph::getNodeOutput(
+ZENAPI shared_any const &Graph::getNodeOutput(
     std::string const &sn, std::string const &ss) const {
     auto node = safe_at(nodes, sn, "node");
     return safe_at(node->outputs, ss, "output");
