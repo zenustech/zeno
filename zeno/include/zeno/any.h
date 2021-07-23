@@ -210,6 +210,10 @@ public:
         return *this;
     }
 
+    void unsafe_set(shared_any const &a) {
+        m_any = a;
+    }
+
     T *get() const {
         return m_any.unsafe_cast<T>();
     }
@@ -228,6 +232,16 @@ public:
 
     operator bool() const {
         return (bool)m_any;
+    }
+
+    shared_cast clone() const {
+        shared_cast c;
+        c.unsafe_set(m_any.clone());
+        return c;
+    }
+
+    void assign(shared_any const &a) const {
+        m_any.assign(a);
     }
 
     template <class ...Ts>
