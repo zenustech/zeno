@@ -82,7 +82,7 @@ struct Program {
     std::string assembly;
 
     auto const &get_assembly() const {
-        return symbols;
+        return assembly;
     }
 
     auto const &get_symbols() const {
