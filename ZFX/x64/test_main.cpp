@@ -16,7 +16,7 @@ int main() {
 #else
     int n = 2;
     std::string code(R"(
-@clr = @pos + 1
+@clr = pow(@pos, 2)
 )");
 #endif
 
@@ -33,7 +33,7 @@ int main() {
 
     auto ctx = exec->make_context();
     for (int i = 0; i < n; i++) {
-        ctx.channel(prog->symbol_id("@pos", i))[0] = 1.0f;
+        ctx.channel(prog->symbol_id("@pos", i))[0] = 1.414f;
     }
     ctx.execute();
     printf("%f\n", ctx.channel(2)[0]);

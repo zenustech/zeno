@@ -47,10 +47,8 @@ namespace opreg {
 #if defined(_WIN32)
     enum {
         a1 = rcx,
-        a3 = rdx,
-        a2 = r8,
-        //a2 = rdx,
-        //a3 = r8,
+        a2 = rdx,
+        a3 = r8,
         a4 = r9,
     };
 #else
@@ -116,10 +114,11 @@ struct SIMDBuilder {   // requires AVX2
                     mflag |= memflag::reg_imm32;
                 }
             }
-            flag |= mflag | val << 3 & 0x38 | adr;
+            auto adreg = adr & 0x07;
+            flag |= mflag | val << 3 & 0x38 | adreg;
             //if (adr == opreg::rsp)
                 //flag |= 0x10;
-            if (adr == opreg::rbp)
+            if (adreg == opreg::rbp)
                 flag |= memflag::reg_imm8;
             res.push_back(flag);
             if (adr == opreg::rsp)

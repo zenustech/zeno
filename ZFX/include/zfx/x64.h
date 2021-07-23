@@ -21,8 +21,7 @@ struct Executable {
 
         void execute() {
             auto entry = (void(*)(void *, void *, void *))exec->mem;
-            //entry((void *)locals, (void *)exec->consts, (void *)exec->functable);
-            entry((void*)locals, (void*)exec->functable, (void*)exec->consts);
+            entry((void *)locals, (void *)exec->consts, (void *)exec->functable);
         }
 
         float *channel(int chid) {
