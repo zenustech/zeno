@@ -163,7 +163,8 @@ std::tuple
 #ifdef ZFX_PRINT_IR
         cout << "=== RegisterAllocation" << endl;
 #endif
-        apply_register_allocation(ir.get(), options.arch_maxregs);
+        int memsize = apply_register_allocation(ir.get(),
+                options.arch_maxregs);
 #ifdef ZFX_PRINT_IR
         ir->print();
 #endif
@@ -172,7 +173,8 @@ std::tuple
 #ifdef ZFX_PRINT_IR
             cout << "=== SaveMathRegisters" << endl;
 #endif
-            ir = apply_save_math_registers(ir.get(), options.arch_maxregs);
+            ir = apply_save_math_registers(ir.get(),
+                    options.arch_maxregs, memsize);
 #ifdef ZFX_PRINT_IR
             ir->print();
 #endif

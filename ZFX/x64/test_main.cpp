@@ -16,13 +16,16 @@ int main() {
 #else
     int n = 2;
     std::string code(R"(
-@clr = pow(@pos, 2)
+@clr = pow(@pos.x, 2)
 )");
 #endif
 
     zfx::Options opts(zfx::Options::for_x64);
     opts.detect_new_symbols = true;
+    opts.reassign_channels = false;
+    opts.reassign_parameters = false;
     opts.define_symbol("@pos", n);
+    opts.define_symbol("@clr", n);
     auto prog = compiler.compile(code, opts);
     auto exec = assembler.assemble(prog->assembly);
 
@@ -39,7 +42,9 @@ int main() {
     }
     ctx.execute();
     for (int i = 0; i < n; i++) {
-        auto sid = prog->symbol_id("@clr", i);
+        int sid = prog->symbol_id("@pos", i);
+        printf("%d\n", sid);
+        sid = prog->symbol_id("@clr", i);
         printf("%d\n", sid);
         printf("%f\n", ctx.channel(sid)[0]);
     }
