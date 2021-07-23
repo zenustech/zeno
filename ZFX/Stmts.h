@@ -507,7 +507,7 @@ struct AsmLoadConstStmt : AsmStmt<AsmLoadConstStmt> {
     }
 
     virtual RegFields dest_registers() const override {
-        return dst;
+        return {dst};
     }
 
     virtual RegFields source_registers() const override {
@@ -546,7 +546,7 @@ struct AsmBinaryOpStmt : AsmStmt<AsmBinaryOpStmt> {
     }
 
     virtual RegFields dest_registers() const override {
-        return dst;
+        return {dst};
     }
 
     virtual RegFields source_registers() const override {
@@ -581,7 +581,7 @@ struct AsmUnaryOpStmt : AsmStmt<AsmUnaryOpStmt> {
     }
 
     virtual RegFields dest_registers() const override {
-        return dst;
+        return {dst};
     }
 
     virtual RegFields source_registers() const override {
@@ -616,11 +616,15 @@ struct AsmFuncCallStmt : AsmStmt<AsmFuncCallStmt> {
     }
 
     virtual RegFields dest_registers() const override {
-        return dst;
+        return {dst};
     }
 
     virtual RegFields source_registers() const override {
-        return args;
+        RegFields ret;
+        for (auto a: args) {
+            ret.emplace_back(a);
+        }
+        return ret;
     }
 };
 
@@ -678,7 +682,7 @@ struct AsmLocalLoadStmt : AsmStmt<AsmLocalLoadStmt> {
     }
 
     virtual RegFields dest_registers() const override {
-        return val;
+        return {val};
     }
 
     virtual RegFields source_registers() const override {
@@ -740,7 +744,7 @@ struct AsmGlobalLoadStmt : AsmStmt<AsmGlobalLoadStmt> {
     }
 
     virtual RegFields dest_registers() const override {
-        return val;
+        return {val};
     }
 
     virtual RegFields source_registers() const override {
@@ -771,7 +775,7 @@ struct AsmParamLoadStmt : AsmStmt<AsmParamLoadStmt> {
     }
 
     virtual RegFields dest_registers() const override {
-        return val;
+        return {val};
     }
 
     virtual RegFields source_registers() const override {

@@ -7,7 +7,7 @@ namespace zfx {
 struct Statement;
 
 using StmtFields = std::vector<std::reference_wrapper<Statement *>>;
-using RegFields = std::vector<std::reference_wrapper<int>>;
+using RegFields = std::vector<int>;
 
 struct Statement {
     int id;
