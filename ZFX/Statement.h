@@ -7,6 +7,7 @@ namespace zfx {
 struct Statement;
 
 using StmtFields = std::vector<std::reference_wrapper<Statement *>>;
+using RegFields = std::vector<std::reference_wrapper<int>>;
 
 struct Statement {
     int id;
@@ -31,10 +32,10 @@ struct Statement {
         return false;
     }
 
-    virtual int affect_register() const {
-        return -1;
+    virtual RegFields dest_registers() const {
+        return {};
     }
-    virtual std::vector<int> source_registers() const {
+    virtual RegFields source_registers() const {
         return {};
     }
 };
