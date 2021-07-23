@@ -17,6 +17,7 @@ struct Options {
     bool save_math_registers = true;
     int arch_maxregs = 8;
 
+    bool detect_new_channels = true;
     bool reassign_parameters = true;
     bool reassign_channels = true;
 

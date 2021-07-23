@@ -21,9 +21,8 @@ int main() {
 #endif
 
     zfx::Options opts(zfx::Options::for_x64);
+    opts.detect_new_channels = true;
     opts.define_symbol("@pos", n);
-    opts.define_symbol("@clr", n);
-    //opts.reassign_channels = false;
     auto prog = compiler.compile(code, opts);
     auto exec = assembler.assemble(prog->assembly);
 
@@ -36,9 +35,10 @@ int main() {
         ctx.channel(prog->symbol_id("@pos", i))[0] = 1.414f;
     }
     ctx.execute();
-    printf("%f\n", ctx.channel(2)[0]);
     for (int i = 0; i < n; i++) {
-        printf("%f\n", ctx.channel(prog->symbol_id("@clr", i))[0]);
+        auto sid = prog->symbol_id("@clr", i);
+        printf("%d\n", sid);
+        printf("%f\n", ctx.channel(sid)[0]);
     }
 
     return 0;

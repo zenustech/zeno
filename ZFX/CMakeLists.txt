@@ -14,9 +14,9 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 endif()
 
 if (CMAKE_BUILD_TYPE EQUAL Debug)
-    option(ZFX_PRINT_IR "Print IR for the ZFX compiler" OFF)
-else()
     option(ZFX_PRINT_IR "Print IR for the ZFX compiler" ON)
+else()
+    option(ZFX_PRINT_IR "Print IR for the ZFX compiler" OFF)
 endif()
 
 add_library(ZFX STATIC
