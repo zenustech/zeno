@@ -114,8 +114,8 @@ public:
     T *cast() const {
         using P = copiable_unique_ptr<typename poly_base_of<T>::type>;
         auto p = dynamic_cast<_AnyImpl<P> *>(m_ptr.get());
-        printf("!?%p %s %s\n", p, typeid(m_ptr.get()).name(),
-                typeid(_AnyImpl<P> *).name());
+        printf("!?%p %s %s\n", p, typeid(*m_ptr).name(),
+                typeid(_AnyImpl<P>).name());
         if (!p) return nullptr;
         return dynamic_cast<T *>(p->t.get());
     }
@@ -157,9 +157,17 @@ public:
         return {m_ptr->clone()};
     }
 
-    template <class T, class ...Ts>
+    template <class T, class ...Ts,
+             std::enable_if_t<!poly_base_of<T>::value, int> = 0>
     void emplace(Ts &&...ts) {
         m_ptr = std::make_shared<_AnyImpl<T>>(std::forward<Ts>(ts)...);
+    }
+
+    template <class T, class ...Ts,
+             std::enable_if_t<poly_base_of<T>::value, int> = 0>
+    void emplace(Ts &&...ts) {
+        using P = copiable_unique_ptr<typename poly_base_of<T>::type>;
+        m_ptr = std::make_shared<_AnyImpl<P>>(std::forward<Ts>(ts)...);
     }
 
     template <class T, class ...Ts>
