@@ -206,6 +206,8 @@ class QDMGraphicsNode(QGraphicsItem):
         for v in self.childItems():
             v.hide()
 
+        for v in self.options.values():
+            v.show()
         self.dummy_input_socket.show()
         self.dummy_output_socket.show()
         self.collapse_button.show()
