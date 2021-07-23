@@ -35,6 +35,7 @@ std::tuple
         [ ir
         , symbols
         , params
+        , temporaries
         ] = lower_ast
         ( std::move(asts)
         , options.symdims
@@ -67,6 +68,16 @@ std::tuple
 #ifdef ZFX_PRINT_IR
     ir->print();
 #endif
+
+    if (options.detect_new_channels) {
+#ifdef ZFX_PRINT_IR
+        cout << "=== DetectNewChannels" << endl;
+#endif
+        apply_detect_new_channels(ir.get(), temporaries);
+#ifdef ZFX_PRINT_IR
+        ir->print();
+#endif
+    }
 
 #ifdef ZFX_PRINT_IR
     cout << "=== ExpandFunctions" << endl;

@@ -8,6 +8,7 @@ namespace zfx {
 void apply_control_check(IR *ir);
 void apply_symbol_check(IR *ir);
 void apply_type_check(IR *ir);
+void apply_detect_new_channels(IR *ir, std::map<int, std::string> temps);
 std::unique_ptr<IR> apply_expand_functions(IR *ir);
 std::unique_ptr<IR> apply_lower_math(IR *ir);
 std::unique_ptr<IR> apply_math_functions(IR *ir);
