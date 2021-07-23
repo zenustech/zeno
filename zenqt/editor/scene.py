@@ -302,7 +302,7 @@ class QDMGraphicsView(QGraphicsView):
         if name == '':
             return
         node = self.scene().makeNode(name)
-        node.initSockets()
+        node.initUI()
         node.setPos(self.lastContextMenuPos)
         self.scene().addNode(node)
         self.autoConnectSpecialNode(node)
@@ -311,7 +311,7 @@ class QDMGraphicsView(QGraphicsView):
     def autoConnectSpecialNode(self, node):
         def connectWith(new_name, sock_name):
             new_node = self.scene().makeNode(new_name)
-            new_node.initSockets()
+            new_node.initUI()
             new_node.setPos(self.lastContextMenuPos + QPointF(300, 0))
             self.scene().addNode(new_node)
             src = node.outputs[sock_name]

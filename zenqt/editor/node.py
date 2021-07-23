@@ -155,6 +155,8 @@ class QDMGraphicsNode(QGraphicsItem):
         y += TEXT_HEIGHT * 0.75
         self.height = y
 
+    def initUI(self):
+        self.initSockets()
         self.title.setPos(HORI_MARGIN * 0.8, self.height)
         pad = style['button_svg_padding']
         self.collapse_button.setPos(style['node_title_width'] + pad, self.height + pad)
@@ -320,7 +322,7 @@ class QDMGraphicsNode(QGraphicsItem):
         posx, posy = data['uipos']
         options = data.get('options', [])
 
-        self.initSockets()
+        self.initUI()
         self.setIdent(ident)
         self.setName(name)
         self.setPos(posx, posy)
