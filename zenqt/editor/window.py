@@ -46,17 +46,6 @@ class QDMEditMenu(QMenu):
             action.setShortcut(shortcut)
             self.addAction(action)
 
-class QDMDisplayMenu(QMenu):
-    def __init__(self):
-        super().__init__()
-
-        self.setTitle('Display')
-
-        action = QAction('Show Grid', self)
-        action.setCheckable(True)
-        action.setChecked(True)
-        self.addAction(action)
-
 
 class NodeEditor(QWidget):
     def __init__(self, parent=None):
@@ -81,10 +70,6 @@ class NodeEditor(QWidget):
         self.menuEdit = QDMEditMenu()
         self.menuEdit.triggered.connect(self.menuTriggered)
         self.menubar.addMenu(self.menuEdit)
-
-        self.menuDisplay = QDMDisplayMenu()
-        self.menuDisplay.triggered.connect(self.menuTriggered)
-        self.menubar.addMenu(self.menuDisplay)
 
         self.view = QDMGraphicsView(self)
         self.layout.addWidget(self.view)
@@ -365,10 +350,6 @@ class NodeEditor(QWidget):
 
         elif name == 'Paste':
             self.do_paste()
-
-        elif name == 'Show Grid':
-            checked = act.isChecked()
-            zenvis.pyzenvis.set_show_grid(checked)
 
     def do_copy(self):
         itemList = self.scene.selectedItems()

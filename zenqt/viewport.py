@@ -111,6 +111,43 @@ class ViewportWidget(QGLWidget):
         self.repaint()
 
 
+class QDMDisplayMenu(QMenu):
+    def __init__(self):
+        super().__init__()
+
+        self.setTitle('Display')
+
+        action = QAction('Show Grid', self)
+        action.setCheckable(True)
+        action.setChecked(True)
+        self.addAction(action)
+
+
+class DisplayWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+
+        self.menubar = QMenuBar()
+        self.layout.addWidget(self.menubar)
+
+        self.menuDisplay = QDMDisplayMenu()
+        self.menuDisplay.triggered.connect(self.menuTriggered)
+        self.menubar.addMenu(self.menuDisplay)
+        
+        self.view = ViewportWidget()
+        self.layout.addWidget(self.view)
+        self.setLayout(self.layout)
+    
+    def on_update(self):
+        self.view.on_update()
+    
+    def menuTriggered(self, act):
+        if name == 'Show Grid':
+            checked = act.isChecked()
+            zenvis.pyzenvis.set_show_grid(checked)
+
 for name in ['mousePressEvent', 'mouseMoveEvent', 'wheelEvent']:
     def closure(name):
         oldfunc = getattr(ViewportWidget, name)
