@@ -222,11 +222,11 @@ class QDMGraphicsNode(QGraphicsItem):
                 edge.updatePath()
 
     def unfold(self):
-        self.dummy_input_socket.hide()
-        self.dummy_output_socket.hide()
-
         for v in self.childItems():
             v.show()
+
+        self.dummy_input_socket.hide()
+        self.dummy_output_socket.hide()
 
         self.collapsed = False
         self.collapse_button.update_svg(self.collapsed)
