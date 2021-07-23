@@ -24,8 +24,11 @@ add_library(ZFX STATIC
 AST.h
 ConstParametrize.cpp
 ControlCheck.cpp
+DetectNewChannels.cpp
 EmitAssembly.cpp
 ExpandFunctions.cpp
+ReassignGlobals.cpp
+ReassignParameters.cpp
 GlobalLocalize.cpp
 include/zfx/utils.h
 include/zfx/x64.h
