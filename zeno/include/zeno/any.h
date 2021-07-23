@@ -1,16 +1,16 @@
 #pragma once
 
-#include <zeno/memory.h>
+#include <cstdio>
+#include <memory>
 
 namespace zeno {
 
 template <class T, class = void>
-struct poly_base_of {
-    using type = T;
+struct poly_base_of : std::false_type {
 };
 
 template <class T>
-struct poly_base_of<T, std::void_t<typename T::poly_base>> {
+struct poly_base_of<T, std::void_t<typename T::poly_base>> : std::true_type {
     using type = typename T::poly_base;
 };
 
@@ -21,11 +21,12 @@ class shared_any {
         virtual ~_AnyBase() = default;
     };
 
-    template <class T>
+    template <class T, class = void>
     struct _AnyImpl : _AnyBase {
         T t;
 
-        _AnyImpl(T const &t) : t(t) {}
+        template <class ...Ts>
+        _AnyImpl(Ts &&...ts) : t(std::forward<Ts>(ts)...) {}
 
         virtual std::shared_ptr<_AnyBase> clone() const {
             return std::make_shared<_AnyImpl<T>>(t);
@@ -40,12 +41,38 @@ class shared_any {
     };
 
     template <class T>
-    struct _AnyImpl<copiable_unique_ptr<T>> : _AnyBase {
+    struct copiable_unique_ptr : std::unique_ptr<T> {
+        using std::unique_ptr<T>::unique_ptr;
+        using std::unique_ptr<T>::operator=;
+
+        copiable_unique_ptr &operator=(copiable_unique_ptr const &o) {
+            std::unique_ptr<T>::operator=(std::unique_ptr<T>(
+                std::make_unique<T>(static_cast<T const &>(*o))));
+            return *this;
+        }
+
+        copiable_unique_ptr(std::unique_ptr<T> &&o)
+            : std::unique_ptr<T>(std::move(o)) {
+        }
+
+        copiable_unique_ptr(copiable_unique_ptr const &o)
+            : std::unique_ptr<T>(std::make_unique<T>(
+                static_cast<T const &>(*o))) {
+        }
+
+        operator std::unique_ptr<T> &() { return *this; }
+        operator std::unique_ptr<T> const &() const { return *this; }
+    };
+
+    template <class T>
+    struct _AnyImpl<copiable_unique_ptr<T>,
+        std::void_t<typename poly_base_of<T>::type>> : _AnyBase {
         using P = copiable_unique_ptr<typename poly_base_of<T>::type>;
 
         P t;
 
-        _AnyImpl(P const &t) : t(t) {}
+        template <class ...Ts>
+        _AnyImpl(Ts &&...ts) : t(std::forward<Ts>(ts)...) {}
 
         virtual std::shared_ptr<_AnyBase> clone() const {
             return std::make_shared<_AnyImpl<P>>(t);
@@ -83,22 +110,31 @@ public:
         return *this;
     }
 
-    template <class T>
-    T *poly_cast() const {
+    template <class T, std::enable_if_t<poly_base_of<T>::value, int> = 0>
+    T *cast() const {
         using P = copiable_unique_ptr<typename poly_base_of<T>::type>;
         auto p = dynamic_cast<_AnyImpl<P> *>(m_ptr.get());
+        printf("!?%p %s %s\n", p, typeid(m_ptr.get()).name(),
+                typeid(_AnyImpl<P> *).name());
         if (!p) return nullptr;
         return dynamic_cast<T *>(p->t.get());
     }
 
-    template <class T>
+    template <class T, std::enable_if_t<!poly_base_of<T>::value, int> = 0>
     T *cast() const {
         auto p = dynamic_cast<_AnyImpl<T> *>(m_ptr.get());
         if (!p) return nullptr;
         return &p->t;
     }
 
-    template <class T>
+    template <class T, std::enable_if_t<poly_base_of<T>::value, int> = 0>
+    T *unsafe_cast() const {
+        using P = copiable_unique_ptr<typename poly_base_of<T>::type>;
+        auto p = static_cast<_AnyImpl<P> *>(m_ptr.get());
+        return static_cast<T *>(p->t.get());
+    }
+
+    template <class T, std::enable_if_t<!poly_base_of<T>::value, int> = 0>
     T *unsafe_cast() const {
         auto p = static_cast<_AnyImpl<T> *>(m_ptr.get());
         return &p->t;
