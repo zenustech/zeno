@@ -11,6 +11,8 @@ namespace zenvis {
 int curr_frameid = -1;
 
 static bool playing = true;
+static bool show_grid = true;
+
 static int nx = 960, ny = 800;
 
 static double last_xpos, last_ypos;
@@ -84,8 +86,10 @@ static void paint_graphics(void) {
   CHECK_GL(glClearColor(0.23f, 0.23f, 0.23f, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   vao->bind();
-  grid->draw();
-  axis->draw();
+  if (show_grid) {
+    grid->draw();
+    axis->draw();
+  }
   for (auto const &[key, gra]: current_frame_data()->graphics) {
     gra->draw();
   }
@@ -136,6 +140,10 @@ double get_render_fps() {
 
 double get_solver_interval() {
   return solverFPS.interval();
+}
+
+void set_show_grid(bool flag) {
+    show_grid = flag;
 }
 
 }
