@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/StringObject.h>
-
+#include <zeno/NumericObject.h>
 namespace zeno {
 
 struct HeatmapObject : zeno::IObject {
@@ -27,7 +27,7 @@ struct MakeHeatmap : zeno::INode {
         for (int i = 0; i < count; i++) {
             float f = 0.f, x = 0.f, y = 0.f, z = 0.f;
             ss >> f >> x >> y >> z;
-            //printf("%f %f %f %f\n", f, x, y, z);
+            printf("%f %f %f %f\n", f, x, y, z);
             colors.emplace_back(
                     f, zeno::vec3f(x, y, z));
         }
@@ -73,10 +73,17 @@ struct PrimitiveColorByHeatmap : zeno::INode {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto heatmap = get_input<HeatmapObject>("heatmap");
         auto attrName = get_param<std::string>("attrName");
+        float maxv = 1.0f;
+        float minv = 0.0f;
+        if(has_input("max"))
+            maxv = get_input<NumericObject>("max")->get<float>();
+        if(has_input("min"))
+            minv = get_input<NumericObject>("min")->get<float>();
         auto &clr = prim->add_attr<zeno::vec3f>("clr");
         auto &src = prim->attr<float>(attrName);
-
+        #pragma omp parallel for //ideally this could be done in opengl
         for (int i = 0; i < src.size(); i++) {
+            src[i] = (src[i]-minv)/(maxv-minv);
             clr[i] = heatmap->interp(src[i]);
         }
 
@@ -86,7 +93,7 @@ struct PrimitiveColorByHeatmap : zeno::INode {
 
 ZENDEFNODE(PrimitiveColorByHeatmap,
         { /* inputs: */ {
-        "prim", "heatmap",
+        "prim", "heatmap", "min", "max", 
         }, /* outputs: */ {
         "prim",
         }, /* params: */ {

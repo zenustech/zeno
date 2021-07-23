@@ -40,10 +40,10 @@ struct SaveMathRegisters : Visitor<SaveMathRegisters> {
     }
 };
 
-std::unique_ptr<IR> apply_save_math_registers(IR *ir, int nregs) {
+std::unique_ptr<IR> apply_save_math_registers(IR *ir, int nregs, int memsize) {
     SaveMathRegisters visitor;
     visitor.nregs = nregs;
-    visitor.minaddr = ir->size() * 50;
+    visitor.minaddr = memsize;
     visitor.apply(ir);
     return std::move(visitor.ir);
 }

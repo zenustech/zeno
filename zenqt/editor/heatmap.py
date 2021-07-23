@@ -1,7 +1,22 @@
 from . import *
 
 
-class QDMGraphicsRampDragger(QGraphicsItem):
+
+class QDMGraphicsItemNoDragThrough(QGraphicsItem):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setAcceptHoverEvents(True)
+
+    def hoverEnterEvent(self, event):
+        self.parentItem().setFlag(QGraphicsItem.ItemIsMovable, False)
+        super().hoverEnterEvent(event)
+
+    def hoverLeaveEvent(self, event):
+        self.parentItem().setFlag(QGraphicsItem.ItemIsMovable, True)
+        super().hoverLeaveEvent(event)
+
+
+class QDMGraphicsRampDragger(QDMGraphicsItemNoDragThrough):
     def __init__(self, parent):
         super().__init__(parent)
         self.setFlag(QGraphicsItem.ItemIsMovable)
@@ -49,7 +64,12 @@ class QDMGraphicsRampDragger(QGraphicsItem):
         self.parent.updateRamps()
 
     def setSelected(self, selected):
+        super().setSelected(selected)
         self.selected = selected
+
+    def mouseDoubleClickEvent(self, event):
+        super().mouseDoubleClickEvent(event)
+        self.remove()
 
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
@@ -70,7 +90,7 @@ class QDMGraphicsRampDragger(QGraphicsItem):
             self.parent.removeRamp(self)
 
 
-class QDMGraphicsColorChannel(QGraphicsItem):
+class QDMGraphicsColorChannel(QDMGraphicsItemNoDragThrough):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
@@ -105,7 +125,7 @@ class QDMGraphicsColorChannel(QGraphicsItem):
         painter.drawRect(0, 0, self.rect.width(), self.rect.height())
 
 
-class QDMGraphicsColorRamp(QGraphicsItem):
+class QDMGraphicsColorRamp(QDMGraphicsItemNoDragThrough):
     def __init__(self, parent):
         super().__init__(parent)
         self.rect = QRectF()
@@ -158,7 +178,8 @@ class QDMGraphicsColorRamp(QGraphicsItem):
         new_ramp = (fac, rgb)
         self.ramps.insert(i, new_ramp)
         self.initDraggers()
-        self.draggers[i].setSelected(True)
+        dragger = self.draggers[i]
+        self.updateRampSelection(dragger)
 
     def initDraggers(self):
         for dragger in self.draggers:

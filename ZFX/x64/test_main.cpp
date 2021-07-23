@@ -16,29 +16,37 @@ int main() {
 #else
     int n = 2;
     std::string code(R"(
-@clr = 0.5 + sin(@pos)
+@clr = pow(@pos.x, 2)
 )");
 #endif
 
     zfx::Options opts(zfx::Options::for_x64);
-    opts.arch_maxregs = 5;
+    opts.detect_new_symbols = true;
+    opts.reassign_channels = false;
+    opts.reassign_parameters = false;
     opts.define_symbol("@pos", n);
     opts.define_symbol("@clr", n);
-    //opts.reassign_channels = false;
     auto prog = compiler.compile(code, opts);
     auto exec = assembler.assemble(prog->assembly);
 
     for (auto const &[key, dim]: prog->symbols) {
         printf("%s.%d\n", key.c_str(), dim);
     }
+    for (auto const &[key, dim]: prog->newsyms) {
+        printf("new symbol %s with dim %d\n", key.c_str(), dim);
+    }
 
     auto ctx = exec->make_context();
     for (int i = 0; i < n; i++) {
-        ctx.channel(prog->symbol_id("@pos", i))[0] = 1.0f;
+        ctx.channel(prog->symbol_id("@pos", i))[0] = 1.414f;
     }
     ctx.execute();
     for (int i = 0; i < n; i++) {
-        printf("%f\n", ctx.channel(prog->symbol_id("@clr", i))[0]);
+        int sid = prog->symbol_id("@pos", i);
+        printf("%d\n", sid);
+        sid = prog->symbol_id("@clr", i);
+        printf("%d\n", sid);
+        printf("%f\n", ctx.channel(sid)[0]);
     }
 
     return 0;

@@ -1,6 +1,5 @@
 #include "IRVisitor.h"
 #include "Stmts.h"
-#include <functional>
 #include <map>
 
 namespace zfx {
@@ -14,27 +13,6 @@ struct ParamMaxCounter : Visitor<ParamMaxCounter> {
 
     void visit(AsmParamLoadStmt *stmt) {
         nuniforms = std::max(nuniforms, stmt->mem + 1);
-    }
-};
-
-struct ReassignParameters : Visitor<ReassignParameters> {
-    using visit_stmt_types = std::tuple
-        < AsmParamLoadStmt
-        >;
-
-    std::map<int, int> uniforms;
-
-    int replace(int id) {
-        if (auto it = uniforms.find(id); it != uniforms.end()) {
-            return it->second;
-        }
-        int ret = uniforms.size();
-        uniforms[id] = ret;
-        return ret;
-    }
-
-    void visit(AsmParamLoadStmt *stmt) {
-        stmt->mem = replace(stmt->mem);
     }
 };
 
@@ -75,12 +53,6 @@ struct ConstParametrize : Visitor<ConstParametrize> {
         return res;
     }
 };
-
-std::map<int, int> apply_reassign_parameters(IR *ir) {
-    ReassignParameters reassign;
-    reassign.apply(ir);
-    return reassign.uniforms;
-}
 
 std::map<int, std::string> apply_const_parametrize(IR *ir) {
     ParamMaxCounter counter;

@@ -3,4 +3,4 @@ NoReluctantLoad
 KillUnreached
 MergeIdentical
 MergeLocalStorage
-refactor zsg file format
+refactor zsg file format for input output both connection
