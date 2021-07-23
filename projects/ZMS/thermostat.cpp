@@ -28,7 +28,7 @@ struct ScaleVelocity: zeno::INode {
     }
     auto energy = zeno::IObject::make<NumericObject>();
     energy->set<float>(ek * 0.5);
-    set_output_ref("prim", get_input_ref("prim"));
+    set_output("prim", get_input("prim"));
     set_output("kinetic energy", energy);
   }
 

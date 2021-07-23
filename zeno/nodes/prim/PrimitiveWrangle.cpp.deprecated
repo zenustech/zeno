@@ -450,7 +450,7 @@ struct PrimitiveWrangle : zeno::INode {
         opcode->apply(i, primList);
     }
 
-    set_output_ref("prim0", get_input_ref("prim0"));
+    set_output("prim0", get_input("prim0"));
   }
 };
 

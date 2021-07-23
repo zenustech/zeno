@@ -23,7 +23,7 @@ struct PeriodicBoundary : zeno::INode {
         }
     }
 
-    set_output_ref("prims", get_input_ref("prims"));
+    set_output("prims", get_input("prims"));
   }
 };
 
@@ -55,7 +55,7 @@ struct SimulationBox : zeno::INode {
     auto n_particles_obj = zeno::IObject::make<NumericObject>();
     n_particles_obj->set(n_particles);
 
-    set_output_ref("prim", get_input_ref("prim"));
+    set_output("prim", get_input("prim"));
     set_output("boxlength", boxlength_obj);
     set_output("n_particles", n_particles_obj);
     
@@ -106,7 +106,7 @@ struct InitializeSystem: zeno::INode {
     for (int i = 0; i < n; i++) {
         vel[i] -= vcm;
     }
-    set_output_ref("prim", get_input_ref("prim"));
+    set_output("prim", get_input("prim"));
   }
 
 };
