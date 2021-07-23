@@ -110,7 +110,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@pos.z = sin($frame_id / 10)\n@clr = vec3(1, 1, 1)"
+      "value": "@pos.z = sin($frame_id / 10)\n@clr = vec3(cos(@pos.xy + $frame_id / 4) * 0.5 + 0.5, 0.5)"
      },
      "uipos": [
       -238.71999999999997,
@@ -205,7 +205,7 @@
     }
    },
    "view": {
-    "scale": 1.5625,
+    "scale": 1.953125,
     "trans_x": -772,
     "trans_y": 472
    }
