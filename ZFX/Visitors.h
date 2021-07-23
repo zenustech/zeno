@@ -9,7 +9,8 @@ void apply_control_check(IR *ir);
 void apply_symbol_check(IR *ir);
 void apply_type_check(IR *ir);
 std::map<std::string, int> apply_detect_new_channels(IR *ir,
-        std::map<int, std::string> const &temps);
+        std::map<int, std::string> const &temps,
+        std::vector<std::pair<std::string, int>> &symbols);
 std::unique_ptr<IR> apply_expand_functions(IR *ir);
 std::unique_ptr<IR> apply_lower_math(IR *ir);
 std::unique_ptr<IR> apply_math_functions(IR *ir);

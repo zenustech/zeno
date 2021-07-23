@@ -73,7 +73,7 @@ std::tuple
 #ifdef ZFX_PRINT_IR
         cout << "=== DetectNewChannels" << endl;
 #endif
-        apply_detect_new_channels(ir.get(), temporaries);
+        apply_detect_new_channels(ir.get(), temporaries, symbols);
 #ifdef ZFX_PRINT_IR
         ir->print();
 #endif
