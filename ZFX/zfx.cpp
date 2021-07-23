@@ -8,6 +8,7 @@ std::tuple
     < std::string
     , std::vector<std::pair<std::string, int>>
     , std::vector<std::pair<std::string, int>>
+    , std::map<std::string, int>
     > compile_to_assembly
     ( std::string const &code
     , Options const &options
@@ -69,11 +70,13 @@ std::tuple
     ir->print();
 #endif
 
+    std::map<std::string, int> newsyms;
     if (options.detect_new_channels) {
 #ifdef ZFX_PRINT_IR
         cout << "=== DetectNewChannels" << endl;
 #endif
-        apply_detect_new_channels(ir.get(), temporaries, symbols);
+        newsyms = apply_detect_new_channels(
+                ir.get(), temporaries, symbols);
 #ifdef ZFX_PRINT_IR
         ir->print();
 #endif
@@ -223,6 +226,7 @@ std::tuple
         { assem
         , symbols
         , params
+        , newsyms
         };
 }
 
