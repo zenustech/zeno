@@ -12,14 +12,16 @@ RUN pacman -S python --noconfirm
 RUN pacman -S python-pip --noconfirm
 RUN pacman -S pybind11 --noconfirm
 RUN pacman -S tbb --noconfirm
-RUN pacman -S cblas --noconfirm
 RUN pacman -S boost --noconfirm
 RUN pacman -S openvdb --noconfirm
 RUN pacman -S eigen --noconfirm
-RUN pacman -S openblas --noconfirm
 RUN pacman -S lapack --noconfirm
 
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
-RUN pip install -r numpy PySide2
+RUN pip install numpy PySide2
+
+RUN pacman -S git --noconfirm
+RUN pacman -S gcc --noconfirm
+RUN pacman -S make --noconfirm
 
 ENTRYPOINT bash

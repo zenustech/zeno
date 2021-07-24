@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
+make -C build -j32
+make -C build install
 
 rm -rf /tmp/build
 mkdir -p /tmp/build/{bin,lib/python3.9}
