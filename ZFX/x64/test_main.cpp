@@ -16,7 +16,7 @@ int main() {
 #else
     int n = 1;
     std::string code(R"(
-@clr = sin(@pos)
+@clr = !0 ? 2 : 3
 )");
 #endif
 

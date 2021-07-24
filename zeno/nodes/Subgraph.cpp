@@ -1,20 +1,31 @@
 #include <zeno/zeno.h>
 #include <zeno/GlobalState.h>
+#include <zeno/ConditionObject.h>
 #include <zeno/safe_at.h>
 #include <cassert>
 
 
+namespace {
+
 struct SubInput : zeno::INode {
     virtual void apply() override {
         auto name = get_param<std::string>("name");
-        auto obj = zeno::safe_at(graph->subInputs, name, "subinput");
-        set_output("port", std::move(obj));
+        if (auto it = graph->subInputs.find(name);
+                it == graph->subInputs.end()) {
+            set_output("hasValue",
+                    std::make_shared<zeno::ConditionObject>(false));
+        } else {
+            auto obj = it->second;
+            set_output("port", std::move(obj));
+            set_output("hasValue",
+                    std::make_shared<zeno::ConditionObject>(true));
+        }
     }
 };
 
 ZENDEFNODE(SubInput, {
     {},
-    {"port"},
+    {"port", "hasValue"},
     {{"string", "name", "input1"}},
     {"subgraph"},
 });
@@ -88,3 +99,4 @@ ZENDEFNODE(SubCategory, {
 });
 
 
+}

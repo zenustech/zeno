@@ -121,11 +121,11 @@ ZENAPI bool INode::has_input(std::string const &id) const {
 }
 
 ZENAPI std::shared_ptr<IObject> INode::get_input(std::string const &id) const {
-    return safe_at(inputs, id, "input");
+    return safe_at(inputs, id, "input", myname);
 }
 
 ZENAPI IValue INode::get_param(std::string const &id) const {
-    return safe_at(params, id, "param");
+    return safe_at(params, id, "param", myname);
 }
 
 ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
@@ -135,7 +135,7 @@ ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&
 ZENAPI std::shared_ptr<IObject> const &Graph::getNodeOutput(
     std::string const &sn, std::string const &ss) const {
     auto node = safe_at(nodes, sn, "node");
-    return safe_at(node->outputs, ss, "output");
+    return safe_at(node->outputs, ss, "output", node->myname);
 }
 
 ZENAPI void Graph::clearNodes() {
@@ -165,18 +165,31 @@ ZENAPI void Graph::applyNode(std::string const &id) {
 #ifdef ZENO_DETAILED_LOG
     printf("+ %s\n", id.c_str());
 #endif
-    safe_at(nodes, id, "node")->doApply();
+    auto node = safe_at(nodes, id, "node");
+    try {
+        node->doApply();
+    } catch (std::exception const &e) {
+        throw zeno::Exception("During evaluation of `"
+                + node->myname + "`:\n" + e.what());
+    }
 #ifdef ZENO_DETAILED_LOG
     printf("- %s\n", id.c_str());
 #endif
 }
 
 ZENAPI void Graph::applyNodes(std::vector<std::string> const &ids) {
-    ctx = std::make_unique<Context>();
-    for (auto const &id: ids) {
-        applyNode(id);
+    try {
+        ctx = std::make_unique<Context>();
+        for (auto const &id: ids) {
+            applyNode(id);
+        }
+        ctx = nullptr;
+    } catch (std::exception const &e) {
+        ctx = nullptr;
+        throw zeno::Exception(
+                (std::string)"ZENO Traceback (most recent call last):\n"
+                + e.what());
     }
-    ctx = nullptr;
 }
 
 ZENAPI void Graph::bindNodeInput(std::string const &dn, std::string const &ds,

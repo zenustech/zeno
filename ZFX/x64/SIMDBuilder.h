@@ -21,7 +21,7 @@ namespace opcode {
         min = 0x5d,
         max = 0x5f,
         bit_and = 0x54,
-        bit_andnot = 0x55,
+        bit_andn = 0x55,
         bit_or = 0x56,
         bit_xor = 0x57,
         sqrt = 0x51,
@@ -29,6 +29,23 @@ namespace opcode {
         loada = 0x28,
         storeu = 0x11,
         storea = 0x29,
+        cmp_eq = 0x00c2,
+        cmp_ne = 0x04c2,
+        cmp_lt = 0x01c2,
+        cmp_le = 0x02c2,
+        cmp_gt = 0x0ec2,
+        cmp_ge = 0x0dc2,
+    };
+};
+
+namespace jmpcode {
+    enum {
+        je = 0x04,
+        jne = 0x05,
+        jl = 0x0c,
+        jle = 0x0e,
+        jg = 0x0f,
+        jge = 0x0d,
     };
 };
 
@@ -220,8 +237,11 @@ struct SIMDBuilder {   // requires AVX2
     void addAvxBinaryOp(int type, int op, int dst, int lhs, int rhs) {
         res.push_back(0xc5);
         res.push_back(type | ~lhs << 3);
-        res.push_back(op);
+        res.push_back(op & 0xff);
         res.push_back(0xc0 | dst << 3 | rhs);
+        if ((op & 0xff) == 0xc2) {
+           res.push_back(op >> 8);
+        }
     }
 
     void addAvxUnaryOp(int type, int op, int dst, int src) {
@@ -230,6 +250,18 @@ struct SIMDBuilder {   // requires AVX2
 
     void addAvxMoveOp(int type, int dst, int src) {
         addAvxBinaryOp(opcode::loadu, opcode::mov, dst, opreg::mm0, src);
+    }
+
+    void addJumpOp(int off) {
+        off -= 4;
+        if (-128 <= off && off <= 127) {
+            res.push_back(0xeb);
+            res.push_back(off & 0xff);
+        } else {
+            off -= 6;
+            res.push_back(0xe9);
+            res.push_back(off);
+        }
     }
 
     void addPushReg(int reg) {

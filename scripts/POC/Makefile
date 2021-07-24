@@ -1,4 +1,4 @@
-x=ptr2any
+x=ieee
 
 x: $x.exe Makefile
 	./$<

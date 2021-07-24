@@ -121,19 +121,19 @@ protected:
 
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
-        return std::dynamic_pointer_cast<T>(get_input(id));
+        auto obj = get_input(id);
+        auto p = std::dynamic_pointer_cast<T>(std::move(obj));
+        if (!p) {
+            throw Exception("input socket `" + id + "` expect `"
+                    + typeid(T).name() + "`, got `"
+                    + typeid(*obj.get()).name() + "`");
+        }
+        return p;
     }
 
     template <class T>
     T get_param(std::string const &id) const {
         return std::get<T>(get_param(id));
-    }
-
-    template <class T>
-    [[deprecated("use set_output(id, std::move(obj))")]]
-    void set_output(std::string const &id,
-        std::shared_ptr<T> &obj) {
-        set_output(id, std::move(obj));
     }
 };
 

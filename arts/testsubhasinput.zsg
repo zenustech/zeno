@@ -2,156 +2,205 @@
  "graph": {
   "main": {
    "nodes": {
-    "9a345514-NumericInt": {
+    "300d82db-NumericInt": {
      "name": "NumericInt",
      "inputs": {
       "SRC": null
      },
      "params": {
-      "value": 32
+      "value": 16
      },
      "uipos": [
-      495.4000000000001,
-      227.60000000000002
+      -97.53999999999996,
+      85.68
      ],
      "options": []
     },
-    "ef4ec533-ParticlesWrangle": {
+    "3b1d8ec4-ParticlesWrangle": {
      "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       "730549a0-Make2DGridPrimitive",
+       "fa0c3931-PrimitiveRandomizeAttr",
        "prim"
       ],
       "zfxCode": [
-       "3e5f8949-MakeMultilineString",
+       "fef4c997-MakeMultilineString",
        "value"
       ],
-      "params": [
-       "ed95e8b4-MakeDict",
-       "dict"
-      ],
+      "params": null,
       "SRC": null
      },
      "params": {},
      "uipos": [
-      1014.4000000000001,
-      228.8
+      782.72,
+      220.16
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
-    "3e5f8949-MakeMultilineString": {
+    "fef4c997-MakeMultilineString": {
      "name": "MakeMultilineString",
      "inputs": {
       "SRC": null
      },
      "params": {
-      "value": "@rad = mix(2, 12, 0.5 + 0.5 * sin(@pos.x + $frame_id / 10))"
+      "value": "@rad = 10\n@clr = vec3(0.375, 0.75, 1.0)"
      },
      "uipos": [
-      1022.3999999999999,
-      436.00000000000006
+      720.0,
+      416.0
      ],
      "options": []
     },
-    "730549a0-Make2DGridPrimitive": {
-     "name": "Make2DGridPrimitive",
+    "fa0c3931-PrimitiveRandomizeAttr": {
+     "name": "PrimitiveRandomizeAttr",
+     "inputs": {
+      "prim": [
+       "10b49c66-make3d",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "attrName": "pos",
+      "min": -1.0,
+      "minY": -1.0,
+      "minZ": -1.0,
+      "max": 1.0,
+      "maxY": 1.0,
+      "maxZ": 1.0
+     },
+     "uipos": [
+      451.1500000000001,
+      143.45000000000005
+     ],
+     "options": []
+    },
+    "10b49c66-make3d": {
+     "name": "make3d",
+     "inputs": {
+      "nx": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      181.12000000000006,
+      221.44000000000003
+     ],
+     "options": [
+      "VIEW"
+     ]
+    }
+   },
+   "view": {
+    "scale": 1.25,
+    "trans_x": -402,
+    "trans_y": -103
+   }
+  },
+  "make3d": {
+   "nodes": {
+    "2a0b1a10-Make3DGridPrimitive": {
+     "name": "Make3DGridPrimitive",
      "inputs": {
       "nx": [
-       "9a345514-NumericInt",
-       "value"
+       "5e3ada11-IfElse",
+       "result"
       ],
       "ny": null,
+      "nz": null,
       "sizeX": null,
       "sizeY": null,
+      "sizeZ": null,
       "scale": null,
       "origin": null,
       "SRC": null
      },
      "params": {
-      "isCentered": 0,
-      "hasFaces": 0
+      "isCentered": 0
      },
      "uipos": [
-      753.5999999999999,
-      229.60000000000002
+      536.0,
+      243.0
      ],
-     "options": []
-    },
-    "ed95e8b4-MakeDict": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": null,
-      "frame_id": [
-       "67dbf542-NumericOperator",
-       "ret"
-      ]
-     },
-     "params": {
-      "_KEYS": "frame_id"
-     },
-     "uipos": [
-      747.1999999999999,
-      568.8000000000001
-     ],
-     "options": [],
-     "socket_keys": [
-      "frame_id"
+     "options": [
+      "VIEW"
      ]
     },
-    "5e432964-GetFrameNum": {
-     "name": "GetFrameNum",
+    "33d74b73-NumericInt": {
+     "name": "NumericInt",
      "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 4
+     },
+     "uipos": [
+      -172.79999999999993,
+      375.68
+     ],
+     "options": []
+    },
+    "5e3ada11-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "28b584a2-SubInput",
+       "port"
+      ],
+      "false": [
+       "33d74b73-NumericInt",
+       "value"
+      ],
+      "cond": [
+       "28b584a2-SubInput",
+       "hasValue"
+      ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      354.4000000000002,
-      623.1999999999998
+      158.72000000000003,
+      247.67999999999995
      ],
      "options": []
     },
-    "67dbf542-NumericOperator": {
-     "name": "NumericOperator",
+    "28b584a2-SubInput": {
+     "name": "SubInput",
      "inputs": {
-      "lhs": [
-       "5e432964-GetFrameNum",
-       "FrameNum"
-      ],
-      "rhs": [
-       "b551dbbc-GetFrameTime",
-       "time"
+      "SRC": null
+     },
+     "params": {
+      "name": "nx"
+     },
+     "uipos": [
+      -127.2,
+      136.00000000000006
+     ],
+     "options": []
+    },
+    "a95b62a1-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "2a0b1a10-Make3DGridPrimitive",
+       "prim"
       ],
       "SRC": null
      },
      "params": {
-      "op_type": "add"
+      "name": "prim"
      },
      "uipos": [
-      580.0,
-      772.8000000000001
-     ],
-     "options": []
-    },
-    "b551dbbc-GetFrameTime": {
-     "name": "GetFrameTime",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      334.4000000000001,
-      808.0
+      843.2,
+      307.20000000000005
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 103,
-    "trans_y": 90
+    "scale": 1.5625,
+    "trans_x": -373,
+    "trans_y": 142
    }
   }
  },
@@ -1630,6 +1679,7 @@
    ],
    "outputs": [
     "port",
+    "hasValue",
     "DST"
    ],
    "params": [
@@ -1714,6 +1764,21 @@
    "categories": [
     "numeric"
    ]
+  },
+  "make3d": {
+   "inputs": [
+    "nx",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],

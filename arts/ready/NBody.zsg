@@ -21,8 +21,8 @@
       "maxZ": 1.0
      },
      "uipos": [
-      221.36046875000005,
-      85.74031250000007
+      -65.7489062499999,
+      72.06843750000007
      ],
      "options": [
       "ONCE"
@@ -35,8 +35,8 @@
      },
      "params": {},
      "uipos": [
-      -239.17937499999982,
-      134.87015625000004
+      -336.8356249999998,
+      58.698281250000036
      ],
      "options": [
       "ONCE",
@@ -58,8 +58,8 @@
       "type": "float3"
      },
      "uipos": [
-      -237.13937499999986,
-      216.83015625000007
+      -334.79562499999986,
+      140.65828125000007
      ],
      "options": [
       "ONCE",
@@ -81,8 +81,8 @@
      },
      "params": {},
      "uipos": [
-      -237.41937499999983,
-      175.63015625000003
+      -335.07562499999983,
+      99.45828125000003
      ],
      "options": [
       "ONCE",
@@ -98,8 +98,8 @@
       "value": 1024
      },
      "uipos": [
-      -672.0567187499998,
-      139.88562499999998
+      -699.4004687499997,
+      42.229375000000005
      ],
      "options": [
       "ONCE"
@@ -114,8 +114,8 @@
       "value": "dis = @@pos - @pos\nacc = dis / pow(length(dis) + 0.01, 3)\n@vel +=  $dt * 0.001 * acc\n"
      },
      "uipos": [
-      569.6500000000001,
-      188.62000000000035
+      535.9000000000001,
+      152.37000000000035
      ],
      "options": []
     },
@@ -134,8 +134,8 @@
       "type": "float3"
      },
      "uipos": [
-      -234.05937499999982,
-      259.3101562500001
+      -331.7156249999998,
+      183.13828125000015
      ],
      "options": [
       "ONCE",
@@ -174,7 +174,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@pos += @vel * $dt\n@clr = abs(@vel)\n@rad = length(@vel) * 10"
+      "value": "@pos += @vel * $dt\n@clr = abs(@vel)\n@rad = length(@vel) * 5"
      },
      "uipos": [
       1514.6599999999994,
@@ -197,8 +197,8 @@
       "type": "float3"
      },
      "uipos": [
-      -235.8593749999999,
-      368.66015625
+      -333.5156249999999,
+      292.48828125000006
      ],
      "options": [
       "collapsed"
@@ -245,8 +245,8 @@
       "_KEYS": "dt"
      },
      "uipos": [
-      538.0,
-      535.25
+      465.5,
+      505.25
      ],
      "options": [],
      "socket_keys": [
@@ -260,8 +260,8 @@
      },
      "params": {},
      "uipos": [
-      223.5,
-      546.25
+      171.0,
+      543.75
      ],
      "options": []
     },
@@ -281,7 +281,10 @@
        "dfa30c9c-MakeDict",
        "dict"
       ],
-      "radius": null,
+      "radius": [
+       "d4914fbc-NumericFloat",
+       "value"
+      ],
       "SRC": null
      },
      "params": {},
@@ -302,12 +305,26 @@
      "height": 457.5,
      "title": "Blackboard",
      "content": "                                 \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\t     \t        connect this socket to end node if only wants neighbor force\n\n                                                             "
+    },
+    "d4914fbc-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.6
+     },
+     "uipos": [
+      678.75,
+      710.0
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 0.8,
-    "trans_x": 552,
-    "trans_y": 253
+    "trans_x": 544,
+    "trans_y": 303
    }
   }
  },

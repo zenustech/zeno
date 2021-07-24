@@ -1,4 +1,4 @@
-O=xuben.zsg
+O=arts/testpointshading.zsg
 
 default: run
 

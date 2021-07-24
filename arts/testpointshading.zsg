@@ -2,156 +2,126 @@
  "graph": {
   "main": {
    "nodes": {
-    "9a345514-NumericInt": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": 32
-     },
-     "uipos": [
-      495.4000000000001,
-      227.60000000000002
-     ],
-     "options": []
-    },
-    "ef4ec533-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "730549a0-Make2DGridPrimitive",
-       "prim"
-      ],
-      "zfxCode": [
-       "3e5f8949-MakeMultilineString",
-       "value"
-      ],
-      "params": [
-       "ed95e8b4-MakeDict",
-       "dict"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      1014.4000000000001,
-      228.8
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
-    "3e5f8949-MakeMultilineString": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "@rad = mix(2, 12, 0.5 + 0.5 * sin(@pos.x + $frame_id / 10))"
-     },
-     "uipos": [
-      1022.3999999999999,
-      436.00000000000006
-     ],
-     "options": []
-    },
-    "730549a0-Make2DGridPrimitive": {
-     "name": "Make2DGridPrimitive",
+    "4bb97511-Make3DGridPrimitive": {
+     "name": "Make3DGridPrimitive",
      "inputs": {
       "nx": [
-       "9a345514-NumericInt",
+       "300d82db-NumericInt",
        "value"
       ],
       "ny": null,
+      "nz": null,
       "sizeX": null,
       "sizeY": null,
+      "sizeZ": null,
       "scale": null,
       "origin": null,
       "SRC": null
      },
      "params": {
-      "isCentered": 0,
-      "hasFaces": 0
+      "isCentered": 1
      },
      "uipos": [
-      753.5999999999999,
-      229.60000000000002
+      166.5,
+      33.0
      ],
-     "options": []
-    },
-    "ed95e8b4-MakeDict": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": null,
-      "frame_id": [
-       "67dbf542-NumericOperator",
-       "ret"
-      ]
-     },
-     "params": {
-      "_KEYS": "frame_id"
-     },
-     "uipos": [
-      747.1999999999999,
-      568.8000000000001
-     ],
-     "options": [],
-     "socket_keys": [
-      "frame_id"
+     "options": [
+      "ONCE"
      ]
     },
-    "5e432964-GetFrameNum": {
-     "name": "GetFrameNum",
+    "300d82db-NumericInt": {
+     "name": "NumericInt",
      "inputs": {
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      354.4000000000002,
-      623.1999999999998
-     ],
-     "options": []
-    },
-    "67dbf542-NumericOperator": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "5e432964-GetFrameNum",
-       "FrameNum"
-      ],
-      "rhs": [
-       "b551dbbc-GetFrameTime",
-       "time"
-      ],
       "SRC": null
      },
      "params": {
-      "op_type": "add"
+      "value": 11
      },
      "uipos": [
-      580.0,
-      772.8000000000001
+      -97.53999999999996,
+      85.68
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "fef4c997-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "@clr = vec3(0.375, 0.75, 1.0)\n@pos.z += @@pos.z * 0.004 - @pos.z * (dot(@@pos.xy, @@pos.xy) + 0.1) * 0.008\n@pos.xy += cos(@@pos.z * 100) * @pos.xy * 0.01"
+     },
+     "uipos": [
+      683.52,
+      435.84
      ],
      "options": []
     },
-    "b551dbbc-GetFrameTime": {
-     "name": "GetFrameTime",
+    "82655833-ParticlesNeighborWrangle": {
+     "name": "ParticlesNeighborWrangle",
      "inputs": {
+      "prim": [
+       "4bb97511-Make3DGridPrimitive",
+       "prim"
+      ],
+      "primNei": null,
+      "zfxCode": [
+       "fef4c997-MakeMultilineString",
+       "value"
+      ],
+      "params": null,
+      "radius": [
+       "2f18a685-NumericFloat",
+       "value"
+      ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      334.4000000000001,
-      808.0
+      937.4400000000003,
+      236.3200000000001
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "2f18a685-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.101
+     },
+     "uipos": [
+      951.0399999999998,
+      488.9599999999999
+     ],
+     "options": []
+    },
+    "64b9d96a-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "4bb97511-Make3DGridPrimitive",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      549.7599999999999,
+      307.2
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 103,
-    "trans_y": 90
+    "scale": 1.0,
+    "trans_x": 300,
+    "trans_y": 152
    }
   }
  },
@@ -243,6 +213,20 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "Clone": {
+   "inputs": [
+    "object",
+    "SRC"
+   ],
+   "outputs": [
+    "newObject",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "portal"
    ]
   },
   "DictGetItem": {
@@ -982,6 +966,23 @@
     "numeric"
    ]
   },
+  "ParticleParticleWrangle": {
+   "inputs": [
+    "prim1",
+    "prim2",
+    "zfxCode",
+    "params",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
   "ParticlesNeighborWrangle": {
    "inputs": [
     "prim",
@@ -1630,6 +1631,7 @@
    ],
    "outputs": [
     "port",
+    "hasValue",
     "DST"
    ],
    "params": [

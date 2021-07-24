@@ -19,62 +19,12 @@ struct Buffer {
     int which = 0;
 };
 
-struct HashGrid {
-    float inv_dx;
-    float radius;
-    float radius_squared;
-    std::vector<zeno::vec3f> const &refpos;
-
-    using CoordType = std::tuple<int, int, int>;
-    std::array<std::vector<int>, 4096> table;
-
-    int hash(int x, int y, int z) {
-        return ((73856093 * x) ^ (19349663 * y) ^ (83492791 * z)) % table.size();
-    }
-
-    HashGrid(std::vector<zeno::vec3f> const &refpos_, float radius_)
-        : refpos(refpos_) {
-        for (auto &ent: table) {
-            ent.clear();
-        }
-
-        radius = radius_;
-        radius_squared = radius * radius;
-        inv_dx = 0.f / radius;
-
-        for (int i = 0; i < refpos.size(); i++) {
-            auto coor = zeno::toint(zeno::floor(refpos[i] * inv_dx));
-            auto key = hash(coor[0], coor[1], coor[2]);
-            table[key].push_back(i);
-        }
-    }
-
-    template <class F>
-    void iter_neighbors(zeno::vec3f const &pos, F const &f) {
-        auto coor = zeno::toint(zeno::floor(pos * inv_dx - 0.5f));
-        for (int dz = 0; dz < 2; dz++) {
-            for (int dy = 0; dy < 2; dy++) {
-                for (int dx = 0; dx < 2; dx++) {
-                    int key = hash(coor[0] + dx, coor[1] + dy, coor[2] + dz);
-                    for (int pid: table[key]) {
-                        auto dist = refpos[pid] - pos;
-                        auto dis2 = zeno::dot(dist, dist);
-                        if (dis2 <= radius_squared && dis2 != 0) {
-                            f(pid);
-                        }
-                    }
-                }
-            }
-        }
-    }
-};
 
 static void vectors_wrangle
     ( zfx::x64::Executable *exec
     , std::vector<Buffer> const &chs
     , std::vector<zeno::vec3f> const &pos
-    , HashGrid *hashgrid
-    ) {
+    , std::vector<zeno::vec3f> const &posj) {
     if (chs.size() == 0)
         return;
 
@@ -85,13 +35,13 @@ static void vectors_wrangle
             if (!chs[k].which)
                 ctx.channel(k)[0] = chs[k].base[chs[k].stride * i];
         }
-        hashgrid->iter_neighbors(pos[i], [&] (int pid) {
+        for(int pid=0;pid<posj.size();pid++) {
             for (int k = 0; k < chs.size(); k++) {
                 if (chs[k].which)
                     ctx.channel(k)[0] = chs[k].base[chs[k].stride * pid];
             }
             ctx.execute();
-        });
+        }
         for (int k = 0; k < chs.size(); k++) {
             if (!chs[k].which)
                 chs[k].base[chs[k].stride * i] = ctx.channel(k)[0];
@@ -99,14 +49,13 @@ static void vectors_wrangle
     }
 }
 
-struct ParticlesNeighborWrangle : zeno::INode {
+struct ParticleParticleWrangle : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto prim = get_input<zeno::PrimitiveObject>("prim1");
         auto primNei = has_input("primNei") ?
             get_input<zeno::PrimitiveObject>("primNei") :
             std::static_pointer_cast<zeno::PrimitiveObject>(prim->clone());
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
-        auto radius = get_input<zeno::NumericObject>("radius")->get<float>();
 
         zfx::Options opts(zfx::Options::for_x64);
         opts.detect_new_symbols = true;
@@ -219,16 +168,14 @@ struct ParticlesNeighborWrangle : zeno::INode {
             chs[i] = iob;
         }
 
-        auto hashgrid = std::make_unique<HashGrid>(
-                primNei->attr<zeno::vec3f>("pos"), radius);
-        vectors_wrangle(exec, chs, prim->attr<zeno::vec3f>("pos"), hashgrid.get());
+        vectors_wrangle(exec, chs, prim->attr<zeno::vec3f>("pos"), primNei->attr<zeno::vec3f>("pos"));
 
         set_output("prim", std::move(prim));
     }
 };
 
-ZENDEFNODE(ParticlesNeighborWrangle, {
-    {"prim", "primNei", "zfxCode", "params", "radius"},
+ZENDEFNODE(ParticleParticleWrangle, {
+    {"prim1", "prim2", "zfxCode", "params"},
     {"prim"},
     {},
     {"zenofx"},
