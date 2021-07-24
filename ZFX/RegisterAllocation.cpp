@@ -157,6 +157,7 @@ struct InspectRegisters : Visitor<InspectRegisters> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
+        , AsmTernaryOpStmt
         , AsmFuncCallStmt
         , AsmLoadConstStmt
         , AsmParamLoadStmt
@@ -184,6 +185,13 @@ struct InspectRegisters : Visitor<InspectRegisters> {
 
     void visit(AsmBinaryOpStmt *stmt) {
         touch(stmt->id, stmt->dst);
+        touch(stmt->id, stmt->lhs);
+        touch(stmt->id, stmt->rhs);
+    }
+
+    void visit(AsmTernaryOpStmt *stmt) {
+        touch(stmt->id, stmt->dst);
+        touch(stmt->id, stmt->cond);
         touch(stmt->id, stmt->lhs);
         touch(stmt->id, stmt->rhs);
     }
@@ -225,6 +233,7 @@ struct ReassignRegisters : Visitor<ReassignRegisters> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
+        , AsmTernaryOpStmt
         , AsmFuncCallStmt
         , AsmLoadConstStmt
         , AsmParamLoadStmt
@@ -252,6 +261,13 @@ struct ReassignRegisters : Visitor<ReassignRegisters> {
 
     void visit(AsmBinaryOpStmt *stmt) {
         reassign(stmt->dst);
+        reassign(stmt->lhs);
+        reassign(stmt->rhs);
+    }
+
+    void visit(AsmTernaryOpStmt *stmt) {
+        reassign(stmt->dst);
+        reassign(stmt->cond);
         reassign(stmt->lhs);
         reassign(stmt->rhs);
     }
@@ -358,6 +374,14 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
     void visit(AsmBinaryOpStmt *stmt) {
         touch(1, stmt->lhs);
         touch(2, stmt->rhs);
+        auto _ = touch(0, stmt->dst);
+        visit((Statement *)stmt);
+    }
+
+    void visit(AsmTernaryOpStmt *stmt) {
+        touch(1, stmt->cond);
+        touch(2, stmt->lhs);
+        touch(3, stmt->rhs);
         auto _ = touch(0, stmt->dst);
         visit((Statement *)stmt);
     }

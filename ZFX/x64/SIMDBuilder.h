@@ -248,6 +248,15 @@ struct SIMDBuilder {   // requires AVX2
         addAvxBinaryOp(type, op, dst, 0, src);
     }
 
+    void addAvxTernaryOp(int type, int cond, int lhs, int rhs) {
+        res.push_back(0xc4);
+        res.push_back(0xe3);
+        res.push_back(type & 0x0f ^ 0x01 | ~cond << 3 & 0x38);
+        res.push_back(0x4a);
+        res.push_back(0xc0 | lhs << 3);
+        res.push_back(rhs << 4);
+    }
+
     void addAvxMoveOp(int type, int dst, int src) {
         addAvxBinaryOp(opcode::loadu, opcode::mov, dst, opreg::mm0, src);
     }

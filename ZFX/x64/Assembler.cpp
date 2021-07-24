@@ -262,6 +262,13 @@ struct ImplAssembler {
                 auto src = from_string<int>(linesep[2]);
                 builder->addAvxRoundOp(simdkind, dst, src, 2 + 8);
 
+            } else if (cmd == "blend") {
+                ERROR_IF(linesep.size() < 3);
+                auto cond = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxTernaryOp(simdkind, cond, lhs, rhs);
+
             } else if (auto it = std::find(
                 FuncTable::funcnames.begin(), FuncTable::funcnames.end(), cmd);
                 it != FuncTable::funcnames.end()) {
