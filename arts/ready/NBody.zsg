@@ -174,7 +174,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@pos += @vel * $dt\n@clr = abs(@vel)\n@rad = length(@vel) * 10"
+      "value": "@pos += @vel * $dt\n@clr = abs(@vel)\n@rad = length(@vel) * 5"
      },
      "uipos": [
       1514.6599999999994,
@@ -305,9 +305,9 @@
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": 552,
-    "trans_y": 253
+    "scale": 1.0,
+    "trans_x": 404,
+    "trans_y": 18
    }
   }
  },
