@@ -135,13 +135,6 @@ protected:
     T get_param(std::string const &id) const {
         return std::get<T>(get_param(id));
     }
-
-    template <class T>
-    [[deprecated("use set_output(id, std::move(obj))")]]
-    void set_output(std::string const &id,
-        std::shared_ptr<T> &obj) {
-        set_output(id, std::move(obj));
-    }
 };
 
 struct ParamDescriptor {
