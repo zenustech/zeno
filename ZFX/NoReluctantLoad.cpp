@@ -14,32 +14,42 @@ struct NoReluctantLoad : Visitor<NoReluctantLoad> {
 
     std::unique_ptr<IR> ir = std::make_unique<IR>();
 
-    void local(int &mem) {
-    }
+    std::map<int, std::vector<int>> writes;
+    std::map<int, std::vector<int>> reads;
 
-    void global(int &mem) {
+    void visit(Statement *stmt) {
+        auto dst = stmt->dest_registers();
+        auto src = stmt->source_registers();
+        for (int r: dst) {
+            writes[stmt->id].push_back(r);
+        }
+        for (int r: src) {
+            reads[stmt->id].push_back(r);
+        }
+        ir->push_clone_back(stmt);
     }
 
     void visit(AsmLocalStoreStmt *stmt) {
-        local(stmt->mem);
+        ir->push_clone_back(stmt);
     }
 
     void visit(AsmLocalLoadStmt *stmt) {
-        local(stmt->mem);
+        ir->push_clone_back(stmt);
     }
 
     void visit(AsmGlobalStoreStmt *stmt) {
-        global(stmt->mem);
+        ir->push_clone_back(stmt);
     }
 
     void visit(AsmGlobalLoadStmt *stmt) {
-        global(stmt->mem);
+        ir->push_clone_back(stmt);
     }
 };
 
 std::unique_ptr<IR> apply_reassign_globals(IR *ir) {
     NoReluctantLoad visitor;
     visitor.apply(ir);
+    return std::move(visitor.ir);
 }
 
 }
