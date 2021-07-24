@@ -121,11 +121,11 @@ ZENAPI bool INode::has_input(std::string const &id) const {
 }
 
 ZENAPI std::shared_ptr<IObject> INode::get_input(std::string const &id) const {
-    return safe_at(inputs, id, "input");
+    return safe_at(inputs, id, "input", myname);
 }
 
 ZENAPI IValue INode::get_param(std::string const &id) const {
-    return safe_at(params, id, "param");
+    return safe_at(params, id, "param", myname);
 }
 
 ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
@@ -135,7 +135,7 @@ ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&
 ZENAPI std::shared_ptr<IObject> const &Graph::getNodeOutput(
     std::string const &sn, std::string const &ss) const {
     auto node = safe_at(nodes, sn, "node");
-    return safe_at(node->outputs, ss, "output");
+    return safe_at(node->outputs, ss, "output", node->myname);
 }
 
 ZENAPI void Graph::clearNodes() {
@@ -185,6 +185,7 @@ ZENAPI void Graph::applyNodes(std::vector<std::string> const &ids) {
         }
         ctx = nullptr;
     } catch (std::exception const &e) {
+        ctx = nullptr;
         throw zeno::Exception(
                 (std::string)"ZENO Traceback (most recent call last):\n"
                 + e.what());

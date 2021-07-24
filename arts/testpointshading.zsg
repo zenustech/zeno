@@ -82,8 +82,8 @@
      "name": "PrimitiveRandomizeAttr",
      "inputs": {
       "prim": [
-       "300d82db-NumericInt",
-       "value"
+       "4bb97511-Make3DGridPrimitive",
+       "prim"
       ],
       "SRC": null
      },
