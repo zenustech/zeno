@@ -51,7 +51,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@clr = vec3(0.375, 0.75, 1.0)\n@pos.z += @@pos.z"
+      "value": "@clr = vec3(0.375, 0.75, 1.0)\n@pos.z += @@pos.z * 0.004 - @pos.z * (dot(@@pos.xy, @@pos.xy) + 0.1) * 0.008\n@pos.xy += cos(@@pos.z * 100) * @pos.xy * 0.01"
      },
      "uipos": [
       683.52,
@@ -93,7 +93,7 @@
       "SRC": null
      },
      "params": {
-      "value": 0.11
+      "value": 0.101
      },
      "uipos": [
       951.0399999999998,
@@ -119,9 +119,9 @@
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 257,
-    "trans_y": 322
+    "scale": 1.0,
+    "trans_x": 300,
+    "trans_y": 152
    }
   }
  },

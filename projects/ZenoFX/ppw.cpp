@@ -52,8 +52,9 @@ static void vectors_wrangle
 struct ParticleParticleWrangle : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim1");
-        auto primNei = has_input("prim2") ?
-            get_input<zeno::PrimitiveObject>("prim2") : prim;
+        auto primNei = has_input("primNei") ?
+            get_input<zeno::PrimitiveObject>("primNei") :
+            std::static_pointer_cast<zeno::PrimitiveObject>(prim->clone());
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
         zfx::Options opts(zfx::Options::for_x64);
