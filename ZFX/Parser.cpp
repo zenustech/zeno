@@ -100,10 +100,24 @@ struct Parser {
         return nullptr;
     }
 
-    AST::Ptr parse_expr(AST::Iter iter) {
+    AST::Ptr parse_side(AST::Iter iter) {
         if (auto lhs = parse_term(iter); lhs) {
             while (1) if (auto ope = parse_operator(lhs->iter, {"+", "-"}); ope) {
                     if (auto rhs = parse_term(ope->iter); rhs) {
+                        lhs = make_ast(ope->token, rhs->iter, {std::move(lhs), std::move(rhs)});
+                    } else error("`%s` expecting rhs, got `%s`",
+                        lhs->iter->c_str(), ope->iter->c_str());
+            } else break;
+            return lhs;
+        }
+        return nullptr;
+    }
+
+    AST::Ptr parse_expr(AST::Iter iter) {
+        if (auto lhs = parse_side(iter); lhs) {
+            while (1) if (auto ope = parse_operator(lhs->iter, {
+                        "==", "!=", "<", "<=", ">", ">="}); ope) {
+                    if (auto rhs = parse_side(ope->iter); rhs) {
                         lhs = make_ast(ope->token, rhs->iter, {std::move(lhs), std::move(rhs)});
                     } else error("`%s` expecting rhs, got `%s`",
                         lhs->iter->c_str(), ope->iter->c_str());
