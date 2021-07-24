@@ -104,7 +104,7 @@ struct IfElse : zeno::INode {
                 return (bool)v;
             }, num->value);
         } else if (auto con = dynamic_cast<zeno::ConditionObject *>(cond); con) {
-            return (bool)con;
+            return con->get();
         } else {
             printf("invalid input of IfElse::cond to be evaluated as boolean\n");
             abort();
@@ -117,12 +117,12 @@ struct IfElse : zeno::INode {
         if (has_option("MUTE")) {
             requireInput("true");
         } else if (evaluate_condition(cond.get())) {
-            if(has_input("true")){
+            if (has_input("true")) {
                 requireInput("true");
                 set_output("result", get_input("true"));
             }
         } else {
-            if(has_input("false")){
+            if (has_input("false")) {
                 requireInput("false");
                 set_output("result", get_input("false"));
             }
