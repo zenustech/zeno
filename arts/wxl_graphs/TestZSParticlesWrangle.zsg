@@ -234,7 +234,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@pos.z = 0"
+      "value": "$tmp = 1\n$abc = 0\n@pos.z = $tmp\n@pos.y = ($tmp + $abc) * @pos.y"
      },
      "uipos": [
       944.0,
@@ -244,9 +244,9 @@
     }
    },
    "view": {
-    "scale": 3.0517578125,
-    "trans_x": -827,
-    "trans_y": 1579
+    "scale": 0.6400000000000003,
+    "trans_x": -368,
+    "trans_y": -100
    }
   },
   "ToMaterialPoints": {
@@ -1607,6 +1607,20 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "Clone": {
+   "inputs": [
+    "object",
+    "SRC"
+   ],
+   "outputs": [
+    "newObject",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "portal"
    ]
   },
   "CombineVDB": {
@@ -2987,37 +3001,6 @@
     "GPUMPM"
    ]
   },
-  "NBodySolver": {
-   "inputs": [
-    "ini_pars",
-    "dt",
-    "SRC"
-   ],
-   "outputs": [
-    "pars",
-    "DST"
-   ],
-   "params": [
-    [
-     "float",
-     "r0",
-     "0.02"
-    ],
-    [
-     "float",
-     "G",
-     "-10.0"
-    ],
-    [
-     "float",
-     "M",
-     "0.001"
-    ]
-   ],
-   "categories": [
-    "particles"
-   ]
-  },
   "NumericFloat": {
    "inputs": [
     "SRC"
@@ -3325,6 +3308,23 @@
     "FLIPSolver"
    ]
   },
+  "ParticleParticleWrangle": {
+   "inputs": [
+    "prim1",
+    "prim2",
+    "zfxCode",
+    "params",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
   "ParticlesNeighborWrangle": {
    "inputs": [
     "prim",
@@ -3523,6 +3523,43 @@
     "primitive"
    ]
   },
+  "PrimitiveBinaryOp": {
+   "inputs": [
+    "primA",
+    "primB",
+    "primOut",
+    "SRC"
+   ],
+   "outputs": [
+    "primOut",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrB",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copyA"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveCalcNormal": {
    "inputs": [
     "prim",
@@ -3555,6 +3592,8 @@
    "inputs": [
     "prim",
     "heatmap",
+    "min",
+    "max",
     "SRC"
    ],
    "outputs": [
@@ -3621,6 +3660,38 @@
     "primitive"
    ]
   },
+  "PrimitiveHalfBinaryOp": {
+   "inputs": [
+    "primA",
+    "valueB",
+    "primOut",
+    "SRC"
+   ],
+   "outputs": [
+    "primOut",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copyA"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveMerge": {
    "inputs": [
     "listPrim",
@@ -3631,6 +3702,39 @@
     "DST"
    ],
    "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveMix": {
+   "inputs": [
+    "primA",
+    "primB",
+    "primOut",
+    "coef",
+    "SRC"
+   ],
+   "outputs": [
+    "primOut",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrB",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ]
+   ],
    "categories": [
     "primitive"
    ]
@@ -3911,6 +4015,37 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "PrimitiveUnaryOp": {
+   "inputs": [
+    "primA",
+    "primOut",
+    "SRC"
+   ],
+   "outputs": [
+    "primOut",
+    "DST"
+   ],
+   "params": [
+    [
+     "string",
+     "attrA",
+     "pos"
+    ],
+    [
+     "string",
+     "attrOut",
+     "pos"
+    ],
+    [
+     "string",
+     "op",
+     "copy"
+    ]
+   ],
+   "categories": [
+    "primitive"
    ]
   },
   "PrintMessage": {
@@ -4402,6 +4537,7 @@
    ],
    "outputs": [
     "port",
+    "hasValue",
     "DST"
    ],
    "params": [
