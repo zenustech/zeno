@@ -19,6 +19,7 @@ struct TypeCheck : Visitor<TypeCheck> {
         , VectorSwizzleStmt
         , VectorComposeStmt
         , FunctionCallStmt
+        , TernaryOpStmt
         , BinaryOpStmt
         , UnaryOpStmt
         , Statement
@@ -62,6 +63,19 @@ struct TypeCheck : Visitor<TypeCheck> {
         ERROR_IF(stmt->lhs->dim == 0);
         ERROR_IF(stmt->rhs->dim == 0);
         stmt->dim = std::max(stmt->lhs->dim, stmt->rhs->dim);
+        visit((Statement *)stmt);
+    }
+
+    void visit(TernaryOpStmt *stmt) {
+        if (stmt->cond->dim > 1 && stmt->lhs->dim > 1 && stmt->rhs->dim > 1
+            && (stmt->cond->dim != stmt->lhs->dim || stmt->lhs->dim != stmt->rhs->dim)) {
+            error("dimension mismatch in ternary `?`: %d != %d != %d",
+                stmt->cond->dim, stmt->lhs->dim, stmt->rhs->dim);
+        }
+        ERROR_IF(stmt->cond->dim == 0);
+        ERROR_IF(stmt->lhs->dim == 0);
+        ERROR_IF(stmt->rhs->dim == 0);
+        stmt->dim = std::max(stmt->cond->dim, std::max(stmt->lhs->dim, stmt->rhs->dim));
         visit((Statement *)stmt);
     }
 
