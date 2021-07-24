@@ -158,6 +158,54 @@ struct ImplAssembler {
                 builder->addAvxBinaryOp(simdkind, opcode::bit_andnot,
                     dst, lhs, rhs);
 
+            } else if (cmd == "cmpeq") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::cmp_eq,
+                    dst, lhs, rhs);
+
+            } else if (cmd == "cmpne") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::cmp_ne,
+                    dst, lhs, rhs);
+
+            } else if (cmd == "cmplt") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::cmp_lt,
+                    dst, lhs, rhs);
+
+            } else if (cmd == "cmple") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::cmp_le,
+                    dst, lhs, rhs);
+
+            } else if (cmd == "cmpgt") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::cmp_gt,
+                    dst, lhs, rhs);
+
+            } else if (cmd == "cmpge") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::cmp_ge,
+                    dst, lhs, rhs);
+
             } else if (cmd == "or") {
                 ERROR_IF(linesep.size() < 3);
                 auto dst = from_string<int>(linesep[1]);

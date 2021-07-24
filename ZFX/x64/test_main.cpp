@@ -16,7 +16,7 @@ int main() {
 #else
     int n = 1;
     std::string code(R"(
-@clr = @pos >= 1
+@clr = @pos <= 2
 )");
 #endif
 

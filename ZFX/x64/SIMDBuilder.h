@@ -29,12 +29,12 @@ namespace opcode {
         loada = 0x28,
         storeu = 0x11,
         storea = 0x29,
-        cmpeq = 0x00c2,
-        cmpne = 0x04c2,
-        cmplt = 0x01c2,
-        cmple = 0x02c2,
-        cmpgt = 0x0ec2,
-        cmpge = 0x0dc2,
+        cmp_eq = 0x00c2,
+        cmp_ne = 0x04c2,
+        cmp_lt = 0x01c2,
+        cmp_le = 0x02c2,
+        cmp_gt = 0x0ec2,
+        cmp_ge = 0x0dc2,
     };
 };
 
@@ -236,11 +236,11 @@ struct SIMDBuilder {   // requires AVX2
 
     void addAvxBinaryOp(int type, int op, int dst, int lhs, int rhs) {
         res.push_back(0xc5);
-        res.push_back(type & 0xff | ~lhs << 3);
-        res.push_back(op);
+        res.push_back(type | ~lhs << 3);
+        res.push_back(op & 0xff);
         res.push_back(0xc0 | dst << 3 | rhs);
-        if ((type & 0xff) == 1) {
-           res.push_back(type >> 8);
+        if ((op & 0xff) == 0xc2) {
+           res.push_back(op >> 8);
         }
     }
 
