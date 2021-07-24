@@ -114,6 +114,12 @@ struct LowerAST {
             auto src = serialize(ast->args[1].get());
             return ir->emplace_back<AssignStmt>(dst, src);
 
+        } else if (contains({"?"}, ast->token) && ast->args.size() == 3) {
+            auto cond = serialize(ast->args[0].get());
+            auto lhs = serialize(ast->args[1].get());
+            auto rhs = serialize(ast->args[2].get());
+            return ir->emplace_back<TernaryOpStmt>(cond, lhs, rhs);
+
         } else if (contains({"+=", "-=", "*=", "/=", "%="},
             ast->token) && ast->args.size() == 2) {
             auto dst = serialize(ast->args[0].get());

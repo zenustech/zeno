@@ -67,6 +67,40 @@ struct BinaryOpStmt : Stmt<BinaryOpStmt> {
     }
 };
 
+struct TernaryOpStmt : Stmt<BinaryOpStmt> {
+    Statement *cond;
+    Statement *lhs;
+    Statement *rhs;
+
+    TernaryOpStmt
+        ( int id_
+        , Statement *lhs_
+        , Statement *rhs_
+        )
+        : Stmt(id_)
+        , cond(cond_)
+        , lhs(lhs_)
+        , rhs(rhs_)
+    {}
+
+    virtual StmtFields fields() override {
+        return {
+            cond,
+            lhs,
+            rhs,
+            };
+    }
+
+    virtual std::string to_string() const override {
+        return format(
+            "TernaryOp $%d $%d $%d"
+            , cond->id
+            , lhs->id
+            , rhs->id
+            );
+    }
+};
+
 struct FunctionCallStmt : Stmt<FunctionCallStmt> {
     std::string name;
     std::vector<Statement *> args;
