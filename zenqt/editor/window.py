@@ -31,11 +31,11 @@ class QDMEditMenu(QMenu):
         self.setTitle('&Edit')
 
         acts = [
-                ('Undo', QKeySequence.Undo),
-                ('Redo', QKeySequence.Redo),
+                ('&Undo', QKeySequence.Undo),
+                ('&Redo', QKeySequence.Redo),
                 (None, None),
-                ('Copy', QKeySequence.Copy),
-                ('Paste', QKeySequence.Paste),
+                ('&Copy', QKeySequence.Copy),
+                ('&Paste', QKeySequence.Paste),
         ]
         
         for name, shortcut in acts:
@@ -61,14 +61,15 @@ class NodeEditor(QWidget):
         self.setLayout(self.layout)
 
         self.menubar = QMenuBar()
-        self.menu = QDMFileMenu()
-        self.menu.triggered.connect(self.menuTriggered)
-        self.menubar.addMenu(self.menu)
+        self.layout.addWidget(self.menubar)
+
+        self.menuFile = QDMFileMenu()
+        self.menuFile.triggered.connect(self.menuTriggered)
+        self.menubar.addMenu(self.menuFile)
 
         self.menuEdit = QDMEditMenu()
         self.menuEdit.triggered.connect(self.menuTriggered)
         self.menubar.addMenu(self.menuEdit)
-        self.layout.addWidget(self.menubar)
 
         self.view = QDMGraphicsView(self)
         self.layout.addWidget(self.view)
@@ -338,16 +339,16 @@ class NodeEditor(QWidget):
             if path != '':
                 self.do_import(path)
 
-        elif name == 'Undo':
+        elif name == '&Undo':
             self.scene.undo()
 
-        elif name == 'Redo':
+        elif name == '&Redo':
             self.scene.redo()
 
-        elif name == 'Copy':
+        elif name == '&Copy':
             self.do_copy()
 
-        elif name == 'Paste':
+        elif name == '&Paste':
             self.do_paste()
 
     def do_copy(self):
