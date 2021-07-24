@@ -26,6 +26,8 @@ add_library(gmpm SHARED
   nosys/ToZensimLevelSet.cpp 
   nosys/ZensimBoundary.cpp 
   nosys/MakePartitionAndGrid.cpp 
+
+  nosys/ZensimParticleWrangler.cu
   #nosys/Test.cu
   nosys/PartitionForParticles.cu 
   nosys/GridFromPartition.cu 
@@ -73,8 +75,9 @@ set_target_properties(gmpm PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
 	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
 	)
-target_link_libraries(gmpm PRIVATE zeno)
 target_link_libraries(gmpm PRIVATE zensim)
+target_link_libraries(gmpm PRIVATE zeno)
+target_link_libraries(gmpm PUBLIC ZFX)
 target_include_directories(gmpm PRIVATE ../oldzenbase/include)
 target_include_directories(gmpm PRIVATE ../zenvdb/include)
 
