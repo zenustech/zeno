@@ -1,5 +1,4 @@
 from . import *
-import zenvis
 
 class QDMFileMenu(QMenu):
     def __init__(self):
@@ -63,9 +62,9 @@ class NodeEditor(QWidget):
         self.menubar = QMenuBar()
         self.layout.addWidget(self.menubar)
 
-        self.menu = QDMFileMenu()
-        self.menu.triggered.connect(self.menuTriggered)
-        self.menubar.addMenu(self.menu)
+        self.menuFile = QDMFileMenu()
+        self.menuFile.triggered.connect(self.menuTriggered)
+        self.menubar.addMenu(self.menuFile)
 
         self.menuEdit = QDMEditMenu()
         self.menuEdit.triggered.connect(self.menuTriggered)

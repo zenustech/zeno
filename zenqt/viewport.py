@@ -110,6 +110,15 @@ class ViewportWidget(QGLWidget):
     def on_update(self):
         self.repaint()
 
+for name in ['mousePressEvent', 'mouseMoveEvent', 'wheelEvent']:
+    def closure(name):
+        oldfunc = getattr(ViewportWidget, name)
+        def newfunc(self, event):
+            getattr(self.camera, name)(event)
+            oldfunc(self, event)
+        setattr(ViewportWidget, name, newfunc)
+    closure(name)
+
 
 class QDMDisplayMenu(QMenu):
     def __init__(self):
@@ -128,6 +137,7 @@ class DisplayWidget(QWidget):
         super().__init__(parent)
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self.layout)
 
         self.menubar = QMenuBar()
         self.layout.addWidget(self.menubar)
@@ -138,7 +148,6 @@ class DisplayWidget(QWidget):
         
         self.view = ViewportWidget()
         self.layout.addWidget(self.view)
-        self.setLayout(self.layout)
     
     def on_update(self):
         self.view.on_update()
@@ -147,12 +156,3 @@ class DisplayWidget(QWidget):
         if name == 'Show Grid':
             checked = act.isChecked()
             zenvis.pyzenvis.set_show_grid(checked)
-
-for name in ['mousePressEvent', 'mouseMoveEvent', 'wheelEvent']:
-    def closure(name):
-        oldfunc = getattr(ViewportWidget, name)
-        def newfunc(self, event):
-            getattr(self.camera, name)(event)
-            oldfunc(self, event)
-        setattr(ViewportWidget, name, newfunc)
-    closure(name)
