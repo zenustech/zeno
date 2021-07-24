@@ -1,4 +1,4 @@
-O=arts/ready/HACD.zsg
+O=arts/ready/DynamicPointSize.zsg
 
 default: run
 

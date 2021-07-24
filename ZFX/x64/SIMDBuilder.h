@@ -59,7 +59,7 @@ namespace opreg {
         a4 = rcx,
         a5 = r8,
         a6 = r9,
-};
+    };
 #endif
 };
 
@@ -114,10 +114,11 @@ struct SIMDBuilder {   // requires AVX2
                     mflag |= memflag::reg_imm32;
                 }
             }
-            flag |= mflag | val << 3 & 0x38 | adr;
+            auto adreg = adr & 0x07;
+            flag |= mflag | val << 3 & 0x38 | adreg;
             //if (adr == opreg::rsp)
                 //flag |= 0x10;
-            if (adr == opreg::rbp)
+            if (adreg == opreg::rbp)
                 flag |= memflag::reg_imm8;
             res.push_back(flag);
             if (adr == opreg::rsp)
@@ -210,6 +211,8 @@ struct SIMDBuilder {   // requires AVX2
     }
 
     void addCallOp(MemoryAddress adr) {
+        if (adr.adr & 0x08)
+            res.push_back(0x41);
         res.push_back(0xff);
         adr.dump(res, 0, 0x10);
     }
@@ -230,11 +233,15 @@ struct SIMDBuilder {   // requires AVX2
     }
 
     void addPushReg(int reg) {
-        res.push_back(0x50 | reg);
+        if (reg & 0x08)
+            res.push_back(0x41);
+        res.push_back(0x50 | reg & 0x7);
     }
 
     void addPopReg(int reg) {
-        res.push_back(0x58 | reg);
+        if (reg & 0x08)
+            res.push_back(0x41);
+        res.push_back(0x58 | reg & 0x7);
     }
 
     void addReturn() {

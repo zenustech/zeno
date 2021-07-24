@@ -27,7 +27,7 @@ struct MakeHeatmap : zeno::INode {
         for (int i = 0; i < count; i++) {
             float f = 0.f, x = 0.f, y = 0.f, z = 0.f;
             ss >> f >> x >> y >> z;
-            printf("%f %f %f %f\n", f, x, y, z);
+            //printf("%f %f %f %f\n", f, x, y, z);
             colors.emplace_back(
                     f, zeno::vec3f(x, y, z));
         }

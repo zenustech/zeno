@@ -223,7 +223,13 @@ struct ImplAssembler {
                     builder->addRegularMoveOp(opreg::a1, opreg::rsp);
                     int id = it - FuncTable::funcnames.begin();
                     int offset = id * sizeof(void *);
+#if defined(_WIN32)
+                    builder->addAdjStackTop(-64);
+#endif
                     builder->addCallOp({opreg::a3, memflag::reg_imm8, offset});
+#if defined(_WIN32)
+                    builder->addAdjStackTop(64);
+#endif
                     builder->addAvxMemoryOp(simdkind, opcode::loadu,
                         dst, opreg::rsp);
                     builder->addAdjStackTop(size);
@@ -248,7 +254,13 @@ struct ImplAssembler {
                     builder->addRegularMoveOp(opreg::a1, opreg::rsp);
                     int id = it - FuncTable::funcnames.begin();
                     int offset = id * sizeof(void *);
+#if defined(_WIN32)
+                    builder->addAdjStackTop(-64);
+#endif
                     builder->addCallOp({opreg::a3, memflag::reg_imm8, offset});
+#if defined(_WIN32)
+                    builder->addAdjStackTop(64);
+#endif
                     builder->addAvxMemoryOp(simdkind, opcode::loadu,
                         dst, opreg::rsp);
                     builder->addAdjStackTop(size * 2);

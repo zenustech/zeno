@@ -14,9 +14,9 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 endif()
 
 if (CMAKE_BUILD_TYPE EQUAL Debug)
-    option(ZFX_PRINT_IR "Print IR for the ZFX compiler" OFF)
-else()
     option(ZFX_PRINT_IR "Print IR for the ZFX compiler" ON)
+else()
+    option(ZFX_PRINT_IR "Print IR for the ZFX compiler" OFF)
 endif()
 
 add_library(ZFX STATIC
@@ -24,8 +24,13 @@ add_library(ZFX STATIC
 AST.h
 ConstParametrize.cpp
 ControlCheck.cpp
+DemoteMathFuncs.cpp
+DetectNewSymbols.cpp
 EmitAssembly.cpp
 ExpandFunctions.cpp
+KillUnreachable.cpp
+ReassignGlobals.cpp
+ReassignParameters.cpp
 GlobalLocalize.cpp
 include/zfx/utils.h
 include/zfx/x64.h
@@ -37,7 +42,6 @@ LowerAccess.cpp
 LowerAST.cpp
 LowerAST.h
 LowerMath.cpp
-MathFunctions.cpp
 Parser.cpp
 RegisterAllocation.cpp
 SaveMathRegisters.cpp

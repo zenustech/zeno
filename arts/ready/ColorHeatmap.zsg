@@ -2,330 +2,54 @@
  "graph": {
   "main": {
    "nodes": {
-    "0a96a449-NumericInt": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "value": 128
-     },
-     "uipos": [
-      -399.5999999999999,
-      -95.0
-     ],
-     "options": []
-    },
-    "df3a7bea-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 3.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -403.35,
-      300.9
-     ],
-     "options": []
-    },
-    "a3d3c606-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 3.0,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -402.05000000000007,
-      84.69999999999999
-     ],
-     "options": []
-    },
-    "8cf5c24a-SampleVDBToPrimitive": {
-     "name": "SampleVDBToPrimitive",
-     "inputs": {
-      "prim": [
-       "b176c97f-PrimitiveAddAttr",
-       "prim"
-      ],
-      "vdbGrid": [
-       "34250153-MeshToSDF",
-       "sdf"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "primAttr": "rho"
-     },
-     "uipos": [
-      420.25,
-      138.5
-     ],
-     "options": []
-    },
-    "693e312b-ReadObjMesh": {
-     "name": "ReadObjMesh",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "path": "assets/Pig_Head.obj"
-     },
-     "uipos": [
-      -268.0,
-      530.0
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "34250153-MeshToSDF": {
-     "name": "MeshToSDF",
-     "inputs": {
-      "mesh": [
-       "693e312b-ReadObjMesh",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "voxel_size": 0.04,
-      "type": "vertex"
-     },
-     "uipos": [
-      -19.0,
-      393.0
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "b176c97f-PrimitiveAddAttr": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "89cdfd21-Make2DGridPrimitive",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "rho",
-      "type": "float"
-     },
-     "uipos": [
-      151.25000000000006,
-      74.00000000000003
-     ],
-     "options": []
-    },
-    "abd73164-MeshToPrimitive": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "693e312b-ReadObjMesh",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -8.800000000000011,
-      624.0000000000001
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "89cdfd21-Make2DGridPrimitive": {
-     "name": "Make2DGridPrimitive",
+    "b890f2d5-Make3DGridPrimitive": {
+     "name": "Make3DGridPrimitive",
      "inputs": {
       "nx": [
-       "0a96a449-NumericInt",
+       "298563e8-NumericInt",
        "value"
       ],
       "ny": null,
-      "dx": null,
-      "dy": null,
-      "sizeX": [
-       "a3d3c606-NumericVec3",
-       "vec3"
-      ],
-      "sizeY": [
-       "df3a7bea-NumericVec3",
-       "vec3"
-      ],
-      "origin": [
-       "45d8868e-NumericInterpolation",
-       "dst"
-      ],
-      "SRC": null,
-      "COND": null
+      "nz": null,
+      "sizeX": null,
+      "sizeY": null,
+      "sizeZ": null,
+      "scale": null,
+      "origin": null,
+      "SRC": null
      },
      "params": {
       "isCentered": 1
      },
      "uipos": [
-      -109.0,
-      -73.0
+      905.9374999999997,
+      177.25781249999994
      ],
      "options": []
     },
-    "eb52bb0f-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.0,
-      "z": -1.5
-     },
-     "uipos": [
-      -1007.75,
-      343.25
-     ],
-     "options": []
-    },
-    "45d8868e-NumericInterpolation": {
-     "name": "NumericInterpolation",
-     "inputs": {
-      "src": [
-       "f6731780-GetFrameNum",
-       "FrameNum"
-      ],
-      "srcMin": [
-       "d0e3ade7-NumericInt",
-       "value"
-      ],
-      "srcMax": [
-       "5ddec741-NumericInt",
-       "value"
-      ],
-      "dstMin": [
-       "eb52bb0f-NumericVec3",
-       "vec3"
-      ],
-      "dstMax": [
-       "bb3c2ad8-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "isClamped": 0
-     },
-     "uipos": [
-      -695.75,
-      175.25
-     ],
-     "options": []
-    },
-    "bb3c2ad8-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.0,
-      "z": 1.5
-     },
-     "uipos": [
-      -1008.75,
-      572.25
-     ],
-     "options": []
-    },
-    "f6731780-GetFrameNum": {
-     "name": "GetFrameNum",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -800.8,
-      -11.200000000000003
-     ],
-     "options": []
-    },
-    "d0e3ade7-NumericInt": {
+    "298563e8-NumericInt": {
      "name": "NumericInt",
      "inputs": {
-      "SRC": null,
-      "COND": null
+      "SRC": null
      },
      "params": {
-      "value": 0
+      "value": 32
      },
      "uipos": [
-      -1035.4000000000003,
-      -7.399999999999977
+      601.9537499999998,
+      156.73937499999994
      ],
      "options": []
     },
-    "5ddec741-NumericInt": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "value": 128
-     },
-     "uipos": [
-      -1017.0,
-      162.0
-     ],
-     "options": []
-    },
-    "6d9c4ec5-PrintNumeric": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "45d8868e-NumericInterpolation",
-       "dst"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "hint": "Origin"
-     },
-     "uipos": [
-      -660.0,
-      457.0
-     ],
-     "options": []
-    },
-    "221657a9-ParticlesWrangle": {
+    "1f74dc87-ParticlesWrangle": {
      "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       "8cf5c24a-SampleVDBToPrimitive",
+       "b890f2d5-Make3DGridPrimitive",
        "prim"
       ],
       "zfxCode": [
-       "2e79b870-MakeMultilineString",
+       "3aeea543-x",
        "value"
       ],
       "params": null,
@@ -333,32 +57,103 @@
      },
      "params": {},
      "uipos": [
-      791.0,
-      191.0
+      1251.84,
+      285.4400000000001
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
-    "2e79b870-MakeMultilineString": {
+    "3aeea543-x": {
      "name": "MakeMultilineString",
      "inputs": {
       "SRC": null
      },
      "params": {
-      "value": "@clr = mix(vec3(1, 0, 0), vec3(0, 1, 0), @rho)"
+      "value": "@rho = @pos.x + 0.5"
      },
      "uipos": [
-      760.0,
-      406.0
+      974.0,
+      577.0
      ],
      "options": []
+    },
+    "f3d617e0-PrimitiveColorByHeatmap": {
+     "name": "PrimitiveColorByHeatmap",
+     "inputs": {
+      "prim": [
+       "1f74dc87-ParticlesWrangle",
+       "prim"
+      ],
+      "heatmap": [
+       "540ddef4-MakeHeatmap",
+       "heatmap"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "attrName": "rho"
+     },
+     "uipos": [
+      1596.0,
+      328.0
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "540ddef4-MakeHeatmap": {
+     "name": "MakeHeatmap",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "nres": 1024,
+      "_RAMPS": "4\n0.0 0 0 0\n0.5 1 0 0\n0.9 1 1 0\n1.0 1 1 1"
+     },
+     "uipos": [
+      1275.2,
+      536.0
+     ],
+     "options": [],
+     "color_ramps": [
+      [
+       0.0,
+       [
+        0,
+        0,
+        0
+       ]
+      ],
+      [
+       0.5,
+       [
+        1,
+        0,
+        0
+       ]
+      ],
+      [
+       0.9,
+       [
+        1,
+        1,
+        0
+       ]
+      ],
+      [
+       1.0,
+       [
+        1,
+        1,
+        1
+       ]
+      ]
+     ]
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -521,
-    "trans_y": -57
+    "scale": 0.8000000000000002,
+    "trans_x": 181,
+    "trans_y": 118
    }
   }
  },

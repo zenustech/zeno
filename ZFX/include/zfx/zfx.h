@@ -17,8 +17,10 @@ struct Options {
     bool save_math_registers = true;
     int arch_maxregs = 8;
 
+    bool detect_new_symbols = false;
     bool reassign_parameters = true;
     bool reassign_channels = true;
+    bool kill_unreachable = true;
 
     //Options() = default;
 
@@ -70,6 +72,7 @@ std::tuple
     < std::string
     , std::vector<std::pair<std::string, int>>
     , std::vector<std::pair<std::string, int>>
+    , std::map<std::string, int>
     > compile_to_assembly
     ( std::string const &code
     , Options const &options
@@ -78,14 +81,19 @@ std::tuple
 struct Program {
     std::vector<std::pair<std::string, int>> symbols;
     std::vector<std::pair<std::string, int>> params;
+    std::map<std::string, int> newsyms;
     std::string assembly;
 
     auto const &get_assembly() const {
-        return symbols;
+        return assembly;
     }
 
     auto const &get_symbols() const {
         return symbols;
+    }
+
+    auto const &get_newsyms() const {
+        return newsyms;
     }
 
     auto const &get_params() const {
@@ -126,6 +134,7 @@ struct Compiler {
             [ assembly
             , symbols
             , params
+            , newsyms
             ] = compile_to_assembly
             ( code
             , options
@@ -134,6 +143,7 @@ struct Compiler {
         prog->assembly = assembly;
         prog->symbols = symbols;
         prog->params = params;
+        prog->newsyms = newsyms;
 
         auto raw_ptr = prog.get();
         cache[key] = std::move(prog);
