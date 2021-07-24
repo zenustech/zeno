@@ -32,6 +32,17 @@ namespace opcode {
     };
 };
 
+namespace jmpcode {
+    enum {
+        je = 0x04,
+        jne = 0x05,
+        jl = 0x0c,
+        jle = 0x0e,
+        jg = 0x0f,
+        jge = 0x0d,
+    };
+};
+
 namespace opreg {
     enum {
         mm0, mm1, mm2, mm3, mm4, mm5, mm6, mm7,
@@ -230,6 +241,18 @@ struct SIMDBuilder {   // requires AVX2
 
     void addAvxMoveOp(int type, int dst, int src) {
         addAvxBinaryOp(opcode::loadu, opcode::mov, dst, opreg::mm0, src);
+    }
+
+    void addJumpOp(int off) {
+        off -= 4;
+        if (-128 <= off && off <= 127) {
+            res.push_back(0xeb);
+            res.push_back(off & 0xff);
+        } else {
+            off -= 6;
+            res.push_back(0xe9);
+            res.push_back(off);
+        }
     }
 
     void addPushReg(int reg) {

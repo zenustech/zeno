@@ -2,7 +2,32 @@
  "graph": {
   "main": {
    "nodes": {
-    "9a345514-NumericInt": {
+    "4bb97511-Make3DGridPrimitive": {
+     "name": "Make3DGridPrimitive",
+     "inputs": {
+      "nx": [
+       "300d82db-NumericInt",
+       "value"
+      ],
+      "ny": null,
+      "nz": null,
+      "sizeX": null,
+      "sizeY": null,
+      "sizeZ": null,
+      "scale": null,
+      "origin": null,
+      "SRC": null
+     },
+     "params": {
+      "isCentered": 1
+     },
+     "uipos": [
+      166.5,
+      33.0
+     ],
+     "options": []
+    },
+    "300d82db-NumericInt": {
      "name": "NumericInt",
      "inputs": {
       "SRC": null
@@ -11,147 +36,77 @@
       "value": 32
      },
      "uipos": [
-      495.4000000000001,
-      227.60000000000002
+      -97.53999999999996,
+      85.68
      ],
      "options": []
     },
-    "ef4ec533-ParticlesWrangle": {
+    "3b1d8ec4-ParticlesWrangle": {
      "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       "730549a0-Make2DGridPrimitive",
+       "fa0c3931-PrimitiveRandomizeAttr",
        "prim"
       ],
       "zfxCode": [
-       "3e5f8949-MakeMultilineString",
+       "fef4c997-MakeMultilineString",
        "value"
       ],
-      "params": [
-       "ed95e8b4-MakeDict",
-       "dict"
-      ],
+      "params": null,
       "SRC": null
      },
      "params": {},
      "uipos": [
-      1014.4000000000001,
-      228.8
+      782.72,
+      220.16
      ],
      "options": [
       "VIEW"
      ]
     },
-    "3e5f8949-MakeMultilineString": {
+    "fef4c997-MakeMultilineString": {
      "name": "MakeMultilineString",
      "inputs": {
       "SRC": null
      },
      "params": {
-      "value": "@rad = mix(2, 12, 0.5 + 0.5 * sin(@pos.x + $frame_id / 10))"
+      "value": "@rad = 10\n@clr = vec3(0.375, 0.75, 1.0)"
      },
      "uipos": [
-      1022.3999999999999,
-      436.00000000000006
+      720.0,
+      416.0
      ],
      "options": []
     },
-    "730549a0-Make2DGridPrimitive": {
-     "name": "Make2DGridPrimitive",
+    "fa0c3931-PrimitiveRandomizeAttr": {
+     "name": "PrimitiveRandomizeAttr",
      "inputs": {
-      "nx": [
-       "9a345514-NumericInt",
-       "value"
-      ],
-      "ny": null,
-      "sizeX": null,
-      "sizeY": null,
-      "scale": null,
-      "origin": null,
-      "SRC": null
-     },
-     "params": {
-      "isCentered": 0,
-      "hasFaces": 0
-     },
-     "uipos": [
-      753.5999999999999,
-      229.60000000000002
-     ],
-     "options": []
-    },
-    "ed95e8b4-MakeDict": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": null,
-      "frame_id": [
-       "67dbf542-NumericOperator",
-       "ret"
-      ]
-     },
-     "params": {
-      "_KEYS": "frame_id"
-     },
-     "uipos": [
-      747.1999999999999,
-      568.8000000000001
-     ],
-     "options": [],
-     "socket_keys": [
-      "frame_id"
-     ]
-    },
-    "5e432964-GetFrameNum": {
-     "name": "GetFrameNum",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      354.4000000000002,
-      623.1999999999998
-     ],
-     "options": []
-    },
-    "67dbf542-NumericOperator": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "5e432964-GetFrameNum",
-       "FrameNum"
-      ],
-      "rhs": [
-       "b551dbbc-GetFrameTime",
-       "time"
+      "prim": [
+       "4bb97511-Make3DGridPrimitive",
+       "prim"
       ],
       "SRC": null
      },
      "params": {
-      "op_type": "add"
+      "attrName": "pos",
+      "min": -1.0,
+      "minY": -1.0,
+      "minZ": -1.0,
+      "max": 1.0,
+      "maxY": 1.0,
+      "maxZ": 1.0
      },
      "uipos": [
-      580.0,
-      772.8000000000001
-     ],
-     "options": []
-    },
-    "b551dbbc-GetFrameTime": {
-     "name": "GetFrameTime",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      334.4000000000001,
-      808.0
+      451.1500000000001,
+      143.45000000000005
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": 103,
-    "trans_y": 90
+    "trans_x": -303,
+    "trans_y": -181
    }
   }
  },

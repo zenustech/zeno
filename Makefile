@@ -1,4 +1,4 @@
-O=arts/ready/DynamicPointSize.zsg
+O=arts/testpointshading.zsg
 
 default: run
 

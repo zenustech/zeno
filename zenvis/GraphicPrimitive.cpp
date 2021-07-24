@@ -224,9 +224,12 @@ varying vec3 color;
 
 void main()
 {
-  if (length(gl_PointCoord - vec2(0.5)) > 0.5)
+  vec2 coor = gl_PointCoord * 2 - 1;
+  float len2 = dot(coor, coor);
+  if (len2 > 1)
     discard;
-  gl_FragColor = vec4(color, 1.0);
+  vec3 oColor = color * mix(1, 0.4, len2);
+  gl_FragColor = vec4(oColor, 1.0);
 }
 )";
     }
