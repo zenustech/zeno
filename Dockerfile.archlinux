@@ -28,6 +28,8 @@ RUN pacman -S openexr --noconfirm
 WORKDIR /build
 RUN git clone https://github.com/aforsythe/IlmBase.git --depth=1
 RUN cd IlmBase && cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=11 && make -Cbuild -j32 && make -Cbuild install && cd ..
+
 WORKDIR /root
+RUN echo 'cp -dr /tmp/zeno /root/ && cd /root/zeno && rm -rf build && bash scripts/dist.archlinux.sh' > runme.sh && chmod +x runme.sh
 
 ENTRYPOINT bash
