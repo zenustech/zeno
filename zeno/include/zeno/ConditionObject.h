@@ -7,15 +7,20 @@ namespace zeno {
 
 
 struct ConditionObject : IObjectClone<ConditionObject> {
-  bool value = true;
+  bool value;
 
-  bool get() {
+  ConditionObject(bool value = true) : value(value) {
+  }
+
+  bool get() const {
     return value;
   }
 
   void set(bool x) {
     value = x;
   }
+
+  operator bool() const { return get(); }
 };
 
 }
