@@ -353,11 +353,8 @@ You may contact us via WeChat:
 - Arch Linux
 
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
-make -C build -j8
-make -C build install
 ./dist.sh
-# you will get /tmp/zeno-linux-20xx.x.x.tar.gz
+# you will get /tmp/release/zeno-linux-20xx.x.x.tar.gz
 ```
 
 - Windows
