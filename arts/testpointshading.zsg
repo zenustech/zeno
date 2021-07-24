@@ -25,7 +25,9 @@
       166.5,
       33.0
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "300d82db-NumericInt": {
      "name": "NumericInt",
@@ -33,35 +35,14 @@
       "SRC": null
      },
      "params": {
-      "value": 32
+      "value": 11
      },
      "uipos": [
       -97.53999999999996,
       85.68
      ],
-     "options": []
-    },
-    "3b1d8ec4-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "fa0c3931-PrimitiveRandomizeAttr",
-       "prim"
-      ],
-      "zfxCode": [
-       "fef4c997-MakeMultilineString",
-       "value"
-      ],
-      "params": null,
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      782.72,
-      220.16
-     ],
      "options": [
-      "VIEW"
+      "ONCE"
      ]
     },
     "fef4c997-MakeMultilineString": {
@@ -70,43 +51,61 @@
       "SRC": null
      },
      "params": {
-      "value": "@rad = 10\n@clr = vec3(0.375, 0.75, 1.0)"
+      "value": "@clr = vec3(0.375, 0.75, 1.0)"
      },
      "uipos": [
-      720.0,
-      416.0
+      683.52,
+      435.84
      ],
      "options": []
     },
-    "fa0c3931-PrimitiveRandomizeAttr": {
-     "name": "PrimitiveRandomizeAttr",
+    "82655833-ParticlesNeighborWrangle": {
+     "name": "ParticlesNeighborWrangle",
      "inputs": {
       "prim": [
        "4bb97511-Make3DGridPrimitive",
        "prim"
       ],
+      "primNei": null,
+      "zfxCode": [
+       "fef4c997-MakeMultilineString",
+       "value"
+      ],
+      "params": null,
+      "radius": [
+       "2f18a685-NumericFloat",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      937.4400000000003,
+      236.3200000000001
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "2f18a685-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
       "SRC": null
      },
      "params": {
-      "attrName": "pos",
-      "min": -1.0,
-      "minY": -1.0,
-      "minZ": -1.0,
-      "max": 1.0,
-      "maxY": 1.0,
-      "maxZ": 1.0
+      "value": 0.1
      },
      "uipos": [
-      451.1500000000001,
-      143.45000000000005
+      951.0399999999998,
+      488.9599999999999
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -253,
-    "trans_y": 19
+    "trans_x": -42,
+    "trans_y": -22
    }
   }
  },
@@ -1585,6 +1584,7 @@
    ],
    "outputs": [
     "port",
+    "hasValue",
     "DST"
    ],
    "params": [

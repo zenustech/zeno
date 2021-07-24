@@ -23,7 +23,7 @@ struct HashGrid {
     float inv_dx;
     float radius;
     float radius_squared;
-    std::vector<zeno::vec3f> refpos;
+    std::vector<zeno::vec3f> const &refpos;
 
     using CoordType = std::tuple<int, int, int>;
     std::array<std::vector<int>, 4096> table;
@@ -32,8 +32,8 @@ struct HashGrid {
         return ((73856093 * x) ^ (19349663 * y) ^ (83492791 * z)) % table.size();
     }
 
-    void build(std::vector<zeno::vec3f> const &refpos_, float radius_) {
-        refpos = refpos_;
+    HashGrid(std::vector<zeno::vec3f> const &refpos_, float radius_)
+        : refpos(refpos_) {
         for (auto &ent: table) {
             ent.clear();
         }
@@ -103,7 +103,8 @@ struct ParticlesNeighborWrangle : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto primNei = has_input("primNei") ?
-            get_input<zeno::PrimitiveObject>("primNei") : prim;
+            get_input<zeno::PrimitiveObject>("primNei") :
+            std::static_pointer_cast<zeno::PrimitiveObject>(prim);
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
         auto radius = get_input<zeno::NumericObject>("radius")->get<float>();
 
@@ -218,8 +219,8 @@ struct ParticlesNeighborWrangle : zeno::INode {
             chs[i] = iob;
         }
 
-        auto hashgrid = std::make_unique<HashGrid>();
-        hashgrid->build(primNei->attr<zeno::vec3f>("pos"), radius);
+        auto hashgrid = std::make_unique<HashGrid>(
+                primNei->attr<zeno::vec3f>("pos"), radius);
         vectors_wrangle(exec, chs, prim->attr<zeno::vec3f>("pos"), hashgrid.get());
 
         set_output("prim", std::move(prim));
