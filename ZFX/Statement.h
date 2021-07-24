@@ -52,15 +52,6 @@ struct Stmt : Statement {
 };
 
 template <class T>
-struct CtrlStmt : Stmt<T> {
-    using Stmt<T>::Stmt;
-
-    virtual bool is_control_stmt() const override {
-        return true;
-    }
-};
-
-template <class T>
 struct AsmStmt : Stmt<T> {
     using Stmt<T>::Stmt;
 

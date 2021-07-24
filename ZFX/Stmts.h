@@ -296,14 +296,14 @@ struct LiterialStmt : Stmt<LiterialStmt> {
     }
 };
 
-struct FrontendIfStmt : CtrlStmt<FrontendIfStmt> {
+struct FrontendIfStmt : Stmt<FrontendIfStmt> {
     Statement *cond;
 
     FrontendIfStmt
         ( int id_
         , Statement *cond_
         )
-        : CtrlStmt(id_)
+        : Stmt(id_)
         , cond(cond_)
     {}
 
@@ -319,16 +319,20 @@ struct FrontendIfStmt : CtrlStmt<FrontendIfStmt> {
             , cond->id
             );
     }
+
+    virtual bool is_control_stmt() const override {
+        return true;
+    }
 };
 
-struct FrontendElseIfStmt : CtrlStmt<FrontendElseIfStmt> {
+struct FrontendElseIfStmt : Stmt<FrontendElseIfStmt> {
     Statement *cond;
 
     FrontendElseIfStmt
         ( int id_
         , Statement *cond_
         )
-        : CtrlStmt(id_)
+        : Stmt(id_)
         , cond(cond_)
     {}
 
@@ -344,13 +348,17 @@ struct FrontendElseIfStmt : CtrlStmt<FrontendElseIfStmt> {
             , cond->id
             );
     }
+
+    virtual bool is_control_stmt() const override {
+        return true;
+    }
 };
 
-struct FrontendElseStmt : CtrlStmt<FrontendElseStmt> {
+struct FrontendElseStmt : Stmt<FrontendElseStmt> {
     FrontendElseStmt
         ( int id_
         )
-        : CtrlStmt(id_)
+        : Stmt(id_)
     {}
 
     virtual StmtFields fields() override {
@@ -363,13 +371,17 @@ struct FrontendElseStmt : CtrlStmt<FrontendElseStmt> {
             "FrontendElse"
             );
     }
+
+    virtual bool is_control_stmt() const override {
+        return true;
+    }
 };
 
-struct FrontendEndIfStmt : CtrlStmt<FrontendEndIfStmt> {
+struct FrontendEndIfStmt : Stmt<FrontendEndIfStmt> {
     FrontendEndIfStmt
         ( int id_
         )
-        : CtrlStmt(id_)
+        : Stmt(id_)
     {}
 
     virtual StmtFields fields() override {
@@ -382,13 +394,17 @@ struct FrontendEndIfStmt : CtrlStmt<FrontendEndIfStmt> {
             "FrontendEndIf"
             );
     }
+
+    virtual bool is_control_stmt() const override {
+        return true;
+    }
 };
 
-/*struct GotoStmt : CtrlStmt<GotoStmt> {
+/*struct GotoStmt : Stmt<GotoStmt> {
     GotoStmt
         ( int id_
         )
-        : CtrlStmt(id_)
+        : Stmt(id_)
     {}
 
     virtual StmtFields fields() override {
@@ -403,14 +419,14 @@ struct FrontendEndIfStmt : CtrlStmt<FrontendEndIfStmt> {
     }
 };
 
-struct GotoIfStmt : CtrlStmt<GotoIfStmt> {
+struct GotoIfStmt : Stmt<GotoIfStmt> {
     Statement *cond;
 
     GotoIfStmt
         ( int id_
         , Statement *cond_
         )
-        : CtrlStmt(id_)
+        : Stmt(id_)
         , cond(cond_)
     {}
 
@@ -428,14 +444,14 @@ struct GotoIfStmt : CtrlStmt<GotoIfStmt> {
     }
 };
 
-struct GofromStmt : CtrlStmt<GofromStmt> {
+struct GofromStmt : Stmt<GofromStmt> {
     Statement *from;
 
     GofromStmt
         ( int id_
         , Statement *from_
         )
-        : CtrlStmt(id_)
+        : Stmt(id_)
         , from(from_)
     {}
 

@@ -28,7 +28,7 @@ DemoteMathFuncs.cpp
 DetectNewSymbols.cpp
 EmitAssembly.cpp
 ExpandFunctions.cpp
-NoReluctantLoad.cpp
+KillUnreachable.cpp
 ReassignGlobals.cpp
 ReassignParameters.cpp
 GlobalLocalize.cpp
