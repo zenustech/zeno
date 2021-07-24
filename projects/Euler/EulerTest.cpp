@@ -245,7 +245,7 @@ struct makeCompressibleSim : zeno::INode {
         flowData->gas->dx, flowData->gas->grid.bbmin, flowData->gas->grid.bbmax,
         flowData->gas->m_q_amb, *(flowData->gas));
     simParam->data = sim.getSolverControl();
-    set_output_ref("outFlowData", get_input_ref("inFlowData"));
+    set_output("outFlowData", get_input("inFlowData"));
     set_output("SimParam", simParam);
   }
 };
@@ -268,7 +268,7 @@ struct MakeVelocityPressure : zeno::INode {
     sim.initialize();
     simParam->data = sim.getSolverControl();
 
-    set_output_ref("outFlowData", get_input_ref("inFlowData"));
+    set_output("outFlowData", get_input("inFlowData"));
   }
 };
 ZENDEFNODE(MakeVelocityPressure, {
@@ -293,7 +293,7 @@ struct CompressibleAdvection : zeno::INode {
     sim.setSolverControl(simParam->data);
     sim.advection(dt, rk_order);
     simParam->data = sim.getSolverControl();
-    set_output_ref("outFlowData", get_input_ref("inFlowData"));
+    set_output("outFlowData", get_input("inFlowData"));
   }
 };
 ZENDEFNODE(CompressibleAdvection,
@@ -319,7 +319,7 @@ struct CompressibleProjection : zeno::INode {
     sim.setSolverControl(simParam->data);
     sim.projection(dt, rk_order);
     simParam->data = sim.getSolverControl();
-    set_output_ref("outFlowData", get_input_ref("inFlowData"));
+    set_output("outFlowData", get_input("inFlowData"));
   }
 };
 ZENDEFNODE(CompressibleProjection,

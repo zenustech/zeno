@@ -26,7 +26,7 @@ struct FishYields : zeno::INode {
     printf("fish yields new_size = %zd\n", new_size);
     stars->resize(new_size);
 
-    set_output_ref("stars", get_input_ref("stars"));
+    set_output("stars", get_input("stars"));
   }
 };
 
@@ -56,7 +56,7 @@ struct AdvectStars : zeno::INode {
         vel[i] += acc[i] * dt;
     }
 
-    set_output_ref("stars", get_input_ref("stars"));
+    set_output("stars", get_input("stars"));
   }
 };
 
@@ -173,7 +173,7 @@ struct LinearOctree : zeno::INode {
 
     printf("%zd stars, %zd nodes, radius %f\n", stars->size(), children.size(), radius);
     set_output("tree", tree);
-    set_output_ref("stars", get_input_ref("stars"));
+    set_output("stars", get_input("stars"));
   }
 };
 
@@ -229,7 +229,7 @@ struct CalcOctreeAttrs : zeno::INode {
         printf("total mass %f at %f %f %f\n", tree->mass[0],
             tree->CoM[0][0], tree->CoM[0][1], tree->CoM[0][2]);
 
-        set_output_ref("tree", get_input_ref("tree"));
+        set_output("tree", get_input("tree"));
     }
 };
 
@@ -298,7 +298,7 @@ struct ComputeGravity : zeno::INode {
         acc[i] *= G;
     }
 
-    set_output_ref("stars", get_input_ref("stars"));
+    set_output("stars", get_input("stars"));
   }
 };
 
@@ -343,7 +343,7 @@ struct DirectComputeGravity : zeno::INode {
         acc[i] *= G;
     }
 
-    set_output_ref("stars", get_input_ref("stars"));
+    set_output("stars", get_input("stars"));
   }
 };
 
