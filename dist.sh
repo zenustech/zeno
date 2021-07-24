@@ -6,7 +6,7 @@ rm -rf /tmp/build
 mkdir -p /tmp/build/{bin,lib/python3.9}
 
 cp -d /tmp/tmp-install/lib/*.so* /tmp/build/lib
-for x in `ZEN_SPROC=1 ZEN_DOEXEC=2 ZEN_OPEN=arts/FLIPSolver.zsg scripts/tracedll.sh python3 -m zenqt`; do
+for x in `ZEN_SPROC=1 ZEN_DOEXEC=2 ZEN_OPEN=arts/ready/VDBMonkeyErode.zsg scripts/tracedll.sh python3 -m zenqt`; do
     y="`realpath $x`"
     echo "$x => $y"
     x="$(echo "$x" | sed 's/\.so/@dot@so/g' | awk -F @dot@so '{print $1".so*"}')"
