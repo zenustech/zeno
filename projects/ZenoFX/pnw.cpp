@@ -104,7 +104,7 @@ struct ParticlesNeighborWrangle : zeno::INode {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto primNei = has_input("primNei") ?
             get_input<zeno::PrimitiveObject>("primNei") :
-            std::static_pointer_cast<zeno::PrimitiveObject>(prim);
+            std::static_pointer_cast<zeno::PrimitiveObject>(prim->clone());
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
         auto radius = get_input<zeno::NumericObject>("radius")->get<float>();
 

@@ -51,7 +51,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@clr = vec3(0.375, 0.75, 1.0)"
+      "value": "@clr = vec3(0.375, 0.75, 1.0)\n@pos.z += @@pos.z"
      },
      "uipos": [
       683.52,
@@ -93,19 +93,35 @@
       "SRC": null
      },
      "params": {
-      "value": 0.1
+      "value": 0.11
      },
      "uipos": [
       951.0399999999998,
       488.9599999999999
      ],
      "options": []
+    },
+    "64b9d96a-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "4bb97511-Make3DGridPrimitive",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      549.7599999999999,
+      307.2
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -42,
-    "trans_y": -22
+    "trans_x": 257,
+    "trans_y": 322
    }
   }
  },
@@ -197,6 +213,20 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "Clone": {
+   "inputs": [
+    "object",
+    "SRC"
+   ],
+   "outputs": [
+    "newObject",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "portal"
    ]
   },
   "DictGetItem": {
@@ -934,6 +964,23 @@
    ],
    "categories": [
     "numeric"
+   ]
+  },
+  "ParticleParticleWrangle": {
+   "inputs": [
+    "prim1",
+    "prim2",
+    "zfxCode",
+    "params",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
    ]
   },
   "ParticlesNeighborWrangle": {
