@@ -426,7 +426,7 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
 };
 
 int apply_register_allocation(IR *ir, int nregs) {
-    nregs -= 3; // left two regs for load/store from spilled memory
+    nregs -= 0; // left two regs for load/store from spilled memory
     if (nregs <= 3) {
         error("no enough registers!\n");
     }
