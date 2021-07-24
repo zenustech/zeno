@@ -35,24 +35,34 @@ struct DemoteMathFuncs : Visitor<DemoteMathFuncs> {
         return {ir.get(), ir->push_clone_back(stmt)};
     }
 
+    Stm stm_const(std::string const &x) {
+        return {ir.get(), ir->emplace_back<LiterialStmt>(x)};
+    }
+
     Stm stm_const(float x) {
         std::stringstream ss; ss << x;
-        return {ir.get(), ir->emplace_back<LiterialStmt>(ss.str())};
+        return stm_const(ss.str());
     }
 
     Statement *emit_op(std::string const &name, std::vector<Statement *> const &args) {
         if (0) {
 
+        } else if (name == "!" && args.size() == 1) {
+            ERROR_IF(args.size() != 1);
+            auto x = make_stm(args[0]);
+            auto mask = stm_const("-nan");
+            return stm("xor", mask, x);
+
         } else if (name == "-" && args.size() == 1) {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
-            auto mask = stm_const(-0.f); // 0x80000000
+            auto mask = stm_const("-0");
             return stm("xor", mask, x);
 
         } else if (name == "abs") {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
-            auto mask = stm_const(-0.f);
+            auto mask = stm_const("-0");
             return stm("andnot", mask, x);
 
         /*} else if (name == "fsin") {
