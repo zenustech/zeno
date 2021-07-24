@@ -9,6 +9,7 @@ from .utils import asset_path
 
 
 def main():
+    QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     app = QApplication(sys.argv)
     font_file_path = asset_path('SourceSansPro-Regular.ttf')
     QFontDatabase().addApplicationFont(font_file_path)
