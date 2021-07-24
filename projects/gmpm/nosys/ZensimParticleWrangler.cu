@@ -49,14 +49,13 @@ struct ZSParticlesWrangle : zeno::INode {
     zfx::cuda::Assembler assembler;
     zfx::Options opts(zfx::Options::for_cuda);
     // opts.reassign_channels = true;
-    opts.reassign_parameters = false;
+    // opts.reassign_parameters = false;
 
     /// params
     auto params = has_input("params") ? get_input<zeno::DictObject>("params")
                                       : std::make_shared<zeno::DictObject>();
     std::vector<float> parvals;
     std::vector<std::pair<std::string, int>> parnames; // (paramName, dim)
-    zs::Vector<zs::f32> dparams;
     for (auto const &[key_, obj] : params->lut) {
       auto key = '$' + key_;
       auto par = dynamic_cast<zeno::NumericObject *>(obj.get());
@@ -82,10 +81,7 @@ struct ZSParticlesWrangle : zeno::INode {
       fmt::print("define param: {} dim {}\n", key, dim);
       opts.define_param(key, dim);
     }
-    zs::Vector<zs::f32> hparams{parvals.size()};
-    for (auto &&[dst, src] : zip(hparams, parvals))
-      dst = src;
-    dparams = hparams.clone({zs::memsrc_e::device, 0});
+
     /// symbols
     auto def_sym = [&opts](const std::string &key, int dim) {
       fmt::print("define symbol: @{} dim {}\n", key, dim);
@@ -113,6 +109,7 @@ struct ZSParticlesWrangle : zeno::INode {
       auto jitCode = assembler.assemble(
           prog->assembly); // amazing! you avoid nvrtc totally
 
+      /// symbols
       zs::Vector<AccessorAoSoA> haccessors{prog->symbols.size()};
       auto unitBytes = match([](auto &pars) {
         return sizeof(typename RM_CVREF_T(pars)::T);
@@ -154,6 +151,19 @@ struct ZSParticlesWrangle : zeno::INode {
         // fmt::print("base: {}\n", haccessors[i].base);
       }
       auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});
+
+      /// params
+      zs::Vector<zs::f32> hparams{prog->params.size()};
+      for (int i = 0; i < prog->params.size(); i++) {
+        auto [name, dimid] = prog->params[i];
+        printf("parameter %d: %s.%d\t", i, name.c_str(), dimid);
+        auto it = std::find(parnames.begin(), parnames.end(),
+                            std::make_pair(name, dimid));
+        auto value = parvals.at(it - parnames.begin());
+        printf("(valued %f)\n", value);
+        hparams[i] = value;
+      }
+      zs::Vector<zs::f32> dparams = hparams.clone({zs::memsrc_e::device, 0});
 
       if constexpr (true) { /// execute on the current particle object
         auto wrangleKernelPtxs = cudri::load_all_ptx_files_at();
