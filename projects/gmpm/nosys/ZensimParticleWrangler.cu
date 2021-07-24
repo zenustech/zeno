@@ -48,7 +48,7 @@ struct ZSParticlesWrangle : zeno::INode {
     zfx::Compiler compiler;
     zfx::cuda::Assembler assembler;
     zfx::Options opts(zfx::Options::for_cuda);
-    opts.reassign_channels = false;
+    // opts.reassign_channels = true;
     opts.reassign_parameters = false;
 
     /// params
@@ -113,10 +113,47 @@ struct ZSParticlesWrangle : zeno::INode {
       auto jitCode = assembler.assemble(
           prog->assembly); // amazing! you avoid nvrtc totally
 
+      zs::Vector<AccessorAoSoA> haccessors{prog->symbols.size()};
+      auto unitBytes = match([](auto &pars) {
+        return sizeof(typename RM_CVREF_T(pars)::T);
+      })(parObjPtr->get());
+      const int dim = match([](auto &pars) { return RM_CVREF_T(pars)::dim; })(
+          parObjPtr->get());
       for (int i = 0; i < prog->symbols.size(); i++) {
         auto [name, dimid] = prog->symbols[i];
-        printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
+        printf("channel %d: %s.%d\t", i, name.c_str(), dimid);
+
+        int ndim;
+        void *addr;
+        match([&ndim, &addr, dim, name = name, unitBytes](auto &pars) {
+          if (name == "@mass") {
+            ndim = 1;
+            addr = pars.M.data();
+          } else if (name == "@pos") {
+            ndim = dim;
+            addr = pars.X.data();
+          } else if (name == "@vel") {
+            ndim = dim;
+            addr = pars.V.data();
+          } else if (name == "@C") {
+            ndim = dim * dim;
+            addr = pars.C.data();
+          } else if (name == "@F") {
+            ndim = dim * dim;
+            addr = pars.F.data();
+          } else if (name == "@J") {
+            ndim = 1;
+            addr = pars.J.data();
+          } else if (name == "@logJp") {
+            ndim = 1;
+            addr = pars.logJp.data();
+          }
+        })(parObjPtr->get());
+        haccessors[i] =
+            zs::AccessorAoSoA{zs::aos_v, addr, unitBytes, ndim, dimid};
+        // fmt::print("base: {}\n", haccessors[i].base);
       }
+      auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});
 
       if constexpr (true) { /// execute on the current particle object
         auto wrangleKernelPtxs = cudri::load_all_ptx_files_at();
@@ -155,18 +192,25 @@ struct ZSParticlesWrangle : zeno::INode {
         zs::f32 *d_params;
         zs::ParticlesProxy<zs::execspace_e::cuda, zs::Particles<zs::f32, 3>>
             parObj;
-        void *args[4];
+        int nchns = daccessors.size();
+        void *addr = daccessors.data();
+        void *args[5];
 
         match(
             [&](auto &pars) -> std::enable_if_t<std::is_same_v<
                                 RM_CVREF_T(pars), zs::Particles<zs::f32, 3>>> {
               cnt = pars.size();
               args[0] = (void *)&cnt;
+              args[1] = (void *)&parObjPtr->model;
               d_params = dparams.data();
-              args[1] = (void *)&d_params;
+              args[2] = (void *)&d_params;
+#if 0
               parObj = proxy<zs::execspace_e::cuda>(pars);
-              args[2] = (void *)&parObj;
-              args[3] = (void *)&parObjPtr->model;
+              args[3] = (void *)&parObj;
+#else
+              args[3] = (void *)&nchns;
+              args[4] = (void *)&addr;
+#endif
             },
             [](...) {})(parObjPtr->get());
         cudri::launchCuKernel(function, (cnt + 127) / 128, 1, 1, 128, 1, 1, 0,
