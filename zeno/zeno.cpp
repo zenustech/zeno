@@ -169,7 +169,7 @@ ZENAPI void Graph::applyNode(std::string const &id) {
     try {
         node->doApply();
     } catch (std::exception const &e) {
-        throw zeno::Exception("During execution of node `"
+        throw zeno::Exception("During evaluation of `"
                 + node->myname + "`:\n" + e.what());
     }
 #ifdef ZENO_DETAILED_LOG
@@ -178,11 +178,17 @@ ZENAPI void Graph::applyNode(std::string const &id) {
 }
 
 ZENAPI void Graph::applyNodes(std::vector<std::string> const &ids) {
-    ctx = std::make_unique<Context>();
-    for (auto const &id: ids) {
-        applyNode(id);
+    try {
+        ctx = std::make_unique<Context>();
+        for (auto const &id: ids) {
+            applyNode(id);
+        }
+        ctx = nullptr;
+    } catch (std::exception const &e) {
+        throw zeno::Exception(
+                (std::string)"ZENO Traceback (most recent call last):\n"
+                + e.what());
     }
-    ctx = nullptr;
 }
 
 ZENAPI void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
