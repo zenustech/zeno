@@ -1,6 +1,5 @@
-OutOfOrderOptimize
-NoReluctantLoad
-KillUnreached
+OutOfOrder
+ConstantFold
 MergeIdentical
 MergeLocalStorage
 refactor zsg file format for input output both connection

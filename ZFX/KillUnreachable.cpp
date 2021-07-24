@@ -85,6 +85,7 @@ struct KillUnreachable : Visitor<KillUnreachable> {
     void visit(Statement *stmt) {
         if (!stmt->is_control_stmt()) {
             if (reached.find(stmt->id) == reached.end()) {
+                return;
             }
         }
         ir->push_clone_back(stmt);
