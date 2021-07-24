@@ -46,7 +46,7 @@ struct NoReluctantLoad : Visitor<NoReluctantLoad> {
     }
 };
 
-std::unique_ptr<IR> apply_reassign_globals(IR *ir) {
+std::unique_ptr<IR> apply_no_reluctant_load(IR *ir) {
     NoReluctantLoad visitor;
     visitor.apply(ir);
     return std::move(visitor.ir);
