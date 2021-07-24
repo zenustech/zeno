@@ -81,6 +81,10 @@ struct EmitAssembly : Visitor<EmitAssembly> {
             } else if (op == "*") { return "mul";
             } else if (op == "/") { return "div";
             } else if (op == "%") { return "mod";
+            } else if (op == "&") { return "and";
+            } else if (op == "|") { return "or";
+            } else if (op == "^") { return "xor";
+            } else if (op == "&!") { return "andnot";
             } else if (op == "==") { return "cmpeq";
             } else if (op == "!=") { return "cmpne";
             } else if (op == "<") { return "cmplt";

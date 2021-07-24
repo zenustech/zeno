@@ -99,12 +99,13 @@ struct LowerAST {
 
         } else if (contains({"+", "-", "*", "/", "%",
                     "==", "!=", "<", "<=", ">", ">=",
+                    "&", "&!", "|", "^",
                     }, ast->token) && ast->args.size() == 2) {
             auto lhs = serialize(ast->args[0].get());
             auto rhs = serialize(ast->args[1].get());
             return ir->emplace_back<BinaryOpStmt>(ast->token, lhs, rhs);
 
-        } else if (contains({"+", "-"}, ast->token) && ast->args.size() == 1) {
+        } else if (contains({"+", "-", "!"}, ast->token) && ast->args.size() == 1) {
             auto src = serialize(ast->args[0].get());
             return ir->emplace_back<UnaryOpStmt>(ast->token, src);
 

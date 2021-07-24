@@ -21,7 +21,7 @@ namespace opcode {
         min = 0x5d,
         max = 0x5f,
         bit_and = 0x54,
-        bit_andnot = 0x55,
+        bit_andn = 0x55,
         bit_or = 0x56,
         bit_xor = 0x57,
         sqrt = 0x51,

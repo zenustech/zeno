@@ -37,7 +37,16 @@ struct ImplAssembler {
                 ERROR_IF(linesep.size() < 2);
                 auto id = from_string<int>(linesep[1]);
                 auto expr = linesep[2];
-                if (!(std::istringstream(expr) >> exec->consts[id])) {
+                float &dst = exec->consts[id];
+                if (expr[0] == 'i') {
+                    union {
+                        float f;
+                        uint32_t i;
+                    } u;
+                    u.i = 0;
+                    std::istringstream(expr) >> u.i;
+                    dst = u.f;
+                } else if (!(std::istringstream(expr) >> dst)) {
                     error("cannot parse literial constant `%s`",
                         expr.c_str());
                 }
@@ -155,8 +164,8 @@ struct ImplAssembler {
                 auto dst = from_string<int>(linesep[1]);
                 auto lhs = from_string<int>(linesep[2]);
                 auto rhs = from_string<int>(linesep[3]);
-                builder->addAvxBinaryOp(simdkind, opcode::bit_andnot,
-                    dst, lhs, rhs);
+                builder->addAvxBinaryOp(simdkind, opcode::bit_andn,
+                    dst, rhs, lhs);
 
             } else if (cmd == "cmpeq") {
                 ERROR_IF(linesep.size() < 3);

@@ -49,7 +49,7 @@ struct Parser {
             }
             return atm;
         }
-        if (auto ope = parse_operator(iter, {"+", "-"}); ope) {
+        if (auto ope = parse_operator(iter, {"+", "-", "!"}); ope) {
             if (auto rhs = parse_compound(ope->iter); rhs) {
                 return make_ast(ope->token, rhs->iter, {std::move(rhs)});
             } else {
@@ -129,7 +129,7 @@ struct Parser {
 
     AST::Ptr parse_andexpr(AST::Iter iter) {
         if (auto lhs = parse_cond(iter); lhs) {
-            while (1) if (auto ope = parse_operator(lhs->iter, {"&"}); ope) {
+            while (1) if (auto ope = parse_operator(lhs->iter, {"&", "&!"}); ope) {
                     if (auto rhs = parse_cond(ope->iter); rhs) {
                         lhs = make_ast(ope->token, rhs->iter, {std::move(lhs), std::move(rhs)});
                     } else error("`%s` expecting rhs, got `%s`",
@@ -140,7 +140,7 @@ struct Parser {
         return nullptr;
     }
 
-    AST::Ptr parse_expr(AST::Iter iter) {
+    AST::Ptr parse_orexpr(AST::Iter iter) {
         if (auto lhs = parse_andexpr(iter); lhs) {
             while (1) if (auto ope = parse_operator(lhs->iter, {"|", "^"}); ope) {
                     if (auto rhs = parse_andexpr(ope->iter); rhs) {
@@ -149,6 +149,24 @@ struct Parser {
                         lhs->iter->c_str(), ope->iter->c_str());
             } else break;
             return lhs;
+        }
+        return nullptr;
+    }
+
+    AST::Ptr parse_expr(AST::Iter iter) {
+        if (auto cond = parse_orexpr(iter); cond) {
+            if (auto ope = parse_operator(cond->iter, {"?"}); ope) {
+                if (auto lhs = parse_orexpr(ope->iter); lhs) {
+                    if (auto ope2 = parse_operator(cond->iter, {":"}); ope) {
+                        if (auto rhs = parse_expr(ope2->iter); rhs) {
+                            cond = make_ast(ope->token, rhs->iter, {std::move(lhs), std::move(rhs)});
+                        } else error("`%s` expecting rhs, got `%s`",
+                            lhs->iter->c_str(), ope2->iter->c_str());
+                    } else error("`%s` expecting `:`, got `%s`",
+                        ope2->iter->c_str(), ope->iter->c_str());
+                } else error("`%s` expecting lhs, got `%s`",
+                    lhs->iter->c_str(), ope->iter->c_str());
+            }
         }
         return nullptr;
     }
