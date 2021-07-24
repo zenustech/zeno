@@ -16,7 +16,7 @@ int main() {
 #else
     int n = 1;
     std::string code(R"(
-@clr = !0 ? 2.718 : 3.14
+@clr = 0 ? 2.718 : 3.14
 )");
 #endif
 

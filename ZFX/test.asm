@@ -6,4 +6,3 @@ vblendvps xmm1, xmm0, xmm0, xmm0
 vblendvps xmm0, xmm1, xmm0, xmm0
 vblendvps xmm0, xmm0, xmm1, xmm0
 vblendvps xmm0, xmm0, xmm0, xmm1
-vblendvps ymm0, ymm0, ymm0, ymm0

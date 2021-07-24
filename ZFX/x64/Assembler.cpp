@@ -264,10 +264,11 @@ struct ImplAssembler {
 
             } else if (cmd == "blend") {
                 ERROR_IF(linesep.size() < 3);
-                auto cond = from_string<int>(linesep[1]);
-                auto lhs = from_string<int>(linesep[2]);
-                auto rhs = from_string<int>(linesep[3]);
-                builder->addAvxTernaryOp(simdkind, cond, lhs, rhs);
+                auto dst = from_string<int>(linesep[1]);
+                auto cond = from_string<int>(linesep[2]);
+                auto lhs = from_string<int>(linesep[3]);
+                auto rhs = from_string<int>(linesep[4]);
+                builder->addAvxTernaryOp(simdkind, dst, cond, lhs, rhs);
 
             } else if (auto it = std::find(
                 FuncTable::funcnames.begin(), FuncTable::funcnames.end(), cmd);
