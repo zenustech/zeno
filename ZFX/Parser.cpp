@@ -159,7 +159,8 @@ struct Parser {
                 if (auto lhs = parse_orexpr(ope->iter); lhs) {
                     if (auto ope2 = parse_operator(lhs->iter, {":"}); ope2) {
                         if (auto rhs = parse_expr(ope2->iter); rhs) {
-                            return make_ast(ope->token, rhs->iter, {std::move(lhs), std::move(rhs)});
+                            return make_ast(ope->token, rhs->iter, {
+                                    std::move(cond), std::move(lhs), std::move(rhs)});
                         } else error("`%s` expecting rhs, got `%s`",
                             lhs->iter->c_str(), ope2->iter->c_str());
                     } else error("`%s` expecting `:`, got `%s`",

@@ -67,13 +67,14 @@ struct BinaryOpStmt : Stmt<BinaryOpStmt> {
     }
 };
 
-struct TernaryOpStmt : Stmt<BinaryOpStmt> {
+struct TernaryOpStmt : Stmt<TernaryOpStmt> {
     Statement *cond;
     Statement *lhs;
     Statement *rhs;
 
     TernaryOpStmt
         ( int id_
+        , Statement *cond_
         , Statement *lhs_
         , Statement *rhs_
         )
