@@ -20,6 +20,7 @@ struct Options {
     bool detect_new_symbols = false;
     bool reassign_parameters = true;
     bool reassign_channels = true;
+    bool kill_unreachable = true;
 
     //Options() = default;
 
@@ -101,13 +102,13 @@ struct Program {
 
     int symbol_id(std::string const &name, int dim) const {
         auto it = std::find(
-            symbols.begin(), symbols.end(), std::pair{name, dim});
+            symbols.begin(), symbols.end(), std::make_pair(name, dim));
         return it != symbols.end() ? it - symbols.begin() : -1;
     }
 
     int param_id(std::string const &name, int dim) const {
         auto it = std::find(
-            params.begin(), params.end(), std::pair{name, dim});
+            params.begin(), params.end(), std::make_pair(name, dim));
         return it != params.end() ? it - params.begin() : -1;
     }
 };

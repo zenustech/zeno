@@ -14,9 +14,9 @@ int main() {
         return pos;
     };
 #else
-    int n = 2;
+    int n = 1;
     std::string code(R"(
-@clr = pow(@pos.x, 2)
+@clr = sin(@pos)
 )");
 #endif
 

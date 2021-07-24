@@ -47,8 +47,19 @@ struct GraphicPrimitive : IGraphic {
     if (!prim->has_attr("nrm")) {
         auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
 
-        for (size_t i = 0; i < nrm.size(); i++) {
-            nrm[i] = zeno::vec3f(1 / zeno::sqrt(3.0f));
+        if (prim->has_attr("rad")) {
+            auto &rad = prim->attr<float>("rad");
+            for (size_t i = 0; i < nrm.size(); i++) {
+                nrm[i] = zeno::vec3f(rad[i], 0.0f, 0.0f);
+            }
+        } else if (prim->tris.size()) {
+            for (size_t i = 0; i < nrm.size(); i++) {
+                nrm[i] = zeno::vec3f(1 / zeno::sqrt(3.0f));
+            }
+        } else {
+            for (size_t i = 0; i < nrm.size(); i++) {
+                nrm[i] = zeno::vec3f(5.0f, 0.0f, 0.0f);
+            }
         }
     }
     auto const &pos = prim->attr<zeno::vec3f>("pos");
@@ -172,47 +183,52 @@ struct GraphicPrimitive : IGraphic {
     auto frag = hg::file_get_content(path + ".points.frag");
 
     if (vert.size() == 0) {
-      vert =
-"#version 120\n"
-"\n"
-"uniform mat4 mVP;\n"
-"uniform mat4 mInvVP;\n"
-"uniform mat4 mView;\n"
-"uniform mat4 mProj;\n"
-"\n"
-"attribute vec3 vPosition;\n"
-"attribute vec3 vColor;\n"
-"\n"
-"varying vec3 position;\n"
-"varying vec3 color;\n"
-"\n"
-"void main()\n"
-"{\n"
-"  position = vPosition;\n"
-"  color = vColor;\n"
-"\n"
-"  gl_Position = mVP * vec4(position, 1.0);\n"
-"  gl_PointSize = 5.0;\n"
-"}\n";
+      vert = R"(
+#version 120
+
+uniform mat4 mVP;
+uniform mat4 mInvVP;
+uniform mat4 mView;
+uniform mat4 mProj;
+
+attribute vec3 vPosition;
+attribute vec3 vColor;
+attribute vec3 vNormal;
+
+varying vec3 position;
+varying vec3 color;
+varying float radius;
+
+void main()
+{
+  position = vPosition;
+  color = vColor;
+  radius = vNormal.x;
+
+  gl_Position = mVP * vec4(position, 1.0);
+  gl_PointSize = radius;
+}
+)";
     }
     if (frag.size() == 0) {
-      frag =
-"#version 120\n"
-"\n"
-"uniform mat4 mVP;\n"
-"uniform mat4 mInvVP;\n"
-"uniform mat4 mView;\n"
-"uniform mat4 mProj;\n"
-"\n"
-"varying vec3 position;\n"
-"varying vec3 color;\n"
-"\n"
-"void main()\n"
-"{\n"
-"  if (length(gl_PointCoord - vec2(0.5)) > 0.5)\n"
-"    discard;\n"
-"  gl_FragColor = vec4(color, 1.0);\n"
-"}\n";
+      frag = R"(
+#version 120
+
+uniform mat4 mVP;
+uniform mat4 mInvVP;
+uniform mat4 mView;
+uniform mat4 mProj;
+
+varying vec3 position;
+varying vec3 color;
+
+void main()
+{
+  if (length(gl_PointCoord - vec2(0.5)) > 0.5)
+    discard;
+  gl_FragColor = vec4(color, 1.0);
+}
+)";
     }
 
     return compile_program(vert, frag);
@@ -223,48 +239,50 @@ struct GraphicPrimitive : IGraphic {
     auto frag = hg::file_get_content(path + ".lines.frag");
 
     if (vert.size() == 0) {
-      vert =
-"#version 120\n"
-"\n"
-"uniform mat4 mVP;\n"
-"uniform mat4 mInvVP;\n"
-"uniform mat4 mView;\n"
-"uniform mat4 mProj;\n"
-"uniform mat4 mInvView;\n"
-"uniform mat4 mInvProj;\n"
-"\n"
-"attribute vec3 vPosition;\n"
-"attribute vec3 vColor;\n"
-"\n"
-"varying vec3 position;\n"
-"varying vec3 color;\n"
-"\n"
-"void main()\n"
-"{\n"
-"  position = vPosition;\n"
-"  color = vColor;\n"
-"\n"
-"  gl_Position = mVP * vec4(position, 1.0);\n"
-"}\n";
+      vert = R"(
+#version 120
+
+uniform mat4 mVP;
+uniform mat4 mInvVP;
+uniform mat4 mView;
+uniform mat4 mProj;
+uniform mat4 mInvView;
+uniform mat4 mInvProj;
+
+attribute vec3 vPosition;
+attribute vec3 vColor;
+
+varying vec3 position;
+varying vec3 color;
+
+void main()
+{
+  position = vPosition;
+  color = vColor;
+
+  gl_Position = mVP * vec4(position, 1.0);
+}
+)";
     }
     if (frag.size() == 0) {
-      frag =
-"#version 120\n"
-"\n"
-"uniform mat4 mVP;\n"
-"uniform mat4 mInvVP;\n"
-"uniform mat4 mView;\n"
-"uniform mat4 mProj;\n"
-"uniform mat4 mInvView;\n"
-"uniform mat4 mInvProj;\n"
-"\n"
-"varying vec3 position;\n"
-"varying vec3 color;\n"
-"\n"
-"void main()\n"
-"{\n"
-"  gl_FragColor = vec4(color, 1.0);\n"
-"}\n";
+      frag = R"(
+#version 120
+
+uniform mat4 mVP;
+uniform mat4 mInvVP;
+uniform mat4 mView;
+uniform mat4 mProj;
+uniform mat4 mInvView;
+uniform mat4 mInvProj;
+
+varying vec3 position;
+varying vec3 color;
+
+void main()
+{
+  gl_FragColor = vec4(color, 1.0);
+}
+)";
     }
 
     return compile_program(vert, frag);
@@ -275,118 +293,120 @@ struct GraphicPrimitive : IGraphic {
     auto frag = hg::file_get_content(path + ".tris.frag");
 
     if (vert.size() == 0) {
-      vert =
-"#version 120\n"
-"\n"
-"uniform mat4 mVP;\n"
-"uniform mat4 mInvVP;\n"
-"uniform mat4 mView;\n"
-"uniform mat4 mProj;\n"
-"uniform mat4 mInvView;\n"
-"uniform mat4 mInvProj;\n"
-"\n"
-"attribute vec3 vPosition;\n"
-"attribute vec3 vColor;\n"
-"attribute vec3 vNormal;\n"
-"\n"
-"varying vec3 position;\n"
-"varying vec3 iColor;\n"
-"varying vec3 iNormal;\n"
-"\n"
-"void main()\n"
-"{\n"
-"  position = vPosition;\n"
-"  iColor = vColor;\n"
-"  iNormal = vNormal;\n"
-"\n"
-"  gl_Position = mVP * vec4(position, 1.0);\n"
-"}\n";
+      vert = R"(
+#version 120
+
+uniform mat4 mVP;
+uniform mat4 mInvVP;
+uniform mat4 mView;
+uniform mat4 mProj;
+uniform mat4 mInvView;
+uniform mat4 mInvProj;
+
+attribute vec3 vPosition;
+attribute vec3 vColor;
+attribute vec3 vNormal;
+
+varying vec3 position;
+varying vec3 iColor;
+varying vec3 iNormal;
+
+void main()
+{
+  position = vPosition;
+  iColor = vColor;
+  iNormal = vNormal;
+
+  gl_Position = mVP * vec4(position, 1.0);
+}
+)";
     }
     if (frag.size() == 0) {
-      frag =
-"#version 120\n"
-"\n"
-"uniform mat4 mVP;\n"
-"uniform mat4 mInvVP;\n"
-"uniform mat4 mView;\n"
-"uniform mat4 mProj;\n"
-"uniform mat4 mInvView;\n"
-"uniform mat4 mInvProj;\n"
-"\n"
-"varying vec3 position;\n"
-"varying vec3 iColor;\n"
-"varying vec3 iNormal;\n"
-"\n"
-"struct Light {\n"
-"  vec3 dir;\n"
-"  vec3 color;\n"
-"};\n"
-"\n"
-"struct Material {\n"
-"  vec3 albedo;\n"
-"  float roughness;\n"
-"  float metallic;\n"
-"  float specular;\n"
-"};\n"
-"\n"
-"vec3 pbr(Material material, vec3 nrm, vec3 idir, vec3 odir) {\n"
-"  float roughness = material.roughness;\n"
-"  float metallic = material.metallic;\n"
-"  float specular = material.specular;\n"
-"  vec3 albedo = material.albedo;\n"
-"\n"
-"  vec3 hdir = normalize(idir + odir);\n"
-"  float NoH = max(0, dot(hdir, nrm));\n"
-"  float NoL = max(0, dot(idir, nrm));\n"
-"  float NoV = max(0, dot(odir, nrm));\n"
-"  float VoH = clamp(dot(odir, hdir), 0, 1);\n"
-"  float LoH = clamp(dot(idir, hdir), 0, 1);\n"
-"\n"
-"  vec3 f0 = metallic * albedo + (1 - metallic) * 0.16 * specular * specular;\n"
-"  vec3 fdf = f0 + (1 - f0) * pow(1 - VoH, 5);\n"
-"\n"
-"  float k = (roughness + 1) * (roughness + 1) / 8;\n"
-"  float vdf = 0.25 / ((NoV * k + 1 - k) * (NoL * k + 1 - k));\n"
-"\n"
-"  float alpha2 = max(0, roughness * roughness);\n"
-"  float denom = 1 - NoH * NoH * (1 - alpha2);\n"
-"  float ndf = alpha2 / (denom * denom);\n"
-"\n"
-"  vec3 brdf = fdf * vdf * ndf * f0 + (1 - f0) * albedo;\n"
-"  return brdf * NoL;\n"
-"}\n"
-"\n"
-"vec3 calcRayDir(vec3 pos)\n"
-"{\n"
-"  vec4 vpos = mVP * vec4(pos, 1);\n"
-"  vec2 uv = vpos.xy / vpos.w;\n"
-"  vec4 ro = mInvVP * vec4(uv, -1, 1);\n"
-"  vec4 re = mInvVP * vec4(uv, +1, 1);\n"
-"  vec3 rd = normalize(re.xyz / re.w - ro.xyz / ro.w);\n"
-"  return rd;\n"
-"}\n"
-"\n"
-"void main()\n"
-"{\n"
-"  vec3 normal = normalize(iNormal);\n"
-"  vec3 viewdir = -calcRayDir(position);\n"
-"\n"
-"  Material material;\n"
-//"  material.albedo = vec3(0.8);\n"
-"  material.albedo = iColor;\n"
-"  material.roughness = 0.4;\n"
-"  material.metallic = 0.0;\n"
-"  material.specular = 0.5;\n"
-"\n"
-"  Light light;\n"
-"  light.dir = normalize((mVP * vec4(-1, -2, 5, 0)).xyz);\n"
-"  light.dir = faceforward(light.dir, -light.dir, normal);\n"
-"  light.color = vec3(1, 1, 1);\n"
-"\n"
-"  vec3 strength = pbr(material, normal, light.dir, viewdir);\n"
-"  vec3 color = light.color * strength;\n"
-"  gl_FragColor = vec4(color, 1.0);\n"
-"}\n";
+      frag = R"(
+#version 120
+
+uniform mat4 mVP;
+uniform mat4 mInvVP;
+uniform mat4 mView;
+uniform mat4 mProj;
+uniform mat4 mInvView;
+uniform mat4 mInvProj;
+
+varying vec3 position;
+varying vec3 iColor;
+varying vec3 iNormal;
+
+struct Light {
+  vec3 dir;
+  vec3 color;
+};
+
+struct Material {
+  vec3 albedo;
+  float roughness;
+  float metallic;
+  float specular;
+};
+
+vec3 pbr(Material material, vec3 nrm, vec3 idir, vec3 odir) {
+  float roughness = material.roughness;
+  float metallic = material.metallic;
+  float specular = material.specular;
+  vec3 albedo = material.albedo;
+
+  vec3 hdir = normalize(idir + odir);
+  float NoH = max(0, dot(hdir, nrm));
+  float NoL = max(0, dot(idir, nrm));
+  float NoV = max(0, dot(odir, nrm));
+  float VoH = clamp(dot(odir, hdir), 0, 1);
+  float LoH = clamp(dot(idir, hdir), 0, 1);
+
+  vec3 f0 = metallic * albedo + (1 - metallic) * 0.16 * specular * specular;
+  vec3 fdf = f0 + (1 - f0) * pow(1 - VoH, 5);
+
+  float k = (roughness + 1) * (roughness + 1) / 8;
+  float vdf = 0.25 / ((NoV * k + 1 - k) * (NoL * k + 1 - k));
+
+  float alpha2 = max(0, roughness * roughness);
+  float denom = 1 - NoH * NoH * (1 - alpha2);
+  float ndf = alpha2 / (denom * denom);
+
+  vec3 brdf = fdf * vdf * ndf * f0 + (1 - f0) * albedo;
+  return brdf * NoL;
+}
+
+vec3 calcRayDir(vec3 pos)
+{
+  vec4 vpos = mVP * vec4(pos, 1);
+  vec2 uv = vpos.xy / vpos.w;
+  vec4 ro = mInvVP * vec4(uv, -1, 1);
+  vec4 re = mInvVP * vec4(uv, +1, 1);
+  vec3 rd = normalize(re.xyz / re.w - ro.xyz / ro.w);
+  return rd;
+}
+
+void main()
+{
+  vec3 normal = normalize(iNormal);
+  vec3 viewdir = -calcRayDir(position);
+
+  Material material;
+  //material.albedo = vec3(0.8);
+  material.albedo = iColor;
+  material.roughness = 0.4;
+  material.metallic = 0.0;
+  material.specular = 0.5;
+
+  Light light;
+  light.dir = normalize((mVP * vec4(-1, -2, 5, 0)).xyz);
+  light.dir = faceforward(light.dir, -light.dir, normal);
+  light.color = vec3(1, 1, 1);
+
+  vec3 strength = pbr(material, normal, light.dir, viewdir);
+  vec3 color = light.color * strength;
+  gl_FragColor = vec4(color, 1.0);
+}
+)";
     }
 
     return compile_program(vert, frag);

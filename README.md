@@ -150,13 +150,13 @@ Other requirements like Pybind11 or GLAD are self-contained and you don't have t
 - Arch Linux
 
 ```bash
-sudo pacman -S gcc make cmake python python-pip python-numpy python-pyqt5 qt5-base libglvnd mesa
+sudo pacman -S gcc make cmake python python-pip python-numpy pyside2
 ```
 
 - Ubuntu 20.04
 
 ```bash
-sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip libqt5core5a qt5dxcb-plugin libglvnd-dev libglapi-mesa libosmesa6
+sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin
 
 python --version  # make sure Python version >= 3.7
 sudo python -m pip install -U pip
@@ -353,11 +353,8 @@ You may contact us via WeChat:
 - Arch Linux
 
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
-make -C build -j8
-make -C build install
 ./dist.sh
-# you will get /tmp/zeno-linux-20xx.x.x.tar.gz
+# you will get /tmp/release/zeno-linux-20xx.x.x.tar.gz
 ```
 
 - Windows

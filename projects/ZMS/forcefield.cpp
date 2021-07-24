@@ -91,7 +91,7 @@ struct ApplyForce: zeno::INode {
     // TODO: add primitive type attribute
     forcefield->force(pos, acc, boxlength);
     printf("Apply force\n");
-    set_output_ref("prim", get_input_ref("prim"));
+    set_output("prim", get_input("prim"));
   }
 };
 

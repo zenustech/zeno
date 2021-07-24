@@ -54,8 +54,6 @@ struct IObject {
     virtual void dumpfile(std::string const &path) {}
 #endif
 
-    using Ptr = std::unique_ptr<IObject>;
-
     template <class T>
     [[deprecated("use std::make_shared<T>")]]
     static std::shared_ptr<T> make() { return std::make_shared<T>(); }
@@ -121,17 +119,6 @@ protected:
     ZENAPI void set_output(std::string const &id,
         std::shared_ptr<IObject> &&obj);
 
-    [[deprecated("use get_input")]]
-    std::shared_ptr<IObject> get_input_ref(std::string const &id) const {
-        return get_input(id);
-    }
-
-    [[deprecated("use set_output")]]
-    void set_output_ref(std::string const &id,
-        std::shared_ptr<IObject> &&obj) {
-        set_output(id, std::move(obj));
-    }
-
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
         return std::dynamic_pointer_cast<T>(get_input(id));
@@ -140,16 +127,6 @@ protected:
     template <class T>
     T get_param(std::string const &id) const {
         return std::get<T>(get_param(id));
-    }
-
-
-    template <class T>
-    [[deprecated("use set_output")]]
-    T *new_member(std::string const &id) {
-        auto obj = std::make_shared<T>();
-        auto obj_ptr = obj.get();
-        set_output(id, std::move(obj));
-        return obj_ptr;
     }
 
     template <class T>

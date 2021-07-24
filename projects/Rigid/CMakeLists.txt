@@ -6,10 +6,6 @@ add_library(zenRigidLib SHARED ${ZEN_RIGID_SOURCE})
 target_include_directories(zenRigidLib PRIVATE .)
 target_include_directories(zenRigidLib PRIVATE bullet3/src)
 
-#find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
-#target_link_libraries(zenRigidLib PRIVATE openvdb IlmBase::Half)
-#target_link_libraries(zenRigidLib PRIVATE pthread openblas lapack cblas)
-
 target_link_libraries(zenRigidLib PRIVATE LinearMath)
 target_link_libraries(zenRigidLib PRIVATE Bullet3Common)
 target_link_libraries(zenRigidLib PRIVATE BulletInverseDynamics)

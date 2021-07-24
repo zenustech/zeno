@@ -2,363 +2,84 @@
  "graph": {
   "main": {
    "nodes": {
-    "0a96a449-NumericInt": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "value": 128
-     },
-     "uipos": [
-      -399.5999999999999,
-      -95.0
-     ],
-     "options": []
-    },
-    "df3a7bea-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 3.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -403.35,
-      300.9
-     ],
-     "options": []
-    },
-    "a3d3c606-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 3.0,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -402.05000000000007,
-      84.69999999999999
-     ],
-     "options": []
-    },
-    "8cf5c24a-SampleVDBToPrimitive": {
-     "name": "SampleVDBToPrimitive",
-     "inputs": {
-      "prim": [
-       "b176c97f-PrimitiveAddAttr",
-       "prim"
-      ],
-      "vdbGrid": [
-       "34250153-MeshToSDF",
-       "sdf"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "primAttr": "rho"
-     },
-     "uipos": [
-      420.25,
-      138.5
-     ],
-     "options": []
-    },
-    "693e312b-ReadObjMesh": {
-     "name": "ReadObjMesh",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "path": "assets/Pig_Head.obj"
-     },
-     "uipos": [
-      -268.0,
-      530.0
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "34250153-MeshToSDF": {
-     "name": "MeshToSDF",
-     "inputs": {
-      "mesh": [
-       "693e312b-ReadObjMesh",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "voxel_size": 0.04,
-      "type": "vertex"
-     },
-     "uipos": [
-      -19.0,
-      393.0
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "b176c97f-PrimitiveAddAttr": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "89cdfd21-Make2DGridPrimitive",
-       "prim"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "name": "rho",
-      "type": "float"
-     },
-     "uipos": [
-      151.25000000000006,
-      74.00000000000003
-     ],
-     "options": []
-    },
-    "abd73164-MeshToPrimitive": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "693e312b-ReadObjMesh",
-       "mesh"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -8.800000000000011,
-      624.0000000000001
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "89cdfd21-Make2DGridPrimitive": {
-     "name": "Make2DGridPrimitive",
-     "inputs": {
-      "nx": [
-       "0a96a449-NumericInt",
-       "value"
-      ],
-      "ny": null,
-      "dx": null,
-      "dy": null,
-      "sizeX": [
-       "a3d3c606-NumericVec3",
-       "vec3"
-      ],
-      "sizeY": [
-       "df3a7bea-NumericVec3",
-       "vec3"
-      ],
-      "origin": [
-       "45d8868e-NumericInterpolation",
-       "dst"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "isCentered": 1
-     },
-     "uipos": [
-      -109.0,
-      -73.0
-     ],
-     "options": []
-    },
-    "eb52bb0f-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.0,
-      "z": -1.5
-     },
-     "uipos": [
-      -1007.75,
-      343.25
-     ],
-     "options": []
-    },
-    "45d8868e-NumericInterpolation": {
-     "name": "NumericInterpolation",
-     "inputs": {
-      "src": [
-       "f6731780-GetFrameNum",
-       "FrameNum"
-      ],
-      "srcMin": [
-       "d0e3ade7-NumericInt",
-       "value"
-      ],
-      "srcMax": [
-       "5ddec741-NumericInt",
-       "value"
-      ],
-      "dstMin": [
-       "eb52bb0f-NumericVec3",
-       "vec3"
-      ],
-      "dstMax": [
-       "bb3c2ad8-x",
-       "vec3"
-      ],
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "isClamped": 0
-     },
-     "uipos": [
-      -695.75,
-      175.25
-     ],
-     "options": []
-    },
-    "bb3c2ad8-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.0,
-      "z": 1.5
-     },
-     "uipos": [
-      -1008.75,
-      572.25
-     ],
-     "options": []
-    },
-    "f6731780-GetFrameNum": {
-     "name": "GetFrameNum",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {},
-     "uipos": [
-      -800.8,
-      -11.200000000000003
-     ],
-     "options": []
-    },
-    "d0e3ade7-NumericInt": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "value": 0
-     },
-     "uipos": [
-      -1035.4000000000003,
-      -7.399999999999977
-     ],
-     "options": []
-    },
-    "5ddec741-NumericInt": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": null,
-      "COND": null
-     },
-     "params": {
-      "value": 128
-     },
-     "uipos": [
-      -1017.0,
-      162.0
-     ],
-     "options": []
-    },
-    "6d9c4ec5-PrintNumeric": {
+    "9341d92c-d3f0-11eb-ba10-907841694de9-PrintNumeric": {
      "name": "PrintNumeric",
      "inputs": {
       "value": [
-       "45d8868e-NumericInterpolation",
-       "dst"
+       "9a3c11a2-d3f0-11eb-ba10-907841694de9-BeginFor",
+       "index"
       ],
       "SRC": null,
       "COND": null
      },
      "params": {
-      "hint": "Origin"
+      "hint": "PrintNumeric"
      },
      "uipos": [
-      -660.0,
-      457.0
+      -26.31250000000003,
+      -211.56250000000006
      ],
      "options": []
     },
-    "221657a9-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
+    "957e90ae-d3f0-11eb-ba10-907841694de9-NumericInt": {
+     "name": "NumericInt",
      "inputs": {
-      "prim": [
-       "8cf5c24a-SampleVDBToPrimitive",
-       "prim"
-      ],
-      "zfxCode": [
-       "2e79b870-MakeMultilineString",
+      "SRC": null,
+      "COND": null
+     },
+     "params": {
+      "value": 4
+     },
+     "uipos": [
+      -589.5781250000001,
+      -124.57812500000003
+     ],
+     "options": []
+    },
+    "9a3c11a2-d3f0-11eb-ba10-907841694de9-BeginFor": {
+     "name": "BeginFor",
+     "inputs": {
+      "count": [
+       "957e90ae-d3f0-11eb-ba10-907841694de9-NumericInt",
        "value"
       ],
-      "params": null,
-      "SRC": null
+      "SRC": null,
+      "COND": null
      },
      "params": {},
      "uipos": [
-      791.0,
-      191.0
+      -319.75,
+      -96.45
+     ],
+     "options": []
+    },
+    "a09d0f10-d3f0-11eb-ba10-907841694de9-EndFor": {
+     "name": "EndFor",
+     "inputs": {
+      "FOR": [
+       "9a3c11a2-d3f0-11eb-ba10-907841694de9-BeginFor",
+       "FOR"
+      ],
+      "SRC": [
+       "9341d92c-d3f0-11eb-ba10-907841694de9-PrintNumeric",
+       "DST"
+      ],
+      "COND": null
+     },
+     "params": {},
+     "uipos": [
+      262.75,
+      -76.00000000000003
      ],
      "options": [
       "VIEW"
      ]
-    },
-    "2e79b870-MakeMultilineString": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "@clr = mix(vec3(1, 0, 0), vec3(0, 1, 0), @rho)"
-     },
-     "uipos": [
-      760.0,
-      406.0
-     ],
-     "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -521,
-    "trans_y": -57
+    "scale": 1.0000000000000002,
+    "trans_x": -634,
+    "trans_y": -402
    }
   }
  },

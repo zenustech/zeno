@@ -234,7 +234,7 @@ struct BulletCompoundAddChild : zeno::INode {
         auto trans = get_input<BulletTransform>("trans")->trans;
 
         compound->addChild(trans, std::move(childShape));
-        set_output_ref("compound", get_input_ref("compound"));
+        set_output("compound", get_input("compound"));
     }
 };
 
@@ -390,7 +390,7 @@ struct RigidVelToPrimitive : zeno::INode {
             vel[i] = lin + zeno::cross(ang, pos[i] - com);
         }
 
-        set_output_ref("prim", get_input_ref("prim"));
+        set_output("prim", get_input("prim"));
     }
 };
 
@@ -537,7 +537,7 @@ struct BulletWorldAddObject : zeno::INode {
         auto object = get_input<BulletObject>("object");
         object->body->setDamping(0,0);
         world->addObject(std::move(object));
-        set_output_ref("world", get_input_ref("world"));
+        set_output("world", get_input("world"));
     }
 };
 
