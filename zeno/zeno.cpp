@@ -165,7 +165,13 @@ ZENAPI void Graph::applyNode(std::string const &id) {
 #ifdef ZENO_DETAILED_LOG
     printf("+ %s\n", id.c_str());
 #endif
-    safe_at(nodes, id, "node")->doApply();
+    auto node = safe_at(nodes, id, "node");
+    try {
+        node->doApply();
+    } catch (std::exception const &e) {
+        throw zeno::Exception("During execution of node `"
+                + node->myname + "`:\n" + e.what());
+    }
 #ifdef ZENO_DETAILED_LOG
     printf("- %s\n", id.c_str());
 #endif

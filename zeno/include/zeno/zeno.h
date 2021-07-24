@@ -121,7 +121,14 @@ protected:
 
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
-        return std::dynamic_pointer_cast<T>(get_input(id));
+        auto obj = get_input(id);
+        auto p = std::dynamic_pointer_cast<T>(std::move(obj));
+        if (!p) {
+            throw Exception("input socket `" + id + "` expect `"
+                    + typeid(T).name() + "`, got `"
+                    + typeid(*obj.get()).name() + "`");
+        }
+        return p;
     }
 
     template <class T>
