@@ -23,5 +23,11 @@ RUN pip install numpy PySide2
 RUN pacman -S git --noconfirm
 RUN pacman -S gcc --noconfirm
 RUN pacman -S make --noconfirm
+RUN pacman -S openexr --noconfirm
+
+WORKDIR /build
+RUN git clone https://github.com/aforsythe/IlmBase.git --depth=1
+RUN cd IlmBase && cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=11 && make -Cbuild -j32 && make -Cbuild install && cd ..
+WORKDIR /root
 
 ENTRYPOINT bash
