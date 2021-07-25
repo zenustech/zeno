@@ -182,8 +182,7 @@ struct ParticlesNeighborWrangle : zeno::INode {
             }
         }
 
-        std::vector<float> pars(prog->params.size());
-        for (int i = 0; i < pars.size(); i++) {
+        for (int i = 0; i < prog->params.size(); i++) {
             auto [name, dimid] = prog->params[i];
             printf("parameter %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '$');
