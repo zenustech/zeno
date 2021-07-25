@@ -95,6 +95,7 @@ public:
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
     std::map<std::string, std::shared_ptr<IObject>> inputs;
     std::map<std::string, std::shared_ptr<IObject>> outputs;
+    std::shared_ptr<IObject> muted_output;
     std::map<std::string, IValue> params;
     std::set<std::string> options;
 

@@ -1,4 +1,4 @@
-O=arts/testpointshading.zsg
+O=arts/subgraph.zsg
 
 default: run
 

@@ -35,7 +35,9 @@
       782.72,
       220.16
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "fef4c997-MakeMultilineString": {
      "name": "MakeMultilineString",
@@ -78,7 +80,10 @@
     "10b49c66-make3d": {
      "name": "make3d",
      "inputs": {
-      "nx": null,
+      "nx": [
+       "300d82db-NumericInt",
+       "value"
+      ],
       "SRC": null
      },
      "params": {},
@@ -87,14 +92,14 @@
       221.44000000000003
      ],
      "options": [
-      "VIEW"
+      "MUTE"
      ]
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -402,
-    "trans_y": -103
+    "trans_x": 132,
+    "trans_y": 45
    }
   },
   "make3d": {
@@ -198,7 +203,7 @@
     }
    },
    "view": {
-    "scale": 1.5625,
+    "scale": 1.25,
     "trans_x": -373,
     "trans_y": 142
    }
@@ -292,6 +297,20 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "Clone": {
+   "inputs": [
+    "object",
+    "SRC"
+   ],
+   "outputs": [
+    "newObject",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "portal"
    ]
   },
   "DictGetItem": {
@@ -1029,6 +1048,23 @@
    ],
    "categories": [
     "numeric"
+   ]
+  },
+  "ParticleParticleWrangle": {
+   "inputs": [
+    "prim1",
+    "prim2",
+    "zfxCode",
+    "params",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
    ]
   },
   "ParticlesNeighborWrangle": {

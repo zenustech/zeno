@@ -72,7 +72,10 @@ ZENAPI bool INode::checkApplyCondition() {
 
     if (has_option("MUTE")) {
         auto desc = nodeClass->desc.get();
-        set_output(desc->outputs[0], get_input(desc->inputs[0]));
+        for (auto const &[ds, bound]: inputBounds) {
+            muted_output = get_input(ds);
+            break;
+        }
         return false;
     }
 
@@ -135,6 +138,8 @@ ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&
 ZENAPI std::shared_ptr<IObject> const &Graph::getNodeOutput(
     std::string const &sn, std::string const &ss) const {
     auto node = safe_at(nodes, sn, "node");
+    if (node->muted_output)
+        return node->muted_output;
     return safe_at(node->outputs, ss, "output", node->myname);
 }
 
