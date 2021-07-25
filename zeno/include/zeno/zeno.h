@@ -164,7 +164,7 @@ struct SocketDescriptor {
 
   //[[deprecated("use {\"sockType\", \"sockName\"} instead of \"sockName\"")]]
   SocketDescriptor(const char *name)
-      : SocketDescriptor("any", name) {}
+      : SocketDescriptor({}, name) {}
 };
 
 template <class S, class T>

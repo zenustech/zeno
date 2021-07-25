@@ -206,8 +206,8 @@
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": -1270,
-    "trans_y": 224
+    "trans_x": -1172,
+    "trans_y": 273
    }
   }
  },
@@ -216,29 +216,29 @@
   "AppendList": {
    "inputs": [
     [
-     "any",
+     "",
      "list",
      ""
     ],
     [
-     "any",
+     "",
      "object",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "list",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -251,29 +251,29 @@
   "Assign": {
    "inputs": [
     [
-     "any",
+     "",
      "dst",
      ""
     ],
     [
-     "any",
+     "",
      "src",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "dst",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -286,29 +286,29 @@
   "BeginFor": {
    "inputs": [
     [
-     "any",
+     "",
      "count",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "index",
      ""
     ],
     [
-     "any",
+     "",
      "FOR",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -321,34 +321,34 @@
   "BeginForEach": {
    "inputs": [
     [
-     "any",
+     "",
      "list",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "object",
      ""
     ],
     [
-     "any",
+     "",
      "index",
      ""
     ],
     [
-     "any",
+     "",
      "FOR",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -361,19 +361,19 @@
   "BreakFor": {
    "inputs": [
     [
-     "any",
+     "",
      "FOR",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -386,24 +386,24 @@
   "CachedOnce": {
    "inputs": [
     [
-     "any",
+     "",
      "input",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "output",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -416,24 +416,24 @@
   "Clone": {
    "inputs": [
     [
-     "any",
+     "",
      "object",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "newObject",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -446,29 +446,29 @@
   "DictGetItem": {
    "inputs": [
     [
-     "any",
+     "",
      "dict",
      ""
     ],
     [
-     "any",
+     "",
      "key",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "object",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -481,34 +481,34 @@
   "DictSetItem": {
    "inputs": [
     [
-     "any",
+     "",
      "dict",
      ""
     ],
     [
-     "any",
+     "",
      "key",
      ""
     ],
     [
-     "any",
+     "",
      "object",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "dict",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -521,24 +521,24 @@
   "DictSize": {
    "inputs": [
     [
-     "any",
+     "",
      "dict",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "size",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -551,19 +551,19 @@
   "EmptyDict": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "dict",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -576,19 +576,19 @@
   "EmptyList": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "list",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -601,19 +601,19 @@
   "EndFor": {
    "inputs": [
     [
-     "any",
+     "",
      "FOR",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -626,14 +626,14 @@
   "ExitProcess": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -652,24 +652,24 @@
   "ExportZpmPrimitive": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "path",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -682,19 +682,19 @@
   "ExtractDict": {
    "inputs": [
     [
-     "any",
+     "",
      "dict",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -707,29 +707,29 @@
   "ExtractList": {
    "inputs": [
     [
-     "any",
+     "",
      "list",
      ""
     ],
     [
-     "any",
+     "",
      "index",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "object",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -742,29 +742,29 @@
   "FuncBegin": {
    "inputs": [
     [
-     "any",
+     "",
      "extraArgs",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "args",
      ""
     ],
     [
-     "any",
+     "",
      "FUNC",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -777,29 +777,29 @@
   "FuncCall": {
    "inputs": [
     [
-     "any",
+     "",
      "function",
      ""
     ],
     [
-     "any",
+     "",
      "args",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "rets",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -812,29 +812,29 @@
   "FuncEnd": {
    "inputs": [
     [
-     "any",
+     "",
      "rets",
      ""
     ],
     [
-     "any",
+     "",
      "FUNC",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "function",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -847,19 +847,19 @@
   "GetFrameNum": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "FrameNum",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -872,19 +872,19 @@
   "GetFramePortion": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "FramePortion",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -897,19 +897,19 @@
   "GetFrameTime": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "time",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -922,19 +922,19 @@
   "GetFrameTimeElapsed": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "time",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -947,19 +947,19 @@
   "GetTime": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "time",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -972,34 +972,34 @@
   "IfElse": {
    "inputs": [
     [
-     "any",
+     "",
      "true",
      ""
     ],
     [
-     "any",
+     "",
      "false",
      ""
     ],
     [
-     "any",
+     "",
      "cond",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "result",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1012,24 +1012,24 @@
   "ImportObjPrimitive": {
    "inputs": [
     [
-     "any",
+     "",
      "path",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1042,24 +1042,24 @@
   "ImportZpmPrimitive": {
    "inputs": [
     [
-     "any",
+     "",
      "path",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1072,24 +1072,24 @@
   "IntegrateFrameTime": {
    "inputs": [
     [
-     "any",
+     "",
      "desired_dt",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "actual_dt",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1108,24 +1108,24 @@
   "ListLength": {
    "inputs": [
     [
-     "any",
+     "",
      "list",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "length",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1168,7 +1168,7 @@
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
@@ -1180,7 +1180,7 @@
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1204,59 +1204,59 @@
   "Make3DGridPrimitive": {
    "inputs": [
     [
-     "any",
+     "",
      "nx",
      ""
     ],
     [
-     "any",
+     "",
      "ny",
      ""
     ],
     [
-     "any",
+     "",
      "nz",
      ""
     ],
     [
-     "any",
+     "",
      "sizeX",
      ""
     ],
     [
-     "any",
+     "",
      "sizeY",
      ""
     ],
     [
-     "any",
+     "",
      "sizeZ",
      ""
     ],
     [
-     "any",
+     "",
      "scale",
      ""
     ],
     [
-     "any",
+     "",
      "origin",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1275,19 +1275,19 @@
   "MakeDict": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "dict",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1300,19 +1300,19 @@
   "MakeGCTest": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "value",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1331,19 +1331,19 @@
   "MakeHeatmap": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "heatmap",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1362,19 +1362,19 @@
   "MakeMultilineString": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "value",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1403,7 +1403,7 @@
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
@@ -1415,7 +1415,7 @@
      ""
     ],
     [
-     "any",
+     "",
      "tangent",
      ""
     ],
@@ -1425,7 +1425,7 @@
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1438,19 +1438,19 @@
   "MakePrimitive": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1463,49 +1463,49 @@
   "MakeSmallList": {
    "inputs": [
     [
-     "any",
+     "",
      "obj0",
      ""
     ],
     [
-     "any",
+     "",
      "obj1",
      ""
     ],
     [
-     "any",
+     "",
      "obj2",
      ""
     ],
     [
-     "any",
+     "",
      "obj3",
      ""
     ],
     [
-     "any",
+     "",
      "obj4",
      ""
     ],
     [
-     "any",
+     "",
      "obj5",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "list",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1518,19 +1518,19 @@
   "MakeString": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "value",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1549,29 +1549,29 @@
   "MakeVisualAABBPrimitive": {
    "inputs": [
     [
-     "any",
+     "",
      "boundMin",
      ""
     ],
     [
-     "any",
+     "",
      "boundMax",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1590,7 +1590,7 @@
   "NumericFloat": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
@@ -1602,7 +1602,7 @@
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1621,7 +1621,7 @@
   "NumericInt": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
@@ -1633,7 +1633,7 @@
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1677,7 +1677,7 @@
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
@@ -1689,7 +1689,7 @@
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1718,7 +1718,7 @@
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
@@ -1730,7 +1730,7 @@
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1749,7 +1749,7 @@
   "NumericRandom": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
@@ -1761,7 +1761,7 @@
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1780,7 +1780,7 @@
   "NumericVec2": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
@@ -1792,7 +1792,7 @@
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1816,7 +1816,7 @@
   "NumericVec3": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
@@ -1828,7 +1828,7 @@
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1857,7 +1857,7 @@
   "NumericVec4": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
@@ -1869,7 +1869,7 @@
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1903,39 +1903,39 @@
   "ParticleParticleWrangle": {
    "inputs": [
     [
-     "any",
+     "",
      "prim1",
      ""
     ],
     [
-     "any",
+     "",
      "prim2",
      ""
     ],
     [
-     "any",
+     "",
      "zfxCode",
      ""
     ],
     [
-     "any",
+     "",
      "params",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1948,44 +1948,44 @@
   "ParticlesNeighborWrangle": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "primNei",
      ""
     ],
     [
-     "any",
+     "",
      "zfxCode",
      ""
     ],
     [
-     "any",
+     "",
      "params",
      ""
     ],
     [
-     "any",
+     "",
      "radius",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -1998,34 +1998,34 @@
   "ParticlesWrangle": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "zfxCode",
      ""
     ],
     [
-     "any",
+     "",
      "params",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2038,49 +2038,49 @@
   "PlaneProjectPrimitive2DAABB": {
    "inputs": [
     [
-     "any",
+     "",
      "origin",
      ""
     ],
     [
-     "any",
+     "",
      "normal",
      ""
     ],
     [
-     "any",
+     "",
      "tangent",
      ""
     ],
     [
-     "any",
+     "",
      "bitangent",
      ""
     ],
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "boundMin2D",
      ""
     ],
     [
-     "any",
+     "",
      "boundMax2D",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2093,19 +2093,19 @@
   "PortalIn": {
    "inputs": [
     [
-     "any",
+     "",
      "port",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2124,19 +2124,19 @@
   "PortalOut": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "port",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2155,29 +2155,29 @@
   "PrimitiveAddAttr": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "fillValue",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2201,34 +2201,34 @@
   "PrimitiveBinaryOp": {
    "inputs": [
     [
-     "any",
+     "",
      "primA",
      ""
     ],
     [
-     "any",
+     "",
      "primB",
      ""
     ],
     [
-     "any",
+     "",
      "primOut",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "primOut",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2262,24 +2262,24 @@
   "PrimitiveCalcNormal": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2292,24 +2292,24 @@
   "PrimitiveClearConnect": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2322,39 +2322,39 @@
   "PrimitiveColorByHeatmap": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "heatmap",
      ""
     ],
     [
-     "any",
+     "",
      "min",
      ""
     ],
     [
-     "any",
+     "",
      "max",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2373,29 +2373,29 @@
   "PrimitiveFillAttr": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "value",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2414,24 +2414,24 @@
   "PrimitiveGetSize": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "size",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2444,34 +2444,34 @@
   "PrimitiveHalfBinaryOp": {
    "inputs": [
     [
-     "any",
+     "",
      "primA",
      ""
     ],
     [
-     "any",
+     "",
      "valueB",
      ""
     ],
     [
-     "any",
+     "",
      "primOut",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "primOut",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2500,24 +2500,24 @@
   "PrimitiveMerge": {
    "inputs": [
     [
-     "any",
+     "",
      "listPrim",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2530,39 +2530,39 @@
   "PrimitiveMix": {
    "inputs": [
     [
-     "any",
+     "",
      "primA",
      ""
     ],
     [
-     "any",
+     "",
      "primB",
      ""
     ],
     [
-     "any",
+     "",
      "primOut",
      ""
     ],
     [
-     "any",
+     "",
      "coef",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "primOut",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2591,24 +2591,24 @@
   "PrimitivePrintAttr": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2627,24 +2627,24 @@
   "PrimitiveRandomizeAttr": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2693,24 +2693,24 @@
   "PrimitiveReduction": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "result",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2734,29 +2734,29 @@
   "PrimitiveResize": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "size",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2769,24 +2769,24 @@
   "PrimitiveShade": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "shade",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2815,24 +2815,24 @@
   "PrimitiveSimpleLines": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2845,24 +2845,24 @@
   "PrimitiveSimplePoints": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2875,24 +2875,24 @@
   "PrimitiveSimpleQuads": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2905,24 +2905,24 @@
   "PrimitiveSimpleTris": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2935,24 +2935,24 @@
   "PrimitiveSplitEdges": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -2965,29 +2965,29 @@
   "PrimitiveUnaryOp": {
    "inputs": [
     [
-     "any",
+     "",
      "primA",
      ""
     ],
     [
-     "any",
+     "",
      "primOut",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "primOut",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -3016,14 +3016,14 @@
   "PrintMessage": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -3047,14 +3047,14 @@
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -3073,24 +3073,24 @@
   "Route": {
    "inputs": [
     [
-     "any",
+     "",
      "input",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "output",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -3103,19 +3103,19 @@
   "SetFrameTime": {
    "inputs": [
     [
-     "any",
+     "",
      "time",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -3128,14 +3128,14 @@
   "SubCategory": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -3154,24 +3154,24 @@
   "SubInput": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "port",
      ""
     ],
     [
-     "any",
+     "",
      "hasValue",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -3190,19 +3190,19 @@
   "SubOutput": {
    "inputs": [
     [
-     "any",
+     "",
      "port",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -3221,14 +3221,14 @@
   "Subgraph": {
    "inputs": [
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -3247,44 +3247,44 @@
   "TransformPrimitive": {
    "inputs": [
     [
-     "any",
+     "",
      "prim",
      ""
     ],
     [
-     "any",
+     "",
      "translation",
      ""
     ],
     [
-     "any",
+     "",
      "eulerXYZ",
      ""
     ],
     [
-     "any",
+     "",
      "quatRotation",
      ""
     ],
     [
-     "any",
+     "",
      "scaling",
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
     [
-     "any",
+     "",
      "outPrim",
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
@@ -3302,7 +3302,7 @@
      ""
     ],
     [
-     "any",
+     "",
      "SRC",
      ""
     ]
@@ -3329,7 +3329,7 @@
      ""
     ],
     [
-     "any",
+     "",
      "DST",
      ""
     ]
