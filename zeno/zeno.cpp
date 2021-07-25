@@ -261,6 +261,11 @@ ZENAPI Session &getSession() {
 }
 
 
+SocketDescriptor::SocketDescriptor(std::string const &name,
+	  std::string const &type, std::string const &defl)
+      : name(name), type(type), defl(defl) {}
+SocketDescriptor::~SocketDescriptor() = default;
+
 
 ParamDescriptor::ParamDescriptor(std::string const &type,
 	  std::string const &name, std::string const &defl)
@@ -269,8 +274,8 @@ ParamDescriptor::~ParamDescriptor() = default;
 
 ZENAPI Descriptor::Descriptor() = default;
 ZENAPI Descriptor::Descriptor(
-  std::vector<std::string> const &inputs,
-  std::vector<std::string> const &outputs,
+  std::vector<SocketDescriptor> const &inputs,
+  std::vector<SocketDescriptor> const &outputs,
   std::vector<ParamDescriptor> const &params,
   std::vector<std::string> const &categories)
   : inputs(inputs), outputs(outputs), params(params), categories(categories) {
