@@ -6,7 +6,10 @@ using namespace zfx::x64;
 
 int main() {
     auto builder = std::make_unique<SIMDBuilder>();
-    builder->addAvxMemoryOp(simdtype::xmmps, opcode::storeu, 7, opreg::rax);
+    builder->addAvxRoundOp(simdtype::ymmpd, 7, 0, 1);
+    builder->addAvxRoundOp(simdtype::ymmpd, 15, 0, 1);
+    builder->addAvxRoundOp(simdtype::ymmpd, 0, 7, 1);
+    builder->addAvxRoundOp(simdtype::ymmpd, 0, 15, 1);
     for (uint8_t inst: builder->res) {
         printf("%02X ", inst);
     }

@@ -190,10 +190,10 @@ struct SIMDBuilder {   // requires AVX2
 
     void addAvxRoundOp(int type, int dst, int src, int opid) {
         res.push_back(0xc4);
-        res.push_back(0xe3);
-        res.push_back(0x79 | type << 2 & 0x04);
-        res.push_back(0x08 | type >> 2 & 0x01);
-        res.push_back(0xc0 | dst << 3 | src);
+        res.push_back(0x43 | ~dst >> 3 << 7 | (~src >> 3 & 1) << 5);
+        res.push_back(0x79 | type & 0x04);
+        res.push_back(0x08 | type & 0x01);
+        res.push_back(0xc0 | dst << 3 & 0x38 | src);
         res.push_back(opid);
     }
 
