@@ -88,9 +88,21 @@ def parse_descriptor_line(line):
     assert rest.startswith('(') and rest.endswith(')'), (n_name, rest)
     inputs, outputs, params, categories = rest[1:-1].split(')(')
 
-    z_inputs = [name for name in inputs.split(',') if name]
-    z_outputs = [name for name in outputs.split(',') if name]
     z_categories = [name for name in categories.split(',') if name]
+
+    z_inputs = []
+    for input in inputs.split(','):
+        if not input:
+            continue
+        type, name, defl = input.split(':')
+        z_inputs.append((type, name, defl))
+
+    z_outputs = []
+    for output in outputs.split(','):
+        if not output:
+            continue
+        type, name, defl = output.split(':')
+        z_outputs.append((type, name, defl))
 
     z_params = []
     for param in params.split(','):
