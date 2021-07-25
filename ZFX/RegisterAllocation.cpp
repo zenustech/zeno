@@ -309,6 +309,7 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
+        , AsmTernaryOpStmt
         , AsmFuncCallStmt
         , AsmLoadConstStmt
         , AsmParamLoadStmt
@@ -335,21 +336,26 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
 
     std::optional<call_on_dtor> touch(int operandid, int &regid) {
         if (regid >= NREGS) {
-            //printf("register spilled at %d\n", regid);
+            printf("register spilled at %d\n", regid);
             int memid = regid - NREGS;
             memsize = std::max(memsize, memid + 1);
             if (!operandid) {
                 int tmpid = NREGS;
                 regid = tmpid;
+                //ir->emplace_back<AsmLocalStoreStmt>(memid2, tmpid);
                 return [=] () {
-                    ir->emplace_back<AsmLocalStoreStmt>(
-                        memid, tmpid);
+                    ir->emplace_back<AsmLocalStoreStmt>(memid, tmpid);
+                    //ir->emplace_back<AsmLocalLoadStmt>(memid2, tmpid);
                 };
             } else {
                 int tmpid = NREGS + (operandid - 1);
                 regid = tmpid;
+                //ir->emplace_back<AsmLocalStoreStmt>(memid2, tmpid);
                 ir->emplace_back<AsmLocalLoadStmt>(
                     memid, tmpid);
+                //return [=] () {
+                    //ir->emplace_back<AsmLocalLoadStmt>(memid2, tmpid);
+                //};
             }
         }
         return std::nullopt;
@@ -426,7 +432,7 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
 };
 
 int apply_register_allocation(IR *ir, int nregs) {
-    nregs -= 0; // left two regs for load/store from spilled memory
+    nregs -= 3; // left two regs for load/store from spilled memory
     if (nregs <= 3) {
         error("no enough registers!\n");
     }

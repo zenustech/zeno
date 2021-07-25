@@ -14,9 +14,9 @@ int main() {
         return pos;
     };
 #else
-    int n = 1;
+    int n = 3;
     std::string code(R"(
-@clr = 0 ? 2.718 : 3.14
+@clr = 0 ? vec3(1.1, 2.2, 3.3) : vec3(1.9, 2.8, 3.7)
 )");
 #endif
 
