@@ -44,9 +44,10 @@ SOCKET_RADIUS = style['socket_radius']
 BEZIER_FACTOR = 0.5
 
 socket_colors = {
-    'primitive': '#4e9a06',
+    'primitive': '#ffaa55',
     'openvdb': '#7777ff',
     'numeric': '#888888',
-    'string': '#222222',
+    'string': '#ee2244',
+    'dict': '#638e77',
     'any': '#555555',
 }
