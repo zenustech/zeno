@@ -1,3 +1,4 @@
+#if 0
 #include "SIMDBuilder.h"
 #include <memory>
 
@@ -17,7 +18,7 @@ int main() {
     return 0;
 }
 
-#if 0
+#else
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cmath>
@@ -34,9 +35,10 @@ int main() {
         return pos;
     };
 #else
-    int n = 3;
+    int n = 4;
     std::string code(R"(
-@clr = 0 ? vec3(1.1, 2.2, 3.3) : vec3(1.9, 2.8, 3.7)
+tmp = @pos + 0.5
+@clr = tmp + 3.14 * tmp + 2.718 / (@pos * tmp + 1)
 )");
 #endif
 

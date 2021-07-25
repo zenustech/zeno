@@ -15,7 +15,7 @@ struct Options {
     bool global_localize = true;
     bool demote_math_funcs = true;
     bool save_math_registers = true;
-    int arch_maxregs = 8;
+    int arch_maxregs = 16;
 
     bool detect_new_symbols = false;
     bool reassign_parameters = true;
@@ -30,7 +30,7 @@ struct Options {
         , global_localize(true)
         , demote_math_funcs(true)
         , save_math_registers(true)
-        , arch_maxregs(8)
+        , arch_maxregs(16)
     {}
 
     static constexpr struct {} for_cuda{};

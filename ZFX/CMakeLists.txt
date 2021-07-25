@@ -51,9 +51,9 @@ SymbolCheck.cpp
 Tokenizer.cpp
 TypeCheck.cpp
 Visitors.h
-#x64/Assembler.cpp
-#x64/Executable.h
-#x64/SIMDBuilder.h
+x64/Assembler.cpp
+x64/Executable.h
+x64/SIMDBuilder.h
 zfx.cpp
     )
 if (ZFX_PRINT_IR)
