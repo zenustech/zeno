@@ -161,6 +161,10 @@ struct SocketDescriptor {
   ZENAPI SocketDescriptor(std::string const &name,
 	  std::string const &type = {}, std::string const &defl = {});
   ZENAPI ~SocketDescriptor();
+
+  //[[deprecated("use {\"sockName\", \"sockType\"} instead of \"sockName\"")]]
+  SocketDescriptor(const char *name)
+      : SocketDescriptor(name, "", "") {}
 };
 
 template <class S, class T>
