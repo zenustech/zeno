@@ -6,11 +6,11 @@ using namespace zfx::x64;
 
 int main() {
     auto builder = std::make_unique<SIMDBuilder>();
-    builder->addAvxBlendvOp(simdtype::ymmpd, 0, 0, 0, 0);
-    builder->addAvxBlendvOp(simdtype::ymmpd, 15, 0, 0, 0);
-    builder->addAvxBlendvOp(simdtype::ymmpd, 0, 15, 0, 0);
-    builder->addAvxBlendvOp(simdtype::ymmpd, 0, 0, 15, 0);
-    builder->addAvxBlendvOp(simdtype::ymmpd, 0, 0, 0, 15);
+    builder->addAvxBlendvOp(simdtype::xmmps, 0, 0, 0, 0);
+    builder->addAvxBlendvOp(simdtype::xmmps, 15, 0, 0, 0);
+    builder->addAvxBlendvOp(simdtype::xmmps, 0, 15, 0, 0);
+    builder->addAvxBlendvOp(simdtype::xmmps, 0, 0, 15, 0);
+    builder->addAvxBlendvOp(simdtype::xmmps, 0, 0, 0, 15);
     for (uint8_t inst: builder->res) {
         printf("%02X ", inst);
     }
