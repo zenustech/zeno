@@ -35,7 +35,7 @@ int main() {
         return pos;
     };
 #else
-    int n = 5;
+    int n = 3;
     std::string code(R"(
 tmp = @pos + 0.5
 @clr = tmp + 3.14 * tmp + 2.718 / (@pos * tmp + 1)

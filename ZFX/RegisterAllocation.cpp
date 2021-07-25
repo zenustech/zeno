@@ -54,6 +54,7 @@ struct UCLAScanner {
     std::set<int> used_pool;
     std::map<int, int> result;
     int memsize = 0;
+    int maxregs = 0;
 
     void free_register(Reg *i) {
         int newid = usage.at(i);
@@ -63,7 +64,11 @@ struct UCLAScanner {
     }
 
     void alloc_register(Reg *i) {
-        assert(freed_pool.size());
+        if (!freed_pool.size()) {
+            int newreg = used_pool.size();
+            maxregs = std::max(maxregs, newreg + 1);
+            freed_pool.insert(newreg);
+        }
         int newid = *freed_pool.begin();
         used_pool.insert(newid);
         freed_pool.erase(newid);
@@ -91,10 +96,6 @@ struct UCLAScanner {
     }
 
     void scan() {
-        for (int i = 0; i < 1024; i++) {
-            freed_pool.insert(i);
-        }
-
         for (auto const &[stmtid, stmt]: stmts) {
             for (auto const &regid: stmt.regs) {
                 regs[regid].regid = regid;
@@ -398,22 +399,26 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
 };
 
 int apply_register_allocation(IR *ir, int nregs) {
-    nregs -= 3; // left two regs for load/store from spilled memory
     if (nregs <= 3) {
         error("no enough registers!\n");
     }
-    UCLAScanner scanner;
     InspectRegisters inspect;
+    UCLAScanner scanner;
     inspect.scanner = &scanner;
     inspect.apply(ir);
     scanner.scan();
     ReassignRegisters reassign;
     reassign.scanner = &scanner;
     reassign.apply(ir);
-    FixupMemorySpill fixspill(nregs);
-    fixspill.apply(ir);
-    *ir = *fixspill.ir;
-    return fixspill.memsize;
+    int memsize = 0;
+    if (scanner.maxregs >= nregs) {
+        // left 3 regs for load/store from spilled memory (ternaryop)
+        FixupMemorySpill fixspill(nregs - 3);
+        fixspill.apply(ir);
+        *ir = *fixspill.ir;
+        memsize = fixspill.memsize;
+    }
+    return memsize;
 }
 
 }
