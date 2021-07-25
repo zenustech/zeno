@@ -13,15 +13,15 @@ static zfx::x64::Assembler assembler;
 
 static void numeric_wrangle
     ( zfx::x64::Executable *exec
-    , std::vector<float *> const &chs
+    , std::vector<float> &chs
     ) {
     auto ctx = exec->make_context();
     for (int j = 0; j < chs.size(); j++) {
-        ctx.channel(j)[0] = *chs[j];
+        ctx.channel(j)[0] = chs[j];
     }
     ctx.execute();
     for (int j = 0; j < chs.size(); j++) {
-        *chs[j] = ctx.channel(j)[0];
+        chs[j] = ctx.channel(j)[0];
     }
 }
 
@@ -82,7 +82,7 @@ struct NumericWrangle : zeno::INode {
                 printf("ERROR: bad output dimension for numeric: %d\n", dim);
                 abort();
             }
-            result->lut[name] = std::make_shared<zeno::NumericObject>(value);
+            result->lut[key] = std::make_shared<zeno::NumericObject>(value);
         }
 
         for (int i = 0; i < prog->params.size(); i++) {
@@ -96,20 +96,27 @@ struct NumericWrangle : zeno::INode {
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
 
-        std::vector<float *> chs(prog->symbols.size());
+        std::vector<float> chs(prog->symbols.size());
         for (int i = 0; i < chs.size(); i++) {
             auto [name, dimid] = prog->symbols[i];
             printf("output %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '@');
-            chs[i] = std::visit([&] (auto const &value) {
-                    return (float *)(void *)&value;
-            }, std::static_pointer_cast<zeno::NumericObject>(
-                result->lut[name])->value);
         }
 
         numeric_wrangle(exec, chs);
 
-        set_output("results", std::move(result));
+        for (int i = 0; i < chs.size(); i++) {
+            auto [name, dimid] = prog->symbols[i];
+            float value = chs[i];
+            printf("output %d: %s.%d = %f\n", i, name.c_str(), dimid, value);
+            auto key = name.substr(1);
+            std::visit([dimid = dimid, value] (auto &res) {
+                    dimid[(float *)(void *)&res] = value;
+            }, std::static_pointer_cast<zeno::NumericObject>(
+                result->lut[key])->value);
+        }
+
+        set_output("result", std::move(result));
     }
 };
 
