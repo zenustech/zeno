@@ -86,18 +86,18 @@ class QDMGraphicsSocket(QGraphicsItem):
         return QRectF(*self.getCircleBounds()).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
-        '''
-        if self.hasAnyEdge() or self.dummy:
-            socket_color = style['socket_connect_color']
-        else:
-            socket_color = style['socket_unconnect_color']
-        '''
         socket_type = self.type.split(':')[0] if self.type else None
         socket_color = socket_colors.get(socket_type, socket_colors['any'])
-        painter.setBrush(QColor(socket_color))
-        pen = QPen(QColor(style['line_color']))
-        pen.setWidth(style['socket_outline_width'])
-        painter.setPen(pen)
+
+        if self.hasAnyEdge() or self.dummy:
+            painter.setBrush(QColor(socket_color))
+            pen = QPen(QColor(style['line_color']))
+            pen.setWidth(style['socket_outline_width'])
+            painter.setPen(pen)
+        else:
+            painter.setBrush(QColor(socket_color))
+            painter.setPen(Qt.NoPen)
+
         painter.drawEllipse(*self.getCircleBounds())
 
     def remove(self):
