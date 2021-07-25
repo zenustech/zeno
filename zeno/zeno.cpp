@@ -291,10 +291,12 @@ ZENAPI std::string Descriptor::serialize() const {
       strs.push_back(type + "@" + name + "@" + defl);
   }
   res += "{" + join_str(strs, "%") + "}";
+  strs.clear();
   for (auto const &[type, name, defl] : outputs) {
       strs.push_back(type + "@" + name + "@" + defl);
   }
   res += "{" + join_str(strs, "%") + "}";
+  strs.clear();
   for (auto const &[type, name, defl] : params) {
       strs.push_back(type + "@" + name + "@" + defl);
   }

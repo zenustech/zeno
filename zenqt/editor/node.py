@@ -111,6 +111,7 @@ class QDMGraphicsNode(QGraphicsItem):
             self.scene().removeItem(output)
 
     def initSockets(self):
+        print(self.desc)
         inputs = self.desc['inputs']
         outputs = self.desc['outputs']
         params = self.desc['params']
