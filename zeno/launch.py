@@ -77,38 +77,39 @@ def getDescriptors():
         descs = subprocess.check_output([sys.executable, '-m', 'zeno', '--dump-descs'])
         descs = descs.split(b'==<DESCS>==')[1].decode()
     descs = descs.splitlines()
-    descs = [parse_descriptor_line(line) for line in descs if line.startswith('DESC:')]
+    descs = [parse_descriptor_line(line) for line in descs
+            if line.startswith('DESC@')]
     descs = {name: desc for name, desc in descs}
     print('Loaded', len(descs), 'descriptors')
     return descs
 
 
 def parse_descriptor_line(line):
-    _, z_name, rest = line.strip().split(':', maxsplit=2)
-    assert rest.startswith('(') and rest.endswith(')'), (n_name, rest)
-    inputs, outputs, params, categories = rest[1:-1].split(')(')
+    _, z_name, rest = line.strip().split('@', maxsplit=2)
+    assert rest.startswith('{') and rest.endswith('}'), (n_name, rest)
+    inputs, outputs, params, categories = rest[1:-1].split('}{')
 
-    z_categories = [name for name in categories.split(',') if name]
+    z_categories = [name for name in categories.split('%') if name]
 
     z_inputs = []
-    for input in inputs.split(','):
+    for input in inputs.split('%'):
         if not input:
             continue
-        type, name, defl = input.split(':')
+        type, name, defl = input.split('@')
         z_inputs.append((type, name, defl))
 
     z_outputs = []
-    for output in outputs.split(','):
+    for output in outputs.split('%'):
         if not output:
             continue
-        type, name, defl = output.split(':')
+        type, name, defl = output.split('@')
         z_outputs.append((type, name, defl))
 
     z_params = []
-    for param in params.split(','):
+    for param in params.split('%'):
         if not param:
             continue
-        type, name, defl = param.split(':')
+        type, name, defl = param.split('@')
         z_params.append((type, name, defl))
 
     z_desc = {

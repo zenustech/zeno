@@ -246,7 +246,7 @@ ZENAPI Graph &Session::getGraph() const {
 ZENAPI std::string Session::dumpDescriptors() const {
   std::string res = "";
   for (auto const &[key, cls] : nodeClasses) {
-    res += "DESC:" + key + ":" + cls->desc->serialize() + "\n";
+    res += "DESC@" + key + "@" + cls->desc->serialize() + "\n";
   }
   return res;
 }
@@ -288,18 +288,18 @@ ZENAPI std::string Descriptor::serialize() const {
   std::string res = "";
   std::vector<std::string> strs;
   for (auto const &[type, name, defl] : inputs) {
-      strs.push_back(type + ":" + name + ":" + defl);
+      strs.push_back(type + "@" + name + "@" + defl);
   }
-  res += "(" + join_str(strs, ",") + ")";
+  res += "{" + join_str(strs, "%") + "}";
   for (auto const &[type, name, defl] : outputs) {
-      strs.push_back(type + ":" + name + ":" + defl);
+      strs.push_back(type + "@" + name + "@" + defl);
   }
-  res += "(" + join_str(strs, ",") + ")";
+  res += "{" + join_str(strs, "%") + "}";
   for (auto const &[type, name, defl] : params) {
-      strs.push_back(type + ":" + name + ":" + defl);
+      strs.push_back(type + "@" + name + "@" + defl);
   }
-  res += "(" + join_str(strs, ",") + ")";
-  res += "(" + join_str(categories, ",") + ")";
+  res += "{" + join_str(strs, "%") + "}";
+  res += "{" + join_str(categories, "%") + "}";
   return res;
 }
 
