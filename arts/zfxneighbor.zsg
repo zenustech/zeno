@@ -61,7 +61,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@rad = 10\n@vel = vec3(0, 0, 0)\n@pre = 0\n@rho = 1\n@den = all(@pos == 0) ? 1 : 0"
+      "value": "@rad = 10\n@vel = vec3(0, 0, 0)\n@pre = 0\n@rho = 1000\n@clr = vec3(0.375, 0.75, 1)"
      },
      "uipos": [
       -545.3574999999998,
@@ -103,7 +103,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@rho += @d_rho * $dt\n@vel += @d_vel * $dt\n@clr = mix(0, vec3(0.375, 0.75, 1), @den)\n@pos += @vel * $dt\nnrm = pow(length(@pos), 3) + 0.01\nacc = -0.01 * @pos / nrm\n@vel += acc * $dt"
+      "value": "@pos += @vel * $dt\n@vel += @d_vel * $dt\n@rho += @d_rho * $dt\n@pre = 1000 * 400 / 7 * (pow(@rho / 1000, 7) - 1)\nacc = -0.05 * @pos\n@vel += acc * $dt"
      },
      "uipos": [
       891.8000000000002,
@@ -203,7 +203,7 @@
       "SRC": null
      },
      "params": {
-      "value": "disp = @pos - @@pos   dist = length(disp)\ndisp /= dist   inv_rad = 1 / $radius\nu = dist * inv_rad   um1 = 1 - u\nknorm = 8 / 3.14159 * inv_rad * inv_rad * inv_rad\nkernel = (u < 0.5 ? 1 + 6 * (u - 1) * u * u\n  : u < 1 ? 2 * um1 * um1 * um1 : 0) * knorm\nkderiv = (u < 0.5 ? u * (18 * u - 12)\n  : u < 1 ? -6 * um1 * um1 : 0) * knorm * inv_rad\n@d_rho += kderiv * dot(@vel - @@vel, disp)\n@d_vel += kderiv * (1 / @rho - 1 / @@rho) * disp"
+      "value": "disp = @pos - @@pos   dist = length(disp)\ndisp /= dist   inv_rad = 1 / $radius\nu = dist * inv_rad   um1 = 1 - u\nknorm = 8 / 3.14159 * inv_rad * inv_rad * inv_rad\nkernel = (u < 0.5 ? 1 + 6 * (u - 1) * u * u\n  : u < 1 ? 2 * um1 * um1 * um1 : 0) * knorm\nkderiv = (u < 0.5 ? u * (18 * u - 12)\n  : u < 1 ? -6 * um1 * um1 : 0) * knorm * inv_rad\n@d_rho += kderiv * dot(@vel - @@vel, disp)\n@d_vel -= kderiv * (@pre - @@pre) * disp"
      },
      "uipos": [
       468.0,
@@ -231,7 +231,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@d_rho = 0\n@d_vel = vec3(0, 0, 0)"
+      "value": "@d_rho = 0\n@d_vel = vec3(0, 0, 0)\n@pre /= @rho * @rho"
      },
      "uipos": [
       18.389999999999958,
@@ -265,9 +265,9 @@
     }
    },
    "view": {
-    "scale": 1.953125,
-    "trans_x": 1062,
-    "trans_y": 589
+    "scale": 0.8000000000000002,
+    "trans_x": -100,
+    "trans_y": 199
    }
   }
  },
