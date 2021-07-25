@@ -37,8 +37,8 @@ struct MakeOrthonormalBase : INode {
 };
 
 ZENDEFNODE(MakeOrthonormalBase, {
-    {"normal", "tangent"},
-    {"normal", "tangent", "bitangent"},
+    {{"numeric:vec3f", "normal"}, {"numeric:vec3f", "tangent"}},
+    {{"numeric:vec3f", "normal"}, "tangent", {"numeric:vec3f", "bitangent"}},
     {},
     {"math"},
 });
@@ -67,8 +67,9 @@ struct UnpackNumericVec : INode {
 };
 
 ZENDEFNODE(UnpackNumericVec, {
-    {"vec"},
-    {"X", "Y", "Z", "W"},
+    {{"numeric:vec3", "vec"}},
+    {{"numeric:scalar", "X"}, {"numeric:scalar", "Y"},
+     {"numeric:scalar", "Z"}, {"numeric:scalar", "W"}},
     {},
     {"numeric"},
 }); // TODO: add PackNumericVec too.
@@ -95,7 +96,7 @@ struct NumericRandom : INode {
 
 ZENDEFNODE(NumericRandom, {
     {},
-    {"value"},
+    {{"numeric", "value"}},
     {{"int", "dim", "1"}},
     {"numeric"},
 });
