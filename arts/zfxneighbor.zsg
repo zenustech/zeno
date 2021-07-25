@@ -100,7 +100,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@den /= 16\n@clr = mix(0, vec3(0.375, 0.75, 1), @den)"
+      "value": "@clr = mix(0, vec3(0.375, 0.75, 1), @den)"
      },
      "uipos": [
       891.8000000000002,
@@ -214,7 +214,7 @@
       "SRC": null
      },
      "params": {
-      "value": 0.11
+      "value": 1.0
      },
      "uipos": [
       8.0,
@@ -224,9 +224,9 @@
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 246,
-    "trans_y": 140
+    "scale": 0.6400000000000001,
+    "trans_x": -576,
+    "trans_y": -217
    }
   }
  },
