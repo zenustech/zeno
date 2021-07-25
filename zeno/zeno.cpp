@@ -103,13 +103,14 @@ ZENAPI void INode::coreApply() {
     }
 
     if (has_option("VIEW")) {
+        graph->hasAnyView = true;
         if (!state.isOneSubstep())  // no duplicate view when multi-substep used
             return;
         if (!graph->isViewed)  // VIEW subnodes only if subgraph is VIEW'ed
             return;
         auto desc = nodeClass->desc.get();
         auto id = desc->outputs[0];
-        auto obj = safe_at(outputs, id, "output");
+        auto obj = muted_output ? muted_output : safe_at(outputs, id, "output");
         auto path = Visualization::exportPath();
         obj->dumpfile(path);
     }

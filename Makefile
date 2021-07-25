@@ -1,4 +1,4 @@
-O=arts/subgraph.zsg
+O=arts/testsubnetview.zsg
 
 default: run
 

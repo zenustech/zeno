@@ -223,6 +223,7 @@ struct Graph {
     std::unique_ptr<Context> ctx;
 
     bool isViewed = true;
+    bool hasAnyView = false;
 
     ZENAPI Graph();
     ZENAPI ~Graph();
