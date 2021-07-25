@@ -205,9 +205,9 @@
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -795,
-    "trans_y": 561
+    "scale": 1.5625,
+    "trans_x": -1270,
+    "trans_y": 224
    }
   }
  },
@@ -1138,32 +1138,32 @@
   "Make2DGridPrimitive": {
    "inputs": [
     [
-     "any",
+     "numeric:int",
      "nx",
      ""
     ],
     [
-     "any",
+     "numeric:int",
      "ny",
      ""
     ],
     [
-     "any",
+     "numeric:vec3f",
      "sizeX",
      ""
     ],
     [
-     "any",
+     "numeric:vec3f",
      "sizeY",
      ""
     ],
     [
-     "any",
+     "numeric:float",
      "scale",
      ""
     ],
     [
-     "any",
+     "numeric:vec3f",
      "origin",
      ""
     ],
@@ -1175,7 +1175,7 @@
    ],
    "outputs": [
     [
-     "any",
+     "primitive",
      "prim",
      ""
     ],
