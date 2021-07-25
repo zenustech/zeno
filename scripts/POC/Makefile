@@ -1,4 +1,4 @@
-x=ieee
+x=myvdb
 
 x: $x.exe Makefile
 	./$<
