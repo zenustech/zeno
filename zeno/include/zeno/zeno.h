@@ -156,15 +156,15 @@ struct ParamDescriptor {
 };
 
 struct SocketDescriptor {
-  std::string name, type, defl;
+  std::string type, name, defl;
 
-  ZENAPI SocketDescriptor(std::string const &name,
-	  std::string const &type = {}, std::string const &defl = {});
+  ZENAPI SocketDescriptor(std::string const &type,
+	  std::string const &name, std::string const &defl = {});
   ZENAPI ~SocketDescriptor();
 
-  //[[deprecated("use {\"sockName\", \"sockType\"} instead of \"sockName\"")]]
+  //[[deprecated("use {\"sockType\", \"sockName\"} instead of \"sockName\"")]]
   SocketDescriptor(const char *name)
-      : SocketDescriptor(name, "", "") {}
+      : SocketDescriptor("any", name) {}
 };
 
 template <class S, class T>

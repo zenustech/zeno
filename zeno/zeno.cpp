@@ -109,7 +109,7 @@ ZENAPI void INode::coreApply() {
         if (!graph->isViewed)  // VIEW subnodes only if subgraph is VIEW'ed
             return;
         auto desc = nodeClass->desc.get();
-        auto id = desc->outputs[0];
+        auto id = desc->outputs[0].name;
         auto obj = muted_output ? muted_output : safe_at(outputs, id, "output");
         auto path = Visualization::exportPath();
         obj->dumpfile(path);
@@ -261,9 +261,9 @@ ZENAPI Session &getSession() {
 }
 
 
-SocketDescriptor::SocketDescriptor(std::string const &name,
-	  std::string const &type, std::string const &defl)
-      : name(name), type(type), defl(defl) {}
+SocketDescriptor::SocketDescriptor(std::string const &type,
+	  std::string const &name, std::string const &defl)
+      : type(type), name(name), defl(defl) {}
 SocketDescriptor::~SocketDescriptor() = default;
 
 
@@ -286,13 +286,19 @@ ZENAPI Descriptor::Descriptor(
 
 ZENAPI std::string Descriptor::serialize() const {
   std::string res = "";
-  res += "(" + join_str(inputs, ",") + ")";
-  res += "(" + join_str(outputs, ",") + ")";
-  std::vector<std::string> paramStrs;
-  for (auto const &[type, name, defl] : params) {
-      paramStrs.push_back(type + ":" + name + ":" + defl);
+  std::vector<std::string> strs;
+  for (auto const &[type, name, defl] : inputs) {
+      strs.push_back(type + ":" + name + ":" + defl);
   }
-  res += "(" + join_str(paramStrs, ",") + ")";
+  res += "(" + join_str(strs, ",") + ")";
+  for (auto const &[type, name, defl] : outputs) {
+      strs.push_back(type + ":" + name + ":" + defl);
+  }
+  res += "(" + join_str(strs, ",") + ")";
+  for (auto const &[type, name, defl] : params) {
+      strs.push_back(type + ":" + name + ":" + defl);
+  }
+  res += "(" + join_str(strs, ",") + ")";
   res += "(" + join_str(categories, ",") + ")";
   return res;
 }
