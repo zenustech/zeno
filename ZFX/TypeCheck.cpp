@@ -102,7 +102,8 @@ struct TypeCheck : Visitor<TypeCheck> {
                     "ceil",
                     "round",
                     "abs",
-                    "not",
+                    "all",
+                    "any",
             }, name)) {
             if (stmt->args.size() != 1) {
                 error("function `%s` takes exactly 1 argument", name.c_str());
@@ -113,10 +114,6 @@ struct TypeCheck : Visitor<TypeCheck> {
                     "max",
                     "pow",
                     "atan2",
-                    "and",
-                    "andnot",
-                    "or",
-                    "xor",
             }, name)) {
             if (stmt->args.size() != 2) {
                 error("function `%s` takes exactly 2 arguments", name.c_str());

@@ -112,7 +112,7 @@ struct ParticlesNeighborWrangle : zeno::INode {
         auto radius = get_input<zeno::NumericObject>("radius")->get<float>();
         float radiusMin = has_input("radiusMin") ?
             get_input<zeno::NumericObject>("radiusMin")->get<float>() :
-            -1.f;
+            0.f;
 
         zfx::Options opts(zfx::Options::for_x64);
         opts.detect_new_symbols = true;
