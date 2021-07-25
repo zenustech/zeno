@@ -91,14 +91,14 @@ namespace memflag {
     };
 };
 
-namespace optype {
+namespace simdtype {
     enum {
-        xmmps = 0xc0,
-        xmmpd = 0xc1,
-        xmmss = 0xc2,
-        xmmsd = 0xc3,
-        ymmps = 0xc4,
-        ymmpd = 0xc5,
+        xmmps = 0x00,
+        xmmpd = 0x01,
+        xmmss = 0x02,
+        xmmsd = 0x03,
+        ymmps = 0x04,
+        ymmpd = 0x05,
     };
 };
 
@@ -156,24 +156,24 @@ struct SIMDBuilder {   // requires AVX2
 
     static constexpr size_t scalarSizeOfType(int type) {
         switch (type) {
-        case optype::xmmps: return sizeof(float);
-        case optype::xmmpd: return sizeof(double);
-        case optype::xmmss: return sizeof(float);
-        case optype::xmmsd: return sizeof(double);
-        case optype::ymmps: return sizeof(float);
-        case optype::ymmpd: return sizeof(double);
+        case simdtype::xmmps: return sizeof(float);
+        case simdtype::xmmpd: return sizeof(double);
+        case simdtype::xmmss: return sizeof(float);
+        case simdtype::xmmsd: return sizeof(double);
+        case simdtype::ymmps: return sizeof(float);
+        case simdtype::ymmpd: return sizeof(double);
         default: return 0;
         }
     }
 
     static constexpr size_t sizeOfType(int type) {
         switch (type) {
-        case optype::xmmps: return 4 * sizeof(float);
-        case optype::xmmpd: return 2 * sizeof(double);
-        case optype::xmmss: return 1 * sizeof(float);
-        case optype::xmmsd: return 1 * sizeof(double);
-        case optype::ymmps: return 8 * sizeof(float);
-        case optype::ymmpd: return 4 * sizeof(double);
+        case simdtype::xmmps: return 4 * sizeof(float);
+        case simdtype::xmmpd: return 2 * sizeof(double);
+        case simdtype::xmmss: return 1 * sizeof(float);
+        case simdtype::xmmsd: return 1 * sizeof(double);
+        case simdtype::ymmps: return 8 * sizeof(float);
+        case simdtype::ymmpd: return 4 * sizeof(double);
         default: return 0;
         }
     }
@@ -197,7 +197,7 @@ struct SIMDBuilder {   // requires AVX2
 
     void addAvxMemoryOp(int type, int op, int val, MemoryAddress adr) {
         res.push_back(0xc5);
-        res.push_back(type | 0x38);
+        res.push_back(type | 0xf8);
         res.push_back(op);
         adr.dump(res, val);
     }
@@ -236,10 +236,10 @@ struct SIMDBuilder {   // requires AVX2
 
     void addAvxBinaryOp(int type, int op, int dst, int lhs, int rhs) {
         res.push_back(0xc5);
-        res.push_back(type | ~lhs << 3);
+        res.push_back(type | ~lhs << 3 & 0x78 | ~dst >> 3 << 7);
         res.push_back(op & 0xff);
         res.push_back(0xc0 | dst << 3 | rhs);
-        if ((op & 0xff) == 0xc2) {
+        if ((op & 0xff) == opcode::cmp_eq) {
            res.push_back(op >> 8);
         }
     }
@@ -251,7 +251,7 @@ struct SIMDBuilder {   // requires AVX2
     void addAvxTernaryOp(int type, int dst, int mask, int lhs, int rhs) {
         res.push_back(0xc4);
         res.push_back(0xe3);
-        res.push_back(type & 0x0f | 0x01 | ~lhs << 3 & 0x78);
+        res.push_back(type | 0x01 | ~lhs << 3 & 0x78);
         res.push_back(0x4a);
         res.push_back(0xc0 | dst << 3 | rhs);
         res.push_back(mask << 4);

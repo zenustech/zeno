@@ -1,3 +1,22 @@
+#include "SIMDBuilder.h"
+#include <memory>
+
+using namespace zfx;
+using namespace zfx::x64;
+
+int main() {
+    auto builder = std::make_unique<SIMDBuilder>();
+    builder->addAvxBinaryOp(simdtype::xmmps, opcode::add, 0, 0, 0);
+    builder->addAvxBinaryOp(simdtype::xmmps, opcode::add, 1, 0, 0);
+    builder->addAvxBinaryOp(simdtype::xmmps, opcode::add, 8, 0, 0);
+    for (uint8_t inst: builder->res) {
+        printf("%02X ", inst);
+    }
+    printf("\n");
+    return 0;
+}
+
+#if 0
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cmath>
@@ -51,3 +70,4 @@ int main() {
 
     return 0;
 }
+#endif

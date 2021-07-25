@@ -16,7 +16,7 @@ namespace zfx::x64 {
 } while (0)
 
 struct ImplAssembler {
-    int simdkind = optype::xmmps;
+    int simdkind = simdtype::xmmps;
 
     std::unique_ptr<SIMDBuilder> builder = std::make_unique<SIMDBuilder>();
     std::unique_ptr<Executable> exec = std::make_unique<Executable>();
