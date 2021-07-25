@@ -255,9 +255,9 @@ struct SIMDBuilder {   // requires AVX2
         addAvxBinaryOp(type, op, dst, 0, src);
     }
 
-    void addAvxTernaryOp(int type, int dst, int mask, int lhs, int rhs) {
+    void addAvxBlendvOp(int type, int dst, int lhs, int rhs, int mask) {
         res.push_back(0xc4);
-        res.push_back(0xe3);
+        res.push_back(0x43 | ~dst >> 3 << 7 | (~rhs >> 3 & 1) << 5);
         res.push_back(type | 0x01 | ~lhs << 3 & 0x78);
         res.push_back(0x4a);
         res.push_back(0xc0 | dst << 3 | rhs);

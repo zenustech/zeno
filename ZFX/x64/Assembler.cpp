@@ -268,7 +268,7 @@ struct ImplAssembler {
                 auto cond = from_string<int>(linesep[2]);
                 auto lhs = from_string<int>(linesep[3]);
                 auto rhs = from_string<int>(linesep[4]);
-                builder->addAvxTernaryOp(simdkind, dst, cond, lhs, rhs);
+                builder->addAvxBlendvOp(simdkind, dst, lhs, rhs, cond);
 
             } else if (auto it = std::find(
                 FuncTable::funcnames.begin(), FuncTable::funcnames.end(), cmd);
