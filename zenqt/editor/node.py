@@ -138,9 +138,8 @@ class QDMGraphicsNode(QGraphicsItem):
         for index, name in enumerate(inputs):
             socket = QDMGraphicsSocket(self)
             socket.setPos(0, y)
-            try: type, name, defl = name
-            except:
-                type = ''
+            try: type, name, defl = name  # bkwd compat
+            except: type = ''
             socket.setName(name)
             socket.setType(type)
             socket.setIsOutput(False)
@@ -153,9 +152,8 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.outputs.clear()
         for index, name in enumerate(outputs):
-            try: type, name, defl = name
-            except:
-                type = ''
+            try: type, name, defl = name  # bkwd compat
+            except: type = ''
             socket = QDMGraphicsSocket(self)
             socket.setPos(0, y)
             socket.setName(name)
