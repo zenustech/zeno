@@ -10,10 +10,6 @@ namespace zfx {
 
 // http://web.cs.ucla.edu/~palsberg/course/cs132/linearscan.pdf
 struct UCLAScanner {
-    const int NREGS;
-
-    explicit UCLAScanner(int nregs) : NREGS(nregs) {}
-
     struct Stmt {
         std::set<int> regs;
     };
@@ -75,19 +71,6 @@ struct UCLAScanner {
         result[i->regid] = newid;
     }
 
-    void transit_register(Reg *i, Reg *spill) {
-        assert(i != spill);
-        int newid = usage.at(spill);
-        usage[i] = newid;
-        usage.erase(spill);
-        assert(result.find(i->regid) == result.end());
-        result[i->regid] = newid;
-    }
-
-    void alloc_stack(Reg *i) {
-        result[i->regid] = NREGS + memsize++;
-    }
-
     void do_scan() {
         active.clear();
         for (auto const &i: interval) {
@@ -96,27 +79,10 @@ struct UCLAScanner {
                     break;
                 }
                 active.erase(j);
-                //printf("free %d: %d cuz %d\n", j->regid, lookup(j->regid), j->endpoint());
                 free_register(j);
             }
-            if (active.size() == NREGS) {
-                auto spill = *active.rbegin();
-                if (spill->endpoint() > i->endpoint()) {
-                    //printf("transit %d <- %d!\n", i->regid, spill->regid);
-                    transit_register(i, spill);
-                    alloc_stack(spill);
-                    active.erase(spill);
-                    active.insert(i);
-                } else {
-                    //printf("allocdirectly!\n");
-                    alloc_stack(i);
-                }
-            } else {
-                //printf("allocins!\n");
-                alloc_register(i);
-                active.insert(i);
-                //printf("insert %p %zd\n", i, active.size());
-            }
+            alloc_register(i);
+            active.insert(i);
         }
     }
 
@@ -125,7 +91,7 @@ struct UCLAScanner {
     }
 
     void scan() {
-        for (int i = 0; i < NREGS; i++) {
+        for (int i = 0; i < 1024; i++) {
             freed_pool.insert(i);
         }
 
@@ -436,7 +402,7 @@ int apply_register_allocation(IR *ir, int nregs) {
     if (nregs <= 3) {
         error("no enough registers!\n");
     }
-    UCLAScanner scanner(nregs);
+    UCLAScanner scanner;
     InspectRegisters inspect;
     inspect.scanner = &scanner;
     inspect.apply(ir);
