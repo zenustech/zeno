@@ -53,6 +53,7 @@ namespace jmpcode {
 namespace opreg {
     enum {
         mm0, mm1, mm2, mm3, mm4, mm5, mm6, mm7,
+        mm8, mm9, mm10, mm11, mm12, mm13, mm14, mm15,
     };
     enum {
         rax, rcx, rdx, rbx, rsp, rbp, rsi, rdi,
@@ -198,7 +199,7 @@ struct SIMDBuilder {   // requires AVX2
 
     void addAvxMemoryOp(int type, int op, int val, MemoryAddress adr) {
         res.push_back(0xc5);
-        res.push_back(type | 0xf8);
+        res.push_back(type | 0x78 | ~val >> 3 << 7);
         res.push_back(op);
         adr.dump(res, val);
     }
@@ -252,7 +253,7 @@ struct SIMDBuilder {   // requires AVX2
     }
 
     void addAvxUnaryOp(int type, int op, int dst, int src) {
-        addAvxBinaryOp(type, op, dst, 0, src);
+        addAvxBinaryOp(type, op, dst, opreg::mm0, src);
     }
 
     void addAvxBlendvOp(int type, int dst, int lhs, int rhs, int mask) {
