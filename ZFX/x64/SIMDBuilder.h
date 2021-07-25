@@ -101,6 +101,8 @@ namespace simdtype {
         xmmsd = 0x03,
         ymmps = 0x04,
         ymmpd = 0x05,
+        ymmss = 0x06,
+        ymmsd = 0x07,
     };
 };
 
@@ -182,9 +184,9 @@ struct SIMDBuilder {   // requires AVX2
 
     void addAvxBroadcastLoadOp(int type, int val, MemoryAddress adr) {
         res.push_back(0xc4);
-        res.push_back(0xe2);
-        res.push_back(0x79 | type << 2 & 0x04);
-        res.push_back(0x18 | type >> 2 & 0x01);
+        res.push_back(0x62 | ~val >> 3 << 7);
+        res.push_back(0x79 | type & 0x04);
+        res.push_back(0x18 | type & 0x03);
         adr.dump(res, val);
     }
 
@@ -192,7 +194,7 @@ struct SIMDBuilder {   // requires AVX2
         res.push_back(0xc4);
         res.push_back(0x43 | ~dst >> 3 << 7 | (~src >> 3 & 1) << 5);
         res.push_back(0x79 | type & 0x04);
-        res.push_back(0x08 | type & 0x01);
+        res.push_back(0x09 | type & 0x01);
         res.push_back(0xc0 | dst << 3 & 0x38 | src);
         res.push_back(opid);
     }
