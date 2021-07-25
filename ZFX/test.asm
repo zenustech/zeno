@@ -1,7 +1,7 @@
 ; vim: ft=nasm
 
-vblendvps xmm0, xmm0, xmm0, xmm0
-vblendvps xmm15, xmm0, xmm0, xmm0
-vblendvps xmm0, xmm15, xmm0, xmm0
-vblendvps xmm0, xmm0, xmm15, xmm0
-vblendvps xmm0, xmm0, xmm0, xmm15
+vblendvpd ymm0, ymm0, ymm0, ymm0
+vblendvpd ymm15, ymm0, ymm0, ymm0
+vblendvpd ymm0, ymm15, ymm0, ymm0
+vblendvpd ymm0, ymm0, ymm15, ymm0
+vblendvpd ymm0, ymm0, ymm0, ymm15

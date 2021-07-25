@@ -258,9 +258,9 @@ struct SIMDBuilder {   // requires AVX2
     void addAvxBlendvOp(int type, int dst, int lhs, int rhs, int mask) {
         res.push_back(0xc4);
         res.push_back(0x43 | ~dst >> 3 << 7 | (~rhs >> 3 & 1) << 5);
-        res.push_back(type | 0x01 | ~lhs << 3 & 0x78);
-        res.push_back(0x4a);
-        res.push_back(0xc0 | dst << 3 | rhs);
+        res.push_back(0x01 | type & 0x04 | ~lhs << 3 & 0x78);
+        res.push_back(0x4a | type & 0x01);
+        res.push_back(0xc0 | dst << 3 & 0x38 | rhs & 0x07);
         res.push_back(mask << 4);
     }
 
