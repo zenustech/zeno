@@ -7,8 +7,8 @@ using namespace zfx::x64;
 int main() {
     auto builder = std::make_unique<SIMDBuilder>();
     builder->addAvxBinaryOp(simdtype::xmmps, opcode::add, 0, 0, 0);
-    builder->addAvxBinaryOp(simdtype::xmmps, opcode::add, 1, 0, 0);
-    builder->addAvxBinaryOp(simdtype::xmmps, opcode::add, 8, 0, 0);
+    builder->addAvxBinaryOp(simdtype::xmmps, opcode::add, 0, 0, 1);
+    builder->addAvxBinaryOp(simdtype::xmmps, opcode::add, 0, 0, 8);
     for (uint8_t inst: builder->res) {
         printf("%02X ", inst);
     }

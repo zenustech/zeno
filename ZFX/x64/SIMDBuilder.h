@@ -25,6 +25,7 @@ namespace opcode {
         bit_or = 0x56,
         bit_xor = 0x57,
         sqrt = 0x51,
+        rsqrt = 0x52,
         loadu = 0x10,
         loada = 0x28,
         storeu = 0x11,
@@ -235,10 +236,16 @@ struct SIMDBuilder {   // requires AVX2
     }
 
     void addAvxBinaryOp(int type, int op, int dst, int lhs, int rhs) {
-        res.push_back(0xc5);
-        res.push_back(type | ~lhs << 3 & 0x78 | ~dst >> 3 << 7);
+        if (rhs >= 8) {
+            res.push_back(0xc4);
+            res.push_back(0x41 | ~dst >> 3 << 7);
+            res.push_back(type | ~lhs << 3 & 0x78);
+        } else {
+            res.push_back(0xc5);
+            res.push_back(type | ~lhs << 3 & 0x78 | ~dst >> 3 << 7);
+        }
         res.push_back(op & 0xff);
-        res.push_back(0xc0 | dst << 3 | rhs);
+        res.push_back(0xc0 | dst << 3 & 0x38 | rhs & 0x07);
         if ((op & 0xff) == opcode::cmp_eq) {
            res.push_back(op >> 8);
         }
