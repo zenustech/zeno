@@ -206,8 +206,8 @@
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": -1172,
-    "trans_y": 273
+    "trans_x": -1002,
+    "trans_y": 270
    }
   }
  },
@@ -1900,6 +1900,41 @@
     "numeric"
    ]
   },
+  "NumericWrangle": {
+   "inputs": [
+    [
+     "dict:numeric",
+     "params",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "dict:numeric",
+     "result",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
   "ParticleParticleWrangle": {
    "inputs": [
     [
@@ -1970,6 +2005,11 @@
     [
      "",
      "radius",
+     ""
+    ],
+    [
+     "",
+     "radiusMin",
      ""
     ],
     [
@@ -3337,6 +3377,46 @@
    "params": [],
    "categories": [
     "numeric"
+   ]
+  },
+  "VDBWrangle": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "zfxCode",
+     ""
+    ],
+    [
+     "",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
    ]
   },
   "Blackboard": {
