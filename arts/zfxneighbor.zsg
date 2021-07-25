@@ -22,8 +22,8 @@
       "isCentered": 1
      },
      "uipos": [
-      -328.9375,
-      -85.625
+      -891.4374999999999,
+      -44.609375
      ],
      "options": [
       "ONCE"
@@ -40,13 +40,16 @@
        "f8532743-MakeMultilineString",
        "value"
       ],
-      "params": null,
+      "params": [
+       "f7e36ee2-MakeDict",
+       "dict"
+      ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      19.0625,
-      25.375000000000014
+      -543.4374999999999,
+      66.39062500000003
      ],
      "options": [
       "ONCE"
@@ -58,11 +61,11 @@
       "SRC": null
      },
      "params": {
-      "value": "@rad = 10\n@vel = vec3(0, 0, 0)\n@den = all(@pos == 0) ? 0.5 : 0"
+      "value": "@rad = 10\n@vel = vec3(0, 0, 0)\n@pre = 0\n@rho = 1\n@den = all(@pos == 0) ? 1 : 0"
      },
      "uipos": [
-      17.142499999999984,
-      223.77499999999998
+      -545.3574999999998,
+      264.790625
      ],
      "options": [
       "ONCE"
@@ -100,7 +103,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@clr = mix(0, vec3(0.375, 0.75, 1), @den)"
+      "value": "@rho += @d_rho * $dt\n@vel += @d_vel * $dt\n@clr = mix(0, vec3(0.375, 0.75, 1), @den)\n@pos += @vel * $dt\nnrm = pow(length(@pos), 3) + 0.01\nacc = -0.01 * @pos / nrm\n@vel += acc * $dt"
      },
      "uipos": [
       891.8000000000002,
@@ -125,8 +128,8 @@
       "_KEYS": "dt\nradius"
      },
      "uipos": [
-      265.0,
-      -295.4
+      -238.90624999999986,
+      -271.9624999999999
      ],
      "options": [],
      "socket_keys": [
@@ -143,8 +146,8 @@
       "value": 0.01
      },
      "uipos": [
-      -1.2000000000000028,
-      -373.20000000000005
+      -505.1062499999999,
+      -349.7625000000001
      ],
      "options": []
     },
@@ -157,8 +160,8 @@
       "value": 11
      },
      "uipos": [
-      -608.9375,
-      -57.625
+      -1171.4375,
+      -16.609375
      ],
      "options": [
       "ONCE"
@@ -168,7 +171,7 @@
      "name": "ParticlesNeighborWrangle",
      "inputs": {
       "prim": [
-       "4d9585e9-ParticlesWrangle",
+       "cb97cd5d-x",
        "prim"
       ],
       "primNei": null,
@@ -200,7 +203,7 @@
       "SRC": null
      },
      "params": {
-      "value": "disp = @pos - @@pos\ndist = length(disp)\ninv_rad = 1 / $radius\nu = dist * inv_rad\num1 = 1 - u\nknorm = 8 / 3.14159 * inv_rad * inv_rad * inv_rad\nkernel = (u < 0.5 ? 1 + 6 * (u - 1) * u * u\n  : u < 1 ? 2 * um1 * um1 * um1 : 0) * knorm\nkgrad = (u < 0.5 ? u * (18 * u - 12)\n  : u < 1 ? -6 * um1 * um1 : 0) * knorm * inv_rad\n@den += @@den * kernel"
+      "value": "disp = @pos - @@pos   dist = length(disp)\ndisp /= dist   inv_rad = 1 / $radius\nu = dist * inv_rad   um1 = 1 - u\nknorm = 8 / 3.14159 * inv_rad * inv_rad * inv_rad\nkernel = (u < 0.5 ? 1 + 6 * (u - 1) * u * u\n  : u < 1 ? 2 * um1 * um1 * um1 : 0) * knorm\nkderiv = (u < 0.5 ? u * (18 * u - 12)\n  : u < 1 ? -6 * um1 * um1 : 0) * knorm * inv_rad\n@d_rho += kderiv * dot(@vel - @@vel, disp)\n@d_vel += kderiv * (1 / @rho - 1 / @@rho) * disp"
      },
      "uipos": [
       468.0,
@@ -217,16 +220,54 @@
       "value": 1.0
      },
      "uipos": [
-      8.0,
-      -207.0
+      -554.4999999999999,
+      -165.984375
+     ],
+     "options": []
+    },
+    "b788db6b-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "@d_rho = 0\n@d_vel = vec3(0, 0, 0)"
+     },
+     "uipos": [
+      18.389999999999958,
+      291.8
+     ],
+     "options": []
+    },
+    "cb97cd5d-x": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "4d9585e9-ParticlesWrangle",
+       "prim"
+      ],
+      "zfxCode": [
+       "b788db6b-x",
+       "value"
+      ],
+      "params": [
+       "f7e36ee2-MakeDict",
+       "dict"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      20.309999999999917,
+      93.4
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.6400000000000001,
-    "trans_x": -576,
-    "trans_y": -217
+    "scale": 1.953125,
+    "trans_x": 1062,
+    "trans_y": 589
    }
   }
  },
