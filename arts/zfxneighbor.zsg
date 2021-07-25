@@ -122,10 +122,14 @@
       "radius": [
        "dfb6f693-NumericFloat",
        "value"
+      ],
+      "mu": [
+       "d0a4fa3c-NumericFloat",
+       "value"
       ]
      },
      "params": {
-      "_KEYS": "dt\nradius"
+      "_KEYS": "dt\nradius\nmu"
      },
      "uipos": [
       -238.90624999999986,
@@ -134,7 +138,8 @@
      "options": [],
      "socket_keys": [
       "dt",
-      "radius"
+      "radius",
+      "mu"
      ]
     },
     "326cbe91-NumericFloat": {
@@ -203,7 +208,7 @@
       "SRC": null
      },
      "params": {
-      "value": "disp = @pos - @@pos   dist = length(disp)\ndisp /= dist   inv_rad = 1 / $radius\nu = dist * inv_rad   um1 = 1 - u\nknorm = 8 / 3.14159 * inv_rad * inv_rad * inv_rad\nkernel = (u < 0.5 ? 1 + 6 * (u - 1) * u * u\n  : u < 1 ? 2 * um1 * um1 * um1 : 0) * knorm\nkderiv = (u < 0.5 ? u * (18 * u - 12)\n  : u < 1 ? -6 * um1 * um1 : 0) * knorm * inv_rad\n@d_rho += kderiv * dot(@vel - @@vel, disp)\n@d_vel -= kderiv * (@pre - @@pre) * disp"
+      "value": "disp = @pos - @@pos   dist = length(disp)\ndisp /= dist   inv_rad = 1 / $radius\nu = dist * inv_rad   um1 = 1 - u\nknorm = 8 / 3.14159 * inv_rad * inv_rad * inv_rad\nkernel = (u < 0.5 ? 1 + 6 * (u - 1) * u * u\n  : u < 1 ? 2 * um1 * um1 * um1 : 0) * knorm\nkderiv = (u < 0.5 ? u * (18 * u - 12)\n  : u < 1 ? -6 * um1 * um1 : 0) * knorm * inv_rad\nm = $radius * $radius * $radius * 1000\n@d_rho += m * kderiv * dot(@vel - @@vel, disp)\n@d_vel -= m * kderiv * (@pre - @@pre) * disp\n@d_vel -= $mu * (@rho_inv2 + @@rho_inv2)\n    * kderiv * (@vel - @@vel) / dist"
      },
      "uipos": [
       468.0,
@@ -231,7 +236,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@d_rho = 0\n@d_vel = vec3(0, 0, 0)\n@pre /= @rho * @rho"
+      "value": "@d_rho = 0\n@d_vel = vec3(0, 0, 0)\n@rho_inv2 = 1 / (@rho * @rho)\n@pre *= @rho_inv2"
      },
      "uipos": [
       18.389999999999958,
@@ -262,12 +267,26 @@
       93.4
      ],
      "options": []
+    },
+    "d0a4fa3c-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.001
+     },
+     "uipos": [
+      -246.40000000000003,
+      -447.2
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.8000000000000002,
-    "trans_x": -100,
-    "trans_y": 199
+    "scale": 1.25,
+    "trans_x": 393,
+    "trans_y": 254
    }
   }
  },
