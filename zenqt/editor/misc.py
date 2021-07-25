@@ -43,3 +43,10 @@ HORI_MARGIN = style['hori_margin']
 SOCKET_RADIUS = style['socket_radius']
 BEZIER_FACTOR = 0.5
 
+socket_colors = {
+    'primitive': '#4e9a06',
+    'openvdb': '#7777ff',
+    'numeric': '#888888',
+    'string': '#222222',
+    'any': '#555555',
+}
