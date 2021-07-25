@@ -2,212 +2,291 @@
  "graph": {
   "main": {
    "nodes": {
-    "46e84ca1-Make2DGridPrimitive": {
-     "name": "Make2DGridPrimitive",
+    "649d7742-Make3DGridPrimitive": {
+     "name": "Make3DGridPrimitive",
      "inputs": {
       "nx": [
-       "d4a13f31-NumericInt",
+       "7914106f-NumericInt",
        "value"
       ],
       "ny": null,
-      "sizeX": [
-       "97c86c9b-NumericVec3",
-       "vec3"
-      ],
-      "sizeY": [
-       "c2d96f9f-x",
-       "vec3"
-      ],
+      "nz": null,
+      "sizeX": null,
+      "sizeY": null,
+      "sizeZ": null,
       "scale": null,
       "origin": null,
       "SRC": null
      },
      "params": {
-      "isCentered": 1,
-      "hasFaces": 1
+      "isCentered": 1
      },
      "uipos": [
-      -298.4,
-      184.0
+      -891.4374999999999,
+      -44.609375
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
-    "d4a13f31-NumericInt": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": 3
-     },
-     "uipos": [
-      -540.0,
-      164.79999999999998
-     ],
-     "options": []
-    },
-    "97c86c9b-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "x": 2.0,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -550.4,
-      339.2
-     ],
-     "options": []
-    },
-    "c2d96f9f-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 2.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -776.8,
-      338.4000000000001
-     ],
-     "options": []
-    },
-    "e2e7d25d-ParticlesWrangle": {
+    "4d9585e9-ParticlesWrangle": {
      "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       "46e84ca1-Make2DGridPrimitive",
+       "649d7742-Make3DGridPrimitive",
        "prim"
       ],
       "zfxCode": [
-       "dacabede-MakeMultilineString",
+       "f8532743-MakeMultilineString",
        "value"
       ],
       "params": [
-       "b40920c6-MakeDict",
+       "f7e36ee2-MakeDict",
        "dict"
       ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      371.98,
-      321.8800000000001
+      -543.4374999999999,
+      66.39062500000003
      ],
      "options": [
-      "VIEW"
+      "ONCE"
      ]
     },
-    "dacabede-MakeMultilineString": {
+    "f8532743-MakeMultilineString": {
      "name": "MakeMultilineString",
      "inputs": {
       "SRC": null
      },
      "params": {
-      "value": "@pos.z = sin($frame_id / 10)\n@clr = vec3(cos(@pos.xy + $frame_id / 4) * 0.5 + 0.5, 0.5)"
+      "value": "@rad = 10\n@vel = vec3(0, 0, 0)\n@pre = 0\n@rho = 1000\n@clr = vec3(0.375, 0.75, 1)"
      },
      "uipos": [
-      -238.71999999999997,
-      493.4399999999998
+      -545.3574999999998,
+      264.790625
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
-    "0ba458ab-NumericOperator": {
-     "name": "NumericOperator",
+    "cd722976-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
      "inputs": {
-      "lhs": [
-       "da7c6252-GetFrameNum",
-       "FrameNum"
+      "prim": [
+       "92cf3061-ParticlesNeighborWrangle",
+       "prim"
       ],
-      "rhs": [
-       "af3bd429-GetFramePortion",
-       "FramePortion"
+      "zfxCode": [
+       "9dc2c6b7-MakeMultilineString",
+       "value"
       ],
-      "SRC": null
-     },
-     "params": {
-      "op_type": "add"
-     },
-     "uipos": [
-      -469.76,
-      673.4399999999999
-     ],
-     "options": []
-    },
-    "da7c6252-GetFrameNum": {
-     "name": "GetFrameNum",
-     "inputs": {
+      "params": [
+       "f7e36ee2-MakeDict",
+       "dict"
+      ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      -714.2399999999999,
-      647.04
+      890.2,
+      42.400000000000006
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
-    "ff25c3c5-PrintNumeric": {
-     "name": "PrintNumeric",
+    "9dc2c6b7-MakeMultilineString": {
+     "name": "MakeMultilineString",
      "inputs": {
-      "value": [
-       "0ba458ab-NumericOperator",
-       "ret"
-      ],
       "SRC": null
      },
      "params": {
-      "hint": "PrintNumeric"
+      "value": "@pos += @vel * $dt\n@vel += @d_vel * $dt\n@rho += @d_rho * $dt\n@pre = 1000 * 400 / 7 * (pow(@rho / 1000, 7) - 1)\nacc = -0.05 * @pos\n@vel += acc * $dt"
      },
      "uipos": [
-      -140.79999999999998,
-      806.4000000000001
+      891.8000000000002,
+      227.19999999999993
      ],
      "options": []
     },
-    "af3bd429-GetFramePortion": {
-     "name": "GetFramePortion",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -712.8000000000001,
-      793.6000000000001
-     ],
-     "options": []
-    },
-    "b40920c6-MakeDict": {
+    "f7e36ee2-MakeDict": {
      "name": "MakeDict",
      "inputs": {
       "SRC": null,
-      "frame_id": [
-       "0ba458ab-NumericOperator",
-       "ret"
+      "dt": [
+       "326cbe91-NumericFloat",
+       "value"
+      ],
+      "radius": [
+       "dfb6f693-NumericFloat",
+       "value"
+      ],
+      "mu": [
+       "d0a4fa3c-NumericFloat",
+       "value"
       ]
      },
      "params": {
-      "_KEYS": "frame_id"
+      "_KEYS": "dt\nradius\nmu"
      },
      "uipos": [
-      9.25,
-      609.75
+      -238.90624999999986,
+      -271.9624999999999
      ],
      "options": [],
      "socket_keys": [
-      "frame_id"
+      "dt",
+      "radius",
+      "mu"
      ]
+    },
+    "326cbe91-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.01
+     },
+     "uipos": [
+      -505.1062499999999,
+      -349.7625000000001
+     ],
+     "options": []
+    },
+    "7914106f-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 11
+     },
+     "uipos": [
+      -1171.4375,
+      -16.609375
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "92cf3061-ParticlesNeighborWrangle": {
+     "name": "ParticlesNeighborWrangle",
+     "inputs": {
+      "prim": [
+       "cb97cd5d-x",
+       "prim"
+      ],
+      "primNei": null,
+      "zfxCode": [
+       "5772cada-MakeMultilineString",
+       "value"
+      ],
+      "params": [
+       "f7e36ee2-MakeDict",
+       "dict"
+      ],
+      "radius": [
+       "dfb6f693-NumericFloat",
+       "value"
+      ],
+      "radiusMin": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      463.0,
+      22.0
+     ],
+     "options": []
+    },
+    "5772cada-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "disp = @pos - @@pos   dist = length(disp)\ndisp /= dist   inv_rad = 1 / $radius\nu = dist * inv_rad   um1 = 1 - u\nknorm = 8 / 3.14159 * inv_rad * inv_rad * inv_rad\nkernel = (u < 0.5 ? 1 + 6 * (u - 1) * u * u\n  : u < 1 ? 2 * um1 * um1 * um1 : 0) * knorm\nkderiv = (u < 0.5 ? u * (18 * u - 12)\n  : u < 1 ? -6 * um1 * um1 : 0) * knorm * inv_rad\nm = $radius * $radius * $radius * 1000\n@d_rho += m * kderiv * dot(@vel - @@vel, disp)\n@d_vel -= m * kderiv * (@pre - @@pre) * disp\n@d_vel -= $mu * (@rho_inv2 + @@rho_inv2)\n    * kderiv * (@vel - @@vel) / dist"
+     },
+     "uipos": [
+      468.0,
+      277.0
+     ],
+     "options": []
+    },
+    "dfb6f693-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 1.0
+     },
+     "uipos": [
+      -554.4999999999999,
+      -165.984375
+     ],
+     "options": []
+    },
+    "b788db6b-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "@d_rho = 0\n@d_vel = vec3(0, 0, 0)\n@rho_inv2 = 1 / (@rho * @rho)\n@pre *= @rho_inv2"
+     },
+     "uipos": [
+      18.389999999999958,
+      291.8
+     ],
+     "options": []
+    },
+    "cb97cd5d-x": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "4d9585e9-ParticlesWrangle",
+       "prim"
+      ],
+      "zfxCode": [
+       "b788db6b-x",
+       "value"
+      ],
+      "params": [
+       "f7e36ee2-MakeDict",
+       "dict"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      20.309999999999917,
+      93.4
+     ],
+     "options": []
+    },
+    "d0a4fa3c-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.001
+     },
+     "uipos": [
+      -246.40000000000003,
+      -447.2
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.5625,
-    "trans_x": -1002,
-    "trans_y": 270
+    "scale": 1.25,
+    "trans_x": 393,
+    "trans_y": 254
    }
   }
  },

@@ -7,8 +7,9 @@ namespace zfx {
 struct EmitAssembly : Visitor<EmitAssembly> {
     using visit_stmt_types = std::tuple
         < AssignStmt
-        , AsmBinaryOpStmt
         , AsmUnaryOpStmt
+        , AsmBinaryOpStmt
+        , AsmTernaryOpStmt
         , AsmFuncCallStmt
         , AsmAssignStmt
         , AsmLoadConstStmt
@@ -96,6 +97,11 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         }(stmt->op);
         emit("%s %d %d %d", opcode,
             stmt->dst, stmt->lhs, stmt->rhs);
+    }
+
+    void visit(AsmTernaryOpStmt *stmt) {
+        emit("blend %d %d %d %d", stmt->dst,
+            stmt->cond, stmt->lhs, stmt->rhs);
     }
 
     void visit(AsmGlobalStoreStmt *stmt) {

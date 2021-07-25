@@ -16,7 +16,7 @@ namespace zfx::x64 {
 } while (0)
 
 struct ImplAssembler {
-    int simdkind = optype::xmmps;
+    int simdkind = simdtype::xmmps;
 
     std::unique_ptr<SIMDBuilder> builder = std::make_unique<SIMDBuilder>();
     std::unique_ptr<Executable> exec = std::make_unique<Executable>();
@@ -261,6 +261,14 @@ struct ImplAssembler {
                 auto dst = from_string<int>(linesep[1]);
                 auto src = from_string<int>(linesep[2]);
                 builder->addAvxRoundOp(simdkind, dst, src, 2 + 8);
+
+            } else if (cmd == "blend") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto cond = from_string<int>(linesep[2]);
+                auto lhs = from_string<int>(linesep[3]);
+                auto rhs = from_string<int>(linesep[4]);
+                builder->addAvxBlendvOp(simdkind, dst, rhs, lhs, cond);
 
             } else if (auto it = std::find(
                 FuncTable::funcnames.begin(), FuncTable::funcnames.end(), cmd);

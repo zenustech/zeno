@@ -1,6 +1,5 @@
 #include <zeno/zeno.h>
 #include <zeno/StringObject.h>
-#include <zeno/PrimitiveObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/DictObject.h>
 #include <zfx/zfx.h>
@@ -12,65 +11,26 @@ namespace {
 static zfx::Compiler compiler;
 static zfx::x64::Assembler assembler;
 
-struct Buffer {
-    float *base = nullptr;
-    size_t count = 0;
-    size_t stride = 0;
-};
-
-static void vectors_wrangle
+static void numeric_wrangle
     ( zfx::x64::Executable *exec
-    , std::vector<Buffer> const &chs
+    , std::vector<float> &chs
     ) {
-    if (chs.size() == 0)
-        return;
-    size_t size = chs[0].count;
-    for (int i = 1; i < chs.size(); i++) {
-        size = std::min(chs[i].count, size);
+    auto ctx = exec->make_context();
+    for (int j = 0; j < chs.size(); j++) {
+        ctx.channel(j)[0] = chs[j];
     }
-
-    #pragma omp parallel for
-    for (int i = 0; i < size - exec->SimdWidth + 1; i += exec->SimdWidth) {
-        auto ctx = exec->make_context();
-        for (int j = 0; j < chs.size(); j++) {
-            for (int k = 0; k < exec->SimdWidth; k++)
-                ctx.channel(j)[k] = chs[j].base[chs[j].stride * (i + k)];
-        }
-        ctx.execute();
-        for (int j = 0; j < chs.size(); j++) {
-            for (int k = 0; k < exec->SimdWidth; k++)
-                 chs[j].base[chs[j].stride * (i + k)] = ctx.channel(j)[k];
-        }
-    }
-    for (int i = size / exec->SimdWidth * exec->SimdWidth; i < size; i++) {
-        auto ctx = exec->make_context();
-        for (int j = 0; j < chs.size(); j++) {
-            ctx.channel(j)[0] = chs[j].base[chs[j].stride * i];
-        }
-        ctx.execute();
-        for (int j = 0; j < chs.size(); j++) {
-            chs[j].base[chs[j].stride * i] = ctx.channel(j)[0];
-        }
+    ctx.execute();
+    for (int j = 0; j < chs.size(); j++) {
+        chs[j] = ctx.channel(j)[0];
     }
 }
 
-struct ParticlesWrangle : zeno::INode {
+struct NumericWrangle : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
         zfx::Options opts(zfx::Options::for_x64);
         opts.detect_new_symbols = true;
-        for (auto const &[key, attr]: prim->m_attrs) {
-            int dim = std::visit([] (auto const &v) {
-                using T = std::decay_t<decltype(v[0])>;
-                if constexpr (std::is_same_v<T, zeno::vec3f>) return 3;
-                else if constexpr (std::is_same_v<T, float>) return 1;
-                else return 0;
-            }, attr);
-            printf("define symbol: @%s dim %d\n", key.c_str(), dim);
-            opts.define_symbol('@' + key, dim);
-        }
 
         auto params = has_input("params") ?
             get_input<zeno::DictObject>("params") :
@@ -103,20 +63,26 @@ struct ParticlesWrangle : zeno::INode {
         auto prog = compiler.compile(code, opts);
         auto exec = assembler.assemble(prog->assembly);
 
+        auto result = std::make_shared<zeno::DictObject>();
         for (auto const &[name, dim]: prog->newsyms) {
-            printf("auto-defined new attribute: %s with dim %d\n",
+            printf("output numeric value: %s with dim %d\n",
                     name.c_str(), dim);
             assert(name[0] == '@');
             auto key = name.substr(1);
-            if (dim == 3) {
-                prim->add_attr<zeno::vec3f>(key);
+            zeno::NumericValue value;
+            if (dim == 4) {
+                value = zeno::vec4f{};
+            } else if (dim == 3) {
+                value = zeno::vec3f{};
+            } else if (dim == 2) {
+                value = zeno::vec2f{};
             } else if (dim == 1) {
-                prim->add_attr<float>(key);
+                value = float{};
             } else {
-                printf("ERROR: bad attribute dimension for primitive: %d\n",
-                    dim);
+                printf("ERROR: bad output dimension for numeric: %d\n", dim);
                 abort();
             }
+            result->lut[key] = std::make_shared<zeno::NumericObject>(value);
         }
 
         for (int i = 0; i < prog->params.size(); i++) {
@@ -130,29 +96,33 @@ struct ParticlesWrangle : zeno::INode {
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
 
-        std::vector<Buffer> chs(prog->symbols.size());
+        std::vector<float> chs(prog->symbols.size());
         for (int i = 0; i < chs.size(); i++) {
             auto [name, dimid] = prog->symbols[i];
-            printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
+            printf("output %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '@');
-            Buffer iob;
-            auto const &attr = prim->attr(name.substr(1));
-            std::visit([&, dimid_ = dimid] (auto const &arr) {
-                iob.base = (float *)arr.data() + dimid_;
-                iob.count = arr.size();
-                iob.stride = sizeof(arr[0]) / sizeof(float);
-            }, attr);
-            chs[i] = iob;
         }
-        vectors_wrangle(exec, chs);
 
-        set_output("prim", std::move(prim));
+        numeric_wrangle(exec, chs);
+
+        for (int i = 0; i < chs.size(); i++) {
+            auto [name, dimid] = prog->symbols[i];
+            float value = chs[i];
+            printf("output %d: %s.%d = %f\n", i, name.c_str(), dimid, value);
+            auto key = name.substr(1);
+            std::visit([dimid = dimid, value] (auto &res) {
+                    dimid[(float *)(void *)&res] = value;
+            }, std::static_pointer_cast<zeno::NumericObject>(
+                result->lut[key])->value);
+        }
+
+        set_output("result", std::move(result));
     }
 };
 
-ZENDEFNODE(ParticlesWrangle, {
-    {"prim", "zfxCode", "params"},
-    {"prim"},
+ZENDEFNODE(NumericWrangle, {
+    {{"dict:numeric", "params"}, {"string", "zfxCode"}},
+    {{"dict:numeric", "result"}},
     {},
     {"zenofx"},
 });

@@ -63,6 +63,11 @@ class QDMGraphicsSocket(QGraphicsItem):
         self.name = name
         self.label.setPlainText(name)
 
+    def setType(self, type):
+        self.type = type
+        if type != '':
+            self.label.setPlainText(self.name + ' (' + type + ')')
+
     def getCirclePos(self):
         basePos = self.node.pos() + self.pos()
         if self.isOutput:

@@ -150,7 +150,7 @@ class QDMGraphicsParam_multiline_string(QDMGraphicsParam):
 
     def setGeometry(self, rect):
         rect = QRectF(rect)
-        rect.setHeight(6 * TEXT_HEIGHT)
+        rect.setHeight(10 * TEXT_HEIGHT)
         super().setGeometry(rect)
 
     def setValue(self, value):

@@ -1,3 +1,24 @@
+#if 0
+#include "SIMDBuilder.h"
+#include <memory>
+
+using namespace zfx;
+using namespace zfx::x64;
+
+int main() {
+    auto builder = std::make_unique<SIMDBuilder>();
+    builder->addAvxBroadcastLoadOp(simdtype::xmmps, 7, opreg::rax);
+    builder->addAvxBroadcastLoadOp(simdtype::ymmpd, 7, opreg::rax);
+    builder->addAvxBroadcastLoadOp(simdtype::xmmps, 15, opreg::rax);
+    builder->addAvxBroadcastLoadOp(simdtype::ymmpd, 15, opreg::rax);
+    for (uint8_t inst: builder->res) {
+        printf("%02X ", inst);
+    }
+    printf("\n");
+    return 0;
+}
+
+#else
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cmath>
@@ -14,9 +35,10 @@ int main() {
         return pos;
     };
 #else
-    int n = 1;
+    int n = 3;
     std::string code(R"(
-@clr = !0 ? 2 : 3
+tmp = @pos + 0.5
+@clr = tmp + 3.14 * tmp + 2.718 / (@pos * tmp + 1)
 )");
 #endif
 
@@ -51,3 +73,4 @@ int main() {
 
     return 0;
 }
+#endif

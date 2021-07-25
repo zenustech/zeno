@@ -25,6 +25,7 @@ namespace opcode {
         bit_or = 0x56,
         bit_xor = 0x57,
         sqrt = 0x51,
+        rsqrt = 0x52,
         loadu = 0x10,
         loada = 0x28,
         storeu = 0x11,
@@ -52,6 +53,7 @@ namespace jmpcode {
 namespace opreg {
     enum {
         mm0, mm1, mm2, mm3, mm4, mm5, mm6, mm7,
+        mm8, mm9, mm10, mm11, mm12, mm13, mm14, mm15,
     };
     enum {
         rax, rcx, rdx, rbx, rsp, rbp, rsi, rdi,
@@ -91,14 +93,16 @@ namespace memflag {
     };
 };
 
-namespace optype {
+namespace simdtype {
     enum {
-        xmmps = 0xc0,
-        xmmpd = 0xc1,
-        xmmss = 0xc2,
-        xmmsd = 0xc3,
-        ymmps = 0xc4,
-        ymmpd = 0xc5,
+        xmmps = 0x00,
+        xmmpd = 0x01,
+        xmmss = 0x02,
+        xmmsd = 0x03,
+        ymmps = 0x04,
+        ymmpd = 0x05,
+        ymmss = 0x06,
+        ymmsd = 0x07,
     };
 };
 
@@ -156,48 +160,48 @@ struct SIMDBuilder {   // requires AVX2
 
     static constexpr size_t scalarSizeOfType(int type) {
         switch (type) {
-        case optype::xmmps: return sizeof(float);
-        case optype::xmmpd: return sizeof(double);
-        case optype::xmmss: return sizeof(float);
-        case optype::xmmsd: return sizeof(double);
-        case optype::ymmps: return sizeof(float);
-        case optype::ymmpd: return sizeof(double);
+        case simdtype::xmmps: return sizeof(float);
+        case simdtype::xmmpd: return sizeof(double);
+        case simdtype::xmmss: return sizeof(float);
+        case simdtype::xmmsd: return sizeof(double);
+        case simdtype::ymmps: return sizeof(float);
+        case simdtype::ymmpd: return sizeof(double);
         default: return 0;
         }
     }
 
     static constexpr size_t sizeOfType(int type) {
         switch (type) {
-        case optype::xmmps: return 4 * sizeof(float);
-        case optype::xmmpd: return 2 * sizeof(double);
-        case optype::xmmss: return 1 * sizeof(float);
-        case optype::xmmsd: return 1 * sizeof(double);
-        case optype::ymmps: return 8 * sizeof(float);
-        case optype::ymmpd: return 4 * sizeof(double);
+        case simdtype::xmmps: return 4 * sizeof(float);
+        case simdtype::xmmpd: return 2 * sizeof(double);
+        case simdtype::xmmss: return 1 * sizeof(float);
+        case simdtype::xmmsd: return 1 * sizeof(double);
+        case simdtype::ymmps: return 8 * sizeof(float);
+        case simdtype::ymmpd: return 4 * sizeof(double);
         default: return 0;
         }
     }
 
     void addAvxBroadcastLoadOp(int type, int val, MemoryAddress adr) {
         res.push_back(0xc4);
-        res.push_back(0xe2);
-        res.push_back(0x79 | type << 2 & 0x04);
-        res.push_back(0x18 | type >> 2 & 0x01);
+        res.push_back(0x62 | ~val >> 3 << 7);
+        res.push_back(0x79 | type & 0x04);
+        res.push_back(0x18 | type & 0x03);
         adr.dump(res, val);
     }
 
     void addAvxRoundOp(int type, int dst, int src, int opid) {
         res.push_back(0xc4);
-        res.push_back(0xe3);
-        res.push_back(0x79 | type << 2 & 0x04);
-        res.push_back(0x08 | type >> 2 & 0x01);
-        res.push_back(0xc0 | dst << 3 | src);
+        res.push_back(0x43 | ~dst >> 3 << 7 | (~src >> 3 & 1) << 5);
+        res.push_back(0x79 | type & 0x04);
+        res.push_back(0x09 | type & 0x01);
+        res.push_back(0xc0 | dst << 3 & 0x38 | src);
         res.push_back(opid);
     }
 
     void addAvxMemoryOp(int type, int op, int val, MemoryAddress adr) {
         res.push_back(0xc5);
-        res.push_back(type | 0x38);
+        res.push_back(type | 0x78 | ~val >> 3 << 7);
         res.push_back(op);
         adr.dump(res, val);
     }
@@ -235,17 +239,32 @@ struct SIMDBuilder {   // requires AVX2
     }
 
     void addAvxBinaryOp(int type, int op, int dst, int lhs, int rhs) {
-        res.push_back(0xc5);
-        res.push_back(type | ~lhs << 3);
+        if (rhs >= 8) {
+            res.push_back(0xc4);
+            res.push_back(0x41 | ~dst >> 3 << 7);
+            res.push_back(type | ~lhs << 3 & 0x78);
+        } else {
+            res.push_back(0xc5);
+            res.push_back(type | ~lhs << 3 & 0x78 | ~dst >> 3 << 7);
+        }
         res.push_back(op & 0xff);
-        res.push_back(0xc0 | dst << 3 | rhs);
-        if ((op & 0xff) == 0xc2) {
+        res.push_back(0xc0 | dst << 3 & 0x38 | rhs & 0x07);
+        if ((op & 0xff) == opcode::cmp_eq) {
            res.push_back(op >> 8);
         }
     }
 
     void addAvxUnaryOp(int type, int op, int dst, int src) {
-        addAvxBinaryOp(type, op, dst, 0, src);
+        addAvxBinaryOp(type, op, dst, opreg::mm0, src);
+    }
+
+    void addAvxBlendvOp(int type, int dst, int lhs, int rhs, int mask) {
+        res.push_back(0xc4);
+        res.push_back(0x43 | ~dst >> 3 << 7 | (~rhs >> 3 & 1) << 5);
+        res.push_back(0x01 | type & 0x04 | ~lhs << 3 & 0x78);
+        res.push_back(0x4a | type & 0x01);
+        res.push_back(0xc0 | dst << 3 & 0x38 | rhs & 0x07);
+        res.push_back(mask << 4);
     }
 
     void addAvxMoveOp(int type, int dst, int src) {

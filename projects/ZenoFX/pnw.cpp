@@ -22,7 +22,8 @@ struct Buffer {
 struct HashGrid {
     float inv_dx;
     float radius;
-    float radius_squared;
+    float radius_sqr;
+    float radius_sqr_min;
     std::vector<zeno::vec3f> const &refpos;
 
     using CoordType = std::tuple<int, int, int>;
@@ -32,14 +33,16 @@ struct HashGrid {
         return ((73856093 * x) ^ (19349663 * y) ^ (83492791 * z)) % table.size();
     }
 
-    HashGrid(std::vector<zeno::vec3f> const &refpos_, float radius_)
+    HashGrid(std::vector<zeno::vec3f> const &refpos_,
+            float radius_, float radius_min)
         : refpos(refpos_) {
         for (auto &ent: table) {
             ent.clear();
         }
 
         radius = radius_;
-        radius_squared = radius * radius;
+        radius_sqr = radius * radius;
+        radius_sqr_min = radius_min < 0.f ? -1.f : radius_min * radius_min;
         inv_dx = 0.f / radius;
 
         for (int i = 0; i < refpos.size(); i++) {
@@ -59,7 +62,7 @@ struct HashGrid {
                     for (int pid: table[key]) {
                         auto dist = refpos[pid] - pos;
                         auto dis2 = zeno::dot(dist, dist);
-                        if (dis2 <= radius_squared && dis2 != 0) {
+                        if (dis2 <= radius_sqr && dis2 > radius_sqr_min) {
                             f(pid);
                         }
                     }
@@ -107,6 +110,9 @@ struct ParticlesNeighborWrangle : zeno::INode {
             std::static_pointer_cast<zeno::PrimitiveObject>(prim->clone());
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
         auto radius = get_input<zeno::NumericObject>("radius")->get<float>();
+        float radiusMin = has_input("radiusMin") ?
+            get_input<zeno::NumericObject>("radiusMin")->get<float>() :
+            0.f;
 
         zfx::Options opts(zfx::Options::for_x64);
         opts.detect_new_symbols = true;
@@ -182,8 +188,7 @@ struct ParticlesNeighborWrangle : zeno::INode {
             }
         }
 
-        std::vector<float> pars(prog->params.size());
-        for (int i = 0; i < pars.size(); i++) {
+        for (int i = 0; i < prog->params.size(); i++) {
             auto [name, dimid] = prog->params[i];
             printf("parameter %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '$');
@@ -220,15 +225,16 @@ struct ParticlesNeighborWrangle : zeno::INode {
         }
 
         auto hashgrid = std::make_unique<HashGrid>(
-                primNei->attr<zeno::vec3f>("pos"), radius);
-        vectors_wrangle(exec, chs, prim->attr<zeno::vec3f>("pos"), hashgrid.get());
+                primNei->attr<zeno::vec3f>("pos"), radius, radiusMin);
+        vectors_wrangle(exec, chs, prim->attr<zeno::vec3f>("pos"),
+                hashgrid.get());
 
         set_output("prim", std::move(prim));
     }
 };
 
 ZENDEFNODE(ParticlesNeighborWrangle, {
-    {"prim", "primNei", "zfxCode", "params", "radius"},
+    {"prim", "primNei", "zfxCode", "params", "radius", "radiusMin"},
     {"prim"},
     {},
     {"zenofx"},

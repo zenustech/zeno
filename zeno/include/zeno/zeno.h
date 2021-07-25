@@ -95,6 +95,7 @@ public:
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
     std::map<std::string, std::shared_ptr<IObject>> inputs;
     std::map<std::string, std::shared_ptr<IObject>> outputs;
+    std::shared_ptr<IObject> muted_output;
     std::map<std::string, IValue> params;
     std::set<std::string> options;
 
@@ -118,6 +119,15 @@ protected:
     ZENAPI std::shared_ptr<IObject> get_input(std::string const &id) const;
     ZENAPI void set_output(std::string const &id,
         std::shared_ptr<IObject> &&obj);
+
+    template <class T>
+    bool has_input(std::string const &id) const {
+        if (!has_input(id))
+            return false;
+        auto obj = get_input(id);
+        auto p = std::dynamic_pointer_cast<T>(std::move(obj));
+        return (bool)p;
+    }
 
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
@@ -145,6 +155,18 @@ struct ParamDescriptor {
   ZENAPI ~ParamDescriptor();
 };
 
+struct SocketDescriptor {
+  std::string type, name, defl;
+
+  ZENAPI SocketDescriptor(std::string const &type,
+	  std::string const &name, std::string const &defl = {});
+  ZENAPI ~SocketDescriptor();
+
+  //[[deprecated("use {\"sockType\", \"sockName\"} instead of \"sockName\"")]]
+  SocketDescriptor(const char *name)
+      : SocketDescriptor({}, name) {}
+};
+
 template <class S, class T>
 static std::string join_str(std::vector<T> const &elms, S const &delim) {
   std::stringstream ss;
@@ -158,15 +180,15 @@ static std::string join_str(std::vector<T> const &elms, S const &delim) {
 }
 
 struct Descriptor {
-  std::vector<std::string> inputs;
-  std::vector<std::string> outputs;
+  std::vector<SocketDescriptor> inputs;
+  std::vector<SocketDescriptor> outputs;
   std::vector<ParamDescriptor> params;
   std::vector<std::string> categories;
 
   ZENAPI Descriptor();
   ZENAPI Descriptor(
-	  std::vector<std::string> const &inputs,
-	  std::vector<std::string> const &outputs,
+	  std::vector<SocketDescriptor> const &inputs,
+	  std::vector<SocketDescriptor> const &outputs,
 	  std::vector<ParamDescriptor> const &params,
 	  std::vector<std::string> const &categories);
 
@@ -222,6 +244,7 @@ struct Graph {
     std::unique_ptr<Context> ctx;
 
     bool isViewed = true;
+    bool hasAnyView = false;
 
     ZENAPI Graph();
     ZENAPI ~Graph();

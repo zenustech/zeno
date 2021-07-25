@@ -11,6 +11,7 @@ struct LowerAccess : Visitor<LowerAccess> {
         < AssignStmt
         , UnaryOpStmt
         , BinaryOpStmt
+        , TernaryOpStmt
         , FunctionCallStmt
         , LiterialStmt
         , SymbolStmt
@@ -132,6 +133,15 @@ struct LowerAccess : Visitor<LowerAccess> {
         ir->emplace_back<AsmBinaryOpStmt>
             ( stmt->op
             , store(stmt->id)
+            , load(stmt->lhs->id)
+            , load(stmt->rhs->id)
+            );
+    }
+
+    void visit(TernaryOpStmt *stmt) {
+        ir->emplace_back<AsmTernaryOpStmt>
+            ( store(stmt->id)
+            , load(stmt->cond->id)
             , load(stmt->lhs->id)
             , load(stmt->rhs->id)
             );

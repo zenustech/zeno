@@ -1,4 +1,4 @@
-O=arts/testpointshading.zsg
+O=arts/zfxneighbor.zsg
 
 default: run
 

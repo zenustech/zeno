@@ -109,6 +109,26 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             }
             return stm_cross(x, y);
 
+        } else if (name == "all") {
+            ERROR_IF(args.size() != 1);
+            auto x = make_stm(args[0]);
+            ERROR_IF(!x->dim && "all");
+            auto ret = x[0];
+            for (int i = 1; i < x->dim; i++) {
+                ret = ret & x[i];
+            }
+            return ret;
+
+        } else if (name == "any") {
+            ERROR_IF(args.size() != 1);
+            auto x = make_stm(args[0]);
+            ERROR_IF(!x->dim && "all");
+            auto ret = x[0];
+            for (int i = 1; i < x->dim; i++) {
+                ret = ret | x[i];
+            }
+            return ret;
+
         } else {
             std::vector<Stm> argstms;
             for (auto const &x: args) {

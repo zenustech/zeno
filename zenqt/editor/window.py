@@ -240,6 +240,14 @@ class NodeEditor(QWidget):
         if 'descs' not in prog:
             prog['descs'] = dict(self.descs)
 
+        for name, desc in prog['descs'].items():
+            for key, output in enumerate(desc['outputs']):
+                if isinstance(output, str):
+                    desc['outputs'][key] = ('any', output, '')
+            for key, input in enumerate(desc['inputs']):
+                if isinstance(input, str):
+                    desc['inputs'][key] = ('any', input, '')
+
         for name, graph in prog['graph'].items():
             if 'nodes' not in graph:
                 prog['graph'][name] = {

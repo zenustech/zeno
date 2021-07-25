@@ -13,7 +13,7 @@ struct NumericInt : zeno::INode {
 
 ZENDEFNODE(NumericInt, {
     {},
-    {"value"},
+    {{"numeric:int", "value"}},
     {{"int", "value", "0"}},
     {"numeric"},
 });
@@ -29,7 +29,7 @@ struct NumericFloat : zeno::INode {
 
 ZENDEFNODE(NumericFloat, {
     {},
-    {"value"},
+    {{"numeric:float", "value"}},
     {{"float", "value", "0"}},
     {"numeric"},
 });
@@ -47,7 +47,7 @@ struct NumericVec2 : zeno::INode {
 
 ZENDEFNODE(NumericVec2, {
     {},
-    {"vec2"},
+    {{"numeric:vec2f", "vec2"}},
     {{"float", "x", "0"}, {"float", "y", "0"}},
     {"numeric"},
 });
@@ -66,7 +66,7 @@ struct NumericVec3 : zeno::INode {
 
 ZENDEFNODE(NumericVec3, {
     {},
-    {"vec3"},
+    {{"numeric:vec3f", "vec3"}},
     {{"float", "x", "0"}, {"float", "y", "0"}, {"float", "z", "0"}},
     {"numeric"},
 });
@@ -86,7 +86,7 @@ struct NumericVec4 : zeno::INode {
 
 ZENDEFNODE(NumericVec4, {
     {},
-    {"vec4"},
+    {{"numeric:vec4f", "vec4"}},
     {{"float", "x", "0"}, {"float", "y", "0"},
      {"float", "z", "0"}, {"float", "w", "0"}},
     {"numeric"},

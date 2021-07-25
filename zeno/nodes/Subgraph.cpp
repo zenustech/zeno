@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/GlobalState.h>
+#include <zeno/Visualization.h>
 #include <zeno/ConditionObject.h>
 #include <zeno/safe_at.h>
 #include <cassert>
@@ -71,6 +72,11 @@ struct Subgraph : zeno::INode {
         subg->applyNodes(applies);
 
         for (auto &[key, obj]: subg->subOutputs) {
+            if (subg->isViewed && !subg->hasAnyView) {
+                auto path = zeno::Visualization::exportPath();
+                obj->dumpfile(path);
+                subg->hasAnyView = true;
+            }
             set_output(key, std::move(obj));
         }
 

@@ -566,6 +566,45 @@ struct AsmLoadConstStmt : AsmStmt<AsmLoadConstStmt> {
     }
 };
 
+struct AsmTernaryOpStmt : AsmStmt<AsmTernaryOpStmt> {
+    int dst;
+    int cond;
+    int lhs;
+    int rhs;
+
+    AsmTernaryOpStmt
+        ( int id_
+        , int dst_
+        , int cond_
+        , int lhs_
+        , int rhs_
+        )
+        : AsmStmt(id_)
+        , dst(dst_)
+        , cond(cond_)
+        , lhs(lhs_)
+        , rhs(rhs_)
+    {}
+
+    virtual std::string to_string() const override {
+        return format(
+            "AsmTernaryOp r%d r%d r%d r%d"
+            , dst
+            , cond
+            , lhs
+            , rhs
+            );
+    }
+
+    virtual RegFields dest_registers() const override {
+        return {dst};
+    }
+
+    virtual RegFields source_registers() const override {
+        return {cond, lhs, rhs};
+    }
+};
+
 struct AsmBinaryOpStmt : AsmStmt<AsmBinaryOpStmt> {
     std::string op;
     int dst;
