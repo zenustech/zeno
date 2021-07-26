@@ -7,12 +7,12 @@ struct HashGrid {
     static constexpr auto HashShift = HL;
     static constexpr auto LeafShift = L;
     using ElementType = T;
-    using LeafNodeType = LeafNode<T, L>;
+    using LeafType = Leaf<T, L>;
 
     struct HashEntry {
         Coord m_coord;
         HashEntry *m_next;
-        LeafNodeType *m_leaf;
+        LeafType *m_leaf;
     };
 
     HashEntry *m_entries[1 << HL];
@@ -24,24 +24,24 @@ struct HashGrid {
     }
 
     static int _hashCoord(Coord const &coord) {
-        int x = coord.x;
-        int y = coord.y;
-        int z = coord.z;
+        int x = coord[0];
+        int y = coord[1];
+        int z = coord[2];
         int h = (73856093 * x) ^ (19349663 * y) ^ (83492791 * z);
         return h & (1 << HL) - 1;
     }
 
-    LeafNodeType *leafAt(Coord const &coord) {
+    LeafType *leafAt(Coord const &coord) {
         int i = _hashCoord(coord);
         for (auto *curr = m_entries[i]; curr; curr = curr->m_next) {
-            if (curr->m_coord.x == coord.x
-             && curr->m_coord.y == coord.y
-             && curr->m_coord.z == coord.z) {
+            if (curr->m_coord[0] == coord[0]
+             && curr->m_coord[1] == coord[1]
+             && curr->m_coord[2] == coord[2]) {
                 return curr->m_leaf;
             }
         }
         auto *entry = new HashEntry;
-        auto *leaf = new LeafNodeType;
+        auto *leaf = new LeafType;
         entry->m_coord = coord;
         entry->m_next = m_entries[i];
         entry->m_leaf = leaf;
@@ -49,12 +49,12 @@ struct HashGrid {
         return leaf;
     }
 
-    LeafNodeType *cleafAt(Coord const &coord) const {
+    LeafType *cleafAt(Coord const &coord) const {
         int i = _hashCoord(coord);
         for (auto *curr = m_entries[i]; curr; curr = curr->m_next) {
-            if (curr->m_coord.x == coord.x
-             && curr->m_coord.y == coord.y
-             && curr->m_coord.z == coord.z) {
+            if (curr->m_coord[0] == coord[0]
+             && curr->m_coord[1] == coord[1]
+             && curr->m_coord[2] == coord[2]) {
                 return curr->m_leaf;
             }
         }

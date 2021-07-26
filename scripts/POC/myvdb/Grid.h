@@ -5,7 +5,7 @@
 template <class T>
 struct Grid {
     using GridType = T;
-    using LeafNodeType = typename T::LeafNodeType;
+    using LeafType = typename T::LeafType;
     static constexpr auto LeafShift = T::LeafShift;
 
     float leaf_size = 1.f;
@@ -22,11 +22,11 @@ struct Grid {
         m_tree = nullptr;
     }
 
-    LeafNodeType *leafAt(Coord const &coord) {
+    LeafType *leafAt(Coord const &coord) {
         return m_tree->leafAt(coord);
     }
 
-    LeafNodeType *cleafAt(Coord const &coord) const {
+    LeafType *cleafAt(Coord const &coord) const {
         return m_tree->cleafAt(coord);
     }
 

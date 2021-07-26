@@ -2,7 +2,7 @@
 
 template <class T, int L2, int L>
 struct InternalNode {
-    LeafNode<T, L> *m_data[1 << L2 * 3];
+    Leaf<T, L> *m_data[1 << L2 * 3];
 
     InternalNode() {
         for (int i = 0; i < 1 << L2 * 3; i++) {
@@ -48,7 +48,7 @@ struct P2PGrid {
     using ElementType = T;
     using RootNodeType = RootNode<T, L1, L2, L>;
     using InternalNodeType = InternalNode<T, L2, L>;
-    using LeafNodeType = LeafNode<T, L>;
+    using LeafType = Leaf<T, L>;
 
     RootNodeType *m_root;
 
@@ -62,16 +62,16 @@ struct P2PGrid {
     }
 
     static int _linearizeRootToInternal(Coord const &coord) {
-        int x = coord.x >> L2 & (1 << L1) - 1;
-        int y = coord.y >> L2 & (1 << L1) - 1;
-        int z = coord.z >> L2 & (1 << L1) - 1;
+        int x = coord[0] >> L2 & (1 << L1) - 1;
+        int y = coord[1] >> L2 & (1 << L1) - 1;
+        int z = coord[2] >> L2 & (1 << L1) - 1;
         return z << L * 2 | y << L | x;
     }
 
     static int _linearizeInternalToLeaf(Coord const &coord) {
-        int x = coord.x & (1 << L2) - 1;
-        int y = coord.y & (1 << L2) - 1;
-        int z = coord.z & (1 << L2) - 1;
+        int x = coord[0] & (1 << L2) - 1;
+        int y = coord[1] & (1 << L2) - 1;
+        int z = coord[2] & (1 << L2) - 1;
         return z << L2 * 2 | y << L2 | x;
     }
 
@@ -95,7 +95,7 @@ struct P2PGrid {
         return {x, y, z};
     }
 
-    LeafNodeType *cleafAt(Coord const &coord) const {
+    LeafType *cleafAt(Coord const &coord) const {
         int internalIdx = _linearizeRootToInternal(coord);
         int leafIdx = _linearizeInternalToLeaf(coord);
         auto *internalNode = m_root->m_data[internalIdx];
@@ -106,7 +106,7 @@ struct P2PGrid {
         return leafNode;
     }
 
-    LeafNodeType *leafAt(Coord const &coord) const {
+    LeafType *leafAt(Coord const &coord) const {
         int internalIdx = _linearizeRootToInternal(coord);
         int leafIdx = _linearizeInternalToLeaf(coord);
         auto *&internalNode = m_root->m_data[internalIdx];
@@ -115,7 +115,7 @@ struct P2PGrid {
         }
         auto *&leafNode = internalNode->m_data[leafIdx];
         if (!leafNode) {
-            leafNode = new LeafNodeType;
+            leafNode = new LeafType;
         }
         return leafNode;
     }

@@ -3,7 +3,7 @@
 #include "Coord.h"
 
 template <class D, int L>
-struct LeafNodeBase {
+struct LeafBase {
     static Coord indexToCoord(int i) {
         int x = i & (1 << L) - 1;
         i >>= L;
@@ -14,9 +14,9 @@ struct LeafNodeBase {
     }
 
     static int coordToIndex(Coord const &coord) {
-        int x = coord.x & (1 << L) - 1;
-        int y = coord.y & (1 << L) - 1;
-        int z = coord.z & (1 << L) - 1;
+        int x = coord[0] & (1 << L) - 1;
+        int y = coord[1] & (1 << L) - 1;
+        int z = coord[2] & (1 << L) - 1;
         return z << L * 2 | y << L | x;
     }
 
@@ -45,8 +45,7 @@ struct LeafNodeBase {
 };
 
 template <class T, int L>
-struct LeafNode
-    : LeafNodeBase<LeafNode<T, L>, L> {
+struct Leaf : LeafBase<Leaf<T, L>, L> {
     using ValueType = T;
 
     T m_data[1 << L * 3];

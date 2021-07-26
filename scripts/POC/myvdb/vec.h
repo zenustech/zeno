@@ -3,7 +3,7 @@
 #include <array>
 #include <cmath>
 
-namespace fdb {
+//namespace fdb {
 
 /* main class definition */
 
@@ -428,4 +428,4 @@ using vec4L = vec<4, unsigned long>;
 using vec4H = vec<4, unsigned short>;
 using vec4B = vec<4, unsigned char>;
 
-}
+//}
