@@ -130,6 +130,7 @@ class DisplayWidget(QWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
 
         self.menubar = QMenuBar()
+        self.menubar.setMaximumHeight(26)
         self.layout.addWidget(self.menubar)
 
         self.menuDisplay = QDMDisplayMenu()
@@ -147,6 +148,9 @@ class DisplayWidget(QWidget):
         if name == 'Show Grid':
             checked = act.isChecked()
             zenvis.pyzenvis.set_show_grid(checked)
+
+    def sizeHint(self):
+        return QSize(1200, 400)
 
 for name in ['mousePressEvent', 'mouseMoveEvent', 'wheelEvent']:
     def closure(name):
