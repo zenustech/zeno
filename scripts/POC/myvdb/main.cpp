@@ -9,6 +9,8 @@
 #include "HashGrid.h"
 #include "LeafPoints.h"
 
+using namespace fdb;
+
 int main() {
     Grid<HashGrid<Points<int, 32>>> grid, new_grid;
 

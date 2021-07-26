@@ -3,6 +3,8 @@
 #include "vec.h"
 #include "Leaf.h"
 
+namespace fdb {
+
 template <class T, int N>
 struct SOA {
 };
@@ -27,3 +29,5 @@ struct Leaf<SOA<T, N>, L> : LeafBase<Leaf<SOA<T, N>, L>, L> {
         }
     }
 };
+
+}

@@ -2,6 +2,8 @@
 
 #include "Leaf.h"
 
+namespace fdb {
+
 template <class T, int HL = 16, int L = 10>
 struct HashGrid {
     static constexpr auto HashShift = HL;
@@ -66,3 +68,5 @@ struct HashGrid {
         }
     }
 };
+
+}

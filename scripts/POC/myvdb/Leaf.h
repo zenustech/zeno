@@ -2,6 +2,8 @@
 
 #include "Coord.h"
 
+namespace fdb {
+
 template <class D, int L>
 struct LeafBase {
     static Coord indexToCoord(int i) {
@@ -58,3 +60,5 @@ struct Leaf : LeafBase<Leaf<T, L>, L> {
         m_data[i] = value;
     }
 };
+
+}

@@ -2,6 +2,8 @@
 
 #include "Coord.h"
 
+namespace fdb {
+
 template <class T>
 struct Grid {
     using GridType = T;
@@ -35,3 +37,5 @@ struct Grid {
         m_tree->foreachLeaf(f);
     }
 };
+
+}

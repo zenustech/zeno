@@ -3,7 +3,7 @@
 #include <array>
 #include <cmath>
 
-//namespace fdb {
+namespace fdb {
 
 /* main class definition */
 
@@ -332,6 +332,11 @@ inline bool any(vec<N, T> const &a) {
   return ret;
 }
 
+template <class T>
+inline bool any(T const &a) {
+    return (bool)a;
+}
+
 template <size_t N, class T>
 inline bool all(vec<N, T> const &a) {
   bool ret = true;
@@ -339,6 +344,11 @@ inline bool all(vec<N, T> const &a) {
     ret = ret && (bool)a[i];
   }
   return ret;
+}
+
+template <class T>
+inline bool all(T const &a) {
+    return (bool)a;
 }
 
 inline auto dot(float a, float b) { return a * b; }
@@ -440,4 +450,4 @@ using vec4L = vec<4, unsigned long>;
 using vec4H = vec<4, unsigned short>;
 using vec4B = vec<4, unsigned char>;
 
-//}
+}

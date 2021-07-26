@@ -1,5 +1,7 @@
 #pragma once
 
+namespace fdb {
+
 template <class T, int L2, int L>
 struct InternalNode {
     Leaf<T, L> *m_data[1 << L2 * 3];
@@ -134,3 +136,5 @@ struct P2PGrid {
         }
     }
 };
+
+}

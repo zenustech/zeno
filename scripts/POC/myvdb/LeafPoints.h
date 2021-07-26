@@ -2,6 +2,8 @@
 
 #include "Leaf.h"
 
+namespace fdb {
+
 template <class T, int N>
 struct Points {
 };
@@ -52,3 +54,5 @@ struct Leaf<Points<T, N>, L> : LeafBase<Leaf<Points<T, N>, L>, L> {
         m_data[i] = value;
     }
 };
+
+}

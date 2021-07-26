@@ -3,6 +3,8 @@
 #include "vec.h"
 #include "Leaf.h"
 
+namespace fdb {
+
 template <class T, int N>
 struct AOS {
 };
@@ -27,3 +29,5 @@ struct Leaf<AOS<T, N>, L> : LeafBase<Leaf<AOS<T, N>, L>, L> {
         }
     }
 };
+
+}
