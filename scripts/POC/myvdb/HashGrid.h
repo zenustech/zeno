@@ -34,9 +34,7 @@ struct HashGrid {
     LeafType *leafAt(Coord const &coord) {
         int i = _hashCoord(coord);
         for (auto *curr = m_entries[i]; curr; curr = curr->m_next) {
-            if (curr->m_coord[0] == coord[0]
-             && curr->m_coord[1] == coord[1]
-             && curr->m_coord[2] == coord[2]) {
+            if (all(curr->m_coord == coord)) {
                 return curr->m_leaf;
             }
         }
@@ -52,9 +50,7 @@ struct HashGrid {
     LeafType *cleafAt(Coord const &coord) const {
         int i = _hashCoord(coord);
         for (auto *curr = m_entries[i]; curr; curr = curr->m_next) {
-            if (curr->m_coord[0] == coord[0]
-             && curr->m_coord[1] == coord[1]
-             && curr->m_coord[2] == coord[2]) {
+            if (curr->m_coord == coord) {
                 return curr->m_leaf;
             }
         }
