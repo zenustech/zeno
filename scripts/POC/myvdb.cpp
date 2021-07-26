@@ -11,7 +11,7 @@ struct Coord {
     int x, y, z;
 };
 
-template <int L = 3>
+template <int L>
 static Coord combineCoord(Coord const &leafCoord, Coord const &subCoord) {
     return {
         leafCoord.x << L | subCoord.x,
@@ -20,7 +20,7 @@ static Coord combineCoord(Coord const &leafCoord, Coord const &subCoord) {
     };
 }
 
-template <int L = 3>
+template <int L>
 static Coord staggerCoord(Coord const &coord) {
     int offset = 1 << (L - 1);
     return {
@@ -234,6 +234,9 @@ struct RootNode {
 
 template <class T, int L1 = 5, int L2 = 4, int L = 3>
 struct P2PGrid {
+    static constexpr auto RootShift = L1;
+    static constexpr auto InternalShift = L2;
+    static constexpr auto LeafShift = L;
     using ElementType = T;
     using RootNodeType = RootNode<T, L1, L2, L>;
     using InternalNodeType = InternalNode<T, L2, L>;
@@ -324,8 +327,10 @@ struct P2PGrid {
     }
 };
 
-template <class T, int HL = 16, int L = 3>
+template <class T, int HL = 16, int L = 10>
 struct HashGrid {
+    static constexpr auto HashShift = HL;
+    static constexpr auto LeafShift = L;
     using ElementType = T;
     using LeafNodeType = LeafNode<T, L>;
 
@@ -394,6 +399,7 @@ struct HashGrid {
 int main() {
     HashGrid<Points<int, 32>> grid, new_grid;
 
+    const int L = grid.LeafShift;
     const int N = 1;
     std::vector<glm::vec3> pos(N);
     std::vector<glm::vec3> new_pos(N);
@@ -405,53 +411,55 @@ int main() {
                 rand(), rand(), rand()) / (float)RAND_MAX * 2.f - 1.f;
     }
 
-    float leaf_size = 0.1f;
+    float leaf_size = 0.04f;
     float dt = 0.01f;
 
     // p2g
     for (int i = 0; i < N; i++) {
         auto iipos = pos[i] / leaf_size;
         auto ipos = glm::ivec3(iipos);
-        auto jpos = glm::ivec3(glm::mod(iipos, 1.f) * float(1 << 3));
+        auto jpos = glm::ivec3(glm::mod(iipos, 1.f) * float(1 << L));
         Coord leafCoord{ipos.x, ipos.y, ipos.z};
         auto *leaf = grid.leafAt(leafCoord);
         Coord subCoord{jpos.x, jpos.y, jpos.z};
         leaf->insertElement(subCoord, i);
         printf("? %d %d %d\n", leafCoord.x, leafCoord.y, leafCoord.z);
-            printf("! %d %d %d\n", subCoord.x, subCoord.y, subCoord.z);
+        printf("! %d %d %d\n", subCoord.x, subCoord.y, subCoord.z);
     }
 
     // advect
-    /*grid.foreachLeaf([&] (auto *leaf, Coord const &leafCoord) {
+    grid.foreachLeaf([&] (auto *leaf, Coord const &leafCoord) {
         leaf->foreachElement([&] (auto &value, int index) {
             Coord subCoord = leaf->indexToCoord(index);
             auto vel_dt = vel[value] * dt;
-            subCoord.x += int(vel_dt.x / leaf_size);
-            subCoord.y += int(vel_dt.y / leaf_size);
-            subCoord.z += int(vel_dt.z / leaf_size);
+            subCoord.x += int(vel_dt.x * float(1 << L) / leaf_size);
+            subCoord.y += int(vel_dt.y * float(1 << L) / leaf_size);
+            subCoord.z += int(vel_dt.z * float(1 << L) / leaf_size);
 
             Coord newLeafCoord = leafCoord;
-            if (subCoord.x < 0) newLeafCoord.x--; else if (subCoord.x >= 1 << 3) newLeafCoord.x++;
-            if (subCoord.y < 0) newLeafCoord.y--; else if (subCoord.y >= 1 << 3) newLeafCoord.y++;
-            if (subCoord.z < 0) newLeafCoord.z--; else if (subCoord.z >= 1 << 3) newLeafCoord.z++;
+            if (subCoord.x < 0) newLeafCoord.x--; else if (subCoord.x >= 1 << L) newLeafCoord.x++;
+            if (subCoord.y < 0) newLeafCoord.y--; else if (subCoord.y >= 1 << L) newLeafCoord.y++;
+            if (subCoord.z < 0) newLeafCoord.z--; else if (subCoord.z >= 1 << L) newLeafCoord.z++;
 
-            subCoord.x &= 1 << 3 - 1;
-            subCoord.y &= 1 << 3 - 1;
-            subCoord.z &= 1 << 3 - 1;
+            subCoord.x &= (1 << L) - 1;
+            subCoord.y &= (1 << L) - 1;
+            subCoord.z &= (1 << L) - 1;
 
+            printf("? %d %d %d\n", newLeafCoord.x, newLeafCoord.y, newLeafCoord.z);
+            printf("! %d %d %d\n", subCoord.x, subCoord.y, subCoord.z);
             new_grid.leafAt(newLeafCoord)->insertElement(subCoord, value);
         });
-    });*/
+    });
 
     // g2p
-    grid.foreachLeaf([&] (auto *leaf, Coord const &leafCoord) {
+    new_grid.foreachLeaf([&] (auto *leaf, Coord const &leafCoord) {
         printf("? %d %d %d\n", leafCoord.x, leafCoord.y, leafCoord.z);
         leaf->foreachElement([&] (auto &value, int index) {
             Coord subCoord = leaf->indexToCoord(index);
             printf("! %d %d %d\n", subCoord.x, subCoord.y, subCoord.z);
-            float fx = (leafCoord.x + subCoord.x / float(1 << 3)) * leaf_size;
-            float fy = (leafCoord.y + subCoord.y / float(1 << 3)) * leaf_size;
-            float fz = (leafCoord.z + subCoord.z / float(1 << 3)) * leaf_size;
+            float fx = (leafCoord.x + subCoord.x / float(1 << L)) * leaf_size;
+            float fy = (leafCoord.y + subCoord.y / float(1 << L)) * leaf_size;
+            float fz = (leafCoord.z + subCoord.z / float(1 << L)) * leaf_size;
 
             new_pos[value] = glm::vec3(fx, fy, fz);
         });
