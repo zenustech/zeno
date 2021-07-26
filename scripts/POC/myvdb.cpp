@@ -396,8 +396,40 @@ struct HashGrid {
     }
 };
 
+template <class T>
+struct Grid {
+    using GridType = T;
+    using LeafNodeType = typename T::LeafNodeType;
+    static constexpr auto LeafShift = T::LeafShift;
+
+    float leaf_size = 1.f;
+    GridType *m_tree = nullptr;
+
+    Grid() {
+        m_tree = new GridType;
+    }
+
+    ~Grid() {
+        delete m_tree;
+        m_tree = nullptr;
+    }
+
+    LeafNodeType *leafAt(Coord const &coord) {
+        return m_tree->leafAt(coord);
+    }
+
+    LeafNodeType *cleafAt(Coord const &coord) const {
+        return m_tree->cleafAt(coord);
+    }
+
+    template <class F>
+    void foreachLeaf(F const &f) const {
+        m_tree->foreachLeaf(f);
+    }
+};
+
 int main() {
-    HashGrid<Points<int, 32>> grid, new_grid;
+    Grid<HashGrid<Points<int, 32>>> grid, new_grid;
 
     const int L = grid.LeafShift;
     const int N = 1;
