@@ -234,8 +234,10 @@ struct ParticlesNeighborWrangle : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesNeighborWrangle, {
-    {"prim", "primNei", "zfxCode", "params", "radius", "radiusMin"},
-    {"prim"},
+    {{"primitive", "prim"}, {"primitive", "primNei"},
+     {"string", "zfxCode"}, {"dict:numeric", "params"},
+     {"numeric:float", "radius"}, {"numeric:float", "radiusMin"}},
+    {{"primitive", "prim"}},
     {},
     {"zenofx"},
 });
