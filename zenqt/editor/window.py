@@ -441,18 +441,19 @@ class NodeEditor(QWidget):
             subinputs = []
             suboutputs = []
             for node in graph.values():
+                param = node['params']
                 if node['name'] == 'SubInput':
-                    n_type = node['params'].get('type')
-                    n_name = node['params']['name']
-                    n_defl = node['params'].get('defl')
+                    n_type = params.get('type')
+                    n_name = params['name']
+                    n_defl = params.get('defl')
                     subinputs.append((n_type, n_name, n_defl))
                 elif node['name'] == 'SubOutput':
-                    n_type = node['params'].get('type')
-                    n_name = node['params']['name']
-                    n_defl = node['params'].get('defl')
+                    n_type = params.get('type')
+                    n_name = params['name']
+                    n_defl = params.get('defl')
                     suboutputs.append((n_type, n_name, n_defl))
                 elif node['name'] == 'SubCategory':
-                    subcategory = node['params']['name']
+                    subcategory = params['name']
             subinputs.extend(self.descs['Subgraph']['inputs'])
             suboutputs.extend(self.descs['Subgraph']['outputs'])
             desc = {}
