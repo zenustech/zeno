@@ -43,6 +43,3 @@ CMakeSettings.json
 /zenv/
 zeno-windows-*
 zeno-linux-*
-
-# private modules
-zeno-private/
