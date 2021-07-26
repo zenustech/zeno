@@ -13,6 +13,8 @@ add_subdirectory(external/glad)
 add_subdirectory(zenvis)
 add_subdirectory(zeno)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/zeno/cmake)
+
 option(ZENO_BUILD_EXTENSIONS "Build extensions for Zeno" ON)
 if (ZENO_BUILD_EXTENSIONS)
     add_subdirectory(projects)
