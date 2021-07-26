@@ -20,6 +20,8 @@ struct Options {
     bool detect_new_symbols = false;
     bool reassign_parameters = true;
     bool reassign_channels = true;
+
+    bool merge_identical = true;
     bool kill_unreachable = true;
 
     //Options() = default;

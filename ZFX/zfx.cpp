@@ -191,6 +191,16 @@ std::tuple
 #endif
     }
 
+    if (options.merge_identical) {
+#ifdef ZFX_PRINT_IR
+        cout << "=== MergeIdentical" << endl;
+#endif
+        ir = apply_merge_identical(ir.get());
+#ifdef ZFX_PRINT_IR
+        ir->print();
+#endif
+    }
+
     if (options.reassign_channels) {
 #ifdef ZFX_PRINT_IR
         cout << "=== ReassignGlobals" << endl;

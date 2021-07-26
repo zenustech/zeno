@@ -20,6 +20,7 @@ std::map<int, float> apply_const_parametrize(IR *ir);
 int apply_register_allocation(IR *ir, int nregs);
 std::unique_ptr<IR> apply_save_math_registers(IR *ir,
         int nregs, int memsize);
+std::unique_ptr<IR> apply_merge_identical(IR *ir);
 std::unique_ptr<IR> apply_kill_unreachable(IR *ir);
 std::map<int, int> apply_reassign_globals(IR *ir);
 void apply_global_localize(IR *ir);
