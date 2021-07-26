@@ -2,6 +2,7 @@
 #include "AST.h"
 #include "Stmts.h"
 #include "Lexical.h"
+#include <sstream>
 #include <map>
 
 namespace zfx {
@@ -152,7 +153,10 @@ struct LowerAST {
             return emplace_temporary_symbol(ast->token);
 
         } else if (is_literial_atom(ast->token) && ast->args.size() == 0) {
-            return ir->emplace_back<LiterialStmt>(ast->token);
+            float value = 0.0f;
+            if (!(std::stringstream(ast->token) >> value))
+                error("failed to parse float literial: %s\n", ast->token.c_str());
+            return ir->emplace_back<LiterialStmt>(value);
 
         } else if (contains({"()"}, ast->token) && ast->args.size() >= 1) {
             auto func_name = ast->args[0]->token;

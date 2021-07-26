@@ -308,11 +308,11 @@ struct TempSymbolStmt : Stmt<TempSymbolStmt> {
 };
 
 struct LiterialStmt : Stmt<LiterialStmt> {
-    std::string value;
+    float value;
 
     LiterialStmt
         ( int id_
-        , std::string value_
+        , float value_
         )
         : Stmt(id_)
         , value(value_)
@@ -325,8 +325,8 @@ struct LiterialStmt : Stmt<LiterialStmt> {
 
     virtual std::string to_string() const override {
         return format(
-            "Literial [%s]"
-            , value.c_str()
+            "Literial [%f]"
+            , value
             );
     }
 };
@@ -537,12 +537,12 @@ struct AsmAssignStmt : AsmStmt<AsmAssignStmt> {
 
 struct AsmLoadConstStmt : AsmStmt<AsmLoadConstStmt> {
     int dst;
-    std::string value;
+    float value;
 
     AsmLoadConstStmt
         ( int id_
         , int dst_
-        , std::string value_
+        , float value_
         )
         : AsmStmt(id_)
         , dst(dst_)
@@ -551,9 +551,9 @@ struct AsmLoadConstStmt : AsmStmt<AsmLoadConstStmt> {
 
     virtual std::string to_string() const override {
         return format(
-            "AsmLoadConst r%d [%s]"
+            "AsmLoadConst r%d [%f]"
             , dst
-            , value.c_str()
+            , value
             );
     }
 

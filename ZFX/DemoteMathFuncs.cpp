@@ -35,18 +35,17 @@ struct DemoteMathFuncs : Visitor<DemoteMathFuncs> {
         return {ir.get(), ir->push_clone_back(stmt)};
     }
 
-    Stm stm_const(std::string const &x) {
+    Stm stm_const(float x) {
         return {ir.get(), ir->emplace_back<LiterialStmt>(x)};
     }
 
     Stm stm_const(uint32_t x) {
-        std::stringstream ss; ss << 'i' << x;
-        return stm_const(ss.str());
-    }
-
-    Stm stm_const(float x) {
-        std::stringstream ss; ss << x;
-        return stm_const(ss.str());
+        union {
+            float f;
+            uint32_t i;
+        } u;
+        u.i = x;
+        return stm_const(u.f);
     }
 
     Statement *emit_op(std::string const &name, std::vector<Statement *> const &args) {

@@ -16,7 +16,7 @@ std::unique_ptr<IR> apply_lower_math(IR *ir);
 std::unique_ptr<IR> apply_demote_math_funcs(IR *ir);
 std::unique_ptr<IR> apply_lower_access(IR *ir);
 std::map<int, int> apply_reassign_parameters(IR *ir);
-std::map<int, std::string> apply_const_parametrize(IR *ir);
+std::map<int, float> apply_const_parametrize(IR *ir);
 int apply_register_allocation(IR *ir, int nregs);
 std::unique_ptr<IR> apply_save_math_registers(IR *ir,
         int nregs, int memsize);
