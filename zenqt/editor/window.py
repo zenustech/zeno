@@ -441,7 +441,7 @@ class NodeEditor(QWidget):
             subinputs = []
             suboutputs = []
             for node in graph.values():
-                param = node['params']
+                params = node['params']
                 if node['name'] == 'SubInput':
                     n_type = params.get('type')
                     n_name = params['name']

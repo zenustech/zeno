@@ -72,9 +72,13 @@ ZENAPI bool INode::checkApplyCondition() {
 
     if (has_option("MUTE")) {
         auto desc = nodeClass->desc.get();
-        for (auto const &[ds, bound]: inputBounds) {
-            muted_output = get_input(ds);
-            break;
+        if (desc->inputs[0].name != "SRC") {
+            muted_output = get_input(desc->inputs[0].name);
+        } else {
+            for (auto const &[ds, bound]: inputBounds) {
+                muted_output = get_input(ds);
+                break;
+            }
         }
         return false;
     }
@@ -109,8 +113,8 @@ ZENAPI void INode::coreApply() {
         if (!graph->isViewed)  // VIEW subnodes only if subgraph is VIEW'ed
             return;
         auto desc = nodeClass->desc.get();
-        auto id = desc->outputs[0].name;
-        auto obj = muted_output ? muted_output : safe_at(outputs, id, "output");
+        auto obj = muted_output ? muted_output
+            : safe_at(outputs, desc->outputs[0].name, "output");
         auto path = Visualization::exportPath();
         obj->dumpfile(path);
     }
