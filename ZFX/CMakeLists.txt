@@ -28,10 +28,11 @@ DemoteMathFuncs.cpp
 DetectNewSymbols.cpp
 EmitAssembly.cpp
 ExpandFunctions.cpp
+GlobalLocalize.cpp
 KillUnreachable.cpp
+MergeIdentical.cpp
 ReassignGlobals.cpp
 ReassignParameters.cpp
-GlobalLocalize.cpp
 include/zfx/utils.h
 include/zfx/x64.h
 include/zfx/zfx.h

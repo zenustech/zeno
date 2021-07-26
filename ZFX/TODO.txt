@@ -2,6 +2,6 @@ OutOfOrder
 ConstantFold
 MergeIdentical
 MergeLocalStorage
-MergeConstants
+MergeConstants *
 refactor zsg file format for input output both connection
 MUTE is Buggy in dict order
