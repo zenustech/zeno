@@ -4,7 +4,7 @@ set -e
 cd "$(dirname "$(realpath $0)")/.."
 
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
-make -C build -j32
+make -C build -j 32
 make -C build install
 
 rm -rf /tmp/build
