@@ -1,5 +1,6 @@
 from . import *
 
+import zenvis
 
 class QDMFileMenu(QMenu):
     def __init__(self):
@@ -13,6 +14,7 @@ class QDMFileMenu(QMenu):
                 ('&Save', QKeySequence.Save),
                 ('&Import', 'ctrl+shift+o'),
                 ('Save &as', QKeySequence.SaveAs),
+                ('Screenshot', None),
         ]
 
         for name, shortcut in acts:
@@ -20,7 +22,8 @@ class QDMFileMenu(QMenu):
                 self.addSeparator()
                 continue
             action = QAction(name, self)
-            action.setShortcut(shortcut)
+            if shortcut:
+                action.setShortcut(shortcut)
             self.addAction(action)
 
 
@@ -358,6 +361,19 @@ class NodeEditor(QWidget):
 
         elif name == '&Paste':
             self.do_paste()
+
+        elif name == 'Screenshot':
+            dir_path = 'screenshot'
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+            file_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
+            file_name += '.png'
+            path = os.path.join(dir_path, file_name)
+
+            zenvis.pyzenvis.do_screenshot(path)
+
+            msg = 'Saved at {}!'.format(path)
+            QMessageBox.information(self, 'Screenshot', msg)
 
     def do_copy(self):
         itemList = self.scene.selectedItems()

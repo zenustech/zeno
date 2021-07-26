@@ -5,6 +5,8 @@
 #include <sstream>
 #include <cstdlib>
 #include <array>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
 namespace zenvis {
 
@@ -136,6 +138,18 @@ double get_render_fps() {
 
 double get_solver_interval() {
   return solverFPS.interval();
+}
+
+void do_screenshot(std::string path) {
+    int w = nx;
+    int h = ny;
+
+    glReadBuffer(GL_FRONT);
+    void* pixels = malloc(w * h * 3);
+    glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+    stbi_flip_vertically_on_write(true);
+    stbi_write_png(path.c_str(), w, h, 3, pixels, 0);
+    free(pixels);
 }
 
 }
