@@ -423,8 +423,8 @@ int main() {
         auto *leaf = grid.leafAt(leafCoord);
         Coord subCoord{jpos.x, jpos.y, jpos.z};
         leaf->insertElement(subCoord, i);
-        printf("? %d %d %d\n", leafCoord.x, leafCoord.y, leafCoord.z);
-        printf("! %d %d %d\n", subCoord.x, subCoord.y, subCoord.z);
+        //printf("? %d %d %d\n", leafCoord.x, leafCoord.y, leafCoord.z);
+        //printf("! %d %d %d\n", subCoord.x, subCoord.y, subCoord.z);
     }
 
     // advect
@@ -437,26 +437,26 @@ int main() {
             subCoord.z += int(vel_dt.z * float(1 << L) / leaf_size);
 
             Coord newLeafCoord = leafCoord;
-            if (subCoord.x < 0) newLeafCoord.x--; else if (subCoord.x >= 1 << L) newLeafCoord.x++;
-            if (subCoord.y < 0) newLeafCoord.y--; else if (subCoord.y >= 1 << L) newLeafCoord.y++;
-            if (subCoord.z < 0) newLeafCoord.z--; else if (subCoord.z >= 1 << L) newLeafCoord.z++;
+            newLeafCoord.x += subCoord.x >> L;
+            newLeafCoord.y += subCoord.y >> L;
+            newLeafCoord.z += subCoord.z >> L;
 
             subCoord.x &= (1 << L) - 1;
             subCoord.y &= (1 << L) - 1;
             subCoord.z &= (1 << L) - 1;
 
-            printf("? %d %d %d\n", newLeafCoord.x, newLeafCoord.y, newLeafCoord.z);
-            printf("! %d %d %d\n", subCoord.x, subCoord.y, subCoord.z);
+            //printf("? %d %d %d\n", newLeafCoord.x, newLeafCoord.y, newLeafCoord.z);
+            //printf("! %d %d %d\n", subCoord.x, subCoord.y, subCoord.z);
             new_grid.leafAt(newLeafCoord)->insertElement(subCoord, value);
         });
     });
 
     // g2p
     new_grid.foreachLeaf([&] (auto *leaf, Coord const &leafCoord) {
-        printf("? %d %d %d\n", leafCoord.x, leafCoord.y, leafCoord.z);
+        //printf("? %d %d %d\n", leafCoord.x, leafCoord.y, leafCoord.z);
         leaf->foreachElement([&] (auto &value, int index) {
             Coord subCoord = leaf->indexToCoord(index);
-            printf("! %d %d %d\n", subCoord.x, subCoord.y, subCoord.z);
+            //printf("! %d %d %d\n", subCoord.x, subCoord.y, subCoord.z);
             float fx = (leafCoord.x + subCoord.x / float(1 << L)) * leaf_size;
             float fy = (leafCoord.y + subCoord.y / float(1 << L)) * leaf_size;
             float fz = (leafCoord.z + subCoord.z / float(1 << L)) * leaf_size;
