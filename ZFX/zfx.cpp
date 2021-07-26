@@ -154,8 +154,8 @@ std::tuple
 #ifdef ZFX_PRINT_IR
         ir->print();
 #endif
-        for (auto const &[idx, expr]: constants) {
-            oss_end << "const " << idx << " " << expr << "\n";
+        for (auto const &[idx, value]: constants) {
+            oss_end << "const " << idx << " " << value << "\n";
         }
     }
 

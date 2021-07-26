@@ -26,6 +26,18 @@ struct ImplAssembler {
     int nlocals = 0;
     //int nglobals = 0;
 
+    static float parse_float(std::string const &expr) {
+        float value = 0.0f;
+        if (std::istringstream(expr) >> value)
+            return value;
+        union {
+            float f;
+            uint32_t i;
+        } u;
+        u.i = 0xffffffff;
+        return u.f;
+    }
+
     void parse(std::string const &lines) {
         for (auto line: split_str(lines, '\n')) {
             if (!line.size()) continue;
@@ -37,19 +49,7 @@ struct ImplAssembler {
                 ERROR_IF(linesep.size() < 2);
                 auto id = from_string<int>(linesep[1]);
                 auto expr = linesep[2];
-                float &dst = exec->consts[id];
-                if (expr[0] == 'i') {
-                    union {
-                        float f;
-                        uint32_t i;
-                    } u;
-                    u.i = 0;
-                    std::istringstream(expr) >> u.i;
-                    dst = u.f;
-                } else if (!(std::istringstream(expr) >> dst)) {
-                    error("cannot parse literial constant `%s`",
-                        expr.c_str());
-                }
+                exec->consts[id] = parse_float(expr);
 
             } else if (cmd == "ldp") {
                 // rsi points to an array of constants
