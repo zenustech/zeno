@@ -1,5 +1,4 @@
 from . import *
-import zenvis
 
 class QDMFileMenu(QMenu):
     def __init__(self):
@@ -449,4 +448,3 @@ class NodeEditor(QWidget):
             desc['is_subgraph'] = True
             descs[name] = desc
         return descs
-
