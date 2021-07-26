@@ -32,11 +32,9 @@ int main() {
     // p2g
     for (int i = 0; i < N; i++) {
         auto iipos = pos[i] / grid.leaf_size;
-        auto ipos = vec3i(iipos);
-        auto jpos = vec3i(fmod(iipos, 1.f) * float(1 << L));
-        Coord leafCoord{ipos[0], ipos[1], ipos[2]};
+        auto leafCoord = vec3i(iipos);
+        auto subCoord = vec3i(fmod(iipos, 1.f) * float(1 << L));
         auto *leaf = grid.leafAt(leafCoord);
-        Coord subCoord{jpos[0], jpos[1], jpos[2]};
         leaf->insertElement(subCoord, i);
         //printf("? %d %d %d\n", leafCoord[0], leafCoord[1], leafCoord[2]);
         //printf("! %d %d %d\n", subCoord[0], subCoord[1], subCoord[2]);
@@ -47,18 +45,12 @@ int main() {
         leaf->foreachElement([&] (auto &value, int index) {
             Coord subCoord = leaf->indexToCoord(index);
             auto vel_dt = vel[value] * dt;
-            subCoord[0] += int(vel_dt[0] * ((1 << L) / grid.leaf_size));
-            subCoord[1] += int(vel_dt[1] * ((1 << L) / grid.leaf_size));
-            subCoord[2] += int(vel_dt[2] * ((1 << L) / grid.leaf_size));
+            subCoord += toint(vel_dt * ((1 << L) / grid.leaf_size));
 
             Coord newLeafCoord = leafCoord;
-            newLeafCoord[0] += subCoord[0] >> L;
-            newLeafCoord[1] += subCoord[1] >> L;
-            newLeafCoord[2] += subCoord[2] >> L;
+            newLeafCoord += subCoord >> L;
 
-            subCoord[0] &= (1 << L) - 1;
-            subCoord[1] &= (1 << L) - 1;
-            subCoord[2] &= (1 << L) - 1;
+            subCoord &= (1 << L) - 1;
 
             //printf("? %d %d %d\n", newLeafCoord[0], newLeafCoord[1], newLeafCoord[2]);
             //printf("! %d %d %d\n", subCoord[0], subCoord[1], subCoord[2]);
@@ -72,11 +64,8 @@ int main() {
         leaf->foreachElement([&] (auto &value, int index) {
             Coord subCoord = leaf->indexToCoord(index);
             //printf("! %d %d %d\n", subCoord[0], subCoord[1], subCoord[2]);
-            float fx = (leafCoord[0] + subCoord[0] * (1.f / (1 << L))) * grid.leaf_size;
-            float fy = (leafCoord[1] + subCoord[1] * (1.f / (1 << L))) * grid.leaf_size;
-            float fz = (leafCoord[2] + subCoord[2] * (1.f / (1 << L))) * grid.leaf_size;
-
-            new_pos[value] = vec3f(fx, fy, fz);
+            vec3f fpos = (leafCoord + subCoord * (1.f / (1 << L))) * grid.leaf_size;
+            new_pos[value] = fpos;
         });
     });
 
