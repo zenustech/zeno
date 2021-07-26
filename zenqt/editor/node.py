@@ -135,11 +135,9 @@ class QDMGraphicsNode(QGraphicsItem):
         socket_start = y + TEXT_HEIGHT * style['output_shift']
 
         self.inputs.clear()
-        for index, name in enumerate(inputs):
+        for index, (type, name, defl) in enumerate(inputs):
             socket = QDMGraphicsSocket(self)
             socket.setPos(0, y)
-            try: type, name, defl = name  # bkwd compat
-            except: type = ''
             socket.setName(name)
             socket.setType(type)
             socket.setIsOutput(False)
@@ -151,9 +149,7 @@ class QDMGraphicsNode(QGraphicsItem):
             y += (len(inputs) - len(outputs)) * TEXT_HEIGHT
 
         self.outputs.clear()
-        for index, name in enumerate(outputs):
-            try: type, name, defl = name  # bkwd compat
-            except: type = ''
+        for index, (type, name, defl) in enumerate(outputs):
             socket = QDMGraphicsSocket(self)
             socket.setPos(0, y)
             socket.setName(name)

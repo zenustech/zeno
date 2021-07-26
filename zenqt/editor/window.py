@@ -243,10 +243,10 @@ class NodeEditor(QWidget):
         for name, desc in prog['descs'].items():
             for key, output in enumerate(desc['outputs']):
                 if isinstance(output, str):
-                    desc['outputs'][key] = ('any', output, '')
+                    desc['outputs'][key] = ('', output, '')
             for key, input in enumerate(desc['inputs']):
                 if isinstance(input, str):
-                    desc['inputs'][key] = ('any', input, '')
+                    desc['inputs'][key] = ('', input, '')
 
         for name, graph in prog['graph'].items():
             if 'nodes' not in graph:
@@ -442,9 +442,15 @@ class NodeEditor(QWidget):
             suboutputs = []
             for node in graph.values():
                 if node['name'] == 'SubInput':
-                    subinputs.append(node['params']['name'])
+                    type = node['params'].get('type')
+                    name = node['params']['name']
+                    defl = node['params'].get('defl')
+                    subinputs.append((type, name, defl))
                 elif node['name'] == 'SubOutput':
-                    suboutputs.append(node['params']['name'])
+                    type = node['params'].get('type')
+                    name = node['params']['name']
+                    defl = node['params'].get('defl')
+                    suboutputs.append((type, name, defl))
                 elif node['name'] == 'SubCategory':
                     subcategory = node['params']['name']
             subinputs.extend(self.descs['Subgraph']['inputs'])

@@ -1,6 +1,6 @@
 # make xxx commands for @archibate's convinence
 
-O=arts/zfxneighbor.zsg
+O=arts/testsubhasinput.zsg
 
 default: run
 

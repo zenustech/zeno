@@ -27,7 +27,9 @@ struct SubInput : zeno::INode {
 ZENDEFNODE(SubInput, {
     {},
     {"port", "hasValue"},
-    {{"string", "name", "input1"}},
+    {{"string", "type", ""},
+     {"string", "name", "input1"},
+     {"string", "defl", ""}},
     {"subgraph"},
 });
 
@@ -43,7 +45,9 @@ struct SubOutput : zeno::INode {
 ZENDEFNODE(SubOutput, {
     {"port"},
     {},
-    {{"string", "name", "output1"}},
+    {{"string", "type", ""},
+     {"string", "name", "output1"},
+     {"string", "defl", ""}},
     {"subgraph"},
 });
 
