@@ -38,8 +38,6 @@ int main() {
         auto subCoord = vec3i(fmod(iipos, 1.f) * float(1 << L));
         auto *leaf = grid.leafAt(leafCoord);
         leaf->insertElement(subCoord, i);
-        //printf("? %d %d %d\n", leafCoord[0], leafCoord[1], leafCoord[2]);
-        //printf("! %d %d %d\n", subCoord[0], subCoord[1], subCoord[2]);
     }
 
     // advect
@@ -51,21 +49,16 @@ int main() {
 
             Coord newLeafCoord = leafCoord;
             newLeafCoord += subCoord >> L;
-
             subCoord &= (1 << L) - 1;
 
-            //printf("? %d %d %d\n", newLeafCoord[0], newLeafCoord[1], newLeafCoord[2]);
-            //printf("! %d %d %d\n", subCoord[0], subCoord[1], subCoord[2]);
             new_grid.leafAt(newLeafCoord)->insertElement(subCoord, value);
         });
     });
 
     // g2p
     new_grid.foreachLeaf([&] (auto *leaf, Coord const &leafCoord) {
-        //printf("? %d %d %d\n", leafCoord[0], leafCoord[1], leafCoord[2]);
         leaf->foreachElement([&] (auto &value, int index) {
             Coord subCoord = leaf->indexToCoord(index);
-            //printf("! %d %d %d\n", subCoord[0], subCoord[1], subCoord[2]);
             vec3f fpos = (leafCoord + subCoord * (1.f / (1 << L))) * grid.leaf_size;
             new_pos[value] = fpos;
         });
