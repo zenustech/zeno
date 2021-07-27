@@ -28,6 +28,7 @@ void look_perspective(
 void set_perspective(
     std::array<double, 16> viewArr,
     std::array<double, 16> projArr);
+void do_screenshot(std::string path);
 
 };
 
@@ -47,6 +48,7 @@ PYBIND11_MODULE(pyzenvis, m) {
     m.def("auto_gc_frame_data", zenvis::auto_gc_frame_data);
     m.def("get_valid_frames_list", zenvis::get_valid_frames_list);
     m.def("load_file", zenvis::load_file);
+    m.def("do_screenshot", zenvis::do_screenshot);
     m.def("set_show_grid", zenvis::set_show_grid);
 }
 

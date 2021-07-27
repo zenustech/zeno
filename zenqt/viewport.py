@@ -1,3 +1,4 @@
+import os
 import math
 import time
 import numpy as np
@@ -133,6 +134,15 @@ class QDMDisplayMenu(QMenu):
         action.setChecked(True)
         self.addAction(action)
 
+class QDMRecordMenu(QMenu):
+    def __init__(self):
+        super().__init__()
+
+        self.setTitle('Record')
+
+        action = QAction('Screenshot', self)
+        self.addAction(action)
+
 
 class DisplayWidget(QWidget):
     def __init__(self, parent=None):
@@ -149,6 +159,10 @@ class DisplayWidget(QWidget):
         self.menuDisplay.triggered.connect(self.menuTriggered)
         self.menubar.addMenu(self.menuDisplay)
 
+        self.recordDisplay = QDMRecordMenu()
+        self.recordDisplay.triggered.connect(self.menuTriggered)
+        self.menubar.addMenu(self.recordDisplay)
+
         self.view = ViewportWidget()
         self.layout.addWidget(self.view)
 
@@ -160,6 +174,19 @@ class DisplayWidget(QWidget):
         if name == 'Show Grid':
             checked = act.isChecked()
             zenvis.status['show_grid'] = checked
+
+        elif name == 'Screenshot':
+            dir_path = 'screenshots'
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+            file_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
+            file_name += '.png'
+            path = os.path.join(dir_path, file_name)
+
+            zenvis.core.do_screenshot(path)
+
+            msg = 'Saved screenshot to {}!'.format(path)
+            QMessageBox.information(self, 'Screenshot', msg)
 
     def sizeHint(self):
         return QSize(1200, 400)
