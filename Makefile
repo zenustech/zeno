@@ -1,4 +1,4 @@
-O=arts/OfficialSubnets/vdbslice.zsg
+O=arts/testneighborzfx.zsg
 
 default: run
 
