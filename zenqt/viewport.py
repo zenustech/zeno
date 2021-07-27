@@ -143,6 +143,9 @@ class QDMRecordMenu(QMenu):
         action = QAction('Screenshot', self)
         self.addAction(action)
 
+        action = QAction('Record Video', self)
+        self.addAction(action)
+
 
 class DisplayWidget(QWidget):
     def __init__(self, parent=None):
@@ -166,6 +169,8 @@ class DisplayWidget(QWidget):
         self.view = ViewportWidget()
         self.layout.addWidget(self.view)
 
+        self.do_record_video()
+
     def on_update(self):
         self.view.on_update()
 
@@ -176,17 +181,26 @@ class DisplayWidget(QWidget):
             zenvis.status['show_grid'] = checked
 
         elif name == 'Screenshot':
-            dir_path = 'screenshots'
-            if not os.path.exists(dir_path):
-                os.makedirs(dir_path)
-            file_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
-            file_name += '.png'
-            path = os.path.join(dir_path, file_name)
+            self.do_screenshot()
 
-            zenvis.core.do_screenshot(path)
+        elif name == 'Record Video':
+            self.do_record_video()
 
-            msg = 'Saved screenshot to {}!'.format(path)
-            QMessageBox.information(self, 'Screenshot', msg)
+    def do_record_video(self):
+        pass
+
+    def do_screenshot(self):
+        dir_path = 'screenshots'
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+        file_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
+        file_name += '.png'
+        path = os.path.join(dir_path, file_name)
+
+        zenvis.core.do_screenshot(path)
+
+        msg = 'Saved screenshot to {}!'.format(path)
+        QMessageBox.information(self, 'Screenshot', msg)
 
     def sizeHint(self):
         return QSize(1200, 400)
