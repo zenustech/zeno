@@ -19,14 +19,14 @@
       "SRC": null
      },
      "params": {
-      "isCentered": 0
+      "isCentered": 1
      },
      "uipos": [
       391.0,
       174.0
      ],
      "options": [
-      "VIEW"
+      "ONCE"
      ]
     },
     "dbe4ae54-NumericInt": {
@@ -35,19 +35,74 @@
       "SRC": null
      },
      "params": {
-      "value": 16
+      "value": 3
      },
      "uipos": [
       144.0,
       263.0
      ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "18696ae0-PrimitiveTraceTrail": {
+     "name": "PrimitiveTraceTrail",
+     "inputs": {
+      "parsPrim": [
+       "a3867615-ParticlesWrangle",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      968.0,
+      257.0
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "a3867615-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "dc8647d3-Make3DGridPrimitive",
+       "prim"
+      ],
+      "zfxCode": [
+       "8d52873c-MakeMultilineString",
+       "value"
+      ],
+      "params": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      686.0,
+      229.0
+     ],
+     "options": []
+    },
+    "8d52873c-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "dt = 0.1\n@pos.x += @pos.y * dt\n@pos.y -= @pos.x * dt\n@clr = vec3(0.375, 0.75, 1.0)"
+     },
+     "uipos": [
+      621.0,
+      473.0
+     ],
      "options": []
     }
    },
    "view": {
-    "scale": 1,
-    "trans_x": 0,
-    "trans_y": 0
+    "scale": 1.5625,
+    "trans_x": 52,
+    "trans_y": 144
    }
   }
  },
@@ -3358,37 +3413,6 @@
    "categories": [
     "zenofx"
    ]
-  },
-  "make3d": {
-   "inputs": [
-    [
-     "",
-     "nx",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],

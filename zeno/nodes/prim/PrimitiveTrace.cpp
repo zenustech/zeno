@@ -15,21 +15,26 @@ struct PrimitiveTraceTrail : zeno::INode {
     virtual void apply() override {
         auto parsPrim = get_input<PrimitiveObject>("parsPrim");
 
-        auto &parsPos = parsPrim->attr<zeno::vec3f>("pos");
-        auto &trailPos = trailPrim->add_attr<zeno::vec3f>("pos");
-        int base = trailPos.size();
-        int last_base = base - parsPos.size();
-        trailPos.resize(base + parsPos.size());
-        for (int i = 0; i < parsPos.size(); i++) {
-            trailPos[base + i] = parsPos[i];
+        int base = trailPrim->size();
+        int last_base = base - parsPrim->size();
+        trailPrim->resize(base + parsPrim->size());
+
+        for (auto const &[parsAttr, parsArr]: parsPrim->m_attrs) {
+            std::visit([&, trailAttr = parsAttr] (auto const &parsArr) {
+                using T = std::decay_t<decltype(parsArr[0])>;
+                auto &trailArr = trailPrim->add_attr<T>(trailAttr);
+                for (int i = 0; i < parsPrim->size(); i++) {
+                    trailArr[base + i] = parsArr[i];
+                }
+            }, parsArr);
         }
         if (last_base > 0) {
-            for (int i = 0; i < parsPos.size(); i++) {
+            for (int i = 0; i < parsPrim->size(); i++) {
                 trailPrim->lines.emplace_back(base + i, last_base + i);
             }
         }
 
-        set_output("prim", trailPrim);
+        set_output("trailPrim", trailPrim);
     }
 };
 
