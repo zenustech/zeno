@@ -11,8 +11,8 @@
       "value": 0.1
      },
      "uipos": [
-      -800.3750000000002,
-      -202.5625
+      -1919.7109375000005,
+      -293.28515625
      ],
      "options": []
     },
@@ -23,12 +23,15 @@
        "250687d2-NumericFloat",
        "value"
       ],
-      "SRC": null
+      "SRC": [
+       "432e5713-SetFrameTime",
+       "DST"
+      ]
      },
      "params": {},
      "uipos": [
-      -286.625,
-      -152.43749999999994
+      -1215.6874999999995,
+      -469.70312499999966
      ],
      "options": [
       "ONCE"
@@ -41,8 +44,8 @@
      },
      "params": {},
      "uipos": [
-      -543.125,
-      67.31250000000006
+      -1725.6445312499995,
+      67.99609375000011
      ],
      "options": []
     },
@@ -65,8 +68,8 @@
      },
      "params": {},
      "uipos": [
-      920.6499999999996,
-      224.7375
+      949.2437499999996,
+      219.58124999999995
      ],
      "options": [
       "VIEW"
@@ -78,11 +81,11 @@
       "SRC": null
      },
      "params": {
-      "value": "\n@clr = (1-@isboundary) * vec3(0,0,1) + (@isboundary) * vec3(1,1,0)"
+      "value": "\n@clr = (1-@isboundary) * vec3(0,0,1) + (@isboundary) * vec3(1,1,0)\n@testv = 0"
      },
      "uipos": [
-      429.9687500000001,
-      245.08750000000023
+      496.21875,
+      258.8375000000002
      ],
      "options": []
     },
@@ -110,8 +113,8 @@
       "value": 0.01
      },
      "uipos": [
-      -486.0624999999998,
-      244.3125
+      -1598.269531249999,
+      246.5585937500001
      ],
      "options": []
     },
@@ -119,12 +122,12 @@
      "name": "SPHstep",
      "inputs": {
       "particles": [
-       "39b3d0c9-GenParticles",
-       "oparticles"
+       "8e1bcc17-x",
+       "particles"
       ],
       "dt": [
-       "bc6706d5-GetFrameTime",
-       "time"
+       "3681ce6d-IntegrateFrameTime",
+       "actual_dt"
       ],
       "h": [
        "250687d2-NumericFloat",
@@ -138,12 +141,23 @@
        "409795c9-NumericFloat",
        "value"
       ],
-      "SRC": null
+      "poly6kern": [
+       "b6cb41b1-x",
+       "poly6kern"
+      ],
+      "spikykern": [
+       "b6cb41b1-x",
+       "spikykern"
+      ],
+      "SRC": [
+       "3681ce6d-IntegrateFrameTime",
+       "DST"
+      ]
      },
      "params": {},
      "uipos": [
-      190.29999999999995,
-      66.5
+      377.7999999999996,
+      -47.249999999999986
      ],
      "options": []
     },
@@ -156,16 +170,213 @@
       "value": 0.05
      },
      "uipos": [
-      -545.3124999999999,
-      451.56249999999994
+      -1529.394531249999,
+      483.4960937499999
+     ],
+     "options": []
+    },
+    "28df8e69-ParticlesNeighborWrangle": {
+     "name": "ParticlesNeighborWrangle",
+     "inputs": {
+      "prim": null,
+      "primNei": null,
+      "zfxCode": [
+       "31ba5542-x",
+       "value"
+      ],
+      "params": null,
+      "radius": [
+       "250687d2-NumericFloat",
+       "value"
+      ],
+      "radiusMin": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      1320.78125,
+      301.24999999999994
+     ],
+     "options": []
+    },
+    "31ba5542-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "@testv += 1\n@rad = @testv/2\n@clr = @vel"
+     },
+     "uipos": [
+      771.25,
+      537.5
+     ],
+     "options": []
+    },
+    "8e1bcc17-x": {
+     "name": "restVolume",
+     "inputs": {
+      "poly6kern": [
+       "b6cb41b1-x",
+       "poly6kern"
+      ],
+      "spikykern": [
+       "b6cb41b1-x",
+       "spikykern"
+      ],
+      "particles": [
+       "39b3d0c9-GenParticles",
+       "oparticles"
+      ],
+      "h": [
+       "250687d2-NumericFloat",
+       "value"
+      ],
+      "SRC": [
+       "b6cb41b1-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -531.0254882812505,
+      -311.0304687500001
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "b6cb41b1-x": {
+     "name": "computeKernel",
+     "inputs": {
+      "h": [
+       "250687d2-NumericFloat",
+       "value"
+      ],
+      "SRC": [
+       "39b3d0c9-GenParticles",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -929.2870117187484,
+      -301.2742187499997
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "3681ce6d-IntegrateFrameTime": {
+     "name": "IntegrateFrameTime",
+     "inputs": {
+      "desired_dt": [
+       "52e46723-NumericFloat",
+       "value"
+      ],
+      "SRC": [
+       "8e1bcc17-x",
+       "DST"
+      ]
+     },
+     "params": {
+      "min_scale": 0.0001
+     },
+     "uipos": [
+      -25.15625,
+      -10.703125000000007
+     ],
+     "options": []
+    },
+    "52e46723-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.003
+     },
+     "uipos": [
+      -352.57812499999966,
+      -10.078124999999964
+     ],
+     "options": []
+    },
+    "432e5713-SetFrameTime": {
+     "name": "SetFrameTime",
+     "inputs": {
+      "time": [
+       "5c7d6dd4-NumericFloat",
+       "value"
+      ],
+      "SRC": [
+       "250687d2-NumericFloat",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1493.906249999999,
+      -427.18749999999955
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "5c7d6dd4-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.0001
+     },
+     "uipos": [
+      -1776.7968749999984,
+      -494.9218749999996
+     ],
+     "options": []
+    },
+    "2840dffe-SetFrameTime": {
+     "name": "SetFrameTime",
+     "inputs": {
+      "time": [
+       "b39fb00d-NumericFloat",
+       "value"
+      ],
+      "SRC": [
+       "999a93b8-ParticlesWrangle",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1913.749999999998,
+      487.49999999999955
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "b39fb00d-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.03
+     },
+     "uipos": [
+      1647.1874999999986,
+      347.6562499999996
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.5120000000000001,
-    "trans_x": -131,
-    "trans_y": -179
+    "scale": 0.8,
+    "trans_x": -309,
+    "trans_y": -124
    }
   },
   "GenParticles": {
@@ -176,7 +387,9 @@
       "SRC": null
      },
      "params": {
-      "name": "h"
+      "type": "",
+      "name": "h",
+      "defl": ""
      },
      "uipos": [
       -589.0625,
@@ -247,7 +460,9 @@
       ]
      },
      "params": {
-      "name": "oparticles"
+      "type": "",
+      "name": "oparticles",
+      "defl": ""
      },
      "uipos": [
       3500.6367187500005,
@@ -819,7 +1034,9 @@
       "SRC": null
      },
      "params": {
-      "name": "h"
+      "type": "",
+      "name": "h",
+      "defl": ""
      },
      "uipos": [
       -505.0,
@@ -837,7 +1054,9 @@
       "SRC": null
      },
      "params": {
-      "name": "poly6kern"
+      "type": "",
+      "name": "poly6kern",
+      "defl": ""
      },
      "uipos": [
       1915.625,
@@ -855,7 +1074,9 @@
       "SRC": null
      },
      "params": {
-      "name": "spikykern"
+      "type": "",
+      "name": "spikykern",
+      "defl": ""
      },
      "uipos": [
       1621.1718750000005,
@@ -1116,7 +1337,9 @@
       "SRC": null
      },
      "params": {
-      "name": "particles"
+      "type": "",
+      "name": "particles",
+      "defl": ""
      },
      "uipos": [
       -1072.6757812499986,
@@ -1134,7 +1357,9 @@
       "SRC": null
      },
      "params": {
-      "name": "particles"
+      "type": "",
+      "name": "particles",
+      "defl": ""
      },
      "uipos": [
       3029.0,
@@ -1148,11 +1373,13 @@
       "SRC": null
      },
      "params": {
-      "name": "dt"
+      "type": "",
+      "name": "dt",
+      "defl": ""
      },
      "uipos": [
-      -1085.4257812499986,
-      436.0869140624999
+      -1107.3007812499986,
+      342.3369140624999
      ],
      "options": []
     },
@@ -1162,31 +1389,15 @@
       "SRC": null
      },
      "params": {
-      "name": "h"
+      "type": "",
+      "name": "h",
+      "defl": ""
      },
      "uipos": [
-      -1090.4257812499986,
-      608.0869140624999
+      -1091.9882812499986,
+      548.7119140625
      ],
      "options": []
-    },
-    "4b0593f8-computeKernel": {
-     "name": "computeKernel",
-     "inputs": {
-      "h": [
-       "5d7f9833-SubInput",
-       "port"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -436.2548828124991,
-      237.82226562500017
-     ],
-     "options": [
-      "ONCE"
-     ]
     },
     "65cad6bd-sourceTerms": {
      "name": "sourceTerms",
@@ -1196,20 +1407,20 @@
        "port"
       ],
       "particles": [
-       "4579b496-restVolume",
-       "particles"
+       "15c6a2fc-SubInput",
+       "port"
       ],
       "h": [
        "5d7f9833-SubInput",
        "port"
       ],
       "poly6kern": [
-       "4b0593f8-computeKernel",
-       "poly6kern"
+       "ba8642b2-SubInput",
+       "port"
       ],
       "spikykern": [
-       "4b0593f8-computeKernel",
-       "spikykern"
+       "a6785082-SubInput",
+       "port"
       ],
       "mass": [
        "f5f4dae9-SubInput",
@@ -1219,50 +1430,14 @@
        "6ac51bac-SubInput",
        "port"
       ],
-      "SRC": [
-       "4579b496-restVolume",
-       "DST"
-      ]
+      "SRC": null
      },
      "params": {},
      "uipos": [
-      1190.4736328124993,
-      437.9150390624996
+      439.29687499999955,
+      -92.03124999999989
      ],
      "options": []
-    },
-    "4579b496-restVolume": {
-     "name": "restVolume",
-     "inputs": {
-      "poly6kern": [
-       "4b0593f8-computeKernel",
-       "poly6kern"
-      ],
-      "spikykern": [
-       "4b0593f8-computeKernel",
-       "spikykern"
-      ],
-      "particles": [
-       "15c6a2fc-SubInput",
-       "port"
-      ],
-      "h": [
-       "5d7f9833-SubInput",
-       "port"
-      ],
-      "SRC": [
-       "4b0593f8-computeKernel",
-       "DST"
-      ]
-     },
-     "params": {},
-     "uipos": [
-      613.4128906249987,
-      74.15976562499971
-     ],
-     "options": [
-      "ONCE"
-     ]
     },
     "5afa4e04-computePress": {
      "name": "computePress",
@@ -1284,12 +1459,12 @@
        "port"
       ],
       "poly6kern": [
-       "4b0593f8-computeKernel",
-       "poly6kern"
+       "ba8642b2-SubInput",
+       "port"
       ],
       "spikykern": [
-       "4b0593f8-computeKernel",
-       "spikykern"
+       "a6785082-SubInput",
+       "port"
       ],
       "SRC": [
        "65cad6bd-sourceTerms",
@@ -1298,8 +1473,8 @@
      },
      "params": {},
      "uipos": [
-      1899.2080078125002,
-      70.95214843750006
+      1525.70361328125,
+      59.0966796875
      ],
      "options": []
     },
@@ -1309,11 +1484,13 @@
       "SRC": null
      },
      "params": {
-      "name": "mass"
+      "type": "",
+      "name": "mass",
+      "defl": ""
      },
      "uipos": [
-      -1111.4257812499986,
-      770.3369140624999
+      -1125.4882812499989,
+      743.7744140624999
      ],
      "options": []
     },
@@ -1335,8 +1512,8 @@
      },
      "params": {},
      "uipos": [
-      2338.569335937497,
-      472.2216796874994
+      2095.609374999999,
+      254.92187499999977
      ],
      "options": [
       "VIEW"
@@ -1348,19 +1525,53 @@
       "SRC": null
      },
      "params": {
-      "name": "viscosity"
+      "type": "",
+      "name": "viscosity",
+      "defl": ""
      },
      "uipos": [
       -1156.2499999999995,
       977.4999999999997
      ],
      "options": []
+    },
+    "ba8642b2-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "poly6kern",
+      "defl": ""
+     },
+     "uipos": [
+      -1075.375,
+      -312.633544921875
+     ],
+     "options": []
+    },
+    "a6785082-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "spikykern",
+      "defl": ""
+     },
+     "uipos": [
+      -1082.2187499999998,
+      -94.609375
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": 514,
-    "trans_y": 38
+    "scale": 1.0000000000000002,
+    "trans_x": 1073,
+    "trans_y": -23
    }
   },
   "sourceTerms": {
@@ -1371,7 +1582,9 @@
       "SRC": null
      },
      "params": {
-      "name": "dt"
+      "type": "",
+      "name": "dt",
+      "defl": ""
      },
      "uipos": [
       68.0,
@@ -1385,7 +1598,9 @@
       "SRC": null
      },
      "params": {
-      "name": "particles"
+      "type": "",
+      "name": "particles",
+      "defl": ""
      },
      "uipos": [
       269.0,
@@ -1399,7 +1614,9 @@
       "SRC": null
      },
      "params": {
-      "name": "h"
+      "type": "",
+      "name": "h",
+      "defl": ""
      },
      "uipos": [
       279.0999999999999,
@@ -1437,7 +1654,9 @@
       "SRC": null
      },
      "params": {
-      "name": "poly6kern"
+      "type": "",
+      "name": "poly6kern",
+      "defl": ""
      },
      "uipos": [
       311.8,
@@ -1451,11 +1670,13 @@
       "SRC": null
      },
      "params": {
-      "name": "spikykern"
+      "type": "",
+      "name": "spikykern",
+      "defl": ""
      },
      "uipos": [
-      318.0,
-      856.0
+      59.25000000000006,
+      866.0000000000001
      ],
      "options": []
     },
@@ -1468,8 +1689,8 @@
       "value": "@volume = 0\n@aii = 0\n@Ap = 0\n@source = 0\n\n@accel = vec3(0,0,0)\n"
      },
      "uipos": [
-      797.3125,
-      270.00000000000006
+      688.5625000000002,
+      250.0000000000001
      ],
      "options": []
     },
@@ -1483,7 +1704,9 @@
       "SRC": null
      },
      "params": {
-      "name": "particles"
+      "type": "",
+      "name": "particles",
+      "defl": ""
      },
      "uipos": [
       5618.34375,
@@ -1533,8 +1756,8 @@
       "value": "rij = @pos - @@pos\nd2 = dot(rij,rij)\nc = $h * $h - d2\n\n@volume += @@restvolume * pow(c, 3) * $poly6kern\n\n"
      },
      "uipos": [
-      1448.5999999999997,
-      337.65000000000015
+      1431.0999999999997,
+      296.4000000000002
      ],
      "options": []
     },
@@ -1589,7 +1812,8 @@
      "width": 1116.0,
      "height": 557.0,
      "title": "compute volume",
-     "content": ""
+     "content": "",
+     "params": []
     },
     "b92cb4df-ParticlesNeighborWrangle": {
      "name": "ParticlesNeighborWrangle",
@@ -1619,7 +1843,7 @@
      },
      "params": {},
      "uipos": [
-      3005.75,
+      3032.0000000000005,
       404.0
      ],
      "options": []
@@ -1648,7 +1872,8 @@
      "width": 1150.0,
      "height": 630.0,
      "title": "compute source term",
-     "content": ""
+     "content": "",
+     "params": []
     },
     "f2399020-ParticlesWrangle": {
      "name": "ParticlesWrangle",
@@ -1686,8 +1911,8 @@
       "value": "@source = 1 - @restvolume / @volume + $dt  * @source\n\n@sphbuffer = vec3(0,0,0)\n"
      },
      "uipos": [
-      3204.0,
-      190.0
+      3230.2500000000005,
+      157.5000000000001
      ],
      "options": []
     },
@@ -1701,7 +1926,8 @@
      "width": 1270.3125,
      "height": 701.5624999999999,
      "title": "compute aii",
-     "content": ""
+     "content": "",
+     "params": []
     },
     "406e6ed5-ParticlesNeighborWrangle": {
      "name": "ParticlesNeighborWrangle",
@@ -1756,7 +1982,9 @@
       "SRC": null
      },
      "params": {
-      "name": "mass"
+      "type": "",
+      "name": "mass",
+      "defl": ""
      },
      "uipos": [
       220.703125,
@@ -1854,7 +2082,9 @@
       "SRC": null
      },
      "params": {
-      "name": "viscosity"
+      "type": "",
+      "name": "viscosity",
+      "defl": ""
      },
      "uipos": [
       215.25390624999983,
@@ -1913,8 +2143,8 @@
      },
      "params": {},
      "uipos": [
-      3178.749999999999,
-      1030.4499999999996
+      3156.2499999999986,
+      1031.6999999999996
      ],
      "options": []
     },
@@ -1927,16 +2157,16 @@
       "value": "@midvel = @vel + $dt * @accel"
      },
      "uipos": [
-      2670.5986328124986,
-      1071.1318359374998
+      2660.5986328124986,
+      1069.8818359374998
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": 3798,
-    "trans_y": 75
+    "scale": 0.8000000000000002,
+    "trans_x": 884,
+    "trans_y": 35
    }
   },
   "restVolume": {
@@ -1947,7 +2177,9 @@
       "SRC": null
      },
      "params": {
-      "name": "poly6kern"
+      "type": "",
+      "name": "poly6kern",
+      "defl": ""
      },
      "uipos": [
       -12.0,
@@ -1961,7 +2193,9 @@
       "SRC": null
      },
      "params": {
-      "name": "spikykern"
+      "type": "",
+      "name": "spikykern",
+      "defl": ""
      },
      "uipos": [
       15.25,
@@ -1975,7 +2209,9 @@
       "SRC": null
      },
      "params": {
-      "name": "particles"
+      "type": "",
+      "name": "particles",
+      "defl": ""
      },
      "uipos": [
       47.93750000000003,
@@ -1993,7 +2229,9 @@
       "SRC": null
      },
      "params": {
-      "name": "particles"
+      "type": "",
+      "name": "particles",
+      "defl": ""
      },
      "uipos": [
       2796.2000000000007,
@@ -2067,8 +2305,8 @@
      },
      "params": {},
      "uipos": [
-      1667.0499999999993,
-      212.25
+      1642.0499999999995,
+      204.4375
      ],
      "options": []
     },
@@ -2092,7 +2330,9 @@
       "SRC": null
      },
      "params": {
-      "name": "h"
+      "type": "",
+      "name": "h",
+      "defl": ""
      },
      "uipos": [
       -8.0,
@@ -2176,9 +2416,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": 1710,
-    "trans_y": -245
+    "scale": 0.40960000000000013,
+    "trans_x": 566,
+    "trans_y": -91
    }
   },
   "computePress": {
@@ -2189,7 +2429,9 @@
       "SRC": null
      },
      "params": {
-      "name": "particles"
+      "type": "",
+      "name": "particles",
+      "defl": ""
      },
      "uipos": [
       119.0,
@@ -2210,11 +2452,13 @@
       ]
      },
      "params": {
-      "name": "particles"
+      "type": "",
+      "name": "particles",
+      "defl": ""
      },
      "uipos": [
-      4719.035000000001,
-      659.1275000000004
+      4928.635000000002,
+      661.3275000000003
      ],
      "options": []
     },
@@ -2224,7 +2468,9 @@
       "SRC": null
      },
      "params": {
-      "name": "h"
+      "type": "",
+      "name": "h",
+      "defl": ""
      },
      "uipos": [
       97.0,
@@ -2238,7 +2484,9 @@
       "SRC": null
      },
      "params": {
-      "name": "dt"
+      "type": "",
+      "name": "dt",
+      "defl": ""
      },
      "uipos": [
       102.0,
@@ -2252,7 +2500,9 @@
       "SRC": null
      },
      "params": {
-      "name": "mass"
+      "type": "",
+      "name": "mass",
+      "defl": ""
      },
      "uipos": [
       92.25,
@@ -2375,11 +2625,11 @@
       "SRC": null
      },
      "params": {
-      "value": "rij = @pos - @@pos\nd2 = dot(rij,rij)\nd = sqrt(d2)\nc = $h - d\nkernel = $spikykern * c * c * rij / (d+0.000000001)\n\n@pressAccel -= @volume / $mass* @@volume *(@press + @@press) * kernel * (1-@isboundary)\n\n"
+      "value": "@Ap = 0\nrij = @pos - @@pos\nd2 = dot(rij,rij)\nd = sqrt(d2)\nc = $h - d\nkernel = $spikykern * c * c * rij / (d+0.000000001)\n\n@pressAccel -= @volume / $mass* @@volume *(@press + @@press) * kernel * (1-@isboundary)\n\n"
      },
      "uipos": [
-      1378.4374999999998,
-      321.24999999999983
+      1367.4999999999998,
+      391.5624999999999
      ],
      "options": []
     },
@@ -2389,7 +2639,9 @@
       "SRC": null
      },
      "params": {
-      "name": "poly6kern"
+      "type": "",
+      "name": "poly6kern",
+      "defl": ""
      },
      "uipos": [
       82.5,
@@ -2403,7 +2655,9 @@
       "SRC": null
      },
      "params": {
-      "name": "spikykern"
+      "type": "",
+      "name": "spikykern",
+      "defl": ""
      },
      "uipos": [
       45.0,
@@ -2417,7 +2671,7 @@
       "SRC": null
      },
      "params": {
-      "value": 5
+      "value": 10
      },
      "uipos": [
       947.5,
@@ -2505,11 +2759,11 @@
       "SRC": null
      },
      "params": {
-      "value": "omega = 0.5 * @restvolume / pow(0.5 * $h, 3)\n\ndelta = @source - @Ap\n\ndivision = @aii < 0?@aii:10000000\n\n@press = @press + omega * delta/division\n\n@press = @press > 100000? 100000:@press\n\n@press = @press < 0 ? 0 : @press\n\n@pressAccel = vec3(0,0,0)\n\n@Ap = 0\n"
+      "value": "omega = 0.5 * @restvolume / pow(0.5 * $h, 3)\n\ndelta = @source - @Ap\n\ndivision = @aii < 0?@aii:10000000\n\n@press = @press + omega * delta/division\n\n@press = @press > 100000? 100000:@press\n\n@press = @press < 0 ? 0 : @press\n\n@pressAccel = vec3(0,0,0)\n\n"
      },
      "uipos": [
-      2658.0,
-      382.0
+      2676.7500000000005,
+      280.4375000000001
      ],
      "options": []
     },
@@ -2541,8 +2795,8 @@
      },
      "params": {},
      "uipos": [
-      3647.0,
-      524.0
+      3609.9882812499995,
+      567.7500000000001
      ],
      "options": []
     },
@@ -2555,8 +2809,8 @@
       "value": "rij = @pos - @@pos\nd2 = dot(rij,rij)\nd = sqrt(d2)\nc = $h - d\nkernel = $spikykern * c * c * rij / (d+0.000000001)\n\n@pressAccel -= @volume / $mass* @@volume *(@press + @@press) * kernel * (1-@isboundary)\n\n"
      },
      "uipos": [
-      3330.8125,
-      411.3749999999999
+      3136.4765624999995,
+      585.3984374999995
      ],
      "options": []
     },
@@ -2582,8 +2836,8 @@
      },
      "params": {},
      "uipos": [
-      4128.200000000001,
-      542.2
+      4047.075000000001,
+      659.4499999999999
      ],
      "options": []
     },
@@ -2593,11 +2847,11 @@
       "SRC": null
      },
      "params": {
-      "value": "@accel = @pressAccel\n\n@sphbuffer.y = @press\n\n@sphbuffer.z = @Ap\n\n@sphbuffer.x = @isboundary\n\n@rad = @press / 1000 < 5? 5: 5 * @press / 1000"
+      "value": "@accel = @pressAccel\n\n@sphbuffer.y = @source\n\n@sphbuffer.z = @Ap\n\n@sphbuffer.x = @isboundary\n\n"
      },
      "uipos": [
-      3824.600000000002,
-      227.0
+      3705.8500000000026,
+      186.37500000000006
      ],
      "options": []
     },
@@ -2649,22 +2903,27 @@
        "934a983e-ParticlesWrangle",
        "prim"
       ],
-      "SRC": null
+      "SRC": [
+       "934a983e-ParticlesWrangle",
+       "DST"
+      ]
      },
      "params": {
       "attrName": "sphbuffer"
      },
      "uipos": [
-      4425.0,
-      409.0625
+      4402.875000000001,
+      578.9375000000001
      ],
-     "options": []
+     "options": [
+      "MUTE"
+     ]
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 3243,
-    "trans_y": 284
+    "scale": 0.8,
+    "trans_x": 2098,
+    "trans_y": 28
    }
   },
   "advection": {
@@ -2675,7 +2934,9 @@
       "SRC": null
      },
      "params": {
-      "name": "particles"
+      "type": "",
+      "name": "particles",
+      "defl": ""
      },
      "uipos": [
       438.0,
@@ -2693,7 +2954,9 @@
       "SRC": null
      },
      "params": {
-      "name": "particles"
+      "type": "",
+      "name": "particles",
+      "defl": ""
      },
      "uipos": [
       1543.0,
@@ -2720,7 +2983,7 @@
      },
      "params": {},
      "uipos": [
-      1047.0,
+      1191.0,
       318.0
      ],
      "options": [
@@ -2733,11 +2996,11 @@
       "SRC": null
      },
      "params": {
-      "value": "@accel += vec3(0,-9.8,0) * (1-@isboundary)\n\nnaccel = sqrt(dot(@accel, @accel))\n\n\n@vel = @midvel + @accel * $dt\n\nnvel = sqrt(dot(@vel,@vel))\n@vel = nvel>2?@vel/nvel*2:@vel\n\n@pos = @pos + @vel * $dt + 0.5 * @accel * $dt * $dt\n\n@accel = vec3(0,0,0)"
+      "value": "#@accel += vec3(0,-9.8,0) * (1-@isboundary)\n\nnaccel = sqrt(dot(@accel, @accel))\n\n\n@vel = @midvel + @accel * $dt\n\nnvel = sqrt(dot(@vel,@vel))\n@vel = nvel>2?@vel/nvel*2:@vel\n\n@pos = @pos + @vel * $dt \n#+ 0.5 * @accel * $dt * $dt\n\n@accel = vec3(0,0,0)\n@vel +=$dt * vec3(0,-9.8,0) * (1-@isboundary)"
      },
      "uipos": [
-      751.0400000000001,
-      49.16000000000001
+      777.8399999999999,
+      60.76000000000002
      ],
      "options": []
     },
@@ -2747,7 +3010,9 @@
       "SRC": null
      },
      "params": {
-      "name": "dt"
+      "type": "",
+      "name": "dt",
+      "defl": ""
      },
      "uipos": [
       295.0,
@@ -2778,9 +3043,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": 601,
-    "trans_y": -10
+    "scale": 1.25,
+    "trans_x": 357,
+    "trans_y": 53
    }
   },
   "computeViscosity": {
@@ -2791,7 +3056,9 @@
       "SRC": null
      },
      "params": {
-      "name": "particles"
+      "type": "",
+      "name": "particles",
+      "defl": ""
      },
      "uipos": [
       333.0,
@@ -2805,7 +3072,9 @@
       "SRC": null
      },
      "params": {
-      "name": "viscosity"
+      "type": "",
+      "name": "viscosity",
+      "defl": ""
      },
      "uipos": [
       337.0,
@@ -2819,7 +3088,9 @@
       "SRC": null
      },
      "params": {
-      "name": "poly6kern"
+      "type": "",
+      "name": "poly6kern",
+      "defl": ""
      },
      "uipos": [
       238.7499999999999,
@@ -2837,11 +3108,13 @@
       "SRC": null
      },
      "params": {
-      "name": "particles"
+      "type": "",
+      "name": "particles",
+      "defl": ""
      },
      "uipos": [
-      2562.25,
-      487.5
+      2619.25,
+      354.5
      ],
      "options": []
     },
@@ -2917,7 +3190,9 @@
       "SRC": null
      },
      "params": {
-      "name": "h"
+      "type": "",
+      "name": "h",
+      "defl": ""
      },
      "uipos": [
       297.5,
@@ -3021,7 +3296,9 @@
       "SRC": null
      },
      "params": {
-      "name": "dt"
+      "type": "",
+      "name": "dt",
+      "defl": ""
      },
      "uipos": [
       249.9999999999999,
@@ -3031,9 +3308,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": 1383,
-    "trans_y": -43
+    "scale": 1.0000000000000002,
+    "trans_x": 2088,
+    "trans_y": 138
    }
   }
  },
@@ -3997,6 +4274,96 @@
     "openvdb"
    ]
   },
+  "CompressibleAdvection": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "simParam",
+     ""
+    ],
+    [
+     "",
+     "RK_Order",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
+  "CompressibleProjection": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "simParam",
+     ""
+    ],
+    [
+     "",
+     "RK_Order",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
   "CutCellWeight": {
    "inputs": [
     [
@@ -4032,16 +4399,11 @@
     "FLIPSolver"
    ]
   },
-  "DictGetItem": {
+  "DenseFieldToVDB": {
    "inputs": [
     [
      "",
-     "dict",
-     ""
-    ],
-    [
-     "",
-     "key",
+     "inDenseField",
      ""
     ],
     [
@@ -4053,6 +4415,41 @@
    "outputs": [
     [
      "",
+     "VDBField",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
+  "DictGetItem": {
+   "inputs": [
+    [
+     "dict",
+     "dict",
+     ""
+    ],
+    [
+     "string",
+     "key",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "any",
      "object",
      ""
     ],
@@ -4070,17 +4467,17 @@
   "DictSetItem": {
    "inputs": [
     [
-     "",
+     "dict",
      "dict",
      ""
     ],
     [
-     "",
+     "string",
      "key",
      ""
     ],
     [
-     "",
+     "any",
      "object",
      ""
     ],
@@ -4092,7 +4489,7 @@
    ],
    "outputs": [
     [
-     "",
+     "dict",
      "dict",
      ""
     ],
@@ -4110,7 +4507,7 @@
   "DictSize": {
    "inputs": [
     [
-     "",
+     "dict",
      "dict",
      ""
     ],
@@ -4122,7 +4519,7 @@
    ],
    "outputs": [
     [
-     "",
+     "numeric:int",
      "size",
      ""
     ],
@@ -4147,7 +4544,7 @@
    ],
    "outputs": [
     [
-     "",
+     "dict",
      "dict",
      ""
     ],
@@ -4212,6 +4609,57 @@
     "control"
    ]
   },
+  "EquationOfStateConfig": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Model",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "density",
+     "1e3"
+    ],
+    [
+     "float",
+     "volume",
+     "1"
+    ],
+    [
+     "float",
+     "bulk_modulus",
+     "1e4"
+    ],
+    [
+     "float",
+     "gamma",
+     "7"
+    ],
+    [
+     "float",
+     "viscosity",
+     "0.01"
+    ]
+   ],
+   "categories": [
+    "constitutive_model"
+   ]
+  },
   "ExitProcess": {
    "inputs": [
     [
@@ -4236,6 +4684,42 @@
    ],
    "categories": [
     "debug"
+   ]
+  },
+  "ExpandPartition": {
+   "inputs": [
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "lo",
+     "0"
+    ],
+    [
+     "int",
+     "hi",
+     "1"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "ExportObjMesh": {
@@ -4361,7 +4845,7 @@
   "ExtractDict": {
    "inputs": [
     [
-     "",
+     "dict",
      "dict",
      ""
     ],
@@ -4547,6 +5031,52 @@
    "params": [],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "FixedCorotatedConfig": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Model",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "density",
+     "1e3"
+    ],
+    [
+     "float",
+     "volume",
+     "1"
+    ],
+    [
+     "float",
+     "youngs_modulus",
+     "1e4"
+    ],
+    [
+     "float",
+     "poisson_ratio",
+     "0.4"
+    ]
+   ],
+   "categories": [
+    "constitutive_model"
    ]
   },
   "FluidReseed": {
@@ -4737,6 +5267,51 @@
    "params": [],
    "categories": [
     "functional"
+   ]
+  },
+  "G2P": {
+   "inputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "ZSModel",
+     ""
+    ],
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "simulation"
    ]
   },
   "G2PAdvectorSheetty": {
@@ -4931,6 +5506,42 @@
     "trimesh"
    ]
   },
+  "GetDenseField": {
+   "inputs": [
+    [
+     "",
+     "inSolverData",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outDenseField",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "FieldName",
+     "p u rho"
+    ]
+   ],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
   "GetFrameNum": {
    "inputs": [
     [
@@ -5119,6 +5730,93 @@
    "params": [],
    "categories": [
     "openvdb"
+   ]
+  },
+  "GridFromPartition": {
+   "inputs": [
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "1"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
+  "GridUpdate": {
+   "inputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "MaxVelSqr",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "gravity",
+     "-9.8"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "IfElse": {
@@ -5625,6 +6323,51 @@
     "primitive"
    ]
   },
+  "MakeCompressibleFlow": {
+   "inputs": [
+    [
+     "",
+     "bmin",
+     ""
+    ],
+    [
+     "",
+     "bmax",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "q_amb",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "CompressibleFlow",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
   "MakeCubePrimitive": {
    "inputs": [
     [
@@ -5685,7 +6428,7 @@
    ],
    "outputs": [
     [
-     "",
+     "dict",
      "dict",
      ""
     ],
@@ -5729,6 +6472,47 @@
    ],
    "categories": [
     "debug"
+   ]
+  },
+  "MakeGrid": {
+   "inputs": [
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "1"
+    ],
+    [
+     "int",
+     "count",
+     "1"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "MakeHeatmap": {
@@ -5827,7 +6611,7 @@
    ],
    "outputs": [
     [
-     "",
+     "string",
      "value",
      ""
     ],
@@ -5845,7 +6629,7 @@
     ]
    ],
    "categories": [
-    "fileio"
+    "string"
    ]
   },
   "MakeOrthonormalBase": {
@@ -5891,6 +6675,37 @@
    "params": [],
    "categories": [
     "math"
+   ]
+  },
+  "MakePartition": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "count",
+     "1"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "MakePrimitive": {
@@ -5983,7 +6798,7 @@
    ],
    "outputs": [
     [
-     "",
+     "string",
      "value",
      ""
     ],
@@ -6001,7 +6816,7 @@
     ]
    ],
    "categories": [
-    "fileio"
+    "string"
    ]
   },
   "MakeVDBGrid": {
@@ -6053,6 +6868,41 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "MakeVelocityPressure": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "simParam",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
    ]
   },
   "MakeVisualAABBPrimitive": {
@@ -6625,6 +7475,117 @@
     "zenofx"
    ]
   },
+  "OutputZensimParticles": {
+   "inputs": [
+    [
+     "",
+     "ZensimParticles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "ZensimGeometry"
+   ]
+  },
+  "P2G": {
+   "inputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "ZSModel",
+     ""
+    ],
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "simulation"
+   ]
+  },
+  "PairZensimParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSParticlesA",
+     ""
+    ],
+    [
+     "",
+     "ZSParticlesB",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZensimParticleList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "ZensimGeometry"
+   ]
+  },
   "ParticleAddDV": {
    "inputs": [
     [
@@ -6735,22 +7696,22 @@
   "ParticleParticleWrangle": {
    "inputs": [
     [
-     "",
+     "primitive",
      "prim1",
      ""
     ],
     [
-     "",
+     "primitive",
      "prim2",
      ""
     ],
     [
-     "",
+     "string",
      "zfxCode",
      ""
     ],
     [
-     "",
+     "dict:numeric",
      "params",
      ""
     ],
@@ -6762,7 +7723,7 @@
    ],
    "outputs": [
     [
-     "",
+     "primitive",
      "prim",
      ""
     ],
@@ -6780,32 +7741,32 @@
   "ParticlesNeighborWrangle": {
    "inputs": [
     [
-     "",
+     "primitive",
      "prim",
      ""
     ],
     [
-     "",
+     "primitive",
      "primNei",
      ""
     ],
     [
-     "",
+     "string",
      "zfxCode",
      ""
     ],
     [
-     "",
+     "dict:numeric",
      "params",
      ""
     ],
     [
-     "",
+     "numeric:float",
      "radius",
      ""
     ],
     [
-     "",
+     "numeric:float",
      "radiusMin",
      ""
     ],
@@ -6817,7 +7778,7 @@
    ],
    "outputs": [
     [
-     "",
+     "primitive",
      "prim",
      ""
     ],
@@ -6865,17 +7826,17 @@
   "ParticlesWrangle": {
    "inputs": [
     [
-     "",
+     "primitive",
      "prim",
      ""
     ],
     [
-     "",
+     "string",
      "zfxCode",
      ""
     ],
     [
-     "",
+     "dict:numeric",
      "params",
      ""
     ],
@@ -6887,7 +7848,7 @@
    ],
    "outputs": [
     [
-     "",
+     "primitive",
      "prim",
      ""
     ],
@@ -8146,6 +9107,36 @@
     "openvdb"
    ]
   },
+  "PrimitiveTraceTrail": {
+   "inputs": [
+    [
+     "primitive",
+     "parsPrim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "primitive",
+     "trailPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveUnaryOp": {
    "inputs": [
     [
@@ -8467,6 +9458,41 @@
    "params": [],
    "categories": [
     "openvdb"
+   ]
+  },
+  "ResolveBoundaryOnGrid": {
+   "inputs": [
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "ZSBoundary",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "RigidGetPressureForce": {
@@ -8970,6 +9996,52 @@
     "Molecular"
    ]
   },
+  "SpatialPartitionForParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "1"
+    ],
+    [
+     "int",
+     "block_side_length",
+     "4"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
   "SprayParticles": {
    "inputs": [
     [
@@ -9115,8 +10187,18 @@
    "params": [
     [
      "string",
+     "type",
+     ""
+    ],
+    [
+     "string",
      "name",
      "input1"
+    ],
+    [
+     "string",
+     "defl",
+     ""
     ]
    ],
    "categories": [
@@ -9146,8 +10228,18 @@
    "params": [
     [
      "string",
+     "type",
+     ""
+    ],
+    [
+     "string",
      "name",
      "output1"
+    ],
+    [
+     "string",
+     "defl",
+     ""
     ]
    ],
    "categories": [
@@ -9249,6 +10341,101 @@
    ],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "ToParticleObject": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "pars",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "ZensimGeometry"
+   ]
+  },
+  "ToZensimLevelSet": {
+   "inputs": [
+    [
+     "",
+     "VDBFloatGrid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
+  "ToZensimParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSModel",
+     ""
+    ],
+    [
+     "",
+     "ParticleObject",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZensimParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "ZensimGeometry"
    ]
   },
   "TraceOneStep": {
@@ -9520,17 +10707,17 @@
   "VDBWrangle": {
    "inputs": [
     [
-     "",
+     "openvdb",
      "grid",
      ""
     ],
     [
-     "",
+     "string",
      "zfxCode",
      ""
     ],
     [
-     "",
+     "dict:numeric",
      "params",
      ""
     ],
@@ -9542,7 +10729,7 @@
    ],
    "outputs": [
     [
-     "",
+     "openvdb",
      "grid",
      ""
     ],
@@ -9712,9 +10899,23 @@
     "openvdb"
    ]
   },
-  "GenParticles": {
+  "ZSParticlesWrangle": {
    "inputs": [
-    "h",
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "zfxCode",
+     ""
+    ],
+    [
+     "",
+     "params",
+     ""
+    ],
     [
      "",
      "SRC",
@@ -9722,7 +10923,112 @@
     ]
    ],
    "outputs": [
-    "oparticles",
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
+  "ZensimBoundary": {
+   "inputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSBoundary",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "type",
+     "sticky"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
+  "makeCompressibleSim": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "SimParam",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
+  "GenParticles": {
+   "inputs": [
+    [
+     "",
+     "h",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "oparticles",
+     ""
+    ],
     [
      "",
      "DST",
@@ -9737,7 +11043,11 @@
   },
   "computeKernel": {
    "inputs": [
-    "h",
+    [
+     "",
+     "h",
+     ""
+    ],
     [
      "",
      "SRC",
@@ -9745,8 +11055,16 @@
     ]
    ],
    "outputs": [
-    "poly6kern",
-    "spikykern",
+    [
+     "",
+     "poly6kern",
+     ""
+    ],
+    [
+     "",
+     "spikykern",
+     ""
+    ],
     [
      "",
      "DST",
@@ -9761,11 +11079,41 @@
   },
   "SPHstep": {
    "inputs": [
-    "particles",
-    "dt",
-    "h",
-    "mass",
-    "viscosity",
+    [
+     "",
+     "particles",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "h",
+     ""
+    ],
+    [
+     "",
+     "mass",
+     ""
+    ],
+    [
+     "",
+     "viscosity",
+     ""
+    ],
+    [
+     "",
+     "poly6kern",
+     ""
+    ],
+    [
+     "",
+     "spikykern",
+     ""
+    ],
     [
      "",
      "SRC",
@@ -9773,7 +11121,11 @@
     ]
    ],
    "outputs": [
-    "particles",
+    [
+     "",
+     "particles",
+     ""
+    ],
     [
      "",
      "DST",
@@ -9788,13 +11140,41 @@
   },
   "sourceTerms": {
    "inputs": [
-    "dt",
-    "particles",
-    "h",
-    "poly6kern",
-    "spikykern",
-    "mass",
-    "viscosity",
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "particles",
+     ""
+    ],
+    [
+     "",
+     "h",
+     ""
+    ],
+    [
+     "",
+     "poly6kern",
+     ""
+    ],
+    [
+     "",
+     "spikykern",
+     ""
+    ],
+    [
+     "",
+     "mass",
+     ""
+    ],
+    [
+     "",
+     "viscosity",
+     ""
+    ],
     [
      "",
      "SRC",
@@ -9802,7 +11182,11 @@
     ]
    ],
    "outputs": [
-    "particles",
+    [
+     "",
+     "particles",
+     ""
+    ],
     [
      "",
      "DST",
@@ -9817,10 +11201,26 @@
   },
   "restVolume": {
    "inputs": [
-    "poly6kern",
-    "spikykern",
-    "particles",
-    "h",
+    [
+     "",
+     "poly6kern",
+     ""
+    ],
+    [
+     "",
+     "spikykern",
+     ""
+    ],
+    [
+     "",
+     "particles",
+     ""
+    ],
+    [
+     "",
+     "h",
+     ""
+    ],
     [
      "",
      "SRC",
@@ -9828,7 +11228,11 @@
     ]
    ],
    "outputs": [
-    "particles",
+    [
+     "",
+     "particles",
+     ""
+    ],
     [
      "",
      "DST",
@@ -9843,12 +11247,36 @@
   },
   "computePress": {
    "inputs": [
-    "particles",
-    "h",
-    "dt",
-    "mass",
-    "poly6kern",
-    "spikykern",
+    [
+     "",
+     "particles",
+     ""
+    ],
+    [
+     "",
+     "h",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "mass",
+     ""
+    ],
+    [
+     "",
+     "poly6kern",
+     ""
+    ],
+    [
+     "",
+     "spikykern",
+     ""
+    ],
     [
      "",
      "SRC",
@@ -9856,7 +11284,11 @@
     ]
    ],
    "outputs": [
-    "particles",
+    [
+     "",
+     "particles",
+     ""
+    ],
     [
      "",
      "DST",
@@ -9871,8 +11303,16 @@
   },
   "advection": {
    "inputs": [
-    "particles",
-    "dt",
+    [
+     "",
+     "particles",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
     [
      "",
      "SRC",
@@ -9880,7 +11320,11 @@
     ]
    ],
    "outputs": [
-    "particles",
+    [
+     "",
+     "particles",
+     ""
+    ],
     [
      "",
      "DST",
@@ -9895,11 +11339,31 @@
   },
   "computeViscosity": {
    "inputs": [
-    "particles",
-    "viscosity",
-    "poly6kern",
-    "h",
-    "dt",
+    [
+     "",
+     "particles",
+     ""
+    ],
+    [
+     "",
+     "viscosity",
+     ""
+    ],
+    [
+     "",
+     "poly6kern",
+     ""
+    ],
+    [
+     "",
+     "h",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
     [
      "",
      "SRC",
@@ -9907,7 +11371,11 @@
     ]
    ],
    "outputs": [
-    "particles",
+    [
+     "",
+     "particles",
+     ""
+    ],
     [
      "",
      "DST",
