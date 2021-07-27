@@ -26,8 +26,8 @@ struct GatherReachable : Visitor<GatherReachable> {
         for (int r: src) {
             auto it = regs.find(r);
             if (it == regs.end()) {
-                error("uninitialized register %d used at $%d\n",
-                        r, stmt->id);
+                //error("uninitialized register %d used at $%d\n", r, stmt->id);
+                continue;
             }
             auto stmtid = it->second;
             deps[stmt->id].insert(stmtid);
@@ -41,8 +41,8 @@ struct GatherReachable : Visitor<GatherReachable> {
         visit((Statement *)stmt);
         auto it = locals.find(stmt->mem);
         if (it == locals.end()) {
-            error("uninitialized local memory %d used at $%d\n",
-                    stmt->mem, stmt->id);
+            //error("uninitialized local memory %d used at $%d\n", stmt->mem, stmt->id);
+            return;
         }
         auto stmtid = it->second;
         deps[stmt->id].insert(stmtid);
