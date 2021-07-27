@@ -1,4 +1,4 @@
-file(GLOB PYZENO_SOURCE python/*.cpp)
+file(GLOB PYZENO_SOURCE *.cpp)
 pybind11_add_module(pyzeno ${PYZENO_SOURCE})
 target_link_libraries(pyzeno PRIVATE zeno)
 

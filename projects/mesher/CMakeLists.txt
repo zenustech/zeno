@@ -24,10 +24,9 @@ target_include_directories(zenMesher PRIVATE mpmmeshing/)
 
 
 target_link_libraries(zenMesher PRIVATE mpmmeshing )
-
-find_package(zeno REQUIRED)
 target_link_libraries(zenMesher PRIVATE zeno Eigen3::Eigen)
 
+get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
 set_target_properties(zenMesher PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
     RUNTIME_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
