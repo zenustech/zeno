@@ -29,6 +29,7 @@ void set_perspective(
     std::array<double, 16> viewArr,
     std::array<double, 16> projArr);
 void do_screenshot(std::string path);
+
 };
 
 PYBIND11_MODULE(pyzenvis, m) {

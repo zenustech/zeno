@@ -1,5 +1,6 @@
+import os
 import math
-import time, os
+import time
 import numpy as np
 
 from PySide2.QtGui import *
@@ -175,16 +176,16 @@ class DisplayWidget(QWidget):
             zenvis.status['show_grid'] = checked
 
         elif name == 'Screenshot':
-            dir_path = 'screenshot'
+            dir_path = 'screenshots'
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
             file_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
             file_name += '.png'
             path = os.path.join(dir_path, file_name)
 
-            zenvis.pyzenvis.do_screenshot(path)
+            zenvis.core.do_screenshot(path)
 
-            msg = 'Saved at {}!'.format(path)
+            msg = 'Saved screenshot to {}!'.format(path)
             QMessageBox.information(self, 'Screenshot', msg)
 
     def sizeHint(self):
