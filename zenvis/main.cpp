@@ -8,7 +8,7 @@
 #include <stb_image_write.h>
 
 namespace zenvis {
-
+float g_fov;
 int curr_frameid = -1;
 
 static bool playing = true;
@@ -33,6 +33,7 @@ void look_perspective(
     double cx, double cy, double cz,
     double theta, double phi, double radius,
     double fov, bool ortho_mode) {
+      g_fov = fov;
   glm::dvec3 center(cx, cy, cz);
 
   double cos_t = glm::cos(theta), sin_t = glm::sin(theta);
@@ -60,6 +61,7 @@ void set_program_uniforms(Program *pro) {
   pro->set_uniform("mProj", proj);
   pro->set_uniform("mInvView", glm::inverse(view));
   pro->set_uniform("mInvProj", glm::inverse(proj));
+  pro->set_uniform("mPointScale", ny / tanf(g_fov*0.5f*3.1415926f/180.0f));
 }
 
 static std::unique_ptr<VAO> vao;
