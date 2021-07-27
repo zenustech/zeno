@@ -143,9 +143,11 @@ class QDMRecordMenu(QMenu):
         self.setTitle('Record')
 
         action = QAction('Screenshot', self)
+        action.setShortcut(QKeySequence('F12'))
         self.addAction(action)
 
         action = QAction('Record Video', self)
+        action.setShortcut(QKeySequence('Shift+F12'))
         action.setCheckable(True)
         action.setChecked(False)
         self.addAction(action)
