@@ -134,6 +134,16 @@ std::tuple
 #endif
     }
 
+    if (options.kill_unreachable) {
+#ifdef ZFX_PRINT_IR
+        cout << "=== KillUnreachable" << endl;
+#endif
+        ir = apply_kill_unreachable(ir.get());
+#ifdef ZFX_PRINT_IR
+        ir->print();
+#endif
+    }
+
     if (options.reassign_parameters) {
 #ifdef ZFX_PRINT_IR
         cout << "=== ReassignParameters" << endl;
