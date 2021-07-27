@@ -43,3 +43,7 @@ CMakeSettings.json
 /zenv/
 zeno-windows-*
 zeno-linux-*
+
+# euler files
+projects/Euler
+assets/smoke
