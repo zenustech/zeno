@@ -154,6 +154,7 @@ class DisplayWidget(QWidget):
         self.view.on_update()
     
     def menuTriggered(self, act):
+        name = act.text()
         if name == 'Show Grid':
             checked = act.isChecked()
             zenvis.pyzenvis.set_show_grid(checked)
