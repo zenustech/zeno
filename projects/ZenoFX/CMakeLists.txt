@@ -2,7 +2,7 @@ add_library(ZenoFXlib SHARED)
 target_include_directories(ZenoFXlib PRIVATE .)
 
 target_link_libraries(ZenoFXlib PRIVATE zeno ZFX)
-target_sources(ZenoFXlib PRIVATE nw.cpp pw.cpp pnw.cpp ppw.cpp)
+target_sources(ZenoFXlib PRIVATE nw.cpp pw.cpp pnw.cpp ppw.cpp petw.cpp)
 
 if (EXTENSION_zenvdb)
     option(ZENOFX_ENABLE_OPENVDB "Enable OpenVDB wrangler in ZenoFX" ON)
