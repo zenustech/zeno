@@ -90,7 +90,7 @@
       "SRC": null
      },
      "params": {
-      "value": "dt = 0.01\nsigma = 10\nrho = 28\nbeta = 8/3\ndx = sigma * (@pos.y - @pos.x)\ndy = @pos.x * (rho - @pos.z) - @pos.y\ndz = @pos.x * @pos.y - beta * @pos.z\n@pos.x += dt * dx\n@pos.y += dt * dy\n@pos.z += dt * dz"
+      "value": "dt = 0.01\nsigma = 10\nrho = 28\nbeta = 8/3\ndx = sigma * (@pos.y - @pos.x)\ndy = @pos.x * (rho - @pos.z) - @pos.y\ndz = @pos.x * @pos.y - beta * @pos.z\n@pos.x += dt * dx\n@pos.y += dt * dy\n@pos.z += dt * dz\n# zoom out if you don't see anything"
      },
      "uipos": [
       622.9200000000001,
@@ -179,8 +179,8 @@
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": -1383,
-    "trans_y": 37
+    "trans_x": 44,
+    "trans_y": 293
    }
   }
  },
