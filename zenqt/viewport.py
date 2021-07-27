@@ -110,12 +110,56 @@ class ViewportWidget(QGLWidget):
     def on_update(self):
         self.repaint()
 
+@eval('lambda x: x()')
+def _():
+    for name in ['mousePressEvent', 'mouseMoveEvent', 'wheelEvent']:
+        def closure(name):
+            oldfunc = getattr(ViewportWidget, name)
+            def newfunc(self, event):
+                getattr(self.camera, name)(event)
+                oldfunc(self, event)
+            setattr(ViewportWidget, name, newfunc)
+        closure(name)
 
-for name in ['mousePressEvent', 'mouseMoveEvent', 'wheelEvent']:
-    def closure(name):
-        oldfunc = getattr(ViewportWidget, name)
-        def newfunc(self, event):
-            getattr(self.camera, name)(event)
-            oldfunc(self, event)
-        setattr(ViewportWidget, name, newfunc)
-    closure(name)
+
+class QDMDisplayMenu(QMenu):
+    def __init__(self):
+        super().__init__()
+
+        self.setTitle('Display')
+
+        action = QAction('Show Grid', self)
+        action.setCheckable(True)
+        action.setChecked(True)
+        self.addAction(action)
+
+
+class DisplayWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self.layout)
+
+        self.menubar = QMenuBar()
+        self.menubar.setMaximumHeight(26)
+        self.layout.addWidget(self.menubar)
+
+        self.menuDisplay = QDMDisplayMenu()
+        self.menuDisplay.triggered.connect(self.menuTriggered)
+        self.menubar.addMenu(self.menuDisplay)
+
+        self.view = ViewportWidget()
+        self.layout.addWidget(self.view)
+
+    def on_update(self):
+        self.view.on_update()
+
+    def menuTriggered(self, act):
+        name = act.text()
+        if name == 'Show Grid':
+            checked = act.isChecked()
+            zenvis.status['show_grid'] = checked
+
+    def sizeHint(self):
+        return QSize(1200, 400)
