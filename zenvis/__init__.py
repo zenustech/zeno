@@ -70,3 +70,6 @@ def paintGL():
     _frameUpdate()
     core.new_frame()
     _recieveStatus()
+
+def recordGL(path):
+    core.new_frame_offline(path)

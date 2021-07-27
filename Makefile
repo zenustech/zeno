@@ -1,4 +1,4 @@
-O=arts/testcachedif.zsg
+O=arts/ZFXv2.zsg
 
 default: run
 

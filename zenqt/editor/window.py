@@ -11,7 +11,7 @@ class QDMFileMenu(QMenu):
                 ('&New', QKeySequence.New),
                 ('&Open', QKeySequence.Open),
                 ('&Save', QKeySequence.Save),
-                ('&Import', 'ctrl+shift+o'),
+                ('&Import', 'Ctrl+Shift+O'),
                 ('Save &as', QKeySequence.SaveAs),
         ]
 
