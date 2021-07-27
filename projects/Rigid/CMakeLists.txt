@@ -14,9 +14,9 @@ target_link_libraries(zenRigidLib PRIVATE BulletDynamics)
 target_link_libraries(zenRigidLib PRIVATE BulletSoftBody)
 target_link_libraries(zenRigidLib PRIVATE HACD)
 
-find_package(zeno REQUIRED)
 target_link_libraries(zenRigidLib PRIVATE zeno)
 
+get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
 set_target_properties(zenRigidLib PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
     RUNTIME_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}

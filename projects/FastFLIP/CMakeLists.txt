@@ -51,8 +51,8 @@ ENDIF()
 target_link_libraries(FLIPlib PRIVATE partio)
 
 
-find_package(zeno REQUIRED)
 target_link_libraries(FLIPlib PRIVATE zeno)
+get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
 set_target_properties(FLIPlib PROPERTIES
 	LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
 	RUNTIME_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}

@@ -12,6 +12,7 @@ status = {
     'resolution': (1, 1),
     'perspective': (),
     'cache_frames': 10,
+    'show_grid': True,
     'playing': True,
 }
 
@@ -50,6 +51,7 @@ def _frameUpdate():
     core.set_curr_frameid(frameid)
     core.auto_gc_frame_data(status['cache_frames'])
     #print(core.get_valid_frames_list())
+    core.set_show_grid(status['show_grid'])
 
     global old_frame_files
     frame_files = fileio.getFrameFiles(frameid)
