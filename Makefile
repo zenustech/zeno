@@ -1,6 +1,4 @@
-# make xxx commands for @archibate's convinence
-
-O=arts/particletrail.zsg
+O=arts/OfficialSubnets/vdbslice.zsg
 
 default: run
 

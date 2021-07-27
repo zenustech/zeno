@@ -14,6 +14,11 @@ if (ZENOFX_ENABLE_OPENVDB)
     target_include_directories(ZenoFXlib PRIVATE ../zenvdb/include)
     target_link_libraries(ZenoFXlib PRIVATE openvdb)
 endif()
+find_package(OpenMP)
+if (TARGET OpenMP::OpenMP_CXX)
+    message("found package: OpenMP::OpenMP_CXX")
+    target_link_libraries(ZenoFXlib PRIVATE OpenMP::OpenMP_CXX)
+endif()
 
 get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
 set_target_properties(ZenoFXlib PROPERTIES
