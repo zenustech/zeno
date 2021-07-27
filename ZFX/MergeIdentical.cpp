@@ -5,7 +5,6 @@
 
 namespace zfx {
 
-#if 1
 struct MergeIdentical : Visitor<MergeIdentical> {
     using visit_stmt_types = std::tuple
         < AsmLocalStoreStmt
@@ -21,6 +20,13 @@ struct MergeIdentical : Visitor<MergeIdentical> {
     std::map<int, int> regs;
 
     void visit(Statement *stmt) {
+        if (stmt->is_control_stmt()) {
+            revstmts.clear();
+            regs.clear();
+            ir->push_clone_back(stmt);
+            return;
+        }
+
         std::stringstream ss;
         ss << stmt->serialize_identity();
         for (auto r: stmt->source_registers()) {
@@ -71,7 +77,6 @@ struct MergeIdentical : Visitor<MergeIdentical> {
         ir->push_clone_back(stmt);
     }
 };
-#endif
 
 std::unique_ptr<IR> apply_merge_identical(IR *ir) {
     MergeIdentical visitor;

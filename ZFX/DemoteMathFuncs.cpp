@@ -55,19 +55,19 @@ struct DemoteMathFuncs : Visitor<DemoteMathFuncs> {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
             auto mask = stm_const(0xffffffff);
-            return stm("xor", x, mask);
+            return stm("^", x, mask);
 
         } else if (name == "-" && args.size() == 1) {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
             auto mask = stm_const(0x80000000);
-            return stm("xor", x, mask);
+            return stm("^", x, mask);
 
         } else if (name == "abs") {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
             auto mask = stm_const(0x80000000);
-            return stm("andnot", x, mask);
+            return stm("&!", x, mask);
 
         /*} else if (name == "fsin") {
             ERROR_IF(args.size() != 1);

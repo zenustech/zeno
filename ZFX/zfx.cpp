@@ -124,6 +124,16 @@ std::tuple
     ir->print();
 #endif
 
+    if (options.constant_fold) {
+#ifdef ZFX_PRINT_IR
+        cout << "=== ConstantFold" << endl;
+#endif
+        ir = apply_constant_fold(ir.get());
+#ifdef ZFX_PRINT_IR
+        ir->print();
+#endif
+    }
+
     if (options.reassign_parameters) {
 #ifdef ZFX_PRINT_IR
         cout << "=== ReassignParameters" << endl;

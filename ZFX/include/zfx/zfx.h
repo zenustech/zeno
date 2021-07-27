@@ -23,6 +23,7 @@ struct Options {
 
     bool merge_identical = true;
     bool kill_unreachable = true;
+    bool constant_fold = true;
 
     //Options() = default;
 

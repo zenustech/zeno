@@ -22,6 +22,7 @@ endif()
 add_library(ZFX STATIC
 # ls {,include/zfx/}*{,/*}.{h,cpp} | grep -v main.cpp
 AST.h
+ConstantFold.cpp
 ConstParametrize.cpp
 ControlCheck.cpp
 DemoteMathFuncs.cpp
