@@ -463,4 +463,3 @@ class NodeEditor(QWidget):
             desc['is_subgraph'] = True
             descs[name] = desc
         return descs
-
