@@ -12,6 +12,7 @@ status = {
     'resolution': (1, 1),
     'perspective': (),
     'cache_frames': 10,
+    'record_video': None,
     'show_grid': True,
     'playing': True,
 }
@@ -68,5 +69,8 @@ def initializeGL():
 def paintGL():
     _uploadStatus()
     _frameUpdate()
-    core.new_frame()
+    if status['record_video']:
+        core.new_frame_offline(status['record_video'])
+    else:
+        core.new_frame()
     _recieveStatus()

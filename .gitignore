@@ -19,7 +19,6 @@ a.out
 
 # output files
 outputs/
-screenshots/
 
 # vim files
 .*.swp

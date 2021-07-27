@@ -1,6 +1,8 @@
 import os
-import math
 import time
+import shutil
+import tempfile
+import subprocess
 import numpy as np
 
 from PySide2.QtGui import *
@@ -61,10 +63,10 @@ class CameraControl:
             center = center + delta * self.radius
             self.center = tuple(center)
         else:
-            self.theta -= dy * math.pi
-            self.theta = max(-math.pi / 2, min(self.theta, math.pi / 2))
-            self.phi += dx * math.pi
-            self.phi %= math.pi * 2
+            self.theta -= dy * np.pi
+            self.theta = max(-np.pi / 2, min(self.theta, np.pi / 2))
+            self.phi += dx * np.pi
+            self.phi %= np.pi * 2
 
         self.last_pos = x, y
 
@@ -144,6 +146,8 @@ class QDMRecordMenu(QMenu):
         self.addAction(action)
 
         action = QAction('Record Video', self)
+        action.setCheckable(True)
+        action.setChecked(False)
         self.addAction(action)
 
 
@@ -169,8 +173,6 @@ class DisplayWidget(QWidget):
         self.view = ViewportWidget()
         self.layout.addWidget(self.view)
 
-        #self.do_record_video()####
-
     def on_update(self):
         self.view.on_update()
 
@@ -180,23 +182,42 @@ class DisplayWidget(QWidget):
             checked = act.isChecked()
             zenvis.status['show_grid'] = checked
 
+        elif name == 'Record Video':
+            checked = act.isChecked()
+            self.do_record_video(checked)
+
         elif name == 'Screenshot':
             self.do_screenshot()
 
-        elif name == 'Record Video':
-            self.do_record_video()
-
-    def do_record_video(self):
-        zenvis.core.bind_framebuffer()
-
-    def do_screenshot(self):
-        dir_path = 'screenshots'
+    def get_output_path(self, extname):
+        dir_path = 'outputs'
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
         file_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
-        file_name += '.png'
+        file_name += extname
         path = os.path.join(dir_path, file_name)
+        return path
 
+    def do_record_video(self, checked):
+        if checked:
+            tmp_path = tempfile.mkdtemp(prefix='recording-')
+            assert os.path.isdir(tmp_path)
+            zenvis.status['record_video'] = tmp_path
+        else:
+            tmp_path = zenvis.status['record_video']
+            assert tmp_path is not None
+            path = self.get_output_path('.mp4')
+            png_paths = os.path.join(tmp_path, '%06d.png')
+            cmd = ['ffmpeg', '-r', '60', '-i', png_paths, path]
+            print('Executing command:', cmd)
+            subprocess.check_call(cmd)
+            shutil.rmtree(tmp_path, ignore_errors=True)
+            zenvis.status['record_video'] = None
+            msg = 'Saved video to {}!'.format(path)
+            QMessageBox.information(self, 'Record Video', msg)
+
+    def do_screenshot(self):
+        path = self.get_output_path('.png')
         zenvis.core.do_screenshot(path)
 
         msg = 'Saved screenshot to {}!'.format(path)

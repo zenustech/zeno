@@ -143,25 +143,22 @@ double get_solver_interval() {
   return solverFPS.interval();
 }
 
-void do_screenshot(std::string path) {
-    int w = nx;
-    int h = ny;
-
-    CHECK_GL(glReadBuffer(GL_FRONT));
-    void *pixels = malloc(w * h * 3);
-    CHECK_GL(glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels));
-    stbi_flip_vertically_on_write(true);
-    stbi_write_png(path.c_str(), w, h, 3, pixels, 0);
-    free(pixels);
-}
-
 void set_show_grid(bool flag) {
     show_grid = flag;
 }
 
-static GLuint fbo, rbo1, rbo2;
+void do_screenshot(std::string path) {
+    CHECK_GL(glReadBuffer(GL_FRONT));
+    void *pixels = malloc(nx * ny * 3);
+    CHECK_GL(glReadPixels(0, 0, nx, ny, GL_RGB, GL_UNSIGNED_BYTE, pixels));
+    stbi_flip_vertically_on_write(true);
+    stbi_write_png(path.c_str(), nx, ny, 3, pixels, 0);
+    free(pixels);
+}
 
-void bind_framebuffer() {
+void new_frame_offline(std::string path) {
+    GLuint fbo, rbo1, rbo2;
+
     CHECK_GL(glGenRenderbuffers(1, &rbo1));
     CHECK_GL(glGenRenderbuffers(1, &rbo2));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
@@ -177,20 +174,23 @@ void bind_framebuffer() {
                 GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo2));
     CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
 
+    new_frame();
+
     if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
-        CHECK_GL(glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny,
-                GL_COLOR_BUFFER_BIT, GL_NEAREST));
+        CHECK_GL(glBlitFramebuffer(0, 0, nx, ny, 0, 0, nx, ny, GL_COLOR_BUFFER_BIT, GL_NEAREST));
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
         CHECK_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, 0));
         CHECK_GL(glReadBuffer(GL_COLOR_ATTACHMENT0));
 
-        std::string path = "/tmp/a.png";
+        char buf[1024];
+        sprintf(buf, "%s/%06d.png", path.c_str(), curr_frameid);
+        printf("saving screen to %s\n", buf);
 
         void *pixels = malloc(nx * ny * 3);
         CHECK_GL(glReadPixels(0, 0, nx, ny, GL_RGB, GL_UNSIGNED_BYTE, pixels));
         stbi_flip_vertically_on_write(true);
-        stbi_write_png(path.c_str(), nx, ny, 3, pixels, 0);
+        stbi_write_png(buf, nx, ny, 3, pixels, 0);
         free(pixels);
     }
 
@@ -200,9 +200,6 @@ void bind_framebuffer() {
     CHECK_GL(glDeleteRenderbuffers(1, &rbo1));
     CHECK_GL(glDeleteRenderbuffers(1, &rbo2));
     CHECK_GL(glDeleteFramebuffers(1, &fbo));
-}
-
-void unbind_framebuffer() {
 }
 
 }
