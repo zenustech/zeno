@@ -2,370 +2,95 @@
  "graph": {
   "main": {
    "nodes": {
-    "fd6a5cdc-PrimitiveRandomizeAttr": {
-     "name": "PrimitiveRandomizeAttr",
+    "50d9c22a-CachedIf": {
+     "name": "CachedIf",
      "inputs": {
-      "prim": [
-       "9e254fd7-PrimitiveAddAttr",
-       "prim"
+      "input": [
+       "624c07eb-PrintMessage",
+       "DST"
       ],
-      "SRC": null
-     },
-     "params": {
-      "attrName": "pos",
-      "min": -1.0,
-      "minY": -1.0,
-      "minZ": -1.0,
-      "max": 1.0,
-      "maxY": 1.0,
-      "maxZ": 1.0
-     },
-     "uipos": [
-      221.36046875000005,
-      85.74031250000007
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "5647df28-MakePrimitive": {
-     "name": "MakePrimitive",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -239.17937499999982,
-      134.87015625000004
-     ],
-     "options": [
-      "ONCE",
-      "collapsed"
-     ]
-    },
-    "9c42f535-PrimitiveAddAttr": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "1b9f2e90-PrimitiveResize",
-       "prim"
-      ],
-      "fillValue": null,
-      "SRC": null
-     },
-     "params": {
-      "name": "pos",
-      "type": "float3"
-     },
-     "uipos": [
-      -237.13937499999986,
-      216.83015625000007
-     ],
-     "options": [
-      "ONCE",
-      "collapsed"
-     ]
-    },
-    "1b9f2e90-PrimitiveResize": {
-     "name": "PrimitiveResize",
-     "inputs": {
-      "prim": [
-       "5647df28-MakePrimitive",
-       "prim"
-      ],
-      "size": [
-       "13273af4-NumericInt",
-       "value"
+      "keepCache": [
+       "a4084aff-NumericOperator",
+       "ret"
       ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      -237.41937499999983,
-      175.63015625000003
-     ],
-     "options": [
-      "ONCE",
-      "collapsed"
-     ]
-    },
-    "13273af4-NumericInt": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": 1024
-     },
-     "uipos": [
-      -672.0567187499998,
-      139.88562499999998
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "0f1821eb-MakeMultilineString": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "dis = @@pos - @pos\nacc = dis / pow(length(dis) + 0.01, 3)\n@vel +=  $dt * 0.001 * acc\n"
-     },
-     "uipos": [
-      569.6500000000001,
-      188.62000000000035
-     ],
-     "options": []
-    },
-    "9bcf0a55-PrimitiveAddAttr": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "9c42f535-PrimitiveAddAttr",
-       "prim"
-      ],
-      "fillValue": null,
-      "SRC": null
-     },
-     "params": {
-      "name": "vel",
-      "type": "float3"
-     },
-     "uipos": [
-      -234.05937499999982,
-      259.3101562500001
-     ],
-     "options": [
-      "ONCE",
-      "collapsed"
-     ]
-    },
-    "50f117cf-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "5de8d10f-ParticlesNeighborWrangle",
-       "prim"
-      ],
-      "zfxCode": [
-       "97230540-x",
-       "value"
-      ],
-      "params": [
-       "dfa30c9c-MakeDict",
-       "dict"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      1990.9499999999998,
-      263.70000000000005
+      713.0000000000001,
+      244.59999999999997
      ],
      "options": [
       "VIEW"
      ]
     },
-    "97230540-x": {
-     "name": "MakeMultilineString",
+    "624c07eb-PrintMessage": {
+     "name": "PrintMessage",
      "inputs": {
       "SRC": null
      },
      "params": {
-      "value": "@pos += @vel * $dt\n@clr = abs(@vel)\n@rad = 2 + length(@vel) * 10"
+      "message": "hello"
      },
      "uipos": [
-      1514.6599999999994,
-      35.61000000000013
+      232.0,
+      162.4000000000001
      ],
      "options": []
     },
-    "9e254fd7-PrimitiveAddAttr": {
-     "name": "PrimitiveAddAttr",
+    "33e8829b-GetFrameNum": {
+     "name": "GetFrameNum",
      "inputs": {
-      "prim": [
-       "9bcf0a55-PrimitiveAddAttr",
-       "prim"
-      ],
-      "fillValue": null,
       "SRC": null
      },
-     "params": {
-      "name": "clr",
-      "type": "float3"
-     },
+     "params": {},
      "uipos": [
-      -235.8593749999999,
-      368.66015625
+      57.599999999999966,
+      359.1999999999999
      ],
-     "options": [
-      "collapsed"
-     ]
+     "options": []
     },
-    "3b8880bf-ParticleParticleWrangle": {
-     "name": "ParticleParticleWrangle",
+    "a4084aff-NumericOperator": {
+     "name": "NumericOperator",
      "inputs": {
-      "prim1": [
-       "fd6a5cdc-PrimitiveRandomizeAttr",
-       "prim"
+      "lhs": [
+       "33e8829b-GetFrameNum",
+       "FrameNum"
       ],
-      "prim2": [
-       "fd6a5cdc-PrimitiveRandomizeAttr",
-       "prim"
-      ],
-      "zfxCode": [
-       "0f1821eb-MakeMultilineString",
+      "rhs": [
+       "804d4087-NumericInt",
        "value"
       ],
-      "params": [
-       "dfa30c9c-MakeDict",
-       "dict"
-      ],
       "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      1042.5,
-      133.75
-     ],
-     "options": []
-    },
-    "dfa30c9c-MakeDict": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": null,
-      "dt": [
-       "f8f4beb1-GetFrameTime",
-       "time"
-      ]
      },
      "params": {
-      "_KEYS": "dt"
+      "op_type": "mod"
      },
      "uipos": [
-      538.0,
-      535.25
-     ],
-     "options": [],
-     "socket_keys": [
-      "dt"
-     ]
-    },
-    "f8f4beb1-GetFrameTime": {
-     "name": "GetFrameTime",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      223.5,
-      546.25
+      374.40000000000003,
+      428.8
      ],
      "options": []
     },
-    "5de8d10f-ParticlesNeighborWrangle": {
-     "name": "ParticlesNeighborWrangle",
-     "inputs": {
-      "prim": [
-       "fd6a5cdc-PrimitiveRandomizeAttr",
-       "prim"
-      ],
-      "primNei": [
-       "dc727fc7-Clone",
-       "newObject"
-      ],
-      "hashGrid": [
-       "a6095173-ParticlesBuildHashGrid",
-       "hashGrid"
-      ],
-      "zfxCode": [
-       "0f1821eb-MakeMultilineString",
-       "value"
-      ],
-      "params": [
-       "dfa30c9c-MakeDict",
-       "dict"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      1548.2226562499995,
-      593.984375
-     ],
-     "options": []
-    },
-    "237f8b83-Blackboard": {
-     "name": "Blackboard",
-     "uipos": [
-      1568.25,
-      457.5
-     ],
-     "special": true,
-     "width": 563.0,
-     "height": 455.5,
-     "title": "Blackboard",
-     "content": "                                 \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\t     \t        connect this socket to end node if only wants neighbor force\n\n                                                             ",
-     "params": []
-    },
-    "a6095173-ParticlesBuildHashGrid": {
-     "name": "ParticlesBuildHashGrid",
-     "inputs": {
-      "primNei": [
-       "dc727fc7-Clone",
-       "newObject"
-      ],
-      "radius": [
-       "630fae1d-NumericFloat",
-       "value"
-      ],
-      "radiusMin": null,
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      1302.875,
-      657.375
-     ],
-     "options": []
-    },
-    "dc727fc7-Clone": {
-     "name": "Clone",
-     "inputs": {
-      "object": [
-       "fd6a5cdc-PrimitiveRandomizeAttr",
-       "prim"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      1044.875,
-      606.375
-     ],
-     "options": []
-    },
-    "630fae1d-NumericFloat": {
-     "name": "NumericFloat",
+    "804d4087-NumericInt": {
+     "name": "NumericInt",
      "inputs": {
       "SRC": null
      },
      "params": {
-      "value": 0.5
+      "value": 5
      },
      "uipos": [
-      1062.875,
-      768.375
+      105.60000000000002,
+      511.20000000000005
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": 783,
-    "trans_y": 373
+    "scale": 1.25,
+    "trans_x": -40,
+    "trans_y": 148
    }
   }
  },
@@ -530,6 +255,41 @@
     ]
    ],
    "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CachedIf": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "keepCache",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
     [
      "",
      "DST",

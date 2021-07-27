@@ -19,7 +19,7 @@ struct Buffer {
     int which = 0;
 };
 
-struct HashGrid {
+struct HashGrid : zeno::IObject {
     float inv_dx;
     float radius;
     float radius_sqr;
@@ -102,17 +102,31 @@ static void vectors_wrangle
     }
 }
 
+struct ParticlesBuildHashGrid : zeno::INode {
+    virtual void apply() override {
+        auto primNei = get_input<zeno::PrimitiveObject>("primNei");
+        float radius = get_input<zeno::NumericObject>("radius")->get<float>();
+        float radiusMin = has_input("radiusMin") ?
+            get_input<zeno::NumericObject>("radiusMin")->get<float>() : 0.f;
+        auto hashgrid = std::make_shared<HashGrid>(
+                primNei->attr<zeno::vec3f>("pos"), radius, radiusMin);
+        set_output("hashGrid", std::move(hashgrid));
+    }
+};
+
+ZENDEFNODE(ParticlesBuildHashGrid, {
+    {{"primitive", "primNei"}, {"numeric:float", "radius"}, {"numeric:float", "radiusMin"}},
+    {{"hashgrid", "hashGrid"}},
+    {},
+    {"zenofx"},
+});
+
 struct ParticlesNeighborWrangle : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto primNei = has_input("primNei") ?
-            get_input<zeno::PrimitiveObject>("primNei") :
-            std::static_pointer_cast<zeno::PrimitiveObject>(prim->clone());
+        auto primNei = get_input<zeno::PrimitiveObject>("primNei");
+        auto hashgrid = get_input<HashGrid>("hashGrid");
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
-        auto radius = get_input<zeno::NumericObject>("radius")->get<float>();
-        float radiusMin = has_input("radiusMin") ?
-            get_input<zeno::NumericObject>("radiusMin")->get<float>() :
-            0.f;
 
         zfx::Options opts(zfx::Options::for_x64);
         opts.detect_new_symbols = true;
@@ -224,8 +238,6 @@ struct ParticlesNeighborWrangle : zeno::INode {
             chs[i] = iob;
         }
 
-        auto hashgrid = std::make_unique<HashGrid>(
-                primNei->attr<zeno::vec3f>("pos"), radius, radiusMin);
         vectors_wrangle(exec, chs, prim->attr<zeno::vec3f>("pos"),
                 hashgrid.get());
 
@@ -234,9 +246,8 @@ struct ParticlesNeighborWrangle : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesNeighborWrangle, {
-    {{"primitive", "prim"}, {"primitive", "primNei"},
-     {"string", "zfxCode"}, {"dict:numeric", "params"},
-     {"numeric:float", "radius"}, {"numeric:float", "radiusMin"}},
+    {{"primitive", "prim"}, {"primitive", "primNei"}, {"hashgrid", "hashGrid"},
+     {"string", "zfxCode"}, {"dict:numeric", "params"}},
     {{"primitive", "prim"}},
     {},
     {"zenofx"},
