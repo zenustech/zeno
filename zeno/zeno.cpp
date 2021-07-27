@@ -72,7 +72,14 @@ ZENAPI bool INode::checkApplyCondition() {
 
     if (has_option("MUTE")) {
         auto desc = nodeClass->desc.get();
-        set_output(desc->outputs[0], get_input(desc->inputs[0]));
+        if (desc->inputs[0].name != "SRC") {
+            muted_output = get_input(desc->inputs[0].name);
+        } else {
+            for (auto const &[ds, bound]: inputBounds) {
+                muted_output = get_input(ds);
+                break;
+            }
+        }
         return false;
     }
 
@@ -100,13 +107,14 @@ ZENAPI void INode::coreApply() {
     }
 
     if (has_option("VIEW")) {
+        graph->hasAnyView = true;
         if (!state.isOneSubstep())  // no duplicate view when multi-substep used
             return;
         if (!graph->isViewed)  // VIEW subnodes only if subgraph is VIEW'ed
             return;
         auto desc = nodeClass->desc.get();
-        auto id = desc->outputs[0];
-        auto obj = safe_at(outputs, id, "output");
+        auto obj = muted_output ? muted_output
+            : safe_at(outputs, desc->outputs[0].name, "output");
         auto path = Visualization::exportPath();
         obj->dumpfile(path);
     }
@@ -121,11 +129,11 @@ ZENAPI bool INode::has_input(std::string const &id) const {
 }
 
 ZENAPI std::shared_ptr<IObject> INode::get_input(std::string const &id) const {
-    return safe_at(inputs, id, "input");
+    return safe_at(inputs, id, "input", myname);
 }
 
 ZENAPI IValue INode::get_param(std::string const &id) const {
-    return safe_at(params, id, "param");
+    return safe_at(params, id, "param", myname);
 }
 
 ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
@@ -135,7 +143,9 @@ ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&
 ZENAPI std::shared_ptr<IObject> const &Graph::getNodeOutput(
     std::string const &sn, std::string const &ss) const {
     auto node = safe_at(nodes, sn, "node");
-    return safe_at(node->outputs, ss, "output");
+    if (node->muted_output)
+        return node->muted_output;
+    return safe_at(node->outputs, ss, "output", node->myname);
 }
 
 ZENAPI void Graph::clearNodes() {
@@ -165,18 +175,31 @@ ZENAPI void Graph::applyNode(std::string const &id) {
 #ifdef ZENO_DETAILED_LOG
     printf("+ %s\n", id.c_str());
 #endif
-    safe_at(nodes, id, "node")->doApply();
+    auto node = safe_at(nodes, id, "node");
+    try {
+        node->doApply();
+    } catch (std::exception const &e) {
+        throw zeno::Exception("During evaluation of `"
+                + node->myname + "`:\n" + e.what());
+    }
 #ifdef ZENO_DETAILED_LOG
     printf("- %s\n", id.c_str());
 #endif
 }
 
 ZENAPI void Graph::applyNodes(std::vector<std::string> const &ids) {
-    ctx = std::make_unique<Context>();
-    for (auto const &id: ids) {
-        applyNode(id);
+    try {
+        ctx = std::make_unique<Context>();
+        for (auto const &id: ids) {
+            applyNode(id);
+        }
+        ctx = nullptr;
+    } catch (std::exception const &e) {
+        ctx = nullptr;
+        throw zeno::Exception(
+                (std::string)"ZENO Traceback (most recent call last):\n"
+                + e.what());
     }
-    ctx = nullptr;
 }
 
 ZENAPI void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
@@ -227,7 +250,7 @@ ZENAPI Graph &Session::getGraph() const {
 ZENAPI std::string Session::dumpDescriptors() const {
   std::string res = "";
   for (auto const &[key, cls] : nodeClasses) {
-    res += "DESC:" + key + ":" + cls->desc->serialize() + "\n";
+    res += "DESC@" + key + "@" + cls->desc->serialize() + "\n";
   }
   return res;
 }
@@ -242,6 +265,11 @@ ZENAPI Session &getSession() {
 }
 
 
+SocketDescriptor::SocketDescriptor(std::string const &type,
+	  std::string const &name, std::string const &defl)
+      : type(type), name(name), defl(defl) {}
+SocketDescriptor::~SocketDescriptor() = default;
+
 
 ParamDescriptor::ParamDescriptor(std::string const &type,
 	  std::string const &name, std::string const &defl)
@@ -250,8 +278,8 @@ ParamDescriptor::~ParamDescriptor() = default;
 
 ZENAPI Descriptor::Descriptor() = default;
 ZENAPI Descriptor::Descriptor(
-  std::vector<std::string> const &inputs,
-  std::vector<std::string> const &outputs,
+  std::vector<SocketDescriptor> const &inputs,
+  std::vector<SocketDescriptor> const &outputs,
   std::vector<ParamDescriptor> const &params,
   std::vector<std::string> const &categories)
   : inputs(inputs), outputs(outputs), params(params), categories(categories) {
@@ -262,14 +290,22 @@ ZENAPI Descriptor::Descriptor(
 
 ZENAPI std::string Descriptor::serialize() const {
   std::string res = "";
-  res += "(" + join_str(inputs, ",") + ")";
-  res += "(" + join_str(outputs, ",") + ")";
-  std::vector<std::string> paramStrs;
-  for (auto const &[type, name, defl] : params) {
-      paramStrs.push_back(type + ":" + name + ":" + defl);
+  std::vector<std::string> strs;
+  for (auto const &[type, name, defl] : inputs) {
+      strs.push_back(type + "@" + name + "@" + defl);
   }
-  res += "(" + join_str(paramStrs, ",") + ")";
-  res += "(" + join_str(categories, ",") + ")";
+  res += "{" + join_str(strs, "%") + "}";
+  strs.clear();
+  for (auto const &[type, name, defl] : outputs) {
+      strs.push_back(type + "@" + name + "@" + defl);
+  }
+  res += "{" + join_str(strs, "%") + "}";
+  strs.clear();
+  for (auto const &[type, name, defl] : params) {
+      strs.push_back(type + "@" + name + "@" + defl);
+  }
+  res += "{" + join_str(strs, "%") + "}";
+  res += "{" + join_str(categories, "%") + "}";
   return res;
 }
 

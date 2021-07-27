@@ -16,7 +16,7 @@ namespace zfx::x64 {
 } while (0)
 
 struct ImplAssembler {
-    int simdkind = optype::xmmps;
+    int simdkind = simdtype::xmmps;
 
     std::unique_ptr<SIMDBuilder> builder = std::make_unique<SIMDBuilder>();
     std::unique_ptr<Executable> exec = std::make_unique<Executable>();
@@ -37,7 +37,16 @@ struct ImplAssembler {
                 ERROR_IF(linesep.size() < 2);
                 auto id = from_string<int>(linesep[1]);
                 auto expr = linesep[2];
-                if (!(std::istringstream(expr) >> exec->consts[id])) {
+                float &dst = exec->consts[id];
+                if (expr[0] == 'i') {
+                    union {
+                        float f;
+                        uint32_t i;
+                    } u;
+                    u.i = 0;
+                    std::istringstream(expr) >> u.i;
+                    dst = u.f;
+                } else if (!(std::istringstream(expr) >> dst)) {
                     error("cannot parse literial constant `%s`",
                         expr.c_str());
                 }
@@ -155,7 +164,55 @@ struct ImplAssembler {
                 auto dst = from_string<int>(linesep[1]);
                 auto lhs = from_string<int>(linesep[2]);
                 auto rhs = from_string<int>(linesep[3]);
-                builder->addAvxBinaryOp(simdkind, opcode::bit_andnot,
+                builder->addAvxBinaryOp(simdkind, opcode::bit_andn,
+                    dst, rhs, lhs);
+
+            } else if (cmd == "cmpeq") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::cmp_eq,
+                    dst, lhs, rhs);
+
+            } else if (cmd == "cmpne") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::cmp_ne,
+                    dst, lhs, rhs);
+
+            } else if (cmd == "cmplt") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::cmp_lt,
+                    dst, lhs, rhs);
+
+            } else if (cmd == "cmple") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::cmp_le,
+                    dst, lhs, rhs);
+
+            } else if (cmd == "cmpgt") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::cmp_gt,
+                    dst, lhs, rhs);
+
+            } else if (cmd == "cmpge") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto lhs = from_string<int>(linesep[2]);
+                auto rhs = from_string<int>(linesep[3]);
+                builder->addAvxBinaryOp(simdkind, opcode::cmp_ge,
                     dst, lhs, rhs);
 
             } else if (cmd == "or") {
@@ -204,6 +261,14 @@ struct ImplAssembler {
                 auto dst = from_string<int>(linesep[1]);
                 auto src = from_string<int>(linesep[2]);
                 builder->addAvxRoundOp(simdkind, dst, src, 2 + 8);
+
+            } else if (cmd == "blend") {
+                ERROR_IF(linesep.size() < 3);
+                auto dst = from_string<int>(linesep[1]);
+                auto cond = from_string<int>(linesep[2]);
+                auto lhs = from_string<int>(linesep[3]);
+                auto rhs = from_string<int>(linesep[4]);
+                builder->addAvxBlendvOp(simdkind, dst, rhs, lhs, cond);
 
             } else if (auto it = std::find(
                 FuncTable::funcnames.begin(), FuncTable::funcnames.end(), cmd);

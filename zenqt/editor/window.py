@@ -30,11 +30,11 @@ class QDMEditMenu(QMenu):
         self.setTitle('&Edit')
 
         acts = [
-                ('Undo', QKeySequence.Undo),
-                ('Redo', QKeySequence.Redo),
+                ('&Undo', QKeySequence.Undo),
+                ('&Redo', QKeySequence.Redo),
                 (None, None),
-                ('Copy', QKeySequence.Copy),
-                ('Paste', QKeySequence.Paste),
+                ('&Copy', QKeySequence.Copy),
+                ('&Paste', QKeySequence.Paste),
         ]
         
         for name, shortcut in acts:
@@ -239,6 +239,14 @@ class NodeEditor(QWidget):
         if 'descs' not in prog:
             prog['descs'] = dict(self.descs)
 
+        for name, desc in prog['descs'].items():
+            for key, output in enumerate(desc['outputs']):
+                if isinstance(output, str):
+                    desc['outputs'][key] = ('', output, '')
+            for key, input in enumerate(desc['inputs']):
+                if isinstance(input, str):
+                    desc['inputs'][key] = ('', input, '')
+
         for name, graph in prog['graph'].items():
             if 'nodes' not in graph:
                 prog['graph'][name] = {
@@ -338,16 +346,16 @@ class NodeEditor(QWidget):
             if path != '':
                 self.do_import(path)
 
-        elif name == 'Undo':
+        elif name == '&Undo':
             self.scene.undo()
 
-        elif name == 'Redo':
+        elif name == '&Redo':
             self.scene.redo()
 
-        elif name == 'Copy':
+        elif name == '&Copy':
             self.do_copy()
 
-        elif name == 'Paste':
+        elif name == '&Paste':
             self.do_paste()
 
     def do_copy(self):
@@ -432,12 +440,19 @@ class NodeEditor(QWidget):
             subinputs = []
             suboutputs = []
             for node in graph.values():
+                params = node['params']
                 if node['name'] == 'SubInput':
-                    subinputs.append(node['params']['name'])
+                    n_type = params.get('type')
+                    n_name = params['name']
+                    n_defl = params.get('defl')
+                    subinputs.append((n_type, n_name, n_defl))
                 elif node['name'] == 'SubOutput':
-                    suboutputs.append(node['params']['name'])
+                    n_type = params.get('type')
+                    n_name = params['name']
+                    n_defl = params.get('defl')
+                    suboutputs.append((n_type, n_name, n_defl))
                 elif node['name'] == 'SubCategory':
-                    subcategory = node['params']['name']
+                    subcategory = params['name']
             subinputs.extend(self.descs['Subgraph']['inputs'])
             suboutputs.extend(self.descs['Subgraph']['outputs'])
             desc = {}

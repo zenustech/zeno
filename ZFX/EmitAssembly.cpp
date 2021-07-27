@@ -7,8 +7,9 @@ namespace zfx {
 struct EmitAssembly : Visitor<EmitAssembly> {
     using visit_stmt_types = std::tuple
         < AssignStmt
-        , AsmBinaryOpStmt
         , AsmUnaryOpStmt
+        , AsmBinaryOpStmt
+        , AsmTernaryOpStmt
         , AsmFuncCallStmt
         , AsmAssignStmt
         , AsmLoadConstStmt
@@ -65,6 +66,7 @@ struct EmitAssembly : Visitor<EmitAssembly> {
             if (0) {
             } else if (op == "+") { return "mov";
             } else if (op == "-") { return "neg";
+            } else if (op == "!") { return "not";
             } else { return op.c_str();
             }
         }(stmt->op);
@@ -80,11 +82,26 @@ struct EmitAssembly : Visitor<EmitAssembly> {
             } else if (op == "*") { return "mul";
             } else if (op == "/") { return "div";
             } else if (op == "%") { return "mod";
+            } else if (op == "&") { return "and";
+            } else if (op == "|") { return "or";
+            } else if (op == "^") { return "xor";
+            } else if (op == "&!") { return "andnot";
+            } else if (op == "==") { return "cmpeq";
+            } else if (op == "!=") { return "cmpne";
+            } else if (op == "<") { return "cmplt";
+            } else if (op == "<=") { return "cmple";
+            } else if (op == ">") { return "cmpgt";
+            } else if (op == ">=") { return "cmpge";
             } else { return op.c_str();
             }
         }(stmt->op);
         emit("%s %d %d %d", opcode,
             stmt->dst, stmt->lhs, stmt->rhs);
+    }
+
+    void visit(AsmTernaryOpStmt *stmt) {
+        emit("blend %d %d %d %d", stmt->dst,
+            stmt->cond, stmt->lhs, stmt->rhs);
     }
 
     void visit(AsmGlobalStoreStmt *stmt) {

@@ -62,14 +62,6 @@ template <size_t N, class T> struct vec : std::array<T, N> {
     }
     return res;
   }
-
-  explicit operator bool() const {
-    bool ret = false;
-    for (size_t i = 0; i < N; i++) {
-      ret = ret || (bool)(*this)[i];
-    }
-    return ret;
-  }
 };
 
 /* type traits */
@@ -139,10 +131,6 @@ template <size_t N, class T> struct decay_vec<vec<N, T>> { using type = T; };
 template <class T> using decay_vec_t = typename decay_vec<T>::type;
 
 /* converter functions */
-
-template <size_t N, class T> auto array_to_vec(std::array<T, N> const &a) {
-  return array_to_vec<vec<N, T>>(a);
-}
 
 template <class OtherT, class T> auto vec_to_other(vec<2, T> const &a) {
   return OtherT(a[0], a[1]);
@@ -334,7 +322,37 @@ template <class T> inline auto tofloat(T const &a) {
 }
 
 /* vector math functions */
+
+template <size_t N, class T>
+inline bool any(vec<N, T> const &a) {
+  bool ret = false;
+  for (size_t i = 0; i < N; i++) {
+    ret = ret || (bool)a[i];
+  }
+  return ret;
+}
+
+template <class T>
+inline bool any(T const &a) {
+    return (bool)a;
+}
+
+template <size_t N, class T>
+inline bool all(vec<N, T> const &a) {
+  bool ret = true;
+  for (size_t i = 0; i < N; i++) {
+    ret = ret && (bool)a[i];
+  }
+  return ret;
+}
+
+template <class T>
+inline bool all(T const &a) {
+    return (bool)a;
+}
+
 inline auto dot(float a, float b) { return a * b; }
+
 template <size_t N, class T, class S>
 inline auto dot(vec<N, T> const &a, vec<N, S> const &b) {
   std::decay_t<decltype(a[0] * b[0])> res(0);
@@ -344,7 +362,8 @@ inline auto dot(vec<N, T> const &a, vec<N, S> const &b) {
   return res;
 }
 
-template <size_t N, class T> inline auto lengthsq(vec<N, T> const &a) {
+template <size_t N, class T>
+inline auto lengthsq(vec<N, T> const &a) {
   std::decay_t<decltype(a[0])> res(0);
   for (size_t i = 0; i < N; i++) {
     res += a[i] * a[i];
@@ -352,7 +371,8 @@ template <size_t N, class T> inline auto lengthsq(vec<N, T> const &a) {
   return res;
 }
 
-template <size_t N, class T> inline auto length(vec<N, T> const &a) {
+template <size_t N, class T>
+inline auto length(vec<N, T> const &a) {
   std::decay_t<decltype(a[0])> res(0);
   for (size_t i = 0; i < N; i++) {
     res += a[i] * a[i];
@@ -360,7 +380,8 @@ template <size_t N, class T> inline auto length(vec<N, T> const &a) {
   return std::sqrt(res);
 }
 
-template <size_t N, class T> inline auto normalize(vec<N, T> const &a) {
+template <size_t N, class T>
+inline auto normalize(vec<N, T> const &a) {
   return a * (1 / length(a));
 }
 
@@ -393,7 +414,8 @@ inline auto tovec(T const &x) {
   return vec<N, T>(x);
 }
 
-template <size_t N, class T> inline auto tovec(vec<N, T> const &x) { return x; }
+template <size_t N, class T>
+inline auto tovec(vec<N, T> const &x) { return x; }
 
 /* common type definitions */
 
@@ -428,4 +450,4 @@ using vec4L = vec<4, unsigned long>;
 using vec4H = vec<4, unsigned short>;
 using vec4B = vec<4, unsigned char>;
 
-} // namespace zeno
+}

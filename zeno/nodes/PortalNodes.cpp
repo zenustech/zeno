@@ -59,7 +59,6 @@ ZENDEFNODE(Route, {
 });
 
 
-
 struct Clone : zeno::INode {
     virtual void apply() override {
         auto obj = get_input("object");
@@ -71,6 +70,14 @@ struct Clone : zeno::INode {
         set_output("newObject", std::move(newobj));
     }
 };
+
+ZENDEFNODE(Clone, {
+    {"object"},
+    {"newObject"},
+    {},
+    {"portal"},
+});
+
 
 struct Assign : zeno::INode {
     virtual void apply() override {

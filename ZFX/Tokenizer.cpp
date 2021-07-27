@@ -9,7 +9,10 @@ std::vector<std::string> tokenize(const char *cp) {
         if (!*cp)
             break;
 
-        if (isalpha(*cp) || strchr("_$@", *cp)) {
+        if (*cp == '#') {
+            for (; *cp && *cp != '\n'; cp++);
+
+        } else if (isalpha(*cp) || strchr("_$@", *cp)) {
             std::string res;
             res += *cp++;
             for (; isalnum(*cp) || *cp && strchr("_$@", *cp); cp++)

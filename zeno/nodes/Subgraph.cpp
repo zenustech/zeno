@@ -1,21 +1,35 @@
 #include <zeno/zeno.h>
 #include <zeno/GlobalState.h>
+#include <zeno/Visualization.h>
+#include <zeno/ConditionObject.h>
 #include <zeno/safe_at.h>
 #include <cassert>
 
 
+namespace {
+
 struct SubInput : zeno::INode {
     virtual void apply() override {
         auto name = get_param<std::string>("name");
-        auto obj = zeno::safe_at(graph->subInputs, name, "subinput");
-        set_output("port", std::move(obj));
+        if (auto it = graph->subInputs.find(name);
+                it == graph->subInputs.end()) {
+            set_output("hasValue",
+                    std::make_shared<zeno::ConditionObject>(false));
+        } else {
+            auto obj = it->second;
+            set_output("port", std::move(obj));
+            set_output("hasValue",
+                    std::make_shared<zeno::ConditionObject>(true));
+        }
     }
 };
 
 ZENDEFNODE(SubInput, {
     {},
-    {"port"},
-    {{"string", "name", "input1"}},
+    {"port", "hasValue"},
+    {{"string", "type", ""},
+     {"string", "name", "input1"},
+     {"string", "defl", ""}},
     {"subgraph"},
 });
 
@@ -31,7 +45,9 @@ struct SubOutput : zeno::INode {
 ZENDEFNODE(SubOutput, {
     {"port"},
     {},
-    {{"string", "name", "output1"}},
+    {{"string", "type", ""},
+     {"string", "name", "output1"},
+     {"string", "defl", ""}},
     {"subgraph"},
 });
 
@@ -60,6 +76,11 @@ struct Subgraph : zeno::INode {
         subg->applyNodes(applies);
 
         for (auto &[key, obj]: subg->subOutputs) {
+            if (subg->isViewed && !subg->hasAnyView) {
+                auto path = zeno::Visualization::exportPath();
+                obj->dumpfile(path);
+                subg->hasAnyView = true;
+            }
             set_output(key, std::move(obj));
         }
 
@@ -88,3 +109,4 @@ ZENDEFNODE(SubCategory, {
 });
 
 
+}

@@ -21,6 +21,7 @@ from .param import *
 from .socket import *
 from .node import *
 from .blackboard import *
+from .textarea import *
 from .makedict import *
 from .heatmap import *
 from .scene import *

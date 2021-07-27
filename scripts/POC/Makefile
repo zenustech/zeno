@@ -1,4 +1,4 @@
-x=ptr2any
+x=myvdb
 
 x: $x.exe Makefile
 	./$<

@@ -10,10 +10,6 @@ namespace zfx {
 
 // http://web.cs.ucla.edu/~palsberg/course/cs132/linearscan.pdf
 struct UCLAScanner {
-    const int NREGS;
-
-    explicit UCLAScanner(int nregs) : NREGS(nregs) {}
-
     struct Stmt {
         std::set<int> regs;
     };
@@ -58,6 +54,7 @@ struct UCLAScanner {
     std::set<int> used_pool;
     std::map<int, int> result;
     int memsize = 0;
+    int maxregs = 0;
 
     void free_register(Reg *i) {
         int newid = usage.at(i);
@@ -67,25 +64,16 @@ struct UCLAScanner {
     }
 
     void alloc_register(Reg *i) {
-        assert(freed_pool.size());
+        if (!freed_pool.size()) {
+            int newreg = used_pool.size();
+            maxregs = std::max(maxregs, newreg + 1);
+            freed_pool.insert(newreg);
+        }
         int newid = *freed_pool.begin();
         used_pool.insert(newid);
         freed_pool.erase(newid);
         usage[i] = newid;
         result[i->regid] = newid;
-    }
-
-    void transit_register(Reg *i, Reg *spill) {
-        assert(i != spill);
-        int newid = usage.at(spill);
-        usage[i] = newid;
-        usage.erase(spill);
-        assert(result.find(i->regid) == result.end());
-        result[i->regid] = newid;
-    }
-
-    void alloc_stack(Reg *i) {
-        result[i->regid] = NREGS + memsize++;
     }
 
     void do_scan() {
@@ -96,27 +84,10 @@ struct UCLAScanner {
                     break;
                 }
                 active.erase(j);
-                //printf("free %d: %d cuz %d\n", j->regid, lookup(j->regid), j->endpoint());
                 free_register(j);
             }
-            if (active.size() == NREGS) {
-                auto spill = *active.rbegin();
-                if (spill->endpoint() > i->endpoint()) {
-                    //printf("transit %d <- %d!\n", i->regid, spill->regid);
-                    transit_register(i, spill);
-                    alloc_stack(spill);
-                    active.erase(spill);
-                    active.insert(i);
-                } else {
-                    //printf("allocdirectly!\n");
-                    alloc_stack(i);
-                }
-            } else {
-                //printf("allocins!\n");
-                alloc_register(i);
-                active.insert(i);
-                //printf("insert %p %zd\n", i, active.size());
-            }
+            alloc_register(i);
+            active.insert(i);
         }
     }
 
@@ -125,10 +96,6 @@ struct UCLAScanner {
     }
 
     void scan() {
-        for (int i = 0; i < NREGS; i++) {
-            freed_pool.insert(i);
-        }
-
         for (auto const &[stmtid, stmt]: stmts) {
             for (auto const &regid: stmt.regs) {
                 regs[regid].regid = regid;
@@ -157,6 +124,7 @@ struct InspectRegisters : Visitor<InspectRegisters> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
+        , AsmTernaryOpStmt
         , AsmFuncCallStmt
         , AsmLoadConstStmt
         , AsmParamLoadStmt
@@ -184,6 +152,13 @@ struct InspectRegisters : Visitor<InspectRegisters> {
 
     void visit(AsmBinaryOpStmt *stmt) {
         touch(stmt->id, stmt->dst);
+        touch(stmt->id, stmt->lhs);
+        touch(stmt->id, stmt->rhs);
+    }
+
+    void visit(AsmTernaryOpStmt *stmt) {
+        touch(stmt->id, stmt->dst);
+        touch(stmt->id, stmt->cond);
         touch(stmt->id, stmt->lhs);
         touch(stmt->id, stmt->rhs);
     }
@@ -225,6 +200,7 @@ struct ReassignRegisters : Visitor<ReassignRegisters> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
+        , AsmTernaryOpStmt
         , AsmFuncCallStmt
         , AsmLoadConstStmt
         , AsmParamLoadStmt
@@ -252,6 +228,13 @@ struct ReassignRegisters : Visitor<ReassignRegisters> {
 
     void visit(AsmBinaryOpStmt *stmt) {
         reassign(stmt->dst);
+        reassign(stmt->lhs);
+        reassign(stmt->rhs);
+    }
+
+    void visit(AsmTernaryOpStmt *stmt) {
+        reassign(stmt->dst);
+        reassign(stmt->cond);
         reassign(stmt->lhs);
         reassign(stmt->rhs);
     }
@@ -293,6 +276,7 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
         < AsmAssignStmt
         , AsmUnaryOpStmt
         , AsmBinaryOpStmt
+        , AsmTernaryOpStmt
         , AsmFuncCallStmt
         , AsmLoadConstStmt
         , AsmParamLoadStmt
@@ -319,21 +303,26 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
 
     std::optional<call_on_dtor> touch(int operandid, int &regid) {
         if (regid >= NREGS) {
-            //printf("register spilled at %d\n", regid);
+            printf("register spilled at %d\n", regid);
             int memid = regid - NREGS;
             memsize = std::max(memsize, memid + 1);
             if (!operandid) {
                 int tmpid = NREGS;
                 regid = tmpid;
+                //ir->emplace_back<AsmLocalStoreStmt>(memid2, tmpid);
                 return [=] () {
-                    ir->emplace_back<AsmLocalStoreStmt>(
-                        memid, tmpid);
+                    ir->emplace_back<AsmLocalStoreStmt>(memid, tmpid);
+                    //ir->emplace_back<AsmLocalLoadStmt>(memid2, tmpid);
                 };
             } else {
                 int tmpid = NREGS + (operandid - 1);
                 regid = tmpid;
+                //ir->emplace_back<AsmLocalStoreStmt>(memid2, tmpid);
                 ir->emplace_back<AsmLocalLoadStmt>(
                     memid, tmpid);
+                //return [=] () {
+                    //ir->emplace_back<AsmLocalLoadStmt>(memid2, tmpid);
+                //};
             }
         }
         return std::nullopt;
@@ -358,6 +347,14 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
     void visit(AsmBinaryOpStmt *stmt) {
         touch(1, stmt->lhs);
         touch(2, stmt->rhs);
+        auto _ = touch(0, stmt->dst);
+        visit((Statement *)stmt);
+    }
+
+    void visit(AsmTernaryOpStmt *stmt) {
+        touch(1, stmt->cond);
+        touch(2, stmt->lhs);
+        touch(3, stmt->rhs);
         auto _ = touch(0, stmt->dst);
         visit((Statement *)stmt);
     }
@@ -402,22 +399,26 @@ struct FixupMemorySpill : Visitor<FixupMemorySpill> {
 };
 
 int apply_register_allocation(IR *ir, int nregs) {
-    nregs -= 2; // left two regs for load/store from spilled memory
-    if (nregs <= 2) {
+    if (nregs <= 3) {
         error("no enough registers!\n");
     }
-    UCLAScanner scanner(nregs);
     InspectRegisters inspect;
+    UCLAScanner scanner;
     inspect.scanner = &scanner;
     inspect.apply(ir);
     scanner.scan();
     ReassignRegisters reassign;
     reassign.scanner = &scanner;
     reassign.apply(ir);
-    FixupMemorySpill fixspill(nregs);
-    fixspill.apply(ir);
-    *ir = *fixspill.ir;
-    return fixspill.memsize;
+    int memsize = 0;
+    if (scanner.maxregs >= nregs) {
+        // left 3 regs for load/store from spilled memory (ternaryop)
+        FixupMemorySpill fixspill(nregs - 3);
+        fixspill.apply(ir);
+        *ir = *fixspill.ir;
+        memsize = fixspill.memsize;
+    }
+    return memsize;
 }
 
 }

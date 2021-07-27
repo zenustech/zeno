@@ -206,8 +206,8 @@ struct NumericOperator : zeno::INode {
 };
 
 ZENDEFNODE(NumericOperator, {
-    {"lhs", "rhs"},
-    {"ret"},
+    {{"numeric", "lhs"}, {"numeric", "rhs"}},
+    {{"numeric", "ret"}},
     {{"string", "op_type", "copy"}},
     {"numeric"},
 });

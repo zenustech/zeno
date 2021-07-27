@@ -18,6 +18,7 @@ struct LowerMath : Visitor<LowerMath> {
         , LiterialStmt
         , UnaryOpStmt
         , BinaryOpStmt
+        , TernaryOpStmt
         , FunctionCallStmt
         , VectorSwizzleStmt
         , VectorComposeStmt
@@ -83,6 +84,17 @@ struct LowerMath : Visitor<LowerMath> {
         for (int i = 0; i < stmt->dim; i++) {
             rep.push_back(ir->emplace_back<BinaryOpStmt>(
                 stmt->op, replace(stmt->lhs, i), replace(stmt->rhs, i)));
+        }
+    }
+
+    void visit(TernaryOpStmt *stmt) {
+        auto &rep = replaces[stmt];
+        rep.clear();
+        ERROR_IF(stmt->dim == 0);
+        for (int i = 0; i < stmt->dim; i++) {
+            rep.push_back(ir->emplace_back<TernaryOpStmt>(
+                replace(stmt->cond, i), replace(stmt->lhs, i),
+                replace(stmt->rhs, i)));
         }
     }
 

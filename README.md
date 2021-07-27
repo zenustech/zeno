@@ -86,7 +86,7 @@ Zeno adopts a highly decoupled design of things, making extending it becoming su
 
 Here's an example on how to add a ZENO node with its C++ API:
 
-![demo_project/main.cpp](images/demo_project.png "demo_project/main.cpp")
+[![zeno_addon_wizard/YourProject/CustomNumber.cpp](images/demo_project.png)](https://github.com/zenustech/zeno_addon_wizard/blob/main/YourProject/CustomNumber.cpp)
 
 ## Extensible
 
@@ -150,13 +150,13 @@ Other requirements like Pybind11 or GLAD are self-contained and you don't have t
 - Arch Linux
 
 ```bash
-sudo pacman -S gcc make cmake python python-pip python-numpy python-pyqt5 qt5-base libglvnd mesa
+sudo pacman -S gcc make cmake python python-pip python-numpy pyside2
 ```
 
 - Ubuntu 20.04
 
 ```bash
-sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip libqt5core5a qt5dxcb-plugin libglvnd-dev libglapi-mesa libosmesa6
+sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin
 
 python --version  # make sure Python version >= 3.7
 sudo python -m pip install -U pip
@@ -314,11 +314,11 @@ self-contained and portable to all platforms.
 
 ### Write your own extension!
 
-See ```demo_project/``` for an example on how to write custom nodes in ZENO.
+See https://github.com/zenustech/zeno_addon_wizard for an example on how to write custom nodes in ZENO.
 
 #### Installing extensions
 
-To install a node library for ZENO just copy the `.so` or `.dll` files to `zeno/lib/`. See ```demo_project/CMakeLists.txt``` for how to automate this in CMake.
+To install a node library for ZENO just copy the `.so` or `.dll` files to `zeno/lib/`.
 
 
 # Miscellaneous
@@ -353,11 +353,8 @@ You may contact us via WeChat:
 - Arch Linux
 
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
-make -C build -j8
-make -C build install
 ./dist.sh
-# you will get /tmp/zeno-linux-20xx.x.x.tar.gz
+# you will get /tmp/release/zeno-linux-20xx.x.x.tar.gz
 ```
 
 - Windows

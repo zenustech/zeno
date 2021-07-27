@@ -19,9 +19,9 @@ struct MakeString : zeno::INode {
 
 ZENDEFNODE(MakeString, {
     {},
-    {"value"},
+    {{"string", "value"}},
     {{"string", "value", ""}},
-    {"fileio"},
+    {"string"},
 });
 
 struct MakeMultilineString : MakeString {
@@ -29,9 +29,9 @@ struct MakeMultilineString : MakeString {
 
 ZENDEFNODE(MakeMultilineString, {
     {},
-    {"value"},
+    {{"string", "value"}},
     {{"multiline_string", "value", ""}},
-    {"fileio"},
+    {"string"},
 });
 
 /*static int objid = 0;

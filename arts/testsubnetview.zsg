@@ -55,9 +55,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -3,
-    "trans_y": 78
+    "scale": 1.25,
+    "trans_x": -236,
+    "trans_y": 4
    }
   },
   "TestSub": {
@@ -85,9 +85,7 @@
       506.30000000000007,
       201.9
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "d614fa29-x": {
      "name": "NumericInt",
@@ -154,9 +152,7 @@
       769.5,
       346.5
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     }
    },
    "view": {
@@ -181,6 +177,21 @@
    "params": [],
    "categories": [
     "list"
+   ]
+  },
+  "Assign": {
+   "inputs": [
+    "dst",
+    "src",
+    "SRC"
+   ],
+   "outputs": [
+    "dst",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "portal"
    ]
   },
   "BeginFor": {
@@ -357,7 +368,7 @@
     "debug"
    ]
   },
-  "ExportPrimitive": {
+  "ExportZpmPrimitive": {
    "inputs": [
     "prim",
     "path",
@@ -539,7 +550,7 @@
     "primitive"
    ]
   },
-  "ImportPrimitive": {
+  "ImportZpmPrimitive": {
    "inputs": [
     "path",
     "SRC"
@@ -886,6 +897,25 @@
     "numeric"
    ]
   },
+  "NumericRandom": {
+   "inputs": [
+    "SRC"
+   ],
+   "outputs": [
+    "value",
+    "DST"
+   ],
+   "params": [
+    [
+     "int",
+     "dim",
+     "1"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
   "NumericVec2": {
    "inputs": [
     "SRC"
@@ -971,6 +1001,23 @@
    ],
    "categories": [
     "numeric"
+   ]
+  },
+  "ParticleParticleWrangle": {
+   "inputs": [
+    "prim1",
+    "prim2",
+    "zfxCode",
+    "params",
+    "SRC"
+   ],
+   "outputs": [
+    "prim",
+    "DST"
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
    ]
   },
   "ParticlesNeighborWrangle": {
@@ -1159,6 +1206,8 @@
    "inputs": [
     "prim",
     "heatmap",
+    "min",
+    "max",
     "SRC"
    ],
    "outputs": [
@@ -1531,24 +1580,6 @@
     "primitive"
    ]
   },
-  "PrimitiveWrangle": {
-   "inputs": [
-    "prim0",
-    "prim1",
-    "prim2",
-    "prim3",
-    "wrangle",
-    "SRC"
-   ],
-   "outputs": [
-    "prim0",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
   "PrintMessage": {
    "inputs": [
     "SRC"
@@ -1637,6 +1668,7 @@
    ],
    "outputs": [
     "port",
+    "hasValue",
     "DST"
    ],
    "params": [
@@ -1720,132 +1752,6 @@
    "params": [],
    "categories": [
     "numeric"
-   ]
-  },
-  "WrangleBinaryOp": {
-   "inputs": [
-    "lhs",
-    "rhs",
-    "SRC"
-   ],
-   "outputs": [
-    "res",
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "opName",
-     "add"
-    ]
-   ],
-   "categories": [
-    "wrangler"
-   ]
-  },
-  "WrangleImmed": {
-   "inputs": [
-    "value",
-    "SRC"
-   ],
-   "outputs": [
-    "res",
-    "DST"
-   ],
-   "params": [],
-   "categories": [
-    "wrangler"
-   ]
-  },
-  "WrangleLoad": {
-   "inputs": [
-    "SRC"
-   ],
-   "outputs": [
-    "res",
-    "DST"
-   ],
-   "params": [
-    [
-     "int",
-     "primId",
-     "0"
-    ],
-    [
-     "string",
-     "attrName",
-     "pos"
-    ]
-   ],
-   "categories": [
-    "wrangler"
-   ]
-  },
-  "WrangleStore": {
-   "inputs": [
-    "val",
-    "SRC"
-   ],
-   "outputs": [
-    "res",
-    "DST"
-   ],
-   "params": [
-    [
-     "int",
-     "primId",
-     "0"
-    ],
-    [
-     "string",
-     "attrName",
-     "pos"
-    ]
-   ],
-   "categories": [
-    "wrangler"
-   ]
-  },
-  "WrangleTernaryOp": {
-   "inputs": [
-    "lhs",
-    "mhs",
-    "rhs",
-    "SRC"
-   ],
-   "outputs": [
-    "res",
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "opName",
-     "vec"
-    ]
-   ],
-   "categories": [
-    "wrangler"
-   ]
-  },
-  "WrangleUnaryOp": {
-   "inputs": [
-    "lhs",
-    "SRC"
-   ],
-   "outputs": [
-    "res",
-    "DST"
-   ],
-   "params": [
-    [
-     "string",
-     "opName",
-     "neg"
-    ]
-   ],
-   "categories": [
-    "wrangler"
    ]
   },
   "TestSub": {

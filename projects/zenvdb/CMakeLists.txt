@@ -17,8 +17,8 @@ find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
 find_package(OpenVDB REQUIRED)
 target_link_libraries(zenvdb PRIVATE OpenVDB::openvdb IlmBase::Half TBB::tbbmalloc TBB::tbb)
 
-find_package(zeno REQUIRED)
 target_link_libraries(zenvdb PRIVATE zeno)
+get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
 set_target_properties(zenvdb PROPERTIES
 	LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
 	RUNTIME_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}

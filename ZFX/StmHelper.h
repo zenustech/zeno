@@ -67,6 +67,26 @@ inline Stm operator/(Stm const &lhs, Stm const &rhs) {
     return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>("/", lhs.stmt, rhs.stmt)};
 }
 
+inline Stm operator%(Stm const &lhs, Stm const &rhs) {
+    return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>("%", lhs.stmt, rhs.stmt)};
+}
+
+inline Stm operator&(Stm const &lhs, Stm const &rhs) {
+    return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>("&", lhs.stmt, rhs.stmt)};
+}
+
+inline Stm stm_andnot(Stm const &lhs, Stm const &rhs) {
+    return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>("&~", lhs.stmt, rhs.stmt)};
+}
+
+inline Stm operator^(Stm const &lhs, Stm const &rhs) {
+    return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>("^", lhs.stmt, rhs.stmt)};
+}
+
+inline Stm operator|(Stm const &lhs, Stm const &rhs) {
+    return {lhs.ir, lhs.ir->emplace_back<BinaryOpStmt>("|", lhs.stmt, rhs.stmt)};
+}
+
 inline Stm operator+(Stm const &src) {
     return {src.ir, src.ir->emplace_back<UnaryOpStmt>("+", src.stmt)};
 }
