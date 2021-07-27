@@ -101,7 +101,7 @@ struct IfElse : zeno::INode {
     static bool evaluate_condition(zeno::IObject *cond) {
         if (auto num = dynamic_cast<zeno::NumericObject *>(cond); num) {
             return std::visit([] (auto const &v) {
-                return (bool)v;
+                return zeno::any(v);
             }, num->value);
         } else if (auto con = dynamic_cast<zeno::ConditionObject *>(cond); con) {
             return con->get();

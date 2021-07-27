@@ -3,7 +3,7 @@
 #include <array>
 #include <cmath>
 
-namespace zeno {
+namespace fdb {
 
 /* main class definition */
 

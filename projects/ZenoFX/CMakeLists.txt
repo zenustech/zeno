@@ -1,7 +1,6 @@
 add_library(ZenoFXlib SHARED)
 target_include_directories(ZenoFXlib PRIVATE .)
 
-find_package(zeno REQUIRED)
 target_link_libraries(ZenoFXlib PRIVATE zeno ZFX)
 target_sources(ZenoFXlib PRIVATE nw.cpp pw.cpp pnw.cpp ppw.cpp)
 
@@ -16,6 +15,7 @@ if (ZENOFX_ENABLE_OPENVDB)
     target_link_libraries(ZenoFXlib PRIVATE openvdb)
 endif()
 
+get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
 set_target_properties(ZenoFXlib PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
     RUNTIME_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}

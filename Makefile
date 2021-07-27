@@ -1,10 +1,8 @@
-O=arts/zfxneighbor.zsg
+# make xxx commands for @archibate's convinence
+
+O=arts/testsubhasinput.zsg
 
 default: run
-
-dist: all
-	make -C build install
-	./dist.sh
 
 all:
 	cmake -B build
@@ -31,4 +29,4 @@ run: all
 debug: debug_all
 	USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh
 
-.PHONY: all debug_all debug run dist test configure default
+.PHONY: all debug_all debug run test configure default
