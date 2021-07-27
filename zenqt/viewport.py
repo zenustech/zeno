@@ -110,14 +110,16 @@ class ViewportWidget(QGLWidget):
     def on_update(self):
         self.repaint()
 
-for name in ['mousePressEvent', 'mouseMoveEvent', 'wheelEvent']:
-    def closure(name):
-        oldfunc = getattr(ViewportWidget, name)
-        def newfunc(self, event):
-            getattr(self.camera, name)(event)
-            oldfunc(self, event)
-        setattr(ViewportWidget, name, newfunc)
-    closure(name)
+@eval('lambda x: x()')
+def _():
+    for name in ['mousePressEvent', 'mouseMoveEvent', 'wheelEvent']:
+        def closure(name):
+            oldfunc = getattr(ViewportWidget, name)
+            def newfunc(self, event):
+                getattr(self.camera, name)(event)
+                oldfunc(self, event)
+            setattr(ViewportWidget, name, newfunc)
+        closure(name)
 
 
 class QDMDisplayMenu(QMenu):
