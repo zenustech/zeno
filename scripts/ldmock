@@ -131,10 +131,10 @@ if [ "x" == "x$PYTHONHOME" ]; then
     export PYTHONHOME="$root"
 fi
 
-if [ "x" != "x$ldmock_no_ldlinux" ]; then
-    export ldmock_no_ldlinux=1
-    export LD_LIBRARY_PATH="$root/lib:$LD_LIBRARY_PATH"
-    exec -a "$0" -- "$root/.bin/$base" "$@"
-fi
+#if [ "x" != "x$ldmock_no_ldlinux" ]; then
+    #export ldmock_no_ldlinux=1
+    #export LD_LIBRARY_PATH="$root/lib:$LD_LIBRARY_PATH"
+    #exec -a "$0" -- "$root/.bin/$base" "$@"
+#fi
 
 exec "$root/lib/ld-linux-x86-64.so.2" --library-path "$root/lib" --argv0 "$0" "$root/.bin/$base" "$@"

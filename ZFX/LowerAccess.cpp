@@ -104,12 +104,12 @@ struct LowerAccess : Visitor<LowerAccess> {
     }
 
     void visit(LiterialStmt *stmt) {
-        //loaders[stmt->id] = [this, &]() {
-        ir->emplace_back<AsmLoadConstStmt>
-            ( store(stmt->id)
-            , stmt->value
-            );
-        //};
+        loaders[stmt->id] = [this, stmt]() {
+            ir->emplace_back<AsmLoadConstStmt>
+                ( store(stmt->id)
+                , stmt->value
+                );
+        };
     }
 
     void visit(TempSymbolStmt *stmt) {

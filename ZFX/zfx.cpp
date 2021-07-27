@@ -124,6 +124,26 @@ std::tuple
     ir->print();
 #endif
 
+    if (options.constant_fold) {
+#ifdef ZFX_PRINT_IR
+        cout << "=== ConstantFold" << endl;
+#endif
+        ir = apply_constant_fold(ir.get());
+#ifdef ZFX_PRINT_IR
+        ir->print();
+#endif
+    }
+
+    if (options.kill_unreachable) {
+#ifdef ZFX_PRINT_IR
+        cout << "=== KillUnreachable" << endl;
+#endif
+        ir = apply_kill_unreachable(ir.get());
+#ifdef ZFX_PRINT_IR
+        ir->print();
+#endif
+    }
+
     if (options.reassign_parameters) {
 #ifdef ZFX_PRINT_IR
         cout << "=== ReassignParameters" << endl;
@@ -154,8 +174,8 @@ std::tuple
 #ifdef ZFX_PRINT_IR
         ir->print();
 #endif
-        for (auto const &[idx, expr]: constants) {
-            oss_end << "const " << idx << " " << expr << "\n";
+        for (auto const &[idx, value]: constants) {
+            oss_end << "const " << idx << " " << value << "\n";
         }
     }
 
@@ -186,6 +206,16 @@ std::tuple
         cout << "=== KillUnreachable" << endl;
 #endif
         ir = apply_kill_unreachable(ir.get());
+#ifdef ZFX_PRINT_IR
+        ir->print();
+#endif
+    }
+
+    if (options.merge_identical) {
+#ifdef ZFX_PRINT_IR
+        cout << "=== MergeIdentical" << endl;
+#endif
+        ir = apply_merge_identical(ir.get());
 #ifdef ZFX_PRINT_IR
         ir->print();
 #endif

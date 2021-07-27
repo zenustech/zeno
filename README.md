@@ -86,7 +86,7 @@ Zeno adopts a highly decoupled design of things, making extending it becoming su
 
 Here's an example on how to add a ZENO node with its C++ API:
 
-![demo_project/main.cpp](images/demo_project.png "demo_project/main.cpp")
+[![zeno_addon_wizard/YourProject/CustomNumber.cpp](images/demo_project.png)](https://github.com/zenustech/zeno_addon_wizard/blob/main/YourProject/CustomNumber.cpp)
 
 ## Extensible
 
@@ -314,11 +314,11 @@ self-contained and portable to all platforms.
 
 ### Write your own extension!
 
-See ```demo_project/``` for an example on how to write custom nodes in ZENO.
+See https://github.com/zenustech/zeno_addon_wizard for an example on how to write custom nodes in ZENO.
 
 #### Installing extensions
 
-To install a node library for ZENO just copy the `.so` or `.dll` files to `zeno/lib/`. See ```demo_project/CMakeLists.txt``` for how to automate this in CMake.
+To install a node library for ZENO just copy the `.so` or `.dll` files to `zeno/lib/`.
 
 
 # Miscellaneous

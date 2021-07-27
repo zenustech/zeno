@@ -12,9 +12,9 @@ endif()
 #find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
 #target_link_libraries(oldzenbase PRIVATE TBB::tbb TBB::tbbmalloc)
 
-find_package(zeno REQUIRED)
 target_link_libraries(oldzenbase PRIVATE zeno)
 
+get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
 set_target_properties(oldzenbase PROPERTIES
 	LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
 	RUNTIME_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}

@@ -35,18 +35,17 @@ struct DemoteMathFuncs : Visitor<DemoteMathFuncs> {
         return {ir.get(), ir->push_clone_back(stmt)};
     }
 
-    Stm stm_const(std::string const &x) {
+    Stm stm_const(float x) {
         return {ir.get(), ir->emplace_back<LiterialStmt>(x)};
     }
 
     Stm stm_const(uint32_t x) {
-        std::stringstream ss; ss << 'i' << x;
-        return stm_const(ss.str());
-    }
-
-    Stm stm_const(float x) {
-        std::stringstream ss; ss << x;
-        return stm_const(ss.str());
+        union {
+            float f;
+            uint32_t i;
+        } u;
+        u.i = x;
+        return stm_const(u.f);
     }
 
     Statement *emit_op(std::string const &name, std::vector<Statement *> const &args) {
@@ -56,19 +55,19 @@ struct DemoteMathFuncs : Visitor<DemoteMathFuncs> {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
             auto mask = stm_const(0xffffffff);
-            return stm("xor", x, mask);
+            return stm("^", x, mask);
 
         } else if (name == "-" && args.size() == 1) {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
             auto mask = stm_const(0x80000000);
-            return stm("xor", x, mask);
+            return stm("^", x, mask);
 
         } else if (name == "abs") {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
             auto mask = stm_const(0x80000000);
-            return stm("andnot", x, mask);
+            return stm("&!", x, mask);
 
         /*} else if (name == "fsin") {
             ERROR_IF(args.size() != 1);

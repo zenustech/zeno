@@ -63,7 +63,7 @@ set_target_properties(gmpm
                   CUDA_ARCHITECTURES OFF
     )
 
-find_package(zeno REQUIRED)
+get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
 set_target_properties(gmpm PROPERTIES
 	LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
 	RUNTIME_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}

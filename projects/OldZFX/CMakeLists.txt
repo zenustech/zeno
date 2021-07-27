@@ -2,7 +2,6 @@ file (GLOB WRANGLE_SOURCE *.cpp)
 add_library(wrangleLib SHARED ${WRANGLE_SOURCE})
 target_include_directories(wrangleLib PRIVATE .)
 
-find_package(zeno REQUIRED)
 target_link_libraries(wrangleLib PRIVATE zeno)
 
 find_package(OpenMP)
@@ -12,6 +11,7 @@ if (OPENMP_FOUND)
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
+get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
 set_target_properties(wrangleLib PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
     RUNTIME_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}

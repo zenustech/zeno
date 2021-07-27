@@ -24,7 +24,12 @@ struct GatherReachable : Visitor<GatherReachable> {
         auto dst = stmt->dest_registers();
         auto src = stmt->source_registers();
         for (int r: src) {
-            auto stmtid = regs[r];
+            auto it = regs.find(r);
+            if (it == regs.end()) {
+                //error("uninitialized register %d used at $%d\n", r, stmt->id);
+                continue;
+            }
+            auto stmtid = it->second;
             deps[stmt->id].insert(stmtid);
         }
         for (int r: dst) {
@@ -34,7 +39,12 @@ struct GatherReachable : Visitor<GatherReachable> {
 
     void visit(AsmLocalLoadStmt *stmt) {
         visit((Statement *)stmt);
-        auto stmtid = locals[stmt->mem];
+        auto it = locals.find(stmt->mem);
+        if (it == locals.end()) {
+            //error("uninitialized local memory %d used at $%d\n", stmt->mem, stmt->id);
+            return;
+        }
+        auto stmtid = it->second;
         deps[stmt->id].insert(stmtid);
     }
 
@@ -45,7 +55,11 @@ struct GatherReachable : Visitor<GatherReachable> {
 
     void visit(AsmGlobalLoadStmt *stmt) {
         visit((Statement *)stmt);
-        auto stmtid = globals[stmt->mem];
+        auto it = globals.find(stmt->mem);
+        if (it == globals.end()) {
+            return;
+        }
+        auto stmtid = it->second;
         deps[stmt->id].insert(stmtid);
     }
 
