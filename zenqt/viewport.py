@@ -202,7 +202,7 @@ class DisplayWidget(QWidget):
             self.do_screenshot()
 
     def get_output_path(self, extname):
-        dir_path = '/tmp/outputs'
+        dir_path = 'outputs'
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
         file_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
