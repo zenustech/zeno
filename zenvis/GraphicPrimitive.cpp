@@ -231,7 +231,7 @@ void main()
 {
   vec2 coor = gl_PointCoord * 2 - 1;
   float len2 = dot(coor, coor);
-  if (len2 > 1)
+  if (len2 > 1&&radius>1)
     discard;
   vec3 oColor = color * mix(1, 0.4, len2);
   if(radius==1.0)
