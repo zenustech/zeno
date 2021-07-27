@@ -37,13 +37,15 @@ int main() {
 #else
     int n = 3;
     std::string code(R"(
-tmp = @pos + 0.5  # this is a comment
-@clr = tmp + 3.14 * tmp + 2.718 / (@pos * tmp + 1)
+#tmp = @pos + 0.5  # this is a comment
+#@clr = tmp + 3.14 * tmp + 2.718 / (@pos * tmp + 1)
+@clr = sin(1) * @pos
 )");
 #endif
 
     zfx::Options opts(zfx::Options::for_x64);
     opts.detect_new_symbols = true;
+    //opts.constant_fold = false;
     opts.reassign_channels = false;
     opts.reassign_parameters = false;
     opts.define_symbol("@pos", n);
