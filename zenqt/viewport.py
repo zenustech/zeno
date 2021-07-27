@@ -1,4 +1,5 @@
 import os
+import copy
 import time
 import shutil
 import tempfile
@@ -192,7 +193,7 @@ class DisplayWidget(QWidget):
             self.do_screenshot()
 
     def get_output_path(self, extname):
-        dir_path = 'outputs'
+        dir_path = '/tmp/outputs'
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
         file_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
@@ -204,10 +205,11 @@ class DisplayWidget(QWidget):
         if checked:
             tmp_path = tempfile.mkdtemp(prefix='recording-')
             assert os.path.isdir(tmp_path)
-            zenvis.status['record_video'] = tmp_path
+            self.record_path = tmp_path
+            self.view.camera.res = (nx, ny)
+            self.view.camera.update_perspective()
         else:
-            tmp_path = zenvis.status['record_video']
-            assert tmp_path is not None
+            tmp_path = self.record_path
             path = self.get_output_path('.mp4')
             png_paths = os.path.join(tmp_path, '%06d.png')
             cmd = ['ffmpeg', '-r', '60', '-i', png_paths, path]

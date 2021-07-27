@@ -84,6 +84,7 @@ void initialize() {
 }
 
 static void paint_graphics(void) {
+  CHECK_GL(glViewport(0, 0, nx, ny));
   CHECK_GL(glClearColor(0.23f, 0.23f, 0.23f, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   vao->bind();
@@ -113,7 +114,6 @@ void finalize() {
 }
 
 void new_frame() {
-  CHECK_GL(glViewport(0, 0, nx, ny));
   paint_graphics();
   renderFPS.tick();
 }
@@ -156,9 +156,13 @@ void do_screenshot(std::string path) {
     free(pixels);
 }
 
-void new_frame_offline(std::string path) {
-    GLuint fbo, rbo1, rbo2;
+void new_frame_offline(std::string path, int new_nx, int new_ny) {
+    paint_graphics();
 
+    int old_nx = nx, old_ny = ny;
+    nx = new_nx, ny = new_ny;
+
+    GLuint fbo, rbo1, rbo2;
     CHECK_GL(glGenRenderbuffers(1, &rbo1));
     CHECK_GL(glGenRenderbuffers(1, &rbo2));
     CHECK_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo1));
@@ -174,7 +178,7 @@ void new_frame_offline(std::string path) {
                 GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo2));
     CHECK_GL(glDrawBuffer(GL_COLOR_ATTACHMENT0));
 
-    new_frame();
+    paint_graphics();
 
     if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
         CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo));
@@ -201,9 +205,12 @@ void new_frame_offline(std::string path) {
     CHECK_GL(glDeleteRenderbuffers(1, &rbo2));
     CHECK_GL(glDeleteFramebuffers(1, &fbo));
 
-    CHECK_GL(glViewport(0, 0, nx, ny));
-    CHECK_GL(glClearColor(0.375f, 0.75f, 1.0f, 0.0f));
-    CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
+    //CHECK_GL(glViewport(0, 0, nx, ny));
+    //CHECK_GL(glClearColor(0.375f, 0.75f, 1.0f, 0.0f));
+    //CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
+    renderFPS.tick();
+
+    nx = old_nx, ny = old_ny;
 }
 
 }
