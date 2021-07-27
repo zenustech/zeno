@@ -1,4 +1,4 @@
-O=arts/testneighborzfx.zsg
+O=arts/testcachedif.zsg
 
 default: run
 

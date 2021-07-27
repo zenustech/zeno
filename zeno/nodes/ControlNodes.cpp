@@ -355,6 +355,7 @@ struct CachedIf : zeno::INode {
 
     virtual void doApply() override {
         if (has_input("keepCache")) {
+            requireInput("keepCache");
             bool keep = evaluate_condition(get_input("keepCache").get());
             if (!keep) {
                 m_done = false;
