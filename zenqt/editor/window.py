@@ -1,5 +1,6 @@
 from . import *
 
+
 class QDMFileMenu(QMenu):
     def __init__(self):
         super().__init__()
@@ -463,3 +464,4 @@ class NodeEditor(QWidget):
             desc['is_subgraph'] = True
             descs[name] = desc
         return descs
+

@@ -148,13 +148,13 @@ class DisplayWidget(QWidget):
         self.menuDisplay = QDMDisplayMenu()
         self.menuDisplay.triggered.connect(self.menuTriggered)
         self.menubar.addMenu(self.menuDisplay)
-        
+
         self.view = ViewportWidget()
         self.layout.addWidget(self.view)
-    
+
     def on_update(self):
         self.view.on_update()
-    
+
     def menuTriggered(self, act):
         name = act.text()
         if name == 'Show Grid':
