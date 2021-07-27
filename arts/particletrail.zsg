@@ -22,8 +22,8 @@
       "isCentered": 1
      },
      "uipos": [
-      391.0,
-      174.0
+      -499.78125,
+      167.859375
      ],
      "options": [
       "ONCE"
@@ -38,8 +38,8 @@
       "value": 3
      },
      "uipos": [
-      144.0,
-      263.0
+      -750.53125,
+      256.85937500000006
      ],
      "options": [
       "ONCE"
@@ -56,8 +56,8 @@
      },
      "params": {},
      "uipos": [
-      968.0,
-      257.0
+      1204.825,
+      376.71250000000015
      ],
      "options": [
       "VIEW"
@@ -67,8 +67,8 @@
      "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       "dc8647d3-Make3DGridPrimitive",
-       "prim"
+       "c2aa74a5-TransformPrimitive",
+       "outPrim"
       ],
       "zfxCode": [
        "8d52873c-MakeMultilineString",
@@ -90,19 +90,97 @@
       "SRC": null
      },
      "params": {
-      "value": "dt = 0.1\n@pos.x += @pos.y * dt\n@pos.y -= @pos.x * dt\n@clr = vec3(0.375, 0.75, 1.0)"
+      "value": "dt = 0.01\nsigma = 10\nrho = 28\nbeta = 8/3\ndx = sigma * (@pos.y - @pos.x)\ndy = @pos.x * (rho - @pos.z) - @pos.y\ndz = @pos.x * @pos.y - beta * @pos.z\n@pos.x += dt * dx\n@pos.y += dt * dy\n@pos.z += dt * dz"
      },
      "uipos": [
-      621.0,
-      473.0
+      622.9200000000001,
+      472.9999999999999
+     ],
+     "options": []
+    },
+    "c2aa74a5-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "e522737a-ParticlesWrangle",
+       "prim"
+      ],
+      "translation": [
+       "b064d28c-NumericVec3",
+       "vec3"
+      ],
+      "eulerXYZ": null,
+      "quatRotation": null,
+      "scaling": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      226.21875000000006,
+      218.109375
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "b064d28c-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": -10.0,
+      "y": 10.0,
+      "z": 25.0
+     },
+     "uipos": [
+      244.71875,
+      484.859375
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "e522737a-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "dc8647d3-Make3DGridPrimitive",
+       "prim"
+      ],
+      "zfxCode": [
+       "0ad7fc58-x",
+       "value"
+      ],
+      "params": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -155.75,
+      225.5
+     ],
+     "options": []
+    },
+    "0ad7fc58-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "@clr = @pos * 0.5 + 0.5"
+     },
+     "uipos": [
+      -201.25,
+      450.0
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": 52,
-    "trans_y": 144
+    "trans_x": -1383,
+    "trans_y": 37
    }
   }
  },
