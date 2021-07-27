@@ -39,7 +39,7 @@ int main() {
     std::string code(R"(
 #tmp = @pos + 0.5  # this is a comment
 #@clr = tmp + 3.14 * tmp + 2.718 / (@pos * tmp + 1)
-@clr = vec3(1.1, 2.2, 3.3) * @pos.x
+@clr = vec3(1.1, 1.1, 1.1) * @pos.x
 )");
 #endif
 

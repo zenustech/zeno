@@ -28,6 +28,10 @@ struct Statement {
     virtual StmtFields fields() = 0;
     virtual ~Statement() = default;
 
+    virtual std::string serialize_identity() const {
+        return to_string();
+    }
+
     virtual bool is_control_stmt() const {
         return false;
     }

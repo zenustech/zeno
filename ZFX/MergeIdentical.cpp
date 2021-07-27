@@ -34,7 +34,8 @@ struct MergeIdentical : Visitor<MergeIdentical> {
             for (auto [r_d, r_s]: regs) {
                 if (r_s == it->second) {
                     for (auto d: stmt->dest_registers()) {
-                        ir->emplace_back<AsmAssignStmt>(d, r_d);
+                        if (d != r_d)
+                            ir->emplace_back<AsmAssignStmt>(d, r_d);
                     }
                     found = true;
                     break;
