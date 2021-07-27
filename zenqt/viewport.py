@@ -100,6 +100,8 @@ class ViewportWidget(QGLWidget):
         super().__init__(fmt, parent)
 
         self.camera = CameraControl()
+        self.record_path = None
+        self.record_res = None
 
     def initializeGL(self):
         zenvis.initializeGL()
@@ -109,6 +111,13 @@ class ViewportWidget(QGLWidget):
         self.camera.update_perspective()
 
     def paintGL(self):
+        if self.record_path:
+            old_res = self.camera.res
+            self.camera.res = self.record_res
+            self.camera.update_perspective()
+            zenvis.recordGL(self.record_path)
+            self.camera.res = old_res
+            self.camera.update_perspective()
         zenvis.paintGL()
 
     def on_update(self):
@@ -205,11 +214,12 @@ class DisplayWidget(QWidget):
         if checked:
             tmp_path = tempfile.mkdtemp(prefix='recording-')
             assert os.path.isdir(tmp_path)
-            self.record_path = tmp_path
-            self.view.camera.res = (nx, ny)
-            self.view.camera.update_perspective()
+            self.view.record_path = tmp_path
+            self.view.record_res = (1024, 768)
         else:
-            tmp_path = self.record_path
+            tmp_path = self.view.record_path
+            assert tmp_path is not None
+            self.view.record_path = None
             path = self.get_output_path('.mp4')
             png_paths = os.path.join(tmp_path, '%06d.png')
             cmd = ['ffmpeg', '-r', '60', '-i', png_paths, path]

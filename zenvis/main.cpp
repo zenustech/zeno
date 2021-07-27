@@ -156,12 +156,7 @@ void do_screenshot(std::string path) {
     free(pixels);
 }
 
-void new_frame_offline(std::string path, int new_nx, int new_ny) {
-    paint_graphics();
-
-    int old_nx = nx, old_ny = ny;
-    nx = new_nx, ny = new_ny;
-
+void new_frame_offline(std::string path) {
     GLuint fbo, rbo1, rbo2;
     CHECK_GL(glGenRenderbuffers(1, &rbo1));
     CHECK_GL(glGenRenderbuffers(1, &rbo2));
@@ -208,9 +203,6 @@ void new_frame_offline(std::string path, int new_nx, int new_ny) {
     //CHECK_GL(glViewport(0, 0, nx, ny));
     //CHECK_GL(glClearColor(0.375f, 0.75f, 1.0f, 0.0f));
     //CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
-    renderFPS.tick();
-
-    nx = old_nx, ny = old_ny;
 }
 
 }
