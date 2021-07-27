@@ -159,7 +159,7 @@ class DisplayWidget(QWidget):
         name = act.text()
         if name == 'Show Grid':
             checked = act.isChecked()
-            zenvis.pyzenvis.set_show_grid(checked)
+            zenvis.status['show_grid'] = checked
 
     def sizeHint(self):
         return QSize(1200, 400)
