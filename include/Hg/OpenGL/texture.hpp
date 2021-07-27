@@ -90,6 +90,10 @@ namespace hg::OpenGL {
 
     void unbind() const { CHECK_GL(glBindFramebuffer(target, 0)); }
 
+    void bind(GLuint target) const { CHECK_GL(glBindFramebuffer(target, fbo)); }
+
+    void unbind(GLuint target) const { CHECK_GL(glBindFramebuffer(target, 0)); }
+
     bool complete() const { return glCheckFramebufferStatus(target) == GL_FRAMEBUFFER_COMPLETE; }
 
     void attach(Texture const &texture) {

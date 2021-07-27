@@ -11,6 +11,8 @@ void initialize();
 void finalize();
 void new_frame();
 void clear_graphics();
+void bind_framebuffer();
+void unbind_framebuffer();
 void auto_gc_frame_data(int nkeep);
 std::vector<int> get_valid_frames_list();
 void load_file(std::string name, std::string ext, std::string path, int frameid);
@@ -50,6 +52,8 @@ PYBIND11_MODULE(pyzenvis, m) {
     m.def("load_file", zenvis::load_file);
     m.def("do_screenshot", zenvis::do_screenshot);
     m.def("set_show_grid", zenvis::set_show_grid);
+    m.def("bind_framebuffer", zenvis::bind_framebuffer);
+    m.def("unbind_framebuffer", zenvis::unbind_framebuffer);
 }
 
 

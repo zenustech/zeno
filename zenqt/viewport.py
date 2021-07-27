@@ -169,7 +169,7 @@ class DisplayWidget(QWidget):
         self.view = ViewportWidget()
         self.layout.addWidget(self.view)
 
-        self.do_record_video()
+        #self.do_record_video()####
 
     def on_update(self):
         self.view.on_update()
@@ -187,7 +187,7 @@ class DisplayWidget(QWidget):
             self.do_record_video()
 
     def do_record_video(self):
-        pass
+        zenvis.core.bind_framebuffer()
 
     def do_screenshot(self):
         dir_path = 'screenshots'
