@@ -277,7 +277,6 @@ class DisplayWidget(QWidget):
             'ffmpeg', 
             '-r', str(self.params['fps']), 
             '-i', png_paths, 
-            '-c:v', 'mpeg4', 
             path
         ]
         print('Executing command:', cmd)
