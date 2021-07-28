@@ -1,21 +1,7 @@
 #include <iostream>
 #include <string_view>
 #include "source_location.h"
-
-namespace zpp {
-
-void log(const std::string_view message,
-         const source_location &location = source_location::current())
-{
-    std::cout << "file: "
-              << location.file_name() << "("
-              << location.line() << ":"
-              << location.column() << ") `"
-              << location.function_name() << "`: "
-              << message << '\n';
-}
-
-}
+#include "print.h"
 
 template <class T>
 void fun(T x) {
@@ -24,5 +10,6 @@ void fun(T x) {
 
 int main() {
     fun("Hello, world\n");
+    *(int *)nullptr = 0;
     return 0;
 }

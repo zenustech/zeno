@@ -4,6 +4,7 @@
 namespace zpp {
 
 static void __signal_handler(int signo) {
+    printf("*** recieved signal %d\n", signo);
     throw signal_exception(signo);
 }
 
