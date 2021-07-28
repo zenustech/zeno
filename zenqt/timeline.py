@@ -211,3 +211,4 @@ class TimelineWidget(QWidget):
     def jump_frame(self, frameid):
         self.stop_play()
         self.slider.setValue(frameid)
+        zenvis.status['frameid'] = frameid
