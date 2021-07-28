@@ -209,12 +209,11 @@ class QDMGraphicsNode(QGraphicsItem):
 
     def collapse(self):
         for v in self.childItems():
-            v.hide()
+            if v not in [self.title, self.collapse_button]:
+                v.hide()
 
         self.dummy_input_socket.show()
         self.dummy_output_socket.show()
-        self.collapse_button.show()
-        self.title.show()
 
         self.collapsed = True
         self.collapse_button.update_svg(self.collapsed)
