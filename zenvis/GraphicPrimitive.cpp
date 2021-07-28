@@ -208,10 +208,7 @@ void main()
 
   vec3 posEye = vec3(mView * vec4(position, 1.0));
   float dist = length(posEye);
-  if (radius > 1)
-    gl_PointSize = radius * mPointScale / dist;
-  else
-    gl_PointSize = 1;
+  gl_PointSize = max(1, radius * mPointScale / dist);
   gl_Position = mVP * vec4(position, 1.0);
 }
 )";
@@ -232,7 +229,7 @@ void main()
 {
   vec2 coor = gl_PointCoord * 2 - 1;
   float len2 = dot(coor, coor);
-  if (len2 > 1 && radius > 1)
+  if (len2 > 1 && radius > 0)
     discard;
   vec3 oColor;
   if (radius > 1)
