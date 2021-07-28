@@ -161,9 +161,6 @@ ZENAPI void Graph::applyNode(std::string const &id) {
         return;
     }
     ctx->visited.insert(id);
-#ifdef ZENO_DETAILED_LOG
-    printf("+ %s\n", id.c_str());
-#endif
     auto node = safe_at(nodes, id, "node");
     try {
         node->doApply();
@@ -171,9 +168,6 @@ ZENAPI void Graph::applyNode(std::string const &id) {
         throw zeno::Exception("During evaluation of `"
                 + node->myname + "`:\n" + e.what());
     }
-#ifdef ZENO_DETAILED_LOG
-    printf("- %s\n", id.c_str());
-#endif
 }
 
 ZENAPI void Graph::applyNodes(std::vector<std::string> const &ids) {
