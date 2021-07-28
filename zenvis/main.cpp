@@ -208,10 +208,6 @@ void new_frame_offline(std::string path) {
     CHECK_GL(glDeleteRenderbuffers(1, &rbo1));
     CHECK_GL(glDeleteRenderbuffers(1, &rbo2));
     CHECK_GL(glDeleteFramebuffers(1, &fbo));
-
-    //CHECK_GL(glViewport(0, 0, nx, ny));
-    //CHECK_GL(glClearColor(0.375f, 0.75f, 1.0f, 0.0f));
-    //CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
 }
 
 void set_background_color(float r, float g, float b) {
