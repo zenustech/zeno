@@ -12,6 +12,7 @@ from PySide2.QtWidgets import *
 from PySide2.QtOpenGL import *
 
 import zenvis
+from zeno import fileio
 from .dialog import *
 
 class CameraControl:
@@ -218,12 +219,19 @@ class DisplayWidget(QWidget):
         return path
 
     def do_record_video(self, checked):
+        count = fileio.getFrameCount()
+        if count == 0:
+            QMessageBox.information(self, 'Zeno', 'Please do simulation before record video!')
+            return
         self.params = {}
         dialog = RecordVideoDialog(self.params)
         accept = dialog.exec()
         if not accept:
             return
-        self.params['frame_end'] = min(self.timeline.slider.maximum(), self.params['frame_end'])
+        if self.params['frame_start'] >= self.params['frame_end']:
+            QMessageBox.information(self, 'Zeno', 'Frame strat must be less than frame end!')
+            return
+        self.params['frame_end'] = min(count - 1, self.params['frame_end'])
 
         self.timeline.jump_frame(self.params['frame_start'])
         self.timeline.start_play()
@@ -232,7 +240,7 @@ class DisplayWidget(QWidget):
         tmp_path = tempfile.mkdtemp(prefix='recording-')
         assert os.path.isdir(tmp_path)
         self.view.record_path = tmp_path
-        self.view.record_res = (1024, 768)
+        self.view.record_res = (self.params['width'], self.params['height'])
 
     def finish_record(self):
         tmp_path = self.view.record_path
@@ -242,7 +250,7 @@ class DisplayWidget(QWidget):
         png_paths = os.path.join(tmp_path, '%06d.png')
         cmd = [
             'ffmpeg', 
-            '-r', '60', 
+            '-r', str(self.params['fps']), 
             '-i', png_paths, 
             '-c:v', 'mpeg4', 
             path

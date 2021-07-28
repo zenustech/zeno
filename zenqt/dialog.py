@@ -70,8 +70,8 @@ class RecordVideoDialog(QDialog):
         r['frame_start'] = int(self.frame_start_edit.text())
         r['frame_end'] = int(self.frame_end_edit.text())
         r['fps'] = int(self.fps_edit.text())
-        r['viewport_width'] = int(self.viewport_width_eidtor.text())
-        r['viewport_height'] = int(self.viewport_height_eidtor.text())
+        r['width'] = int(self.viewport_width_eidtor.text())
+        r['height'] = int(self.viewport_height_eidtor.text())
         super().accept()
 
     def build_combobox(self):
