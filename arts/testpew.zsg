@@ -17,12 +17,12 @@
       "SRC": null
      },
      "params": {
-      "isCentered": 0,
+      "isCentered": 1,
       "hasFaces": 1
      },
      "uipos": [
-      -719.04,
-      -67.44
+      -997.4399999999999,
+      -57.84
      ],
      "options": []
     },
@@ -32,11 +32,11 @@
       "SRC": null
      },
      "params": {
-      "value": 32
+      "value": 4
      },
      "uipos": [
-      -1039.0400000000002,
-      -27.319999999999993
+      -1317.4400000000005,
+      -17.72
      ],
      "options": []
     },
@@ -46,7 +46,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@clr = vec3(1)"
+      "value": "@clr += 0.3\n@@clr += 0.3"
      },
      "uipos": [
       -144.76,
@@ -81,7 +81,7 @@
      "name": "PrimitiveFaceToEdges",
      "inputs": {
       "prim": [
-       "9c6477d7-Make2DGridPrimitive",
+       "7a4c7789-PrimitiveAddAttr",
        "prim"
       ],
       "SRC": null
@@ -94,12 +94,32 @@
       2.0
      ],
      "options": []
+    },
+    "7a4c7789-PrimitiveAddAttr": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "9c6477d7-Make2DGridPrimitive",
+       "prim"
+      ],
+      "fillValue": null,
+      "SRC": null
+     },
+     "params": {
+      "name": "clr",
+      "type": "float3"
+     },
+     "uipos": [
+      -725.0,
+      -24.480000000000004
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": -537,
-    "trans_y": -285
+    "trans_x": -2339,
+    "trans_y": -186
    }
   }
  },

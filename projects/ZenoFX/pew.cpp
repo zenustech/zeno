@@ -122,7 +122,7 @@ struct PrimitiveEdgeWrangle : zeno::INode {
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
 
-        std::vector<Buffer> chs(prog->symbols.size() * 2);
+        std::vector<Buffer> chs(prog->symbols.size());
         for (int i = 0; i < prog->symbols.size(); i++) {
             auto [name, dimid] = prog->symbols[i];
             printf("channel %d: %s.%d\n", i, name.c_str(), dimid);

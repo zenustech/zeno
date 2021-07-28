@@ -6,24 +6,24 @@
 #include <signal.h>
 #include <unistd.h>
 #endif
-#define ZENO_TRIGGER_GDB 1///
+//#define ZENO_TRIGGER_GDB 1///
 
 namespace zeno {
 
 #ifdef __linux__
 static void trigger_gdb(int exitcode = -1) {
-    printf("*** Launching emergency GDB for debugging...\n");
     char cmd[1024];
     sprintf(cmd, "sudo gdb -q "
             " -ex 'set confirm off'"
             " -ex 'set pagination off'"
             " -p %d", getpid());
     system(cmd);
-    exit(exitcode);
+    _exit(exitcode);
 }
 
 static void signal_handler(int signo) {
-    printf("*** ZENO process recieved signal %d: %s\n", signo, strsignal(signo));
+    printf("*** ZENO process recieved signal %d: %s\n",
+            signo, strsignal(signo));
 #ifdef ZENO_TRIGGER_GDB
     trigger_gdb(-signo);
 #endif
@@ -36,7 +36,6 @@ static int registerMyHandlers() {
     }
     signal(SIGSEGV, signal_handler);
     signal(SIGFPE, signal_handler);
-    signal(SIGABRT, signal_handler);
     signal(SIGILL, signal_handler);
     signal(SIGBUS, signal_handler);
     signal(SIGPIPE, signal_handler);
