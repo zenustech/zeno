@@ -27,7 +27,7 @@ static void vectors_wrangle
     if (chs.size() == 0)
         return;
 
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for (int i = 0; i < edges.size(); i++) {
         auto uv = edges[i];
         auto ctx = exec->make_context();

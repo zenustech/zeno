@@ -21,10 +21,12 @@
       "hasFaces": 1
      },
      "uipos": [
-      -997.4399999999999,
-      -57.84
+      -1448.2524999999998,
+      -68.9025
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "77061f12-NumericInt": {
      "name": "NumericInt",
@@ -35,10 +37,12 @@
       "value": 4
      },
      "uipos": [
-      -1317.4400000000005,
-      -17.72
+      -1768.2525000000007,
+      -28.7825
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "2dabbb5b-MakeMultilineString": {
      "name": "MakeMultilineString",
@@ -46,7 +50,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@clr += 0.3\n@@clr += 0.3"
+      "value": "K = 1\nL = @@pos - @pos\nacc = K * normalize(L) * (length(L) - @L0)\n@acc += acc\n@@acc -= acc"
      },
      "uipos": [
       -144.76,
@@ -73,15 +77,13 @@
       22.0,
       -28.0
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "b623ba74-PrimitiveFaceToEdges": {
      "name": "PrimitiveFaceToEdges",
      "inputs": {
       "prim": [
-       "7a4c7789-PrimitiveAddAttr",
+       "6c7e9d41-x",
        "prim"
       ],
       "SRC": null
@@ -90,8 +92,8 @@
       "clearFaces": 1
      },
      "uipos": [
-      -439.0,
-      2.0
+      -408.0,
+      16.0
      ],
      "options": []
     },
@@ -110,16 +112,99 @@
       "type": "float3"
      },
      "uipos": [
-      -725.0,
-      -24.480000000000004
+      -1175.8125000000002,
+      -35.542500000000004
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "ca5701f9-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "7cbc20dc-PrimitiveEdgeWrangle",
+       "prim"
+      ],
+      "zfxCode": [
+       "8320af03-x",
+       "value"
+      ],
+      "params": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      308.47999999999996,
+      120.32000000000002
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "8320af03-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "dt = 0.01\n@pos += @vel * dt\n@vel += @acc * dt"
+     },
+     "uipos": [
+      290.55999999999995,
+      339.84000000000003
      ],
      "options": []
+    },
+    "31ee1201-x": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "7a4c7789-PrimitiveAddAttr",
+       "prim"
+      ],
+      "fillValue": null,
+      "SRC": null
+     },
+     "params": {
+      "name": "vel",
+      "type": "float3"
+     },
+     "uipos": [
+      -923.6125,
+      27.9375
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "6c7e9d41-x": {
+     "name": "PrimitiveAddAttr",
+     "inputs": {
+      "prim": [
+       "31ee1201-x",
+       "prim"
+      ],
+      "fillValue": null,
+      "SRC": null
+     },
+     "params": {
+      "name": "acc",
+      "type": "float3"
+     },
+     "uipos": [
+      -658.3999999999999,
+      85.6
+     ],
+     "options": [
+      "ONCE"
+     ]
     }
    },
    "view": {
-    "scale": 1.5625,
-    "trans_x": -2339,
-    "trans_y": -186
+    "scale": 1.25,
+    "trans_x": -1226,
+    "trans_y": -63
    }
   }
  },
