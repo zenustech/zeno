@@ -5,10 +5,9 @@
 
 namespace zpp {
 
-void __attach_debugger();
+void __attach_debugger(int exitcode = -1);
 
 struct exception : std::exception {
-public:
     exception() noexcept {
         __attach_debugger();
     }
