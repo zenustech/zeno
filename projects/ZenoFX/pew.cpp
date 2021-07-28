@@ -29,7 +29,7 @@ static void vectors_wrangle
 
     //#pragma omp parallel for
     for (int i = 0; i < edges.size(); i++) {
-        auto uv = edges[i];
+        int uv[3] = {i, edges[i][0], edges[i][1]};
         auto ctx = exec->make_context();
         for (int k = 0; k < chs.size(); k++) {
             ctx.channel(k)[0] = chs[k].base[chs[k].stride * uv[chs[k].which]];
@@ -44,6 +44,7 @@ static void vectors_wrangle
 struct PrimitiveEdgeWrangle : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto edgePrim = get_input<zeno::PrimitiveObject>("edgePrim");
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
         zfx::Options opts(zfx::Options::for_x64);
@@ -55,10 +56,10 @@ struct PrimitiveEdgeWrangle : zeno::INode {
                 else if constexpr (std::is_same_v<T, float>) return 1;
                 else return 0;
             }, attr);
-            printf("define symbol: @%s dim %d\n", key.c_str(), dim);
-            opts.define_symbol('@' + key, dim);
-            printf("define symbol: @@%s dim %d\n", key.c_str(), dim);
-            opts.define_symbol("@@" + key, dim);
+            printf("define symbol: @1%s dim %d\n", key.c_str(), dim);
+            opts.define_symbol("@1" + key, dim);
+            printf("define symbol: @2%s dim %d\n", key.c_str(), dim);
+            opts.define_symbol("@2" + key, dim);
         }
 
         auto params = has_input("params") ?
@@ -97,13 +98,15 @@ struct PrimitiveEdgeWrangle : zeno::INode {
                     name.c_str(), dim);
             assert(name[0] == '@');
             std::string key = name.substr(1);
-            if (key[0] == '@') {
+            auto *primPtr = edgePrim.get();
+            if ('1' <= key[0] && key[0] <= '9') {
                 key = key.substr(1);
+                primPtr = prim.get();
             }
             if (dim == 3) {
-                prim->add_attr<zeno::vec3f>(key);
+                primPtr->add_attr<zeno::vec3f>(key);
             } else if (dim == 1) {
-                prim->add_attr<float>(key);
+                primPtr->add_attr<float>(key);
             } else {
                 printf("ERROR: bad attribute dimension for primitive: %d\n",
                     dim);
@@ -128,14 +131,17 @@ struct PrimitiveEdgeWrangle : zeno::INode {
             printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '@');
             Buffer iob;
-            if (name[1] == '@') {
+            zeno::PrimitiveObject *primPtr;
+            if ('1' <= name[1] && name[1] <= '9') {
+                iob.which = name[1] - '0';
                 name = name.substr(2);
-                iob.which = 1;
+                primPtr = prim.get();
             } else {
-                name = name.substr(1);
                 iob.which = 0;
+                name = name.substr(1);
+                primPtr = edgePrim.get();
             }
-            auto const &attr = prim->attr(name);
+            auto const &attr = primPtr->attr(name);
             std::visit([&, dimid_ = dimid] (auto const &arr) {
                 iob.base = (float *)arr.data() + dimid_;
                 iob.count = arr.size();
@@ -147,13 +153,14 @@ struct PrimitiveEdgeWrangle : zeno::INode {
         vectors_wrangle(exec, chs, prim->lines);
 
         set_output("prim", std::move(prim));
+        set_output("edgePrim", std::move(edgePrim));
     }
 };
 
 ZENDEFNODE(PrimitiveEdgeWrangle, {
-    {{"primitive", "prim"},
+    {{"primitive", "prim"}, {"primitive", "edgePrim"},
      {"string", "zfxCode"}, {"dict:numeric", "params"}},
-    {{"primitive", "prim"}},
+    {{"primitive", "prim"}, {"primitive", "edgePrim"}},
     {},
     {"zenofx"},
 });
