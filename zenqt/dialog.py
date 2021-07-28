@@ -39,8 +39,8 @@ class RecordVideoDialog(QDialog):
         viewport_height = QLabel('Height:')
         self.viewport_height_eidtor = QLineEdit('720')
 
-        ok_button = QPushButton('Ok')
-        cancel_button = QPushButton('Cancle')
+        ok_button = QPushButton('OK')
+        cancel_button = QPushButton('Cancel')
 
         ok_button.clicked.connect(self.accept)
         cancel_button.clicked.connect(self.reject)
