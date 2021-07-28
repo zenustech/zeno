@@ -61,6 +61,16 @@ struct PrimitiveEdgeWrangle : zeno::INode {
             printf("define symbol: @2%s dim %d\n", key.c_str(), dim);
             opts.define_symbol("@2" + key, dim);
         }
+        for (auto const &[key, attr]: edgePrim->m_attrs) {
+            int dim = std::visit([] (auto const &v) {
+                using T = std::decay_t<decltype(v[0])>;
+                if constexpr (std::is_same_v<T, zeno::vec3f>) return 3;
+                else if constexpr (std::is_same_v<T, float>) return 1;
+                else return 0;
+            }, attr);
+            printf("define symbol: @%s dim %d\n", key.c_str(), dim);
+            opts.define_symbol('@' + key, dim);
+        }
 
         auto params = has_input("params") ?
             get_input<zeno::DictObject>("params") :
@@ -149,7 +159,6 @@ struct PrimitiveEdgeWrangle : zeno::INode {
                 iob.count = arr.size();
                 iob.stride = sizeof(arr[0]) / sizeof(float);
             }, attr);
-            printf("%d %p\n", i, iob.base);
             chs[i] = iob;
         }
 

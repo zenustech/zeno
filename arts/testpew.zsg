@@ -34,7 +34,7 @@
       "SRC": null
      },
      "params": {
-      "value": 4
+      "value": 32
      },
      "uipos": [
       -2354.1900000000005,
@@ -53,8 +53,8 @@
       "value": "K = 1\nL = @2pos - @1pos\nacc = K * normalize(L) * (length(L) - @L0)\n@1acc += acc\n@2acc -= acc"
      },
      "uipos": [
-      -144.76,
-      209.15999999999997
+      -97.75999999999999,
+      -439.84000000000003
      ],
      "options": []
     },
@@ -136,7 +136,10 @@
        "8320af03-x",
        "value"
       ],
-      "params": null,
+      "params": [
+       "b04acd62-NumericWrangle",
+       "result"
+      ],
       "SRC": null
      },
      "params": {},
@@ -144,7 +147,9 @@
       308.47999999999996,
       120.32000000000002
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "8320af03-x": {
      "name": "MakeMultilineString",
@@ -152,11 +157,11 @@
       "SRC": null
      },
      "params": {
-      "value": "dt = 0.01\n@pos += @vel * dt\n@vel += @acc * dt"
+      "value": "@pos += @vel * $dt\n@vel += @acc * $dt\n@vel *= $exp_damp_dt"
      },
      "uipos": [
-      290.55999999999995,
-      339.84000000000003
+      300.55999999999995,
+      -279.15999999999997
      ],
      "options": []
     },
@@ -242,8 +247,7 @@
       -134.04902343750007
      ],
      "options": [
-      "ONCE",
-      "VIEW"
+      "ONCE"
      ]
     },
     "16340659-x": {
@@ -252,7 +256,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@L0 = length(@2pos - @1pos)"
+      "value": "@L0 = length(@2pos - @1pos) * 1.1"
      },
      "uipos": [
       -828.2066406250003,
@@ -261,12 +265,105 @@
      "options": [
       "ONCE"
      ]
+    },
+    "0adcdfcc-IntegrateFrameTime": {
+     "name": "IntegrateFrameTime",
+     "inputs": {
+      "desired_dt": [
+       "5398e115-NumericFloat",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "min_scale": 0.0001
+     },
+     "uipos": [
+      -543.46875,
+      266.04687500000006
+     ],
+     "options": []
+    },
+    "f2347882-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": null,
+      "dt": [
+       "0adcdfcc-IntegrateFrameTime",
+       "actual_dt"
+      ]
+     },
+     "params": {
+      "_KEYS": "dt"
+     },
+     "uipos": [
+      -272.46875,
+      244.04687500000006
+     ],
+     "options": [
+      "ONCE"
+     ],
+     "socket_keys": [
+      "dt"
+     ]
+    },
+    "5398e115-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.001
+     },
+     "uipos": [
+      -803.46875,
+      257.04687500000006
+     ],
+     "options": []
+    },
+    "b04acd62-NumericWrangle": {
+     "name": "NumericWrangle",
+     "inputs": {
+      "params": [
+       "f2347882-MakeDict",
+       "dict"
+      ],
+      "zfxCode": [
+       "70a1b120-MakeMultilineString",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      7.53125,
+      227.79687500000006
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "70a1b120-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "damp = 500\n@dt = $dt\n@exp_damp_dt = exp(-damp * $dt)"
+     },
+     "uipos": [
+      -12.578124999999972,
+      415.23437500000006
+     ],
+     "options": [
+      "ONCE"
+     ]
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -1278,
-    "trans_y": -691
+    "scale": 1.0,
+    "trans_x": -2628,
+    "trans_y": -318
    }
   }
  },
