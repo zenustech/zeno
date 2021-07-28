@@ -3,9 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <unistd.h>
 
 static void handler(int signo) {
     printf("ZENO process recieved signal %d: %s\n", signo, strsignal(signo));
+    char cmd[1024];
+    sprintf(cmd, "sudo gdb -p %d", getpid());
+    system(cmd);
     exit(-signo);
 }
 
