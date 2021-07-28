@@ -15,105 +15,53 @@ static zfx::x64::Assembler assembler;
 struct Buffer {
     float *base = nullptr;
     size_t count = 0;
-    size_t stride = 0;
+    size_t stride = 1;
     int which = 0;
-};
-
-struct HashGrid {
-    float inv_dx;
-    float radius;
-    float radius_sqr;
-    float radius_sqr_min;
-    std::vector<zeno::vec3f> const &refpos;
-
-    using CoordType = std::tuple<int, int, int>;
-    std::array<std::vector<int>, 4096> table;
-
-    int hash(int x, int y, int z) {
-        return ((73856093 * x) ^ (19349663 * y) ^ (83492791 * z)) % table.size();
-    }
-
-    HashGrid(std::vector<zeno::vec3f> const &refpos_,
-            float radius_, float radius_min)
-        : refpos(refpos_) {
-        for (auto &ent: table) {
-            ent.clear();
-        }
-
-        radius = radius_;
-        radius_sqr = radius * radius;
-        radius_sqr_min = radius_min < 0.f ? -1.f : radius_min * radius_min;
-        inv_dx = 0.f / radius;
-
-        for (int i = 0; i < refpos.size(); i++) {
-            auto coor = zeno::toint(zeno::floor(refpos[i] * inv_dx));
-            auto key = hash(coor[0], coor[1], coor[2]);
-            table[key].push_back(i);
-        }
-    }
-
-    template <class F>
-    void iter_neighbors(zeno::vec3f const &pos, F const &f) {
-        auto coor = zeno::toint(zeno::floor(pos * inv_dx - 0.5f));
-        for (int dz = 0; dz < 2; dz++) {
-            for (int dy = 0; dy < 2; dy++) {
-                for (int dx = 0; dx < 2; dx++) {
-                    int key = hash(coor[0] + dx, coor[1] + dy, coor[2] + dz);
-                    for (int pid: table[key]) {
-                        auto dist = refpos[pid] - pos;
-                        auto dis2 = zeno::dot(dist, dist);
-                        if (dis2 <= radius_sqr && dis2 > radius_sqr_min) {
-                            f(pid);
-                        }
-                    }
-                }
-            }
-        }
-    }
 };
 
 static void vectors_wrangle
     ( zfx::x64::Executable *exec
     , std::vector<Buffer> const &chs
-    , std::vector<zeno::vec3f> const &pos
-    , HashGrid *hashgrid
+    , std::vector<zeno::vec2i> const &edges
     ) {
     if (chs.size() == 0)
         return;
 
-    #pragma omp parallel for
-    for (int i = 0; i < pos.size(); i++) {
+    //#pragma omp parallel for
+    for (int i = 0; i < edges.size(); i++) {
+        int uv[3] = {i, edges[i][0], edges[i][1]};
         auto ctx = exec->make_context();
         for (int k = 0; k < chs.size(); k++) {
-            if (!chs[k].which)
-                ctx.channel(k)[0] = chs[k].base[chs[k].stride * i];
+            ctx.channel(k)[0] = chs[k].base[chs[k].stride * uv[chs[k].which]];
         }
-        hashgrid->iter_neighbors(pos[i], [&] (int pid) {
-            for (int k = 0; k < chs.size(); k++) {
-                if (chs[k].which)
-                    ctx.channel(k)[0] = chs[k].base[chs[k].stride * pid];
-            }
-            ctx.execute();
-        });
+        ctx.execute();
         for (int k = 0; k < chs.size(); k++) {
-            if (!chs[k].which)
-                chs[k].base[chs[k].stride * i] = ctx.channel(k)[0];
+            chs[k].base[chs[k].stride * uv[chs[k].which]] = ctx.channel(k)[0];
         }
     }
 }
 
-struct ParticlesNeighborWrangle : zeno::INode {
+struct PrimitiveEdgeWrangle : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto edgePrim = get_input<zeno::PrimitiveObject>("edgePrim");
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
-        auto radius = get_input<zeno::NumericObject>("radius")->get<float>();
-        float radiusMin = has_input("radiusMin") ?
-            get_input<zeno::NumericObject>("radiusMin")->get<float>() :
-            0.f;
 
         zfx::Options opts(zfx::Options::for_x64);
         opts.detect_new_symbols = true;
         for (auto const &[key, attr]: prim->m_attrs) {
+            int dim = std::visit([] (auto const &v) {
+                using T = std::decay_t<decltype(v[0])>;
+                if constexpr (std::is_same_v<T, zeno::vec3f>) return 3;
+                else if constexpr (std::is_same_v<T, float>) return 1;
+                else return 0;
+            }, attr);
+            printf("define symbol: @1%s dim %d\n", key.c_str(), dim);
+            opts.define_symbol("@1" + key, dim);
+            printf("define symbol: @2%s dim %d\n", key.c_str(), dim);
+            opts.define_symbol("@2" + key, dim);
+        }
+        for (auto const &[key, attr]: edgePrim->m_attrs) {
             int dim = std::visit([] (auto const &v) {
                 using T = std::decay_t<decltype(v[0])>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) return 3;
@@ -159,17 +107,24 @@ struct ParticlesNeighborWrangle : zeno::INode {
             printf("auto-defined new attribute: %s with dim %d\n",
                     name.c_str(), dim);
             assert(name[0] == '@');
-            auto key = name.substr(1);
+            std::string key = name.substr(1);
+            auto *primPtr = edgePrim.get();
+            if ('1' <= key[0] && key[0] <= '9') {
+                key = key.substr(1);
+                primPtr = prim.get();
+            }
             if (dim == 3) {
-                prim->add_attr<zeno::vec3f>(key);
+                primPtr->add_attr<zeno::vec3f>(key);
             } else if (dim == 1) {
-                prim->add_attr<float>(key);
+                primPtr->add_attr<float>(key);
             } else {
                 printf("ERROR: bad attribute dimension for primitive: %d\n",
                     dim);
                 abort();
             }
         }
+
+        edgePrim->resize(prim->lines.size());
 
         for (int i = 0; i < prog->params.size(); i++) {
             auto [name, dimid] = prog->params[i];
@@ -189,9 +144,15 @@ struct ParticlesNeighborWrangle : zeno::INode {
             assert(name[0] == '@');
             Buffer iob;
             zeno::PrimitiveObject *primPtr;
-            name = name.substr(1);
-            primPtr = prim.get();
-            iob.which = 0;
+            if ('1' <= name[1] && name[1] <= '9') {
+                iob.which = name[1] - '0';
+                name = name.substr(2);
+                primPtr = prim.get();
+            } else {
+                iob.which = 0;
+                name = name.substr(1);
+                primPtr = edgePrim.get();
+            }
             auto const &attr = primPtr->attr(name);
             std::visit([&, dimid_ = dimid] (auto const &arr) {
                 iob.base = (float *)arr.data() + dimid_;
@@ -201,17 +162,17 @@ struct ParticlesNeighborWrangle : zeno::INode {
             chs[i] = iob;
         }
 
-        vectors_wrangle(exec, chs, prim->attr<zeno::vec3f>("pos"),
-                hashgrid.get());
+        vectors_wrangle(exec, chs, prim->lines);
 
         set_output("prim", std::move(prim));
+        set_output("edgePrim", std::move(edgePrim));
     }
 };
 
-ZENDEFNODE(PrimitiveEdgeTopologyWrangle, {
-    {{"primitive", "prim"},
+ZENDEFNODE(PrimitiveEdgeWrangle, {
+    {{"primitive", "prim"}, {"primitive", "edgePrim"},
      {"string", "zfxCode"}, {"dict:numeric", "params"}},
-    {{"primitive", "prim"}},
+    {{"primitive", "prim"}, {"primitive", "edgePrim"}},
     {},
     {"zenofx"},
 });

@@ -3,7 +3,7 @@ from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 from PySide2.QtSvg import *
 
-from .utils import asset_path
+from .utils import asset_path, setKeepAspect
 
 import os
 import zenvis
@@ -17,7 +17,7 @@ class QDMPlayButton(QSvgWidget):
         self.timeline = timeline
         self.checked = True
         # PySide2 >= 5.15
-        self.render.setAspectRatioMode(Qt.KeepAspectRatio)
+        setKeepAspect(self.render)
     
     def isChecked(self):
         return self.checked
@@ -28,7 +28,7 @@ class QDMPlayButton(QSvgWidget):
             self.load(asset_path('stop.svg'))
         else:
             self.load(asset_path('play.svg'))
-        self.render.setAspectRatioMode(Qt.KeepAspectRatio)
+        setKeepAspect(self.render)
         self.timeline.value_changed()
 
     def mousePressEvent(self, event):
@@ -43,7 +43,7 @@ class QDMPrevNextButton(QSvgWidget):
         self.load(asset_path(self.svg_up))
         self.timeline = timeline
         # PySide2 >= 5.15
-        self.render.setAspectRatioMode(Qt.KeepAspectRatio)
+        setKeepAspect(self.render)
 
         self.counter = 0
         self.timer = QTimer(self)
@@ -53,13 +53,13 @@ class QDMPrevNextButton(QSvgWidget):
         super().mouseMoveEvent(event)
         self.callback()
         self.load(asset_path(self.svg_down))
-        self.render.setAspectRatioMode(Qt.KeepAspectRatio)
+        setKeepAspect(self.render)
         self.counter = 0
         self.timer.start(100)
     
     def mouseReleaseEvent(self, event):
         self.load(asset_path(self.svg_up))
-        self.render.setAspectRatioMode(Qt.KeepAspectRatio)
+        setKeepAspect(self.render)
         self.timer.stop()
 
     def on_timeout(self):

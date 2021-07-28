@@ -11,9 +11,9 @@ if (OPENMP_FOUND)
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-option(ZENO_DETAILED_LOG "Dump detailed log when running ZENO" OFF)
-if (ZENO_DETAILED_LOG)
-    target_compile_definitions(zeno PRIVATE -DZENO_DETAILED_LOG)
+option(ZENO_TRIGGER_GDB "Trigger GDB when exception or signal catched" OFF)
+if (ZENO_TRIGGER_GDB)
+    target_compile_definitions(zeno PRIVATE -DZENO_TRIGGER_GDB)
 endif()
 
 target_compile_definitions(zeno PRIVATE -DDLL_ZENO)
