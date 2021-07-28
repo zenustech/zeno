@@ -95,6 +95,7 @@ class CameraControl:
 class ViewportWidget(QGLWidget):
     def __init__(self, parent=None):
         fmt = QGLFormat()
+        fmt.setSamples(16)
         fmt.setVersion(3, 0)
         fmt.setProfile(QGLFormat.CoreProfile)
         super().__init__(fmt, parent)
