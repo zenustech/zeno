@@ -224,7 +224,7 @@ class DisplayWidget(QWidget):
             QMessageBox.information(self, 'Zeno', 'Please do simulation before record video!')
             return
         self.params = {}
-        dialog = RecordVideoDialog(self.params)
+        dialog = RecordVideoDialog(self.params, count)
         accept = dialog.exec()
         if not accept:
             return

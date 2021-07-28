@@ -5,22 +5,33 @@ from PySide2.QtGui import *
 
 
 class RecordVideoDialog(QDialog):
-    def __init__(self, result):
+    def __init__(self, result, frame_count):
         super().__init__()
 
         self.setWindowTitle('Record screen')    
         self.result = result
+        self.frame_count = frame_count
         self.initUI()
 
     def initUI(self):
         frame_start = QLabel('Frame start:')
-        self.frame_start_edit = QLineEdit('0')
+        self.frame_start_edit = QSpinBox()
+        self.frame_start_edit.setMinimum(0)
+        self.frame_start_edit.setMaximum(self.frame_count - 1)
+        self.frame_start_edit.setValue(0)
+
 
         frame_end = QLabel('Frame end:')
-        self.frame_end_edit = QLineEdit('100')
+        self.frame_end_edit = QSpinBox()
+        self.frame_end_edit.setMinimum(0)
+        self.frame_end_edit.setMaximum(self.frame_count - 1)
+        self.frame_end_edit.setValue(self.frame_count - 1)
 
         fps = QLabel('FPS:')
-        self.fps_edit = QLineEdit('30')
+        self.fps_edit = QSpinBox()
+        self.fps_edit.setMinimum(1)
+        self.fps_edit.setValue(30)
+
 
         viewport_width = QLabel('Width:')
         self.viewport_width_eidtor = QLineEdit('1280')
@@ -67,9 +78,9 @@ class RecordVideoDialog(QDialog):
 
     def accept(self):
         r = self.result
-        r['frame_start'] = int(self.frame_start_edit.text())
-        r['frame_end'] = int(self.frame_end_edit.text())
-        r['fps'] = int(self.fps_edit.text())
+        r['frame_start'] = self.frame_start_edit.value()
+        r['frame_end'] = self.frame_end_edit.value()
+        r['fps'] = self.fps_edit.value()
         r['width'] = int(self.viewport_width_eidtor.text())
         r['height'] = int(self.viewport_height_eidtor.text())
         super().accept()
