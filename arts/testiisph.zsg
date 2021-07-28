@@ -59,7 +59,9 @@
       949.2437499999996,
       219.58124999999995
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "ea11c007-MakeMultilineString": {
      "name": "MakeMultilineString",
@@ -67,7 +69,7 @@
       "SRC": null
      },
      "params": {
-      "value": "\n@clr = (1-@isboundary) * vec3(0,0,1) + (@isboundary) * vec3(1,1,0)\n@testv = 0"
+      "value": "@rad = 1.5\n@clr = (1-@isboundary) * vec3(0,0,1) + (@isboundary) * vec3(1,1,0)\n@testv = 0"
      },
      "uipos": [
       496.21875,
@@ -250,7 +252,7 @@
        "value"
       ],
       "SRC": [
-       "ea49a007-PrimitiveColorByHeatmap",
+       "999a93b8-ParticlesWrangle",
        "DST"
       ]
      },
@@ -362,9 +364,7 @@
       1925.8125,
       553.875
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "3d8e350b-PrimitiveReduction": {
      "name": "PrimitiveReduction",
@@ -407,14 +407,8 @@
     "8ecf342a-ParticlesNeighborWrangle": {
      "name": "ParticlesNeighborWrangle",
      "inputs": {
-      "prim": [
-       "999a93b8-ParticlesWrangle",
-       "prim"
-      ],
-      "primNei": [
-       "999a93b8-ParticlesWrangle",
-       "prim"
-      ],
+      "prim": null,
+      "primNei": null,
       "hashGrid": [
        "b8cd7b65-ParticlesBuildHashGrid",
        "hashGrid"
@@ -478,9 +472,9 @@
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": -261,
-    "trans_y": -128
+    "scale": 0.8000000000000002,
+    "trans_x": -101,
+    "trans_y": -54
    }
   },
   "GenParticles": {
@@ -1545,8 +1539,8 @@
      },
      "params": {},
      "uipos": [
-      -252.4386596679691,
-      -45.873718261718636
+      160.06134033203085,
+      -231.81121826171864
      ],
      "options": []
     },
@@ -1706,8 +1700,8 @@
    },
    "view": {
     "scale": 0.6400000000000001,
-    "trans_x": 346,
-    "trans_y": -110
+    "trans_x": 1073,
+    "trans_y": -19
    }
   },
   "sourceTerms": {
@@ -1983,7 +1977,7 @@
        "dict"
       ],
       "SRC": [
-       "6d8e14f8-ParticlesWrangle",
+       "22ab65c2-computeViscosity",
        "DST"
       ]
      },
@@ -2000,7 +1994,7 @@
       "SRC": null
      },
      "params": {
-      "value": "rij = @pos - @@pos\nd2 = dot(rij,rij)\nd = sqrt(d2)\nc = $h - d\nkernel = d > 0?$spikykern * c * c * rij / d : vec3(0,0,0)\n\n@source -= dot(@midvel - @@midvel, kernel) * @@volume"
+      "value": "rij = @pos - @@pos\nd2 = dot(rij,rij)\nd = sqrt(d2)\nc = $h - d\nkernel = d > 0?$spikykern * c * c * rij / d : vec3(0,0,0)\n\n@source -= dot(@midvel - @@midvel, kernel) * 2 * @@volume * @volume / (@volume + @@volume)"
      },
      "uipos": [
       2797.4753125000016,
@@ -2269,12 +2263,15 @@
        "88a8e36b-SubInput",
        "port"
       ],
-      "SRC": null
+      "SRC": [
+       "6d8e14f8-ParticlesWrangle",
+       "DST"
+      ]
      },
      "params": {},
      "uipos": [
-      2438.0273437500005,
-      790.3007812499997
+      2551.7773437500005,
+      771.5507812499997
      ],
      "options": []
     },
@@ -2334,9 +2331,9 @@
     }
    },
    "view": {
-    "scale": 0.5120000000000001,
-    "trans_x": 1597,
-    "trans_y": 30
+    "scale": 1.0,
+    "trans_x": 4556,
+    "trans_y": 348
    }
   },
   "restVolume": {
@@ -2604,9 +2601,9 @@
     }
    },
    "view": {
-    "scale": 0.8000000000000002,
-    "trans_x": 1195,
-    "trans_y": -121
+    "scale": 0.8,
+    "trans_x": 1633,
+    "trans_y": -97
    }
   },
   "computePress": {
@@ -2815,7 +2812,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@Ap = 0\nrij = @pos - @@pos\nd2 = dot(rij,rij)\nd = sqrt(d2)\nc = $h - d\nkernel = $spikykern * c * c * rij / (d+0.000000001)\n\n@pressAccel -= @volume / $mass* @@volume *(@press + @@press) * kernel * (1-@isboundary)\n\n"
+      "value": "@Ap = 0\nrij = @pos - @@pos\nd2 = dot(rij,rij)\nd = sqrt(d2)\nc = $h - d\nkernel = $spikykern * c * c * rij / (d+0.000000001)\n\n@pressAccel -= @volume / $mass* 2 * @volume * @@volume/(@volume + @@volume) *(@press + @@press) * kernel * (1-@isboundary)\n\n"
      },
      "uipos": [
       1281.5000000000002,
@@ -2910,15 +2907,13 @@
       "SRC": null
      },
      "params": {
-      "value": "rij = @pos - @@pos\nd2 = dot(rij,rij)\nd = sqrt(d2)\nc = $h - d\nkernel = $spikykern * c * c * rij / (d+0.000000001)\n\n@Ap += $dt * $dt * @@volume * dot(@pressAccel - @@pressAccel, kernel)"
+      "value": "rij = @pos - @@pos\nd2 = dot(rij,rij)\nd = sqrt(d2)\nc = $h - d\nkernel = $spikykern * c * c * rij / (d+0.000000001)\n\n@Ap += $dt * $dt  * dot(@pressAccel - @@pressAccel, kernel) * 2 * (@@volume * @volume)/(@volume + @@volume)"
      },
      "uipos": [
       2061.6000000000004,
       434.4000000000001
      ],
-     "options": [
-      "collapsed"
-     ]
+     "options": []
     },
     "e451aac0-ParticlesWrangle": {
      "name": "ParticlesWrangle",
@@ -3002,7 +2997,7 @@
       "SRC": null
      },
      "params": {
-      "value": "rij = @pos - @@pos\nd2 = dot(rij,rij)\nd = sqrt(d2)\nc = $h - d\nkernel = $spikykern * c * c * rij / (d+0.000000001)\n\n@pressAccel -= @volume / $mass* @@volume *(@press + @@press) * kernel * (1-@isboundary)\n\n"
+      "value": "rij = @pos - @@pos\nd2 = dot(rij,rij)\nd = sqrt(d2)\nc = $h - d\nkernel = $spikykern * c * c * rij / (d+0.000000001)\n\n@pressAccel -= @volume / $mass* 2 * @volume * @@volume/(@volume + @@volume) *(@press + @@press) * kernel * (1-@isboundary)\n\n"
      },
      "uipos": [
       3287.8437499999995,
@@ -3133,9 +3128,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": 412,
-    "trans_y": 127
+    "scale": 0.6400000000000001,
+    "trans_x": 27,
+    "trans_y": 274
    }
   },
   "advection": {
@@ -3255,9 +3250,9 @@
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 759,
-    "trans_y": -52
+    "scale": 0.6400000000000001,
+    "trans_x": 14,
+    "trans_y": -59
    }
   },
   "computeViscosity": {
@@ -3420,7 +3415,7 @@
       "SRC": null
      },
      "params": {
-      "value": "rij = @pos - @@pos\nd2 = dot(rij,rij)\ndij = sqrt(d2)\nc = $h * $h - d2\n\n\n@midvel += $viscosity * $poly6kern * c * c * c * @@volume * (@@vel - @vel) * (1-@@isboundary)\n"
+      "value": "rij = @pos - @@pos\nd2 = dot(rij,rij)\ndij = sqrt(d2)\nc = $h * $h - d2\n\n\n@midvel += $viscosity * $poly6kern * c * c * c * 2 * @@volume * @volume / (@@volume + @volume)* (@@vel - @vel) * (1-@@isboundary)\n"
      },
      "uipos": [
       1198.0,
@@ -3538,9 +3533,9 @@
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": 122,
-    "trans_y": 25
+    "scale": 0.8000000000000002,
+    "trans_x": 676,
+    "trans_y": -94
    }
   },
   "initSPH": {
