@@ -22,3 +22,10 @@ from zenutils import rel2abs
 def asset_path(name):
     return rel2abs(__file__, 'assets', name)
 
+def setKeepAspect(renderer):
+    if hasattr(renderer, 'setAspectRatioMode'):
+        # PySide2 >= 5.15
+        from PySide2.QtCore import Qt
+        renderer.setAspectRatioMode(Qt.KeepAspectRatio)
+    else:
+        print('WARNING: setAspectRatioMode failed to work')
