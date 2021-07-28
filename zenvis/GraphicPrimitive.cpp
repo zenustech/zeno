@@ -199,7 +199,6 @@ attribute vec3 vNormal;
 varying vec3 position;
 varying vec3 color;
 varying float radius;
-
 void main()
 {
   position = vPosition;
@@ -208,7 +207,10 @@ void main()
 
   vec3 posEye = vec3(mView * vec4(position, 1.0));
   float dist = length(posEye);
-  gl_PointSize = max(1, radius * mPointScale / dist);
+  if (radius != 0)
+    gl_PointSize = max(1, radius * mPointScale / dist);
+  else
+    gl_PointSize = 2;
   gl_Position = mVP * vec4(position, 1.0);
 }
 )";
@@ -229,7 +231,7 @@ void main()
 {
   vec2 coor = gl_PointCoord * 2 - 1;
   float len2 = dot(coor, coor);
-  if (len2 > 1 && radius > 0)
+  if (len2 > 1 && radius != 0)
     discard;
   vec3 oColor;
   if (radius > 1)

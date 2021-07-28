@@ -75,12 +75,15 @@ std::unique_ptr<IGraphic> makeGraphicAxis();
 void initialize() {
   gladLoadGL();
 
-  CHECK_GL(glEnable(GL_BLEND));
-  CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+  //CHECK_GL(glEnable(GL_BLEND));//??
+  //CHECK_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
   CHECK_GL(glEnable(GL_DEPTH_TEST));
   CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
   //CHECK_GL(glEnable(GL_POINT_SPRITE_ARB));
-
+  //CHECK_GL(glEnable(GL_SAMPLE_COVERAGE));
+  //CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE));
+  //CHECK_GL(glEnable(GL_SAMPLE_ALPHA_TO_ONE));
+  CHECK_GL(glEnable(GL_MULTISAMPLE));
   vao = std::make_unique<VAO>();
   grid = makeGraphicGrid();
   axis = makeGraphicAxis();
