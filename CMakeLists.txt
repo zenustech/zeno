@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 project(zeno LANGUAGES C CXX)
 
-option(CMAKE_BUILD_TYPE "Select CMake Build Type" Debug)
+if (NOT CMAKE_BUILD_TYPE)
+    message("Auto-setting CMAKE_BUILD_TYPE to Release")
+    set(CMAKE_BUILD_TYPE Release)
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
