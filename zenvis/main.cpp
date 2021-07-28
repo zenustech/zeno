@@ -35,7 +35,7 @@ void look_perspective(
     double fov, bool ortho_mode) {
   glm::dvec3 center(cx, cy, cz);
 
-  point_scale = ny / tanf(fov*0.5f*3.1415926f/180.0f);
+  point_scale = ny / (50.f * tanf(fov*0.5f*3.1415926f/180.0f));
 
   double cos_t = glm::cos(theta), sin_t = glm::sin(theta);
   double cos_p = glm::cos(phi), sin_p = glm::sin(phi);

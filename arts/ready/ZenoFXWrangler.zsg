@@ -100,7 +100,9 @@
       371.98,
       321.8800000000001
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "dacabede-MakeMultilineString": {
      "name": "MakeMultilineString",
@@ -215,15 +217,13 @@
       728.9600000000002,
       398.08000000000004
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     }
    },
    "view": {
-    "scale": 1.5625,
-    "trans_x": -225,
-    "trans_y": 309
+    "scale": 0.6400000000000001,
+    "trans_x": -384,
+    "trans_y": -77
    }
   }
  },

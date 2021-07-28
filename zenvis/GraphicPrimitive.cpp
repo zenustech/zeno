@@ -191,6 +191,7 @@ uniform mat4 mInvVP;
 uniform mat4 mView;
 uniform mat4 mProj;
 uniform float mPointScale;
+
 attribute vec3 vPosition;
 attribute vec3 vColor;
 attribute vec3 vNormal;
@@ -207,8 +208,8 @@ void main()
 
   vec3 posEye = vec3(mView * vec4(position, 1.0));
   float dist = length(posEye);
-  if(radius>1)
-    gl_PointSize = radius/50.0f * mPointScale/dist;
+  if (radius > 1)
+    gl_PointSize = radius * mPointScale / dist;
   else
     gl_PointSize = 1;
   gl_Position = mVP * vec4(position, 1.0);
