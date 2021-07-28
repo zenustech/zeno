@@ -30,8 +30,8 @@ void set_perspective(
     std::array<double, 16> projArr);
 void do_screenshot(std::string path);
 void new_frame_offline(std::string path);
-void setBackgroundColor(double r, double g, double b);
-std::tuple<double, double, double> getBackgroundColor();
+void setBackgroundColor(float r, float g, float b);
+std::tuple<float, float, float> getBackgroundColor();
 
 };
 
@@ -68,5 +68,7 @@ server -> client: (per-frame)
 client -> server: (per-mouse-event)
 
 {nx}:{ny}:{cx}:{cy}:{cz}:{theta}:{phi}:{radius}:{fov}:{ortho_mode}:{set_frameid}
+
+^^^NVM: our web enginneer never get hired in to handle zenwebvis..^^^
 
 \****/
