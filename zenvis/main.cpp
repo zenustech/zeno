@@ -15,9 +15,9 @@ static bool show_grid = true;
 
 static int nx = 960, ny = 800;
 
-static double background_red = 0.23;
-static double background_green = 0.23;
-static double background_blue = 0.23;
+static float background_red = 0.23f;
+static float background_green = 0.23f;
+static float background_blue = 0.23f;
 
 static double last_xpos, last_ypos;
 static glm::dvec3 center;
