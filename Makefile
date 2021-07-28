@@ -22,7 +22,7 @@ test: all
 	build/tests/zentest
 
 run: all
-	ZEN_AUTOGDB=1 ZEN_OPEN=$O ./run.sh
+	ZEN_OPEN=$O ./run.sh
 
 debug: debug_all
 	USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh

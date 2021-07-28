@@ -1,15 +1,20 @@
 #include <iostream>
 #include <string_view>
+#include "exception.h"
 #include "source_location.h"
 #include "print.h"
 
+void bar(int a, ZPP_TRACEBACK) {
+    printf("a=%d\n", a);
+    throw zpp::exception();
+}
+
 template <class T>
-void fun(T x) {
-    zpp::log(x);
+void foo(T x, int y = 0, ZPP_TRACEBACK) {
+    print_traceback(zpp_tb);
 }
 
 int main() {
-    fun("Hello, world\n");
-    *(int *)nullptr = 0;
+    foo("Hello, world\n");
     return 0;
 }

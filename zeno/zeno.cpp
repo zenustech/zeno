@@ -7,17 +7,6 @@
 
 namespace zeno {
 
-ZENAPI Exception::Exception(std::string const &msg) noexcept
-    : msg(msg) {
-}
-
-ZENAPI Exception::~Exception() noexcept = default;
-
-ZENAPI char const *Exception::what() const noexcept {
-    return msg.c_str();
-}
-
-
 ZENAPI IObject::IObject() = default;
 ZENAPI IObject::~IObject() = default;
 
