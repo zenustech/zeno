@@ -95,7 +95,12 @@ class CameraControl:
 class ViewportWidget(QGLWidget):
     def __init__(self, parent=None):
         fmt = QGLFormat()
-        fmt.setSamples(16)
+        nsamples = os.environ.get('ZEN_MSAA')
+        if not nsamples:
+            nsamples = 16
+        else:
+            nsamples = int(nsamples)
+        fmt.setSamples(nsamples)
         fmt.setVersion(3, 0)
         fmt.setProfile(QGLFormat.CoreProfile)
         super().__init__(fmt, parent)
