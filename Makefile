@@ -1,4 +1,5 @@
-O=arts/testvdbpoints.zsg
+
+O=arts/trigsegfault.zsg
 
 default: run
 
