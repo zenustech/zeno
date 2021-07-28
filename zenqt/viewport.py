@@ -12,7 +12,7 @@ from PySide2.QtWidgets import *
 from PySide2.QtOpenGL import *
 
 import zenvis
-
+from .dialog import *
 
 class CameraControl:
     '''
@@ -211,6 +211,13 @@ class DisplayWidget(QWidget):
         return path
 
     def do_record_video(self, checked):
+        params = {}
+        dialog = RecordVideoDialog(params)
+        accept = dialog.exec()
+        if not accept:
+            return
+
+        return
         if checked:
             tmp_path = tempfile.mkdtemp(prefix='recording-')
             assert os.path.isdir(tmp_path)
