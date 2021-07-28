@@ -16,26 +16,8 @@ struct Buffer {
     float *base = nullptr;
     size_t count = 0;
     size_t stride = 1;
+    int which = 0;
 };
-
-/*struct EdgeList {
-    std::vector<std::vector<int>> edgelist;
-
-    void build(std::vector<zeno::vec2i> const &edges) {
-        for (int i = 0; i < edges.size(); i++) {
-            auto uv = edges[i];
-            auto size = std::max(uv[0], uv[1]) + 1;
-            if (size > edgelist.size())
-                edgelist.resize(size);
-            edgelist[uv[0]].push_back(uv[1]);
-            edgelist[uv[1]].push_back(uv[0]);
-        }
-    }
-
-    std::vector<int> const &neighbors_of(int i) const {
-        return edgelist[i];
-    }
-};*/
 
 static void vectors_wrangle
     ( zfx::x64::Executable *exec
@@ -59,7 +41,7 @@ static void vectors_wrangle
     }
 }
 
-struct PrimitiveEdgeTopologyWrangle : zeno::INode {
+struct PrimitiveEdgeWrangle : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
@@ -140,12 +122,19 @@ struct PrimitiveEdgeTopologyWrangle : zeno::INode {
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
 
-        std::vector<Buffer> chs(prog->symbols.size());
-        for (int i = 0; i < chs.size(); i++) {
+        std::vector<Buffer> chs(prog->symbols.size() * 2);
+        for (int i = 0; i < prog->symbols.size(); i++) {
             auto [name, dimid] = prog->symbols[i];
             printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '@');
             Buffer iob;
+            if (name[1] == '@') {
+                name = name.substr(2);
+                iob.which = 1;
+            } else {
+                name = name.substr(1);
+                iob.which = 0;
+            }
             auto const &attr = prim->attr(name);
             std::visit([&, dimid_ = dimid] (auto const &arr) {
                 iob.base = (float *)arr.data() + dimid_;
@@ -155,13 +144,13 @@ struct PrimitiveEdgeTopologyWrangle : zeno::INode {
             chs[i] = iob;
         }
 
-        vectors_wrangle(exec, chs);
+        vectors_wrangle(exec, chs, prim->lines);
 
         set_output("prim", std::move(prim));
     }
 };
 
-ZENDEFNODE(PrimitiveEdgeTopologyWrangle, {
+ZENDEFNODE(PrimitiveEdgeWrangle, {
     {{"primitive", "prim"},
      {"string", "zfxCode"}, {"dict:numeric", "params"}},
     {{"primitive", "prim"}},

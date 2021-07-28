@@ -6,11 +6,12 @@
 #include <signal.h>
 #include <unistd.h>
 #endif
+#define ZENO_TRIGGER_GDB 1///
 
 namespace zeno {
 
 #ifdef __linux__
-static void trigger_gdb(int exitcode = 0) {
+static void trigger_gdb(int exitcode = -1) {
     printf("*** Launching emergency GDB for debugging...\n");
     char cmd[1024];
     sprintf(cmd, "sudo gdb -q "
@@ -18,8 +19,7 @@ static void trigger_gdb(int exitcode = 0) {
             " -ex 'set pagination off'"
             " -p %d", getpid());
     system(cmd);
-    if (exitcode != 0)
-        exit(exitcode);
+    exit(exitcode);
 }
 
 static void signal_handler(int signo) {
@@ -30,6 +30,7 @@ static void signal_handler(int signo) {
 }
 
 static int registerMyHandlers() {
+#ifdef ZENO_TRIGGER_GDB
     if (getenv("ZEN_NOSIGHOOK")) {
         return 0;
     }
@@ -39,6 +40,7 @@ static int registerMyHandlers() {
     signal(SIGILL, signal_handler);
     signal(SIGBUS, signal_handler);
     signal(SIGPIPE, signal_handler);
+#endif
     return 1;
 }
 

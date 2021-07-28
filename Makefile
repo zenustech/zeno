@@ -1,4 +1,4 @@
-O=arts/trigsegfault.zsg
+O=arts/testpew.zsg
 
 default: run
 
