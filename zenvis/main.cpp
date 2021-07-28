@@ -8,12 +8,15 @@
 #include <stb_image_write.h>
 
 namespace zenvis {
+
 int curr_frameid = -1;
 
 static bool playing = true;
 static bool show_grid = true;
 
 static int nx = 960, ny = 800;
+
+static glm::vec3 bgcolor(0.23f, 0.23f, 0.23f);
 
 static double last_xpos, last_ypos;
 static glm::dvec3 center;
@@ -91,7 +94,7 @@ void initialize() {
 
 static void paint_graphics(void) {
   CHECK_GL(glViewport(0, 0, nx, ny));
-  CHECK_GL(glClearColor(0.23f, 0.23f, 0.23f, 0.0f));
+  CHECK_GL(glClearColor(bgcolor.r, bgcolor.g, bgcolor.b, 0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   vao->bind();
   if (show_grid) {
@@ -205,10 +208,14 @@ void new_frame_offline(std::string path) {
     CHECK_GL(glDeleteRenderbuffers(1, &rbo1));
     CHECK_GL(glDeleteRenderbuffers(1, &rbo2));
     CHECK_GL(glDeleteFramebuffers(1, &fbo));
+}
 
-    //CHECK_GL(glViewport(0, 0, nx, ny));
-    //CHECK_GL(glClearColor(0.375f, 0.75f, 1.0f, 0.0f));
-    //CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
+void set_background_color(float r, float g, float b) {
+    bgcolor = glm::vec3(r, g, b);
+}
+
+std::tuple<float, float, float> get_background_color() {
+    return {bgcolor.r, bgcolor.g, bgcolor.b};
 }
 
 }
