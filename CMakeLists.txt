@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 project(zeno LANGUAGES C CXX)
 
 if (NOT CMAKE_BUILD_TYPE)
-    message("Auto-setting CMAKE_BUILD_TYPE to Release")
-    set(CMAKE_BUILD_TYPE Release)
+    message("Auto-setting CMAKE_BUILD_TYPE to RelWithDebInfo")
+    set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
