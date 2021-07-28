@@ -165,8 +165,6 @@ class QDMRecordMenu(QMenu):
 
         action = QAction('Record Video', self)
         action.setShortcut(QKeySequence('Shift+F12'))
-        action.setCheckable(True)
-        action.setChecked(False)
         self.addAction(action)
 
 
@@ -203,8 +201,7 @@ class DisplayWidget(QWidget):
             zenvis.status['show_grid'] = checked
 
         elif name == 'Record Video':
-            checked = act.isChecked()
-            self.do_record_video(checked)
+            self.do_record_video()
 
         elif name == 'Screenshot':
             self.do_screenshot()
@@ -218,7 +215,7 @@ class DisplayWidget(QWidget):
         path = os.path.join(dir_path, file_name)
         return path
 
-    def do_record_video(self, checked):
+    def do_record_video(self):
         count = fileio.getFrameCount()
         if count == 0:
             QMessageBox.information(self, 'Zeno', 'Please do simulation before record video!')
