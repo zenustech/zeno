@@ -18,6 +18,47 @@ struct Buffer {
     size_t stride = 1;
 };
 
+/*struct EdgeList {
+    std::vector<std::vector<int>> edgelist;
+
+    void build(std::vector<zeno::vec2i> const &edges) {
+        for (int i = 0; i < edges.size(); i++) {
+            auto uv = edges[i];
+            auto size = std::max(uv[0], uv[1]) + 1;
+            if (size > edgelist.size())
+                edgelist.resize(size);
+            edgelist[uv[0]].push_back(uv[1]);
+            edgelist[uv[1]].push_back(uv[0]);
+        }
+    }
+
+    std::vector<int> const &neighbors_of(int i) const {
+        return edgelist[i];
+    }
+};*/
+
+static void vectors_wrangle
+    ( zfx::x64::Executable *exec
+    , std::vector<Buffer> const &chs
+    , std::vector<zeno::vec2i> const &edges
+    ) {
+    if (chs.size() == 0)
+        return;
+
+    #pragma omp parallel for
+    for (int i = 0; i < edges.size(); i++) {
+        auto uv = edges[i];
+        auto ctx = exec->make_context();
+        for (int k = 0; k < chs.size(); k++) {
+            ctx.channel(k)[0] = chs[k].base[chs[k].stride * uv[chs[k].which]];
+        }
+        ctx.execute();
+        for (int k = 0; k < chs.size(); k++) {
+            chs[k].base[chs[k].stride * uv[chs[k].which]] = ctx.channel(k)[0];
+        }
+    }
+}
+
 struct PrimitiveEdgeTopologyWrangle : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
@@ -34,6 +75,8 @@ struct PrimitiveEdgeTopologyWrangle : zeno::INode {
             }, attr);
             printf("define symbol: @%s dim %d\n", key.c_str(), dim);
             opts.define_symbol('@' + key, dim);
+            printf("define symbol: @@%s dim %d\n", key.c_str(), dim);
+            opts.define_symbol("@@" + key, dim);
         }
 
         auto params = has_input("params") ?
@@ -71,7 +114,10 @@ struct PrimitiveEdgeTopologyWrangle : zeno::INode {
             printf("auto-defined new attribute: %s with dim %d\n",
                     name.c_str(), dim);
             assert(name[0] == '@');
-            auto key = name.substr(1);
+            std::string key = name.substr(1);
+            if (key[0] == '@') {
+                key = key.substr(1);
+            }
             if (dim == 3) {
                 prim->add_attr<zeno::vec3f>(key);
             } else if (dim == 1) {
@@ -100,7 +146,6 @@ struct PrimitiveEdgeTopologyWrangle : zeno::INode {
             printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '@');
             Buffer iob;
-            name = name.substr(1);
             auto const &attr = prim->attr(name);
             std::visit([&, dimid_ = dimid] (auto const &arr) {
                 iob.base = (float *)arr.data() + dimid_;
@@ -109,6 +154,8 @@ struct PrimitiveEdgeTopologyWrangle : zeno::INode {
             }, attr);
             chs[i] = iob;
         }
+
+        vectors_wrangle(exec, chs);
 
         set_output("prim", std::move(prim));
     }
