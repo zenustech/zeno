@@ -16,6 +16,10 @@ static bool show_grid = true;
 
 static int nx = 960, ny = 800;
 
+static double background_red = 0.23;
+static double background_green = 0.23;
+static double background_blue = 0.23;
+
 static double last_xpos, last_ypos;
 static glm::dvec3 center;
 
@@ -87,7 +91,11 @@ void initialize() {
 
 static void paint_graphics(void) {
   CHECK_GL(glViewport(0, 0, nx, ny));
-  CHECK_GL(glClearColor(0.23f, 0.23f, 0.23f, 0.0f));
+  CHECK_GL(glClearColor(
+      background_red,
+      background_green,
+      background_blue,
+      0.0f));
   CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   vao->bind();
   if (show_grid) {
@@ -205,6 +213,20 @@ void new_frame_offline(std::string path) {
     //CHECK_GL(glViewport(0, 0, nx, ny));
     //CHECK_GL(glClearColor(0.375f, 0.75f, 1.0f, 0.0f));
     //CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
+}
+
+void setBackgroundColor(double r, double g, double b) {
+    background_red = r;
+    background_green = g;
+    background_blue = b;
+}
+
+std::tuple<double, double, double> getBackgroundColor() {
+    return std::tuple<double, double, double>(
+        background_red,
+        background_green,
+        background_blue
+    );
 }
 
 }

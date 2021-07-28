@@ -30,6 +30,8 @@ void set_perspective(
     std::array<double, 16> projArr);
 void do_screenshot(std::string path);
 void new_frame_offline(std::string path);
+void setBackgroundColor(double r, double g, double b);
+std::tuple<double, double, double> getBackgroundColor();
 
 };
 
@@ -52,6 +54,8 @@ PYBIND11_MODULE(pyzenvis, m) {
     m.def("do_screenshot", zenvis::do_screenshot);
     m.def("set_show_grid", zenvis::set_show_grid);
     m.def("new_frame_offline", zenvis::new_frame_offline);
+    m.def("setBackgroundColor", zenvis::setBackgroundColor);
+    m.def("getBackgroundColor", zenvis::getBackgroundColor);
 }
 
 

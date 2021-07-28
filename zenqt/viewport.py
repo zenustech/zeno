@@ -146,6 +146,9 @@ class QDMDisplayMenu(QMenu):
         action.setChecked(True)
         self.addAction(action)
 
+        action = QAction('Background Color', self)
+        self.addAction(action)
+
 class QDMRecordMenu(QMenu):
     def __init__(self):
         super().__init__()
@@ -193,6 +196,17 @@ class DisplayWidget(QWidget):
         if name == 'Show Grid':
             checked = act.isChecked()
             zenvis.status['show_grid'] = checked
+
+        elif name == 'Background Color':
+            c = QColor.fromRgbF(*zenvis.core.getBackgroundColor())
+            c = QColorDialog.getColor(c)
+            if c.isValid():
+                zenvis.core.setBackgroundColor(
+                    c.redF(),
+                    c.greenF(),
+                    c.blueF(),
+                )
+
 
         elif name == 'Record Video':
             checked = act.isChecked()
