@@ -199,10 +199,10 @@ class DisplayWidget(QWidget):
             zenvis.status['show_grid'] = checked
 
         elif name == 'Background Color':
-            c = QColor.fromRgbF(*zenvis.core.getBackgroundColor())
+            c = QColor.fromRgbF(*zenvis.core.get_background_color())
             c = QColorDialog.getColor(c)
             if c.isValid():
-                zenvis.core.setBackgroundColor(
+                zenvis.core.set_background_color(
                     c.redF(),
                     c.greenF(),
                     c.blueF(),

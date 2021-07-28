@@ -8,6 +8,7 @@
 #include <stb_image_write.h>
 
 namespace zenvis {
+
 int curr_frameid = -1;
 
 static bool playing = true;
@@ -213,14 +214,12 @@ void new_frame_offline(std::string path) {
     //CHECK_GL(glClear(GL_COLOR_BUFFER_BIT));
 }
 
-void setBackgroundColor(float r, float g, float b) {
+void set_background_color(float r, float g, float b) {
     bgcolor = glm::vec3(r, g, b);
 }
 
-std::tuple<float, float, float> getBackgroundColor() {
-    return std::make_tuple(
-            bgcolor.r, bgcolor.g, bgcolor.b
-    );
+std::tuple<float, float, float> get_background_color() {
+    return {bgcolor.r, bgcolor.g, bgcolor.b};
 }
 
 }
