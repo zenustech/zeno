@@ -110,14 +110,20 @@ class ViewportWidget(QGLWidget):
         self.camera.res = (nx, ny)
         self.camera.update_perspective()
 
-    def paintGL(self):
-        if self.record_path:
+    def check_record(self):
+        f = zenvis.status['frameid']
+        if self.record_path and f <= self.frame_end:
             old_res = self.camera.res
             self.camera.res = self.record_res
             self.camera.update_perspective()
             zenvis.recordGL(self.record_path)
             self.camera.res = old_res
             self.camera.update_perspective()
+            if f == self.frame_end:
+                self.parent_widget.finish_record()
+
+    def paintGL(self):
+        self.check_record()
         zenvis.paintGL()
 
     def on_update(self):
@@ -183,6 +189,7 @@ class DisplayWidget(QWidget):
         self.menubar.addMenu(self.recordDisplay)
 
         self.view = ViewportWidget()
+        self.view.parent_widget = self
         self.layout.addWidget(self.view)
 
     def on_update(self):
@@ -211,31 +218,41 @@ class DisplayWidget(QWidget):
         return path
 
     def do_record_video(self, checked):
-        params = {}
-        dialog = RecordVideoDialog(params)
+        self.params = {}
+        dialog = RecordVideoDialog(self.params)
         accept = dialog.exec()
         if not accept:
             return
+        self.params['frame_end'] = min(self.timeline.slider.maximum(), self.params['frame_end'])
 
-        return
-        if checked:
-            tmp_path = tempfile.mkdtemp(prefix='recording-')
-            assert os.path.isdir(tmp_path)
-            self.view.record_path = tmp_path
-            self.view.record_res = (1024, 768)
-        else:
-            tmp_path = self.view.record_path
-            assert tmp_path is not None
-            self.view.record_path = None
-            path = self.get_output_path('.mp4')
-            png_paths = os.path.join(tmp_path, '%06d.png')
-            cmd = ['ffmpeg', '-r', '60', '-i', png_paths, path]
-            print('Executing command:', cmd)
-            subprocess.check_call(cmd)
-            shutil.rmtree(tmp_path, ignore_errors=True)
-            zenvis.status['record_video'] = None
-            msg = 'Saved video to {}!'.format(path)
-            QMessageBox.information(self, 'Record Video', msg)
+        self.timeline.jump_frame(self.params['frame_start'])
+        self.timeline.start_play()
+        self.view.frame_end = self.params['frame_end']
+
+        tmp_path = tempfile.mkdtemp(prefix='recording-')
+        assert os.path.isdir(tmp_path)
+        self.view.record_path = tmp_path
+        self.view.record_res = (1024, 768)
+
+    def finish_record(self):
+        tmp_path = self.view.record_path
+        assert tmp_path is not None
+        self.view.record_path = None
+        path = self.get_output_path('.mp4')
+        png_paths = os.path.join(tmp_path, '%06d.png')
+        cmd = [
+            'ffmpeg', 
+            '-r', '60', 
+            '-i', png_paths, 
+            '-c:v', 'mpeg4', 
+            path
+        ]
+        print('Executing command:', cmd)
+        subprocess.check_call(cmd)
+        shutil.rmtree(tmp_path, ignore_errors=True)
+        zenvis.status['record_video'] = None
+        msg = 'Saved video to {}!'.format(path)
+        QMessageBox.information(self, 'Record Video', msg)
 
     def do_screenshot(self):
         path = self.get_output_path('.png')
