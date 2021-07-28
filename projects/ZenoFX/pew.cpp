@@ -114,6 +114,8 @@ struct PrimitiveEdgeWrangle : zeno::INode {
             }
         }
 
+        edgePrim->resize(prim->lines.size());
+
         for (int i = 0; i < prog->params.size(); i++) {
             auto [name, dimid] = prog->params[i];
             printf("parameter %d: %s.%d\n", i, name.c_str(), dimid);
@@ -126,7 +128,7 @@ struct PrimitiveEdgeWrangle : zeno::INode {
         }
 
         std::vector<Buffer> chs(prog->symbols.size());
-        for (int i = 0; i < prog->symbols.size(); i++) {
+        for (int i = 0; i < chs.size(); i++) {
             auto [name, dimid] = prog->symbols[i];
             printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '@');
@@ -147,6 +149,7 @@ struct PrimitiveEdgeWrangle : zeno::INode {
                 iob.count = arr.size();
                 iob.stride = sizeof(arr[0]) / sizeof(float);
             }, attr);
+            printf("%d %p\n", i, iob.base);
             chs[i] = iob;
         }
 

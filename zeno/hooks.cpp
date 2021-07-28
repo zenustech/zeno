@@ -18,7 +18,7 @@ static void trigger_gdb(int exitcode = -1) {
             " -ex 'set pagination off'"
             " -p %d", getpid());
     system(cmd);
-    _exit(exitcode);
+    exit(exitcode);
 }
 
 static void signal_handler(int signo) {
@@ -44,6 +44,10 @@ static int registerMyHandlers() {
 }
 
 static int doRegisterMyHandlers = registerMyHandlers();
+#else
+static void trigger_gdb(int exitcode = -1) {
+    exit(exitcode);
+}
 #endif
 
 ZENAPI Exception::Exception(std::string const &msg) noexcept
