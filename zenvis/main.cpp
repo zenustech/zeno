@@ -193,7 +193,7 @@ void new_frame_offline(std::string path) {
 
         char buf[1024];
         sprintf(buf, "%s/%06d.png", path.c_str(), curr_frameid);
-        printf("saving screen to %s\n", buf);
+        printf("saving screen %dx%d to %s\n", nx, ny, buf);
 
         void *pixels = malloc(nx * ny * 3);
         CHECK_GL(glReadPixels(0, 0, nx, ny, GL_RGB, GL_UNSIGNED_BYTE, pixels));
