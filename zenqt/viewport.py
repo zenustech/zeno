@@ -246,6 +246,14 @@ class DisplayWidget(QWidget):
         tmp_path = self.view.record_path
         assert tmp_path is not None
         self.view.record_path = None
+        l = os.listdir(tmp_path)
+        l.sort()
+        for i in range(len(l)):
+            old_name = l[i]
+            new_name = '{:06}.png'.format(i + 1)
+            old_path = os.path.join(tmp_path, old_name)
+            new_path = os.path.join(tmp_path, new_name)
+            os.rename(old_path, new_path)
         path = self.get_output_path('.mp4')
         png_paths = os.path.join(tmp_path, '%06d.png')
         cmd = [
