@@ -44,6 +44,6 @@ ZENDEFNODE(StringToMesh, {
     {"string", "AZmesh" ,"spacing"},
     {"StringMeshList", "SpacingList"},
     {},
-    {"zelloWorld"},
+    {"math"},
 });
 }

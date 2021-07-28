@@ -60,4 +60,47 @@ ZENDEFNODE(ExitProcess, {
     {"debug"},
 });
 
+
+struct TriggerSegFault : zeno::INode {
+    virtual void apply() override {
+        *(volatile float *)nullptr = 0;
+    }
+};
+
+ZENDEFNODE(TriggerSegFault, {
+    {},
+    {},
+    {},
+    {"debug"},
+});
+
+
+struct TriggerDivideZero : zeno::INode {
+    virtual void apply() override {
+        volatile int x = 0;
+        x /= x;
+    }
+};
+
+ZENDEFNODE(TriggerDivideZero, {
+    {},
+    {},
+    {},
+    {"debug"},
+});
+
+
+struct TriggerAbortSignal : zeno::INode {
+    virtual void apply() override {
+        abort();
+    }
+};
+
+ZENDEFNODE(TriggerAbortSignal, {
+    {},
+    {},
+    {},
+    {"debug"},
+});
+
 }

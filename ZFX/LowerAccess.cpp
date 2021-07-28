@@ -95,21 +95,21 @@ struct LowerAccess : Visitor<LowerAccess> {
                 stmt->symids.size());
         }
         store(stmt->id);
-        loaders[stmt->id] = [this, stmt]() {
+        //loaders[stmt->id] = [this, stmt]() {
             ir->emplace_back<AsmParamLoadStmt>
                 ( stmt->symids[0]
                 , stmt->id
                 );
-        };
+        //};
     }
 
     void visit(LiterialStmt *stmt) {
-        loaders[stmt->id] = [this, stmt]() {
+        //loaders[stmt->id] = [this, stmt]() {
             ir->emplace_back<AsmLoadConstStmt>
                 ( store(stmt->id)
                 , stmt->value
                 );
-        };
+        //};
     }
 
     void visit(TempSymbolStmt *stmt) {

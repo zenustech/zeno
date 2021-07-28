@@ -2,76 +2,193 @@
  "graph": {
   "main": {
    "nodes": {
-    "dc8647d3-Make3DGridPrimitive": {
-     "name": "Make3DGridPrimitive",
+    "c0b22d09-ReadVDBGrid": {
+     "name": "ReadVDBGrid",
      "inputs": {
-      "nx": [
-       "dbe4ae54-NumericInt",
-       "value"
-      ],
-      "ny": null,
-      "nz": null,
-      "sizeX": null,
-      "sizeY": null,
-      "sizeZ": null,
-      "scale": null,
-      "origin": null,
       "SRC": null
      },
      "params": {
-      "isCentered": 1
+      "type": "points",
+      "path": "/home/dilei/Desktop/animatedResult/result.300.vdb"
      },
      "uipos": [
-      -499.78125,
-      167.859375
+      -476.0,
+      -77.0
      ],
      "options": [
       "ONCE"
      ]
     },
-    "dbe4ae54-NumericInt": {
-     "name": "NumericInt",
+    "b5afa71d-GetVDBPoints": {
+     "name": "GetVDBPoints",
      "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": 3
-     },
-     "uipos": [
-      -750.53125,
-      256.85937500000006
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "18696ae0-PrimitiveTraceTrail": {
-     "name": "PrimitiveTraceTrail",
-     "inputs": {
-      "parsPrim": [
-       "a3867615-ParticlesWrangle",
-       "prim"
+      "grid": [
+       "c0b22d09-ReadVDBGrid",
+       "data"
       ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      1204.825,
-      376.71250000000015
+      -188.75,
+      -27.0
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "fb061dbf-ParticlesToPrimitive": {
+     "name": "ParticlesToPrimitive",
+     "inputs": {
+      "pars": [
+       "b5afa71d-GetVDBPoints",
+       "pars"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      110.5,
+      -68.4375
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "cc04214e-MakeHeatmap": {
+     "name": "MakeHeatmap",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "nres": 1024,
+      "_RAMPS": "4\n0 0 0 0.8241758241758241\n0.3516483516483517 0 0.5659340659340659 1\n0.748901098901099 0 1 0.6098901098901099\n0.9230769230769231 1 1 1"
+     },
+     "uipos": [
+      628.0,
+      186.0
+     ],
+     "options": [
+      "ONCE"
+     ],
+     "color_ramps": [
+      [
+       0,
+       [
+        0,
+        0,
+        0.8241758241758241
+       ]
+      ],
+      [
+       0.3516483516483517,
+       [
+        0,
+        0.5659340659340659,
+        1
+       ]
+      ],
+      [
+       0.748901098901099,
+       [
+        0,
+        1,
+        0.6098901098901099
+       ]
+      ],
+      [
+       0.9230769230769231,
+       [
+        1,
+        1,
+        1
+       ]
+      ]
+     ]
+    },
+    "9d3bd9cd-PrimitiveColorByHeatmap": {
+     "name": "PrimitiveColorByHeatmap",
+     "inputs": {
+      "prim": [
+       "7a6b4e56-ParticlesWrangle",
+       "prim"
+      ],
+      "heatmap": [
+       "cc04214e-MakeHeatmap",
+       "heatmap"
+      ],
+      "min": [
+       "e0f32d73-NumericFloat",
+       "value"
+      ],
+      "max": [
+       "c0a9fb9d-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "attrName": "speed"
+     },
+     "uipos": [
+      1407.0,
+      -51.0
      ],
      "options": [
       "VIEW"
      ]
     },
-    "a3867615-ParticlesWrangle": {
+    "e0f32d73-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.0
+     },
+     "uipos": [
+      906.0,
+      190.0
+     ],
+     "options": []
+    },
+    "c0a9fb9d-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 3.0
+     },
+     "uipos": [
+      874.0,
+      355.0
+     ],
+     "options": []
+    },
+    "1adbf7c5-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "@speed = length(@vel)\n@rad=0"
+     },
+     "uipos": [
+      85.75,
+      79.25
+     ],
+     "options": []
+    },
+    "7a6b4e56-ParticlesWrangle": {
      "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       "c2aa74a5-TransformPrimitive",
-       "outPrim"
+       "fb061dbf-ParticlesToPrimitive",
+       "prim"
       ],
       "zfxCode": [
-       "8d52873c-MakeMultilineString",
+       "1adbf7c5-MakeMultilineString",
        "value"
       ],
       "params": null,
@@ -79,108 +196,16 @@
      },
      "params": {},
      "uipos": [
-      686.0,
-      229.0
-     ],
-     "options": []
-    },
-    "8d52873c-MakeMultilineString": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "dt = 0.01\nsigma = 10\nrho = 28\nbeta = 8/3\ndx = sigma * (@pos.y - @pos.x)\ndy = @pos.x * (rho - @pos.z) - @pos.y\ndz = @pos.x * @pos.y - beta * @pos.z\n@pos.x += dt * dx\n@pos.y += dt * dy\n@pos.z += dt * dz\n# zoom out if you don't see anything"
-     },
-     "uipos": [
-      622.9200000000001,
-      472.9999999999999
-     ],
-     "options": []
-    },
-    "c2aa74a5-TransformPrimitive": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "e522737a-ParticlesWrangle",
-       "prim"
-      ],
-      "translation": [
-       "b064d28c-NumericVec3",
-       "vec3"
-      ],
-      "eulerXYZ": null,
-      "quatRotation": null,
-      "scaling": null,
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      226.21875000000006,
-      218.109375
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "b064d28c-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "x": -10.0,
-      "y": 10.0,
-      "z": 25.0
-     },
-     "uipos": [
-      244.71875,
-      484.859375
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "e522737a-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "dc8647d3-Make3DGridPrimitive",
-       "prim"
-      ],
-      "zfxCode": [
-       "0ad7fc58-x",
-       "value"
-      ],
-      "params": null,
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -155.75,
-      225.5
-     ],
-     "options": []
-    },
-    "0ad7fc58-x": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "@clr = @pos * 0.5 + 0.5"
-     },
-     "uipos": [
-      -201.25,
-      450.0
+      601.0,
+      -104.0
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.5625,
-    "trans_x": 44,
-    "trans_y": 293
+    "scale": 0.6400000000000001,
+    "trans_x": 115,
+    "trans_y": 124
    }
   }
  },

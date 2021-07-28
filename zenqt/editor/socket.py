@@ -1,5 +1,7 @@
 from . import *
 
+from ..utils import setKeepAspect
+
 
 class QDMGraphicsSocket(QGraphicsItem):
     def __init__(self, parent):
@@ -175,7 +177,7 @@ class QDMGraphicsCollapseButton(QGraphicsSvgItem):
     def update_svg(self, collapsed):
         svg_filename = ('collapse' if collapsed else 'unfold') + '.svg'
         self._renderer.load(asset_path(svg_filename))
-        self._renderer.setAspectRatioMode(Qt.KeepAspectRatio)
+        setKeepAspect(self._renderer)
         self.setSharedRenderer(self._renderer)
 
     def mousePressEvent(self, event):

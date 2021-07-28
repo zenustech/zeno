@@ -96,6 +96,12 @@ class CameraControl:
 class ViewportWidget(QGLWidget):
     def __init__(self, parent=None):
         fmt = QGLFormat()
+        nsamples = os.environ.get('ZEN_MSAA')
+        if not nsamples:
+            nsamples = 16
+        else:
+            nsamples = int(nsamples)
+        fmt.setSamples(nsamples)
         fmt.setVersion(3, 0)
         fmt.setProfile(QGLFormat.CoreProfile)
         super().__init__(fmt, parent)
@@ -153,6 +159,9 @@ class QDMDisplayMenu(QMenu):
         action.setChecked(True)
         self.addAction(action)
 
+        action = QAction('Background Color', self)
+        self.addAction(action)
+
 class QDMRecordMenu(QMenu):
     def __init__(self):
         super().__init__()
@@ -199,6 +208,17 @@ class DisplayWidget(QWidget):
         if name == 'Show Grid':
             checked = act.isChecked()
             zenvis.status['show_grid'] = checked
+
+        elif name == 'Background Color':
+            c = QColor.fromRgbF(*zenvis.core.get_background_color())
+            c = QColorDialog.getColor(c)
+            if c.isValid():
+                zenvis.core.set_background_color(
+                    c.redF(),
+                    c.greenF(),
+                    c.blueF(),
+                )
+
 
         elif name == 'Record Video':
             self.do_record_video()
