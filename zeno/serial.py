@@ -1,4 +1,6 @@
 def serializeScene(graphs):
+    yield ('clearAllState',)
+
     subgkeys = set(graphs.keys())
     for name, graph in graphs.items():
         yield 'switchGraph', name

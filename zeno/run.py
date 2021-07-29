@@ -12,7 +12,8 @@ def evaluateExpr(expr, frameid):
 def runScene(graphs, nframes, iopath):
     core.setIOPath(iopath)
 
-    core.clearAllState()
+    #data = json.dumps(list(serializeScene(graphs)))
+    #core.loadSceneFromList(data)
     for cmd, *args in serializeScene(graphs):
         getattr(core, cmd)(*args)
 
