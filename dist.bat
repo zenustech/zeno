@@ -1,7 +1,7 @@
 @echo off
 @rem get the cpython.zip and extract it here..
 zenv\PCBuild\amd64\python -m ensurepip
-python -m pip install PySide2 numpy -t zenv\Lib\site-packages -i https://mirrors.aliyun.com/pypi/simple
+python -m pip install pybind11 numpy PySide2 -t zenv\Lib\site-packages -i https://mirrors.aliyun.com/pypi/simple
 zenv\PCBuild\amd64\python setup.py install
 copy /y arts zenv
 copy /y assets zenv

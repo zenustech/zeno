@@ -16,7 +16,7 @@ version = '2021.7.24'
 description = 'Open-source node system framework for physics simulation and other CG applications'
 
 packages = ['zenqt', 'zenutils', 'zeno', 'zenvis']
-requirements = ['numpy', 'PySide2']
+requirements = ['pybind11', 'numpy', 'PySide2']
 
 def treefiles(dir):
     if not os.path.isdir(dir):
