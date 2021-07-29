@@ -15,13 +15,9 @@ option(ZENO_TRIGGER_GDB "Trigger GDB when exception or signal catched" OFF)
 if (ZENO_TRIGGER_GDB)
     target_compile_definitions(zeno PRIVATE -DZENO_TRIGGER_GDB)
 endif()
-
-option(ZENO_GLOBALSTATE "Enable ZENO frame and substep support" ON)
 if (ZENO_GLOBALSTATE)
     target_compile_definitions(zeno PUBLIC -DZENO_GLOBALSTATE)
 endif()
-
-option(ZENO_VISUALIZATION "Enable ZENO visualization support" ON)
 if (ZENO_VISUALIZATION)
     target_compile_definitions(zeno PUBLIC -DZENO_VISUALIZATION)
 endif()
@@ -42,4 +38,6 @@ set_target_properties(zeno PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
 	)
 
-add_subdirectory(python)
+if (ZENO_ENABLE_PYTHON)
+	add_subdirectory(python)
+endif()
