@@ -277,14 +277,20 @@ class DisplayWidget(QWidget):
             'ffmpeg', 
             '-r', str(self.params['fps']), 
             '-i', png_paths, 
+            '-c:v', self.params['encoder'],
             path
         ]
         print('Executing command:', cmd)
-        subprocess.check_call(cmd)
-        shutil.rmtree(tmp_path, ignore_errors=True)
-        zenvis.status['record_video'] = None
-        msg = 'Saved video to {}!'.format(path)
-        QMessageBox.information(self, 'Record Video', msg)
+        try:
+            subprocess.check_call(cmd)
+            msg = 'Saved video to {}!'.format(path)
+            QMessageBox.information(self, 'Record Video', msg)
+        except subprocess.CalledProcessError:
+            msg = 'Encoding error, please use libx264 (linux) / h264_mf (win)!'.format(path)
+            QMessageBox.critical(self, 'Record Video', msg)
+        finally:
+            shutil.rmtree(tmp_path, ignore_errors=True)
+            zenvis.status['record_video'] = None
 
     def do_screenshot(self):
         path = self.get_output_path('.png')

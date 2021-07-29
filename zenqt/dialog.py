@@ -46,8 +46,11 @@ class RecordVideoDialog(QDialog):
         cancel_button.clicked.connect(self.reject)
 
         
+        encoder = QLabel('Encoder:')
+        self.encoder_combo = self.build_encoder_combobox()
+
         presets = QLabel('Presets:')
-        combo = self.build_combobox()
+        res_combo = self.build_res_combobox()
 
         grid = QGridLayout()
         grid.setSpacing(10)
@@ -61,17 +64,20 @@ class RecordVideoDialog(QDialog):
         grid.addWidget(fps, 3, 0)
         grid.addWidget(self.fps_edit, 3, 1)
 
-        grid.addWidget(presets, 4, 0)
-        grid.addWidget(combo, 4, 1)
+        grid.addWidget(encoder, 4, 0)
+        grid.addWidget(self.encoder_combo, 4, 1)
 
-        grid.addWidget(viewport_width, 5, 0)
-        grid.addWidget(self.viewport_width_eidtor, 5, 1)
+        grid.addWidget(presets, 5, 0)
+        grid.addWidget(res_combo, 5, 1)
 
-        grid.addWidget(viewport_height, 6, 0)
-        grid.addWidget(self.viewport_height_eidtor, 6, 1)
+        grid.addWidget(viewport_width, 6, 0)
+        grid.addWidget(self.viewport_width_eidtor, 6, 1)
 
-        grid.addWidget(ok_button, 7, 0)
-        grid.addWidget(cancel_button, 7, 1)
+        grid.addWidget(viewport_height, 7, 0)
+        grid.addWidget(self.viewport_height_eidtor, 7, 1)
+
+        grid.addWidget(ok_button, 8, 0)
+        grid.addWidget(cancel_button, 8, 1)
 
 
         self.setLayout(grid) 
@@ -83,9 +89,10 @@ class RecordVideoDialog(QDialog):
         r['fps'] = self.fps_edit.value()
         r['width'] = int(self.viewport_width_eidtor.text())
         r['height'] = int(self.viewport_height_eidtor.text())
+        r['encoder'] = self.encoder_combo.currentText().split()[0]
         super().accept()
 
-    def build_combobox(self):
+    def build_res_combobox(self):
         screen_resolution = {
             '540P': (960, 540),
             '720P': (1280, 720),
@@ -101,6 +108,22 @@ class RecordVideoDialog(QDialog):
             self.viewport_height_eidtor.setText(str(h))
         c.textActivated.connect(callback)
         c.setCurrentIndex(1)
+        return c
+
+    def build_encoder_combobox(self):
+        encoders =[
+            'libx264 (linux)',
+            'h264_mf (win)',
+            'h264_qsv (intel)',
+            'h264_amf (amd)',
+            'h264_nvenc (nvidia)',
+        ]
+        c = QComboBox()
+        c.addItems(encoders)
+        if sys.platform == 'win32':
+            c.setCurrentIndex(1)
+        else:
+            c.setCurrentIndex(0)
         return c
 
 if __name__ == '__main__':
