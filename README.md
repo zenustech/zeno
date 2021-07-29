@@ -166,6 +166,7 @@ sudo python -m pip install numpy PySide2
 - Windows 10
 
 1. Install Python 3.8 64-bit. IMPORTANT: make sure you **Add Python 3.8 to PATH**! After that rebooting your computer would be the best.
+
 2. Start CMD in **Administrator mode** and type these commands:
 ```cmd
 python -m pip install numpy PySide2
@@ -215,6 +216,28 @@ IMPORTANT: In MSVC, Release mode must **always be active** when building ZENO, s
 run.bat
 ```
 
+After successfully loading the editor, you may play `arts/ready/LorenzParticleTrail.zsg` which is confirmed to work at this moment :)
+
+#### Troubleshooting
+
+1. If you got:
+```bash
+This application failed to start because it could not find or load the Qt platform plugin "xxx"
+
+Reinstalling the application may fix this problem.
+```
+
+- Windows
+
+Are you using Anaconda? Please try using the methods in: https://stackoverflow.com/questions/41994485/how-to-fix-could-not-find-or-load-the-qt-platform-plugin-windows-while-using-m
+
+- Ubuntu 20.04
+
+```bash
+sudo apt-get install qt5dxcb-plugin
+```
+
+2. Please let me know if you have any trouble not mentioned above by opening an [issue](https://github.com/zenustech/zeno/issues) on GitHub, thanks for you support!
 
 ## ZENO Extensions
 
