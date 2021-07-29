@@ -1,9 +1,6 @@
 import os
 import copy
 import time
-import shutil
-import tempfile
-import subprocess
 import numpy as np
 
 from PySide2.QtGui import *
@@ -12,7 +9,6 @@ from PySide2.QtWidgets import *
 from PySide2.QtOpenGL import *
 
 import zenvis
-from zeno import fileio
 from .dialog import *
 
 class CameraControl:
@@ -127,7 +123,7 @@ class ViewportWidget(QGLWidget):
             self.camera.res = old_res
             self.camera.update_perspective()
             if f == self.frame_end:
-                self.parent_widget.finish_record()
+                self.parent_widget.record_video.finish_record()
 
     def paintGL(self):
         self.check_record()
@@ -200,6 +196,9 @@ class DisplayWidget(QWidget):
         self.view.parent_widget = self
         self.layout.addWidget(self.view)
 
+        self.params = {}
+        self.record_video = RecordVideoDialog(self)
+
     def on_update(self):
         self.view.on_update()
 
@@ -219,9 +218,8 @@ class DisplayWidget(QWidget):
                     c.blueF(),
                 )
 
-
         elif name == 'Record Video':
-            self.do_record_video()
+            self.record_video.do_record_video()
 
         elif name == 'Screenshot':
             self.do_screenshot()
@@ -234,63 +232,6 @@ class DisplayWidget(QWidget):
         file_name += extname
         path = os.path.join(dir_path, file_name)
         return path
-
-    def do_record_video(self):
-        count = fileio.getFrameCount()
-        if count == 0:
-            QMessageBox.information(self, 'Zeno', 'Please do simulation before record video!')
-            return
-        self.params = {}
-        dialog = RecordVideoDialog(self.params, count)
-        accept = dialog.exec()
-        if not accept:
-            return
-        if self.params['frame_start'] >= self.params['frame_end']:
-            QMessageBox.information(self, 'Zeno', 'Frame strat must be less than frame end!')
-            return
-        self.params['frame_end'] = min(count - 1, self.params['frame_end'])
-
-        self.timeline.jump_frame(self.params['frame_start'])
-        self.timeline.start_play()
-        self.view.frame_end = self.params['frame_end']
-
-        tmp_path = tempfile.mkdtemp(prefix='recording-')
-        assert os.path.isdir(tmp_path)
-        self.view.record_path = tmp_path
-        self.view.record_res = (self.params['width'], self.params['height'])
-
-    def finish_record(self):
-        tmp_path = self.view.record_path
-        assert tmp_path is not None
-        self.view.record_path = None
-        l = os.listdir(tmp_path)
-        l.sort()
-        for i in range(len(l)):
-            old_name = l[i]
-            new_name = '{:06}.png'.format(i + 1)
-            old_path = os.path.join(tmp_path, old_name)
-            new_path = os.path.join(tmp_path, new_name)
-            os.rename(old_path, new_path)
-        path = self.get_output_path('.mp4')
-        png_paths = os.path.join(tmp_path, '%06d.png')
-        cmd = [
-            'ffmpeg', 
-            '-r', str(self.params['fps']), 
-            '-i', png_paths, 
-            '-c:v', self.params['encoder'],
-            path
-        ]
-        print('Executing command:', cmd)
-        try:
-            subprocess.check_call(cmd)
-            msg = 'Saved video to {}!'.format(path)
-            QMessageBox.information(self, 'Record Video', msg)
-        except subprocess.CalledProcessError:
-            msg = 'Encoding error, please use libx264 (linux) / h264_mf (win)!'.format(path)
-            QMessageBox.critical(self, 'Record Video', msg)
-        finally:
-            shutil.rmtree(tmp_path, ignore_errors=True)
-            zenvis.status['record_video'] = None
 
     def do_screenshot(self):
         path = self.get_output_path('.png')
