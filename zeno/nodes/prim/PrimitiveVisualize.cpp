@@ -5,7 +5,7 @@
 namespace zeno {
 
 // TODO: why taint IObject with visualization stuffs?
-ZENAPI void PrimitiveObject::dumpfile(std::string const &path) {
+ZENO_API void PrimitiveObject::dumpfile(std::string const &path) {
 }
 
 }
@@ -18,7 +18,7 @@ ZENAPI void PrimitiveObject::dumpfile(std::string const &path) {
 
 namespace zeno {
 
-ZENAPI void PrimitiveObject::dumpfile(std::string const &path) {
+ZENO_API void PrimitiveObject::dumpfile(std::string const &path) {
     writezpm(this, (path + ".zpm").c_str());
 }
 

@@ -3,9 +3,9 @@
 
 namespace zeno {
 
-ZENAPI GlobalState state;
+ZENO_API GlobalState state;
 
-ZENAPI bool GlobalState::substepBegin() {
+ZENO_API bool GlobalState::substepBegin() {
     if (has_substep_executed) {
         if (!time_step_integrated)
             return false;
@@ -15,23 +15,23 @@ ZENAPI bool GlobalState::substepBegin() {
     return true;
 }
 
-ZENAPI void GlobalState::substepEnd() {
+ZENO_API void GlobalState::substepEnd() {
     substepid++;
     has_substep_executed = true;
 }
 
-ZENAPI void GlobalState::setIOPath(const std::string &iopath_) {
+ZENO_API void GlobalState::setIOPath(const std::string &iopath_) {
     iopath = iopath_;
 }
 
-ZENAPI void GlobalState::frameBegin() {
+ZENO_API void GlobalState::frameBegin() {
     has_frame_completed = false;
     has_substep_executed = false;
     time_step_integrated = false;
     frame_time_elapsed = 0;
 }
 
-ZENAPI void GlobalState::frameEnd() {
+ZENO_API void GlobalState::frameEnd() {
     frameid++;
 }
 

@@ -31,12 +31,12 @@ struct GlobalState {
         return substepid == 0;
     }
 
-    ZENAPI bool substepBegin();
-    ZENAPI void substepEnd();
-    ZENAPI void frameBegin();
-    ZENAPI void frameEnd();
-    ZENAPI void setIOPath(std::string const &iopath_);
+    ZENO_API bool substepBegin();
+    ZENO_API void substepEnd();
+    ZENO_API void frameBegin();
+    ZENO_API void frameEnd();
+    ZENO_API void setIOPath(std::string const &iopath_);
 };
 
-ZENAPI extern GlobalState state;
+ZENO_API extern GlobalState state;
 }

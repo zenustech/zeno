@@ -24,7 +24,7 @@ struct PrimitiveObject : zeno::IObjectClone<PrimitiveObject> {
   std::vector<zeno::vec4i> quads;
 
 #ifndef ZENO_APIFREE
-  ZENAPI virtual void dumpfile(std::string const &path) override;
+  ZENO_API virtual void dumpfile(std::string const &path) override;
 #else
   virtual void dumpfile(std::string const &path) override {}
 #endif
