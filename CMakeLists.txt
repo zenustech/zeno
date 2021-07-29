@@ -11,9 +11,19 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include_directories(include)
 
-add_subdirectory(external/pybind11)
-add_subdirectory(external/glad)
-add_subdirectory(zenvis)
+
+option(ZENO_ENABLE_PYTHON "Enable ZENO Python bindings" ON)
+if (ZENO_ENABLE_PYTHON)
+    add_subdirectory(external/pybind11)
+endif()
+
+option(ZENO_GLOBALSTATE "Enable ZENO frame and substep support" ON)
+option(ZENO_VISUALIZATION "Enable ZENO visualization support" ON)
+if (ZENO_VISUALIZATION)
+    add_subdirectory(external/glad)
+    add_subdirectory(zenvis)
+endif()
+
 add_subdirectory(zeno)
 
 option(ZENO_BUILD_EXTENSIONS "Build extensions for Zeno" ON)

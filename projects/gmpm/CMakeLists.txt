@@ -26,6 +26,7 @@ add_library(gmpm SHARED
   nosys/ToZensimLevelSet.cpp 
   nosys/ZensimBoundary.cpp 
   nosys/MakePartitionAndGrid.cpp 
+  nosys/MakeIndexBuckets.cpp 
 
   nosys/ZensimParticleWrangler.cu
   nosys/ZensimParticleNeighborWrangler.cu
