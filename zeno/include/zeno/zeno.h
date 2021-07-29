@@ -40,7 +40,7 @@ using IValue = std::variant<std::string, int, float>;
 
 
 struct IObject {
-#ifndef ZEN_NOREFDLL
+#ifndef ZENO_APIFREE
     ZENAPI IObject();
     ZENAPI virtual ~IObject();
 
