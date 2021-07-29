@@ -2,6 +2,7 @@ file(GLOB ZENO_SOURCE *.cpp nodes/*.cpp nodes/*/*.cpp include/*/*.h)
 add_library(zeno SHARED ${ZENO_SOURCE})
 
 if (ZENO_ENABLE_OPENMP)
+    add()
     find_package(OpenMP)
     if (OPENMP_FOUND)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")

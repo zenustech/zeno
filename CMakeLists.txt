@@ -12,7 +12,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include_directories(include)
 
 
-option(ZENO_ENABLE_OPENMP "Enable OpenMP in ZENO for parallelism" ON)
 option(ZENO_ENABLE_PYTHON "Enable ZENO Python bindings" ON)
 if (ZENO_ENABLE_PYTHON)
     add_subdirectory(external/pybind11)
@@ -25,6 +24,7 @@ if (ZENO_VISUALIZATION)
     add_subdirectory(zenvis)
 endif()
 
+option(ZENO_ENABLE_OPENMP "Enable OpenMP in ZENO for parallelism" ON)
 add_subdirectory(zeno)
 
 option(ZENO_BUILD_EXTENSIONS "Build extensions for Zeno" ON)
