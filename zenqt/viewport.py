@@ -127,7 +127,7 @@ class ViewportWidget(QGLWidget):
         zenvis.paintGL()
 
     def on_update(self):
-        self.repaint()
+        self.updateGL()
 
 @eval('lambda x: x()')
 def _():
