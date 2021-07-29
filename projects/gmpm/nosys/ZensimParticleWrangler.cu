@@ -105,8 +105,7 @@ struct ZSParticlesWrangle : zeno::INode {
           [](...) {})(parObjPtr->model, parObjPtr->get());
 
       auto prog = compiler.compile(code, opts);
-      auto jitCode = assembler.assemble(
-          prog->assembly); // amazing! you avoid nvrtc totally
+      auto jitCode = assembler.assemble(prog->assembly);
 
       /// symbols
       zs::Vector<AccessorAoSoA> haccessors{prog->symbols.size()};
@@ -145,8 +144,8 @@ struct ZSParticlesWrangle : zeno::INode {
             addr = pars.logJp.data();
           }
         })(parObjPtr->get());
-        haccessors[i] =
-            zs::AccessorAoSoA{zs::aos_v, addr, unitBytes, ndim, dimid};
+        haccessors[i] = zs::AccessorAoSoA{zs::aos_v, addr,  unitBytes,
+                                          ndim,      dimid, (unsigned short)0};
         // fmt::print("base: {}\n", haccessors[i].base);
       }
       auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});
@@ -199,8 +198,6 @@ struct ZSParticlesWrangle : zeno::INode {
         // begin kernel launch
         std::size_t cnt;
         zs::f32 *d_params;
-        zs::ParticlesView<zs::execspace_e::cuda, zs::Particles<zs::f32, 3>>
-            parObj;
         int nchns = daccessors.size();
         void *addr = daccessors.data();
         void *args[5];
@@ -213,13 +210,8 @@ struct ZSParticlesWrangle : zeno::INode {
               args[1] = (void *)&parObjPtr->model;
               d_params = dparams.data();
               args[2] = (void *)&d_params;
-#if 0
-              parObj = proxy<zs::execspace_e::cuda>(pars);
-              args[3] = (void *)&parObj;
-#else
               args[3] = (void *)&nchns;
               args[4] = (void *)&addr;
-#endif
             },
             [](...) {})(parObjPtr->get());
         cudri::launchCuKernel(function, (cnt + 127) / 128, 1, 1, 128, 1, 1, 0,
