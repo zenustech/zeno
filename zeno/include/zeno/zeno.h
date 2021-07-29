@@ -249,6 +249,11 @@ struct Graph {
     ZENO_API Graph();
     ZENO_API ~Graph();
 
+    ZENO_API void setGraphInput(std::string const &id,
+            std::shared_ptr<IObject> &&obj);
+    ZENO_API std::shared_ptr<IObject> &&getGraphOutput(
+            std::string const &id);
+
     ZENO_API void clearNodes();
     ZENO_API void applyNodes(std::vector<std::string> const &ids);
     ZENO_API void addNode(std::string const &cls, std::string const &id);

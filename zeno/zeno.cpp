@@ -49,6 +49,15 @@ ZENO_API Context::Context(Context const &other)
 ZENO_API Graph::Graph() = default;
 ZENO_API Graph::~Graph() = default;
 
+ZENO_API void Graph::setGraphInput(std::string const &id,
+        std::shared_ptr<IObject> &&obj) {
+    subg->subInputs[id] = obj;
+}
+ZENO_API std::shared_ptr<IObject> &&Graph::getGraphOutput(
+        std::string const &id) {
+    return subg->subInputs[id];
+}
+
 ZENO_API void INode::doComplete() {
     set_output("DST", std::make_shared<ConditionObject>());
     complete();
