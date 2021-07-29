@@ -1,4 +1,6 @@
-OutOfOrder
+ParameterFold
 AlgebraSimplify for pow(x, 2) -> x*x
+VectorizeControl
+OutOfOrderExecution
 refactor zsg file format for input output both connection
 MUTE is Buggy in dict order for subnodes
