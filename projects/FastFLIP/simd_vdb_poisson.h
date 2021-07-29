@@ -30,23 +30,18 @@ public:
                                     |           |
                                     |     b     |
                                     |           |
-
             x indicates the location of unknown pressure variable
             mx and my indicates minus x and minus y faces
             a,b,c,d indicate the neighbor cells
-
             each cell carries the diagonal entry for x
             and face weight for the minus x and minus y (minus z for 3d).
             face weight = 1 if that face is purely liquid
             face weight = 0 if that face is purely solid
-
             for each of the cell in {a,b,c,d},
             if it is liquid voxel, add the term = (weight(x,{a,b,c,d}) *
        dt/(dx*dx)) to the diagonal entry
-
             if it is an air voxel, add term / (fraction_liquid(x,{a,b,c,d})
             to the diagonal entry
-
             When this laplacian is applied to some value in x
             It scatters diagonal to x, and (- term({a,b,c,d})) to {a,b,c,d} if
        it is liquid
@@ -56,7 +51,6 @@ public:
     struct coarsening {};
     // constructor from liquid phi, vector face weights, dx, dt
     Laplacian_with_level(openvdb::FloatGrid::Ptr in_liquid_phi,
-                         openvdb::FloatGrid::Ptr in_true_liquid_phi,
                          openvdb::Vec3fGrid::Ptr in_face_weights,
                          const float in_dt, const float in_dx);
 
@@ -66,7 +60,6 @@ public:
     void initialize_entries_from_parent(const Laplacian_with_level &parent);
 
     void initialize_finest(openvdb::FloatGrid::Ptr in_liquid_phi,
-                           openvdb::FloatGrid::Ptr in_true_liquid_phi,
                            openvdb::Vec3fGrid::Ptr in_face_weights);
 
     // it assumes the dof idx tree already has the same topology as the
@@ -165,13 +158,11 @@ public:
   }; // end Laplacian with level
 
   simd_vdb_poisson(openvdb::FloatGrid::Ptr in_liquid_sdf,
-                   openvdb::FloatGrid::Ptr in_true_liquid_sdf,
                    openvdb::Vec3fGrid::Ptr in_face_weight,
                    openvdb::Vec3fGrid::Ptr in_velocity,
                    openvdb::Vec3fGrid::Ptr in_solid_velocity, float in_dt,
                    float in_dx) {
     m_liquid_sdf = in_liquid_sdf;
-    m_true_liquid_sdf = in_true_liquid_sdf;
     m_face_weight = in_face_weight;
     m_velocity = in_velocity;
     m_solid_velocity = in_solid_velocity;
@@ -254,7 +245,6 @@ private:
   int m_max_iter;
   // the grid information used to construct the matrix and right hand side
   openvdb::FloatGrid::Ptr m_liquid_sdf;
-  openvdb::FloatGrid::Ptr m_true_liquid_sdf;
   openvdb::Vec3fGrid::Ptr m_face_weight;
   openvdb::Vec3fGrid::Ptr m_velocity, m_solid_velocity;
 
