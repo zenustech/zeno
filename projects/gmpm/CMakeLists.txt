@@ -28,6 +28,7 @@ add_library(gmpm SHARED
   nosys/MakePartitionAndGrid.cpp 
 
   nosys/ZensimParticleWrangler.cu
+  nosys/ZensimParticleNeighborWrangler.cu
   #nosys/Test.cu
   nosys/PartitionForParticles.cu 
   nosys/GridFromPartition.cu 

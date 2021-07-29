@@ -23,7 +23,7 @@
 
 namespace zeno {
 
-struct ZSParticlesWrangle : zeno::INode {
+struct ZSParticleNeighborWrangle : zeno::INode {
   virtual void apply() override {
     using namespace zs;
     auto code = get_input<zeno::StringObject>("zfxCode")->get();
@@ -238,7 +238,7 @@ struct ZSParticlesWrangle : zeno::INode {
   }
 };
 
-ZENDEFNODE(ZSParticlesWrangle, {
+ZENDEFNODE(ZSParticleNeighborWrangle, {
                                    {"ZSParticles", "zfxCode", "params"},
                                    {"ZSParticles"},
                                    {},
