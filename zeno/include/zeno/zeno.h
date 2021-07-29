@@ -278,6 +278,7 @@ struct Session {
 
     ZENO_API void clearAllState();
     ZENO_API Graph &getGraph() const;
+    ZENO_API Graph &getGraph(std::string const &name) const;
     ZENO_API void switchGraph(std::string const &name);
     ZENO_API std::string dumpDescriptors() const;
     ZENO_API void loadSceneFromList(const char *json);

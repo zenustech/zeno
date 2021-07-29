@@ -55,7 +55,8 @@ ZENO_API void Graph::setGraphInput(std::string const &id,
 }
 ZENO_API std::shared_ptr<IObject> &&Graph::getGraphOutput(
         std::string const &id) {
-    return subg->subInputs[id];
+    // TODO: requireInput
+    return subg->subOutputs.at(id);
 }
 
 ZENO_API void INode::doComplete() {
@@ -259,6 +260,10 @@ ZENO_API void Session::switchGraph(std::string const &name) {
 
 ZENO_API Graph &Session::getGraph() const {
     return *currGraph;
+}
+
+ZENO_API Graph &Session::getGraph(std::string const &name) const {
+    return *graphs.at(name);
 }
 
 ZENO_API std::string Session::dumpDescriptors() const {
