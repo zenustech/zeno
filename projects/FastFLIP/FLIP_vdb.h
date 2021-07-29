@@ -24,7 +24,7 @@ static inline void initRandomTable() {
     std::mt19937 generator(/*seed=*/device());
     std::uniform_real_distribution<> distribution(-0.5, 0.5);
 #pragma omp parallel for
-    for (size_t i = 0; i < 21474836; i++) {
+    for (int64_t i = 0; i < 21474836; i++) {
         randomTable[i] = frand(i)-0.5f;
     }
 }
@@ -164,14 +164,14 @@ struct FLIP_vdb {
 
   static void solve_pressure_simd(
       openvdb::FloatGrid::Ptr &liquid_sdf,
-      openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf,
+      openvdb::FloatGrid::Ptr &deprecated_pushed_out_liquid_sdf,
       openvdb::FloatGrid::Ptr &rhsgrid, openvdb::FloatGrid::Ptr &curr_pressure,
       openvdb::Vec3fGrid::Ptr &face_weight, openvdb::Vec3fGrid::Ptr &velocity,
       openvdb::Vec3fGrid::Ptr &solid_velocity, float dt, float dx);
 
   static void apply_pressure_gradient(
-      openvdb::FloatGrid::Ptr &liquid_sdf, openvdb::FloatGrid::Ptr &solid_sdf,
-      openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf,
+      openvdb::FloatGrid::Ptr &liquid_sdf, openvdb::FloatGrid::Ptr &deprecated_solid_sdf,
+      openvdb::FloatGrid::Ptr &deprecated_pushed_out_liquid_sdf,
       openvdb::FloatGrid::Ptr &pressure, openvdb::Vec3fGrid::Ptr &face_weight,
       openvdb::Vec3fGrid::Ptr &velocity,
       openvdb::Vec3fGrid::Ptr &solid_velocity, float dt, float dx);

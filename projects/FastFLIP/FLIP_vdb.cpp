@@ -3237,47 +3237,44 @@ void FLIP_vdb::calculate_face_weights(openvdb::Vec3fGrid::Ptr &face_weight,
   leafman.foreach (set_face_weight_op);
 }
 
+//pushed_out_liquid_sdf is a deprecated argument
 void FLIP_vdb::clamp_liquid_phi_in_solids(
     openvdb::FloatGrid::Ptr &liquid_sdf, openvdb::FloatGrid::Ptr &solid_sdf,
-    openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf, float dx) {
-  openvdb::tools::dilateActiveValues(
-      liquid_sdf->tree(), 1,
-      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
-  auto correct_liquid_phi_in_solid = [&](openvdb::FloatTree::LeafNodeType &leaf,
+    openvdb::FloatGrid::Ptr &deprecated_pushed_out_sdf, float dx) {
+
+  auto preliminary_immerse = [&](openvdb::FloatTree::LeafNodeType &leaf,
                                          openvdb::Index leafpos) {
-    // detech if there is solid
-    if (solid_sdf->tree().probeConstLeaf(leaf.origin())) {
-      auto const_solid_axr{solid_sdf->getConstAccessor()};
-      auto shift{openvdb::Vec3R{0.5}};
-
-      for (auto offset = 0; offset < leaf.SIZE; offset++) {
-        if (leaf.isValueMaskOff(offset)) {
-          continue;
-        }
-        auto voxel_solid_sdf = openvdb::tools::BoxSampler::sample(
-            solid_sdf->tree(),
-            leaf.offsetToGlobalCoord(offset).asVec3d() + shift);
-
-        if (voxel_solid_sdf < 0) {
-          leaf.setValueOn(offset, dx);
-        }
-      } // end for all voxel
-    }   // end there is solid in this leaf
-  };    // end correct_liquid_phi_in_solid
+    ///detech if there is solid
+          if (solid_sdf->tree().probeConstLeaf(leaf.origin())) {
+              auto const_solid_axr{ solid_sdf->getConstUnsafeAccessor() };
+              auto shift{ openvdb::Vec3R{0.5} };
+              for (auto iter = leaf.beginValueOn(); iter; ++iter) {
+                  auto voxel_solid_sdf = openvdb::tools::BoxSampler::sample(
+                      const_solid_axr, iter.getCoord() + shift);
+                  if (voxel_solid_sdf < 0) {
+                      //leaf.setValueOn(offset, -voxel_solid_sdf);
+                      iter.setValue(iter.getValue() - 0.5f * dx);
+                  }
+              }//end for all voxel
+          }//end there is solid in this leaf
+  };    // end preliminary_immerse
 
   auto phi_manager =
       openvdb::tree::LeafManager<openvdb::FloatTree>(liquid_sdf->tree());
 
-  phi_manager.foreach (correct_liquid_phi_in_solid);
+  phi_manager.foreach (preliminary_immerse);
 
-  pushed_out_liquid_sdf = liquid_sdf->deepCopy();
+  auto ref_liquid_sdf = liquid_sdf->deepCopy();
 
-  // this is to be called by a solid manager
-  auto immerse_liquid_into_solid = [&](openvdb::FloatTree::LeafNodeType &leaf,
+  openvdb::tools::dilateActiveValues(
+      liquid_sdf->tree(), 1,
+      openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+
+  auto secondary_immerse = [&](openvdb::FloatTree::LeafNodeType &leaf,
                                        openvdb::Index leafpos) {
     // detech if there is solid
     if (solid_sdf->tree().probeConstLeaf(leaf.origin())) {
-      auto pushed_out_liquid_axr{pushed_out_liquid_sdf->getConstAccessor()};
+      auto reference_liquid_sdf_axr{ ref_liquid_sdf->getConstUnsafeAccessor() };
       auto const_solid_axr{solid_sdf->getConstAccessor()};
       auto shift{openvdb::Vec3R{0.5}};
 
@@ -3288,6 +3285,7 @@ void FLIP_vdb::clamp_liquid_phi_in_solids(
 
         if (voxel_solid_sdf < 0) {
           bool found_liquid_neib = false;
+          float min_fluid_sdf = dx * 3.0f;
           for (int i_neib = 0; i_neib < 6 && !found_liquid_neib; i_neib++) {
             int component = i_neib / 2;
             int positive_dir = (i_neib % 2 == 0);
@@ -3299,14 +3297,15 @@ void FLIP_vdb::clamp_liquid_phi_in_solids(
             } else {
               test_coord[component]--;
             }
+            min_fluid_sdf = std::min(min_fluid_sdf, reference_liquid_sdf_axr.getValue(test_coord));
             found_liquid_neib |=
-                (pushed_out_liquid_axr.getValue(test_coord) < 0);
+                (reference_liquid_sdf_axr.getValue(test_coord) < 0);
           } // end for 6 direction
 
           // mark this voxel as liquid
           if (found_liquid_neib) {
             float current_sdf = iter.getValue();
-            iter.setValue(-0.5f * dx);
+            iter.setValue(min_fluid_sdf);
             // iter.setValue(-dx * 0.01);
             iter.setValueOn();
           }
@@ -3314,9 +3313,9 @@ void FLIP_vdb::clamp_liquid_phi_in_solids(
 
       } // end for all voxel
     }   // end there is solid in this leaf
-  };    // end immerse_liquid_into_solid
+  };    // end secondary_immerse
 
-  phi_manager.foreach (immerse_liquid_into_solid);
+  phi_manager.foreach (secondary_immerse);
 }
 
 namespace {
@@ -3378,8 +3377,8 @@ fill_idx_tree_from_liquid_sdf(openvdb::Int32Tree::Ptr dof_tree,
 
 } // namespace
 void FLIP_vdb::apply_pressure_gradient(
-    openvdb::FloatGrid::Ptr &liquid_sdf, openvdb::FloatGrid::Ptr &solid_sdf,
-    openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf,
+    openvdb::FloatGrid::Ptr &liquid_sdf, openvdb::FloatGrid::Ptr &deprecated_solid_sdf,
+    openvdb::FloatGrid::Ptr &deprecated_pushed_out_liquid_sdf,
     openvdb::FloatGrid::Ptr &pressure, openvdb::Vec3fGrid::Ptr &face_weight,
     openvdb::Vec3fGrid::Ptr &velocity, openvdb::Vec3fGrid::Ptr &solid_velocity,
     float dx, float in_dt) {
@@ -3389,10 +3388,8 @@ void FLIP_vdb::apply_pressure_gradient(
   auto velocity_update_op = [&](openvdb::Vec3fTree::LeafNodeType &leaf,
                                 openvdb::Index leafpos) {
     auto phi_axr{liquid_sdf->getConstUnsafeAccessor()};
-    auto true_phi_axr{pushed_out_liquid_sdf->getConstUnsafeAccessor()};
     auto weight_axr{face_weight->getConstUnsafeAccessor()};
     auto solid_vel_axr{solid_velocity->getConstUnsafeAccessor()};
-    auto solid_sdf_axr{solid_sdf->getConstUnsafeAccessor()};
     auto pressure_axr{pressure->getConstUnsafeAccessor()};
     // auto update_axr{ m_velocity_update->getAccessor() };
 
@@ -3406,13 +3403,12 @@ void FLIP_vdb::apply_pressure_gradient(
       // set this velocity as off unless we have an update
       // on any component of its velocity
       bool has_any_update = false;
-      auto gcoord = leaf.offsetToGlobalCoord(offset);
-      auto original_vel = leaf.getValue(offset);
+      const auto gcoord = leaf.offsetToGlobalCoord(offset);
+      auto updated_vel = leaf.getValue(offset);
       auto solid_vel = solid_vel_axr.getValue(gcoord);
 
       // face_weight=0 in solid
       auto face_weights = weight_axr.getValue(gcoord);
-      auto vel_update = 0 * original_vel;
       // three velocity channel
       for (int ic = 0; ic < 3; ic++) {
         auto lower_gcoord = gcoord;
@@ -3420,60 +3416,36 @@ void FLIP_vdb::apply_pressure_gradient(
         if (face_weights[ic] > 0) {
           // this face has liquid component
           // does it have any dof on its side?
-          auto phi_this = phi_axr.getValue(gcoord);
-          auto phi_below = phi_axr.getValue(lower_gcoord);
-          float p_this = pressure_axr.getValue(gcoord);
-          float p_below = pressure_axr.getValue(lower_gcoord);
+          bool has_pressure = pressure_axr.isValueOn(gcoord);
+          bool has_pressure_below = pressure_axr.isValueOn(lower_gcoord);
 
-          bool update_this_velocity = false;
-          if (phi_this < 0 && phi_below < 0) {
-            update_this_velocity = true;
-          } else {
-            if (phi_this > 0 && phi_below > 0) {
-              update_this_velocity = false;
-            } // end if all outside liquid
-            else {
-              // one of them is inside the liquid, one is outside
-              if (phi_this >= 0) {
-                // this point is outside the liquid, possibly free air or free
-                // air in the liquid if so, set the pressure to be ghost value
-                // if (phi_this+phi_below<0) {
-                if (true_phi_axr.getValue(lower_gcoord) < 0) {
-                  update_this_velocity = true;
-                }
-                //}
+          if (has_pressure || has_pressure_below) {
+
+              auto phi_this = phi_axr.getValue(gcoord);
+              auto phi_below = phi_axr.getValue(lower_gcoord);
+              float p_this = pressure_axr.getValue(gcoord);
+              float p_below = pressure_axr.getValue(lower_gcoord);
+              float theta = 1.0f;
+
+              if (phi_this >= 0 || phi_below >= 0) {
+                  theta = fraction_inside(phi_below, phi_this);
+                  if (theta < 0.02f) theta = 0.02f;
               }
-              if (phi_below >= 0) {
-                // this point below is outside the liquid, possibly free air
-                // if so, set the pressure to be ghost value
-                // if (phi_this+phi_below<0) {
-                if (true_phi_axr.getValue(gcoord) < 0) {
-                  update_this_velocity = true;
-                }
-                //}
-              }
-            } // end else all outside liquid
-          }   // end all inside liquid
 
-          if (update_this_velocity) {
-            float theta = 1;
-            if (phi_this >= 0 || phi_below >= 0) {
-              theta = fraction_inside(phi_below, phi_this);
-              if (theta < 0.02f)
-                theta = 0.02f;
-            }
+              float vel_update = -in_dt * (float)(p_this - p_below) / dx / theta;
+              updated_vel[ic] += vel_update;
 
-            original_vel[ic] -= in_dt * (float)(p_this - p_below) / dx / theta;
-            vel_update[ic] = in_dt * (float)(p_this - p_below) / dx / theta;
-            if (face_weights[ic] < 1) {
-              // mix the solid velocity and fluid velocity if friction is
-              // expected
-              float solid_fraction = (1 - face_weights[ic]);
-              original_vel[ic] = (1 - solid_fraction) * original_vel[ic] +
-                                 (solid_fraction)*solid_vel[ic];
-            }
-            has_any_update = true;
-          } // end if any dofs on two sides
+              //uncomment this block to add artificial friction
+              //if (face_weights[ic] < 1) {
+              //    // mix the solid velocity and fluid velocity if friction is
+              //    // expected
+              //    float solid_fraction = (1 - face_weights[ic]);
+              //    updated_vel[ic] = (1 - solid_fraction) * updated_vel[ic] +
+              //        (solid_fraction)*solid_vel[ic];
+              //}
+              has_any_update = true;
+          }
+
         }   // end if face_weight[ic]>0
         else {
           // this face is inside solid
@@ -3484,11 +3456,9 @@ void FLIP_vdb::apply_pressure_gradient(
       }   // end for three component
 
       if (!has_any_update) {
-        leaf.setValueOff(offset, openvdb::Vec3R(0, 0, 0));
-        // update_axr.setValueOff(leaf.offsetToGlobalCoord(offset));
+        leaf.setValueOff(offset);
       } else {
-        leaf.setValueOn(offset, original_vel);
-        // update_axr.setValue(leaf.offsetToGlobalCoord(offset), vel_update);
+        leaf.setValueOn(offset, updated_vel);
       }
     } // end for all voxels
   };  // end velocity_update_op
@@ -3500,13 +3470,13 @@ void FLIP_vdb::apply_pressure_gradient(
 
 void FLIP_vdb::solve_pressure_simd(
     openvdb::FloatGrid::Ptr &liquid_sdf,
-    openvdb::FloatGrid::Ptr &pushed_out_liquid_sdf,
+    openvdb::FloatGrid::Ptr &deprecated_pushed_out_liquid_sdf,
     openvdb::FloatGrid::Ptr &rhsgrid, openvdb::FloatGrid::Ptr &curr_pressure,
     openvdb::Vec3fGrid::Ptr &face_weight, openvdb::Vec3fGrid::Ptr &velocity,
     openvdb::Vec3fGrid::Ptr &solid_velocity, float dt, float dx) {
   // CSim::TimerMan::timer("Sim.step/vdbflip/pressure/buildlevel").start();
   auto simd_solver =
-      simd_vdb_poisson(liquid_sdf, pushed_out_liquid_sdf, face_weight, velocity,
+      simd_vdb_poisson(liquid_sdf, face_weight, velocity,
                        solid_velocity, dt, dx);
 
   simd_solver.construct_levels();
