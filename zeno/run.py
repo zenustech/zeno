@@ -51,15 +51,13 @@ def runScene(graphs, nframes, iopath):
 
 
 def serializeScene(graphs):
-    res = []
-
     subgkeys = set(graphs.keys())
     for name, graph in graphs.items():
         yield 'switchGraph', name
         yield from serializeGraph(graph['nodes'], subgkeys)
 
 
-def serializeGraph(res, nodes, subgkeys):
+def serializeGraph(nodes, subgkeys):
     for ident, data in nodes.items():
         if 'special' in data:
             continue

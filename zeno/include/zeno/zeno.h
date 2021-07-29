@@ -258,8 +258,7 @@ struct Graph {
         std::string const &sn, std::string const &ss);
     ZENAPI void setNodeParam(std::string const &id, std::string const &par,
         IValue const &val);
-    ZENAPI void setNodeOptions(std::string const &id,
-            std::set<std::string> const &opts);
+    ZENAPI void setNodeOption(std::string const &id, std::string const &name);
     ZENAPI std::shared_ptr<IObject> const &getNodeOutput(
         std::string const &sn, std::string const &ss) const;
 };
@@ -338,9 +337,8 @@ inline void setNodeParam(std::string const &id, std::string const &par,
     return getSession().getGraph().setNodeParam(id, par, val);
 }
 
-inline void setNodeOptions(std::string const &id,
-        std::set<std::string> const &opts) {
-    return getSession().getGraph().setNodeOptions(id, opts);
+inline void setNodeOption(std::string const &id, std::string const &name) {
+    return getSession().getGraph().setNodeOption(id, name);
 }
 
 
