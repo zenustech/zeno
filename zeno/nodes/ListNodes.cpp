@@ -92,7 +92,7 @@ ZENDEFNODE(MakeSmallList, {
     {"list"},
 });
 
-ZENAPI void ListObject::dumpfile(std::string const &path) {
+ZENO_API void ListObject::dumpfile(std::string const &path) {
     for (int i = 0; i < arr.size(); i++) {
         auto const &obj = arr[i];
         std::stringstream ss;

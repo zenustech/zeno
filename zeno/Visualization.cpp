@@ -1,3 +1,7 @@
+#ifdef ZENO_VISUALIZATION
+#ifndef ZENO_GLOBALSTATE
+#error "ZENO_GLOBALSTATE must be ON when ZENO_VISUALIZATION is ON"
+#endif
 #include <zeno/zeno.h>
 #include <zeno/Visualization.h>
 #include <zeno/GlobalState.h>
@@ -9,7 +13,7 @@ namespace zeno::Visualization {
 
 static int objid = 0;
 
-ZENAPI std::string exportPath() {
+ZENO_API std::string exportPath() {
     char buf[100];
     sprintf(buf, "%06d", zeno::state.frameid);
     auto path = fs::path(zeno::state.iopath) / buf;
@@ -22,7 +26,7 @@ ZENAPI std::string exportPath() {
     return path.string();
 }
 
-ZENAPI void endFrame() {
+ZENO_API void endFrame() {
     char buf[100];
     sprintf(buf, "%06d", zeno::state.frameid);
     auto path = fs::path(zeno::state.iopath) / buf;
@@ -36,3 +40,4 @@ ZENAPI void endFrame() {
 }
 
 }
+#endif

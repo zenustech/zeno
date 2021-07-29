@@ -1,3 +1,4 @@
+#ifdef ZENO_GLOBALSTATE
 #include <zeno/zeno.h>
 #include <zeno/NumericObject.h>
 #include <zeno/ConditionObject.h>
@@ -170,3 +171,4 @@ ZENDEFNODE(IntegrateFrameTime, {
     {{"float", "min_scale", "0.0001"}},
     {"frame"},
 });
+#endif

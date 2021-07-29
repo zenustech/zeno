@@ -1,54 +1,59 @@
 #include <zeno/zeno.h>
 #include <zeno/ConditionObject.h>
+#ifdef ZENO_VISUALIZATION  // TODO: can we decouple then from zeno core?
 #include <zeno/Visualization.h>
+#endif
+#ifdef ZENO_GLOBALSTATE
 #include <zeno/GlobalState.h>
+#endif
 #include <zeno/safe_at.h>
 #include <cassert>
 
 namespace zeno {
 
-ZENAPI IObject::IObject() = default;
-ZENAPI IObject::~IObject() = default;
+ZENO_API IObject::IObject() = default;
+ZENO_API IObject::~IObject() = default;
 
-ZENAPI std::shared_ptr<IObject> IObject::clone() const {
+ZENO_API std::shared_ptr<IObject> IObject::clone() const {
     return nullptr;
 }
 
-ZENAPI bool IObject::assign(IObject *other) {
+ZENO_API bool IObject::assign(IObject *other) {
     return false;
 }
 
-ZENAPI void IObject::dumpfile(std::string const &path) {
+ZENO_API void IObject::dumpfile(std::string const &path) {
 }
 
-ZENAPI INode::INode() = default;
-ZENAPI INode::~INode() = default;
+ZENO_API INode::INode() = default;
+ZENO_API INode::~INode() = default;
 
-ZENAPI Context::Context() = default;
-ZENAPI Context::~Context() = default;
+ZENO_API Context::Context() = default;
+ZENO_API Context::~Context() = default;
 
-ZENAPI Context::Context(Context const &other)
+ZENO_API Context::Context(Context const &other)
     : visited(other.visited)
 {
 }
 
-ZENAPI Graph::Graph() = default;
-ZENAPI Graph::~Graph() = default;
+ZENO_API Graph::Graph() = default;
+ZENO_API Graph::~Graph() = default;
 
-ZENAPI void INode::doComplete() {
+ZENO_API void INode::doComplete() {
     set_output("DST", std::make_shared<ConditionObject>());
     complete();
 }
 
-ZENAPI void INode::complete() {}
+ZENO_API void INode::complete() {}
 
-ZENAPI bool INode::checkApplyCondition() {
+ZENO_API bool INode::checkApplyCondition() {
     /*if (has_input("COND")) {  // deprecated
         auto cond = get_input<zeno::ConditionObject>("COND");
         if (!cond->get())
             return false;
     }*/
 
+#ifdef ZENO_GLOBALSTATE
     if (has_option("ONCE")) {
         if (!zeno::state.isFirstSubstep())
             return false;
@@ -58,6 +63,7 @@ ZENAPI bool INode::checkApplyCondition() {
         if (!zeno::state.isOneSubstep())
             return false;
     }
+#endif
 
     if (has_option("MUTE")) {
         auto desc = nodeClass->desc.get();
@@ -75,7 +81,7 @@ ZENAPI bool INode::checkApplyCondition() {
     return true;
 }
 
-ZENAPI void INode::doApply() {
+ZENO_API void INode::doApply() {
     for (auto const &[ds, bound]: inputBounds) {
         requireInput(ds);
     }
@@ -83,18 +89,19 @@ ZENAPI void INode::doApply() {
     coreApply();
 }
 
-ZENAPI void INode::requireInput(std::string const &ds) {
+ZENO_API void INode::requireInput(std::string const &ds) {
     auto [sn, ss] = inputBounds.at(ds);
     graph->applyNode(sn);
     auto ref = graph->getNodeOutput(sn, ss);
     inputs[ds] = ref;
 }
 
-ZENAPI void INode::coreApply() {
+ZENO_API void INode::coreApply() {
     if (checkApplyCondition()) {
         apply();
     }
 
+#ifdef ZENO_VISUALIZATION
     if (has_option("VIEW")) {
         graph->hasAnyView = true;
         if (!state.isOneSubstep())  // no duplicate view when multi-substep used
@@ -107,29 +114,30 @@ ZENAPI void INode::coreApply() {
         auto path = Visualization::exportPath();
         obj->dumpfile(path);
     }
+#endif
 }
 
-ZENAPI bool INode::has_option(std::string const &id) const {
+ZENO_API bool INode::has_option(std::string const &id) const {
     return options.find(id) != options.end();
 }
 
-ZENAPI bool INode::has_input(std::string const &id) const {
+ZENO_API bool INode::has_input(std::string const &id) const {
     return inputBounds.find(id) != inputBounds.end();
 }
 
-ZENAPI std::shared_ptr<IObject> INode::get_input(std::string const &id) const {
+ZENO_API std::shared_ptr<IObject> INode::get_input(std::string const &id) const {
     return safe_at(inputs, id, "input", myname);
 }
 
-ZENAPI IValue INode::get_param(std::string const &id) const {
+ZENO_API IValue INode::get_param(std::string const &id) const {
     return safe_at(params, id, "param", myname);
 }
 
-ZENAPI void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
+ZENO_API void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
     outputs[id] = std::move(obj);
 }
 
-ZENAPI std::shared_ptr<IObject> const &Graph::getNodeOutput(
+ZENO_API std::shared_ptr<IObject> const &Graph::getNodeOutput(
     std::string const &sn, std::string const &ss) const {
     auto node = safe_at(nodes, sn, "node");
     if (node->muted_output)
@@ -137,11 +145,11 @@ ZENAPI std::shared_ptr<IObject> const &Graph::getNodeOutput(
     return safe_at(node->outputs, ss, "output", node->myname);
 }
 
-ZENAPI void Graph::clearNodes() {
+ZENO_API void Graph::clearNodes() {
     nodes.clear();
 }
 
-ZENAPI void Graph::addNode(std::string const &cls, std::string const &id) {
+ZENO_API void Graph::addNode(std::string const &cls, std::string const &id) {
     if (nodes.find(id) != nodes.end())
         return;  // no add twice, to prevent output object invalid
     auto cl = safe_at(sess->nodeClasses, cls, "node class");
@@ -152,11 +160,11 @@ ZENAPI void Graph::addNode(std::string const &cls, std::string const &id) {
     nodes[id] = std::move(node);
 }
 
-ZENAPI void Graph::completeNode(std::string const &id) {
+ZENO_API void Graph::completeNode(std::string const &id) {
     safe_at(nodes, id, "node")->doComplete();
 }
 
-ZENAPI void Graph::applyNode(std::string const &id) {
+ZENO_API void Graph::applyNode(std::string const &id) {
     if (ctx->visited.find(id) != ctx->visited.end()) {
         return;
     }
@@ -170,7 +178,7 @@ ZENAPI void Graph::applyNode(std::string const &id) {
     }
 }
 
-ZENAPI void Graph::applyNodes(std::vector<std::string> const &ids) {
+ZENO_API void Graph::applyNodes(std::vector<std::string> const &ids) {
     try {
         ctx = std::make_unique<Context>();
         for (auto const &id: ids) {
@@ -185,39 +193,43 @@ ZENAPI void Graph::applyNodes(std::vector<std::string> const &ids) {
     }
 }
 
-ZENAPI void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
+ZENO_API void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss) {
     safe_at(nodes, dn, "node")->inputBounds[ds] = std::pair(sn, ss);
 }
 
-ZENAPI void Graph::setNodeParam(std::string const &id, std::string const &par,
+ZENO_API void Graph::setNodeParam(std::string const &id, std::string const &par,
         IValue const &val) {
     safe_at(nodes, id, "node")->params[par] = val;
 }
 
-ZENAPI void Graph::setNodeOptions(std::string const &id,
-        std::set<std::string> const &opts) {
-    safe_at(nodes, id, "node")->options = opts;
+ZENO_API void Graph::setNodeOption(std::string const &id,
+        std::string const &name) {
+    safe_at(nodes, id, "node")->options.insert(name);
 }
 
 
-ZENAPI Session::Session() {
+ZENO_API Session::Session() {
     switchGraph("main");
 }
 
-ZENAPI Session::~Session() = default;
+ZENO_API Session::~Session() = default;
 
-ZENAPI void Session::_defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls) {
+ZENO_API void Session::clearAllState() {
+    graphs.clear();
+}
+
+ZENO_API void Session::_defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls) {
     nodeClasses[id] = std::move(cls);
 }
 
-ZENAPI INodeClass::INodeClass(Descriptor const &desc)
+ZENO_API INodeClass::INodeClass(Descriptor const &desc)
         : desc(std::make_unique<Descriptor>(desc)) {
 }
 
-ZENAPI INodeClass::~INodeClass() = default;
+ZENO_API INodeClass::~INodeClass() = default;
 
-ZENAPI void Session::switchGraph(std::string const &name) {
+ZENO_API void Session::switchGraph(std::string const &name) {
     if (graphs.find(name) == graphs.end()) {
         auto subg = std::make_unique<zeno::Graph>();
         subg->sess = this;
@@ -226,11 +238,11 @@ ZENAPI void Session::switchGraph(std::string const &name) {
     currGraph = graphs.at(name).get();
 }
 
-ZENAPI Graph &Session::getGraph() const {
+ZENO_API Graph &Session::getGraph() const {
     return *currGraph;
 }
 
-ZENAPI std::string Session::dumpDescriptors() const {
+ZENO_API std::string Session::dumpDescriptors() const {
   std::string res = "";
   for (auto const &[key, cls] : nodeClasses) {
     res += "DESC@" + key + "@" + cls->desc->serialize() + "\n";
@@ -239,7 +251,7 @@ ZENAPI std::string Session::dumpDescriptors() const {
 }
 
 
-ZENAPI Session &getSession() {
+ZENO_API Session &getSession() {
     static std::unique_ptr<Session> ptr;
     if (!ptr) {
         ptr = std::make_unique<Session>();
@@ -259,8 +271,8 @@ ParamDescriptor::ParamDescriptor(std::string const &type,
       : type(type), name(name), defl(defl) {}
 ParamDescriptor::~ParamDescriptor() = default;
 
-ZENAPI Descriptor::Descriptor() = default;
-ZENAPI Descriptor::Descriptor(
+ZENO_API Descriptor::Descriptor() = default;
+ZENO_API Descriptor::Descriptor(
   std::vector<SocketDescriptor> const &inputs,
   std::vector<SocketDescriptor> const &outputs,
   std::vector<ParamDescriptor> const &params,
@@ -271,7 +283,7 @@ ZENAPI Descriptor::Descriptor(
     this->outputs.push_back("DST");
 }
 
-ZENAPI std::string Descriptor::serialize() const {
+ZENO_API std::string Descriptor::serialize() const {
   std::string res = "";
   std::vector<std::string> strs;
   for (auto const &[type, name, defl] : inputs) {

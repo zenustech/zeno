@@ -14,12 +14,12 @@
 
 #ifdef _MSC_VER
 # ifdef DLL_ZENO
-#  define ZENAPI __declspec(dllexport)
+#  define ZENO_API __declspec(dllexport)
 # else
-#  define ZENAPI __declspec(dllimport)
+#  define ZENO_API __declspec(dllimport)
 # endif
 #else
-# define ZENAPI
+# define ZENO_API
 #endif
 
 
@@ -30,9 +30,9 @@ class Exception : public std::exception {
 private:
   std::string msg;
 public:
-  ZENAPI Exception(std::string const &msg) noexcept;
-  ZENAPI ~Exception() noexcept;
-  ZENAPI char const *what() const noexcept;
+  ZENO_API Exception(std::string const &msg) noexcept;
+  ZENO_API ~Exception() noexcept;
+  ZENO_API char const *what() const noexcept;
 };
 
 
@@ -40,13 +40,13 @@ using IValue = std::variant<std::string, int, float>;
 
 
 struct IObject {
-#ifndef ZEN_NOREFDLL
-    ZENAPI IObject();
-    ZENAPI virtual ~IObject();
+#ifndef ZENO_APIFREE
+    ZENO_API IObject();
+    ZENO_API virtual ~IObject();
 
-    ZENAPI virtual std::shared_ptr<IObject> clone() const;
-    ZENAPI virtual bool assign(IObject *other);
-    ZENAPI virtual void dumpfile(std::string const &path);
+    ZENO_API virtual std::shared_ptr<IObject> clone() const;
+    ZENO_API virtual bool assign(IObject *other);
+    ZENO_API virtual void dumpfile(std::string const &path);
 #else
     virtual ~IObject() = default;
     virtual std::shared_ptr<IObject> clone() const { return nullptr; }
@@ -99,25 +99,25 @@ public:
     std::map<std::string, IValue> params;
     std::set<std::string> options;
 
-    ZENAPI INode();
-    ZENAPI virtual ~INode();
+    ZENO_API INode();
+    ZENO_API virtual ~INode();
 
-    ZENAPI void doComplete();
-    ZENAPI virtual void doApply();
+    ZENO_API void doComplete();
+    ZENO_API virtual void doApply();
 
 protected:
-    ZENAPI bool checkApplyCondition();
-    ZENAPI void requireInput(std::string const &ds);
-    ZENAPI void coreApply();
+    ZENO_API bool checkApplyCondition();
+    ZENO_API void requireInput(std::string const &ds);
+    ZENO_API void coreApply();
 
-    ZENAPI virtual void complete();
-    ZENAPI virtual void apply() = 0;
+    ZENO_API virtual void complete();
+    ZENO_API virtual void apply() = 0;
 
-    ZENAPI bool has_option(std::string const &id) const;
-    ZENAPI bool has_input(std::string const &id) const;
-    ZENAPI IValue get_param(std::string const &id) const;
-    ZENAPI std::shared_ptr<IObject> get_input(std::string const &id) const;
-    ZENAPI void set_output(std::string const &id,
+    ZENO_API bool has_option(std::string const &id) const;
+    ZENO_API bool has_input(std::string const &id) const;
+    ZENO_API IValue get_param(std::string const &id) const;
+    ZENO_API std::shared_ptr<IObject> get_input(std::string const &id) const;
+    ZENO_API void set_output(std::string const &id,
         std::shared_ptr<IObject> &&obj);
 
     template <class T>
@@ -150,17 +150,17 @@ protected:
 struct ParamDescriptor {
   std::string type, name, defl;
 
-  ZENAPI ParamDescriptor(std::string const &type,
+  ZENO_API ParamDescriptor(std::string const &type,
 	  std::string const &name, std::string const &defl);
-  ZENAPI ~ParamDescriptor();
+  ZENO_API ~ParamDescriptor();
 };
 
 struct SocketDescriptor {
   std::string type, name, defl;
 
-  ZENAPI SocketDescriptor(std::string const &type,
+  ZENO_API SocketDescriptor(std::string const &type,
 	  std::string const &name, std::string const &defl = {});
-  ZENAPI ~SocketDescriptor();
+  ZENO_API ~SocketDescriptor();
 
   //[[deprecated("use {\"sockType\", \"sockName\"} instead of \"sockName\"")]]
   SocketDescriptor(const char *name)
@@ -185,21 +185,21 @@ struct Descriptor {
   std::vector<ParamDescriptor> params;
   std::vector<std::string> categories;
 
-  ZENAPI Descriptor();
-  ZENAPI Descriptor(
+  ZENO_API Descriptor();
+  ZENO_API Descriptor(
 	  std::vector<SocketDescriptor> const &inputs,
 	  std::vector<SocketDescriptor> const &outputs,
 	  std::vector<ParamDescriptor> const &params,
 	  std::vector<std::string> const &categories);
 
-  ZENAPI std::string serialize() const;
+  ZENO_API std::string serialize() const;
 };
 
 struct INodeClass {
     std::unique_ptr<Descriptor> desc;
 
-    ZENAPI INodeClass(Descriptor const &desc);
-    ZENAPI virtual ~INodeClass();
+    ZENO_API INodeClass(Descriptor const &desc);
+    ZENO_API virtual ~INodeClass();
 
     virtual std::unique_ptr<INode> new_instance() const = 0;
 };
@@ -225,9 +225,9 @@ struct Context {
         visited.insert(other.visited.begin(), other.visited.end());
     }
 
-    ZENAPI Context();
-    ZENAPI Context(Context const &other);
-    ZENAPI ~Context();
+    ZENO_API Context();
+    ZENO_API Context(Context const &other);
+    ZENO_API ~Context();
 };
 
 struct Graph {
@@ -246,21 +246,20 @@ struct Graph {
     bool isViewed = true;
     bool hasAnyView = false;
 
-    ZENAPI Graph();
-    ZENAPI ~Graph();
+    ZENO_API Graph();
+    ZENO_API ~Graph();
 
-    ZENAPI void clearNodes();
-    ZENAPI void applyNodes(std::vector<std::string> const &ids);
-    ZENAPI void addNode(std::string const &cls, std::string const &id);
-    ZENAPI void applyNode(std::string const &id);
-    ZENAPI void completeNode(std::string const &id);
-    ZENAPI void bindNodeInput(std::string const &dn, std::string const &ds,
+    ZENO_API void clearNodes();
+    ZENO_API void applyNodes(std::vector<std::string> const &ids);
+    ZENO_API void addNode(std::string const &cls, std::string const &id);
+    ZENO_API void applyNode(std::string const &id);
+    ZENO_API void completeNode(std::string const &id);
+    ZENO_API void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss);
-    ZENAPI void setNodeParam(std::string const &id, std::string const &par,
+    ZENO_API void setNodeParam(std::string const &id, std::string const &par,
         IValue const &val);
-    ZENAPI void setNodeOptions(std::string const &id,
-            std::set<std::string> const &opts);
-    ZENAPI std::shared_ptr<IObject> const &getNodeOutput(
+    ZENO_API void setNodeOption(std::string const &id, std::string const &name);
+    ZENO_API std::shared_ptr<IObject> const &getNodeOutput(
         std::string const &sn, std::string const &ss) const;
 };
 
@@ -269,13 +268,14 @@ struct Session {
     std::map<std::string, std::unique_ptr<Graph>> graphs;
     Graph *currGraph;
 
-    ZENAPI Session();
-    ZENAPI ~Session();
+    ZENO_API Session();
+    ZENO_API ~Session();
 
-    ZENAPI Graph &getGraph() const;
-    ZENAPI void switchGraph(std::string const &name);
-    ZENAPI std::string dumpDescriptors() const;
-    ZENAPI void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
+    ZENO_API void clearAllState();
+    ZENO_API Graph &getGraph() const;
+    ZENO_API void switchGraph(std::string const &name);
+    ZENO_API std::string dumpDescriptors() const;
+    ZENO_API void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
 
     template <class F>
     int defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {
@@ -285,7 +285,7 @@ struct Session {
 };
 
 
-ZENAPI Session &getSession();
+ZENO_API Session &getSession();
 
 
 template <class F>
@@ -305,6 +305,10 @@ inline std::string dumpDescriptors() {
 
 inline void switchGraph(std::string const &name) {
     return getSession().switchGraph(name);
+}
+
+inline void clearAllState() {
+    return getSession().clearAllState();
 }
 
 inline void clearNodes() {
@@ -333,9 +337,8 @@ inline void setNodeParam(std::string const &id, std::string const &par,
     return getSession().getGraph().setNodeParam(id, par, val);
 }
 
-inline void setNodeOptions(std::string const &id,
-        std::set<std::string> const &opts) {
-    return getSession().getGraph().setNodeOptions(id, opts);
+inline void setNodeOption(std::string const &id, std::string const &name) {
+    return getSession().getGraph().setNodeOption(id, name);
 }
 
 

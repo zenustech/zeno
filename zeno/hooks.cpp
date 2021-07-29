@@ -50,16 +50,16 @@ static void trigger_gdb(int exitcode = -1) {
 }
 #endif
 
-ZENAPI Exception::Exception(std::string const &msg) noexcept
+ZENO_API Exception::Exception(std::string const &msg) noexcept
     : msg(msg) {
 #ifdef ZENO_TRIGGER_GDB
         trigger_gdb();
 #endif
 }
 
-ZENAPI Exception::~Exception() noexcept = default;
+ZENO_API Exception::~Exception() noexcept = default;
 
-ZENAPI char const *Exception::what() const noexcept {
+ZENO_API char const *Exception::what() const noexcept {
     return msg.c_str();
 }
 
