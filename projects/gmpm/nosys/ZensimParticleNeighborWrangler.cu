@@ -112,10 +112,9 @@ struct ZSParticleNeighborWrangle : zeno::INode {
     for (int i = 0; i < prog->symbols.size(); i++) {
       auto [name, dimid] = prog->symbols[i];
       printf("channel %d: %s.%d\t", i, name.c_str(), dimid);
-
       bool isNeighborChannel = false;
       auto targetParPtr = &parObjPtr->get(); // GeneralParticles
-      if (name[1] = '@') {
+      if (name[1] == '@') {
         isNeighborChannel = true;
         name = name.substr(2);
         targetParPtr = &parNeighborPtr->get();
