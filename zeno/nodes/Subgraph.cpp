@@ -1,6 +1,8 @@
 #include <zeno/zeno.h>
 #include <zeno/GlobalState.h>
+#ifdef ZENO_VISUALIZATION
 #include <zeno/Visualization.h>
+#endif
 #include <zeno/ConditionObject.h>
 #include <zeno/safe_at.h>
 #include <cassert>
@@ -59,8 +61,10 @@ struct Subgraph : zeno::INode {
         auto subg = graph->sess->graphs.at(name).get();
         assert(subg->sess == graph->sess);
 
+#ifdef ZENO_VISUALIZATION
         // VIEW subnodes only if subgraph is VIEW'ed
         subg->isViewed = has_option("VIEW");
+#endif
 
         for (auto const &[key, obj]: inputs) {
             subg->subInputs[key] = obj;
@@ -75,6 +79,7 @@ struct Subgraph : zeno::INode {
         }
         subg->applyNodes(applies);
 
+#ifdef ZENO_VISUALIZATION
         for (auto &[key, obj]: subg->subOutputs) {
             if (subg->isViewed && !subg->hasAnyView) {
                 auto path = zeno::Visualization::exportPath();
@@ -83,6 +88,7 @@ struct Subgraph : zeno::INode {
             }
             set_output(key, std::move(obj));
         }
+#endif
 
         subg->subInputs.clear();
         subg->subOutputs.clear();
