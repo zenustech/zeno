@@ -19,7 +19,8 @@ a.out
 
 # output files
 outputs/
-*.zsl
+/a.zsl
+/a.zsg
 
 # vim files
 .*.swp

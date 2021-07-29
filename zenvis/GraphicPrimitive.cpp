@@ -210,7 +210,7 @@ void main()
   if (radius != 0)
     gl_PointSize = max(1, radius * mPointScale / dist);
   else
-    gl_PointSize = max(min(3.0, radius * mPointScale / dist),1.0);
+    gl_PointSize = max(1, min(3, radius * mPointScale / dist));
   gl_Position = mVP * vec4(position, 1.0);
 }
 )";
