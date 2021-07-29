@@ -1,6 +1,7 @@
 import json
 
 from .dll import core
+from .serial import serializeScene
 
 
 def evaluateExpr(expr, frameid):
