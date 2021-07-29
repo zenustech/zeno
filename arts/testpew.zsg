@@ -34,7 +34,7 @@
       "SRC": null
      },
      "params": {
-      "value": 32
+      "value": 16
      },
      "uipos": [
       -2354.1900000000005,
@@ -50,7 +50,7 @@
       "SRC": null
      },
      "params": {
-      "value": "K = 1\nL = @2pos - @1pos\nacc = K * normalize(L) * (length(L) - @L0)\n@1acc += acc\n@2acc -= acc"
+      "value": "stiffness = 10\nL = @2pos - @1pos\nacc = stiffness * normalize(L) * (length(L) - @L0)\n@1acc += acc\n@2acc -= acc"
      },
      "uipos": [
       -97.75999999999999,
@@ -157,7 +157,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@pos += @vel * $dt\n@vel += @acc * $dt\n@vel *= $exp_damp_dt"
+      "value": "gravity = 50\nball_stiff = 50\n@vel.z -= gravity * $dt\n\nball_pos = vec3(0, 0, -1)\nball_rad = 0.5\nball_vel = vec3(0, 0, 0)\n\ndp = @pos - ball_pos\ndp2 = dot(dp, dp)\ncond = dp2 <= ball_rad * ball_rad\ndv = @vel - ball_vel\nNoV = ball_stiff * dot(dv, dp)\n@vel -= cond ? NoV * dp / dp2 : 0\n\n@vel += @acc * $dt\n@vel *= $exp_damp_dt\n@pos += @vel * $dt"
      },
      "uipos": [
       300.55999999999995,
@@ -313,7 +313,7 @@
       "SRC": null
      },
      "params": {
-      "value": 0.001
+      "value": 0.0005
      },
      "uipos": [
       -803.46875,
@@ -349,7 +349,7 @@
       "SRC": null
      },
      "params": {
-      "value": "damp = 500\n@dt = $dt\n@exp_damp_dt = exp(-damp * $dt)"
+      "value": "damping = 600\n@dt = $dt\n@exp_damp_dt = exp(-damping * $dt)"
      },
      "uipos": [
       -12.578124999999972,
@@ -361,9 +361,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -2628,
-    "trans_y": -318
+    "scale": 0.8,
+    "trans_x": -1636,
+    "trans_y": -302
    }
   }
  },
