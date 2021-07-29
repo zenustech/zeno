@@ -2,7 +2,8 @@
 Node Editor UI
 '''
 
-import os, time
+import os
+import time
 import json
 
 from PySide2.QtWidgets import *

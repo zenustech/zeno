@@ -13,6 +13,7 @@ class QDMFileMenu(QMenu):
                 ('&Save', QKeySequence.Save),
                 ('&Import', 'Ctrl+Shift+O'),
                 ('Save &as', QKeySequence.SaveAs),
+                ('&Export', 'Ctrl+Shift+E'),
         ]
 
         for name, shortcut in acts:
@@ -347,6 +348,9 @@ class NodeEditor(QWidget):
             if path != '':
                 self.do_import(path)
 
+        elif name == '&Export':
+            self.do_export()
+
         elif name == '&Undo':
             self.scene.undo()
 
@@ -358,6 +362,16 @@ class NodeEditor(QWidget):
 
         elif name == '&Paste':
             self.do_paste()
+
+    def do_export(self):
+        path, kind = QFileDialog.getSaveFileName(self, 'Path to Export',
+                '', 'Zensim List File(*.zsl);; All Files(*);;')
+        if path != '':
+            prog = self.dumpProgram()
+            from zeno import serial
+            data = list(serial.serializeScene(prog['graph']))
+            with open(path, 'w') as f:
+                json.dump(data, f)
 
     def do_copy(self):
         itemList = self.scene.selectedItems()
