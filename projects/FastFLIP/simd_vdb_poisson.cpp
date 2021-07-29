@@ -8,7 +8,6 @@
 #include <atomic>
 simd_vdb_poisson::Laplacian_with_level::Laplacian_with_level(
     openvdb::FloatGrid::Ptr in_liquid_phi,
-    openvdb::FloatGrid::Ptr in_true_liquid_phi,
     openvdb::Vec3fGrid::Ptr in_face_weights, const float in_dt,
     const float in_dx) {
   // random token to identify the finest level
@@ -53,7 +52,7 @@ simd_vdb_poisson::Laplacian_with_level::Laplacian_with_level(
   m_Neg_z_entry = m_Neg_x_entry->deepCopy();
   m_Neg_z_entry->setName("Neg_z_term");
 
-  initialize_finest(in_liquid_phi, in_true_liquid_phi, in_face_weights);
+  initialize_finest(in_liquid_phi, in_face_weights);
 
   initialize_evaluators();
 }
@@ -281,7 +280,6 @@ void simd_vdb_poisson::Laplacian_with_level::initialize_entries_from_parent(
 
 void simd_vdb_poisson::Laplacian_with_level::initialize_finest(
     openvdb::FloatGrid::Ptr in_liquid_phi,
-    openvdb::FloatGrid::Ptr in_true_liquid_phi,
     openvdb::Vec3fGrid::Ptr in_face_weights) {
   // really create the poisson matrix
 
@@ -294,7 +292,6 @@ void simd_vdb_poisson::Laplacian_with_level::initialize_finest(
     const auto &phi_leaf = *in_liquid_phi->tree().probeConstLeaf(leaf.origin());
     auto phi_axr{in_liquid_phi->getConstAccessor()};
     auto weight_axr{in_face_weights->getConstAccessor()};
-    auto true_liquid_axr{in_true_liquid_phi->getConstAccessor()};
 
     // everytime only write to the coefficient on the lower side
     // the positive side will be handled from the dof on the other side
@@ -353,23 +350,24 @@ void simd_vdb_poisson::Laplacian_with_level::initialize_finest(
           } else {
             // the other cell is an air cell
             float theta = fraction_inside(phi_iter.getValue(), phi_other_cell);
-            if (theta < 0.02f)
-              theta = 0.02f;
-            if (true_liquid_axr.getValue(phi_iter.getCoord()) < 0) {
-              this_diag_entry += term / theta;
-            } else {
-              // this_diag_entry += term * 1e-1f;
-            }
+            if (theta < 0.02f) { theta = 0.02f; }
+            this_diag_entry += term / theta;
           } // end else other cell is dof
-        }   // end for 6 faces
-        // if (this_diag_entry < m_diag_entry_min_threshold) {
-        if (this_diag_entry == 0) {
-          // this_diag_entry = m_diag_entry_min_threshold;
+        }// end for 6 faces
+        if (this_diag_entry == 0.f) {
+            //for totally isolated voxel
+            //mark it as inactive
+            leaf.setValueOff(phi_iter.offset());
+            x_entry_leaf->setValueOff(phi_iter.offset(), 0.f);
+            y_entry_leaf->setValueOff(phi_iter.offset(), 0.f);
+            z_entry_leaf->setValueOff(phi_iter.offset(), 0.f);
         }
-        leaf.setValueOn(phi_iter.offset(), this_diag_entry);
-        x_entry_leaf->setValueOn(phi_iter.offset(), this_xyz_term[0]);
-        y_entry_leaf->setValueOn(phi_iter.offset(), this_xyz_term[1]);
-        z_entry_leaf->setValueOn(phi_iter.offset(), this_xyz_term[2]);
+        else {
+            leaf.setValueOn(phi_iter.offset(), this_diag_entry);
+            x_entry_leaf->setValueOn(phi_iter.offset(), this_xyz_term[0]);
+            y_entry_leaf->setValueOn(phi_iter.offset(), this_xyz_term[1]);
+            z_entry_leaf->setValueOn(phi_iter.offset(), this_xyz_term[2]);
+        }
       } // end if this voxel is liquid voxel
       else {
         leaf.setValueOff(phi_iter.offset());
@@ -1799,7 +1797,7 @@ void simd_vdb_poisson::Laplacian_with_level::trim_default_nodes(
 void simd_vdb_poisson::construct_levels() {
   // build the first level
   Laplacian_with_level::Ptr level0 = std::make_shared<Laplacian_with_level>(
-      m_liquid_sdf, m_true_liquid_sdf, m_face_weight, dt, m_dx);
+      m_liquid_sdf, m_face_weight, dt, m_dx);
 
   m_laplacian_with_levels.push_back(level0);
 
@@ -2466,54 +2464,11 @@ void simd_vdb_poisson::build_rhs() {
   auto build_rhs_op = [&](const openvdb::Int32Tree::LeafNodeType &idxleaf,
                           openvdb::Index leafpos) {
     auto *rhs_leaf = m_rhs->tree().probeLeaf(idxleaf.origin());
-    auto diag_axr{m_laplacian_with_levels[0]->m_Diagonal->getConstAccessor()};
-    auto liquid_phi_axr{m_liquid_sdf->getConstAccessor()};
-    auto true_phi_axr{m_true_liquid_sdf->getConstAccessor()};
+    auto weight_axr = m_face_weight->getConstUnsafeAccessor();
+    auto vel_axr = m_velocity->getConstUnsafeAccessor();
+    auto svel_axr = m_solid_velocity->getConstUnsafeAccessor();
 
-    using namespace openvdb;
-    // leaf caches for access
-    // when trying to access a neighbor leaf
-    // probe it. if it is not found, use the background value
-    const auto weight_bg = m_face_weight->background();
-    const auto vel_bg = m_velocity->background();
-    const auto solid_vel_bg = m_solid_velocity->background();
-
-    //<leaf pointer,tried to probe>
-    // 0: self, 1:xp, 2:yp, 3:zp
-    std::array<std::pair<const openvdb::Vec3fTree::LeafNodeType *, bool>, 4>
-        weight_leaf_cache;
-    std::array<std::pair<const openvdb::Vec3fTree::LeafNodeType *, bool>, 4>
-        vel_leaf_cache;
-    std::array<std::pair<const openvdb::Vec3fTree::LeafNodeType *, bool>, 4>
-        solid_vel_leaf_cache;
-
-    // only the up direction need to access neighbor cache
-    std::array<int, 6> vector_cid{1, 0, 2, 0, 3, 0};
-    // for the 6 faces, which cache id to look into when overflow happened
-
-    // std::array<int, 6> component{ 0,0,1,1,2,2 };
     float invdx = 1.0f / m_dx;
-
-    weight_leaf_cache.fill(std::make_pair(nullptr, false));
-    vel_leaf_cache.fill(std::make_pair(nullptr, false));
-    solid_vel_leaf_cache.fill(std::make_pair(nullptr, false));
-
-    // assign the center cache
-    weight_leaf_cache[0].first =
-        m_face_weight->tree().probeConstLeaf(idxleaf.origin());
-    weight_leaf_cache[0].second = true;
-    vel_leaf_cache[0].first =
-        m_velocity->tree().probeConstLeaf(idxleaf.origin());
-    vel_leaf_cache[0].second = true;
-    solid_vel_leaf_cache[0].first =
-        m_solid_velocity->tree().probeConstLeaf(idxleaf.origin());
-    solid_vel_leaf_cache[0].second = true;
-
-    float dt_over_dxsqr = dt / (m_dx * m_dx);
-
-    // const Coord xp{ 1,0,0 }, xm{ -1,0,0 }, yp{ 0,1,0 }, ym{ 0,-1,0 }, zp{
-    // 0,0,1 }, zm{ 0,0,-1 };
-    float threshold = 0.02f;
 
     for (auto offset = 0; offset < idxleaf.SIZE; offset++) {
       if (!idxleaf.isValueMaskOn(offset)) {
@@ -2523,107 +2478,31 @@ void simd_vdb_poisson::build_rhs() {
       const auto gcoord = lcoord + idxleaf.origin();
 
       float local_rhs = 0;
-      openvdb::Vec3f this_vel = vel_leaf_cache[0].first->getValue(offset);
-      int solid_count = 0;
+      openvdb::Vec3f this_vel = vel_axr.getValue(gcoord);
+      bool has_non_zero_weight = false;
+
       // x+ x- y+ y- z+ z-
       for (int i_face = 0; i_face < 6; i_face++) {
         int channel = i_face / 2;
         bool positive_dir = (i_face % 2) == 0;
-        // detect if we are have access overflow at this face
-        // if it happens, we set the cache id to the overflow id
-        // otherwise we set it to be the center cache.
-        // vector cache id, scalar cache id
-        int vcid = 0;
-
-        // near the border and query in the positive direction
-        if (lcoord[channel] == 7 && positive_dir) {
-          vcid = vector_cid[i_face];
-        }
 
         auto vneib_c = gcoord;
-        auto phineib_c = gcoord;
         vneib_c[channel] += positive_dir;
-        auto vneib_o = idxleaf.coordToOffset(vneib_c);
 
-        if (positive_dir) {
-          phineib_c[channel]++;
-        } else {
-          phineib_c[channel]--;
-        }
+        //face weight
+        float weight = weight_axr.getValue(vneib_c)[channel];
 
-        float neibphi = liquid_phi_axr.getValue(phineib_c);
-
-        // retrieve the scalar variables
-        float weight;
-        if (weight_leaf_cache[vcid].first) {
-          weight = weight_leaf_cache[vcid].first->getValue(vneib_o)[channel];
-        } else {
-          // the cache doesn't exist, have we tried to get it before:
-          if (weight_leaf_cache[vcid].second) {
-            weight = weight_bg[channel];
-          } else {
-            weight_leaf_cache[vcid].second = true;
-            if (weight_leaf_cache[vcid].first =
-                    m_face_weight->tree().probeConstLeaf(vneib_c)) {
-              weight =
-                  weight_leaf_cache[vcid].first->getValue(vneib_o)[channel];
-            } else {
-              weight = weight_bg[channel];
-            }
-          }
-        }
-        if (weight < 0.5) {
-          solid_count++;
-        }
-        // liquid velocity channel
-        float vel;
-        if (vel_leaf_cache[vcid].first) {
-          vel = vel_leaf_cache[vcid].first->getValue(vneib_o)[channel];
-        } else {
-          // the cache doesn't exist, have we tried to get it before:
-          if (vel_leaf_cache[vcid].second) {
-            vel = vel_bg[channel];
-          } else {
-            vel_leaf_cache[vcid].second = true;
-            if (vel_leaf_cache[vcid].first =
-                    m_velocity->tree().probeConstLeaf(vneib_c)) {
-              vel = vel_leaf_cache[vcid].first->getValue(vneib_o)[channel];
-            } else {
-              vel = vel_bg[channel];
-            }
-          }
+        if (weight != 0.f) {
+            has_non_zero_weight = true;
         }
 
-        // liquid velocity channel
-        float svel;
-        if (solid_vel_leaf_cache[vcid].first) {
-          svel = solid_vel_leaf_cache[vcid].first->getValue(vneib_o)[channel];
-        } else {
-          // the cache doesn't exist, have we tried to get it before:
-          if (solid_vel_leaf_cache[vcid].second) {
-            svel = vel_bg[channel];
-          } else {
-            solid_vel_leaf_cache[vcid].second = true;
-            if (solid_vel_leaf_cache[vcid].first =
-                    m_solid_velocity->tree().probeConstLeaf(vneib_c)) {
-              svel =
-                  solid_vel_leaf_cache[vcid].first->getValue(vneib_o)[channel];
-            } else {
-              svel = solid_vel_bg[channel];
-            }
-          }
-        }
+        //liquid velocity channel
+        float vel = vel_axr.getValue(vneib_c)[channel];
+
+        //solid velocity channel
+        float svel = svel_axr.getValue(vneib_c)[channel];
 
         // all elements there, write the rhs
-
-        // write to the right hand side part
-        if (neibphi > 0) {
-          // vel = this_vel[channel];
-          if (true_phi_axr.getValue(gcoord) >= 0) {
-            vel = 0;
-          }
-        }
-
         if (positive_dir) {
           local_rhs -= invdx * (weight * vel + (1.0f - weight) * svel);
         } else {
@@ -2632,17 +2511,9 @@ void simd_vdb_poisson::build_rhs() {
 
       } // end for 6 faces of this voxel
 
-      if (diag_axr.getValue(gcoord) <
-          (m_laplacian_with_levels[0]->m_diag_entry_min_threshold)) {
-        if (diag_axr.getValue(gcoord) == 0) {
-          // printf("isolated rhs id:%d, val:%e\n", isolated_cell, local_rhs);
+      if (!has_non_zero_weight) {
           local_rhs = 0;
           isolated_cell++;
-        }
-      }
-      if (solid_count >= 4) {
-        // disable suction from solid.
-        // local_rhs = std::max(0.f, local_rhs);
       }
       rhs_leaf->setValueOn(offset, local_rhs);
     } // for all active dof in this leaf

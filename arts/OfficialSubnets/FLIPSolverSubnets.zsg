@@ -197,8 +197,7 @@
       -100.53750000000002
      ],
      "options": [
-      "ONCE",
-      "VIEW"
+      "ONCE"
      ]
     },
     "5e43cd2d-x": {
@@ -938,8 +937,7 @@
       556.6874999999999
      ],
      "options": [
-      "PREP",
-      "VIEW"
+      "PREP"
      ]
     },
     "45f9d91a-makeCollision": {
@@ -976,7 +974,8 @@
      "width": 2418.627929687499,
      "height": 1291.3574218749995,
      "title": "\u52a0\u8f7d\u573a\u666f",
-     "content": "\u8fd9\u91cc\u662f\u4e00\u4e9b\u8bbe\u7f6e\u573a\u666f\u7684\u529f\u80fd, \u50cf\u662f\u8bfb\u53d6ObjMesh, \u628a\u4ed6\u4eec\u8f6c\u6362\u4e3aPrimitive, \u518d\u628a\u4ed6\u4eec\u8f6c\u6362\u4e3aSDF(\u7b26\u53f7\u8ddd\u79bb\u573a), \u7559\u7740\u5907\u7528"
+     "content": "\u8fd9\u91cc\u662f\u4e00\u4e9b\u8bbe\u7f6e\u573a\u666f\u7684\u529f\u80fd, \u50cf\u662f\u8bfb\u53d6ObjMesh, \u628a\u4ed6\u4eec\u8f6c\u6362\u4e3aPrimitive, \u518d\u628a\u4ed6\u4eec\u8f6c\u6362\u4e3aSDF(\u7b26\u53f7\u8ddd\u79bb\u573a), \u7559\u7740\u5907\u7528",
+     "params": []
     },
     "f61865fe-Blackboard": {
      "name": "Blackboard",
@@ -988,7 +987,8 @@
      "width": 389.45312499999994,
      "height": 241.796875,
      "title": "ONCE:",
-     "content": "\u53ea\u5728\u4e00\u5f00\u59cb\u8fd0\u884c\u4e00\u6b21"
+     "content": "\u53ea\u5728\u4e00\u5f00\u59cb\u8fd0\u884c\u4e00\u6b21",
+     "params": []
     },
     "add52a80-Blackboard": {
      "name": "Blackboard",
@@ -1000,7 +1000,8 @@
      "width": 423.0267187500003,
      "height": 921.3698437499997,
      "title": "Portal\u8282\u70b9",
-     "content": "\u4f20\u9001\u95e8, \n                 \u65e0\u6211\u76f8\n                               \u65e0\u4ed6\u76f8\n                                             \u65e0\u4f17\u751f\u76f8\n                                                           \u5b9e\u4e3a\u4f20\u9001zeno\u7684\u5bf9\u76f8"
+     "content": "\u4f20\u9001\u95e8, \n                 \u65e0\u6211\u76f8\n                               \u65e0\u4ed6\u76f8\n                                             \u65e0\u4f17\u751f\u76f8\n                                                           \u5b9e\u4e3a\u4f20\u9001zeno\u7684\u5bf9\u76f8",
+     "params": []
     },
     "963ce0ec-Blackboard": {
      "name": "Blackboard",
@@ -1012,7 +1013,8 @@
      "width": 968.7499999999995,
      "height": 678.1249999999999,
      "title": "CombineVDB:",
-     "content": "\u628a\u4e0d\u540c\u7684VDB\u573a\u5408\u8d77\u6765, \u8fdb\u884cCSG\u8fd0\u7b97, \nCSGUnion, \u4e24\u4e2a\u8ddd\u79bb\u573a\u7684\u5e76\nCSGIntersection: \u4e24\u4e2a\u8ddd\u79bb\u573a\u6c42\u4ea4\nCSGDifference: \u4eceA\u8ddd\u79bb\u573a\u4e2d\u6316\u8d70B\u8ddd\u79bb\u573a\u7684\u90e8\u5206"
+     "content": "\u628a\u4e0d\u540c\u7684VDB\u573a\u5408\u8d77\u6765, \u8fdb\u884cCSG\u8fd0\u7b97, \nCSGUnion, \u4e24\u4e2a\u8ddd\u79bb\u573a\u7684\u5e76\nCSGIntersection: \u4e24\u4e2a\u8ddd\u79bb\u573a\u6c42\u4ea4\nCSGDifference: \u4eceA\u8ddd\u79bb\u573a\u4e2d\u6316\u8d70B\u8ddd\u79bb\u573a\u7684\u90e8\u5206",
+     "params": []
     },
     "27afec29-Blackboard": {
      "name": "Blackboard",
@@ -1024,7 +1026,8 @@
      "width": 617.5,
      "height": 447.5,
      "title": "MakeTank",
-     "content": "\u6839\u636e\u4f20\u5165\u7684\u7b26\u53f7\u8ddd\u79bb\u573a, \u4ea7\u751f\u4e00\u4e2a\u9759\u6001\u7684\u6c34\u4f53, \u8f93\u51fa\u53d8\u91cf\u662fParticles,\u53ef\u76f4\u63a5\u88ab\u4eff\u771f\u89e3\u7b97\u5668\u4f7f\u7528\n\u8be5\u8282\u70b9\u5e76\u975e\u4eceCPP\u4ee3\u7801\u5f97\u5230, \u800c\u662f\u7528zeno\u7684\u8282\u70b9\u8fde\u51fa\u6765, \u662f\u4e00\u4e2asubnet, \u53ef \u53cc\u51fb\u8fdb\u5165\u67e5\u770b."
+     "content": "\u6839\u636e\u4f20\u5165\u7684\u7b26\u53f7\u8ddd\u79bb\u573a, \u4ea7\u751f\u4e00\u4e2a\u9759\u6001\u7684\u6c34\u4f53, \u8f93\u51fa\u53d8\u91cf\u662fParticles,\u53ef\u76f4\u63a5\u88ab\u4eff\u771f\u89e3\u7b97\u5668\u4f7f\u7528\n\u8be5\u8282\u70b9\u5e76\u975e\u4eceCPP\u4ee3\u7801\u5f97\u5230, \u800c\u662f\u7528zeno\u7684\u8282\u70b9\u8fde\u51fa\u6765, \u662f\u4e00\u4e2asubnet, \u53ef \u53cc\u51fb\u8fdb\u5165\u67e5\u770b.",
+     "params": []
     },
     "dbcc22db-Blackboard": {
      "name": "Blackboard",
@@ -1036,7 +1039,8 @@
      "width": 337.9501953125,
      "height": 645.1298828124997,
      "title": "makeFLIPWorld",
-     "content": "\u8be5\u8282\u70b9\u4e00\u6b21\u6027\u521b\u5efa\u51fa\u4e00\u4e2aFLIP sim\u6240\u9700\u8981\u7684\u5168\u90e8\u6570\u636e"
+     "content": "\u8be5\u8282\u70b9\u4e00\u6b21\u6027\u521b\u5efa\u51fa\u4e00\u4e2aFLIP sim\u6240\u9700\u8981\u7684\u5168\u90e8\u6570\u636e",
+     "params": []
     },
     "f9931325-Blackboard": {
      "name": "Blackboard",
@@ -1048,7 +1052,8 @@
      "width": 423.75,
      "height": 309.6875,
      "title": "\u6839\u636e\u5f53\u524d\u901f\u5ea6\u573a\u8ba1\u7b97\u81ea\u9002\u5e94dt",
-     "content": "\u8fd9\u4e5f\u662f\u7531zeno\u7684subnet\u8fde\u63a5\u51fa\u6765\u7684, \u4f1a\u6839\u636e\u5f53\u524d\u7684\u901f\u5ea6\u573a\u4fe1\u606f, \u81ea\u52a8\u8ba1\u7b97\u5408\u7406\u7684dt, \u4f20\u51fa\u4f9b\u4f7f\u7528, \u53cc\u51fb\u8fdb\u5165\u67e5\u770b"
+     "content": "\u8fd9\u4e5f\u662f\u7531zeno\u7684subnet\u8fde\u63a5\u51fa\u6765\u7684, \u4f1a\u6839\u636e\u5f53\u524d\u7684\u901f\u5ea6\u573a\u4fe1\u606f, \u81ea\u52a8\u8ba1\u7b97\u5408\u7406\u7684dt, \u4f20\u51fa\u4f9b\u4f7f\u7528, \u53cc\u51fb\u8fdb\u5165\u67e5\u770b",
+     "params": []
     },
     "d266dd89-Blackboard": {
      "name": "Blackboard",
@@ -1060,7 +1065,8 @@
      "width": 1481.2499999999982,
      "height": 643.75,
      "title": "Wrangle\u8282\u70b9",
-     "content": "\u8be5\u90e8\u5206\u4e3azeno\u7684zfx\u7279\u6027, wrangle\u63a5\u53d7\u4e00\u7ec4\u53c2\u6570\u5217\u8868(\u901a\u8fc7list\u4f20\u9012), \u4ee5\u53ca\u4e00\u4e2azfx\u811a\u672c\u4ee3\u7801,\n \u5e76\u884c\u5730\u5bf9\u5bf9\u8c61\u56fe\u5143\u65bd\u52a0\u5b9a\u4e49\u7684\u6570\u5b66\u8ba1\u7b97, \u8be5\u5e76\u884c\u6267\u884c\u53ef\u5728cpu\u548cgpu\u4e0a\u6267\u884c."
+     "content": "\u8be5\u90e8\u5206\u4e3azeno\u7684zfx\u7279\u6027, wrangle\u63a5\u53d7\u4e00\u7ec4\u53c2\u6570\u5217\u8868(\u901a\u8fc7list\u4f20\u9012), \u4ee5\u53ca\u4e00\u4e2azfx\u811a\u672c\u4ee3\u7801,\n \u5e76\u884c\u5730\u5bf9\u5bf9\u8c61\u56fe\u5143\u65bd\u52a0\u5b9a\u4e49\u7684\u6570\u5b66\u8ba1\u7b97, \u8be5\u5e76\u884c\u6267\u884c\u53ef\u5728cpu\u548cgpu\u4e0a\u6267\u884c.",
+     "params": []
     },
     "e51b42e5-Blackboard": {
      "name": "Blackboard",
@@ -1072,7 +1078,8 @@
      "width": 569.0,
      "height": 362.0,
      "title": "\u5236\u4f5c\u78b0\u649esdf\u573a",
-     "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n                                   \u8be5\u8282\u70b9\u4e5f\u662f\u4e00\u4e2azeno\u7684\u5b98\u65b9subnet\n                                                         \u5b83\u63a5\u53d7\u4e00\u4e2a\u6709\u901f\u5ea6channel(\"vel\")\u7684primitive\u6570\u636e\n                                                                                                             \u5c06\u5176\u81ea\u52a8\u7684\u8f6c\u5316\u4e3a\u78b0\u649e\u573a\u5e76\u4e0e\u9759\u6001\n                                                                                                                                                                                 \u78b0\u649e\u4f53\u5408\u5e76"
+     "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n                                   \u8be5\u8282\u70b9\u4e5f\u662f\u4e00\u4e2azeno\u7684\u5b98\u65b9subnet\n                                                         \u5b83\u63a5\u53d7\u4e00\u4e2a\u6709\u901f\u5ea6channel(\"vel\")\u7684primitive\u6570\u636e\n                                                                                                             \u5c06\u5176\u81ea\u52a8\u7684\u8f6c\u5316\u4e3a\u78b0\u649e\u573a\u5e76\u4e0e\u9759\u6001\n                                                                                                                                                                                 \u78b0\u649e\u4f53\u5408\u5e76",
+     "params": []
     },
     "960d4af2-Blackboard": {
      "name": "Blackboard",
@@ -1084,7 +1091,8 @@
      "width": 329.6875,
      "height": 814.0624999999999,
      "title": "FLIP\u89e3\u7b97\u8282\u70b9",
-     "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n     \u7ed9\u6211\u9700\u8981\u7684\u6570\u636e\n                \u6211\u5c31\u80fd\u9884\u6d4b\u4e0b\u4e00\u523b\u7684\u5f62\u6001\n                              \u4f60\u95ee\u6211 \u4e0b\u4e00\u523b\u7684\u4e0b\u4e00\u523b\u662f\u600e\u6837\u7684?\n                                                   \u6216\u8005\u8bf4\u540e\u6765\u7684\u540e\u6765?\n\n\n\n\n\u6211\u4e5f\u662f\u4e00\u4e2a\u5b98\u65b9\u5b50\u56fe, \u70b9\u8d5e\u53cc\u8fde\u8fdb\u5165."
+     "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n     \u7ed9\u6211\u9700\u8981\u7684\u6570\u636e\n                \u6211\u5c31\u80fd\u9884\u6d4b\u4e0b\u4e00\u523b\u7684\u5f62\u6001\n                              \u4f60\u95ee\u6211 \u4e0b\u4e00\u523b\u7684\u4e0b\u4e00\u523b\u662f\u600e\u6837\u7684?\n                                                   \u6216\u8005\u8bf4\u540e\u6765\u7684\u540e\u6765?\n\n\n\n\n\u6211\u4e5f\u662f\u4e00\u4e2a\u5b98\u65b9\u5b50\u56fe, \u70b9\u8d5e\u53cc\u8fde\u8fdb\u5165.",
+     "params": []
     },
     "f91214d4-Blackboard": {
      "name": "Blackboard",
@@ -1096,7 +1104,8 @@
      "width": 351.5625,
      "height": 595.3125,
      "title": "\u6587\u4ef6\u5199\u51fa\u8282\u70b9",
-     "content": "\u5173\u952e\u5b57, \u6211\u53ea\u8ba4 {frame}"
+     "content": "\u5173\u952e\u5b57, \u6211\u53ea\u8ba4 {frame}",
+     "params": []
     },
     "5efb981a-PrimitiveAddAttr": {
      "name": "PrimitiveAddAttr",
@@ -1300,8 +1309,8 @@
       "type": "float"
      },
      "uipos": [
-      11422.0,
-      693.0
+      11362.0,
+      630.5
      ],
      "options": [
       "PREP"
@@ -1313,11 +1322,11 @@
       "SRC": null
      },
      "params": {
-      "value": "@speed = length(@vel)\n@rad = 1"
+      "value": "@speed = length(@vel)\n@rad = 0"
      },
      "uipos": [
-      11408.250000000002,
-      849.5
+      11477.0,
+      890.75
      ],
      "options": []
     },
@@ -1328,7 +1337,7 @@
      },
      "params": {
       "nres": 1024,
-      "_RAMPS": "4\n0 0 0 0.5659340659340659\n0.25824175824175827 0 0.23626373626373626 0.945054945054945\n0.6692307692307693 0 1 1\n0.9065934065934066 1 1 1"
+      "_RAMPS": "5\n0 0 0 0.5659340659340659\n0.25824175824175827 0 0.23626373626373626 0.945054945054945\n0.5648351648351649 0 0.7252747252747253 1\n0.7774725274725275 0.14351851851851852 1 0.5810439560439561\n0.989010989010989 1 1 1"
      },
      "uipos": [
       12112.0,
@@ -1355,15 +1364,23 @@
        ]
       ],
       [
-       0.6692307692307693,
+       0.5648351648351649,
        [
         0,
-        1,
+        0.7252747252747253,
         1
        ]
       ],
       [
-       0.9065934065934066,
+       0.7774725274725275,
+       [
+        0.14351851851851852,
+        1,
+        0.5810439560439561
+       ]
+      ],
+      [
+       0.989010989010989,
        [
         1,
         1,
@@ -1427,7 +1444,7 @@
       "SRC": null
      },
      "params": {
-      "value": 5.0
+      "value": 3.0
      },
      "uipos": [
       12148.75,
@@ -1558,12 +1575,221 @@
       87.5
      ],
      "options": []
+    },
+    "d93d5442-ReadVDBGrid": {
+     "name": "ReadVDBGrid",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "points",
+      "path": "/home/dilei/Desktop/animatedResult/result.240.vdb"
+     },
+     "uipos": [
+      -447.99999999999994,
+      944.8
+     ],
+     "options": [
+      "ONCE",
+      "MUTE"
+     ]
+    },
+    "f4746c50-GetVDBPoints": {
+     "name": "GetVDBPoints",
+     "inputs": {
+      "grid": [
+       "d93d5442-ReadVDBGrid",
+       "data"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -183.20000000000002,
+      995.1999999999998
+     ],
+     "options": [
+      "ONCE",
+      "MUTE"
+     ]
+    },
+    "860f3b9a-ParticlesToPrimitive": {
+     "name": "ParticlesToPrimitive",
+     "inputs": {
+      "pars": [
+       "f4746c50-GetVDBPoints",
+       "pars"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      82.39999999999995,
+      1032.8000000000004
+     ],
+     "options": [
+      "MUTE"
+     ]
+    },
+    "95a8f860-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "@speed = length(@vel)\n@rad = 0\n"
+     },
+     "uipos": [
+      82.39999999999998,
+      1178.4000000000003
+     ],
+     "options": [
+      "MUTE"
+     ]
+    },
+    "3235287e-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "860f3b9a-ParticlesToPrimitive",
+       "prim"
+      ],
+      "zfxCode": [
+       "95a8f860-MakeMultilineString",
+       "value"
+      ],
+      "params": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      502.39999999999986,
+      1051.9999999999993
+     ],
+     "options": [
+      "MUTE"
+     ]
+    },
+    "6d4d2a80-MakeHeatmap": {
+     "name": "MakeHeatmap",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "nres": 1024,
+      "_RAMPS": "4\n0 0 0 1\n0.38571428571428595 0 0.5098901098901103 1\n0.7241758241758246 0 1 0.7180138380138392\n0.9032967032967032 1 1 1"
+     },
+     "uipos": [
+      447.9999999999999,
+      1263.2000000000003
+     ],
+     "options": [
+      "MUTE"
+     ],
+     "color_ramps": [
+      [
+       0,
+       [
+        0,
+        0,
+        1
+       ]
+      ],
+      [
+       0.38571428571428595,
+       [
+        0,
+        0.5098901098901103,
+        1
+       ]
+      ],
+      [
+       0.7241758241758246,
+       [
+        0,
+        1,
+        0.7180138380138392
+       ]
+      ],
+      [
+       0.9032967032967032,
+       [
+        1,
+        1,
+        1
+       ]
+      ]
+     ]
+    },
+    "6f7bd6f1-PrimitiveColorByHeatmap": {
+     "name": "PrimitiveColorByHeatmap",
+     "inputs": {
+      "prim": [
+       "3235287e-ParticlesWrangle",
+       "prim"
+      ],
+      "heatmap": [
+       "6d4d2a80-MakeHeatmap",
+       "heatmap"
+      ],
+      "min": [
+       "df00eb9e-NumericFloat",
+       "value"
+      ],
+      "max": [
+       "b4f5fd78-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "attrName": "speed"
+     },
+     "uipos": [
+      966.3999999999999,
+      1142.4
+     ],
+     "options": [
+      "MUTE"
+     ]
+    },
+    "df00eb9e-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.0
+     },
+     "uipos": [
+      632.7250000000001,
+      1120.25
+     ],
+     "options": [
+      "MUTE"
+     ]
+    },
+    "b4f5fd78-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 3.0
+     },
+     "uipos": [
+      740.8000000000001,
+      1322.3999999999996
+     ],
+     "options": [
+      "MUTE"
+     ]
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -745,
-    "trans_y": -290
+    "scale": 0.8000000000000005,
+    "trans_x": 9009,
+    "trans_y": 526
    }
   },
   "FLIPSimTemplate": {
@@ -2057,7 +2283,9 @@
       "SRC": null
      },
      "params": {
-      "name": "Velocity"
+      "type": "",
+      "name": "Velocity",
+      "defl": ""
      },
      "uipos": [
       2095.9892129898058,
@@ -2073,7 +2301,9 @@
       "SRC": null
      },
      "params": {
-      "name": "Collision"
+      "type": "",
+      "name": "Collision",
+      "defl": ""
      },
      "uipos": [
       2091.442046165465,
@@ -2089,7 +2319,9 @@
       "SRC": null
      },
      "params": {
-      "name": "PostAdvVel"
+      "type": "",
+      "name": "PostAdvVel",
+      "defl": ""
      },
      "uipos": [
       2110.2170095443716,
@@ -2103,7 +2335,9 @@
       "SRC": null
      },
      "params": {
-      "name": "Pressure"
+      "type": "",
+      "name": "Pressure",
+      "defl": ""
      },
      "uipos": [
       2081.627287864684,
@@ -2119,7 +2353,9 @@
       "SRC": null
      },
      "params": {
-      "name": "CollisionVel"
+      "type": "",
+      "name": "CollisionVel",
+      "defl": ""
      },
      "uipos": [
       2081.8714284896837,
@@ -2135,7 +2371,9 @@
       "SRC": null
      },
      "params": {
-      "name": "DynEmitter"
+      "type": "",
+      "name": "DynEmitter",
+      "defl": ""
      },
      "uipos": [
       5517.352995872496,
@@ -2170,7 +2408,9 @@
       "SRC": null
      },
      "params": {
-      "name": "ifEmit"
+      "type": "",
+      "name": "ifEmit",
+      "defl": ""
      },
      "uipos": [
       5500.034179687501,
@@ -2203,7 +2443,9 @@
       "SRC": null
      },
      "params": {
-      "name": "Particles"
+      "type": "",
+      "name": "Particles",
+      "defl": ""
      },
      "uipos": [
       2076.5717458724966,
@@ -2219,7 +2461,9 @@
       "SRC": null
      },
      "params": {
-      "name": "VelocityWeights"
+      "type": "",
+      "name": "VelocityWeights",
+      "defl": ""
      },
      "uipos": [
       6775.707488059993,
@@ -2233,7 +2477,9 @@
       "SRC": null
      },
      "params": {
-      "name": "dx"
+      "type": "",
+      "name": "dx",
+      "defl": ""
      },
      "uipos": [
       1718.4467458724962,
@@ -2247,7 +2493,9 @@
       "SRC": null
      },
      "params": {
-      "name": "ExtractedLiquidSDF"
+      "type": "",
+      "name": "ExtractedLiquidSDF",
+      "defl": ""
      },
      "uipos": [
       2080.3949880599957,
@@ -2263,7 +2511,9 @@
       "SRC": null
      },
      "params": {
-      "name": "Gravity"
+      "type": "",
+      "name": "Gravity",
+      "defl": ""
      },
      "uipos": [
       8765.45729160308,
@@ -2277,7 +2527,9 @@
       "SRC": null
      },
      "params": {
-      "name": "CellFWeight"
+      "type": "",
+      "name": "CellFWeight",
+      "defl": ""
      },
      "uipos": [
       2093.003325462339,
@@ -2293,7 +2545,9 @@
       "SRC": null
      },
      "params": {
-      "name": "Divergence"
+      "type": "",
+      "name": "Divergence",
+      "defl": ""
      },
      "uipos": [
       8939.385542869564,
@@ -2307,7 +2561,9 @@
       "SRC": null
      },
      "params": {
-      "name": "LiquidSDF"
+      "type": "",
+      "name": "LiquidSDF",
+      "defl": ""
      },
      "uipos": [
       2085.4802541732774,
@@ -2327,7 +2583,9 @@
       "SRC": null
      },
      "params": {
-      "name": "end"
+      "type": "",
+      "name": "end",
+      "defl": ""
      },
      "uipos": [
       10905.399399999995,
@@ -2355,7 +2613,9 @@
       "SRC": null
      },
      "params": {
-      "name": "dt"
+      "type": "",
+      "name": "dt",
+      "defl": ""
      },
      "uipos": [
       2135.937499999997,
@@ -2392,7 +2652,9 @@
       "SRC": null
      },
      "params": {
-      "name": "dynamicShape"
+      "type": "",
+      "name": "dynamicShape",
+      "defl": ""
      },
      "uipos": [
       123.31249999999989,
@@ -2406,7 +2668,9 @@
       "SRC": null
      },
      "params": {
-      "name": "StaticSDF"
+      "type": "",
+      "name": "StaticSDF",
+      "defl": ""
      },
      "uipos": [
       114.62500000000006,
@@ -2471,7 +2735,9 @@
       "SRC": null
      },
      "params": {
-      "name": "BCSDF"
+      "type": "",
+      "name": "BCSDF",
+      "defl": ""
      },
      "uipos": [
       2024.25,
@@ -2667,7 +2933,9 @@
       "SRC": null
      },
      "params": {
-      "name": "end"
+      "type": "",
+      "name": "end",
+      "defl": ""
      },
      "uipos": [
       2876.55,
@@ -2685,7 +2953,9 @@
       "SRC": null
      },
      "params": {
-      "name": "BCVel"
+      "type": "",
+      "name": "BCVel",
+      "defl": ""
      },
      "uipos": [
       2832.8124999999995,
@@ -2699,7 +2969,9 @@
       "SRC": null
      },
      "params": {
-      "name": "dx"
+      "type": "",
+      "name": "dx",
+      "defl": ""
      },
      "uipos": [
       65.62499999999994,
@@ -2774,7 +3046,9 @@
       "SRC": null
      },
      "params": {
-      "name": "TankSDF"
+      "type": "",
+      "name": "TankSDF",
+      "defl": ""
      },
      "uipos": [
       164.5,
@@ -2788,7 +3062,9 @@
       "SRC": null
      },
      "params": {
-      "name": "dx"
+      "type": "",
+      "name": "dx",
+      "defl": ""
      },
      "uipos": [
       194.0,
@@ -2856,7 +3132,9 @@
       "SRC": null
      },
      "params": {
-      "name": "end"
+      "type": "",
+      "name": "end",
+      "defl": ""
      },
      "uipos": [
       1604.0,
@@ -2874,7 +3152,9 @@
       "SRC": null
      },
      "params": {
-      "name": "Particles"
+      "type": "",
+      "name": "Particles",
+      "defl": ""
      },
      "uipos": [
       1767.45,
@@ -2954,7 +3234,9 @@
       "SRC": null
      },
      "params": {
-      "name": "Velocity"
+      "type": "",
+      "name": "Velocity",
+      "defl": ""
      },
      "uipos": [
       184.0,
@@ -2986,7 +3268,9 @@
       "SRC": null
      },
      "params": {
-      "name": "CFLNumber"
+      "type": "",
+      "name": "CFLNumber",
+      "defl": ""
      },
      "uipos": [
       463.3125000000001,
@@ -3000,7 +3284,9 @@
       "SRC": null
      },
      "params": {
-      "name": "dx"
+      "type": "",
+      "name": "dx",
+      "defl": ""
      },
      "uipos": [
       76.0,
@@ -3036,7 +3322,9 @@
       "SRC": null
      },
      "params": {
-      "name": "maxSubSteps"
+      "type": "",
+      "name": "maxSubSteps",
+      "defl": ""
      },
      "uipos": [
       146.0,
@@ -3054,7 +3342,9 @@
       "SRC": null
      },
      "params": {
-      "name": "step_dt"
+      "type": "",
+      "name": "step_dt",
+      "defl": ""
      },
      "uipos": [
       1561.0,
@@ -3919,6 +4209,41 @@
     "FLIPSolver"
    ]
   },
+  "CachedIf": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "keepCache",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
   "CachedOnce": {
    "inputs": [
     [
@@ -4188,12 +4513,12 @@
   "DictGetItem": {
    "inputs": [
     [
-     "",
+     "dict",
      "dict",
      ""
     ],
     [
-     "",
+     "string",
      "key",
      ""
     ],
@@ -4205,7 +4530,7 @@
    ],
    "outputs": [
     [
-     "",
+     "any",
      "object",
      ""
     ],
@@ -4223,17 +4548,17 @@
   "DictSetItem": {
    "inputs": [
     [
-     "",
+     "dict",
      "dict",
      ""
     ],
     [
-     "",
+     "string",
      "key",
      ""
     ],
     [
-     "",
+     "any",
      "object",
      ""
     ],
@@ -4245,7 +4570,7 @@
    ],
    "outputs": [
     [
-     "",
+     "dict",
      "dict",
      ""
     ],
@@ -4263,7 +4588,7 @@
   "DictSize": {
    "inputs": [
     [
-     "",
+     "dict",
      "dict",
      ""
     ],
@@ -4275,7 +4600,7 @@
    ],
    "outputs": [
     [
-     "",
+     "numeric:int",
      "size",
      ""
     ],
@@ -4300,7 +4625,7 @@
    ],
    "outputs": [
     [
-     "",
+     "dict",
      "dict",
      ""
     ],
@@ -4601,7 +4926,7 @@
   "ExtractDict": {
    "inputs": [
     [
-     "",
+     "dict",
      "dict",
      ""
     ],
@@ -6184,7 +6509,7 @@
    ],
    "outputs": [
     [
-     "",
+     "dict",
      "dict",
      ""
     ],
@@ -6367,7 +6692,7 @@
    ],
    "outputs": [
     [
-     "",
+     "string",
      "value",
      ""
     ],
@@ -6385,7 +6710,7 @@
     ]
    ],
    "categories": [
-    "fileio"
+    "string"
    ]
   },
   "MakeOrthonormalBase": {
@@ -6554,7 +6879,7 @@
    ],
    "outputs": [
     [
-     "",
+     "string",
      "value",
      ""
     ],
@@ -6572,7 +6897,7 @@
     ]
    ],
    "categories": [
-    "fileio"
+    "string"
    ]
   },
   "MakeVDBGrid": {
@@ -7452,22 +7777,22 @@
   "ParticleParticleWrangle": {
    "inputs": [
     [
-     "",
+     "primitive",
      "prim1",
      ""
     ],
     [
-     "",
+     "primitive",
      "prim2",
      ""
     ],
     [
-     "",
+     "string",
      "zfxCode",
      ""
     ],
     [
-     "",
+     "dict:numeric",
      "params",
      ""
     ],
@@ -7479,8 +7804,48 @@
    ],
    "outputs": [
     [
-     "",
+     "primitive",
      "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "ParticlesBuildHashGrid": {
+   "inputs": [
+    [
+     "primitive",
+     "primNei",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radius",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radiusMin",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "hashgrid",
+     "hashGrid",
      ""
     ],
     [
@@ -7497,33 +7862,28 @@
   "ParticlesNeighborWrangle": {
    "inputs": [
     [
-     "",
+     "primitive",
      "prim",
      ""
     ],
     [
-     "",
+     "primitive",
      "primNei",
      ""
     ],
     [
-     "",
+     "hashgrid",
+     "hashGrid",
+     ""
+    ],
+    [
+     "string",
      "zfxCode",
      ""
     ],
     [
-     "",
+     "dict:numeric",
      "params",
-     ""
-    ],
-    [
-     "",
-     "radius",
-     ""
-    ],
-    [
-     "",
-     "radiusMin",
      ""
     ],
     [
@@ -7534,7 +7894,7 @@
    ],
    "outputs": [
     [
-     "",
+     "primitive",
      "prim",
      ""
     ],
@@ -7582,17 +7942,17 @@
   "ParticlesWrangle": {
    "inputs": [
     [
-     "",
+     "primitive",
      "prim",
      ""
     ],
     [
-     "",
+     "string",
      "zfxCode",
      ""
     ],
     [
-     "",
+     "dict:numeric",
      "params",
      ""
     ],
@@ -7604,7 +7964,7 @@
    ],
    "outputs": [
     [
-     "",
+     "primitive",
      "prim",
      ""
     ],
@@ -8133,6 +8493,92 @@
    "params": [],
    "categories": [
     "Rigid"
+   ]
+  },
+  "PrimitiveEdgeWrangle": {
+   "inputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "primitive",
+     "edgePrim",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "dict:numeric",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "primitive",
+     "edgePrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "PrimitiveFaceToEdges": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "clearFaces",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
    ]
   },
   "PrimitiveFillAttr": {
@@ -8861,6 +9307,36 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "PrimitiveTraceTrail": {
+   "inputs": [
+    [
+     "primitive",
+     "parsPrim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "primitive",
+     "trailPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "PrimitiveUnaryOp": {
@@ -9856,7 +10332,7 @@
    ],
    "params": [],
    "categories": [
-    "zelloWorld"
+    "math"
    ]
   },
   "SubCategory": {
@@ -9913,8 +10389,18 @@
    "params": [
     [
      "string",
+     "type",
+     ""
+    ],
+    [
+     "string",
      "name",
      "input1"
+    ],
+    [
+     "string",
+     "defl",
+     ""
     ]
    ],
    "categories": [
@@ -9944,8 +10430,18 @@
    "params": [
     [
      "string",
+     "type",
+     ""
+    ],
+    [
+     "string",
      "name",
      "output1"
+    ],
+    [
+     "string",
+     "defl",
+     ""
     ]
    ],
    "categories": [
@@ -10294,6 +10790,66 @@
     "primitive"
    ]
   },
+  "TriggerAbortSignal": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "debug"
+   ]
+  },
+  "TriggerDivideZero": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "debug"
+   ]
+  },
+  "TriggerSegFault": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "debug"
+   ]
+  },
   "UnpackNumericVec": {
    "inputs": [
     [
@@ -10413,17 +10969,17 @@
   "VDBWrangle": {
    "inputs": [
     [
-     "",
+     "openvdb",
      "grid",
      ""
     ],
     [
-     "",
+     "string",
      "zfxCode",
      ""
     ],
     [
-     "",
+     "dict:numeric",
      "params",
      ""
     ],
@@ -10435,7 +10991,7 @@
    ],
    "outputs": [
     [
-     "",
+     "openvdb",
      "grid",
      ""
     ],
@@ -10718,32 +11274,100 @@
   },
   "FLIPSimTemplate": {
    "inputs": [
-    "Velocity",
-    "Collision",
-    "PostAdvVel",
-    "Pressure",
-    "CollisionVel",
-    "DynEmitter",
-    "ifEmit",
-    "Particles",
-    "VelocityWeights",
-    "dx",
-    "ExtractedLiquidSDF",
-    "Gravity",
-    "CellFWeight",
-    "Divergence",
-    "LiquidSDF",
-    "dt",
     [
-     "any",
+     "",
+     "Velocity",
+     ""
+    ],
+    [
+     "",
+     "Collision",
+     ""
+    ],
+    [
+     "",
+     "PostAdvVel",
+     ""
+    ],
+    [
+     "",
+     "Pressure",
+     ""
+    ],
+    [
+     "",
+     "CollisionVel",
+     ""
+    ],
+    [
+     "",
+     "DynEmitter",
+     ""
+    ],
+    [
+     "",
+     "ifEmit",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "VelocityWeights",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "ExtractedLiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "Gravity",
+     ""
+    ],
+    [
+     "",
+     "CellFWeight",
+     ""
+    ],
+    [
+     "",
+     "Divergence",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
-    "end",
     [
-     "any",
+     "",
+     "end",
+     ""
+    ],
+    [
+     "",
      "DST",
      ""
     ]
@@ -10756,21 +11380,45 @@
   },
   "makeCollision": {
    "inputs": [
-    "dynamicShape",
-    "StaticSDF",
-    "dx",
     [
-     "any",
+     "",
+     "dynamicShape",
+     ""
+    ],
+    [
+     "",
+     "StaticSDF",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
-    "BCSDF",
-    "end",
-    "BCVel",
     [
-     "any",
+     "",
+     "BCSDF",
+     ""
+    ],
+    [
+     "",
+     "end",
+     ""
+    ],
+    [
+     "",
+     "BCVel",
+     ""
+    ],
+    [
+     "",
      "DST",
      ""
     ]
@@ -10783,19 +11431,35 @@
   },
   "makeTank": {
    "inputs": [
-    "TankSDF",
-    "dx",
     [
-     "any",
+     "",
+     "TankSDF",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
-    "end",
-    "Particles",
     [
-     "any",
+     "",
+     "end",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
      "DST",
      ""
     ]
@@ -10808,20 +11472,40 @@
   },
   "GetFluidStepDT": {
    "inputs": [
-    "Velocity",
-    "CFLNumber",
-    "dx",
-    "maxSubSteps",
     [
-     "any",
+     "",
+     "Velocity",
+     ""
+    ],
+    [
+     "",
+     "CFLNumber",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "maxSubSteps",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
    ],
    "outputs": [
-    "step_dt",
     [
-     "any",
+     "",
+     "step_dt",
+     ""
+    ],
+    [
+     "",
      "DST",
      ""
     ]
