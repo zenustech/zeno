@@ -1,3 +1,4 @@
+#ifdef ZENO_GLOBALSTATE
 #include <zeno/GlobalState.h>
 
 namespace zeno {
@@ -35,3 +36,4 @@ ZENAPI void GlobalState::frameEnd() {
 }
 
 }
+#endif

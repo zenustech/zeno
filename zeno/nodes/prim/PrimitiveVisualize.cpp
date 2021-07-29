@@ -1,3 +1,4 @@
+#ifdef ZENO_VISUALIZATION
 #include <zeno/zeno.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/Visualization.h>
@@ -50,3 +51,4 @@ ZENDEFNODE(PrimitiveShade,
     }});
 
 }
+#endif

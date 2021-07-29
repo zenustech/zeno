@@ -1,7 +1,11 @@
 #include <zeno/zeno.h>
 #include <zeno/ConditionObject.h>
+#ifdef ZENO_VISUALIZATION
 #include <zeno/Visualization.h>
+#endif
+#ifdef ZENO_GLOBALSTATE
 #include <zeno/GlobalState.h>
+#endif
 #include <zeno/safe_at.h>
 #include <cassert>
 
@@ -49,6 +53,7 @@ ZENAPI bool INode::checkApplyCondition() {
             return false;
     }*/
 
+#ifdef ZENO_GLOBALSTATE
     if (has_option("ONCE")) {
         if (!zeno::state.isFirstSubstep())
             return false;
@@ -58,6 +63,7 @@ ZENAPI bool INode::checkApplyCondition() {
         if (!zeno::state.isOneSubstep())
             return false;
     }
+#endif
 
     if (has_option("MUTE")) {
         auto desc = nodeClass->desc.get();
@@ -97,15 +103,19 @@ ZENAPI void INode::coreApply() {
 
     if (has_option("VIEW")) {
         graph->hasAnyView = true;
+#ifdef ZENO_GLOBALSTATE
         if (!state.isOneSubstep())  // no duplicate view when multi-substep used
             return;
+#endif
         if (!graph->isViewed)  // VIEW subnodes only if subgraph is VIEW'ed
             return;
         auto desc = nodeClass->desc.get();
         auto obj = muted_output ? muted_output
             : safe_at(outputs, desc->outputs[0].name, "output");
+#ifdef ZENO_VISUALIZATION
         auto path = Visualization::exportPath();
         obj->dumpfile(path);
+#endif
     }
 }
 
