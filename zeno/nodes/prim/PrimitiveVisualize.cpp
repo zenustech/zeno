@@ -1,4 +1,15 @@
-#ifdef ZENO_VISUALIZATION
+#ifndef ZENO_VISUALIZATION
+#include <zeno/zeno.h>
+#include <zeno/PrimitiveObject.h>
+
+namespace zeno {
+
+// TODO: why taint IObject with visualization stuffs?
+ZENAPI void PrimitiveObject::dumpfile(std::string const &path) {
+}
+
+}
+#else
 #include <zeno/zeno.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/Visualization.h>

@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/ConditionObject.h>
-#ifdef ZENO_VISUALIZATION
+#ifdef ZENO_VISUALIZATION  // TODO: can we decouple then from zeno core?
 #include <zeno/Visualization.h>
 #endif
 #ifdef ZENO_GLOBALSTATE
@@ -101,22 +101,20 @@ ZENAPI void INode::coreApply() {
         apply();
     }
 
+#ifdef ZENO_VISUALIZATION
     if (has_option("VIEW")) {
         graph->hasAnyView = true;
-#ifdef ZENO_GLOBALSTATE
         if (!state.isOneSubstep())  // no duplicate view when multi-substep used
             return;
-#endif
         if (!graph->isViewed)  // VIEW subnodes only if subgraph is VIEW'ed
             return;
         auto desc = nodeClass->desc.get();
         auto obj = muted_output ? muted_output
             : safe_at(outputs, desc->outputs[0].name, "output");
-#ifdef ZENO_VISUALIZATION
         auto path = Visualization::exportPath();
         obj->dumpfile(path);
-#endif
     }
+#endif
 }
 
 ZENAPI bool INode::has_option(std::string const &id) const {

@@ -2,8 +2,12 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <zeno/zeno.h>
+#ifdef ZENO_GLOBALSTATE
 #include <zeno/GlobalState.h>
+#endif
+#ifdef ZENO_VISUALIZATION
 #include <zeno/Visualization.h>
+#endif
 namespace py = pybind11;
 
 
@@ -19,6 +23,7 @@ PYBIND11_MODULE(pyzeno, m) {
     m.def("applyNodes", zeno::applyNodes);
     m.def("addNode", zeno::addNode);
 
+#ifdef ZENO_GLOBALSTATE
     m.def("setIOPath", [] (std::string const &iopath) {
         zeno::state = zeno::GlobalState();
         return zeno::state.setIOPath(iopath);
@@ -27,9 +32,12 @@ PYBIND11_MODULE(pyzeno, m) {
     m.def("substepEnd", [] () { return zeno::state.substepEnd(); });
     m.def("frameBegin", [] () { return zeno::state.frameBegin(); });
     m.def("frameEnd", [] () {
+#ifdef ZENO_VISUALIZATION
         zeno::Visualization::endFrame();
+#endif
         return zeno::state.frameEnd();
     });
+#endif
 
     py::register_exception_translator([](std::exception_ptr p) {
         try {
