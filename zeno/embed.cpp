@@ -1,4 +1,3 @@
-#ifdef ZENO_EMBED
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <zeno/zeno.h>
@@ -19,13 +18,14 @@ static zeno::IValue generic_get(Value const &x) {
     }
 }
 
-void loadSceneFromList(const char *json) {
+ZENO_API void Session::loadSceneFromList(const char *json) {
     Document d;
     d.Parse(json);
 
     for (int i = 0; i < d.Size(); i++) {
         Value const &di = d[i];
         std::string cmd = di[0].GetString();
+        printf("%s\n", cmd.c_str());
         if (0) {
         } else if (cmd == "addNode") {
             addNode(di[1].GetString(), di[2].GetString());
@@ -46,4 +46,3 @@ void loadSceneFromList(const char *json) {
 }
 
 }
-#endif
