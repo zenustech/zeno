@@ -7,15 +7,14 @@ def evaluateExpr(expr, frameid):
     frame = frameid
     return eval('f' + repr(expr))
 
+
 def runScene(graphs, nframes, iopath):
     core.setIOPath(iopath)
 
-    subgkeys = set(graphs.keys())
-    for name, graph in graphs.items():
-        core.switchGraph(name)
-        loadGraph(graph['nodes'], subgkeys)
+    core.clearAllState()
+    for cmd, *args in serializeScene(graphs):
+        getattr(core, cmd)(*args)
 
-    
     applies = []
     nodes = graphs['main']['nodes']
     for ident, data in nodes.items():
@@ -51,9 +50,16 @@ def runScene(graphs, nframes, iopath):
     print('EXITING')
 
 
-def loadGraph(nodes, subgkeys):
-    core.clearNodes()
+def serializeScene(graphs):
+    res = []
 
+    subgkeys = set(graphs.keys())
+    for name, graph in graphs.items():
+        yield 'switchGraph', name
+        yield from serializeGraph(graph['nodes'], subgkeys)
+
+
+def serializeGraph(res, nodes, subgkeys):
     for ident, data in nodes.items():
         if 'special' in data:
             continue
@@ -67,20 +73,21 @@ def loadGraph(nodes, subgkeys):
             name = 'Subgraph'
         elif name == 'ExecutionOutput':
             name = 'Route'
-        core.addNode(name, ident)
+        yield 'addNode', name, ident
 
         for name, input in inputs.items():
             if input is None:
                 continue
             srcIdent, srcSockName = input
-            core.bindNodeInput(ident, name, srcIdent, srcSockName)
+            yield 'bindNodeInput', ident, name, srcIdent, srcSockName
 
         for name, value in params.items():
-            core.setNodeParam(ident, name, value)
+            yield 'setNodeParam', ident, name, value
 
-        core.setNodeOptions(ident, set(options))
+        for name in options:
+            yield 'setNodeOption', ident, name
 
-        core.completeNode(ident)
+        yield 'completeNode', ident
 
 
 def dumpDescriptors():

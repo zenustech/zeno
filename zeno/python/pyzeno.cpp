@@ -12,6 +12,7 @@ PYBIND11_MODULE(pyzeno, m) {
     m.def("bindNodeInput", zeno::bindNodeInput);
     m.def("setNodeParam", zeno::setNodeParam);
     m.def("setNodeOptions", zeno::setNodeOptions);
+    m.def("clearAllState", zeno::clearAllState);
     m.def("completeNode", zeno::completeNode);
     m.def("switchGraph", zeno::switchGraph);
     m.def("clearNodes", zeno::clearNodes);

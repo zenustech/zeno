@@ -207,6 +207,10 @@ ZENAPI Session::Session() {
 
 ZENAPI Session::~Session() = default;
 
+ZENAPI void Session::clearAllState() {
+    graphs.clear();
+}
+
 ZENAPI void Session::_defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls) {
     nodeClasses[id] = std::move(cls);
 }

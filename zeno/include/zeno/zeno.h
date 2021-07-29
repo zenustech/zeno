@@ -272,6 +272,7 @@ struct Session {
     ZENAPI Session();
     ZENAPI ~Session();
 
+    ZENAPI void clearAllState();
     ZENAPI Graph &getGraph() const;
     ZENAPI void switchGraph(std::string const &name);
     ZENAPI std::string dumpDescriptors() const;
@@ -305,6 +306,10 @@ inline std::string dumpDescriptors() {
 
 inline void switchGraph(std::string const &name) {
     return getSession().switchGraph(name);
+}
+
+inline void clearAllState() {
+    return getSession().clearAllState();
 }
 
 inline void clearNodes() {
