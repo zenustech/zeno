@@ -229,13 +229,23 @@ varying vec3 color;
 varying float radius;
 void main()
 {
+  const vec3 lightDir = vec3(0.577, 0.577, 0.577);
   vec2 coor = gl_PointCoord * 2 - 1;
   float len2 = dot(coor, coor);
   if (len2 > 1 && radius != 0)
     discard;
   vec3 oColor;
   if (radius > 1)
-    oColor = color * mix(1, 0.4, len2);
+  {
+    vec3 N;
+    N.xy = gl_PointCoord*vec2(2.0, -2.0) + vec2(-1.0, 1.0);
+    float mag = dot(N.xy, N.xy);
+    N.z = sqrt(1.0-mag);
+
+    // calculate lighting
+    float diffuse = max(0.0, dot(lightDir, N));
+    oColor = color * diffuse;
+  }
   else
     oColor = color;
   gl_FragColor = vec4(oColor, 1.0);

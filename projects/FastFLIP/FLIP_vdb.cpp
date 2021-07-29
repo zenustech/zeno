@@ -2796,9 +2796,9 @@ void FLIP_vdb::emit_liquid(
               // test if any of the corner of this box touches the
               int has_solid = 0;
               int i8 = i * 8, j8 = j * 8, k8 = k * 8;
-              for (int ii = 0; ii <= 8 && !has_solid; ii += 8) {
-                for (int jj = 0; jj <= 8 && !has_solid; jj += 8) {
-                  for (int kk = 0; kk <= 8 && !has_solid; kk += 8) {
+              for (int ii = 0; ii <= 8 && !has_solid; ii += 1) {
+                for (int jj = 0; jj <= 8 && !has_solid; jj += 1) {
+                  for (int kk = 0; kk <= 8 && !has_solid; kk += 1) {
                     auto particle_idx_pos =
                         openvdb::Vec3i(i8 + ii, j8 + jj, k8 + kk);
                     has_solid =
