@@ -3,6 +3,9 @@
 #include <zeno/core/Descriptor.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/ConditionObject.h>
+#ifdef ZENO_VISUALIZATION
+#include <zeno/extra/Visualization.h>
+#endif
 #ifdef ZENO_GLOBALSTATE
 #include <zeno/extra/GlobalState.h>
 #endif
@@ -110,4 +113,6 @@ ZENO_API IValue INode::get_param(std::string const &id) const {
 
 ZENO_API void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
     outputs[id] = std::move(obj);
+}
+
 }

@@ -70,7 +70,6 @@ inline std::unique_ptr<Scene> createScene() {
 }
 
 
-
 #define ZENDEFNODE(Class, ...) \
     static int def##Class = zeno::defNodeClass(std::make_unique<Class>, #Class, __VA_ARGS__)
 

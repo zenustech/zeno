@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/ListObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/vec.h>
 #include <cstring>
 #include <cstdlib>
