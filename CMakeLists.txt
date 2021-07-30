@@ -37,7 +37,7 @@ if (ZENO_BUILD_ZFX)
     add_subdirectory(ZFX)
 endif()
 
-option(ZENO_BUILD_TESTS "Build tests for Zeno" OFF)
+option(ZENO_BUILD_TESTS "Build tests for Zeno" ON)
 if (ZENO_BUILD_TESTS)
     add_subdirectory(tests)
 endif()

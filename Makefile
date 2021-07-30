@@ -1,6 +1,6 @@
 O=arts/ZFXv2.zsg
 
-default: run
+default: test
 
 all:
 	cmake -B build

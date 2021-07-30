@@ -72,14 +72,9 @@ struct Subgraph : zeno::INode {
 #endif
 
         for (auto const &[key, obj]: inputs) {
-            subg->subInputs[key] = obj;
+            subg->setGraphInput(key, obj);
         }
-
-        std::vector<std::string> applies;
-        for (auto const &[id, nodename]: subg->subOutputNodes) {
-            applies.push_back(nodename);
-        }
-        subg->applyNodes(applies);
+        subg->applyGraph();
 
 #ifdef ZENO_VISUALIZATION
         for (auto &[key, obj]: subg->subOutputs) {

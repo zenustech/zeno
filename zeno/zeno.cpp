@@ -50,7 +50,7 @@ ZENO_API Graph::Graph() = default;
 ZENO_API Graph::~Graph() = default;
 
 ZENO_API void Graph::setGraphInput(std::string const &id,
-        std::shared_ptr<IObject> &&obj) {
+        std::shared_ptr<IObject> obj) {
     subInputs[id] = obj;
 }
 
@@ -82,7 +82,7 @@ ZENO_API bool INode::checkApplyCondition() {
     }*/
 
 #ifdef ZENO_GLOBALSTATE
-    if (has_option("ONCE")) {
+    if (has_option("ONCE")) {  // TODO: frame control should be editor work
         if (!zeno::state.isFirstSubstep())
             return false;
     }
@@ -96,6 +96,7 @@ ZENO_API bool INode::checkApplyCondition() {
     if (has_option("MUTE")) {
         auto desc = nodeClass->desc.get();
         if (desc->inputs[0].name != "SRC") {
+            // TODO: MUTE should be an editor work
             muted_output = get_input(desc->inputs[0].name);
         } else {
             for (auto const &[ds, bound]: inputBounds) {

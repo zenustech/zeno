@@ -252,7 +252,7 @@ struct Graph {
     ZENO_API ~Graph();
 
     ZENO_API void setGraphInput(std::string const &id,
-            std::shared_ptr<IObject> &&obj);
+            std::shared_ptr<IObject> obj);
     ZENO_API std::shared_ptr<IObject> getGraphOutput(
             std::string const &id) const;
     ZENO_API void applyGraph();
