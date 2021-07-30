@@ -197,7 +197,8 @@
       -100.53750000000002
      ],
      "options": [
-      "ONCE"
+      "ONCE",
+      "VIEW"
      ]
     },
     "5e43cd2d-x": {
@@ -1209,10 +1210,12 @@
      },
      "params": {},
      "uipos": [
-      7969.0,
-      1065.0
+      7967.75,
+      1063.75
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "c65290c2-GetVDBPoints": {
      "name": "GetVDBPoints",
@@ -1322,7 +1325,7 @@
       "SRC": null
      },
      "params": {
-      "value": "@speed = length(@vel)\n@rad = 0"
+      "value": "@speed = length(@vel)\n@rad = 1"
      },
      "uipos": [
       11477.0,
@@ -1460,7 +1463,7 @@
       "SRC": null
      },
      "params": {
-      "value": 0.08
+      "value": 0.04
      },
      "uipos": [
       -1582.0312499999989,
@@ -1787,9 +1790,9 @@
     }
    },
    "view": {
-    "scale": 0.8000000000000005,
-    "trans_x": 9009,
-    "trans_y": 526
+    "scale": 0.2621440000000001,
+    "trans_x": -460,
+    "trans_y": -208
    }
   },
   "FLIPSimTemplate": {
@@ -2625,9 +2628,9 @@
     }
    },
    "view": {
-    "scale": 0.06871947673600008,
-    "trans_x": 591,
-    "trans_y": -961
+    "scale": 0.13421772800000023,
+    "trans_x": 283,
+    "trans_y": -487
    }
   },
   "makeCollision": {
@@ -6625,6 +6628,46 @@
    ],
    "categories": [
     "visualize"
+   ]
+  },
+  "MakeIndexBuckets": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radius",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radiusMin",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSIndexBuckets",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "MakeMPMMehser": {
@@ -11159,6 +11202,56 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "ZSParticleNeighborWrangle": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "ZSParticlesNeighbor",
+     ""
+    ],
+    [
+     "",
+     "ZSIndexBuckets",
+     ""
+    ],
+    [
+     "",
+     "zfxCode",
+     ""
+    ],
+    [
+     "",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "ZSParticlesWrangle": {
