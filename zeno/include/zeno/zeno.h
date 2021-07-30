@@ -283,7 +283,7 @@ struct Session {
     ZENO_API Graph &getGraph(std::string const &name) const;
     ZENO_API void switchGraph(std::string const &name);
     ZENO_API std::string dumpDescriptors() const;
-    ZENO_API void loadSceneFromList(const char *json);
+    ZENO_API void loadScene(const char *json);
     ZENO_API void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
 
     template <class F>
@@ -350,8 +350,8 @@ inline void setNodeOption(std::string const &id, std::string const &name) {
     return getSession().getGraph().setNodeOption(id, name);
 }
 
-inline void loadSceneFromList(const char *json) {
-    return getSession().loadSceneFromList(json);
+inline void loadScene(const char *json) {
+    return getSession().loadScene(json);
 }
 
 
