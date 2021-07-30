@@ -231,7 +231,7 @@ struct Context {
 };
 
 struct Graph {
-    Session *sess = nullptr;
+    Scene *scene = nullptr;
 
     std::map<std::string, std::unique_ptr<INode>> nodes;
 
@@ -270,20 +270,29 @@ struct Graph {
         std::string const &sn, std::string const &ss) const;
 };
 
-struct Session {
+struct Scene {
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
-    std::map<std::string, std::unique_ptr<Graph>> graphs;
-    Graph *currGraph;
+    Graph *currGraph = nullptr;
+    Session *sess = nullptr;
 
-    ZENO_API Session();
-    ZENO_API ~Session();
+    ZENO_API Scene();
+    ZENO_API ~Scene();
 
     ZENO_API void clearAllState();
     ZENO_API Graph &getGraph() const;
     ZENO_API Graph &getGraph(std::string const &name) const;
     ZENO_API void switchGraph(std::string const &name);
-    ZENO_API std::string dumpDescriptors() const;
     ZENO_API void loadScene(const char *json);
+};
+
+struct Session {
+    std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
+    std::map<std::string, std::unique_ptr<Scene>> scenes;
+
+    ZENO_API Session();
+    ZENO_API ~Session();
+
+    ZENO_API std::string dumpDescriptors() const;
     ZENO_API void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
 
     template <class F>

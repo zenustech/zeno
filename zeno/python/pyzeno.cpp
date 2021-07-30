@@ -13,7 +13,6 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(pyzeno, m) {
     m.def("dumpDescriptors", zeno::dumpDescriptors);
-    m.def("loadSceneFromList", zeno::loadSceneFromList);
     m.def("bindNodeInput", zeno::bindNodeInput);
     m.def("setNodeParam", zeno::setNodeParam);
     m.def("setNodeOption", zeno::setNodeOption);
@@ -22,6 +21,7 @@ PYBIND11_MODULE(pyzeno, m) {
     m.def("switchGraph", zeno::switchGraph);
     m.def("clearNodes", zeno::clearNodes);
     m.def("applyNodes", zeno::applyNodes);
+    m.def("loadScene", zeno::loadScene);
     m.def("addNode", zeno::addNode);
 
 #ifdef ZENO_GLOBALSTATE

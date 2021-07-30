@@ -237,15 +237,15 @@ ZENO_API void Graph::setNodeOption(std::string const &id,
 }
 
 
-ZENO_API Session::Session() {
-    switchGraph("main");
-}
+ZENO_API Scene::Scene() = default;
+ZENO_API Scene::~Scene() = default;
 
-ZENO_API Session::~Session() = default;
-
-ZENO_API void Session::clearAllState() {
+ZENO_API void Scene::clearAllState() {
     graphs.clear();
 }
+
+ZENO_API Session::Session() = default;
+ZENO_API Session::~Session() = default;
 
 ZENO_API void Session::_defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls) {
     nodeClasses[id] = std::move(cls);
@@ -257,7 +257,7 @@ ZENO_API INodeClass::INodeClass(Descriptor const &desc)
 
 ZENO_API INodeClass::~INodeClass() = default;
 
-ZENO_API void Session::switchGraph(std::string const &name) {
+ZENO_API void Scene::switchGraph(std::string const &name) {
     if (graphs.find(name) == graphs.end()) {
         auto subg = std::make_unique<zeno::Graph>();
         subg->sess = this;
@@ -266,12 +266,12 @@ ZENO_API void Session::switchGraph(std::string const &name) {
     currGraph = graphs.at(name).get();
 }
 
-ZENO_API Graph &Session::getGraph() const {
+ZENO_API Graph &Scene::getGraph() const {
     return *currGraph;
 }
 
-ZENO_API Graph &Session::getGraph(std::string const &name) const {
-    return *graphs.at(name);
+ZENO_API Graph &Scene::getGraph(std::string const &name) const {
+    return *safe_at(graphs, name, "graph");
 }
 
 ZENO_API std::string Session::dumpDescriptors() const {
