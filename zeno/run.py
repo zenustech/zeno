@@ -17,14 +17,14 @@ def runScene(graphs, nframes, iopath):
     for cmd, *args in serializeScene(graphs):
         getattr(core, cmd)(*args)
 
-    applies = []
+    applies = set()
     nodes = graphs['main']['nodes']
     for ident, data in nodes.items():
         if 'special' in data:
             continue
         options = data['options']
         if 'VIEW' in options:
-            applies.append(ident)
+            applies.add(ident)
 
     core.switchGraph('main')
 
