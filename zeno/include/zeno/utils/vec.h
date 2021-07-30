@@ -67,7 +67,7 @@ template <size_t N, class T> struct vec : std::array<T, N> {
 /* type traits */
 
 template <class T> struct is_vec : std::false_type {
-  static constexpr size_t _N = 0;
+  static constexpr size_t _N = 1;
 };
 
 template <size_t N, class T> struct is_vec<vec<N, T>> : std::true_type {
