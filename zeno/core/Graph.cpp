@@ -1,5 +1,8 @@
 #include <zeno/core/Scene.h>
 #include <zeno/core/Graph.h>
+#include <zeno/core/INode.h>
+#include <zeno/core/IObject.h>
+#include <zeno/core/Session.h>
 #include <zeno/utils/safe_at.h>
 
 namespace zeno {
