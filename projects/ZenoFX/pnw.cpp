@@ -27,7 +27,7 @@ struct HashGrid : zeno::IObject {
     std::vector<zeno::vec3f> const &refpos;
 
     using CoordType = std::tuple<int, int, int>;
-    std::array<std::vector<int>, 4096> table;
+    std::vector<std::vector<int>> table;
 
     int hash(int x, int y, int z) {
         return ((73856093 * x) ^ (19349663 * y) ^ (83492791 * z)) % table.size();
@@ -36,14 +36,16 @@ struct HashGrid : zeno::IObject {
     HashGrid(std::vector<zeno::vec3f> const &refpos_,
             float radius_, float radius_min)
         : refpos(refpos_) {
-        for (auto &ent: table) {
-            ent.clear();
-        }
 
         radius = radius_;
         radius_sqr = radius * radius;
         radius_sqr_min = radius_min < 0.f ? -1.f : radius_min * radius_min;
         inv_dx = 0.5f / radius;
+
+        table.clear();
+        int table_size = refpos.size() / 8;
+        printf("table size: %d\n", table_size);
+        table.resize(table_size);
 
         for (int i = 0; i < refpos.size(); i++) {
             auto coor = zeno::toint(zeno::floor(refpos[i] * inv_dx));
