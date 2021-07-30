@@ -1,9 +1,9 @@
 #pragma once
 
+#include <zeno/utils/defs.h>
 #include <string>
 
 namespace zeno {
-
 
 class Exception : public std::exception {
 private:

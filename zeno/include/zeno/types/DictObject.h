@@ -1,6 +1,6 @@
 #pragma once
 
-#include <zeno/zeno.h>
+#include <zeno/core/IObject.h>
 #include <memory>
 #include <string>
 #include <map>

@@ -1,12 +1,12 @@
 #pragma once
 
-#include <map>
+#include <zeno/core/IObject.h>
+#include <zeno/utils/vec.h>
+#include <variant>
 #include <memory>
 #include <string>
-#include <variant>
 #include <vector>
-#include <zeno/vec.h>
-#include <zeno/zeno.h>
+#include <map>
 
 namespace zeno {
 

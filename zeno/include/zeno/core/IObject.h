@@ -1,6 +1,13 @@
 #pragma once
 
+#include <variant>
+#include <string>
+#include <memory>
+#include <map>
+
 namespace zeno {
+
+using IValue = std::variant<std::string, int, float>;
 
 struct IObject {
 #ifndef ZENO_APIFREE

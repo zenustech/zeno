@@ -1,7 +1,7 @@
 #pragma once
 
-#include <zeno/zeno.h>
-#include <zeno/vec.h>
+#include <zeno/core/IObject.h>
+#include <zeno/utils/vec.h>
 
 namespace zeno {
 
