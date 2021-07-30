@@ -5,7 +5,7 @@ set(ENV{PYTHONPATH} ${CMAKE_CURRENT_SOURCE_DIR}/.. $ENV{PYTHONPATH})
 
 set(EXTENSIONS_LIST Rigid ZMS oldzenbase ZenoFX OldZFX zenvdb FastFLIP gmpm mesher)
 
-set(EXTENSIONS_ENABLE_LIST Rigid ZMS oldzenbase ZenoFX)
+set(EXTENSIONS_ENABLE_LIST Rigid ZMS oldzenbase ZenoFX zenvdb FastFLIP)
 
 foreach (name IN ITEMS ${EXTENSIONS_LIST})
     if (${name} IN_LIST EXTENSIONS_ENABLE_LIST)

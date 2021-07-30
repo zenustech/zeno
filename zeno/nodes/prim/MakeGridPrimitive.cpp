@@ -185,4 +185,5 @@ ZENDEFNODE(MakeCubePrimitive,
         }, /* category: */ {
         "primitive",
         }});
+
 } // namespace zeno
