@@ -26,27 +26,65 @@ struct HashGrid : zeno::IObject {
     float radius_sqr_min;
     std::vector<zeno::vec3f> const &refpos;
 
-    using CoordType = std::tuple<int, int, int>;
-    std::array<std::vector<int>, 4096> table;
+    std::vector<std::vector<int>> table;
+
+//#define DILEI
+#define XUBEN
 
     int hash(int x, int y, int z) {
+#ifdef XUBEN
+        return x + y * gridRes[0] + z * gridRes[0] * gridRes[1];
+#else
         return ((73856093 * x) ^ (19349663 * y) ^ (83492791 * z)) % table.size();
+#endif
     }
+
+#ifdef XUBEN
+    zeno::vec3f pMin, pMax;
+    zeno::vec3i gridRes;
+#endif
 
     HashGrid(std::vector<zeno::vec3f> const &refpos_,
             float radius_, float radius_min)
         : refpos(refpos_) {
-        for (auto &ent: table) {
-            ent.clear();
-        }
 
         radius = radius_;
         radius_sqr = radius * radius;
         radius_sqr_min = radius_min < 0.f ? -1.f : radius_min * radius_min;
-        inv_dx = 0.f / radius;
+#ifdef DILEI
+        inv_dx = 0.5f / radius;
+#else
+        inv_dx = 1.0f / radius;
+#endif
+
+#ifdef XUBEN
+        pMin = refpos[0];
+        pMax = refpos[0];
+        for (int i = 1; i < refpos.size(); i++) {
+            auto coor = refpos[i];
+            pMin = zeno::min(pMin, coor);
+            pMax = zeno::max(pMax, coor);
+        }
+        pMin -= radius;
+        pMax += radius;
+        gridRes = zeno::toint(zeno::floor((pMax - pMin) * inv_dx)) + 1;
+
+        printf("grid res: %dx%dx%d\n", gridRes[0], gridRes[1], gridRes[2]);
+        table.clear();
+        table.resize(gridRes[0] * gridRes[1] * gridRes[2]);
+#else
+        int table_size = refpos.size() / 8;
+        printf("table size: %d\n", table_size);
+        table.clear();
+        table.resize(table_size);
+#endif
 
         for (int i = 0; i < refpos.size(); i++) {
+#ifdef XUBEN
+            auto coor = zeno::toint(zeno::floor((refpos[i] - pMin) * inv_dx));
+#else
             auto coor = zeno::toint(zeno::floor(refpos[i] * inv_dx));
+#endif
             auto key = hash(coor[0], coor[1], coor[2]);
             table[key].push_back(i);
         }
@@ -54,10 +92,28 @@ struct HashGrid : zeno::IObject {
 
     template <class F>
     void iter_neighbors(zeno::vec3f const &pos, F const &f) {
+#ifdef XUBEN
+#ifdef DILEI
+        auto coor = zeno::toint(zeno::floor((pos - pMin) * inv_dx - 0.5f));
+#else
+        auto coor = zeno::toint(zeno::floor((pos - pMin) * inv_dx));
+#endif
+#else
+#ifdef DILEI
         auto coor = zeno::toint(zeno::floor(pos * inv_dx - 0.5f));
+#else
+        auto coor = zeno::toint(zeno::floor(pos * inv_dx));
+#endif
+#endif
+#ifdef DILEI
         for (int dz = 0; dz < 2; dz++) {
             for (int dy = 0; dy < 2; dy++) {
                 for (int dx = 0; dx < 2; dx++) {
+#else
+        for (int dz = -1; dz < 2; dz++) {
+            for (int dy = -1; dy < 2; dy++) {
+                for (int dx = -1; dx < 2; dx++) {
+#endif
                     int key = hash(coor[0] + dx, coor[1] + dy, coor[2] + dz);
                     for (int pid: table[key]) {
                         auto dist = refpos[pid] - pos;
@@ -107,7 +163,7 @@ struct ParticlesBuildHashGrid : zeno::INode {
         auto primNei = get_input<zeno::PrimitiveObject>("primNei");
         float radius = get_input<zeno::NumericObject>("radius")->get<float>();
         float radiusMin = has_input("radiusMin") ?
-            get_input<zeno::NumericObject>("radiusMin")->get<float>() : 0.f;
+            get_input<zeno::NumericObject>("radiusMin")->get<float>() : -1.f;
         auto hashgrid = std::make_shared<HashGrid>(
                 primNei->attr<zeno::vec3f>("pos"), radius, radiusMin);
         set_output("hashGrid", std::move(hashgrid));
