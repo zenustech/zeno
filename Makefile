@@ -1,4 +1,4 @@
-O=testiisph.zsg
+O=arts/ZFXv2.zsg
 
 default: run
 

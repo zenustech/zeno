@@ -210,7 +210,7 @@ void main()
   if (radius != 0)
     gl_PointSize = max(1, radius * mPointScale / dist);
   else
-    gl_PointSize = max(1, min(3, radius * mPointScale / dist));
+    gl_PointSize = 1.5;
   gl_Position = mVP * vec4(position, 1.0);
 }
 )";
@@ -235,7 +235,7 @@ void main()
   if (len2 > 1 && radius != 0)
     discard;
   vec3 oColor;
-  if (radius > 1)
+  if (radius != 0)
   {
     vec3 N;
     N.xy = gl_PointCoord*vec2(2.0, -2.0) + vec2(-1.0, 1.0);
@@ -243,7 +243,7 @@ void main()
     N.z = sqrt(1.0-mag);
 
     // calculate lighting
-    float diffuse = max(0.0, dot(lightDir, N));
+    float diffuse = max(0.0, dot(lightDir, N) * 0.6 + 0.4);
     oColor = color * diffuse;
   }
   else
