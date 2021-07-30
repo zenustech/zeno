@@ -237,6 +237,7 @@ struct Graph {
 
     std::map<std::string, std::shared_ptr<IObject>> subInputs;
     std::map<std::string, std::shared_ptr<IObject>> subOutputs;
+    std::map<std::string, std::string> subOutputNodes;
 
     std::map<std::string, std::string> portalIns;
     std::map<std::string, std::shared_ptr<IObject>> portals;
@@ -251,8 +252,9 @@ struct Graph {
 
     ZENO_API void setGraphInput(std::string const &id,
             std::shared_ptr<IObject> &&obj);
-    ZENO_API std::shared_ptr<IObject> &&getGraphOutput(
-            std::string const &id);
+    ZENO_API std::shared_ptr<IObject> getGraphOutput(
+            std::string const &id) const;
+    ZENO_API void applyGraph();
 
     ZENO_API void clearNodes();
     ZENO_API void applyNodes(std::vector<std::string> const &ids);

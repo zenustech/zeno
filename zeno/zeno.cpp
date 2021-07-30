@@ -51,12 +51,20 @@ ZENO_API Graph::~Graph() = default;
 
 ZENO_API void Graph::setGraphInput(std::string const &id,
         std::shared_ptr<IObject> &&obj) {
-    subg->subInputs[id] = obj;
+    subInputs[id] = obj;
 }
-ZENO_API std::shared_ptr<IObject> &&Graph::getGraphOutput(
-        std::string const &id) {
-    // TODO: requireInput
-    return subg->subOutputs.at(id);
+
+ZENO_API void Graph::applyGraph() {
+    std::vector<std::string> applies;
+    for (auto const &[id, nodename]: subOutputNodes) {
+        applies.push_back(nodename);
+    }
+    applyNodes(applies);
+}
+
+ZENO_API std::shared_ptr<IObject> Graph::getGraphOutput(
+        std::string const &id) const {
+    return subOutputs.at(id);
 }
 
 ZENO_API void INode::doComplete() {

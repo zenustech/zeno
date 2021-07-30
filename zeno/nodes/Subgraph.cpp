@@ -37,6 +37,11 @@ ZENDEFNODE(SubInput, {
 
 
 struct SubOutput : zeno::INode {
+    virtual void complete() override {
+        auto name = get_param<std::string>("name");
+        graph->subOutputNodes[name] = myname;
+    }
+
     virtual void apply() override {
         auto name = get_param<std::string>("name");
         auto obj = get_input("port");
@@ -71,11 +76,8 @@ struct Subgraph : zeno::INode {
         }
 
         std::vector<std::string> applies;
-        for (auto const &[key, node]: subg->nodes) {
-            auto suboutptr = dynamic_cast<SubOutput *>(node.get());
-            if (suboutptr) {
-                applies.push_back(key);
-            }
+        for (auto const &[id, nodename]: subg->subOutputNodes) {
+            applies.push_back(nodename);
         }
         subg->applyNodes(applies);
 
