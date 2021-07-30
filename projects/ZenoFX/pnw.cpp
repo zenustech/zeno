@@ -29,7 +29,9 @@ struct HashGrid : zeno::IObject {
     using CoordType = std::tuple<int, int, int>;
     std::vector<std::vector<int>> table;
 
-//#define XUBEN
+//#define DILEI
+#define XUBEN
+
     int hash(int x, int y, int z) {
 #ifdef XUBEN
         return x + y * gridRes[0] + z * gridRes[0] * gridRes[1];
@@ -50,7 +52,11 @@ struct HashGrid : zeno::IObject {
         radius = radius_;
         radius_sqr = radius * radius;
         radius_sqr_min = radius_min < 0.f ? -1.f : radius_min * radius_min;
+#ifdef DILEI
         inv_dx = 0.5f / radius;
+#else
+        inv_dx = 1.0f / radius;
+#endif
 
 #ifdef XUBEN
         pMin = refpos[0];
@@ -88,13 +94,27 @@ struct HashGrid : zeno::IObject {
     template <class F>
     void iter_neighbors(zeno::vec3f const &pos, F const &f) {
 #ifdef XUBEN
+#ifdef DILEI
         auto coor = zeno::toint(zeno::floor((pos - pMin) * inv_dx - 0.5f));
 #else
-        auto coor = zeno::toint(zeno::floor(pos * inv_dx - 0.5f));
+        auto coor = zeno::toint(zeno::floor((pos - pMin) * inv_dx));
 #endif
+#else
+#ifdef DILEI
+        auto coor = zeno::toint(zeno::floor(pos * inv_dx - 0.5f));
+#else
+        auto coor = zeno::toint(zeno::floor(pos * inv_dx));
+#endif
+#endif
+#ifdef DILEI
         for (int dz = 0; dz < 2; dz++) {
             for (int dy = 0; dy < 2; dy++) {
                 for (int dx = 0; dx < 2; dx++) {
+#else
+        for (int dz = -1; dz < 2; dz++) {
+            for (int dy = -1; dy < 2; dy++) {
+                for (int dx = -1; dx < 2; dx++) {
+#endif
                     int key = hash(coor[0] + dx, coor[1] + dy, coor[2] + dz);
                     for (int pid: table[key]) {
                         auto dist = refpos[pid] - pos;
