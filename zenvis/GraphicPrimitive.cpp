@@ -58,7 +58,7 @@ struct GraphicPrimitive : IGraphic {
             }
         } else {
             for (size_t i = 0; i < nrm.size(); i++) {
-                nrm[i] = zeno::vec3f(5.0f, 0.0f, 0.0f);
+                nrm[i] = zeno::vec3f(1.5f, 0.0f, 0.0f);
             }
         }
     }
