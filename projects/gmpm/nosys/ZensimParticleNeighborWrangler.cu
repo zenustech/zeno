@@ -26,8 +26,21 @@ namespace zeno {
 struct ZSParticleNeighborWrangle : zeno::INode {
   virtual void apply() override {
     using namespace zs;
+
+    // parObjPtr
     auto parObjPtr = get_input<zeno::ZenoParticles>("ZSParticles");
-    auto neiParObjPtr = get_input<zeno::ZenoParticles>("ZSParticlesNeighbor");
+    // parNeighborPtr
+    std::shared_ptr<zeno::ZenoParticles> parNeighborPtr{};
+    if (has_input<zeno::ZenoParticles>("ZSParticlesNeighbor"))
+      parNeighborPtr = std::shared_ptr<zeno::ZenoParticles>(
+          get_input<zeno::ZenoParticles>("ZSParticlesNeighbor").get(),
+          [](void *) {});
+    else
+      parNeighborPtr = std::make_shared<zeno::ZenoParticles>(
+          *parObjPtr); // clone the other one
+    // ibs
+    auto ibsPtr = get_input<zeno::ZenoIndexBuckets>("ZSIndexBuckets");
+    // code
     auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
     zfx::Compiler compiler;
@@ -69,6 +82,7 @@ struct ZSParticleNeighborWrangle : zeno::INode {
     auto def_sym = [&opts](const std::string &key, int dim) {
       fmt::print("define symbol: @{} dim {}\n", key, dim);
       opts.define_symbol('@' + key, dim);
+      opts.define_symbol("@@" + key, dim);
     };
 
     match(
@@ -86,8 +100,7 @@ struct ZSParticleNeighborWrangle : zeno::INode {
         [](...) {})(parObjPtr->model, parObjPtr->get());
 
     auto prog = compiler.compile(code, opts);
-    auto jitCode =
-        assembler.assemble(prog->assembly); // amazing! you avoid nvrtc totally
+    auto jitCode = assembler.assemble(prog->assembly);
 
     /// symbols
     zs::Vector<AccessorAoSoA> haccessors{prog->symbols.size()};
@@ -99,35 +112,44 @@ struct ZSParticleNeighborWrangle : zeno::INode {
     for (int i = 0; i < prog->symbols.size(); i++) {
       auto [name, dimid] = prog->symbols[i];
       printf("channel %d: %s.%d\t", i, name.c_str(), dimid);
+      bool isNeighborChannel = false;
+      auto targetParPtr = &parObjPtr->get(); // GeneralParticles
+      if (name[1] == '@') {
+        isNeighborChannel = true;
+        name = name.substr(2);
+        targetParPtr = &parNeighborPtr->get();
+      } else
+        name = name.substr(1);
 
       int ndim = 1;
       void *addr = nullptr;
-      match([&ndim, &addr, dim, name = name, unitBytes](auto &pars) {
-        if (name == "@mass") {
+      match([&ndim, &addr, dim, name = name](auto &pars) {
+        if (name == "mass") {
           ndim = 1;
           addr = pars.M.data();
-        } else if (name == "@pos") {
+        } else if (name == "pos") {
           ndim = dim;
           addr = pars.X.data();
-        } else if (name == "@vel") {
+        } else if (name == "vel") {
           ndim = dim;
           addr = pars.V.data();
-        } else if (name == "@C") {
+        } else if (name == "C") {
           ndim = dim * dim;
           addr = pars.C.data();
-        } else if (name == "@F") {
+        } else if (name == "F") {
           ndim = dim * dim;
           addr = pars.F.data();
-        } else if (name == "@J") {
+        } else if (name == "J") {
           ndim = 1;
           addr = pars.J.data();
-        } else if (name == "@logJp") {
+        } else if (name == "logJp") {
           ndim = 1;
           addr = pars.logJp.data();
         }
-      })(parObjPtr->get());
-      haccessors[i] =
-          zs::AccessorAoSoA{zs::aos_v, addr, unitBytes, ndim, dimid};
+      })(*targetParPtr);
+      haccessors[i] = zs::AccessorAoSoA{
+          zs::aos_v, addr,  unitBytes,
+          ndim,      dimid, (unsigned short)isNeighborChannel};
       // fmt::print("base: {}\n", haccessors[i].base);
     }
     auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});
@@ -145,65 +167,76 @@ struct ZSParticleNeighborWrangle : zeno::INode {
     }
     zs::Vector<zs::f32> dparams = hparams.clone({zs::memsrc_e::device, 0});
 
-    if constexpr (true) { /// execute on the current particle object
-      auto wrangleKernelPtxs = cudri::load_all_ptx_files_at();
-      void *state;
-      cudri::linkCreate(0, nullptr, nullptr, &state);
+    /// execute on the current particle object
+    auto wrangleKernelPtxs = cudri::load_all_ptx_files_at();
+    void *state;
+    cudri::linkCreate(0, nullptr, nullptr, &state);
 
-      auto jitSrc = cudri::compile_cuda_source_to_ptx(jitCode);
-      cudri::linkAddData(state, CU_JIT_INPUT_PTX, (void *)jitSrc.data(),
-                         (size_t)jitSrc.size(), "script", 0, NULL, NULL);
+    auto jitSrc = cudri::compile_cuda_source_to_ptx(jitCode);
+    cudri::linkAddData(state, CU_JIT_INPUT_PTX, (void *)jitSrc.data(),
+                       (size_t)jitSrc.size(), "script", 0, NULL, NULL);
 
-      int no = 0;
-      for (auto const &ptx : wrangleKernelPtxs) {
-        auto str = std::string("wrangler") + std::to_string(no++);
-        cudri::linkAddData(state, CU_JIT_INPUT_PTX, (char *)ptx.data(),
-                           ptx.size(), str.data(), 0, NULL, NULL);
-      }
-      void *cubin;
-      size_t cubinSize;
-      cudri::linkComplete(state, &cubin, &cubinSize);
-
-      void *module;
-      cudri::loadModuleData(&module, cubin);
-
-      void *function;
-      cudri::getModuleFunc(&function, module, "zpc_particle_wrangle_kernel");
-
-      auto &currentContext = Cuda::context(0);
-
-      // begin kernel launch
-      std::size_t cnt;
-      zs::f32 *d_params;
-      zs::ParticlesView<zs::execspace_e::cuda, zs::Particles<zs::f32, 3>>
-          parObj;
-      int nchns = daccessors.size();
-      void *addr = daccessors.data();
-      void *args[5];
-
-      match(
-          [&](auto &pars)
-              -> std::enable_if_t<
-                  std::is_same_v<RM_CVREF_T(pars), zs::Particles<zs::f32, 3>>> {
-            cnt = pars.size();
-            args[0] = (void *)&cnt;
-            args[1] = (void *)&parObjPtr->model;
-            d_params = dparams.data();
-            args[2] = (void *)&d_params;
-            args[3] = (void *)&nchns;
-            args[4] = (void *)&addr;
-          },
-          [](...) {})(parObjPtr->get());
-      cudri::launchCuKernel(function, (cnt + 127) / 128, 1, 1, 128, 1, 1, 0,
-                            currentContext.streamSpare(0), args,
-                            (void **)nullptr);
-      // end kernel launch
-
-      cudri::syncContext();
-
-      cudri::unloadModuleData{module};
-      cudri::linkDestroy{state};
+    int no = 0;
+    for (auto const &ptx : wrangleKernelPtxs) {
+      auto str = std::string("wrangler") + std::to_string(no++);
+      cudri::linkAddData(state, CU_JIT_INPUT_PTX, (char *)ptx.data(),
+                         ptx.size(), str.data(), 0, NULL, NULL);
     }
+    void *cubin;
+    size_t cubinSize;
+    cudri::linkComplete(state, &cubin, &cubinSize);
+
+    void *module;
+    cudri::loadModuleData(&module, cubin);
+
+    void *function;
+    cudri::getModuleFunc(&function, module,
+                         "zpc_particle_neighbor_wrangle_kernel");
+
+    auto &currentContext = Cuda::context(0);
+
+    // begin kernel launch
+    std::size_t cnt;
+    zs::f32 *d_params;
+    zs::VectorView<zs::execspace_e::cuda, zs::Vector<zs::vec<zs::f32, 3>>>
+        posView, neighborPosView;
+    zs::IndexBucketsView<zs::execspace_e::cuda, zs::IndexBuckets<3>> ibsView =
+        proxy<zs::execspace_e::cuda>(
+            std::get<zs::IndexBuckets<3>>(ibsPtr->get()));
+    zs::ParticlesView<zs::execspace_e::cuda, zs::Particles<zs::f32, 3>> parObj;
+    int nchns = daccessors.size();
+    void *addr = daccessors.data();
+    void *args[7];
+
+    match(
+        [&](auto &pars, auto &neighbor)
+            -> std::enable_if_t<
+                zs::is_same_v<RM_CVREF_T(pars), zs::Particles<zs::f32, 3>> &&
+                zs::is_same_v<RM_CVREF_T(neighbor),
+                              zs::Particles<zs::f32, 3>>> {
+          cnt = pars.size();
+          args[0] = (void *)&cnt;
+          posView = proxy<zs::execspace_e::cuda>(pars.X);
+          args[1] = (void *)&posView;
+          neighborPosView = proxy<zs::execspace_e::cuda>(neighbor.X);
+          args[2] = (void *)&neighborPosView;
+
+          args[3] = (void *)&ibsView;
+          d_params = dparams.data();
+          args[4] = (void *)&d_params;
+          args[5] = (void *)&nchns;
+          args[6] = (void *)&addr;
+        },
+        [](...) {})(parObjPtr->get(), parNeighborPtr->get());
+    cudri::launchCuKernel(function, (cnt + 127) / 128, 1, 1, 128, 1, 1, 0,
+                          currentContext.streamSpare(0), args,
+                          (void **)nullptr);
+    // end kernel launch
+
+    cudri::syncContext();
+
+    cudri::unloadModuleData{module};
+    cudri::linkDestroy{state};
 
     set_output("ZSParticles", get_input("ZSParticles"));
   }
