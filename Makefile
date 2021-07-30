@@ -1,6 +1,6 @@
 O=a.zsg
 
-default: run
+default: test
 
 all:
 	cmake -B build
