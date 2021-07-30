@@ -217,6 +217,7 @@ struct ImplNodeClass : INodeClass {
 };
 
 struct Session;
+struct Scene;
 
 struct Context {
     std::set<std::string> visited;
@@ -272,6 +273,8 @@ struct Graph {
 
 struct Scene {
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
+    std::map<std::string, std::unique_ptr<Graph>> graphs;
+
     Graph *currGraph = nullptr;
     Session *sess = nullptr;
 
@@ -287,11 +290,13 @@ struct Scene {
 
 struct Session {
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
-    std::map<std::string, std::unique_ptr<Scene>> scenes;
+    std::unique_ptr<Scene> defaultScene;
 
     ZENO_API Session();
     ZENO_API ~Session();
 
+    ZENO_API Scene &getDefaultScene();
+    ZENO_API std::unique_ptr<Scene> createScene();
     ZENO_API std::string dumpDescriptors() const;
     ZENO_API void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
 
@@ -322,45 +327,45 @@ inline std::string dumpDescriptors() {
 }
 
 inline void switchGraph(std::string const &name) {
-    return getSession().switchGraph(name);
+    return getSession().getDefaultScene().switchGraph(name);
 }
 
 inline void clearAllState() {
-    return getSession().clearAllState();
+    return getSession().getDefaultScene().clearAllState();
 }
 
 inline void clearNodes() {
-    return getSession().getGraph().clearNodes();
+    return getSession().getDefaultScene().getGraph().clearNodes();
 }
 
 inline void addNode(std::string const &cls, std::string const &id) {
-    return getSession().getGraph().addNode(cls, id);
+    return getSession().getDefaultScene().getGraph().addNode(cls, id);
 }
 
 inline void completeNode(std::string const &id) {
-    return getSession().getGraph().completeNode(id);
+    return getSession().getDefaultScene().getGraph().completeNode(id);
 }
 
 inline void applyNodes(std::vector<std::string> const &ids) {
-    return getSession().getGraph().applyNodes(ids);
+    return getSession().getDefaultScene().getGraph().applyNodes(ids);
 }
 
 inline void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss) {
-    return getSession().getGraph().bindNodeInput(dn, ds, sn, ss);
+    return getSession().getDefaultScene().getGraph().bindNodeInput(dn, ds, sn, ss);
 }
 
 inline void setNodeParam(std::string const &id, std::string const &par,
         IValue const &val) {
-    return getSession().getGraph().setNodeParam(id, par, val);
+    return getSession().getDefaultScene().getGraph().setNodeParam(id, par, val);
 }
 
 inline void setNodeOption(std::string const &id, std::string const &name) {
-    return getSession().getGraph().setNodeOption(id, name);
+    return getSession().getDefaultScene().getGraph().setNodeOption(id, name);
 }
 
 inline void loadScene(const char *json) {
-    return getSession().loadScene(json);
+    return getSession().getDefaultScene().loadScene(json);
 }
 
 

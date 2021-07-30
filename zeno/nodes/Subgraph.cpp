@@ -63,8 +63,8 @@ struct Subgraph : zeno::INode {
     virtual void apply() override {
         auto name = get_param<std::string>("name");
 
-        auto subg = graph->sess->graphs.at(name).get();
-        assert(subg->sess == graph->sess);
+        auto subg = graph->scene->graphs.at(name).get();
+        assert(subg->scene == graph->scene);
 
 #ifdef ZENO_VISUALIZATION
         // VIEW subnodes only if subgraph is VIEW'ed

@@ -180,7 +180,7 @@ ZENO_API void Graph::clearNodes() {
 ZENO_API void Graph::addNode(std::string const &cls, std::string const &id) {
     if (nodes.find(id) != nodes.end())
         return;  // no add twice, to prevent output object invalid
-    auto cl = safe_at(sess->nodeClasses, cls, "node class");
+    auto cl = safe_at(scene->sess->nodeClasses, cls, "node class");
     auto node = cl->new_instance();
     node->graph = this;
     node->myname = id;
@@ -260,7 +260,7 @@ ZENO_API INodeClass::~INodeClass() = default;
 ZENO_API void Scene::switchGraph(std::string const &name) {
     if (graphs.find(name) == graphs.end()) {
         auto subg = std::make_unique<zeno::Graph>();
-        subg->sess = this;
+        subg->scene = this;
         graphs[name] = std::move(subg);
     }
     currGraph = graphs.at(name).get();
@@ -272,6 +272,18 @@ ZENO_API Graph &Scene::getGraph() const {
 
 ZENO_API Graph &Scene::getGraph(std::string const &name) const {
     return *safe_at(graphs, name, "graph");
+}
+
+ZENO_API std::unique_ptr<Scene> Session::createScene() {
+    auto scene = std::make_unique<Scene>();
+    scene->sess = const_cast<Session *>(this);
+    return scene;
+}
+
+ZENO_API Scene &Session::getDefaultScene() {
+    if (!defaultScene)
+        defaultScene = createScene();
+    return *defaultScene;
 }
 
 ZENO_API std::string Session::dumpDescriptors() const {

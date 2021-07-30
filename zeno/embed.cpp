@@ -18,7 +18,7 @@ static zeno::IValue generic_get(Value const &x) {
     }
 }
 
-ZENO_API void Session::loadScene(const char *json) {
+ZENO_API void Scene::loadScene(const char *json) {
     Document d;
     d.Parse(json);
 
