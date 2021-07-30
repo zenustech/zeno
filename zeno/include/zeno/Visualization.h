@@ -1,10 +1,5 @@
 #pragma once
 
-#include <zeno/zeno.h>
+#warning "<zeno/Visualization.h> is deprecated, use <zeno/extra/Visualization.h> instead"
 
-namespace zeno::Visualization {
-
-ZENO_API std::string exportPath();
-ZENO_API void endFrame();
-
-}
+#include <zeno/extra/Visualization.h>

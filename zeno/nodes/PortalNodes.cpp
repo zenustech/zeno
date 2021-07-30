@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
-#include <zeno/GlobalState.h>
-#include <zeno/ConditionObject.h>
+#include <zeno/extra/GlobalState.h>
+#include <zeno/types/ConditionObject.h>
 
 struct PortalIn : zeno::INode {
     virtual void complete() override {

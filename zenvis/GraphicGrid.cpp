@@ -2,7 +2,7 @@
 #include "IGraphic.hpp"
 #include "MyShader.hpp"
 #include "main.hpp"
-#include <zeno/vec.h>
+#include <zeno/utils/vec.h>
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
 #include <zeno/PrimitiveObject.h>

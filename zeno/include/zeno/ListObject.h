@@ -1,19 +1,5 @@
 #pragma once
 
-#include <zeno/zeno.h>
-#include <vector>
-#include <memory>
+#warning "<zeno/ListObject.h> is deprecated, use <zeno/types/ListObject.h> instead"
 
-namespace zeno {
-
-struct ListObject : IObjectClone<ListObject> {
-  std::vector<std::shared_ptr<IObject>> arr;
-
-#ifndef ZENO_APIFREE
-  ZENO_API virtual void dumpfile(std::string const &path) override;
-#else
-  virtual void dumpfile(std::string const &path) override {}
-#endif
-};
-
-}
+#include <zeno/types/ListObject.h>

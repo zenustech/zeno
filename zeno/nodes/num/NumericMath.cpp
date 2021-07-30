@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/NumericObject.h>
+#include <zeno/types/NumericObject.h>
 
 namespace {
 

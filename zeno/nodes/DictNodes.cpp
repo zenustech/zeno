@@ -1,8 +1,8 @@
 #include <zeno/zeno.h>
-#include <zeno/DictObject.h>
-#include <zeno/StringObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/safe_at.h>
+#include <zeno/types/DictObject.h>
+#include <zeno/types/StringObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/utils/string.h>
 
 namespace {
 

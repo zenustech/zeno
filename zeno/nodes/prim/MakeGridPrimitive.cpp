@@ -1,9 +1,9 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
-#include <zeno/NumericObject.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/vec.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
 
 namespace zeno {

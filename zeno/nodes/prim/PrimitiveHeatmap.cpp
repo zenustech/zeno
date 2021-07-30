@@ -1,7 +1,9 @@
 #include <zeno/zeno.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/StringObject.h>
-#include <zeno/NumericObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/StringObject.h>
+#include <zeno/types/NumericObject.h>
+#include <sstream>
+
 namespace zeno {
 
 struct HeatmapObject : zeno::IObject {

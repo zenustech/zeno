@@ -3,10 +3,10 @@
 #include <pybind11/stl.h>
 #include <zeno/zeno.h>
 #ifdef ZENO_GLOBALSTATE
-#include <zeno/GlobalState.h>
+#include <zeno/extra/GlobalState.h>
 #endif
 #ifdef ZENO_VISUALIZATION
-#include <zeno/Visualization.h>
+#include <zeno/extra/Visualization.h>
 #endif
 namespace py = pybind11;
 

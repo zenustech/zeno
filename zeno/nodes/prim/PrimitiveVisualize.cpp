@@ -1,6 +1,6 @@
 #ifndef ZENO_VISUALIZATION
 #include <zeno/zeno.h>
-#include <zeno/PrimitiveObject.h>
+#include <zeno/types/PrimitiveObject.h>
 
 namespace zeno {
 
@@ -11,10 +11,10 @@ ZENO_API void PrimitiveObject::dumpfile(std::string const &path) {
 }
 #else
 #include <zeno/zeno.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/Visualization.h>
-#include <zeno/PrimitiveIO.h>
-#include <zeno/filesystem.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/extra/Visualization.h>
+#include <zeno/types/PrimitiveIO.h>
+#include <zeno/utils/filesystem.h>
 
 namespace zeno {
 

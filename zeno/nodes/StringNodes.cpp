@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/StringObject.h>
+#include <zeno/types/StringObject.h>
 #include <iostream>
 #include <fstream>
 

@@ -1,27 +1,5 @@
 #pragma once
 
+#warning "<zeno/ContextManaged.h> is deprecated, use <zeno/extra/ContextManaged.h> instead"
 
-#include <zeno/zeno.h>
-#include <cassert>
-
-
-namespace zeno {
-
-struct ContextManagedNode : INode {
-    std::unique_ptr<Context> m_ctx = nullptr;
-
-    void push_context() {
-        assert(!m_ctx);
-        m_ctx = std::move(graph->ctx);
-        graph->ctx = std::make_unique<Context>(*m_ctx);
-    }
-
-    std::unique_ptr<Context> pop_context() {
-        assert(m_ctx);
-        auto old_ctx = std::move(graph->ctx);
-        graph->ctx = std::move(m_ctx);
-        return old_ctx;
-    }
-};
-
-}
+#include <zeno/extra/ContextManaged.h>

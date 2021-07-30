@@ -1,6 +1,6 @@
 #include "main.hpp"
 #include "IGraphic.hpp"
-#include <zeno/PrimitiveIO.h>
+#include <zeno/types/PrimitiveIO.h>
 
 
 namespace zenvis {

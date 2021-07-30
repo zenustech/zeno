@@ -1,10 +1,9 @@
 #include <zeno/zeno.h>
-#include <zeno/GlobalState.h>
 #ifdef ZENO_VISUALIZATION
-#include <zeno/Visualization.h>
+#include <zeno/extra/Visualization.h>
 #endif
-#include <zeno/ConditionObject.h>
-#include <zeno/safe_at.h>
+#include <zeno/types/ConditionObject.h>
+#include <zeno/utils/safe_at.h>
 #include <cassert>
 
 
@@ -63,7 +62,7 @@ struct Subgraph : zeno::INode {
     virtual void apply() override {
         auto name = get_param<std::string>("name");
 
-        auto subg = graph->scene->graphs.at(name).get();
+        auto subg = safe_at(graph->scene->graphs, name, "subgraph");
         assert(subg->scene == graph->scene);
 
 #ifdef ZENO_VISUALIZATION

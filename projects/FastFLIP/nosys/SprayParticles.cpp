@@ -9,7 +9,7 @@
 #include <zeno/NumericObject.h>
 #include <zeno/ParticlesObject.h>
 #include <zeno/PrimitiveObject.h>
-#include <zeno/vec.h>
+#include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
 #include <zeno/ZenoInc.h>
 
