@@ -381,6 +381,10 @@ inline void loadScene(const char *json) {
     return getSession().getDefaultScene().loadScene(json);
 }
 
+inline std::unique_ptr<Scene> createScene() {
+    return getSession().createScene();
+}
+
 
 
 #define ZENDEFNODE(Class, ...) \
