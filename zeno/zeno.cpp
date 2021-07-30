@@ -55,9 +55,9 @@ ZENO_API void Graph::setGraphInput(std::string const &id,
 }
 
 ZENO_API void Graph::applyGraph() {
-    std::vector<std::string> applies;
+    std::set<std::string> applies;
     for (auto const &[id, nodename]: subOutputNodes) {
-        applies.push_back(nodename);
+        applies.insert(nodename);
     }
     applyNodes(applies);
 }
@@ -207,7 +207,7 @@ ZENO_API void Graph::applyNode(std::string const &id) {
     }
 }
 
-ZENO_API void Graph::applyNodes(std::vector<std::string> const &ids) {
+ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
     try {
         ctx = std::make_unique<Context>();
         for (auto const &id: ids) {

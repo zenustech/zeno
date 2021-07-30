@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/ListObject.h>
 #include <zeno/NumericObject.h>
+#include <sstream>
 
 namespace zeno {
 

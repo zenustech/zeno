@@ -1,6 +1,7 @@
 #pragma once
 
-#include <zeno/zeno.h>
+#include <zeno/utils/defs.h>
+#include <string>
 
 namespace zeno::Visualization {
 

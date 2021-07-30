@@ -1,6 +1,12 @@
 #pragma once
 
-#include "IObject.h"
+#include <zeno/utils/defs.h>
+#include <zeno/core/IObject.h>
+#include <zeno/utils/Exception.h>
+#include <memory>
+#include <string>
+#include <set>
+#include <map>
 
 namespace zeno {
 
@@ -67,3 +73,5 @@ protected:
         return std::get<T>(get_param(id));
     }
 };
+
+}

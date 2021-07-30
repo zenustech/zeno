@@ -1,5 +1,9 @@
 #pragma once
 
+#include <zeno/utils/defs.h>
+#include <string>
+#include <vector>
+
 namespace zeno {
 
 struct ParamDescriptor {

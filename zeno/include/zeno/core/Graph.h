@@ -1,6 +1,12 @@
 #pragma once
 
-#include "IObject.h"
+#include <zeno/utils/defs.h>
+#include <zeno/core/IObject.h>
+#include <zeno/utils/Exception.h>
+#include <memory>
+#include <string>
+#include <set>
+#include <map>
 
 namespace zeno {
 
@@ -59,7 +65,7 @@ struct Graph {
     }
 
     ZENO_API void clearNodes();
-    ZENO_API void applyNodes(std::vector<std::string> const &ids);
+    ZENO_API void applyNodes(std::set<std::string> const &ids);
     ZENO_API void addNode(std::string const &cls, std::string const &id);
     ZENO_API void applyNode(std::string const &id);
     ZENO_API void completeNode(std::string const &id);
@@ -72,18 +78,4 @@ struct Graph {
         std::string const &sn, std::string const &ss) const;
 };
 
-struct Scene {
-    std::map<std::string, std::unique_ptr<Graph>> graphs;
-
-    Graph *currGraph = nullptr;
-    Session *sess = nullptr;
-
-    ZENO_API Scene();
-    ZENO_API ~Scene();
-
-    ZENO_API Graph &getGraph();
-    ZENO_API void clearAllState();
-    ZENO_API Graph &getGraph(std::string const &name) const;
-    ZENO_API void switchGraph(std::string const &name);
-    ZENO_API void loadScene(const char *json);
-};
+}

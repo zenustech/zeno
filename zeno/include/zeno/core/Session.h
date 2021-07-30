@@ -1,11 +1,16 @@
 #pragma once
 
-#include "Descriptor.h"
+#include <zeno/utils/defs.h>
+#include <zeno/core/Descriptor.h>
+#include <memory>
+#include <string>
+#include <map>
+
+namespace zeno {
 
 struct Session;
 struct Scene;
-
-namespace zeno {
+struct INode;
 
 struct INodeClass {
     std::unique_ptr<Descriptor> desc;

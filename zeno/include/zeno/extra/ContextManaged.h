@@ -1,7 +1,9 @@
 #pragma once
 
 
-#include <zeno/zeno.h>
+#include <zeno/core/Graph.h>
+#include <zeno/core/INode.h>
+#include <memory>
 #include <cassert>
 
 
