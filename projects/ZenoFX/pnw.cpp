@@ -26,7 +26,6 @@ struct HashGrid : zeno::IObject {
     float radius_sqr_min;
     std::vector<zeno::vec3f> const &refpos;
 
-    using CoordType = std::tuple<int, int, int>;
     std::vector<std::vector<int>> table;
 
 //#define DILEI
