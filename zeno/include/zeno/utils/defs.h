@@ -1,7 +1,5 @@
 #pragma once
 
-namespace zeno {
-
 #ifdef _MSC_VER
 # ifdef DLL_ZENO
 #  define ZENO_API __declspec(dllexport)
@@ -11,5 +9,3 @@ namespace zeno {
 #else
 # define ZENO_API
 #endif
-
-}
