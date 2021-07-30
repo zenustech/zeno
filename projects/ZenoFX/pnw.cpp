@@ -29,9 +29,19 @@ struct HashGrid : zeno::IObject {
     using CoordType = std::tuple<int, int, int>;
     std::vector<std::vector<int>> table;
 
+//#define XUBEN
     int hash(int x, int y, int z) {
+#ifdef XUBEN
+        return x + y * gridRes[0] + z * gridRes[0] * gridRes[1];
+#else
         return ((73856093 * x) ^ (19349663 * y) ^ (83492791 * z)) % table.size();
+#endif
     }
+
+#ifdef XUBEN
+    zeno::vec3f pMin, pMax;
+    zeno::vec3i gridRes;
+#endif
 
     HashGrid(std::vector<zeno::vec3f> const &refpos_,
             float radius_, float radius_min)
@@ -42,13 +52,34 @@ struct HashGrid : zeno::IObject {
         radius_sqr_min = radius_min < 0.f ? -1.f : radius_min * radius_min;
         inv_dx = 0.5f / radius;
 
+#ifdef XUBEN
+        pMin = refpos[0];
+        pMax = refpos[0];
+        for (int i = 1; i < refpos.size(); i++) {
+            auto coor = refpos[i];
+            pMin = zeno::min(pMin, coor);
+            pMax = zeno::max(pMax, coor);
+        }
+        pMin -= radius;
+        pMax += radius;
+        gridRes = zeno::toint(zeno::floor((pMax - pMin) * inv_dx)) + 1;
+
+        printf("grid res: %dx%dx%d\n", gridRes[0], gridRes[1], gridRes[2]);
         table.clear();
+        table.resize(gridRes[0] * gridRes[1] * gridRes[2]);
+#else
         int table_size = refpos.size() / 8;
         printf("table size: %d\n", table_size);
+        table.clear();
         table.resize(table_size);
+#endif
 
         for (int i = 0; i < refpos.size(); i++) {
+#ifdef XUBEN
+            auto coor = zeno::toint(zeno::floor((refpos[i] - pMin) * inv_dx));
+#else
             auto coor = zeno::toint(zeno::floor(refpos[i] * inv_dx));
+#endif
             auto key = hash(coor[0], coor[1], coor[2]);
             table[key].push_back(i);
         }
@@ -56,7 +87,11 @@ struct HashGrid : zeno::IObject {
 
     template <class F>
     void iter_neighbors(zeno::vec3f const &pos, F const &f) {
+#ifdef XUBEN
+        auto coor = zeno::toint(zeno::floor((pos - pMin) * inv_dx - 0.5f));
+#else
         auto coor = zeno::toint(zeno::floor(pos * inv_dx - 0.5f));
+#endif
         for (int dz = 0; dz < 2; dz++) {
             for (int dy = 0; dy < 2; dy++) {
                 for (int dx = 0; dx < 2; dx++) {
