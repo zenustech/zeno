@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/ListObject.h>
-#include <zeno/vec.h>
+#include <zeno/utils/vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>

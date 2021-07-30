@@ -2,7 +2,7 @@
 #include <zeno/MeshObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/NumericObject.h>
-#include <zeno/vec.h>
+#include <zeno/utils/vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
