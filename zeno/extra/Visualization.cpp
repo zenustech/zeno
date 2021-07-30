@@ -3,9 +3,9 @@
 #error "ZENO_GLOBALSTATE must be ON when ZENO_VISUALIZATION is ON"
 #endif
 #include <zeno/zeno.h>
-#include <zeno/Visualization.h>
-#include <zeno/GlobalState.h>
-#include <zeno/filesystem.h>
+#include <zeno/extra/Visualization.h>
+#include <zeno/extra/GlobalState.h>
+#include <zeno/utils/filesystem.h>
 #include <fstream>
 #include <cstdio>
 

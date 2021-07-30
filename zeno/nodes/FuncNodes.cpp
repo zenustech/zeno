@@ -1,8 +1,8 @@
 #include <zeno/zeno.h>
-#include <zeno/DictObject.h>
-#include <zeno/FunctionObject.h>
-#include <zeno/ConditionObject.h>
-#include <zeno/ContextManaged.h>
+#include <zeno/types/DictObject.h>
+#include <zeno/types/FunctionObject.h>
+#include <zeno/types/ConditionObject.h>
+#include <zeno/extra/ContextManaged.h>
 #include <cassert>
 
 namespace {

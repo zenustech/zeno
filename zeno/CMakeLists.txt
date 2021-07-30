@@ -1,4 +1,4 @@
-file(GLOB ZENO_SOURCE *.cpp nodes/*.cpp nodes/*/*.cpp include/*/*.h)
+file(GLOB ZENO_SOURCE core/*.cpp extra/*.cpp nodes/*.cpp nodes/*/*.cpp include/*/*.h)
 add_library(zeno SHARED ${ZENO_SOURCE})
 
 if (ZENO_ENABLE_OPENMP)

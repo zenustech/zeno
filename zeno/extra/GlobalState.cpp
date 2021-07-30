@@ -1,5 +1,5 @@
 #ifdef ZENO_GLOBALSTATE
-#include <zeno/GlobalState.h>
+#include <zeno/extra/GlobalState.h>
 
 namespace zeno {
 

@@ -1,8 +1,8 @@
 #include <zeno/zeno.h>
-#include <zeno/ListObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/ConditionObject.h>
-#include <zeno/ContextManaged.h>
+#include <zeno/types/ListObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/ConditionObject.h>
+#include <zeno/extra/ContextManaged.h>
 
 namespace zeno {
 
