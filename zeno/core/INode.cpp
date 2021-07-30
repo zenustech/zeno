@@ -3,7 +3,7 @@
 #include <zeno/core/Descriptor.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/ConditionObject.h>
-#ifdef ZENO_VISUALIZATION
+#ifdef ZENO_VISUALIZATION  // TODO: can we decouple vis from zeno core?
 #include <zeno/extra/Visualization.h>
 #endif
 #ifdef ZENO_GLOBALSTATE
