@@ -1,4 +1,4 @@
-O=arts/ZFXv2.zsg
+O=a.zsg
 
 default: run
 
