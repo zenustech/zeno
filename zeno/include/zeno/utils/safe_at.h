@@ -4,7 +4,7 @@
 #include <map>
 #include <string>
 #include <memory>
-#include <zeno/zeno.h>
+#include <zeno/utils/Exception.h>
 
 
 namespace zeno {
@@ -42,15 +42,6 @@ T const &safe_at(std::map<S, T> const &m, S const &key, std::string const &msg) 
     throw Exception("invalid " + msg + " as index");
   }
   return it->second;
-}
-
-static inline auto split_str(std::string const &s, char delimiter) {
-    std::vector<std::string> tokens;
-    std::string token;
-    std::istringstream iss(s);
-    while (std::getline(iss, token, delimiter))
-        tokens.push_back(token);
-    return tokens;
 }
 
 
