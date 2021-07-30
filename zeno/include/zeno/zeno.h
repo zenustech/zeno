@@ -281,8 +281,8 @@ struct Scene {
     ZENO_API Scene();
     ZENO_API ~Scene();
 
+    ZENO_API Graph &getGraph();
     ZENO_API void clearAllState();
-    ZENO_API Graph &getGraph() const;
     ZENO_API Graph &getGraph(std::string const &name) const;
     ZENO_API void switchGraph(std::string const &name);
     ZENO_API void loadScene(const char *json);

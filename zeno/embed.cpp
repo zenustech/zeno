@@ -27,19 +27,19 @@ ZENO_API void Scene::loadScene(const char *json) {
         std::string cmd = di[0].GetString();
         if (0) {
         } else if (cmd == "addNode") {
-            addNode(di[1].GetString(), di[2].GetString());
+            getGraph().addNode(di[1].GetString(), di[2].GetString());
         } else if (cmd == "completeNode") {
-            completeNode(di[1].GetString());
+            getGraph().completeNode(di[1].GetString());
         } else if (cmd == "setNodeParam") {
-            setNodeParam(di[1].GetString(), di[2].GetString(), generic_get(di[3]));
+            getGraph().setNodeParam(di[1].GetString(), di[2].GetString(), generic_get(di[3]));
         } else if (cmd == "setNodeOption") {
-            setNodeOption(di[1].GetString(), di[2].GetString());
+            getGraph().setNodeOption(di[1].GetString(), di[2].GetString());
         } else if (cmd == "bindNodeInput") {
-            bindNodeInput(di[1].GetString(), di[2].GetString(), di[3].GetString(), di[4].GetString());
+            getGraph().bindNodeInput(di[1].GetString(), di[2].GetString(), di[3].GetString(), di[4].GetString());
         } else if (cmd == "switchGraph") {
-            switchGraph(di[1].GetString());
+            this->switchGraph(di[1].GetString());
         } else if (cmd == "clearAllState") {
-            clearAllState();
+            this->clearAllState();
         }
     }
 }

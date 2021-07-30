@@ -266,7 +266,9 @@ ZENO_API void Scene::switchGraph(std::string const &name) {
     currGraph = graphs.at(name).get();
 }
 
-ZENO_API Graph &Scene::getGraph() const {
+ZENO_API Graph &Scene::getGraph() {
+    if (!currGraph)
+        switchGraph("main");
     return *currGraph;
 }
 
