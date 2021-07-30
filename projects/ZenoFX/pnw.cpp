@@ -43,7 +43,7 @@ struct HashGrid : zeno::IObject {
         radius = radius_;
         radius_sqr = radius * radius;
         radius_sqr_min = radius_min < 0.f ? -1.f : radius_min * radius_min;
-        inv_dx = 0.f / radius;
+        inv_dx = 0.5f / radius;
 
         for (int i = 0; i < refpos.size(); i++) {
             auto coor = zeno::toint(zeno::floor(refpos[i] * inv_dx));
@@ -107,7 +107,7 @@ struct ParticlesBuildHashGrid : zeno::INode {
         auto primNei = get_input<zeno::PrimitiveObject>("primNei");
         float radius = get_input<zeno::NumericObject>("radius")->get<float>();
         float radiusMin = has_input("radiusMin") ?
-            get_input<zeno::NumericObject>("radiusMin")->get<float>() : 0.f;
+            get_input<zeno::NumericObject>("radiusMin")->get<float>() : -1.f;
         auto hashgrid = std::make_shared<HashGrid>(
                 primNei->attr<zeno::vec3f>("pos"), radius, radiusMin);
         set_output("hashGrid", std::move(hashgrid));
