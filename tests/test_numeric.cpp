@@ -10,7 +10,6 @@ TEST_CASE("numeric operators", "[numeric]") {
     auto input = std::make_shared<zeno::NumericObject>(40);
     scene->getGraph().setGraphInput("input", input);
     scene->getGraph().applyGraph();
-    auto output_ptr = scene->getGraph().getGraphOutput("output");
-    auto output = std::dynamic_pointer_cast<zeno::NumericObject>(output_ptr);
+    auto output = scene->getGraph().getGraphOutput<zeno::NumericObject>("output");
     REQUIRE(output->get<int>() == 42);
 }

@@ -257,6 +257,19 @@ struct Graph {
             std::string const &id) const;
     ZENO_API void applyGraph();
 
+    template <class T>
+    std::shared_ptr<T> getGraphOutput(
+            std::string const &id) const {
+        auto obj = getGraphOutput(id);
+        auto p = std::dynamic_pointer_cast<T>(obj);
+        if (!p) {
+            throw Exception("graph output `" + id + "` expect `"
+                    + typeid(T).name() + "`, got `"
+                    + typeid(*obj.get()).name() + "`");
+        }
+        return p;
+    }
+
     ZENO_API void clearNodes();
     ZENO_API void applyNodes(std::vector<std::string> const &ids);
     ZENO_API void addNode(std::string const &cls, std::string const &id);
