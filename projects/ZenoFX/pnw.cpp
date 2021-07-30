@@ -34,7 +34,6 @@ struct HashGrid : zeno::IObject {
 
     int hash(int x, int y, int z) {
         return x + y * GridRes[0] + z * GridRes[0] * GridRes[1];
-        //return ((73856093 * x) ^ (19349663 * y) ^ (83492791 * z)) % table.size();
     }
 
     HashGrid(std::vector<zeno::vec3f> const &refpos_,
@@ -42,9 +41,6 @@ struct HashGrid : zeno::IObject {
         : refpos(refpos_) {
         for(int i=0;i<table.size();++i)
             table[i].clear();
-        // for (auto &ent: table) {
-        //     ent.clear();
-        // }
 
         radius = radius_;
         radius_sqr = radius * radius;
@@ -67,11 +63,10 @@ struct HashGrid : zeno::IObject {
         pMax += zeno::vec3f(radius, radius, radius);
         GridRes = zeno::floor((pMax - pMin) * inv_dx) + zeno::vec3i(1,1,1);
         table.resize(GridRes[0] * GridRes[1] * GridRes[2]);
-        printf("hash table size is %d, particle num is %d\n", table.size(), refpos.size());
+        // printf("hash table size is %d, particle num is %d\n", table.size(), refpos.size());
         for (int i = 0; i < refpos.size(); i++) {
             auto coor = zeno::toint(zeno::floor((refpos[i]-pMin) * inv_dx));
             auto key = hash(coor[0], coor[1], coor[2]);
-            //printf("generate key %d\n", key);
             table[key].push_back(i);
         }
     }
