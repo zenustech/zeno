@@ -19,7 +19,7 @@ struct GLPrimitiveObject : zeno::IObjectClone<GLPrimitiveObject,
 
 struct GLShaderObject : zeno::IObjectClone<GLShaderObject> {
     struct Impl {
-        GLint id = 0;
+        GLuint id = 0;
     };
 
     std::shared_ptr<Impl> impl = std::make_shared<Impl>();
@@ -66,7 +66,7 @@ ZENDEFNODE(GLCreateShader, {
 
 struct GLProgramObject : zeno::IObjectClone<GLProgramObject> {
     struct Impl {
-        GLint id = 0;
+        GLuint id = 0;
     };
 
     std::shared_ptr<Impl> impl = std::make_shared<Impl>();
@@ -153,6 +153,116 @@ struct GLDrawArrayTriangles : zeno::INode {
 
 ZENDEFNODE(GLDrawArrayTriangles, {
         {"prim"},
+        {},
+        {},
+        {"EasyGL"},
+});
+
+struct MakeFullscreenRect : zeno::INode {
+    inline static const GLfloat vVertices[] = {
+        -1.0f, -1.0f, 0.0f,
+         1.0f, -1.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f,
+         1.0f, -1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f,
+         1.0f,  1.0f, 0.0f,
+    };
+
+    virtual void apply() override {
+        auto prim = std::make_shared<GLPrimitiveObject>();
+        prim->add_attr<zeno::vec3f>("pos");
+        prim->add_bound_attr("pos");
+        prim->resize(6);
+        std::memcpy(prim->attr<zeno::vec3f>("pos").data(),
+                vVertices, sizeof(vVertices));
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(MakeFullscreenRect, {
+        {},
+        {"prim"},
+        {},
+        {"EasyGL"},
+});
+
+struct GLFramebufferObject : zeno::IObjectClone<GLFramebufferObject> {
+    struct Impl {
+        GLuint id = 0;
+    };
+
+    std::shared_ptr<Impl> impl = std::make_shared<Impl>();
+
+    ~GLFramebufferObject() {
+        if (impl->id)
+            glDeleteFramebuffers(1, &impl->id);
+    }
+
+    operator GLuint() const {
+        return impl->id;
+    }
+};
+
+struct GLCreateFramebuffer : zeno::INode {
+    virtual void apply() override {
+        auto fbo = std::make_shared<GLFramebufferObject>();
+        glGenFramebuffers(1, &fbo->impl->id);
+        set_output("framebuffer", std::move(fbo));
+    }
+};
+
+ZENDEFNODE(GLCreateFramebuffer, {
+        {},
+        {"framebuffer"},
+        {},
+        {"EasyGL"},
+});
+
+struct GLTextureObject : zeno::IObjectClone<GLTextureObject> {
+    struct Impl {
+        GLuint id = 0;
+    };
+
+    std::shared_ptr<Impl> impl = std::make_shared<Impl>();
+
+    ~GLTextureObject() {
+        if (impl->id)
+            glDeleteTextures(1, &impl->id);
+    }
+
+    operator GLuint() const {
+        return impl->id;
+    }
+};
+
+struct GLCreateTexture : zeno::INode {
+    virtual void apply() override {
+        auto tex = std::make_shared<GLTextureObject>();
+        glGenTextures(1, &tex->impl->id);
+        set_output("texture", std::move(tex));
+    }
+};
+
+ZENDEFNODE(GLCreateTexture, {
+        {},
+        {"texture"},
+        {},
+        {"EasyGL"},
+});
+
+struct GLBindFramebufferTexture : zeno::INode {
+    virtual void apply() override {
+        auto fbo = get_input<GLFramebufferObject>("framebuffer");
+        auto tex = get_input<GLTextureObject>("texture");
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo->impl->id);
+        glBindTexture(GL_TEXTURE_2D, tex->impl->id);
+        glFramebufferTexture2D(GL_FRAMEBUFFER,
+                GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->impl->id, 0);
+    }
+};
+
+ZENDEFNODE(GLBindFramebufferTexture, {
+        {"framebuffer", "texture"},
         {},
         {},
         {"EasyGL"},
