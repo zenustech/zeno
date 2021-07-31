@@ -31,4 +31,8 @@ struct GLProgramObject {
         impl = std::make_shared<Impl>();
         impl->id = id;
     }
+
+    void use() {
+        CHECK_GL(glUseProgram(impl->id));
+    }
 };

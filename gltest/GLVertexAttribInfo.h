@@ -1,6 +1,8 @@
 #pragma once
 
 #include "common.h"
+#include "GLProgramObject.h"
+#include "GLFramebuffer.h"
 
 struct GLVertexAttribInfo {
     GLenum type = GL_FLOAT;
@@ -14,7 +16,11 @@ struct GLVertexAttribInfo {
     }
 };
 
-static void drawVertexArrays(GLenum type, GLuint count, std::vector<GLVertexAttribInfo> const &vabs) {
+static void drawVertexArrays
+( GLenum type
+, GLuint count
+, std::vector<GLVertexAttribInfo> const &vabs
+) {
     for (int i = 0; i < vabs.size(); i++) {
         vabs[i]._bindTo(i);
     }

@@ -11,16 +11,6 @@ struct GLFramebuffer {
     std::shared_ptr<Impl> impl;
     operator GLuint() { return impl->id; }
 
-    GLuint width = 512;
-    GLuint height = 512;
-    GLenum format = GL_RGB;
-    GLenum type = GL_UNSIGNED_BYTE;
-
-    GLenum wrapS = GL_CLAMP_TO_EDGE;
-    GLenum wrapT = GL_CLAMP_TO_EDGE;
-    GLenum minFilter = GL_LINEAR;
-    GLenum magFilter = GL_LINEAR;
-
     void initialize() {
         impl = std::make_shared<Impl>();
         CHECK_GL(glGenFramebuffers(1, &impl->id));
@@ -31,6 +21,11 @@ struct GLFramebuffer {
         CHECK_GL(glBindTexture(GL_TEXTURE_2D, tex.impl->id));
         CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, attach,
                     GL_TEXTURE_2D, tex.impl->id, 0));
+        CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+    }
+
+    void use() const {
+        CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, impl ? impl->id : 0));
     }
 
     void _checkStatusComplete() const {
