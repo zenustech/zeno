@@ -166,7 +166,7 @@
       "SRC": null
      },
      "params": {
-      "interval": 1700,
+      "interval": 17,
       "nx": 512,
       "ny": 512
      },
@@ -395,7 +395,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nlayout (location = 0) in vec3 vPosition;\nout vec2 fPosition;\nvoid main() {\n  fPosition = vPosition.xy;\n  gl_Position = vec4(vPosition, 1.0);\n}"
+      "value": "#version 300 es\nlayout (location = 0) in vec3 vPosition;\nout vec2 fragCoord;\nvoid main() {\n  fragCoord = vPosition.xy;\n  gl_Position = vec4(vPosition * 2.0 - 1.0, 1.0);\n}"
      },
      "uipos": [
       -1463.55359375,
@@ -467,7 +467,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nin vec2 fPosition;\nout vec4 fragColor;\nvoid main() {\n  vec3 color = texture(image, fPosition).xyz;\n  fragColor = vec4(color, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 color = texture(image, fragCoord).xyz;\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
       -1460.35359375,
@@ -545,8 +545,8 @@
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -2353,
-    "trans_y": -1329
+    "trans_x": 1692,
+    "trans_y": -351
    }
   }
  },

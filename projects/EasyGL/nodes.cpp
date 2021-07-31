@@ -191,12 +191,12 @@ ZENDEFNODE(GLDrawArrayTriangles, {
 
 struct MakeFullscreenRect : zeno::INode {
     inline static const GLfloat vVertices[] = {
-        -1.0f, -1.0f, 0.0f,
-         1.0f, -1.0f, 0.0f,
-        -1.0f,  1.0f, 0.0f,
-         1.0f, -1.0f, 0.0f,
-        -1.0f,  1.0f, 0.0f,
-         1.0f,  1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f,
     };
 
     virtual void apply() override {
@@ -275,11 +275,7 @@ struct GLCreateTexture : zeno::INode {
         CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
         CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
         CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-        unsigned char *img = (unsigned char *)malloc(512 * 512 * 3 * sizeof(char));
-        for (int i = 0; i < 512 * 512 * 3; i++) {
-            img[i] = i % 250;
-        }
-        CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 512, 512, 0, GL_RGB, GL_UNSIGNED_BYTE, img));
+        CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 512, 512, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL));
         set_output("texture", std::move(tex));
     }
 };
