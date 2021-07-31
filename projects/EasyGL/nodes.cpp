@@ -8,6 +8,37 @@
 
 namespace {
 
+      static const char *get_opengl_error_string(GLenum err) {
+    switch (err) {
+#define PER_GL_ERR(x) \
+  case x:             \
+    return #x;
+      PER_GL_ERR(GL_NO_ERROR)
+      PER_GL_ERR(GL_INVALID_ENUM)
+      PER_GL_ERR(GL_INVALID_VALUE)
+      PER_GL_ERR(GL_INVALID_OPERATION)
+      PER_GL_ERR(GL_INVALID_FRAMEBUFFER_OPERATION)
+      PER_GL_ERR(GL_OUT_OF_MEMORY)
+#undef PER_GL_ERR
+    }
+    static char tmp[233];
+    sprintf(tmp, "%d\n", err);
+    return tmp;
+  }
+
+  static void _check_opengl_error(const char *file, int line, const char *hint) {
+    auto err = glGetError();
+    if (err != GL_NO_ERROR) {
+      auto msg = get_opengl_error_string(err);
+      printf("%s:%d: `%s`: %s\n", file, line, hint, msg);
+      abort();
+    }
+  }
+
+#define CHECK_GL(x) do { (x); \
+    _check_opengl_error(__FILE__, __LINE__, #x); \
+  } while (0)
+
 struct GLPrimitiveObject : zeno::IObjectClone<GLPrimitiveObject,
     zeno::PrimitiveObject> {
     std::vector<std::string> boundAttrs;
@@ -23,7 +54,7 @@ struct GLShaderObject : zeno::IObjectClone<GLShaderObject> {
 
         ~Impl() {
             if (id)
-                glDeleteShader(id);
+                CHECK_GL(glDeleteShader(id));
         }
     };
 
@@ -70,7 +101,7 @@ struct GLProgramObject : zeno::IObjectClone<GLProgramObject> {
 
         ~Impl() {
             if (id)
-                glDeleteProgram(id);
+                CHECK_GL(glDeleteProgram(id));
         }
     };
 
@@ -116,7 +147,7 @@ ZENDEFNODE(GLCreateProgram, {
 struct GLUseProgram : zeno::INode {
     virtual void apply() override {
         auto program = get_input<GLProgramObject>("program");
-        glUseProgram(program->impl->id);
+        CHECK_GL(glUseProgram(program->impl->id));
     }
 };
 
@@ -135,19 +166,19 @@ struct GLDrawArrayTriangles : zeno::INode {
             std::visit([&] (auto const &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
                 using S = zeno::decay_vec_t<T>;
-                glEnableVertexAttribArray(i);
-                glVertexAttribPointer
+                CHECK_GL(glEnableVertexAttribArray(i));
+                CHECK_GL(glVertexAttribPointer
                         ( /*index=*/i
                         , /*size=*/zeno::is_vec_n<T>
                         , GL_FLOAT
                         , GL_FALSE
                         , /*stride=*/0
                         , (void *)arr.data()
-                        );
+                        ));
             }, prim->attr(name));
         }
         printf("drawing %zd triangle vertices\n", prim->size());
-        glDrawArrays(GL_TRIANGLES, 0, /*count=*/prim->size());
+        CHECK_GL(glDrawArrays(GL_TRIANGLES, 0, /*count=*/prim->size()));
     }
 };
 
@@ -192,7 +223,7 @@ struct GLFramebufferObject : zeno::IObjectClone<GLFramebufferObject> {
 
         ~Impl() {
             if (id)
-                glDeleteFramebuffers(1, &id);
+                CHECK_GL(glDeleteFramebuffers(1, &id));
         }
     };
 
@@ -206,7 +237,7 @@ struct GLFramebufferObject : zeno::IObjectClone<GLFramebufferObject> {
 struct GLCreateFramebuffer : zeno::INode {
     virtual void apply() override {
         auto fbo = std::make_shared<GLFramebufferObject>();
-        glGenFramebuffers(1, &fbo->impl->id);
+        CHECK_GL(glGenFramebuffers(1, &fbo->impl->id));
         set_output("framebuffer", std::move(fbo));
     }
 };
@@ -224,7 +255,7 @@ struct GLTextureObject : zeno::IObjectClone<GLTextureObject> {
 
         ~Impl() {
             if (id)
-                glDeleteTextures(1, &id);
+                CHECK_GL(glDeleteTextures(1, &id));
         }
     };
 
@@ -238,14 +269,13 @@ struct GLTextureObject : zeno::IObjectClone<GLTextureObject> {
 struct GLCreateTexture : zeno::INode {
     virtual void apply() override {
         auto tex = std::make_shared<GLTextureObject>();
-        glGenTextures(1, &tex->impl->id);
-        glBindTexture(GL_TEXTURE_2D, tex->impl->id);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 512, 512,
-                0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        CHECK_GL(glGenTextures(1, &tex->impl->id));
+        CHECK_GL(glBindTexture(GL_TEXTURE_2D, tex->impl->id));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+        CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+        CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 512, 512, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL));
         set_output("texture", std::move(tex));
     }
 };
@@ -263,8 +293,8 @@ struct GLBindTexture : zeno::INode {
         int num = has_input("number") ?
             get_input<zeno::NumericObject>("number")->get<int>() :
             0;
-        glActiveTexture(GL_TEXTURE0 + num);
-        glBindTexture(GL_TEXTURE_2D, tex->impl->id);
+        CHECK_GL(glActiveTexture(GL_TEXTURE0 + num));
+        CHECK_GL(glBindTexture(GL_TEXTURE_2D, tex->impl->id));
     }
 };
 
@@ -279,10 +309,9 @@ struct GLBindFramebufferTexture : zeno::INode {
     virtual void apply() override {
         auto fbo = get_input<GLFramebufferObject>("framebuffer");
         auto tex = get_input<GLTextureObject>("texture");
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo->impl->id);
-        glBindTexture(GL_TEXTURE_2D, tex->impl->id);
-        glFramebufferTexture2D(GL_FRAMEBUFFER,
-                GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->impl->id, 0);
+        CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, fbo->impl->id));
+        CHECK_GL(glBindTexture(GL_TEXTURE_2D, tex->impl->id));
+        CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->impl->id, 0));
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER)
                 != GL_FRAMEBUFFER_COMPLETE) {
             printf("ERROR: framebuffer status is not complete!\n");
