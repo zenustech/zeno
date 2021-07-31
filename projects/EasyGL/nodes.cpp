@@ -146,6 +146,7 @@ struct GLDrawArrayTriangles : zeno::INode {
                         );
             }, prim->attr(name));
         }
+        printf("drawing %zd triangles\n", prim->size());
         glDrawArrays(GL_TRIANGLES, 0, /*count=*/prim->size());
     }
 };

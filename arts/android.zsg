@@ -183,7 +183,7 @@
       "SRC": null
      },
      "params": {
-      "interval": 100,
+      "interval": 17,
       "nx": 512,
       "ny": 512
      },
@@ -2150,7 +2150,7 @@
     [
      "int",
      "interval",
-     "100 0"
+     "17 0"
     ],
     [
      "int",

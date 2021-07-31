@@ -56,7 +56,7 @@ ZENDEFNODE(GLUTMainLoop, {
         {"drawFunc"},
         {},
         {
-            {"int", "interval", "100 0"},
+            {"int", "interval", "17 0"},
             {"int", "nx", "512 1"},
             {"int", "ny", "512 1"},
         },
