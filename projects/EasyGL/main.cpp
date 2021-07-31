@@ -3,25 +3,18 @@
 #include <GL/glut.h>
 
 
+static std::unique_ptr<zeno::Scene> scene;
+
 void drawScene() {
-    auto scene = zeno::createScene();
-    /*scene->clearAllState();
-    scene->switchGraph("main");
-    scene->getGraph().addNode("GLCreateProgram", "program");
-    scene->getGraph().completeNode("program");
-    scene->getGraph().addNode("GLUseProgram", "use");
-    scene->getGraph().bindNodeInput("use", "program", "program", "program");
-    scene->getGraph().completeNode("use");
-    scene->getGraph().addNode("MakeSimpleTriangle", "tri");
-    scene->getGraph().completeNode("tri");
-    scene->getGraph().addNode("GLDrawArrayTriangles", "draw");
-    scene->getGraph().bindNodeInput("draw", "prim", "tri", "prim");
-    scene->getGraph().completeNode("draw");
-    scene->getGraph().completeNode("draw");*/
+    scene->getGraph().applyGraph();
 }
 
-
 void initFunc() {
+    scene = zeno::createScene();
+    auto json = (
+#include "myprogram.inl.h"
+            );
+    scene->loadScene(json);
 }
 
 void displayFunc() {
@@ -43,7 +36,6 @@ void keyboardFunc(unsigned char key, int x, int y) {
 }
 
 int main(int argc, char **argv) {
-
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DEPTH | GLUT_SINGLE | GLUT_RGBA);
     glutInitWindowPosition(100, 100);

@@ -26,7 +26,7 @@
       "SRC": null
      },
      "params": {
-      "value": ""
+      "value": "#version 200 es\nlayout (location = 0) in vec3 vPosition;\nvoid main() {\n  gl_Position = vPosition;\n}"
      },
      "uipos": [
       -544.6400000000001,
@@ -40,7 +40,7 @@
       "SRC": null
      },
      "params": {
-      "value": ""
+      "value": "#version 200 es\nlayout (location = 0) out vec4 fragColor;\nvoid main() {\n  fragColor = vec4(gl_FragCoord, 1.0);\n}"
      },
      "uipos": [
       -541.44,
@@ -152,12 +152,32 @@
       22.400000000000002
      ],
      "options": []
+    },
+    "210755f3-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "beaa2ba2-GLDrawArrayTriangles",
+       "DST"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "dst",
+      "defl": ""
+     },
+     "uipos": [
+      1156.0,
+      110.4
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": 367,
-    "trans_y": -257
+    "trans_x": -834,
+    "trans_y": -178
    }
   }
  },

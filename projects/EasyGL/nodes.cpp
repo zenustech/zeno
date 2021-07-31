@@ -3,6 +3,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/ListObject.h>
 #include <GLES2/gl2.h>
+#include <cstring>
 
 namespace {
 
@@ -30,7 +31,7 @@ struct GLShaderObject : zeno::IObjectClone<GLShaderObject> {
 
 struct GLCreateShader : zeno::INode {
     virtual void apply() override {
-        auto typeStr = get_param<std::string>("typeStr");
+        auto typeStr = get_param<std::string>("type");
         GLenum type =
             typeStr == "vertex" ? GL_VERTEX_SHADER :
             typeStr == "fragment" ? GL_FRAGMENT_SHADER :
@@ -49,8 +50,7 @@ struct GLCreateShader : zeno::INode {
             glGetShaderiv(id, GL_INFO_LOG_LENGTH, &infoLen);
             std::vector<char> infoLog(infoLen);
             glGetShaderInfoLog(id, infoLen, NULL, infoLog.data());
-            printf("error compiling shader:\n%s\n", infoLog.data());
-            return;
+            throw zeno::Exception((std::string)infoLog.data());
         }
         set_output("shader", std::move(shader));
     }
@@ -82,9 +82,7 @@ struct GLProgramObject : zeno::IObjectClone<GLProgramObject> {
 
 struct GLCreateProgram : zeno::INode {
     virtual void apply() override {
-        auto const &source = get_input<zeno::StringObject>("source")->get();
         auto shaderList = get_input<zeno::ListObject>("shaderList");
-        const char *sourcePtr = source.c_str();
         auto program = std::make_shared<GLProgramObject>();
         GLint id = program->impl->id = glCreateProgram();
         for (auto const &obj: shaderList->arr) {
@@ -94,14 +92,15 @@ struct GLCreateProgram : zeno::INode {
         }
         glLinkProgram(id);
         GLint status = 0;
-        glGetProgramiv(id, GL_COMPILE_STATUS, &status);
+        glGetProgramiv(id, GL_LINK_STATUS, &status);
         if (!status) {
             GLint infoLen = 0;
             glGetProgramiv(id, GL_INFO_LOG_LENGTH, &infoLen);
-            std::vector<char> infoLog(infoLen);
-            glGetProgramInfoLog(id, infoLen, NULL, infoLog.data());
-            printf("error linking program:\n%s\n", infoLog.data());
-            return;
+            if (infoLen) {
+                std::vector<char> infoLog(infoLen);
+                glGetProgramInfoLog(id, infoLen, NULL, infoLog.data());
+                throw zeno::Exception((std::string)infoLog.data());
+            }
         }
         set_output("program", std::move(program));
     }
@@ -168,6 +167,9 @@ struct MakeSimpleTriangle : zeno::INode {
         auto prim = std::make_shared<GLPrimitiveObject>();
         prim->add_attr<zeno::vec3f>("pos");
         prim->add_bound_attr("pos");
+        prim->resize(3);
+        std::memcpy(prim->attr<zeno::vec3f>("pos").data(),
+                vVertices, sizeof(vVertices));
         set_output("prim", std::move(prim));
     }
 };
