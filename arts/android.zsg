@@ -467,7 +467,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nout vec4 fragColor;\nvoid main() {\n  vec3 color = texture(image, gl_FragCoord.xy).xyz;\n  fragColor = vec4(color * 0.5 + 0.5, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nout vec4 fragColor;\nvoid main() {\n  vec3 color = texture(image, gl_FragCoord.xy).xyz;\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
       -1460.35359375,
@@ -545,8 +545,8 @@
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": 1793,
-    "trans_y": -75
+    "trans_x": -384,
+    "trans_y": -581
    }
   }
  },

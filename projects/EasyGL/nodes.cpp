@@ -275,7 +275,11 @@ struct GLCreateTexture : zeno::INode {
         CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
         CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
         CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-        CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 512, 512, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL));
+        char *img = (char *)malloc(512 * 512 * 3 * sizeof(char));
+        for (int i = 0; i < 512 * 512 * 3; i++) {
+            img[i] = i % 256;
+        }
+        CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 512, 512, 0, GL_RGB, GL_UNSIGNED_BYTE, img));
         set_output("texture", std::move(tex));
     }
 };
