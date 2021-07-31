@@ -33,7 +33,7 @@ struct GLTextureObject {
                     0, format, type, base));
     }
 
-    void _activateAndBind(GLuint number) {
+    void _activateAndBind(GLuint number) const {
         CHECK_GL(glActiveTexture(GL_TEXTURE0 + number));
         CHECK_GL(glBindTexture(GL_TEXTURE_2D, impl->id));
     }

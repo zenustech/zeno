@@ -1,6 +1,8 @@
 #include "GLShaderObject.h"
 #include "GLProgramObject.h"
 #include "GLVertexAttribInfo.h"
+#include "GLTextureObject.h"
+#include "GLFramebuffer.h"
 #include <GL/glut.h>
 
 inline static int interval = 100;
@@ -14,6 +16,8 @@ static float vertices[] = {
 
 static GLProgramObject prog;
 static GLShaderObject vert, frag;
+static GLFramebuffer fbo;
+static GLTextureObject tex;
 
 static void initFunc() {
     vert.initialize(GL_VERTEX_SHADER, R"(
@@ -33,15 +37,14 @@ void main() {
 }
 )");
     prog.initialize({vert, frag});
-    glUseProgram(prog);
 }
 
 static void drawFunc() {
     GLVertexAttribInfo vab;
     vab.base = vertices;
     vab.dim = 2;
-    vab.bindTo(0);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glUseProgram(prog);
+    drawVertexArrays(GL_TRIANGLES, 3, {vab});
 }
 
 static void displayFunc() {
