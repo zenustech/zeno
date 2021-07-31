@@ -239,6 +239,11 @@ struct GLCreateTexture : zeno::INode {
     virtual void apply() override {
         auto tex = std::make_shared<GLTextureObject>();
         glGenTextures(1, &tex->impl->id);
+        glBindTexture(GL_TEXTURE_2D, tex->impl->id);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         set_output("texture", std::move(tex));
     }
 };
@@ -263,6 +268,19 @@ struct GLBindFramebufferTexture : zeno::INode {
 
 ZENDEFNODE(GLBindFramebufferTexture, {
         {"framebuffer", "texture"},
+        {},
+        {},
+        {"EasyGL"},
+});
+
+struct GLUnbindFramebuffer : zeno::INode {
+    virtual void apply() override {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+};
+
+ZENDEFNODE(GLUnbindFramebuffer, {
+        {},
         {},
         {},
         {"EasyGL"},
