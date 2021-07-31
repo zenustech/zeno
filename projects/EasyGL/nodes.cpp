@@ -338,6 +338,50 @@ ZENDEFNODE(GLUnbindFramebuffer, {
         {"EasyGL"},
 });
 
+struct GLViewportSize : zeno::INode {
+    virtual void apply() override {
+        auto bx = has_input("baseX") ?
+            get_input<zeno::NumericObject>("baseX")->get<float>() :
+            0;
+        auto by = has_input("baseY") ?
+            get_input<zeno::NumericObject>("baseY")->get<float>() :
+            0;
+        auto nx = has_input("sizeX") ?
+            get_input<zeno::NumericObject>("sizeX")->get<float>() :
+            0;
+        auto ny = has_input("sizeY") ?
+            get_input<zeno::NumericObject>("sizeY")->get<float>() :
+            0;
+    }
+};
+
+ZENDEFNODE(GLViewportSize, {
+        {"baseX", "baseY", "sizeX", "sizeY"},
+        {},
+        {},
+        {"EasyGL"},
+});
+
+struct GLClearColor : zeno::INode {
+    virtual void apply() override {
+        auto rgb = has_input("color") ?
+            get_input<zeno::NumericObject>("color")->get<zeno::vec3f>() :
+            zeno::vec3f(0);
+        auto a = has_input("alpha") ?
+            get_input<zeno::NumericObject>("alph")->get<float>() :
+            0.0f;
+        glClearColor(rgb[0], rgb[1], rgb[2], a);
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
+};
+
+ZENDEFNODE(GLClearColor, {
+        {"color", "alpha"},
+        {},
+        {},
+        {"EasyGL"},
+});
+
 struct MakeSimpleTriangle : zeno::INode {
     inline static const GLfloat vVertices[] = {
         0.0f,  0.5f, 0.0f,

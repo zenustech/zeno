@@ -11,8 +11,6 @@ struct GLUTMainLoop : zeno::INode {
 
     static void displayFunc() {
         glViewport(0, 0, nx, ny);
-        glClearColor(0.25f, 0.25f, 0.25f, 0.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
         printf("calling draw function...\n");
         drawFunc->call({});
         glFlush();

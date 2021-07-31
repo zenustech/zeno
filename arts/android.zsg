@@ -114,7 +114,7 @@
        "output"
       ],
       "SRC": [
-       "898cd37f-GLBindFramebufferTexture",
+       "d506486b-GLClearColor",
        "DST"
       ]
      },
@@ -284,8 +284,8 @@
      },
      "params": {},
      "uipos": [
-      21.1110839843748,
-      -177.8388671874999
+      -392.8889160156252,
+      -183.8388671874999
      ],
      "options": []
     },
@@ -304,8 +304,8 @@
      },
      "params": {},
      "uipos": [
-      304.1110839843748,
-      -87.83886718749989
+      -123.88891601562523,
+      -106.83886718749989
      ],
      "options": []
     },
@@ -316,8 +316,8 @@
      },
      "params": {},
      "uipos": [
-      38.1110839843748,
-      15.16113281250006
+      -375.8889160156252,
+      9.161132812500057
      ],
      "options": []
     },
@@ -350,8 +350,8 @@
      },
      "params": {},
      "uipos": [
-      2281.4025878906255,
-      150.88220214843753
+      2262.402587890625,
+      148.8822021484375
      ],
      "options": []
     },
@@ -541,12 +541,48 @@
       130.0
      ],
      "options": []
+    },
+    "d506486b-GLClearColor": {
+     "name": "GLClearColor",
+     "inputs": {
+      "color": [
+       "67b89a3c-NumericVec3",
+       "vec3"
+      ],
+      "alpha": null,
+      "SRC": [
+       "898cd37f-GLBindFramebufferTexture",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      262.0,
+      -15.400000000000091
+     ],
+     "options": []
+    },
+    "67b89a3c-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 0.25,
+      "y": 0.25,
+      "z": 0.25
+     },
+     "uipos": [
+      -29.40000000000009,
+      103.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 1692,
-    "trans_y": -351
+    "scale": 1.0,
+    "trans_x": -1673,
+    "trans_y": -1006
    }
   }
  },
@@ -2444,6 +2480,36 @@
     "EasyGL"
    ]
   },
+  "GLClearColor": {
+   "inputs": [
+    [
+     "",
+     "color",
+     ""
+    ],
+    [
+     "",
+     "alpha",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
   "GLCreateFramebuffer": {
    "inputs": [
     [
@@ -2651,6 +2717,46 @@
     [
      "",
      "program",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLViewportSize": {
+   "inputs": [
+    [
+     "",
+     "baseX",
+     ""
+    ],
+    [
+     "",
+     "baseY",
+     ""
+    ],
+    [
+     "",
+     "sizeX",
+     ""
+    ],
+    [
+     "",
+     "sizeY",
      ""
     ],
     [
