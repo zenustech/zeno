@@ -5,7 +5,7 @@
 #include <zeno/utils/vec.h>
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
-#include <zeno/PrimitiveObject.h>
+#include <zeno/types/PrimitiveObject.h>
 
 namespace zenvis {
 
