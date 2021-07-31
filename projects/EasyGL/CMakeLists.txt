@@ -4,6 +4,7 @@ target_include_directories(zeno_EasyGL PRIVATE .)
 
 target_link_libraries(zeno_EasyGL PRIVATE zeno)
 target_link_libraries(zeno_EasyGL PRIVATE GLESv2)
+target_link_libraries(zeno_EasyGL PRIVATE glut)
 target_sources(zeno_EasyGL PRIVATE main.cpp)
 
 if (0 AND ZENO_ENABLE_PYTHON)

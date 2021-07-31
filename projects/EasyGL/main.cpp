@@ -3,6 +3,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/ListObject.h>
 #include <GLES2/gl2.h>
+#include <GL/glut.h>
 
 namespace {
 
@@ -82,7 +83,7 @@ struct GLCreateProgram : zeno::INode {
         auto const &source = get_input<zeno::StringObject>("source")->get();
         auto shaderList = get_input<zeno::ListObject>("shaderList");
         const char *sourcePtr = source.c_str();
-        auto program = std::make_shared<GLShaderObject>();
+        auto program = std::make_shared<GLProgramObject>();
         GLint id = program->impl->id = glCreateProgram();
         for (auto const &obj: shaderList->arr) {
             auto shader = dynamic_cast<GLShaderObject *>(obj.get());
@@ -163,11 +164,44 @@ ZENDEFNODE(MakeSimpleTriangle, {
 });
 
 }
-
-int main() {
+/*
     auto scene = zeno::createScene();
     scene->clearAllState();
     scene->switchGraph("main");
     scene->getGraph().addNode("MakeSimpleTriangle", "tri");
-    scene->getGraph().completeNode("tri");
+    scene->getGraph().completeNode("tri");*/
+
+
+void initFunc() {
+}
+
+void displayFunc() {
+    glClearColor(0.375f, 0.75f, 1.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glFlush();
+}
+
+#define ITV 100
+void timerFunc(int unused) {
+    glutPostRedisplay();
+    glutTimerFunc(ITV, timerFunc, 0);
+}
+
+void keyboardFunc(unsigned char key, int x, int y) {
+    if (key == 27)
+        exit(0);
+}
+
+int main(int argc, char **argv) {
+
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DEPTH | GLUT_SINGLE | GLUT_RGBA);
+    glutInitWindowPosition(100, 100);
+    glutInitWindowSize(512, 512);
+    glutCreateWindow("GLUT Window");
+    glutDisplayFunc(displayFunc);
+    glutKeyboardFunc(keyboardFunc);
+    initFunc();
+    glutTimerFunc(ITV, timerFunc, 0);
+    glutMainLoop();
 }
