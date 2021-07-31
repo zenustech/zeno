@@ -20,14 +20,14 @@ struct GLPrimitiveObject : zeno::IObjectClone<GLPrimitiveObject,
 struct GLShaderObject : zeno::IObjectClone<GLShaderObject> {
     struct Impl {
         GLuint id = 0;
+
+        ~Impl() {
+            if (id)
+                glDeleteShader(id);
+        }
     };
 
     std::shared_ptr<Impl> impl = std::make_shared<Impl>();
-
-    ~GLShaderObject() {
-        if (impl->id)
-            glDeleteShader(impl->id);
-    }
 };
 
 struct GLCreateShader : zeno::INode {
@@ -67,14 +67,14 @@ ZENDEFNODE(GLCreateShader, {
 struct GLProgramObject : zeno::IObjectClone<GLProgramObject> {
     struct Impl {
         GLuint id = 0;
+
+        ~Impl() {
+            if (id)
+                glDeleteProgram(id);
+        }
     };
 
     std::shared_ptr<Impl> impl = std::make_shared<Impl>();
-
-    ~GLProgramObject() {
-        if (impl->id)
-            glDeleteProgram(impl->id);
-    }
 
     operator GLuint() const {
         return impl->id;
@@ -164,7 +164,7 @@ struct MakeFullscreenRect : zeno::INode {
          1.0f, -1.0f, 0.0f,
         -1.0f,  1.0f, 0.0f,
          1.0f, -1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f,
          1.0f,  1.0f, 0.0f,
     };
 
@@ -189,14 +189,14 @@ ZENDEFNODE(MakeFullscreenRect, {
 struct GLFramebufferObject : zeno::IObjectClone<GLFramebufferObject> {
     struct Impl {
         GLuint id = 0;
+
+        ~Impl() {
+            if (id)
+                glDeleteFramebuffers(1, &id);
+        }
     };
 
     std::shared_ptr<Impl> impl = std::make_shared<Impl>();
-
-    ~GLFramebufferObject() {
-        if (impl->id)
-            glDeleteFramebuffers(1, &impl->id);
-    }
 
     operator GLuint() const {
         return impl->id;
@@ -221,14 +221,14 @@ ZENDEFNODE(GLCreateFramebuffer, {
 struct GLTextureObject : zeno::IObjectClone<GLTextureObject> {
     struct Impl {
         GLuint id = 0;
+
+        ~Impl() {
+            if (id)
+                glDeleteTextures(1, &id);
+        }
     };
 
     std::shared_ptr<Impl> impl = std::make_shared<Impl>();
-
-    ~GLTextureObject() {
-        if (impl->id)
-            glDeleteTextures(1, &impl->id);
-    }
 
     operator GLuint() const {
         return impl->id;
@@ -244,6 +244,8 @@ struct GLCreateTexture : zeno::INode {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 512, 512,
+                0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
         set_output("texture", std::move(tex));
     }
 };
@@ -251,6 +253,24 @@ struct GLCreateTexture : zeno::INode {
 ZENDEFNODE(GLCreateTexture, {
         {},
         {"texture"},
+        {},
+        {"EasyGL"},
+});
+
+struct GLBindTexture : zeno::INode {
+    virtual void apply() override {
+        auto tex = get_input<GLTextureObject>("texture");
+        int num = has_input("number") ?
+            get_input<zeno::NumericObject>("number")->get<int>() :
+            0;
+        glActiveTexture(GL_TEXTURE0 + num);
+        glBindTexture(GL_TEXTURE_2D, tex->impl->id);
+    }
+};
+
+ZENDEFNODE(GLBindTexture, {
+        {"texture", "number"},
+        {},
         {},
         {"EasyGL"},
 });
@@ -263,6 +283,10 @@ struct GLBindFramebufferTexture : zeno::INode {
         glBindTexture(GL_TEXTURE_2D, tex->impl->id);
         glFramebufferTexture2D(GL_FRAMEBUFFER,
                 GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->impl->id, 0);
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER)
+                != GL_FRAMEBUFFER_COMPLETE) {
+            printf("ERROR: framebuffer status is not complete!\n");
+        }
     }
 };
 

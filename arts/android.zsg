@@ -171,8 +171,8 @@
       "ny": 512
      },
      "uipos": [
-      2701.180712890625,
-      300.8978271484375
+      3066.4150878906244,
+      336.0540771484375
      ],
      "options": [
       "VIEW"
@@ -193,8 +193,8 @@
      },
      "params": {},
      "uipos": [
-      2401.180712890625,
-      331.29782714843736
+      2766.4150878906244,
+      366.45407714843736
      ],
      "options": []
     },
@@ -206,8 +206,8 @@
      },
      "params": {},
      "uipos": [
-      2400.5807128906245,
-      170.5478271484375
+      2765.815087890624,
+      205.7040771484375
      ],
      "options": []
     },
@@ -344,14 +344,14 @@
        "output"
       ],
       "SRC": [
-       "89503785-x",
+       "000e835a-GLBindTexture",
        "DST"
       ]
      },
      "params": {},
      "uipos": [
-      1916.168212890625,
-      115.7259521484375
+      2281.4025878906255,
+      150.88220214843753
      ],
      "options": []
     },
@@ -467,7 +467,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nout vec4 fragColor;\nvoid main() {\n  vec3 color = texture(image, gl_FragCoord.xy).xyz;\n  fragColor = vec4(color, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nout vec4 fragColor;\nvoid main() {\n  vec3 color = texture(image, gl_FragCoord.xy).xyz;\n  fragColor = vec4(color * 0.5 + 0.5, 1.0);\n}"
      },
      "uipos": [
       -1460.35359375,
@@ -501,8 +501,8 @@
      },
      "params": {},
      "uipos": [
-      1304.0,
-      -119.0
+      1656.0,
+      -114.0
      ],
      "options": []
     },
@@ -517,16 +517,36 @@
      },
      "params": {},
      "uipos": [
-      1625.0,
-      -77.0
+      1977.0,
+      -72.0
+     ],
+     "options": []
+    },
+    "000e835a-GLBindTexture": {
+     "name": "GLBindTexture",
+     "inputs": {
+      "texture": [
+       "8823979f-GLCreateTexture",
+       "texture"
+      ],
+      "number": null,
+      "SRC": [
+       "89503785-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1874.0,
+      130.0
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": 684,
-    "trans_y": -388
+    "trans_x": 1793,
+    "trans_y": -75
    }
   }
  },
@@ -2374,6 +2394,36 @@
     [
      "",
      "texture",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLBindTexture": {
+   "inputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "number",
      ""
     ],
     [
