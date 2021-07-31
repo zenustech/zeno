@@ -2,7 +2,7 @@
 
 #include <zeno/utils/defs.h>
 #include <zeno/core/IObject.h>
-#include <zeno/utils/Exception.h>
+#include <zeno/utils/safe_dynamic_cast.h>
 #include <memory>
 #include <string>
 #include <set>
@@ -55,13 +55,8 @@ struct Graph {
     std::shared_ptr<T> getGraphOutput(
             std::string const &id) const {
         auto obj = getGraphOutput(id);
-        auto p = std::dynamic_pointer_cast<T>(obj);
-        if (!p) {
-            throw Exception("graph output `" + id + "` expect `"
-                    + typeid(T).name() + "`, got `"
-                    + typeid(*obj.get()).name() + "`");
-        }
-        return p;
+        return safe_dynamic_cast<T>(std::move(obj),
+                "graph output `" + id + "` ");
     }
 
     ZENO_API void clearNodes();

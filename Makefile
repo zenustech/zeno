@@ -1,6 +1,6 @@
 O=arts/ZFXv2.zsg
 
-default: test
+default: easygl
 
 all:
 	cmake -B build
@@ -20,6 +20,9 @@ configure:
 
 test: all
 	build/tests/zentest
+
+easygl: all
+	build/projects/EasyGL/zeno_EasyGL
 
 run: all
 	ZEN_OPEN=$O ./run.sh

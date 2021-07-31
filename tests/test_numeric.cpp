@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 #include <zeno/zeno.h>
-#include <zeno/NumericObject.h>
+#include <zeno/types/NumericObject.h>
 
 TEST_CASE("numeric operators", "[numeric]") {
     int a = 1;

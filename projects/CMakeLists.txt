@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/../zeno/cmake ${CMAKE_MODULE_PATH})
 set(ENV{PYTHONPATH} ${CMAKE_CURRENT_SOURCE_DIR}/.. $ENV{PYTHONPATH})
 
-set(EXTENSIONS_LIST ZenoFX Rigid oldzenbase zenvdb FastFLIP gmpm mesher ZMS OldZFX)
+set(EXTENSIONS_LIST ZenoFX Rigid oldzenbase zenvdb FastFLIP gmpm mesher ZMS OldZFX EasyGL)
 
 set(EXTENSIONS_ENABLE_LIST ZenoFX Rigid oldzenbase)
 
