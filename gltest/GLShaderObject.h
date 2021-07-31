@@ -10,7 +10,7 @@ struct GLShaderObject {
     std::shared_ptr<Impl> impl;
     operator GLuint() { return impl->id; }
 
-    void initialize(std::string const &source, GLenum type) {
+    void initialize(GLenum type, std::string const &source) {
         const char *sourcePtr = source.c_str();
         GLint id = glCreateShader(type);
         glShaderSource(id, 1, &sourcePtr, NULL);

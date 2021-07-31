@@ -13,11 +13,35 @@ static float vertices[] = {
 };
 
 static GLProgramObject prog;
+static GLShaderObject vert, frag;
 
 static void initFunc() {
-    GLVertexAttribInfo vai;
-    vai.base = vertices;
-    vai.dim = 2;
+    vert.initialize(GL_VERTEX_SHADER, R"(
+#version 300 es
+layout (location = 0) in vec2 vPosition;
+void main() {
+  gl_Position = vec4(vPosition, 0.0, 1.0);
+}
+)");
+    frag.initialize(GL_FRAGMENT_SHADER, R"(
+#version 300 es
+precision mediump float;
+out vec4 fragColor;
+void main() {
+  vec3 color = vec3(0.375, 0.75, 1.0);
+  fragColor = vec4(color, 1.0);
+}
+)");
+    prog.initialize({vert, frag});
+    glUseProgram(prog);
+}
+
+static void drawFunc() {
+    GLVertexAttribInfo vab;
+    vab.base = vertices;
+    vab.dim = 2;
+    vab.bindTo(0);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 static void displayFunc() {
@@ -25,6 +49,7 @@ static void displayFunc() {
     spdlog::info("calling draw function...");
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+    drawFunc();
     glFlush();
 }
 
