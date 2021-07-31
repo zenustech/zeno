@@ -29,7 +29,7 @@ struct GLUTMainLoop : zeno::INode {
     }
 
     static void mainFunc() {
-        const char *argv[] = {"<glut_happy_argv>", NULL};
+        const char *argv[] = {"make_glut_happy", NULL};
         int argc = sizeof(argv) / sizeof(argv[0]) - 1;
         glutInit(&argc, (char **)argv);
         glutInitDisplayMode(GLUT_DEPTH | GLUT_SINGLE | GLUT_RGBA);

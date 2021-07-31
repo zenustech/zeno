@@ -25,7 +25,7 @@ easygl: all
 	build/projects/EasyGL/zeno_EasyGL_main
 
 run: all
-	ZEN_OPEN=$O ./run.sh
+	ZEN_NOFORK=1 ZEN_OPEN=$O ./run.sh
 
 debug: debug_all
 	USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh

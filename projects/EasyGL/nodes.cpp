@@ -86,9 +86,8 @@ struct GLCreateProgram : zeno::INode {
         auto program = std::make_shared<GLProgramObject>();
         GLint id = program->impl->id = glCreateProgram();
         for (auto const &obj: shaderList->arr) {
-            auto shader = dynamic_cast<GLShaderObject *>(obj.get());
-            if (shader)
-                glAttachShader(id, shader->impl->id);
+            auto shader = zeno::safe_dynamic_cast<GLShaderObject>(obj.get());
+            glAttachShader(id, shader->impl->id);
         }
         glLinkProgram(id);
         GLint status = 0;
@@ -146,7 +145,7 @@ struct GLDrawArrayTriangles : zeno::INode {
                         );
             }, prim->attr(name));
         }
-        printf("drawing %zd triangles\n", prim->size());
+        printf("drawing %zd triangle vertices\n", prim->size());
         glDrawArrays(GL_TRIANGLES, 0, /*count=*/prim->size());
     }
 };
