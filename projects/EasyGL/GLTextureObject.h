@@ -1,8 +1,9 @@
 #pragma once
 
 #include "common.h"
+#include <zeno/core/IObject.h>
 
-struct GLTextureObject {
+struct GLTextureObject : zeno::IObjectClone<GLTextureObject> {
     struct Impl {
         GLuint id = 0;
         ~Impl() { if (id) glDeleteTextures(1, &id); }

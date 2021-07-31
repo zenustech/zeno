@@ -5,7 +5,12 @@
 #include <zeno/types/ListObject.h>
 #include <GLES2/gl2.h>
 #include <cstring>
+#include "GLVertexAttribInfo.h"
 #include "GLPrimitiveObject.h"
+#include "GLTextureObject.h"
+#include "GLShaderObject.h"
+#include "GLProgramObject.h"
+#include "GLFramebuffer.h"
 
 struct GLCreateShader : zeno::INode {
     virtual void apply() override {
@@ -17,7 +22,7 @@ struct GLCreateShader : zeno::INode {
 
         auto const &source = get_input<zeno::StringObject>("source")->get();
         auto shader = std::make_shared<GLShaderObject>();
-        shader.initialize(type, source);
+        shader->initialize(type, source);
         set_output("shader", std::move(shader));
     }
 };
@@ -38,7 +43,7 @@ struct GLCreateProgram : zeno::INode {
             auto shader = zeno::safe_dynamic_cast<GLShaderObject>(obj.get());
             shaders.push_back(*shader);
         }
-        program.initialize(shaders);
+        program->initialize(shaders);
         set_output("program", std::move(program));
     }
 };
@@ -68,10 +73,10 @@ struct GLDrawArrayTriangles : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<GLPrimitiveObject>("prim");
         std::vector<GLVertexAttribInfo> vabs;
-        for (int i = 0; i < prim->attrs(); i++) {
-            auto &[arr, dim] = prim->attrs()[i];
+        for (int i = 0; i < prim->nattrs(); i++) {
+            auto &[arr, dim] = prim->attr(i);
             GLVertexAttribInfo vab;
-            vab.base = arr.data();
+            vab.base = (void *)arr.data();
             vab.dim = dim;
             vabs.push_back(vab);
         }
@@ -102,7 +107,7 @@ struct MakeFullscreenRect : zeno::INode {
         auto prim = std::make_shared<GLPrimitiveObject>();
         prim->add_attr(2);
         prim->resize(6);
-        std::memcpy(prim->attrs()[0].data(),
+        std::memcpy(prim->attr(0).arr.data(),
                 vVertices, sizeof(vVertices));
         set_output("prim", std::move(prim));
     }
@@ -119,8 +124,8 @@ struct GLCreateTextureFramebuffer : zeno::INode {
     virtual void apply() override {
         auto fbo = std::make_shared<GLTextureFramebuffer>();
         auto colorTexList = get_input<zeno::ListObject>("colorTextureList");
-        fbo->colorTextures.resize(colorTexList.size());
-        for (int i = 0; i < colorTexList.size(); i++) {
+        fbo->colorTextures.resize(colorTexList->arr.size());
+        for (int i = 0; i < colorTexList->arr.size(); i++) {
             fbo->colorTextures[i].initialize();
         }
         fbo->initialize();
@@ -137,7 +142,7 @@ ZENDEFNODE(GLCreateTextureFramebuffer, {
 
 struct GLUseFramebuffer : zeno::INode {
     virtual void apply() override {
-        auto fbo = get_input<GLFramebufferObject>("framebuffer");
+        auto fbo = get_input<GLFramebuffer>("framebuffer");
         fbo->use();
     }
 };

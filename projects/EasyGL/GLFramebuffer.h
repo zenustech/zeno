@@ -2,8 +2,9 @@
 
 #include "common.h"
 #include "GLTextureObject.h"
+#include <zeno/core/IObject.h>
 
-struct GLFramebuffer {
+struct GLFramebuffer : zeno::IObjectClone<GLFramebuffer> {
     struct Impl {
         GLuint id = 0;
         ~Impl() { if (id) glDeleteFramebuffers(1, &id); }

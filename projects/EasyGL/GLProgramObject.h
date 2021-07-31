@@ -2,8 +2,9 @@
 
 #include "common.h"
 #include "GLShaderObject.h"
+#include <zeno/core/IObject.h>
 
-struct GLProgramObject {
+struct GLProgramObject : zeno::IObjectClone<GLProgramObject> {
     struct Impl {
         GLuint id = 0;
         ~Impl() { if (id) glDeleteProgram(id); }

@@ -3,6 +3,7 @@
 #include "common.h"
 #include "GLProgramObject.h"
 #include "GLFramebuffer.h"
+#include <zeno/core/IObject.h>
 
 struct GLVertexAttribInfo {
     GLenum type = GL_FLOAT;

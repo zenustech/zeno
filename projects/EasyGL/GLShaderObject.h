@@ -1,8 +1,9 @@
 #pragma once
 
 #include "common.h"
+#include <zeno/core/IObject.h>
 
-struct GLShaderObject {
+struct GLShaderObject : zeno::IObjectClone<GLShaderObject> {
     struct Impl {
         GLuint id = 0;
         ~Impl() { if (id) glDeleteShader(id); }
