@@ -275,9 +275,9 @@ struct GLCreateTexture : zeno::INode {
         CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
         CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
         CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-        char *img = (char *)malloc(512 * 512 * 3 * sizeof(char));
+        unsigned char *img = (unsigned char *)malloc(512 * 512 * 3 * sizeof(char));
         for (int i = 0; i < 512 * 512 * 3; i++) {
-            img[i] = i % 256;
+            img[i] = i % 250;
         }
         CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 512, 512, 0, GL_RGB, GL_UNSIGNED_BYTE, img));
         set_output("texture", std::move(tex));
@@ -316,8 +316,7 @@ struct GLBindFramebufferTexture : zeno::INode {
         CHECK_GL(glBindFramebuffer(GL_FRAMEBUFFER, fbo->impl->id));
         CHECK_GL(glBindTexture(GL_TEXTURE_2D, tex->impl->id));
         CHECK_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->impl->id, 0));
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER)
-                != GL_FRAMEBUFFER_COMPLETE) {
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
             printf("ERROR: framebuffer status is not complete!\n");
         }
     }

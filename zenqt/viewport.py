@@ -258,4 +258,5 @@ class DisplayWidget(QWidget):
         QMessageBox.information(self, 'Screenshot', msg)
 
     def sizeHint(self):
-        return QSize(1200, 400)
+        return QSize(1200, 0)
+        #return QSize(1200, 400)
