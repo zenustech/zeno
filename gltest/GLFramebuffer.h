@@ -21,6 +21,7 @@ struct GLFramebuffer {
     GLenum magFilter = GL_LINEAR;
 
     void initialize() {
+        impl = std::make_shared<Impl>();
         CHECK_GL(glGenFramebuffers(1, &impl->id));
     }
 

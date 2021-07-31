@@ -22,6 +22,7 @@ struct GLTextureObject {
     GLenum magFilter = GL_LINEAR;
 
     void initialize() {
+        impl = std::make_shared<Impl>();
         CHECK_GL(glGenTextures(1, &impl->id));
         CHECK_GL(glBindTexture(GL_TEXTURE_2D, impl->id));
         CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS));

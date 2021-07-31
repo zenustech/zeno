@@ -26,6 +26,7 @@ struct GLShaderObject {
                 spdlog::error("error compiling shader: {}", infoLog.data());
             }
         }
+        impl = std::make_shared<Impl>();
         impl->id = id;
     }
 };

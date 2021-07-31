@@ -28,5 +28,7 @@ struct GLProgramObject {
                 spdlog::error("error linking program: {}", infoLog.data());
             }
         }
+        impl = std::make_shared<Impl>();
+        impl->id = id;
     }
 };
