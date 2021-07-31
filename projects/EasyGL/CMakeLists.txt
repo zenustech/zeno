@@ -1,13 +1,11 @@
-#add_library(zeno_EasyGL SHARED)
-add_executable(zeno_EasyGL)
+add_library(zeno_EasyGL SHARED)
 target_include_directories(zeno_EasyGL PRIVATE .)
 
-target_link_libraries(zeno_EasyGL PRIVATE zeno)
-target_link_libraries(zeno_EasyGL PRIVATE GLESv2)
-target_link_libraries(zeno_EasyGL PRIVATE glut)
-target_sources(zeno_EasyGL PRIVATE main.cpp)
+target_link_libraries(zeno_EasyGL PUBLIC zeno)
+target_link_libraries(zeno_EasyGL PUBLIC GLESv2)
+target_sources(zeno_EasyGL PRIVATE nodes.cpp)
 
-if (0 AND ZENO_ENABLE_PYTHON)
+if (ZENO_ENABLE_PYTHON)
     get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
     set_target_properties(zeno_EasyGL PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
@@ -21,3 +19,9 @@ if (0 AND ZENO_ENABLE_PYTHON)
         ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
         )
 endif()
+
+add_executable(zeno_EasyGL_main main.cpp)
+target_link_libraries(zeno_EasyGL_main PRIVATE zeno)
+target_link_libraries(zeno_EasyGL_main PRIVATE zeno_EasyGL)
+target_link_libraries(zeno_EasyGL_main PRIVATE GLESv2)
+target_link_libraries(zeno_EasyGL_main PRIVATE glut)

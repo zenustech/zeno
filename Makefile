@@ -1,6 +1,6 @@
-O=arts/ZFXv2.zsg
+O=arts/android.zsg
 
-default: easygl
+default: run #easygl
 
 all:
 	cmake -B build
@@ -22,7 +22,7 @@ test: all
 	build/tests/zentest
 
 easygl: all
-	build/projects/EasyGL/zeno_EasyGL
+	build/projects/EasyGL/zeno_EasyGL_main
 
 run: all
 	ZEN_OPEN=$O ./run.sh
