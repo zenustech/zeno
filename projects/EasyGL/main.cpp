@@ -18,6 +18,7 @@ void initFunc() {
 }
 
 void displayFunc() {
+    glViewport(0, 0, 512, 512);
     glClearColor(0.375f, 0.75f, 1.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     drawScene();
