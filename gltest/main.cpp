@@ -74,6 +74,7 @@ void main() {
     fbo.colorTextures.resize(1);
     fbo.colorTextures[0].width = 512;
     fbo.colorTextures[0].height = 512;
+    fbo.colorTextures[0].initialize();
     fbo.initialize();
 }
 

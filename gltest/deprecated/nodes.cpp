@@ -8,7 +8,7 @@
 
 namespace {
 
-      static const char *get_opengl_error_string(GLenum err) {
+  static const char *get_opengl_error_string(GLenum err) {
     switch (err) {
 #define PER_GL_ERR(x) \
   case x:             \
@@ -39,27 +39,10 @@ namespace {
     _check_opengl_error(__FILE__, __LINE__, #x); \
   } while (0)
 
-struct GLPrimitiveObject : zeno::IObjectClone<GLPrimitiveObject,
-    zeno::PrimitiveObject> {
-    std::vector<std::string> boundAttrs;
-
-    void add_bound_attr(std::string const &name) {
-        boundAttrs.push_back(name);
-    }
+struct GLPrimitiveObject : zeno::IObjectClone<GLPrimitiveObject> {
+    std::vector<std::vector<float>> attrs;
 };
 
-struct GLShaderObject : zeno::IObjectClone<GLShaderObject> {
-    struct Impl {
-        GLuint id = 0;
-
-        ~Impl() {
-            if (id)
-                CHECK_GL(glDeleteShader(id));
-        }
-    };
-
-    std::shared_ptr<Impl> impl = std::make_shared<Impl>();
-};
 
 struct GLCreateShader : zeno::INode {
     virtual void apply() override {

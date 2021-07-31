@@ -41,6 +41,7 @@ struct GLTextureFramebuffer : GLFramebuffer {
     void initialize() {
         GLFramebuffer::initialize();
         for (int i = 0; i < colorTextures.size(); i++) {
+            colorTextures[i].initialize();
             _bindToTexture(colorTextures[i], GL_COLOR_ATTACHMENT0 + i);
         }
         _checkStatusComplete();
