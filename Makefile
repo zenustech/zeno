@@ -1,6 +1,6 @@
-O=arts/ZFXv2.zsg
+O=arts/android.zsg
 
-default: run
+default: glrun
 
 all:
 	cmake -B build

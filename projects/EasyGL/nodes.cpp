@@ -142,8 +142,12 @@ ZENDEFNODE(GLCreateTextureFramebuffer, {
 
 struct GLUseFramebuffer : zeno::INode {
     virtual void apply() override {
-        auto fbo = get_input<GLFramebuffer>("framebuffer");
-        fbo->use();
+        if (has_input("framebuffer")) {
+            auto fbo = get_input<GLFramebuffer>("framebuffer");
+            fbo->use();
+        } else {
+            GLFramebuffer().use();
+        }
     }
 };
 
