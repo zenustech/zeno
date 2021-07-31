@@ -40,7 +40,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nlayout (location = 0) out vec4 fragColor;\nvoid main() {\n  vec3 color = vec3(0.375, 0.75, 1.0);\n  fragColor = vec4(color, 1.0);\n}"
+      "value": "#version 300 es\nout vec4 fragColor;\nvoid main() {\n  vec3 color = vec3(0.375, 0.75, 1.0);\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
       -541.44,
@@ -168,16 +168,71 @@
       "defl": ""
      },
      "uipos": [
-      1156.0,
-      110.4
+      1188.0000000000002,
+      -45.599999999999994
+     ],
+     "options": []
+    },
+    "bdb37856-GLUTMainLoop": {
+     "name": "GLUTMainLoop",
+     "inputs": {
+      "drawFunc": [
+       "49534670-FuncEnd",
+       "function"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "interval": 100,
+      "nx": 512,
+      "ny": 512
+     },
+     "uipos": [
+      1487.1999999999998,
+      200.00000000000006
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "49534670-FuncEnd": {
+     "name": "FuncEnd",
+     "inputs": {
+      "rets": null,
+      "FUNC": [
+       "fb1a9518-FuncBegin",
+       "FUNC"
+      ],
+      "SRC": [
+       "beaa2ba2-GLDrawArrayTriangles",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1187.2000000000003,
+      230.39999999999992
+     ],
+     "options": []
+    },
+    "fb1a9518-FuncBegin": {
+     "name": "FuncBegin",
+     "inputs": {
+      "extraArgs": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      855.8499999999999,
+      292.9
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": 555,
-    "trans_y": -111
+    "trans_x": 1019,
+    "trans_y": -8
    }
   }
  },
@@ -2067,6 +2122,47 @@
     ]
    ],
    "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLUTMainLoop": {
+   "inputs": [
+    [
+     "",
+     "drawFunc",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "interval",
+     "100 0"
+    ],
+    [
+     "int",
+     "nx",
+     "512 1"
+    ],
+    [
+     "int",
+     "ny",
+     "512 1"
+    ]
+   ],
    "categories": [
     "EasyGL"
    ]

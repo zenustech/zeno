@@ -6,3 +6,4 @@ refactor zsg file format for input output both connection
 MUTE is Buggy in dict order for subnodes
 MUTE,VIEW,PREP,ONCE should be editor's mock
 support GlobalState on android too
+refactor .so autoload system to be less ad-hoc

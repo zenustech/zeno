@@ -5,6 +5,12 @@ target_link_libraries(zeno_EasyGL PUBLIC zeno)
 target_link_libraries(zeno_EasyGL PUBLIC GLESv2)
 target_sources(zeno_EasyGL PRIVATE nodes.cpp)
 
+option(ZENO_EASYGL_ENABLE_GLUT "Enable GLUT nodes in ZENO EasyGL" ON)
+if (ZENO_EASYGL_ENABLE_GLUT)
+    target_sources(zeno_EasyGL PRIVATE glut.cpp)
+    target_link_libraries(zeno_EasyGL PUBLIC glut)
+endif()
+
 if (ZENO_ENABLE_PYTHON)
     get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
     set_target_properties(zeno_EasyGL PROPERTIES

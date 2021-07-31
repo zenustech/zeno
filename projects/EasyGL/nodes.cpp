@@ -135,7 +135,6 @@ struct GLDrawArrayTriangles : zeno::INode {
             std::visit([&] (auto const &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
                 using S = zeno::decay_vec_t<T>;
-                printf("%zd\n", zeno::is_vec_n<T>);
                 glEnableVertexAttribArray(i);
                 glVertexAttribPointer
                         ( /*index=*/i

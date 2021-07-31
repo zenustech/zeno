@@ -1,6 +1,6 @@
 O=arts/android.zsg
 
-default: easygl
+default: run
 
 all:
 	cmake -B build
