@@ -75,11 +75,14 @@ struct GLProgramObject : zeno::IObjectClone<GLProgramObject> {
         if (impl->id)
             glDeleteProgram(impl->id);
     }
+
+    operator GLuint() const {
+        return impl->id;
+    }
 };
 
 struct GLCreateProgram : zeno::INode {
     virtual void apply() override {
-        GLenum type = GL_VERTEX_SHADER;
         auto const &source = get_input<zeno::StringObject>("source")->get();
         auto shaderList = get_input<zeno::ListObject>("shaderList");
         const char *sourcePtr = source.c_str();
@@ -108,6 +111,20 @@ struct GLCreateProgram : zeno::INode {
 ZENDEFNODE(GLCreateProgram, {
         {"source"},
         {"program"},
+        {},
+        {"EasyGL"},
+});
+
+struct GLUseProgram : zeno::INode {
+    virtual void apply() override {
+        auto program = get_input<GLProgramObject>("program");
+        glUseProgram(program->impl->id);
+    }
+};
+
+ZENDEFNODE(GLUseProgram, {
+        {"program"},
+        {},
         {},
         {"EasyGL"},
 });
@@ -164,12 +181,17 @@ ZENDEFNODE(MakeSimpleTriangle, {
 });
 
 }
-/*
+
+void drawScene() {
     auto scene = zeno::createScene();
     scene->clearAllState();
     scene->switchGraph("main");
     scene->getGraph().addNode("MakeSimpleTriangle", "tri");
-    scene->getGraph().completeNode("tri");*/
+    scene->getGraph().completeNode("tri");
+    scene->getGraph().addNode("GLDrawArrayTriangles", "draw");
+    scene->getGraph().bindNodeInput("draw", "prim", "tri", "prim");
+    scene->getGraph().completeNode("draw");
+}
 
 
 void initFunc() {
@@ -178,6 +200,7 @@ void initFunc() {
 void displayFunc() {
     glClearColor(0.375f, 0.75f, 1.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+    drawScene();
     glFlush();
 }
 
