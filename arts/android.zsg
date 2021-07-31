@@ -129,8 +129,8 @@
      "name": "GLDrawArrayTriangles",
      "inputs": {
       "prim": [
-       "62a157b3-DemoAdvectParticlesInBox",
-       "prim"
+       "9dff8803-x",
+       "output"
       ],
       "SRC": [
        "86cd8fcf-GLUseProgram",
@@ -151,8 +151,8 @@
      },
      "params": {},
      "uipos": [
-      -255.4500000000001,
-      -357.06249999999994
+      267.54999999999995,
+      -190.0625
      ],
      "options": []
     },
@@ -166,7 +166,7 @@
       "SRC": null
      },
      "params": {
-      "interval": 17,
+      "interval": 1700,
       "nx": 512,
       "ny": 512
      },
@@ -187,7 +187,7 @@
        "FUNC"
       ],
       "SRC": [
-       "fb82e268-x",
+       "29a8a1c6-PostprocessingPass",
        "DST"
       ]
      },
@@ -238,42 +238,8 @@
      },
      "params": {},
      "uipos": [
-      8.55000000000021,
-      -328.2625
-     ],
-     "options": []
-    },
-    "62a157b3-DemoAdvectParticlesInBox": {
-     "name": "DemoAdvectParticlesInBox",
-     "inputs": {
-      "prim": [
-       "9dff8803-x",
-       "output"
-      ],
-      "dt": [
-       "04248a82-NumericFloat",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      294.75,
-      -326.06249999999994
-     ],
-     "options": []
-    },
-    "04248a82-NumericFloat": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": 0.05
-     },
-     "uipos": [
-      1.950000000000074,
-      -503.06249999999994
+      531.5500000000002,
+      -161.2625
      ],
      "options": []
     },
@@ -284,8 +250,8 @@
      },
      "params": {},
      "uipos": [
-      -392.8889160156252,
-      -183.8388671874999
+      -496.88891601562517,
+      -214.23886718749978
      ],
      "options": []
     },
@@ -304,8 +270,8 @@
      },
      "params": {},
      "uipos": [
-      -123.88891601562523,
-      -106.83886718749989
+      -227.8889160156252,
+      -137.23886718749978
      ],
      "options": []
     },
@@ -316,8 +282,8 @@
      },
      "params": {},
      "uipos": [
-      -375.8889160156252,
-      9.161132812500057
+      -479.88891601562517,
+      -21.238867187499892
      ],
      "options": []
     },
@@ -336,209 +302,17 @@
      ],
      "options": []
     },
-    "fb82e268-x": {
-     "name": "GLDrawArrayTriangles",
-     "inputs": {
-      "prim": [
-       "d2eec4fd-CachedOnce",
-       "output"
-      ],
-      "SRC": [
-       "000e835a-GLBindTexture",
-       "DST"
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2262.402587890625,
-      148.8822021484375
-     ],
-     "options": []
-    },
-    "49bd4a90-x": {
-     "name": "GLCreateShader",
-     "inputs": {
-      "source": [
-       "74f4922d-x",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "type": "fragment"
-     },
-     "uipos": [
-      -1097.0735937499994,
-      -583.1618749999999
-     ],
-     "options": []
-    },
-    "98c7841c-x": {
-     "name": "CachedOnce",
-     "inputs": {
-      "input": [
-       "5b418bd2-x",
-       "program"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -317.6964062499997,
-      -636.51109375
-     ],
-     "options": []
-    },
-    "75bb6655-x": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "#version 300 es\nlayout (location = 0) in vec3 vPosition;\nout vec2 fragCoord;\nvoid main() {\n  fragCoord = vPosition.xy;\n  gl_Position = vec4(vPosition * 2.0 - 1.0, 1.0);\n}"
-     },
-     "uipos": [
-      -1463.55359375,
-      -1006.6818749999999
-     ],
-     "options": []
-    },
-    "79d78e11-x": {
-     "name": "GLCreateShader",
-     "inputs": {
-      "source": [
-       "75bb6655-x",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "type": "vertex"
-     },
-     "uipos": [
-      -1110.2735937499997,
-      -834.521875
-     ],
-     "options": []
-    },
-    "5b418bd2-x": {
-     "name": "GLCreateProgram",
-     "inputs": {
-      "shaderList": [
-       "60464609-x",
-       "list"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -591.7135937499997,
-      -656.761875
-     ],
-     "options": []
-    },
-    "60464609-x": {
-     "name": "MakeSmallList",
-     "inputs": {
-      "obj0": [
-       "79d78e11-x",
-       "shader"
-      ],
-      "obj1": [
-       "49bd4a90-x",
-       "shader"
-      ],
-      "obj2": null,
-      "obj3": null,
-      "obj4": null,
-      "obj5": null,
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -850.11359375,
-      -701.561875
-     ],
-     "options": []
-    },
     "74f4922d-x": {
      "name": "MakeMultilineString",
      "inputs": {
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 color = texture(image, fragCoord).xyz;\n  fragColor = vec4(color, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec3 at(int dx, int dy) {\n  vec2 uv = fragCoord + vec2(dx, dy) / 512.0;\n  vec3 color = texture(image, uv).xyz;\n  return color;\n}\nvoid main() {\n  vec3 color = vec3(0);\n  for (int i = -10; i <= 10; i++) {\n    color += at(i, 0);\n  }\n  color /= 21.0;\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
-      -1460.35359375,
-      -610.321875
-     ],
-     "options": []
-    },
-    "89503785-x": {
-     "name": "GLUseProgram",
-     "inputs": {
-      "program": [
-       "98c7841c-x",
-       "output"
-      ],
-      "SRC": [
-       "12a0e57d-GLUnbindFramebuffer",
-       "DST"
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1509.9999999999993,
-      99.99999999999989
-     ],
-     "options": []
-    },
-    "c3dbb7b9-MakeFullscreenRect": {
-     "name": "MakeFullscreenRect",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      1656.0,
-      -114.0
-     ],
-     "options": []
-    },
-    "d2eec4fd-CachedOnce": {
-     "name": "CachedOnce",
-     "inputs": {
-      "input": [
-       "c3dbb7b9-MakeFullscreenRect",
-       "prim"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      1977.0,
-      -72.0
-     ],
-     "options": []
-    },
-    "000e835a-GLBindTexture": {
-     "name": "GLBindTexture",
-     "inputs": {
-      "texture": [
-       "8823979f-GLCreateTexture",
-       "texture"
-      ],
-      "number": null,
-      "SRC": [
-       "89503785-x",
-       "DST"
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1874.0,
-      130.0
+      1021.3401562499995,
+      -343.3312500000003
      ],
      "options": []
     },
@@ -557,8 +331,8 @@
      },
      "params": {},
      "uipos": [
-      262.0,
-      -15.400000000000091
+      264.0,
+      50.59999999999991
      ],
      "options": []
     },
@@ -573,16 +347,273 @@
       "z": 0.25
      },
      "uipos": [
-      -29.40000000000009,
-      103.0
+      8.199999999999903,
+      -282.6000000000001
+     ],
+     "options": []
+    },
+    "29a8a1c6-PostprocessingPass": {
+     "name": "PostprocessingPass",
+     "inputs": {
+      "fragShader": [
+       "74f4922d-x",
+       "value"
+      ],
+      "texture": [
+       "8823979f-GLCreateTexture",
+       "texture"
+      ],
+      "SRC": [
+       "12a0e57d-GLUnbindFramebuffer",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1435.5,
+      -36.0
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.0,
-    "trans_x": -1673,
-    "trans_y": -1006
+    "trans_x": 1005,
+    "trans_y": -328
+   }
+  },
+  "PostprocessingPass": {
+   "nodes": {
+    "b147950b-x": {
+     "name": "GLCreateProgram",
+     "inputs": {
+      "shaderList": [
+       "d2d2985f-x",
+       "list"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      312.5300000000001,
+      345.83
+     ],
+     "options": []
+    },
+    "3496110f-x": {
+     "name": "GLCreateShader",
+     "inputs": {
+      "source": [
+       "a187afd1-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "type": "vertex"
+     },
+     "uipos": [
+      -232.28,
+      159.32
+     ],
+     "options": []
+    },
+    "d2d2985f-x": {
+     "name": "MakeSmallList",
+     "inputs": {
+      "obj0": [
+       "3496110f-x",
+       "shader"
+      ],
+      "obj1": [
+       "657d01a0-x",
+       "shader"
+      ],
+      "obj2": null,
+      "obj3": null,
+      "obj4": null,
+      "obj5": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      27.879999999999768,
+      292.28000000000003
+     ],
+     "options": []
+    },
+    "657d01a0-x": {
+     "name": "GLCreateShader",
+     "inputs": {
+      "source": [
+       "bced5620-SubInput",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "type": "fragment"
+     },
+     "uipos": [
+      -261.5799999999997,
+      410.6800000000001
+     ],
+     "options": []
+    },
+    "79ab8b16-x": {
+     "name": "GLBindTexture",
+     "inputs": {
+      "texture": [
+       "8bc3ab5b-SubInput",
+       "port"
+      ],
+      "number": null,
+      "SRC": [
+       "70d8ff57-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1143.9080810546877,
+      384.09014892578125
+     ],
+     "options": []
+    },
+    "a00bbf71-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "ef873df0-x",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      1247.9080810546877,
+      182.09014892578128
+     ],
+     "options": []
+    },
+    "70d8ff57-x": {
+     "name": "GLUseProgram",
+     "inputs": {
+      "program": [
+       "b147950b-x",
+       "program"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      870.9080810546869,
+      400.3401489257813
+     ],
+     "options": []
+    },
+    "c2ac49bd-x": {
+     "name": "GLDrawArrayTriangles",
+     "inputs": {
+      "prim": [
+       "a00bbf71-x",
+       "output"
+      ],
+      "SRC": [
+       "79ab8b16-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1533.3106689453127,
+      402.97235107421875
+     ],
+     "options": []
+    },
+    "ef873df0-x": {
+     "name": "MakeFullscreenRect",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      926.9080810546877,
+      140.09014892578128
+     ],
+     "options": []
+    },
+    "a187afd1-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "#version 300 es\nlayout (location = 0) in vec3 vPosition;\nout vec2 fragCoord;\nvoid main() {\n  fragCoord = vPosition.xy;\n  gl_Position = vec4(vPosition * 2.0 - 1.0, 1.0);\n}"
+     },
+     "uipos": [
+      -637.4999999999999,
+      -103.17999999999995
+     ],
+     "options": []
+    },
+    "bced5620-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "string",
+      "name": "fragShader",
+      "defl": ""
+     },
+     "uipos": [
+      -528.8000000000002,
+      395.19999999999993
+     ],
+     "options": []
+    },
+    "8bc3ab5b-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "GLTextureObject",
+      "name": "texture",
+      "defl": ""
+     },
+     "uipos": [
+      643.0,
+      168.0
+     ],
+     "options": []
+    },
+    "232b69ec-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "c2ac49bd-x",
+       "DST"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "_dummy",
+      "defl": ""
+     },
+     "uipos": [
+      1838.0,
+      420.0
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1.0,
+    "trans_x": -881,
+    "trans_y": -182
    }
   }
  },
@@ -7471,6 +7502,42 @@
    "categories": [
     "openvdb"
    ]
+  },
+  "PostprocessingPass": {
+   "inputs": [
+    [
+     "string",
+     "fragShader",
+     ""
+    ],
+    [
+     "GLTextureObject",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "_dummy",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],
