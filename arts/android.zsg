@@ -126,8 +126,8 @@
      "name": "GLDrawArrayTriangles",
      "inputs": {
       "prim": [
-       "9dff8803-x",
-       "output"
+       "62a157b3-DemoAdvectParticlesInBox",
+       "prim"
       ],
       "SRC": [
        "86cd8fcf-GLUseProgram",
@@ -148,8 +148,8 @@
      },
      "params": {},
      "uipos": [
-      256.7999999999999,
-      11.999999999999993
+      25.799999999999898,
+      -18.0
      ],
      "options": []
     },
@@ -255,16 +255,50 @@
      },
      "params": {},
      "uipos": [
-      600.8000000000002,
-      32.799999999999955
+      289.8000000000002,
+      10.799999999999955
+     ],
+     "options": []
+    },
+    "62a157b3-DemoAdvectParticlesInBox": {
+     "name": "DemoAdvectParticlesInBox",
+     "inputs": {
+      "prim": [
+       "9dff8803-x",
+       "output"
+      ],
+      "dt": [
+       "04248a82-NumericFloat",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      576.0,
+      13.0
+     ],
+     "options": []
+    },
+    "04248a82-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.05
+     },
+     "uipos": [
+      283.20000000000005,
+      -164.0
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -441,
-    "trans_y": -96
+    "scale": 1.25,
+    "trans_x": -240,
+    "trans_y": -259
    }
   }
  },
@@ -1256,6 +1290,41 @@
    "params": [],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "DemoAdvectParticlesInBox": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
    ]
   },
   "DictGetItem": {

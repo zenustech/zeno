@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/ListObject.h>
 #include <GLES2/gl2.h>
@@ -163,20 +164,55 @@ struct MakeSimpleTriangle : zeno::INode {
         -0.5f, -0.5f, 0.0f,
         0.5f, -0.5f, 0.0f,
     };
+    inline static const GLfloat vVelocities[] = {
+        -0.5f, -0.3f, 0.0f,
+        0.2f, -0.6f, 0.0f,
+        0.1f,  0.7f, 0.0f,
+    };
 
     virtual void apply() override {
         auto prim = std::make_shared<GLPrimitiveObject>();
         prim->add_attr<zeno::vec3f>("pos");
+        prim->add_attr<zeno::vec3f>("vel");
         prim->add_bound_attr("pos");
         prim->resize(3);
         std::memcpy(prim->attr<zeno::vec3f>("pos").data(),
                 vVertices, sizeof(vVertices));
+        std::memcpy(prim->attr<zeno::vec3f>("vel").data(),
+                vVelocities, sizeof(vVelocities));
         set_output("prim", std::move(prim));
     }
 };
 
 ZENDEFNODE(MakeSimpleTriangle, {
         {},
+        {"prim"},
+        {},
+        {"EasyGL"},
+});
+
+struct DemoAdvectParticlesInBox : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<GLPrimitiveObject>("prim");
+        float dt = get_input<zeno::NumericObject>("dt")->get<float>();
+        auto &pos = prim->attr<zeno::vec3f>("pos");
+        auto &vel = prim->attr<zeno::vec3f>("vel");
+        for (int i = 0; i < prim->size(); i++) {
+            pos[i] += vel[i] * dt;
+            for (int j = 0; j < 3; j++) {
+                if (pos[i][j] > 1 && vel[i][j] > 0) {
+                    vel[i][j] = -vel[i][j];
+                } else if (pos[i][j] < -1 && vel[i][j] < 0) {
+                    vel[i][j] = -vel[i][j];
+                }
+            }
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(DemoAdvectParticlesInBox, {
+        {"prim", "dt"},
         {"prim"},
         {},
         {"EasyGL"},
