@@ -26,7 +26,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 200 es\nlayout (location = 0) in vec3 vPosition;\nvoid main() {\n  gl_Position = vPosition;\n}"
+      "value": "#version 300 es\nlayout (location = 0) in vec3 vPosition;\nvoid main() {\n  gl_Position = vPosition;\n}"
      },
      "uipos": [
       -544.6400000000001,
@@ -40,7 +40,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 200 es\nlayout (location = 0) out vec4 fragColor;\nvoid main() {\n  fragColor = vec4(gl_FragCoord, 1.0);\n}"
+      "value": "#version 300 es\nlayout (location = 0) out vec4 fragColor;\nvoid main() {\n  vec3 color = vec3(0.375, 0.75, 1.0);\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
       -541.44,
@@ -176,8 +176,8 @@
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -834,
-    "trans_y": -178
+    "trans_x": 555,
+    "trans_y": -111
    }
   }
  },
