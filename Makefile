@@ -1,4 +1,4 @@
-O=arts/android.zsg
+O=arts/ZFXv2.zsg
 
 default: run
 
@@ -25,7 +25,10 @@ easygl: all
 	build/projects/EasyGL/zeno_EasyGL_main
 
 run: all
-	ZEN_NOFORK=1 ZEN_OPEN=$O ./run.sh
+	ZEN_OPEN=$O ./run.sh
+
+glrun: all
+	ZEN_NOFORK=1 ZEN_NOVIEW=1 ZEN_OPEN=$O ./run.sh
 
 debug: debug_all
 	USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh

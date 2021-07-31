@@ -258,5 +258,7 @@ class DisplayWidget(QWidget):
         QMessageBox.information(self, 'Screenshot', msg)
 
     def sizeHint(self):
-        return QSize(1200, 0)
-        #return QSize(1200, 400)
+        if os.environ.get('ZEN_NOVIEW'):
+            return QSize(1200, 0)
+        else:
+            return QSize(1200, 400)
