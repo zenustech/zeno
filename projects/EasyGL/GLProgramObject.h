@@ -70,6 +70,22 @@ struct GLProgramObject : zeno::IObjectClone<GLProgramObject> {
         CHECK_GL(glUniform4f(loc, x[0], x[1], x[2], x[3]));
     }
 
+    void setUniform(int loc, bool x) {
+        CHECK_GL(glUniform1i(loc, x));
+    }
+
+    void setUniform(int loc, zeno::vec2b const &x) {
+        CHECK_GL(glUniform2i(loc, x[0], x[1]));
+    }
+
+    void setUniform(int loc, zeno::vec3b const &x) {
+        CHECK_GL(glUniform3i(loc, x[0], x[1], x[2]));
+    }
+
+    void setUniform(int loc, zeno::vec4b const &x) {
+        CHECK_GL(glUniform4i(loc, x[0], x[1], x[2], x[3]));
+    }
+
     template <class T>
     void setUniform(const char *name, T const &t) {
         GLuint loc = glGetUniformLocation(impl->id, name);

@@ -41,8 +41,8 @@
      },
      "params": {},
      "uipos": [
-      -1265.9375,
-      -133.6875
+      -1857.2748730468743,
+      -129.31102539062502
      ],
      "options": []
     },
@@ -57,8 +57,8 @@
      },
      "params": {},
      "uipos": [
-      -1515.9375,
-      -216.1875
+      -1860.9948730468745,
+      -262.551025390625
      ],
      "options": []
     },
@@ -71,8 +71,8 @@
       "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  float iTime = float(iFrame) / 24.0;\n//  vec3 color = cos(iTime + fragCoord.xyx + vec3(0, 2, 4)) * 0.5 + 0.5;\n  ivec2 coord = ivec2(floor(fragCoord * 8.0));\n  vec3 color = vec3((coord.x + coord.y) % 2 != 0 ? 0.9 : 0.23);\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
-      -1570.6875,
-      -597.6875
+      -1901.9948730468745,
+      -642.801025390625
      ],
      "options": []
     },
@@ -116,10 +116,13 @@
        "1834ff36-x",
        "shader"
       ],
-      "uniforms": null,
+      "uniforms": [
+       "9fe1edbe-MakeDict",
+       "dict"
+      ],
       "textureIn": [
-       "0a25ec8b-PassToyApplyShader",
-       "textureOut"
+       "df4be5a9-MakeSmallList",
+       "list"
       ],
       "textureOut": [
        "6c6fc88a-x",
@@ -141,8 +144,8 @@
      },
      "params": {},
      "uipos": [
-      -683.4250000000002,
-      -35.400000000000034
+      -432.1750000000004,
+      85.59999999999991
      ],
      "options": []
     },
@@ -152,11 +155,11 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexture;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 color =  texture(iTexture, fragCoord).xyz;\n  fragColor = vec4(color, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform ivec2 iResolution;\nuniform sampler2D iTexture[2];\nin vec2 fragCoord;\nout vec4 fragColor;\nfloat pf(ivec2 coor) {\n  return texelFetch(iTexture[0], coor, 0).r;\n}\nfloat vdiv(ivec2 coor) {\n  return texelFetch(iTexture[1], coor, 0).r;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  float r = pf(coord + ivec2(0, 1));\n  float l = pf(coord + ivec2(0, -1));\n  float u = pf(coord + ivec2(1, 0));\n  float d = pf(coord + ivec2(-1, 0));\n  float div = vdiv(coord);\n  float res =  (r + l + u + d - div) * 0.25;\n  fragColor = vec4(vec3(res), 1.0);\n}"
      },
      "uipos": [
-      -738.8125000000001,
-      -564.225
+      -491.31250000000045,
+      -637.9749999999999
      ],
      "options": []
     },
@@ -171,8 +174,8 @@
      },
      "params": {},
      "uipos": [
-      -684.0625000000001,
-      -182.72500000000005
+      -444.06250000000045,
+      -262.725
      ],
      "options": []
     },
@@ -186,18 +189,23 @@
       "iFrame": [
        "4cfd0835-Assign",
        "dst"
+      ],
+      "iResolution": [
+       "35d18bee-PassToyGetResolution",
+       "resolution"
       ]
      },
      "params": {
-      "_KEYS": "iFrame"
+      "_KEYS": "iFrame\niResolution"
      },
      "uipos": [
-      -1505.8374999999996,
-      -55.337499999999885
+      -2420.6019042968737,
+      584.7983496093749
      ],
      "options": [],
      "socket_keys": [
-      "iFrame"
+      "iFrame",
+      "iResolution"
      ]
     },
     "5c17746f-NumericInt": {
@@ -209,8 +217,8 @@
       "value": -1
      },
      "uipos": [
-      -2857.5249999999983,
-      -181.69999999999996
+      -3772.2894042968733,
+      458.4358496093748
      ],
      "options": []
     },
@@ -229,8 +237,8 @@
      },
      "params": {},
      "uipos": [
-      -2044.725,
-      -80.89999999999995
+      -2959.489404296874,
+      559.2358496093748
      ],
      "options": []
     },
@@ -251,8 +259,8 @@
       "op_type": "add"
      },
      "uipos": [
-      -2293.525,
-      -34.49999999999986
+      -3208.289404296875,
+      605.6358496093749
      ],
      "options": []
     },
@@ -265,8 +273,8 @@
       "value": 1
      },
      "uipos": [
-      -2551.9249999999997,
-      20.700000000000188
+      -3466.6894042968747,
+      660.8358496093749
      ],
      "options": []
     },
@@ -283,8 +291,8 @@
       "hint": "iFrame"
      },
      "uipos": [
-      -1779.825,
-      8.662500000000051
+      -2693.3094042968737,
+      515.6783496093748
      ],
      "options": []
     },
@@ -299,16 +307,101 @@
      },
      "params": {},
      "uipos": [
-      -2578.0875,
-      -152.76250000000002
+      -3492.851904296875,
+      487.3733496093747
+     ],
+     "options": []
+    },
+    "35d18bee-PassToyGetResolution": {
+     "name": "PassToyGetResolution",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -2788.364404296875,
+      734.7458496093748
+     ],
+     "options": []
+    },
+    "df4be5a9-MakeSmallList": {
+     "name": "MakeSmallList",
+     "inputs": {
+      "obj0": [
+       "0a25ec8b-PassToyApplyShader",
+       "textureOut"
+      ],
+      "obj1": [
+       "f605ae29-x",
+       "textureOut"
+      ],
+      "obj2": null,
+      "obj3": null,
+      "obj4": null,
+      "obj5": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -958.4000000000001,
+      -241.60000000000002
+     ],
+     "options": []
+    },
+    "0f8f4f53-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  float iTime = float(iFrame) / 24.0;\n//  vec3 color = cos(iTime + fragCoord.xyx + vec3(0, 2, 4)) * 0.5 + 0.5;\n  ivec2 coord = ivec2(floor(fragCoord * 10.0));\n  vec3 color = vec3((coord.x + coord.y) % 2 == 0 ? 0.9 : 0.23);\n  fragColor = vec4(color, 1.0);\n}"
+     },
+     "uipos": [
+      -1464.5475,
+      -1075.495
+     ],
+     "options": []
+    },
+    "eb395b1d-x": {
+     "name": "PassToyMakeShader",
+     "inputs": {
+      "source": [
+       "0f8f4f53-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -1423.5475,
+      -695.245
+     ],
+     "options": []
+    },
+    "f605ae29-x": {
+     "name": "PassToyApplyShader",
+     "inputs": {
+      "shader": [
+       "eb395b1d-x",
+       "shader"
+      ],
+      "uniforms": null,
+      "textureIn": null,
+      "textureOut": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -1419.8274999999996,
+      -562.005
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -2156,
-    "trans_y": -592
+    "scale": 0.8,
+    "trans_x": -1676,
+    "trans_y": -980
    }
   }
  },
@@ -2598,6 +2691,31 @@
     "PassToy"
    ]
   },
+  "PassToyGetResolution": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
   "PassToyMakeShader": {
    "inputs": [
     [
@@ -2632,12 +2750,7 @@
    "inputs": [
     [
      "",
-     "nx",
-     ""
-    ],
-    [
-     "",
-     "ny",
+     "resolution",
      ""
     ],
     [
