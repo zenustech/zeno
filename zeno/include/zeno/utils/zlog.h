@@ -29,6 +29,11 @@ namespace zlog {
         _impl_format(os, std::string(fmt).c_str(), std::forward<Ts>(ts)...);
     }
 
+    template <class Os, class ...Ts>
+    void print(std::string_view const &fmt, Ts &&...ts) {
+        format(std::cout, fmt, std::forward<Ts>(ts)...);
+    }
+
     enum class LogLevel : char {
         trace = 't',
         debug = 'd',
@@ -39,11 +44,16 @@ namespace zlog {
         fatal = 'f',
     };
 
+    template <class Os>
+    void _prefix_bar(Os &os, LogLevel level) {
+        os << "zlog/" << (char)level << ": ";
+    }
+
     template <class ...Ts>
     void log(LogLevel level, std::string_view const &fmt, Ts &&...ts) {
-        std::cout << "zlog/" << (char)level << ": ";
-        format(std::cout, fmt, std::forward<Ts>(ts)...);
-        std::cout << std::endl;
+        _prefix_bar(std::cerr, level);
+        format(std::cerr, fmt, std::forward<Ts>(ts)...);
+        std::cerr << std::endl;
     }
 
     template <class ...Ts>

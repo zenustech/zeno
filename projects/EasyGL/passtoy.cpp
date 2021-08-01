@@ -98,7 +98,11 @@ ZENDEFNODE(PassToyMakeTexture, {
 
 struct PassToyApplyShader : zeno::INode {
     virtual void apply() override {
-        zeno::vec2i resolution(32, 32);
+        GLint dims[4];
+        glGetIntegerv(GL_VIEWPORT, dims);
+        zeno::vec2i resolution;
+        resolution[0] = dims[2] - dims[0];
+        resolution[1] = dims[3] - dims[1];
         if (has_input<zeno::ListObject>("textureIn")) {
             auto textureInList = get_input<zeno::ListObject>("textureIn");
             for (int i = 0; i < textureInList->arr.size(); i++) {
@@ -120,9 +124,10 @@ struct PassToyApplyShader : zeno::INode {
         if (has_input<PassToyTexture>("textureOut")) {
             textureOut = get_input<PassToyTexture>("textureOut");
             textureOut->fbo.use();
+            resolution[0] = textureOut->tex.width;
+            resolution[1] = textureOut->tex.height;
         } else if (!has_input("textureOut")) {
             textureOut = std::make_shared<PassToyTexture>();
-            printf("%d %d\n", resolution[0], resolution[1]);
             textureOut->tex.width = resolution[0];
             textureOut->tex.height = resolution[1];
             textureOut->tex.initialize();
@@ -139,6 +144,7 @@ struct PassToyApplyShader : zeno::INode {
         GLVertexAttribInfo vab;
         vab.base = generic_rect_vertices;
         vab.dim = 2;
+        glViewport(0, 0, resolution[0], resolution[1]);
         drawVertexArrays(GL_TRIANGLES, 6, {vab});
         GLFramebuffer().use();
         set_output("textureOut", std::move(textureOut));
