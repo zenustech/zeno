@@ -3,8 +3,6 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/ListObject.h>
-#include <GLES2/gl2.h>
-#include <cstring>
 #include "GLVertexAttribInfo.h"
 #include "GLPrimitiveObject.h"
 #include "GLTextureObject.h"

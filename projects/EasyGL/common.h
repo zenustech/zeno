@@ -6,7 +6,7 @@
 #include <string>
 #include <cstdlib>
 #include <cstring>
-#include <GLES2/gl2.h>
+#include <GLES3/gl3.h>
 #include <zeno/utils/zlog.h>
 
 static const char *get_opengl_error_string(GLenum err) {
