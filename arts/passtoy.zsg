@@ -121,8 +121,8 @@
        "dict"
       ],
       "textureIn": [
-       "df4be5a9-MakeSmallList",
-       "list"
+       "27d9caa1-MakeDict",
+       "dict"
       ],
       "textureOut": [
        "6c6fc88a-x",
@@ -324,30 +324,6 @@
      ],
      "options": []
     },
-    "df4be5a9-MakeSmallList": {
-     "name": "MakeSmallList",
-     "inputs": {
-      "obj0": [
-       "0a25ec8b-PassToyApplyShader",
-       "textureOut"
-      ],
-      "obj1": [
-       "f605ae29-x",
-       "textureOut"
-      ],
-      "obj2": null,
-      "obj3": null,
-      "obj4": null,
-      "obj5": null,
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -958.4000000000001,
-      -241.60000000000002
-     ],
-     "options": []
-    },
     "0f8f4f53-x": {
      "name": "MakeMultilineString",
      "inputs": {
@@ -385,7 +361,10 @@
        "eb395b1d-x",
        "shader"
       ],
-      "uniforms": null,
+      "uniforms": [
+       "9fe1edbe-MakeDict",
+       "dict"
+      ],
       "textureIn": null,
       "textureOut": null,
       "SRC": null
@@ -396,12 +375,70 @@
       -562.005
      ],
      "options": []
+    },
+    "27d9caa1-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": null,
+      "iTexture[0]": [
+       "88daaae0-CachedOnce",
+       "output"
+      ],
+      "iTexture[1]": [
+       "d873481a-CachedOnce",
+       "output"
+      ]
+     },
+     "params": {
+      "_KEYS": "iTexture[0]\niTexture[1]"
+     },
+     "uipos": [
+      -732.75,
+      -97.75
+     ],
+     "options": [],
+     "socket_keys": [
+      "iTexture[0]",
+      "iTexture[1]"
+     ]
+    },
+    "d873481a-CachedOnce": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "f605ae29-x",
+       "textureOut"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -1418.9124999999995,
+      -353.78749999999985
+     ],
+     "options": []
+    },
+    "88daaae0-CachedOnce": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "0a25ec8b-PassToyApplyShader",
+       "textureOut"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -1852.0,
+      89.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": -1676,
-    "trans_y": -980
+    "scale": 1.0000000000000002,
+    "trans_x": -1451,
+    "trans_y": -655
    }
   }
  },

@@ -1,7 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
-#include <zeno/types/ListObject.h>
 #include <zeno/types/DictObject.h>
 #include <GLES2/gl2.h>
 #include <cstring>
@@ -127,15 +126,22 @@ ZENDEFNODE(PassToyGetResolution, {
 struct PassToyApplyShader : zeno::INode {
     virtual void apply() override {
         auto resolution = get_default_resolution();
-        if (has_input<zeno::ListObject>("textureIn")) {
-            auto textureInList = get_input<zeno::ListObject>("textureIn");
-            for (int i = 0; i < textureInList->arr.size(); i++) {
-                auto obj = textureInList->arr[i].get();
+
+        auto shader = get_input<PassToyShader>("shader");
+        shader->prog.use();
+
+        if (has_input<zeno::DictObject>("textureIn")) {
+            auto textureIns = get_input<zeno::DictObject>("textureIn");
+            int i = 0;
+            for (auto const &[key, obj]: textureIns->lut) {
                 auto textureIn = zeno::safe_dynamic_cast<PassToyTexture>(obj);
                 textureIn->tex.use(i);
-                if (i == 0)
+                shader->prog.setUniform(key.c_str(), i);
+                if (i == 0) {
                     resolution = zeno::vec2i(
                             textureIn->tex.width, textureIn->tex.height);
+                }
+                i++;
             }
         } else if (has_input("textureIn")) {
             auto textureIn = get_input<PassToyTexture>("textureIn");
@@ -162,9 +168,6 @@ struct PassToyApplyShader : zeno::INode {
         } else {
             GLFramebuffer().use();
         }
-
-        auto shader = get_input<PassToyShader>("shader");
-        shader->prog.use();
 
         if (has_input("uniforms")) {
             auto uniforms = get_input<zeno::DictObject>("uniforms");
