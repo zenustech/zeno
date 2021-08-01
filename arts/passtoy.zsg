@@ -17,8 +17,8 @@
       "ny": 768
      },
      "uipos": [
-      1200.0,
-      -5.0
+      1944.1406249999998,
+      78.984375
      ],
      "options": [
       "VIEW"
@@ -32,8 +32,8 @@
        "shader"
       ],
       "uniforms": [
-       "9fe1edbe-MakeDict",
-       "dict"
+       "0d354834-PortalOut",
+       "port"
       ],
       "textureIn": null,
       "textureOut": null,
@@ -41,8 +41,8 @@
      },
      "params": {},
      "uipos": [
-      -1857.2748730468743,
-      -129.31102539062502
+      -2946.1420605468747,
+      -97.57274414062502
      ],
      "options": []
     },
@@ -57,8 +57,8 @@
      },
      "params": {},
      "uipos": [
-      -1860.9948730468745,
-      -262.551025390625
+      -2949.862060546874,
+      -230.812744140625
      ],
      "options": []
     },
@@ -71,8 +71,8 @@
       "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n//  vec3 color = cos(float(iFrame) / 24.0 + fragCoord.xyx + vec3(0, 2, 4)) * 0.5 + 0.5;\n  ivec2 coord = ivec2(floor(fragCoord * 8.0));\n  float res = float((coord.x + coord.y) % 2 != 0);\n  fragColor = vec4(vec3(res * 0.5 + 0.5), 1.0);\n}"
      },
      "uipos": [
-      -1901.9948730468745,
-      -642.801025390625
+      -2990.862060546874,
+      -611.062744140625
      ],
      "options": []
     },
@@ -91,8 +91,8 @@
      },
      "params": {},
      "uipos": [
-      947.2,
-      30.400000000000006
+      1923.7625,
+      -92.64687499999997
      ],
      "options": []
     },
@@ -104,8 +104,8 @@
      },
      "params": {},
      "uipos": [
-      949.2,
-      -133.60000000000002
+      1925.7625,
+      -256.646875
      ],
      "options": []
     },
@@ -117,23 +117,23 @@
        "shader"
       ],
       "uniforms": [
-       "9fe1edbe-MakeDict",
-       "dict"
+       "e7fb0a47-x",
+       "port"
       ],
       "textureIn": [
        "27d9caa1-MakeDict",
        "dict"
       ],
       "textureOut": [
-       "88daaae0-CachedOnce",
-       "output"
+       "4f325145-PortalOut",
+       "port"
       ],
       "SRC": null
      },
      "params": {},
      "uipos": [
       -439.79999999999995,
-      -125.6
+      -124.6
      ],
      "options": []
     },
@@ -143,7 +143,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform ivec2 iResolution;\nuniform sampler2D iTexPressure;\nuniform sampler2D iTexVelocityDiv;\nin vec2 fragCoord;\nout vec4 fragColor;\nfloat pf(ivec2 coor) {\n  return texelFetch(iTexPressure, coor, 0).r * 2.0 - 1.0;\n}\nfloat vdiv(ivec2 coor) {\n  return texelFetch(iTexVelocityDiv, coor, 0).r * 2.0 - 1.0;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  float u = pf(coord + ivec2(0, 1));\n  float d = pf(coord + ivec2(0, -1));\n  float r = pf(coord + ivec2(1, 0));\n  float l = pf(coord + ivec2(-1, 0));\n  float div = vdiv(coord);\n  float res =  (r + l + u + d - div) * 0.25;\n  fragColor = vec4(vec3(res * 0.5 + 0.5), 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform ivec2 iResolution;\nuniform sampler2D iTexPressure;\nuniform sampler2D iTexVelocityDiv;\nin vec2 fragCoord;\nout vec4 fragColor;\nfloat pf(ivec2 coor) {\n  return texelFetch(iTexPressure, clamp(coor, ivec2(0), iResolution - 1), 0).r * 2.0 - 1.0;\n}\nfloat vdiv(ivec2 coor) {\n  return texelFetch(iTexVelocityDiv, coor, 0).r * 2.0 - 1.0;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  float u = pf(coord + ivec2(0, 1));\n  float d = pf(coord + ivec2(0, -1));\n  float r = pf(coord + ivec2(1, 0));\n  float l = pf(coord + ivec2(-1, 0));\n  float div = vdiv(coord);\n  float res = (r + l + u + d - div) * 0.25;\n  fragColor = vec4(vec3(res * 0.5 + 0.5), 1.0);\n}"
      },
      "uipos": [
       -492.1125000000004,
@@ -187,8 +187,8 @@
       "_KEYS": "iFrame\niResolution"
      },
      "uipos": [
-      -2420.6019042968737,
-      584.7983496093749
+      -2545.601904296874,
+      878.5483496093748
      ],
      "options": [],
      "socket_keys": [
@@ -205,8 +205,8 @@
       "value": -1
      },
      "uipos": [
-      -3772.2894042968733,
-      458.4358496093748
+      -3897.2894042968733,
+      752.1858496093746
      ],
      "options": []
     },
@@ -225,8 +225,8 @@
      },
      "params": {},
      "uipos": [
-      -2959.489404296874,
-      559.2358496093748
+      -3084.489404296874,
+      852.9858496093746
      ],
      "options": []
     },
@@ -247,8 +247,8 @@
       "op_type": "add"
      },
      "uipos": [
-      -3208.289404296875,
-      605.6358496093749
+      -3333.289404296875,
+      899.3858496093746
      ],
      "options": []
     },
@@ -261,8 +261,8 @@
       "value": 1
      },
      "uipos": [
-      -3466.6894042968747,
-      660.8358496093749
+      -3591.6894042968747,
+      954.5858496093747
      ],
      "options": []
     },
@@ -279,8 +279,8 @@
       "hint": "iFrame"
      },
      "uipos": [
-      -2693.3094042968737,
-      515.6783496093748
+      -2818.3094042968737,
+      809.4283496093744
      ],
      "options": []
     },
@@ -295,8 +295,8 @@
      },
      "params": {},
      "uipos": [
-      -3492.851904296875,
-      487.3733496093747
+      -3617.851904296875,
+      781.1233496093746
      ],
      "options": []
     },
@@ -307,8 +307,8 @@
      },
      "params": {},
      "uipos": [
-      -2788.364404296875,
-      734.7458496093748
+      -2913.364404296875,
+      1028.4958496093745
      ],
      "options": []
     },
@@ -321,8 +321,8 @@
       "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  float iTime = float(iFrame) / 24.0;\n  float res = 3.0 * smoothstep(0.02, 0.0, distance(vec2(fragCoord), vec2(0.5)));\n  fragColor = vec4(vec3(res * 0.5 + 0.5), 1.0);\n}"
      },
      "uipos": [
-      -1464.5475,
-      -1075.495
+      -1728.61,
+      -1083.3075
      ],
      "options": []
     },
@@ -337,8 +337,8 @@
      },
      "params": {},
      "uipos": [
-      -1423.5475,
-      -695.245
+      -1687.61,
+      -703.0575
      ],
      "options": []
     },
@@ -350,8 +350,8 @@
        "shader"
       ],
       "uniforms": [
-       "9fe1edbe-MakeDict",
-       "dict"
+       "f5e36965-x",
+       "port"
       ],
       "textureIn": null,
       "textureOut": null,
@@ -359,8 +359,8 @@
      },
      "params": {},
      "uipos": [
-      -1419.8274999999996,
-      -562.005
+      -1683.8899999999996,
+      -569.8175
      ],
      "options": []
     },
@@ -369,20 +369,20 @@
      "inputs": {
       "SRC": null,
       "iTexPressure": [
-       "88daaae0-CachedOnce",
-       "output"
+       "4f325145-PortalOut",
+       "port"
       ],
       "iTexVelocityDiv": [
-       "d873481a-CachedOnce",
-       "output"
+       "37bdd12c-x",
+       "port"
       ]
      },
      "params": {
       "_KEYS": "iTexPressure\niTexVelocityDiv"
      },
      "uipos": [
-      -732.75,
-      -97.75
+      -784.25,
+      -122.25
      ],
      "options": [],
      "socket_keys": [
@@ -401,8 +401,8 @@
      },
      "params": {},
      "uipos": [
-      -1418.9124999999995,
-      -353.78749999999985
+      -1682.9749999999997,
+      -361.5999999999998
      ],
      "options": []
     },
@@ -417,8 +417,8 @@
      },
      "params": {},
      "uipos": [
-      -1852.0,
-      89.0
+      -2940.8671875,
+      120.73828125
      ],
      "options": []
     },
@@ -429,8 +429,8 @@
      },
      "params": {},
      "uipos": [
-      313.79375,
-      160.29999999999995
+      1290.35625,
+      37.25312500000001
      ],
      "options": []
     },
@@ -442,12 +442,12 @@
        "shader"
       ],
       "uniforms": [
-       "9fe1edbe-MakeDict",
-       "dict"
+       "13020590-x",
+       "port"
       ],
       "textureIn": [
-       "f3497c81-PassToyApplyShader",
-       "textureOut"
+       "14e720c6-Route",
+       "output"
       ],
       "textureOut": [
        "3bfe6069-x",
@@ -457,8 +457,8 @@
      },
      "params": {},
      "uipos": [
-      312.36875000000043,
-      -53.81200000000001
+      1288.9312500000003,
+      -176.858875
      ],
      "options": []
     },
@@ -473,8 +473,8 @@
      },
      "params": {},
      "uipos": [
-      308.3062499999999,
-      -191.22499999999997
+      1284.8687499999999,
+      -314.271875
      ],
      "options": []
     },
@@ -487,16 +487,238 @@
       "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexture;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  float value = texture(iTexture, fragCoord).r;\n  fragColor = vec4(vec3(value), 1);\n}"
      },
      "uipos": [
-      261.0562499999999,
-      -566.4749999999999
+      1237.6187499999999,
+      -689.521875
+     ],
+     "options": []
+    },
+    "9e57be15-BeginFor": {
+     "name": "BeginFor",
+     "inputs": {
+      "count": [
+       "e1d9203b-NumericInt",
+       "value"
+      ],
+      "SRC": [
+       "27d9caa1-MakeDict",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -786.3499999999999,
+      -291.6
+     ],
+     "options": []
+    },
+    "d9926120-EndFor": {
+     "name": "EndFor",
+     "inputs": {
+      "FOR": [
+       "9e57be15-BeginFor",
+       "FOR"
+      ],
+      "SRC": [
+       "f3497c81-PassToyApplyShader",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -137.48437499999997,
+      -172.90625
+     ],
+     "options": []
+    },
+    "14e720c6-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "f3497c81-PassToyApplyShader",
+       "textureOut"
+      ],
+      "SRC": [
+       "d9926120-EndFor",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -137.60937499999991,
+      -28.75000000000003
+     ],
+     "options": []
+    },
+    "e1d9203b-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 10
+     },
+     "uipos": [
+      -792.0999999999999,
+      -468.6
+     ],
+     "options": []
+    },
+    "36613f54-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "9fe1edbe-MakeDict",
+       "dict"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "name": "uniforms"
+     },
+     "uipos": [
+      -2244.109999999999,
+      933.7224999999994
+     ],
+     "options": []
+    },
+    "0d354834-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "uniforms"
+     },
+     "uipos": [
+      -2945.6015625,
+      270.7382812500001
+     ],
+     "options": []
+    },
+    "e7fb0a47-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "uniforms"
+     },
+     "uipos": [
+      -439.0,
+      84.0
+     ],
+     "options": []
+    },
+    "f5e36965-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "uniforms"
+     },
+     "uipos": [
+      -1684.1249999999993,
+      -221.06249999999991
+     ],
+     "options": []
+    },
+    "2683bdaa-Blackboard": {
+     "name": "Blackboard",
+     "uipos": [
+      -1068.6718749999995,
+      -689.8437499999997
+     ],
+     "special": true,
+     "width": 1163.1249999999995,
+     "height": 956.875,
+     "title": "Blackboard",
+     "content": "Jacobi Iteration to let pressure equation coverage.",
+     "params": []
+    },
+    "13020590-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "uniforms"
+     },
+     "uipos": [
+      1293.7499999999986,
+      182.81249999999983
+     ],
+     "options": []
+    },
+    "d13c5c43-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "88daaae0-CachedOnce",
+       "output"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "name": "pressure"
+     },
+     "uipos": [
+      -2671.0,
+      125.0
+     ],
+     "options": []
+    },
+    "4f325145-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "pressure"
+     },
+     "uipos": [
+      -1046.0,
+      -91.0
+     ],
+     "options": []
+    },
+    "37bdd12c-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "velocityDiv"
+     },
+     "uipos": [
+      -1045.0,
+      101.0
+     ],
+     "options": []
+    },
+    "63bae5c1-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "d873481a-CachedOnce",
+       "output"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "name": "velocityDiv"
+     },
+     "uipos": [
+      -1437.0,
+      -341.0
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -126,
-    "trans_y": -652
+    "scale": 1.0,
+    "trans_x": -1095,
+    "trans_y": -547
    }
   }
  },

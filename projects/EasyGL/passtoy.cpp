@@ -136,8 +136,8 @@ struct PassToyApplyShader : zeno::INode {
                 if (i == 0) {
                     resolution = zeno::vec2i(textureIn->tex.width, textureIn->tex.height);
                 }
-                i++;
-                zlog::debug("texture number {} is `{}`", i, key);
+                i += 1;
+                //zlog::debug("texture number {} is `{}`", i, key);
                 textureIn->tex.use(i);
                 shader->prog.setUniform(key.c_str(), i);
             }
