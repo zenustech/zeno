@@ -25,12 +25,12 @@ namespace zlog {
     }
 
     template <class Os, class ...Ts>
-    void format(Os &os, std::string_view const &fmt, Ts &&...ts) {
+    void format(Os &os, const char *fmt, Ts &&...ts) {
         _impl_format(os, std::string(fmt).c_str(), std::forward<Ts>(ts)...);
     }
 
     template <class Os, class ...Ts>
-    void print(std::string_view const &fmt, Ts &&...ts) {
+    void print(const char *fmt, Ts &&...ts) {
         format(std::cout, fmt, std::forward<Ts>(ts)...);
     }
 
@@ -50,7 +50,7 @@ namespace zlog {
     }
 
     template <class ...Ts>
-    void log(LogLevel level, std::string_view const &fmt, Ts &&...ts) {
+    void log(LogLevel level, const char *fmt, Ts &&...ts) {
         _prefix_bar(std::cerr, level);
         format(std::cerr, fmt, std::forward<Ts>(ts)...);
         std::cerr << std::endl;

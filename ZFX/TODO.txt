@@ -6,3 +6,5 @@ MUTE is Buggy in dict order for subnodes: MUTE,VIEW,PREP,ONCE should be editor's
 refactor .so autoload system to be less ad-hoc, maybe all should be static
 zhouhang editor bug on undo: shoudn't allow undo on files' first commit
 Unconnected sockets should be UnconnectedObject instead of error
+Zeno Python modules should be only zenqt.
+add ZBB header-only <zbb/math/vec.h>.

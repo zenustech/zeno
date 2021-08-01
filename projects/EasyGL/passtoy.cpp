@@ -42,14 +42,23 @@ struct PassToyShader : zeno::IObjectClone<PassToyShader> {
 };
 
 struct PassToyMakeShader : zeno::INode {
+    inline static std::map<std::string, GLProgramObject> cache;
+
     virtual void apply() override {
         GLShaderObject frag, vert;
         GLProgramObject prog;
 
         auto source = get_input<zeno::StringObject>("source")->get();
-        frag.initialize(GL_FRAGMENT_SHADER, source);
-        vert = get_generic_vertex_shader();
-        prog.initialize({vert, frag});
+
+        if (auto it = cache.find(source); it == cache.end()) {
+            zlog::info("compiling shader:\n{}", source);
+            frag.initialize(GL_FRAGMENT_SHADER, source);
+            vert = get_generic_vertex_shader();
+            prog.initialize({vert, frag});
+            cache[source] = prog;
+        } else {
+            prog = it->second;
+        }
 
         auto shader = std::make_shared<PassToyShader>();
         shader->prog = prog;
@@ -87,8 +96,8 @@ struct PassToyMakeTexture : zeno::INode {
         auto texture = std::make_shared<PassToyTexture>();
         texture->tex.width = resolution[0];
         texture->tex.height = resolution[1];
-        texture->tex.type = GL_FLOAT;
-        texture->tex.format = GL_RED;
+        texture->tex.type = GL_UNSIGNED_BYTE;
+        texture->tex.format = GL_RGB;
         texture->tex.initialize();
         texture->fbo.initialize();
         texture->fbo.bindToTexture(texture->tex, GL_COLOR_ATTACHMENT0);
@@ -128,7 +137,7 @@ struct PassToyApplyShader : zeno::INode {
         auto shader = get_input<PassToyShader>("shader");
         shader->prog.use();
 
-        if (has_input<zeno::DictObject>("textureIn")) {
+        if (has_input("textureIn")) {
             auto textureIns = get_input<zeno::DictObject>("textureIn");
             int i = 0;
             for (auto const &[key, obj]: textureIns->lut) {
@@ -141,11 +150,6 @@ struct PassToyApplyShader : zeno::INode {
                 textureIn->tex.use(i);
                 shader->prog.setUniform(key.c_str(), i);
             }
-        } else if (has_input("textureIn")) {
-            auto textureIn = get_input<PassToyTexture>("textureIn");
-            textureIn->tex.use(0);
-            resolution = zeno::vec2i(
-                    textureIn->tex.width, textureIn->tex.height);
         }
         glActiveTexture(GL_TEXTURE0);
 
@@ -159,8 +163,8 @@ struct PassToyApplyShader : zeno::INode {
             textureOut = std::make_shared<PassToyTexture>();
             textureOut->tex.width = resolution[0];
             textureOut->tex.height = resolution[1];
-            textureOut->tex.type = GL_FLOAT;
-            textureOut->tex.format = GL_RED;
+            textureOut->tex.type = GL_UNSIGNED_BYTE;
+            textureOut->tex.format = GL_RGB;
             textureOut->tex.initialize();
             textureOut->fbo.initialize();
             textureOut->fbo.bindToTexture(textureOut->tex, GL_COLOR_ATTACHMENT0);
