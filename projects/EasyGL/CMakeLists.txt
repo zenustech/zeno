@@ -3,7 +3,7 @@ target_include_directories(zeno_EasyGL PRIVATE .)
 
 target_link_libraries(zeno_EasyGL PUBLIC zeno)
 target_link_libraries(zeno_EasyGL PUBLIC GLESv2)
-target_sources(zeno_EasyGL PRIVATE nodes.cpp)
+target_sources(zeno_EasyGL PRIVATE nodes.cpp passtoy.cpp)
 
 option(EASYGL_ENABLE_GLUT "Enable GLUT nodes in ZENO EasyGL" ON)
 if (EASYGL_ENABLE_GLUT)

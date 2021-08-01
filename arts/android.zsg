@@ -61,7 +61,7 @@
        "FUNC"
       ],
       "SRC": [
-       "df4542fd-PostprocessingPass",
+       "dcc51619-PassToScreen",
        "framebuffer"
       ]
      },
@@ -192,7 +192,7 @@
       "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec3 at(int dx, int dy) {\n  vec2 uv = fragCoord + vec2(dx, dy) / 512.0;\n  vec3 color = texture(image, uv).xyz;\n  return color;\n}\nvoid main() {\n  vec3 color = vec3(0);\n  for (int i = -10; i <= 10; i++) {\n    color += at(0, i);\n  }\n  color /= 21.0;\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
-      901.0020947265615,
+      749.4395947265616,
       -243.75492553710956
      ],
      "options": []
@@ -249,48 +249,8 @@
      },
      "params": {},
      "uipos": [
-      944.9999999999998,
+      793.4374999999998,
       151.24999999999994
-     ],
-     "options": []
-    },
-    "df4542fd-PostprocessingPass": {
-     "name": "PostprocessingPass",
-     "inputs": {
-      "fragShader": [
-       "ed9a3739-x",
-       "value"
-      ],
-      "texture": [
-       "ba0dd88c-GLGetFramebufferTexture",
-       "texture"
-      ],
-      "framebuffer": [
-       "14c38009-GLNoFramebuffer",
-       "framebuffer"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      1770.75,
-      191.5
-     ],
-     "options": []
-    },
-    "ba0dd88c-GLGetFramebufferTexture": {
-     "name": "GLGetFramebufferTexture",
-     "inputs": {
-      "framebuffer": [
-       "9a215c3e-Pass",
-       "framebuffer"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      1520.0,
-      222.0
      ],
      "options": []
     },
@@ -308,23 +268,31 @@
      ],
      "options": []
     },
-    "14c38009-GLNoFramebuffer": {
-     "name": "GLNoFramebuffer",
+    "dcc51619-PassToScreen": {
+     "name": "PassToScreen",
      "inputs": {
+      "framebuffer": [
+       "9a215c3e-Pass",
+       "framebuffer"
+      ],
+      "fragShader": [
+       "ed9a3739-x",
+       "value"
+      ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      1765.0,
-      397.0
+      1728.75,
+      211.25
      ],
      "options": []
     }
    },
    "view": {
     "scale": 0.8,
-    "trans_x": 578,
-    "trans_y": -400
+    "trans_x": 930,
+    "trans_y": -430
    }
   },
   "PostprocessingPass": {
@@ -1123,9 +1091,122 @@
     }
    },
    "view": {
-    "scale": 1,
+    "scale": 0.5120000000000001,
     "trans_x": -186,
     "trans_y": -195
+   }
+  },
+  "PassToScreen": {
+   "nodes": {
+    "f2b643aa-x": {
+     "name": "GLGetFramebufferTexture",
+     "inputs": {
+      "framebuffer": [
+       "19a716dc-x",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      298.4191406250002,
+      264.54765624999993
+     ],
+     "options": []
+    },
+    "19a716dc-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "framebuffer",
+      "defl": ""
+     },
+     "uipos": [
+      -65.0,
+      260.84921875
+     ],
+     "options": []
+    },
+    "fdde5d3a-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "string",
+      "name": "fragShader",
+      "defl": ""
+     },
+     "uipos": [
+      397.0,
+      17.849218749999977
+     ],
+     "options": []
+    },
+    "ec7c3203-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "db937560-x",
+       "framebuffer"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "framebuffer",
+      "defl": ""
+     },
+     "uipos": [
+      1021.0,
+      417.84921875
+     ],
+     "options": []
+    },
+    "db937560-x": {
+     "name": "PostprocessingPass",
+     "inputs": {
+      "fragShader": [
+       "fdde5d3a-x",
+       "port"
+      ],
+      "texture": [
+       "f2b643aa-x",
+       "texture"
+      ],
+      "framebuffer": [
+       "bddf1884-GLNoFramebuffer",
+       "framebuffer"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      755.5691406250004,
+      353.09765624999994
+     ],
+     "options": []
+    },
+    "bddf1884-GLNoFramebuffer": {
+     "name": "GLNoFramebuffer",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      492.0,
+      462.0
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1,
+    "trans_x": 87,
+    "trans_y": -123
    }
   }
  },
@@ -5853,6 +5934,42 @@
     [
      "",
      "framebuffer",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "framebuffer",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "PassToScreen": {
+   "inputs": [
+    [
+     "",
+     "framebuffer",
+     ""
+    ],
+    [
+     "string",
+     "fragShader",
      ""
     ],
     [

@@ -1,4 +1,4 @@
-O=arts/android.zsg
+O=arts/passtoy.zsg
 default: glrun
 
 #O=arts/ZFXv2.zsg
