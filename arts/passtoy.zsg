@@ -362,7 +362,7 @@
      },
      "params": {},
      "uipos": [
-      -1931.0823828124992,
+      -1932.3323828124994,
       -432.4883984375
      ],
      "options": []
@@ -395,22 +395,6 @@
       "iTexPressure",
       "iTexVelocityDiv"
      ]
-    },
-    "d873481a-CachedOnce": {
-     "name": "CachedOnce",
-     "inputs": {
-      "input": [
-       "f605ae29-x",
-       "textureOut"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -1931.1673828124995,
-      -224.2708984374999
-     ],
-     "options": []
     },
     "88daaae0-CachedOnce": {
      "name": "CachedOnce",
@@ -542,7 +526,7 @@
       "SRC": null
      },
      "params": {
-      "value": 20
+      "value": 150
      },
      "uipos": [
       -792.0999999999999,
@@ -605,8 +589,8 @@
       "name": "uniforms"
      },
      "uipos": [
-      -1931.3173828124989,
-      -83.7333984375
+      -1930.067382812499,
+      -218.7333984375
      ],
      "options": []
     },
@@ -687,8 +671,8 @@
      "name": "PortalIn",
      "inputs": {
       "port": [
-       "d873481a-CachedOnce",
-       "output"
+       "f605ae29-x",
+       "textureOut"
       ],
       "SRC": null
      },
@@ -696,8 +680,8 @@
       "name": "velocityDiv"
      },
      "uipos": [
-      -1685.1923828125,
-      -203.6708984375001
+      -1681.4423828125,
+      -347.4208984375001
      ],
      "options": []
     },
@@ -708,8 +692,8 @@
       -1015.5200000000002
      ],
      "special": true,
-     "width": 777.1600000000001,
-     "height": 1108.5549999999996,
+     "width": 767.1600000000001,
+     "height": 959.8049999999996,
      "title": "Blackboard",
      "content": "Calcuate velocity divergence: div v",
      "params": []
@@ -816,12 +800,12 @@
     "786a0555-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      -3499.1992187500023,
-      375.3730957031245
+      -4247.636718750002,
+      350.3730957031246
      ],
      "special": true,
-     "width": 657.5,
-     "height": 1151.25,
+     "width": 1376.25,
+     "height": 1173.125,
      "title": "Blackboard",
      "content": "Initial velocity: v = (0, 0, 0)",
      "params": []
@@ -952,7 +936,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec2 res = vec2(fragCoord - 0.5) * -8.0;\n  fragColor = vec4(res * 0.0625 + 0.5, 0.0, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec2 res = vec2(3.0, 0.0) * smoothstep(0.15, 0.0, length(fragCoord - 0.5));\n  fragColor = vec4(res * 0.0625 + 0.5, 0.0, 1.0);\n}"
      },
      "uipos": [
       -3416.887280273438,
@@ -1126,8 +1110,8 @@
       "name": "velocity"
      },
      "uipos": [
-      -4514.418749999997,
-      -601.3479394531249
+      -4515.218749999998,
+      -617.3479394531249
      ],
      "options": []
     },
@@ -1146,16 +1130,13 @@
        "5dcfc148-x",
        "dict"
       ],
-      "textureOut": [
-       "dce6460c-x",
-       "port"
-      ],
+      "textureOut": null,
       "SRC": null
      },
      "params": {},
      "uipos": [
-      -4240.37274902344,
-      -439.12676269531255
+      -4241.17274902344,
+      -431.9267626953125
      ],
      "options": []
     },
@@ -1204,8 +1185,8 @@
       "_KEYS": "iTexVelocity"
      },
      "uipos": [
-      -4504.218749999996,
-      -418.8479394531247
+      -4505.018749999997,
+      -434.8479394531247
      ],
      "options": [],
      "socket_keys": [
@@ -1218,7 +1199,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec2 vf(vec2 coor) {\n  coor = clamp(coor / vec2(iResolution), vec2(0), vec2(1));\n  return texture(iTexVelocity, coor).rg * 16.0 - 8.0;\n}\nvoid main() {\n  float dt = 0.1;\n  vec2 p0 = fragCoord * vec2(iResolution);\n  vec2 p1 = p0 - vf(p0) * dt;\n  vec2 res = vf(p1);\n  fragColor = vec4(res * 0.0625 + 0.5, 0.0, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec2 vf(vec2 coor) {\n  coor = clamp(coor / vec2(iResolution), vec2(0), vec2(1));\n  return texture(iTexVelocity, coor).rg * 16.0 - 8.0;\n}\nvoid main() {\n  float dt = 30.0;\n  vec2 p0 = fragCoord * vec2(iResolution);\n  vec2 p1 = p0 - 0.5 * vf(p0) * dt;\n  vec2 p2 = p0 - vf(p1) * dt;\n  vec2 res = vf(p1) * 0.95;\n  fragColor = vec4(res * 0.0625 + 0.5, 0.0, 1.0);\n}"
      },
      "uipos": [
       -4286.13274902344,
@@ -1229,8 +1210,8 @@
     "de385b81-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      -4556.249999999998,
-      -1037.1874999999998
+      -4553.049999999998,
+      -1037.9874999999997
      ],
      "special": true,
      "width": 783.4374999999995,
@@ -1238,12 +1219,112 @@
      "title": "Blackboard",
      "content": "Advect velocity with velocity: v(t + dt, x) = v(t, x - v*dt)",
      "params": []
+    },
+    "26327e37-x": {
+     "name": "PassToyApplyShader",
+     "inputs": {
+      "shader": [
+       "eea20599-x",
+       "shader"
+      ],
+      "uniforms": [
+       "cf0914a2-x",
+       "port"
+      ],
+      "textureIn": null,
+      "textureOut": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -4147.948530273437,
+      956.9644873046875
+     ],
+     "options": []
+    },
+    "4f0c4a15-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "26327e37-x",
+       "textureOut"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -4142.673657226562,
+      1175.2755126953118
+     ],
+     "options": []
+    },
+    "eea20599-x": {
+     "name": "PassToyMakeShader",
+     "inputs": {
+      "source": [
+       "80875a37-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -4151.668530273437,
+      823.7244873046873
+     ],
+     "options": []
+    },
+    "80875a37-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec2 res = vec2(3.0, 0.0) * smoothstep(0.15, 0.0, length(fragCoord - 0.5));\n  fragColor = vec4(res * 0.0625 + 0.5, 0.0, 1.0);\n}"
+     },
+     "uipos": [
+      -4192.668530273437,
+      443.4744873046873
+     ],
+     "options": []
+    },
+    "cf0914a2-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "uniforms"
+     },
+     "uipos": [
+      -4147.408032226562,
+      1325.2755126953118
+     ],
+     "options": []
+    },
+    "82004862-x": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "4f0c4a15-x",
+       "output"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "name": "advVelocityStorage"
+     },
+     "uipos": [
+      -3879.206469726562,
+      1181.1372314453122
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.953125,
-    "trans_x": -5934,
-    "trans_y": -1431
+    "scale": 1.25,
+    "trans_x": -5771,
+    "trans_y": -908
    }
   }
  },
