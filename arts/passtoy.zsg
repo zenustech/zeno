@@ -12,7 +12,7 @@
       "SRC": null
      },
      "params": {
-      "interval": 1700,
+      "interval": 170,
       "nx": 512,
       "ny": 512
      },
@@ -30,6 +30,10 @@
       "shader": [
        "c4e25e2d-PassToyMakeShader",
        "shader"
+      ],
+      "uniforms": [
+       "9fe1edbe-MakeDict",
+       "dict"
       ],
       "textureIn": null,
       "textureOut": null,
@@ -64,7 +68,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n//  vec3 color = cos(fragCoord.xyx + vec3(0, 2, 4)) * 0.5 + 0.5;\n  ivec2 coord = ivec2(floor(fragCoord * 8.0));\n  vec3 color = vec3((coord.x + coord.y) % 2 != 0 ? 0.9 : 0.23);\n  fragColor = vec4(color, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n//  vec3 color = cos(fragCoord.xyx + vec3(0, 2, 4)) * 0.5 + 0.5;\n  ivec2 coord = ivec2(floor(fragCoord * 8.0 + float(iFrame) * 1.0));\n  vec3 color = vec3((coord.x + coord.y) % 2 != 0 ? 0.9 : 0.23);\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
       -1570.6875,
@@ -112,6 +116,7 @@
        "1834ff36-x",
        "shader"
       ],
+      "uniforms": null,
       "textureIn": [
        "0a25ec8b-PassToyApplyShader",
        "textureOut"
@@ -125,7 +130,7 @@
      "params": {},
      "uipos": [
       -440.0,
-      -124.0
+      -124.79999999999998
      ],
      "options": []
     },
@@ -147,7 +152,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 color =  texture(image, fragCoord).xyz;\n  fragColor = vec4(color, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexture;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 color =  texture(iTexture, fragCoord).xyz;\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
       -738.8125000000001,
@@ -170,12 +175,140 @@
       -182.72500000000005
      ],
      "options": []
+    },
+    "9fe1edbe-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       "edaa4c5a-PrintNumeric",
+       "DST"
+      ],
+      "iFrame": [
+       "4cfd0835-Assign",
+       "dst"
+      ]
+     },
+     "params": {
+      "_KEYS": "iFrame"
+     },
+     "uipos": [
+      -1505.8374999999996,
+      -55.337499999999885
+     ],
+     "options": [],
+     "socket_keys": [
+      "iFrame"
+     ]
+    },
+    "5c17746f-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": -1
+     },
+     "uipos": [
+      -2577.8374999999987,
+      -80.13749999999993
+     ],
+     "options": []
+    },
+    "4cfd0835-Assign": {
+     "name": "Assign",
+     "inputs": {
+      "dst": [
+       "fe27a580-CachedOnce",
+       "output"
+      ],
+      "src": [
+       "2d9d1f44-NumericOperator",
+       "ret"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -1765.0375,
+      20.66250000000008
+     ],
+     "options": []
+    },
+    "2d9d1f44-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "fe27a580-CachedOnce",
+       "output"
+      ],
+      "rhs": [
+       "c8f76c93-NumericInt",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      -2013.8375,
+      67.06250000000011
+     ],
+     "options": []
+    },
+    "c8f76c93-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 1
+     },
+     "uipos": [
+      -2272.2374999999997,
+      122.26250000000019
+     ],
+     "options": []
+    },
+    "edaa4c5a-PrintNumeric": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "4cfd0835-Assign",
+       "dst"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "hint": "PrintNumeric"
+     },
+     "uipos": [
+      -1539.2,
+      169.60000000000002
+     ],
+     "options": []
+    },
+    "fe27a580-CachedOnce": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "5c17746f-NumericInt",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -2298.3999999999996,
+      -51.2
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -31,
-    "trans_y": -584
+    "trans_x": -3369,
+    "trans_y": -524
    }
   }
  },
@@ -2425,6 +2558,11 @@
     [
      "",
      "shader",
+     ""
+    ],
+    [
+     "",
+     "uniforms",
      ""
     ],
     [
