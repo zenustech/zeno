@@ -367,7 +367,10 @@
     "27d9caa1-MakeDict": {
      "name": "MakeDict",
      "inputs": {
-      "SRC": null,
+      "SRC": [
+       "e7fb0a47-x",
+       "DST"
+      ],
       "iTexPressure": [
        "4f325145-PortalOut",
        "port"
@@ -381,8 +384,8 @@
       "_KEYS": "iTexPressure\niTexVelocityDiv"
      },
      "uipos": [
-      -784.25,
-      -122.25
+      -785.25,
+      -88.25
      ],
      "options": [],
      "socket_keys": [
@@ -605,7 +608,7 @@
      },
      "uipos": [
       -439.0,
-      84.0
+      83.0
      ],
      "options": []
     },
@@ -716,9 +719,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -1095,
-    "trans_y": -547
+    "scale": 0.8,
+    "trans_x": -1171,
+    "trans_y": -592
    }
   }
  },
