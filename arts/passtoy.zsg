@@ -12,7 +12,7 @@
       "SRC": null
      },
      "params": {
-      "interval": 17,
+      "interval": 170,
       "nx": 1024,
       "ny": 768
      },
@@ -68,7 +68,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  float iTime = float(iFrame) / 24.0;\n  vec3 color = cos(iTime + fragCoord.xyx + vec3(0, 2, 4)) * 0.5 + 0.5;\n//  ivec2 coord = ivec2(floor(fragCoord) * 8.0));\n//  vec3 color = vec3((coord.x + coord.y) % 2 != 0 ? 0.9 : 0.23);\n  fragColor = vec4(color, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  float iTime = float(iFrame) / 24.0;\n//  vec3 color = cos(iTime + fragCoord.xyx + vec3(0, 2, 4)) * 0.5 + 0.5;\n  ivec2 coord = ivec2(floor(fragCoord * 8.0));\n  vec3 color = vec3((coord.x + coord.y) % 2 != 0 ? 0.9 : 0.23);\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
       -1570.6875,
@@ -306,9 +306,9 @@
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -3021,
-    "trans_y": -453
+    "scale": 1.0,
+    "trans_x": -2156,
+    "trans_y": -592
    }
   }
  },

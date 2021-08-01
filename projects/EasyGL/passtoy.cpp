@@ -68,6 +68,15 @@ ZENDEFNODE(PassToyMakeShader, {
 });
 
 
+zeno::vec2i get_default_resolution() {
+    zeno::vec2i resolution;
+    GLint dims[4];
+    glGetIntegerv(GL_VIEWPORT, dims);
+    resolution[0] = dims[2] - dims[0];
+    resolution[1] = dims[3] - dims[1];
+    return resolution;
+}
+
 struct PassToyTexture : zeno::IObjectClone<PassToyTexture> {
     GLFramebuffer fbo;
     GLTextureObject tex;
@@ -75,9 +84,11 @@ struct PassToyTexture : zeno::IObjectClone<PassToyTexture> {
 
 struct PassToyMakeTexture : zeno::INode {
     virtual void apply() override {
-        auto nx = get_input<zeno::NumericObject>("nx")->get<int>();
-        auto ny = get_input<zeno::NumericObject>("ny")->get<int>();
-        zeno::vec2i resolution(nx, ny);
+        zeno::vec2i resolution = has_input("resolution") ?
+            get_input<zeno::NumericObject>("nx")->get<zeno::vec2i>() :
+            get_default_resolution();
+        if (has_input("ny"))
+            resolution[0] = get_input<zeno::NumericObject>("ny")->get<int>();
         auto texture = std::make_shared<PassToyTexture>();
         texture->tex.width = resolution[0];
         texture->tex.height = resolution[1];
@@ -90,21 +101,19 @@ struct PassToyMakeTexture : zeno::INode {
 };
 
 ZENDEFNODE(PassToyMakeTexture, {
-        {"nx", "ny"},
+        {"resolution"},
         {"texture"},
         {},
         {"PassToy"},
 });
 
 
+struct PassToyGetResolution : zeno::INode {
+};
+
+
 struct PassToyApplyShader : zeno::INode {
     virtual void apply() override {
-        zeno::vec2i resolution;
-        GLint dims[4];
-        glGetIntegerv(GL_VIEWPORT, dims);
-        resolution[0] = dims[2] - dims[0];
-        resolution[1] = dims[3] - dims[1];
-
         if (has_input<zeno::ListObject>("textureIn")) {
             auto textureInList = get_input<zeno::ListObject>("textureIn");
             for (int i = 0; i < textureInList->arr.size(); i++) {

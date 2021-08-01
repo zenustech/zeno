@@ -73,10 +73,8 @@ struct GLProgramObject : zeno::IObjectClone<GLProgramObject> {
     template <class T>
     void setUniform(const char *name, T const &t) {
         GLuint loc = glGetUniformLocation(impl->id, name);
-        if (loc == -1) {
-            zlog::warning("invalid uniform name {}", name);
+        if (loc == -1)
             return;
-        }
         setUniform(loc, t);
     }
 };
