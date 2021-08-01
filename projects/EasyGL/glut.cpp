@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/FunctionObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/utils/zlog.h>
 #include <GLES2/gl2.h>
 #include <GL/glut.h>
 
@@ -13,7 +14,7 @@ struct GLUTMainLoop : zeno::INode {
         glViewport(0, 0, nx, ny);
         glClearColor(0.23f, 0.23f, 0.23f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        printf("calling draw function...\n");
+        zlog::trace("calling draw function...");
         drawFunc->call({});
         glFlush();
     }
@@ -39,7 +40,7 @@ struct GLUTMainLoop : zeno::INode {
         glutDisplayFunc(displayFunc);
         glutKeyboardFunc(keyboardFunc);
         glutTimerFunc(interval, timerFunc, interval);
-        printf("entering main loop...\n");
+        zlog::trace("entering main loop...");
         glutMainLoop();
     }
 
