@@ -5,4 +5,4 @@ OutOfOrderExecution
 MUTE is Buggy in dict order for subnodes: MUTE,VIEW,PREP,ONCE should be editor's mock
 refactor .so autoload system to be less ad-hoc, maybe all should be static
 zhouhang editor bug on undo: shoudn't allow undo on files' first commit
-CachedByKey nodes
+Unconnected sockets should be UnconnectedObject instead of error

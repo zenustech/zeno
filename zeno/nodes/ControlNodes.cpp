@@ -3,6 +3,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/ConditionObject.h>
 #include <zeno/extra/ContextManaged.h>
+#include <zeno/extra/evaluate_condition.h>
 
 namespace zeno {
 
@@ -95,21 +96,6 @@ ZENDEFNODE(BreakFor, {
     {},
     {"control"},
 });
-
-
-static bool evaluate_condition(zeno::IObject *cond) {
-    if (auto num = dynamic_cast<zeno::NumericObject *>(cond); num) {
-        return std::visit([] (auto const &v) {
-            return zeno::any(v);
-        }, num->value);
-    } else if (auto con = dynamic_cast<zeno::ConditionObject *>(cond); con) {
-        return con->get();
-    } else {
-        printf("invalid input `%s` to be evaluated as boolean\n",
-                typeid(*cond).name());
-        abort();
-    }
-}
 
 struct IfElse : zeno::INode {
     virtual void doApply() override {
@@ -321,61 +307,6 @@ struct BeginForEach : IBeginFor {
 ZENDEFNODE(BeginForEach, {
     {"list"},
     {"object", "index", "FOR"},
-    {},
-    {"control"},
-});
-
-
-struct CachedOnce : zeno::INode {
-    bool m_done = false;
-
-    virtual void doApply() override {
-        if (!m_done) {
-            zeno::INode::doApply();
-            m_done = true;
-        }
-    }
-
-    virtual void apply() override {
-        auto ptr = get_input("input");
-        set_output("output", std::move(ptr));
-    }
-};
-
-ZENDEFNODE(CachedOnce, {
-    {"input"},
-    {"output"},
-    {},
-    {"control"},
-});
-
-
-struct CachedIf : zeno::INode {
-    bool m_done = false;
-
-    virtual void doApply() override {
-        if (has_input("keepCache")) {
-            requireInput("keepCache");
-            bool keep = evaluate_condition(get_input("keepCache").get());
-            if (!keep) {
-                m_done = false;
-            }
-        }
-        if (!m_done) {
-            zeno::INode::doApply();
-            m_done = true;
-        }
-    }
-
-    virtual void apply() override {
-        auto ptr = get_input("input");
-        set_output("output", std::move(ptr));
-    }
-};
-
-ZENDEFNODE(CachedIf, {
-    {"input", "keepCache"},
-    {"output"},
     {},
     {"control"},
 });

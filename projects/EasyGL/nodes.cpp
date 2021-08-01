@@ -260,4 +260,24 @@ ZENDEFNODE(GLUseTexture, {
         {"EasyGL"},
 });
 
+struct GLClearColor : zeno::INode {
+    virtual void apply() override {
+        auto color = has_input("color") ?
+            get_input<zeno::NumericObject>("color")->get<zeno::vec3f>() :
+            zeno::vec3f(0);
+        auto alpha = has_input("alpha") ?
+            get_input<zeno::NumericObject>("alpha")->get<float>() :
+            0.0f;
+        glClearColor(color[0], color[1], color[2], alpha);
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
+};
+
+ZENDEFNODE(GLClearColor, {
+        {"color", "alpha"},
+        {},
+        {},
+        {"EasyGL"},
+});
+
 }

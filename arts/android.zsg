@@ -11,8 +11,8 @@
       "value": "#version 300 es\nlayout (location = 0) in vec3 vPosition;\nvoid main() {\n  gl_Position = vec4(vPosition, 1.0);\n}"
      },
      "uipos": [
-      -598.4990087890624,
-      -101.40934326171882
+      -2062.073227539062,
+      -170.15934326171882
      ],
      "options": []
     },
@@ -25,8 +25,8 @@
       "value": "#version 300 es\nprecision mediump float;\nout vec4 fragColor;\nvoid main() {\n  vec3 color = vec3(0.375, 0.75, 1.0);\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
-      -595.8302587890628,
-      280.9662817382814
+      -2059.404477539062,
+      212.21628173828142
      ],
      "options": []
     },
@@ -40,7 +40,7 @@
       "SRC": null
      },
      "params": {
-      "interval": 1700,
+      "interval": 17,
       "nx": 512,
       "ny": 512
      },
@@ -61,14 +61,14 @@
        "FUNC"
       ],
       "SRC": [
-       "29a8a1c6-PostprocessingPass",
-       "DST"
+       "5dee7519-x",
+       "framebuffer"
       ]
      },
      "params": {},
      "uipos": [
-      1681.3643066406248,
-      228.39157714843736
+      1681.364306640625,
+      228.39157714843742
      ],
      "options": []
     },
@@ -94,7 +94,7 @@
       "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec3 at(int dx, int dy) {\n  vec2 uv = fragCoord + vec2(dx, dy) / 512.0;\n  vec3 color = texture(image, uv).xyz;\n  return color;\n}\nvoid main() {\n  vec3 color = vec3(0);\n  for (int i = -10; i <= 10; i++) {\n    color += at(i, 0);\n  }\n  color /= 21.0;\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
-      915.9950634765619,
+      -146.01665527343778,
       -367.70985107421905
      ],
      "options": []
@@ -111,14 +111,14 @@
        "texture"
       ],
       "framebuffer": [
-       "4c39311c-GLNoFramebuffer",
+       "afc12bc7-x",
        "framebuffer"
       ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      976.9000000000001,
+      -85.11171874999957,
       45.39999999999998
      ],
      "options": []
@@ -130,8 +130,8 @@
      },
      "params": {},
      "uipos": [
-      -262.70446777343716,
-      134.6370239257813
+      -1726.2786865234368,
+      65.88702392578128
      ],
      "options": []
     },
@@ -142,8 +142,8 @@
      },
      "params": {},
      "uipos": [
-      -731.5325927734376,
-      -413.6129760742188
+      -2195.1068115234366,
+      -482.3629760742188
      ],
      "options": []
     },
@@ -162,8 +162,8 @@
      },
      "params": {},
      "uipos": [
-      -500.06384277343716,
-      -314.7067260742188
+      -1963.6380615234368,
+      -383.45672607421875
      ],
      "options": []
     },
@@ -174,20 +174,8 @@
      },
      "params": {},
      "uipos": [
-      -753.0638427734376,
-      -270.7067260742188
-     ],
-     "options": []
-    },
-    "4c39311c-GLNoFramebuffer": {
-     "name": "GLNoFramebuffer",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      645.1999999999999,
-      119.80000000000001
+      -2216.6380615234366,
+      -339.45672607421875
      ],
      "options": []
     },
@@ -203,7 +191,7 @@
        "value"
       ],
       "framebuffer": [
-       "c45cbaaa-GLBindFramebufferTexture",
+       "a7bcd7fc-ClearFramebuffer",
        "framebuffer"
       ],
       "prim": [
@@ -214,7 +202,7 @@
      },
      "params": {},
      "uipos": [
-      -10.35937499999983,
+      -1072.3710937499993,
       -1.984375
      ],
      "options": []
@@ -230,16 +218,143 @@
      },
      "params": {},
      "uipos": [
-      640.0,
-      -34.40000000000002
+      -341.2617187499998,
+      -0.15000000000000568
+     ],
+     "options": []
+    },
+    "b213f270-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec3 at(int dx, int dy) {\n  vec2 uv = fragCoord + vec2(dx, dy) / 512.0;\n  vec3 color = texture(image, uv).xyz;\n  return color;\n}\nvoid main() {\n  vec3 color = vec3(0);\n  for (int i = -10; i <= 10; i++) {\n    color += at(0, i);\n  }\n  color /= 21.0;\n  fragColor = vec4(color, 1.0);\n}"
+     },
+     "uipos": [
+      901.0020947265615,
+      -243.75492553710956
+     ],
+     "options": []
+    },
+    "5dee7519-x": {
+     "name": "PostprocessingPass",
+     "inputs": {
+      "fragShader": [
+       "b213f270-x",
+       "value"
+      ],
+      "texture": [
+       "97b73ffc-x",
+       "texture"
+      ],
+      "framebuffer": [
+       "17089d14-x",
+       "framebuffer"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      960.6570312499996,
+      168.10492553710947
+     ],
+     "options": []
+    },
+    "17089d14-x": {
+     "name": "GLNoFramebuffer",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      630.2070312499997,
+      243.75492553710944
+     ],
+     "options": []
+    },
+    "97b73ffc-x": {
+     "name": "GLGetFramebufferTexture",
+     "inputs": {
+      "framebuffer": [
+       "29a8a1c6-PostprocessingPass",
+       "framebuffer"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      625.0070312499996,
+      89.55492553710951
+     ],
+     "options": []
+    },
+    "db37ac93-x": {
+     "name": "GLCreateFramebuffer",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -548.7187500000002,
+      103.54687499999994
+     ],
+     "options": []
+    },
+    "afc12bc7-x": {
+     "name": "GLBindFramebufferTexture",
+     "inputs": {
+      "framebuffer": [
+       "db37ac93-x",
+       "framebuffer"
+      ],
+      "texture": [
+       "55340e16-x",
+       "texture"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -317.2499999999998,
+      202.45312500000006
+     ],
+     "options": []
+    },
+    "55340e16-x": {
+     "name": "GLCreateTexture",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -570.2500000000002,
+      246.45312500000006
+     ],
+     "options": []
+    },
+    "a7bcd7fc-ClearFramebuffer": {
+     "name": "ClearFramebuffer",
+     "inputs": {
+      "framebuffer": [
+       "c45cbaaa-GLBindFramebufferTexture",
+       "framebuffer"
+      ],
+      "color": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -1508.0,
+      -241.0
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.5120000000000001,
-    "trans_x": -65,
-    "trans_y": -507
+    "scale": 1.0000000000000002,
+    "trans_x": -2107,
+    "trans_y": -570
    }
   },
   "PostprocessingPass": {
@@ -255,7 +370,7 @@
      },
      "params": {},
      "uipos": [
-      -999.5793749999998,
+      -998.7793749999996,
       418.48625000000004
      ],
      "options": []
@@ -324,7 +439,7 @@
      "name": "GLUseProgram",
      "inputs": {
       "program": [
-       "d1f86b32-CachedOnce",
+       "d647b104-CachedByKey",
        "output"
       ],
       "SRC": null
@@ -456,22 +571,6 @@
      ],
      "options": []
     },
-    "d1f86b32-CachedOnce": {
-     "name": "CachedOnce",
-     "inputs": {
-      "input": [
-       "b147950b-x",
-       "program"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -617.609375,
-      453.21875
-     ],
-     "options": []
-    },
     "a3b8e4a5-SubInput": {
      "name": "SubInput",
      "inputs": {
@@ -506,12 +605,32 @@
       483.7499999999999
      ],
      "options": []
+    },
+    "d647b104-CachedByKey": {
+     "name": "CachedByKey",
+     "inputs": {
+      "input": [
+       "b147950b-x",
+       "program"
+      ],
+      "key": [
+       "bced5620-SubInput",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -658.4,
+      426.4000000000001
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -449,
-    "trans_y": -252
+    "scale": 1.25,
+    "trans_x": -1396,
+    "trans_y": 22
    }
   },
   "ForwardRendering": {
@@ -755,6 +874,144 @@
     "trans_x": 373,
     "trans_y": 19
    }
+  },
+  "ClearFramebuffer": {
+   "nodes": {
+    "c7ca3de1-GLClearColor": {
+     "name": "GLClearColor",
+     "inputs": {
+      "color": null,
+      "alpha": null,
+      "SRC": [
+       "bf037a7c-GLUseFramebuffer",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      499.0,
+      512.0
+     ],
+     "options": []
+    },
+    "bf037a7c-GLUseFramebuffer": {
+     "name": "GLUseFramebuffer",
+     "inputs": {
+      "framebuffer": [
+       "a87d41f4-SubInput",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      209.0,
+      483.0
+     ],
+     "options": []
+    },
+    "a87d41f4-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "GLFramebuffer",
+      "name": "framebuffer",
+      "defl": ""
+     },
+     "uipos": [
+      -83.0,
+      531.0
+     ],
+     "options": []
+    },
+    "28fa7903-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "a87d41f4-SubInput",
+       "port"
+      ],
+      "SRC": [
+       "c2428f2e-IfElse",
+       "DST"
+      ]
+     },
+     "params": {
+      "type": "GLFramebuffer",
+      "name": "framebuffer",
+      "defl": ""
+     },
+     "uipos": [
+      1090.25,
+      514.25
+     ],
+     "options": []
+    },
+    "c678c25b-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "numeric:vec3",
+      "name": "color",
+      "defl": ""
+     },
+     "uipos": [
+      173.0,
+      149.0
+     ],
+     "options": []
+    },
+    "2a5393b5-x": {
+     "name": "GLClearColor",
+     "inputs": {
+      "color": [
+       "c678c25b-SubInput",
+       "port"
+      ],
+      "alpha": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      473.75,
+      242.75
+     ],
+     "options": []
+    },
+    "c2428f2e-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "2a5393b5-x",
+       "DST"
+      ],
+      "false": [
+       "c7ca3de1-GLClearColor",
+       "DST"
+      ],
+      "cond": [
+       "c678c25b-SubInput",
+       "hasValue"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      800.0,
+      425.0
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1.0,
+    "trans_x": -271,
+    "trans_y": -8
+   }
   }
  },
  "views": {},
@@ -918,6 +1175,41 @@
     ]
    ],
    "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CachedByKey": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "key",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
     [
      "",
      "DST",
@@ -1449,6 +1741,36 @@
      "framebuffer",
      ""
     ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLClearColor": {
+   "inputs": [
+    [
+     "",
+     "color",
+     ""
+    ],
+    [
+     "",
+     "alpha",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
     [
      "",
      "DST",
@@ -4444,6 +4766,42 @@
     [
      "primitive",
      "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "GLFramebuffer",
+     "framebuffer",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "ClearFramebuffer": {
+   "inputs": [
+    [
+     "GLFramebuffer",
+     "framebuffer",
+     ""
+    ],
+    [
+     "numeric:vec3",
+     "color",
      ""
     ],
     [
