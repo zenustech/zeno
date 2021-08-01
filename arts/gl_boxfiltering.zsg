@@ -45,8 +45,8 @@
       "ny": 512
      },
      "uipos": [
-      2508.7080566406244,
-      199.89782714843753
+      1981.3643066406248,
+      195.9915771484375
      ],
      "options": [
       "VIEW"
@@ -61,14 +61,14 @@
        "FUNC"
       ],
       "SRC": [
-       "df4542fd-PostprocessingPass",
+       "5dee7519-x",
        "framebuffer"
       ]
      },
      "params": {},
      "uipos": [
-      2208.7080566406253,
-      232.2978271484374
+      1681.364306640625,
+      228.39157714843742
      ],
      "options": []
     },
@@ -80,8 +80,8 @@
      },
      "params": {},
      "uipos": [
-      2218.1080566406245,
-      60.547827148437534
+      1690.7643066406245,
+      56.641577148437534
      ],
      "options": []
     },
@@ -94,8 +94,32 @@
       "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec3 at(int dx, int dy) {\n  vec2 uv = fragCoord + vec2(dx, dy) / 512.0;\n  vec3 color = texture(image, uv).xyz;\n  return color;\n}\nvoid main() {\n  vec3 color = vec3(0);\n  for (int i = -10; i <= 10; i++) {\n    color += at(i, 0);\n  }\n  color /= 21.0;\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
-      -256.01665527343766,
-      -411.70985107421905
+      -146.01665527343778,
+      -367.70985107421905
+     ],
+     "options": []
+    },
+    "29a8a1c6-PostprocessingPass": {
+     "name": "PostprocessingPass",
+     "inputs": {
+      "fragShader": [
+       "74f4922d-x",
+       "value"
+      ],
+      "texture": [
+       "9216f786-GLGetFramebufferTexture",
+       "texture"
+      ],
+      "framebuffer": [
+       "afc12bc7-x",
+       "framebuffer"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -85.11171874999957,
+      45.39999999999998
      ],
      "options": []
     },
@@ -183,6 +207,22 @@
      ],
      "options": []
     },
+    "9216f786-GLGetFramebufferTexture": {
+     "name": "GLGetFramebufferTexture",
+     "inputs": {
+      "framebuffer": [
+       "fce5d049-ForwardRendering",
+       "framebuffer"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -341.2617187499998,
+      -0.15000000000000568
+     ],
+     "options": []
+    },
     "b213f270-x": {
      "name": "MakeMultilineString",
      "inputs": {
@@ -194,6 +234,102 @@
      "uipos": [
       901.0020947265615,
       -243.75492553710956
+     ],
+     "options": []
+    },
+    "5dee7519-x": {
+     "name": "PostprocessingPass",
+     "inputs": {
+      "fragShader": [
+       "b213f270-x",
+       "value"
+      ],
+      "texture": [
+       "97b73ffc-x",
+       "texture"
+      ],
+      "framebuffer": [
+       "17089d14-x",
+       "framebuffer"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      960.6570312499996,
+      168.10492553710947
+     ],
+     "options": []
+    },
+    "17089d14-x": {
+     "name": "GLNoFramebuffer",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      630.2070312499997,
+      243.75492553710944
+     ],
+     "options": []
+    },
+    "97b73ffc-x": {
+     "name": "GLGetFramebufferTexture",
+     "inputs": {
+      "framebuffer": [
+       "29a8a1c6-PostprocessingPass",
+       "framebuffer"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      625.0070312499996,
+      89.55492553710951
+     ],
+     "options": []
+    },
+    "db37ac93-x": {
+     "name": "GLCreateFramebuffer",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -548.7187500000002,
+      103.54687499999994
+     ],
+     "options": []
+    },
+    "afc12bc7-x": {
+     "name": "GLBindFramebufferTexture",
+     "inputs": {
+      "framebuffer": [
+       "db37ac93-x",
+       "framebuffer"
+      ],
+      "texture": [
+       "55340e16-x",
+       "texture"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -317.2499999999998,
+      202.45312500000006
+     ],
+     "options": []
+    },
+    "55340e16-x": {
+     "name": "GLCreateTexture",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -570.2500000000002,
+      246.45312500000006
      ],
      "options": []
     },
@@ -213,118 +349,12 @@
       -241.0
      ],
      "options": []
-    },
-    "bf30d0ff-Pass": {
-     "name": "Pass",
-     "inputs": {
-      "fragShader": [
-       "74f4922d-x",
-       "value"
-      ],
-      "framebuffer": [
-       "fce5d049-ForwardRendering",
-       "framebuffer"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -180.0,
-      -8.25
-     ],
-     "options": []
-    },
-    "9a215c3e-Pass": {
-     "name": "Pass",
-     "inputs": {
-      "fragShader": [
-       "b213f270-x",
-       "value"
-      ],
-      "framebuffer": [
-       "bf30d0ff-Pass",
-       "framebuffer"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      944.9999999999998,
-      151.24999999999994
-     ],
-     "options": []
-    },
-    "df4542fd-PostprocessingPass": {
-     "name": "PostprocessingPass",
-     "inputs": {
-      "fragShader": [
-       "ed9a3739-x",
-       "value"
-      ],
-      "texture": [
-       "ba0dd88c-GLGetFramebufferTexture",
-       "texture"
-      ],
-      "framebuffer": [
-       "14c38009-GLNoFramebuffer",
-       "framebuffer"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      1770.75,
-      191.5
-     ],
-     "options": []
-    },
-    "ba0dd88c-GLGetFramebufferTexture": {
-     "name": "GLGetFramebufferTexture",
-     "inputs": {
-      "framebuffer": [
-       "9a215c3e-Pass",
-       "framebuffer"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      1520.0,
-      222.0
-     ],
-     "options": []
-    },
-    "ed9a3739-x": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 color =  texture(image, fragCoord).xyz;\n  fragColor = vec4(color, 1.0);\n}"
-     },
-     "uipos": [
-      1611.0,
-      -217.0
-     ],
-     "options": []
-    },
-    "14c38009-GLNoFramebuffer": {
-     "name": "GLNoFramebuffer",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      1765.0,
-      397.0
-     ],
-     "options": []
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": 578,
-    "trans_y": -400
+    "scale": 1.0000000000000002,
+    "trans_x": -2107,
+    "trans_y": -570
    }
   },
   "PostprocessingPass": {
@@ -598,9 +628,9 @@
     }
    },
    "view": {
-    "scale": 0.8000000000000002,
-    "trans_x": -1010,
-    "trans_y": -173
+    "scale": 1.25,
+    "trans_x": -1396,
+    "trans_y": 22
    }
   },
   "ForwardRendering": {
@@ -981,151 +1011,6 @@
     "scale": 1.0,
     "trans_x": -271,
     "trans_y": -8
-   }
-  },
-  "Pass": {
-   "nodes": {
-    "591b9a1e-x": {
-     "name": "GLCreateFramebuffer",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      142.96210937499973,
-      190.39531249999993
-     ],
-     "options": []
-    },
-    "d144a80d-x": {
-     "name": "GLCreateTexture",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      121.43085937499973,
-      333.30156250000005
-     ],
-     "options": []
-    },
-    "deed6c38-x": {
-     "name": "PostprocessingPass",
-     "inputs": {
-      "fragShader": [
-       "b7fc7571-SubInput",
-       "port"
-      ],
-      "texture": [
-       "43fbd0b5-x",
-       "texture"
-      ],
-      "framebuffer": [
-       "f0516448-x",
-       "framebuffer"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      606.5691406250004,
-      132.24843749999997
-     ],
-     "options": []
-    },
-    "f0516448-x": {
-     "name": "GLBindFramebufferTexture",
-     "inputs": {
-      "framebuffer": [
-       "591b9a1e-x",
-       "framebuffer"
-      ],
-      "texture": [
-       "d144a80d-x",
-       "texture"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      374.4308593750002,
-      289.30156250000005
-     ],
-     "options": []
-    },
-    "43fbd0b5-x": {
-     "name": "GLGetFramebufferTexture",
-     "inputs": {
-      "framebuffer": [
-       "dd1f1848-SubInput",
-       "port"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      149.41914062500018,
-      43.69843749999997
-     ],
-     "options": []
-    },
-    "b7fc7571-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "type": "string",
-      "name": "fragShader",
-      "defl": ""
-     },
-     "uipos": [
-      248.0,
-      -203.0
-     ],
-     "options": []
-    },
-    "5bc4fef2-SubOutput": {
-     "name": "SubOutput",
-     "inputs": {
-      "port": [
-       "deed6c38-x",
-       "framebuffer"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "type": "",
-      "name": "framebuffer",
-      "defl": ""
-     },
-     "uipos": [
-      872.0,
-      197.0
-     ],
-     "options": []
-    },
-    "dd1f1848-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "type": "",
-      "name": "framebuffer",
-      "defl": ""
-     },
-     "uipos": [
-      -214.0,
-      40.0
-     ],
-     "options": []
-    }
-   },
-   "view": {
-    "scale": 1,
-    "trans_x": -186,
-    "trans_y": -195
    }
   }
  },
@@ -1635,66 +1520,6 @@
    ],
    "categories": [
     "debug"
-   ]
-  },
-  "ExportObjMesh": {
-   "inputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
-  "ExportParticles": {
-   "inputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "particles"
    ]
   },
   "ExportZpmPrimitive": {
@@ -2274,46 +2099,6 @@
     "EasyGL"
    ]
   },
-  "GeoVertexVel": {
-   "inputs": [
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "TargetMesh",
-     ""
-    ],
-    [
-     "",
-     "OriginMesh",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "MeshVel",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
   "GetFrameNum": {
    "inputs": [
     [
@@ -2479,36 +2264,6 @@
     "control"
    ]
   },
-  "ImportObjMesh": {
-   "inputs": [
-    [
-     "",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
   "ImportObjPrimitive": {
    "inputs": [
     [
@@ -2537,36 +2292,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "ImportParticles": {
-   "inputs": [
-    [
-     "",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "particles"
    ]
   },
   "ImportZpmPrimitive": {
@@ -3217,106 +2942,6 @@
     "visualize"
    ]
   },
-  "MeshCopy": {
-   "inputs": [
-    [
-     "",
-     "copyFrom",
-     ""
-    ],
-    [
-     "",
-     "copyTo",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
-  "MeshMix": {
-   "inputs": [
-    [
-     "",
-     "meshA",
-     ""
-    ],
-    [
-     "",
-     "meshB",
-     ""
-    ],
-    [
-     "",
-     "coef",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
-  "MeshToPrimitive": {
-   "inputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
   "NumericFloat": {
    "inputs": [
     [
@@ -3630,246 +3255,6 @@
     "numeric"
    ]
   },
-  "NumericWrangle": {
-   "inputs": [
-    [
-     "dict:numeric",
-     "params",
-     ""
-    ],
-    [
-     "string",
-     "zfxCode",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "dict:numeric",
-     "result",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
-  "ParticleParticleWrangle": {
-   "inputs": [
-    [
-     "primitive",
-     "prim1",
-     ""
-    ],
-    [
-     "primitive",
-     "prim2",
-     ""
-    ],
-    [
-     "string",
-     "zfxCode",
-     ""
-    ],
-    [
-     "dict:numeric",
-     "params",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "primitive",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
-  "ParticlesBuildHashGrid": {
-   "inputs": [
-    [
-     "primitive",
-     "primNei",
-     ""
-    ],
-    [
-     "numeric:float",
-     "radius",
-     ""
-    ],
-    [
-     "numeric:float",
-     "radiusMin",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "hashgrid",
-     "hashGrid",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
-  "ParticlesNeighborWrangle": {
-   "inputs": [
-    [
-     "primitive",
-     "prim",
-     ""
-    ],
-    [
-     "primitive",
-     "primNei",
-     ""
-    ],
-    [
-     "hashgrid",
-     "hashGrid",
-     ""
-    ],
-    [
-     "string",
-     "zfxCode",
-     ""
-    ],
-    [
-     "dict:numeric",
-     "params",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "primitive",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
-  "ParticlesToPrimitive": {
-   "inputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
-  "ParticlesWrangle": {
-   "inputs": [
-    [
-     "primitive",
-     "prim",
-     ""
-    ],
-    [
-     "string",
-     "zfxCode",
-     ""
-    ],
-    [
-     "dict:numeric",
-     "params",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "primitive",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
-   ]
-  },
   "PlaneProjectPrimitive2DAABB": {
    "inputs": [
     [
@@ -3923,41 +3308,6 @@
    "params": [],
    "categories": [
     "math"
-   ]
-  },
-  "PolyDuplicate": {
-   "inputs": [
-    [
-     "",
-     "Mesh",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Meshes",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
    ]
   },
   "PortalIn": {
@@ -4238,56 +3588,6 @@
    ],
    "categories": [
     "visualize"
-   ]
-  },
-  "PrimitiveEdgeWrangle": {
-   "inputs": [
-    [
-     "primitive",
-     "prim",
-     ""
-    ],
-    [
-     "primitive",
-     "edgePrim",
-     ""
-    ],
-    [
-     "string",
-     "zfxCode",
-     ""
-    ],
-    [
-     "dict:numeric",
-     "params",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "primitive",
-     "prim",
-     ""
-    ],
-    [
-     "primitive",
-     "edgePrim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
    ]
   },
   "PrimitiveFaceToEdges": {
@@ -4918,66 +4218,6 @@
     "primitive"
    ]
   },
-  "PrimitiveToMesh": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
-  "PrimitiveToParticles": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
   "PrimitiveTraceTrail": {
    "inputs": [
     [
@@ -5116,109 +4356,6 @@
     "numeric"
    ]
   },
-  "RandomParticles": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "int",
-     "count",
-     "1 0"
-    ],
-    [
-     "float",
-     "Prange",
-     "1 0"
-    ],
-    [
-     "float",
-     "Vrange",
-     "1 0"
-    ]
-   ],
-   "categories": [
-    "particles"
-   ]
-  },
-  "ReadObjMesh": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "trimesh"
-   ]
-  },
-  "ReadParticles": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "particles"
-   ]
-  },
   "Route": {
    "inputs": [
     [
@@ -5272,51 +4409,6 @@
    "params": [],
    "categories": [
     "frame"
-   ]
-  },
-  "StringToMesh": {
-   "inputs": [
-    [
-     "",
-     "string",
-     ""
-    ],
-    [
-     "",
-     "AZmesh",
-     ""
-    ],
-    [
-     "",
-     "spacing",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "StringMeshList",
-     ""
-    ],
-    [
-     "",
-     "SpacingList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "math"
    ]
   },
   "SubCategory": {
@@ -5456,51 +4548,6 @@
    ],
    "categories": [
     "subgraph"
-   ]
-  },
-  "TransformMesh": {
-   "inputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "translate",
-     ""
-    ],
-    [
-     "",
-     "rotate",
-     ""
-    ],
-    [
-     "",
-     "scaling",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
    ]
   },
   "TransformPrimitive": {
@@ -5658,68 +4705,6 @@
     "numeric"
    ]
   },
-  "WriteObjMesh": {
-   "inputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "trimesh"
-   ]
-  },
-  "WriteParticles": {
-   "inputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "particles"
-   ]
-  },
   "PostprocessingPass": {
    "inputs": [
     [
@@ -5828,42 +4813,6 @@
    "outputs": [
     [
      "GLFramebuffer",
-     "framebuffer",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
-  },
-  "Pass": {
-   "inputs": [
-    [
-     "string",
-     "fragShader",
-     ""
-    ],
-    [
-     "",
-     "framebuffer",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
      "framebuffer",
      ""
     ],
