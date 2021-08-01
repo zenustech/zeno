@@ -83,7 +83,7 @@ struct GLDrawArrayTriangles : zeno::INode {
             vabs.push_back(vab);
         }
         printf("drawing %zd triangle vertices\n", prim->size());
-        //drawVertexArrays(GL_TRIANGLES, prim->size(), vabs);
+        drawVertexArrays(GL_TRIANGLES, prim->size(), vabs);
     }
 };
 
@@ -122,20 +122,20 @@ ZENDEFNODE(MakeFullscreenRect, {
 
 struct GLCreateTextureFramebuffer : zeno::INode {
     virtual void apply() override {
-        auto fbo = std::make_shared<GLTextureFramebuffer>();
-        auto colorTexList = get_input<zeno::ListObject>("colorTextureList");
-        fbo->colorTextures.resize(colorTexList->arr.size());
-        for (int i = 0; i < colorTexList->arr.size(); i++) {
-            fbo->colorTextures[i].initialize();
-        }
+        auto fbo = std::make_shared<GLFramebuffer>();
+        auto tex = std::make_shared<GLTextureObject>();
         fbo->initialize();
+        tex->initialize();
+        fbo->bindToTexture(*tex, GL_COLOR_ATTACHMENT0);
+        fbo->checkStatusComplete();
+        set_output("colorTexture", std::move(tex));
         set_output("framebuffer", std::move(fbo));
     }
 };
 
 ZENDEFNODE(GLCreateTextureFramebuffer, {
-        {"colorTextureList"},
-        {"framebuffer"},
+        {},
+        {"framebuffer", "colorTexture"},
         {},
         {"EasyGL"},
 });
