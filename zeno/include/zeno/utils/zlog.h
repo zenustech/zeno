@@ -1,10 +1,34 @@
 #pragma once
 
-#include <fmt/core.h>
+#define FMT_HEADER_ONLY
+
 #include <iostream>
 #include <string_view>
 
 namespace zlog {
+    template <class Os>
+    void _impl_format(Os &os, const char *fmt) {
+        os << fmt;
+    }
+
+    template <class Os, class T, class ...Ts>
+    void _impl_format(Os &os, const char *fmt, T const &t, Ts &&...ts) {
+        const char *p = fmt;
+        for (; *p; p++) {
+            if (*p == '{' && p[1] == '}') {
+                os << t;
+                _impl_format(os, p + 2, std::forward<Ts>(ts)...);
+                return;
+            }
+            os << *p;
+        }
+    }
+
+    template <class Os, class ...Ts>
+    void format(Os &os, std::string_view const &fmt, Ts &&...ts) {
+        _impl_format(os, std::string(fmt).c_str(), std::forward<Ts>(ts)...);
+    }
+
     enum class LogLevel : char {
         trace = 't',
         debug = 'd',
@@ -18,7 +42,7 @@ namespace zlog {
     template <class ...Ts>
     void log(LogLevel level, std::string_view const &fmt, Ts &&...ts) {
         std::cout << "zlog/" << (char)level << ": ";
-        std::cout << fmt::format(fmt, std::forward<Ts>(ts)...);
+        format(std::cout, fmt, std::forward<Ts>(ts)...);
         std::cout << std::endl;
     }
 
