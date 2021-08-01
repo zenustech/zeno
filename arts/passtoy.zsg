@@ -12,9 +12,9 @@
       "SRC": null
      },
      "params": {
-      "interval": 170,
-      "nx": 512,
-      "ny": 512
+      "interval": 17,
+      "nx": 1024,
+      "ny": 768
      },
      "uipos": [
       496.0,
@@ -68,7 +68,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n//  vec3 color = cos(fragCoord.xyx + vec3(0, 2, 4)) * 0.5 + 0.5;\n  ivec2 coord = ivec2(floor(fragCoord * 8.0 + float(iFrame) * 1.0));\n  vec3 color = vec3((coord.x + coord.y) % 2 != 0 ? 0.9 : 0.23);\n  fragColor = vec4(color, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  float iTime = float(iFrame) / 24.0;\n  vec3 color = cos(iTime + fragCoord.xyx + vec3(0, 2, 4)) * 0.5 + 0.5;\n//  ivec2 coord = ivec2(floor(fragCoord) * 8.0));\n//  vec3 color = vec3((coord.x + coord.y) % 2 != 0 ? 0.9 : 0.23);\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
       -1570.6875,
@@ -209,8 +209,8 @@
       "value": -1
      },
      "uipos": [
-      -2577.8374999999987,
-      -80.13749999999993
+      -2857.5249999999983,
+      -181.69999999999996
      ],
      "options": []
     },
@@ -229,8 +229,8 @@
      },
      "params": {},
      "uipos": [
-      -1765.0375,
-      20.66250000000008
+      -2044.725,
+      -80.89999999999995
      ],
      "options": []
     },
@@ -251,8 +251,8 @@
       "op_type": "add"
      },
      "uipos": [
-      -2013.8375,
-      67.06250000000011
+      -2293.525,
+      -34.49999999999986
      ],
      "options": []
     },
@@ -265,8 +265,8 @@
       "value": 1
      },
      "uipos": [
-      -2272.2374999999997,
-      122.26250000000019
+      -2551.9249999999997,
+      20.700000000000188
      ],
      "options": []
     },
@@ -280,11 +280,11 @@
       "SRC": null
      },
      "params": {
-      "hint": "PrintNumeric"
+      "hint": "iFrame"
      },
      "uipos": [
-      -1539.2,
-      169.60000000000002
+      -1779.825,
+      8.662500000000051
      ],
      "options": []
     },
@@ -299,16 +299,16 @@
      },
      "params": {},
      "uipos": [
-      -2298.3999999999996,
-      -51.2
+      -2578.0875,
+      -152.76250000000002
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -3369,
-    "trans_y": -524
+    "trans_x": -1215,
+    "trans_y": -733
    }
   }
  },
