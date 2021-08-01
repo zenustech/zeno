@@ -98,7 +98,7 @@ ZENDEFNODE(PassToyMakeTexture, {
 
 struct PassToyApplyShader : zeno::INode {
     virtual void apply() override {
-        zeno::vec2i resolution(512, 512);
+        zeno::vec2i resolution(32, 32);
         if (has_input<zeno::ListObject>("textureIn")) {
             auto textureInList = get_input<zeno::ListObject>("textureIn");
             for (int i = 0; i < textureInList->arr.size(); i++) {
@@ -122,6 +122,7 @@ struct PassToyApplyShader : zeno::INode {
             textureOut->fbo.use();
         } else if (!has_input("textureOut")) {
             textureOut = std::make_shared<PassToyTexture>();
+            printf("%d %d\n", resolution[0], resolution[1]);
             textureOut->tex.width = resolution[0];
             textureOut->tex.height = resolution[1];
             textureOut->tex.initialize();

@@ -32,16 +32,13 @@
        "shader"
       ],
       "textureIn": null,
-      "textureOut": [
-       "aa7f933f-PassToyScreenTexture",
-       "texture"
-      ],
+      "textureOut": null,
       "SRC": null
      },
      "params": {},
      "uipos": [
-      -169.0,
-      -74.0
+      -1265.9375,
+      -133.6875
      ],
      "options": []
     },
@@ -56,8 +53,8 @@
      },
      "params": {},
      "uipos": [
-      -449.0,
-      -184.0
+      -1515.9375,
+      -216.1875
      ],
      "options": []
     },
@@ -67,11 +64,11 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n//  vec3 color =  texture(image, fragCoord).xyz;\n  vec3 color = cos(fragCoord.xyx + vec3(0, 2, 4)) * 0.5 + 0.5;\n  fragColor = vec4(color, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n//  vec3 color = cos(fragCoord.xyx + vec3(0, 2, 4)) * 0.5 + 0.5;\n  ivec2 coord = ivec2(floor(fragCoord * 8.0));\n  vec3 color = vec3((coord.x + coord.y) % 2 != 0 ? 0.9 : 0.23);\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
-      -895.0,
-      -498.0
+      -1570.6875,
+      -597.6875
      ],
      "options": []
     },
@@ -84,14 +81,14 @@
        "FUNC"
       ],
       "SRC": [
-       "0a25ec8b-PassToyApplyShader",
-       "DST"
+       "f3497c81-PassToyApplyShader",
+       "textureOut"
       ]
      },
      "params": {},
      "uipos": [
-      164.0,
-      -76.0
+      243.20000000000005,
+      -1.5999999999999943
      ],
      "options": []
     },
@@ -103,28 +100,82 @@
      },
      "params": {},
      "uipos": [
-      166.0,
-      -240.0
+      245.20000000000005,
+      -165.60000000000002
      ],
      "options": []
     },
-    "aa7f933f-PassToyScreenTexture": {
+    "f3497c81-PassToyApplyShader": {
+     "name": "PassToyApplyShader",
+     "inputs": {
+      "shader": [
+       "1834ff36-x",
+       "shader"
+      ],
+      "textureIn": [
+       "0a25ec8b-PassToyApplyShader",
+       "textureOut"
+      ],
+      "textureOut": [
+       "6c6fc88a-x",
+       "texture"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -440.0,
+      -124.0
+     ],
+     "options": []
+    },
+    "6c6fc88a-x": {
      "name": "PassToyScreenTexture",
      "inputs": {
       "SRC": null
      },
      "params": {},
      "uipos": [
-      -424.80000000000007,
-      11.199999999999996
+      -683.4250000000002,
+      -35.400000000000034
+     ],
+     "options": []
+    },
+    "93507541-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 color =  texture(image, fragCoord).xyz;\n  fragColor = vec4(color, 1.0);\n}"
+     },
+     "uipos": [
+      -738.8125000000001,
+      -564.225
+     ],
+     "options": []
+    },
+    "1834ff36-x": {
+     "name": "PassToyMakeShader",
+     "inputs": {
+      "source": [
+       "93507541-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -684.0625000000001,
+      -182.72500000000005
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -1084,
-    "trans_y": -696
+    "trans_x": -1203,
+    "trans_y": -773
    }
   }
  },

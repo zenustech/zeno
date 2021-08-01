@@ -11,7 +11,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include_directories(include)
 
-
 option(ZENO_ENABLE_PYTHON "Enable ZENO Python bindings" ON)
 if (ZENO_ENABLE_PYTHON)
     add_subdirectory(external/pybind11)
