@@ -12,6 +12,8 @@
 #include "GLProgramObject.h"
 #include "GLFramebuffer.h"
 
+namespace {
+
 struct GLCreateShader : zeno::INode {
     virtual void apply() override {
         auto typeStr = get_param<std::string>("type");
@@ -80,9 +82,8 @@ struct GLDrawArrayTriangles : zeno::INode {
             vab.dim = dim;
             vabs.push_back(vab);
         }
-        drawVertexArrays(GL_TRIANGLES, prim->size(), vabs);
         printf("drawing %zd triangle vertices\n", prim->size());
-        CHECK_GL(glDrawArrays(GL_TRIANGLES, 0, /*count=*/prim->size()));
+        //drawVertexArrays(GL_TRIANGLES, prim->size(), vabs);
     }
 };
 
@@ -107,8 +108,7 @@ struct MakeFullscreenRect : zeno::INode {
         auto prim = std::make_shared<GLPrimitiveObject>();
         prim->add_attr(2);
         prim->resize(6);
-        std::memcpy(prim->attr(0).arr.data(),
-                vVertices, sizeof(vVertices));
+        std::memcpy(prim->attr(0).arr.data(), vVertices, sizeof(vVertices));
         set_output("prim", std::move(prim));
     }
 };
@@ -188,3 +188,5 @@ ZENDEFNODE(GLUseTexture, {
         {},
         {"EasyGL"},
 });
+
+}

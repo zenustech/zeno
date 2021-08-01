@@ -30,6 +30,9 @@ run: all
 glrun: all
 	ZEN_NOFORK=1 ZEN_NOVIEW=1 ZEN_OPEN=$O ./run.sh
 
+gldebug: debug_all
+	ZEN_NOVIEW=1 USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh
+
 debug: debug_all
 	USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh
 
