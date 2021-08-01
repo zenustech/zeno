@@ -94,6 +94,29 @@ ZENDEFNODE(GLDrawArrayTriangles, {
         {"EasyGL"},
 });
 
+struct MakeSimpleTriangle : zeno::INode {
+    inline static const GLfloat vVertices[] = {
+        0.0f, 0.5f,
+        -0.5f, -0.5f,
+        0.5f, -0.5f,
+    };
+
+    virtual void apply() override {
+        auto prim = std::make_shared<GLPrimitiveObject>();
+        prim->add_attr(2);
+        prim->resize(3);
+        std::memcpy(prim->attr(0).arr.data(), vVertices, sizeof(vVertices));
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(MakeSimpleTriangle, {
+        {},
+        {"prim"},
+        {},
+        {"EasyGL"},
+});
+
 struct MakeFullscreenRect : zeno::INode {
     inline static const GLfloat vVertices[] = {
         0.0f, 0.0f,
@@ -120,22 +143,49 @@ ZENDEFNODE(MakeFullscreenRect, {
         {"EasyGL"},
 });
 
-struct GLCreateTextureFramebuffer : zeno::INode {
+struct GLNoFramebuffer : zeno::INode {
     virtual void apply() override {
         auto fbo = std::make_shared<GLFramebuffer>();
-        auto tex = std::make_shared<GLTextureObject>();
-        fbo->initialize();
-        tex->initialize();
-        fbo->bindToTexture(*tex, GL_COLOR_ATTACHMENT0);
-        fbo->checkStatusComplete();
-        set_output("colorTexture", std::move(tex));
         set_output("framebuffer", std::move(fbo));
     }
 };
 
-ZENDEFNODE(GLCreateTextureFramebuffer, {
+ZENDEFNODE(GLNoFramebuffer, {
         {},
-        {"framebuffer", "colorTexture"},
+        {"framebuffer"},
+        {},
+        {"EasyGL"},
+});
+
+struct GLCreateFramebuffer : zeno::INode {
+    virtual void apply() override {
+        auto fbo = std::make_shared<GLFramebuffer>();
+        fbo->initialize();
+        set_output("framebuffer", std::move(fbo));
+    }
+};
+
+ZENDEFNODE(GLCreateFramebuffer, {
+        {},
+        {"framebuffer"},
+        {},
+        {"EasyGL"},
+});
+
+struct GLBindFramebufferTexture : zeno::INode {
+    virtual void apply() override {
+        auto fbo = get_input<GLFramebuffer>("framebuffer");
+        auto tex = get_input<GLTextureObject>("texture");
+        fbo->bindToTexture(*tex, GL_COLOR_ATTACHMENT0);
+        fbo->checkStatusComplete();
+        set_output("framebuffer", std::move(fbo));
+        set_output("texture", std::move(tex));
+    }
+};
+
+ZENDEFNODE(GLBindFramebufferTexture, {
+        {"framebuffer", "texture"},
+        {"framebuffer", "texture"},
         {},
         {"EasyGL"},
 });
