@@ -68,7 +68,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  float iTime = float(iFrame) / 24.0;\n//  vec3 color = cos(iTime + fragCoord.xyx + vec3(0, 2, 4)) * 0.5 + 0.5;\n  ivec2 coord = ivec2(floor(fragCoord * 8.0));\n  vec3 color = vec3((coord.x + coord.y) % 2 != 0);\n  fragColor = vec4(color, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n//  vec3 color = cos(float(iFrame) / 24.0 + fragCoord.xyx + vec3(0, 2, 4)) * 0.5 + 0.5;\n  ivec2 coord = ivec2(floor(fragCoord * 8.0));\n  float res = float((coord.x + coord.y) % 2 != 0);\n  fragColor = vec4(vec3(res * 0.5 + 0.5), 1.0);\n}"
      },
      "uipos": [
       -1901.9948730468745,
@@ -143,7 +143,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform ivec2 iResolution;\nuniform sampler2D iTexPressure;\nuniform sampler2D iTexVelocityDiv;\nin vec2 fragCoord;\nout vec4 fragColor;\nfloat pf(ivec2 coor) {\n  return texelFetch(iTexPressure, coor, 0).r;\n}\nfloat vdiv(ivec2 coor) {\n  return texelFetch(iTexVelocityDiv, coor, 0).r;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  float u = pf(coord + ivec2(0, 1));\n  float d = pf(coord + ivec2(0, -1));\n  float r = pf(coord + ivec2(1, 0));\n  float l = pf(coord + ivec2(-1, 0));\n  float div = vdiv(coord);\n  float res =  (r + l + u + d - div) * 0.25;\n  fragColor = vec4(vec3(res), 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform ivec2 iResolution;\nuniform sampler2D iTexPressure;\nuniform sampler2D iTexVelocityDiv;\nin vec2 fragCoord;\nout vec4 fragColor;\nfloat pf(ivec2 coor) {\n  return texelFetch(iTexPressure, coor, 0).r * 2.0 - 1.0;\n}\nfloat vdiv(ivec2 coor) {\n  return texelFetch(iTexVelocityDiv, coor, 0).r * 2.0 - 1.0;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  float u = pf(coord + ivec2(0, 1));\n  float d = pf(coord + ivec2(0, -1));\n  float r = pf(coord + ivec2(1, 0));\n  float l = pf(coord + ivec2(-1, 0));\n  float div = vdiv(coord);\n  float res =  (r + l + u + d - div) * 0.25;\n  fragColor = vec4(vec3(res * 0.5 + 0.5), 1.0);\n}"
      },
      "uipos": [
       -492.1125000000004,
@@ -318,7 +318,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  float iTime = float(iFrame) / 24.0;\n  float res = 3.0 * smoothstep(0.02, 0.0, distance(vec2(fragCoord), vec2(0.5)));\n  fragColor = vec4(vec3(res), 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  float iTime = float(iFrame) / 24.0;\n  float res = 3.0 * smoothstep(0.02, 0.0, distance(vec2(fragCoord), vec2(0.5)));\n  fragColor = vec4(vec3(res * 0.5 + 0.5), 1.0);\n}"
      },
      "uipos": [
       -1464.5475,
@@ -494,9 +494,9 @@
     }
    },
    "view": {
-    "scale": 1.5625,
-    "trans_x": 49,
-    "trans_y": -959
+    "scale": 1.0000000000000002,
+    "trans_x": -126,
+    "trans_y": -652
    }
   }
  },
