@@ -145,7 +145,7 @@ struct NumericOperator : zeno::INode {
 
                 if (op == "copy") ret->value = lhs;
                 else if (op == "copyr") ret->value = rhs;
-#define _PER_OP(name) else if (op == #name) ret->value = op_##name(lhs, rhs);
+#define _PER_OP(name) else if (op == #name) ret->value = (decltype(ret->value))op_##name(lhs, rhs);
     _PER_OP(add)
     _PER_OP(sub)
     _PER_OP(mul)
@@ -175,8 +175,8 @@ struct NumericOperator : zeno::INode {
         } else {
             std::visit([op, &ret](auto const &lhs) {
 
-                if (op == "copy" || op == "copyr") ret->value = lhs;
-#define _PER_OP(name) else if (op == #name) ret->value = op_##name(lhs);
+                if (op == "copy" || op == "copyr") ret->value = (decltype(ret->value))lhs;
+#define _PER_OP(name) else if (op == #name) ret->value = (decltype(ret->value))op_##name(lhs);
     _PER_OP(pos)
     _PER_OP(neg)
     _PER_OP(inv)
