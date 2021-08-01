@@ -2,24 +2,6 @@
  "graph": {
   "main": {
    "nodes": {
-    "aced5b8b-GLCreateShader": {
-     "name": "GLCreateShader",
-     "inputs": {
-      "source": [
-       "6aae1c6d-MakeMultilineString",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "type": "vertex"
-     },
-     "uipos": [
-      -1110.702041015625,
-      -17.042617187499985
-     ],
-     "options": []
-    },
     "6aae1c6d-MakeMultilineString": {
      "name": "MakeMultilineString",
      "inputs": {
@@ -29,8 +11,8 @@
       "value": "#version 300 es\nlayout (location = 0) in vec3 vPosition;\nvoid main() {\n  gl_Position = vec4(vPosition, 1.0);\n}"
      },
      "uipos": [
-      -1463.982041015625,
-      -189.20261718750004
+      -346.3896337890624,
+      31.325031738281155
      ],
      "options": []
     },
@@ -43,101 +25,8 @@
       "value": "#version 300 es\nprecision mediump float;\nout vec4 fragColor;\nvoid main() {\n  vec3 color = vec3(0.375, 0.75, 1.0);\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
-      -1460.7820410156253,
-      207.1573828125001
-     ],
-     "options": []
-    },
-    "d2e3ed54-x": {
-     "name": "GLCreateShader",
-     "inputs": {
-      "source": [
-       "d8872fce-x",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "type": "fragment"
-     },
-     "uipos": [
-      -1097.5020410156246,
-      234.31738281250017
-     ],
-     "options": []
-    },
-    "d2702b38-MakeSmallList": {
-     "name": "MakeSmallList",
-     "inputs": {
-      "obj0": [
-       "aced5b8b-GLCreateShader",
-       "shader"
-      ],
-      "obj1": [
-       "d2e3ed54-x",
-       "shader"
-      ],
-      "obj2": null,
-      "obj3": null,
-      "obj4": null,
-      "obj5": null,
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -850.542041015625,
-      115.91738281250005
-     ],
-     "options": []
-    },
-    "3e3d803a-GLCreateProgram": {
-     "name": "GLCreateProgram",
-     "inputs": {
-      "shaderList": [
-       "d2702b38-MakeSmallList",
-       "list"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -592.142041015625,
-      160.71738281250003
-     ],
-     "options": []
-    },
-    "86cd8fcf-GLUseProgram": {
-     "name": "GLUseProgram",
-     "inputs": {
-      "program": [
-       "1806eb29-CachedOnce",
-       "output"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      68.23608398437455,
-      70.66113281250011
-     ],
-     "options": []
-    },
-    "beaa2ba2-GLDrawArrayTriangles": {
-     "name": "GLDrawArrayTriangles",
-     "inputs": {
-      "prim": [
-       "2141860f-MakeSimpleTriangle",
-       "prim"
-      ],
-      "SRC": [
-       "9a525a73-GLUseFramebuffer",
-       "DST"
-      ]
-     },
-     "params": {},
-     "uipos": [
-      644.1000000000004,
-      102.85000000000002
+      -343.7208837890628,
+      413.70065673828145
      ],
      "options": []
     },
@@ -196,22 +85,6 @@
      ],
      "options": []
     },
-    "1806eb29-CachedOnce": {
-     "name": "CachedOnce",
-     "inputs": {
-      "input": [
-       "3e3d803a-GLCreateProgram",
-       "program"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -318.12485351562486,
-      180.96816406250008
-     ],
-     "options": []
-    },
     "74f4922d-x": {
      "name": "MakeMultilineString",
      "inputs": {
@@ -221,8 +94,8 @@
       "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec3 at(int dx, int dy) {\n  vec2 uv = fragCoord + vec2(dx, dy) / 512.0;\n  vec3 color = texture(image, uv).xyz;\n  return color;\n}\nvoid main() {\n  vec3 color = vec3(0);\n  for (int i = -10; i <= 10; i++) {\n    color += at(i, 0);\n  }\n  color /= 21.0;\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
-      617.3401562499994,
-      -413.3312500000003
+      918.9950634765619,
+      -409.70985107421905
      ],
      "options": []
     },
@@ -242,7 +115,7 @@
        "framebuffer"
       ],
       "SRC": [
-       "beaa2ba2-GLDrawArrayTriangles",
+       "fce5d049-ForwardRendering",
        "DST"
       ]
      },
@@ -253,25 +126,6 @@
      ],
      "options": []
     },
-    "9a525a73-GLUseFramebuffer": {
-     "name": "GLUseFramebuffer",
-     "inputs": {
-      "framebuffer": [
-       "c45cbaaa-GLBindFramebufferTexture",
-       "framebuffer"
-      ],
-      "SRC": [
-       "86cd8fcf-GLUseProgram",
-       "DST"
-      ]
-     },
-     "params": {},
-     "uipos": [
-      352.19999999999993,
-      102.80000000000001
-     ],
-     "options": []
-    },
     "2141860f-MakeSimpleTriangle": {
      "name": "MakeSimpleTriangle",
      "inputs": {
@@ -279,8 +133,8 @@
      },
      "params": {},
      "uipos": [
-      381.0,
-      -143.0
+      205.6549072265626,
+      218.62139892578125
      ],
      "options": []
     },
@@ -291,8 +145,8 @@
      },
      "params": {},
      "uipos": [
-      -210.0,
-      -241.0
+      -429.3450927734374,
+      -274.37860107421875
      ],
      "options": []
     },
@@ -311,8 +165,8 @@
      },
      "params": {},
      "uipos": [
-      32.0,
-      -141.0
+      -187.3450927734374,
+      -174.37860107421875
      ],
      "options": []
     },
@@ -323,8 +177,8 @@
      },
      "params": {},
      "uipos": [
-      -212.0,
-      -102.0
+      -431.3450927734374,
+      -135.37860107421875
      ],
      "options": []
     },
@@ -335,16 +189,44 @@
      },
      "params": {},
      "uipos": [
-      718.0,
-      255.0
+      706.0,
+      -13.0
+     ],
+     "options": []
+    },
+    "fce5d049-ForwardRendering": {
+     "name": "ForwardRendering",
+     "inputs": {
+      "vertShader": [
+       "6aae1c6d-MakeMultilineString",
+       "value"
+      ],
+      "fragShader": [
+       "d8872fce-x",
+       "value"
+      ],
+      "framebuffer": [
+       "c45cbaaa-GLBindFramebufferTexture",
+       "framebuffer"
+      ],
+      "prim": [
+       "2141860f-MakeSimpleTriangle",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      458.0,
+      82.0
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": 206,
-    "trans_y": -440
+    "trans_x": -561,
+    "trans_y": -390
    }
   },
   "PostprocessingPass": {
@@ -617,6 +499,248 @@
     "scale": 1.0000000000000002,
     "trans_x": -449,
     "trans_y": -252
+   }
+  },
+  "ForwardRendering": {
+   "nodes": {
+    "51d66a91-x": {
+     "name": "GLUseProgram",
+     "inputs": {
+      "program": [
+       "87d3da5e-x",
+       "output"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      821.5371044921868,
+      518.00244140625
+     ],
+     "options": []
+    },
+    "0a3c3cbb-x": {
+     "name": "GLCreateShader",
+     "inputs": {
+      "source": [
+       "9f629c14-SubInput",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "type": "vertex"
+     },
+     "uipos": [
+      -357.40102050781275,
+      430.29869140624993
+     ],
+     "options": []
+    },
+    "7c3f4e35-x": {
+     "name": "GLCreateProgram",
+     "inputs": {
+      "shaderList": [
+       "d45e63ca-x",
+       "list"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      161.15897949218743,
+      608.05869140625
+     ],
+     "options": []
+    },
+    "7d38b6bb-x": {
+     "name": "GLCreateShader",
+     "inputs": {
+      "source": [
+       "21431d6c-x",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "type": "fragment"
+     },
+     "uipos": [
+      -344.201020507812,
+      681.6586914062501
+     ],
+     "options": []
+    },
+    "435cafda-x": {
+     "name": "GLUseFramebuffer",
+     "inputs": {
+      "framebuffer": [
+       "147dff9a-SubInput",
+       "port"
+      ],
+      "SRC": [
+       "51d66a91-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1105.5010205078124,
+      550.14130859375
+     ],
+     "options": []
+    },
+    "87d3da5e-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "7c3f4e35-x",
+       "program"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      435.1761669921875,
+      628.30947265625
+     ],
+     "options": []
+    },
+    "83a888b1-x": {
+     "name": "GLDrawArrayTriangles",
+     "inputs": {
+      "prim": [
+       "13fb3957-SubInput",
+       "port"
+      ],
+      "SRC": [
+       "435cafda-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1397.4010205078125,
+      550.1913085937499
+     ],
+     "options": []
+    },
+    "d45e63ca-x": {
+     "name": "MakeSmallList",
+     "inputs": {
+      "obj0": [
+       "0a3c3cbb-x",
+       "shader"
+      ],
+      "obj1": [
+       "7d38b6bb-x",
+       "shader"
+      ],
+      "obj2": null,
+      "obj3": null,
+      "obj4": null,
+      "obj5": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -97.24102050781266,
+      563.2586914062499
+     ],
+     "options": []
+    },
+    "9f629c14-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "string",
+      "name": "vertShader",
+      "defl": ""
+     },
+     "uipos": [
+      -681.0,
+      354.0
+     ],
+     "options": []
+    },
+    "21431d6c-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "string",
+      "name": "fragShader",
+      "defl": ""
+     },
+     "uipos": [
+      -681.0,
+      679.0
+     ],
+     "options": []
+    },
+    "8f265ef0-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "147dff9a-SubInput",
+       "port"
+      ],
+      "SRC": [
+       "83a888b1-x",
+       "DST"
+      ]
+     },
+     "params": {
+      "type": "GLFramebuffer",
+      "name": "framebuffer",
+      "defl": ""
+     },
+     "uipos": [
+      1737.0,
+      507.0
+     ],
+     "options": []
+    },
+    "147dff9a-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "GLFramebuffer",
+      "name": "framebuffer",
+      "defl": ""
+     },
+     "uipos": [
+      821.0,
+      246.0
+     ],
+     "options": []
+    },
+    "13fb3957-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "primitive",
+      "name": "prim",
+      "defl": ""
+     },
+     "uipos": [
+      1153.0,
+      227.0
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1.0000000000000002,
+    "trans_x": 373,
+    "trans_y": 19
    }
   }
  },
@@ -4247,6 +4371,52 @@
    "outputs": [
     [
      "",
+     "framebuffer",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "ForwardRendering": {
+   "inputs": [
+    [
+     "string",
+     "vertShader",
+     ""
+    ],
+    [
+     "string",
+     "fragShader",
+     ""
+    ],
+    [
+     "GLFramebuffer",
+     "framebuffer",
+     ""
+    ],
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "GLFramebuffer",
      "framebuffer",
      ""
     ],
