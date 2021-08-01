@@ -172,20 +172,41 @@ ZENDEFNODE(GLCreateFramebuffer, {
         {"EasyGL"},
 });
 
+struct GLTexturedFramebuffer : GLFramebuffer {
+    GLTextureObject tex;
+};
+
 struct GLBindFramebufferTexture : zeno::INode {
     virtual void apply() override {
         auto fbo = get_input<GLFramebuffer>("framebuffer");
         auto tex = get_input<GLTextureObject>("texture");
         fbo->bindToTexture(*tex, GL_COLOR_ATTACHMENT0);
         fbo->checkStatusComplete();
-        set_output("framebuffer", std::move(fbo));
-        set_output("texture", std::move(tex));
+        auto new_fbo = std::make_shared<GLTexturedFramebuffer>();
+        new_fbo->impl = fbo->impl;
+        new_fbo->tex = *tex;
+        set_output("framebuffer", std::move(new_fbo));
     }
 };
 
 ZENDEFNODE(GLBindFramebufferTexture, {
         {"framebuffer", "texture"},
-        {"framebuffer", "texture"},
+        {"framebuffer"},
+        {},
+        {"EasyGL"},
+});
+
+struct GLGetFramebufferTexture : zeno::INode {
+    virtual void apply() override {
+        auto fbo = get_input<GLTexturedFramebuffer>("framebuffer");
+        auto tex = std::make_shared<GLTextureObject>(fbo->tex);
+        set_output("texture", std::move(tex));
+    }
+};
+
+ZENDEFNODE(GLGetFramebufferTexture, {
+        {"framebuffer"},
+        {"texture"},
         {},
         {"EasyGL"},
 });

@@ -11,8 +11,8 @@
       "value": "#version 300 es\nlayout (location = 0) in vec3 vPosition;\nvoid main() {\n  gl_Position = vec4(vPosition, 1.0);\n}"
      },
      "uipos": [
-      -346.3896337890624,
-      31.325031738281155
+      -598.4990087890624,
+      -101.40934326171882
      ],
      "options": []
     },
@@ -25,8 +25,8 @@
       "value": "#version 300 es\nprecision mediump float;\nout vec4 fragColor;\nvoid main() {\n  vec3 color = vec3(0.375, 0.75, 1.0);\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
-      -343.7208837890628,
-      413.70065673828145
+      -595.8302587890628,
+      280.9662817382814
      ],
      "options": []
     },
@@ -45,8 +45,8 @@
       "ny": 512
      },
      "uipos": [
-      1589.3643066406248,
-      296.9915771484375
+      1981.3643066406248,
+      195.9915771484375
      ],
      "options": [
       "VIEW"
@@ -67,8 +67,8 @@
      },
      "params": {},
      "uipos": [
-      1289.3643066406248,
-      329.39157714843736
+      1681.3643066406248,
+      228.39157714843736
      ],
      "options": []
     },
@@ -80,8 +80,8 @@
      },
      "params": {},
      "uipos": [
-      1298.7643066406245,
-      157.64157714843753
+      1690.7643066406245,
+      56.641577148437534
      ],
      "options": []
     },
@@ -94,8 +94,8 @@
       "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D image;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec3 at(int dx, int dy) {\n  vec2 uv = fragCoord + vec2(dx, dy) / 512.0;\n  vec3 color = texture(image, uv).xyz;\n  return color;\n}\nvoid main() {\n  vec3 color = vec3(0);\n  for (int i = -10; i <= 10; i++) {\n    color += at(i, 0);\n  }\n  color /= 21.0;\n  fragColor = vec4(color, 1.0);\n}"
      },
      "uipos": [
-      918.9950634765619,
-      -409.70985107421905
+      915.9950634765619,
+      -367.70985107421905
      ],
      "options": []
     },
@@ -107,17 +107,14 @@
        "value"
       ],
       "texture": [
-       "c45cbaaa-GLBindFramebufferTexture",
+       "9216f786-GLGetFramebufferTexture",
        "texture"
       ],
       "framebuffer": [
        "4c39311c-GLNoFramebuffer",
        "framebuffer"
       ],
-      "SRC": [
-       "fce5d049-ForwardRendering",
-       "DST"
-      ]
+      "SRC": null
      },
      "params": {},
      "uipos": [
@@ -133,8 +130,8 @@
      },
      "params": {},
      "uipos": [
-      205.6549072265626,
-      218.62139892578125
+      -262.70446777343716,
+      134.6370239257813
      ],
      "options": []
     },
@@ -145,8 +142,8 @@
      },
      "params": {},
      "uipos": [
-      -429.3450927734374,
-      -274.37860107421875
+      -731.5325927734376,
+      -413.6129760742188
      ],
      "options": []
     },
@@ -165,8 +162,8 @@
      },
      "params": {},
      "uipos": [
-      -187.3450927734374,
-      -174.37860107421875
+      -500.06384277343716,
+      -314.7067260742188
      ],
      "options": []
     },
@@ -177,8 +174,8 @@
      },
      "params": {},
      "uipos": [
-      -431.3450927734374,
-      -135.37860107421875
+      -753.0638427734376,
+      -270.7067260742188
      ],
      "options": []
     },
@@ -189,8 +186,8 @@
      },
      "params": {},
      "uipos": [
-      706.0,
-      -13.0
+      645.1999999999999,
+      119.80000000000001
      ],
      "options": []
     },
@@ -217,16 +214,32 @@
      },
      "params": {},
      "uipos": [
-      458.0,
-      82.0
+      -10.35937499999983,
+      -1.984375
+     ],
+     "options": []
+    },
+    "9216f786-GLGetFramebufferTexture": {
+     "name": "GLGetFramebufferTexture",
+     "inputs": {
+      "framebuffer": [
+       "fce5d049-ForwardRendering",
+       "framebuffer"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      640.0,
+      -34.40000000000002
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -561,
-    "trans_y": -390
+    "scale": 0.5120000000000001,
+    "trans_x": -65,
+    "trans_y": -507
    }
   },
   "PostprocessingPass": {
@@ -1438,11 +1451,6 @@
     ],
     [
      "",
-     "texture",
-     ""
-    ],
-    [
-     "",
      "DST",
      ""
     ]
@@ -1582,6 +1590,36 @@
     ]
    ],
    "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLGetFramebufferTexture": {
+   "inputs": [
+    [
+     "",
+     "framebuffer",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
     [
      "",
      "DST",
