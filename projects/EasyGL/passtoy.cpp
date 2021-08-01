@@ -96,7 +96,7 @@ struct PassToyMakeTexture : zeno::INode {
         auto texture = std::make_shared<PassToyTexture>();
         texture->tex.width = resolution[0];
         texture->tex.height = resolution[1];
-        texture->tex.type = GL_UNSIGNED_BYTE;
+        texture->tex.type = GL_FLOAT;
         texture->tex.format = GL_RGB;
         texture->tex.initialize();
         texture->fbo.initialize();
@@ -163,7 +163,7 @@ struct PassToyApplyShader : zeno::INode {
             textureOut = std::make_shared<PassToyTexture>();
             textureOut->tex.width = resolution[0];
             textureOut->tex.height = resolution[1];
-            textureOut->tex.type = GL_UNSIGNED_BYTE;
+            textureOut->tex.type = GL_FLOAT;
             textureOut->tex.format = GL_RGB;
             textureOut->tex.initialize();
             textureOut->fbo.initialize();

@@ -12,7 +12,7 @@
       "SRC": null
      },
      "params": {
-      "interval": 170,
+      "interval": 50,
       "nx": 512,
       "ny": 512
      },
@@ -318,7 +318,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec2 vf(ivec2 coor) {\n  if (any(lessThanEqual(coor, ivec2(0)))) return vec2(0);\n  if (any(greaterThanEqual(coor, iResolution - 1))) return vec2(0);\n  coor = clamp(coor, ivec2(0), iResolution - 1);\n  return texelFetch(iTexVelocity, coor, 0).rg * 16.0 - 8.0;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  float u = vf(coord + ivec2(0, 1)).y;\n  float d = vf(coord + ivec2(0, -1)).y;\n  float r = vf(coord + ivec2(1, 0)).x;\n  float l = vf(coord + ivec2(-1, 0)).x;\n  float res = (u - d + r - l) * 0.5;\n  fragColor = vec4(vec3(res * 0.0625 + 0.5), 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec2 vf(ivec2 coor) {\n  if (any(lessThanEqual(coor, ivec2(0)))) return vec2(0);\n  if (any(greaterThanEqual(coor, iResolution - 1))) return vec2(0);\n  return texelFetch(iTexVelocity, coor, 0).rg * 16.0 - 8.0;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  float u = vf(coord + ivec2(0, 1)).y;\n  float d = vf(coord + ivec2(0, -1)).y;\n  float r = vf(coord + ivec2(1, 0)).x;\n  float l = vf(coord + ivec2(-1, 0)).x;\n  float res = (u - d + r - l) * 0.5;\n  fragColor = vec4(vec3(res * 0.0625 + 0.5), 1.0);\n}"
      },
      "uipos": [
       -1975.8023828124994,
@@ -542,7 +542,7 @@
       "SRC": null
      },
      "params": {
-      "value": 10
+      "value": 20
      },
      "uipos": [
       -792.0999999999999,
@@ -733,7 +733,7 @@
       "SRC": null
      },
      "params": {
-      "name": "velocity"
+      "name": "advVelocity"
      },
      "uipos": [
       -2188.375,
@@ -805,7 +805,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nuniform sampler2D iTexPressure;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec2 vf(ivec2 coor) {\n  if (any(lessThanEqual(coor, ivec2(0)))) return vec2(0);\n  if (any(greaterThanEqual(coor, iResolution - 1))) return vec2(0);\n  coor = clamp(coor, ivec2(0), iResolution - 1);\n  return texelFetch(iTexVelocity, coor, 0).rg * 16.0 - 8.0;\n}\nfloat pf(ivec2 coor) {\n  return texelFetch(iTexPressure, clamp(coor, ivec2(0), iResolution - 1), 0).r * 16.0 - 8.0;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  vec2 res = vf(coord);\n  float u = pf(coord + ivec2(0, 1));\n  float d = pf(coord + ivec2(0, -1));\n  float r = pf(coord + ivec2(1, 0));\n  float l = pf(coord + ivec2(-1, 0));\n  res -= 0.5 * vec2(r - l, u - d);\n  fragColor = vec4(res * 0.0625 + 0.5, 0.0, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nuniform sampler2D iTexPressure;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec2 vf(ivec2 coor) {\n  return texelFetch(iTexVelocity, coor, 0).rg * 16.0 - 8.0;\n}\nfloat pf(ivec2 coor) {\n  return texelFetch(iTexPressure, clamp(coor, ivec2(0), iResolution - 1), 0).r * 16.0 - 8.0;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  vec2 res = vf(coord);\n  float u = pf(coord + ivec2(0, 1));\n  float d = pf(coord + ivec2(0, -1));\n  float r = pf(coord + ivec2(1, 0));\n  float l = pf(coord + ivec2(-1, 0));\n  res -= 0.5 * vec2(r - l, u - d);\n  fragColor = vec4(res * 0.0625 + 0.5, 0.0, 1.0);\n}"
      },
      "uipos": [
       -3115.2514990234395,
@@ -1061,7 +1061,7 @@
       "SRC": null
      },
      "params": {
-      "name": "velocity"
+      "name": "advVelocity"
      },
      "uipos": [
       -3574.5375,
@@ -1100,12 +1100,150 @@
       -343.6499999999999
      ],
      "options": []
+    },
+    "1c342555-x": {
+     "name": "PassToyMakeShader",
+     "inputs": {
+      "source": [
+       "e4467b86-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -4244.092749023439,
+      -572.3667626953126
+     ],
+     "options": []
+    },
+    "dce6460c-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "velocity"
+     },
+     "uipos": [
+      -4514.418749999997,
+      -601.3479394531249
+     ],
+     "options": []
+    },
+    "b65a8b22-x": {
+     "name": "PassToyApplyShader",
+     "inputs": {
+      "shader": [
+       "1c342555-x",
+       "shader"
+      ],
+      "uniforms": [
+       "74f7e198-x",
+       "port"
+      ],
+      "textureIn": [
+       "5dcfc148-x",
+       "dict"
+      ],
+      "textureOut": [
+       "dce6460c-x",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -4240.37274902344,
+      -439.12676269531255
+     ],
+     "options": []
+    },
+    "6be8ebbc-x": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "b65a8b22-x",
+       "textureOut"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "name": "advVelocity"
+     },
+     "uipos": [
+      -4004.5812499999997,
+      -347.8479394531247
+     ],
+     "options": []
+    },
+    "74f7e198-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "uniforms"
+     },
+     "uipos": [
+      -4238.269750976564,
+      -219.25323730468745
+     ],
+     "options": []
+    },
+    "5dcfc148-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": null,
+      "iTexVelocity": [
+       "dce6460c-x",
+       "port"
+      ]
+     },
+     "params": {
+      "_KEYS": "iTexVelocity"
+     },
+     "uipos": [
+      -4504.218749999996,
+      -418.8479394531247
+     ],
+     "options": [],
+     "socket_keys": [
+      "iTexVelocity"
+     ]
+    },
+    "e4467b86-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec2 vf(vec2 coor) {\n  coor = clamp(coor / vec2(iResolution), vec2(0), vec2(1));\n  return texture(iTexVelocity, coor).rg * 16.0 - 8.0;\n}\nvoid main() {\n  float dt = 0.1;\n  vec2 p0 = fragCoord * vec2(iResolution);\n  vec2 p1 = p0 - vf(p0) * dt;\n  vec2 res = vf(p1);\n  fragColor = vec4(res * 0.0625 + 0.5, 0.0, 1.0);\n}"
+     },
+     "uipos": [
+      -4286.13274902344,
+      -949.4967626953122
+     ],
+     "options": []
+    },
+    "de385b81-Blackboard": {
+     "name": "Blackboard",
+     "uipos": [
+      -4556.249999999998,
+      -1037.1874999999998
+     ],
+     "special": true,
+     "width": 783.4374999999995,
+     "height": 980.9374999999998,
+     "title": "Blackboard",
+     "content": "Advect velocity with velocity: v(t + dt, x) = v(t, x - v*dt)",
+     "params": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -3010,
-    "trans_y": -868
+    "scale": 1.953125,
+    "trans_x": -5934,
+    "trans_y": -1431
    }
   }
  },
