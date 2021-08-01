@@ -2,6 +2,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/ListObject.h>
+#include <zeno/types/DictObject.h>
 #include <GLES2/gl2.h>
 #include <cstring>
 #include "GLVertexAttribInfo.h"
@@ -98,11 +99,12 @@ ZENDEFNODE(PassToyMakeTexture, {
 
 struct PassToyApplyShader : zeno::INode {
     virtual void apply() override {
+        zeno::vec2i resolution;
         GLint dims[4];
         glGetIntegerv(GL_VIEWPORT, dims);
-        zeno::vec2i resolution;
         resolution[0] = dims[2] - dims[0];
         resolution[1] = dims[3] - dims[1];
+
         if (has_input<zeno::ListObject>("textureIn")) {
             auto textureInList = get_input<zeno::ListObject>("textureIn");
             for (int i = 0; i < textureInList->arr.size(); i++) {
@@ -141,6 +143,18 @@ struct PassToyApplyShader : zeno::INode {
 
         auto shader = get_input<PassToyShader>("shader");
         shader->prog.use();
+
+        if (has_input("uniforms")) {
+            auto uniforms = get_input<zeno::DictObject>("uniforms");
+            for (auto const &[key, obj]: uniforms->lut) {
+                auto const &value = zeno::safe_dynamic_cast
+                    <zeno::NumericObject>(obj)->value;
+                std::visit([&shader, key = key] (auto const &value) {
+                    shader->prog.setUniform(key.c_str(), value);
+                }, value);
+            }
+        }
+
         GLVertexAttribInfo vab;
         vab.base = generic_rect_vertices;
         vab.dim = 2;
@@ -152,7 +166,7 @@ struct PassToyApplyShader : zeno::INode {
 };
 
 ZENDEFNODE(PassToyApplyShader, {
-        {"shader", "textureIn", "textureOut"},
+        {"shader", "uniforms", "textureIn", "textureOut"},
         {"textureOut"},
         {},
         {"PassToy"},
