@@ -201,6 +201,7 @@ struct PassToyApplyShader : zeno::INode {
                 textureIn->tex.use(i);
                 shader->prog.setUniform(key.c_str(), i);
             }
+            //zlog::debug("done assigning input textures");
         }
         glActiveTexture(GL_TEXTURE0);
 

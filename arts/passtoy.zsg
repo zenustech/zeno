@@ -12,7 +12,7 @@
       "SRC": null
      },
      "params": {
-      "interval": 170,
+      "interval": 17,
       "nx": 512,
       "ny": 512
      },
@@ -872,8 +872,8 @@
       "name": "finalVelocity"
      },
      "uipos": [
-      417.5073925781253,
-      -385.17060546875024
+      356.5073925781253,
+      -266.1706054687502
      ],
      "options": []
     },
@@ -901,7 +901,10 @@
     "496d5823-MakeDict": {
      "name": "MakeDict",
      "inputs": {
-      "SRC": null,
+      "SRC": [
+       "9fcef517-PortalOut",
+       "DST"
+      ],
       "iTexture": [
        "aa2b21c3-x",
        "port"
@@ -1450,7 +1453,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform float iDeltaTime;\nuniform float iDecayRate;\nuniform sampler2D iTexVelocity;\nuniform sampler2D iTexColor;\nin vec2 fragCoord;\nout vec3 res;\nvec2 vf(vec2 coor) {\n  return texture(iTexVelocity, clamp(coor / vec2(iResolution), vec2(0), vec2(1))).rg;\n}\nvec3 cf(vec2 coor) {\n  return texture(iTexColor, clamp(coor / vec2(iResolution), vec2(0), vec2(1))).rgb;\n}\nvoid main() {\n  float dt = iDeltaTime;\n  vec2 p0 = fragCoord * vec2(iResolution);\n  /*vec2 p1 = p0 - 0.5 * vf(p0) * dt;\n  vec2 p2 = p0 - vf(p1) * dt;\n  res = cf(p2) * iDecayRate;*/\n  res = vec3(vf(p0).xy * 0.5 + 0.5, 0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform float iDeltaTime;\nuniform float iDecayRate;\nuniform sampler2D iTexVelocity;\nuniform sampler2D iTexColor;\nin vec2 fragCoord;\nout vec3 res;\nvec2 vf(vec2 coor) {\n  return texture(iTexVelocity, clamp(coor / vec2(iResolution), vec2(0), vec2(1))).rg;\n}\nvec3 cf(vec2 coor) {\n  return texture(iTexColor, clamp(coor / vec2(iResolution), vec2(0), vec2(1))).rgb;\n}\nvoid main() {\n  float dt = iDeltaTime;\n  vec2 p0 = fragCoord * vec2(iResolution);\n  vec2 p1 = p0 - 0.5 * vf(p0) * dt;\n  vec2 p2 = p0 - vf(p1) * dt;\n  res = cf(p2) * iDecayRate;\n  //res = vec3(vf(p0).xy * 0.5 + 0.5, 0);\n}"
      },
      "uipos": [
       -5452.993259277346,
@@ -1473,7 +1476,10 @@
        "bc68394a-x",
        "dict"
       ],
-      "textureOut": null,
+      "textureOut": [
+       "ce71664c-x",
+       "texturePair"
+      ],
       "SRC": null
      },
      "params": {},
@@ -1549,9 +1555,13 @@
      "name": "MakeDict",
      "inputs": {
       "SRC": null,
-      "iTexColor": [
-       "2f51c419-x",
+      "iTexVelocity": [
+       "1119b3c9-PortalOut",
        "port"
+      ],
+      "iTexColor": [
+       "ce71664c-x",
+       "oldTexture"
       ]
      },
      "params": {
@@ -1745,11 +1755,11 @@
       "SRC": null
      },
      "params": {
-      "value": 1.0
+      "value": 3.0
      },
      "uipos": [
       49.0,
-      748.0
+      745.0
      ],
      "options": []
     },
@@ -1776,16 +1786,16 @@
       "name": "advColor"
      },
      "uipos": [
-      238.40000000000003,
-      -112.47999999999999
+      107.40000000000009,
+      -129.48000000000002
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.953125,
-    "trans_x": -6174,
-    "trans_y": -1147
+    "scale": 1.0000000000000002,
+    "trans_x": -2555,
+    "trans_y": -1053
    }
   }
  },
