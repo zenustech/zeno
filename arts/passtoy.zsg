@@ -526,7 +526,7 @@
       "SRC": null
      },
      "params": {
-      "value": 150
+      "value": 100
      },
      "uipos": [
       -792.0999999999999,
@@ -1116,7 +1116,7 @@
       "SRC": null
      },
      "params": {
-      "name": "velocity"
+      "name": "impVelocity"
      },
      "uipos": [
       -4515.618749999998,
@@ -1334,12 +1334,150 @@
       1597.44
      ],
      "options": []
+    },
+    "89084cf4-x": {
+     "name": "PassToyMakeShader",
+     "inputs": {
+      "source": [
+       "6b0d6c67-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -5250.342749023435,
+      -593.6017626953121
+     ],
+     "options": []
+    },
+    "6b0d6c67-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec2 res;\nvec2 vf(ivec2 coor) {\n  return texelFetch(iTexVelocity, coor, 0).rg;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  res = vf(coord);\n  res += vec2(1.0, 0.0) * smoothstep(0.06, 0.0, length(fragCoord - 0.5));\n}"
+     },
+     "uipos": [
+      -5292.382749023436,
+      -970.731762695312
+     ],
+     "options": []
+    },
+    "1d91341d-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "uniforms"
+     },
+     "uipos": [
+      -5244.519750976562,
+      -240.48823730468717
+     ],
+     "options": []
+    },
+    "41d2a7d7-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "velocity"
+     },
+     "uipos": [
+      -5751.668749999997,
+      -431.3829394531245
+     ],
+     "options": []
+    },
+    "0ffc9eb9-x": {
+     "name": "PassToyApplyShader",
+     "inputs": {
+      "shader": [
+       "89084cf4-x",
+       "shader"
+      ],
+      "uniforms": [
+       "1d91341d-x",
+       "port"
+      ],
+      "textureIn": [
+       "c68ec009-x",
+       "dict"
+      ],
+      "textureOut": [
+       "41d2a7d7-x",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -5246.622749023438,
+      -460.36176269531217
+     ],
+     "options": []
+    },
+    "659a0ba1-x": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "0ffc9eb9-x",
+       "textureOut"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "name": "impVelocity"
+     },
+     "uipos": [
+      -5010.831249999997,
+      -369.0829394531243
+     ],
+     "options": []
+    },
+    "c68ec009-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": null,
+      "iTexVelocity": [
+       "41d2a7d7-x",
+       "port"
+      ]
+     },
+     "params": {
+      "_KEYS": "iTexVelocity"
+     },
+     "uipos": [
+      -5503.068749999995,
+      -431.08293945312425
+     ],
+     "options": [],
+     "socket_keys": [
+      "iTexVelocity"
+     ]
+    },
+    "edabef7d-Blackboard": {
+     "name": "Blackboard",
+     "uipos": [
+      -5785.156249999999,
+      -1044.9218749999998
+     ],
+     "special": true,
+     "width": 1020.3125,
+     "height": 966.4062499999998,
+     "title": "Blackboard",
+     "content": "Apply impulse to velocity field: v += impulse",
+     "params": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -2779,
-    "trans_y": -40
+    "trans_x": -7164,
+    "trans_y": -1252
    }
   }
  },

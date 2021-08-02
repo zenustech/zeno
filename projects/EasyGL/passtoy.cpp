@@ -28,13 +28,10 @@ void main() {
     return vert;
 }
 
-static GLfloat generic_rect_vertices[] = {
+static GLfloat generic_triangle_vertices[] = {
     0.0f, 0.0f,
-    1.0f, 0.0f,
-    0.0f, 1.0f,
-    1.0f, 0.0f,
-    0.0f, 1.0f,
-    1.0f, 1.0f,
+    2.0f, 0.0f,
+    0.0f, 2.0f,
 };
 
 struct PassToyShader : zeno::IObjectClone<PassToyShader> {
@@ -94,6 +91,7 @@ static auto make_texture(zeno::vec2i resolution) {
     texture->tex.height = resolution[1];
     texture->tex.type = GL_FLOAT;
     texture->tex.format = GL_RGB;
+    texture->tex.internalformat = GL_RGB16F;
     texture->tex.initialize();
     texture->fbo.initialize();
     texture->fbo.bindToTexture(texture->tex, GL_COLOR_ATTACHMENT0);
@@ -154,7 +152,6 @@ struct PassToyTexturePairSwap : zeno::INode {
         auto texturePair = get_input<PassToyTexturePair>("texturePair");
         texturePair->swap();
         auto oldTexture = std::make_shared<PassToyTexture>(texturePair->second);
-        texturePair->swap();
         set_output("texturePair", std::move(texturePair));
         set_output("oldTexture", std::move(oldTexture));
     }
@@ -232,10 +229,10 @@ struct PassToyApplyShader : zeno::INode {
         }
 
         GLVertexAttribInfo vab;
-        vab.base = generic_rect_vertices;
+        vab.base = generic_triangle_vertices;
         vab.dim = 2;
         glViewport(0, 0, resolution[0], resolution[1]);
-        drawVertexArrays(GL_TRIANGLES, 6, {vab});
+        drawVertexArrays(GL_TRIANGLES, 3, {vab});
         GLFramebuffer().use();
         set_output("textureOut", std::move(textureOut));
     }
