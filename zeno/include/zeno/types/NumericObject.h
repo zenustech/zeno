@@ -8,7 +8,6 @@ namespace zeno {
 
 
 using NumericValue = std::variant<
-  bool, zeno::vec2b, zeno::vec3b, zeno::vec4b,
   int, zeno::vec2i, zeno::vec3i, zeno::vec4i,
   float, zeno::vec2f, zeno::vec3f, zeno::vec4f>;
 

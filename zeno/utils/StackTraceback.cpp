@@ -1,3 +1,10 @@
+// https://github.com/taichi-dev/taichi/blob/eb769ebfc0cb6b48649a3aed8ccd293cbd4eb5ed/taichi/system/traceback.cpp
+/*******************************************************************************
+    Copyright (c) The Taichi Authors (2016- ). All Rights Reserved.
+    The use of this software is governed by the LICENSE file.
+*******************************************************************************/
+
+#define FMT_HEADER_ONLY
 #include <vector>
 #include <iostream>
 #include <string>
@@ -16,7 +23,14 @@
 #include <intrin.h>
 #include <dbghelp.h>
 
-#include "taichi/platform/windows/windows.h"
+#include <windows.h>
+// Never directly include <windows.h>. That will bring you evil max/min macros.
+#if defined(min)
+#undef min
+#endif
+#if defined(max)
+#undef max
+#endif
 
 #pragma comment(lib, "dbghelp.lib")
 //  https://gist.github.com/rioki/85ca8295d51a5e0b7c56e5005b0ba8b4
@@ -190,6 +204,7 @@ inline std::vector<StackFrame> stack_trace() {
 #include <cxxabi.h>
 #endif
 
+namespace zeno {
 void print_traceback() {
 #ifdef __APPLE__
   static std::mutex traceback_printer_mutex;
@@ -310,9 +325,9 @@ void print_traceback() {
     exit(EXIT_FAILURE);
   }
 
-  fmt::print(fg(fmt::color::magenta), "***********************************\n");
-  fmt::print(fg(fmt::color::magenta), "* Taichi Compiler Stack Traceback *\n");
-  fmt::print(fg(fmt::color::magenta), "***********************************\n");
+  fmt::print(fg(fmt::color::magenta), "************************\n");
+  fmt::print(fg(fmt::color::magenta), "* Zeno Stack Traceback *\n");
+  fmt::print(fg(fmt::color::magenta), "************************\n");
 
   // j = 0: taichi::print_traceback
   for (int j = 1; j < nptrs; j++) {
@@ -348,8 +363,6 @@ void print_traceback() {
   std::free(strings);
 #endif
 
-  fmt::print(
-      fg(fmt::color::orange),
-      "\nInternal error occurred. Check out this page for possible solutions:\n"
-      "https://taichi.readthedocs.io/en/stable/install.html#troubleshooting\n");
+  fmt::print(fg(fmt::color::orange), "\nInternal error occurred.\n");
+}
 }
