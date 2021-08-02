@@ -154,12 +154,20 @@
        "3a38638f-x",
        "output"
       ],
+      "mousePos": [
+       "15bda0b9-NumericVec2",
+       "vec2"
+      ],
+      "mouseDir": [
+       "9011c136-NumericVec2",
+       "vec2"
+      ],
       "SRC": null
      },
      "params": {},
      "uipos": [
       -322.8499999999999,
-      636.3999999999999
+      634.3999999999999
      ],
      "options": []
     },
@@ -174,8 +182,8 @@
      },
      "params": {},
      "uipos": [
-      -574.3160766601568,
-      197.5994873046875
+      -757.9098266601567,
+      193.6932373046875
      ],
      "options": []
     },
@@ -190,8 +198,8 @@
      },
      "params": {},
      "uipos": [
-      -565.3212036132818,
-      625.1505126953125
+      -803.5555786132818,
+      618.8692626953126
      ],
      "options": []
     },
@@ -204,8 +212,8 @@
       "value": "#version 300 es\nprecision mediump float;\nin vec2 fragCoord;\nout vec3 res;\nvoid main() {\n  res = 3.0 * vec3(0.375, 0.75, 1.0) * smoothstep(0.1, 0.0, length(fragCoord - 0.5));\n}"
      },
      "uipos": [
-      -615.3160766601568,
-      -182.6505126953126
+      -798.9098266601567,
+      -186.5567626953126
      ],
      "options": []
     },
@@ -223,8 +231,8 @@
      },
      "params": {},
      "uipos": [
-      -573.0960766601575,
-      337.9894873046873
+      -756.6898266601573,
+      334.08323730468726
      ],
      "options": []
     },
@@ -237,8 +245,8 @@
       "path": "assets/image.jpg"
      },
      "uipos": [
-      -1046.7978424072273,
-      675.9954101562505
+      -1230.391592407227,
+      672.0891601562504
      ],
      "options": []
     },
@@ -268,8 +276,8 @@
      },
      "params": {},
      "uipos": [
-      -1080.1099999999997,
-      190.3800000000001
+      -1263.7037499999997,
+      186.4737500000001
      ],
      "options": []
     },
@@ -282,8 +290,8 @@
       "value": "#version 300 es\nprecision mediump float;\nin vec2 fragCoord;\nout vec3 res;\nvoid main() {\n  ivec2 coord = ivec2(floor(fragCoord * 16.0));\n  res = vec3((coord.x + coord.y) % 2 == 0 ? 0.23 : 0.9);\n}"
      },
      "uipos": [
-      -1121.1099999999997,
-      -189.86999999999995
+      -1304.7037499999997,
+      -193.77624999999995
      ],
      "options": []
     },
@@ -301,16 +309,46 @@
      },
      "params": {},
      "uipos": [
-      -1078.8900000000003,
-      332.3699999999999
+      -1262.4837500000003,
+      328.4637499999999
+     ],
+     "options": []
+    },
+    "15bda0b9-NumericVec2": {
+     "name": "NumericVec2",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 0.5,
+      "y": 0.2
+     },
+     "uipos": [
+      -603.0,
+      802.0
+     ],
+     "options": []
+    },
+    "9011c136-NumericVec2": {
+     "name": "NumericVec2",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 0.0,
+      "y": 1.0
+     },
+     "uipos": [
+      -326.40000000000003,
+      868.0
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.953125,
-    "trans_x": -2629,
-    "trans_y": -576
+    "scale": 1.25,
+    "trans_x": -1212,
+    "trans_y": 461
    }
   },
   "StableFluid": {
@@ -1156,7 +1194,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision highp float;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec2 res;\nvec2 vf(ivec2 coor) {\n  return texelFetch(iTexVelocity, coor, 0).rg;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  res = vf(coord);\n  res += vec2(1.0, 0.0) * smoothstep(0.06, 0.0, length(fragCoord - 0.5));\n}"
+      "value": "#version 300 es\nprecision highp float;\nuniform vec2 iMousePos;\nuniform vec2 iMouseDir;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec2 res;\nvec2 vf(ivec2 coor) {\n  return texelFetch(iTexVelocity, coor, 0).rg;\n}\nvoid main() {\n  res = texture(iTexVelocity, fragCoord).rg;\n  res += iMouseDir * smoothstep(0.06, 0.0, length(fragCoord - iMousePos));\n}"
      },
      "uipos": [
       -4545.834573211668,
@@ -1173,8 +1211,8 @@
       "name": "uniforms"
      },
      "uipos": [
-      -4497.9715751647955,
-      1132.9815922546381
+      -4262.971575164796,
+      793.9815922546381
      ],
      "options": []
     },
@@ -1200,8 +1238,8 @@
        "shader"
       ],
       "uniforms": [
-       "1d91341d-x",
-       "port"
+       "2885af74-MakeDict",
+       "dict"
       ],
       "textureIn": [
        "c68ec009-x",
@@ -1215,8 +1253,8 @@
      },
      "params": {},
      "uipos": [
-      -4500.074573211669,
-      913.1080668640133
+      -4507.07457321167,
+      934.1080668640134
      ],
      "options": []
     },
@@ -1262,12 +1300,12 @@
     "edabef7d-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      -5038.6080741882315,
-      328.5479545593256
+      -5171.4205741882315,
+      303.1573295593255
      ],
      "special": true,
-     "width": 1020.3125,
-     "height": 966.4062499999998,
+     "width": 1162.890625,
+     "height": 886.3281249999998,
      "title": "Blackboard",
      "content": "Apply impulse to velocity field: v += impulse",
      "params": []
@@ -1715,12 +1753,70 @@
       874.9611523437505
      ],
      "options": []
+    },
+    "2885af74-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": null,
+      "iMousePos": [
+       "0e71935f-SubInput",
+       "port"
+      ],
+      "iMouseDir": [
+       "a27732f2-x",
+       "port"
+      ]
+     },
+     "params": {
+      "_KEYS": "iMousePos\niMouseDir"
+     },
+     "uipos": [
+      -4819.0,
+      651.0
+     ],
+     "options": [],
+     "socket_keys": [
+      "iMousePos",
+      "iMouseDir"
+     ]
+    },
+    "0e71935f-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "mousePos",
+      "defl": ""
+     },
+     "uipos": [
+      -5105.600000000001,
+      406.4
+     ],
+     "options": []
+    },
+    "a27732f2-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "mouseDir",
+      "defl": ""
+     },
+     "uipos": [
+      -5106.4000000000015,
+      667.9999999999998
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -1017,
-    "trans_y": -664
+    "scale": 1.25,
+    "trans_x": -6434,
+    "trans_y": 419
    }
   },
   "CopyTexture": {
@@ -2467,6 +2563,41 @@
     [
      "numeric:int",
      "size",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "dict"
+   ]
+  },
+  "DictUnion": {
+   "inputs": [
+    [
+     "dict1",
+     "dict",
+     ""
+    ],
+    [
+     "dict2",
+     "dict",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "dict",
+     "dict",
      ""
     ],
     [
@@ -6180,6 +6311,16 @@
     [
      "",
      "initialColor",
+     ""
+    ],
+    [
+     "",
+     "mousePos",
+     ""
+    ],
+    [
+     "",
+     "mouseDir",
      ""
     ],
     [
