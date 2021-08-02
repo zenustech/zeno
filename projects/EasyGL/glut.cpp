@@ -46,20 +46,21 @@ struct GLUTMainLoop : zeno::INode {
 
     virtual void apply() override {
         drawFunc = get_input<zeno::FunctionObject>("drawFunc");
+        zeno::vec2i resolution(512, 512);
+        if (has_input("resolution"))
+            resolution = get_input<zeno::NumericObject>(
+                    "resolution")->get<zeno::vec2i>();
+        nx = resolution[0];
+        ny = resolution[1];
         interval = get_param<int>("interval");
-        nx = get_param<int>("nx");
-        ny = get_param<int>("ny");
+        zlog::debug("initializing with res={}x{} itv={}", nx, ny, interval);
         mainFunc();
     }
 };
 
 ZENDEFNODE(GLUTMainLoop, {
-        {"drawFunc"},
+        {"drawFunc", "resolution"},
         {},
-        {
-            {"int", "interval", "17 0"},
-            {"int", "nx", "512 1"},
-            {"int", "ny", "512 1"},
-        },
+        {{"int", "interval", "17 0"}},
         {"EasyGL"},
 });

@@ -1,5 +1,270 @@
 {
  "graph": {
+  "main": {
+   "nodes": {
+    "97b072d3-x": {
+     "name": "PassToyScreenTexture",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      334.1609375000003,
+      754.6078125
+     ],
+     "options": []
+    },
+    "68149629-x": {
+     "name": "FuncEnd",
+     "inputs": {
+      "rets": null,
+      "FUNC": [
+       "2f86a972-x",
+       "FUNC"
+      ],
+      "SRC": [
+       "ca083d31-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      876.9421875000005,
+      574.7078125
+     ],
+     "options": []
+    },
+    "26fa68eb-x": {
+     "name": "PassToyMakeShader",
+     "inputs": {
+      "source": [
+       "69872c79-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      328.6734375000001,
+      403.0828125
+     ],
+     "options": []
+    },
+    "7493ac46-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": null,
+      "iTexture": [
+       "e3a9a688-StableFluid",
+       "color"
+      ]
+     },
+     "params": {
+      "_KEYS": "iTexture"
+     },
+     "uipos": [
+      77.24218749999977,
+      537.7765624999997
+     ],
+     "options": [],
+     "socket_keys": [
+      "iTexture"
+     ]
+    },
+    "2f86a972-x": {
+     "name": "FuncBegin",
+     "inputs": {
+      "extraArgs": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      878.9421875000005,
+      410.7078125000001
+     ],
+     "options": []
+    },
+    "c81c15f8-x": {
+     "name": "GLUTMainLoop",
+     "inputs": {
+      "drawFunc": [
+       "68149629-x",
+       "function"
+      ],
+      "resolution": [
+       "d7fe6c3f-PassToyGetTextureResolution",
+       "resolution"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "interval": 17
+     },
+     "uipos": [
+      883.5703125000002,
+      753.8390625
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "69872c79-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexture;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 value = texture(iTexture, fragCoord).rgb;\n  fragColor = vec4(value, 1);\n}"
+     },
+     "uipos": [
+      281.4234375000001,
+      27.832812500000045
+     ],
+     "options": []
+    },
+    "ca083d31-x": {
+     "name": "PassToyApplyShader",
+     "inputs": {
+      "shader": [
+       "26fa68eb-x",
+       "shader"
+      ],
+      "uniforms": null,
+      "textureIn": [
+       "7493ac46-x",
+       "dict"
+      ],
+      "textureOut": [
+       "97b072d3-x",
+       "texture"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      332.73593750000055,
+      540.4958125
+     ],
+     "options": []
+    },
+    "e3a9a688-StableFluid": {
+     "name": "StableFluid",
+     "inputs": {
+      "initialColor": [
+       "3a38638f-x",
+       "output"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -322.8499999999999,
+      636.3999999999999
+     ],
+     "options": []
+    },
+    "d633e0dd-x": {
+     "name": "PassToyMakeShader",
+     "inputs": {
+      "source": [
+       "d191424d-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -574.3160766601568,
+      197.5994873046875
+     ],
+     "options": []
+    },
+    "3a38638f-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "a20e2524-PassToyLoadImageTexture",
+       "texture"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -565.3212036132818,
+      625.1505126953125
+     ],
+     "options": []
+    },
+    "d191424d-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec3 res;\nvoid main() {\n  res = 3.0 * vec3(0.375, 0.75, 1.0) * smoothstep(0.1, 0.0, length(fragCoord - 0.5));\n}"
+     },
+     "uipos": [
+      -615.3160766601568,
+      -182.6505126953126
+     ],
+     "options": []
+    },
+    "12ef6b05-x": {
+     "name": "PassToyApplyShader",
+     "inputs": {
+      "shader": [
+       "d633e0dd-x",
+       "shader"
+      ],
+      "uniforms": null,
+      "textureIn": null,
+      "textureOut": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -570.5960766601575,
+      330.8394873046873
+     ],
+     "options": []
+    },
+    "a20e2524-PassToyLoadImageTexture": {
+     "name": "PassToyLoadImageTexture",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "path": "assets/image.jpg"
+     },
+     "uipos": [
+      -812.3978424072272,
+      600.7954101562505
+     ],
+     "options": []
+    },
+    "d7fe6c3f-PassToyGetTextureResolution": {
+     "name": "PassToyGetTextureResolution",
+     "inputs": {
+      "texture": [
+       "a20e2524-PassToyLoadImageTexture",
+       "texture"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -556.9852812499998,
+      790.8203124999999
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1.0000000000000002,
+    "trans_x": -105,
+    "trans_y": 221
+   }
+  },
   "StableFluid": {
    "nodes": {
     "0a25ec8b-PassToyApplyShader": {
@@ -1492,253 +1757,6 @@
     "trans_y": -53
    }
   },
-  "main": {
-   "nodes": {
-    "97b072d3-x": {
-     "name": "PassToyScreenTexture",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      334.1609375000003,
-      754.6078125
-     ],
-     "options": []
-    },
-    "68149629-x": {
-     "name": "FuncEnd",
-     "inputs": {
-      "rets": null,
-      "FUNC": [
-       "2f86a972-x",
-       "FUNC"
-      ],
-      "SRC": [
-       "ca083d31-x",
-       "DST"
-      ]
-     },
-     "params": {},
-     "uipos": [
-      876.9421875000005,
-      574.7078125
-     ],
-     "options": []
-    },
-    "26fa68eb-x": {
-     "name": "PassToyMakeShader",
-     "inputs": {
-      "source": [
-       "69872c79-x",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      328.6734375000001,
-      403.0828125
-     ],
-     "options": []
-    },
-    "7493ac46-x": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": null,
-      "iTexture": [
-       "e3a9a688-StableFluid",
-       "color"
-      ]
-     },
-     "params": {
-      "_KEYS": "iTexture"
-     },
-     "uipos": [
-      77.24218749999977,
-      537.7765624999997
-     ],
-     "options": [],
-     "socket_keys": [
-      "iTexture"
-     ]
-    },
-    "2f86a972-x": {
-     "name": "FuncBegin",
-     "inputs": {
-      "extraArgs": null,
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      878.9421875000005,
-      410.7078125000001
-     ],
-     "options": []
-    },
-    "c81c15f8-x": {
-     "name": "GLUTMainLoop",
-     "inputs": {
-      "drawFunc": [
-       "68149629-x",
-       "function"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "interval": 17,
-      "nx": 512,
-      "ny": 512
-     },
-     "uipos": [
-      883.5703125000002,
-      753.8390625
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
-    "69872c79-x": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexture;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 value = texture(iTexture, fragCoord).rgb;\n  fragColor = vec4(value, 1);\n}"
-     },
-     "uipos": [
-      281.4234375000001,
-      27.832812500000045
-     ],
-     "options": []
-    },
-    "ca083d31-x": {
-     "name": "PassToyApplyShader",
-     "inputs": {
-      "shader": [
-       "26fa68eb-x",
-       "shader"
-      ],
-      "uniforms": null,
-      "textureIn": [
-       "7493ac46-x",
-       "dict"
-      ],
-      "textureOut": [
-       "97b072d3-x",
-       "texture"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      332.73593750000055,
-      540.4958125
-     ],
-     "options": []
-    },
-    "e3a9a688-StableFluid": {
-     "name": "StableFluid",
-     "inputs": {
-      "initialColor": [
-       "3a38638f-x",
-       "output"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -322.8499999999999,
-      636.3999999999999
-     ],
-     "options": []
-    },
-    "d633e0dd-x": {
-     "name": "PassToyMakeShader",
-     "inputs": {
-      "source": [
-       "d191424d-x",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -574.3160766601568,
-      197.5994873046875
-     ],
-     "options": []
-    },
-    "3a38638f-x": {
-     "name": "CachedOnce",
-     "inputs": {
-      "input": [
-       "a20e2524-PassToyLoadImageTexture",
-       "texture"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -565.3212036132818,
-      625.1505126953125
-     ],
-     "options": []
-    },
-    "d191424d-x": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec3 res;\nvoid main() {\n  res = 3.0 * vec3(0.375, 0.75, 1.0) * smoothstep(0.1, 0.0, length(fragCoord - 0.5));\n}"
-     },
-     "uipos": [
-      -615.3160766601568,
-      -182.6505126953126
-     ],
-     "options": []
-    },
-    "12ef6b05-x": {
-     "name": "PassToyApplyShader",
-     "inputs": {
-      "shader": [
-       "d633e0dd-x",
-       "shader"
-      ],
-      "uniforms": null,
-      "textureIn": null,
-      "textureOut": null,
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -570.5960766601575,
-      330.8394873046873
-     ],
-     "options": []
-    },
-    "a20e2524-PassToyLoadImageTexture": {
-     "name": "PassToyLoadImageTexture",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "path": "assets/image.jpg"
-     },
-     "uipos": [
-      -812.3978424072272,
-      600.7954101562505
-     ],
-     "options": []
-    }
-   },
-   "view": {
-    "scale": 1.0000000000000007,
-    "trans_x": 131,
-    "trans_y": 260
-   }
-  },
   "CopyTexture": {
    "nodes": {
     "a481134e-x": {
@@ -3062,6 +3080,11 @@
     ],
     [
      "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -3078,16 +3101,6 @@
      "int",
      "interval",
      "17 0"
-    ],
-    [
-     "int",
-     "nx",
-     "512 1"
-    ],
-    [
-     "int",
-     "ny",
-     "512 1"
     ]
    ],
    "categories": [
@@ -4377,6 +4390,36 @@
   },
   "PassToyGetResolution": {
    "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyGetTextureResolution": {
+   "inputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
     [
      "",
      "SRC",

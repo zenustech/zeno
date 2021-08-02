@@ -218,6 +218,22 @@ ZENDEFNODE(PassToyLoadImageTexture, {
         {"PassToy"},
 });
 
+struct PassToyGetTextureResolution : zeno::INode {
+    virtual void apply() override {
+        auto texture = get_input<PassToyTexture>("texture");
+        zeno::vec2i resolution(texture->tex.width, texture->tex.height);
+        auto res = std::make_shared<zeno::NumericObject>(resolution);
+        set_output("resolution", std::move(res));
+    }
+};
+
+ZENDEFNODE(PassToyGetTextureResolution, {
+        {"texture"},
+        {"resolution"},
+        {},
+        {"PassToy"},
+});
+
 struct PassToyTexturePair : PassToyTexture {
     PassToyTexture second;
 
