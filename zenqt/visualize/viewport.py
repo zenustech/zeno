@@ -11,7 +11,7 @@ from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 from PySide2.QtOpenGL import *
 
-import zenvis
+from . import zenvis
 
 
 class CameraControl:

@@ -4,9 +4,9 @@ from PySide2.QtWidgets import *
 from PySide2.QtSvg import *
 
 from ..utils import asset_path, setKeepAspect
+from . import zenvis
 
 import os
-import zenvis
 
 
 class QDMPlayButton(QSvgWidget):
