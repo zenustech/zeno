@@ -1,4 +1,4 @@
-O=arts/passtoy.zsg
+O=arts/stablefluid.zsg
 default: glrun
 
 #O=arts/ZFXv2.zsg
