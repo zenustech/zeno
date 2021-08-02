@@ -367,9 +367,7 @@
       4321.145000000001,
       428.01999999999964
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "6f4b683b-ReadObjMesh": {
      "name": "ReadObjMesh",
@@ -529,7 +527,8 @@
       1090.9625000000003
      ],
      "options": [
-      "PREP"
+      "PREP",
+      "VIEW"
      ]
     },
     "df8dc561-NumericFloat": {
@@ -714,7 +713,8 @@
       1177.8375000000008
      ],
      "options": [
-      "PREP"
+      "PREP",
+      "VIEW"
      ]
     },
     "87c49122-x": {
@@ -760,8 +760,7 @@
       1192.8124999999989
      ],
      "options": [
-      "PREP",
-      "VIEW"
+      "PREP"
      ]
     },
     "9d3b2d93-PortalOut": {
@@ -995,9 +994,9 @@
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": 5169,
-    "trans_y": 1000
+    "scale": 0.40960000000000063,
+    "trans_x": -1522,
+    "trans_y": 207
    }
   },
   "ToMaterialPoints": {
@@ -1022,7 +1021,9 @@
       "SRC": null
      },
      "params": {
-      "name": "emitterSDF"
+      "type": "",
+      "name": "emitterSDF",
+      "defl": ""
      },
      "uipos": [
       -609.3749999999997,
@@ -1036,7 +1037,9 @@
       "SRC": null
      },
      "params": {
-      "name": "model"
+      "type": "",
+      "name": "model",
+      "defl": ""
      },
      "uipos": [
       -619.2578124999997,
@@ -1103,7 +1106,9 @@
       "SRC": null
      },
      "params": {
-      "name": "currentSDF"
+      "type": "",
+      "name": "currentSDF",
+      "defl": ""
      },
      "uipos": [
       -616.6875,
@@ -1195,7 +1200,9 @@
       "SRC": null
      },
      "params": {
-      "name": "MaterialPoints"
+      "type": "",
+      "name": "MaterialPoints",
+      "defl": ""
      },
      "uipos": [
       2418.3835937499994,
@@ -1209,7 +1216,9 @@
       "SRC": null
      },
      "params": {
-      "name": "Dx"
+      "type": "",
+      "name": "Dx",
+      "defl": ""
      },
      "uipos": [
       -607.8124999999998,
@@ -1223,7 +1232,9 @@
       "SRC": null
      },
      "params": {
-      "name": "vel"
+      "type": "",
+      "name": "vel",
+      "defl": ""
      },
      "uipos": [
       932.9062499999998,
@@ -1308,7 +1319,9 @@
       "SRC": null
      },
      "params": {
-      "name": "indt"
+      "type": "",
+      "name": "indt",
+      "defl": ""
      },
      "uipos": [
       -561.6093749999998,
@@ -1336,7 +1349,9 @@
       "SRC": null
      },
      "params": {
-      "name": "inZSBoundary"
+      "type": "",
+      "name": "inZSBoundary",
+      "defl": ""
      },
      "uipos": [
       2023.2832031249986,
@@ -1350,7 +1365,9 @@
       "SRC": null
      },
      "params": {
-      "name": "inMaterialPoints"
+      "type": "",
+      "name": "inMaterialPoints",
+      "defl": ""
      },
      "uipos": [
       -962.6196093749992,
@@ -1364,7 +1381,9 @@
       "SRC": null
      },
      "params": {
-      "name": "inModel"
+      "type": "",
+      "name": "inModel",
+      "defl": ""
      },
      "uipos": [
       -743.9599609374997,
@@ -1571,7 +1590,9 @@
       "SRC": null
      },
      "params": {
-      "name": "end"
+      "type": "",
+      "name": "end",
+      "defl": ""
      },
      "uipos": [
       3784.7460937500005,
@@ -1589,7 +1610,9 @@
       "SRC": null
      },
      "params": {
-      "name": "maxVel"
+      "type": "",
+      "name": "maxVel",
+      "defl": ""
      },
      "uipos": [
       3701.6259765625005,
@@ -1603,7 +1626,9 @@
       "SRC": null
      },
      "params": {
-      "name": "Dx"
+      "type": "",
+      "name": "Dx",
+      "defl": ""
      },
      "uipos": [
       -978.1250000000001,
@@ -1617,7 +1642,9 @@
       "SRC": null
      },
      "params": {
-      "name": "partition"
+      "type": "",
+      "name": "partition",
+      "defl": ""
      },
      "uipos": [
       -1036.2499999999995,
@@ -1631,7 +1658,9 @@
       "SRC": null
      },
      "params": {
-      "name": "grid"
+      "type": "",
+      "name": "grid",
+      "defl": ""
      },
      "uipos": [
       -993.4375000000001,
@@ -1687,7 +1716,9 @@
       "SRC": null
      },
      "params": {
-      "name": "BoundarySDF"
+      "type": "",
+      "name": "BoundarySDF",
+      "defl": ""
      },
      "uipos": [
       115.78125,
@@ -1748,7 +1779,9 @@
       ]
      },
      "params": {
-      "name": "ZSBoundary"
+      "type": "",
+      "name": "ZSBoundary",
+      "defl": ""
      },
      "uipos": [
       1233.6687500000003,
@@ -1771,7 +1804,9 @@
       "SRC": null
      },
      "params": {
-      "name": "dx"
+      "type": "",
+      "name": "dx",
+      "defl": ""
      },
      "uipos": [
       2180.0000000000005,
@@ -1799,7 +1834,9 @@
       "SRC": null
      },
      "params": {
-      "name": "vmax"
+      "type": "",
+      "name": "vmax",
+      "defl": ""
      },
      "uipos": [
       2227.8125000000005,
@@ -1857,7 +1894,9 @@
       "SRC": null
      },
      "params": {
-      "name": "defalutDt"
+      "type": "",
+      "name": "defalutDt",
+      "defl": ""
      },
      "uipos": [
       2278.4375000000005,
@@ -1875,7 +1914,9 @@
       "SRC": null
      },
      "params": {
-      "name": "desired_dt"
+      "type": "",
+      "name": "desired_dt",
+      "defl": ""
      },
      "uipos": [
       3984.562499999999,
@@ -1970,7 +2011,9 @@
       "SRC": null
      },
      "params": {
-      "name": "dx"
+      "type": "",
+      "name": "dx",
+      "defl": ""
      },
      "uipos": [
       103.0,
@@ -2002,7 +2045,9 @@
       "SRC": null
      },
      "params": {
-      "name": "grid"
+      "type": "",
+      "name": "grid",
+      "defl": ""
      },
      "uipos": [
       842.0,
@@ -2020,7 +2065,9 @@
       "SRC": null
      },
      "params": {
-      "name": "partition"
+      "type": "",
+      "name": "partition",
+      "defl": ""
      },
      "uipos": [
       881.0,
@@ -2885,6 +2932,41 @@
     "FLIPSolver"
    ]
   },
+  "CachedByKey": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "key",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
   "CachedIf": {
    "inputs": [
     [
@@ -3031,96 +3113,6 @@
     "openvdb"
    ]
   },
-  "CompressibleAdvection": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "simParam",
-     ""
-    ],
-    [
-     "",
-     "RK_Order",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
-   ]
-  },
-  "CompressibleProjection": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "simParam",
-     ""
-    ],
-    [
-     "",
-     "RK_Order",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
-   ]
-  },
   "CutCellWeight": {
    "inputs": [
     [
@@ -3154,36 +3146,6 @@
    "params": [],
    "categories": [
     "FLIPSolver"
-   ]
-  },
-  "DenseFieldToVDB": {
-   "inputs": [
-    [
-     "",
-     "inDenseField",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "VDBField",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
    ]
   },
   "DictGetItem": {
@@ -4263,42 +4225,6 @@
     "trimesh"
    ]
   },
-  "GetDenseField": {
-   "inputs": [
-    [
-     "",
-     "inSolverData",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outDenseField",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "FieldName",
-     "p u rho"
-    ]
-   ],
-   "categories": [
-    "CompressibleFlow"
-   ]
-  },
   "GetFrameNum": {
    "inputs": [
     [
@@ -5080,51 +5006,6 @@
     "primitive"
    ]
   },
-  "MakeCompressibleFlow": {
-   "inputs": [
-    [
-     "",
-     "bmin",
-     ""
-    ],
-    [
-     "",
-     "bmax",
-     ""
-    ],
-    [
-     "",
-     "dx",
-     ""
-    ],
-    [
-     "",
-     "q_amb",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "CompressibleFlow",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
-   ]
-  },
   "MakeCubePrimitive": {
    "inputs": [
     [
@@ -5301,6 +5182,46 @@
    ],
    "categories": [
     "visualize"
+   ]
+  },
+  "MakeIndexBuckets": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radius",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radiusMin",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSIndexBuckets",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "MakeMPMMehser": {
@@ -5625,41 +5546,6 @@
    ],
    "categories": [
     "openvdb"
-   ]
-  },
-  "MakeVelocityPressure": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "simParam",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
    ]
   },
   "MakeVisualAABBPrimitive": {
@@ -7169,6 +7055,92 @@
    "params": [],
    "categories": [
     "Rigid"
+   ]
+  },
+  "PrimitiveEdgeWrangle": {
+   "inputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "primitive",
+     "edgePrim",
+     ""
+    ],
+    [
+     "string",
+     "zfxCode",
+     ""
+    ],
+    [
+     "dict:numeric",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "primitive",
+     "prim",
+     ""
+    ],
+    [
+     "primitive",
+     "edgePrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
+   ]
+  },
+  "PrimitiveFaceToEdges": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "clearFaces",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
    ]
   },
   "PrimitiveFillAttr": {
@@ -8922,7 +8894,7 @@
    ],
    "params": [],
    "categories": [
-    "zelloWorld"
+    "math"
    ]
   },
   "SubCategory": {
@@ -9380,6 +9352,66 @@
     "primitive"
    ]
   },
+  "TriggerAbortSignal": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "debug"
+   ]
+  },
+  "TriggerDivideZero": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "debug"
+   ]
+  },
+  "TriggerSegFault": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "debug"
+   ]
+  },
   "UnpackNumericVec": {
    "inputs": [
     [
@@ -9691,6 +9723,56 @@
     "openvdb"
    ]
   },
+  "ZSParticleNeighborWrangle": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "ZSParticlesNeighbor",
+     ""
+    ],
+    [
+     "",
+     "ZSIndexBuckets",
+     ""
+    ],
+    [
+     "",
+     "zfxCode",
+     ""
+    ],
+    [
+     "",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
   "ZSParticlesWrangle": {
    "inputs": [
     [
@@ -9767,67 +9849,32 @@
     "GPUMPM"
    ]
   },
-  "makeCompressibleSim": {
-   "inputs": [
-    [
-     "",
-     "inFlowData",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outFlowData",
-     ""
-    ],
-    [
-     "",
-     "SimParam",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "CompressibleFlow"
-   ]
-  },
   "ToMaterialPoints": {
    "inputs": [
     [
-     null,
+     "",
      "emitterSDF",
-     null
+     ""
     ],
     [
-     null,
+     "",
      "model",
-     null
+     ""
     ],
     [
-     null,
+     "",
      "currentSDF",
-     null
+     ""
     ],
     [
-     null,
+     "",
      "Dx",
-     null
+     ""
     ],
     [
-     null,
+     "",
      "vel",
-     null
+     ""
     ],
     [
      "",
@@ -9837,9 +9884,9 @@
    ],
    "outputs": [
     [
-     null,
+     "",
      "MaterialPoints",
-     null
+     ""
     ],
     [
      "",
@@ -9856,39 +9903,39 @@
   "MPMStepDt": {
    "inputs": [
     [
-     null,
+     "",
      "indt",
-     null
+     ""
     ],
     [
-     null,
+     "",
      "inZSBoundary",
-     null
+     ""
     ],
     [
-     null,
+     "",
      "inMaterialPoints",
-     null
+     ""
     ],
     [
-     null,
+     "",
      "inModel",
-     null
+     ""
     ],
     [
-     null,
+     "",
      "Dx",
-     null
+     ""
     ],
     [
-     null,
+     "",
      "partition",
-     null
+     ""
     ],
     [
-     null,
+     "",
      "grid",
-     null
+     ""
     ],
     [
      "",
@@ -9898,14 +9945,14 @@
    ],
    "outputs": [
     [
-     null,
+     "",
      "end",
-     null
+     ""
     ],
     [
-     null,
+     "",
      "maxVel",
-     null
+     ""
     ],
     [
      "",
@@ -9922,9 +9969,9 @@
   "ToMPMBoundary": {
    "inputs": [
     [
-     null,
+     "",
      "BoundarySDF",
-     null
+     ""
     ],
     [
      "",
@@ -9934,9 +9981,9 @@
    ],
    "outputs": [
     [
-     null,
+     "",
      "ZSBoundary",
-     null
+     ""
     ],
     [
      "",
@@ -9953,19 +10000,19 @@
   "CFLdt": {
    "inputs": [
     [
-     null,
+     "",
      "dx",
-     null
+     ""
     ],
     [
-     null,
+     "",
      "vmax",
-     null
+     ""
     ],
     [
-     null,
+     "",
      "defalutDt",
-     null
+     ""
     ],
     [
      "",
@@ -9975,9 +10022,9 @@
    ],
    "outputs": [
     [
-     null,
+     "",
      "desired_dt",
-     null
+     ""
     ],
     [
      "",
@@ -9994,9 +10041,9 @@
   "makeSPGrid": {
    "inputs": [
     [
-     null,
+     "",
      "dx",
-     null
+     ""
     ],
     [
      "",
@@ -10006,14 +10053,14 @@
    ],
    "outputs": [
     [
-     null,
+     "",
      "grid",
-     null
+     ""
     ],
     [
-     null,
+     "",
      "partition",
-     null
+     ""
     ],
     [
      "",
