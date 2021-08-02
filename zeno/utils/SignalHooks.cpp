@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#ifdef __linux__
 #include <unistd.h>
+#endif
 
 namespace zeno {
 

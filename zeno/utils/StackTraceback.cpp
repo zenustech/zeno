@@ -1,3 +1,4 @@
+#ifdef ZENO_FAULTHANDLER
 // https://github.com/taichi-dev/taichi/blob/eb769ebfc0cb6b48649a3aed8ccd293cbd4eb5ed/taichi/system/traceback.cpp
 /*******************************************************************************
     Copyright (c) The Taichi Authors (2016- ). All Rights Reserved.
@@ -366,3 +367,9 @@ void print_traceback() {
   fmt::print(fg(fmt::color::orange), "\nInternal error occurred.\n");
 }
 }
+#else
+namespace zeno {
+void print_traceback() {
+}
+}
+#endif
