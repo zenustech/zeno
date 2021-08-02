@@ -1,36 +1,43 @@
 #include <zeno/zeno.h>
-#ifdef __linux__
+#include <zeno/utils/zlog.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
-#endif
-//#define ZENO_TRIGGER_GDB 1///
 
 namespace zeno {
 
+void print_traceback();
+
 #ifdef __linux__
-static void trigger_gdb(int exitcode = -1) {
+void trigger_gdb() {
+    print_traceback();
+#ifdef ZENO_FAULTHANDLER
+    if (!getenv("ZEN_AUTOGDB"))
+        return;
     char cmd[1024];
     sprintf(cmd, "sudo gdb -q "
             " -ex 'set confirm off'"
             " -ex 'set pagination off'"
             " -p %d", getpid());
     system(cmd);
-    exit(exitcode);
-}
-
-static void signal_handler(int signo) {
-    printf("*** ZENO process recieved signal %d: %s\n",
-            signo, strsignal(signo));
-#ifdef ZENO_TRIGGER_GDB
-    trigger_gdb(-signo);
 #endif
+}
+#else
+void trigger_gdb() {
+    print_traceback();
+}
+#endif
+
+#ifdef ZENO_FAULTHANDLER
+static void signal_handler(int signo) {
+    zlog::error("recieved signal {}: {}", signo, strsignal(signo));
+    trigger_gdb();
+    exit(-signo);
 }
 
 static int registerMyHandlers() {
-#ifdef ZENO_TRIGGER_GDB
     if (getenv("ZEN_NOSIGHOOK")) {
         return 0;
     }
@@ -38,29 +45,10 @@ static int registerMyHandlers() {
     signal(SIGFPE, signal_handler);
     signal(SIGILL, signal_handler);
     signal(SIGBUS, signal_handler);
-    signal(SIGPIPE, signal_handler);
-#endif
     return 1;
 }
 
 static int doRegisterMyHandlers = registerMyHandlers();
-#else
-static void trigger_gdb(int exitcode = -1) {
-    exit(exitcode);
-}
 #endif
-
-ZENO_API Exception::Exception(std::string const &msg) noexcept
-    : msg(msg) {
-#ifdef ZENO_TRIGGER_GDB
-        trigger_gdb();
-#endif
-}
-
-ZENO_API Exception::~Exception() noexcept = default;
-
-ZENO_API char const *Exception::what() const noexcept {
-    return msg.c_str();
-}
 
 }

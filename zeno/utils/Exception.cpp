@@ -2,8 +2,11 @@
 
 namespace zeno {
 
+void trigger_gdb();
+
 ZENO_API Exception::Exception(std::string const &msg) noexcept
     : msg(msg) {
+    trigger_gdb();
 }
 
 ZENO_API Exception::~Exception() noexcept = default;

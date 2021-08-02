@@ -1199,7 +1199,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec2 vf(vec2 coor) {\n  coor = clamp(coor / vec2(iResolution), vec2(0), vec2(1));\n  return texture(iTexVelocity, coor).rg * 16.0 - 8.0;\n}\nvoid main() {\n  float dt = 30.0;\n  vec2 p0 = fragCoord * vec2(iResolution);\n  vec2 p1 = p0 - 0.5 * vf(p0) * dt;\n  vec2 p2 = p0 - vf(p1) * dt;\n  vec2 res = vf(p1) * 0.95;\n  fragColor = vec4(res * 0.0625 + 0.5, 0.0, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec2 vf(vec2 coor) {\n  coor = clamp(coor / vec2(iResolution), vec2(0), vec2(1));\n  return texture(iTexVelocity, coor).rg * 16.0 - 8.0;\n}\nvoid main() {\n  float dt = 8.0;\n  vec2 p0 = fragCoord * vec2(iResolution);\n  vec2 p1 = p0 - 0.5 * vf(p0) * dt;\n  vec2 p2 = p0 - vf(p1) * dt;\n  vec2 res = vf(p1) * 0.95;\n  fragColor = vec4(res * 0.0625 + 0.5, 0.0, 1.0);\n}"
      },
      "uipos": [
       -4286.13274902344,
@@ -1323,8 +1323,8 @@
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -5771,
-    "trans_y": -908
+    "trans_x": -5872,
+    "trans_y": -1412
    }
   }
  },
