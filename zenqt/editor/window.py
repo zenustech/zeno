@@ -380,7 +380,8 @@ class NodeEditor(QWidget):
         self.clipboard = nodes
 
     def do_paste(self):
-            if self.clipboard is None:
+            if not self.clipboard:
+                print('nothing to paste')
                 return
             itemList = self.scene.selectedItems()
             for i in itemList:
