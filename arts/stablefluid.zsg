@@ -29,8 +29,8 @@
      },
      "params": {},
      "uipos": [
-      876.9421875000005,
-      574.7078125
+      897.2546875000004,
+      588.7703125
      ],
      "options": []
     },
@@ -55,8 +55,8 @@
      "inputs": {
       "SRC": null,
       "iTexture": [
-       "e3a9a688-StableFluid",
-       "color"
+       "3a38638f-x",
+       "output"
       ]
      },
      "params": {
@@ -79,8 +79,8 @@
      },
      "params": {},
      "uipos": [
-      878.9421875000005,
-      410.7078125000001
+      899.2546875000004,
+      424.7703125000001
      ],
      "options": []
     },
@@ -101,8 +101,8 @@
       "interval": 17
      },
      "uipos": [
-      884.5703125000002,
-      753.8390625
+      904.8828125000001,
+      767.9015625
      ],
      "options": [
       "VIEW"
@@ -114,7 +114,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexture;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 value = texture(iTexture, fragCoord).rgb;\n  fragColor = vec4(value, 1);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexture;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 value = 0.5+0.5*texture(iTexture, fragCoord).rgb;\n  fragColor = vec4(value, 1);\n}"
      },
      "uipos": [
       281.4234375000001,
@@ -260,8 +260,8 @@
       "y": 512
      },
      "uipos": [
-      608.0,
-      883.0
+      902.3874999999999,
+      966.5124999999999
      ],
      "options": []
     },
@@ -324,8 +324,8 @@
       "y": 0.2
      },
      "uipos": [
-      -603.0,
-      802.0
+      -322.99999999999994,
+      427.5999999999999
      ],
      "options": []
     },
@@ -339,8 +339,8 @@
       "y": 1.0
      },
      "uipos": [
-      -326.40000000000003,
-      868.0
+      -325.6,
+      832.7999999999997
      ],
      "options": []
     },
@@ -366,9 +366,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -12,
-    "trans_y": 5
+    "scale": 1.25,
+    "trans_x": -142,
+    "trans_y": 60
    }
   },
   "StableFluid": {
