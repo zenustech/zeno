@@ -9,8 +9,8 @@
      },
      "params": {},
      "uipos": [
-      33.91093750000027,
-      861.3578124999999
+      1262.7976562499994,
+      735.5570312499999
      ],
      "options": []
     },
@@ -29,8 +29,8 @@
      },
      "params": {},
      "uipos": [
-      1311.9421875000005,
-      603.4578125
+      2489.786257934571,
+      558.6554901123047
      ],
      "options": []
     },
@@ -45,8 +45,8 @@
      },
      "params": {},
      "uipos": [
-      332.4234375000001,
-      309.33281250000005
+      1138.0874999999996,
+      194.5867187500001
      ],
      "options": []
     },
@@ -63,8 +63,8 @@
       "_KEYS": "iTexture"
      },
      "uipos": [
-      39.99218749999977,
-      500.2765624999997
+      984.5937499999991,
+      495.8164062499991
      ],
      "options": [],
      "socket_keys": [
@@ -79,8 +79,8 @@
      },
      "params": {},
      "uipos": [
-      1012.0421875,
-      414.7578125
+      2090.88625793457,
+      384.9554901123047
      ],
      "options": []
     },
@@ -101,8 +101,8 @@
       "interval": 17
      },
      "uipos": [
-      1749.3359375000002,
-      767.9796874999998
+      2940.1800079345703,
+      736.1773651123046
      ],
      "options": [
       "VIEW"
@@ -117,8 +117,8 @@
       "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexture;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 value = texture(iTexture, fragCoord).rgb;\n  fragColor = vec4(value, 1);\n}"
      },
      "uipos": [
-      -45.57656249999991,
-      -66.66718749999995
+      533.0367187499997,
+      -340.10468749999984
      ],
      "options": []
     },
@@ -142,8 +142,8 @@
      },
      "params": {},
      "uipos": [
-      615.2359375000005,
-      509.99581250000006
+      1694.0800079345704,
+      480.19349011230474
      ],
      "options": []
     },
@@ -158,12 +158,32 @@
        "f049e280-GenericUniforms",
        "fcount"
       ],
+      "inDt": [
+       "54379be0-NumericFloat",
+       "value"
+      ],
+      "light": [
+       "45d9b647-NumericFloat",
+       "value"
+      ],
+      "strength": [
+       "494da0e1-GenCondition",
+       "strength"
+      ],
+      "forceList": [
+       "494da0e1-GenCondition",
+       "forceList"
+      ],
+      "starryNight": [
+       "bcc69ad1-x",
+       "output"
+      ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      -323.1624999999999,
-      740.3374999999997
+      761.7007812499988,
+      722.0953124999999
      ],
      "options": []
     },
@@ -178,8 +198,8 @@
      },
      "params": {},
      "uipos": [
-      -610.5660766601568,
-      158.8494873046875
+      -503.1442016601568,
+      53.86901855468756
      ],
      "options": []
     },
@@ -194,8 +214,8 @@
      },
      "params": {},
      "uipos": [
-      -683.5712036132818,
-      577.4005126953125
+      -153.78604736328214,
+      567.6348876953124
      ],
      "options": []
     },
@@ -227,8 +247,8 @@
      },
      "params": {},
      "uipos": [
-      -324.34607666015745,
-      311.7394873046874
+      -133.91638916015756,
+      121.30979980468749
      ],
      "options": []
     },
@@ -241,8 +261,8 @@
       "path": "assets/image2.jpeg"
      },
      "uipos": [
-      -1097.6728424072273,
-      622.1985351562503
+      -664.6845611572276,
+      563.8977539062503
      ],
      "options": []
     },
@@ -256,8 +276,8 @@
       "y": 512
      },
      "uipos": [
-      657.6,
-      871.8
+      1736.4440704345698,
+      841.9976776123046
      ],
      "options": []
     },
@@ -272,8 +292,8 @@
      },
      "params": {},
      "uipos": [
-      -1361.3599999999997,
-      205.3800000000001
+      -1310.0904687499994,
+      122.37218750000011
      ],
      "options": []
     },
@@ -305,8 +325,8 @@
      },
      "params": {},
      "uipos": [
-      -1105.1400000000003,
-      339.8699999999999
+      -826.8196875000004,
+      242.2137499999999
      ],
      "options": []
     },
@@ -317,16 +337,145 @@
      },
      "params": {},
      "uipos": [
-      -778.1249999999999,
-      989.0624999999999
+      -1468.3124999999989,
+      728.921875
+     ],
+     "options": []
+    },
+    "45d9b647-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 1.0
+     },
+     "uipos": [
+      -272.81249999999943,
+      841.5624999999991
+     ],
+     "options": []
+    },
+    "54379be0-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.02
+     },
+     "uipos": [
+      155.52343750000085,
+      444.58593749999966
+     ],
+     "options": []
+    },
+    "494da0e1-GenCondition": {
+     "name": "GenCondition",
+     "inputs": {
+      "beat": [
+       "d396bdbf-NumericOperator",
+       "ret"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -290.49218749999955,
+      810.9999999999991
+     ],
+     "options": []
+    },
+    "927ea611-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "f049e280-GenericUniforms",
+       "ftime"
+      ],
+      "rhs": null,
+      "SRC": null
+     },
+     "params": {
+      "op_type": "sin"
+     },
+     "uipos": [
+      -1041.1328124999982,
+      932.6171874999984
+     ],
+     "options": []
+    },
+    "d396bdbf-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "927ea611-NumericOperator",
+       "ret"
+      ],
+      "rhs": [
+       "369b8edd-NumericFloat",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "cmpge"
+     },
+     "uipos": [
+      -743.6523437499987,
+      1068.0664062499986
+     ],
+     "options": []
+    },
+    "369b8edd-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.0
+     },
+     "uipos": [
+      -1079.1015624999982,
+      1230.761718749998
+     ],
+     "options": []
+    },
+    "bcc69ad1-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "4c423166-x",
+       "texture"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      235.44925689697266,
+      1369.86856689453
+     ],
+     "options": []
+    },
+    "4c423166-x": {
+     "name": "PassToyLoadImageTexture",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "path": "assets/StarryNight.jpg"
+     },
+     "uipos": [
+      -198.00785064697268,
+      1530.7056518554677
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.6400000000000001,
-    "trans_x": -775,
-    "trans_y": 264
+    "scale": 0.6400000000000008,
+    "trans_x": -567,
+    "trans_y": -58
    }
   },
   "StableFluid": {
@@ -385,7 +534,7 @@
      "params": {},
      "uipos": [
       988.6877500964333,
-      -874.9527165530244
+      -890.5777165530244
      ],
      "options": []
     },
@@ -461,7 +610,7 @@
      },
      "uipos": [
       798.2658750964333,
-      -606.6808415530247
+      -636.3683415530248
      ],
      "options": [],
      "socket_keys": [
@@ -498,8 +647,8 @@
      },
      "params": {},
      "uipos": [
-      217.99400009643387,
-      -1072.124591553024
+      255.4940000964338,
+      -1095.562091553024
      ],
      "options": []
     },
@@ -517,8 +666,8 @@
      },
      "params": {},
      "uipos": [
-      1390.9690000964333,
-      -1026.5402165530245
+      1559.719000096433,
+      -953.1027165530244
      ],
      "options": []
     },
@@ -528,11 +677,11 @@
       "SRC": null
      },
      "params": {
-      "value": 30
+      "value": 10
      },
      "uipos": [
-      -202.70912490356613,
-      -1210.9058415530244
+      -240.20912490356608,
+      -1212.4683415530244
      ],
      "options": []
     },
@@ -566,8 +715,8 @@
       "name": "uniforms"
      },
      "uipos": [
-      -11.60912490356668,
-      -1013.243341553024
+      -33.48412490356665,
+      -1011.680841553024
      ],
      "options": []
     },
@@ -588,7 +737,7 @@
     "2683bdaa-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      -590.9460633801286,
+      -584.6960633801286,
       -1282.095636474899
      ],
      "special": true,
@@ -611,8 +760,8 @@
       "name": "pressure"
      },
      "uipos": [
-      -6580.204870605464,
-      -522.9599975585927
+      -6588.204870605463,
+      -521.9599975585927
      ],
      "options": []
     },
@@ -628,8 +777,8 @@
       "name": "pressure"
      },
      "uipos": [
-      -270.7809999035667,
-      -945.3214665530247
+      -300.4684999035667,
+      -954.6964665530247
      ],
      "options": []
     },
@@ -642,8 +791,8 @@
       "name": "velocityDiv"
      },
      "uipos": [
-      -525.4997499035667,
-      -957.5324040530247
+      -544.2497499035667,
+      -962.2199040530247
      ],
      "options": []
     },
@@ -780,8 +929,8 @@
       "name": "finalPressure"
      },
      "uipos": [
-      1712.6721250964342,
-      -773.1652165530245
+      1839.2346250964342,
+      -760.6652165530245
      ],
      "options": []
     },
@@ -797,8 +946,8 @@
       "name": "finalVelocity"
      },
      "uipos": [
-      3010.2644067586493,
-      -520.324108809044
+      3262.158938008649,
+      -575.031140059044
      ],
      "options": []
     },
@@ -937,8 +1086,8 @@
       "name": "finalVelocity"
      },
      "uipos": [
-      -3013.095501618272,
-      -665.852613460831
+      -2974.8142516182725,
+      -668.586988460831
      ],
      "options": []
     },
@@ -1140,8 +1289,8 @@
      },
      "params": {},
      "uipos": [
-      504.6096250964333,
-      -731.8214665530247
+      537.4221250964332,
+      -778.6964665530246
      ],
      "options": []
     },
@@ -1156,8 +1305,8 @@
      },
      "params": {},
      "uipos": [
-      -4291.004446411132,
-      465.8708935546874
+      -4120.377102661133,
+      398.88808105468763
      ],
      "options": []
     },
@@ -1167,11 +1316,11 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision highp float;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec2 res;\nvec2 vf(ivec2 coor) {\n  return texelFetch(iTexVelocity, coor, 0).rg;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  res = vf(coord);\n  res += vec2(1.0, 0.0) * smoothstep(0.06, 0.0, length(fragCoord - 0.5));\n}"
+      "value": "#version 300 es\nprecision highp float;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nuniform vec4 force;\nuniform float strength;\nin vec2 fragCoord;\nout vec2 res;\nvec2 vf(ivec2 coor) {\n  return texelFetch(iTexVelocity, coor, 0).rg;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  res = vf(coord);\n  res += force.xy * strength * smoothstep(0.03, 0.0, length(fragCoord - force.zw));\n}"
      },
      "uipos": [
-      -4508.919446411133,
-      92.99089355468777
+      -4760.657727661135,
+      45.11003417968783
      ],
      "options": []
     },
@@ -1184,8 +1333,8 @@
       "name": "uniforms"
      },
      "uipos": [
-      -4436.431448364259,
-      808.0469189453124
+      -4810.02519836426,
+      572.8125439453122
      ],
      "options": []
     },
@@ -1198,8 +1347,8 @@
       "name": "velocity"
      },
      "uipos": [
-      -4590.767947387694,
-      601.2147167968751
+      -4699.971072387692,
+      420.82409179687534
      ],
      "options": []
     },
@@ -1211,8 +1360,8 @@
        "shader"
       ],
       "uniforms": [
-       "1d91341d-x",
-       "port"
+       "b7b23473-DictSetItem",
+       "dict"
       ],
       "textureIn": [
        "c68ec009-x",
@@ -1222,12 +1371,15 @@
        "41d2a7d7-x",
        "port"
       ],
-      "SRC": null
+      "SRC": [
+       "b7b23473-DictSetItem",
+       "DST"
+      ]
      },
      "params": {},
      "uipos": [
-      -4053.321946411133,
-      576.4358935546875
+      -3888.556321411133,
+      579.7024951171876
      ],
      "options": []
     },
@@ -1238,14 +1390,17 @@
        "0ffc9eb9-x",
        "textureOut"
       ],
-      "SRC": null
+      "SRC": [
+       "34469836-EndFor",
+       "DST"
+      ]
      },
      "params": {
       "name": "impVelocity"
      },
      "uipos": [
-      -3802.430447387696,
-      671.0147167968753
+      -2889.2370880126978,
+      704.5694042968753
      ],
      "options": []
     },
@@ -1262,8 +1417,8 @@
       "_KEYS": "iTexVelocity"
      },
      "uipos": [
-      -4308.167947387692,
-      599.5147167968753
+      -4370.339822387691,
+      504.2803417968753
      ],
      "options": [],
      "socket_keys": [
@@ -1273,8 +1428,8 @@
     "edabef7d-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      -4594.255447387695,
-      -7.324218750000227
+      -4596.755447387695,
+      -7.871093750000227
      ],
      "special": true,
      "width": 1020.3125,
@@ -1508,14 +1663,17 @@
     "aa2b21c3-x": {
      "name": "PortalOut",
      "inputs": {
-      "SRC": null
+      "SRC": [
+       "1e365395-BeginFor",
+       "DST"
+      ]
      },
      "params": {
       "name": "advColor"
      },
      "uipos": [
-      2466.5476391805237,
-      -855.5147533402937
+      2522.172639180524,
+      -982.6241283402935
      ],
      "options": []
     },
@@ -1538,7 +1696,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "dc3fba38-x",
+       "fd3f515b-x",
        "textureOut"
       ],
       "SRC": null
@@ -1549,8 +1707,8 @@
       "defl": ""
      },
      "uipos": [
-      4351.610139180524,
-      -777.7441283402932
+      7108.56326418052,
+      -861.6308470902933
      ],
      "options": []
     },
@@ -1565,8 +1723,8 @@
       "defl": ""
      },
      "uipos": [
-      -8856.119531249999,
-      242.7947021484381
+      -8730.4603515625,
+      1306.002709960938
      ],
      "options": []
     },
@@ -1582,7 +1740,7 @@
        "texturePair"
       ],
       "cond": [
-       "c31e7fd1-SubInput",
+       "187da5b8-SubInput",
        "hasValue"
       ],
       "SRC": null
@@ -1598,7 +1756,7 @@
      "name": "CopyTexture",
      "inputs": {
       "srcTexture": [
-       "c31e7fd1-SubInput",
+       "187da5b8-SubInput",
        "port"
       ],
       "dstTexture": [
@@ -1611,20 +1769,6 @@
      "uipos": [
       -8056.410253906246,
       104.89165039062587
-     ],
-     "options": []
-    },
-    "20507cc6-x": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": 3.0
-     },
-     "uipos": [
-      -8387.061595153802,
-      -1358.9064797210685
      ],
      "options": []
     },
@@ -1669,8 +1813,8 @@
        "resolution"
       ],
       "iDeltaTime": [
-       "20507cc6-x",
-       "value"
+       "291e2188-SubInput",
+       "port"
       ],
       "iColorDecay": [
        "18b57823-x",
@@ -1683,14 +1827,23 @@
       "iTimePortion": [
        "af92240d-NumericOperator",
        "ret"
+      ],
+      "force": null,
+      "light": [
+       "d8d302a3-SubInput",
+       "port"
+      ],
+      "strength": [
+       "108c6739-SubInput",
+       "port"
       ]
      },
      "params": {
-      "_KEYS": "iResolution\niDeltaTime\niColorDecay\niVelDecay\niTimePortion"
+      "_KEYS": "iResolution\niDeltaTime\niColorDecay\niVelDecay\niTimePortion\nforce\nlight\nstrength"
      },
      "uipos": [
-      -7772.520608825678,
-      -1221.9361379241936
+      -7705.030608825681,
+      -1319.9986379241934
      ],
      "options": [],
      "socket_keys": [
@@ -1698,7 +1851,10 @@
       "iDeltaTime",
       "iColorDecay",
       "iVelDecay",
-      "iTimePortion"
+      "iTimePortion",
+      "force",
+      "light",
+      "strength"
      ]
     },
     "18b57823-x": {
@@ -1721,11 +1877,11 @@
       "SRC": null
      },
      "params": {
-      "value": 0.9
+      "value": 0.99
      },
      "uipos": [
-      -8414.361101989738,
-      -997.9013869476296
+      -8497.211101989735,
+      -993.5513869476298
      ],
      "options": []
     },
@@ -1734,7 +1890,7 @@
      "inputs": {
       "SRC": null,
       "iTexAdvectedColor": [
-       "f7cb2a04-x",
+       "138e8682-PassToyTexturePairSwap",
        "oldTexture"
       ],
       "iTexOriginalColor": [
@@ -1746,8 +1902,8 @@
       "_KEYS": "iTexAdvectedColor\niTexOriginalColor"
      },
      "uipos": [
-      3411.2319653523987,
-      -1211.493444746542
+      3393.731965352398,
+      -1215.2434447465419
      ],
      "options": [],
      "socket_keys": [
@@ -1771,7 +1927,7 @@
        "dict"
       ],
       "textureOut": [
-       "f7cb2a04-x",
+       "138e8682-PassToyTexturePairSwap",
        "texturePair"
       ],
       "SRC": [
@@ -1781,8 +1937,8 @@
      },
      "params": {},
      "uipos": [
-      3942.4819653523987,
-      -1057.2934447465427
+      4186.231965352399,
+      -1010.9848509965428
      ],
      "options": []
     },
@@ -1792,11 +1948,11 @@
       "SRC": null
      },
      "params": {
-      "name": "color2"
+      "name": "color3"
      },
      "uipos": [
-      2472.425715352399,
-      -1199.6465697465428
+      2698.675715352399,
+      -1335.8965697465426
      ],
      "options": []
     },
@@ -1809,8 +1965,8 @@
       "name": "uniforms"
      },
      "uipos": [
-      3533.238215352397,
-      -875.1153197465428
+      3675.738215352397,
+      -1101.3653197465424
      ],
      "options": []
     },
@@ -1820,27 +1976,11 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision highp float;\nuniform float iTimePortion;\nuniform ivec2 iResolution;\nuniform sampler2D iTexOriginalColor;\nuniform sampler2D iTexAdvectedColor;\nin vec2 fragCoord;\nout vec3 res;\nvec3 cfOrig(vec2 coor) {\n  return texture(iTexOriginalColor, clamp(coor / vec2(iResolution), vec2(0), vec2(1))).rgb;\n}\nvec3 cfCurr(vec2 coor) {\n  return texture(iTexAdvectedColor, clamp(coor / vec2(iResolution), vec2(0), vec2(1))).rgb;\n}\nvoid main() {\n  vec2 p0 = fragCoord * vec2(iResolution);\n  vec3 oColor = cfOrig(p0);\n vec3 Color = cfCurr(p0);\n res = (1.0-iTimePortion)*Color +  iTimePortion*oColor;\n}"
+      "value": "#version 300 es\nprecision highp float;\nuniform float lighting;\nuniform float iTimePortion;\nuniform ivec2 iResolution;\nuniform sampler2D iTexOriginalColor;\nuniform sampler2D iTexAdvectedColor;\nin vec2 fragCoord;\nout vec3 res;\nvec3 cfOrig(vec2 coor) {\n  return texture(iTexOriginalColor, clamp(coor / vec2(iResolution), vec2(0), vec2(1))).rgb;\n}\nvec3 cfCurr(vec2 coor) {\n  return texture(iTexAdvectedColor, clamp(coor / vec2(iResolution), vec2(0), vec2(1))).rgb;\n}\nvoid main() {\n  vec2 p0 = fragCoord * vec2(iResolution);\n  vec3 oColor = cfOrig(p0);\n vec3 Color = cfCurr(p0);\n res = (1.0-iTimePortion)*Color +  iTimePortion*oColor;\n //res *= lighting;\n}"
      },
      "uipos": [
       3374.8975903523983,
       -1619.8309447465426
-     ],
-     "options": []
-    },
-    "f7cb2a04-x": {
-     "name": "PassToyTexturePairSwap",
-     "inputs": {
-      "texturePair": [
-       "aa2b21c3-x",
-       "port"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      2975.8038403523965,
-      -950.324694746542
      ],
      "options": []
     },
@@ -1875,8 +2015,8 @@
      },
      "params": {},
      "uipos": [
-      -7967.416889190663,
-      676.3628635406485
+      -7937.554584503163,
+      1049.1958713531483
      ],
      "options": []
     },
@@ -1890,8 +2030,8 @@
       "format": "rgb16f"
      },
      "uipos": [
-      -8309.26551513671,
-      768.6637722015378
+      -8326.965710449213,
+      1189.6842800140375
      ],
      "options": []
     },
@@ -1908,8 +2048,8 @@
       "name": "color2"
      },
      "uipos": [
-      -7044.015734863275,
-      644.2174098968492
+      -7022.653430175775,
+      1135.550417709349
      ],
      "options": []
     },
@@ -1932,8 +2072,8 @@
      },
      "params": {},
      "uipos": [
-      -7629.613666534417,
-      715.2159152984607
+      -7608.251361846917,
+      1206.5489231109605
      ],
      "options": []
     },
@@ -1948,8 +2088,8 @@
      },
      "params": {},
      "uipos": [
-      -7326.395422363275,
-      706.8556911468497
+      -7305.033117675775,
+      1198.1886989593495
      ],
      "options": []
     },
@@ -1964,8 +2104,8 @@
       "defl": ""
      },
      "uipos": [
-      -9208.359374999995,
-      -940.1367187499997
+      -9182.968749999995,
+      -893.2617187499998
      ],
      "options": []
     },
@@ -1984,8 +2124,8 @@
      },
      "params": {},
      "uipos": [
-      -8295.617187499995,
-      -793.7695312499997
+      -8435.617187499993,
+      -807.7695312499995
      ],
      "options": []
     },
@@ -2017,7 +2157,7 @@
       "SRC": null
      },
      "params": {
-      "value": 60
+      "value": 240
      },
      "uipos": [
       -9179.999999999998,
@@ -2042,8 +2182,8 @@
       "op_type": "div"
      },
      "uipos": [
-      -7956.249999999998,
-      -661.2499999999999
+      -8004.624999999998,
+      -851.5624999999998
      ],
      "options": []
     },
@@ -2053,19 +2193,629 @@
       "SRC": null
      },
      "params": {
-      "value": 60.0
+      "value": 240.0
      },
      "uipos": [
-      -8357.499999999998,
-      -594.9999999999997
+      -8525.5,
+      -607.9999999999995
+     ],
+     "options": []
+    },
+    "b7b23473-DictSetItem": {
+     "name": "DictSetItem",
+     "inputs": {
+      "dict": [
+       "1d91341d-x",
+       "port"
+      ],
+      "key": [
+       "52912f03-MakeString",
+       "value"
+      ],
+      "object": [
+       "d2f1f5cb-BeginForEach",
+       "object"
+      ],
+      "SRC": [
+       "d2f1f5cb-BeginForEach",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -4359.9999999999945,
+      853.0468749999997
+     ],
+     "options": []
+    },
+    "52912f03-MakeString": {
+     "name": "MakeString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "force"
+     },
+     "uipos": [
+      -4610.765624999996,
+      661.2968749999993
+     ],
+     "options": []
+    },
+    "291e2188-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "inDt",
+      "defl": ""
+     },
+     "uipos": [
+      -8419.75,
+      -1787.5
+     ],
+     "options": []
+    },
+    "d8d302a3-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "light",
+      "defl": ""
+     },
+     "uipos": [
+      -8564.0,
+      -1632.0
+     ],
+     "options": []
+    },
+    "108c6739-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "strength",
+      "defl": ""
+     },
+     "uipos": [
+      -8598.0,
+      -1449.0
+     ],
+     "options": []
+    },
+    "66d3b203-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "forceList",
+      "defl": ""
+     },
+     "uipos": [
+      -5867.714843749992,
+      277.7148437499996
+     ],
+     "options": []
+    },
+    "34469836-EndFor": {
+     "name": "EndFor",
+     "inputs": {
+      "FOR": [
+       "d2f1f5cb-BeginForEach",
+       "FOR"
+      ],
+      "SRC": [
+       "0ffc9eb9-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3453.5156249999964,
+      263.2812499999997
+     ],
+     "options": []
+    },
+    "d2f1f5cb-BeginForEach": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "66d3b203-SubInput",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -5226.562499999991,
+      354.6874999999995
+     ],
+     "options": []
+    },
+    "187da5b8-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "starryNight",
+      "defl": ""
+     },
+     "uipos": [
+      -8841.03125,
+      253.0625
+     ],
+     "options": []
+    },
+    "07a9f160-x": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "43d8458d-x",
+       "output"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "name": "screenBuffer"
+     },
+     "uipos": [
+      -6751.641406250001,
+      -40.28469726562537
+     ],
+     "options": []
+    },
+    "a9b94a4f-x": {
+     "name": "PassToyMakeTexturePair",
+     "inputs": {
+      "resolution": null,
+      "SRC": null
+     },
+     "params": {
+      "format": "rgb16f"
+     },
+     "uipos": [
+      -6761.630419921877,
+      -391.71530273437463
+     ],
+     "options": []
+    },
+    "43d8458d-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "a9b94a4f-x",
+       "texturePair"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -6768.35859375,
+      -205.95891601562482
+     ],
+     "options": []
+    },
+    "3077fb57-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "63017f25-x",
+       "result"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -7401.134237289422,
+      578.85139427185
+     ],
+     "options": []
+    },
+    "30d039e0-x": {
+     "name": "CopyTexture",
+     "inputs": {
+      "srcTexture": [
+       "187da5b8-SubInput",
+       "port"
+      ],
+      "dstTexture": [
+       "e342814b-x",
+       "texturePair"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -8042.15570411681,
+      548.358566665649
+     ],
+     "options": []
+    },
+    "e1fdf082-x": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "3077fb57-x",
+       "output"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "name": "color3"
+     },
+     "uipos": [
+      -7118.754549789422,
+      516.21311302185
+     ],
+     "options": []
+    },
+    "63017f25-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "30d039e0-x",
+       "dstTexture"
+      ],
+      "false": [
+       "e342814b-x",
+       "texturePair"
+      ],
+      "cond": [
+       "187da5b8-SubInput",
+       "hasValue"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -7704.3524814605635,
+      587.211618423461
+     ],
+     "options": []
+    },
+    "e342814b-x": {
+     "name": "PassToyMakeTexturePair",
+     "inputs": {
+      "resolution": null,
+      "SRC": null
+     },
+     "params": {
+      "format": "rgb16f"
+     },
+     "uipos": [
+      -8403.403744125359,
+      758.491506576538
+     ],
+     "options": []
+    },
+    "d3bf6709-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "uniforms"
+     },
+     "uipos": [
+      6030.642358398431,
+      -956.5807617187484
+     ],
+     "options": []
+    },
+    "6c1819c5-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": null,
+      "iTexAdvectedColor": [
+       "dc3fba38-x",
+       "textureOut"
+      ],
+      "iTexOriginalColor": [
+       "e6d413ca-x",
+       "port"
+      ],
+      "iTexMask": [
+       "73210799-x",
+       "port"
+      ]
+     },
+     "params": {
+      "_KEYS": "iTexAdvectedColor\niTexOriginalColor\niTexMask"
+     },
+     "uipos": [
+      5748.636108398432,
+      -1070.458886718748
+     ],
+     "options": [],
+     "socket_keys": [
+      "iTexAdvectedColor",
+      "iTexOriginalColor",
+      "iTexMask"
+     ]
+    },
+    "dfab449c-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "#version 300 es\nprecision highp float;\nuniform float lighting;\nuniform float iTimePortion;\nuniform ivec2 iResolution;\nuniform sampler2D iTexOriginalColor;\nuniform sampler2D iTexAdvectedColor;\nuniform sampler2D iTexMask;\nin vec2 fragCoord;\nout vec3 res;\nvec3 cfOrig(vec2 coor) {\n  return texture(iTexOriginalColor, clamp(coor / vec2(iResolution), vec2(0), vec2(1))).rgb;\n}\nvec3 cfCurr(vec2 coor) {\n  return texture(iTexAdvectedColor, clamp(coor / vec2(iResolution), vec2(0), vec2(1))).rgb;\n}\nvec3 mask(vec2 coor) {\n  return texture(iTexMask, clamp(coor / vec2(iResolution), vec2(0), vec2(1))).rgb;\n}\nvoid main() {\n  vec2 p0 = fragCoord * vec2(iResolution);\n  vec3 oColor = cfOrig(p0);\n vec3 Color = cfCurr(p0);\n float coef = 1.0-0.6*length(mask(p0));\n res = (1.0-coef)*Color +  coef*oColor;\n //res *= lighting;\n}"
+     },
+     "uipos": [
+      5729.8017333984335,
+      -1475.0463867187486
+     ],
+     "options": []
+    },
+    "e6d413ca-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "color2"
+     },
+     "uipos": [
+      5393.579858398434,
+      -717.908886718749
+     ],
+     "options": []
+    },
+    "556856a9-x": {
+     "name": "PassToyMakeShader",
+     "inputs": {
+      "source": [
+       "dfab449c-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      6083.501733398434,
+      -1122.4557617187488
+     ],
+     "options": []
+    },
+    "f008c10d-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "screenBuffer"
+     },
+     "uipos": [
+      5853.138518046036,
+      -621.289660722206
+     ],
+     "options": []
+    },
+    "fd3f515b-x": {
+     "name": "PassToyApplyShader",
+     "inputs": {
+      "shader": [
+       "556856a9-x",
+       "shader"
+      ],
+      "uniforms": [
+       "d3bf6709-x",
+       "port"
+      ],
+      "textureIn": [
+       "6c1819c5-x",
+       "dict"
+      ],
+      "textureOut": [
+       "f008c10d-x",
+       "port"
+      ],
+      "SRC": [
+       "8f78b37c-EndFor",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      6603.600108398435,
+      -780.696292968749
+     ],
+     "options": []
+    },
+    "138e8682-PassToyTexturePairSwap": {
+     "name": "PassToyTexturePairSwap",
+     "inputs": {
+      "texturePair": [
+       "aa2b21c3-x",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      2996.8749999999977,
+      -909.3749999999994
+     ],
+     "options": []
+    },
+    "65896f35-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "cb9691a2-x",
+       "dstTexture"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -6732.821929931634,
+      2023.3970254898045
+     ],
+     "options": []
+    },
+    "8da1b533-x": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "65896f35-x",
+       "output"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "name": "color4"
+     },
+     "uipos": [
+      -6428.5672424316335,
+      1988.8837442398049
+     ],
+     "options": []
+    },
+    "a42926e8-x": {
+     "name": "PassToyMakeTexturePair",
+     "inputs": {
+      "resolution": null,
+      "SRC": null
+     },
+     "params": {
+      "format": "rgb16f"
+     },
+     "uipos": [
+      -7434.4420227050705,
+      2153.9551065444934
+     ],
+     "options": []
+    },
+    "cb9691a2-x": {
+     "name": "CopyTexture",
+     "inputs": {
+      "srcTexture": [
+       "0877ac07-x",
+       "output"
+      ],
+      "dstTexture": [
+       "a42926e8-x",
+       "texturePair"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -7079.405896759023,
+      2035.3416978836037
+     ],
+     "options": []
+    },
+    "ef5ed575-x": {
+     "name": "PassToyLoadImageTexture",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "path": "assets/image2mask.jpg"
+     },
+     "uipos": [
+      -8134.160194396967,
+      1818.0288940429677
+     ],
+     "options": []
+    },
+    "0877ac07-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "ef5ed575-x",
+       "texture"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -7532.636680603022,
+      1842.0785278320295
+     ],
+     "options": []
+    },
+    "73210799-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "color4"
+     },
+     "uipos": [
+      5251.0,
+      -913.0
+     ],
+     "options": []
+    },
+    "1e365395-BeginFor": {
+     "name": "BeginFor",
+     "inputs": {
+      "count": [
+       "1aab91ff-NumericInt",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      2187.499999999998,
+      -1244.140624999999
+     ],
+     "options": []
+    },
+    "8f78b37c-EndFor": {
+     "name": "EndFor",
+     "inputs": {
+      "FOR": [
+       "1e365395-BeginFor",
+       "FOR"
+      ],
+      "SRC": [
+       "dc3fba38-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4630.078124999996,
+      -1242.187499999999
+     ],
+     "options": []
+    },
+    "1aab91ff-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 3
+     },
+     "uipos": [
+      1753.9062499999986,
+      -1410.156249999999
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.2621440000000006,
-    "trans_x": -1038,
-    "trans_y": -373
+    "scale": 0.6400000000000006,
+    "trans_x": -10944,
+    "trans_y": -1850
    }
   },
   "CopyTexture": {
@@ -2429,12 +3179,581 @@
       55.625
      ],
      "options": []
+    },
+    "b495bde6-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.0
+     },
+     "uipos": [
+      -1092.187499999999,
+      -193.7499999999999
+     ],
+     "options": []
+    },
+    "66d4f312-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "b495bde6-NumericFloat",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -673.4374999999997,
+      -228.1249999999999
+     ],
+     "options": []
+    },
+    "0342d979-x": {
+     "name": "Assign",
+     "inputs": {
+      "dst": null,
+      "src": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      600.7484375000001,
+      407.6374999999997
+     ],
+     "options": []
+    },
+    "39f3a070-x": {
+     "name": "Assign",
+     "inputs": {
+      "dst": [
+       "66d4f312-x",
+       "output"
+      ],
+      "src": [
+       "c5c567dc-x",
+       "ret"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      141.37343750000045,
+      -190.7999999999999
+     ],
+     "options": []
+    },
+    "c5c567dc-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "66d4f312-x",
+       "output"
+      ],
+      "rhs": [
+       "d5c0fab9-NumericFloat",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      -230.50468750000056,
+      -111.46249999999976
+     ],
+     "options": []
+    },
+    "b91e3de2-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "39f3a070-x",
+       "dst"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "ftime",
+      "defl": ""
+     },
+     "uipos": [
+      451.5624999999998,
+      -131.24999999999991
+     ],
+     "options": []
+    },
+    "d5c0fab9-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.2
+     },
+     "uipos": [
+      -591.0,
+      13.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.32768000000000014,
-    "trans_x": -268,
-    "trans_y": -128
+    "scale": 1.0,
+    "trans_x": -1206,
+    "trans_y": -338
+   }
+  },
+  "GenCondition": {
+   "nodes": {
+    "b4942bd2-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "9206de34-x",
+       "list"
+      ],
+      "object": [
+       "6148ad66-x",
+       "vec4"
+      ],
+      "SRC": [
+       "9206de34-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1794.5312500000014,
+      814.4531249999995
+     ],
+     "options": []
+    },
+    "a39f4f95-x": {
+     "name": "EmptyList",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -440.77563476562625,
+      -82.3835449218748
+     ],
+     "options": []
+    },
+    "49abe2d1-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "f3c936ce-x",
+       "list"
+      ],
+      "object": [
+       "2910a60f-x",
+       "vec4"
+      ],
+      "SRC": [
+       "f3c936ce-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2610.7031250000005,
+      1120.8593749999993
+     ],
+     "options": []
+    },
+    "9206de34-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "eba4bba7-x",
+       "list"
+      ],
+      "object": [
+       "2ce0ea88-x",
+       "vec4"
+      ],
+      "SRC": [
+       "eba4bba7-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1415.781250000001,
+      643.2031249999995
+     ],
+     "options": []
+    },
+    "f3c936ce-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "b4942bd2-x",
+       "list"
+      ],
+      "object": [
+       "f25962d6-x",
+       "vec4"
+      ],
+      "SRC": [
+       "b4942bd2-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2235.7812500000005,
+      968.2031249999986
+     ],
+     "options": []
+    },
+    "eba4bba7-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "facba478-x",
+       "list"
+      ],
+      "object": [
+       "1dcab7e8-x",
+       "vec4"
+      ],
+      "SRC": [
+       "facba478-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1050.6188964843736,
+      531.1047363281255
+     ],
+     "options": []
+    },
+    "facba478-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "88cb1011-x",
+       "list"
+      ],
+      "object": [
+       "38d671d6-NumericVec4",
+       "vec4"
+      ],
+      "SRC": [
+       "88cb1011-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      742.6735839843736,
+      360.4914550781252
+     ],
+     "options": []
+    },
+    "5d74ed3f-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "beat",
+      "defl": ""
+     },
+     "uipos": [
+      159.494705200196,
+      -235.35980224609318
+     ],
+     "options": []
+    },
+    "1813c3af-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "49abe2d1-x",
+       "list"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "forceList",
+      "defl": ""
+     },
+     "uipos": [
+      3171.531249999997,
+      1244.671875
+     ],
+     "options": []
+    },
+    "820948df-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "0d5d1702-IfElse",
+       "result"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "strength",
+      "defl": ""
+     },
+     "uipos": [
+      1750.0577239990237,
+      -518.9731750488273
+     ],
+     "options": []
+    },
+    "0d5d1702-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "6f45a809-NumericFloat",
+       "value"
+      ],
+      "false": [
+       "c4ae8cd5-x",
+       "value"
+      ],
+      "cond": [
+       "5d74ed3f-SubInput",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      1081.588455200194,
+      -500.1410522460943
+     ],
+     "options": []
+    },
+    "6f45a809-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 10.0
+     },
+     "uipos": [
+      477.2759552001944,
+      -728.2660522460939
+     ],
+     "options": []
+    },
+    "c4ae8cd5-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.0
+     },
+     "uipos": [
+      339.6509552001942,
+      -496.14105224609386
+     ],
+     "options": []
+    },
+    "38d671d6-NumericVec4": {
+     "name": "NumericVec4",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 0.0,
+      "y": 5.0,
+      "z": 0.1,
+      "w": 0.2
+     },
+     "uipos": [
+      315.0,
+      419.0
+     ],
+     "options": []
+    },
+    "1dcab7e8-x": {
+     "name": "NumericVec4",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 0.0,
+      "y": 5.0,
+      "z": 0.9,
+      "w": 0.2
+     },
+     "uipos": [
+      611.0,
+      606.0
+     ],
+     "options": []
+    },
+    "2ce0ea88-x": {
+     "name": "NumericVec4",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 1.0,
+      "y": 0.0,
+      "z": 0.2,
+      "w": 0.89
+     },
+     "uipos": [
+      919.4375000000002,
+      838.1875000000002
+     ],
+     "options": []
+    },
+    "6148ad66-x": {
+     "name": "NumericVec4",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 1.0,
+      "y": 0.0,
+      "z": 0.4,
+      "w": 0.8
+     },
+     "uipos": [
+      1336.0,
+      956.0
+     ],
+     "options": []
+    },
+    "f25962d6-x": {
+     "name": "NumericVec4",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 1.0,
+      "y": 0.0,
+      "z": 0.6,
+      "w": 0.85
+     },
+     "uipos": [
+      1759.0,
+      1083.0
+     ],
+     "options": []
+    },
+    "2910a60f-x": {
+     "name": "NumericVec4",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 1.0,
+      "y": 0.0,
+      "z": 0.8,
+      "w": 0.9
+     },
+     "uipos": [
+      2158.0,
+      1236.0
+     ],
+     "options": []
+    },
+    "88cb1011-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "13fe5eeb-x",
+       "list"
+      ],
+      "object": [
+       "a5345b4f-x",
+       "vec4"
+      ],
+      "SRC": [
+       "13fe5eeb-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      391.5594482421867,
+      230.35900878906284
+     ],
+     "options": []
+    },
+    "5949fb27-x": {
+     "name": "NumericVec4",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 0.0,
+      "y": 5.0,
+      "z": 0.1,
+      "w": 0.4
+     },
+     "uipos": [
+      -344.05944824218693,
+      118.25427246093739
+     ],
+     "options": []
+    },
+    "a5345b4f-x": {
+     "name": "NumericVec4",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 0.0,
+      "y": 5.0,
+      "z": 0.9,
+      "w": 0.4
+     },
+     "uipos": [
+      -48.05944824218693,
+      305.2542724609374
+     ],
+     "options": []
+    },
+    "13fe5eeb-x": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "a39f4f95-x",
+       "list"
+      ],
+      "object": [
+       "5949fb27-x",
+       "vec4"
+      ],
+      "SRC": [
+       "a39f4f95-x",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      83.6141357421867,
+      59.745727539062614
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 0.8000000000000002,
+    "trans_x": -506,
+    "trans_y": -82
    }
   }
  },
@@ -11061,6 +12380,31 @@
     ],
     [
      "",
+     "inDt",
+     ""
+    ],
+    [
+     "",
+     "light",
+     ""
+    ],
+    [
+     "",
+     "strength",
+     ""
+    ],
+    [
+     "",
+     "forceList",
+     ""
+    ],
+    [
+     "",
+     "starryNight",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -11141,6 +12485,47 @@
     [
      "",
      "fcount",
+     ""
+    ],
+    [
+     "",
+     "ftime",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "GenCondition": {
+   "inputs": [
+    [
+     "",
+     "beat",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "forceList",
+     ""
+    ],
+    [
+     "",
+     "strength",
      ""
     ],
     [
