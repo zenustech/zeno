@@ -45,8 +45,8 @@
      },
      "params": {},
      "uipos": [
-      1138.0874999999996,
-      194.5867187500001
+      1134.1812499999999,
+      139.8992187500001
      ],
      "options": []
     },
@@ -117,8 +117,8 @@
       "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexture;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 value = texture(iTexture, fragCoord).rgb;\n  fragColor = vec4(value, 1);\n}"
      },
      "uipos": [
-      533.0367187499997,
-      -340.10468749999984
+      746.3179687499997,
+      -138.54218749999984
      ],
      "options": []
     },
@@ -182,24 +182,8 @@
      },
      "params": {},
      "uipos": [
-      761.7007812499988,
-      722.0953124999999
-     ],
-     "options": []
-    },
-    "d633e0dd-x": {
-     "name": "PassToyMakeShader",
-     "inputs": {
-      "source": [
-       "d191424d-x",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -503.1442016601568,
-      53.86901855468756
+      765.4507812499988,
+      505.84531249999975
      ],
      "options": []
     },
@@ -214,41 +198,8 @@
      },
      "params": {},
      "uipos": [
-      -153.78604736328214,
-      567.6348876953124
-     ],
-     "options": []
-    },
-    "d191424d-x": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "#version 300 es\nprecision mediump float;\nin vec2 fragCoord;\nout vec3 res;\nvoid main() {\n  res = 3.0 * vec3(0.375, 0.75, 1.0) * smoothstep(0.1, 0.0, length(fragCoord - 0.5));\n}"
-     },
-     "uipos": [
-      -971.5660766601568,
-      -227.6505126953126
-     ],
-     "options": []
-    },
-    "12ef6b05-x": {
-     "name": "PassToyApplyShader",
-     "inputs": {
-      "shader": [
-       "d633e0dd-x",
-       "shader"
-      ],
-      "uniforms": null,
-      "textureIn": null,
-      "textureOut": null,
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -133.91638916015756,
-      121.30979980468749
+      -167.78604736328214,
+      501.6348876953125
      ],
      "options": []
     },
@@ -261,8 +212,8 @@
       "path": "assets/image2.jpeg"
      },
      "uipos": [
-      -664.6845611572276,
-      563.8977539062503
+      -660.6845611572276,
+      489.8977539062503
      ],
      "options": []
     },
@@ -276,57 +227,8 @@
       "y": 512
      },
      "uipos": [
-      1736.4440704345698,
-      841.9976776123046
-     ],
-     "options": []
-    },
-    "2eed7133-x": {
-     "name": "PassToyMakeShader",
-     "inputs": {
-      "source": [
-       "cba3f630-x",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -1310.0904687499994,
-      122.37218750000011
-     ],
-     "options": []
-    },
-    "cba3f630-x": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "#version 300 es\nprecision mediump float;\nin vec2 fragCoord;\nout vec3 res;\nvoid main() {\n  ivec2 coord = ivec2(floor(fragCoord * 16.0));\n  res = vec3((coord.x + coord.y) % 2 == 0 ? 0.23 : 0.9);\n}"
-     },
-     "uipos": [
-      -1756.1099999999997,
-      -199.86999999999995
-     ],
-     "options": []
-    },
-    "36569fff-x": {
-     "name": "PassToyApplyShader",
-     "inputs": {
-      "shader": [
-       "2eed7133-x",
-       "shader"
-      ],
-      "uniforms": null,
-      "textureIn": null,
-      "textureOut": null,
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -826.8196875000004,
-      242.2137499999999
+      2165.5440704345697,
+      872.0476776123046
      ],
      "options": []
     },
@@ -377,12 +279,16 @@
        "d396bdbf-NumericOperator",
        "ret"
       ],
+      "time": [
+       "f049e280-GenericUniforms",
+       "ftime"
+      ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      -229.24218749999963,
-      1009.7499999999989
+      -232.36718749999963,
+      972.2499999999989
      ],
      "options": []
     },
@@ -452,8 +358,8 @@
      },
      "params": {},
      "uipos": [
-      235.44925689697266,
-      1369.86856689453
+      16.699256896972884,
+      1256.5873168945304
      ],
      "options": []
     },
@@ -466,16 +372,16 @@
       "path": "assets/StarryNight.jpg"
      },
      "uipos": [
-      -198.00785064697268,
-      1530.7056518554677
+      -416.75785064697243,
+      1417.4244018554677
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -679,
-    "trans_y": 75
+    "scale": 0.6400000000000001,
+    "trans_x": -1091,
+    "trans_y": 290
    }
   },
   "StableFluid": {
@@ -1333,8 +1239,8 @@
       "name": "uniforms"
      },
      "uipos": [
-      -4810.02519836426,
-      572.8125439453122
+      -4652.425198364259,
+      536.0125439453122
      ],
      "options": []
     },
@@ -2233,8 +2139,8 @@
       "value": "force"
      },
      "uipos": [
-      -4610.765624999996,
-      661.2968749999993
+      -4637.165624999997,
+      703.6968749999993
      ],
      "options": []
     },
@@ -3247,8 +3153,8 @@
    },
    "view": {
     "scale": 0.6400000000000001,
-    "trans_x": -3611,
-    "trans_y": -1074
+    "trans_x": -3588,
+    "trans_y": 75
    }
   },
   "CopyTexture": {
@@ -3694,7 +3600,7 @@
       "op_type": "add"
      },
      "uipos": [
-      -230.50468750000056,
+      -231.3046875000006,
       -111.46249999999976
      ],
      "options": []
@@ -3714,8 +3620,8 @@
       "defl": ""
      },
      "uipos": [
-      451.5624999999998,
-      -131.24999999999991
+      515.6249999999997,
+      -173.43749999999991
      ],
      "options": []
     },
@@ -3735,9 +3641,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -1206,
-    "trans_y": -338
+    "scale": 1.25,
+    "trans_x": -1114,
+    "trans_y": -436
    }
   },
   "GenCondition": {
@@ -3841,8 +3747,8 @@
      },
      "params": {},
      "uipos": [
-      2235.7812500000005,
-      968.2031249999986
+      2236.78125,
+      967.2031249999986
      ],
      "options": []
     },
@@ -4003,6 +3909,10 @@
     "38d671d6-NumericVec4": {
      "name": "NumericVec4",
      "inputs": {
+      "x": null,
+      "y": null,
+      "z": null,
+      "w": null,
       "SRC": null
      },
      "params": {
@@ -4020,6 +3930,10 @@
     "1dcab7e8-x": {
      "name": "NumericVec4",
      "inputs": {
+      "x": null,
+      "y": null,
+      "z": null,
+      "w": null,
       "SRC": null
      },
      "params": {
@@ -4037,23 +3951,37 @@
     "2ce0ea88-x": {
      "name": "NumericVec4",
      "inputs": {
+      "x": [
+       "5376b54a-NumericOperator",
+       "ret"
+      ],
+      "y": null,
+      "z": null,
+      "w": null,
       "SRC": null
      },
      "params": {
       "x": 3.0,
       "y": 0.0,
       "z": 0.2,
-      "w": 0.78
+      "w": 0.82
      },
      "uipos": [
-      830.6875000000002,
-      828.1875000000002
+      1015.578125,
+      796.6562500000002
      ],
      "options": []
     },
     "6148ad66-x": {
      "name": "NumericVec4",
      "inputs": {
+      "x": [
+       "5376b54a-NumericOperator",
+       "ret"
+      ],
+      "y": null,
+      "z": null,
+      "w": null,
       "SRC": null
      },
      "params": {
@@ -4071,13 +3999,20 @@
     "f25962d6-x": {
      "name": "NumericVec4",
      "inputs": {
+      "x": [
+       "5376b54a-NumericOperator",
+       "ret"
+      ],
+      "y": null,
+      "z": null,
+      "w": null,
       "SRC": null
      },
      "params": {
       "x": 3.0,
       "y": 0.0,
       "z": 0.6,
-      "w": 0.75
+      "w": 0.8
      },
      "uipos": [
       1759.0,
@@ -4088,17 +4023,24 @@
     "2910a60f-x": {
      "name": "NumericVec4",
      "inputs": {
+      "x": [
+       "5376b54a-NumericOperator",
+       "ret"
+      ],
+      "y": null,
+      "z": null,
+      "w": null,
       "SRC": null
      },
      "params": {
       "x": 3.0,
       "y": 0.0,
       "z": 0.8,
-      "w": 0.8
+      "w": 0.86
      },
      "uipos": [
-      2158.0,
-      1236.0
+      2038.0000000000005,
+      1327.2499999999998
      ],
      "options": []
     },
@@ -4120,14 +4062,18 @@
      },
      "params": {},
      "uipos": [
-      391.5594482421867,
-      230.35900878906284
+      331.95480346679614,
+      206.5171508789066
      ],
      "options": []
     },
     "5949fb27-x": {
      "name": "NumericVec4",
      "inputs": {
+      "x": null,
+      "y": null,
+      "z": null,
+      "w": null,
       "SRC": null
      },
      "params": {
@@ -4145,6 +4091,10 @@
     "a5345b4f-x": {
      "name": "NumericVec4",
      "inputs": {
+      "x": null,
+      "y": null,
+      "z": null,
+      "w": null,
       "SRC": null
      },
      "params": {
@@ -4177,16 +4127,123 @@
      },
      "params": {},
      "uipos": [
-      83.6141357421867,
-      59.745727539062614
+      0.16763305663994288,
+      23.982940673828267
+     ],
+     "options": []
+    },
+    "73bdde16-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "time",
+      "defl": ""
+     },
+     "uipos": [
+      -224.89062500000034,
+      961.8187499999985
+     ],
+     "options": []
+    },
+    "da2d6830-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "03fe2a58-NumericOperator",
+       "ret"
+      ],
+      "rhs": null,
+      "SRC": null
+     },
+     "params": {
+      "op_type": "sin"
+     },
+     "uipos": [
+      474.9843749999993,
+      1243.156249999999
+     ],
+     "options": []
+    },
+    "5376b54a-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "da2d6830-NumericOperator",
+       "ret"
+      ],
+      "rhs": [
+       "9bba3e47-NumericFloat",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      870.0,
+      1443.0
+     ],
+     "options": []
+    },
+    "9bba3e47-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 20.0
+     },
+     "uipos": [
+      535.0,
+      1528.0
+     ],
+     "options": []
+    },
+    "03fe2a58-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "73bdde16-SubInput",
+       "port"
+      ],
+      "rhs": [
+       "252f50e2-NumericFloat",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      158.0,
+      1207.0
+     ],
+     "options": []
+    },
+    "252f50e2-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 12.0
+     },
+     "uipos": [
+      -131.0,
+      1422.0
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.8000000000000006,
-    "trans_x": 615,
-    "trans_y": 552
+    "scale": 0.8000000000000002,
+    "trans_x": -166,
+    "trans_y": -728
    }
   }
  },
@@ -8621,6 +8678,16 @@
    "inputs": [
     [
      "",
+     "x",
+     ""
+    ],
+    [
+     "",
+     "y",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -8655,6 +8722,21 @@
   },
   "NumericVec3": {
    "inputs": [
+    [
+     "",
+     "x",
+     ""
+    ],
+    [
+     "",
+     "y",
+     ""
+    ],
+    [
+     "",
+     "z",
+     ""
+    ],
     [
      "",
      "SRC",
@@ -8696,6 +8778,26 @@
   },
   "NumericVec4": {
    "inputs": [
+    [
+     "",
+     "x",
+     ""
+    ],
+    [
+     "",
+     "y",
+     ""
+    ],
+    [
+     "",
+     "z",
+     ""
+    ],
+    [
+     "",
+     "w",
+     ""
+    ],
     [
      "",
      "SRC",
@@ -12942,6 +13044,11 @@
     [
      "",
      "beat",
+     ""
+    ],
+    [
+     "",
+     "time",
      ""
     ],
     [
