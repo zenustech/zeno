@@ -12,7 +12,7 @@
       "SRC": null
      },
      "params": {
-      "interval": 50,
+      "interval": 17,
       "nx": 512,
       "ny": 512
      },
@@ -36,7 +36,10 @@
        "port"
       ],
       "textureIn": null,
-      "textureOut": null,
+      "textureOut": [
+       "9241ad3d-PassToyMakeTexturePair",
+       "texturePair"
+      ],
       "SRC": null
      },
      "params": {},
@@ -68,7 +71,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  float res = 0.0;\n  fragColor = vec4(vec3(res * 0.0625 + 0.5), 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout float res;\nvoid main() {\n  res = 0.0;\n}"
      },
      "uipos": [
       -2345.873046874999,
@@ -125,8 +128,8 @@
        "dict"
       ],
       "textureOut": [
-       "4f325145-PortalOut",
-       "port"
+       "1084d69d-PassToyTexturePairSwap",
+       "texturePair"
       ],
       "SRC": null
      },
@@ -143,7 +146,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform ivec2 iResolution;\nuniform sampler2D iTexPressure;\nuniform sampler2D iTexVelocityDiv;\nin vec2 fragCoord;\nout vec4 fragColor;\nfloat pf(ivec2 coor) {\n  return texelFetch(iTexPressure, clamp(coor, ivec2(0), iResolution - 1), 0).r * 16.0 - 8.0;\n}\nfloat vdiv(ivec2 coor) {\n  return texelFetch(iTexVelocityDiv, coor, 0).r * 16.0 - 8.0;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  float u = pf(coord + ivec2(0, 1));\n  float d = pf(coord + ivec2(0, -1));\n  float r = pf(coord + ivec2(1, 0));\n  float l = pf(coord + ivec2(-1, 0));\n  float div = vdiv(coord);\n  float res = (r + l + u + d - div) * 0.25;\n  fragColor = vec4(vec3(res * 0.0625 + 0.5), 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform ivec2 iResolution;\nuniform sampler2D iTexPressure;\nuniform sampler2D iTexVelocityDiv;\nin vec2 fragCoord;\nout float res;\nfloat pf(ivec2 coor) {\n  return texelFetch(iTexPressure, clamp(coor, ivec2(0), iResolution - 1), 0).r;\n}\nfloat vdiv(ivec2 coor) {\n  return texelFetch(iTexVelocityDiv, coor, 0).r;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  float u = pf(coord + ivec2(0, 1));\n  float d = pf(coord + ivec2(0, -1));\n  float r = pf(coord + ivec2(1, 0));\n  float l = pf(coord + ivec2(-1, 0));\n  float div = vdiv(coord);\n  res = (r + l + u + d - div) * 0.25;\n}"
      },
      "uipos": [
       -481.1125000000004,
@@ -318,11 +321,11 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec2 vf(ivec2 coor) {\n  if (any(lessThanEqual(coor, ivec2(0)))) return vec2(0);\n  if (any(greaterThanEqual(coor, iResolution - 1))) return vec2(0);\n  return texelFetch(iTexVelocity, coor, 0).rg * 16.0 - 8.0;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  float u = vf(coord + ivec2(0, 1)).y;\n  float d = vf(coord + ivec2(0, -1)).y;\n  float r = vf(coord + ivec2(1, 0)).x;\n  float l = vf(coord + ivec2(-1, 0)).x;\n  float res = (u - d + r - l) * 0.5;\n  fragColor = vec4(vec3(res * 0.0625 + 0.5), 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout float res;\nvec2 vf(ivec2 coor) {\n  if (any(lessThanEqual(coor, ivec2(0)))) return vec2(0);\n  if (any(greaterThanEqual(coor, iResolution - 1))) return vec2(0);\n  return texelFetch(iTexVelocity, coor, 0).rg;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  float u = vf(coord + ivec2(0, 1)).y;\n  float d = vf(coord + ivec2(0, -1)).y;\n  float r = vf(coord + ivec2(1, 0)).x;\n  float l = vf(coord + ivec2(-1, 0)).x;\n  res = (u - d + r - l) * 0.5;\n}"
      },
      "uipos": [
-      -1975.8023828124994,
-      -945.9783984375
+      -1972.8023828124997,
+      -949.9783984374999
      ],
      "options": []
     },
@@ -370,13 +373,10 @@
     "27d9caa1-MakeDict": {
      "name": "MakeDict",
      "inputs": {
-      "SRC": [
-       "e7fb0a47-x",
-       "DST"
-      ],
+      "SRC": null,
       "iTexPressure": [
-       "4f325145-PortalOut",
-       "port"
+       "1084d69d-PassToyTexturePairSwap",
+       "oldTexture"
       ],
       "iTexVelocityDiv": [
        "37bdd12c-x",
@@ -387,8 +387,8 @@
       "_KEYS": "iTexPressure\niTexVelocityDiv"
      },
      "uipos": [
-      -784.0,
-      -88.25
+      -788.0,
+      -111.25
      ],
      "options": [],
      "socket_keys": [
@@ -474,7 +474,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexture;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 value = texture(iTexture, fragCoord).rgb * 16.0 - 8.0;\n  fragColor = vec4(value * 0.5 + 0.5, 1);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexture;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 value = texture(iTexture, fragCoord).rgb;\n  fragColor = vec4(value * 1.0 * 0.5 + 0.5, 1);\n}"
      },
      "uipos": [
       829.4461425781251,
@@ -490,7 +490,7 @@
        "value"
       ],
       "SRC": [
-       "27d9caa1-MakeDict",
+       "e7fb0a47-x",
        "DST"
       ]
      },
@@ -569,13 +569,16 @@
     "e7fb0a47-x": {
      "name": "PortalOut",
      "inputs": {
-      "SRC": null
+      "SRC": [
+       "4f325145-PortalOut",
+       "DST"
+      ]
      },
      "params": {
       "name": "uniforms"
      },
      "uipos": [
-      -439.0,
+      -440.0,
       83.0
      ],
      "options": []
@@ -597,12 +600,12 @@
     "2683bdaa-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      -1069.2562499999995,
-      -689.9570312499998
+      -1086.2562499999995,
+      -687.9570312499998
      ],
      "special": true,
-     "width": 1163.1249999999995,
-     "height": 956.875,
+     "width": 1175.1249999999995,
+     "height": 947.875,
      "title": "Blackboard",
      "content": "Jacobi Iteration to let pressure equation coverage: grad^2 p = div v",
      "params": []
@@ -642,14 +645,17 @@
     "4f325145-PortalOut": {
      "name": "PortalOut",
      "inputs": {
-      "SRC": null
+      "SRC": [
+       "37bdd12c-x",
+       "DST"
+      ]
      },
      "params": {
       "name": "pressure"
      },
      "uipos": [
-      -1046.0,
-      -91.0
+      -1059.0,
+      -262.0
      ],
      "options": []
     },
@@ -662,8 +668,8 @@
       "name": "velocityDiv"
      },
      "uipos": [
-      -1045.0,
-      101.0
+      -1052.0,
+      92.0
      ],
      "options": []
     },
@@ -701,12 +707,12 @@
     "44d11984-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      -2414.6859863281243,
-      378.4549804687499
+      -2579.3109863281243,
+      396.8924804687499
      ],
      "special": true,
-     "width": 668.75,
-     "height": 1151.9531249999995,
+     "width": 789.0625,
+     "height": 1141.0156249999998,
      "title": "Blackboard",
      "content": "Initialize pressure: p = 0",
      "params": []
@@ -789,7 +795,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nuniform sampler2D iTexPressure;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec2 vf(ivec2 coor) {\n  return texelFetch(iTexVelocity, coor, 0).rg * 16.0 - 8.0;\n}\nfloat pf(ivec2 coor) {\n  return texelFetch(iTexPressure, clamp(coor, ivec2(0), iResolution - 1), 0).r * 16.0 - 8.0;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  vec2 res = vf(coord);\n  float u = pf(coord + ivec2(0, 1));\n  float d = pf(coord + ivec2(0, -1));\n  float r = pf(coord + ivec2(1, 0));\n  float l = pf(coord + ivec2(-1, 0));\n  res -= 0.5 * vec2(r - l, u - d);\n  fragColor = vec4(res * 0.0625 + 0.5, 0.0, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nuniform sampler2D iTexPressure;\nin vec2 fragCoord;\nout vec2 res;\nvec2 vf(ivec2 coor) {\n  return texelFetch(iTexVelocity, coor, 0).rg;\n}\nfloat pf(ivec2 coor) {\n  return texelFetch(iTexPressure, clamp(coor, ivec2(0), iResolution - 1), 0).r;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  res = vf(coord);\n  float u = pf(coord + ivec2(0, 1));\n  float d = pf(coord + ivec2(0, -1));\n  float r = pf(coord + ivec2(1, 0));\n  float l = pf(coord + ivec2(-1, 0));\n  res -= 0.5 * vec2(r - l, u - d);\n}"
      },
      "uipos": [
       -3115.2514990234395,
@@ -800,12 +806,12 @@
     "786a0555-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      -4247.636718750002,
-      350.3730957031246
+      -3663.6523437500023,
+      405.0605957031246
      ],
      "special": true,
-     "width": 1376.25,
-     "height": 1173.125,
+     "width": 800.0781249999995,
+     "height": 1128.2031250000002,
      "title": "Blackboard",
      "content": "Initial velocity: v = (0, 0, 0)",
      "params": []
@@ -853,8 +859,8 @@
       "name": "finalVelocity"
      },
      "uipos": [
-      620.6273925781252,
-      -304.37060546875017
+      622.6273925781252,
+      -304.3706054687502
      ],
      "options": []
     },
@@ -936,7 +942,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec2 res = vec2(3.0, 0.0) * smoothstep(0.15, 0.0, length(fragCoord - 0.5));\n  fragColor = vec4(res * 0.0625 + 0.5, 0.0, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec2 res;\nvoid main() {\n  res = vec2(2.0, 0.0) * smoothstep(0.2, 0.0, length(fragCoord - 0.5));\n}"
      },
      "uipos": [
       -3416.887280273438,
@@ -974,7 +980,10 @@
        "port"
       ],
       "textureIn": null,
-      "textureOut": null,
+      "textureOut": [
+       "168a9c78-PassToyMakeTexturePair",
+       "texturePair"
+      ],
       "SRC": null
      },
      "params": {},
@@ -1110,8 +1119,8 @@
       "name": "velocity"
      },
      "uipos": [
-      -4515.218749999998,
-      -617.3479394531249
+      -4515.618749999998,
+      -772.1479394531248
      ],
      "options": []
     },
@@ -1130,7 +1139,10 @@
        "5dcfc148-x",
        "dict"
       ],
-      "textureOut": null,
+      "textureOut": [
+       "7be00b36-PassToyTexturePairSwap",
+       "texturePair"
+      ],
       "SRC": null
      },
      "params": {},
@@ -1167,8 +1179,8 @@
       "name": "uniforms"
      },
      "uipos": [
-      -4238.269750976564,
-      -219.25323730468745
+      -4241.469750976565,
+      -220.05323730468743
      ],
      "options": []
     },
@@ -1177,16 +1189,16 @@
      "inputs": {
       "SRC": null,
       "iTexVelocity": [
-       "dce6460c-x",
-       "port"
+       "7be00b36-PassToyTexturePairSwap",
+       "oldTexture"
       ]
      },
      "params": {
       "_KEYS": "iTexVelocity"
      },
      "uipos": [
-      -4505.018749999997,
-      -434.8479394531247
+      -4513.818749999998,
+      -424.4479394531247
      ],
      "options": [],
      "socket_keys": [
@@ -1199,7 +1211,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec4 fragColor;\nvec2 vf(vec2 coor) {\n  coor = clamp(coor / vec2(iResolution), vec2(0), vec2(1));\n  return texture(iTexVelocity, coor).rg * 16.0 - 8.0;\n}\nvoid main() {\n  float dt = 8.0;\n  vec2 p0 = fragCoord * vec2(iResolution);\n  vec2 p1 = p0 - 0.5 * vf(p0) * dt;\n  vec2 p2 = p0 - vf(p1) * dt;\n  vec2 res = vf(p1) * 0.95;\n  fragColor = vec4(res * 0.0625 + 0.5, 0.0, 1.0);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec2 res;\nvec2 vf(vec2 coor) {\n  return texture(iTexVelocity, clamp(coor / vec2(iResolution), vec2(0), vec2(1))).rg;\n}\nvoid main() {\n  float dt = 4.0;\n  vec2 p0 = fragCoord * vec2(iResolution);\n  vec2 p1 = p0 - 0.5 * vf(p0) * dt;\n  vec2 p2 = p0 - vf(p1) * dt;\n  res = vf(p1) * 0.95;\n}"
      },
      "uipos": [
       -4286.13274902344,
@@ -1220,111 +1232,114 @@
      "content": "Advect velocity with velocity: v(t + dt, x) = v(t, x - v*dt)",
      "params": []
     },
-    "26327e37-x": {
-     "name": "PassToyApplyShader",
+    "168a9c78-PassToyMakeTexturePair": {
+     "name": "PassToyMakeTexturePair",
      "inputs": {
-      "shader": [
-       "eea20599-x",
-       "shader"
-      ],
-      "uniforms": [
-       "cf0914a2-x",
+      "resolution": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -3630.7499999999995,
+      1039.55
+     ],
+     "options": []
+    },
+    "7be00b36-PassToyTexturePairSwap": {
+     "name": "PassToyTexturePairSwap",
+     "inputs": {
+      "texturePair": [
+       "dce6460c-x",
        "port"
       ],
-      "textureIn": null,
-      "textureOut": null,
       "SRC": null
      },
      "params": {},
      "uipos": [
-      -4147.948530273437,
-      956.9644873046875
+      -4513.0,
+      -596.0
      ],
      "options": []
     },
-    "4f0c4a15-x": {
-     "name": "CachedOnce",
+    "9241ad3d-PassToyMakeTexturePair": {
+     "name": "PassToyMakeTexturePair",
      "inputs": {
-      "input": [
-       "26327e37-x",
-       "textureOut"
-      ],
+      "resolution": null,
       "SRC": null
      },
      "params": {},
      "uipos": [
-      -4142.673657226562,
-      1175.2755126953118
+      -2550.3374999999996,
+      1045.1024999999995
      ],
      "options": []
     },
-    "eea20599-x": {
-     "name": "PassToyMakeShader",
+    "1084d69d-PassToyTexturePairSwap": {
+     "name": "PassToyTexturePairSwap",
      "inputs": {
-      "source": [
-       "80875a37-x",
-       "value"
+      "texturePair": [
+       "4f325145-PortalOut",
+       "port"
       ],
-      "SRC": null
+      "SRC": [
+       "9e57be15-BeginFor",
+       "DST"
+      ]
      },
      "params": {},
      "uipos": [
-      -4151.668530273437,
-      823.7244873046873
+      -1059.0,
+      -86.0
      ],
      "options": []
     },
-    "80875a37-x": {
-     "name": "MakeMultilineString",
+    "6c6bfec9-NumericFloat": {
+     "name": "NumericFloat",
      "inputs": {
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec2 res = vec2(3.0, 0.0) * smoothstep(0.15, 0.0, length(fragCoord - 0.5));\n  fragColor = vec4(res * 0.0625 + 0.5, 0.0, 1.0);\n}"
+      "value": 0.0
      },
      "uipos": [
-      -4192.668530273437,
-      443.4744873046873
+      -210.45,
+      1237.7499999999998
      ],
      "options": []
     },
-    "cf0914a2-x": {
-     "name": "PortalOut",
+    "8bce2908-x": {
+     "name": "NumericFloat",
      "inputs": {
       "SRC": null
      },
      "params": {
-      "name": "uniforms"
+      "value": 0.04
      },
      "uipos": [
-      -4147.408032226562,
-      1325.2755126953118
+      -208.11000000000004,
+      1422.7375000000002
      ],
      "options": []
     },
-    "82004862-x": {
-     "name": "PortalIn",
+    "4eddeb7c-x": {
+     "name": "NumericFloat",
      "inputs": {
-      "port": [
-       "4f0c4a15-x",
-       "output"
-      ],
       "SRC": null
      },
      "params": {
-      "name": "advVelocityStorage"
+      "value": 0.3
      },
      "uipos": [
-      -3879.206469726562,
-      1181.1372314453122
+      -193.28000000000003,
+      1597.44
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -5872,
-    "trans_y": -1412
+    "trans_x": -2779,
+    "trans_y": -40
    }
   }
  },
@@ -3699,6 +3714,36 @@
     "PassToy"
    ]
   },
+  "PassToyMakeTexturePair": {
+   "inputs": [
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texturePair",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
   "PassToyScreenTexture": {
    "inputs": [
     [
@@ -3711,6 +3756,41 @@
     [
      "",
      "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyTexturePairSwap": {
+   "inputs": [
+    [
+     "",
+     "texturePair",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texturePair",
+     ""
+    ],
+    [
+     "",
+     "oldTexture",
      ""
     ],
     [

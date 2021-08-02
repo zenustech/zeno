@@ -88,20 +88,25 @@ struct PassToyTexture : zeno::IObjectClone<PassToyTexture> {
     GLTextureObject tex;
 };
 
+static auto make_texture(zeno::vec2i resolution) {
+    auto texture = std::make_shared<PassToyTexture>();
+    texture->tex.width = resolution[0];
+    texture->tex.height = resolution[1];
+    texture->tex.type = GL_FLOAT;
+    texture->tex.format = GL_RGB;
+    texture->tex.initialize();
+    texture->fbo.initialize();
+    texture->fbo.bindToTexture(texture->tex, GL_COLOR_ATTACHMENT0);
+    texture->fbo.checkStatusComplete();
+    return texture;
+}
+
 struct PassToyMakeTexture : zeno::INode {
     virtual void apply() override {
         auto resolution = has_input("resolution") ?
             get_input<zeno::NumericObject>("nx")->get<zeno::vec2i>() :
             get_default_resolution();
-        auto texture = std::make_shared<PassToyTexture>();
-        texture->tex.width = resolution[0];
-        texture->tex.height = resolution[1];
-        texture->tex.type = GL_FLOAT;
-        texture->tex.format = GL_RGB;
-        texture->tex.initialize();
-        texture->fbo.initialize();
-        texture->fbo.bindToTexture(texture->tex, GL_COLOR_ATTACHMENT0);
-        texture->fbo.checkStatusComplete();
+        auto texture = make_texture(resolution);
         set_output("texture", std::move(texture));
     }
 };
@@ -109,6 +114,55 @@ struct PassToyMakeTexture : zeno::INode {
 ZENDEFNODE(PassToyMakeTexture, {
         {"resolution"},
         {"texture"},
+        {},
+        {"PassToy"},
+});
+
+struct PassToyTexturePair : PassToyTexture {
+    PassToyTexture second;
+
+    void swap() {
+        std::swap(fbo, second.fbo);
+        std::swap(tex, second.tex);
+    }
+};
+
+struct PassToyMakeTexturePair : zeno::INode {
+    virtual void apply() override {
+        auto resolution = has_input("resolution") ?
+            get_input<zeno::NumericObject>("nx")->get<zeno::vec2i>() :
+            get_default_resolution();
+        auto texture1 = make_texture(resolution);
+        auto texture2 = make_texture(resolution);
+        auto texturePair = std::make_shared<PassToyTexturePair>();
+        texturePair->fbo = texture1->fbo;
+        texturePair->tex = texture1->tex;
+        texturePair->second = *texture2;
+        set_output("texturePair", std::move(texturePair));
+    }
+};
+
+ZENDEFNODE(PassToyMakeTexturePair, {
+        {"resolution"},
+        {"texturePair"},
+        {},
+        {"PassToy"},
+});
+
+struct PassToyTexturePairSwap : zeno::INode {
+    virtual void apply() override {
+        auto texturePair = get_input<PassToyTexturePair>("texturePair");
+        texturePair->swap();
+        auto oldTexture = std::make_shared<PassToyTexture>(texturePair->second);
+        texturePair->swap();
+        set_output("texturePair", std::move(texturePair));
+        set_output("oldTexture", std::move(oldTexture));
+    }
+};
+
+ZENDEFNODE(PassToyTexturePairSwap, {
+        {"texturePair"},
+        {"texturePair", "oldTexture"},
         {},
         {"PassToy"},
 });
@@ -160,15 +214,7 @@ struct PassToyApplyShader : zeno::INode {
             resolution[0] = textureOut->tex.width;
             resolution[1] = textureOut->tex.height;
         } else if (!has_input("textureOut")) {
-            textureOut = std::make_shared<PassToyTexture>();
-            textureOut->tex.width = resolution[0];
-            textureOut->tex.height = resolution[1];
-            textureOut->tex.type = GL_FLOAT;
-            textureOut->tex.format = GL_RGB;
-            textureOut->tex.initialize();
-            textureOut->fbo.initialize();
-            textureOut->fbo.bindToTexture(textureOut->tex, GL_COLOR_ATTACHMENT0);
-            textureOut->fbo.checkStatusComplete();
+            textureOut = make_texture(resolution);
             textureOut->fbo.use();
         } else {
             GLFramebuffer().use();
