@@ -198,8 +198,8 @@
      },
      "params": {},
      "uipos": [
-      -803.5555786132818,
-      618.8692626953126
+      -601.5555786132818,
+      627.8692626953125
      ],
      "options": []
     },
@@ -346,9 +346,9 @@
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -1212,
-    "trans_y": 461
+    "scale": 1.0000000000000002,
+    "trans_x": -1152,
+    "trans_y": 220
    }
   },
   "StableFluid": {
@@ -555,7 +555,7 @@
       "SRC": null
      },
      "params": {
-      "value": 100
+      "value": 50
      },
      "uipos": [
       -792.0999999999999,
@@ -783,7 +783,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision highp float;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nuniform sampler2D iTexPressure;\nin vec2 fragCoord;\nout vec2 res;\nvec2 vf(ivec2 coor) {\n  return texelFetch(iTexVelocity, coor, 0).rg;\n}\nfloat pf(ivec2 coor) {\n  return texelFetch(iTexPressure, clamp(coor, ivec2(0), iResolution - 1), 0).r;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  res = vf(coord);\n  float u = pf(coord + ivec2(0, 1));\n  float d = pf(coord + ivec2(0, -1));\n  float r = pf(coord + ivec2(1, 0));\n  float l = pf(coord + ivec2(-1, 0));\n  res -= 0.5 * vec2(r - l, u - d);\n}"
+      "value": "#version 300 es\nprecision highp float;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nuniform sampler2D iTexPressure;\nin vec2 fragCoord;\nout vec2 res;\nvec2 vf(ivec2 coor) {\n  return texelFetch(iTexVelocity, coor, 0).rg;\n}\nfloat pf(ivec2 coor) {\n  return texelFetch(iTexPressure, clamp(coor, ivec2(0), iResolution - 1), 0).r;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  res = vf(coord);\n  float u = pf(coord + ivec2(0, 1));\n  float d = pf(coord + ivec2(0, -1));\n  float r = pf(coord + ivec2(1, 0));\n  float l = pf(coord + ivec2(-1, 0));\n  res -= 0.5 * 1.4 * vec2(r - l, u - d);\n}"
      },
      "uipos": [
       -3115.2514990234395,
@@ -1814,9 +1814,9 @@
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -6434,
-    "trans_y": 419
+    "scale": 1.5625,
+    "trans_x": -1712,
+    "trans_y": -1138
    }
   },
   "CopyTexture": {
