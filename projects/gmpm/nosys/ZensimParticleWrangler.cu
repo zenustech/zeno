@@ -25,15 +25,15 @@ namespace zeno {
 
 struct ZSParticlesWrangle : zeno::INode {
   struct Module {
+    Module() = default;
     bool initialized() { return module != nullptr; }
     ~Module() {
       if (initialized())
         zs::cudri::unloadModuleData{module};
     }
     void *module{nullptr};
-  };
+  } module;
   virtual void apply() override {
-    static Module module{};
     using namespace zs;
     auto code = get_input<zeno::StringObject>("zfxCode")->get();
 

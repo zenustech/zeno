@@ -366,8 +366,7 @@
       604.734375
      ],
      "options": [
-      "PREP",
-      "VIEW"
+      "PREP"
      ]
     },
     "d6969779-NumericFloat": {
@@ -438,7 +437,9 @@
       3371.8749999999977,
       712.4999999999995
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "45956f99-MakeMultilineString": {
      "name": "MakeMultilineString",
@@ -453,12 +454,26 @@
       795.2148437499995
      ],
      "options": []
+    },
+    "3f3cbaa6-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.0
+     },
+     "uipos": [
+      442.5,
+      825.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.32768000000000047,
-    "trans_x": -101,
-    "trans_y": -51
+    "scale": 0.6400000000000001,
+    "trans_x": -813,
+    "trans_y": -238
    }
   },
   "ToMaterialPoints": {
@@ -1513,46 +1528,6 @@
    "params": [],
    "categories": [
     "list"
-   ]
-  },
-  "ApplyForce": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "forcefield",
-     ""
-    ],
-    [
-     "",
-     "boxlength",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Molecular"
    ]
   },
   "AssembleSolvePPE": {
@@ -3228,56 +3203,6 @@
     "FLIPSolver"
    ]
   },
-  "ForceField": {
-   "inputs": [
-    [
-     "",
-     "nonbond",
-     ""
-    ],
-    [
-     "",
-     "coulomb",
-     ""
-    ],
-    [
-     "",
-     "bonded",
-     ""
-    ],
-    [
-     "",
-     "external",
-     ""
-    ],
-    [
-     "",
-     "mass",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "forcefield",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Molecular"
-   ]
-  },
   "FuncBegin": {
    "inputs": [
     [
@@ -3850,6 +3775,11 @@
     ],
     [
      "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -3866,16 +3796,6 @@
      "int",
      "interval",
      "17 0"
-    ],
-    [
-     "int",
-     "nx",
-     "512 1"
-    ],
-    [
-     "int",
-     "ny",
-     "512 1"
     ]
    ],
    "categories": [
@@ -4475,41 +4395,6 @@
     "primitive"
    ]
   },
-  "InitializeSystem": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "boxlength",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Molecular"
-   ]
-  },
   "IntegrateFrameTime": {
    "inputs": [
     [
@@ -4544,76 +4429,6 @@
    ],
    "categories": [
     "frame"
-   ]
-  },
-  "KineticEnergy": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "kinetic energy",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Molecular"
-   ]
-  },
-  "LennardJones": {
-   "inputs": [
-    [
-     "",
-     "rcut",
-     ""
-    ],
-    [
-     "",
-     "sigma",
-     ""
-    ],
-    [
-     "",
-     "epsilon",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "lennard-jones",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Molecular"
    ]
   },
   "ListLength": {
@@ -5538,6 +5353,129 @@
     "numeric"
    ]
   },
+  "NumericIVec2": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "numeric:vec2i",
+     "vec2",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "x",
+     "0"
+    ],
+    [
+     "int",
+     "y",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericIVec3": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "numeric:vec3i",
+     "vec3",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "x",
+     "0"
+    ],
+    [
+     "int",
+     "y",
+     "0"
+    ],
+    [
+     "int",
+     "z",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericIVec4": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "numeric:vec4f",
+     "vec4",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ],
+    [
+     "float",
+     "w",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
   "NumericInt": {
    "inputs": [
     [
@@ -6348,6 +6286,67 @@
     "PassToy"
    ]
   },
+  "PassToyGetTextureResolution": {
+   "inputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyLoadImageTexture": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "PassToy"
+   ]
+  },
   "PassToyMakeShader": {
    "inputs": [
     [
@@ -6403,7 +6402,49 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "string",
+     "format",
+     "rgb16f"
+    ]
+   ],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyMakeTexturePair": {
+   "inputs": [
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texturePair",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "format",
+     "rgb16f"
+    ]
+   ],
    "categories": [
     "PassToy"
    ]
@@ -6433,16 +6474,11 @@
     "PassToy"
    ]
   },
-  "PeriodicBoundary": {
+  "PassToyTexturePairSwap": {
    "inputs": [
     [
      "",
-     "prims",
-     ""
-    ],
-    [
-     "",
-     "boxlength",
+     "texturePair",
      ""
     ],
     [
@@ -6454,7 +6490,12 @@
    "outputs": [
     [
      "",
-     "prims",
+     "texturePair",
+     ""
+    ],
+    [
+     "",
+     "oldTexture",
      ""
     ],
     [
@@ -6465,7 +6506,7 @@
    ],
    "params": [],
    "categories": [
-    "Molecular"
+    "PassToy"
    ]
   },
   "PlaneProjectPrimitive2DAABB": {
@@ -6618,46 +6659,6 @@
    ],
    "categories": [
     "portal"
-   ]
-  },
-  "PotentialEnergy": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "forcefield",
-     ""
-    ],
-    [
-     "",
-     "boxlength",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "potential energy",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Molecular"
    ]
   },
   "PrimToVDBPointDataGrid": {
@@ -8373,52 +8374,6 @@
     "openvdb"
    ]
   },
-  "ScaleVelocity": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "temperature",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "kinetic energy",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "float",
-     "rel_error_to_scale",
-     "0.05"
-    ]
-   ],
-   "categories": [
-    "Molecular"
-   ]
-  },
   "SetFLIPWorld": {
    "inputs": [
     [
@@ -8599,57 +8554,6 @@
    ],
    "categories": [
     "particles"
-   ]
-  },
-  "SimulationBox": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "boxlength",
-     ""
-    ],
-    [
-     "",
-     "n_particles",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "float",
-     "boxlength",
-     "1"
-    ],
-    [
-     "int",
-     "n_particles",
-     "128"
-    ]
-   ],
-   "categories": [
-    "Molecular"
    ]
   },
   "SpatialPartitionForParticles": {
