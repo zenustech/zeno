@@ -8,6 +8,7 @@
 #include "GLShaderObject.h"
 #include "GLProgramObject.h"
 #include "GLFramebuffer.h"
+#include <algorithm>
 
 namespace {
 
@@ -85,13 +86,74 @@ struct PassToyTexture : zeno::IObjectClone<PassToyTexture> {
     GLTextureObject tex;
 };
 
-static auto make_texture(zeno::vec2i resolution) {
+static GLenum internalformat_from_string(std::string name) {
+    std::transform(name.begin(), name.end(), name.begin(), ::toupper);
+    if (0) {
+#define _EVAL(x) x
+#define _PER_FMT(x) } else if (name == #x) { return _EVAL(GL_##x);
+
+    _PER_FMT(RED)
+    _PER_FMT(R8UI)
+    _PER_FMT(R16UI)
+    _PER_FMT(R32UI)
+    _PER_FMT(R8I)
+    _PER_FMT(R16I)
+    _PER_FMT(R32I)
+    _PER_FMT(R16F)
+    _PER_FMT(R32F)
+
+    _PER_FMT(RG)
+    _PER_FMT(RG8UI)
+    _PER_FMT(RG16UI)
+    _PER_FMT(RG32UI)
+    _PER_FMT(RG8I)
+    _PER_FMT(RG16I)
+    _PER_FMT(RG32I)
+    _PER_FMT(RG16F)
+    _PER_FMT(RG32F)
+
+    _PER_FMT(RGB)
+    _PER_FMT(RGB8UI)
+    _PER_FMT(RGB16UI)
+    _PER_FMT(RGB32UI)
+    _PER_FMT(RGB8I)
+    _PER_FMT(RGB16I)
+    _PER_FMT(RGB32I)
+    _PER_FMT(RGB16F)
+    _PER_FMT(RGB32F)
+
+    _PER_FMT(RGBA)
+    _PER_FMT(RGBA8UI)
+    _PER_FMT(RGBA16UI)
+    _PER_FMT(RGBA32UI)
+    _PER_FMT(RGBA8I)
+    _PER_FMT(RGBA16I)
+    _PER_FMT(RGBA32I)
+    _PER_FMT(RGBA16F)
+    _PER_FMT(RGBA32F)
+
+    _PER_FMT(RGB5_A1)
+    _PER_FMT(RGB10_A2)
+    _PER_FMT(RGB10_A2UI)
+    _PER_FMT(R8_SNORM)
+    _PER_FMT(RG8_SNORM)
+    _PER_FMT(RGB8_SNORM)
+    _PER_FMT(RGBA8_SNORM)
+    _PER_FMT(R11F_G11F_B10F)
+    _PER_FMT(RGB9_E5)
+
+#undef _PER_FMT
+#undef _EVAL
+    }
+    zlog::error("bad format string {}", name);
+    abort();
+}
+
+static auto make_texture(zeno::vec2i resolution, std::string const &format) {
     auto texture = std::make_shared<PassToyTexture>();
     texture->tex.width = resolution[0];
     texture->tex.height = resolution[1];
-    texture->tex.type = GL_FLOAT;
-    texture->tex.format = GL_RGB;
-    texture->tex.internalformat = GL_RGB16F;
+    texture->tex.internalformat = internalformat_from_string(format);
     texture->tex.initialize();
     texture->fbo.initialize();
     texture->fbo.bindToTexture(texture->tex, GL_COLOR_ATTACHMENT0);
@@ -104,7 +166,8 @@ struct PassToyMakeTexture : zeno::INode {
         auto resolution = has_input("resolution") ?
             get_input<zeno::NumericObject>("nx")->get<zeno::vec2i>() :
             get_default_resolution();
-        auto texture = make_texture(resolution);
+        auto format = get_param<std::string>("format");
+        auto texture = make_texture(resolution, format);
         set_output("texture", std::move(texture));
     }
 };
@@ -112,7 +175,7 @@ struct PassToyMakeTexture : zeno::INode {
 ZENDEFNODE(PassToyMakeTexture, {
         {"resolution"},
         {"texture"},
-        {},
+        {{"string", "format", "rgb16f"}},
         {"PassToy"},
 });
 
@@ -130,8 +193,9 @@ struct PassToyMakeTexturePair : zeno::INode {
         auto resolution = has_input("resolution") ?
             get_input<zeno::NumericObject>("nx")->get<zeno::vec2i>() :
             get_default_resolution();
-        auto texture1 = make_texture(resolution);
-        auto texture2 = make_texture(resolution);
+        auto format = get_param<std::string>("format");
+        auto texture1 = make_texture(resolution, format);
+        auto texture2 = make_texture(resolution, format);
         auto texturePair = std::make_shared<PassToyTexturePair>();
         texturePair->fbo = texture1->fbo;
         texturePair->tex = texture1->tex;
@@ -143,7 +207,7 @@ struct PassToyMakeTexturePair : zeno::INode {
 ZENDEFNODE(PassToyMakeTexturePair, {
         {"resolution"},
         {"texturePair"},
-        {},
+        {{"string", "format", "rgb16f"}},
         {"PassToy"},
 });
 
@@ -212,7 +276,7 @@ struct PassToyApplyShader : zeno::INode {
             resolution[0] = textureOut->tex.width;
             resolution[1] = textureOut->tex.height;
         } else if (!has_input("textureOut")) {
-            textureOut = make_texture(resolution);
+            textureOut = make_texture(resolution, "rgb16f");
             textureOut->fbo.use();
         } else {
             GLFramebuffer().use();

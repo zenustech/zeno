@@ -370,7 +370,10 @@
        "1f199291-MakeDict",
        "dict"
       ],
-      "textureOut": null,
+      "textureOut": [
+       "8e8f0683-PassToyMakeTexture",
+       "texture"
+      ],
       "SRC": null
      },
      "params": {},
@@ -823,7 +826,7 @@
      "width": 800.0781249999995,
      "height": 1128.2031250000002,
      "title": "Blackboard",
-     "content": "Initial velocity: v = (0, 0, 0)",
+     "content": "Initial velocity: v = (0, 0)",
      "params": []
     },
     "070dec8e-Blackboard": {
@@ -1254,7 +1257,9 @@
       "resolution": null,
       "SRC": null
      },
-     "params": {},
+     "params": {
+      "format": "rg16f"
+     },
      "uipos": [
       -3630.7499999999995,
       1039.55
@@ -1283,7 +1288,9 @@
       "resolution": null,
       "SRC": null
      },
-     "params": {},
+     "params": {
+      "format": "r16f"
+     },
      "uipos": [
       -2550.3374999999996,
       1045.1024999999995
@@ -1642,7 +1649,9 @@
       "resolution": null,
       "SRC": null
      },
-     "params": {},
+     "params": {
+      "format": "rgb16f"
+     },
      "uipos": [
       -4650.564245605467,
       1038.5734375
@@ -1790,12 +1799,27 @@
       -129.48000000000002
      ],
      "options": []
+    },
+    "8e8f0683-PassToyMakeTexture": {
+     "name": "PassToyMakeTexture",
+     "inputs": {
+      "resolution": null,
+      "SRC": null
+     },
+     "params": {
+      "format": "r16f"
+     },
+     "uipos": [
+      -2190.25,
+      -607.2499999999998
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -2555,
-    "trans_y": -1053
+    "scale": 1.0000000000000007,
+    "trans_x": -5004,
+    "trans_y": 463
    }
   }
  },
@@ -4165,7 +4189,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "string",
+     "format",
+     "rgb16f"
+    ]
+   ],
    "categories": [
     "PassToy"
    ]
@@ -4195,7 +4225,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "string",
+     "format",
+     "rgb16f"
+    ]
+   ],
    "categories": [
     "PassToy"
    ]
