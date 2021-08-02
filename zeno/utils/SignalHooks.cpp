@@ -12,7 +12,6 @@ void print_traceback();
 
 #ifdef __linux__
 void trigger_gdb() {
-    print_traceback();
 #ifdef ZENO_FAULTHANDLER
     if (!getenv("ZEN_AUTOGDB"))
         return;
@@ -26,13 +25,13 @@ void trigger_gdb() {
 }
 #else
 void trigger_gdb() {
-    print_traceback();
 }
 #endif
 
 #ifdef ZENO_FAULTHANDLER
 static void signal_handler(int signo) {
     zlog::error("recieved signal {}: {}", signo, strsignal(signo));
+    print_traceback();
     trigger_gdb();
     exit(-signo);
 }

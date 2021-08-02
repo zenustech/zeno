@@ -2,10 +2,12 @@
 
 namespace zeno {
 
+void print_traceback();
 void trigger_gdb();
 
 ZENO_API Exception::Exception(std::string const &msg) noexcept
     : msg(msg) {
+    print_traceback();
     trigger_gdb();
 }
 
