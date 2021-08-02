@@ -30,7 +30,10 @@ class HistoryStack:
         self.scene.newGraph()
         self.scene.loadGraph(current_scene)
     
-    def record(self):
+    def record(self, clear_stack):
+        if clear_stack:
+            self.init_state()
+
         if self.current_pointer != len(self.stack) - 1:
             self.stack = self.stack[:self.current_pointer + 1]
 
@@ -199,8 +202,8 @@ class QDMGraphicsScene(QGraphicsScene):
         self.nodes.append(node)
         self.addItem(node)
 
-    def record(self):
-        self.history_stack.record()
+    def record(self, clear_stack=False):
+        self.history_stack.record(clear_stack)
         self.setContentChanged(True)
 
     def undo(self):
