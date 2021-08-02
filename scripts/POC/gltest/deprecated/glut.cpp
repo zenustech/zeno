@@ -13,7 +13,8 @@ struct GLUTMainLoop : zeno::INode {
         glViewport(0, 0, nx, ny);
         printf("calling draw function...\n");
         drawFunc->call({});
-        glFlush();
+        glutPostRedisplay();
+        //glFlush();
     }
 
     static void timerFunc(int interval) {
