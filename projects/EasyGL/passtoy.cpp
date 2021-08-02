@@ -8,6 +8,7 @@
 #include "GLShaderObject.h"
 #include "GLProgramObject.h"
 #include "GLFramebuffer.h"
+#include "stb_image.h"
 #include <algorithm>
 
 namespace {
@@ -176,6 +177,44 @@ ZENDEFNODE(PassToyMakeTexture, {
         {"resolution"},
         {"texture"},
         {{"string", "format", "rgb16f"}},
+        {"PassToy"},
+});
+
+struct PassToyLoadImageTexture : zeno::INode {
+    virtual void apply() override {
+        auto path = get_param<std::string>("path");
+        auto texture = std::make_shared<PassToyTexture>();
+        int nx, ny, nc;
+        stbi_set_flip_vertically_on_load(true);
+        zlog::debug("loading image file: {}", path);
+        unsigned char *img = stbi_load(path.c_str(), &nx, &ny, &nc, 0);
+        zlog::debug("loaded {}x{}x{}", nx, ny, nc);
+        int format = GL_RGB;
+        switch (nc) {
+        case 4: format = GL_RGBA; break;
+        case 3: format = GL_RGB; break;
+        case 2: format = GL_RG; break;
+        case 1: format = GL_RED; break;
+        };
+        texture->tex.width = nx;
+        texture->tex.height = ny;
+        texture->tex.type = GL_UNSIGNED_BYTE;
+        texture->tex.format = format;
+        texture->tex.internalformat = format;
+        texture->tex.base = img;
+        texture->tex.initialize();
+        texture->fbo.initialize();
+        texture->fbo.bindToTexture(texture->tex, GL_COLOR_ATTACHMENT0);
+        texture->fbo.checkStatusComplete();
+        stbi_image_free(img);
+        set_output("texture", std::move(texture));
+    }
+};
+
+ZENDEFNODE(PassToyLoadImageTexture, {
+        {},
+        {"texture"},
+        {{"string", "path", ""}},
         {"PassToy"},
 });
 
