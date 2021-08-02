@@ -368,7 +368,7 @@ class NodeEditor(QWidget):
                 '', 'Zensim List File(*.zsl);; All Files(*);;')
         if path != '':
             prog = self.dumpProgram()
-            from zeno import serial
+            from ..system import serial
             data = list(serial.serializeScene(prog['graph']))
             with open(path, 'w') as f:
                 json.dump(data, f)
