@@ -265,8 +265,8 @@
      },
      "params": {},
      "uipos": [
-      -319.3702636718758,
-      1074.2722167968745
+      -243.68666992187585,
+      1052.2995605468745
      ],
      "options": []
     },
@@ -435,8 +435,8 @@
       "name": "uniforms"
      },
      "uipos": [
-      349.8841406249999,
-      979.4988671874994
+      306.8841406249999,
+      982.4988671874994
      ],
      "options": []
     },
@@ -677,19 +677,6 @@
      ],
      "options": []
     },
-    "786a0555-Blackboard": {
-     "name": "Blackboard",
-     "uipos": [
-      -3663.6523437500023,
-      405.0605957031246
-     ],
-     "special": true,
-     "width": 800.0781249999995,
-     "height": 1128.2031250000002,
-     "title": "Blackboard",
-     "content": "Initial velocity: v = (0, 0)",
-     "params": []
-    },
     "070dec8e-Blackboard": {
      "name": "Blackboard",
      "uipos": [
@@ -697,8 +684,8 @@
       689.3701171874995
      ],
      "special": true,
-     "width": 1920.9374999999995,
-     "height": 514.0781249999999,
+     "width": 2131.9374999999995,
+     "height": 508.0781249999999,
      "title": "Blackboard",
      "content": "Shadertoy alike iFrame, iResolution uniforms..",
      "params": []
@@ -762,47 +749,19 @@
       "iTexVelocity"
      ]
     },
-    "37d3ede6-x": {
-     "name": "PortalOut",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "name": "uniforms"
-     },
-     "uipos": [
-      -3371.626782226563,
-      1357.404418945312
-     ],
-     "options": []
-    },
     "0719290b-x": {
      "name": "CachedOnce",
      "inputs": {
       "input": [
-       "85ca451d-x",
-       "textureOut"
+       "168a9c78-PassToyMakeTexturePair",
+       "texturePair"
       ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      -3366.892407226563,
-      1207.404418945312
-     ],
-     "options": []
-    },
-    "58887011-x": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec2 res;\nvoid main() {\n  res = vec2(0);\n}"
-     },
-     "uipos": [
-      -3416.887280273438,
-      475.6033935546873
+      55.07815093993895,
+      1358.6805458068848
      ],
      "options": []
     },
@@ -819,49 +778,8 @@
       "name": "velocity"
      },
      "uipos": [
-      -3103.425219726563,
-      1213.266137695312
-     ],
-     "options": []
-    },
-    "85ca451d-x": {
-     "name": "PassToyApplyShader",
-     "inputs": {
-      "shader": [
-       "c9fc6c7e-x",
-       "shader"
-      ],
-      "uniforms": [
-       "37d3ede6-x",
-       "port"
-      ],
-      "textureIn": null,
-      "textureOut": [
-       "168a9c78-PassToyMakeTexturePair",
-       "texturePair"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -3372.167280273439,
-      989.0933935546872
-     ],
-     "options": []
-    },
-    "c9fc6c7e-x": {
-     "name": "PassToyMakeShader",
-     "inputs": {
-      "source": [
-       "58887011-x",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -3375.887280273438,
-      855.8533935546872
+      320.5453384399393,
+      1343.5422645568842
      ],
      "options": []
     },
@@ -1098,8 +1016,8 @@
       "format": "rg16f"
      },
      "uipos": [
-      -3630.7499999999995,
-      1039.55
+      -204.0294418334979,
+      1340.3261268615724
      ],
      "options": []
     },
@@ -1164,8 +1082,8 @@
      },
      "params": {},
      "uipos": [
-      -5464.91947021484,
-      787.318647460937
+      -4503.794573211667,
+      779.868066864013
      ],
      "options": []
     },
@@ -1178,8 +1096,8 @@
       "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec2 res;\nvec2 vf(ivec2 coor) {\n  return texelFetch(iTexVelocity, coor, 0).rg;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  res = vf(coord);\n  res += vec2(1.0, 0.0) * smoothstep(0.06, 0.0, length(fragCoord - 0.5));\n}"
      },
      "uipos": [
-      -5506.959470214841,
-      410.18864746093726
+      -4545.834573211668,
+      402.7380668640134
      ],
      "options": []
     },
@@ -1192,8 +1110,8 @@
       "name": "uniforms"
      },
      "uipos": [
-      -5459.096472167968,
-      1140.432172851562
+      -4497.9715751647955,
+      1132.9815922546381
      ],
      "options": []
     },
@@ -1206,8 +1124,8 @@
       "name": "velocity"
      },
      "uipos": [
-      -5966.2454711914015,
-      949.5374707031247
+      -5005.120574188229,
+      942.0868901062007
      ],
      "options": []
     },
@@ -1234,8 +1152,8 @@
      },
      "params": {},
      "uipos": [
-      -5461.199470214842,
-      920.558647460937
+      -4500.074573211669,
+      913.1080668640133
      ],
      "options": []
     },
@@ -1252,8 +1170,8 @@
       "name": "impVelocity"
      },
      "uipos": [
-      -5225.407971191404,
-      1011.8374707031248
+      -4264.283074188231,
+      1004.3868901062009
      ],
      "options": []
     },
@@ -1270,8 +1188,8 @@
       "_KEYS": "iTexVelocity"
      },
      "uipos": [
-      -5717.645471191399,
-      949.8374707031248
+      -4756.520574188226,
+      942.3868901062009
      ],
      "options": [],
      "socket_keys": [
@@ -1281,8 +1199,8 @@
     "edabef7d-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      -5999.732971191404,
-      335.9985351562495
+      -5038.6080741882315,
+      328.5479545593256
      ],
      "special": true,
      "width": 1020.3125,
@@ -1468,15 +1386,15 @@
      "name": "CachedOnce",
      "inputs": {
       "input": [
-       "82494632-x",
-       "textureOut"
+       "ac10be9c-IfElse",
+       "result"
       ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      -4386.70665283203,
-      1206.4278564453123
+      -781.1910331726089,
+      1655.130327606201
      ],
      "options": []
     },
@@ -1490,77 +1408,8 @@
       "format": "rgb16f"
      },
      "uipos": [
-      -4650.564245605467,
-      1038.5734375
-     ],
-     "options": []
-    },
-    "d44adab2-x": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec3 res;\nvoid main() {\n  res = 3.0 * vec3(0.375, 0.75, 1.0) * smoothstep(0.1, 0.0, length(fragCoord - 0.5));\n}"
-     },
-     "uipos": [
-      -4436.701525878905,
-      474.6268310546873
-     ],
-     "options": []
-    },
-    "2a5b109c-x": {
-     "name": "PassToyMakeShader",
-     "inputs": {
-      "source": [
-       "d44adab2-x",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -4395.701525878905,
-      854.8768310546873
-     ],
-     "options": []
-    },
-    "82494632-x": {
-     "name": "PassToyApplyShader",
-     "inputs": {
-      "shader": [
-       "2a5b109c-x",
-       "shader"
-      ],
-      "uniforms": [
-       "385d5160-x",
-       "port"
-      ],
-      "textureIn": null,
-      "textureOut": [
-       "7ebe65a6-x",
-       "texturePair"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -4391.981525878906,
-      988.116831054687
-     ],
-     "options": []
-    },
-    "385d5160-x": {
-     "name": "PortalOut",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "name": "uniforms"
-     },
-     "uipos": [
-      -4391.44102783203,
-      1356.4278564453123
+      -1584.311125946045,
+      1406.375908660889
      ],
      "options": []
     },
@@ -1577,23 +1426,10 @@
       "name": "color"
      },
      "uipos": [
-      -4123.23946533203,
-      1212.2895751953122
+      -527.4363456726084,
+      1602.242046356201
      ],
      "options": []
-    },
-    "cb0887ae-Blackboard": {
-     "name": "Blackboard",
-     "uipos": [
-      -4686.249999999999,
-      409.7656249999999
-     ],
-     "special": true,
-     "width": 800.0,
-     "height": 1108.7499999999993,
-     "title": "Blackboard",
-     "content": "Initial color: c = (0, 0, 0)",
-     "params": []
     },
     "9ed0ad2d-NumericFloat": {
      "name": "NumericFloat",
@@ -1690,16 +1526,76 @@
       "defl": ""
      },
      "uipos": [
-      626.0,
-      957.0
+      553.0,
+      960.0
+     ],
+     "options": []
+    },
+    "c31e7fd1-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "initialColor",
+      "defl": ""
+     },
+     "uipos": [
+      -1581.6717773437506,
+      1611.4155517578122
+     ],
+     "options": []
+    },
+    "ac10be9c-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "1c6bb053-CopyTexture",
+       "dstTexture"
+      ],
+      "false": [
+       "7ebe65a6-x",
+       "texturePair"
+      ],
+      "cond": [
+       "c31e7fd1-SubInput",
+       "hasValue"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -1028.4092773437524,
+      1648.553051757812
+     ],
+     "options": []
+    },
+    "1c6bb053-CopyTexture": {
+     "name": "CopyTexture",
+     "inputs": {
+      "srcTexture": [
+       "c31e7fd1-SubInput",
+       "port"
+      ],
+      "dstTexture": [
+       "7ebe65a6-x",
+       "texturePair"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -1310.825000000001,
+      1592.575
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000007,
-    "trans_x": -296,
-    "trans_y": 490
+    "scale": 1.0000000000000002,
+    "trans_x": -1675,
+    "trans_y": 1581
    }
   },
   "main": {
@@ -1765,8 +1661,8 @@
       "_KEYS": "iTexture"
      },
      "uipos": [
-      50.80468749999977,
-      567.3546875
+      77.24218749999977,
+      537.7765624999997
      ],
      "options": [],
      "socket_keys": [
@@ -1814,7 +1710,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexture;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 value = texture(iTexture, fragCoord).rgb;\n  fragColor = vec4(value, 1);\n//  fragColor = vec4(value * 0.5 + 0.5, 1);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexture;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 value = texture(iTexture, fragCoord).rgb;\n  fragColor = vec4(value, 1);\n}"
      },
      "uipos": [
       281.4234375000001,
@@ -1829,10 +1725,7 @@
        "26fa68eb-x",
        "shader"
       ],
-      "uniforms": [
-       "e3a9a688-StableFluid",
-       "uniforms"
-      ],
+      "uniforms": null,
       "textureIn": [
        "7493ac46-x",
        "dict"
@@ -1853,20 +1746,226 @@
     "e3a9a688-StableFluid": {
      "name": "StableFluid",
      "inputs": {
+      "initialColor": [
+       "3a38638f-x",
+       "output"
+      ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      -234.04999999999995,
-      632.3999999999999
+      -322.8499999999999,
+      636.3999999999999
+     ],
+     "options": []
+    },
+    "d633e0dd-x": {
+     "name": "PassToyMakeShader",
+     "inputs": {
+      "source": [
+       "d191424d-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -603.0660766601568,
+      282.3494873046875
+     ],
+     "options": []
+    },
+    "3a38638f-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "12ef6b05-x",
+       "textureOut"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -594.0712036132818,
+      633.9005126953125
+     ],
+     "options": []
+    },
+    "d191424d-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "#version 300 es\nprecision mediump float;\nuniform int iFrame;\nin vec2 fragCoord;\nout vec3 res;\nvoid main() {\n  res = 3.0 * vec3(0.375, 0.75, 1.0) * smoothstep(0.1, 0.0, length(fragCoord - 0.5));\n}"
+     },
+     "uipos": [
+      -644.0660766601568,
+      -97.90051269531261
+     ],
+     "options": []
+    },
+    "12ef6b05-x": {
+     "name": "PassToyApplyShader",
+     "inputs": {
+      "shader": [
+       "d633e0dd-x",
+       "shader"
+      ],
+      "uniforms": null,
+      "textureIn": null,
+      "textureOut": null,
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -599.3460766601575,
+      415.5894873046873
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": -395,
-    "trans_y": 14
+    "trans_x": -1157,
+    "trans_y": -25
+   }
+  },
+  "CopyTexture": {
+   "nodes": {
+    "a481134e-x": {
+     "name": "PassToyMakeShader",
+     "inputs": {
+      "source": [
+       "2749fd09-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      622.6843749999999,
+      408.91849999999994
+     ],
+     "options": []
+    },
+    "c08a23be-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": null,
+      "iTexture": [
+       "71b41c4f-SubInput",
+       "port"
+      ]
+     },
+     "params": {
+      "_KEYS": "iTexture"
+     },
+     "uipos": [
+      371.2531249999996,
+      543.6122499999997
+     ],
+     "options": [],
+     "socket_keys": [
+      "iTexture"
+     ]
+    },
+    "2749fd09-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexture;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 value = texture(iTexture, fragCoord).rgb;\n  fragColor = vec4(value, 1);\n}"
+     },
+     "uipos": [
+      575.4343749999999,
+      33.668499999999995
+     ],
+     "options": []
+    },
+    "332eb81a-x": {
+     "name": "PassToyApplyShader",
+     "inputs": {
+      "shader": [
+       "a481134e-x",
+       "shader"
+      ],
+      "uniforms": null,
+      "textureIn": [
+       "c08a23be-x",
+       "dict"
+      ],
+      "textureOut": [
+       "a3ddcc72-x",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      626.7468750000004,
+      546.3315
+     ],
+     "options": []
+    },
+    "71b41c4f-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "srcTexture",
+      "defl": ""
+     },
+     "uipos": [
+      108.625,
+      366.0000000000001
+     ],
+     "options": []
+    },
+    "a3ddcc72-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "dstTexture",
+      "defl": ""
+     },
+     "uipos": [
+      103.22499999999997,
+      623.7999999999998
+     ],
+     "options": []
+    },
+    "387c2b27-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "332eb81a-x",
+       "textureOut"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "dstTexture",
+      "defl": ""
+     },
+     "uipos": [
+      883.0,
+      575.4000000000001
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 0.8000000000000002,
+    "trans_x": -404,
+    "trans_y": -176
    }
   }
  },
@@ -5797,6 +5896,11 @@
    "inputs": [
     [
      "",
+     "initialColor",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -5810,6 +5914,42 @@
     [
      "",
      "uniforms",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "CopyTexture": {
+   "inputs": [
+    [
+     "",
+     "srcTexture",
+     ""
+    ],
+    [
+     "",
+     "dstTexture",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dstTexture",
      ""
     ],
     [
