@@ -19,6 +19,64 @@ ZENDEFNODE(NumericInt, {
 });
 
 
+struct NumericIVec2 : zeno::INode {
+    virtual void apply() override {
+        auto obj = std::make_unique<zeno::NumericObject>();
+        auto x = get_param<int>("x");
+        auto y = get_param<int>("y");
+        obj->set(zeno::vec2i(x, y));
+        set_output("vec2", std::move(obj));
+    }
+};
+
+ZENDEFNODE(NumericIVec2, {
+    {},
+    {{"numeric:vec2i", "vec2"}},
+    {{"int", "x", "0"}, {"int", "y", "0"}},
+    {"numeric"},
+});
+
+
+struct NumericIVec3 : zeno::INode {
+    virtual void apply() override {
+        auto obj = std::make_unique<zeno::NumericObject>();
+        auto x = get_param<int>("x");
+        auto y = get_param<int>("y");
+        auto z = get_param<int>("z");
+        obj->set(zeno::vec3i(x, y, z));
+        set_output("vec3", std::move(obj));
+    }
+};
+
+ZENDEFNODE(NumericIVec3, {
+    {},
+    {{"numeric:vec3i", "vec3"}},
+    {{"int", "x", "0"}, {"int", "y", "0"}, {"int", "z", "0"}},
+    {"numeric"},
+});
+
+
+struct NumericIVec4 : zeno::INode {
+    virtual void apply() override {
+        auto obj = std::make_unique<zeno::NumericObject>();
+        auto x = get_param<int>("x");
+        auto y = get_param<int>("y");
+        auto z = get_param<int>("z");
+        auto w = get_param<int>("w");
+        obj->set(zeno::vec4i(x, y, z, w));
+        set_output("vec4", std::move(obj));
+    }
+};
+
+ZENDEFNODE(NumericIVec4, {
+    {},
+    {{"numeric:vec4f", "vec4"}},
+    {{"float", "x", "0"}, {"float", "y", "0"},
+     {"float", "z", "0"}, {"float", "w", "0"}},
+    {"numeric"},
+});
+
+
 struct NumericFloat : zeno::INode {
     virtual void apply() override {
         auto obj = std::make_unique<zeno::NumericObject>();

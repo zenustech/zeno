@@ -92,8 +92,8 @@
        "function"
       ],
       "resolution": [
-       "d7fe6c3f-PassToyGetTextureResolution",
-       "resolution"
+       "e56eb0e0-NumericIVec2",
+       "vec2"
       ],
       "SRC": null
      },
@@ -101,7 +101,7 @@
       "interval": 17
      },
      "uipos": [
-      883.5703125000002,
+      884.5703125000002,
       753.8390625
      ],
      "options": [
@@ -242,27 +242,26 @@
      ],
      "options": []
     },
-    "d7fe6c3f-PassToyGetTextureResolution": {
-     "name": "PassToyGetTextureResolution",
+    "e56eb0e0-NumericIVec2": {
+     "name": "NumericIVec2",
      "inputs": {
-      "texture": [
-       "a20e2524-PassToyLoadImageTexture",
-       "texture"
-      ],
       "SRC": null
      },
-     "params": {},
+     "params": {
+      "x": 768,
+      "y": 1024
+     },
      "uipos": [
-      -556.9852812499998,
-      790.8203124999999
+      608.0,
+      883.0
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": -105,
-    "trans_y": 221
+    "trans_x": -65,
+    "trans_y": 345
    }
   },
   "StableFluid": {
@@ -4054,6 +4053,129 @@
     [
      "float",
      "value",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericIVec2": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "numeric:vec2i",
+     "vec2",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "x",
+     "0"
+    ],
+    [
+     "int",
+     "y",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericIVec3": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "numeric:vec3i",
+     "vec3",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "x",
+     "0"
+    ],
+    [
+     "int",
+     "y",
+     "0"
+    ],
+    [
+     "int",
+     "z",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
+  "NumericIVec4": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "numeric:vec4f",
+     "vec4",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "x",
+     "0"
+    ],
+    [
+     "float",
+     "y",
+     "0"
+    ],
+    [
+     "float",
+     "z",
+     "0"
+    ],
+    [
+     "float",
+     "w",
      "0"
     ]
    ],
