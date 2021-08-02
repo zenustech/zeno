@@ -3,7 +3,7 @@ from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 from PySide2.QtSvg import *
 
-from .utils import asset_path, setKeepAspect
+from ..utils import asset_path, setKeepAspect
 
 import os
 import zenvis

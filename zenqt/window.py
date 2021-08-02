@@ -2,8 +2,8 @@ from PySide2.QtGui import *
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 
-from .viewport import DisplayWidget
-from .timeline import TimelineWidget
+from .visualize.viewport import DisplayWidget
+from .visualize.timeline import TimelineWidget
 from .editor import NodeEditor
 
 from .utils import asset_path

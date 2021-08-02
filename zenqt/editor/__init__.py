@@ -11,7 +11,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtSvg import *
 
-from zenutils import go, gen_unique_ident
+from ..system.utils import go, gen_unique_ident
 
 from ..system import launch
 from ..utils import asset_path, fuzzy_search

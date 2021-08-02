@@ -42,8 +42,6 @@ compile_commands.json
 CMakeSettings.json
 
 # binary folders
-/zeno/lib/
-/zenv/
 zeno-windows-*
 zeno-linux-*
 
