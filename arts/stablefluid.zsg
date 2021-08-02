@@ -115,161 +115,6 @@
      ],
      "options": []
     },
-    "9fe1edbe-MakeDict": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": [
-       "edaa4c5a-PrintNumeric",
-       "DST"
-      ],
-      "iFrame": [
-       "4cfd0835-Assign",
-       "dst"
-      ],
-      "iResolution": [
-       "35d18bee-PassToyGetResolution",
-       "resolution"
-      ],
-      "iDeltaTime": [
-       "9ed0ad2d-NumericFloat",
-       "value"
-      ],
-      "iDecayRate": [
-       "6d9aec93-x",
-       "value"
-      ]
-     },
-     "params": {
-      "_KEYS": "iFrame\niResolution\niDeltaTime\niDecayRate"
-     },
-     "uipos": [
-      47.59223632812491,
-      924.3247167968748
-     ],
-     "options": [],
-     "socket_keys": [
-      "iFrame",
-      "iResolution",
-      "iDeltaTime",
-      "iDecayRate"
-     ]
-    },
-    "5c17746f-NumericInt": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": -1
-     },
-     "uipos": [
-      -1303.2952636718742,
-      797.9622167968746
-     ],
-     "options": []
-    },
-    "4cfd0835-Assign": {
-     "name": "Assign",
-     "inputs": {
-      "dst": [
-       "fe27a580-CachedOnce",
-       "output"
-      ],
-      "src": [
-       "2d9d1f44-NumericOperator",
-       "ret"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -490.4952636718749,
-      898.7622167968746
-     ],
-     "options": []
-    },
-    "2d9d1f44-NumericOperator": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "fe27a580-CachedOnce",
-       "output"
-      ],
-      "rhs": [
-       "c8f76c93-NumericInt",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "op_type": "add"
-     },
-     "uipos": [
-      -739.295263671876,
-      945.1622167968746
-     ],
-     "options": []
-    },
-    "c8f76c93-NumericInt": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": 1
-     },
-     "uipos": [
-      -997.6952636718756,
-      1000.3622167968747
-     ],
-     "options": []
-    },
-    "edaa4c5a-PrintNumeric": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "4cfd0835-Assign",
-       "dst"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "hint": "iFrame"
-     },
-     "uipos": [
-      -224.31526367187462,
-      855.2047167968744
-     ],
-     "options": []
-    },
-    "fe27a580-CachedOnce": {
-     "name": "CachedOnce",
-     "inputs": {
-      "input": [
-       "5c17746f-NumericInt",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -1023.857763671876,
-      826.8997167968746
-     ],
-     "options": []
-    },
-    "35d18bee-PassToyGetResolution": {
-     "name": "PassToyGetResolution",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -243.68666992187585,
-      1052.2995605468745
-     ],
-     "options": []
-    },
     "0f8f4f53-x": {
      "name": "MakeMultilineString",
      "inputs": {
@@ -426,8 +271,8 @@
      "name": "PortalIn",
      "inputs": {
       "port": [
-       "9fe1edbe-MakeDict",
-       "dict"
+       "08757255-GenericUniforms",
+       "uniforms"
       ],
       "SRC": null
      },
@@ -435,8 +280,8 @@
       "name": "uniforms"
      },
      "uipos": [
-      306.8841406249999,
-      982.4988671874994
+      -908.2660058593751,
+      493.1458398437496
      ],
      "options": []
     },
@@ -677,19 +522,6 @@
      ],
      "options": []
     },
-    "070dec8e-Blackboard": {
-     "name": "Blackboard",
-     "uipos": [
-      -1335.2246093749995,
-      689.3701171874995
-     ],
-     "special": true,
-     "width": 2131.9374999999995,
-     "height": 508.0781249999999,
-     "title": "Blackboard",
-     "content": "Shadertoy alike iFrame, iResolution uniforms..",
-     "params": []
-    },
     "81c32c28-PortalIn": {
      "name": "PortalIn",
      "inputs": {
@@ -723,8 +555,8 @@
       "name": "finalVelocity"
      },
      "uipos": [
-      356.5073925781253,
-      -266.1706054687502
+      -1085.1820605468738,
+      1222.2229492187485
      ],
      "options": []
     },
@@ -760,8 +592,8 @@
      },
      "params": {},
      "uipos": [
-      55.07815093993895,
-      1358.6805458068848
+      -253.50949554443605,
+      556.202518463135
      ],
      "options": []
     },
@@ -778,8 +610,8 @@
       "name": "velocity"
      },
      "uipos": [
-      320.5453384399393,
-      1343.5422645568842
+      11.957691955564314,
+      541.0642372131344
      ],
      "options": []
     },
@@ -1016,8 +848,8 @@
       "format": "rg16f"
      },
      "uipos": [
-      -204.0294418334979,
-      1340.3261268615724
+      -512.6170883178729,
+      537.8480995178227
      ],
      "options": []
     },
@@ -1393,8 +1225,8 @@
      },
      "params": {},
      "uipos": [
-      -781.1910331726089,
-      1655.130327606201
+      -740.755242156984,
+      909.5858940124513
      ],
      "options": []
     },
@@ -1408,8 +1240,8 @@
       "format": "rgb16f"
      },
      "uipos": [
-      -1584.311125946045,
-      1406.375908660889
+      -1543.8753349304202,
+      660.8314750671393
      ],
      "options": []
     },
@@ -1426,36 +1258,8 @@
       "name": "color"
      },
      "uipos": [
-      -527.4363456726084,
-      1602.242046356201
-     ],
-     "options": []
-    },
-    "9ed0ad2d-NumericFloat": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": 3.0
-     },
-     "uipos": [
-      15.0,
-      744.0
-     ],
-     "options": []
-    },
-    "6d9aec93-x": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": 0.99
-     },
-     "uipos": [
-      247.0,
-      746.4000000000001
+      -487.00055465698324,
+      856.6976127624512
      ],
      "options": []
     },
@@ -1468,8 +1272,8 @@
       "name": "advColor"
      },
      "uipos": [
-      107.40000000000009,
-      -129.48000000000002
+      -1334.2894531249988,
+      1358.9135546874986
      ],
      "options": []
     },
@@ -1506,28 +1310,8 @@
       "defl": ""
      },
      "uipos": [
-      632.4999999999999,
-      -159.99999999999997
-     ],
-     "options": []
-    },
-    "778a77fc-x": {
-     "name": "SubOutput",
-     "inputs": {
-      "port": [
-       "9fe1edbe-MakeDict",
-       "dict"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "type": "",
-      "name": "uniforms",
-      "defl": ""
-     },
-     "uipos": [
-      553.0,
-      960.0
+      -809.189453124999,
+      1328.3935546874989
      ],
      "options": []
     },
@@ -1542,8 +1326,8 @@
       "defl": ""
      },
      "uipos": [
-      -1581.6717773437506,
-      1611.4155517578122
+      -1541.2359863281258,
+      865.8711181640624
      ],
      "options": []
     },
@@ -1566,8 +1350,8 @@
      },
      "params": {},
      "uipos": [
-      -1028.4092773437524,
-      1648.553051757812
+      -987.9734863281274,
+      903.0086181640622
      ],
      "options": []
     },
@@ -1586,16 +1370,28 @@
      },
      "params": {},
      "uipos": [
-      -1310.825000000001,
-      1592.575
+      -1270.3892089843762,
+      847.0305664062503
+     ],
+     "options": []
+    },
+    "08757255-GenericUniforms": {
+     "name": "GenericUniforms",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -1207.9626464843745,
+      508.3813476562498
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -1675,
-    "trans_y": 1581
+    "scale": 0.32768000000000025,
+    "trans_x": -858,
+    "trans_y": -155
    }
   },
   "main": {
@@ -1826,9 +1622,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -1157,
-    "trans_y": -25
+    "scale": 1.25,
+    "trans_x": -216,
+    "trans_y": 204
    }
   },
   "CopyTexture": {
@@ -1966,6 +1762,218 @@
     "scale": 0.8000000000000002,
     "trans_x": -404,
     "trans_y": -176
+   }
+  },
+  "GenericUniforms": {
+   "nodes": {
+    "87b26ba3-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "e07b8695-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -332.7101318359389,
+      274.7499365234373
+     ],
+     "options": []
+    },
+    "1a15f0b9-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "87b26ba3-x",
+       "output"
+      ],
+      "rhs": [
+       "d81f67bf-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      -48.14763183593891,
+      393.0124365234374
+     ],
+     "options": []
+    },
+    "9475af7d-x": {
+     "name": "Assign",
+     "inputs": {
+      "dst": [
+       "87b26ba3-x",
+       "output"
+      ],
+      "src": [
+       "1a15f0b9-x",
+       "ret"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      200.65236816406218,
+      346.6124365234373
+     ],
+     "options": []
+    },
+    "d5a8b76d-x": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "9475af7d-x",
+       "dst"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "hint": "iFrame"
+     },
+     "uipos": [
+      466.8323681640625,
+      303.05493652343716
+     ],
+     "options": []
+    },
+    "e07b8695-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": -1
+     },
+     "uipos": [
+      -605.1476318359371,
+      272.8124365234373
+     ],
+     "options": []
+    },
+    "d81f67bf-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 1
+     },
+     "uipos": [
+      -306.54763183593855,
+      448.2124365234374
+     ],
+     "options": []
+    },
+    "a1e4f391-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 3.0
+     },
+     "uipos": [
+      706.1476318359371,
+      191.85021972656273
+     ],
+     "options": []
+    },
+    "bc2d6502-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       "d5a8b76d-x",
+       "DST"
+      ],
+      "iFrame": [
+       "9475af7d-x",
+       "dst"
+      ],
+      "iResolution": [
+       "e98c92a3-x",
+       "resolution"
+      ],
+      "iDeltaTime": [
+       "a1e4f391-x",
+       "value"
+      ],
+      "iDecayRate": [
+       "e4ac0d48-x",
+       "value"
+      ]
+     },
+     "params": {
+      "_KEYS": "iFrame\niResolution\niDeltaTime\niDecayRate"
+     },
+     "uipos": [
+      738.739868164062,
+      372.1749365234375
+     ],
+     "options": [],
+     "socket_keys": [
+      "iFrame",
+      "iResolution",
+      "iDeltaTime",
+      "iDecayRate"
+     ]
+    },
+    "e4ac0d48-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.99
+     },
+     "uipos": [
+      938.1476318359371,
+      194.25021972656282
+     ],
+     "options": []
+    },
+    "b3cc2fb5-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "bc2d6502-x",
+       "dict"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "uniforms",
+      "defl": ""
+     },
+     "uipos": [
+      1030.1476318359373,
+      414.8502197265627
+     ],
+     "options": []
+    },
+    "e98c92a3-x": {
+     "name": "PassToyGetResolution",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      447.4609619140613,
+      500.1497802734373
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1.0,
+    "trans_x": 39,
+    "trans_y": -85
    }
   }
  },
@@ -5950,6 +5958,32 @@
     [
      "",
      "dstTexture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "GenericUniforms": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "uniforms",
      ""
     ],
     [
