@@ -20,10 +20,7 @@
 #include <execinfo.h>
 #include <cxxabi.h>
 #endif
-#ifdef _WIN64
-#include <intrin.h>
-#include <dbghelp.h>
-
+#ifdef _WIN32
 #include <windows.h>
 // Never directly include <windows.h>. That will bring you evil max/min macros.
 #if defined(min)
@@ -32,6 +29,8 @@
 #if defined(max)
 #undef max
 #endif
+#include <intrin.h>
+#include <dbghelp.h>
 
 #pragma comment(lib, "dbghelp.lib")
 //  https://gist.github.com/rioki/85ca8295d51a5e0b7c56e5005b0ba8b4
@@ -91,7 +90,7 @@ struct StackFrame {
 };
 
 inline std::vector<StackFrame> stack_trace() {
-#if _WIN64
+#if _WIN32
   DWORD machine = IMAGE_FILE_MACHINE_AMD64;
 #else
   DWORD machine = IMAGE_FILE_MACHINE_I386;
@@ -110,7 +109,7 @@ inline std::vector<StackFrame> stack_trace() {
   context.ContextFlags = CONTEXT_FULL;
   RtlCaptureContext(&context);
 
-#if _WIN64
+#if _WIN32
   STACKFRAME frame = {};
   frame.AddrPC.Offset = context.Rip;
   frame.AddrPC.Mode = AddrModeFlat;
@@ -136,7 +135,7 @@ inline std::vector<StackFrame> stack_trace() {
     StackFrame f = {};
     f.address = frame.AddrPC.Offset;
 
-#if _WIN64
+#if _WIN32
     DWORD64 moduleBase = 0;
 #else
     DWORD moduleBase = 0;
@@ -151,7 +150,7 @@ inline std::vector<StackFrame> stack_trace() {
     } else {
       f.module = "Unknown Module";
     }
-#if _WIN64
+#if _WIN32
     DWORD64 offset = 0;
 #else
     DWORD offset = 0;
@@ -294,7 +293,7 @@ void print_traceback() {
       "========================================================================"
       "==================\n");
   printf("\n");
-#elif defined(_WIN64)
+#elif defined(_WIN32)
   // Windows
   fmt::print(fg(fmt::color::magenta), "************************\n");
   fmt::print(fg(fmt::color::magenta), "* Zeno Stack Traceback *\n");

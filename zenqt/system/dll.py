@@ -2,32 +2,35 @@ import ctypes, os
 
 from .utils import rel2abs, os_name
 
-'''
+lib_dir = rel2abs(__file__, '..', 'lib')
+
+#'''
 if os_name == 'win32':
-    dllpath = rel2abs(__file__, 'lib')
-    os.environ['PATH'] += os.pathsep + dllpath
+    os.environ['PATH'] += os.pathsep + lib_dir
     ctypes.cdll.LoadLibrary('zeno.dll')
 elif os_name == 'darwin':
-    ctypes.cdll.LoadLibrary(rel2abs(__file__, 'lib', 'libzeno.dylib'))
+    ctypes.cdll.LoadLibrary(os.path.join(lib_dir, 'libzeno.dylib'))
 else:
-    ctypes.cdll.LoadLibrary(rel2abs(__file__, 'lib', 'libzeno.so'))
-'''
+    ctypes.cdll.LoadLibrary(os.path.join(lib_dir, 'libzeno.so'))
+#'''
 
 from . import pyzeno as core
 
 def loadAutoloads():
-    dir = rel2abs(__file__, 'lib')
-    print('loading addons from', dir)
-    if not os.path.isdir(dir):
+    print('loading addons from', lib_dir)
+    if not os.path.isdir(lib_dir):
         return
 
     paths = []
-    for name in os.listdir(dir):
-        path = os.path.join(dir, name)
+    for name in os.listdir(lib_dir):
+        path = os.path.join(lib_dir, name)
         if os.path.islink(path):
             continue
         if os_name == 'win32':
             if name.endswith('.dll'):
+                paths.append(name)
+        elif os_name == 'darwin':
+            if name.endswith('.dylib'):
                 paths.append(name)
         else:
             if 'so' in name.split(os.extsep):

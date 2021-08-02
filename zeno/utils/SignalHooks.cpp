@@ -1,10 +1,10 @@
 #include <zeno/zeno.h>
 #include <zeno/utils/zlog.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
+#include <cstdio>
+#include <cstdlib>
+#include <csignal>
 #ifdef __linux__
+#include <string.h>
 #include <unistd.h>
 #endif
 
@@ -32,7 +32,15 @@ void trigger_gdb() {
 
 #ifdef ZENO_FAULTHANDLER
 static void signal_handler(int signo) {
+#ifdef __linux__
     zlog::error("recieved signal {}: {}", signo, strsignal(signo));
+#else
+    const char *signame = "SIG-unknown";
+    if (signo == SIGSEGV) signame = "SIGSEGV";
+    if (signo == SIGFPE) signame = "SIGFPE";
+    if (signo == SIGILL) signame = "SIGILL";
+    zlog::error("recieved signal {}: {}", signo, signame);
+#endif
     print_traceback();
     trigger_gdb();
     exit(-signo);
@@ -45,7 +53,9 @@ static int registerMyHandlers() {
     signal(SIGSEGV, signal_handler);
     signal(SIGFPE, signal_handler);
     signal(SIGILL, signal_handler);
+#ifdef __linux__
     signal(SIGBUS, signal_handler);
+#endif
     return 1;
 }
 
