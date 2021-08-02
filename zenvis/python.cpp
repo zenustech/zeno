@@ -35,7 +35,7 @@ std::tuple<float, float, float> get_background_color();
 
 };
 
-PYBIND11_MODULE(pyzenvis, m) {
+PYBIND11_MODULE(zenvis_pybind11_module, m) {
     m.def("initialize", zenvis::initialize);
     m.def("finalize", zenvis::finalize);
     m.def("new_frame", zenvis::new_frame);

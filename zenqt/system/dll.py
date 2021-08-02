@@ -14,7 +14,7 @@ else:
     ctypes.cdll.LoadLibrary(os.path.join(lib_dir, 'libzeno.so'))
 #'''
 
-from . import pyzeno as core
+from .. import zeno_pybind11_module as core
 
 def loadAutoloads():
     print('loading addons from', lib_dir)

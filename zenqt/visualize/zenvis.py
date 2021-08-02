@@ -1,4 +1,4 @@
-from . import pyzenvis as core
+from .. import zenvis_pybind11_module as core
 
 from .system import fileio
 
