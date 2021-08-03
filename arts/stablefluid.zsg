@@ -114,7 +114,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexture;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 value = 0.5+0.5*texture(iTexture, fragCoord).rgb;\n  fragColor = vec4(value, 1);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexture;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 value = texture(iTexture, fragCoord).rgb;\n  fragColor = vec4(value, 1);\n}"
      },
      "uipos": [
       281.4234375000001,
@@ -256,8 +256,8 @@
       "SRC": null
      },
      "params": {
-      "x": 320,
-      "y": 512
+      "x": 640,
+      "y": 1024
      },
      "uipos": [
       902.3874999999999,
@@ -309,8 +309,8 @@
      },
      "params": {},
      "uipos": [
-      -1262.4837500000003,
-      328.4637499999999
+      -1262.48375,
+      327.6637499999998
      ],
      "options": []
     },
@@ -366,9 +366,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -945,
-    "trans_y": -30
+    "scale": 1.0,
+    "trans_x": -836,
+    "trans_y": 99
    }
   },
   "StableFluid": {
@@ -575,7 +575,7 @@
       "SRC": null
      },
      "params": {
-      "value": 50
+      "value": 36
      },
      "uipos": [
       -792.0999999999999,
@@ -803,7 +803,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision highp float;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nuniform sampler2D iTexPressure;\nin vec2 fragCoord;\nout vec2 res;\nvec2 vf(ivec2 coor) {\n  return texelFetch(iTexVelocity, coor, 0).rg;\n}\nfloat pf(ivec2 coor) {\n  return texelFetch(iTexPressure, clamp(coor, ivec2(0), iResolution - 1), 0).r;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  res = vf(coord);\n  float u = pf(coord + ivec2(0, 1));\n  float d = pf(coord + ivec2(0, -1));\n  float r = pf(coord + ivec2(1, 0));\n  float l = pf(coord + ivec2(-1, 0));\n  res -= 0.5 * 1.4 * vec2(r - l, u - d);\n}"
+      "value": "#version 300 es\nprecision highp float;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nuniform sampler2D iTexPressure;\nin vec2 fragCoord;\nout vec2 res;\nvec2 vf(ivec2 coor) {\n  return texelFetch(iTexVelocity, coor, 0).rg;\n}\nfloat pf(ivec2 coor) {\n  return texelFetch(iTexPressure, clamp(coor, ivec2(0), iResolution - 1), 0).r;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  res = vf(coord);\n  float u = pf(coord + ivec2(0, 1));\n  float d = pf(coord + ivec2(0, -1));\n  float r = pf(coord + ivec2(1, 0));\n  float l = pf(coord + ivec2(-1, 0));\n  res -= 0.5 * 2.0 * vec2(r - l, u - d);\n}"
      },
      "uipos": [
       -3115.2514990234395,
@@ -1835,8 +1835,8 @@
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": -1712,
-    "trans_y": -1138
+    "trans_x": -1347,
+    "trans_y": -1123
    }
   },
   "CopyTexture": {

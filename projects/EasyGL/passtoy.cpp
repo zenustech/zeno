@@ -87,61 +87,54 @@ struct PassToyTexture : zeno::IObjectClone<PassToyTexture> {
     GLTextureObject tex;
 };
 
-static GLenum internalformat_from_string(std::string name) {
+static std::tuple<GLenum, GLenum, GLenum>
+internalformat_from_string(std::string name) {
     std::transform(name.begin(), name.end(), name.begin(), ::toupper);
     if (0) {
 #define _EVAL(x) x
-#define _PER_FMT(x) } else if (name == #x) { return _EVAL(GL_##x);
+#define _PER_FMT(x, y, z) \
+    } else if (name == #x) { \
+        return {_EVAL(GL_##x), _EVAL(GL_##y), _EVAL(GL_##z)};
 
-    _PER_FMT(RED)
-    _PER_FMT(R8UI)
-    _PER_FMT(R16UI)
-    _PER_FMT(R32UI)
-    _PER_FMT(R8I)
-    _PER_FMT(R16I)
-    _PER_FMT(R32I)
-    _PER_FMT(R16F)
-    _PER_FMT(R32F)
+    _PER_FMT(RED, RED, UNSIGNED_BYTE)
+    _PER_FMT(R8UI, RED, UNSIGNED_BYTE)
+    _PER_FMT(R16UI, RED, UNSIGNED_SHORT)
+    _PER_FMT(R32UI, RED, UNSIGNED_INT)
+    _PER_FMT(R8I, RED, BYTE)
+    _PER_FMT(R16I, RED, SHORT)
+    _PER_FMT(R32I, RED, INT)
+    _PER_FMT(R16F, RED, HALF_FLOAT)
+    _PER_FMT(R32F, RED, FLOAT)
 
-    _PER_FMT(RG)
-    _PER_FMT(RG8UI)
-    _PER_FMT(RG16UI)
-    _PER_FMT(RG32UI)
-    _PER_FMT(RG8I)
-    _PER_FMT(RG16I)
-    _PER_FMT(RG32I)
-    _PER_FMT(RG16F)
-    _PER_FMT(RG32F)
+    _PER_FMT(RG, RG, UNSIGNED_BYTE)
+    _PER_FMT(RG8UI, RG, UNSIGNED_BYTE)
+    _PER_FMT(RG16UI, RG, UNSIGNED_SHORT)
+    _PER_FMT(RG32UI, RG, UNSIGNED_INT)
+    _PER_FMT(RG8I, RG, BYTE)
+    _PER_FMT(RG16I, RG, SHORT)
+    _PER_FMT(RG32I, RG, INT)
+    _PER_FMT(RG16F, RG, HALF_FLOAT)
+    _PER_FMT(RG32F, RG, FLOAT)
 
-    _PER_FMT(RGB)
-    _PER_FMT(RGB8UI)
-    _PER_FMT(RGB16UI)
-    _PER_FMT(RGB32UI)
-    _PER_FMT(RGB8I)
-    _PER_FMT(RGB16I)
-    _PER_FMT(RGB32I)
-    _PER_FMT(RGB16F)
-    _PER_FMT(RGB32F)
+    _PER_FMT(RGB, RGB, UNSIGNED_BYTE)
+    _PER_FMT(RGB8UI, RGB, UNSIGNED_BYTE)
+    _PER_FMT(RGB16UI, RGB, UNSIGNED_SHORT)
+    _PER_FMT(RGB32UI, RGB, UNSIGNED_INT)
+    _PER_FMT(RGB8I, RGB, BYTE)
+    _PER_FMT(RGB16I, RGB, SHORT)
+    _PER_FMT(RGB32I, RGB, INT)
+    _PER_FMT(RGB16F, RGB, HALF_FLOAT)
+    _PER_FMT(RGB32F, RGB, FLOAT)
 
-    _PER_FMT(RGBA)
-    _PER_FMT(RGBA8UI)
-    _PER_FMT(RGBA16UI)
-    _PER_FMT(RGBA32UI)
-    _PER_FMT(RGBA8I)
-    _PER_FMT(RGBA16I)
-    _PER_FMT(RGBA32I)
-    _PER_FMT(RGBA16F)
-    _PER_FMT(RGBA32F)
-
-    _PER_FMT(RGB5_A1)
-    _PER_FMT(RGB10_A2)
-    _PER_FMT(RGB10_A2UI)
-    _PER_FMT(R8_SNORM)
-    _PER_FMT(RG8_SNORM)
-    _PER_FMT(RGB8_SNORM)
-    _PER_FMT(RGBA8_SNORM)
-    _PER_FMT(R11F_G11F_B10F)
-    _PER_FMT(RGB9_E5)
+    _PER_FMT(RGBA, RGBA, UNSIGNED_BYTE)
+    _PER_FMT(RGBA8UI, RGBA, UNSIGNED_BYTE)
+    _PER_FMT(RGBA16UI, RGBA, UNSIGNED_SHORT)
+    _PER_FMT(RGBA32UI, RGBA, UNSIGNED_INT)
+    _PER_FMT(RGBA8I, RGBA, BYTE)
+    _PER_FMT(RGBA16I, RGBA, SHORT)
+    _PER_FMT(RGBA32I, RGBA, INT)
+    _PER_FMT(RGBA16F, RGBA, HALF_FLOAT)
+    _PER_FMT(RGBA32F, RGBA, FLOAT)
 
 #undef _PER_FMT
 #undef _EVAL
@@ -154,7 +147,10 @@ static auto make_texture(zeno::vec2i resolution, std::string const &format) {
     auto texture = std::make_shared<PassToyTexture>();
     texture->tex.width = resolution[0];
     texture->tex.height = resolution[1];
-    texture->tex.internalformat = internalformat_from_string(format);
+    auto [ifmt, fmt, typ] = internalformat_from_string(format);
+    texture->tex.internalformat = ifmt;
+    texture->tex.format = fmt;
+    texture->tex.type = typ;
     texture->tex.initialize();
     texture->fbo.initialize();
     texture->fbo.bindToTexture(texture->tex, GL_COLOR_ATTACHMENT0);
