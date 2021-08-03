@@ -58,7 +58,7 @@
        "DST"
       ],
       "iTexColor": [
-       "3a38638f-x",
+       "f31a363e-CachedIf",
        "output"
       ],
       "iTexMapping": [
@@ -173,73 +173,8 @@
      },
      "params": {},
      "uipos": [
-      -317.8499999999999,
-      632.3999999999999
-     ],
-     "options": []
-    },
-    "d633e0dd-x": {
-     "name": "PassToyMakeShader",
-     "inputs": {
-      "source": [
-       "d191424d-x",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -757.9098266601567,
-      193.6932373046875
-     ],
-     "options": []
-    },
-    "3a38638f-x": {
-     "name": "CachedOnce",
-     "inputs": {
-      "input": [
-       "3c8d8e91-IfElse",
-       "result"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -1089.1180786132823,
-      877.7567626953124
-     ],
-     "options": []
-    },
-    "d191424d-x": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": "#version 300 es\nprecision mediump float;\nin vec2 fragCoord;\nout vec3 res;\nvoid main() {\n  res = 3.0 * vec3(0.375, 0.75, 1.0) * smoothstep(0.1, 0.0, length(fragCoord - 0.5));\n}"
-     },
-     "uipos": [
-      -798.9098266601567,
-      -186.5567626953126
-     ],
-     "options": []
-    },
-    "12ef6b05-x": {
-     "name": "PassToyApplyShader",
-     "inputs": {
-      "shader": [
-       "d633e0dd-x",
-       "shader"
-      ],
-      "uniforms": null,
-      "textureIn": null,
-      "textureOut": null,
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -756.6898266601573,
-      334.08323730468726
+      -505.34999999999997,
+      737.0874999999997
      ],
      "options": []
     },
@@ -283,8 +218,8 @@
      },
      "params": {},
      "uipos": [
-      -1263.7037499999997,
-      186.4737500000001
+      -1087.14125,
+      80.22375000000011
      ],
      "options": []
     },
@@ -297,8 +232,8 @@
       "value": "#version 300 es\nprecision mediump float;\nin vec2 fragCoord;\nout vec3 res;\nvoid main() {\n  ivec2 coord = ivec2(floor(fragCoord * 16.0));\n  res = vec3((coord.x + coord.y) % 2 == 0 ? 0.23 : 0.9);\n}"
      },
      "uipos": [
-      -1304.7037499999997,
-      -193.77624999999995
+      -1128.14125,
+      -300.02624999999995
      ],
      "options": []
     },
@@ -319,8 +254,8 @@
      },
      "params": {},
      "uipos": [
-      -1262.48375,
-      327.6637499999998
+      -1085.92125,
+      221.41374999999977
      ],
      "options": []
     },
@@ -517,8 +452,8 @@
       "defl": ""
      },
      "uipos": [
-      -319.0,
-      193.0
+      -498.6875,
+      -25.75
      ],
      "options": []
     },
@@ -541,8 +476,8 @@
      },
      "params": {},
      "uipos": [
-      -315.0,
-      441.0
+      -494.6875,
+      222.25000000000006
      ],
      "options": []
     },
@@ -555,8 +490,8 @@
       "value": 250
      },
      "uipos": [
-      -326.0,
-      -173.0
+      -505.6875,
+      -391.75
      ],
      "options": []
     },
@@ -577,8 +512,8 @@
       "op_type": "mod"
      },
      "uipos": [
-      -321.0,
-      2.0
+      -500.6875,
+      -216.75
      ],
      "options": []
     },
@@ -589,16 +524,36 @@
      },
      "params": {},
      "uipos": [
-      -323.0,
-      -310.0
+      -502.6875,
+      -528.75
+     ],
+     "options": []
+    },
+    "f31a363e-CachedIf": {
+     "name": "CachedIf",
+     "inputs": {
+      "input": [
+       "3c8d8e91-IfElse",
+       "result"
+      ],
+      "keepCache": [
+       "6688c9a6-IfElse",
+       "result"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -1086.4,
+      843.2
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -1792,
-    "trans_y": 794
+    "scale": 1.0000000000000002,
+    "trans_x": -966,
+    "trans_y": 163
    }
   },
   "StableFluid": {
@@ -789,7 +744,7 @@
       "SRC": null
      },
      "params": {
-      "value": 36
+      "value": 40
      },
      "uipos": [
       -792.0999999999999,
@@ -2099,9 +2054,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -4126,
-    "trans_y": 178
+    "scale": 0.40960000000000013,
+    "trans_x": -1560,
+    "trans_y": -828
    }
   },
   "CopyTexture": {
