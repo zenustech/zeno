@@ -82,6 +82,54 @@ static zeno::vec2i get_default_resolution() {
     return resolution;
 }
 
+struct PassToyGetResolution : zeno::INode {
+    virtual void apply() override {
+        auto resolution = get_default_resolution();
+        auto res = std::make_shared<zeno::NumericObject>(resolution);
+        set_output("resolution", std::move(res));
+    }
+};
+
+ZENDEFNODE(PassToyGetResolution, {
+        {},
+        {"resolution"},
+        {},
+        {"PassToy"},
+});
+
+struct PassToyDownscaleResolution : zeno::INode {
+    virtual void apply() override {
+        auto scale = get_input<zeno::NumericObject>("scale")->get<int>();
+        auto res = get_default_resolution();
+        res /= scale;
+        glViewport(0, 0, res[0], res[1]);
+    }
+};
+
+ZENDEFNODE(PassToyDownscaleResolution, {
+        {"scale"},
+        {},
+        {},
+        {"PassToy"},
+});
+
+struct PassToyUpscaleResolution : zeno::INode {
+    virtual void apply() override {
+        auto scale = get_input<zeno::NumericObject>("scale")->get<int>();
+        auto res = get_default_resolution();
+        res *= scale;
+        glViewport(0, 0, res[0], res[1]);
+    }
+};
+
+ZENDEFNODE(PassToyUpscaleResolution, {
+        {"scale"},
+        {},
+        {},
+        {"PassToy"},
+});
+
+
 struct PassToyTexture : zeno::IObjectClone<PassToyTexture> {
     GLFramebuffer fbo;
     GLTextureObject tex;
@@ -280,21 +328,6 @@ ZENDEFNODE(PassToyTexturePairSwap, {
 });
 
 
-struct PassToyGetResolution : zeno::INode {
-    virtual void apply() override {
-        auto resolution = get_default_resolution();
-        auto res = std::make_shared<zeno::NumericObject>(resolution);
-        set_output("resolution", std::move(res));
-    }
-};
-
-ZENDEFNODE(PassToyGetResolution, {
-        {},
-        {"resolution"},
-        {},
-        {"PassToy"},
-});
-
 
 struct PassToyApplyShader : zeno::INode {
     virtual void apply() override {
@@ -308,9 +341,6 @@ struct PassToyApplyShader : zeno::INode {
             int i = 0;
             for (auto const &[key, obj]: textureIns->lut) {
                 auto textureIn = zeno::safe_dynamic_cast<PassToyTexture>(obj);
-                if (i == 0) {
-                    resolution = zeno::vec2i(textureIn->tex.width, textureIn->tex.height);
-                }
                 i += 1;
                 //zlog::debug("texture number {} is `{}`", i, key);
                 textureIn->tex.use(i);
@@ -324,8 +354,6 @@ struct PassToyApplyShader : zeno::INode {
         if (has_input<PassToyTexture>("textureOut")) {
             textureOut = get_input<PassToyTexture>("textureOut");
             textureOut->fbo.use();
-            resolution[0] = textureOut->tex.width;
-            resolution[1] = textureOut->tex.height;
         } else if (!has_input("textureOut")) {
             textureOut = make_texture(resolution, "rgb16f");
             textureOut->fbo.use();
@@ -347,7 +375,6 @@ struct PassToyApplyShader : zeno::INode {
         GLVertexAttribInfo vab;
         vab.base = generic_triangle_vertices;
         vab.dim = 2;
-        glViewport(0, 0, resolution[0], resolution[1]);
         drawVertexArrays(GL_TRIANGLES, 3, {vab});
         GLFramebuffer().use();
         set_output("textureOut", std::move(textureOut));

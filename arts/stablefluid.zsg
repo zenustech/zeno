@@ -53,7 +53,10 @@
     "7493ac46-x": {
      "name": "MakeDict",
      "inputs": {
-      "SRC": null,
+      "SRC": [
+       "f55b1a5b-PassToyUpscaleResolution",
+       "DST"
+      ],
       "iTexture": [
        "e3a9a688-StableFluid",
        "color"
@@ -162,7 +165,10 @@
        "9011c136-NumericVec2",
        "vec2"
       ],
-      "SRC": null
+      "SRC": [
+       "8532770f-PassToyDownscaleResolution",
+       "DST"
+      ]
      },
      "params": {},
      "uipos": [
@@ -198,8 +204,8 @@
      },
      "params": {},
      "uipos": [
-      -601.5555786132818,
-      627.8692626953125
+      -323.80557861328197,
+      486.1192626953126
      ],
      "options": []
     },
@@ -305,7 +311,10 @@
       "uniforms": null,
       "textureIn": null,
       "textureOut": null,
-      "SRC": null
+      "SRC": [
+       "8532770f-PassToyDownscaleResolution",
+       "DST"
+      ]
      },
      "params": {},
      "uipos": [
@@ -324,8 +333,8 @@
       "y": 0.2
      },
      "uipos": [
-      -322.99999999999994,
-      427.5999999999999
+      -327.9999999999998,
+      1033.8500000000001
      ],
      "options": []
     },
@@ -363,12 +372,61 @@
       184.0
      ],
      "options": []
+    },
+    "8532770f-PassToyDownscaleResolution": {
+     "name": "PassToyDownscaleResolution",
+     "inputs": {
+      "scale": [
+       "306eb46d-NumericInt",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -1706.5,
+      834.0
+     ],
+     "options": []
+    },
+    "f55b1a5b-PassToyUpscaleResolution": {
+     "name": "PassToyUpscaleResolution",
+     "inputs": {
+      "scale": [
+       "306eb46d-NumericInt",
+       "value"
+      ],
+      "SRC": [
+       "e3a9a688-StableFluid",
+       "DST"
+      ]
+     },
+     "params": {},
+     "uipos": [
+      69.15000000000002,
+      418.34999999999997
+     ],
+     "options": []
+    },
+    "306eb46d-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 2
+     },
+     "uipos": [
+      -1968.8000000000002,
+      853.5999999999999
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -836,
-    "trans_y": 99
+    "scale": 0.8000000000000002,
+    "trans_x": -1103,
+    "trans_y": 241
    }
   },
   "StableFluid": {
@@ -731,7 +789,7 @@
       "SRC": null
      },
      "params": {
-      "name": "advVelocity"
+      "name": "impVelocity"
      },
      "uipos": [
       -2188.375,
@@ -949,7 +1007,7 @@
       "SRC": null
      },
      "params": {
-      "name": "advVelocity"
+      "name": "impVelocity"
      },
      "uipos": [
       -3574.5375,
@@ -1011,7 +1069,7 @@
       "SRC": null
      },
      "params": {
-      "name": "impVelocity"
+      "name": "velocity"
      },
      "uipos": [
       -4515.618749999998,
@@ -1242,7 +1300,7 @@
       "SRC": null
      },
      "params": {
-      "name": "velocity"
+      "name": "advVelocity"
      },
      "uipos": [
       -5005.120574188229,
@@ -1495,7 +1553,7 @@
       "SRC": null
      },
      "params": {
-      "name": "impVelocity"
+      "name": "velocity"
      },
      "uipos": [
       -5690.25,
@@ -1834,9 +1892,9 @@
     }
    },
    "view": {
-    "scale": 1.5625,
-    "trans_x": -1347,
-    "trans_y": -1123
+    "scale": 1.0000000000000002,
+    "trans_x": -2867,
+    "trans_y": -1043
    }
   },
   "CopyTexture": {
@@ -4628,6 +4686,31 @@
     "PassToy"
    ]
   },
+  "PassToyDownscaleResolution": {
+   "inputs": [
+    [
+     "",
+     "scale",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
   "PassToyGetResolution": {
    "inputs": [
     [
@@ -4865,6 +4948,31 @@
      "oldTexture",
      ""
     ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyUpscaleResolution": {
+   "inputs": [
+    [
+     "",
+     "scale",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
     [
      "",
      "DST",
