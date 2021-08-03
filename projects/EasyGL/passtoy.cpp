@@ -228,11 +228,11 @@ struct PassToyLoadImageTexture : zeno::INode {
     virtual void apply() override {
         auto path = get_param<std::string>("path");
         auto texture = std::make_shared<PassToyTexture>();
-        int nx, ny, nc;
+        int nx = 0, ny = 0, nc = 0;
         stbi_set_flip_vertically_on_load(true);
-        zlog::debug("loading image file: {}", path);
+        zlog::info("loading image file: {}", path);
         unsigned char *img = stbi_load(path.c_str(), &nx, &ny, &nc, 0);
-        zlog::debug("loaded {}x{}x{}", nx, ny, nc);
+        zlog::info("loaded {}x{}x{} at {}", nx, ny, nc, (void *)img);
         int format = GL_RGB;
         switch (nc) {
         case 4: format = GL_RGBA; break;
@@ -250,7 +250,8 @@ struct PassToyLoadImageTexture : zeno::INode {
         texture->fbo.initialize();
         texture->fbo.bindToTexture(texture->tex, GL_COLOR_ATTACHMENT0);
         texture->fbo.checkStatusComplete();
-        stbi_image_free(img);
+        if (img)
+            stbi_image_free(img);
         set_output("texture", std::move(texture));
     }
 };
