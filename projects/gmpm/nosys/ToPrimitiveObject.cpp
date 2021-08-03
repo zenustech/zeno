@@ -26,7 +26,7 @@ struct ToPrimitiveObject : INode {
 
     zs::match([&pos, &J](auto &zspars) {
       {
-        auto X = zspars.X.clone({zs::memsrc_e::host, -1});
+        auto X = zspars.attrVector("pos").clone({zs::memsrc_e::host, -1});
         const auto cnt = X.size();
         pos.resize(cnt);
 #pragma omp parallel for
@@ -34,17 +34,17 @@ struct ToPrimitiveObject : INode {
           pos[i] = vec3f{X[i][0], X[i][1], X[i][2]};
       }
       {
-        auto F = zspars.F.clone({zs::memsrc_e::host, -1});
+        auto F = zspars.attrMatrix("F").clone({zs::memsrc_e::host, -1});
         const auto cnt = F.size();
         J.resize(cnt);
 #pragma omp parallel for
         for (int i = 0; i < cnt; ++i) {
-		float sum = 0.f;
-		const auto &f = F[i];
-		for (int d = 0; d < 9; ++d)
-			sum += F[i].data()[d] * ;
+          float sum = 0.f;
+          const auto &f = F[i];
+          for (int d = 0; d < 9; ++d)
+            sum += F[i].data()[d] *;
           J[i] = vec3f{X[i][0], X[i][1], X[i][2]};
-	}
+        }
       }
     })(zspars);
 
