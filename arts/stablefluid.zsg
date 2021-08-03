@@ -57,21 +57,26 @@
        "f55b1a5b-PassToyUpscaleResolution",
        "DST"
       ],
-      "iTexture": [
+      "iTexColor": [
+       "3a38638f-x",
+       "output"
+      ],
+      "iTexMapping": [
        "e3a9a688-StableFluid",
-       "color"
+       "mapping"
       ]
      },
      "params": {
-      "_KEYS": "iTexture"
+      "_KEYS": "iTexColor\niTexMapping"
      },
      "uipos": [
-      77.24218749999977,
-      537.7765624999997
+      78.84218749999977,
+      537.7765624999998
      ],
      "options": [],
      "socket_keys": [
-      "iTexture"
+      "iTexColor",
+      "iTexMapping"
      ]
     },
     "2f86a972-x": {
@@ -117,7 +122,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexture;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec3 value = texture(iTexture, fragCoord).rgb;\n  fragColor = vec4(value, 1);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexColor;\nuniform sampler2D iTexMapping;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec2 coord = texture(iTexMapping, fragCoord).rg;\n  vec3 value = texture(iTexColor, coord).rgb;\n  fragColor = vec4(value, 1);\n}"
      },
      "uipos": [
       281.4234375000001,
@@ -153,10 +158,6 @@
     "e3a9a688-StableFluid": {
      "name": "StableFluid",
      "inputs": {
-      "initialColor": [
-       "3a38638f-x",
-       "output"
-      ],
       "mouse": [
        "c4fcd2c3-IfElse",
        "result"
@@ -200,8 +201,8 @@
      },
      "params": {},
      "uipos": [
-      -323.80557861328197,
-      486.1192626953126
+      -1085.118078613282,
+      874.5567626953126
      ],
      "options": []
     },
@@ -369,8 +370,8 @@
      },
      "params": {},
      "uipos": [
-      69.15000000000002,
-      418.34999999999997
+      72.35000000000002,
+      391.95000000000005
      ],
      "options": []
     },
@@ -455,8 +456,8 @@
       "defl": ""
      },
      "uipos": [
-      -690.25,
-      933.8499999999999
+      -474.87500000000006,
+      1157.3499999999997
      ],
      "options": []
     },
@@ -467,13 +468,13 @@
      },
      "params": {
       "x": 0.5,
-      "y": 0.2,
+      "y": 0.8,
       "z": 0.0,
       "w": 1.0
      },
      "uipos": [
-      -435.8900000000001,
-      1156.67
+      -220.51500000000016,
+      1380.1700000000003
      ],
      "options": []
     },
@@ -496,16 +497,16 @@
      },
      "params": {},
      "uipos": [
-      -434.0999999999999,
-      961.1999999999998
+      -218.72499999999997,
+      1184.7
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.5625,
-    "trans_x": -677,
-    "trans_y": 383
+    "scale": 1.0000000000000002,
+    "trans_x": -474,
+    "trans_y": 69
    }
   },
   "StableFluid": {
@@ -940,7 +941,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision highp float;\nuniform ivec2 iResolution;\nuniform sampler2D iTexVelocity;\nuniform sampler2D iTexPressure;\nin vec2 fragCoord;\nout vec2 res;\nvec2 vf(ivec2 coor) {\n  return texelFetch(iTexVelocity, coor, 0).rg;\n}\nfloat pf(ivec2 coor) {\n  return texelFetch(iTexPressure, clamp(coor, ivec2(0), iResolution - 1), 0).r;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  res = vf(coord);\n  float u = pf(coord + ivec2(0, 1));\n  float d = pf(coord + ivec2(0, -1));\n  float r = pf(coord + ivec2(1, 0));\n  float l = pf(coord + ivec2(-1, 0));\n  res -= 0.5 * 2.0 * vec2(r - l, u - d);\n}"
+      "value": "#version 300 es\nprecision highp float;\nuniform ivec2 iResolution;\nuniform float iPreScale;\nuniform sampler2D iTexVelocity;\nuniform sampler2D iTexPressure;\nin vec2 fragCoord;\nout vec2 res;\nvec2 vf(ivec2 coor) {\n  return texelFetch(iTexVelocity, coor, 0).rg;\n}\nfloat pf(ivec2 coor) {\n  return texelFetch(iTexPressure, clamp(coor, ivec2(0), iResolution - 1), 0).r;\n}\nvoid main() {\n  ivec2 coord = ivec2(fragCoord * vec2(iResolution));\n  res = vf(coord);\n  float u = pf(coord + ivec2(0, 1));\n  float d = pf(coord + ivec2(0, -1));\n  float r = pf(coord + ivec2(1, 0));\n  float l = pf(coord + ivec2(-1, 0));\n  res -= 0.5 * iPreScale * vec2(r - l, u - d);\n}"
      },
      "uipos": [
       -3115.2514990234395,
@@ -1515,7 +1516,7 @@
       "SRC": null
      },
      "params": {
-      "name": "color"
+      "name": "mapping"
      },
      "uipos": [
       -5688.729260253904,
@@ -1549,7 +1550,7 @@
       "SRC": null
      },
      "params": {
-      "name": "advColor"
+      "name": "advMapping"
      },
      "uipos": [
       -5177.441760253905,
@@ -1623,7 +1624,7 @@
      "width": 775.0,
      "height": 979.6874999999994,
      "title": "Blackboard",
-     "content": "Advect color with velocity: c(t + dt, x) = c(t, x - v*dt)",
+     "content": "Advect mapping with velocity: c(t + dt, x) = c(t, x - v*dt)",
      "params": []
     },
     "1119b3c9-PortalOut": {
@@ -1644,15 +1645,15 @@
      "name": "CachedOnce",
      "inputs": {
       "input": [
-       "ac10be9c-IfElse",
-       "result"
+       "1724bf5e-x",
+       "textureOut"
       ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      -2391.4815605163576,
-      527.4716361999516
+      -2327.7315605163576,
+      1077.4716361999517
      ],
      "options": []
     },
@@ -1663,11 +1664,11 @@
       "SRC": null
      },
      "params": {
-      "format": "rgb16f"
+      "format": "rg16f"
      },
      "uipos": [
-      -2913.3516532897943,
-      462.46721725463965
+      -2808.5516532897946,
+      869.8672172546399
      ],
      "options": []
     },
@@ -1681,11 +1682,11 @@
       "SRC": null
      },
      "params": {
-      "name": "color"
+      "name": "mapping"
      },
      "uipos": [
-      -2387.726873016357,
-      343.3333549499515
+      -2333.976873016357,
+      889.5833549499516
      ],
      "options": []
     },
@@ -1695,7 +1696,7 @@
       "SRC": null
      },
      "params": {
-      "name": "advColor"
+      "name": "advMapping"
      },
      "uipos": [
       -3604.0343261718713,
@@ -1732,72 +1733,12 @@
      },
      "params": {
       "type": "",
-      "name": "color",
+      "name": "mapping",
       "defl": ""
      },
      "uipos": [
       -3078.9343261718727,
       1137.658691406249
-     ],
-     "options": []
-    },
-    "c31e7fd1-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "type": "",
-      "name": "initialColor",
-      "defl": ""
-     },
-     "uipos": [
-      -2910.7123046875,
-      667.5068603515628
-     ],
-     "options": []
-    },
-    "ac10be9c-IfElse": {
-     "name": "IfElse",
-     "inputs": {
-      "true": [
-       "1c6bb053-CopyTexture",
-       "dstTexture"
-      ],
-      "false": [
-       "7ebe65a6-x",
-       "texturePair"
-      ],
-      "cond": [
-       "c31e7fd1-SubInput",
-       "hasValue"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -2387.4498046875015,
-      677.1443603515626
-     ],
-     "options": []
-    },
-    "1c6bb053-CopyTexture": {
-     "name": "CopyTexture",
-     "inputs": {
-      "srcTexture": [
-       "c31e7fd1-SubInput",
-       "port"
-      ],
-      "dstTexture": [
-       "7ebe65a6-x",
-       "texturePair"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -2639.8655273437503,
-      648.6663085937506
      ],
      "options": []
     },
@@ -1866,10 +1807,14 @@
       "iVelDecay": [
        "24a57796-x",
        "value"
+      ],
+      "iPreScale": [
+       "9a1e1c15-x",
+       "value"
       ]
      },
      "params": {
-      "_KEYS": "iResolution\niDeltaTime\niColorDecay\niVelDecay"
+      "_KEYS": "iResolution\niDeltaTime\niColorDecay\niVelDecay\niPreScale"
      },
      "uipos": [
       -1536.3795947265612,
@@ -1880,7 +1825,8 @@
       "iResolution",
       "iDeltaTime",
       "iColorDecay",
-      "iVelDecay"
+      "iVelDecay",
+      "iPreScale"
      ]
     },
     "18b57823-x": {
@@ -1947,12 +1893,95 @@
       405.6
      ],
      "options": []
+    },
+    "9a1e1c15-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 2.3
+     },
+     "uipos": [
+      -1290.4,
+      925.6
+     ],
+     "options": []
+    },
+    "f28d5804-x": {
+     "name": "PassToyMakeShader",
+     "inputs": {
+      "source": [
+       "87ddd2f4-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -2567.3914990234343,
+      854.3055883789059
+     ],
+     "options": []
+    },
+    "87ddd2f4-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "#version 300 es\nprecision highp float;\nuniform vec4 iMouse;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec2 res;\nvoid main() {\n  res = fragCoord;\n}"
+     },
+     "uipos": [
+      -2609.431499023435,
+      477.17558837890624
+     ],
+     "options": []
+    },
+    "1724bf5e-x": {
+     "name": "PassToyApplyShader",
+     "inputs": {
+      "shader": [
+       "f28d5804-x",
+       "shader"
+      ],
+      "uniforms": [
+       "19f67a48-x",
+       "port"
+      ],
+      "textureIn": null,
+      "textureOut": [
+       "7ebe65a6-x",
+       "texturePair"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -2570.6714990234377,
+      1008.5455883789062
+     ],
+     "options": []
+    },
+    "19f67a48-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "name": "uniforms"
+     },
+     "uipos": [
+      -2576.568500976564,
+      1223.4191137695311
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.6400000000000001,
-    "trans_x": -2372,
-    "trans_y": -138
+    "scale": 1.25,
+    "trans_x": -3184,
+    "trans_y": 458
    }
   },
   "CopyTexture": {
@@ -6526,11 +6555,6 @@
    "inputs": [
     [
      "",
-     "initialColor",
-     ""
-    ],
-    [
-     "",
      "mouse",
      ""
     ],
@@ -6543,7 +6567,7 @@
    "outputs": [
     [
      "",
-     "color",
+     "mapping",
      ""
     ],
     [
