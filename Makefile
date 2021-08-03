@@ -1,6 +1,8 @@
-O=arts/ZFXv2.zsg
+O=arts/stablefluid.zsg
+default: glrun
 
-default: run
+#O=arts/ZFXv2.zsg
+#default: run
 
 all:
 	cmake -B build
@@ -21,10 +23,19 @@ configure:
 test: all
 	build/tests/zentest
 
+easygl: all
+	build/projects/EasyGL/zeno_EasyGL_main
+
 run: all
 	ZEN_OPEN=$O ./run.sh
 
+glrun: all
+	ZEN_NOFORK=1 ZEN_NOVIEW=1 ZEN_OPEN=$O ./run.sh
+
+gldebug: debug_all
+	ZEN_NOSIGHOOK=1 ZEN_NOVIEW=1 USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh
+
 debug: debug_all
-	USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh
+	ZEN_NOSIGHOOK=1 USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh
 
 .PHONY: all debug_all debug run test configure default

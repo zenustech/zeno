@@ -5,7 +5,6 @@
 #include <zeno/utils/vec.h>
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
-#include <zeno/PrimitiveObject.h>
 
 using std::string;
 using zeno::vec3f;

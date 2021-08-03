@@ -25,21 +25,26 @@ ZENO_API void Scene::loadScene(const char *json) {
     for (int i = 0; i < d.Size(); i++) {
         Value const &di = d[i];
         std::string cmd = di[0].GetString();
-        if (0) {
-        } else if (cmd == "addNode") {
-            getGraph().addNode(di[1].GetString(), di[2].GetString());
-        } else if (cmd == "completeNode") {
-            getGraph().completeNode(di[1].GetString());
-        } else if (cmd == "setNodeParam") {
-            getGraph().setNodeParam(di[1].GetString(), di[2].GetString(), generic_get(di[3]));
-        } else if (cmd == "setNodeOption") {
-            getGraph().setNodeOption(di[1].GetString(), di[2].GetString());
-        } else if (cmd == "bindNodeInput") {
-            getGraph().bindNodeInput(di[1].GetString(), di[2].GetString(), di[3].GetString(), di[4].GetString());
-        } else if (cmd == "switchGraph") {
-            this->switchGraph(di[1].GetString());
-        } else if (cmd == "clearAllState") {
-            this->clearAllState();
+        try {
+            if (0) {
+            } else if (cmd == "addNode") {
+                getGraph().addNode(di[1].GetString(), di[2].GetString());
+            } else if (cmd == "completeNode") {
+                getGraph().completeNode(di[1].GetString());
+            } else if (cmd == "setNodeParam") {
+                getGraph().setNodeParam(di[1].GetString(), di[2].GetString(), generic_get(di[3]));
+            } else if (cmd == "setNodeOption") {
+                getGraph().setNodeOption(di[1].GetString(), di[2].GetString());
+            } else if (cmd == "bindNodeInput") {
+                getGraph().bindNodeInput(di[1].GetString(), di[2].GetString(), di[3].GetString(), di[4].GetString());
+            } else if (cmd == "switchGraph") {
+                this->switchGraph(di[1].GetString());
+            } else if (cmd == "clearAllState") {
+                this->clearAllState();
+            }
+        } catch (zeno::Exception const &e) {
+            printf("exception executing command %d (%s): %s\n",
+                    i, cmd.c_str(), e.what());
         }
     }
 }

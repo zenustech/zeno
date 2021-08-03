@@ -63,7 +63,8 @@ def launchProgram(prog, nframes):
         filepath = os.path.join(g_iopath, 'prog.zsg')
         with open(filepath, 'w') as f:
             json.dump(prog, f)
-        g_proc = subprocess.Popen([sys.executable, '-m', 'zeno', filepath, str(nframes), g_iopath])
+        # TODO: replace with binary executable
+        g_proc = subprocess.Popen([sys.executable, '-m', 'zenqt.system', filepath, str(nframes), g_iopath])
         retcode = g_proc.wait()
         if retcode != 0:
             print('zeno program exited with error code:', retcode)
@@ -74,7 +75,7 @@ def getDescriptors():
         from . import run
         descs = run.dumpDescriptors()
     else:
-        descs = subprocess.check_output([sys.executable, '-m', 'zeno', '--dump-descs'])
+        descs = subprocess.check_output([sys.executable, '-m', 'zenqt.system', '--dump-descs'])
         descs = descs.split(b'==<DESCS>==')[1].decode()
     descs = descs.splitlines()
     descs = [parse_descriptor_line(line) for line in descs

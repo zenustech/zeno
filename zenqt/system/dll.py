@@ -1,35 +1,36 @@
-import os, ctypes, traceback
+import ctypes, os
 
-from zenutils import rel2abs, os_name
+from .utils import rel2abs, os_name
 
-def getInstallDir():
-    return rel2abs(__file__)
+lib_dir = rel2abs(__file__, '..', 'lib')
 
-def getIncludeDir():
-    return rel2abs(__file__, 'include')
+#'''
+if os_name == 'win32':
+    os.environ['PATH'] += os.pathsep + lib_dir
+    ctypes.cdll.LoadLibrary('zeno.dll')
+elif os_name == 'darwin':
+    ctypes.cdll.LoadLibrary(os.path.join(lib_dir, 'libzeno.dylib'))
+else:
+    ctypes.cdll.LoadLibrary(os.path.join(lib_dir, 'libzeno.so'))
+#'''
 
-def getLibraryDir():
-    return rel2abs(__file__, 'lib')
-
-def getCMakeDir():
-    return rel2abs(__file__, 'cmake')
-
-def getAutoloadDir():
-    return rel2abs(__file__, 'lib')
+from .. import zeno_pybind11_module as core
 
 def loadAutoloads():
-    dir = getAutoloadDir()
-    print('loading addons from', dir)
-    if not os.path.isdir(dir):
+    print('loading addons from', lib_dir)
+    if not os.path.isdir(lib_dir):
         return
 
     paths = []
-    for name in os.listdir(dir):
-        path = os.path.join(dir, name)
+    for name in os.listdir(lib_dir):
+        path = os.path.join(lib_dir, name)
         if os.path.islink(path):
             continue
         if os_name == 'win32':
             if name.endswith('.dll'):
+                paths.append(name)
+        elif os_name == 'darwin':
+            if name.endswith('.dylib'):
                 paths.append(name)
         else:
             if 'so' in name.split(os.extsep):
@@ -57,4 +58,4 @@ def loadAutoloads():
 if not os.environ.get('ZEN_NOAUTOLOAD'):
     loadAutoloads()
 
-__all__ = ['getInstallDir', 'getIncludeDir', 'getLibraryDir', 'getAutoloadDir', 'getCMakeDir', 'loadAutoloads']
+__all__ = ['core']

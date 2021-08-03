@@ -1,6 +1,6 @@
-from . import pyzenvis as core
+from .. import zenvis_pybind11_module as core
 
-from zeno import fileio
+from ..system import fileio
 
 
 status = {

@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <zeno/core/Graph.h>
 #include <zeno/core/INode.h>
 #include <memory>

@@ -11,6 +11,9 @@ if (ZENO_ENABLE_OPENMP)
     endif()
 endif()
 
+if (ZENO_FAULTHANDLER)
+    target_compile_definitions(zeno PUBLIC -DZENO_FAULTHANDLER)
+endif()
 if (ZENO_GLOBALSTATE)
     target_compile_definitions(zeno PUBLIC -DZENO_GLOBALSTATE)
 endif()
@@ -25,7 +28,7 @@ target_compile_definitions(zeno PRIVATE -DDLL_ZENO)
 target_include_directories(zeno PUBLIC include)
 
 if (ZENO_ENABLE_PYTHON)
-	set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/zeno/lib)
+	set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/zenqt/lib)
 	set_target_properties(zeno PROPERTIES
 		LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
 		RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}

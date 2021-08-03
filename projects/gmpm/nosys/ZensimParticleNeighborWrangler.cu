@@ -24,6 +24,15 @@
 namespace zeno {
 
 struct ZSParticleNeighborWrangle : zeno::INode {
+  struct Module {
+    Module() = default;
+    bool initialized() { return module != nullptr; }
+    ~Module() {
+      if (initialized())
+        zs::cudri::unloadModuleData{module};
+    }
+    void *module{nullptr};
+  } module;
   virtual void apply() override {
     using namespace zs;
 
@@ -35,9 +44,28 @@ struct ZSParticleNeighborWrangle : zeno::INode {
       parNeighborPtr = std::shared_ptr<zeno::ZenoParticles>(
           get_input<zeno::ZenoParticles>("ZSParticlesNeighbor").get(),
           [](void *) {});
-    else
-      parNeighborPtr = std::make_shared<zeno::ZenoParticles>(
-          *parObjPtr); // clone the other one
+    else {
+      parNeighborPtr =
+          std::make_shared<zeno::ZenoParticles>(*parObjPtr); // copy-ctor
+      if constexpr (true) {
+        fmt::print("indeed copied zeno particles!\n");
+        auto &ref = parObjPtr->get();
+        auto &neighbor = parNeighborPtr->get();
+        match([](auto &&ref, auto &&neighbor) {
+          fmt::print("particle obj comparison {} and {}!\n", demangle(ref),
+                     demangle(neighbor));
+          fmt::print("[size] ref {}, neighbor {}!\n", ref.size(),
+                     neighbor.size());
+          fmt::print("[memspace] ref {}, neighbor {}!\n",
+                     get_memory_source_tag(ref.space()),
+                     get_memory_source_tag(neighbor.space()));
+          fmt::print("[devid] ref {}, neighbor {}!\n", (int)ref.devid(),
+                     (int)neighbor.devid());
+          fmt::print("[X addr] ref {}, neighbor {}!\n", (void *)ref.X.data(),
+                     (void *)neighbor.X.data());
+        })(ref, neighbor);
+      }
+    }
     // ibs
     auto ibsPtr = get_input<zeno::ZenoIndexBuckets>("ZSIndexBuckets");
     // code
@@ -74,13 +102,13 @@ struct ZSParticleNeighborWrangle : zeno::INode {
             return 0;
           },
           par->value);
-      fmt::print("define param: {} dim {}\n", key, dim);
+      // fmt::print("define param: {} dim {}\n", key, dim);
       opts.define_param(key, dim);
     }
 
     /// symbols
     auto def_sym = [&opts](const std::string &key, int dim) {
-      fmt::print("define symbol: @{} dim {}\n", key, dim);
+      // fmt::print("define symbol: @{} dim {}\n", key, dim);
       opts.define_symbol('@' + key, dim);
       opts.define_symbol("@@" + key, dim);
     };
@@ -102,6 +130,32 @@ struct ZSParticleNeighborWrangle : zeno::INode {
     auto prog = compiler.compile(code, opts);
     auto jitCode = assembler.assemble(prog->assembly);
 
+    auto &currentContext = Cuda::context(0);
+    currentContext.setContext();
+    if (!module.initialized()) {
+      /// execute on the current particle object
+      auto wrangleKernelPtxs = cudri::load_all_ptx_files_at();
+      void *state;
+      cudri::linkCreate(0, nullptr, nullptr, &state);
+
+      auto jitSrc = cudri::compile_cuda_source_to_ptx(jitCode);
+      cudri::linkAddData(state, CU_JIT_INPUT_PTX, (void *)jitSrc.data(),
+                         (size_t)jitSrc.size(), "script", 0, NULL, NULL);
+
+      int no = 0;
+      for (auto const &ptx : wrangleKernelPtxs) {
+        auto str = std::string("wrangler") + std::to_string(no++);
+        cudri::linkAddData(state, CU_JIT_INPUT_PTX, (char *)ptx.data(),
+                           ptx.size(), str.data(), 0, NULL, NULL);
+      }
+      void *cubin;
+      size_t cubinSize;
+      cudri::linkComplete(state, &cubin, &cubinSize);
+
+      cudri::loadModuleData(&module.module, cubin);
+      cudri::linkDestroy{state};
+    }
+
     /// symbols
     zs::Vector<AccessorAoSoA> haccessors{prog->symbols.size()};
     auto unitBytes = match([](auto &pars) {
@@ -111,7 +165,7 @@ struct ZSParticleNeighborWrangle : zeno::INode {
         parObjPtr->get());
     for (int i = 0; i < prog->symbols.size(); i++) {
       auto [name, dimid] = prog->symbols[i];
-      printf("channel %d: %s.%d\t", i, name.c_str(), dimid);
+      // printf("channel %d: %s.%d\t", i, name.c_str(), dimid);
       bool isNeighborChannel = false;
       auto targetParPtr = &parObjPtr->get(); // GeneralParticles
       if (name[1] == '@') {
@@ -147,9 +201,12 @@ struct ZSParticleNeighborWrangle : zeno::INode {
           addr = pars.logJp.data();
         }
       })(*targetParPtr);
-      haccessors[i] = zs::AccessorAoSoA{
-          zs::aos_v, addr,  unitBytes,
-          ndim,      dimid, (unsigned short)isNeighborChannel};
+      haccessors[i] = zs::AccessorAoSoA{zs::aos_v,
+                                        addr,
+                                        (unsigned short)unitBytes,
+                                        (unsigned short)ndim,
+                                        (unsigned short)dimid,
+                                        (unsigned short)isNeighborChannel};
       // fmt::print("base: {}\n", haccessors[i].base);
     }
     auto daccessors = haccessors.clone({zs::memsrc_e::device, 0});
@@ -158,42 +215,18 @@ struct ZSParticleNeighborWrangle : zeno::INode {
     zs::Vector<zs::f32> hparams{prog->params.size()};
     for (int i = 0; i < prog->params.size(); i++) {
       auto [name, dimid] = prog->params[i];
-      printf("parameter %d: %s.%d\t", i, name.c_str(), dimid);
+      // printf("parameter %d: %s.%d\t", i, name.c_str(), dimid);
       auto it = std::find(parnames.begin(), parnames.end(),
                           std::make_pair(name, dimid));
       auto value = parvals.at(it - parnames.begin());
-      printf("(valued %f)\n", value);
+      // printf("(valued %f)\n", value);
       hparams[i] = value;
     }
     zs::Vector<zs::f32> dparams = hparams.clone({zs::memsrc_e::device, 0});
 
-    /// execute on the current particle object
-    auto wrangleKernelPtxs = cudri::load_all_ptx_files_at();
-    void *state;
-    cudri::linkCreate(0, nullptr, nullptr, &state);
-
-    auto jitSrc = cudri::compile_cuda_source_to_ptx(jitCode);
-    cudri::linkAddData(state, CU_JIT_INPUT_PTX, (void *)jitSrc.data(),
-                       (size_t)jitSrc.size(), "script", 0, NULL, NULL);
-
-    int no = 0;
-    for (auto const &ptx : wrangleKernelPtxs) {
-      auto str = std::string("wrangler") + std::to_string(no++);
-      cudri::linkAddData(state, CU_JIT_INPUT_PTX, (char *)ptx.data(),
-                         ptx.size(), str.data(), 0, NULL, NULL);
-    }
-    void *cubin;
-    size_t cubinSize;
-    cudri::linkComplete(state, &cubin, &cubinSize);
-
-    void *module;
-    cudri::loadModuleData(&module, cubin);
-
     void *function;
-    cudri::getModuleFunc(&function, module,
+    cudri::getModuleFunc(&function, module.module,
                          "zpc_particle_neighbor_wrangle_kernel");
-
-    auto &currentContext = Cuda::context(0);
 
     // begin kernel launch
     std::size_t cnt;
@@ -235,9 +268,7 @@ struct ZSParticleNeighborWrangle : zeno::INode {
 
     cudri::syncContext();
 
-    cudri::unloadModuleData{module};
-    cudri::linkDestroy{state};
-
+    parNeighborPtr.reset();
     set_output("ZSParticles", get_input("ZSParticles"));
   }
 };

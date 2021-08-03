@@ -4,9 +4,11 @@ from .dll import core
 from .serial import serializeScene
 
 
-def evaluateExpr(expr, frameid):
-    frame = frameid
-    return eval('f' + repr(expr))
+def evaluateExpr(expr, frame):
+    try:
+        return eval('f' + repr(expr))
+    except:
+        return expr
 
 
 def runScene(graphs, nframes, iopath):

@@ -11,7 +11,7 @@ from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 from PySide2.QtOpenGL import *
 
-import zenvis
+from . import zenvis
 
 
 class CameraControl:
@@ -258,4 +258,7 @@ class DisplayWidget(QWidget):
         QMessageBox.information(self, 'Screenshot', msg)
 
     def sizeHint(self):
-        return QSize(1200, 400)
+        if os.environ.get('ZEN_NOVIEW'):
+            return QSize(1200, 0)
+        else:
+            return QSize(1200, 400)
