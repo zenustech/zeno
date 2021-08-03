@@ -18,8 +18,7 @@ namespace {
 static GLShaderObject get_generic_vertex_shader() {
     static GLShaderObject vert;
     if (!vert.impl) {
-        vert.initialize(GL_VERTEX_SHADER, R"GLSL(
-#version 300 es
+        vert.initialize(GL_VERTEX_SHADER, R"GLSL(#version 300 es
 layout (location = 0) in vec2 vPosition;
 out vec2 fragCoord;
 void main() {
