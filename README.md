@@ -163,14 +163,14 @@ python --version  # make sure Python version >= 3.7
 sudo python -m pip install -U pip
 sudo python -m pip install pybind11 numpy PySide2
 
-# Install ccmake to change some configuration
+# Install ccmake to change some configurations(Optional)
 sudo apt-get install cmake-curses-gui
 
 # Install OpenVDB
 # Installing Dependencies (Boost, TBB, Blosc)
 sudo apt-get install -y libboost-iostreams-dev libboost-system-dev libtbb-dev
 # Attention: change your workdir to where you want to put these dependencies
-git clone git@github.com:Blosc/c-blosc.git
+git clone https://github.com/Blosc/c-blosc.git
 cd c-blosc
 git checkout tags/v1.5.0 -b v1.5.0
 mkdir build
@@ -180,9 +180,8 @@ make -j4
 sudo make install
 cd ../..
 # Building OpenVDB
-git clone git@github.com:AcademySoftwareFoundation/openvdb.git
+git clone https://github.com/AcademySoftwareFoundation/openvdb.git --branch=v7.2.1
 cd openvdb
-git checkout v7.2.1
 mkdir build
 cd build
 cmake ..
@@ -212,21 +211,23 @@ Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/
 
 ## Build ZENO
 
-- Linux(Previous)
+- Linux
 
 ```bash
 cmake -B build
 make -C build -j8
 ```
 
-- Ubuntu 20.04
+> Optional: You can change some cmake configurations using ccmake.
 
 ```bash
-# clone ZENO
-git clone git@github.com:zenustech/zeno.git
-cd zeno
-make all -j # you can change cmake configuration using $ ccmake -Bbuild
+cmake -B build
+# change some cmake configurations
+ccmake -Bbuild # change mesher and CUDA to OFF may slove cmake and gpu dependencies issue
+make -C build -j8
 ```
+
+<img src="images/ccmake1.png" alt="ccmake1" style="zoom:98%;" /><img src="images/ccmake2.png" alt="ccmake2" style="zoom:50%;" />
 
 - Windows
 
