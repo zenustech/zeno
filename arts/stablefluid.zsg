@@ -55,8 +55,8 @@
      "inputs": {
       "SRC": null,
       "iTexture": [
-       "3a38638f-x",
-       "output"
+       "e3a9a688-StableFluid",
+       "color"
       ]
      },
      "params": {
@@ -166,8 +166,8 @@
      },
      "params": {},
      "uipos": [
-      -322.8499999999999,
-      634.3999999999999
+      -317.8499999999999,
+      632.3999999999999
      ],
      "options": []
     },
@@ -366,9 +366,9 @@
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -142,
-    "trans_y": 60
+    "scale": 1.0000000000000002,
+    "trans_x": -945,
+    "trans_y": -30
    }
   },
   "StableFluid": {
