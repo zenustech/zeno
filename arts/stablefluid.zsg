@@ -157,13 +157,9 @@
        "3a38638f-x",
        "output"
       ],
-      "mousePos": [
-       "15bda0b9-NumericVec2",
-       "vec2"
-      ],
-      "mouseDir": [
-       "9011c136-NumericVec2",
-       "vec2"
+      "mouse": [
+       "c4fcd2c3-IfElse",
+       "result"
       ],
       "SRC": [
        "8532770f-PassToyDownscaleResolution",
@@ -197,8 +193,8 @@
      "name": "CachedOnce",
      "inputs": {
       "input": [
-       "36569fff-x",
-       "textureOut"
+       "3c8d8e91-IfElse",
+       "result"
       ],
       "SRC": null
      },
@@ -251,8 +247,8 @@
       "path": "assets/image.jpg"
      },
      "uipos": [
-      -1230.391592407227,
-      672.0891601562504
+      -1090.216592407227,
+      1220.5891601562503
      ],
      "options": []
     },
@@ -323,36 +319,6 @@
      ],
      "options": []
     },
-    "15bda0b9-NumericVec2": {
-     "name": "NumericVec2",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "x": 0.5,
-      "y": 0.2
-     },
-     "uipos": [
-      -327.9999999999998,
-      1033.8500000000001
-     ],
-     "options": []
-    },
-    "9011c136-NumericVec2": {
-     "name": "NumericVec2",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "x": 0.0,
-      "y": 1.0
-     },
-     "uipos": [
-      -325.6,
-      832.7999999999997
-     ],
-     "options": []
-    },
     "7bb88f60-SubOutput": {
      "name": "SubOutput",
      "inputs": {
@@ -384,8 +350,8 @@
      },
      "params": {},
      "uipos": [
-      -1706.5,
-      834.0
+      -1834.6250000000002,
+      591.8125000000001
      ],
      "options": []
     },
@@ -417,16 +383,129 @@
       "value": 2
      },
      "uipos": [
-      -1968.8000000000002,
-      853.5999999999999
+      -1837.5500000000004,
+      406.725
+     ],
+     "options": []
+    },
+    "3c8d8e91-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "f214babc-PassToyImageTextureFromVoidPtr",
+       "texture"
+      ],
+      "false": [
+       "a20e2524-PassToyLoadImageTexture",
+       "texture"
+      ],
+      "cond": [
+       "3993348c-SubInput",
+       "hasValue"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -1087.6250000000002,
+      1016.4999999999999
+     ],
+     "options": []
+    },
+    "3993348c-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "image0",
+      "defl": ""
+     },
+     "uipos": [
+      -1350.4250000000004,
+      931.2999999999997
+     ],
+     "options": []
+    },
+    "f214babc-PassToyImageTextureFromVoidPtr": {
+     "name": "PassToyImageTextureFromVoidPtr",
+     "inputs": {
+      "voidPtr": [
+       "3993348c-SubInput",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -1350.4,
+      1179.1999999999998
+     ],
+     "options": []
+    },
+    "756a84aa-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "mouse",
+      "defl": ""
+     },
+     "uipos": [
+      -690.25,
+      933.8499999999999
+     ],
+     "options": []
+    },
+    "95fb423b-NumericVec4": {
+     "name": "NumericVec4",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "x": 0.5,
+      "y": 0.2,
+      "z": 0.0,
+      "w": 1.0
+     },
+     "uipos": [
+      -435.8900000000001,
+      1156.67
+     ],
+     "options": []
+    },
+    "c4fcd2c3-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "756a84aa-x",
+       "port"
+      ],
+      "false": [
+       "95fb423b-NumericVec4",
+       "vec4"
+      ],
+      "cond": [
+       "756a84aa-x",
+       "hasValue"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -434.0999999999999,
+      961.1999999999998
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.8000000000000002,
-    "trans_x": -1103,
-    "trans_y": 241
+    "scale": 1.5625,
+    "trans_x": -677,
+    "trans_y": 383
    }
   },
   "StableFluid": {
@@ -1272,7 +1351,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision highp float;\nuniform vec2 iMousePos;\nuniform vec2 iMouseDir;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec2 res;\nvec2 vf(ivec2 coor) {\n  return texelFetch(iTexVelocity, coor, 0).rg;\n}\nvoid main() {\n  res = texture(iTexVelocity, fragCoord).rg;\n  res += iMouseDir * smoothstep(0.06, 0.0, length(fragCoord - iMousePos));\n}"
+      "value": "#version 300 es\nprecision highp float;\nuniform vec4 iMouse;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec2 res;\nvec2 vf(ivec2 coor) {\n  return texelFetch(iTexVelocity, coor, 0).rg;\n}\nvoid main() {\n  res = texture(iTexVelocity, fragCoord).rg;\n  res += iMouse.zw * smoothstep(0.06, 0.0, length(fragCoord - iMouse.xy));\n}"
      },
      "uipos": [
       -4545.834573211668,
@@ -1378,12 +1457,12 @@
     "edabef7d-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      -5171.4205741882315,
-      303.1573295593255
+      -5038.170574188232,
+      309.3448295593254
      ],
      "special": true,
-     "width": 1162.890625,
-     "height": 886.3281249999998,
+     "width": 1013.890625,
+     "height": 868.9531249999998,
      "title": "Blackboard",
      "content": "Apply impulse to velocity field: v += impulse",
      "params": []
@@ -1836,26 +1915,21 @@
      "name": "MakeDict",
      "inputs": {
       "SRC": null,
-      "iMousePos": [
+      "iMouse": [
        "0e71935f-SubInput",
-       "port"
-      ],
-      "iMouseDir": [
-       "a27732f2-x",
        "port"
       ]
      },
      "params": {
-      "_KEYS": "iMousePos\niMouseDir"
+      "_KEYS": "iMouse"
      },
      "uipos": [
-      -4819.0,
-      651.0
+      -4803.000000000001,
+      670.2000000000002
      ],
      "options": [],
      "socket_keys": [
-      "iMousePos",
-      "iMouseDir"
+      "iMouse"
      ]
     },
     "0e71935f-SubInput": {
@@ -1865,36 +1939,20 @@
      },
      "params": {
       "type": "",
-      "name": "mousePos",
+      "name": "mouse",
       "defl": ""
      },
      "uipos": [
-      -5105.600000000001,
-      406.4
-     ],
-     "options": []
-    },
-    "a27732f2-x": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "type": "",
-      "name": "mouseDir",
-      "defl": ""
-     },
-     "uipos": [
-      -5106.4000000000015,
-      667.9999999999998
+      -4802.600000000003,
+      405.6
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -2867,
-    "trans_y": -1043
+    "scale": 0.6400000000000001,
+    "trans_x": -2372,
+    "trans_y": -138
    }
   },
   "CopyTexture": {
@@ -4766,6 +4824,36 @@
     "PassToy"
    ]
   },
+  "PassToyImageTextureFromVoidPtr": {
+   "inputs": [
+    [
+     "",
+     "voidPtr",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
   "PassToyLoadImageTexture": {
    "inputs": [
     [
@@ -6443,12 +6531,7 @@
     ],
     [
      "",
-     "mousePos",
-     ""
-    ],
-    [
-     "",
-     "mouseDir",
+     "mouse",
      ""
     ],
     [
