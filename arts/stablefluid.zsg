@@ -181,6 +181,10 @@
        "bcc69ad1-x",
        "output"
       ],
+      "imageMask": [
+       "ef66534f-CachedOnce",
+       "output"
+      ],
       "SRC": [
        "a459be0f-PassToyDownscaleResolution",
        "DST"
@@ -189,7 +193,7 @@
      "params": {},
      "uipos": [
       765.4507812499988,
-      505.84531249999975
+      507.09531249999975
      ],
      "options": []
     },
@@ -197,8 +201,8 @@
      "name": "CachedOnce",
      "inputs": {
       "input": [
-       "a20e2524-PassToyLoadImageTexture",
-       "texture"
+       "f9348852-IfElse",
+       "result"
       ],
       "SRC": null
      },
@@ -218,8 +222,8 @@
       "path": "assets/image2.jpeg"
      },
      "uipos": [
-      -660.6845611572276,
-      489.8977539062503
+      -850.6845611572276,
+      384.8977539062503
      ],
      "options": []
     },
@@ -357,8 +361,8 @@
      "name": "CachedOnce",
      "inputs": {
       "input": [
-       "4c423166-x",
-       "texture"
+       "3116ca63-x",
+       "result"
       ],
       "SRC": null
      },
@@ -366,20 +370,6 @@
      "uipos": [
       16.699256896972884,
       1256.5873168945304
-     ],
-     "options": []
-    },
-    "4c423166-x": {
-     "name": "PassToyLoadImageTexture",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "path": "assets/StarryNight.jpg"
-     },
-     "uipos": [
-      -416.75785064697243,
-      1417.4244018554677
      ],
      "options": []
     },
@@ -451,12 +441,224 @@
       19.99999999999983
      ],
      "options": []
+    },
+    "9bdc59ba-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "image0",
+      "defl": ""
+     },
+     "uipos": [
+      -1142.0,
+      467.0
+     ],
+     "options": []
+    },
+    "2a051e74-PassToyImageTextureFromVoidPtr": {
+     "name": "PassToyImageTextureFromVoidPtr",
+     "inputs": {
+      "voidPtr": [
+       "9bdc59ba-SubInput",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -838.0,
+      607.0
+     ],
+     "options": []
+    },
+    "f9348852-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "2a051e74-PassToyImageTextureFromVoidPtr",
+       "texture"
+      ],
+      "false": [
+       "a20e2524-PassToyLoadImageTexture",
+       "texture"
+      ],
+      "cond": [
+       "9bdc59ba-SubInput",
+       "hasValue"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -551.0,
+      518.0
+     ],
+     "options": []
+    },
+    "2f5cda90-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "image2",
+      "defl": ""
+     },
+     "uipos": [
+      -658.0,
+      1536.0511230468749
+     ],
+     "options": []
+    },
+    "984d500c-x": {
+     "name": "PassToyLoadImageTexture",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "path": "assets/StarryNight.jpg"
+     },
+     "uipos": [
+      -366.68456115722756,
+      1453.9488769531247
+     ],
+     "options": []
+    },
+    "0616ab97-x": {
+     "name": "PassToyImageTextureFromVoidPtr",
+     "inputs": {
+      "voidPtr": [
+       "2f5cda90-x",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -354.0,
+      1676.0511230468749
+     ],
+     "options": []
+    },
+    "3116ca63-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "0616ab97-x",
+       "texture"
+      ],
+      "false": [
+       "984d500c-x",
+       "texture"
+      ],
+      "cond": [
+       "2f5cda90-x",
+       "hasValue"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -66.99999999999994,
+      1587.0511230468749
+     ],
+     "options": []
+    },
+    "f0954481-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "6c129dd8-x",
+       "texture"
+      ],
+      "false": [
+       "fc8a3e8c-x",
+       "texture"
+      ],
+      "cond": [
+       "32dfdded-x",
+       "hasValue"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      860.5,
+      1499.5511230468749
+     ],
+     "options": []
+    },
+    "32dfdded-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "image1",
+      "defl": ""
+     },
+     "uipos": [
+      301.99999999999983,
+      1433.5511230468749
+     ],
+     "options": []
+    },
+    "fc8a3e8c-x": {
+     "name": "PassToyLoadImageTexture",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "path": "assets/image2mask.jpg"
+     },
+     "uipos": [
+      560.8154388427723,
+      1366.4488769531247
+     ],
+     "options": []
+    },
+    "6c129dd8-x": {
+     "name": "PassToyImageTextureFromVoidPtr",
+     "inputs": {
+      "voidPtr": [
+       "32dfdded-x",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      573.4999999999999,
+      1588.5511230468749
+     ],
+     "options": []
+    },
+    "ef66534f-CachedOnce": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "f0954481-x",
+       "result"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      872.4999999999998,
+      1341.2499999999998
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.5625,
-    "trans_x": 1163,
-    "trans_y": -261
+    "scale": 0.8000000000000002,
+    "trans_x": -556,
+    "trans_y": 672
    }
   },
   "StableFluid": {
@@ -2692,26 +2894,12 @@
      ],
      "options": []
     },
-    "ef5ed575-x": {
-     "name": "PassToyLoadImageTexture",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "path": "assets/image2mask.jpg"
-     },
-     "uipos": [
-      -8134.160194396967,
-      1818.0288940429677
-     ],
-     "options": []
-    },
     "0877ac07-x": {
      "name": "CachedOnce",
      "inputs": {
       "input": [
-       "ef5ed575-x",
-       "texture"
+       "3cfd62b2-SubInput",
+       "port"
       ],
       "SRC": null
      },
@@ -3224,12 +3412,28 @@
       -691.2499999999994
      ],
      "options": []
+    },
+    "3cfd62b2-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "imageMask",
+      "defl": ""
+     },
+     "uipos": [
+      -7884.999999999995,
+      2088.749999999999
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.6400000000000001,
-    "trans_x": -3588,
-    "trans_y": 75
+    "scale": 0.8000000000000005,
+    "trans_x": -6752,
+    "trans_y": 1218
    }
   },
   "CopyTexture": {
@@ -6797,6 +7001,36 @@
     "PassToy"
    ]
   },
+  "PassToyImageTextureFromVoidPtr": {
+   "inputs": [
+    [
+     "",
+     "voidPtr",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
   "PassToyLoadImageTexture": {
    "inputs": [
     [
@@ -8500,6 +8734,11 @@
     [
      "",
      "starryNight",
+     ""
+    ],
+    [
+     "",
+     "imageMask",
      ""
     ],
     [
