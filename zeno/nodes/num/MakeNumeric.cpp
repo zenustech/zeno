@@ -98,18 +98,13 @@ struct NumericVec2 : zeno::INode {
         auto obj = std::make_unique<zeno::NumericObject>();
         auto x = get_param<float>("x");
         auto y = get_param<float>("y");
-        if(has_input("x"))
-            x = get_input("x")->as<zeno::NumericObject>()->get<float>();
-        if(has_input("y"))
-            y = get_input("y")->as<zeno::NumericObject>()->get<float>();
-        
         obj->set(zeno::vec2f(x, y));
         set_output("vec2", std::move(obj));
     }
 };
 
 ZENDEFNODE(NumericVec2, {
-    {"x", "y"},
+    {},
     {{"numeric:vec2f", "vec2"}},
     {{"float", "x", "0"}, {"float", "y", "0"}},
     {"numeric"},
@@ -122,12 +117,6 @@ struct NumericVec3 : zeno::INode {
         auto x = get_param<float>("x");
         auto y = get_param<float>("y");
         auto z = get_param<float>("z");
-        if(has_input("x"))
-            x = get_input("x")->as<zeno::NumericObject>()->get<float>();
-        if(has_input("y"))
-            y = get_input("y")->as<zeno::NumericObject>()->get<float>();
-        if(has_input("z"))
-            z = get_input("z")->as<zeno::NumericObject>()->get<float>();
         
         obj->set(zeno::vec3f(x, y, z));
         set_output("vec3", std::move(obj));
@@ -135,7 +124,7 @@ struct NumericVec3 : zeno::INode {
 };
 
 ZENDEFNODE(NumericVec3, {
-    {"x", "y", "z"},
+    {},
     {{"numeric:vec3f", "vec3"}},
     {{"float", "x", "0"}, {"float", "y", "0"}, {"float", "z", "0"}},
     {"numeric"},
@@ -149,21 +138,13 @@ struct NumericVec4 : zeno::INode {
         auto y = get_param<float>("y");
         auto z = get_param<float>("z");
         auto w = get_param<float>("w");
-        if(has_input("x"))
-            x = get_input("x")->as<zeno::NumericObject>()->get<float>();
-        if(has_input("y"))
-            y = get_input("y")->as<zeno::NumericObject>()->get<float>();
-        if(has_input("z"))
-            z = get_input("z")->as<zeno::NumericObject>()->get<float>();
-        if(has_input("w"))
-            w = get_input("w")->as<zeno::NumericObject>()->get<float>();
         obj->set(zeno::vec4f(x, y, z, w));
         set_output("vec4", std::move(obj));
     }
 };
 
 ZENDEFNODE(NumericVec4, {
-    {"x", "y", "z", "w"},
+    {},
     {{"numeric:vec4f", "vec4"}},
     {{"float", "x", "0"}, {"float", "y", "0"},
      {"float", "z", "0"}, {"float", "w", "0"}},
