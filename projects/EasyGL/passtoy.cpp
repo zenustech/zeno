@@ -234,8 +234,7 @@ struct PassToyImageTextureFromVoidPtr : zeno::INode {
         auto ny = 1[(int *)p];
         auto img = (unsigned char *)p + 8;
         for (int i = 0; i < nx * ny * 4; i += 4) {
-            //std::swap(img[i + 0], img[i + 3]);
-            //std::swap(img[i + 1], img[i + 2]);
+            std::swap(img[i + 0], img[i + 2]);
         }
         zlog::info("loaded {}x{} at {}", nx, ny, (void *)img);
         texture->tex.width = nx;
@@ -265,7 +264,7 @@ struct PassToyLoadImageTexture : zeno::INode {
         auto path = get_param<std::string>("path");
         auto texture = std::make_shared<PassToyTexture>();
         int nx = 0, ny = 0, nc = 0;
-        stbi_set_flip_vertically_on_load(true);
+        //stbi_set_flip_vertically_on_load(true);
         zlog::info("loading image file: {}", path);
         unsigned char *img = stbi_load(path.c_str(), &nx, &ny, &nc, 0);
         zlog::info("loaded {}x{}x{} at {}", nx, ny, nc, (void *)img);

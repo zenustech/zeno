@@ -122,7 +122,7 @@
       "SRC": null
      },
      "params": {
-      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexColor;\nuniform sampler2D iTexMapping;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec2 coord = texture(iTexMapping, fragCoord).rg;\n  vec3 value = texture(iTexColor, coord).rgb;\n  fragColor = vec4(value, 1);\n}"
+      "value": "#version 300 es\nprecision mediump float;\nuniform sampler2D iTexColor;\nuniform sampler2D iTexMapping;\nin vec2 fragCoord;\nout vec4 fragColor;\nvoid main() {\n  vec2 coord = texture(iTexMapping, fragCoord).rg;\n  coord.y = 1.0 - coord.y;\n  vec3 value = texture(iTexColor, coord).rgb;\n  fragColor = vec4(value, 1);\n}"
      },
      "uipos": [
       281.4234375000001,
@@ -551,9 +551,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -966,
-    "trans_y": 163
+    "scale": 1.25,
+    "trans_x": -403,
+    "trans_y": -129
    }
   },
   "StableFluid": {
