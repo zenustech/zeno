@@ -1,3 +1,4 @@
+#include <GL/freeglut_std.h>
 #include <zeno/zeno.h>
 #include <zeno/types/FunctionObject.h>
 #include <zeno/types/NumericObject.h>
@@ -16,7 +17,8 @@ struct GLUTMainLoop : zeno::INode {
         glClear(GL_COLOR_BUFFER_BIT);
         zlog::trace("calling draw function...");
         drawFunc->call({});
-        glFlush();
+        glutSwapBuffers();
+        glutPostRedisplay();
     }
 
     static void timerFunc(int interval) {
@@ -33,7 +35,7 @@ struct GLUTMainLoop : zeno::INode {
         const char *argv[] = {"make_glut_happy", NULL};
         int argc = sizeof(argv) / sizeof(argv[0]) - 1;
         glutInit(&argc, (char **)argv);
-        glutInitDisplayMode(GLUT_DEPTH | GLUT_SINGLE | GLUT_RGBA);
+        glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
         glutInitWindowPosition(100, 100);
         glutInitWindowSize(nx, ny);
         glutCreateWindow("GLUT Window");
