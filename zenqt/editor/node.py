@@ -14,8 +14,6 @@ class QDMGraphicsNode(QGraphicsItem):
         font.setPointSize(style['title_text_size'])
         self.title.setFont(font)
 
-        self.collapse_button = QDMGraphicsCollapseButton(self)
-        self.collapse_button.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT * 0.84)
         self.collapsed = False
         self.name = None
         self.ident = None
@@ -27,9 +25,6 @@ class QDMGraphicsNode(QGraphicsItem):
         self.inputs = {}
         self.outputs = {}
         self.options = {}
-
-        self.initDummySockets()
-        self.initCondButtons()
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
@@ -87,7 +82,10 @@ class QDMGraphicsNode(QGraphicsItem):
         self.dummy_output_socket = s
         self.dummy_output_socket.hide()
 
-    def initCondButtons(self):
+    def initButtons(self):
+        self.collapse_button = QDMGraphicsCollapseButton(self)
+        self.collapse_button.setPos(HORI_MARGIN * 0.5, -TEXT_HEIGHT * 0.84)
+
         cond_keys = ['ONCE', 'PREP', 'MUTE', 'VIEW']
         for i, key in enumerate(cond_keys):
             button = QDMGraphicsButton(self)
@@ -111,6 +109,9 @@ class QDMGraphicsNode(QGraphicsItem):
             self.scene().removeItem(output)
 
     def initSockets(self):
+        self.initButtons()
+        self.initDummySockets()
+
         inputs = self.desc['inputs']
         outputs = self.desc['outputs']
         params = self.desc['params']

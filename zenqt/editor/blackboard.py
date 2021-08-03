@@ -48,7 +48,7 @@ class QDMGraphicsBlackboardResizeHelper(QGraphicsItem):
         self.setCursor(Qt.ArrowCursor)
 
 
-class QDMGraphicsNode_Blackboard(QGraphicsItem):
+class QDMGraphicsNode_Blackboard(QDMGraphicsNode):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -160,6 +160,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
             'height': self.height,
             'title': self.title.toPlainText(),
             'content': self.content.toPlainText(),
+            'inputs': {},
             'params': []
         }
         return self.ident, data
