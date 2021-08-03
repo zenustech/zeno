@@ -162,6 +162,10 @@
        "c4fcd2c3-IfElse",
        "result"
       ],
+      "keepCache": [
+       "6688c9a6-IfElse",
+       "result"
+      ],
       "SRC": [
        "8532770f-PassToyDownscaleResolution",
        "DST"
@@ -501,12 +505,100 @@
       1184.7
      ],
      "options": []
+    },
+    "ba3c122d-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "keepCache",
+      "defl": ""
+     },
+     "uipos": [
+      -319.0,
+      193.0
+     ],
+     "options": []
+    },
+    "6688c9a6-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "ba3c122d-SubInput",
+       "port"
+      ],
+      "false": [
+       "79c32a31-NumericOperator",
+       "ret"
+      ],
+      "cond": [
+       "ba3c122d-SubInput",
+       "hasValue"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -315.0,
+      441.0
+     ],
+     "options": []
+    },
+    "89382e36-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 250
+     },
+     "uipos": [
+      -326.0,
+      -173.0
+     ],
+     "options": []
+    },
+    "79c32a31-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "78398185-FrameCounter",
+       "frameNumber"
+      ],
+      "rhs": [
+       "89382e36-NumericInt",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "mod"
+     },
+     "uipos": [
+      -321.0,
+      2.0
+     ],
+     "options": []
+    },
+    "78398185-FrameCounter": {
+     "name": "FrameCounter",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -323.0,
+      -310.0
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": -474,
-    "trans_y": 69
+    "trans_x": -1065,
+    "trans_y": -503
    }
   },
   "StableFluid": {
@@ -1641,22 +1733,6 @@
      ],
      "options": []
     },
-    "206c8952-x": {
-     "name": "CachedOnce",
-     "inputs": {
-      "input": [
-       "1724bf5e-x",
-       "textureOut"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -2327.7315605163576,
-      1077.4716361999517
-     ],
-     "options": []
-    },
     "7ebe65a6-x": {
      "name": "PassToyMakeTexturePair",
      "inputs": {
@@ -1676,7 +1752,7 @@
      "name": "PortalIn",
      "inputs": {
       "port": [
-       "206c8952-x",
+       "a5e042cc-CachedIf",
        "output"
       ],
       "SRC": null
@@ -1976,12 +2052,48 @@
       1223.4191137695311
      ],
      "options": []
+    },
+    "a5e042cc-CachedIf": {
+     "name": "CachedIf",
+     "inputs": {
+      "input": [
+       "1724bf5e-x",
+       "textureOut"
+      ],
+      "keepCache": [
+       "9f7e043a-SubInput",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -2325.0,
+      1071.0
+     ],
+     "options": []
+    },
+    "9f7e043a-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "keepCache",
+      "defl": ""
+     },
+     "uipos": [
+      -2323.0,
+      1245.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -3184,
-    "trans_y": 458
+    "scale": 1.0,
+    "trans_x": -3157,
+    "trans_y": 718
    }
   },
   "CopyTexture": {
@@ -2121,85 +2233,9 @@
     "trans_y": 211
    }
   },
-  "GenericUniforms": {
+  "FrameCounter": {
    "nodes": {
-    "87b26ba3-x": {
-     "name": "CachedOnce",
-     "inputs": {
-      "input": [
-       "e07b8695-x",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -332.7101318359389,
-      274.7499365234373
-     ],
-     "options": []
-    },
-    "1a15f0b9-x": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "87b26ba3-x",
-       "output"
-      ],
-      "rhs": [
-       "d81f67bf-x",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "op_type": "add"
-     },
-     "uipos": [
-      -48.14763183593891,
-      393.0124365234374
-     ],
-     "options": []
-    },
-    "9475af7d-x": {
-     "name": "Assign",
-     "inputs": {
-      "dst": [
-       "87b26ba3-x",
-       "output"
-      ],
-      "src": [
-       "1a15f0b9-x",
-       "ret"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      200.65236816406218,
-      346.6124365234373
-     ],
-     "options": []
-    },
-    "d5a8b76d-x": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "9475af7d-x",
-       "dst"
-      ],
-      "SRC": null
-     },
-     "params": {
-      "hint": "iFrame"
-     },
-     "uipos": [
-      466.8323681640625,
-      303.05493652343716
-     ],
-     "options": []
-    },
-    "e07b8695-x": {
+    "c0c14749-x": {
      "name": "NumericInt",
      "inputs": {
       "SRC": null
@@ -2208,12 +2244,12 @@
       "value": -1
      },
      "uipos": [
-      -605.1476318359371,
-      272.8124365234373
+      -84.1476318359372,
+      210.29999999999995
      ],
      "options": []
     },
-    "d81f67bf-x": {
+    "cc2de6fd-x": {
      "name": "NumericInt",
      "inputs": {
       "SRC": null
@@ -2222,115 +2258,94 @@
       "value": 1
      },
      "uipos": [
-      -306.54763183593855,
-      448.2124365234374
+      214.45236816406134,
+      385.70000000000005
      ],
      "options": []
     },
-    "a1e4f391-x": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": 3.0
-     },
-     "uipos": [
-      706.1476318359371,
-      191.85021972656273
-     ],
-     "options": []
-    },
-    "bc2d6502-x": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": [
-       "d5a8b76d-x",
-       "DST"
-      ],
-      "iFrame": [
-       "9475af7d-x",
-       "dst"
-      ],
-      "iResolution": [
-       "e98c92a3-x",
-       "resolution"
-      ],
-      "iDeltaTime": [
-       "a1e4f391-x",
-       "value"
-      ],
-      "iDecayRate": [
-       "e4ac0d48-x",
-       "value"
-      ]
-     },
-     "params": {
-      "_KEYS": "iFrame\niResolution\niDeltaTime\niDecayRate"
-     },
-     "uipos": [
-      738.739868164062,
-      372.1749365234375
-     ],
-     "options": [],
-     "socket_keys": [
-      "iFrame",
-      "iResolution",
-      "iDeltaTime",
-      "iDecayRate"
-     ]
-    },
-    "e4ac0d48-x": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": 0.99
-     },
-     "uipos": [
-      938.1476318359371,
-      194.25021972656282
-     ],
-     "options": []
-    },
-    "b3cc2fb5-x": {
+    "30e8f866-x": {
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "bc2d6502-x",
-       "dict"
+       "6155a454-x",
+       "dst"
       ],
       "SRC": null
      },
      "params": {
       "type": "",
-      "name": "uniforms",
+      "name": "frameNumber",
       "defl": ""
      },
      "uipos": [
-      1030.1476318359373,
-      414.8502197265627
+      982.1476318359372,
+      259.33778320312535
      ],
      "options": []
     },
-    "e98c92a3-x": {
-     "name": "PassToyGetResolution",
+    "6155a454-x": {
+     "name": "Assign",
      "inputs": {
+      "dst": [
+       "e203a5a0-x",
+       "output"
+      ],
+      "src": [
+       "6165c2b5-x",
+       "ret"
+      ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      447.4609619140613,
-      500.1497802734373
+      721.6523681640621,
+      284.0999999999999
+     ],
+     "options": []
+    },
+    "6165c2b5-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "e203a5a0-x",
+       "output"
+      ],
+      "rhs": [
+       "cc2de6fd-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      472.852368164061,
+      330.5
+     ],
+     "options": []
+    },
+    "e203a5a0-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "c0c14749-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      188.28986816406098,
+      212.23749999999995
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.6400000000000001,
-    "trans_x": -376,
-    "trans_y": -322
+    "scale": 1,
+    "trans_x": -188,
+    "trans_y": -165
    }
   }
  },
@@ -6560,6 +6575,11 @@
     ],
     [
      "",
+     "keepCache",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -6623,7 +6643,7 @@
    ],
    "is_subgraph": true
   },
-  "GenericUniforms": {
+  "FrameCounter": {
    "inputs": [
     [
      "",
@@ -6634,7 +6654,7 @@
    "outputs": [
     [
      "",
-     "uniforms",
+     "frameNumber",
      ""
     ],
     [
