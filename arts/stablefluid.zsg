@@ -537,7 +537,7 @@
        "result"
       ],
       "keepCache": [
-       "6688c9a6-IfElse",
+       "e622922f-IfElse",
        "result"
       ],
       "SRC": null
@@ -548,12 +548,66 @@
       843.2
      ],
      "options": []
+    },
+    "6850d248-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "type": "",
+      "name": "keepImage",
+      "defl": ""
+     },
+     "uipos": [
+      -863.25,
+      579.8499999999999
+     ],
+     "options": []
+    },
+    "e622922f-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "6850d248-SubInput",
+       "port"
+      ],
+      "false": [
+       "801a1b5d-NumericInt",
+       "value"
+      ],
+      "cond": [
+       "6850d248-SubInput",
+       "hasValue"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -1088.4,
+      652.8000000000002
+     ],
+     "options": []
+    },
+    "801a1b5d-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 1
+     },
+     "uipos": [
+      -1085.15,
+      477.8000000000002
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -403,
-    "trans_y": -129
+    "trans_x": -1205,
+    "trans_y": 5
    }
   },
   "StableFluid": {
