@@ -21,7 +21,14 @@ namespace zlog {
 
 #if ZLOG_USE_ANDROID
     static inline void log_print(LogLevel level, const char *msg) {
-        __android_log_print(ANDROID_LOG_INFO, "zlog", "%s", msg);
+        __android_log_print(level == LogLevel::trace ? ANDROID_LOG_VERBOSE :
+            level == LogLevel::debug ? ANDROID_LOG_DEBUG :
+            level == LogLevel::info ? ANDROID_LOG_INFO :
+            level == LogLevel::critical ? ANDROID_LOG_WARN :
+            level == LogLevel::warning ? ANDROID_LOG_WARN :
+            level == LogLevel::error ? ANDROID_LOG_ERROR :
+            level == LogLevel::fatal ? ANDROID_LOG_FATAL :
+            ANDROID_LOG_INFO, "zlog", "%s", msg);
     }
 #else
     static inline void log_print(LogLevel level, const char *msg) {
