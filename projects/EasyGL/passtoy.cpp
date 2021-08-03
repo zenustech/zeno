@@ -233,6 +233,10 @@ struct PassToyImageTextureFromVoidPtr : zeno::INode {
         auto nx = 0[(int *)p];
         auto ny = 1[(int *)p];
         auto img = (unsigned char *)p + 8;
+        for (int i = 0; i < nx * ny * 4; i += 4) {
+            //std::swap(img[i + 0], img[i + 3]);
+            //std::swap(img[i + 1], img[i + 2]);
+        }
         zlog::info("loaded {}x{} at {}", nx, ny, (void *)img);
         texture->tex.width = nx;
         texture->tex.height = ny;
