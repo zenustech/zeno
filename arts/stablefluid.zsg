@@ -205,8 +205,8 @@
      },
      "params": {},
      "uipos": [
-      -1085.118078613282,
-      874.5567626953126
+      -1089.1180786132823,
+      877.7567626953124
      ],
      "options": []
     },
@@ -460,8 +460,8 @@
       "defl": ""
      },
      "uipos": [
-      -474.87500000000006,
-      1157.3499999999997
+      -135.79687500000003,
+      985.1312499999997
      ],
      "options": []
     },
@@ -477,8 +477,8 @@
       "w": 1.0
      },
      "uipos": [
-      -220.51500000000016,
-      1380.1700000000003
+      -140.43687500000013,
+      1430.9512500000003
      ],
      "options": []
     },
@@ -501,8 +501,8 @@
      },
      "params": {},
      "uipos": [
-      -218.72499999999997,
-      1184.7
+      -138.64687499999994,
+      1235.48125
      ],
      "options": []
     },
@@ -596,9 +596,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -1065,
-    "trans_y": -503
+    "scale": 1.25,
+    "trans_x": -1792,
+    "trans_y": 794
    }
   },
   "StableFluid": {
@@ -745,22 +745,6 @@
       "iTexVelocityDiv"
      ]
     },
-    "88daaae0-CachedOnce": {
-     "name": "CachedOnce",
-     "inputs": {
-      "input": [
-       "9241ad3d-PassToyMakeTexturePair",
-       "texturePair"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -3377.535583496092,
-      448.49707031250034
-     ],
-     "options": []
-    },
     "9e57be15-BeginFor": {
      "name": "BeginFor",
      "inputs": {
@@ -879,7 +863,7 @@
      "name": "PortalIn",
      "inputs": {
       "port": [
-       "88daaae0-CachedOnce",
+       "477717dc-x",
        "output"
       ],
       "SRC": null
@@ -888,8 +872,8 @@
       "name": "pressure"
      },
      "uipos": [
-      -3376.5683959960916,
-      599.6712890625
+      -3366.968395996091,
+      594.8712890624998
      ],
      "options": []
     },
@@ -1074,8 +1058,8 @@
       "name": "finalVelocity"
      },
      "uipos": [
-      -3354.9269335937474,
-      1031.488085937498
+      -3351.8019335937474,
+      1164.3005859374982
      ],
      "options": []
     },
@@ -1100,27 +1084,11 @@
       "iTexVelocity"
      ]
     },
-    "0719290b-x": {
-     "name": "CachedOnce",
-     "inputs": {
-      "input": [
-       "168a9c78-PassToyMakeTexturePair",
-       "texturePair"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -3830.4885604858387,
-      448.81573867797886
-     ],
-     "options": []
-    },
     "df10b678-x": {
      "name": "PortalIn",
      "inputs": {
       "port": [
-       "0719290b-x",
+       "62d0cf3b-CachedIf",
        "output"
       ],
       "SRC": null
@@ -1775,8 +1743,8 @@
       "name": "advMapping"
      },
      "uipos": [
-      -3604.0343261718713,
-      1168.1786914062486
+      -3610.2843261718713,
+      1218.1786914062488
      ],
      "options": []
     },
@@ -1813,8 +1781,8 @@
       "defl": ""
      },
      "uipos": [
-      -3078.9343261718727,
-      1137.658691406249
+      -3085.1843261718727,
+      1187.6586914062493
      ],
      "options": []
     },
@@ -2084,16 +2052,56 @@
       "defl": ""
      },
      "uipos": [
-      -2323.0,
-      1245.0
+      -3597.0625000000005,
+      750.0000000000001
+     ],
+     "options": []
+    },
+    "62d0cf3b-CachedIf": {
+     "name": "CachedIf",
+     "inputs": {
+      "input": [
+       "168a9c78-PassToyMakeTexturePair",
+       "texturePair"
+      ],
+      "keepCache": [
+       "9f7e043a-SubInput",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -3832.8,
+      439.19999999999993
+     ],
+     "options": []
+    },
+    "477717dc-x": {
+     "name": "CachedIf",
+     "inputs": {
+      "input": [
+       "9241ad3d-PassToyMakeTexturePair",
+       "texturePair"
+      ],
+      "keepCache": [
+       "9f7e043a-SubInput",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -3368.8000000000006,
+      429.59999999999997
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.0,
-    "trans_x": -3157,
-    "trans_y": 718
+    "trans_x": -4126,
+    "trans_y": 178
    }
   },
   "CopyTexture": {

@@ -281,6 +281,8 @@ struct PassToyLoadImageTexture : zeno::INode {
         texture->tex.type = GL_UNSIGNED_BYTE;
         texture->tex.format = format;
         texture->tex.internalformat = format;
+        //texture->tex.minFilter = GL_LINEAR_MIPMAP_LINEAR;
+        //texture->tex.magFilter = GL_LINEAR_MIPMAP_LINEAR;
         texture->tex.base = img;
         texture->tex.initialize();
         texture->fbo.initialize();
