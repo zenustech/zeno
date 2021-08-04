@@ -19,9 +19,9 @@ struct Context {
 
 
 struct Session {
-    std::map<std::string, std::function<void(Context &)>> nodes;
+    std::map<std::string, std::function<void(Context *)>> nodes;
     std::map<int, std::any> objects;
-} session;
+};
 
 
 
@@ -30,27 +30,27 @@ struct Invocation {
     std::vector<int> inputs;
     std::vector<int> outputs;
 
-    void operator()() {
-        auto const &node = session.nodes.at(node_name);
+    void invoke(Session *session) {
+        auto const &node = session->nodes.at(node_name);
         Context ctx;
         ctx.inputs.resize(inputs.size());
         for (int i = 0; i < inputs.size(); i++) {
-            ctx.inputs[i] = session.objects.at(inputs[i]);
+            ctx.inputs[i] = session->objects.at(inputs[i]);
         }
         ctx.outputs.resize(outputs.size());
-        node(ctx);
+        node(&ctx);
         for (int i = 0; i < outputs.size(); i++) {
-            session.objects[outputs[i]] = ctx.outputs[i];
+            session->objects[outputs[i]] = ctx.outputs[i];
         }
     }
 };
 
 
-void myadd(Context &ctx) {
-    auto x = std::any_cast<int>(ctx.inputs[0]);
-    auto y = std::any_cast<int>(ctx.inputs[1]);
+void myadd(Context *ctx) {
+    auto x = std::any_cast<int>(ctx->inputs[0]);
+    auto y = std::any_cast<int>(ctx->inputs[1]);
     auto z = x + y;
-    ctx.outputs[0] = z;
+    ctx->outputs[0] = z;
 }
 
 
@@ -61,36 +61,6 @@ struct Graph {
     };
     std::vector<Node> nodes;
 };
-
-
-/*struct ReverseSorter {
-    std::set<int> visited;
-    std::map<int, std::vector<int>> rev_links;
-
-    std::vector<int> result;
-
-    void build(Graph const &graph) {
-        for (int dst_node = 0; dst_node < graph.nodes.size(); dst_node++) {
-            auto const &node = graph.nodes.at(dst_node);
-            for (auto const &[src_node, src_sock]: node.inputs) {
-                rev_links[src_node].push_back(dst_node);
-            }
-        }
-    }
-
-    void touch(int key) {
-        if (auto it = visited.find(key); it != visited.end()) {
-            return;
-        }
-        result.push_back(key);
-        visited.insert(key);
-        if (auto it = rev_links.find(key); it != rev_links.end()) {
-            for (auto const &target: it->second) {
-                touch(target);
-            }
-        }
-    }
-};*/
 
 
 struct ForwardSorter {
