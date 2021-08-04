@@ -100,7 +100,8 @@ struct ForwardSorter {
             auto &link = links[dst_node];
             auto const &node = graph.nodes.at(dst_node);
             for (auto const &[src_node, src_sock]: node.inputs) {
-                link.push_back(src_node);
+                if (src_node != -1)
+                    link.push_back(src_node);
             }
         }
     }
@@ -127,7 +128,8 @@ struct ForwardSorter {
             Invocation invo;
             invo.node_name = node.name;
             for (auto const &source: node.inputs) {
-                invo.inputs.push_back(lut.at(source));
+                if (source.first != -1)
+                    invo.inputs.push_back(lut.at(source));
             }
             for (int sockid = 0; sockid < node.num_outputs; sockid++) {
                 auto id = lutid++;
