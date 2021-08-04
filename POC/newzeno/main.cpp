@@ -63,7 +63,7 @@ struct Graph {
 };
 
 
-struct Sorter {
+struct ReverseSorter {
     std::set<int> visited;
     std::map<int, std::vector<int>> rev_links;
 
@@ -93,15 +93,45 @@ struct Sorter {
 };
 
 
+struct Sorter {
+    std::set<int> visited;
+    std::map<int, std::vector<int>> links;
+
+    std::vector<int> result;
+
+    void build(Graph const &graph) {
+        for (int dst_node = 0; dst_node < graph.nodes.size(); dst_node++) {
+            auto &link = links[dst_node];
+            auto const &node = graph.nodes.at(dst_node);
+            for (auto const &[src_node, src_sock]: node.inputs) {
+                link.push_back(src_node);
+            }
+        }
+    }
+
+    void touch(int key) {
+        if (auto it = visited.find(key); it != visited.end()) {
+            return;
+        }
+        visited.insert(key);
+        if (auto it = links.find(key); it != links.end()) {
+            for (auto const &source: it->second) {
+                touch(source);
+            }
+        }
+        result.push_back(key);
+    }
+};
+
+
 int main() {
     Graph graph;
-    graph.nodes.push_back({"start", {}});
-    graph.nodes.push_back({"hisfunc", {{2, 0}}});
-    graph.nodes.push_back({"myfunc", {{0, 0}}});
+    graph.nodes.push_back({"myfunc", {}});
+    graph.nodes.push_back({"hisfunc", {{0, 0}}});
 
     Sorter sorter;
     sorter.build(graph);
-    sorter.touch(0);
+    sorter.touch(1);
 
     for (auto key: sorter.result) {
         std::cout << key << std::endl;
