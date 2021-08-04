@@ -16,18 +16,13 @@ struct Method {
     std::vector<ArgInfo> returns;
 };
 
-struct Node {
-    int type;
-};
-
-struct Link {
-    int src_node, dst_node;
-    int src_socket, dst_socket;
+struct Invoke {
+    int method;
+    std::vector<std::pair<int, int>> arguments;
 };
 
 std::vector<Method> methods;
-std::vector<Node> nodes;
-std::vector<Link> links;
+std::vector<Invoke> invokes;
 
 void gen_method_declare(Method const &method) {
     std::cout << "std::tuple\n";
@@ -38,6 +33,7 @@ void gen_method_declare(Method const &method) {
         std::cout << method.arguments[a].name;
         std::cout << "\n";
     }
+    std::cout << (method.returns.size() ? ">" : "<>") << "\n";
     std::cout << method.name << "\n";
     for (int a = 0; a < (int)method.arguments.size(); a++) {
         std::cout << (a == 0 ? "( " : ", ");
@@ -57,4 +53,15 @@ void codegen() {
 }
 
 int main() {
+    methods.emplace_back();
+    methods.back().arguments.resize(2);
+    methods.back().returns.resize(1);
+    methods.back().arguments[0].type = "int";
+    methods.back().arguments[0].name = "lhs";
+    methods.back().arguments[1].type = "int";
+    methods.back().arguments[1].name = "rhs";
+    methods.back().returns[0].type = "int";
+    methods.back().returns[0].name = "ret";
+    methods.back().name = "my_add";
+    codegen();
 }
