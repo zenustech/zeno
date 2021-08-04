@@ -12,7 +12,10 @@
 
 
 
-struct Context;
+struct Context {
+    std::vector<std::any> inputs;
+    std::vector<std::any> outputs;
+};
 
 
 struct Session {
@@ -21,11 +24,6 @@ struct Session {
 } session;
 
 
-struct Context {
-    std::vector<std::any> inputs;
-    std::vector<std::any> outputs;
-};
-
 
 struct Invocation {
     std::string node_name;
@@ -33,7 +31,7 @@ struct Invocation {
     std::vector<int> outputs;
 
     void operator()() {
-        auto &node = session.nodes.at(node_name);
+        auto const &node = session.nodes.at(node_name);
         Context ctx;
         ctx.inputs.resize(inputs.size());
         for (int i = 0; i < inputs.size(); i++) {
