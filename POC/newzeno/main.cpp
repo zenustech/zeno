@@ -8,15 +8,15 @@
 #include <map>
 #include <any>
 
-template <typename F, typename Ret, typename A, typename... Rest>
+template <class F, class Ret, class A, class... Rest>
 A helper(Ret (F::*)(A, Rest...));
 
 template <class F, class Ret, class A, class... Rest>
 A helper(Ret (F::*)(A, Rest...) const);
 
-template<typename F>
+template <class F>
 struct first_argument {
-    typedef decltype( helper(&F::operator()) ) type;
+    using type = decltype(helper(&F::operator()));
 };
 
 struct IMethod {
@@ -40,13 +40,13 @@ struct Method : IMethod {
     }
 };
 
-template <class T, class F>
+template <class F>
 auto make_method(F &&func) {
-    return Method<F, T>(std::move(func));
+    return Method<F, typename first_argument<F>::type>(std::move(func));
 }
 
 int main() {
-    auto method = make_method<int>([=] (int val) -> int {
+    auto method = make_method([=] (int val) -> int {
         return -val;
     });
     int ret = std::any_cast<int>(method(1));

@@ -146,6 +146,8 @@ If you find the binary version didn't worked properly or some error message has 
 You need a C++17 compiler, CMake 3.12+, and Python 3.6+ to build ZENO; Pybind11, NumPy and PySide2 (Qt for Python) to run ZENO editor.
 Other requirements like GLAD are self-contained and you don't have to worry installing them manually.
 
+> Hint: for Python, please try avoid using virtualenv and Conda if possible.
+
 - Arch Linux
 
 ```bash
