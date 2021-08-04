@@ -30,7 +30,7 @@ struct Invocation {
     std::vector<int> inputs;
     std::vector<int> outputs;
 
-    void invoke(Session *session) {
+    void invoke(Session *session) const {
         auto const &node = session->nodes.at(node_name);
         Context ctx;
         ctx.inputs.resize(inputs.size());
@@ -51,6 +51,11 @@ void myadd(Context *ctx) {
     auto y = std::any_cast<int>(ctx->inputs[1]);
     auto z = x + y;
     ctx->outputs[0] = z;
+}
+
+
+void makeint(Context *ctx) {
+    ctx->outputs[0] = 21;
 }
 
 
@@ -123,19 +128,19 @@ struct ForwardSorter {
 
 void print_invocation(Invocation const &invo) {
     std::cout << "[";
-    bool first = true;
+    bool had = false;
     for (auto const &output: invo.outputs) {
-        if (!first) std::cout << ", ";
-        else first = true;
+        if (had) std::cout << ", ";
+        else had = true;
         std::cout << output;
     }
     std::cout << "] = ";
     std::cout << invo.node_name;
     std::cout << "(";
-    first = true;
+    had = false;
     for (auto const &input: invo.inputs) {
-        if (!first) std::cout << ", ";
-        else first = true;
+        if (had) std::cout << ", ";
+        else had = true;
         std::cout << input;
     }
     std::cout << ");\n";
@@ -144,8 +149,8 @@ void print_invocation(Invocation const &invo) {
 
 int main() {
     Graph graph;
-    graph.nodes.push_back({"myfunc", {}});
-    graph.nodes.push_back({"hisfunc", {{0, 0}}});
+    graph.nodes.push_back({"makeint", {}});
+    graph.nodes.push_back({"myadd", {{0, 0}, {0, 0}}});
 
     ForwardSorter sorter(graph); sorter.touch(1);
     auto invos = sorter.linearize();
@@ -153,9 +158,12 @@ int main() {
         print_invocation(invo);
     }
 
-    /*session.nodes["myadd"] = myadd;
-    session.objects[0] = 40;
-    session.objects[1] = 2;
-    Invocation{"myadd", {0, 1}, {2}}();
-    std::cout << std::any_cast<int>(session.objects.at(2)) << std::endl;*/
+    Session session;
+    session.nodes["makeint"] = makeint;
+    session.nodes["myadd"] = myadd;
+
+    for (auto const &invo: invos) {
+        invo.invoke(&session);
+    }
+    return 0;
 }
