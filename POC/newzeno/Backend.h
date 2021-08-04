@@ -62,7 +62,7 @@ struct Invocation {
     std::vector<int> inputs;
     std::vector<int> outputs;
 
-    void invoke(Scope *scope) const {
+    void apply(Scope *scope) const {
         auto const &node = scope->session->nodes.at(node_name);
         Context ctx;
         ctx.inputs.resize(inputs.size());

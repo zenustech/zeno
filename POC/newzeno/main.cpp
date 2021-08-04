@@ -37,7 +37,7 @@ int main() {
 
     auto scope = zeno::v2::backend::Session::get().makeScope();
     for (auto const &invo: ir->invos) {
-        invo.invoke(scope.get());
+        invo.apply(scope.get());
     }
 
     return 0;
