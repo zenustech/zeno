@@ -6,8 +6,8 @@
 #include <string>
 #include <tuple>
 #include <map>
+#include <set>
 #include <any>
-#include "Method.h"
 
 
 
@@ -54,10 +54,55 @@ void myadd(Context &ctx) {
 }
 
 
+struct Graph {
+    struct Node {
+        std::string name;
+        std::vector<std::pair<int, int>> inputs;
+    };
+    std::vector<Node> nodes;
+};
+
+struct Sorter {
+    std::set<int> visited;
+    std::map<int, std::vector<int>> rev_links;
+
+    void build(Graph const &graph) {
+        for (int dst_node = 0; dst_node < graph.nodes.size(); dst_node++) {
+            auto const &node = graph.nodes.at(dst_node);
+            for (auto const &[src_node, src_sock]: node.inputs) {
+                rev_links[src_node].push_back(dst_node);
+            }
+        }
+    }
+
+    void touch(int key) {
+        if (auto it = visited.find(key); it != visited.end()) {
+            return;
+        }
+        std::cout << key << std::endl;
+        visited.insert(key);
+        if (auto it = rev_links.find(key); it != rev_links.end()) {
+            for (auto const &target: it->second) {
+                touch(target);
+            }
+        }
+    }
+};
+
+
 int main() {
-    session.nodes["myadd"] = myadd;
+    Graph graph;
+    graph.nodes.push_back({"start", {}});
+    graph.nodes.push_back({"hisfunc", {{2, 0}}});
+    graph.nodes.push_back({"myfunc", {{0, 0}}});
+
+    Sorter sorter;
+    sorter.build(graph);
+    sorter.touch(0);
+
+    /*session.nodes["myadd"] = myadd;
     session.objects[0] = 40;
     session.objects[1] = 2;
     Invocation{"myadd", {0, 1}, {2}}();
-    std::cout << std::any_cast<int>(session.objects.at(2)) << std::endl;
+    std::cout << std::any_cast<int>(session.objects.at(2)) << std::endl;*/
 }
