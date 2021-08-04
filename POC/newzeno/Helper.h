@@ -112,9 +112,9 @@ auto wrap_context_function(F func) {
     };
 }
 
-#define ZENO_DEFINE_NODE(name) \
+#define ZENO_DEFINE_NODE(name, ...) \
 static auto _zeno_def_##name = \
     ::zeno::v2::backend::Session::get().defineNode(#name, \
-        ::zeno::v2::helpers::wrap_context_function(name));
+        ::zeno::v2::helpers::wrap_context_function(name), {__VA_ARGS__});
 
 }

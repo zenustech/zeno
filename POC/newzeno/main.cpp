@@ -8,17 +8,17 @@ int myadd(int x, int y) {
     auto z = x + y;
     return z;
 }
-ZENO_DEFINE_NODE(myadd);
+ZENO_DEFINE_NODE(myadd, {"ret"}, {"x", "y"});
 
 int makeint() {
     return 21;
 }
-ZENO_DEFINE_NODE(makeint);
+ZENO_DEFINE_NODE(makeint, {"value"}, {});
 
 void printint(int x) {
     std::cout << "printint: " << x << std::endl;
 }
-ZENO_DEFINE_NODE(printint);
+ZENO_DEFINE_NODE(printint, {}, {});
 
 
 int main() {
