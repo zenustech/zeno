@@ -93,7 +93,7 @@ struct ReverseSorter {
 };
 
 
-struct Sorter {
+struct ForwardSorter {
     std::set<int> visited;
     std::map<int, std::vector<int>> links;
 
@@ -129,7 +129,7 @@ int main() {
     graph.nodes.push_back({"myfunc", {}});
     graph.nodes.push_back({"hisfunc", {{0, 0}}});
 
-    Sorter sorter;
+    ForwardSorter sorter;
     sorter.build(graph);
     sorter.touch(1);
 
