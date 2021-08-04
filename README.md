@@ -162,8 +162,13 @@ python --version  # make sure Python version >= 3.7
 sudo python -m pip install -U pip
 sudo python -m pip install pybind11 numpy PySide2
 
-# Install ccmake to change some configurations(Optional)
+# Install ccmake to change some configurations(Necessary!Otherwise you get an empty zeno)
 sudo apt-get install cmake-curses-gui
+
+suggested Extension Setup(if you have confidence with your GPU and CUDA version, also turn ON those CUDA related stuffs)
+![extension](images/extension1.png)
+![extension](images/extension2.png)
+
 
 # Install OpenVDB
 # Installing Dependencies (Boost, TBB, Blosc)
