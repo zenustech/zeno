@@ -12,6 +12,11 @@ RUN sed -i s@/security.ubuntu.com/@/mirrors.aliyun.com/@g /etc/apt/sources.list
 
 RUN apt-get update
 RUN apt-get upgrade -y
+
+#################################
+# Begin installing dependencies #
+#################################
+
 RUN apt-get install -y wget
 RUN apt-get install -y git
 RUN apt-get install -y gcc
@@ -30,7 +35,7 @@ RUN apt-get install -y libopenblas-dev
 RUN git clone https://gitee.com/codespace1212/c-blosc.git --depth=1 --branch=v1.5.0
 RUN cd c-blosc && mkdir build && cd build && cmake .. && make -j32 && make install && cd ../..
 
-RUN git clone https://gitee.com/zeng_gui/openvdb.git --depth=1
+RUN git clone https://gitee.com/zeng_gui/openvdb.git --depth=1 --branch=v7.2.1
 RUN cd openvdb && mkdir build && cd build && cmake .. && make -j32 && make install && cd ../..
 
 #################################################

@@ -3,8 +3,8 @@
 
 #include "../ZensimGeometry.h"
 #include "../ZensimModel.h"
-#include "zensim/simulation/mpm/Simulator.hpp"
 #include "zensim/container/Vector.hpp"
+#include "zensim/simulation/mpm/Simulator.hpp"
 #include "zensim/tpls/fmt/color.h"
 #include "zensim/tpls/fmt/format.h"
 
@@ -17,7 +17,7 @@ struct ToZensimParticles : zeno::INode {
     auto inParticles = get_input("ParticleObject")->as<ParticlesObject>();
     auto outParticles = zeno::IObject::make<ZenoParticles>();
     const auto size = inParticles->size();
-    outParticles->get() = zs::Particles<zs::f32, 3>{};
+    outParticles->get() = zs::Particles<zs::f32, 3>{size, zs::memsrc_e::um, 0};
 
     const bool hasPlasticity =
         model.index() ==
@@ -36,35 +36,36 @@ struct ToZensimParticles : zeno::INode {
             using TM = typename PT::TM;
             using ModelT = zs::remove_cvref_t<decltype(model)>;
 
-            res.M = zs::Vector<T>{size, zs::memsrc_e::um, 0};
-            res.X = zs::Vector<TV>{size, zs::memsrc_e::um, 0};
-            res.V = zs::Vector<TV>{size, zs::memsrc_e::um, 0};
+            res.addAttr("mass", zs::scalar_v);
+            res.addAttr("vel", zs::vector_v);
             if (hasF)
-              res.F = zs::Vector<TM>{size, zs::memsrc_e::um, 0};
+              res.addAttr("F", zs::matrix_v);
             else
-              res.J = zs::Vector<T>{size, zs::memsrc_e::um, 0};
-            res.C = zs::Vector<TM>{size, zs::memsrc_e::um, 0};
+              res.addAttr("J", zs::scalar_v);
+            res.addAttr("C", zs::matrix_v);
             if (hasPlasticity)
-              res.logJp = zs::Vector<T>{size, zs::memsrc_e::um, 0};
+              res.addAttr("logJp", zs::scalar_v);
 
             auto mass = model.volume * model.rho;
-            for (auto &&m : res.M)
+            for (auto &&m : res.attrScalar("mass"))
               m = mass;
-            for (auto &&[dst, src] : zs::zip(res.X, inParticles->pos))
+            for (auto &&[dst, src] :
+                 zs::zip(res.attrVector("pos"), inParticles->pos))
               dst = TV{src[0], src[1], src[2]};
-            for (auto &&[dst, src] : zs::zip(res.V, inParticles->vel))
+            for (auto &&[dst, src] :
+                 zs::zip(res.attrVector("vel"), inParticles->vel))
               dst = TV{src[0], src[1], src[2]};
-            for (auto &&c : res.C)
+            for (auto &&c : res.attrMatrix("C"))
               c = TM{0, 0, 0, 0, 0, 0, 0, 0, 0};
             if (hasF)
-              for (auto &&f : res.F)
+              for (auto &&f : res.attrMatrix("F"))
                 f = TM{1, 0, 0, 0, 1, 0, 0, 0, 1};
             else
-              for (auto &&j : res.J)
+              for (auto &&j : res.attrScalar("J"))
                 j = 1.f;
             if constexpr (std::is_same_v<ModelT, zs::NACCConfig> ||
                           std::is_same_v<ModelT, zs::DruckerPragerConfig>) {
-              for (auto &&logjp : res.logJp)
+              for (auto &&logjp : res.attrScalar("logJp"))
                 logjp = model.logJp0;
             }
           })(model, outParticles->get());

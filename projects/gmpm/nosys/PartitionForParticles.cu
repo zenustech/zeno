@@ -60,7 +60,7 @@ struct SpatialPartitionForParticles : zeno::INode {
       zs::match([&ret, &cudaPol, dx, blocklen](auto &p) {
         cudaPol({p.size()},
                 zs::ComputeSparsity{zs::wrapv<zs::execspace_e::cuda>{}, dx,
-                                    blocklen, ret, p.X});
+                                    blocklen, ret, p.attrVector("pos")});
       })(particles);
     }
 

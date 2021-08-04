@@ -365,13 +365,15 @@ class NodeEditor(QWidget):
 
     def do_export(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Export',
-                '', 'Zensim List File(*.zsl);; All Files(*);;')
+                '', 'C++ Header File(*.h);; All Files(*);;')
         if path != '':
             prog = self.dumpProgram()
             from ..system import serial
             data = list(serial.serializeScene(prog['graph']))
             with open(path, 'w') as f:
+                f.write('R"ZSL(')
                 json.dump(data, f)
+                f.write(')ZSL"\n')
 
     def do_copy(self):
         itemList = self.scene.selectedItems()

@@ -157,25 +157,25 @@ struct ZSParticlesWrangle : zeno::INode {
         match([&ndim, &addr, dim, name = name, unitBytes](auto &pars) {
           if (name == "@mass") {
             ndim = 1;
-            addr = pars.M.data();
+            addr = pars.attrScalar("mass").data();
           } else if (name == "@pos") {
             ndim = dim;
-            addr = pars.X.data();
+            addr = pars.attrVector("pos").data();
           } else if (name == "@vel") {
             ndim = dim;
-            addr = pars.V.data();
+            addr = pars.attrVector("vel").data();
           } else if (name == "@C") {
             ndim = dim * dim;
-            addr = pars.C.data();
+            addr = pars.attrMatrix("C").data();
           } else if (name == "@F") {
             ndim = dim * dim;
-            addr = pars.F.data();
+            addr = pars.attrMatrix("F").data();
           } else if (name == "@J") {
             ndim = 1;
-            addr = pars.J.data();
+            addr = pars.attrScalar("J").data();
           } else if (name == "@logJp") {
             ndim = 1;
-            addr = pars.logJp.data();
+            addr = pars.attrScalar("logJp").data();
           }
         })(parObjPtr->get());
         haccessors[i] = zs::AccessorAoSoA{zs::aos_v,
