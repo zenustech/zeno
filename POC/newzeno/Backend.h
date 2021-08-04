@@ -21,15 +21,9 @@ struct Scope {
 };
 
 
-struct NodeInfo {
-    std::vector<std::string> outputs;
-    std::vector<std::string> inputs;
-};
-
-
 struct Session {
     std::map<std::string, std::function<void(Context *)>> nodes;
-    std::map<std::string, NodeInfo> nodeinfo;
+    std::map<std::string, std::string> nodeinfo;
 
     static Session &get() {
         static std::unique_ptr<Session> session;
@@ -43,7 +37,7 @@ struct Session {
     int defineNode
         ( std::string const &name
         , F func
-        , NodeInfo const &info
+        , std::string const &info
         ) {
         nodes[name] = func;
         nodeinfo[name] = info;
