@@ -60,6 +60,34 @@ namespace details {
                 std::forward<List>(list),
                 std::make_index_sequence<N>{});
     }
+
+    template <class Tuple, class List, size_t ...Indices>
+    void impl_tuple_to_any_list(Tuple &&tuple, List &&list, std::index_sequence<Indices...>) {
+        ((list[Indices] = std::get<Indices>(tuple), (void)0), ...);
+    }
+
+    template <class Tuple, class List>
+    void tuple_to_any_list(Tuple &&tuple, List &&list) {
+        constexpr size_t N = std::tuple_size_v<Tuple>;
+        impl_tuple_to_any_list(
+                std::forward<Tuple>(tuple),
+                std::forward<List>(list),
+                std::make_index_sequence<N>{});
+    }
+
+    template <class T>
+    struct tuple_if_not_tuple {
+        using type = std::tuple<T>;
+
+        static auto cast(T &&t) { return std::tuple<T>(t); }
+    };
+
+    template <class ...Ts>
+    struct tuple_if_not_tuple<std::tuple<Ts...>> {
+        using type = std::tuple<Ts...>;
+
+        static auto cast(std::tuple<Ts...> &&tuple) { return tuple; }
+    };
 }
 
 template <class F>
@@ -68,7 +96,10 @@ auto wrap_context(F func) {
         using Args = details::function_nth_argument_t<0, F>;
         auto ret = func(details::any_list_to_tuple<Args>(
                     static_cast<Context const *>(ctx)->inputs));
-        ctx->outputs[0] = ret;
+        auto rets = details::tuple_if_not_tuple<decltype(ret)>::cast(
+                std::move(ret));
+        using Rets = decltype(rets);
+        details::tuple_to_any_list(rets, ctx->outputs);
     };
 }
 #endif
@@ -98,7 +129,7 @@ int main() {
     Graph graph;
     graph.nodes.push_back({"makeint", {}, 1});
     graph.nodes.push_back({"myadd", {{0, 0}, {0, 0}}, 1});
-    graph.nodes.push_back({"printint", {{1, 0}}, 1});
+    graph.nodes.push_back({"printint", {{1, 0}}, 0});
 
     ForwardSorter sorter(graph);
     sorter.touch(2);
