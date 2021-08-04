@@ -166,8 +166,7 @@ sudo python -m pip install pybind11 numpy PySide2
 sudo apt-get install cmake-curses-gui
 
 suggested Extension Setup(if you have confidence with your GPU and CUDA version, also turn ON those CUDA related stuffs)
-![extension](images/extension1.png)
-![extension](images/extension2.png)
+see figures(extensions) for more details!
 
 
 # Install OpenVDB
@@ -192,6 +191,9 @@ cmake ..
 make -j4
 sudo make install
 ```
+
+![extension](images/extension1.png)
+![extension](images/extension2.png)
 
 - Windows 10
 
