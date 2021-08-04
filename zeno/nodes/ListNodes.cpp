@@ -93,7 +93,7 @@ ZENDEFNODE(MakeSmallList, {
     {"list"},
 });
 
-struct Merge : zeno::INode {
+struct MakeList : zeno::INode {
     virtual void apply() override {
         auto list = std::make_shared<zeno::ListObject>();
 
@@ -118,7 +118,7 @@ struct Merge : zeno::INode {
     }
 };
 
-ZENDEFNODE(Merge, {
+ZENDEFNODE(MakeList, {
     {},
     {"list"},
     {},
