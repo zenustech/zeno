@@ -276,6 +276,8 @@ class NodeEditor(QWidget):
                 self.switchScene(name)
                 nodes = graph['nodes']
                 self.scene.loadGraphEx(graph)
+                self.scene.history_stack.init_state()
+                self.scene.record()
         self.scene.record()
         self.switchScene('main')
         self.initDescriptors()
@@ -288,6 +290,8 @@ class NodeEditor(QWidget):
             print('Loading subgraph', name)
             self.switchScene(name)
             self.scene.loadGraphEx(graph)
+            self.scene.history_stack.init_state()
+            self.scene.record()
         self.initDescriptors()
         self.switchScene('main')
 
