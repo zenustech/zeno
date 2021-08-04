@@ -76,6 +76,19 @@ namespace details {
     }
 
     template <class T>
+    struct is_tuple : std::false_type {
+    };
+
+    template <class ...Ts>
+    struct is_tuple<std::tuple<Ts...>> : std::true_type {
+    };
+
+    template <class T, class List>
+    void tuple_to_any_list(std::enable_if_t<!is_tuple<T>::value, T> &&t, List &&list) {
+        list[0] = t;
+    }
+
+    template <class T>
     struct tuple_if_not_tuple {
         using type = std::tuple<T>;
 
@@ -94,11 +107,8 @@ template <class F>
 auto wrap_context(F func) {
     return [=] (Context *ctx) {
         using Args = details::function_nth_argument_t<0, F>;
-        auto ret = func(details::any_list_to_tuple<Args>(
+        auto rets = func(details::any_list_to_tuple<Args>(
                     static_cast<Context const *>(ctx)->inputs));
-        auto rets = details::tuple_if_not_tuple<decltype(ret)>::cast(
-                std::move(ret));
-        using Rets = decltype(rets);
         details::tuple_to_any_list(rets, ctx->outputs);
     };
 }
