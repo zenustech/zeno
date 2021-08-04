@@ -56,7 +56,7 @@ def launchProgram(prog, nframes):
     cleanIOPath()
     g_iopath = tempfile.mkdtemp(prefix='zenvis-')
     print('IOPath:', g_iopath)
-    if os.environ.get('ZEN_SPROC') or not os.environ.get('ZEN_NOFORK'):
+    if os.environ.get('ZEN_SPROC') or os.environ.get('ZEN_DOFORK'):
         from . import run
         _launch_mproc(run.runScene, prog['graph'], nframes, g_iopath)
     else:
@@ -71,7 +71,7 @@ def launchProgram(prog, nframes):
 
 
 def getDescriptors():
-    if not os.environ.get('ZEN_NOFORK'):
+    if os.environ.get('ZEN_DOFORK'):
         from . import run
         descs = run.dumpDescriptors()
     else:
