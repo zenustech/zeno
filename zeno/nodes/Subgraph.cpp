@@ -75,16 +75,16 @@ struct Subgraph : zeno::INode {
         }
         subg->applyGraph();
 
-#ifdef ZENO_VISUALIZATION
         for (auto &[key, obj]: subg->subOutputs) {
+#ifdef ZENO_VISUALIZATION
             if (subg->isViewed && !subg->hasAnyView) {
                 auto path = zeno::Visualization::exportPath();
                 obj->dumpfile(path);
                 subg->hasAnyView = true;
             }
+#endif
             set_output(key, std::move(obj));
         }
-#endif
 
         subg->subInputs.clear();
         subg->subOutputs.clear();

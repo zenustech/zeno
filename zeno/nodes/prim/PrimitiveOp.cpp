@@ -385,9 +385,8 @@ struct PrimitivePrintAttr : zeno::INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
     auto attrName = std::get<std::string>(get_param("attrName"));
-    auto const &arr = prim->attr(attrName);
     std::visit([attrName](auto const &arr) {
-        printf("attribute `%s`, length %d:\n", attrName.c_str(), arr.size());
+        printf("attribute `%s`, length %zd:\n", attrName.c_str(), arr.size());
         for (int i = 0; i < arr.size(); i++) {
             print_cout(arr[i]);
         }
@@ -395,7 +394,7 @@ struct PrimitivePrintAttr : zeno::INode {
             printf("(no data)\n");
         }
         printf("\n");
-    }, arr);
+    }, prim->attr(attrName));
 
     set_output("prim", get_input("prim"));
   }

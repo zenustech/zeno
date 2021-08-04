@@ -12,10 +12,10 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 
 name = 'zensim-zeno'
-version = '2021.7.24'
+version = '2021.8.4'
 description = 'Open-source node system framework for physics simulation and other CG applications'
 
-packages = ['zenqt', 'zenutils', 'zeno', 'zenvis']
+packages = ['zenqt']
 requirements = ['pybind11', 'numpy', 'PySide2']
 
 def treefiles(dir):
@@ -27,16 +27,11 @@ def treefiles(dir):
             yield from treefiles(path)
 
 data_files = []
-data_files += glob('zeno/*.so')
-data_files += glob('zeno/*.dylib')
-data_files += glob('zeno/*.pyd')
-data_files += glob('zenvis/*.so')
-data_files += glob('zenvis/*.dylib')
-data_files += glob('zenvis/*.pyd')
-data_files += glob('zenqt/assets/*')
-data_files += treefiles('zeno/lib')
-data_files += treefiles('zeno/cmake')
-data_files += treefiles('zeno/include')
+data_files += glob('zenqt/*.so')
+data_files += glob('zenqt/*.dylib')
+data_files += glob('zenqt/*.pyd')
+data_files += treefiles('zenqt/assets')
+data_files += treefiles('zenqt/lib')
 
 print('version:', version)
 print('packages:', packages)

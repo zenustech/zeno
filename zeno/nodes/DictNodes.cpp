@@ -96,6 +96,26 @@ ZENDEFNODE(MakeDict, {
 });
 
 
+struct DictUnion : zeno::INode {
+    virtual void apply() override {
+        auto dict1 = get_input<zeno::DictObject>("dict1");
+        auto dict2 = get_input<zeno::DictObject>("dict2");
+        auto dict = std::make_shared<zeno::DictObject>();
+        dict->lut = dict1->lut;
+        dict->lut.merge(dict2->lut);
+        set_output("dict", std::move(dict));
+    }
+};
+
+ZENDEFNODE(DictUnion, {
+    {{"dict1", "dict"}, {"dict2", "dict"}},
+    {{"dict", "dict"}},
+    {},
+    {"dict"},
+});
+
+
+
 struct ExtractDict : zeno::INode {
     virtual void apply() override {
         auto inkeys = get_param<std::string>("_KEYS");

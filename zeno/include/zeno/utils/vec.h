@@ -33,7 +33,8 @@ template <size_t N, class T> struct vec : std::array<T, N> {
     return res;
   }
 
-  template <class S> explicit vec(vec<N, S> const &x) {
+  template <class S>
+  explicit vec(vec<N, S> const &x) {
     for (size_t i = 0; i < N; i++) {
       (*this)[i] = T(x[i]);
     }
@@ -55,7 +56,8 @@ template <size_t N, class T> struct vec : std::array<T, N> {
 
   vec(T const &x, T const &y, T const &z, T const &w) : vec{x, y, z, w} {}
 
-  template <class S> operator vec<N, S>() const {
+  template <class S>
+  operator vec<N, S>() const {
     vec<N, S> res;
     for (size_t i = 0; i < N; i++) {
       res[i] = (*this)[i];
@@ -424,30 +426,33 @@ using vec2d = vec<2, double>;
 using vec2i = vec<2, int>;
 using vec2l = vec<2, long>;
 using vec2h = vec<2, short>;
-using vec2b = vec<2, char>;
+using vec2c = vec<2, char>;
+using vec2b = vec<2, bool>;
 using vec2I = vec<2, unsigned int>;
 using vec2L = vec<2, unsigned long>;
 using vec2H = vec<2, unsigned short>;
-using vec2B = vec<2, unsigned char>;
+using vec2C = vec<2, unsigned char>;
 using vec3f = vec<3, float>;
 using vec3d = vec<3, double>;
 using vec3i = vec<3, int>;
 using vec3l = vec<3, long>;
 using vec3h = vec<3, short>;
-using vec3b = vec<3, char>;
+using vec3c = vec<3, char>;
+using vec3b = vec<3, bool>;
 using vec3I = vec<3, unsigned int>;
 using vec3L = vec<3, unsigned long>;
 using vec3H = vec<3, unsigned short>;
-using vec3B = vec<3, unsigned char>;
+using vec3C = vec<3, unsigned char>;
 using vec4f = vec<4, float>;
 using vec4d = vec<4, double>;
 using vec4i = vec<4, int>;
 using vec4l = vec<4, long>;
 using vec4h = vec<4, short>;
-using vec4b = vec<4, char>;
+using vec4c = vec<4, char>;
+using vec4b = vec<4, bool>;
 using vec4I = vec<4, unsigned int>;
 using vec4L = vec<4, unsigned long>;
 using vec4H = vec<4, unsigned short>;
-using vec4B = vec<4, unsigned char>;
+using vec4C = vec<4, unsigned char>;
 
 }

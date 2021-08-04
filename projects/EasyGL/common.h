@@ -6,8 +6,8 @@
 #include <string>
 #include <cstdlib>
 #include <cstring>
-#include <GLES2/gl2.h>
-#include <spdlog/spdlog.h>
+#include <GLES3/gl3.h>
+#include <zeno/utils/zlog.h>
 
 static const char *get_opengl_error_string(GLenum err) {
     switch (err) {
@@ -30,7 +30,7 @@ static void _check_opengl_error(const char *file, int line, const char *hint) {
     auto err = glGetError();
     if (err != GL_NO_ERROR) {
         auto msg = get_opengl_error_string(err);
-        spdlog::error("{}:{}: `{}`: {}", file, line, hint, msg);
+        zlog::error("{}:{}: `{}`: {}", file, line, hint, msg);
     }
 }
 

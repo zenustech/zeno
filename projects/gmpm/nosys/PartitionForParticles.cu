@@ -31,8 +31,7 @@ struct SpatialPartitionForParticles : zeno::INode {
     else if (get_input("ZSParticles")->as<ZenoParticleList>()) {
       auto &list = get_input("ZSParticles")->as<ZenoParticleList>()->get();
       parObjPtrs.insert(parObjPtrs.end(), list.begin(), list.end());
-    }
-    else if (get_input("ZSParticles")->as<ListObject>()) {
+    } else if (get_input("ZSParticles")->as<ListObject>()) {
       auto &objSharedPtrLists = *get_input("ZSParticles")->as<ListObject>();
       for (auto &&objSharedPtr : objSharedPtrLists.arr)
         if (auto ptr = dynamic_cast<ZenoParticles *>(objSharedPtr.get());
@@ -41,16 +40,17 @@ struct SpatialPartitionForParticles : zeno::INode {
     }
 
     std::size_t cnt = 0;
-    zs::MemoryHandle mh;
+    zs::MemoryLocation mloc;
     for (auto &&parObjPtr : parObjPtrs) {
       cnt += zs::match([](auto &p) { return p.size(); })(parObjPtr->get());
-      mh = zs::match([](auto &p) { return p.handle(); })(parObjPtr->get());
+      mloc = zs::match([](auto &p) { return p.memoryLocation(); })(
+          parObjPtr->get());
     }
     using TableT = zs::HashTable<zs::i32, 3, int>;
     // zs::HashTable<zs::i32, 3, int> ret{cnt, mh.memspace(), mh.devid()};
     TableT &ret = std::get<TableT>(partition);
     if (ret._tableSize < ret.evaluateTableSize(cnt))
-      ret = TableT{cnt, mh.memspace(), mh.devid()};
+      ret = TableT{cnt, mloc.memspace(), mloc.devid()};
 
     auto cudaPol = zs::cuda_exec().device(0);
     cudaPol({ret._tableSize},
@@ -60,7 +60,7 @@ struct SpatialPartitionForParticles : zeno::INode {
       zs::match([&ret, &cudaPol, dx, blocklen](auto &p) {
         cudaPol({p.size()},
                 zs::ComputeSparsity{zs::wrapv<zs::execspace_e::cuda>{}, dx,
-                                    blocklen, ret, p.X});
+                                    blocklen, ret, p.attrVector("pos")});
       })(particles);
     }
 

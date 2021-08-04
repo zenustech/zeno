@@ -14,7 +14,8 @@ struct GLTextureObject : zeno::IObjectClone<GLTextureObject> {
     GLuint width = 512;
     GLuint height = 512;
     GLenum format = GL_RGB;
-    GLenum type = GL_UNSIGNED_BYTE;
+    GLenum type = GL_FLOAT;
+    GLenum internalformat = GL_RGB16F;
     void *base = nullptr;
 
     GLenum wrapS = GL_CLAMP_TO_EDGE;
@@ -30,8 +31,9 @@ struct GLTextureObject : zeno::IObjectClone<GLTextureObject> {
         CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT));
         CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter));
         CHECK_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter));
-        CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, format, width, height,
+        CHECK_GL(glTexImage2D(GL_TEXTURE_2D, 0, internalformat, width, height,
                     0, format, type, base));
+        CHECK_GL(glGenerateMipmap(GL_TEXTURE_2D));
     }
 
     void use(GLuint number) const {

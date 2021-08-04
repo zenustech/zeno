@@ -17,7 +17,7 @@ def direct_search(pattern, keys):
 def fuzzy_search(pattern, keys):
     return chain(capital_search(pattern, keys), direct_search(pattern, keys))
 
-from zenutils import rel2abs
+from .system.utils import rel2abs
 
 def asset_path(name):
     return rel2abs(__file__, 'assets', name)

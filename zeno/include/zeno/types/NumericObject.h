@@ -8,7 +8,8 @@ namespace zeno {
 
 
 using NumericValue = std::variant<
-  int, float, zeno::vec2f, zeno::vec3f, zeno::vec4f>;
+  int, zeno::vec2i, zeno::vec3i, zeno::vec4i,
+  float, zeno::vec2f, zeno::vec3f, zeno::vec4f>;
 
 struct NumericObject : IObjectClone<NumericObject> {
   NumericValue value;

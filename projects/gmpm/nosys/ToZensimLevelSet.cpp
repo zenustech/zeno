@@ -20,7 +20,7 @@ struct ToZensimLevelSet : zeno::INode {
         get_input("VDBFloatGrid")->as<VDBFloatGrid>()->m_grid;
 
     ls->get() = zs::convertFloatGridToSparseLevelSet(
-        gridPtr, zs::MemoryHandle{zs::memsrc_e::um, 0});
+        gridPtr, zs::MemoryProperty{zs::memsrc_e::um, 0});
     fmt::print(fg(fmt::color::cyan), "done executing ToZensimLevelSet\n");
     set_output("ZSLevelSet", ls);
   }

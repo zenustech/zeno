@@ -1,8 +1,8 @@
-O=arts/ZFXv2.zsg
-default: run
+O=arts/stablefluid.zsg
+default: glrun
 
-#O=arts/android.zsg
-#default: glrun
+#O=arts/ZFXv2.zsg
+#default: run
 
 all:
 	cmake -B build
@@ -33,9 +33,9 @@ glrun: all
 	ZEN_NOFORK=1 ZEN_NOVIEW=1 ZEN_OPEN=$O ./run.sh
 
 gldebug: debug_all
-	ZEN_NOVIEW=1 USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh
+	ZEN_NOSIGHOOK=1 ZEN_NOVIEW=1 USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh
 
 debug: debug_all
-	USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh
+	ZEN_NOSIGHOOK=1 USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O ./run.sh
 
 .PHONY: all debug_all debug run test configure default

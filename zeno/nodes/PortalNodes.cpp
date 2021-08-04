@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/ConditionObject.h>
+#include <zeno/utils/safe_at.h>
 
 struct PortalIn : zeno::INode {
     virtual void complete() override {
@@ -25,9 +26,9 @@ ZENDEFNODE(PortalIn, {
 struct PortalOut : zeno::INode {
     virtual void apply() override {
         auto name = get_param<std::string>("name");
-        auto depnode = graph->portalIns.at(name);
+        auto depnode = zeno::safe_at(graph->portalIns, name, "PortalIn");
         graph->applyNode(depnode);
-        auto obj = graph->portals.at(name);
+        auto obj = safe_at(graph->portals, name, "portal object");
         set_output("port", std::move(obj));
     }
 };
