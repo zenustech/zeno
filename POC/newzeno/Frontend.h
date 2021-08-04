@@ -1,16 +1,9 @@
 #pragma once
 
-#include <functional>
-#include <typeinfo>
-#include <iostream>
-#include <memory>
-#include <vector>
-#include <string>
-#include <tuple>
-#include <map>
-#include <set>
-#include <any>
+#include "common.h"
 
+
+namespace zeno::v2::frontend {
 
 struct Graph {
     struct Node {
@@ -40,14 +33,14 @@ struct ForwardSorter {
         }
     }
 
-    void touch(int key) {
+    void require(int key) {
         if (auto it = visited.find(key); it != visited.end()) {
             return;
         }
         visited.insert(key);
         if (auto it = links.find(key); it != links.end()) {
             for (auto const &source: it->second) {
-                touch(source);
+                require(source);
             }
         }
         result.push_back(key);
@@ -55,11 +48,11 @@ struct ForwardSorter {
 
     auto linearize() {
         int lutid = 0;
-        auto ir = std::make_unique<IRBlock>();
+        auto ir = std::make_unique<backend::IRBlock>();
         std::map<std::pair<int, int>, int> lut;
         for (auto nodeid: result) {
             auto const &node = graph.nodes.at(nodeid);
-            Invocation invo;
+            backend::Invocation invo;
             invo.node_name = node.name;
             for (auto const &source: node.inputs) {
                 if (source.first != -1)
@@ -76,23 +69,4 @@ struct ForwardSorter {
     }
 };
 
-
-void print_invocation(Invocation const &invo) {
-    std::cout << "[";
-    bool had = false;
-    for (auto const &output: invo.outputs) {
-        if (had) std::cout << ", ";
-        else had = true;
-        std::cout << output;
-    }
-    std::cout << "] = ";
-    std::cout << invo.node_name;
-    std::cout << "(";
-    had = false;
-    for (auto const &input: invo.inputs) {
-        if (had) std::cout << ", ";
-        else had = true;
-        std::cout << input;
-    }
-    std::cout << ");\n";
 }

@@ -1,17 +1,9 @@
 #pragma once
 
-#include <functional>
-#include <typeinfo>
-#include <iostream>
-#include <memory>
-#include <vector>
-#include <string>
-#include <tuple>
-#include <map>
-#include <set>
-#include <any>
+#include "common.h"
 
 
+namespace zeno::v2::backend {
 
 struct Context {
     std::vector<std::any> inputs;
@@ -31,6 +23,7 @@ struct Scope {
 
 struct Session {
     std::map<std::string, std::function<void(Context *)>> nodes;
+    std::map<std::string, std::string> nodeinfo;
 
     static Session &get() {
         static std::unique_ptr<Session> session;
@@ -41,8 +34,13 @@ struct Session {
     }
 
     template <class F>
-    int defineNode(std::string const &name, F func) {
+    int defineNode
+        ( std::string const &name
+        , F func
+        , std::string const &info
+        ) {
         nodes[name] = func;
+        nodeinfo[name] = info;
         return 1;
     }
 
@@ -58,7 +56,7 @@ struct Invocation {
     std::vector<int> inputs;
     std::vector<int> outputs;
 
-    void invoke(Scope *scope) const {
+    void apply(Scope *scope) const {
         auto const &node = scope->session->nodes.at(node_name);
         Context ctx;
         ctx.inputs.resize(inputs.size());
@@ -77,3 +75,30 @@ struct Invocation {
 struct IRBlock {
     std::vector<Invocation> invos;
 };
+
+}
+
+namespace zeno::v2::helpers {
+
+template <class Os>
+void print_invocation(Os &&os, backend::Invocation const &invo) {
+    os << "[";
+    bool had = false;
+    for (auto const &output: invo.outputs) {
+        if (had) os << ", ";
+        else had = true;
+        os << output;
+    }
+    os << "] = ";
+    os << invo.node_name;
+    os << "(";
+    had = false;
+    for (auto const &input: invo.inputs) {
+        if (had) os << ", ";
+        else had = true;
+        os << input;
+    }
+    os << ");\n";
+}
+
+}
