@@ -1,6 +1,6 @@
 #pragma once
 
-#include <utility>
+#include <memory>
 #include <any>
 
 
@@ -36,9 +36,9 @@ struct _ImplMethod : Method {
 };
 
 template <class F>
-Method make_method(F &&func) {
+std::unique_ptr<Method> make_method(F &&func) {
     using T = typename details::first_argument<F>::type;
-    return _ImplMethod<F, T>(std::move(func));
+    return std::make_unique<_ImplMethod<F, T>>(std::move(func));
 }
 
 

@@ -14,6 +14,6 @@ int main() {
     auto method = zfp::make_method([=] (int val) -> int {
         return -val;
     });
-    int ret = std::any_cast<int>(method(1));
+    int ret = std::any_cast<int>((*method)(1));
     std::cout << ret << std::endl;
 }
