@@ -100,7 +100,7 @@
        "function"
       ],
       "resolution": [
-       "e56eb0e0-NumericIVec2",
+       "e56eb0e0-NumericIntVec2",
        "vec2"
       ],
       "SRC": null
@@ -192,8 +192,8 @@
      ],
      "options": []
     },
-    "e56eb0e0-NumericIVec2": {
-     "name": "NumericIVec2",
+    "e56eb0e0-NumericIntVec2": {
+     "name": "NumericIntVec2",
      "inputs": {
       "SRC": null
      },
@@ -4355,7 +4355,7 @@
     "numeric"
    ]
   },
-  "NumericIVec2": {
+  "NumericIntVec2": {
    "inputs": [
     [
      "",
@@ -4391,7 +4391,7 @@
     "numeric"
    ]
   },
-  "NumericIVec3": {
+  "NumericIntVec3": {
    "inputs": [
     [
      "",
@@ -4432,7 +4432,7 @@
     "numeric"
    ]
   },
-  "NumericIVec4": {
+  "NumericIntVec4": {
    "inputs": [
     [
      "",
