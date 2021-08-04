@@ -53,9 +53,13 @@ void myadd(Context *ctx) {
     ctx->outputs[0] = z;
 }
 
-
 void makeint(Context *ctx) {
     ctx->outputs[0] = 21;
+}
+
+void printint(Context *ctx) {
+    auto x = std::any_cast<int>(ctx->inputs[0]);
+    std::cout << "printint: " << x << std::endl;
 }
 
 
@@ -63,6 +67,7 @@ struct Graph {
     struct Node {
         std::string name;
         std::vector<std::pair<int, int>> inputs;
+        int num_outputs = 0;
     };
     std::vector<Node> nodes;
 };
@@ -71,7 +76,6 @@ struct Graph {
 struct ForwardSorter {
     std::set<int> visited;
     std::map<int, std::vector<int>> links;
-    std::map<int, std::set<int>> outputs;
     std::vector<int> result;
 
     Graph const &graph;
@@ -82,7 +86,6 @@ struct ForwardSorter {
             auto const &node = graph.nodes.at(dst_node);
             for (auto const &[src_node, src_sock]: node.inputs) {
                 link.push_back(src_node);
-                outputs[src_node].insert(src_sock);
             }
         }
     }
@@ -111,13 +114,10 @@ struct ForwardSorter {
             for (auto const &source: node.inputs) {
                 invo.inputs.push_back(lut.at(source));
             }
-            auto it = outputs.find(nodeid);
-            if (it != outputs.end()) {
-                for (int sockid: it->second) {
-                    auto id = lutid++;
-                    lut[std::make_pair(nodeid, sockid)] = id;
-                    invo.outputs.push_back(id);
-                }
+            for (int sockid = 0; sockid < node.num_outputs; sockid++) {
+                auto id = lutid++;
+                lut[std::make_pair(nodeid, sockid)] = id;
+                invo.outputs.push_back(id);
             }
             invocations.push_back(invo);
         }
@@ -149,10 +149,12 @@ void print_invocation(Invocation const &invo) {
 
 int main() {
     Graph graph;
-    graph.nodes.push_back({"makeint", {}});
-    graph.nodes.push_back({"myadd", {{0, 0}, {0, 0}}});
+    graph.nodes.push_back({"makeint", {}, 1});
+    graph.nodes.push_back({"myadd", {{0, 0}, {0, 0}}, 1});
+    graph.nodes.push_back({"printint", {{1, 0}}, 0});
 
-    ForwardSorter sorter(graph); sorter.touch(1);
+    ForwardSorter sorter(graph);
+    sorter.touch(2);
     auto invos = sorter.linearize();
     for (auto const &invo: invos) {
         print_invocation(invo);
@@ -161,9 +163,11 @@ int main() {
     Session session;
     session.nodes["makeint"] = makeint;
     session.nodes["myadd"] = myadd;
+    session.nodes["printint"] = printint;
 
     for (auto const &invo: invos) {
         invo.invoke(&session);
     }
+
     return 0;
 }
