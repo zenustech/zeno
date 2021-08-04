@@ -148,43 +148,35 @@ Other requirements like GLAD are self-contained and you don't have to worry inst
 
 > Hint: for Python, please try avoid using virtualenv and Conda if possible.
 
-- Arch Linux
-
-```bash
-sudo pacman -S gcc make cmake python python-pip python-numpy pyside2
-```
-
 - Ubuntu 20.04
 
 ```bash
-# Install some Dependencies
-sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin # make sure your cmake version >= 3.19
+# Install basic dependencies
+sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin
 
 python --version  # make sure Python version >= 3.7
 sudo python -m pip install -U pip
 sudo python -m pip install pybind11 numpy PySide2
 
-# Install ccmake to change some configurations(Necessary!Otherwise you get an empty zeno)
+# (Optional) for easily altering cmake configurations from terminal:
 sudo apt-get install cmake-curses-gui
 
-suggested Extension Setup(if you have confidence with your GPU and CUDA version, also turn ON those CUDA related stuffs)
-see figures(extensions) for more details!
+# (Optional) Installing IlmBase and other dependencies:
+sudo apt-get install -y libilmbase-dev libopenexr-dev
+sudo apt-get install -y zlib1g-dev libeigen3-dev libopenblas-dev
 
-
-# Install OpenVDB
-# Installing Dependencies (Boost, TBB, Blosc)
+# (Optional) Installing OpenVDB dependencies (Boost, TBB, Blosc):
 sudo apt-get install -y libboost-iostreams-dev libboost-system-dev libtbb-dev
-# Attention: change your workdir to where you want to put these dependencies
-git clone https://github.com/Blosc/c-blosc.git
+git clone https://github.com/Blosc/c-blosc.git --branch=v1.5.0
 cd c-blosc
-git checkout tags/v1.5.0 -b v1.5.0
 mkdir build
 cd build
 cmake ..
 make -j4
 sudo make install
 cd ../..
-# Building OpenVDB
+
+# (Optional) Install OpenVDB:
 git clone https://github.com/AcademySoftwareFoundation/openvdb.git --branch=v7.2.1
 cd openvdb
 mkdir build
@@ -192,10 +184,18 @@ cd build
 cmake ..
 make -j4
 sudo make install
+cd ../..
 ```
 
-![extension](images/extension1.png)
-![extension](images/extension2.png)
+See also [`Dockerfile`](Dockerfile) as a reference for full installing steps.
+
+- Arch Linux
+
+```bash
+sudo pacman -S gcc make cmake python python-pip python-numpy pyside2
+```
+
+See also [`Dockerfile.archlinux`](Dockerfile.archlinux) for full installing steps.
 
 - Windows 10
 
@@ -232,14 +232,20 @@ cmake -B build
 cmake --build build --parallel
 ```
 
-> Optional: You can change some cmake configurations using ccmake.
+> Optional: You can change some cmake configurations using `ccmake`.
 
 ```bash
 cmake -B build
-# change some cmake configurations
-ccmake -Bbuild # change mesher and CUDA to OFF may slove cmake and gpu dependencies issue
-make -C build -j8
+# change some cmake configurations via ccmake:
+ccmake -B build  # will shows up a curses screen, c to save, q to exit
 ```
+
+> Below is the suggested Extension Setup:
+
+![extension](images/extension1.png)
+![extension](images/extension2.png)
+
+> if you have confidence with your GPU and CUDA version, also turn ON those CUDA related stuffs, see figures below: (change mesher and CUDA to OFF may slove cmake and gpu dependencies issue)
 
 <img src="images/ccmake1.png" alt="ccmake1" style="zoom:98%;" /><img src="images/ccmake2.png" alt="ccmake2" style="zoom:50%;" />
 
@@ -289,6 +295,10 @@ sudo apt-get install qt5dxcb-plugin
 ```
 
 Please let me know if you have any trouble not mentioned above by opening an [issue](https://github.com/zenustech/zeno/issues) on GitHub, thanks for you support!
+
+- WSL
+
+WSL doesn't have X11 display by default :(
 
 # Building ZENO Extensions
 
