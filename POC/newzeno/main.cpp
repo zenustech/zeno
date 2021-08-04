@@ -20,7 +20,22 @@ struct Context {
 
 struct Session {
     std::map<std::string, std::function<void(Context *)>> nodes;
+
+    static Session *getDefault() {
+        static std::unique_ptr<Session> session;
+        if (!session) {
+            session = std::make_unique<Session>();
+        }
+        return session.get();
+    }
+};
+
+struct Scope {
+    Session *session;
     std::map<int, std::any> objects;
+
+    Scope(Session *session) : session(session) {
+    }
 };
 
 
@@ -30,17 +45,17 @@ struct Invocation {
     std::vector<int> inputs;
     std::vector<int> outputs;
 
-    void invoke(Session *session) const {
-        auto const &node = session->nodes.at(node_name);
+    void invoke(Scope *scope) const {
+        auto const &node = scope->session->nodes.at(node_name);
         Context ctx;
         ctx.inputs.resize(inputs.size());
         for (int i = 0; i < inputs.size(); i++) {
-            ctx.inputs[i] = session->objects.at(inputs[i]);
+            ctx.inputs[i] = scope->objects.at(inputs[i]);
         }
         ctx.outputs.resize(outputs.size());
         node(&ctx);
         for (int i = 0; i < outputs.size(); i++) {
-            session->objects[outputs[i]] = ctx.outputs[i];
+            scope->objects[outputs[i]] = ctx.outputs[i];
         }
     }
 };
@@ -160,13 +175,14 @@ int main() {
         print_invocation(invo);
     }
 
-    Session session;
-    session.nodes["makeint"] = makeint;
-    session.nodes["myadd"] = myadd;
-    session.nodes["printint"] = printint;
+    auto session = Session::getDefault();
+    session->nodes["makeint"] = makeint;
+    session->nodes["myadd"] = myadd;
+    session->nodes["printint"] = printint;
 
+    Scope scope(session);
     for (auto const &invo: invos) {
-        invo.invoke(&session);
+        invo.invoke(&scope);
     }
 
     return 0;
