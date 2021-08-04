@@ -47,7 +47,7 @@ struct Session {
     }
 
     std::unique_ptr<Scope> makeScope() const {
-        std::make_unique<Scope>(static_cast<Session *>(this));
+        return std::make_unique<Scope>(const_cast<Session *>(this));
     }
 };
 

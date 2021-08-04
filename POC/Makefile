@@ -1,4 +1,4 @@
-x=myvdb
+x=tuplecast
 
 x: $x.exe Makefile
 	./$<
