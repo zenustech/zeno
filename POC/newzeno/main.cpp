@@ -3,20 +3,18 @@
 #include "Helper.h"
 
 
-int myadd(std::tuple<int, int> arguments) {
-    auto [x, y] = arguments;
+int myadd(int x, int y) {
     auto z = x + y;
     return z;
 }
 ZENO_DEFINE_NODE(myadd);
 
-int makeint(std::tuple<> arguments) {
+int makeint() {
     return 21;
 }
 ZENO_DEFINE_NODE(makeint);
 
-void printint(std::tuple<int> arguments) {
-    auto [x] = arguments;
+void printint(int x) {
     std::cout << "printint: " << x << std::endl;
 }
 ZENO_DEFINE_NODE(printint);

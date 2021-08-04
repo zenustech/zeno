@@ -55,10 +55,6 @@ namespace details {
         using argument_types = std::tuple<Args...>;
     };
 
-    template <size_t N, class T>
-    using function_nth_argument_t = std::tuple_element_t<N,
-          typename function_traits<T>::argument_types>;
-
     template <class Tuple, class List, size_t ...Indices>
     auto impl_any_list_to_tuple(List &&list, std::index_sequence<Indices...>) {
         return std::make_tuple(
@@ -107,10 +103,11 @@ namespace details {
 
     template <class F, class T>
     auto call_with_wrap_tuple(F func, T &&args) {
-        if constexpr (std::is_void_v<decltype(func(std::move(args)))>) {
+        if constexpr (std::is_void_v<decltype(std::apply(func, std::move(args)))>) {
+            std::apply(func, std::move(args));
             return std::tuple<>();
         } else {
-            return tuple_if_not_tuple(func(std::move(args)));
+            return tuple_if_not_tuple(std::apply(func, std::move(args)));
         }
     }
 }
@@ -118,7 +115,7 @@ namespace details {
 template <class F>
 auto wrap_context_function(F func) {
     return [=] (Context *ctx) {
-        using Args = details::function_nth_argument_t<0, F>;
+        using Args = typename details::function_traits<F>::argument_types;
         auto rets = details::call_with_wrap_tuple(
                 func, details::any_list_to_tuple<Args>(
                     static_cast<Context const *>(ctx)->inputs));
