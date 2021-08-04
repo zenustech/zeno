@@ -88,6 +88,11 @@ struct Graph {
 };
 
 
+struct IRBlock {
+    std::vector<Invocation> invos;
+};
+
+
 struct ForwardSorter {
     std::set<int> visited;
     std::map<int, std::vector<int>> links;
@@ -121,7 +126,7 @@ struct ForwardSorter {
 
     auto linearize() {
         int lutid = 0;
-        std::vector<Invocation> invocations;
+        auto ir = std::make_unique<IRBlock>();
         std::map<std::pair<int, int>, int> lut;
         for (auto nodeid: result) {
             auto const &node = graph.nodes.at(nodeid);
@@ -136,9 +141,9 @@ struct ForwardSorter {
                 lut[std::make_pair(nodeid, sockid)] = id;
                 invo.outputs.push_back(id);
             }
-            invocations.push_back(invo);
+            ir->invos.push_back(invo);
         }
-        return invocations;
+        return ir;
     }
 };
 
@@ -172,8 +177,8 @@ int main() {
 
     ForwardSorter sorter(graph);
     sorter.touch(2);
-    auto invos = sorter.linearize();
-    for (auto const &invo: invos) {
+    auto ir = sorter.linearize();
+    for (auto const &invo: ir->invos) {
         print_invocation(invo);
     }
 
@@ -183,7 +188,7 @@ int main() {
     session->nodes["printint"] = printint;
 
     Scope scope(session);
-    for (auto const &invo: invos) {
+    for (auto const &invo: ir->invos) {
         invo.invoke(&scope);
     }
 
