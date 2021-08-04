@@ -63,7 +63,7 @@ struct Graph {
 };
 
 
-struct ReverseSorter {
+/*struct ReverseSorter {
     std::set<int> visited;
     std::map<int, std::vector<int>> rev_links;
 
@@ -90,21 +90,24 @@ struct ReverseSorter {
             }
         }
     }
-};
+};*/
 
 
 struct ForwardSorter {
     std::set<int> visited;
     std::map<int, std::vector<int>> links;
-
+    std::map<int, std::set<int>> outputs;
     std::vector<int> result;
 
-    void build(Graph const &graph) {
+    Graph const &graph;
+
+    ForwardSorter(Graph const &graph) : graph(graph) {
         for (int dst_node = 0; dst_node < graph.nodes.size(); dst_node++) {
             auto &link = links[dst_node];
             auto const &node = graph.nodes.at(dst_node);
             for (auto const &[src_node, src_sock]: node.inputs) {
                 link.push_back(src_node);
+                outputs[src_node].insert(src_sock);
             }
         }
     }
@@ -121,7 +124,52 @@ struct ForwardSorter {
         }
         result.push_back(key);
     }
+
+    auto linearize() {
+        int lutid = 0;
+        std::vector<Invocation> invocations;
+        std::map<std::pair<int, int>, int> lut;
+        for (auto nodeid: result) {
+            auto const &node = graph.nodes.at(nodeid);
+            Invocation invo;
+            invo.node_name = node.name;
+            for (auto const &source: node.inputs) {
+                invo.inputs.push_back(lut.at(source));
+            }
+            auto it = outputs.find(nodeid);
+            if (it != outputs.end()) {
+                for (int sockid: it->second) {
+                    auto id = lutid++;
+                    lut[std::make_pair(nodeid, sockid)] = id;
+                    invo.outputs.push_back(id);
+                }
+            }
+            invocations.push_back(invo);
+        }
+        return invocations;
+    }
 };
+
+
+void print_invocation(Invocation const &invo) {
+    std::cout << "[";
+    bool first = true;
+    for (auto const &output: invo.outputs) {
+        if (!first) std::cout << ", ";
+        else first = true;
+        std::cout << output;
+    }
+    std::cout << "] = ";
+    std::cout << invo.node_name;
+    std::cout << "(";
+    first = true;
+    for (auto const &input: invo.inputs) {
+        if (!first) std::cout << ", ";
+        else first = true;
+        std::cout << input;
+    }
+    std::cout << ");\n";
+}
 
 
 int main() {
@@ -129,12 +177,10 @@ int main() {
     graph.nodes.push_back({"myfunc", {}});
     graph.nodes.push_back({"hisfunc", {{0, 0}}});
 
-    ForwardSorter sorter;
-    sorter.build(graph);
-    sorter.touch(1);
-
-    for (auto key: sorter.result) {
-        std::cout << key << std::endl;
+    ForwardSorter sorter(graph); sorter.touch(1);
+    auto invos = sorter.linearize();
+    for (auto const &invo: invos) {
+        print_invocation(invo);
     }
 
     /*session.nodes["myadd"] = myadd;
