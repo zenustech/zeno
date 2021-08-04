@@ -62,9 +62,12 @@ struct Graph {
     std::vector<Node> nodes;
 };
 
+
 struct Sorter {
     std::set<int> visited;
     std::map<int, std::vector<int>> rev_links;
+
+    std::vector<int> result;
 
     void build(Graph const &graph) {
         for (int dst_node = 0; dst_node < graph.nodes.size(); dst_node++) {
@@ -79,7 +82,7 @@ struct Sorter {
         if (auto it = visited.find(key); it != visited.end()) {
             return;
         }
-        std::cout << key << std::endl;
+        result.push_back(key);
         visited.insert(key);
         if (auto it = rev_links.find(key); it != rev_links.end()) {
             for (auto const &target: it->second) {
@@ -99,6 +102,10 @@ int main() {
     Sorter sorter;
     sorter.build(graph);
     sorter.touch(0);
+
+    for (auto key: sorter.result) {
+        std::cout << key << std::endl;
+    }
 
     /*session.nodes["myadd"] = myadd;
     session.objects[0] = 40;
