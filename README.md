@@ -155,11 +155,37 @@ sudo pacman -S gcc make cmake python python-pip python-numpy pyside2
 - Ubuntu 20.04
 
 ```bash
-sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin
+# Install some Dependencies
+sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin # make sure your cmake version >= 3.19
 
 python --version  # make sure Python version >= 3.7
 sudo python -m pip install -U pip
 sudo python -m pip install pybind11 numpy PySide2
+
+# Install ccmake to change some configurations(Optional)
+sudo apt-get install cmake-curses-gui
+
+# Install OpenVDB
+# Installing Dependencies (Boost, TBB, Blosc)
+sudo apt-get install -y libboost-iostreams-dev libboost-system-dev libtbb-dev
+# Attention: change your workdir to where you want to put these dependencies
+git clone https://github.com/Blosc/c-blosc.git
+cd c-blosc
+git checkout tags/v1.5.0 -b v1.5.0
+mkdir build
+cd build
+cmake ..
+make -j4
+sudo make install
+cd ../..
+# Building OpenVDB
+git clone https://github.com/AcademySoftwareFoundation/openvdb.git --branch=v7.2.1
+cd openvdb
+mkdir build
+cd build
+cmake ..
+make -j4
+sudo make install
 ```
 
 - Windows 10
@@ -196,6 +222,17 @@ Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/
 cmake -B build
 cmake --build build --parallel
 ```
+
+> Optional: You can change some cmake configurations using ccmake.
+
+```bash
+cmake -B build
+# change some cmake configurations
+ccmake -Bbuild # change mesher and CUDA to OFF may slove cmake and gpu dependencies issue
+make -C build -j8
+```
+
+<img src="images/ccmake1.png" alt="ccmake1" style="zoom:98%;" /><img src="images/ccmake2.png" alt="ccmake2" style="zoom:50%;" />
 
 - Windows
 
