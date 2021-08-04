@@ -1,20 +1,9 @@
 #pragma once
 
-
-#include <functional>
-#include <typeinfo>
-#include <iostream>
-#include <memory>
-#include <vector>
-#include <string>
-#include <tuple>
-#include <map>
-#include <set>
-#include <any>
-
-#include "Backend.h"
+#include "common.h"
 
 
+namespace zeno::v2::helpers {
 
 namespace details {
     template <class T>
@@ -114,15 +103,18 @@ namespace details {
 
 template <class F>
 auto wrap_context_function(F func) {
-    return [=] (Context *ctx) {
+    return [=] (backend::Context *ctx) {
         using Args = typename details::function_traits<F>::argument_types;
         auto rets = details::call_with_wrap_tuple(
                 func, details::any_list_to_tuple<Args>(
-                    static_cast<Context const *>(ctx)->inputs));
+                    static_cast<backend::Context const *>(ctx)->inputs));
         details::tuple_to_any_list(std::move(rets), ctx->outputs);
     };
 }
 
 #define ZENO_DEFINE_NODE(name) \
-static auto _zeno_def_##name = Session::get().defineNode(#name, \
-        wrap_context_function(name));
+static auto _zeno_def_##name = \
+    ::zeno::v2::backend::Session::get().defineNode(#name, \
+        ::zeno::v2::helpers::wrap_context_function(name));
+
+}

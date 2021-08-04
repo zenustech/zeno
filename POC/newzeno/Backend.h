@@ -1,17 +1,9 @@
 #pragma once
 
-#include <functional>
-#include <typeinfo>
-#include <iostream>
-#include <memory>
-#include <vector>
-#include <string>
-#include <tuple>
-#include <map>
-#include <set>
-#include <any>
+#include "common.h"
 
 
+namespace zeno::v2::backend {
 
 struct Context {
     std::vector<std::any> inputs;
@@ -77,3 +69,30 @@ struct Invocation {
 struct IRBlock {
     std::vector<Invocation> invos;
 };
+
+}
+
+namespace zeno::v2::helpers {
+
+template <class Os>
+void print_invocation(Os &&os, backend::Invocation const &invo) {
+    os << "[";
+    bool had = false;
+    for (auto const &output: invo.outputs) {
+        if (had) os << ", ";
+        else had = true;
+        os << output;
+    }
+    os << "] = ";
+    os << invo.node_name;
+    os << "(";
+    had = false;
+    for (auto const &input: invo.inputs) {
+        if (had) os << ", ";
+        else had = true;
+        os << input;
+    }
+    os << ");\n";
+}
+
+}

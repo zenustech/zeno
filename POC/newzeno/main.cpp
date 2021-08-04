@@ -1,6 +1,7 @@
 #include "Backend.h"
 #include "Frontend.h"
 #include "Helper.h"
+#include <iostream>
 
 
 int myadd(int x, int y) {
@@ -21,19 +22,20 @@ ZENO_DEFINE_NODE(printint);
 
 
 int main() {
-    Graph graph;
+    zeno::v2::frontend::Graph graph;
     graph.nodes.push_back({"makeint", {}, 1});
     graph.nodes.push_back({"myadd", {{0, 0}, {0, 0}}, 1});
     graph.nodes.push_back({"printint", {{1, 0}}, 0});
 
-    ForwardSorter sorter(graph);
-    sorter.touch(2);
+    zeno::v2::frontend::ForwardSorter sorter(graph);
+    sorter.require(2);
     auto ir = sorter.linearize();
+
     for (auto const &invo: ir->invos) {
-        print_invocation(invo);
+        zeno::v2::helpers::print_invocation(std::cout, invo);
     }
 
-    auto scope = Session::get().makeScope();
+    auto scope = zeno::v2::backend::Session::get().makeScope();
     for (auto const &invo: ir->invos) {
         invo.invoke(scope.get());
     }
