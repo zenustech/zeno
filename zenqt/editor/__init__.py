@@ -24,7 +24,7 @@ from .node import *
 from .blackboard import *
 from .textarea import *
 from .makedict import *
-from .makelist import *
+from .merge import *
 from .heatmap import *
 from .scene import *
 from .window import *

@@ -1,6 +1,6 @@
 from . import *
 
-class QDMGraphicsNode_MakeList(QDMGraphicsNode):
+class QDMGraphicsNode_Merge(QDMGraphicsNode):
     def __init__(self, parent=None):
         self.socket_keys = ['obj0', 'obj1']
         super().__init__(parent)
