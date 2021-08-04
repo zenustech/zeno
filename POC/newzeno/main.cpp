@@ -84,7 +84,7 @@ namespace details {
     };
 
     template <class T, class List>
-    void tuple_to_any_list(std::enable_if_t<!is_tuple<T>::value, T> &&t, List &&list) {
+    void tuple_to_any_list(std::enable_if_t<1, T> &&t, List &&list) {
         list[0] = t;
     }
 
