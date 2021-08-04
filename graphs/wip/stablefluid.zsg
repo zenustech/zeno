@@ -605,9 +605,9 @@
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -1205,
-    "trans_y": 5
+    "scale": 0.6400000000000003,
+    "trans_x": -906,
+    "trans_y": -64
    }
   },
   "StableFluid": {
@@ -819,8 +819,8 @@
       "name": "uniforms"
      },
      "uipos": [
-      -1235.2008203124985,
-      473.0652734374996
+      -317.28929077148314,
+      532.6699182128903
      ],
      "options": []
     },
@@ -881,8 +881,8 @@
       "name": "pressure"
      },
      "uipos": [
-      -3366.968395996091,
-      594.8712890624998
+      -2771.3131835937475,
+      1067.1703308105466
      ],
      "options": []
     },
@@ -1067,8 +1067,8 @@
       "name": "finalVelocity"
      },
      "uipos": [
-      -3351.8019335937474,
-      1164.3005859374982
+      -896.0905688476541,
+      1297.3381530761706
      ],
      "options": []
     },
@@ -1106,8 +1106,8 @@
       "name": "velocity"
      },
      "uipos": [
-      -3829.0838729858383,
-      599.3024574279783
+      -3550.206004333495,
+      1057.9686866760248
      ],
      "options": []
     },
@@ -1344,8 +1344,8 @@
       "format": "rg16f"
      },
      "uipos": [
-      -3830.221153259275,
-      271.08631973266654
+      -3790.843284606931,
+      729.0025489807131
      ],
      "options": []
     },
@@ -1362,21 +1362,6 @@
      "uipos": [
       -4513.0,
       -596.0
-     ],
-     "options": []
-    },
-    "9241ad3d-PassToyMakeTexturePair": {
-     "name": "PassToyMakeTexturePair",
-     "inputs": {
-      "resolution": null,
-      "SRC": null
-     },
-     "params": {
-      "format": "r16f"
-     },
-     "uipos": [
-      -3369.8074096679675,
-      261.74068359375053
      ],
      "options": []
     },
@@ -1720,8 +1705,8 @@
       "format": "rg16f"
      },
      "uipos": [
-      -2808.5516532897946,
-      869.8672172546399
+      -2100.906237030028,
+      812.4178764343276
      ],
      "options": []
     },
@@ -1738,8 +1723,8 @@
       "name": "mapping"
      },
      "uipos": [
-      -2333.976873016357,
-      889.5833549499516
+      -1626.3314567565913,
+      832.1340141296394
      ],
      "options": []
     },
@@ -1752,8 +1737,8 @@
       "name": "advMapping"
      },
      "uipos": [
-      -3610.2843261718713,
-      1218.1786914062488
+      -1154.572961425778,
+      1351.2162585449212
      ],
      "options": []
     },
@@ -1790,8 +1775,8 @@
       "defl": ""
      },
      "uipos": [
-      -3085.1843261718727,
-      1187.6586914062493
+      -629.4729614257794,
+      1320.6962585449216
      ],
      "options": []
     },
@@ -1804,8 +1789,8 @@
       "value": 3.0
      },
      "uipos": [
-      -1845.451831054686,
-      444.5810595703118
+      -927.5403015136708,
+      504.18570434570256
      ],
      "options": []
     },
@@ -1824,8 +1809,8 @@
       "defl": ""
      },
      "uipos": [
-      -1233.2862060546856,
-      680.1173095703118
+      -315.37467651367024,
+      739.7219543457024
      ],
      "options": []
     },
@@ -1836,8 +1821,8 @@
      },
      "params": {},
      "uipos": [
-      -1840.7385009765617,
-      624.010620117186
+      -922.8269714355465,
+      683.6152648925768
      ],
      "options": []
     },
@@ -1870,8 +1855,8 @@
       "_KEYS": "iResolution\niDeltaTime\niColorDecay\niVelDecay\niPreScale"
      },
      "uipos": [
-      -1536.3795947265612,
-      539.7857763671867
+      -618.468065185546,
+      599.3904211425775
      ],
      "options": [],
      "socket_keys": [
@@ -1891,8 +1876,8 @@
       "value": 1.0
      },
      "uipos": [
-      -1834.2518310546861,
-      767.6210595703122
+      -916.340301513671,
+      827.225704345703
      ],
      "options": []
     },
@@ -1905,8 +1890,8 @@
       "value": 0.99
      },
      "uipos": [
-      -1578.0638378906228,
-      874.9611523437505
+      -660.1523083496077,
+      934.5657971191413
      ],
      "options": []
     },
@@ -1956,8 +1941,8 @@
       "value": 2.3
      },
      "uipos": [
-      -1290.4,
-      925.6
+      -372.4884704589849,
+      985.2046447753905
      ],
      "options": []
     },
@@ -1972,8 +1957,8 @@
      },
      "params": {},
      "uipos": [
-      -2567.3914990234343,
-      854.3055883789059
+      -1859.7460827636687,
+      796.8562475585934
      ],
      "options": []
     },
@@ -1986,8 +1971,8 @@
       "value": "#version 300 es\nprecision highp float;\nuniform vec4 iMouse;\nuniform sampler2D iTexVelocity;\nin vec2 fragCoord;\nout vec2 res;\nvoid main() {\n  res = fragCoord;\n}"
      },
      "uipos": [
-      -2609.431499023435,
-      477.17558837890624
+      -1901.7860827636696,
+      419.72624755859374
      ],
      "options": []
     },
@@ -2011,8 +1996,8 @@
      },
      "params": {},
      "uipos": [
-      -2570.6714990234377,
-      1008.5455883789062
+      -1863.0260827636712,
+      951.0962475585936
      ],
      "options": []
     },
@@ -2025,8 +2010,8 @@
       "name": "uniforms"
      },
      "uipos": [
-      -2576.568500976564,
-      1223.4191137695311
+      -1868.9230847167973,
+      1165.9697729492189
      ],
      "options": []
     },
@@ -2045,8 +2030,8 @@
      },
      "params": {},
      "uipos": [
-      -2325.0,
-      1071.0
+      -1617.3545837402335,
+      1013.5506591796873
      ],
      "options": []
     },
@@ -2061,8 +2046,8 @@
       "defl": ""
      },
      "uipos": [
-      -3597.0625000000005,
-      750.0000000000001
+      -3258.2432250976562,
+      1235.5998229980469
      ],
      "options": []
     },
@@ -2070,8 +2055,8 @@
      "name": "CachedIf",
      "inputs": {
       "input": [
-       "168a9c78-PassToyMakeTexturePair",
-       "texturePair"
+       "9d75f145-x",
+       "textureOut"
       ],
       "keepCache": [
        "9f7e043a-SubInput",
@@ -2081,8 +2066,8 @@
      },
      "params": {},
      "uipos": [
-      -3832.8,
-      439.19999999999993
+      -3553.9221313476573,
+      897.8662292480467
      ],
      "options": []
     },
@@ -2090,8 +2075,8 @@
      "name": "CachedIf",
      "inputs": {
       "input": [
-       "9241ad3d-PassToyMakeTexturePair",
-       "texturePair"
+       "dc57c809-x",
+       "textureOut"
       ],
       "keepCache": [
        "9f7e043a-SubInput",
@@ -2101,16 +2086,135 @@
      },
      "params": {},
      "uipos": [
-      -3368.8000000000006,
-      429.59999999999997
+      -2769.1447875976573,
+      900.8990417480466
+     ],
+     "options": []
+    },
+    "9d75f145-x": {
+     "name": "PassToyApplyShader",
+     "inputs": {
+      "shader": [
+       "c553e0ea-x",
+       "shader"
+      ],
+      "uniforms": null,
+      "textureIn": null,
+      "textureOut": [
+       "168a9c78-PassToyMakeTexturePair",
+       "texturePair"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -3554.13213134766,
+      697.1012292480466
+     ],
+     "options": []
+    },
+    "c553e0ea-x": {
+     "name": "PassToyMakeShader",
+     "inputs": {
+      "source": [
+       "18625c81-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -3550.852131347656,
+      542.8612292480464
+     ],
+     "options": []
+    },
+    "18625c81-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "#version 300 es\nprecision highp float;\nin vec2 fragCoord;\nout vec2 res;\nvoid main() {\n  res = vec2(0);\n}"
+     },
+     "uipos": [
+      -3592.8921313476567,
+      165.7312292480467
+     ],
+     "options": []
+    },
+    "95e49490-x": {
+     "name": "PassToyMakeTexturePair",
+     "inputs": {
+      "resolution": null,
+      "SRC": null
+     },
+     "params": {
+      "format": "r16f"
+     },
+     "uipos": [
+      -3005.218232879638,
+      723.5184723663333
+     ],
+     "options": []
+    },
+    "1fbe1581-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": "#version 300 es\nprecision highp float;\nin vec2 fragCoord;\nout vec2 res;\nvoid main() {\n  res = 0.0;\n}"
+     },
+     "uipos": [
+      -2807.267079620364,
+      160.24715263366664
+     ],
+     "options": []
+    },
+    "16f85446-x": {
+     "name": "PassToyMakeShader",
+     "inputs": {
+      "source": [
+       "1fbe1581-x",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -2765.227079620363,
+      537.3771526336664
+     ],
+     "options": []
+    },
+    "dc57c809-x": {
+     "name": "PassToyApplyShader",
+     "inputs": {
+      "shader": [
+       "16f85446-x",
+       "shader"
+      ],
+      "uniforms": null,
+      "textureIn": null,
+      "textureOut": [
+       "95e49490-x",
+       "texturePair"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -2768.507079620367,
+      691.6171526336666
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.40960000000000013,
-    "trans_x": -1560,
-    "trans_y": -828
+    "scale": 1.25,
+    "trans_x": -4283,
+    "trans_y": 446
    }
   },
   "CopyTexture": {
@@ -4355,6 +4459,37 @@
     "numeric"
    ]
   },
+  "NumericInt": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "numeric:int",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "value",
+     "0"
+    ]
+   ],
+   "categories": [
+    "numeric"
+   ]
+  },
   "NumericIntVec2": {
    "inputs": [
     [
@@ -4471,37 +4606,6 @@
     [
      "float",
      "w",
-     "0"
-    ]
-   ],
-   "categories": [
-    "numeric"
-   ]
-  },
-  "NumericInt": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "numeric:int",
-     "value",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "int",
-     "value",
      "0"
     ]
    ],
