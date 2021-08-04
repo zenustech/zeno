@@ -1,67 +1,54 @@
-#define FMT_HEADER_ONLY
+#include <functional>
+#include <typeinfo>
+#include <iostream>
+#include <memory>
 #include <vector>
 #include <string>
-#include <iostream>
+#include <tuple>
 #include <map>
 #include <any>
 
-struct Method {
-    struct ArgInfo {
-        std::string type;
-        std::string name;
-    };
+template <typename F, typename Ret, typename A, typename... Rest>
+A helper(Ret (F::*)(A, Rest...));
 
-    std::string name;
-    std::vector<ArgInfo> arguments;
-    std::vector<ArgInfo> returns;
+template <class F, class Ret, class A, class... Rest>
+A helper(Ret (F::*)(A, Rest...) const);
+
+template<typename F>
+struct first_argument {
+    typedef decltype( helper(&F::operator()) ) type;
 };
 
-struct Invoke {
-    int method;
-    std::vector<std::pair<int, int>> arguments;
+struct IMethod {
+    virtual std::any invoke(std::any &&argument) const = 0;
+    virtual ~IMethod() = default;
+
+    template <class T>
+    auto operator()(T &&t) {
+        return invoke(std::move(t));
+    }
 };
 
-std::vector<Method> methods;
-std::vector<Invoke> invokes;
+template <class F, class T>
+struct Method : IMethod {
+    F func;
 
-void gen_method_declare(Method const &method) {
-    std::cout << "std::tuple\n";
-    for (int a = 0; a < (int)method.returns.size(); a++) {
-        std::cout << (a == 0 ? "< " : ", ");
-        std::cout << method.arguments[a].type;
-        std::cout << " ";
-        std::cout << method.arguments[a].name;
-        std::cout << "\n";
-    }
-    std::cout << (method.returns.size() ? ">" : "<>") << "\n";
-    std::cout << method.name << "\n";
-    for (int a = 0; a < (int)method.arguments.size(); a++) {
-        std::cout << (a == 0 ? "( " : ", ");
-        std::cout << method.arguments[a].type;
-        std::cout << " ";
-        std::cout << method.arguments[a].name;
-        std::cout << "\n";
-    }
-    std::cout << (method.arguments.size() ? ")" : "()") << ";\n";
-}
+    Method(F &&func) : func(func) {}
 
-void codegen() {
-    for (int i = 0; i < (int)methods.size(); i++) {
-        auto const &method = methods[i];
-        gen_method_declare(method);
+    virtual std::any invoke(std::any &&argument) const override {
+        return func(std::any_cast<T>(argument));
     }
+};
+
+template <class T, class F>
+auto make_method(F &&func) {
+    return Method<F, T>(std::move(func));
 }
 
 int main() {
-    methods.emplace_back();
-    methods.back().arguments.resize(2);
-    methods.back().returns.resize(1);
-    methods.back().arguments[0].type = "int";
-    methods.back().arguments[0].name = "lhs";
-    methods.back().arguments[1].type = "int";
-    methods.back().arguments[1].name = "rhs";
-    methods.back().returns[0].type = "int";
-    methods.back().returns[0].name = "ret";
-    methods.back().name = "my_add";
-    codegen();
+    auto method = make_method<int>([=] (int val) -> int {
+        return -val;
+    });
+    int ret = std::any_cast<int>(method(1));
+    std::cout << ret << std::endl;
 }
