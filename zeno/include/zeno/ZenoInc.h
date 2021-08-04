@@ -9,3 +9,5 @@
 #include <zeno/PrimitiveObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/ListObject.h>
+#include <zeno/FunctionObject.h>
+#include <zeno/DictObject.h>
