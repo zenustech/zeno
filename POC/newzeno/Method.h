@@ -4,19 +4,19 @@
 #include <any>
 
 
-namespace zfp {
+namespace fp {
 
 
 namespace details {
-    template <class F, class Ret, class A, class... Rest>
-    A first_argument_helper(Ret (F::*)(A, Rest...));
+    template <size_t N, class F, class Ret, class A, class... Rest>
+    A nth_argument_helper(Ret (F::*)(A, Rest...));
 
-    template <class F, class Ret, class A, class... Rest>
-    A first_argument_helper(Ret (F::*)(A, Rest...) const);
+    template <size_t N, class F, class Ret, class A, class... Rest>
+    A nth_argument_helper(Ret (F::*)(A, Rest...) const);
 
-    template <class F>
-    struct first_argument {
-        using type = decltype(first_argument_helper(&F::operator()));
+    template <size_t N, class F>
+    struct nth_argument {
+        using type = decltype(nth_argument_helper<N>(&F::operator()));
     };
 }
 
@@ -37,7 +37,7 @@ struct _ImplMethod : Method {
 
 template <class F>
 std::unique_ptr<Method> make_method(F &&func) {
-    using T = typename details::first_argument<F>::type;
+    using T = typename details::nth_argument<0, F>::type;
     return std::make_unique<_ImplMethod<F, T>>(std::move(func));
 }
 
