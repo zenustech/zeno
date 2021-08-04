@@ -83,32 +83,25 @@ namespace details {
     struct is_tuple<std::tuple<Ts...>> : std::true_type {
     };
 
-    template <class T, class List>
-    void tuple_to_any_list(std::enable_if_t<1, T> &&t, List &&list) {
-        list[0] = t;
-    }
-
     template <class T>
-    struct tuple_if_not_tuple {
-        using type = std::tuple<T>;
-
-        static auto cast(T &&t) { return std::tuple<T>(t); }
-    };
-
-    template <class ...Ts>
-    struct tuple_if_not_tuple<std::tuple<Ts...>> {
-        using type = std::tuple<Ts...>;
-
-        static auto cast(std::tuple<Ts...> &&tuple) { return tuple; }
-    };
+    auto tuple_if_not_tuple(T &&t) {
+        if constexpr (is_tuple<T>::value) {
+            return t;
+        } else if constexpr (std::is_void<T>::value) {
+            return std::tuple<>();
+        } else {
+            return std::tuple<T>(t);
+        }
+    }
 }
 
 template <class F>
 auto wrap_context(F func) {
     return [=] (Context *ctx) {
         using Args = details::function_nth_argument_t<0, F>;
-        auto rets = func(details::any_list_to_tuple<Args>(
-                    static_cast<Context const *>(ctx)->inputs));
+        auto rets = details::tuple_if_not_tuple(
+                func(details::any_list_to_tuple<Args>(
+                    static_cast<Context const *>(ctx)->inputs)));
         details::tuple_to_any_list(rets, ctx->outputs);
     };
 }
