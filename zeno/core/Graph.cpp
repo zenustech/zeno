@@ -35,10 +35,10 @@ ZENO_API std::shared_ptr<IObject> Graph::getGraphOutput(
     return subOutputs.at(id);
 }
 
-ZENO_API std::shared_ptr<IObject> const &Graph::getNodeOutput(
+ZENO_API any const &Graph::getNodeOutput(
     std::string const &sn, std::string const &ss) const {
     auto node = safe_at(nodes, sn, "node");
-    if (node->muted_output)
+    if (node->muted_output.has_value())
         return node->muted_output;
     return safe_at(node->outputs, ss, "output", node->myname);
 }

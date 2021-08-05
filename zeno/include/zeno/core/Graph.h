@@ -2,7 +2,7 @@
 
 #include <zeno/utils/defs.h>
 #include <zeno/core/IObject.h>
-#include <zeno/utils/safe_dynamic_cast.h>
+#include <zeno/utils/any.h>
 #include <memory>
 #include <string>
 #include <set>
@@ -69,7 +69,7 @@ struct Graph {
     ZENO_API void setNodeParam(std::string const &id, std::string const &par,
         IValue const &val);
     ZENO_API void setNodeOption(std::string const &id, std::string const &name);
-    ZENO_API std::shared_ptr<IObject> const &getNodeOutput(
+    ZENO_API any const &getNodeOutput(
         std::string const &sn, std::string const &ss) const;
 };
 
