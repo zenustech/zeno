@@ -13,26 +13,26 @@ struct is_variant<std::variant<Ts...>> : std::true_type {
 };
 
 template <class T>
-struct is_pointer : std::false_type {
+struct is_smart_ptr : std::false_type {
 };
 
 template <class T>
-struct is_pointer<T *> : std::true_type {
+struct is_smart_ptr<T *> : std::true_type {
     using type = T;
 };
 
 template <class T>
-struct is_pointer<T const *> : std::true_type {
+struct is_smart_ptr<T const *> : std::true_type {
     using type = T;
 };
 
 template <class T>
-struct is_pointer<std::unique_ptr<T>> : std::true_type {
+struct is_smart_ptr<std::unique_ptr<T>> : std::true_type {
     using type = T;
 };
 
 template <class T>
-struct is_pointer<std::shared_ptr<T>> : std::true_type {
+struct is_smart_ptr<std::shared_ptr<T>> : std::true_type {
     using type = T;
 };
 
@@ -90,10 +90,7 @@ struct any : std::any {
     template <class T>
     any(T const &t)
     : std::any(static_cast<typename any_traits<T>::underlying_type>(t))
-    {
-        printf("%s\n", typeid(T).name());
-        printf("%s\n", typeid(typename any_traits<T>::underlying_type).name());
-    }
+    {}
 
     any &operator=(any const &a) = default;
 
@@ -105,15 +102,23 @@ struct any : std::any {
     }
 };
 
+struct bad_dynamic_cast : std::bad_cast {
+    virtual const char *what() const noexcept { return "bad dynamic_cast"; }
+};
+
 template <class T>
 T implicit_any_cast(any const &a) {
     using V = typename any_traits<T>::underlying_type;
     decltype(auto) v = std::any_cast<V const &>(a);
     if constexpr (std::is_pointer_v<T>) {
-        return dynamic_cast<T>(v);
-    } else if constexpr (is_pointer<T>::value) {
-        using U = typename is_pointer<T>::type;
-        return std::dynamic_pointer_cast<U>(v);
+        auto ret = dynamic_cast<T>(v);
+        if (!ret) throw bad_dynamic_cast{};
+        return ret;
+    } else if constexpr (is_smart_ptr<T>::value) {
+        using U = typename is_smart_ptr<T>::type;
+        auto ret = std::dynamic_pointer_cast<U>(v);
+        if (!ret) throw bad_dynamic_cast{};
+        return ret;
     } else if constexpr (is_variant<V>::value) {
         return std::visit([] (auto const &x) -> T {
             return (T)x;
@@ -133,7 +138,7 @@ struct Derived : Base {
 };
 
 int main() {
-    any a = new Derived;
-    std::cout << implicit_any_cast<Base *>(a) << std::endl;
+    any a = std::make_shared<Derived>();
+    std::cout << implicit_any_cast<std::shared_ptr<Base>>(a) << std::endl;
     return 0;
 }
