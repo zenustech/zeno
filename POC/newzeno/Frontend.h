@@ -33,6 +33,7 @@ struct ForwardSorter {
             }
         }
         root_block = std::make_unique<statement::IRBlock>();
+        current_block = root_block.get();
     }
 
     std::unique_ptr<statement::IRBlock> get_root() {
