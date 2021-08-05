@@ -20,7 +20,6 @@ struct Graph {
 struct ForwardSorter {
     std::set<int> visited;
     std::map<int, std::vector<int>> links;
-    std::vector<int> result;
 
     Graph const &graph;
 
@@ -45,15 +44,17 @@ struct ForwardSorter {
             return;
         }
         visited.insert(key);
+
+        auto stmt = parse_node(key);
+        current_block->stmts.emplace_back(std::move(stmt));
+    }
+
+    void do_require(int key) {
         if (auto it = links.find(key); it != links.end()) {
             for (auto const &source: it->second) {
                 require(source);
             }
         }
-        auto prev_block = current_block;
-        auto const &node = graph.nodes.at(key);
-        auto stmt = parse_node(key, node);
-        prev_block->stmts.emplace_back(std::move(stmt));
     }
 
     int lutid = 0;
@@ -67,20 +68,27 @@ struct ForwardSorter {
         return id;
     }
 
-    std::unique_ptr<statement::Statement>
-    parse_node(int nodeid, Graph::Node const &node) {
-        if (node.name == "value") {
-            auto stmt = std::make_unique<statement::StmtValue>();
-            stmt->output = lut_entry(nodeid, 0);
-            stmt->value = node.parameter;
-            return stmt;
-        }
+    std::unique_ptr<statement::Statement> parse_node(int nodeid) {
+        auto const &node = graph.nodes.at(nodeid);
+
         if (node.name == "if") {
             auto stmt = std::make_unique<statement::StmtIfBlock>();
             stmt->cond_input = lut.at(node.inputs.at(0));
             stmt->block = std::make_unique<statement::IRBlock>();
             stmt->block->parent = current_block;
+            auto old_block = current_block;
             current_block = stmt->block.get();
+            do_require(nodeid);
+            current_block = old_block;
+            return std::move(stmt);
+        }
+
+        do_require(nodeid);
+
+        if (node.name == "value") {
+            auto stmt = std::make_unique<statement::StmtValue>();
+            stmt->output = lut_entry(nodeid, 0);
+            stmt->value = node.parameter;
             return stmt;
         }
 
