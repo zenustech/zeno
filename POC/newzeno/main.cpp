@@ -22,7 +22,7 @@ ZENO_DEFINE_NODE(printint, "void printint(int x)");
 
 int main() {
     zeno::v2::frontend::Graph graph;
-    graph.nodes.push_back({"make_value", {}, 1, (int)21});
+    graph.nodes.push_back({"make_value", {}, 1, 21.34f});
     graph.nodes.push_back({"myadd", {{0, 0}, {0, 0}}, 1, nullptr});
     graph.nodes.push_back({"printint", {{1, 0}}, 0, nullptr});
 
