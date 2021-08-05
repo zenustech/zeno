@@ -15,7 +15,11 @@ def direct_search(pattern, keys):
     return matched
 
 def fuzzy_search(pattern, keys):
-    return chain(capital_search(pattern, keys), direct_search(pattern, keys))
+    front = list(capital_search(pattern, keys))
+    front_set = set(front)
+    back = direct_search(pattern, keys)
+    back = [k for k in back if (k not in front_set)]
+    return front + back
 
 from .system.utils import rel2abs
 
