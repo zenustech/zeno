@@ -12,11 +12,6 @@ int myadd(int x, int y) {
 }
 ZENO_DEFINE_NODE(myadd, "int myadd(int x, int y)");
 
-int makeint() {
-    return 21;
-}
-ZENO_DEFINE_NODE(makeint, "int makeint()");
-
 void printint(int x) {
     std::cout << "printint: " << x << std::endl;
 }

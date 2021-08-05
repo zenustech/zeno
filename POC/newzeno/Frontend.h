@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.h"
+#include "Container.h"
 #include "Statement.h"
 
 
@@ -11,7 +11,7 @@ struct Graph {
         std::string name;
         std::vector<std::pair<int, int>> inputs;
         int num_outputs = 0;
-        std::any parameter{};
+        container::any parameter{};
     };
     std::vector<Node> nodes;
 };

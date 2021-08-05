@@ -3,6 +3,7 @@
 #include <functional>
 #include <typeinfo>
 #include <sstream>
+#include <variant>
 #include <memory>
 #include <vector>
 #include <string>
