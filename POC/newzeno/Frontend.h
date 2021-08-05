@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "Statement.h"
 
 
 namespace zeno::v2::frontend {
@@ -46,24 +47,30 @@ struct ForwardSorter {
         result.push_back(key);
     }
 
+    int lutid = 0;
+    std::map<std::pair<int, int>, int> lut;
+
+    auto parse_node(int nodeid, Graph::Node const &node) {
+        auto stmt = std::make_unique<statement::StmtCall>();
+        stmt->node_name = node.name;
+        for (auto const &source: node.inputs) {
+            if (source.first != -1)
+                stmt->inputs.push_back(lut.at(source));
+        }
+        for (int sockid = 0; sockid < node.num_outputs; sockid++) {
+            auto id = lutid++;
+            lut[std::make_pair(nodeid, sockid)] = id;
+            stmt->outputs.push_back(id);
+        }
+        return stmt;
+    }
+
     auto linearize() {
-        int lutid = 0;
-        auto ir = std::make_unique<backend::IRBlock>();
-        std::map<std::pair<int, int>, int> lut;
+        auto ir = std::make_unique<statement::IRBlock>();
         for (auto nodeid: result) {
             auto const &node = graph.nodes.at(nodeid);
-            backend::Invocation invo;
-            invo.node_name = node.name;
-            for (auto const &source: node.inputs) {
-                if (source.first != -1)
-                    invo.inputs.push_back(lut.at(source));
-            }
-            for (int sockid = 0; sockid < node.num_outputs; sockid++) {
-                auto id = lutid++;
-                lut[std::make_pair(nodeid, sockid)] = id;
-                invo.outputs.push_back(id);
-            }
-            ir->invos.push_back(invo);
+            auto stmt = parse_node(nodeid, node);
+            ir->stmts.emplace_back(std::move(stmt));
         }
         return ir;
     }

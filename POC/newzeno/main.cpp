@@ -31,13 +31,13 @@ int main() {
     sorter.require(2);
     auto ir = sorter.linearize();
 
-    for (auto const &invo: ir->invos) {
-        zeno::v2::helpers::print_invocation(std::cout, invo);
+    for (auto const &stmt: ir->stmts) {
+        std::cout << stmt->to_string() << std::endl;
     }
 
     auto scope = zeno::v2::backend::Session::get().makeScope();
-    for (auto const &invo: ir->invos) {
-        invo.apply(scope.get());
+    for (auto const &stmt: ir->stmts) {
+        stmt->apply(scope.get());
     }
 
     return 0;

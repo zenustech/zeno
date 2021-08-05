@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <typeinfo>
+#include <sstream>
 #include <memory>
 #include <vector>
 #include <string>
