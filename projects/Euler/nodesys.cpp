@@ -397,7 +397,7 @@ struct CompressibleMarkDOF : zeno::INode {
           if (flowData->gas->cell_type[idx] == ZenEulerGas::CellType::SOLID)
             num++;
         });
-    std::cout << "solid cell num after marking dof is " << num << std::endl;
+    // std::cout << "solid cell num after marking dof is " << num << std::endl;
 
     // // just trial
     // flowData->gas
@@ -550,7 +550,7 @@ struct CompressibleAdvection : zeno::INode {
           if (flowData->gas->cell_type[idx] == ZenEulerGas::CellType::SOLID)
             num++;
         });
-    std::cout << "solid cell num after marking dof is " << num << std::endl;
+    // std::cout << "solid cell num after marking dof is " << num << std::endl;
 
     set_output("outFlowData", get_input("inFlowData"));
   }

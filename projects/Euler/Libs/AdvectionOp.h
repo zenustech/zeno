@@ -207,9 +207,9 @@ public:
                         if (cell_types[i] == CellType::GAS || cell_types[i] == CellType::FREE || cell_types[i] == CellType::INLET)
                             U[i] = field_helper.uf[IDX[i]](d);
                         else if (cell_types[i] == CellType::SOLID) {
-                            std::cout << "correctly got interface vel ";
+                            // std::cout << "correctly got interface vel ";
                             U[i] = field_helper.us[IDX[i]](d);
-                            std::cout << U[i] << std::endl;
+                            // std::cout << U[i] << std::endl;
                         }
                         else if (cell_types[i] == CellType::BOUND)
                             U[i] = 0;
