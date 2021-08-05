@@ -13,26 +13,11 @@ struct is_variant<std::variant<Ts...>> : std::true_type {
 };
 
 template <class T>
-struct is_smart_ptr : std::false_type {
+struct is_shared_ptr : std::false_type {
 };
 
 template <class T>
-struct is_smart_ptr<T *> : std::true_type {
-    using type = T;
-};
-
-template <class T>
-struct is_smart_ptr<T const *> : std::true_type {
-    using type = T;
-};
-
-template <class T>
-struct is_smart_ptr<std::unique_ptr<T>> : std::true_type {
-    using type = T;
-};
-
-template <class T>
-struct is_smart_ptr<std::shared_ptr<T>> : std::true_type {
+struct is_shared_ptr<std::shared_ptr<T>> : std::true_type {
     using type = T;
 };
 
@@ -114,8 +99,8 @@ T implicit_any_cast(any const &a) {
         auto ret = dynamic_cast<T>(v);
         if (!ret) throw bad_dynamic_cast{};
         return ret;
-    } else if constexpr (is_smart_ptr<T>::value) {
-        using U = typename is_smart_ptr<T>::type;
+    } else if constexpr (is_shared_ptr<T>::value) {
+        using U = typename is_shared_ptr<T>::type;
         auto ret = std::dynamic_pointer_cast<U>(v);
         if (!ret) throw bad_dynamic_cast{};
         return ret;
