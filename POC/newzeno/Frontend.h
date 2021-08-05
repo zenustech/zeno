@@ -79,13 +79,10 @@ struct ForwardSorter {
 
         if (node.name == "if") {
             auto stmt = std::make_unique<statement::StmtIfBlock>();
-            stmt->cond_input = lut_require(node.inputs.at(0));
-            stmt->block = std::make_unique<statement::IRBlock>();
-            stmt->block->parent = current_block;
-            auto old_block = current_block;
-            current_block = stmt->block.get();
-            //
-            current_block = old_block;
+            stmt->input_cond = lut_require(node.inputs.at(0));
+            stmt->input_true = lut_require(node.inputs.at(1));
+            stmt->input_false = lut_require(node.inputs.at(2));
+            stmt->output = lut_entry(nodeid, 0);
             return std::move(stmt);
         }
 

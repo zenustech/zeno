@@ -28,11 +28,13 @@ ZENO_DEFINE_NODE(printtype, "void printtype(zeno::v2::container::any x)");
 
 int main() {
     zeno::v2::frontend::Graph graph;
+    // x ? x + x : x
     graph.nodes.push_back({"value", {}, 1, 21.34f});
-    graph.nodes.push_back({"if", {{0, 0}}, 0, nullptr});
+    graph.nodes.push_back({"myadd", {{0, 0}, {0, 0}}, 1, nullptr});
+    graph.nodes.push_back({"if", {{0, 0}, {1, 0}, {0, 0}}, 0, nullptr});
 
     zeno::v2::frontend::ForwardSorter sorter(graph);
-    sorter.require(1);
+    sorter.require(graph.nodes.size() - 1);
     auto ir = sorter.get_root();
 
     for (auto const &stmt: ir->stmts) {

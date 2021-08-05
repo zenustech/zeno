@@ -33,8 +33,10 @@ struct IRBlock {
 
 
 struct StmtIfBlock : Statement {
-    std::unique_ptr<IRBlock> block;
-    int cond_input;
+    std::unique_ptr<IRBlock> block_true;
+    int input_cond;
+    int input_true;
+    int input_false;
 
     virtual void apply(backend::Scope *scope) const override {
         block->apply(scope);
@@ -42,7 +44,7 @@ struct StmtIfBlock : Statement {
 
     virtual std::string to_string() const override {
         std::stringstream os;
-        os << "if (" << cond_input << ") {\n";
+        os << "if (" << input_cond << ") {\n";
         os << block->to_string();
         os << "}";
         return os.str();
