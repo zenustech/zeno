@@ -80,7 +80,12 @@ struct any : std::any {
 
     template <class T>
     any(T const &t)
-    : std::any(static_cast<typename any_traits<T>::underlying_type>(t))
+    : std::any(static_cast<typename any_traits<T>::underlying_type const &>(t))
+    {}
+
+    template <class T>
+    any(T &&t)
+    : std::any(static_cast<typename any_traits<T>::underlying_type &&>(t))
     {}
 
     any &operator=(any const &a) = default;

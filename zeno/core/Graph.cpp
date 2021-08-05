@@ -17,9 +17,8 @@ ZENO_API Context::Context(Context const &other)
 ZENO_API Graph::Graph() = default;
 ZENO_API Graph::~Graph() = default;
 
-ZENO_API void Graph::setGraphInput(std::string const &id,
-        std::shared_ptr<IObject> obj) {
-    subInputs[id] = obj;
+ZENO_API void Graph::setGraphInput2(std::string const &id, any &&obj) {
+    subInputs[id] = std::move(obj);
 }
 
 ZENO_API void Graph::applyGraph() {
@@ -30,7 +29,7 @@ ZENO_API void Graph::applyGraph() {
     applyNodes(applies);
 }
 
-ZENO_API std::shared_ptr<IObject> Graph::getGraphOutput(
+ZENO_API any const &Graph::getGraphOutput2(
         std::string const &id) const {
     return subOutputs.at(id);
 }

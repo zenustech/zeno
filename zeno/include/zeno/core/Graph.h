@@ -30,8 +30,8 @@ struct Graph {
 
     std::map<std::string, std::unique_ptr<INode>> nodes;
 
-    std::map<std::string, std::shared_ptr<IObject>> subInputs;
-    std::map<std::string, std::shared_ptr<IObject>> subOutputs;
+    std::map<std::string, any> subInputs;
+    std::map<std::string, any> subOutputs;
     std::map<std::string, std::string> subOutputNodes;
 
     std::map<std::string, std::string> portalIns;
@@ -45,11 +45,18 @@ struct Graph {
     ZENO_API Graph();
     ZENO_API ~Graph();
 
-    ZENO_API void setGraphInput(std::string const &id,
-            std::shared_ptr<IObject> obj);
-    ZENO_API std::shared_ptr<IObject> getGraphOutput(
-            std::string const &id) const;
+    ZENO_API void setGraphInput2(std::string const &id, any &&obj);
+    ZENO_API any const &getGraphOutput2(std::string const &id) const;
     ZENO_API void applyGraph();
+
+    void setGraphInput(std::string const &id,
+            std::shared_ptr<IObject> obj) {
+        setGraphInput2(id, std::move(obj));
+    }
+    std::shared_ptr<IObject> getGraphOutput(
+            std::string const &id) const {
+        return smart_any_cast<std::shared_ptr<IObject>>(getGraphOutput2(id));
+    }
 
     template <class T>
     std::shared_ptr<T> getGraphOutput(
