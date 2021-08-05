@@ -41,6 +41,8 @@ struct any : std::any {
         printf("!!!%s\n", typeid(t).name());
     }
 
+    any &operator=(any const &a) = default;
+
     template <class T>
     any &operator=(T const &t) {
         std::any::operator=(
@@ -58,10 +60,13 @@ struct is_variant<std::variant<Ts...>> : std::true_type {
 };
 
 template <class T>
-auto our_any_cast(any const &a) {
-    auto &&v = std::any_cast<typename any_traits<T>::underlying_type>(a);
-    if constexpr (is_variant<std::decay_t<decltype(v)>>::value) {
-        return std::get<T>(v);
+T implicit_any_cast(any const &a) {
+    using V = typename any_traits<T>::underlying_type;
+    decltype(auto) v = std::any_cast<V const &>(a);
+    if constexpr (is_variant<V>::value) {
+        return std::visit([] (auto const &x) -> T {
+            return (T)x;
+        }, v);
     } else {
         return v;
     }
@@ -69,6 +74,6 @@ auto our_any_cast(any const &a) {
 
 int main() {
     any a = 3.14f;
-    std::cout << our_any_cast<int>(a) << std::endl;
+    std::cout << implicit_any_cast<int>(a) << std::endl;
     return 0;
 }
