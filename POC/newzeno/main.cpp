@@ -36,7 +36,7 @@ int main() {
     sorter.require(0);
     sorter.require(1);
     sorter.require(2);
-    auto ir = sorter.linearize();
+    auto ir = sorter.get_root();
 
     for (auto const &stmt: ir->stmts) {
         std::cout << stmt->to_string() << std::endl;

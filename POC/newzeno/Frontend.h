@@ -33,6 +33,11 @@ struct ForwardSorter {
                     link.push_back(src_node);
             }
         }
+        root_block = std::make_unique<statement::IRBlock>();
+    }
+
+    std::unique_ptr<statement::IRBlock> get_root() {
+        return std::move(root_block);
     }
 
     void require(int key) {
@@ -45,12 +50,16 @@ struct ForwardSorter {
                 require(source);
             }
         }
-        result.push_back(key);
+        auto prev_block = current_block;
+        auto const &node = graph.nodes.at(key);
+        auto stmt = parse_node(key, node);
+        prev_block->stmts.emplace_back(std::move(stmt));
     }
 
     int lutid = 0;
     std::map<std::pair<int, int>, int> lut;
-    statement::IRBlock *current_block;
+    statement::IRBlock *current_block = nullptr;
+    std::unique_ptr<statement::IRBlock> root_block;
 
     int lut_entry(int nodeid, int sockid) {
         auto id = lutid++;
@@ -59,7 +68,7 @@ struct ForwardSorter {
     }
 
     std::unique_ptr<statement::Statement>
-        parse_node(int nodeid, Graph::Node const &node) {
+    parse_node(int nodeid, Graph::Node const &node) {
         if (node.name == "value") {
             auto stmt = std::make_unique<statement::StmtValue>();
             stmt->output = lut_entry(nodeid, 0);
@@ -85,18 +94,6 @@ struct ForwardSorter {
             stmt->outputs.push_back(lut_entry(nodeid, sockid));
         }
         return stmt;
-    }
-
-    auto linearize() {
-        auto ir = std::make_unique<statement::IRBlock>();
-        current_block = ir.get();
-        for (auto nodeid: result) {
-            auto prev_block = current_block;
-            auto const &node = graph.nodes.at(nodeid);
-            auto stmt = parse_node(nodeid, node);
-            prev_block->stmts.emplace_back(std::move(stmt));
-        }
-        return ir;
     }
 };
 
