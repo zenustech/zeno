@@ -48,7 +48,7 @@ struct StmtIfBlock : Statement {
     }
 };
 
-struct StmtLoadValue : Statement {
+struct StmtValue : Statement {
     container::any value;
     int output;
 
@@ -59,7 +59,7 @@ struct StmtLoadValue : Statement {
     virtual std::string to_string() const override {
         std::stringstream os;
         os << "[" << output << "] = ";
-        os << "load_value(" << value.type().name() << ");";
+        os << "value(" << value.type().name() << ");";
         return os.str();
     }
 };

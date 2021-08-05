@@ -28,7 +28,7 @@ ZENO_DEFINE_NODE(printtype, "void printtype(zeno::v2::container::any x)");
 
 int main() {
     zeno::v2::frontend::Graph graph;
-    graph.nodes.push_back({"make_value", {}, 1, 21.34f});
+    graph.nodes.push_back({"value", {}, 1, 21.34f});
     graph.nodes.push_back({"if", {{0, 0}}, 0, nullptr});
 
     zeno::v2::frontend::ForwardSorter sorter(graph);

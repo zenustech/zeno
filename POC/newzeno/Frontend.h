@@ -60,8 +60,8 @@ struct ForwardSorter {
 
     std::unique_ptr<statement::Statement>
         parse_node(int nodeid, Graph::Node const &node) {
-        if (node.name == "make_value") {
-            auto stmt = std::make_unique<statement::StmtLoadValue>();
+        if (node.name == "value") {
+            auto stmt = std::make_unique<statement::StmtValue>();
             stmt->output = lut_entry(nodeid, 0);
             stmt->value = node.parameter;
             return stmt;
