@@ -35,7 +35,7 @@ struct Graph {
     std::map<std::string, std::string> subOutputNodes;
 
     std::map<std::string, std::string> portalIns;
-    std::map<std::string, std::shared_ptr<IObject>> portals;
+    std::map<std::string, any> portals;
 
     std::unique_ptr<Context> ctx;
 

@@ -41,11 +41,17 @@ protected:
     ZENO_API virtual void apply() = 0;
 
     ZENO_API bool has_option(std::string const &id) const;
-    ZENO_API bool has_input(std::string const &id) const;
+    ZENO_API bool has_input2(std::string const &id) const;
     ZENO_API IValue get_param(std::string const &id) const;
     ZENO_API any get_input2(std::string const &id) const;
     ZENO_API void set_output2(std::string const &id, any &&obj);
 
+    /* deprecated */
+    bool has_input(std::string const &id) const {
+        return has_input2(id);
+    }
+
+    /* deprecated */
     void set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
         set_output2(id, std::move(obj));
     }

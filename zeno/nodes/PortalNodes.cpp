@@ -11,7 +11,7 @@ struct PortalIn : zeno::INode {
 
     virtual void apply() override {
         auto name = get_param<std::string>("name");
-        auto obj = get_input("port");
+        auto obj = get_input2("port");
         graph->portals[name] = std::move(obj);
     }
 };
@@ -29,7 +29,7 @@ struct PortalOut : zeno::INode {
         auto depnode = zeno::safe_at(graph->portalIns, name, "PortalIn");
         graph->applyNode(depnode);
         auto obj = safe_at(graph->portals, name, "portal object");
-        set_output("port", std::move(obj));
+        set_output2("port", std::move(obj));
     }
 };
 
@@ -43,11 +43,11 @@ ZENDEFNODE(PortalOut, {
 
 struct Route : zeno::INode {
     virtual void apply() override {
-        if (has_input("input")) {
-            auto obj = get_input("input");
-            set_output("output", std::move(obj));
+        if (has_input2("input")) {
+            auto obj = get_input2("input");
+            set_output2("output", std::move(obj));
         } else {
-            set_output("output", std::make_shared<zeno::ConditionObject>());
+            set_output2("output", std::make_shared<zeno::ConditionObject>());
         }
     }
 };
