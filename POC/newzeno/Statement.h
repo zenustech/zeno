@@ -14,6 +14,7 @@ struct Statement {
 
 struct IRBlock {
     std::vector<std::unique_ptr<Statement>> stmts;
+    IRBlock *parent = nullptr;
 
     void apply(backend::Scope *scope) const {
         for (auto const &stmt: stmts) {

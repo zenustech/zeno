@@ -30,9 +30,12 @@ int main() {
     zeno::v2::frontend::Graph graph;
     graph.nodes.push_back({"value", {}, 1, 21.34f});
     graph.nodes.push_back({"if", {{0, 0}}, 0, nullptr});
+    graph.nodes.push_back({"value", {}, 1, 3.14f});
 
     zeno::v2::frontend::ForwardSorter sorter(graph);
+    sorter.require(0);
     sorter.require(1);
+    sorter.require(2);
     auto ir = sorter.linearize();
 
     for (auto const &stmt: ir->stmts) {

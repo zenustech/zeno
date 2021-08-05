@@ -70,6 +70,7 @@ struct ForwardSorter {
             auto stmt = std::make_unique<statement::StmtIfBlock>();
             stmt->cond_input = lut.at(node.inputs.at(0));
             stmt->block = std::make_unique<statement::IRBlock>();
+            stmt->block->parent = current_block;
             current_block = stmt->block.get();
             return stmt;
         }
