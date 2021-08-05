@@ -1,7 +1,40 @@
 #include <iostream>
 #include <variant>
 #include <cstdint>
+#include <memory>
 #include <any>
+
+template <class T>
+struct is_variant : std::false_type {
+};
+
+template <class ...Ts>
+struct is_variant<std::variant<Ts...>> : std::true_type {
+};
+
+template <class T>
+struct is_pointer : std::false_type {
+};
+
+template <class T>
+struct is_pointer<T *> : std::true_type {
+    using type = T;
+};
+
+template <class T>
+struct is_pointer<T const *> : std::true_type {
+    using type = T;
+};
+
+template <class T>
+struct is_pointer<std::unique_ptr<T>> : std::true_type {
+    using type = T;
+};
+
+template <class T>
+struct is_pointer<std::shared_ptr<T>> : std::true_type {
+    using type = T;
+};
 
 using scalar_type_variant = std::variant
         < bool
@@ -29,6 +62,26 @@ struct any_traits<T, std::void_t<decltype(
     using underlying_type = scalar_type_variant;
 };
 
+template <class T>
+struct any_traits<T *, std::void_t<typename T::polymorphic_base_type>> {
+    using underlying_type = typename T::polymorphic_base_type *;
+};
+
+template <class T>
+struct any_traits<T const *, std::void_t<typename T::polymorphic_base_type>> {
+    using underlying_type = typename T::polymorphic_base_type const *;
+};
+
+template <class T>
+struct any_traits<std::unique_ptr<T>, std::void_t<typename T::polymorphic_base_type>> {
+    using underlying_type = std::unique_ptr<typename T::polymorphic_base_type>;
+};
+
+template <class T>
+struct any_traits<std::shared_ptr<T>, std::void_t<typename T::polymorphic_base_type>> {
+    using underlying_type = std::shared_ptr<typename T::polymorphic_base_type>;
+};
+
 struct any : std::any {
     any() = default;
     any(any &&a) = default;
@@ -38,7 +91,8 @@ struct any : std::any {
     any(T const &t)
     : std::any(static_cast<typename any_traits<T>::underlying_type>(t))
     {
-        printf("!!!%s\n", typeid(t).name());
+        printf("%s\n", typeid(T).name());
+        printf("%s\n", typeid(typename any_traits<T>::underlying_type).name());
     }
 
     any &operator=(any const &a) = default;
@@ -52,18 +106,15 @@ struct any : std::any {
 };
 
 template <class T>
-struct is_variant : std::false_type {
-};
-
-template <class ...Ts>
-struct is_variant<std::variant<Ts...>> : std::true_type {
-};
-
-template <class T>
 T implicit_any_cast(any const &a) {
     using V = typename any_traits<T>::underlying_type;
     decltype(auto) v = std::any_cast<V const &>(a);
-    if constexpr (is_variant<V>::value) {
+    if constexpr (std::is_pointer_v<T>) {
+        return dynamic_cast<T>(v);
+    } else if constexpr (is_pointer<T>::value) {
+        using U = typename is_pointer<T>::type;
+        return std::dynamic_pointer_cast<U>(v);
+    } else if constexpr (is_variant<V>::value) {
         return std::visit([] (auto const &x) -> T {
             return (T)x;
         }, v);
@@ -72,8 +123,17 @@ T implicit_any_cast(any const &a) {
     }
 }
 
+struct Base {
+    using polymorphic_base_type = Base;
+    virtual ~Base() = default;
+};
+
+struct Derived : Base {
+    virtual ~Derived() = default;
+};
+
 int main() {
-    any a = 3.14f;
-    std::cout << implicit_any_cast<int>(a) << std::endl;
+    any a = new Derived;
+    std::cout << implicit_any_cast<Base *>(a) << std::endl;
     return 0;
 }
