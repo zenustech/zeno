@@ -29,13 +29,10 @@ ZENO_DEFINE_NODE(printtype, "void printtype(zeno::v2::container::any x)");
 int main() {
     zeno::v2::frontend::Graph graph;
     graph.nodes.push_back({"make_value", {}, 1, 21.34f});
-    graph.nodes.push_back({"myadd", {{0, 0}, {0, 0}}, 1, nullptr});
-    graph.nodes.push_back({"printint", {{1, 0}}, 0, nullptr});
-    graph.nodes.push_back({"printtype", {{1, 0}}, 0, nullptr});
+    graph.nodes.push_back({"if", {{0, 0}}, 0, nullptr});
 
     zeno::v2::frontend::ForwardSorter sorter(graph);
-    sorter.require(2);
-    sorter.require(3);
+    sorter.require(1);
     auto ir = sorter.linearize();
 
     for (auto const &stmt: ir->stmts) {
@@ -43,9 +40,7 @@ int main() {
     }
 
     auto scope = zeno::v2::backend::Session::get().makeScope();
-    for (auto const &stmt: ir->stmts) {
-        stmt->apply(scope.get());
-    }
+    ir->apply(scope.get());
 
     return 0;
 }

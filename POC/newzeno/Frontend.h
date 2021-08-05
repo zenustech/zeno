@@ -50,6 +50,7 @@ struct ForwardSorter {
 
     int lutid = 0;
     std::map<std::pair<int, int>, int> lut;
+    statement::IRBlock *current_block;
 
     int lut_entry(int nodeid, int sockid) {
         auto id = lutid++;
@@ -63,6 +64,13 @@ struct ForwardSorter {
             auto stmt = std::make_unique<statement::StmtLoadValue>();
             stmt->output = lut_entry(nodeid, 0);
             stmt->value = node.parameter;
+            return stmt;
+        }
+        if (node.name == "if") {
+            auto stmt = std::make_unique<statement::StmtIfBlock>();
+            stmt->cond_input = lut.at(node.inputs.at(0));
+            stmt->block = std::make_unique<statement::IRBlock>();
+            current_block = stmt->block.get();
             return stmt;
         }
 
