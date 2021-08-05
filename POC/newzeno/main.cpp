@@ -17,6 +17,12 @@ void printint(int x) {
 }
 ZENO_DEFINE_NODE(printint, "void printint(int x)");
 
+void printtype(zeno::v2::container::any x) {
+    // see also https://en.cppreference.com/w/cpp/utility/any/type
+    std::cout << "printtype: " << x.type().name() << std::endl;
+}
+ZENO_DEFINE_NODE(printtype, "void printtype(zeno::v2::container::any x)");
+
 }
 
 
@@ -25,9 +31,11 @@ int main() {
     graph.nodes.push_back({"make_value", {}, 1, 21.34f});
     graph.nodes.push_back({"myadd", {{0, 0}, {0, 0}}, 1, nullptr});
     graph.nodes.push_back({"printint", {{1, 0}}, 0, nullptr});
+    graph.nodes.push_back({"printtype", {{1, 0}}, 0, nullptr});
 
     zeno::v2::frontend::ForwardSorter sorter(graph);
     sorter.require(2);
+    sorter.require(3);
     auto ir = sorter.linearize();
 
     for (auto const &stmt: ir->stmts) {

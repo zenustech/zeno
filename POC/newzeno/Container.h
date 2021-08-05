@@ -95,39 +95,47 @@ struct bad_dynamic_cast : std::bad_cast {
 
 template <class T>
 T smart_any_cast(any const &a) {
-    using V = typename any_traits<T>::underlying_type;
-    decltype(auto) v = std::any_cast<V const &>(a);
-    if constexpr (std::is_pointer_v<T>) {
-        auto ret = dynamic_cast<T>(v);
-        if (!ret) throw bad_dynamic_cast{};
-        return ret;
-    } else if constexpr (is_shared_ptr<T>::value) {
-        using U = typename is_shared_ptr<T>::type;
-        auto ret = std::dynamic_pointer_cast<U>(v);
-        if (!ret) throw bad_dynamic_cast{};
-        return ret;
-    } else if constexpr (is_variant<V>::value) {
-        return std::visit([] (auto const &x) {
-            return (T)x;
-        }, v);
+    if constexpr (std::is_same_v<T, any>) {
+        return a;
     } else {
-        return v;
+        using V = typename any_traits<T>::underlying_type;
+        decltype(auto) v = std::any_cast<V const &>(a);
+        if constexpr (std::is_pointer_v<T>) {
+            auto ret = dynamic_cast<T>(v);
+            if (!ret) throw bad_dynamic_cast{};
+            return ret;
+        } else if constexpr (is_shared_ptr<T>::value) {
+            using U = typename is_shared_ptr<T>::type;
+            auto ret = std::dynamic_pointer_cast<U>(v);
+            if (!ret) throw bad_dynamic_cast{};
+            return ret;
+        } else if constexpr (is_variant<V>::value && !is_variant<T>::value) {
+            return std::visit([] (auto const &x) {
+                return (T)x;
+            }, v);
+        } else {
+            return v;
+        }
     }
 }
 
 template <class T>
 T &&exact_any_cast(any &&a) {
-    using V = typename any_traits<T>::underlying_type;
-    decltype(auto) v = std::any_cast<V &&>(a);
-    if constexpr (std::is_pointer_v<T>) {
-        return static_cast<T>(v);
-    } else if constexpr (is_shared_ptr<T>::value) {
-        using U = typename is_shared_ptr<T>::type;
-        return std::static_pointer_cast<U>(v);
-    } else if constexpr (is_variant<V>::value) {
-        return std::get<T>(v);
+    if constexpr (std::is_same_v<T, any>) {
+        return a;
     } else {
-        return v;
+        using V = typename any_traits<T>::underlying_type;
+        decltype(auto) v = std::any_cast<V &&>(a);
+        if constexpr (std::is_pointer_v<T>) {
+            return static_cast<T>(v);
+        } else if constexpr (is_shared_ptr<T>::value) {
+            using U = typename is_shared_ptr<T>::type;
+            return std::static_pointer_cast<U>(v);
+        } else if constexpr (is_variant<V>::value) {
+            return std::get<T>(v);
+        } else {
+            return v;
+        }
     }
 }
 
