@@ -44,8 +44,11 @@ protected:
     ZENO_API bool has_input(std::string const &id) const;
     ZENO_API IValue get_param(std::string const &id) const;
     ZENO_API any get_input2(std::string const &id) const;
-    ZENO_API void set_output(std::string const &id,
-        std::shared_ptr<IObject> &&obj);
+    ZENO_API void set_output2(std::string const &id, any &&obj);
+
+    void set_output(std::string const &id,
+        std::shared_ptr<IObject> &&obj) {
+    }
 
     /* deprecated */
     std::shared_ptr<IObject> get_input(std::string const &id) const {

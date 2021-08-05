@@ -113,7 +113,7 @@ ZENO_API IValue INode::get_param(std::string const &id) const {
     return safe_at(params, id, "param", myname);
 }
 
-ZENO_API void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
+ZENO_API void INode::set_output2(std::string const &id, any &&obj) {
     outputs[id] = std::move(obj);
 }
 
