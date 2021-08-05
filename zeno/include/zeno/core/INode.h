@@ -46,8 +46,8 @@ protected:
     ZENO_API any get_input2(std::string const &id) const;
     ZENO_API void set_output2(std::string const &id, any &&obj);
 
-    void set_output(std::string const &id,
-        std::shared_ptr<IObject> &&obj) {
+    void set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
+        set_output2(id, std::move(obj));
     }
 
     /* deprecated */

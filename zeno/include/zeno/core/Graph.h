@@ -45,7 +45,7 @@ struct Graph {
     ZENO_API Graph();
     ZENO_API ~Graph();
 
-    ZENO_API void setGraphInput2(std::string const &id, any &&obj);
+    ZENO_API void setGraphInput2(std::string const &id, any obj);
     ZENO_API any const &getGraphOutput2(std::string const &id) const;
     ZENO_API void applyGraph();
 

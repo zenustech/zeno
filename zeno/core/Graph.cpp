@@ -17,7 +17,7 @@ ZENO_API Context::Context(Context const &other)
 ZENO_API Graph::Graph() = default;
 ZENO_API Graph::~Graph() = default;
 
-ZENO_API void Graph::setGraphInput2(std::string const &id, any &&obj) {
+ZENO_API void Graph::setGraphInput2(std::string const &id, any obj) {
     subInputs[id] = std::move(obj);
 }
 
