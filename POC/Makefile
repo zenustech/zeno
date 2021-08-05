@@ -1,4 +1,4 @@
-x=tuplecast
+x=contany
 
 x: $x.exe Makefile
 	./$<

@@ -1,22 +1,17 @@
 #pragma once
 
-#include <functional>
-#include <typeinfo>
-#include <iostream>
-#include <memory>
-#include <vector>
-#include <string>
-#include <tuple>
-#include <map>
-#include <set>
-#include <any>
+#include "Container.h"
+#include "Statement.h"
 
+
+namespace zeno::v2::frontend {
 
 struct Graph {
     struct Node {
         std::string name;
         std::vector<std::pair<int, int>> inputs;
         int num_outputs = 0;
+        container::any parameter{};
     };
     std::vector<Node> nodes;
 };
@@ -40,59 +35,58 @@ struct ForwardSorter {
         }
     }
 
-    void touch(int key) {
+    void require(int key) {
         if (auto it = visited.find(key); it != visited.end()) {
             return;
         }
         visited.insert(key);
         if (auto it = links.find(key); it != links.end()) {
             for (auto const &source: it->second) {
-                touch(source);
+                require(source);
             }
         }
         result.push_back(key);
     }
 
+    int lutid = 0;
+    std::map<std::pair<int, int>, int> lut;
+
+    int lut_entry(int nodeid, int sockid) {
+        auto id = lutid++;
+        lut[std::make_pair(nodeid, sockid)] = id;
+        return id;
+    }
+
+    std::unique_ptr<statement::Statement>
+        parse_node(int nodeid, Graph::Node const &node) {
+        if (node.name == "make_value") {
+            auto stmt = std::make_unique<statement::StmtLoadValue>();
+            stmt->output = lut_entry(nodeid, 0);
+            stmt->value = node.parameter;
+            return stmt;
+        }
+
+        auto stmt = std::make_unique<statement::StmtCall>();
+        stmt->node_name = node.name;
+        for (auto const &source: node.inputs) {
+            if (source.first != -1)
+                stmt->inputs.push_back(lut.at(source));
+        }
+        for (int sockid = 0; sockid < node.num_outputs; sockid++) {
+            stmt->outputs.push_back(lut_entry(nodeid, sockid));
+        }
+        return stmt;
+    }
+
     auto linearize() {
-        int lutid = 0;
-        auto ir = std::make_unique<IRBlock>();
-        std::map<std::pair<int, int>, int> lut;
+        auto ir = std::make_unique<statement::IRBlock>();
         for (auto nodeid: result) {
             auto const &node = graph.nodes.at(nodeid);
-            Invocation invo;
-            invo.node_name = node.name;
-            for (auto const &source: node.inputs) {
-                if (source.first != -1)
-                    invo.inputs.push_back(lut.at(source));
-            }
-            for (int sockid = 0; sockid < node.num_outputs; sockid++) {
-                auto id = lutid++;
-                lut[std::make_pair(nodeid, sockid)] = id;
-                invo.outputs.push_back(id);
-            }
-            ir->invos.push_back(invo);
+            auto stmt = parse_node(nodeid, node);
+            ir->stmts.emplace_back(std::move(stmt));
         }
         return ir;
     }
 };
 
-
-void print_invocation(Invocation const &invo) {
-    std::cout << "[";
-    bool had = false;
-    for (auto const &output: invo.outputs) {
-        if (had) std::cout << ", ";
-        else had = true;
-        std::cout << output;
-    }
-    std::cout << "] = ";
-    std::cout << invo.node_name;
-    std::cout << "(";
-    had = false;
-    for (auto const &input: invo.inputs) {
-        if (had) std::cout << ", ";
-        else had = true;
-        std::cout << input;
-    }
-    std::cout << ");\n";
 }

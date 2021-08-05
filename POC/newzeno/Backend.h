@@ -1,28 +1,20 @@
 #pragma once
 
-#include <functional>
-#include <typeinfo>
-#include <iostream>
-#include <memory>
-#include <vector>
-#include <string>
-#include <tuple>
-#include <map>
-#include <set>
-#include <any>
+#include "Container.h"
 
 
+namespace zeno::v2::backend {
 
 struct Context {
-    std::vector<std::any> inputs;
-    std::vector<std::any> outputs;
+    std::vector<container::any> inputs;
+    std::vector<container::any> outputs;
 };
 
 
 struct Session;
 struct Scope {
     Session *session;
-    std::map<int, std::any> objects;
+    std::map<int, container::any> objects;
 
     Scope(Session *session) : session(session) {
     }
@@ -31,6 +23,7 @@ struct Scope {
 
 struct Session {
     std::map<std::string, std::function<void(Context *)>> nodes;
+    std::map<std::string, std::string> nodeinfo;
 
     static Session &get() {
         static std::unique_ptr<Session> session;
@@ -41,8 +34,13 @@ struct Session {
     }
 
     template <class F>
-    int defineNode(std::string const &name, F func) {
+    int defineNode
+        ( std::string const &name
+        , F func
+        , std::string const &info
+        ) {
         nodes[name] = func;
+        nodeinfo[name] = info;
         return 1;
     }
 
@@ -51,29 +49,4 @@ struct Session {
     }
 };
 
-
-
-struct Invocation {
-    std::string node_name;
-    std::vector<int> inputs;
-    std::vector<int> outputs;
-
-    void invoke(Scope *scope) const {
-        auto const &node = scope->session->nodes.at(node_name);
-        Context ctx;
-        ctx.inputs.resize(inputs.size());
-        for (int i = 0; i < inputs.size(); i++) {
-            ctx.inputs[i] = scope->objects.at(inputs[i]);
-        }
-        ctx.outputs.resize(outputs.size());
-        node(&ctx);
-        for (int i = 0; i < outputs.size(); i++) {
-            scope->objects[outputs[i]] = ctx.outputs[i];
-        }
-    }
-};
-
-
-struct IRBlock {
-    std::vector<Invocation> invos;
-};
+}
