@@ -1,10 +1,12 @@
 #pragma once
 
-#include "common.h"
+#include <memory>
+#include <variant>
 #include <cstdint>
+#include <any>
 
 
-namespace zeno {
+namespace zinc {
 
 template <class T>
 struct is_variant : std::false_type {

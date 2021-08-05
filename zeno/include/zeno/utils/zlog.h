@@ -1,7 +1,5 @@
 #pragma once
 
-#define FMT_HEADER_ONLY
-
 #include <sstream>
 
 #if ZLOG_USE_ANDROID
