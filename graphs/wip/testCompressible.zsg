@@ -569,12 +569,12 @@
        "heatmap"
       ],
       "min": [
-       "b3b04521-NumericFloat",
-       "value"
+       "42210e02-PrimitiveReduction",
+       "result"
       ],
       "max": [
-       "d0e5d830-NumericFloat",
-       "value"
+       "951dee56-x",
+       "result"
       ],
       "SRC": null
      },
@@ -586,7 +586,8 @@
       762.5000000000001
      ],
      "options": [
-      "PREP"
+      "PREP",
+      "VIEW"
      ]
     },
     "42210e02-PrimitiveReduction": {
@@ -603,11 +604,12 @@
       "op": "min"
      },
      "uipos": [
-      4472.287500000003,
-      368.7500000000001
+      4441.037500000002,
+      900.0
      ],
      "options": [
-      "PREP"
+      "PREP",
+      "collapsed"
      ]
     },
     "951dee56-x": {
@@ -624,11 +626,12 @@
       "op": "max"
      },
      "uipos": [
-      4471.128125,
-      579.8000000000003
+      4442.378124999999,
+      956.0500000000002
      ],
      "options": [
-      "PREP"
+      "PREP",
+      "collapsed"
      ]
     },
     "67504200-ReadObjMesh": {
@@ -1482,86 +1485,12 @@
       628.9062499999994
      ],
      "options": []
-    },
-    "7e5f9c43-PrintNumeric": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "42210e02-PrimitiveReduction",
-       "result"
-      ],
-      "SRC": [
-       "42210e02-PrimitiveReduction",
-       "DST"
-      ]
-     },
-     "params": {
-      "hint": "rho min"
-     },
-     "uipos": [
-      4798.749999999999,
-      382.49999999999994
-     ],
-     "options": []
-    },
-    "71b5da96-x": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "951dee56-x",
-       "result"
-      ],
-      "SRC": [
-       "951dee56-x",
-       "DST"
-      ]
-     },
-     "params": {
-      "hint": "rho max"
-     },
-     "uipos": [
-      4794.999999999999,
-      558.7499999999999
-     ],
-     "options": []
-    },
-    "b3b04521-NumericFloat": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": 0.8
-     },
-     "uipos": [
-      4462.25,
-      930.5
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "d0e5d830-NumericFloat": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": null
-     },
-     "params": {
-      "value": 1.2
-     },
-     "uipos": [
-      4580.0,
-      1123.0
-     ],
-     "options": [
-      "ONCE"
-     ]
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -1172,
-    "trans_y": -587
+    "scale": 0.6400000000000001,
+    "trans_x": -1046,
+    "trans_y": 495
    }
   },
   "makeCompressibleVolume": {
