@@ -88,10 +88,12 @@ struct ForwardSorter {
 
     auto linearize() {
         auto ir = std::make_unique<statement::IRBlock>();
+        current_block = ir.get();
         for (auto nodeid: result) {
+            auto prev_block = current_block;
             auto const &node = graph.nodes.at(nodeid);
             auto stmt = parse_node(nodeid, node);
-            ir->stmts.emplace_back(std::move(stmt));
+            prev_block->stmts.emplace_back(std::move(stmt));
         }
         return ir;
     }
