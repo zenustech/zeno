@@ -12,6 +12,22 @@ struct Statement {
     virtual ~Statement() = default;
 };
 
+struct StmtLoadValue : Statement {
+    std::any value;
+    int output;
+
+    virtual void apply(backend::Scope *scope) const override {
+        scope->objects[output] = value;
+    }
+
+    virtual std::string to_string() const override {
+        std::stringstream os;
+        os << "[" << output << "] = ";
+        os << "load_value(...);";
+        return os.str();
+    }
+};
+
 struct StmtCall : Statement {
     std::string node_name;
     std::vector<int> inputs;

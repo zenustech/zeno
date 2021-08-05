@@ -11,6 +11,7 @@ struct Graph {
         std::string name;
         std::vector<std::pair<int, int>> inputs;
         int num_outputs = 0;
+        std::any parameter{};
     };
     std::vector<Node> nodes;
 };
@@ -50,7 +51,21 @@ struct ForwardSorter {
     int lutid = 0;
     std::map<std::pair<int, int>, int> lut;
 
-    auto parse_node(int nodeid, Graph::Node const &node) {
+    int lut_entry(int nodeid, int sockid) {
+        auto id = lutid++;
+        lut[std::make_pair(nodeid, sockid)] = id;
+        return id;
+    }
+
+    std::unique_ptr<statement::Statement>
+        parse_node(int nodeid, Graph::Node const &node) {
+        if (node.name == "make_value") {
+            auto stmt = std::make_unique<statement::StmtLoadValue>();
+            stmt->output = lut_entry(nodeid, 0);
+            stmt->value = node.parameter;
+            return stmt;
+        }
+
         auto stmt = std::make_unique<statement::StmtCall>();
         stmt->node_name = node.name;
         for (auto const &source: node.inputs) {
@@ -58,9 +73,7 @@ struct ForwardSorter {
                 stmt->inputs.push_back(lut.at(source));
         }
         for (int sockid = 0; sockid < node.num_outputs; sockid++) {
-            auto id = lutid++;
-            lut[std::make_pair(nodeid, sockid)] = id;
-            stmt->outputs.push_back(id);
+            stmt->outputs.push_back(lut_entry(nodeid, sockid));
         }
         return stmt;
     }
