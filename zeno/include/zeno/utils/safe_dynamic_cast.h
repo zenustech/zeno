@@ -1,9 +1,9 @@
 #pragma once
 
+#include <any>
 #include <memory>
 #include <string>
 #include <typeinfo>
-
 #include <zeno/utils/Exception.h>
 
 namespace zeno {
@@ -29,6 +29,17 @@ std::shared_ptr<T> safe_dynamic_cast(
                 + typeid(*s).name() + "`");
     }
     return t;
+}
+
+template <class T, class A>
+T safe_any_cast(A &&a, std::string const &msg = {}) {
+    try {
+        return std::any_cast<T>(std::forward<A>(a));
+    } catch (std::bad_any_cast const &e) {
+        throw Exception(msg + "expect `"
+                + typeid(T).name() + "`, got `"
+                + typeid(a.type()).name() + "`");
+    }
 }
 
 }

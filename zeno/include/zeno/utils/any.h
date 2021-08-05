@@ -4,9 +4,10 @@
 #include <variant>
 #include <cstdint>
 #include <any>
+#include <zeno/utils/safe_dynamic_cast.h>
 
 
-namespace zinc {
+namespace zeno {
 
 template <class T>
 struct is_variant : std::false_type {
@@ -91,26 +92,19 @@ struct any : std::any {
     }
 };
 
-struct bad_dynamic_cast : std::bad_cast {
-    virtual const char *what() const noexcept { return "bad dynamic_cast"; }
-};
-
 template <class T>
 T smart_any_cast(any const &a) {
     if constexpr (std::is_same_v<T, any>) {
         return a;
     } else {
         using V = typename any_traits<T>::underlying_type;
-        decltype(auto) v = std::any_cast<V const &>(a);
+        decltype(auto) v = safe_any_cast<V const &>(a);
         if constexpr (std::is_pointer_v<T>) {
-            auto ret = dynamic_cast<T>(v);
-            if (!ret) throw bad_dynamic_cast{};
-            return ret;
+            using U = std::remove_pointer_t<T>;
+            return safe_dynamic_pointer_cast<U>(v);
         } else if constexpr (is_shared_ptr<T>::value) {
             using U = typename is_shared_ptr<T>::type;
-            auto ret = std::dynamic_pointer_cast<U>(v);
-            if (!ret) throw bad_dynamic_cast{};
-            return ret;
+            return safe_dynamic_pointer_cast<U>(v);
         } else if constexpr (is_variant<V>::value && !is_variant<T>::value) {
             return std::visit([] (auto const &x) {
                 return (T)x;
