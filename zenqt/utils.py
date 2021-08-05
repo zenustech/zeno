@@ -49,6 +49,3 @@ def setKeepAspect(renderer):
         renderer.setAspectRatioMode(Qt.KeepAspectRatio)
     else:
         print('WARNING: setAspectRatioMode failed to work')
-
-def main():
-    print(key_appear_by_order('reil', 'RigidVelToPrimitive'))
