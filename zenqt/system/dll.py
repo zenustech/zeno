@@ -1,4 +1,4 @@
-import ctypes, os, sys
+import ctypes, os, sys, traceback
 
 from .utils import rel2abs, os_name
 
