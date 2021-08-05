@@ -69,12 +69,16 @@ struct ForwardSorter {
         return id;
     }
 
+    auto lut_at(std::pair<int, int> const &key) {
+        return lut.at(key);
+    }
+
     std::unique_ptr<statement::Statement> parse_node(int nodeid) {
         auto const &node = graph.nodes.at(nodeid);
 
         if (node.name == "if") {
             auto stmt = std::make_unique<statement::StmtIfBlock>();
-            stmt->cond_input = lut.at(node.inputs.at(0));
+            stmt->cond_input = lut_at(node.inputs.at(0));
             stmt->block = std::make_unique<statement::IRBlock>();
             stmt->block->parent = current_block;
             auto old_block = current_block;
