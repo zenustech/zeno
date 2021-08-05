@@ -50,7 +50,7 @@ struct ForwardSorter {
         current_block->stmts.emplace_back(std::move(stmt));
     }
 
-    void do_require(int key) {
+    void require_all_inputs(int key) {
         if (auto it = links.find(key); it != links.end()) {
             for (auto const &source: it->second) {
                 require(source);
@@ -69,7 +69,8 @@ struct ForwardSorter {
         return id;
     }
 
-    auto lut_at(std::pair<int, int> const &key) {
+    auto lut_require(std::pair<int, int> const &key) {
+        require(key.first);
         return lut.at(key);
     }
 
@@ -78,17 +79,17 @@ struct ForwardSorter {
 
         if (node.name == "if") {
             auto stmt = std::make_unique<statement::StmtIfBlock>();
-            stmt->cond_input = lut_at(node.inputs.at(0));
+            stmt->cond_input = lut_require(node.inputs.at(0));
             stmt->block = std::make_unique<statement::IRBlock>();
             stmt->block->parent = current_block;
             auto old_block = current_block;
             current_block = stmt->block.get();
-            do_require(nodeid);
+            //
             current_block = old_block;
             return std::move(stmt);
         }
 
-        do_require(nodeid);
+        require_all_inputs(nodeid);
 
         if (node.name == "value") {
             auto stmt = std::make_unique<statement::StmtValue>();
