@@ -22,7 +22,7 @@ public:
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
     std::map<std::string, any> inputs;
     std::map<std::string, any> outputs;
-    std::map<std::string, IValue> params; // TODO: use any for params too?
+    std::map<std::string, IValue> params; // todo: use any for params too?
     std::set<std::string> options;
     any muted_output;
 
