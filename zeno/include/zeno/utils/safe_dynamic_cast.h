@@ -14,7 +14,7 @@ T *safe_dynamic_cast(S *s, std::string const &msg = {}) {
     if (!t) {
         throw Exception(msg + "expect `"
                 + typeid(T).name() + "`, got `"
-                + typeid(*s).name() + "`");
+                + typeid(*s).name() + "` (dyncast)");
     }
     return t;
 }
@@ -26,7 +26,7 @@ std::shared_ptr<T> safe_dynamic_cast(
     if (!t) {
         throw Exception(msg + "expect `"
                 + typeid(T).name() + "`, got `"
-                + typeid(*s).name() + "`");
+                + typeid(*s).name() + "` (dyncast)");
     }
     return t;
 }
@@ -38,7 +38,7 @@ T safe_any_cast(A &&a, std::string const &msg = {}) {
     } catch (std::bad_any_cast const &e) {
         throw Exception(msg + "expect `"
                 + typeid(T).name() + "`, got `"
-                + typeid(a.type()).name() + "`");
+                + a.type().name() + "` (anycast)");
     }
 }
 

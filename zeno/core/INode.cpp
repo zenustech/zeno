@@ -102,7 +102,7 @@ ZENO_API bool INode::has_option(std::string const &id) const {
 }
 
 ZENO_API bool INode::has_input2(std::string const &id) const {
-    return inputBounds.find(id) != inputBounds.end();
+    return inputs.find(id) != inputs.end();
 }
 
 ZENO_API struct any INode::get_input2(std::string const &id) const {

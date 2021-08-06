@@ -47,7 +47,7 @@ protected:
 
     /* deprecated */
     bool has_input(std::string const &id) const {
-        return has_input2(id);
+        return inputBounds.find(id) != inputBounds.end();
     }
 
     /* deprecated */
@@ -75,7 +75,7 @@ protected:
     /* deprecated */
     template <class T>
     bool has_input(std::string const &id) const {
-        if (!has_input(id))
+        if (!has_input2(id))
             return false;
         if (!has_input2<std::shared_ptr<IObject>>(id))
             return false;
