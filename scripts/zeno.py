@@ -1,12 +1,11 @@
-import sys, json
-from zenqt.main import main
-from zenqt.system.main import main as sys_main
-
+import sys
 
 if len(sys.argv) > 1:
     # cli only
     #   dump-descs or open .zsg file
-    sys.exit(sys_main())
+    from zenqt.system.main import main as _main
+    sys.exit(_main())
 else:
     # GUI
-    sys.exit(main())
+    from zenqt.main import main as _main
+    sys.exit(_main())
