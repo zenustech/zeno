@@ -101,10 +101,10 @@ struct VDBWrangle : zeno::INode {
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
 
-        if (zeno::silent_any_cast<std::shared_ptr<zeno::VDBFloatGrid>>(grid).has_value())
-            vdb_wrangle(exec, p->m_grid);
-        else if (zeno::silent_any_cast<std::shared_ptr<zeno::VDBFloat3Grid>>(grid).has_value())
-            vdb_wrangle(exec, p->m_grid);
+        if (auto p = zeno::silent_any_cast<std::shared_ptr<zeno::VDBFloatGrid>>(grid); p.has_value())
+            vdb_wrangle(exec, p.value()->m_grid);
+        else if (auto p = zeno::silent_any_cast<std::shared_ptr<zeno::VDBFloat3Grid>>(grid); p.has_value())
+            vdb_wrangle(exec, p.value()->m_grid);
 
         set_output("grid", std::move(grid));
     }
