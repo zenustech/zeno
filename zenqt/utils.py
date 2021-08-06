@@ -1,12 +1,5 @@
 from itertools import chain
-import os, sys
 
-
-# use in portable_mode
-exe_root_path = os.path.dirname(sys.executable)
-
-def is_portable_mode():
-    return getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
 
 def key_appear_by_order(pattern, key):
     key = key.lower()
@@ -44,16 +37,6 @@ def fuzzy_search(pattern, keys):
         key_appear_by_order_conds
     )
 
-
-from .system.utils import rel2abs
-
-def asset_path(name):
-    if is_portable_mode():
-        rel_path = rel2abs(sys.executable, 'zenqt', 'assets', name)
-    else:
-        rel_path = rel2abs(__file__, 'assets', name)
-    return rel_path
-
 def setKeepAspect(renderer):
     if hasattr(renderer, 'setAspectRatioMode'):
         # PySide2 >= 5.15
@@ -61,3 +44,27 @@ def setKeepAspect(renderer):
         renderer.setAspectRatioMode(Qt.KeepAspectRatio)
     else:
         print('WARNING: setAspectRatioMode failed to work')
+
+################## TODO sep these two files
+
+import os, sys
+
+from .system.utils import rel2abs
+
+def is_portable_mode():
+    return getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+
+def relative_path(*args):
+    if is_portable_mode():
+        return rel2abs(sys.executable, 'zenqt', *args)
+    else:
+        return rel2abs(__file__, *args)
+
+def get_executable():
+    if is_portable_mode():
+        return [sys.executable]
+    else:
+        return [sys.executable, '-m', 'zenqt.system']
+
+def asset_path(name):
+    return relative_path('assets', name)
