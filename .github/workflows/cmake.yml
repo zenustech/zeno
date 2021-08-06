@@ -53,23 +53,23 @@ jobs:
       run: ctest -C ${{env.BUILD_TYPE}}
 
     - name: Packaging (Windows)
-      if: matrix.config.os == 'windows-latest'
+      if: ${{ matrix.config.os == 'windows-latest' }}
       run: python -m PyInstaller scripts\zeno_win.spec
 
     - name: Packaging (Linux)
-      if: matrix.config.os == 'ubuntu-latest'
+      if: ${{ matrix.config.os == 'ubuntu-latest' }}
       run: python -m PyInstaller scripts\zeno_linux.spec
 
     - name: Upload Artifact (Windows)
-      if: matrix.config.os == 'windows-latest'
+      if: ${{ matrix.config.os == 'windows-latest' }}
       uses: actions/upload-artifact@v2
       with:
-        name: zenqt-win
+        name: zeno-win
         path: dist/zeno
 
     - name: Upload Artifact (Linux)
-      if: matrix.config.os == 'ubuntu-latest'
+      if: ${{ matrix.config.os == 'ubuntu-latest' }}
       uses: actions/upload-artifact@v2
       with:
-        name: zenqt-win
+        name: zeno-linux
         path: dist/zeno
