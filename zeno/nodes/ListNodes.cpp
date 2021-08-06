@@ -46,8 +46,7 @@ struct ExtractList2 : zeno::INode {
         auto list = get_input<zeno::ListObject>("list");
         for (auto const& key : keys) {
             int index = std::stoi(key);
-            if (list->arr.size() > index)
-            {
+            if (list->arr.size() > index) {
                 auto obj = list->arr[index];
                 set_output(key, std::move(obj));
             }
@@ -121,15 +120,12 @@ struct MakeList : zeno::INode {
         auto list = std::make_shared<zeno::ListObject>();
 
         int max_input_index = 0;
-        for (auto& pair : inputs)
-        {
-            if (std::isdigit(pair.first.back()))
-            {
+        for (auto& pair : inputs) {
+            if (std::isdigit(pair.first.back())) {
                 max_input_index = std::max<int>(max_input_index, std::stoi(pair.first.substr(3)));
             }
         }
-        for (int i = 0; i <= max_input_index; ++i)
-        {
+        for (int i = 0; i <= max_input_index; ++i) {
             std::stringstream namess;
             namess << "obj" << i;
             auto name = namess.str();
