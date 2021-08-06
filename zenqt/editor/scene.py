@@ -260,10 +260,11 @@ class QDMGraphicsView(QGraphicsView):
             if not isinstance(act, QWidgetAction):
                 edit.menu.removeAction(act)
         pattern = edit.text()
-        keys = self.scene().descs.keys()
-        matched = fuzzy_search(pattern, keys)
-        for key in matched:
-            edit.menu.addAction(key)
+        if pattern:
+            keys = self.scene().descs.keys()
+            matched = fuzzy_search(pattern, keys)
+            for key in matched:
+                edit.menu.addAction(key)
 
     def getCategoryActions(self):
         cates = self.scene().cates
