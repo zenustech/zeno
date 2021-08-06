@@ -314,7 +314,7 @@ For now, official extensions will be built by default when running the
 Note that the extensions: ZenVDB and FastFLIP are **not built by default**.
 You can use
 ```bash
-cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
+cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
 ```
 to enable them.
 
@@ -422,7 +422,7 @@ You may contact us via WeChat:
 
 # Maintainers' manual
 
-## To run intergrated test
+## Run intergrated test
 
 - Linux
 
