@@ -18,12 +18,12 @@ jobs:
         #- os: ubuntu-latest
         #  python: 3.8
         #  container: archibate/zeno_build:latest
-        #  options: -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
+        #  options: -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
         #- os: ubuntu-18.04
         #  python: 3.6
         - os: ubuntu-20.04
           python: 3.7
-          options: -DZENO_BUILD_TESTS=ON
+          options: -DZENO_BUILD_TESTS:BOOL=ON
         - os: windows-latest
           python: 3.9
 
@@ -52,6 +52,6 @@ jobs:
       run: python -c "import zenqt.system.dll"
 
     - name: Test
-      if: {{ matrix.os != 'windows-latest' }}
+      skip-if: {{ matrix.os == 'windows-latest' }}
       working-directory: ${{github.workspace}}/build
       run: ./tests/zentest
