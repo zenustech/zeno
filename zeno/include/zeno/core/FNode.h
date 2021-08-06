@@ -112,39 +112,35 @@ struct OpsBuilder {
         , std::map<std::string, std::string> const &input_bounds
         , std::set<std::string> const &legacy_options = {}
         ) {
-            auto const &func = safe_at(
-                    codebase.functions, func_name, "function");
-            auto const &desc = safe_at(
-                    codebase.descriptors, func_name, "descriptor");
+        auto const &func = safe_at(
+                codebase.functions, func_name, "function");
+        auto const &desc = safe_at(
+                codebase.descriptors, func_name, "descriptor");
 
-            auto op = std::make_unique<OpCallNode>();
-            op->functor = func;
+        auto op = std::make_unique<OpCallNode>();
+        op->functor = func;
 
-            op.input_refs.resize(desc.inputs.size());
-            for (int i = 0; i < desc.inputs.size(); i++) {
-                auto key = desc.inputs[i];
-                auto it = input_bounds.find(key);
-                if (it != input_bounds.end()) {
-                    auto [sn, ss] = it->second;
-                    ops.input_refs[i] = lut_at(sn, ss);
-                } else {
-                    ops.input_refs[i] = "";
-                }
+        op.input_refs.resize(desc.inputs.size());
+        for (int i = 0; i < desc.inputs.size(); i++) {
+            auto key = desc.inputs[i];
+            auto it = input_bounds.find(key);
+            if (it != input_bounds.end()) {
+                auto [sn, ss] = it->second;
+                ops.input_refs[i] = lut_at(sn, ss);
+            } else {
+                ops.input_refs[i] = "";
             }
-
-            op.output_refs.resize(desc.outputs.size());
-            for (int i = 0; i < desc.outputs.size(); i++) {
-                auto key = desc.outputs[i];
-                auto id = lut_put(node_ident, key);
-                op.output_refs[i] = id;
-            }
-
-            operations.push_back(std::move(op));
         }
-    }
 
-struct LegacyBuilder {
-    OpsBuilder ops_builder;
+        op.output_refs.resize(desc.outputs.size());
+        for (int i = 0; i < desc.outputs.size(); i++) {
+            auto key = desc.outputs[i];
+            auto id = lut_put(node_ident, key);
+            op.output_refs[i] = id;
+        }
+
+        operations.push_back(std::move(op));
+    }
 };
 
 }
