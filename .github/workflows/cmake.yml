@@ -34,6 +34,10 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python }}
+    - name: Update pip and Install Packages
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install pybind11 numpy PySide2 pyinstaller
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DZENO_ENABLE_TESTS:BOOL=ON ${{matrix.options}}
@@ -47,3 +51,12 @@ jobs:
     - name: Test
       working-directory: ${{github.workspace}}/build/tests
       run: ctest -C ${{env.BUILD_TYPE}}
+
+    - name: Build
+      run: pyinstaller scripts\zeno_win.spec
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: zenqt-win
+        path: dist/zeno
