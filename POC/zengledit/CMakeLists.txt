@@ -5,4 +5,4 @@ add_subdirectory(glad)
 
 file(GLOB PROJECT_SOURCE *.cpp)
 add_executable(zengledit ${PROJECT_SOURCE})
-target_link_libraries(zengledit PRIVATE glad)
+target_link_libraries(zengledit PRIVATE glad dl)
