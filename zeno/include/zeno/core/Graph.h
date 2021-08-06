@@ -74,7 +74,7 @@ struct Graph {
     ZENO_API void completeNode(std::string const &id);
     ZENO_API void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss);
-    ZENO_API void setNodeParam2(std::string const &id, std::string const &par,
+    ZENO_API void setNodeInput(std::string const &id, std::string const &par,
         any const &val);
     ZENO_API void setNodeOption(std::string const &id, std::string const &name);
     ZENO_API any const &getNodeOutput(
@@ -82,8 +82,9 @@ struct Graph {
 
     void setNodeParam(std::string const &id, std::string const &par,
         std::variant<int, float, std::string> const &val) {
+        auto parid = "param_" + par;
         std::visit([&] (auto const &val) {
-            setNodeParam(id, par, val);
+            setNodeInput(id, parid, val);
         }, val);
     }
 };
