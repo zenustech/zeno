@@ -8,7 +8,7 @@ import json
 import sys
 import os
 from multiprocessing import Process
-from .utils import get_executable
+from ..utils import get_executable
 
 
 g_proc = None
@@ -76,7 +76,7 @@ def getDescriptors():
         from . import run
         descs = run.dumpDescriptors()
     else:
-        g_proc = subprocess.Popen(get_executable() + ['--dump-descs'])
+        descs = subprocess.check_output(get_executable() + ['--dump-descs'])
         descs = descs.split(b'==<DESCS>==')[1].decode()
     descs = descs.splitlines()
     descs = [parse_descriptor_line(line) for line in descs

@@ -1,6 +1,7 @@
 import ctypes, os, sys, traceback
 
-from .utils import rel2abs, os_name, relative_path
+from .utils import rel2abs, os_name
+from ..utils import relative_path
 
 
 lib_dir = relative_path('lib')
