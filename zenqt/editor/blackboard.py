@@ -160,7 +160,7 @@ class QDMGraphicsNode_Blackboard(QDMGraphicsNode):
             'height': self.height,
             'title': self.title.toPlainText(),
             'content': self.content.toPlainText(),
-            'inputs': {},
+            'inputs': {},  # todo???
             'params': []
         }
         return self.ident, data

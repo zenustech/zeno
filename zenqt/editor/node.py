@@ -26,6 +26,9 @@ class QDMGraphicsNode(QGraphicsItem):
         self.outputs = {}
         self.options = {}
 
+        self.initButtons()
+        self.initDummySockets()
+
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
         self.scene().moved = True
@@ -109,9 +112,6 @@ class QDMGraphicsNode(QGraphicsItem):
             self.scene().removeItem(output)
 
     def initSockets(self):
-        self.initButtons()
-        self.initDummySockets()
-
         inputs = self.desc['inputs']
         outputs = self.desc['outputs']
         params = self.desc['params']
