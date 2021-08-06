@@ -41,13 +41,6 @@ TEST_CASE("cast any of vec3f to vec3i", "[any]") {
     REQUIRE(allTrue(i == zeno::vec3i(42, 985, 211)));
 }
 
-TEST_CASE("cast any of vec3f to vec3i", "[any]") {
-    zeno::vec3f f(42.0f, 985.99f, 211.3f);
-    zeno::any a = f;
-    zeno::vec3i i = zeno::smart_any_cast<zeno::vec3i>(a);
-    REQUIRE(allTrue(i == zeno::vec3i(42, 985, 211)));
-}
-
 TEST_CASE("static assertion of underlying type", "[any]") {
     REQUIRE(std::is_same_v<
             zeno::any_underlying_type_t<float>,

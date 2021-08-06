@@ -422,6 +422,16 @@ You may contact us via WeChat:
 
 # Maintainers' manual
 
+## To run intergrated test
+
+- Linux
+
+```bash
+cmake -B build -DZENO_BUILD_TESTS:BOOL=ON
+cmake --build build --parallel
+build/tests/zentest
+```
+
 ## Build binary release
 
 - Arch Linux
