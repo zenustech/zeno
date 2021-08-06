@@ -75,23 +75,34 @@ struct any_traits<std::shared_ptr<T>, std::void_t<typename T::polymorphic_base_t
 
 struct any : std::any {
     any() = default;
+
+    any(any &a) = default;
     any(any &&a) = default;
     any(any const &a) = default;
 
-    template <class T>
+    template <class T>//, std::enable_if_t<!std::is_same_v<any, T>, int> = 0>
     any(T const &t)
     : std::any(static_cast<typename any_traits<T>::underlying_type const &>(t))
     {}
 
-    template <class T>
+    template <class T>//, std::enable_if_t<!std::is_same_v<any, T>, int> = 0>
     any(T &&t)
     : std::any(static_cast<typename any_traits<T>::underlying_type &&>(t))
     {}
 
+    any &operator=(any &a) = default;
+    any &operator=(any &&a) = default;
     any &operator=(any const &a) = default;
 
-    template <class T>
+    template <class T>//, std::enable_if_t<!std::is_same_v<any, T>, int> = 0>
     any &operator=(T const &t) {
+        std::any::operator=(
+                static_cast<typename any_traits<T>::underlying_type>(t));
+        return *this;
+    }
+
+    template <class T>//, std::enable_if_t<!std::is_same_v<any, T>, int> = 0>
+    any &operator=(T &&t) {
         std::any::operator=(
                 static_cast<typename any_traits<T>::underlying_type>(t));
         return *this;
