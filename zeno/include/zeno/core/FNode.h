@@ -7,14 +7,15 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 #include <set>
 #include <map>
 
 namespace zeno {
 
 struct Context2 {
-    std::map<std::string, any> inputs;
-    std::map<std::string, any> outputs;
+    std::vector<any> inputs;
+    std::vector<any> outputs;
 };
 
 struct Descriptor2 {
@@ -30,7 +31,7 @@ struct Codebase {
 };
 
 struct Scope {
-    std::map<std::string, any> objects;
+    std::vector<any> objects;
 };
 
 struct IOperation {
@@ -39,7 +40,7 @@ struct IOperation {
 };
 
 struct OpLoadValue : IOperation {
-    std::string output_ref;
+    int output_ref;
     any value;
 
     virtual void apply(Scope *scope) const override {
@@ -49,8 +50,8 @@ struct OpLoadValue : IOperation {
 
 struct OpCallNode : IOperation {
     std::function<void(Context2 *>)> functor;
-    std::map<std::string, std::string> input_refs;
-    std::map<std::string, std::string> output_refs;
+    std::vector<int> input_refs;
+    std::vector<int> output_refs;
 
     virtual void apply(Scope *scope) const override {
         for (auto const &ref: input_refs) {
@@ -64,31 +65,80 @@ struct OpCallNode : IOperation {
 };
 
 struct OpsBuilder {
-    Codebase *codebase;
-    std::vector<std::unique_ptr<IOperation>> ops;
+    Codebase const *codebase;
+    std::vector<std::unique_ptr<IOperation>> operations;
+
+    explicit OpsBuilder(Codebase const *codebase) : codebase(codebase) {
+    }
+
+    std::map<std::pair<std::string, std::string>, int> lut;
+    int lut_top_id = 0;
+
+    int lut_at(std::string const &sn, std::string const &ss) {
+        return safe_at(lut, {sn, ss}, "object");
+    }
+
+    int lut_put(std::string const &sn, std::string const &ss) {
+        auto id = lut_top_id++;
+        lut[std::make_pair(sn, ss)] = id;
+        return id;
+    }
+
+    decltype(auto) getResult() {
+        return std::move(operations);
+    }
+
+    int getObjectCount() const {
+        return lut_top_id;
+    }
+
+    addLoadValue
+        ( std::string const &node_ident
+        , any const &value
+        ) {
+        auto op = std::make_unique<OpLoadValue>();
+        op.value = value;
+
+        auto id = lut_put(node_ident, "value");
+        op.output_ref = id;
+
+        operations.push_back(std::move(op));
+    }
 
     addCallNode
-        (
+        ( std::string const &node_ident
         , std::string const &func_name
-        , std::map<std::string, std::string> input_bounds
+        , std::map<std::string, std::string> const &input_bounds
         ) {
             auto const &func = safe_at(
                     codebase.functions, func_name, "function");
             auto const &desc = safe_at(
                     codebase.descriptors, func_name, "descriptor");
+
             auto op = std::make_unique<OpCallNode>();
             op->functor = func;
-            for (auto key: desc.inputs) {
+
+            op.input_refs.resize(desc.inputs.size());
+            for (int i = 0; i < desc.inputs.size(); i++) {
+                auto key = desc.inputs[i];
                 auto it = input_bounds.find(key);
-                if (it != input_bounds.end())
-                    ops.input_refs[key] = it->second;
-                else
-                    ops.input_refs[key] = "";
+                if (it != input_bounds.end()) {
+                    auto [sn, ss] = it->second;
+                    ops.input_refs[i] = lut_at(sn, ss);
+                } else {
+                    ops.input_refs[i] = "";
+                }
             }
-            for (auto key: desc.outputs) {
-                auto id = node
-                ops.output_refs[key] = id;
+
+            op.output_refs.resize(desc.outputs.size());
+            for (int i = 0; i < desc.outputs.size(); i++) {
+                auto key = desc.outputs[i];
+                auto id = lut_put(node_ident, key);
+                op.output_refs[i] = id;
             }
+
+            operations.push_back(std::move(op));
+        }
     }
 };
 
