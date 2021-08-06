@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
-#include <zeno/StringObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/DictObject.h>
+#include <zeno/types/StringObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/DictObject.h>
 #include <zeno/VDBGrid.h>
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
@@ -51,9 +51,9 @@ struct VDBWrangle : zeno::INode {
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
         zfx::Options opts(zfx::Options::for_x64);
-        if (dynamic_cast<zeno::VDBFloatGrid *>(grid.get()))
+        if (zeno::silent_any_cast<std::shared_ptr<zeno::VDBFloatGrid>>(grid).has_value())
             opts.define_symbol("@val", 1);
-        else if (dynamic_cast<zeno::VDBFloat3Grid *>(grid.get()))
+        else if (zeno::silent_any_cast<std::shared_ptr<zeno::VDBFloat3Grid>>(grid).has_value())
             opts.define_symbol("@val", 3);
         else
             printf("unexpected vdb grid type");
@@ -66,7 +66,7 @@ struct VDBWrangle : zeno::INode {
         std::vector<std::pair<std::string, int>> parnames;
         for (auto const &[key_, obj]: params->lut) {
             auto key = '$' + key_;
-            auto par = dynamic_cast<zeno::NumericObject *>(obj.get());
+            auto par = zeno::smart_any_cast<std::shared_ptr<zeno::NumericObject>>(obj).get();
             auto dim = std::visit([&] (auto const &v) {
                 using T = std::decay_t<decltype(v)>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) {
@@ -101,10 +101,10 @@ struct VDBWrangle : zeno::INode {
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
 
-        if (auto p = dynamic_cast<zeno::VDBFloatGrid *>(grid.get()))
-            vdb_wrangle(exec, p->m_grid);
-        else if (auto p = dynamic_cast<zeno::VDBFloat3Grid *>(grid.get()))
-            vdb_wrangle(exec, p->m_grid);
+        if (auto p = zeno::silent_any_cast<std::shared_ptr<zeno::VDBFloatGrid>>(grid); p.has_value())
+            vdb_wrangle(exec, p.value()->m_grid);
+        else if (auto p = zeno::silent_any_cast<std::shared_ptr<zeno::VDBFloat3Grid>>(grid); p.has_value())
+            vdb_wrangle(exec, p.value()->m_grid);
 
         set_output("grid", std::move(grid));
     }

@@ -21,9 +21,9 @@ struct ToParticleObject : zeno::INode {
       const auto cnt = zspars.size();
       pos.resize(cnt);
       vel.resize(cnt);
-      for (auto &&[dst, src] : zs::zip(pos, zspars.X))
+      for (auto &&[dst, src] : zs::zip(pos, zspars.attrVector("pos")))
         dst = glm::vec3{src[0], src[1], src[2]};
-      for (auto &&[dst, src] : zs::zip(vel, zspars.V))
+      for (auto &&[dst, src] : zs::zip(vel, zspars.attrVector("vel")))
         dst = glm::vec3{src[0], src[1], src[2]};
     })(zspars);
 

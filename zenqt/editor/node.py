@@ -308,6 +308,9 @@ class QDMGraphicsNode(QGraphicsItem):
         self.initSockets()
         self.restoreEdges(edges)
     
+    def onInputChanged(self):
+        pass
+
     def load(self, ident, data):
         name = data['name']
         inputs = data['inputs']

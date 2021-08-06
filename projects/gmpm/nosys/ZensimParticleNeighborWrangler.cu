@@ -61,8 +61,9 @@ struct ZSParticleNeighborWrangle : zeno::INode {
                      get_memory_source_tag(neighbor.space()));
           fmt::print("[devid] ref {}, neighbor {}!\n", (int)ref.devid(),
                      (int)neighbor.devid());
-          fmt::print("[X addr] ref {}, neighbor {}!\n", (void *)ref.X.data(),
-                     (void *)neighbor.X.data());
+          fmt::print("[X addr] ref {}, neighbor {}!\n",
+                     (void *)ref.attrVector("pos").data(),
+                     (void *)neighbor.attrVector("pos").data());
         })(ref, neighbor);
       }
     }
@@ -82,7 +83,7 @@ struct ZSParticleNeighborWrangle : zeno::INode {
     std::vector<std::pair<std::string, int>> parnames; // (paramName, dim)
     for (auto const &[key_, obj] : params->lut) {
       auto key = '$' + key_;
-      auto par = dynamic_cast<zeno::NumericObject *>(obj.get());
+      auto par = zeno::smart_any_cast<std::shared_ptr<zeno::NumericObject>>(obj).get();
       auto dim = std::visit(
           [&](auto const &v) -> int {
             using T = std::decay_t<decltype(v)>;
@@ -180,25 +181,25 @@ struct ZSParticleNeighborWrangle : zeno::INode {
       match([&ndim, &addr, dim, name = name](auto &pars) {
         if (name == "mass") {
           ndim = 1;
-          addr = pars.M.data();
+          addr = pars.attrScalar("mass").data();
         } else if (name == "pos") {
           ndim = dim;
-          addr = pars.X.data();
+          addr = pars.attrVector("pos").data();
         } else if (name == "vel") {
           ndim = dim;
-          addr = pars.V.data();
+          addr = pars.attrVector("vel").data();
         } else if (name == "C") {
           ndim = dim * dim;
-          addr = pars.C.data();
+          addr = pars.attrMatrix("C").data();
         } else if (name == "F") {
           ndim = dim * dim;
-          addr = pars.F.data();
+          addr = pars.attrMatrix("F").data();
         } else if (name == "J") {
           ndim = 1;
-          addr = pars.J.data();
+          addr = pars.attrScalar("J").data();
         } else if (name == "logJp") {
           ndim = 1;
-          addr = pars.logJp.data();
+          addr = pars.attrScalar("logJp").data();
         }
       })(*targetParPtr);
       haccessors[i] = zs::AccessorAoSoA{zs::aos_v,
@@ -249,9 +250,10 @@ struct ZSParticleNeighborWrangle : zeno::INode {
                               zs::Particles<zs::f32, 3>>> {
           cnt = pars.size();
           args[0] = (void *)&cnt;
-          posView = proxy<zs::execspace_e::cuda>(pars.X);
+          posView = proxy<zs::execspace_e::cuda>(pars.attrVector("pos"));
           args[1] = (void *)&posView;
-          neighborPosView = proxy<zs::execspace_e::cuda>(neighbor.X);
+          neighborPosView =
+              proxy<zs::execspace_e::cuda>(neighbor.attrVector("pos"));
           args[2] = (void *)&neighborPosView;
 
           args[3] = (void *)&ibsView;

@@ -28,7 +28,7 @@ struct DictGetItem : zeno::INode {
         auto dict = get_input<zeno::DictObject>("dict");
         auto key = get_input<zeno::StringObject>("key")->get();
         auto obj = dict->lut.at(key);
-        set_output("object", std::move(obj));
+        set_output2("object", std::move(obj));
     }
 };
 
@@ -59,9 +59,9 @@ struct DictSetItem : zeno::INode {
     virtual void apply() override {
         auto dict = get_input<zeno::DictObject>("dict");
         auto key = get_input<zeno::StringObject>("key")->get();
-        auto obj = get_input("object");
+        auto obj = get_input2("object");
         dict->lut[key] = std::move(obj);
-        set_output("dict", get_input("dict"));
+        set_output("dict", std::move(dict));
     }
 };
 
@@ -79,8 +79,8 @@ struct MakeDict : zeno::INode {
         auto keys = zeno::split_str(inkeys, '\n');
         auto dict = std::make_shared<zeno::DictObject>();
         for (auto const &key: keys) {
-            if (has_input(key)) {
-                auto obj = get_input(key);
+            if (has_input2(key)) {
+                auto obj = get_input2(key);
                 dict->lut[key] = std::move(obj);
             }
         }
@@ -96,6 +96,26 @@ ZENDEFNODE(MakeDict, {
 });
 
 
+struct DictUnion : zeno::INode {
+    virtual void apply() override {
+        auto dict1 = get_input<zeno::DictObject>("dict1");
+        auto dict2 = get_input<zeno::DictObject>("dict2");
+        auto dict = std::make_shared<zeno::DictObject>();
+        dict->lut = dict1->lut;
+        dict->lut.merge(dict2->lut);
+        set_output("dict", std::move(dict));
+    }
+};
+
+ZENDEFNODE(DictUnion, {
+    {{"dict1", "dict"}, {"dict2", "dict"}},
+    {{"dict", "dict"}},
+    {},
+    {"dict"},
+});
+
+
+
 struct ExtractDict : zeno::INode {
     virtual void apply() override {
         auto inkeys = get_param<std::string>("_KEYS");
@@ -106,7 +126,7 @@ struct ExtractDict : zeno::INode {
             if (it == dict->lut.end())
                 continue;
             auto obj = it->second;
-            set_output(key, std::move(obj));
+            set_output2(key, std::move(obj));
         }
     }
 };

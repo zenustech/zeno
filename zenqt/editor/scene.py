@@ -260,10 +260,11 @@ class QDMGraphicsView(QGraphicsView):
             if not isinstance(act, QWidgetAction):
                 edit.menu.removeAction(act)
         pattern = edit.text()
-        keys = self.scene().descs.keys()
-        matched = fuzzy_search(pattern, keys)
-        for key in matched:
-            edit.menu.addAction(key)
+        if pattern:
+            keys = self.scene().descs.keys()
+            matched = fuzzy_search(pattern, keys)
+            for key in matched:
+                edit.menu.addAction(key)
 
     def getCategoryActions(self):
         cates = self.scene().cates
@@ -362,6 +363,7 @@ class QDMGraphicsView(QGraphicsView):
                     if not item.isOutput and len(item.edges):
                         srcItem = item.getTheOnlyEdge().srcSocket
                         item.removeAllEdges()
+                        item.node.onInputChanged()
                         item = srcItem
 
                     edge = QDMGraphicsTempEdge()
@@ -377,7 +379,11 @@ class QDMGraphicsView(QGraphicsView):
                 item = self.itemAt(event.pos())
                 edge = self.dragingEdge
                 if isinstance(item, QDMGraphicsSocket):
-                    self.addEdge(edge.item, item)
+                    if self.addEdge(edge.item, item):
+                        if edge.item.isOutput:
+                            item.node.onInputChanged()
+                        else:
+                            edge.item.node.onInputChanged()
                 self.scene().removeItem(edge)
                 self.scene().update()
                 self.dragingEdge = None
@@ -436,4 +442,3 @@ class QDMGraphicsView(QGraphicsView):
 
         self.scene().addEdge(src, dst)
         return True
-

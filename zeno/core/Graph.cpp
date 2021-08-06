@@ -17,9 +17,8 @@ ZENO_API Context::Context(Context const &other)
 ZENO_API Graph::Graph() = default;
 ZENO_API Graph::~Graph() = default;
 
-ZENO_API void Graph::setGraphInput(std::string const &id,
-        std::shared_ptr<IObject> obj) {
-    subInputs[id] = obj;
+ZENO_API void Graph::setGraphInput2(std::string const &id, any obj) {
+    subInputs[id] = std::move(obj);
 }
 
 ZENO_API void Graph::applyGraph() {
@@ -30,15 +29,15 @@ ZENO_API void Graph::applyGraph() {
     applyNodes(applies);
 }
 
-ZENO_API std::shared_ptr<IObject> Graph::getGraphOutput(
+ZENO_API any const &Graph::getGraphOutput2(
         std::string const &id) const {
     return subOutputs.at(id);
 }
 
-ZENO_API std::shared_ptr<IObject> const &Graph::getNodeOutput(
+ZENO_API any const &Graph::getNodeOutput(
     std::string const &sn, std::string const &ss) const {
     auto node = safe_at(nodes, sn, "node");
-    if (node->muted_output)
+    if (node->muted_output.has_value())
         return node->muted_output;
     return safe_at(node->outputs, ss, "output", node->myname);
 }
@@ -96,9 +95,9 @@ ZENO_API void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
     safe_at(nodes, dn, "node")->inputBounds[ds] = std::pair(sn, ss);
 }
 
-ZENO_API void Graph::setNodeParam(std::string const &id, std::string const &par,
-        IValue const &val) {
-    safe_at(nodes, id, "node")->params[par] = val;
+ZENO_API void Graph::setNodeInput(std::string const &id, std::string const &par,
+        any const &val) {
+    safe_at(nodes, id, "node")->inputs[par] = val;
 }
 
 ZENO_API void Graph::setNodeOption(std::string const &id,

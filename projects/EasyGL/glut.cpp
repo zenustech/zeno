@@ -5,18 +5,56 @@
 #include <zeno/utils/zlog.h>
 #include <GLES2/gl2.h>
 #include <GL/glut.h>
-
+#include <zeno/types/DictObject.h>
+static float lastx = 0, lasty = 0;
+static float fx=0,fy=0,ax=0,ay=0;
+static bool clicked = false;
 struct GLUTMainLoop : zeno::INode {
+    
     inline static std::shared_ptr<zeno::FunctionObject> drawFunc;
     inline static int interval;
     inline static int nx, ny;
 
+    static void click(int button, int updown, int x, int y)
+    {
+        lastx = x;
+        lasty = y;
+        clicked = !clicked;
+    }
+
+    static void motion(int x, int y)
+    {
+        
+
+        if (clicked)
+        {
+            int ddx = x - lastx;
+            int ddy = y - lasty;
+            fx = ddx;
+            fy = -ddy;
+            ax = x/(float)nx;
+            ay = 1-y/(float)ny;
+            lastx = x;
+            lasty = y;
+        }
+        else {
+            fx = 0;
+            fy = 0;
+        }
+
+        glutPostRedisplay();
+    }
     static void displayFunc() {
         glViewport(0, 0, nx, ny);
         glClearColor(0.23f, 0.23f, 0.23f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         zlog::trace("calling draw function...");
-        drawFunc->call({});
+
+        auto vec = zeno::vec4f(ax, ay, fx, fy);
+        auto vecobj = std::make_shared<zeno::NumericObject>(vec);
+        std::map<std::string, zeno::any> param;
+        param["mouseInput"] = vecobj;
+        drawFunc->call(param);
         glutSwapBuffers();
         glutPostRedisplay();
     }
@@ -41,6 +79,8 @@ struct GLUTMainLoop : zeno::INode {
         glutCreateWindow("GLUT Window");
         glutDisplayFunc(displayFunc);
         glutKeyboardFunc(keyboardFunc);
+        glutMouseFunc(click);
+        glutMotionFunc(motion);
         glutTimerFunc(interval, timerFunc, interval);
         zlog::trace("entering main loop...");
         glutMainLoop();

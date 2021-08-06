@@ -3,9 +3,9 @@
 #include "MyShader.hpp"
 #include "main.hpp"
 #include <zeno/utils/vec.h>
+#include <zeno/types/PrimitiveObject.h>
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
-#include <zeno/types/PrimitiveObject.h>
 
 namespace zenvis {
 

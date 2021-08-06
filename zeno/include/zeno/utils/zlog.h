@@ -1,11 +1,39 @@
 #pragma once
 
-#define FMT_HEADER_ONLY
+#include <sstream>
 
-#include <iostream>
-#include <string_view>
+#if ZLOG_USE_ANDROID
+#include <android/log.h>
+#endif
 
 namespace zlog {
+    enum class LogLevel : char {
+        trace = 't',
+        debug = 'd',
+        info = 'i',
+        critical = 'c',
+        warning = 'w',
+        error = 'e',
+        fatal = 'f',
+    };
+
+#if ZLOG_USE_ANDROID
+    static inline void log_print(LogLevel level, const char *msg) {
+        __android_log_print(level == LogLevel::trace ? ANDROID_LOG_VERBOSE :
+            level == LogLevel::debug ? ANDROID_LOG_DEBUG :
+            level == LogLevel::info ? ANDROID_LOG_INFO :
+            level == LogLevel::critical ? ANDROID_LOG_WARN :
+            level == LogLevel::warning ? ANDROID_LOG_WARN :
+            level == LogLevel::error ? ANDROID_LOG_ERROR :
+            level == LogLevel::fatal ? ANDROID_LOG_FATAL :
+            ANDROID_LOG_INFO, "zlog", "%s", msg);
+    }
+#else
+    static inline void log_print(LogLevel level, const char *msg) {
+        fprintf(stderr, "zlog/%c: %s\n", (char)level, msg);
+    }
+#endif
+
     template <class Os>
     void _impl_format(Os &os, const char *fmt) {
         os << fmt;
@@ -29,31 +57,11 @@ namespace zlog {
         _impl_format(os, std::string(fmt).c_str(), std::forward<Ts>(ts)...);
     }
 
-    template <class Os, class ...Ts>
-    void print(const char *fmt, Ts &&...ts) {
-        format(std::cout, fmt, std::forward<Ts>(ts)...);
-    }
-
-    enum class LogLevel : char {
-        trace = 't',
-        debug = 'd',
-        info = 'i',
-        critical = 'c',
-        warning = 'w',
-        error = 'e',
-        fatal = 'f',
-    };
-
-    template <class Os>
-    void _prefix_bar(Os &os, LogLevel level) {
-        os << "zlog/" << (char)level << ": ";
-    }
-
     template <class ...Ts>
     void log(LogLevel level, const char *fmt, Ts &&...ts) {
-        _prefix_bar(std::cerr, level);
-        format(std::cerr, fmt, std::forward<Ts>(ts)...);
-        std::cerr << std::endl;
+        std::stringstream ss;
+        format(ss, fmt, std::forward<Ts>(ts)...);
+        log_print(level, ss.str().c_str());
     }
 
     template <class ...Ts>

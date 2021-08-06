@@ -2,6 +2,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/DictObject.h>
+#include <zeno/types/VoidPtrObject.h>
 #include "GLVertexAttribInfo.h"
 #include "GLPrimitiveObject.h"
 #include "GLTextureObject.h"
@@ -17,8 +18,7 @@ namespace {
 static GLShaderObject get_generic_vertex_shader() {
     static GLShaderObject vert;
     if (!vert.impl) {
-        vert.initialize(GL_VERTEX_SHADER, R"GLSL(
-#version 300 es
+        vert.initialize(GL_VERTEX_SHADER, R"GLSL(#version 300 es
 layout (location = 0) in vec2 vPosition;
 out vec2 fragCoord;
 void main() {
@@ -82,66 +82,107 @@ static zeno::vec2i get_default_resolution() {
     return resolution;
 }
 
+struct PassToyGetResolution : zeno::INode {
+    virtual void apply() override {
+        auto resolution = get_default_resolution();
+        auto res = std::make_shared<zeno::NumericObject>(resolution);
+        set_output("resolution", std::move(res));
+    }
+};
+
+ZENDEFNODE(PassToyGetResolution, {
+        {},
+        {"resolution"},
+        {},
+        {"PassToy"},
+});
+
+struct PassToyDownscaleResolution : zeno::INode {
+    virtual void apply() override {
+        auto scale = get_input<zeno::NumericObject>("scale")->get<int>();
+        auto res = get_default_resolution();
+        res /= scale;
+        glViewport(0, 0, res[0], res[1]);
+    }
+};
+
+ZENDEFNODE(PassToyDownscaleResolution, {
+        {"scale"},
+        {},
+        {},
+        {"PassToy"},
+});
+
+struct PassToyUpscaleResolution : zeno::INode {
+    virtual void apply() override {
+        auto scale = get_input<zeno::NumericObject>("scale")->get<int>();
+        auto res = get_default_resolution();
+        res *= scale;
+        glViewport(0, 0, res[0], res[1]);
+    }
+};
+
+ZENDEFNODE(PassToyUpscaleResolution, {
+        {"scale"},
+        {},
+        {},
+        {"PassToy"},
+});
+
+
 struct PassToyTexture : zeno::IObjectClone<PassToyTexture> {
     GLFramebuffer fbo;
     GLTextureObject tex;
 };
 
-static GLenum internalformat_from_string(std::string name) {
+static std::tuple<GLenum, GLenum, GLenum>
+internalformat_from_string(std::string name) {
     std::transform(name.begin(), name.end(), name.begin(), ::toupper);
     if (0) {
 #define _EVAL(x) x
-#define _PER_FMT(x) } else if (name == #x) { return _EVAL(GL_##x);
+#define _PER_FMT(x, y, z) \
+    } else if (name == #x) { \
+        return {_EVAL(GL_##x), _EVAL(GL_##y), _EVAL(GL_##z)};
 
-    _PER_FMT(RED)
-    _PER_FMT(R8UI)
-    _PER_FMT(R16UI)
-    _PER_FMT(R32UI)
-    _PER_FMT(R8I)
-    _PER_FMT(R16I)
-    _PER_FMT(R32I)
-    _PER_FMT(R16F)
-    _PER_FMT(R32F)
+    _PER_FMT(RED, RED, UNSIGNED_BYTE)
+    _PER_FMT(R8UI, RED, UNSIGNED_BYTE)
+    _PER_FMT(R16UI, RED, UNSIGNED_SHORT)
+    _PER_FMT(R32UI, RED, UNSIGNED_INT)
+    _PER_FMT(R8I, RED, BYTE)
+    _PER_FMT(R16I, RED, SHORT)
+    _PER_FMT(R32I, RED, INT)
+    _PER_FMT(R16F, RED, HALF_FLOAT)
+    _PER_FMT(R32F, RED, FLOAT)
 
-    _PER_FMT(RG)
-    _PER_FMT(RG8UI)
-    _PER_FMT(RG16UI)
-    _PER_FMT(RG32UI)
-    _PER_FMT(RG8I)
-    _PER_FMT(RG16I)
-    _PER_FMT(RG32I)
-    _PER_FMT(RG16F)
-    _PER_FMT(RG32F)
+    _PER_FMT(RG, RG, UNSIGNED_BYTE)
+    _PER_FMT(RG8UI, RG, UNSIGNED_BYTE)
+    _PER_FMT(RG16UI, RG, UNSIGNED_SHORT)
+    _PER_FMT(RG32UI, RG, UNSIGNED_INT)
+    _PER_FMT(RG8I, RG, BYTE)
+    _PER_FMT(RG16I, RG, SHORT)
+    _PER_FMT(RG32I, RG, INT)
+    _PER_FMT(RG16F, RG, HALF_FLOAT)
+    _PER_FMT(RG32F, RG, FLOAT)
 
-    _PER_FMT(RGB)
-    _PER_FMT(RGB8UI)
-    _PER_FMT(RGB16UI)
-    _PER_FMT(RGB32UI)
-    _PER_FMT(RGB8I)
-    _PER_FMT(RGB16I)
-    _PER_FMT(RGB32I)
-    _PER_FMT(RGB16F)
-    _PER_FMT(RGB32F)
+    _PER_FMT(RGB, RGB, UNSIGNED_BYTE)
+    _PER_FMT(RGB8UI, RGB, UNSIGNED_BYTE)
+    _PER_FMT(RGB16UI, RGB, UNSIGNED_SHORT)
+    _PER_FMT(RGB32UI, RGB, UNSIGNED_INT)
+    _PER_FMT(RGB8I, RGB, BYTE)
+    _PER_FMT(RGB16I, RGB, SHORT)
+    _PER_FMT(RGB32I, RGB, INT)
+    _PER_FMT(RGB16F, RGB, HALF_FLOAT)
+    _PER_FMT(RGB32F, RGB, FLOAT)
 
-    _PER_FMT(RGBA)
-    _PER_FMT(RGBA8UI)
-    _PER_FMT(RGBA16UI)
-    _PER_FMT(RGBA32UI)
-    _PER_FMT(RGBA8I)
-    _PER_FMT(RGBA16I)
-    _PER_FMT(RGBA32I)
-    _PER_FMT(RGBA16F)
-    _PER_FMT(RGBA32F)
-
-    _PER_FMT(RGB5_A1)
-    _PER_FMT(RGB10_A2)
-    _PER_FMT(RGB10_A2UI)
-    _PER_FMT(R8_SNORM)
-    _PER_FMT(RG8_SNORM)
-    _PER_FMT(RGB8_SNORM)
-    _PER_FMT(RGBA8_SNORM)
-    _PER_FMT(R11F_G11F_B10F)
-    _PER_FMT(RGB9_E5)
+    _PER_FMT(RGBA, RGBA, UNSIGNED_BYTE)
+    _PER_FMT(RGBA8UI, RGBA, UNSIGNED_BYTE)
+    _PER_FMT(RGBA16UI, RGBA, UNSIGNED_SHORT)
+    _PER_FMT(RGBA32UI, RGBA, UNSIGNED_INT)
+    _PER_FMT(RGBA8I, RGBA, BYTE)
+    _PER_FMT(RGBA16I, RGBA, SHORT)
+    _PER_FMT(RGBA32I, RGBA, INT)
+    _PER_FMT(RGBA16F, RGBA, HALF_FLOAT)
+    _PER_FMT(RGBA32F, RGBA, FLOAT)
 
 #undef _PER_FMT
 #undef _EVAL
@@ -154,7 +195,10 @@ static auto make_texture(zeno::vec2i resolution, std::string const &format) {
     auto texture = std::make_shared<PassToyTexture>();
     texture->tex.width = resolution[0];
     texture->tex.height = resolution[1];
-    texture->tex.internalformat = internalformat_from_string(format);
+    auto [ifmt, fmt, typ] = internalformat_from_string(format);
+    texture->tex.internalformat = ifmt;
+    texture->tex.format = fmt;
+    texture->tex.type = typ;
     texture->tex.initialize();
     texture->fbo.initialize();
     texture->fbo.bindToTexture(texture->tex, GL_COLOR_ATTACHMENT0);
@@ -180,15 +224,49 @@ ZENDEFNODE(PassToyMakeTexture, {
         {"PassToy"},
 });
 
+struct PassToyImageTextureFromVoidPtr : zeno::INode {
+    virtual void apply() override {
+        void *p = get_input<zeno::VoidPtrObject>("voidPtr")->get();
+        auto texture = std::make_shared<PassToyTexture>();
+        zlog::info("loading image file from void ptr {}", p);
+        auto nx = 0[(int *)p];
+        auto ny = 1[(int *)p];
+        auto img = (unsigned char *)p + 8;
+        for (int i = 0; i < nx * ny * 4; i += 4) {
+            std::swap(img[i + 0], img[i + 2]);
+        }
+        zlog::info("loaded {}x{} at {}", nx, ny, (void *)img);
+        texture->tex.width = nx;
+        texture->tex.height = ny;
+        texture->tex.type = GL_UNSIGNED_BYTE;
+        texture->tex.format = GL_RGBA;
+        texture->tex.internalformat = GL_RGBA;
+        texture->tex.base = img;
+        texture->tex.initialize();
+        texture->fbo.initialize();
+        texture->fbo.bindToTexture(texture->tex, GL_COLOR_ATTACHMENT0);
+        texture->fbo.checkStatusComplete();
+        set_output("texture", std::move(texture));
+    }
+};
+
+ZENDEFNODE(PassToyImageTextureFromVoidPtr, {
+        {"voidPtr"},
+        {"texture"},
+        {},
+        {"PassToy"},
+});
+
+
 struct PassToyLoadImageTexture : zeno::INode {
     virtual void apply() override {
         auto path = get_param<std::string>("path");
         auto texture = std::make_shared<PassToyTexture>();
-        int nx, ny, nc;
-        stbi_set_flip_vertically_on_load(true);
-        zlog::debug("loading image file: {}", path);
+        int nx = 0, ny = 0, nc = 0;
+        //stbi_set_flip_vertically_on_load(true);
+        zlog::info("loading image file: {}", path);
         unsigned char *img = stbi_load(path.c_str(), &nx, &ny, &nc, 0);
-        zlog::debug("loaded {}x{}x{}", nx, ny, nc);
+        zlog::info("loaded {}x{}x{} at {}", nx, ny, nc, (void *)img);
         int format = GL_RGB;
         switch (nc) {
         case 4: format = GL_RGBA; break;
@@ -201,12 +279,15 @@ struct PassToyLoadImageTexture : zeno::INode {
         texture->tex.type = GL_UNSIGNED_BYTE;
         texture->tex.format = format;
         texture->tex.internalformat = format;
+        //texture->tex.minFilter = GL_LINEAR_MIPMAP_LINEAR;
+        //texture->tex.magFilter = GL_LINEAR_MIPMAP_LINEAR;
         texture->tex.base = img;
         texture->tex.initialize();
         texture->fbo.initialize();
         texture->fbo.bindToTexture(texture->tex, GL_COLOR_ATTACHMENT0);
         texture->fbo.checkStatusComplete();
-        stbi_image_free(img);
+        if (img)
+            stbi_image_free(img);
         set_output("texture", std::move(texture));
     }
 };
@@ -284,21 +365,6 @@ ZENDEFNODE(PassToyTexturePairSwap, {
 });
 
 
-struct PassToyGetResolution : zeno::INode {
-    virtual void apply() override {
-        auto resolution = get_default_resolution();
-        auto res = std::make_shared<zeno::NumericObject>(resolution);
-        set_output("resolution", std::move(res));
-    }
-};
-
-ZENDEFNODE(PassToyGetResolution, {
-        {},
-        {"resolution"},
-        {},
-        {"PassToy"},
-});
-
 
 struct PassToyApplyShader : zeno::INode {
     virtual void apply() override {
@@ -311,10 +377,7 @@ struct PassToyApplyShader : zeno::INode {
             auto textureIns = get_input<zeno::DictObject>("textureIn");
             int i = 0;
             for (auto const &[key, obj]: textureIns->lut) {
-                auto textureIn = zeno::safe_dynamic_cast<PassToyTexture>(obj);
-                if (i == 0) {
-                    resolution = zeno::vec2i(textureIn->tex.width, textureIn->tex.height);
-                }
+                auto textureIn = zeno::smart_any_cast<std::shared_ptr<PassToyTexture>>(obj);
                 i += 1;
                 //zlog::debug("texture number {} is `{}`", i, key);
                 textureIn->tex.use(i);
@@ -328,8 +391,6 @@ struct PassToyApplyShader : zeno::INode {
         if (has_input<PassToyTexture>("textureOut")) {
             textureOut = get_input<PassToyTexture>("textureOut");
             textureOut->fbo.use();
-            resolution[0] = textureOut->tex.width;
-            resolution[1] = textureOut->tex.height;
         } else if (!has_input("textureOut")) {
             textureOut = make_texture(resolution, "rgb16f");
             textureOut->fbo.use();
@@ -340,8 +401,7 @@ struct PassToyApplyShader : zeno::INode {
         if (has_input("uniforms")) {
             auto uniforms = get_input<zeno::DictObject>("uniforms");
             for (auto const &[key, obj]: uniforms->lut) {
-                auto const &value = zeno::safe_dynamic_cast
-                    <zeno::NumericObject>(obj)->value;
+                auto const &value = zeno::smart_any_cast<std::shared_ptr<zeno::NumericObject>>(obj)->value;
                 std::visit([&shader, key = key] (auto const &value) {
                     shader->prog.setUniform(key.c_str(), value);
                 }, value);
@@ -351,7 +411,6 @@ struct PassToyApplyShader : zeno::INode {
         GLVertexAttribInfo vab;
         vab.base = generic_triangle_vertices;
         vab.dim = 2;
-        glViewport(0, 0, resolution[0], resolution[1]);
         drawVertexArrays(GL_TRIANGLES, 3, {vab});
         GLFramebuffer().use();
         set_output("textureOut", std::move(textureOut));

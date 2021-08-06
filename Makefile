@@ -1,5 +1,5 @@
 O=arts/stablefluid.zsg
-default: glrun
+default: test
 
 #O=arts/ZFXv2.zsg
 #default: run

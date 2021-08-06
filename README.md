@@ -4,7 +4,7 @@
 
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 
-![rigid3.zsg](images/rigid3.jpg "arts/rigid3.zsg")
+![rigid3.zsg](images/rigid3.jpg "graphs/wip/rigid3.zsg")
 
 ZENO is an OpenSource, Node based 3D system able to produce cinematic physics effects at High Efficiency, it was designed for large scale simulations and has been tested on complex setups.
 Aside of its simulation Tools, ZENO provides necessary visualization nodes for users to import and run simulations if you feel that the current software you are using is too slow.
@@ -13,7 +13,7 @@ Aside of its simulation Tools, ZENO provides necessary visualization nodes for u
 ## Features
 
 Integrated Toolbox, from volumetric geometry process tools (OpenVDB), to state-of-art, commercially robust, highly optimized physics solvers and visualization
-nodes, and various VFX and simulation solutions based on our nodes (provided by .zsg file in `arts/` folder).
+nodes, and various VFX and simulation solutions based on our nodes (provided by .zsg file in `graphs/` folder).
 
 ## Gallery
 
@@ -41,7 +41,7 @@ This repo aims to provide a great tool for both technical artists and CG develop
 
 One may create complicated simulation scenarios by simply connecting the nodes provided by the system. For example, here's a molecular simulation built by our users:
 
-![lennardjones.zsg](images/lennardjones.jpg "arts/lennardjones.zsg")
+![lennardjones.zsg](images/lennardjones.jpg "graphs/wip/lennardjones.zsg")
 
 This is the charm of visual-programming, not only the direction of data-flow, but also the logic-flow of the solution algorithm is presented at no more clarity.
 In fact, building this molecular simulation from scratch took no more than 7 minutes!
@@ -55,7 +55,7 @@ By connecting these nodes, you can literally create your unique solver that best
 your need, rather than being limited by the imagination of software programmers.
 For example, here @zhxx1987 created two-way coupled fluid-rigid simulation by adding some nodes to pass momentums from surfaces despite the FLIP solver didn't support fluid-rigid coupling at the first place:
 
-![Rigid_pool2.zsg](images/FSI.gif "arts/Rigid_pool2.zsg")
+![Rigid_pool2.zsg](images/FSI.gif "graphs/wip/Rigid_pool2.zsg")
 
 
 ## Performant
@@ -67,7 +67,7 @@ low-level details.
 Performance-wisely, it's shown by @zhxx1987 that our FLIP solver is 4x faster than
 Houdini at large scale.
 
-![FLIPSolver.zsg](images/FLIPSolver.jpg "arts/FLIPSolver.zsg")
+![FLIPSolver.zsg](images/FLIPSolver.jpg "graphs/wip/FLIPSolver.zsg")
 
 ## Control-flows
 
@@ -75,7 +75,7 @@ Unlike many pure functional node systems (e.g. Blender), ZENO has a strong time-
 and provide a lot of control-flow nodes including CachedOnce, BeginForEach, EndFor, etc.
 This enable you to make turing-equivalent programs that fit real-world problems.
 
-![forloop.zsg](images/forloop.jpg "arts/forloop.zsg")
+![forloop.zsg](images/forloop.jpg "graphs/wip/forloop.zsg")
 
 ## Simplicity
 
@@ -109,7 +109,7 @@ Loading these libraries would add corresponding functional nodes into ZENO,
 after which you can creating node graphs with them for simulation.
 You may also add your own solver nodes to ZENO with this workflow if you'd like.
 
-![demoproject.zsg](images/demoprojgraph.jpg "arts/demoproject.zsg")
+![demoproject.zsg](images/demoprojgraph.jpg "graphs/wip/demoproject.zsg")
 
 ## Integratable
 
@@ -126,12 +126,11 @@ for more information.
 ## Get binary release
 
 Go to the [release page](https://github.com/zenustech/zeno/releases/), and click Assets -> download `zeno-linux-20xx.x.x.tar.gz`.
-Then, extract this archive, and simply run `./start.sh`, then the node editor window will shows up if everything is working well.
+Then, extract this archive, and simply run `./start.sh` (`start.bat` for Windows), then the node editor window will shows up if everything is working well.
 
 ## How to play
 
-There are some example graphs in the `./arts/` folder, you may open them in the editor and have fun!
-Currently `rigid3.zsg`, `FLIPSolver.zsg`, `prim.zsg`, and `lennardjones.zsg` are confirmed to be functional.
+There are some example graphs in the `graphs/` folder, you may open them in the editor and have fun!
 Hint: To run an animation for 100 frames, change the `1` on the top-left of node editor to `100`, then click `Execute`.
 Also MMB to drag in the node editor, LMB click on sockets to create connections. MMB drag in the viewport to orbit camera, Shift+MMB to pan camera.
 
@@ -147,21 +146,56 @@ If you find the binary version didn't worked properly or some error message has 
 You need a C++17 compiler, CMake 3.12+, and Python 3.6+ to build ZENO; Pybind11, NumPy and PySide2 (Qt for Python) to run ZENO editor.
 Other requirements like GLAD are self-contained and you don't have to worry installing them manually.
 
+> Hint: for Python, please try avoid using virtualenv and Conda if possible.
+
+- Ubuntu 20.04
+
+```bash
+# Install basic dependencies
+sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin
+
+python --version  # make sure Python version >= 3.7
+sudo python -m pip install -U pip
+sudo python -m pip install pybind11 numpy PySide2
+
+# (Optional) for easily altering cmake configurations from terminal:
+sudo apt-get install cmake-curses-gui
+
+# (Optional) Installing IlmBase and other dependencies:
+sudo apt-get install -y libilmbase-dev libopenexr-dev
+sudo apt-get install -y zlib1g-dev libeigen3-dev libopenblas-dev
+
+# (Optional) Installing OpenVDB dependencies (Boost, TBB, Blosc):
+sudo apt-get install -y libboost-iostreams-dev libboost-system-dev libtbb-dev
+git clone https://github.com/Blosc/c-blosc.git --branch=v1.5.0
+cd c-blosc
+mkdir build
+cd build
+cmake ..
+make -j4
+sudo make install
+cd ../..
+
+# (Optional) Install OpenVDB:
+git clone https://github.com/AcademySoftwareFoundation/openvdb.git --branch=v7.2.1
+cd openvdb
+mkdir build
+cd build
+cmake ..
+make -j4
+sudo make install
+cd ../..
+```
+
+See also [`Dockerfile`](Dockerfile) as a reference for full installing steps.
+
 - Arch Linux
 
 ```bash
 sudo pacman -S gcc make cmake python python-pip python-numpy pyside2
 ```
 
-- Ubuntu 20.04
-
-```bash
-sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin
-
-python --version  # make sure Python version >= 3.7
-sudo python -m pip install -U pip
-sudo python -m pip install pybind11 numpy PySide2
-```
+See also [`Dockerfile.archlinux`](Dockerfile.archlinux) for full installing steps.
 
 - Windows 10
 
@@ -182,6 +216,12 @@ Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/
 
 3. Install Visual Studio 2019 Community Edition or later version (for C++17 support in MSVC).
 
+- Docker
+
+```bash
+./docker.sh
+```
+
 
 ## Build ZENO
 
@@ -189,13 +229,31 @@ Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/
 
 ```bash
 cmake -B build
-make -C build -j8
+cmake --build build --parallel
 ```
+
+> Optional: You can change some cmake configurations using `ccmake`.
+
+```bash
+cmake -B build
+# change some cmake configurations via ccmake:
+ccmake -B build  # will shows up a curses screen, c to save, q to exit
+```
+
+> Below is the suggested Extension Setup:
+
+![extension](images/extension1.png)
+![extension](images/extension2.png)
+
+> if you have confidence with your GPU and CUDA version, also turn ON those CUDA related stuffs, see figures below: (change mesher, gmpm, ZS_CUDA, ZFXCUDA to OFF may skip cmake and gpu dependencies issue, while disable you from using GPU computing features)
+
+<img src="images/ccmake1.png" alt="ccmake1" style="zoom:98%;" />
+<img src="images/ccmake2.png" alt="ccmake2" style="zoom:50%;" />
 
 - Windows
 
 ```cmd
-cmake -B build
+cmake -B build -DCMAKE_BUILD_TYPE=Release
 ```
 Then open ```build/zeno.sln``` in Visual Studio 2019, and **switch to Release mode in build configurations**, then run `Build -> Build All`.
 
@@ -216,11 +274,11 @@ IMPORTANT: In MSVC, Release mode must **always be active** when building ZENO, s
 run.bat
 ```
 
-After successfully loading the editor, you may play `arts/ready/LorenzParticleTrail.zsg` which is confirmed to work at this moment :)
+After successfully loading the editor, you may click `File -> Open` to play `graphs/LorenzParticleTrail.zsg` to confirm everything is working well :)
 
 #### Troubleshooting
 
-1. If you got:
+If you got:
 ```bash
 This application failed to start because it could not find or load the Qt platform plugin "xxx"
 
@@ -237,33 +295,32 @@ Are you using Anaconda? Please try using the methods in: https://stackoverflow.c
 sudo apt-get install qt5dxcb-plugin
 ```
 
-2. Please let me know if you have any trouble not mentioned above by opening an [issue](https://github.com/zenustech/zeno/issues) on GitHub, thanks for you support!
+Please let me know if you have any trouble not mentioned above by opening an [issue](https://github.com/zenustech/zeno/issues) on GitHub, thanks for you support!
 
-## ZENO Extensions
+- WSL
+
+WSL doesn't have X11 display by default :(
+
+# Building ZENO Extensions
 
 ZENO is extensible which means we may write extensions (node libraries) for it.
 The source code of all our official extensions are provided in `projects/`.
 
-### Build extensions
-
 For now, official extensions will be built by default when running the
 ```ALL_BUILD``` target of CMake.
 
-#### ZenVDB & FastFLIP
+### ZenVDB & FastFLIP
 
 Note that the extensions: ZenVDB and FastFLIP are **not built by default**.
 You can use
 ```bash
-cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
+cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
 ```
 to enable them.
 
-##### Known issues
-```diff
-- **The FastFLIP solver we know work well with OpenVDB 7.2.3, and have problem with OpenVDB 8.1.**
-```
+> **The FastFLIP solver we know work well with OpenVDB 7.2.3, and have problem with OpenVDB 8.1.**
 
-#### GMPM
+### GMPM
 
 You need to update git submodules before building @littlemine's GPU MPM.
 To do so:
@@ -276,7 +333,7 @@ cmake -B build -DEXTENSION_gmpm:BOOL=ON
 ```
 to enable it.
 
-#### ZenoFX
+### ZenoFX
 
 You need to turn on two flags to enable ZenoFX build:
 ```bash
@@ -284,13 +341,7 @@ cmake -B build -DZENO_BUILD_ZFX:BOOL=ON -DEXTENSION_ZenoFX:BOOL=ON
 ```
 to enable it.
 
-Use:
-```bash
-cmake -B build -DZENO_BUILD_ZFX:BOOL=ON -DEXTENSION_ZenoFX:BOOL=ON -DZFX_ENABLE_CUDA:BOOL=ON
-```
-if you want to enable CUDA support for ZFX.
-
-#### Major dependencies
+## Major dependencies
 
 Building them require some dependencies:
 
@@ -335,13 +386,13 @@ Building them require some dependencies:
 Other extensions are built by default because their dependencies are
 self-contained and portable to all platforms.
 
-### Write your own extension!
+## Write your own extension!
 
 See https://github.com/zenustech/zeno_addon_wizard for an example on how to write custom nodes in ZENO.
 
-#### Installing extensions
+### Installing custom extensions
 
-To install a node library for ZENO just copy the `.so` or `.dll` files to `zeno/lib/`.
+To install a node library for ZENO just copy the `.so` or `.dll` files to `zenqt/lib/`.
 
 
 # Miscellaneous
@@ -370,6 +421,16 @@ You may contact us via WeChat:
 
 
 # Maintainers' manual
+
+## Run intergrated test
+
+- Linux
+
+```bash
+cmake -B build -DZENO_BUILD_TESTS:BOOL=ON
+cmake --build build --parallel
+build/tests/zentest
+```
 
 ## Build binary release
 

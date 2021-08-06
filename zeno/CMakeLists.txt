@@ -1,6 +1,9 @@
 file(GLOB ZENO_SOURCE core/*.cpp utils/*.cpp extra/*.cpp include/*/*.h include/*/*/*.h)
 file(GLOB ZENO_NODES_SOURCE nodes/*.cpp nodes/*/*.cpp)
-add_library(zeno SHARED ${ZENO_SOURCE} ${ZENO_NODES_SOURCE})
+add_library(zeno SHARED ${ZENO_SOURCE})
+if (ZENO_BUILTIN_NODES)
+    target_sources(zeno PRIVATE ${ZENO_NODES_SOURCE})
+endif()
 
 if (ZENO_ENABLE_OPENMP)
     find_package(OpenMP)
@@ -41,4 +44,10 @@ if (ZENO_ENABLE_PYTHON)
 		ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
 		)
 	add_subdirectory(python)
+endif()
+
+if (ZLOG_USE_ANDROID)
+    target_compile_definitions(zeno PUBLIC -DZLOG_USE_ANDROID)
+    find_library(log-lib log)
+    target_link_libraries(zeno PUBLIC ${log-lib})
 endif()

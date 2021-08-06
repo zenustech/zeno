@@ -52,8 +52,13 @@ inline void bindNodeInput(std::string const &dn, std::string const &ds,
     return getSession().getDefaultScene().getGraph().bindNodeInput(dn, ds, sn, ss);
 }
 
+inline void setNodeInput(std::string const &id, std::string const &par,
+        any const &val) {
+    return getSession().getDefaultScene().getGraph().setNodeInput(id, par, val);
+}
+
 inline void setNodeParam(std::string const &id, std::string const &par,
-        IValue const &val) {
+        std::variant<int, float, std::string> const &val) {
     return getSession().getDefaultScene().getGraph().setNodeParam(id, par, val);
 }
 

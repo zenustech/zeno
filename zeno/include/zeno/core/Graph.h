@@ -2,7 +2,8 @@
 
 #include <zeno/utils/defs.h>
 #include <zeno/core/IObject.h>
-#include <zeno/utils/safe_dynamic_cast.h>
+#include <zeno/utils/any.h>
+#include <variant>
 #include <memory>
 #include <string>
 #include <set>
@@ -30,12 +31,12 @@ struct Graph {
 
     std::map<std::string, std::unique_ptr<INode>> nodes;
 
-    std::map<std::string, std::shared_ptr<IObject>> subInputs;
-    std::map<std::string, std::shared_ptr<IObject>> subOutputs;
+    std::map<std::string, any> subInputs;
+    std::map<std::string, any> subOutputs;
     std::map<std::string, std::string> subOutputNodes;
 
     std::map<std::string, std::string> portalIns;
-    std::map<std::string, std::shared_ptr<IObject>> portals;
+    std::map<std::string, any> portals;
 
     std::unique_ptr<Context> ctx;
 
@@ -45,11 +46,18 @@ struct Graph {
     ZENO_API Graph();
     ZENO_API ~Graph();
 
-    ZENO_API void setGraphInput(std::string const &id,
-            std::shared_ptr<IObject> obj);
-    ZENO_API std::shared_ptr<IObject> getGraphOutput(
-            std::string const &id) const;
+    ZENO_API void setGraphInput2(std::string const &id, any obj);
+    ZENO_API any const &getGraphOutput2(std::string const &id) const;
     ZENO_API void applyGraph();
+
+    void setGraphInput(std::string const &id,
+            std::shared_ptr<IObject> obj) {
+        setGraphInput2(id, std::move(obj));
+    }
+    std::shared_ptr<IObject> getGraphOutput(
+            std::string const &id) const {
+        return smart_any_cast<std::shared_ptr<IObject>>(getGraphOutput2(id));
+    }
 
     template <class T>
     std::shared_ptr<T> getGraphOutput(
@@ -66,11 +74,19 @@ struct Graph {
     ZENO_API void completeNode(std::string const &id);
     ZENO_API void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss);
-    ZENO_API void setNodeParam(std::string const &id, std::string const &par,
-        IValue const &val);
+    ZENO_API void setNodeInput(std::string const &id, std::string const &par,
+        any const &val);
     ZENO_API void setNodeOption(std::string const &id, std::string const &name);
-    ZENO_API std::shared_ptr<IObject> const &getNodeOutput(
+    ZENO_API any const &getNodeOutput(
         std::string const &sn, std::string const &ss) const;
+
+    void setNodeParam(std::string const &id, std::string const &par,
+        std::variant<int, float, std::string> const &val) {
+        auto parid = "param_" + par;
+        std::visit([&] (auto const &val) {
+            setNodeInput(id, parid, val);
+        }, val);
+    }
 };
 
 }
