@@ -15,7 +15,6 @@ class QDMGraphicsNode_MakeList(QDMGraphicsNode):
             socket.setName(key)
             socket.setIsOutput(False)
             self.inputs[socket.name] = socket
-
             self.height += TEXT_HEIGHT
         self.height += TEXT_HEIGHT * 1.5
 
@@ -23,11 +22,8 @@ class QDMGraphicsNode_MakeList(QDMGraphicsNode):
         if len(self.inputs[self.socket_keys[-1]].edges) > 0:
             self.add_new_key()
         else:
-            while len(self.inputs[self.socket_keys[-2]].edges) == 0:
-                if len(self.socket_keys) > 2:
-                    self.del_last_key()
-                else:
-                    break
+            while len(self.socket_keys) > 2 and len(self.inputs[self.socket_keys[-2]].edges) == 0:
+                self.del_last_key()
 
     def add_new_key(self):
         self.socket_keys.append('obj{}'.format(len(self.socket_keys)))

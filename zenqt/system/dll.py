@@ -1,4 +1,4 @@
-import ctypes, os
+import ctypes, os, sys, traceback
 
 from .utils import rel2abs, os_name
 
@@ -7,6 +7,10 @@ lib_dir = rel2abs(__file__, '..', 'lib')
 #'''
 if os_name == 'win32':
     os.environ['PATH'] += os.pathsep + lib_dir
+    if sys.version_info >= (3, 8):
+        # for py 3.8+
+        #   https://docs.python.org/3.8/whatsnew/3.8.html#ctypes
+        os.add_dll_directory(lib_dir)
     ctypes.cdll.LoadLibrary('zeno.dll')
 elif os_name == 'darwin':
     ctypes.cdll.LoadLibrary(os.path.join(lib_dir, 'libzeno.dylib'))
