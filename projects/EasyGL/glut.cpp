@@ -50,12 +50,10 @@ struct GLUTMainLoop : zeno::INode {
         glClear(GL_COLOR_BUFFER_BIT);
         zlog::trace("calling draw function...");
 
-        
         auto vec = zeno::vec4f(ax, ay, fx, fy);
         auto vecobj = std::make_shared<zeno::NumericObject>(vec);
-        std::map<std::string, std::shared_ptr<zeno::IObject>> param;
+        std::map<std::string, zeno::any> param;
         param["mouseInput"] = vecobj;
-
         drawFunc->call(param);
         glutSwapBuffers();
         glutPostRedisplay();

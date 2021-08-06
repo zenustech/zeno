@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
-#include <zeno/StringObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/DictObject.h>
+#include <zeno/types/StringObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/DictObject.h>
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
@@ -39,7 +39,7 @@ struct NumericWrangle : zeno::INode {
         std::vector<std::pair<std::string, int>> parnames;
         for (auto const &[key_, obj]: params->lut) {
             auto key = '$' + key_;
-            auto par = dynamic_cast<zeno::NumericObject *>(obj.get());
+            auto par = zeno::smart_any_cast<std::shared_ptr<zeno::NumericObject>>(obj).get();
             auto dim = std::visit([&] (auto const &v) {
                 using T = std::decay_t<decltype(v)>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) {
@@ -112,7 +112,7 @@ struct NumericWrangle : zeno::INode {
             auto key = name.substr(1);
             std::visit([dimid = dimid, value] (auto &res) {
                     dimid[(float *)(void *)&res] = value;
-            }, std::static_pointer_cast<zeno::NumericObject>(
+            }, zeno::smart_any_cast<std::shared_ptr<zeno::NumericObject>>(
                 result->lut[key])->value);
         }
 

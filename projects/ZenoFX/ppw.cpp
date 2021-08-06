@@ -1,8 +1,8 @@
 #include <zeno/zeno.h>
-#include <zeno/StringObject.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/DictObject.h>
+#include <zeno/types/StringObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/DictObject.h>
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
@@ -87,7 +87,7 @@ struct ParticleParticleWrangle : zeno::INode {
         std::vector<std::pair<std::string, int>> parnames;
         for (auto const &[key_, obj]: params->lut) {
             auto key = '$' + key_;
-            auto par = dynamic_cast<zeno::NumericObject *>(obj.get());
+            auto par = zeno::smart_any_cast<std::shared_ptr<zeno::NumericObject>>(obj).get();
             auto dim = std::visit([&] (auto const &v) {
                 using T = std::decay_t<decltype(v)>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) {
