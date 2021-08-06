@@ -48,7 +48,11 @@ def fuzzy_search(pattern, keys):
 from .system.utils import rel2abs
 
 def asset_path(name):
-    return rel2abs(__file__, 'assets', name)
+    if is_portable_mode():
+        rel_path = rel2abs(sys.executable, 'zenqt', 'assets', name)
+    else:
+        rel_path = rel2abs(__file__, 'assets', name)
+    return rel_path
 
 def setKeepAspect(renderer):
     if hasattr(renderer, 'setAspectRatioMode'):

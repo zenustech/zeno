@@ -1,8 +1,13 @@
 import ctypes, os, sys, traceback
 
 from .utils import rel2abs, os_name
+from zenqt.utils import is_portable_mode
 
-lib_dir = rel2abs(__file__, '..', 'lib')
+
+if is_portable_mode():
+    lib_dir = rel2abs(sys.executable, 'zenqt', 'lib')    
+else:
+    lib_dir = rel2abs(__file__, '..', 'lib')
 
 #'''
 if os_name == 'win32':

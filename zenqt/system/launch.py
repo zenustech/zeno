@@ -8,6 +8,7 @@ import json
 import sys
 import os
 from multiprocessing import Process
+from zenqt.utils import is_portable_mode
 
 
 g_proc = None
@@ -64,7 +65,10 @@ def launchProgram(prog, nframes):
         with open(filepath, 'w') as f:
             json.dump(prog, f)
         # TODO: replace with binary executable
-        g_proc = subprocess.Popen([sys.executable, '-m', 'zenqt.system', filepath, str(nframes), g_iopath])
+        if is_portable_mode():
+            g_proc = subprocess.Popen([sys.executable, filepath, str(nframes), g_iopath]) 
+        else:
+            g_proc = subprocess.Popen([sys.executable, '-m', 'zenqt.system', filepath, str(nframes), g_iopath])
         retcode = g_proc.wait()
         if retcode != 0:
             print('zeno program exited with error code:', retcode)
@@ -75,7 +79,10 @@ def getDescriptors():
         from . import run
         descs = run.dumpDescriptors()
     else:
-        descs = subprocess.check_output([sys.executable, '-m', 'zenqt.system', '--dump-descs'])
+        if is_portable_mode():
+            descs = subprocess.check_output([sys.executable, '--dump-descs'])
+        else:
+            descs = subprocess.check_output([sys.executable, '-m', 'zenqt.system', '--dump-descs'])
         descs = descs.split(b'==<DESCS>==')[1].decode()
     descs = descs.splitlines()
     descs = [parse_descriptor_line(line) for line in descs
