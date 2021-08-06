@@ -102,33 +102,17 @@ using any_underlying_type_t = typename any_traits<std::decay_t<T>>::underlying_t
 struct any : std::any {
     any() = default;
 
-    any(any &a) = default;
-    any(any &&a) = default;
     any(any const &a) = default;
 
-    template <class T, std::enable_if_t<!std::is_same_v<std::decay_t<T>, any>, int> = 0>
+    template <class T>
     any(T const &t)
     : std::any(static_cast<any_underlying_type_t<T> const &>(t))
     {}
 
-    template <class T, std::enable_if_t<!std::is_same_v<std::decay_t<T>, any>, int> = 0>
-    any(T &&t)
-    : std::any(static_cast<any_underlying_type_t<T> &&>(t))
-    {}
-
-    any &operator=(any &a) = default;
-    any &operator=(any &&a) = default;
     any &operator=(any const &a) = default;
 
-    template <class T, std::enable_if_t<!std::is_same_v<std::decay_t<T>, any>, int> = 0>
+    template <class T>
     any &operator=(T const &t) {
-        std::any::operator=(
-                static_cast<any_underlying_type_t<T>>(t));
-        return *this;
-    }
-
-    template <class T, std::enable_if_t<!std::is_same_v<std::decay_t<T>, any>, int> = 0>
-    any &operator=(T &&t) {
         std::any::operator=(
                 static_cast<any_underlying_type_t<T>>(t));
         return *this;
