@@ -1,13 +1,10 @@
 #pragma once
 
 #include <zeno/utils/defs.h>
-#include <variant>
 #include <string>
 #include <memory>
 
 namespace zeno {
-
-using IValue = std::variant<std::string, int, float>;
 
 struct IObject {
     using polymorphic_base_type = IObject;

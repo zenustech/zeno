@@ -38,6 +38,7 @@ def serializeGraph(nodes, subgkeys):
         yield 'completeNode', ident
 
 
+'''
 def serializeGraph2(nodes, subkeys='todo_not_used_for_now'):
     for ident, data in nodes.items():
         if 'special' in data:
@@ -79,6 +80,7 @@ def serializeScene2(graphs):
     for name, graph in graphs.items():
         yield 'switchGraph', name
         yield from serializeGraph2(graph['nodes'], subgkeys)
+'''
 
 
 __all__ = [

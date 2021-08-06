@@ -3,6 +3,7 @@
 #include <zeno/utils/defs.h>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/any.h>
+#include <variant>
 #include <memory>
 #include <string>
 #include <set>
@@ -22,7 +23,6 @@ public:
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
     std::map<std::string, any> inputs;
     std::map<std::string, any> outputs;
-    std::map<std::string, IValue> params; // todo: use any for params too?
     std::set<std::string> options;
     any muted_output;
 
@@ -42,7 +42,6 @@ protected:
 
     ZENO_API bool has_option(std::string const &id) const;
     ZENO_API bool has_input2(std::string const &id) const;
-    ZENO_API IValue get_param(std::string const &id) const;
     ZENO_API any get_input2(std::string const &id) const;
     ZENO_API void set_output2(std::string const &id, any &&obj);
 
@@ -93,9 +92,30 @@ protected:
                 "input socket `" + id + "` ");
     }
 
+    /* deprecated */
+    auto get_param(std::string const &id) const {
+        std::variant<int, float, std::string> res;
+        auto inpid = "param_" + id;
+        if (has_input2<scalar_type_variant>(inpid)) {
+            std::visit([&] (auto const &x) {
+                using T = std::decay_t<decltype(x)>;
+                if constexpr (std::is_integral_v<T>) {
+                    res = (int)x;
+                } else {
+                    res = (float)x;
+                }
+            }, get_input2<scalar_type_variant>(inpid));
+        } else {
+            res = get_input2<std::string>(inpid);
+        }
+        return res;
+    }
+
+    /* deprecated */
     template <class T>
     T get_param(std::string const &id) const {
-        return std::get<T>(get_param(id));
+        //return std::get<T>(get_param(id));
+        return get_input2<T>("param_" + id);
     }
 };
 

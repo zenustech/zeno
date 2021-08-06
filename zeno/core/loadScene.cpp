@@ -6,9 +6,9 @@ namespace zeno {
 
 using namespace rapidjson;
 
-static zeno::IValue generic_get(Value const &x) {
+static zeno::any generic_get(Value const &x) {
     if (x.IsString()) {
-        return x.GetString();
+        return (std::string)x.GetString();
     } else if (x.IsInt()) {
         return x.GetInt();
     } else if (x.IsFloat()) {
@@ -32,7 +32,7 @@ ZENO_API void Scene::loadScene(const char *json) {
             } else if (cmd == "completeNode") {
                 getGraph().completeNode(di[1].GetString());
             } else if (cmd == "setNodeParam") {
-                getGraph().setNodeParam(di[1].GetString(), di[2].GetString(), generic_get(di[3]));
+                getGraph().setNodeParam2(di[1].GetString(), di[2].GetString(), generic_get(di[3]));
             } else if (cmd == "setNodeOption") {
                 getGraph().setNodeOption(di[1].GetString(), di[2].GetString());
             } else if (cmd == "bindNodeInput") {

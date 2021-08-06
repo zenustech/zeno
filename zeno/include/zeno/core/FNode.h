@@ -1,7 +1,9 @@
 #pragma once
 
+// wipdemo..
+
 #include <zeno/utils/defs.h>
-#include <zeno/core/IObject.h>
+#include <zeno/core/INode.h>
 #include <zeno/utils/safe_at.h>
 #include <zeno/utils/any.h>
 #include <functional>
@@ -28,7 +30,54 @@ struct Descriptor2 {
 struct Codebase {
     std::map<std::string, std::function<void(Context2 *)>> functions;
     std::map<std::string, Descriptor2> descriptors;
+
+    int defNodeFunction
+            ( std::string const &name
+            , std::function<void(Context2 *)> func
+            , Descriptor2 const &desc
+            ) {
+        functions[name] = func;
+        descriptors[name] = desc;
+        return 1;
+    }
+
+    int defLegacyNodeClass
+            ( std::string const &name
+            , std::function<std::unique_ptr<INode>()> ctor
+            , Descriptor2 const &desc
+            ) {
+        auto func = [ctor = std::move(ctor), desc] (Context2 *ctx) {
+            auto node = ctor();
+            for (int i = 0; i < desc.inputs.size(); i++) {
+                auto key = desc.inputs[i];
+                node->inputs[key] = ctx.inputs.at(i);
+            }
+            node->apply();
+            for (int i = 0; i < desc.outputs.size(); i++) {
+                auto key = desc.outputs[i];
+                auto it = node->outputs.find(key);
+                if (it != node->outputs.end())
+                    ctx.outputs.at(i) = it->second;
+                else
+                    ctx.outputs.
+            }
+        };
+        functions[name] = func;
+        descriptors[name] = desc;
+        return 1;
+    }
 };
+
+extern Codebase &getCodebase();
+
+#define ZENO_DEFNODE(func, ...) \
+    static int zeno_defnode_##func = \
+    getCodebase().defNodeFunction(#func, func, __VA_ARGS__)
+
+#define ZENDEFNODE(cls, ...) \
+    static int zeno_defnode_##cls = \
+    getCodebase().defLegacyNodeClass(#cls, std::make_unique<cls>, __VA_ARGS__)
+
 
 struct Scope {
     std::vector<any> objects;

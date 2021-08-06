@@ -95,9 +95,9 @@ ZENO_API void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
     safe_at(nodes, dn, "node")->inputBounds[ds] = std::pair(sn, ss);
 }
 
-ZENO_API void Graph::setNodeParam(std::string const &id, std::string const &par,
-        IValue const &val) {
-    safe_at(nodes, id, "node")->params[par] = val;
+ZENO_API void Graph::setNodeParam2(std::string const &id, std::string const &par,
+        any const &val) {
+    safe_at(nodes, id, "node")->inputs[par] = val;
 }
 
 ZENO_API void Graph::setNodeOption(std::string const &id,
