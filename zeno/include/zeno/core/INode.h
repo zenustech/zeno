@@ -67,7 +67,7 @@ protected:
 
     template <class T>
     bool has_input2(std::string const &id) const {
-        if (!has_input(id))
+        if (!has_input2(id))
             return false;
         return silent_any_cast<T>(get_input2(id)).has_value();
     }
@@ -75,7 +75,7 @@ protected:
     /* deprecated */
     template <class T>
     bool has_input(std::string const &id) const {
-        if (!has_input2(id))
+        if (!has_input(id))
             return false;
         if (!has_input2<std::shared_ptr<IObject>>(id))
             return false;
