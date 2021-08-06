@@ -1,4 +1,4 @@
-O=arts/prim.zsg
+O=arts/testprm.zsg
 default: glrun
 
 #O=arts/ZFXv2.zsg

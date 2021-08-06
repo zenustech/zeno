@@ -99,18 +99,18 @@ struct any : std::any {
 };
 
 template <class T>
-T smart_any_cast(any const &a) {
+T smart_any_cast(any const &a, std::string const &msg = {}) {
     if constexpr (std::is_same_v<T, any>) {
         return a;
     } else {
         using V = typename any_traits<T>::underlying_type;
-        decltype(auto) v = safe_any_cast<V const &>(a);
+        decltype(auto) v = safe_any_cast<V const &>(a, msg);
         if constexpr (std::is_pointer_v<T>) {
             using U = std::remove_pointer_t<T>;
-            return safe_dynamic_cast<U>(v);
+            return safe_dynamic_cast<U>(v, msg);
         } else if constexpr (is_shared_ptr<T>::value) {
             using U = typename is_shared_ptr<T>::type;
-            return safe_dynamic_cast<U>(v);
+            return safe_dynamic_cast<U>(v, msg);
         } else if constexpr (is_variant<V>::value && !is_variant<T>::value) {
             return std::visit([] (auto const &x) {
                 return (T)x;

@@ -62,7 +62,7 @@ protected:
 
     template <class T>
     T get_input2(std::string const &id) const {
-        return smart_any_cast<T>(get_input2(id));
+        return smart_any_cast<T>(get_input2(id), "input `" + id + "` ");
     }
 
     template <class T>
