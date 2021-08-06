@@ -57,7 +57,7 @@ jobs:
 
     - name: Packaging via PyInstaller
       if: ${{ matrix.packaging }}
-      run: python -m PyInstaller scripts\zeno_${{matrix.packaging}}.spec
+      run: python -m PyInstaller scripts/zeno_${{matrix.packaging}}.spec
 
     - name: Upload Artifact
       if: ${{ matrix.packaging }}
