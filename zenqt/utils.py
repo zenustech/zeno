@@ -1,4 +1,12 @@
 from itertools import chain
+import os, sys
+
+
+# use in portable_mode
+exe_root_path = os.path.dirname(sys.executable)
+
+def is_portable_mode():
+    return getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
 
 def key_appear_by_order(pattern, key):
     key = key.lower()
