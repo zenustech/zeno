@@ -86,7 +86,7 @@
       "SRC": null
      },
      "params": {
-      "value": 32
+      "value": 1024
      },
      "uipos": [
       103.03999999999999,
@@ -97,8 +97,8 @@
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": 184,
-    "trans_y": -265
+    "trans_x": 30,
+    "trans_y": -222
    }
   }
  },

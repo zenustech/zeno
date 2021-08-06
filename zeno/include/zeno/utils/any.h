@@ -123,10 +123,30 @@ T smart_any_cast(any const &a, std::string const &msg = {}) {
 
 template <class T>
 std::optional<T> silent_any_cast(any const &a) {
-    try {
-        return smart_any_cast<T>(a);
-    } catch (Exception const &e) {
-        return std::nullopt;
+    if constexpr (std::is_same_v<T, any>) {
+        return std::make_optional(a);
+    } else {
+        using V = typename any_traits<T>::underlying_type;
+        if (typeid(V) != a.type()) {
+            return std::nullopt;
+        }
+        decltype(auto) v = std::any_cast<V const &>(a);
+        if constexpr (std::is_pointer_v<T>) {
+            auto ptr = dynamic_cast<T>(v);
+            if (!ptr) return std::nullopt;
+            return std::make_optional(ptr);
+        } else if constexpr (is_shared_ptr<T>::value) {
+            using U = typename is_shared_ptr<T>::type;
+            auto ptr = std::dynamic_pointer_cast<U>(v);
+            if (!ptr) return std::nullopt;
+            return std::make_optional(ptr);
+        } else if constexpr (is_variant<V>::value && !is_variant<T>::value) {
+            return std::make_optional(std::visit([] (auto const &x) {
+                return (T)x;
+            }, v));
+        } else {
+            return std::make_optional(v);
+        }
     }
 }
 
