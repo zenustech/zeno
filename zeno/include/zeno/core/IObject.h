@@ -10,6 +10,8 @@ namespace zeno {
 using IValue = std::variant<std::string, int, float>;
 
 struct IObject {
+    using polymorphic_base_type = IObject;
+
 #ifndef ZENO_APIFREE
     ZENO_API IObject();
     ZENO_API virtual ~IObject();

@@ -20,7 +20,6 @@ struct Graph {
 struct ForwardSorter {
     std::set<int> visited;
     std::map<int, std::vector<int>> links;
-    std::vector<int> result;
 
     Graph const &graph;
 
@@ -33,6 +32,12 @@ struct ForwardSorter {
                     link.push_back(src_node);
             }
         }
+        root_block = std::make_unique<statement::IRBlock>();
+        current_block = root_block.get();
+    }
+
+    std::unique_ptr<statement::IRBlock> get_root() {
+        return std::move(root_block);
     }
 
     void require(int key) {
@@ -40,16 +45,23 @@ struct ForwardSorter {
             return;
         }
         visited.insert(key);
+
+        auto stmt = parse_node(key);
+        current_block->stmts.emplace_back(std::move(stmt));
+    }
+
+    void require_all_inputs(int key) {
         if (auto it = links.find(key); it != links.end()) {
             for (auto const &source: it->second) {
                 require(source);
             }
         }
-        result.push_back(key);
     }
 
     int lutid = 0;
     std::map<std::pair<int, int>, int> lut;
+    statement::IRBlock *current_block = nullptr;
+    std::unique_ptr<statement::IRBlock> root_block;
 
     int lut_entry(int nodeid, int sockid) {
         auto id = lutid++;
@@ -57,10 +69,27 @@ struct ForwardSorter {
         return id;
     }
 
-    std::unique_ptr<statement::Statement>
-        parse_node(int nodeid, Graph::Node const &node) {
-        if (node.name == "make_value") {
-            auto stmt = std::make_unique<statement::StmtLoadValue>();
+    auto lut_require(std::pair<int, int> const &key) {
+        require(key.first);
+        return lut.at(key);
+    }
+
+    std::unique_ptr<statement::Statement> parse_node(int nodeid) {
+        auto const &node = graph.nodes.at(nodeid);
+
+        if (node.name == "if") {
+            auto stmt = std::make_unique<statement::StmtIfBlock>();
+            stmt->input_cond = lut_require(node.inputs.at(0));
+            stmt->input_true = lut_require(node.inputs.at(1));
+            stmt->input_false = lut_require(node.inputs.at(2));
+            stmt->output = lut_entry(nodeid, 0);
+            return std::move(stmt);
+        }
+
+        require_all_inputs(nodeid);
+
+        if (node.name == "value") {
+            auto stmt = std::make_unique<statement::StmtValue>();
             stmt->output = lut_entry(nodeid, 0);
             stmt->value = node.parameter;
             return stmt;
@@ -76,16 +105,6 @@ struct ForwardSorter {
             stmt->outputs.push_back(lut_entry(nodeid, sockid));
         }
         return stmt;
-    }
-
-    auto linearize() {
-        auto ir = std::make_unique<statement::IRBlock>();
-        for (auto nodeid: result) {
-            auto const &node = graph.nodes.at(nodeid);
-            auto stmt = parse_node(nodeid, node);
-            ir->stmts.emplace_back(std::move(stmt));
-        }
-        return ir;
     }
 };
 

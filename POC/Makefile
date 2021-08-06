@@ -1,4 +1,4 @@
-x=contany
+x=adl
 
 x: $x.exe Makefile
 	./$<

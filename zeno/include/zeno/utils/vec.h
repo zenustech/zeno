@@ -326,7 +326,7 @@ template <class T> inline auto tofloat(T const &a) {
 /* vector math functions */
 
 template <size_t N, class T>
-inline bool any(vec<N, T> const &a) {
+inline bool anyTrue(vec<N, T> const &a) {
   bool ret = false;
   for (size_t i = 0; i < N; i++) {
     ret = ret || (bool)a[i];
@@ -335,12 +335,12 @@ inline bool any(vec<N, T> const &a) {
 }
 
 template <class T>
-inline bool any(T const &a) {
+inline bool anyTrue(T const &a) {
     return (bool)a;
 }
 
 template <size_t N, class T>
-inline bool all(vec<N, T> const &a) {
+inline bool allTrue(vec<N, T> const &a) {
   bool ret = true;
   for (size_t i = 0; i < N; i++) {
     ret = ret && (bool)a[i];
@@ -349,7 +349,7 @@ inline bool all(vec<N, T> const &a) {
 }
 
 template <class T>
-inline bool all(T const &a) {
+inline bool allTrue(T const &a) {
     return (bool)a;
 }
 
@@ -365,7 +365,7 @@ inline auto dot(vec<N, T> const &a, vec<N, S> const &b) {
 }
 
 template <size_t N, class T>
-inline auto lengthsq(vec<N, T> const &a) {
+inline auto lengthSquared(vec<N, T> const &a) {
   std::decay_t<decltype(a[0])> res(0);
   for (size_t i = 0; i < N; i++) {
     res += a[i] * a[i];

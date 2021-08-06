@@ -28,24 +28,21 @@ ZENO_DEFINE_NODE(printtype, "void printtype(zeno::v2::container::any x)");
 
 int main() {
     zeno::v2::frontend::Graph graph;
-    graph.nodes.push_back({"make_value", {}, 1, 21.34f});
+    // x ? x + x : x
+    graph.nodes.push_back({"value", {}, 1, 21.34f});
     graph.nodes.push_back({"myadd", {{0, 0}, {0, 0}}, 1, nullptr});
-    graph.nodes.push_back({"printint", {{1, 0}}, 0, nullptr});
-    graph.nodes.push_back({"printtype", {{1, 0}}, 0, nullptr});
+    graph.nodes.push_back({"if", {{0, 0}, {1, 0}, {0, 0}}, 0, nullptr});
 
     zeno::v2::frontend::ForwardSorter sorter(graph);
-    sorter.require(2);
-    sorter.require(3);
-    auto ir = sorter.linearize();
+    sorter.require(graph.nodes.size() - 1);
+    auto ir = sorter.get_root();
 
     for (auto const &stmt: ir->stmts) {
         std::cout << stmt->to_string() << std::endl;
     }
 
     auto scope = zeno::v2::backend::Session::get().makeScope();
-    for (auto const &stmt: ir->stmts) {
-        stmt->apply(scope.get());
-    }
+    ir->apply(scope.get());
 
     return 0;
 }

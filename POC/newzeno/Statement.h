@@ -12,7 +12,46 @@ struct Statement {
     virtual ~Statement() = default;
 };
 
-struct StmtLoadValue : Statement {
+struct IRBlock {
+    std::vector<std::unique_ptr<Statement>> stmts;
+    IRBlock *parent = nullptr;
+
+    void apply(backend::Scope *scope) const {
+        for (auto const &stmt: stmts) {
+            stmt->apply(scope);
+        }
+    }
+
+    std::string to_string() const {
+        std::stringstream os;
+        for (auto const &stmt: stmts) {
+            os << stmt->to_string() << "\n";
+        }
+        return os.str();
+    }
+};
+
+
+struct StmtIfBlock : Statement {
+    std::unique_ptr<IRBlock> block_true;
+    int input_cond;
+    int input_true;
+    int input_false;
+
+    virtual void apply(backend::Scope *scope) const override {
+        block->apply(scope);
+    }
+
+    virtual std::string to_string() const override {
+        std::stringstream os;
+        os << "if (" << input_cond << ") {\n";
+        os << block->to_string();
+        os << "}";
+        return os.str();
+    }
+};
+
+struct StmtValue : Statement {
     container::any value;
     int output;
 
@@ -23,7 +62,7 @@ struct StmtLoadValue : Statement {
     virtual std::string to_string() const override {
         std::stringstream os;
         os << "[" << output << "] = ";
-        os << "load_value(...);";
+        os << "value(" << value.type().name() << ");";
         return os.str();
     }
 };
@@ -68,11 +107,6 @@ struct StmtCall : Statement {
         os << ");";
         return os.str();
     }
-};
-
-
-struct IRBlock {
-    std::vector<std::unique_ptr<Statement>> stmts;
 };
 
 }

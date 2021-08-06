@@ -46,10 +46,10 @@ ZENO_API bool INode::checkApplyCondition() {
         auto desc = nodeClass->desc.get();
         if (desc->inputs[0].name != "SRC") {
             // TODO: MUTE should be an editor work
-            muted_output = get_input(desc->inputs[0].name);
+            muted_output = get_input2(desc->inputs[0].name);
         } else {
             for (auto const &[ds, bound]: inputBounds) {
-                muted_output = get_input(ds);
+                muted_output = get_input2(ds);
                 break;
             }
         }
@@ -87,10 +87,12 @@ ZENO_API void INode::coreApply() {
         if (!graph->isViewed)  // VIEW subnodes only if subgraph is VIEW'ed
             return;
         auto desc = nodeClass->desc.get();
-        auto obj = muted_output ? muted_output
+        auto obj = muted_output.has_value() ? muted_output
             : safe_at(outputs, desc->outputs[0].name, "output");
-        auto path = Visualization::exportPath();
-        obj->dumpfile(path);
+        if (auto p = silent_any_cast<std::shared_ptr<IObject>>(obj); p.has_value()) {
+            auto path = Visualization::exportPath();
+            p.value()->dumpfile(path);
+        }
     }
 #endif
 }
@@ -99,11 +101,11 @@ ZENO_API bool INode::has_option(std::string const &id) const {
     return options.find(id) != options.end();
 }
 
-ZENO_API bool INode::has_input(std::string const &id) const {
+ZENO_API bool INode::has_input2(std::string const &id) const {
     return inputBounds.find(id) != inputBounds.end();
 }
 
-ZENO_API std::shared_ptr<IObject> INode::get_input(std::string const &id) const {
+ZENO_API struct any INode::get_input2(std::string const &id) const {
     return safe_at(inputs, id, "input", myname);
 }
 
@@ -111,7 +113,7 @@ ZENO_API IValue INode::get_param(std::string const &id) const {
     return safe_at(params, id, "param", myname);
 }
 
-ZENO_API void INode::set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
+ZENO_API void INode::set_output2(std::string const &id, any &&obj) {
     outputs[id] = std::move(obj);
 }
 
