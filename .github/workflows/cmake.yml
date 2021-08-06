@@ -40,7 +40,7 @@ jobs:
         python -m pip install pybind11 numpy PySide2 pyinstaller
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DZENO_ENABLE_TESTS:BOOL=ON ${{matrix.options}}
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DZENO_BUILD_TESTS:BOOL=ON ${{matrix.options}}
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel
@@ -48,9 +48,9 @@ jobs:
     - name: Test Import ZENO
       run: python -c "import zenqt.system.dll"
 
-    #- name: Test
-    #  working-directory: ${{github.workspace}}/build/tests
-    #  run: ctest -C ${{env.BUILD_TYPE}}
+    - name: Test
+      working-directory: ${{github.workspace}}/build/tests
+      run: ctest -C ${{env.BUILD_TYPE}}
 
     - name: Packaging (Windows)
       if: matrix.config.os == 'windows-latest'
