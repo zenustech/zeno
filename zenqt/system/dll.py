@@ -6,9 +6,8 @@ lib_dir = rel2abs(__file__, '..', 'lib')
 
 #'''
 if os_name == 'win32':
-    if sys.version_info < (3, 8):
-        os.environ['PATH'] += os.pathsep + lib_dir
-    else:
+    os.environ['PATH'] += os.pathsep + lib_dir
+    if sys.version_info >= (3, 8):
         # for py 3.8+
         #   https://docs.python.org/3.8/whatsnew/3.8.html#ctypes
         os.add_dll_directory(lib_dir)
