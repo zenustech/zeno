@@ -9,6 +9,10 @@ from .utils import asset_path
 
 
 def main():
+    if len(sys.argv) > 1:
+        from .system.main import main as _main
+        return _main()
+
     QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     app = QApplication(sys.argv)
     font_file_path = asset_path('SourceSansPro-Regular.ttf')

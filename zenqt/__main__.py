@@ -1,4 +1,4 @@
-if __name__ == "__main__":
-    import sys
-    from .main import main
-    sys.exit(main())
+import sys
+
+from .main import main as _main
+sys.exit(_main())
