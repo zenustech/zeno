@@ -21,7 +21,7 @@ jobs:
         #  options: -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
         #- os: ubuntu-18.04
         #  python: 3.6
-        - os: ubuntu-20.04
+        - os: ubuntu-latest
           python: 3.7
         - os: windows-latest
           python: 3.9
@@ -48,16 +48,27 @@ jobs:
     - name: Test Import ZENO
       run: python -c "import zenqt.system.dll"
 
-    - name: Test
-      working-directory: ${{github.workspace}}/build/tests
-      run: ctest -C ${{env.BUILD_TYPE}}
+    #- name: Test
+    #  working-directory: ${{github.workspace}}/build/tests
+    #  run: ctest -C ${{env.BUILD_TYPE}}
 
-    - name: Build
+    - name: Packaging (Windows)
       if: matrix.config.os == 'windows-latest'
-      run: pyinstaller scripts\zeno_win.spec
+      run: python -m PyInstaller scripts\zeno_win.spec
 
-    - name: Upload Artifact
+    - name: Packaging (Linux)
+      if: matrix.config.os == 'ubuntu-latest'
+      run: python -m PyInstaller scripts\zeno_linux.spec
+
+    - name: Upload Artifact (Windows)
       if: matrix.config.os == 'windows-latest'
+      uses: actions/upload-artifact@v2
+      with:
+        name: zenqt-win
+        path: dist/zeno
+
+    - name: Upload Artifact (Linux)
+      if: matrix.config.os == 'ubuntu-latest'
       uses: actions/upload-artifact@v2
       with:
         name: zenqt-win
