@@ -1,8 +1,10 @@
 from . import *
+from .makedict import QDMGraphicsSocketEdiable
 
 class QDMGraphicsNode_MakeList(QDMGraphicsNode):
     def __init__(self, parent=None):
-        self.socket_keys = ['obj0', 'obj1']
+        self.socket_keys = ['obj0']
+        self.socket_key_prefix = 'obj'
         super().__init__(parent)
 
     def initSockets(self):
@@ -22,11 +24,11 @@ class QDMGraphicsNode_MakeList(QDMGraphicsNode):
         if len(self.inputs[self.socket_keys[-1]].edges) > 0:
             self.add_new_key()
         else:
-            while len(self.socket_keys) > 2 and len(self.inputs[self.socket_keys[-2]].edges) == 0:
+            while len(self.socket_keys) > 1 and len(self.inputs[self.socket_keys[-2]].edges) == 0:
                 self.del_last_key()
 
     def add_new_key(self):
-        self.socket_keys.append('obj{}'.format(len(self.socket_keys)))
+        self.socket_keys.append('{}{}'.format(self.socket_key_prefix, len(self.socket_keys)))
         self.reloadSockets()
 
     def del_last_key(self):
@@ -45,3 +47,34 @@ class QDMGraphicsNode_MakeList(QDMGraphicsNode):
             self.socket_keys = list(data['socket_keys'])
 
         return super().load(ident, data)
+
+
+class QDMGraphicsNode_ExtractList2(QDMGraphicsNode_MakeList):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.socket_keys = ['0']
+        self.socket_key_prefix = ''
+
+    def initSockets(self):
+        QDMGraphicsNode.initSockets(self)
+        self.height -= TEXT_HEIGHT * 0.75
+
+        for key in self.socket_keys:
+            socket = QDMGraphicsSocketEdiable(self)
+            socket.setValidator(QIntValidator())
+            socket.setPos(0, self.height + TEXT_HEIGHT * 0.5)
+            socket.setName(key)
+            socket.setIsOutput(True)
+            self.outputs[socket.name] = socket
+            self.height += TEXT_HEIGHT
+        self.height += TEXT_HEIGHT * 1.5
+
+    def onInputChanged(self):
+        pass
+
+    def onOutputChanged(self):
+        if len(self.outputs[self.socket_keys[-1]].edges) > 0:
+            self.add_new_key()
+        else:
+            while len(self.socket_keys) > 1 and len(self.outputs[self.socket_keys[-2]].edges) == 0:
+                self.del_last_key()

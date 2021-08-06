@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/utils/string.h>
 #include <sstream>
 
 namespace zeno {
@@ -38,6 +39,28 @@ ZENDEFNODE(ExtractList, {
     {"list"},
 });
 
+struct ExtractList2 : zeno::INode {
+    virtual void apply() override {
+        auto inkeys = get_param<std::string>("_KEYS");
+        auto keys = zeno::split_str(inkeys, '\n');
+        auto list = get_input<zeno::ListObject>("list");
+        for (auto const& key : keys) {
+            int index = std::stoi(key);
+            if (list->arr.size() > index)
+            {
+                auto obj = list->arr[index];
+                set_output(key, std::move(obj));
+            }
+        }
+    }
+};
+
+ZENDEFNODE(ExtractList2, {
+    {"list"},
+    {},
+    {},
+    {"list"},
+    });
 
 struct EmptyList : zeno::INode {
     virtual void apply() override {

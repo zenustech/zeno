@@ -362,9 +362,14 @@ class QDMGraphicsView(QGraphicsView):
                 if isinstance(item, QDMGraphicsSocket) and not item.dummy:
                     if not item.isOutput and len(item.edges):
                         srcItem = item.getTheOnlyEdge().srcSocket
+                        # output_changed_nodes = set()
+                        # for edge in item.edges:
+                        #     output_changed_nodes.add(edge.srcSocket.node)
                         item.removeAllEdges()
                         item.node.onInputChanged()
                         item = srcItem
+                        # for output_changed_node in output_changed_nodes:
+                        #     output_changed_node.onOutputChanged()
 
                     edge = QDMGraphicsTempEdge()
                     pos = self.mapToScene(event.pos())
@@ -376,14 +381,22 @@ class QDMGraphicsView(QGraphicsView):
                     self.scene().update()
 
             else:
+                edge_added = False
                 item = self.itemAt(event.pos())
                 edge = self.dragingEdge
                 if isinstance(item, QDMGraphicsSocket):
                     if self.addEdge(edge.item, item):
+                        edge_added = True
                         if edge.item.isOutput:
                             item.node.onInputChanged()
+                            edge.item.node.onOutputChanged()
                         else:
                             edge.item.node.onInputChanged()
+                            item.node.onOutputChanged()
+
+                if not edge_added and edge.item.isOutput:
+                    edge.item.node.onOutputChanged()
+
                 self.scene().removeItem(edge)
                 self.scene().update()
                 self.dragingEdge = None
