@@ -253,7 +253,7 @@ ccmake -B build  # will shows up a curses screen, c to save, q to exit
 - Windows
 
 ```cmd
-cmake -B build
+cmake -B build -DCMAKE_BUILD_TYPE=Release
 ```
 Then open ```build/zeno.sln``` in Visual Studio 2019, and **switch to Release mode in build configurations**, then run `Build -> Build All`.
 
