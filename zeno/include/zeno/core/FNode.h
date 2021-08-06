@@ -65,10 +65,11 @@ struct OpCallNode : IOperation {
 };
 
 struct OpsBuilder {
-    Codebase const *codebase;
+    Codebase const *codebase = nullptr;
     std::vector<std::unique_ptr<IOperation>> operations;
 
-    explicit OpsBuilder(Codebase const *codebase) : codebase(codebase) {
+    setCodebase(Codebase const *codebase_) {
+        codebase = codebase_;
     }
 
     std::map<std::pair<std::string, std::string>, int> lut;
@@ -142,4 +143,6 @@ struct OpsBuilder {
     }
 };
 
+struct LegacyBuilder {
+    OpsBuilder ops_builder;
 }
