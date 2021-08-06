@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <optional>
 #include <zeno/utils/safe_dynamic_cast.h>
+#include <zeno/utils/vec.h>
 
 
 namespace zeno {
@@ -41,6 +42,21 @@ using scalar_type_variant = std::variant
         , double
         >;
 
+template <size_t N>
+using vector_type_variant = std::variant
+        < vec<N, bool>
+        , vec<N, uint8_t>
+        , vec<N, uint16_t>
+        , vec<N, uint32_t>
+        , vec<N, uint64_t>
+        , vec<N, int8_t>
+        , vec<N, int16_t>
+        , vec<N, int32_t>
+        , vec<N, int64_t>
+        , vec<N, float>
+        , vec<N, double>
+        >;
+
 template <class T, class = void>
 struct any_traits {
     using underlying_type = T;
@@ -51,6 +67,13 @@ struct any_traits<T, std::void_t<decltype(
         std::declval<scalar_type_variant &>() = std::declval<T>()
         )>> {
     using underlying_type = scalar_type_variant;
+};
+
+template <size_t N, class T>
+struct any_traits<vec<N, T>, std::void_t<decltype(
+        std::declval<vector_type_variant<N> &>() = std::declval<T>()
+        )>> {
+    using underlying_type = vector_type_variant<N>;
 };
 
 template <class T>
