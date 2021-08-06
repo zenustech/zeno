@@ -110,6 +110,7 @@ struct OpsBuilder {
         ( std::string const &node_ident
         , std::string const &func_name
         , std::map<std::string, std::string> const &input_bounds
+        , std::set<std::string> const &legacy_options = {}
         ) {
             auto const &func = safe_at(
                     codebase.functions, func_name, "function");
@@ -141,8 +142,9 @@ struct OpsBuilder {
             operations.push_back(std::move(op));
         }
     }
-};
 
 struct LegacyBuilder {
     OpsBuilder ops_builder;
+};
+
 }

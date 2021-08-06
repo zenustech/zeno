@@ -38,7 +38,7 @@ def serializeGraph(nodes, subgkeys):
         yield 'completeNode', ident
 
 
-def serializeGraph2(nodes):
+def serializeGraph2(nodes, subkeys='todo_not_used_for_now'):
     for ident, data in nodes.items():
         if 'special' in data:
             continue
@@ -56,20 +56,29 @@ def serializeGraph2(nodes):
 
         for name, value in params.items():
             new_ident = ident + '-param-' + name
-            yield {
-                'op': 'addLoadValue',
-                'node_ident': new_ident,
-                'value': value,
-            }
+            yield (
+                'addLoadValue',
+                new_ident,
+                value,
+            )
             input_bounds['param_' + name] = new_ident, 'value'
 
-        yield {
-            'op': 'addCallNode',
-            'node_ident': ident,
-            'func_name': name,
-            'input_bounds': input_bounds,
-            'legacy_options': list(options),
-        }
+        yield (
+            'addCallNode',
+            ident,
+            name,
+            input_bounds,
+            set(options),
+        )
+
+
+def serializeScene2(graphs):
+    yield ('clearAllState',)
+
+    subgkeys = set(graphs.keys())
+    for name, graph in graphs.items():
+        yield 'switchGraph', name
+        yield from serializeGraph2(graph['nodes'], subgkeys)
 
 
 __all__ = [
