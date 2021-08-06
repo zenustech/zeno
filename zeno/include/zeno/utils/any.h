@@ -71,7 +71,7 @@ struct any_traits<T, std::void_t<decltype(
 
 template <size_t N, class T>
 struct any_traits<vec<N, T>, std::void_t<decltype(
-        std::declval<vector_type_variant<N> &>() = std::declval<T>()
+        std::declval<vector_type_variant<N> &>() = std::declval<vec<N, T>>()
         )>> {
     using underlying_type = vector_type_variant<N>;
 };
