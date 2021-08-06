@@ -59,7 +59,7 @@ jobs:
 
     - name: Integrated Test
       working-directory: ${{github.workspace}}/build/tests
-      run: ctest -C ${{env.BUILD_TYPE}}
+      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
 
     - name: Packaging via PyInstaller
       if: ${{ matrix.packaging }}
