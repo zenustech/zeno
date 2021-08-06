@@ -71,7 +71,7 @@ struct any_traits<T, std::void_t<decltype(
 
 template <size_t N, class T>
 struct any_traits<vec<N, T>, std::void_t<decltype(
-        std::declval<vector_type_variant<N> &>() = std::declval<vec<N, T>>()
+        std::declval<scalar_type_variant &>() = std::declval<T>()
         )>> {
     using underlying_type = vector_type_variant<N>;
 };
@@ -96,6 +96,9 @@ struct any_traits<std::shared_ptr<T>, std::void_t<typename T::polymorphic_base_t
     using underlying_type = std::shared_ptr<typename T::polymorphic_base_type>;
 };
 
+template <class T>
+using any_underlying_type_t = typename any_traits<std::decay_t<T>>::underlying_type;
+
 struct any : std::any {
     any() = default;
 
@@ -105,12 +108,12 @@ struct any : std::any {
 
     template <class T>
     any(T const &t)
-    : std::any(static_cast<typename any_traits<T>::underlying_type const &>(t))
+    : std::any(static_cast<any_underlying_type_t<T> const &>(t))
     {}
 
     template <class T>
     any(T &&t)
-    : std::any(static_cast<typename any_traits<T>::underlying_type &&>(t))
+    : std::any(static_cast<any_underlying_type_t<T> &&>(t))
     {}
 
     any &operator=(any &a) = default;
@@ -120,14 +123,14 @@ struct any : std::any {
     template <class T>
     any &operator=(T const &t) {
         std::any::operator=(
-                static_cast<typename any_traits<T>::underlying_type>(t));
+                static_cast<any_underlying_type_t<T>>(t));
         return *this;
     }
 
     template <class T>
     any &operator=(T &&t) {
         std::any::operator=(
-                static_cast<typename any_traits<T>::underlying_type>(t));
+                static_cast<any_underlying_type_t<T>>(t));
         return *this;
     }
 };
@@ -137,7 +140,7 @@ T smart_any_cast(any const &a, std::string const &msg = {}) {
     if constexpr (std::is_same_v<T, any>) {
         return a;
     } else {
-        using V = typename any_traits<T>::underlying_type;
+        using V = any_underlying_type_t<T>;
         decltype(auto) v = safe_any_cast<V const &>(a, msg);
         if constexpr (std::is_pointer_v<T>) {
             using U = std::remove_pointer_t<T>;
@@ -160,7 +163,7 @@ std::optional<T> silent_any_cast(any const &a) {
     if constexpr (std::is_same_v<T, any>) {
         return std::make_optional(a);
     } else {
-        using V = typename any_traits<T>::underlying_type;
+        using V = any_underlying_type_t<T>;
         if (typeid(V) != a.type()) {
             return std::nullopt;
         }
@@ -189,7 +192,7 @@ T &&exact_any_cast(any &&a) {
     if constexpr (std::is_same_v<T, any>) {
         return a;
     } else {
-        using V = typename any_traits<T>::underlying_type;
+        using V = any_underlying_type_t<T>;
         decltype(auto) v = std::any_cast<V &&>(a);
         if constexpr (std::is_pointer_v<T>) {
             return static_cast<T>(v);

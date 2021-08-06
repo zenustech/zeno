@@ -31,6 +31,7 @@ add_subdirectory(zeno)
 option(ZENO_BUILD_EXTENSIONS "Build extension modules for Zeno" ON)
 option(ZENO_BUILD_ZFX "Build ZFX module for Zeno" ON)
 option(ZENO_BUILD_TESTS "Build tests for Zeno" OFF)
+option(ZENO_BUILTIN_NODES "Include built-in nodes in Zeno" ON)
 option(ZLOG_USE_ANDROID "Use Android Log System for <zeno/utils/zlog.h>" OFF)
 
 if (ZENO_BUILD_EXTENSIONS)
