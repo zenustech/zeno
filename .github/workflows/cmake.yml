@@ -53,9 +53,11 @@ jobs:
       run: ctest -C ${{env.BUILD_TYPE}}
 
     - name: Build
+      if: matrix.config.os == 'windows-latest'
       run: pyinstaller scripts\zeno_win.spec
 
     - name: Upload Artifact
+      if: matrix.config.os == 'windows-latest'
       uses: actions/upload-artifact@v2
       with:
         name: zenqt-win
