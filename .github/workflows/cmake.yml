@@ -23,8 +23,10 @@ jobs:
         #  python: 3.6
         - os: ubuntu-latest
           python: 3.7
+          packaging: linux
         - os: windows-latest
           python: 3.9
+          packaging: win
 
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
@@ -41,36 +43,25 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel
 
-    - name: Update pip and Install Packages
+    - name: Install Python Packages
       run: |
         python -m pip install --upgrade pip
         python -m pip install pybind11 numpy PySide2 pyinstaller
 
-    - name: Test Import ZENO
+    - name: Test Import ZENO DLLs
       run: python -c "import zenqt.system.dll"
 
-    - name: Test
+    - name: Test C++
       working-directory: ${{github.workspace}}/build/tests
       run: ctest -C ${{env.BUILD_TYPE}}
 
-    - name: Packaging (Windows)
-      if: ${{ matrix.os == 'windows-latest' }}
-      run: python -m PyInstaller scripts\zeno_win.spec
+    - name: Packaging via PyInstaller
+      if: ${{ matrix.packaging }}
+      run: python -m PyInstaller scripts\zeno_${{matrix.packaging}}.spec
 
-    - name: Packaging (Linux)
-      if: ${{ matrix.os == 'ubuntu-latest' }}
-      run: python -m PyInstaller scripts\zeno_linux.spec
-
-    - name: Upload Artifact (Windows)
-      if: ${{ matrix.os == 'windows-latest' }}
+    - name: Upload Artifact
+      if: ${{ matrix.packaging }}
       uses: actions/upload-artifact@v2
       with:
-        name: zeno-win
-        path: dist/zeno
-
-    - name: Upload Artifact (Linux)
-      if: ${{ matrix.os == 'ubuntu-latest' }}
-      uses: actions/upload-artifact@v2
-      with:
-        name: zeno-linux
+        name: zeno-${{matrix.packaging}}
         path: dist/zeno
