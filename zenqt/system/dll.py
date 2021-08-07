@@ -22,7 +22,7 @@ else:
 from .utils import os_name
 from ..utils import relative_path
 
-if os_name == 'win32':  # windows doesn't support rpath, let's mock it
+if os_name == 'win32':  # windows doesn't support rpath, let's mock it only
     lib_dir = relative_path('lib')
     os.environ['PATH'] += os.pathsep + lib_dir
     if sys.version_info >= (3, 8):
