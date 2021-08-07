@@ -4,7 +4,6 @@
 block_cipher = None
 
 dlls=[
-    ( '../zenqt/lib/*', '.' ),
 ]
 assets=[
     ( '../zenqt/assets/*',  'zenqt/assets' ),
