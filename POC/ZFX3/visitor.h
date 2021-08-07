@@ -2,12 +2,18 @@
 
 #include "common.h"
 
-struct IRVisitor {
+struct Stmt;
 #define _PER_STMT(StmtType) \
-    virtual void visit(StmtType *stmt) { return generic_visit(stmt); }
+    struct StmtType;
 #include "statements.inl"
 #undef _PER_STMT
-    virtual void generic_visit(Statement *) {}
+
+struct IRVisitor {
+#define _PER_STMT(StmtType) \
+    virtual void visit(StmtType *stmt) { generic_visit((Stmt *)stmt); }
+#include "statements.inl"
+#undef _PER_STMT
+    virtual void generic_visit(Stmt *) {}
 
     virtual ~IRVisitor() = 0;
 };
