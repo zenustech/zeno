@@ -7,7 +7,6 @@ on:
     branches: [ master ]
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
 
 jobs:
@@ -15,12 +14,6 @@ jobs:
     strategy:
       matrix:
         include:
-        #- os: ubuntu-latest
-        #  python: 3.8
-        #  container: archibate/zeno_build:latest
-        #  options: -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
-        #- os: ubuntu-18.04
-        #  python: 3.6
         - os: ubuntu-20.04
           python: 3.7
           packaging: linux
