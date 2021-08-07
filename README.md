@@ -262,16 +262,8 @@ IMPORTANT: In MSVC, Release mode must **always be active** when building ZENO, s
 
 ### Run ZENO for development
 
-- Linux
-
-```bash
-./run.sh
-```
-
-- Windows
-
 ```cmd
-run.bat
+./run.py
 ```
 
 After successfully loading the editor, you may click `File -> Open` to play `graphs/LorenzParticleTrail.zsg` to confirm everything is working well :)
@@ -299,7 +291,7 @@ Please let me know if you have any trouble not mentioned above by opening an [is
 
 - WSL
 
-WSL doesn't have X11 display by default :(
+WSL doesn't have X11 display by default :( Please try search the Web for how to enable it, sorry!
 
 # Building ZENO Extensions
 
@@ -432,12 +424,24 @@ cmake --build build --parallel
 build/tests/zentest
 ```
 
+- Windows
+
+Not supported yet.
+
 ## Build binary release
+
+```bash
+./dist.py
+```
+
+You will get dist/launcher.zip, upload it to, for example, zeno-linux-2021.8.7.zip in the `Release` page.
+
+## Build binary release (old method)
 
 - Arch Linux
 
 ```bash
-./dist.sh
+scripts/dist.sh
 # you will get /tmp/release/zeno-linux-20xx.x.x.tar.gz
 ```
 
@@ -445,5 +449,5 @@ build/tests/zentest
 
 First, download `zenv-windows-prebuilt.zip` from [this page](https://github.com/zenustech/binaries/releases).
 Second, extract it directly into project root.
-Then run `dist.bat` in project root.
+Then run `scripts/dist.bat` in project root.
 Finally, rename the `zenv` folder to `zeno-windows-20xx.x.x`, and archive it into `zeno-windows-20xx.x.x.zip`.
