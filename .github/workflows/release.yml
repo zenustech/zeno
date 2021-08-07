@@ -22,9 +22,9 @@ jobs:
         - os: ubuntu-20.04
           python: 3.7
           packaging: linux
-        - os: windows-latest
-          python: 3.9
-          packaging: win
+        #- os: windows-latest
+        #  python: 3.9
+        #  packaging: win
 
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
@@ -82,5 +82,5 @@ jobs:
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: dist/launcher.zip
-        asset_name: zeno-${{ github.ref }}-${{ matrix.packaging }}
+        asset_name: zeno-${{ github.ref }}-${{ matrix.packaging }}.zip
         asset_content_type: application/zip
