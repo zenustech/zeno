@@ -1,5 +1,5 @@
-O=arts/stablefluid.zsg
-default: test
+O=arts/prim.zsg
+default: run
 
 #O=arts/ZFXv2.zsg
 #default: run
