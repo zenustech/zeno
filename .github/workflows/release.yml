@@ -35,6 +35,12 @@ jobs:
       with:
         python-version: ${{ matrix.python }}
 
+    - uses: actions/cache@v2  # to be removed
+      with:
+        key: ${{matrix.os}}-${{matrix.python}}-${{env.BUILD_TYPE}}-${{hashFiles('**/CMakeLists.txt')}}
+        path: |
+          ${{github.workspace}}/build
+
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DZENO_BUILD_TESTS:BOOL=ON ${{matrix.options}}
 
