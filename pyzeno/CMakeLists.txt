@@ -1,6 +1,9 @@
 file(GLOB PYZENO_SOURCE *.cpp)
 pybind11_add_module(zeno_pybind11_module ${PYZENO_SOURCE})
 target_link_libraries(zeno_pybind11_module PRIVATE zeno)
+if (ZENO_BUILD_EXTENSIONS)
+    target_link_libraries(zeno_pybind11_module PRIVATE zeno_projects)
+endif()
 
 set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/zenqt)
 set_target_properties(zeno_pybind11_module PROPERTIES
