@@ -29,10 +29,10 @@ RUN apt-get install -y zlib1g-dev
 RUN apt-get install -y libeigen3-dev
 RUN apt-get install -y libopenblas-dev
 
-RUN git clone https://github.com/zenustech/c-blosc.git --depth=1 --branch=v1.5.0
+RUN git clone https://github.com/Blosc/c-blosc.git --depth=1 --branch=v1.5.0
 RUN cd c-blosc && mkdir build && cd build && cmake .. && make -j32 && make install && cd ../..
 
-RUN git clone https://github.com/zenustech/openvdb.git --depth=1 --branch=v7.2.1
+RUN git clone https://github.com/AcademySoftwareFoundation/openvdb.git --depth=1 --branch=v7.2.1
 RUN cd openvdb && mkdir build && cd build && cmake .. && make -j32 && make install && cd ../..
 
 #################################################
@@ -45,9 +45,6 @@ RUN apt-get install -y python3-pip
 
 RUN apt-get install -y libglvnd-dev
 RUN apt-get install -y libglapi-mesa
-
-RUN git clone https://github.com/zenustech/zeno.git --depth=1
-RUN cd zeno && mkdir build && cd build && cmake .. && make -j32 && make install && cd .. && python setup.py install && cd ..
 
 RUN rm -rf /build
 
