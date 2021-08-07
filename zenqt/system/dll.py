@@ -19,6 +19,15 @@ else:
     ctypes.cdll.LoadLibrary(os.path.join(lib_dir, 'libzeno.so'))
 '''
 
+from .utils import os_name
+from ..utils import relative_path
+
+if os_name == 'win32':  # windows doesn't support rpath, let's mock it
+    lib_dir = relative_path('lib')
+    os.environ['PATH'] += os.pathsep + lib_dir
+    if sys.version_info >= (3, 8):
+        os.add_dll_directory(lib_dir)
+
 from .. import zeno_pybind11_module as core
 
 '''
