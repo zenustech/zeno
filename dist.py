@@ -13,5 +13,5 @@ elif sys.platform == 'darwin':
 else:
     raise AssertionError(sys.platform)
 
-subprocess.check_call([sys.executable, '-m', 'PyInstaller', 'scripts/launcher_{}.spec'.format(os_name))
+subprocess.check_call([sys.executable, '-m', 'PyInstaller', 'scripts/launcher_{}.spec'.format(os_name)])
 shutil.make_archive('dist/launcher', 'zip', 'dist/launcher')
