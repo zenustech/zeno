@@ -78,7 +78,7 @@ set_target_properties(gmpm PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
 	)
 target_link_libraries(gmpm PRIVATE zensim)
-target_link_libraries(gmpm PRIVATE zeno)
+target_link_libraries(gmpm PUBLIC zeno)
 target_link_libraries(gmpm PUBLIC ZFX)
 target_include_directories(gmpm PRIVATE ../oldzenbase/include)
 target_include_directories(gmpm PRIVATE ../zenvdb/include)

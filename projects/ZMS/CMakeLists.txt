@@ -11,7 +11,7 @@ if (TARGET OpenMP::OpenMP_CXX)
     target_link_libraries(ZMSlib PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-target_link_libraries(ZMSlib PRIVATE zeno)
+target_link_libraries(ZMSlib PUBLIC zeno)
 get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
 set_target_properties(ZMSlib PROPERTIES
 	LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}

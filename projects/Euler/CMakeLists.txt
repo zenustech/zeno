@@ -34,19 +34,7 @@ endif()
 target_link_libraries(ZenEulerLib PRIVATE OpenVDB::openvdb )
 target_link_libraries(ZenEulerLib PRIVATE Eigen3::Eigen)
 
-target_link_libraries(ZenEulerLib PRIVATE zeno)
-get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
-set_target_properties(ZenEulerLib PROPERTIES
-	LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-	RUNTIME_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-	LIBRARY_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-	RUNTIME_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-	LIBRARY_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-	)
+target_link_libraries(ZenEulerLib PUBLIC zeno)
 target_include_directories(ZenEulerLib PRIVATE ../oldzenbase/include)
 target_include_directories(ZenEulerLib PRIVATE ../zenvdb/include)
 

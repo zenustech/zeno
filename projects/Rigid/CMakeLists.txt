@@ -14,7 +14,7 @@ target_link_libraries(zenRigidLib PRIVATE BulletDynamics)
 target_link_libraries(zenRigidLib PRIVATE BulletSoftBody)
 target_link_libraries(zenRigidLib PRIVATE HACD)
 
-target_link_libraries(zenRigidLib PRIVATE zeno)
+target_link_libraries(zenRigidLib PUBLIC zeno)
 
 get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
 set_target_properties(zenRigidLib PROPERTIES

@@ -1,6 +1,11 @@
 file(GLOB ZENO_SOURCE core/*.cpp utils/*.cpp extra/*.cpp include/*/*.h include/*/*/*.h)
 file(GLOB ZENO_NODES_SOURCE nodes/*.cpp nodes/*/*.cpp)
-add_library(zeno SHARED ${ZENO_SOURCE} ${ZENO_NODES_SOURCE})
+
+if (ZENO_BUILD_SHARED_LIBS)
+    add_library(zeno SHARED ${ZENO_SOURCE} ${ZENO_NODES_SOURCE})
+else()
+    add_library(zeno STATIC ${ZENO_SOURCE} ${ZENO_NODES_SOURCE})
+endif()
 
 if (ZENO_ENABLE_OPENMP)
     find_package(OpenMP)
@@ -26,22 +31,6 @@ endif()
 
 target_compile_definitions(zeno PRIVATE -DDLL_ZENO)
 target_include_directories(zeno PUBLIC include)
-
-if (ZENO_ENABLE_PYTHON)
-	set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/zenqt/lib)
-	set_target_properties(zeno PROPERTIES
-		LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-		RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-		ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-		LIBRARY_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-		RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-		ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-		LIBRARY_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-		RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-		ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-		)
-	add_subdirectory(python)
-endif()
 
 if (ZLOG_USE_ANDROID)
     target_compile_definitions(zeno PUBLIC -DZLOG_USE_ANDROID)

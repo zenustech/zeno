@@ -2,7 +2,7 @@ file (GLOB WRANGLE_SOURCE *.cpp)
 add_library(wrangleLib SHARED ${WRANGLE_SOURCE})
 target_include_directories(wrangleLib PRIVATE .)
 
-target_link_libraries(wrangleLib PRIVATE zeno)
+target_link_libraries(wrangleLib PUBLIC zeno)
 
 find_package(OpenMP)
 if (OPENMP_FOUND)
