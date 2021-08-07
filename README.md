@@ -154,7 +154,7 @@ Other requirements like GLAD are self-contained and you don't have to worry inst
 # Install basic dependencies
 sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin
 
-python --version  # make sure Python version >= 3.7
+python --version  # make sure Python version >= 3.6
 sudo python -m pip install -U pip
 sudo python -m pip install pybind11 numpy PySide2
 
