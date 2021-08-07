@@ -19,7 +19,7 @@ else()
     option(ZFX_PRINT_IR "Print IR for the ZFX compiler" OFF)
 endif()
 
-add_library(ZFX STATIC
+add_library(ZFX
 # ls {,include/zfx/}*{,/*}.{h,cpp} | grep -v main.cpp
 AST.h
 ConstantFold.cpp
