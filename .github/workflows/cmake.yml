@@ -16,10 +16,8 @@ jobs:
         include:
         - os: ubuntu-20.04
           python: 3.7
-          packaging: linux
         - os: windows-latest
           python: 3.9
-          packaging: win
 
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
@@ -49,19 +47,3 @@ jobs:
       if: ${{ matrix.os != 'windows-latest' }}  # TODO: fix windows test
       working-directory: ${{github.workspace}}/build/tests
       run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
-
-    #- name: Install Python Packages
-    #  run: |
-    #    python -m pip install --upgrade pip
-    #    python -m pip install pybind11 numpy PySide2 pyinstaller
-
-    #- name: Packaging via PyInstaller
-    #  if: ${{ matrix.packaging }}
-    #  run: python -m PyInstaller scripts/launcher_${{matrix.packaging}}.spec
-
-    #- name: Upload Artifact
-    #  if: ${{ matrix.packaging }}
-    #  uses: actions/upload-artifact@v2
-    #  with:
-    #    name: launcher-${{matrix.packaging}}
-    #    path: dist/launcher
