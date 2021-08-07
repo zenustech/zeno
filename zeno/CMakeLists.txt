@@ -33,3 +33,5 @@ if (ZLOG_USE_ANDROID)
     find_library(log-lib log)
     target_link_libraries(zeno PUBLIC ${log-lib})
 endif()
+
+add_zeno_autoload(zeno)

@@ -14,23 +14,6 @@ foreach (name IN ITEMS ${EXTENSIONS_LIST})
     option(EXTENSION_${name} "Build ZENO with extension: ${name}" ${val})
 endforeach()
 
-function(add_zeno_autoload target)
-    if (ZENO_ENABLE_PYTHON)
-        set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/zenqt)
-        set_target_properties(${target} PROPERTIES
-            LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-            RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-            ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-            LIBRARY_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-            RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-            ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-            LIBRARY_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-            RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-            ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-            )
-    endif()
-endfunction()
-
 add_library(zeno_projects INTERFACE)
 foreach (name IN ITEMS ${EXTENSIONS_LIST})
     if (${EXTENSION_${name}})
