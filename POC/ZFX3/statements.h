@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "visitor.h"
+#include "operators.h"
 
 struct Stmt {
     std::vector<int> inputs;
@@ -13,8 +14,7 @@ struct Stmt {
         )
         : inputs(inputs_)
         , outputs(outputs_)
-    {
-    }
+    {}
 
     virtual ~Stmt() = 0;
 
@@ -24,6 +24,14 @@ struct Stmt {
 
 struct StmtConst : Stmt {
     float value;
+
+    StmtConst
+        ( int output_
+        , float value_
+        )
+        : Stmt({output_}, {})
+        , value(value_)
+    {}
 
     virtual void accept(IRVisitor *visitor) override {
         return visitor->visit(this);
@@ -40,6 +48,14 @@ struct StmtConst : Stmt {
 struct StmtVariable : Stmt {
     std::string var_name;
 
+    StmtVariable
+        ( int output_
+        , std::string const &var_name_
+        )
+        : Stmt({output_}, {})
+        , var_name(var_name_)
+    {}
+
     virtual void accept(IRVisitor *visitor) override {
         return visitor->visit(this);
     }
@@ -53,7 +69,16 @@ struct StmtVariable : Stmt {
 };
 
 struct StmtOp : Stmt {
-    std::string op_name;
+    Opcode opcode;
+
+    StmtOp
+        ( std::vector<int> const &inputs_
+        , std::vector<int> const &outputs_
+        , Opcode opcode_
+        )
+        : Stmt(inputs_, outputs_)
+        , opcode(opcode_)
+    {}
 
     virtual void accept(IRVisitor *visitor) override {
         return visitor->visit(this);
@@ -62,7 +87,7 @@ struct StmtOp : Stmt {
     virtual std::string to_string() const override {
         return fmt::format("{} = [{}] {}"
                 , fmt::join(outputs, ", ")
-                , op_name
+                , magic_enum::enum_name(opcode)
                 , fmt::join(inputs, ", ")
                 );
     }
