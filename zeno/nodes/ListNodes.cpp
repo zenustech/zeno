@@ -23,7 +23,7 @@ ZENDEFNODE(ListLength, {
 });
 
 
-struct ExtractList : zeno::INode {
+struct ListGetItem : zeno::INode {
     virtual void apply() override {
         auto list = get_input<zeno::ListObject>("list");
         auto index = get_input<zeno::NumericObject>("index")->get<int>();
@@ -32,14 +32,14 @@ struct ExtractList : zeno::INode {
     }
 };
 
-ZENDEFNODE(ExtractList, {
+ZENDEFNODE(ListGetItem, {
     {"list", "index"},
     {"object"},
     {},
     {"list"},
 });
 
-struct ExtractList2 : zeno::INode {
+struct ExtractList : zeno::INode {
     virtual void apply() override {
         auto inkeys = get_param<std::string>("_KEYS");
         auto keys = zeno::split_str(inkeys, '\n');
@@ -54,7 +54,7 @@ struct ExtractList2 : zeno::INode {
     }
 };
 
-ZENDEFNODE(ExtractList2, {
+ZENDEFNODE(ExtractList, {
     {"list"},
     {},
     {},

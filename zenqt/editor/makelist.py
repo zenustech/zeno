@@ -49,7 +49,7 @@ class QDMGraphicsNode_MakeList(QDMGraphicsNode):
         return super().load(ident, data)
 
 
-class QDMGraphicsNode_ExtractList2(QDMGraphicsNode_MakeList):
+class QDMGraphicsNode_ExtractList(QDMGraphicsNode_MakeList):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.socket_keys = ['0']
