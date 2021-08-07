@@ -19,7 +19,7 @@ add_subdirectory(zecomp)
 #   cmake_policy(SET CMP0104 OLD)
 # endif (POLICY CMP0104)
 
-add_library(zeno_gmpm
+add_library(zeno_gmpm SHARED
   nosys/ToZensimParticles.cpp 
   nosys/OutputZensimParticles.cpp 
   nosys/ConstitutiveModels.cpp 

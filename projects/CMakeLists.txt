@@ -22,3 +22,8 @@ foreach (name IN ITEMS ${EXTENSIONS_LIST})
         add_subdirectory(${name})
     endif()
 endforeach()
+
+add_library(zeno_projects INTERFACE)
+foreach (name IN ITEMS ${EXTENSIONS_LIST})
+    target_link_libraries(zeno_projects INTERFACE zeno_${name})
+endforeach()

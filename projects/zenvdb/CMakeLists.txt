@@ -2,7 +2,7 @@ file(GLOB PROJECT_SOURCE include/*/*.h *.cpp)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/lib/cmake/OpenVDB/)
 
-add_library(zeno_zenvdb ${PROJECT_SOURCE})
+add_library(zeno_zenvdb SHARED ${PROJECT_SOURCE})
 target_include_directories(zeno_zenvdb PUBLIC include)
 target_include_directories(zeno_zenvdb PRIVATE ../oldzenbase/include)
 

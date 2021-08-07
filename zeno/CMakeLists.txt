@@ -1,7 +1,7 @@
 file(GLOB ZENO_SOURCE core/*.cpp utils/*.cpp extra/*.cpp include/*/*.h include/*/*/*.h)
 file(GLOB ZENO_NODES_SOURCE nodes/*.cpp nodes/*/*.cpp)
 
-add_library(zeno ${ZENO_SOURCE} ${ZENO_NODES_SOURCE})
+add_library(zeno SHARED ${ZENO_SOURCE} ${ZENO_NODES_SOURCE})
 
 if (ZENO_ENABLE_OPENMP)
     find_package(OpenMP)

@@ -1,4 +1,4 @@
-add_library(zeno_ZenoFX)
+add_library(zeno_ZenoFX SHARED)
 target_include_directories(zeno_ZenoFX PRIVATE .)
 
 target_link_libraries(zeno_ZenoFX PUBLIC zeno ZFX)
