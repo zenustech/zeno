@@ -64,11 +64,11 @@ jobs:
 
     #- name: Packaging via PyInstaller
     #  if: ${{ matrix.packaging }}
-    #  run: python -m PyInstaller scripts/zeno.spec
+    #  run: python -m PyInstaller scripts/launcher_${{matrix.packaging}}.spec
 
     #- name: Upload Artifact
     #  if: ${{ matrix.packaging }}
     #  uses: actions/upload-artifact@v2
     #  with:
-    #    name: zeno-${{matrix.packaging}}
-    #    path: dist/zeno
+    #    name: launcher-${{matrix.packaging}}
+    #    path: dist/launcher
