@@ -4,6 +4,9 @@ target_link_libraries(zeno_pybind11_module PRIVATE zeno)
 if (ZENO_BUILD_EXTENSIONS)
     target_link_libraries(zeno_pybind11_module PRIVATE zeno_projects)
 endif()
+if (DEFINED ZENO_ADDITIONAL_LINKS)
+    target_link_libraries(zeno_pybind11_module PRIVATE ${ZENO_ADDITIONAL_LINKS})
+endif()
 
 set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/zenqt)
 set_target_properties(zeno_pybind11_module PROPERTIES
