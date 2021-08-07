@@ -1,10 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/../zeno/cmake ${CMAKE_MODULE_PATH})
-set(ENV{PYTHONPATH} ${CMAKE_CURRENT_SOURCE_DIR}/.. $ENV{PYTHONPATH})
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 set(EXTENSIONS_LIST ZenoFX Rigid oldzenbase zenvdb FastFLIP gmpm Euler mesher ZMS OldZFX EasyGL)
-
 set(EXTENSIONS_ENABLE_LIST ZenoFX Rigid oldzenbase)
 
 foreach (name IN ITEMS ${EXTENSIONS_LIST})
@@ -16,9 +14,12 @@ foreach (name IN ITEMS ${EXTENSIONS_LIST})
     option(EXTENSION_${name} "Build ZENO with extension: ${name}" ${val})
 endforeach()
 
+add_library(zeno_projects INTERFACE)
 foreach (name IN ITEMS ${EXTENSIONS_LIST})
     if (${EXTENSION_${name}})
         message("*** Building ZENO with extension: ${name}")
         add_subdirectory(${name})
+        target_link_libraries(zeno_projects INTERFACE zeno_${name})
+        add_zeno_autoload(zeno_${name})
     endif()
 endforeach()

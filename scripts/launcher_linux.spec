@@ -3,8 +3,7 @@
 
 block_cipher = None
 
-dlls=[ 
-    ( '../zenqt/lib/*.so', 'zenqt/lib' ),
+dlls=[
 ]
 assets=[
     ( '../zenqt/assets/*',  'zenqt/assets' ),
@@ -12,7 +11,7 @@ assets=[
     ( '../graphs/*',        'graphs' ),
 ]
 
-a = Analysis(['zeno.py'],
+a = Analysis(['launcher.py'],
              pathex=['.'],
              binaries=dlls,
              datas=assets,
@@ -33,7 +32,7 @@ exe = EXE(pyz,
           a.scripts, 
           [],
           exclude_binaries=True,
-          name='zeno',
+          name='launcher',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
@@ -51,4 +50,4 @@ coll = COLLECT(exe,
                strip=False,
                upx=False,
                upx_exclude=[],
-               name='zeno')
+               name='launcher')

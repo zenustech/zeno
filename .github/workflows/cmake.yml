@@ -7,7 +7,6 @@ on:
     branches: [ master ]
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
 
 jobs:
@@ -15,18 +14,10 @@ jobs:
     strategy:
       matrix:
         include:
-        #- os: ubuntu-latest
-        #  python: 3.8
-        #  container: archibate/zeno_build:latest
-        #  options: -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
-        #- os: ubuntu-18.04
-        #  python: 3.6
         - os: ubuntu-20.04
           python: 3.7
-          packaging: linux
         - os: windows-latest
           python: 3.9
-          packaging: win
 
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
@@ -56,19 +47,3 @@ jobs:
       if: ${{ matrix.os != 'windows-latest' }}  # TODO: fix windows test
       working-directory: ${{github.workspace}}/build/tests
       run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
-
-    #- name: Install Python Packages
-    #  run: |
-    #    python -m pip install --upgrade pip
-    #    python -m pip install pybind11 numpy PySide2 pyinstaller
-
-    #- name: Packaging via PyInstaller
-    #  if: ${{ matrix.packaging }}
-    #  run: python -m PyInstaller scripts/zeno_${{matrix.packaging}}.spec
-
-    #- name: Upload Artifact
-    #  if: ${{ matrix.packaging }}
-    #  uses: actions/upload-artifact@v2
-    #  with:
-    #    name: zeno-${{matrix.packaging}}
-    #    path: dist/zeno
