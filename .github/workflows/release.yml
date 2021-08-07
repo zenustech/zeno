@@ -1,11 +1,8 @@
 name: Release
 
 on:
-  #push:
-  #  tags:
-  #    - 'v*'
-  pull_request:
-    branches: [ master ]
+  push:
+    branches: [ stable ]
 
 env:
   BUILD_TYPE: Release
@@ -19,6 +16,7 @@ jobs:
         #  python: 3.8
         #  container: archibate/zeno_build:latest
         #  options: -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
+        #  packaging: linux_full
         - os: ubuntu-20.04
           python: 3.7
           packaging: linux
@@ -55,10 +53,7 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install pybind11 numpy PySide2 pyinstaller
 
-    - name: Packaging via PyInstaller
-      run: python -m PyInstaller scripts/launcher_${{matrix.packaging}}.spec
-
-    - name: Compress Package into ZIP
+    - name: Packaging into ZIP
       run: python scripts/makezip.py
 
     - name: Create Release
