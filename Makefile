@@ -1,4 +1,6 @@
-O=arts/ZFXv2.zsg
+#O=arts/prim.zsg
+#O=arts/ZFXv2.zsg
+O=arts/lowResMPM.zsg
 default: run
 
 #####################################################
