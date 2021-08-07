@@ -13,13 +13,13 @@ add_subdirectory(zecomp)
 
 #if (EXISTS zecomp AND EXISTS zecomp/include/zensim/tpls)
 
-#message("enable gmpm:${ENABLE_GMPM_BUILD}, cuda compiler: ${CMAKE_CUDA_COMPILER}")
+#message("enable zeno_gmpm:${ENABLE_GMPM_BUILD}, cuda compiler: ${CMAKE_CUDA_COMPILER}")
 
 # if (POLICY CMP0104)
 #   cmake_policy(SET CMP0104 OLD)
 # endif (POLICY CMP0104)
 
-add_library(gmpm SHARED 
+add_library(zeno_gmpm
   nosys/ToZensimParticles.cpp 
   nosys/OutputZensimParticles.cpp 
   nosys/ConstitutiveModels.cpp 
@@ -40,24 +40,24 @@ add_library(gmpm SHARED
 
 if (${ZS_ENABLE_CUDA})
     enable_language(CUDA)
-    target_compile_features(gmpm PRIVATE cuda_std_17)
+    target_compile_features(zeno_gmpm PRIVATE cuda_std_17)
 endif()
-target_compile_features(gmpm PRIVATE cuda_std_17)
+target_compile_features(zeno_gmpm PRIVATE cuda_std_17)
 
-target_compile_features(gmpm PRIVATE cxx_std_17)
+target_compile_features(zeno_gmpm PRIVATE cxx_std_17)
 
 #simd compiler flags
 if (WIN32)
 else()
-target_compile_options(gmpm PRIVATE "-march=native")
+target_compile_options(zeno_gmpm PRIVATE "-march=native")
 endif()
-target_compile_options(gmpm 
+target_compile_options(zeno_gmpm 
       PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:${CMAKE_CUDA_FLAGS} -dlto -fopenmp --expt-extended-lambda --expt-relaxed-constexpr --default-stream=per-thread --use_fast_math -lineinfo --ptxas-options=-allow-expensive-optimizations=true>
     )
-target_link_options(gmpm 
+target_link_options(zeno_gmpm 
       PUBLIC       $<$<LINK_LANGUAGE:CUDA>:-dlto>
     )
-set_target_properties(gmpm
+set_target_properties(zeno_gmpm
       PROPERTIES  CUDA_EXTENSIONS ON
                   CUDA_SEPARABLE_COMPILATION ON
                   LINKER_LANGUAGE CUDA
@@ -65,22 +65,10 @@ set_target_properties(gmpm
                   CUDA_ARCHITECTURES OFF
     )
 
-get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
-set_target_properties(gmpm PROPERTIES
-	LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-	RUNTIME_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-	LIBRARY_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-	RUNTIME_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-	LIBRARY_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-	)
-target_link_libraries(gmpm PRIVATE zensim)
-target_link_libraries(gmpm PUBLIC zeno)
-target_link_libraries(gmpm PUBLIC ZFX)
-target_include_directories(gmpm PRIVATE ../oldzenbase/include)
-target_include_directories(gmpm PRIVATE ../zenvdb/include)
+target_link_libraries(zeno_gmpm PRIVATE zensim)
+target_link_libraries(zeno_gmpm PUBLIC zeno)
+target_link_libraries(zeno_gmpm PUBLIC ZFX)
+target_include_directories(zeno_gmpm PRIVATE ../oldzenbase/include)
+target_include_directories(zeno_gmpm PRIVATE ../zenvdb/include)
 
 endif(ENABLE_GMPM_BUILD)

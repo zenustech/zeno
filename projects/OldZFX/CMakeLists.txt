@@ -1,8 +1,8 @@
 file (GLOB WRANGLE_SOURCE *.cpp)
-add_library(wrangleLib SHARED ${WRANGLE_SOURCE})
-target_include_directories(wrangleLib PRIVATE .)
+add_library(zeno_OldZFX ${WRANGLE_SOURCE})
+target_include_directories(zeno_OldZFX PRIVATE .)
 
-target_link_libraries(wrangleLib PUBLIC zeno)
+target_link_libraries(zeno_OldZFX PUBLIC zeno)
 
 find_package(OpenMP)
 if (OPENMP_FOUND)
@@ -12,7 +12,7 @@ if (OPENMP_FOUND)
 endif()
 
 get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
-set_target_properties(wrangleLib PROPERTIES
+set_target_properties(zeno_OldZFX PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
     RUNTIME_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
     ARCHIVE_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
