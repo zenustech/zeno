@@ -26,16 +26,3 @@ target_include_directories(zeno_zenMesher PRIVATE mpmmeshing/)
 target_link_libraries(zeno_zenMesher PRIVATE mpmmeshing )
 target_link_libraries(zeno_zenMesher PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno_zenMesher PUBLIC zeno)
-
-get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
-set_target_properties(zeno_zenMesher PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-    RUNTIME_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-    ARCHIVE_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-    LIBRARY_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-    RUNTIME_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-    ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-    LIBRARY_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-    RUNTIME_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-    ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-    )

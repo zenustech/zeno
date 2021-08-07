@@ -24,8 +24,8 @@ if (ZENO_GLOBALSTATE)
 endif()
 if (ZENO_VISUALIZATION)
     target_compile_definitions(zeno PUBLIC -DZENO_VISUALIZATION)
-	if (UNIX)
-		target_link_libraries(zeno PRIVATE stdc++fs)  # for Ubuntu 18.04 <experimental/filesystem>
+    if (UNIX OR APPLE)
+		target_link_libraries(zeno PRIVATE stdc++fs)  # for <experimental/filesystem>
 	endif()
 endif()
 
