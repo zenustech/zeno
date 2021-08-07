@@ -16,7 +16,7 @@ struct Stmt {
         , outputs(outputs_)
     {}
 
-    virtual ~Stmt() = 0;
+    virtual ~Stmt() = default;
 
     virtual std::string to_string() const = 0;
     virtual void accept(IRVisitor *visitor) = 0;
