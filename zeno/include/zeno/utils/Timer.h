@@ -14,10 +14,10 @@ public:
 private:
     struct Record {
         std::string tag;
-        int ns;
+        int us;
 
-        Record(std::string &&tag_, int ns_)
-            : tag(std::move(tag_)), ns(ns_) {}
+        Record(std::string &&tag_, int us_)
+            : tag(std::move(tag_)), us(us_) {}
     };
 
     static Timer *current;
