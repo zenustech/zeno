@@ -1,6 +1,7 @@
 #O=arts/prim.zsg
 #O=arts/ZFXv2.zsg
-O=arts/lowResMPM.zsg
+#O=arts/lowResMPM.zsg
+O=arts/literialconst.zsg
 default: run
 
 #####################################################
