@@ -131,7 +131,7 @@ class QDMGraphicsParam_multiline_string(QDMGraphicsParam):
         self.edit = self.QDMPlainTextEdit()
         self.edit.parent = self
         self.edit.setFont(font)
-        from ..system.utils import os_name
+        from ...system.utils import os_name
         if os_name == 'win32':  # the stupid win seems doesn't support background-color
             self.edit.setStyleSheet('background-color: white; color: black')
         else:
