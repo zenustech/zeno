@@ -8,9 +8,10 @@
 namespace zeno {
 
 class Timer {
-private:
+public:
     using ClockType = std::chrono::high_resolution_clock;
 
+private:
     struct Record {
         std::string tag;
         int ms;
@@ -28,7 +29,7 @@ private:
     std::string tag;
 
     Timer(std::string_view &&tag, ClockType::time_point &&beg);
-    _destroy(ClockType::time_point end);
+    void _destroy(ClockType::time_point &&end);
 
 public:
     Timer(std::string_view tag_) : Timer(std::move(tag_), ClockType::now()) {}

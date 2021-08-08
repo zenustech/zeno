@@ -5,7 +5,7 @@
 
 namespace zeno {
 
-Timer::Timer(std::string_view &&tag_, ClockType::time_point &&beg_)
+Timer::Timer(std::string_view &&tag_, Timer::ClockType::time_point &&beg_)
     : parent(current)
     , beg(ClockType::now())
     , tag(current ? current->tag + '/' + (std::string)tag_ : tag_)
@@ -13,9 +13,8 @@ Timer::Timer(std::string_view &&tag_, ClockType::time_point &&beg_)
     current = this;
 }
 
-Timer::_destroy(ClockType::time_point &&end) {
+void Timer::_destroy(Timer::ClockType::time_point &&end) {
     current = parent;
-    auto end = ClockType::now();
     auto diff = end - beg;
     int ms = std::chrono::duration_cast
         <std::chrono::microseconds>(diff).count();
