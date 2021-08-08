@@ -1,6 +1,7 @@
 #ifdef ZENO_BENCHMARK
 #include <zeno/utils/Timer.h>
 #include <zeno/utils/zlog.h>
+#include <algorithm>
 #include <cstdlib>
 #include <cstdio>
 #include <map>
@@ -46,8 +47,17 @@ void Timer::print() {
         stat.min_us = stat.count_rec ? stat.min_us : std::min(stat.min_us, us);
     }
 
+    std::vector<std::pair<std::string, Statistic>> sortstats;
+    for (auto const &kv: stats) {
+        sortstats.push_back(kv);
+    }
+    std::sort(sortstats.begin(), sortstats.end(),
+    [&] (auto const &lhs, auto const &rhs) {
+        return lhs.second.total_us > rhs.second.total_us;
+    });
+
     printf("   avg   |   min   |   max   |  total  | count  [tag]\n");
-    for (auto const &[tag, stat]: stats) {
+    for (auto const &[tag, stat]: sortstats) {
         printf("%9d|%9d|%9d|%9d|%7d [%s]\n",
                 stat.total_us / stat.count_rec,
                 stat.min_us, stat.max_us, stat.total_us,
