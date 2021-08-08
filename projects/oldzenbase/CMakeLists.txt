@@ -1,4 +1,4 @@
-file(GLOB PROJECT_SOURCE include/*/*.h *.cpp mesh/*.cpp pars/*.cpp prim/*.cpp)
+file(GLOB PROJECT_SOURCE include/*/*.h *.cpp mesh/*.cpp pars/*.cpp prim/*.cpp *.cpp)
 
 add_library(zeno_oldzenbase SHARED ${PROJECT_SOURCE})
 target_compile_definitions(zeno_oldzenbase PRIVATE -DDLL_ZENBASE)

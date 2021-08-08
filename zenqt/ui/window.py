@@ -2,6 +2,8 @@ from PySide2.QtGui import *
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 
+import os
+
 from .visualize.viewport import DisplayWidget
 from .visualize.timeline import TimelineWidget
 from .editor import NodeEditor
@@ -35,14 +37,16 @@ class MainWindow(QWidget):
                 #(scrn_size.height() - self_size.height()) // 2)
 
         self.editorTimeline = EditorTimeline()
-        self.viewport = DisplayWidget()
+        if not os.environ.get('ZEN_NOVIEW'):
+            self.viewport = DisplayWidget()
 
         self.timeline = self.editorTimeline.timeline
         self.editor = self.editorTimeline.editor
         self.timeline.setEditor(self.editor)
 
         self.mainsplit = QSplitter(Qt.Vertical)
-        self.mainsplit.addWidget(self.viewport)
+        if hasattr(self, 'viewport'):
+            self.mainsplit.addWidget(self.viewport)
         self.mainsplit.addWidget(self.editorTimeline)
 
         self.layout = QVBoxLayout()
@@ -63,7 +67,8 @@ class MainWindow(QWidget):
         super().keyPressEvent(event)
 
     def on_update(self):
-        self.viewport.on_update()
+        if hasattr(self, 'viewport'):
+            self.viewport.on_update()
         self.timeline.on_update()
 
     def closeEvent(self, event):
