@@ -1,12 +1,15 @@
+#pragma once
+
 #include <chrono>
 #include <string>
 #include <vector>
 #include <cassert>
-#include <unistd.h>
 
-using ClockType = std::chrono::high_resolution_clock;
+namespace zeno {
 
 struct Timer {
+    using ClockType = std::chrono::high_resolution_clock;
+
     struct Record {
         std::string tag;
         int ms;
@@ -15,8 +18,8 @@ struct Timer {
             : tag(std::move(tag_)), ms(ms_) {}
     };
 
-    inline static Timer *current = nullptr;
-    std::vector<Record> records;
+    static Timer *current;
+    static std::vector<Record> records;
 
     Timer *parent = nullptr;
     ClockType::time_point beg;
@@ -41,20 +44,4 @@ struct Timer {
     }
 };
 
-int main() {
-    {
-        Timer _("mainloop");
-        usleep(500);
-        {
-            Timer _("simulation");
-            usleep(8000);
-        }
-        usleep(500);
-        {
-            Timer _("rendering");
-            usleep(6000);
-        }
-        usleep(500);
-    }
-    return 0;
 }
