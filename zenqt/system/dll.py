@@ -30,7 +30,7 @@ if os_name == 'win32':  # windows doesn't support rpath, let's mock it only
 
 from .. import zeno_pybind11_module as core
 
-'''
+#'''
 def loadAutoloads():
     print('loading addons from', lib_dir)
     if not os.path.isdir(lib_dir):
@@ -70,8 +70,8 @@ def loadAutoloads():
             else:
                 print('[  OK  ] [{}]'.format(path))
 
-if not os.environ.get('ZEN_NOAUTOLOAD'):
+if os_name == 'win32' and not os.environ.get('ZEN_NOAUTOLOAD'):
     loadAutoloads()
-'''
+#'''
 
 __all__ = ['core']
