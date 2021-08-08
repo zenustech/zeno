@@ -24,6 +24,9 @@ if (ZENO_VISUALIZATION)
 		target_link_libraries(zeno PRIVATE stdc++fs)  # for <experimental/filesystem>
 	endif()
 endif()
+if (ZENO_BENCHMARK)
+    target_compile_definitions(zeno PUBLIC -DZENO_BENCHMARK)
+endif()
 
 target_compile_definitions(zeno PRIVATE -DDLL_ZENO)
 target_include_directories(zeno PUBLIC include)
