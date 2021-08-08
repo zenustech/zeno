@@ -1,7 +1,8 @@
 #ifdef ZENO_BENCHMARK
 #include <zeno/utils/Timer.h>
 #include <zeno/utils/zlog.h>
-#include <iostream>
+#include <cstdlib>
+#include <cstdio>
 #include <map>
 
 namespace zeno {
@@ -11,7 +12,7 @@ Timer::Timer(std::string_view &&tag_, Timer::ClockType::time_point &&beg_)
     , beg(ClockType::now())
     , tag(current ? current->tag + '/' + (std::string)tag_ : tag_)
 {
-    zlog::trace("** Enter [{}]", tag);
+    //zlog::trace("** Enter [{}]", tag);
     current = this;
 }
 
@@ -20,7 +21,7 @@ void Timer::_destroy(Timer::ClockType::time_point &&end) {
     auto diff = end - beg;
     int us = std::chrono::duration_cast
         <std::chrono::microseconds>(diff).count();
-    zlog::trace("** Leave [{}] spent {} us", tag, us);
+    //zlog::trace("** Leave [{}] spent {} us", tag, us);
     records.emplace_back(std::move(tag), us);
 }
 
@@ -59,7 +60,8 @@ void Timer::print() {
 namespace {
     struct AtexitHelper {
         ~AtexitHelper() {
-            Timer::print();
+            if (getenv("ZEN_PRINTSTAT"))
+                Timer::print();
         }
     } atexitHelper;
 }
