@@ -42,6 +42,8 @@ struct Timer {
             <std::chrono::microseconds>(diff).count();
         records.emplace_back(std::move(tag), ms);
     }
+
+    static void print();
 };
 
 }
