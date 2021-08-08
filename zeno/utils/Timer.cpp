@@ -27,9 +27,19 @@ Timer *Timer::current = nullptr;
 std::vector<Timer::Record> Timer::records;
 
 void Timer::print() {
+    std::cerr << "=== Begin ZENO Timing Statistics ===" << std::endl;
     for (auto const &[tag, ns]: records) {
         std::cerr << "[" << tag << "] " << ns << " ns" << std::endl;
     }
+    std::cerr << "==== End ZENO Timing Statistics ====" << std::endl;
+}
+
+namespace {
+    struct AtexitHelper {
+        ~AtexitHelper() {
+            Timer::print();
+        }
+    } atexitHelper;
 }
 
 }
