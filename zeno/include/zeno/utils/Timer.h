@@ -7,7 +7,8 @@
 
 namespace zeno {
 
-struct Timer {
+class Timer {
+private:
     using ClockType = std::chrono::high_resolution_clock;
 
     struct Record {
@@ -26,22 +27,12 @@ struct Timer {
     ClockType::time_point end;
     std::string tag;
 
-    Timer(std::string_view tag_)
-        : parent(current)
-        , beg(ClockType::now())
-        , tag(current ? current->tag + '/' + (std::string)tag_ : tag_)
-    {
-        current = this;
-    }
+    Timer(std::string_view &&tag, ClockType::time_point &&beg);
+    _destroy(ClockType::time_point end);
 
-    ~Timer() {
-        current = parent;
-        auto end = ClockType::now();
-        auto diff = end - beg;
-        int ms = std::chrono::duration_cast
-            <std::chrono::microseconds>(diff).count();
-        records.emplace_back(std::move(tag), ms);
-    }
+public:
+    Timer(std::string_view tag_) : Timer(std::move(tag_), ClockType::now()) {}
+    ~Timer() { _destroy(ClockType::now()); }
 
     static void print();
 };
