@@ -44,7 +44,7 @@ struct KineticEnergy: zeno::INode {
     float ek = 0.0f;
     #pragma omp parallel for
     for (int i = 0; i < vel.size(); i++) {
-        ek += zeno::lengthsq(vel[i]);
+        ek += zeno::lengthSquared(vel[i]);
     }
     energy->set<float>(ek * 0.5f);
     set_output("kinetic energy", energy);
