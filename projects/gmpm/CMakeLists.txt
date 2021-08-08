@@ -20,6 +20,7 @@ add_subdirectory(zecomp)
 # endif (POLICY CMP0104)
 
 add_library(zeno_gmpm SHARED
+  nosys/dummy.cpp
   nosys/ToZensimParticles.cpp 
   nosys/OutputZensimParticles.cpp 
   nosys/ConstitutiveModels.cpp 
