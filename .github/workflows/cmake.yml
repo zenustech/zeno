@@ -44,6 +44,5 @@ jobs:
       run: python -c "import zenqt.system.dll"
 
     - name: Integrated Test
-      if: ${{ matrix.os != 'windows-latest' }}  # TODO: fix windows test
       working-directory: ${{github.workspace}}/build/tests
       run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
