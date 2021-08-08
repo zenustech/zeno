@@ -37,7 +37,7 @@ struct PrintLiterial : zeno::INode {
         auto hint = get_param<std::string>("hint");
         std::cout << hint << ": ";
         std::visit([&] (auto const &val) {
-                std::cout << val << std::endl;
+            std::cout << val << std::endl;
         }, value);
     }
 };
