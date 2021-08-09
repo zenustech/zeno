@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/utils/string.h>
 #include <sstream>
 
 namespace zeno {
@@ -22,7 +23,7 @@ ZENDEFNODE(ListLength, {
 });
 
 
-struct ExtractList : zeno::INode {
+struct ListGetItem : zeno::INode {
     virtual void apply() override {
         auto list = get_input<zeno::ListObject>("list");
         auto index = get_input<zeno::NumericObject>("index")->get<int>();
@@ -31,13 +32,34 @@ struct ExtractList : zeno::INode {
     }
 };
 
-ZENDEFNODE(ExtractList, {
+ZENDEFNODE(ListGetItem, {
     {"list", "index"},
     {"object"},
     {},
     {"list"},
 });
 
+struct ExtractList : zeno::INode {
+    virtual void apply() override {
+        auto inkeys = get_param<std::string>("_KEYS");
+        auto keys = zeno::split_str(inkeys, '\n');
+        auto list = get_input<zeno::ListObject>("list");
+        for (auto const& key : keys) {
+            int index = std::stoi(key);
+            if (list->arr.size() > index) {
+                auto obj = list->arr[index];
+                set_output(key, std::move(obj));
+            }
+        }
+    }
+};
+
+ZENDEFNODE(ExtractList, {
+    {"list"},
+    {},
+    {},
+    {"list"},
+    });
 
 struct EmptyList : zeno::INode {
     virtual void apply() override {
@@ -98,15 +120,12 @@ struct MakeList : zeno::INode {
         auto list = std::make_shared<zeno::ListObject>();
 
         int max_input_index = 0;
-        for (auto& pair : inputs)
-        {
-            if (std::isdigit(pair.first.back()))
-            {
+        for (auto& pair : inputs) {
+            if (std::isdigit(pair.first.back())) {
                 max_input_index = std::max<int>(max_input_index, std::stoi(pair.first.substr(3)));
             }
         }
-        for (int i = 0; i <= max_input_index; ++i)
-        {
+        for (int i = 0; i <= max_input_index; ++i) {
             std::stringstream namess;
             namess << "obj" << i;
             auto name = namess.str();

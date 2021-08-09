@@ -312,6 +312,9 @@ class QDMGraphicsNode(QGraphicsItem):
     def onInputChanged(self):
         pass
 
+    def onOutputChanged(self):
+        pass
+
     def load(self, ident, data):
         name = data['name']
         inputs = data['inputs']
