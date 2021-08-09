@@ -3,13 +3,12 @@
 #include <vector>
 #include <zeno/zeno.h>
 
-#include <openvdb/points/PointCount.h>
+//#include <openvdb/points/PointCount.h>
 #include <openvdb/tree/LeafManager.h>
 #include <openvdb/points/PointAdvect.h>
 #include <openvdb/tools/Morphology.h>
 #include <openvdb/tools/MeshToVolume.h>
 #include <openvdb/openvdb.h>
-#include <openvdb/points/PointCount.h>
 #include <string.h>
 namespace zeno {
 
