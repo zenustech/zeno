@@ -182,6 +182,10 @@ class NodeEditor(QWidget):
         self.button_delete.resize(80, 30)
         self.button_delete.clicked.connect(self.deleteCurrScene)
 
+        self.find_bar = QDMFindBar(self)
+        self.find_bar.move(400, 40)
+        self.find_bar.resize(300, 30)
+
     def on_switch_graph(self, name):
         self.switchScene(name)
         self.initDescriptors()

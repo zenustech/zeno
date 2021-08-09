@@ -53,6 +53,33 @@ class QDMSearchLineEdit(QLineEdit):
         self.wact.setDefaultWidget(self)
         self.menu.addAction(self.wact)
 
+class QDMFindBar(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.lineEdit = QLineEdit(self)
+        self.resultLabel = QLabel(' {} of {} '.format('  ', '  '), self)
+        self.prevButton = QPushButton('Prev', self)
+        self.prevButton.setFixedWidth(50)
+        self.nextButton = QPushButton('Next', self)
+        self.nextButton.setFixedWidth(50)
+        self.closeButton = QPushButton('X', self)
+        self.closeButton.setFixedWidth(30)
+
+        self.layout = QHBoxLayout()
+        self.layout.setContentsMargins(5, 0, 5, 0)
+        self.layout.addWidget(self.lineEdit)
+        self.layout.addWidget(self.resultLabel)
+        self.layout.addWidget(self.prevButton)
+        self.layout.addWidget(self.nextButton)
+        self.layout.addWidget(self.closeButton)
+        self.setLayout(self.layout)
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setPen(Qt.NoPen)
+        p.setBrush(Qt.white)
+        p.drawRect(self.rect())
+
 
 class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
