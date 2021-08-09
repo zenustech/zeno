@@ -7,10 +7,46 @@ struct LeafNode {
 
 struct InternalNode {
     LeafNode* m[16 * 16 * 16];
+
+    InternalNode() {
+        for (int i = 0; i < 16 * 16 * 16; i++) {
+            m[i] = nullptr;
+        }
+    }
+
+    InternalNode(InternalNode const &) = delete;
+    InternalNode &operator=(InternalNode const &) = delete;
+
+    ~InternalNode() {
+        for (int i = 0; i < 16 * 16 * 16; i++) {
+            if (m[i]) {
+                delete m[i];
+                m[i] = nullptr;
+            }
+        }
+    }
 };
 
 struct RootNode {
     InternalNode* m[32 * 32 * 32];
+
+    RootNode() {
+        for (int i = 0; i < 32 * 32 * 32; i++) {
+            m[i] = nullptr;
+        }
+    }
+
+    RootNode(RootNode const &) = delete;
+    RootNode &operator=(RootNode const &) = delete;
+
+    ~RootNode() {
+        for (int i = 0; i < 32 * 32 * 32; i++) {
+            if (m[i]) {
+                delete m[i];
+                m[i] = nullptr;
+            }
+        }
+    }
 };
 
 
@@ -32,3 +68,6 @@ void foreachLeaf
         }
     }
 }
+
+
+
