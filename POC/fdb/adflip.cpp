@@ -14,8 +14,8 @@ struct InternalNode {
         }
     }
 
-    InternalNode(InternalNode const &) = delete;
-    InternalNode &operator=(InternalNode const &) = delete;
+    InternalNode(InternalNode const&) = delete;
+    InternalNode& operator=(InternalNode const&) = delete;
 
     ~InternalNode() {
         for (int i = 0; i < 16 * 16 * 16; i++) {
@@ -36,8 +36,8 @@ struct RootNode {
         }
     }
 
-    RootNode(RootNode const &) = delete;
-    RootNode &operator=(RootNode const &) = delete;
+    RootNode(RootNode const&) = delete;
+    RootNode& operator=(RootNode const&) = delete;
 
     ~RootNode() {
         for (int i = 0; i < 32 * 32 * 32; i++) {
@@ -54,19 +54,45 @@ void foreachLeaf
     ( RootNode* root
     , std::function<void(LeafNode*, fdb::vec3i)> cb
     ) {
+#pragma omp parallel for
     for (int i = 0; i < 32 * 32 * 32; i++) {
         int ix = i % 32 * 16, iy = i / 32 % 32 * 16, iz = i / 32 / 32 * 16;
-        auto intern = root->m[i];
+        auto* intern = root->m[i];
         if (!intern) continue;
         for (int z = iz; z < 16; z++) {
             for (int y = iy; y < 16; y++) {
                 for (int x = ix; x < 16; x++) {
-                    auto leaf = intern->m[i];
+                    auto j = x + y * 16 + z * 16 * 16;
+                    auto* leaf = intern->m[j];
+                    if (!leaf) continue;
                     cb(leaf, fdb::vec3i(x, y, z));
                 }
             }
         }
     }
+}
+
+void foreachElement
+    ( LeafNode* leaf
+    , std::function<void(float&, fdb::vec3i)> cb
+    ) {
+    for (int z = 0; z < 8; z++) {
+        for (int y = 0; y < 8; y++) {
+            for (int x = 0; x < 8; x++) {
+                auto k = x + y * 8 + z * 8 * 8;
+                cb(leaf->m[k], fdb::vec3i(x, y, z));
+            }
+        }
+    }
+}
+
+int main() {
+    auto* root = new RootNode;
+    foreachLeaf(root, [&] (auto* leaf, auto) {
+        foreachElement(leaf, [&] (float& value, auto) {
+            value *= 2.0f;
+        });
+    });
 }
 
 
