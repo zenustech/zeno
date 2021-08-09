@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.19)
 set(CMAKE_CXX_STANDARD 17)
-project(zenMesher)
+project(zeno_mesher)
 add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)  
 
 # add cmake file
@@ -19,22 +19,10 @@ if (OPENMP_FOUND)
 endif()
 
 file (GLOB ZEN_MESHER_SOURCE *.cpp)
-add_library(zenMesher SHARED ${ZEN_MESHER_SOURCE})
-target_include_directories(zenMesher PRIVATE mpmmeshing/)
+add_library(zeno_mesher SHARED ${ZEN_MESHER_SOURCE})
+target_include_directories(zeno_mesher PRIVATE mpmmeshing/)
 
 
-target_link_libraries(zenMesher PRIVATE mpmmeshing )
-target_link_libraries(zenMesher PRIVATE zeno Eigen3::Eigen)
-
-get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
-set_target_properties(zenMesher PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-    RUNTIME_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-    ARCHIVE_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-    LIBRARY_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-    RUNTIME_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-    ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-    LIBRARY_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-    RUNTIME_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-    ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-    )
+target_link_libraries(zeno_mesher PRIVATE mpmmeshing )
+target_link_libraries(zeno_mesher PRIVATE Eigen3::Eigen)
+target_link_libraries(zeno_mesher PUBLIC zeno)

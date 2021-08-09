@@ -35,7 +35,7 @@ void ForceFieldObject::force(std::vector<zeno::vec3f, std::allocator<zeno::vec3f
             for (int j = 0; j < n; j++) {
                 if (i != j) {
                     auto d = distance(pos[i], pos[j], boxlength);
-                    float r2 = zeno::lengthsq(d);
+                    float r2 = zeno::lengthSquared(d);
                     if (r2 <= nonbond->rcutsq) {
                         //printf("%d %d %f %f %f %f\n", i, j, d[0], d[1], d[2], r2);
                         auto force = nonbond->virial(r2) * d / r2;
@@ -65,7 +65,7 @@ float ForceFieldObject::energy(std::vector<zeno::vec3f, std::allocator<zeno::vec
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < i; j++) {
                 auto d = distance(pos[i], pos[j], boxlength);
-                float r2 = zeno::lengthsq(d);
+                float r2 = zeno::lengthSquared(d);
                 //printf("%f %f %f %f\n", r2, nonbond->rcut, nonbond->rcutsq, nonbond->ecut);
                 if (r2 <= nonbond->rcutsq)  {
                     ep += nonbond->energy(r2);

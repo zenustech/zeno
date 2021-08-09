@@ -8,6 +8,7 @@ import json
 import sys
 import os
 from multiprocessing import Process
+from ..utils import get_executable
 
 
 g_proc = None
@@ -64,7 +65,7 @@ def launchProgram(prog, nframes):
         with open(filepath, 'w') as f:
             json.dump(prog, f)
         # TODO: replace with binary executable
-        g_proc = subprocess.Popen([sys.executable, '-m', 'zenqt.system', filepath, str(nframes), g_iopath])
+        g_proc = subprocess.Popen(get_executable() + [filepath, str(nframes), g_iopath])
         retcode = g_proc.wait()
         if retcode != 0:
             print('zeno program exited with error code:', retcode)
@@ -75,7 +76,7 @@ def getDescriptors():
         from . import run
         descs = run.dumpDescriptors()
     else:
-        descs = subprocess.check_output([sys.executable, '-m', 'zenqt.system', '--dump-descs'])
+        descs = subprocess.check_output(get_executable() + ['--dump-descs'])
         descs = descs.split(b'==<DESCS>==')[1].decode()
     descs = descs.splitlines()
     descs = [parse_descriptor_line(line) for line in descs

@@ -7,7 +7,6 @@ on:
     branches: [ master ]
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
 
 jobs:
@@ -15,12 +14,6 @@ jobs:
     strategy:
       matrix:
         include:
-        #- os: ubuntu-latest
-        #  python: 3.8
-        #  container: archibate/zeno_build:latest
-        #  options: -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
-        #- os: ubuntu-18.04
-        #  python: 3.6
         - os: ubuntu-20.04
           python: 3.7
         - os: windows-latest
@@ -35,23 +28,21 @@ jobs:
       with:
         python-version: ${{ matrix.python }}
 
-    #- uses: actions/cache@v2
-      #with:
-        #key: ${{matrix.os}}-${{matrix.python}}-${{env.BUILD_TYPE}}-${{hashFiles('**/CMakeLists.txt')}}
-        #path: |
-          #${{github.workspace}}/build
+    - uses: actions/cache@v2
+      with:
+        key: ${{matrix.os}}-${{matrix.python}}-${{env.BUILD_TYPE}}-${{hashFiles('**/CMakeLists.txt')}}
+        path: |
+          ${{github.workspace}}/build
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ${{matrix.options}}
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DZENO_BUILD_TESTS:BOOL=ON ${{matrix.options}}
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    - name: Test Import ZENO
+    - name: Test Import ZENO DLLs
       run: python -c "import zenqt.system.dll"
 
-    #- name: Test
-      #working-directory: ${{github.workspace}}/build
-      #run: ./tests/zentest
-      #run: ctest -C ${{env.BUILD_TYPE}}
-
+    - name: Integrated Test
+      working-directory: ${{github.workspace}}/build/tests
+      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure

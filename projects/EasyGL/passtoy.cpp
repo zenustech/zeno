@@ -377,7 +377,7 @@ struct PassToyApplyShader : zeno::INode {
             auto textureIns = get_input<zeno::DictObject>("textureIn");
             int i = 0;
             for (auto const &[key, obj]: textureIns->lut) {
-                auto textureIn = zeno::safe_dynamic_cast<PassToyTexture>(obj);
+                auto textureIn = zeno::smart_any_cast<std::shared_ptr<PassToyTexture>>(obj);
                 i += 1;
                 //zlog::debug("texture number {} is `{}`", i, key);
                 textureIn->tex.use(i);
@@ -401,8 +401,7 @@ struct PassToyApplyShader : zeno::INode {
         if (has_input("uniforms")) {
             auto uniforms = get_input<zeno::DictObject>("uniforms");
             for (auto const &[key, obj]: uniforms->lut) {
-                auto const &value = zeno::safe_dynamic_cast
-                    <zeno::NumericObject>(obj)->value;
+                auto const &value = zeno::smart_any_cast<std::shared_ptr<zeno::NumericObject>>(obj)->value;
                 std::visit([&shader, key = key] (auto const &value) {
                     shader->prog.setUniform(key.c_str(), value);
                 }, value);

@@ -6,9 +6,9 @@ namespace zeno {
 
 using namespace rapidjson;
 
-static zeno::IValue generic_get(Value const &x) {
+static std::variant<int, float, std::string> generic_get(Value const &x) {
     if (x.IsString()) {
-        return x.GetString();
+        return (std::string)x.GetString();
     } else if (x.IsInt()) {
         return x.GetInt();
     } else if (x.IsFloat()) {

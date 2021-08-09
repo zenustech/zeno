@@ -126,7 +126,7 @@ for more information.
 ## Get binary release
 
 Go to the [release page](https://github.com/zenustech/zeno/releases/), and click Assets -> download `zeno-linux-20xx.x.x.tar.gz`.
-Then, extract this archive, and simply run `./start.sh` (`start.bat` for Windows), then the node editor window will shows up if everything is working well.
+Then, extract this archive, and simply run `./launcher` (`launcher.exe` for Windows), then the node editor window will shows up if everything is working well.
 
 ## How to play
 
@@ -154,7 +154,7 @@ Other requirements like GLAD are self-contained and you don't have to worry inst
 # Install basic dependencies
 sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin
 
-python --version  # make sure Python version >= 3.7
+python --version  # make sure Python version >= 3.6
 sudo python -m pip install -U pip
 sudo python -m pip install pybind11 numpy PySide2
 
@@ -189,14 +189,6 @@ cd ../..
 
 See also [`Dockerfile`](Dockerfile) as a reference for full installing steps.
 
-- Arch Linux
-
-```bash
-sudo pacman -S gcc make cmake python python-pip python-numpy pyside2
-```
-
-See also [`Dockerfile.archlinux`](Dockerfile.archlinux) for full installing steps.
-
 - Windows 10
 
 1. Install Python 3.8 64-bit. IMPORTANT: make sure you **Add Python 3.8 to PATH**! After that rebooting your computer would be the best.
@@ -215,6 +207,32 @@ If you got `ImportError: DLL load failed while importing QtGui`:
 Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe).
 
 3. Install Visual Studio 2019 Community Edition or later version (for C++17 support in MSVC).
+
+4. (Optional) Install other dependencies via [vcpkg](https://github.com/microsoft/vcpkg):
+
+```cmd
+git clone https://github.com/microsoft/vcpkg.git --depth=1
+cd vcpkg
+
+# (Optional) integrate vcpkg into your VS2019 if necessary:
+vcpkg integrate install
+
+# (Optional) Install OpenVDB for the extension ZenVDB & FastFLIP:
+vcpkg install openvdb:x64-windows
+
+# (Optional) Install Eigen3 for the extension FastFLIP:
+vcpkg install eigen3:x64-windows
+```
+
+Hint: You may need to install the `English Pack` for VS2019, and have fast internet condition for vcpkg to work. See [their official guide](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md) for more details.
+
+- Arch Linux
+
+```bash
+sudo pacman -S gcc make cmake python python-pip python-numpy pyside2
+```
+
+See also [`Dockerfile.archlinux`](Dockerfile.archlinux) for full installing steps.
 
 - Docker
 
@@ -236,7 +254,6 @@ cmake --build build --parallel
 
 ```bash
 cmake -B build
-# change some cmake configurations via ccmake:
 ccmake -B build  # will shows up a curses screen, c to save, q to exit
 ```
 
@@ -257,21 +274,19 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release
 ```
 Then open ```build/zeno.sln``` in Visual Studio 2019, and **switch to Release mode in build configurations**, then run `Build -> Build All`.
 
+> Optional: You can change some cmake configurations using `cmake-gui`.
+
+```bash
+cmake-gui -B build
+```
+
 IMPORTANT: In MSVC, Release mode must **always be active** when building ZENO, since MSVC uses different allocators in Release and Debug mode. If a DLL of Release mode and a DLL in Debug mode are linked together in Windows, it will crash when passing STL objects.
 
 
 ### Run ZENO for development
 
-- Linux
-
 ```bash
-./run.sh
-```
-
-- Windows
-
-```cmd
-run.bat
+./run.py
 ```
 
 After successfully loading the editor, you may click `File -> Open` to play `graphs/LorenzParticleTrail.zsg` to confirm everything is working well :)
@@ -299,7 +314,7 @@ Please let me know if you have any trouble not mentioned above by opening an [is
 
 - WSL
 
-WSL doesn't have X11 display by default :(
+WSL doesn't have X11 display by default :( Please try search the Web for how to enable it, sorry!
 
 # Building ZENO Extensions
 
@@ -314,7 +329,7 @@ For now, official extensions will be built by default when running the
 Note that the extensions: ZenVDB and FastFLIP are **not built by default**.
 You can use
 ```bash
-cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON
+cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
 ```
 to enable them.
 
@@ -422,12 +437,34 @@ You may contact us via WeChat:
 
 # Maintainers' manual
 
+## Run intergrated test
+
+- Linux
+
+```bash
+cmake -B build -DZENO_BUILD_TESTS:BOOL=ON
+cmake --build build --parallel
+build/tests/zentest
+```
+
+- Windows
+
+Not supported yet.
+
 ## Build binary release
+
+```bash
+./dist.py
+```
+
+You will get dist/launcher.zip, upload it to, for example, zeno-linux-2021.8.7.zip in the `Release` page.
+
+## Build binary release (old method)
 
 - Arch Linux
 
 ```bash
-./dist.sh
+scripts/dist.sh
 # you will get /tmp/release/zeno-linux-20xx.x.x.tar.gz
 ```
 
@@ -435,5 +472,5 @@ You may contact us via WeChat:
 
 First, download `zenv-windows-prebuilt.zip` from [this page](https://github.com/zenustech/binaries/releases).
 Second, extract it directly into project root.
-Then run `dist.bat` in project root.
+Then run `scripts/dist.bat` in project root.
 Finally, rename the `zenv` folder to `zeno-windows-20xx.x.x`, and archive it into `zeno-windows-20xx.x.x.zip`.

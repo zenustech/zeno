@@ -83,7 +83,7 @@ struct ZSParticleNeighborWrangle : zeno::INode {
     std::vector<std::pair<std::string, int>> parnames; // (paramName, dim)
     for (auto const &[key_, obj] : params->lut) {
       auto key = '$' + key_;
-      auto par = dynamic_cast<zeno::NumericObject *>(obj.get());
+      auto par = zeno::smart_any_cast<std::shared_ptr<zeno::NumericObject>>(obj).get();
       auto dim = std::visit(
           [&](auto const &v) -> int {
             using T = std::decay_t<decltype(v)>;

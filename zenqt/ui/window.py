@@ -2,6 +2,8 @@ from PySide2.QtGui import *
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 
+import os
+
 from .visualize.viewport import DisplayWidget
 from .visualize.timeline import TimelineWidget
 from .editor import NodeEditor
@@ -9,9 +11,9 @@ from .editor import NodeEditor
 from .utils import asset_path
 
 class EditorTimeline(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent):
         super().__init__(parent)
-        self.editor = NodeEditor()
+        self.editor = NodeEditor(self, parent)
         self.timeline = TimelineWidget()
 
         self.layout = QVBoxLayout()
@@ -24,7 +26,7 @@ class MainWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setWindowTitle('ZENO Qt Editor')
+        self.setWindowTitleWithPostfix(None)
         self.setGeometry(0, 0, 1200, 1000)
         #self.setGeometry(0, 0, 800, 1000)
 
@@ -34,15 +36,17 @@ class MainWindow(QWidget):
                 #(scrn_size.width() - self_size.width()) // 2,
                 #(scrn_size.height() - self_size.height()) // 2)
 
-        self.editorTimeline = EditorTimeline()
-        self.viewport = DisplayWidget()
+        self.editorTimeline = EditorTimeline(self)
+        if not os.environ.get('ZEN_NOVIEW'):
+            self.viewport = DisplayWidget()
 
         self.timeline = self.editorTimeline.timeline
         self.editor = self.editorTimeline.editor
         self.timeline.setEditor(self.editor)
 
         self.mainsplit = QSplitter(Qt.Vertical)
-        self.mainsplit.addWidget(self.viewport)
+        if hasattr(self, 'viewport'):
+            self.mainsplit.addWidget(self.viewport)
         self.mainsplit.addWidget(self.editorTimeline)
 
         self.layout = QVBoxLayout()
@@ -56,6 +60,12 @@ class MainWindow(QWidget):
         self.timer.start(1000 // 60)
         self.timer.timeout.connect(self.on_update)
 
+    def setWindowTitleWithPostfix(self, postfix):
+        if postfix:
+            self.setWindowTitle('ZENO Qt Editor - {}'.format(postfix))
+        else:
+            self.setWindowTitle('ZENO Qt Editor')
+
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
             self.close()
@@ -63,7 +73,8 @@ class MainWindow(QWidget):
         super().keyPressEvent(event)
 
     def on_update(self):
-        self.viewport.on_update()
+        if hasattr(self, 'viewport'):
+            self.viewport.on_update()
         self.timeline.on_update()
 
     def closeEvent(self, event):

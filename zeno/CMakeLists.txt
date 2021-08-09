@@ -1,5 +1,6 @@
 file(GLOB ZENO_SOURCE core/*.cpp utils/*.cpp extra/*.cpp include/*/*.h include/*/*/*.h)
 file(GLOB ZENO_NODES_SOURCE nodes/*.cpp nodes/*/*.cpp)
+
 add_library(zeno SHARED ${ZENO_SOURCE} ${ZENO_NODES_SOURCE})
 
 if (ZENO_ENABLE_OPENMP)
@@ -19,32 +20,21 @@ if (ZENO_GLOBALSTATE)
 endif()
 if (ZENO_VISUALIZATION)
     target_compile_definitions(zeno PUBLIC -DZENO_VISUALIZATION)
-	if (UNIX)
-		target_link_libraries(zeno PRIVATE stdc++fs)  # for Ubuntu 18.04 <experimental/filesystem>
+    if (UNIX OR APPLE)
+		target_link_libraries(zeno PRIVATE stdc++fs)  # for <experimental/filesystem>
 	endif()
+endif()
+if (ZENO_BENCHMARK)
+    target_compile_definitions(zeno PUBLIC -DZENO_BENCHMARK)
 endif()
 
 target_compile_definitions(zeno PRIVATE -DDLL_ZENO)
 target_include_directories(zeno PUBLIC include)
-
-if (ZENO_ENABLE_PYTHON)
-	set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/zenqt/lib)
-	set_target_properties(zeno PROPERTIES
-		LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-		RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-		ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-		LIBRARY_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-		RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-		ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-		LIBRARY_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-		RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-		ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-		)
-	add_subdirectory(python)
-endif()
 
 if (ZLOG_USE_ANDROID)
     target_compile_definitions(zeno PUBLIC -DZLOG_USE_ANDROID)
     find_library(log-lib log)
     target_link_libraries(zeno PUBLIC ${log-lib})
 endif()
+
+add_zeno_autoload(zeno)

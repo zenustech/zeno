@@ -10,6 +10,9 @@
 #include <zeno/extra/GlobalState.h>
 #endif
 #include <zeno/utils/safe_at.h>
+#ifdef ZENO_BENCHMARK
+#include <zeno/utils/Timer.h>
+#endif
 
 namespace zeno {
 
@@ -76,6 +79,9 @@ ZENO_API void INode::requireInput(std::string const &ds) {
 
 ZENO_API void INode::coreApply() {
     if (checkApplyCondition()) {
+#ifdef ZENO_BENCHMARK
+        Timer _(myname);
+#endif
         apply();
     }
 
@@ -102,15 +108,11 @@ ZENO_API bool INode::has_option(std::string const &id) const {
 }
 
 ZENO_API bool INode::has_input2(std::string const &id) const {
-    return inputBounds.find(id) != inputBounds.end();
+    return inputs.find(id) != inputs.end();
 }
 
 ZENO_API struct any INode::get_input2(std::string const &id) const {
     return safe_at(inputs, id, "input", myname);
-}
-
-ZENO_API IValue INode::get_param(std::string const &id) const {
-    return safe_at(params, id, "param", myname);
 }
 
 ZENO_API void INode::set_output2(std::string const &id, any &&obj) {

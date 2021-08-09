@@ -1,10 +1,11 @@
-import ctypes, os, sys, traceback
+import ctypes, os, sys
 
-from .utils import rel2abs, os_name
+'''
+from .utils import os_name
+from ..utils import relative_path
 
-lib_dir = rel2abs(__file__, '..', 'lib')
+lib_dir = relative_path('lib')
 
-#'''
 if os_name == 'win32':
     os.environ['PATH'] += os.pathsep + lib_dir
     if sys.version_info >= (3, 8):
@@ -16,10 +17,20 @@ elif os_name == 'darwin':
     ctypes.cdll.LoadLibrary(os.path.join(lib_dir, 'libzeno.dylib'))
 else:
     ctypes.cdll.LoadLibrary(os.path.join(lib_dir, 'libzeno.so'))
-#'''
+'''
+
+from .utils import os_name
+from ..utils import relative_path
+
+if os_name == 'win32':  # windows doesn't support rpath, let's mock it only
+    lib_dir = relative_path('lib')
+    os.environ['PATH'] += os.pathsep + lib_dir
+    if sys.version_info >= (3, 8):
+        os.add_dll_directory(lib_dir)
 
 from .. import zeno_pybind11_module as core
 
+#'''
 def loadAutoloads():
     print('loading addons from', lib_dir)
     if not os.path.isdir(lib_dir):
@@ -31,13 +42,13 @@ def loadAutoloads():
         if os.path.islink(path):
             continue
         if os_name == 'win32':
-            if name.endswith('.dll'):
+            if name.startswith('zeno_') and name.endswith('.dll'):
                 paths.append(name)
         elif os_name == 'darwin':
-            if name.endswith('.dylib'):
+            if 'zeno_' in name and name.endswith('.dylib'):
                 paths.append(name)
         else:
-            if 'so' in name.split(os.extsep):
+            if 'zeno_' in name and 'so' in name.split(os.extsep):
                 paths.append(path)
 
     retries = {}
@@ -45,7 +56,7 @@ def loadAutoloads():
     while paths:
         for path in list(paths):
             try:
-                #print('[      ] [{}]'.format(path))
+                print('[      ] [{}]'.format(path))
                 ctypes.cdll.LoadLibrary(path)
                 paths.remove(path)
             except OSError:
@@ -59,7 +70,8 @@ def loadAutoloads():
             else:
                 print('[  OK  ] [{}]'.format(path))
 
-if not os.environ.get('ZEN_NOAUTOLOAD'):
+if os_name == 'win32' and not os.environ.get('ZEN_NOAUTOLOAD'):
     loadAutoloads()
+#'''
 
 __all__ = ['core']

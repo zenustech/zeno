@@ -1,7 +1,6 @@
-
 cmake_minimum_required(VERSION 3.19)
 set(CMAKE_CXX_STANDARD 17)
-project(ZenEulerLib)
+project(zeno_Euler)
 add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)  
 
 # add cmake file
@@ -11,42 +10,30 @@ find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
 find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenVDB REQUIRED)
-add_library(ZenEulerLib nodesys.cpp)
+add_library(zeno_Euler SHARED dummy.cpp nodesys.cpp)
 
 #simd compiler flags
 if (WIN32)
 else()
-target_compile_options(ZenEulerLib PRIVATE "-march=native")
+target_compile_options(zeno_Euler PRIVATE "-march=native")
 endif()
 
 
-target_include_directories(ZenEulerLib PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_directories(ZenEulerLib PUBLIC /usr/lib/x86_64-linux-gnu:/usr/local/lib)
+target_include_directories(zeno_Euler PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_directories(zeno_Euler PUBLIC /usr/lib/x86_64-linux-gnu:/usr/local/lib)
 
-target_link_libraries(ZenEulerLib PRIVATE TBB::tbb TBB::tbbmalloc)
-# target_link_libraries(ZenEulerLib PRIVATE bow)
+target_link_libraries(zeno_Euler PRIVATE TBB::tbb TBB::tbbmalloc)
+# target_link_libraries(zeno_Euler PRIVATE bow)
 
 #disable default malloc options
 if (WIN32)
-  target_compile_options(ZenEulerLib PRIVATE -DNOMINMAX)
+  target_compile_options(zeno_Euler PRIVATE -DNOMINMAX)
 endif()
 
-target_link_libraries(ZenEulerLib PRIVATE OpenVDB::openvdb )
-target_link_libraries(ZenEulerLib PRIVATE Eigen3::Eigen)
+target_link_libraries(zeno_Euler PRIVATE OpenVDB::openvdb )
+target_link_libraries(zeno_Euler PRIVATE Eigen3::Eigen)
 
-target_link_libraries(ZenEulerLib PRIVATE zeno)
-get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
-set_target_properties(ZenEulerLib PROPERTIES
-	LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-	RUNTIME_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-	LIBRARY_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-	RUNTIME_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-	LIBRARY_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-	)
-target_include_directories(ZenEulerLib PRIVATE ../oldzenbase/include)
-target_include_directories(ZenEulerLib PRIVATE ../zenvdb/include)
+target_link_libraries(zeno_Euler PUBLIC zeno)
+target_include_directories(zeno_Euler PRIVATE ../oldzenbase/include)
+target_include_directories(zeno_Euler PRIVATE ../zenvdb/include)
 

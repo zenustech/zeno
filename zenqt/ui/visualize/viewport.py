@@ -101,7 +101,7 @@ class ViewportWidget(QGLWidget):
         else:
             nsamples = int(nsamples)
         fmt.setSamples(nsamples)
-        fmt.setVersion(3, 0)
+        fmt.setVersion(3, 2)
         fmt.setProfile(QGLFormat.CoreProfile)
         super().__init__(fmt, parent)
 
