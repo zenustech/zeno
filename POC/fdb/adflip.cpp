@@ -1,4 +1,5 @@
 #include <functional>
+#include <cstring>
 #include <cstdio>
 #include "vec.h"
 
@@ -132,12 +133,13 @@ void jacobiSmooth
     ) {
     foreachLeaf(dRoot, [&] (auto* dLeaf, auto dLeafCoor) {
         float buffer[16 * 16 * 16];
-        float divBuffer[16 * 16 * 16];
+        std::memset(buffer, 0, sizeof(buffer));
         for (int z = 0; z < 2; z++) {
             for (int y = 0; y < 2; y++) {
                 for (int x = 0; x < 2; x++) {
-                    auto sLeaf = leafAt(sRoot,
-                            dLeafCoor + fdb::vec3i(dx, dy, dz) - stagger);
+                    auto sLeaf = getLeaf(sRoot,
+                            dLeafCoor + fdb::vec3i(x, y, z) - stagger);
+                    if (!sLeaf) continue;
                     foreachElement(sLeaf, [&] (float& sValue, auto sElmCoor) {
                         int k = dot(sElmCoor, fdb::vec3i(0, 16, 16 * 16));
                         buffer[k] = sValue;
@@ -145,13 +147,14 @@ void jacobiSmooth
                 }
             }
         }
+#if 0
         for (int t = 1; t <= 4; t++) {
             for (int z = t; z < 16 - t; z++) {
                 for (int y = t; y < 16 - t; y++) {
                     for (int x = t; x < 16 - t; x++) {
                         if ((x + y + z) % 2 != 0) continue;
                         int k = x + y * 16 + z * 16 * 16;
-                        float value = 0.0f; // -divBuffer[k];
+                        float value = 0.0f;
                         value += buffer[k + 1];
                         value += buffer[k - 1];
                         value += buffer[k + 16];
@@ -163,7 +166,8 @@ void jacobiSmooth
                 }
             }
         }
-        foreachElement(dLeaf, [&] (float& dValue, auto dVlmCoor) {
+#endif
+        foreachElement(dLeaf, [&] (float& dValue, auto dElmCoor) {
             int k = dot(dElmCoor + 4, fdb::vec3i(0, 16, 16 * 16));
             dValue = buffer[k];
         });
@@ -180,15 +184,20 @@ void jacobiSmooth
 
 int main() {
     auto* root = new RootNode;
-    auto* tran = new Transform;
+    auto* tmpRoot = new RootNode;
+    auto* trans = new Transform;
     addLeaf(root, {8, 9, 10});
+
     foreachLeaf(root, [&] (auto* leaf, auto leafCoor) {
         foreachElement(leaf, [&] (float& value, auto elmCoor) {
-            auto pos = tran->to_world(leafCoor, elmCoor);
+            auto pos = trans->to_world(leafCoor, elmCoor);
             value = pos[0];
         });
     });
-    foreachLeaf(root, [&] (auto* leaf, auto) {
+
+    jacobiSmooth(root, tmpRoot);
+
+    foreachLeaf(tmpRoot, [&] (auto* leaf, auto) {
         foreachElement(leaf, [&] (float& value, auto) {
             printf("%f\n", value);
         });
