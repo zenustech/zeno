@@ -123,7 +123,7 @@ struct SprayParticles : zeno::INode {
     result->pos.resize(data.size());
     result->vel.resize(data.size());
 #pragma omp parallel for
-    for (size_t index = 0; index < data.size(); index++) {
+    for (int index = 0; index < data.size(); index++) {
       result->pos[index] = zeno::vec_to_other<glm::vec3>(std::get<0>(data[index]));
       result->vel[index] = zeno::vec_to_other<glm::vec3>(std::get<1>(data[index]));
     }
