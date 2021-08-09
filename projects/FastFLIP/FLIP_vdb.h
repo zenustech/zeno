@@ -24,7 +24,7 @@ static inline void initRandomTable() {
     std::mt19937 generator(/*seed=*/device());
     std::uniform_real_distribution<> distribution(-0.5, 0.5);
 #pragma omp parallel for
-    for (size_t i = 0; i < 21474836; i++) {
+    for (int64_t i = 0; i < 21474836; i++) {
         randomTable[i] = frand(i)-0.5f;
     }
 }
