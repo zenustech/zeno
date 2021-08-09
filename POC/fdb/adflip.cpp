@@ -1,4 +1,5 @@
 #include <functional>
+#include <cstdio>
 #include "vec.h"
 
 struct LeafNode {
@@ -115,11 +116,28 @@ void foreachElement
     }
 }
 
+struct Transform {
+    fdb::vec3f bmin{-2048.f}, bmax{2048.f};
+
+    fdb::vec3f to_world(fdb::vec3i leafCoor, fdb::vec3i elmCoor) {
+        auto coor = leafCoor * 8 + elmCoor;
+        return bmin + (bmax - bmin) / 4096.f * coor;
+    }
+};
+
 int main() {
     auto* root = new RootNode;
+    auto* tran = new Transform;
+    addLeaf(root, {8, 9, 10});
+    foreachLeaf(root, [&] (auto* leaf, auto leafCoor) {
+        foreachElement(leaf, [&] (float& value, auto elmCoor) {
+            auto pos = tran->to_world(leafCoor, elmCoor);
+            value = pos[0];
+        });
+    });
     foreachLeaf(root, [&] (auto* leaf, auto) {
         foreachElement(leaf, [&] (float& value, auto) {
-            value *= 2.0f;
+            printf("%f\n", value);
         });
     });
 }
