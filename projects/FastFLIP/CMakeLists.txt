@@ -36,7 +36,9 @@ endif()
 target_include_directories(zeno_FastFLIP PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_link_libraries(zeno_FastFLIP PRIVATE TBB::tbb TBB::tbbmalloc)
-target_link_libraries(zeno_FastFLIP PRIVATE pthread)
+if (GNU)
+    target_link_libraries(zeno_FastFLIP PRIVATE pthread)
+endif()
 
 #disable default malloc options
 if (WIN32)
