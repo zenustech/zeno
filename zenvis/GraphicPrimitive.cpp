@@ -184,7 +184,7 @@ struct GraphicPrimitive : IGraphic {
 
     if (vert.size() == 0) {
       vert = R"(
-#version 120
+#version 300 core
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -217,7 +217,7 @@ void main()
     }
     if (frag.size() == 0) {
       frag = R"(
-#version 120
+#version 300 core
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -262,7 +262,7 @@ void main()
 
     if (vert.size() == 0) {
       vert = R"(
-#version 120
+#version 300 core
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -288,7 +288,7 @@ void main()
     }
     if (frag.size() == 0) {
       frag = R"(
-#version 120
+#version 300 core
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -316,7 +316,7 @@ void main()
 
     if (vert.size() == 0) {
       vert = R"(
-#version 120
+#version 300 core
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;
@@ -345,7 +345,7 @@ void main()
     }
     if (frag.size() == 0) {
       frag = R"(
-#version 120
+#version 300 core
 
 uniform mat4 mVP;
 uniform mat4 mInvVP;

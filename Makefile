@@ -1,5 +1,5 @@
-O=graphs/Xuben_ZFX_IISPH.zsg
-#O=arts/prim.zsg
+#O=graphs/Xuben_ZFX_IISPH.zsg
+O=arts/prim.zsg
 #O=arts/ZFXv2.zsg
 #O=arts/lowResMPM.zsg
 #O=arts/literialconst.zsg
