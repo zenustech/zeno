@@ -1,13 +1,16 @@
 import taichi as ti
 
 N = 512
-xi = ti.field(float, (N, N))
-cu = ti.field(float, (N//2, N//2))
+L = 3
+
+mg = []
+for l in range(L + 1):
+    mg.append(ti.field(float, (N // 2**l, N // 2**l)))
 
 @ti.kernel
 def init():
-    for i, j in xi:
-        xi[i, j] = ((i + j) % 32) / 32
+    for i, j in mg[0]:
+        mg[0][i, j] = ((i + j) % 32) / 32
 
 
 @ti.kernel
@@ -28,25 +31,26 @@ def prolongate(cu: ti.template(), xi: ti.template()):
         xi[i, j] = cu[i//2, j//2]
 
 init()
-ti.imshow(xi)
+ti.imshow(mg[0])
 
-rbgs(xi, 0)
-rbgs(xi, 1)
-rbgs(xi, 0)
-rbgs(xi, 1)
+for l in range(0, L, 1):
+    rbgs(mg[l], 0)
+    rbgs(mg[l], 1)
+    rbgs(mg[l], 0)
+    rbgs(mg[l], 1)
+    restrict(mg[l], mg[l+1])
 
-restrict(xi, cu)
+rbgs(mg[L], 0)
+rbgs(mg[L], 1)
+rbgs(mg[L], 0)
+rbgs(mg[L], 1)
 
-rbgs(cu, 0)
-rbgs(cu, 1)
-rbgs(cu, 0)
-rbgs(cu, 1)
+for l in range(L, 0, -1):
+    prolongate(mg[l], mg[l-1])
 
-prolongate(cu, xi)
+    rbgs(mg[l-1], 0)
+    rbgs(mg[l-1], 1)
+    rbgs(mg[l-1], 0)
+    rbgs(mg[l-1], 1)
 
-rbgs(xi, 0)
-rbgs(xi, 1)
-rbgs(xi, 0)
-rbgs(xi, 1)
-
-ti.imshow(xi)
+ti.imshow(mg[0])
