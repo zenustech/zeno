@@ -187,6 +187,7 @@ int main() {
     auto* tmpRoot = new RootNode;
     auto* trans = new Transform;
     addLeaf(root, {8, 9, 10});
+    addLeaf(tmpRoot, {8, 9, 10});
 
     foreachLeaf(root, [&] (auto* leaf, auto leafCoor) {
         foreachElement(leaf, [&] (float& value, auto elmCoor) {

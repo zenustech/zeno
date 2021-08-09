@@ -1,1 +1,1 @@
-add_executable(adflip adflip.cpp)
+add_executable(adflip adgrid.cpp)
