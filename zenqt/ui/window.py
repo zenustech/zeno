@@ -11,9 +11,9 @@ from .editor import NodeEditor
 from .utils import asset_path
 
 class EditorTimeline(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent):
         super().__init__(parent)
-        self.editor = NodeEditor()
+        self.editor = NodeEditor(self, parent)
         self.timeline = TimelineWidget()
 
         self.layout = QVBoxLayout()
@@ -36,7 +36,7 @@ class MainWindow(QWidget):
                 #(scrn_size.width() - self_size.width()) // 2,
                 #(scrn_size.height() - self_size.height()) // 2)
 
-        self.editorTimeline = EditorTimeline()
+        self.editorTimeline = EditorTimeline(self)
         if not os.environ.get('ZEN_NOVIEW'):
             self.viewport = DisplayWidget()
 
@@ -59,6 +59,9 @@ class MainWindow(QWidget):
         self.timer = QTimer(self)
         self.timer.start(1000 // 60)
         self.timer.timeout.connect(self.on_update)
+
+    def setWindowTitleWithPostfix(self, postfix):
+        self.setWindowTitle('ZENO Qt Editor - {}'.format(postfix))
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:

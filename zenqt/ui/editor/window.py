@@ -49,13 +49,13 @@ class QDMEditMenu(QMenu):
 
 
 class NodeEditor(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent, window):
         super().__init__(parent)
+
+        self.window = window
 
         self.current_path = None
         self.clipboard = None
-
-        self.setWindowTitle('Node Editor')
 
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -86,6 +86,15 @@ class NodeEditor(QWidget):
         self.newProgram()
 
         self.startTimer(1000 * 10)
+
+    @property
+    def current_path(self):
+        return self._current_path
+
+    @current_path.setter
+    def current_path(self, value):
+        self._current_path = value
+        self.window.setWindowTitleWithPostfix(value)
 
     def timerEvent(self, event):
         self.auto_save()
