@@ -42,13 +42,13 @@ def loadAutoloads():
         if os.path.islink(path):
             continue
         if os_name == 'win32':
-            if name.endswith('.dll'):
+            if name.startswith('zeno_') and name.endswith('.dll'):
                 paths.append(name)
         elif os_name == 'darwin':
-            if name.endswith('.dylib'):
+            if 'zeno_' in name and name.endswith('.dylib'):
                 paths.append(name)
         else:
-            if 'so' in name.split(os.extsep):
+            if 'zeno_' in name and 'so' in name.split(os.extsep):
                 paths.append(path)
 
     retries = {}
@@ -56,7 +56,7 @@ def loadAutoloads():
     while paths:
         for path in list(paths):
             try:
-                #print('[      ] [{}]'.format(path))
+                print('[      ] [{}]'.format(path))
                 ctypes.cdll.LoadLibrary(path)
                 paths.remove(path)
             except OSError:

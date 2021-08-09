@@ -9,7 +9,6 @@
 #include <openvdb/tools/Morphology.h>
 #include <openvdb/tools/MeshToVolume.h>
 #include <openvdb/openvdb.h>
-#include <openvdb/points/PointCount.h>
 #include <string.h>
 namespace zeno {
 

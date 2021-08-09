@@ -19,14 +19,25 @@ inline float frand(unsigned int i)
 }
 static inline void initRandomTable() {
     if (randomTable) return;
-    randomTable = new float[21474836];
-    std::random_device device;
-    std::mt19937 generator(/*seed=*/device());
-    std::uniform_real_distribution<> distribution(-0.5, 0.5);
-#pragma omp parallel for
-    for (size_t i = 0; i < 21474836; i++) {
+#ifdef _WIN32
+    const int randTabSize = 21474836/2;
+#else
+    const int randTabSize = 21474836;
+#endif
+    randomTable = new float[randTabSize];
+    /*std::random_device device;
+    std::mt19937 generator(device());
+    std::uniform_real_distribution<> distribution(-0.5, 0.5);*/
+#ifdef _WIN32
+    for (int64_t i = 0; i < randTabSize; i++) {
         randomTable[i] = frand(i)-0.5f;
     }
+#else
+#pragma omp parallel for
+    for (int64_t i = 0; i < randTabSize; i++) {
+        randomTable[i] = frand(i)-0.5f;
+    }
+#endif
 }
 struct OpenvdbInitializer {
   OpenvdbInitializer() { openvdb::initialize(); initRandomTable(); }
