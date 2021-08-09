@@ -59,17 +59,46 @@ void foreachLeaf
         int ix = i % 32 * 16, iy = i / 32 % 32 * 16, iz = i / 32 / 32 * 16;
         auto* intern = root->m[i];
         if (!intern) continue;
-        for (int z = iz; z < 16; z++) {
-            for (int y = iy; y < 16; y++) {
-                for (int x = ix; x < 16; x++) {
+        for (int z = 0; z < 16; z++) {
+            for (int y = 0; y < 16; y++) {
+                for (int x = 0; x < 16; x++) {
                     auto j = x + y * 16 + z * 16 * 16;
                     auto* leaf = intern->m[j];
                     if (!leaf) continue;
-                    cb(leaf, fdb::vec3i(x, y, z));
+                    cb(leaf, fdb::vec3i(ix + x, iy + y, iz + z));
                 }
             }
         }
     }
+}
+
+LeafNode* getLeaf
+    ( RootNode* root
+    , fdb::vec3i coor
+    ) {
+    int x = coor[0] / 16, y = coor[1] / 16, z = coor[2] / 16;
+    int i = x + y * 16 + z * 16 * 16;
+    auto* intern = root->m[i];
+    if (!intern) return nullptr;
+    x = coor[0] % 16, y = coor[1] % 16, z = coor[2] % 16;
+    int j = x + y * 16 + z * 16 * 16;
+    auto* leaf = intern->m[j];
+    return leaf;
+}
+
+LeafNode* addLeaf
+    ( RootNode* root
+    , fdb::vec3i coor
+    ) {
+    int x = coor[0] / 16, y = coor[1] / 16, z = coor[2] / 16;
+    int i = x + y * 16 + z * 16 * 16;
+    auto*& intern = root->m[i];
+    if (!intern) intern = new InternalNode;
+    x = coor[0] % 16, y = coor[1] % 16, z = coor[2] % 16;
+    int j = x + y * 16 + z * 16 * 16;
+    auto*& leaf = intern->m[j];
+    if (!leaf) leaf = new LeafNode;
+    return leaf;
 }
 
 void foreachElement
