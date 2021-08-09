@@ -11,8 +11,8 @@ struct NDGrid {
     uint8_t *m_mask = new uint8_t[N * N * N / 8];
 
     NDGrid() {
-        std::memset(m_data, N * N * N * sizeof(float));
-        std::memset(m_mask, N * N * N / 8 * sizeof(uint8_t));
+        std::memset(m_data, 0, N * N * N * sizeof(float));
+        std::memset(m_mask, 0, N * N * N / 8 * sizeof(uint8_t));
     }
 
     ~NDGrid() {
@@ -23,7 +23,7 @@ struct NDGrid {
     NDGrid(NDGrid const &) = delete;
     NDGrid &operator=(NDGrid const &) = delete;
 
-    uintptr_t linearize(vec3L coor) {
+    static uintptr_t linearize(vec3L coor) {
         return dot(coor, vec3L(1, N, N * N));
     }
 
@@ -32,12 +32,12 @@ struct NDGrid {
         return m_mask[i >> 3] & (1 << (i & 7));
     }
 
-    bool activate(vec3L coor) {
+    void activate(vec3L coor) {
         uintptr_t i = linearize(coor);
         m_mask[i >> 3] |= 1 << (i & 7);
     }
 
-    bool deactivate(vec3L coor) {
+    void deactivate(vec3L coor) {
         uintptr_t i = linearize(coor);
         m_mask[i >> 3] &= ~(1 << (i & 7));
     }
@@ -61,5 +61,5 @@ struct NDGrid {
 
 
 int main() {
-    NDGrid ng;
+    NDGrid<32> ng;
 }
