@@ -125,6 +125,59 @@ struct Transform {
     }
 };
 
+void jacobiSmooth
+    ( RootNode *dRoot
+    , RootNode *sRoot
+    , int stagger
+    ) {
+    foreachLeaf(dRoot, [&] (auto* dLeaf, auto dLeafCoor) {
+        float buffer[16 * 16 * 16];
+        float divBuffer[16 * 16 * 16];
+        for (int z = 0; z < 2; z++) {
+            for (int y = 0; y < 2; y++) {
+                for (int x = 0; x < 2; x++) {
+                    auto sLeaf = leafAt(sRoot,
+                            dLeafCoor + fdb::vec3i(dx, dy, dz) - stagger);
+                    foreachElement(sLeaf, [&] (float& sValue, auto sElmCoor) {
+                        int k = dot(sElmCoor, fdb::vec3i(0, 16, 16 * 16));
+                        buffer[k] = sValue;
+                    });
+                }
+            }
+        }
+        for (int t = 1; t <= 4; t++) {
+            for (int z = t; z < 16 - t; z++) {
+                for (int y = t; y < 16 - t; y++) {
+                    for (int x = t; x < 16 - t; x++) {
+                        if ((x + y + z) % 2 != 0) continue;
+                        int k = x + y * 16 + z * 16 * 16;
+                        float value = 0.0f; // -divBuffer[k];
+                        value += buffer[k + 1];
+                        value += buffer[k - 1];
+                        value += buffer[k + 16];
+                        value += buffer[k - 16];
+                        value += buffer[k + 16 * 16];
+                        value += buffer[k - 16 * 16];
+                        buffer[k] = value;
+                    }
+                }
+            }
+        }
+        foreachElement(dLeaf, [&] (float& dValue, auto dVlmCoor) {
+            int k = dot(dElmCoor + 4, fdb::vec3i(0, 16, 16 * 16));
+            dValue = buffer[k];
+        });
+    });
+}
+
+void jacobiSmooth
+    ( RootNode *dRoot
+    , RootNode *tmpRoot
+    ) {
+    jacobiSmooth(tmpRoot, dRoot, 0);
+    jacobiSmooth(dRoot, tmpRoot, 1);
+}
+
 int main() {
     auto* root = new RootNode;
     auto* tran = new Transform;
