@@ -126,7 +126,7 @@ for more information.
 ## Get binary release
 
 Go to the [release page](https://github.com/zenustech/zeno/releases/), and click Assets -> download `zeno-linux-20xx.x.x.tar.gz`.
-Then, extract this archive, and simply run `./start.sh` (`start.bat` for Windows), then the node editor window will shows up if everything is working well.
+Then, extract this archive, and simply run `./launcher` (`launcher.exe` for Windows), then the node editor window will shows up if everything is working well.
 
 ## How to play
 

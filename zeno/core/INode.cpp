@@ -10,6 +10,9 @@
 #include <zeno/extra/GlobalState.h>
 #endif
 #include <zeno/utils/safe_at.h>
+#ifdef ZENO_BENCHMARK
+#include <zeno/utils/Timer.h>
+#endif
 
 namespace zeno {
 
@@ -76,6 +79,9 @@ ZENO_API void INode::requireInput(std::string const &ds) {
 
 ZENO_API void INode::coreApply() {
     if (checkApplyCondition()) {
+#ifdef ZENO_BENCHMARK
+        Timer _(myname);
+#endif
         apply();
     }
 
