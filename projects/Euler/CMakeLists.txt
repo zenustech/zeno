@@ -21,7 +21,7 @@ endif()
 
 
 target_include_directories(zeno_Euler PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-if (GNU)
+if (UNIX)
     target_link_directories(zeno_Euler PUBLIC /usr/lib/x86_64-linux-gnu:/usr/local/lib)
 endif()
 

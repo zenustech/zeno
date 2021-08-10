@@ -211,42 +211,76 @@ void advect(Grid<T, N> &dst, Grid<T, N> const &src, Grid<vec3f, N> const &vel) {
     }
 }
 
-int main() {
-    constexpr size_t N = 64;
+struct Domain {
+    inline static constexpr size_t N = 64;
 
     Grid<float, N> pressure;
     Grid<float, N> neg_vel_div;
     Grid<vec3f, N> velocity;
     Grid<vec3f, N> new_velocity;
+    Grid<float, N> color;
+    Grid<float, N> new_color;
 
-    zeroinit(pressure);
-    zeroinit(velocity);
+    Domain() {
+        zeroinit(pressure);
+        zeroinit(velocity);
+    }
 
+    void calc_neg_vel_div() {
+        ZINC_PRETTY_TIMER;
 #pragma omp parallel for
-    for range(z, 0, N) {
-        for range(y, 0, N) {
-            for range(x, 0, N) {
-                neg_vel_div(x, y, z) =
-                      velocity(x-1, y, z)[0] - velocity(x+1, y, z)[0]
-                    + velocity(x, y-1, z)[1] - velocity(x, y+1, z)[1]
-                    + velocity(x, y, z-1)[2] - velocity(x, y, z+1)[2]
-                    ;
-            }
-        }
-    }
-    vcycle<16>(pressure, neg_vel_div);
-    printf("loss: %f\n", loss(pressure, neg_vel_div));
-
-    for range(z, 0, N) {
-        for range(y, 0, N) {
-            for range(x, 0, N) {
-                velocity(x, y, z)[0] += pressure(x+1, y, z)[0] - pressure(x-1, y, z)[0];
-                velocity(x, y, z)[1] += pressure(x, y+1, z)[1] - pressure(x, y-1, z)[1];
-                velocity(x, y, z)[2] += pressure(x, y, z+1)[2] - pressure(x, y, z-1)[2];
+        for range(z, 0, N) {
+            for range(y, 0, N) {
+                for range(x, 0, N) {
+                    neg_vel_div(x, y, z) =
+                          velocity(x-1, y, z)[0] - velocity(x+1, y, z)[0]
+                        + velocity(x, y-1, z)[1] - velocity(x, y+1, z)[1]
+                        + velocity(x, y, z-1)[2] - velocity(x, y, z+1)[2]
+                        ;
+                }
             }
         }
     }
 
-    advect(new_velocity, velocity, velocity);
+    void solve_possion_eqn() {
+        ZINC_PRETTY_TIMER;
+        vcycle<16>(pressure, neg_vel_div);
+        printf("loss: %f\n", loss(pressure, neg_vel_div));
+    }
 
+    void subtract_gradient() {
+        ZINC_PRETTY_TIMER;
+#pragma omp parallel for
+        for range(z, 0, N) {
+            for range(y, 0, N) {
+                for range(x, 0, N) {
+                    velocity(x, y, z)[0] += pressure(x+1, y, z) - pressure(x-1, y, z);
+                    velocity(x, y, z)[1] += pressure(x, y+1, z) - pressure(x, y-1, z);
+                    velocity(x, y, z)[2] += pressure(x, y, z+1) - pressure(x, y, z-1);
+                }
+            }
+        }
+    }
+
+    void advect_quantities() {
+        advect(new_velocity, velocity, velocity);
+        advect(new_color, color, velocity);
+    }
+
+    void substep() {
+        calc_neg_vel_div();
+        solve_possion_eqn();
+        subtract_gradient();
+        advect_quantities();
+    }
+};
+
+int main() {
+    Domain dom;
+
+    for (int i = 0; i < 100; i++) {
+        dom.substep();
+    }
+
+    return 0;
 }
