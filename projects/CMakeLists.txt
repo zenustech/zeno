@@ -14,9 +14,6 @@ foreach (name IN ITEMS ${EXTENSIONS_LIST})
     option(EXTENSION_${name} "Build ZENO with extension: ${name}" ${val})
 endforeach()
 
-# TODO: deprecated target:
-add_library(zeno_projects INTERFACE)
-
 foreach (name IN ITEMS ${EXTENSIONS_LIST})
     if (${EXTENSION_${name}})
         message("*** Building ZENO with extension: ${name}")
