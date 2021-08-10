@@ -14,18 +14,26 @@ foreach (name IN ITEMS ${EXTENSIONS_LIST})
     option(EXTENSION_${name} "Build ZENO with extension: ${name}" ${val})
 endforeach()
 
-# todo: to be deprecated:
+# TODO: deprecated target:
 add_library(zeno_projects INTERFACE)
-if (NOT MSVC)
-    target_link_options(zeno_projects INTERFACE LINKER:--no-as-needed)
-endif()
 
 foreach (name IN ITEMS ${EXTENSIONS_LIST})
     if (${EXTENSION_${name}})
         message("*** Building ZENO with extension: ${name}")
         add_subdirectory(${name})
-        add_zeno_autoload(zeno_${name})
-        # todo: to be deprecated:
-        target_link_libraries(zeno_projects INTERFACE zeno_${name})
+
+        get_property(OUTPUT_DIR TARGET zeno
+            PROPERTY LIBRARY_OUTPUT_DIRECTORY)
+        set_target_properties(zeno_${name} PROPERTIES
+            LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
+            RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
+            ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR}
+            LIBRARY_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
+            RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
+            ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
+            LIBRARY_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
+            RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
+            ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
+            )
     endif()
 endforeach()
