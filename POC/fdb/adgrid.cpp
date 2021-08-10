@@ -106,21 +106,23 @@ struct NDGrid {
 #define range(x, x0, x1) (uint32_t x = x0; x < x1; x++)
 
 template <size_t N>
-void smooth(NDGrid<N> &v, NDGrid<N> const &f, int phase) {
-    for range(z, 1, N-1) {
-        for range(y, 1, N-1) {
-            for range(x, 1, N-1) {
-                if ((x + y + z) % 2 != phase)
-                    continue;
-                v(x, y, z) = 0.5f * (
-                      f(x, y, z)
-                    + v(x+1, y, z)
-                    + v(x, y+1, z)
-                    + v(x, y, z+1)
-                    + v(x-1, y, z)
-                    + v(x, y-1, z)
-                    + v(x, y, z-1)
-                    );
+void smooth(NDGrid<N> &v, NDGrid<N> const &f, int times = 4) {
+    for range(phase, 0, times) {
+        for range(z, 1, N-1) {
+            for range(y, 1, N-1) {
+                for range(x, 1, N-1) {
+                    if ((x + y + z) % 2 != phase % 2)
+                        continue;
+                    v(x, y, z) = (
+                          f(x, y, z)
+                        + v(x+1, y, z)
+                        + v(x, y+1, z)
+                        + v(x, y, z+1)
+                        + v(x-1, y, z)
+                        + v(x, y-1, z)
+                        + v(x, y, z-1)
+                        ) / 6;
+                }
             }
         }
     }
@@ -147,20 +149,41 @@ void residual(NDGrid<N> &r, NDGrid<N> const &v, NDGrid<N> const &f) {
 }
 
 template <size_t N>
-void restrict(NDGrid<N/2> &w, NDGrid<N> const &v) {
+[[nodiscard]] float residual(NDGrid<N> const &v, NDGrid<N> const &f) {
+    float res = 0.0f;
+    for range(z, 1, N-1) {
+        for range(y, 1, N-1) {
+            for range(x, 1, N-1) {
+                float val = f(x, y, z)
+                    + v(x+1, y, z)
+                    + v(x, y+1, z)
+                    + v(x, y, z+1)
+                    + v(x-1, y, z)
+                    + v(x, y-1, z)
+                    + v(x, y, z-1)
+                    - v(x, y, z) * 6;
+                res += val * val;
+            }
+        }
+    }
+    return res * 0.25f;
+}
+
+template <size_t N>
+void restrict(NDGrid<N/2> &u, NDGrid<N/2> &w, NDGrid<N> const &v) {
     for range(z, 0, N/2) {
         for range(y, 0, N/2) {
             for range(x, 0, N/2) {
-                w(x, y, z) = 0.125f * (
-                      v(x, y, z)
-                    + v(x+1, y, z)
-                    + v(x, y+1, z)
-                    + v(x+1, y+1, z)
-                    + v(x, y, z+1)
-                    + v(x+1, y, z+1)
-                    + v(x, y+1, z+1)
-                    + v(x+1, y+1, z+1)
-                    );
+                u(x, y, z) = w(x, y, z) = (
+                      v(x*2, y*2, z*2)
+                    + v(x*2+1, y*2, z*2)
+                    + v(x*2, y*2+1, z*2)
+                    + v(x*2+1, y*2+1, z*2)
+                    + v(x*2, y*2, z*2+1)
+                    + v(x*2+1, y*2, z*2+1)
+                    + v(x*2, y*2+1, z*2+1)
+                    + v(x*2+1, y*2+1, z*2+1)
+                    ) / 8;
             }
         }
     }
@@ -171,19 +194,52 @@ void prolongate(NDGrid<N*2> &w, NDGrid<N> const &v) {
     for range(z, 0, N*2) {
         for range(y, 0, N*2) {
             for range(x, 0, N*2) {
-                w(x, y, z) = v(x/2, y/2, z/2);
+                w(x, y, z) += v(x/2, y/2, z/2);
             }
         }
     }
 }
 
+template <size_t N>
+void vcycle(NDGrid<N> &v, NDGrid<N> const &f) {
+    if constexpr (N <= 8) {
+        smooth(v, f);
+
+    } else {
+        smooth(v, f);
+
+        NDGrid<N> r;
+        residual(r, v, f);
+
+        NDGrid<N/2> r2;
+        NDGrid<N/2> e2;
+        restrict(e2, r2, r);
+
+        vcycle(e2, r2);
+
+        prolongate(v, e2);
+        smooth(v, f);
+    }
+}
+
 int main() {
-    NDGrid<16> v;
-    for range(z, 0, 16) {
-        for range(y, 0, 16) {
-            for range(x, 0, 16) {
-                v(x, y, z) = 1.0f;
+    constexpr size_t N = 32;
+    NDGrid<N> v, f;
+    for range(z, 0, N) {
+        for range(y, 0, N) {
+            for range(x, 0, N) {
+                v(x, y, z) = 0.0f;
             }
         }
     }
+    for range(z, 0, N) {
+        for range(y, 0, N) {
+            for range(x, 0, N) {
+                f(x, y, z) = x == N/2 && y == N/2 && z == N/2 ? 10.0f : 0.0f;
+            }
+        }
+    }
+    printf("%f\n", residual(v, f));
+    vcycle(v, f);
+    printf("%f\n", residual(v, f));
 }
