@@ -1,18 +1,58 @@
-#ifdef ZENO_BENCHMARK
-#include <zeno/utils/Timer.h>
+#pragma once
+
+#include <chrono>
+#include <string>
+#include <vector>
+#include <cassert>
+
+namespace zinc {
+
+class Timer {
+public:
+    using ClockType = std::chrono::high_resolution_clock;
+
+private:
+    struct Record {
+        std::string tag;
+        int us;
+
+        Record(std::string &&tag_, int us_)
+            : tag(std::move(tag_)), us(us_) {}
+    };
+
+    static Timer *current;
+    static std::vector<Record> records;
+
+    Timer *parent = nullptr;
+    ClockType::time_point beg;
+    ClockType::time_point end;
+    std::string tag;
+
+    Timer(std::string_view &&tag, ClockType::time_point &&beg);
+    void _destroy(ClockType::time_point &&end);
+
+public:
+    Timer(std::string_view tag_) : Timer(std::move(tag_), ClockType::now()) {}
+    ~Timer() { _destroy(ClockType::now()); }
+
+    static void print();
+};
+
+}
+
+#ifdef ZINC_TIMER_IMPLEMENTATION
 #include <algorithm>
 #include <cstdlib>
 #include <cstdio>
 #include <map>
 
-namespace zeno {
+namespace zinc {
 
 Timer::Timer(std::string_view &&tag_, Timer::ClockType::time_point &&beg_)
     : parent(current)
     , beg(ClockType::now())
     , tag(current ? current->tag + '/' + (std::string)tag_ : tag_)
 {
-    //zlog::trace("** Enter [{}]", tag);
     current = this;
 }
 
@@ -21,7 +61,6 @@ void Timer::_destroy(Timer::ClockType::time_point &&end) {
     auto diff = end - beg;
     int us = std::chrono::duration_cast
         <std::chrono::microseconds>(diff).count();
-    //zlog::trace("** Leave [{}] spent {} us", tag, us);
     records.emplace_back(std::move(tag), us);
 }
 
@@ -29,7 +68,7 @@ Timer *Timer::current = nullptr;
 std::vector<Timer::Record> Timer::records;
 
 void Timer::print() {
-    printf("=== Begin ZENO Timing Statistics ===\n");
+    printf("=== Begin ZINC Timing Statistics ===\n");
 
     struct Statistic {
         int max_us = 0;
@@ -63,16 +102,16 @@ void Timer::print() {
                 stat.count_rec, tag.c_str());
     }
 
-    printf("==== End ZENO Timing Statistics ====\n");
+    printf("==== End ZINC Timing Statistics ====\n");
 }
 
 namespace {
-    struct AtexitHelper {
-        ~AtexitHelper() {
+    static struct TimerAtexitHelper {
+        ~TimerAtexitHelper() {
             if (getenv("ZEN_PRINTSTAT"))
                 Timer::print();
         }
-    } atexitHelper;
+    } timerAtexitHelper;
 }
 
 }

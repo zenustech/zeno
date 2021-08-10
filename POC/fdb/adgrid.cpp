@@ -2,6 +2,7 @@
 #include <cstring>
 #include <cstdio>
 #include "vec.h"
+#include "timer.h"
 
 using namespace fdb;
 
@@ -105,8 +106,6 @@ struct NDGrid {
 
 #define range(x, x0, x1) (uint32_t x = x0; x < x1; x++)
 
-int smooth_count;
-
 template <size_t N>
 void smooth(NDGrid<N> &v, NDGrid<N> const &f, int times = 4) {
     for range(phase, 0, times) {
@@ -128,7 +127,6 @@ void smooth(NDGrid<N> &v, NDGrid<N> const &f, int times = 4) {
             }
         }
     }
-    smooth_count += times * N * N * N;
 }
 
 template <size_t N>
@@ -136,7 +134,7 @@ void residual(NDGrid<N> &r, NDGrid<N> const &v, NDGrid<N> const &f) {
     for range(z, 1, N-1) {
         for range(y, 1, N-1) {
             for range(x, 1, N-1) {
-                r(x, y, z) = 0.5f * (
+                r(x, y, z) = (
                       f(x, y, z)
                     + v(x+1, y, z)
                     + v(x, y+1, z)
@@ -186,7 +184,7 @@ void restrict(NDGrid<N/2> &w, NDGrid<N> const &v) {
                     + v(x*2+1, y*2, z*2+1)
                     + v(x*2, y*2+1, z*2+1)
                     + v(x*2+1, y*2+1, z*2+1)
-                    ) / 8;
+                    );
             }
         }
     }
@@ -237,7 +235,5 @@ int main() {
     }
     printf("%f\n", residual(v, f));
     vcycle<8>(v, f);
-    //smooth(v, f, 18);
     printf("%f\n", residual(v, f));
-    printf("%d\n", smooth_count);
 }
