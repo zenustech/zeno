@@ -148,7 +148,7 @@ Other requirements like GLAD are self-contained and you don't have to worry inst
 
 > Hint: for Python, please try avoid using virtualenv and Conda if possible.
 
-- Ubuntu 20.04
+### Ubuntu 20.04
 
 ```bash
 # Install basic dependencies
@@ -189,7 +189,7 @@ cd ../..
 
 See also [`Dockerfile`](Dockerfile) as a reference for full installing steps.
 
-- Windows 10
+### Windows 10
 
 1. Install Python 3.8 64-bit. IMPORTANT: make sure you **Add Python 3.8 to PATH**! After that rebooting your computer would be the best.
 
@@ -226,7 +226,7 @@ vcpkg install eigen3:x64-windows
 
 Hint: You may need to install the `English Pack` for VS2019, and have fast internet condition for vcpkg to work. See [their official guide](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md) for more details.
 
-- Arch Linux
+### Arch Linux
 
 ```bash
 sudo pacman -S gcc make cmake python python-pip python-numpy pyside2
@@ -234,7 +234,7 @@ sudo pacman -S gcc make cmake python python-pip python-numpy pyside2
 
 See also [`Dockerfile.archlinux`](Dockerfile.archlinux) for full installing steps.
 
-- Docker
+### Docker
 
 ```bash
 ./docker.sh
@@ -243,7 +243,7 @@ See also [`Dockerfile.archlinux`](Dockerfile.archlinux) for full installing step
 
 ## Build ZENO
 
-- Linux
+### Linux
 
 ```bash
 cmake -B build
@@ -267,7 +267,7 @@ ccmake -B build  # will shows up a curses screen, c to save, q to exit
 <img src="images/ccmake1.png" alt="ccmake1" style="zoom:98%;" />
 <img src="images/ccmake2.png" alt="ccmake2" style="zoom:50%;" />
 
-- Windows
+### Windows
 
 ```cmd
 cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -288,7 +288,7 @@ IMPORTANT: In MSVC, **Release** mode must **always be active** when building ZEN
 ### Run ZENO for development
 
 ```bash
-./run.py
+python run.py
 ```
 
 After successfully loading the editor, you may click `File -> Open` to play `graphs/LorenzParticleTrail.zsg` to confirm everything is working well :)
@@ -302,11 +302,11 @@ This application failed to start because it could not find or load the Qt platfo
 Reinstalling the application may fix this problem.
 ```
 
-- Windows
+### Windows 10
 
 Are you using Anaconda? Please try using the methods in: https://stackoverflow.com/questions/41994485/how-to-fix-could-not-find-or-load-the-qt-platform-plugin-windows-while-using-m
 
-- Ubuntu 20.04
+### Ubuntu 20.04
 
 ```bash
 sudo apt-get install qt5dxcb-plugin
@@ -314,7 +314,7 @@ sudo apt-get install qt5dxcb-plugin
 
 Please let me know if you have any trouble not mentioned above by opening an [issue](https://github.com/zenustech/zeno/issues) on GitHub, thanks for you support!
 
-- WSL
+### WSL
 
 WSL doesn't have X11 display by default :( Please try search the Web for how to enable it, sorry!
 
@@ -444,7 +444,7 @@ You may contact us via WeChat:
 
 ## Run intergrated test
 
-- Linux
+### Linux
 
 ```bash
 cmake -B build -DZENO_BUILD_TESTS:BOOL=ON
@@ -452,28 +452,32 @@ cmake --build build --parallel
 build/tests/zentest
 ```
 
-- Windows
+### Windows
 
-Not supported yet.
+```cmd
+cmake -B build -DZENO_BUILD_TESTS:BOOL=ON
+cmake --build build --parallel
+build\tests\zentest.exe
+```
 
 ## Build binary release
 
 ```bash
-./dist.py
+python dist.py
 ```
 
 You will get dist/launcher.zip, upload it to, for example, zeno-linux-2021.8.7.zip in the `Release` page.
 
 ## Build binary release (old method)
 
-- Arch Linux
+### Arch Linux
 
 ```bash
 scripts/dist.sh
 # you will get /tmp/release/zeno-linux-20xx.x.x.tar.gz
 ```
 
-- Windows
+### Windows
 
 First, download `zenv-windows-prebuilt.zip` from [this page](https://github.com/zenustech/binaries/releases).
 Second, extract it directly into project root.
