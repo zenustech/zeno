@@ -112,6 +112,13 @@ void prolongate(NDGrid<N*2> &w, NDGrid<N> const &v) {
     }
 }
 
+template <size_t N>
+void zeroinit(NDGrid<N> &v) {
+    ZINC_PRETTY_TIMER;
+    std::memset(v.m_data, 0, N * N * N * sizeof(float));
+    std::memset(v.m_mask, 1, N * N * N / 8 * sizeof(uint8_t));
+}
+
 template <size_t T, size_t N>
 void vcycle(NDGrid<N> &v, NDGrid<N> const &f) {
     if constexpr (N <= T) {
@@ -127,18 +134,12 @@ void vcycle(NDGrid<N> &v, NDGrid<N> const &f) {
         restrict(r2, r);
 
         NDGrid<N/2> e2;
+        zeroinit(e2);
         vcycle<T>(e2, r2);
 
         prolongate(v, e2);
         smooth<T>(v, f);
     }
-}
-
-template <size_t N>
-void zeroinit(NDGrid<N> &v) {
-    ZINC_PRETTY_TIMER;
-    std::memset(v.m_data, 0, N * N * N * sizeof(float));
-    std::memset(v.m_mask, 0, N * N * N / 8 * sizeof(uint8_t));
 }
 
 int main() {
@@ -148,7 +149,7 @@ int main() {
     for range(z, 0, N) {
         for range(y, 0, N) {
             for range(x, 0, N) {
-                f(x, y, z) = x == N/6 && y == N/2 && z == N/4 ? 100.0f : 0.0f;
+                f.aat(x, y, z) = x == N/6 && y == N/2 && z == N/4 ? 100.0f : 0.0f;
             }
         }
     }
