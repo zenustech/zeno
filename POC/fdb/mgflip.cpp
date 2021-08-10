@@ -214,8 +214,8 @@ struct Domain {
     Grid<float, N> neg_vel_div;
     Grid<vec3f, N> velocity;
     Grid<vec3f, N> new_velocity;
-    Grid<float, N> color;
-    Grid<float, N> new_color;
+    Grid<vec3f, N> color;
+    Grid<vec3f, N> new_color;
 
     Domain() {
         zeroinit(pressure);
@@ -225,7 +225,9 @@ struct Domain {
             for range(y, 0, N) {
                 for range(x, 0, N) {
                     if (x < N/2 && x > N/4 && y < N/2 && y > N/4 && z < N/2 && z > N/4)
-                        color(x, y, z) = 0.5f;
+                        color(x, y, z)[0] = 0.5f;
+                    if (x > N/2 && x < N*3/4 && y > N/2 && y < N*3/4 && z > N/2 && z < N*3/4)
+                        color(x, y, z)[1] = 0.5f;
                 }
             }
         }
@@ -234,6 +236,8 @@ struct Domain {
                 for range(x, 0, N) {
                     if (x < N/2 && x > N/4 && y < N/2 && y > N/4 && z < N/2 && z > N/4)
                         velocity(x, y, z)[0] = 0.5f;
+                    if (x > N/2 && x < N*3/4 && y > N/2 && y < N*3/4 && z > N/2 && z < N*3/4)
+                        velocity(x, y, z)[0] = -0.5f;
                 }
             }
         }
@@ -287,8 +291,8 @@ struct Domain {
         char path[1024];
         sprintf(path, "/tmp/%06d.vdb", frame);
         writevdb(path,
-                [&] (vec3I p) -> float {
-                    return abs(color(p));
+                [&] (vec3I p) -> vec3f {
+                    return color(p);
                 }, {N, N, N});
     }
 
