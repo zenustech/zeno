@@ -5,17 +5,17 @@
 
 namespace zinc {
 
-template <size_t N>
-struct NDGrid {
-    float *m_data = new float[N * N * N];
+template <class T, size_t N>
+struct Grid {
+    T *m_data = new T[N * N * N];
 
-    NDGrid() = default;
-    ~NDGrid() {
+    Grid() = default;
+    ~Grid() {
         delete[] m_data;
     }
 
-    NDGrid(NDGrid const &) = delete;
-    NDGrid &operator=(NDGrid const &) = delete;
+    Grid(Grid const &) = delete;
+    Grid &operator=(Grid const &) = delete;
 
     [[nodiscard]] static uintptr_t linearize(vec3I coor) {
         return dot(clamp(coor, 0, N-1), vec3L(1, N, N * N));
@@ -57,16 +57,16 @@ struct NDGrid {
 };
 
 template <size_t N>
-struct NDBitmask {
+struct BooleanGrid {
     uint8_t *m_mask = new uint8_t[N * N * N / 8];
 
-    NDBitmask() = default;
-    ~NDBitmask() {
+    BooleanGrid() = default;
+    ~BooleanGrid() {
         delete[] m_mask;
     }
 
-    NDBitmask(NDBitmask const &) = delete;
-    NDBitmask &operator=(NDBitmask const &) = delete;
+    BooleanGrid(BooleanGrid const &) = delete;
+    BooleanGrid &operator=(BooleanGrid const &) = delete;
 
     [[nodiscard]] static uintptr_t linearize(vec3I coor) {
         return dot(clamp(coor, 0, N-1), vec3L(1, N, N * N));
