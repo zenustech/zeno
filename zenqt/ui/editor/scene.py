@@ -315,25 +315,6 @@ class QDMGraphicsView(QGraphicsView):
 
         self.node_editor = parent
 
-        self.select_index = 0
-
-        self.msg = QShortcut(QKeySequence('J'), self)
-        self.msg.activated.connect(self.on_jump)
-
-    def on_jump(self):
-        nodes = [n for n in self.scene().items() if isinstance(n, QDMGraphicsNode)]
-        n = nodes[self.select_index % len(nodes)]
-        self.resetTransform()
-        print(n.pos())
-        trans_x = n.pos().x() - self.geometry().width() // 2
-        trans_y = n.pos().y() - self.geometry().height() // 2
-
-        self.select_index += 1
-
-        self.horizontalScrollBar().setValue(trans_x)
-        self.verticalScrollBar().setValue(trans_y)
-
-
     def setScene(self, scene):
         super().setScene(scene)
         transform = QTransform()
