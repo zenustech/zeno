@@ -1,5 +1,6 @@
 #include <cstring>
 #include <cstdio>
+#include <utility>
 #include "vec.h"
 #include "timer.h"
 #include "ndgrid.h"
@@ -187,11 +188,11 @@ T bilerp(Grid<T, N> const &f, vec3f const &p) {
     return mix(
             mix(
                 mix(c000, c100, k[0]),
-                mix(c110, c100, k[0]),
+                mix(c010, c110, k[0]),
                 k[1]),
             mix(
                 mix(c001, c101, k[0]),
-                mix(c111, c101, k[0]),
+                mix(c011, c111, k[0]),
                 k[1]),
             k[2]
             );
@@ -219,12 +220,30 @@ struct Domain {
     Grid<float, N> neg_vel_div;
     Grid<vec3f, N> velocity;
     Grid<vec3f, N> new_velocity;
-    Grid<vec3f, N> color;
-    Grid<vec3f, N> new_color;
+    Grid<float, N> color;
+    Grid<float, N> new_color;
 
     Domain() {
         zeroinit(pressure);
         zeroinit(velocity);
+        zeroinit(color);
+        for range(z, 0, N) {
+            for range(y, 0, N) {
+                for range(x, 0, N) {
+                    color(x, y, z) = x < N/2 ? 0.01f : 0.0f;
+                    if (x < N/2 && x > N/4 && y < N/2 && y > N/4 && z < N/2 && z > N/4)
+                        color(x, y, z) = 0.5f;
+                }
+            }
+        }
+        for range(z, 0, N) {
+            for range(y, 0, N) {
+                for range(x, 0, N) {
+                    if (x < N/2 && x > N/4 && y < N/2 && y > N/4 && z < N/2 && z > N/4)
+                        velocity(x, y, z)[0] = 0.5f;
+                }
+            }
+        }
     }
 
     void calc_neg_vel_div() {
@@ -233,11 +252,11 @@ struct Domain {
         for range(z, 0, N) {
             for range(y, 0, N) {
                 for range(x, 0, N) {
-                    neg_vel_div(x, y, z) =
+                    neg_vel_div(x, y, z) = 0.5f * (
                           velocity(x-1, y, z)[0] - velocity(x+1, y, z)[0]
                         + velocity(x, y-1, z)[1] - velocity(x, y+1, z)[1]
                         + velocity(x, y, z-1)[2] - velocity(x, y, z+1)[2]
-                        ;
+                        );
                 }
             }
         }
@@ -245,7 +264,8 @@ struct Domain {
 
     void solve_possion_eqn() {
         ZINC_PRETTY_TIMER;
-        vcycle<16>(pressure, neg_vel_div);
+        //vcycle<16>(pressure, neg_vel_div);
+        smooth<N>(pressure, neg_vel_div);
         printf("loss: %f\n", loss(pressure, neg_vel_div));
     }
 
@@ -255,17 +275,19 @@ struct Domain {
         for range(z, 0, N) {
             for range(y, 0, N) {
                 for range(x, 0, N) {
-                    velocity(x, y, z)[0] += pressure(x+1, y, z) - pressure(x-1, y, z);
-                    velocity(x, y, z)[1] += pressure(x, y+1, z) - pressure(x, y-1, z);
-                    velocity(x, y, z)[2] += pressure(x, y, z+1) - pressure(x, y, z-1);
+                    velocity(x, y, z)[0] -= pressure(x+1, y, z) - pressure(x-1, y, z);
+                    velocity(x, y, z)[1] -= pressure(x, y+1, z) - pressure(x, y-1, z);
+                    velocity(x, y, z)[2] -= pressure(x, y, z+1) - pressure(x, y, z-1);
                 }
             }
         }
     }
 
     void advect_quantities() {
-        advect(new_velocity, velocity, velocity);
         advect(new_color, color, velocity);
+        advect(new_velocity, velocity, velocity);
+        color.swap(new_color);
+        velocity.swap(new_velocity);
     }
 
     void dump_file(int frame) {
@@ -273,12 +295,17 @@ struct Domain {
         sprintf(path, "/tmp/vel%d.vdb", frame);
         writevdb(path,
                 [&] (vec3I p) -> vec3f {
-                    return velocity(p);
+                    return abs(velocity(p));
                 }, {N, N, N});
         sprintf(path, "/tmp/clr%d.vdb", frame);
         writevdb(path,
-                [&] (vec3I p) -> vec3f {
-                    return color(p);
+                [&] (vec3I p) -> float {
+                    return abs(color(p));
+                }, {N, N, N});
+        sprintf(path, "/tmp/pre%d.vdb", frame);
+        writevdb(path,
+                [&] (vec3I p) -> float {
+                    return abs(pressure(p));
                 }, {N, N, N});
     }
 
@@ -293,9 +320,9 @@ struct Domain {
 int main() {
     Domain dom;
 
-    for (int i = 0; i < 100; i++) {
-        dom.substep();
+    for (int i = 0; i < 50; i++) {
         dom.dump_file(i);
+        dom.substep();
     }
 
     return 0;

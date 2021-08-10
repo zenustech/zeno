@@ -11,11 +11,19 @@ struct Grid {
 
     Grid() = default;
     ~Grid() {
-        delete[] m_data;
+        if (m_data)
+            delete[] m_data;
+        m_data = nullptr;
     }
 
     Grid(Grid const &) = delete;
     Grid &operator=(Grid const &) = delete;
+    Grid(Grid &&) = default;
+    Grid &operator=(Grid &&) = default;
+
+    void swap(Grid &other) {
+        std::swap(m_data, other.m_data);
+    }
 
     [[nodiscard]] static uintptr_t linearize(vec3I coor) {
         return dot(clamp(coor, 0, N-1), vec3L(1, N, N * N));
