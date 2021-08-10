@@ -120,7 +120,7 @@ void prolongate(Grid<T, N*2> &w, Grid<T, N> const &v) {
     for range(z, 0, N*2) {
         for range(y, 0, N*2) {
             for range(x, 0, N*2) {
-                w(x, y, z) += v(x/2, y/2, z/2);
+                w(x, y, z) += v(x/2, y/2, z/2) * 0.5f;
             }
         }
     }
@@ -128,7 +128,7 @@ void prolongate(Grid<T, N*2> &w, Grid<T, N> const &v) {
 
 template <size_t M, size_t N0 = M, class T, size_t N>
 void vcycle(Grid<T, N> &v, Grid<T, N> const &f) {
-    if constexpr (N <= N0) {
+    if constexpr (N <= M) {
         smooth<M>(v, f);
 
     } else {
@@ -230,7 +230,6 @@ struct Domain {
         for range(z, 0, N) {
             for range(y, 0, N) {
                 for range(x, 0, N) {
-                    color(x, y, z) = x < N/2 ? 0.01f : 0.0f;
                     if (x < N/2 && x > N/4 && y < N/2 && y > N/4 && z < N/2 && z > N/4)
                         color(x, y, z) = 0.5f;
                 }
@@ -264,7 +263,7 @@ struct Domain {
 
     void solve_possion_eqn() {
         ZINC_PRETTY_TIMER;
-        //vcycle<16>(pressure, neg_vel_div);
+        vcycle<16>(pressure, neg_vel_div);
         smooth<N>(pressure, neg_vel_div);
         printf("loss: %f\n", loss(pressure, neg_vel_div));
     }
