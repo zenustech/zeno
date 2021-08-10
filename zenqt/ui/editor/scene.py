@@ -83,6 +83,7 @@ class QDMFindBar(QWidget):
         self.lineEdit.textChanged.connect(self.textChanged)
         self.prevButton.clicked.connect(self.jump_prev)
         self.nextButton.clicked.connect(self.jump_next)
+        self.closeButton.clicked.connect(self.close)
 
     def paintEvent(self, event):
         p = QPainter(self)
@@ -126,6 +127,13 @@ class QDMFindBar(QWidget):
     def jump_next(self):
         self.current_index = (self.current_index + 1) % self.total_count
         self.on_jump()
+
+    def close(self):
+        self.current_index = 0
+        self.total_count = 0
+        self.lineEdit.clear()
+        self.hide()
+        self.window.view.setFocus()
 
 class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):

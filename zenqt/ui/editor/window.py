@@ -165,6 +165,9 @@ class NodeEditor(QWidget):
         self.msgAdd = QShortcut(QKeySequence('Tab'), self)
         self.msgAdd.activated.connect(self.shortcut_add)
 
+        self.msgFind = QShortcut(QKeySequence('CTRL+F'), self)
+        self.msgFind.activated.connect(lambda: self.find_bar.show())
+
     def initExecute(self):
         self.edit_graphname = QComboBox(self)
         self.edit_graphname.setEditable(True)
@@ -185,6 +188,7 @@ class NodeEditor(QWidget):
         self.find_bar = QDMFindBar(self)
         self.find_bar.move(400, 40)
         self.find_bar.resize(300, 30)
+        self.find_bar.hide()
 
     def on_switch_graph(self, name):
         self.switchScene(name)
