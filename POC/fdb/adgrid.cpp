@@ -23,11 +23,11 @@ struct NDGrid {
     NDGrid(NDGrid const &) = delete;
     NDGrid &operator=(NDGrid const &) = delete;
 
-    static uintptr_t linearize(vec3I coor) {
+    [[nodiscard]] static uintptr_t linearize(vec3I coor) {
         return dot(coor, vec3L(1, N, N * N));
     }
 
-    bool is_active(vec3I coor) const {
+    [[nodiscard]] bool is_active(vec3I coor) const {
         uintptr_t i = linearize(coor);
         return m_mask[i >> 3] & (1 << (i & 7));
     }
@@ -42,36 +42,55 @@ struct NDGrid {
         m_mask[i >> 3] &= ~(1 << (i & 7));
     }
 
-    auto const &at(vec3I coor) const {
+    [[nodiscard]] auto const &at(vec3I coor) const {
         uintptr_t i = linearize(coor);
         return m_data[i];
     }
 
-    auto &at(vec3I coor) {
+    [[nodiscard]] auto &at(vec3I coor) {
         uintptr_t i = linearize(coor);
         return m_data[i];
     }
 
-    auto &aat(vec3I coor) {
+    [[nodiscard]] auto &aat(vec3I coor) {
         uintptr_t i = linearize(coor);
         m_mask[i >> 3] |= 1 << (i & 7);
         return m_data[i];
     }
 
-    decltype(auto) operator()(vec3I &&coor) {
+    [[nodiscard]] decltype(auto) operator()(vec3I &&coor) {
         return at(std::forward<vec3I>(coor));
     }
 
-    decltype(auto) operator()(vec3I &&coor) const {
+    [[nodiscard]] decltype(auto) operator()(vec3I &&coor) const {
         return at(std::forward<vec3I>(coor));
     }
 
-    decltype(auto) operator[](vec3I &&coor) {
+    [[nodiscard]] decltype(auto) operator[](vec3I &&coor) {
         return aat(std::forward<vec3I>(coor));
+    }
+
+    [[nodiscard]] decltype(auto) operator()(int x, int y, int z) {
+        return operator()({x, y, z});
+    }
+
+    [[nodiscard]] decltype(auto) operator()(int x, int y, int z) const {
+        return operator()({x, y, z});
     }
 };
 
 #define range(x, x0, x1) (uint32_t x = x0; x < x1; x++)
+
+template <size_t N>
+void smooth(NDGrid<N> *v, NDGrid<N> *f) {
+    for range(z, 0, 16) {
+        for range(y, 0, 16) {
+            for range(x, 0, 16) {
+                v(x, y, z);
+            }
+        }
+    }
+}
 
 int main() {
     NDGrid<16> cu;

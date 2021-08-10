@@ -172,7 +172,7 @@ cd c-blosc
 mkdir build
 cd build
 cmake ..
-make -j4
+make -j8
 sudo make install
 cd ../..
 
@@ -182,7 +182,7 @@ cd openvdb
 mkdir build
 cd build
 cmake ..
-make -j4
+make -j8
 sudo make install
 cd ../..
 ```
@@ -214,13 +214,13 @@ Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/
 git clone https://github.com/microsoft/vcpkg.git --depth=1
 cd vcpkg
 
-# (Optional) integrate vcpkg into your VS2019 if necessary:
+@rem (Optional) integrate vcpkg into your VS2019 if necessary:
 vcpkg integrate install
 
-# (Optional) Install OpenVDB for the extension ZenVDB & FastFLIP:
+@rem (Optional) Install OpenVDB for the extension ZenVDB & FastFLIP:
 vcpkg install openvdb:x64-windows
 
-# (Optional) Install Eigen3 for the extension FastFLIP:
+@rem (Optional) Install Eigen3 for the extension FastFLIP:
 vcpkg install eigen3:x64-windows
 ```
 
