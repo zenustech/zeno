@@ -324,37 +324,35 @@ The source code of all our official extensions are provided in `projects/`.
 For now, official extensions will be built by default when running the
 ```ALL_BUILD``` target of CMake.
 
+But some of the extensions are not **enabled by default** because they requries optional dependencies, don't worry, you can enable them with the following commands:
+
+### Rigid
+
+```bash
+cmake -B build -DEXTENSION_Rigid:BOOL=ON
+```
+
 ### ZenVDB & FastFLIP
 
-Note that the extensions: ZenVDB and FastFLIP are **not built by default**.
-You can use
 ```bash
 cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
 ```
-to enable them.
 
 > **The FastFLIP solver we know work well with OpenVDB 7.2.3, and have problem with OpenVDB 8.1.**
 
-### GMPM
+### GMPM & Mesher
 
-You need to update git submodules before building @littlemine's GPU MPM.
-To do so:
 ```bash
+# update git submodules to fetch @littlemine's ZPC submodule:
 git submodule update --init --recursive
+cmake -B build -DEXTENSION_gmpm:BOOL=ON -DEXTENSION_mesher:BOOL=ON
 ```
-Then:
-```bash
-cmake -B build -DEXTENSION_gmpm:BOOL=ON
-```
-to enable it.
 
-### ZenoFX
+### Euler
 
-You need to turn on two flags to enable ZenoFX build:
 ```bash
-cmake -B build -DZENO_BUILD_ZFX:BOOL=ON -DEXTENSION_ZenoFX:BOOL=ON
+cmake -B build -DEXTENSION_Euler:BOOL=ON
 ```
-to enable it.
 
 ## Major dependencies
 
@@ -362,7 +360,7 @@ Building them require some dependencies:
 
 - ZenoFX (ZFX expression wrangler)
   - OpenMP (optional)
-  - CUDA driver API (optional)
+  - OpenVDB (optional)
 
 - Rigid (bullet3 rigid dynamics)
   - OpenMP
@@ -397,6 +395,15 @@ Building them require some dependencies:
 - Mesher (MPM Meshing)
   - Eigen3
   - OpenMP (optional)
+
+- Euler (aerodynamics solver)
+  - OpenVDB
+  - IlmBase
+  - Eigen3
+  - TBB
+  - ZenVDB (see above)
+  - OldZenBASE (see above)
+
 
 Other extensions are built by default because their dependencies are
 self-contained and portable to all platforms.
