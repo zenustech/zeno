@@ -124,9 +124,9 @@ void prolongate(Grid<T, N*2> &w, Grid<T, N> const &v) {
     }
 }
 
-template <size_t M, class T, size_t N>
+template <size_t M, size_t N0 = M, class T, size_t N>
 void vcycle(Grid<T, N> &v, Grid<T, N> const &f) {
-    if constexpr (N <= M) {
+    if constexpr (N <= N0) {
         smooth<M>(v, f);
 
     } else {
