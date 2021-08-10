@@ -208,7 +208,7 @@ void prolongate(NDGrid<N*2> &w, NDGrid<N> const &v) {
 
 template <size_t T, size_t N>
 void vcycle(NDGrid<N> &v, NDGrid<N> const &f) {
-    if constexpr (N <= 8) {
+    if constexpr (N <= T) {
         smooth(v, f, T);
 
     } else {
@@ -239,6 +239,6 @@ int main() {
         }
     }
     printf("%f\n", residual(v, f));
-    vcycle<8>(v, f);
+    vcycle<16>(v, f);
     printf("%f\n", residual(v, f));
 }
