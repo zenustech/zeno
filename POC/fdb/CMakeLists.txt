@@ -3,7 +3,7 @@ project(adflip LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE Release)
 
-add_executable(adflip mgflip.cpp vdbdense.cpp timer.cpp)
+add_executable(adflip mgflip.cpp vdbio.cpp timer.cpp)
 
 find_package(OpenMP REQUIRED)
 target_link_libraries(adflip OpenMP::OpenMP_CXX)

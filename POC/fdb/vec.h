@@ -135,15 +135,23 @@ template <class T> using decay_vec_t = typename decay_vec<T>::type;
 
 /* converter functions */
 
-template <class OtherT, class T> auto vec_to_other(vec<2, T> const &a) {
+template <class T, std::enable_if_t<!is_vec_v<T>, bool> = true>
+auto vec_to_other(T const &a) {
+  return a;
+}
+
+template <class OtherT, class T>
+auto vec_to_other(vec<2, T> const &a) {
   return OtherT(a[0], a[1]);
 }
 
-template <class OtherT, class T> auto vec_to_other(vec<3, T> const &a) {
+template <class OtherT, class T>
+auto vec_to_other(vec<3, T> const &a) {
   return OtherT(a[0], a[1], a[2]);
 }
 
-template <class OtherT, class T> auto vec_to_other(vec<4, T> const &a) {
+template <class OtherT, class T>
+auto vec_to_other(vec<4, T> const &a) {
   return OtherT(a[0], a[1], a[2], a[3]);
 }
 
