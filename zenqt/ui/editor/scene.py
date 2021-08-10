@@ -54,10 +54,13 @@ class QDMSearchLineEdit(QLineEdit):
         self.menu.addAction(self.wact)
 
 class QDMFindBar(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent):
         super().__init__(parent)
+
+        self.window = parent
+
         self.lineEdit = QLineEdit(self)
-        self.resultLabel = QLabel(' {} of {} '.format('  ', '  '), self)
+        self.resultLabel = QLabel()
         self.prevButton = QPushButton('Prev', self)
         self.prevButton.setFixedWidth(50)
         self.nextButton = QPushButton('Next', self)
@@ -74,12 +77,55 @@ class QDMFindBar(QWidget):
         self.layout.addWidget(self.closeButton)
         self.setLayout(self.layout)
 
+        self.current_index = 0
+        self.total_count = 0
+
+        self.lineEdit.textChanged.connect(self.textChanged)
+        self.prevButton.clicked.connect(self.jump_prev)
+        self.nextButton.clicked.connect(self.jump_next)
+
     def paintEvent(self, event):
         p = QPainter(self)
         p.setPen(Qt.NoPen)
         p.setBrush(Qt.white)
         p.drawRect(self.rect())
 
+    def textChanged(self, text):
+        if text == '':
+            self.resultLabel.setText('')
+            return
+        scene = self.window.view.scene()
+        ns = [n for n in scene.nodes if text in n.name.lower()]
+        if len(ns) == 0:
+            self.resultLabel.setText('')
+            return
+
+        self.current_index = 0
+        self.total_count = len(ns)
+        self.on_jump()
+
+    def on_jump(self):
+        self.resultLabel.setText(' {} of {} '.format(self.current_index + 1, self.total_count))
+
+        scene = self.window.view.scene()
+        text = self.lineEdit.text()
+        ns = [n for n in scene.nodes if text in n.name.lower()]
+        n = ns[self.current_index]
+
+        view = self.window.view
+        view.resetTransform()
+        trans_x = n.pos().x() - view.geometry().width() // 2 + style['node_width'] // 2
+        trans_y = n.pos().y() - view.geometry().height() // 2
+        view.horizontalScrollBar().setValue(trans_x)
+        view.verticalScrollBar().setValue(trans_y)
+
+    def jump_prev(self):
+        self.current_index = (self.current_index - 1) % self.total_count
+        self.on_jump()
+
+    def jump_next(self):
+        self.current_index = (self.current_index + 1) % self.total_count
+        self.on_jump()
 
 class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
