@@ -245,10 +245,10 @@ struct Domain {
         for range(z, 0, N) {
             for range(y, 0, N) {
                 for range(x, 0, N) {
-                    neg_vel_div(x, y, z) = 0.5f * (
-                          velocity(x-1, y, z)[0] - velocity(x+1, y, z)[0]
-                        + velocity(x, y-1, z)[1] - velocity(x, y+1, z)[1]
-                        + velocity(x, y, z-1)[2] - velocity(x, y, z+1)[2]
+                    neg_vel_div(x, y, z) = 0.25f * (
+                          velocity(x, y, z)[0] - velocity(x-1, y, z)[0]
+                        + velocity(x, y, z)[1] - velocity(x, y-1, z)[1]
+                        + velocity(x, y, z)[2] - velocity(x, y, z-1)[2]
                         );
                 }
             }
@@ -257,7 +257,7 @@ struct Domain {
 
     void solve_possion_eqn() {
         ZINC_PRETTY_TIMER;
-        vcycle<8>(pressure, neg_vel_div);
+        vcycle<16>(pressure, neg_vel_div);
         //smooth<N>(pressure, neg_vel_div);
         printf("loss: %f\n", loss(pressure, neg_vel_div));
     }
@@ -268,9 +268,9 @@ struct Domain {
         for range(z, 0, N) {
             for range(y, 0, N) {
                 for range(x, 0, N) {
-                    velocity(x, y, z)[0] -= pressure(x+1, y, z) - pressure(x-1, y, z);
-                    velocity(x, y, z)[1] -= pressure(x, y+1, z) - pressure(x, y-1, z);
-                    velocity(x, y, z)[2] -= pressure(x, y, z+1) - pressure(x, y, z-1);
+                    velocity(x, y, z)[0] -= pressure(x, y, z) - pressure(x+1, y, z);
+                    velocity(x, y, z)[1] -= pressure(x, y, z) - pressure(x, y+1, z);
+                    velocity(x, y, z)[2] -= pressure(x, y, z) - pressure(x, y, z+1);
                 }
             }
         }
@@ -285,20 +285,10 @@ struct Domain {
 
     void dump_file(int frame) {
         char path[1024];
-        sprintf(path, "/tmp/vel%d.vdb", frame);
-        writevdb(path,
-                [&] (vec3I p) -> vec3f {
-                    return abs(velocity(p));
-                }, {N, N, N});
-        sprintf(path, "/tmp/clr%d.vdb", frame);
+        sprintf(path, "/tmp/%06d.vdb", frame);
         writevdb(path,
                 [&] (vec3I p) -> float {
                     return abs(color(p));
-                }, {N, N, N});
-        sprintf(path, "/tmp/pre%d.vdb", frame);
-        writevdb(path,
-                [&] (vec3I p) -> float {
-                    return abs(pressure(p));
                 }, {N, N, N});
     }
 
@@ -313,7 +303,7 @@ struct Domain {
 int main() {
     Domain dom;
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 250; i++) {
         dom.dump_file(i);
         dom.substep();
     }
