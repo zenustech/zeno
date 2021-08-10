@@ -192,8 +192,8 @@ T bilerp(Grid<T, N> const &f, vec3f const &p) {
             );
 }
 
-template <class T, size_t N>
-void advect(Grid<T, N> &dst, Grid<T, N> const &src, Grid<vec3f, N> const &vel) {
+template <class T, class S, size_t N>
+void advect(Grid<T, N> &dst, Grid<T, N> const &src, Grid<S, N> const &vel) {
     ZINC_PRETTY_TIMER;
 #pragma omp parallel for
     for range(z, 0, N) {
