@@ -107,10 +107,10 @@ struct NDGrid {
 
 #define range(x, x0, x1) (uint32_t x = x0; x < x1; x++)
 
-template <size_t N>
-void smooth(NDGrid<N> &v, NDGrid<N> const &f, int times = 4) {
+template <size_t T, size_t N>
+void smooth(NDGrid<N> &v, NDGrid<N> const &f) {
     ZINC_PRETTY_TIMER;
-    for range(phase, 0, times) {
+    for range(phase, 0, T) {
         for range(z, 1, N-1) {
             for range(y, 1, N-1) {
                 for range(x, 1, N-1) {
@@ -153,7 +153,7 @@ void residual(NDGrid<N> &r, NDGrid<N> const &v, NDGrid<N> const &f) {
 }
 
 template <size_t N>
-[[nodiscard]] float residual(NDGrid<N> const &v, NDGrid<N> const &f) {
+[[nodiscard]] float loss(NDGrid<N> const &v, NDGrid<N> const &f) {
     float res = 0.0f;
     for range(z, 1, N-1) {
         for range(y, 1, N-1) {
@@ -209,10 +209,10 @@ void prolongate(NDGrid<N*2> &w, NDGrid<N> const &v) {
 template <size_t T, size_t N>
 void vcycle(NDGrid<N> &v, NDGrid<N> const &f) {
     if constexpr (N <= T) {
-        smooth(v, f, T);
+        smooth<T>(v, f);
 
     } else {
-        smooth(v, f, T);
+        smooth<T>(v, f);
 
         NDGrid<N> r;
         residual(r, v, f);
@@ -224,12 +224,12 @@ void vcycle(NDGrid<N> &v, NDGrid<N> const &f) {
         vcycle<T>(e2, r2);
 
         prolongate(v, e2);
-        smooth(v, f, T);
+        smooth<T>(v, f);
     }
 }
 
 int main() {
-    constexpr size_t N = 128;
+    constexpr size_t N = 64;
     NDGrid<N> v, f;
     for range(z, 0, N) {
         for range(y, 0, N) {
@@ -238,7 +238,7 @@ int main() {
             }
         }
     }
-    printf("%f\n", residual(v, f));
+    printf("%f\n", loss(v, f));
     vcycle<16>(v, f);
-    printf("%f\n", residual(v, f));
+    printf("%f\n", loss(v, f));
 }
