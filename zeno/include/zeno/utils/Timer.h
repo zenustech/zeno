@@ -11,7 +11,6 @@ class Timer {
 public:
     using ClockType = std::chrono::high_resolution_clock;
 
-private:
     struct Record {
         std::string tag;
         int us;
@@ -20,6 +19,7 @@ private:
             : tag(std::move(tag_)), us(us_) {}
     };
 
+private:
     static Timer *current;
     static std::vector<Record> records;
 
@@ -35,7 +35,10 @@ public:
     Timer(std::string_view tag_) : Timer(std::move(tag_), ClockType::now()) {}
     ~Timer() { _destroy(ClockType::now()); }
 
+    static auto const &get_records() { return records; }
     static void print();
 };
+
+#define ZENO_AUTO_TIMER ::zeno::Timer _zeno_timer(__func__);
 
 }

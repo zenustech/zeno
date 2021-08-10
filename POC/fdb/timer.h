@@ -11,7 +11,6 @@ class Timer {
 public:
     using ClockType = std::chrono::high_resolution_clock;
 
-private:
     struct Record {
         std::string tag;
         int us;
@@ -20,6 +19,7 @@ private:
             : tag(std::move(tag_)), us(us_) {}
     };
 
+private:
     static Timer *current;
     static std::vector<Record> records;
 
@@ -35,8 +35,12 @@ public:
     Timer(std::string_view tag_) : Timer(std::move(tag_), ClockType::now()) {}
     ~Timer() { _destroy(ClockType::now()); }
 
+    static auto const &getRecords() { return records; }
     static void print();
 };
+
+#define ZINC_FUNC_TIMER ::zinc::Timer _zinc_timer(__func__);
+#define ZINC_PRETTY_TIMER ::zinc::Timer _zinc_timer(__PRETTY_FUNCTION__);
 
 }
 
@@ -80,9 +84,9 @@ void Timer::print() {
     for (auto const &[tag, us]: records) {
         auto &stat = stats[tag];
         stat.total_us += us;
-        stat.count_rec++;
         stat.max_us = std::max(stat.max_us, us);
-        stat.min_us = stat.count_rec ? stat.min_us : std::min(stat.min_us, us);
+        stat.min_us = !stat.count_rec ? us : std::min(stat.min_us, us);
+        stat.count_rec++;
     }
 
     std::vector<std::pair<std::string, Statistic>> sortstats;
@@ -94,9 +98,9 @@ void Timer::print() {
         return lhs.second.total_us > rhs.second.total_us;
     });
 
-    printf("   avg   |   min   |   max   |  total  | count  [tag]\n");
+    printf("   avg   |   min   |   max   |  total  | cnt | tag\n");
     for (auto const &[tag, stat]: sortstats) {
-        printf("%9d|%9d|%9d|%9d|%7d [%s]\n",
+        printf("%9d|%9d|%9d|%9d|%5d| %s\n",
                 stat.total_us / stat.count_rec,
                 stat.min_us, stat.max_us, stat.total_us,
                 stat.count_rec, tag.c_str());
@@ -108,11 +112,11 @@ void Timer::print() {
 namespace {
     static struct TimerAtexitHelper {
         ~TimerAtexitHelper() {
-            if (getenv("ZEN_PRINTSTAT"))
-                Timer::print();
+            Timer::print();
         }
     } timerAtexitHelper;
 }
 
 }
+
 #endif

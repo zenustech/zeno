@@ -4,7 +4,7 @@
 #include <cmath>
 #include <cstdint>
 
-namespace fdb {
+namespace zinc {
 
 /* main class definition */
 

@@ -41,9 +41,9 @@ void Timer::print() {
     for (auto const &[tag, us]: records) {
         auto &stat = stats[tag];
         stat.total_us += us;
-        stat.count_rec++;
         stat.max_us = std::max(stat.max_us, us);
-        stat.min_us = stat.count_rec ? stat.min_us : std::min(stat.min_us, us);
+        stat.min_us = stat.count_rec ? us : std::min(stat.min_us, us);
+        stat.count_rec++;
     }
 
     std::vector<std::pair<std::string, Statistic>> sortstats;
@@ -69,7 +69,7 @@ void Timer::print() {
 namespace {
     struct AtexitHelper {
         ~AtexitHelper() {
-            if (getenv("ZEN_PRINTSTAT"))
+            if (getenv("ZEN_TIMING"))
                 Timer::print();
         }
     } atexitHelper;
