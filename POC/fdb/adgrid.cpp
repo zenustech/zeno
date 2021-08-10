@@ -142,8 +142,26 @@ void vcycle(NDGrid<N> &v, NDGrid<N> const &f) {
     }
 }
 
+template <size_t T, size_t N>
+void ecycle(NDGrid<N> &v, NDGrid<N> const &f) {
+    smooth<T>(v, f);
+
+    NDGrid<N> r;
+    residual(r, v, f);
+
+    NDGrid<N/2> r2;
+    restrict(r2, r);
+
+    NDGrid<N/2> e2;
+    zeroinit(e2);
+    smooth<T>(e2, r2);
+
+    prolongate(v, e2);
+    smooth<T>(v, f);
+}
+
 int main() {
-    constexpr size_t N = 64;
+    constexpr size_t N = 32;
     NDGrid<N> v, f;
     zeroinit(v);
     for range(z, 0, N) {
@@ -154,6 +172,6 @@ int main() {
         }
     }
     printf("%f\n", loss(v, f));
-    vcycle<16>(v, f);
+    ecycle<16>(v, f);
     printf("%f\n", loss(v, f));
 }
