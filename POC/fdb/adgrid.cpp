@@ -105,6 +105,8 @@ struct NDGrid {
 
 #define range(x, x0, x1) (uint32_t x = x0; x < x1; x++)
 
+int smooth_count;
+
 template <size_t N>
 void smooth(NDGrid<N> &v, NDGrid<N> const &f, int times = 4) {
     for range(phase, 0, times) {
@@ -126,6 +128,7 @@ void smooth(NDGrid<N> &v, NDGrid<N> const &f, int times = 4) {
             }
         }
     }
+    smooth_count += times * N * N * N;
 }
 
 template <size_t N>
@@ -170,11 +173,11 @@ template <size_t N>
 }
 
 template <size_t N>
-void restrict(NDGrid<N/2> &u, NDGrid<N/2> &w, NDGrid<N> const &v) {
+void restrict(NDGrid<N/2> &w, NDGrid<N> const &v) {
     for range(z, 0, N/2) {
         for range(y, 0, N/2) {
             for range(x, 0, N/2) {
-                u(x, y, z) = w(x, y, z) = (
+                w(x, y, z) = (
                       v(x*2, y*2, z*2)
                     + v(x*2+1, y*2, z*2)
                     + v(x*2, y*2+1, z*2)
@@ -200,25 +203,25 @@ void prolongate(NDGrid<N*2> &w, NDGrid<N> const &v) {
     }
 }
 
-template <size_t N>
+template <size_t T, size_t N>
 void vcycle(NDGrid<N> &v, NDGrid<N> const &f) {
     if constexpr (N <= 8) {
-        smooth(v, f);
+        smooth(v, f, T);
 
     } else {
-        smooth(v, f);
+        smooth(v, f, T);
 
         NDGrid<N> r;
         residual(r, v, f);
 
         NDGrid<N/2> r2;
-        NDGrid<N/2> e2;
-        restrict(e2, r2, r);
+        restrict(r2, r);
 
-        vcycle(e2, r2);
+        NDGrid<N/2> e2;
+        vcycle<T>(e2, r2);
 
         prolongate(v, e2);
-        smooth(v, f);
+        smooth(v, f, T);
     }
 }
 
@@ -228,18 +231,13 @@ int main() {
     for range(z, 0, N) {
         for range(y, 0, N) {
             for range(x, 0, N) {
-                v(x, y, z) = 0.0f;
-            }
-        }
-    }
-    for range(z, 0, N) {
-        for range(y, 0, N) {
-            for range(x, 0, N) {
                 f(x, y, z) = x == N/2 && y == N/2 && z == N/2 ? 10.0f : 0.0f;
             }
         }
     }
     printf("%f\n", residual(v, f));
-    vcycle(v, f);
+    vcycle<8>(v, f);
+    //smooth(v, f, 18);
     printf("%f\n", residual(v, f));
+    printf("%d\n", smooth_count);
 }
