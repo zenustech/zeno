@@ -165,11 +165,11 @@ template <size_t N>
                     + v(x, y-1, z)
                     + v(x, y, z-1)
                     - v(x, y, z) * 6;
-                res += val * val;
+                res = std::max(res, val);
             }
         }
     }
-    return res * 0.25f;
+    return res;
 }
 
 template <size_t N>
@@ -226,12 +226,12 @@ void vcycle(NDGrid<N> &v, NDGrid<N> const &f) {
 }
 
 int main() {
-    constexpr size_t N = 32;
+    constexpr size_t N = 128;
     NDGrid<N> v, f;
     for range(z, 0, N) {
         for range(y, 0, N) {
             for range(x, 0, N) {
-                f(x, y, z) = x == N/2 && y == N/2 && z == N/2 ? 10.0f : 0.0f;
+                f(x, y, z) = x == N/2 && y == N/2 && z == N/2 ? 100.0f : 0.0f;
             }
         }
     }
