@@ -111,6 +111,7 @@ template <size_t T, size_t N>
 void smooth(NDGrid<N> &v, NDGrid<N> const &f) {
     ZINC_PRETTY_TIMER;
     for range(phase, 0, T) {
+#pragma omp parallel for
         for range(z, 1, N-1) {
             for range(y, 1, N-1) {
                 for range(x, 1, N-1) {
@@ -134,6 +135,7 @@ void smooth(NDGrid<N> &v, NDGrid<N> const &f) {
 template <size_t N>
 void residual(NDGrid<N> &r, NDGrid<N> const &v, NDGrid<N> const &f) {
     ZINC_PRETTY_TIMER;
+#pragma omp parallel for
     for range(z, 1, N-1) {
         for range(y, 1, N-1) {
             for range(x, 1, N-1) {
@@ -176,6 +178,7 @@ template <size_t N>
 template <size_t N>
 void restrict(NDGrid<N/2> &w, NDGrid<N> const &v) {
     ZINC_PRETTY_TIMER;
+#pragma omp parallel for
     for range(z, 0, N/2) {
         for range(y, 0, N/2) {
             for range(x, 0, N/2) {
@@ -197,6 +200,7 @@ void restrict(NDGrid<N/2> &w, NDGrid<N> const &v) {
 template <size_t N>
 void prolongate(NDGrid<N*2> &w, NDGrid<N> const &v) {
     ZINC_PRETTY_TIMER;
+#pragma omp parallel for
     for range(z, 0, N*2) {
         for range(y, 0, N*2) {
             for range(x, 0, N*2) {
