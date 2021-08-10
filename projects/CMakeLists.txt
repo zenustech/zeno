@@ -14,15 +14,18 @@ foreach (name IN ITEMS ${EXTENSIONS_LIST})
     option(EXTENSION_${name} "Build ZENO with extension: ${name}" ${val})
 endforeach()
 
+# todo: to be deprecated:
 add_library(zeno_projects INTERFACE)
 if (NOT MSVC)
     target_link_options(zeno_projects INTERFACE LINKER:--no-as-needed)
 endif()
+
 foreach (name IN ITEMS ${EXTENSIONS_LIST})
     if (${EXTENSION_${name}})
         message("*** Building ZENO with extension: ${name}")
         add_subdirectory(${name})
-        target_link_libraries(zeno_projects INTERFACE zeno_${name})
         add_zeno_autoload(zeno_${name})
+        # todo: to be deprecated:
+        target_link_libraries(zeno_projects INTERFACE zeno_${name})
     endif()
 endforeach()

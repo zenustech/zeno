@@ -22,8 +22,8 @@ else:
 from .utils import os_name
 from ..utils import relative_path
 
-if os_name == 'win32':  # windows doesn't support rpath, let's mock it only
-    lib_dir = relative_path('lib')
+lib_dir = relative_path('lib')
+if os_name == 'win32':  # windows doesn't support rpath, let's mock him only
     os.environ['PATH'] += os.pathsep + lib_dir
     if sys.version_info >= (3, 8):
         os.add_dll_directory(lib_dir)
@@ -70,7 +70,7 @@ def loadAutoloads():
             else:
                 print('[  OK  ] [{}]'.format(path))
 
-if os_name == 'win32' and not os.environ.get('ZEN_NOAUTOLOAD'):
+if not os.environ.get('ZEN_NOAUTOLOAD'):
     loadAutoloads()
 #'''
 
