@@ -32,7 +32,7 @@ struct NDGrid {
         return m_mask[i >> 3] & (1 << (i & 7));
     }
 
-    [[nodiscard]] bool is_active(int x, int y, int z) {
+    [[nodiscard]] bool is_active(uint32_t x, uint32_t y, uint32_t z) {
         return is_active({x, y, z});
     }
 
@@ -41,7 +41,7 @@ struct NDGrid {
         m_mask[i >> 3] |= 1 << (i & 7);
     }
 
-    void activate(int x, int y, int z) {
+    void activate(uint32_t x, uint32_t y, uint32_t z) {
         return activate({x, y, z});
     }
 
@@ -50,7 +50,7 @@ struct NDGrid {
         m_mask[i >> 3] &= ~(1 << (i & 7));
     }
 
-    void deactivate(int x, int y, int z) {
+    void deactivate(uint32_t x, uint32_t y, uint32_t z) {
         return deactivate({x, y, z});
     }
 
@@ -64,11 +64,11 @@ struct NDGrid {
         return m_data[i];
     }
 
-    [[nodiscard]] decltype(auto) at(int x, int y, int z) {
+    [[nodiscard]] decltype(auto) at(uint32_t x, uint32_t y, uint32_t z) {
         return at({x, y, z});
     }
 
-    [[nodiscard]] decltype(auto) at(int x, int y, int z) const {
+    [[nodiscard]] decltype(auto) at(uint32_t x, uint32_t y, uint32_t z) const {
         return at({x, y, z});
     }
 
@@ -78,7 +78,7 @@ struct NDGrid {
         return m_data[i];
     }
 
-    [[nodiscard]] decltype(auto) aat(int x, int y, int z) {
+    [[nodiscard]] decltype(auto) aat(uint32_t x, uint32_t y, uint32_t z) {
         return aat({x, y, z});
     }
 
@@ -94,11 +94,11 @@ struct NDGrid {
         return aat(std::forward<vec3I>(coor));
     }
 
-    [[nodiscard]] decltype(auto) operator()(int x, int y, int z) {
+    [[nodiscard]] decltype(auto) operator()(uint32_t x, uint32_t y, uint32_t z) {
         return operator()({x, y, z});
     }
 
-    [[nodiscard]] decltype(auto) operator()(int x, int y, int z) const {
+    [[nodiscard]] decltype(auto) operator()(uint32_t x, uint32_t y, uint32_t z) const {
         return operator()({x, y, z});
     }
 };
@@ -107,9 +107,9 @@ struct NDGrid {
 
 template <size_t N>
 void smooth(NDGrid<N> &v, NDGrid<N> const &f, int phase) {
-    for range(z, 0, 16) {
-        for range(y, 0, 16) {
-            for range(x, 0, 16) {
+    for range(z, 1, N-1) {
+        for range(y, 1, N-1) {
+            for range(x, 1, N-1) {
                 if ((x + y + z) % 2 != phase)
                     continue;
                 v(x, y, z) = 0.5f * (
@@ -126,20 +126,42 @@ void smooth(NDGrid<N> &v, NDGrid<N> const &f, int phase) {
     }
 }
 
-int main() {
-    NDGrid<16> cu;
-    NDGrid<32> xi;
-    for range(z, 0, 16) {
-        for range(y, 0, 16) {
-            for range(x, 0, 16) {
-                cu.aat({x, y, z}) = 1.0f;
+template <size_t N>
+void residual(NDGrid<N> &r, NDGrid<N> const &v, NDGrid<N> const &f) {
+    for range(z, 1, N-1) {
+        for range(y, 1, N-1) {
+            for range(x, 1, N-1) {
+                r(x, y, z) = 0.5f * (
+                      f(x, y, z)
+                    + v(x+1, y, z)
+                    + v(x, y+1, z)
+                    + v(x, y, z+1)
+                    + v(x-1, y, z)
+                    + v(x, y-1, z)
+                    + v(x, y, z-1)
+                    - v(x, y, z) * 6
+                    );
             }
         }
     }
-    for range(z, 14, 18) {
-        for range(y, 14, 18) {
-            for range(x, 14, 18) {
-                xi.aat({x, y, z}) = 2.0f;
+}
+
+template <size_t N>
+void restrict(NDGrid<N/2> &w, NDGrid<N> const &v) {
+    for range(z, 0, N/2) {
+        for range(y, 0, N/2) {
+            for range(x, 0, N/2) {
+            }
+        }
+    }
+}
+
+int main() {
+    NDGrid<16> v;
+    for range(z, 0, 16) {
+        for range(y, 0, 16) {
+            for range(x, 0, 16) {
+                v(x, y, z) = 1.0f;
             }
         }
     }
