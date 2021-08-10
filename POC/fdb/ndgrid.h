@@ -26,7 +26,8 @@ struct Grid {
     }
 
     [[nodiscard]] static uintptr_t linearize(vec3I coor) {
-        return dot(clamp(coor, 0, N-1), vec3L(1, N, N * N));
+        //return dot(clamp(coor, 0, N-1), vec3L(1, N, N * N));
+        return dot((coor + N) % N, vec3L(1, N, N * N));
     }
 
     [[nodiscard]] auto &operator()(vec3I coor) {
@@ -48,6 +49,7 @@ struct Grid {
     }
 };
 
+/*
 template <size_t N>
 struct BooleanGrid {
     uint8_t *m_mask = new uint8_t[N * N * N / 8];
@@ -90,6 +92,6 @@ struct BooleanGrid {
     void deactivate(uint32_t x, uint32_t y, uint32_t z) {
         return deactivate({x, y, z});
     }
-};
+};*/
 
 }

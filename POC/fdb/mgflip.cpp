@@ -16,12 +16,6 @@ void zeroinit(Grid<T, N> &v) {
     std::memset(v.m_data, 0, N * N * N * sizeof(T));
 }
 
-template <size_t N>
-void zeroinit(BooleanGrid<N> &v) {
-    ZINC_PRETTY_TIMER;
-    std::memset(v.m_mask, 0, N * N * N / 8 * sizeof(uint8_t));
-}
-
 template <size_t M, class T, size_t N>
 void smooth(Grid<T, N> &v, Grid<T, N> const &f) {
     ZINC_PRETTY_TIMER;
@@ -263,8 +257,8 @@ struct Domain {
 
     void solve_possion_eqn() {
         ZINC_PRETTY_TIMER;
-        vcycle<16>(pressure, neg_vel_div);
-        smooth<N>(pressure, neg_vel_div);
+        vcycle<8>(pressure, neg_vel_div);
+        //smooth<N>(pressure, neg_vel_div);
         printf("loss: %f\n", loss(pressure, neg_vel_div));
     }
 
@@ -319,7 +313,7 @@ struct Domain {
 int main() {
     Domain dom;
 
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 100; i++) {
         dom.dump_file(i);
         dom.substep();
     }
