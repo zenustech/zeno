@@ -32,14 +32,26 @@ struct NDGrid {
         return m_mask[i >> 3] & (1 << (i & 7));
     }
 
+    [[nodiscard]] bool is_active(int x, int y, int z) {
+        return is_active({x, y, z});
+    }
+
     void activate(vec3I coor) {
         uintptr_t i = linearize(coor);
         m_mask[i >> 3] |= 1 << (i & 7);
     }
 
+    void activate(int x, int y, int z) {
+        return activate({x, y, z});
+    }
+
     void deactivate(vec3I coor) {
         uintptr_t i = linearize(coor);
         m_mask[i >> 3] &= ~(1 << (i & 7));
+    }
+
+    void deactivate(int x, int y, int z) {
+        return deactivate({x, y, z});
     }
 
     [[nodiscard]] auto const &at(vec3I coor) const {
@@ -52,10 +64,22 @@ struct NDGrid {
         return m_data[i];
     }
 
+    [[nodiscard]] decltype(auto) at(int x, int y, int z) {
+        return at({x, y, z});
+    }
+
+    [[nodiscard]] decltype(auto) at(int x, int y, int z) const {
+        return at({x, y, z});
+    }
+
     [[nodiscard]] auto &aat(vec3I coor) {
         uintptr_t i = linearize(coor);
         m_mask[i >> 3] |= 1 << (i & 7);
         return m_data[i];
+    }
+
+    [[nodiscard]] decltype(auto) aat(int x, int y, int z) {
+        return aat({x, y, z});
     }
 
     [[nodiscard]] decltype(auto) operator()(vec3I &&coor) {
@@ -82,11 +106,21 @@ struct NDGrid {
 #define range(x, x0, x1) (uint32_t x = x0; x < x1; x++)
 
 template <size_t N>
-void smooth(NDGrid<N> *v, NDGrid<N> *f) {
+void smooth(NDGrid<N> &v, NDGrid<N> const &f, int phase) {
     for range(z, 0, 16) {
         for range(y, 0, 16) {
             for range(x, 0, 16) {
-                v(x, y, z);
+                if ((x + y + z) % 2 != phase)
+                    continue;
+                v(x, y, z) = 0.5f * (
+                      f(x, y, z)
+                    + v(x+1, y, z)
+                    + v(x, y+1, z)
+                    + v(x, y, z+1)
+                    + v(x-1, y, z)
+                    + v(x, y-1, z)
+                    + v(x, y, z-1)
+                    );
             }
         }
     }
