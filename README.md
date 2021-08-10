@@ -272,15 +272,17 @@ ccmake -B build  # will shows up a curses screen, c to save, q to exit
 ```cmd
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 ```
-Then open ```build/zeno.sln``` in Visual Studio 2019, and **switch to Release mode in build configurations**, then run `Build -> Build All`.
+Then open ```build/zeno.sln``` in Visual Studio 2019, and **switch to Release mode in build configurations**, then run `Build -> Build All` (Ctrl+Shift+B).
 
 > Optional: You can change some cmake configurations using `cmake-gui`.
 
-```bash
+```cmd
+cmake -B build
 cmake-gui -B build
+@rem will shows up a window to allow you turn ON/OFF the extensions build
 ```
 
-IMPORTANT: In MSVC, Release mode must **always be active** when building ZENO, since MSVC uses different allocators in Release and Debug mode. If a DLL of Release mode and a DLL in Debug mode are linked together in Windows, it will crash when passing STL objects.
+IMPORTANT: In MSVC, **Release** mode must **always be active** when building ZENO, since MSVC uses different allocators in Release and Debug mode. If a DLL of Release mode and a DLL in Debug mode are linked together in Windows, it will crash when passing STL objects.
 
 
 ### Run ZENO for development
@@ -326,13 +328,13 @@ For now, official extensions will be built by default when running the
 
 But some of the extensions are not **enabled by default** because they requries optional dependencies, don't worry, you can enable them with the following commands:
 
-### Rigid
+## Building Rigid
 
 ```bash
 cmake -B build -DEXTENSION_Rigid:BOOL=ON
 ```
 
-### ZenVDB & FastFLIP
+## Building ZenVDB & FastFLIP
 
 ```bash
 cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
@@ -340,7 +342,7 @@ cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON -DZENOFX_
 
 > **The FastFLIP solver we know work well with OpenVDB 7.2.3, and have problem with OpenVDB 8.1.**
 
-### GMPM & Mesher
+## Building GMPM & Mesher
 
 ```bash
 # update git submodules to fetch @littlemine's ZPC submodule:
@@ -348,7 +350,7 @@ git submodule update --init --recursive
 cmake -B build -DEXTENSION_gmpm:BOOL=ON -DEXTENSION_mesher:BOOL=ON
 ```
 
-### Euler
+## Building Euler
 
 ```bash
 cmake -B build -DEXTENSION_Euler:BOOL=ON
@@ -411,10 +413,6 @@ self-contained and portable to all platforms.
 ## Write your own extension!
 
 See https://github.com/zenustech/zeno_addon_wizard for an example on how to write custom nodes in ZENO.
-
-### Installing custom extensions
-
-To install a node library for ZENO just copy the `.so` or `.dll` files to `zenqt/lib/`.
 
 
 # Miscellaneous
