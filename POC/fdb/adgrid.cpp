@@ -159,38 +159,56 @@ void vcycle(NDGrid<N> &v, NDGrid<N> const &f) {
     }
 }
 
+template <size_t N>
+struct Level {
+    NDGrid<N> v, f;
+};
+
 int main() {
     constexpr size_t N = 32;
-    NDGrid<N> v, f;
-    NDGrid<N/2> v2, f2;
-    NDGrid<N/4> v3, f3;
+    Level<N> l1;
+    Level<N/2> l2;
+    Level<N/4> l3;
 
-    zeroinit(v);
-    zeroinit(v2);
-    zeroinit(v3);
+    zeroinit(l1.v);
+    zeroinit(l2.v);
+    zeroinit(l3.v);
+
     for range(z, 0, N) {
         for range(y, 0, N) {
             for range(x, 0, N) {
-                f(x, y, z) = x == N/2 && y == N/2 && z == N/2 ? 100.0f : 0.0f;
+                l1.f(x, y, z) = x == N/2 && y == N/2 && z == N/2 ? 100.0f : 0.0f;
+            }
+        }
+    }
+    for range(z, 0, N/2) {
+        for range(y, 0, N/2) {
+            for range(x, 0, N/2) {
+                l2.f(x, y, z) = x == N/2/2 && y == N/2/2 && z == N/2/2 ? 100.0f : 0.0f;
+            }
+        }
+    }
+    for range(z, 0, N/4) {
+        for range(y, 0, N/4) {
+            for range(x, 0, N/4) {
+                l3.f(x, y, z) = x == N/4/2 && y == N/4/2 && z == N/4/2 ? 100.0f : 0.0f;
             }
         }
     }
 
-    printf("%f\n", loss(v, f));
+    smooth<4>(l1.v, l1.f);
+    restrict(l2.f, l1.f);
 
-    smooth<4>(v, f);
-    restrict(f2, f);
+    smooth<4>(l2.v, l2.f);
+    restrict(l3.f, l2.f);
 
-    smooth<4>(v2, f2);
-    restrict(f3, f2);
+    smooth<4>(l3.v, l3.f);
 
-    smooth<4>(v3, f3);
+    prolongate(l2.v, l3.v);
+    smooth<4>(l2.v, l2.f);
 
-    prolongate(v2, v3);
-    smooth<4>(v2, f2);
+    prolongate(l1.v, l2.v);
+    smooth<4>(l1.v, l1.f);
 
-    prolongate(v, v2);
-    smooth<4>(v, f);
-
-    printf("%f\n", loss(v, f));
+    printf("%f\n", loss(l1.v, l1.f));
 }
