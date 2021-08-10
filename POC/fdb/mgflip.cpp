@@ -120,9 +120,35 @@ void prolongate(Grid<T, N*2> &w, Grid<T, N> const &v) {
     }
 }
 
-template <size_t M, size_t N0 = M, class T, size_t N>
+template <size_t M, size_t N0, class T, size_t N, class = void>
+struct Vcycle {
+    Grid<T, N> r;
+    Grid<T, N/2> r2;
+    Grid<T, N/2> e2;
+
+    Vcycle<M, N0, T, N/2> child;
+
+    void operator()(Grid<T, N> &v, Grid<T, N> const &f) {
+        smooth<M>(v, f);
+        residual(r, v, f);
+        restrict(r2, r);
+        zeroinit(e2);
+        child(e2, r2);
+        prolongate(v, e2);
+        smooth<M>(v, f);
+    }
+};
+
+template <size_t M, size_t N0, class T, size_t N>
+struct Vcycle<M, N0, T, N, std::enable_if_t<N <= N0>> {
+    void operator()(Grid<T, N> &v, Grid<T, N> const &f) {
+        smooth<M>(v, f);
+    }
+};
+
+/*template <size_t M, size_t N0 = M, class T, size_t N>
 void vcycle(Grid<T, N> &v, Grid<T, N> const &f) {
-    if constexpr (N <= M) {
+    if constexpr (N <= N0) {
         smooth<M>(v, f);
 
     } else {
@@ -141,29 +167,8 @@ void vcycle(Grid<T, N> &v, Grid<T, N> const &f) {
         prolongate(v, e2);
         smooth<M>(v, f);
     }
-}
+}*/
 
-
-template <class T>
-struct Points {
-    std::vector<T> m_data;
-
-    void resize(size_t n) {
-        return m_data.resize(n);
-    }
-
-    size_t size() const {
-        return m_data.size();
-    }
-
-    [[nodiscard]] auto &operator()(uint32_t i) {
-        return m_data[i];
-    }
-
-    [[nodiscard]] auto const &operator()(uint32_t i) const {
-        return m_data[i];
-    }
-};
 
 template <class T, size_t N>
 T bilerp(Grid<T, N> const &f, vec3f const &p) {
@@ -208,7 +213,7 @@ void advect(Grid<T, N> &dst, Grid<T, N> const &src, Grid<S, N> const &vel) {
 }
 
 struct Domain {
-    inline static constexpr size_t N = 64;
+    inline static constexpr size_t N = 128;
 
     Grid<float, N> pressure;
     Grid<float, N> neg_vel_div;
@@ -216,6 +221,7 @@ struct Domain {
     Grid<vec3f, N> new_velocity;
     Grid<vec3f, N> color;
     Grid<vec3f, N> new_color;
+    Vcycle<16, 16, float, N> vcycle;
 
     Domain() {
         zeroinit(pressure);
@@ -261,7 +267,7 @@ struct Domain {
 
     void solve_possion_eqn() {
         ZINC_PRETTY_TIMER;
-        vcycle<16>(pressure, neg_vel_div);
+        vcycle(pressure, neg_vel_div);
         //smooth<N>(pressure, neg_vel_div);
         printf("loss: %f\n", loss(pressure, neg_vel_div));
     }
@@ -307,7 +313,7 @@ struct Domain {
 int main() {
     Domain dom;
 
-    for (int i = 0; i < 250; i++) {
+    for (int i = 0; i < 10; i++) {
         dom.dump_file(i);
         dom.substep();
     }

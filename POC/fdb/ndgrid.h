@@ -28,6 +28,10 @@ struct Grid {
     [[nodiscard]] static uintptr_t linearize(vec3I coor) {
         //return dot(clamp(coor, 0, N-1), vec3L(1, N, N * N));
         return dot((coor + N) % N, vec3L(1, N, N * N));
+        /*coor += N;
+        uintptr_t i = dot((coor / 8) % (N/8), vec3L(1, N/8, N/8 * N/8));
+        uintptr_t j = dot(coor % 8, vec3L(1, 8, 8 * 8));
+        return 8*8*8 * i + j;*/
     }
 
     [[nodiscard]] auto &operator()(vec3I coor) {
@@ -93,5 +97,26 @@ struct BooleanGrid {
         return deactivate({x, y, z});
     }
 };*/
+
+template <class T>
+struct Points {
+    std::vector<T> m_data;
+
+    void resize(size_t n) {
+        return m_data.resize(n);
+    }
+
+    size_t size() const {
+        return m_data.size();
+    }
+
+    [[nodiscard]] auto &operator()(uint32_t i) {
+        return m_data[i];
+    }
+
+    [[nodiscard]] auto const &operator()(uint32_t i) const {
+        return m_data[i];
+    }
+};
 
 }
