@@ -147,18 +147,106 @@ void vcycle(Grid<T, N> &v, Grid<T, N> const &f) {
     }
 }
 
-int main() {
-    constexpr size_t N = 64;
-    Grid<float, N> v, f;
-    zeroinit(v);
+
+template <class T>
+struct Points {
+    std::vector<T> m_data;
+
+    void resize(size_t n) {
+        return m_data.resize(n);
+    }
+
+    size_t size() const {
+        return m_data.size();
+    }
+
+    [[nodiscard]] auto &operator()(uint32_t i) {
+        return m_data[i];
+    }
+
+    [[nodiscard]] auto const &operator()(uint32_t i) const {
+        return m_data[i];
+    }
+};
+
+template <class T, size_t N>
+T bilerp(Grid<T, N> const &f, vec3f const &p) {
+    vec3i i(floor(p));
+    vec3f k = p - i;
+
+    auto c000 = f(i[0], i[1], i[2]);
+    auto c100 = f(i[0]+1, i[1], i[2]);
+    auto c010 = f(i[0], i[1]+1, i[2]);
+    auto c110 = f(i[0]+1, i[1]+1, i[2]);
+    auto c001 = f(i[0], i[1], i[2]+1);
+    auto c101 = f(i[0]+1, i[1], i[2]+1);
+    auto c011 = f(i[0], i[1]+1, i[2]+1);
+    auto c111 = f(i[0]+1, i[1]+1, i[2]+1);
+
+    return mix(
+            mix(
+                mix(c000, c100, k[0]),
+                mix(c110, c100, k[0]),
+                k[1]),
+            mix(
+                mix(c001, c101, k[0]),
+                mix(c111, c101, k[0]),
+                k[1]),
+            k[2]
+            );
+}
+
+template <class T, size_t N>
+void advect(Grid<T, N> &dst, Grid<T, N> const &src, Grid<vec3f, N> const &vel) {
+    ZINC_PRETTY_TIMER;
+#pragma omp parallel for
     for range(z, 0, N) {
         for range(y, 0, N) {
             for range(x, 0, N) {
-                f(x, y, z) = x == N/6 && y == N/2 && z == N/4 ? 100.0f : 0.0f;
+                vec3f p(x, y, z);
+                p -= bilerp(vel, p);
+                dst(x, y, z) = bilerp(src, p);
             }
         }
     }
-    printf("%f\n", loss(v, f));
-    vcycle<16>(v, f);
-    printf("%f\n", loss(v, f));
+}
+
+int main() {
+    constexpr size_t N = 64;
+
+    Grid<float, N> pressure;
+    Grid<float, N> neg_vel_div;
+    Grid<vec3f, N> velocity;
+    Grid<vec3f, N> new_velocity;
+
+    zeroinit(pressure);
+    zeroinit(velocity);
+
+#pragma omp parallel for
+    for range(z, 0, N) {
+        for range(y, 0, N) {
+            for range(x, 0, N) {
+                neg_vel_div(x, y, z) =
+                      velocity(x-1, y, z)[0] - velocity(x+1, y, z)[0]
+                    + velocity(x, y-1, z)[1] - velocity(x, y+1, z)[1]
+                    + velocity(x, y, z-1)[2] - velocity(x, y, z+1)[2]
+                    ;
+            }
+        }
+    }
+    vcycle<16>(pressure, neg_vel_div);
+    printf("loss: %f\n", loss(pressure, neg_vel_div));
+
+    for range(z, 0, N) {
+        for range(y, 0, N) {
+            for range(x, 0, N) {
+                velocity(x, y, z)[0] += pressure(x+1, y, z)[0] - pressure(x-1, y, z)[0];
+                velocity(x, y, z)[1] += pressure(x, y+1, z)[1] - pressure(x, y-1, z)[1];
+                velocity(x, y, z)[2] += pressure(x, y, z+1)[2] - pressure(x, y, z-1)[2];
+            }
+        }
+    }
+
+    advect(new_velocity, velocity, velocity);
+
 }

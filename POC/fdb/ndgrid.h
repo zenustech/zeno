@@ -21,30 +21,14 @@ struct Grid {
         return dot(clamp(coor, 0, N-1), vec3L(1, N, N * N));
     }
 
-    [[nodiscard]] auto const &at(vec3I coor) const {
+    [[nodiscard]] auto &operator()(vec3I coor) {
         uintptr_t i = linearize(coor);
         return m_data[i];
     }
 
-    [[nodiscard]] auto &at(vec3I coor) {
+    [[nodiscard]] auto const &operator()(vec3I coor) const {
         uintptr_t i = linearize(coor);
         return m_data[i];
-    }
-
-    [[nodiscard]] decltype(auto) at(uint32_t x, uint32_t y, uint32_t z) {
-        return at({x, y, z});
-    }
-
-    [[nodiscard]] decltype(auto) at(uint32_t x, uint32_t y, uint32_t z) const {
-        return at({x, y, z});
-    }
-
-    [[nodiscard]] decltype(auto) operator()(vec3I &&coor) {
-        return at(std::forward<vec3I>(coor));
-    }
-
-    [[nodiscard]] decltype(auto) operator()(vec3I &&coor) const {
-        return at(std::forward<vec3I>(coor));
     }
 
     [[nodiscard]] decltype(auto) operator()(uint32_t x, uint32_t y, uint32_t z) {
