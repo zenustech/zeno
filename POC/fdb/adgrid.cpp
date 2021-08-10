@@ -11,12 +11,7 @@ struct NDGrid {
     float *m_data = new float[N * N * N];
     uint8_t *m_mask = new uint8_t[N * N * N / 8];
 
-    NDGrid() {
-        ZINC_PRETTY_TIMER;
-        std::memset(m_data, 0, N * N * N * sizeof(float));
-        std::memset(m_mask, 0, N * N * N / 8 * sizeof(uint8_t));
-    }
-
+    NDGrid() = default;
     ~NDGrid() {
         delete[] m_data;
         delete[] m_mask;
@@ -26,7 +21,7 @@ struct NDGrid {
     NDGrid &operator=(NDGrid const &) = delete;
 
     [[nodiscard]] static uintptr_t linearize(vec3I coor) {
-        return dot(coor, vec3L(1, N, N * N));
+        return dot(clamp(coor, 0, N-1), vec3L(1, N, N * N));
     }
 
     [[nodiscard]] bool is_active(vec3I coor) const {
@@ -112,9 +107,9 @@ void smooth(NDGrid<N> &v, NDGrid<N> const &f) {
     ZINC_PRETTY_TIMER;
     for range(phase, 0, T) {
 #pragma omp parallel for
-        for range(z, 1, N-1) {
-            for range(y, 1, N-1) {
-                for range(x, 1, N-1) {
+        for range(z, 0, N) {
+            for range(y, 0, N) {
+                for range(x, 0, N) {
                     if ((x + y + z) % 2 != phase % 2)
                         continue;
                     v(x, y, z) = (
@@ -136,9 +131,9 @@ template <size_t N>
 void residual(NDGrid<N> &r, NDGrid<N> const &v, NDGrid<N> const &f) {
     ZINC_PRETTY_TIMER;
 #pragma omp parallel for
-    for range(z, 1, N-1) {
-        for range(y, 1, N-1) {
-            for range(x, 1, N-1) {
+    for range(z, 0, N) {
+        for range(y, 0, N) {
+            for range(x, 0, N) {
                 r(x, y, z) = (
                       f(x, y, z)
                     + v(x+1, y, z)
@@ -157,9 +152,9 @@ void residual(NDGrid<N> &r, NDGrid<N> const &v, NDGrid<N> const &f) {
 template <size_t N>
 [[nodiscard]] float loss(NDGrid<N> const &v, NDGrid<N> const &f) {
     float res = 0.0f;
-    for range(z, 1, N-1) {
-        for range(y, 1, N-1) {
-            for range(x, 1, N-1) {
+    for range(z, 0, N) {
+        for range(y, 0, N) {
+            for range(x, 0, N) {
                 float val = f(x, y, z)
                     + v(x+1, y, z)
                     + v(x, y+1, z)
@@ -168,7 +163,8 @@ template <size_t N>
                     + v(x, y-1, z)
                     + v(x, y, z-1)
                     - v(x, y, z) * 6;
-                res = std::max(res, val);
+                //res = std::max(res, val);
+                res += val * val;
             }
         }
     }
@@ -232,9 +228,17 @@ void vcycle(NDGrid<N> &v, NDGrid<N> const &f) {
     }
 }
 
+template <size_t N>
+void zeroinit(NDGrid<N> &v) {
+    ZINC_PRETTY_TIMER;
+    std::memset(v.m_data, 0, N * N * N * sizeof(float));
+    std::memset(v.m_mask, 0, N * N * N / 8 * sizeof(uint8_t));
+}
+
 int main() {
     constexpr size_t N = 64;
     NDGrid<N> v, f;
+    zeroinit(v);
     for range(z, 0, N) {
         for range(y, 0, N) {
             for range(x, 0, N) {
