@@ -3,6 +3,7 @@
 #include "vec.h"
 #include "timer.h"
 #include "ndgrid.h"
+#include "vdbio.h"
 
 using namespace zinc;
 
@@ -218,8 +219,8 @@ struct Domain {
     Grid<float, N> neg_vel_div;
     Grid<vec3f, N> velocity;
     Grid<vec3f, N> new_velocity;
-    Grid<float, N> color;
-    Grid<float, N> new_color;
+    Grid<vec3f, N> color;
+    Grid<vec3f, N> new_color;
 
     Domain() {
         zeroinit(pressure);
@@ -267,6 +268,20 @@ struct Domain {
         advect(new_color, color, velocity);
     }
 
+    void dump_file(int frame) {
+        char path[1024];
+        sprintf(path, "/tmp/vel%d.vdb", frame);
+        writevdb(path,
+                [&] (vec3I p) -> vec3f {
+                    return velocity(p);
+                }, {N, N, N});
+        sprintf(path, "/tmp/clr%d.vdb", frame);
+        writevdb(path,
+                [&] (vec3I p) -> vec3f {
+                    return color(p);
+                }, {N, N, N});
+    }
+
     void substep() {
         calc_neg_vel_div();
         solve_possion_eqn();
@@ -280,6 +295,7 @@ int main() {
 
     for (int i = 0; i < 100; i++) {
         dom.substep();
+        dom.dump_file(i);
     }
 
     return 0;
