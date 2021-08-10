@@ -234,7 +234,7 @@ int main() {
     for range(z, 0, N) {
         for range(y, 0, N) {
             for range(x, 0, N) {
-                f(x, y, z) = x == N/2 && y == N/2 && z == N/2 ? 100.0f : 0.0f;
+                f(x, y, z) = x == N/6 && y == N/2 && z == N/4 ? 100.0f : 0.0f;
             }
         }
     }
