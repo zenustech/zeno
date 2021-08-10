@@ -116,7 +116,24 @@ template <size_t N>
 void zeroinit(NDGrid<N> &v) {
     ZINC_PRETTY_TIMER;
     std::memset(v.m_data, 0, N * N * N * sizeof(float));
-    std::memset(v.m_mask, 1, N * N * N / 8 * sizeof(uint8_t));
+}
+
+template <size_t N>
+void copygrid(NDGrid<N> &d, NDGrid<N> const &s) {
+    ZINC_PRETTY_TIMER;
+    std::memcpy(d.m_data, s.m_data, N * N * N * sizeof(float));
+}
+
+template <size_t N>
+void zeroinit(NDBitmask<N> &v) {
+    ZINC_PRETTY_TIMER;
+    std::memset(v.m_mask, 0, N * N * N / 8 * sizeof(float));
+}
+
+template <size_t N>
+void copygrid(NDBitmask<N> &d, NDBitmask<N> const &s) {
+    ZINC_PRETTY_TIMER;
+    std::memcpy(d.m_mask, s.m_mask, N * N * N / 8 * sizeof(float));
 }
 
 template <size_t T, size_t N>
@@ -142,36 +159,38 @@ void vcycle(NDGrid<N> &v, NDGrid<N> const &f) {
     }
 }
 
-template <size_t T, size_t N>
-void ecycle(NDGrid<N> &v, NDGrid<N> const &f) {
-    smooth<T>(v, f);
-
-    NDGrid<N> r;
-    residual(r, v, f);
-
-    NDGrid<N/2> r2;
-    restrict(r2, r);
-
-    NDGrid<N/2> e2;
-    zeroinit(e2);
-    smooth<T>(e2, r2);
-
-    prolongate(v, e2);
-    smooth<T>(v, f);
-}
-
 int main() {
     constexpr size_t N = 32;
     NDGrid<N> v, f;
+    NDGrid<N/2> v2, f2;
+    NDGrid<N/4> v3, f3;
+
     zeroinit(v);
+    zeroinit(v2);
+    zeroinit(v3);
     for range(z, 0, N) {
         for range(y, 0, N) {
             for range(x, 0, N) {
-                f.aat(x, y, z) = x == N/6 && y == N/2 && z == N/4 ? 100.0f : 0.0f;
+                f(x, y, z) = x == N/2 && y == N/2 && z == N/2 ? 100.0f : 0.0f;
             }
         }
     }
+
     printf("%f\n", loss(v, f));
-    ecycle<16>(v, f);
+
+    smooth<4>(v, f);
+    restrict(f2, f);
+
+    smooth<4>(v2, f2);
+    restrict(f3, f2);
+
+    smooth<4>(v3, f3);
+
+    prolongate(v2, v3);
+    smooth<4>(v2, f2);
+
+    prolongate(v, v2);
+    smooth<4>(v, f);
+
     printf("%f\n", loss(v, f));
 }
