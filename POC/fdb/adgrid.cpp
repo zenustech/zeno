@@ -151,6 +151,27 @@ void restrict(NDGrid<N/2> &w, NDGrid<N> const &v) {
     for range(z, 0, N/2) {
         for range(y, 0, N/2) {
             for range(x, 0, N/2) {
+                w(x, y, z) = 0.125f * (
+                      v(x, y, z)
+                    + v(x+1, y, z)
+                    + v(x, y+1, z)
+                    + v(x+1, y+1, z)
+                    + v(x, y, z+1)
+                    + v(x+1, y, z+1)
+                    + v(x, y+1, z+1)
+                    + v(x+1, y+1, z+1)
+                    );
+            }
+        }
+    }
+}
+
+template <size_t N>
+void prolongate(NDGrid<N*2> &w, NDGrid<N> const &v) {
+    for range(z, 0, N*2) {
+        for range(y, 0, N*2) {
+            for range(x, 0, N*2) {
+                w(x, y, z) = v(x/2, y/2, z/2);
             }
         }
     }
