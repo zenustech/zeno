@@ -53,6 +53,7 @@ class QDMSearchLineEdit(QLineEdit):
         self.wact.setDefaultWidget(self)
         self.menu.addAction(self.wact)
 
+
 class QDMFindBar(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
@@ -92,12 +93,15 @@ class QDMFindBar(QWidget):
         p.setBrush(Qt.white)
         p.drawRect(self.rect())
 
+    def do_search(self, text):
+        scene = self.window.view.scene()
+        return [n for n in scene.nodes if text.lower() in n.name.lower()]
+
     def textChanged(self, text):
         if text == '':
             self.resultLabel.setText('')
             return
-        scene = self.window.view.scene()
-        ns = [n for n in scene.nodes if text in n.name.lower()]
+        ns = self.search(text)
         if len(ns) == 0:
             self.resultLabel.setText('')
             return
@@ -109,9 +113,8 @@ class QDMFindBar(QWidget):
     def on_jump(self):
         self.resultLabel.setText(' {} of {} '.format(self.current_index + 1, self.total_count))
 
-        scene = self.window.view.scene()
         text = self.lineEdit.text()
-        ns = [n for n in scene.nodes if text in n.name.lower()]
+        ns = self.do_search(text)
         n = ns[self.current_index]
 
         view = self.window.view
@@ -122,10 +125,14 @@ class QDMFindBar(QWidget):
         view.verticalScrollBar().setValue(trans_y)
 
     def jump_prev(self):
+        if self.total_count == 0:
+            return
         self.current_index = (self.current_index - 1) % self.total_count
         self.on_jump()
 
     def jump_next(self):
+        if self.total_count == 0:
+            return
         self.current_index = (self.current_index + 1) % self.total_count
         self.on_jump()
 
@@ -135,6 +142,7 @@ class QDMFindBar(QWidget):
         self.lineEdit.clear()
         self.hide()
         self.window.view.setFocus()
+
 
 class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
