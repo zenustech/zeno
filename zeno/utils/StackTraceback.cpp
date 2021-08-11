@@ -205,11 +205,28 @@ inline std::vector<StackFrame> stack_trace() {
 #include <cxxabi.h>
 
 namespace zeno {
-static std::string calc_addr_to_line(std::string const &file, std::string const &offset) {
-    auto cmd = "addr2line -e '" + file + "' -- '" + offset + "'";
-    FILE *fp = popen(cmd.c_str(), "r");
-    if (!fp) { return ""; }
+static std::string calc_addr_to_line(
+        std::string const &file, std::string const &name,
+        std::string const &offset) {
+
+    char cmd[2048];
     int ch;
+    sprintf(cmd, "nm -p --defined-only '%s' | grep 'T %s$'", file.c_str(), name.c_str());
+    FILE *fp = popen(cmd, "r");
+    if (!fp) return "";
+    std::string addr;
+    while (1) {
+        ch = fgetc(fp);
+        if (ch == EOF)
+            break;
+        if (ch != ' ')
+            addr += (char)ch;
+    }
+    pclose(fp);
+
+    sprintf(cmd, "addr2line -e '%s' -- '%s'", file.c_str(), addr.c_str());
+    fp = popen(cmd, "r");
+    if (!fp) return "";
     std::string res;
     while (1) {
         ch = fgetc(fp);
@@ -373,7 +390,7 @@ void print_traceback() {
       fmt::print(fg(fmt::color::red), "{}\n", s);
       //fmt::print(fg(fmt::color::gray), "[name={} offset={} file={}]\n", name, offset, file);
       fmt::print(fg(fmt::color::yellow), "{}", demangled);
-      auto lineinfo = calc_addr_to_line(file, name);
+      auto lineinfo = calc_addr_to_line(file, name, offset);
       if (lineinfo.size()) {
           fmt::print(fg(fmt::color::gray), " at ");
           fmt::print(fg(fmt::color::cyan), "{}", lineinfo);
