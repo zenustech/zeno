@@ -1,4 +1,4 @@
-x=timer
+x=gdbtrace
 
 x: $x.exe Makefile
 	./$<

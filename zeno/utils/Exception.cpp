@@ -12,7 +12,7 @@ ZENO_API BaseException::BaseException(std::string_view msg) noexcept
 
 ZENO_API Exception::Exception(std::string_view msg) noexcept
     : BaseException(msg) {
-    spdlog::error("exception occurred: {}", msg);
+    spdlog::error("Exception: {}", msg);
     print_traceback();
     trigger_gdb();
 }

@@ -329,7 +329,7 @@ void print_traceback() {
   fmt::print(fg(fmt::color::magenta), "* Zeno Stack Traceback *\n");
   fmt::print(fg(fmt::color::magenta), "************************\n");
 
-  // j = 0: taichi::print_traceback
+  // j = 0: zeno::print_traceback
   for (int j = 1; j < nptrs; j++) {
     std::string s(strings[j]);
     std::size_t slash = s.find("/");
