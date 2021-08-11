@@ -1,5 +1,3 @@
-#define ZENO_LINUX_GDB_BACKTRACE 1
-
 #ifdef ZENO_FAULTHANDLER
 // https://github.com/taichi-dev/taichi/blob/eb769ebfc0cb6b48649a3aed8ccd293cbd4eb5ed/taichi/system/traceback.cpp
 /*******************************************************************************
@@ -200,19 +198,30 @@ inline std::vector<StackFrame> stack_trace() {
 }
 #endif
 #ifdef __linux__
-#ifndef ZENO_LINUX_GDB_BACKTRACE
 #include <execinfo.h>
 #include <signal.h>
 #include <ucontext.h>
 #include <unistd.h>
 #include <cxxabi.h>
-#else
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <sys/prctl.h>
-#endif
+
+namespace zeno {
+static std::string calc_addr_to_line(std::string const &file, std::string const &offset) {
+    auto cmd = "addr2line -e '" + file + "' -- '" + offset + "'";
+    FILE *fp = popen(cmd.c_str(), "r");
+    if (!fp) { return ""; }
+    int ch;
+    std::string res;
+    while (1) {
+        ch = fgetc(fp);
+        if (ch == EOF)
+            break;
+        if (ch != '\n')
+            res += (char)ch;
+    }
+    pclose(fp);
+    return res;
+}
+}
 #endif
 
 namespace zeno {
@@ -322,7 +331,6 @@ void print_traceback() {
                fmt::format(" in {}\n", stack[i].module));
   }
 #elif defined(__linux__)
-#ifndef ZENO_LINUX_GDB_BACKTRACE
   // Based on http://man7.org/linux/man-pages/man3/backtrace.3.html
   constexpr int BT_BUF_SIZE = 1024;
   int nptrs;
@@ -345,50 +353,38 @@ void print_traceback() {
   for (int j = 1; j < nptrs; j++) {
     std::string s(strings[j]);
     std::size_t slash = s.find("/");
-    std::size_t start = s.find("(");
-    std::size_t end = s.rfind("+");
+    std::size_t bra = s.find("(");
+    std::size_t ket = s.find(")");
+    std::size_t pls = s.rfind("+");
 
-    std::string line;
-
-    if (slash == 0 && start < end && s[start + 1] != '+') {
-      std::string name = s.substr(start + 1, end - start - 1);
-
-      char *demangled_name_;
+    if (slash == 0 && bra < pls && s[bra + 1] != '+') {
+      std::string name = s.substr(bra + 1, pls - bra - 1);
+      std::string file = s.substr(0, bra);
+      std::string offset = s.substr(pls + 1, ket - pls - 1);
 
       int status = -1;
-
-      demangled_name_ = abi::__cxa_demangle(name.c_str(), NULL, NULL, &status);
-
-      if (demangled_name_) {
-        name = std::string(demangled_name_);
+      std::string demangled;
+      if (char *p = abi::__cxa_demangle(name.c_str(), NULL, NULL, &status); p) {
+        demangled = std::string(p);
+        free(p);
+      } else {
+        demangled = name;
       }
-
-      std::string prefix = s.substr(0, start);
-
-      line = fmt::format("{}: {}", prefix, name);
-      free(demangled_name_);
+      fmt::print(fg(fmt::color::red), "{}\n", s);
+      //fmt::print(fg(fmt::color::gray), "[name={} offset={} file={}]\n", name, offset, file);
+      fmt::print(fg(fmt::color::yellow), "{}", demangled);
+      auto lineinfo = calc_addr_to_line(file, name);
+      if (lineinfo.size()) {
+          fmt::print(fg(fmt::color::gray), " at ");
+          fmt::print(fg(fmt::color::cyan), "{}", lineinfo);
+      }
+      fmt::print(fg(fmt::color::gray), "\n");
     } else {
-      line = s;
+      fmt::print(fg(fmt::color::red), "{}\n", s);
     }
-    fmt::print(fg(fmt::color::magenta), "{}\n", line);
   }
   std::free(strings);
-#else
-    char pid_buf[30];
-    sprintf(pid_buf, "%d", getpid());
-    char name_buf[512];
-    name_buf[readlink("/proc/self/exe", name_buf, 511)] = 0;
-    prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY, 0, 0, 0);
-    int child_pid = fork();
-    if (!child_pid) {
-        execl("/usr/bin/gdb", "gdb", "--batch", "-n", "-ex", "thread", "-ex", "bt", name_buf, pid_buf, NULL);
-        abort();  /* If gdb failed to start */
-    } else {
-        waitpid(child_pid, NULL, 0);
-    }
 #endif
-#endif
-
   fmt::print(fg(fmt::color::orange), "\nInternal error occurred.\n");
 }
 }
