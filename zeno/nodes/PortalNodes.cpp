@@ -2,6 +2,7 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/ConditionObject.h>
 #include <zeno/utils/safe_at.h>
+#include <spdlog/spdlog.h>
 
 struct PortalIn : zeno::INode {
     virtual void complete() override {
@@ -65,7 +66,7 @@ struct Clone : zeno::INode {
         auto obj = get_input("object");
         auto newobj = obj->clone();
         if (!newobj) {
-            printf("ERROR: requested object doesn't support clone\n");
+            spdlog::error("requested object doesn't support clone");
             return;
         }
         set_output("newObject", std::move(newobj));
@@ -86,7 +87,7 @@ struct Assign : zeno::INode {
         auto dst = get_input("dst");
         bool succ = dst->assign(src.get());
         if (!succ) {
-            printf("ERROR: requested object doesn't support assign or type mismatch\n");
+            spdlog::error("requested object doesn't support assign or type mismatch");
             return;
         }
         set_output("dst", std::move(dst));

@@ -14,13 +14,16 @@ add_library(zeno_Euler SHARED dummy.cpp nodesys.cpp)
 
 #simd compiler flags
 if (WIN32)
+target_compile_options(zeno_Euler PRIVATE /arch:AVX)
 else()
 target_compile_options(zeno_Euler PRIVATE "-march=native")
 endif()
 
 
 target_include_directories(zeno_Euler PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_directories(zeno_Euler PUBLIC /usr/lib/x86_64-linux-gnu:/usr/local/lib)
+if (UNIX)
+    target_link_directories(zeno_Euler PUBLIC /usr/lib/x86_64-linux-gnu:/usr/local/lib)
+endif()
 
 target_link_libraries(zeno_Euler PRIVATE TBB::tbb TBB::tbbmalloc)
 # target_link_libraries(zeno_Euler PRIVATE bow)

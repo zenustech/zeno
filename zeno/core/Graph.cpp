@@ -70,7 +70,7 @@ ZENO_API void Graph::applyNode(std::string const &id) {
     try {
         node->doApply();
     } catch (std::exception const &e) {
-        throw zeno::Exception("During evaluation of `"
+        throw zeno::BaseException("During evaluation of `"
                 + node->myname + "`:\n" + e.what());
     }
 }
@@ -84,7 +84,7 @@ ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
         ctx = nullptr;
     } catch (std::exception const &e) {
         ctx = nullptr;
-        throw zeno::Exception(
+        throw zeno::BaseException(
                 (std::string)"ZENO Traceback (most recent call last):\n"
                 + e.what());
     }

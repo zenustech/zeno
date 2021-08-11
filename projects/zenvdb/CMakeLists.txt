@@ -1,6 +1,6 @@
 file(GLOB PROJECT_SOURCE include/*/*.h *.cpp)
 
-if (GNU)
+if (UNIX)
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/lib/cmake/OpenVDB)
 endif()
 
