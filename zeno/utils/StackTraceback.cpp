@@ -204,7 +204,7 @@ inline std::vector<StackFrame> stack_trace() {
 #include <unistd.h>
 #include <cxxabi.h>
 
-namespace zeno {
+namespace zeno::dbg {
 static std::string calc_addr_to_line(
         std::string const &file, std::string const &name,
         std::string const &offset) {
@@ -339,14 +339,14 @@ void print_traceback() {
 
   std::vector<dbg::StackFrame> stack = dbg::stack_trace();
   for (unsigned int i = 0; i < stack.size(); i++) {
-    fmt::print(fg(fmt::color::magenta),
-               fmt::format("0x{:x}: ", stack[i].address));
-    fmt::print(fg(fmt::color::red), stack[i].name);
-    if (stack[i].file != std::string(""))
-      fmt::print(fg(fmt::color::magenta),
-                 fmt::format("(line {} in {})", stack[i].line, stack[i].file));
-    fmt::print(fg(fmt::color::magenta),
-               fmt::format(" in {}\n", stack[i].module));
+    fmt::print(fg(fmt::color::gray), "0x{:x}: ", stack[i].address);
+    fmt::print(fg(fmt::color::yellow), stack[i].name);
+    if (stack[i].file != std::string("")) {
+      fmt::print(fg(fmt::color::gray), " at ");
+      fmt::print(fg(fmt::color::cyan), "{}:{}", stack[i].file, stack[i].line);
+    }
+    fmt::print(fg(fmt::color::gray), " in ");
+    fmt::print(fg(fmt::color::magenta), "{}\n", stack[i].module);
   }
 #elif defined(__linux__)
   // Based on http://man7.org/linux/man-pages/man3/backtrace.3.html
@@ -360,7 +360,7 @@ void print_traceback() {
 
   if (strings == nullptr) {
     perror("backtrace_symbols");
-    exit(EXIT_FAILURE);
+    return;
   }
 
   fmt::print(fg(fmt::color::magenta), "************************\n");
@@ -373,12 +373,15 @@ void print_traceback() {
     std::size_t slash = s.find("/");
     std::size_t bra = s.find("(");
     std::size_t ket = s.find(")");
+    std::size_t ebra = s.find("[");
+    std::size_t eket = s.find("]");
     std::size_t pls = s.rfind("+");
 
     if (slash == 0 && bra < pls && s[bra + 1] != '+') {
       std::string name = s.substr(bra + 1, pls - bra - 1);
       std::string file = s.substr(0, bra);
       std::string offset = s.substr(pls + 1, ket - pls - 1);
+      std::string address = s.substr(ebra + 1, eket - ebra - 1);
 
       int status = -1;
       std::string demangled;
@@ -389,13 +392,16 @@ void print_traceback() {
         demangled = name;
       }
       fmt::print(fg(fmt::color::red), "{}\n", s);
+      fmt::print(fg(fmt::color::gray), "{}: ", address);
       //fmt::print(fg(fmt::color::gray), "[name={} offset={} file={}]\n", name, offset, file);
       fmt::print(fg(fmt::color::yellow), "{}", demangled);
-      auto lineinfo = calc_addr_to_line(file, name, offset);
+      auto lineinfo = dbg::calc_addr_to_line(file, name, offset);
       if (lineinfo.size()) {
           fmt::print(fg(fmt::color::gray), " at ");
           fmt::print(fg(fmt::color::cyan), "{}", lineinfo);
       }
+      fmt::print(fg(fmt::color::gray), " in ");
+      fmt::print(fg(fmt::color::magenta), "{}", file);
       fmt::print(fg(fmt::color::gray), "\n");
     } else {
       fmt::print(fg(fmt::color::red), "{}\n", s);
