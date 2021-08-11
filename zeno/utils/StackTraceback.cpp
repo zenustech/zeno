@@ -1,4 +1,4 @@
-#define ZENO_LINUX_GDB_BACKTRACE
+#define ZENO_LINUX_GDB_BACKTRACE 1
 
 #ifdef ZENO_FAULTHANDLER
 // https://github.com/taichi-dev/taichi/blob/eb769ebfc0cb6b48649a3aed8ccd293cbd4eb5ed/taichi/system/traceback.cpp
