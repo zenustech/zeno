@@ -377,7 +377,7 @@ void print_traceback() {
     std::size_t eket = s.find("]");
     std::size_t pls = s.rfind("+");
 
-    if (slash == 0 && bra < pls && s[bra + 1] != '+') {
+    //if (slash == 0 && bra < pls && s[bra + 1] != '+') {
       std::string name = s.substr(bra + 1, pls - bra - 1);
       std::string file = s.substr(0, bra);
       std::string offset = s.substr(pls + 1, ket - pls - 1);
@@ -385,15 +385,16 @@ void print_traceback() {
 
       int status = -1;
       std::string demangled;
-      if (char *p = abi::__cxa_demangle(name.c_str(), NULL, NULL, &status); p) {
+      if (name.size() == 0) {
+          demangled = "??";
+      } else if (char *p = abi::__cxa_demangle(name.c_str(), NULL, NULL, &status); p) {
         demangled = std::string(p);
         free(p);
       } else {
         demangled = name;
       }
-      fmt::print(fg(fmt::color::red), "{}\n", s);
+      //fmt::print(fg(fmt::color::red), "{}\n", s);
       fmt::print(fg(fmt::color::gray), "{}: ", address);
-      //fmt::print(fg(fmt::color::gray), "[name={} offset={} file={}]\n", name, offset, file);
       fmt::print(fg(fmt::color::yellow), "{}", demangled);
       auto lineinfo = dbg::calc_addr_to_line(file, name, offset);
       if (lineinfo.size()) {
@@ -403,9 +404,9 @@ void print_traceback() {
       fmt::print(fg(fmt::color::gray), " in ");
       fmt::print(fg(fmt::color::magenta), "{}", file);
       fmt::print(fg(fmt::color::gray), "\n");
-    } else {
+    /*} else {
       fmt::print(fg(fmt::color::red), "{}\n", s);
-    }
+    }*/
   }
   std::free(strings);
 #endif
