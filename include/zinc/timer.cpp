@@ -9,7 +9,7 @@ namespace zinc {
 Timer::Timer(std::string_view &&tag_, Timer::ClockType::time_point &&beg_)
     : parent(current)
     , beg(ClockType::now())
-    , tag(current ? current->tag + '/' + (std::string)tag_ : tag_)
+    , tag(current ? current->tag + " => " + (std::string)tag_ : tag_)
 {
     current = this;
 }
@@ -26,6 +26,10 @@ Timer *Timer::current = nullptr;
 std::vector<Timer::Record> Timer::records;
 
 void Timer::print() {
+    if (records.size() == 0) {
+        return;
+    }
+
     printf("=== Begin ZINC Timing Statistics ===\n");
 
     struct Statistic {

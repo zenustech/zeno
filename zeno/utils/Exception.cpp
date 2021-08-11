@@ -1,5 +1,5 @@
 #include <zeno/utils/Exception.h>
-#include <zeno/utils/zlog.h>
+#include <spdlog/spdlog.h>
 
 namespace zeno {
 
@@ -8,7 +8,7 @@ void trigger_gdb();
 
 ZENO_API Exception::Exception(std::string const &msg) noexcept
     : msg(msg) {
-    zlog::error("exception occurred: {}", msg);
+    spdlog::error("exception occurred: {}", msg);
     print_traceback();
     trigger_gdb();
 }

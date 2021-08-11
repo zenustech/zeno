@@ -1,5 +1,6 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
+#include <spdlog/spdlog.h>
 #include <zeno/zeno.h>
 
 namespace zeno {
@@ -43,7 +44,7 @@ ZENO_API void Scene::loadScene(const char *json) {
                 this->clearAllState();
             }
         } catch (zeno::Exception const &e) {
-            printf("exception executing command %d (%s): %s\n",
+            spdlog::warn("exception executing command {} ({}): {}",
                     i, cmd.c_str(), e.what());
         }
     }
