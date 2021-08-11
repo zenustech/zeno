@@ -101,7 +101,7 @@ class QDMFindBar(QWidget):
         if text == '':
             self.resultLabel.setText('')
             return
-        ns = self.search(text)
+        ns = self.do_search(text)
         if len(ns) == 0:
             self.resultLabel.setText('')
             return
