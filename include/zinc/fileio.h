@@ -4,7 +4,7 @@
 #include <fstream>
 #include <cstdio>
 
-namespace zeno {
+namespace zinc {
 
 static std::string file_get_content(std::string const &path) {
   std::ifstream fin(path);

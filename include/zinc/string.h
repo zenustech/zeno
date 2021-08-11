@@ -7,7 +7,7 @@
 #include <sstream>
 
 
-namespace zeno {
+namespace zinc {
 
 
 static inline auto split_str(std::string const &s, char delimiter) {
