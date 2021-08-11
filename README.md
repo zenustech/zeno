@@ -285,7 +285,7 @@ cmake-gui -B build
 IMPORTANT: In MSVC, **Release** mode must **always be active** when building ZENO, since MSVC uses different allocators in Release and Debug mode. If a DLL of Release mode and a DLL in Debug mode are linked together in Windows, it will crash when passing STL objects.
 
 
-### Run ZENO for development
+## Run ZENO for development
 
 ```bash
 python run.py
@@ -293,7 +293,7 @@ python run.py
 
 After successfully loading the editor, you may click `File -> Open` to play `graphs/LorenzParticleTrail.zsg` to confirm everything is working well :)
 
-#### Troubleshooting
+## Troubleshooting
 
 If you got:
 ```bash
