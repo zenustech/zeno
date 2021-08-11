@@ -239,7 +239,7 @@
       "SRC": null
      },
      "params": {
-      "value": 0.1
+      "value": 0.04
      },
      "uipos": [
       -4224.047088623046,
@@ -928,12 +928,44 @@
       703.7499999999998
      ],
      "options": []
+    },
+    "9d8c41f5-MeshToPrimitive": {
+     "name": "MeshToPrimitive",
+     "inputs": {
+      "mesh": [
+       "abe22816-ReadObjMesh",
+       "mesh"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -2079.999999999997,
+      156.24999999999974
+     ],
+     "options": []
+    },
+    "b9b69b81-x": {
+     "name": "MeshToPrimitive",
+     "inputs": {
+      "mesh": [
+       "6f4b683b-ReadObjMesh",
+       "mesh"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -2846.8749999999955,
+      1303.124999999998
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.2621440000000004,
-    "trans_x": 819,
-    "trans_y": 57
+    "scale": 0.2097152000000001,
+    "trans_x": -70,
+    "trans_y": 23
    }
   },
   "ToMaterialPoints": {
