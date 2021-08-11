@@ -81,6 +81,7 @@ class QDMFindBar(QWidget):
         self.total_count = 0
 
         self.lineEdit.textChanged.connect(self.textChanged)
+        self.lineEdit.returnPressed.connect(self.jump_next)
         self.prevButton.clicked.connect(self.jump_prev)
         self.nextButton.clicked.connect(self.jump_next)
         self.closeButton.clicked.connect(self.close)
