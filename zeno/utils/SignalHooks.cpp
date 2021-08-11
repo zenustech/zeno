@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/utils/zlog.h>
+#include <spdlog/spdlog.h>
 #include <cstdio>
 #include <cstdlib>
 #include <csignal>
@@ -33,13 +33,13 @@ void trigger_gdb() {
 #ifdef ZENO_FAULTHANDLER
 static void signal_handler(int signo) {
 #ifdef __linux__
-    zlog::error("recieved signal {}: {}", signo, strsignal(signo));
+    spdlog::error("recieved signal {}: {}", signo, strsignal(signo));
 #else
     const char *signame = "SIG-unknown";
     if (signo == SIGSEGV) signame = "SIGSEGV";
     if (signo == SIGFPE) signame = "SIGFPE";
     if (signo == SIGILL) signame = "SIGILL";
-    zlog::error("recieved signal {}: {}", signo, signame);
+    spdlog::error("recieved signal {}: {}", signo, signame);
 #endif
     print_traceback();
     trigger_gdb();
