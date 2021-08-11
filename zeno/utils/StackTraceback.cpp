@@ -211,7 +211,7 @@ static std::string calc_addr_to_line(
 
     char cmd[2048];
     int ch;
-    sprintf(cmd, "nm -p --defined-only '%s' | grep 'T %s$'", file.c_str(), name.c_str());
+    sprintf(cmd, "nm -p --defined-only '%s' 2>&1 | grep 'T %s$'", file.c_str(), name.c_str());
     FILE *fp = popen(cmd, "r");
     if (!fp) return "";
     std::string addr;
@@ -223,6 +223,7 @@ static std::string calc_addr_to_line(
             addr += (char)ch;
     }
     pclose(fp);
+    if (!addr.size()) return "";
 
     sprintf(cmd, "addr2line -e '%s' -- '%s'", file.c_str(), addr.c_str());
     fp = popen(cmd, "r");
