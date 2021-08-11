@@ -54,6 +54,96 @@ class QDMSearchLineEdit(QLineEdit):
         self.menu.addAction(self.wact)
 
 
+class QDMFindBar(QWidget):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.window = parent
+
+        self.lineEdit = QLineEdit(self)
+        self.resultLabel = QLabel()
+        self.prevButton = QPushButton('Prev', self)
+        self.prevButton.setFixedWidth(50)
+        self.nextButton = QPushButton('Next', self)
+        self.nextButton.setFixedWidth(50)
+        self.closeButton = QPushButton('X', self)
+        self.closeButton.setFixedWidth(30)
+
+        self.layout = QHBoxLayout()
+        self.layout.setContentsMargins(5, 0, 5, 0)
+        self.layout.addWidget(self.lineEdit)
+        self.layout.addWidget(self.resultLabel)
+        self.layout.addWidget(self.prevButton)
+        self.layout.addWidget(self.nextButton)
+        self.layout.addWidget(self.closeButton)
+        self.setLayout(self.layout)
+
+        self.current_index = 0
+        self.total_count = 0
+
+        self.lineEdit.textChanged.connect(self.textChanged)
+        self.lineEdit.returnPressed.connect(self.jump_next)
+        self.prevButton.clicked.connect(self.jump_prev)
+        self.nextButton.clicked.connect(self.jump_next)
+        self.closeButton.clicked.connect(self.close)
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setPen(Qt.NoPen)
+        p.setBrush(Qt.white)
+        p.drawRect(self.rect())
+
+    def do_search(self, text):
+        scene = self.window.view.scene()
+        return [n for n in scene.nodes if text.lower() in n.name.lower()]
+
+    def textChanged(self, text):
+        if text == '':
+            self.resultLabel.setText('')
+            return
+        ns = self.search(text)
+        if len(ns) == 0:
+            self.resultLabel.setText('')
+            return
+
+        self.current_index = 0
+        self.total_count = len(ns)
+        self.on_jump()
+
+    def on_jump(self):
+        self.resultLabel.setText(' {} of {} '.format(self.current_index + 1, self.total_count))
+
+        text = self.lineEdit.text()
+        ns = self.do_search(text)
+        n = ns[self.current_index]
+
+        view = self.window.view
+        view.resetTransform()
+        trans_x = n.pos().x() - view.geometry().width() // 2 + style['node_width'] // 2
+        trans_y = n.pos().y() - view.geometry().height() // 2
+        view.horizontalScrollBar().setValue(trans_x)
+        view.verticalScrollBar().setValue(trans_y)
+
+    def jump_prev(self):
+        if self.total_count == 0:
+            return
+        self.current_index = (self.current_index - 1) % self.total_count
+        self.on_jump()
+
+    def jump_next(self):
+        if self.total_count == 0:
+            return
+        self.current_index = (self.current_index + 1) % self.total_count
+        self.on_jump()
+
+    def close(self):
+        self.current_index = 0
+        self.total_count = 0
+        self.lineEdit.clear()
+        self.hide()
+        self.window.view.setFocus()
+
+
 class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
         super().__init__(parent)
