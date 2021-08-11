@@ -43,7 +43,7 @@ ZENO_API void Scene::loadScene(const char *json) {
             } else if (cmd == "clearAllState") {
                 this->clearAllState();
             }
-        } catch (zeno::Exception const &e) {
+        } catch (zeno::BaseException const &e) {
             spdlog::warn("exception executing command {} ({}): {}",
                     i, cmd.c_str(), e.what());
         }

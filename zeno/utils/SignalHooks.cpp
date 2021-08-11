@@ -5,30 +5,12 @@
 #include <csignal>
 #ifdef __linux__
 #include <string.h>
-#include <unistd.h>
 #endif
 
 namespace zeno {
 
 void print_traceback();
-
-#ifdef __linux__
-void trigger_gdb() {
-#ifdef ZENO_FAULTHANDLER
-    if (!getenv("ZEN_AUTOGDB"))
-        return;
-    char cmd[1024];
-    sprintf(cmd, "sudo gdb -q "
-            " -ex 'set confirm off'"
-            " -ex 'set pagination off'"
-            " -p %d", getpid());
-    system(cmd);
-#endif
-}
-#else
-void trigger_gdb() {
-}
-#endif
+void trigger_gdb();
 
 #ifdef ZENO_FAULTHANDLER
 static void signal_handler(int signo) {

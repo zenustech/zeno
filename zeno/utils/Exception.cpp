@@ -6,16 +6,20 @@ namespace zeno {
 void print_traceback();
 void trigger_gdb();
 
-ZENO_API Exception::Exception(std::string const &msg) noexcept
+ZENO_API BaseException::BaseException(std::string_view msg) noexcept
     : msg(msg) {
+}
+
+ZENO_API Exception::Exception(std::string_view msg) noexcept
+    : BaseException(msg) {
     spdlog::error("exception occurred: {}", msg);
     print_traceback();
     trigger_gdb();
 }
 
-ZENO_API Exception::~Exception() noexcept = default;
+ZENO_API BaseException::~BaseException() noexcept = default;
 
-ZENO_API char const *Exception::what() const noexcept {
+ZENO_API char const *BaseException::what() const noexcept {
     return msg.c_str();
 }
 
