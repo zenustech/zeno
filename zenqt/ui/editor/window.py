@@ -37,6 +37,8 @@ class QDMEditMenu(QMenu):
                 (None, None),
                 ('&Copy', QKeySequence.Copy),
                 ('&Paste', QKeySequence.Paste),
+                (None, None),
+                ('&Find', QKeySequence.Find),
         ]
         
         for name, shortcut in acts:
@@ -164,9 +166,6 @@ class NodeEditor(QWidget):
 
         self.msgAdd = QShortcut(QKeySequence('Tab'), self)
         self.msgAdd.activated.connect(self.shortcut_add)
-
-        self.msgFind = QShortcut(QKeySequence('CTRL+F'), self)
-        self.msgFind.activated.connect(lambda: self.find_bar.show())
 
     def initExecute(self):
         self.edit_graphname = QComboBox(self)
@@ -383,6 +382,9 @@ class NodeEditor(QWidget):
 
         elif name == '&Paste':
             self.do_paste()
+
+        elif name == '&Find':
+            self.find_bar.show()
 
     def do_export(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Export',
