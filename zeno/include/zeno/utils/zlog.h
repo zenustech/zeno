@@ -1,7 +1,7 @@
 #pragma once
 
-#include <zinc/zlog.h>
+#include <zinc/logging.h>
 
-namespace zeno {
-using namespace zinc;
+namespace zlog {
+using namespace zinc::logging;
 }

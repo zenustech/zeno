@@ -6,7 +6,7 @@
 #include <android/log.h>
 #endif
 
-namespace zlog {
+namespace zinc::logging {
     enum class LogLevel : char {
         trace = 't',
         debug = 'd',
