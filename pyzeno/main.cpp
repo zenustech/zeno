@@ -44,7 +44,7 @@ PYBIND11_MODULE(zeno_pybind11_module, m) {
         try {
             if (p)
                 std::rethrow_exception(p);
-        } catch (zeno::Exception const &e) {
+        } catch (zeno::BaseException const &e) {
             PyErr_SetString(PyExc_RuntimeError, e.what());
         }
     });
