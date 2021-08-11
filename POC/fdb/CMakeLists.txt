@@ -12,7 +12,6 @@ if (UNIX)
     set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../projects/cmake ${CMAKE_MODULE_PATH})
 endif()
 
-find_package(TBB REQUIRED)
 find_package(OpenVDB REQUIRED)
-target_link_libraries(adflip OpenVDB::openvdb TBB::tbb)
+target_link_libraries(adflip OpenVDB::openvdb)
 target_include_directories(adflip PRIVATE ../../include)
