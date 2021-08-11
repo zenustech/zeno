@@ -1,3 +1,4 @@
+#ifdef ZENO_FAULTHANDLER
 #include <zeno/zeno.h>
 #include <spdlog/spdlog.h>
 #include <cstdio>
@@ -9,9 +10,8 @@
 
 namespace zeno {
 
-#ifdef __linux__
 void trigger_gdb() {
-#ifdef ZENO_FAULTHANDLER
+#ifdef __linux__
     if (!getenv("ZEN_TRIGGDB"))
         return;
     char cmd[1024];
@@ -22,9 +22,11 @@ void trigger_gdb() {
     system(cmd);
 #endif
 }
-#else
-void trigger_gdb() {
-}
-#endif
 
 }
+#else
+namespace zeno {
+void trigger_gdb() {
+}
+}
+#endif

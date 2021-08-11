@@ -1,3 +1,5 @@
+#define ZENO_LINUX_GDB_BACKTRACE
+
 #ifdef ZENO_FAULTHANDLER
 // https://github.com/taichi-dev/taichi/blob/eb769ebfc0cb6b48649a3aed8ccd293cbd4eb5ed/taichi/system/traceback.cpp
 /*******************************************************************************
@@ -14,6 +16,7 @@
 #include <algorithm>
 #include <memory>
 #include <mutex>
+#include <fmt/core.h>
 #include <fmt/color.h>
 
 #ifdef __APPLE__
@@ -197,11 +200,19 @@ inline std::vector<StackFrame> stack_trace() {
 }
 #endif
 #ifdef __linux__
+#ifndef ZENO_LINUX_GDB_BACKTRACE
 #include <execinfo.h>
 #include <signal.h>
 #include <ucontext.h>
 #include <unistd.h>
 #include <cxxabi.h>
+#else
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <sys/prctl.h>
+#endif
 #endif
 
 namespace zeno {
@@ -310,7 +321,8 @@ void print_traceback() {
     fmt::print(fg(fmt::color::magenta),
                fmt::format(" in {}\n", stack[i].module));
   }
-#else
+#elif defined(__linux__)
+#ifndef ZENO_LINUX_GDB_BACKTRACE
   // Based on http://man7.org/linux/man-pages/man3/backtrace.3.html
   constexpr int BT_BUF_SIZE = 1024;
   int nptrs;
@@ -361,6 +373,20 @@ void print_traceback() {
     fmt::print(fg(fmt::color::magenta), "{}\n", line);
   }
   std::free(strings);
+#else
+    char pid_buf[30];
+    sprintf(pid_buf, "%d", getpid());
+    char name_buf[512];
+    name_buf[readlink("/proc/self/exe", name_buf, 511)] = 0;
+    prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY, 0, 0, 0);
+    int child_pid = fork();
+    if (!child_pid) {
+        execl("/usr/bin/gdb", "gdb", "--batch", "-n", "-ex", "thread", "-ex", "bt", name_buf, pid_buf, NULL);
+        abort();  /* If gdb failed to start */
+    } else {
+        waitpid(child_pid, NULL, 0);
+    }
+#endif
 #endif
 
   fmt::print(fg(fmt::color::orange), "\nInternal error occurred.\n");
