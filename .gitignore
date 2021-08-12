@@ -48,3 +48,6 @@ zeno-linux-*
 # euler files
 projects/Euler
 assets/smoke
+
+# archibate files
+/a.h
