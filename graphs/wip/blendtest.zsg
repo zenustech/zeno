@@ -9,12 +9,12 @@
      },
      "params": {
       "type": "",
-      "name": "inputPrim",
+      "name": "inputMesh",
       "defl": ""
      },
      "uipos": [
-      -963.7699999999998,
-      -28.659999999999997
+      -1247.7699999999995,
+      -8.659999999999997
      ],
      "options": []
     },
@@ -22,19 +22,19 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "60a8466a-TransformPrimitive",
-       "outPrim"
+       "c5dbf43b-PrimitiveToBMesh",
+       "mesh"
       ],
       "SRC": null
      },
      "params": {
       "type": "",
-      "name": "outputPrim",
+      "name": "outputMesh",
       "defl": ""
      },
      "uipos": [
-      -155.15999999999997,
-      -6.039999999999992
+      130.84000000000003,
+      6.960000000000008
      ],
      "options": []
     },
@@ -106,8 +106,8 @@
      "name": "IfElse",
      "inputs": {
       "true": [
-       "d6fbed98-SubInput",
-       "port"
+       "398db6ed-BMeshToPrimitive",
+       "prim"
       ],
       "false": [
        "0e3f294b-Make3DGridPrimitive",
@@ -141,12 +141,44 @@
       -226.0
      ],
      "options": []
+    },
+    "c5dbf43b-PrimitiveToBMesh": {
+     "name": "PrimitiveToBMesh",
+     "inputs": {
+      "prim": [
+       "60a8466a-TransformPrimitive",
+       "outPrim"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -145.0,
+      70.0
+     ],
+     "options": []
+    },
+    "398db6ed-BMeshToPrimitive": {
+     "name": "BMeshToPrimitive",
+     "inputs": {
+      "mesh": [
+       "d6fbed98-SubInput",
+       "port"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -979.0000000000001,
+      26.250000000000007
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -1073,
-    "trans_y": -529
+    "scale": 0.8000000000000002,
+    "trans_x": -1022,
+    "trans_y": -394
    }
   }
  },
@@ -220,6 +252,36 @@
    "params": [],
    "categories": [
     "portal"
+   ]
+  },
+  "BMeshToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "blendermesh"
    ]
   },
   "BeginFor": {
@@ -3775,6 +3837,36 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "PrimitiveToBMesh": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "blendermesh"
    ]
   },
   "PrimitiveToMesh": {

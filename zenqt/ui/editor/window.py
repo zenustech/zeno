@@ -388,15 +388,18 @@ class NodeEditor(QWidget):
 
     def do_export(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Export',
-                '', 'C++ Header File(*.h);; All Files(*);;')
+                '', 'JSON file(*.json);; C++ Header File(*.h);; All Files(*);;',
+                options=QFileDialog.DontConfirmOverwrite)
         if path != '':
             prog = self.dumpProgram()
             from ...system import serial
             data = list(serial.serializeScene(prog['graph']))
             with open(path, 'w') as f:
-                f.write('R"ZSL(')
+                if path.endswith('.h'):
+                    f.write('R"ZSL(')
                 json.dump(data, f)
-                f.write(')ZSL"\n')
+                if path.endswith('.h'):
+                    f.write(')ZSL"\n')
 
     def do_copy(self):
         itemList = self.scene.selectedItems()
