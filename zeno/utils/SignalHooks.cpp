@@ -9,7 +9,7 @@
 
 namespace zeno {
 
-void print_traceback();
+void print_traceback(int skip);
 void trigger_gdb();
 
 #ifdef ZENO_FAULTHANDLER
@@ -23,7 +23,7 @@ static void signal_handler(int signo) {
     if (signo == SIGILL) signame = "SIGILL";
     spdlog::error("recieved signal {}: {}", signo, signame);
 #endif
-    print_traceback();
+    print_traceback(1);
     trigger_gdb();
     exit(-signo);
 }
