@@ -31,7 +31,7 @@ struct BMeshToPrimitive : zeno::INode {
                     mesh->loop[start + 0],
                     mesh->loop[start + 1],
                     mesh->loop[start + 2]);
-            for (int j = start + 3; j < start + len; j++) {
+            for (int j = 3; j < len; j++) {
                 prim->tris.emplace_back(
                         mesh->loop[start + 0],
                         mesh->loop[start + j - 1],
