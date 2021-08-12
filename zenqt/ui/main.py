@@ -20,7 +20,8 @@ def main():
         os.environ['QT_AUTO_SCREEN_SCALE_FACTOR'] = '1'
         app = QApplication([sys.argv[0], '-platform', 'windows:dpiawareness=0'])
     else:
-        app = QApplication([sys.argv[0]])
+        os.environ['QT_AUTO_SCREEN_SCALE_FACTOR'] = '1'
+        app = QApplication([sys.argv[0], '-platform', 'xcb:dpiawareness=0'])
 
     font_file_path = asset_path('SourceSansPro-Regular.ttf')
     QFontDatabase().addApplicationFont(font_file_path)
