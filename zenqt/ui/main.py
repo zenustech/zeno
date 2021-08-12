@@ -17,11 +17,11 @@ def main():
     QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
 
     if sys.platform == 'win32':
-        os.environ['QT_AUTO_SCREEN_SCALE_FACTOR'] = '1'
         app = QApplication([sys.argv[0], '-platform', 'windows:dpiawareness=0'])
-    else:
-        os.environ['QT_AUTO_SCREEN_SCALE_FACTOR'] = '1'
+    elif sys.platform == 'linux':
         app = QApplication([sys.argv[0], '-platform', 'xcb:dpiawareness=0'])
+    else:
+        app = QApplication([sys.argv[0]])
 
     font_file_path = asset_path('SourceSansPro-Regular.ttf')
     QFontDatabase().addApplicationFont(font_file_path)
