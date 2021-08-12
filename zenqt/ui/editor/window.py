@@ -391,7 +391,7 @@ class NodeEditor(QWidget):
                 '', 'C++ Header File(*.h);; All Files(*);;')
         if path != '':
             prog = self.dumpProgram()
-            from ..system import serial
+            from ...system import serial
             data = list(serial.serializeScene(prog['graph']))
             with open(path, 'w') as f:
                 f.write('R"ZSL(')
