@@ -59,9 +59,7 @@
       -424.60000000000014,
       -0.9200000000000017
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "0e3f294b-Make3DGridPrimitive": {
      "name": "Make3DGridPrimitive",
@@ -110,7 +108,7 @@
        "prim"
       ],
       "false": [
-       "0e3f294b-Make3DGridPrimitive",
+       "c3f06746-Make2DGridPrimitive",
        "prim"
       ],
       "cond": [
@@ -173,12 +171,56 @@
       26.250000000000007
      ],
      "options": []
+    },
+    "c3f06746-Make2DGridPrimitive": {
+     "name": "Make2DGridPrimitive",
+     "inputs": {
+      "nx": [
+       "67716fa9-NumericInt",
+       "value"
+      ],
+      "ny": null,
+      "sizeX": null,
+      "sizeY": null,
+      "scale": null,
+      "origin": null,
+      "SRC": null
+     },
+     "params": {
+      "isCentered": 0,
+      "hasFaces": 1
+     },
+     "uipos": [
+      -707.5,
+      -333.75
+     ],
+     "options": []
+    },
+    "48e5d7e5-PrimitiveFaceToEdges": {
+     "name": "PrimitiveFaceToEdges",
+     "inputs": {
+      "prim": [
+       "60a8466a-TransformPrimitive",
+       "outPrim"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "clearFaces": 1
+     },
+     "uipos": [
+      -135.0,
+      -136.25
+     ],
+     "options": [
+      "VIEW"
+     ]
     }
    },
    "view": {
-    "scale": 0.8000000000000002,
-    "trans_x": -1022,
-    "trans_y": -394
+    "scale": 1.0,
+    "trans_x": -904,
+    "trans_y": -442
    }
   }
  },
@@ -279,7 +321,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "allow_quads",
+     "int",
+     "0"
+    ]
+   ],
    "categories": [
     "blendermesh"
    ]
