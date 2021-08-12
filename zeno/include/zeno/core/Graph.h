@@ -82,7 +82,7 @@ struct Graph {
 
     void setNodeParam(std::string const &id, std::string const &par,
         std::variant<int, float, std::string> const &val) {
-        auto parid = "param_" + par;
+        auto parid = par + ":";
         std::visit([&] (auto const &val) {
             setNodeInput(id, parid, val);
         }, val);
