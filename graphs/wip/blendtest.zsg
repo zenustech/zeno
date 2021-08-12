@@ -165,7 +165,9 @@
       ],
       "SRC": null
      },
-     "params": {},
+     "params": {
+      "allow_quads": 0
+     },
      "uipos": [
       -979.0000000000001,
       26.250000000000007
@@ -219,8 +221,8 @@
    },
    "view": {
     "scale": 1.0,
-    "trans_x": -904,
-    "trans_y": -442
+    "trans_x": -1498,
+    "trans_y": -434
    }
   }
  },
@@ -323,8 +325,8 @@
    ],
    "params": [
     [
-     "allow_quads",
      "int",
+     "allow_quads",
      "0"
     ]
    ],
