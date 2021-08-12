@@ -1,4 +1,4 @@
-file(GLOB PROJECT_SOURCE include/*/*.h *.cpp mesh/*.cpp pars/*.cpp prim/*.cpp *.cpp)
+file(GLOB PROJECT_SOURCE *.cpp *.h)
 
 add_library(zeno_bmeshops SHARED ${PROJECT_SOURCE})
 target_include_directories(zeno_bmeshops PRIVATE .)
