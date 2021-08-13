@@ -30,7 +30,7 @@ namespace zeno{
                             grid->indexToWorld(leaf.offsetToGlobalCoord(offset));
                         auto voxelipos = openvdb::Vec3i(grid->worldToIndex(voxelwpos));
                         float value = grid_axr.getValue(openvdb::Coord(voxelipos));
-                        if(value == 1.0)
+                        if(value ==1.0)
                         {
                             for(int i = -1;i<=1;i++)
                             {
@@ -47,7 +47,7 @@ namespace zeno{
                     } // end for all on voxels
                 }
             };
-        
+            grid->tree().getNodes(leaves);
             tmpGrid = grid->deepCopy();
             tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), work);
             grid = tmpGrid->deepCopy();

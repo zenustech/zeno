@@ -165,6 +165,7 @@ struct LiquidAdaptiveRule : AdaptiveRule{
         //);
         extend(grid);
         extend(grid);
+        extend(grid);
     }
 };
 
