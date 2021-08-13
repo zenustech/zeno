@@ -134,5 +134,9 @@ ZENO_API std::set<std::string> Graph::getGraphEndpointSetNames() const {
     return res;
 }
 
+ZENO_API any const &Graph::getGraphEndpointSetValue(std::string const &id) const {
+    return safe_at(subEndpointSetValues, id, "endpoint set value");
+}
+
 
 }
