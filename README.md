@@ -245,7 +245,7 @@ git clone https://github.com/aforsythe/IlmBase.git --branch=v2.0.0
 cd IlmBase
 mkdir build
 cd build
-cmake ..
+cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j8
 sudo make install
 cd ../..
@@ -254,7 +254,7 @@ git clone https://github.com/AcademySoftwareFoundation/openexr.git --branch=v2.3
 cd openexr
 mkdir build
 cd build
-cmake .. -DOPENEXR_BUILD_PYTHON_LIBS:BOOL=OFF
+cmake .. -DOPENEXR_BUILD_PYTHON_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release
 make -j8
 sudo make install
 cd ../..
@@ -268,7 +268,7 @@ sudo ./b2 install --without-python
 
 git clone https://github.com/oneapi-src/oneTBB.git --branch=2017_U8
 cd oneTBB
-make -j8
+make cfg=release -j8
 sudo cp -r include/tbb /usr/local/include/
 sudo cp -r build/linux_*_release/*.so* /usr/local/lib64/
 sudo cp cmake/*.cmake /usr/local/lib/pkgconfig/
