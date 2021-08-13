@@ -152,21 +152,21 @@ Other requirements like GLAD are self-contained and you don't have to worry inst
 
 ```bash
 # Install basic dependencies:
-sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin
+sudo apt-get install -y gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin
 
 python --version  # make sure Python version >= 3.6
 sudo python -m pip install -U pip
 sudo python -m pip install pybind11 numpy PySide2
 
 # (Optional) for easily altering cmake configurations from terminal:
-sudo apt-get install cmake-curses-gui
+sudo apt-get install -y cmake-curses-gui
 
-# (Optional) Installing IlmBase and other dependencies:
-sudo apt-get install -y libilmbase-dev libopenexr-dev
+# (Optional) Install Zlib, Eigen3, OpenBLAS:
 sudo apt-get install -y zlib1g-dev libeigen3-dev libopenblas-dev
 
-# (Optional) Installing OpenVDB dependencies (Boost, TBB, Blosc):
-sudo apt-get install -y libboost-iostreams-dev libboost-system-dev libtbb-dev
+# (Optional) Installing OpenVDB dependencies (Boost, TBB, Blosc, OpenEXR):
+sudo apt-get install -y libilmbase-dev libopenexr-dev libtbb-dev
+sudo apt-get install -y libboost-iostreams-dev libboost-system-dev
 git clone https://github.com/Blosc/c-blosc.git --branch=v1.5.0
 cd c-blosc
 mkdir build
@@ -193,12 +193,12 @@ See also [`Dockerfile`](Dockerfile) as a reference for full installing steps.
 
 ```bash
 # Install basic dependencies:
-sudo yum install wget make python3 python3-devel
+sudo yum -y install wget make zlib python3 python3-devel
 
 sudo python3 -m pip install pybind11 numpy PySide2
 
 # Install CMake dependency (OpenSSL):
-sudo yum install openssl openssl-devel
+sudo yum -y install openssl openssl-devel
 
 # Install CMake 3.17:
 wget -c https://github.com/Kitware/CMake/releases/download/v3.17.0-rc3/cmake-3.17.0-rc3.tar.gz
@@ -215,14 +215,51 @@ sudo ln -sf /usr/local/bin/cmake /usr/bin/
 cmake --version  # make sure CMake version is 3.17 now
 
 # Install GCC 9.x
-yum install centos-release-scl
-yum install devtoolset-9-gcc
-yum install devtoolset-9-gcc-c++
+yum -y install centos-release-scl
+yum -y install devtoolset-9-gcc
+yum -y install devtoolset-9-gcc-c++
 
 # Enable GCC 9.x (must be executed before build)
 scl enable devtoolset-9 bash
-
 g++ --version  # Make sure G++ version is 9.x now
+
+# (Optional) Install OpenVDB dependencies (Boost, TBB, Blosc, OpenEXR):
+sudo yum -y install boost boost-devel
+sudo yum -y install ilmbase ilmbase-devel openexr openexr-devel
+git clone https://github.com/oneapi-src/oneTBB.git --branch=2017_U8
+cd oneTBB
+mkdir build
+cd build
+cmake ..
+make -j8
+sudo make install
+cd ../..
+git clone https://github.com/Blosc/c-blosc.git --branch=v1.5.0
+cd c-blosc
+mkdir build
+cd build
+cmake ..
+make -j8
+sudo make install
+cd ../..
+git clone https://github.com/aforsythe/IlmBase.git --branch=v2.0.0
+cd IlmBase
+mkdir build
+cd build
+cmake ..
+make -j8
+sudo make install
+cd ../..
+
+# (Optional) Install OpenVDB:
+git clone https://github.com/AcademySoftwareFoundation/openvdb.git --branch=v7.2.1
+cd openvdb
+mkdir build
+cd build
+cmake ..
+make -j8
+sudo make install
+cd ../..
 ```
 
 ### Windows 10
@@ -350,7 +387,7 @@ Are you using Anaconda? Please try using the methods in: https://stackoverflow.c
 ### Ubuntu 20.04
 
 ```bash
-sudo apt-get install qt5dxcb-plugin
+sudo apt-get install -y qt5dxcb-plugin
 ```
 
 Please let me know if you have any trouble not mentioned above by opening an [issue](https://github.com/zenustech/zeno/issues) on GitHub, thanks for you support!
