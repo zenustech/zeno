@@ -575,11 +575,15 @@ build\tests\zentest.exe
 
 - Linux
 ```bash
+sudo python3 -m pip install wheel
+sudo python3 -m pip install pyinstaller
 ./dist.py
 ```
 
 - Windows
 ```bash
+python -m pip install wheel
+python -m pip install pyinstaller
 python dist.py
 ```
 
