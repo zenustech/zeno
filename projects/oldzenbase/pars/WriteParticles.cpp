@@ -39,7 +39,7 @@ static int defWriteParticles = zeno::defNodeClass<WriteParticles>("WriteParticle
     "pars",
     }, /* outputs: */ {
     }, /* params: */ {
-    {"string", "path", ""},
+    {"writepath", "path", ""},
     }, /* category: */ {
     "particles",
     }});
