@@ -151,7 +151,7 @@ Other requirements like GLAD are self-contained and you don't have to worry inst
 ### Ubuntu 20.04
 
 ```bash
-# Install basic dependencies
+# Install basic dependencies:
 sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin
 
 python --version  # make sure Python version >= 3.6
@@ -188,6 +188,42 @@ cd ../..
 ```
 
 See also [`Dockerfile`](Dockerfile) as a reference for full installing steps.
+
+### CentOS 7
+
+```bash
+# Install basic dependencies:
+sudo yum install wget make python3 python3-devel
+
+sudo python3 -m pip install pybind11 numpy PySide2
+
+# Install CMake dependency (OpenSSL):
+sudo yum install openssl openssl-devel
+
+# Install CMake 3.17:
+wget -c https://github.com/Kitware/CMake/releases/download/v3.17.0-rc3/cmake-3.17.0-rc3.tar.gz
+tar zxvf cmake-3.17.0-rc3.tar.gz
+cd cmake-3.17.0-rc3
+./bootstrap
+make -j8
+sudo make install
+cd ..
+
+# Allowing CMake 3.17 to be launched directly from shell:
+sudo ln -sf /usr/local/bin/cmake /usr/bin/
+
+cmake --version  # make sure CMake version is 3.17 now
+
+# Install GCC 9.x
+yum install centos-release-scl
+yum install devtoolset-9-gcc
+yum install devtoolset-9-gcc-c++
+
+# Enable GCC 9.x (must be executed before build)
+scl enable devtoolset-9 bash
+
+g++ --version  # Make sure G++ version is 9.x now
+```
 
 ### Windows 10
 
@@ -287,6 +323,11 @@ IMPORTANT: In MSVC, **Release** mode must **always be active** when building ZEN
 
 ## Run ZENO for development
 
+```bash
+./run.py
+```
+
+- Windows
 ```bash
 python run.py
 ```
@@ -462,6 +503,12 @@ build\tests\zentest.exe
 
 ## Build binary release
 
+- Linux
+```bash
+./dist.py
+```
+
+- Windows
 ```bash
 python dist.py
 ```

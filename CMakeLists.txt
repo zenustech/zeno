@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
+set(CMAKE_CXX_STANDARD 17)
 project(zeno LANGUAGES C CXX)
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -11,7 +12,6 @@ if (NOT CMAKE_BUILD_TYPE)
     endif()
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if (WIN32)
 	set(CMAKE_DEBUG_POSTFIX "")
