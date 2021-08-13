@@ -17,6 +17,12 @@ ZENO_API Context::Context(Context const &other)
 ZENO_API Graph::Graph() = default;
 ZENO_API Graph::~Graph() = default;
 
+ZENO_API void Graph::setGraphEndpoint(std::string const &id,
+        std::function<any(any)> functor) {
+    // an endpoint serves as a getter/setter
+    subEndpoints[id] = std::move(functor);
+}
+
 ZENO_API void Graph::setGraphInput2(std::string const &id, any obj) {
     subInputs[id] = std::move(obj);
 }
@@ -108,6 +114,14 @@ ZENO_API void Graph::setNodeOption(std::string const &id,
 ZENO_API std::set<std::string> Graph::getGraphInputNames() const {
     std::set<std::string> res;
     for (auto const &[id, _]: subInputNodes) {
+        res.insert(id);
+    }
+    return res;
+}
+
+ZENO_API std::set<std::string> Graph::getGraphEndpointNames() const {
+    std::set<std::string> res;
+    for (auto const &[id, _]: subEndpointNodes) {
         res.insert(id);
     }
     return res;
