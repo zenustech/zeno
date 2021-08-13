@@ -51,6 +51,6 @@ target_link_libraries(zeno_AdaptiveSolver PRIVATE OpenVDB::openvdb IlmBase::Half
 target_link_libraries(zeno_AdaptiveSolver PRIVATE Eigen3::Eigen)
 
 
-target_link_libraries(zeno_AdaptiveSolver PUBLIC zeno)
+target_link_libraries(zeno_AdaptiveSolver PUBLIC zeno zeno_zenvdb)
 target_include_directories(zeno_AdaptiveSolver PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_AdaptiveSolver PRIVATE ../zenvdb/include)

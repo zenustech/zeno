@@ -39,23 +39,7 @@ namespace zeno {
 //     }, /* category: */ {
 //     "openvdb",
 //     }});
-template <typename GridT>
-void resampleVDB(typename GridT::Ptr source, typename GridT::Ptr target)
-{
-      const openvdb::math::Transform
-      &sourceXform = source->transform(),
-      &targetXform = target->transform();
-      
-      openvdb::Mat4R xform =
-      sourceXform.baseMap()->getAffineMap()->getMat4() *
-      targetXform.baseMap()->getAffineMap()->getMat4().inverse();
-      openvdb::tools::GridTransformer transformer(xform);
 
-      transformer.transformGrid<openvdb::tools::BoxSampler, GridT>(
-      *source, *target);
-      target->tree().prune();
-
-}
 
 struct  ResampleVDBGrid : zeno::INode {
   virtual void apply() override {
@@ -69,13 +53,13 @@ struct  ResampleVDBGrid : zeno::INode {
         {
           auto target = get_input("resampleTo")->as<VDBFloatGrid>();
           auto source = get_input("resampleFrom")->as<VDBFloatGrid>();
-          resampleVDB<openvdb::FloatGrid>(source->m_grid, target->m_grid);
+          resampleVDB<openvdb::tools::BoxSampler,openvdb::FloatGrid>(source->m_grid, target->m_grid);
         }
         else if (sourceType==std::string("Vec3fGrid"))
         {
           auto target = get_input("resampleTo")->as<VDBFloat3Grid>();
           auto source = get_input("resampleFrom")->as<VDBFloat3Grid>();
-          resampleVDB<openvdb::Vec3fGrid>(source->m_grid, target->m_grid);
+          resampleVDB<openvdb::tools::BoxSampler,openvdb::Vec3fGrid>(source->m_grid, target->m_grid);
         }
     }
   }

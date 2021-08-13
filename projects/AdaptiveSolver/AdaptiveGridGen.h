@@ -14,25 +14,12 @@ namespace zeno{
 
     struct AdaptiveRule{
         virtual void markSubd(openvdb::FloatGrid::Ptr &grid){}
-        
-    };
-    struct LiquidAdaptiveRule : AdaptiveRule{
-        //particle list
-        //std::shared_ptr<zeno::PrimitiveObject> p;
-        virtual void markSubd(openvdb::FloatGrid::Ptr &grid) override
-        {
-            
-        }
-    };
-    struct TestRule : AdaptiveRule{
-        //particle list
-        //std::shared_ptr<zeno::PrimitiveObject> p;
-        virtual void markSubd(openvdb::FloatGrid::Ptr &grid) override
+        void extend(openvdb::FloatGrid::Ptr &grid)
         {
             float dx = grid->voxelSize()[0];
             std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
             openvdb::FloatGrid::Ptr tmpGrid;
-            auto extend = [&](const tbb::blocked_range<size_t> &r) {
+            auto work = [&](const tbb::blocked_range<size_t> &r) {
                 auto grid_axr{grid->getAccessor()};
                 auto write_axr{tmpGrid->getAccessor()};
                 // leaf iter
@@ -60,6 +47,20 @@ namespace zeno{
                     } // end for all on voxels
                 }
             };
+        
+            tmpGrid = grid->deepCopy();
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), work);
+            grid = tmpGrid->deepCopy();
+        }
+    };
+    
+    struct TestRule : AdaptiveRule{
+        //particle list
+        //std::shared_ptr<zeno::PrimitiveObject> p;
+        virtual void markSubd(openvdb::FloatGrid::Ptr &grid) override
+        {
+            float dx = grid->voxelSize()[0];
+            std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
             auto mark = [&](const tbb::blocked_range<size_t> &r) {
                 auto grid_axr{grid->getAccessor()};
                 
@@ -80,9 +81,7 @@ namespace zeno{
             };
             grid->tree().getNodes(leaves);
             tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), mark);
-            tmpGrid = grid->deepCopy();
-            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), extend);
-            grid = tmpGrid->deepCopy();
+            extend(grid);
         }
     };
     struct AdaptiveIndexGenerator{

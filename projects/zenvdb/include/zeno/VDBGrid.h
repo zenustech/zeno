@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <zeno/zeno.h>
-
 #include <openvdb/points/PointCount.h>
 #include <openvdb/tree/LeafManager.h>
 #include <openvdb/points/PointAdvect.h>
@@ -10,8 +9,31 @@
 #include <openvdb/tools/MeshToVolume.h>
 #include <openvdb/openvdb.h>
 #include <string.h>
-namespace zeno {
+#include <openvdb/tools/GridTransformer.h>
+#include <openvdb/tools/Composite.h>
+#include <zeno/ZenoInc.h>
+#include <tbb/concurrent_vector.h>
+#include <tbb/scalable_allocator.h>
+#include <tbb/parallel_for.h>
 
+namespace zeno {
+template <typename sampler, typename GridT>
+void resampleVDB(typename GridT::Ptr source, typename GridT::Ptr target)
+{
+      const openvdb::math::Transform
+      &sourceXform = source->transform(),
+      &targetXform = target->transform();
+      
+      openvdb::Mat4R xform =
+      sourceXform.baseMap()->getAffineMap()->getMat4() *
+      targetXform.baseMap()->getAffineMap()->getMat4().inverse();
+      openvdb::tools::GridTransformer transformer(xform);
+
+      transformer.transformGrid<sampler, GridT>(
+      *source, *target);
+      target->tree().prune();
+
+}
 template <typename GridT>
 typename GridT::Ptr readFloatGrid(const std::string &fn) {
   openvdb::io::File file(fn);
@@ -100,6 +122,7 @@ struct VDBGridWrapper : VDBGrid {
       m_grid->tree(), l,
       openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
   }
+
 
   virtual std::string getType() {
     if (std::is_same<GridT, openvdb::FloatGrid>::value) {

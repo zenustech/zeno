@@ -2,26 +2,234 @@
  "graph": {
   "main": {
    "nodes": {
-    "242522d7-testAdaptiveGrid": {
-     "name": "testAdaptiveGrid",
+    "ffeb1769-GenAdaptiveTopo": {
+     "name": "GenAdaptiveTopo",
      "inputs": {
+      "Rule": [
+       "d726544b-MakeLiquidAdaptiveRule",
+       "AdaptRule"
+      ],
+      "bmin": [
+       "b676e17a-PrimitiveReduction",
+       "result"
+      ],
+      "bmax": [
+       "2b048c4e-x",
+       "result"
+      ],
+      "startDx": [
+       "4ffebee9-NumericFloat",
+       "value"
+      ],
+      "levels": [
+       "077398f0-NumericInt",
+       "value"
+      ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      -604.0,
-      -99.36000000000007
+      471.63749999999993,
+      -122.84249999999997
      ],
-     "options": [
-      "ONCE"
+     "options": []
+    },
+    "d726544b-MakeLiquidAdaptiveRule": {
+     "name": "MakeLiquidAdaptiveRule",
+     "inputs": {
+      "inGeo": [
+       "382018e0-ParticlesToPrimitive",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -206.72,
+      -246.39999999999998
+     ],
+     "options": []
+    },
+    "e72c61b1-ReadObjMesh": {
+     "name": "ReadObjMesh",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "path": "assets/Pig_Head.obj"
+     },
+     "uipos": [
+      -1505.3,
+      -232.3100000000001
+     ],
+     "options": []
+    },
+    "34b4a4e1-MeshToPrimitive": {
+     "name": "MeshToPrimitive",
+     "inputs": {
+      "mesh": [
+       "e72c61b1-ReadObjMesh",
+       "mesh"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -1184.96,
+      -241.28
+     ],
+     "options": []
+    },
+    "b676e17a-PrimitiveReduction": {
+     "name": "PrimitiveReduction",
+     "inputs": {
+      "prim": [
+       "382018e0-ParticlesToPrimitive",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "attr": "pos",
+      "op": "min"
+     },
+     "uipos": [
+      -166.4,
+      -277.6
+     ],
+     "options": []
+    },
+    "2b048c4e-x": {
+     "name": "PrimitiveReduction",
+     "inputs": {
+      "prim": [
+       "382018e0-ParticlesToPrimitive",
+       "prim"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "attr": "pos",
+      "op": "min"
+     },
+     "uipos": [
+      -128.49999999999994,
+      -231.95
+     ],
+     "options": []
+    },
+    "87e6e323-SprayParticles": {
+     "name": "SprayParticles",
+     "inputs": {
+      "TrianglePrim": [
+       "34b4a4e1-MeshToPrimitive",
+       "prim"
+      ],
+      "Dx": null,
+      "SRC": null
+     },
+     "params": {
+      "dx": 0.01,
+      "channel": "pos"
+     },
+     "uipos": [
+      -873.5999999999998,
+      -172.0
+     ],
+     "options": []
+    },
+    "382018e0-ParticlesToPrimitive": {
+     "name": "ParticlesToPrimitive",
+     "inputs": {
+      "pars": [
+       "87e6e323-SprayParticles",
+       "particles"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      -592.0000000000001,
+      -124.00000000000003
+     ],
+     "options": []
+    },
+    "4ffebee9-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.125
+     },
+     "uipos": [
+      -201.25000000000006,
+      -42.75000000000001
+     ],
+     "options": []
+    },
+    "077398f0-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 5
+     },
+     "uipos": [
+      -149.05,
+      225.29999999999995
+     ],
+     "options": []
+    },
+    "724553ac-ListAdaptiveTopo": {
+     "name": "ListAdaptiveTopo",
+     "inputs": {
+      "AdaptTopo": [
+       "ffeb1769-GenAdaptiveTopo",
+       "AdaptTopo"
+      ],
+      "SRC": null
+     },
+     "params": {},
+     "uipos": [
+      768.7500000000002,
+      -52.49999999999998
+     ],
+     "options": []
+    },
+    "80620d50-ExtractList": {
+     "name": "ExtractList",
+     "inputs": {
+      "list": [
+       "724553ac-ListAdaptiveTopo",
+       "ListAdaptTopo"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "_KEYS": "0\n1\n2\n3\n4\n5"
+     },
+     "uipos": [
+      1062.8500000000001,
+      -13.399999999999977
+     ],
+     "options": [],
+     "socket_keys": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
      ]
     },
-    "09d7cb90-WriteVDBGrid": {
+    "b5e0ea24-WriteVDBGrid": {
      "name": "WriteVDBGrid",
      "inputs": {
       "data": [
-       "242522d7-testAdaptiveGrid",
-       "level0"
+       "80620d50-ExtractList",
+       "0"
       ],
       "SRC": null
      },
@@ -29,19 +237,19 @@
       "path": "/home/dilei/Desktop/adapVolume1.vdb"
      },
      "uipos": [
-      -214.28000000000003,
-      -236.36
+      1383.2000000000007,
+      -91.20000000000002
      ],
      "options": [
       "VIEW"
      ]
     },
-    "72e8d68e-x": {
+    "7ab1665a-x": {
      "name": "WriteVDBGrid",
      "inputs": {
       "data": [
-       "242522d7-testAdaptiveGrid",
-       "level1"
+       "80620d50-ExtractList",
+       "1"
       ],
       "SRC": null
      },
@@ -49,19 +257,19 @@
       "path": "/home/dilei/Desktop/adapVolume2.vdb"
      },
      "uipos": [
-      -81.80000000000001,
-      -179.25249999999994
+      1528.0,
+      27.200000000000003
      ],
      "options": [
       "VIEW"
      ]
     },
-    "dea8cfd4-x": {
+    "94c0810d-x": {
      "name": "WriteVDBGrid",
      "inputs": {
       "data": [
-       "242522d7-testAdaptiveGrid",
-       "level2"
+       "80620d50-ExtractList",
+       "2"
       ],
       "SRC": null
      },
@@ -69,19 +277,19 @@
       "path": "/home/dilei/Desktop/adapVolume3.vdb"
      },
      "uipos": [
-      25.315000000000012,
-      -23.28
+      1658.4,
+      168.8
      ],
      "options": [
       "VIEW"
      ]
     },
-    "5e593ad1-x": {
+    "232d0c6f-x": {
      "name": "WriteVDBGrid",
      "inputs": {
       "data": [
-       "242522d7-testAdaptiveGrid",
-       "level3"
+       "80620d50-ExtractList",
+       "3"
       ],
       "SRC": null
      },
@@ -89,19 +297,19 @@
       "path": "/home/dilei/Desktop/adapVolume4.vdb"
      },
      "uipos": [
-      -79.68000000000002,
-      90.60000000000002
+      1684.8000000000002,
+      282.4
      ],
      "options": [
       "VIEW"
      ]
     },
-    "97be490e-x": {
+    "bf61465c-x": {
      "name": "WriteVDBGrid",
      "inputs": {
       "data": [
-       "242522d7-testAdaptiveGrid",
-       "level4"
+       "80620d50-ExtractList",
+       "4"
       ],
       "SRC": null
      },
@@ -109,8 +317,8 @@
       "path": "/home/dilei/Desktop/adapVolume5.vdb"
      },
      "uipos": [
-      130.48000000000002,
-      179.52
+      1782.4,
+      373.6
      ],
      "options": [
       "VIEW"
@@ -118,9 +326,9 @@
     }
    },
    "view": {
-    "scale": 0.6400000000000001,
-    "trans_x": -577,
-    "trans_y": -303
+    "scale": 0.5120000000000001,
+    "trans_x": 37,
+    "trans_y": -252
    }
   }
  },
@@ -2538,6 +2746,56 @@
     "EasyGL"
    ]
   },
+  "GenAdaptiveTopo": {
+   "inputs": [
+    [
+     "",
+     "Rule",
+     ""
+    ],
+    [
+     "",
+     "bmin",
+     ""
+    ],
+    [
+     "",
+     "bmax",
+     ""
+    ],
+    [
+     "",
+     "startDx",
+     ""
+    ],
+    [
+     "",
+     "levels",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "AdaptTopo",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "AdaptiveSolver"
+   ]
+  },
   "GeoVertexVel": {
    "inputs": [
     [
@@ -3092,6 +3350,36 @@
     "frame"
    ]
   },
+  "ListAdaptiveTopo": {
+   "inputs": [
+    [
+     "",
+     "AdaptTopo",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ListAdaptTopo",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "AdaptiveSolver"
+   ]
+  },
   "ListGetItem": {
    "inputs": [
     [
@@ -3597,6 +3885,36 @@
    "params": [],
    "categories": [
     "GPUMPM"
+   ]
+  },
+  "MakeLiquidAdaptiveRule": {
+   "inputs": [
+    [
+     "",
+     "inGeo",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "AdaptRule",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "AdaptiveSolver"
    ]
   },
   "MakeList": {
