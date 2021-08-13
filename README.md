@@ -223,7 +223,6 @@ cd eigen-git-mirror
 mkdir build
 cd build
 cmake ..
-make -j8
 sudo make install
 cd ../..
 
@@ -273,6 +272,7 @@ make -j8
 sudo cp -r include/tbb /usr/local/include/
 sudo cp -r build/linux_*_release/*.so* /usr/local/lib64/
 sudo cp cmake/*.cmake /usr/local/lib/pkgconfig/
+sudo cp -r cmake/templates /usr/local/lib/pkgconfig/
 cd ..
 
 git clone https://github.com/Blosc/c-blosc.git --branch=v1.5.0

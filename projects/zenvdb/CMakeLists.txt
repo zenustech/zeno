@@ -14,7 +14,7 @@ if (TARGET OpenMP::OpenMP_CXX)
     target_link_libraries(zeno_zenvdb PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
+find_package(TBB REQUIRED COMPONENTS tbb tbbmalloc)
 find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
 find_package(OpenVDB REQUIRED)
 target_link_libraries(zeno_zenvdb PRIVATE OpenVDB::openvdb IlmBase::Half TBB::tbbmalloc TBB::tbb)

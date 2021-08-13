@@ -6,7 +6,7 @@ add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)
 # add cmake file
 include (common)
 
-find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
+find_package(TBB REQUIRED COMPONENTS tbb tbbmalloc)
 find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenVDB REQUIRED)
