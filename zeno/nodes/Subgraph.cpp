@@ -9,6 +9,40 @@
 
 namespace {
 
+struct SubEndpoint : zeno::INode {
+    virtual void complete() override {
+        auto name = get_param<std::string>("name");
+        graph->subEndpointNodes[name].insert(myname);
+    }
+
+    virtual void apply() override {
+        auto name = get_param<std::string>("name");
+        if (auto it = graph->subEndpoints.find(name);
+                it == graph->subEndpoints.end()) {
+            set_output2("hasValue",
+                    std::make_shared<zeno::ConditionObject>(false));
+        } else {
+            any obj;
+            if (has_input2("setValue")) {
+                obj = get_input2("setValue");
+                obj = it->second(obj);
+            } else {
+                obj = it->second({});
+            }
+            set_output2("getValue", std::move(obj));
+            set_output2("hasValue",
+                    std::make_shared<zeno::ConditionObject>(true));
+        }
+    }
+};
+
+ZENDEFNODE(SubEndpoint, {
+    {"setValue"},
+    {"getValue", "hasValue"},
+    {{"string", "name", "Cube"}},
+    {"subgraph"},
+});
+
 struct SubInput : zeno::INode {
     virtual void complete() override {
         auto name = get_param<std::string>("name");

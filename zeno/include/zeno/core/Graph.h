@@ -37,7 +37,7 @@ struct Graph {
     std::map<std::string, any> subEndpoints;
     std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;
-    std::map<std::string, std::string> subEndpointNodes;
+    std::map<std::string, std::set<std::string>> subEndpointNodes;
 
     std::map<std::string, std::string> portalIns;
     std::map<std::string, any> portals;
