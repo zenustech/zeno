@@ -25,11 +25,11 @@ struct SubEndpoint : zeno::INode {
             any obj;
             if (has_input2("setValue")) {
                 obj = get_input2("setValue");
-                obj = it->second(obj);
+                graph->subEndpointSetValues[name] = std::move(obj);
             } else {
                 obj = it->second({});
+                set_output2("getValue", std::move(obj));
             }
-            set_output2("getValue", std::move(obj));
             set_output2("hasValue",
                     std::make_shared<zeno::ConditionObject>(true));
         }
