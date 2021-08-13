@@ -10,6 +10,11 @@
 namespace {
 
 struct SubInput : zeno::INode {
+    virtual void complete() override {
+        auto name = get_param<std::string>("name");
+        graph->subInputNodes[name] = myname;
+    }
+
     virtual void apply() override {
         auto name = get_param<std::string>("name");
         if (auto it = graph->subInputs.find(name);

@@ -105,4 +105,21 @@ ZENO_API void Graph::setNodeOption(std::string const &id,
     safe_at(nodes, id, "node")->options.insert(name);
 }
 
+ZENO_API std::vector<std::string> getGraphInputNames() const {
+    std::vector<std::string> res;
+    for (auto const &[id, _]: subInputNodes) {
+        res.push_back(id);
+    }
+    return res;
+}
+
+ZENO_API std::vector<std::string> getGraphOutputNames() const {
+    std::vector<std::string> res;
+    for (auto const &[id, _]: subOutputNodes) {
+        res.push_back(id);
+    }
+    return res;
+}
+
+
 }

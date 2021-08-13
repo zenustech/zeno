@@ -33,6 +33,7 @@ struct Graph {
 
     std::map<std::string, any> subInputs;
     std::map<std::string, any> subOutputs;
+    std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;
 
     std::map<std::string, std::string> portalIns;
@@ -45,6 +46,9 @@ struct Graph {
 
     ZENO_API Graph();
     ZENO_API ~Graph();
+
+    ZENO_API std::vector<std::string> getGraphInputNames() const;
+    ZENO_API std::vector<std::string> getGraphOutputNames() const;
 
     ZENO_API void setGraphInput2(std::string const &id, any obj);
     ZENO_API any const &getGraphOutput2(std::string const &id) const;
