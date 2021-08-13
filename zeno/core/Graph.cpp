@@ -27,11 +27,7 @@ ZENO_API void Graph::setGraphInput2(std::string const &id, any obj) {
 }
 
 ZENO_API void Graph::applyGraph() {
-    std::set<std::string> applies;
-    for (auto const &[id, nodename]: subOutputNodes) {
-        applies.insert(nodename);
-    }
-    applyNodes(applies);
+    applyNodes(finalOutputNodes);
 }
 
 ZENO_API any const &Graph::getGraphOutput2(

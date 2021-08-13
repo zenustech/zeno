@@ -37,6 +37,7 @@ struct Graph {
     std::map<std::string, std::function<any()>> subEndpointGetters;
     std::map<std::string, any> subEndpointSetValues;
 
+    std::set<std::string> finalOutputNodes;
     std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;
     std::map<std::string, std::set<std::string>> subEndpointNodes;

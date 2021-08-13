@@ -9,6 +9,23 @@
 
 namespace {
 
+
+struct FinalOutput : zeno::INode {
+    virtual void complete() override {
+        graph->finalOutputNodes.insert(myname);
+    }
+
+    virtual void apply() override {}
+};
+
+ZENDEFNODE(FinalOutput, {
+    {},
+    {},
+    {},
+    {"subgraph"},
+});
+
+
 struct SubEndpoint : zeno::INode {
     virtual void complete() override {
         auto name = get_param<std::string>("name");
@@ -77,6 +94,7 @@ struct SubOutput : zeno::INode {
     virtual void complete() override {
         auto name = get_param<std::string>("name");
         graph->subOutputNodes[name] = myname;
+        graph->finalOutputNodes.insert(myname);
     }
 
     virtual void apply() override {
