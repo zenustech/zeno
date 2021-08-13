@@ -29,7 +29,7 @@ add_library(zeno_FastFLIP SHARED ${FLIP_SOURCE} ${NOSYS_SOURCE})
 if (MSVC)
     target_compile_options(zeno_FastFLIP PRIVATE "/arch:AVX")
 else()
-    target_compile_options(zeno_FastFLIP PRIVATE "-march=avx2")
+    target_compile_options(zeno_FastFLIP PRIVATE -mavx -mfma)
 endif()
 
 
