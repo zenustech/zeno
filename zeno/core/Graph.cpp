@@ -126,6 +126,14 @@ ZENO_API std::set<std::string> Graph::getGraphOutputNames() const {
     return res;
 }
 
+ZENO_API std::set<std::string> Graph::getGraphEndpointNames() const {
+    std::set<std::string> res;
+    for (auto const &[id, _]: subEndpointNodes) {
+        res.insert(id);
+    }
+    return res;
+}
+
 ZENO_API std::set<std::string> Graph::getGraphEndpointSetNames() const {
     std::set<std::string> res;
     for (auto const &[id, _]: subEndpointSetValues) {

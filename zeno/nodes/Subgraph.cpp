@@ -17,17 +17,16 @@ struct SubEndpoint : zeno::INode {
 
     virtual void apply() override {
         auto name = get_param<std::string>("name");
-        if (auto it = graph->subEndpoints.find(name);
-                it == graph->subEndpoints.end()) {
+        if (auto it = graph->subEndpointGetters.find(name);
+                it == graph->subEndpointGetters.end()) {
             set_output2("hasValue",
                     std::make_shared<zeno::ConditionObject>(false));
         } else {
-            any obj;
             if (has_input2("setValue")) {
-                obj = get_input2("setValue");
+                auto obj = get_input2("setValue");
                 graph->subEndpointSetValues[name] = std::move(obj);
             } else {
-                obj = it->second({});
+                auto obj = it->second();
                 set_output2("getValue", std::move(obj));
             }
             set_output2("hasValue",
