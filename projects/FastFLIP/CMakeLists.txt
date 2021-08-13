@@ -26,10 +26,10 @@ file(GLOB NOSYS_SOURCE nosys/*.cpp nosys/*.h)
 add_library(zeno_FastFLIP SHARED ${FLIP_SOURCE} ${NOSYS_SOURCE})
 
 #simd compiler flags
-if (WIN32)
-#target_compile_options(zeno_FastFLIP PRIVATE "/arch:AVX")
+if (MSVC)
+    target_compile_options(zeno_FastFLIP PRIVATE "/arch:AVX")
 else()
-target_compile_options(zeno_FastFLIP PRIVATE "-march=native")
+    target_compile_options(zeno_FastFLIP PRIVATE "-march=avx2")
 endif()
 
 
