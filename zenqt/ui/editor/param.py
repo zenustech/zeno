@@ -117,18 +117,38 @@ class QDMGraphicsParam_string(QDMGraphicsParam):
     def getValue(self):
         return str(self.edit.text())
 
-class QDMGraphicsParam_path(QDMGraphicsParam):
+
+class QDMGraphicsParam_writepath(QDMGraphicsParam):
     def initLayout(self):
         super().initLayout()
-        self.button = QPushButton('.')
+        self.button = QPushButton('..')
         self.button.setFixedWidth(20)
-        self.button.clicked.connect(self.open)
+        self.button.clicked.connect(self.on_open)
         self.layout.addWidget(self.button)
 
     def getValue(self):
         return str(self.edit.text())
 
-    def open(self):
+    def on_open(self):
+        path, kind = QFileDialog.getOpenFileName(None, 'Path to Save',
+            '', 'All Files(*);;')
+        if not path:
+            return
+        self.edit.setText(path)
+
+
+class QDMGraphicsParam_readpath(QDMGraphicsParam):
+    def initLayout(self):
+        super().initLayout()
+        self.button = QPushButton('..')
+        self.button.setFixedWidth(20)
+        self.button.clicked.connect(self.on_open)
+        self.layout.addWidget(self.button)
+
+    def getValue(self):
+        return str(self.edit.text())
+
+    def on_open(self):
         path, kind = QFileDialog.getOpenFileName(None, 'File to Open',
             '', 'All Files(*);;')
         if not path:
