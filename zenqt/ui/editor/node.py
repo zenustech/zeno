@@ -119,6 +119,7 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.params.clear()
         for index, (type, name, defl) in enumerate(params):
+            type = type if name != 'path' else 'path'
             param = globals()['QDMGraphicsParam_' + type](self)
             rect = QRectF(HORI_MARGIN, y, self.width - HORI_MARGIN * 2, 0)
             param.setGeometry(rect)
