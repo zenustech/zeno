@@ -34,7 +34,7 @@ from zenlib import pylib_zeno as core
 
 #'''
 def loadAutoloads(lib_dir):
-    print('loading addons from', lib_dir)
+    #print('loading addons from', lib_dir)
     if not os.path.isdir(lib_dir):
         return
 
@@ -53,7 +53,7 @@ def loadAutoloads(lib_dir):
             if 'zeno_' in name and 'so' in name.split(os.extsep):
                 paths.append(path)
 
-    print('to be loaded:', paths)
+    #print('to be loaded:', paths)
 
     retries = {}
     max_retries = len(paths) + 2

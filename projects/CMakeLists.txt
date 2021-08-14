@@ -20,5 +20,3 @@ foreach (name IN ITEMS ${EXTENSIONS_LIST})
         add_subdirectory(${name})
     endif()
 endforeach()
-
-add_subdirectory(linkall)
