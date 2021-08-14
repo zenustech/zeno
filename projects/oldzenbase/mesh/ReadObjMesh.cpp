@@ -156,7 +156,7 @@ static int defReadObjMesh = zeno::defNodeClass<ReadObjMesh>("ReadObjMesh",
     }, /* outputs: */ {
     "mesh",
     }, /* params: */ {
-    {"string", "path", ""},
+    {"readpath", "path", ""},
     }, /* category: */ {
     "trimesh",
     }});

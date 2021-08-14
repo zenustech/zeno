@@ -6,7 +6,7 @@ add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)
 # add cmake file
 include (common)
 
-find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
+find_package(TBB REQUIRED COMPONENTS tbb tbbmalloc)
 find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenVDB REQUIRED)
@@ -26,17 +26,17 @@ file(GLOB NOSYS_SOURCE nosys/*.cpp nosys/*.h)
 add_library(zeno_FastFLIP SHARED ${FLIP_SOURCE} ${NOSYS_SOURCE})
 
 #simd compiler flags
-if (WIN32)
-#target_compile_options(zeno_FastFLIP PRIVATE "/arch:AVX")
+if (MSVC)
+    target_compile_options(zeno_FastFLIP PRIVATE "/arch:AVX")
 else()
-target_compile_options(zeno_FastFLIP PRIVATE "-march=native")
+    target_compile_options(zeno_FastFLIP PRIVATE -mavx -mfma)
 endif()
 
 
 target_include_directories(zeno_FastFLIP PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_link_libraries(zeno_FastFLIP PRIVATE TBB::tbb TBB::tbbmalloc)
-if (GNU)
+if (UNIX)
     target_link_libraries(zeno_FastFLIP PRIVATE pthread)
 endif()
 
@@ -44,7 +44,7 @@ endif()
 if (WIN32)
   target_compile_options(zeno_FastFLIP PRIVATE -DNOMINMAX -D_USE_MATH_DEFINES)
 endif()
-if (GNU)
+if (UNIX)
   target_link_directories(zeno_FastFLIP PUBLIC /usr/lib/x86_64-linux-gnu:/usr/local/lib)
 endif()
 target_link_libraries(zeno_FastFLIP PRIVATE OpenVDB::openvdb IlmBase::Half)

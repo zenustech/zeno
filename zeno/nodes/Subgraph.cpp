@@ -9,7 +9,62 @@
 
 namespace {
 
+
+struct FinalOutput : zeno::INode {
+    virtual void complete() override {
+        graph->finalOutputNodes.insert(myname);
+    }
+
+    virtual void apply() override {}
+};
+
+ZENDEFNODE(FinalOutput, {
+    {},
+    {},
+    {},
+    {"subgraph"},
+});
+
+
+struct SubEndpoint : zeno::INode {
+    virtual void complete() override {
+        auto name = get_param<std::string>("name");
+        graph->subEndpointNodes[name].insert(myname);
+    }
+
+    virtual void apply() override {
+        auto name = get_param<std::string>("name");
+        if (auto it = graph->subEndpointGetters.find(name);
+                it == graph->subEndpointGetters.end()) {
+            set_output2("hasValue",
+                    std::make_shared<zeno::ConditionObject>(false));
+        } else {
+            if (has_input2("setValue")) {
+                auto obj = get_input2("setValue");
+                graph->subEndpointSetValues[name] = std::move(obj);
+            } else {
+                auto obj = it->second();
+                set_output2("getValue", std::move(obj));
+            }
+            set_output2("hasValue",
+                    std::make_shared<zeno::ConditionObject>(true));
+        }
+    }
+};
+
+ZENDEFNODE(SubEndpoint, {
+    {"setValue"},
+    {"getValue", "hasValue"},
+    {{"string", "name", "Cube"}},
+    {"subgraph"},
+});
+
 struct SubInput : zeno::INode {
+    virtual void complete() override {
+        auto name = get_param<std::string>("name");
+        graph->subInputNodes[name] = myname;
+    }
+
     virtual void apply() override {
         auto name = get_param<std::string>("name");
         if (auto it = graph->subInputs.find(name);
@@ -28,8 +83,8 @@ struct SubInput : zeno::INode {
 ZENDEFNODE(SubInput, {
     {},
     {"port", "hasValue"},
-    {{"string", "type", ""},
-     {"string", "name", "input1"},
+    {{"string", "name", "input1"},
+     {"string", "type", ""},
      {"string", "defl", ""}},
     {"subgraph"},
 });
@@ -39,6 +94,7 @@ struct SubOutput : zeno::INode {
     virtual void complete() override {
         auto name = get_param<std::string>("name");
         graph->subOutputNodes[name] = myname;
+        graph->finalOutputNodes.insert(myname);
     }
 
     virtual void apply() override {
@@ -51,8 +107,8 @@ struct SubOutput : zeno::INode {
 ZENDEFNODE(SubOutput, {
     {"port"},
     {},
-    {{"string", "type", ""},
-     {"string", "name", "output1"},
+    {{"string", "name", "output1"},
+     {"string", "type", ""},
      {"string", "defl", ""}},
     {"subgraph"},
 });

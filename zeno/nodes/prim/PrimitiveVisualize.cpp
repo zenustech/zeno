@@ -55,8 +55,8 @@ ZENDEFNODE(PrimitiveShade,
     "shade",
     }, /* params: */ {
     {"string", "primtype", "points"},
-    {"string", "vertpath", "assets/particles.vert"},
-    {"string", "fragpath", "assets/particles.frag"},
+    {"readpath", "vertpath", "assets/particles.vert"},
+    {"readpath", "fragpath", "assets/particles.frag"},
     }, /* category: */ {
     "visualize",
     }});

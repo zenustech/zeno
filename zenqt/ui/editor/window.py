@@ -37,6 +37,8 @@ class QDMEditMenu(QMenu):
                 (None, None),
                 ('&Copy', QKeySequence.Copy),
                 ('&Paste', QKeySequence.Paste),
+                (None, None),
+                ('&Find', QKeySequence.Find),
         ]
         
         for name, shortcut in acts:
@@ -181,6 +183,11 @@ class NodeEditor(QWidget):
         self.button_delete.move(250, 40)
         self.button_delete.resize(80, 30)
         self.button_delete.clicked.connect(self.deleteCurrScene)
+
+        self.find_bar = QDMFindBar(self)
+        self.find_bar.move(400, 40)
+        self.find_bar.resize(300, 30)
+        self.find_bar.hide()
 
     def on_switch_graph(self, name):
         self.switchScene(name)
@@ -376,17 +383,23 @@ class NodeEditor(QWidget):
         elif name == '&Paste':
             self.do_paste()
 
+        elif name == '&Find':
+            self.find_bar.show()
+
     def do_export(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Export',
-                '', 'C++ Header File(*.h);; All Files(*);;')
+                '', 'JSON file(*.json);; C++ Header File(*.h);; All Files(*);;',
+                options=QFileDialog.DontConfirmOverwrite)
         if path != '':
             prog = self.dumpProgram()
-            from ..system import serial
+            from ...system import serial
             data = list(serial.serializeScene(prog['graph']))
             with open(path, 'w') as f:
-                f.write('R"ZSL(')
+                if path.endswith('.h'):
+                    f.write('R"ZSL(')
                 json.dump(data, f)
-                f.write(')ZSL"\n')
+                if path.endswith('.h'):
+                    f.write(')ZSL"\n')
 
     def do_copy(self):
         itemList = self.scene.selectedItems()

@@ -3,6 +3,7 @@
 #include <zeno/utils/defs.h>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/any.h>
+#include <functional>
 #include <variant>
 #include <memory>
 #include <string>
@@ -33,7 +34,13 @@ struct Graph {
 
     std::map<std::string, any> subInputs;
     std::map<std::string, any> subOutputs;
+    std::map<std::string, std::function<any()>> subEndpointGetters;
+    std::map<std::string, any> subEndpointSetValues;
+
+    std::set<std::string> finalOutputNodes;
+    std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;
+    std::map<std::string, std::set<std::string>> subEndpointNodes;
 
     std::map<std::string, std::string> portalIns;
     std::map<std::string, any> portals;
@@ -46,8 +53,17 @@ struct Graph {
     ZENO_API Graph();
     ZENO_API ~Graph();
 
+    ZENO_API std::set<std::string> getGraphInputNames() const;
+    ZENO_API std::set<std::string> getGraphOutputNames() const;
+    ZENO_API std::set<std::string> getGraphEndpointNames() const;
+    ZENO_API std::set<std::string> getGraphEndpointSetNames() const;
+
+    ZENO_API void setGraphEndpointGetter(std::string const &id,
+            std::function<any()> getter);
+
     ZENO_API void setGraphInput2(std::string const &id, any obj);
     ZENO_API any const &getGraphOutput2(std::string const &id) const;
+    ZENO_API any const &getGraphEndpointSetValue(std::string const &id) const;
     ZENO_API void applyGraph();
 
     void setGraphInput(std::string const &id,
@@ -82,7 +98,7 @@ struct Graph {
 
     void setNodeParam(std::string const &id, std::string const &par,
         std::variant<int, float, std::string> const &val) {
-        auto parid = "param_" + par;
+        auto parid = par + ":";
         std::visit([&] (auto const &val) {
             setNodeInput(id, parid, val);
         }, val);

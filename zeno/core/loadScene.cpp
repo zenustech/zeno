@@ -1,12 +1,14 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
+#include <spdlog/spdlog.h>
 #include <zeno/zeno.h>
 
 namespace zeno {
 
 using namespace rapidjson;
 
-static std::variant<int, float, std::string> generic_get(Value const &x) {
+template <class T>
+static T generic_get(Value const &x) {
     if (x.IsString()) {
         return (std::string)x.GetString();
     } else if (x.IsInt()) {
@@ -31,8 +33,10 @@ ZENO_API void Scene::loadScene(const char *json) {
                 getGraph().addNode(di[1].GetString(), di[2].GetString());
             } else if (cmd == "completeNode") {
                 getGraph().completeNode(di[1].GetString());
+            } else if (cmd == "setNodeInput") {
+                getGraph().setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zeno::any>(di[3]));
             } else if (cmd == "setNodeParam") {
-                getGraph().setNodeParam(di[1].GetString(), di[2].GetString(), generic_get(di[3]));
+                getGraph().setNodeParam(di[1].GetString(), di[2].GetString(), generic_get<std::variant<int, float, std::string>>(di[3]));
             } else if (cmd == "setNodeOption") {
                 getGraph().setNodeOption(di[1].GetString(), di[2].GetString());
             } else if (cmd == "bindNodeInput") {
@@ -42,8 +46,8 @@ ZENO_API void Scene::loadScene(const char *json) {
             } else if (cmd == "clearAllState") {
                 this->clearAllState();
             }
-        } catch (zeno::Exception const &e) {
-            printf("exception executing command %d (%s): %s\n",
+        } catch (zeno::BaseException const &e) {
+            spdlog::warn("exception executing command {} ({}): {}",
                     i, cmd.c_str(), e.what());
         }
     }

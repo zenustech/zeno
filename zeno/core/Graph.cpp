@@ -17,16 +17,17 @@ ZENO_API Context::Context(Context const &other)
 ZENO_API Graph::Graph() = default;
 ZENO_API Graph::~Graph() = default;
 
+ZENO_API void Graph::setGraphEndpointGetter(std::string const &id,
+        std::function<any()> getter) {
+    subEndpointGetters[id] = std::move(getter);
+}
+
 ZENO_API void Graph::setGraphInput2(std::string const &id, any obj) {
     subInputs[id] = std::move(obj);
 }
 
 ZENO_API void Graph::applyGraph() {
-    std::set<std::string> applies;
-    for (auto const &[id, nodename]: subOutputNodes) {
-        applies.insert(nodename);
-    }
-    applyNodes(applies);
+    applyNodes(finalOutputNodes);
 }
 
 ZENO_API any const &Graph::getGraphOutput2(
@@ -70,7 +71,7 @@ ZENO_API void Graph::applyNode(std::string const &id) {
     try {
         node->doApply();
     } catch (std::exception const &e) {
-        throw zeno::Exception("During evaluation of `"
+        throw zeno::BaseException("During evaluation of `"
                 + node->myname + "`:\n" + e.what());
     }
 }
@@ -84,7 +85,7 @@ ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
         ctx = nullptr;
     } catch (std::exception const &e) {
         ctx = nullptr;
-        throw zeno::Exception(
+        throw zeno::BaseException(
                 (std::string)"ZENO Traceback (most recent call last):\n"
                 + e.what());
     }
@@ -104,5 +105,42 @@ ZENO_API void Graph::setNodeOption(std::string const &id,
         std::string const &name) {
     safe_at(nodes, id, "node")->options.insert(name);
 }
+
+ZENO_API std::set<std::string> Graph::getGraphInputNames() const {
+    std::set<std::string> res;
+    for (auto const &[id, _]: subInputNodes) {
+        res.insert(id);
+    }
+    return res;
+}
+
+ZENO_API std::set<std::string> Graph::getGraphOutputNames() const {
+    std::set<std::string> res;
+    for (auto const &[id, _]: subOutputNodes) {
+        res.insert(id);
+    }
+    return res;
+}
+
+ZENO_API std::set<std::string> Graph::getGraphEndpointNames() const {
+    std::set<std::string> res;
+    for (auto const &[id, _]: subEndpointNodes) {
+        res.insert(id);
+    }
+    return res;
+}
+
+ZENO_API std::set<std::string> Graph::getGraphEndpointSetNames() const {
+    std::set<std::string> res;
+    for (auto const &[id, _]: subEndpointSetValues) {
+        res.insert(id);
+    }
+    return res;
+}
+
+ZENO_API any const &Graph::getGraphEndpointSetValue(std::string const &id) const {
+    return safe_at(subEndpointSetValues, id, "endpoint set value");
+}
+
 
 }

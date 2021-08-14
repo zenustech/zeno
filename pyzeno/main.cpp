@@ -11,7 +11,7 @@
 namespace py = pybind11;
 
 
-PYBIND11_MODULE(zeno_pybind11_module, m) {
+PYBIND11_MODULE(pylib_zeno, m) {
     m.def("dumpDescriptors", zeno::dumpDescriptors);
     m.def("bindNodeInput", zeno::bindNodeInput);
     m.def("setNodeParam", zeno::setNodeParam);
@@ -44,7 +44,7 @@ PYBIND11_MODULE(zeno_pybind11_module, m) {
         try {
             if (p)
                 std::rethrow_exception(p);
-        } catch (zeno::Exception const &e) {
+        } catch (zeno::BaseException const &e) {
             PyErr_SetString(PyExc_RuntimeError, e.what());
         }
     });

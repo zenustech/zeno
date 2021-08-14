@@ -95,7 +95,7 @@ protected:
     /* deprecated */
     auto get_param(std::string const &id) const {
         std::variant<int, float, std::string> res;
-        auto inpid = "param_" + id;
+        auto inpid = id + ":";
         if (has_input2<scalar_type_variant>(inpid)) {
             std::visit([&] (auto const &x) {
                 using T = std::decay_t<decltype(x)>;
@@ -115,7 +115,7 @@ protected:
     template <class T>
     T get_param(std::string const &id) const {
         //return std::get<T>(get_param(id));
-        return get_input2<T>("param_" + id);
+        return get_input2<T>(id + ":");
     }
 };
 

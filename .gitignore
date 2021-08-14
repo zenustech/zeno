@@ -10,6 +10,8 @@ cmake-build-*/
 # binary files
 *.zpm
 *.exe
+*.a
+*.la
 *.so
 *.dll
 *.lib
@@ -18,6 +20,7 @@ cmake-build-*/
 a.out
 
 # output files
+/zenlib/
 outputs/
 /a.zsl
 /a.zsg
@@ -50,9 +53,5 @@ projects/Euler
 assets/smoke
 
 # archibate files
-/c
-/e
-/i
-/o
-/u
-/n
+/a.h
+/a.json

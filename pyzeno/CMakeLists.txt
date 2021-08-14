@@ -1,22 +1,3 @@
 file(GLOB PYZENO_SOURCE *.cpp)
-pybind11_add_module(zeno_pybind11_module ${PYZENO_SOURCE})
-target_link_libraries(zeno_pybind11_module PRIVATE zeno)
-if (ZENO_BUILD_EXTENSIONS)
-    target_link_libraries(zeno_pybind11_module PRIVATE zeno_projects)
-endif()
-if (DEFINED ZENO_ADDITIONAL_LINKS)
-    target_link_libraries(zeno_pybind11_module PRIVATE ${ZENO_ADDITIONAL_LINKS})
-endif()
-
-set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/zenqt)
-set_target_properties(zeno_pybind11_module PROPERTIES
-	LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-	RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-	LIBRARY_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-	RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-	LIBRARY_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-	)
+pybind11_add_module(pylib_zeno ${PYZENO_SOURCE})
+target_link_libraries(pylib_zeno PRIVATE zeno)

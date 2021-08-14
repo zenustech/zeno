@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <memory>
 #include <mutex>
+#include <fmt/core.h>
 #include <fmt/color.h>
 
 #ifdef __APPLE__
@@ -202,10 +203,47 @@ inline std::vector<StackFrame> stack_trace() {
 #include <ucontext.h>
 #include <unistd.h>
 #include <cxxabi.h>
+
+namespace zeno::dbg {
+static std::string calc_addr_to_line(
+        std::string const &file, std::string const &name,
+        std::string const &offset) {
+
+    char cmd[2048];
+    int ch;
+    sprintf(cmd, "nm -p --defined-only '%s' 2>&1 | grep 'T %s$'", file.c_str(), name.c_str());
+    FILE *fp = popen(cmd, "r");
+    if (!fp) return "";
+    std::string addr;
+    while (1) {
+        ch = fgetc(fp);
+        if (ch == EOF)
+            break;
+        if (ch != ' ')
+            addr += (char)ch;
+    }
+    pclose(fp);
+    if (!addr.size()) return "";
+
+    sprintf(cmd, "addr2line -e '%s' -- '%s'", file.c_str(), addr.c_str());
+    fp = popen(cmd, "r");
+    if (!fp) return "";
+    std::string res;
+    while (1) {
+        ch = fgetc(fp);
+        if (ch == EOF)
+            break;
+        if (ch != '\n')
+            res += (char)ch;
+    }
+    pclose(fp);
+    return res;
+}
+}
 #endif
 
 namespace zeno {
-void print_traceback() {
+void print_traceback(int skip) {
 #ifdef __APPLE__
   static std::mutex traceback_printer_mutex;
   // Modified based on
@@ -271,7 +309,7 @@ void print_traceback() {
     const int line_width = 86;
     const int function_width = line_width - function_start - 2;
     int i;
-    for (i = 0; i < (int)trace.size(); i++) {
+    for (i = skip; i < (int)trace.size(); i++) {
       std::cout << trace[i];
       if (i > function_start + 3 &&
           (i - 3 - function_start) % function_width == 0) {
@@ -300,17 +338,17 @@ void print_traceback() {
   fmt::print(fg(fmt::color::magenta), "************************\n");
 
   std::vector<dbg::StackFrame> stack = dbg::stack_trace();
-  for (unsigned int i = 0; i < stack.size(); i++) {
-    fmt::print(fg(fmt::color::magenta),
-               fmt::format("0x{:x}: ", stack[i].address));
-    fmt::print(fg(fmt::color::red), stack[i].name);
-    if (stack[i].file != std::string(""))
-      fmt::print(fg(fmt::color::magenta),
-                 fmt::format("(line {} in {})", stack[i].line, stack[i].file));
-    fmt::print(fg(fmt::color::magenta),
-               fmt::format(" in {}\n", stack[i].module));
+  for (unsigned int i = skip; i < stack.size(); i++) {
+    fmt::print(fg(fmt::color::gray), "0x{:x}: ", stack[i].address);
+    fmt::print(fg(fmt::color::yellow), stack[i].name);
+    if (stack[i].file != std::string("")) {
+      fmt::print(fg(fmt::color::gray), " at ");
+      fmt::print(fg(fmt::color::cyan), "{}:{}", stack[i].file, stack[i].line);
+    }
+    fmt::print(fg(fmt::color::gray), " in ");
+    fmt::print(fg(fmt::color::magenta), "{}\n", stack[i].module);
   }
-#else
+#elif defined(__linux__)
   // Based on http://man7.org/linux/man-pages/man3/backtrace.3.html
   constexpr int BT_BUF_SIZE = 1024;
   int nptrs;
@@ -322,47 +360,56 @@ void print_traceback() {
 
   if (strings == nullptr) {
     perror("backtrace_symbols");
-    exit(EXIT_FAILURE);
+    return;
   }
 
   fmt::print(fg(fmt::color::magenta), "************************\n");
   fmt::print(fg(fmt::color::magenta), "* Zeno Stack Traceback *\n");
   fmt::print(fg(fmt::color::magenta), "************************\n");
 
-  // j = 0: taichi::print_traceback
-  for (int j = 1; j < nptrs; j++) {
+  // j = 0: zeno::print_traceback
+  for (int j = 1 + skip; j < nptrs; j++) {
     std::string s(strings[j]);
     std::size_t slash = s.find("/");
-    std::size_t start = s.find("(");
-    std::size_t end = s.rfind("+");
+    std::size_t bra = s.find("(");
+    std::size_t ket = s.find(")");
+    std::size_t ebra = s.find("[");
+    std::size_t eket = s.find("]");
+    std::size_t pls = s.rfind("+");
 
-    std::string line;
-
-    if (slash == 0 && start < end && s[start + 1] != '+') {
-      std::string name = s.substr(start + 1, end - start - 1);
-
-      char *demangled_name_;
+    //if (slash == 0 && bra < pls && s[bra + 1] != '+') {
+      std::string name = s.substr(bra + 1, pls - bra - 1);
+      std::string file = s.substr(0, bra);
+      std::string offset = s.substr(pls + 1, ket - pls - 1);
+      std::string address = s.substr(ebra + 1, eket - ebra - 1);
 
       int status = -1;
-
-      demangled_name_ = abi::__cxa_demangle(name.c_str(), NULL, NULL, &status);
-
-      if (demangled_name_) {
-        name = std::string(demangled_name_);
+      std::string demangled;
+      if (name.size() == 0) {
+          demangled = "??";
+      } else if (char *p = abi::__cxa_demangle(name.c_str(), NULL, NULL, &status); p) {
+        demangled = std::string(p);
+        free(p);
+      } else {
+        demangled = name;
       }
-
-      std::string prefix = s.substr(0, start);
-
-      line = fmt::format("{}: {}", prefix, name);
-      free(demangled_name_);
-    } else {
-      line = s;
-    }
-    fmt::print(fg(fmt::color::magenta), "{}\n", line);
+      //fmt::print(fg(fmt::color::red), "{}\n", s);
+      fmt::print(fg(fmt::color::gray), "{}: ", address);
+      fmt::print(fg(fmt::color::yellow), "{}", demangled);
+      auto lineinfo = dbg::calc_addr_to_line(file, name, offset);
+      if (lineinfo.size()) {
+          fmt::print(fg(fmt::color::gray), " at ");
+          fmt::print(fg(fmt::color::cyan), "{}", lineinfo);
+      }
+      fmt::print(fg(fmt::color::gray), " in ");
+      fmt::print(fg(fmt::color::magenta), "{}", file);
+      fmt::print(fg(fmt::color::gray), "\n");
+    /*} else {
+      fmt::print(fg(fmt::color::red), "{}\n", s);
+    }*/
   }
   std::free(strings);
 #endif
-
   fmt::print(fg(fmt::color::orange), "\nInternal error occurred.\n");
 }
 }

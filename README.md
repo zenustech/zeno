@@ -148,31 +148,32 @@ Other requirements like GLAD are self-contained and you don't have to worry inst
 
 > Hint: for Python, please try avoid using virtualenv and Conda if possible.
 
-- Ubuntu 20.04
+### Ubuntu 20.04
 
 ```bash
-# Install basic dependencies
-sudo apt-get install gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin
+# Install basic dependencies:
+sudo apt-get install -y gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin
 
 python --version  # make sure Python version >= 3.6
 sudo python -m pip install -U pip
 sudo python -m pip install pybind11 numpy PySide2
 
 # (Optional) for easily altering cmake configurations from terminal:
-sudo apt-get install cmake-curses-gui
+sudo apt-get install -y cmake-curses-gui
 
-# (Optional) Installing IlmBase and other dependencies:
-sudo apt-get install -y libilmbase-dev libopenexr-dev
+# (Optional) Install Zlib, Eigen3, OpenBLAS:
 sudo apt-get install -y zlib1g-dev libeigen3-dev libopenblas-dev
 
-# (Optional) Installing OpenVDB dependencies (Boost, TBB, Blosc):
-sudo apt-get install -y libboost-iostreams-dev libboost-system-dev libtbb-dev
+# (Optional) Installing OpenVDB dependencies (Boost, TBB, Blosc, OpenEXR):
+sudo apt-get install -y libilmbase-dev libopenexr-dev libtbb-dev
+sudo apt-get install -y libboost-iostreams-dev libboost-system-dev
+
 git clone https://github.com/Blosc/c-blosc.git --branch=v1.5.0
 cd c-blosc
 mkdir build
 cd build
 cmake ..
-make -j4
+make -j8
 sudo make install
 cd ../..
 
@@ -182,14 +183,119 @@ cd openvdb
 mkdir build
 cd build
 cmake ..
-make -j4
+make -j8
 sudo make install
 cd ../..
 ```
 
 See also [`Dockerfile`](Dockerfile) as a reference for full installing steps.
 
-- Windows 10
+### CentOS 7
+
+```bash
+# Install basic dependencies:
+sudo yum -y install wget make python3 python3-devel
+
+sudo python3 -m pip install pybind11 numpy PySide2
+
+# Install CMake dependency (OpenSSL):
+sudo yum -y install openssl openssl-devel
+
+# Install CMake 3.17:
+wget -c https://github.com/Kitware/CMake/releases/download/v3.17.0-rc3/cmake-3.17.0-rc3.tar.gz
+tar zxvf cmake-3.17.0-rc3.tar.gz
+cd cmake-3.17.0-rc3
+./bootstrap
+make -j8
+sudo make install
+cd ..
+
+# Allowing CMake 3.17 to be launched directly from shell:
+sudo ln -sf /usr/local/bin/cmake /usr/bin/
+
+cmake --version  # make sure CMake version is 3.17 now
+
+# (Optional) Install Zlib, Eigen3, OpenBLAS:
+sudo yum -y install bzip2-devel zlib-devel
+
+git clone https://github.com/eigenteam/eigen-git-mirror.git --branch=3.3.7
+cd eigen-git-mirror
+mkdir build
+cd build
+cmake ..
+sudo make install
+cd ../..
+
+git clone https://github.com/xianyi/OpenBLAS.git --branch=v0.3.17
+cd OpenBLAS
+make FC=gfortran -j8
+sudo make install PREFIX=/usr/local
+
+# Install GCC 9.x
+yum -y install centos-release-scl
+yum -y install devtoolset-9-gcc
+yum -y install devtoolset-9-gcc-c++
+
+# Enable GCC 9.x (must be executed before build)
+scl enable devtoolset-9 bash
+g++ --version  # Make sure G++ version is 9.x now
+
+# (Optional) Install OpenVDB dependencies (Boost, TBB, Blosc, OpenEXR):
+git clone https://github.com/aforsythe/IlmBase.git --branch=v2.0.0
+cd IlmBase
+mkdir build
+cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j8
+sudo make install
+cd ../..
+
+git clone https://github.com/AcademySoftwareFoundation/openexr.git --branch=v2.3.0
+cd openexr
+mkdir build
+cd build
+cmake .. -DOPENEXR_BUILD_PYTHON_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release
+make -j8
+sudo make install
+cd ../..
+
+wget https://cfhcable.dl.sourceforge.net/project/boost/boost/1.67.0/boost_1_67_0.tar.gz
+tar zxvf boost_1_67_0.tar.gz
+cd boost_1_67_0
+./bootstrap.sh
+./b2 -j8 --without-python
+sudo ./b2 install --without-python
+
+git clone https://github.com/oneapi-src/oneTBB.git --branch=2017_U8
+cd oneTBB
+make cfg=release -j8
+sudo cp -r include/tbb /usr/local/include/
+sudo cp -r build/linux_*_release/*.so* /usr/local/lib64/
+sudo cp cmake/*.cmake /usr/local/lib/pkgconfig/
+sudo cp -r cmake/templates /usr/local/lib/pkgconfig/
+cd ..
+
+git clone https://github.com/Blosc/c-blosc.git --branch=v1.5.0
+cd c-blosc
+mkdir build
+cd build
+cmake ..
+make -j8
+sudo make install
+cd ../..
+
+# (Optional) Install OpenVDB:
+git clone https://github.com/AcademySoftwareFoundation/openvdb.git --branch=v7.2.1
+cd openvdb
+mkdir build
+cd build
+cmake ..
+make -j8
+sudo make install
+cd ../..
+```
+
+### Windows 10
 
 1. Install Python 3.8 64-bit. IMPORTANT: make sure you **Add Python 3.8 to PATH**! After that rebooting your computer would be the best.
 
@@ -214,19 +320,19 @@ Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/
 git clone https://github.com/microsoft/vcpkg.git --depth=1
 cd vcpkg
 
-# (Optional) integrate vcpkg into your VS2019 if necessary:
+@rem (Optional) integrate vcpkg into your VS2019 if necessary:
 vcpkg integrate install
 
-# (Optional) Install OpenVDB for the extension ZenVDB & FastFLIP:
+@rem (Optional) Install OpenVDB for the extension ZenVDB & FastFLIP:
 vcpkg install openvdb:x64-windows
 
-# (Optional) Install Eigen3 for the extension FastFLIP:
+@rem (Optional) Install Eigen3 for the extension FastFLIP:
 vcpkg install eigen3:x64-windows
 ```
 
 Hint: You may need to install the `English Pack` for VS2019, and have fast internet condition for vcpkg to work. See [their official guide](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md) for more details.
 
-- Arch Linux
+### Arch Linux
 
 ```bash
 sudo pacman -S gcc make cmake python python-pip python-numpy pyside2
@@ -234,7 +340,7 @@ sudo pacman -S gcc make cmake python python-pip python-numpy pyside2
 
 See also [`Dockerfile.archlinux`](Dockerfile.archlinux) for full installing steps.
 
-- Docker
+### Docker
 
 ```bash
 ./docker.sh
@@ -243,7 +349,7 @@ See also [`Dockerfile.archlinux`](Dockerfile.archlinux) for full installing step
 
 ## Build ZENO
 
-- Linux
+### Linux
 
 ```bash
 cmake -B build
@@ -267,31 +373,38 @@ ccmake -B build  # will shows up a curses screen, c to save, q to exit
 <img src="images/ccmake1.png" alt="ccmake1" style="zoom:98%;" />
 <img src="images/ccmake2.png" alt="ccmake2" style="zoom:50%;" />
 
-- Windows
+### Windows
 
 ```cmd
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 ```
-Then open ```build/zeno.sln``` in Visual Studio 2019, and **switch to Release mode in build configurations**, then run `Build -> Build All`.
+Then open ```build/zeno.sln``` in Visual Studio 2019, and **switch to Release mode in build configurations**, then run `Build -> Build All` (Ctrl+Shift+B).
 
 > Optional: You can change some cmake configurations using `cmake-gui`.
 
-```bash
+```cmd
+cmake -B build
 cmake-gui -B build
+@rem will shows up a window to allow you turn ON/OFF the extensions build
 ```
 
-IMPORTANT: In MSVC, Release mode must **always be active** when building ZENO, since MSVC uses different allocators in Release and Debug mode. If a DLL of Release mode and a DLL in Debug mode are linked together in Windows, it will crash when passing STL objects.
+IMPORTANT: In MSVC, **Release** mode must **always be active** when building ZENO, since MSVC uses different allocators in Release and Debug mode. If a DLL of Release mode and a DLL in Debug mode are linked together in Windows, it will crash when passing STL objects.
 
 
-### Run ZENO for development
+## Run ZENO for development
 
 ```bash
 ./run.py
 ```
 
+- Windows
+```bash
+python run.py
+```
+
 After successfully loading the editor, you may click `File -> Open` to play `graphs/LorenzParticleTrail.zsg` to confirm everything is working well :)
 
-#### Troubleshooting
+## Troubleshooting
 
 If you got:
 ```bash
@@ -300,19 +413,19 @@ This application failed to start because it could not find or load the Qt platfo
 Reinstalling the application may fix this problem.
 ```
 
-- Windows
+### Windows 10
 
 Are you using Anaconda? Please try using the methods in: https://stackoverflow.com/questions/41994485/how-to-fix-could-not-find-or-load-the-qt-platform-plugin-windows-while-using-m
 
-- Ubuntu 20.04
+### Ubuntu 20.04
 
 ```bash
-sudo apt-get install qt5dxcb-plugin
+sudo apt-get install -y qt5dxcb-plugin
 ```
 
 Please let me know if you have any trouble not mentioned above by opening an [issue](https://github.com/zenustech/zeno/issues) on GitHub, thanks for you support!
 
-- WSL
+### WSL
 
 WSL doesn't have X11 display by default :( Please try search the Web for how to enable it, sorry!
 
@@ -324,37 +437,35 @@ The source code of all our official extensions are provided in `projects/`.
 For now, official extensions will be built by default when running the
 ```ALL_BUILD``` target of CMake.
 
-### ZenVDB & FastFLIP
+But some of the extensions are not **enabled by default** because they requries optional dependencies, don't worry, you can enable them with the following commands:
 
-Note that the extensions: ZenVDB and FastFLIP are **not built by default**.
-You can use
+## Building Rigid
+
+```bash
+cmake -B build -DEXTENSION_Rigid:BOOL=ON
+```
+
+## Building ZenVDB & FastFLIP
+
 ```bash
 cmake -B build -DEXTENSION_zenvdb:BOOL=ON -DEXTENSION_FastFLIP:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
 ```
-to enable them.
 
 > **The FastFLIP solver we know work well with OpenVDB 7.2.3, and have problem with OpenVDB 8.1.**
 
-### GMPM
+## Building GMPM & Mesher
 
-You need to update git submodules before building @littlemine's GPU MPM.
-To do so:
 ```bash
+# update git submodules to fetch @littlemine's ZPC submodule:
 git submodule update --init --recursive
+cmake -B build -DEXTENSION_gmpm:BOOL=ON -DEXTENSION_mesher:BOOL=ON
 ```
-Then:
-```bash
-cmake -B build -DEXTENSION_gmpm:BOOL=ON
-```
-to enable it.
 
-### ZenoFX
+## Building Euler
 
-You need to turn on two flags to enable ZenoFX build:
 ```bash
-cmake -B build -DZENO_BUILD_ZFX:BOOL=ON -DEXTENSION_ZenoFX:BOOL=ON
+cmake -B build -DEXTENSION_Euler:BOOL=ON
 ```
-to enable it.
 
 ## Major dependencies
 
@@ -362,7 +473,7 @@ Building them require some dependencies:
 
 - ZenoFX (ZFX expression wrangler)
   - OpenMP (optional)
-  - CUDA driver API (optional)
+  - OpenVDB (optional)
 
 - Rigid (bullet3 rigid dynamics)
   - OpenMP
@@ -398,16 +509,21 @@ Building them require some dependencies:
   - Eigen3
   - OpenMP (optional)
 
+- Euler (aerodynamics solver)
+  - OpenVDB
+  - IlmBase
+  - Eigen3
+  - TBB
+  - ZenVDB (see above)
+  - OldZenBASE (see above)
+
+
 Other extensions are built by default because their dependencies are
 self-contained and portable to all platforms.
 
 ## Write your own extension!
 
 See https://github.com/zenustech/zeno_addon_wizard for an example on how to write custom nodes in ZENO.
-
-### Installing custom extensions
-
-To install a node library for ZENO just copy the `.so` or `.dll` files to `zenqt/lib/`.
 
 
 # Miscellaneous
@@ -439,7 +555,7 @@ You may contact us via WeChat:
 
 ## Run intergrated test
 
-- Linux
+### Linux
 
 ```bash
 cmake -B build -DZENO_BUILD_TESTS:BOOL=ON
@@ -447,28 +563,42 @@ cmake --build build --parallel
 build/tests/zentest
 ```
 
-- Windows
+### Windows
 
-Not supported yet.
+```cmd
+cmake -B build -DZENO_BUILD_TESTS:BOOL=ON
+cmake --build build --parallel
+build\tests\zentest.exe
+```
 
 ## Build binary release
 
+- Linux
 ```bash
+sudo python3 -m pip install wheel
+sudo python3 -m pip install pyinstaller
 ./dist.py
+```
+
+- Windows
+```bash
+python -m pip install wheel
+python -m pip install pyinstaller
+python dist.py
 ```
 
 You will get dist/launcher.zip, upload it to, for example, zeno-linux-2021.8.7.zip in the `Release` page.
 
 ## Build binary release (old method)
 
-- Arch Linux
+### Arch Linux
 
 ```bash
 scripts/dist.sh
 # you will get /tmp/release/zeno-linux-20xx.x.x.tar.gz
 ```
 
-- Windows
+### Windows
 
 First, download `zenv-windows-prebuilt.zip` from [this page](https://github.com/zenustech/binaries/releases).
 Second, extract it directly into project root.

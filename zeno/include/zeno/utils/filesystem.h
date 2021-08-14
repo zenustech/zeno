@@ -1,15 +1,7 @@
 #pragma once
 
-#if __has_include(<filesystem>)
-#include <filesystem>
+#include <zinc/filesystem.h>
+
 namespace zeno {
-namespace fs = std::filesystem;
+using namespace zinc;
 }
-#elif __has_include(<experimental/filesystem>)
-#include <experimental/filesystem>
-namespace zeno {
-namespace fs = std::experimental::filesystem;
-}
-#else
-#error "missing <filesystem> header."
-#endif

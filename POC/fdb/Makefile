@@ -1,4 +1,4 @@
 x:
 	cmake -Bbuild -Wno-dev
-	make -Cbuild
+	make -Cbuild -j4
 	build/adflip

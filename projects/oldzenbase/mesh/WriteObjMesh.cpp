@@ -49,7 +49,7 @@ static int defWriteObjMesh = zeno::defNodeClass<WriteObjMesh>("WriteObjMesh",
     "mesh",
     }, /* outputs: */ {
     }, /* params: */ {
-    {"string", "path", ""},
+    {"writepath", "path", ""},
     }, /* category: */ {
     "trimesh",
     }});
