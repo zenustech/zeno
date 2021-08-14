@@ -1,9 +1,9 @@
 import ctypes, os, sys
 
-'''
 from .utils import os_name
 from ..utils import relative_path
 
+'''
 lib_dir = relative_path('lib')
 
 if os_name == 'win32':
@@ -32,8 +32,8 @@ if os_name == 'win32':  # windows doesn't support rpath, let's mock him only
 
 from zenlib import pylib_zeno as core
 
-'''
-def loadAutoloads():
+#'''
+def loadAutoloads(lib_dir):
     print('loading addons from', lib_dir)
     if not os.path.isdir(lib_dir):
         return
@@ -52,6 +52,8 @@ def loadAutoloads():
         else:
             if 'zeno_' in name and 'so' in name.split(os.extsep):
                 paths.append(path)
+
+    print('to be loaded:', paths)
 
     retries = {}
     max_retries = len(paths) + 2
@@ -73,7 +75,8 @@ def loadAutoloads():
                 print('[  OK  ] [{}]'.format(path))
 
 if not os.environ.get('ZEN_NOAUTOLOAD'):
-    loadAutoloads()
-'''
+    loadAutoloads(relative_path('..', 'zenlib'))
+    loadAutoloads(relative_path('..'))
+#'''
 
 __all__ = ['core']
