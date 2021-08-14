@@ -115,6 +115,7 @@ def touch(path):
     if path in visited:
         return
     visited.add(path)
+    print('ldd', path)
     output = sp.check_output(['ldd', path]).decode()
     for line in output.splitlines():
         if '=>' not in line: continue
@@ -122,16 +123,18 @@ def touch(path):
         rhs = rhs.split('(')[0]
         lhs = lhs.strip()
         rhs = rhs.strip()
-        #print('{} => {}'.format(lhs, rhs))
+        if not rhs: continue
+        print('{} => {}'.format(lhs, rhs))
         if lhs in resolved:
             assert rhs == resolved[lhs], (rhs, resolved[lhs])
         else:
             resolved[lhs] = rhs
         touch(rhs)
 
-for path in glob.glob('ZenoBin/*.so'):
+for path in glob.glob('ZenoBin/*.so*'):
     path = os.path.abspath(path)
-    touch(path)
+    if os.path.isfile(path):
+        touch(path)
 
 shutil.rmtree('ZenoBin/extra', ignore_errors=True)
 os.mkdir('ZenoBin/extra')
