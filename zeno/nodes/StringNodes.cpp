@@ -5,6 +5,36 @@
 
 namespace {
 
+struct MakeWritePath : zeno::INode {
+    virtual void apply() override {
+        auto obj = std::make_unique<zeno::StringObject>();
+        obj->set(get_param<std::string>("path"));
+        set_output("path", std::move(obj));
+    }
+};
+
+ZENDEFNODE(MakeWritePath, {
+    {},
+    {{"string", "path"}},
+    {{"writepath", "path", ""}},
+    {"string"},
+});
+
+struct MakeReadPath : zeno::INode {
+    virtual void apply() override {
+        auto obj = std::make_unique<zeno::StringObject>();
+        obj->set(get_param<std::string>("path"));
+        set_output("path", std::move(obj));
+    }
+};
+
+ZENDEFNODE(MakeReadPath, {
+    {},
+    {{"string", "path"}},
+    {{"readpath", "path", ""}},
+    {"string"},
+});
+
 struct MakeString : zeno::INode {
     virtual void apply() override {
         auto obj = std::make_unique<zeno::StringObject>();

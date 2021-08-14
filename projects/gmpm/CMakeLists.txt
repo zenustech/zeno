@@ -19,7 +19,9 @@ add_subdirectory(zecomp)
 #   cmake_policy(SET CMP0104 OLD)
 # endif (POLICY CMP0104)
 
-add_library(zeno_gmpm SHARED
+add_library(zeno_gmpm SHARED)
+
+target_sources(zeno_gmpm PRIVATE
   nosys/dummy.cpp
   nosys/ToZensimParticles.cpp 
   nosys/OutputZensimParticles.cpp 
@@ -29,8 +31,6 @@ add_library(zeno_gmpm SHARED
   nosys/MakePartitionAndGrid.cpp 
   nosys/MakeIndexBuckets.cpp 
 
-  nosys/ZensimParticleWrangler.cu
-  nosys/ZensimParticleNeighborWrangler.cu
   #nosys/Test.cu
   nosys/PartitionForParticles.cu 
   nosys/GridFromPartition.cu 
@@ -38,6 +38,13 @@ add_library(zeno_gmpm SHARED
   nosys/GridOps.cu 
   nosys/ToParticleObject.cpp 
   nosys/AppendZensimObject.cpp)
+
+if (NOT MSVC)
+target_sources(zeno_gmpm PRIVATE 
+  nosys/ZensimParticleWrangler.cu
+  nosys/ZensimParticleNeighborWrangler.cu
+)
+endif()
 
 if (${ZS_ENABLE_CUDA})
     enable_language(CUDA)
@@ -53,7 +60,7 @@ else()
 target_compile_options(zeno_gmpm PRIVATE "-march=native")
 endif()
 target_compile_options(zeno_gmpm 
-      PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:${CMAKE_CUDA_FLAGS} -dlto -fopenmp --expt-extended-lambda --expt-relaxed-constexpr --default-stream=per-thread --use_fast_math -lineinfo --ptxas-options=-allow-expensive-optimizations=true>
+      PRIVATE        $<$<COMPILE_LANGUAGE:CUDA>:${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr --default-stream=per-thread --use_fast_math -lineinfo --ptxas-options=-allow-expensive-optimizations=true>
     )
 target_link_options(zeno_gmpm 
       PUBLIC       $<$<LINK_LANGUAGE:CUDA>:-dlto>
