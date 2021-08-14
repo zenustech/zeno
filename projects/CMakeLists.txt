@@ -18,21 +18,5 @@ foreach (name IN ITEMS ${EXTENSIONS_LIST})
     if (${EXTENSION_${name}})
         message("*** Building ZENO with extension: ${name}")
         add_subdirectory(${name})
-
-        if (ZENO_ENABLE_PYTHON)
-            get_property(OUTPUT_DIR TARGET zeno
-                PROPERTY LIBRARY_OUTPUT_DIRECTORY)
-            set_target_properties(zeno_${name} PROPERTIES
-                LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-                RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-                ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-                LIBRARY_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-                RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-                ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-                LIBRARY_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-                RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-                ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-                )
-        endif()
     endif()
 endforeach()
