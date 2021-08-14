@@ -124,7 +124,7 @@ def touch(path):
         rhs = rhs.strip()
         #print('{} => {}'.format(lhs, rhs))
         if lhs in resolved:
-            assert rhs == resolved[lhs]
+            assert rhs == resolved[lhs], (rhs, resolved[lhs])
         else:
             resolved[lhs] = rhs
         touch(rhs)
@@ -133,9 +133,12 @@ for path in glob.glob('ZenoBin/*.so'):
     path = os.path.abspath(path)
     touch(path)
 
+shutil.rmtree('ZenoBin/extra', ignore_errors=True)
+os.mkdir('ZenoBin/extra')
+
 for path in visited:
-    name = os.path.basename(path)
-    dstpath = os.path.join('ZenoBin', name)
-    if not os.path.exists(dstpath):
+    if 'ZenoBin' not in path:
+        name = os.path.basename(path)
+        dstpath = os.path.join('ZenoBin/extra', name)
         print('copying', path, '=>', dstpath)
         shutil.copy(path, dstpath)
