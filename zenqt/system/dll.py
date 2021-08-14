@@ -30,7 +30,7 @@ if os_name == 'win32':  # windows doesn't support rpath, let's mock him only
         os.add_dll_directory(lib_dir)
 '''
 
-from zenlib import zeno_pybind11_module as core
+from zenlib import pylib_zeno as core
 
 '''
 def loadAutoloads():

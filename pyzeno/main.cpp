@@ -11,7 +11,7 @@
 namespace py = pybind11;
 
 
-PYBIND11_MODULE(zeno_pybind11_module, m) {
+PYBIND11_MODULE(pylib_zeno, m) {
     m.def("dumpDescriptors", zeno::dumpDescriptors);
     m.def("bindNodeInput", zeno::bindNodeInput);
     m.def("setNodeParam", zeno::setNodeParam);
