@@ -3,32 +3,14 @@ import ctypes, os, sys, traceback
 from .utils import os_name
 from ..utils import relative_path
 
-'''
-lib_dir = relative_path('lib')
-
-if os_name == 'win32':
-    os.environ['PATH'] += os.pathsep + lib_dir
-    if sys.version_info >= (3, 8):
-        # for py 3.8+
-        #   https://docs.python.org/3.8/whatsnew/3.8.html#ctypes
-        os.add_dll_directory(lib_dir)
-    ctypes.cdll.LoadLibrary('zeno.dll')
-elif os_name == 'darwin':
-    ctypes.cdll.LoadLibrary(os.path.join(lib_dir, 'libzeno.dylib'))
-else:
-    ctypes.cdll.LoadLibrary(os.path.join(lib_dir, 'libzeno.so'))
-'''
-
-'''
-from .utils import os_name
-from ..utils import relative_path
-
-lib_dir = relative_path('lib')
+#'''
 if os_name == 'win32':  # windows doesn't support rpath, let's mock him only
+    lib_dir = relative_path('..', 'zenlib')
     os.environ['PATH'] += os.pathsep + lib_dir
     if sys.version_info >= (3, 8):
         os.add_dll_directory(lib_dir)
-'''
+    del lib_dir
+#'''
 
 from zenlib import pylib_zeno as core
 
