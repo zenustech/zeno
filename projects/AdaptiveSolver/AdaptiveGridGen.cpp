@@ -149,23 +149,24 @@ struct LiquidAdaptiveRule : AdaptiveRule{
     std::shared_ptr<zeno::PrimitiveObject> p;
     virtual void markSubd(openvdb::FloatGrid::Ptr &grid) override
     {
-        auto write{grid->getAccessor()};
-        // tbb::parallel_for(
-        //     (size_t)0,
-        //     (size_t)p->size(),
-        //     (size_t)1,
-        //     [&](size_t index)
-        for(int index=0;index<p->size();index++)
+        double dx = grid->voxelSize()[0];
+        tbb::parallel_for(
+            (size_t)0,
+            (size_t)p->size(),
+            (size_t)1,
+            [&](size_t index)
+        //////for(int index=0;index<p->size();index++)
             {
+                auto write{grid->getAccessor()};
                 auto pos = p->attr<zeno::vec3f>("pos")[index];
-                auto ppos = openvdb::Vec3d{pos[0],pos[1],pos[2]};
-                auto wpos = openvdb::Vec3i(grid->worldToIndex(ppos));
+                auto ppos = openvdb::Vec3d{floor(pos[0]/dx), floor(pos[1]/dx), floor(pos[2]/dx)};
+                auto wpos = openvdb::Vec3i(ppos);
                 write.setValue(openvdb::Coord(wpos), 1.0);
             }
-        //);
+        );
         extend(grid);
         extend(grid);
-        extend(grid);
+        //extend(grid);
     }
 };
 
