@@ -1,4 +1,4 @@
-import ctypes, os, sys
+import ctypes, os, sys, traceback
 
 from .utils import os_name
 from ..utils import relative_path
@@ -47,10 +47,10 @@ def loadAutoloads(lib_dir):
             if name.startswith('zeno_') and name.endswith('.dll'):
                 paths.append(name)
         elif os_name == 'darwin':
-            if 'zeno_' in name and name.endswith('.dylib'):
+            if name.startswith('libzeno_') and name.endswith('.dylib'):
                 paths.append(name)
         else:
-            if 'zeno_' in name and 'so' in name.split(os.extsep):
+            if name.startswith('libzeno_') and name.endswith('.so'):
                 paths.append(path)
 
     #print('to be loaded:', paths)
