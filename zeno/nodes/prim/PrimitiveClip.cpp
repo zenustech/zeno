@@ -26,8 +26,7 @@ namespace zeno {
                 origin = get_input<zeno::NumericObject>("origin")->get<zeno::vec3f>();
             if (has_input("direction"))
                 direction = get_input<zeno::NumericObject>("direction")->get<zeno::vec3f>();
-            if (lengthSquared(direction) < 0.000001f)
-            {
+            if (lengthSquared(direction) < 0.000001f) {
                 set_output("outPrim", get_input("prim"));
                 return;
             }
@@ -113,8 +112,7 @@ namespace zeno {
                     }
 
                     auto it1 = point_map.find(below_points[0]);
-                    if (it1 == point_map.end())
-                    {
+                    if (it1 == point_map.end()) {
                         below_pt1 = new_pos_attr.size();
                         new_pos_attr.emplace_back(pos1);
                         point_map[below_points[0]] = below_pt1;
@@ -124,8 +122,7 @@ namespace zeno {
                     }
 
                     auto it2 = point_map.find(below_points[1]);
-                    if (it2 == point_map.end())
-                    {
+                    if (it2 == point_map.end()) {
                         below_pt2 = new_pos_attr.size();
                         new_pos_attr.emplace_back(pos2);
                         point_map[below_points[1]] = below_pt2;
@@ -178,8 +175,7 @@ namespace zeno {
                     }
 
                     auto it = point_map.find(below_points[0]);
-                    if (it == point_map.end())
-                    {
+                    if (it == point_map.end()) {
                         below_pt = new_pos_attr.size();
                         new_pos_attr.emplace_back(pos);
                         point_map[below_points[0]] = below_pt;
@@ -198,11 +194,9 @@ namespace zeno {
                 else if (above_points.size() == 0)
                 {
                     zeno::vec3i new_tri;
-                    for(size_t i = 0; i < 3; ++i)
-                    {
+                    for(size_t i = 0; i < 3; ++i) {
                         auto it = point_map.find(vertices[i]);
-                        if (it == point_map.end())
-                        {
+                        if (it == point_map.end()) {
                             new_tri[i] = new_pos_attr.size();
                             new_pos_attr.emplace_back(pos_attr[vertices[i]]);
                             point_map[vertices[i]] = new_tri[i];
