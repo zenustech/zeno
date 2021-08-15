@@ -98,9 +98,11 @@ struct SubOutput : zeno::INode {
     }
 
     virtual void apply() override {
-        auto name = get_param<std::string>("name");
-        auto obj = get_input2("port");
-        graph->subOutputs[name] = std::move(obj);
+        if (has_input2("port")) {
+            auto name = get_param<std::string>("name");
+            auto obj = get_input2("port");
+            graph->subOutputs[name] = std::move(obj);
+        }
     }
 };
 
