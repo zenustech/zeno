@@ -53,7 +53,7 @@ inline void bindNodeInput(std::string const &dn, std::string const &ds,
 }
 
 inline void setNodeInput(std::string const &id, std::string const &par,
-        any const &val) {
+        zany const &val) {
     return getSession().getDefaultScene().getGraph().setNodeInput(id, par, val);
 }
 

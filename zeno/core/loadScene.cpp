@@ -34,7 +34,7 @@ ZENO_API void Scene::loadScene(const char *json) {
             } else if (cmd == "completeNode") {
                 getGraph().completeNode(di[1].GetString());
             } else if (cmd == "setNodeInput") {
-                getGraph().setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zeno::any>(di[3]));
+                getGraph().setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zeno::zany>(di[3]));
             } else if (cmd == "setNodeParam") {
                 getGraph().setNodeParam(di[1].GetString(), di[2].GetString(), generic_get<std::variant<int, float, std::string>>(di[3]));
             } else if (cmd == "setNodeOption") {
