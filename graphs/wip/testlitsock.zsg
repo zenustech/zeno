@@ -2,24 +2,32 @@
  "graph": {
   "main": {
    "nodes": {
-    "39fddd3a-LiterialInt": {
-     "name": "LiterialInt",
+    "c9d8a6f0-LiterialFloat": {
+     "name": "LiterialFloat",
      "inputs": {
-      "value": null,
-      "SRC": null
+      "value": [
+       null,
+       null,
+       0.03
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
      },
      "params": {},
      "uipos": [
-      -239.36,
-      -55.68000000000001
+      485.0,
+      305.0
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": -599,
-    "trans_y": -304
+    "trans_x": 0,
+    "trans_y": 0
    }
   }
  },

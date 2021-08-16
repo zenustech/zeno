@@ -112,3 +112,12 @@ class QDMGraphicsSocket(QGraphicsItem):
             self.node.width - HORI_MARGIN * 3 - w, 0)
         self.paramEdit.setGeometry(rect)
         self.paramEdit.setDefault(default)
+
+    def setValue(self, value):
+        if hasattr(self, 'paramEdit'):
+            self.paramEdit.setValue(value)
+
+    def getValue(self):
+        if hasattr(self, 'paramEdit'):
+            return self.paramEdit.getValue()
+        return None

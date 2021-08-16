@@ -244,11 +244,13 @@ class QDMGraphicsNode(QGraphicsItem):
         inputs = {}
         for name, socket in self.inputs.items():
             assert not socket.isOutput
-            data = None
+            srcId = srcSock = None
             if socket.hasAnyEdge():
                 srcSocket = socket.getTheOnlyEdge().srcSocket
-                data = srcSocket.node.ident, srcSocket.name
-            inputs[name] = data
+                assert srcSocket.node.ident == self.ident
+                srcId, srcSock = self.ident, srcSocket.name
+            deflVal = socket.getValue()
+            inputs[name] = srcId, srcSock, deflVal
 
         params = {}
         for name, param in self.params.items():
@@ -348,10 +350,16 @@ class QDMGraphicsNode(QGraphicsItem):
                     name, data['name']))
                 continue
             dest = self.inputs[name]
-            if len(input) == 2:
+            if input is None:  # bkwd-compat
+                srcid = srcsock = None
+            elif len(input) == 2:
                 srcid, srcsock = input
+                srcid, srcsock, deflVal = input
             else:
-                srcid, srcsock, immvalue = input
-            edges.append((dest, (srcid, srcsock)))
+                srcid, srcsock, deflVal = input
+                if deflVal is not None:
+                    dest.setValue(deflVal)
+            if srcid is not None:
+                edges.append((dest, (srcid, srcsock)))
         return edges
 
