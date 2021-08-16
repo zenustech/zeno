@@ -1,5 +1,5 @@
-O=arts/testlitsock.zsg
-#O=arts/prim.zsg
+O=arts/prim.zsg
+#O=arts/testlitsock.zsg
 #O=graphs/BulletRigidSim.zsg
 #O=graphs/Xuben_ZFX_IISPH.zsg
 #O=arts/ZFXv2.zsg
