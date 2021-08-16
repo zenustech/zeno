@@ -63,7 +63,9 @@ class QDMGraphicsParam_int(QDMGraphicsParam):
 
     def setDefault(self, default):
         default = [int(x) for x in default.split()]
-        if len(default) == 1:
+        if not default:
+            self.setValue('0')
+        elif len(default) == 1:
             x = default[0]
             self.setValue(x)
         elif len(default) == 2:
@@ -91,7 +93,9 @@ class QDMGraphicsParam_float(QDMGraphicsParam):
 
     def setDefault(self, default):
         default = [float(x) for x in default.split()]
-        if len(default) == 1:
+        if not default:
+            self.setValue('0.0')
+        elif len(default) == 1:
             x = default[0]
             self.setValue(x)
         elif len(default) == 2:
