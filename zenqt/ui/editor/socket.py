@@ -103,6 +103,8 @@ class QDMGraphicsSocket(QGraphicsItem):
     def setDefault(self, default):
         if self.isOutput:
             return
+        if not self.type:
+            return
         param_type = 'QDMGraphicsParam_' + self.type
         if param_type not in globals():
             return
