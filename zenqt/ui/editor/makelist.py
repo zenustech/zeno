@@ -1,5 +1,4 @@
 from . import *
-from .makedict import QDMGraphicsSocketEdiable
 
 class QDMGraphicsNode_MakeList(QDMGraphicsNode):
     def __init__(self, parent=None):
@@ -60,7 +59,7 @@ class QDMGraphicsNode_ExtractList(QDMGraphicsNode_MakeList):
         self.height -= TEXT_HEIGHT * 0.75
 
         for key in self.socket_keys:
-            socket = QDMGraphicsSocketEdiable(self)
+            socket = QDMGraphicsSocketEditName(self)
             socket.setValidator(QIntValidator())
             socket.setPos(0, self.height + TEXT_HEIGHT * 0.5)
             socket.setName(key)

@@ -3,38 +3,38 @@
 
 namespace {
 
-struct LiterialInt : zeno::INode {
+struct LiteralInt : zeno::INode {
     virtual void apply() override {
-        auto value = get_param<int>("value");
+        auto value = get_input2<int>("value");
         set_output2("value", value);
     }
 };
 
-ZENDEFNODE(LiterialInt, {
-    {},
-    {{"int", "value"}},
+ZENDEFNODE(LiteralInt, {
     {{"int", "value", "0"}},
-    {"numeric"},
+    {{"int", "value"}},
+    {},
+    {"literal"},
 });
 
-struct LiterialFloat : zeno::INode {
+struct LiteralFloat : zeno::INode {
     virtual void apply() override {
-        auto value = get_param<float>("value");
+        auto value = get_input2<float>("value");
         set_output2("value", value);
     }
 };
 
-ZENDEFNODE(LiterialFloat, {
-    {},
-    {{"float", "value"}},
+ZENDEFNODE(LiteralFloat, {
     {{"float", "value", "0"}},
-    {"numeric"},
+    {{"float", "value"}},
+    {},
+    {"literal"},
 });
 
-struct PrintLiterial : zeno::INode {
+struct PrintLiteral : zeno::INode {
     virtual void apply() override {
         auto value = get_input2<zeno::scalar_type_variant>("value");
-        auto hint = get_param<std::string>("hint");
+        auto hint = get_input2<std::string>("hint");
         std::cout << hint << ": ";
         std::visit([&] (auto const &val) {
             std::cout << val << std::endl;
@@ -42,11 +42,11 @@ struct PrintLiterial : zeno::INode {
     }
 };
 
-ZENDEFNODE(PrintLiterial, {
-    {{"float", "value"}},
+ZENDEFNODE(PrintLiteral, {
+    {"value", {"string", "hint", "PrintLiteral"}},
     {},
-    {{"string", "hint", "PrintLiterial"}},
-    {"numeric"},
+    {},
+    {"literal"},
 });
 
 }
