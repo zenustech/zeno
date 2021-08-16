@@ -2,10 +2,51 @@
 
 ## Installation requirements
 
-You need a C++17 compiler, CMake 3.12+, and Python 3.6+ to build ZENO; Pybind11, NumPy and PySide2 (Qt for Python) to run ZENO editor.
-Other requirements like GLAD are self-contained and you don't have to worry installing them manually.
+- A C++17 compiler, CMake 3.12+, and Python 3.6+ to build ZENO.
+- Pybind11, NumPy and PySide2 (Qt for Python) to run ZENO editor.
+- (Optional) OpenVDB for building volume nodes; CUDA for GPU nodes.
 
 > Hint: for Python, please try avoid using virtualenv and Conda if possible.
+
+### Windows 10
+
+1. Install Python 3.8 64-bit. IMPORTANT: make sure you **Add Python 3.8 to PATH**! After that rebooting your computer would be the best.
+
+2. Start CMD in **Administrator mode** and type these commands:
+```cmd
+python -m pip install pybind11 numpy PySide2
+```
+> (Fun fact: you will be redirected to Microsoft Store if `python` is not added to PATH properly :) Make sure it starts to downloading and installing successfully without `ERROR` (warnings are OK though).
+
+> If you got `ERROR: Could not install packages due to an EnvironmentError: [Errno 13] Permission denied: 'c:\\python38\\Lib\\site-packages\\PySide2\\Qt5\\bin\\d3dcompiler_47.dll''`:
+> **Quit anti-virus softwares** (e.g. 360), they probably prevent `pip` from copying DLL files.
+
+> If you got `ImportError: DLL load failed while importing QtGui`:
+> Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe).
+
+3. Install Visual Studio 2019 Community Edition or later version (for C++17 support in MSVC).
+
+4. (Optional) Install other dependencies via [vcpkg](https://github.com/microsoft/vcpkg):
+
+```cmd
+git clone https://github.com/microsoft/vcpkg.git --depth=1
+cd vcpkg
+
+@rem (Optional) integrate vcpkg into your VS2019 if necessary:
+vcpkg integrate install
+
+@rem (Optional) Install OpenVDB for the extension ZenVDB & FastFLIP:
+vcpkg install openvdb:x64-windows
+
+@rem (Optional) Install Eigen3 for the extension FastFLIP:
+vcpkg install eigen3:x64-windows
+```
+
+> Notice that you may need to install the `English Pack` for VS2019 for vcpkg to work.
+
+> For Chinese users, you may also need to follow the instruction in [this zhihu post](https://zhuanlan.zhihu.com/p/383683670) to **switch to domestic source** for faster download.
+
+> See also [their official guide](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md) for other issues.
 
 ### Ubuntu 20.04
 
@@ -153,47 +194,6 @@ make -j8
 sudo make install
 cd ../..
 ```
-
-### Windows 10
-
-1. Install Python 3.8 64-bit. IMPORTANT: make sure you **Add Python 3.8 to PATH**! After that rebooting your computer would be the best.
-
-2. Start CMD in **Administrator mode** and type these commands:
-```cmd
-python -m pip install pybind11 numpy PySide2
-```
-(Fun fact: you will be redirected to Microsoft Store if `python` is not added to PATH properly :)
-Make sure it starts to downloading and installing successfully without `ERROR` (warnings are OK though).
-
-If you got `ERROR: Could not install packages due to an EnvironmentError: [Errno 13] Permission denied: 'c:\\python38\\Lib\\site-packages\\PySide2\\Qt5\\bin\\d3dcompiler_47.dll''`:
-**Quit anti-virus softwares** (e.g. 360), they probably prevent `pip` from copying DLL files.
-
-If you got `ImportError: DLL load failed while importing QtGui`:
-Try install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe).
-
-3. Install Visual Studio 2019 Community Edition or later version (for C++17 support in MSVC).
-
-4. (Optional) Install other dependencies via [vcpkg](https://github.com/microsoft/vcpkg):
-
-```cmd
-git clone https://github.com/microsoft/vcpkg.git --depth=1
-cd vcpkg
-
-@rem (Optional) integrate vcpkg into your VS2019 if necessary:
-vcpkg integrate install
-
-@rem (Optional) Install OpenVDB for the extension ZenVDB & FastFLIP:
-vcpkg install openvdb:x64-windows
-
-@rem (Optional) Install Eigen3 for the extension FastFLIP:
-vcpkg install eigen3:x64-windows
-```
-
-Notice that you may need to install the `English Pack` for VS2019 for vcpkg to work.
-
-For Chinese users, you may also need to follow the instruction in [this zhihu post](https://zhuanlan.zhihu.com/p/383683670) to **switch to domestic source** for faster download.
-
-See also [their official guide](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md) for other issues.
 
 ### Arch Linux
 
