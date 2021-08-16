@@ -81,7 +81,7 @@ class QDMGraphicsParam_int(QDMGraphicsParam):
 
     def getValue(self):
         text = super().getValue()
-        if not text: return 0
+        if not text: return None
         return int(text)
 
 
@@ -112,7 +112,7 @@ class QDMGraphicsParam_float(QDMGraphicsParam):
 
     def getValue(self):
         text = super().getValue()
-        if not text: return 0.0
+        if not text: return None
         return float(text)
 
 
