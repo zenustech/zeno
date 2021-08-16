@@ -9,8 +9,8 @@ namespace zeno {
 using namespace zinc;
 
 template <class T>
-T smart_any_cast(any const &a) {
-    auto o = implicit_any_cast<T>(a);
+T smart_any_cast(any const &a, std::string const &msg = {}) {
+    auto o = silent_any_cast<T>(a);
     if (!o.has_value()) {
         throw Exception(msg + "expect `"
                 + typeid(T).name() + "`, got `"

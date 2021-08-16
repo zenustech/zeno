@@ -119,7 +119,7 @@ struct any : std::any {
 };
 
 template <class T>
-std::optional<T> implicit_any_cast(any const &a) {
+std::optional<T> silent_any_cast(any const &a) {
     if constexpr (std::is_same_v<T, any>) {
         return std::make_optional(a);
     } else {
