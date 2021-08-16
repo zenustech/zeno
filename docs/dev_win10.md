@@ -43,23 +43,22 @@ vcpkg install eigen3:x64-windows
 
 ## Build ZENO
 
+1. Minimal build:
 ```cmd
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 
 @rem Use this if you are using vcpkg:
 @rem cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake
 ```
-Then open ```build/zeno.sln``` in Visual Studio 2019, and **switch to Release mode in build configurations**, then run `Build -> Build All` (Ctrl+Shift+B).
+Then open ```build/zeno.sln``` in Visual Studio 2019, and **switch to Release mode in build configurations**, then run `build -> build all` (Ctrl+Shift+B).
 
-> Optional: You can change some cmake configurations using `cmake-gui`.
-
-```cmd
-cmake -B build
-cmake-gui -B build
-@rem will shows up a window to allow you turn ON/OFF the extensions build
+2. (Optional) Enable OpenVDB support:
 ```
+cmake -B build -DEXTENSION_FastFLIP:BOOL=ON -DEXTENSION_zenvdb:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
+```
+Then goto VS2019 and run `build -> build all` again.
 
-IMPORTANT: In MSVC, **Release** mode must **always be active** when building ZENO, since MSVC uses different allocators in Release and Debug mode. If a DLL of Release mode and a DLL in Debug mode are linked together in Windows, it will crash when passing STL objects.
+> IMPORTANT: In MSVC, **Release** mode must **always be active** when building ZENO, since MSVC uses different allocators in Release and Debug mode. If a DLL of Release mode and a DLL in Debug mode are linked together in Windows, it will crash when passing STL objects.
 
 
 ## Run ZENO for development

@@ -45,10 +45,11 @@ See also [`Dockerfile`](/Dockerfile) as a reference for full installing steps.
 ## Build ZENO
 
 ```bash
+# Minimal build:
 cmake -B build
 cmake --build build --parallel
 
-# (Optional) with OpenVDB support:
+# (Optional) Enable OpenVDB support:
 cmake -B build -DEXTENSION_FastFLIP:BOOL=ON -DEXTENSION_zenvdb:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
 cmake --build build --parallel
 ```
