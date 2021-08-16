@@ -247,8 +247,7 @@ class QDMGraphicsNode(QGraphicsItem):
             srcId = srcSock = None
             if socket.hasAnyEdge():
                 srcSocket = socket.getTheOnlyEdge().srcSocket
-                assert srcSocket.node.ident == self.ident
-                srcId, srcSock = self.ident, srcSocket.name
+                srcId, srcSock = srcSocket.node.ident, srcSocket.name
             deflVal = socket.getValue()
             inputs[name] = srcId, srcSock, deflVal
 
