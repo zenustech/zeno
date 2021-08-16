@@ -107,11 +107,8 @@ class QDMGraphicsSocket(QGraphicsItem):
         if param_type not in globals():
             return
         w = self.node.width / 3
-        self.paramEdit = globals()[param_type]()
+        self.paramEdit = globals()[param_type](self)
         rect = QRectF(HORI_MARGIN + w, -TEXT_HEIGHT * 0.5,
             self.node.width - HORI_MARGIN * 3 - w, 0)
         self.paramEdit.setGeometry(rect)
-        #self.label.setPlainText = self.label.setValue
-        #self.label.getPlainText = self.label.getValue
-
         self.paramEdit.setDefault(default)

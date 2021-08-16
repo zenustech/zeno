@@ -155,10 +155,10 @@ class QDMGraphicsNode(QGraphicsItem):
         self.outputs.clear()
         for index, (type, name, defl) in enumerate(outputs):
             socket = QDMGraphicsSocket(self)
+            socket.setIsOutput(True)
             socket.setPos(0, y)
             socket.setName(name)
             socket.setType(type)
-            socket.setIsOutput(True)
             self.outputs[name] = socket
             y += TEXT_HEIGHT
 
