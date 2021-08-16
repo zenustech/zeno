@@ -8,7 +8,7 @@
 
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 
-![rigid3.zsg](/images/rigid3.jpg "graphs/wip/rigid3.zsg")
+![rigid3.zsg](/images/rigid3.jpg "arts/rigid3.zsg")
 
 ZENO is an OpenSource, Node based 3D system able to produce cinematic physics effects at High Efficiency, it was designed for large scale simulations and has been tested on complex setups.
 Aside of its simulation Tools, ZENO provides necessary visualization nodes for users to import and run simulations if you feel that the current software you are using is too slow.
@@ -36,8 +36,9 @@ Then, extract this archive, and simply run `./launcher` (`launcher.exe` for Wind
 ## How to play
 
 There are some example graphs in the `graphs/` folder, you may open them in the editor and have fun!
-Hint: To run an animation for 100 frames, change the `1` on the top-left of node editor to `100`, then click `Execute`.
+Hint: To run an animation for 100 frames, change the `1` on the top-left of node editor to `100`, then click `Run`.
 Also MMB to drag in the node editor, LMB click on sockets to create connections. MMB drag in the viewport to orbit camera, Shift+MMB to pan camera.
+More details are available in [our official tutorial](https://zenustech.com/tutorial).
 
 ## Bug report
 
@@ -79,7 +80,7 @@ Thank you to all the people who have already contributed to ZENO!
 
 ## License
 
-ZENO is licensed under the Mozilla Public License Version 2.0, see [LICENSE](LICENSE) for more information.
+ZENO is licensed under the Mozilla Public License Version 2.0, see [LICENSE](/LICENSE) for more information.
 
 ## Contact us
 
