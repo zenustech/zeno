@@ -224,6 +224,22 @@ ZENDEFNODE(PassToyMakeTexture, {
         {"PassToy"},
 });
 
+struct PassToyGetTextureInteger : zeno::INode {
+    virtual void apply() override {
+        auto texture = get_input<GLTextureObject>("nx");
+        auto id = std::make_shared<zeno::NumericObject>();
+        id->value = (int)texture->impl->id;
+        set_output("id", std::move(id));
+    }
+};
+
+ZENDEFNODE(PassToyGetTextureInteger, {
+        {"texture"},
+        {"id"},
+        {},
+        {"PassToy"},
+});
+
 struct PassToyImageTextureFromVoidPtr : zeno::INode {
     virtual void apply() override {
         void *p = get_input<zeno::VoidPtrObject>("voidPtr")->get();
