@@ -20,37 +20,22 @@ namespace zeno {
         };
 
         template<typename T>
-        static void append_element(const T& ref_element, std::vector<T>& element_array, 
-                std::vector<zeno::vec3f>& new_pos_attr, 
-                const std::vector<zeno::vec3f>& ref_pos_attr, 
+        static void append_element(const T& ref_element, std::vector<T>& element_arr, 
                 std::unordered_map<int32_t, int32_t>& point_map) {
             T new_element;
             for (size_t i = 0; i < new_element.size(); ++i) {
-                auto it = point_map.find(ref_element[i]);
-                if (it == point_map.end()) {
-                    new_element[i] = new_pos_attr.size();
-                    new_pos_attr.emplace_back(ref_pos_attr[ref_element[i]]);
-                    point_map[ref_element[i]] = new_element[i];
-                }
-                else {
-                    new_element[i] = it->second;
-                }
+                new_element[i] = point_map[ref_element[i]];
             }
-            element_array.emplace_back(new_element);
+            element_arr.emplace_back(new_element);
         }
 
-        static void clip_points(const PrimitiveObject* refprim,
-                std::vector<zeno::vec3f>& new_pos_attr,
-                const std::vector<zeno::vec3f>& ref_pos_attr,
+        static void clip_points(PrimitiveObject* outprim, const PrimitiveObject* refprim,
                 std::unordered_map<int32_t, int32_t>& point_map,
                 const std::vector<bool>& is_above_arr) {
             for (size_t i = 0; i < refprim->points.size(); ++i) {
                 const int32_t ref_point = refprim->points[i];
                 if (!is_above_arr[ref_point]) {
-                    if (point_map.find(ref_point) == point_map.end()) {
-                        point_map[ref_point] = new_pos_attr.size();
-                        new_pos_attr.emplace_back(ref_pos_attr[ref_point]);
-                    }
+                    outprim->points.emplace_back(point_map[ref_point]);
                 }
             }
         }
@@ -65,7 +50,7 @@ namespace zeno {
             for (size_t line_idx = 0; line_idx < refprim->lines.size(); ++line_idx) {
                 const zeno::vec2i& line_points = refprim->lines[line_idx];
                 if (!is_above_arr[line_points[0]] && !is_above_arr[line_points[1]]) {
-                    append_element<zeno::vec2i>(line_points, outprim->lines, new_pos_attr, ref_pos_attr, point_map);
+                    append_element<zeno::vec2i>(line_points, outprim->lines, point_map);
                 }
                 else if (is_above_arr[line_points[0]] ^ is_above_arr[line_points[1]]) {
                     const size_t above_idx = is_above_arr[line_points[0]] ? 0 : 1;
@@ -75,22 +60,11 @@ namespace zeno {
                     const zeno::vec3f& pos1 = ref_pos_attr[below_point];
                     const zeno::vec3f& pos2 = ref_pos_attr[above_point];
                     const zeno::vec3f new_pos = line_plane_intersection(origin, direction, pos1, normalize(pos2 - pos1));
-                    int32_t new_point1 = new_pos_attr.size();
-                    int32_t new_point2 = -1;
+                    const int32_t new_point1 = new_pos_attr.size();
+                    const int32_t new_point2 = point_map[below_point];
                     new_pos_attr.emplace_back(new_pos);
-
-                    auto it = point_map.find(below_point);
-                    if (it == point_map.end()) {
-                        new_point2 = new_pos_attr.size();
-                        new_pos_attr.emplace_back(pos1);
-                        point_map[below_point] = new_point2;
-                    }
-                    else {
-                        new_point2 = it->second;
-                    }
                     outprim->lines.emplace_back(new_point1, new_point2);
                 }
-  
             }
         }
 
@@ -146,8 +120,8 @@ namespace zeno {
 
                     int32_t new_point1 = -1;
                     int32_t new_point2 = -1;
-                    int32_t below_point1 = -1;
-                    int32_t below_point2 = -1;
+                    const int32_t below_point1 = point_map[below_points[0]];
+                    const int32_t below_point2 = point_map[below_points[1]];
 
                     auto edge_it1 = edge_point_map.find(edge1);
                     if (edge_it1 == edge_point_map.end()) {
@@ -171,26 +145,6 @@ namespace zeno {
                         new_point2 = edge_it2->second;
                     }
 
-                    auto it1 = point_map.find(below_points[0]);
-                    if (it1 == point_map.end()) {
-                        below_point1 = new_pos_attr.size();
-                        new_pos_attr.emplace_back(pos1);
-                        point_map[below_points[0]] = below_point1;
-                    }
-                    else {
-                        below_point1 = it1->second;
-                    }
-
-                    auto it2 = point_map.find(below_points[1]);
-                    if (it2 == point_map.end()) {
-                        below_point2 = new_pos_attr.size();
-                        new_pos_attr.emplace_back(pos2);
-                        point_map[below_points[1]] = below_point2;
-                    }
-                    else {
-                        below_point2 = it2->second;
-                    }
-
                     if (is_continuous) {
                         outprim->tris.emplace_back(below_point1, below_point2, new_point2);
                         outprim->tris.emplace_back(new_point2, new_point1, below_point1);
@@ -210,7 +164,7 @@ namespace zeno {
 
                     int32_t new_point1 = -1;
                     int32_t new_point2 = -1;
-                    int32_t below_point = -1;
+                    const int32_t below_point = point_map[below_points[0]];
 
                     auto edge_it1 = edge_point_map.find(edge1);
                     if (edge_it1 == edge_point_map.end()) {
@@ -234,16 +188,6 @@ namespace zeno {
                         new_point2 = edge_it2->second;
                     }
 
-                    auto it = point_map.find(below_points[0]);
-                    if (it == point_map.end()) {
-                        below_point = new_pos_attr.size();
-                        new_pos_attr.emplace_back(pos);
-                        point_map[below_points[0]] = below_point;
-                    }
-                    else {
-                        below_point = it->second;
-                    }
-
                     if (is_continuous) {
                         outprim->tris.emplace_back(below_point, new_point1, new_point2);
                     }
@@ -252,7 +196,7 @@ namespace zeno {
                     }
                 }
                 else if (above_points.size() == 0) {
-                    append_element<zeno::vec3i>(tri_points, outprim->tris, new_pos_attr, ref_pos_attr, point_map);
+                    append_element<zeno::vec3i>(tri_points, outprim->tris, point_map);
                 }
             }
 
@@ -286,15 +230,16 @@ namespace zeno {
             std::unordered_map<int32_t, int32_t> point_map;
             
             std::vector<bool> is_above_arr(ref_pos_attr.size());
-            // #pragma omp parallel for
             for (int32_t i = 0; i < ref_pos_attr.size(); ++i)
             {
                 is_above_arr[i] = dot(ref_pos_attr[i] - origin, direction) > 0;
+                if (!is_above_arr[i]) {
+                    point_map[i] = new_pos_attr.size();
+                    new_pos_attr.emplace_back(ref_pos_attr[i]);
+                }
             }
 
-            clip_points(refprim.get(),
-                new_pos_attr,
-                ref_pos_attr,
+            clip_points(outprim.get(), refprim.get(),
                 point_map,
                 is_above_arr);
 
