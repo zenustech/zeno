@@ -15,7 +15,6 @@ def runScene(graphs, nframes, iopath):
     core.setIOPath(iopath)
 
     data = json.dumps(list(serializeScene(graphs)))
-    print(data)
     core.loadScene(data)
     #for cmd, *args in serializeScene(graphs):
     #    getattr(core, cmd)(*args)

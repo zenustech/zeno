@@ -160,7 +160,7 @@ class QDMGraphicsNode_Blackboard(QGraphicsItem):
             'height': self.height,
             'title': self.title.toPlainText(),
             'content': self.content.toPlainText(),
-            'params': []
+            'params': [] # TODO: deprecate
         }
         return self.ident, data
     
