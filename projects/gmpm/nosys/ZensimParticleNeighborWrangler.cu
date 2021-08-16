@@ -57,8 +57,8 @@ struct ZSParticleNeighborWrangle : zeno::INode {
           fmt::print("[size] ref {}, neighbor {}!\n", ref.size(),
                      neighbor.size());
           fmt::print("[memspace] ref {}, neighbor {}!\n",
-                     get_memory_source_tag(ref.space()),
-                     get_memory_source_tag(neighbor.space()));
+                     get_memory_tag_name(ref.space()),
+                     get_memory_tag_name(neighbor.space()));
           fmt::print("[devid] ref {}, neighbor {}!\n", (int)ref.devid(),
                      (int)neighbor.devid());
           fmt::print("[X addr] ref {}, neighbor {}!\n",

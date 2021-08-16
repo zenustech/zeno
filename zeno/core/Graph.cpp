@@ -18,11 +18,11 @@ ZENO_API Graph::Graph() = default;
 ZENO_API Graph::~Graph() = default;
 
 ZENO_API void Graph::setGraphEndpointGetter(std::string const &id,
-        std::function<any()> getter) {
+        std::function<zany()> getter) {
     subEndpointGetters[id] = std::move(getter);
 }
 
-ZENO_API void Graph::setGraphInput2(std::string const &id, any obj) {
+ZENO_API void Graph::setGraphInput2(std::string const &id, zany obj) {
     subInputs[id] = std::move(obj);
 }
 
@@ -30,12 +30,12 @@ ZENO_API void Graph::applyGraph() {
     applyNodes(finalOutputNodes);
 }
 
-ZENO_API any const &Graph::getGraphOutput2(
+ZENO_API zany const &Graph::getGraphOutput2(
         std::string const &id) const {
     return subOutputs.at(id);
 }
 
-ZENO_API any const &Graph::getNodeOutput(
+ZENO_API zany const &Graph::getNodeOutput(
     std::string const &sn, std::string const &ss) const {
     auto node = safe_at(nodes, sn, "node");
     if (node->muted_output.has_value())
@@ -97,7 +97,7 @@ ZENO_API void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
 }
 
 ZENO_API void Graph::setNodeInput(std::string const &id, std::string const &par,
-        any const &val) {
+        zany const &val) {
     safe_at(nodes, id, "node")->inputs[par] = val;
 }
 
@@ -138,7 +138,7 @@ ZENO_API std::set<std::string> Graph::getGraphEndpointSetNames() const {
     return res;
 }
 
-ZENO_API any const &Graph::getGraphEndpointSetValue(std::string const &id) const {
+ZENO_API zany const &Graph::getGraphEndpointSetValue(std::string const &id) const {
     return safe_at(subEndpointSetValues, id, "endpoint set value");
 }
 

@@ -16,8 +16,8 @@
 namespace zeno {
 
 struct Context2 {
-    std::vector<any> inputs;
-    std::vector<any> outputs;
+    std::vector<zany> inputs;
+    std::vector<zany> outputs;
 };
 
 struct Descriptor2 {
@@ -80,7 +80,7 @@ extern Codebase &getCodebase();
 
 
 struct Scope {
-    std::vector<any> objects;
+    std::vector<zany> objects;
 };
 
 struct IOperation {
@@ -90,7 +90,7 @@ struct IOperation {
 
 struct OpLoadValue : IOperation {
     int output_ref;
-    any value;
+    zany value;
 
     virtual void apply(Scope *scope) const override {
         scope->objects[output_ref] = value;
@@ -144,7 +144,7 @@ struct OpsBuilder {
 
     addLoadValue
         ( std::string const &node_ident
-        , any const &value
+        , zany const &value
         ) {
         auto op = std::make_unique<OpLoadValue>();
         op.value = value;

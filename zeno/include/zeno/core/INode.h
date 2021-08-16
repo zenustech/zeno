@@ -22,10 +22,10 @@ public:
 
     std::string myname;
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
-    std::map<std::string, any> inputs;
-    std::map<std::string, any> outputs;
+    std::map<std::string, zany> inputs;
+    std::map<std::string, zany> outputs;
     std::set<std::string> options;
-    any muted_output;
+    zany muted_output;
 
     ZENO_API INode();
     ZENO_API virtual ~INode();
@@ -43,8 +43,8 @@ protected:
 
     ZENO_API bool has_option(std::string const &id) const;
     ZENO_API bool has_input2(std::string const &id) const;
-    ZENO_API any get_input2(std::string const &id) const;
-    ZENO_API void set_output2(std::string const &id, any &&obj);
+    ZENO_API zany get_input2(std::string const &id) const;
+    ZENO_API void set_output2(std::string const &id, zany &&obj);
 
     /* deprecated */
     bool has_input(std::string const &id) const {

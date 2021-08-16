@@ -9,7 +9,7 @@
 namespace zeno {
 
 struct DictObject : IObjectClone<DictObject> {
-  std::map<std::string, any> lut;
+  std::map<std::string, zany> lut;
 };
 
 }

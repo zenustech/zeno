@@ -98,20 +98,20 @@ struct any_traits<std::shared_ptr<T>, std::void_t<typename T::polymorphic_base_t
 template <class T>
 using any_underlying_type_t = typename any_traits<std::decay_t<T>>::underlying_type;
 
-struct any : std::any {
-    any() = default;
+struct zany : std::any {
+    zany() = default;
 
-    any(any const &a) = default;
+    zany(zany const &a) = default;
 
     template <class T>
-    any(T const &t)
+    zany(T const &t)
     : std::any(static_cast<any_underlying_type_t<T> const &>(t))
     {}
 
-    any &operator=(any const &a) = default;
+    zany &operator=(zany const &a) = default;
 
     template <class T>
-    any &operator=(T const &t) {
+    zany &operator=(T const &t) {
         std::any::operator=(
                 static_cast<any_underlying_type_t<T>>(t));
         return *this;
@@ -119,8 +119,8 @@ struct any : std::any {
 };
 
 template <class T>
-std::optional<T> silent_any_cast(any const &a) {
-    if constexpr (std::is_same_v<T, any>) {
+std::optional<T> silent_any_cast(zany const &a) {
+    if constexpr (std::is_same_v<T, zany>) {
         return std::make_optional(a);
     } else {
         using V = any_underlying_type_t<T>;
@@ -146,8 +146,8 @@ std::optional<T> silent_any_cast(any const &a) {
 }
 
 template <class T>
-std::optional<T> exact_any_cast(any a) {
-    if constexpr (std::is_same_v<std::decay_t<T>, any>) {
+std::optional<T> exact_any_cast(zany a) {
+    if constexpr (std::is_same_v<std::decay_t<T>, zany>) {
         return std::make_optional(a);
     } else {
         using V = any_underlying_type_t<T>;
@@ -184,7 +184,7 @@ inline constexpr bool static_for(Lambda const &f) {
 }
 
 template <class ...Ts>
-auto any_to_variant(any a) {
+auto any_to_variant(zany a) {
     std::variant<Ts...> v;
     static_for<0, sizeof...(Ts)>([&] (auto i) {
         using T = std::tuple_element_t<i, std::tuple<Ts...>>;
