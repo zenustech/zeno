@@ -434,7 +434,7 @@ class NodeEditor(QWidget):
                 for name, info in inputs.items():
                     if info == None:
                         continue
-                    nid_, name_ = info
+                    nid_, name_, _ = info
                     if nid_ in nid_map:
                         info = (nid_map[nid_], name_)
                     else:

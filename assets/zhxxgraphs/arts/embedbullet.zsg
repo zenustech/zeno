@@ -178,8 +178,8 @@
      "name": "BulletStepWorld",
      "inputs": {
       "world": [
-       "7345e58a-cdb2-11eb-bf51-907841694de9",
-       "world",
+       "793ee0c3-CachedOnce",
+       "output",
        null
       ],
       "dt": [
@@ -277,8 +277,8 @@
      },
      "params": {},
      "uipos": [
-      97.23437500000003,
-      447.12890625000017
+      49.73437500000003,
+      435.8789062500001
      ],
      "options": [
       "ONCE"
@@ -408,8 +408,8 @@
      },
      "params": {},
      "uipos": [
-      1312.8203125000005,
-      404.9882812499998
+      1091.5703125000002,
+      352.48828124999983
      ],
      "options": [
       "ONCE"
@@ -419,8 +419,8 @@
      "name": "BulletGetObjTransform",
      "inputs": {
       "object": [
-       "475eb10e-cdb2-11eb-bf51-907841694de9",
-       "object",
+       "145d6f9e-x",
+       "output",
        null
       ],
       "SRC": [
@@ -431,8 +431,8 @@
      },
      "params": {},
      "uipos": [
-      1352.5976562500005,
-      725.5429687499998
+      1405.5976562500005,
+      727.5429687499998
      ],
      "options": []
     },
@@ -461,8 +461,8 @@
      "name": "TransformPrimitive",
      "inputs": {
       "prim": [
-       "ea7c647e-d255-11eb-a6a9-907841694de9-PrimitiveCalcNormal",
-       "prim",
+       "47f93b99-CachedOnce",
+       "output",
        null
       ],
       "translation": [
@@ -725,10 +725,12 @@
      },
      "params": {},
      "uipos": [
-      -21.00390624999993,
-      286.7164062500002
+      47.74609375000008,
+      227.96640625000015
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "ea7c647e-d255-11eb-a6a9-907841694de9-PrimitiveCalcNormal": {
      "name": "PrimitiveCalcNormal",
@@ -846,12 +848,75 @@
       881.9999999999995
      ],
      "options": []
+    },
+    "793ee0c3-CachedOnce": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "7345e58a-cdb2-11eb-bf51-907841694de9",
+       "world",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1421.2499999999998,
+      456.2499999999999
+     ],
+     "options": []
+    },
+    "145d6f9e-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "475eb10e-cdb2-11eb-bf51-907841694de9",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1002.0,
+      768.0
+     ],
+     "options": []
+    },
+    "47f93b99-CachedOnce": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "ea7c647e-d255-11eb-a6a9-907841694de9-PrimitiveCalcNormal",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1961.2499999999995,
+      994.9999999999998
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000007,
-    "trans_x": 1945,
-    "trans_y": 543
+    "scale": 1.0000000000000002,
+    "trans_x": 1592,
+    "trans_y": 545
    }
   }
  },
