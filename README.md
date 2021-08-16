@@ -330,7 +330,8 @@ vcpkg install openvdb:x64-windows
 vcpkg install eigen3:x64-windows
 ```
 
-Hint: You may need to install the `English Pack` for VS2019, and have fast internet condition for vcpkg to work. See [their official guide](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md) for more details.
+Hint: You may need to install the `English Pack` for VS2019, and have fast internet condition for vcpkg to work.
+See [their official guide](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md) for more details.
 
 ### Arch Linux
 
@@ -377,6 +378,9 @@ ccmake -B build  # will shows up a curses screen, c to save, q to exit
 
 ```cmd
 cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+@rem Use this if you are using vcpkg:
+@rem cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake
 ```
 Then open ```build/zeno.sln``` in Visual Studio 2019, and **switch to Release mode in build configurations**, then run `Build -> Build All` (Ctrl+Shift+B).
 
