@@ -139,15 +139,12 @@ class QDMGraphicsNode(QGraphicsItem):
 
         self.inputs.clear()
         for index, (type, name, defl) in enumerate(inputs):
-            paramClass = 'QDMGraphicsParam_' + type
-            if paramClass in globals():
-                socket = QDMGraphicsSocketParam(globals()[paramClass], self)
-            else:
-                socket = QDMGraphicsSocket(self)
+            socket = QDMGraphicsSocket(self)
+            socket.setIsOutput(False)
             socket.setPos(0, y)
             socket.setName(name)
             socket.setType(type)
-            socket.setIsOutput(False)
+            socket.setDefault(defl)
             self.inputs[name] = socket
             y += TEXT_HEIGHT
 
@@ -351,6 +348,10 @@ class QDMGraphicsNode(QGraphicsItem):
                     name, data['name']))
                 continue
             dest = self.inputs[name]
-            edges.append((dest, input))
+            if len(input) == 2:
+                srcid, srcsock = input
+            else:
+                srcid, srcsock, immvalue = input
+            edges.append((dest, (srcid, srcsock)))
         return edges
 
