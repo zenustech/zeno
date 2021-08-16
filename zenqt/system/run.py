@@ -14,10 +14,10 @@ def evaluateExpr(expr, frame):
 def runScene(graphs, nframes, iopath):
     core.setIOPath(iopath)
 
-    #data = json.dumps(list(serializeScene(graphs)))
-    #core.loadScene(data)
-    for cmd, *args in serializeScene(graphs):
-        getattr(core, cmd)(*args)
+    data = json.dumps(list(serializeScene(graphs)))
+    core.loadScene(data)
+    #for cmd, *args in serializeScene(graphs):
+    #    getattr(core, cmd)(*args)
 
     applies = set()
     nodes = graphs['main']['nodes']

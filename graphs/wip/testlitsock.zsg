@@ -22,12 +22,40 @@
       305.0
      ],
      "options": []
+    },
+    "dec9d5a5-PrintLiterial": {
+     "name": "PrintLiterial",
+     "inputs": {
+      "value": [
+       "c9d8a6f0-LiterialFloat",
+       "value",
+       null
+      ],
+      "hint": [
+       null,
+       null,
+       "myprint"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      782.72,
+      336.0
+     ],
+     "options": [
+      "VIEW"
+     ]
     }
    },
    "view": {
     "scale": 1.5625,
-    "trans_x": 0,
-    "trans_y": 0
+    "trans_x": 395,
+    "trans_y": 212
    }
   }
  },
@@ -2472,7 +2500,7 @@
     [
      "int",
      "value",
-     "0"
+     ""
     ],
     [
      "",
@@ -5445,9 +5473,14 @@
   "PrintLiterial": {
    "inputs": [
     [
-     "float",
+     "",
      "value",
      ""
+    ],
+    [
+     "string",
+     "hint",
+     "PrintLiterial"
     ],
     [
      "",
@@ -5462,13 +5495,7 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "string",
-     "hint",
-     "PrintLiterial"
-    ]
-   ],
+   "params": [],
    "categories": [
     "numeric"
    ]
