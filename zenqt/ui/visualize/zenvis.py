@@ -1,4 +1,4 @@
-from zenlib import pylib_zenvis as core
+from ZenoBin import pylib_zenvis as core
 
 from ...system import fileio
 

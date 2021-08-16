@@ -9,11 +9,25 @@ struct BMeshToPrimitive : zeno::INode {
         auto mesh = get_input<zeno::BlenderMesh>("mesh");
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         bool allow_quads = get_param<int>("allow_quads");
+        bool do_transform = get_param<int>("do_transform");
 
         prim->resize(mesh->vert.size());
         auto &pos = prim->add_attr<zeno::vec3f>("pos");
-        for (int i = 0; i < mesh->vert.size(); i++) {
-            pos[i] = mesh->vert[i];
+        if (do_transform) {
+            auto m = mesh->matrix;
+            for (int i = 0; i < mesh->vert.size(); i++) {
+                auto p = mesh->vert[i];
+                p = {
+                    m[0][0] * p[0] + m[0][1] * p[1] + m[0][2] * p[2] + m[0][3],
+                    m[1][0] * p[0] + m[1][1] * p[1] + m[1][2] * p[2] + m[1][3],
+                    m[2][0] * p[0] + m[2][1] * p[1] + m[2][2] * p[2] + m[2][3],
+                };
+                pos[i] = p;
+            }
+        } else {
+            for (int i = 0; i < mesh->vert.size(); i++) {
+                pos[i] = mesh->vert[i];
+            }
         }
 
         for (int i = 0; i < mesh->poly.size(); i++) {
@@ -46,7 +60,7 @@ struct BMeshToPrimitive : zeno::INode {
 ZENDEFNODE(BMeshToPrimitive, {
     {"mesh"},
     {"prim"},
-    {{"int", "allow_quads", "0"}},
+    {{"int", "allow_quads", "0"}, {"int", "do_transform", "1"}},
     {"blendermesh"},
 });
 
