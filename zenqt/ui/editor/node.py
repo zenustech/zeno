@@ -117,6 +117,7 @@ class QDMGraphicsNode(QGraphicsItem):
 
         y = self.height + TEXT_HEIGHT * 0.4
 
+        # todo: params are to be replaced by socket with default_value
         self.params.clear()
         for index, (type, name, defl) in enumerate(params):
             param = globals()['QDMGraphicsParam_' + type](self)
@@ -133,12 +134,16 @@ class QDMGraphicsNode(QGraphicsItem):
             y += TEXT_HEIGHT * 0.4
 
         socket_start = y
-        if len(inputs) < len(outputs):
-            y += (len(outputs) - len(inputs)) * TEXT_HEIGHT
+        #if len(inputs) < len(outputs):
+        #    y += (len(outputs) - len(inputs)) * TEXT_HEIGHT
 
         self.inputs.clear()
         for index, (type, name, defl) in enumerate(inputs):
-            socket = QDMGraphicsSocket(self)
+            paramClass = 'QDMGraphicsParam_' + type
+            if paramClass in globals():
+                socket = QDMGraphicsSocketParam(globals()[paramClass], self)
+            else:
+                socket = QDMGraphicsSocket(self)
             socket.setPos(0, y)
             socket.setName(name)
             socket.setType(type)
@@ -146,9 +151,9 @@ class QDMGraphicsNode(QGraphicsItem):
             self.inputs[name] = socket
             y += TEXT_HEIGHT
 
-        y = socket_start
-        if len(inputs) > len(outputs):
-            y += (len(inputs) - len(outputs)) * TEXT_HEIGHT
+        #y = socket_start
+        #if len(inputs) > len(outputs):
+        #    y += (len(inputs) - len(outputs)) * TEXT_HEIGHT
 
         self.outputs.clear()
         for index, (type, name, defl) in enumerate(outputs):
@@ -160,7 +165,7 @@ class QDMGraphicsNode(QGraphicsItem):
             self.outputs[name] = socket
             y += TEXT_HEIGHT
 
-        y = socket_start + max(len(inputs), len(outputs)) * TEXT_HEIGHT
+        #y = socket_start + max(len(inputs), len(outputs)) * TEXT_HEIGHT
 
         y += TEXT_HEIGHT * 0.75
         self.height = y

@@ -99,3 +99,19 @@ class QDMGraphicsSocket(QGraphicsItem):
     def remove(self):
         for edge in list(self.edges):
             edge.remove()
+
+
+class QDMGraphicsSocketParam(QDMGraphicsSocket):
+    def __init__(self, paramClass, parent=None):
+        self.paramClass = paramClass
+        super().__init__(parent)
+
+    def initLabel(self):
+        super().initLabel()
+        w = self.node.width / 3
+        self.paramEdit = self.paramClass(self)
+        rect = QRectF(HORI_MARGIN + w, -TEXT_HEIGHT * 0.5,
+            self.node.width - HORI_MARGIN * 3 - w, 0)
+        self.paramEdit.setGeometry(rect)
+        #self.label.setPlainText = self.label.setValue
+        #self.label.getPlainText = self.label.getValue
