@@ -89,3 +89,21 @@ Building them require some dependencies:
 
 Other extensions are built by default because their dependencies are
 self-contained and portable to all platforms.
+
+## Using `ccmake`
+
+Optional: You can change some cmake configurations using `ccmake`:
+```bash
+cmake -B build
+ccmake -B build  # will shows up a curses screen, c to save, q to exit
+```
+
+Below is the suggested Extension Setup:
+![extension](images/extension1.png)
+![extension](images/extension2.png)
+
+> if you have confidence with your GPU and CUDA version, also turn ON those CUDA related stuffs, see figures below: (change mesher, gmpm, ZS_CUDA, ZFXCUDA to OFF may skip cmake and gpu dependencies issue, while disable you from using GPU computing features)
+<img src="images/ccmake1.png" alt="ccmake1" style="zoom:98%;" />
+<img src="images/ccmake2.png" alt="ccmake2" style="zoom:50%;" />
+
+> Windows user may use `cmake-gui` instead of `ccmake`.

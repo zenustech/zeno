@@ -13,6 +13,8 @@ Open-source node system framework, to change your algorithmic code into useful t
 ZENO is an OpenSource, Node based 3D system able to produce cinematic physics effects at High Efficiency, it was designed for large scale simulations and has been tested on complex setups.
 Aside of its simulation Tools, ZENO provides necessary visualization nodes for users to import and run simulations if you feel that the current software you are using is too slow.
 
+- [Why a new node system?](/docs/motivation.md)
+
 
 ## Features
 
