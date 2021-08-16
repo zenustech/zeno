@@ -330,8 +330,11 @@ vcpkg install openvdb:x64-windows
 vcpkg install eigen3:x64-windows
 ```
 
-Hint: You may need to install the `English Pack` for VS2019, and have fast internet condition for vcpkg to work.
-See [their official guide](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md) for more details.
+Notice that you may need to install the `English Pack` for VS2019 for vcpkg to work.
+
+For Chinese users, you may also need to follow the instruction in [this zhihu post](https://zhuanlan.zhihu.com/p/383683670) to **switch to domestic source** for faster download.
+
+See also [their official guide](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md) for other issues.
 
 ### Arch Linux
 
