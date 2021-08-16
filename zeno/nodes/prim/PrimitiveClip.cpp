@@ -19,30 +19,92 @@ namespace zeno {
             }
         };
 
-        virtual void apply() override {
-            zeno::vec3f origin = { 0,0,0 };
-            zeno::vec3f direction = { 0,1,0 };
-            if (has_input("origin"))
-                origin = get_input<zeno::NumericObject>("origin")->get<zeno::vec3f>();
-            if (has_input("direction"))
-                direction = get_input<zeno::NumericObject>("direction")->get<zeno::vec3f>();
-            if (lengthSquared(direction) < 0.000001f) {
-                set_output("outPrim", get_input("prim"));
-                return;
+        template<typename T>
+        static void append_element(const T& ref_element, std::vector<T>& element_array, 
+                std::vector<zeno::vec3f>& new_pos_attr, 
+                const std::vector<zeno::vec3f>& ref_pos_attr, 
+                std::unordered_map<int32_t, int32_t>& point_map) {
+            T new_element;
+            for (size_t i = 0; i < new_element.size(); ++i) {
+                auto it = point_map.find(ref_element[i]);
+                if (it == point_map.end()) {
+                    new_element[i] = new_pos_attr.size();
+                    new_pos_attr.emplace_back(ref_pos_attr[ref_element[i]]);
+                    point_map[ref_element[i]] = new_element[i];
+                }
+                else {
+                    new_element[i] = it->second;
+                }
             }
-            direction = normalize(direction);
+            element_array.emplace_back(new_element);
+        }
 
-            auto prim = get_input<PrimitiveObject>("prim");
-            auto& pos_attr = prim->attr<zeno::vec3f>("pos");
+        static void clip_points(const PrimitiveObject* refprim,
+                std::vector<zeno::vec3f>& new_pos_attr,
+                const std::vector<zeno::vec3f>& ref_pos_attr,
+                std::unordered_map<int32_t, int32_t>& point_map,
+                const std::vector<bool>& is_above_arr) {
+            for (size_t i = 0; i < refprim->points.size(); ++i) {
+                const int32_t ref_point = refprim->points[i];
+                if (!is_above_arr[ref_point]) {
+                    if (point_map.find(ref_point) == point_map.end()) {
+                        point_map[ref_point] = new_pos_attr.size();
+                        new_pos_attr.emplace_back(ref_pos_attr[ref_point]);
+                    }
+                }
+            }
+        }
 
-            auto outprim = std::make_unique<PrimitiveObject>();
-            std::vector<zeno::vec3f> new_pos_attr;
-            std::unordered_map<int32_t, int32_t> point_map;
+        static void clip_lines(PrimitiveObject* outprim, const PrimitiveObject* refprim,
+                std::vector<zeno::vec3f>& new_pos_attr,
+                const std::vector<zeno::vec3f>& ref_pos_attr,
+                std::unordered_map<int32_t, int32_t>& point_map,
+                const std::vector<bool>& is_above_arr,
+                const zeno::vec3f& origin,
+                const zeno::vec3f& direction) {
+            for (size_t line_idx = 0; line_idx < refprim->lines.size(); ++line_idx) {
+                const zeno::vec2i& line_points = refprim->lines[line_idx];
+                if (!is_above_arr[line_points[0]] && !is_above_arr[line_points[1]]) {
+                    append_element<zeno::vec2i>(line_points, outprim->lines, new_pos_attr, ref_pos_attr, point_map);
+                }
+                else if (is_above_arr[line_points[0]] ^ is_above_arr[line_points[1]]) {
+                    const size_t above_idx = is_above_arr[line_points[0]] ? 0 : 1;
+                    const int32_t above_point = line_points[above_idx];
+                    const int32_t below_point = line_points[1 - above_idx];
+
+                    const zeno::vec3f& pos1 = ref_pos_attr[below_point];
+                    const zeno::vec3f& pos2 = ref_pos_attr[above_point];
+                    const zeno::vec3f new_pos = line_plane_intersection(origin, direction, pos1, normalize(pos2 - pos1));
+                    int32_t new_point1 = new_pos_attr.size();
+                    int32_t new_point2 = -1;
+                    new_pos_attr.emplace_back(new_pos);
+
+                    auto it = point_map.find(below_point);
+                    if (it == point_map.end()) {
+                        new_point2 = new_pos_attr.size();
+                        new_pos_attr.emplace_back(pos1);
+                        point_map[below_point] = new_point2;
+                    }
+                    else {
+                        new_point2 = it->second;
+                    }
+                    outprim->lines.emplace_back(new_point1, new_point2);
+                }
+  
+            }
+        }
+
+        static void clip_tris(PrimitiveObject* outprim, const PrimitiveObject* refprim, 
+                std::vector<zeno::vec3f>& new_pos_attr, 
+                const std::vector<zeno::vec3f>& ref_pos_attr,
+                std::unordered_map<int32_t, int32_t>& point_map,
+                const std::vector<bool>& is_above_arr,
+                const zeno::vec3f& origin,
+                const zeno::vec3f& direction) {
             std::unordered_map<std::pair<int32_t, int32_t>, int32_t, hash_pair> edge_point_map;
+            for (size_t tri_idx = 0; tri_idx < refprim->tris.size(); ++tri_idx) {
+                const zeno::vec3i& tri_points = refprim->tris[tri_idx];
 
-            for (size_t tri_idx = 0; tri_idx < prim->tris.size(); ++tri_idx) {
-                zeno::vec3i& vertices = prim->tris[tri_idx];
-                
                 std::vector<size_t> above_points;
                 std::vector<size_t> below_points;
                 bool is_continuous = true;
@@ -50,10 +112,8 @@ namespace zeno {
                 int32_t last_below = -1;
 
                 for (size_t i = 0; i < 3; ++i) {
-                    const zeno::vec3f& pos = pos_attr[vertices[i]];
-
-                    if (dot(pos - origin, direction) > 0) {
-                        above_points.push_back(vertices[i]);
+                    if (is_above_arr[tri_points[i]]) {
+                        above_points.push_back(tri_points[i]);
                         if (last_above >= 0) {
                             if (last_above != (i - 1)) {
                                 is_continuous = 0;
@@ -64,7 +124,7 @@ namespace zeno {
                         }
                     }
                     else {
-                        below_points.push_back(vertices[i]);
+                        below_points.push_back(tri_points[i]);
                         if (last_below >= 0) {
                             if (last_below != (i - 1)) {
                                 is_continuous = 0;
@@ -77,137 +137,182 @@ namespace zeno {
                 }
 
                 if (above_points.size() == 1) {
-                    const zeno::vec3f& pos = pos_attr[above_points[0]];
-                    const zeno::vec3f& pos1 = pos_attr[below_points[0]];
-                    const zeno::vec3f& pos2 = pos_attr[below_points[1]];
+                    const zeno::vec3f& pos = ref_pos_attr[above_points[0]];
+                    const zeno::vec3f& pos1 = ref_pos_attr[below_points[0]];
+                    const zeno::vec3f& pos2 = ref_pos_attr[below_points[1]];
 
                     const std::pair<int32_t, int32_t> edge1(below_points[0], above_points[0]);
                     const std::pair<int32_t, int32_t> edge2(below_points[1], above_points[0]);
 
-                    int32_t new_pt1 = -1;
-                    int32_t new_pt2 = - 1;
-                    int32_t below_pt1 = -1;
-                    int32_t below_pt2 = -1;
+                    int32_t new_point1 = -1;
+                    int32_t new_point2 = -1;
+                    int32_t below_point1 = -1;
+                    int32_t below_point2 = -1;
 
                     auto edge_it1 = edge_point_map.find(edge1);
                     if (edge_it1 == edge_point_map.end()) {
                         const zeno::vec3f p1 = line_plane_intersection(origin, direction, pos1, normalize(pos - pos1));
-                        new_pt1 = new_pos_attr.size();
+                        new_point1 = new_pos_attr.size();
                         new_pos_attr.emplace_back(p1);
-                        edge_point_map[edge1] = new_pt1;
+                        edge_point_map[edge1] = new_point1;
                     }
                     else {
-                        new_pt1 = edge_it1->second;
+                        new_point1 = edge_it1->second;
                     }
 
                     auto edge_it2 = edge_point_map.find(edge2);
                     if (edge_it2 == edge_point_map.end()) {
                         const zeno::vec3f p2 = line_plane_intersection(origin, direction, pos2, normalize(pos - pos2));
-                        new_pt2 = new_pos_attr.size();
+                        new_point2 = new_pos_attr.size();
                         new_pos_attr.emplace_back(p2);
-                        edge_point_map[edge2] = new_pt2;
+                        edge_point_map[edge2] = new_point2;
                     }
                     else {
-                        new_pt2 = edge_it2->second;
+                        new_point2 = edge_it2->second;
                     }
 
                     auto it1 = point_map.find(below_points[0]);
                     if (it1 == point_map.end()) {
-                        below_pt1 = new_pos_attr.size();
+                        below_point1 = new_pos_attr.size();
                         new_pos_attr.emplace_back(pos1);
-                        point_map[below_points[0]] = below_pt1;
+                        point_map[below_points[0]] = below_point1;
                     }
                     else {
-                        below_pt1 = it1->second;
+                        below_point1 = it1->second;
                     }
 
                     auto it2 = point_map.find(below_points[1]);
                     if (it2 == point_map.end()) {
-                        below_pt2 = new_pos_attr.size();
+                        below_point2 = new_pos_attr.size();
                         new_pos_attr.emplace_back(pos2);
-                        point_map[below_points[1]] = below_pt2;
+                        point_map[below_points[1]] = below_point2;
                     }
                     else {
-                        below_pt2 = it2->second;
+                        below_point2 = it2->second;
                     }
 
                     if (is_continuous) {
-                        outprim->tris.emplace_back(below_pt1, below_pt2, new_pt2);
-                        outprim->tris.emplace_back(new_pt2, new_pt1, below_pt1);
+                        outprim->tris.emplace_back(below_point1, below_point2, new_point2);
+                        outprim->tris.emplace_back(new_point2, new_point1, below_point1);
                     }
                     else {
-                        outprim->tris.emplace_back(below_pt2, below_pt1, new_pt2);
-                        outprim->tris.emplace_back(new_pt1, new_pt2, below_pt1);
+                        outprim->tris.emplace_back(below_point2, below_point1, new_point2);
+                        outprim->tris.emplace_back(new_point1, new_point2, below_point1);
                     }
                 }
                 else if (above_points.size() == 2) {
-                    const zeno::vec3f& pos = pos_attr[below_points[0]];
-                    const zeno::vec3f& pos1 = pos_attr[above_points[0]];
-                    const zeno::vec3f& pos2 = pos_attr[above_points[1]];
+                    const zeno::vec3f& pos = ref_pos_attr[below_points[0]];
+                    const zeno::vec3f& pos1 = ref_pos_attr[above_points[0]];
+                    const zeno::vec3f& pos2 = ref_pos_attr[above_points[1]];
 
                     const std::pair<int32_t, int32_t> edge1(below_points[0], above_points[0]);
                     const std::pair<int32_t, int32_t> edge2(below_points[0], above_points[1]);
 
-                    int32_t new_pt1 = -1;
-                    int32_t new_pt2 = -1;
-                    int32_t below_pt = -1;
+                    int32_t new_point1 = -1;
+                    int32_t new_point2 = -1;
+                    int32_t below_point = -1;
 
                     auto edge_it1 = edge_point_map.find(edge1);
                     if (edge_it1 == edge_point_map.end()) {
-                        const zeno::vec3f p1 = line_plane_intersection(origin, direction, pos, normalize(pos1 - pos));
-                        new_pt1 = new_pos_attr.size();
-                        new_pos_attr.emplace_back(p1);
-                        edge_point_map[edge1] = new_pt1;
+                        const zeno::vec3f new_pos = line_plane_intersection(origin, direction, pos, normalize(pos1 - pos));
+                        new_point1 = new_pos_attr.size();
+                        new_pos_attr.emplace_back(new_pos);
+                        edge_point_map[edge1] = new_point1;
                     }
                     else {
-                        new_pt1 = edge_it1->second;
+                        new_point1 = edge_it1->second;
                     }
 
                     auto edge_it2 = edge_point_map.find(edge2);
                     if (edge_it2 == edge_point_map.end()) {
-                        const zeno::vec3f p2 = line_plane_intersection(origin, direction, pos, normalize(pos2 - pos));
-                        new_pt2 = new_pos_attr.size();
-                        new_pos_attr.emplace_back(p2);
-                        edge_point_map[edge2] = new_pt2;
+                        const zeno::vec3f new_pos = line_plane_intersection(origin, direction, pos, normalize(pos2 - pos));
+                        new_point2 = new_pos_attr.size();
+                        new_pos_attr.emplace_back(new_pos);
+                        edge_point_map[edge2] = new_point2;
                     }
                     else {
-                        new_pt2 = edge_it2->second;
+                        new_point2 = edge_it2->second;
                     }
 
                     auto it = point_map.find(below_points[0]);
                     if (it == point_map.end()) {
-                        below_pt = new_pos_attr.size();
+                        below_point = new_pos_attr.size();
                         new_pos_attr.emplace_back(pos);
-                        point_map[below_points[0]] = below_pt;
+                        point_map[below_points[0]] = below_point;
                     }
                     else {
-                        below_pt = it->second;
+                        below_point = it->second;
                     }
 
                     if (is_continuous) {
-                        outprim->tris.emplace_back(below_pt, new_pt1, new_pt2);
+                        outprim->tris.emplace_back(below_point, new_point1, new_point2);
                     }
                     else {
-                        outprim->tris.emplace_back(below_pt, new_pt2, new_pt1);
+                        outprim->tris.emplace_back(below_point, new_point2, new_point1);
                     }
                 }
-                else if (above_points.size() == 0)
-                {
-                    zeno::vec3i new_tri;
-                    for(size_t i = 0; i < 3; ++i) {
-                        auto it = point_map.find(vertices[i]);
-                        if (it == point_map.end()) {
-                            new_tri[i] = new_pos_attr.size();
-                            new_pos_attr.emplace_back(pos_attr[vertices[i]]);
-                            point_map[vertices[i]] = new_tri[i];
-                        }
-                        else {
-                            new_tri[i] = it->second;
-                        }
-                    }
-                    outprim->tris.emplace_back(new_tri);
+                else if (above_points.size() == 0) {
+                    append_element<zeno::vec3i>(tri_points, outprim->tris, new_pos_attr, ref_pos_attr, point_map);
                 }
             }
+
+        }
+
+        virtual void apply() override {
+            zeno::vec3f origin = { 0,0,0 };
+            zeno::vec3f direction = { 0,1,0 };
+            float distance = 0.0f;
+            int reverse = false;
+            if (has_input("origin"))
+                origin = get_input<zeno::NumericObject>("origin")->get<zeno::vec3f>();
+            if (has_input("direction"))
+                direction = get_input<zeno::NumericObject>("direction")->get<zeno::vec3f>();
+            if (has_input("distance"))
+                distance = get_input<zeno::NumericObject>("distance")->get<float>();
+            if (has_input("reverse"))
+                reverse = get_input<zeno::NumericObject>("reverse")->get<int>();
+            if (lengthSquared(direction) < 0.000001f) {
+                set_output("outPrim", get_input("prim"));
+                return;
+            }
+            direction = reverse > 0 ? -normalize(direction) : normalize(direction);
+            origin += direction * distance;
+
+            auto refprim = get_input<PrimitiveObject>("prim");
+            auto& ref_pos_attr = refprim->attr<zeno::vec3f>("pos");
+
+            auto outprim = std::make_unique<PrimitiveObject>();
+            std::vector<zeno::vec3f> new_pos_attr;
+            std::unordered_map<int32_t, int32_t> point_map;
+            
+            std::vector<bool> is_above_arr(ref_pos_attr.size());
+            // #pragma omp parallel for
+            for (int32_t i = 0; i < ref_pos_attr.size(); ++i)
+            {
+                is_above_arr[i] = dot(ref_pos_attr[i] - origin, direction) > 0;
+            }
+
+            clip_points(refprim.get(),
+                new_pos_attr,
+                ref_pos_attr,
+                point_map,
+                is_above_arr);
+
+            clip_lines(outprim.get(), refprim.get(),
+                new_pos_attr,
+                ref_pos_attr,
+                point_map,
+                is_above_arr,
+                origin,
+                direction);
+
+            clip_tris(outprim.get(), refprim.get(),
+                new_pos_attr,
+                ref_pos_attr,
+                point_map,
+                is_above_arr,
+                origin,
+                direction);
 
             outprim->m_attrs["pos"] = new_pos_attr;
             outprim->m_size = new_pos_attr.size();
@@ -216,10 +321,9 @@ namespace zeno {
     };
 
 ZENDEFNODE(PrimitiveClip, {
-    {"prim", "origin", "direction"},
+    {"prim", "origin", "direction", "distance", "reverse"},
     {"outPrim"},
     {},
     {"primitive"},
     });
-
 }
