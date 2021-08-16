@@ -51,7 +51,7 @@ struct TransformPrimitive : zeno::INode {
 
         if (prim->has_attr("pos")) {
             auto &pos = outprim->attr<zeno::vec3f>("pos");
-            //#pragma omp parallel for
+            #pragma omp parallel for
             for (int i = 0; i < pos.size(); i++) {
                 auto p = zeno::vec_to_other<glm::vec3>(pos[i]);
                 p = mapplypos(matrix, p);
@@ -61,7 +61,7 @@ struct TransformPrimitive : zeno::INode {
 
         if (prim->has_attr("nrm")) {
             auto &nrm = outprim->attr<zeno::vec3f>("nrm");
-            //#pragma omp parallel for
+            #pragma omp parallel for
             for (int i = 0; i < nrm.size(); i++) {
                 auto n = zeno::vec_to_other<glm::vec3>(nrm[i]);
                 n = mapplynrm(matrix, n);

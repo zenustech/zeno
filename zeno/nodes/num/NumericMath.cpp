@@ -102,4 +102,21 @@ ZENDEFNODE(NumericRandom, {
 });
 
 
+struct NumericCounter : INode {
+    int counter = -1;
+    virtual void apply() override {
+        auto count = std::make_shared<NumericObject>();
+        count->value = counter++;
+        set_output("count", std::move(count));
+    }
+};
+
+ZENDEFNODE(NumericCounter, {
+    {},
+    {{"numeric", "count"}},
+    {},
+    {"numeric"},
+});
+
+
 }
