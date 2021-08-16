@@ -353,7 +353,6 @@ class QDMGraphicsNode(QGraphicsItem):
                 srcid = srcsock = None
             elif len(input) == 2:  # bkwd-compat
                 srcid, srcsock = input
-                srcid, srcsock, deflVal = input
             else:
                 srcid, srcsock, deflVal = input
                 if deflVal is not None:
