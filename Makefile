@@ -1,4 +1,4 @@
-O=arts/embedbullet.zsg
+O=arts/embedglpars.zsg
 #O=arts/prim.zsg
 #O=arts/testlitsock.zsg
 #O=graphs/BulletRigidSim.zsg
