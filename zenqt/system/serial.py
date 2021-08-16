@@ -31,7 +31,8 @@ def serializeGraph(nodes, subgkeys):
             else:
                 srcIdent, srcSockName, sockDeflVal = input
             if srcIdent is None:
-                yield 'setNodeInput', ident, name, srcIdent, sockDeflVal
+                if sockDeflVal is not None:
+                    yield 'setNodeInput', ident, name, sockDeflVal
             else:
                 yield 'bindNodeInput', ident, name, srcIdent, srcSockName
 
