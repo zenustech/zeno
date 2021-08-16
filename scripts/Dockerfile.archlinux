@@ -1,6 +1,6 @@
 # archibate/zeno_build
 #
-# ZENO build environment
+# ZENO build environment (WIP)
 #
 FROM archlinux
 
