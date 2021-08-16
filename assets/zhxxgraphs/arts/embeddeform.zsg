@@ -22,8 +22,8 @@
       "defl": ""
      },
      "uipos": [
-      285.0,
-      -37.0
+      295.0,
+      -45.0
      ],
      "options": []
     },
@@ -31,8 +31,8 @@
      "name": "TransformPrimitive",
      "inputs": {
       "prim": [
-       "65886b6b-PrimitiveCalcNormal",
-       "prim",
+       "88a56154-CachedOnce",
+       "output",
        null
       ],
       "translation": [
@@ -64,7 +64,7 @@
      "params": {},
      "uipos": [
       12.0,
-      -55.0
+      -54.0
      ],
      "options": [
       "VIEW"
@@ -150,8 +150,8 @@
      },
      "params": {},
      "uipos": [
-      -281.76,
-      -342.0799999999999
+      -293.56,
+      -511.28
      ],
      "options": []
     },
@@ -168,8 +168,8 @@
       "path": "assets/Pig_Head.obj"
      },
      "uipos": [
-      -282.0799999999999,
-      -515.6800000000001
+      -293.87999999999994,
+      -684.8800000000001
      ],
      "options": []
     },
@@ -189,16 +189,37 @@
      },
      "params": {},
      "uipos": [
-      -278.4,
-      -179.83999999999992
+      -290.2,
+      -349.03999999999996
+     ],
+     "options": []
+    },
+    "88a56154-CachedOnce": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "65886b6b-PrimitiveCalcNormal",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -287.0,
+      -179.0
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -749,
-    "trans_y": -285
+    "trans_x": -927,
+    "trans_y": -624
    }
   }
  },
