@@ -19,6 +19,7 @@ from ..utils import asset_path, fuzzy_search
 from .misc import *
 from .edge import *
 from .param import *
+from .button import *
 from .socket import *
 from .node import *
 from .blackboard import *
