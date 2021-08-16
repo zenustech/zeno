@@ -11,7 +11,7 @@ struct LiterialInt : zeno::INode {
 };
 
 ZENDEFNODE(LiterialInt, {
-    {{"int", "value", ""}},
+    {{"int", "value", "0"}},
     {{"int", "value"}},
     {},
     {"numeric"},
