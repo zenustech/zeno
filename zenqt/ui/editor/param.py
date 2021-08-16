@@ -62,6 +62,7 @@ class QDMGraphicsParam_int(QDMGraphicsParam):
         self.edit.setValidator(self.validator)
 
     def setDefault(self, default):
+        if not default: return
         default = [int(x) for x in default.split()]
         if len(default) == 1:
             x = default[0]
@@ -79,7 +80,9 @@ class QDMGraphicsParam_int(QDMGraphicsParam):
             assert False, default
 
     def getValue(self):
-        return int(self.edit.text())
+        text = super().getValue()
+        if not text: return None
+        return int(text)
 
 
 class QDMGraphicsParam_float(QDMGraphicsParam):
@@ -90,6 +93,7 @@ class QDMGraphicsParam_float(QDMGraphicsParam):
         self.edit.setValidator(self.validator)
 
     def setDefault(self, default):
+        if not default: return
         default = [float(x) for x in default.split()]
         if len(default) == 1:
             x = default[0]
@@ -107,7 +111,9 @@ class QDMGraphicsParam_float(QDMGraphicsParam):
             assert False, default
 
     def getValue(self):
-        return float(self.edit.text())
+        text = super().getValue()
+        if not text: return None
+        return float(text)
 
 
 class QDMGraphicsParam_string(QDMGraphicsParam):

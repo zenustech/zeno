@@ -29,7 +29,7 @@ struct PortalOut : zeno::INode {
         auto name = get_param<std::string>("name");
         auto depnode = zeno::safe_at(graph->portalIns, name, "PortalIn");
         graph->applyNode(depnode);
-        auto obj = safe_at(graph->portals, name, "portal object");
+        auto obj = zeno::safe_at(graph->portals, name, "portal object");
         set_output2("port", std::move(obj));
     }
 };

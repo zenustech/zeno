@@ -1,6 +1,7 @@
 from . import *
 
-class QDMGraphicsSocketEdiable(QDMGraphicsSocket):
+
+class QDMGraphicsSocketEditName(QDMGraphicsSocket):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -42,7 +43,7 @@ class QDMGraphicsNode_MakeDict(QDMGraphicsNode):
         self.height -= TEXT_HEIGHT * 0.75
 
         for key in self.socket_keys:
-            socket = QDMGraphicsSocketEdiable(self)
+            socket = QDMGraphicsSocketEditName(self)
             socket.setPos(0, self.height + TEXT_HEIGHT * 0.5)
             socket.setName(key)
             socket.setIsOutput(self.dynamic_sockets_is_output)

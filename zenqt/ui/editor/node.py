@@ -117,6 +117,7 @@ class QDMGraphicsNode(QGraphicsItem):
 
         y = self.height + TEXT_HEIGHT * 0.4
 
+        # todo: params are to be replaced by socket with default_value
         self.params.clear()
         for index, (type, name, defl) in enumerate(params):
             param = globals()['QDMGraphicsParam_' + type](self)
@@ -133,34 +134,35 @@ class QDMGraphicsNode(QGraphicsItem):
             y += TEXT_HEIGHT * 0.4
 
         socket_start = y
-        if len(inputs) < len(outputs):
-            y += (len(outputs) - len(inputs)) * TEXT_HEIGHT
+        #if len(inputs) < len(outputs):
+        #    y += (len(outputs) - len(inputs)) * TEXT_HEIGHT
 
         self.inputs.clear()
         for index, (type, name, defl) in enumerate(inputs):
             socket = QDMGraphicsSocket(self)
+            socket.setIsOutput(False)
             socket.setPos(0, y)
             socket.setName(name)
             socket.setType(type)
-            socket.setIsOutput(False)
+            socket.setDefault(defl)
             self.inputs[name] = socket
             y += TEXT_HEIGHT
 
-        y = socket_start
-        if len(inputs) > len(outputs):
-            y += (len(inputs) - len(outputs)) * TEXT_HEIGHT
+        #y = socket_start
+        #if len(inputs) > len(outputs):
+        #    y += (len(inputs) - len(outputs)) * TEXT_HEIGHT
 
         self.outputs.clear()
         for index, (type, name, defl) in enumerate(outputs):
             socket = QDMGraphicsSocket(self)
+            socket.setIsOutput(True)
             socket.setPos(0, y)
             socket.setName(name)
             socket.setType(type)
-            socket.setIsOutput(True)
             self.outputs[name] = socket
             y += TEXT_HEIGHT
 
-        y = socket_start + max(len(inputs), len(outputs)) * TEXT_HEIGHT
+        #y = socket_start + max(len(inputs), len(outputs)) * TEXT_HEIGHT
 
         y += TEXT_HEIGHT * 0.75
         self.height = y
@@ -242,11 +244,12 @@ class QDMGraphicsNode(QGraphicsItem):
         inputs = {}
         for name, socket in self.inputs.items():
             assert not socket.isOutput
-            data = None
+            srcId = srcSock = None
             if socket.hasAnyEdge():
                 srcSocket = socket.getTheOnlyEdge().srcSocket
-                data = srcSocket.node.ident, srcSocket.name
-            inputs[name] = data
+                srcId, srcSock = srcSocket.node.ident, srcSocket.name
+            deflVal = socket.getValue()
+            inputs[name] = srcId, srcSock, deflVal
 
         params = {}
         for name, param in self.params.items():
@@ -346,6 +349,15 @@ class QDMGraphicsNode(QGraphicsItem):
                     name, data['name']))
                 continue
             dest = self.inputs[name]
-            edges.append((dest, input))
+            if input is None:  # bkwd-compat
+                srcid = srcsock = None
+            elif len(input) == 2:  # bkwd-compat
+                srcid, srcsock = input
+            else:
+                srcid, srcsock, deflVal = input
+                if deflVal is not None:
+                    dest.setValue(deflVal)
+            if srcid is not None:
+                edges.append((dest, (srcid, srcsock)))
         return edges
 

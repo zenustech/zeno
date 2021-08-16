@@ -1,6 +1,10 @@
-# ZENO
+# ZENO node system
 
 [![CMake](https://github.com/zenustech/zeno/actions/workflows/cmake.yml/badge.svg)](https://github.com/zenustech/zeno/actions/workflows/cmake.yml) [![License](https://img.shields.io/badge/license-MPLv2-blue)](LICENSE) [![Version](https://img.shields.io/github/v/release/zenustech/zeno)](https://github.com/zenustech/zeno/releases)
+
+[Download](https://github.com/zenustech/zeno/releases) | [Repo](https://github.com/zenustech/zeno) | [About us](https://zenustech.com) | [Tutorial](https://zenustech.com/tutorial) | [Videos](https://space.bilibili.com/263032155) | [Q&A Forum](https://github.com/zenustech/zeno/discussions) | [Bug report](https://github.com/zenustech/zeno/issues)
+
+[国内高速下载](https://github.com/zenustech/zeno/releases) | [Gitee 镜像仓库](https://gitee.com/zenustech/zeno) | [公司主页](https://zenustech.com) | [中文教程](https://zenustech.com/tutorial) | [视频教程](https://space.bilibili.com/263032155) | [问答论坛](https://github.com/zenustech/zeno/discussions) | [BUG 反馈](https://github.com/zenustech/zeno/issues)
 
 Open-source node system framework, to change your algorithmic code into useful tools to create much more complicated simulations!
 
@@ -152,7 +156,7 @@ Other requirements like GLAD are self-contained and you don't have to worry inst
 
 ```bash
 # Install basic dependencies:
-sudo apt-get install -y gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin
+sudo apt-get install -y gcc make cmake python-is-python3 python-dev-is-python3 python3-pip qt5dxcb-plugin libglvnd libglapi
 
 python --version  # make sure Python version >= 3.6
 sudo python -m pip install -U pip
@@ -330,7 +334,11 @@ vcpkg install openvdb:x64-windows
 vcpkg install eigen3:x64-windows
 ```
 
-Hint: You may need to install the `English Pack` for VS2019, and have fast internet condition for vcpkg to work. See [their official guide](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md) for more details.
+Notice that you may need to install the `English Pack` for VS2019 for vcpkg to work.
+
+For Chinese users, you may also need to follow the instruction in [this zhihu post](https://zhuanlan.zhihu.com/p/383683670) to **switch to domestic source** for faster download.
+
+See also [their official guide](https://github.com/microsoft/vcpkg/blob/master/README_zh_CN.md) for other issues.
 
 ### Arch Linux
 
@@ -377,6 +385,9 @@ ccmake -B build  # will shows up a curses screen, c to save, q to exit
 
 ```cmd
 cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+@rem Use this if you are using vcpkg:
+@rem cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake
 ```
 Then open ```build/zeno.sln``` in Visual Studio 2019, and **switch to Release mode in build configurations**, then run `Build -> Build All` (Ctrl+Shift+B).
 

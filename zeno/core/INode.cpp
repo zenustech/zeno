@@ -111,11 +111,11 @@ ZENO_API bool INode::has_input2(std::string const &id) const {
     return inputs.find(id) != inputs.end();
 }
 
-ZENO_API struct any INode::get_input2(std::string const &id) const {
+ZENO_API struct zany INode::get_input2(std::string const &id) const {
     return safe_at(inputs, id, "input", myname);
 }
 
-ZENO_API void INode::set_output2(std::string const &id, any &&obj) {
+ZENO_API void INode::set_output2(std::string const &id, zany &&obj) {
     outputs[id] = std::move(obj);
 }
 

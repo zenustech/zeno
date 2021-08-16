@@ -52,7 +52,7 @@ struct GLUTMainLoop : zeno::INode {
 
         auto vec = zeno::vec4f(ax, ay, fx, fy);
         auto vecobj = std::make_shared<zeno::NumericObject>(vec);
-        std::map<std::string, zeno::any> param;
+        std::map<std::string, zinc::zany> param;
         param["mouseInput"] = vecobj;
         drawFunc->call(param);
         glutSwapBuffers();
