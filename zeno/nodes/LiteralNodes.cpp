@@ -3,35 +3,35 @@
 
 namespace {
 
-struct LiterialInt : zeno::INode {
+struct LiteralInt : zeno::INode {
     virtual void apply() override {
         auto value = get_input2<int>("value");
         set_output2("value", value);
     }
 };
 
-ZENDEFNODE(LiterialInt, {
+ZENDEFNODE(LiteralInt, {
     {{"int", "value", "0"}},
     {{"int", "value"}},
     {},
-    {"numeric"},
+    {"literal"},
 });
 
-struct LiterialFloat : zeno::INode {
+struct LiteralFloat : zeno::INode {
     virtual void apply() override {
         auto value = get_input2<float>("value");
         set_output2("value", value);
     }
 };
 
-ZENDEFNODE(LiterialFloat, {
+ZENDEFNODE(LiteralFloat, {
     {{"float", "value", "0"}},
     {{"float", "value"}},
     {},
-    {"numeric"},
+    {"literal"},
 });
 
-struct PrintLiterial : zeno::INode {
+struct PrintLiteral : zeno::INode {
     virtual void apply() override {
         auto value = get_input2<zeno::scalar_type_variant>("value");
         auto hint = get_input2<std::string>("hint");
@@ -42,11 +42,11 @@ struct PrintLiterial : zeno::INode {
     }
 };
 
-ZENDEFNODE(PrintLiterial, {
-    {"value", {"string", "hint", "PrintLiterial"}},
+ZENDEFNODE(PrintLiteral, {
+    {"value", {"string", "hint", "PrintLiteral"}},
     {},
     {},
-    {"numeric"},
+    {"literal"},
 });
 
 }
