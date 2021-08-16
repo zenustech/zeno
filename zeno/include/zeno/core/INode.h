@@ -3,6 +3,7 @@
 #include <zeno/utils/defs.h>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/any.h>
+#include <zeno/utils/safe_dynamic_cast.h>
 #include <variant>
 #include <memory>
 #include <string>
