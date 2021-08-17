@@ -60,7 +60,7 @@ struct BMeshToPrimitive : zeno::INode {
 ZENDEFNODE(BMeshToPrimitive, {
     {"mesh"},
     {"prim"},
-    {{"int", "allow_quads", "0"}, {"int", "do_transform", "0"}},
+    {{"int", "allow_quads", "0"}, {"int", "do_transform", "1"}},
     {"blendermesh"},
 });
 
