@@ -19,6 +19,7 @@ option(ZENO_FAULTHANDLER "Enable ZENO fault handler for traceback" ON)
 option(ZENO_BENCHMARKING "Enable ZENO benchmarking timer" ON)
 option(ZENO_ENABLE_PYTHON "Enable ZENO Python bindings" ON)
 option(ZENO_ENABLE_OPENMP "Enable OpenMP in ZENO for parallelism" ON)
+option(ZENO_FAIL_SILENTLY "Silently supress error as possible" OFF)
 
 if (ZENO_ENABLE_PYTHON)
     set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/ZenoBin)

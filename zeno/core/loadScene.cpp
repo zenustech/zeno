@@ -27,7 +27,9 @@ ZENO_API void Scene::loadScene(const char *json) {
     for (int i = 0; i < d.Size(); i++) {
         Value const &di = d[i];
         std::string cmd = di[0].GetString();
+#ifdef ZENO_FAIL_SILENTLY
         try {
+#endif
             if (0) {
             } else if (cmd == "addNode") {
                 getGraph().addNode(di[1].GetString(), di[2].GetString());
@@ -46,10 +48,12 @@ ZENO_API void Scene::loadScene(const char *json) {
             } else if (cmd == "clearAllState") {
                 this->clearAllState();
             }
+#ifdef ZENO_FAIL_SILENTLY
         } catch (zeno::BaseException const &e) {
             spdlog::warn("exception executing command {} ({}): {}",
                     i, cmd.c_str(), e.what());
         }
+#endif
     }
 }
 
