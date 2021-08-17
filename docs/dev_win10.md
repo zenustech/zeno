@@ -2,7 +2,9 @@
 
 ## Installation requirements
 
-1. Install Python 3.8 64-bit. IMPORTANT: make sure you **Add Python 3.8 to PATH**! After that rebooting your computer would be the best.
+1. Install Python 3.9 64-bit. IMPORTANT: make sure you **Add Python 3.9 to PATH**! After that rebooting your computer would be the best.
+
+> WARNING: **Don't use Python 3.8**, PySide2 have a known bug with 3.8. Also **don't use 32-bit Python**.
 
 2. Start CMD in **Administrator mode** and type these commands:
 ```cmd
@@ -75,3 +77,11 @@ Reinstalling the application may fix this problem.
 ```
 
 Are you using Anaconda? Please try using the methods in: https://stackoverflow.com/questions/41994485/how-to-fix-could-not-find-or-load-the-qt-platform-plugin-windows-while-using-m
+
+
+If you got:
+```bash
+ImportError: DLL load failed while importing shiboken2
+```
+
+Don't use Python 3.8, it's a PySide2 bug, use Python 3.9 (or even 3.6) instead. See also [this post](https://blog.csdn.net/sinat_37938004/article/details/106384172).
