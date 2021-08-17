@@ -415,7 +415,7 @@ void print_traceback(int skip) {
 }
 #else
 namespace zeno {
-void print_traceback() {
+void print_traceback(int skip) {
 }
 }
 #endif
