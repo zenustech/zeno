@@ -355,8 +355,8 @@
       ]
      },
      "params": {
-      "type": "",
       "name": "name_doesnt_matter",
+      "type": "",
       "defl": ""
      },
      "uipos": [
@@ -466,8 +466,8 @@
       ]
      },
      "params": {
-      "type": "",
       "name": "image0",
+      "type": "",
       "defl": ""
      },
      "uipos": [
@@ -507,8 +507,8 @@
       ]
      },
      "params": {
-      "type": "",
       "name": "mouse",
+      "type": "",
       "defl": ""
      },
      "uipos": [
@@ -579,8 +579,8 @@
       ]
      },
      "params": {
-      "type": "",
       "name": "keepCache",
+      "type": "",
       "defl": ""
      },
      "uipos": [
@@ -718,8 +718,8 @@
       ]
      },
      "params": {
-      "type": "",
       "name": "keepImage",
+      "type": "",
       "defl": ""
      },
      "uipos": [
@@ -807,8 +807,8 @@
      "name": "PassToyGetTextureInteger",
      "inputs": {
       "texture": [
-       "ca083d31-x",
-       "textureOut",
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -852,8 +852,8 @@
    },
    "view": {
     "scale": 1.25,
-    "trans_x": 134,
-    "trans_y": 283
+    "trans_x": 115,
+    "trans_y": 182
    }
   },
   "StableFluid": {
@@ -2303,8 +2303,8 @@
       ]
      },
      "params": {
-      "type": "",
       "name": "mapping",
+      "type": "",
       "defl": ""
      },
      "uipos": [
@@ -2346,8 +2346,8 @@
       ]
      },
      "params": {
-      "type": "",
       "name": "uniforms",
+      "type": "",
       "defl": ""
      },
      "uipos": [
@@ -2494,8 +2494,8 @@
       ]
      },
      "params": {
-      "type": "",
       "name": "mouse",
+      "type": "",
       "defl": ""
      },
      "uipos": [
@@ -2651,8 +2651,8 @@
       ]
      },
      "params": {
-      "type": "",
       "name": "keepCache",
+      "type": "",
       "defl": ""
      },
      "uipos": [
@@ -3006,8 +3006,8 @@
       ]
      },
      "params": {
-      "type": "",
       "name": "srcTexture",
+      "type": "",
       "defl": ""
      },
      "uipos": [
@@ -3026,8 +3026,8 @@
       ]
      },
      "params": {
-      "type": "",
       "name": "dstTexture",
+      "type": "",
       "defl": ""
      },
      "uipos": [
@@ -3051,8 +3051,8 @@
       ]
      },
      "params": {
-      "type": "",
       "name": "dstTexture",
+      "type": "",
       "defl": ""
      },
      "uipos": [
@@ -3121,8 +3121,8 @@
       ]
      },
      "params": {
-      "type": "",
       "name": "frameNumber",
+      "type": "",
       "defl": ""
      },
      "uipos": [
@@ -3755,6 +3755,36 @@
    ],
    "categories": [
     "debug"
+   ]
+  },
+  "ExportObjPrimitive": {
+   "inputs": [
+    [
+     "",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "ExportZpmPrimitive": {
@@ -5364,6 +5394,31 @@
     "string"
    ]
   },
+  "NumericCounter": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "numeric",
+     "count",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
+   ]
+  },
   "NumericFloat": {
    "inputs": [
     [
@@ -5960,6 +6015,41 @@
     [
      "",
      "voidPtr",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyImageTextureFromVoidPtrAndRes": {
+   "inputs": [
+    [
+     "",
+     "voidPtr",
+     ""
+    ],
+    [
+     "",
+     "resolution",
      ""
     ],
     [
