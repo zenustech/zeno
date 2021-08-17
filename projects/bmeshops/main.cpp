@@ -68,6 +68,8 @@ struct PrimitiveToBMesh : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto mesh = std::make_shared<zeno::BlenderMesh>();
+        bool is_smooth = get_param<int>("is_smooth");
+        // todo: matrix too?
 
         mesh->vert.resize(prim->size());
         auto &pos = prim->attr<zeno::vec3f>("pos");
@@ -75,6 +77,7 @@ struct PrimitiveToBMesh : zeno::INode {
             mesh->vert[i] = pos[i];
         }
 
+        mesh->is_smooth = is_smooth;
         mesh->poly.resize(prim->tris.size() + prim->quads.size());
         mesh->loop.resize(3 * prim->tris.size() + 4 * prim->quads.size());
         for (int i = 0; i < prim->tris.size(); i++) {
@@ -102,7 +105,7 @@ struct PrimitiveToBMesh : zeno::INode {
 ZENDEFNODE(PrimitiveToBMesh, {
     {"prim"},
     {"mesh"},
-    {},
+    {{"int", "is_smooth", "0"}},
     {"blendermesh"},
 });
 

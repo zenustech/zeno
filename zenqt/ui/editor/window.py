@@ -388,7 +388,7 @@ class NodeEditor(QWidget):
 
     def do_export(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Export',
-                '', 'JSON file(*.json);; C++ Header File(*.h);; All Files(*);;',
+                '', 'C++ Header File(*.h);; JSON file(*.json);; All Files(*);;',
                 options=QFileDialog.DontConfirmOverwrite)
         if path != '':
             prog = self.dumpProgram()
