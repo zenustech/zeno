@@ -242,12 +242,58 @@
       -334.0
      ],
      "options": []
+    },
+    "9bb7bef1-ExportObjPrimitive": {
+     "name": "ExportObjPrimitive",
+     "inputs": {
+      "path": [
+       "7a62547d-MakeWritePath",
+       "path",
+       null
+      ],
+      "prim": [
+       "573956c4-PrimitiveCalcNormal",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1121.6000000000004,
+      -72.80000000000001
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "7a62547d-MakeWritePath": {
+     "name": "MakeWritePath",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": "/tmp/monkey{frame:06d}.obj"
+     },
+     "uipos": [
+      816.8,
+      -247.20000000000002
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -366,
-    "trans_y": -626
+    "scale": 1.25,
+    "trans_x": 534,
+    "trans_y": -427
    }
   }
  },
@@ -1545,6 +1591,36 @@
    "params": [],
    "categories": [
     "trimesh"
+   ]
+  },
+  "ExportObjPrimitive": {
+   "inputs": [
+    [
+     "",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "ExportParticles": {

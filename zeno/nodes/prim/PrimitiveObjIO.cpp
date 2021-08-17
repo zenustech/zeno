@@ -79,7 +79,7 @@ static void writeobj(
         std::vector<zeno::vec3i> const &indices,
         const char *path)
 {
-    FILE *fp = fopen(path, "r");
+    FILE *fp = fopen(path, "w");
     if (!fp) {
         perror(path);
         abort();
@@ -90,7 +90,7 @@ static void writeobj(
     }
 
     for (auto const &ind: indices) {
-        fprintf(fp, "f %d %d %d\n", ind[0], ind[1], ind[2]);
+        fprintf(fp, "f %d %d %d\n", ind[0] + 1, ind[1] + 1, ind[2] + 1);
     }
     fclose(fp);
 }
