@@ -306,6 +306,39 @@ class QDMGraphicsScene(QGraphicsScene):
             return
         super().mousePressEvent(event)
 
+    def _draw_dots(self, painter, rect, grid_size):
+        viewer = self.views()[0]
+        transform = viewer.transform()
+        cur_scale = (transform.m11(), transform.m22())
+        zoom = float('{:0.2f}'.format(cur_scale[0] - 1.0))
+
+        if zoom < 0:
+            grid_size = int(abs(zoom) / 0.3 + 1) * grid_size
+        if zoom < -0.9:
+            return
+        left = int(rect.left())
+        right = int(rect.right())
+        top = int(rect.top())
+        bottom = int(rect.bottom())
+
+        first_left = left - (left % grid_size)
+        first_top = top - (top % grid_size)
+
+        pen = QPen(QColor(255, 255, 255, 50), 0.65)
+        pen.setWidth(grid_size / 20)
+        painter.setPen(pen)
+        painter.drawPoints([QPoint(x, y) for x in range(first_left, right, grid_size) for y in range(first_top, bottom, grid_size)])
+
+    def drawBackground(self, painter, rect):
+        super().drawBackground(painter, rect)
+        painter.save()
+
+        if style['background_style'] is BackgroundStyle.DOT:
+            painter.setRenderHint(QPainter.Antialiasing, False)
+            painter.setBrush(self.backgroundBrush())
+            self._draw_dots(painter, rect, 50)
+
+        painter.restore()
 
 class QDMGraphicsView(QGraphicsView):
     ZOOM_FACTOR = 1.25
