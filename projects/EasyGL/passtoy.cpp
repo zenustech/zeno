@@ -273,6 +273,35 @@ ZENDEFNODE(PassToyImageTextureFromVoidPtr, {
         {"PassToy"},
 });
 
+struct PassToyImageTextureFromVoidPtrAndRes : zeno::INode {
+    virtual void apply() override {
+        void *p = get_input<zeno::VoidPtrObject>("voidPtr")->get();
+        auto res = get_input<zeno::NumericObject>("voidPtr")->get<zeno::vec2i>();
+        auto nx = res[0], ny = res[1];
+        auto texture = std::make_shared<PassToyTexture>();
+        zlog::info("loading image file from void ptr {}", p);
+        zlog::info("loaded {}x{} at {}", nx, ny, p);
+        texture->tex.width = nx;
+        texture->tex.height = ny;
+        texture->tex.type = GL_UNSIGNED_BYTE;
+        texture->tex.format = GL_RGBA;
+        texture->tex.internalformat = GL_RGBA;
+        texture->tex.base = p;
+        texture->tex.initialize();
+        texture->fbo.initialize();
+        texture->fbo.bindToTexture(texture->tex, GL_COLOR_ATTACHMENT0);
+        texture->fbo.checkStatusComplete();
+        set_output("texture", std::move(texture));
+    }
+};
+
+ZENDEFNODE(PassToyImageTextureFromVoidPtrAndRes, {
+        {"voidPtr", "resolution"},
+        {"texture"},
+        {},
+        {"PassToy"},
+});
+
 
 struct PassToyLoadImageTexture : zeno::INode {
     virtual void apply() override {
