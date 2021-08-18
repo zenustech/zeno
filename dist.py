@@ -14,6 +14,6 @@ else:
     raise AssertionError(sys.platform)
 
 if os_name == 'linux':
-    subprocess.check_call([sys.executable, 'scripts/fixldd.py'])
+    subprocess.check_call([sys.executable, 'scripts/linux_dist.py'])
 subprocess.check_call([sys.executable, '-m', 'PyInstaller', 'scripts/launcher_{}.spec'.format(os_name), '-y'] + sys.argv[1:])
 shutil.make_archive('dist/launcher', 'zip', 'dist/launcher')
