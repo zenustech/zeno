@@ -148,8 +148,6 @@ class QDMGraphicsScene(QGraphicsScene):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        width, height = 64000, 64000
-        self.setSceneRect(-width // 2, -height // 2, width, height)
         self.setBackgroundBrush(QColor(style['background_color']))
 
         self.nodes = []
@@ -364,14 +362,13 @@ class QDMGraphicsView(QGraphicsView):
         self.needReloadNodes = False
 
         self.node_editor = parent
+        self._last_mouse_pos = None
+        self._scene_rect = None
 
     def setScene(self, scene):
         super().setScene(scene)
-        transform = QTransform()
-        transform.scale(scene.scale, scene.scale)
-        self.setTransform(transform)
-        self.horizontalScrollBar().setValue(scene.trans_x)
-        self.verticalScrollBar().setValue(scene.trans_y)
+        if self._scene_rect:
+            self._update_scene_rect()
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -460,7 +457,8 @@ class QDMGraphicsView(QGraphicsView):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MiddleButton:
-            self.setDragMode(QGraphicsView.ScrollHandDrag)
+            self._last_mouse_pos = event.pos()
+            self.setDragMode(QGraphicsView.NoDrag)
             self.scene().mmb_press = True
 
             releaseEvent = QMouseEvent(QEvent.MouseButtonRelease,
@@ -530,7 +528,13 @@ class QDMGraphicsView(QGraphicsView):
             edge.setEndPos(pos)
             edge.updatePath()
             self.scene().update()
-
+        if self.scene().mmb_press:
+            last_pos = self.mapToScene(self._last_mouse_pos)
+            current_pos = self.mapToScene(event.pos())
+            delta = last_pos - current_pos
+            self._last_mouse_pos = event.pos()
+            self._scene_rect.translate(delta)
+            self._update_scene_rect()
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
@@ -556,9 +560,32 @@ class QDMGraphicsView(QGraphicsView):
             zoomFactor = self.ZOOM_FACTOR
         elif event.angleDelta().y() < 0:
             zoomFactor = 1 / self.ZOOM_FACTOR
+        self.scale(zoomFactor, zoomFactor, event.pos())
 
-        self.scale(zoomFactor, zoomFactor)
-        self.scene().scale = self.transform().m11()
+    def resizeEvent(self, event):
+        if self._scene_rect is None:
+            self._scene_rect = QRectF(0, 0, self.size().width(), self.size().height())
+            self._update_scene_rect()
+        super().resizeEvent(event)
+
+    def scale(self, sx, sy, pos=None):
+        if (self._scene_rect.width() > 60000 and sx < 1) or (self._scene_rect.width() < 500 and sx > 1):
+            return
+        if pos:
+            pos = self.mapToScene(pos)
+        center = pos or self._scene_rect.center()
+        w = self._scene_rect.width() / sx
+        h = self._scene_rect.height() / sy
+        self._scene_rect = QRectF(
+            center.x() - (center.x() - self._scene_rect.left()) / sx,
+            center.y() - (center.y() - self._scene_rect.top()) / sy,
+            w, h
+        )
+        self._update_scene_rect()
+
+    def _update_scene_rect(self):
+        self.setSceneRect(self._scene_rect)
+        self.fitInView(self._scene_rect, Qt.KeepAspectRatio)
 
     def addEdge(self, a, b):
         if a is None or b is None:
