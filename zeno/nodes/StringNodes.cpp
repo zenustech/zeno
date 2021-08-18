@@ -15,7 +15,7 @@ struct MakeWritePath : zeno::INode {
 
 ZENDEFNODE(MakeWritePath, {
     {},
-    {{"string", "path"}},
+    {{"StringObject", "path"}},
     {{"writepath", "path", ""}},
     {"string"},
 });
@@ -30,7 +30,7 @@ struct MakeReadPath : zeno::INode {
 
 ZENDEFNODE(MakeReadPath, {
     {},
-    {{"string", "path"}},
+    {{"StringObject", "path"}},
     {{"readpath", "path", ""}},
     {"string"},
 });
@@ -45,7 +45,7 @@ struct MakeString : zeno::INode {
 
 ZENDEFNODE(MakeString, {
     {},
-    {{"string", "value"}},
+    {{"StringObject", "value"}},
     {{"string", "value", ""}},
     {"string"},
 });
@@ -55,7 +55,7 @@ struct MakeMultilineString : MakeString {
 
 ZENDEFNODE(MakeMultilineString, {
     {},
-    {{"string", "value"}},
+    {{"StringObject", "value"}},
     {{"multiline_string", "value", ""}},
     {"string"},
 });

@@ -112,9 +112,9 @@ struct VDBWrangle : zeno::INode {
 };
 
 ZENDEFNODE(VDBWrangle, {
-    {{"openvdb", "grid"}, {"string", "zfxCode"},
-     {"dict:numeric", "params"}},
-    {{"openvdb", "grid"}},
+    {{"VDBGrid", "grid"}, {"StringObject", "zfxCode"},
+     {"DictObject:NumericObject", "params"}},
+    {{"VDBGrid", "grid"}},
     {},
     {"zenofx"},
 });

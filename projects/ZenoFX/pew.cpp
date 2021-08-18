@@ -171,9 +171,9 @@ struct PrimitiveEdgeWrangle : zeno::INode {
 };
 
 ZENDEFNODE(PrimitiveEdgeWrangle, {
-    {{"primitive", "prim"}, {"primitive", "edgePrim"},
-     {"string", "zfxCode"}, {"dict:numeric", "params"}},
-    {{"primitive", "prim"}, {"primitive", "edgePrim"}},
+    {{"PrimitiveObject", "prim"}, {"PrimitiveObject", "edgePrim"},
+     {"StringObject", "zfxCode"}, {"DictObject:NumericObject", "params"}},
+    {{"PrimitiveObject", "prim"}, {"PrimitiveObject", "edgePrim"}},
     {},
     {"zenofx"},
 });

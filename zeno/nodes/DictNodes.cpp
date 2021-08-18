@@ -16,8 +16,8 @@ struct DictSize : zeno::INode {
 };
 
 ZENDEFNODE(DictSize, {
-    {{"dict", "dict"}},
-    {{"numeric:int", "size"}},
+    {{"DictObject", "dict"}},
+    {{"NumericObject:int", "size"}},
     {},
     {"dict"},
 });
@@ -33,8 +33,8 @@ struct DictGetItem : zeno::INode {
 };
 
 ZENDEFNODE(DictGetItem, {
-    {{"dict", "dict"}, {"string", "key"}},
-    {{"any", "object"}},
+    {{"DictObject", "dict"}, {"StringObject", "key"}},
+    {{"Any", "object"}},
     {},
     {"dict"},
 });
@@ -49,7 +49,7 @@ struct EmptyDict : zeno::INode {
 
 ZENDEFNODE(EmptyDict, {
     {},
-    {{"dict", "dict"}},
+    {{"DictObject", "dict"}},
     {},
     {"dict"},
 });
@@ -66,8 +66,8 @@ struct DictSetItem : zeno::INode {
 };
 
 ZENDEFNODE(DictSetItem, {
-    {{"dict", "dict"}, {"string", "key"}, {"any", "object"}},
-    {{"dict", "dict"}},
+    {{"DictObject", "dict"}, {"StringObject", "key"}, {"Any", "object"}},
+    {{"DictObject", "dict"}},
     {},
     {"dict"},
 });
@@ -90,7 +90,7 @@ struct MakeDict : zeno::INode {
 
 ZENDEFNODE(MakeDict, {
     {},
-    {{"dict", "dict"}},
+    {{"DictObject", "dict"}},
     {},
     {"dict"},
 });
@@ -109,7 +109,7 @@ struct DictUnion : zeno::INode {
 
 ZENDEFNODE(DictUnion, {
     {{"dict1", "dict"}, {"dict2", "dict"}},
-    {{"dict", "dict"}},
+    {{"DictObject", "dict"}},
     {},
     {"dict"},
 });
@@ -132,7 +132,7 @@ struct ExtractDict : zeno::INode {
 };
 
 ZENDEFNODE(ExtractDict, {
-    {{"dict", "dict"}},
+    {{"DictObject", "dict"}},
     {},
     {},
     {"dict"},
