@@ -132,7 +132,7 @@ static int defMakeVDBGrid = zeno::defNodeClass<MakeVDBGrid>(
                     },
                     /* params: */
                     {
-                        {"float", "dx", "0.01"},
+                        {"float", "dx", "0.08"},
                         {"string", "type", "float"},
                         {"string", "structure", "Centered"},
                         {"string", "name", "Rename!"},
