@@ -22,7 +22,6 @@ add_subdirectory(zecomp)
 add_library(zeno_gmpm SHARED)
 
 target_sources(zeno_gmpm PRIVATE
-  nosys/dummy.cpp
   nosys/ToZensimParticles.cpp 
   nosys/OutputZensimParticles.cpp 
   nosys/ConstitutiveModels.cpp 
