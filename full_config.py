@@ -3,7 +3,7 @@
 import subprocess
 
 args = [
-'-DCMAKE_BUILD_TYPE=RelWithDebInfo',
+'-DCMAKE_BUILD_TYPE=Release',
 '-DZENOFX_ENABLE_OPENVDB:BOOL=ON',
 '-DEXTENSION_oldzenbase:BOOL=ON',
 '-DEXTENSION_ZenoFX:BOOL=ON',
