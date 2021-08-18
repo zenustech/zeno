@@ -13,6 +13,7 @@ elif sys.platform == 'darwin':
 else:
     raise AssertionError(sys.platform)
 
+subprocess.check_call([sys.executable, 'build.py'])
 if os_name == 'linux':
     subprocess.check_call([sys.executable, 'scripts/linux_dist.py'])
 subprocess.check_call([sys.executable, '-m', 'PyInstaller', 'scripts/launcher_{}.spec'.format(os_name), '-y'] + sys.argv[1:])
