@@ -32,7 +32,7 @@ ZENO_API void Graph::applyGraph() {
 
 ZENO_API zany const &Graph::getGraphOutput2(
         std::string const &id) const {
-    return subOutputs.at(id);
+    return safe_at(subOutputs, id, "subgraph output");
 }
 
 ZENO_API zany const &Graph::getNodeOutput(
