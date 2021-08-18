@@ -44,5 +44,4 @@ jobs:
       run: python -c "import zenqt.system.dll"
 
     - name: Integrated Test
-      working-directory: ${{github.workspace}}/ZenoBin
-      run: ./zeno_tests
+      run: zenqt/bin/zeno_tests
