@@ -28,6 +28,8 @@ sudo python3 -m pip install pyinstaller
 ./dist.py
 ```
 
+> NOTE: Linux binary releases should always be done in CentOS for GLIBC version compatibilty on older systems.
+
 ### Windows 10
 
 ```bash
@@ -36,7 +38,7 @@ python -m pip install pyinstaller
 python dist.py
 ```
 
-You will get `dist/zeno-2021.x.xx.zip`, now upload it to the `Release` page.
+You will get `dist/zeno-windows-2021.x.xx.zip`, now upload it to the `Release` page.
 
 ## Build binary release (old method)
 
