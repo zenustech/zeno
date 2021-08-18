@@ -41,6 +41,14 @@ cd OpenBLAS
 make FC=gfortran -j8
 sudo make install PREFIX=/usr/local
 
+# (Optional) Install Patchelf (for building binary release):
+git clone https://github.com/NixOS/patchelf.git --branch=0.13
+cd patchelf
+./bootstrap.sh
+./configure
+make -j8
+sudo make install
+
 # Install GCC 9.x
 yum -y install centos-release-scl
 yum -y install devtoolset-9-gcc
