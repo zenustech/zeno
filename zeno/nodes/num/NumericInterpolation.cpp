@@ -78,10 +78,10 @@ struct NumericInterpolation : zeno::INode {
 };
 
 ZENDEFNODE(NumericInterpolation, {
-    {{"numeric", "src"}, {"numeric", "srcMin"},
-     {"numeric", "srcMax"}, {"numeric", "dstMin"},
-     {"numeric", "dstMax"}},
-    {{"numeric", "dst"}},
+    {{"NumericObject", "src"}, {"NumericObject", "srcMin"},
+     {"NumericObject", "srcMax"}, {"NumericObject", "dstMin"},
+     {"NumericObject", "dstMax"}},
+    {{"NumericObject", "dst"}},
     {{"int", "isClamped", "0"}},
     {"numeric"},
 });
