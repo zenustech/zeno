@@ -6,8 +6,11 @@
 
 namespace zeno {
 
-struct BlenderMesh : IObjectClone<BlenderMesh> {
+struct BlenderAxis : IObjectClone<BlenderAxis> {
     std::array<std::array<float, 4>, 4> matrix;
+};
+
+struct BlenderMesh : IObjectClone<BlenderMesh, BlenderAxis> {
     bool is_smooth = false;
 
     std::vector<vec3f> vert;

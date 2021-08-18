@@ -4,6 +4,7 @@
 
 namespace {
 
+
 struct BMeshToPrimitive : zeno::INode {
     virtual void apply() override {
         auto mesh = get_input<zeno::BlenderMesh>("mesh");
@@ -64,6 +65,7 @@ ZENDEFNODE(BMeshToPrimitive, {
     {"blendermesh"},
 });
 
+
 struct PrimitiveToBMesh : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
@@ -108,5 +110,68 @@ ZENDEFNODE(PrimitiveToBMesh, {
     {{"int", "is_smooth", "0"}},
     {"blendermesh"},
 });
+
+
+/*
+static void decompose_matrix(const Matrix4x4 &m, Vector3f *T,
+                                  Quaternion *Rquat, Matrix4x4 *S) {
+    // 获取平移T
+    T->x = m.m[0][3];
+    T->y = m.m[1][3];
+    T->z = m.m[2][3];
+
+    // 获取除去平移的新矩阵M
+    Matrix4x4 M = m;
+    for (int i = 0; i < 3; ++i) M.m[i][3] = M.m[3][i] = 0.f;
+    M.m[3][3] = 1.f;
+
+    // 从M分离出R
+    Float norm;
+    int count = 0;
+    Matrix4x4 R = M;
+    do {
+        // 计算Mi+1
+        Matrix4x4 Rnext;
+        Matrix4x4 Rit = Inverse(Transpose(R));
+        for (int i = 0; i < 4; ++i)
+            for (int j = 0; j < 4; ++j)
+                Rnext.m[i][j] = 0.5f * (R.m[i][j] + Rit.m[i][j]);
+
+        // 计算Mi和Mi+1之间的差
+        norm = 0;
+        for (int i = 0; i < 3; ++i) {
+            Float n = std::abs(R.m[i][0] - Rnext.m[i][0]) +
+                      std::abs(R.m[i][1] - Rnext.m[i][1]) +
+                      std::abs(R.m[i][2] - Rnext.m[i][2]);
+            norm = std::max(norm, n);
+        }
+        R = Rnext;
+    } while (++count < 100 && norm > .0001);//当迭代次数超过上限，或者连续项之间的差足够小，则退出循环
+    // 获取旋转矩阵的四元数形式
+    *Rquat = Quaternion(R);
+
+    // 计算缩放矩阵S
+    *S = Matrix4x4::Mul(Inverse(R), M);
+}
+
+struct BAxisExtract : zeno::INode {
+    virtual void apply() override {
+        auto axis = get_input<zeno::BlenderAxis>("axis");
+        auto translation = std::make_shared<zeno::NumericObject>();
+        auto quaternion = std::make_shared<zeno::NumericObject>();
+        auto scaling = std::make_shared<zeno::NumericObject>();
+        trans->matrix = mesh->matrix;
+
+        set_output("trans", std::move(trans));
+    }
+};
+
+ZENDEFNODE(BAxisExtract, {
+    {"mesh"},
+    {"trans"},
+    {},
+    {"blendermesh"},
+});*/
+
 
 }
