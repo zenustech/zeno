@@ -139,7 +139,7 @@ def fix_missing_libs(src_dir, dst_dir):
 
     for path in glob.glob(os.path.join(src_dir, '*.so*')):
         path = os.path.abspath(path)
-        if os.path.isfile(path):
+        if os.path.isfile(path) and not os.path.islink(path):
             touch(path)
 
     shutil.rmtree(dst_dir, ignore_errors=True)

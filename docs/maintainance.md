@@ -7,7 +7,7 @@
 ```bash
 cmake -B build -DZENO_BUILD_TESTS:BOOL=ON
 cmake --build build --parallel
-build/tests/zentest
+zenqt\bin\zentest
 ```
 
 ### Windows
@@ -15,26 +15,28 @@ build/tests/zentest
 ```cmd
 cmake -B build -DZENO_BUILD_TESTS:BOOL=ON
 cmake --build build --parallel
-build\tests\zentest.exe
+zenqt\bin\zentest.exe
 ```
 
 ## Build binary release
 
-- Linux
+### CentOS 7
+
 ```bash
 sudo python3 -m pip install wheel
 sudo python3 -m pip install pyinstaller
 ./dist.py
 ```
 
-- Windows
+### Windows 10
+
 ```bash
 python -m pip install wheel
 python -m pip install pyinstaller
 python dist.py
 ```
 
-You will get dist/launcher.zip, upload it to, for example, zeno-linux-2021.8.7.zip in the `Release` page.
+You will get `dist/zeno-2021.x.xx.zip`, now upload it to the `Release` page.
 
 ## Build binary release (old method)
 
