@@ -13,4 +13,3 @@ args = [
 ]
 
 subprocess.check_call(['cmake', '-B', 'build'] + args)
-subprocess.check_call(['cmake', '--build', 'build', '--parallel'])

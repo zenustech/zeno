@@ -20,7 +20,7 @@ cmake-build-*/
 a.out
 
 # output files
-/ZenoBin/
+/zenqt/bin/
 outputs/
 /a.zsl
 /a.zsg
