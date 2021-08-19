@@ -61,8 +61,9 @@ class MainWindow(QWidget):
         self.timer.timeout.connect(self.on_update)
 
     def setWindowTitleWithPostfix(self, postfix):
-        from .. import version
-        title = 'ZENO Qt Editor ({})'.format(version)
+        #from .. import version
+        #title = 'ZENO Qt Editor ({})'.format(version)
+        title = 'ZENO Qt Editor'
         if postfix:
             title = '{} - [{}]'.format(title, postfix)
         self.setWindowTitle(title)
