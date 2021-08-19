@@ -28,6 +28,7 @@ namespace zeno {
     //openvdb::tools::signedFloodFill(inoutSDF->m_grid->tree());
 
     
+    set_output("inoutSDF", get_input("inoutSDF"));
   }
 };
 
@@ -35,6 +36,7 @@ static int defVDBRenormalizeSDF = zeno::defNodeClass<VDBRenormalizeSDF>("VDBReno
      { /* inputs: */ {
      "inoutSDF", 
      }, /* outputs: */ {
+     "inoutSDF",
      }, /* params: */ {
          {"string", "method", "1oUpwind"},
          {"int", "iterations", "4"},
