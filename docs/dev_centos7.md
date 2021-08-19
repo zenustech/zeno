@@ -1,15 +1,29 @@
 # CentOS 7 Setup
 
+> CentOS 7 is our binary release building environment, this is to downgrade glibc requirement to 2.17, according to [VFX Reference Platform](vfxplatform.com).
+
 ## Installation requirements
 
 ```bash
 # Install basic dependencies:
-sudo yum -y install wget make python3 python3-devel
+sudo yum -y install curl wget make gcc
 
+# Install CMake and Python dependency (OpenSSL, Bzip2, FFI):
+sudo yum -y install bzip2-devel libffi-devel openssl-devel
+
+# Install Python 3.9:
+curl -O https://www.python.org/ftp/python/3.9.0/Python-3.9.0.tgz
+tar -zxvf Python-3.9.0.tgz
+cd Python-3.9.0
+./configure prefix=/usr/local --enable-optimizations
+make -j8
+sudo make install
+cd ..
+which python3  # make sure it's /usr/usr/bin/python3
+python3 --version  # make sure it's 3.9.0
+
+# Install Python packages:
 sudo python3 -m pip install pybind11 numpy PySide2
-
-# Install CMake dependency (OpenSSL):
-sudo yum -y install openssl openssl-devel
 
 # Install CMake 3.17:
 wget -c https://github.com/Kitware/CMake/releases/download/v3.17.0-rc3/cmake-3.17.0-rc3.tar.gz
