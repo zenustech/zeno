@@ -1,5 +1,4 @@
 #include "FLIP_vdb.h"
-#include <omp.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
 #include <zeno/ZenoInc.h>
@@ -33,6 +32,7 @@ struct ParticleEmitter : zeno::INode {
     FLIP_vdb::emit_liquid(particles->m_grid, shape->m_grid,
                           velocityVolume, liquid_sdf, vx, vy,
                           vz);
+    set_output("Particles", get_input("Particles"));
   }
 };
 
@@ -43,7 +43,9 @@ static int defParticleEmitter = zeno::defNodeClass<ParticleEmitter>(
                             "VelocityVolume",
                             "LiquidSDF",
                         },
-                        /* outputs: */ {},
+                        /* outputs: */ {
+                            "Particles",
+                        },
                         /* params: */
                         {
                             {"float", "vx", "0.0"},

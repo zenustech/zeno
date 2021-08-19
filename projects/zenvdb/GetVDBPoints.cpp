@@ -98,6 +98,7 @@ struct VDBPointsToPrimitive : zeno::INode {
         retvel.emplace_back(v[0], v[1], v[2]);
       }
     }
+    ret->resize(retpos.size());
     set_output("prim", ret);
   }
 };
@@ -106,7 +107,7 @@ static int defVDBPointsToPrimitive = zeno::defNodeClass<VDBPointsToPrimitive>("V
     { /* inputs: */ {
         "grid",
     }, /* outputs: */ {
-        "pars",
+        "prim",
     }, /* params: */ {
     }, /* category: */ {
       "openvdb",
