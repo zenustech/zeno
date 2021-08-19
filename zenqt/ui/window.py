@@ -43,6 +43,7 @@ class MainWindow(QWidget):
         self.timeline = self.editorTimeline.timeline
         self.editor = self.editorTimeline.editor
         self.timeline.setEditor(self.editor)
+        self.viewport.timeline = self.timeline
 
         self.mainsplit = QSplitter(Qt.Vertical)
         if hasattr(self, 'viewport'):
