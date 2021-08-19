@@ -51,7 +51,7 @@ If you find the binary version didn't worked properly or some error message has 
 
 To build ZENO, you need:
 
-- A C++17 compiler, CMake 3.12+, and Python 3.6+ to build ZENO.
+- GCC 9+ or MSVC 19+, CMake 3.12+, and Python 3.6+ to build ZENO.
 - Pybind11, NumPy and PySide2 (Qt for Python) to run ZENO editor.
 - (Optional) OpenVDB for building volume nodes; CUDA for GPU nodes.
 
