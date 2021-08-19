@@ -1950,7 +1950,6 @@ struct particle_fill_kill_op {
                         FLIP_vdb::descriptor_t::Ptr pv_descriptor)
       : m_leaf_nodes(in_nodes), m_p_descriptor(p_descriptor),
         m_pv_descriptor(pv_descriptor) {
-    initRandomTable();
     m_boundary_fill_kill_volume = in_boundary_fill_kill_volume;
     m_domain_begin = in_domain_begin;
     m_domain_end = in_domain_end;
@@ -2568,7 +2567,6 @@ void FLIP_vdb::update_solid_sdf(
 void FLIP_vdb::reseed_fluid(
     openvdb::points::PointDataGrid::Ptr &in_out_particles,
     openvdb::FloatGrid::Ptr &liquid_sdf, openvdb::Vec3fGrid::Ptr &velocity) {
-  initRandomTable();
   using namespace openvdb::tools::local_util;
   float dx = in_out_particles->transform().voxelSize()[0];
   std::vector<openvdb::points::PointDataTree::LeafNodeType *> particle_leaves;
@@ -2740,7 +2738,6 @@ void FLIP_vdb::emit_liquid(
     openvdb::points::PointDataGrid::Ptr &in_out_particles,
     openvdb::FloatGrid::Ptr &sdf, openvdb::Vec3fGrid::Ptr &vel,
     openvdb::FloatGrid::Ptr &liquid_sdf, float vx, float vy, float vz) {
-  initRandomTable();
   using namespace openvdb::tools::local_util;
 
   // alias

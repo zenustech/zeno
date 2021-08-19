@@ -7,40 +7,20 @@
 
 
 
-static inline float *randomTable = nullptr;
-inline float frand(unsigned int i)
-{
+static inline float frand(unsigned int i) {
 	unsigned int value = (i ^ 61) ^ (i >> 16);
 	value *= 9;
 	value ^= value << 4;
 	value *= 0x27d4eb2d;
 	value ^= value >> 15;	
-    return (float)value/(float)4294967296;
+    return (float)value / (float)4294967296;
 }
-static inline void initRandomTable() {
-    if (randomTable) return;
-#ifdef _WIN32
-    const int randTabSize = 21474836/2;
-#else
-    const int randTabSize = 21474836;
-#endif
-    randomTable = new float[randTabSize];
-    /*std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> distribution(-0.5, 0.5);*/
-#ifdef _WIN32
-    for (int64_t i = 0; i < randTabSize; i++) {
-        randomTable[i] = frand(i)-0.5f;
-    }
-#else
-#pragma omp parallel for
-    for (int64_t i = 0; i < randTabSize; i++) {
-        randomTable[i] = frand(i)-0.5f;
-    }
-#endif
-}
+static inline struct MakeZhxxHappyRandomTable {
+    float operator[](unsigned int i) { return frand(i); }
+} randomTable;
+
 struct OpenvdbInitializer {
-  OpenvdbInitializer() { openvdb::initialize(); initRandomTable(); }
+  OpenvdbInitializer() { openvdb::initialize(); }
 };
 static OpenvdbInitializer g_openvdb_initializer{};
 struct FLIP_vdb {
