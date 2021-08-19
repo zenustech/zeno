@@ -2,78 +2,11 @@
  "graph": {
   "main": {
    "nodes": {
-    "7d5926c6-PrimitiveCalcNormal": {
-     "name": "PrimitiveCalcNormal",
-     "inputs": {
-      "prim": [
-       "947b7b5d-Assign",
-       "dst",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1247.5657910156256,
-      243.66781738281236
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
-    "140800ef-SDFToPoly": {
-     "name": "SDFToPoly",
-     "inputs": {
-      "SDF": [
-       "198fe063-VDBErodeSDF",
-       "inoutSDF",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "isoValue": 0.0,
-      "adaptivity": 0.04
-     },
-     "uipos": [
-      549.0527343749986,
-      369.9462890624999
-     ],
-     "options": []
-    },
-    "a5bf8310-MakeReadPath": {
-     "name": "MakeReadPath",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "path": "/home/bate/zeno/assets/Pig_Head.obj"
-     },
-     "uipos": [
-      -778.0,
-      357.0
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "8ada7307-ImportObjPrimitive": {
+    "b8c1d6c8-ImportObjPrimitive": {
      "name": "ImportObjPrimitive",
      "inputs": {
       "path": [
-       "a5bf8310-MakeReadPath",
+       "20a7e8c4-MakeReadPath",
        "path",
        null
       ],
@@ -85,18 +18,16 @@
      },
      "params": {},
      "uipos": [
-      -535.2,
-      364.23999999999995
+      -720.0,
+      -75.0
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
-    "a21dc95d-PrimitiveToSDF": {
+    "0ab475e0-PrimitiveToSDF": {
      "name": "PrimitiveToSDF",
      "inputs": {
       "PrimitiveMesh": [
-       "8ada7307-ImportObjPrimitive",
+       "b8c1d6c8-ImportObjPrimitive",
        "prim",
        null
       ],
@@ -112,17 +43,41 @@
       ]
      },
      "params": {
-      "voxel_size": 0.012,
+      "voxel_size": 0.05,
       "type": "vertex"
      },
      "uipos": [
-      -221.0,
-      311.0
+      -460.8,
+      8.96
      ],
      "options": []
     },
-    "dc9302ea-NumericInt": {
-     "name": "NumericInt",
+    "2bbde183-SDFToPoly": {
+     "name": "SDFToPoly",
+     "inputs": {
+      "SDF": [
+       "20d8a322-x",
+       "SDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isoValue": 0.0,
+      "adaptivity": 0.0
+     },
+     "uipos": [
+      809.1199999999999,
+      -13.079999999999984
+     ],
+     "options": []
+    },
+    "20a7e8c4-MakeReadPath": {
+     "name": "MakeReadPath",
      "inputs": {
       "SRC": [
        null,
@@ -131,68 +86,19 @@
       ]
      },
      "params": {
-      "value": 0
+      "path": "/home/bate/zeno/assets/Pig_Head.obj"
      },
      "uipos": [
-      -482.154,
-      -544.136
+      -977.9200000000001,
+      -50.55999999999999
      ],
      "options": []
     },
-    "b195d8bc-NumericFloat": {
-     "name": "NumericFloat",
+    "635466f8-PrimitiveCalcNormal": {
+     "name": "PrimitiveCalcNormal",
      "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 0.006
-     },
-     "uipos": [
-      147.0,
-      148.0
-     ],
-     "options": []
-    },
-    "198fe063-VDBErodeSDF": {
-     "name": "VDBErodeSDF",
-     "inputs": {
-      "inoutSDF": [
-       "a21dc95d-PrimitiveToSDF",
-       "sdf",
-       null
-      ],
-      "depth": [
-       "b195d8bc-NumericFloat",
-       "value",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      199.0,
-      381.0
-     ],
-     "options": []
-    },
-    "947b7b5d-Assign": {
-     "name": "Assign",
-     "inputs": {
-      "dst": [
-       "8ada7307-ImportObjPrimitive",
-       "prim",
-       null
-      ],
-      "src": [
-       "140800ef-SDFToPoly",
+      "prim": [
+       "2bbde183-SDFToPoly",
        "Mesh",
        null
       ],
@@ -204,22 +110,42 @@
      },
      "params": {},
      "uipos": [
-      864.0,
-      277.0
+      1081.84,
+      17.639999999999986
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "cba003e7-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.1
+     },
+     "uipos": [
+      -140.07999999999993,
+      -243.94249999999988
      ],
      "options": []
     },
-    "86465825-ExportObjPrimitive": {
-     "name": "ExportObjPrimitive",
+    "4371eedb-VDBCutEar": {
+     "name": "VDBCutEar",
      "inputs": {
-      "path": [
-       "9191eb28-MakeWritePath",
-       "path",
+      "SDF": [
+       "0ab475e0-PrimitiveToSDF",
+       "sdf",
        null
       ],
-      "prim": [
-       "7d5926c6-PrimitiveCalcNormal",
-       "prim",
+      "depth": [
+       "cba003e7-NumericFloat",
+       "value",
        null
       ],
       "SRC": [
@@ -230,15 +156,39 @@
      },
      "params": {},
      "uipos": [
-      1560.8,
-      344.80000000000007
+      -127.0,
+      -42.0
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
-    "9191eb28-MakeWritePath": {
-     "name": "MakeWritePath",
+    "20d8a322-x": {
+     "name": "VDBCutEar",
+     "inputs": {
+      "SDF": [
+       "4371eedb-VDBCutEar",
+       "SDF",
+       null
+      ],
+      "depth": [
+       "3e250a6d-x",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      357.53999999999996,
+      -73.02875000000006
+     ],
+     "options": []
+    },
+    "3e250a6d-x": {
+     "name": "NumericFloat",
      "inputs": {
       "SRC": [
        null,
@@ -247,33 +197,33 @@
       ]
      },
      "params": {
-      "path": "/tmp/pig{frame}.obj"
+      "value": -0.1
      },
      "uipos": [
-      1268.8000000000002,
-      461.6
+      344.46000000000004,
+      -274.97124999999994
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -549,
-    "trans_y": 147
+    "scale": 1.0,
+    "trans_x": -188,
+    "trans_y": -399
    }
   },
   "VDBCutEar": {
    "nodes": {
-    "648c428d-x": {
+    "778db20f-x": {
      "name": "VDBErodeSDF",
      "inputs": {
       "inoutSDF": [
-       "fea52611-x",
+       "b0816afa-x",
        "inoutSDF",
        null
       ],
       "depth": [
-       "0dcdd2f9-x",
+       "74d2a871-x",
        "ret",
        null
       ],
@@ -285,16 +235,66 @@
      },
      "params": {},
      "uipos": [
-      1005.6800000000001,
-      376.92
+      697.61,
+      344.84
      ],
      "options": []
     },
-    "0dcdd2f9-x": {
+    "c6dd69d0-x": {
+     "name": "VDBErodeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "9b7bacef-SubInput",
+       "port",
+       null
+      ],
+      "depth": [
+       "a169da9a-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -17.610000000000014,
+      329.64
+     ],
+     "options": []
+    },
+    "b0816afa-x": {
+     "name": "VDBRenormalizeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "c6dd69d0-x",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "method": "1oUpwind",
+      "iterations": 4
+     },
+     "uipos": [
+      369.75,
+      264.15999999999997
+     ],
+     "options": []
+    },
+    "74d2a871-x": {
      "name": "NumericOperator",
      "inputs": {
       "lhs": [
-       "9d45805a-SubInput",
+       "a169da9a-SubInput",
        "port",
        null
       ],
@@ -313,62 +313,12 @@
       "op_type": "neg"
      },
      "uipos": [
-      661.52,
-      160.64
+      302.75,
+      521.16
      ],
      "options": []
     },
-    "c8b500fe-x": {
-     "name": "VDBErodeSDF",
-     "inputs": {
-      "inoutSDF": [
-       "64f2306f-SubInput",
-       "port",
-       null
-      ],
-      "depth": [
-       "9d45805a-SubInput",
-       "port",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      136.32000000000028,
-      304.72
-     ],
-     "options": []
-    },
-    "fea52611-x": {
-     "name": "VDBRenormalizeSDF",
-     "inputs": {
-      "inoutSDF": [
-       "c8b500fe-x",
-       "inoutSDF",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "method": "1oUpwind",
-      "iterations": 4
-     },
-     "uipos": [
-      577.52,
-      399.64000000000004
-     ],
-     "options": []
-    },
-    "64f2306f-SubInput": {
+    "9b7bacef-SubInput": {
      "name": "SubInput",
      "inputs": {
       "SRC": [
@@ -378,21 +328,41 @@
       ]
      },
      "params": {
-      "name": "inoutSDF",
+      "name": "SDF",
       "type": "",
       "defl": ""
      },
      "uipos": [
-      -213.0,
-      451.0
+      -355.0,
+      80.0
      ],
      "options": []
     },
-    "49b0f416-SubOutput": {
+    "a169da9a-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "depth",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -340.0,
+      486.0
+     ],
+     "options": []
+    },
+    "14f097e6-SubOutput": {
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "648c428d-x",
+       "778db20f-x",
        "inoutSDF",
        null
       ],
@@ -403,41 +373,21 @@
       ]
      },
      "params": {
-      "name": "inoutSDF",
+      "name": "SDF",
       "type": "",
       "defl": ""
      },
      "uipos": [
-      1323.0,
-      474.0
-     ],
-     "options": []
-    },
-    "9d45805a-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "sdfDepth",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      -207.0,
-      113.0
+      1044.0,
+      333.0
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -322,
-    "trans_y": 48
+    "scale": 0.6400000000000001,
+    "trans_x": -278,
+    "trans_y": 156
    }
   }
  },
@@ -7530,12 +7480,12 @@
    "inputs": [
     [
      "",
-     "inoutSDF",
+     "SDF",
      ""
     ],
     [
      "",
-     "sdfDepth",
+     "depth",
      ""
     ],
     [
@@ -7547,7 +7497,7 @@
    "outputs": [
     [
      "",
-     "inoutSDF",
+     "SDF",
      ""
     ],
     [
