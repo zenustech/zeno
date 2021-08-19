@@ -9,7 +9,7 @@ import numpy as np
 from PySide2.QtGui import *
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
-# from PySide2.QtOpenGL import *
+from PySide2.QtOpenGL import *
 
 from . import zenvis
 
@@ -92,9 +92,9 @@ class CameraControl:
         self.update_perspective()
 
 
-class ViewportWidget(QOpenGLWidget):
+class ViewportWidget(QGLWidget):
     def __init__(self, parent=None):
-        fmt = QSurfaceFormat()
+        fmt = QGLFormat()
         nsamples = os.environ.get('ZEN_MSAA')
         if not nsamples:
             nsamples = 16
@@ -102,9 +102,8 @@ class ViewportWidget(QOpenGLWidget):
             nsamples = int(nsamples)
         fmt.setSamples(nsamples)
         fmt.setVersion(3, 2)
-        fmt.setProfile(QSurfaceFormat.CoreProfile)
-        super().__init__(parent)
-        self.setFormat(fmt)
+        fmt.setProfile(QGLFormat.CoreProfile)
+        super().__init__(fmt, parent)
 
         self.camera = CameraControl()
         self.record_path = None
@@ -128,7 +127,7 @@ class ViewportWidget(QOpenGLWidget):
         zenvis.paintGL()
 
     def on_update(self):
-        self.update()
+        self.updateGL()
 
 @eval('lambda x: x()')
 def _():
