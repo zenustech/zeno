@@ -42,6 +42,9 @@ class RecordVideoDialog(QDialog):
         viewport_height = QLabel('Height:')
         self.viewport_height_eidtor = QLineEdit('720')
 
+        bit_rate = QLabel('Bit rate:')
+        self.bit_rate_eidtor = QLineEdit('2000')
+
         ok_button = QPushButton('OK')
         cancel_button = QPushButton('Cancel')
 
@@ -66,21 +69,23 @@ class RecordVideoDialog(QDialog):
         grid.addWidget(fps, 3, 0)
         grid.addWidget(self.fps_edit, 3, 1)
 
-        grid.addWidget(encoder, 4, 0)
-        grid.addWidget(self.encoder_combo, 4, 1)
+        grid.addWidget(bit_rate, 4, 0)
+        grid.addWidget(self.bit_rate_eidtor, 4, 1)
 
-        grid.addWidget(presets, 5, 0)
-        grid.addWidget(res_combo, 5, 1)
+        grid.addWidget(encoder, 5, 0)
+        grid.addWidget(self.encoder_combo, 5, 1)
 
-        grid.addWidget(viewport_width, 6, 0)
-        grid.addWidget(self.viewport_width_eidtor, 6, 1)
+        grid.addWidget(presets, 6, 0)
+        grid.addWidget(res_combo, 6, 1)
 
-        grid.addWidget(viewport_height, 7, 0)
-        grid.addWidget(self.viewport_height_eidtor, 7, 1)
+        grid.addWidget(viewport_width, 7, 0)
+        grid.addWidget(self.viewport_width_eidtor, 7, 1)
 
-        grid.addWidget(ok_button, 8, 0)
-        grid.addWidget(cancel_button, 8, 1)
+        grid.addWidget(viewport_height, 8, 0)
+        grid.addWidget(self.viewport_height_eidtor, 8, 1)
 
+        grid.addWidget(ok_button, 9, 0)
+        grid.addWidget(cancel_button, 9, 1)
 
         self.setLayout(grid) 
 
@@ -94,6 +99,7 @@ class RecordVideoDialog(QDialog):
         r['frame_start'] = self.frame_start_edit.value()
         r['frame_end'] = self.frame_end_edit.value()
         r['fps'] = self.fps_edit.value()
+        r['bit_rate'] = self.bit_rate_eidtor.text().strip() + 'k'
         r['width'] = int(self.viewport_width_eidtor.text())
         r['height'] = int(self.viewport_height_eidtor.text())
         r['encoder'] = self.encoder_combo.currentText().split()[0]
@@ -181,6 +187,7 @@ class RecordVideoDialog(QDialog):
             '-r', str(params['fps']), 
             '-i', png_paths, 
             '-c:v', params['encoder'],
+            '-b:v', params['bit_rate'],
             path
         ]
         print('Executing command:', cmd)
