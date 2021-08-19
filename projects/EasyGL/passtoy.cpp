@@ -280,6 +280,12 @@ struct PassToyImageTextureFromVoidPtrAndRes : zeno::INode {
         auto nx = res[0], ny = res[1];
         auto texture = std::make_shared<PassToyTexture>();
         zlog::info("loading image file from void ptr {}", p);
+        // >>> tianjia zhexie daima
+        auto img = (unsigned char *)p + 8;
+        for (int i = 0; i < nx * ny * 4; i += 4) {
+            std::swap(img[i + 0], img[i + 2]);
+        }
+        // <<< tianjia zhexie daima
         zlog::info("loaded {}x{} at {}", nx, ny, p);
         texture->tex.width = nx;
         texture->tex.height = ny;
