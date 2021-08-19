@@ -2,105 +2,11 @@
  "graph": {
   "main": {
    "nodes": {
-    "b124768e-MeshToSDF": {
-     "name": "MeshToSDF",
-     "inputs": {
-      "mesh": [
-       "0cfc3fb9-ReadObjMesh",
-       "mesh",
-       null
-      ],
-      "Dx": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "voxel_size": 0.08,
-      "type": "vertex"
-     },
-     "uipos": [
-      -251.37749999999997,
-      282.69750000000005
-     ],
-     "options": []
-    },
-    "0cfc3fb9-ReadObjMesh": {
-     "name": "ReadObjMesh",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "path": "/home/bate/zeno/assets/Pig_Head.obj"
-     },
-     "uipos": [
-      -520.1775,
-      324.93750000000006
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "06c3503f-MeshToPrimitive": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "0cfc3fb9-ReadObjMesh",
-       "mesh",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -268.6574999999998,
-      91.97749999999996
-     ],
-     "options": []
-    },
-    "868389b9-SDFToPoly": {
-     "name": "SDFToPoly",
-     "inputs": {
-      "SDF": [
-       "4da5e8bd-CombineVDB",
-       "FieldOut",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "isoValue": 0.0,
-      "adaptivity": 0.0
-     },
-     "uipos": [
-      1362.8500000000001,
-      269.8999999999999
-     ],
-     "options": []
-    },
     "7d5926c6-PrimitiveCalcNormal": {
      "name": "PrimitiveCalcNormal",
      "inputs": {
       "prim": [
-       "868389b9-SDFToPoly",
+       "140800ef-SDFToPoly",
        "Mesh",
        null
       ],
@@ -112,8 +18,8 @@
      },
      "params": {},
      "uipos": [
-      1619.49,
-      317.26000000000005
+      2787.516962890625,
+      502.06527832031236
      ],
      "options": [
       "VIEW"
@@ -145,8 +51,8 @@
      },
      "params": {},
      "uipos": [
-      360.03249999999997,
-      291.1775000000001
+      436.0325,
+      201.17750000000012
      ],
      "options": []
     },
@@ -160,7 +66,7 @@
       ]
      },
      "params": {
-      "value": "@val += 0.1"
+      "value": "@val += 0.05"
      },
      "uipos": [
       293.4724999999999,
@@ -172,13 +78,13 @@
      "name": "CombineVDB",
      "inputs": {
       "FieldA": [
-       "f7a1e4db-VDBWrangle",
-       "grid",
+       "a21dc95d-PrimitiveToSDF",
+       "sdf",
        null
       ],
       "FieldB": [
-       "b124768e-MeshToSDF",
-       "sdf",
+       "6cc08743-x",
+       "grid",
        null
       ],
       "SRC": [
@@ -190,11 +96,11 @@
      "params": {
       "MultiplierA": 1.0,
       "MultiplierB": 1.0,
-      "OpType": "CSGUnion"
+      "OpType": "CSGDifference"
      },
      "uipos": [
-      861.9875000000001,
-      455.3374999999999
+      2035.3119628906247,
+      426.23996582031225
      ],
      "options": []
     },
@@ -202,7 +108,7 @@
      "name": "Clone",
      "inputs": {
       "object": [
-       "b124768e-MeshToSDF",
+       "a21dc95d-PrimitiveToSDF",
        "sdf",
        null
       ],
@@ -218,12 +124,177 @@
       247.0
      ],
      "options": []
+    },
+    "7d54affb-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "@val -= 0.05"
+     },
+     "uipos": [
+      1349.7710253906243,
+      -186.1303466796876
+     ],
+     "options": []
+    },
+    "6cc08743-x": {
+     "name": "VDBWrangle",
+     "inputs": {
+      "grid": [
+       "f7a1e4db-VDBWrangle",
+       "grid",
+       null
+      ],
+      "zfxCode": [
+       "7d54affb-x",
+       "value",
+       null
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "ea6d01c8-VDBRenormalizeSDF",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1491.531025390624,
+      232.66965332031248
+     ],
+     "options": []
+    },
+    "140800ef-SDFToPoly": {
+     "name": "SDFToPoly",
+     "inputs": {
+      "SDF": [
+       "4da5e8bd-CombineVDB",
+       "FieldOut",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isoValue": 0.0,
+      "adaptivity": 0.0
+     },
+     "uipos": [
+      2374.003906249998,
+      452.3437499999999
+     ],
+     "options": []
+    },
+    "ea6d01c8-VDBRenormalizeSDF": {
+     "name": "VDBRenormalizeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "f7a1e4db-VDBWrangle",
+       "grid",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "method": "1oUpwind",
+      "iterations": 4
+     },
+     "uipos": [
+      986.4000000000003,
+      291.99999999999994
+     ],
+     "options": []
+    },
+    "a5bf8310-MakeReadPath": {
+     "name": "MakeReadPath",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": "/home/bate/zeno/assets/Pig_Head.obj"
+     },
+     "uipos": [
+      -778.0,
+      357.0
+     ],
+     "options": []
+    },
+    "8ada7307-ImportObjPrimitive": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       "a5bf8310-MakeReadPath",
+       "path",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -516.0,
+      338.0
+     ],
+     "options": []
+    },
+    "a21dc95d-PrimitiveToSDF": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "8ada7307-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "Dx": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "voxel_size": 0.04,
+      "type": "vertex"
+     },
+     "uipos": [
+      -221.0,
+      311.0
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -396,
-    "trans_y": -278
+    "trans_x": 946,
+    "trans_y": -43
    }
   }
  },

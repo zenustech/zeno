@@ -1,4 +1,3 @@
-
 #include <openvdb/openvdb.h>
 #include <zeno/zeno.h>
 #include <zeno/VDBGrid.h>
@@ -113,14 +112,15 @@ struct CombineVDB : zeno::INode{
         {
           openvdb::tools::csgUnion(*(dataf->m_grid), *(source->m_grid));
         }
-        if(OpType==std::string("CSGIntersection"))
+        else if(OpType==std::string("CSGIntersection"))
         {
           openvdb::tools::csgIntersection(*(dataf->m_grid), *(source->m_grid));
         }
-        if(OpType==std::string("CSGDifference"))
+        else if(OpType==std::string("CSGDifference"))
         {
           openvdb::tools::csgDifference(*(dataf->m_grid), *(source->m_grid));
         }
+        else { throw zeno::Exception("bad CSG optype: " + OpType); }
         source->m_grid = dataft->deepCopy();
         set_output("FieldOut", dataf);
     }
