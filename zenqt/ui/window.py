@@ -61,10 +61,11 @@ class MainWindow(QWidget):
         self.timer.timeout.connect(self.on_update)
 
     def setWindowTitleWithPostfix(self, postfix):
+        from .. import version
+        title = 'ZENO Qt Editor ({})'.format(version)
         if postfix:
-            self.setWindowTitle('ZENO Qt Editor - {}'.format(postfix))
-        else:
-            self.setWindowTitle('ZENO Qt Editor')
+            title = '{} - [{}]'.format(title, postfix)
+        self.setWindowTitle(title)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:

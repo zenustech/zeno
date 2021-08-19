@@ -4,9 +4,8 @@
 block_cipher = None
 
 dlls=[
-    ( '../ZenoBin/lib*.so*', '.' ),
-    ( '../ZenoBin/extra/lib*.so*', '.' ),
-    ( '../ZenoBin/pylib_*.so', 'ZenoBin' ),
+    ( '../zenqt/bin/lib*.so*', '.' ),
+    ( '../zenqt/bin/pylib_*.so', 'zenqt/bin' ),
 ]
 assets=[
     ( '../zenqt/assets/*',  'zenqt/assets' ),

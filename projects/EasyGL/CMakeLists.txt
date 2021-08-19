@@ -1,4 +1,4 @@
-add_library(zeno_EasyGL SHARED dummy.cpp)
+add_library(zeno_EasyGL SHARED)
 target_include_directories(zeno_EasyGL PRIVATE .)
 
 target_link_libraries(zeno_EasyGL PUBLIC zeno)
