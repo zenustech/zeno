@@ -18,8 +18,8 @@
      },
      "params": {},
      "uipos": [
-      2787.516962890625,
-      502.06527832031236
+      962.5657910156256,
+      419.66781738281236
      ],
      "options": [
       "VIEW"
@@ -29,7 +29,7 @@
      "name": "SDFToPoly",
      "inputs": {
       "SDF": [
-       "5919511a-VDBErodeSDF",
+       "bacf6f27-VDBCutEar",
        "inoutSDF",
        null
       ],
@@ -44,8 +44,8 @@
       "adaptivity": 0.0
      },
      "uipos": [
-      2374.003906249998,
-      452.3437499999999
+      549.0527343749986,
+      369.9462890624999
      ],
      "options": []
     },
@@ -117,16 +117,69 @@
      ],
      "options": []
     },
-    "5919511a-VDBErodeSDF": {
+    "fd6da640-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.1
+     },
+     "uipos": [
+      155.8000000000003,
+      139.71999999999989
+     ],
+     "options": []
+    },
+    "bacf6f27-VDBCutEar": {
+     "name": "VDBCutEar",
+     "inputs": {
+      "inoutSDF": [
+       "a21dc95d-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "sdfDepth": [
+       "fd6da640-x",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      153.74999999999966,
+      354.9999999999999
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1.25,
+    "trans_x": -258,
+    "trans_y": 55
+   }
+  },
+  "VDBCutEar": {
+   "nodes": {
+    "648c428d-x": {
      "name": "VDBErodeSDF",
      "inputs": {
       "inoutSDF": [
-       "fc1f5fc8-VDBRenormalizeSDF",
+       "fea52611-x",
        "inoutSDF",
        null
       ],
       "depth": [
-       "ddce5788-NumericOperator",
+       "0dcdd2f9-x",
        "ret",
        null
       ],
@@ -138,85 +191,17 @@
      },
      "params": {},
      "uipos": [
-      1432.16,
-      237.28000000000003
+      1005.6800000000001,
+      376.92
      ],
      "options": []
     },
-    "fc1f5fc8-VDBRenormalizeSDF": {
-     "name": "VDBRenormalizeSDF",
-     "inputs": {
-      "inoutSDF": [
-       "72e38564-x",
-       "inoutSDF",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "method": "1oUpwind",
-      "iterations": 4
-     },
-     "uipos": [
-      1004.0,
-      260.00000000000006
-     ],
-     "options": []
-    },
-    "fd6da640-x": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 0.09
-     },
-     "uipos": [
-      470.80000000000007,
-      -55.280000000000015
-     ],
-     "options": []
-    },
-    "72e38564-x": {
-     "name": "VDBErodeSDF",
-     "inputs": {
-      "inoutSDF": [
-       "a21dc95d-PrimitiveToSDF",
-       "sdf",
-       null
-      ],
-      "depth": [
-       "fd6da640-x",
-       "value",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      562.8000000000003,
-      164.08000000000004
-     ],
-     "options": []
-    },
-    "ddce5788-NumericOperator": {
+    "0dcdd2f9-x": {
      "name": "NumericOperator",
      "inputs": {
       "lhs": [
-       "fd6da640-x",
-       "value",
+       "9d45805a-SubInput",
+       "port",
        null
       ],
       "rhs": [
@@ -234,16 +219,131 @@
       "op_type": "neg"
      },
      "uipos": [
-      1088.0,
-      21.0
+      661.52,
+      160.64
+     ],
+     "options": []
+    },
+    "c8b500fe-x": {
+     "name": "VDBErodeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "64f2306f-SubInput",
+       "port",
+       null
+      ],
+      "depth": [
+       "9d45805a-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      136.32000000000028,
+      304.72
+     ],
+     "options": []
+    },
+    "fea52611-x": {
+     "name": "VDBRenormalizeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "c8b500fe-x",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "method": "1oUpwind",
+      "iterations": 4
+     },
+     "uipos": [
+      577.52,
+      399.64000000000004
+     ],
+     "options": []
+    },
+    "64f2306f-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "inoutSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -213.0,
+      451.0
+     ],
+     "options": []
+    },
+    "49b0f416-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "648c428d-x",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "inoutSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1323.0,
+      474.0
+     ],
+     "options": []
+    },
+    "9d45805a-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "sdfDepth",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -207.0,
+      113.0
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.0,
-    "trans_x": 306,
-    "trans_y": -221
+    "trans_x": -322,
+    "trans_y": 48
    }
   }
  },
@@ -7331,6 +7431,42 @@
    "categories": [
     "openvdb"
    ]
+  },
+  "VDBCutEar": {
+   "inputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "sdfDepth",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],
