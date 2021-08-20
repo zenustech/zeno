@@ -85,6 +85,31 @@ class QDMGraphicsParam_int(QDMGraphicsParam):
         return int(text)
 
 
+class QDMGraphicsParam_bool(QDMGraphicsParam):
+    def initLayout(self):
+        super().initLayout()
+
+        self.validator = QIntValidator()
+        self.edit.setValidator(self.validator)
+
+    def setDefault(self, default):
+        if not default: return
+        default = [bool(int(x)) for x in default.split()]
+        if len(default) == 1:
+            x = default[0]
+            self.setValue(x)
+        else:
+            assert False, default
+
+    def setValue(self, x):
+        super().setValue(str(int(x)))
+
+    def getValue(self):
+        text = super().getValue()
+        if not text: return None
+        return bool(int(text))
+
+
 class QDMGraphicsParam_float(QDMGraphicsParam):
     def initLayout(self):
         super().initLayout()
