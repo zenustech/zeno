@@ -9,10 +9,11 @@
 int main(void)
 {
     std::string kernel1 = R"CLC(
-        kernel void updateGlobal() {
-          printf("Hello, World!\n");
+        kernel void updateGlobal(int x) {
+          printf("Hello, the value is %d\n", x);
         }
     )CLC";
+
     cl::Program program({kernel1});
     try {
         program.build("-cl-std=CL2.0");
@@ -24,7 +25,12 @@ int main(void)
         }
         return 1;
     }
+
+    cl::Image2D img;
+
     cl::KernelFunctor<> kernel(program, "updateGlobal");
+    kernel.getKernel().setArg(0, 42);
     kernel(cl::EnqueueArgs(cl::NDRange(1)));
+
     return 0;
 }
