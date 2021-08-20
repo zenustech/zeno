@@ -30,7 +30,7 @@ struct Make2DGridPrimitive : INode {
         }
 
 
-    if (get_param<int>("isCentered"))
+    if (get_param<bool>("isCentered"))
       o -= (ax + ay) / 2;
     ax *= dx; ay *= dy;
 
@@ -48,7 +48,7 @@ struct Make2DGridPrimitive : INode {
       pos[i] = p;
       // }
     }
-    if (get_param<int>("hasFaces")) {
+    if (get_param<bool>("hasFaces")) {
         prim->tris.resize((nx - 1) * (ny - 1) * 2);
 #pragma omp parallel for
         for (int index = 0; index < (nx - 1) * (ny - 1); index++) {
@@ -77,8 +77,8 @@ ZENDEFNODE(Make2DGridPrimitive,
         }, /* outputs: */ {
         {"PrimitiveObject", "prim"},
         }, /* params: */ {
-        {"int", "isCentered", "0"},
-        {"int", "hasFaces", "1"},
+        {"bool", "isCentered", "0"},
+        {"bool", "hasFaces", "1"},
         }, /* category: */ {
         "primitive",
         }});
@@ -112,7 +112,7 @@ struct Make3DGridPrimitive : INode {
         }
 
 
-    if (get_param<int>("isCentered"))
+    if (get_param<bool>("isCentered"))
       o -= (ax + ay + az) / 2;
     ax *= dx; ay *= dy; az *= dz;
 
@@ -140,7 +140,7 @@ ZENDEFNODE(Make3DGridPrimitive,
         }, /* outputs: */ {
         "prim",
         }, /* params: */ {
-        {"int", "isCentered", "0"},
+        {"bool", "isCentered", "0"},
         }, /* category: */ {
         "primitive",
         }});
