@@ -15,8 +15,7 @@ else:
 version = int(time.strftime('%Y')), int(time.strftime('%m')), int(time.strftime('%d'))
 version = '{}.{}.{}'.format(*version)
 
-print('==> building release for version={} os_name={}'.format(version, os_name))
-subprocess.check_call([sys.executable, 'build.py'])
+print('==> release version={} os_name={}'.format(version, os_name))
 
 if os_name == 'linux':
     print('==> copying linux shared libraries')
