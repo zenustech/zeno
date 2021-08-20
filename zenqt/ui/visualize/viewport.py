@@ -198,7 +198,6 @@ class DisplayWidget(QWidget):
         self.view.parent_widget = self
         self.layout.addWidget(self.view)
 
-        self.params = {}
         self.record_video = RecordVideoDialog(self)
 
     def on_update(self):

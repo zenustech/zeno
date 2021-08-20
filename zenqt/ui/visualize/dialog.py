@@ -18,7 +18,7 @@ class RecordVideoDialog(QDialog):
 
         self.setWindowTitle('Record screen')   
         self.display = display 
-        self.params = display.params
+        self.params = {}
         self.initUI()
 
     def initUI(self):
@@ -204,9 +204,8 @@ class RecordVideoDialog(QDialog):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    r = {}
-    ex = Example(r)
+    ex = RecordVideoDialog(None)
     ex.open()
-    print(r)
+    print(ex.params)
 
     sys.exit(app.exec_())
