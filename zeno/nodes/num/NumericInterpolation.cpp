@@ -56,7 +56,7 @@ struct NumericInterpolation : zeno::INode {
         auto srcMax = has_input("srcMax") ? get_input<zeno::NumericObject>("srcMax")->value : 1;
         auto dstMin = has_input("dstMin") ? get_input<zeno::NumericObject>("dstMin")->value : 0;
         auto dstMax = has_input("dstMax") ? get_input<zeno::NumericObject>("dstMax")->value : 1;
-        bool isClamped = get_param<int>("isClamped");
+        auto isClamped = get_param<bool>("isClamped");
 
         zeno::NumericValue fac;
         std::visit([&fac, isClamped] (auto src, auto srcMin, auto srcMax) {
@@ -82,7 +82,7 @@ ZENDEFNODE(NumericInterpolation, {
      {"NumericObject", "srcMax"}, {"NumericObject", "dstMin"},
      {"NumericObject", "dstMax"}},
     {{"NumericObject", "dst"}},
-    {{"int", "isClamped", "0"}},
+    {{"bool", "isClamped", "0"}},
     {"numeric"},
 });
 

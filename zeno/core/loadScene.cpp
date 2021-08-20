@@ -15,6 +15,8 @@ static T generic_get(Value const &x) {
         return x.GetInt();
     } else if (x.IsFloat()) {
         return x.GetFloat();
+    } else if (x.IsBool()) {
+        return x.GetBool();
     } else {
         return 0;
     }

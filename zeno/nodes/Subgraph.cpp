@@ -26,6 +26,7 @@ ZENDEFNODE(FinalOutput, {
 });
 
 
+#if 0
 struct SubEndpoint : zeno::INode {
     virtual void complete() override {
         auto name = get_param<std::string>("name");
@@ -58,6 +59,8 @@ ZENDEFNODE(SubEndpoint, {
     {{"string", "name", "Cube"}},
     {"subgraph"},
 });
+#endif
+
 
 struct SubInput : zeno::INode {
     virtual void complete() override {
@@ -67,15 +70,24 @@ struct SubInput : zeno::INode {
 
     virtual void apply() override {
         auto name = get_param<std::string>("name");
+
         if (auto it = graph->subInputs.find(name);
-                it == graph->subInputs.end()) {
-            set_output2("hasValue",
-                    std::make_shared<zeno::ConditionObject>(false));
-        } else {
+                it != graph->subInputs.end()) {
             auto obj = it->second;
             set_output2("port", std::move(obj));
             set_output2("hasValue",
                     std::make_shared<zeno::ConditionObject>(true));
+
+        } else if (auto it = graph->subInputPromises.find(name);
+                it != graph->subInputPromises.end()) {
+            auto obj = it->second();
+            set_output2("port", std::move(obj));
+            set_output2("hasValue",
+                    std::make_shared<zeno::ConditionObject>(true));
+
+        } else {
+            set_output2("hasValue",
+                    std::make_shared<zeno::ConditionObject>(false));
         }
     }
 };
@@ -107,6 +119,32 @@ struct SubOutput : zeno::INode {
 };
 
 ZENDEFNODE(SubOutput, {
+    {"port"},
+    {},
+    {{"string", "name", "output1"},
+     {"string", "type", ""},
+     {"string", "defl", ""}},
+    {"subgraph"},
+});
+
+
+struct SetSubOutput : zeno::INode {
+    virtual void complete() override {
+        auto name = get_param<std::string>("name");
+        graph->subOutputNodes[name] = myname;
+        graph->finalOutputNodes.insert(myname);
+    }
+
+    virtual void apply() override {
+        if (has_input2("port")) {
+            auto name = get_param<std::string>("name");
+            auto obj = get_input2("port");
+            graph->subOutputs[name] = std::move(obj);
+        }
+    }
+};
+
+ZENDEFNODE(SetSubOutput, {
     {"port"},
     {},
     {{"string", "name", "output1"},

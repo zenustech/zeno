@@ -4,6 +4,20 @@ if (UNIX)
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/lib/cmake/OpenVDB)
 endif()
 
+####################################################
+# FUN FACT: DID U KNOW THAT MICROSOFT LOVES LINUX? #
+####################################################
+if (MSVC)  # must use this to make msvc linker happy
+    add_compile_options(
+            $<$<CONFIG:>:/bigobj>
+            $<$<CONFIG:Debug>:/bigobj>
+            $<$<CONFIG:Release>:/bigobj>
+    )  # 节数超过对象文件格式限制: 请使用 /bigobj 进行编译 
+endif()
+####################################################
+# FUN FACT: DID U KNOW THAT MICROSOFT BUYS GITHUB? #
+####################################################
+
 add_library(zeno_zenvdb SHARED ${PROJECT_SOURCE})
 target_include_directories(zeno_zenvdb PUBLIC include)
 target_include_directories(zeno_zenvdb PRIVATE ../oldzenbase/include)

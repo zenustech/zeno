@@ -6,7 +6,7 @@ import numpy as np
 from PySide2.QtGui import *
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
-from PySide2.QtOpenGL import *
+# from PySide2.QtOpenGL import *
 
 from . import zenvis
 from .dialog import *
@@ -90,9 +90,9 @@ class CameraControl:
         self.update_perspective()
 
 
-class ViewportWidget(QGLWidget):
+class ViewportWidget(QOpenGLWidget):
     def __init__(self, parent=None):
-        fmt = QGLFormat()
+        fmt = QSurfaceFormat()
         nsamples = os.environ.get('ZEN_MSAA')
         if not nsamples:
             nsamples = 16
@@ -100,8 +100,9 @@ class ViewportWidget(QGLWidget):
             nsamples = int(nsamples)
         fmt.setSamples(nsamples)
         fmt.setVersion(3, 2)
-        fmt.setProfile(QGLFormat.CoreProfile)
-        super().__init__(fmt, parent)
+        fmt.setProfile(QSurfaceFormat.CoreProfile)
+        super().__init__(parent)
+        self.setFormat(fmt)
 
         self.camera = CameraControl()
         self.record_path = None
@@ -114,9 +115,24 @@ class ViewportWidget(QGLWidget):
         self.camera.res = (nx, ny)
         self.camera.update_perspective()
 
+'''
     def paintGL(self):
-        self.check_record()
         zenvis.paintGL()
+        if self.record_path:
+            old_res = self.camera.res
+            self.camera.res = self.record_res
+            self.camera.update_perspective()
+            zenvis.recordGL(self.record_path)
+            self.camera.res = old_res
+            self.camera.update_perspective()
+
+    def on_update(self):
+        self.update()
+        '''
+
+    def paintGL(self):
+        zenvis.paintGL()
+        self.check_record()
 
     def check_record(self):
         f = zenvis.status['frameid']
@@ -131,7 +147,7 @@ class ViewportWidget(QGLWidget):
                 self.parent_widget.record_video.finish_record()
 
     def on_update(self):
-        self.updateGL()
+        self.update()
 
 @eval('lambda x: x()')
 def _():

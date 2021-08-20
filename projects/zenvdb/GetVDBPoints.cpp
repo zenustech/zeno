@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/ParticlesObject.h>
+#include <zeno/PrimitiveObject.h>
 #include <zeno/VDBGrid.h>
-#include <omp.h>
 
 namespace zeno {
 
@@ -52,6 +52,62 @@ static int defGetVDBPoints = zeno::defNodeClass<GetVDBPoints>("GetVDBPoints",
         "grid",
     }, /* outputs: */ {
         "pars",
+    }, /* params: */ {
+    }, /* category: */ {
+      "openvdb",
+    }});
+
+
+struct VDBPointsToPrimitive : zeno::INode {
+  virtual void apply() override {
+    auto grid = get_input("grid")->as<VDBPointsGrid>()->m_grid;
+
+    std::vector<openvdb::points::PointDataTree::LeafNodeType*> leafs;
+    grid->tree().getNodes(leafs);
+    printf("GetVDBPoints: particle leaf nodes: %d\n", leafs.size());
+
+    auto transform = grid->transformPtr();
+
+    auto ret = zeno::IObject::make<zeno::PrimitiveObject>();
+    auto &retpos = ret->add_attr<zeno::vec3f>("pos");
+    auto &retvel = ret->add_attr<zeno::vec3f>("vel");
+
+    for (auto const &leaf: leafs) {
+      //attributes
+      // Attribute reader
+      // Extract the position attribute from the leaf by name (P is position).
+      openvdb::points::AttributeArray& positionArray =
+        leaf->attributeArray("P");
+      // Extract the velocity attribute from the leaf by name (v is velocity).
+      openvdb::points::AttributeArray& velocityArray =
+        leaf->attributeArray("v");
+
+      using PositionCodec = openvdb::points::FixedPointCodec</*one byte*/false>;
+      using VelocityCodec = openvdb::points::TruncateCodec;
+      // Create read handles for position and velocity
+      openvdb::points::AttributeHandle<openvdb::Vec3f, PositionCodec> positionHandle(positionArray);
+      openvdb::points::AttributeHandle<openvdb::Vec3f, VelocityCodec> velocityHandle(velocityArray);
+
+      for (auto iter = leaf->beginIndexOn(); iter; ++iter) {
+        openvdb::Vec3R p = positionHandle.get(*iter);
+        p += iter.getCoord().asVec3d();
+        // https://people.cs.clemson.edu/~jtessen/cpsc8190/OpenVDB-dpawiki.pdf
+        p = transform->indexToWorld(p);
+        openvdb::Vec3R v = velocityHandle.get(*iter);
+        retpos.emplace_back(p[0], p[1], p[2]);
+        retvel.emplace_back(v[0], v[1], v[2]);
+      }
+    }
+    ret->resize(retpos.size());
+    set_output("prim", ret);
+  }
+};
+
+static int defVDBPointsToPrimitive = zeno::defNodeClass<VDBPointsToPrimitive>("VDBPointsToPrimitive",
+    { /* inputs: */ {
+        "grid",
+    }, /* outputs: */ {
+        "prim",
     }, /* params: */ {
     }, /* category: */ {
       "openvdb",
