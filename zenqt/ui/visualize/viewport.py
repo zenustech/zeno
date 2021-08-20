@@ -9,7 +9,7 @@ from PySide2.QtWidgets import *
 # from PySide2.QtOpenGL import *
 
 from . import zenvis
-from .dialog import *
+from .dialog import RecordVideoDialog
 
 
 class CameraControl:
@@ -114,21 +114,6 @@ class ViewportWidget(QOpenGLWidget):
     def resizeGL(self, nx, ny):
         self.camera.res = (nx, ny)
         self.camera.update_perspective()
-
-'''
-    def paintGL(self):
-        zenvis.paintGL()
-        if self.record_path:
-            old_res = self.camera.res
-            self.camera.res = self.record_res
-            self.camera.update_perspective()
-            zenvis.recordGL(self.record_path)
-            self.camera.res = old_res
-            self.camera.update_perspective()
-
-    def on_update(self):
-        self.update()
-        '''
 
     def paintGL(self):
         zenvis.paintGL()

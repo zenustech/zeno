@@ -196,7 +196,7 @@ class RecordVideoDialog(QDialog):
             msg = 'Saved video to {}!'.format(path)
             QMessageBox.information(display, 'Record Video', msg)
         except subprocess.CalledProcessError:
-            msg = 'Encoding error, please use libx264 (linux) / h264_mf (win)!'.format(path)
+            msg = 'Encoding error, please try use libx264 (linux) / h264_mf (win)!'.format(path)
             QMessageBox.critical(display, 'Record Video', msg)
         finally:
             shutil.rmtree(tmp_path, ignore_errors=True)
