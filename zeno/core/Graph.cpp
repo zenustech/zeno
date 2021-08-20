@@ -17,9 +17,9 @@ ZENO_API Context::Context(Context const &other)
 ZENO_API Graph::Graph() = default;
 ZENO_API Graph::~Graph() = default;
 
-ZENO_API void Graph::setGraphEndpointGetter(std::string const &id,
+ZENO_API void Graph::setGraphInputPromise(std::string const &id,
         std::function<zany()> getter) {
-    subEndpointGetters[id] = std::move(getter);
+    subInputPromises[id] = std::move(getter);
 }
 
 ZENO_API void Graph::setGraphInput2(std::string const &id, zany obj) {
@@ -121,26 +121,5 @@ ZENO_API std::set<std::string> Graph::getGraphOutputNames() const {
     }
     return res;
 }
-
-ZENO_API std::set<std::string> Graph::getGraphEndpointNames() const {
-    std::set<std::string> res;
-    for (auto const &[id, _]: subEndpointNodes) {
-        res.insert(id);
-    }
-    return res;
-}
-
-ZENO_API std::set<std::string> Graph::getGraphEndpointSetNames() const {
-    std::set<std::string> res;
-    for (auto const &[id, _]: subEndpointSetValues) {
-        res.insert(id);
-    }
-    return res;
-}
-
-ZENO_API zany const &Graph::getGraphEndpointSetValue(std::string const &id) const {
-    return safe_at(subEndpointSetValues, id, "endpoint set value");
-}
-
 
 }

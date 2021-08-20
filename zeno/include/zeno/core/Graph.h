@@ -35,13 +35,11 @@ struct Graph {
 
     std::map<std::string, zany> subInputs;
     std::map<std::string, zany> subOutputs;
-    std::map<std::string, std::function<zany()>> subEndpointGetters;
-    std::map<std::string, zany> subEndpointSetValues;
+    std::map<std::string, std::function<zany()>> subInputPromises;
 
     std::set<std::string> finalOutputNodes;
     std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;
-    std::map<std::string, std::set<std::string>> subEndpointNodes;
 
     std::map<std::string, std::string> portalIns;
     std::map<std::string, zany> portals;
@@ -56,15 +54,12 @@ struct Graph {
 
     ZENO_API std::set<std::string> getGraphInputNames() const;
     ZENO_API std::set<std::string> getGraphOutputNames() const;
-    ZENO_API std::set<std::string> getGraphEndpointNames() const;
-    ZENO_API std::set<std::string> getGraphEndpointSetNames() const;
 
-    ZENO_API void setGraphEndpointGetter(std::string const &id,
+    ZENO_API void setGraphInputPromise(std::string const &id,
             std::function<zany()> getter);
 
     ZENO_API void setGraphInput2(std::string const &id, zany obj);
     ZENO_API zany const &getGraphOutput2(std::string const &id) const;
-    ZENO_API zany const &getGraphEndpointSetValue(std::string const &id) const;
     ZENO_API void applyGraph();
 
     void setGraphInput(std::string const &id,
