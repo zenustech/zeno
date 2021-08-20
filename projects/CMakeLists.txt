@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 set(EXTENSIONS_LIST ZenoFX oldzenbase zenvdb FastFLIP gmpm mesher Euler Rigid ZMS OldZFX EasyGL bmeshops)
-set(EXTENSIONS_ENABLE_LIST ZenoFX oldzenbase Rigid)
+set(EXTENSIONS_ENABLE_LIST ZenoFX oldzenbase)
 
 foreach (name IN ITEMS ${EXTENSIONS_LIST})
     if (${name} IN_LIST EXTENSIONS_ENABLE_LIST)

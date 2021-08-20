@@ -25,9 +25,9 @@ if os_name == 'linux':
 print('==> invoking pyinstaller for packaging')
 subprocess.check_call([sys.executable, '-m', 'PyInstaller', 'scripts/launcher_{}.spec'.format(os_name), '-y'] + sys.argv[1:])
 
-print('==> appending version informations')
-with open('dist/zenqt/__init__.py', 'a') as f:
-    f.write('\nversion = {}\n', repr(version))
+#print('==> appending version informations')
+#with open('dist/launcher/zenqt/__init__.py', 'a') as f:
+#    f.write('\nversion = {}\n'.format(repr(version)))
 
 zipname = 'dist/zeno-{}-{}'.format(os_name, version)
 print('==> creating zip archive at {}'.format(zipname))

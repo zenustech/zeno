@@ -28,6 +28,7 @@ namespace zeno {
     //openvdb::tools::signedFloodFill(inoutSDF->m_grid->tree());
 
     
+    set_output("inoutSDF", get_input("inoutSDF"));
   }
 };
 
@@ -35,6 +36,7 @@ static int defVDBRenormalizeSDF = zeno::defNodeClass<VDBRenormalizeSDF>("VDBReno
      { /* inputs: */ {
      "inoutSDF", 
      }, /* outputs: */ {
+     "inoutSDF",
      }, /* params: */ {
          {"string", "method", "1oUpwind"},
          {"int", "iterations", "4"},
@@ -62,6 +64,33 @@ static int defVDBDilateTopo = zeno::defNodeClass<VDBDilateTopo>("VDBDilateTopo",
      "openvdb",
      }});
 
+struct VDBErodeSDF : zeno::INode {
+  virtual void apply() override {
+    auto inoutSDF = get_input("inoutSDF")->as<VDBFloatGrid>();
+    auto grid = inoutSDF->m_grid;
+    auto depth = get_input("depth")->as<zeno::NumericObject>()->get<float>();
+    auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
+        for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
+            iter.modifyValue([&](auto &v) {
+                v += depth;
+            });
+        }
+    };
+    auto velman = openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>>(grid->tree());
+    velman.foreach(wrangler);
+    set_output("inoutSDF", get_input("inoutSDF"));
+  }
+};
+
+static int defVDBErodeSDF = zeno::defNodeClass<VDBErodeSDF>("VDBErodeSDF",
+     { /* inputs: */ {
+     "inoutSDF", "depth", 
+     }, /* outputs: */ {
+       "inoutSDF",
+     }, /* params: */ {
+     }, /* category: */ {
+     "openvdb",
+     }});
 
 
 }

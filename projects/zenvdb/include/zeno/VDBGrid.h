@@ -62,11 +62,19 @@ struct VDBGrid : zeno::IObject {
 };
 
 template <typename GridT>
-// struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
-struct VDBGridWrapper : VDBGrid {
+struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
   typename GridT::Ptr m_grid;
 
   VDBGridWrapper() { m_grid = GridT::create(); }
+
+  VDBGridWrapper(VDBGridWrapper const &other) {
+      m_grid = other.m_grid->deepCopy();
+  }
+
+  VDBGridWrapper &operator=(VDBGridWrapper const &other) {
+      m_grid = other.m_grid->deepCopy();
+      return *this;
+  }
 
   // using VDBGrid::GeneralVdbGrid;
   // GeneralVdbGrid getGrid() override {
