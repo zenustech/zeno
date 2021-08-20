@@ -3,6 +3,20 @@ set(CMAKE_CXX_STANDARD 17)
 project(zeno_FastFLIP)
 add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)  
 
+####################################################
+# FUN FACT: DID U KNOW THAT MICROSOFT LOVES LINUX? #
+####################################################
+if (MSVC)  # must use this to make msvc linker happy
+    add_compile_options(
+            $<$<CONFIG:>:/bigobj>
+            $<$<CONFIG:Debug>:/bigobj>
+            $<$<CONFIG:Release>:/bigobj>
+    )  # 节数超过对象文件格式限制: 请使用 /bigobj 进行编译 
+endif()
+####################################################
+# FUN FACT: DID U KNOW THAT MICROSOFT BUYS GITHUB? #
+####################################################
+
 # add cmake file
 include (common)
 
