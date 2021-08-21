@@ -543,9 +543,9 @@
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -1863,
-    "trans_y": 1570
+    "scale": 0.6400000000000001,
+    "trans_x": -821,
+    "trans_y": -78
    }
   },
   "FLIPSimTemplate": {
@@ -2447,6 +2447,408 @@
     "trans_x": -417,
     "trans_y": -110
    }
+  },
+  "MakeFLIP": {
+   "nodes": {
+    "7cfd688e-x": {
+     "name": "SetFLIPWorld",
+     "inputs": {
+      "Dx": [
+       "7661c89f-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "dx": 0.08
+     },
+     "uipos": [
+      238.92999999999995,
+      443.94000000000005
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "53641771-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "Pressure": [
+       "7cfd688e-x",
+       "Pressure",
+       null
+      ],
+      "Divergence": [
+       "7cfd688e-x",
+       "Divergence",
+       null
+      ],
+      "CellFWeight": [
+       "7cfd688e-x",
+       "CellFWeight",
+       null
+      ],
+      "Velocity": [
+       "7cfd688e-x",
+       "Velocity",
+       null
+      ],
+      "PostAdvVelocity": [
+       "7cfd688e-x",
+       "PostAdvVelocity",
+       null
+      ],
+      "VelocityWeights": [
+       "7cfd688e-x",
+       "VelocityWeights",
+       null
+      ],
+      "LiquidSDF": [
+       "7cfd688e-x",
+       "LiquidSDF",
+       null
+      ],
+      "ExtractedLiquidSDF": [
+       "7cfd688e-x",
+       "ExtractedLiquidSDF",
+       null
+      ],
+      "Dx": [
+       "7661c89f-SubInput",
+       "port",
+       null
+      ],
+      "obj9": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "Pressure\nDivergence\nCellFWeight\nVelocity\nPostAdvVelocity\nVelocityWeights\nLiquidSDF\nExtractedLiquidSDF\nDx\nobj9"
+     },
+     "uipos": [
+      663.0,
+      975.0
+     ],
+     "options": [],
+     "socket_keys": [
+      "Pressure",
+      "Divergence",
+      "CellFWeight",
+      "Velocity",
+      "PostAdvVelocity",
+      "VelocityWeights",
+      "LiquidSDF",
+      "ExtractedLiquidSDF",
+      "Dx",
+      "obj9"
+     ]
+    },
+    "7661c89f-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Dx",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -44.99999999999999,
+      498.7499999999999
+     ],
+     "options": []
+    },
+    "cba0e3cb-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "53641771-MakeDict",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      937.4999999999998,
+      989.25
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1.25,
+    "trans_x": -180,
+    "trans_y": 699
+   }
+  },
+  "StepFLIP": {
+   "nodes": {
+    "18bed683-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Gravity",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      196.09000000000015,
+      44.5
+     ],
+     "options": []
+    },
+    "f64f79cc-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Dt",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      259.09000000000015,
+      329.5
+     ],
+     "options": []
+    },
+    "56cd53d3-x": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "9e1f9502-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "Pressure\nDivergence\nCellFWeight\nVelocity\nPostAdvVelocity\nVelocityWeights\nLiquidSDF\nExtractedLiquidSDF\nDx\nobj9"
+     },
+     "uipos": [
+      254.59000000000015,
+      616.5
+     ],
+     "options": [],
+     "socket_keys": [
+      "Pressure",
+      "Divergence",
+      "CellFWeight",
+      "Velocity",
+      "PostAdvVelocity",
+      "VelocityWeights",
+      "LiquidSDF",
+      "ExtractedLiquidSDF",
+      "Dx",
+      "obj9"
+     ]
+    },
+    "aad2ade1-x": {
+     "name": "FLIPSimTemplate",
+     "inputs": {
+      "Velocity": [
+       "56cd53d3-x",
+       "Velocity",
+       null
+      ],
+      "Collision": [
+       null,
+       null,
+       null
+      ],
+      "PostAdvVel": [
+       "56cd53d3-x",
+       "PostAdvVelocity",
+       null
+      ],
+      "Pressure": [
+       "56cd53d3-x",
+       "Pressure",
+       null
+      ],
+      "CollisionVel": [
+       null,
+       null,
+       null
+      ],
+      "DynEmitter": [
+       null,
+       null,
+       null
+      ],
+      "ifEmit": [
+       "2dde32d4-x",
+       "value",
+       null
+      ],
+      "Particles": [
+       null,
+       null,
+       null
+      ],
+      "VelocityWeights": [
+       "56cd53d3-x",
+       "VelocityWeights",
+       null
+      ],
+      "dx": [
+       "56cd53d3-x",
+       "Dx",
+       null
+      ],
+      "ExtractedLiquidSDF": [
+       "56cd53d3-x",
+       "ExtractedLiquidSDF",
+       null
+      ],
+      "Gravity": [
+       "18bed683-x",
+       "port",
+       null
+      ],
+      "CellFWeight": [
+       "56cd53d3-x",
+       "CellFWeight",
+       null
+      ],
+      "Divergence": [
+       "56cd53d3-x",
+       "Divergence",
+       null
+      ],
+      "LiquidSDF": [
+       "56cd53d3-x",
+       "LiquidSDF",
+       null
+      ],
+      "dt": [
+       "f64f79cc-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      671.9099999999999,
+      108.68000000000006
+     ],
+     "options": []
+    },
+    "2dde32d4-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0
+     },
+     "uipos": [
+      442.59000000000015,
+      -72.5
+     ],
+     "options": []
+    },
+    "9e1f9502-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -7.0,
+      618.0
+     ],
+     "options": []
+    },
+    "6235b875-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "9e1f9502-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "aad2ade1-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1055.0,
+      606.0
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1,
+    "trans_x": -477,
+    "trans_y": 73
+   }
   }
  },
  "views": {},
@@ -2590,6 +2992,77 @@
    "params": [],
    "categories": [
     "portal"
+   ]
+  },
+  "BMeshToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "allow_quads",
+     "0"
+    ],
+    [
+     "bool",
+     "do_transform",
+     "1"
+    ]
+   ],
+   "categories": [
+    "blendermesh"
+   ]
+  },
+  "BackupField": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
    ]
   },
   "BeginFor": {
@@ -3439,6 +3912,126 @@
     "openvdb"
    ]
   },
+  "CompressibleAdvection": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "simParam",
+     ""
+    ],
+    [
+     "",
+     "RK_Order",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
+  "CompressibleMarkDOF": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
+  "CompressibleProjection": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "simParam",
+     ""
+    ],
+    [
+     "",
+     "RK_Order",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
   "CutCellWeight": {
    "inputs": [
     [
@@ -3472,6 +4065,36 @@
    "params": [],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "DenseFieldToVDB": {
+   "inputs": [
+    [
+     "",
+     "inDenseField",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "VDBField",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
    ]
   },
   "DictGetItem": {
@@ -4536,6 +5159,383 @@
     "FLIPSolver"
    ]
   },
+  "GLBindFramebufferTexture": {
+   "inputs": [
+    [
+     "",
+     "framebuffer",
+     ""
+    ],
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "framebuffer",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLClearColor": {
+   "inputs": [
+    [
+     "",
+     "color",
+     ""
+    ],
+    [
+     "",
+     "alpha",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLCreateFramebuffer": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "framebuffer",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLCreateProgram": {
+   "inputs": [
+    [
+     "",
+     "shaderList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "program",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLCreateShader": {
+   "inputs": [
+    [
+     "",
+     "source",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shader",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "type",
+     "vertex"
+    ]
+   ],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLCreateTexture": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLDrawArrayTriangles": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLGetFramebufferTexture": {
+   "inputs": [
+    [
+     "",
+     "framebuffer",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLNoFramebuffer": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "framebuffer",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLUTMainLoop": {
+   "inputs": [
+    [
+     "",
+     "drawFunc",
+     ""
+    ],
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "interval",
+     "17 0"
+    ]
+   ],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLUseFramebuffer": {
+   "inputs": [
+    [
+     "",
+     "framebuffer",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLUseProgram": {
+   "inputs": [
+    [
+     "",
+     "program",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLUseTexture": {
+   "inputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "index",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
   "GeoVertexVel": {
    "inputs": [
     [
@@ -4574,6 +5574,42 @@
    "params": [],
    "categories": [
     "trimesh"
+   ]
+  },
+  "GetDenseField": {
+   "inputs": [
+    [
+     "",
+     "inSolverData",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outDenseField",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "FieldName",
+     "p u rho"
+    ]
+   ],
+   "categories": [
+    "CompressibleFlow"
    ]
   },
   "GetFrameNum": {
@@ -5054,6 +6090,41 @@
     "primitive"
    ]
   },
+  "InitField": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "simParam",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
   "IntegrateFrameTime": {
    "inputs": [
     [
@@ -5352,6 +6423,51 @@
     "primitive"
    ]
   },
+  "MakeCompressibleFlow": {
+   "inputs": [
+    [
+     "",
+     "bmin",
+     ""
+    ],
+    [
+     "",
+     "bmax",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "q_amb",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "CompressibleFlow",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
   "MakeCubePrimitive": {
    "inputs": [
     [
@@ -5425,6 +6541,31 @@
    "params": [],
    "categories": [
     "dict"
+   ]
+  },
+  "MakeFullscreenRect": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
    ]
   },
   "MakeGCTest": {
@@ -5813,6 +6954,31 @@
     "string"
    ]
   },
+  "MakeSimpleTriangle": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
   "MakeSmallList": {
    "inputs": [
     [
@@ -5950,6 +7116,41 @@
     "openvdb"
    ]
   },
+  "MakeVelocityPressure": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "simParam",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
   "MakeVisualAABBPrimitive": {
    "inputs": [
     [
@@ -6020,6 +7221,51 @@
    ],
    "categories": [
     "string"
+   ]
+  },
+  "MarkMovingSolidCellsByVDB": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "simParam",
+     ""
+    ],
+    [
+     "",
+     "SDFVDBField",
+     ""
+    ],
+    [
+     "",
+     "SolidVelVDBField",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
    ]
   },
   "MeshCopy": {
@@ -7125,6 +8371,444 @@
    "params": [],
    "categories": [
     "zenofx"
+   ]
+  },
+  "PassToyApplyShader": {
+   "inputs": [
+    [
+     "",
+     "shader",
+     ""
+    ],
+    [
+     "",
+     "uniforms",
+     ""
+    ],
+    [
+     "",
+     "textureIn",
+     ""
+    ],
+    [
+     "",
+     "textureOut",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "textureOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyDownscaleResolution": {
+   "inputs": [
+    [
+     "",
+     "scale",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyGetResolution": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyGetTextureInteger": {
+   "inputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "id",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyGetTextureResolution": {
+   "inputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyImageTextureFromVoidPtr": {
+   "inputs": [
+    [
+     "",
+     "voidPtr",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyImageTextureFromVoidPtrAndRes": {
+   "inputs": [
+    [
+     "",
+     "voidPtr",
+     ""
+    ],
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyLoadImageTexture": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyMakeShader": {
+   "inputs": [
+    [
+     "",
+     "source",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shader",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyMakeTexture": {
+   "inputs": [
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "format",
+     "rgb16f"
+    ]
+   ],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyMakeTexturePair": {
+   "inputs": [
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texturePair",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "format",
+     "rgb16f"
+    ]
+   ],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyScreenTexture": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyTexturePairSwap": {
+   "inputs": [
+    [
+     "",
+     "texturePair",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texturePair",
+     ""
+    ],
+    [
+     "",
+     "oldTexture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyUpscaleResolution": {
+   "inputs": [
+    [
+     "",
+     "scale",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
    ]
   },
   "PlaneProjectPrimitive2DAABB": {
@@ -8294,6 +9978,42 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "PrimitiveToBMesh": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "is_smooth",
+     "0"
+    ]
+   ],
+   "categories": [
+    "blendermesh"
    ]
   },
   "PrimitiveToBulletMesh": {
@@ -10454,6 +12174,41 @@
     "GPUMPM"
    ]
   },
+  "makeCompressibleSim": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "SimParam",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
   "FLIPSimTemplate": {
    "inputs": [
     [
@@ -10695,6 +12450,78 @@
    "params": [],
    "categories": [
     "FLIPSolver"
+   ],
+   "is_subgraph": true
+  },
+  "MakeFLIP": {
+   "inputs": [
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FLIP",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "StepFLIP": {
+   "inputs": [
+    [
+     "",
+     "Gravity",
+     ""
+    ],
+    [
+     "",
+     "Dt",
+     ""
+    ],
+    [
+     "",
+     "FLIP",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FLIP",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
    ],
    "is_subgraph": true
   },
