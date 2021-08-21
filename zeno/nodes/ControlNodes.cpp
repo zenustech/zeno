@@ -147,11 +147,6 @@ struct BeginSubstep : IBeginFor {
     }
 
     virtual void update() override {
-        if (!m_ever_called) {
-            printf("WARNING: SubstepDt never called for BeginSubstep!\n");
-            is_break = true;
-        }
-        m_ever_called = false;
         auto ret = std::make_shared<zeno::NumericObject>();
         ret->set(m_elapsed);
         set_output("elapsed_time", std::move(ret));
@@ -179,6 +174,7 @@ struct SubstepDt : zeno::INode {
             dt = std::max(0.f, fore->m_total - fore->m_elapsed);
             fore->m_elapsed = fore->m_total;
         }
+        printf("** actual_dt: %f\n", dt);
         auto ret = std::make_shared<zeno::NumericObject>();
         ret->set(dt);
         set_output("actual_dt", std::move(ret));
