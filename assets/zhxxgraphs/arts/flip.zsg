@@ -398,8 +398,8 @@
      "name": "StepFLIP",
      "inputs": {
       "FLIP": [
-       "89eb0ef7-MakeFLIP",
-       "FLIP",
+       null,
+       null,
        null
       ],
       "Particles": [
@@ -418,7 +418,7 @@
        null
       ],
       "Collider": [
-       "dcc8bc4f-FLIPCollider",
+       "5fb9adea-makeCollision",
        "Collider",
        null
       ],
@@ -435,14 +435,9 @@
      ],
      "options": []
     },
-    "dcc8bc4f-FLIPCollider": {
-     "name": "FLIPCollider",
+    "5fb9adea-makeCollision": {
+     "name": "makeCollision",
      "inputs": {
-      "FLIP": [
-       "89eb0ef7-MakeFLIP",
-       "FLIP",
-       null
-      ],
       "StaticSDF": [
        "3ae6801d-x",
        "sdf",
@@ -453,6 +448,11 @@
        "prim",
        null
       ],
+      "dx": [
+       "35e6f99c-NumericFloat",
+       "value",
+       null
+      ],
       "SRC": [
        null,
        null,
@@ -461,18 +461,16 @@
      },
      "params": {},
      "uipos": [
-      -323.0,
-      714.0
+      -304.0,
+      587.0
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -1243,
-    "trans_y": 602
+    "scale": 0.8,
+    "trans_x": -866,
+    "trans_y": 30
    }
   },
   "FLIPSimTemplate": {
@@ -1497,26 +1495,6 @@
      ],
      "options": []
     },
-    "faef8013-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "StaticSDF",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      114.62500000000006,
-      443.375
-     ],
-     "options": []
-    },
     "4eb2ed2f-PrimitiveToSDF": {
      "name": "PrimitiveToSDF",
      "inputs": {
@@ -1573,31 +1551,6 @@
      "uipos": [
       1032.0,
       97.0
-     ],
-     "options": []
-    },
-    "82cc6df1-SubOutput": {
-     "name": "SubOutput",
-     "inputs": {
-      "port": [
-       "55c1f2d9-CombineVDB",
-       "FieldOut",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "BCSDF",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      2024.25,
-      29.750000000000057
      ],
      "options": []
     },
@@ -1810,31 +1763,6 @@
      ],
      "options": []
     },
-    "be680019-SubOutput": {
-     "name": "SubOutput",
-     "inputs": {
-      "port": [
-       "cfb1eb31-MakeVDBGrid",
-       "data",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "BCVel",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      2832.8124999999995,
-      303.12499999999994
-     ],
-     "options": []
-    },
     "c2a2c361-NumericOperator": {
      "name": "NumericOperator",
      "inputs": {
@@ -1880,33 +1808,6 @@
       749.9999999999999
      ],
      "options": []
-    },
-    "3774041e-x": {
-     "name": "ExtractDict",
-     "inputs": {
-      "dict": [
-       "a5f80ff2-x",
-       "port",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "Dx\nobj1"
-     },
-     "uipos": [
-      -156.14749999999975,
-      971.0624999999998
-     ],
-     "options": [],
-     "socket_keys": [
-      "Dx",
-      "obj1"
-     ]
     },
     "ee2afe3d-x": {
      "name": "SubInput",
@@ -1958,7 +1859,7 @@
       ]
      },
      "params": {
-      "name": "FLIP",
+      "name": "dx",
       "type": "",
       "defl": ""
      },
@@ -1981,14 +1882,14 @@
        "FieldOut",
        null
       ],
-      "obj2": [
-       null,
-       null,
-       null
-      ],
       "Vel": [
        "cfb1eb31-MakeVDBGrid",
        "data",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
        null
       ]
      },
@@ -2035,8 +1936,8 @@
      "name": "Route",
      "inputs": {
       "input": [
-       "3774041e-x",
-       "Dx",
+       "a5f80ff2-x",
+       "port",
        null
       ],
       "SRC": [
@@ -2054,9 +1955,9 @@
     }
    },
    "view": {
-    "scale": 0.8000000000000002,
-    "trans_x": -685,
-    "trans_y": 538
+    "scale": 0.8,
+    "trans_x": 780,
+    "trans_y": -41
    }
   },
   "makeTank": {
@@ -2619,7 +2520,7 @@
       ]
      },
      "params": {
-      "name": "FLIP",
+      "name": "World",
       "type": "",
       "defl": ""
      },
@@ -2649,9 +2550,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -423,
-    "trans_y": 349
+    "scale": 1.5625,
+    "trans_x": -418,
+    "trans_y": 471
    }
   },
   "StepFLIP": {
@@ -2815,7 +2716,7 @@
       ]
      },
      "params": {
-      "name": "FLIP",
+      "name": "World",
       "type": "",
       "defl": ""
      },
@@ -2840,7 +2741,7 @@
       ]
      },
      "params": {
-      "name": "FLIP",
+      "name": "World",
       "type": "",
       "defl": ""
      },
@@ -3003,9 +2904,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -577,
-    "trans_y": 69
+    "scale": 1.25,
+    "trans_x": -52,
+    "trans_y": 72
    }
   },
   "FLIPCollider": {
@@ -3013,19 +2914,19 @@
     "bde6e62b-x": {
      "name": "makeCollision",
      "inputs": {
-      "dynamicShape": [
-       "c54efa25-SubInput",
-       "port",
-       null
-      ],
       "StaticSDF": [
        "e766df1b-SubInput",
        "port",
        null
       ],
-      "dx": [
-       "5dd86eb3-ExtractDict",
-       "Dx",
+      "dynamicPrim": [
+       null,
+       null,
+       null
+      ],
+      "FLIP": [
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -3194,8 +3095,8 @@
    },
    "view": {
     "scale": 0.8,
-    "trans_x": -217,
-    "trans_y": 5
+    "trans_x": 18,
+    "trans_y": -77
    }
   }
  },
@@ -12667,12 +12568,12 @@
    "inputs": [
     [
      "",
-     "dynamicShape",
+     "StaticSDF",
      ""
     ],
     [
      "",
-     "StaticSDF",
+     "dynamicPrim",
      ""
     ],
     [
@@ -12689,17 +12590,7 @@
    "outputs": [
     [
      "",
-     "BCSDF",
-     ""
-    ],
-    [
-     "",
-     "end",
-     ""
-    ],
-    [
-     "",
-     "BCVel",
+     "Collider",
      ""
     ],
     [
@@ -12817,7 +12708,7 @@
    "outputs": [
     [
      "",
-     "FLIP",
+     "World",
      ""
     ],
     [
