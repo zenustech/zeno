@@ -284,12 +284,10 @@
      },
      "params": {},
      "uipos": [
-      424.0000000000001,
-      580.8000000000002
+      554.0,
+      627.8000000000002
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "1821cdf8-MeshToPrimitive": {
      "name": "MeshToPrimitive",
@@ -349,7 +347,9 @@
       -1659.52,
       718.0800000000002
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "6b3d812a-NumericVec3": {
      "name": "NumericVec3",
@@ -397,9 +397,9 @@
     "6fc2555e-StepFLIP": {
      "name": "StepFLIP",
      "inputs": {
-      "FLIP": [
-       null,
-       null,
+      "World": [
+       "89eb0ef7-MakeFLIP",
+       "World",
        null
       ],
       "Particles": [
@@ -412,14 +412,14 @@
        "vec3",
        null
       ],
-      "dt": [
-       "1117ce05-x",
-       "value",
-       null
-      ],
       "Collider": [
        "5fb9adea-makeCollision",
        "Collider",
+       null
+      ],
+      "dt": [
+       "1117ce05-x",
+       "value",
        null
       ],
       "SRC": [
@@ -464,13 +464,130 @@
       -304.0,
       587.0
      ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "640a4573-SDFToPoly": {
+     "name": "SDFToPoly",
+     "inputs": {
+      "SDF": [
+       "97e5fa6c-VDBRenormalizeSDF",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isoValue": 0.0,
+      "adaptivity": 0.05
+     },
+     "uipos": [
+      1014.0,
+      308.0
+     ],
+     "options": []
+    },
+    "27a84e25-PrimitiveCalcNormal": {
+     "name": "PrimitiveCalcNormal",
+     "inputs": {
+      "prim": [
+       "640a4573-SDFToPoly",
+       "Mesh",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1289.0,
+      327.0
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "48d0615c-VDBDilateTopo": {
+     "name": "VDBDilateTopo",
+     "inputs": {
+      "inField": [
+       "6fc2555e-StepFLIP",
+       "LiquidSDF",
+       null
+      ],
+      "layers": [
+       "367254ec-NumericInt",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      414.0,
+      288.0
+     ],
+     "options": []
+    },
+    "97e5fa6c-VDBRenormalizeSDF": {
+     "name": "VDBRenormalizeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "48d0615c-VDBDilateTopo",
+       "oField",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "method": "1oUpwind",
+      "iterations": 4
+     },
+     "uipos": [
+      694.0,
+      255.0
+     ],
+     "options": []
+    },
+    "367254ec-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 8
+     },
+     "uipos": [
+      454.0,
+      95.0
+     ],
      "options": []
     }
    },
    "view": {
     "scale": 0.8,
-    "trans_x": -866,
-    "trans_y": 30
+    "trans_x": -781,
+    "trans_y": 7
    }
   },
   "FLIPSimTemplate": {
@@ -1487,7 +1604,7 @@
       ]
      },
      "params": {
-      "name": "FLIPSolver"
+      "name": "FLIP"
      },
      "uipos": [
       204.9375,
@@ -1955,9 +2072,9 @@
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": 780,
-    "trans_y": -41
+    "scale": 1.5625,
+    "trans_x": -180,
+    "trans_y": -214
    }
   },
   "makeTank": {
@@ -1972,7 +2089,7 @@
       ]
      },
      "params": {
-      "name": "FLIPSolver"
+      "name": "FLIP"
      },
      "uipos": [
       228.25,
@@ -1995,8 +2112,8 @@
       "defl": ""
      },
      "uipos": [
-      164.5,
-      244.75000000000006
+      185.5,
+      198.75
      ],
      "options": []
     },
@@ -2086,31 +2203,6 @@
      ],
      "options": []
     },
-    "70103c2b-SubOutput": {
-     "name": "SubOutput",
-     "inputs": {
-      "port": [
-       "81412251-ParticleEmitter",
-       "DST",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "end",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      1604.0,
-      443.5
-     ],
-     "options": []
-    },
     "63201162-SubOutput": {
      "name": "SubOutput",
      "inputs": {
@@ -2120,8 +2212,8 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "81412251-ParticleEmitter",
+       "DST",
        null
       ]
      },
@@ -2164,9 +2256,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": 31,
-    "trans_y": -49
+    "scale": 0.8000000000000002,
+    "trans_x": 138,
+    "trans_y": -177
    }
   },
   "GetFluidStepDT": {
@@ -2671,7 +2763,7 @@
        null
       ],
       "dt": [
-       "aeda3189-x",
+       "6391edc8-SubInput",
        "port",
        null
       ],
@@ -2844,13 +2936,13 @@
       ]
      },
      "params": {
-      "name": "dt",
+      "name": "Collider",
       "type": "",
       "defl": ""
      },
      "uipos": [
-      272.00000000000006,
-      324.79999999999995
+      -11.75,
+      947.3
      ],
      "options": []
     },
@@ -2864,13 +2956,13 @@
       ]
      },
      "params": {
-      "name": "Collider",
+      "name": "dt",
       "type": "",
       "defl": ""
      },
      "uipos": [
-      -22.75,
-      1021.5000000000002
+      259.75,
+      356.5000000000002
      ],
      "options": []
     },
@@ -2878,7 +2970,7 @@
      "name": "ExtractDict",
      "inputs": {
       "dict": [
-       "6391edc8-SubInput",
+       "aeda3189-x",
        "port",
        null
       ],
@@ -2901,140 +2993,13 @@
       "Vel",
       "obj2"
      ]
-    }
-   },
-   "view": {
-    "scale": 1.25,
-    "trans_x": -52,
-    "trans_y": 72
-   }
-  },
-  "FLIPCollider": {
-   "nodes": {
-    "bde6e62b-x": {
-     "name": "makeCollision",
-     "inputs": {
-      "StaticSDF": [
-       "e766df1b-SubInput",
-       "port",
-       null
-      ],
-      "dynamicPrim": [
-       null,
-       null,
-       null
-      ],
-      "FLIP": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      906.25,
-      36.5
-     ],
-     "options": []
     },
-    "f7db3a6e-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "FLIP",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      281.4,
-      513.5600000000001
-     ],
-     "options": []
-    },
-    "e766df1b-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "StaticSDF",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      421.9200000000001,
-      238.88000000000002
-     ],
-     "options": []
-    },
-    "c54efa25-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "dynamicPrim",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      422.5199999999999,
-      -9.999999999999972
-     ],
-     "options": []
-    },
-    "5dd86eb3-ExtractDict": {
-     "name": "ExtractDict",
-     "inputs": {
-      "dict": [
-       "f7db3a6e-SubInput",
-       "port",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "Dx\nobj1"
-     },
-     "uipos": [
-      550.0,
-      554.0
-     ],
-     "options": [],
-     "socket_keys": [
-      "Dx",
-      "obj1"
-     ]
-    },
-    "9108b34a-SubOutput": {
+    "4813782e-x": {
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "c1237dbd-MakeDict",
-       "dict",
+       "56cd53d3-x",
+       "LiquidSDF",
        null
       ],
       "SRC": [
@@ -3044,59 +3009,21 @@
       ]
      },
      "params": {
-      "name": "Collider",
+      "name": "LiquidSDF",
       "type": "",
       "defl": ""
      },
      "uipos": [
-      1371.5199999999995,
-      208.64
+      1245.0,
+      498.0
      ],
      "options": []
-    },
-    "c1237dbd-MakeDict": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ],
-      "SDF": [
-       "bde6e62b-x",
-       "BCSDF",
-       null
-      ],
-      "Vel": [
-       "bde6e62b-x",
-       "BCVel",
-       null
-      ],
-      "obj2": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "SDF\nVel\nobj2"
-     },
-     "uipos": [
-      1071.3600000000001,
-      353.28000000000003
-     ],
-     "options": [],
-     "socket_keys": [
-      "SDF",
-      "Vel",
-      "obj2"
-     ]
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": 18,
-    "trans_y": -77
+    "scale": 1.0,
+    "trans_x": 235,
+    "trans_y": 328
    }
   }
  },
@@ -12601,7 +12528,7 @@
    ],
    "params": [],
    "categories": [
-    "FLIPSolver"
+    "FLIP"
    ],
    "is_subgraph": true
   },
@@ -12626,11 +12553,6 @@
    "outputs": [
     [
      "",
-     "end",
-     ""
-    ],
-    [
-     "",
      "Particles",
      ""
     ],
@@ -12642,7 +12564,7 @@
    ],
    "params": [],
    "categories": [
-    "FLIPSolver"
+    "FLIP"
    ],
    "is_subgraph": true
   },
@@ -12727,7 +12649,7 @@
    "inputs": [
     [
      "",
-     "FLIP",
+     "World",
      ""
     ],
     [
@@ -12742,12 +12664,12 @@
     ],
     [
      "",
-     "dt",
+     "Collider",
      ""
     ],
     [
      "",
-     "Collider",
+     "dt",
      ""
     ],
     [
@@ -12759,12 +12681,17 @@
    "outputs": [
     [
      "",
-     "FLIP",
+     "World",
      ""
     ],
     [
      "",
      "Particles",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
      ""
     ],
     [
@@ -12776,47 +12703,6 @@
    "params": [],
    "categories": [
     "FLIP"
-   ],
-   "is_subgraph": true
-  },
-  "FLIPCollider": {
-   "inputs": [
-    [
-     "",
-     "FLIP",
-     ""
-    ],
-    [
-     "",
-     "StaticSDF",
-     ""
-    ],
-    [
-     "",
-     "dynamicPrim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Collider",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
    ],
    "is_subgraph": true
   },
