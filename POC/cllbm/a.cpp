@@ -4,15 +4,20 @@
 #include <iostream>
 #include <vector>
 #include <memory>
-#include <algorithm>
 
 int main(void)
 {
     std::string kernel1 = R"CLC(
-        kernel void updateGlobal(int x) {
-          printf("Hello, the value is %d\n", x);
-        }
+kernel void updateGlobal(global float *img, int nx, int ny) {
+    int x = get_global_id(0);
+    int y = get_global_id(1);
+    printf("before %d, %d: %f\n", x, y, img[x +nx* y]);
+    img[x +nx* y] = 3.14f;
+    printf("after  %d, %d: %f\n", x, y, img[x +nx* y]);
+}
     )CLC";
+
+    auto ctx = cl::Context::getDefault();
 
     cl::Program program({kernel1});
     try {
@@ -26,11 +31,25 @@ int main(void)
         return 1;
     }
 
-    cl::Image2D img;
+    const int nx = 4, ny = 4;
 
-    cl::KernelFunctor<> kernel(program, "updateGlobal");
-    kernel.getKernel().setArg(0, 42);
-    kernel(cl::EnqueueArgs(cl::NDRange(1)));
+    cl::Buffer img(CL_MEM_READ_WRITE, nx * ny * sizeof(float));
+
+    cl::KernelFunctor<
+        cl::Buffer const &, int, int
+    > kernel(program, "updateGlobal");
+
+    kernel(cl::NDRange(nx, ny), img, nx, ny).wait();
+
+    auto d_img = new float[nx * ny];
+
+    cl::enqueueReadBuffer(img, true, 0, nx * ny * sizeof(float), d_img);
+
+    for (int y = 0; y < ny; y++) {
+        for (int x = 0; x < nx; x++) {
+            printf("%f\n", d_img[x +nx* y]);
+        }
+    }
 
     return 0;
 }
