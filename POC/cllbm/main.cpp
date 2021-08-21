@@ -10,7 +10,7 @@
 int main(void)
 {
     std::string kernel1 = R"CLC(
-kernel void updateGlobal(__read_write image2d_t img, int nx, int ny) {
+kernel void updateGlobal(read_write image2d_t img, int nx, int ny) {
     int x = get_global_id(0);
     int y = get_global_id(1);
     float val = sin(4.f * (float)x / nx);
@@ -33,7 +33,7 @@ kernel void updateGlobal(__read_write image2d_t img, int nx, int ny) {
     const int nx = 128, ny = 128;
 
     cl::Image2D img(cl::Context::getDefault(),
-            CL_MEM_READ_WRITE, {CL_R, CL_FLOAT}, nx, ny);
+            CL_MEM_READ_WRITE, {CL_INTENSITY, CL_FLOAT}, nx, ny);
 
     cl::KernelFunctor<
         cl::Image2D const &, int, int
