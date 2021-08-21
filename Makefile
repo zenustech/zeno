@@ -1,4 +1,5 @@
-O=arts/tmptutvdb2.zsg
+O=arts/flip.zsg
+#O=arts/tmptutvdb2.zsg
 #O=arts/embeddeform.zsg
 #O=arts/prim.zsg
 #O=arts/testlitsock.zsg
