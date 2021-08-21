@@ -147,7 +147,7 @@ struct BeginSubstep : IBeginFor {
     }
 
     virtual void update() override {
-        if (m_ever_called) {
+        if (!m_ever_called) {
             printf("WARNING: SubstepDt never called for BeginSubstep!\n");
             is_break = true;
         }
