@@ -55,18 +55,19 @@ void AdaptiveIndexGenerator::generateAdaptiveGrid(
                     if(value>0.9)
                     {
                         //we need emit
-                    for(int i=-1;i<=1;i+=2)
-                    {
-                        for(int j=-1;j<=1;j+=2)
+                        for(int i=-1;i<=1;i+=2)
                         {
-                            for(int k=-1;k<=1;k+=2)
+                            for(int j=-1;j<=1;j+=2)
                             {
-                                auto fine_pos = voxelwpos + openvdb::Vec3d{(float)i,(float)j,(float)k}*0.5*fine_h;
-                                auto wpos = openvdb::Vec3i(fine_grid->worldToIndex(fine_pos));
-                                fine_waxr.setValue(openvdb::Coord(wpos), 0.5);
+                                for(int k=-1;k<=1;k+=2)
+                                {
+                                    auto fine_pos = voxelwpos + openvdb::Vec3d{(float)i,(float)j,(float)k}*0.5*fine_h;
+                                    
+                                    auto wpos = openvdb::Vec3i(fine_grid->worldToIndex(fine_pos));
+                                    fine_waxr.setValue(openvdb::Coord(wpos), 0.5);
+                                }
                             }
                         }
-                    }
                     }
                 } // end for all on voxels
             }
@@ -77,52 +78,57 @@ void AdaptiveIndexGenerator::generateAdaptiveGrid(
     }
 }
 
-struct testAdaptiveGrid : zeno::INode{
+struct generateAdaptiveGrid : zeno::INode{
     virtual void apply() override {
         double h_coarse = 1.0/16.0;
-        auto coarse_grid = openvdb::FloatGrid::create(float(0));
+        // auto coarse_grid = openvdb::FloatGrid::create(float(0));
+        auto coarse_grid = get_input("VDBGrid")->as<VDBFloatGrid>();
+        
         auto transform = openvdb::math::Transform::createLinearTransform(h_coarse);
         transform->postTranslate(openvdb::Vec3d{0.5,0.5,0.5} *
                                           double(h_coarse));
         coarse_grid->setTransform(transform);
+
         auto rule = std::make_shared<TestRule>();
-        for(int i=-20; i<=20; i++)
-        {
-            for(int j=-20;j<=20; j++)
-            {
-                for(int k=-20;k<=20;k++)
-                {
-                    openvdb::Coord xyz{i,j,k};
-                    coarse_grid->getAccessor().setValue(xyz, 0.5);
-                }
-            }
-        }
-        rule->markSubd(coarse_grid);
+        // for(int i=-20; i<=20; i++)
+        // {
+        //     for(int j=-20;j<=20; j++)
+        //     {
+        //         for(int k=-20;k<=20;k++)
+        //         {
+        //             openvdb::Coord xyz{i,j,k};
+        //             coarse_grid->getAccessor().setValue(xyz, 0.5);
+        //         }
+        //     }
+        // }
+        rule->markSubd(coarse_grid->m_grid);
+        AdaptiveIndexGenerator aig;
+        aig.topoLevels.resize(5);
+        aig.topoLevels[0] = coarse_grid->m_grid;
+        //aig.generateAdaptiveGrid(aig, 5, h_coarse, rule);
+
         auto level0 = zeno::IObject::make<VDBFloatGrid>();
         auto level1 = zeno::IObject::make<VDBFloatGrid>();
         auto level2 = zeno::IObject::make<VDBFloatGrid>();
         auto level3 = zeno::IObject::make<VDBFloatGrid>();
         auto level4 = zeno::IObject::make<VDBFloatGrid>();
-        AdaptiveIndexGenerator aig;
-        aig.topoLevels.resize(5);
-        aig.topoLevels[4] = coarse_grid;
-        aig.generateAdaptiveGrid(aig, 5, h_coarse, rule);
         level0->m_grid = aig.topoLevels[0];
         level1->m_grid = aig.topoLevels[1];
         level2->m_grid = aig.topoLevels[2];
         level3->m_grid = aig.topoLevels[3];
         level4->m_grid = aig.topoLevels[4];
-        set_output("level0", level4);
-        set_output("level1", level3);
+
+        set_output("level0", level0);
+        set_output("level1", level1);
         set_output("level2", level2);
-        set_output("level3", level1);
-        set_output("level4", level0);
+        set_output("level3", level3);
+        set_output("level4", level4);
     }
 };
 
-ZENDEFNODE(testAdaptiveGrid, {
-        {},
-        {"level0","level1","level2","level3", "level4"},
+ZENDEFNODE(generateAdaptiveGrid, {
+        {"VDBGrid"},
+        {"level0", "level1", "level2", "level3", "level4"},
         {},
         {"AdaptiveSolver"},
 });

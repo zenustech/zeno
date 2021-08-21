@@ -27,6 +27,7 @@ namespace zeno{
     struct TestRule : AdaptiveRule{
         //particle list
         //std::shared_ptr<zeno::PrimitiveObject> p;
+        // refinement the details
         virtual void markSubd(openvdb::FloatGrid::Ptr &grid) override
         {
             float dx = grid->voxelSize()[0];
@@ -60,6 +61,7 @@ namespace zeno{
                     } // end for all on voxels
                 }
             };
+            // mark the points based on pos
             auto mark = [&](const tbb::blocked_range<size_t> &r) {
                 auto grid_axr{grid->getAccessor()};
                 
