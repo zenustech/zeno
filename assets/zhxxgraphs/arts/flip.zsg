@@ -2,127 +2,6 @@
  "graph": {
   "main": {
    "nodes": {
-    "46297a7d-FLIPSimTemplate": {
-     "name": "FLIPSimTemplate",
-     "inputs": {
-      "Velocity": [
-       "31d2623d-SetFLIPWorld",
-       "Velocity",
-       null
-      ],
-      "Collision": [
-       "ed55da7e-makeCollision",
-       "BCSDF",
-       null
-      ],
-      "PostAdvVel": [
-       "31d2623d-SetFLIPWorld",
-       "PostAdvVelocity",
-       null
-      ],
-      "Pressure": [
-       "31d2623d-SetFLIPWorld",
-       "Pressure",
-       null
-      ],
-      "CollisionVel": [
-       "ed55da7e-makeCollision",
-       "BCVel",
-       null
-      ],
-      "DynEmitter": [
-       null,
-       null,
-       null
-      ],
-      "ifEmit": [
-       "c5e1c3a0-NumericInt",
-       "value",
-       null
-      ],
-      "Particles": [
-       "cc374997-makeTank",
-       "Particles",
-       null
-      ],
-      "VelocityWeights": [
-       "31d2623d-SetFLIPWorld",
-       "VelocityWeights",
-       null
-      ],
-      "dx": [
-       "35e6f99c-NumericFloat",
-       "value",
-       null
-      ],
-      "ExtractedLiquidSDF": [
-       "31d2623d-SetFLIPWorld",
-       "ExtractedLiquidSDF",
-       null
-      ],
-      "Gravity": [
-       "c1d1d1a0-NumericVec3",
-       "vec3",
-       null
-      ],
-      "CellFWeight": [
-       "31d2623d-SetFLIPWorld",
-       "CellFWeight",
-       null
-      ],
-      "Divergence": [
-       "31d2623d-SetFLIPWorld",
-       "Divergence",
-       null
-      ],
-      "LiquidSDF": [
-       "31d2623d-SetFLIPWorld",
-       "LiquidSDF",
-       null
-      ],
-      "dt": [
-       "1117ce05-x",
-       "value",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      36.48000000000002,
-      404.3600000000001
-     ],
-     "options": []
-    },
-    "31d2623d-SetFLIPWorld": {
-     "name": "SetFLIPWorld",
-     "inputs": {
-      "Dx": [
-       "35e6f99c-NumericFloat",
-       "value",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "dx": 0.08
-     },
-     "uipos": [
-      -572.16,
-      373.12
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
     "35e6f99c-NumericFloat": {
      "name": "NumericFloat",
      "inputs": {
@@ -136,8 +15,8 @@
       "value": 0.1
      },
      "uipos": [
-      -1025.7656250000002,
-      205.0625000000001
+      -1037.015625,
+      272.5625000000001
      ],
      "options": []
     },
@@ -154,8 +33,8 @@
       "value": 0.02
      },
      "uipos": [
-      -220.57499999999993,
-      852.6750000000001
+      -258.57499999999993,
+      874.6750000000002
      ],
      "options": []
     },
@@ -174,8 +53,8 @@
       "z": 0.0
      },
      "uipos": [
-      -263.19999999999993,
-      216.0
+      -664.1999999999999,
+      29.0
      ],
      "options": []
     },
@@ -192,8 +71,8 @@
       "value": 0
      },
      "uipos": [
-      26.399999999999963,
-      207.99999999999994
+      28.399999999999963,
+      253.0
      ],
      "options": []
     },
@@ -226,7 +105,9 @@
       -596.0,
       985.6000000000001
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "cc374997-makeTank": {
      "name": "makeTank",
@@ -442,7 +323,7 @@
      "name": "VDBPointsToPrimitive",
      "inputs": {
       "grid": [
-       "46297a7d-FLIPSimTemplate",
+       "6fc2555e-StepFLIP",
        "Particles",
        null
       ],
@@ -540,12 +421,81 @@
       919.6799999999998
      ],
      "options": []
+    },
+    "89eb0ef7-MakeFLIP": {
+     "name": "MakeFLIP",
+     "inputs": {
+      "Dx": [
+       "35e6f99c-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -601.5624999999999,
+      -198.43749999999997
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "6fc2555e-StepFLIP": {
+     "name": "StepFLIP",
+     "inputs": {
+      "FLIP": [
+       "89eb0ef7-MakeFLIP",
+       "FLIP",
+       null
+      ],
+      "Particles": [
+       "cc374997-makeTank",
+       "Particles",
+       null
+      ],
+      "CollisionSDF": [
+       "ed55da7e-makeCollision",
+       "BCSDF",
+       null
+      ],
+      "CollisionVel": [
+       "ed55da7e-makeCollision",
+       "BCVel",
+       null
+      ],
+      "gravity": [
+       "c1d1d1a0-NumericVec3",
+       "vec3",
+       null
+      ],
+      "dt": [
+       "1117ce05-x",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -259.6874999999999,
+      -108.625
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.6400000000000001,
-    "trans_x": -821,
-    "trans_y": -78
+    "scale": 1.0,
+    "trans_x": -1078,
+    "trans_y": 68
    }
   },
   "FLIPSimTemplate": {
@@ -2471,9 +2421,7 @@
       238.92999999999995,
       443.94000000000005
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "53641771-MakeDict": {
      "name": "MakeDict",
@@ -2599,56 +2547,34 @@
       989.25
      ],
      "options": []
+    },
+    "b544125f-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP"
+     },
+     "uipos": [
+      212.8,
+      1072.8
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -180,
-    "trans_y": 699
+    "scale": 1.0,
+    "trans_x": -423,
+    "trans_y": 349
    }
   },
   "StepFLIP": {
    "nodes": {
-    "18bed683-x": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "Gravity",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      196.09000000000015,
-      44.5
-     ],
-     "options": []
-    },
-    "f64f79cc-x": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "Dt",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      259.09000000000015,
-      329.5
-     ],
-     "options": []
-    },
     "56cd53d3-x": {
      "name": "ExtractDict",
      "inputs": {
@@ -2693,8 +2619,8 @@
        null
       ],
       "Collision": [
-       null,
-       null,
+       "bc025203-x",
+       "port",
        null
       ],
       "PostAdvVel": [
@@ -2708,8 +2634,8 @@
        null
       ],
       "CollisionVel": [
-       null,
-       null,
+       "c4ebe84f-x",
+       "port",
        null
       ],
       "DynEmitter": [
@@ -2723,8 +2649,8 @@
        null
       ],
       "Particles": [
-       null,
-       null,
+       "0b575c56-SubInput",
+       "port",
        null
       ],
       "VelocityWeights": [
@@ -2743,7 +2669,7 @@
        null
       ],
       "Gravity": [
-       "18bed683-x",
+       "56681340-x",
        "port",
        null
       ],
@@ -2763,7 +2689,7 @@
        null
       ],
       "dt": [
-       "f64f79cc-x",
+       "aeda3189-x",
        "port",
        null
       ],
@@ -2838,16 +2764,159 @@
       "defl": ""
      },
      "uipos": [
-      1055.0,
-      606.0
+      949.3999999999997,
+      737.1999999999999
+     ],
+     "options": []
+    },
+    "bc677e05-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP"
+     },
+     "uipos": [
+      -90.0,
+      888.75
+     ],
+     "options": []
+    },
+    "1e2a4a76-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "aad2ade1-x",
+       "Particles",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Particles",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      968.0000000000001,
+      373.6
+     ],
+     "options": []
+    },
+    "0b575c56-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Particles",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -44.00000000000003,
+      312.79999999999984
+     ],
+     "options": []
+    },
+    "bc025203-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "CollisionSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -299.2,
+      -35.19999999999996
+     ],
+     "options": []
+    },
+    "c4ebe84f-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "CollisionVel",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -305.6,
+      221.60000000000002
+     ],
+     "options": []
+    },
+    "56681340-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "gravity",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      17.600000000000023,
+      -146.4
+     ],
+     "options": []
+    },
+    "aeda3189-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dt",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      272.00000000000006,
+      324.79999999999995
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1,
-    "trans_x": -477,
-    "trans_y": 73
+    "scale": 1.25,
+    "trans_x": -321,
+    "trans_y": -267
    }
   }
  },
@@ -12480,7 +12549,7 @@
    ],
    "params": [],
    "categories": [
-    "subgraph"
+    "FLIP"
    ],
    "is_subgraph": true
   },
@@ -12488,17 +12557,32 @@
    "inputs": [
     [
      "",
-     "Gravity",
-     ""
-    ],
-    [
-     "",
-     "Dt",
-     ""
-    ],
-    [
-     "",
      "FLIP",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "CollisionSDF",
+     ""
+    ],
+    [
+     "",
+     "CollisionVel",
+     ""
+    ],
+    [
+     "",
+     "gravity",
+     ""
+    ],
+    [
+     "",
+     "dt",
      ""
     ],
     [
@@ -12515,13 +12599,18 @@
     ],
     [
      "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
      "DST",
      ""
     ]
    ],
    "params": [],
    "categories": [
-    "subgraph"
+    "FLIP"
    ],
    "is_subgraph": true
   },
