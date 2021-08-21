@@ -12,10 +12,9 @@ int main(void)
     std::string kernel1 = R"CLC(
 constant const int directions[][3] = {{0,0,0},{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},{1,-1,1},{-1,1,-1},{-1,1,1},{1,-1,-1}};
 constant const float weights[] = {2.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f, 1.f/9.f,1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f, 1.f/72.f};
-constant float niu = 0.005f;
-constant float tau = 1.f / (3.f * niu + 0.5f);
+constant float inv_tau = 1.f / (3.f * 0.005f + 0.5f);
 
-inline f_eq(int q, float4 v) {
+inline float f_eq(int q, float4 v) {
     float eu = v.x * directions[q][0]
              + v.y * directions[q][1]
              + v.z * directions[q][2];
@@ -26,7 +25,7 @@ inline f_eq(int q, float4 v) {
 }
 
 kernel void collide
-    ( read_only global float *vel
+    ( read_only global float4 *vel
     , read_write global float *fie
     , int nx
     , int ny
@@ -60,21 +59,18 @@ kernel void stream
     int y = get_global_id(1);
     int z = get_global_id(2);
     int xyz = x +nx* y +nx*ny* z;
-    float4 v = vel[xyz];
-    float uv = v.x * v.x + v.y * v.y + v.z * v.z;
-    uv = 1.f - 1.5f * uv;
     for (int q = 0; q < 15; q++) {
         int mdx = (x - directions[q][0] + nx)%nx;
         int mdy = (y - directions[q][1] + ny)%ny;
         int mdz = (z - directions[q][2] + nz)%nz;
-        int xyzq = x +nx* y +nx*ny* z +nx*ny*nz* q;
         int mdxyzq = mdx +nx* mdy +nx*ny* mdz +nx*ny*nz* q;
+        int xyzq = xyz +nx*ny*nz* q;
         fie[xyzq] = fie[mdxyzq];
     }
 }
 
 kernel void update_macro
-    ( write_only global float *vel
+    ( write_only global float4 *vel
     , read_only global float *fie
     , int nx
     , int ny
@@ -93,6 +89,7 @@ kernel void update_macro
         v.z += f * directions[q][2];
         v.w += f;
     }
+    float mscale = 1.f / max(v.w, 1e-6f);
     v.x *= mscale;
     v.y *= mscale;
     v.z *= mscale;
