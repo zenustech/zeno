@@ -97,6 +97,104 @@ ZENDEFNODE(BreakFor, {
     {"control"},
 });
 
+struct BeginForEach : IBeginFor {
+    int m_index = 0;
+    std::shared_ptr<zeno::ListObject> m_list;
+
+    virtual bool isContinue() const override {
+        return m_index < m_list->arr.size() && !is_break;
+    }
+
+    virtual void apply() override {
+        m_index = 0;
+        is_break = false;
+        m_list = get_input<zeno::ListObject>("list");
+        set_output("FOR", std::make_shared<zeno::ConditionObject>());
+    }
+
+    virtual void update() override {
+        auto ret = std::make_shared<zeno::NumericObject>();
+        ret->set(m_index);
+        set_output("index", std::move(ret));
+        auto obj = m_list->arr[m_index];
+        set_output("object", std::move(obj));
+        m_index++;
+    }
+};
+
+ZENDEFNODE(BeginForEach, {
+    {"list"},
+    {"object", "index", "FOR"},
+    {},
+    {"control"},
+});
+
+struct BeginSubstep : IBeginFor {
+    float m_elapsed = 0;
+    float m_total = 0;
+    bool m_ever_called = false;
+
+    virtual bool isContinue() const override {
+        return m_elapsed < m_total && !is_break;
+    }
+
+    virtual void apply() override {
+        m_elapsed = 0;
+        is_break = false;
+        m_ever_called = false;
+        m_total = get_input<zeno::NumericObject>("total_dt")->get<float>();
+        set_output("FOR", std::make_shared<zeno::ConditionObject>());
+    }
+
+    virtual void update() override {
+        if (m_ever_called) {
+            printf("WARNING: SubstepDt never called for BeginSubstep!\n");
+            is_break = true;
+        }
+        m_ever_called = false;
+        auto ret = std::make_shared<zeno::NumericObject>();
+        ret->set(m_elapsed);
+        set_output("elapsed_time", std::move(ret));
+    }
+};
+
+ZENDEFNODE(BeginSubstep, {
+    {"total_dt"},
+    {"FOR", "elapsed_time"},
+    {},
+    {"control"},
+});
+
+struct SubstepDt : zeno::INode {
+    void apply() override {
+        auto [sn, ss] = inputBounds.at("FOR");
+        auto fore = dynamic_cast<BeginSubstep *>(graph->nodes.at(sn).get());
+        if (!fore) {
+            printf("SubstepDt::FOR must be conn to BeginSubstep::FOR!\n");
+            abort();
+        }
+        fore->m_ever_called = true;
+        float dt = get_input<zeno::NumericObject>("desired_dt")->get<float>();
+        if (fore->m_elapsed + dt >= fore->m_total) {
+            dt = std::max(0.f, fore->m_total - fore->m_elapsed);
+            fore->m_elapsed = fore->m_total;
+        }
+        auto ret = std::make_shared<zeno::NumericObject>();
+        ret->set(dt);
+        set_output("actual_dt", std::move(ret));
+    }
+};
+
+ZENDEFNODE(SubstepDt, {
+    {"FOR", "desired_dt"},
+    {"actual_dt"},
+    {},
+    {"control"},
+});
+
+
+
+
 struct IfElse : zeno::INode {
     virtual void doApply() override {
         requireInput("cond");
@@ -278,37 +376,5 @@ ZENDEFNODE(ConditionedDo, {
 
 
 
-
-struct BeginForEach : IBeginFor {
-    int m_index = 0;
-    std::shared_ptr<zeno::ListObject> m_list;
-
-    virtual bool isContinue() const override {
-        return m_index < m_list->arr.size() && !is_break;
-    }
-
-    virtual void apply() override {
-        m_index = 0;
-        is_break = false;
-        m_list = get_input<zeno::ListObject>("list");
-        set_output("FOR", std::make_shared<zeno::ConditionObject>());
-    }
-
-    virtual void update() override {
-        auto ret = std::make_shared<zeno::NumericObject>();
-        ret->set(m_index);
-        set_output("index", std::move(ret));
-        auto obj = m_list->arr[m_index];
-        set_output("object", std::move(obj));
-        m_index++;
-    }
-};
-
-ZENDEFNODE(BeginForEach, {
-    {"list"},
-    {"object", "index", "FOR"},
-    {},
-    {"control"},
-});
 
 }
