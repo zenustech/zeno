@@ -10,11 +10,11 @@
 int main(void)
 {
     std::string kernel1 = R"CLC(
-kernel void updateGlobal(read_write image2d_t img, int nx, int ny) {
+kernel void updateGlobal(global float *img, int nx, int ny) {
     int x = get_global_id(0);
     int y = get_global_id(1);
     float val = sin(4.f * (float)x / nx);
-    write_imagef(img, (int2)(x, y), val);
+    img[x +nx* y] = val;
 }
     )CLC";
 
@@ -32,18 +32,17 @@ kernel void updateGlobal(read_write image2d_t img, int nx, int ny) {
 
     const int nx = 128, ny = 128;
 
-    cl::Image2D img(cl::Context::getDefault(),
-            CL_MEM_READ_WRITE, {CL_INTENSITY, CL_FLOAT}, nx, ny);
+    cl::Buffer img(CL_MEM_READ_WRITE, nx * ny * sizeof(float));
 
     cl::KernelFunctor<
-        cl::Image2D const &, int, int
+        cl::Buffer const &, int, int
     > kernel(program, "updateGlobal");
 
     kernel(cl::NDRange(nx, ny), img, nx, ny).wait();
 
     auto h_img = new float[nx * ny];
 
-    cl::enqueueReadImage(img, true, {0, 0, 0}, {nx, ny, 1}, 0, 0, h_img);
+    cl::enqueueReadBuffer(img, true, 0, nx * ny * sizeof(float), h_img);
     stbi_write_hdr("/tmp/a.hdr", nx, ny, 1, h_img);
     system("display /tmp/a.hdr");
 
