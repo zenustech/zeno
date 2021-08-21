@@ -406,7 +406,7 @@ class QDMGraphicsView(QGraphicsView):
             src = node.outputs[sock_name]
             dst = new_node.inputs[sock_name]
             self.addEdge(src, dst)
-        if node.name in ['BeginFor', 'BeginForEach']:
+        if node.name in ['BeginFor', 'BeginForEach', 'BeginSubstep']:
             connectWith('EndFor', 'FOR')
         elif node.name == 'FuncBegin':
             connectWith('FuncEnd', 'FUNC')
