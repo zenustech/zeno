@@ -130,8 +130,9 @@ ZENDEFNODE(BeginForEach, {
 });
 
 struct BeginSubstep : IBeginFor {
-    float m_elapsed = 0;
     float m_total = 0;
+    float m_mindt = 0;
+    float m_elapsed = 0;
     bool m_ever_called = false;
 
     virtual bool isContinue() const override {
@@ -143,6 +144,9 @@ struct BeginSubstep : IBeginFor {
         is_break = false;
         m_ever_called = false;
         m_total = get_input<zeno::NumericObject>("total_dt")->get<float>();
+        auto min_scale = has_input("min_scale") ?
+            get_input<zeno::NumericObject>("min_scale")->get<float>() : 0.01f;
+        m_mindt = m_total * min_scale;
         set_output("FOR", std::make_shared<zeno::ConditionObject>());
     }
 
@@ -154,7 +158,7 @@ struct BeginSubstep : IBeginFor {
 };
 
 ZENDEFNODE(BeginSubstep, {
-    {"total_dt"},
+    {"total_dt", "min_scale"},
     {"FOR", "elapsed_time"},
     {},
     {"control"},
@@ -173,6 +177,11 @@ struct SubstepDt : zeno::INode {
         if (fore->m_elapsed + dt >= fore->m_total) {
             dt = std::max(0.f, fore->m_total - fore->m_elapsed);
             fore->m_elapsed = fore->m_total;
+        } else {
+            if (dt < fore->m_mindt) {
+                dt = fore->m_mindt;
+            }
+            fore->m_elapsed += dt;
         }
         printf("** actual_dt: %f\n", dt);
         auto ret = std::make_shared<zeno::NumericObject>();
