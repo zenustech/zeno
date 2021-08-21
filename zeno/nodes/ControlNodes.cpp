@@ -145,7 +145,7 @@ struct BeginSubstep : IBeginFor {
         m_ever_called = false;
         m_total = get_input<zeno::NumericObject>("total_dt")->get<float>();
         auto min_scale = has_input("min_scale") ?
-            get_input<zeno::NumericObject>("min_scale")->get<float>() : 0.01f;
+            get_input<zeno::NumericObject>("min_scale")->get<float>() : 0.05f;
         m_mindt = m_total * min_scale;
         set_output("FOR", std::make_shared<zeno::ConditionObject>());
     }

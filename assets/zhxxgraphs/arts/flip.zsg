@@ -506,6 +506,16 @@
        "value",
        null
       ],
+      "min_scale": [
+       null,
+       null,
+       null
+      ],
+      "dt_scale": [
+       null,
+       null,
+       null
+      ],
       "SRC": [
        null,
        null,
@@ -3312,8 +3322,8 @@
       "dx": 0.0
      },
      "uipos": [
-      534.0,
-      652.0
+      297.8427734375001,
+      664.4267578125001
      ],
      "options": []
     },
@@ -3332,8 +3342,8 @@
       "defl": ""
      },
      "uipos": [
-      -399.85,
-      490.8499999999999
+      -604.3177734374999,
+      478.6429687499999
      ],
      "options": []
     },
@@ -3345,6 +3355,11 @@
        "port",
        null
       ],
+      "min_scale": [
+       "a010d919-IfElse",
+       "result",
+       null
+      ],
       "SRC": [
        "27fbce1b-SubInput",
        "DST",
@@ -3353,8 +3368,8 @@
      },
      "params": {},
      "uipos": [
-      -103.75,
-      511.0
+      -308.2177734374999,
+      498.79296875
      ],
      "options": []
     },
@@ -3397,8 +3412,8 @@
       "_KEYS": "Velocity\nDx\nobj2"
      },
      "uipos": [
-      226.0,
-      667.0
+      -10.157226562499943,
+      679.4267578125001
      ],
      "options": [],
      "socket_keys": [
@@ -3457,8 +3472,8 @@
        null
       ],
       "desired_dt": [
-       "81f24abc-CFL_dt",
-       "cfl_dt",
+       "50110ad3-NumericOperator",
+       "ret",
        null
       ],
       "SRC": [
@@ -3549,8 +3564,8 @@
       "defl": ""
      },
      "uipos": [
-      -114.0,
-      251.0
+      -318.4677734374999,
+      238.79296875
      ],
      "options": []
     },
@@ -3628,12 +3643,178 @@
       1224.0
      ],
      "options": []
+    },
+    "90e52dfe-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "min_scale",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -880.4677734374999,
+      144.59296875000007
+     ],
+     "options": []
+    },
+    "a010d919-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "90e52dfe-x",
+       "port",
+       null
+      ],
+      "false": [
+       "00074ccc-NumericFloat",
+       "value",
+       null
+      ],
+      "cond": [
+       "90e52dfe-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -630.8677734374999,
+      228.59296875000007
+     ],
+     "options": []
+    },
+    "00074ccc-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.05
+     },
+     "uipos": [
+      -626.8677734375,
+      50.992968750000045
+     ],
+     "options": []
+    },
+    "50110ad3-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "81f24abc-CFL_dt",
+       "cfl_dt",
+       null
+      ],
+      "rhs": [
+       "8d111477-x",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      562.4999999999997,
+      782.4999999999995
+     ],
+     "options": []
+    },
+    "6f8d477b-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 2.0
+     },
+     "uipos": [
+      318.04999999999984,
+      943.6999999999994
+     ],
+     "options": []
+    },
+    "e6688c61-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dt_scale",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      64.44999999999999,
+      1037.2999999999993
+     ],
+     "options": []
+    },
+    "8d111477-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "e6688c61-x",
+       "port",
+       null
+      ],
+      "false": [
+       "6f8d477b-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "e6688c61-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      314.04999999999995,
+      1121.2999999999993
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -225,
-    "trans_y": 477
+    "trans_x": -41,
+    "trans_y": 1099
    }
   }
  },
@@ -3860,6 +4041,11 @@
     [
      "",
      "total_dt",
+     ""
+    ],
+    [
+     "",
+     "min_scale",
      ""
     ],
     [
@@ -11255,6 +11441,16 @@
     [
      "",
      "dt",
+     ""
+    ],
+    [
+     "",
+     "min_scale",
+     ""
+    ],
+    [
+     "",
+     "dt_scale",
      ""
     ],
     [
