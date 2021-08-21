@@ -50,6 +50,29 @@ kernel void collide
     }
 }
 
+kernel void stream
+    ( read_write global float *fie
+    , int nx
+    , int ny
+    , int nz
+    ) {
+    int x = get_global_id(0);
+    int y = get_global_id(1);
+    int z = get_global_id(2);
+    int xyz = x +nx* y +nx*ny* z;
+    float4 v = vel[xyz];
+    float uv = v.x * v.x + v.y * v.y + v.z * v.z;
+    uv = 1.f - 1.5f * uv;
+    for (int q = 0; q < 15; q++) {
+        int mdx = (x - directions[q][0] + nx)%nx;
+        int mdy = (y - directions[q][1] + ny)%ny;
+        int mdz = (z - directions[q][2] + nz)%nz;
+        int xyzq = x +nx* y +nx*ny* z +nx*ny*nz* q;
+        int mdxyzq = mdx +nx* mdy +nx*ny* mdz +nx*ny*nz* q;
+        fie[xyzq] = fie[mdxyzq];
+    }
+}
+
 kernel void update_macro
     ( write_only global float *vel
     , read_only global float *fie
