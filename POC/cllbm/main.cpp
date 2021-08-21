@@ -126,7 +126,24 @@ kernel void update_macro
         , int
     > collide(program, "collide");
 
+    cl::KernelFunctor
+        < cl::Buffer const &
+        , int
+        , int
+        , int
+    > stream(program, "stream");
+
+    cl::KernelFunctor
+        < cl::Buffer const &
+        , cl::Buffer const &
+        , int
+        , int
+        , int
+    > update_macro(program, "update_macro");
+
     collide(cl::NDRange(nx, ny), vel, fie, nx, ny, nz).wait();
+    stream(cl::NDRange(nx, ny), fie, nx, ny, nz).wait();
+    update_macro(cl::NDRange(nx, ny), vel, fie, nx, ny, nz).wait();
 
     auto h_img = new float[nx * ny];
     cl::enqueueReadBuffer(img, true, 0, nx * ny * sizeof(float), h_img);
