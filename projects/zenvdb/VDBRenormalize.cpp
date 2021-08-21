@@ -8,6 +8,7 @@
 #include <openvdb/tools/Morphology.h>
 #include <openvdb/tools/MeshToVolume.h>
 #include <openvdb/tools/LevelSetTracker.h>
+#include <openvdb/tools/Filter.h>
 #include <zeno/ParticlesObject.h>
 #include <openvdb/openvdb.h>
 #include <openvdb/tools/LevelSetSphere.h>
@@ -19,15 +20,20 @@ namespace zeno {
 
     auto inoutSDF = get_input("inoutSDF")->as<VDBFloatGrid>();
     int normIter = std::get<int>(get_param("iterations"));
+    int dilateIter = std::get<int>(get_param("dilateIters"));
     auto lstracker = openvdb::tools::LevelSetTracker<openvdb::FloatGrid>(*(inoutSDF->m_grid));
     lstracker.setState({openvdb::math::FIRST_BIAS, openvdb::math::TVD_RK3, 1, 1});
     lstracker.setTrimming(openvdb::tools::lstrack::TrimMode::kNone);
+
+    if (dilateIter > 0)
+        lstracker.dilate(dilateIter);
+    else if (dilateIter < 0)
+        lstracker.erode(dilateIter);
     for(int i=0;i<normIter;i++)
         lstracker.normalize();
     //openvdb::tools::changeBackground(inoutSDF->m_grid->tree(), ((float)normIter)*(inoutSDF->m_grid->transformPtr()->voxelSize()[0]));
     //openvdb::tools::signedFloodFill(inoutSDF->m_grid->tree());
 
-    
     set_output("inoutSDF", get_input("inoutSDF"));
   }
 };
@@ -40,6 +46,33 @@ static int defVDBRenormalizeSDF = zeno::defNodeClass<VDBRenormalizeSDF>("VDBReno
      }, /* params: */ {
          {"string", "method", "1oUpwind"},
          {"int", "iterations", "4"},
+         {"int", "dilateIters", "0"},
+     }, /* category: */ {
+     "openvdb",
+     }});
+
+struct  VDBSmoothSDF : zeno::INode {
+  virtual void apply() override {
+
+    auto inoutSDF = get_input("inoutSDF")->as<VDBFloatGrid>();
+    int width = std::get<int>(get_param("width"));
+    int iterations = std::get<int>(get_param("iterations"));
+    auto lsf = openvdb::tools::Filter<openvdb::FloatGrid>(*(inoutSDF->m_grid));
+    lsf.setGrainSize(1);
+    lsf.gaussian(width, iterations, nullptr);
+    //openvdb::tools::ttls_internal::smoothLevelSet(*inoutSDF->m_grid, normIter, halfWidth);
+    set_output("inoutSDF", get_input("inoutSDF"));
+  }
+};
+
+static int defVDBSmoothSDF = zeno::defNodeClass<VDBSmoothSDF>("VDBSmoothSDF",
+     { /* inputs: */ {
+     "inoutSDF", 
+     }, /* outputs: */ {
+     "inoutSDF",
+     }, /* params: */ {
+         {"int", "width", "1"},
+         {"int", "iterations", "1"},
      }, /* category: */ {
      "openvdb",
      }});

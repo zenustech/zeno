@@ -12,7 +12,7 @@
       ]
      },
      "params": {
-      "value": 0.1
+      "value": 0.04
      },
      "uipos": [
       -1037.015625,
@@ -53,8 +53,8 @@
       "z": 0.0
      },
      "uipos": [
-      41.80000000000018,
-      29.0
+      52.80000000000018,
+      83.0
      ],
      "options": []
     },
@@ -177,8 +177,8 @@
        null
       ],
       "Dx": [
-       null,
-       null,
+       "35e6f99c-NumericFloat",
+       "value",
        null
       ],
       "SRC": [
@@ -309,8 +309,7 @@
       1669.0
      ],
      "options": [
-      "ONCE",
-      "VIEW"
+      "ONCE"
      ]
     },
     "ae91c4b7-TransformMesh": {
@@ -387,8 +386,8 @@
      },
      "params": {},
      "uipos": [
-      -637.5625,
-      293.5625
+      -613.5625,
+      296.5625
      ],
      "options": [
       "ONCE"
@@ -472,7 +471,7 @@
      "name": "SDFToPoly",
      "inputs": {
       "SDF": [
-       "97e5fa6c-VDBRenormalizeSDF",
+       "c5f709de-SmoothLiquidSDF",
        "inoutSDF",
        null
       ],
@@ -484,11 +483,11 @@
      },
      "params": {
       "isoValue": 0.0,
-      "adaptivity": 0.05
+      "adaptivity": 0.0
      },
      "uipos": [
-      1014.0,
-      308.0
+      864.5781250000005,
+      253.5468750000001
      ],
      "options": []
     },
@@ -508,23 +507,23 @@
      },
      "params": {},
      "uipos": [
-      1289.0,
-      327.0
+      1139.5781250000005,
+      272.5468750000001
      ],
      "options": [
       "VIEW"
      ]
     },
-    "48d0615c-VDBDilateTopo": {
-     "name": "VDBDilateTopo",
+    "c5f709de-SmoothLiquidSDF": {
+     "name": "SmoothLiquidSDF",
      "inputs": {
-      "inField": [
+      "inoutSDF": [
        "6fc2555e-StepFLIP",
        "LiquidSDF",
        null
       ],
-      "layers": [
-       "367254ec-NumericInt",
+      "dx": [
+       "35e6f99c-NumericFloat",
        "value",
        null
       ],
@@ -536,58 +535,16 @@
      },
      "params": {},
      "uipos": [
-      414.0,
-      288.0
-     ],
-     "options": []
-    },
-    "97e5fa6c-VDBRenormalizeSDF": {
-     "name": "VDBRenormalizeSDF",
-     "inputs": {
-      "inoutSDF": [
-       "48d0615c-VDBDilateTopo",
-       "oField",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "method": "1oUpwind",
-      "iterations": 4
-     },
-     "uipos": [
-      694.0,
-      255.0
-     ],
-     "options": []
-    },
-    "367254ec-NumericInt": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 8
-     },
-     "uipos": [
-      454.0,
-      95.0
+      551.0,
+      320.0
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": -781,
-    "trans_y": 7
+    "scale": 0.8000000000000002,
+    "trans_x": -1013,
+    "trans_y": 848
    }
   },
   "FLIPSimTemplate": {
@@ -608,7 +565,8 @@
      },
      "params": {
       "method": "1oUpwind",
-      "iterations": 4
+      "iterations": 4,
+      "dilateIters": 0
      },
      "uipos": [
       7605.615743353981,
@@ -2999,7 +2957,7 @@
      "inputs": {
       "port": [
        "56cd53d3-x",
-       "LiquidSDF",
+       "ExtractedLiquidSDF",
        null
       ],
       "SRC": [
@@ -3022,8 +2980,332 @@
    },
    "view": {
     "scale": 1.0,
-    "trans_x": 235,
-    "trans_y": 328
+    "trans_x": 127,
+    "trans_y": 345
+   }
+  },
+  "SmoothLiquidSDF": {
+   "nodes": {
+    "13831fd6-x": {
+     "name": "VDBRenormalizeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "a0cfcb29-x",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "method": "1oUpwind",
+      "iterations": 0,
+      "dilateIters": -2
+     },
+     "uipos": [
+      1104.3,
+      439.47500000000014
+     ],
+     "options": []
+    },
+    "696253df-x": {
+     "name": "VDBRenormalizeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "4ba9d496-x",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "method": "1oUpwind",
+      "iterations": 0,
+      "dilateIters": 2
+     },
+     "uipos": [
+      56.700000000000045,
+      399.875
+     ],
+     "options": []
+    },
+    "c7e42109-x": {
+     "name": "VDBSmoothSDF",
+     "inputs": {
+      "inoutSDF": [
+       "696253df-x",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "width": 1,
+      "iterations": 1
+     },
+     "uipos": [
+      325.70000000000005,
+      407.875
+     ],
+     "options": []
+    },
+    "79d4cf37-x": {
+     "name": "VDBRenormalizeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "c7e42109-x",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "method": "1oUpwind",
+      "iterations": 4,
+      "dilateIters": 0
+     },
+     "uipos": [
+      573.7,
+      435.875
+     ],
+     "options": []
+    },
+    "bdae91e8-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "b31e2a1a-SubInput",
+       "port",
+       null
+      ],
+      "rhs": [
+       "038d6874-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      -450.04999999999995,
+      179.625
+     ],
+     "options": []
+    },
+    "4ba9d496-x": {
+     "name": "VDBErodeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "94c34deb-x",
+       "inoutSDF",
+       null
+      ],
+      "depth": [
+       "bdae91e8-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -196.9000000000001,
+      416.875
+     ],
+     "options": []
+    },
+    "9677e552-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "bdae91e8-x",
+       "ret",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "neg"
+     },
+     "uipos": [
+      574.6999999999998,
+      210.075
+     ],
+     "options": []
+    },
+    "94c34deb-x": {
+     "name": "VDBRenormalizeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "44d210b4-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "method": "1oUpwind",
+      "iterations": 4,
+      "dilateIters": 0
+     },
+     "uipos": [
+      -450.29999999999995,
+      404.875
+     ],
+     "options": []
+    },
+    "a0cfcb29-x": {
+     "name": "VDBErodeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "79d4cf37-x",
+       "inoutSDF",
+       null
+      ],
+      "depth": [
+       "9677e552-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      844.7,
+      442.875
+     ],
+     "options": []
+    },
+    "44d210b4-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "inoutSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -719.2000000000002,
+      384.8
+     ],
+     "options": []
+    },
+    "bc4da704-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "13831fd6-x",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "inoutSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1368.0000000000005,
+      490.4000000000001
+     ],
+     "options": []
+    },
+    "b31e2a1a-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dx",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -731.1999999999998,
+      124.0
+     ],
+     "options": []
+    },
+    "038d6874-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": -2.0
+     },
+     "uipos": [
+      -456.0,
+      -1.0
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1.0,
+    "trans_x": -65,
+    "trans_y": 124
    }
   }
  },
@@ -12023,6 +12305,52 @@
      "int",
      "iterations",
      "4"
+    ],
+    [
+     "int",
+     "dilateIters",
+     "0"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBSmoothSDF": {
+   "inputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "width",
+     "1"
+    ],
+    [
+     "int",
+     "iterations",
+     "1"
     ]
    ],
    "categories": [
@@ -12703,6 +13031,42 @@
    "params": [],
    "categories": [
     "FLIP"
+   ],
+   "is_subgraph": true
+  },
+  "SmoothLiquidSDF": {
+   "inputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
    ],
    "is_subgraph": true
   },
