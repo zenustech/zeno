@@ -1,9 +1,10 @@
 #define CL_HPP_ENABLE_EXCEPTIONS
 #define CL_HPP_TARGET_OPENCL_VERSION 200
 #include <CL/opencl.hpp>
-#include <iostream>
 #include <vector>
 #include <memory>
+#include <cstdio>
+#include "stb_image_write.h"
 
 int main(void)
 {
@@ -11,9 +12,7 @@ int main(void)
 kernel void updateGlobal(global float *img, int nx, int ny) {
     int x = get_global_id(0);
     int y = get_global_id(1);
-    printf("before %d, %d: %f\n", x, y, img[x +nx* y]);
-    img[x +nx* y] = 3.14f;
-    printf("after  %d, %d: %f\n", x, y, img[x +nx* y]);
+    img[x +nx* y] = sin(4.f * (float)x / nx);
 }
     )CLC";
 
@@ -26,12 +25,12 @@ kernel void updateGlobal(global float *img, int nx, int ny) {
         cl_int buildErr = CL_SUCCESS;
         auto buildInfo = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(&buildErr);
         for (auto &pair : buildInfo) {
-            std::cerr << pair.second << std::endl << std::endl;
+            printf("%s\n\n", pair.second.c_str());
         }
         return 1;
     }
 
-    const int nx = 4, ny = 4;
+    const int nx = 128, ny = 128;
 
     cl::Buffer img(CL_MEM_READ_WRITE, nx * ny * sizeof(float));
 
@@ -44,12 +43,8 @@ kernel void updateGlobal(global float *img, int nx, int ny) {
     auto d_img = new float[nx * ny];
 
     cl::enqueueReadBuffer(img, true, 0, nx * ny * sizeof(float), d_img);
-
-    for (int y = 0; y < ny; y++) {
-        for (int x = 0; x < nx; x++) {
-            printf("%f\n", d_img[x +nx* y]);
-        }
-    }
+    stbi_write_hdr("/tmp/a.hdr", nx, ny, 1, d_img);
+    delete[] d_img;
 
     return 0;
 }
