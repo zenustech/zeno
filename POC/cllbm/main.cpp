@@ -4,19 +4,19 @@
 #include <vector>
 #include <memory>
 #include <cstdio>
+#include <cstdlib>
 #include "stb_image_write.h"
 
 int main(void)
 {
     std::string kernel1 = R"CLC(
-kernel void updateGlobal(global float *img, int nx, int ny) {
+kernel void updateGlobal(__read_write image2d_t img, int nx, int ny) {
     int x = get_global_id(0);
     int y = get_global_id(1);
-    img[x +nx* y] = sin(4.f * (float)x / nx);
+    float val = sin(4.f * (float)x / nx);
+    write_imagef(img, (int2)(x, y), val);
 }
     )CLC";
-
-    auto ctx = cl::Context::getDefault();
 
     cl::Program program({kernel1});
     try {
@@ -32,19 +32,20 @@ kernel void updateGlobal(global float *img, int nx, int ny) {
 
     const int nx = 128, ny = 128;
 
-    cl::Buffer img(CL_MEM_READ_WRITE, nx * ny * sizeof(float));
+    cl::Image2D img(cl::Context::getDefault(),
+            CL_MEM_READ_WRITE, {CL_R, CL_FLOAT}, nx, ny);
 
     cl::KernelFunctor<
-        cl::Buffer const &, int, int
+        cl::Image2D const &, int, int
     > kernel(program, "updateGlobal");
 
     kernel(cl::NDRange(nx, ny), img, nx, ny).wait();
 
-    auto d_img = new float[nx * ny];
+    auto h_img = new float[nx * ny];
 
-    cl::enqueueReadBuffer(img, true, 0, nx * ny * sizeof(float), d_img);
-    stbi_write_hdr("/tmp/a.hdr", nx, ny, 1, d_img);
-    delete[] d_img;
+    cl::enqueueReadImage(img, true, {0, 0, 0}, {nx, ny, 1}, 0, 0, h_img);
+    stbi_write_hdr("/tmp/a.hdr", nx, ny, 1, h_img);
+    system("display /tmp/a.hdr");
 
     return 0;
 }
