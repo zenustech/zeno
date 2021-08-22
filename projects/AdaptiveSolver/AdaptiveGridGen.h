@@ -80,11 +80,11 @@ namespace zeno{
                     } // end for all on voxels
                 }
             };
-            grid->tree().getNodes(leaves);
-            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), mark);
-            tmpGrid = grid->deepCopy();
-            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), extend);
-            grid = tmpGrid->deepCopy();
+            // grid->tree().getNodes(leaves);
+            // tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), mark);
+            // tmpGrid = grid->deepCopy();
+            // tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), extend);
+            // grid = tmpGrid->deepCopy();
         }
     };
     struct AdaptiveIndexGenerator{
@@ -96,7 +96,16 @@ namespace zeno{
         double start_h,
         std::shared_ptr<AdaptiveRule> rule
         );
-
+    openvdb::Vec3d abs(openvdb::Vec3d a)
+    {
+        openvdb::Vec3d b;
+        for(int i=0;i<3;++i)
+            if(a[i]<0)
+                b[i] = -a[i];
+            else
+                b[i] = a[i];
+        return b;
+    };
     };
 
 }

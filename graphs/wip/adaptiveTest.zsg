@@ -18,33 +18,10 @@
       "ONCE"
      ]
     },
-    "f7c761d8-MeshToSDF": {
-     "name": "MeshToSDF",
-     "inputs": {
-      "mesh": [
-       "5b79a082-ReadObjMesh",
-       "mesh"
-      ],
-      "Dx": null,
-      "SRC": null
-     },
-     "params": {
-      "voxel_size": 0.08,
-      "type": "vertex"
-     },
-     "uipos": [
-      -945.0,
-      56.0
-     ],
-     "options": []
-    },
     "d234e697-MeshToPrimitive": {
      "name": "MeshToPrimitive",
      "inputs": {
-      "mesh": [
-       "a7c5218c-SDFToPoly",
-       "Mesh"
-      ],
+      "mesh": null,
       "SRC": null
      },
      "params": {},
@@ -54,28 +31,12 @@
      ],
      "options": []
     },
-    "c90183fd-generateAdaptiveGrid": {
-     "name": "generateAdaptiveGrid",
-     "inputs": {
-      "VDBGrid": [
-       "f7c761d8-MeshToSDF",
-       "sdf"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -561.0,
-      26.0
-     ],
-     "options": []
-    },
     "a7c5218c-SDFToPoly": {
      "name": "SDFToPoly",
      "inputs": {
       "SDF": [
-       "c90183fd-generateAdaptiveGrid",
-       "level0"
+       "47585c98-generateAdaptiveGrid",
+       "level1"
       ],
       "SRC": null
      },
@@ -84,34 +45,75 @@
       "adaptivity": 0.0
      },
      "uipos": [
-      -277.0,
+      -278.25,
       -75.0
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
-    "b91cb6f7-x": {
-     "name": "MeshToPrimitive",
+    "47585c98-generateAdaptiveGrid": {
+     "name": "generateAdaptiveGrid",
      "inputs": {
-      "mesh": [
-       "5b79a082-ReadObjMesh",
-       "mesh"
+      "VDBGrid": [
+       "5303dfd6-MeshToLevelSet",
+       "levelset"
+      ],
+      "Dx": [
+       "ad6b21b5-NumericFloat",
+       "value"
       ],
       "SRC": null
      },
      "params": {},
      "uipos": [
-      -925.0,
-      -166.0
+      -591.25,
+      -22.5
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
+    },
+    "ad6b21b5-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": null
+     },
+     "params": {
+      "value": 0.08
+     },
+     "uipos": [
+      -1313.75,
+      267.5
+     ],
+     "options": []
+    },
+    "5303dfd6-MeshToLevelSet": {
+     "name": "MeshToLevelSet",
+     "inputs": {
+      "mesh": [
+       "5b79a082-ReadObjMesh",
+       "mesh"
+      ],
+      "Dx": [
+       "ad6b21b5-NumericFloat",
+       "value"
+      ],
+      "SRC": null
+     },
+     "params": {
+      "voxel_size": 0.08,
+      "type": "vertex"
+     },
+     "uipos": [
+      -965.0,
+      -90.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -920,
-    "trans_y": -419
+    "scale": 0.8,
+    "trans_x": -1077,
+    "trans_y": -253
    }
   }
  },
@@ -2684,6 +2686,52 @@
    "params": [],
    "categories": [
     "trimesh"
+   ]
+  },
+  "MeshToLevelSet": {
+   "inputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "levelset",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "voxel_size",
+     "0.08 0"
+    ],
+    [
+     "string",
+     "type",
+     "vertex"
+    ]
+   ],
+   "categories": [
+    "openvdb"
    ]
   },
   "MeshToPrimitive": {
@@ -6310,6 +6358,11 @@
     [
      "",
      "VDBGrid",
+     ""
+    ],
+    [
+     "",
+     "Dx",
      ""
     ],
     [
