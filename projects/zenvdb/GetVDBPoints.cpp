@@ -58,6 +58,7 @@ static int defGetVDBPoints = zeno::defNodeClass<GetVDBPoints>("GetVDBPoints",
     }});
 
 
+//TODO: parallelize using concurrent vector
 struct VDBPointsToPrimitive : zeno::INode {
   virtual void apply() override {
     auto grid = get_input("grid")->as<VDBPointsGrid>()->m_grid;
