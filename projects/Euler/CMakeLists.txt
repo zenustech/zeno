@@ -37,6 +37,6 @@ target_link_libraries(zeno_Euler PRIVATE OpenVDB::openvdb )
 target_link_libraries(zeno_Euler PRIVATE Eigen3::Eigen)
 
 target_link_libraries(zeno_Euler PUBLIC zeno)
+target_link_libraries(zeno_Euler PRIVATE zeno_nodep)
 target_include_directories(zeno_Euler PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_Euler PRIVATE ../zenvdb/include)
-

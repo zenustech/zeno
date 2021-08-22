@@ -3,6 +3,7 @@ add_library(zeno_OldZFX SHARED ${WRANGLE_SOURCE})
 target_include_directories(zeno_OldZFX PRIVATE .)
 
 target_link_libraries(zeno_OldZFX PUBLIC zeno)
+target_link_libraries(zeno_OldZFX PRIVATE zeno_nodep)
 
 find_package(OpenMP)
 if (OPENMP_FOUND)

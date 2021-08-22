@@ -10,3 +10,4 @@ if (TARGET OpenMP::OpenMP_CXX)
 endif()
 
 target_link_libraries(zeno_bmeshops PUBLIC zeno)
+target_link_libraries(zeno_bmeshops PRIVATE zeno_nodep)

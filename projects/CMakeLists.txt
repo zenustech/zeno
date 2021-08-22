@@ -5,6 +5,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 set(EXTENSIONS_LIST ZenoFX oldzenbase zenvdb FastFLIP gmpm mesher Euler Rigid ZMS OldZFX EasyGL bmeshops FLIPtools)
 set(EXTENSIONS_ENABLE_LIST ZenoFX oldzenbase)
 
+add_library(zeno_nodep INTERFACE)
+if (NOT WIN32)
+    target_link_libraries(zeno_nodep INTERFACE -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/../scripts/linker.map)
+endif()
+
 foreach (name IN ITEMS ${EXTENSIONS_LIST})
     if (${name} IN_LIST EXTENSIONS_ENABLE_LIST)
         set(val ON)
