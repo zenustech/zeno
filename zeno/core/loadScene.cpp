@@ -71,7 +71,6 @@ ZENO_API void Graph::loadGraph(const char *json) {
 #endif
             if (0) {
             } else if (cmd == "addNode") {
-                printf("%p addNode %s, %s\n", this, di[1].GetString(), di[2].GetString());
                 addNode(di[1].GetString(), di[2].GetString());
             } else if (cmd == "completeNode") {
                 completeNode(di[1].GetString());
