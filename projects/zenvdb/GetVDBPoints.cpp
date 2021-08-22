@@ -2,7 +2,9 @@
 #include <zeno/ParticlesObject.h>
 #include <zeno/PrimitiveObject.h>
 #include <zeno/VDBGrid.h>
-
+#include "tbb/concurrent_vector.h"
+#include "tbb/parallel_for.h"
+#include "tbb/scalable_allocator.h"
 namespace zeno {
 
 struct GetVDBPoints : zeno::INode {
@@ -73,7 +75,11 @@ struct VDBPointsToPrimitive : zeno::INode {
     auto &retpos = ret->add_attr<zeno::vec3f>("pos");
     auto &retvel = ret->add_attr<zeno::vec3f>("vel");
 
-    for (auto const &leaf: leafs) {
+    tbb::concurrent_vector<std::tuple<zeno::vec3f,zeno::vec3f>> data(0);
+    tbb::parallel_for((size_t)0, (size_t)leafs.size(), (size_t)1, [&](size_t index)
+    //for (auto const &leaf: leafs)
+    {
+      auto &leaf = leafs[index];
       //attributes
       // Attribute reader
       // Extract the position attribute from the leaf by name (P is position).
@@ -95,11 +101,18 @@ struct VDBPointsToPrimitive : zeno::INode {
         // https://people.cs.clemson.edu/~jtessen/cpsc8190/OpenVDB-dpawiki.pdf
         p = transform->indexToWorld(p);
         openvdb::Vec3R v = velocityHandle.get(*iter);
-        retpos.emplace_back(p[0], p[1], p[2]);
-        retvel.emplace_back(v[0], v[1], v[2]);
+        //retpos.emplace_back(p[0], p[1], p[2]);
+        //retvel.emplace_back(v[0], v[1], v[2]);
+        data.emplace_back(std::make_tuple(zeno::vec3f(p[0],p[1],p[2]), zeno::vec3f(v[0],v[1],v[2])));
       }
-    }
-    ret->resize(retpos.size());
+    });
+    ret->resize(data.size());
+    tbb::parallel_for((size_t)0, (size_t)ret->size(), (size_t)1, 
+    [&](size_t index)
+    {
+      retpos[index] = std::get<0>(data[index]);
+      retvel[index] = std::get<1>(data[index]);
+    });
     set_output("prim", ret);
   }
 };
