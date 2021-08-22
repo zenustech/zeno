@@ -395,7 +395,7 @@ class NodeEditor(QWidget):
             from ...system import serial
 
             if path.endswith('.cpp'):
-                graphs = serial.serializeGraphs(prog['graph'])
+                graphs = serial.serializeGraphs(prog['graph'], has_subgraphs=False)
                 content = self.do_export_cpp(graphs)
             else:
                 data = list(serial.serializeScene(prog['graph']))
