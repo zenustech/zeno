@@ -12,7 +12,7 @@ struct ISubgraphNode : zeno::INode {
     ZENO_API virtual ~ISubgraphNode();
 };
 
-struct ISerialSubgraphNode : zeno::INode {
+struct ISerialSubgraphNode : ISubgraphNode {
     std::unique_ptr<zeno::Graph> graph = nullptr;
 
     virtual const char *get_subgraph_json() = 0;
