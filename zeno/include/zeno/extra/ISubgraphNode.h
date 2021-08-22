@@ -13,7 +13,7 @@ struct ISubgraphNode : zeno::INode {
 };
 
 struct ISerialSubgraphNode : ISubgraphNode {
-    std::unique_ptr<zeno::Graph> graph = nullptr;
+    std::unique_ptr<zeno::Graph> subg = nullptr;
 
     virtual const char *get_subgraph_json() = 0;
     ZENO_API virtual zeno::Graph *get_subgraph() override;

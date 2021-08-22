@@ -41,12 +41,13 @@ ISubgraphNode::ISubgraphNode() = default;
 ISubgraphNode::~ISubgraphNode() = default;
 
 zeno::Graph *ISerialSubgraphNode::get_subgraph() {
-    if (!graph) {
-        graph = std::make_unique<zeno::Graph>();
+    if (!subg) {
+        subg = std::make_unique<zeno::Graph>();
+        subg->scene = graph->scene;
         auto json = get_subgraph_json();
-        graph->loadGraph(json);
+        subg->loadGraph(json);
     }
-    return graph.get();
+    return subg.get();
 }
 
 ISerialSubgraphNode::ISerialSubgraphNode() = default;
