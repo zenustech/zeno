@@ -425,7 +425,7 @@ class NodeEditor(QWidget):
 ''' + json.dumps(data) + '''
 )ZSL");
         }
-        return graph;
+        return graph.get();
     }
 };
 ZENDEFNODE(''' + key + ''', {
