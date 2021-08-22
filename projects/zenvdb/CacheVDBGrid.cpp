@@ -60,9 +60,11 @@ struct CacheVDBGrid : zeno::INode {
         if (ignore || !fs::exists(path)) {
             requireInput("inGrid");
             auto grid = get_input<VDBGrid>("inGrid");
+            printf("dumping cache to [%s]\n", path.c_str());
             grid->output(path);
             set_output("outGrid", std::move(grid));
         } else {
+            printf("using cache from [%s]\n", path.c_str());
             auto grid = readGenericGrid(path);
             set_output("outGrid", std::move(grid));
         }

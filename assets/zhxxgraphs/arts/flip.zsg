@@ -293,7 +293,9 @@
       -1922.5599999999997,
       919.6799999999998
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "89eb0ef7-MakeFLIPWorld": {
      "name": "MakeFLIPWorld",
@@ -485,7 +487,7 @@
       ]
      },
      "params": {
-      "value": 0.03
+      "value": 0.04
      },
      "uipos": [
       713.25,
@@ -513,7 +515,9 @@
       ]
      },
      "params": {
-      "dir": "/tmp/cache"
+      "dir": "/tmp/cache",
+      "prefix": "",
+      "ignore": false
      },
      "uipos": [
       564.0,
@@ -539,9 +543,9 @@
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 444,
-    "trans_y": 294
+    "scale": 1.0,
+    "trans_x": 89,
+    "trans_y": 350
    }
   },
   "FLIPSimTemplate": {
@@ -3637,7 +3641,7 @@
       ]
      },
      "params": {
-      "value": 0.04
+      "value": 0.05
      },
      "uipos": [
       -626.8677734375,
@@ -3683,7 +3687,7 @@
       ]
      },
      "params": {
-      "value": 3.0
+      "value": 4.0
      },
      "uipos": [
       318.04999999999984,
@@ -3863,8 +3867,8 @@
    },
    "view": {
     "scale": 1.0000000000000007,
-    "trans_x": 571,
-    "trans_y": -179
+    "trans_x": -917,
+    "trans_y": -97
    }
   }
  },
@@ -4752,6 +4756,16 @@
      "string",
      "dir",
      "/tmp/cache"
+    ],
+    [
+     "string",
+     "prefix",
+     ""
+    ],
+    [
+     "bool",
+     "ignore",
+     "0"
     ]
    ],
    "categories": [
