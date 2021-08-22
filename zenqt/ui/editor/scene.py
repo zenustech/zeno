@@ -102,12 +102,12 @@ class QDMFindBar(QWidget):
             self.resultLabel.setText('')
             return
         ns = self.do_search(text)
+        self.current_index = 0
+        self.total_count = len(ns)
+
         if len(ns) == 0:
             self.resultLabel.setText('')
             return
-
-        self.current_index = 0
-        self.total_count = len(ns)
         self.on_jump()
 
     def on_jump(self):
