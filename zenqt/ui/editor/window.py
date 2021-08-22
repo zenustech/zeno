@@ -416,16 +416,11 @@ class NodeEditor(QWidget):
         for key, data in graphs.items():
             if key not in self.descs: continue
             desc = self.descs[key]
-            res += 'struct ' + key + ''' : zeno::ISubgraphNode {
-    std::unique_ptr<zeno::Graph> graph = nullptr;
-    virtual zeno::Graph *get_subgraph() override {
-        if (!graph) {
-            graph = std::make_unique<zeno::Graph>();
-            graph->loadGraph(R"ZSL(
+            res += 'struct ' + key + ''' : zeno::ISerialSubgraphNode {
+    virtual const char *get_subgraph_json() override {
+        return R"ZSL(
 ''' + json.dumps(data) + '''
-)ZSL");
-        }
-        return graph.get();
+)ZSL";
     }
 };
 ZENDEFNODE(''' + key + ''', {

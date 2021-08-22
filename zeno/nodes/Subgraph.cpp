@@ -1,7 +1,4 @@
 #include <zeno/zeno.h>
-#ifdef ZENO_VISUALIZATION
-#include <zeno/extra/Visualization.h>
-#endif
 #include <zeno/extra/ISubgraphNode.h>
 #include <zeno/types/ConditionObject.h>
 #include <zeno/utils/safe_at.h>

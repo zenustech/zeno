@@ -6,37 +6,20 @@ namespace zeno {
 
 struct ISubgraphNode : zeno::INode {
     virtual zeno::Graph *get_subgraph() = 0;
+    ZENO_API virtual void apply() override;
 
-    virtual void apply() override {
-        auto subg = get_subgraph();
+    ZENO_API ISubgraphNode();
+    ZENO_API virtual ~ISubgraphNode();
+};
 
-#ifdef ZENO_VISUALIZATION
-        // VIEW subnodes only if subgraph is VIEW'ed
-        subg->isViewed = has_option("VIEW");
-#endif
+struct ISerialSubgraphNode : zeno::INode {
+    std::unique_ptr<zeno::Graph> graph = nullptr;
 
-        for (auto const &[key, obj]: inputs) {
-            subg->setGraphInput2(key, obj);
-        }
-        subg->applyGraph();
+    virtual const char *get_subgraph_json() = 0;
+    ZENO_API virtual zeno::Graph *get_subgraph() override;
 
-        for (auto &[key, obj]: subg->subOutputs) {
-#ifdef ZENO_VISUALIZATION
-            if (subg->isViewed && !subg->hasAnyView) {
-                auto path = zeno::Visualization::exportPath();
-                if (auto p = zeno::silent_any_cast<
-                        std::shared_ptr<zeno::IObject>>(obj); p.has_value()) {
-                    p.value()->dumpfile(path);
-                }
-                subg->hasAnyView = true;
-            }
-#endif
-            set_output2(key, std::move(obj));
-        }
-
-        subg->subInputs.clear();
-        subg->subOutputs.clear();
-    }
+    ZENO_API ISerialSubgraphNode();
+    ZENO_API virtual ~ISerialSubgraphNode();
 };
 
 }
