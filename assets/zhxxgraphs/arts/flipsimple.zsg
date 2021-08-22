@@ -30,7 +30,7 @@
       ]
      },
      "params": {
-      "value": 0.1
+      "value": 0.2
      },
      "uipos": [
       80.80000000000004,
@@ -137,37 +137,6 @@
       "ONCE"
      ]
     },
-    "f82d66f8-PrimitiveAddAttr": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "1821cdf8-MeshToPrimitive",
-       "prim",
-       null
-      ],
-      "fillValue": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "vel",
-      "type": "float3"
-     },
-     "uipos": [
-      -1028.1999999999998,
-      1063.2
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
     "3ae6801d-x": {
      "name": "MeshToSDF",
      "inputs": {
@@ -268,29 +237,6 @@
       "ONCE"
      ]
     },
-    "1821cdf8-MeshToPrimitive": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "371e4cd2-x",
-       "mesh",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -818.2,
-      1669.0
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
     "ae91c4b7-TransformMesh": {
      "name": "TransformMesh",
      "inputs": {
@@ -381,8 +327,8 @@
        null
       ],
       "dynamicPrim": [
-       "f82d66f8-PrimitiveAddAttr",
-       "prim",
+       null,
+       null,
        null
       ],
       "dx": [
@@ -456,7 +402,7 @@
      "name": "SmoothLiquidSDF",
      "inputs": {
       "inoutSDF": [
-       "2032497c-MultiStepFLIPWorld",
+       "2032497c-StepFLIPWorld",
        "LiquidSDF",
        null
       ],
@@ -478,8 +424,8 @@
      ],
      "options": []
     },
-    "2032497c-MultiStepFLIPWorld": {
-     "name": "MultiStepFLIPWorld",
+    "2032497c-StepFLIPWorld": {
+     "name": "StepFLIPWorld",
      "inputs": {
       "World": [
        "89eb0ef7-MakeFLIPWorld",
@@ -491,14 +437,14 @@
        "Particles",
        null
       ],
-      "Collider": [
-       "5fb9adea-FLIPMakeCollider",
-       "Collider",
-       null
-      ],
       "gravity": [
        "c1d1d1a0-NumericVec3",
        "vec3",
+       null
+      ],
+      "Collider": [
+       "5fb9adea-FLIPMakeCollider",
+       "Collider",
        null
       ],
       "dt": [
@@ -506,12 +452,7 @@
        "value",
        null
       ],
-      "min_scale": [
-       null,
-       null,
-       null
-      ],
-      "dt_scale": [
+      "maxSubstep": [
        null,
        null,
        null
@@ -531,9 +472,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -581,
-    "trans_y": 186
+    "scale": 0.8,
+    "trans_x": -579,
+    "trans_y": 159
    }
   }
  },
@@ -2099,6 +2040,11 @@
      "",
      "SRC",
      ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
     ]
    ],
    "outputs": [
@@ -2111,13 +2057,17 @@
      "",
      "DST",
      ""
+    ],
+    [
+     "",
+     "DST",
+     ""
     ]
    ],
    "params": [],
    "categories": [
     "FLIP"
-   ],
-   "is_subgraph": true
+   ]
   },
   "FLIPMakeParticles": {
    "inputs": [
@@ -4098,86 +4048,6 @@
    ],
    "categories": [
     "openvdb"
-   ]
-  },
-  "MultiStepFLIPWorld": {
-   "inputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "Collider",
-     ""
-    ],
-    [
-     "",
-     "gravity",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "min_scale",
-     ""
-    ],
-    [
-     "",
-     "dt_scale",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
    ]
   },
   "NumericCounter": {
@@ -7231,12 +7101,12 @@
     ],
     [
      "",
-     "gravity",
+     "Collider",
      ""
     ],
     [
      "",
-     "Collider",
+     "gravity",
      ""
     ],
     [
@@ -7246,7 +7116,12 @@
     ],
     [
      "",
-     "maxSubstep",
+     "min_scale",
+     ""
+    ],
+    [
+     "",
+     "dt_scale",
      ""
     ],
     [
@@ -7509,6 +7384,76 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "SubstepFLIPWorld": {
+   "inputs": [
+    [
+     "",
+     "World",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "gravity",
+     ""
+    ],
+    [
+     "",
+     "Collider",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "World",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
    ]
   },
   "SubtractPressureGradient": {

@@ -137,37 +137,6 @@
       "ONCE"
      ]
     },
-    "f82d66f8-PrimitiveAddAttr": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "1821cdf8-MeshToPrimitive",
-       "prim",
-       null
-      ],
-      "fillValue": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "vel",
-      "type": "float3"
-     },
-     "uipos": [
-      -1028.1999999999998,
-      1063.2
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
     "3ae6801d-x": {
      "name": "MeshToSDF",
      "inputs": {
@@ -268,29 +237,6 @@
       "ONCE"
      ]
     },
-    "1821cdf8-MeshToPrimitive": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "371e4cd2-x",
-       "mesh",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -818.2,
-      1669.0
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
     "ae91c4b7-TransformMesh": {
      "name": "TransformMesh",
      "inputs": {
@@ -381,8 +327,8 @@
        null
       ],
       "dynamicPrim": [
-       "f82d66f8-PrimitiveAddAttr",
-       "prim",
+       null,
+       null,
        null
       ],
       "dx": [
@@ -531,9 +477,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -581,
-    "trans_y": 186
+    "scale": 0.6400000000000001,
+    "trans_x": -1054,
+    "trans_y": 220
    }
   },
   "FLIPSimTemplate": {
@@ -1583,8 +1529,8 @@
       "type": "vertex"
      },
      "uipos": [
-      588.0,
-      102.0
+      576.0,
+      85.0
      ],
      "options": []
     },
@@ -1642,7 +1588,7 @@
       "channel": "vel"
      },
      "uipos": [
-      922.0,
+      921.0,
       411.0
      ],
      "options": []
@@ -1975,8 +1921,8 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "653f3340-x",
-       "dict",
+       "d300bc9b-IfElse",
+       "result",
        null
       ],
       "SRC": [
@@ -1991,8 +1937,8 @@
       "defl": ""
      },
      "uipos": [
-      3153.4349999999995,
-      669.4525000000001
+      3446.4349999999995,
+      879.4525000000001
      ],
      "options": []
     },
@@ -2016,12 +1962,107 @@
       982.4999999999998
      ],
      "options": []
+    },
+    "2634ee9c-x": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "79a370a6-Route",
+       "output",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "dx": 0.04,
+      "type": "float3",
+      "structure": "Staggered",
+      "name": "Rename!"
+     },
+     "uipos": [
+      2508.75,
+      1041.25
+     ],
+     "options": []
+    },
+    "437d3b5d-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "SDF": [
+       "ee2afe3d-x",
+       "port",
+       null
+      ],
+      "Vel": [
+       "2634ee9c-x",
+       "data",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nVel\nobj2"
+     },
+     "uipos": [
+      2822.5,
+      1092.5
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "Vel",
+      "obj2"
+     ]
+    },
+    "d300bc9b-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "653f3340-x",
+       "dict",
+       null
+      ],
+      "false": [
+       "437d3b5d-x",
+       "dict",
+       null
+      ],
+      "cond": [
+       "9c99f5bb-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3153.75,
+      1005.75
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -180,
-    "trans_y": -214
+    "scale": 0.8000000000000002,
+    "trans_x": 1757,
+    "trans_y": 477
    }
   },
   "FLIPMakeParticles": {
@@ -3737,9 +3778,9 @@
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": -263,
-    "trans_y": 746
+    "scale": 1.0000000000000002,
+    "trans_x": -227,
+    "trans_y": 784
    }
   }
  },
@@ -7279,77 +7320,6 @@
     "openvdb"
    ]
   },
-  "StepFLIPWorld": {
-   "inputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "Collider",
-     ""
-    ],
-    [
-     "",
-     "gravity",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "min_scale",
-     ""
-    ],
-    [
-     "",
-     "dt_scale",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ],
-   "is_subgraph": true
-  },
   "NumericCounter": {
    "inputs": [
     [
@@ -10378,7 +10348,7 @@
     "primitive"
    ]
   },
-  "SubstepFLIPWorld": {
+  "StepFLIPWorld": {
    "inputs": [
     [
      "",
@@ -10392,17 +10362,27 @@
     ],
     [
      "",
-     "gravity",
-     ""
-    ],
-    [
-     "",
      "Collider",
      ""
     ],
     [
      "",
+     "gravity",
+     ""
+    ],
+    [
+     "",
      "dt",
+     ""
+    ],
+    [
+     "",
+     "min_scale",
+     ""
+    ],
+    [
+     "",
+     "dt_scale",
      ""
     ],
     [
@@ -10657,6 +10637,67 @@
    "categories": [
     "control"
    ]
+  },
+  "SubstepFLIPWorld": {
+   "inputs": [
+    [
+     "",
+     "World",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "gravity",
+     ""
+    ],
+    [
+     "",
+     "Collider",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "World",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ],
+   "is_subgraph": true
   },
   "SubtractPressureGradient": {
    "inputs": [
