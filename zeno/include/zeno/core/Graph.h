@@ -91,6 +91,7 @@ struct Graph {
     ZENO_API void setNodeOption(std::string const &id, std::string const &name);
     ZENO_API zany const &getNodeOutput(
         std::string const &sn, std::string const &ss) const;
+    ZENO_API void loadGraph(const char *json);
 
     void setNodeParam(std::string const &id, std::string const &par,
         std::variant<int, float, std::string> const &val) {

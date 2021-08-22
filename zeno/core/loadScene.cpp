@@ -59,4 +59,37 @@ ZENO_API void Scene::loadScene(const char *json) {
     }
 }
 
+ZENO_API void Graph::loadGraph(const char *json) {
+    Document d;
+    d.Parse(json);
+
+    for (int i = 0; i < d.Size(); i++) {
+        Value const &di = d[i];
+        std::string cmd = di[0].GetString();
+#ifdef ZENO_FAIL_SILENTLY
+        try {
+#endif
+            if (0) {
+            } else if (cmd == "addNode") {
+                addNode(di[1].GetString(), di[2].GetString());
+            } else if (cmd == "completeNode") {
+                completeNode(di[1].GetString());
+            } else if (cmd == "setNodeInput") {
+                setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zeno::zany>(di[3]));
+            } else if (cmd == "setNodeParam") {
+                setNodeParam(di[1].GetString(), di[2].GetString(), generic_get<std::variant<int, float, std::string>>(di[3]));
+            } else if (cmd == "setNodeOption") {
+                setNodeOption(di[1].GetString(), di[2].GetString());
+            } else if (cmd == "bindNodeInput") {
+                bindNodeInput(di[1].GetString(), di[2].GetString(), di[3].GetString(), di[4].GetString());
+            }
+#ifdef ZENO_FAIL_SILENTLY
+        } catch (zeno::BaseException const &e) {
+            spdlog::warn("exception executing command {} ({}): {}",
+                    i, cmd.c_str(), e.what());
+        }
+#endif
+    }
+}
+
 }

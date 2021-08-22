@@ -408,17 +408,25 @@ class NodeEditor(QWidget):
                 f.write(content)
 
     def do_export_cpp(self, graphs):
-        res = ''
+        res = '/* auto generated subgraph stubs by ZENO editor */'
         res += '#include <zeno/zeno.h>\n'
         res += '#include <zeno/extra/ISubgraphNode.h>\n'
         res += 'namespace {\n'
 
 
-        for key, data in graphs:
+        for key, data in graphs.items():
+            if key not in self.descs: continue
             desc = self.descs[key]
             res += 'struct ' + key + ''' : zeno::ISubgraphNode {
-    virtual std::string subgraph_name() override {
-        return "''' + key + '''";
+    std::unique_ptr<zeno::Graph> graph = nullptr;
+    virtual zeno::Graph *get_subgraph() override {
+        if (!graph) {
+            graph = std::make_unique<zeno::Graph>();
+            graph->loadGraph(R"ZSL(
+''' + json.dumps(data) + '''
+)ZSL");
+        }
+        return graph;
     }
 };
 ZENDEFNODE(''' + key + ''', {

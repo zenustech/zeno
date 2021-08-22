@@ -156,8 +156,11 @@ ZENDEFNODE(SetSubOutput, {
 
 
 struct Subgraph : zeno::ISubgraphNode {
-    virtual std::string subgraph_name() override {
-        return get_param<std::string>("name");
+    virtual zeno::Graph *get_subgraph() override {
+        auto name = get_param<std::string>("name");
+        auto subg = safe_at(graph->scene->graphs, name, "subgraph");
+        assert(subg->scene == graph->scene);
+        return subg;
     }
 };
 

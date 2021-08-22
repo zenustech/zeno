@@ -5,13 +5,10 @@
 namespace zeno {
 
 struct ISubgraphNode : zeno::INode {
-    virtual std::string subgraph_name() = 0;
+    virtual zeno::Graph *get_subgraph() = 0;
 
     virtual void apply() override {
-        auto name = subgraph_name();
-
-        auto subg = safe_at(graph->scene->graphs, name, "subgraph");
-        assert(subg->scene == graph->scene);
+        auto subg = get_subgraph();
 
 #ifdef ZENO_VISUALIZATION
         // VIEW subnodes only if subgraph is VIEW'ed
