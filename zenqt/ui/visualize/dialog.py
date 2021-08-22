@@ -182,13 +182,12 @@ class RecordVideoDialog(QDialog):
             os.rename(old_path, new_path)
         path = display.get_output_path('.mp4')
         png_paths = os.path.join(tmp_path, '%06d.png')
-        input()
         cmd = [
             'ffmpeg', 
             '-r', str(params['fps']), 
             '-i', png_paths, 
-            #'-c:v', params['encoder'],
-            #'-b:v', params['bit_rate'],
+            '-c:v', params['encoder'],
+            '-b:v', params['bit_rate'],
             path,
         ]
         print('Executing command:', cmd)
