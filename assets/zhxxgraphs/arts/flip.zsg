@@ -33,7 +33,7 @@
       "value": 0.03
      },
      "uipos": [
-      -306.6999999999997,
+      -305.6999999999997,
       902.721875
      ],
      "options": []
@@ -401,13 +401,13 @@
     "c5f709de-SmoothLiquidSDF": {
      "name": "SmoothLiquidSDF",
      "inputs": {
-      "inoutSDF": [
+      "inParticles": [
        "2032497c-StepFLIPWorld",
-       "LiquidSDF",
+       "Particles",
        null
       ],
       "dx": [
-       "35e6f99c-NumericFloat",
+       "94b22873-NumericFloat",
        "value",
        null
       ],
@@ -419,8 +419,8 @@
      },
      "params": {},
      "uipos": [
-      634.8124999999999,
-      303.1875
+      614.8125,
+      391.1875
      ],
      "options": []
     },
@@ -470,16 +470,34 @@
      },
      "params": {},
      "uipos": [
-      122.63867187499997,
-      319.1982421875
+      151.93554687499997,
+      425.1552734374999
+     ],
+     "options": []
+    },
+    "94b22873-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.03
+     },
+     "uipos": [
+      320.0,
+      281.0
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.8000000000000006,
-    "trans_x": -763,
-    "trans_y": 122
+    "scale": 1.0000000000000002,
+    "trans_x": -52,
+    "trans_y": 156
    }
   },
   "FLIPSimTemplate": {
@@ -2870,11 +2888,11 @@
       ]
      },
      "params": {
-      "width": 2,
+      "width": 1,
       "iterations": 2
      },
      "uipos": [
-      325.70000000000005,
+      319.4500000000001,
       407.875
      ],
      "options": []
@@ -2899,8 +2917,8 @@
       "dilateIters": 0
      },
      "uipos": [
-      596.7,
-      513.875
+      577.9499999999999,
+      565.4375000000001
      ],
      "options": []
     },
@@ -2953,8 +2971,8 @@
      },
      "params": {},
      "uipos": [
-      -196.9000000000001,
-      416.875
+      -228.15000000000012,
+      407.5
      ],
      "options": []
     },
@@ -2990,8 +3008,8 @@
      "name": "VDBRenormalizeSDF",
      "inputs": {
       "inoutSDF": [
-       "44d210b4-SubInput",
-       "port",
+       "6af52a44-x",
+       "SurfaceSDF",
        null
       ],
       "SRC": [
@@ -3006,8 +3024,8 @@
       "dilateIters": 0
      },
      "uipos": [
-      -450.29999999999995,
-      404.875
+      -585.8468749999998,
+      377.140625
      ],
      "options": []
     },
@@ -3047,13 +3065,13 @@
       ]
      },
      "params": {
-      "name": "inoutSDF",
+      "name": "inParticles",
       "type": "",
       "defl": ""
      },
      "uipos": [
-      -755.4500000000002,
-      387.30000000000007
+      -2203.8874999999994,
+      329.87812500000007
      ],
      "options": []
     },
@@ -3097,8 +3115,8 @@
       "defl": ""
      },
      "uipos": [
-      -929.9499999999999,
-      55.25000000000006
+      -2195.5749999999994,
+      630.25
      ],
      "options": []
     },
@@ -3137,12 +3155,59 @@
       74.99999999999997
      ],
      "options": []
+    },
+    "30d7a84d-x": {
+     "name": "VDBPointsToPrimitive",
+     "inputs": {
+      "grid": [
+       "44d210b4-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1710.7187499999986,
+      347.1406250000003
+     ],
+     "options": []
+    },
+    "6af52a44-x": {
+     "name": "ParticleToLevelSet",
+     "inputs": {
+      "Particles": [
+       "30d7a84d-x",
+       "prim",
+       null
+      ],
+      "Radius": [
+       "b31e2a1a-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1193.9218749999993,
+      463.9375000000001
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -969,
-    "trans_y": -161
+    "scale": 0.5120000000000001,
+    "trans_x": -1206,
+    "trans_y": -82
    }
   },
   "StepFLIPWorld": {
@@ -3467,31 +3532,6 @@
      ],
      "options": []
     },
-    "772e9276-x": {
-     "name": "SubOutput",
-     "inputs": {
-      "port": [
-       "9af97890-ParticleToLevelSet",
-       "SurfaceSDF",
-       null
-      ],
-      "SRC": [
-       "daa1a5be-EndFor",
-       "DST",
-       null
-      ]
-     },
-     "params": {
-      "name": "LiquidSDF",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      2954.25,
-      753.375
-     ],
-     "options": []
-    },
     "90e52dfe-x": {
      "name": "SubInput",
      "inputs": {
@@ -3775,79 +3815,12 @@
       886.0
      ],
      "options": []
-    },
-    "9af97890-ParticleToLevelSet": {
-     "name": "ParticleToLevelSet",
-     "inputs": {
-      "Particles": [
-       "21e33354-VDBPointsToPrimitive",
-       "prim",
-       null
-      ],
-      "Radius": [
-       "d301f598-SubInput",
-       "port",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2554.6875,
-      949.9999999999998
-     ],
-     "options": []
-    },
-    "21e33354-VDBPointsToPrimitive": {
-     "name": "VDBPointsToPrimitive",
-     "inputs": {
-      "grid": [
-       "1be95b63-SubstepFLIPWorld",
-       "Particles",
-       null
-      ],
-      "SRC": [
-       "1be95b63-SubstepFLIPWorld",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2115.6250000000005,
-      754.6875000000001
-     ],
-     "options": []
-    },
-    "d301f598-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "parRadius",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      1996.8749999999986,
-      1095.3124999999993
-     ],
-     "options": []
     }
    },
    "view": {
     "scale": 0.6400000000000005,
-    "trans_x": 658,
-    "trans_y": 454
+    "trans_x": 815,
+    "trans_y": 126
    }
   }
  },
@@ -13644,7 +13617,7 @@
    "inputs": [
     [
      "",
-     "inoutSDF",
+     "inParticles",
      ""
     ],
     [
@@ -13728,11 +13701,6 @@
     [
      "",
      "Particles",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
      ""
     ],
     [
