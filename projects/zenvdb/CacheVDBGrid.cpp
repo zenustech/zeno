@@ -47,6 +47,9 @@ struct CacheVDBGrid : zeno::INode {
             return;
         }
         auto dir = get_param<std::string>("dir");
+        if (!fs::is_directory(dir)) {
+            fs::create_directory(dir);
+        }
         requireInput("frameNum");
         auto fno = get_input<zeno::NumericObject>("frameNum")->get<int>();
         char buf[512];
