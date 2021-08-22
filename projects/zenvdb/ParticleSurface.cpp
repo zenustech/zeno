@@ -135,7 +135,7 @@ openvdb::FloatGrid::Ptr particleToLevelset(const std::vector<zinc::vec3f>& pos, 
             auto ppos = pos[p];
             pa.set(p, openvdb::Vec3R((double)(ppos[0]), (double)(ppos[1]), (double)(ppos[2])), radius);
         });
-    openvdb::FloatGrid::Ptr ls = openvdb::createLevelSet<openvdb::FloatGrid>(voxelSize, 3.0);
+    openvdb::FloatGrid::Ptr ls = openvdb::createLevelSet<openvdb::FloatGrid>(voxelSize, 4.0);
     openvdb::tools::ParticlesToLevelSet<openvdb::FloatGrid, openvdb::Index32> raster(*ls);
 
 
@@ -150,15 +150,18 @@ struct ParticleToLevelSet : zeno::INode{
     virtual void apply() override {
         auto par = get_input("Particles")->as<zeno::PrimitiveObject>();
         auto radius = get_input("Radius")->as<zeno::NumericObject>()->get<float>();
-        float dx = radius/2.0;
-        
+        float dx = radius/3.0;
+        if(has_input("Dx"))
+        {
+            dx = get_input("Dx")->as<zeno::NumericObject>()->get<float>();
+        }
         auto result = zeno::IObject::make<VDBFloatGrid>();
         result->m_grid = particleToLevelset(par->attr<zeno::vec3f>("pos"), radius, dx);
         set_output("SurfaceSDF", result);
     }
 };
 ZENDEFNODE(ParticleToLevelSet, {
-    {"Particles", "Radius"},
+    {"Particles", "Radius", "Dx"},
     {"SurfaceSDF"},
     {},
     {"openvdb"},
