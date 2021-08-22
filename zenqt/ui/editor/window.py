@@ -408,7 +408,7 @@ class NodeEditor(QWidget):
                 f.write(content)
 
     def do_export_cpp(self, graphs):
-        res = '/* auto generated subgraph stubs by ZENO editor */\n'
+        res += '/* auto generated from: %s */\n' % self.current_path
         res += '#include <zeno/zeno.h>\n'
         res += '#include <zeno/extra/ISubgraphNode.h>\n'
         res += 'namespace {\n'

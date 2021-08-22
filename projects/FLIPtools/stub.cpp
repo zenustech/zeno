@@ -1,4 +1,4 @@
-/* auto generated subgraph stubs by ZENO editor */
+/* auto generated from: arts/flipfinal.zsg */
 #include <zeno/zeno.h>
 #include <zeno/extra/ISubgraphNode.h>
 namespace {
