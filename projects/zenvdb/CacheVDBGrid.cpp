@@ -47,15 +47,17 @@ struct CacheVDBGrid : zeno::INode {
             return;
         }
         auto dir = get_param<std::string>("dir");
+        auto prefix = get_param<std::string>("prefix");
+        bool ignore = get_param<bool>("ignore");
         if (!fs::is_directory(dir)) {
             fs::create_directory(dir);
         }
         requireInput("frameNum");
         auto fno = get_input<zeno::NumericObject>("frameNum")->get<int>();
         char buf[512];
-        sprintf(buf, "%06d.vdb", fno);
+        sprintf(buf, "%s%06d.vdb", prefix.c_str(), fno);
         auto path = fs::path(dir) / buf;
-        if (!fs::exists(path)) {
+        if (ignore || !fs::exists(path)) {
             requireInput("inGrid");
             auto grid = get_input<VDBGrid>("inGrid");
             grid->output(path);
@@ -77,6 +79,8 @@ ZENDEFNODE(CacheVDBGrid,
     "outGrid",
     }, /* params: */ {
     {"string", "dir", "/tmp/cache"},
+    {"string", "prefix", ""},
+    {"bool", "ignore", "0"},
     }, /* category: */ {
     "openvdb",
     }});
