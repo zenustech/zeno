@@ -388,18 +388,49 @@ class NodeEditor(QWidget):
 
     def do_export(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Export',
-                '', 'C++ Header File(*.h);; JSON file(*.json);; All Files(*);;',
+                '', 'C++ Source File(*.cpp);; C++ Header File(*.h);; JSON file(*.json);; All Files(*);;',
                 options=QFileDialog.DontConfirmOverwrite)
         if path != '':
             prog = self.dumpProgram()
             from ...system import serial
-            data = list(serial.serializeScene(prog['graph']))
+
+            if path.endswith('.cpp'):
+                graphs = serial.serializeGraphs(prog['graph'])
+                content = self.do_export_cpp(graphs)
+            else:
+                data = list(serial.serializeScene(prog['graph']))
+                content = json.dumps(data)
+                if path.endswith('.h'):
+                    content = 'R"ZSL(' + content + ')ZSL"\n'
+                content = json.dumps(data)
+
             with open(path, 'w') as f:
-                if path.endswith('.h'):
-                    f.write('R"ZSL(')
-                json.dump(data, f)
-                if path.endswith('.h'):
-                    f.write(')ZSL"\n')
+                f.write(content)
+
+    def do_export_cpp(self, graphs):
+        res = ''
+        res += '#include <zeno/zeno.h>\n'
+        res += '#include <zeno/extra/ISubgraphNode.h>\n'
+        res += 'namespace {\n'
+
+
+        for key, data in graphs:
+            desc = self.descs[key]
+            res += 'struct ' + key + ''' : zeno::ISubgraphNode {
+    virtual std::string subgraph_name() override {
+        return "''' + key + '''";
+    }
+};
+ZENDEFNODE(''' + key + ''', {
+    {''' + ', '.join('{"%s", "%s", "%s"}' % (x, y, z) for x, y, z in desc['inputs']) + '''},
+    {''' + ', '.join('{"%s", "%s", "%s"}' % (x, y, z) for x, y, z in desc['outputs']) + '''},
+    {''' + ', '.join('{"%s", "%s", "%s"}' % (x, y, z) for x, y, z in desc['params']) + '''},
+    {''' + ', '.join('"%s"' % x for x in desc['categories']) + '''},
+});
+'''
+
+        res += '}\n'
+        return res
 
     def do_copy(self):
         itemList = self.scene.selectedItems()
