@@ -370,8 +370,8 @@
       "adaptivity": 0.0
      },
      "uipos": [
-      927.3906250000003,
-      321.734375
+      1308.6406250000005,
+      394.234375
      ],
      "options": []
     },
@@ -391,8 +391,8 @@
      },
      "params": {},
      "uipos": [
-      1202.3906250000005,
-      340.734375
+      1583.6406250000005,
+      413.234375
      ],
      "options": [
       "VIEW"
@@ -402,8 +402,8 @@
      "name": "SmoothLiquidSDF",
      "inputs": {
       "inParticles": [
-       "2032497c-StepFLIPWorld",
-       "Particles",
+       "0bf0a111-CacheVDBGrid",
+       "outGrid",
        null
       ],
       "dx": [
@@ -419,8 +419,8 @@
      },
      "params": {},
      "uipos": [
-      614.8125,
-      391.1875
+      996.0625,
+      463.6875
      ],
      "options": []
     },
@@ -488,16 +488,60 @@
       "value": 0.03
      },
      "uipos": [
-      332.0,
-      243.0
+      713.25,
+      315.5
+     ],
+     "options": []
+    },
+    "0bf0a111-CacheVDBGrid": {
+     "name": "CacheVDBGrid",
+     "inputs": {
+      "inGrid": [
+       "2032497c-StepFLIPWorld",
+       "Particles",
+       null
+      ],
+      "frameNum": [
+       "3e025bf7-GetFrameNum",
+       "FrameNum",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "dir": "/tmp/cache"
+     },
+     "uipos": [
+      564.0,
+      500.8
+     ],
+     "options": []
+    },
+    "3e025bf7-GetFrameNum": {
+     "name": "GetFrameNum",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      433.6,
+      348.80000000000007
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -499,
-    "trans_y": 288
+    "scale": 1.25,
+    "trans_x": 444,
+    "trans_y": 294
    }
   },
   "FLIPSimTemplate": {
@@ -4671,6 +4715,47 @@
    ],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "CacheVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "inGrid",
+     ""
+    ],
+    [
+     "",
+     "frameNum",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "dir",
+     "/tmp/cache"
+    ]
+   ],
+   "categories": [
+    "openvdb"
    ]
   },
   "CachedByKey": {

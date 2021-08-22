@@ -27,8 +27,9 @@ std::shared_ptr<VDBGrid> readGenericGrid(const std::string &fn) {
     if (zeno::static_for<0, std::tuple_size_v<GridTypes>>([&] (auto i) {
         using GridT = std::tuple_element_t<i, GridTypes>;
         if ((*iter)->isType<GridT>()) {
-          grid = std::make_shared<VDBGridWrapper<GridT>>();
-          grid->m_grid = openvdb::gridPtrCast<GridT>(*iter);
+          auto pGrid = std::make_shared<VDBGridWrapper<GridT>>();
+          pGrid->m_grid = openvdb::gridPtrCast<GridT>(*iter);
+          grid = pGrid;
           return true;
         }
         return false;
@@ -46,11 +47,11 @@ struct CacheVDBGrid : zeno::INode {
             return;
         }
         auto dir = get_param<std::string>("dir");
+        requireInput("frameNum");
         auto fno = get_input<zeno::NumericObject>("frameNum")->get<int>();
         char buf[512];
         sprintf(buf, "%06d.vdb", fno);
         auto path = fs::path(dir) / buf;
-        zeno::file_put_content();
         if (!fs::exists(path)) {
             requireInput("inGrid");
             auto grid = get_input<VDBGrid>("inGrid");
