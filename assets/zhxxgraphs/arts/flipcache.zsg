@@ -82,9 +82,7 @@
       -1078.0,
       815.0
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "01257425-MeshToSDF": {
      "name": "MeshToSDF",
@@ -113,9 +111,7 @@
       -1380.72,
       701.232
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "a9cece35-ReadObjMesh": {
      "name": "ReadObjMesh",
@@ -133,9 +129,7 @@
       -1923.584,
       725.3760000000002
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "3ae6801d-x": {
      "name": "MeshToSDF",
@@ -164,9 +158,7 @@
       -823.2080000000001,
       1396.448
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "371e4cd2-x": {
      "name": "ReadObjMesh",
@@ -184,58 +176,7 @@
       -1102.3920000000003,
       1440.152
      ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "7be04bc9-MakePrimitive": {
-     "name": "MakePrimitive",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -1559.2,
-      1096.8
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "dd258f35-PrimitiveAddAttr": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "7be04bc9-MakePrimitive",
-       "prim",
-       null
-      ],
-      "fillValue": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "pos",
-      "type": "float3"
-     },
-     "uipos": [
-      -1293.6000000000001,
-      1055.2
-     ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "ae91c4b7-TransformMesh": {
      "name": "TransformMesh",
@@ -271,9 +212,7 @@
       -1659.52,
       718.0800000000002
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "6b3d812a-NumericVec3": {
      "name": "NumericVec3",
@@ -314,9 +253,7 @@
       -552.0,
       365.0000000000001
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "5fb9adea-FLIPMakeCollider": {
      "name": "FLIPMakeCollider",
@@ -344,12 +281,10 @@
      },
      "params": {},
      "uipos": [
-      -304.0,
-      587.0
+      -455.0,
+      617.0
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "640a4573-SDFToPoly": {
      "name": "SDFToPoly",
@@ -370,8 +305,8 @@
       "adaptivity": 0.0
      },
      "uipos": [
-      927.3906250000003,
-      321.734375
+      1308.6406250000005,
+      394.234375
      ],
      "options": []
     },
@@ -391,8 +326,8 @@
      },
      "params": {},
      "uipos": [
-      1202.3906250000005,
-      340.734375
+      1583.6406250000005,
+      413.234375
      ],
      "options": [
       "VIEW"
@@ -402,8 +337,8 @@
      "name": "SmoothLiquidSDF",
      "inputs": {
       "inParticles": [
-       "2032497c-StepFLIPWorld",
-       "Particles",
+       "0bf0a111-CacheVDBGrid",
+       "outGrid",
        null
       ],
       "dx": [
@@ -419,8 +354,8 @@
      },
      "params": {},
      "uipos": [
-      614.8125,
-      391.1875
+      996.0625,
+      463.6875
      ],
      "options": []
     },
@@ -428,18 +363,18 @@
      "name": "StepFLIPWorld",
      "inputs": {
       "World": [
-       "89eb0ef7-MakeFLIPWorld",
-       "World",
+       "9959ab43-CachedOnce",
+       "output",
        null
       ],
       "Particles": [
-       "cc374997-FLIPMakeParticles",
-       "Particles",
+       "82bf761d-x",
+       "output",
        null
       ],
       "Collider": [
-       "5fb9adea-FLIPMakeCollider",
-       "Collider",
+       "c8ed6ea0-x",
+       "output",
        null
       ],
       "gravity": [
@@ -485,19 +420,128 @@
       ]
      },
      "params": {
-      "value": 0.03
+      "value": 0.04
      },
      "uipos": [
-      332.0,
-      243.0
+      713.25,
+      315.5
+     ],
+     "options": []
+    },
+    "0bf0a111-CacheVDBGrid": {
+     "name": "CacheVDBGrid",
+     "inputs": {
+      "inGrid": [
+       "2032497c-StepFLIPWorld",
+       "Particles",
+       null
+      ],
+      "frameNum": [
+       "3e025bf7-GetFrameNum",
+       "FrameNum",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "dir": "/tmp/cache",
+      "prefix": "",
+      "ignore": false
+     },
+     "uipos": [
+      564.0,
+      500.8
+     ],
+     "options": []
+    },
+    "3e025bf7-GetFrameNum": {
+     "name": "GetFrameNum",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      433.6,
+      348.80000000000007
+     ],
+     "options": []
+    },
+    "9959ab43-CachedOnce": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "89eb0ef7-MakeFLIPWorld",
+       "World",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -199.2,
+      381.59999999999997
+     ],
+     "options": []
+    },
+    "82bf761d-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "cc374997-FLIPMakeParticles",
+       "Particles",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -198.0,
+      546.0
+     ],
+     "options": []
+    },
+    "c8ed6ea0-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "5fb9adea-FLIPMakeCollider",
+       "Collider",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -199.0,
+      710.0
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": -499,
-    "trans_y": 288
+    "trans_x": 17,
+    "trans_y": 205
    }
   },
   "FLIPSimTemplate": {
@@ -3205,9 +3249,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -257,
-    "trans_y": 33
+    "scale": 1.25,
+    "trans_x": -2371,
+    "trans_y": 256
    }
   },
   "StepFLIPWorld": {
@@ -3593,7 +3637,7 @@
       ]
      },
      "params": {
-      "value": 0.04
+      "value": 0.05
      },
      "uipos": [
       -626.8677734375,
@@ -3639,7 +3683,7 @@
       ]
      },
      "params": {
-      "value": 3.0
+      "value": 4.0
      },
      "uipos": [
       318.04999999999984,
@@ -3819,8 +3863,8 @@
    },
    "view": {
     "scale": 1.0000000000000007,
-    "trans_x": 571,
-    "trans_y": -179
+    "trans_x": -917,
+    "trans_y": -97
    }
   }
  },
@@ -4671,6 +4715,57 @@
    ],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "CacheVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "inGrid",
+     ""
+    ],
+    [
+     "",
+     "frameNum",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "dir",
+     "/tmp/cache"
+    ],
+    [
+     "string",
+     "prefix",
+     ""
+    ],
+    [
+     "bool",
+     "ignore",
+     "0"
+    ]
+   ],
+   "categories": [
+    "openvdb"
    ]
   },
   "CachedByKey": {
