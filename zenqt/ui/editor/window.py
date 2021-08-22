@@ -413,7 +413,6 @@ class NodeEditor(QWidget):
         res += '#include <zeno/extra/ISubgraphNode.h>\n'
         res += 'namespace {\n'
 
-
         for key, data in graphs.items():
             if key not in self.descs: continue
             desc = self.descs[key]
