@@ -3,7 +3,6 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/filesystem.h>
-#include <zeno/utils/fileio.h>
 
 namespace zeno {
 
@@ -59,7 +58,7 @@ ZENDEFNODE(CachePrimitive,
     {"string", "prefix", ""},
     {"bool", "ignore", "0"},
     }, /* category: */ {
-    "openvdb",
+    "primitive",
     }});
 
 

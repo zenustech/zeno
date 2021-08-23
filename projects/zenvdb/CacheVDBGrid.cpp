@@ -3,7 +3,6 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/filesystem.h>
-#include <zeno/utils/fileio.h>
 
 namespace zeno {
 
