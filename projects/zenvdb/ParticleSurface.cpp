@@ -124,14 +124,14 @@ openvdb::FloatGrid::Ptr particleToLevelset(const std::vector<zinc::vec3f>& pos, 
     tbb::parallel_for(0, (int)pos.size(), 1, [&](int p)
         {
             auto ppos = pos[p];
-            pa.set(p, openvdb::Vec3R((double)(ppos[0]), (double)(ppos[1]), (double)(ppos[2])));
+            pa.set(p, openvdb::Vec3R(ppos[0], ppos[1], ppos[2]));
         });
     openvdb::FloatGrid::Ptr ls = openvdb::createLevelSet<openvdb::FloatGrid>(voxelSize, 4.0);
     openvdb::tools::ParticlesToLevelSet<openvdb::FloatGrid, openvdb::Index32> raster(*ls);
 
     raster.setGrainSize(1);//a value of zero disables threading
     raster.rasterizeSpheres(pa);
-    openvdb::CoordBBox bbox = pa.getBBox(*ls);
+    //openvdb::CoordBBox bbox = pa.getBBox(*ls);
     raster.finalize(true);
     return ls;
 }

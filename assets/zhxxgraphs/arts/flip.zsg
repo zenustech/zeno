@@ -3162,7 +3162,7 @@
      },
      "params": {
       "method": "1oUpwind",
-      "iterations": 2,
+      "iterations": 1,
       "dilateIters": 0
      },
      "uipos": [
@@ -3211,7 +3211,7 @@
      },
      "params": {
       "method": "1oUpwind",
-      "iterations": 2,
+      "iterations": 1,
       "dilateIters": 0
      },
      "uipos": [
@@ -3706,9 +3706,9 @@
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": -179,
-    "trans_y": 104
+    "scale": 1.0,
+    "trans_x": -615,
+    "trans_y": 38
    }
   },
   "StepFLIPWorld": {
