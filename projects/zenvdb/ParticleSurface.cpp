@@ -150,7 +150,7 @@ struct ParticleToLevelSet : zeno::INode{
     virtual void apply() override {
         auto par = get_input("Particles")->as<zeno::PrimitiveObject>();
         auto radius = get_input("Radius")->as<zeno::NumericObject>()->get<float>();
-        float dx = radius/3.0;
+        float dx = radius/2.0f;
         if(has_input("Dx"))
         {
             dx = get_input("Dx")->as<zeno::NumericObject>()->get<float>();

@@ -407,7 +407,12 @@
        null
       ],
       "dx": [
-       "35e6f99c-NumericFloat",
+       "d4481292-NumericOperator",
+       "ret",
+       null
+      ],
+      "dx_scale": [
+       "cb0cb1bf-x",
        "value",
        null
       ],
@@ -696,13 +701,15 @@
      "params": {
       "dir": "/tmp/cache",
       "prefix": "",
-      "ignore": true
+      "ignore": false
      },
      "uipos": [
       545.2500000000002,
       534.7500000000001
      ],
-     "options": []
+     "options": [
+      "MUTE"
+     ]
     },
     "6b0009e1-GetFrameNum": {
      "name": "GetFrameNum",
@@ -719,12 +726,76 @@
       818.6
      ],
      "options": []
+    },
+    "d4481292-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "35e6f99c-NumericFloat",
+       "value",
+       null
+      ],
+      "rhs": [
+       "9aabc348-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      344.19999999999993,
+      74.19999999999999
+     ],
+     "options": []
+    },
+    "9aabc348-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.75
+     },
+     "uipos": [
+      339.9999999999999,
+      -105.60000000000002
+     ],
+     "options": []
+    },
+    "cb0cb1bf-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.5
+     },
+     "uipos": [
+      708.0999999999999,
+      -153.10000000000002
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 1511,
-    "trans_y": -23
+    "scale": 1.0,
+    "trans_x": 269,
+    "trans_y": -259
    }
   },
   "FLIPSimTemplate": {
@@ -3070,8 +3141,8 @@
       "dilateIters": 0
      },
      "uipos": [
-      1116.8,
-      444.1625
+      1135.8000000000002,
+      474.1624999999999
      ],
      "options": []
     },
@@ -3091,7 +3162,7 @@
      },
      "params": {
       "method": "1oUpwind",
-      "iterations": 4,
+      "iterations": 2,
       "dilateIters": 0
      },
      "uipos": [
@@ -3115,8 +3186,8 @@
       ]
      },
      "params": {
-      "width": 1,
-      "iterations": 4
+      "width": 2,
+      "iterations": 2
      },
      "uipos": [
       286.63750000000005,
@@ -3140,8 +3211,8 @@
      },
      "params": {
       "method": "1oUpwind",
-      "iterations": 4,
-      "dilateIters": 0
+      "iterations": 2,
+      "dilateIters": -2
      },
      "uipos": [
       559.1999999999999,
@@ -3153,8 +3224,8 @@
      "name": "NumericOperator",
      "inputs": {
       "lhs": [
-       "498e5e9f-SubInput",
-       "port",
+       "13b9e4e5-NumericOperator",
+       "ret",
        null
       ],
       "rhs": [
@@ -3219,7 +3290,7 @@
      },
      "params": {
       "method": "1oUpwind",
-      "iterations": 4,
+      "iterations": 0,
       "dilateIters": 2
      },
      "uipos": [
@@ -3278,7 +3349,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "13831fd6-x",
+       "a0cfcb29-x",
        "inoutSDF",
        null
       ],
@@ -3309,7 +3380,7 @@
       ]
      },
      "params": {
-      "value": -1.0
+      "value": -2.0
      },
      "uipos": [
       -471.25,
@@ -3344,8 +3415,8 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "0ecdce51-x",
+       "DST",
        null
       ]
      },
@@ -3370,13 +3441,13 @@
        null
       ],
       "Dx": [
-       null,
-       null,
+       "13b9e4e5-NumericOperator",
+       "ret",
        null
       ],
       "SRC": [
-       null,
-       null,
+       "be07665a-PrintMessage",
+       "DST",
        null
       ]
      },
@@ -3402,8 +3473,8 @@
       "defl": ""
      },
      "uipos": [
-      -1833.2812499999984,
-      768.3593749999992
+      -1739.1187499999985,
+      558.7843749999994
      ],
      "options": []
     },
@@ -3411,8 +3482,8 @@
      "name": "NumericOperator",
      "inputs": {
       "lhs": [
-       "498e5e9f-SubInput",
-       "port",
+       "13b9e4e5-NumericOperator",
+       "ret",
        null
       ],
       "rhs": [
@@ -3445,19 +3516,103 @@
       ]
      },
      "params": {
-      "value": 0.75
+      "value": 2.0
      },
      "uipos": [
       494.0,
       -56.0
      ],
      "options": []
+    },
+    "87c46688-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dx_scale",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -1708.5375000000004,
+      838.8125
+     ],
+     "options": []
+    },
+    "13b9e4e5-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "498e5e9f-SubInput",
+       "port",
+       null
+      ],
+      "rhs": [
+       "87c46688-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      -1275.35,
+      830.5499999999998
+     ],
+     "options": []
+    },
+    "be07665a-PrintMessage": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "30d7a84d-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "ParticleToLevelSet"
+     },
+     "uipos": [
+      -1443.0,
+      292.0
+     ],
+     "options": []
+    },
+    "0ecdce51-x": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "44d210b4-SubInput",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "VDBGetParticles"
+     },
+     "uipos": [
+      -1962.0,
+      272.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": 105,
-    "trans_y": 209
+    "scale": 1.0000000000000002,
+    "trans_x": -1896,
+    "trans_y": 95
    }
   },
   "StepFLIPWorld": {
@@ -10657,6 +10812,11 @@
     [
      "",
      "dx",
+     ""
+    ],
+    [
+     "",
+     "dx_scale",
      ""
     ],
     [
