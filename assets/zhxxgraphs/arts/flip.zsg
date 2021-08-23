@@ -407,8 +407,8 @@
        null
       ],
       "Dx": [
-       "cf61e37a-NumericOperator",
-       "ret",
+       "35e6f99c-NumericFloat",
+       "value",
        null
       ],
       "voxelScale": [
@@ -423,6 +423,11 @@
       ],
       "influenceScale": [
        "14172652-NumericFloat",
+       "value",
+       null
+      ],
+      "allScale": [
+       "28878c13-x",
        "value",
        null
       ],
@@ -806,34 +811,6 @@
      ],
      "options": []
     },
-    "cf61e37a-NumericOperator": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "35e6f99c-NumericFloat",
-       "value",
-       null
-      ],
-      "rhs": [
-       "28878c13-x",
-       "value",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "op_type": "mul"
-     },
-     "uipos": [
-      566.25,
-      151.25
-     ],
-     "options": []
-    },
     "28878c13-x": {
      "name": "NumericFloat",
      "inputs": {
@@ -847,16 +824,16 @@
       "value": 0.5
      },
      "uipos": [
-      279.20000000000016,
-      207.20000000000005
+      964.2000000000003,
+      214.20000000000005
      ],
      "options": []
     }
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": 337,
-    "trans_y": -236
+    "trans_x": 392,
+    "trans_y": -112
    }
   },
   "FLIPSimTemplate": {
@@ -3411,8 +3388,8 @@
       "defl": ""
      },
      "uipos": [
-      -3397.996093749998,
-      -252.95898437499955
+      -3664.246093749998,
+      -499.20898437499955
      ],
      "options": []
     },
@@ -3460,8 +3437,8 @@
      "name": "NumericOperator",
      "inputs": {
       "lhs": [
-       "7f1e760a-SubInput",
-       "port",
+       "4889ce4f-NumericOperator",
+       "ret",
        null
       ],
       "rhs": [
@@ -3562,8 +3539,8 @@
      "name": "NumericOperator",
      "inputs": {
       "lhs": [
-       "7f1e760a-SubInput",
-       "port",
+       "4889ce4f-NumericOperator",
+       "ret",
        null
       ],
       "rhs": [
@@ -3649,8 +3626,8 @@
      "name": "NumericOperator",
      "inputs": {
       "lhs": [
-       "7f1e760a-SubInput",
-       "port",
+       "4889ce4f-NumericOperator",
+       "ret",
        null
       ],
       "rhs": [
@@ -3686,8 +3663,8 @@
       "value": 2.0
      },
      "uipos": [
-      82.00859374999973,
-      144.16406249999994
+      220.0085937499997,
+      178.16406249999994
      ],
      "options": []
     },
@@ -3979,7 +3956,7 @@
       ]
      },
      "params": {
-      "value": 3.0
+      "value": 1.5
      },
      "uipos": [
       -3645.0,
@@ -4186,12 +4163,109 @@
       680.0
      ],
      "options": []
+    },
+    "b0c4fded-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.5
+     },
+     "uipos": [
+      -3941.999999999998,
+      -181.9999999999999
+     ],
+     "options": []
+    },
+    "1356ce6b-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "allScale",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -4197.999999999998,
+      -254.24999999999994
+     ],
+     "options": []
+    },
+    "017e48af-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "1356ce6b-x",
+       "port",
+       null
+      ],
+      "false": [
+       "b0c4fded-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "1356ce6b-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3666.9999999999986,
+      -247.24999999999994
+     ],
+     "options": []
+    },
+    "4889ce4f-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "7f1e760a-SubInput",
+       "port",
+       null
+      ],
+      "rhs": [
+       "017e48af-x",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      -3345.703124999999,
+      -213.37890624999994
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.8000000000000002,
-    "trans_x": -3321,
-    "trans_y": -110
+    "scale": 0.8,
+    "trans_x": -3409,
+    "trans_y": -445
    }
   },
   "StepFLIPWorld": {
@@ -11406,6 +11480,11 @@
     [
      "",
      "influenceScale",
+     ""
+    ],
+    [
+     "",
+     "allScale",
      ""
     ],
     [
