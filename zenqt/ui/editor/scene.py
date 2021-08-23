@@ -95,7 +95,20 @@ class QDMFindBar(QWidget):
 
     def do_search(self, text):
         scene = self.window.view.scene()
-        return [n for n in scene.nodes if text.lower() in n.name.lower()]
+        text = text.lower()
+        result = []
+        for n in scene.nodes:
+            if n.name in ('PortalIn', 'PortalOut', 'SubInput', 'SubOutput'):
+                name = n.params['name'].getValue().lower()
+                if text in name:
+                    result.append(n)
+                    continue
+
+            name = n.name.lower()
+            if text in name:
+                result.append(n)
+
+        return result
 
     def textChanged(self, text):
         if text == '':
