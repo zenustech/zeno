@@ -98,7 +98,7 @@ class QDMFindBar(QWidget):
         text = text.lower()
         result = []
         for n in scene.nodes:
-            if n.name.startswith('Portal'):
+            if n.name in ('PortalIn', 'PortalOut', 'SubInput', 'SubOutput'):
                 name = n.params['name'].getValue().lower()
                 if text in name:
                     result.append(n)
