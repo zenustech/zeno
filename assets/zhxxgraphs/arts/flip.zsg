@@ -402,28 +402,33 @@
      "name": "SmoothLiquidSDF",
      "inputs": {
       "inParticles": [
-       "476188f5-CacheVDBGrid",
-       "outGrid",
+       "8c5c59c9-ReadVDBGrid",
+       "data",
        null
       ],
-      "influenceScale": [
-       "14172652-NumericFloat",
+      "Dx": [
+       "35e6f99c-NumericFloat",
        "value",
        null
       ],
-      "particleSeparation": [
-       "4150758e-NumericFloat",
-       "value",
+      "DxScale": [
+       null,
+       null,
        null
       ],
       "voxelScale": [
-       "0c5244b9-NumericFloat",
-       "value",
+       null,
+       null,
        null
       ],
       "dropletScale": [
-       "eb69e4a7-x",
-       "value",
+       null,
+       null,
+       null
+      ],
+      "influenceScale": [
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -741,42 +746,6 @@
      ],
      "options": []
     },
-    "14172652-NumericFloat": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 3.0
-     },
-     "uipos": [
-      602.2500000000001,
-      7.187499999999957
-     ],
-     "options": []
-    },
-    "4150758e-NumericFloat": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 0.02
-     },
-     "uipos": [
-      609.2500000000001,
-      150.12499999999994
-     ],
-     "options": []
-    },
     "8c5c59c9-ReadVDBGrid": {
      "name": "ReadVDBGrid",
      "inputs": {
@@ -793,42 +762,6 @@
      "uipos": [
       848.5,
       -93.75000000000006
-     ],
-     "options": []
-    },
-    "0c5244b9-NumericFloat": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 0.75
-     },
-     "uipos": [
-      821.875,
-      234.0
-     ],
-     "options": []
-    },
-    "eb69e4a7-x": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 1.2
-     },
-     "uipos": [
-      918.0625,
-      383.1875
      ],
      "options": []
     },
@@ -927,9 +860,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": 477,
-    "trans_y": -268
+    "scale": 1.0000000000000002,
+    "trans_x": -212,
+    "trans_y": -217
    }
   },
   "FLIPSimTemplate": {
@@ -3479,13 +3412,13 @@
       ]
      },
      "params": {
-      "name": "influenceScale",
+      "name": "Dx",
       "type": "",
       "defl": ""
      },
      "uipos": [
-      -3381.791992187498,
-      159.79003906250045
+      -4088.791992187498,
+      261.79003906250045
      ],
      "options": []
     },
@@ -3499,13 +3432,13 @@
       ]
      },
      "params": {
-      "name": "particleSeparation",
+      "name": "DxScale",
       "type": "",
       "defl": ""
      },
      "uipos": [
-      -3390.9960937499986,
-      -92.95898437499955
+      -4191.996093749998,
+      -113.95898437499955
      ],
      "options": []
     },
@@ -3553,13 +3486,13 @@
      "name": "NumericOperator",
      "inputs": {
       "lhs": [
-       "7f1e760a-SubInput",
-       "port",
+       "343c4bcb-NumericOperator",
+       "ret",
        null
       ],
       "rhs": [
-       "07a4eb29-SubInput",
-       "port",
+       "30ae9964-IfElse",
+       "result",
        null
       ],
       "SRC": [
@@ -3572,8 +3505,8 @@
       "op_type": "mul"
      },
      "uipos": [
-      -2938.183593749998,
-      349.853515625
+      -2903.183593749998,
+      351.853515625
      ],
      "options": []
     },
@@ -3604,13 +3537,13 @@
      "name": "NumericOperator",
      "inputs": {
       "lhs": [
-       "7f1e760a-SubInput",
+       "7b7a84ed-SubInput",
        "port",
        null
       ],
       "rhs": [
-       "7b7a84ed-SubInput",
-       "port",
+       "83972ea7-x",
+       "result",
        null
       ],
       "SRC": [
@@ -3655,13 +3588,13 @@
      "name": "NumericOperator",
      "inputs": {
       "lhs": [
-       "7f1e760a-SubInput",
-       "port",
+       "343c4bcb-NumericOperator",
+       "ret",
        null
       ],
       "rhs": [
-       "e2be73a2-SubInput",
-       "port",
+       "2999e4e9-x",
+       "result",
        null
       ],
       "SRC": [
@@ -3950,12 +3883,256 @@
       98.74999999999991
      ],
      "options": []
+    },
+    "888abb73-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.75
+     },
+     "uipos": [
+      -3151.234375,
+      313.375
+     ],
+     "options": []
+    },
+    "30ae9964-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "07a4eb29-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "888abb73-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "07a4eb29-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3146.0,
+      481.0
+     ],
+     "options": []
+    },
+    "2999e4e9-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "e2be73a2-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "02e1b123-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "e2be73a2-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3123.0,
+      759.0
+     ],
+     "options": []
+    },
+    "02e1b123-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1.2
+     },
+     "uipos": [
+      -3114.0,
+      971.0
+     ],
+     "options": []
+    },
+    "83972ea7-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "d50dce56-x",
+       "port",
+       null
+      ],
+      "false": [
+       "41930a58-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "d50dce56-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3158.3828125,
+      102.8125
+     ],
+     "options": []
+    },
+    "41930a58-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1.5
+     },
+     "uipos": [
+      -3163.6171875,
+      -63.8125
+     ],
+     "options": []
+    },
+    "d50dce56-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "influenceScale",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -3413.0,
+      146.0
+     ],
+     "options": []
+    },
+    "343c4bcb-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "7b7a84ed-SubInput",
+       "port",
+       null
+      ],
+      "rhs": [
+       "54a1ebb9-x",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      -3682.0,
+      160.0
+     ],
+     "options": []
+    },
+    "54a1ebb9-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "7f1e760a-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "f8c536e7-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "7f1e760a-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3934.0,
+      -24.0
+     ],
+     "options": []
+    },
+    "f8c536e7-x": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.5
+     },
+     "uipos": [
+      -3934.0,
+      -196.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.5120000000000007,
-    "trans_x": -617,
-    "trans_y": -85
+    "scale": 1.0000000000000002,
+    "trans_x": -3676,
+    "trans_y": -139
    }
   },
   "StepFLIPWorld": {
@@ -11205,12 +11382,12 @@
     ],
     [
      "",
-     "influenceScale",
+     "Dx",
      ""
     ],
     [
      "",
-     "particleSeparation",
+     "DxScale",
      ""
     ],
     [
@@ -11221,6 +11398,11 @@
     [
      "",
      "dropletScale",
+     ""
+    ],
+    [
+     "",
+     "influenceScale",
      ""
     ],
     [
