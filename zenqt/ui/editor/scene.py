@@ -136,6 +136,10 @@ class QDMFindBar(QWidget):
         self.current_index = (self.current_index + 1) % self.total_count
         self.on_jump()
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.lineEdit.setFocus()
+
     def close(self):
         self.current_index = 0
         self.total_count = 0
