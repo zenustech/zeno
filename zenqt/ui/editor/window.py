@@ -406,7 +406,6 @@ class NodeEditor(QWidget):
                 content = json.dumps(data)
                 if path.endswith('.h'):
                     content = 'R"ZSL(' + content + ')ZSL"\n'
-                content = json.dumps(data)
 
             with open(path, 'w') as f:
                 f.write(content)
