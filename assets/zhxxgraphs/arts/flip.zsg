@@ -426,7 +426,7 @@
        "value",
        null
       ],
-      "allScale": [
+      "DxScale": [
        "28878c13-x",
        "value",
        null
@@ -748,7 +748,7 @@
       ]
      },
      "params": {
-      "value": 3.0
+      "value": 1.5
      },
      "uipos": [
       1294.4500000000003,
@@ -767,7 +767,7 @@
      },
      "params": {
       "type": "points",
-      "path": "/tmp/cache/000050.vdb"
+      "path": "/tmp/cache/000030.vdb"
      },
      "uipos": [
       876.0500000000001,
@@ -832,8 +832,8 @@
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": 392,
-    "trans_y": -112
+    "trans_x": 599,
+    "trans_y": -85
    }
   },
   "FLIPSimTemplate": {
@@ -3508,7 +3508,7 @@
      },
      "uipos": [
       -2930.371093749998,
-      101.41601562499977
+      100.16601562499977
      ],
      "options": []
     },
@@ -4192,7 +4192,7 @@
       ]
      },
      "params": {
-      "name": "allScale",
+      "name": "DxScale",
       "type": "",
       "defl": ""
      },
@@ -4264,8 +4264,8 @@
    },
    "view": {
     "scale": 0.8,
-    "trans_x": -3409,
-    "trans_y": -445
+    "trans_x": -3566,
+    "trans_y": -395
    }
   },
   "StepFLIPWorld": {
@@ -11484,7 +11484,7 @@
     ],
     [
      "",
-     "allScale",
+     "DxScale",
      ""
     ],
     [
