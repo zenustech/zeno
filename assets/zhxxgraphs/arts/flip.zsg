@@ -412,8 +412,8 @@
        null
       ],
       "dx_scale": [
-       "cb0cb1bf-x",
-       "value",
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -772,30 +772,12 @@
       -105.60000000000002
      ],
      "options": []
-    },
-    "cb0cb1bf-x": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 0.5
-     },
-     "uipos": [
-      708.0999999999999,
-      -153.10000000000002
-     ],
-     "options": []
     }
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": 531,
-    "trans_y": -217
+    "trans_x": 136,
+    "trans_y": -239
    }
   },
   "FLIPSimTemplate": {

@@ -10,8 +10,8 @@ struct FLIPSimTemplate : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(FLIPSimTemplate, {
-    {{"", "Velocity", ""}, {"", "Collision", ""}, {"", "PostAdvVel", ""}, {"", "Pressure", ""}, {"", "CollisionVel", ""}, {"", "DynEmitter", ""}, {"", "ifEmit", ""}, {"", "Particles", ""}, {"", "VelocityWeights", ""}, {"", "dx", ""}, {"", "ExtractedLiquidSDF", ""}, {"", "Gravity", ""}, {"", "CellFWeight", ""}, {"", "Divergence", ""}, {"", "LiquidSDF", ""}, {"", "dt", ""}, {"", "SRC", ""}},
-    {{"", "Particles", ""}, {"", "DST", ""}},
+    {{"", "Velocity", ""}, {"", "Collision", ""}, {"", "PostAdvVel", ""}, {"", "Pressure", ""}, {"", "CollisionVel", ""}, {"", "DynEmitter", ""}, {"", "ifEmit", ""}, {"", "Particles", ""}, {"", "VelocityWeights", ""}, {"", "dx", ""}, {"", "ExtractedLiquidSDF", ""}, {"", "Gravity", ""}, {"", "CellFWeight", ""}, {"", "Divergence", ""}, {"", "LiquidSDF", ""}, {"", "dt", ""}},
+    {{"", "Particles", ""}},
     {},
     {"FLIPSolver"},
 });
@@ -23,8 +23,8 @@ struct FLIPMakeCollider : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(FLIPMakeCollider, {
-    {{"", "StaticSDF", ""}, {"", "dynamicPrim", ""}, {"", "dx", ""}, {"", "SRC", ""}},
-    {{"", "Collider", ""}, {"", "DST", ""}},
+    {{"", "StaticSDF", ""}, {"", "dynamicPrim", ""}, {"", "dx", ""}},
+    {{"", "Collider", ""}},
     {},
     {"FLIP"},
 });
@@ -36,8 +36,8 @@ struct FLIPMakeParticles : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(FLIPMakeParticles, {
-    {{"", "TankSDF", ""}, {"", "dx", ""}, {"", "SRC", ""}},
-    {{"", "Particles", ""}, {"", "DST", ""}},
+    {{"", "TankSDF", ""}, {"", "dx", ""}},
+    {{"", "Particles", ""}},
     {},
     {"FLIP"},
 });
@@ -49,8 +49,8 @@ struct MakeFLIPWorld : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(MakeFLIPWorld, {
-    {{"", "dx", ""}, {"", "SRC", ""}},
-    {{"", "World", ""}, {"", "DST", ""}},
+    {{"", "dx", ""}},
+    {{"", "World", ""}},
     {},
     {"FLIP"},
 });
@@ -62,21 +62,21 @@ struct SubstepFLIPWorld : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(SubstepFLIPWorld, {
-    {{"", "World", ""}, {"", "Particles", ""}, {"", "gravity", ""}, {"", "Collider", ""}, {"", "dt", ""}, {"", "SRC", ""}},
-    {{"", "World", ""}, {"", "Particles", ""}, {"", "LiquidSDF", ""}, {"", "DST", ""}},
+    {{"", "World", ""}, {"", "Particles", ""}, {"", "gravity", ""}, {"", "Collider", ""}, {"", "dt", ""}},
+    {{"", "World", ""}, {"", "Particles", ""}, {"", "LiquidSDF", ""}},
     {},
     {"FLIP"},
 });
 struct SmoothLiquidSDF : zeno::ISerialSubgraphNode {
     virtual const char *get_subgraph_json() override {
         return R"ZSL(
-[["addNode", "VDBRenormalizeSDF", "13831fd6-x"], ["bindNodeInput", "13831fd6-x", "inoutSDF", "a0cfcb29-x", "inoutSDF"], ["setNodeParam", "13831fd6-x", "method", "1oUpwind"], ["setNodeParam", "13831fd6-x", "iterations", 4], ["setNodeParam", "13831fd6-x", "dilateIters", 0], ["completeNode", "13831fd6-x"], ["addNode", "VDBRenormalizeSDF", "696253df-x"], ["bindNodeInput", "696253df-x", "inoutSDF", "4ba9d496-x", "inoutSDF"], ["setNodeParam", "696253df-x", "method", "1oUpwind"], ["setNodeParam", "696253df-x", "iterations", 4], ["setNodeParam", "696253df-x", "dilateIters", 0], ["completeNode", "696253df-x"], ["addNode", "VDBSmoothSDF", "c7e42109-x"], ["bindNodeInput", "c7e42109-x", "inoutSDF", "696253df-x", "inoutSDF"], ["setNodeParam", "c7e42109-x", "width", 1], ["setNodeParam", "c7e42109-x", "iterations", 4], ["completeNode", "c7e42109-x"], ["addNode", "VDBRenormalizeSDF", "79d4cf37-x"], ["bindNodeInput", "79d4cf37-x", "inoutSDF", "c7e42109-x", "inoutSDF"], ["setNodeParam", "79d4cf37-x", "method", "1oUpwind"], ["setNodeParam", "79d4cf37-x", "iterations", 4], ["setNodeParam", "79d4cf37-x", "dilateIters", 0], ["completeNode", "79d4cf37-x"], ["addNode", "NumericOperator", "bdae91e8-x"], ["bindNodeInput", "bdae91e8-x", "lhs", "498e5e9f-SubInput", "port"], ["bindNodeInput", "bdae91e8-x", "rhs", "038d6874-NumericFloat", "value"], ["setNodeParam", "bdae91e8-x", "op_type", "mul"], ["completeNode", "bdae91e8-x"], ["addNode", "VDBErodeSDF", "4ba9d496-x"], ["bindNodeInput", "4ba9d496-x", "inoutSDF", "94c34deb-x", "inoutSDF"], ["bindNodeInput", "4ba9d496-x", "depth", "bdae91e8-x", "ret"], ["completeNode", "4ba9d496-x"], ["addNode", "VDBRenormalizeSDF", "94c34deb-x"], ["bindNodeInput", "94c34deb-x", "inoutSDF", "6af52a44-x", "SurfaceSDF"], ["setNodeParam", "94c34deb-x", "method", "1oUpwind"], ["setNodeParam", "94c34deb-x", "iterations", 4], ["setNodeParam", "94c34deb-x", "dilateIters", 2], ["completeNode", "94c34deb-x"], ["addNode", "VDBErodeSDF", "a0cfcb29-x"], ["bindNodeInput", "a0cfcb29-x", "inoutSDF", "79d4cf37-x", "inoutSDF"], ["bindNodeInput", "a0cfcb29-x", "depth", "16e6ef0d-x", "ret"], ["completeNode", "a0cfcb29-x"], ["addNode", "SubInput", "44d210b4-SubInput"], ["setNodeParam", "44d210b4-SubInput", "name", "inParticles"], ["setNodeParam", "44d210b4-SubInput", "type", ""], ["setNodeParam", "44d210b4-SubInput", "defl", ""], ["completeNode", "44d210b4-SubInput"], ["addNode", "SubOutput", "bc4da704-SubOutput"], ["bindNodeInput", "bc4da704-SubOutput", "port", "13831fd6-x", "inoutSDF"], ["setNodeParam", "bc4da704-SubOutput", "name", "inoutSDF"], ["setNodeParam", "bc4da704-SubOutput", "type", ""], ["setNodeParam", "bc4da704-SubOutput", "defl", ""], ["completeNode", "bc4da704-SubOutput"], ["addNode", "NumericFloat", "038d6874-NumericFloat"], ["setNodeParam", "038d6874-NumericFloat", "value", -1.0], ["completeNode", "038d6874-NumericFloat"], ["addNode", "SubCategory", "9a375c1e-x"], ["setNodeParam", "9a375c1e-x", "name", "FLIP"], ["completeNode", "9a375c1e-x"], ["addNode", "VDBPointsToPrimitive", "30d7a84d-x"], ["bindNodeInput", "30d7a84d-x", "grid", "44d210b4-SubInput", "port"], ["completeNode", "30d7a84d-x"], ["addNode", "ParticleToLevelSet", "6af52a44-x"], ["bindNodeInput", "6af52a44-x", "Particles", "30d7a84d-x", "prim"], ["bindNodeInput", "6af52a44-x", "Radius", "498e5e9f-SubInput", "port"], ["completeNode", "6af52a44-x"], ["addNode", "SubInput", "498e5e9f-SubInput"], ["setNodeParam", "498e5e9f-SubInput", "name", "dx"], ["setNodeParam", "498e5e9f-SubInput", "type", ""], ["setNodeParam", "498e5e9f-SubInput", "defl", ""], ["completeNode", "498e5e9f-SubInput"], ["addNode", "NumericOperator", "16e6ef0d-x"], ["bindNodeInput", "16e6ef0d-x", "lhs", "498e5e9f-SubInput", "port"], ["bindNodeInput", "16e6ef0d-x", "rhs", "8cc0776d-x", "value"], ["setNodeParam", "16e6ef0d-x", "op_type", "mul"], ["completeNode", "16e6ef0d-x"], ["addNode", "NumericFloat", "8cc0776d-x"], ["setNodeParam", "8cc0776d-x", "value", 0.75], ["completeNode", "8cc0776d-x"]]
+[["addNode", "VDBRenormalizeSDF", "13831fd6-x"], ["bindNodeInput", "13831fd6-x", "inoutSDF", "a0cfcb29-x", "inoutSDF"], ["setNodeParam", "13831fd6-x", "method", "1oUpwind"], ["setNodeParam", "13831fd6-x", "iterations", 4], ["setNodeParam", "13831fd6-x", "dilateIters", 0], ["completeNode", "13831fd6-x"], ["addNode", "VDBRenormalizeSDF", "696253df-x"], ["bindNodeInput", "696253df-x", "inoutSDF", "4ba9d496-x", "inoutSDF"], ["setNodeParam", "696253df-x", "method", "1oUpwind"], ["setNodeParam", "696253df-x", "iterations", 1], ["setNodeParam", "696253df-x", "dilateIters", 0], ["completeNode", "696253df-x"], ["addNode", "VDBSmoothSDF", "c7e42109-x"], ["bindNodeInput", "c7e42109-x", "inoutSDF", "696253df-x", "inoutSDF"], ["bindNodeInput", "c7e42109-x", "SRC", "50800828-x", "DST"], ["setNodeParam", "c7e42109-x", "width", 2], ["setNodeParam", "c7e42109-x", "iterations", 1], ["completeNode", "c7e42109-x"], ["addNode", "VDBRenormalizeSDF", "79d4cf37-x"], ["bindNodeInput", "79d4cf37-x", "inoutSDF", "c7e42109-x", "inoutSDF"], ["setNodeParam", "79d4cf37-x", "method", "1oUpwind"], ["setNodeParam", "79d4cf37-x", "iterations", 1], ["setNodeParam", "79d4cf37-x", "dilateIters", 0], ["completeNode", "79d4cf37-x"], ["addNode", "NumericOperator", "bdae91e8-x"], ["bindNodeInput", "bdae91e8-x", "lhs", "13b9e4e5-NumericOperator", "ret"], ["bindNodeInput", "bdae91e8-x", "rhs", "038d6874-NumericFloat", "value"], ["setNodeParam", "bdae91e8-x", "op_type", "mul"], ["completeNode", "bdae91e8-x"], ["addNode", "VDBErodeSDF", "4ba9d496-x"], ["bindNodeInput", "4ba9d496-x", "inoutSDF", "6af52a44-x", "SurfaceSDF"], ["bindNodeInput", "4ba9d496-x", "depth", "bdae91e8-x", "ret"], ["bindNodeInput", "4ba9d496-x", "SRC", "f43a8cf9-x", "DST"], ["completeNode", "4ba9d496-x"], ["addNode", "VDBErodeSDF", "a0cfcb29-x"], ["bindNodeInput", "a0cfcb29-x", "inoutSDF", "79d4cf37-x", "inoutSDF"], ["bindNodeInput", "a0cfcb29-x", "depth", "16e6ef0d-x", "ret"], ["bindNodeInput", "a0cfcb29-x", "SRC", "9db09ccf-x", "DST"], ["completeNode", "a0cfcb29-x"], ["addNode", "SubInput", "44d210b4-SubInput"], ["setNodeParam", "44d210b4-SubInput", "name", "inParticles"], ["setNodeParam", "44d210b4-SubInput", "type", ""], ["setNodeParam", "44d210b4-SubInput", "defl", ""], ["completeNode", "44d210b4-SubInput"], ["addNode", "SubOutput", "bc4da704-SubOutput"], ["bindNodeInput", "bc4da704-SubOutput", "port", "13831fd6-x", "inoutSDF"], ["bindNodeInput", "bc4da704-SubOutput", "SRC", "a66c3d94-x", "DST"], ["setNodeParam", "bc4da704-SubOutput", "name", "inoutSDF"], ["setNodeParam", "bc4da704-SubOutput", "type", ""], ["setNodeParam", "bc4da704-SubOutput", "defl", ""], ["completeNode", "bc4da704-SubOutput"], ["addNode", "NumericFloat", "038d6874-NumericFloat"], ["setNodeParam", "038d6874-NumericFloat", "value", -2.0], ["completeNode", "038d6874-NumericFloat"], ["addNode", "SubCategory", "9a375c1e-x"], ["setNodeParam", "9a375c1e-x", "name", "FLIP"], ["completeNode", "9a375c1e-x"], ["addNode", "VDBPointsToPrimitive", "30d7a84d-x"], ["bindNodeInput", "30d7a84d-x", "grid", "44d210b4-SubInput", "port"], ["bindNodeInput", "30d7a84d-x", "SRC", "0ecdce51-x", "DST"], ["completeNode", "30d7a84d-x"], ["addNode", "ParticleToLevelSet", "6af52a44-x"], ["bindNodeInput", "6af52a44-x", "Particles", "30d7a84d-x", "prim"], ["bindNodeInput", "6af52a44-x", "Radius", "498e5e9f-SubInput", "port"], ["bindNodeInput", "6af52a44-x", "Dx", "13b9e4e5-NumericOperator", "ret"], ["bindNodeInput", "6af52a44-x", "SRC", "be07665a-PrintMessage", "DST"], ["completeNode", "6af52a44-x"], ["addNode", "SubInput", "498e5e9f-SubInput"], ["setNodeParam", "498e5e9f-SubInput", "name", "dx"], ["setNodeParam", "498e5e9f-SubInput", "type", ""], ["setNodeParam", "498e5e9f-SubInput", "defl", ""], ["completeNode", "498e5e9f-SubInput"], ["addNode", "NumericOperator", "16e6ef0d-x"], ["bindNodeInput", "16e6ef0d-x", "lhs", "13b9e4e5-NumericOperator", "ret"], ["bindNodeInput", "16e6ef0d-x", "rhs", "8cc0776d-x", "value"], ["setNodeParam", "16e6ef0d-x", "op_type", "mul"], ["completeNode", "16e6ef0d-x"], ["addNode", "NumericFloat", "8cc0776d-x"], ["setNodeParam", "8cc0776d-x", "value", 2.0], ["completeNode", "8cc0776d-x"], ["addNode", "SubInput", "87c46688-x"], ["setNodeParam", "87c46688-x", "name", "dx_scale"], ["setNodeParam", "87c46688-x", "type", ""], ["setNodeParam", "87c46688-x", "defl", ""], ["completeNode", "87c46688-x"], ["addNode", "NumericOperator", "13b9e4e5-NumericOperator"], ["bindNodeInput", "13b9e4e5-NumericOperator", "lhs", "498e5e9f-SubInput", "port"], ["bindNodeInput", "13b9e4e5-NumericOperator", "rhs", "c257b83f-IfElse", "result"], ["setNodeParam", "13b9e4e5-NumericOperator", "op_type", "mul"], ["completeNode", "13b9e4e5-NumericOperator"], ["addNode", "PrintMessage", "be07665a-PrintMessage"], ["bindNodeInput", "be07665a-PrintMessage", "SRC", "30d7a84d-x", "DST"], ["setNodeParam", "be07665a-PrintMessage", "message", "ParticleToLevelSet"], ["completeNode", "be07665a-PrintMessage"], ["addNode", "PrintMessage", "0ecdce51-x"], ["bindNodeInput", "0ecdce51-x", "SRC", "44d210b4-SubInput", "DST"], ["setNodeParam", "0ecdce51-x", "message", "VDBGetParticles"], ["completeNode", "0ecdce51-x"], ["addNode", "PrintMessage", "f43a8cf9-x"], ["bindNodeInput", "f43a8cf9-x", "SRC", "6af52a44-x", "DST"], ["setNodeParam", "f43a8cf9-x", "message", "Dilate"], ["completeNode", "f43a8cf9-x"], ["addNode", "PrintMessage", "50800828-x"], ["bindNodeInput", "50800828-x", "SRC", "696253df-x", "DST"], ["setNodeParam", "50800828-x", "message", "Smoothing"], ["completeNode", "50800828-x"], ["addNode", "PrintMessage", "9db09ccf-x"], ["bindNodeInput", "9db09ccf-x", "SRC", "79d4cf37-x", "DST"], ["setNodeParam", "9db09ccf-x", "message", "Erode"], ["completeNode", "9db09ccf-x"], ["addNode", "PrintMessage", "a66c3d94-x"], ["bindNodeInput", "a66c3d94-x", "SRC", "13831fd6-x", "DST"], ["setNodeParam", "a66c3d94-x", "message", "done"], ["completeNode", "a66c3d94-x"], ["addNode", "IfElse", "c257b83f-IfElse"], ["bindNodeInput", "c257b83f-IfElse", "true", "87c46688-x", "port"], ["bindNodeInput", "c257b83f-IfElse", "false", "464eb841-NumericFloat", "value"], ["bindNodeInput", "c257b83f-IfElse", "cond", "87c46688-x", "hasValue"], ["completeNode", "c257b83f-IfElse"], ["addNode", "NumericFloat", "464eb841-NumericFloat"], ["setNodeParam", "464eb841-NumericFloat", "value", 0.5], ["completeNode", "464eb841-NumericFloat"]]
 )ZSL";
     }
 };
 ZENDEFNODE(SmoothLiquidSDF, {
-    {{"", "inParticles", ""}, {"", "dx", ""}, {"", "SRC", ""}},
-    {{"", "inoutSDF", ""}, {"", "DST", ""}},
+    {{"", "inParticles", ""}, {"", "dx", ""}, {"", "dx_scale", ""}},
+    {{"", "inoutSDF", ""}},
     {},
     {"FLIP"},
 });
@@ -88,8 +88,8 @@ struct StepFLIPWorld : zeno::ISerialSubgraphNode {
     }
 };
 ZENDEFNODE(StepFLIPWorld, {
-    {{"", "World", ""}, {"", "Particles", ""}, {"", "Collider", ""}, {"", "gravity", ""}, {"", "dt", ""}, {"", "min_scale", ""}, {"", "dt_scale", ""}, {"", "SRC", ""}},
-    {{"", "World", ""}, {"", "Particles", ""}, {"", "DST", ""}},
+    {{"", "World", ""}, {"", "Particles", ""}, {"", "Collider", ""}, {"", "gravity", ""}, {"", "dt", ""}, {"", "min_scale", ""}, {"", "dt_scale", ""}},
+    {{"", "World", ""}, {"", "Particles", ""}},
     {},
     {"FLIP"},
 });

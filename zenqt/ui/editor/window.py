@@ -428,8 +428,8 @@ class NodeEditor(QWidget):
     }
 };
 ZENDEFNODE(''' + key + ''', {
-    {''' + ', '.join('{"%s", "%s", "%s"}' % (x, y, z) for x, y, z in desc['inputs']) + '''},
-    {''' + ', '.join('{"%s", "%s", "%s"}' % (x, y, z) for x, y, z in desc['outputs']) + '''},
+    {''' + ', '.join('{"%s", "%s", "%s"}' % (x, y, z) for x, y, z in desc['inputs'] if y != 'SRC') + '''},
+    {''' + ', '.join('{"%s", "%s", "%s"}' % (x, y, z) for x, y, z in desc['outputs'] if y != 'DST') + '''},
     {''' + ', '.join('{"%s", "%s", "%s"}' % (x, y, z) for x, y, z in desc['params']) + '''},
     {''' + ', '.join('"%s"' % x for x in desc['categories']) + '''},
 });
