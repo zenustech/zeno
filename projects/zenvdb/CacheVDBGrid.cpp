@@ -61,7 +61,7 @@ struct CacheVDBGrid : zeno::INode {
         }
         char buf[512];
         sprintf(buf, "%s%06d.vdb", prefix.c_str(), fno);
-        auto path = fs::path(dir) / buf;
+        auto path = (fs::path(dir) / buf).generic_string();
         if (ignore || !fs::exists(path)) {
             requireInput("inGrid");
             auto grid = get_input<VDBGrid>("inGrid");
