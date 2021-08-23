@@ -30,7 +30,7 @@
       ]
      },
      "params": {
-      "value": 0.04
+      "value": 0.03
      },
      "uipos": [
       -305.6999999999997,
@@ -366,7 +366,7 @@
       ]
      },
      "params": {
-      "isoValue": 0.0,
+      "isoValue": 0.0075,
       "adaptivity": 0.025
      },
      "uipos": [
@@ -407,8 +407,13 @@
        null
       ],
       "dx": [
-       "35e6f99c-NumericFloat",
-       "value",
+       null,
+       null,
+       null
+      ],
+      "pradius": [
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -674,6 +679,25 @@
      ],
      "options": []
     },
+    "9a65eb68-ReadVDBGrid": {
+     "name": "ReadVDBGrid",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "points",
+      "path": "/home/dilei/Desktop/animatedResult/result2.{frame}.vdb"
+     },
+     "uipos": [
+      809.8632812499998,
+      -208.30078124999983
+     ],
+     "options": []
+    },
     "476188f5-CacheVDBGrid": {
      "name": "CacheVDBGrid",
      "inputs": {
@@ -722,9 +746,9 @@
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 1511,
-    "trans_y": -23
+    "scale": 0.8000000000000002,
+    "trans_x": 176,
+    "trans_y": -120
    }
   },
   "FLIPSimTemplate": {
@@ -3203,6 +3227,34 @@
      ],
      "options": []
     },
+    "9677e552-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "bdae91e8-x",
+       "ret",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "neg"
+     },
+     "uipos": [
+      573.1374999999999,
+      203.825
+     ],
+     "options": []
+    },
     "94c34deb-x": {
      "name": "VDBRenormalizeSDF",
      "inputs": {
@@ -3237,7 +3289,7 @@
        null
       ],
       "depth": [
-       "16e6ef0d-x",
+       "9677e552-x",
        "ret",
        null
       ],
@@ -3312,8 +3364,8 @@
       "value": -1.0
      },
      "uipos": [
-      -471.25,
-      -102.12499999999997
+      -837.2500000000001,
+      -104.12499999999997
      ],
      "options": []
     },
@@ -3330,8 +3382,8 @@
       "name": "FLIP"
      },
      "uipos": [
-      -119.0,
-      -43.00000000000003
+      65.0,
+      74.99999999999997
      ],
      "options": []
     },
@@ -3406,58 +3458,12 @@
       768.3593749999992
      ],
      "options": []
-    },
-    "16e6ef0d-x": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "498e5e9f-SubInput",
-       "port",
-       null
-      ],
-      "rhs": [
-       "8cc0776d-x",
-       "value",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "op_type": "mul"
-     },
-     "uipos": [
-      522.0,
-      126.0
-     ],
-     "options": []
-    },
-    "8cc0776d-x": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 0.75
-     },
-     "uipos": [
-      494.0,
-      -56.0
-     ],
-     "options": []
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": 105,
-    "trans_y": 209
+    "scale": 0.8,
+    "trans_x": -1516,
+    "trans_y": 154
    }
   },
   "StepFLIPWorld": {
@@ -10657,6 +10663,11 @@
     [
      "",
      "dx",
+     ""
+    ],
+    [
+     "",
+     "pradius",
      ""
     ],
     [

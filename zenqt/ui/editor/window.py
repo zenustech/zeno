@@ -104,6 +104,7 @@ class NodeEditor(QWidget):
 
     def auto_save(self):
         if any(s.contentChanged is True for s in self.scenes.values()):
+            from ...system.utils import os_name
             if os_name == 'win32':
                 dir_path = '\\zeno_autosave'
             else:
