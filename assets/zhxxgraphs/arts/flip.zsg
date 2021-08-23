@@ -391,7 +391,7 @@
      },
      "params": {},
      "uipos": [
-      2136.960937500001,
+      2599.4609375000005,
       232.33593749999983
      ],
      "options": [
@@ -402,12 +402,17 @@
      "name": "SmoothLiquidSDF",
      "inputs": {
       "inParticles": [
-       "8c5c59c9-ReadVDBGrid",
-       "data",
+       "476188f5-CacheVDBGrid",
+       "outGrid",
        null
       ],
-      "Dx": [
-       "35e6f99c-NumericFloat",
+      "influenceScale": [
+       "14172652-NumericFloat",
+       "value",
+       null
+      ],
+      "particleSeparation": [
+       "4150758e-NumericFloat",
        "value",
        null
       ],
@@ -418,16 +423,6 @@
       ],
       "dropletScale": [
        "eb69e4a7-x",
-       "value",
-       null
-      ],
-      "influenceScale": [
-       "14172652-NumericFloat",
-       "value",
-       null
-      ],
-      "DxScale": [
-       "28878c13-x",
        "value",
        null
       ],
@@ -536,11 +531,11 @@
       ]
      },
      "params": {
-      "value": "@speed = length(@vel) * 0.8\n@rad = 0.1"
+      "value": "@speed = length(@vel)\n@rad = 1.2"
      },
      "uipos": [
-      2104.793457031248,
-      484.4106445312491
+      2005.7934570312482,
+      360.4106445312491
      ],
      "options": []
     },
@@ -577,8 +572,8 @@
       "attrName": "speed"
      },
      "uipos": [
-      2846.724853515623,
-      834.3444824218747
+      2760.7873535156236,
+      748.4069824218747
      ],
      "options": []
     },
@@ -610,11 +605,11 @@
       ]
      },
      "params": {
-      "value": 5.0
+      "value": 8.0
      },
      "uipos": [
-      2609.7717285156223,
-      1394.500732421874
+      2621.7717285156223,
+      1390.500732421874
      ],
      "options": []
     },
@@ -629,7 +624,7 @@
      },
      "params": {
       "nres": 1024,
-      "_RAMPS": "4\n0 0 0 1\n0.3589010989010973 0 0.7184065934065934 1\n0.6981318681318694 0 1 0.6909340659340659\n1 1 1 1"
+      "_RAMPS": "5\n0 0 0 1\n0.15218143672734516 0 1 1\n0.528846153846154 0 1 0\n0.9013736263736264 1 1 0\n1 1 0 0"
      },
      "uipos": [
       2079.302978515623,
@@ -646,27 +641,35 @@
        ]
       ],
       [
-       0.3589010989010973,
+       0.15218143672734516,
        [
         0,
-        0.7184065934065934,
+        1,
         1
        ]
       ],
       [
-       0.6981318681318694,
+       0.528846153846154,
        [
         0,
         1,
-        0.6909340659340659
+        0
+       ]
+      ],
+      [
+       0.9013736263736264,
+       [
+        1,
+        1,
+        0
        ]
       ],
       [
        1,
        [
         1,
-        1,
-        1
+        0,
+        0
        ]
       ]
      ]
@@ -687,8 +690,8 @@
      },
      "params": {},
      "uipos": [
-      1650.7995605468736,
-      797.2106933593748
+      1835.7995605468736,
+      811.2106933593748
      ],
      "options": []
     },
@@ -714,7 +717,7 @@
      "params": {
       "dir": "/tmp/cache",
       "prefix": "",
-      "ignore": false
+      "ignore": true
      },
      "uipos": [
       524.9375000000001,
@@ -748,11 +751,29 @@
       ]
      },
      "params": {
-      "value": 1.5
+      "value": 3.0
      },
      "uipos": [
-      1294.4500000000003,
-      544.5875
+      602.2500000000001,
+      7.187499999999957
+     ],
+     "options": []
+    },
+    "4150758e-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.02
+     },
+     "uipos": [
+      609.2500000000001,
+      150.12499999999994
      ],
      "options": []
     },
@@ -767,11 +788,11 @@
      },
      "params": {
       "type": "points",
-      "path": "/tmp/cache/000030.vdb"
+      "path": "/tmp/houzi000060.vdb"
      },
      "uipos": [
-      876.0500000000001,
-      -108.15000000000006
+      848.5,
+      -93.75000000000006
      ],
      "options": []
     },
@@ -788,8 +809,8 @@
       "value": 0.75
      },
      "uipos": [
-      1287.125,
-      -107.25
+      821.875,
+      234.0
      ],
      "options": []
     },
@@ -806,13 +827,88 @@
       "value": 1.2
      },
      "uipos": [
-      1294.8125,
-      358.4375
+      918.0625,
+      383.1875
      ],
      "options": []
     },
-    "28878c13-x": {
-     "name": "NumericFloat",
+    "ee116297-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "27a84e25-PrimitiveCalcNormal",
+       "prim",
+       null
+      ],
+      "false": [
+       "155a68f3-PrimitiveColorByHeatmap",
+       "prim",
+       null
+      ],
+      "cond": [
+       "e220ab98-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4417.96875,
+      417.08984375
+     ],
+     "options": []
+    },
+    "f2e349f8-GetFrameNum": {
+     "name": "GetFrameNum",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3157.8124999999995,
+      601.5624999999999
+     ],
+     "options": []
+    },
+    "e220ab98-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "f2e349f8-GetFrameNum",
+       "FrameNum",
+       null
+      ],
+      "rhs": [
+       "8a4f56c9-NumericInt",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mod"
+     },
+     "uipos": [
+      3470.3124999999995,
+      724.9999999999999
+     ],
+     "options": []
+    },
+    "8a4f56c9-NumericInt": {
+     "name": "NumericInt",
      "inputs": {
       "SRC": [
        null,
@@ -821,19 +917,19 @@
       ]
      },
      "params": {
-      "value": 0.5
+      "value": 2
      },
      "uipos": [
-      964.2000000000003,
-      214.20000000000005
+      3132.8124999999995,
+      873.4374999999999
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": 599,
-    "trans_y": -85
+    "scale": 1.0,
+    "trans_x": 477,
+    "trans_y": -268
    }
   },
   "FLIPSimTemplate": {
@@ -3168,8 +3264,8 @@
        null
       ],
       "SRC": [
-       "1ccb451d-PrintMessage",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -3193,8 +3289,8 @@
        null
       ],
       "SRC": [
-       "45dde980-x",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -3217,8 +3313,8 @@
        null
       ],
       "SRC": [
-       "0f03c204-x",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -3262,8 +3358,8 @@
        null
       ],
       "SRC": [
-       "edfc34b2-x",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -3336,8 +3432,8 @@
        null
       ],
       "SRC": [
-       "e616e217-x",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -3357,8 +3453,8 @@
        null
       ],
       "SRC": [
-       "1035a9c3-x",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -3373,6 +3469,26 @@
      ],
      "options": []
     },
+    "7b7a84ed-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "influenceScale",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -3381.791992187498,
+      159.79003906250045
+     ],
+     "options": []
+    },
     "7f1e760a-SubInput": {
      "name": "SubInput",
      "inputs": {
@@ -3383,13 +3499,13 @@
       ]
      },
      "params": {
-      "name": "Dx",
+      "name": "particleSeparation",
       "type": "",
       "defl": ""
      },
      "uipos": [
-      -3664.246093749998,
-      -499.20898437499955
+      -3390.9960937499986,
+      -92.95898437499955
      ],
      "options": []
     },
@@ -3408,8 +3524,8 @@
       "defl": ""
      },
      "uipos": [
-      -3798.871093749998,
-      349.29101562499955
+      -3377.871093749998,
+      418.29101562499955
      ],
      "options": []
     },
@@ -3428,8 +3544,8 @@
       "defl": ""
      },
      "uipos": [
-      -3791.746093749998,
-      666.7910156249995
+      -3364.746093749998,
+      670.7910156249995
      ],
      "options": []
     },
@@ -3437,13 +3553,13 @@
      "name": "NumericOperator",
      "inputs": {
       "lhs": [
-       "4889ce4f-NumericOperator",
-       "ret",
+       "7f1e760a-SubInput",
+       "port",
        null
       ],
       "rhs": [
-       "4830c52c-x",
-       "result",
+       "07a4eb29-SubInput",
+       "port",
        null
       ],
       "SRC": [
@@ -3493,8 +3609,8 @@
        null
       ],
       "rhs": [
-       "9a94fa72-x",
-       "result",
+       "7b7a84ed-SubInput",
+       "port",
        null
       ],
       "SRC": [
@@ -3508,7 +3624,7 @@
      },
      "uipos": [
       -2930.371093749998,
-      100.16601562499977
+      101.41601562499977
      ],
      "options": []
     },
@@ -3539,13 +3655,13 @@
      "name": "NumericOperator",
      "inputs": {
       "lhs": [
-       "4889ce4f-NumericOperator",
-       "ret",
+       "7f1e760a-SubInput",
+       "port",
        null
       ],
       "rhs": [
-       "051338a9-IfElse",
-       "result",
+       "e2be73a2-SubInput",
+       "port",
        null
       ],
       "SRC": [
@@ -3622,52 +3738,6 @@
      ],
      "options": []
     },
-    "afb12d8c-x": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "4889ce4f-NumericOperator",
-       "ret",
-       null
-      ],
-      "rhs": [
-       "9af5a3aa-x",
-       "value",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "op_type": "mul"
-     },
-     "uipos": [
-      486.4031249999998,
-      53.16796874999994
-     ],
-     "options": []
-    },
-    "9af5a3aa-x": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 2.0
-     },
-     "uipos": [
-      220.0085937499997,
-      178.16406249999994
-     ],
-     "options": []
-    },
     "c60435c4-x": {
      "name": "VDBErodeSDF",
      "inputs": {
@@ -3682,8 +3752,8 @@
        null
       ],
       "SRC": [
-       "d8c43ac2-x",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -3708,15 +3778,15 @@
        null
       ],
       "SRC": [
-       "7b1c504b-x",
-       "DST",
+       null,
+       null,
        null
       ]
      },
      "params": {},
      "uipos": [
-      1633.4904296874988,
-      651.0945312499994
+      1632.6904296874989,
+      651.8945312499995
      ],
      "options": []
     },
@@ -3739,8 +3809,8 @@
        null
       ],
       "SRC": [
-       "8b249c1b-x",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -3801,8 +3871,8 @@
        null
       ],
       "SRC": [
-       "7709b79d-x",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -3817,433 +3887,17 @@
      ],
      "options": []
     },
-    "051338a9-IfElse": {
-     "name": "IfElse",
-     "inputs": {
-      "true": [
-       "e2be73a2-SubInput",
-       "port",
-       null
-      ],
-      "false": [
-       "881beec1-x",
-       "value",
-       null
-      ],
-      "cond": [
-       "e2be73a2-SubInput",
-       "hasValue",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -3262.0,
-      727.0
-     ],
-     "options": []
-    },
-    "881beec1-x": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 1.2
-     },
-     "uipos": [
-      -3524.0,
-      741.0
-     ],
-     "options": []
-    },
-    "fbc089b5-x": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 0.75
-     },
-     "uipos": [
-      -3544.0,
-      418.0
-     ],
-     "options": []
-    },
-    "4830c52c-x": {
-     "name": "IfElse",
-     "inputs": {
-      "true": [
-       "07a4eb29-SubInput",
-       "port",
-       null
-      ],
-      "false": [
-       "fbc089b5-x",
-       "value",
-       null
-      ],
-      "cond": [
-       "07a4eb29-SubInput",
-       "hasValue",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -3298.0,
-      367.0
-     ],
-     "options": []
-    },
-    "9a94fa72-x": {
-     "name": "IfElse",
-     "inputs": {
-      "true": [
-       "9a893bf1-x",
-       "port",
-       null
-      ],
-      "false": [
-       "1d5c0f12-x",
-       "value",
-       null
-      ],
-      "cond": [
-       "9a893bf1-x",
-       "hasValue",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -3370.0,
-      64.0
-     ],
-     "options": []
-    },
-    "1d5c0f12-x": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 1.5
-     },
-     "uipos": [
-      -3645.0,
-      128.0
-     ],
-     "options": []
-    },
-    "9a893bf1-x": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "influenceScale",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      -3901.0,
-      57.0
-     ],
-     "options": []
-    },
-    "1ccb451d-PrintMessage": {
-     "name": "PrintMessage",
-     "inputs": {
-      "SRC": [
-       "6af52a44-x",
-       "DST",
-       null
-      ]
-     },
-     "params": {
-      "message": "Renormalize"
-     },
-     "uipos": [
-      -941.6,
-      129.6
-     ],
-     "options": []
-    },
-    "e616e217-x": {
-     "name": "PrintMessage",
-     "inputs": {
-      "SRC": [
-       "30d7a84d-x",
-       "DST",
-       null
-      ]
-     },
-     "params": {
-      "message": "ParticleToSDF"
-     },
-     "uipos": [
-      -1315.2,
-      144.8
-     ],
-     "options": []
-    },
-    "0f03c204-x": {
-     "name": "PrintMessage",
-     "inputs": {
-      "SRC": [
-       "c7e42109-x",
-       "DST",
-       null
-      ]
-     },
-     "params": {
-      "message": "Renormalize"
-     },
-     "uipos": [
-      -217.6,
-      136.0
-     ],
-     "options": []
-    },
-    "45dde980-x": {
-     "name": "PrintMessage",
-     "inputs": {
-      "SRC": [
-       "696253df-x",
-       "DST",
-       null
-      ]
-     },
-     "params": {
-      "message": "Smooth"
-     },
-     "uipos": [
-      -583.1999999999999,
-      159.20000000000005
-     ],
-     "options": []
-    },
-    "d8c43ac2-x": {
-     "name": "PrintMessage",
-     "inputs": {
-      "SRC": [
-       "79d4cf37-x",
-       "DST",
-       null
-      ]
-     },
-     "params": {
-      "message": "Erode"
-     },
-     "uipos": [
-      460.80000000000007,
-      460.8000000000002
-     ],
-     "options": []
-    },
-    "7b1c504b-x": {
-     "name": "PrintMessage",
-     "inputs": {
-      "SRC": [
-       "c60435c4-x",
-       "DST",
-       null
-      ]
-     },
-     "params": {
-      "message": "GetDroplet"
-     },
-     "uipos": [
-      1215.0499999999995,
-      728.2249999999999
-     ],
-     "options": []
-    },
-    "8b249c1b-x": {
-     "name": "PrintMessage",
-     "inputs": {
-      "SRC": [
-       "d6f480a9-VDBPointsToDropletPrimitive",
-       "DST",
-       null
-      ]
-     },
-     "params": {
-      "message": "DropletToSDF"
-     },
-     "uipos": [
-      1916.0,
-      1016.0
-     ],
-     "options": []
-    },
-    "7709b79d-x": {
-     "name": "PrintMessage",
-     "inputs": {
-      "SRC": [
-       "c435d271-x",
-       "DST",
-       null
-      ]
-     },
-     "params": {
-      "message": "CombineVDB"
-     },
-     "uipos": [
-      2342.0,
-      953.0
-     ],
-     "options": []
-    },
-    "1035a9c3-x": {
-     "name": "PrintMessage",
-     "inputs": {
-      "SRC": [
-       "66e53205-CombineVDB",
-       "DST",
-       null
-      ]
-     },
-     "params": {
-      "message": "Renormalize"
-     },
-     "uipos": [
-      2776.0,
-      766.0
-     ],
-     "options": []
-    },
-    "edfc34b2-x": {
-     "name": "PrintMessage",
-     "inputs": {
-      "SRC": [
-       "550d7497-x",
-       "DST",
-       null
-      ]
-     },
-     "params": {
-      "message": "done"
-     },
-     "uipos": [
-      3194.0,
-      680.0
-     ],
-     "options": []
-    },
-    "b0c4fded-x": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 0.5
-     },
-     "uipos": [
-      -3941.999999999998,
-      -181.9999999999999
-     ],
-     "options": []
-    },
-    "1356ce6b-x": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "DxScale",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      -4197.999999999998,
-      -254.24999999999994
-     ],
-     "options": []
-    },
-    "017e48af-x": {
-     "name": "IfElse",
-     "inputs": {
-      "true": [
-       "1356ce6b-x",
-       "port",
-       null
-      ],
-      "false": [
-       "b0c4fded-x",
-       "value",
-       null
-      ],
-      "cond": [
-       "1356ce6b-x",
-       "hasValue",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -3666.9999999999986,
-      -247.24999999999994
-     ],
-     "options": []
-    },
-    "4889ce4f-NumericOperator": {
+    "93ad2902-NumericOperator": {
      "name": "NumericOperator",
      "inputs": {
       "lhs": [
-       "7f1e760a-SubInput",
+       "5690cae8-PortalOut",
        "port",
        null
       ],
       "rhs": [
-       "017e48af-x",
-       "result",
+       "b3c4ca62-x",
+       "port",
        null
       ],
       "SRC": [
@@ -4253,19 +3907,55 @@
       ]
      },
      "params": {
-      "op_type": "mul"
+      "op_type": "sub"
      },
      "uipos": [
-      -3345.703124999999,
-      -213.37890624999994
+      153.2031249999999,
+      -3.1250000000000284
+     ],
+     "options": []
+    },
+    "5690cae8-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dilate"
+     },
+     "uipos": [
+      -277.9687499999997,
+      -90.78124999999993
+     ],
+     "options": []
+    },
+    "b3c4ca62-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "droplet"
+     },
+     "uipos": [
+      -239.9999999999998,
+      98.74999999999991
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": -3566,
-    "trans_y": -395
+    "scale": 0.5120000000000007,
+    "trans_x": -617,
+    "trans_y": -85
    }
   },
   "StepFLIPWorld": {
@@ -4876,9 +4566,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -410,
-    "trans_y": 489
+    "scale": 1.0000000000000007,
+    "trans_x": 571,
+    "trans_y": -179
    }
   }
  },
@@ -5729,6 +5419,57 @@
    ],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "CachePrimitive": {
+   "inputs": [
+    [
+     "",
+     "inPrim",
+     ""
+    ],
+    [
+     "",
+     "frameNum",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "dir",
+     "/tmp/cache"
+    ],
+    [
+     "string",
+     "prefix",
+     ""
+    ],
+    [
+     "bool",
+     "ignore",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
    ]
   },
   "CacheVDBGrid": {
@@ -11464,7 +11205,12 @@
     ],
     [
      "",
-     "Dx",
+     "influenceScale",
+     ""
+    ],
+    [
+     "",
+     "particleSeparation",
      ""
     ],
     [
@@ -11475,16 +11221,6 @@
     [
      "",
      "dropletScale",
-     ""
-    ],
-    [
-     "",
-     "influenceScale",
-     ""
-    ],
-    [
-     "",
-     "DxScale",
      ""
     ],
     [
