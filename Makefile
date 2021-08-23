@@ -1,3 +1,4 @@
+#O=arts/pa2ls.zsg
 O=arts/flip.zsg
 #O=arts/tmptutvdb2.zsg
 #O=arts/embeddeform.zsg
