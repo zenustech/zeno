@@ -855,8 +855,8 @@
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": -521,
-    "trans_y": 139
+    "trans_x": 337,
+    "trans_y": -236
    }
   },
   "FLIPSimTemplate": {
@@ -3979,7 +3979,7 @@
       ]
      },
      "params": {
-      "value": 0.75
+      "value": 3.0
      },
      "uipos": [
       -3645.0,
@@ -4190,8 +4190,8 @@
    },
    "view": {
     "scale": 0.8000000000000002,
-    "trans_x": -1460,
-    "trans_y": -82
+    "trans_x": -3321,
+    "trans_y": -110
    }
   },
   "StepFLIPWorld": {
