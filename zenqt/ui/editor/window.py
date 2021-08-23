@@ -104,7 +104,10 @@ class NodeEditor(QWidget):
 
     def auto_save(self):
         if any(s.contentChanged is True for s in self.scenes.values()):
-            dir_path = '/tmp/autosave'
+            if os_name == 'win32':
+                dir_path = '\\zeno_autosave'
+            else:
+                dir_path = '/tmp/autosave'
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
             file_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
