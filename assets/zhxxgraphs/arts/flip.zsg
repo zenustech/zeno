@@ -402,8 +402,8 @@
      "name": "SmoothLiquidSDF",
      "inputs": {
       "inParticles": [
-       "476188f5-CacheVDBGrid",
-       "outGrid",
+       "8c5c59c9-ReadVDBGrid",
+       "data",
        null
       ],
       "influenceScale": [
@@ -494,8 +494,8 @@
      "name": "ParticlesWrangle",
      "inputs": {
       "prim": [
-       null,
-       null,
+       "a2756233-VDBPointsToPrimitive",
+       "prim",
        null
       ],
       "zfxCode": [
@@ -672,8 +672,8 @@
      "name": "VDBPointsToPrimitive",
      "inputs": {
       "grid": [
-       null,
-       null,
+       "8c5c59c9-ReadVDBGrid",
+       "data",
        null
       ],
       "SRC": [
@@ -785,7 +785,7 @@
       "path": "/home/dilei/Desktop/animatedResult/result2.85.vdb"
      },
      "uipos": [
-      867.2499999999999,
+      848.5,
       -93.75000000000006
      ],
      "options": []
@@ -803,8 +803,8 @@
       "value": 0.75
      },
      "uipos": [
-      858.1250000000001,
-      252.74999999999997
+      821.875,
+      234.0
      ],
      "options": []
     },
@@ -821,16 +821,16 @@
       "value": 1.2
      },
      "uipos": [
-      931.8124999999999,
-      384.43750000000006
+      918.0625,
+      383.1875
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": 255,
-    "trans_y": 350
+    "scale": 0.6400000000000001,
+    "trans_x": 440,
+    "trans_y": -70
    }
   },
   "FLIPSimTemplate": {
@@ -3288,8 +3288,8 @@
       "name": "FLIP"
      },
      "uipos": [
-      -119.0,
-      -43.00000000000003
+      -224.4687499999999,
+      -246.12499999999983
      ],
      "options": []
     },
@@ -3639,52 +3639,6 @@
      ],
      "options": []
     },
-    "afb12d8c-x": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "7f1e760a-SubInput",
-       "port",
-       null
-      ],
-      "rhs": [
-       "9af5a3aa-x",
-       "value",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "op_type": "mul"
-     },
-     "uipos": [
-      486.4031249999998,
-      53.16796874999994
-     ],
-     "options": []
-    },
-    "9af5a3aa-x": {
-     "name": "NumericFloat",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 2.0
-     },
-     "uipos": [
-      82.00859374999973,
-      144.16406249999994
-     ],
-     "options": []
-    },
     "c60435c4-x": {
      "name": "VDBErodeSDF",
      "inputs": {
@@ -3694,7 +3648,7 @@
        null
       ],
       "depth": [
-       "afb12d8c-x",
+       "93ad2902-NumericOperator",
        "ret",
        null
       ],
@@ -3706,8 +3660,8 @@
      },
      "params": {},
      "uipos": [
-      819.31953125,
-      374.58593749999983
+      834.3195312499998,
+      271.77343749999994
      ],
      "options": []
     },
@@ -3833,12 +3787,76 @@
       632.4999999999991
      ],
      "options": []
+    },
+    "93ad2902-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "5690cae8-PortalOut",
+       "port",
+       null
+      ],
+      "rhs": [
+       "b3c4ca62-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "sub"
+     },
+     "uipos": [
+      153.2031249999999,
+      -3.1250000000000284
+     ],
+     "options": []
+    },
+    "5690cae8-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dilate"
+     },
+     "uipos": [
+      -277.9687499999997,
+      -90.78124999999993
+     ],
+     "options": []
+    },
+    "b3c4ca62-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "droplet"
+     },
+     "uipos": [
+      -239.9999999999998,
+      98.74999999999991
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.8000000000000006,
-    "trans_x": -3248,
-    "trans_y": 25
+    "scale": 0.5120000000000007,
+    "trans_x": -617,
+    "trans_y": -85
    }
   },
   "StepFLIPWorld": {
