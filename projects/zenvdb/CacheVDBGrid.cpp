@@ -40,6 +40,8 @@ std::shared_ptr<VDBGrid> readGenericGrid(const std::string &fn) {
 
 
 struct CacheVDBGrid : zeno::INode {
+    int m_framecounter = 0;
+
     virtual void doApply() override {
         if (has_option("MUTE")) {
             requireInput("inGrid");
@@ -52,11 +54,14 @@ struct CacheVDBGrid : zeno::INode {
         if (!fs::is_directory(dir)) {
             fs::create_directory(dir);
         }
-        requireInput("frameNum");
-        auto fno = get_input<zeno::NumericObject>("frameNum")->get<int>();
+        int fno = m_framecounter++;
+        if (has_input("frameNum")) {
+            requireInput("frameNum");
+            fno = get_input<zeno::NumericObject>("frameNum")->get<int>();
+        }
         char buf[512];
         sprintf(buf, "%s%06d.vdb", prefix.c_str(), fno);
-        auto path = fs::path(dir) / buf;
+        auto path = (fs::path(dir) / buf).generic_string();
         if (ignore || !fs::exists(path)) {
             requireInput("inGrid");
             auto grid = get_input<VDBGrid>("inGrid");
