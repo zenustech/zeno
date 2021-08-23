@@ -3610,9 +3610,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -1896,
-    "trans_y": 95
+    "scale": 1.0000000000000007,
+    "trans_x": -824,
+    "trans_y": 236
    }
   },
   "StepFLIPWorld": {
