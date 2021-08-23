@@ -157,13 +157,16 @@ class RecordVideoDialog(QDialog):
 
 
         display.timeline.jump_frame(params['frame_start'])
-        display.timeline.start_play()
         display.view.frame_end = params['frame_end']
 
         tmp_path = tempfile.mkdtemp(prefix='recording-')
         assert os.path.isdir(tmp_path)
         display.view.record_path = tmp_path
         display.view.record_res = (params['width'], params['height'])
+
+        display.timeline.stop_play()
+        display.view.paintGL()
+        display.timeline.start_play()
 
     def finish_record(self):
         display = self.display
@@ -176,12 +179,12 @@ class RecordVideoDialog(QDialog):
         l.sort()
         for i in range(len(l)):
             old_name = l[i]
-            new_name = '{:06}.png'.format(i + 1)
+            new_name = '{:07}.png'.format(i + 1)
             old_path = os.path.join(tmp_path, old_name)
             new_path = os.path.join(tmp_path, new_name)
             os.rename(old_path, new_path)
         path = display.get_output_path('.mp4')
-        png_paths = os.path.join(tmp_path, '%06d.png')
+        png_paths = os.path.join(tmp_path, '%07d.png')
         cmd = [
             'ffmpeg', '-y',
             '-r', str(params['fps']), 
@@ -200,7 +203,6 @@ class RecordVideoDialog(QDialog):
             QMessageBox.critical(display, 'Record Video', msg)
         finally:
             shutil.rmtree(tmp_path, ignore_errors=True)
-            zenvis.status['record_video'] = None
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
