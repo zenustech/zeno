@@ -12,11 +12,93 @@ class QDMGraphicsScene(QGraphicsScene):
         self.setSceneRect(-width // 2, -height // 2, width, height)
         self.setBackgroundBrush(QColor('#393939'))
 
+        node = self.addNode()
+        node.addInput()
+        node.addInput()
+        node.addOutput()
+
+        self._pendingLink = None
+
+    def addNode(self):
         node = QDMGraphicsNode()
-        node.addInputSocket()
-        node.addInputSocket()
-        node.addOutputSocket()
         self.addItem(node)
+        return node
+
+    def addLink(self, from_socket, to_socket):
+        print(from_socket, to_socket)
+
+    def onSocketClick(self, socket, mousePos):
+        if self._pendingLink and hasattr(self._pendingLink, '_socket'):
+            self.addLink(self._pendingLink._socket, socket)
+        else:
+            link = QDMGraphicsPendingLink()
+            link.setSrcPos(socket.scenePos())
+            link.setDstPos(mousePos)
+            self.addItem(link)
+            self._pendingLink = link
+
+    def onMouseMove(self, pos):
+        if self._pendingLink:
+            self._pendingLink.setDstPos(pos)
+
+
+class QDMGraphicsPendingLink(QGraphicsPathItem):
+    BEZIER_FACTOR = 0
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setZValue(-1)
+
+        self._srcPos = QPointF(0, 0)
+        self._dstPos = QPointF(0, 0)
+
+    def paint(self, painter, options, widget=None):
+        lod = options.levelOfDetailFromTransform(painter.worldTransform())
+
+        pen = QPen()
+        if self.isSelected():
+            pen.setColor(QColor('#ffcc66'))
+        else:
+            pen.setColor(QColor('#66ccff'))
+        pen.setWidthF(4 if lod > 0.5 else 8)
+        painter.setPen(pen)
+        painter.setBrush(Qt.NoBrush)
+        painter.drawPath(self.path())
+
+    def srcPos(self):
+        return self._srcPos
+
+    def setSrcPos(self, pos):
+        self._srcPos = pos
+        self.onUpdatePath()
+
+    def setDstPos(self, pos):
+        self._dstPos = pos
+        self.onUpdatePath()
+
+    def dstPos(self):
+        return self._dstPos
+
+    def onUpdatePath(self):
+        path = QPainterPath(self.srcPos())
+        if self.BEZIER_FACTOR == 0:
+            path.lineTo(self.dstPos().x(), self.dstPos().y())
+        else:
+            dist = self.dstPos().x() - self.srcPos().x()
+            dist = max(100, dist, -dist) * BEZIER_FACTOR
+            path.cubicTo(self.srcPos().x() + dist, self.srcPos().y(),
+                    self.dstPos().x() - dist, self.dstPos().y(),
+                    self.dstPos().x(), self.dstPos().y())
+        self.setPath(path)
+
+
+class QDMGraphicsLink(QDMGraphicsPendingLink):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setFlag(QGraphicsItem.ItemIsSelectable)
+
 
 
 class QDMGraphicsSocket(QGraphicsItem):
@@ -39,7 +121,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         else:
             pathContent.addRect(self._rect)
 
-        painter.setBrush(QColor('#aaaaaa'))
+        painter.setBrush(QColor('#ffffff'))
         if self.isSelected():
             pen = QPen()
             pen.setColor(QColor('#66ccff'))
@@ -53,10 +135,13 @@ class QDMGraphicsSocket(QGraphicsItem):
     def boundingRect(self):
         return self._rect.normalized()
 
+    def mousePressEvent(self, event):
+        self.scene().onSocketClick(self, event.pos())
+        super().mousePressEvent(event)
+
 
 class QDMGraphicsNode(QGraphicsItem):
     WIDTH, HEIGHT = 85, 35
-    SOCKET_SPAN_WIDTH = WIDTH * 0.8
     ROUND_RADIUS = 10
 
     def __init__(self, parent=None):
@@ -68,48 +153,51 @@ class QDMGraphicsNode(QGraphicsItem):
         self._rect = QRectF(-self.WIDTH, -self.HEIGHT,
                 self.WIDTH * 2, self.HEIGHT * 2)
 
+        self._text = QGraphicsTextItem('vdbsmooth', self)
+        self._text.setDefaultTextColor(QColor('#ffffff'))
+        self._text.setScale(2)
+        self._text.setPos(self.WIDTH, -self._text.boundingRect().height())
+
         self._inputs = []
         self._outputs = []
 
-    def addInputSocket(self):
+    def addInput(self):
         socket = QDMGraphicsSocket(self)
         self._inputs.append(socket)
-        self._updateInputSocketsPos()
+        self.onUpdateInputs()
         return socket
 
-    def addOutputSocket(self):
+    def addOutput(self):
         socket = QDMGraphicsSocket(self)
         self._outputs.append(socket)
-        self._updateOutputSocketsPos()
+        self.onUpdateOutputs()
         return socket
 
-    def _updateInputSocketsPos(self):
+    def onUpdateInputs(self):
         for i, socket in enumerate(self._inputs):
             x = (i + 0.5) / len(self._inputs)
             x = 2 * x - 1
             socket.setPos(x * self.WIDTH, -self.HEIGHT)
-            print(x)
 
-    def _updateOutputSocketsPos(self):
+    def onUpdateOutputs(self):
         for i, socket in enumerate(self._outputs):
             x = (i + 0.5) / len(self._outputs)
             x = 2 * x - 1
             socket.setPos(x * self.WIDTH, self.HEIGHT)
-            print(x)
 
     def paint(self, painter, options, widget=None):
         lod = options.levelOfDetailFromTransform(painter.worldTransform())
 
         pathContent = QPainterPath()
-        if lod > 0.5:
+        if lod > 0.25:
             pathContent.addRoundedRect(self._rect, self.ROUND_RADIUS, self.ROUND_RADIUS)
         else:
             pathContent.addRect(self._rect)
 
-        painter.setBrush(QColor('#884422'))
+        painter.setBrush(QColor('#66aa33'))
         if self.isSelected():
             pen = QPen()
-            pen.setColor(QColor('#66ccff'))
+            pen.setColor(QColor('#ffcc66'))
             pen.setWidthF(4 if lod > 0.5 else 8)
             painter.setPen(pen)
         else:
@@ -154,6 +242,11 @@ class QDMGraphicsView(QGraphicsView):
             zoomFactor = 1 / ZOOM_FACTOR
 
         self.scale(zoomFactor, zoomFactor)
+
+    def mouseMoveEvent(self, event):
+        pos = self.mapToScene(event.pos())
+        self.scene().onMouseMove(pos)
+        super().mouseMoveEvent(event)
 
 
 class NodeEditor(QWidget):
