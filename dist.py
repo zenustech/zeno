@@ -1,34 +1,65 @@
 #!/usr/bin/env python3
 
+import os
 import sys
-import time
 import shutil
+import argparse
 import subprocess
 
-if sys.platform == 'win32':
-    os_name = 'windows'
-elif sys.platform == 'linux':
-    os_name = 'linux'
-else:
-    raise AssertionError('not supported platform: {}'.format(sys.platform))
 
-version = int(time.strftime('%Y')), int(time.strftime('%m')), int(time.strftime('%d'))
-version = '{}.{}.{}'.format(*version)
+ap = argparse.ArgumentParser()
+ap.add_argument('--config', default='Release')
+ap.add_argument('--toolchain', type=argparse.FileType('r'), default=os.expanduser('~') + '\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake' if sys.platform == 'win32' else None)
+ap.add_argument('--with-openvdb', action='store_true')
+ap.add_argument('--with-cuda', action='store_true')
+ap.add_argument('--with-bullet', action='store_true')
+ap.add_argument('--cmake-args', default='')
 
-print('==> release version={} os_name={}'.format(version, os_name))
+ap = ap.parse_args()
 
-if os_name == 'linux':
-    print('==> copying linux shared libraries')
-    subprocess.check_call([sys.executable, 'scripts/linux_dist.py'])
 
-print('==> invoking pyinstaller for packaging')
-subprocess.check_call([sys.executable, '-m', 'PyInstaller', 'scripts/launcher_{}.spec'.format(os_name), '-y'] + sys.argv[1:])
+if clean:
+    shutil.rmtree('zenqt/bin', ignore_errors=True)
+    shutil.rmtree('build', ignore_errors=True)
 
-#print('==> appending version informations')
-#with open('dist/launcher/zenqt/__init__.py', 'a') as f:
-#    f.write('\nversion = {}\n'.format(repr(version)))
 
-zipname = 'dist/zeno-{}-{}'.format(os_name, version)
-print('==> creating zip archive at {}'.format(zipname))
-shutil.make_archive(zipname, 'zip', 'dist/launcher', verbose=1)
-print('==> done with zip archive {}.zip'.format(zipname))
+args = []
+
+args.append(['-DPYTHON_EXECUTABLE=' + sys.executable])
+
+if ap.with_openvdb:
+    args.extend([
+    '-DZENOFX_ENABLE_OPENVDB:BOOL=ON',
+    '-DEXTENSION_oldzenbase:BOOL=ON',
+    '-DEXTENSION_ZenoFX:BOOL=ON',
+    '-DEXTENSION_FastFLIP:BOOL=ON',
+    '-DEXTENSION_FLIPtools:BOOL=ON',
+    '-DEXTENSION_zenvdb:BOOL=ON',
+    ])
+
+if ap.with_cuda:
+    args.extend([
+    '-DZFX_ENABLE_CUDA:BOOL=ON',
+    '-DEXTENSION_gmpm:BOOL=ON',
+    '-DEXTENSION_mesher:BOOL=ON',
+    ])
+
+if ap.with_bullet:
+    args.extend([
+    '-DEXTENSION_Rigid:BOOL=ON',
+    ])
+
+if ap.config:
+    args.append('-DCMAKE_BUILD_TYPE=' + ap.config)
+if ap.toolchain:
+    args.append('-DCMAKE_TOOLCHAIN_FILE=' + ap.toolchain)
+
+args.extend(ap.cmake.split(';'))
+
+subprocess.check_call(['cmake', '-B', 'build'] + args)
+
+if ap.build:
+    subprocess.check_call(['cmake', '--build', 'build', '--parallel'])
+
+if ap.dist:
+    subprocess.check_call([sys.executable, 'scripts/final_dist.py'])
