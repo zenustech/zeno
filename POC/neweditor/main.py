@@ -37,8 +37,10 @@ class QDMGraphicsScene(QGraphicsScene):
         link.onUpdatePath()
         self.addItem(link)
 
-    def deleteSelectedItems(self):
+    def removeSelectedItems(self):
         for item in self.selectedItems():
+            if hasattr(item, 'onRemove'):
+                item.onRemove()
             self.removeItem(item)
 
 
@@ -347,7 +349,7 @@ class QDMGraphicsView(QGraphicsView):
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Delete:
-            self.scene().deleteSelectedItems()
+            self.scene().removeSelectedItems()
         super().keyPressEvent(event)
 
 
