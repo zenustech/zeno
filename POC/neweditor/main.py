@@ -21,6 +21,9 @@ class QDMGraphicsScene(QGraphicsScene):
 
         node = self.addNode()
         node.addInput()
+        node.addInput()
+        node.addInput()
+        node.addInput()
         node.addOutput()
         node.setTitle('convertvdb')
         node.setPos(0, 100)
@@ -126,12 +129,15 @@ class QDMGraphicsLink(QDMGraphicsPendingLink):
 
 class QDMGraphicsSocket(QGraphicsItem):
     RADIUS = 14
+    BOUND_RADIUS = RADIUS * 1.65
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self._rect = QRectF(-self.RADIUS, -self.RADIUS,
                 2 * self.RADIUS, 2 * self.RADIUS)
+        self._bounding_rect = QRectF(-self.BOUND_RADIUS, -self.BOUND_RADIUS,
+                2 * self.BOUND_RADIUS, 2 * self.BOUND_RADIUS)
 
         self._links = []
 
@@ -168,7 +174,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         painter.drawPath(pathContent.simplified())
 
     def boundingRect(self):
-        return self._rect.normalized()
+        return self._bounding_rect.normalized()
 
     def onUpdatePosition(self):
         for link in self._links:
@@ -181,7 +187,7 @@ class QDMGraphicsSocket(QGraphicsItem):
 
 
 class QDMGraphicsNode(QGraphicsItem):
-    WIDTH, HEIGHT = 85, 35
+    WIDTH, HEIGHT = 95, 35
     ROUND_RADIUS = 10
 
     def __init__(self, parent=None):
@@ -310,6 +316,8 @@ class QDMGraphicsView(QGraphicsView):
             item = self.itemAt(event.pos())
             if isinstance(item, QDMGraphicsSocket):
                 self.onSocketClick(item)
+            else:
+                self.onEmptyClick()
 
         super().mousePressEvent(event)
 
@@ -334,6 +342,13 @@ class QDMGraphicsView(QGraphicsView):
                 pos = item.scenePos()
                 self._pendingLink.setDstPos(pos)
         super().mouseMoveEvent(event)
+
+    def onEmptyClick(self):
+        if self._pendingLink:
+            from_socket = self._pendingLink.srcSocket()
+            from_socket._isPendingLinked = False
+            self.scene().removeItem(self._pendingLink)
+            self._pendingLink = None
 
     def onSocketClick(self, socket):
         if self._pendingLink:
