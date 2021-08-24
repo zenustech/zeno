@@ -41,7 +41,6 @@ class QDMGraphicsScene(QGraphicsScene):
         for item in self.selectedItems():
             if hasattr(item, 'onRemove'):
                 item.onRemove()
-            self.removeItem(item)
 
 
 class QDMGraphicsPendingLink(QGraphicsPathItem):
@@ -119,6 +118,11 @@ class QDMGraphicsLink(QDMGraphicsPendingLink):
         socket._links.append(self)
         self._dstSocket = socket
 
+    def onRemove(self):
+        self._srcSocket._links.remove(self)
+        self._dstSocket._links.remove(self)
+        self.scene().removeItem(self)
+
 
 class QDMGraphicsSocket(QGraphicsItem):
     RADIUS = 14
@@ -169,6 +173,11 @@ class QDMGraphicsSocket(QGraphicsItem):
     def onUpdatePosition(self):
         for link in self._links:
             link.onUpdatePath()
+
+    def onRemove(self):
+        for link in self._links:
+            link.onRemove()
+        self.scene().removeItem(self)
 
 
 class QDMGraphicsNode(QGraphicsItem):
@@ -270,6 +279,13 @@ class QDMGraphicsNode(QGraphicsItem):
     def mouseMoveEvent(self, event):
         self.onUpdatePosition()
         super().mouseMoveEvent(event)
+
+    def onRemove(self):
+        for socket in self._inputs:
+            socket.onRemove()
+        for socket in self._outputs:
+            socket.onRemove()
+        self.scene().removeItem(self)
 
 
 class QDMGraphicsView(QGraphicsView):
