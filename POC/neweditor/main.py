@@ -31,7 +31,11 @@ class QDMGraphicsScene(QGraphicsScene):
         return node
 
     def addLink(self, from_socket, to_socket):
-        print(from_socket, to_socket)
+        link = QDMGraphicsLink()
+        link.setSrcSocket(from_socket)
+        link.setDstSocket(to_socket)
+        link.onUpdatePath()
+        self.addItem(link)
 
 
 class QDMGraphicsPendingLink(QGraphicsPathItem):
@@ -41,9 +45,6 @@ class QDMGraphicsPendingLink(QGraphicsPathItem):
         super().__init__(parent)
 
         self.setZValue(-1)
-
-        self._srcPos = QPointF(0, 0)
-        self._dstPos = QPointF(0, 0)
 
     def paint(self, painter, options, widget=None):
         lod = options.levelOfDetailFromTransform(painter.worldTransform())
@@ -58,16 +59,17 @@ class QDMGraphicsPendingLink(QGraphicsPathItem):
         painter.setBrush(Qt.NoBrush)
         painter.drawPath(self.path())
 
-    def srcPos(self):
-        return self._srcPos
+    def srcSocket(self):
+        return self._srcSocket
 
-    def setSrcPos(self, pos):
-        self._srcPos = pos
-        self.onUpdatePath()
+    def setSrcSocket(self, socket):
+        self._srcSocket = socket
 
     def setDstPos(self, pos):
         self._dstPos = pos
-        self.onUpdatePath()
+
+    def srcPos(self):
+        return self._srcSocket.scenePos()
 
     def dstPos(self):
         return self._dstPos
@@ -91,6 +93,25 @@ class QDMGraphicsLink(QDMGraphicsPendingLink):
 
         self.setFlag(QGraphicsItem.ItemIsSelectable)
 
+    def srcPos(self):
+        return self._srcSocket.scenePos()
+
+    def dstPos(self):
+        return self._dstSocket.scenePos()
+
+    def srcSocket(self):
+        return self._srcSocket
+
+    def setSrcSocket(self, socket):
+        socket._links.append(self)
+        self._srcSocket = socket
+
+    def dstSocket(self):
+        return self._dstSocket
+
+    def setDstSocket(self, socket):
+        socket._links.append(self)
+        self._dstSocket = socket
 
 
 class QDMGraphicsSocket(QGraphicsItem):
@@ -99,10 +120,23 @@ class QDMGraphicsSocket(QGraphicsItem):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setFlag(QGraphicsItem.ItemIsSelectable)
-
         self._rect = QRectF(-self.RADIUS, -self.RADIUS,
                 2 * self.RADIUS, 2 * self.RADIUS)
+
+        #self.setFlag(QGraphicsItem.ItemIsSelectable)
+
+        self._links = []
+
+        self.setAcceptHoverEvents(True)
+        self._isHovered = False
+
+    def hoverEnterEvent(self, event):
+        self._isHovered = True
+        super().hoverEnterEvent(event)
+
+    def hoverLeaveEvent(self, event):
+        self._isHovered = False
+        super().hoverLeaveEvent(event)
 
     def paint(self, painter, options, widget=None):
         lod = options.levelOfDetailFromTransform(painter.worldTransform())
@@ -114,7 +148,7 @@ class QDMGraphicsSocket(QGraphicsItem):
             pathContent.addRect(self._rect)
 
         painter.setBrush(QColor('#ffffff'))
-        if self.isSelected():
+        if self._isHovered:# or self.isSelected():
             pen = QPen()
             pen.setColor(QColor('#66ccff'))
             pen.setWidthF(4 if lod > 0.5 else 8)
@@ -126,6 +160,10 @@ class QDMGraphicsSocket(QGraphicsItem):
 
     def boundingRect(self):
         return self._rect.normalized()
+
+    def onUpdatePosition(self):
+        for link in self._links:
+            link.onUpdatePath()
 
 
 class QDMGraphicsNode(QGraphicsItem):
@@ -149,6 +187,17 @@ class QDMGraphicsNode(QGraphicsItem):
         self._inputs = []
         self._outputs = []
 
+        self.setAcceptHoverEvents(True)
+        self._isHovered = False
+
+    def hoverEnterEvent(self, event):
+        self._isHovered = True
+        super().hoverEnterEvent(event)
+
+    def hoverLeaveEvent(self, event):
+        self._isHovered = False
+        super().hoverLeaveEvent(event)
+
     def title(self):
         self._text.toPlainText()
 
@@ -171,13 +220,13 @@ class QDMGraphicsNode(QGraphicsItem):
         for i, socket in enumerate(self._inputs):
             x = (i + 0.5) / len(self._inputs)
             x = 2 * x - 1
-            socket.setPos(x * self.WIDTH, -self.HEIGHT)
+            socket.setPos(x * self.WIDTH, -self.HEIGHT - socket.RADIUS)
 
     def onUpdateOutputs(self):
         for i, socket in enumerate(self._outputs):
             x = (i + 0.5) / len(self._outputs)
             x = 2 * x - 1
-            socket.setPos(x * self.WIDTH, self.HEIGHT)
+            socket.setPos(x * self.WIDTH, self.HEIGHT + socket.RADIUS)
 
     def paint(self, painter, options, widget=None):
         lod = options.levelOfDetailFromTransform(painter.worldTransform())
@@ -194,6 +243,11 @@ class QDMGraphicsNode(QGraphicsItem):
             pen.setColor(QColor('#ffcc66'))
             pen.setWidthF(4 if lod > 0.5 else 8)
             painter.setPen(pen)
+        elif self._isHovered:
+            pen = QPen()
+            pen.setColor(QColor('#888888'))
+            pen.setWidthF(4 if lod > 0.5 else 8)
+            painter.setPen(pen)
         else:
             painter.setPen(Qt.NoPen)
 
@@ -201,6 +255,16 @@ class QDMGraphicsNode(QGraphicsItem):
 
     def boundingRect(self):
         return self._rect.normalized()
+
+    def onUpdatePosition(self):
+        for socket in self._inputs:
+            socket.onUpdatePosition()
+        for socket in self._outputs:
+            socket.onUpdatePosition()
+
+    def mouseMoveEvent(self, event):
+        self.onUpdatePosition()
+        super().mouseMoveEvent(event)
 
 
 class QDMGraphicsView(QGraphicsView):
@@ -252,24 +316,27 @@ class QDMGraphicsView(QGraphicsView):
 
     def onSocketClick(self, socket):
         if self._pendingLink:
-            self.scene().addLink(self._pendingLink._socket, socket)
+            self.scene().addLink(self._pendingLink.srcSocket(), socket)
             self.scene().removeItem(self._pendingLink)
+            self._pendingLink = None
         else:
             link = QDMGraphicsPendingLink()
             pos = socket.scenePos()
-            link.setSrcPos(pos)
+            link.setSrcSocket(socket)
             link.setDstPos(pos)
+            link.onUpdatePath()
             self.scene().addItem(link)
             self._pendingLink = link
 
     def mouseMoveEvent(self, event):
         if self._pendingLink:
             item = self.itemAt(event.pos())
-            if item and isinstance(item, QDMGraphicsSocket):
+            if isinstance(item, QDMGraphicsSocket):
                 pos = item.scenePos()
             else:
                 pos = self.mapToScene(event.pos())
             self._pendingLink.setDstPos(pos)
+            self._pendingLink.onUpdatePath()
         super().mouseMoveEvent(event)
 
 
