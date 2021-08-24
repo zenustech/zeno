@@ -16,6 +16,14 @@ class QDMGraphicsScene(QGraphicsScene):
         node.addInput()
         node.addInput()
         node.addOutput()
+        node.setTitle('vdbsmooth')
+        node.setPos(0, -100)
+
+        node = self.addNode()
+        node.addInput()
+        node.addOutput()
+        node.setTitle('convertvdb')
+        node.setPos(0, 100)
 
         self._pendingLink = None
 
@@ -37,9 +45,10 @@ class QDMGraphicsScene(QGraphicsScene):
             self.addItem(link)
             self._pendingLink = link
 
-    def onMouseMove(self, pos):
+    def mouseMoveEvent(self, event):
         if self._pendingLink:
-            self._pendingLink.setDstPos(pos)
+            self._pendingLink.setDstPos(event.scenePos())
+        super().mouseMoveEvent(event)
 
 
 class QDMGraphicsPendingLink(QGraphicsPathItem):
@@ -85,10 +94,10 @@ class QDMGraphicsPendingLink(QGraphicsPathItem):
         if self.BEZIER_FACTOR == 0:
             path.lineTo(self.dstPos().x(), self.dstPos().y())
         else:
-            dist = self.dstPos().x() - self.srcPos().x()
-            dist = max(100, dist, -dist) * BEZIER_FACTOR
-            path.cubicTo(self.srcPos().x() + dist, self.srcPos().y(),
-                    self.dstPos().x() - dist, self.dstPos().y(),
+            dist = self.dstPos().y() - self.srcPos().y()
+            dist = max(100, dist, -dist) * self.BEZIER_FACTOR
+            path.cubicTo(self.srcPos().x(), self.srcPos().y() + dist,
+                    self.dstPos().x(), self.dstPos().y() - dist,
                     self.dstPos().x(), self.dstPos().y())
         self.setPath(path)
 
@@ -136,7 +145,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         return self._rect.normalized()
 
     def mousePressEvent(self, event):
-        self.scene().onSocketClick(self, event.pos())
+        self.scene().onSocketClick(self, event.scenePos())
         super().mousePressEvent(event)
 
 
@@ -153,13 +162,19 @@ class QDMGraphicsNode(QGraphicsItem):
         self._rect = QRectF(-self.WIDTH, -self.HEIGHT,
                 self.WIDTH * 2, self.HEIGHT * 2)
 
-        self._text = QGraphicsTextItem('vdbsmooth', self)
+        self._text = QGraphicsTextItem('', self)
         self._text.setDefaultTextColor(QColor('#ffffff'))
         self._text.setScale(2)
         self._text.setPos(self.WIDTH, -self._text.boundingRect().height())
 
         self._inputs = []
         self._outputs = []
+
+    def title(self):
+        self._text.toPlainText()
+
+    def setTitle(self, title):
+        self._text.setPlainText(title)
 
     def addInput(self):
         socket = QDMGraphicsSocket(self)
@@ -242,11 +257,6 @@ class QDMGraphicsView(QGraphicsView):
             zoomFactor = 1 / ZOOM_FACTOR
 
         self.scale(zoomFactor, zoomFactor)
-
-    def mouseMoveEvent(self, event):
-        pos = self.mapToScene(event.pos())
-        self.scene().onMouseMove(pos)
-        super().mouseMoveEvent(event)
 
 
 class NodeEditor(QWidget):
