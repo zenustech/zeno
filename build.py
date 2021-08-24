@@ -33,6 +33,10 @@ if ap.clean:
 
 
 args = []
+build_args = []
+
+if sys.platform == 'win32':
+    build_args.append(['--config', ap.config])
 
 args.append('-DPYTHON_EXECUTABLE=' + sys.executable)
 
@@ -69,4 +73,4 @@ if ap.cmake_args:
 print('*** cmake arguments:', args)
 subprocess.check_call(['cmake', '-B', 'build'] + args)
 print('*** now building project...')
-subprocess.check_call(['cmake', '--build', 'build', '--config', ap.config, '--parallel'])
+subprocess.check_call(['cmake', '--build', 'build', '--parallel'] + build_args)
