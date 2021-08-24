@@ -61,4 +61,4 @@ if ap.cmake_args:
 print('==> cmake arguments:', args)
 subprocess.check_call(['cmake', '-B', 'build'] + args)
 print('==> now building project...')
-subprocess.check_call(['cmake', '--build', 'build', '--parallel'])
+subprocess.check_call(['cmake', '--build', 'build', '--config', ap.config, '--parallel'])
