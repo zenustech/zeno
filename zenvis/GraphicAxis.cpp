@@ -30,7 +30,7 @@ static string vert_code = R"(
         color = vColor;
 
         gl_Position = mVP * vec4(position, 1.0);
-    };
+    }
 )";
 
 static string frag_code = R"(
@@ -48,7 +48,7 @@ static string frag_code = R"(
 
     void main() {
         gl_FragColor = vec4(color, 1.0);
-    };
+    }
 )";
 
 
