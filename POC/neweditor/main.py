@@ -37,6 +37,10 @@ class QDMGraphicsScene(QGraphicsScene):
         link.onUpdatePath()
         self.addItem(link)
 
+    def deleteSelectedItems(self):
+        for item in self.selectedItems():
+            self.removeItem(item)
+
 
 class QDMGraphicsPendingLink(QGraphicsPathItem):
     BEZIER_FACTOR = 0
@@ -53,7 +57,7 @@ class QDMGraphicsPendingLink(QGraphicsPathItem):
         if self.isSelected():
             pen.setColor(QColor('#ffcc66'))
         else:
-            pen.setColor(QColor('#66ccff'))
+            pen.setColor(QColor('#bbbbbb'))
         pen.setWidthF(4 if lod > 0.5 else 8)
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
@@ -123,12 +127,11 @@ class QDMGraphicsSocket(QGraphicsItem):
         self._rect = QRectF(-self.RADIUS, -self.RADIUS,
                 2 * self.RADIUS, 2 * self.RADIUS)
 
-        #self.setFlag(QGraphicsItem.ItemIsSelectable)
-
         self._links = []
 
         self.setAcceptHoverEvents(True)
         self._isHovered = False
+        self._isPendingLinked = False
 
     def hoverEnterEvent(self, event):
         self._isHovered = True
@@ -148,9 +151,9 @@ class QDMGraphicsSocket(QGraphicsItem):
             pathContent.addRect(self._rect)
 
         painter.setBrush(QColor('#ffffff'))
-        if self._isHovered:# or self.isSelected():
+        if self._isHovered or self._links or self._isPendingLinked:
             pen = QPen()
-            pen.setColor(QColor('#66ccff'))
+            pen.setColor(QColor('#bbbbbb'))
             pen.setWidthF(4 if lod > 0.5 else 8)
             painter.setPen(pen)
         else:
@@ -316,13 +319,16 @@ class QDMGraphicsView(QGraphicsView):
 
     def onSocketClick(self, socket):
         if self._pendingLink:
-            self.scene().addLink(self._pendingLink.srcSocket(), socket)
+            from_socket = self._pendingLink.srcSocket()
+            self.scene().addLink(from_socket, socket)
+            from_socket._isPendingLinked = False
             self.scene().removeItem(self._pendingLink)
             self._pendingLink = None
         else:
             link = QDMGraphicsPendingLink()
             pos = socket.scenePos()
             link.setSrcSocket(socket)
+            socket._isPendingLinked = True
             link.setDstPos(pos)
             link.onUpdatePath()
             self.scene().addItem(link)
@@ -338,6 +344,11 @@ class QDMGraphicsView(QGraphicsView):
             self._pendingLink.setDstPos(pos)
             self._pendingLink.onUpdatePath()
         super().mouseMoveEvent(event)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Delete:
+            self.scene().deleteSelectedItems()
+        super().keyPressEvent(event)
 
 
 class NodeEditor(QWidget):
@@ -362,6 +373,7 @@ class NodeEditor(QWidget):
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
             self.close()
+        super().keyPressEvent(event)
 
 
 if __name__ == '__main__':
