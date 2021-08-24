@@ -8,7 +8,7 @@ import subprocess
 
 
 if sys.platform == 'win32':
-    tcpath = os.expanduser('~') + '\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake'
+    tcpath = 'C:\\Users\\archibate\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake'
     if not os.path.exists(tcpath):
         tcpath = None
 else:
@@ -17,7 +17,7 @@ else:
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--config', default='Release')
-ap.add_argument('--toolchain', type=argparse.FileType('r'), default=tcpath)
+ap.add_argument('--toolchain', default=tcpath)
 ap.add_argument('--clean', action='store_true')
 ap.add_argument('--with-openvdb', action='store_true')
 ap.add_argument('--with-cuda', action='store_true')
