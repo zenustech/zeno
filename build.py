@@ -10,9 +10,9 @@ import subprocess
 if sys.platform == 'win32':
     tcpath = os.expanduser('~') + '\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake'
     if not os.path.exists(tcpath):
-        tcpath = ''
+        tcpath = None
 else:
-    tcpath = ''
+    tcpath = None
 
 
 ap = argparse.ArgumentParser()
@@ -35,11 +35,6 @@ if ap.clean:
 args = []
 
 args.append('-DPYTHON_EXECUTABLE=' + sys.executable)
-
-if ap.with_blender:
-    args.extend([
-        '-DEXTENSION_bmeshops:BOOL=ON',
-        ])
 
 if ap.with_openvdb:
     args.extend([
