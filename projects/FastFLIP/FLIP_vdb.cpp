@@ -19,10 +19,6 @@
 #include "tbb/blocked_range3d.h"
 #include <thread>
 namespace {
-struct OpenvdbInitializer {
-  OpenvdbInitializer() { openvdb::initialize(); }
-};
-static OpenvdbInitializer g_openvdb_initializer{};
 struct BoxSampler {
   template <typename axr_t>
   static void get_eight_data(openvdb::Vec3f *data, axr_t &axr,

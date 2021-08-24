@@ -20,6 +20,7 @@ option(ZENO_BENCHMARKING "Enable ZENO benchmarking timer" OFF)
 option(ZENO_ENABLE_PYTHON "Enable ZENO Python bindings" ON)
 option(ZENO_ENABLE_OPENMP "Enable OpenMP in ZENO for parallelism" ON)
 option(ZENO_FAIL_SILENTLY "Silently supress error as possible" OFF)
+option(ZENO_HIDE_SYMBOLS "Hide DLL symbols from global scope" OFF)
 
 if (ZENO_ENABLE_PYTHON)
     set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/zenqt/bin)

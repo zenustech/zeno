@@ -1,8 +1,4 @@
 {
-global:
-    extern "C++" {
-        openvdb::v7_2::*;
-    };
 local:
     *;
 };

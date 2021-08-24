@@ -6,7 +6,8 @@ set(EXTENSIONS_LIST ZenoFX oldzenbase zenvdb FastFLIP gmpm mesher Euler Rigid ZM
 set(EXTENSIONS_ENABLE_LIST ZenoFX oldzenbase)
 
 add_library(zeno_nodep INTERFACE)
-if (NOT WIN32)
+if (ZENO_HIDE_SYMBOLS AND UNIX)
+    message("Hidding symbols from ZENO libraries...")
     target_link_libraries(zeno_nodep INTERFACE -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/../scripts/linker.map)
 endif()
 
