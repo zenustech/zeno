@@ -25,8 +25,6 @@ class QDMGraphicsScene(QGraphicsScene):
         node.setTitle('convertvdb')
         node.setPos(0, 100)
 
-        self._pendingLink = None
-
     def addNode(self):
         node = QDMGraphicsNode()
         self.addItem(node)
@@ -34,21 +32,6 @@ class QDMGraphicsScene(QGraphicsScene):
 
     def addLink(self, from_socket, to_socket):
         print(from_socket, to_socket)
-
-    def onSocketClick(self, socket, mousePos):
-        if self._pendingLink and hasattr(self._pendingLink, '_socket'):
-            self.addLink(self._pendingLink._socket, socket)
-        else:
-            link = QDMGraphicsPendingLink()
-            link.setSrcPos(socket.scenePos())
-            link.setDstPos(mousePos)
-            self.addItem(link)
-            self._pendingLink = link
-
-    def mouseMoveEvent(self, event):
-        if self._pendingLink:
-            self._pendingLink.setDstPos(event.scenePos())
-        super().mouseMoveEvent(event)
 
 
 class QDMGraphicsPendingLink(QGraphicsPathItem):
@@ -144,10 +127,6 @@ class QDMGraphicsSocket(QGraphicsItem):
     def boundingRect(self):
         return self._rect.normalized()
 
-    def mousePressEvent(self, event):
-        self.scene().onSocketClick(self, event.scenePos())
-        super().mousePressEvent(event)
-
 
 class QDMGraphicsNode(QGraphicsItem):
     WIDTH, HEIGHT = 85, 35
@@ -238,9 +217,14 @@ class QDMGraphicsView(QGraphicsView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
 
+        self._pendingLink = None
+
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.setDragMode(QGraphicsView.RubberBandDrag)
+            item = self.itemAt(event.pos())
+            if isinstance(item, QDMGraphicsSocket):
+                self.onSocketClick(item)
 
         super().mousePressEvent(event)
 
@@ -257,6 +241,36 @@ class QDMGraphicsView(QGraphicsView):
             zoomFactor = 1 / ZOOM_FACTOR
 
         self.scale(zoomFactor, zoomFactor)
+
+    def mouseMoveEvent(self, event):
+        if self._pendingLink:
+            item = self.itemAt(event.pos())
+            if isinstance(item, QDMGraphicsSocket):
+                pos = item.scenePos()
+                self._pendingLink.setDstPos(pos)
+        super().mouseMoveEvent(event)
+
+    def onSocketClick(self, socket):
+        if self._pendingLink:
+            self.scene().addLink(self._pendingLink._socket, socket)
+            self.scene().removeItem(self._pendingLink)
+        else:
+            link = QDMGraphicsPendingLink()
+            pos = socket.scenePos()
+            link.setSrcPos(pos)
+            link.setDstPos(pos)
+            self.scene().addItem(link)
+            self._pendingLink = link
+
+    def mouseMoveEvent(self, event):
+        if self._pendingLink:
+            item = self.itemAt(event.pos())
+            if item and isinstance(item, QDMGraphicsSocket):
+                pos = item.scenePos()
+            else:
+                pos = self.mapToScene(event.pos())
+            self._pendingLink.setDstPos(pos)
+        super().mouseMoveEvent(event)
 
 
 class NodeEditor(QWidget):
