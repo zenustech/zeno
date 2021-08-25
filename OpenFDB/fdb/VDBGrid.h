@@ -70,7 +70,7 @@ struct RootNode {
     void foreach(Pol const &pol, F const &func) {
         m_data.foreach(pol, [&] (Quint3 coor1, InternalNode *node) {
             if (node) {
-                node->m_data.foreach(policy::Serial{}, [&] (Quint3 coor2, LeafNode *&leaf) {
+                node->m_data.foreach(policy::Serial{}, [&] (Quint3 coor2, LeafNode *leaf) {
                     if (leaf) {
                         Quint3 coor = coor1 << 4 | coor2;
                         func(coor, leaf);
