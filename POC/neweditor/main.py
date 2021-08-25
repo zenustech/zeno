@@ -31,9 +31,13 @@ class QDMGraphicsScene(QGraphicsScene):
         node.setTitle('convertvdb2')
         node.setPos(100, -100)
 
+        self._nodes = set()
+        self._links = set()
+
     def addNode(self):
         node = QDMGraphicsNode()
         self.addItem(node)
+        self._nodes.add(node)
         return node
 
     def addLink(self, from_socket, to_socket):
@@ -49,6 +53,10 @@ class QDMGraphicsScene(QGraphicsScene):
         for item in self.selectedItems():
             if hasattr(item, 'onRemove'):
                 item.onRemove()
+
+    def dumpGraph(self):
+        for node in self._nodes:
+            title = node.title()
 
 
 class QDMGraphicsPendingLink(QGraphicsPathItem):
