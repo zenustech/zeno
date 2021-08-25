@@ -2,7 +2,7 @@
 #include <fdb/types.h>
 #include <fdb/policy.h>
 #include <fdb/VDBGrid.h>
-#include <fdb/Stencil.h>
+#include <fdb/VDBStencil.h>
 #include <fdb/openvdb.h>
 
 using namespace fdb;
@@ -15,13 +15,13 @@ int main() {
         g_pressure.add(coor);
     });
 
-    Stencil(g_pressure).foreach(policy::Parallel{}, [&] (auto leafCoor, auto *leaf, auto callback) {
+    VDBStencil(g_pressure).foreach(policy::Parallel{}, [&] (auto leafCoor, auto *leaf, auto callback) {
         callback([&] (auto coor, auto &value) {
             value = length(coor - 32.f) < 32.f ? 1.0f : 0.0f;
         });
     });
 
-    Stencil(g_pressure).foreach_2x2x2_star(policy::Serial{},
+    VDBStencil(g_pressure).foreach_2x2x2_star(policy::Serial{},
     [&] (auto leafCoor, auto *leaf, auto callback) {
         auto *vel_leaf = g_velocity.add(leafCoor);
         callback([&] (auto coor
@@ -38,7 +38,7 @@ int main() {
     });
 
     write_dense_vdb("/tmp/a.vdb", [&] (Quint3 coor) {
-        return g_velocity.read_at(coor);
+        return abs(g_velocity.read_at(coor));
     }, Quint3(64, 64, 64));
     return 0;
 }
