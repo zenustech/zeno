@@ -215,6 +215,7 @@ struct Stencil {
                     , zleaf->at(coor + Quint3(0, 0, -7))
                     );
                 }
+            });
         });
     }
 };
