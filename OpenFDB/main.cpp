@@ -21,6 +21,7 @@ int main() {
     });
 
     fdb::foreach_cell(policy::Serial{}, grid, [&] (auto leafCoor, auto *leaf, auto callback) {
+        auto *leaf2 = grid2.add(leafCoor);
         callback([&] (auto coor
             , auto &value000
             , auto &value100
@@ -31,7 +32,7 @@ int main() {
             , auto &value011
             , auto &value111
             ) {
-            grid2.write_at(coor, std::fabs(value100 - value000));
+            leaf2->at(coor) = fabsf(value100 - value000);
         });
     });
     return 0;

@@ -7,10 +7,10 @@ namespace fdb {
 
 template <class Pol, class Grid, class F>
 void foreach(Pol const &pol, Grid &grid, F const &func) {
-    return grid.foreach(pol, [&] (Quint3 coor1, auto *leaf) {
-        func(coor1, leaf, [&] (auto const &func) {
-            leaf->foreach(pol, [&] (Quint3 coor2, auto &value) {
-                auto coor = coor1 << 3 | coor2;
+    return grid.foreach(pol, [&] (Quint3 leafCoor, auto *leaf) {
+        func(leafCoor, leaf, [&] (auto const &func) {
+            leaf->foreach(pol, [&] (Quint3 subCoor, auto &value) {
+                auto coor = leafCoor << 3 | subCoor;
                 func(coor, value);
             });
         });
@@ -19,10 +19,10 @@ void foreach(Pol const &pol, Grid &grid, F const &func) {
 
 template <class Pol, class Grid, class F>
 void foreach_cell(Pol const &pol, Grid &grid, F const &func) {
-    return grid.foreach(pol, [&] (Quint3 coor1, auto *leaf) {
-        func(coor1, leaf, [&] (auto const &func) {
+    return grid.foreach(pol, [&] (Quint3 leafCoor, auto *leaf) {
+        func(leafCoor, leaf, [&] (auto const &func) {
             ndrange_for(policy::Serial{}, Quint3(0), Quint3(7), [&] (Quint3 coor) {
-                func(coor1 << 3 | coor, leaf->at(coor)
+                func(leafCoor << 3 | coor, leaf->at(coor)
                 , leaf->at(coor + Quint3(1, 0, 0))
                 , leaf->at(coor + Quint3(0, 1, 0))
                 , leaf->at(coor + Quint3(1, 1, 0))
@@ -32,13 +32,13 @@ void foreach_cell(Pol const &pol, Grid &grid, F const &func) {
                 , leaf->at(coor + Quint3(1, 1, 1))
                 );
             });
-            auto xleaf = grid.get(coor1 + Quint3(1, 0, 0));
-            auto yleaf = grid.get(coor1 + Quint3(0, 1, 0));
-            auto zleaf = grid.get(coor1 + Quint3(0, 0, 1));
-            ndrange_for(policy::Serial{}, Quint2(0), Quint2(7), [&] (Quint2 coor2) {
+            auto xleaf = grid.get(leafCoor + Quint3(1, 0, 0));
+            auto yleaf = grid.get(leafCoor + Quint3(0, 1, 0));
+            auto zleaf = grid.get(leafCoor + Quint3(0, 0, 1));
+            ndrange_for(policy::Serial{}, Quint2(0), Quint2(7), [&] (Quint2 subCoor) {
                 if (xleaf) {
-                    auto coor = Quint3(7, coor2[0], coor2[1]);
-                    func(coor1 << 3 | coor, leaf->at(coor)
+                    auto coor = Quint3(7, subCoor[0], subCoor[1]);
+                    func(leafCoor << 3 | coor, leaf->at(coor)
                     , xleaf->at(coor + Quint3(-7, 0, 0))
                     , leaf->at(coor + Quint3(0, 1, 0))
                     , xleaf->at(coor + Quint3(-7, 1, 0))
@@ -49,8 +49,8 @@ void foreach_cell(Pol const &pol, Grid &grid, F const &func) {
                     );
                 }
                 if (yleaf) {
-                    auto coor = Quint3(coor2[0], 7, coor2[1]);
-                    func(coor1 << 3 | coor, leaf->at(coor)
+                    auto coor = Quint3(subCoor[0], 7, subCoor[1]);
+                    func(leafCoor << 3 | coor, leaf->at(coor)
                     , leaf->at(coor + Quint3(1, 0, 0))
                     , yleaf->at(coor + Quint3(0, -7, 0))
                     , yleaf->at(coor + Quint3(1, -7, 0))
@@ -61,8 +61,8 @@ void foreach_cell(Pol const &pol, Grid &grid, F const &func) {
                     );
                 }
                 if (zleaf) {
-                    auto coor = Quint3(coor2[0], coor2[1], 7);
-                    func(coor1 << 3 | coor, leaf->at(coor)
+                    auto coor = Quint3(subCoor[0], subCoor[1], 7);
+                    func(leafCoor << 3 | coor, leaf->at(coor)
                     , leaf->at(coor + Quint3(1, 0, 0))
                     , leaf->at(coor + Quint3(0, 1, 0))
                     , leaf->at(coor + Quint3(1, 1, 0))
@@ -73,13 +73,13 @@ void foreach_cell(Pol const &pol, Grid &grid, F const &func) {
                     );
                 }
             });
-            auto xyleaf = grid.get(coor1 + Quint3(1, 1, 0));
-            auto yzleaf = grid.get(coor1 + Quint3(0, 1, 1));
-            auto zxleaf = grid.get(coor1 + Quint3(1, 0, 1));
-            range_for(policy::Serial{}, Quint(0), Quint(7), [&] (Quint coor2) {
+            auto xyleaf = grid.get(leafCoor + Quint3(1, 1, 0));
+            auto yzleaf = grid.get(leafCoor + Quint3(0, 1, 1));
+            auto zxleaf = grid.get(leafCoor + Quint3(1, 0, 1));
+            range_for(policy::Serial{}, Quint(0), Quint(7), [&] (Quint subCoor) {
                 if (xleaf && yleaf && xyleaf) {
-                    auto coor = Quint3(7, 7, coor2);
-                    func(coor1 << 3 | coor, leaf->at(coor)
+                    auto coor = Quint3(7, 7, subCoor);
+                    func(leafCoor << 3 | coor, leaf->at(coor)
                     , xleaf->at(coor + Quint3(-7, 0, 0))
                     , yleaf->at(coor + Quint3(0, -7, 0))
                     , xyleaf->at(coor + Quint3(-7, -7, 0))
@@ -90,8 +90,8 @@ void foreach_cell(Pol const &pol, Grid &grid, F const &func) {
                     );
                 }
                 if (yleaf && zleaf && yzleaf) {
-                    auto coor = Quint3(coor2, 7, 7);
-                    func(coor1 << 3 | coor, leaf->at(coor)
+                    auto coor = Quint3(subCoor, 7, 7);
+                    func(leafCoor << 3 | coor, leaf->at(coor)
                     , leaf->at(coor + Quint3(1, 0, 0))
                     , yleaf->at(coor + Quint3(0, -7, 0))
                     , yleaf->at(coor + Quint3(1, -7, 0))
@@ -102,8 +102,8 @@ void foreach_cell(Pol const &pol, Grid &grid, F const &func) {
                     );
                 }
                 if (zleaf && xleaf && zxleaf) {
-                    auto coor = Quint3(7, coor2, 7);
-                    func(coor1 << 3 | coor, leaf->at(coor)
+                    auto coor = Quint3(7, subCoor, 7);
+                    func(leafCoor << 3 | coor, leaf->at(coor)
                     , xleaf->at(coor + Quint3(-7, 0, 0))
                     , leaf->at(coor + Quint3(0, 1, 0))
                     , xleaf->at(coor + Quint3(-7, 1, 0))
@@ -114,10 +114,10 @@ void foreach_cell(Pol const &pol, Grid &grid, F const &func) {
                     );
                 }
             });
-            auto xyzleaf = grid.get(coor1 + Quint3(1, 1, 1));
+            auto xyzleaf = grid.get(leafCoor + Quint3(1, 1, 1));
             if (xleaf && yleaf && zleaf && xyleaf && yzleaf && zxleaf && xyzleaf) {
                 auto coor = Quint3(7, 7, 7);
-                func(coor1 << 3 | coor, leaf->at(coor)
+                func(leafCoor << 3 | coor, leaf->at(coor)
                 , xleaf->at(coor + Quint3(-7, 0, 0))
                 , yleaf->at(coor + Quint3(0, -7, 0))
                 , xyleaf->at(coor + Quint3(-7, -7, 0))
