@@ -4,39 +4,24 @@
 #include <fdb/VDBGrid.h>
 #include <fdb/Stencil.h>
 #include <fdb/openvdb.h>
+#include <fdb/MarchingCube.h>
 
 using namespace fdb;
 
 int main() {
-    VDBGrid<float> grid, grid2;
+    VDBGrid<float> grid;
 
     ndrange_for(policy::Serial{}, Quint3(0), Quint3(8), [&] (auto coor) {
         grid.add(coor);
     });
 
-    fdb::Stencil(grid).foreach(policy::Serial{}, [&] (auto leafCoor, auto *leaf, auto callback) {
+    fdb::Stencil(grid).foreach(policy::Parallel{}, [&] (auto leafCoor, auto *leaf, auto callback) {
         callback([&] (auto coor, auto &value) {
             value = length(coor - 32.f) < 32.f ? 1.0f : 0.0f;
         });
     });
 
-    fdb::Stencil(grid).foreach_cell(policy::Serial{}, [&] (auto leafCoor, auto *leaf, auto callback) {
-        auto *leaf2 = grid2.add(leafCoor);
-        callback([&] (auto coor
-            , auto &value000
-            , auto &value100
-            , auto &value010
-            , auto &value110
-            , auto &value001
-            , auto &value101
-            , auto &value011
-            , auto &value111
-            ) {
-            leaf2->at(coor) = fabsf(value100 - value000);
-        });
-    });
-
     fdb::write_dense_vdb("/tmp/a.vdb", [&] (Quint3 coor) {
-        return grid2.read_at(coor);
+        return grid.read_at(coor);
     }, Quint3(64, 64, 64));
 }

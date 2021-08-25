@@ -24,7 +24,7 @@ struct Stencil {
     }
 
     template <class Pol, class F>
-    void foreach_cell(Pol const &pol, F const &func) {
+    void foreach_2x2x2_cube(Pol const &pol, F const &func) {
         return grid.foreach(pol, [&] (Quint3 leafCoor, auto *leaf) {
             func(leafCoor, leaf, [&] (auto const &func) {
                 ndrange_for(policy::Serial{}, Quint3(0), Quint3(7), [&] (Quint3 coor) {
@@ -133,6 +133,66 @@ struct Stencil {
                     , xyzleaf->at(coor + Quint3(-7, -7, -7))
                     );
                 }
+            });
+        });
+    }
+
+    template <class Pol, class F>
+    void foreach_2x2x2_star(Pol const &pol, F const &func) {
+        return grid.foreach(pol, [&] (Quint3 leafCoor, auto *leaf) {
+            func(leafCoor, leaf, [&] (auto const &func) {
+                ndrange_for(policy::Serial{}, Quint3(0), Quint3(7), [&] (Quint3 coor) {
+                    func(leafCoor << 3 | coor, leaf->at(coor)
+                    , leaf->at(coor + Quint3(1, 0, 0))
+                    , leaf->at(coor + Quint3(0, 1, 0))
+                    , leaf->at(coor + Quint3(1, 1, 0))
+                    , leaf->at(coor + Quint3(0, 0, 1))
+                    , leaf->at(coor + Quint3(1, 0, 1))
+                    , leaf->at(coor + Quint3(0, 1, 1))
+                    , leaf->at(coor + Quint3(1, 1, 1))
+                    );
+                });
+                auto xleaf = grid.get(leafCoor + Quint3(1, 0, 0));
+                auto yleaf = grid.get(leafCoor + Quint3(0, 1, 0));
+                auto zleaf = grid.get(leafCoor + Quint3(0, 0, 1));
+                ndrange_for(policy::Serial{}, Quint2(0), Quint2(7), [&] (Quint2 subCoor) {
+                    if (xleaf) {
+                        auto coor = Quint3(7, subCoor[0], subCoor[1]);
+                        func(leafCoor << 3 | coor, leaf->at(coor)
+                        , xleaf->at(coor + Quint3(-7, 0, 0))
+                        , leaf->at(coor + Quint3(0, 1, 0))
+                        , xleaf->at(coor + Quint3(-7, 1, 0))
+                        , leaf->at(coor + Quint3(0, 0, 1))
+                        , xleaf->at(coor + Quint3(-7, 0, 1))
+                        , leaf->at(coor + Quint3(0, 1, 1))
+                        , xleaf->at(coor + Quint3(-7, 1, 1))
+                        );
+                    }
+                    if (yleaf) {
+                        auto coor = Quint3(subCoor[0], 7, subCoor[1]);
+                        func(leafCoor << 3 | coor, leaf->at(coor)
+                        , leaf->at(coor + Quint3(1, 0, 0))
+                        , yleaf->at(coor + Quint3(0, -7, 0))
+                        , yleaf->at(coor + Quint3(1, -7, 0))
+                        , leaf->at(coor + Quint3(0, 0, 1))
+                        , leaf->at(coor + Quint3(1, 0, 1))
+                        , yleaf->at(coor + Quint3(0, -7, 1))
+                        , yleaf->at(coor + Quint3(1, -7, 1))
+                        );
+                    }
+                    if (zleaf) {
+                        auto coor = Quint3(subCoor[0], subCoor[1], 7);
+                        func(leafCoor << 3 | coor, leaf->at(coor)
+                        , leaf->at(coor + Quint3(1, 0, 0))
+                        , leaf->at(coor + Quint3(0, 1, 0))
+                        , leaf->at(coor + Quint3(1, 1, 0))
+                        , zleaf->at(coor + Quint3(0, 0, -7))
+                        , zleaf->at(coor + Quint3(1, 0, -7))
+                        , zleaf->at(coor + Quint3(0, 1, -7))
+                        , zleaf->at(coor + Quint3(1, 1, -7))
+                        );
+                    }
+                });
             });
         });
     }
