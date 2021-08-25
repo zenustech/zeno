@@ -16,7 +16,7 @@ int main() {
 
     fdb::foreach(policy::Serial{}, grid, [&] (auto leafCoor, auto *leaf, auto callback) {
         callback([&] (auto coor, auto &value) {
-            value = length(coor - 16.f) < 20.f ? 1.f : 0.f;
+            value = coor[0] > 16.f ? 1.0f : 0.0f;
         });
     });
 
@@ -35,7 +35,6 @@ int main() {
             leaf2->at(coor) = fabsf(value100 - value000);
         });
     });
-    return 0;
 
     fdb::write_dense_vdb("/tmp/a.vdb", [&] (Quint3 coor) {
         return grid2.read_at(coor);
