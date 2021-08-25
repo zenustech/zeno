@@ -20,7 +20,7 @@ int main() {
     fdb::foreach(policy::Serial{}, grid, [&] (auto leafCoor, auto *leaf, auto callback) {
         count++;
         callback([&] (auto coor, auto &value) {
-            value = 1.0f;
+            value = length(coor - 32.f) < 32.f ? 1.0f : 0.0f;
         });
     });
     printf("%d %d\n", count, recount);
