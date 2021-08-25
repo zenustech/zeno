@@ -1,6 +1,7 @@
 #include <fdb/types.h>
 #include <fdb/policy.h>
 #include <fdb/VDBGrid.h>
+#include <fdb/Stencil.h>
 #include <cstdio>
 
 using namespace fdb;
@@ -10,7 +11,7 @@ int main() {
 
     grid.add({3, 1, 5});
 
-    grid.foreachVert(policy::Serial{}, [&] (auto coor, auto &leaf) {
-        printf("%d %d %d\n", coor[0], coor[1], coor[2]);
+    fdb::foreach(policy::Serial{}, grid, [&] (auto coor, auto &value) {
+        printf("%d %d %d: %f\n", coor[0], coor[1], coor[2], value);
     });
 }

@@ -10,7 +10,7 @@ using std::size_t;
 
 /* main class definition */
 
-template <size_t N, class T> struct vec : std::array<T, N> {
+template <class T, size_t N> struct vec : std::array<T, N> {
   vec() = default;
   explicit vec(T const &x) {
     for (size_t i = 0; i < N; i++) {
@@ -37,7 +37,7 @@ template <size_t N, class T> struct vec : std::array<T, N> {
   }
 
   template <class S>
-  explicit vec(vec<N, S> const &x) {
+  explicit vec(vec<S, N> const &x) {
     for (size_t i = 0; i < N; i++) {
       (*this)[i] = T(x[i]);
     }
@@ -60,8 +60,8 @@ template <size_t N, class T> struct vec : std::array<T, N> {
   vec(T const &x, T const &y, T const &z, T const &w) : vec{x, y, z, w} {}
 
   template <class S>
-  operator vec<N, S>() const {
-    vec<N, S> res;
+  operator vec<S, N>() const {
+    vec<S, N> res;
     for (size_t i = 0; i < N; i++) {
       res[i] = (*this)[i];
     }
@@ -75,7 +75,7 @@ template <class T> struct is_vec : std::false_type {
   static constexpr size_t _N = 1;
 };
 
-template <size_t N, class T> struct is_vec<vec<N, T>> : std::true_type {
+template <size_t N, class T> struct is_vec<vec<T, N>> : std::true_type {
   static constexpr size_t _N = N;
 };
 
@@ -90,18 +90,18 @@ template <class T, class S> struct is_vec_promotable : std::false_type {
 };
 
 template <class T, size_t N>
-struct is_vec_promotable<vec<N, T>, vec<N, T>> : std::true_type {
-  using type = vec<N, T>;
+struct is_vec_promotable<vec<T, N>, vec<T, N>> : std::true_type {
+  using type = vec<T, N>;
 };
 
 template <class T, size_t N>
-struct is_vec_promotable<vec<N, T>, T> : std::true_type {
-  using type = vec<N, T>;
+struct is_vec_promotable<vec<T, N>, T> : std::true_type {
+  using type = vec<T, N>;
 };
 
 template <class T, size_t N>
-struct is_vec_promotable<T, vec<N, T>> : std::true_type {
-  using type = vec<N, T>;
+struct is_vec_promotable<T, vec<T, N>> : std::true_type {
+  using type = vec<T, N>;
 };
 
 template <class T> struct is_vec_promotable<T, T> : std::true_type {
@@ -118,10 +118,10 @@ using is_vec_promotable_t =
 
 template <class T, class S> struct is_vec_castable : std::false_type {};
 template <class T, size_t N>
-struct is_vec_castable<vec<N, T>, T> : std::true_type {};
+struct is_vec_castable<vec<T, N>, T> : std::true_type {};
 
 template <class T, size_t N>
-struct is_vec_castable<T, vec<N, T>> : std::false_type {};
+struct is_vec_castable<T, vec<T, N>> : std::false_type {};
 
 template <class T> struct is_vec_castable<T, T> : std::true_type {};
 
@@ -131,7 +131,7 @@ inline constexpr bool is_vec_castable_v =
 
 template <class T> struct decay_vec { using type = T; };
 
-template <size_t N, class T> struct decay_vec<vec<N, T>> { using type = T; };
+template <size_t N, class T> struct decay_vec<vec<T, N>> { using type = T; };
 
 template <class T> using decay_vec_t = typename decay_vec<T>::type;
 
@@ -143,22 +143,22 @@ auto vec_to_other(T const &a) {
 }
 
 template <class OtherT, class T>
-auto vec_to_other(vec<2, T> const &a) {
+auto vec_to_other(vec<T, 2> const &a) {
   return OtherT(a[0], a[1]);
 }
 
 template <class OtherT, class T>
-auto vec_to_other(vec<3, T> const &a) {
+auto vec_to_other(vec<T, 3> const &a) {
   return OtherT(a[0], a[1], a[2]);
 }
 
 template <class OtherT, class T>
-auto vec_to_other(vec<4, T> const &a) {
+auto vec_to_other(vec<T, 4> const &a) {
   return OtherT(a[0], a[1], a[2], a[3]);
 }
 
 template <class OtherT, size_t N, class T>
-auto vec_to_other(vec<N, T> const &a) {
+auto vec_to_other(vec<T, N> const &a) {
   OtherT res;
   for (size_t i = 0; i < N; i++) {
     res[i] = a[i];
@@ -167,7 +167,7 @@ auto vec_to_other(vec<N, T> const &a) {
 }
 
 template <size_t N, class OtherT> auto other_to_vec(OtherT const &x) {
-  vec<N, std::decay_t<decltype(x[0])>> res;
+  vec<std::decay_t<decltype(x[0])>, N> res;
   for (size_t i = 0; i < N; i++) {
     res[i] = x[i];
   }
@@ -177,8 +177,8 @@ template <size_t N, class OtherT> auto other_to_vec(OtherT const &x) {
 /* element-wise operations */
 
 template <size_t N, class T, class F>
-inline auto vapply(F const &f, vec<N, T> const &a) {
-  vec<N, decltype(f(a[0]))> res;
+inline auto vapply(F const &f, vec<T, N> const &a) {
+  vec<decltype(f(a[0])), N> res;
   for (size_t i = 0; i < N; i++) {
     res[i] = f(a[i]);
   }
@@ -191,8 +191,8 @@ inline auto vapply(F const &f, T const &a) {
 }
 
 template <size_t N, class T, class S, class F>
-inline auto vapply(F const &f, vec<N, T> const &a, vec<N, S> const &b) {
-  vec<N, decltype(f(a[0], b[0]))> res;
+inline auto vapply(F const &f, vec<T, N> const &a, vec<S, N> const &b) {
+  vec<decltype(f(a[0], b[0])), N> res;
   for (size_t i = 0; i < N; i++) {
     res[i] = f(a[i], b[i]);
   }
@@ -201,8 +201,8 @@ inline auto vapply(F const &f, vec<N, T> const &a, vec<N, S> const &b) {
 
 template <size_t N, class T, class S, class F,
           std::enable_if_t<!is_vec_v<T>, bool> = true>
-inline auto vapply(F const &f, T const &a, vec<N, S> const &b) {
-  vec<N, decltype(f(a, b[0]))> res;
+inline auto vapply(F const &f, T const &a, vec<S, N> const &b) {
+  vec<decltype(f(a, b[0])), N> res;
   for (size_t i = 0; i < N; i++) {
     res[i] = f(a, b[i]);
   }
@@ -211,8 +211,8 @@ inline auto vapply(F const &f, T const &a, vec<N, S> const &b) {
 
 template <size_t N, class T, class S, class F,
           std::enable_if_t<!is_vec_v<S>, bool> = true>
-inline auto vapply(F const &f, vec<N, T> const &a, S const &b) {
-  vec<N, decltype(f(a[0], b))> res;
+inline auto vapply(F const &f, vec<T, N> const &a, S const &b) {
+  vec<decltype(f(a[0], b)), N> res;
   for (size_t i = 0; i < N; i++) {
     res[i] = f(a[i], b);
   }
@@ -248,10 +248,10 @@ inline auto vapply(F const &f, T const &a, S const &b) {
 #define _PER_IOP2(op)                                                          \
   _PER_OP2(op)                                                                 \
   template <size_t N, class T, class S,                                        \
-            std::enable_if_t<is_vapply_v<vec<N, T>, S>, bool> = true,          \
-            decltype(std::declval<vec<N, T>>() op std::declval<S>(), true) =   \
+            std::enable_if_t<is_vapply_v<vec<T, N>, S>, bool> = true,          \
+            decltype(std::declval<vec<T, N>>() op std::declval<S>(), true) =   \
                 true>                                                          \
-  inline vec<N, T> &operator op##=(vec<N, T> &a, S const &b) {                 \
+  inline vec<T, N> &operator op##=(vec<T, N> &a, S const &b) {                 \
     a = a op b;                                                                \
     return a;                                                                  \
   }
@@ -337,7 +337,7 @@ template <class T> inline auto tofloat(T const &a) {
 /* vector math functions */
 
 template <size_t N, class T>
-inline bool anyTrue(vec<N, T> const &a) {
+inline bool anyTrue(vec<T, N> const &a) {
   bool ret = false;
   for (size_t i = 0; i < N; i++) {
     ret = ret || (bool)a[i];
@@ -351,7 +351,7 @@ inline bool anyTrue(T const &a) {
 }
 
 template <size_t N, class T>
-inline bool allTrue(vec<N, T> const &a) {
+inline bool allTrue(vec<T, N> const &a) {
   bool ret = true;
   for (size_t i = 0; i < N; i++) {
     ret = ret && (bool)a[i];
@@ -367,7 +367,7 @@ inline bool allTrue(T const &a) {
 inline auto dot(float a, float b) { return a * b; }
 
 template <size_t N, class T, class S>
-inline auto dot(vec<N, T> const &a, vec<N, S> const &b) {
+inline auto dot(vec<T, N> const &a, vec<S, N> const &b) {
   std::decay_t<decltype(a[0] * b[0])> res(0);
   for (size_t i = 0; i < N; i++) {
     res += a[i] * b[i];
@@ -376,7 +376,7 @@ inline auto dot(vec<N, T> const &a, vec<N, S> const &b) {
 }
 
 template <size_t N, class T>
-inline auto lengthSquared(vec<N, T> const &a) {
+inline auto lengthSquared(vec<T, N> const &a) {
   std::decay_t<decltype(a[0])> res(0);
   for (size_t i = 0; i < N; i++) {
     res += a[i] * a[i];
@@ -385,7 +385,7 @@ inline auto lengthSquared(vec<N, T> const &a) {
 }
 
 template <size_t N, class T>
-inline auto length(vec<N, T> const &a) {
+inline auto length(vec<T, N> const &a) {
   std::decay_t<decltype(a[0])> res(0);
   for (size_t i = 0; i < N; i++) {
     res += a[i] * a[i];
@@ -394,18 +394,18 @@ inline auto length(vec<N, T> const &a) {
 }
 
 template <size_t N, class T>
-inline auto normalize(vec<N, T> const &a) {
+inline auto normalize(vec<T, N> const &a) {
   return a * (1 / length(a));
 }
 
 template <class T, class S>
-inline auto cross(vec<2, T> const &a, vec<2, S> const &b) {
+inline auto cross(vec<T, 2> const &a, vec<S, 2> const &b) {
   return a[0] * b[1] - b[0] * a[1];
 }
 
 template <class T, class S>
-inline auto cross(vec<3, T> const &a, vec<3, S> const &b) {
-  return vec<3, decltype(a[0] * b[0])>(a[1] * b[2] - b[1] * a[2],
+inline auto cross(vec<T, 3> const &a, vec<S, 3> const &b) {
+  return vec<decltype(a[0] * b[0]), 3>(a[1] * b[2] - b[1] * a[2],
                                        a[2] * b[0] - b[2] * a[0],
                                        a[0] * b[1] - b[0] * a[1]);
 }
@@ -424,10 +424,10 @@ inline auto clamp(T const &x, S const &a, F const &b) {
 
 template <size_t N, class T, std::enable_if_t<!is_vec_v<T>, bool> = true>
 inline auto tovec(T const &x) {
-  return vec<N, T>(x);
+  return vec<T, N>(x);
 }
 
 template <size_t N, class T>
-inline auto tovec(vec<N, T> const &x) { return x; }
+inline auto tovec(vec<T, N> const &x) { return x; }
 
 }
