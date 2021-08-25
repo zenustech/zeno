@@ -131,11 +131,20 @@ class QDMFindBar(QWidget):
         n = ns[self.current_index]
 
         view = self.window.view
-        view.resetTransform()
-        trans_x = n.pos().x() - view.geometry().width() // 2 + style['node_width'] // 2
-        trans_y = n.pos().y() - view.geometry().height() // 2
-        view.horizontalScrollBar().setValue(trans_x)
-        view.verticalScrollBar().setValue(trans_y)
+        rect = view._scene_rect
+        node_scene_center_x = n.pos().x() + style['node_width'] // 2
+        diff_x = node_scene_center_x - rect.center().x()
+
+        node_scene_center_y = n.pos().y()
+        diff_y = node_scene_center_y - rect.center().y()
+
+        view._scene_rect = QRectF(
+            rect.x() + diff_x,
+            rect.y() + diff_y,
+            rect.width(),
+            rect.height()
+        )
+        view._update_scene_rect()
 
     def jump_prev(self):
         if self.total_count == 0:
