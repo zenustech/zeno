@@ -131,14 +131,14 @@ class QDMFindBar(QWidget):
         n = ns[self.current_index]
 
         view = self.window.view
-        rect = view._scene_rect
+        rect = view.scene()._scene_rect
         node_scene_center_x = n.pos().x() + style['node_width'] // 2
         diff_x = node_scene_center_x - rect.center().x()
 
         node_scene_center_y = n.pos().y()
         diff_y = node_scene_center_y - rect.center().y()
 
-        view._scene_rect = QRectF(
+        view.scene()._scene_rect = QRectF(
             rect.x() + diff_x,
             rect.y() + diff_y,
             rect.width(),
@@ -186,6 +186,7 @@ class QDMGraphicsScene(QGraphicsScene):
         self.scale = 1
         self.trans_x = 0
         self.trans_y = 0
+        self._scene_rect = None
 
     @property
     def descs(self):
@@ -357,12 +358,12 @@ class QDMGraphicsView(QGraphicsView):
         self.node_editor = parent
 
         self._last_mouse_pos = None
-        self._scene_rect = None
 
     def setScene(self, scene):
         super().setScene(scene)
-        if self._scene_rect:
-            self._update_scene_rect()
+        if scene._scene_rect == None:
+            scene._scene_rect = QRectF(0, 0, self.size().width(), self.size().height())
+        self._update_scene_rect()
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -527,7 +528,7 @@ class QDMGraphicsView(QGraphicsView):
             current_pos = self.mapToScene(event.pos())
             delta = last_pos - current_pos
             self._last_mouse_pos = event.pos()
-            self._scene_rect.translate(delta)
+            self.scene()._scene_rect.translate(delta)
             self._update_scene_rect()
         super().mouseMoveEvent(event)
 
@@ -558,30 +559,32 @@ class QDMGraphicsView(QGraphicsView):
         self.scale(zoomFactor, zoomFactor, event.pos())
 
     def resizeEvent(self, event):
-        if self._scene_rect is None:
-            self._scene_rect = QRectF(0, 0, self.size().width(), self.size().height())
+        if self.scene()._scene_rect is None:
+            self.scene()._scene_rect = QRectF(0, 0, self.size().width(), self.size().height())
             self._update_scene_rect()
         super().resizeEvent(event)
 
     def scale(self, sx, sy, pos=None):
-        if (self._scene_rect.width() > 60000 and sx < 1) or \
-            (self._scene_rect.width() < 500 and sx > 1):
+        rect = self.scene()._scene_rect
+        if (rect.width() > 60000 and sx < 1) or \
+            (rect.width() < 500 and sx > 1):
             return
         if pos:
             pos = self.mapToScene(pos)
-        center = pos or self._scene_rect.center()
-        w = self._scene_rect.width() / sx
-        h = self._scene_rect.height() / sy
-        self._scene_rect = QRectF(
-            center.x() - (center.x() - self._scene_rect.left()) / sx,
-            center.y() - (center.y() - self._scene_rect.top()) / sy,
+        center = pos or rect.center()
+        w = rect.width() / sx
+        h = rect.height() / sy
+        self.scene()._scene_rect = QRectF(
+            center.x() - (center.x() - rect.left()) / sx,
+            center.y() - (center.y() - rect.top()) / sy,
             w, h
         )
         self._update_scene_rect()
 
     def _update_scene_rect(self):
-        self.setSceneRect(self._scene_rect)
-        self.fitInView(self._scene_rect, Qt.KeepAspectRatio)
+        rect = self.scene()._scene_rect
+        self.setSceneRect(rect)
+        self.fitInView(rect, Qt.KeepAspectRatio)
 
     def addEdge(self, a, b):
         if a is None or b is None:
