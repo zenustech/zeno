@@ -6,5 +6,9 @@
 using namespace fdb;
 
 int main() {
-    fdb::VDBGrid grid;
+    VDBGrid grid;
+
+    grid.foreach(policy::Serial{}, [&] (auto coor, auto &leaf) {
+        grid.get(coor + 1);
+    });
 }

@@ -2,17 +2,18 @@
 
 #include <memory>
 #include "Dense.h"
+#include <atomic>
 
 namespace fdb {
 
 namespace VDBGrid_details {
 
 struct LeafNode {
-    Dense<Qfloat, 8> m;
+    Dense<Qfloat, 8> m_data;
 };
 
 struct InternalNode {
-    Dense<LeafNode *, 16> m;
+    Dense<LeafNode *, 16> m_data;
 
     InternalNode() = default;
     ~InternalNode() = default;
@@ -23,7 +24,8 @@ struct InternalNode {
 };
 
 struct RootNode {
-    Dense<InternalNode *, 32> m;
+    Dense<InternalNode *, 32> m_data;
+    Dense<std::atomic<ushort>, 32> m_counter;
 
     RootNode() = default;
     ~RootNode() = default;
@@ -32,21 +34,47 @@ struct RootNode {
     RootNode(RootNode &&) = default;
     RootNode &operator=(RootNode &&) = default;
 
-    LeafNode *&operator()(Quint3 coor) {
-        InternalNode *&node = m(coor >> 4);
-        if (node) {
+    LeafNode *add(Quint3 coor) {
+        InternalNode *&node = m_data(coor >> 4);
+        if (!node) {
             node = new InternalNode;
         }
-        return node->m(coor & 15);
+        LeafNode *&leaf = node->m_data(coor & 15);
+        if (!leaf) {
+            leaf = new LeafNode;
+            ++m_counter(coor >> 4);
+        }
+        return leaf;
+    }
+
+    LeafNode *get(Quint3 coor) {
+        InternalNode *&node = m_data(coor >> 4);
+        if (!node) {
+            return nullptr;
+        }
+        LeafNode *leaf = node->m_data(coor & 15);
+        return leaf;
+    }
+
+    void del(Quint3 coor) {
+        InternalNode *&node = m_data(coor >> 4);
+        LeafNode *&leaf = node->m_data(coor & 15);
+        if (leaf) {
+            delete leaf;
+            if (--m_counter(coor >> 4) <= 0) {
+                delete node;
+            }
+            leaf = nullptr;
+        }
     }
 
     template <class Pol, class F>
     void foreach(Pol const &pol, F const &func) {
-        m.foreach(pol, [&] (Quint3 coor1, InternalNode *node) {
+        m_data.foreach(pol, [&] (Quint3 coor1, InternalNode *node) {
             if (node) {
-                node->m.foreach(policy::Serial{}, [&] (Quint3 coor2, LeafNode *&leaf) {
-                        Quint3 coor = coor1 << 4 | coor2;
-                        func(coor, leaf);
+                node->m_data.foreach(policy::Serial{}, [&] (Quint3 coor2, LeafNode *&leaf) {
+                    Quint3 coor = coor1 << 4 | coor2;
+                    func(coor, leaf);
                 });
             }
         });
@@ -56,12 +84,20 @@ struct RootNode {
 struct VDBGrid {
     std::unique_ptr<RootNode> m_root = std::make_unique<RootNode>();
 
-    LeafNode *&operator()(Quint3 coor) const {
-        return m_root->operator()(coor);
+    LeafNode *add(Quint3 coor) const {
+        return m_root->add(coor);
+    }
+
+    LeafNode *get(Quint3 coor) const {
+        return m_root->get(coor);
+    }
+
+    void del(Quint3 coor) const {
+        return m_root->del(coor);
     }
 
     template <class Pol, class F>
-    LeafNode *&foreach(Pol const &pol, F const &func) const {
+    void foreach(Pol const &pol, F const &func) const {
         return m_root->foreach(pol, func);
     }
 };
