@@ -45,7 +45,7 @@ struct VDBGrid {
             return leaf;
         }
 
-        LeafNode *get(Quint3 coor) {
+        [[nodiscard]] LeafNode *get(Quint3 coor) {
             InternalNode *&node = m_data(coor >> 4);
             if (!node) {
                 return nullptr;
@@ -87,7 +87,7 @@ struct VDBGrid {
         return m_root->add(coor);
     }
 
-    LeafNode *get(Quint3 coor) const {
+    [[nodiscard]] LeafNode *get(Quint3 coor) const {
         return m_root->get(coor);
     }
 
@@ -95,7 +95,7 @@ struct VDBGrid {
         return m_root->del(coor);
     }
 
-    T read_at(Quint3 coor) const {
+    [[nodiscard]] T read_at(Quint3 coor) const {
         auto leaf = get(coor >> 3);
         return leaf ? leaf->at(coor & 7) : T(0);
     }

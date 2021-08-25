@@ -16,7 +16,7 @@ int main() {
 
     fdb::foreach(policy::Serial{}, grid, [&] (auto leafCoor, auto *leaf, auto callback) {
         callback([&] (auto coor, auto &value) {
-            value = coor[0] > 16.f ? 1.0f : 0.0f;
+            value = coor[0] > 16 ? 1.0f : 0.0f;
         });
     });
 
@@ -32,7 +32,7 @@ int main() {
             , auto &value011
             , auto &value111
             ) {
-            leaf2->at(coor) = fabsf(value100 - value000);
+            leaf2->at(coor) = value000;//fabsf(value100 - value000);
         });
     });
 
