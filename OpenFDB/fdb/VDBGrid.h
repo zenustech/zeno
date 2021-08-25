@@ -73,8 +73,10 @@ struct RootNode {
         m_data.foreach(pol, [&] (Quint3 coor1, InternalNode *node) {
             if (node) {
                 node->m_data.foreach(policy::Serial{}, [&] (Quint3 coor2, LeafNode *&leaf) {
-                    Quint3 coor = coor1 << 4 | coor2;
-                    func(coor, leaf);
+                    if (leaf) {
+                        Quint3 coor = coor1 << 4 | coor2;
+                        func(coor, leaf);
+                    }
                 });
             }
         });
