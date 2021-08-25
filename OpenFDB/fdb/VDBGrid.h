@@ -95,9 +95,14 @@ struct VDBGrid {
         return m_root->del(coor);
     }
 
-    T sample(Quint3 coor) const {
+    T read_at(Quint3 coor) const {
         auto leaf = get(coor >> 3);
         return leaf ? leaf->at(coor & 7) : T(0);
+    }
+
+    void write_at(Quint3 coor, T value) const {
+        auto leaf = add(coor >> 3);
+        leaf->at(coor & 7) = value;
     }
 
     template <class Pol, class F>
