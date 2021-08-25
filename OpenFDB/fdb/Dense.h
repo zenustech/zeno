@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include "schedule.h"
 
 namespace fdb {
 
@@ -15,21 +16,20 @@ struct Dense {
     Dense(Dense &&) = default;
     Dense &operator=(Dense &&) = default;
 
-    [[nodiscard]] static Qulong linearize(Qint3 coor) {
-        //return dot(clamp(coor, 0, N-1), Qulong3(1, N, N * N));
+    [[nodiscard]] static Qulong linearize(Quint3 coor) {
         return dot((coor + N) % N, Qulong3(1, N, N * N));
-        /*coor += N;
-        Qulong i = dot((coor / 8) % (N/8), Qulong3(1, N/8, N/8 * N/8));
-        Qulong j = dot(coor % 8, Qulong3(1, 8, 8 * 8));
-        return 8*8*8 * i + j;*/
     }
 
-    [[nodiscard]] T &operator()(Qint3 coor) {
+    [[nodiscard]] static Quint3 delinearize(Qulong i) {
+        return {i % N, (i / N) % N, (i / N) / N};
+    }
+
+    [[nodiscard]] T &operator()(Quint3 coor) {
         Qulong i = linearize(coor);
         return m_data[i];
     }
 
-    [[nodiscard]] T const &operator()(Qint3 coor) const {
+    [[nodiscard]] T const &operator()(Quint3 coor) const {
         Qulong i = linearize(coor);
         return m_data[i];
     }
@@ -40,6 +40,14 @@ struct Dense {
 
     [[nodiscard]] decltype(auto) operator()(Quint x, Quint y, Quint z) const {
         return operator()({x, y, z});
+    }
+
+    template <class Pol, class F>
+    void foreach(Pol const &pol, F const &func) {
+        pol->range_for(0, N * N * N, [&] (Qulong i) {
+            Quint3 coor = delinearize(i);
+            func(coor, m_data[i]);
+        });
     }
 };
 
