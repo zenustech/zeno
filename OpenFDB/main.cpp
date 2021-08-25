@@ -45,7 +45,7 @@ struct Dense {
     Dense(Dense &&) = default;
     Dense &operator=(Dense &&) = default;
 
-    [[nodiscard]] static uintptr_t linearize(vec3I coor) {
+    [[nodiscard]] static uintptr_t linearize(Qint3 coor) {
         //return dot(clamp(coor, 0, N-1), vec3L(1, N, N * N));
         return dot((coor + N) % N, vec3L(1, N, N * N));
         /*coor += N;
@@ -54,12 +54,12 @@ struct Dense {
         return 8*8*8 * i + j;*/
     }
 
-    [[nodiscard]] T &operator()(vec3I coor) {
+    [[nodiscard]] T &operator()(Qint3 coor) {
         uintptr_t i = linearize(coor);
         return m_data[i];
     }
 
-    [[nodiscard]] T const &operator()(vec3I coor) const {
+    [[nodiscard]] T const &operator()(Qint3 coor) const {
         uintptr_t i = linearize(coor);
         return m_data[i];
     }
@@ -99,11 +99,16 @@ struct RootNode {
     RootNode(RootNode &&) = default;
     RootNode &operator=(RootNode &&) = default;
 
-    void operator()(vec3I coor) {
+    void operator()(Qint3 coor) {
+        auto *&p = m(coor >> 4);
+        if (p) {
+            Qfloat, Qulong, qulong
+        }
     }
 };
 
 }
+
 using namespace fdb;
 
 int main() {
