@@ -10,13 +10,13 @@ using namespace fdb;
 int main() {
     VDBGrid<float> grid, grid2;
 
-    ndrange_for(policy::Serial{}, Quint3(0), Quint3(4), [&] (auto coor) {
+    ndrange_for(policy::Serial{}, Quint3(0), Quint3(8), [&] (auto coor) {
         grid.add(coor);
     });
 
     fdb::foreach(policy::Serial{}, grid, [&] (auto leafCoor, auto *leaf, auto callback) {
         callback([&] (auto coor, auto &value) {
-            value = coor[0] > 16 ? 1.0f : 0.0f;
+            value = coor[0] > 32 ? 1.0f : 0.0f;
         });
     });
 
@@ -37,6 +37,6 @@ int main() {
     });
 
     fdb::write_dense_vdb("/tmp/a.vdb", [&] (Quint3 coor) {
-        return grid2.read_at(coor);
-    }, Quint3(32, 32, 32));
+        return grid.read_at(coor);
+    }, Quint3(64, 64, 64));
 }

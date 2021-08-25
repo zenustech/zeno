@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(openfdb LANGUAGES C CXX)
+set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
 add_executable(openfdb main.cpp openvdb.cpp)
 target_include_directories(openfdb PRIVATE .)
