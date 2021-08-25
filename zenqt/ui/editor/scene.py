@@ -183,9 +183,6 @@ class QDMGraphicsScene(QGraphicsScene):
         self.mmb_press = False
         self.contentChanged = False
 
-        self.scale = 1
-        self.trans_x = 0
-        self.trans_y = 0
         self._scene_rect = None
 
     @property
@@ -216,10 +213,6 @@ class QDMGraphicsScene(QGraphicsScene):
     def loadGraphEx(self, graph):
         nodes = graph['nodes']
         self.loadGraph(nodes)
-        view = graph['view']
-        self.scale = view['scale']
-        self.trans_x = view['trans_x']
-        self.trans_y = view['trans_y']
         if 'view_rect' in graph:
             r = graph['view_rect']
             self._scene_rect = QRectF(
@@ -372,11 +365,6 @@ class QDMGraphicsView(QGraphicsView):
         if scene._scene_rect == None:
             scene._scene_rect = QRectF(0, 0, self.size().width(), self.size().height())
         self._update_scene_rect()
-
-    def showEvent(self, event):
-        super().showEvent(event)
-        self.scene().trans_x = self.horizontalScrollBar().value()
-        self.scene().trans_y = self.verticalScrollBar().value()
 
     def updateSearch(self, edit):
         for act in edit.menu.actions():
@@ -546,9 +534,6 @@ class QDMGraphicsView(QGraphicsView):
         if event.button() == Qt.MiddleButton:
             self.scene().mmb_press = False
             self.setDragMode(QGraphicsView.NoDrag)
-
-            self.scene().trans_x = self.horizontalScrollBar().value()
-            self.scene().trans_y = self.verticalScrollBar().value()
 
         elif event.button() == Qt.LeftButton:
             self.setDragMode(QGraphicsView.NoDrag)
