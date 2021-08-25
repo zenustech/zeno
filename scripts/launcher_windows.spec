@@ -8,9 +8,10 @@ dlls=[
     ( '../zenqt/bin/pylib_*.pyd', 'zenqt/bin' ),
 ]
 assets=[
-    ( '../zenqt/assets/*',  'zenqt/assets' ),
-    ( '../assets/*',        'assets' ),
-    ( '../graphs/*',        'graphs' ),
+    ( '../zenqt/assets/*',     'zenqt/assets' ),
+    ( '../assets/*',           'assets' ),
+    ( '../graphs/*',           'graphs' ),
+    ( '../scripts/wintools/*', '.' ),
 ]
 
 a = Analysis(['launcher.py'],

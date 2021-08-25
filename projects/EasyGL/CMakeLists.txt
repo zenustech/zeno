@@ -2,6 +2,7 @@ add_library(zeno_EasyGL SHARED)
 target_include_directories(zeno_EasyGL PRIVATE .)
 
 target_link_libraries(zeno_EasyGL PUBLIC zeno)
+target_link_libraries(zeno_EasyGL PRIVATE zeno_nodep)
 target_link_libraries(zeno_EasyGL PUBLIC GLESv2)
 target_sources(zeno_EasyGL PRIVATE nodes.cpp passtoy.cpp stb_image.cpp)
 

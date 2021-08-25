@@ -1,6 +1,7 @@
 #pragma once
 
 #include <zeno/utils/defs.h>
+#include <zeno/utils/safe_dynamic_cast.h>
 #include <string>
 #include <memory>
 
@@ -29,11 +30,11 @@ struct IObject {
 
     template <class T>
     [[deprecated("use dynamic_cast<T *>")]]
-    T *as() { return dynamic_cast<T *>(this); }
+    T *as() { return zeno::safe_dynamic_cast<T>(this); }
 
     template <class T>
     [[deprecated("use dynamic_cast<const T *>")]]
-    const T *as() const { return dynamic_cast<const T *>(this); }
+    const T *as() const { return zeno::safe_dynamic_cast<T>(this); }
 };
 
 template <class Derived, class Base = IObject>

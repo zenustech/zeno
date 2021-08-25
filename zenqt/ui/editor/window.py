@@ -104,7 +104,11 @@ class NodeEditor(QWidget):
 
     def auto_save(self):
         if any(s.contentChanged is True for s in self.scenes.values()):
-            dir_path = '/tmp/autosave'
+            from ...system.utils import os_name
+            if os_name == 'win32':
+                dir_path = '\\zeno_autosave'
+            else:
+                dir_path = '/tmp/autosave'
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
             file_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
@@ -388,18 +392,50 @@ class NodeEditor(QWidget):
 
     def do_export(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Export',
-                '', 'C++ Header File(*.h);; JSON file(*.json);; All Files(*);;',
+                '', 'C++ Source File(*.cpp);; C++ Header File(*.h);; JSON file(*.json);; All Files(*);;',
                 options=QFileDialog.DontConfirmOverwrite)
         if path != '':
             prog = self.dumpProgram()
             from ...system import serial
-            data = list(serial.serializeScene(prog['graph']))
+
+            if path.endswith('.cpp'):
+                graphs = serial.serializeGraphs(prog['graph'], has_subgraphs=False)
+                content = self.do_export_cpp(graphs)
+            else:
+                data = list(serial.serializeScene(prog['graph']))
+                content = json.dumps(data)
+                if path.endswith('.h'):
+                    content = 'R"ZSL(' + content + ')ZSL"\n'
+
             with open(path, 'w') as f:
-                if path.endswith('.h'):
-                    f.write('R"ZSL(')
-                json.dump(data, f)
-                if path.endswith('.h'):
-                    f.write(')ZSL"\n')
+                f.write(content)
+
+    def do_export_cpp(self, graphs):
+        res = '/* auto generated from: %s */\n' % self.current_path
+        res += '#include <zeno/zeno.h>\n'
+        res += '#include <zeno/extra/ISubgraphNode.h>\n'
+        res += 'namespace {\n'
+
+        for key, data in graphs.items():
+            if key not in self.descs: continue
+            desc = self.descs[key]
+            res += 'struct ' + key + ''' : zeno::ISerialSubgraphNode {
+    virtual const char *get_subgraph_json() override {
+        return R"ZSL(
+''' + json.dumps(data) + '''
+)ZSL";
+    }
+};
+ZENDEFNODE(''' + key + ''', {
+    {''' + ', '.join('{"%s", "%s", "%s"}' % (x, y, z) for x, y, z in desc['inputs'] if y != 'SRC') + '''},
+    {''' + ', '.join('{"%s", "%s", "%s"}' % (x, y, z) for x, y, z in desc['outputs'] if y != 'DST') + '''},
+    {''' + ', '.join('{"%s", "%s", "%s"}' % (x, y, z) for x, y, z in desc['params']) + '''},
+    {''' + ', '.join('"%s"' % x for x in desc['categories']) + '''},
+});
+'''
+
+        res += '}\n'
+        return res
 
     def do_copy(self):
         itemList = self.scene.selectedItems()

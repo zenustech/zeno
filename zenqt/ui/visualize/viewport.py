@@ -99,7 +99,7 @@ class ViewportWidget(QOpenGLWidget):
         else:
             nsamples = int(nsamples)
         fmt.setSamples(nsamples)
-        fmt.setVersion(3, 2)
+        fmt.setVersion(3, 0)
         fmt.setProfile(QSurfaceFormat.CoreProfile)
         super().__init__(parent)
         self.setFormat(fmt)

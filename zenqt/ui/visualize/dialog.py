@@ -183,12 +183,12 @@ class RecordVideoDialog(QDialog):
         path = display.get_output_path('.mp4')
         png_paths = os.path.join(tmp_path, '%06d.png')
         cmd = [
-            'ffmpeg', 
+            'ffmpeg', '-y',
             '-r', str(params['fps']), 
             '-i', png_paths, 
             '-c:v', params['encoder'],
             '-b:v', params['bit_rate'],
-            path
+            path,
         ]
         print('Executing command:', cmd)
         try:
