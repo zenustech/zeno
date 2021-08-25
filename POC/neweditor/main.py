@@ -16,17 +16,20 @@ class QDMGraphicsScene(QGraphicsScene):
         node.addInput()
         node.addInput()
         node.addOutput()
-        node.setTitle('vdbsmooth')
-        node.setPos(0, -100)
+        node.setTitle('vdbsmooth1')
+        node.setPos(0, 100)
 
         node = self.addNode()
         node.addInput()
-        node.addInput()
-        node.addInput()
+        node.addOutput()
+        node.setTitle('convertvdb1')
+        node.setPos(-100, -100)
+
+        node = self.addNode()
         node.addInput()
         node.addOutput()
-        node.setTitle('convertvdb')
-        node.setPos(0, 100)
+        node.setTitle('convertvdb2')
+        node.setPos(100, -100)
 
     def addNode(self):
         node = QDMGraphicsNode()
@@ -37,6 +40,8 @@ class QDMGraphicsScene(QGraphicsScene):
         link = QDMGraphicsLink()
         link.setSrcSocket(from_socket)
         link.setDstSocket(to_socket)
+        from_socket.onUpdateLinks()
+        to_socket.onUpdateLinks()
         link.onUpdatePath()
         self.addItem(link)
 
@@ -185,6 +190,15 @@ class QDMGraphicsSocket(QGraphicsItem):
             link.onRemove()
         self.scene().removeItem(self)
 
+    def onUpdateLinks(self):
+        for link in list(self._links[:-1]):
+            link.onRemove()
+
+
+class QDMGraphicsOutputSocket(QDMGraphicsSocket):
+    def onUpdateLinks(self):
+        pass
+
 
 class QDMGraphicsNode(QGraphicsItem):
     WIDTH, HEIGHT = 95, 35
@@ -231,7 +245,7 @@ class QDMGraphicsNode(QGraphicsItem):
         return socket
 
     def addOutput(self):
-        socket = QDMGraphicsSocket(self)
+        socket = QDMGraphicsOutputSocket(self)
         self._outputs.append(socket)
         self.onUpdateOutputs()
         return socket
