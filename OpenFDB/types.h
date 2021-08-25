@@ -1,61 +1,69 @@
 #pragma once
 
 #include "vec.h"
+#include <cstdint>
 
 namespace fdb {
 
-using uchar = unsigned char;
-using ushort = unsigned short;
-using uint = unsigned int;
-using ulong = unsigned long;
-using half = decltype([] () { struct { short i; } r; return r; });
+using Qchar = std::int8_t;
+using Qshort = std::int16_t;
+using Qint = std::int32_t;
+using Qlong = std::int64_t;
+using Qlonglong = std::int64_t;
+using Quchar = std::uint8_t;
+using Qushort = std::uint16_t;
+using Quint = std::uint32_t;
+using Qulonglong = std::uint64_t;
+using Qhalf = decltype([] () { struct { std::uint16_t i; } r; return r; });
+using Qfloat = float;
+using Qdouble = double;
 
-using char1 = vec<1, char>;
-using short1 = vec<1, short>;
-using int1 = vec<1, int>;
-using long1 = vec<1, long>;
-using uchar1 = vec<1, uchar>;
-using ushort1 = vec<1, ushort>;
-using uint1 = vec<1, uint>;
-using ulong1 = vec<1, ulong>;
-using half1 = vec<1, half>;
-using float1 = vec<1, float>;
-using double1 = vec<1, double>;
+using Qchar1 = vec<1, Qchar>;
+using Qshort1 = vec<1, Qshort>;
+using Qint1 = vec<1, Qint>;
+using Qlong1 = vec<1, Qlong>;
+using Quchar1 = vec<1, Quchar>;
+using Qushort1 = vec<1, Qushort>;
+using Quint1 = vec<1, Quint>;
+using Qulong1 = vec<1, Qulong>;
+using Qhalf1 = vec<1, Qhalf>;
+using Qfloat1 = vec<1, Qfloat>;
+using Qdouble1 = vec<1, Qdouble>;
 
-using char2 = vec<2, char>;
-using short2 = vec<2, short>;
-using int2 = vec<2, int>;
-using long2 = vec<2, long>;
-using uchar2 = vec<2, uchar>;
-using ushort2 = vec<2, ushort>;
-using uint2 = vec<2, uint>;
-using ulong2 = vec<2, ulong>;
-using half2 = vec<2, half>;
-using float2 = vec<2, float>;
-using double2 = vec<2, double>;
+using Qchar2 = vec<2, Qchar>;
+using Qshort2 = vec<2, Qshort>;
+using Qint2 = vec<2, Qint>;
+using Qlong2 = vec<2, Qlong>;
+using Quchar2 = vec<2, Quchar>;
+using Qushort2 = vec<2, Qushort>;
+using Quint2 = vec<2, Quint>;
+using Qulong2 = vec<2, Qulong>;
+using Qhalf2 = vec<2, Qhalf>;
+using Qfloat2 = vec<2, Qfloat>;
+using Qdouble2 = vec<2, Qdouble>;
 
-using char3 = vec<3, char>;
-using short3 = vec<3, short>;
-using int3 = vec<3, int>;
-using long3 = vec<3, long>;
-using uchar3 = vec<3, uchar>;
-using ushort3 = vec<3, ushort>;
-using uint3 = vec<3, uint>;
-using ulong3 = vec<3, ulong>;
-using half3 = vec<3, half>;
-using float3 = vec<3, float>;
-using double3 = vec<3, double>;
+using Qchar3 = vec<3, Qchar>;
+using Qshort3 = vec<3, Qshort>;
+using Qint3 = vec<3, Qint>;
+using Qlong3 = vec<3, Qlong>;
+using Quchar3 = vec<3, Quchar>;
+using Qushort3 = vec<3, Qushort>;
+using Quint3 = vec<3, Quint>;
+using Qulong3 = vec<3, Qulong>;
+using Qhalf3 = vec<3, Qhalf>;
+using Qfloat3 = vec<3, Qfloat>;
+using Qdouble3 = vec<3, Qdouble>;
 
-using char4 = vec<4, char>;
-using short4 = vec<4, short>;
-using int4 = vec<4, int>;
-using long4 = vec<4, long>;
-using uchar4 = vec<4, uchar>;
-using ushort4 = vec<4, ushort>;
-using uint4 = vec<4, uint>;
-using ulong4 = vec<4, ulong>;
-using half4 = vec<4, half>;
-using float4 = vec<4, float>;
-using double4 = vec<4, double>;
+using Qchar4 = vec<4, Qchar>;
+using Qshort4 = vec<4, Qshort>;
+using Qint4 = vec<4, Qint>;
+using Qlong4 = vec<4, Qlong>;
+using Quchar4 = vec<4, Quchar>;
+using Qushort4 = vec<4, Qushort>;
+using Quint4 = vec<4, Quint>;
+using Qulong4 = vec<4, Qulong>;
+using Qhalf4 = vec<4, Qhalf>;
+using Qfloat4 = vec<4, Qfloat>;
+using Qdouble4 = vec<4, Qdouble>;
 
 }

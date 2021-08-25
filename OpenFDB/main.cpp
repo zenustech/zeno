@@ -1,19 +1,34 @@
 #include <cstdint>
 #include <cstddef>
-#include <zinc/vec.h>
+#include <types.h>
 
-using namespace zinc;
+namespace fdb {
 
 template <class T>
 struct AutoInit {
     T m_value{0};
 
-    operator T *() const {
+    AutoInit() = default;
+    ~AutoInit() = default;
+    AutoInit(AutoInit const &) = default;
+    AutoInit &operator=(AutoInit const &) = default;
+    AutoInit(AutoInit &&) = default;
+    AutoInit &operator=(AutoInit &&) = default;
+
+    operator T() const {
         return m_value;
     }
 
-    auto &operator=(T const &p) {
+    AutoInit(T const &t) : m_value(t) {}
+    AutoInit(T &&t) : m_value(t) {}
+
+    AutoInit &operator=(T const &t) {
         m_value = p;
+        return *this;
+    }
+
+    AutoInit &operator=(T &&t) {
+        m_value = std::move(t);
         return *this;
     }
 };
@@ -49,18 +64,18 @@ struct Dense {
         return m_data[i];
     }
 
-    [[nodiscard]] decltype(auto) operator()(uint32_t x, uint32_t y, uint32_t z) {
+    [[nodiscard]] decltype(auto) operator()(Quint x, Quint y, Quint z) {
         return operator()({x, y, z});
     }
 
-    [[nodiscard]] decltype(auto) operator()(uint32_t x, uint32_t y, uint32_t z) const {
+    [[nodiscard]] decltype(auto) operator()(Quint x, Quint y, Quint z) const {
         return operator()({x, y, z});
     }
 };
 
 
 struct LeafNode {
-    Dense<float, 8> m;
+    Dense<Qfloat, 8> m;
 };
 
 struct InternalNode {
@@ -88,6 +103,8 @@ struct RootNode {
     }
 };
 
+}
+using namespace fdb;
 
 int main() {
 }
