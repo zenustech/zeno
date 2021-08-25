@@ -47,6 +47,7 @@ void ndrange_for(Pol const &pol, vec<T, N> start, vec<T, N> stop, F const &func)
             offs[i] = n % dist[i];
             if (n != N - 1) n /= dist[i];
         }
+        printf("?? %d %d %d\n", offs[0], offs[1], offs[2]);
         func(start + offs);
     });
 }

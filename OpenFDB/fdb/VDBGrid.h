@@ -59,10 +59,10 @@ struct VDBGrid {
             LeafNode *&leaf = node->m_data(coor & 15);
             if (leaf) {
                 delete leaf;
+                leaf = nullptr;
                 if (--m_counter(coor >> 4) <= 0) {
                     delete node;
                 }
-                leaf = nullptr;
             }
         }
 
