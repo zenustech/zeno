@@ -1,12 +1,12 @@
 #include <openvdb/openvdb.h>
 #include <openvdb/tools/Dense.h>
-#include "vdbio.h"
-#include "vec.h"
+#include <fdb/types.h>
+#include <fdb/openvdb.h>
 
-namespace zinc {
+namespace fdb {
 
 template <class GridT, class ValT>
-void impl_writevdb
+void impl_write_dense_vdb
         ( std::string_view path
         , std::function<ValT(Quint3)> sampler
         , Quint3 size
@@ -27,22 +27,22 @@ void impl_writevdb
     openvdb::io::File((std::string)path).write({grid});
 }
 
-void writevdb
+void write_dense_vdb
     ( std::string_view path
     , std::function<Qfloat(Quint3)> sampler
     , Quint3 size
     )
 {
-    return impl_writevdb<openvdb::FloatGrid>(path, sampler, size);
+    return impl_write_dense_vdb<openvdb::FloatGrid>(path, sampler, size);
 }
 
-void writevdb
+void write_dense_vdb
     ( std::string_view path
     , std::function<Qfloat3(Quint3)> sampler
     , Quint3 size
     )
 {
-    return impl_writevdb<openvdb::Vec3fGrid>(path, sampler, size);
+    return impl_write_dense_vdb<openvdb::Vec3fGrid>(path, sampler, size);
 }
 
 }

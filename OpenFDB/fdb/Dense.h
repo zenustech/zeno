@@ -2,6 +2,7 @@
 
 #include <array>
 #include "policy.h"
+#include "types.h"
 
 namespace fdb {
 
