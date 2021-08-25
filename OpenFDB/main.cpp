@@ -1,7 +1,8 @@
 #include <fdb/types.h>
 #include <fdb/policy.h>
 #include <fdb/VDBGrid.h>
-#include <fdb/Stencil.h>
+#include <fdb/stencil.h>
+#include <fdb/openvdb.h>
 #include <cstdio>
 
 using namespace fdb;
@@ -15,6 +16,10 @@ int main() {
         value = length(coor - 36) - 4;
         printf("%d %d %d: %f\n", coor[0], coor[1], coor[2], value);
     });
+
+    fdb::write_dense_vdb("/tmp/a.vdb", [&] (Quint3 coor) {
+        return grid.get({4, 4, 4})->at(coor);
+    }, Quint3(8, 8, 8));
 
     /*fdb::foreach_cell(policy::Serial{}, grid, [&] (auto coor
         , auto &value000

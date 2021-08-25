@@ -25,22 +25,22 @@ struct Dense {
         return Quint3(i % N, (i / N) % N, (i / N) / N);
     }
 
-    [[nodiscard]] T &operator()(Quint3 coor) {
+    [[nodiscard]] T &at(Quint3 coor) {
         Quint i = linearize(coor);
         return m_data[i];
     }
 
-    [[nodiscard]] T const &operator()(Quint3 coor) const {
+    [[nodiscard]] T const &at(Quint3 coor) const {
         Quint i = linearize(coor);
         return m_data[i];
     }
 
-    [[nodiscard]] decltype(auto) operator()(Quint x, Quint y, Quint z) {
-        return operator()({x, y, z});
+    [[nodiscard]] decltype(auto) operator()(Quint3 coor) {
+        return at(coor);
     }
 
-    [[nodiscard]] decltype(auto) operator()(Quint x, Quint y, Quint z) const {
-        return operator()({x, y, z});
+    [[nodiscard]] decltype(auto) operator()(Quint3 coor) const {
+        return at(coor);
     }
 
     template <class Pol, class F>
