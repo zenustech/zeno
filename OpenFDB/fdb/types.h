@@ -9,12 +9,11 @@ using Qchar = std::int8_t;
 using Qshort = std::int16_t;
 using Qint = std::int32_t;
 using Qlong = std::int64_t;
-using Qlonglong = std::int64_t;
 using Quchar = std::uint8_t;
 using Qushort = std::uint16_t;
 using Quint = std::uint32_t;
-using Qulonglong = std::uint64_t;
-using Qhalf = decltype([] () { struct { std::uint16_t i; } r; return r; });
+using Qulong = std::uint64_t;
+using Qhalf = std::int16_t;
 using Qfloat = float;
 using Qdouble = double;
 

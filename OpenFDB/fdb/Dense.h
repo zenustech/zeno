@@ -1,12 +1,12 @@
 #pragma once
 
-#include "AutoInit.h"
+#include <array>
 
 namespace fdb {
 
 template <class T, size_t N>
 struct Dense {
-    AutoInit<T> m_data[N * N * N];
+    std::array<T, N * N * N> m_data;
 
     Dense() = default;
     ~Dense() = default;
@@ -16,11 +16,11 @@ struct Dense {
     Dense &operator=(Dense &&) = default;
 
     [[nodiscard]] static Qulong linearize(Qint3 coor) {
-        //return dot(clamp(coor, 0, N-1), vec3L(1, N, N * N));
-        return dot((coor + N) % N, vec3L(1, N, N * N));
+        //return dot(clamp(coor, 0, N-1), Qulong3(1, N, N * N));
+        return dot((coor + N) % N, Qulong3(1, N, N * N));
         /*coor += N;
-        Qulong i = dot((coor / 8) % (N/8), vec3L(1, N/8, N/8 * N/8));
-        Qulong j = dot(coor % 8, vec3L(1, 8, 8 * 8));
+        Qulong i = dot((coor / 8) % (N/8), Qulong3(1, N/8, N/8 * N/8));
+        Qulong j = dot(coor % 8, Qulong3(1, 8, 8 * 8));
         return 8*8*8 * i + j;*/
     }
 
