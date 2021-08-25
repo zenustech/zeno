@@ -145,11 +145,7 @@ struct Stencil {
                     func(leafCoor << 3 | coor, leaf->at(coor)
                     , leaf->at(coor + Quint3(1, 0, 0))
                     , leaf->at(coor + Quint3(0, 1, 0))
-                    , leaf->at(coor + Quint3(1, 1, 0))
                     , leaf->at(coor + Quint3(0, 0, 1))
-                    , leaf->at(coor + Quint3(1, 0, 1))
-                    , leaf->at(coor + Quint3(0, 1, 1))
-                    , leaf->at(coor + Quint3(1, 1, 1))
                     );
                 });
                 auto xleaf = grid.get(leafCoor + Quint3(1, 0, 0));
@@ -161,11 +157,7 @@ struct Stencil {
                         func(leafCoor << 3 | coor, leaf->at(coor)
                         , xleaf->at(coor + Quint3(-7, 0, 0))
                         , leaf->at(coor + Quint3(0, 1, 0))
-                        , xleaf->at(coor + Quint3(-7, 1, 0))
                         , leaf->at(coor + Quint3(0, 0, 1))
-                        , xleaf->at(coor + Quint3(-7, 0, 1))
-                        , leaf->at(coor + Quint3(0, 1, 1))
-                        , xleaf->at(coor + Quint3(-7, 1, 1))
                         );
                     }
                     if (yleaf) {
@@ -173,11 +165,7 @@ struct Stencil {
                         func(leafCoor << 3 | coor, leaf->at(coor)
                         , leaf->at(coor + Quint3(1, 0, 0))
                         , yleaf->at(coor + Quint3(0, -7, 0))
-                        , yleaf->at(coor + Quint3(1, -7, 0))
                         , leaf->at(coor + Quint3(0, 0, 1))
-                        , leaf->at(coor + Quint3(1, 0, 1))
-                        , yleaf->at(coor + Quint3(0, -7, 1))
-                        , yleaf->at(coor + Quint3(1, -7, 1))
                         );
                     }
                     if (zleaf) {
@@ -185,15 +173,48 @@ struct Stencil {
                         func(leafCoor << 3 | coor, leaf->at(coor)
                         , leaf->at(coor + Quint3(1, 0, 0))
                         , leaf->at(coor + Quint3(0, 1, 0))
-                        , leaf->at(coor + Quint3(1, 1, 0))
                         , zleaf->at(coor + Quint3(0, 0, -7))
-                        , zleaf->at(coor + Quint3(1, 0, -7))
-                        , zleaf->at(coor + Quint3(0, 1, -7))
-                        , zleaf->at(coor + Quint3(1, 1, -7))
                         );
                     }
                 });
-            });
+                auto xyleaf = grid.get(leafCoor + Quint3(1, 1, 0));
+                auto yzleaf = grid.get(leafCoor + Quint3(0, 1, 1));
+                auto zxleaf = grid.get(leafCoor + Quint3(1, 0, 1));
+                range_for(policy::Serial{}, Quint(0), Quint(7), [&] (Quint subCoor) {
+                    if (xleaf && yleaf) {
+                        auto coor = Quint3(7, 7, subCoor);
+                        func(leafCoor << 3 | coor, leaf->at(coor)
+                        , xleaf->at(coor + Quint3(-7, 0, 0))
+                        , yleaf->at(coor + Quint3(0, -7, 0))
+                        , leaf->at(coor + Quint3(0, 0, 1))
+                        );
+                    }
+                    if (yleaf && zleaf) {
+                        auto coor = Quint3(subCoor, 7, 7);
+                        func(leafCoor << 3 | coor, leaf->at(coor)
+                        , leaf->at(coor + Quint3(1, 0, 0))
+                        , yleaf->at(coor + Quint3(0, -7, 0))
+                        , zleaf->at(coor + Quint3(0, 0, -7))
+                        );
+                    }
+                    if (zleaf && xleaf) {
+                        auto coor = Quint3(7, subCoor, 7);
+                        func(leafCoor << 3 | coor, leaf->at(coor)
+                        , xleaf->at(coor + Quint3(-7, 0, 0))
+                        , leaf->at(coor + Quint3(0, 1, 0))
+                        , zleaf->at(coor + Quint3(0, 0, -7))
+                        );
+                    }
+                });
+                auto xyzleaf = grid.get(leafCoor + Quint3(1, 1, 1));
+                if (xleaf && yleaf && zleaf) {
+                    auto coor = Quint3(7, 7, 7);
+                    func(leafCoor << 3 | coor, leaf->at(coor)
+                    , xleaf->at(coor + Quint3(-7, 0, 0))
+                    , yleaf->at(coor + Quint3(0, -7, 0))
+                    , zleaf->at(coor + Quint3(0, 0, -7))
+                    );
+                }
         });
     }
 };
