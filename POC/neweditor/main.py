@@ -12,6 +12,9 @@ class QDMGraphicsScene(QGraphicsScene):
         self.setSceneRect(-width // 2, -height // 2, width, height)
         self.setBackgroundBrush(QColor('#393939'))
 
+        self._nodes = set()
+        self._links = set()
+
         node = self.addNode()
         node.addInput()
         node.addInput()
@@ -30,9 +33,6 @@ class QDMGraphicsScene(QGraphicsScene):
         node.addOutput()
         node.setTitle('convertvdb2')
         node.setPos(100, -100)
-
-        self._nodes = set()
-        self._links = set()
 
     def addNode(self):
         node = QDMGraphicsNode()
@@ -137,6 +137,7 @@ class QDMGraphicsLink(QDMGraphicsPendingLink):
     def onRemove(self):
         self._srcSocket._links.remove(self)
         self._dstSocket._links.remove(self)
+        self.scene()._links.remove(self)
         self.scene().removeItem(self)
 
 
@@ -313,6 +314,7 @@ class QDMGraphicsNode(QGraphicsItem):
             socket.onRemove()
         for socket in self._outputs:
             socket.onRemove()
+        self.scene()._nodes.remove(self)
         self.scene().removeItem(self)
 
 

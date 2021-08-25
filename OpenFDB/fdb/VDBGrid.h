@@ -1,16 +1,14 @@
 #pragma once
 
 #include <memory>
-#include "Dense.h"
 #include <atomic>
+#include "Dense.h"
 
 namespace fdb {
 
 namespace VDBGrid_details {
 
-struct LeafNode {
-    Dense<Qfloat, 8> m_data;
-};
+using LeafNode = Dense<Qfloat, 8>;
 
 struct InternalNode {
     Dense<LeafNode *, 16> m_data;

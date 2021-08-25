@@ -1,7 +1,7 @@
 #pragma once
 
 #include <array>
-#include "schedule.h"
+#include "policy.h"
 
 namespace fdb {
 
@@ -44,7 +44,7 @@ struct Dense {
 
     template <class Pol, class F>
     void foreach(Pol const &pol, F const &func) {
-        pol.range_for((Quint)0, N * N * N, [&] (Quint i) {
+        range_for(pol, (Quint)0, N * N * N, [&] (Quint i) {
             Quint3 coor = delinearize(i);
             func(coor, m_data[i]);
         });
