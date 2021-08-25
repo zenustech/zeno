@@ -220,6 +220,14 @@ class QDMGraphicsScene(QGraphicsScene):
         self.scale = view['scale']
         self.trans_x = view['trans_x']
         self.trans_y = view['trans_y']
+        if 'view_rect' in graph:
+            r = graph['view_rect']
+            self._scene_rect = QRectF(
+                r['x'],
+                r['y'],
+                r['width'],
+                r['height']
+            )
 
     def loadGraph(self, nodes, select_all=False):
         edges = []

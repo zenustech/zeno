@@ -245,7 +245,13 @@ class NodeEditor(QWidget):
                 'trans_x': scene.trans_x,
                 'trans_y': scene.trans_y,
             }
-            graphs[name] = {'nodes': nodes, 'view': view}
+            view_rect = {
+                'x': scene._scene_rect.x(),
+                'y': scene._scene_rect.y(),
+                'width': scene._scene_rect.width(),
+                'height': scene._scene_rect.height(),
+            }
+            graphs[name] = {'nodes': nodes, 'view': view, 'view_rect': view_rect}
         prog = {}
         prog['graph'] = graphs
         prog['views'] = views
