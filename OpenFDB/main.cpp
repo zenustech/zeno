@@ -289,60 +289,78 @@ void weld_close() {
     }
     g_triangles.clear();
     for (auto const &[x, y, z]: new_tris) {
-        fprintf(stderr, "%d %d %d\n", x, y, z);
-        g_triangles.emplace_back(x, y, z);
+        if (x != y && y != z && z != x) {
+            g_triangles.emplace_back(x, y, z);
+        }
     }
+}
+
+std::tuple<int, int, int> sort_three(vec3i ind) {
+    int i1 = 0, i2 = 1, i3 = 2;
+    if (ind[i1] > ind[i2]) {
+        std::swap(i1, i2);
+    }
+    if (ind[i1] > ind[i3]) {
+        std::swap(i1, i3);
+    }
+    if (ind[i2] > ind[i3]) {
+        std::swap(i2, i3);
+    }
+    return {ind[i1], ind[i2], ind[i3]};
 }
 
 void flip_edges() {
     std::set<std::tuple<int, int>> edges;
     for (auto const &ind: g_triangles) {
         auto x = ind[0], y = ind[1], z = ind[2];
+        //fprintf(stderr, "%d -> %d -> %d\n", x, y, z);
         edges.emplace(x, y);
         edges.emplace(y, z);
         edges.emplace(z, x);
+        edges.emplace(y, x);
+        edges.emplace(z, y);
+        edges.emplace(x, z);
     }
 
     std::vector<std::vector<int>> edgelut(g_vertices.size());
     for (auto const &[x, y]: edges) {
+        //fprintf(stderr, "%d -> %d\n", x, y);
         edgelut[x].push_back(y);
-        edgelut[y].push_back(x);
+        //edgelut[y].push_back(x);
     }
 
-    std::set<int> fives, sevens;
+    std::set<std::tuple<int, int, int>> new_tris;
+    for (auto const &ind: g_triangles) {
+        new_tris.insert(sort_three(ind));
+    }
+
+    std::map<std::tuple<int, int>, int> to_flip;
     for (int i = 0; i < g_vertices.size(); i++) {
-        auto ecnt = edgelut[i].size();
-        if (ecnt == 5) {
-            fives.insert(i);
-        } else if (ecnt == 7) {
-            sevens.insert(i);
-        }
-    }
-
-    std::vector<vec3I> new_tris;
-    for (auto fiv: fives) {
+        if (edgelut[i].size() != 5) continue;
         int found[2] = {-1, -1}, foundi = 0;
-        for (auto i: edgelut[fiv]) {
-            if (foundi < 2 && sevens.find(i) != sevens.end()) {
-                found[foundi++] = i;
-                foundi = !foundi;
+        for (auto j: edgelut[i]) {
+            if (foundi < 2 && edgelut[j].size() >= 7) {
+                found[foundi++] = j;
             }
         }
         if (foundi >= 2) {
-            new_tris.emplace_back(fiv, found[0], found[1]);
+            auto fid = std::make_tuple(found[0], found[1]);
+            if (auto it = to_flip.find(fid); it != to_flip.end()) {
+                new_tris.erase(sort_three({i, found[0], found[1]}));
+                new_tris.erase(sort_three({it->second, found[0], found[1]}));
+                new_tris.insert(sort_three({it->second, found[0], i}));
+                new_tris.insert(sort_three({it->second, found[1], i}));
+                to_flip.erase(it);
+            } else {
+                to_flip.emplace(fid, i);
+            }
         }
     }
 
-    for (auto const &ind: g_triangles) {
-        auto x = ind[0], y = ind[1], z = ind[2];
-        int has_x = fives.find(x) != fives.end();
-        int has_y = fives.find(y) != fives.end();
-        int has_z = fives.find(z) != fives.end();
-        if (has_x + has_y + has_z != 2) {
-            new_tris.emplace_back(x, y, z);
-        }
+    g_triangles.clear();
+    for (auto const &[x, y, z]: new_tris) {
+        g_triangles.emplace_back(x, y, z);
     }
-    g_triangles = std::move(new_tris);
 }
 
 int main() {
