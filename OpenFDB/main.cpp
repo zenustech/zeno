@@ -3,6 +3,7 @@
 #include <fdb/schedule.h>
 #include <fdb/VDBGrid.h>
 #include <fdb/openvdb.h>
+#include <vector>
 #include <map>
 
 using namespace fdb;
@@ -258,7 +259,7 @@ void marching_tetra() {
 
 int main() {
     ndrange_for(Serial{}, vec3i(0), vec3i(64), [&] (auto idx) {
-        float value = max(0.f, 16.f - length(tofloat(idx)));
+        float value = 16.f - length(tofloat(idx));
         g_sdf.set(idx, value);
     });
 
