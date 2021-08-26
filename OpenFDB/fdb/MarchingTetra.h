@@ -7,6 +7,7 @@
 namespace fdb::marchingtetra {
 
 using ImplicitEvalFunc = std::function<float(vec3i)>;
+
 struct AABB {
     vec3f _min;
     vec3f _max;
