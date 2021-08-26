@@ -294,6 +294,57 @@ void weld_close() {
     }
 }
 
+void flip_edges() {
+    std::set<std::tuple<int, int>> edges;
+    for (auto const &ind: g_triangles) {
+        auto x = ind[0], y = ind[1], z = ind[2];
+        edges.emplace(x, y);
+        edges.emplace(y, z);
+        edges.emplace(z, x);
+    }
+
+    std::vector<std::vector<int>> edgelut(g_vertices.size());
+    for (auto const &[x, y]: edges) {
+        edgelut[x].push_back(y);
+        edgelut[y].push_back(x);
+    }
+
+    std::set<int> fives, sevens;
+    for (int i = 0; i < g_vertices.size(); i++) {
+        auto ecnt = edgelut[i].size();
+        if (ecnt == 5) {
+            fives.insert(i);
+        } else if (ecnt == 7) {
+            sevens.insert(i);
+        }
+    }
+
+    std::vector<vec3I> new_tris;
+    for (auto fiv: fives) {
+        int found[2] = {-1, -1}, foundi = 0;
+        for (auto i: edgelut[fiv]) {
+            if (foundi < 2 && sevens.find(i) != sevens.end()) {
+                found[foundi++] = i;
+                foundi = !foundi;
+            }
+        }
+        if (foundi >= 2) {
+            new_tris.emplace_back(fiv, found[0], found[1]);
+        }
+    }
+
+    for (auto const &ind: g_triangles) {
+        auto x = ind[0], y = ind[1], z = ind[2];
+        int has_x = fives.find(x) != fives.end();
+        int has_y = fives.find(y) != fives.end();
+        int has_z = fives.find(z) != fives.end();
+        if (has_x + has_y + has_z != 2) {
+            new_tris.emplace_back(x, y, z);
+        }
+    }
+    g_triangles = std::move(new_tris);
+}
+
 int main() {
     ndrange_for(Serial{}, vec3i(0), vec3i(65), [&] (auto idx) {
         float value = max(-4.0f, length(tofloat(idx)) - 16.9f);
@@ -302,6 +353,7 @@ int main() {
 
     marching_tetra();
     weld_close();
+    flip_edges();
 
     for (auto f: g_triangles) { f += 1;
         printf("f %d %d %d\n", f[0], f[1], f[2]);
