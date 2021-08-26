@@ -1,7 +1,8 @@
 x:
 	cmake -B build
 	cmake --build build --parallel
-	build/openfdb
+	-rm -rf /tmp/a.obj
+	build/openfdb | tee /tmp/a.obj
 
 d:
 	cmake -B build

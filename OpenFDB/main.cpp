@@ -1,11 +1,13 @@
 #include <cstdio>
+#include <cassert>
 #include <fdb/schedule.h>
 #include <fdb/VDBGrid.h>
 #include <fdb/openvdb.h>
+#include <map>
 
 using namespace fdb;
 
-size_t g_nx = 128, g_ny = 128, g_nz = 128;
+size_t g_nx = 64, g_ny = 64, g_nz = 64;
 
 std::vector<vec3I> g_tris;
 
@@ -55,6 +57,29 @@ const uint8_t TETRA_VERTICES[NUM_TETRA_IN_CUBE][NUM_EDGES_IN_TETRA] =
 static uint8_t TETRA_EDGES[NUM_EDGES_IN_TETRA][NUM_EDGES_IN_TETRA];
 
 static uint8_t TETRA_VERTEX_TO_EDGE_MAP[NUM_VERTS_IN_CUBE][NUM_VERTS_IN_CUBE];
+bool construct_tetra_adjacency() {
+  auto& tvem = TETRA_VERTEX_TO_EDGE_MAP;
+  for (int i = 0; i < NUM_EDGES_IN_CUBE; ++i) {
+    auto v0 = TETRA_EDGE_TABLE[i][0];
+    auto v1 = TETRA_EDGE_TABLE[i][1];
+    tvem[v0][v1] = i;
+    tvem[v1][v0] = i;
+  }
+
+  for (int i = 0; i < NUM_EDGES_IN_TETRA; ++i) {
+    auto& te = TETRA_EDGES[i];
+    const auto& tv = TETRA_VERTICES[i];
+    te[0] = tvem[tv[0]][tv[1]];
+    te[1] = tvem[tv[0]][tv[2]];
+    te[2] = tvem[tv[0]][tv[3]];
+    te[3] = tvem[tv[1]][tv[2]];
+    te[4] = tvem[tv[1]][tv[3]];
+    te[5] = tvem[tv[2]][tv[3]];
+  }
+
+  return true;
+}
+static bool cta = construct_tetra_adjacency();
 
 uint8_t TETRA_LOOKUP_PERM[16][4] = {
     {0, 1, 2, 3}, // 0b0000 ; no triangles
@@ -101,15 +126,6 @@ void add_two_triangles_case(size_t cube_idx, uint8_t i0, uint8_t i1, uint8_t i2,
   auto e3 = global_edge_index(cube_idx, i1, i3);
   add_tri(e0, e1, e2);
   add_tri(e2, e1, e3);
-}
-
-vec3f get_vertex_position(size_t vi) {
-  size_t cx = vi % g_nx;
-  vi /= g_nx;
-  size_t cy = vi % g_ny;
-  vi /= g_ny;
-  size_t cz = vi; // % g_nz;
-  return vec3f(cx, cy, cz);
 }
 
 vdbgrid::VDBGrid<float> g_sdf;
@@ -172,15 +188,92 @@ void compute_cube(size_t cx, size_t cy, size_t cz) {
   }
 }
 
+vec3i global_vertex_index(size_t cube_index, uint8_t local_v) {
+  size_t cx = cube_index % g_nx;
+  cube_index /= g_nx;
+  size_t cy = cube_index % g_ny;
+  cube_index /= g_ny;
+  size_t cz = cube_index;
+    vec3i lut[8] = {
+        vec3i(cx, cy, cz),
+        vec3i(cx+1, cy, cz),
+        vec3i(cx, cy+1, cz),
+        vec3i(cx+1, cy+1, cz),
+        vec3i(cx, cy, cz+1),
+        vec3i(cx+1, cy, cz+1),
+        vec3i(cx, cy+1, cz+1),
+        vec3i(cx+1, cy+1, cz+1),
+    };
+  return lut[local_v];
+}
+
+vec3f get_edge_vertex_position(size_t e) {
+  size_t cube_index = e / NUM_EDGES_IN_CUBE;
+  uint8_t local_e = e % NUM_EDGES_IN_CUBE;
+
+  auto& verts = TETRA_EDGE_TABLE[local_e];
+
+  // global vertex indices
+  auto vi0 = global_vertex_index(cube_index, verts[0]);
+  auto vi1 = global_vertex_index(cube_index, verts[1]);
+
+  float f0 = sample(vi0[0], vi0[1], vi0[2]), f1 = sample(vi1[0], vi1[1], vi1[2]);
+
+  assert(f0 * f1 <= 0);
+
+  // linear interpolate between the sampled points to find the zero-crossing
+  float zero_t = f0 == f1 ? 0.5 : f0 / (f0 - f1);
+
+  // interpolation between the vertex positions at the zero crossing
+  return mix( vi0, vi1, zero_t );
+};
+
+std::vector<vec3f> g_vertices;
+std::vector<vec3I> g_triangles;
+std::map<int, int> g_em;
+
+void marching_tetra() {
+  for (size_t cz = 0; cz < g_nz; ++cz)
+    for (size_t cy = 0; cy < g_ny; ++cy)
+      for (size_t cx = 0; cx < g_nx; ++cx)
+        compute_cube(cx, cy, cz);
+
+  for (int i = 0; i < g_tris.size(); i++) {
+      for (int j = 0; j < 3; j++) {
+          auto idx = g_tris[i][j];
+          if (g_em.find(idx) == g_em.end()) {
+              g_em.emplace(idx, g_vertices.size());
+              g_vertices.push_back(get_edge_vertex_position(idx));
+          }
+        }
+  }
+
+  for (int i = 0; i < g_tris.size(); i++) {
+      g_triangles.emplace_back(
+              g_em.find(g_tris[i][0])->second,
+              g_em.find(g_tris[i][1])->second,
+              g_em.find(g_tris[i][2])->second);
+  }
+}
+
 int main() {
-    ndrange_for(Serial{}, vec3i(-64), vec3i(64), [&] (auto idx) {
-        float value = max(0.f, 40.f - length(tofloat(idx)));
+    ndrange_for(Serial{}, vec3i(0), vec3i(64), [&] (auto idx) {
+        float value = max(0.f, 16.f - length(tofloat(idx)));
         g_sdf.set(idx, value);
     });
 
+    marching_tetra();
+
+    for (auto f: g_triangles) { f += 1;
+        printf("f %d %d %d\n", f[0], f[1], f[2]);
+    }
+    for (auto v: g_vertices) {
+        printf("v %f %f %f\n", v[0], v[1], v[2]);
+    }
+
     write_dense_vdb("/tmp/a.vdb", [&] (auto idx) {
         return g_sdf.get(idx);
-    }, vec3i(-64), vec3i(64));
+    }, vec3i(0), vec3i(64));
 
     return 0;
 }
