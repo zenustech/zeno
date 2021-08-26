@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+
 namespace fdb::volumemesh {
 
 template <class GridT>
@@ -10,17 +12,19 @@ struct MarchingTetra {
     }
 private:
 
+GridT const &g_sdf;
+
 size_t g_nx = 64, g_ny = 64, g_nz = 64;
 
 std::vector<vec3I> g_tris;
 
-const uint8_t NUM_VERTS_IN_TETRA = 4;
-const uint8_t NUM_EDGES_IN_TETRA = 6;
-const uint8_t NUM_VERTS_IN_CUBE = 8;
-const uint8_t NUM_EDGES_IN_CUBE = 19;
-const uint8_t NUM_TETRA_IN_CUBE = 6;
+inline static const uint8_t NUM_VERTS_IN_TETRA = 4;
+inline static const uint8_t NUM_EDGES_IN_TETRA = 6;
+inline static const uint8_t NUM_VERTS_IN_CUBE = 8;
+inline static const uint8_t NUM_EDGES_IN_CUBE = 19;
+inline static const uint8_t NUM_TETRA_IN_CUBE = 6;
 
-const uint8_t TETRA_EDGE_TABLE[NUM_EDGES_IN_CUBE][2] =
+inline static const uint8_t TETRA_EDGE_TABLE[NUM_EDGES_IN_CUBE][2] =
 {{0, 1}, // around z = 0
  {1, 3},
  {2, 3},
@@ -47,7 +51,7 @@ const uint8_t TETRA_EDGE_TABLE[NUM_EDGES_IN_CUBE][2] =
  {0, 7} // cross diagonal
 };
 
-const uint8_t TETRA_VERTICES[NUM_TETRA_IN_CUBE][NUM_EDGES_IN_TETRA] =
+inline static const uint8_t TETRA_VERTICES[NUM_TETRA_IN_CUBE][NUM_EDGES_IN_TETRA] =
 {
   {0, 1, 5, 7},
   {0, 5, 4, 7},
@@ -57,10 +61,10 @@ const uint8_t TETRA_VERTICES[NUM_TETRA_IN_CUBE][NUM_EDGES_IN_TETRA] =
   {0, 3, 1, 7}
 };
 
-static uint8_t TETRA_EDGES[NUM_EDGES_IN_TETRA][NUM_EDGES_IN_TETRA];
+inline static uint8_t TETRA_EDGES[NUM_EDGES_IN_TETRA][NUM_EDGES_IN_TETRA];
 
-static uint8_t TETRA_VERTEX_TO_EDGE_MAP[NUM_VERTS_IN_CUBE][NUM_VERTS_IN_CUBE];
-bool construct_tetra_adjacency() {
+inline static uint8_t TETRA_VERTEX_TO_EDGE_MAP[NUM_VERTS_IN_CUBE][NUM_VERTS_IN_CUBE];
+static bool construct_tetra_adjacency() {
   auto& tvem = TETRA_VERTEX_TO_EDGE_MAP;
   for (int i = 0; i < NUM_EDGES_IN_CUBE; ++i) {
     auto v0 = TETRA_EDGE_TABLE[i][0];
@@ -82,9 +86,9 @@ bool construct_tetra_adjacency() {
 
   return true;
 }
-static bool cta = construct_tetra_adjacency();
+inline static bool cta = construct_tetra_adjacency();
 
-uint8_t TETRA_LOOKUP_PERM[16][4] = {
+inline static uint8_t TETRA_LOOKUP_PERM[16][4] = {
     {0, 1, 2, 3}, // 0b0000 ; no triangles
     {0, 1, 2, 3}, // 0b0001 ; one triangle, vertex 0
     {1, 2, 0, 3}, // 0b0010 ; one triangle, vertex 1
@@ -131,10 +135,8 @@ void add_two_triangles_case(size_t cube_idx, uint8_t i0, uint8_t i1, uint8_t i2,
   add_tri(e2, e1, e3);
 }
 
-GridT const &g_sdf;
-
 float sample(size_t cx, size_t cy, size_t cz) {
-    return g_sdf.at(vec3i(cx,cy,cz));
+    return g_sdf.get(vec3i(cx,cy,cz));
 }
 
 void compute_cube(size_t cx, size_t cy, size_t cz) {
@@ -234,6 +236,12 @@ vec3f get_edge_vertex_position(size_t e) {
 std::vector<vec3f> g_vertices;
 std::vector<vec3I> g_triangles;
 std::map<int, int> g_em;
+std::map<int, vec4f> g_cell;
+
+int truncate_cell(vec3f pos) {
+    auto ip = toint(pos);
+    return ip[2] * g_nx * g_ny + ip[1] * g_nx + ip[0];
+}
 
 void march() {
   for (size_t cz = 0; cz < g_nz; ++cz)
@@ -241,22 +249,37 @@ void march() {
       for (size_t cx = 0; cx < g_nx; ++cx)
         compute_cube(cx, cy, cz);
 
+      fprintf(stderr, "!%d\n", g_tris.size());
   for (int i = 0; i < g_tris.size(); i++) {
       for (int j = 0; j < 3; j++) {
           auto idx = g_tris[i][j];
-          if (g_em.find(idx) == g_em.end()) {
-              g_em.emplace(idx, g_vertices.size());
-              g_vertices.push_back(get_edge_vertex_position(idx));
+          auto p = get_edge_vertex_position(idx);
+          auto cel = truncate_cell(p);
+          vec4f pos(p[0], p[1], p[2], 1);
+          if (auto it = g_cell.find(cel); it == g_cell.end()) {
+              g_cell.emplace(cel, pos);
+          } else {
+              it->second += pos;
           }
+          /*if (g_em.find(idx) == g_em.end()) {
+              g_em.emplace(idx, cel);
+              auto pos = get_edge_vertex_position(idx);
+              g_vertices.push_back(pos);
+          }*/
         }
+    }
+
+  for (auto [cel, p]: g_cell) {
+      vec3f pos(p[0], p[1], p[2]);
+      g_vertices.push_back(pos);
   }
 
-  for (int i = 0; i < g_tris.size(); i++) {
+  /*for (int i = 0; i < g_tris.size(); i++) {
       g_triangles.emplace_back(
               g_em.find(g_tris[i][0])->second,
               g_em.find(g_tris[i][1])->second,
               g_em.find(g_tris[i][2])->second);
-  }
+  }*/
 }
 
 public:
