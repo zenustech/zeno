@@ -3,7 +3,9 @@
 #include <fdb/schedule.h>
 #include <fdb/VDBGrid.h>
 #include <fdb/openvdb.h>
+#include <set>
 #include <vector>
+#include <tuple>
 #include <map>
 
 using namespace fdb;
@@ -257,13 +259,49 @@ void marching_tetra() {
   }
 }
 
+void weld_close() {
+    std::map<std::tuple<int, int, int>, std::vector<int>> rear;
+    for (int i = 0; i < g_vertices.size(); i++) {
+        auto pos = g_vertices[i];
+        vec3i ipos(pos);
+        rear[std::make_tuple(ipos[0], ipos[1], ipos[2])].push_back(i);
+    }
+    std::map<int, int> lut;
+    std::vector<vec3f> new_verts;
+    for (auto const &[ipos, inds]: rear) {
+        vec3f cpos = g_vertices[inds[0]];
+        int vertid = new_verts.size();
+        lut.emplace(inds[0], vertid);
+        for (int i = 1; i < inds.size(); i++) {
+            cpos += g_vertices[inds[i]];
+            lut.emplace(inds[i], vertid);
+        }
+        cpos /= inds.size();
+        new_verts.emplace_back(cpos);
+    }
+    g_vertices = std::move(new_verts);
+    std::set<std::tuple<int, int, int>> new_tris;
+    for (auto const &inds: g_triangles) {
+        new_tris.emplace(
+                lut.find(inds[0])->second,
+                lut.find(inds[1])->second,
+                lut.find(inds[2])->second);
+    }
+    g_triangles.clear();
+    for (auto const &[x, y, z]: new_tris) {
+        fprintf(stderr, "%d %d %d\n", x, y, z);
+        g_triangles.emplace_back(x, y, z);
+    }
+}
+
 int main() {
-    ndrange_for(Serial{}, vec3i(0), vec3i(64), [&] (auto idx) {
-        float value = 16.f - length(tofloat(idx));
+    ndrange_for(Serial{}, vec3i(0), vec3i(65), [&] (auto idx) {
+        float value = max(-0.1f, length(tofloat(idx)) - 16.9f);
         g_sdf.set(idx, value);
     });
 
     marching_tetra();
+    weld_close();
 
     for (auto f: g_triangles) { f += 1;
         printf("f %d %d %d\n", f[0], f[1], f[2]);
