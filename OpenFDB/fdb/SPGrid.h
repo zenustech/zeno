@@ -70,6 +70,7 @@ static constexpr size_t expandbits3d(size_t v) {
 }
 
 static constexpr size_t morton3d(size_t x, size_t y, size_t z) {
+    //return x | (y << 16) | (z << 32);
     x = expandbits3d(x);
     y = expandbits3d(y);
     z = expandbits3d(z);
@@ -83,7 +84,7 @@ struct SPLayout {
 
 template <>
 struct SPLayout<16, 4> {
-    static size_t linearize(size_t c, size_t i, size_t j, size_t k) {
+    static constexpr size_t linearize(size_t c, size_t i, size_t j, size_t k) {
         size_t t = (i & 3) | ((j & 3) << 2) | ((k & 3) << 4) | ((c & 15) << 6);
         size_t m = morton3d(i >> 2, j >> 2, k >> 2);
         return (t << 2) | (m << 12);
@@ -92,17 +93,16 @@ struct SPLayout<16, 4> {
 
 template <>
 struct SPLayout<4, 4> {
-    static size_t linearize(size_t c, size_t i, size_t j, size_t k) {
+    static constexpr size_t linearize(size_t c, size_t i, size_t j, size_t k) {
         size_t t = (i & 7) | ((j & 7) << 3) | ((k & 3) << 6) | ((c & 3) << 8);
         size_t m = morton3d(i >> 3, j >> 3, k >> 2);
-        t = (t << 2) | (m << 12);
-        return t;
+        return (t << 2) | (m << 12);
     }
 };
 
 template <>
 struct SPLayout<1, 4> {
-    static size_t linearize(size_t c, size_t i, size_t j, size_t k) {
+    static constexpr size_t linearize(size_t c, size_t i, size_t j, size_t k) {
         size_t t = (i & 15) | ((j & 7) << 4) | ((k & 7) << 7);
         size_t m = morton3d(i >> 4, j >> 3, k >> 3);
         return (t << 2) | (m << 12);
@@ -111,7 +111,7 @@ struct SPLayout<1, 4> {
 
 template <>
 struct SPLayout<1, 0> {
-    static size_t linearize(size_t c, size_t i, size_t j, size_t k) {
+    static constexpr size_t linearize(size_t c, size_t i, size_t j, size_t k) {
         size_t t = ((i >> 3) & 3) | ((j & 31) << 2) | ((k & 31) << 7);
         size_t m = morton3d(i >> 5, j >> 5, k >> 5);
         return t | (m << 12);
@@ -151,10 +151,9 @@ struct SPGrid {
     SPGrid &operator=(SPGrid &&) = default;
 
     void *address(size_t c, size_t i, size_t j, size_t k) const {
-        //size_t offset = LayoutClass::linearize(c, i, j, k);
-        size_t offset = c + NChannels * (i + j * NRes + k * NRes * NRes);
-        offset %= NRes * NRes * NRes * NChannels;
-        offset *= NElmsize;
+        size_t offset = LayoutClass::linearize(c, i, j, k);
+        //size_t offset = (c + NChannels * (i + j * NRes + k * NRes * NRes)) * NElmsize;
+        offset %= NRes * NRes * NRes * NChannels * NElmsize;
         return static_cast<void *>(static_cast<char *>(m_ptr) + offset);
     }
 };

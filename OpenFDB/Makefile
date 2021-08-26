@@ -1,7 +1,7 @@
 x:
 	cmake -B build
 	cmake --build build --parallel
-	build/openfdb | tee /tmp/a.txt
+	build/openfdb
 
 d:
 	cmake -B build
