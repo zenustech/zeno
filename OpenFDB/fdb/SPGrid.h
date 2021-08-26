@@ -70,7 +70,6 @@ static constexpr size_t expandbits3d(size_t v) {
 }
 
 static constexpr size_t morton3d(size_t x, size_t y, size_t z) {
-    //return x | (y << 16) | (z << 32);
     x = expandbits3d(x);
     y = expandbits3d(y);
     z = expandbits3d(z);
@@ -84,6 +83,10 @@ struct SPLayout {
 
 template <>
 struct SPLayout<16, 4> {
+    static constexpr size_t ScaleX = 1;
+    static constexpr size_t ScaleY = 1;
+    static constexpr size_t ScaleZ = 1;
+
     static constexpr size_t linearize(size_t c, size_t i, size_t j, size_t k) {
         size_t t = (i & 3) | ((j & 3) << 2) | ((k & 3) << 4) | ((c & 15) << 6);
         size_t m = morton3d(i >> 2, j >> 2, k >> 2);
@@ -93,6 +96,10 @@ struct SPLayout<16, 4> {
 
 template <>
 struct SPLayout<4, 4> {
+    static constexpr size_t ScaleX = 2;
+    static constexpr size_t ScaleY = 2;
+    static constexpr size_t ScaleZ = 1;
+
     static constexpr size_t linearize(size_t c, size_t i, size_t j, size_t k) {
         size_t t = (i & 7) | ((j & 7) << 3) | ((k & 3) << 6) | ((c & 3) << 8);
         size_t m = morton3d(i >> 3, j >> 3, k >> 2);
@@ -102,23 +109,14 @@ struct SPLayout<4, 4> {
 
 template <>
 struct SPLayout<1, 4> {
+    static constexpr size_t ScaleX = 2;
+    static constexpr size_t ScaleY = 1;
+    static constexpr size_t ScaleZ = 1;
+
     static constexpr size_t linearize(size_t c, size_t i, size_t j, size_t k) {
         size_t t = (i & 15) | ((j & 7) << 4) | ((k & 7) << 7);
         size_t m = morton3d(i >> 4, j >> 3, k >> 3);
         return (t << 2) | (m << 12);
-    }
-};
-
-template <>
-struct SPLayout<1, 0> {
-    static constexpr size_t linearize(size_t c, size_t i, size_t j, size_t k) {
-        size_t t = ((i >> 3) & 3) | ((j & 31) << 2) | ((k & 31) << 7);
-        size_t m = morton3d(i >> 5, j >> 5, k >> 5);
-        return t | (m << 12);
-    }
-
-    static size_t bit_linearize(size_t c, size_t i, size_t j, size_t k) {
-        return i & 7;
     }
 };
 
@@ -128,13 +126,13 @@ struct SPGrid {
     using LayoutClass = SPLayout<NChannels, NElmsize>;
 
     void *m_ptr;
-    static constexpr size_t Resolution = NRes;
+    static constexpr size_t ResolutionX = NRes * LayoutClass::ScaleX;
+    static constexpr size_t ResolutionY = NRes * LayoutClass::ScaleY;
+    static constexpr size_t ResolutionZ = NRes * LayoutClass::ScaleZ;
     static constexpr size_t NumChannels = NChannels;
     static constexpr size_t ElementSize = NElmsize;
     static constexpr size_t MemorySize =
-        NElmsize == 0 ?
-        NRes * NRes * NRes * NChannels / 8 :
-        NRes * NRes * NRes * NChannels * NElmsize;
+        ResolutionX * ResolutionY * ResolutionZ * NumChannels * ElementSize;
 
     SPGrid() {
         m_ptr = allocate(MemorySize);
@@ -151,9 +149,10 @@ struct SPGrid {
     SPGrid &operator=(SPGrid &&) = default;
 
     void *address(size_t c, size_t i, size_t j, size_t k) const {
+        i %= ResolutionX;
+        j %= ResolutionY;
+        k %= ResolutionZ;
         size_t offset = LayoutClass::linearize(c, i, j, k);
-        //size_t offset = (c + NChannels * (i + j * NRes + k * NRes * NRes)) * NElmsize;
-        offset %= NRes * NRes * NRes * NChannels * NElmsize;
         return static_cast<void *>(static_cast<char *>(m_ptr) + offset);
     }
 };
@@ -216,7 +215,7 @@ using SPFloat4Grid = SPTypedGrid<NRes, 4, float>;
 template <size_t NRes>
 using SPFloat16Grid = SPTypedGrid<NRes, 16, float>;
 
-template <size_t NRes>
+/*template <size_t NRes>
 struct SPBooleanGrid : SPGrid<NRes, 1, 0> {
     using ValueType = bool;
 
@@ -242,7 +241,7 @@ struct SPBooleanGrid : SPGrid<NRes, 1, 0> {
         else
             set_false(i, j, k);
     }
-};
+};*/
 
 /*template <size_t NRes, size_t NScale = 8>
 struct SPActivationMask {
