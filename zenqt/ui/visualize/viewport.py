@@ -120,7 +120,7 @@ class ViewportWidget(QOpenGLWidget):
         self.check_record()
 
     def check_record(self):
-        f = zenvis.status['frameid']
+        f = zenvis.get_curr_frameid()
         if self.record_path and f <= self.frame_end:
             old_res = self.camera.res
             self.camera.res = self.record_res
