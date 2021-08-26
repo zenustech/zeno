@@ -17,18 +17,18 @@ int main() {
         g_pre.set(i, j, k, c);
     });
 
-    /*ndrange_for(policy::Serial{},
-    vec<int, 3>(32), vec<int, 3>(64), [&] (auto idx) {
+    ndrange_for(policy::Serial{},
+    vec<int, 3>(1), vec<int, 3>(127), [&] (auto idx) {
         int i = idx[0], j = idx[1], k = idx[2];
         float c = g_pre.get(i, j, k);
         g_vel.set(i, j, k, vec<float, 3>(
                 c - g_pre.get(i+1, j, k),
                 c - g_pre.get(i, j+1, k),
                 c - g_pre.get(i, j, k+1)));
-    });*/
+    });
 
-    write_dense_vdb("/tmp/a.vdb", [&] (vec<int, 3> coor) -> float {
-        return g_pre.get(coor[0], coor[1], coor[2]);
+    write_dense_vdb("/tmp/a.vdb", [&] (auto coor) {
+        return abs(g_vel.get(coor[0], coor[1], coor[2]));
     }, vec<int, 3>(128));
 
     return 0;

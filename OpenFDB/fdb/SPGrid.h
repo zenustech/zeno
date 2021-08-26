@@ -150,7 +150,7 @@ struct SPGrid {
     SPGrid &operator=(SPGrid const &) = delete;
     SPGrid &operator=(SPGrid &&) = default;
 
-    void *pointer_at(size_t c, size_t i, size_t j, size_t k) const {
+    void *address(size_t c, size_t i, size_t j, size_t k) const {
         //size_t offset = LayoutClass::linearize(c, i, j, k);
         size_t offset = c + NChannels * (i + j * NRes + k * NRes * NRes);
         offset %= NRes * NRes * NRes * NChannels;
@@ -168,7 +168,7 @@ struct SPTypedGrid : SPGrid<NRes, NChannels, sizeof(T)> {
     using ValueType = vec<T, NChannels>;
 
     T &at(size_t c, size_t i, size_t j, size_t k) const {
-        return *(T *)this->pointer_at(c, i, j, k);
+        return *(T *)this->address(c, i, j, k);
     }
 
     auto get(size_t i, size_t j, size_t k) const {
@@ -191,7 +191,7 @@ struct SPTypedGrid<NRes, 1, T> : SPGrid<NRes, 1, sizeof(T)> {
     using ValueType = T;
 
     T &at(size_t i, size_t j, size_t k) const {
-        return *(T *)this->pointer_at(0, i, j, k);
+        return *(T *)this->address(0, i, j, k);
     }
 
     T &at(size_t c, size_t i, size_t j, size_t k) const {
@@ -222,7 +222,7 @@ struct SPBooleanGrid : SPGrid<NRes, 1, 0> {
     using ValueType = bool;
 
     unsigned char &uchar_at(size_t i, size_t j, size_t k) const {
-        return *(unsigned char *)this->pointer_at(0, i, j, k);
+        return *(unsigned char *)this->address(0, i, j, k);
     }
 
     bool get(size_t i, size_t j, size_t k) const {
