@@ -215,8 +215,15 @@ template <size_t Log2Res>
 using SPFloat16Grid = SPTypedGrid<Log2Res, 16, float>;
 
 
-template <size_t Log2Res>
+template <size_t Log2Res, size_t Log2EndRes, size_t NChannels, size_t NElmsize>
 struct SPGridLevel {
+    SPGrid<Log2Res, NChannels, NElmsize> m_head;
+    SPGridLevel<Log2Res - 1, NChannels, NElmsize> m_next;
+};
+
+template <size_t Log2Res, size_t NChannels, size_t NElmsize>
+struct SPGridLevel<Log2Res, Log2Res, NChannels, NElmsize> {
+    SPGrid<Log2Res, NChannels, NElmsize> m_head;
 };
 
 }
