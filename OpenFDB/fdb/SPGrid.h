@@ -15,7 +15,6 @@ namespace fdb::spgrid {
 static_assert(sizeof(void *) == 8, "SPGrid requies 64-bit architecture");
 
 static void *allocate(size_t size) {
-    printf("SPGrid allocate size = %zd\n", size);
 #if defined(_WIN32)
     void *ptr = ::VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_READWRITE);
     if (!ptr) {
@@ -149,9 +148,9 @@ struct SPGrid {
     SPGrid &operator=(SPGrid &&) = default;
 
     void *address(size_t c, vec3i ijk) const {
-        size_t i = ijk[0] & ((1ul << Log2ResX) - 1);
-        size_t j = ijk[1] & ((1ul << Log2ResY) - 1);
-        size_t k = ijk[2] & ((1ul << Log2ResZ) - 1);
+        size_t i = ijk[0] & ((1l << Log2ResX) - 1);
+        size_t j = ijk[1] & ((1l << Log2ResY) - 1);
+        size_t k = ijk[2] & ((1l << Log2ResZ) - 1);
         size_t offset = LayoutClass::linearize(c, i, j, k);
         return static_cast<void *>(static_cast<char *>(m_ptr) + offset);
     }

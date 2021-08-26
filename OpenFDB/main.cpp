@@ -10,10 +10,14 @@ int main() {
     spgrid::SPFloat3Grid<12> g_vel;
 
     ndrange_for(policy::Serial{},
-    vec3i(0), vec3i(128), [&] (auto idx) {
-        float c = length(idx - 64.f) < 64.f ? 1.f : 0.f;
-        g_pre.set(idx, c);
+    vec3i(-64), vec3i(64), [&] (auto idx) {
+        float value = length(idx) < 40.f ? 1.f : 0.f;
+        g_pre.set(idx, value);
     });
+
+    printf("%p\n", g_pre.address(0, {-1, 0, 0}));
+    printf("%p\n", g_pre.address(0, {0, 0, 0}));
+    printf("%p\n", g_pre.address(0, {4095, 0, 0}));
 
     /*ndrange_for(policy::Serial{},
     vec3i(1), vec3i(127), [&] (auto idx) {
@@ -26,7 +30,7 @@ int main() {
 
     write_dense_vdb("/tmp/a.vdb", [&] (auto idx) {
         return abs(g_pre.get(idx));
-    }, vec3i(128));
+    }, vec3i(-64), vec3i(64));
 
     return 0;
 }

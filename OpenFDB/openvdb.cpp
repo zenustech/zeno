@@ -7,17 +7,22 @@ namespace fdb {
 
 template <class GridT, class ValT>
 void impl_write_dense_vdb
-        ( std::string_view path
-        , std::function<ValT(vec3I)> sampler
-        , vec3I size
+        ( std::string path
+        , std::function<ValT(vec3i)> sampler
+        , vec3i start
+        , vec3i stop
         )
 {
-    openvdb::tools::Dense<typename GridT::ValueType> dens(openvdb::Coord(size[0], size[1], size[2]));
-    for (uint32_t z = 0; z < size[2]; z++) {
-        for (uint32_t y = 0; y < size[1]; y++) {
-            for (uint32_t x = 0; x < size[0]; x++) {
+    openvdb::CoordBBox bbox(
+            openvdb::Coord(start[0], start[1], start[2]),
+            openvdb::Coord(stop[0], stop[1], stop[2]));
+    openvdb::tools::Dense<typename GridT::ValueType> dens(bbox);
+    for (int z = start[2]; z < stop[2]; z++) {
+        for (int y = start[1]; y < stop[1]; y++) {
+            for (int x = start[0]; x < stop[0]; x++) {
                 auto val = sampler({x, y, z});
-                dens.setValue(x, y, z, vec_to_other<typename GridT::ValueType>(val));
+                dens.setValue(x - start[0], y - start[1], z - start[2],
+                        vec_to_other<typename GridT::ValueType>(val));
             }
         }
     }
@@ -28,21 +33,23 @@ void impl_write_dense_vdb
 }
 
 void write_dense_vdb
-    ( std::string_view path
-    , std::function<float(vec3I)> sampler
-    , vec3I size
+    ( std::string path
+    , std::function<float(vec3i)> sampler
+    , vec3i start
+    , vec3i stop
     )
 {
-    return impl_write_dense_vdb<openvdb::FloatGrid>(path, sampler, size);
+    return impl_write_dense_vdb<openvdb::FloatGrid>(path, sampler, start, stop);
 }
 
 void write_dense_vdb
-    ( std::string_view path
-    , std::function<vec3f(vec3I)> sampler
-    , vec3I size
+    ( std::string path
+    , std::function<vec3f(vec3i)> sampler
+    , vec3i start
+    , vec3i stop
     )
 {
-    return impl_write_dense_vdb<openvdb::Vec3fGrid>(path, sampler, size);
+    return impl_write_dense_vdb<openvdb::Vec3fGrid>(path, sampler, start, stop);
 }
 
 }
