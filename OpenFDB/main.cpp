@@ -1,5 +1,4 @@
 #include <cstdio>
-#include <fdb/types.h>
 #include <fdb/policy.h>
 #include <fdb/SPGrid.h>
 #include <fdb/openvdb.h>
