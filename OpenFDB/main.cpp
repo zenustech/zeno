@@ -329,7 +329,7 @@ void flip_edges() {
 
     std::set<std::tuple<int, int, int>> new_tris;
     for (auto const &ind: g_triangles) {
-        new_tris.insert(sort_three(ind));
+        new_tris.emplace(ind[0], ind[1], ind[2]);
     }
 
     std::map<std::tuple<int, int>, int> to_flip;
@@ -344,10 +344,21 @@ void flip_edges() {
         if (foundi >= 2) {
             auto fid = std::make_tuple(found[0], found[1]);
             if (auto it = to_flip.find(fid); it != to_flip.end()) {
-                new_tris.erase(sort_three({i, found[0], found[1]}));
-                new_tris.erase(sort_three({it->second, found[0], found[1]}));
-                new_tris.insert(sort_three({it->second, found[0], i}));
-                new_tris.insert(sort_three({it->second, found[1], i}));
+                new_tris.erase({i, found[0], found[1]});
+                new_tris.erase({found[0], i, found[1]});
+                new_tris.erase({found[0], found[1], i});
+                new_tris.erase({i, found[1], found[0]});
+                new_tris.erase({found[1], i, found[0]});
+                new_tris.erase({found[1], found[0], i});
+                new_tris.erase({it->second, found[0], found[1]});
+                new_tris.erase({found[0], it->second, found[1]});
+                new_tris.erase({found[0], found[1], it->second});
+                new_tris.erase({it->second, found[1], found[0]});
+                new_tris.erase({found[1], it->second, found[0]});
+                new_tris.erase({found[1], found[0], it->second});
+                // TODO: fix this face order:
+                new_tris.emplace(i, it->second, found[0]);
+                new_tris.emplace(it->second, found[1], i);
                 to_flip.erase(it);
             } else {
                 to_flip.emplace(fid, i);
