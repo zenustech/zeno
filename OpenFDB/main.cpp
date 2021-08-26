@@ -11,13 +11,13 @@ int main() {
     spgrid::SPFloat3Grid<128> g_vel;
 
     ndrange_for(policy::Serial{},
-    vec<int, 3>(32), vec<int, 3>(64), [&] (auto idx) {
+    vec<int, 3>(0), vec<int, 3>(128), [&] (auto idx) {
         int i = idx[0], j = idx[1], k = idx[2];
-        float c = (i + j + k) % 2 ? 1.f : 0.f;
+        float c = (i / 16 + j / 16 + k / 16) % 2 ? 1.f : 0.f;
         g_pre.set(i, j, k, c);
     });
 
-    ndrange_for(policy::Serial{},
+    /*ndrange_for(policy::Serial{},
     vec<int, 3>(32), vec<int, 3>(64), [&] (auto idx) {
         int i = idx[0], j = idx[1], k = idx[2];
         float c = g_pre.get(i, j, k);
@@ -25,7 +25,7 @@ int main() {
                 c - g_pre.get(i+1, j, k),
                 c - g_pre.get(i, j+1, k),
                 c - g_pre.get(i, j, k+1)));
-    });
+    });*/
 
     write_dense_vdb("/tmp/a.vdb", [&] (vec<int, 3> coor) -> float {
         return g_pre.get(coor[0], coor[1], coor[2]);
