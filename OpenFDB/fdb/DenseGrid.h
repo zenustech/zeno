@@ -46,8 +46,7 @@ public:
     }
 
     ValueType get(vec3i ijk) const {
-        auto ptr = this->get_at(ijk);
-        return ptr ? *ptr : ValueType(0);
+        return at(ijk);
     }
 
     void set(vec3i ijk, ValueType const &val) {
