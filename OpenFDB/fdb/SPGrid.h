@@ -41,7 +41,7 @@ static void deallocate(void *ptr, size_t size) {
 #endif
 }
 
-static void reloadPage(void *ptr) {
+static void reload_page(void *ptr) {
 #if defined(_WIN32)
     ::VirtualAllocEx(GetCurrentProcess(), ptr,
         4096, MEM_COMMIT, PAGE_READWRITE);
@@ -51,7 +51,7 @@ static void reloadPage(void *ptr) {
 #endif
 }
 
-static void unloadPage(void *ptr) {
+static void unload_page(void *ptr) {
 #if defined(_WIN32)
     ::VirtualFreeEx(GetCurrentProcess(), ptr, 4096, MEM_DECOMMIT);
 #else
@@ -151,11 +151,16 @@ struct SPGrid {
     SPGrid &operator=(SPGrid &&) = default;
 
     void *pointer_at(size_t c, size_t i, size_t j, size_t k) const {
-        size_t offset = LayoutClass::linearize(c, i, j, k);
-        //size_t offset = c + NChannels * (i + j * NRes + k * NRes * NRes);
-        //offset %= NRes * NRes * NRes * NChannels;
+        //size_t offset = LayoutClass::linearize(c, i, j, k);
+        size_t offset = c + NChannels * (i + j * NRes + k * NRes * NRes);
+        offset %= NRes * NRes * NRes * NChannels;
+        offset *= NElmsize;
         return static_cast<void *>(static_cast<char *>(m_ptr) + offset);
     }
+};
+
+template <size_t NRes, size_t NElmsize>
+struct SPGrid<NRes, 3, NElmsize> : SPGrid<NRes, 4, NElmsize> {
 };
 
 template <size_t NRes, size_t NChannels, typename T>
@@ -206,6 +211,8 @@ struct SPTypedGrid<NRes, 1, T> : SPGrid<NRes, 1, sizeof(T)> {
 template <size_t NRes>
 using SPFloatGrid = SPTypedGrid<NRes, 1, float>;
 template <size_t NRes>
+using SPFloat3Grid = SPTypedGrid<NRes, 3, float>;
+template <size_t NRes>
 using SPFloat4Grid = SPTypedGrid<NRes, 4, float>;
 template <size_t NRes>
 using SPFloat16Grid = SPTypedGrid<NRes, 16, float>;
@@ -238,7 +245,7 @@ struct SPBooleanGrid : SPGrid<NRes, 1, 0> {
     }
 };
 
-template <size_t NRes, size_t NScale = 8>
+/*template <size_t NRes, size_t NScale = 8>
 struct SPActivationMask {
     static constexpr auto Resolution = NRes;
     static constexpr auto MaskScale = NScale;
@@ -300,7 +307,7 @@ struct SPMasked : Grid {
     }
 };
 
-/*template <class Grid>
+*template <class Grid>
 struct SPBitmasked : SPMasked<Grid> {
     static constexpr auto Resolution = Grid::Resolution;
     using typename Grid::ValueType;
