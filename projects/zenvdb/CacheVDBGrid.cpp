@@ -6,15 +6,14 @@
 
 namespace zeno {
 
-
-template <class GridTypes = std::tuple
+std::shared_ptr<VDBGrid> readGenericVDBGrid(const std::string &fn) {
+  using GridTypes = std::tuple
     < openvdb::points::PointDataGrid
     , openvdb::FloatGrid
     , openvdb::Vec3fGrid
     , openvdb::Int32Grid
     , openvdb::Vec3IGrid
-    >>
-std::shared_ptr<VDBGrid> readGenericGrid(const std::string &fn) {
+    >;
   openvdb::io::File file(fn);
   file.open();
   openvdb::GridPtrVecPtr my_grids = file.getGrids();
@@ -34,7 +33,7 @@ std::shared_ptr<VDBGrid> readGenericGrid(const std::string &fn) {
         return false;
       })) return grid;
   }
-  throw zeno::Exception("failed to readGenericGrid: " + fn);
+  throw zeno::Exception("failed to readGenericVDBGrid: " + fn);
 }
 
 
@@ -69,7 +68,7 @@ struct CacheVDBGrid : zeno::INode {
             set_output("outGrid", std::move(grid));
         } else {
             printf("using cache from [%s]\n", path.c_str());
-            auto grid = readGenericGrid(path);
+            auto grid = readGenericVDBGrid(path);
             set_output("outGrid", std::move(grid));
         }
     }
