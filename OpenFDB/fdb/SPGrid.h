@@ -1,4 +1,3 @@
-#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -9,6 +8,7 @@
 #else
 #include <sys/mman.h>
 #endif
+#include "vec.h"
 
 namespace fdb::spgrid {
 
@@ -160,7 +160,7 @@ struct SPGrid {
 
 template <size_t NRes, size_t NChannels, typename T>
 struct SPTypedGrid : SPGrid<NRes, NChannels, sizeof(T)> {
-    using ValueType = std::array<T, NChannels>;
+    using ValueType = vec<T, NChannels>;
 
     T &at(size_t c, size_t i, size_t j, size_t k) const {
         return *(T *)this->pointer_at(c, i, j, k);
@@ -238,7 +238,7 @@ struct SPBooleanGrid : SPGrid<NRes, 1, 0> {
     }
 };
 
-/*template <size_t NRes, size_t NScale = 8>
+template <size_t NRes, size_t NScale = 8>
 struct SPActivationMask {
     static constexpr auto Resolution = NRes;
     static constexpr auto MaskScale = NScale;
@@ -300,7 +300,7 @@ struct SPMasked : Grid {
     }
 };
 
-*template <class Grid>
+/*template <class Grid>
 struct SPBitmasked : SPMasked<Grid> {
     static constexpr auto Resolution = Grid::Resolution;
     using typename Grid::ValueType;

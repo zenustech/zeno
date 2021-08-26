@@ -1,8 +1,6 @@
 #pragma once
 
 #include <array>
-#include "policy.h"
-#include "types.h"
 
 namespace fdb {
 
@@ -41,14 +39,6 @@ struct Dense {
 
     [[nodiscard]] decltype(auto) operator()(vec<size_t, 3> coor) const {
         return at(coor);
-    }
-
-    template <class Pol, class F>
-    void foreach(Pol const &pol, F const &func) {
-        range_for(pol, (size_t)0, N * N * N, [&] (size_t i) {
-            vec<size_t, 3> coor = delinearize(i);
-            func(coor, m_data[i]);
-        });
     }
 };
 
