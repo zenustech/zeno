@@ -2,6 +2,7 @@
 #include <fdb/schedule.h>
 #include <fdb/VDBGrid.h>
 #include <fdb/openvdb.h>
+#include <fdb/MarchingTetra.h>
 
 using namespace fdb;
 
@@ -14,7 +15,7 @@ int main() {
     });
 
     write_dense_vdb("/tmp/a.vdb", [&] (auto idx) {
-        return abs(g_pre.get(idx));
+        return g_pre.get(idx);
     }, vec3i(-64), vec3i(64));
 
     return 0;

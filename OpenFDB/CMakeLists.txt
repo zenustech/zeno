@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(openfdb LANGUAGES C CXX)
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
-add_executable(openfdb main.cpp openvdb.cpp)
+add_executable(openfdb main.cpp fdb/openvdb.cpp fdb/MarchingTetra.cpp)
 target_include_directories(openfdb PRIVATE .)
 
 set(CMAKE_MODULE_PATH /usr/local/lib/cmake/OpenVDB)

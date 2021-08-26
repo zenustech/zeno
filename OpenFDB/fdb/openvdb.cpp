@@ -1,7 +1,7 @@
 #include <openvdb/openvdb.h>
 #include <openvdb/tools/Dense.h>
-#include <fdb/openvdb.h>
-#include <fdb/vec.h>
+#include "openvdb.h"
+#include "vec.h"
 
 namespace fdb {
 
