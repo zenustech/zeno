@@ -214,3 +214,5 @@ template <size_t NRes>
 using SPFloat4Grid = SPTypedGrid<NRes, 4, float>;
 template <size_t NRes>
 using SPFloat16Grid = SPTypedGrid<NRes, 16, float>;
+
+}
