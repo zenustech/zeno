@@ -430,4 +430,39 @@ inline auto tovec(T const &x) {
 template <size_t N, class T>
 inline auto tovec(vec<T, N> const &x) { return x; }
 
+/* common types definitions */
+
+using vec2f = vec<float, 2>;
+using vec2d = vec<double, 2>;
+using vec2i = vec<int, 2>;
+using vec2l = vec<long, 2>;
+using vec2h = vec<short, 2>;
+using vec2b = vec<char, 2>;
+using vec2I = vec<unsigned int, 2>;
+using vec2L = vec<unsigned long, 2>;
+using vec2H = vec<unsigned short, 2>;
+using vec2B = vec<unsigned char, 2>;
+
+using vec3f = vec<float, 3>;
+using vec3d = vec<double, 3>;
+using vec3i = vec<int, 3>;
+using vec3l = vec<long, 3>;
+using vec3h = vec<short, 3>;
+using vec3b = vec<char, 3>;
+using vec3I = vec<unsigned int, 3>;
+using vec3L = vec<unsigned long, 3>;
+using vec3H = vec<unsigned short, 3>;
+using vec3B = vec<unsigned char, 3>;
+
+using vec4f = vec<float, 4>;
+using vec4d = vec<double, 4>;
+using vec4i = vec<int, 4>;
+using vec4l = vec<long, 4>;
+using vec4h = vec<short, 4>;
+using vec4b = vec<char, 4>;
+using vec4I = vec<unsigned int, 4>;
+using vec4L = vec<unsigned long, 4>;
+using vec4H = vec<unsigned short, 4>;
+using vec4B = vec<unsigned char, 4>;
+
 }
