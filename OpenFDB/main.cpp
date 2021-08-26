@@ -296,7 +296,7 @@ void weld_close() {
 
 int main() {
     ndrange_for(Serial{}, vec3i(0), vec3i(65), [&] (auto idx) {
-        float value = max(-0.1f, length(tofloat(idx)) - 16.9f);
+        float value = max(-4.0f, length(tofloat(idx)) - 16.9f);
         g_sdf.set(idx, value);
     });
 
