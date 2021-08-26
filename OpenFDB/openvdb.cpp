@@ -1,15 +1,15 @@
 #include <openvdb/openvdb.h>
 #include <openvdb/tools/Dense.h>
-#include <fdb/types.h>
 #include <fdb/openvdb.h>
+#include <fdb/vec.h>
 
 namespace fdb {
 
 template <class GridT, class ValT>
 void impl_write_dense_vdb
         ( std::string_view path
-        , std::function<ValT(Quint3)> sampler
-        , Quint3 size
+        , std::function<ValT(vec3I)> sampler
+        , vec3I size
         )
 {
     openvdb::tools::Dense<typename GridT::ValueType> dens(openvdb::Coord(size[0], size[1], size[2]));
@@ -29,8 +29,8 @@ void impl_write_dense_vdb
 
 void write_dense_vdb
     ( std::string_view path
-    , std::function<Qfloat(Quint3)> sampler
-    , Quint3 size
+    , std::function<float(vec3I)> sampler
+    , vec3I size
     )
 {
     return impl_write_dense_vdb<openvdb::FloatGrid>(path, sampler, size);
@@ -38,8 +38,8 @@ void write_dense_vdb
 
 void write_dense_vdb
     ( std::string_view path
-    , std::function<Qfloat3(Quint3)> sampler
-    , Quint3 size
+    , std::function<vec3f(vec3I)> sampler
+    , vec3I size
     )
 {
     return impl_write_dense_vdb<openvdb::Vec3fGrid>(path, sampler, size);

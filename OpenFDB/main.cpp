@@ -6,8 +6,8 @@
 using namespace fdb;
 
 int main() {
-    spgrid::SPFloatGrid<4096> g_pre;
-    spgrid::SPFloat3Grid<4096> g_vel;
+    spgrid::SPFloatGrid<12> g_pre;
+    spgrid::SPFloat3Grid<12> g_vel;
 
     ndrange_for(policy::Serial{},
     vec3i(0), vec3i(128), [&] (auto idx) {
@@ -25,7 +25,7 @@ int main() {
     });*/
 
     write_dense_vdb("/tmp/a.vdb", [&] (auto idx) {
-        return abs(g_pre.get(idx);
+        return abs(g_pre.get(idx));
     }, vec3i(128));
 
     return 0;

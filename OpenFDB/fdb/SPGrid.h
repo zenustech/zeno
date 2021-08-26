@@ -132,7 +132,7 @@ struct SPGrid {
     static constexpr size_t NumChannels = NChannels;
     static constexpr size_t ElementSize = NElmsize;
     static constexpr size_t MemorySize =
-        (1 << Log2ResX + Log2ResY + Log2ResZ) * NumChannels * ElementSize;
+        (1ul << Log2ResX + Log2ResY + Log2ResZ) * NumChannels * ElementSize;
 
     SPGrid() {
         m_ptr = allocate(MemorySize);
@@ -149,9 +149,9 @@ struct SPGrid {
     SPGrid &operator=(SPGrid &&) = default;
 
     void *address(size_t c, vec3i ijk) const {
-        size_t i = ijk[0] & ((1 << Log2ResX) - 1);
-        size_t j = ijk[1] & ((1 << Log2ResY) - 1);
-        size_t k = ijk[2] & ((1 << Log2ResZ) - 1);
+        size_t i = ijk[0] & ((1ul << Log2ResX) - 1);
+        size_t j = ijk[1] & ((1ul << Log2ResY) - 1);
+        size_t k = ijk[2] & ((1ul << Log2ResZ) - 1);
         size_t offset = LayoutClass::linearize(c, i, j, k);
         return static_cast<void *>(static_cast<char *>(m_ptr) + offset);
     }

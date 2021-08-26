@@ -9,7 +9,7 @@ namespace fdb {
 void write_dense_vdb
     ( std::string_view path
     , std::function<float(vec3I)> sampler
-    , Quint3 size
+    , vec3I size
     );
 
 void write_dense_vdb
