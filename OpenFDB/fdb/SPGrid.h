@@ -121,7 +121,7 @@ struct SPLayout<1, 4> {
 
 
 template <size_t Log2Res, size_t NChannels, size_t NElmsize>
-struct SPGrid {
+struct SPUntypedGrid {
     using LayoutClass = SPLayout<NChannels, NElmsize>;
 
     void *m_ptr;
@@ -133,19 +133,19 @@ struct SPGrid {
     static constexpr size_t MemorySize =
         (1ul << Log2ResX + Log2ResY + Log2ResZ) * NumChannels * ElementSize;
 
-    SPGrid() {
+    SPUntypedGrid() {
         m_ptr = allocate(MemorySize);
     }
 
-    ~SPGrid() {
+    ~SPUntypedGrid() {
         deallocate(m_ptr, MemorySize);
         m_ptr = nullptr;
     }
 
-    SPGrid(SPGrid const &) = delete;
-    SPGrid(SPGrid &&) = default;
-    SPGrid &operator=(SPGrid const &) = delete;
-    SPGrid &operator=(SPGrid &&) = default;
+    SPUntypedGrid(SPGrid const &) = delete;
+    SPUntypedGrid(SPGrid &&) = default;
+    SPUntypedGrid &operator=(SPGrid const &) = delete;
+    SPUntypedGrid &operator=(SPGrid &&) = default;
 
     void *address(size_t c, vec3i ijk) const {
         size_t i = ijk[0] & ((1l << Log2ResX) - 1);
@@ -157,11 +157,11 @@ struct SPGrid {
 };
 
 template <size_t Log2Res, size_t NElmsize>
-struct SPGrid<Log2Res, 3, NElmsize> : SPGrid<Log2Res, 4, NElmsize> {
+struct SPUntypedGrid<Log2Res, 3, NElmsize> : SPGrid<Log2Res, 4, NElmsize> {
 };
 
 template <size_t Log2Res, size_t NChannels, typename T>
-struct SPTypedGrid : SPGrid<Log2Res, NChannels, sizeof(T)> {
+struct SPGrid : SPUntypedGrid<Log2Res, NChannels, sizeof(T)> {
     using ValueType = vec<T, NChannels>;
 
     T &at(size_t c, vec3i ijk) const {
@@ -184,7 +184,7 @@ struct SPTypedGrid : SPGrid<Log2Res, NChannels, sizeof(T)> {
 };
 
 template <size_t Log2Res, typename T>
-struct SPTypedGrid<Log2Res, 1, T> : SPGrid<Log2Res, 1, sizeof(T)> {
+struct SPGrid<Log2Res, 1, T> : SPUntypedGrid<Log2Res, 1, sizeof(T)> {
     using ValueType = T;
 
     T &at(vec3i ijk) const {
@@ -206,24 +206,24 @@ struct SPTypedGrid<Log2Res, 1, T> : SPGrid<Log2Res, 1, sizeof(T)> {
 
 
 template <size_t Log2Res>
-using SPFloatGrid = SPTypedGrid<Log2Res, 1, float>;
+using SPFloatGrid = SPGrid<Log2Res, 1, float>;
 template <size_t Log2Res>
-using SPFloat3Grid = SPTypedGrid<Log2Res, 3, float>;
+using SPFloat3Grid = SPGrid<Log2Res, 3, float>;
 template <size_t Log2Res>
-using SPFloat4Grid = SPTypedGrid<Log2Res, 4, float>;
+using SPFloat4Grid = SPGrid<Log2Res, 4, float>;
 template <size_t Log2Res>
-using SPFloat16Grid = SPTypedGrid<Log2Res, 16, float>;
+using SPFloat16Grid = SPGrid<Log2Res, 16, float>;
 
 
 template <size_t Log2Res, size_t Log2EndRes, size_t NChannels, size_t NElmsize>
-struct SPGridLevel {
-    SPGrid<Log2Res, NChannels, NElmsize> m_head;
-    SPGridLevel<Log2Res - 1, NChannels, NElmsize> m_next;
+struct SPAdaptiveGrid {
+    SPUntypedGrid<Log2Res, NChannels, NElmsize> m_head;
+    SPAdaptiveGrid<Log2Res - 1, NChannels, NElmsize> m_next;
 };
 
 template <size_t Log2Res, size_t NChannels, size_t NElmsize>
-struct SPGridLevel<Log2Res, Log2Res, NChannels, NElmsize> {
-    SPGrid<Log2Res, NChannels, NElmsize> m_head;
+struct SPAdaptiveGrid<Log2Res, Log2Res, NChannels, NElmsize> {
+    SPUntypedGrid<Log2Res, NChannels, NElmsize> m_head;
 };
 
 }

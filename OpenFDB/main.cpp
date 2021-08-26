@@ -1,5 +1,5 @@
 #include <cstdio>
-#include <fdb/policy.h>
+#include <fdb/schedule.h>
 #include <fdb/SPGrid.h>
 #include <fdb/openvdb.h>
 
@@ -13,8 +13,8 @@ struct AdaptiveGrid {
     spgrid::SPFloatGrid<11> m_pre2;
 
     void populate_ghost_cell() {
-        m_lv2.foreach(policy::Serial{}, [&] (auto idx2) {
-            ndrange_for(policy::Serial{}, idx2 * 2, idx2 * 2 + 2, [&] (auto idx1) {
+        m_lv2.foreach(gSerial{}, [&] (auto idx2) {
+            ndrange_for(gSerial{}, idx2 * 2, idx2 * 2 + 2, [&] (auto idx1) {
                 if (!m_lv1.is_active(idx1)
                     && (m_lv1.is_active(idx1 + vec3i(1, 0, 0))
                     || m_lv1.is_active(idx1 - vec3i(1, 0, 0))
@@ -31,8 +31,8 @@ struct AdaptiveGrid {
     }
 
     void accumate_ghost_cell() {
-        m_lv2.foreach(policy::Serial{}, [&] (auto idx2) {
-            ndrange_for(policy::Serial{}, idx2 * 2, idx2 * 2 + 2, [&] (auto idx1) {
+        m_lv2.foreach(gSerial{}, [&] (auto idx2) {
+            ndrange_for(gSerial{}, idx2 * 2, idx2 * 2 + 2, [&] (auto idx1) {
                 if (!m_lv1.is_active(idx1)
                     && (m_lv1.is_active(idx1 + vec3i(1, 0, 0))
                     || m_lv1.is_active(idx1 - vec3i(1, 0, 0))
@@ -52,12 +52,12 @@ int main() {
     spgrid::SPFloatGrid<12> g_pre;
     spgrid::SPFloatGrid<11> g_pre2;
 
-    ndrange_for(policy::Serial{}, vec3i(-64), vec3i(64), [&] (auto idx) {
+    ndrange_for(gSerial{}, vec3i(-64), vec3i(64), [&] (auto idx) {
         float value = max(0.f, 40.f - length(tofloat(idx)));
         g_pre.set(idx, value);
     });
 
-    ndrange_for(policy::Serial{}, vec3i(1), vec3i(127), [&] (auto idx) {
+    ndrange_for(gSerial{}, vec3i(1), vec3i(127), [&] (auto idx) {
         float c = g_pre.get(idx);
     });
 

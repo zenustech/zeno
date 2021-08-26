@@ -5,26 +5,24 @@
 
 namespace fdb {
 
-namespace policy {
-    struct Serial {
-        template <class F, class T>
-        void range_for(T num, F const &func) const {
-            for (T i = 0; i < num; i++) {
-                func(i);
-            }
+struct Serial {
+    template <class F, class T>
+    void range_for(T num, F const &func) const {
+        for (T i = 0; i < num; i++) {
+            func(i);
         }
-    };
+    }
+};
 
-    struct Parallel {
-        template <class F, class T>
-        void range_for(T num, F const &func) const {
-            #pragma omp parallel for
-            for (T i = 0; i < num; i++) {
-                func(i);
-            }
+struct Parallel {
+    template <class F, class T>
+    void range_for(T num, F const &func) const {
+        #pragma omp parallel for
+        for (T i = 0; i < num; i++) {
+            func(i);
         }
-    };
-}
+    }
+};
 
 template <class Pol, class F, class T>
 void range_for(Pol const &pol, T start, T stop, F const &func) {
