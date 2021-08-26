@@ -11,7 +11,6 @@ namespace zenvis {
 
 int curr_frameid = -1;
 
-static bool playing = true;
 static bool show_grid = true;
 
 static int nx = 960, ny = 800;
@@ -131,10 +130,6 @@ void new_frame() {
 void set_window_size(int nx_, int ny_) {
   nx = nx_;
   ny = ny_;
-}
-
-void set_curr_playing(bool playing_) {
-  playing = playing_;
 }
 
 void set_curr_frameid(int frameid) {

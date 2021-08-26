@@ -18,7 +18,6 @@ status = {
 def _uploadStatus():
     core.set_window_size(*status['resolution'])
     core.look_perspective(*status['perspective'])
-    core.set_curr_playing(status['playing'])
 
 def _recieveStatus():
     frameid = core.get_curr_frameid()
