@@ -1,14 +1,21 @@
-#include <array>
+#pragma once
 
-template <size_t Log2Res, typename T>
+#include <array>
+#include "vec.h"
+
+namespace fdb::densegrid {
+
+template <typename T, size_t Log2Res>
 struct DenseGrid {
     static constexpr size_t Log2ResX = Log2Res;
     static constexpr size_t Log2ResY = Log2Res;
     static constexpr size_t Log2ResZ = Log2Res;
     using ValueType = T;
 
+private:
     std::array<T, (1 << (3 * Log2Res))> m_data;
 
+public:
     DenseGrid() = default;
     ~DenseGrid() = default;
     DenseGrid(DenseGrid const &) = delete;
@@ -16,23 +23,35 @@ struct DenseGrid {
     DenseGrid &operator=(DenseGrid const &) = delete;
     DenseGrid &operator=(DenseGrid &&) = default;
 
+    decltype(auto) data() const { return m_data.data(); }
+    decltype(auto) data() { return m_data.data(); }
+    decltype(auto) size() { return m_data.size(); }
+
+protected:
     T *address(vec3i ijk) const {
         size_t i = ijk[0] & ((1l << Log2ResX) - 1);
         size_t j = ijk[1] & ((1l << Log2ResY) - 1);
         size_t k = ijk[2] & ((1l << Log2ResZ) - 1);
-        auto offset = i | (j << Log2ResX) | (k << (Log2ResX + Log2ResY));
-        return m_data.data() + offset;
+        auto offset = i | (j << Log2ResX) | (k << Log2ResX + Log2ResY);
+        return const_cast<T *>(m_data.data() + offset);
     }
 
-    T &at(vec3i ijk) const {
+public:
+    T const &at(vec3i ijk) const {
         return *this->address(ijk);
     }
 
-    auto get(vec3i ijk) const {
+    T &at(vec3i ijk) {
+        return *this->address(ijk);
+    }
+
+    ValueType get(vec3i ijk) const {
         return at(ijk);
     }
 
-    void set(vec3i ijk, ValueType const &val) const {
+    void set(vec3i ijk, ValueType const &val) {
         at(ijk) = val;
     }
 };
+
+}

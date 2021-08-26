@@ -368,7 +368,7 @@
      "params": {
       "isoValue": 0.0,
       "adaptivity": 0.025,
-      "allowQuads": true
+      "allowQuads": false
      },
      "uipos": [
       1652.9765625000005,
@@ -862,8 +862,8 @@
    },
    "view": {
     "scale": 1.25,
-    "trans_x": 656,
-    "trans_y": -65
+    "trans_x": 1358,
+    "trans_y": -56
    }
   },
   "FLIPSimTemplate": {
@@ -6848,7 +6848,7 @@
     [
      "string",
      "type",
-     "float"
+     ""
     ]
    ],
    "categories": [
@@ -10394,7 +10394,7 @@
     [
      "string",
      "type",
-     "float"
+     ""
     ],
     [
      "string",
