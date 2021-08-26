@@ -313,7 +313,6 @@ void flip_edges() {
     std::set<std::tuple<int, int>> edges;
     for (auto const &ind: g_triangles) {
         auto x = ind[0], y = ind[1], z = ind[2];
-        //fprintf(stderr, "%d -> %d -> %d\n", x, y, z);
         edges.emplace(x, y);
         edges.emplace(y, z);
         edges.emplace(z, x);
@@ -324,7 +323,6 @@ void flip_edges() {
 
     std::vector<std::vector<int>> edgelut(g_vertices.size());
     for (auto const &[x, y]: edges) {
-        //fprintf(stderr, "%d -> %d\n", x, y);
         edgelut[x].push_back(y);
         //edgelut[y].push_back(x);
     }
@@ -373,16 +371,18 @@ int main() {
     weld_close();
     flip_edges();
 
+    FILE *fp = fopen("/tmp/a.obj", "w");
     for (auto f: g_triangles) { f += 1;
-        printf("f %d %d %d\n", f[0], f[1], f[2]);
+        fprintf(fp, "f %d %d %d\n", f[0], f[1], f[2]);
     }
     for (auto v: g_vertices) {
-        printf("v %f %f %f\n", v[0], v[1], v[2]);
+        fprintf(fp, "v %f %f %f\n", v[0], v[1], v[2]);
     }
+    fclose(fp);
 
-    write_dense_vdb("/tmp/a.vdb", [&] (auto idx) {
+    /*write_dense_vdb("/tmp/a.vdb", [&] (auto idx) {
         return g_sdf.get(idx);
-    }, vec3i(0), vec3i(64));
+    }, vec3i(0), vec3i(64));*/
 
     return 0;
 }
