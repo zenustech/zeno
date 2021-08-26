@@ -51,7 +51,7 @@ void look_perspective(
                       -100.0, 100.0);
   } else {
     view = glm::lookAt(center - back * radius, center, up);
-    proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.05, 500.0);
+    proj = glm::perspective(glm::radians(fov), nx * 1.0 / ny, 0.05, 20000.0);
   }
 }
 
