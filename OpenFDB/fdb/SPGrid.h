@@ -83,9 +83,9 @@ struct SPLayout {
 
 template <>
 struct SPLayout<16, 4> {
-    static constexpr size_t ScaleX = 1;
-    static constexpr size_t ScaleY = 1;
-    static constexpr size_t ScaleZ = 1;
+    static constexpr size_t Log2ScaleX = 0;
+    static constexpr size_t Log2ScaleY = 0;
+    static constexpr size_t Log2ScaleZ = 0;
 
     static constexpr size_t linearize(size_t c, size_t i, size_t j, size_t k) {
         size_t t = (i & 3) | ((j & 3) << 2) | ((k & 3) << 4) | ((c & 15) << 6);
@@ -96,9 +96,9 @@ struct SPLayout<16, 4> {
 
 template <>
 struct SPLayout<4, 4> {
-    static constexpr size_t ScaleX = 2;
-    static constexpr size_t ScaleY = 2;
-    static constexpr size_t ScaleZ = 1;
+    static constexpr size_t Log2ScaleX = 1;
+    static constexpr size_t Log2ScaleY = 1;
+    static constexpr size_t Log2ScaleZ = 0;
 
     static constexpr size_t linearize(size_t c, size_t i, size_t j, size_t k) {
         size_t t = (i & 7) | ((j & 7) << 3) | ((k & 3) << 6) | ((c & 3) << 8);
@@ -109,9 +109,9 @@ struct SPLayout<4, 4> {
 
 template <>
 struct SPLayout<1, 4> {
-    static constexpr size_t ScaleX = 2;
-    static constexpr size_t ScaleY = 1;
-    static constexpr size_t ScaleZ = 1;
+    static constexpr size_t Log2ScaleX = 1;
+    static constexpr size_t Log2ScaleY = 0;
+    static constexpr size_t Log2ScaleZ = 0;
 
     static constexpr size_t linearize(size_t c, size_t i, size_t j, size_t k) {
         size_t t = (i & 15) | ((j & 7) << 4) | ((k & 7) << 7);
@@ -121,18 +121,18 @@ struct SPLayout<1, 4> {
 };
 
 
-template <size_t NRes, size_t NChannels, size_t NElmsize>
+template <size_t Log2Res, size_t NChannels, size_t NElmsize>
 struct SPGrid {
     using LayoutClass = SPLayout<NChannels, NElmsize>;
 
     void *m_ptr;
-    static constexpr size_t ResolutionX = NRes * LayoutClass::ScaleX;
-    static constexpr size_t ResolutionY = NRes * LayoutClass::ScaleY;
-    static constexpr size_t ResolutionZ = NRes * LayoutClass::ScaleZ;
+    static constexpr size_t Log2ResX = Log2Res + LayoutClass::Log2ScaleX;
+    static constexpr size_t Log2ResY = Log2Res + LayoutClass::Log2ScaleY;
+    static constexpr size_t Log2ResZ = Log2Res + LayoutClass::Log2ScaleZ;
     static constexpr size_t NumChannels = NChannels;
     static constexpr size_t ElementSize = NElmsize;
     static constexpr size_t MemorySize =
-        ResolutionX * ResolutionY * ResolutionZ * NumChannels * ElementSize;
+        (1 << Log2ResX + Log2ResY + Log2ResZ) * NumChannels * ElementSize;
 
     SPGrid() {
         m_ptr = allocate(MemorySize);
@@ -148,10 +148,10 @@ struct SPGrid {
     SPGrid &operator=(SPGrid const &) = delete;
     SPGrid &operator=(SPGrid &&) = default;
 
-    void *address(size_t c, size_t i, size_t j, size_t k) const {
-        i %= ResolutionX;
-        j %= ResolutionY;
-        k %= ResolutionZ;
+    void *address(size_t c, vec3i ijk) const {
+        size_t i = ResolutionX;
+        size_t j = ResolutionY;
+        size_t k = ResolutionZ;
         size_t offset = LayoutClass::linearize(c, i, j, k);
         return static_cast<void *>(static_cast<char *>(m_ptr) + offset);
     }
@@ -165,21 +165,21 @@ template <size_t NRes, size_t NChannels, typename T>
 struct SPTypedGrid : SPGrid<NRes, NChannels, sizeof(T)> {
     using ValueType = vec<T, NChannels>;
 
-    T &at(size_t c, size_t i, size_t j, size_t k) const {
-        return *(T *)this->address(c, i, j, k);
+    T &at(size_t c, vec3i ijk) const {
+        return *(T *)this->address(c, ijk);
     }
 
-    auto get(size_t i, size_t j, size_t k) const {
+    auto get(vec3i ijk) const {
         ValueType ret;
         for (size_t c = 0; c < NChannels; c++) {
-            ret[c] = at(c, i, j, k);
+            ret[c] = at(c, ijk);
         }
         return ret;
     }
 
-    void set(size_t i, size_t j, size_t k, ValueType const &val) const {
+    void set(vec3i ijk, ValueType const &val) const {
         for (size_t c = 0; c < NChannels; c++) {
-            at(c, i, j, k) = val[c];
+            at(c, ijk) = val[c];
         }
     }
 };
@@ -188,20 +188,20 @@ template <size_t NRes, typename T>
 struct SPTypedGrid<NRes, 1, T> : SPGrid<NRes, 1, sizeof(T)> {
     using ValueType = T;
 
-    T &at(size_t i, size_t j, size_t k) const {
-        return *(T *)this->address(0, i, j, k);
+    T &at(vec3i ijk) const {
+        return *(T *)this->address(0, ijk);
     }
 
-    T &at(size_t c, size_t i, size_t j, size_t k) const {
-        return at(i, j, k);
+    T &at(size_t c, vec3i ijk) const {
+        return at(ijk);
     }
 
-    auto get(size_t i, size_t j, size_t k) const {
-        return at(i, j, k);
+    auto get(vec3i ijk) const {
+        return at(ijk);
     }
 
-    void set(size_t i, size_t j, size_t k, T const &val) const {
-        at(i, j, k) = val;
+    void set(vec3i ijk, T const &val) const {
+        at(ijk) = val;
     }
 };
 
@@ -214,130 +214,3 @@ template <size_t NRes>
 using SPFloat4Grid = SPTypedGrid<NRes, 4, float>;
 template <size_t NRes>
 using SPFloat16Grid = SPTypedGrid<NRes, 16, float>;
-
-/*template <size_t NRes>
-struct SPBooleanGrid : SPGrid<NRes, 1, 0> {
-    using ValueType = bool;
-
-    unsigned char &uchar_at(size_t i, size_t j, size_t k) const {
-        return *(unsigned char *)this->address(0, i, j, k);
-    }
-
-    bool get(size_t i, size_t j, size_t k) const {
-        return (uchar_at(i, j, k) & (1 << (i & 7))) != 0;
-    }
-
-    void set_true(size_t i, size_t j, size_t k) const {
-        uchar_at(i, j, k) |= (1 << (i & 7));
-    }
-
-    void set_false(size_t i, size_t j, size_t k) const {
-        uchar_at(i, j, k) &= ~(1 << (i & 7));
-    }
-
-    void set(size_t i, size_t j, size_t k, bool value) const {
-        if (value)
-            set_true(i, j, k);
-        else
-            set_false(i, j, k);
-    }
-};*/
-
-/*template <size_t NRes, size_t NScale = 8>
-struct SPActivationMask {
-    static constexpr auto Resolution = NRes;
-    static constexpr auto MaskScale = NScale;
-
-    SPBooleanGrid<NRes / NScale> m_grid;
-
-    bool is_active(size_t i, size_t j, size_t k) const {
-        return m_grid.get(i / NScale, j / NScale, k / NScale);
-    }
-
-    void activate(size_t i, size_t j, size_t k) const {
-        m_grid.set_true(i / NScale, j / NScale, k / NScale);
-    }
-
-    void deactivate(size_t i, size_t j, size_t k) const {
-        m_grid.set_false(i / NScale, j / NScale, k / NScale);
-    }
-};
-
-template <class Grid>
-struct SPMasked : Grid {
-    static constexpr auto Resolution = Grid::Resolution;
-    using typename Grid::ValueType;
-
-    SPActivationMask<Resolution> m_mask;
-    static constexpr auto MaskScale = SPActivationMask<Resolution>::MaskScale;
-
-    bool is_active(size_t i, size_t j, size_t k) const {
-        return m_mask.is_active(i, j, k);
-    }
-
-    void activate(size_t i, size_t j, size_t k) const {
-        m_mask.activate(i, j, k);
-    }
-
-    void deactivate(size_t i, size_t j, size_t k) const {
-        m_mask.deactivate(i, j, k);
-    }
-
-    ValueType direct_get(size_t i, size_t j, size_t k) const {
-        return Grid::get(i, j, k);
-    }
-
-    void direct_set(size_t i, size_t j, size_t k, ValueType value) const {
-        return Grid::set(i, j, k, value);
-    }
-
-    ValueType get(size_t i, size_t j, size_t k) const {
-        if (is_active(i, j, k)) {
-            return Grid::get(i, j, k);
-        } else {
-            return ValueType{};
-        }
-    }
-
-    void set(size_t i, size_t j, size_t k, ValueType value) const {
-        activate(i, j, k);
-        return Grid::set(i, j, k, value);
-    }
-};
-
-*template <class Grid>
-struct SPBitmasked : SPMasked<Grid> {
-    static constexpr auto Resolution = Grid::Resolution;
-    using typename Grid::ValueType;
-
-    SPBooleanGrid<Resolution> m_bitmask;
-
-    bool is_active(size_t i, size_t j, size_t k) const {
-        return SPMasked<Grid>::is_active(i, j, k) && m_bitmask.get(i, j, k);
-    }
-
-    void activate(size_t i, size_t j, size_t k) const {
-        SPMasked<Grid>::activate(i, j, k);
-        m_bitmask.set_true(i, j, k);
-    }
-
-    void deactivate(size_t i, size_t j, size_t k) const {
-        SPMasked<Grid>::deactivate(i, j, k);
-        m_bitmask.set_false(i, j, k);
-    }
-
-    ValueType get(size_t i, size_t j, size_t k) const {
-        if (is_active(i, j, k)) {
-            return Grid::get(i, j, k);
-        } else {
-            return ValueType{};
-        }
-    }
-
-    void set(size_t i, size_t j, size_t k, ValueType value) const {
-        activate(i, j, k);
-        return Grid::set(i, j, k, value);
-    }
-};*/
-
-}
