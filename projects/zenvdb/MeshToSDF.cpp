@@ -136,6 +136,8 @@ struct SDFToPoly : zeno::INode{
         meshpos[i] = zeno::vec3f(points[i][0],points[i][1],points[i][2]);
     }
     if (allowQuads) {
+        mesh->tris.resize(tris.size());
+        mesh->quads.resize(quads.size());
 #pragma omp parallel for
         for(int i=0;i<tris.size();i++)
         {
