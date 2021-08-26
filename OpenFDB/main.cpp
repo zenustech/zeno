@@ -13,7 +13,7 @@ int main() {
     ndrange_for(policy::Serial{},
     vec<int, 3>(0), vec<int, 3>(128), [&] (auto idx) {
         int i = idx[0], j = idx[1], k = idx[2];
-        float c = (i / 16 + j / 16 + k / 16) % 2 ? 1.f : 0.f;
+        float c = (i / 16 + j / 16 + k / 16) % 2 ? .1f : 0.f;
         g_pre.set(i, j, k, c);
     });
 
@@ -28,7 +28,7 @@ int main() {
     });
 
     write_dense_vdb("/tmp/a.vdb", [&] (auto coor) {
-        return abs(g_vel.get(coor[0], coor[1], coor[2]));
+        return abs(g_pre.get(coor[0], coor[1], coor[2]));
     }, vec<int, 3>(128));
 
     return 0;
