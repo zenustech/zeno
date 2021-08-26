@@ -156,12 +156,12 @@ struct SPGrid {
     }
 };
 
-template <size_t NRes, size_t NElmsize>
-struct SPGrid<NRes, 3, NElmsize> : SPGrid<NRes, 4, NElmsize> {
+template <size_t Log2Res, size_t NElmsize>
+struct SPGrid<Log2Res, 3, NElmsize> : SPGrid<Log2Res, 4, NElmsize> {
 };
 
-template <size_t NRes, size_t NChannels, typename T>
-struct SPTypedGrid : SPGrid<NRes, NChannels, sizeof(T)> {
+template <size_t Log2Res, size_t NChannels, typename T>
+struct SPTypedGrid : SPGrid<Log2Res, NChannels, sizeof(T)> {
     using ValueType = vec<T, NChannels>;
 
     T &at(size_t c, vec3i ijk) const {
@@ -183,8 +183,8 @@ struct SPTypedGrid : SPGrid<NRes, NChannels, sizeof(T)> {
     }
 };
 
-template <size_t NRes, typename T>
-struct SPTypedGrid<NRes, 1, T> : SPGrid<NRes, 1, sizeof(T)> {
+template <size_t Log2Res, typename T>
+struct SPTypedGrid<Log2Res, 1, T> : SPGrid<Log2Res, 1, sizeof(T)> {
     using ValueType = T;
 
     T &at(vec3i ijk) const {
@@ -205,13 +205,18 @@ struct SPTypedGrid<NRes, 1, T> : SPGrid<NRes, 1, sizeof(T)> {
 };
 
 
-template <size_t NRes>
-using SPFloatGrid = SPTypedGrid<NRes, 1, float>;
-template <size_t NRes>
-using SPFloat3Grid = SPTypedGrid<NRes, 3, float>;
-template <size_t NRes>
-using SPFloat4Grid = SPTypedGrid<NRes, 4, float>;
-template <size_t NRes>
-using SPFloat16Grid = SPTypedGrid<NRes, 16, float>;
+template <size_t Log2Res>
+using SPFloatGrid = SPTypedGrid<Log2Res, 1, float>;
+template <size_t Log2Res>
+using SPFloat3Grid = SPTypedGrid<Log2Res, 3, float>;
+template <size_t Log2Res>
+using SPFloat4Grid = SPTypedGrid<Log2Res, 4, float>;
+template <size_t Log2Res>
+using SPFloat16Grid = SPTypedGrid<Log2Res, 16, float>;
+
+
+template <size_t Log2Res>
+struct SPGridLevel {
+};
 
 }
