@@ -49,6 +49,17 @@ struct GetVDBPoints : zeno::INode {
   }
 };
 
+struct GetVDBPointsLeafCount : zeno::INode {
+  virtual void apply() override {
+    auto grid = get_input("grid")->as<VDBPointsGrid>()->m_grid;
+    std::vector<openvdb::points::PointDataTree::LeafNodeType*> leafs;
+    grid->tree().getNodes(leafs);
+    auto ret = std::make_shared<zeno::NumericObject>();
+    ret->set((int)leafs.size());
+    set_output("leafCount", std::move(ret));
+  }
+};
+
 static int defGetVDBPoints = zeno::defNodeClass<GetVDBPoints>("GetVDBPoints",
     { /* inputs: */ {
         "grid",

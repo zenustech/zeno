@@ -388,7 +388,7 @@ void simd_vdb_poisson::Laplacian_with_level::initialize_finest(
       m_Diagonal->tree(), -1, openvdb::TopologyCopy()));
   m_dof_idx->setTransform(m_Diagonal->transformPtr());
 
-  set_dof_idx(m_dof_idx);
+  set_dof_idx(m_dof_idx);// bug: crash when 0 particles
   trim_default_nodes();
 }
 
