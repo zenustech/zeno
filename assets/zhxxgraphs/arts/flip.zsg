@@ -33,8 +33,8 @@
       "value": 0.04
      },
      "uipos": [
-      -305.6999999999997,
-      902.721875
+      141.90000000000032,
+      793.3218750000001
      ],
      "options": []
     },
@@ -80,7 +80,7 @@
      "params": {},
      "uipos": [
       -1078.0,
-      815.0
+      811.1500000000001
      ],
      "options": [
       "ONCE"
@@ -344,8 +344,8 @@
      },
      "params": {},
      "uipos": [
-      -275.09375,
-      617.8593750000001
+      -489.5078125,
+      1296.6328125
      ],
      "options": [
       "ONCE"
@@ -395,9 +395,7 @@
       2599.4609375000005,
       232.33593749999983
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "c5f709de-SmoothLiquidSDF": {
      "name": "SmoothLiquidSDF",
@@ -458,9 +456,9 @@
        "Particles",
        null
       ],
-      "Collider": [
-       "5fb9adea-FLIPMakeCollider",
-       "Collider",
+      "Actions": [
+       "c693be4b-FuncEnd",
+       "function",
        null
       ],
       "gravity": [
@@ -581,7 +579,9 @@
       2760.7873535156236,
       748.4069824218747
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "a32f490d-NumericFloat": {
      "name": "NumericFloat",
@@ -742,8 +742,8 @@
      },
      "params": {},
      "uipos": [
-      157.36500000000035,
-      881.1
+      526.3650000000004,
+      835.0999999999999
      ],
      "options": []
     },
@@ -858,12 +858,179 @@
       873.4374999999999
      ],
      "options": []
+    },
+    "60fe0445-FuncBegin": {
+     "name": "FuncBegin",
+     "inputs": {
+      "extraArgs": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -742.0,
+      632.0
+     ],
+     "options": []
+    },
+    "c693be4b-FuncEnd": {
+     "name": "FuncEnd",
+     "inputs": {
+      "rets": [
+       "301ce5b3-MakeDict",
+       "dict",
+       null
+      ],
+      "FUNC": [
+       "60fe0445-FuncBegin",
+       "FUNC",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -144.0,
+      662.0
+     ],
+     "options": []
+    },
+    "301ce5b3-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "Collider": [
+       "5fb9adea-FLIPMakeCollider",
+       "Collider",
+       null
+      ],
+      "Emitter": [
+       "d913c76e-FLIPMakeEmitter",
+       "Emitter",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "Collider\nEmitter\nobj2"
+     },
+     "uipos": [
+      -140.0,
+      884.0
+     ],
+     "options": [],
+     "socket_keys": [
+      "Collider",
+      "Emitter",
+      "obj2"
+     ]
+    },
+    "d913c76e-FLIPMakeEmitter": {
+     "name": "FLIPMakeEmitter",
+     "inputs": {
+      "EmitSDF": [
+       "7da7423b-x",
+       "sdf",
+       null
+      ],
+      "VelGrid": [
+       null,
+       null,
+       null
+      ],
+      "isEnabled": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      136.0,
+      1295.0
+     ],
+     "options": []
+    },
+    "b01c5f7d-ReadObjMesh": {
+     "name": "ReadObjMesh",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": "assets/cube.obj"
+     },
+     "uipos": [
+      -118.0,
+      1539.0
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "7da7423b-x": {
+     "name": "MeshToSDF",
+     "inputs": {
+      "mesh": [
+       "b01c5f7d-ReadObjMesh",
+       "mesh",
+       null
+      ],
+      "Dx": [
+       "35e6f99c-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "voxel_size": 0.08,
+      "type": "vertex"
+     },
+     "uipos": [
+      149.0,
+      1520.0
+     ],
+     "options": [
+      "ONCE"
+     ]
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 1358,
-    "trans_y": -56
+    "scale": 1.0000000000000002,
+    "trans_x": -1570,
+    "trans_y": 321
    }
   },
   "FLIPSimTemplate": {
@@ -1565,9 +1732,7 @@
       5517.352995872496,
       -1280.9989309310902
      ],
-     "options": [
-      "collapsed"
-     ]
+     "options": []
     },
     "8f2de3ef-BeginFor": {
      "name": "BeginFor",
@@ -1861,12 +2026,32 @@
       -1889.374999999998
      ],
      "options": []
+    },
+    "ef976013-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "DynEmitterVel",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      5919.0,
+      -1386.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.20971520000000032,
-    "trans_x": -90,
-    "trans_y": -887
+    "scale": 1.0,
+    "trans_x": 5376,
+    "trans_y": -1701
    }
   },
   "FLIPMakeCollider": {
@@ -2445,8 +2630,8 @@
    },
    "view": {
     "scale": 0.8000000000000002,
-    "trans_x": 1757,
-    "trans_y": 477
+    "trans_x": -425,
+    "trans_y": 126
    }
   },
   "FLIPMakeParticles": {
@@ -2579,13 +2764,13 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "b2f5beac-MakeVDBGrid",
-       "data",
+       "bef31978-IfElse",
+       "result",
        null
       ],
       "SRC": [
-       "81412251-ParticleEmitter",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -2625,12 +2810,43 @@
       386.6500000000001
      ],
      "options": []
+    },
+    "bef31978-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "81412251-ParticleEmitter",
+       "Particles",
+       null
+      ],
+      "false": [
+       "b2f5beac-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "cond": [
+       "2433c6a4-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1393.0,
+      145.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.8000000000000005,
-    "trans_x": 133,
-    "trans_y": -124
+    "scale": 1.0000000000000007,
+    "trans_x": 572,
+    "trans_y": -66
    }
   },
   "MakeFLIPWorld": {
@@ -2874,13 +3090,13 @@
        null
       ],
       "DynEmitter": [
-       null,
-       null,
+       "6d8f3111-x",
+       "result",
        null
       ],
       "ifEmit": [
-       "2dde32d4-x",
-       "value",
+       "47a2a9db-IfElse",
+       "result",
        null
       ],
       "Particles": [
@@ -2928,6 +3144,11 @@
        "port",
        null
       ],
+      "DynEmitterVel": [
+       "77171256-x",
+       "result",
+       null
+      ],
       "SRC": [
        null,
        null,
@@ -2954,8 +3175,8 @@
       "value": 0
      },
      "uipos": [
-      1185.5404394531245,
-      -353.048095703125
+      1457.5404394531242,
+      -260.048095703125
      ],
      "options": []
     },
@@ -3179,12 +3400,154 @@
       810.6037597656247
      ],
      "options": []
+    },
+    "568b00ff-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Emitter",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      575.5,
+      -247.0
+     ],
+     "options": []
+    },
+    "47a2a9db-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "f05fc980-ExtractDict",
+       "enable",
+       null
+      ],
+      "false": [
+       "2dde32d4-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "568b00ff-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1456.0,
+      -59.0
+     ],
+     "options": []
+    },
+    "f05fc980-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "568b00ff-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nVel\nenable\nobj3"
+     },
+     "uipos": [
+      896.0,
+      -243.25
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "Vel",
+      "enable",
+      "obj3"
+     ]
+    },
+    "6d8f3111-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "f05fc980-ExtractDict",
+       "SDF",
+       null
+      ],
+      "false": [
+       "2dde32d4-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "568b00ff-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1451.0,
+      -489.0
+     ],
+     "options": []
+    },
+    "77171256-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "f05fc980-ExtractDict",
+       "Vel",
+       null
+      ],
+      "false": [
+       "2dde32d4-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "568b00ff-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1460.0,
+      -703.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.6400000000000005,
-    "trans_x": 1023,
-    "trans_y": -72
+    "scale": 1.0000000000000002,
+    "trans_x": 601,
+    "trans_y": -802
    }
   },
   "SmoothLiquidSDF": {
@@ -4280,13 +4643,18 @@
        null
       ],
       "Collider": [
-       "ff78e97c-x",
-       "port",
+       "0ba6e113-ExtractDict",
+       "Collider",
        null
       ],
       "dt": [
        "10847622-SubstepDt",
        "actual_dt",
+       null
+      ],
+      "Emitter": [
+       "0ba6e113-ExtractDict",
+       "Emitter",
        null
       ],
       "SRC": [
@@ -4297,8 +4665,8 @@
      },
      "params": {},
      "uipos": [
-      1679.8467407226567,
-      -18.940551757812102
+      2110.8467407226562,
+      140.30944824218773
      ],
      "options": []
     },
@@ -4343,8 +4711,8 @@
       "defl": ""
      },
      "uipos": [
-      778.5000000000002,
-      327.87500000000006
+      791.5000000000002,
+      278.875
      ],
      "options": []
     },
@@ -4358,7 +4726,7 @@
       ]
      },
      "params": {
-      "name": "Collider",
+      "name": "Actions",
       "type": "",
       "defl": ""
      },
@@ -4741,12 +5109,310 @@
       886.0
      ],
      "options": []
+    },
+    "34c4b109-FuncCall": {
+     "name": "FuncCall",
+     "inputs": {
+      "function": [
+       "ff78e97c-x",
+       "port",
+       null
+      ],
+      "args": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1464.8500000000001,
+      85.75
+     ],
+     "options": []
+    },
+    "0ba6e113-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "34c4b109-FuncCall",
+       "rets",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "Collider\nEmitter\nobj2"
+     },
+     "uipos": [
+      1736.8000000000002,
+      84.0
+     ],
+     "options": [],
+     "socket_keys": [
+      "Collider",
+      "Emitter",
+      "obj2"
+     ]
     }
    },
    "view": {
-    "scale": 1.0000000000000007,
-    "trans_x": 571,
-    "trans_y": -179
+    "scale": 1.0000000000000002,
+    "trans_x": 605,
+    "trans_y": -125
+   }
+  },
+  "FLIPMakeEmitter": {
+   "nodes": {
+    "703de0fb-MakeVDBGrid": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "dx": 0.08,
+      "type": "float",
+      "structure": "Centered",
+      "name": "Rename!"
+     },
+     "uipos": [
+      181.39999999999998,
+      1088.6
+     ],
+     "options": []
+    },
+    "fc434429-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "EmitSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      188.8,
+      543.2
+     ],
+     "options": []
+    },
+    "8b655143-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "VelGrid",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      182.0,
+      820.0
+     ],
+     "options": []
+    },
+    "41565939-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "8b655143-x",
+       "port",
+       null
+      ],
+      "false": [
+       "703de0fb-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "cond": [
+       "8b655143-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      532.8,
+      1023.6000000000006
+     ],
+     "options": []
+    },
+    "7f701e0a-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "SDF": [
+       "fc434429-SubInput",
+       "port",
+       null
+      ],
+      "Vel": [
+       "41565939-IfElse",
+       "result",
+       null
+      ],
+      "enable": [
+       "56d82c30-x",
+       "result",
+       null
+      ],
+      "obj3": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nVel\nenable\nobj3"
+     },
+     "uipos": [
+      913.6000000000001,
+      803.9999999999999
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "Vel",
+      "enable",
+      "obj3"
+     ]
+    },
+    "a044787c-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "7f701e0a-MakeDict",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Emitter",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1198.0,
+      825.0
+     ],
+     "options": []
+    },
+    "cedca491-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1
+     },
+     "uipos": [
+      647.0,
+      1512.0
+     ],
+     "options": []
+    },
+    "fcf5f9ea-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "isEnabled",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      642.9000000000001,
+      1256.1999999999998
+     ],
+     "options": []
+    },
+    "56d82c30-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "fcf5f9ea-x",
+       "port",
+       null
+      ],
+      "false": [
+       "cedca491-NumericInt",
+       "value",
+       null
+      ],
+      "cond": [
+       "fcf5f9ea-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      970.7,
+      1461.8000000000006
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1.0,
+    "trans_x": 203,
+    "trans_y": 763
    }
   }
  },
@@ -6025,6 +6691,11 @@
     [
      "",
      "dt",
+     ""
+    ],
+    [
+     "",
+     "DynEmitterVel",
      ""
     ],
     [
@@ -10957,7 +11628,7 @@
     ],
     [
      "",
-     "Collider",
+     "Actions",
      ""
     ],
     [
@@ -11253,6 +11924,11 @@
     [
      "",
      "dt",
+     ""
+    ],
+    [
+     "",
+     "Emitter",
      ""
     ],
     [
@@ -11991,6 +12667,47 @@
    "categories": [
     "openvdb"
    ]
+  },
+  "FLIPMakeEmitter": {
+   "inputs": [
+    [
+     "",
+     "EmitSDF",
+     ""
+    ],
+    [
+     "",
+     "VelGrid",
+     ""
+    ],
+    [
+     "",
+     "isEnabled",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Emitter",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],
