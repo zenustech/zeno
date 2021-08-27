@@ -377,7 +377,7 @@ void smooth_mesh(int niters) {
 }
 
 void compute_cubes() {
-    m_sdf.foreach(Serial{}, [&] (auto idx) {
+    m_sdf->foreach_dilate_cube_zero_positive(Serial{}, [&] (auto idx, auto const &) {
         compute_cube(idx);
     });
 }

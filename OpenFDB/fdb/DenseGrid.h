@@ -56,7 +56,8 @@ public:
 
     template <class Pol, class F>
     void foreach(Pol const &pol, F const &func) {
-        ndrange_for([&] (auto ijk) {
+        ndrange_for(pol, vec3i(0),
+                1 << vec3i(Log2ResX, Log2ResY, Log2ResZ), [&] (auto ijk) {
             auto &value = at(ijk);
             func(ijk, value);
         });

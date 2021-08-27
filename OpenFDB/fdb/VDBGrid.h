@@ -118,14 +118,14 @@ public:
     }
 
     template <class Pol, class F>
-    void foreach_leaf(Pol const &pol, F const &func) {
+    void foreach_leaf(Pol const &pol, F const &func) const {
         ndrange_for(pol, vec3i(0), vec3i(1 << Log2Dim3), [&] (auto ijk3) {
             auto *node = m_root.m_data.at(ijk3);
             if (node) {
                 ndrange_for(Serial{}, vec3i(0), vec3i(1 << Log2Dim2), [&] (auto ijk2) {
                     auto *leaf = node->m_data.at(ijk2);
                     if (leaf) {
-                        auto ijk = ijk3 << Log2Dim2 | ijk;
+                        auto ijk = ijk3 << Log2Dim2 | ijk2;
                         func(ijk, leaf);
                     }
                 });
@@ -134,9 +134,9 @@ public:
     }
 
     template <class Pol, class F>
-    void foreach(Pol const &pol, F const &func) {
-        foreach_leaf(pol, vec3i(0), vec3i(1 << Log2Dim3), [&] (auto ijk23, auto *leaf) {
-            leaf.m_data->foreach(Serial{}, [&] (auto ijk1, auto &value) {
+    void foreach(Pol const &pol, F const &func) const {
+        foreach_leaf(pol, [&] (auto ijk23, auto *leaf) {
+            leaf->m_data.foreach(Serial{}, [&] (auto ijk1, auto &value) {
                 auto ijk = ijk1 | ijk23 << Log2Dim1;
                 func(ijk, value);
             });
@@ -144,10 +144,12 @@ public:
     }
 
     template <class Pol, class F>
-    void foreach_dilate_cube_zero_positive(Pol const &pol, F const &func) {
-        foreach_leaf(pol, vec3i(0), vec3i(1 << Log2Dim3), [&] (auto ijk23, auto *leaf) {
-            get_at(ijk23);
-            leaf.m_data->foreach(Serial{}, [&] (auto ijk1, auto &value) {
+    void foreach_dilate_cube_zero_positive(Pol const &pol, F const &func) const {
+        foreach_leaf(pol, [&] (auto ijk23, auto *leaf) {
+            auto xleaf = get_at(ijk23 + vec3i(1, 0, 0));
+            auto yleaf = get_at(ijk23 + vec3i(0, 1, 0));
+            auto zleaf = get_at(ijk23 + vec3i(0, 0, 1));
+            leaf->m_data.foreach(Serial{}, [&] (auto ijk1, auto &value) {
                 auto ijk = ijk1 | ijk23 << Log2Dim1;
                 func(ijk, value);
             });
