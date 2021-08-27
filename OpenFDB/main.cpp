@@ -263,7 +263,7 @@ void weld_close() {
     std::map<std::tuple<int, int, int>, std::vector<int>> rear;
     for (int i = 0; i < g_vertices.size(); i++) {
         auto pos = g_vertices[i];
-        vec3i ipos(pos);
+        vec3i ipos(pos * 2.f + 0.5f);
         rear[std::make_tuple(ipos[0], ipos[1], ipos[2])].push_back(i);
     }
     std::map<int, int> lut;
@@ -295,7 +295,7 @@ void weld_close() {
     }
 }
 
-void flip_edges() {
+void flip_edges(int niters = 5) {
     std::set<std::tuple<int, int>> edges;
     for (auto const &ind: g_triangles) {
         auto x = ind[0], y = ind[1], z = ind[2];
@@ -326,12 +326,6 @@ void flip_edges() {
     std::set<int> blacklist;
     for (int i = 0; i < g_triangles.size(); i++) {
         auto &ind = g_triangles[i];
-        if (blacklist.find(ind[0]) != blacklist.end()
-         || blacklist.find(ind[1]) != blacklist.end()
-         || blacklist.find(ind[2]) != blacklist.end()
-         ) {
-            continue;
-        }
         std::tuple<int, int, int> enums[] = {
             {0, 1, 2}, {1, 2, 0}, {2, 0, 1},
             {1, 0, 2}, {2, 1, 0}, {0, 2, 1},
@@ -349,8 +343,6 @@ void flip_edges() {
                     g_triangles[it->second.first] = vec3I(it->second.second, ind[b], ind[c]);
                     ind = tmp_ind;
                     it->second.first = -1;
-                    blacklist.insert(ind[a]);
-                    blacklist.insert(ind[b]);
                 } else {
                     it->second = std::make_pair(i, ind[c]);
                 }
@@ -359,7 +351,7 @@ void flip_edges() {
     }
 }
 
-void smooth_mesh(int niters = 2) {
+void smooth_mesh(int niters) {
     std::set<std::tuple<int, int>> edges;
     for (auto const &ind: g_triangles) {
         auto x = ind[0], y = ind[1], z = ind[2];
@@ -379,11 +371,11 @@ void smooth_mesh(int niters = 2) {
     std::vector<vec3f> new_verts(g_vertices.size());
     for (int t = 0; t < niters; t++) {
         for (int i = 0; i < g_vertices.size(); i++) {
-            vec3f avg = g_vertices[i] * 6;
+            vec3f avg = g_vertices[i] * edgelut[i].size();
             for (auto j: edgelut[i]) {
                 avg += g_vertices[j];
             }
-            avg /= 6 + edgelut[i].size();
+            avg /= 2 * edgelut[i].size();
             new_verts[i] = avg;
         }
         std::swap(new_verts, g_vertices);
@@ -392,14 +384,16 @@ void smooth_mesh(int niters = 2) {
 
 int main() {
     ndrange_for(Serial{}, vec3i(0), vec3i(65), [&] (auto idx) {
-        float value = max(-4.0f, length(idx - 32.f) - 10.9f);
+        float value = max(-4.0f, length(idx - 32.f) - 1.9f);
         g_sdf.set(idx, value);
     });
 
     marching_tetra();
     weld_close();
     flip_edges();
-    //smooth_mesh();
+    flip_edges();
+    flip_edges();
+    smooth_mesh(3);
 
     FILE *fp = fopen("/tmp/a.obj", "w");
     for (auto f: g_triangles) { f += 1;
