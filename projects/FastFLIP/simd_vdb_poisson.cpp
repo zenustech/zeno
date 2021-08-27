@@ -388,15 +388,17 @@ void simd_vdb_poisson::Laplacian_with_level::initialize_finest(
       m_Diagonal->tree(), -1, openvdb::TopologyCopy()));
   m_dof_idx->setTransform(m_Diagonal->transformPtr());
 
-  set_dof_idx(m_dof_idx);// bug: crash when 0 particles
+  set_dof_idx(m_dof_idx);
   trim_default_nodes();
 }
 
 void simd_vdb_poisson::Laplacian_with_level::set_dof_idx(
     openvdb::Int32Grid::Ptr in_out_dofidx) {
+  if (in_out_dofidx->tree().leafCount() == 0) // to prevent crash when 0 particles
+      return;
+
   auto dof_leafman =
       openvdb::tree::LeafManager<openvdb::Int32Tree>(in_out_dofidx->tree());
-  printf("%d\n", in_out_dofidx->tree().leafCount());
 
   // first count how many dof in each leaf
   // then assign the global dof id
