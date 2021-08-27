@@ -36,7 +36,7 @@ args = []
 build_args = []
 
 if sys.platform == 'win32':
-    build_args.append(['--config', ap.config])
+    build_args.extend(['--config', ap.config])
 
 args.append('-DPYTHON_EXECUTABLE=' + sys.executable)
 
