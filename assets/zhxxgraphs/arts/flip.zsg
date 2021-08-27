@@ -62,8 +62,8 @@
      "name": "FLIPMakeParticles",
      "inputs": {
       "TankSDF": [
-       "01257425-MeshToSDF",
-       "sdf",
+       null,
+       null,
        null
       ],
       "dx": [
@@ -710,8 +710,8 @@
        null
       ],
       "frameNum": [
-       "6b0009e1-GetFrameNum",
-       "FrameNum",
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -723,27 +723,11 @@
      "params": {
       "dir": "/tmp/cache",
       "prefix": "",
-      "ignore": true
+      "ignore": false
      },
      "uipos": [
       524.9375000000001,
       536.3125000000001
-     ],
-     "options": []
-    },
-    "6b0009e1-GetFrameNum": {
-     "name": "GetFrameNum",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      526.3650000000004,
-      835.0999999999999
      ],
      "options": []
     },
@@ -1025,12 +1009,97 @@
      "options": [
       "ONCE"
      ]
+    },
+    "493251c9-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 70
+     },
+     "uipos": [
+      531.0,
+      330.0
+     ],
+     "options": []
+    },
+    "de483acd-WriteVDBGrid": {
+     "name": "WriteVDBGrid",
+     "inputs": {
+      "data": [
+       "c5f709de-SmoothLiquidSDF",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": "/tmp/sdf.vdb"
+     },
+     "uipos": [
+      1686.249999999999,
+      -159.5
+     ],
+     "options": []
+    },
+    "354f6460-ExportObjPrimitive": {
+     "name": "ExportObjPrimitive",
+     "inputs": {
+      "path": [
+       "cb88262e-MakeWritePath",
+       "path",
+       null
+      ],
+      "prim": [
+       "640a4573-SDFToPoly",
+       "Mesh",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2024.0,
+      63.0
+     ],
+     "options": []
+    },
+    "cb88262e-MakeWritePath": {
+     "name": "MakeWritePath",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": "/tmp/vdbconv.obj"
+     },
+     "uipos": [
+      2018.0,
+      -128.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -1570,
-    "trans_y": 321
+    "scale": 1.25,
+    "trans_x": 4959,
+    "trans_y": 164
    }
   },
   "FLIPSimTemplate": {
