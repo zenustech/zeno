@@ -323,19 +323,34 @@ void flip_edges() {
         }
     }
 
+    std::set<int> blacklist;
     for (int i = 0; i < g_triangles.size(); i++) {
         auto &ind = g_triangles[i];
+        if (blacklist.find(ind[0]) != blacklist.end()
+         || blacklist.find(ind[1]) != blacklist.end()
+         || blacklist.find(ind[2]) != blacklist.end()
+         ) {
+            continue;
+        }
         std::tuple<int, int, int> enums[] = {
             {0, 1, 2}, {1, 2, 0}, {2, 0, 1},
             {1, 0, 2}, {2, 1, 0}, {0, 2, 1},
         };
         for (auto const &[a, b, c]: enums) {
+            if (edgelut[ind[c]].size() > 5) {
+                continue;
+            }
             if (auto it = sevenedges.find({ind[a], ind[b]}); it != sevenedges.end()) {
-                if (it->second.first != -1) {
+                if (it->second.first != -1 && it->second.second != -1) {
+                    if (edgelut[it->second.second].size() > 5) {
+                        continue;
+                    }
                     vec3I tmp_ind(ind[c], ind[a], it->second.second);
                     g_triangles[it->second.first] = vec3I(it->second.second, ind[b], ind[c]);
                     ind = tmp_ind;
                     it->second.first = -1;
+                    blacklist.insert(ind[a]);
+                    blacklist.insert(ind[b]);
                 } else {
                     it->second = std::make_pair(i, ind[c]);
                 }
