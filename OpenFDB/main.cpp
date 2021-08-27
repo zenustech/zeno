@@ -393,7 +393,7 @@ int main() {
     flip_edges();
     flip_edges();
     flip_edges();
-    smooth_mesh(3);
+    //smooth_mesh(3);
 
     FILE *fp = fopen("/tmp/a.obj", "w");
     for (auto f: g_triangles) { f += 1;
