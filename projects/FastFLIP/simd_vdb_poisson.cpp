@@ -393,12 +393,7 @@ void simd_vdb_poisson::Laplacian_with_level::initialize_finest(
 }
 
 void simd_vdb_poisson::Laplacian_with_level::set_dof_idx(
-    openvdb::Int32Grid::Ptr in_out_dofidx) {
-  if (in_out_dofidx->tree().leafCount() == 0) {// to prevent crash when 0 particles
-      m_ndof = 0;
-      return;
-    }
-
+    openvdb::Int32Grid::Ptr in_out_dofidx) {  // crash on 0 particles?
   auto dof_leafman =
       openvdb::tree::LeafManager<openvdb::Int32Tree>(in_out_dofidx->tree());
 

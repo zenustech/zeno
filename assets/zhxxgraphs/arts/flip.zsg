@@ -977,8 +977,8 @@
        null
       ],
       "Emitter": [
-       null,
-       null,
+       "d913c76e-FLIPMakeEmitter",
+       "Emitter",
        null
       ],
       "SRC": [
@@ -1030,7 +1030,7 @@
       ]
      },
      "params": {
-      "op_type": "cmple"
+      "op_type": "cmpne"
      },
      "uipos": [
       -263.0625,
@@ -1048,7 +1048,7 @@
       ]
      },
      "params": {
-      "value": 10
+      "value": 0
      },
      "uipos": [
       -566.5625,
@@ -1080,9 +1080,9 @@
     }
    },
    "view": {
-    "scale": 0.8000000000000002,
-    "trans_x": -98,
-    "trans_y": 281
+    "scale": 1.0,
+    "trans_x": -918,
+    "trans_y": 1641
    }
   },
   "FLIPSimTemplate": {

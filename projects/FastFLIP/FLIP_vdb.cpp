@@ -3502,6 +3502,12 @@ void FLIP_vdb::solve_pressure_simd(
     openvdb::Vec3fGrid::Ptr &face_weight, openvdb::Vec3fGrid::Ptr &velocity,
     openvdb::Vec3fGrid::Ptr &solid_velocity, float dt, float dx) {
   // CSim::TimerMan::timer("Sim.step/vdbflip/pressure/buildlevel").start();
+
+    //skip if there is no dof to solve
+	if (liquid_sdf->tree().leafCount() == 0) {
+		return;
+	}
+
   auto simd_solver =
       simd_vdb_poisson(liquid_sdf, face_weight, velocity,
                        solid_velocity, dt, dx);
