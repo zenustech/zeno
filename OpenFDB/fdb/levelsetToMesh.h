@@ -103,9 +103,7 @@ inline static uint8_t TETRA_LOOKUP_PERM[16][4] = {
 template <class GridT>
 struct MarchingTetra {
 public:
-MarchingTetra(GridT const &sdf) : m_sdf(&sdf) {
-    march();
-}
+MarchingTetra(GridT const &sdf) : m_sdf(&sdf) {}
 private:
 GridT const *m_sdf;
 
@@ -384,6 +382,7 @@ void compute_cubes() {
     });
 }
 
+public:
 void march() {
     compute_cubes();
     march_tetra();
@@ -395,12 +394,21 @@ void march() {
     smooth_mesh(4);
 }
 
-public:
 inline auto const &triangles() const { return m_triangles; }
 inline auto const &vertices() const { return m_vertices; }
 inline auto &triangles() { return m_triangles; }
 inline auto &vertices() { return m_vertices; }
 
 };
+
+template <class GridT>
+auto marching_tetra(GridT &grid,
+        std::vector<vec3f> &vertices,
+        std::vector<vec3I> &triangles) {
+    MarchingTetra mt(grid);
+    mt.march();
+    vertices = std::move(mt.vertices());
+    triangles = std::move(mt.triangles());
+}
 
 }

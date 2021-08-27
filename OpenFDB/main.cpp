@@ -18,14 +18,15 @@ int main() {
         sdf.set(idx, value);
     });
 
-    fdb::levelsetToMesh::MarchingTetra mt(sdf);
-    mt.march();
+    std::vector<vec3f> vertices;
+    std::vector<vec3I> triangles;
+    fdb::levelsetToMesh::marching_tetra(sdf, vertices, triangles);
 
     FILE *fp = fopen("/tmp/a.obj", "w");
-    for (auto f: mt.triangles()) { f += 1;
+    for (auto f: triangles) { f += 1;
         fprintf(fp, "f %d %d %d\n", f[0], f[1], f[2]);
     }
-    for (auto v: mt.vertices()) {
+    for (auto v: vertices) {
         fprintf(fp, "v %f %f %f\n", v[0], v[1], v[2]);
     }
     fclose(fp);
