@@ -12,7 +12,7 @@ using namespace fdb;
 
 size_t g_nx = 64, g_ny = 64, g_nz = 64;
 
-std::vector<vec3I> g_tris;
+std::vector<std::pair<vec3i, vec3i>> g_tris;
 
 const uint8_t NUM_VERTS_IN_TETRA = 4;
 const uint8_t NUM_EDGES_IN_TETRA = 6;
@@ -106,29 +106,24 @@ uint8_t TETRA_LOOKUP_PERM[16][4] = {
     {0, 1, 2, 3}, // 0b1111 ; no triangles
 };
 
-void add_tri(size_t e0, size_t e1, size_t e2) {
-  g_tris.emplace_back(e0, e1, e2);
+size_t global_edge_index(uint8_t lv0, uint8_t lv1) {
+  return TETRA_VERTEX_TO_EDGE_MAP[lv0][lv1];
 }
 
-size_t global_edge_index(size_t cube_index, uint8_t lv0, uint8_t lv1) {
-  return cube_index * NUM_EDGES_IN_CUBE + TETRA_VERTEX_TO_EDGE_MAP[lv0][lv1];
+void add_one_triangle_case(vec3i cube_idx, uint8_t i0, uint8_t i1, uint8_t i2, uint8_t i3) {
+  auto e0 = global_edge_index(i0, i1);
+  auto e1 = global_edge_index(i0, i2);
+  auto e2 = global_edge_index(i0, i3);
+  g_tris.emplace_back(cube_idx, vec3i(e0, e1, e2));
 }
 
-void add_one_triangle_case(size_t cube_idx, uint8_t i0, uint8_t i1, uint8_t i2, uint8_t i3) {
-
-  auto e0 = global_edge_index(cube_idx, i0, i1);
-  auto e1 = global_edge_index(cube_idx, i0, i2);
-  auto e2 = global_edge_index(cube_idx, i0, i3);
-  add_tri(e0, e1, e2);
-}
-
-void add_two_triangles_case(size_t cube_idx, uint8_t i0, uint8_t i1, uint8_t i2, uint8_t i3) {
-  auto e0 = global_edge_index(cube_idx, i0, i2);
-  auto e1 = global_edge_index(cube_idx, i0, i3);
-  auto e2 = global_edge_index(cube_idx, i1, i2);
-  auto e3 = global_edge_index(cube_idx, i1, i3);
-  add_tri(e0, e1, e2);
-  add_tri(e2, e1, e3);
+void add_two_triangles_case(vec3i cube_idx, uint8_t i0, uint8_t i1, uint8_t i2, uint8_t i3) {
+  auto e0 = global_edge_index(i0, i2);
+  auto e1 = global_edge_index(i0, i3);
+  auto e2 = global_edge_index(i1, i2);
+  auto e3 = global_edge_index(i1, i3);
+  g_tris.emplace_back(cube_idx, vec3i(e0, e1, e2));
+  g_tris.emplace_back(cube_idx, vec3i(e2, e1, e3));
 }
 
 vdbgrid::VDBGrid<float> g_sdf;
@@ -141,7 +136,7 @@ void compute_cube(size_t cx, size_t cy, size_t cz) {
   for (auto i = 0u; i < NUM_TETRA_IN_CUBE; ++i) {
     const auto& tv = TETRA_VERTICES[i];
 
-    size_t cube_index = cz * g_ny * g_nx + cy * g_nx + cx;
+    vec3i cube_index(cx, cy, cz);
 
     float vals[8] = {
         sample(cx, cy, cz),
@@ -191,12 +186,10 @@ void compute_cube(size_t cx, size_t cy, size_t cz) {
   }
 }
 
-vec3i global_vertex_index(size_t cube_index, uint8_t local_v) {
-  size_t cx = cube_index % g_nx;
-  cube_index /= g_nx;
-  size_t cy = cube_index % g_ny;
-  cube_index /= g_ny;
-  size_t cz = cube_index;
+vec3i global_vertex_index(vec3i cube_index, uint8_t local_v) {
+  size_t cx = cube_index[0];
+  size_t cy = cube_index[1];
+  size_t cz = cube_index[2];
     vec3i lut[8] = {
         vec3i(cx, cy, cz),
         vec3i(cx+1, cy, cz),
@@ -210,10 +203,7 @@ vec3i global_vertex_index(size_t cube_index, uint8_t local_v) {
   return lut[local_v];
 }
 
-vec3f get_edge_vertex_position(size_t e) {
-  size_t cube_index = e / NUM_EDGES_IN_CUBE;
-  uint8_t local_e = e % NUM_EDGES_IN_CUBE;
-
+vec3f get_edge_vertex_position(vec3i cube_index, int local_e) {
   auto& verts = TETRA_EDGE_TABLE[local_e];
 
   // global vertex indices
@@ -233,7 +223,7 @@ vec3f get_edge_vertex_position(size_t e) {
 
 std::vector<vec3f> g_vertices;
 std::vector<vec3I> g_triangles;
-std::map<int, int> g_em;
+std::map<std::tuple<int, int, int, int>, int> g_em;
 
 void marching_tetra() {
   for (size_t cz = 0; cz < g_nz; ++cz)
@@ -243,19 +233,28 @@ void marching_tetra() {
 
   for (int i = 0; i < g_tris.size(); i++) {
       for (int j = 0; j < 3; j++) {
-          auto idx = g_tris[i][j];
+          auto cube_idx = g_tris[i].first;
+          auto local_e = g_tris[i].second[j];
+          auto idx = std::make_tuple(cube_idx[0], cube_idx[1], cube_idx[2], local_e);
           if (g_em.find(idx) == g_em.end()) {
               g_em.emplace(idx, g_vertices.size());
-              g_vertices.push_back(get_edge_vertex_position(idx));
+              g_vertices.push_back(get_edge_vertex_position(cube_idx, local_e));
           }
         }
   }
 
   for (int i = 0; i < g_tris.size(); i++) {
+      auto cube_idx = g_tris[i].first;
+      auto ae = g_tris[i].second[0];
+      auto a = std::make_tuple(cube_idx[0], cube_idx[1], cube_idx[2], ae);
+      auto be = g_tris[i].second[1];
+      auto b = std::make_tuple(cube_idx[0], cube_idx[1], cube_idx[2], be);
+      auto ce = g_tris[i].second[2];
+      auto c = std::make_tuple(cube_idx[0], cube_idx[1], cube_idx[2], ce);
       g_triangles.emplace_back(
-              g_em.find(g_tris[i][0])->second,
-              g_em.find(g_tris[i][1])->second,
-              g_em.find(g_tris[i][2])->second);
+              g_em.find(a)->second,
+              g_em.find(b)->second,
+              g_em.find(c)->second);
   }
 }
 
@@ -384,7 +383,7 @@ void smooth_mesh(int niters) {
 
 int main() {
     ndrange_for(Serial{}, vec3i(0), vec3i(65), [&] (auto idx) {
-        float value = max(-4.0f, length(idx - 32.f) - 1.9f);
+        float value = max(-4.0f, length(idx - 32.f) - 10.9f);
         g_sdf.set(idx, value);
     });
 
