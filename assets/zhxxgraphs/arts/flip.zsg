@@ -3664,9 +3664,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -1834,
-    "trans_y": -519
+    "scale": 0.8000000000000002,
+    "trans_x": 649,
+    "trans_y": -614
    }
   },
   "SmoothLiquidSDF": {

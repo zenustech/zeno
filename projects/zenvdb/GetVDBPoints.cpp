@@ -49,6 +49,17 @@ struct GetVDBPoints : zeno::INode {
   }
 };
 
+static int defGetVDBPoints = zeno::defNodeClass<GetVDBPoints>("GetVDBPoints",
+    { /* inputs: */ {
+        "grid",
+    }, /* outputs: */ {
+        "pars",
+    }, /* params: */ {
+    }, /* category: */ {
+      "openvdb",
+    }});
+
+#if 0
 struct GetVDBPointsLeafCount : zeno::INode {
   virtual void apply() override {
     auto grid = get_input("grid")->as<VDBPointsGrid>()->m_grid;
@@ -59,16 +70,7 @@ struct GetVDBPointsLeafCount : zeno::INode {
     set_output("leafCount", std::move(ret));
   }
 };
-
-static int defGetVDBPoints = zeno::defNodeClass<GetVDBPoints>("GetVDBPoints",
-    { /* inputs: */ {
-        "grid",
-    }, /* outputs: */ {
-        "pars",
-    }, /* params: */ {
-    }, /* category: */ {
-      "openvdb",
-    }});
+#endif
 
 
 //TODO: parallelize using concurrent vector
