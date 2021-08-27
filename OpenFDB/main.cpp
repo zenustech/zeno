@@ -13,10 +13,10 @@ using namespace fdb;
 template <class SamplerF>
 struct MarchingTetra {
 
-MarchingTetra(SamplerF const &sampler)
-    : m_sampler(sampler)
+MarchingTetra(SamplerF &&sampler)
+    : m_sampler(std::move(sampler))
 {}
-SamplerF const &m_sampler;
+SamplerF &&m_sampler;
 
 std::vector<std::pair<vec3i, vec3i>> m_tris;
 
@@ -398,7 +398,7 @@ int main() {
     });
 
     MarchingTetra mt([&] (auto idx) { return sdf.get(idx); });
-    ndrange_for(Serial{}, vec3i(-1), vec3i(65), [&] (auto idx) {
+    ndrange_for(Serial{}, vec3i(0), vec3i(64), [&] (auto idx) {
         mt.compute_cube(idx);
     });
     mt.march_tetra();
