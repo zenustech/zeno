@@ -327,48 +327,37 @@ void flip_edges() {
         //edgelut[y].push_back(x);
     }
 
-    std::set<std::tuple<int, int, int>> new_tris;
-    for (auto const &ind: g_triangles) {
-        new_tris.emplace(ind[0], ind[1], ind[2]);
-    }
-
-    std::map<std::tuple<int, int>, int> to_flip;
+    std::map<std::tuple<int, int>, std::pair<int, int>> sevenedges;
     for (int i = 0; i < g_vertices.size(); i++) {
-        if (edgelut[i].size() != 5) continue;
-        int found[2] = {-1, -1}, foundi = 0;
-        for (auto j: edgelut[i]) {
-            if (foundi < 2 && edgelut[j].size() >= 7) {
-                found[foundi++] = j;
-            }
-        }
-        if (foundi >= 2) {
-            auto fid = std::make_tuple(found[0], found[1]);
-            if (auto it = to_flip.find(fid); it != to_flip.end()) {
-                new_tris.erase({i, found[0], found[1]});
-                new_tris.erase({found[0], i, found[1]});
-                new_tris.erase({found[0], found[1], i});
-                new_tris.erase({i, found[1], found[0]});
-                new_tris.erase({found[1], i, found[0]});
-                new_tris.erase({found[1], found[0], i});
-                new_tris.erase({it->second, found[0], found[1]});
-                new_tris.erase({found[0], it->second, found[1]});
-                new_tris.erase({found[0], found[1], it->second});
-                new_tris.erase({it->second, found[1], found[0]});
-                new_tris.erase({found[1], it->second, found[0]});
-                new_tris.erase({found[1], found[0], it->second});
-                // TODO: fix this face order:
-                new_tris.emplace(i, it->second, found[0]);
-                new_tris.emplace(it->second, found[1], i);
-                to_flip.erase(it);
-            } else {
-                to_flip.emplace(fid, i);
+        if (edgelut[i].size() >= 7) {
+            for (auto j: edgelut[i]) {
+                if (edgelut[j].size() >= 7) {
+                    sevenedges.emplace(std::make_tuple(i, j), std::make_pair(-1, -1));
+                }
             }
         }
     }
 
-    g_triangles.clear();
-    for (auto const &[x, y, z]: new_tris) {
-        g_triangles.emplace_back(x, y, z);
+    for (int i = 0; i < g_triangles.size(); i++) {
+        auto &ind = g_triangles[i];
+        std::tuple<int, int, int> enums[] = {
+            {0, 1, 2}, {1, 2, 0}, {2, 0, 1},
+            {1, 0, 2}, {2, 1, 0}, {0, 2, 1},
+        };
+        for (auto const &[a, b, c]: enums) {
+            if (auto it = sevenedges.find({ind[a], ind[b]}); it != sevenedges.end()) {
+                if (it->second.first != -1) {
+                    printf("second %d %d %d\n", ind[a], ind[b], ind[c]);
+                    vec3I tmp_ind(ind[c], ind[a], it->second.second);
+                    g_triangles[it->second.first] = vec3I(it->second.second, ind[b], ind[c]);
+                    ind = tmp_ind;
+                    it->second.first = -1;
+                } else {
+                    printf("first %d %d %d\n", ind[a], ind[b], ind[c]);
+                    it->second = std::make_pair(i, ind[c]);
+                }
+            }
+        }
     }
 }
 
