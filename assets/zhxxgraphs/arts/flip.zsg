@@ -164,7 +164,7 @@
      },
      "uipos": [
       -823.2080000000001,
-      1396.448
+      1395.4480000000003
      ],
      "options": [
       "ONCE"
@@ -974,13 +974,18 @@
      "name": "FLIPMakeEnviron",
      "inputs": {
       "Collider": [
-       "5fb9adea-FLIPMakeCollider",
-       "Collider",
+       null,
+       null,
        null
       ],
       "Emitter": [
        "d913c76e-FLIPMakeEmitter",
        "Emitter",
+       null
+      ],
+      "Absorber": [
+       "35125689-FLIPMakeAbsorber",
+       "Absorber",
        null
       ],
       "SRC": [
@@ -992,7 +997,7 @@
      "params": {},
      "uipos": [
       -234.01000000000005,
-      679.0099999999998
+      678.0099999999998
      ],
      "options": []
     },
@@ -1150,12 +1155,40 @@
       1940.0
      ],
      "options": []
+    },
+    "35125689-FLIPMakeAbsorber": {
+     "name": "FLIPMakeAbsorber",
+     "inputs": {
+      "AbsorbSDF": [
+       "3ae6801d-x",
+       "sdf",
+       null
+      ],
+      "isEnabled": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -529.0,
+      1021.0
+     ],
+     "options": [
+      "ONCE"
+     ]
     }
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": -566,
-    "trans_y": 1022
+    "trans_x": -1073,
+    "trans_y": 659
    }
   },
   "FLIPSimTemplate": {
@@ -2240,9 +2273,9 @@
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 4396,
-    "trans_y": -1601
+    "scale": 0.8,
+    "trans_x": 6388,
+    "trans_y": -1811
    }
   },
   "FLIPMakeCollider": {
@@ -3358,8 +3391,8 @@
      },
      "params": {},
      "uipos": [
-      1893.6468164062494,
-      -323.00652343749994
+      2001.1468164062494,
+      -359.25652343749994
      ],
      "options": []
     },
@@ -3778,9 +3811,9 @@
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 502,
-    "trans_y": -598
+    "scale": 0.8,
+    "trans_x": 349,
+    "trans_y": -430
    }
   },
   "SmoothLiquidSDF": {
@@ -5029,8 +5062,8 @@
       "defl": ""
      },
      "uipos": [
-      2790.3375244140607,
-      259.71362304687534
+      3188.77502441406,
+      308.54174804687534
      ],
      "options": []
     },
@@ -5038,8 +5071,8 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "1be95b63-SubstepFLIPWorld",
-       "Particles",
+       "afa8f55d-IfElse",
+       "result",
        null
       ],
       "SRC": [
@@ -5054,8 +5087,8 @@
       "defl": ""
      },
      "uipos": [
-      2778.6187744140598,
-      527.1350708007808
+      3177.0562744140593,
+      575.9631958007808
      ],
      "options": []
     },
@@ -5384,7 +5417,7 @@
       ]
      },
      "params": {
-      "_KEYS": "Collider\nEmitter\nobj2"
+      "_KEYS": "Collider\nEmitter\nAbsorber\nobj3"
      },
      "uipos": [
       1755.8000000000002,
@@ -5394,14 +5427,125 @@
      "socket_keys": [
       "Collider",
       "Emitter",
+      "Absorber",
+      "obj3"
+     ]
+    },
+    "ee79e3ac-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "1be95b63-SubstepFLIPWorld",
+       "LiquidSDF",
+       null
+      ],
+      "SRC": [
+       "daa1a5be-EndFor",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "LiquidSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      3199.4374999999995,
+      55.828125
+     ],
+     "options": []
+    },
+    "e4e3ee1d-KillParticlesInSDF": {
+     "name": "KillParticlesInSDF",
+     "inputs": {
+      "Particles": [
+       "1be95b63-SubstepFLIPWorld",
+       "Particles",
+       null
+      ],
+      "KillerSDF": [
+       "ee0e9191-ExtractDict",
+       "SDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2870.3999999999996,
+      -205.2
+     ],
+     "options": []
+    },
+    "ee0e9191-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "0ba6e113-ExtractDict",
+       "Absorber",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nenable\nobj2"
+     },
+     "uipos": [
+      2584.8,
+      -203.19999999999996
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "enable",
       "obj2"
      ]
+    },
+    "afa8f55d-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "e4e3ee1d-KillParticlesInSDF",
+       "Particles",
+       null
+      ],
+      "false": [
+       "1be95b63-SubstepFLIPWorld",
+       "Particles",
+       null
+      ],
+      "cond": [
+       "ee0e9191-ExtractDict",
+       "enable",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2842.875,
+      451.4375
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": 1430,
-    "trans_y": -217
+    "scale": 1.0000000000000007,
+    "trans_x": 2307,
+    "trans_y": -343
    }
   },
   "FLIPMakeEmitter": {
@@ -5841,14 +5985,19 @@
        "result",
        null
       ],
-      "obj2": [
+      "Absorber": [
+       "97d26673-x",
+       "result",
+       null
+      ],
+      "obj3": [
        null,
        null,
        null
       ]
      },
      "params": {
-      "_KEYS": "Collider\nEmitter\nobj2"
+      "_KEYS": "Collider\nEmitter\nAbsorber\nobj3"
      },
      "uipos": [
       894.2499999999999,
@@ -5858,7 +6007,8 @@
      "socket_keys": [
       "Collider",
       "Emitter",
-      "obj2"
+      "Absorber",
+      "obj3"
      ]
     },
     "c938aa8b-SubOutput": {
@@ -6113,12 +6263,284 @@
       -21.6
      ],
      "options": []
+    },
+    "97d26673-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "24804fee-x",
+       "port",
+       null
+      ],
+      "false": [
+       "cc9f7d76-FLIPMakeAbsorber",
+       "Absorber",
+       null
+      ],
+      "cond": [
+       "24804fee-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      609.6390624999999,
+      1235.15625
+     ],
+     "options": []
+    },
+    "24804fee-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Absorber",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      302.8609375000001,
+      1120.84375
+     ],
+     "options": []
+    },
+    "cc9f7d76-FLIPMakeAbsorber": {
+     "name": "FLIPMakeAbsorber",
+     "inputs": {
+      "AbsorbSDF": [
+       null,
+       null,
+       null
+      ],
+      "isEnabled": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      317.6,
+      1384.0
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": -185,
-    "trans_y": -211
+    "trans_x": 586,
+    "trans_y": 453
+   }
+  },
+  "FLIPMakeAbsorber": {
+   "nodes": {
+    "a96c16b7-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "AbsorbSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      432.0,
+      171.0
+     ],
+     "options": []
+    },
+    "a1be14d3-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "isEnabled",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      397.0,
+      466.0
+     ],
+     "options": []
+    },
+    "a1644e5b-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "SDF": [
+       "c19bb0aa-IfElse",
+       "result",
+       null
+      ],
+      "enable": [
+       "36dbb2e5-x",
+       "result",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nenable\nobj2"
+     },
+     "uipos": [
+      960.0,
+      365.0
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "enable",
+      "obj2"
+     ]
+    },
+    "c19bb0aa-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "a96c16b7-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "57dcc840-Route",
+       "DST",
+       null
+      ],
+      "cond": [
+       "a96c16b7-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      711.1999999999998,
+      188.0
+     ],
+     "options": []
+    },
+    "57dcc840-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      708.8000000000002,
+      17.599999999999994
+     ],
+     "options": []
+    },
+    "36dbb2e5-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "a1be14d3-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "a96c16b7-SubInput",
+       "hasValue",
+       null
+      ],
+      "cond": [
+       "a1be14d3-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      708.8,
+      482.4
+     ],
+     "options": []
+    },
+    "a863484d-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "a1644e5b-MakeDict",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Absorber",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1219.2000000000003,
+      350.40000000000003
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1.25,
+    "trans_x": 652,
+    "trans_y": -63
    }
   }
  },
@@ -8336,6 +8758,41 @@
    ],
    "categories": [
     "frame"
+   ]
+  },
+  "KillParticlesInSDF": {
+   "inputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "KillerSDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
    ]
   },
   "ListGetItem": {
@@ -12426,6 +12883,11 @@
     ],
     [
      "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
      "DST",
      ""
     ]
@@ -13449,6 +13911,11 @@
     ],
     [
      "",
+     "Absorber",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -13457,6 +13924,42 @@
     [
      "",
      "Environ",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "FLIPMakeAbsorber": {
+   "inputs": [
+    [
+     "",
+     "AbsorbSDF",
+     ""
+    ],
+    [
+     "",
+     "isEnabled",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Absorber",
      ""
     ],
     [

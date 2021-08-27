@@ -81,6 +81,7 @@ static void kill_particles_inside(
       new_positions.reserve(positionArray.size());
       new_velocity.reserve(velocityArray.size());
 
+    return;
       for (openvdb::Index offset = 0; offset < leaf.SIZE; offset++) {
         openvdb::Index original_attribute_begin = 0;
         if (offset != 0) {
