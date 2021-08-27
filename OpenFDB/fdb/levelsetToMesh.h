@@ -102,10 +102,11 @@ inline static uint8_t TETRA_LOOKUP_PERM[16][4] = {
 
 template <class GridT>
 struct MarchingTetra {
-
+public:
 MarchingTetra(GridT const &sdf)
     : m_sdf(&sdf)
 {}
+private:
 GridT const *m_sdf;
 
 std::vector<std::pair<vec3i, vec3i>> m_tris;
@@ -226,6 +227,7 @@ std::vector<vec3f> m_vertices;
 std::vector<vec3I> m_triangles;
 std::map<std::tuple<int, int, int, int>, int> m_em;
 
+protected:
 void march_tetra() {
   for (int i = 0; i < m_tris.size(); i++) {
       for (int j = 0; j < 3; j++) {
@@ -290,7 +292,7 @@ void weld_close() {
     }
 }
 
-void flip_edges(int niters = 5) {
+void flip_edges() {
     std::set<std::tuple<int, int>> edges;
     for (auto const &ind: m_triangles) {
         auto x = ind[0], y = ind[1], z = ind[2];
@@ -318,7 +320,6 @@ void flip_edges(int niters = 5) {
         }
     }
 
-    std::set<int> blacklist;
     for (int i = 0; i < m_triangles.size(); i++) {
         auto &ind = m_triangles[i];
         std::tuple<int, int, int> enums[] = {
@@ -375,6 +376,17 @@ void smooth_mesh(int niters) {
         }
         std::swap(new_verts, m_vertices);
     }
+}
+
+public:
+int march() {
+    march_tetra();
+    weld_close();
+    flip_edges();
+    flip_edges();
+    flip_edges();
+    flip_edges();
+    smooth_mesh(4);
 }
 
 inline auto const &triangles() const { return m_triangles; }
