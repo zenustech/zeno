@@ -1186,9 +1186,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -1073,
-    "trans_y": 659
+    "scale": 0.6400000000000001,
+    "trans_x": 1406,
+    "trans_y": 296
    }
   },
   "FLIPSimTemplate": {
@@ -3391,7 +3391,7 @@
      },
      "params": {},
      "uipos": [
-      2001.1468164062494,
+      2000.1468164062494,
       -359.25652343749994
      ],
      "options": []
@@ -3443,8 +3443,8 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "1e2a4a76-SubOutput",
+       "DST",
        null
       ]
      },
@@ -3486,8 +3486,8 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "0ac040f9-IfElse",
+       "DST",
        null
       ]
      },
@@ -3619,8 +3619,8 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "6235b875-SubOutput",
+       "DST",
        null
       ]
      },
@@ -3808,12 +3808,147 @@
       -914.0
      ],
      "options": []
+    },
+    "78988311-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Absorber",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2513.820800781249,
+      -1095.7019042968748
+     ],
+     "options": []
+    },
+    "67802af7-x": {
+     "name": "KillParticlesInSDF",
+     "inputs": {
+      "Particles": [
+       "0b575c56-SubInput",
+       "port",
+       null
+      ],
+      "KillerSDF": [
+       "c041ebe2-x",
+       "SDF",
+       null
+      ],
+      "SRC": [
+       "bd9bfc8e-CombineVDB",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2820.5812499999993,
+      -812.4062499999999
+     ],
+     "options": []
+    },
+    "c041ebe2-x": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "78988311-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nenable\nobj2"
+     },
+     "uipos": [
+      2530.98125,
+      -819.4062499999999
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "enable",
+      "obj2"
+     ]
+    },
+    "bd9bfc8e-CombineVDB": {
+     "name": "CombineVDB",
+     "inputs": {
+      "FieldA": [
+       "56cd53d3-x",
+       "LiquidSDF",
+       null
+      ],
+      "FieldB": [
+       "c041ebe2-x",
+       "SDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "MultiplierA": 1.0,
+      "MultiplierB": 1.0,
+      "OpType": "CSGDifference"
+     },
+     "uipos": [
+      2817.1718749999986,
+      -1099.8624999999997
+     ],
+     "options": []
+    },
+    "0ac040f9-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "67802af7-x",
+       "DST",
+       null
+      ],
+      "false": [
+       null,
+       null,
+       null
+      ],
+      "cond": [
+       "c041ebe2-x",
+       "enable",
+       null
+      ],
+      "SRC": [
+       "aad2ade1-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3077.6468749999995,
+      -655.3375
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": 349,
-    "trans_y": -430
+    "scale": 1.0000000000000002,
+    "trans_x": 2052,
+    "trans_y": -1183
    }
   },
   "SmoothLiquidSDF": {
@@ -4923,6 +5058,11 @@
        "Emitter",
        null
       ],
+      "Absorber": [
+       "0ba6e113-ExtractDict",
+       "Absorber",
+       null
+      ],
       "SRC": [
        null,
        null,
@@ -4931,8 +5071,8 @@
      },
      "params": {},
      "uipos": [
-      2287.8467407226562,
-      -180.69055175781227
+      2281.5967407226562,
+      -176.94055175781227
      ],
      "options": []
     },
@@ -5071,8 +5211,8 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "afa8f55d-IfElse",
-       "result",
+       "1be95b63-SubstepFLIPWorld",
+       "Particles",
        null
       ],
       "SRC": [
@@ -5455,97 +5595,12 @@
       55.828125
      ],
      "options": []
-    },
-    "e4e3ee1d-KillParticlesInSDF": {
-     "name": "KillParticlesInSDF",
-     "inputs": {
-      "Particles": [
-       "1be95b63-SubstepFLIPWorld",
-       "Particles",
-       null
-      ],
-      "KillerSDF": [
-       "ee0e9191-ExtractDict",
-       "SDF",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2870.3999999999996,
-      -205.2
-     ],
-     "options": []
-    },
-    "ee0e9191-ExtractDict": {
-     "name": "ExtractDict",
-     "inputs": {
-      "dict": [
-       "0ba6e113-ExtractDict",
-       "Absorber",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "SDF\nenable\nobj2"
-     },
-     "uipos": [
-      2584.8,
-      -203.19999999999996
-     ],
-     "options": [],
-     "socket_keys": [
-      "SDF",
-      "enable",
-      "obj2"
-     ]
-    },
-    "afa8f55d-IfElse": {
-     "name": "IfElse",
-     "inputs": {
-      "true": [
-       "e4e3ee1d-KillParticlesInSDF",
-       "Particles",
-       null
-      ],
-      "false": [
-       "1be95b63-SubstepFLIPWorld",
-       "Particles",
-       null
-      ],
-      "cond": [
-       "ee0e9191-ExtractDict",
-       "enable",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2842.875,
-      451.4375
-     ],
-     "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000007,
-    "trans_x": 2307,
-    "trans_y": -343
+    "scale": 0.8,
+    "trans_x": 1307,
+    "trans_y": -413
    }
   },
   "FLIPMakeEmitter": {
@@ -13147,6 +13202,11 @@
     [
      "",
      "Emitter",
+     ""
+    ],
+    [
+     "",
+     "Absorber",
      ""
     ],
     [

@@ -81,7 +81,6 @@ static void kill_particles_inside(
       new_positions.reserve(positionArray.size());
       new_velocity.reserve(velocityArray.size());
 
-    return;
       for (openvdb::Index offset = 0; offset < leaf.SIZE; offset++) {
         openvdb::Index original_attribute_begin = 0;
         if (offset != 0) {
@@ -91,12 +90,11 @@ static void kill_particles_inside(
 
           for (int i_emit = original_attribute_begin;
                i_emit < original_attribute_end; i_emit++) {
-              int ie = i_emit - 1;
             auto current_pos = positionHandle.get(i_emit);
               if (openvdb::tools::BoxSampler::sample(
                       solid_axr, voxel_gcoord + current_pos) > 0) {
                 new_positions.push_back(current_pos);
-                new_velocity.push_back(velocityHandle.get(ie));
+                new_velocity.push_back(velocityHandle.get(i_emit));
                 current_particle_count++;
               } // end if the particle position if outside solid
             }
