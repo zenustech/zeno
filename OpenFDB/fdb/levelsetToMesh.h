@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <cassert>
 
-namespace fdb {
+namespace fdb::levelsetToMesh {
 
 inline static constexpr uint8_t NUM_VERTS_IN_TETRA = 4;
 inline static constexpr uint8_t NUM_EDGES_IN_TETRA = 6;
@@ -110,22 +110,18 @@ GridT const *m_sdf;
 
 std::vector<std::pair<vec3i, vec3i>> m_tris;
 
-inline size_t global_edge_index(uint8_t lv0, uint8_t lv1) {
-  return TETRA_VERTEX_TO_EDGE_MAP[lv0][lv1];
-}
-
 inline void add_one_triangle_case(vec3i cube_idx, uint8_t i0, uint8_t i1, uint8_t i2, uint8_t i3) {
-  auto e0 = global_edge_index(i0, i1);
-  auto e1 = global_edge_index(i0, i2);
-  auto e2 = global_edge_index(i0, i3);
+  auto e0 = TETRA_VERTEX_TO_EDGE_MAP[i0][i1];
+  auto e1 = TETRA_VERTEX_TO_EDGE_MAP[i0][i2];
+  auto e2 = TETRA_VERTEX_TO_EDGE_MAP[i0][i3];
   m_tris.emplace_back(cube_idx, vec3i(e0, e1, e2));
 }
 
 inline void add_two_triangles_case(vec3i cube_idx, uint8_t i0, uint8_t i1, uint8_t i2, uint8_t i3) {
-  auto e0 = global_edge_index(i0, i2);
-  auto e1 = global_edge_index(i0, i3);
-  auto e2 = global_edge_index(i1, i2);
-  auto e3 = global_edge_index(i1, i3);
+  auto e0 = TETRA_VERTEX_TO_EDGE_MAP[i0][i2];
+  auto e1 = TETRA_VERTEX_TO_EDGE_MAP[i0][i3];
+  auto e2 = TETRA_VERTEX_TO_EDGE_MAP[i1][i2];
+  auto e3 = TETRA_VERTEX_TO_EDGE_MAP[i1][i3];
   m_tris.emplace_back(cube_idx, vec3i(e0, e1, e2));
   m_tris.emplace_back(cube_idx, vec3i(e2, e1, e3));
 }

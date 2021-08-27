@@ -18,7 +18,7 @@ int main() {
         sdf.set(idx, value);
     });
 
-    MarchingTetra mt(sdf);
+    fdb::levelsetToMesh::MarchingTetra mt(sdf);
     ndrange_for(Serial{}, vec3i(0), vec3i(64), [&] (auto idx) {
         mt.compute_cube(idx);
     });
