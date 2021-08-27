@@ -110,8 +110,8 @@
       "type": "Centered"
      },
      "uipos": [
-      -1723.2200000000005,
-      693.7320000000001
+      -1723.2200000000003,
+      692.732
      ],
      "options": [
       "ONCE"
@@ -295,8 +295,8 @@
      },
      "params": {},
      "uipos": [
-      -489.5078125,
-      1296.6328125
+      -530.5078125,
+      1294.6328125
      ],
      "options": [
       "ONCE"
@@ -407,9 +407,9 @@
        "Particles",
        null
       ],
-      "EnvironFunc": [
-       "c693be4b-FuncEnd",
-       "function",
+      "Environ": [
+       "058e1293-FLIPMakeEnviron",
+       "Environ",
        null
       ],
       "gravity": [
@@ -794,32 +794,6 @@
      ],
      "options": []
     },
-    "c693be4b-FuncEnd": {
-     "name": "FuncEnd",
-     "inputs": {
-      "rets": [
-       "058e1293-FLIPMakeEnviron",
-       "Environ",
-       null
-      ],
-      "FUNC": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -144.0,
-      662.0
-     ],
-     "options": []
-    },
     "d913c76e-FLIPMakeEmitter": {
      "name": "FLIPMakeEmitter",
      "inputs": {
@@ -1000,6 +974,11 @@
        "Emitter",
        null
       ],
+      "isAdvanced": [
+       null,
+       null,
+       false
+      ],
       "SRC": [
        null,
        null,
@@ -1008,8 +987,8 @@
      },
      "params": {},
      "uipos": [
-      -393.0,
-      825.0
+      -153.76,
+      610.76
      ],
      "options": []
     },
@@ -1077,9 +1056,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -311,
-    "trans_y": 347
+    "scale": 1.0,
+    "trans_x": -752,
+    "trans_y": 131
    }
   },
   "FLIPSimTemplate": {
@@ -4775,7 +4754,7 @@
       ]
      },
      "params": {
-      "name": "EnvironFunc",
+      "name": "Environ",
       "type": "",
       "defl": ""
      },
@@ -5589,8 +5568,8 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "4aa2300e-x",
-       "dict",
+       "3d886764-IfElse",
+       "result",
        null
       ],
       "SRC": [
@@ -5605,8 +5584,8 @@
       "defl": ""
      },
      "uipos": [
-      691.0,
-      487.0
+      1164.6000000000004,
+      579.8
      ],
      "options": []
     },
@@ -5649,12 +5628,89 @@
       601.0
      ],
      "options": []
+    },
+    "7232445c-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "isAdvanced",
+      "type": "bool",
+      "defl": "0"
+     },
+     "uipos": [
+      152.39999999999998,
+      860.7999999999998
+     ],
+     "options": []
+    },
+    "425827ad-FuncEnd": {
+     "name": "FuncEnd",
+     "inputs": {
+      "rets": [
+       "4aa2300e-x",
+       "dict",
+       null
+      ],
+      "FUNC": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      671.1999999999998,
+      353.60000000000014
+     ],
+     "options": []
+    },
+    "3d886764-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "4aa2300e-x",
+       "dict",
+       null
+      ],
+      "false": [
+       "425827ad-FuncEnd",
+       "function",
+       null
+      ],
+      "cond": [
+       "7232445c-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      913.5999999999999,
+      599.9999999999999
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1,
-    "trans_x": -298,
-    "trans_y": 9
+    "scale": 1.25,
+    "trans_x": 57,
+    "trans_y": 473
    }
   }
  },
@@ -11870,7 +11926,7 @@
     ],
     [
      "",
-     "EnvironFunc",
+     "Environ",
      ""
     ],
     [
@@ -12962,6 +13018,11 @@
      "",
      "Emitter",
      ""
+    ],
+    [
+     "bool",
+     "isAdvanced",
+     "0"
     ],
     [
      "",
