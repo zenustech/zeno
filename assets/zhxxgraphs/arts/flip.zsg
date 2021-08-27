@@ -110,8 +110,8 @@
       "type": "Centered"
      },
      "uipos": [
-      -1379.4700000000003,
-      701.2320000000001
+      -1723.2200000000005,
+      693.7320000000001
      ],
      "options": [
       "ONCE"
@@ -130,8 +130,8 @@
       "path": "assets/Pig_Head.obj"
      },
      "uipos": [
-      -1951.0840000000003,
-      687.8760000000003
+      -2294.834,
+      680.3760000000003
      ],
      "options": [
       "ONCE"
@@ -188,55 +188,6 @@
       "ONCE"
      ]
     },
-    "7be04bc9-MakePrimitive": {
-     "name": "MakePrimitive",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -1559.2,
-      1096.8
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "dd258f35-PrimitiveAddAttr": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "7be04bc9-MakePrimitive",
-       "prim",
-       null
-      ],
-      "fillValue": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "pos",
-      "type": "float3"
-     },
-     "uipos": [
-      -1293.6000000000001,
-      1055.2
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
     "ae91c4b7-TransformMesh": {
      "name": "TransformMesh",
      "inputs": {
@@ -268,8 +219,8 @@
      },
      "params": {},
      "uipos": [
-      -1659.52,
-      718.0800000000002
+      -2003.2699999999998,
+      710.58
      ],
      "options": [
       "ONCE"
@@ -290,8 +241,8 @@
       "z": 2.0
      },
      "uipos": [
-      -1925.06,
-      918.4299999999998
+      -2268.8099999999995,
+      910.93
      ],
      "options": []
     },
@@ -456,7 +407,7 @@
        "Particles",
        null
       ],
-      "Actions": [
+      "EnvironCb": [
        "c693be4b-FuncEnd",
        "function",
        null
@@ -723,7 +674,7 @@
      "params": {
       "dir": "/tmp/cache",
       "prefix": "",
-      "ignore": false
+      "ignore": true
      },
      "uipos": [
       524.9375000000001,
@@ -859,8 +810,8 @@
      },
      "params": {},
      "uipos": [
-      -742.0,
-      632.0
+      -141.0,
+      847.0
      ],
      "options": []
     },
@@ -868,8 +819,8 @@
      "name": "FuncEnd",
      "inputs": {
       "rets": [
-       "301ce5b3-MakeDict",
-       "dict",
+       "058e1293-FLIPMakeEnviron",
+       "Environ",
        null
       ],
       "FUNC": [
@@ -890,44 +841,6 @@
      ],
      "options": []
     },
-    "301ce5b3-MakeDict": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ],
-      "Collider": [
-       "5fb9adea-FLIPMakeCollider",
-       "Collider",
-       null
-      ],
-      "Emitter": [
-       "d913c76e-FLIPMakeEmitter",
-       "Emitter",
-       null
-      ],
-      "obj2": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "Collider\nEmitter\nobj2"
-     },
-     "uipos": [
-      -140.0,
-      884.0
-     ],
-     "options": [],
-     "socket_keys": [
-      "Collider",
-      "Emitter",
-      "obj2"
-     ]
-    },
     "d913c76e-FLIPMakeEmitter": {
      "name": "FLIPMakeEmitter",
      "inputs": {
@@ -942,8 +855,8 @@
        null
       ],
       "isEnabled": [
-       null,
-       null,
+       "9207629a-x",
+       "ret",
        null
       ],
       "SRC": [
@@ -1094,12 +1007,100 @@
       -128.0
      ],
      "options": []
+    },
+    "058e1293-FLIPMakeEnviron": {
+     "name": "FLIPMakeEnviron",
+     "inputs": {
+      "Collider": [
+       "5fb9adea-FLIPMakeCollider",
+       "Collider",
+       null
+      ],
+      "Emitter": [
+       "d913c76e-FLIPMakeEmitter",
+       "Emitter",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -393.0,
+      825.0
+     ],
+     "options": []
+    },
+    "be19fd5e-x": {
+     "name": "GetFrameNum",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -576.5625,
+      1842.1874999999993
+     ],
+     "options": []
+    },
+    "9207629a-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "be19fd5e-x",
+       "FrameNum",
+       null
+      ],
+      "rhs": [
+       "f844c765-x",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "cmple"
+     },
+     "uipos": [
+      -264.0625,
+      1965.6249999999993
+     ],
+     "options": []
+    },
+    "f844c765-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 10
+     },
+     "uipos": [
+      -566.5625,
+      2033.062499999999
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 4959,
-    "trans_y": 164
+    "scale": 1.0000000000000007,
+    "trans_x": -868,
+    "trans_y": 1684
    }
   },
   "FLIPSimTemplate": {
@@ -3615,8 +3616,8 @@
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": 601,
-    "trans_y": -802
+    "trans_x": 405,
+    "trans_y": -373
    }
   },
   "SmoothLiquidSDF": {
@@ -4660,8 +4661,8 @@
      },
      "params": {},
      "uipos": [
-      1933.1311035156245,
-      421.8458251953126
+      1895.1311035156245,
+      466.8458251953126
      ],
      "options": []
     },
@@ -4795,13 +4796,13 @@
       ]
      },
      "params": {
-      "name": "Actions",
+      "name": "EnvironCb",
       "type": "",
       "defl": ""
      },
      "uipos": [
-      1131.5,
-      36.0
+      1482.5,
+      -154.0
      ],
      "options": []
     },
@@ -4865,8 +4866,8 @@
       "defl": ""
      },
      "uipos": [
-      2293.837524414061,
-      271.71362304687534
+      2417.8375244140607,
+      304.71362304687534
      ],
      "options": []
     },
@@ -5188,8 +5189,8 @@
        null
       ],
       "args": [
-       null,
-       null,
+       "d9a0d695-MakeDict",
+       "dict",
        null
       ],
       "SRC": [
@@ -5200,8 +5201,8 @@
      },
      "params": {},
      "uipos": [
-      1464.8500000000001,
-      85.75
+      1752.8500000000004,
+      -45.25
      ],
      "options": []
     },
@@ -5223,8 +5224,8 @@
       "_KEYS": "Collider\nEmitter\nobj2"
      },
      "uipos": [
-      1736.8000000000002,
-      84.0
+      1756.8000000000002,
+      148.0
      ],
      "options": [],
      "socket_keys": [
@@ -5232,12 +5233,44 @@
       "Emitter",
       "obj2"
      ]
+    },
+    "d9a0d695-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "World": [
+       "27fbce1b-SubInput",
+       "port",
+       null
+      ],
+      "obj1": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "World\nobj1"
+     },
+     "uipos": [
+      1765.0,
+      -260.0
+     ],
+     "options": [],
+     "socket_keys": [
+      "World",
+      "obj1"
+     ]
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": 605,
-    "trans_y": -125
+    "scale": 1.0,
+    "trans_x": 925,
+    "trans_y": -497
    }
   },
   "FLIPMakeEmitter": {
@@ -5421,8 +5454,8 @@
       "value": 1
      },
      "uipos": [
-      647.0,
-      1512.0
+      651.0,
+      1618.0
      ],
      "options": []
     },
@@ -5441,8 +5474,8 @@
       "defl": ""
      },
      "uipos": [
-      642.9000000000001,
-      1256.1999999999998
+      370.9000000000001,
+      1496.1999999999998
      ],
      "options": []
     },
@@ -5450,8 +5483,8 @@
      "name": "IfElse",
      "inputs": {
       "true": [
-       "fcf5f9ea-x",
-       "port",
+       "c34501e9-IfElse",
+       "result",
        null
       ],
       "false": [
@@ -5476,12 +5509,173 @@
       1461.8000000000006
      ],
      "options": []
+    },
+    "c34501e9-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "cedca491-NumericInt",
+       "value",
+       null
+      ],
+      "false": [
+       "943e8780-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "fcf5f9ea-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      676.0,
+      1351.0
+     ],
+     "options": []
+    },
+    "943e8780-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0
+     },
+     "uipos": [
+      933.0,
+      1678.0
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.0,
-    "trans_x": 203,
-    "trans_y": 763
+    "trans_x": 308,
+    "trans_y": 660
+   }
+  },
+  "FLIPMakeEnviron": {
+   "nodes": {
+    "4aa2300e-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "Collider": [
+       "1eb6476f-SubInput",
+       "port",
+       null
+      ],
+      "Emitter": [
+       "61f78493-x",
+       "port",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "Collider\nEmitter\nobj2"
+     },
+     "uipos": [
+      427.0,
+      467.0
+     ],
+     "options": [],
+     "socket_keys": [
+      "Collider",
+      "Emitter",
+      "obj2"
+     ]
+    },
+    "c938aa8b-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "4aa2300e-x",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Environ",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      691.0,
+      487.0
+     ],
+     "options": []
+    },
+    "1eb6476f-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Collider",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      164.0,
+      346.0
+     ],
+     "options": []
+    },
+    "61f78493-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Emitter",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      168.0,
+      601.0
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1,
+    "trans_x": -298,
+    "trans_y": 9
    }
   }
  },
@@ -11697,7 +11891,7 @@
     ],
     [
      "",
-     "Actions",
+     "EnvironCb",
      ""
     ],
     [
@@ -12764,6 +12958,42 @@
     [
      "",
      "Emitter",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "FLIPMakeEnviron": {
+   "inputs": [
+    [
+     "",
+     "Collider",
+     ""
+    ],
+    [
+     "",
+     "Emitter",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Environ",
      ""
     ],
     [
