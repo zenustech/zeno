@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DenseGrid.h"
+#include "schedule.h"
 #include <atomic>
 
 namespace fdb::vdbgrid {
@@ -100,6 +101,22 @@ public:
 
     void set(vec3i ijk, ValueType value) {
         *add_at(ijk) = value;
+    }
+
+    template <class Pol, class F>
+    void foreach_leaf(Pol const &pol, F const &func) {
+        ndrange_for(pol, vec3i(0), vec3i(1 << Log2Dim3), [&] (auto ijk3) {
+            auto *node = m_root.m_data.at(ijk3);
+            if (node) {
+                ndrange_for(Serial{}, vec3i(0), vec3i(1 << Log2Dim2), [&] (auto ijk2) {
+                    auto *leaf = node->m_data.at(ijk2);
+                    if (leaf) {
+                        auto ijk = ijk3 << Log2Dim2 | ijk;
+                        func(ijk, leaf);
+                    }
+                });
+            }
+        });
     }
 };
 
