@@ -825,8 +825,8 @@
      },
      "params": {},
      "uipos": [
-      136.0,
-      1295.0
+      145.0,
+      1282.0
      ],
      "options": []
     },
@@ -979,11 +979,6 @@
        "Emitter",
        null
       ],
-      "isAdvancedFunc": [
-       null,
-       null,
-       null
-      ],
       "SRC": [
        null,
        null,
@@ -1061,9 +1056,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -600,
-    "trans_y": 239
+    "scale": 1.0000000000000002,
+    "trans_x": -784,
+    "trans_y": 1185
    }
   },
   "FLIPSimTemplate": {
@@ -3645,9 +3640,9 @@
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 865,
-    "trans_y": -573
+    "scale": 0.8,
+    "trans_x": -182,
+    "trans_y": -260
    }
   },
   "SmoothLiquidSDF": {
@@ -5219,8 +5214,8 @@
        null
       ],
       "args": [
-       "d9a0d695-MakeDict",
-       "dict",
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -5231,8 +5226,8 @@
      },
      "params": {},
      "uipos": [
-      1752.8500000000004,
-      -45.25
+      1757.8500000000004,
+      -49.25
      ],
      "options": []
     },
@@ -5263,74 +5258,16 @@
       "Emitter",
       "obj2"
      ]
-    },
-    "d9a0d695-MakeDict": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ],
-      "World": [
-       "27fbce1b-SubInput",
-       "port",
-       null
-      ],
-      "obj1": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "World\nobj1"
-     },
-     "uipos": [
-      1765.0,
-      -260.0
-     ],
-     "options": [],
-     "socket_keys": [
-      "World",
-      "obj1"
-     ]
     }
    },
    "view": {
-    "scale": 0.8000000000000002,
-    "trans_x": -312,
-    "trans_y": 14
+    "scale": 1.0,
+    "trans_x": 938,
+    "trans_y": -403
    }
   },
   "FLIPMakeEmitter": {
    "nodes": {
-    "703de0fb-MakeVDBGrid": {
-     "name": "MakeVDBGrid",
-     "inputs": {
-      "Dx": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "dx": 0.08,
-      "type": "float",
-      "structure": "Centered",
-      "name": "Rename!"
-     },
-     "uipos": [
-      181.39999999999998,
-      1088.6
-     ],
-     "options": []
-    },
     "fc434429-SubInput": {
      "name": "SubInput",
      "inputs": {
@@ -5380,8 +5317,8 @@
        null
       ],
       "false": [
-       "703de0fb-MakeVDBGrid",
-       "data",
+       "f5929c93-Route",
+       "DST",
        null
       ],
       "cond": [
@@ -5665,12 +5602,33 @@
       301.0
      ],
      "options": []
+    },
+    "f5929c93-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      236.0,
+      1080.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": 182,
-    "trans_y": 507
+    "scale": 1.0,
+    "trans_x": -174,
+    "trans_y": 772
    }
   },
   "FLIPMakeEnviron": {
@@ -5717,8 +5675,8 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "3d886764-IfElse",
-       "result",
+       "4aa2300e-x",
+       "dict",
        null
       ],
       "SRC": [
@@ -5733,59 +5691,8 @@
       "defl": ""
      },
      "uipos": [
-      1164.6000000000004,
-      579.8
-     ],
-     "options": []
-    },
-    "7232445c-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "isAdvancedFunc",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      901.1499999999996,
-      327.4999999999999
-     ],
-     "options": []
-    },
-    "3d886764-IfElse": {
-     "name": "IfElse",
-     "inputs": {
-      "true": [
-       "4aa2300e-x",
-       "dict",
-       null
-      ],
-      "false": [
-       "e66277f4-FuncEnd",
-       "function",
-       null
-      ],
-      "cond": [
-       "7232445c-SubInput",
-       "hasValue",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      913.5999999999999,
-      599.9999999999999
+      890.6000000000004,
+      486.79999999999995
      ],
      "options": []
     },
@@ -5828,59 +5735,12 @@
       572.6875000000003
      ],
      "options": []
-    },
-    "303d764e-FuncBegin": {
-     "name": "FuncBegin",
-     "inputs": {
-      "extraArgs": [
-       "4aa2300e-x",
-       "dict",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      652.0,
-      985.0
-     ],
-     "options": []
-    },
-    "e66277f4-FuncEnd": {
-     "name": "FuncEnd",
-     "inputs": {
-      "rets": [
-       "303d764e-FuncBegin",
-       "args",
-       null
-      ],
-      "FUNC": [
-       "303d764e-FuncBegin",
-       "FUNC",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      952.0,
-      985.0
-     ],
-     "options": []
     }
    },
    "view": {
-    "scale": 0.8000000000000002,
-    "trans_x": -263,
-    "trans_y": -143
+    "scale": 1.0000000000000002,
+    "trans_x": -66,
+    "trans_y": 155
    }
   }
  },
@@ -13194,21 +13054,6 @@
   },
   "FLIPMakeEnviron": {
    "inputs": [
-    [
-     "",
-     "Collider",
-     ""
-    ],
-    [
-     "",
-     "Emitter",
-     ""
-    ],
-    [
-     "",
-     "isAdvancedFunc",
-     ""
-    ],
     [
      "",
      "Collider",

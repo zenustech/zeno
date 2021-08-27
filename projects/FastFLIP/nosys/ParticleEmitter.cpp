@@ -2,6 +2,7 @@
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
 #include <zeno/ZenoInc.h>
+#include <zeno/ConditionObject.h>
 
 namespace zeno {
 
@@ -15,7 +16,9 @@ struct ParticleEmitter : zeno::INode {
 
     openvdb::Vec3fGrid::Ptr velocityVolume = nullptr;
     if (has_input("VelocityVolume")) {
-      velocityVolume = get_input("VelocityVolume")->as<VDBFloat3Grid>()->m_grid;
+      if (!has_input<zeno::ConditionObject>("VelocityVolume")) {
+          velocityVolume = get_input("VelocityVolume")->as<VDBFloat3Grid>()->m_grid;
+      }
     }
 
     if (has_input("VelocityInit")) {
