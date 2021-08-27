@@ -378,6 +378,7 @@ void smooth_mesh(int niters) {
 }
 
 void compute_cubes() {
+    // TODO: may need dilateActiveValues(1) first..
     m_sdf->foreach(Serial{}, [&] (auto idx, auto const &) {
         compute_cube(idx);
     });

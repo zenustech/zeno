@@ -76,6 +76,9 @@ struct  ResampleVDBGrid : zeno::INode {
           auto source = get_input("resampleFrom")->as<VDBFloat3Grid>();
           resampleVDB<openvdb::Vec3fGrid>(source->m_grid, target->m_grid);
         }
+        set_output("resampleTo", get_input("resampleTo"));
+    } else {
+        printf("ERROR: resample type mismarch!!");
     }
   }
 };
@@ -84,6 +87,7 @@ static int defResampleVDBGrid = zeno::defNodeClass<ResampleVDBGrid>("ResampleVDB
      { /* inputs: */ {
      "resampleTo", "resampleFrom",
      }, /* outputs: */ {
+     "resampleTo",
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",
@@ -136,6 +140,26 @@ static int defCombineVDB = zeno::defNodeClass<CombineVDB>("CombineVDB",
        {"float", "MultiplierA", "1"},
        {"float", "MultiplierB", "1"},
        {"string", "OpType", "CSGUnion"},
+     }, /* category: */ {
+     "openvdb",
+     }});
+
+
+struct CopyVDBTopology : zeno::INode {
+  virtual void apply() override {
+    auto dst = get_input("copyTo")->as<VDBGrid>();
+    auto src = get_input("copyFrom")->as<VDBGrid>();
+    dst->copyTopologyFrom(src);
+    set_output("copyTo", std::move(dst));
+  }
+};
+
+static int defCopyVDBTopology = zeno::defNodeClass<CopyVDBTopology>("CopyVDBTopology",
+     { /* inputs: */ {
+     "copyTo", "copyFrom",
+     }, /* outputs: */ {
+     "copyTo",
+     }, /* params: */ {
      }, /* category: */ {
      "openvdb",
      }});
