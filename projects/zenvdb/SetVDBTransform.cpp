@@ -145,6 +145,7 @@ static int defCombineVDB = zeno::defNodeClass<CombineVDB>("CombineVDB",
      }});
 
 
+#if 0 // TODO: datan help me
 struct CopyVDBTopology : zeno::INode {
   virtual void apply() override {
     auto dst = get_input("copyTo")->as<VDBGrid>();
@@ -163,6 +164,7 @@ static int defCopyVDBTopology = zeno::defNodeClass<CopyVDBTopology>("CopyVDBTopo
      }, /* category: */ {
      "openvdb",
      }});
+#endif
 
 }
 
