@@ -18,7 +18,9 @@
       -1764.5156249999995,
       231.85937500000017
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "1117ce05-x": {
      "name": "NumericFloat",
@@ -244,7 +246,9 @@
       -2268.8099999999995,
       910.93
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "89eb0ef7-MakeFLIPWorld": {
      "name": "MakeFLIPWorld",
@@ -828,9 +832,7 @@
       144.0,
       1265.75
      ],
-     "options": [
-      "ONCE"
-     ]
+     "options": []
     },
     "b01c5f7d-ReadObjMesh": {
      "name": "ReadObjMesh",
@@ -1005,8 +1007,8 @@
      },
      "params": {},
      "uipos": [
-      -576.5625,
-      1842.1874999999993
+      -930.5625,
+      1720.187499999999
      ],
      "options": []
     },
@@ -1014,8 +1016,8 @@
      "name": "NumericOperator",
      "inputs": {
       "lhs": [
-       "be19fd5e-x",
-       "FrameNum",
+       "67296f2f-x",
+       "ret",
        null
       ],
       "rhs": [
@@ -1030,7 +1032,7 @@
       ]
      },
      "params": {
-      "op_type": "cmpge"
+      "op_type": "cmpeq"
      },
      "uipos": [
       -263.0625,
@@ -1048,7 +1050,7 @@
       ]
      },
      "params": {
-      "value": 1
+      "value": 0
      },
      "uipos": [
       -566.5625,
@@ -1077,12 +1079,83 @@
      "options": [
       "ONCE"
      ]
+    },
+    "45a1275a-PrintNumeric": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "9207629a-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "hint": "PrintNumeric"
+     },
+     "uipos": [
+      62.0,
+      1959.0
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "67296f2f-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "be19fd5e-x",
+       "FrameNum",
+       null
+      ],
+      "rhs": [
+       "b1a323d8-x",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mod"
+     },
+     "uipos": [
+      -547.0,
+      1761.0
+     ],
+     "options": []
+    },
+    "b1a323d8-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 5
+     },
+     "uipos": [
+      -947.0,
+      1940.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": -870,
-    "trans_y": 1284
+    "scale": 1.0000000000000002,
+    "trans_x": -566,
+    "trans_y": 1022
    }
   },
   "FLIPSimTemplate": {
@@ -1116,8 +1189,8 @@
      "name": "ParticleEmitter",
      "inputs": {
       "Particles": [
-       "5025569f-SubInput",
-       "port",
+       "aae92be5-Route",
+       "output",
        null
       ],
       "ShapeSDF": [
@@ -1407,8 +1480,8 @@
       "dx": 0.04
      },
      "uipos": [
-      7130.781658372281,
-      -1902.1798908501803
+      7130.7816583722815,
+      -1902.9798908501805
      ],
      "options": []
     },
@@ -1725,7 +1798,9 @@
       2110.2170095443716,
       -2250.4693899154654
      ],
-     "options": []
+     "options": [
+      "collapsed"
+     ]
     },
     "95c068bc-x": {
      "name": "SubInput",
@@ -1800,15 +1875,15 @@
        null
       ],
       "SRC": [
-       "0a81fcd9-x",
+       "aae92be5-Route",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      5809.447021484372,
-      -1765.906066894528
+      5810.697021484371,
+      -1749.6560668945278
      ],
      "options": []
     },
@@ -1827,8 +1902,8 @@
       "defl": ""
      },
      "uipos": [
-      5500.034179687501,
-      -1853.7255859374995
+      5498.7841796875,
+      -1857.4755859374993
      ],
      "options": []
     },
@@ -1841,7 +1916,7 @@
        null
       ],
       "SRC": [
-       "e0dbd827-x",
+       "b6591b53-PrintMessage",
        "DST",
        null
       ]
@@ -1890,8 +1965,8 @@
       "defl": ""
      },
      "uipos": [
-      6775.707488059993,
-      -1502.8885793685909
+      7007.707488059994,
+      -1416.8885793685909
      ],
      "options": []
     },
@@ -2123,12 +2198,51 @@
       -1376.0
      ],
      "options": []
+    },
+    "aae92be5-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "5025569f-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "0a81fcd9-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      5637.499999999993,
+      -1554.9999999999982
+     ],
+     "options": []
+    },
+    "b6591b53-PrintMessage": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "e0dbd827-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "Emitted new liquid"
+     },
+     "uipos": [
+      6642.0,
+      -1570.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": 5826,
-    "trans_y": -1747
+    "scale": 1.25,
+    "trans_x": 4396,
+    "trans_y": -1601
    }
   },
   "FLIPMakeCollider": {
@@ -3244,8 +3358,8 @@
      },
      "params": {},
      "uipos": [
-      1892.3968164062494,
-      -323.0065234375
+      1893.6468164062494,
+      -323.00652343749994
      ],
      "options": []
     },
@@ -3503,8 +3617,8 @@
       "defl": ""
      },
      "uipos": [
-      575.5000000000001,
-      -226.6875
+      569.9,
+      -237.08750000000003
      ],
      "options": []
     },
@@ -3664,9 +3778,9 @@
     }
    },
    "view": {
-    "scale": 0.8000000000000002,
-    "trans_x": 683,
-    "trans_y": -451
+    "scale": 1.25,
+    "trans_x": 502,
+    "trans_y": -598
    }
   },
   "SmoothLiquidSDF": {
@@ -5273,8 +5387,8 @@
       "_KEYS": "Collider\nEmitter\nobj2"
      },
      "uipos": [
-      1756.8000000000002,
-      148.0
+      1755.8000000000002,
+      156.0
      ],
      "options": [],
      "socket_keys": [
@@ -5286,8 +5400,8 @@
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": 1767,
-    "trans_y": -250
+    "trans_x": 1430,
+    "trans_y": -217
    }
   },
   "FLIPMakeEmitter": {
@@ -5702,9 +5816,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -448,
-    "trans_y": 112
+    "scale": 0.8000000000000002,
+    "trans_x": -414,
+    "trans_y": 193
    }
   },
   "FLIPMakeEnviron": {
