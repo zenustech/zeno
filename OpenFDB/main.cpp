@@ -10,13 +10,14 @@
 
 using namespace fdb;
 
-template <class SamplerF>
-struct MarchingTetra {
+//template <class GridT>
+namespace MarchingTetra {
+    using GridT = vdbgrid::VDBGrid<float>;
 
-MarchingTetra(SamplerF &&sampler)
-    : m_sampler(std::move(sampler))
-{}
-SamplerF &&m_sampler;
+//MarchingTetra(GridT const &sdf)
+    //: m_sdf(&sdf)
+//{}
+GridT const *m_sdf;
 
 std::vector<std::pair<vec3i, vec3i>> m_tris;
 
@@ -133,7 +134,7 @@ void add_two_triangles_case(vec3i cube_idx, uint8_t i0, uint8_t i1, uint8_t i2, 
 }
 
 inline float sample(size_t cx, size_t cy, size_t cz) {
-    return m_sampler(vec3i(cx,cy,cz));
+    return m_sdf->get(vec3i(cx,cy,cz));
 }
 
 void compute_cube(vec3i cube_index) {
@@ -383,8 +384,6 @@ void smooth_mesh(int niters) {
     }
 }
 
-auto const &triangles() const { return m_triangles; }
-auto const &vertices() const { return m_vertices; }
 auto &triangles() { return m_triangles; }
 auto &vertices() { return m_vertices; }
 
@@ -397,23 +396,23 @@ int main() {
         sdf.set(idx, value);
     });
 
-    MarchingTetra mt([&] (auto idx) { return sdf.get(idx); });
+    MarchingTetra::m_sdf = &sdf;
     ndrange_for(Serial{}, vec3i(0), vec3i(64), [&] (auto idx) {
-        mt.compute_cube(idx);
+            MarchingTetra::compute_cube(idx);
     });
-    mt.march_tetra();
-    mt.weld_close();
-    mt.flip_edges();
-    mt.flip_edges();
-    mt.flip_edges();
-    mt.flip_edges();
-    mt.smooth_mesh(4);
+    MarchingTetra::march_tetra();
+    //mt.weld_close();
+    //mt.flip_edges();
+    //mt.flip_edges();
+    //mt.flip_edges();
+    //mt.flip_edges();
+    //mt.smooth_mesh(4);
 
     FILE *fp = fopen("/tmp/a.obj", "w");
-    for (auto f: mt.triangles()) { f += 1;
+    for (auto f: MarchingTetra::triangles()) { f += 1;
         fprintf(fp, "f %d %d %d\n", f[0], f[1], f[2]);
     }
-    for (auto v: mt.vertices()) {
+    for (auto v: MarchingTetra::vertices()) {
         fprintf(fp, "v %f %f %f\n", v[0], v[1], v[2]);
     }
     fclose(fp);
