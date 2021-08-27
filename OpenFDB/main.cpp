@@ -10,15 +10,23 @@
 
 using namespace fdb;
 
-std::vector<std::pair<vec3i, vec3i>> g_tris;
+template <class SamplerF>
+struct MarchingTetra {
 
-const uint8_t NUM_VERTS_IN_TETRA = 4;
-const uint8_t NUM_EDGES_IN_TETRA = 6;
-const uint8_t NUM_VERTS_IN_CUBE = 8;
-const uint8_t NUM_EDGES_IN_CUBE = 19;
-const uint8_t NUM_TETRA_IN_CUBE = 6;
+MarchingTetra(SamplerF const &sampler)
+    : m_sampler(sampler)
+{}
+SamplerF const &m_sampler;
 
-const uint8_t TETRA_EDGE_TABLE[NUM_EDGES_IN_CUBE][2] =
+std::vector<std::pair<vec3i, vec3i>> m_tris;
+
+inline static const uint8_t NUM_VERTS_IN_TETRA = 4;
+inline static const uint8_t NUM_EDGES_IN_TETRA = 6;
+inline static const uint8_t NUM_VERTS_IN_CUBE = 8;
+inline static const uint8_t NUM_EDGES_IN_CUBE = 19;
+inline static const uint8_t NUM_TETRA_IN_CUBE = 6;
+
+inline static const uint8_t TETRA_EDGE_TABLE[NUM_EDGES_IN_CUBE][2] =
 {{0, 1}, // around z = 0
  {1, 3},
  {2, 3},
@@ -45,7 +53,7 @@ const uint8_t TETRA_EDGE_TABLE[NUM_EDGES_IN_CUBE][2] =
  {0, 7} // cross diagonal
 };
 
-const uint8_t TETRA_VERTICES[NUM_TETRA_IN_CUBE][NUM_EDGES_IN_TETRA] =
+inline static const uint8_t TETRA_VERTICES[NUM_TETRA_IN_CUBE][NUM_EDGES_IN_TETRA] =
 {
   {0, 1, 5, 7},
   {0, 5, 4, 7},
@@ -55,10 +63,10 @@ const uint8_t TETRA_VERTICES[NUM_TETRA_IN_CUBE][NUM_EDGES_IN_TETRA] =
   {0, 3, 1, 7}
 };
 
-static uint8_t TETRA_EDGES[NUM_EDGES_IN_TETRA][NUM_EDGES_IN_TETRA];
+inline static uint8_t TETRA_EDGES[NUM_EDGES_IN_TETRA][NUM_EDGES_IN_TETRA];
 
-static uint8_t TETRA_VERTEX_TO_EDGE_MAP[NUM_VERTS_IN_CUBE][NUM_VERTS_IN_CUBE];
-bool construct_tetra_adjacency() {
+inline static uint8_t TETRA_VERTEX_TO_EDGE_MAP[NUM_VERTS_IN_CUBE][NUM_VERTS_IN_CUBE];
+static bool construct_tetra_adjacency() {
   auto& tvem = TETRA_VERTEX_TO_EDGE_MAP;
   for (int i = 0; i < NUM_EDGES_IN_CUBE; ++i) {
     auto v0 = TETRA_EDGE_TABLE[i][0];
@@ -80,9 +88,9 @@ bool construct_tetra_adjacency() {
 
   return true;
 }
-static bool cta = construct_tetra_adjacency();
+inline static bool cta = construct_tetra_adjacency();
 
-uint8_t TETRA_LOOKUP_PERM[16][4] = {
+inline static uint8_t TETRA_LOOKUP_PERM[16][4] = {
     {0, 1, 2, 3}, // 0b0000 ; no triangles
     {0, 1, 2, 3}, // 0b0001 ; one triangle, vertex 0
     {1, 2, 0, 3}, // 0b0010 ; one triangle, vertex 1
@@ -112,7 +120,7 @@ void add_one_triangle_case(vec3i cube_idx, uint8_t i0, uint8_t i1, uint8_t i2, u
   auto e0 = global_edge_index(i0, i1);
   auto e1 = global_edge_index(i0, i2);
   auto e2 = global_edge_index(i0, i3);
-  g_tris.emplace_back(cube_idx, vec3i(e0, e1, e2));
+  m_tris.emplace_back(cube_idx, vec3i(e0, e1, e2));
 }
 
 void add_two_triangles_case(vec3i cube_idx, uint8_t i0, uint8_t i1, uint8_t i2, uint8_t i3) {
@@ -120,14 +128,12 @@ void add_two_triangles_case(vec3i cube_idx, uint8_t i0, uint8_t i1, uint8_t i2, 
   auto e1 = global_edge_index(i0, i3);
   auto e2 = global_edge_index(i1, i2);
   auto e3 = global_edge_index(i1, i3);
-  g_tris.emplace_back(cube_idx, vec3i(e0, e1, e2));
-  g_tris.emplace_back(cube_idx, vec3i(e2, e1, e3));
+  m_tris.emplace_back(cube_idx, vec3i(e0, e1, e2));
+  m_tris.emplace_back(cube_idx, vec3i(e2, e1, e3));
 }
 
-vdbgrid::VDBGrid<float> g_sdf;
-
-float sample(size_t cx, size_t cy, size_t cz) {
-    return g_sdf.get(vec3i(cx,cy,cz));
+inline float sample(size_t cx, size_t cy, size_t cz) {
+    return m_sampler(vec3i(cx,cy,cz));
 }
 
 void compute_cube(vec3i cube_index) {
@@ -222,77 +228,77 @@ vec3f get_edge_vertex_position(vec3i cube_index, int local_e) {
   return mix( vi0, vi1, zero_t );
 };
 
-std::vector<vec3f> g_vertices;
-std::vector<vec3I> g_triangles;
-std::map<std::tuple<int, int, int, int>, int> g_em;
+std::vector<vec3f> m_vertices;
+std::vector<vec3I> m_triangles;
+std::map<std::tuple<int, int, int, int>, int> m_em;
 
 void march_tetra() {
-  for (int i = 0; i < g_tris.size(); i++) {
+  for (int i = 0; i < m_tris.size(); i++) {
       for (int j = 0; j < 3; j++) {
-          auto cube_idx = g_tris[i].first;
-          auto local_e = g_tris[i].second[j];
+          auto cube_idx = m_tris[i].first;
+          auto local_e = m_tris[i].second[j];
           auto idx = std::make_tuple(cube_idx[0], cube_idx[1], cube_idx[2], local_e);
-          if (g_em.find(idx) == g_em.end()) {
-              g_em.emplace(idx, g_vertices.size());
-              g_vertices.push_back(get_edge_vertex_position(cube_idx, local_e));
+          if (m_em.find(idx) == m_em.end()) {
+              m_em.emplace(idx, m_vertices.size());
+              m_vertices.push_back(get_edge_vertex_position(cube_idx, local_e));
           }
         }
   }
 
-  for (int i = 0; i < g_tris.size(); i++) {
-      auto cube_idx = g_tris[i].first;
-      auto ae = g_tris[i].second[0];
+  for (int i = 0; i < m_tris.size(); i++) {
+      auto cube_idx = m_tris[i].first;
+      auto ae = m_tris[i].second[0];
       auto a = std::make_tuple(cube_idx[0], cube_idx[1], cube_idx[2], ae);
-      auto be = g_tris[i].second[1];
+      auto be = m_tris[i].second[1];
       auto b = std::make_tuple(cube_idx[0], cube_idx[1], cube_idx[2], be);
-      auto ce = g_tris[i].second[2];
+      auto ce = m_tris[i].second[2];
       auto c = std::make_tuple(cube_idx[0], cube_idx[1], cube_idx[2], ce);
-      g_triangles.emplace_back(
-              g_em.find(a)->second,
-              g_em.find(b)->second,
-              g_em.find(c)->second);
+      m_triangles.emplace_back(
+              m_em.find(a)->second,
+              m_em.find(b)->second,
+              m_em.find(c)->second);
   }
 }
 
 void weld_close() {
     std::map<std::tuple<int, int, int>, std::vector<int>> rear;
-    for (int i = 0; i < g_vertices.size(); i++) {
-        auto pos = g_vertices[i];
+    for (int i = 0; i < m_vertices.size(); i++) {
+        auto pos = m_vertices[i];
         vec3i ipos(floor(pos * 4.f + 0.5f));
         rear[std::make_tuple(ipos[0], ipos[1], ipos[2])].push_back(i);
     }
     std::map<int, int> lut;
     std::vector<vec3f> new_verts;
     for (auto const &[ipos, inds]: rear) {
-        vec3f cpos = g_vertices[inds[0]];
+        vec3f cpos = m_vertices[inds[0]];
         int vertid = new_verts.size();
         lut.emplace(inds[0], vertid);
         for (int i = 1; i < inds.size(); i++) {
-            cpos += g_vertices[inds[i]];
+            cpos += m_vertices[inds[i]];
             lut.emplace(inds[i], vertid);
         }
         cpos /= inds.size();
         new_verts.emplace_back(cpos);
     }
-    g_vertices = std::move(new_verts);
+    m_vertices = std::move(new_verts);
     std::set<std::tuple<int, int, int>> new_tris;
-    for (auto const &inds: g_triangles) {
+    for (auto const &inds: m_triangles) {
         new_tris.emplace(
                 lut.find(inds[0])->second,
                 lut.find(inds[1])->second,
                 lut.find(inds[2])->second);
     }
-    g_triangles.clear();
+    m_triangles.clear();
     for (auto const &[x, y, z]: new_tris) {
         if (x != y && y != z && z != x) {
-            g_triangles.emplace_back(x, y, z);
+            m_triangles.emplace_back(x, y, z);
         }
     }
 }
 
 void flip_edges(int niters = 5) {
     std::set<std::tuple<int, int>> edges;
-    for (auto const &ind: g_triangles) {
+    for (auto const &ind: m_triangles) {
         auto x = ind[0], y = ind[1], z = ind[2];
         edges.emplace(x, y);
         edges.emplace(y, z);
@@ -302,13 +308,13 @@ void flip_edges(int niters = 5) {
         edges.emplace(x, z);
     }
 
-    std::vector<std::vector<int>> edgelut(g_vertices.size());
+    std::vector<std::vector<int>> edgelut(m_vertices.size());
     for (auto const &[x, y]: edges) {
         edgelut[x].push_back(y);
     }
 
     std::map<std::tuple<int, int>, std::pair<int, int>> sevenedges;
-    for (int i = 0; i < g_vertices.size(); i++) {
+    for (int i = 0; i < m_vertices.size(); i++) {
         if (edgelut[i].size() >= 7) {
             for (auto j: edgelut[i]) {
                 if (edgelut[j].size() >= 7) {
@@ -319,8 +325,8 @@ void flip_edges(int niters = 5) {
     }
 
     std::set<int> blacklist;
-    for (int i = 0; i < g_triangles.size(); i++) {
-        auto &ind = g_triangles[i];
+    for (int i = 0; i < m_triangles.size(); i++) {
+        auto &ind = m_triangles[i];
         std::tuple<int, int, int> enums[] = {
             {0, 1, 2}, {1, 2, 0}, {2, 0, 1},
             {1, 0, 2}, {2, 1, 0}, {0, 2, 1},
@@ -335,7 +341,7 @@ void flip_edges(int niters = 5) {
                         continue;
                     }
                     vec3I tmp_ind(ind[c], ind[a], it->second.second);
-                    g_triangles[it->second.first] = vec3I(it->second.second, ind[b], ind[c]);
+                    m_triangles[it->second.first] = vec3I(it->second.second, ind[b], ind[c]);
                     ind = tmp_ind;
                     it->second.first = -1;
                 } else {
@@ -348,7 +354,7 @@ void flip_edges(int niters = 5) {
 
 void smooth_mesh(int niters) {
     std::set<std::tuple<int, int>> edges;
-    for (auto const &ind: g_triangles) {
+    for (auto const &ind: m_triangles) {
         auto x = ind[0], y = ind[1], z = ind[2];
         edges.emplace(x, y);
         edges.emplace(y, z);
@@ -358,48 +364,56 @@ void smooth_mesh(int niters) {
         edges.emplace(x, z);
     }
 
-    std::vector<std::vector<int>> edgelut(g_vertices.size());
+    std::vector<std::vector<int>> edgelut(m_vertices.size());
     for (auto const &[x, y]: edges) {
         edgelut[x].push_back(y);
     }
 
-    std::vector<vec3f> new_verts(g_vertices.size());
+    std::vector<vec3f> new_verts(m_vertices.size());
     for (int t = 0; t < niters; t++) {
-        for (int i = 0; i < g_vertices.size(); i++) {
-            vec3f avg = g_vertices[i] * edgelut[i].size();
+        for (int i = 0; i < m_vertices.size(); i++) {
+            vec3f avg = m_vertices[i] * edgelut[i].size();
             for (auto j: edgelut[i]) {
-                avg += g_vertices[j];
+                avg += m_vertices[j];
             }
             avg /= 2 * edgelut[i].size();
             new_verts[i] = avg;
         }
-        std::swap(new_verts, g_vertices);
+        std::swap(new_verts, m_vertices);
     }
 }
 
+auto const &triangles() const { return m_triangles; }
+auto const &vertices() const { return m_vertices; }
+auto &triangles() { return m_triangles; }
+auto &vertices() { return m_vertices; }
+
+};
+
 int main() {
+    vdbgrid::VDBGrid<float> sdf;
     ndrange_for(Serial{}, vec3i(0), vec3i(64), [&] (auto idx) {
         float value = max(-4.0f, length(idx - 32.f) - 10.9f);
-        g_sdf.set(idx, value);
+        sdf.set(idx, value);
     });
 
-    ndrange_for(Serial{}, vec3i(-2), vec3i(65), [&] (auto idx) {
-        compute_cube(idx);
+    MarchingTetra mt([&] (auto idx) { return sdf.get(idx); });
+    ndrange_for(Serial{}, vec3i(-1), vec3i(65), [&] (auto idx) {
+        mt.compute_cube(idx);
     });
-    march_tetra();
-    weld_close();
-    flip_edges();
-    flip_edges();
-    flip_edges();
-    flip_edges();
-    flip_edges();
-    smooth_mesh(5);
+    mt.march_tetra();
+    mt.weld_close();
+    mt.flip_edges();
+    mt.flip_edges();
+    mt.flip_edges();
+    mt.flip_edges();
+    mt.smooth_mesh(4);
 
     FILE *fp = fopen("/tmp/a.obj", "w");
-    for (auto f: g_triangles) { f += 1;
+    for (auto f: mt.triangles()) { f += 1;
         fprintf(fp, "f %d %d %d\n", f[0], f[1], f[2]);
     }
-    for (auto v: g_vertices) {
+    for (auto v: mt.vertices()) {
         fprintf(fp, "v %f %f %f\n", v[0], v[1], v[2]);
     }
     fclose(fp);
