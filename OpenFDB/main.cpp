@@ -295,20 +295,6 @@ void weld_close() {
     }
 }
 
-std::tuple<int, int, int> sort_three(vec3i ind) {
-    int i1 = 0, i2 = 1, i3 = 2;
-    if (ind[i1] > ind[i2]) {
-        std::swap(i1, i2);
-    }
-    if (ind[i1] > ind[i3]) {
-        std::swap(i1, i3);
-    }
-    if (ind[i2] > ind[i3]) {
-        std::swap(i2, i3);
-    }
-    return {ind[i1], ind[i2], ind[i3]};
-}
-
 void flip_edges() {
     std::set<std::tuple<int, int>> edges;
     for (auto const &ind: g_triangles) {
@@ -324,7 +310,6 @@ void flip_edges() {
     std::vector<std::vector<int>> edgelut(g_vertices.size());
     for (auto const &[x, y]: edges) {
         edgelut[x].push_back(y);
-        //edgelut[y].push_back(x);
     }
 
     std::map<std::tuple<int, int>, std::pair<int, int>> sevenedges;
@@ -347,17 +332,46 @@ void flip_edges() {
         for (auto const &[a, b, c]: enums) {
             if (auto it = sevenedges.find({ind[a], ind[b]}); it != sevenedges.end()) {
                 if (it->second.first != -1) {
-                    printf("second %d %d %d\n", ind[a], ind[b], ind[c]);
                     vec3I tmp_ind(ind[c], ind[a], it->second.second);
                     g_triangles[it->second.first] = vec3I(it->second.second, ind[b], ind[c]);
                     ind = tmp_ind;
                     it->second.first = -1;
                 } else {
-                    printf("first %d %d %d\n", ind[a], ind[b], ind[c]);
                     it->second = std::make_pair(i, ind[c]);
                 }
             }
         }
+    }
+}
+
+void smooth_mesh(int niters = 2) {
+    std::set<std::tuple<int, int>> edges;
+    for (auto const &ind: g_triangles) {
+        auto x = ind[0], y = ind[1], z = ind[2];
+        edges.emplace(x, y);
+        edges.emplace(y, z);
+        edges.emplace(z, x);
+        edges.emplace(y, x);
+        edges.emplace(z, y);
+        edges.emplace(x, z);
+    }
+
+    std::vector<std::vector<int>> edgelut(g_vertices.size());
+    for (auto const &[x, y]: edges) {
+        edgelut[x].push_back(y);
+    }
+
+    std::vector<vec3f> new_verts(g_vertices.size());
+    for (int t = 0; t < niters; t++) {
+        for (int i = 0; i < g_vertices.size(); i++) {
+            vec3f avg = g_vertices[i] * 6;
+            for (auto j: edgelut[i]) {
+                avg += g_vertices[j];
+            }
+            avg /= 6 + edgelut[i].size();
+            new_verts[i] = avg;
+        }
+        std::swap(new_verts, g_vertices);
     }
 }
 
@@ -370,6 +384,7 @@ int main() {
     marching_tetra();
     weld_close();
     flip_edges();
+    smooth_mesh();
 
     FILE *fp = fopen("/tmp/a.obj", "w");
     for (auto f: g_triangles) { f += 1;
