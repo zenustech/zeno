@@ -377,14 +377,14 @@ void smooth_mesh(int niters = 2) {
 
 int main() {
     ndrange_for(Serial{}, vec3i(0), vec3i(65), [&] (auto idx) {
-        float value = max(-4.0f, length(tofloat(idx)) - 16.9f);
+        float value = max(-4.0f, length(idx - 32.f) - 10.9f);
         g_sdf.set(idx, value);
     });
 
     marching_tetra();
     weld_close();
     flip_edges();
-    smooth_mesh();
+    //smooth_mesh();
 
     FILE *fp = fopen("/tmp/a.obj", "w");
     for (auto f: g_triangles) { f += 1;
