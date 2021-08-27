@@ -1030,7 +1030,7 @@
       ]
      },
      "params": {
-      "op_type": "cmpne"
+      "op_type": "cmpge"
      },
      "uipos": [
       -263.0625,
@@ -1048,7 +1048,7 @@
       ]
      },
      "params": {
-      "value": 0
+      "value": 1
      },
      "uipos": [
       -566.5625,
@@ -1080,9 +1080,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -918,
-    "trans_y": 1641
+    "scale": 1.25,
+    "trans_x": -870,
+    "trans_y": 1284
    }
   },
   "FLIPSimTemplate": {
