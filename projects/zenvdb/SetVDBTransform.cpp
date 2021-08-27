@@ -107,27 +107,21 @@ struct CombineVDB : zeno::INode{
         
         auto target = get_input("FieldA")->as<VDBFloatGrid>();
         auto source = get_input("FieldB")->as<VDBFloatGrid>();
-        if (get_param<bool>("writeBack")) {
-            auto srcgrid = source->m_grid->deepCopy();
-            if(OpType=="CSGUnion") {
-              openvdb::tools::csgUnion(*(target->m_grid), *(srcgrid));
-            } else if(OpType=="CSGIntersection") {
-              openvdb::tools::csgIntersection(*(target->m_grid), *(srcgrid));
-            } else if(OpType=="CSGDifference") {
-              openvdb::tools::csgDifference(*(target->m_grid), *(srcgrid));
-            } else { throw zeno::Exception("bad CSG optype: " + OpType); }
-            set_output("FieldOut", get_input("FieldA"));
-        } else {
-            auto result = std::make_shared<VDBFloatGrid>();
-            if(OpType=="CSGUnion") {
-              result->m_grid = openvdb::tools::csgUnionCopy(*(target->m_grid), *(source->m_grid));
-            } else if(OpType=="CSGIntersection") {
-              result->m_grid = openvdb::tools::csgIntersectionCopy(*(target->m_grid), *(source->m_grid));
-            } else if(OpType=="CSGDifference") {
-              result->m_grid = openvdb::tools::csgDifferenceCopy(*(target->m_grid), *(source->m_grid));
-            } else { throw zeno::Exception("bad CSG optype: " + OpType); }
-            set_output("FieldOut", result);
+        auto srcgrid = source->m_grid->deepCopy();
+        if(OpType=="CSGUnion")
+        {
+          openvdb::tools::csgUnion(*(target->m_grid), *(srcgrid));
         }
+        else if(OpType=="CSGIntersection")
+        {
+          openvdb::tools::csgIntersection(*(target->m_grid), *(srcgrid));
+        }
+        else if(OpType=="CSGDifference")
+        {
+          openvdb::tools::csgDifference(*(target->m_grid), *(srcgrid));
+        }
+        else { throw zeno::Exception("bad CSG optype: " + OpType); }
+        set_output("FieldOut", get_input("FieldA"));
     }
     
   }
@@ -141,7 +135,6 @@ static int defCombineVDB = zeno::defNodeClass<CombineVDB>("CombineVDB",
        {"float", "MultiplierA", "1"},
        {"float", "MultiplierB", "1"},
        {"string", "OpType", "CSGUnion"},
-       {"int", "writeBack", "0"},
      }, /* category: */ {
      "openvdb",
      }});

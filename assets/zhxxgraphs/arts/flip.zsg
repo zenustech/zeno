@@ -1186,9 +1186,9 @@
     }
    },
    "view": {
-    "scale": 0.5120000000000002,
-    "trans_x": -652,
-    "trans_y": 88
+    "scale": 0.8,
+    "trans_x": -645,
+    "trans_y": 868
    }
   },
   "FLIPSimTemplate": {
@@ -2349,8 +2349,7 @@
      "params": {
       "MultiplierA": 1.0,
       "MultiplierB": 1.0,
-      "OpType": "CSGUnion",
-      "writeBack": 0
+      "OpType": "CSGUnion"
      },
      "uipos": [
       1032.0,
@@ -3906,8 +3905,7 @@
      "params": {
       "MultiplierA": 1.0,
       "MultiplierB": 1.0,
-      "OpType": "CSGDifference",
-      "writeBack": 1
+      "OpType": "CSGDifference"
      },
      "uipos": [
       2817.1718749999986,
@@ -3949,8 +3947,8 @@
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": 2140,
-    "trans_y": -1194
+    "trans_x": 2052,
+    "trans_y": -1183
    }
   },
   "SmoothLiquidSDF": {
@@ -4579,8 +4577,7 @@
      "params": {
       "MultiplierA": 1.0,
       "MultiplierB": 1.0,
-      "OpType": "CSGUnion",
-      "writeBack": 0
+      "OpType": "CSGUnion"
      },
      "uipos": [
       2436.249999999997,
@@ -5074,8 +5071,8 @@
      },
      "params": {},
      "uipos": [
-      2282.8467407226562,
-      -178.19055175781227
+      2281.5967407226562,
+      -176.94055175781227
      ],
      "options": []
     },
@@ -7203,11 +7200,6 @@
      "string",
      "OpType",
      "CSGUnion"
-    ],
-    [
-     "int",
-     "writeBack",
-     "0"
     ]
    ],
    "categories": [
