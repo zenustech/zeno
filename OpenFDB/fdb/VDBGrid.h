@@ -118,6 +118,16 @@ public:
             }
         });
     }
+
+    template <class Pol, class F>
+    void foreach_element(Pol const &pol, F const &func) {
+        foreach_leaf(pol, vec3i(0), vec3i(1 << Log2Dim3), [&] (auto ijk23, auto *leaf) {
+            leaf.m_data->foreach_element(Serial{}, [&] (auto ijk1, auto &value) {
+                auto ijk = ijk1 | ijk23 << LogDim1;
+                func(ijk, value);
+            });
+        });
+    }
 };
 
 }
