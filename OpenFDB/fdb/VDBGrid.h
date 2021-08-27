@@ -51,38 +51,52 @@ private:
     RootNode m_root;
 
 protected:
-    T *get_at(vec3i ijk) const {
-        auto *node = m_root.m_data.at(ijk >> Log2Dim1 + Log2Dim2);
+    LeafNode *get_leaf_at(vec3i ijk) const {
+        auto *node = m_root.m_data.at(ijk >> Log2Dim2);
         if (!node) return nullptr;
-        auto *leaf = node->m_data.at(ijk >> Log2Dim1);
+        auto *leaf = node->m_data.at(ijk);
+        return leaf;
+    }
+
+    LeafNode *add_leaf_at(vec3i ijk) {
+        auto *&node = m_root.m_data.at(ijk >> Log2Dim2);
+        if (!node)
+            node = new InternalNode;
+        auto *&leaf = node->m_data.at(ijk);
+        if (!leaf) {
+            ++m_root.m_counter.at(ijk >> Log2Dim2);
+            leaf = new LeafNode;
+        }
+        return leaf;
+    }
+
+    void del_leaf_at(vec3i ijk) {
+        auto *&node = m_root.m_data.at(ijk >> Log2Dim2);
+        if (!node) return;
+        auto *&leaf = node->m_data.at(ijk);
+        if (leaf) {
+            delete leaf;
+            leaf = nullptr;
+            if (!--m_root.m_counter.at(ijk >> Log2Dim2)) {
+                delete node;
+                node = nullptr;
+            }
+        }
+    }
+
+    T *get_at(vec3i ijk) const {
+        auto *leaf = get_leaf_at(ijk >> Log2Dim1);
         if (!leaf) return nullptr;
         return &leaf->m_data.at(ijk);
     }
 
     T *add_at(vec3i ijk) {
-        auto *&node = m_root.m_data.at(ijk >> Log2Dim1 + Log2Dim2);
-        if (!node)
-            node = new InternalNode;
-        auto *&leaf = node->m_data.at(ijk >> Log2Dim1);
-        if (!leaf) {
-            ++m_root.m_counter.at(ijk >> Log2Dim1 + Log2Dim2);
-            leaf = new LeafNode;
-        }
+        auto *leaf = add_leaf_at(ijk >> Log2Dim1);
         return &leaf->m_data.at(ijk);
     }
 
     void del_at(vec3i ijk) {
-        auto *&node = m_root.m_data.at(ijk >> Log2Dim1 + Log2Dim2);
-        if (!node) return;
-        auto *&leaf = node->m_data.at(ijk >> Log2Dim1);
-        if (leaf) {
-            delete leaf;
-            leaf = nullptr;
-            if (!--m_root.m_counter.at(ijk >> Log2Dim1 + Log2Dim2)) {
-                delete node;
-                node = nullptr;
-            }
-        }
+        del_leaf_at(ijk >> Log2Dim1);
     }
 
 public:
@@ -120,10 +134,21 @@ public:
     }
 
     template <class Pol, class F>
-    void foreach_element(Pol const &pol, F const &func) {
+    void foreach(Pol const &pol, F const &func) {
         foreach_leaf(pol, vec3i(0), vec3i(1 << Log2Dim3), [&] (auto ijk23, auto *leaf) {
-            leaf.m_data->foreach_element(Serial{}, [&] (auto ijk1, auto &value) {
-                auto ijk = ijk1 | ijk23 << LogDim1;
+            leaf.m_data->foreach(Serial{}, [&] (auto ijk1, auto &value) {
+                auto ijk = ijk1 | ijk23 << Log2Dim1;
+                func(ijk, value);
+            });
+        });
+    }
+
+    template <class Pol, class F>
+    void foreach_dilate_cube_zero_positive(Pol const &pol, F const &func) {
+        foreach_leaf(pol, vec3i(0), vec3i(1 << Log2Dim3), [&] (auto ijk23, auto *leaf) {
+            get_at(ijk23);
+            leaf.m_data->foreach(Serial{}, [&] (auto ijk1, auto &value) {
+                auto ijk = ijk1 | ijk23 << Log2Dim1;
                 func(ijk, value);
             });
         });

@@ -55,7 +55,7 @@ public:
     }
 
     template <class Pol, class F>
-    void foreach_element(Pol const &pol, F const &func) {
+    void foreach(Pol const &pol, F const &func) {
         ndrange_for([&] (auto ijk) {
             auto &value = at(ijk);
             func(ijk, value);
