@@ -39,14 +39,11 @@ struct FuncEnd : zeno::ContextManagedNode {
     virtual void doApply() override {
         auto [sn, ss] = inputBounds.at("FUNC");
         auto fore = dynamic_cast<FuncBegin *>(graph->nodes.at(sn).get());
-        if (!fore) {
-            printf("FuncEnd::FUNC must be conn to FuncBegin::FUNC!\n");
-            abort();
-        }
         graph->applyNode(sn);
         auto func = std::make_shared<zeno::FunctionObject>();
         func->func = [this, fore] (zeno::FunctionObject::DictType const &args) {
-            fore->update_arguments(args);
+            if (fore)
+                fore->update_arguments(args);
             push_context();
             zeno::INode::doApply();
             pop_context();
