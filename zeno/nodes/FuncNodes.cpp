@@ -76,6 +76,11 @@ ZENDEFNODE(FuncEnd, {
 
 struct FuncCall : zeno::ContextManagedNode {
     virtual void apply() override {
+        if (has_input<zeno::DictObject>("function")) {
+            set_output("rets", get_input("function"));
+            return;
+        }
+
         auto func = get_input<zeno::FunctionObject>("function");
 
         zeno::FunctionObject::DictType args{};

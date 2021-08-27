@@ -812,6 +812,11 @@
        "ret",
        null
       ],
+      "VelInit": [
+       null,
+       null,
+       null
+      ],
       "SRC": [
        null,
        null,
@@ -974,10 +979,10 @@
        "Emitter",
        null
       ],
-      "isAdvanced": [
+      "isAdvancedFunc": [
        null,
        null,
-       false
+       null
       ],
       "SRC": [
        null,
@@ -1057,8 +1062,8 @@
    },
    "view": {
     "scale": 1.0,
-    "trans_x": -752,
-    "trans_y": 131
+    "trans_x": -600,
+    "trans_y": 239
    }
   },
   "FLIPSimTemplate": {
@@ -1102,8 +1107,13 @@
        null
       ],
       "VelocityVolume": [
-       null,
-       null,
+       "ef976013-x",
+       "port",
+       null
+      ],
+      "VelocityInit": [
+       "00c583c5-x",
+       "port",
        null
       ],
       "LiquidSDF": [
@@ -2065,7 +2075,7 @@
       ]
      },
      "params": {
-      "name": "DynEmitterVel",
+      "name": "DynEmitterVelVolume",
       "type": "",
       "defl": ""
      },
@@ -2074,12 +2084,32 @@
       -1386.0
      ],
      "options": []
+    },
+    "00c583c5-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "DynEmitterVelInit",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      6311.0,
+      -1376.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": 5376,
-    "trans_y": -1701
+    "scale": 1.25,
+    "trans_x": 5659,
+    "trans_y": -1733
    }
   },
   "FLIPMakeCollider": {
@@ -2740,6 +2770,11 @@
        null,
        null
       ],
+      "VelocityInit": [
+       null,
+       null,
+       null
+      ],
       "LiquidSDF": [
        "d2e54039-MakeVDBGrid",
        "data",
@@ -3172,8 +3207,13 @@
        "port",
        null
       ],
-      "DynEmitterVel": [
+      "DynEmitterVelVolume": [
        "77171256-x",
+       "result",
+       null
+      ],
+      "DynEmitterVelInit": [
+       "4866b45e-x",
        "result",
        null
       ],
@@ -3495,7 +3535,7 @@
       ]
      },
      "params": {
-      "_KEYS": "SDF\nVel\nenable\nobj3"
+      "_KEYS": "SDF\nVelGrid\nenable\nVelInit\nobj4"
      },
      "uipos": [
       896.0,
@@ -3504,9 +3544,10 @@
      "options": [],
      "socket_keys": [
       "SDF",
-      "Vel",
+      "VelGrid",
       "enable",
-      "obj3"
+      "VelInit",
+      "obj4"
      ]
     },
     "6d8f3111-x": {
@@ -3545,7 +3586,7 @@
      "inputs": {
       "true": [
        "f05fc980-ExtractDict",
-       "Vel",
+       "VelGrid",
        null
       ],
       "false": [
@@ -3570,12 +3611,43 @@
       -703.0
      ],
      "options": []
+    },
+    "4866b45e-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "f05fc980-ExtractDict",
+       "VelInit",
+       null
+      ],
+      "false": [
+       "2dde32d4-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "568b00ff-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1460.0,
+      -914.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": 405,
-    "trans_y": -373
+    "scale": 1.25,
+    "trans_x": 865,
+    "trans_y": -573
    }
   },
   "SmoothLiquidSDF": {
@@ -5226,9 +5298,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": 1347,
-    "trans_y": -418
+    "scale": 0.8000000000000002,
+    "trans_x": -312,
+    "trans_y": 14
    }
   },
   "FLIPMakeEmitter": {
@@ -5326,7 +5398,7 @@
      "params": {},
      "uipos": [
       532.8,
-      1023.6000000000006
+      1022.6000000000004
      ],
      "options": []
     },
@@ -5343,7 +5415,7 @@
        "port",
        null
       ],
-      "Vel": [
+      "VelGrid": [
        "41565939-IfElse",
        "result",
        null
@@ -5353,14 +5425,19 @@
        "result",
        null
       ],
-      "obj3": [
+      "VelInit": [
+       "8ce42548-x",
+       "result",
+       null
+      ],
+      "obj4": [
        null,
        null,
        null
       ]
      },
      "params": {
-      "_KEYS": "SDF\nVel\nenable\nobj3"
+      "_KEYS": "SDF\nVelGrid\nenable\nVelInit\nobj4"
      },
      "uipos": [
       913.6000000000001,
@@ -5369,9 +5446,10 @@
      "options": [],
      "socket_keys": [
       "SDF",
-      "Vel",
+      "VelGrid",
       "enable",
-      "obj3"
+      "VelInit",
+      "obj4"
      ]
     },
     "a044787c-SubOutput": {
@@ -5516,12 +5594,83 @@
       1678.0
      ],
      "options": []
+    },
+    "b806e8c9-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "VelInit",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      639.0,
+      493.0
+     ],
+     "options": []
+    },
+    "8ce42548-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "b806e8c9-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "842ceb2e-NumericVec3",
+       "vec3",
+       null
+      ],
+      "cond": [
+       "b806e8c9-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      887.0,
+      531.0
+     ],
+     "options": []
+    },
+    "842ceb2e-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      884.0,
+      301.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": 308,
-    "trans_y": 660
+    "scale": 1.0000000000000002,
+    "trans_x": 182,
+    "trans_y": 507
    }
   },
   "FLIPMakeEnviron": {
@@ -5535,12 +5684,12 @@
        null
       ],
       "Collider": [
-       "1eb6476f-SubInput",
+       "275ba771-x",
        "port",
        null
       ],
       "Emitter": [
-       "61f78493-x",
+       "331ab8f3-x",
        "port",
        null
       ],
@@ -5554,8 +5703,8 @@
       "_KEYS": "Collider\nEmitter\nobj2"
      },
      "uipos": [
-      427.0,
-      467.0
+      618.25,
+      464.5
      ],
      "options": [],
      "socket_keys": [
@@ -5589,46 +5738,6 @@
      ],
      "options": []
     },
-    "1eb6476f-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "Collider",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      164.0,
-      346.0
-     ],
-     "options": []
-    },
-    "61f78493-x": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "Emitter",
-      "type": "",
-      "defl": ""
-     },
-     "uipos": [
-      168.0,
-      601.0
-     ],
-     "options": []
-    },
     "7232445c-SubInput": {
      "name": "SubInput",
      "inputs": {
@@ -5639,39 +5748,13 @@
       ]
      },
      "params": {
-      "name": "isAdvanced",
-      "type": "bool",
-      "defl": "0"
+      "name": "isAdvancedFunc",
+      "type": "",
+      "defl": ""
      },
      "uipos": [
-      152.39999999999998,
-      860.7999999999998
-     ],
-     "options": []
-    },
-    "425827ad-FuncEnd": {
-     "name": "FuncEnd",
-     "inputs": {
-      "rets": [
-       "4aa2300e-x",
-       "dict",
-       null
-      ],
-      "FUNC": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      671.1999999999998,
-      353.60000000000014
+      901.1499999999996,
+      327.4999999999999
      ],
      "options": []
     },
@@ -5684,13 +5767,13 @@
        null
       ],
       "false": [
-       "425827ad-FuncEnd",
+       "e66277f4-FuncEnd",
        "function",
        null
       ],
       "cond": [
        "7232445c-SubInput",
-       "port",
+       "hasValue",
        null
       ],
       "SRC": [
@@ -5705,12 +5788,99 @@
       599.9999999999999
      ],
      "options": []
+    },
+    "275ba771-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Collider",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      282.421875,
+      317.68750000000034
+     ],
+     "options": []
+    },
+    "331ab8f3-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Emitter",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      286.421875,
+      572.6875000000003
+     ],
+     "options": []
+    },
+    "303d764e-FuncBegin": {
+     "name": "FuncBegin",
+     "inputs": {
+      "extraArgs": [
+       "4aa2300e-x",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      652.0,
+      985.0
+     ],
+     "options": []
+    },
+    "e66277f4-FuncEnd": {
+     "name": "FuncEnd",
+     "inputs": {
+      "rets": [
+       "303d764e-FuncBegin",
+       "args",
+       null
+      ],
+      "FUNC": [
+       "303d764e-FuncBegin",
+       "FUNC",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      952.0,
+      985.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 57,
-    "trans_y": 473
+    "scale": 0.8000000000000002,
+    "trans_x": -263,
+    "trans_y": -143
    }
   }
  },
@@ -6993,7 +7163,12 @@
     ],
     [
      "",
-     "DynEmitterVel",
+     "DynEmitterVelVolume",
+     ""
+    ],
+    [
+     "",
+     "DynEmitterVelInit",
      ""
     ],
     [
@@ -9394,6 +9569,11 @@
     [
      "",
      "VelocityVolume",
+     ""
+    ],
+    [
+     "",
+     "VelocityInit",
      ""
     ],
     [
@@ -12985,6 +13165,11 @@
     ],
     [
      "",
+     "VelInit",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -13020,9 +13205,19 @@
      ""
     ],
     [
-     "bool",
-     "isAdvanced",
-     "0"
+     "",
+     "isAdvancedFunc",
+     ""
+    ],
+    [
+     "",
+     "Collider",
+     ""
+    ],
+    [
+     "",
+     "Emitter",
+     ""
     ],
     [
      "",
