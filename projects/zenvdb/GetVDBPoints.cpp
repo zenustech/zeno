@@ -130,7 +130,7 @@ static int defVDBPointsToPrimitive = zeno::defNodeClass<VDBPointsToPrimitive>("V
 
 
 
-struct VDBPointsToDropletPrimitive : zeno::INode {
+struct GetVDBPointsDroplets : zeno::INode {
   virtual void apply() override {
     auto grid = get_input("grid")->as<VDBPointsGrid>()->m_grid;
     auto sdf = get_input("sdf")->as<VDBFloatGrid>()->m_grid;
@@ -189,7 +189,7 @@ struct VDBPointsToDropletPrimitive : zeno::INode {
   }
 };
 
-static int defVDBPointsToDropletPrimitive = zeno::defNodeClass<VDBPointsToDropletPrimitive>("VDBPointsToDropletPrimitive",
+static int defGetVDBPointsDroplets = zeno::defNodeClass<GetVDBPointsDroplets>("GetVDBPointsDroplets",
     { /* inputs: */ {
         "grid","sdf"
     }, /* outputs: */ {

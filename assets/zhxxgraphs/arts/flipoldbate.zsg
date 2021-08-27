@@ -3694,8 +3694,8 @@
      ],
      "options": []
     },
-    "d6f480a9-VDBPointsToDropletPrimitive": {
-     "name": "VDBPointsToDropletPrimitive",
+    "d6f480a9-GetVDBPointsDroplets": {
+     "name": "GetVDBPointsDroplets",
      "inputs": {
       "grid": [
        "44d210b4-SubInput",
@@ -3724,7 +3724,7 @@
      "name": "ParticleToLevelSet",
      "inputs": {
       "Particles": [
-       "d6f480a9-VDBPointsToDropletPrimitive",
+       "d6f480a9-GetVDBPointsDroplets",
        "prim",
        null
       ],
@@ -4096,7 +4096,7 @@
      "name": "PrintMessage",
      "inputs": {
       "SRC": [
-       "d6f480a9-VDBPointsToDropletPrimitive",
+       "d6f480a9-GetVDBPointsDroplets",
        "DST",
        null
       ]
@@ -12350,7 +12350,7 @@
     "openvdb"
    ]
   },
-  "VDBPointsToDropletPrimitive": {
+  "GetVDBPointsDroplets": {
    "inputs": [
     [
      "",
