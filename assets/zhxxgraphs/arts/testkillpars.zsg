@@ -103,7 +103,7 @@
       ]
      },
      "params": {
-      "isCentered": false
+      "isCentered": true
      },
      "uipos": [
       129.92000000000002,
@@ -221,13 +221,15 @@
       688.8000000000002,
       739.2
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": 128,
-    "trans_y": 465
+    "trans_x": 217,
+    "trans_y": 434
    }
   }
  },

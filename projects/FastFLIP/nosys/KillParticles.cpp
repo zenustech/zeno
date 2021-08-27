@@ -83,7 +83,6 @@ static void kill_particles_inside(
 
       for (openvdb::Index offset = 0; offset < leaf.SIZE; offset++) {
         openvdb::Index original_attribute_begin = 0;
-          new_attribute_offsets.push_back(current_particle_count);
         if (offset != 0) {
           original_attribute_begin = leaf.getValue(offset - 1);
         const openvdb::Index original_attribute_end = leaf.getValue(offset);
@@ -101,6 +100,7 @@ static void kill_particles_inside(
               } // end if the particle position if outside solid
             }
           }
+          new_attribute_offsets.push_back(current_particle_count);
         }
           // current_particle_count += original_attribute_end -
           // original_attribute_begin;
