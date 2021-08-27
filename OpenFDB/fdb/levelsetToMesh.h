@@ -103,9 +103,10 @@ inline static uint8_t TETRA_LOOKUP_PERM[16][4] = {
 template <class GridT>
 struct MarchingTetra {
 public:
-MarchingTetra(GridT const &sdf) : m_sdf(&sdf) {}
+MarchingTetra(GridT const &sdf, float isovalue) : m_sdf(&sdf), m_isovalue(isovalue) {}
 private:
 GridT const *m_sdf;
+float m_isovalue;
 
 std::vector<std::pair<vec3i, vec3i>> m_tris;
 
@@ -126,7 +127,7 @@ inline void add_two_triangles_case(vec3i cube_idx, uint8_t i0, uint8_t i1, uint8
 }
 
 inline float sample(size_t cx, size_t cy, size_t cz) {
-    return m_sdf->get(vec3i(cx,cy,cz));
+    return m_sdf->get(vec3i(cx,cy,cz)) - m_isovalue;
 }
 
 void compute_cube(vec3i cube_index) {
@@ -377,7 +378,7 @@ void smooth_mesh(int niters) {
 }
 
 void compute_cubes() {
-    m_sdf->foreach_dilate_cube_zero_positive(Serial{}, [&] (auto idx, auto const &) {
+    m_sdf->foreach(Serial{}, [&] (auto idx, auto const &) {
         compute_cube(idx);
     });
 }
@@ -402,10 +403,13 @@ inline auto &vertices() { return m_vertices; }
 };
 
 template <class GridT>
-auto marching_tetra(GridT &grid,
-        std::vector<vec3f> &vertices,
-        std::vector<vec3I> &triangles) {
-    MarchingTetra mt(grid);
+auto marching_tetra
+    ( GridT &grid
+    , std::vector<vec3f> &vertices
+    , std::vector<vec3I> &triangles
+    , float isovalue = 0
+    ) {
+    MarchingTetra mt(grid, isovalue);
     mt.march();
     vertices = std::move(mt.vertices());
     triangles = std::move(mt.triangles());

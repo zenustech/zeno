@@ -143,7 +143,7 @@ public:
         });
     }
 
-    template <class Pol, class F>
+    /*template <class Pol, class F>  // TODO
     void foreach_dilate_cube_zero_positive(Pol const &pol, F const &func) const {
         foreach_leaf(pol, [&] (auto ijk23, auto *leaf) {
             auto xleaf = get_at(ijk23 + vec3i(1, 0, 0));
@@ -153,8 +153,11 @@ public:
                 auto ijk = ijk1 | ijk23 << Log2Dim1;
                 func(ijk, value);
             });
+            if (!xleaf) {
+                func(ijk, get(ijk));
+            }
         });
-    }
+    }*/
 };
 
 }

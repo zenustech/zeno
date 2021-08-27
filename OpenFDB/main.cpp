@@ -14,13 +14,14 @@ using namespace fdb;
 int main() {
     vdbgrid::VDBGrid<float> sdf;
     ndrange_for(Serial{}, vec3i(0), vec3i(64), [&] (auto idx) {
-        float value = max(-4.0f, length(idx - 32.f) - 10.9f);
+        float value = max(0.f, 10.9f - length(idx - 48.f));
         sdf.set(idx, value);
     });
 
     std::vector<vec3f> vertices;
     std::vector<vec3I> triangles;
-    fdb::levelsetToMesh::marching_tetra(sdf, vertices, triangles);
+    fdb::levelsetToMesh::marching_tetra(sdf, vertices, triangles,
+            /*isovalue=*/1.0f);
 
     FILE *fp = fopen("/tmp/a.obj", "w");
     for (auto f: triangles) { f += 1;
@@ -31,9 +32,9 @@ int main() {
     }
     fclose(fp);
 
-    /*write_dense_vdb("/tmp/a.vdb", [&] (auto idx) {
-        return g_sdf.get(idx);
-    }, vec3i(0), vec3i(64));*/
+    write_dense_vdb("/tmp/a.vdb", [&] (auto idx) {
+        return sdf.get(idx);
+    }, vec3i(0), vec3i(64));
 
     return 0;
 }
