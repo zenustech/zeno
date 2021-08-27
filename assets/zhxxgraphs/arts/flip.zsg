@@ -62,8 +62,8 @@
      "name": "FLIPMakeParticles",
      "inputs": {
       "TankSDF": [
-       "01257425-MeshToSDF",
-       "sdf",
+       null,
+       null,
        null
       ],
       "dx": [
@@ -80,7 +80,7 @@
      "params": {},
      "uipos": [
       -1078.0,
-      811.1500000000001
+      808.6500000000002
      ],
      "options": [
       "ONCE"
@@ -441,7 +441,7 @@
      "params": {},
      "uipos": [
       134.357421875,
-      438.8271484375
+      437.5771484375
      ],
      "options": []
     },
@@ -825,8 +825,8 @@
      },
      "params": {},
      "uipos": [
-      145.0,
-      1265.7500000000002
+      144.0,
+      1265.75
      ],
      "options": [
       "ONCE"
@@ -977,8 +977,8 @@
        null
       ],
       "Emitter": [
-       "d913c76e-FLIPMakeEmitter",
-       "Emitter",
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -990,7 +990,7 @@
      "params": {},
      "uipos": [
       -234.01000000000005,
-      680.0099999999998
+      679.0099999999998
      ],
      "options": []
     },
@@ -1074,13 +1074,15 @@
       411.0,
       1375.0
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -377,
-    "trans_y": 1150
+    "scale": 0.8000000000000002,
+    "trans_x": -771,
+    "trans_y": 227
    }
   },
   "FLIPSimTemplate": {
@@ -2661,8 +2663,8 @@
       "_KEYS": "SDF\nVel\nobj2"
      },
      "uipos": [
-      2822.5,
-      1091.25
+      2823.5,
+      1090.25
      ],
      "options": [],
      "socket_keys": [
@@ -2704,9 +2706,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -159,
-    "trans_y": 13
+    "scale": 1.0000000000000002,
+    "trans_x": 2398,
+    "trans_y": 719
    }
   },
   "FLIPMakeParticles": {
@@ -4750,8 +4752,8 @@
        null
       ],
       "Particles": [
-       "718be7fe-x",
-       "port",
+       "c83f5131-Route",
+       "output",
        null
       ],
       "gravity": [
@@ -4922,13 +4924,13 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "1be95b63-SubstepFLIPWorld",
-       "Particles",
+       "eef7a12d-IfElse",
+       "result",
        null
       ],
       "SRC": [
-       "daa1a5be-EndFor",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -4938,8 +4940,8 @@
       "defl": ""
      },
      "uipos": [
-      2756.1187744140598,
-      424.3850708007808
+      3106.1187744140598,
+      498.3850708007808
      ],
      "options": []
     },
@@ -5280,12 +5282,85 @@
       "Emitter",
       "obj2"
      ]
+    },
+    "c83f5131-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "718be7fe-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1079.0625,
+      357.875
+     ],
+     "options": []
+    },
+    "e6720875-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "1be95b63-SubstepFLIPWorld",
+       "Particles",
+       null
+      ],
+      "SRC": [
+       "daa1a5be-EndFor",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2453.9375,
+      658.75
+     ],
+     "options": []
+    },
+    "eef7a12d-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "e6720875-Route",
+       "output",
+       null
+      ],
+      "false": [
+       "c83f5131-Route",
+       "output",
+       null
+      ],
+      "cond": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2756.0,
+      605.0
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": 1429,
-    "trans_y": -296
+    "trans_x": 2067,
+    "trans_y": -53
    }
   },
   "FLIPMakeEmitter": {
@@ -5700,9 +5775,9 @@
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -249,
-    "trans_y": 1248
+    "scale": 1.0000000000000002,
+    "trans_x": -448,
+    "trans_y": 112
    }
   },
   "FLIPMakeEnviron": {
@@ -5716,13 +5791,13 @@
        null
       ],
       "Collider": [
-       "275ba771-x",
-       "port",
+       "b7559c51-x",
+       "result",
        null
       ],
       "Emitter": [
-       "331ab8f3-x",
-       "port",
+       "b3b92ecc-IfElse",
+       "result",
        null
       ],
       "obj2": [
@@ -5809,12 +5884,200 @@
       572.6875000000005
      ],
      "options": []
+    },
+    "a620d82b-FLIPMakeEmitter": {
+     "name": "FLIPMakeEmitter",
+     "inputs": {
+      "EmitSDF": [
+       null,
+       null,
+       null
+      ],
+      "VelGrid": [
+       null,
+       null,
+       null
+      ],
+      "isEnabled": [
+       null,
+       null,
+       null
+      ],
+      "VelInit": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      298.0,
+      846.0
+     ],
+     "options": []
+    },
+    "b3b92ecc-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "331ab8f3-x",
+       "port",
+       null
+      ],
+      "false": [
+       "a620d82b-FLIPMakeEmitter",
+       "Emitter",
+       null
+      ],
+      "cond": [
+       "331ab8f3-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      594.0,
+      687.0
+     ],
+     "options": []
+    },
+    "b7559c51-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "275ba771-x",
+       "port",
+       null
+      ],
+      "false": [
+       "d8f311d4-x",
+       "dict",
+       null
+      ],
+      "cond": [
+       "275ba771-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      582.0,
+      319.5
+     ],
+     "options": []
+    },
+    "d8f311d4-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "SDF": [
+       "c8b03f60-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "Vel": [
+       "ebc83427-x",
+       "data",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nVel\nobj2"
+     },
+     "uipos": [
+      588.7999999999998,
+      64.80000000000004
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "Vel",
+      "obj2"
+     ]
+    },
+    "c8b03f60-MakeVDBGrid": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "dx": 1.0,
+      "type": "float",
+      "structure": "Centered",
+      "name": "Rename!"
+     },
+     "uipos": [
+      283.19999999999993,
+      -308.0
+     ],
+     "options": []
+    },
+    "ebc83427-x": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "dx": 1.0,
+      "type": "float3",
+      "structure": "Centered",
+      "name": "Rename!"
+     },
+     "uipos": [
+      295.2,
+      -21.6
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0,
-    "trans_x": -53,
-    "trans_y": 3
+    "scale": 1.25,
+    "trans_x": -185,
+    "trans_y": -211
    }
   }
  },
