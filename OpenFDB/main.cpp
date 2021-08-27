@@ -10,8 +10,6 @@
 
 using namespace fdb;
 
-size_t g_nx = 64, g_ny = 64, g_nz = 64;
-
 std::vector<std::pair<vec3i, vec3i>> g_tris;
 
 const uint8_t NUM_VERTS_IN_TETRA = 4;
@@ -129,15 +127,16 @@ void add_two_triangles_case(vec3i cube_idx, uint8_t i0, uint8_t i1, uint8_t i2, 
 vdbgrid::VDBGrid<float> g_sdf;
 
 float sample(size_t cx, size_t cy, size_t cz) {
-    return g_sdf.at(vec3i(cx,cy,cz));
+    return g_sdf.get(vec3i(cx,cy,cz));
 }
 
-void compute_cube(size_t cx, size_t cy, size_t cz) {
+void compute_cube(vec3i cube_index) {
   for (auto i = 0u; i < NUM_TETRA_IN_CUBE; ++i) {
     const auto& tv = TETRA_VERTICES[i];
 
-    vec3i cube_index(cx, cy, cz);
-
+    auto cx = cube_index[0];
+    auto cy = cube_index[1];
+    auto cz = cube_index[2];
     float vals[8] = {
         sample(cx, cy, cz),
         sample(cx+1, cy, cz),
@@ -151,8 +150,10 @@ void compute_cube(size_t cx, size_t cy, size_t cz) {
 
     // Create a lookup index based on the values
     uint8_t tri_lookup = 0;
-    for (auto j = 0u; j < NUM_VERTS_IN_TETRA; ++j)
-      tri_lookup |= (vals[tv[j]] > 0 ? 1 : 0) << j;
+    for (auto j = 0u; j < NUM_VERTS_IN_TETRA; ++j) {
+      if (vals[tv[j]] > 0)
+        tri_lookup |= 1 << j;
+    }
 
     // Call the correct triangle addition case, modifying the lookups as necessary
     const auto& perm = TETRA_LOOKUP_PERM[tri_lookup];
@@ -225,12 +226,7 @@ std::vector<vec3f> g_vertices;
 std::vector<vec3I> g_triangles;
 std::map<std::tuple<int, int, int, int>, int> g_em;
 
-void marching_tetra() {
-  for (size_t cz = 0; cz < g_nz; ++cz)
-    for (size_t cy = 0; cy < g_ny; ++cy)
-      for (size_t cx = 0; cx < g_nx; ++cx)
-        compute_cube(cx, cy, cz);
-
+void march_tetra() {
   for (int i = 0; i < g_tris.size(); i++) {
       for (int j = 0; j < 3; j++) {
           auto cube_idx = g_tris[i].first;
@@ -262,7 +258,7 @@ void weld_close() {
     std::map<std::tuple<int, int, int>, std::vector<int>> rear;
     for (int i = 0; i < g_vertices.size(); i++) {
         auto pos = g_vertices[i];
-        vec3i ipos(pos * 2.f + 0.5f);
+        vec3i ipos(floor(pos * 4.f + 0.5f));
         rear[std::make_tuple(ipos[0], ipos[1], ipos[2])].push_back(i);
     }
     std::map<int, int> lut;
@@ -382,13 +378,17 @@ void smooth_mesh(int niters) {
 }
 
 int main() {
-    ndrange_for(Serial{}, vec3i(0), vec3i(65), [&] (auto idx) {
+    ndrange_for(Serial{}, vec3i(0), vec3i(64), [&] (auto idx) {
         float value = max(-4.0f, length(idx - 32.f) - 10.9f);
         g_sdf.set(idx, value);
     });
 
-    marching_tetra();
+    ndrange_for(Serial{}, vec3i(-2), vec3i(65), [&] (auto idx) {
+        compute_cube(idx);
+    });
+    march_tetra();
     weld_close();
+    flip_edges();
     flip_edges();
     flip_edges();
     flip_edges();
