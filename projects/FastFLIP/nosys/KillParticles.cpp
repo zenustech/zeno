@@ -22,11 +22,17 @@ static void kill_particles_inside(
    		auto m_pv_descriptor =
    m_p_descriptor->duplicateAppend("v", vnamepair);
 
+  using pos_offset_t = std::pair<openvdb::Vec3f, openvdb::Index>;
+  using node_t = openvdb::points::PointDataGrid::TreeType::LeafNodeType;
+
+  auto kill_particles_op = [&](openvdb::points::PointDataTree::LeafNodeType &leaf,
+          openvdb::Index leafpos) {
+
+    auto solid_axr = solid_sdf->getConstAccessor();
+
     std::vector<openvdb::PointDataIndex32> new_attribute_offsets;
     std::vector<openvdb::Vec3f> new_positions;
     std::vector<openvdb::Vec3f> new_velocity;
-
-    auto solid_axr = solid_sdf->getConstAccessor();
 
     // minimum number of particle per voxel
     const int min_np = 8;
@@ -35,12 +41,6 @@ static void kill_particles_inside(
 
     new_positions.reserve(max_np * 512);
     new_velocity.reserve(max_np * 512);
-
-  using pos_offset_t = std::pair<openvdb::Vec3f, openvdb::Index>;
-  using node_t = openvdb::points::PointDataGrid::TreeType::LeafNodeType;
-
-  auto kill_particles_op = [&](openvdb::points::PointDataTree::LeafNodeType &leaf,
-          openvdb::Index leafpos) {
 
       /*// If this leaf is totally outside of the bounding box
       if (!boxes_overlap(leaf.origin(), leaf.origin() + openvdb::Coord{8},
