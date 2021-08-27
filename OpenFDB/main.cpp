@@ -330,12 +330,12 @@ void flip_edges(int niters = 5) {
             {1, 0, 2}, {2, 1, 0}, {0, 2, 1},
         };
         for (auto const &[a, b, c]: enums) {
-            if (edgelut[ind[c]].size() > 5) {
+            if (edgelut[ind[c]].size() > 6) {
                 continue;
             }
             if (auto it = sevenedges.find({ind[a], ind[b]}); it != sevenedges.end()) {
                 if (it->second.first != -1 && it->second.second != -1) {
-                    if (edgelut[it->second.second].size() > 5) {
+                    if (edgelut[it->second.second].size() > 6) {
                         continue;
                     }
                     vec3I tmp_ind(ind[c], ind[a], it->second.second);
@@ -392,7 +392,8 @@ int main() {
     flip_edges();
     flip_edges();
     flip_edges();
-    smooth_mesh(3);
+    flip_edges();
+    smooth_mesh(5);
 
     FILE *fp = fopen("/tmp/a.obj", "w");
     for (auto f: g_triangles) { f += 1;
