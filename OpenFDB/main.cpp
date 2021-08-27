@@ -10,17 +10,6 @@
 
 using namespace fdb;
 
-//template <class GridT>
-namespace MarchingTetra {
-    using GridT = vdbgrid::VDBGrid<float>;
-
-//MarchingTetra(GridT const &sdf)
-    //: m_sdf(&sdf)
-//{}
-GridT const *m_sdf;
-
-std::vector<std::pair<vec3i, vec3i>> m_tris;
-
 inline static const uint8_t NUM_VERTS_IN_TETRA = 4;
 inline static const uint8_t NUM_EDGES_IN_TETRA = 6;
 inline static const uint8_t NUM_VERTS_IN_CUBE = 8;
@@ -112,6 +101,16 @@ inline static uint8_t TETRA_LOOKUP_PERM[16][4] = {
     {0, 3, 2, 1}, // 0b1110 ; one flipped triangle, 0
     {0, 1, 2, 3}, // 0b1111 ; no triangles
 };
+
+template <class GridT>
+struct MarchingTetra {
+
+MarchingTetra(GridT const &sdf)
+    : m_sdf(&sdf)
+{}
+GridT const *m_sdf;
+
+std::vector<std::pair<vec3i, vec3i>> m_tris;
 
 size_t global_edge_index(uint8_t lv0, uint8_t lv1) {
   return TETRA_VERTEX_TO_EDGE_MAP[lv0][lv1];
@@ -384,6 +383,8 @@ void smooth_mesh(int niters) {
     }
 }
 
+auto const &triangles() const { return m_triangles; }
+auto const &vertices() const { return m_vertices; }
 auto &triangles() { return m_triangles; }
 auto &vertices() { return m_vertices; }
 
@@ -396,11 +397,11 @@ int main() {
         sdf.set(idx, value);
     });
 
-    MarchingTetra::m_sdf = &sdf;
+    MarchingTetra mt(sdf);
     ndrange_for(Serial{}, vec3i(0), vec3i(64), [&] (auto idx) {
-            MarchingTetra::compute_cube(idx);
+        mt.compute_cube(idx);
     });
-    MarchingTetra::march_tetra();
+    mt.march_tetra();
     //mt.weld_close();
     //mt.flip_edges();
     //mt.flip_edges();
@@ -409,10 +410,10 @@ int main() {
     //mt.smooth_mesh(4);
 
     FILE *fp = fopen("/tmp/a.obj", "w");
-    for (auto f: MarchingTetra::triangles()) { f += 1;
+    for (auto f: mt.triangles()) { f += 1;
         fprintf(fp, "f %d %d %d\n", f[0], f[1], f[2]);
     }
-    for (auto v: MarchingTetra::vertices()) {
+    for (auto v: mt.vertices()) {
         fprintf(fp, "v %f %f %f\n", v[0], v[1], v[2]);
     }
     fclose(fp);
