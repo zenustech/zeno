@@ -813,8 +813,8 @@
        null
       ],
       "VelInit": [
-       null,
-       null,
+       "970b7603-NumericVec3",
+       "vec3",
        null
       ],
       "SRC": [
@@ -826,9 +826,11 @@
      "params": {},
      "uipos": [
       145.0,
-      1282.0
+      1265.7500000000002
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "b01c5f7d-ReadObjMesh": {
      "name": "ReadObjMesh",
@@ -987,8 +989,8 @@
      },
      "params": {},
      "uipos": [
-      -153.76,
-      610.76
+      -238.01000000000005,
+      684.0099999999999
      ],
      "options": []
     },
@@ -1053,12 +1055,32 @@
       2033.062499999999
      ],
      "options": []
+    },
+    "970b7603-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 4.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      458.0,
+      1372.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -784,
-    "trans_y": 1185
+    "scale": 1.25,
+    "trans_x": -424,
+    "trans_y": 879
    }
   },
   "FLIPSimTemplate": {
