@@ -19,16 +19,7 @@ int main() {
     });
 
     fdb::levelsetToMesh::MarchingTetra mt(sdf);
-    ndrange_for(Serial{}, vec3i(0), vec3i(64), [&] (auto idx) {
-        mt.compute_cube(idx);
-    });
-    mt.march_tetra();
-    mt.weld_close();
-    mt.flip_edges();
-    mt.flip_edges();
-    mt.flip_edges();
-    mt.flip_edges();
-    mt.smooth_mesh(4);
+    mt.march();
 
     FILE *fp = fopen("/tmp/a.obj", "w");
     for (auto f: mt.triangles()) { f += 1;

@@ -103,9 +103,9 @@ inline static uint8_t TETRA_LOOKUP_PERM[16][4] = {
 template <class GridT>
 struct MarchingTetra {
 public:
-MarchingTetra(GridT const &sdf)
-    : m_sdf(&sdf)
-{}
+MarchingTetra(GridT const &sdf) : m_sdf(&sdf) {
+    march();
+}
 private:
 GridT const *m_sdf;
 
@@ -378,8 +378,14 @@ void smooth_mesh(int niters) {
     }
 }
 
-public:
-int march() {
+void compute_cubes() {
+    m_sdf.foreach(Serial{}, [&] (auto idx) {
+        compute_cube(idx);
+    });
+}
+
+void march() {
+    compute_cubes();
     march_tetra();
     weld_close();
     flip_edges();
@@ -389,6 +395,7 @@ int march() {
     smooth_mesh(4);
 }
 
+public:
 inline auto const &triangles() const { return m_triangles; }
 inline auto const &vertices() const { return m_vertices; }
 inline auto &triangles() { return m_triangles; }
