@@ -2855,9 +2855,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": 2398,
-    "trans_y": 719
+    "scale": 0.40960000000000013,
+    "trans_x": -129,
+    "trans_y": -41
    }
   },
   "FLIPMakeParticles": {
@@ -3075,9 +3075,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000007,
-    "trans_x": 572,
-    "trans_y": -66
+    "scale": 0.8000000000000002,
+    "trans_x": -280,
+    "trans_y": -171
    }
   },
   "MakeFLIPWorld": {
@@ -3949,9 +3949,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": 2140,
-    "trans_y": -1194
+    "scale": 0.6400000000000005,
+    "trans_x": 1412,
+    "trans_y": -920
    }
   },
   "SmoothLiquidSDF": {
@@ -6124,10 +6124,28 @@
       378.0
      ],
      "options": []
+    },
+    "5fcfe7d9-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP"
+     },
+     "uipos": [
+      -254.90722656250006,
+      1000.6042480468745
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.8000000000000002,
+    "scale": 0.6400000000000005,
     "trans_x": -414,
     "trans_y": 193
    }
@@ -6507,12 +6525,30 @@
       1384.0
      ],
      "options": []
+    },
+    "45c9558b-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP"
+     },
+     "uipos": [
+      922.4000000000001,
+      811.2
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": 586,
-    "trans_y": 453
+    "trans_x": 538,
+    "trans_y": 675
    }
   },
   "FLIPMakeAbsorber": {
@@ -6702,12 +6738,30 @@
       350.40000000000003
      ],
      "options": []
+    },
+    "76c43703-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP"
+     },
+     "uipos": [
+      990.2343749999998,
+      171.87500000000006
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 652,
-    "trans_y": -63
+    "scale": 0.6400000000000001,
+    "trans_x": -62,
+    "trans_y": -140
    }
   }
  },
@@ -7834,6 +7888,42 @@
     "FLIPSolver"
    ]
   },
+  "FLIPMakeAbsorber": {
+   "inputs": [
+    [
+     "",
+     "AbsorbSDF",
+     ""
+    ],
+    [
+     "",
+     "isEnabled",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Absorber",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ],
+   "is_subgraph": true
+  },
   "FLIPMakeCollider": {
    "inputs": [
     [
@@ -7861,6 +7951,93 @@
     [
      "",
      "Collider",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ],
+   "is_subgraph": true
+  },
+  "FLIPMakeEmitter": {
+   "inputs": [
+    [
+     "",
+     "EmitSDF",
+     ""
+    ],
+    [
+     "",
+     "VelGrid",
+     ""
+    ],
+    [
+     "",
+     "isEnabled",
+     ""
+    ],
+    [
+     "",
+     "VelInit",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Emitter",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ],
+   "is_subgraph": true
+  },
+  "FLIPMakeEnviron": {
+   "inputs": [
+    [
+     "",
+     "Collider",
+     ""
+    ],
+    [
+     "",
+     "Emitter",
+     ""
+    ],
+    [
+     "",
+     "Absorber",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Environ",
      ""
     ],
     [
@@ -14027,129 +14204,6 @@
    "categories": [
     "openvdb"
    ]
-  },
-  "FLIPMakeEmitter": {
-   "inputs": [
-    [
-     "",
-     "EmitSDF",
-     ""
-    ],
-    [
-     "",
-     "VelGrid",
-     ""
-    ],
-    [
-     "",
-     "isEnabled",
-     ""
-    ],
-    [
-     "",
-     "VelInit",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Emitter",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
-  },
-  "FLIPMakeEnviron": {
-   "inputs": [
-    [
-     "",
-     "Collider",
-     ""
-    ],
-    [
-     "",
-     "Emitter",
-     ""
-    ],
-    [
-     "",
-     "Absorber",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Environ",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
-  },
-  "FLIPMakeAbsorber": {
-   "inputs": [
-    [
-     "",
-     "AbsorbSDF",
-     ""
-    ],
-    [
-     "",
-     "isEnabled",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Absorber",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],
