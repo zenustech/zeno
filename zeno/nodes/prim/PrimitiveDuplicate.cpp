@@ -22,7 +22,7 @@ struct PrimitiveDuplicate : zeno::INode {
 
         for(int i = 0; i < parspos.size(); i++) {
             for (int j = 0; j < meshpos.size(); j++) {
-                outmpos[i * parspos.size() + j] = parspos[j] + uniScale * meshpos[j];
+                outmpos[i * parspos.size() + j] = parspos[i] + uniScale * meshpos[j];
             }
         }
         set_output("outPrim", std::move(outm));
@@ -36,6 +36,7 @@ ZENDEFNODE(PrimitiveDuplicate, {
         "particlesPrim",
         "uniScale",
         }, {
+        "outPrim",
         }, {
         }, {
         "primitive",
