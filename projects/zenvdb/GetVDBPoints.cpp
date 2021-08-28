@@ -147,6 +147,7 @@ struct GetVDBPointsDroplets : zeno::INode {
   virtual void apply() override {
     auto grid = get_input("grid")->as<VDBPointsGrid>()->m_grid;
     auto sdf = get_input("sdf")->as<VDBFloatGrid>()->m_grid;
+    auto dx = sdf->voxelSize()[0];
     std::vector<openvdb::points::PointDataTree::LeafNodeType*> leafs;
     grid->tree().getNodes(leafs);
     printf("GetVDBPoints: particle leaf nodes: %d\n", leafs.size());
@@ -187,7 +188,7 @@ struct GetVDBPointsDroplets : zeno::INode {
         //retvel.emplace_back(v[0], v[1], v[2]);
         auto p2 = sdf->worldToIndex(p);
         auto val = openvdb::tools::BoxSampler::sample(sdf->tree(), p2);
-        if(val>0)
+        if(val>dx)
           data.emplace_back(std::make_tuple(zeno::vec3f(p[0],p[1],p[2]), zeno::vec3f(v[0],v[1],v[2])));
       }
     });

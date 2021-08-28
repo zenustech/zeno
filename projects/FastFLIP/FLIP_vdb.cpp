@@ -2865,7 +2865,7 @@ void FLIP_vdb::emit_liquid(
       auto in_sdf_axr{in_sdf->getConstAccessor()};
       auto in_vel_axr{in_vel->getConstAccessor()};
 
-      float sdf_threshold = -dx * 0.55;
+      float sdf_threshold = -dx * 0.1;
 
       // std::random_device device;
       // std::mt19937 generator(/*seed=*/device());
@@ -3005,7 +3005,7 @@ void FLIP_vdb::emit_liquid(
       }   // end for range leaf
     } else {
       auto in_sdf_axr{in_sdf->getConstAccessor()};
-      float sdf_threshold = -dx * 0.55;
+      float sdf_threshold = -dx * 0.1;
 
       // std::random_device device;
       // std::mt19937 generator(/*seed=*/device());
