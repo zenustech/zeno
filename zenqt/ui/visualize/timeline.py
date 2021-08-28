@@ -212,4 +212,3 @@ class TimelineWidget(QWidget):
         self.stop_play()
         self.slider.setValue(frameid)
         zenvis.status['frameid'] = frameid
-        zenvis.core.set_curr_frameid(frameid)
