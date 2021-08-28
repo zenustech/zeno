@@ -93,17 +93,15 @@ struct PrimitiveInterpSubframe : zeno::INode {
             curr_pos = prim->attr<vec3f>("pos");
         }
 
-        auto new_prim = std::make_shared<PrimitiveObject>(
-                static_cast<PrimitiveObject const &>(*prim));
-        auto const &pos = new_prim->attr<vec3f>("pos");
+        auto &pos = prim->attr<vec3f>("pos");
 
 #pragma omp parallel for
         for (int i = 0; i < std::min(pos.size(),
                     std::min(curr_pos.size(), base_pos.size())); i++) {
-            pos[i] = mix(base_pos[i], last_pos[i], portion);
+            pos[i] = mix(base_pos[i], curr_pos[i], portion);
         }
 
-        set_output("prim", std::move(new_prim));
+        set_output("prim", std::move(prim));
     }
 };
 
