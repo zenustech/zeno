@@ -1188,8 +1188,8 @@
    },
    "view": {
     "scale": 0.8000000000000007,
-    "trans_x": -1105,
-    "trans_y": 533
+    "trans_x": -928,
+    "trans_y": 338
    }
   },
   "FLIPSimTemplate": {
@@ -4037,9 +4037,9 @@
     }
    },
    "view": {
-    "scale": 0.6400000000000005,
-    "trans_x": 1412,
-    "trans_y": -920
+    "scale": 1.0,
+    "trans_x": 323,
+    "trans_y": -479
    }
   },
   "SmoothLiquidSDF": {
@@ -5795,12 +5795,44 @@
       55.828125
      ],
      "options": []
+    },
+    "9dda4863-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "dt": [
+       "10847622-SubstepDt",
+       "actual_dt",
+       null
+      ],
+      "portion": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "dt\nportion"
+     },
+     "uipos": [
+      1843.2,
+      -336.0
+     ],
+     "options": [],
+     "socket_keys": [
+      "dt",
+      "portion"
+     ]
     }
    },
    "view": {
-    "scale": 0.8,
-    "trans_x": 1307,
-    "trans_y": -413
+    "scale": 1.25,
+    "trans_x": 1833,
+    "trans_y": -631
    }
   },
   "FLIPMakeEmitter": {
@@ -11321,6 +11353,41 @@
     "primitive"
    ]
   },
+  "PrimitiveCalcVelocity": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "NumericObject:float",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveClearConnect": {
    "inputs": [
     [
@@ -11707,6 +11774,41 @@
      "copyA"
     ]
    ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveInterpSubframe": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "NumericObject:float",
+     "portion",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
    "categories": [
     "primitive"
    ]
@@ -12331,7 +12433,7 @@
   "PrimitiveTraceTrail": {
    "inputs": [
     [
-     "primitive",
+     "PrimitiveObject",
      "parsPrim",
      ""
     ],
@@ -12343,7 +12445,7 @@
    ],
    "outputs": [
     [
-     "primitive",
+     "PrimitiveObject",
      "trailPrim",
      ""
     ],
@@ -14095,6 +14197,46 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "VDBWrangle": {
+   "inputs": [
+    [
+     "VDBGrid",
+     "grid",
+     ""
+    ],
+    [
+     "StringObject",
+     "zfxCode",
+     ""
+    ],
+    [
+     "DictObject:NumericObject",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "VDBGrid",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "zenofx"
    ]
   },
   "Vec3FieldExtrapolate": {
