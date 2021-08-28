@@ -20,11 +20,45 @@ struct PrimitiveDuplicate : zeno::INode {
         auto const &meshpos = mesh->attr<vec3f>("pos");
         auto &outmpos = outm->add_attr<vec3f>("pos");
 
+#pragma omp parallel for
         for(int i = 0; i < parspos.size(); i++) {
             for (int j = 0; j < meshpos.size(); j++) {
-                outmpos[i * parspos.size() + j] = parspos[i] + uniScale * meshpos[j];
+                outmpos[i * meshpos.size() + j] = parspos[i] + uniScale * meshpos[j];
             }
         }
+
+        outm->points.resize(pars->size() * mesh->points.size());
+        for(int i = 0; i < pars->size(); i++) {
+            for (int j = 0; j < mesh->points.size(); j++) {
+                outm->points[i * mesh->points.size() + j]
+                    = mesh->points[j] + i * meshpos.size();
+            }
+        }
+
+        outm->lines.resize(pars->size() * mesh->lines.size());
+        for(int i = 0; i < pars->size(); i++) {
+            for (int j = 0; j < mesh->lines.size(); j++) {
+                outm->lines[i * mesh->lines.size() + j]
+                    = mesh->lines[j] + i * meshpos.size();
+            }
+        }
+
+        outm->tris.resize(pars->size() * mesh->tris.size());
+        for(int i = 0; i < pars->size(); i++) {
+            for (int j = 0; j < mesh->tris.size(); j++) {
+                outm->tris[i * mesh->tris.size() + j]
+                    = mesh->tris[j] + i * meshpos.size();
+            }
+        }
+
+        outm->quads.resize(pars->size() * mesh->tris.size());
+        for(int i = 0; i < pars->size(); i++) {
+            for (int j = 0; j < mesh->quads.size(); j++) {
+                outm->quads[i * mesh->quads.size() + j]
+                    = mesh->quads[j] + i * meshpos.size();
+            }
+        }
+
         set_output("outPrim", std::move(outm));
     }
 };

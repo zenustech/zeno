@@ -6,7 +6,7 @@
      "name": "PrimitiveDuplicate",
      "inputs": {
       "meshPrim": [
-       "41b4b26a-ImportObjPrimitive",
+       "485d205e-PrimitiveCalcNormal",
        "prim",
        null
       ],
@@ -51,8 +51,8 @@
      },
      "params": {},
      "uipos": [
-      -400.0,
-      -389.0
+      -591.0,
+      -486.0
      ],
      "options": []
     },
@@ -127,8 +127,8 @@
       "path": "assets/monkey.obj"
      },
      "uipos": [
-      -677.0,
-      -429.0
+      -868.0,
+      -526.0
      ],
      "options": []
     },
@@ -167,12 +167,33 @@
       23.0
      ],
      "options": []
+    },
+    "485d205e-PrimitiveCalcNormal": {
+     "name": "PrimitiveCalcNormal",
+     "inputs": {
+      "prim": [
+       "41b4b26a-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -288.0,
+      -363.0
+     ],
+     "options": []
     }
    },
    "view": {
     "scale": 1.0000000000000002,
-    "trans_x": -893,
-    "trans_y": -484
+    "trans_x": -748,
+    "trans_y": -524
    }
   }
  },
