@@ -21,7 +21,7 @@ static int defWriteVDBGrid = zeno::defNodeClass<WriteVDBGrid>("WriteVDBGrid",
     "data",
     }, /* outputs: */ {
     }, /* params: */ {
-    {"string", "path", ""},
+    {"writepath", "path", ""},
     }, /* category: */ {
     "openvdb",
     }});

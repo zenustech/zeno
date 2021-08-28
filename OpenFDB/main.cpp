@@ -39,10 +39,10 @@ int main() {
 
     converter::to_vdb_grid(sdf, *vdb);
 
-    writeVdbGrid("/tmp/a.vdb", nvdb);
+    writeVdbGrid<openvdb::FloatGrid>("/tmp/a.vdb", vdb);
 
 #if 0
-    vdbgrid::PPGrid<float> sdf;
+    ppgrid::PPGrid<float> sdf;
     ndrange_for(Serial{}, vec3i(0), vec3i(64), [&] (auto idx) {
         float value = max(0.f, 10.9f - length(idx - 48.f));
         sdf.set(idx, value);
