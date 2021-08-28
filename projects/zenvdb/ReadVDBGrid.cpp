@@ -9,8 +9,14 @@
 
 namespace zeno {
 
+// defined in CacheVDBGrid.cpp:
+extern std::shared_ptr<VDBGrid> readGenericVDBGrid(const std::string &fn);
+
 static std::shared_ptr<VDBGrid> readvdb(std::string path, std::string type)
 {
+    if (type == "") {
+      return readGenericVDBGrid(path);
+    }
     std::shared_ptr<VDBGrid> data;
     if (type == "float") {
       data = zeno::IObject::make<VDBFloatGrid>();
@@ -46,7 +52,7 @@ static int defReadVDBGrid = zeno::defNodeClass<ReadVDBGrid>(
                     },
                     /* params: */
                     {
-                        {"string", "type", "float"},
+                        {"string", "type", ""},
                         {"string", "path", ""},
                     },
                     /* category: */
@@ -69,7 +75,7 @@ static int defImportVDBGrid = zeno::defNodeClass<ImportVDBGrid>("ImportVDBGrid",
     }, /* outputs: */ {
     "data",
     }, /* params: */ {
-    {"string", "type", "float"},
+    {"string", "type", ""},
     }, /* category: */ {
     "openvdb",
     }});

@@ -95,19 +95,32 @@ class QDMFindBar(QWidget):
 
     def do_search(self, text):
         scene = self.window.view.scene()
-        return [n for n in scene.nodes if text.lower() in n.name.lower()]
+        text = text.lower()
+        result = []
+        for n in scene.nodes:
+            if n.name in ('PortalIn', 'PortalOut', 'SubInput', 'SubOutput'):
+                name = n.params['name'].getValue().lower()
+                if text in name:
+                    result.append(n)
+                    continue
+
+            name = n.name.lower()
+            if text in name:
+                result.append(n)
+
+        return result
 
     def textChanged(self, text):
         if text == '':
             self.resultLabel.setText('')
             return
         ns = self.do_search(text)
+        self.current_index = 0
+        self.total_count = len(ns)
+
         if len(ns) == 0:
             self.resultLabel.setText('')
             return
-
-        self.current_index = 0
-        self.total_count = len(ns)
         self.on_jump()
 
     def on_jump(self):
@@ -135,6 +148,10 @@ class QDMFindBar(QWidget):
             return
         self.current_index = (self.current_index + 1) % self.total_count
         self.on_jump()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.lineEdit.setFocus()
 
     def close(self):
         self.current_index = 0

@@ -57,7 +57,7 @@ struct VDBGrid : zeno::IObject {
   virtual openvdb::CoordBBox evalActiveVoxelBoundingBox() = 0;
   virtual openvdb::Vec3d indexToWorld(openvdb::Coord &c) = 0;
   virtual openvdb::Vec3d worldToIndex(openvdb::Vec3d &c) = 0;
-  virtual std::string getType() { return std::string(); }
+  virtual std::string getType() const { return {}; }
   virtual void dilateTopo(int l) =0;
 };
 
@@ -109,7 +109,7 @@ struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
       openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
   }
 
-  virtual std::string getType() {
+  virtual std::string getType() const override {
     if (std::is_same<GridT, openvdb::FloatGrid>::value) {
       return std::string("FloatGrid");
     } else if (std::is_same<GridT, openvdb::Int32Grid>::value) {

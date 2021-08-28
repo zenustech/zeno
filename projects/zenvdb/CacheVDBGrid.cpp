@@ -3,19 +3,17 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/filesystem.h>
-#include <zeno/utils/fileio.h>
 
 namespace zeno {
 
-
-template <class GridTypes = std::tuple
+std::shared_ptr<VDBGrid> readGenericVDBGrid(const std::string &fn) {
+  using GridTypes = std::tuple
     < openvdb::points::PointDataGrid
     , openvdb::FloatGrid
     , openvdb::Vec3fGrid
     , openvdb::Int32Grid
     , openvdb::Vec3IGrid
-    >>
-std::shared_ptr<VDBGrid> readGenericGrid(const std::string &fn) {
+    >;
   openvdb::io::File file(fn);
   file.open();
   openvdb::GridPtrVecPtr my_grids = file.getGrids();
@@ -35,11 +33,13 @@ std::shared_ptr<VDBGrid> readGenericGrid(const std::string &fn) {
         return false;
       })) return grid;
   }
-  throw zeno::Exception("failed to readGenericGrid: " + fn);
+  throw zeno::Exception("failed to readGenericVDBGrid: " + fn);
 }
 
 
 struct CacheVDBGrid : zeno::INode {
+    int m_framecounter = 0;
+
     virtual void doApply() override {
         if (has_option("MUTE")) {
             requireInput("inGrid");
@@ -52,11 +52,14 @@ struct CacheVDBGrid : zeno::INode {
         if (!fs::is_directory(dir)) {
             fs::create_directory(dir);
         }
-        requireInput("frameNum");
-        auto fno = get_input<zeno::NumericObject>("frameNum")->get<int>();
+        int fno = m_framecounter++;
+        if (has_input("frameNum")) {
+            requireInput("frameNum");
+            fno = get_input<zeno::NumericObject>("frameNum")->get<int>();
+        }
         char buf[512];
         sprintf(buf, "%s%06d.vdb", prefix.c_str(), fno);
-        auto path = fs::path(dir) / buf;
+        auto path = (fs::path(dir) / buf).generic_string();
         if (ignore || !fs::exists(path)) {
             requireInput("inGrid");
             auto grid = get_input<VDBGrid>("inGrid");
@@ -65,7 +68,7 @@ struct CacheVDBGrid : zeno::INode {
             set_output("outGrid", std::move(grid));
         } else {
             printf("using cache from [%s]\n", path.c_str());
-            auto grid = readGenericGrid(path);
+            auto grid = readGenericVDBGrid(path);
             set_output("outGrid", std::move(grid));
         }
     }

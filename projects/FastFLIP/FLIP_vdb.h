@@ -19,10 +19,6 @@ static inline struct MakeZhxxHappyRandomTable {
     float operator[](unsigned int i) { return frand(i); }
 } randomTable;
 
-struct OpenvdbInitializer {
-  OpenvdbInitializer() { openvdb::initialize(); }
-};
-static OpenvdbInitializer g_openvdb_initializer{};
 struct FLIP_vdb {
   using vec_tree_t = openvdb::Vec3fGrid::TreeType;
   using scalar_tree_t = openvdb::FloatGrid::TreeType;
