@@ -126,11 +126,10 @@ ZENDEFNODE(SubOutput, {
 });
 
 
-struct SetSubOutput : zeno::INode {
+struct SubResult : zeno::INode {
     virtual void complete() override {
         auto name = get_param<std::string>("name");
         graph->subOutputNodes[name] = myname;
-        graph->finalOutputNodes.insert(myname);
     }
 
     virtual void apply() override {
@@ -142,7 +141,7 @@ struct SetSubOutput : zeno::INode {
     }
 };
 
-ZENDEFNODE(SetSubOutput, {
+ZENDEFNODE(SubResult, {
     {"port"},
     {},
     {{"string", "name", "output1"},
