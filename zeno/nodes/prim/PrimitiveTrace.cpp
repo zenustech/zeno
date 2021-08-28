@@ -40,9 +40,41 @@ struct PrimitiveTraceTrail : zeno::INode {
 
 ZENDEFNODE(PrimitiveTraceTrail,
     { /* inputs: */ {
-    {"primitive", "parsPrim"},
+    {"PrimitiveObject", "parsPrim"},
     }, /* outputs: */ {
-    {"primitive", "trailPrim"},
+    {"PrimitiveObject", "trailPrim"},
+    }, /* params: */ {
+    }, /* category: */ {
+    "primitive",
+    }});
+
+
+struct PrimitiveCalcVelocity : zeno::INode {
+    std::shared_ptr<PrimitiveObject> trailPrim = std::make_shared<PrimitiveObject>();
+    std::vector<vec3f> last_pos;
+
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto dt = get_input<NumericObject>("dt")->get<float>();
+        last_pos = prim->attr<vec3f>("pos");
+        auto const &pos = prim->attr<vec3f>("pos");
+        auto &vel = prim->attr<vec3f>("vel");
+
+#pragma omp parallel for
+        for (int i = 0; i < std::min(last_pos.size(), now_pos.size()); i++) {
+            vel[i] = (pos[i] - last_pos[i]) / dt;
+        }
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(PrimitiveCalcVelocity,
+    { /* inputs: */ {
+    {"PrimitiveObject", "prim"},
+    {"NumericObject:float", "dt"},
+    }, /* outputs: */ {
+    {"PrimitiveObject", "prim"},
     }, /* params: */ {
     }, /* category: */ {
     "primitive",
