@@ -61,7 +61,7 @@ struct PrimitiveCalcVelocity : zeno::INode {
         auto &vel = prim->attr<vec3f>("vel");
 
 #pragma omp parallel for
-        for (int i = 0; i < std::min(last_pos.size(), now_pos.size()); i++) {
+        for (int i = 0; i < std::min(last_pos.size(), pos.size()); i++) {
             vel[i] = (pos[i] - last_pos[i]) / dt;
         }
 
