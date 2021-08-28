@@ -350,7 +350,9 @@
       2599.4609375000005,
       232.33593749999983
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "c5f709de-SmoothLiquidSDF": {
      "name": "SmoothLiquidSDF",
@@ -412,8 +414,8 @@
        null
       ],
       "Environ": [
-       "058e1293-FLIPMakeEnviron",
-       "Environ",
+       "26fe80e4-FuncEnd",
+       "function",
        null
       ],
       "gravity": [
@@ -444,7 +446,7 @@
      },
      "params": {},
      "uipos": [
-      134.357421875,
+      133.357421875,
       437.5771484375
      ],
      "options": []
@@ -534,9 +536,7 @@
       2760.7873535156236,
       748.4069824218747
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "a32f490d-NumericFloat": {
      "name": "NumericFloat",
@@ -974,8 +974,8 @@
      "name": "FLIPMakeEnviron",
      "inputs": {
       "Collider": [
-       null,
-       null,
+       "5fb9adea-FLIPMakeCollider",
+       "Collider",
        null
       ],
       "Emitter": [
@@ -984,8 +984,8 @@
        null
       ],
       "Absorber": [
-       "35125689-FLIPMakeAbsorber",
-       "Absorber",
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -996,8 +996,8 @@
      },
      "params": {},
      "uipos": [
-      -234.01000000000005,
-      678.0099999999998
+      -441.01,
+      674.0099999999998
      ],
      "options": []
     },
@@ -1085,31 +1085,6 @@
       "ONCE"
      ]
     },
-    "45a1275a-PrintNumeric": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "9207629a-x",
-       "ret",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "hint": "PrintNumeric"
-     },
-     "uipos": [
-      62.0,
-      1959.0
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
     "67296f2f-x": {
      "name": "NumericOperator",
      "inputs": {
@@ -1183,12 +1158,38 @@
      "options": [
       "ONCE"
      ]
+    },
+    "26fe80e4-FuncEnd": {
+     "name": "FuncEnd",
+     "inputs": {
+      "rets": [
+       "058e1293-FLIPMakeEnviron",
+       "Environ",
+       null
+      ],
+      "FUNC": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -136.0,
+      685.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.5120000000000002,
-    "trans_x": -652,
-    "trans_y": 88
+    "scale": 1.0000000000000007,
+    "trans_x": -758,
+    "trans_y": 411
    }
   },
   "FLIPSimTemplate": {
@@ -3964,8 +3965,8 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "745750ec-x",
+       "DST",
        null
       ]
      },
@@ -3975,8 +3976,8 @@
       "dilateIters": 0
      },
      "uipos": [
-      -823.6749999999996,
-      327.4218750000002
+      -735.6749999999997,
+      329.4218750000002
      ],
      "options": []
     },
@@ -4058,8 +4059,8 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "9252b563-x",
+       "DST",
        null
       ]
      },
@@ -4101,14 +4102,14 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "8651c115-PrintMessage",
+       "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      -1597.3749999999989,
+      -1598.374999999999,
       280.9843750000002
      ],
      "options": []
@@ -4132,15 +4133,15 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "f3522abd-x",
+       "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      -1106.0835937499996,
-      376.9179687500001
+      -1245.1460937499996,
+      351.91796875000006
      ],
      "options": []
     },
@@ -4415,8 +4416,8 @@
       "name": "Dx"
      },
      "uipos": [
-      -1444.9218749999989,
-      589.8437499999992
+      -1555.8593749999989,
+      522.6562499999992
      ],
      "options": []
     },
@@ -4478,15 +4479,15 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "b2dd9970-x",
+       "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      1632.6904296874989,
-      651.8945312499995
+      1575.9404296874993,
+      581.8945312499997
      ],
      "options": []
     },
@@ -4571,8 +4572,8 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "f64b2af0-x",
+       "DST",
        null
       ]
      },
@@ -4895,12 +4896,120 @@
       -196.0
      ],
      "options": []
+    },
+    "8651c115-PrintMessage": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "44d210b4-SubInput",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "vdbpoints2prim"
+     },
+     "uipos": [
+      -1730.0,
+      40.0
+     ],
+     "options": []
+    },
+    "f3522abd-x": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "30d7a84d-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "pa2ls"
+     },
+     "uipos": [
+      -1307.0,
+      87.0
+     ],
+     "options": []
+    },
+    "745750ec-x": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "6af52a44-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "resmooth"
+     },
+     "uipos": [
+      -973.0,
+      133.0
+     ],
+     "options": []
+    },
+    "b2dd9970-x": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "c60435c4-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "getdroplet"
+     },
+     "uipos": [
+      1164.9999999999993,
+      745.3906249999997
+     ],
+     "options": []
+    },
+    "f64b2af0-x": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "c435d271-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "combine"
+     },
+     "uipos": [
+      2436.0,
+      948.0
+     ],
+     "options": []
+    },
+    "9252b563-x": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "550d7497-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "done"
+     },
+     "uipos": [
+      3235.0,
+      669.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -3676,
-    "trans_y": -139
+    "scale": 0.5120000000000001,
+    "trans_x": 1826,
+    "trans_y": 365
    }
   },
   "StepFLIPWorld": {
