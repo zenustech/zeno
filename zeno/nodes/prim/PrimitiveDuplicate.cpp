@@ -20,14 +20,29 @@ struct PrimitiveDuplicate : zeno::INode {
         auto const &meshpos = mesh->attr<vec3f>("pos");
         auto &outmpos = outm->add_attr<vec3f>("pos");
 
-#pragma omp parallel for
+        #pragma omp parallel for
         for(int i = 0; i < parspos.size(); i++) {
             for (int j = 0; j < meshpos.size(); j++) {
                 outmpos[i * meshpos.size() + j] = parspos[i] + uniScale * meshpos[j];
             }
         }
 
+        for (auto const &[key, attr]: mesh->m_attrs) {
+            if (key == "pos") continue;
+            std::visit([&] (auto const &attr) {
+                using T = std::decay_t<decltype(attr[0])>;
+                auto &outattr = outm->add_attr<T>(key);
+                #pragma omp parallel for
+                for(int i = 0; i < pars->size(); i++) {
+                    for (int j = 0; j < attr.size(); j++) {
+                        outattr[i * attr.size() + j] = attr[j];
+                    }
+                }
+            }, attr);
+        }
+
         outm->points.resize(pars->size() * mesh->points.size());
+        #pragma omp parallel for
         for(int i = 0; i < pars->size(); i++) {
             for (int j = 0; j < mesh->points.size(); j++) {
                 outm->points[i * mesh->points.size() + j]
@@ -36,6 +51,7 @@ struct PrimitiveDuplicate : zeno::INode {
         }
 
         outm->lines.resize(pars->size() * mesh->lines.size());
+        #pragma omp parallel for
         for(int i = 0; i < pars->size(); i++) {
             for (int j = 0; j < mesh->lines.size(); j++) {
                 outm->lines[i * mesh->lines.size() + j]
@@ -44,6 +60,7 @@ struct PrimitiveDuplicate : zeno::INode {
         }
 
         outm->tris.resize(pars->size() * mesh->tris.size());
+        #pragma omp parallel for
         for(int i = 0; i < pars->size(); i++) {
             for (int j = 0; j < mesh->tris.size(); j++) {
                 outm->tris[i * mesh->tris.size() + j]
@@ -51,7 +68,8 @@ struct PrimitiveDuplicate : zeno::INode {
             }
         }
 
-        outm->quads.resize(pars->size() * mesh->tris.size());
+        outm->quads.resize(pars->size() * mesh->quads.size());
+        #pragma omp parallel for
         for(int i = 0; i < pars->size(); i++) {
             for (int j = 0; j < mesh->quads.size(); j++) {
                 outm->quads[i * mesh->quads.size() + j]
