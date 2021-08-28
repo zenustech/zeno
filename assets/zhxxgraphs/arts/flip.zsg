@@ -1255,9 +1255,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": 71,
-    "trans_y": -126
+    "scale": 1.5625,
+    "trans_x": -430,
+    "trans_y": -173
    }
   },
   "FLIPSimTemplate": {
