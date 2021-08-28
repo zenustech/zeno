@@ -106,11 +106,18 @@ struct NumericOperator : zeno::INode {
     _PER_OP1(~, inv)
     _PER_OP1(!, not)
 
+    _PER_FN(mix)
+    _PER_FN(clamp)
+
     _PER_FN(atan2)
     _PER_FN(pow)
     _PER_FN(max)
     _PER_FN(min)
     _PER_FN(fmod)
+
+    _PER_FN(dot)
+    _PER_FN(cross)
+    _PER_FN(length)
 
     _PER_FN(abs)
     _PER_FN(sqrt)
