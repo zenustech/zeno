@@ -55,10 +55,10 @@ struct PrimitiveCalcVelocity : zeno::INode {
 
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto dt = get_input<NumericObject>("dt")->get<float>();
+        auto dt = has_input("dt") ? get_input<NumericObject>("dt")->get<float>() : 0.04f;
         last_pos = prim->attr<vec3f>("pos");
         auto const &pos = prim->attr<vec3f>("pos");
-        auto &vel = prim->attr<vec3f>("vel");
+        auto &vel = prim->add_attr<vec3f>("vel");
 
 #pragma omp parallel for
         for (int i = 0; i < std::min(last_pos.size(), pos.size()); i++) {
