@@ -1,4 +1,5 @@
-O=arts/flip.zsg
+O=arts/testnumvecop.zsg
+#O=arts/flip.zsg
 #O=arts/pa2ls.zsg
 #O=arts/testkillpars.zsg
 #O=arts/tmptutvdb2.zsg

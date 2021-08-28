@@ -210,6 +210,11 @@ struct NumericOperator : zeno::INode {
     _PER_OP(log)
     _PER_OP(floor)
     _PER_OP(ceil)
+    _PER_OP(mix)
+    _PER_OP(clamp)
+    _PER_OP(dot)
+    _PER_OP(cross)
+    _PER_OP(length)
     _PER_OP(toint)
     _PER_OP(tofloat)
                 else std::cout << "Bad unary op name: " << op << std::endl;
