@@ -350,9 +350,7 @@
       2599.4609375000005,
       232.33593749999983
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "c5f709de-SmoothLiquidSDF": {
      "name": "SmoothLiquidSDF",
@@ -536,7 +534,9 @@
       2760.7873535156236,
       748.4069824218747
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "a32f490d-NumericFloat": {
      "name": "NumericFloat",
@@ -996,8 +996,8 @@
      },
      "params": {},
      "uipos": [
-      -441.01,
-      674.0099999999998
+      -441.01000000000005,
+      672.7599999999999
      ],
      "options": []
     },
@@ -1187,9 +1187,9 @@
     }
    },
    "view": {
-    "scale": 1.0000000000000007,
-    "trans_x": -758,
-    "trans_y": 411
+    "scale": 0.8000000000000007,
+    "trans_x": -1105,
+    "trans_y": 533
    }
   },
   "FLIPSimTemplate": {
@@ -2683,8 +2683,8 @@
        null
       ],
       "SDF": [
-       "55c1f2d9-CombineVDB",
-       "FieldOut",
+       "59022a10-IfElse",
+       "result",
        null
       ],
       "Vel": [
@@ -2779,8 +2779,8 @@
       "name": "Rename!"
      },
      "uipos": [
-      2508.75,
-      1041.25
+      2487.5000000000005,
+      1076.2500000000002
      ],
      "options": []
     },
@@ -2793,8 +2793,8 @@
        null
       ],
       "SDF": [
-       "ee2afe3d-x",
-       "port",
+       "bd96c5f9-x",
+       "result",
        null
       ],
       "Vel": [
@@ -2852,12 +2852,100 @@
       1005.75
      ],
      "options": []
+    },
+    "59022a10-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "55c1f2d9-CombineVDB",
+       "FieldOut",
+       null
+      ],
+      "false": [
+       "4eb2ed2f-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "cond": [
+       "ee2afe3d-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1409.5,
+      66.50000000000011
+     ],
+     "options": []
+    },
+    "bd96c5f9-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "ee2afe3d-x",
+       "port",
+       null
+      ],
+      "false": [
+       "b2d0343c-x",
+       "data",
+       null
+      ],
+      "cond": [
+       "ee2afe3d-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1912.0312499999995,
+      1220.390625
+     ],
+     "options": []
+    },
+    "b2d0343c-x": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "79a370a6-Route",
+       "output",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "dx": 0.04,
+      "type": "float",
+      "structure": "Staggered",
+      "name": "Rename!"
+     },
+     "uipos": [
+      1604.9999999999993,
+      1359.9999999999998
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.40960000000000013,
-    "trans_x": -129,
-    "trans_y": -41
+    "scale": 1.0000000000000002,
+    "trans_x": -672,
+    "trans_y": 576
    }
   },
   "FLIPMakeParticles": {
@@ -6337,8 +6425,8 @@
        null
       ],
       "false": [
-       "d8f311d4-x",
-       "dict",
+       "1b92a871-FLIPMakeCollider",
+       "Collider",
        null
       ],
       "cond": [
@@ -6356,96 +6444,6 @@
      "uipos": [
       582.0,
       319.5
-     ],
-     "options": []
-    },
-    "d8f311d4-x": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ],
-      "SDF": [
-       "c8b03f60-MakeVDBGrid",
-       "data",
-       null
-      ],
-      "Vel": [
-       "ebc83427-x",
-       "data",
-       null
-      ],
-      "obj2": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "SDF\nVel\nobj2"
-     },
-     "uipos": [
-      588.7999999999998,
-      64.80000000000004
-     ],
-     "options": [],
-     "socket_keys": [
-      "SDF",
-      "Vel",
-      "obj2"
-     ]
-    },
-    "c8b03f60-MakeVDBGrid": {
-     "name": "MakeVDBGrid",
-     "inputs": {
-      "Dx": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "dx": 1.0,
-      "type": "float",
-      "structure": "Centered",
-      "name": "Rename!"
-     },
-     "uipos": [
-      283.19999999999993,
-      -308.0
-     ],
-     "options": []
-    },
-    "ebc83427-x": {
-     "name": "MakeVDBGrid",
-     "inputs": {
-      "Dx": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "dx": 1.0,
-      "type": "float3",
-      "structure": "Centered",
-      "name": "Rename!"
-     },
-     "uipos": [
-      295.2,
-      -21.6
      ],
      "options": []
     },
@@ -6543,12 +6541,61 @@
       811.2
      ],
      "options": []
+    },
+    "1b92a871-FLIPMakeCollider": {
+     "name": "FLIPMakeCollider",
+     "inputs": {
+      "StaticSDF": [
+       null,
+       null,
+       null
+      ],
+      "dynamicPrim": [
+       null,
+       null,
+       null
+      ],
+      "dx": [
+       "fd681807-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      590.0,
+      84.0
+     ],
+     "options": []
+    },
+    "fd681807-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1.0
+     },
+     "uipos": [
+      342.0,
+      69.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 538,
-    "trans_y": 675
+    "scale": 1.0,
+    "trans_x": -88,
+    "trans_y": -71
    }
   },
   "FLIPMakeAbsorber": {
@@ -12992,47 +13039,6 @@
     "frame"
    ]
   },
-  "SetSubOutput": {
-   "inputs": [
-    [
-     "",
-     "port",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "name",
-     "output1"
-    ],
-    [
-     "string",
-     "type",
-     ""
-    ],
-    [
-     "string",
-     "defl",
-     ""
-    ]
-   ],
-   "categories": [
-    "subgraph"
-   ]
-  },
   "SetVDBPointDataGrid": {
    "inputs": [
     [
@@ -13365,6 +13371,47 @@
    ]
   },
   "SubOutput": {
+   "inputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "output1"
+    ],
+    [
+     "string",
+     "type",
+     ""
+    ],
+    [
+     "string",
+     "defl",
+     ""
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubResult": {
    "inputs": [
     [
      "",
