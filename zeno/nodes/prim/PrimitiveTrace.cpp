@@ -50,7 +50,6 @@ ZENDEFNODE(PrimitiveTraceTrail,
 
 
 struct PrimitiveCalcVelocity : zeno::INode {
-    std::shared_ptr<PrimitiveObject> trailPrim = std::make_shared<PrimitiveObject>();
     std::vector<vec3f> last_pos;
 
     virtual void apply() override {
@@ -73,6 +72,45 @@ ZENDEFNODE(PrimitiveCalcVelocity,
     { /* inputs: */ {
     {"PrimitiveObject", "prim"},
     {"NumericObject:float", "dt"},
+    }, /* outputs: */ {
+    {"PrimitiveObject", "prim"},
+    }, /* params: */ {
+    }, /* category: */ {
+    "primitive",
+    }});
+
+
+struct PrimitiveInterpSubframe : zeno::INode {
+    std::vector<vec3f> base_pos;
+    std::vector<vec3f> curr_pos;
+
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto portion = get_input<NumericObject>("portion")->get<float>();
+
+        if (portion == 0) {
+            base_pos = std::move(curr_pos);
+            curr_pos = prim->attr<vec3f>("pos");
+        }
+
+        auto new_prim = std::make_shared<PrimitiveObject>(
+                static_cast<PrimitiveObject const &>(*prim));
+        auto const &pos = new_prim->attr<vec3f>("pos");
+
+#pragma omp parallel for
+        for (int i = 0; i < std::min(pos.size(),
+                    std::min(curr_pos.size(), base_pos.size())); i++) {
+            pos[i] = mix(base_pos[i], last_pos[i], portion);
+        }
+
+        set_output("prim", std::move(new_prim));
+    }
+};
+
+ZENDEFNODE(PrimitiveInterpSubframe,
+    { /* inputs: */ {
+    {"PrimitiveObject", "prim"},
+    {"NumericObject:float", "portion"},
     }, /* outputs: */ {
     {"PrimitiveObject", "prim"},
     }, /* params: */ {
