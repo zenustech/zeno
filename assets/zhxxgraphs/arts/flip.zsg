@@ -1187,7 +1187,7 @@
     }
    },
    "view": {
-    "scale": 0.8000000000000007,
+    "scale": 1.0,
     "trans_x": -928,
     "trans_y": 338
    }
@@ -5725,8 +5725,8 @@
        null
       ],
       "args": [
-       null,
-       null,
+       "9dda4863-MakeDict",
+       "dict",
        null
       ],
       "SRC": [
@@ -5810,13 +5810,18 @@
        null
       ],
       "portion": [
+       "10847622-SubstepDt",
+       "portion",
+       null
+      ],
+      "obj2": [
        null,
        null,
        null
       ]
      },
      "params": {
-      "_KEYS": "dt\nportion"
+      "_KEYS": "dt\nportion\nobj2"
      },
      "uipos": [
       1843.2,
@@ -5825,14 +5830,15 @@
      "options": [],
      "socket_keys": [
       "dt",
-      "portion"
+      "portion",
+      "obj2"
      ]
     }
    },
    "view": {
     "scale": 1.25,
-    "trans_x": 1833,
-    "trans_y": -631
+    "trans_x": 1673,
+    "trans_y": -343
    }
   },
   "FLIPMakeEmitter": {
@@ -6841,6 +6847,113 @@
     "scale": 0.6400000000000001,
     "trans_x": -62,
     "trans_y": -140
+   }
+  },
+  "FLIPGetEnvironArgs": {
+   "nodes": {
+    "413fd19e-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "30dbb9d5-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "dt\nportion\nobj2"
+     },
+     "uipos": [
+      578.0,
+      256.0
+     ],
+     "options": [],
+     "socket_keys": [
+      "dt",
+      "portion",
+      "obj2"
+     ]
+    },
+    "76aee235-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "413fd19e-ExtractDict",
+       "dt",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dt",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      944.0,
+      165.0
+     ],
+     "options": []
+    },
+    "d7114ddc-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "413fd19e-ExtractDict",
+       "portion",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "portion",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      938.0,
+      424.0
+     ],
+     "options": []
+    },
+    "30dbb9d5-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "environArgs",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      307.0,
+      250.0
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1,
+    "trans_x": 0,
+    "trans_y": 0
    }
   }
  },
@@ -13606,6 +13719,11 @@
     ],
     [
      "",
+     "portion",
+     ""
+    ],
+    [
+     "",
      "DST",
      ""
     ]
@@ -14393,6 +14511,42 @@
    "categories": [
     "openvdb"
    ]
+  },
+  "FLIPGetEnvironArgs": {
+   "inputs": [
+    [
+     "",
+     "environArgs",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "portion",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],
