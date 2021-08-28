@@ -1,6 +1,6 @@
 #include <openvdb/openvdb.h>
 #include <openvdb/tools/Dense.h>
-#include "openvdb.h"
+#include "openvdb_dense_io.h"
 #include "vec.h"
 
 namespace fdb {

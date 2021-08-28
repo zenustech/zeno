@@ -4,10 +4,10 @@
 #include "schedule.h"
 #include <atomic>
 
-namespace fdb::vdbgrid {
+namespace fdb::ppgrid {
 
 template <typename T, size_t Log2Dim1 = 3, size_t Log2Dim2 = 4, size_t Log2Dim3 = 5>
-struct VDBGrid {
+struct PPGrid {
     static constexpr size_t Log2Res = Log2Dim1 + Log2Dim2 + Log2Dim3;
     static constexpr size_t Log2ResX = Log2Res;
     static constexpr size_t Log2ResY = Log2Res;
@@ -142,22 +142,6 @@ public:
             });
         });
     }
-
-    /*template <class Pol, class F>  // TODO
-    void foreach_dilate_cube_zero_positive(Pol const &pol, F const &func) const {
-        foreach_leaf(pol, [&] (auto ijk23, auto *leaf) {
-            auto xleaf = get_at(ijk23 + vec3i(1, 0, 0));
-            auto yleaf = get_at(ijk23 + vec3i(0, 1, 0));
-            auto zleaf = get_at(ijk23 + vec3i(0, 0, 1));
-            leaf->m_data.foreach(Serial{}, [&] (auto ijk1, auto &value) {
-                auto ijk = ijk1 | ijk23 << Log2Dim1;
-                func(ijk, value);
-            });
-            if (!xleaf) {
-                func(ijk, get(ijk));
-            }
-        });
-    }*/
 };
 
 }
