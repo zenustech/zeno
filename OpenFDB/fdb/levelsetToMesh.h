@@ -378,10 +378,12 @@ void smooth_mesh(int niters) {
 }
 
 void compute_cubes() {
-    // TODO: may need dilateActiveValues(1) first..
-    m_sdf->foreach(Serial{}, [&] (auto idx, auto const &) {
+    FILE *fp = fopen("a.txt", "w");
+    m_sdf->foreach(Serial{}, [&] (auto idx, auto const &val) {
+            fprintf(fp, "%d %d %d %f\n", idx[0], idx[1], idx[2], val);
         compute_cube(idx);
     });
+    fclose(fp);
 }
 
 public:

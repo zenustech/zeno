@@ -61,7 +61,7 @@ int main() {
     fclose(fp);
 #endif
 
-#if 0
+#if 1
     auto oldtrans = vdb->transform();
     vdb = openvdb::FloatGrid::create();
     vdb->setTransform(std::make_shared<openvdb::math::Transform>(oldtrans));
