@@ -297,6 +297,11 @@ struct PrimitiveFillAttr : zeno::INode {
     auto prim = get_input<PrimitiveObject>("prim");
     auto const &value = get_input<NumericObject>("value")->value;
     auto attrName = std::get<std::string>(get_param("attrName"));
+    auto attrType = std::get<std::string>(get_param("attrType"));
+    if (!prim->has_attr(attrName)) {
+        if (attrType == "float3") prim->add_attr<zeno::vec3f>(attrName);
+        else if (attrType == "float") prim->add_attr<float>(attrName);
+    }
     auto &arr = prim->attr(attrName);
     std::visit([](auto &arr, auto const &value) {
         if constexpr (zeno::is_vec_castable_v<decltype(arr[0]), decltype(value)>) {
@@ -321,6 +326,7 @@ ZENDEFNODE(PrimitiveFillAttr,
     "prim",
     }, /* params: */ {
     {"string", "attrName", "pos"},
+    {"string", "attrType", ""},
     }, /* category: */ {
     "primitive",
     }});

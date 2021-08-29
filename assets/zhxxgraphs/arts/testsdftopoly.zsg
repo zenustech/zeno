@@ -2,56 +2,12 @@
  "graph": {
   "main": {
    "nodes": {
-    "6c3850cc-ReadVDBGrid": {
-     "name": "ReadVDBGrid",
+    "b5858ce5-VDBLeafAsParticles": {
+     "name": "VDBLeafAsParticles",
      "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "",
-      "path": "/tmp/a.vdb"
-     },
-     "uipos": [
-      911.5518652487953,
-      137.68898593193762
-     ],
-     "options": []
-    },
-    "557a15b8-SDFToPoly": {
-     "name": "SDFToPoly",
-     "inputs": {
-      "SDF": [
-       "6c3850cc-ReadVDBGrid",
-       "data",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "isoValue": 0.0,
-      "adaptivity": 0.0,
-      "allowQuads": false
-     },
-     "uipos": [
-      1196.7190338938428,
-      -64.26179920101643
-     ],
-     "options": []
-    },
-    "e651473c-PrimitiveCalcNormal": {
-     "name": "PrimitiveCalcNormal",
-     "inputs": {
-      "prim": [
-       "557a15b8-SDFToPoly",
-       "Mesh",
+      "vdbGrid": [
+       "240c5d27-Route",
+       "output",
        null
       ],
       "SRC": [
@@ -62,15 +18,142 @@
      },
      "params": {},
      "uipos": [
-      1479.053794713888,
-      -54.40084248119862
+      2107.6173120728936,
+      206.78815489749434
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
-    "ae815843-ReadObjMesh": {
-     "name": "ReadObjMesh",
+    "4c89a44d-PrimitiveDuplicate": {
+     "name": "PrimitiveDuplicate",
+     "inputs": {
+      "meshPrim": [
+       "485044af-MakeVisualAABBPrimitive",
+       "prim",
+       null
+      ],
+      "particlesPrim": [
+       "b5858ce5-VDBLeafAsParticles",
+       "primPars",
+       null
+      ],
+      "uniScale": [
+       "b104db87-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2806.8451025056956,
+      169.68792710706157
+     ],
+     "options": []
+    },
+    "240c5d27-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "90147744-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1847.3075170842824,
+      100.55580865603645
+     ],
+     "options": []
+    },
+    "485044af-MakeVisualAABBPrimitive": {
+     "name": "MakeVisualAABBPrimitive",
+     "inputs": {
+      "boundMin": [
+       null,
+       null,
+       null
+      ],
+      "boundMax": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "connType": 2
+     },
+     "uipos": [
+      2103.562642369021,
+      -47.034168564920265
+     ],
+     "options": []
+    },
+    "8868d6a2-GetVDBVoxelSize": {
+     "name": "GetVDBVoxelSize",
+     "inputs": {
+      "vdbGrid": [
+       "240c5d27-Route",
+       "output",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2097.886104783599,
+      377.89521640091124
+     ],
+     "options": []
+    },
+    "b104db87-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "8868d6a2-GetVDBVoxelSize",
+       "dx",
+       null
+      ],
+      "rhs": [
+       "e6e77708-NumericInt",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      2363.872437357631,
+      364.1093394077448
+     ],
+     "options": []
+    },
+    "e6e77708-NumericInt": {
+     "name": "NumericInt",
      "inputs": {
       "SRC": [
        null,
@@ -79,20 +162,20 @@
       ]
      },
      "params": {
-      "path": "/home/bate/zeno/assets/monkey.obj"
+      "value": 4
      },
      "uipos": [
-      609.2141230068338,
-      -103.39407744874714
+      2360.6287015945322,
+      580.6287015945328
      ],
      "options": []
     },
-    "40e9fbc9-MeshToSDF": {
-     "name": "MeshToSDF",
+    "90147744-PrimitiveToSDF": {
+     "name": "PrimitiveToSDF",
      "inputs": {
-      "mesh": [
-       "ae815843-ReadObjMesh",
-       "mesh",
+      "PrimitiveMesh": [
+       "b224d67a-ImportObjPrimitive",
+       "prim",
        null
       ],
       "Dx": [
@@ -107,45 +190,20 @@
       ]
      },
      "params": {
-      "voxel_size": 0.05,
+      "voxel_size": 0.02,
       "type": "vertex"
      },
      "uipos": [
-      905.2050113895216,
-      -100.35307517084281
+      1490.0911161731208,
+      88.18906605922555
      ],
      "options": []
     },
-    "02dc3bba-WriteVDBGrid": {
-     "name": "WriteVDBGrid",
-     "inputs": {
-      "data": [
-       "40e9fbc9-MeshToSDF",
-       "sdf",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "path": "/tmp/origin.vdb"
-     },
-     "uipos": [
-      1195.577889447236,
-      -266.1306532663316
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
-    "9948d3d6-ImportZpmPrimitive": {
-     "name": "ImportZpmPrimitive",
+    "b224d67a-ImportObjPrimitive": {
+     "name": "ImportObjPrimitive",
      "inputs": {
       "path": [
-       "874c367f-MakeReadPath",
+       "44723867-MakeReadPath",
        "path",
        null
       ],
@@ -157,12 +215,12 @@
      },
      "params": {},
      "uipos": [
-      241.25284738041006,
-      -396.3439635535306
+      1183.9635535307518,
+      93.25740318906605
      ],
      "options": []
     },
-    "874c367f-MakeReadPath": {
+    "44723867-MakeReadPath": {
      "name": "MakeReadPath",
      "inputs": {
       "SRC": [
@@ -172,32 +230,22 @@
       ]
      },
      "params": {
-      "path": "/tmp/a.zpm"
+      "path": "assets/monkey.obj"
      },
      "uipos": [
-      -68.9293849658313,
-      -402.42596810933935
+      901.1503416856493,
+      133.8041002277904
      ],
      "options": []
     },
-    "f2acb8e5-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
+    "fe7c160c-PrimitiveCalcNormal": {
+     "name": "PrimitiveCalcNormal",
      "inputs": {
       "prim": [
-       "9948d3d6-ImportZpmPrimitive",
+       "b224d67a-ImportObjPrimitive",
        "prim",
        null
       ],
-      "zfxCode": [
-       "1d756b18-MakeMultilineString",
-       "value",
-       null
-      ],
-      "params": [
-       null,
-       null,
-       null
-      ],
       "SRC": [
        null,
        null,
@@ -206,81 +254,69 @@
      },
      "params": {},
      "uipos": [
-      540.2847380410022,
-      -410.5353075170843
-     ],
-     "options": []
-    },
-    "1d756b18-MakeMultilineString": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": "@rad = 6\n@clr = @sdf * vec3(0.5, -2, 0)"
-     },
-     "uipos": [
-      490.615034168565,
-      -800.7972665148064
-     ],
-     "options": []
-    },
-    "94a0c1be-VDBVoxelAsParticles": {
-     "name": "VDBVoxelAsParticles",
-     "inputs": {
-      "vdbGrid": [
-       "40e9fbc9-MeshToSDF",
-       "sdf",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "hasInactive": false
-     },
-     "uipos": [
-      1408.9977220956719,
-      228.07517084282458
-     ],
-     "options": []
-    },
-    "b5858ce5-VDBLeafAsParticles": {
-     "name": "VDBLeafAsParticles",
-     "inputs": {
-      "vdbGrid": [
-       "40e9fbc9-MeshToSDF",
-       "sdf",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1685.9316628701595,
-      223.00683371298405
+      1245.7972665148066,
+      303.08656036446473
      ],
      "options": [
       "VIEW"
      ]
+    },
+    "d4e7cf66-PrimitiveFillAttr": {
+     "name": "PrimitiveFillAttr",
+     "inputs": {
+      "prim": [
+       "4c89a44d-PrimitiveDuplicate",
+       "outPrim",
+       null
+      ],
+      "value": [
+       "9b2f0741-NumericVec3",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrName": "clr"
+     },
+     "uipos": [
+      3102.8359908883826,
+      177.39179954441914
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "9b2f0741-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 1.0
+     },
+     "uipos": [
+      3109.9316628701595,
+      402.42596810933935
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 945.8412380810109,
-    "y": -47.61987385674689,
-    "width": 959.9999999999997,
-    "height": 356.0
+    "x": 2416.7964223165977,
+    "y": 101.74964515059258,
+    "width": 1199.9999999999993,
+    "height": 445.0
    }
   }
  },

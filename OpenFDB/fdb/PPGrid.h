@@ -12,8 +12,7 @@ inline T *atomic_allocate_pointer(std::atomic<T *> &ptr) {
     T *old_ptr = ptr;
     if (old_ptr)
         return old_ptr;
-    if (!preallocated) preallocated = new T;
-    T *new_ptr = preallocated;
+    T *new_ptr = preallocated ? preallocated : new T;
     while (!ptr.compare_exchange_weak(old_ptr, new_ptr));
     preallocated = new T;
     return new_ptr;
@@ -69,22 +68,6 @@ protected:
         return leaf;
     }
 
-    LeafNode *touch_leaf_unsafe(vec3i ijk) {
-        auto &node_a = m_root.m_data.at(ijk >> Log2Dim2);
-        auto *node = node_a.load();
-        if (!node) {
-            node = new InternalNode;
-            node_a.store(node);
-        }
-        auto &leaf_a = node->m_data.at(ijk);
-        auto *leaf = leaf_a.load();
-        if (!leaf) {
-            leaf = new LeafNode;
-            leaf_a.store(leaf);
-        }
-        return leaf;
-    }
-
     LeafNode *touch_leaf(vec3i ijk) {
         auto *node = atomic_allocate_pointer(m_root.m_data.at(ijk >> Log2Dim2));
         auto *leaf = atomic_allocate_pointer(node->m_data.at(ijk));
@@ -98,11 +81,6 @@ public:
         auto *leaf = node->m_data.at(ijk);
         if (!leaf) return node->m_tiles.get(ijk >> Log2Dim1);
         return leaf->m_data.get(ijk);
-    }
-
-    void set_unsafe(vec3i ijk, ValueType value) {
-        auto *leaf = touch_leaf_unsafe(ijk >> Log2Dim1);
-        leaf->m_data.set(ijk, value);
     }
 
     void set(vec3i ijk, ValueType value) {
