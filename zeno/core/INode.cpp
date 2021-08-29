@@ -3,6 +3,7 @@
 #include <zeno/core/Descriptor.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/ConditionObject.h>
+#include <zeno/types/NumericObject.h>
 #ifdef ZENO_VISUALIZATION  // TODO: can we decouple vis from zeno core?
 #include <zeno/extra/Visualization.h>
 #endif
@@ -117,6 +118,23 @@ ZENO_API struct zany INode::get_input2(std::string const &id) const {
 
 ZENO_API void INode::set_output2(std::string const &id, zany &&obj) {
     outputs[id] = std::move(obj);
+}
+
+ZENO_API std::shared_ptr<IObject> INode::get_input(std::string const &id, std::string const &msg) const {
+    auto obj = get_input2(id);
+    if (silent_any_cast<std::shared_ptr<IObject>>(obj).has_value())
+        return smart_any_cast<std::shared_ptr<IObject>>(obj, "input `" + id + "` ");
+    auto num = std::make_shared<NumericObject>();
+    using Types = typename zinc::is_variant<NumericValue>::tuple_type;
+    zinc::static_for<0, std::tuple_size_v<Types>>([&] (auto i) {
+        using T = zinc::any_underlying_type_t<std::tuple_element_t<i>>;
+        if (exact_any_cast<T>(obj)) {
+            num->set();
+        }
+    });
+    throw zeno::Exception("expecting `" + msg + "` (IObject pointer) for input `"
+            + id "`, got `" + obj.type().name() + "` (any)");
+    return num;
 }
 
 }

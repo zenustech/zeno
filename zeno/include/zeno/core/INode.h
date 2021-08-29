@@ -46,20 +46,18 @@ protected:
     ZENO_API zany get_input2(std::string const &id) const;
     ZENO_API void set_output2(std::string const &id, zany &&obj);
 
-    /* deprecated */
+    /* todo: deprecated */
     bool has_input(std::string const &id) const {
         return inputBounds.find(id) != inputBounds.end();
     }
 
-    /* deprecated */
+    /* todo: deprecated */
     void set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
         set_output2(id, std::move(obj));
     }
 
-    /* deprecated */
-    std::shared_ptr<IObject> get_input(std::string const &id) const {
-        return get_input2<std::shared_ptr<IObject>>(id);
-    }
+    /* todo: deprecated */
+    std::shared_ptr<IObject> get_input(std::string const &id, std::string const &msg = "IObject") const;
 
     template <class T>
     T get_input2(std::string const &id) const {
@@ -73,7 +71,7 @@ protected:
         return silent_any_cast<T>(get_input2(id)).has_value();
     }
 
-    /* deprecated */
+    /* todo: deprecated */
     template <class T>
     bool has_input(std::string const &id) const {
         if (!has_input(id))
@@ -85,15 +83,15 @@ protected:
         return (bool)p;
     }
 
-    /* deprecated */
+    /* todo: deprecated */
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
-        auto obj = get_input(id);
+        auto obj = get_input(id, typeid(T).name());
         return safe_dynamic_cast<T>(std::move(obj),
                 "input socket `" + id + "` ");
     }
 
-    /* deprecated */
+    /* todo: deprecated */
     auto get_param(std::string const &id) const {
         std::variant<int, float, std::string> res;
         auto inpid = id + ":";
@@ -112,7 +110,7 @@ protected:
         return res;
     }
 
-    /* deprecated */
+    /* todo: deprecated */
     template <class T>
     T get_param(std::string const &id) const {
         //return std::get<T>(get_param(id));
