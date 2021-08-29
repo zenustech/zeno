@@ -71,8 +71,11 @@ ZENO_API void INode::doApply() {
     coreApply();
 }
 
-ZENO_API void INode::requireInput(std::string const &ds) {
-    auto [sn, ss] = inputBounds.at(ds);
+ZENO_API bool INode::requireInput(std::string const &ds) {
+    auto it = inputBounds.find(ds);
+    if (it == inputBounds.end())
+        return false;
+    auto [sn, ss] = it->second;
     graph->applyNode(sn);
     auto ref = graph->getNodeOutput(sn, ss);
     inputs[ds] = ref;
