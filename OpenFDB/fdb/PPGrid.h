@@ -22,6 +22,7 @@ private:
 
     struct InternalNode {
         densegrid::DenseGrid<LeafNode *, Log2Dim2> m_data;  // 32 KiB
+        densegrid::DenseGrid<ValueType, Log2Dim2> m_tiles;  // 16 KiB
 
         ~InternalNode() {
             for (int i = 0; i < m_data.size(); i++) {
@@ -39,7 +40,7 @@ private:
             unsigned char>>>;
         densegrid::DenseGrid<InternalNode *, Log2Dim3, IsOffseted> m_data;  // 256 KiB
         densegrid::DenseGrid<ValueType, Log2Dim3, IsOffseted> m_tiles;  // 128 KiB
-        densegrid::DenseGrid<AtomicCounterType, Log2Dim3, IsOffseted> m_counter;  // 64 KiB
+        densegrid::DenseGrid<AtomicCounterType, Log2Dim3, IsOffseted> m_leafcnt;  // 64 KiB
 
         ~RootNode() {
             for (int i = 0; i < m_data.size(); i++) {
@@ -53,70 +54,73 @@ private:
     RootNode m_root;
 
 protected:
-    LeafNode *get_leaf_at(vec3i ijk) const {
+    LeafNode *peek_leaf(vec3i ijk) const {
         auto *node = m_root.m_data.at(ijk >> Log2Dim2);
         if (!node) return nullptr;
         auto *leaf = node->m_data.at(ijk);
         return leaf;
     }
 
-    LeafNode *add_leaf_at(vec3i ijk) {
+    LeafNode *touch_leaf(vec3i ijk) {
         auto *&node = m_root.m_data.at(ijk >> Log2Dim2);
         if (!node)
             node = new InternalNode;
         auto *&leaf = node->m_data.at(ijk);
         if (!leaf) {
-            ++m_root.m_counter.at(ijk >> Log2Dim2);
+            ++m_root.m_leafcnt.at(ijk >> Log2Dim2);
             leaf = new LeafNode;
         }
         return leaf;
     }
 
-    void del_leaf_at(vec3i ijk) {
+    void delete_leaf(vec3i ijk) {
         auto *&node = m_root.m_data.at(ijk >> Log2Dim2);
         if (!node) return;
         auto *&leaf = node->m_data.at(ijk);
         if (leaf) {
             delete leaf;
             leaf = nullptr;
-            if (!--m_root.m_counter.at(ijk >> Log2Dim2)) {
+            if (!--m_root.m_leafcnt.at(ijk >> Log2Dim2)) {
                 delete node;
                 node = nullptr;
             }
         }
     }
 
-    ValueType *get_at(vec3i ijk) const {
-        auto *leaf = get_leaf_at(ijk >> Log2Dim1);
+    ValueType *get_value(vec3i ijk) const {
+        auto *node = m_root.m_data.at(ijk >> Log2Dim2 + Log2Dim1);
+        if (!node) return m_root.m_tiles.at(ijk >> Log2Dim2 + Log2Dim1);
+        auto *leaf = node->m_data.at(ijk);
+        if (!leaf) return node->m_tiles.at(ijk >> Log2Dim1);
+        return &leaf->m_data.at(ijk);
+    }
+
+    ValueType *peek_value(vec3i ijk) const {
+        auto *leaf = peek_leaf(ijk >> Log2Dim1);
         if (!leaf) return nullptr;
         return &leaf->m_data.at(ijk);
     }
 
-    ValueType *add_at(vec3i ijk) {
-        auto *leaf = add_leaf_at(ijk >> Log2Dim1);
+    ValueType *touch_value(vec3i ijk) {
+        auto *leaf = touch_leaf(ijk >> Log2Dim1);
         return &leaf->m_data.at(ijk);
     }
 
-    void del_at(vec3i ijk) {
-        del_leaf_at(ijk >> Log2Dim1);
-    }
-
 public:
-    ValueType const &at(vec3i ijk) const {
-        return *get_at(ijk);
+    ValueType &at(vec3i ijk) {
+        return *get_value(ijk);
     }
 
-    ValueType &at(vec3i ijk) {
-        return *add_at(ijk);
+    ValueType const &at(vec3i ijk) const {
+        return *get_value(ijk);
     }
 
     ValueType get(vec3i ijk) const {
-        auto ptr = this->get_at(ijk);
-        return ptr ? *ptr : ValueType(0);
+        return *get_value(ijk);
     }
 
     void set(vec3i ijk, ValueType value) {
-        *add_at(ijk) = value;
+        *touch_value(ijk) = value;
     }
 
     template <class Pol, class F>

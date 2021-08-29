@@ -29,7 +29,7 @@ public:
     inline constexpr size_t size() { return 1ul << 3 * Log2Res; }
 
 protected:
-    constexpr T *address(vec3i ijk) const {
+    constexpr T *linearized_pointer(vec3i ijk) const {
         size_t i = ijk[0] & ((1l << Log2ResX) - 1);
         size_t j = ijk[1] & ((1l << Log2ResY) - 1);
         size_t k = ijk[2] & ((1l << Log2ResZ) - 1);
@@ -39,11 +39,11 @@ protected:
 
 public:
     constexpr T const &at(vec3i ijk) const {
-        return *this->address(ijk);
+        return *linearized_pointer(ijk);
     }
 
     constexpr T &at(vec3i ijk) {
-        return *this->address(ijk);
+        return *linearized_pointer(ijk);
     }
 
     constexpr ValueType get(vec3i ijk) const {
