@@ -198,7 +198,7 @@ class QDMGraphicsScene(QGraphicsScene):
 
     def dumpGraph(self, input_nodes=None):
         nodes = {}
-        if input_nodes == None:
+        if input_nodes is None:
             input_nodes = self.nodes
         for node in input_nodes:
             ident, data = node.dump()
@@ -362,7 +362,7 @@ class QDMGraphicsView(QGraphicsView):
 
     def setScene(self, scene):
         super().setScene(scene)
-        if scene._scene_rect == None:
+        if scene._scene_rect is None:
             scene._scene_rect = QRectF(0, 0, self.size().width(), self.size().height())
         self._update_scene_rect()
 
@@ -577,7 +577,6 @@ class QDMGraphicsView(QGraphicsView):
 
     def _update_scene_rect(self):
         rect = self.scene()._scene_rect
-        print(rect, rect, rect)
         self.setSceneRect(rect)
         self.fitInView(rect, Qt.KeepAspectRatio)
 
