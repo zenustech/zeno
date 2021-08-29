@@ -39,8 +39,8 @@ struct BeginFor : IBeginFor {
 };
 
 ZENDEFNODE(BeginFor, {
-    {"count"},
-    {"index", "FOR"},
+    {{"int", "count"}},
+    {{"int", "index"}, "FOR"},
     {},
     {"control"},
 });
@@ -124,7 +124,7 @@ struct BeginForEach : IBeginFor {
 
 ZENDEFNODE(BeginForEach, {
     {"list"},
-    {"object", "index", "FOR"},
+    {"object", {"int", "index"}, "FOR"},
     {},
     {"control"},
 });
@@ -158,8 +158,8 @@ struct BeginSubstep : IBeginFor {
 };
 
 ZENDEFNODE(BeginSubstep, {
-    {"total_dt", "min_scale"},
-    {"FOR", "elapsed_time"},
+    {{"float", "total_dt"}, {"float", "min_scale", "0.05"}},
+    {"FOR", {"float", "elapsed_time"}},
     {},
     {"control"},
 });
@@ -196,8 +196,8 @@ struct SubstepDt : zeno::INode {
 };
 
 ZENDEFNODE(SubstepDt, {
-    {"FOR", "desired_dt"},
-    {"actual_dt", "portion"},
+    {"FOR", {"float", "desired_dt", "0.04"}},
+    {{"float", "actual_dt", {"float", "portion"}},
     {},
     {"control"},
 });

@@ -54,7 +54,7 @@ struct MeshToSDF : zeno::INode{
 
 static int defMeshToSDF = zeno::defNodeClass<MeshToSDF>("MeshToSDF",
     { /* inputs: */ {
-        "mesh","Dx",
+        "mesh",{"float","Dx"},
     }, /* outputs: */ {
         "sdf",
     }, /* params: */ {
@@ -104,7 +104,7 @@ struct PrimitiveToSDF : zeno::INode{
 
 static int defPrimitiveToSDF = zeno::defNodeClass<PrimitiveToSDF>("PrimitiveToSDF",
     { /* inputs: */ {
-        "PrimitiveMesh","Dx",
+        "PrimitiveMesh", {"float","Dx"},
     }, /* outputs: */ {
         "sdf",
     }, /* params: */ {
