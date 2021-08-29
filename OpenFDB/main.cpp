@@ -34,11 +34,11 @@ int main() {
     ppgrid::PPGrid<float> sdf;
 
     openvdb::initialize();
-    auto vdb = readVdbGrid<openvdb::FloatGrid>("/home/bate/Documents/fluid000060.vdb");
+    auto vdb = readVdbGrid<openvdb::FloatGrid>("/home/bate/Documents/fluidsdf.vdb");
 
-    converter::from_vdb_grid(sdf, *vdb);
+    //converter::from_vdb_grid(sdf, *vdb);
 
-    converter::to_vdb_grid(sdf, *vdb);
+    //converter::to_vdb_grid(sdf, *vdb);
 
     writeVdbGrid<openvdb::FloatGrid>("/tmp/a.vdb", vdb);
 

@@ -14,7 +14,7 @@ struct DenseGrid {
     using ValueType = T;
 
 private:
-    std::array<T, (1 << (3 * Log2Res))> m_data;
+    std::array<T, (1ul << 3 * Log2Res)> m_data;
 
 public:
     DenseGrid() = default;
