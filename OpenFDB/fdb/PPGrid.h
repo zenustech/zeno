@@ -12,8 +12,9 @@ inline T *atomic_allocate_pointer(std::atomic<T *> &ptr) {
     T *old_ptr = ptr;
     if (old_ptr)
         return old_ptr;
-    T *new_ptr = preallocated ? preallocated : new T;
-    while (!ptr.compare_exchange_weak(old_ptr, new_ptr));
+    if (!preallocated) preallocated = new T;
+    T *new_ptr = preallocated;
+    while (ptr.compare_exchange_weak(old_ptr, new_ptr));
     preallocated = new T;
     return new_ptr;
 }
