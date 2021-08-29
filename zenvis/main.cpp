@@ -7,8 +7,6 @@
 #include <array>
 #include <stb_image_write.h>
 
-using std::vector;
-
 namespace zenvis {
 
 int curr_frameid = -1;
@@ -154,8 +152,8 @@ void set_show_grid(bool flag) {
     show_grid = flag;
 }
 
-vector<char> record_frame_offline() {
-    vector<char> pixels(nx * ny * 3);
+std::vector<char> record_frame_offline() {
+    std::vector<char> pixels(nx * ny * 3);
 
     // multi-sampling buffer
     GLuint fbo, rbo1, rbo2;
@@ -222,13 +220,13 @@ void new_frame_offline(std::string path) {
     sprintf(buf, "%s/%06d.png", path.c_str(), curr_frameid);
     printf("saving screen %dx%d to %s\n", nx, ny, buf);
 
-    vector<char> pixels = record_frame_offline();
+    std::vector<char> pixels = record_frame_offline();
     stbi_flip_vertically_on_write(true);
     stbi_write_png(buf, nx, ny, 3, &pixels[0], 0);
 }
 
 void do_screenshot(std::string path) {
-    vector<char> pixels = record_frame_offline();
+    std::vector<char> pixels = record_frame_offline();
     stbi_flip_vertically_on_write(true);
     stbi_write_png(path.c_str(), nx, ny, 3, &pixels[0], 0);
 }
