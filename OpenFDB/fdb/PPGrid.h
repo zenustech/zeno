@@ -17,12 +17,12 @@ struct PPGrid {
 
 private:
     struct LeafNode {
-        densegrid::DenseGrid<ValueType, Log2Dim1, IsOffseted> m_data;  // 2 KiB
+        densegrid::DenseGrid<ValueType, Log2Dim1, false> m_data;  // 2 KiB
     };
 
     struct InternalNode {
-        densegrid::DenseGrid<LeafNode *, Log2Dim2, IsOffseted> m_data;  // 32 KiB
-        densegrid::DenseGrid<ValueType, Log2Dim2, IsOffseted> m_tiles;  // 16 KiB
+        densegrid::DenseGrid<LeafNode *, Log2Dim2, false> m_data;  // 32 KiB
+        densegrid::DenseGrid<ValueType, Log2Dim2, false> m_tiles;  // 16 KiB
 
         ~InternalNode() {
             for (int i = 0; i < m_data.size(); i++) {

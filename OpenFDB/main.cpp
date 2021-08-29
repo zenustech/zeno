@@ -37,11 +37,11 @@ int main() {
     auto vdb = readVdbGrid<openvdb::FloatGrid>("/tmp/origin.vdb");
 
     converter::from_vdb_grid(sdf, *vdb);
-    /*sdf.foreach(Serial{}, [&] (auto ijk, auto &value) {
-        value += 0.1f;
-    });*/
-    //converter::clear_vdb_grid(*vdb);
-    //converter::to_vdb_grid(sdf, *vdb);
+    sdf.foreach(Serial{}, [&] (auto ijk, auto &value) {
+        value += 0.0f;
+    });
+    converter::clear_vdb_grid(*vdb);
+    converter::to_vdb_grid(sdf, *vdb);
 
     writeVdbGrid<openvdb::FloatGrid>("/tmp/a.vdb", vdb);
 

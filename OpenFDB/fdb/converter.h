@@ -35,6 +35,12 @@ void clear_vdb_grid(VdbGridT &vdbGrid) {
                 value = {0};
             });
         }
+        for (auto iter = leaf.beginValueOff(); iter != leaf.endValueOff(); ++iter) {
+            auto valpos = iter.getCoord();
+            iter.modifyValue([&] (auto &value) {
+                value = {0};
+            });
+        }
     };
     openvdb::tree::LeafManager<std::decay_t<decltype(vdbGrid.tree())>>
         leafman(vdbGrid.tree());
