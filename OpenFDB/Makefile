@@ -1,7 +1,12 @@
+a:
+	cmake -B build
+	cmake --build build --parallel
+	build/openfdb > a.txt
+	cd .. && python a.py
+
 x:
 	cmake -B build
 	cmake --build build --parallel
-	-rm -rf /tmp/a.obj
 	build/openfdb
 
 d:

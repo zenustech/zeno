@@ -17,12 +17,12 @@ struct PPGrid {
 
 private:
     struct LeafNode {
-        densegrid::DenseGrid<ValueType, Log2Dim1> m_data;  // 2 KiB
+        densegrid::DenseGrid<ValueType, Log2Dim1, IsOffseted> m_data;  // 2 KiB
     };
 
     struct InternalNode {
-        densegrid::DenseGrid<LeafNode *, Log2Dim2> m_data;  // 32 KiB
-        densegrid::DenseGrid<ValueType, Log2Dim2> m_tiles;  // 16 KiB
+        densegrid::DenseGrid<LeafNode *, Log2Dim2, IsOffseted> m_data;  // 32 KiB
+        densegrid::DenseGrid<ValueType, Log2Dim2, IsOffseted> m_tiles;  // 16 KiB
 
         ~InternalNode() {
             for (int i = 0; i < m_data.size(); i++) {
@@ -102,19 +102,12 @@ public:
     }
 
     template <class Pol, class F>
-    void foreach_leaf(Pol const &pol, F const &func) const {
-        int beg = 0, end = 1 << Log2Dim3;
-        if constexpr (IsOffseted) {
-            end >>= 1;
-            beg = -end;
-        }
-        ndrange_for(pol, vec3i(beg), vec3i(end), [&] (auto ijk3) {
-            auto *node = m_root.m_data.at(ijk3);
+    void foreach_leaf(Pol const &pol, F const &func) {
+        m_root.m_data.foreach(pol, [&] (auto ijk3, auto *node) {
             if (node) {
-                ndrange_for(Serial{}, vec3i(0), vec3i(1 << Log2Dim2), [&] (auto ijk2) {
-                    auto *leaf = node->m_data.at(ijk2);
+                node->m_data.foreach(Serial{}, [&] (auto ijk2, auto *leaf) {
                     if (leaf) {
-                        auto ijk = ijk3 << Log2Dim2 | ijk2;
+                        auto ijk = (ijk3 << Log2Dim2) + ijk2;
                         func(ijk, leaf);
                     }
                 });
@@ -123,7 +116,7 @@ public:
     }
 
     template <class Pol, class F>
-    void foreach(Pol const &pol, F const &func) const {
+    void foreach(Pol const &pol, F const &func) {
         foreach_leaf(pol, [&] (auto ijk23, auto *leaf) {
             leaf->m_data.foreach(Serial{}, [&] (auto ijk1, auto &value) {
                 auto ijk = ijk1 | ijk23 << Log2Dim1;

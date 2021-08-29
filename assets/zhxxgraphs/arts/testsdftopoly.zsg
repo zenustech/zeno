@@ -25,8 +25,8 @@
      "name": "SDFToPoly",
      "inputs": {
       "SDF": [
-       "6c3850cc-ReadVDBGrid",
-       "data",
+       "40e9fbc9-MeshToSDF",
+       "sdf",
        null
       ],
       "SRC": [
@@ -107,7 +107,7 @@
       ]
      },
      "params": {
-      "voxel_size": 0.08,
+      "voxel_size": 0.4,
       "type": "vertex"
      },
      "uipos": [
@@ -140,13 +140,101 @@
      "options": [
       "VIEW"
      ]
+    },
+    "9948d3d6-ImportZpmPrimitive": {
+     "name": "ImportZpmPrimitive",
+     "inputs": {
+      "path": [
+       "874c367f-MakeReadPath",
+       "path",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      241.25284738041006,
+      -396.3439635535306
+     ],
+     "options": []
+    },
+    "874c367f-MakeReadPath": {
+     "name": "MakeReadPath",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": "/tmp/a.zpm"
+     },
+     "uipos": [
+      -68.9293849658313,
+      -402.42596810933935
+     ],
+     "options": []
+    },
+    "f2acb8e5-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "9948d3d6-ImportZpmPrimitive",
+       "prim",
+       null
+      ],
+      "zfxCode": [
+       "1d756b18-MakeMultilineString",
+       "value",
+       null
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      540.2847380410022,
+      -410.5353075170843
+     ],
+     "options": []
+    },
+    "1d756b18-MakeMultilineString": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "@rad = 6\n@clr = @sdf * vec3(0.5, -2, 0)"
+     },
+     "uipos": [
+      490.615034168565,
+      -800.7972665148064
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 401.50163545514783,
-    "y": -218.46771943429826,
-    "width": 1499.9999999999993,
-    "height": 556.25
+    "x": 570.3369266605971,
+    "y": -327.658780806074,
+    "width": 1199.9999999999995,
+    "height": 445.0
    }
   }
  },
