@@ -1,4 +1,4 @@
-O=b.zsg
+O=a.zsg
 #O=arts/flip.zsg
 #O=arts/testsdftopoly.zsg
 #O=arts/testprimdup.zsg
