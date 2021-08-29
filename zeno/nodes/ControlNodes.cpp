@@ -212,14 +212,14 @@ struct IfElse : zeno::INode {
         if (has_option("MUTE")) {
             requireInput("true");
         } else if (evaluate_condition(cond.get())) {
-            if (has_input("true")) {
+            if (has_input2("true")) {
                 requireInput("true");
-                set_output("result", get_input("true"));
+                set_output2("result", get_input2("true"));
             }
         } else {
-            if (has_input("false")) {
+            if (has_input2("false")) {
                 requireInput("false");
-                set_output("result", get_input("false"));
+                set_output2("result", get_input2("false"));
             }
         }
 
