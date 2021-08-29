@@ -55,7 +55,7 @@ int main() {
     for (auto f: triangles) { f += 1;
         fprintf(fp, "f %d %d %d\n", f[0], f[1], f[2]);
     }
-    for (auto v: vertices) {
+    for (auto v: vertices) { v *= vdb->transform().voxelSize()[0];
         fprintf(fp, "v %f %f %f\n", v[0], v[1], v[2]);
     }
     fclose(fp);

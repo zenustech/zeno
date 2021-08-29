@@ -387,14 +387,19 @@ void compute_cubes() {
 
 public:
 void march() {
+    printf("compute_cubes\n");
     compute_cubes();
+    printf("march_tetra\n");
     march_tetra();
+    printf("weld_close\n");
     weld_close();
+    printf("flip_edges\n");
     flip_edges();
+    printf("flip_edges\n");
     flip_edges();
-    flip_edges();
-    flip_edges();
-    smooth_mesh(4);
+    printf("smooth_mesh\n");
+    smooth_mesh(3);
+    printf("done\n");
 }
 
 inline auto const &triangles() const { return m_triangles; }
