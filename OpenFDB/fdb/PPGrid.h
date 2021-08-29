@@ -7,16 +7,16 @@
 namespace fdb::ppgrid {
 
 template <typename T>
-inline atomic_allocate_pointer(std::atomic<T *> &ptr) {
+inline T *atomic_allocate_pointer(std::atomic<T *> &ptr) {
     static thread_local T *preallocated = nullptr;
-    if (!preallocated) preallocated = new T;
     T *old_ptr = ptr;
-    while (!ptr.compare_exchage_weak(old_ptr, preallocated));
+    if (old_ptr)
+        return old_ptr;
+    if (!preallocated) preallocated = new T;
+    T *new_ptr = preallocated;
+    while (!ptr.compare_exchange_weak(old_ptr, new_ptr));
     preallocated = new T;
-}
-
-template <typename T, typename CounterT>
-inline atomic_allocate_pointer(T *&ptr, CounterT &cnt) {
+    return new_ptr;
 }
 
 template <typename T, int Log2Dim1 = 3, int Log2Dim2 = 4, int Log2Dim3 = 5, bool IsOffseted = true>
@@ -63,9 +63,9 @@ private:
 
 protected:
     LeafNode *peek_leaf(vec3i ijk) const {
-        auto *node = m_root.m_data.at(ijk >> Log2Dim2);
+        auto *node = m_root.m_data.at(ijk >> Log2Dim2).load();
         if (!node) return nullptr;
-        auto *leaf = node->m_data.at(ijk);
+        auto *leaf = node->m_data.at(ijk).load();
         return leaf;
     }
 
@@ -112,9 +112,11 @@ public:
 
     template <class Pol, class F>
     void foreach_leaf(Pol const &pol, F const &func) {
-        m_root.m_data.foreach(pol, [&] (auto ijk3, auto *node) {
+        m_root.m_data.foreach(pol, [&] (auto ijk3, auto const &node_a) {
+            auto node = node_a.load();
             if (node) {
-                node->m_data.foreach(Serial{}, [&] (auto ijk2, auto *leaf) {
+                node->m_data.foreach(Serial{}, [&] (auto ijk2, auto const &leaf_a) {
+                    auto leaf = leaf_a.load();
                     if (leaf) {
                         auto ijk = (ijk3 << Log2Dim2) + ijk2;
                         func(ijk, leaf);
