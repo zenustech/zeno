@@ -1,6 +1,6 @@
 #pragma once
 
-#include <array>
+#include <memory>
 #include "vec.h"
 #include "schedule.h"
 
@@ -14,22 +14,21 @@ struct DenseGrid {
     using ValueType = T;
 
 private:
-    std::array<T, (1ul << 3 * Log2Res)> m_data;
+    T m_data[1ul << 3 * Log2Res]{};
 
 public:
-    DenseGrid() = default;
-    ~DenseGrid() = default;
-    DenseGrid(DenseGrid const &) = delete;
-    DenseGrid(DenseGrid &&) = default;
-    DenseGrid &operator=(DenseGrid const &) = delete;
-    DenseGrid &operator=(DenseGrid &&) = default;
+    constexpr DenseGrid() = default;
+    constexpr DenseGrid(DenseGrid const &) = delete;
+    constexpr DenseGrid(DenseGrid &&) = default;
+    constexpr DenseGrid &operator=(DenseGrid const &) = delete;
+    constexpr DenseGrid &operator=(DenseGrid &&) = default;
 
-    decltype(auto) data() const { return m_data.data(); }
-    decltype(auto) data() { return m_data.data(); }
-    decltype(auto) size() { return m_data.size(); }
+    constexpr ValueType *data() const { return m_data; }
+    constexpr ValueType *data() { return m_data; }
+    constexpr size_t size() { return 1ul << 3 * Log2Res; }
 
 protected:
-    T *address(vec3i ijk) const {
+    constexpr T *address(vec3i ijk) const {
         size_t i = ijk[0] & ((1l << Log2ResX) - 1);
         size_t j = ijk[1] & ((1l << Log2ResY) - 1);
         size_t k = ijk[2] & ((1l << Log2ResZ) - 1);
@@ -38,19 +37,19 @@ protected:
     }
 
 public:
-    T const &at(vec3i ijk) const {
+    constexpr T const &at(vec3i ijk) const {
         return *this->address(ijk);
     }
 
-    T &at(vec3i ijk) {
+    constexpr T &at(vec3i ijk) {
         return *this->address(ijk);
     }
 
-    ValueType get(vec3i ijk) const {
+    constexpr ValueType get(vec3i ijk) const {
         return at(ijk);
     }
 
-    void set(vec3i ijk, ValueType const &val) {
+    constexpr void set(vec3i ijk, ValueType const &val) {
         at(ijk) = val;
     }
 
