@@ -137,9 +137,6 @@ void compute_cube(vec3i cube_index) {
     auto cx = cube_index[0];
     auto cy = cube_index[1];
     auto cz = cube_index[2];
-    auto val = m_sdf->get(vec3i(cx,cy,cz));
-    if (val) printf("%d %d %d %f\n", cx, cy, cz, val);
-
     float vals[8] = {
         sample(cx, cy, cz),
         sample(cx+1, cy, cz),
@@ -392,12 +389,12 @@ public:
 void march() {
     compute_cubes();
     march_tetra();
-    //weld_close();
-    //flip_edges();
-    //flip_edges();
-    //flip_edges();
-    //flip_edges();
-    //smooth_mesh(4);
+    weld_close();
+    flip_edges();
+    flip_edges();
+    flip_edges();
+    flip_edges();
+    smooth_mesh(4);
 }
 
 inline auto const &triangles() const { return m_triangles; }

@@ -1,8 +1,7 @@
 x:
 	cmake -B build
 	cmake --build build --parallel
-	build/openfdb > a.txt
-	python a.py
+	build/openfdb
 
 d:
 	cmake -B build

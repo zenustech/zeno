@@ -49,7 +49,7 @@ int main() {
     std::vector<vec3f> vertices;
     std::vector<vec3I> triangles;
     fdb::levelsetToMesh::marching_tetra(sdf, vertices, triangles,
-            /*isovalue=*/0.0f);
+            /*isovalue=*/-0.001f);
 
     FILE *fp = fopen("/tmp/a.obj", "w");
     for (auto f: triangles) { f += 1;
