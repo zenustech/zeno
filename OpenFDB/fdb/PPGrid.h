@@ -17,11 +17,11 @@ struct PPGrid {
 
 private:
     struct LeafNode {
-        densegrid::DenseGrid<float, Log2Dim1> m_data;
+        densegrid::DenseGrid<float, Log2Dim1> m_data;  // 2 KiB
     };
 
     struct InternalNode {
-        densegrid::DenseGrid<LeafNode *, Log2Dim2> m_data;
+        densegrid::DenseGrid<LeafNode *, Log2Dim2> m_data;  // 32 KiB
 
         ~InternalNode() {
             for (int i = 0; i < m_data.size(); i++) {
@@ -37,8 +37,9 @@ private:
             std::conditional_t<(Log2Dim2 * 3 > 15), unsigned int,
             std::conditional_t<(Log2Dim2 * 3 > 7), unsigned short,
             unsigned char>>>;
-        densegrid::DenseGrid<InternalNode *, Log2Dim3, IsOffseted> m_data;
-        densegrid::DenseGrid<AtomicCounterType, Log2Dim3, IsOffseted> m_counter;
+        densegrid::DenseGrid<InternalNode *, Log2Dim3, IsOffseted> m_data;  // 256 KiB
+        densegrid::DenseGrid<ValueType, Log2Dim3, IsOffseted> m_tiles;  // 128 KiB
+        densegrid::DenseGrid<AtomicCounterType, Log2Dim3, IsOffseted> m_counter;  // 64 KiB
 
         ~RootNode() {
             for (int i = 0; i < m_data.size(); i++) {

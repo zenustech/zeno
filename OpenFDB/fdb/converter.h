@@ -21,6 +21,21 @@ void from_vdb_grid(OurGridT &ourGrid, VdbGridT &vdbGrid) {
     leafman.foreach(wrangler);
 }
 
+template <class VdbGridT>
+void clear_vdb_grid(VdbGridT &vdbGrid) {
+    auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
+        for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
+            auto valpos = iter.getCoord();
+            iter.modifyValue([&] (auto &value) {
+                value = {0};
+            });
+        }
+    };
+    openvdb::tree::LeafManager<std::decay_t<decltype(vdbGrid.tree())>>
+        leafman(vdbGrid.tree());
+    leafman.foreach(wrangler);
+}
+
 template <class OurGridT, class VdbGridT>
 void to_vdb_grid(OurGridT const &ourGrid, VdbGridT &vdbGrid) {
     auto vdbAxr = vdbGrid.getAccessor();

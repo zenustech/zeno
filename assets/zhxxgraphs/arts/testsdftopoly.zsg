@@ -16,8 +16,8 @@
       "path": "/tmp/a.vdb"
      },
      "uipos": [
-      607.1867881548975,
-      164.21412300683372
+      883.4111617312072,
+      176.8849658314351
      ],
      "options": []
     },
@@ -25,8 +25,8 @@
      "name": "SDFToPoly",
      "inputs": {
       "SDF": [
-       "40e9fbc9-MeshToSDF",
-       "sdf",
+       "6c3850cc-ReadVDBGrid",
+       "data",
        null
       ],
       "SRC": [
@@ -143,10 +143,10 @@
     }
    },
    "view_rect": {
-    "x": 899.5451013609994,
-    "y": -323.5769714174497,
-    "width": 959.9999999999997,
-    "height": 356.0
+    "x": 401.50163545514783,
+    "y": -218.46771943429826,
+    "width": 1499.9999999999993,
+    "height": 556.25
    }
   }
  },
@@ -3842,7 +3842,7 @@
    ],
    "params": [
     [
-     "string",
+     "ENUM mix clamp atan2 pow max min fmod dot cross distance length normalize abs sqrt sin cos tan asin acos atan exp log floor ceil toint tofloat copy copyr",
      "op_type",
      "copy"
     ]
