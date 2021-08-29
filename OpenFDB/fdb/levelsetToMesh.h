@@ -261,7 +261,7 @@ void weld_close() {
     std::map<std::tuple<int, int, int>, std::vector<int>> rear;
     for (int i = 0; i < m_vertices.size(); i++) {
         auto pos = m_vertices[i];
-        vec3i ipos(floor(pos * m_weldscale + 0.5f));
+        vec3i ipos(floor(pos * m_weldscale + 0.01f));
         rear[std::make_tuple(ipos[0], ipos[1], ipos[2])].push_back(i);
     }
     std::map<int, int> lut;
@@ -393,14 +393,12 @@ void march() {
     compute_cubes();
     printf("march_tetra\n");
     march_tetra();
-    //printf("weld_close\n");
-    //weld_close();
-    //printf("flip_edges\n");
-    //flip_edges();
-    //printf("flip_edges\n");
-    //flip_edges();
-    //printf("smooth_mesh\n");
-    //smooth_mesh(3);
+    printf("weld_close\n");
+    weld_close();
+    printf("flip_edges\n");
+    flip_edges();
+    printf("smooth_mesh\n");
+    smooth_mesh(3);
     //printf("done\n");
 }
 
@@ -417,7 +415,7 @@ auto marching_tetra
     , std::vector<vec3f> &vertices
     , std::vector<vec3I> &triangles
     , float isovalue = 0
-    , float weldscale = 2
+    , float weldscale = 1
     ) {
     MarchingTetra mt(grid, isovalue, weldscale);
     mt.march();
