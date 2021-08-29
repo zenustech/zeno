@@ -13,8 +13,8 @@ O=arts/testprimdup.zsg
 #O=arts/lowResMPM.zsg
 #O=arts/literialconst.zsg
 #O=arts/blendtest.zsg
-#default: justrun
-default: run
+default: justrun
+#default: run
 
 #####################################################
 ###### THIS FILE IS USED BY ARCHIBATE AND ZHXX ######
