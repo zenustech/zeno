@@ -232,7 +232,7 @@ struct NumericOperator : zeno::INode {
 ZENO_DEFNODE(NumericOperator)({
     {{"NumericObject", "lhs"}, {"NumericObject", "rhs"}},
     {{"NumericObject", "ret"}},
-    {{"ENUM"
+    {{"enum"
 #define _PER_FN(x) " " #x
     _PER_FN(add)
     _PER_FN(sub)

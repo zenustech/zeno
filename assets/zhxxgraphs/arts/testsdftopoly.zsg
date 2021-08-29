@@ -4134,7 +4134,7 @@
    ],
    "params": [
     [
-     "ENUM add sub mul div mod and or xor shr shl cmpge cmple mpgt mplt cmpne cmpeq pos neg inv not atan2 pow max min fmod dot cross distance length normalize abs sqrt sin cos tan asin acos atan exp log floor ceil toint tofloat copy copyr",
+     "enum add sub mul div mod and or xor shr shl cmpge cmple mpgt mplt cmpne cmpeq pos neg inv not atan2 pow max min fmod dot cross distance length normalize abs sqrt sin cos tan asin acos atan exp log floor ceil toint tofloat copy copyr",
      "op_type",
      "add"
     ]

@@ -120,7 +120,7 @@ class QDMGraphicsNode(QGraphicsItem):
         # todo: params are to be replaced by socket with default_value
         self.params.clear()
         for index, (type, name, defl) in enumerate(params):
-            if type.startswith('ENUM '):
+            if type.startswith('enum '):
                 param = QDMGraphicsParamEnum(self)
                 enums = type.split()[1:]
                 param.setEnums(enums)
