@@ -229,7 +229,7 @@ struct NumericOperator : zeno::INode {
     }
 };
 
-ZENDEFNODE(NumericOperator, {
+ZENO_DEFNODE(NumericOperator)({
     {{"NumericObject", "lhs"}, {"NumericObject", "rhs"}},
     {{"NumericObject", "ret"}},
     {{"ENUM"

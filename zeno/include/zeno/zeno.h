@@ -11,7 +11,8 @@ namespace zeno {
 template <class T>
 [[deprecated("use ZENO_DEFNODE(T)(...)")]]
 inline int defNodeClass(std::string const &id, Descriptor const &desc = {}) {
-    return getSession().defNodeClass(std::make_unique<T>, id, desc);
+    getSession().defNodeClass(std::make_unique<T>, id, desc);
+    return 1;
 }
 
 inline std::string dumpDescriptors() {
