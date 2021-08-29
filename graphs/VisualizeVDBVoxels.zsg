@@ -95,7 +95,7 @@
       ]
      },
      "params": {
-      "connType": 2
+      "type": "edges"
      },
      "uipos": [
       2560.9800683371295,
@@ -435,8 +435,8 @@
     }
    },
    "view_rect": {
-    "x": 2108.8614833492747,
-    "y": -118.43360005465053,
+    "x": 1895.1993962194397,
+    "y": -121.12615415487778,
     "width": 1874.9999999999989,
     "height": 695.3125
    }
@@ -1040,7 +1040,7 @@
      "1"
     ],
     [
-     "string",
+     "enum CSGUnion CSGIntersection CSGDifference",
      "OpType",
      "CSGUnion"
     ],
@@ -3604,7 +3604,7 @@
      "float"
     ],
     [
-     "string",
+     "enum vertex Centered Staggered",
      "structure",
      "Centered"
     ],
@@ -3650,9 +3650,9 @@
    ],
    "params": [
     [
-     "int",
-     "connType",
-     "2"
+     "enum points edges trifaces quadfaces",
+     "type",
+     "edges"
     ]
    ],
    "categories": [
@@ -3827,7 +3827,7 @@
      "0.08 0"
     ],
     [
-     "string",
+     "enum vertex cell",
      "type",
      "vertex"
     ]
@@ -4134,9 +4134,9 @@
    ],
    "params": [
     [
-     "ENUM mix clamp atan2 pow max min fmod dot cross distance length normalize abs sqrt sin cos tan asin acos atan exp log floor ceil toint tofloat copy copyr",
+     "enum add sub mul div mod and or xor shr shl cmpge cmple mpgt mplt cmpne cmpeq pos neg inv not atan2 pow max min fmod dot cross distance length normalize abs sqrt sin cos tan asin acos atan exp log floor ceil toint tofloat copy copyr",
      "op_type",
-     "copy"
+     "add"
     ]
    ],
    "categories": [
@@ -4924,7 +4924,7 @@
      "pos"
     ],
     [
-     "string",
+     "enum float float3",
      "type",
      "float3"
     ]
@@ -5353,7 +5353,7 @@
      "pos"
     ],
     [
-     "string",
+     "enum float float3",
      "attrType",
      ""
     ]
@@ -5399,7 +5399,7 @@
      "pos"
     ],
     [
-     "string",
+     "enum float float3",
      "type",
      "float3"
     ]
@@ -5835,7 +5835,7 @@
      "pos"
     ],
     [
-     "string",
+     "enum float float3",
      "type",
      "float3"
     ]
@@ -5871,7 +5871,7 @@
    ],
    "params": [
     [
-     "string",
+     "enum points lines tris quads",
      "primtype",
      "points"
     ],
@@ -6137,7 +6137,7 @@
      "0.08 0"
     ],
     [
-     "string",
+     "enum vertex cell",
      "type",
      "vertex"
     ]
