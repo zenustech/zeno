@@ -6,14 +6,12 @@
 
 namespace fdb::densegrid {
 
-template <typename T, int Log2Res, int Log2Offs = -1>
+template <typename T, int Log2Res, bool IsOffseted = false>
 struct DenseGrid {
     static constexpr int Log2ResX = Log2Res;
     static constexpr int Log2ResY = Log2Res;
     static constexpr int Log2ResZ = Log2Res;
-    static constexpr int Log2OffsX = Log2Offs;
-    static constexpr int Log2OffsY = Log2Offs;
-    static constexpr int Log2OffsZ = Log2Offs;
+    static constexpr bool Offseted = IsOffseted;
     using ValueType = T;
 
 private:
@@ -32,9 +30,6 @@ public:
 
 protected:
     constexpr T *address(vec3i ijk) const {
-        if constexpr (Log2Offs != -1) {
-            ijk += 1 << Log2Offs;
-        }
         size_t i = ijk[0] & ((1l << Log2ResX) - 1);
         size_t j = ijk[1] & ((1l << Log2ResY) - 1);
         size_t k = ijk[2] & ((1l << Log2ResZ) - 1);
@@ -61,11 +56,19 @@ public:
 
     template <class Pol, class F>
     void foreach(Pol const &pol, F const &func) {
-        ndrange_for(pol, vec3i(0),
-                1 << vec3i(Log2ResX, Log2ResY, Log2ResZ), [&] (auto ijk) {
-            auto &value = at(ijk);
-            func(ijk, value);
-        });
+        auto sz = 1 << vec3i(Log2ResX, Log2ResY, Log2ResZ);
+        if constexpr (IsOffseted) {
+            sz >>= 1;
+            ndrange_for(pol, -sz, sz, [&] (auto ijk) {
+                auto &value = at(ijk);
+                func(ijk, value);
+            });
+        } else {
+            ndrange_for(pol, vec3i(0), sz, [&] (auto ijk) {
+                auto &value = at(ijk);
+                func(ijk, value);
+            });
+        }
     }
 };
 
