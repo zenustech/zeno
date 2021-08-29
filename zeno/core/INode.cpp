@@ -126,14 +126,17 @@ ZENO_API std::shared_ptr<IObject> INode::get_input(std::string const &id, std::s
         return smart_any_cast<std::shared_ptr<IObject>>(obj, "input `" + id + "` ");
     auto num = std::make_shared<NumericObject>();
     using Types = typename zinc::is_variant<NumericValue>::tuple_type;
-    zinc::static_for<0, std::tuple_size_v<Types>>([&] (auto i) {
-        using T = zinc::any_underlying_type_t<std::tuple_element_t<i>>;
-        if (exact_any_cast<T>(obj)) {
-            num->set();
+    if (!zinc::static_for<0, std::tuple_size_v<Types>>([&] (auto i) {
+        using T = std::tuple_element_t<i, Types>;
+        if (auto o = exact_any_cast<T>(obj); o.has_value()) {
+            num->set(o.value());
+            return true;
         }
-    });
-    throw zeno::Exception("expecting `" + msg + "` (IObject pointer) for input `"
-            + id "`, got `" + obj.type().name() + "` (any)");
+        return false;
+    })) {
+        throw zeno::Exception("expecting `" + msg + "` (IObject ptr) for input `"
+                + id + "`, got `" + obj.type().name() + "` (any) [numeric cast also failed]");
+    }
     return num;
 }
 
