@@ -23,9 +23,9 @@ public:
     constexpr DenseGrid &operator=(DenseGrid const &) = delete;
     constexpr DenseGrid &operator=(DenseGrid &&) = default;
 
-    constexpr ValueType *data() const { return m_data; }
-    constexpr ValueType *data() { return m_data; }
-    constexpr size_t size() { return 1ul << 3 * Log2Res; }
+    inline constexpr ValueType const *data() const { return m_data; }
+    inline constexpr ValueType *data() { return m_data; }
+    inline constexpr size_t size() { return 1ul << 3 * Log2Res; }
 
 protected:
     constexpr T *address(vec3i ijk) const {
@@ -33,7 +33,7 @@ protected:
         size_t j = ijk[1] & ((1l << Log2ResY) - 1);
         size_t k = ijk[2] & ((1l << Log2ResZ) - 1);
         auto offset = i | (j << Log2ResX) | (k << Log2ResX + Log2ResY);
-        return const_cast<T *>(m_data.data() + offset);
+        return const_cast<T *>(data() + offset);
     }
 
 public:

@@ -36,9 +36,11 @@ int main() {
     openvdb::initialize();
     auto vdb = readVdbGrid<openvdb::FloatGrid>("/home/bate/Documents/fluidsdf.vdb");
 
-    //converter::from_vdb_grid(sdf, *vdb);
-
-    //converter::to_vdb_grid(sdf, *vdb);
+    converter::from_vdb_grid(sdf, *vdb);
+    sdf.foreach(Serial{}, [&] (auto ijk, auto &value) {
+        value += 0.01f;
+    });
+    converter::to_vdb_grid(sdf, *vdb);
 
     writeVdbGrid<openvdb::FloatGrid>("/tmp/a.vdb", vdb);
 
