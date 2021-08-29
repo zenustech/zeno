@@ -44,7 +44,7 @@ ZENDEFNODE(PrimitiveAddAttr,
     "prim",
     }, /* params: */ {
     {"string", "name", "pos"},
-    {"string", "type", "float3"},
+    {"enum float float3", "type", "float3"},
     }, /* category: */ {
     "primitive",
     } });
@@ -92,7 +92,7 @@ ZENDEFNODE(PrimitiveGetAttrValue,
     "value",
     }, /* params: */ {
     {"string", "name", "pos"},
-    {"string", "type", "float3"},
+    {"enum float float3", "type", "float3"},
     }, /* category: */ {
     "primitive",
     } });
@@ -136,7 +136,7 @@ ZENDEFNODE(PrimitiveSetAttrValue,
     }, /* outputs: */ {
     }, /* params: */ {
     {"string", "name", "pos"},
-    {"string", "type", "float3"},
+    {"enum float float3", "type", "float3"},
     }, /* category: */ {
     "primitive",
     } });
