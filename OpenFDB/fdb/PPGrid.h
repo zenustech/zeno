@@ -6,12 +6,16 @@
 
 namespace fdb::ppgrid {
 
-template <typename T, size_t Log2Dim1 = 3, size_t Log2Dim2 = 4, size_t Log2Dim3 = 5>
+template <typename T, int Log2Dim1 = 3, int Log2Dim2 = 4, int Log2Dim3 = 5, int Log2Offs3 = 4>
 struct PPGrid {
-    static constexpr size_t Log2Res = Log2Dim1 + Log2Dim2 + Log2Dim3;
-    static constexpr size_t Log2ResX = Log2Res;
-    static constexpr size_t Log2ResY = Log2Res;
-    static constexpr size_t Log2ResZ = Log2Res;
+    static constexpr int Log2Res = Log2Dim1 + Log2Dim2 + Log2Dim3;
+    static constexpr int Log2Offs = Log2Offs3 != -1 ? Log2Dim1 + Log2Dim2 + Log2Offs3 : -1;
+    static constexpr int Log2ResX = Log2Res;
+    static constexpr int Log2ResY = Log2Res;
+    static constexpr int Log2ResZ = Log2Res;
+    static constexpr int Log2OffsX = Log2Offs;
+    static constexpr int Log2OffsY = Log2Offs;
+    static constexpr int Log2OffsZ = Log2Offs;
     using ValueType = T;
 
 private:
@@ -36,8 +40,8 @@ private:
             std::conditional_t<(Log2Dim2 * 3 > 15), unsigned int,
             std::conditional_t<(Log2Dim2 * 3 > 7), unsigned short,
             unsigned char>>>;
-        densegrid::DenseGrid<InternalNode *, Log2Dim3> m_data;
-        densegrid::DenseGrid<AtomicCounterType, Log2Dim3> m_counter;
+        densegrid::DenseGrid<InternalNode *, Log2Dim3, Log2Offs3> m_data;
+        densegrid::DenseGrid<AtomicCounterType, Log2Dim3, Log2Offs3> m_counter;
 
         ~RootNode() {
             for (int i = 0; i < m_data.size(); i++) {

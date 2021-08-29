@@ -6,11 +6,14 @@
 
 namespace fdb::densegrid {
 
-template <typename T, size_t Log2Res>
+template <typename T, int Log2Res, int Log2Offs = -1>
 struct DenseGrid {
-    static constexpr size_t Log2ResX = Log2Res;
-    static constexpr size_t Log2ResY = Log2Res;
-    static constexpr size_t Log2ResZ = Log2Res;
+    static constexpr int Log2ResX = Log2Res;
+    static constexpr int Log2ResY = Log2Res;
+    static constexpr int Log2ResZ = Log2Res;
+    static constexpr int Log2OffsX = Log2Offs;
+    static constexpr int Log2OffsY = Log2Offs;
+    static constexpr int Log2OffsZ = Log2Offs;
     using ValueType = T;
 
 private:
@@ -29,6 +32,9 @@ public:
 
 protected:
     constexpr T *address(vec3i ijk) const {
+        if constexpr (Log2Offs != -1) {
+            ijk += 1 << Log2Offs;
+        }
         size_t i = ijk[0] & ((1l << Log2ResX) - 1);
         size_t j = ijk[1] & ((1l << Log2ResY) - 1);
         size_t k = ijk[2] & ((1l << Log2ResZ) - 1);
