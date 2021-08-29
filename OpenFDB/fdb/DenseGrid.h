@@ -56,19 +56,15 @@ public:
 
     template <class Pol, class F>
     void foreach(Pol const &pol, F const &func) {
-        auto sz = 1 << vec3i(Log2ResX, Log2ResY, Log2ResZ);
+        int beg = 0, end = 1 << Log2Res;
         if constexpr (IsOffseted) {
-            sz >>= 1;
-            ndrange_for(pol, -sz, sz, [&] (auto ijk) {
-                auto &value = at(ijk);
-                func(ijk, value);
-            });
-        } else {
-            ndrange_for(pol, vec3i(0), sz, [&] (auto ijk) {
-                auto &value = at(ijk);
-                func(ijk, value);
-            });
+            end >>= 1;
+            beg = -end;
         }
+        ndrange_for(pol, vec3i(beg), vec3i(end), [&] (auto ijk) {
+            auto &value = at(ijk);
+            func(ijk, value);
+        });
     }
 };
 

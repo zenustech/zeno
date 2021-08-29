@@ -6,16 +6,13 @@
 
 namespace fdb::ppgrid {
 
-template <typename T, int Log2Dim1 = 3, int Log2Dim2 = 4, int Log2Dim3 = 5, int Log2Offs3 = 4>
+template <typename T, int Log2Dim1 = 3, int Log2Dim2 = 4, int Log2Dim3 = 5, bool IsOffseted = true>
 struct PPGrid {
     static constexpr int Log2Res = Log2Dim1 + Log2Dim2 + Log2Dim3;
-    static constexpr int Log2Offs = Log2Offs3 != -1 ? Log2Dim1 + Log2Dim2 + Log2Offs3 : -1;
     static constexpr int Log2ResX = Log2Res;
     static constexpr int Log2ResY = Log2Res;
     static constexpr int Log2ResZ = Log2Res;
-    static constexpr int Log2OffsX = Log2Offs;
-    static constexpr int Log2OffsY = Log2Offs;
-    static constexpr int Log2OffsZ = Log2Offs;
+    static constexpr bool Offseted = IsOffseted;
     using ValueType = T;
 
 private:
@@ -40,8 +37,8 @@ private:
             std::conditional_t<(Log2Dim2 * 3 > 15), unsigned int,
             std::conditional_t<(Log2Dim2 * 3 > 7), unsigned short,
             unsigned char>>>;
-        densegrid::DenseGrid<InternalNode *, Log2Dim3, Log2Offs3> m_data;
-        densegrid::DenseGrid<AtomicCounterType, Log2Dim3, Log2Offs3> m_counter;
+        densegrid::DenseGrid<InternalNode *, Log2Dim3, IsOffseted> m_data;
+        densegrid::DenseGrid<AtomicCounterType, Log2Dim3, IsOffseted> m_counter;
 
         ~RootNode() {
             for (int i = 0; i < m_data.size(); i++) {
@@ -123,7 +120,12 @@ public:
 
     template <class Pol, class F>
     void foreach_leaf(Pol const &pol, F const &func) const {
-        ndrange_for(pol, vec3i(0), vec3i(1 << Log2Dim3), [&] (auto ijk3) {
+        int beg = 0, end = 1 << Log2Dim3;
+        if constexpr (IsOffseted) {
+            end >>= 1;
+            beg = -end;
+        }
+        ndrange_for(pol, vec3i(beg), vec3i(end), [&] (auto ijk3) {
             auto *node = m_root.m_data.at(ijk3);
             if (node) {
                 ndrange_for(Serial{}, vec3i(0), vec3i(1 << Log2Dim2), [&] (auto ijk2) {
