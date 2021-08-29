@@ -232,7 +232,41 @@ struct NumericOperator : zeno::INode {
 ZENDEFNODE(NumericOperator, {
     {{"NumericObject", "lhs"}, {"NumericObject", "rhs"}},
     {{"NumericObject", "ret"}},
-    {{"string", "op_type", "copy"}},
+    {{"ENUM"
+#define _PER_FN(x) " " #x
+    _PER_FN(mix)
+    _PER_FN(clamp)
+
+    _PER_FN(atan2)
+    _PER_FN(pow)
+    _PER_FN(max)
+    _PER_FN(min)
+    _PER_FN(fmod)
+    _PER_FN(dot)
+    _PER_FN(cross)
+    _PER_FN(distance)
+
+    _PER_FN(length)
+    _PER_FN(normalize)
+    _PER_FN(abs)
+    _PER_FN(sqrt)
+    _PER_FN(sin)
+    _PER_FN(cos)
+    _PER_FN(tan)
+    _PER_FN(asin)
+    _PER_FN(acos)
+    _PER_FN(atan)
+    _PER_FN(exp)
+    _PER_FN(log)
+    _PER_FN(floor)
+    _PER_FN(ceil)
+    _PER_FN(toint)
+    _PER_FN(tofloat)
+
+    _PER_FN(copy)
+    _PER_FN(copyr)
+#undef _PER_FN
+    , "op_type", "copy"}},
     {"numeric"},
 });
 

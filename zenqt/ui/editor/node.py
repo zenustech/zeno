@@ -120,6 +120,10 @@ class QDMGraphicsNode(QGraphicsItem):
         # todo: params are to be replaced by socket with default_value
         self.params.clear()
         for index, (type, name, defl) in enumerate(params):
+            if type.startswith('ENUM '):
+                type = 'string'
+                enums = type.splitstr()[1:]
+                defl = repr(enums)
             param = globals()['QDMGraphicsParam_' + type](self)
             rect = QRectF(HORI_MARGIN, y, self.width - HORI_MARGIN * 2, 0)
             param.setGeometry(rect)

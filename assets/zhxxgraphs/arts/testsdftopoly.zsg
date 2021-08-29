@@ -25,8 +25,8 @@
      "name": "SDFToPoly",
      "inputs": {
       "SDF": [
-       "6c3850cc-ReadVDBGrid",
-       "data",
+       "40e9fbc9-MeshToSDF",
+       "sdf",
        null
       ],
       "SRC": [
@@ -41,8 +41,8 @@
       "allowQuads": false
      },
      "uipos": [
-      880.7391343963553,
-      210.7130751708428
+      1196.7190338938428,
+      -64.26179920101643
      ],
      "options": []
     },
@@ -62,8 +62,80 @@
      },
      "params": {},
      "uipos": [
-      1163.0738952164008,
-      220.5740318906606
+      1479.053794713888,
+      -54.40084248119862
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "ae815843-ReadObjMesh": {
+     "name": "ReadObjMesh",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": "/home/bate/zeno/assets/monkey.obj"
+     },
+     "uipos": [
+      609.2141230068338,
+      -103.39407744874714
+     ],
+     "options": []
+    },
+    "40e9fbc9-MeshToSDF": {
+     "name": "MeshToSDF",
+     "inputs": {
+      "mesh": [
+       "ae815843-ReadObjMesh",
+       "mesh",
+       null
+      ],
+      "Dx": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "voxel_size": 0.08,
+      "type": "vertex"
+     },
+     "uipos": [
+      905.2050113895216,
+      -100.35307517084281
+     ],
+     "options": []
+    },
+    "02dc3bba-WriteVDBGrid": {
+     "name": "WriteVDBGrid",
+     "inputs": {
+      "data": [
+       "40e9fbc9-MeshToSDF",
+       "sdf",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": "/tmp/origin.vdb"
+     },
+     "uipos": [
+      1195.577889447236,
+      -266.1306532663316
      ],
      "options": [
       "VIEW"
@@ -71,10 +143,10 @@
     }
    },
    "view_rect": {
-    "x": 280.1776765375731,
-    "y": 17.536446469250535,
-    "width": 1199.9999999999995,
-    "height": 445.0
+    "x": 899.5451013609994,
+    "y": -323.5769714174497,
+    "width": 959.9999999999997,
+    "height": 356.0
    }
   }
  },

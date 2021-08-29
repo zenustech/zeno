@@ -34,11 +34,12 @@ int main() {
     ppgrid::PPGrid<float> sdf;
 
     openvdb::initialize();
-    auto vdb = readVdbGrid<openvdb::FloatGrid>("/home/bate/Documents/fluidsdf.vdb");
+    auto vdb = readVdbGrid<openvdb::FloatGrid>("/tmp/origin.vdb");
 
     converter::from_vdb_grid(sdf, *vdb);
     sdf.foreach(Serial{}, [&] (auto ijk, auto &value) {
-        value += 0.1f;
+        printf("%d %d %d\n", ijk[0], ijk[1], ijk[2]);
+        value = 0;
     });
     converter::to_vdb_grid(sdf, *vdb);
 
