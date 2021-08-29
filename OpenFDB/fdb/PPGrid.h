@@ -6,6 +6,19 @@
 
 namespace fdb::ppgrid {
 
+template <typename T>
+inline atomic_allocate_pointer(std::atomic<T *> &ptr) {
+    static thread_local T *preallocated = nullptr;
+    if (!preallocated) preallocated = new T;
+    T *old_ptr = ptr;
+    while (!ptr.compare_exchage_weak(old_ptr, preallocated));
+    preallocated = new T;
+}
+
+template <typename T, typename CounterT>
+inline atomic_allocate_pointer(T *&ptr, CounterT &cnt) {
+}
+
 template <typename T, int Log2Dim1 = 3, int Log2Dim2 = 4, int Log2Dim3 = 5, bool IsOffseted = true>
 struct PPGrid {
     static constexpr int Log2Res = Log2Dim1 + Log2Dim2 + Log2Dim3;
@@ -21,7 +34,7 @@ private:
     };
 
     struct InternalNode {
-        densegrid::DenseGrid<LeafNode *, Log2Dim2, false> m_data;  // 32 KiB
+        densegrid::DenseGrid<std::atomic<LeafNode *>, Log2Dim2, false> m_data;  // 32 KiB
         densegrid::DenseGrid<ValueType, Log2Dim2, false> m_tiles;  // 16 KiB
 
         ~InternalNode() {
@@ -34,13 +47,8 @@ private:
     };
 
     struct RootNode {
-        using AtomicCounterType = std::atomic<
-            std::conditional_t<(Log2Dim2 * 3 > 15), unsigned int,
-            std::conditional_t<(Log2Dim2 * 3 > 7), unsigned short,
-            unsigned char>>>;
-        densegrid::DenseGrid<InternalNode *, Log2Dim3, IsOffseted> m_data;  // 256 KiB
+        densegrid::DenseGrid<std::atomic<InternalNode *>, Log2Dim3, IsOffseted> m_data;  // 256 KiB
         densegrid::DenseGrid<ValueType, Log2Dim3, IsOffseted> m_tiles;  // 128 KiB
-        densegrid::DenseGrid<AtomicCounterType, Log2Dim3, IsOffseted> m_leafcnt;  // 64 KiB
 
         ~RootNode() {
             for (int i = 0; i < m_data.size(); i++) {
@@ -61,30 +69,26 @@ protected:
         return leaf;
     }
 
-    LeafNode *touch_leaf(vec3i ijk) {
-        auto *&node = m_root.m_data.at(ijk >> Log2Dim2);
-        if (!node)
+    LeafNode *touch_leaf_unsafe(vec3i ijk) {
+        auto &node_a = m_root.m_data.at(ijk >> Log2Dim2);
+        auto *node = node_a.load();
+        if (!node) {
             node = new InternalNode;
-        auto *&leaf = node->m_data.at(ijk);
+            node_a.store(node);
+        }
+        auto &leaf_a = node->m_data.at(ijk);
+        auto *leaf = leaf_a.load();
         if (!leaf) {
-            ++m_root.m_leafcnt.at(ijk >> Log2Dim2);
             leaf = new LeafNode;
+            leaf_a.store(leaf);
         }
         return leaf;
     }
 
-    void delete_leaf(vec3i ijk) {
-        auto *&node = m_root.m_data.at(ijk >> Log2Dim2);
-        if (!node) return;
-        auto *&leaf = node->m_data.at(ijk);
-        if (leaf) {
-            delete leaf;
-            leaf = nullptr;
-            if (!--m_root.m_leafcnt.at(ijk >> Log2Dim2)) {
-                delete node;
-                node = nullptr;
-            }
-        }
+    LeafNode *touch_leaf(vec3i ijk) {
+        auto *node = atomic_allocate_pointer(m_root.m_data.at(ijk >> Log2Dim2));
+        auto *leaf = atomic_allocate_pointer(node->m_data.at(ijk));
+        return leaf;
     }
 
 public:
@@ -94,6 +98,11 @@ public:
         auto *leaf = node->m_data.at(ijk);
         if (!leaf) return node->m_tiles.get(ijk >> Log2Dim1);
         return leaf->m_data.get(ijk);
+    }
+
+    void set_unsafe(vec3i ijk, ValueType value) {
+        auto *leaf = touch_leaf_unsafe(ijk >> Log2Dim1);
+        leaf->m_data.set(ijk, value);
     }
 
     void set(vec3i ijk, ValueType value) {

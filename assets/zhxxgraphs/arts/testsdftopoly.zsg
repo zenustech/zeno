@@ -107,7 +107,7 @@
       ]
      },
      "params": {
-      "voxel_size": 0.4,
+      "voxel_size": 0.08,
       "type": "vertex"
      },
      "uipos": [

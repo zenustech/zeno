@@ -59,7 +59,7 @@ void to_vdb_grid(OurGridT &ourGrid, VdbGridT &vdbGrid) {
             //printf("%f vs %f\n", vdbValue, value);
         vdbAxr.setValue(coord, value);
     };
-    ourGrid.foreach(Serial{}, wrangler);
+    ourGrid.foreach(Serial{}, wrangler); // todo: TBBParallel{}
 }
 
 }
