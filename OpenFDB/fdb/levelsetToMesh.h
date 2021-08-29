@@ -126,7 +126,7 @@ inline void add_two_triangles_case(vec3i cube_idx, uint8_t i0, uint8_t i1, uint8
   m_tris.emplace_back(cube_idx, vec3i(e2, e1, e3));
 }
 
-inline float sample(size_t cx, size_t cy, size_t cz) {
+inline float sample(int cx, int cy, int cz) {
     return m_sdf->get(vec3i(cx,cy,cz)) - m_isovalue;
 }
 
@@ -137,6 +137,9 @@ void compute_cube(vec3i cube_index) {
     auto cx = cube_index[0];
     auto cy = cube_index[1];
     auto cz = cube_index[2];
+    auto val = m_sdf->get(vec3i(cx,cy,cz));
+    if (val) printf("%d %d %d %f\n", cx, cy, cz, val);
+
     float vals[8] = {
         sample(cx, cy, cz),
         sample(cx+1, cy, cz),
@@ -378,24 +381,23 @@ void smooth_mesh(int niters) {
 }
 
 void compute_cubes() {
-    FILE *fp = fopen("a.txt", "w");
+    //FILE *fp = fopen("a.txt", "w");
     m_sdf->foreach(Serial{}, [&] (auto idx, auto const &val) {
-            fprintf(fp, "%d %d %d %f\n", idx[0], idx[1], idx[2], val);
         compute_cube(idx);
     });
-    fclose(fp);
+    //fclose(fp);
 }
 
 public:
 void march() {
     compute_cubes();
     march_tetra();
-    weld_close();
-    flip_edges();
-    flip_edges();
-    flip_edges();
-    flip_edges();
-    smooth_mesh(4);
+    //weld_close();
+    //flip_edges();
+    //flip_edges();
+    //flip_edges();
+    //flip_edges();
+    //smooth_mesh(4);
 }
 
 inline auto const &triangles() const { return m_triangles; }
