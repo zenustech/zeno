@@ -28,11 +28,11 @@ void from_vdb_grid(OurGridT &ourGrid, VdbGridT &vdbGrid) {
     openvdb::tree::LeafManager<TreeType> leafman(vdbGrid.tree());
     leafman.foreach(wrangler);
 
-    std::vector<LeafNodeType *> nodes;
+    /*std::vector<LeafNodeType *> nodes;
     vdbGrid.tree().getNodes(nodes);
     for (auto const &node: nodes) {
         printf("%p\n", node);
-    }
+    }*/
 }
 
 template <class VdbGridT>

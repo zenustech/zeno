@@ -103,9 +103,9 @@ inline static uint8_t TETRA_LOOKUP_PERM[16][4] = {
 template <class GridT>
 struct MarchingTetra {
 public:
-MarchingTetra(GridT const &sdf, float isovalue) : m_sdf(&sdf), m_isovalue(isovalue) {}
+MarchingTetra(GridT &sdf, float isovalue) : m_sdf(&sdf), m_isovalue(isovalue) {}
 private:
-GridT const *m_sdf;
+GridT *m_sdf;
 float m_isovalue;
 
 std::vector<std::pair<vec3i, vec3i>> m_tris;

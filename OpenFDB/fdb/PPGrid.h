@@ -76,9 +76,9 @@ protected:
 
 public:
     ValueType get(vec3i ijk) const {
-        auto *node = m_root.m_data.at(ijk >> Log2Dim2 + Log2Dim1);
+        auto *node = m_root.m_data.at(ijk >> Log2Dim2 + Log2Dim1).load();
         if (!node) return m_root.m_tiles.get(ijk >> Log2Dim2 + Log2Dim1);
-        auto *leaf = node->m_data.at(ijk);
+        auto *leaf = node->m_data.at(ijk).load();
         if (!leaf) return node->m_tiles.get(ijk >> Log2Dim1);
         return leaf->m_data.get(ijk);
     }
