@@ -22,7 +22,7 @@ typename GridT::Ptr readVdbGrid(const std::string &fn) {
       return openvdb::gridPtrCast<GridT>(*iter);
     }
   }
-  return nullptr;
+  throw "cannot readVdbGrid";
 }
 
 template <typename GridT>
@@ -33,7 +33,8 @@ void writeVdbGrid(const std::string &fn, typename GridT::Ptr grid) {
 int main() {
     ppgrid::PPGrid<float> sdf;
 
-    auto vdb = readVdbGrid<openvdb::FloatGrid>("/home/bate/fluidsdf.vdb");
+    openvdb::initialize();
+    auto vdb = readVdbGrid<openvdb::FloatGrid>("/home/bate/Documents/fluid000060.vdb");
 
     converter::from_vdb_grid(sdf, *vdb);
 
