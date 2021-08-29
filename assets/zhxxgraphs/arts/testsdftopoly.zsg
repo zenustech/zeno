@@ -435,10 +435,10 @@
     }
    },
    "view_rect": {
-    "x": 2108.8614833492747,
-    "y": -118.43360005465053,
-    "width": 1874.9999999999989,
-    "height": 695.3125
+    "x": 2144.0878767413496,
+    "y": 283.6034546307889,
+    "width": 959.9999999999994,
+    "height": 356.0
    }
   }
  },
@@ -4134,9 +4134,9 @@
    ],
    "params": [
     [
-     "ENUM mix clamp atan2 pow max min fmod dot cross distance length normalize abs sqrt sin cos tan asin acos atan exp log floor ceil toint tofloat copy copyr",
+     "ENUM add sub mul div mod and or xor shr shl cmpge cmple mpgt mplt cmpne cmpeq pos neg inv not atan2 pow max min fmod dot cross distance length normalize abs sqrt sin cos tan asin acos atan exp log floor ceil toint tofloat copy copyr",
      "op_type",
-     "copy"
+     "add"
     ]
    ],
    "categories": [

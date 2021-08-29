@@ -153,16 +153,15 @@ class QDMGraphicsParam_string(QDMGraphicsParam):
 class QDMGraphicsParamEnum(QDMGraphicsParam):
     def initLayout(self):
         self.edit = QComboBox()
+        self.edit.setEditable(True)
         super().initLayout()
 
     def setEnums(self, enums):
         self.edit.addItems(enums)
 
     def setValue(self, value):
-        self.edit.setText(str(value))
-
-    def setValue(self, value):
         self.edit.setCurrentText(str(value))
+        self.edit.setEditText(str(value))
 
     def getValue(self):
         return str(self.edit.currentText())
