@@ -57,7 +57,7 @@ struct MakeVDBGrid : zeno::INode {
 };
 
 static int defMakeVDBGrid = zeno::defNodeClass<MakeVDBGrid>(
-    "MakeVDBGrid", {/* inputs: */ {"Dx",}, /* outputs: */
+    "MakeVDBGrid", {/* inputs: */ {{"float","Dx"},}, /* outputs: */
                     {
                         "data",
                     },

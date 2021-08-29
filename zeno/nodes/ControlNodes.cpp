@@ -197,7 +197,7 @@ struct SubstepDt : zeno::INode {
 
 ZENDEFNODE(SubstepDt, {
     {"FOR", {"float", "desired_dt", "0.04"}},
-    {{"float", "actual_dt", {"float", "portion"}},
+    {{"float", "actual_dt"}, {"float", "portion"}},
     {},
     {"control"},
 });
