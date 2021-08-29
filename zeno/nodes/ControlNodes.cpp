@@ -212,15 +212,11 @@ struct IfElse : zeno::INode {
         if (has_option("MUTE")) {
             requireInput("true");
         } else if (evaluate_condition(cond.get())) {
-            printf("\n\n\n\n\n\n\nTTRTTJHKLDhjklsd\n\n\n\n\n\n\n\n");
             if (requireInput("true")) {
-            printf("\n\n\n\n\n\n\nTTRTTJHKLDhjklsd\n\n\n\n\n\n\n\n");
                 set_output2("result", get_input2("true"));
             }
         } else {
-            printf("\n\n\n\n\n\n\nffffffffffffffff\n\n\n\n\n\n\n\n");
             if (requireInput("false")) {
-            printf("\n\n\n\n\n\n\nffffffffffffffff\n\n\n\n\n\n\n\n");
                 set_output2("result", get_input2("false"));
             }
         }
