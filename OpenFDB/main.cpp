@@ -38,7 +38,7 @@ int main() {
 
     converter::from_vdb_grid(sdf, *vdb);
     sdf.foreach(Serial{}, [&] (auto ijk, auto &value) {
-        value += 0.01f;
+        value += 0.1f;
     });
     converter::to_vdb_grid(sdf, *vdb);
 
