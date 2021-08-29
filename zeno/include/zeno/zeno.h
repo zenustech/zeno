@@ -8,13 +8,8 @@
 
 namespace zeno {
 
-template <class F>
-inline int defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {
-    return getSession().defNodeClass(ctor, id, desc);
-}
-
 template <class T>
-[[deprecated("use ZENDEFNODE(T, ...)")]]
+[[deprecated("use ZENO_DEFNODE(T)(...)")]]
 inline int defNodeClass(std::string const &id, Descriptor const &desc = {}) {
     return getSession().defNodeClass(std::make_unique<T>, id, desc);
 }
@@ -74,8 +69,19 @@ inline std::unique_ptr<Scene> createScene() {
     return getSession().createScene();
 }
 
+template <class F>
+auto defNodeClassHelper(F const &func, std::string const &name) {
+    return [=] (zeno::Descriptor const &desc) -> int {
+        getSession().defNodeClass(func, name, desc);
+        return 1;
+    };
+};
 
+#define ZENO_DEFNODE(Class) \
+    static int def##Class = zeno::defNodeClassHelper(std::make_unique<Class>, #Class)
+
+// [[deprecated("use ZENO_DEFNODE(T)(...)")]]
 #define ZENDEFNODE(Class, ...) \
-    static int def##Class = zeno::defNodeClass(std::make_unique<Class>, #Class, __VA_ARGS__)
+    ZENO_DEFNODE(Class)(__VA_ARGS__)
 
 }
