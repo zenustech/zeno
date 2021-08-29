@@ -108,6 +108,7 @@ class QDMGraphicsSocket(QGraphicsItem):
         type = self.type
         if type == 'NumericObject':
             type = 'float'  # for convinent editing for NumericOperator..
+        print('type')
         if type.startswith('enum '):
             self.paramEdit = QDMGraphicsParamEnum(self)
             enums = type.split()[1:]
