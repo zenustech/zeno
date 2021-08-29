@@ -71,7 +71,7 @@ struct PrimitiveCalcVelocity : zeno::INode {
 ZENDEFNODE(PrimitiveCalcVelocity,
     { /* inputs: */ {
     {"PrimitiveObject", "prim"},
-    {"float", "dt"},
+    {"float", "dt", "0.04"},
     }, /* outputs: */ {
     {"PrimitiveObject", "prim"},
     }, /* params: */ {

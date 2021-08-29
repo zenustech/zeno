@@ -68,7 +68,7 @@ struct Make2DGridPrimitive : INode {
 
 ZENDEFNODE(Make2DGridPrimitive,
         { /* inputs: */ {
-        {"int", "nx"},
+        {"int", "nx", "2"},
         {"int", "ny"},
         {"vec3f", "sizeX"},
         {"vec3f", "sizeY"},
@@ -136,7 +136,7 @@ struct Make3DGridPrimitive : INode {
 
 ZENDEFNODE(Make3DGridPrimitive,
         { /* inputs: */ {
-        {"int", "nx"},
+        {"int", "nx", "2"},
         {"int", "ny"},
         {"int", "nz"},
         {"vec3f", "sizeX"},
