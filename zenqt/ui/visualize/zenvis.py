@@ -39,7 +39,7 @@ def _frameUpdate():
     frameid = get_curr_frameid()
     if status['playing']:
         frameid += 1
-    set_curr_frameid(frameid)
+    frameid = set_curr_frameid(frameid)
     core.auto_gc_frame_data(status['cache_frames'])
     #print(core.get_valid_frames_list())
     core.set_show_grid(status['show_grid'])
@@ -76,3 +76,4 @@ def set_curr_frameid(frameid):
     if frameid >= fileio.getFrameCount():
         frameid = fileio.getFrameCount() - 1
     core.set_curr_frameid(frameid)
+    return frameid
