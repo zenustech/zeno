@@ -550,6 +550,7 @@ class QDMGraphicsView(QGraphicsView):
             zoomFactor = 1 / self.ZOOM_FACTOR
 
         self.scale(zoomFactor, zoomFactor, event.pos())
+        self._update_scene_rect()
 
     def resizeEvent(self, event):
         if self.scene()._scene_rect is None:
@@ -576,6 +577,7 @@ class QDMGraphicsView(QGraphicsView):
 
     def _update_scene_rect(self):
         rect = self.scene()._scene_rect
+        print(rect, rect, rect)
         self.setSceneRect(rect)
         self.fitInView(rect, Qt.KeepAspectRatio)
 
