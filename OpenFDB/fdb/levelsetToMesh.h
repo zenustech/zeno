@@ -103,10 +103,12 @@ inline static uint8_t TETRA_LOOKUP_PERM[16][4] = {
 template <class GridT>
 struct MarchingTetra {
 public:
-MarchingTetra(GridT &sdf, float isovalue) : m_sdf(&sdf), m_isovalue(isovalue) {}
+MarchingTetra(GridT &sdf, float isovalue, float weldscale)
+    : m_sdf(&sdf), m_isovalue(isovalue), m_weldscale(weldscale) {}
 private:
 GridT *m_sdf;
 float m_isovalue;
+float m_weldscale;
 
 std::vector<std::pair<vec3i, vec3i>> m_tris;
 
@@ -259,7 +261,7 @@ void weld_close() {
     std::map<std::tuple<int, int, int>, std::vector<int>> rear;
     for (int i = 0; i < m_vertices.size(); i++) {
         auto pos = m_vertices[i];
-        vec3i ipos(floor(pos * 4.f + 0.5f));
+        vec3i ipos(floor(pos * m_weldscale + 0.5f));
         rear[std::make_tuple(ipos[0], ipos[1], ipos[2])].push_back(i);
     }
     std::map<int, int> lut;
@@ -415,8 +417,9 @@ auto marching_tetra
     , std::vector<vec3f> &vertices
     , std::vector<vec3I> &triangles
     , float isovalue = 0
+    , float weldscale = 1.414f
     ) {
-    MarchingTetra mt(grid, isovalue);
+    MarchingTetra mt(grid, isovalue, weldscale);
     mt.march();
     vertices = std::move(mt.vertices());
     triangles = std::move(mt.triangles());
