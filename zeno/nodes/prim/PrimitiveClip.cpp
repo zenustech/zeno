@@ -206,18 +206,20 @@ namespace zeno {
             zeno::vec3f origin = { 0,0,0 };
             zeno::vec3f direction = { 0,1,0 };
             float distance = 0.0f;
-            auto reverse = get_param<bool>("reverse");
+            int reverse = false;
             if (has_input("origin"))
                 origin = get_input<zeno::NumericObject>("origin")->get<zeno::vec3f>();
             if (has_input("direction"))
                 direction = get_input<zeno::NumericObject>("direction")->get<zeno::vec3f>();
             if (has_input("distance"))
                 distance = get_input<zeno::NumericObject>("distance")->get<float>();
+            if (has_input("reverse"))
+                reverse = get_input<zeno::NumericObject>("reverse")->get<int>();
             if (lengthSquared(direction) < 0.000001f) {
                 set_output("outPrim", get_input("prim"));
                 return;
             }
-            direction = reverse ? -normalize(direction) : normalize(direction);
+            direction = reverse > 0 ? -normalize(direction) : normalize(direction);
             origin += direction * distance;
 
             auto refprim = get_input<PrimitiveObject>("prim");
@@ -264,9 +266,9 @@ namespace zeno {
     };
 
 ZENDEFNODE(PrimitiveClip, {
-    {"prim", {"vec3f", "origin"}, {"vec3f", "direction"}, {"vec3f", "distance"}},
+    {"prim", "origin", "direction", "distance", "reverse"},
     {"outPrim"},
-    {{"bool", "reverse", "0"}},
+    {},
     {"primitive"},
     });
 }

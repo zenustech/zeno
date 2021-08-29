@@ -44,7 +44,7 @@ static int defVDBRenormalizeSDF = zeno::defNodeClass<VDBRenormalizeSDF>("VDBReno
      }, /* outputs: */ {
      "inoutSDF",
      }, /* params: */ {
-         {"enum 1oUpwind", "method", "1oUpwind"},
+         {"string", "method", "1oUpwind"},
          {"int", "iterations", "4"},
          {"int", "dilateIters", "0"},
      }, /* category: */ {
@@ -89,7 +89,7 @@ struct  VDBDilateTopo : zeno::INode {
 
 static int defVDBDilateTopo = zeno::defNodeClass<VDBDilateTopo>("VDBDilateTopo",
      { /* inputs: */ {
-     "inField", {"int", "layers",} 
+     "inField", "layers", 
      }, /* outputs: */ {
        "oField"
      }, /* params: */ {
@@ -117,7 +117,7 @@ struct VDBErodeSDF : zeno::INode {
 
 static int defVDBErodeSDF = zeno::defNodeClass<VDBErodeSDF>("VDBErodeSDF",
      { /* inputs: */ {
-     "inoutSDF", {"float", "depth"}, 
+     "inoutSDF", "depth", 
      }, /* outputs: */ {
        "inoutSDF",
      }, /* params: */ {

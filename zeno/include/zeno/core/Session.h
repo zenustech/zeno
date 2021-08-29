@@ -46,8 +46,9 @@ struct Session {
     ZENO_API void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
 
     template <class F>
-    void defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {
+    int defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {
         _defNodeClass(id, std::make_unique<ImplNodeClass<F>>(ctor, desc));
+        return 1;
     }
 };
 

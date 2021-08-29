@@ -103,12 +103,10 @@ inline static uint8_t TETRA_LOOKUP_PERM[16][4] = {
 template <class GridT>
 struct MarchingTetra {
 public:
-MarchingTetra(GridT &sdf, float isovalue, float weldscale)
-    : m_sdf(&sdf), m_isovalue(isovalue), m_weldscale(weldscale) {}
+MarchingTetra(GridT const &sdf, float isovalue) : m_sdf(&sdf), m_isovalue(isovalue) {}
 private:
-GridT *m_sdf;
+GridT const *m_sdf;
 float m_isovalue;
-float m_weldscale;
 
 std::vector<std::pair<vec3i, vec3i>> m_tris;
 
@@ -128,7 +126,7 @@ inline void add_two_triangles_case(vec3i cube_idx, uint8_t i0, uint8_t i1, uint8
   m_tris.emplace_back(cube_idx, vec3i(e2, e1, e3));
 }
 
-inline float sample(int cx, int cy, int cz) {
+inline float sample(size_t cx, size_t cy, size_t cz) {
     return m_sdf->get(vec3i(cx,cy,cz)) - m_isovalue;
 }
 
@@ -261,7 +259,7 @@ void weld_close() {
     std::map<std::tuple<int, int, int>, std::vector<int>> rear;
     for (int i = 0; i < m_vertices.size(); i++) {
         auto pos = m_vertices[i];
-        vec3i ipos(floor(pos * m_weldscale + 0.01f));
+        vec3i ipos(floor(pos * 4.f + 0.5f));
         rear[std::make_tuple(ipos[0], ipos[1], ipos[2])].push_back(i);
     }
     std::map<int, int> lut;
@@ -380,26 +378,22 @@ void smooth_mesh(int niters) {
 }
 
 void compute_cubes() {
-    //FILE *fp = fopen("a.txt", "w");
-    m_sdf->foreach(Serial{}, [&] (auto idx, auto const &val) {
+    // TODO: may need dilateActiveValues(1) first..
+    m_sdf->foreach(Serial{}, [&] (auto idx, auto const &) {
         compute_cube(idx);
     });
-    //fclose(fp);
 }
 
 public:
 void march() {
-    printf("compute_cubes\n");
     compute_cubes();
-    printf("march_tetra\n");
     march_tetra();
-    printf("weld_close\n");
     weld_close();
-    printf("flip_edges\n");
     flip_edges();
-    printf("smooth_mesh\n");
-    smooth_mesh(3);
-    //printf("done\n");
+    flip_edges();
+    flip_edges();
+    flip_edges();
+    smooth_mesh(4);
 }
 
 inline auto const &triangles() const { return m_triangles; }
@@ -415,9 +409,8 @@ auto marching_tetra
     , std::vector<vec3f> &vertices
     , std::vector<vec3I> &triangles
     , float isovalue = 0
-    , float weldscale = 1
     ) {
-    MarchingTetra mt(grid, isovalue, weldscale);
+    MarchingTetra mt(grid, isovalue);
     mt.march();
     vertices = std::move(mt.vertices());
     triangles = std::move(mt.triangles());

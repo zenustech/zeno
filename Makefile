@@ -1,7 +1,5 @@
-O=a.zsg
 #O=arts/flip.zsg
-#O=arts/testsdftopoly.zsg
-#O=arts/testprimdup.zsg
+O=arts/testprimdup.zsg
 #O=arts/testnumvecop.zsg
 #O=arts/pa2ls.zsg
 #O=arts/testkillpars.zsg
@@ -15,8 +13,8 @@ O=a.zsg
 #O=arts/lowResMPM.zsg
 #O=arts/literialconst.zsg
 #O=arts/blendtest.zsg
-#default: justrun
-default: run
+default: justrun
+#default: run
 
 #####################################################
 ###### THIS FILE IS USED BY ARCHIBATE AND ZHXX ######

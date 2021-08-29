@@ -50,7 +50,7 @@ struct CachePrimitive : zeno::INode {
 
 ZENDEFNODE(CachePrimitive,
     { /* inputs: */ {
-    "inPrim", {"int", "frameNum"},
+    "inPrim", "frameNum",
     }, /* outputs: */ {
     "outPrim",
     }, /* params: */ {

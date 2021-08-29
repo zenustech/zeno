@@ -68,12 +68,12 @@ struct Make2DGridPrimitive : INode {
 
 ZENDEFNODE(Make2DGridPrimitive,
         { /* inputs: */ {
-        {"int", "nx", "2"},
-        {"int", "ny"},
-        {"vec3f", "sizeX"},
-        {"vec3f", "sizeY"},
-        {"float", "scale"},
-        {"vec3f", "origin"},
+        {"NumericObject:int", "nx"},
+        {"NumericObject:int", "ny"},
+        {"NumericObject:vec3f", "sizeX"},
+        {"NumericObject:vec3f", "sizeY"},
+        {"NumericObject:float", "scale"},
+        {"NumericObject:vec3f", "origin"},
         }, /* outputs: */ {
         {"PrimitiveObject", "prim"},
         }, /* params: */ {
@@ -136,14 +136,7 @@ struct Make3DGridPrimitive : INode {
 
 ZENDEFNODE(Make3DGridPrimitive,
         { /* inputs: */ {
-        {"int", "nx", "2"},
-        {"int", "ny"},
-        {"int", "nz"},
-        {"vec3f", "sizeX"},
-        {"vec3f", "sizeY"},
-        {"vec3f", "sizeZ"},
-        {"float", "scale"},
-        {"vec3f", "origin"},
+        "nx", "ny", "nz", "sizeX", "sizeY", "sizeZ", "scale", "origin",
         }, /* outputs: */ {
         "prim",
         }, /* params: */ {
@@ -152,8 +145,6 @@ ZENDEFNODE(Make3DGridPrimitive,
         "primitive",
         }});
 
-
-// TODO: deprecate this xuben-happy node
 struct MakeCubePrimitive : INode {
     virtual void apply() override {
         float spacing = get_input<NumericObject>("spacing")->get<float>();

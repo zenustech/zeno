@@ -33,7 +33,7 @@ struct ListGetItem : zeno::INode {
 };
 
 ZENDEFNODE(ListGetItem, {
-    {"list", {"int", "index"}},
+    {"list", "index"},
     {"object"},
     {},
     {"list"},

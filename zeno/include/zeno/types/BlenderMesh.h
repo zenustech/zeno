@@ -4,9 +4,6 @@
 #include <zeno/utils/vec.h>
 #include <array>
 
-using AttributeArray =
-std::variant<std::vector<zeno::vec3f>, std::vector<float>>;
-
 namespace zeno {
 
 struct BlenderAxis : IObjectClone<BlenderAxis> {
@@ -19,8 +16,6 @@ struct BlenderMesh : IObjectClone<BlenderMesh, BlenderAxis> {
     std::vector<vec3f> vert;
     std::vector<std::tuple<int, int>> poly;
     std::vector<int> loop;
-
-    std::map<std::string, AttributeArray> attrs;
 };
 
 }

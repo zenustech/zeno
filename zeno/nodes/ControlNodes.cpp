@@ -39,8 +39,8 @@ struct BeginFor : IBeginFor {
 };
 
 ZENDEFNODE(BeginFor, {
-    {{"int", "count"}},
-    {{"int", "index"}, "FOR"},
+    {"count"},
+    {"index", "FOR"},
     {},
     {"control"},
 });
@@ -124,7 +124,7 @@ struct BeginForEach : IBeginFor {
 
 ZENDEFNODE(BeginForEach, {
     {"list"},
-    {"object", {"int", "index"}, "FOR"},
+    {"object", "index", "FOR"},
     {},
     {"control"},
 });
@@ -158,8 +158,8 @@ struct BeginSubstep : IBeginFor {
 };
 
 ZENDEFNODE(BeginSubstep, {
-    {{"float", "total_dt"}, {"float", "min_scale", "0.05"}},
-    {"FOR", {"float", "elapsed_time"}},
+    {"total_dt", "min_scale"},
+    {"FOR", "elapsed_time"},
     {},
     {"control"},
 });
@@ -196,8 +196,8 @@ struct SubstepDt : zeno::INode {
 };
 
 ZENDEFNODE(SubstepDt, {
-    {"FOR", {"float", "desired_dt", "0.04"}},
-    {{"float", "actual_dt"}, {"float", "portion"}},
+    {"FOR", "desired_dt"},
+    {"actual_dt", "portion"},
     {},
     {"control"},
 });
@@ -212,12 +212,14 @@ struct IfElse : zeno::INode {
         if (has_option("MUTE")) {
             requireInput("true");
         } else if (evaluate_condition(cond.get())) {
-            if (requireInput("true")) {
-                set_output2("result", get_input2("true"));
+            if (has_input("true")) {
+                requireInput("true");
+                set_output("result", get_input("true"));
             }
         } else {
-            if (requireInput("false")) {
-                set_output2("result", get_input2("false"));
+            if (has_input("false")) {
+                requireInput("false");
+                set_output("result", get_input("false"));
             }
         }
 

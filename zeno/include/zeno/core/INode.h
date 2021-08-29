@@ -35,7 +35,7 @@ public:
 
 protected:
     ZENO_API bool checkApplyCondition();
-    ZENO_API bool requireInput(std::string const &ds);
+    ZENO_API void requireInput(std::string const &ds);
     ZENO_API void coreApply();
 
     ZENO_API virtual void complete();
@@ -46,16 +46,20 @@ protected:
     ZENO_API zany get_input2(std::string const &id) const;
     ZENO_API void set_output2(std::string const &id, zany &&obj);
 
-    /* todo: deprecated */
-    bool has_input(std::string const &id) const;
+    /* deprecated */
+    bool has_input(std::string const &id) const {
+        return inputBounds.find(id) != inputBounds.end();
+    }
 
-    /* todo: deprecated */
+    /* deprecated */
     void set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
         set_output2(id, std::move(obj));
     }
 
-    /* todo: deprecated */
-    std::shared_ptr<IObject> get_input(std::string const &id, std::string const &msg = "IObject") const;
+    /* deprecated */
+    std::shared_ptr<IObject> get_input(std::string const &id) const {
+        return get_input2<std::shared_ptr<IObject>>(id);
+    }
 
     template <class T>
     T get_input2(std::string const &id) const {
@@ -69,7 +73,7 @@ protected:
         return silent_any_cast<T>(get_input2(id)).has_value();
     }
 
-    /* todo: deprecated */
+    /* deprecated */
     template <class T>
     bool has_input(std::string const &id) const {
         if (!has_input(id))
@@ -81,15 +85,15 @@ protected:
         return (bool)p;
     }
 
-    /* todo: deprecated */
+    /* deprecated */
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
-        auto obj = get_input(id, typeid(T).name());
+        auto obj = get_input(id);
         return safe_dynamic_cast<T>(std::move(obj),
                 "input socket `" + id + "` ");
     }
 
-    /* todo: deprecated */
+    /* deprecated */
     auto get_param(std::string const &id) const {
         std::variant<int, float, std::string> res;
         auto inpid = id + ":";
@@ -108,7 +112,7 @@ protected:
         return res;
     }
 
-    /* todo: deprecated */
+    /* deprecated */
     template <class T>
     T get_param(std::string const &id) const {
         //return std::get<T>(get_param(id));

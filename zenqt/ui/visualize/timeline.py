@@ -109,7 +109,7 @@ class TimelineWidget(QWidget):
         self.maxframe.setValidator(validator)
         self.maxframe.setText('100')
         if os.environ.get('ZEN_OPEN'):
-            self.maxframe.setText('1')
+            self.maxframe.setText('2') ### TODO: FIX ZHOUHANG BUG!!!
         self.maxframe.setFixedWidth(40)
 
         self.button_execute = QPushButton('Run', self)

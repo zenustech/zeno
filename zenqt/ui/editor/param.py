@@ -27,8 +27,7 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
         font = QFont()
         font.setPointSize(style['param_text_size'])
 
-        if not hasattr(self, 'edit'):
-            self.edit = QLineEdit()
+        self.edit = QLineEdit()
         self.edit.setFont(font)
         self.label = QLabel()
         self.label.setFont(font)
@@ -148,23 +147,6 @@ class QDMGraphicsParam_string(QDMGraphicsParam):
 
     def getValue(self):
         return str(self.edit.text())
-
-
-class QDMGraphicsParamEnum(QDMGraphicsParam):
-    def initLayout(self):
-        self.edit = QComboBox()
-        self.edit.setEditable(True)
-        super().initLayout()
-
-    def setEnums(self, enums):
-        self.edit.addItems(enums)
-
-    def setValue(self, value):
-        self.edit.setCurrentText(str(value))
-        self.edit.setEditText(str(value))
-
-    def getValue(self):
-        return str(self.edit.currentText())
 
 
 class QDMGraphicsParam_writepath(QDMGraphicsParam):

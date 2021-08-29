@@ -17,7 +17,7 @@ struct DictSize : zeno::INode {
 
 ZENDEFNODE(DictSize, {
     {{"DictObject", "dict"}},
-    {{"int", "size"}},
+    {{"NumericObject:int", "size"}},
     {},
     {"dict"},
 });

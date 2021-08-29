@@ -7,33 +7,19 @@
      "inputs": {
       "prim": [
        "1dd6c242-ImportObjPrimitive",
-       "prim",
-       null
+       "prim"
       ],
       "origin": [
        "22428c04-NumericVec3",
-       "vec3",
-       null
+       "vec3"
       ],
       "direction": [
        "bf5aa980-x",
-       "vec3",
-       null
+       "vec3"
       ],
-      "distance": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
+      "SRC": null
      },
-     "params": {
-      "reverse": false
-     },
+     "params": {},
      "uipos": [
       119.80000000000001,
       285.3999999999999
@@ -45,14 +31,9 @@
      "inputs": {
       "path": [
        "bc5395db-MakeString",
-       "value",
-       null
+       "value"
       ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
+      "SRC": null
      },
      "params": {},
      "uipos": [
@@ -64,11 +45,7 @@
     "bc5395db-MakeString": {
      "name": "MakeString",
      "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
+      "SRC": null
      },
      "params": {
       "value": "assets/cube.obj"
@@ -84,14 +61,9 @@
      "inputs": {
       "prim": [
        "6cd81b90-PrimitiveSplitEdges",
-       "prim",
-       null
+       "prim"
       ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
+      "SRC": null
      },
      "params": {},
      "uipos": [
@@ -107,14 +79,9 @@
      "inputs": {
       "prim": [
        "66cb9f4a-PrimitiveClip",
-       "outPrim",
-       null
+       "outPrim"
       ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
+      "SRC": null
      },
      "params": {},
      "uipos": [
@@ -126,11 +93,7 @@
     "22428c04-NumericVec3": {
      "name": "NumericVec3",
      "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
+      "SRC": null
      },
      "params": {
       "x": 0.0,
@@ -138,19 +101,15 @@
       "z": 0.0
      },
      "uipos": [
-      123.7302961275627,
-      565.1006833712984
+      114.40000000000003,
+      464.8
      ],
      "options": []
     },
     "bf5aa980-x": {
      "name": "NumericVec3",
      "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
+      "SRC": null
      },
      "params": {
       "x": 1.0,
@@ -164,11 +123,10 @@
      "options": []
     }
    },
-   "view_rect": {
-    "x": -144.51025056947594,
-    "y": 139.62059225512547,
-    "width": 614.4,
-    "height": 512.0
+   "view": {
+    "scale": 1.25,
+    "trans_x": -475,
+    "trans_y": 189
    }
   }
  },
@@ -207,77 +165,6 @@
    "params": [],
    "categories": [
     "list"
-   ]
-  },
-  "AssembleSolvePPE": {
-   "inputs": [
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "Dx",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "ExtractedLiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "Divergence",
-     ""
-    ],
-    [
-     "",
-     "Pressure",
-     ""
-    ],
-    [
-     "",
-     "CellFWeight",
-     ""
-    ],
-    [
-     "",
-     "Velocity",
-     ""
-    ],
-    [
-     "",
-     "SolidVelocity",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.0"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
    ]
   },
   "Assign": {
@@ -390,46 +277,6 @@
     "control"
    ]
   },
-  "BeginSubstep": {
-   "inputs": [
-    [
-     "",
-     "total_dt",
-     ""
-    ],
-    [
-     "",
-     "min_scale",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "FOR",
-     ""
-    ],
-    [
-     "",
-     "elapsed_time",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "control"
-   ]
-  },
   "BreakFor": {
    "inputs": [
     [
@@ -455,16 +302,16 @@
     "control"
    ]
   },
-  "CFL_dt": {
+  "BulletComposeTransform": {
    "inputs": [
     [
      "",
-     "Velocity",
+     "transFirst",
      ""
     ],
     [
      "",
-     "Dx",
+     "transSecond",
      ""
     ],
     [
@@ -476,7 +323,7 @@
    "outputs": [
     [
      "",
-     "cfl_dt",
+     "trans",
      ""
     ],
     [
@@ -485,27 +332,26 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.0"
-    ]
-   ],
+   "params": [],
    "categories": [
-    "FLIPSolver"
+    "Rigid"
    ]
   },
-  "CachePrimitive": {
+  "BulletCompoundAddChild": {
    "inputs": [
     [
      "",
-     "inPrim",
+     "compound",
      ""
     ],
     [
      "",
-     "frameNum",
+     "childShape",
+     ""
+    ],
+    [
+     "",
+     "trans",
      ""
     ],
     [
@@ -517,7 +363,7 @@
    "outputs": [
     [
      "",
-     "outPrim",
+     "compound",
      ""
     ],
     [
@@ -526,37 +372,16 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "string",
-     "dir",
-     "/tmp/cache"
-    ],
-    [
-     "string",
-     "prefix",
-     ""
-    ],
-    [
-     "bool",
-     "ignore",
-     "0"
-    ]
-   ],
+   "params": [],
    "categories": [
-    "primitive"
+    "Rigid"
    ]
   },
-  "CacheVDBGrid": {
+  "BulletExtractTransform": {
    "inputs": [
     [
      "",
-     "inGrid",
-     ""
-    ],
-    [
-     "",
-     "frameNum",
+     "trans",
      ""
     ],
     [
@@ -568,7 +393,12 @@
    "outputs": [
     [
      "",
-     "outGrid",
+     "origin",
+     ""
+    ],
+    [
+     "",
+     "rotation",
      ""
     ],
     [
@@ -577,25 +407,424 @@
      ""
     ]
    ],
-   "params": [
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletGetObjMotion": {
+   "inputs": [
     [
-     "string",
-     "dir",
-     "/tmp/cache"
-    ],
-    [
-     "string",
-     "prefix",
+     "",
+     "object",
      ""
     ],
     [
-     "bool",
-     "ignore",
-     "0"
+     "",
+     "SRC",
+     ""
     ]
    ],
+   "outputs": [
+    [
+     "",
+     "linearVel",
+     ""
+    ],
+    [
+     "",
+     "angularVel",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
    "categories": [
-    "openvdb"
+    "Rigid"
+   ]
+  },
+  "BulletGetObjTransform": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "trans",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeBoxShape": {
+   "inputs": [
+    [
+     "",
+     "v3size",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeCompoundShape": {
+   "inputs": [
+    [
+     "",
+     "",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "compound",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeConvexHullShape": {
+   "inputs": [
+    [
+     "",
+     "triMesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeObject": {
+   "inputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "trans",
+     ""
+    ],
+    [
+     "",
+     "mass",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeSphereShape": {
+   "inputs": [
+    [
+     "",
+     "radius",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeTransform": {
+   "inputs": [
+    [
+     "",
+     "origin",
+     ""
+    ],
+    [
+     "",
+     "rotation",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "trans",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletMakeWorld": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletObjectApplyForce": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "ForceImpulse",
+     ""
+    ],
+    [
+     "",
+     "TorqueImpulse",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletSetWorldGravity": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "gravity",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletStepWorld": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletWorldAddObject": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
    ]
   },
   "CachedByKey": {
@@ -770,64 +999,24 @@
      "1"
     ],
     [
-     "enum CSGUnion CSGIntersection CSGDifference",
+     "string",
      "OpType",
      "CSGUnion"
-    ],
-    [
-     "int",
-     "writeBack",
-     "0"
     ]
    ],
    "categories": [
     "openvdb"
    ]
   },
-  "CutCellWeight": {
-   "inputs": [
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "SolidSDF",
-     ""
-    ],
-    [
-     "",
-     "FaceWeight",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIPSolver"
-   ]
-  },
   "DictGetItem": {
    "inputs": [
     [
-     "DictObject",
+     "dict",
      "dict",
      ""
     ],
     [
-     "StringObject",
+     "string",
      "key",
      ""
     ],
@@ -839,7 +1028,7 @@
    ],
    "outputs": [
     [
-     "Any",
+     "any",
      "object",
      ""
     ],
@@ -857,17 +1046,17 @@
   "DictSetItem": {
    "inputs": [
     [
-     "DictObject",
+     "dict",
      "dict",
      ""
     ],
     [
-     "StringObject",
+     "string",
      "key",
      ""
     ],
     [
-     "Any",
+     "any",
      "object",
      ""
     ],
@@ -879,7 +1068,7 @@
    ],
    "outputs": [
     [
-     "DictObject",
+     "dict",
      "dict",
      ""
     ],
@@ -897,7 +1086,7 @@
   "DictSize": {
    "inputs": [
     [
-     "DictObject",
+     "dict",
      "dict",
      ""
     ],
@@ -909,7 +1098,7 @@
    ],
    "outputs": [
     [
-     "int",
+     "numeric:int",
      "size",
      ""
     ],
@@ -944,7 +1133,7 @@
    ],
    "outputs": [
     [
-     "DictObject",
+     "dict",
      "dict",
      ""
     ],
@@ -969,7 +1158,7 @@
    ],
    "outputs": [
     [
-     "DictObject",
+     "dict",
      "dict",
      ""
     ],
@@ -1090,36 +1279,6 @@
     "trimesh"
    ]
   },
-  "ExportObjPrimitive": {
-   "inputs": [
-    [
-     "",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
   "ExportParticles": {
    "inputs": [
     [
@@ -1213,7 +1372,7 @@
   "ExtractDict": {
    "inputs": [
     [
-     "DictObject",
+     "dict",
      "dict",
      ""
     ],
@@ -1260,482 +1419,6 @@
     "list"
    ]
   },
-  "FLIPApplyBoundary": {
-   "inputs": [
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "DynaSolid_SDF",
-     ""
-    ],
-    [
-     "",
-     "StatSolid_SDF",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIPSolver"
-   ]
-  },
-  "FLIPGetEnvironArgs": {
-   "inputs": [
-    [
-     "",
-     "environArgs",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "portion",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ]
-  },
-  "FLIPMakeAbsorber": {
-   "inputs": [
-    [
-     "",
-     "AbsorbSDF",
-     ""
-    ],
-    [
-     "",
-     "isEnabled",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Absorber",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ]
-  },
-  "FLIPMakeCollider": {
-   "inputs": [
-    [
-     "",
-     "StaticSDF",
-     ""
-    ],
-    [
-     "",
-     "dynamicPrim",
-     ""
-    ],
-    [
-     "",
-     "dx",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Collider",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ]
-  },
-  "FLIPMakeEmitter": {
-   "inputs": [
-    [
-     "",
-     "EmitSDF",
-     ""
-    ],
-    [
-     "",
-     "VelGrid",
-     ""
-    ],
-    [
-     "",
-     "isEnabled",
-     ""
-    ],
-    [
-     "",
-     "VelInit",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Emitter",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ]
-  },
-  "FLIPMakeEnviron": {
-   "inputs": [
-    [
-     "",
-     "Collider",
-     ""
-    ],
-    [
-     "",
-     "Emitter",
-     ""
-    ],
-    [
-     "",
-     "Absorber",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Environ",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ]
-  },
-  "FLIPMakeParticles": {
-   "inputs": [
-    [
-     "",
-     "TankSDF",
-     ""
-    ],
-    [
-     "",
-     "dx",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ]
-  },
-  "FLIPSimTemplate": {
-   "inputs": [
-    [
-     "",
-     "Velocity",
-     ""
-    ],
-    [
-     "",
-     "Collision",
-     ""
-    ],
-    [
-     "",
-     "PostAdvVel",
-     ""
-    ],
-    [
-     "",
-     "Pressure",
-     ""
-    ],
-    [
-     "",
-     "CollisionVel",
-     ""
-    ],
-    [
-     "",
-     "DynEmitter",
-     ""
-    ],
-    [
-     "",
-     "ifEmit",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "VelocityWeights",
-     ""
-    ],
-    [
-     "",
-     "dx",
-     ""
-    ],
-    [
-     "",
-     "ExtractedLiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "Gravity",
-     ""
-    ],
-    [
-     "",
-     "CellFWeight",
-     ""
-    ],
-    [
-     "",
-     "Divergence",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "DynEmitterVelVolume",
-     ""
-    ],
-    [
-     "",
-     "DynEmitterVelInit",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIPSolver"
-   ]
-  },
-  "FLIP_P2G": {
-   "inputs": [
-    [
-     "",
-     "Dx",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "Velocity",
-     ""
-    ],
-    [
-     "",
-     "PostP2GVelocity",
-     ""
-    ],
-    [
-     "",
-     "VelocityWeights",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "ExtractedLiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.01 0.0"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
-   ]
-  },
-  "FieldAddVector": {
-   "inputs": [
-    [
-     "",
-     "invec3",
-     ""
-    ],
-    [
-     "",
-     "Velocity",
-     ""
-    ],
-    [
-     "",
-     "FieldWeight",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIPSolver"
-   ]
-  },
   "FinalOutput": {
    "inputs": [
     [
@@ -1754,41 +1437,6 @@
    "params": [],
    "categories": [
     "subgraph"
-   ]
-  },
-  "FluidReseed": {
-   "inputs": [
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "FluidVel",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIPSolver"
    ]
   },
   "FuncBegin": {
@@ -1894,158 +1542,6 @@
    "params": [],
    "categories": [
     "functional"
-   ]
-  },
-  "G2PAdvectorSheetty": {
-   "inputs": [
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "Dx",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "Velocity",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "PostAdvVelocity",
-     ""
-    ],
-    [
-     "",
-     "SolidSDF",
-     ""
-    ],
-    [
-     "",
-     "SolidVelocity",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.01 0.0"
-    ],
-    [
-     "int",
-     "RK_ORDER",
-     "1 1 4"
-    ],
-    [
-     "float",
-     "pic_smoothness",
-     "0.1 0.0 1.0"
-    ],
-    [
-     "int",
-     "surface_size",
-     "4 0 8"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
-   ]
-  },
-  "G2P_Advector": {
-   "inputs": [
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "Dx",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "Velocity",
-     ""
-    ],
-    [
-     "",
-     "PostAdvVelocity",
-     ""
-    ],
-    [
-     "",
-     "SolidSDF",
-     ""
-    ],
-    [
-     "",
-     "SolidVelocity",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.01 0.0"
-    ],
-    [
-     "int",
-     "RK_ORDER",
-     "1 1 4"
-    ],
-    [
-     "float",
-     "pic_smoothness",
-     "0.02 0.0 1.0"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
    ]
   },
   "GeoVertexVel": {
@@ -2278,86 +1774,6 @@
     "openvdb"
    ]
   },
-  "GetVDBPointsDroplets": {
-   "inputs": [
-    [
-     "",
-     "grid",
-     ""
-    ],
-    [
-     "",
-     "sdf",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "openvdb"
-   ]
-  },
-  "GetVDBVoxelSize": {
-   "inputs": [
-    [
-     "",
-     "vdbGrid",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "dx",
-     ""
-    ],
-    [
-     "",
-     "dy",
-     ""
-    ],
-    [
-     "",
-     "dz",
-     ""
-    ],
-    [
-     "",
-     "dxyz",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "openvdb"
-   ]
-  },
   "IfElse": {
    "inputs": [
     [
@@ -2517,7 +1933,7 @@
     [
      "string",
      "type",
-     ""
+     "float"
     ]
    ],
    "categories": [
@@ -2590,41 +2006,6 @@
     "frame"
    ]
   },
-  "KillParticlesInSDF": {
-   "inputs": [
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "KillerSDF",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIPSolver"
-   ]
-  },
   "ListGetItem": {
    "inputs": [
     [
@@ -2690,13 +2071,8 @@
     "list"
    ]
   },
-  "LiteralFloat": {
+  "LiterialFloat": {
    "inputs": [
-    [
-     "float",
-     "value",
-     "0"
-    ],
     [
      "",
      "SRC",
@@ -2715,18 +2091,19 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "float",
+     "value",
+     "0"
+    ]
+   ],
    "categories": [
-    "literal"
+    "numeric"
    ]
   },
-  "LiteralInt": {
+  "LiterialInt": {
    "inputs": [
-    [
-     "int",
-     "value",
-     "0"
-    ],
     [
      "",
      "SRC",
@@ -2745,40 +2122,46 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "int",
+     "value",
+     "0"
+    ]
+   ],
    "categories": [
-    "literal"
+    "numeric"
    ]
   },
   "Make2DGridPrimitive": {
    "inputs": [
     [
-     "int",
+     "numeric:int",
      "nx",
-     "2"
+     ""
     ],
     [
-     "int",
+     "numeric:int",
      "ny",
      ""
     ],
     [
-     "vec3f",
+     "numeric:vec3f",
      "sizeX",
      ""
     ],
     [
-     "vec3f",
+     "numeric:vec3f",
      "sizeY",
      ""
     ],
     [
-     "float",
+     "numeric:float",
      "scale",
      ""
     ],
     [
-     "vec3f",
+     "numeric:vec3f",
      "origin",
      ""
     ],
@@ -2790,7 +2173,7 @@
    ],
    "outputs": [
     [
-     "PrimitiveObject",
+     "primitive",
      "prim",
      ""
     ],
@@ -2802,12 +2185,12 @@
    ],
    "params": [
     [
-     "bool",
+     "int",
      "isCentered",
      "0"
     ],
     [
-     "bool",
+     "int",
      "hasFaces",
      "1"
     ]
@@ -2819,42 +2202,42 @@
   "Make3DGridPrimitive": {
    "inputs": [
     [
-     "int",
+     "",
      "nx",
-     "2"
+     ""
     ],
     [
-     "int",
+     "",
      "ny",
      ""
     ],
     [
-     "int",
+     "",
      "nz",
      ""
     ],
     [
-     "vec3f",
+     "",
      "sizeX",
      ""
     ],
     [
-     "vec3f",
+     "",
      "sizeY",
      ""
     ],
     [
-     "vec3f",
+     "",
      "sizeZ",
      ""
     ],
     [
-     "float",
+     "",
      "scale",
      ""
     ],
     [
-     "vec3f",
+     "",
      "origin",
      ""
     ],
@@ -2878,7 +2261,7 @@
    ],
    "params": [
     [
-     "bool",
+     "int",
      "isCentered",
      "0"
     ]
@@ -2947,7 +2330,7 @@
    ],
    "outputs": [
     [
-     "DictObject",
+     "dict",
      "dict",
      ""
     ],
@@ -2960,36 +2343,6 @@
    "params": [],
    "categories": [
     "dict"
-   ]
-  },
-  "MakeFLIPWorld": {
-   "inputs": [
-    [
-     "",
-     "dx",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
    ]
   },
   "MakeGCTest": {
@@ -3089,7 +2442,7 @@
    ],
    "outputs": [
     [
-     "StringObject",
+     "string",
      "value",
      ""
     ],
@@ -3113,12 +2466,12 @@
   "MakeOrthonormalBase": {
    "inputs": [
     [
-     "vec3f",
+     "numeric:vec3f",
      "normal",
      ""
     ],
     [
-     "vec3f",
+     "numeric:vec3f",
      "tangent",
      ""
     ],
@@ -3130,7 +2483,7 @@
    ],
    "outputs": [
     [
-     "vec3f",
+     "numeric:vec3f",
      "normal",
      ""
     ],
@@ -3140,7 +2493,7 @@
      ""
     ],
     [
-     "vec3f",
+     "numeric:vec3f",
      "bitangent",
      ""
     ],
@@ -3190,7 +2543,7 @@
    ],
    "outputs": [
     [
-     "StringObject",
+     "string",
      "path",
      ""
     ],
@@ -3276,7 +2629,7 @@
    ],
    "outputs": [
     [
-     "StringObject",
+     "string",
      "value",
      ""
     ],
@@ -3326,7 +2679,7 @@
     [
      "float",
      "dx",
-     "0.08"
+     "0.01"
     ],
     [
      "string",
@@ -3334,7 +2687,7 @@
      "float"
     ],
     [
-     "enum vertex Centered Staggered",
+     "string",
      "structure",
      "Centered"
     ],
@@ -3380,9 +2733,9 @@
    ],
    "params": [
     [
-     "enum points edges trifaces quadfaces",
-     "type",
-     "edges"
+     "int",
+     "connType",
+     "2"
     ]
    ],
    "categories": [
@@ -3399,7 +2752,7 @@
    ],
    "outputs": [
     [
-     "StringObject",
+     "string",
      "path",
      ""
     ],
@@ -3557,38 +2910,13 @@
      "0.08 0"
     ],
     [
-     "enum vertex cell",
+     "string",
      "type",
      "vertex"
     ]
    ],
    "categories": [
     "openvdb"
-   ]
-  },
-  "NumericCounter": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "int",
-     "count",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "numeric"
    ]
   },
   "NumericFloat": {
@@ -3601,7 +2929,7 @@
    ],
    "outputs": [
     [
-     "float",
+     "numeric:float",
      "value",
      ""
     ],
@@ -3632,7 +2960,7 @@
    ],
    "outputs": [
     [
-     "int",
+     "numeric:int",
      "value",
      ""
     ],
@@ -3663,7 +2991,7 @@
    ],
    "outputs": [
     [
-     "vec2i",
+     "numeric:vec2i",
      "vec2",
      ""
     ],
@@ -3699,7 +3027,7 @@
    ],
    "outputs": [
     [
-     "vec3i",
+     "numeric:vec3i",
      "vec3",
      ""
     ],
@@ -3740,7 +3068,7 @@
    ],
    "outputs": [
     [
-     "vec4f",
+     "numeric:vec4f",
      "vec4",
      ""
     ],
@@ -3779,29 +3107,29 @@
   "NumericInterpolation": {
    "inputs": [
     [
-     "NumericObject",
+     "numeric",
      "src",
      ""
     ],
     [
-     "NumericObject",
+     "numeric",
      "srcMin",
-     "0"
+     ""
     ],
     [
-     "NumericObject",
+     "numeric",
      "srcMax",
-     "1"
+     ""
     ],
     [
-     "NumericObject",
+     "numeric",
      "dstMin",
-     "0"
+     ""
     ],
     [
-     "NumericObject",
+     "numeric",
      "dstMax",
-     "1"
+     ""
     ],
     [
      "",
@@ -3811,7 +3139,7 @@
    ],
    "outputs": [
     [
-     "NumericObject",
+     "numeric",
      "dst",
      ""
     ],
@@ -3823,7 +3151,7 @@
    ],
    "params": [
     [
-     "bool",
+     "int",
      "isClamped",
      "0"
     ]
@@ -3835,12 +3163,12 @@
   "NumericOperator": {
    "inputs": [
     [
-     "NumericObject",
+     "numeric",
      "lhs",
      ""
     ],
     [
-     "NumericObject",
+     "numeric",
      "rhs",
      ""
     ],
@@ -3852,7 +3180,7 @@
    ],
    "outputs": [
     [
-     "NumericObject",
+     "numeric",
      "ret",
      ""
     ],
@@ -3864,9 +3192,9 @@
    ],
    "params": [
     [
-     "enum add sub mul div mod and or xor shr shl cmpge cmple mpgt mplt cmpne cmpeq pos neg inv not atan2 pow max min fmod dot cross distance length normalize abs sqrt sin cos tan asin acos atan exp log floor ceil toint tofloat copy copyr",
+     "string",
      "op_type",
-     "add"
+     "copy"
     ]
    ],
    "categories": [
@@ -3883,7 +3211,7 @@
    ],
    "outputs": [
     [
-     "NumericObject",
+     "numeric",
      "value",
      ""
     ],
@@ -3914,7 +3242,7 @@
    ],
    "outputs": [
     [
-     "vec2f",
+     "numeric:vec2f",
      "vec2",
      ""
     ],
@@ -3950,7 +3278,7 @@
    ],
    "outputs": [
     [
-     "vec3f",
+     "numeric:vec3f",
      "vec3",
      ""
     ],
@@ -3991,7 +3319,7 @@
    ],
    "outputs": [
     [
-     "vec4f",
+     "numeric:vec4f",
      "vec4",
      ""
     ],
@@ -4030,12 +3358,12 @@
   "NumericWrangle": {
    "inputs": [
     [
-     "DictObject:NumericObject",
+     "dict:numeric",
      "params",
      ""
     ],
     [
-     "StringObject",
+     "string",
      "zfxCode",
      ""
     ],
@@ -4047,7 +3375,7 @@
    ],
    "outputs": [
     [
-     "DictObject:NumericObject",
+     "dict:numeric",
      "result",
      ""
     ],
@@ -4062,142 +3390,25 @@
     "zenofx"
    ]
   },
-  "ParticleAddDV": {
-   "inputs": [
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "dv",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "channel",
-     "vel"
-    ],
-    [
-     "float",
-     "vx",
-     "0.0"
-    ],
-    [
-     "float",
-     "vy",
-     "0.0"
-    ],
-    [
-     "float",
-     "vz",
-     "0.0"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
-   ]
-  },
-  "ParticleEmitter": {
-   "inputs": [
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "ShapeSDF",
-     ""
-    ],
-    [
-     "",
-     "VelocityVolume",
-     ""
-    ],
-    [
-     "",
-     "VelocityInit",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "float",
-     "vx",
-     "0.0"
-    ],
-    [
-     "float",
-     "vy",
-     "0.0"
-    ],
-    [
-     "float",
-     "vz",
-     "0.0"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
-   ]
-  },
   "ParticleParticleWrangle": {
    "inputs": [
     [
-     "PrimitiveObject",
+     "primitive",
      "prim1",
      ""
     ],
     [
-     "PrimitiveObject",
+     "primitive",
      "prim2",
      ""
     ],
     [
-     "StringObject",
+     "string",
      "zfxCode",
      ""
     ],
     [
-     "DictObject:NumericObject",
+     "dict:numeric",
      "params",
      ""
     ],
@@ -4209,7 +3420,7 @@
    ],
    "outputs": [
     [
-     "PrimitiveObject",
+     "primitive",
      "prim",
      ""
     ],
@@ -4224,50 +3435,10 @@
     "zenofx"
    ]
   },
-  "ParticleToLevelSet": {
-   "inputs": [
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "Radius",
-     ""
-    ],
-    [
-     "",
-     "Dx",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "SurfaceSDF",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "openvdb"
-   ]
-  },
   "ParticlesBuildHashGrid": {
    "inputs": [
     [
-     "PrimitiveObject",
+     "primitive",
      "primNei",
      ""
     ],
@@ -4307,12 +3478,12 @@
   "ParticlesNeighborWrangle": {
    "inputs": [
     [
-     "PrimitiveObject",
+     "primitive",
      "prim",
      ""
     ],
     [
-     "PrimitiveObject",
+     "primitive",
      "primNei",
      ""
     ],
@@ -4322,12 +3493,12 @@
      ""
     ],
     [
-     "StringObject",
+     "string",
      "zfxCode",
      ""
     ],
     [
-     "DictObject:NumericObject",
+     "dict:numeric",
      "params",
      ""
     ],
@@ -4339,7 +3510,7 @@
    ],
    "outputs": [
     [
-     "PrimitiveObject",
+     "primitive",
      "prim",
      ""
     ],
@@ -4387,17 +3558,17 @@
   "ParticlesWrangle": {
    "inputs": [
     [
-     "PrimitiveObject",
+     "primitive",
      "prim",
      ""
     ],
     [
-     "StringObject",
+     "string",
      "zfxCode",
      ""
     ],
     [
-     "DictObject:NumericObject",
+     "dict:numeric",
      "params",
      ""
     ],
@@ -4409,7 +3580,7 @@
    ],
    "outputs": [
     [
-     "PrimitiveObject",
+     "primitive",
      "prim",
      ""
     ],
@@ -4654,7 +3825,7 @@
      "pos"
     ],
     [
-     "enum float float3",
+     "string",
      "type",
      "float3"
     ]
@@ -4754,41 +3925,6 @@
     "primitive"
    ]
   },
-  "PrimitiveCalcVelocity": {
-   "inputs": [
-    [
-     "PrimitiveObject",
-     "prim",
-     ""
-    ],
-    [
-     "float",
-     "dt",
-     "0.04"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "PrimitiveObject",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
   "PrimitiveClearConnect": {
    "inputs": [
     [
@@ -4827,18 +3963,13 @@
      ""
     ],
     [
-     "vec3f",
+     "",
      "origin",
      ""
     ],
     [
-     "vec3f",
+     "",
      "direction",
-     ""
-    ],
-    [
-     "vec3f",
-     "distance",
      ""
     ],
     [
@@ -4859,13 +3990,7 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "bool",
-     "reverse",
-     "0"
-    ]
-   ],
+   "params": [],
    "categories": [
     "primitive"
    ]
@@ -4883,14 +4008,14 @@
      ""
     ],
     [
-     "float",
+     "",
      "min",
-     "0"
+     ""
     ],
     [
-     "float",
+     "",
      "max",
-     "1"
+     ""
     ],
     [
      "",
@@ -4921,21 +4046,11 @@
     "visualize"
    ]
   },
-  "PrimitiveDuplicate": {
+  "PrimitiveConvexDecomposition": {
    "inputs": [
     [
      "",
-     "meshPrim",
-     ""
-    ],
-    [
-     "",
-     "particlesPrim",
-     ""
-    ],
-    [
-     "float",
-     "uniScale",
+     "prim",
      ""
     ],
     [
@@ -4947,7 +4062,7 @@
    "outputs": [
     [
      "",
-     "outPrim",
+     "listPrim",
      ""
     ],
     [
@@ -4958,28 +4073,28 @@
    ],
    "params": [],
    "categories": [
-    "primitive"
+    "Rigid"
    ]
   },
   "PrimitiveEdgeWrangle": {
    "inputs": [
     [
-     "PrimitiveObject",
+     "primitive",
      "prim",
      ""
     ],
     [
-     "PrimitiveObject",
+     "primitive",
      "edgePrim",
      ""
     ],
     [
-     "StringObject",
+     "string",
      "zfxCode",
      ""
     ],
     [
-     "DictObject:NumericObject",
+     "dict:numeric",
      "params",
      ""
     ],
@@ -4991,12 +4106,12 @@
    ],
    "outputs": [
     [
-     "PrimitiveObject",
+     "primitive",
      "prim",
      ""
     ],
     [
-     "PrimitiveObject",
+     "primitive",
      "edgePrim",
      ""
     ],
@@ -5082,57 +4197,6 @@
      "string",
      "attrName",
      "pos"
-    ],
-    [
-     "enum float float3",
-     "attrType",
-     ""
-    ]
-   ],
-   "categories": [
-    "primitive"
-   ]
-  },
-  "PrimitiveGetAttrValue": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "int",
-     "index",
-     "0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "value",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "name",
-     "pos"
-    ],
-    [
-     "enum float float3",
-     "type",
-     "float3"
     ]
    ],
    "categories": [
@@ -5221,41 +4285,6 @@
      "copyA"
     ]
    ],
-   "categories": [
-    "primitive"
-   ]
-  },
-  "PrimitiveInterpSubframe": {
-   "inputs": [
-    [
-     "PrimitiveObject",
-     "prim",
-     ""
-    ],
-    [
-     "float",
-     "portion",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "PrimitiveObject",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
    "categories": [
     "primitive"
    ]
@@ -5529,52 +4558,6 @@
     "primitive"
    ]
   },
-  "PrimitiveSetAttrValue": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "int",
-     "index",
-     "0"
-    ],
-    [
-     "",
-     "value",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "name",
-     "pos"
-    ],
-    [
-     "enum float float3",
-     "type",
-     "float3"
-    ]
-   ],
-   "categories": [
-    "primitive"
-   ]
-  },
   "PrimitiveShade": {
    "inputs": [
     [
@@ -5602,7 +4585,7 @@
    ],
    "params": [
     [
-     "enum points lines tris quads",
+     "string",
      "primtype",
      "points"
     ],
@@ -5771,6 +4754,36 @@
     "primitive"
    ]
   },
+  "PrimitiveToBulletMesh": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
   "PrimitiveToMesh": {
    "inputs": [
     [
@@ -5868,7 +4881,7 @@
      "0.08 0"
     ],
     [
-     "enum vertex cell",
+     "string",
      "type",
      "vertex"
     ]
@@ -5880,7 +4893,7 @@
   "PrimitiveTraceTrail": {
    "inputs": [
     [
-     "PrimitiveObject",
+     "primitive",
      "parsPrim",
      ""
     ],
@@ -5892,7 +4905,7 @@
    ],
    "outputs": [
     [
-     "PrimitiveObject",
+     "primitive",
      "trailPrim",
      ""
     ],
@@ -5958,17 +4971,12 @@
     "primitive"
    ]
   },
-  "PrintLiteral": {
+  "PrintLiterial": {
    "inputs": [
     [
-     "",
+     "float",
      "value",
      ""
-    ],
-    [
-     "string",
-     "hint",
-     "PrintLiteral"
     ],
     [
      "",
@@ -5983,9 +4991,15 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "string",
+     "hint",
+     "PrintLiterial"
+    ]
+   ],
    "categories": [
-    "literal"
+    "numeric"
    ]
   },
   "PrintMessage": {
@@ -6017,7 +5031,7 @@
   "PrintNumeric": {
    "inputs": [
     [
-     "NumericObject",
+     "numeric",
      "value",
      ""
     ],
@@ -6043,52 +5057,6 @@
    ],
    "categories": [
     "numeric"
-   ]
-  },
-  "PushOutLiquidSDF": {
-   "inputs": [
-    [
-     "",
-     "Dx",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "SolidSDF",
-     ""
-    ],
-    [
-     "",
-     "ExtractedLiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.0"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
    ]
   },
   "RandomParticles": {
@@ -6218,10 +5186,10 @@
     [
      "string",
      "type",
-     ""
+     "float"
     ],
     [
-     "readpath",
+     "string",
      "path",
      ""
     ]
@@ -6251,11 +5219,6 @@
    "outputs": [
     [
      "",
-     "resampleTo",
-     ""
-    ],
-    [
-     "",
      "DST",
      ""
     ]
@@ -6265,36 +5228,26 @@
     "openvdb"
    ]
   },
-  "RigidGetPressureForce": {
+  "RigidVelToPrimitive": {
    "inputs": [
     [
      "",
-     "dt",
+     "prim",
      ""
     ],
     [
      "",
-     "MassCenter",
+     "centroid",
      ""
     ],
     [
      "",
-     "Rigid",
+     "linearVel",
      ""
     ],
     [
      "",
-     "Pressure",
-     ""
-    ],
-    [
-     "",
-     "CellFWeight",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
+     "angularVel",
      ""
     ],
     [
@@ -6306,12 +5259,7 @@
    "outputs": [
     [
      "",
-     "TotalForceImpulse",
-     ""
-    ],
-    [
-     "",
-     "TotalTorcImpulse",
+     "prim",
      ""
     ],
     [
@@ -6320,15 +5268,9 @@
      ""
     ]
    ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.0"
-    ]
-   ],
+   "params": [],
    "categories": [
-    "FLIPSolver"
+    "Rigid"
    ]
   },
   "Route": {
@@ -6396,11 +5338,6 @@
      "float",
      "adaptivity",
      "0"
-    ],
-    [
-     "bool",
-     "allowQuads",
-     "0"
     ]
    ],
    "categories": [
@@ -6445,122 +5382,6 @@
    "params": [],
    "categories": [
     "openvdb"
-   ]
-  },
-  "SetFLIPWorld": {
-   "inputs": [
-    [
-     "",
-     "Dx",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "Pressure",
-     ""
-    ],
-    [
-     "",
-     "Divergence",
-     ""
-    ],
-    [
-     "",
-     "CellFWeight",
-     ""
-    ],
-    [
-     "",
-     "PressureDOFID",
-     ""
-    ],
-    [
-     "",
-     "IsolatedCellDOF",
-     ""
-    ],
-    [
-     "",
-     "Velocity",
-     ""
-    ],
-    [
-     "",
-     "DeltaVelocity",
-     ""
-    ],
-    [
-     "",
-     "VelocitySnapshot",
-     ""
-    ],
-    [
-     "",
-     "PostAdvVelocity",
-     ""
-    ],
-    [
-     "",
-     "SolidVelocity",
-     ""
-    ],
-    [
-     "",
-     "VelocityWeights",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDFSnapshot",
-     ""
-    ],
-    [
-     "",
-     "ExtractedLiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "ErodedLiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "SolidSDF",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.08 0"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
    ]
   },
   "SetFrameTime": {
@@ -6629,177 +5450,6 @@
     "particles"
    ]
   },
-  "SmoothLiquidSDF": {
-   "inputs": [
-    [
-     "",
-     "inParticles",
-     ""
-    ],
-    [
-     "",
-     "Dx",
-     ""
-    ],
-    [
-     "",
-     "DxScale",
-     ""
-    ],
-    [
-     "",
-     "voxelScale",
-     ""
-    ],
-    [
-     "",
-     "dropletScale",
-     ""
-    ],
-    [
-     "",
-     "influenceScale",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "inoutSDF",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ]
-  },
-  "SprayParticles": {
-   "inputs": [
-    [
-     "",
-     "TrianglePrim",
-     ""
-    ],
-    [
-     "",
-     "Dx",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "particles",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.01"
-    ],
-    [
-     "string",
-     "channel",
-     "vel"
-    ]
-   ],
-   "categories": [
-    "primitive"
-   ]
-  },
-  "StepFLIPWorld": {
-   "inputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "Environ",
-     ""
-    ],
-    [
-     "",
-     "gravity",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "min_scale",
-     ""
-    ],
-    [
-     "",
-     "dt_scale",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ]
-  },
   "StringToMesh": {
    "inputs": [
     [
@@ -6865,6 +5515,47 @@
      "string",
      "name",
      "subgraph"
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
+  "SubEndpoint": {
+   "inputs": [
+    [
+     "",
+     "setValue",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "getValue",
+     ""
+    ],
+    [
+     "",
+     "hasValue",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "Cube"
     ]
    ],
    "categories": [
@@ -6958,47 +5649,6 @@
     "subgraph"
    ]
   },
-  "SubResult": {
-   "inputs": [
-    [
-     "",
-     "port",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "name",
-     "output1"
-    ],
-    [
-     "string",
-     "type",
-     ""
-    ],
-    [
-     "string",
-     "defl",
-     ""
-    ]
-   ],
-   "categories": [
-    "subgraph"
-   ]
-  },
   "Subgraph": {
    "inputs": [
     [
@@ -7023,187 +5673,6 @@
    ],
    "categories": [
     "subgraph"
-   ]
-  },
-  "SubstepDt": {
-   "inputs": [
-    [
-     "",
-     "FOR",
-     ""
-    ],
-    [
-     "",
-     "desired_dt",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "actual_dt",
-     ""
-    ],
-    [
-     "",
-     "portion",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "control"
-   ]
-  },
-  "SubstepFLIPWorld": {
-   "inputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "gravity",
-     ""
-    ],
-    [
-     "",
-     "Collider",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "Emitter",
-     ""
-    ],
-    [
-     "",
-     "Absorber",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ]
-  },
-  "SubtractPressureGradient": {
-   "inputs": [
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "Dx",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "SolidSDF",
-     ""
-    ],
-    [
-     "",
-     "ExtractedLiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "Pressure",
-     ""
-    ],
-    [
-     "",
-     "CellFWeight",
-     ""
-    ],
-    [
-     "",
-     "Velocity",
-     ""
-    ],
-    [
-     "",
-     "SolidVelocity",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "float",
-     "dx",
-     "0.0"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
    ]
   },
   "TraceOneStep": {
@@ -7419,7 +5888,7 @@
   "UnpackNumericVec": {
    "inputs": [
     [
-     "NumericObject",
+     "numeric:vec3",
      "vec",
      ""
     ],
@@ -7431,22 +5900,22 @@
    ],
    "outputs": [
     [
-     "NumericObject",
+     "numeric:scalar",
      "X",
      ""
     ],
     [
-     "NumericObject",
+     "numeric:scalar",
      "Y",
      ""
     ],
     [
-     "NumericObject",
+     "numeric:scalar",
      "Z",
      ""
     ],
     [
-     "NumericObject",
+     "numeric:scalar",
      "W",
      ""
     ],
@@ -7496,101 +5965,6 @@
     "openvdb"
    ]
   },
-  "VDBErodeSDF": {
-   "inputs": [
-    [
-     "",
-     "inoutSDF",
-     ""
-    ],
-    [
-     "",
-     "depth",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "inoutSDF",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "openvdb"
-   ]
-  },
-  "VDBLeafAsParticles": {
-   "inputs": [
-    [
-     "",
-     "vdbGrid",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "primPars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "visualize"
-   ]
-  },
-  "VDBPointsToPrimitive": {
-   "inputs": [
-    [
-     "",
-     "grid",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "openvdb"
-   ]
-  },
   "VDBRenormalizeSDF": {
    "inputs": [
     [
@@ -7607,11 +5981,6 @@
    "outputs": [
     [
      "",
-     "inoutSDF",
-     ""
-    ],
-    [
-     "",
      "DST",
      ""
     ]
@@ -7626,154 +5995,50 @@
      "int",
      "iterations",
      "4"
-    ],
-    [
-     "int",
-     "dilateIters",
-     "0"
     ]
    ],
    "categories": [
     "openvdb"
    ]
   },
-  "VDBSmoothSDF": {
+  "VDBWrangle": {
    "inputs": [
     [
-     "",
-     "inoutSDF",
+     "openvdb",
+     "grid",
      ""
     ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "inoutSDF",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "int",
-     "width",
-     "1"
-    ],
-    [
-     "int",
-     "iterations",
-     "1"
-    ]
-   ],
-   "categories": [
-    "openvdb"
-   ]
-  },
-  "VDBVoxelAsParticles": {
-   "inputs": [
-    [
-     "",
-     "vdbGrid",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "primPars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "bool",
-     "hasInactive",
-     "0"
-    ]
-   ],
-   "categories": [
-    "visualize"
-   ]
-  },
-  "Vec3FieldExtrapolate": {
-   "inputs": [
-    [
-     "",
-     "Field",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "int",
-     "NumIterates",
-     "1"
-    ]
-   ],
-   "categories": [
-    "FLIPSolver"
-   ]
-  },
-  "WriteBgeo": {
-   "inputs": [
-    [
-     "",
-     "data",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
     [
      "string",
-     "path",
+     "zfxCode",
+     ""
+    ],
+    [
+     "dict:numeric",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
      ""
     ]
    ],
+   "outputs": [
+    [
+     "openvdb",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
    "categories": [
-    "particles"
+    "zenofx"
    ]
   },
   "WriteObjMesh": {
@@ -7860,7 +6125,7 @@
    ],
    "params": [
     [
-     "writepath",
+     "string",
      "path",
      ""
     ]

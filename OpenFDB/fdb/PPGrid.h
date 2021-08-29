@@ -6,36 +6,21 @@
 
 namespace fdb::ppgrid {
 
-template <typename T>
-inline T *atomic_allocate_pointer(std::atomic<T *> &ptr) {
-    static thread_local T *preallocated = nullptr;
-    T *old_ptr = ptr;
-    if (old_ptr)
-        return old_ptr;
-    if (!preallocated) preallocated = new T;
-    T *new_ptr = preallocated;
-    while (ptr.compare_exchange_weak(old_ptr, new_ptr));
-    preallocated = new T;
-    return new_ptr;
-}
-
-template <typename T, int Log2Dim1 = 3, int Log2Dim2 = 4, int Log2Dim3 = 5, bool IsOffseted = true>
+template <typename T, size_t Log2Dim1 = 3, size_t Log2Dim2 = 4, size_t Log2Dim3 = 5>
 struct PPGrid {
-    static constexpr int Log2Res = Log2Dim1 + Log2Dim2 + Log2Dim3;
-    static constexpr int Log2ResX = Log2Res;
-    static constexpr int Log2ResY = Log2Res;
-    static constexpr int Log2ResZ = Log2Res;
-    static constexpr bool Offseted = IsOffseted;
+    static constexpr size_t Log2Res = Log2Dim1 + Log2Dim2 + Log2Dim3;
+    static constexpr size_t Log2ResX = Log2Res;
+    static constexpr size_t Log2ResY = Log2Res;
+    static constexpr size_t Log2ResZ = Log2Res;
     using ValueType = T;
 
 private:
     struct LeafNode {
-        densegrid::DenseGrid<ValueType, Log2Dim1, false> m_data;  // 2 KiB
+        densegrid::DenseGrid<float, Log2Dim1> m_data;
     };
 
     struct InternalNode {
-        densegrid::DenseGrid<std::atomic<LeafNode *>, Log2Dim2, false> m_data;  // 32 KiB
-        densegrid::DenseGrid<ValueType, Log2Dim2, false> m_tiles;  // 16 KiB
+        densegrid::DenseGrid<LeafNode *, Log2Dim2> m_data;
 
         ~InternalNode() {
             for (int i = 0; i < m_data.size(); i++) {
@@ -47,8 +32,12 @@ private:
     };
 
     struct RootNode {
-        densegrid::DenseGrid<std::atomic<InternalNode *>, Log2Dim3, IsOffseted> m_data;  // 256 KiB
-        densegrid::DenseGrid<ValueType, Log2Dim3, IsOffseted> m_tiles;  // 128 KiB
+        using AtomicCounterType = std::atomic<
+            std::conditional_t<(Log2Dim2 * 3 > 15), unsigned int,
+            std::conditional_t<(Log2Dim2 * 3 > 7), unsigned short,
+            unsigned char>>>;
+        densegrid::DenseGrid<InternalNode *, Log2Dim3> m_data;
+        densegrid::DenseGrid<AtomicCounterType, Log2Dim3> m_counter;
 
         ~RootNode() {
             for (int i = 0; i < m_data.size(); i++) {
@@ -62,42 +51,81 @@ private:
     RootNode m_root;
 
 protected:
-    LeafNode *probe_leaf(vec3i ijk) const {
-        auto *node = m_root.m_data.at(ijk >> Log2Dim2).load();
+    LeafNode *get_leaf_at(vec3i ijk) const {
+        auto *node = m_root.m_data.at(ijk >> Log2Dim2);
         if (!node) return nullptr;
-        auto *leaf = node->m_data.at(ijk).load();
+        auto *leaf = node->m_data.at(ijk);
         return leaf;
     }
 
-    LeafNode *touch_leaf(vec3i ijk) {
-        auto *node = atomic_allocate_pointer(m_root.m_data.at(ijk >> Log2Dim2));
-        auto *leaf = atomic_allocate_pointer(node->m_data.at(ijk));
+    LeafNode *add_leaf_at(vec3i ijk) {
+        auto *&node = m_root.m_data.at(ijk >> Log2Dim2);
+        if (!node)
+            node = new InternalNode;
+        auto *&leaf = node->m_data.at(ijk);
+        if (!leaf) {
+            ++m_root.m_counter.at(ijk >> Log2Dim2);
+            leaf = new LeafNode;
+        }
         return leaf;
+    }
+
+    void del_leaf_at(vec3i ijk) {
+        auto *&node = m_root.m_data.at(ijk >> Log2Dim2);
+        if (!node) return;
+        auto *&leaf = node->m_data.at(ijk);
+        if (leaf) {
+            delete leaf;
+            leaf = nullptr;
+            if (!--m_root.m_counter.at(ijk >> Log2Dim2)) {
+                delete node;
+                node = nullptr;
+            }
+        }
+    }
+
+    T *get_at(vec3i ijk) const {
+        auto *leaf = get_leaf_at(ijk >> Log2Dim1);
+        if (!leaf) return nullptr;
+        return &leaf->m_data.at(ijk);
+    }
+
+    T *add_at(vec3i ijk) {
+        auto *leaf = add_leaf_at(ijk >> Log2Dim1);
+        return &leaf->m_data.at(ijk);
+    }
+
+    void del_at(vec3i ijk) {
+        del_leaf_at(ijk >> Log2Dim1);
     }
 
 public:
+    T const &at(vec3i ijk) const {
+        return *get_at(ijk);
+    }
+
+    T &at(vec3i ijk) {
+        return *add_at(ijk);
+    }
+
     ValueType get(vec3i ijk) const {
-        auto *node = m_root.m_data.at(ijk >> Log2Dim2 + Log2Dim1).load();
-        if (!node) return m_root.m_tiles.get(ijk >> Log2Dim2 + Log2Dim1);
-        auto *leaf = node->m_data.at(ijk >> Log2Dim1).load();
-        if (!leaf) return node->m_tiles.get(ijk >> Log2Dim1);
-        return leaf->m_data.get(ijk);
+        auto ptr = this->get_at(ijk);
+        return ptr ? *ptr : ValueType(0);
     }
 
     void set(vec3i ijk, ValueType value) {
-        auto *leaf = touch_leaf(ijk >> Log2Dim1);
-        leaf->m_data.set(ijk, value);
+        *add_at(ijk) = value;
     }
 
     template <class Pol, class F>
-    void foreach_leaf(Pol const &pol, F const &func) {
-        m_root.m_data.foreach(pol, [&] (auto ijk3, auto const &node_a) {
-            auto node = node_a.load();
+    void foreach_leaf(Pol const &pol, F const &func) const {
+        ndrange_for(pol, vec3i(0), vec3i(1 << Log2Dim3), [&] (auto ijk3) {
+            auto *node = m_root.m_data.at(ijk3);
             if (node) {
-                node->m_data.foreach(Serial{}, [&] (auto ijk2, auto const &leaf_a) {
-                    auto leaf = leaf_a.load();
+                ndrange_for(Serial{}, vec3i(0), vec3i(1 << Log2Dim2), [&] (auto ijk2) {
+                    auto *leaf = node->m_data.at(ijk2);
                     if (leaf) {
-                        auto ijk = (ijk3 << Log2Dim2) + ijk2;
+                        auto ijk = ijk3 << Log2Dim2 | ijk2;
                         func(ijk, leaf);
                     }
                 });
@@ -106,7 +134,7 @@ public:
     }
 
     template <class Pol, class F>
-    void foreach(Pol const &pol, F const &func) {
+    void foreach(Pol const &pol, F const &func) const {
         foreach_leaf(pol, [&] (auto ijk23, auto *leaf) {
             leaf->m_data.foreach(Serial{}, [&] (auto ijk1, auto &value) {
                 auto ijk = ijk1 | ijk23 << Log2Dim1;

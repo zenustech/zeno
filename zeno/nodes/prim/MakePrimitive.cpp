@@ -23,28 +23,6 @@ ZENDEFNODE(MakePrimitive,
     }});
 
 
-struct PrimitiveResize : zeno::INode {
-  virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
-    auto size = get_input<NumericObject>("size")->get<int>();
-    prim->resize(size);
-
-    set_output("prim", get_input("prim"));
-  }
-};
-
-ZENDEFNODE(PrimitiveResize,
-    { /* inputs: */ {
-    "prim",
-    "size",
-    }, /* outputs: */ {
-    "prim",
-    }, /* params: */ {
-    }, /* category: */ {
-    "primitive",
-    }});
-
-
 struct PrimitiveGetSize : zeno::INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
@@ -65,24 +43,24 @@ ZENDEFNODE(PrimitiveGetSize,
     }});
 
 
-struct PrimitiveGetFaceCount : zeno::INode {
+struct PrimitiveResize : zeno::INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
-    auto size = std::make_shared<NumericObject>();
-    size->set<int>(prim->tris.size() + prim->quads.size());
-    set_output("size", std::move(size));
+    auto size = get_input<NumericObject>("size")->get<int>();
+    prim->resize(size);
+
+    set_output("prim", get_input("prim"));
   }
 };
 
-ZENDEFNODE(PrimitiveGetFaceCount,
+ZENDEFNODE(PrimitiveResize,
     { /* inputs: */ {
     "prim",
-    }, /* outputs: */ {
     "size",
+    }, /* outputs: */ {
+    "prim",
     }, /* params: */ {
     }, /* category: */ {
     "primitive",
     }});
-
-
 }
