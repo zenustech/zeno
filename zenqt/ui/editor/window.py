@@ -270,6 +270,17 @@ class NodeEditor(QWidget):
                 if isinstance(input, str):
                     desc['inputs'][key] = ('', input, '')
 
+        for name, graph in prog['graph'].items():
+            if 'nodes' not in graph:
+                prog['graph'][name] = {
+                    'nodes': graph,
+                    'view_rect': {
+                        'scale': 1,
+                        'trans_x': 0,
+                        'trans_y': 0,
+                    },
+                }
+
         if 'version' not in prog:
             prog['version'] = 'v0'
         if prog['version'] != CURR_VERSION:
