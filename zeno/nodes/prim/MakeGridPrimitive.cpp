@@ -136,7 +136,14 @@ struct Make3DGridPrimitive : INode {
 
 ZENDEFNODE(Make3DGridPrimitive,
         { /* inputs: */ {
-        "nx", "ny", "nz", "sizeX", "sizeY", "sizeZ", "scale", "origin",
+        {"int", "nx"},
+        {"int", "ny"},
+        {"int", "nz"},
+        {"vec3f", "sizeX"},
+        {"vec3f", "sizeY"},
+        {"vec3f", "sizeZ"},
+        {"float", "scale"},
+        {"vec3f", "origin"},
         }, /* outputs: */ {
         "prim",
         }, /* params: */ {
@@ -145,6 +152,8 @@ ZENDEFNODE(Make3DGridPrimitive,
         "primitive",
         }});
 
+
+// TODO: deprecate this xuben-happy node
 struct MakeCubePrimitive : INode {
     virtual void apply() override {
         float spacing = get_input<NumericObject>("spacing")->get<float>();

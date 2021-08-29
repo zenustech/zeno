@@ -47,9 +47,7 @@ protected:
     ZENO_API void set_output2(std::string const &id, zany &&obj);
 
     /* todo: deprecated */
-    bool has_input(std::string const &id) const {
-        return inputBounds.find(id) != inputBounds.end();
-    }
+    bool has_input(std::string const &id) const;
 
     /* todo: deprecated */
     void set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {

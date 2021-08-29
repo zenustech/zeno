@@ -140,4 +140,21 @@ ZENO_API std::shared_ptr<IObject> INode::get_input(std::string const &id, std::s
     return num;
 }
 
+ZENO_API bool INode::has_input(std::string const &id) const {
+    if (!has_input2(id)) return false;
+    //return inputBounds.find(id) != inputBounds.end();
+    auto obj = get_input2(id);
+    if (silent_any_cast<std::shared_ptr<IObject>>(obj).has_value())
+        return true;
+    using Types = typename zinc::is_variant<NumericValue>::tuple_type;
+    return zinc::static_for<0, std::tuple_size_v<Types>>([&] (auto i) {
+        using T = std::tuple_element_t<i, Types>;
+        if (auto o = exact_any_cast<T>(obj); o.has_value()) {
+            return true;
+        }
+        return false;
+    });
+
+}
+
 }

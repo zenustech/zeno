@@ -87,7 +87,7 @@ struct PrimitiveGetAttrValue : zeno::INode {
 
 ZENDEFNODE(PrimitiveGetAttrValue,
     { /* inputs: */ {
-    "prim","index",
+    "prim",{"int","index","0"},
     }, /* outputs: */ {
     "value",
     }, /* params: */ {
@@ -132,7 +132,7 @@ struct PrimitiveSetAttrValue : zeno::INode {
 
 ZENDEFNODE(PrimitiveSetAttrValue,
     { /* inputs: */ {
-    "prim","index","value",
+    "prim",{"int","index","0"},"value",
     }, /* outputs: */ {
     }, /* params: */ {
     {"string", "name", "pos"},
