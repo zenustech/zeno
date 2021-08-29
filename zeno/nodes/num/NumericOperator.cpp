@@ -106,8 +106,8 @@ struct NumericOperator : zeno::INode {
     _PER_OP1(~, inv)
     _PER_OP1(!, not)
 
-    _PER_FN(mix)
-    _PER_FN(clamp)
+    //_PER_FN(mix)
+    //_PER_FN(clamp)
 
     _PER_FN(atan2)
     _PER_FN(pow)
@@ -234,8 +234,30 @@ ZENO_DEFNODE(NumericOperator)({
     {{"NumericObject", "ret"}},
     {{"ENUM"
 #define _PER_FN(x) " " #x
-    _PER_FN(mix)
-    _PER_FN(clamp)
+    _PER_FN(add)
+    _PER_FN(sub)
+    _PER_FN(mul)
+    _PER_FN(div)
+    _PER_FN(mod)
+    _PER_FN(and)
+    _PER_FN(or)
+    _PER_FN(xor)
+    _PER_FN(shr)
+    _PER_FN(shl)
+    _PER_FN(cmpge)
+    _PER_FN(cmple)
+    _PER_FN(mpgt)
+    _PER_FN(mplt)
+    _PER_FN(cmpne)
+    _PER_FN(cmpeq)
+
+    _PER_FN(pos)
+    _PER_FN(neg)
+    _PER_FN(inv)
+    _PER_FN(not)
+
+    //_PER_FN(mix)
+    //_PER_FN(clamp)
 
     _PER_FN(atan2)
     _PER_FN(pow)
@@ -266,7 +288,7 @@ ZENO_DEFNODE(NumericOperator)({
     _PER_FN(copy)
     _PER_FN(copyr)
 #undef _PER_FN
-    , "op_type", "copy"}},
+    , "op_type", "add"}},
     {"numeric"},
 });
 

@@ -121,10 +121,11 @@ class QDMGraphicsNode(QGraphicsItem):
         self.params.clear()
         for index, (type, name, defl) in enumerate(params):
             if type.startswith('ENUM '):
-                type = 'string'
+                param = QDMGraphicsParamEnum(self)
                 enums = type.split()[1:]
-                #defl = repr(enums)
-            param = globals()['QDMGraphicsParam_' + type](self)
+                param.setEnums(enums)
+            else:
+                param = globals()['QDMGraphicsParam_' + type](self)
             rect = QRectF(HORI_MARGIN, y, self.width - HORI_MARGIN * 2, 0)
             param.setGeometry(rect)
             param.setName(name)
