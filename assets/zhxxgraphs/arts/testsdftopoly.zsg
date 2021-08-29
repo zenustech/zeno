@@ -435,10 +435,10 @@
     }
    },
    "view_rect": {
-    "x": 1895.1993962194397,
-    "y": -121.12615415487778,
-    "width": 1874.9999999999989,
-    "height": 695.3125
+    "x": 3109.58582662745,
+    "y": -397.3377754375482,
+    "width": 959.9999999999994,
+    "height": 356.0
    }
   }
  },
@@ -1179,7 +1179,7 @@
    ],
    "outputs": [
     [
-     "NumericObject:int",
+     "int",
      "size",
      ""
     ],
@@ -3023,32 +3023,32 @@
   "Make2DGridPrimitive": {
    "inputs": [
     [
-     "NumericObject:int",
+     "int",
      "nx",
      ""
     ],
     [
-     "NumericObject:int",
+     "int",
      "ny",
      ""
     ],
     [
-     "NumericObject:vec3f",
+     "vec3f",
      "sizeX",
      ""
     ],
     [
-     "NumericObject:vec3f",
+     "vec3f",
      "sizeY",
      ""
     ],
     [
-     "NumericObject:float",
+     "float",
      "scale",
      ""
     ],
     [
-     "NumericObject:vec3f",
+     "vec3f",
      "origin",
      ""
     ],
@@ -3383,12 +3383,12 @@
   "MakeOrthonormalBase": {
    "inputs": [
     [
-     "NumericObject:vec3f",
+     "vec3f",
      "normal",
      ""
     ],
     [
-     "NumericObject:vec3f",
+     "vec3f",
      "tangent",
      ""
     ],
@@ -3400,7 +3400,7 @@
    ],
    "outputs": [
     [
-     "NumericObject:vec3f",
+     "vec3f",
      "normal",
      ""
     ],
@@ -3410,7 +3410,7 @@
      ""
     ],
     [
-     "NumericObject:vec3f",
+     "vec3f",
      "bitangent",
      ""
     ],
@@ -3871,7 +3871,7 @@
    ],
    "outputs": [
     [
-     "NumericObject:float",
+     "float",
      "value",
      ""
     ],
@@ -3902,7 +3902,7 @@
    ],
    "outputs": [
     [
-     "NumericObject:int",
+     "int",
      "value",
      ""
     ],
@@ -3933,7 +3933,7 @@
    ],
    "outputs": [
     [
-     "NumericObject:vec2i",
+     "vec2i",
      "vec2",
      ""
     ],
@@ -3969,7 +3969,7 @@
    ],
    "outputs": [
     [
-     "NumericObject:vec3i",
+     "vec3i",
      "vec3",
      ""
     ],
@@ -4010,7 +4010,7 @@
    ],
    "outputs": [
     [
-     "NumericObject:vec4f",
+     "vec4f",
      "vec4",
      ""
     ],
@@ -4184,7 +4184,7 @@
    ],
    "outputs": [
     [
-     "NumericObject:vec2f",
+     "vec2f",
      "vec2",
      ""
     ],
@@ -4220,7 +4220,7 @@
    ],
    "outputs": [
     [
-     "NumericObject:vec3f",
+     "vec3f",
      "vec3",
      ""
     ],
@@ -4261,7 +4261,7 @@
    ],
    "outputs": [
     [
-     "NumericObject:vec4f",
+     "vec4f",
      "vec4",
      ""
     ],
@@ -5032,7 +5032,7 @@
      ""
     ],
     [
-     "NumericObject:float",
+     "float",
      "dt",
      ""
     ],
@@ -5502,7 +5502,7 @@
      ""
     ],
     [
-     "NumericObject:float",
+     "float",
      "portion",
      ""
     ],
@@ -7688,7 +7688,7 @@
   "UnpackNumericVec": {
    "inputs": [
     [
-     "NumericObject:vec3",
+     "vec3",
      "vec",
      ""
     ],
@@ -7700,22 +7700,22 @@
    ],
    "outputs": [
     [
-     "NumericObject:scalar",
+     "scalar",
      "X",
      ""
     ],
     [
-     "NumericObject:scalar",
+     "scalar",
      "Y",
      ""
     ],
     [
-     "NumericObject:scalar",
+     "scalar",
      "Z",
      ""
     ],
     [
-     "NumericObject:scalar",
+     "scalar",
      "W",
      ""
     ],
@@ -7981,46 +7981,6 @@
    ],
    "categories": [
     "visualize"
-   ]
-  },
-  "VDBWrangle": {
-   "inputs": [
-    [
-     "VDBGrid",
-     "grid",
-     ""
-    ],
-    [
-     "StringObject",
-     "zfxCode",
-     ""
-    ],
-    [
-     "DictObject:NumericObject",
-     "params",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "VDBGrid",
-     "grid",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
    ]
   },
   "Vec3FieldExtrapolate": {

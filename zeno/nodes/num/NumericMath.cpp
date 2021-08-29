@@ -67,9 +67,9 @@ struct UnpackNumericVec : INode {
 };
 
 ZENDEFNODE(UnpackNumericVec, {
-    {{"vec3", "vec"}},
-    {{"scalar", "X"}, {"scalar", "Y"},
-     {"scalar", "Z"}, {"scalar", "W"}},
+    {{"NumericObject", "vec"}},
+    {{"NumericObject", "X"}, {"NumericObject", "Y"},
+     {"NumericObject", "Z"}, {"NumericObject", "W"}},
     {},
     {"numeric"},
 }); // TODO: add PackNumericVec too.
@@ -114,7 +114,7 @@ struct NumericCounter : INode {
 
 ZENDEFNODE(NumericCounter, {
     {},
-    {{"NumericObject", "count"}},
+    {{"int", "count"}},
     {},
     {"numeric"},
 });
