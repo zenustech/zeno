@@ -15,10 +15,12 @@
       "value": 0.04
      },
      "uipos": [
-      -1764.5156249999995,
-      231.85937500000017
+      -3323.773132324216,
+      36.356140136719205
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "1117ce05-x": {
      "name": "NumericFloat",
@@ -33,8 +35,8 @@
       "value": 0.04
      },
      "uipos": [
-      -305.6999999999997,
-      902.721875
+      130.18125000000032,
+      795.2750000000001
      ],
      "options": []
     },
@@ -62,8 +64,8 @@
      "name": "FLIPMakeParticles",
      "inputs": {
       "TankSDF": [
-       "01257425-MeshToSDF",
-       "sdf",
+       null,
+       null,
        null
       ],
       "dx": [
@@ -80,7 +82,7 @@
      "params": {},
      "uipos": [
       -1078.0,
-      815.0
+      808.6500000000002
      ],
      "options": [
       "ONCE"
@@ -110,8 +112,8 @@
       "type": "Centered"
      },
      "uipos": [
-      -1379.4700000000003,
-      701.2320000000001
+      -1723.2200000000003,
+      692.732
      ],
      "options": [
       "ONCE"
@@ -130,8 +132,8 @@
       "path": "assets/Pig_Head.obj"
      },
      "uipos": [
-      -1951.0840000000003,
-      687.8760000000003
+      -2294.834,
+      680.3760000000003
      ],
      "options": [
       "ONCE"
@@ -161,8 +163,8 @@
       "type": "vertex"
      },
      "uipos": [
-      -823.2080000000001,
-      1396.448
+      -1977.1539228515608,
+      1667.2451801757811
      ],
      "options": [
       "ONCE"
@@ -181,57 +183,8 @@
       "path": "assets/bowl.obj"
      },
      "uipos": [
-      -1102.3920000000003,
-      1440.152
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "7be04bc9-MakePrimitive": {
-     "name": "MakePrimitive",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -1559.2,
-      1096.8
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "dd258f35-PrimitiveAddAttr": {
-     "name": "PrimitiveAddAttr",
-     "inputs": {
-      "prim": [
-       "7be04bc9-MakePrimitive",
-       "prim",
-       null
-      ],
-      "fillValue": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "pos",
-      "type": "float3"
-     },
-     "uipos": [
-      -1293.6000000000001,
-      1055.2
+      -2256.337922851561,
+      1711.9491801757808
      ],
      "options": [
       "ONCE"
@@ -268,8 +221,8 @@
      },
      "params": {},
      "uipos": [
-      -1659.52,
-      718.0800000000002
+      -2003.2699999999998,
+      710.58
      ],
      "options": [
       "ONCE"
@@ -290,10 +243,12 @@
       "z": 2.0
      },
      "uipos": [
-      -1925.06,
-      918.4299999999998
+      -2268.8099999999995,
+      910.93
      ],
-     "options": []
+     "options": [
+      "ONCE"
+     ]
     },
     "89eb0ef7-MakeFLIPWorld": {
      "name": "MakeFLIPWorld",
@@ -344,8 +299,8 @@
      },
      "params": {},
      "uipos": [
-      -275.09375,
-      617.8593750000001
+      -1684.4537353515607,
+      1566.4299926757808
      ],
      "options": [
       "ONCE"
@@ -367,7 +322,8 @@
      },
      "params": {
       "isoValue": 0.0,
-      "adaptivity": 0.025
+      "adaptivity": 0.025,
+      "allowQuads": false
      },
      "uipos": [
       1652.9765625000005,
@@ -412,8 +368,8 @@
        null
       ],
       "DxScale": [
-       null,
-       null,
+       "56496640-NumericFloat",
+       "value",
        null
       ],
       "voxelScale": [
@@ -439,8 +395,8 @@
      },
      "params": {},
      "uipos": [
-      1289.848437500001,
-      73.52031250000007
+      1274.5359375000007,
+      31.832812500000074
      ],
      "options": []
     },
@@ -457,9 +413,9 @@
        "Particles",
        null
       ],
-      "Collider": [
-       "5fb9adea-FLIPMakeCollider",
-       "Collider",
+      "Environ": [
+       "26fe80e4-FuncEnd",
+       "function",
        null
       ],
       "gravity": [
@@ -490,8 +446,8 @@
      },
      "params": {},
      "uipos": [
-      134.357421875,
-      438.8271484375
+      455.6230468749998,
+      336.0146484375001
      ],
      "options": []
     },
@@ -521,8 +477,8 @@
      },
      "params": {},
      "uipos": [
-      2235.260009765623,
-      872.0397949218747
+      2118.072509765623,
+      832.9772949218745
      ],
      "options": []
     },
@@ -536,11 +492,11 @@
       ]
      },
      "params": {
-      "value": "@speed = length(@vel)\n@rad = 1.2"
+      "value": "@speed = length(@vel)\n@rad = 0"
      },
      "uipos": [
-      2005.7934570312482,
-      360.4106445312491
+      1739.6801757812486,
+      316.4653320312491
      ],
      "options": []
     },
@@ -598,7 +554,9 @@
       2498.443603515623,
       1220.672607421874
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "1791dd5a-NumericFloat": {
      "name": "NumericFloat",
@@ -610,11 +568,11 @@
       ]
      },
      "params": {
-      "value": 8.0
+      "value": 16.0
      },
      "uipos": [
-      2621.7717285156223,
-      1390.500732421874
+      2635.834228515622,
+      1396.7507324218743
      ],
      "options": []
     },
@@ -629,7 +587,7 @@
      },
      "params": {
       "nres": 1024,
-      "_RAMPS": "5\n0 0 0 1\n0.15218143672734516 0 1 1\n0.528846153846154 0 1 0\n0.9013736263736264 1 1 0\n1 1 0 0"
+      "_RAMPS": "5\n0 0 0 0.6995192307692307\n0.2552034147493232 0 0.25309065934065933 1\n0.528846153846154 0 0.8025412087912088 1\n0.8155219780219781 0 1 0.6181318681318682\n1 1 1 1"
      },
      "uipos": [
       2079.302978515623,
@@ -642,14 +600,14 @@
        [
         0,
         0,
-        1
+        0.6995192307692307
        ]
       ],
       [
-       0.15218143672734516,
+       0.2552034147493232,
        [
         0,
-        1,
+        0.25309065934065933,
         1
        ]
       ],
@@ -657,24 +615,24 @@
        0.528846153846154,
        [
         0,
-        1,
-        0
+        0.8025412087912088,
+        1
        ]
       ],
       [
-       0.9013736263736264,
+       0.8155219780219781,
        [
+        0,
         1,
-        1,
-        0
+        0.6181318681318682
        ]
       ],
       [
        1,
        [
         1,
-        0,
-        0
+        1,
+        1
        ]
       ]
      ]
@@ -709,8 +667,8 @@
        null
       ],
       "frameNum": [
-       "6b0009e1-GetFrameNum",
-       "FrameNum",
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -722,27 +680,11 @@
      "params": {
       "dir": "/tmp/cache",
       "prefix": "",
-      "ignore": true
+      "ignore": false
      },
      "uipos": [
-      524.9375000000001,
-      536.3125000000001
-     ],
-     "options": []
-    },
-    "6b0009e1-GetFrameNum": {
-     "name": "GetFrameNum",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      157.36500000000035,
-      881.1
+      771.03125,
+      540.21875
      ],
      "options": []
     },
@@ -857,12 +799,465 @@
       873.4374999999999
      ],
      "options": []
+    },
+    "d913c76e-FLIPMakeEmitter": {
+     "name": "FLIPMakeEmitter",
+     "inputs": {
+      "EmitSDF": [
+       "7da7423b-x",
+       "sdf",
+       null
+      ],
+      "VelGrid": [
+       null,
+       null,
+       null
+      ],
+      "isEnabled": [
+       "9207629a-x",
+       "ret",
+       null
+      ],
+      "VelInit": [
+       "970b7603-NumericVec3",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -556.7271728515609,
+      1610.7503051757803
+     ],
+     "options": []
+    },
+    "b01c5f7d-ReadObjMesh": {
+     "name": "ReadObjMesh",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": "assets/cube.obj"
+     },
+     "uipos": [
+      -1270.6959228515607,
+      1663.2971801757808
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "7da7423b-x": {
+     "name": "MeshToSDF",
+     "inputs": {
+      "mesh": [
+       "b01c5f7d-ReadObjMesh",
+       "mesh",
+       null
+      ],
+      "Dx": [
+       "35e6f99c-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "voxel_size": 0.08,
+      "type": "vertex"
+     },
+     "uipos": [
+      -957.4459228515608,
+      1496.7971801757808
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "493251c9-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 70
+     },
+     "uipos": [
+      718.5,
+      222.57812500000006
+     ],
+     "options": []
+    },
+    "de483acd-WriteVDBGrid": {
+     "name": "WriteVDBGrid",
+     "inputs": {
+      "data": [
+       "c5f709de-SmoothLiquidSDF",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": "/tmp/sdf.vdb"
+     },
+     "uipos": [
+      1686.249999999999,
+      -159.5
+     ],
+     "options": []
+    },
+    "354f6460-ExportObjPrimitive": {
+     "name": "ExportObjPrimitive",
+     "inputs": {
+      "path": [
+       "cb88262e-MakeWritePath",
+       "path",
+       null
+      ],
+      "prim": [
+       "640a4573-SDFToPoly",
+       "Mesh",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2024.0,
+      63.0
+     ],
+     "options": []
+    },
+    "cb88262e-MakeWritePath": {
+     "name": "MakeWritePath",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "path": "/tmp/vdbconv.obj"
+     },
+     "uipos": [
+      2018.0,
+      -128.0
+     ],
+     "options": []
+    },
+    "058e1293-FLIPMakeEnviron": {
+     "name": "FLIPMakeEnviron",
+     "inputs": {
+      "Collider": [
+       "5fb9adea-FLIPMakeCollider",
+       "Collider",
+       null
+      ],
+      "Emitter": [
+       "d913c76e-FLIPMakeEmitter",
+       "Emitter",
+       null
+      ],
+      "Absorber": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -259.6037500000001,
+      835.5724999999996
+     ],
+     "options": []
+    },
+    "be19fd5e-x": {
+     "name": "GetFrameNum",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2084.5084228515607,
+      1991.9846801757799
+     ],
+     "options": []
+    },
+    "9207629a-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "67296f2f-x",
+       "ret",
+       null
+      ],
+      "rhs": [
+       "f844c765-x",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "cmpeq"
+     },
+     "uipos": [
+      -1409.1959228515607,
+      2233.51593017578
+     ],
+     "options": []
+    },
+    "f844c765-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0
+     },
+     "uipos": [
+      -1710.7427978515607,
+      2310.67218017578
+     ],
+     "options": []
+    },
+    "970b7603-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 2.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -1057.9459228515607,
+      1885.5471801757808
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "67296f2f-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "be19fd5e-x",
+       "FrameNum",
+       null
+      ],
+      "rhs": [
+       "b1a323d8-x",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mod"
+     },
+     "uipos": [
+      -1700.9459228515607,
+      2032.7971801757808
+     ],
+     "options": []
+    },
+    "b1a323d8-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1
+     },
+     "uipos": [
+      -2100.9459228515607,
+      2211.797180175781
+     ],
+     "options": []
+    },
+    "35125689-FLIPMakeAbsorber": {
+     "name": "FLIPMakeAbsorber",
+     "inputs": {
+      "AbsorbSDF": [
+       "3ae6801d-x",
+       "sdf",
+       null
+      ],
+      "isEnabled": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1682.9459228515607,
+      1292.7971801757808
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "26fe80e4-FuncEnd": {
+     "name": "FuncEnd",
+     "inputs": {
+      "rets": [
+       "058e1293-FLIPMakeEnviron",
+       "Environ",
+       null
+      ],
+      "FUNC": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      66.1093749999998,
+      582.8906249999998
+     ],
+     "options": []
+    },
+    "ece9759d-PrimitiveReduction": {
+     "name": "PrimitiveReduction",
+     "inputs": {
+      "prim": [
+       "f44d2c79-ParticlesWrangle",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attr": "speed",
+      "op": "min"
+     },
+     "uipos": [
+      2427.0,
+      668.0
+     ],
+     "options": []
+    },
+    "55e6075f-x": {
+     "name": "PrimitiveReduction",
+     "inputs": {
+      "prim": [
+       "f44d2c79-ParticlesWrangle",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attr": "speed",
+      "op": "max"
+     },
+     "uipos": [
+      2447.0,
+      922.0
+     ],
+     "options": []
+    },
+    "56496640-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.8
+     },
+     "uipos": [
+      911.8281249999998,
+      43.28124999999994
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 1.25,
-    "trans_x": 887,
-    "trans_y": -57
+    "scale": 1.5625,
+    "trans_x": -430,
+    "trans_y": -173
    }
   },
   "FLIPSimTemplate": {
@@ -896,8 +1291,8 @@
      "name": "ParticleEmitter",
      "inputs": {
       "Particles": [
-       "5025569f-SubInput",
-       "port",
+       "aae92be5-Route",
+       "output",
        null
       ],
       "ShapeSDF": [
@@ -906,8 +1301,13 @@
        null
       ],
       "VelocityVolume": [
-       null,
-       null,
+       "ef976013-x",
+       "port",
+       null
+      ],
+      "VelocityInit": [
+       "00c583c5-x",
+       "port",
        null
       ],
       "LiquidSDF": [
@@ -927,8 +1327,8 @@
       "vz": 0.0
      },
      "uipos": [
-      6349.223345813162,
-      -1747.950609043236
+      5551.176470813163,
+      -1720.6068590432362
      ],
      "options": []
     },
@@ -1086,7 +1486,7 @@
        null
       ],
       "SRC": [
-       "8dce9d19-x",
+       "fb648021-EndFor",
        "DST",
        null
       ]
@@ -1098,8 +1498,8 @@
       "surface_size": 4
      },
      "uipos": [
-      5186.188156083232,
-      -1883.5348696261638
+      6676.422531083233,
+      -1918.6911196261638
      ],
      "options": []
     },
@@ -1173,7 +1573,7 @@
        null
       ],
       "SRC": [
-       "fb648021-EndFor",
+       "0a81fcd9-x",
        "DST",
        null
       ]
@@ -1182,8 +1582,8 @@
       "dx": 0.04
      },
      "uipos": [
-      7130.781658372281,
-      -1902.1798908501803
+      7130.7816583722815,
+      -1902.9798908501805
      ],
      "options": []
     },
@@ -1379,8 +1779,8 @@
       "dx": 0.04
      },
      "uipos": [
-      10208.64787088334,
-      -2462.065518608683
+      10206.647870883338,
+      -2462.0655186086824
      ],
      "options": []
     },
@@ -1433,8 +1833,8 @@
      },
      "params": {},
      "uipos": [
-      4792.74284358323,
-      -1609.0192446261638
+      4182.195968583229,
+      -1787.8473696261638
      ],
      "options": []
     },
@@ -1500,7 +1900,9 @@
       2110.2170095443716,
       -2250.4693899154654
      ],
-     "options": []
+     "options": [
+      "collapsed"
+     ]
     },
     "95c068bc-x": {
      "name": "SubInput",
@@ -1561,12 +1963,10 @@
       "defl": ""
      },
      "uipos": [
-      5517.352995872496,
-      -1280.9989309310902
+      4692.446745872498,
+      -1194.4520559310902
      ],
-     "options": [
-      "collapsed"
-     ]
+     "options": []
     },
     "8f2de3ef-BeginFor": {
      "name": "BeginFor",
@@ -1577,15 +1977,15 @@
        null
       ],
       "SRC": [
-       "0a81fcd9-x",
+       "aae92be5-Route",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      5809.447021484372,
-      -1765.906066894528
+      4991.790771484371,
+      -1703.4841918945278
      ],
      "options": []
     },
@@ -1604,8 +2004,8 @@
       "defl": ""
      },
      "uipos": [
-      5500.034179687501,
-      -1853.7255859374995
+      3973.315429687499,
+      -1598.803710937499
      ],
      "options": []
     },
@@ -1618,15 +2018,15 @@
        null
       ],
       "SRC": [
-       "e0dbd827-x",
+       "b6591b53-PrintMessage",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      6689.578056335448,
-      -1755.5911445617653
+      6204.0311813354465,
+      -1529.419269561765
      ],
      "options": []
     },
@@ -1667,8 +2067,8 @@
       "defl": ""
      },
      "uipos": [
-      6775.707488059993,
-      -1502.8885793685909
+      7007.707488059994,
+      -1416.8885793685909
      ],
      "options": []
     },
@@ -1860,12 +2260,91 @@
       -1889.374999999998
      ],
      "options": []
+    },
+    "ef976013-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "DynEmitterVelVolume",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      4952.59375,
+      -1302.0156249999998
+     ],
+     "options": []
+    },
+    "00c583c5-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "DynEmitterVelInit",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      5197.71875,
+      -1407.640625
+     ],
+     "options": []
+    },
+    "aae92be5-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "5025569f-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       "8dce9d19-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      4655.468749999993,
+      -1408.1249999999982
+     ],
+     "options": []
+    },
+    "b6591b53-PrintMessage": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "e0dbd827-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "Emitted new liquid "
+     },
+     "uipos": [
+      5815.828125,
+      -1375.078125
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.20971520000000032,
-    "trans_x": -90,
-    "trans_y": -887
+    "scale": 1.0000000000000007,
+    "trans_x": 5610,
+    "trans_y": -1751
    }
   },
   "FLIPMakeCollider": {
@@ -1939,7 +2418,8 @@
      "params": {
       "MultiplierA": 1.0,
       "MultiplierB": 1.0,
-      "OpType": "CSGUnion"
+      "OpType": "CSGUnion",
+      "writeBack": 0
      },
      "uipos": [
       1032.0,
@@ -2271,8 +2751,8 @@
        null
       ],
       "SDF": [
-       "55c1f2d9-CombineVDB",
-       "FieldOut",
+       "59022a10-IfElse",
+       "result",
        null
       ],
       "Vel": [
@@ -2367,8 +2847,8 @@
       "name": "Rename!"
      },
      "uipos": [
-      2508.75,
-      1041.25
+      2487.5000000000005,
+      1076.2500000000002
      ],
      "options": []
     },
@@ -2381,8 +2861,8 @@
        null
       ],
       "SDF": [
-       "ee2afe3d-x",
-       "port",
+       "bd96c5f9-x",
+       "result",
        null
       ],
       "Vel": [
@@ -2400,8 +2880,8 @@
       "_KEYS": "SDF\nVel\nobj2"
      },
      "uipos": [
-      2822.5,
-      1092.5
+      2823.5,
+      1090.25
      ],
      "options": [],
      "socket_keys": [
@@ -2440,12 +2920,100 @@
       1005.75
      ],
      "options": []
+    },
+    "59022a10-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "55c1f2d9-CombineVDB",
+       "FieldOut",
+       null
+      ],
+      "false": [
+       "4eb2ed2f-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "cond": [
+       "ee2afe3d-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1409.5,
+      66.50000000000011
+     ],
+     "options": []
+    },
+    "bd96c5f9-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "ee2afe3d-x",
+       "port",
+       null
+      ],
+      "false": [
+       "b2d0343c-x",
+       "data",
+       null
+      ],
+      "cond": [
+       "ee2afe3d-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1912.0312499999995,
+      1220.390625
+     ],
+     "options": []
+    },
+    "b2d0343c-x": {
+     "name": "MakeVDBGrid",
+     "inputs": {
+      "Dx": [
+       "79a370a6-Route",
+       "output",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "dx": 0.04,
+      "type": "float",
+      "structure": "Staggered",
+      "name": "Rename!"
+     },
+     "uipos": [
+      1604.9999999999993,
+      1359.9999999999998
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.8000000000000002,
-    "trans_x": 1757,
-    "trans_y": 477
+    "scale": 1.0000000000000002,
+    "trans_x": -672,
+    "trans_y": 576
    }
   },
   "FLIPMakeParticles": {
@@ -2526,6 +3094,11 @@
        null,
        null
       ],
+      "VelocityInit": [
+       null,
+       null,
+       null
+      ],
       "LiquidSDF": [
        "d2e54039-MakeVDBGrid",
        "data",
@@ -2578,13 +3151,13 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "b2f5beac-MakeVDBGrid",
-       "data",
+       "bef31978-IfElse",
+       "result",
        null
       ],
       "SRC": [
-       "81412251-ParticleEmitter",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -2624,12 +3197,43 @@
       386.6500000000001
      ],
      "options": []
+    },
+    "bef31978-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "81412251-ParticleEmitter",
+       "Particles",
+       null
+      ],
+      "false": [
+       "b2f5beac-MakeVDBGrid",
+       "data",
+       null
+      ],
+      "cond": [
+       "2433c6a4-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1393.0,
+      145.0
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.8000000000000005,
-    "trans_x": 133,
-    "trans_y": -124
+    "scale": 0.8000000000000002,
+    "trans_x": -280,
+    "trans_y": -171
    }
   },
   "MakeFLIPWorld": {
@@ -2873,13 +3477,13 @@
        null
       ],
       "DynEmitter": [
-       null,
-       null,
+       "6d8f3111-x",
+       "result",
        null
       ],
       "ifEmit": [
-       "2dde32d4-x",
-       "value",
+       "47a2a9db-IfElse",
+       "result",
        null
       ],
       "Particles": [
@@ -2927,6 +3531,16 @@
        "port",
        null
       ],
+      "DynEmitterVelVolume": [
+       "77171256-x",
+       "result",
+       null
+      ],
+      "DynEmitterVelInit": [
+       "4866b45e-x",
+       "result",
+       null
+      ],
       "SRC": [
        null,
        null,
@@ -2935,8 +3549,8 @@
      },
      "params": {},
      "uipos": [
-      1793.3968164062494,
-      24.993476562500007
+      2751.9290429687494,
+      59.64484374999995
      ],
      "options": []
     },
@@ -2953,8 +3567,8 @@
       "value": 0
      },
      "uipos": [
-      1185.5404394531245,
-      -353.048095703125
+      1457.5404394531242,
+      -260.048095703125
      ],
      "options": []
     },
@@ -2987,8 +3601,8 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "1e2a4a76-SubOutput",
+       "DST",
        null
       ]
      },
@@ -2998,8 +3612,8 @@
       "defl": ""
      },
      "uipos": [
-      3034.4280761718733,
-      478.03251953125005
+      4628.666357421873,
+      456.05986328125005
      ],
      "options": []
     },
@@ -3030,8 +3644,8 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "0ac040f9-IfElse",
+       "DST",
        null
       ]
      },
@@ -3041,8 +3655,8 @@
       "defl": ""
      },
      "uipos": [
-      3089.0070800781245,
-      126.34291992187502
+      3938.6164550781245,
+      184.936669921875
      ],
      "options": []
     },
@@ -3121,8 +3735,8 @@
       "defl": ""
      },
      "uipos": [
-      230.0,
-      356.5000000000002
+      -727.0312499999997,
+      302.78906250000017
      ],
      "options": []
     },
@@ -3163,8 +3777,8 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "6235b875-SubOutput",
+       "DST",
        null
       ]
      },
@@ -3174,16 +3788,326 @@
       "defl": ""
      },
      "uipos": [
-      3129.1857910156245,
-      810.6037597656247
+      5175.084228515625,
+      949.7639160156244
+     ],
+     "options": []
+    },
+    "568b00ff-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Emitter",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      253.64999999999998,
+      -302.0875000000001
+     ],
+     "options": []
+    },
+    "47a2a9db-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "f05fc980-ExtractDict",
+       "enable",
+       null
+      ],
+      "false": [
+       "2dde32d4-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "568b00ff-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1786.0,
+      -82.75
+     ],
+     "options": []
+    },
+    "f05fc980-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "568b00ff-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nVelGrid\nenable\nVelInit\nobj4"
+     },
+     "uipos": [
+      801.0,
+      -258.25
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "VelGrid",
+      "enable",
+      "VelInit",
+      "obj4"
+     ]
+    },
+    "6d8f3111-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "f05fc980-ExtractDict",
+       "SDF",
+       null
+      ],
+      "false": [
+       "2dde32d4-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "568b00ff-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1797.25,
+      -405.25
+     ],
+     "options": []
+    },
+    "77171256-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "f05fc980-ExtractDict",
+       "VelGrid",
+       null
+      ],
+      "false": [
+       "2dde32d4-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "568b00ff-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2073.75,
+      -670.5
+     ],
+     "options": []
+    },
+    "4866b45e-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "f05fc980-ExtractDict",
+       "VelInit",
+       null
+      ],
+      "false": [
+       "2dde32d4-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "568b00ff-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1766.25,
+      -714.0
+     ],
+     "options": []
+    },
+    "78988311-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Absorber",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      2186.672363281249,
+      -1076.170654296875
+     ],
+     "options": []
+    },
+    "67802af7-x": {
+     "name": "KillParticlesInSDF",
+     "inputs": {
+      "Particles": [
+       "0b575c56-SubInput",
+       "port",
+       null
+      ],
+      "KillerSDF": [
+       "c041ebe2-x",
+       "SDF",
+       null
+      ],
+      "SRC": [
+       "bd9bfc8e-CombineVDB",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3179.4679687499984,
+      -866.1171874999998
+     ],
+     "options": []
+    },
+    "c041ebe2-x": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "78988311-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nenable\nobj2"
+     },
+     "uipos": [
+      2530.98125,
+      -819.4062499999999
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "enable",
+      "obj2"
+     ]
+    },
+    "bd9bfc8e-CombineVDB": {
+     "name": "CombineVDB",
+     "inputs": {
+      "FieldA": [
+       "56cd53d3-x",
+       "LiquidSDF",
+       null
+      ],
+      "FieldB": [
+       "c041ebe2-x",
+       "SDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "MultiplierA": 1.0,
+      "MultiplierB": 1.0,
+      "OpType": "CSGDifference",
+      "writeBack": 1
+     },
+     "uipos": [
+      2817.1718749999986,
+      -1099.8624999999997
+     ],
+     "options": []
+    },
+    "0ac040f9-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "67802af7-x",
+       "DST",
+       null
+      ],
+      "false": [
+       null,
+       null,
+       null
+      ],
+      "cond": [
+       "c041ebe2-x",
+       "enable",
+       null
+      ],
+      "SRC": [
+       "aad2ade1-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3565.928125,
+      -557.6812500000001
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 0.6400000000000005,
-    "trans_x": 1023,
-    "trans_y": -72
+    "scale": 0.32768000000000014,
+    "trans_x": 341,
+    "trans_y": -170
    }
   },
   "SmoothLiquidSDF": {
@@ -3197,8 +4121,8 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "745750ec-x",
+       "DST",
        null
       ]
      },
@@ -3208,8 +4132,8 @@
       "dilateIters": 0
      },
      "uipos": [
-      -823.6749999999996,
-      327.4218750000002
+      -668.1749999999996,
+      328.1718750000002
      ],
      "options": []
     },
@@ -3277,8 +4201,8 @@
       "defl": ""
      },
      "uipos": [
-      -2032.576953124999,
-      119.00019531250013
+      -2206.405078124999,
+      132.67207031250013
      ],
      "options": []
     },
@@ -3291,8 +4215,8 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "9252b563-x",
+       "DST",
        null
       ]
      },
@@ -3302,8 +4226,8 @@
       "defl": ""
      },
      "uipos": [
-      3401.2031249999986,
-      400.6343750000002
+      3530.890624999999,
+      405.32187500000026
      ],
      "options": []
     },
@@ -3334,15 +4258,15 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "8651c115-PrintMessage",
+       "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      -1597.3749999999989,
-      280.9843750000002
+      -1608.1406249999989,
+      212.62500000000028
      ],
      "options": []
     },
@@ -3365,15 +4289,15 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "f3522abd-x",
+       "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      -1106.0835937499996,
-      376.9179687500001
+      -1131.39609375,
+      353.16796875
      ],
      "options": []
     },
@@ -3397,8 +4321,8 @@
       "dilateIters": 0
      },
      "uipos": [
-      2955.1515624999975,
-      466.40546874999967
+      2953.589062499997,
+      466.4054687499997
      ],
      "options": []
     },
@@ -3417,8 +4341,8 @@
       "defl": ""
      },
      "uipos": [
-      -4088.791992187498,
-      261.79003906250045
+      -4210.666992187499,
+      277.4150390625004
      ],
      "options": []
     },
@@ -3437,8 +4361,8 @@
       "defl": ""
      },
      "uipos": [
-      -4191.996093749998,
-      -113.95898437499955
+      -4329.496093749999,
+      -215.52148437499946
      ],
      "options": []
     },
@@ -3528,8 +4452,8 @@
       "name": "Dx"
      },
      "uipos": [
-      -2610.058593749998,
-      307.66601562499955
+      -2555.468749999998,
+      328.0126953124995
      ],
      "options": []
     },
@@ -3579,8 +4503,8 @@
       "name": "dilate"
      },
      "uipos": [
-      -2620.996093749998,
-      103.369140625
+      -2528.4960937499977,
+      -71.3183593749998
      ],
      "options": []
     },
@@ -3607,8 +4531,8 @@
       "op_type": "mul"
      },
      "uipos": [
-      -2900.683593749998,
-      673.2910156249995
+      -2839.7460937499986,
+      648.2910156249994
      ],
      "options": []
     },
@@ -3630,8 +4554,8 @@
       "name": "droplet"
      },
      "uipos": [
-      -2574.121093749998,
-      602.9785156249995
+      -2554.1210937499977,
+      636.4160156249994
      ],
      "options": []
     },
@@ -3648,8 +4572,8 @@
       "name": "Dx"
      },
      "uipos": [
-      -1444.9218749999989,
-      589.8437499999992
+      -1615.5468749999989,
+      512.968749999999
      ],
      "options": []
     },
@@ -3666,8 +4590,8 @@
       "name": "dilate"
      },
      "uipos": [
-      -1868.1874999999986,
-      440.99999999999955
+      -1866.9374999999986,
+      388.8124999999996
      ],
      "options": []
     },
@@ -3692,13 +4616,13 @@
      },
      "params": {},
      "uipos": [
-      834.3195312499998,
-      271.77343749999994
+      804.63203125,
+      312.3984375
      ],
      "options": []
     },
-    "d6f480a9-VDBPointsToDropletPrimitive": {
-     "name": "VDBPointsToDropletPrimitive",
+    "d6f480a9-GetVDBPointsDroplets": {
+     "name": "GetVDBPointsDroplets",
      "inputs": {
       "grid": [
        "44d210b4-SubInput",
@@ -3711,15 +4635,15 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "b2dd9970-x",
+       "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      1632.6904296874989,
-      651.8945312499995
+      1568.6162109374993,
+      586.7773437499997
      ],
      "options": []
     },
@@ -3727,7 +4651,7 @@
      "name": "ParticleToLevelSet",
      "inputs": {
       "Particles": [
-       "d6f480a9-VDBPointsToDropletPrimitive",
+       "d6f480a9-GetVDBPointsDroplets",
        "prim",
        null
       ],
@@ -3749,8 +4673,8 @@
      },
      "params": {},
      "uipos": [
-      2060.7666015624973,
-      779.9316406249987
+      2065.6494140624977,
+      772.6074218749987
      ],
      "options": []
     },
@@ -3785,8 +4709,8 @@
       "name": "Dx"
      },
      "uipos": [
-      1613.7499999999982,
-      967.4999999999986
+      1613.7499999999984,
+      968.7499999999986
      ],
      "options": []
     },
@@ -3804,19 +4728,20 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "f64b2af0-x",
+       "DST",
        null
       ]
      },
      "params": {
       "MultiplierA": 1.0,
       "MultiplierB": 1.0,
-      "OpType": "CSGUnion"
+      "OpType": "CSGUnion",
+      "writeBack": 0
      },
      "uipos": [
-      2436.249999999997,
-      632.4999999999991
+      2631.562499999996,
+      560.5273437499993
      ],
      "options": []
     },
@@ -3879,8 +4804,8 @@
       "name": "droplet"
      },
      "uipos": [
-      -239.9999999999998,
-      98.74999999999991
+      -237.4999999999998,
+      83.74999999999994
      ],
      "options": []
     },
@@ -4074,8 +4999,8 @@
       "op_type": "mul"
      },
      "uipos": [
-      -3682.0,
-      160.0
+      -3685.125,
+      158.4375
      ],
      "options": []
     },
@@ -4105,8 +5030,8 @@
      },
      "params": {},
      "uipos": [
-      -3934.0,
-      -24.0
+      -3938.6875000000005,
+      5.687499999999957
      ],
      "options": []
     },
@@ -4123,16 +5048,124 @@
       "value": 0.5
      },
      "uipos": [
-      -3934.0,
-      -196.0
+      -4321.890624999999,
+      59.468749999999844
+     ],
+     "options": []
+    },
+    "8651c115-PrintMessage": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "44d210b4-SubInput",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "vdbpoints2prim"
+     },
+     "uipos": [
+      -1864.7656249999998,
+      77.10937499999997
+     ],
+     "options": []
+    },
+    "f3522abd-x": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "30d7a84d-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "pa2ls"
+     },
+     "uipos": [
+      -1348.2499999999998,
+      134.49999999999997
+     ],
+     "options": []
+    },
+    "745750ec-x": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "6af52a44-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "resmooth"
+     },
+     "uipos": [
+      -903.0,
+      175.49999999999997
+     ],
+     "options": []
+    },
+    "b2dd9970-x": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "c60435c4-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "getdroplet"
+     },
+     "uipos": [
+      1164.9999999999993,
+      745.3906249999997
+     ],
+     "options": []
+    },
+    "f64b2af0-x": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "c435d271-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "combine"
+     },
+     "uipos": [
+      2351.6249999999995,
+      930.8124999999999
+     ],
+     "options": []
+    },
+    "9252b563-x": {
+     "name": "PrintMessage",
+     "inputs": {
+      "SRC": [
+       "550d7497-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "message": "done"
+     },
+     "uipos": [
+      3235.0,
+      669.0
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000002,
-    "trans_x": -3676,
-    "trans_y": -139
+    "scale": 0.5120000000000008,
+    "trans_x": -2632,
+    "trans_y": -176
    }
   },
   "StepFLIPWorld": {
@@ -4160,8 +5193,8 @@
       "dx": 0.0
      },
      "uipos": [
-      296.8427734375001,
-      664.4267578125
+      693.5712890624998,
+      710.2031249999999
      ],
      "options": []
     },
@@ -4180,8 +5213,8 @@
       "defl": ""
      },
      "uipos": [
-      -630.5677734374999,
-      582.39296875
+      -645.2162109374997,
+      548.2132812500001
      ],
      "options": []
     },
@@ -4206,8 +5239,8 @@
      },
      "params": {},
      "uipos": [
-      -308.2177734374999,
-      498.79296875
+      92.70019531249989,
+      416.0000000000002
      ],
      "options": []
     },
@@ -4227,8 +5260,8 @@
      },
      "params": {},
      "uipos": [
-      1933.1311035156245,
-      421.8458251953126
+      3663.434020996092,
+      428.3173828125001
      ],
      "options": []
     },
@@ -4250,8 +5283,8 @@
       "_KEYS": "Velocity\nDx\nobj2"
      },
      "uipos": [
-      -10.157226562499943,
-      679.4267578125001
+      340.7949218749999,
+      670.2714843750001
      ],
      "options": [],
      "socket_keys": [
@@ -4279,13 +5312,23 @@
        null
       ],
       "Collider": [
-       "ff78e97c-x",
-       "port",
+       "0ba6e113-ExtractDict",
+       "Collider",
        null
       ],
       "dt": [
        "10847622-SubstepDt",
        "actual_dt",
+       null
+      ],
+      "Emitter": [
+       "0ba6e113-ExtractDict",
+       "Emitter",
+       null
+      ],
+      "Absorber": [
+       "0ba6e113-ExtractDict",
+       "Absorber",
        null
       ],
       "SRC": [
@@ -4296,8 +5339,8 @@
      },
      "params": {},
      "uipos": [
-      1679.8467407226567,
-      -18.940551757812102
+      3379.8217773437473,
+      -80.10864257812494
      ],
      "options": []
     },
@@ -4322,8 +5365,8 @@
      },
      "params": {},
      "uipos": [
-      825.0,
-      692.0
+      1401.8066406249993,
+      604.4511718750001
      ],
      "options": []
     },
@@ -4342,8 +5385,8 @@
       "defl": ""
      },
      "uipos": [
-      778.5000000000002,
-      327.87500000000006
+      791.5000000000002,
+      278.875
      ],
      "options": []
     },
@@ -4357,13 +5400,13 @@
       ]
      },
      "params": {
-      "name": "Collider",
+      "name": "Environ",
       "type": "",
       "defl": ""
      },
      "uipos": [
-      1131.5,
-      36.0
+      1696.7333984374995,
+      -167.0615234375
      ],
      "options": []
     },
@@ -4402,8 +5445,8 @@
       "defl": ""
      },
      "uipos": [
-      -573.7177734374995,
-      1056.29296875
+      -605.4560546874995,
+      1019.6718750000002
      ],
      "options": []
     },
@@ -4427,8 +5470,8 @@
       "defl": ""
      },
      "uipos": [
-      2293.837524414061,
-      271.71362304687534
+      4461.358032226561,
+      305.4899902343754
      ],
      "options": []
     },
@@ -4452,8 +5495,8 @@
       "defl": ""
      },
      "uipos": [
-      2756.1187744140598,
-      424.3850708007808
+      4449.639282226559,
+      572.9114379882808
      ],
      "options": []
     },
@@ -4472,8 +5515,8 @@
       "defl": ""
      },
      "uipos": [
-      -880.4677734374999,
-      144.59296875000007
+      -1388.2802734374995,
+      169.00703125000007
      ],
      "options": []
     },
@@ -4521,8 +5564,8 @@
       "value": 0.04
      },
      "uipos": [
-      -626.8677734375,
-      50.992968750000045
+      -1041.9068359374996,
+      24.137500000000074
      ],
      "options": []
     },
@@ -4549,8 +5592,8 @@
       "op_type": "mul"
      },
      "uipos": [
-      562.4999999999997,
-      782.4999999999995
+      1090.4541015624995,
+      791.6552734374995
      ],
      "options": []
     },
@@ -4618,8 +5661,8 @@
      },
      "params": {},
      "uipos": [
-      314.04999999999995,
-      1121.2999999999993
+      719.9337890624997,
+      974.8156249999995
      ],
      "options": []
     },
@@ -4736,16 +5779,1249 @@
       "value": 0.04
      },
      "uipos": [
-      -577.0,
-      886.0
+      -557.46875,
+      842.0546875
+     ],
+     "options": []
+    },
+    "34c4b109-FuncCall": {
+     "name": "FuncCall",
+     "inputs": {
+      "function": [
+       "ff78e97c-x",
+       "port",
+       null
+      ],
+      "args": [
+       "9dda4863-MakeDict",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2302.283593750001,
+      40.47167968749997
+     ],
+     "options": []
+    },
+    "0ba6e113-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "34c4b109-FuncCall",
+       "rets",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "Collider\nEmitter\nAbsorber\nobj3"
+     },
+     "uipos": [
+      2687.8068359374997,
+      173.55371093749997
+     ],
+     "options": [],
+     "socket_keys": [
+      "Collider",
+      "Emitter",
+      "Absorber",
+      "obj3"
+     ]
+    },
+    "ee79e3ac-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "1be95b63-SubstepFLIPWorld",
+       "LiquidSDF",
+       null
+      ],
+      "SRC": [
+       "daa1a5be-EndFor",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "LiquidSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      4472.0205078125,
+      52.7763671875
+     ],
+     "options": []
+    },
+    "9dda4863-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "dt": [
+       "10847622-SubstepDt",
+       "actual_dt",
+       null
+      ],
+      "portion": [
+       "10847622-SubstepDt",
+       "portion",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "dt\nportion\nobj2"
+     },
+     "uipos": [
+      1832.7019531249998,
+      290.22070312499983
+     ],
+     "options": [],
+     "socket_keys": [
+      "dt",
+      "portion",
+      "obj2"
+     ]
+    }
+   },
+   "view": {
+    "scale": 0.32768000000000025,
+    "trans_x": -292,
+    "trans_y": 199
+   }
+  },
+  "FLIPMakeEmitter": {
+   "nodes": {
+    "fc434429-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "EmitSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -283.20000000000005,
+      475.20000000000005
+     ],
+     "options": []
+    },
+    "8b655143-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "VelGrid",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      174.0,
+      884.0
+     ],
+     "options": []
+    },
+    "41565939-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "8b655143-x",
+       "port",
+       null
+      ],
+      "false": [
+       "f5929c93-Route",
+       "DST",
+       null
+      ],
+      "cond": [
+       "8b655143-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      533.8,
+      1022.6000000000004
+     ],
+     "options": []
+    },
+    "7f701e0a-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "SDF": [
+       "07138dd0-IfElse",
+       "result",
+       null
+      ],
+      "VelGrid": [
+       "41565939-IfElse",
+       "result",
+       null
+      ],
+      "enable": [
+       "c34501e9-IfElse",
+       "result",
+       null
+      ],
+      "VelInit": [
+       "8ce42548-x",
+       "result",
+       null
+      ],
+      "obj4": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nVelGrid\nenable\nVelInit\nobj4"
+     },
+     "uipos": [
+      1272.9750000000001,
+      802.4374999999999
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "VelGrid",
+      "enable",
+      "VelInit",
+      "obj4"
+     ]
+    },
+    "a044787c-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "7f701e0a-MakeDict",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Emitter",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1613.625,
+      751.5625000000002
+     ],
+     "options": []
+    },
+    "cedca491-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1
+     },
+     "uipos": [
+      931.0,
+      1560.0
+     ],
+     "options": []
+    },
+    "fcf5f9ea-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "isEnabled",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      127.90000000000009,
+      1534.1999999999998
+     ],
+     "options": []
+    },
+    "56d82c30-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "fcf5f9ea-x",
+       "port",
+       null
+      ],
+      "false": [
+       "fc434429-SubInput",
+       "hasValue",
+       null
+      ],
+      "cond": [
+       "fcf5f9ea-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      536.7,
+      1490.8000000000006
+     ],
+     "options": []
+    },
+    "c34501e9-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "cedca491-NumericInt",
+       "value",
+       null
+      ],
+      "false": [
+       "943e8780-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "56d82c30-x",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      922.0,
+      1316.0
+     ],
+     "options": []
+    },
+    "943e8780-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0
+     },
+     "uipos": [
+      936.0,
+      1747.0
+     ],
+     "options": []
+    },
+    "b806e8c9-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "VelInit",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      639.0,
+      493.0
+     ],
+     "options": []
+    },
+    "8ce42548-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "b806e8c9-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "842ceb2e-NumericVec3",
+       "vec3",
+       null
+      ],
+      "cond": [
+       "b806e8c9-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      887.0,
+      531.0
+     ],
+     "options": []
+    },
+    "842ceb2e-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      884.0,
+      301.0
+     ],
+     "options": []
+    },
+    "f5929c93-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      181.0,
+      1131.0
+     ],
+     "options": []
+    },
+    "07138dd0-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "fc434429-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "90adaecf-Route",
+       "DST",
+       null
+      ],
+      "cond": [
+       "fc434429-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      98.75,
+      573.0
+     ],
+     "options": []
+    },
+    "90adaecf-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      92.0,
+      378.0
+     ],
+     "options": []
+    },
+    "5fcfe7d9-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP"
+     },
+     "uipos": [
+      -254.90722656250006,
+      1000.6042480468745
      ],
      "options": []
     }
    },
    "view": {
-    "scale": 1.0000000000000007,
-    "trans_x": 571,
-    "trans_y": -179
+    "scale": 0.4096000000000003,
+    "trans_x": -150,
+    "trans_y": 129
+   }
+  },
+  "FLIPMakeEnviron": {
+   "nodes": {
+    "4aa2300e-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "Collider": [
+       "b7559c51-x",
+       "result",
+       null
+      ],
+      "Emitter": [
+       "b3b92ecc-IfElse",
+       "result",
+       null
+      ],
+      "Absorber": [
+       "97d26673-x",
+       "result",
+       null
+      ],
+      "obj3": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "Collider\nEmitter\nAbsorber\nobj3"
+     },
+     "uipos": [
+      894.2499999999999,
+      491.70000000000005
+     ],
+     "options": [],
+     "socket_keys": [
+      "Collider",
+      "Emitter",
+      "Absorber",
+      "obj3"
+     ]
+    },
+    "c938aa8b-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "4aa2300e-x",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Environ",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1166.6000000000004,
+      514.0
+     ],
+     "options": []
+    },
+    "275ba771-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Collider",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      295.421875,
+      277.68750000000034
+     ],
+     "options": []
+    },
+    "331ab8f3-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Emitter",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      287.22187499999995,
+      572.6875000000005
+     ],
+     "options": []
+    },
+    "a620d82b-FLIPMakeEmitter": {
+     "name": "FLIPMakeEmitter",
+     "inputs": {
+      "EmitSDF": [
+       null,
+       null,
+       null
+      ],
+      "VelGrid": [
+       null,
+       null,
+       null
+      ],
+      "isEnabled": [
+       null,
+       null,
+       null
+      ],
+      "VelInit": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      298.0,
+      846.0
+     ],
+     "options": []
+    },
+    "b3b92ecc-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "331ab8f3-x",
+       "port",
+       null
+      ],
+      "false": [
+       "a620d82b-FLIPMakeEmitter",
+       "Emitter",
+       null
+      ],
+      "cond": [
+       "331ab8f3-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      594.0,
+      687.0
+     ],
+     "options": []
+    },
+    "b7559c51-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "275ba771-x",
+       "port",
+       null
+      ],
+      "false": [
+       "1b92a871-FLIPMakeCollider",
+       "Collider",
+       null
+      ],
+      "cond": [
+       "275ba771-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      582.0,
+      319.5
+     ],
+     "options": []
+    },
+    "97d26673-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "24804fee-x",
+       "port",
+       null
+      ],
+      "false": [
+       "cc9f7d76-FLIPMakeAbsorber",
+       "Absorber",
+       null
+      ],
+      "cond": [
+       "24804fee-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      609.6390624999999,
+      1235.15625
+     ],
+     "options": []
+    },
+    "24804fee-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Absorber",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      302.8609375000001,
+      1120.84375
+     ],
+     "options": []
+    },
+    "cc9f7d76-FLIPMakeAbsorber": {
+     "name": "FLIPMakeAbsorber",
+     "inputs": {
+      "AbsorbSDF": [
+       null,
+       null,
+       null
+      ],
+      "isEnabled": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      317.6,
+      1384.0
+     ],
+     "options": []
+    },
+    "45c9558b-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP"
+     },
+     "uipos": [
+      922.4000000000001,
+      811.2
+     ],
+     "options": []
+    },
+    "1b92a871-FLIPMakeCollider": {
+     "name": "FLIPMakeCollider",
+     "inputs": {
+      "StaticSDF": [
+       null,
+       null,
+       null
+      ],
+      "dynamicPrim": [
+       null,
+       null,
+       null
+      ],
+      "dx": [
+       "fd681807-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      590.0,
+      84.0
+     ],
+     "options": []
+    },
+    "fd681807-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1.0
+     },
+     "uipos": [
+      342.0,
+      69.0
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1.0,
+    "trans_x": -88,
+    "trans_y": -71
+   }
+  },
+  "FLIPMakeAbsorber": {
+   "nodes": {
+    "a96c16b7-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "AbsorbSDF",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      432.0,
+      171.0
+     ],
+     "options": []
+    },
+    "a1be14d3-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "isEnabled",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      397.0,
+      466.0
+     ],
+     "options": []
+    },
+    "a1644e5b-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "SDF": [
+       "c19bb0aa-IfElse",
+       "result",
+       null
+      ],
+      "enable": [
+       "36dbb2e5-x",
+       "result",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nenable\nobj2"
+     },
+     "uipos": [
+      960.0,
+      365.0
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "enable",
+      "obj2"
+     ]
+    },
+    "c19bb0aa-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "a96c16b7-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "57dcc840-Route",
+       "DST",
+       null
+      ],
+      "cond": [
+       "a96c16b7-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      711.1999999999998,
+      188.0
+     ],
+     "options": []
+    },
+    "57dcc840-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      708.8000000000002,
+      17.599999999999994
+     ],
+     "options": []
+    },
+    "36dbb2e5-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "a1be14d3-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "a96c16b7-SubInput",
+       "hasValue",
+       null
+      ],
+      "cond": [
+       "a1be14d3-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      708.8,
+      482.4
+     ],
+     "options": []
+    },
+    "a863484d-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "a1644e5b-MakeDict",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Absorber",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1219.2000000000003,
+      350.40000000000003
+     ],
+     "options": []
+    },
+    "76c43703-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "FLIP"
+     },
+     "uipos": [
+      990.2343749999998,
+      171.87500000000006
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 0.6400000000000001,
+    "trans_x": -62,
+    "trans_y": -140
+   }
+  },
+  "FLIPGetEnvironArgs": {
+   "nodes": {
+    "413fd19e-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "30dbb9d5-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "dt\nportion\nobj2"
+     },
+     "uipos": [
+      578.0,
+      256.0
+     ],
+     "options": [],
+     "socket_keys": [
+      "dt",
+      "portion",
+      "obj2"
+     ]
+    },
+    "76aee235-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "413fd19e-ExtractDict",
+       "dt",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dt",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      944.0,
+      165.0
+     ],
+     "options": []
+    },
+    "d7114ddc-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "413fd19e-ExtractDict",
+       "portion",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "portion",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      938.0,
+      424.0
+     ],
+     "options": []
+    },
+    "30dbb9d5-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "environArgs",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      307.0,
+      250.0
+     ],
+     "options": []
+    }
+   },
+   "view": {
+    "scale": 1,
+    "trans_x": 0,
+    "trans_y": 0
    }
   }
  },
@@ -4890,6 +7166,77 @@
    "params": [],
    "categories": [
     "portal"
+   ]
+  },
+  "BMeshToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "allow_quads",
+     "0"
+    ],
+    [
+     "bool",
+     "do_transform",
+     "1"
+    ]
+   ],
+   "categories": [
+    "blendermesh"
+   ]
+  },
+  "BackupField": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
    ]
   },
   "BeginFor": {
@@ -5875,10 +8222,135 @@
      "string",
      "OpType",
      "CSGUnion"
+    ],
+    [
+     "int",
+     "writeBack",
+     "0"
     ]
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "CompressibleAdvection": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "simParam",
+     ""
+    ],
+    [
+     "",
+     "RK_Order",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
+  "CompressibleMarkDOF": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
+  "CompressibleProjection": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "simParam",
+     ""
+    ],
+    [
+     "",
+     "RK_Order",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
    ]
   },
   "CutCellWeight": {
@@ -5914,6 +8386,36 @@
    "params": [],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "DenseFieldToVDB": {
+   "inputs": [
+    [
+     "",
+     "inDenseField",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "VDBField",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
    ]
   },
   "DictGetItem": {
@@ -6131,6 +8633,57 @@
     "control"
    ]
   },
+  "EquationOfStateConfig": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Model",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "density",
+     "1e3"
+    ],
+    [
+     "float",
+     "volume",
+     "1"
+    ],
+    [
+     "float",
+     "bulk_modulus",
+     "1e4"
+    ],
+    [
+     "float",
+     "gamma",
+     "7"
+    ],
+    [
+     "float",
+     "viscosity",
+     "0.01"
+    ]
+   ],
+   "categories": [
+    "constitutive_model"
+   ]
+  },
   "ExitProcess": {
    "inputs": [
     [
@@ -6155,6 +8708,42 @@
    ],
    "categories": [
     "debug"
+   ]
+  },
+  "ExpandPartition": {
+   "inputs": [
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "lo",
+     "0"
+    ],
+    [
+     "int",
+     "hi",
+     "1"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "ExportObjMesh": {
@@ -6392,189 +8981,6 @@
     "FLIPSolver"
    ]
   },
-  "FLIPMakeCollider": {
-   "inputs": [
-    [
-     "",
-     "StaticSDF",
-     ""
-    ],
-    [
-     "",
-     "dynamicPrim",
-     ""
-    ],
-    [
-     "",
-     "dx",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Collider",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ],
-   "is_subgraph": true
-  },
-  "FLIPMakeParticles": {
-   "inputs": [
-    [
-     "",
-     "TankSDF",
-     ""
-    ],
-    [
-     "",
-     "dx",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ],
-   "is_subgraph": true
-  },
-  "FLIPSimTemplate": {
-   "inputs": [
-    [
-     "",
-     "Velocity",
-     ""
-    ],
-    [
-     "",
-     "Collision",
-     ""
-    ],
-    [
-     "",
-     "PostAdvVel",
-     ""
-    ],
-    [
-     "",
-     "Pressure",
-     ""
-    ],
-    [
-     "",
-     "CollisionVel",
-     ""
-    ],
-    [
-     "",
-     "DynEmitter",
-     ""
-    ],
-    [
-     "",
-     "ifEmit",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "VelocityWeights",
-     ""
-    ],
-    [
-     "",
-     "dx",
-     ""
-    ],
-    [
-     "",
-     "ExtractedLiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "Gravity",
-     ""
-    ],
-    [
-     "",
-     "CellFWeight",
-     ""
-    ],
-    [
-     "",
-     "Divergence",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIPSolver"
-   ],
-   "is_subgraph": true
-  },
   "FLIP_P2G": {
    "inputs": [
     [
@@ -6689,6 +9095,52 @@
    "params": [],
    "categories": [
     "subgraph"
+   ]
+  },
+  "FixedCorotatedConfig": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Model",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "density",
+     "1e3"
+    ],
+    [
+     "float",
+     "volume",
+     "1"
+    ],
+    [
+     "float",
+     "youngs_modulus",
+     "1e4"
+    ],
+    [
+     "float",
+     "poisson_ratio",
+     "0.4"
+    ]
+   ],
+   "categories": [
+    "constitutive_model"
    ]
   },
   "FluidReseed": {
@@ -6829,6 +9281,51 @@
    "params": [],
    "categories": [
     "functional"
+   ]
+  },
+  "G2P": {
+   "inputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "ZSModel",
+     ""
+    ],
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "simulation"
    ]
   },
   "G2PAdvectorSheetty": {
@@ -6983,6 +9480,383 @@
     "FLIPSolver"
    ]
   },
+  "GLBindFramebufferTexture": {
+   "inputs": [
+    [
+     "",
+     "framebuffer",
+     ""
+    ],
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "framebuffer",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLClearColor": {
+   "inputs": [
+    [
+     "",
+     "color",
+     ""
+    ],
+    [
+     "",
+     "alpha",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLCreateFramebuffer": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "framebuffer",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLCreateProgram": {
+   "inputs": [
+    [
+     "",
+     "shaderList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "program",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLCreateShader": {
+   "inputs": [
+    [
+     "",
+     "source",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shader",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "type",
+     "vertex"
+    ]
+   ],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLCreateTexture": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLDrawArrayTriangles": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLGetFramebufferTexture": {
+   "inputs": [
+    [
+     "",
+     "framebuffer",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLNoFramebuffer": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "framebuffer",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLUTMainLoop": {
+   "inputs": [
+    [
+     "",
+     "drawFunc",
+     ""
+    ],
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "interval",
+     "17 0"
+    ]
+   ],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLUseFramebuffer": {
+   "inputs": [
+    [
+     "",
+     "framebuffer",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLUseProgram": {
+   "inputs": [
+    [
+     "",
+     "program",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
+  "GLUseTexture": {
+   "inputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "index",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
+   ]
+  },
   "GeoVertexVel": {
    "inputs": [
     [
@@ -7021,6 +9895,87 @@
    "params": [],
    "categories": [
     "trimesh"
+   ]
+  },
+  "GetBlenderObjectAxes": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "origin",
+     ""
+    ],
+    [
+     "",
+     "axisX",
+     ""
+    ],
+    [
+     "",
+     "axisY",
+     ""
+    ],
+    [
+     "",
+     "axisZ",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "blendermesh"
+   ]
+  },
+  "GetDenseField": {
+   "inputs": [
+    [
+     "",
+     "inSolverData",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outDenseField",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "FieldName",
+     "p u rho"
+    ]
+   ],
+   "categories": [
+    "CompressibleFlow"
    ]
   },
   "GetFrameNum": {
@@ -7213,6 +10168,133 @@
     "openvdb"
    ]
   },
+  "GetVDBPointsDroplets": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "sdf",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "GridFromPartition": {
+   "inputs": [
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "1"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
+  "GridUpdate": {
+   "inputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "extforce",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "MaxVelSqr",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "gravity",
+     "-9.8"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
   "IfElse": {
    "inputs": [
     [
@@ -7372,7 +10454,7 @@
     [
      "string",
      "type",
-     "float"
+     ""
     ]
    ],
    "categories": [
@@ -7409,6 +10491,41 @@
     "primitive"
    ]
   },
+  "InitField": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "simParam",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
   "IntegrateFrameTime": {
    "inputs": [
     [
@@ -7443,6 +10560,41 @@
    ],
    "categories": [
     "frame"
+   ]
+  },
+  "KillParticlesInSDF": {
+   "inputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "KillerSDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
    ]
   },
   "ListGetItem": {
@@ -7707,6 +10859,51 @@
     "primitive"
    ]
   },
+  "MakeCompressibleFlow": {
+   "inputs": [
+    [
+     "",
+     "bmin",
+     ""
+    ],
+    [
+     "",
+     "bmax",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "q_amb",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "CompressibleFlow",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
   "MakeCubePrimitive": {
    "inputs": [
     [
@@ -7782,13 +10979,8 @@
     "dict"
    ]
   },
-  "MakeFLIPWorld": {
+  "MakeFullscreenRect": {
    "inputs": [
-    [
-     "",
-     "dx",
-     ""
-    ],
     [
      "",
      "SRC",
@@ -7798,7 +10990,7 @@
    "outputs": [
     [
      "",
-     "World",
+     "prim",
      ""
     ],
     [
@@ -7809,9 +11001,8 @@
    ],
    "params": [],
    "categories": [
-    "FLIP"
-   ],
-   "is_subgraph": true
+    "EasyGL"
+   ]
   },
   "MakeGCTest": {
    "inputs": [
@@ -7842,6 +11033,47 @@
    ],
    "categories": [
     "debug"
+   ]
+  },
+  "MakeGrid": {
+   "inputs": [
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "1"
+    ],
+    [
+     "int",
+     "count",
+     "1"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "MakeHeatmap": {
@@ -7875,6 +11107,46 @@
     "visualize"
    ]
   },
+  "MakeIndexBuckets": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radius",
+     ""
+    ],
+    [
+     "numeric:float",
+     "radiusMin",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSIndexBuckets",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
   "MakeList": {
    "inputs": [
     [
@@ -7898,6 +11170,61 @@
    "params": [],
    "categories": [
     "list"
+   ]
+  },
+  "MakeMPMMehser": {
+   "inputs": [
+    [
+     "",
+     "pathPreFix",
+     ""
+    ],
+    [
+     "",
+     "tet_path",
+     ""
+    ],
+    [
+     "",
+     "smooth_iter",
+     ""
+    ],
+    [
+     "",
+     "start",
+     ""
+    ],
+    [
+     "",
+     "end",
+     ""
+    ],
+    [
+     "",
+     "edge_stretch",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "MPMMehser",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "MakeMultilineString": {
@@ -7976,6 +11303,37 @@
     "math"
    ]
   },
+  "MakePartition": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "count",
+     "1"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
   "MakePrimitive": {
    "inputs": [
     [
@@ -8030,6 +11388,31 @@
    ],
    "categories": [
     "string"
+   ]
+  },
+  "MakeSimpleTriangle": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "EasyGL"
    ]
   },
   "MakeSmallList": {
@@ -8169,6 +11552,41 @@
     "openvdb"
    ]
   },
+  "MakeVelocityPressure": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "simParam",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
   "MakeVisualAABBPrimitive": {
    "inputs": [
     [
@@ -8239,6 +11657,51 @@
    ],
    "categories": [
     "string"
+   ]
+  },
+  "MarkMovingSolidCellsByVDB": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "simParam",
+     ""
+    ],
+    [
+     "",
+     "SDFVDBField",
+     ""
+    ],
+    [
+     "",
+     "SolidVelVDBField",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
    ]
   },
   "MeshCopy": {
@@ -8385,6 +11848,41 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "MesherProcessFrame": {
+   "inputs": [
+    [
+     "",
+     "Mesher",
+     ""
+    ],
+    [
+     "",
+     "frameNumber",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FramePrimitive",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "NumericCounter": {
@@ -8883,6 +12381,117 @@
     "zenofx"
    ]
   },
+  "OutputZensimParticles": {
+   "inputs": [
+    [
+     "",
+     "ZensimParticles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "ZensimGeometry"
+   ]
+  },
+  "P2G": {
+   "inputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "ZSModel",
+     ""
+    ],
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "simulation"
+   ]
+  },
+  "PairZensimParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSParticlesA",
+     ""
+    ],
+    [
+     "",
+     "ZSParticlesB",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZensimParticleList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "ZensimGeometry"
+   ]
+  },
   "ParticleAddDV": {
    "inputs": [
     [
@@ -8949,6 +12558,11 @@
     [
      "",
      "VelocityVolume",
+     ""
+    ],
+    [
+     "",
+     "VelocityInit",
      ""
     ],
     [
@@ -9238,6 +12852,444 @@
    "params": [],
    "categories": [
     "zenofx"
+   ]
+  },
+  "PassToyApplyShader": {
+   "inputs": [
+    [
+     "",
+     "shader",
+     ""
+    ],
+    [
+     "",
+     "uniforms",
+     ""
+    ],
+    [
+     "",
+     "textureIn",
+     ""
+    ],
+    [
+     "",
+     "textureOut",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "textureOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyDownscaleResolution": {
+   "inputs": [
+    [
+     "",
+     "scale",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyGetResolution": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyGetTextureInteger": {
+   "inputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "id",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyGetTextureResolution": {
+   "inputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyImageTextureFromVoidPtr": {
+   "inputs": [
+    [
+     "",
+     "voidPtr",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyImageTextureFromVoidPtrAndRes": {
+   "inputs": [
+    [
+     "",
+     "voidPtr",
+     ""
+    ],
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyLoadImageTexture": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyMakeShader": {
+   "inputs": [
+    [
+     "",
+     "source",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shader",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyMakeTexture": {
+   "inputs": [
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "format",
+     "rgb16f"
+    ]
+   ],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyMakeTexturePair": {
+   "inputs": [
+    [
+     "",
+     "resolution",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texturePair",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "format",
+     "rgb16f"
+    ]
+   ],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyScreenTexture": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyTexturePairSwap": {
+   "inputs": [
+    [
+     "",
+     "texturePair",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "texturePair",
+     ""
+    ],
+    [
+     "",
+     "oldTexture",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
+   ]
+  },
+  "PassToyUpscaleResolution": {
+   "inputs": [
+    [
+     "",
+     "scale",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "PassToy"
    ]
   },
   "PlaneProjectPrimitive2DAABB": {
@@ -9556,6 +13608,41 @@
    "outputs": [
     [
      "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveCalcVelocity": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "NumericObject:float",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
      "prim",
      ""
     ],
@@ -9986,6 +14073,41 @@
      "copyA"
     ]
    ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveInterpSubframe": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "NumericObject:float",
+     "portion",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
    "categories": [
     "primitive"
    ]
@@ -10501,6 +14623,42 @@
     "primitive"
    ]
   },
+  "PrimitiveToBMesh": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "is_smooth",
+     "0"
+    ]
+   ],
+   "categories": [
+    "blendermesh"
+   ]
+  },
   "PrimitiveToBulletMesh": {
    "inputs": [
     [
@@ -10640,7 +14798,7 @@
   "PrimitiveTraceTrail": {
    "inputs": [
     [
-     "primitive",
+     "PrimitiveObject",
      "parsPrim",
      ""
     ],
@@ -10652,7 +14810,7 @@
    ],
    "outputs": [
     [
-     "primitive",
+     "PrimitiveObject",
      "trailPrim",
      ""
     ],
@@ -10978,7 +15136,7 @@
     [
      "string",
      "type",
-     "float"
+     ""
     ],
     [
      "string",
@@ -11011,6 +15169,11 @@
    "outputs": [
     [
      "",
+     "resampleTo",
+     ""
+    ],
+    [
+     "",
      "DST",
      ""
     ]
@@ -11018,6 +15181,41 @@
    "params": [],
    "categories": [
     "openvdb"
+   ]
+  },
+  "ResolveBoundaryOnGrid": {
+   "inputs": [
+    [
+     "",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "ZSGrid",
+     ""
+    ],
+    [
+     "",
+     "ZSBoundary",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
    ]
   },
   "RigidGetPressureForce": {
@@ -11195,6 +15393,11 @@
     [
      "float",
      "adaptivity",
+     "0"
+    ],
+    [
+     "bool",
+     "allowQuads",
      "0"
     ]
    ],
@@ -11383,47 +15586,6 @@
     "frame"
    ]
   },
-  "SetSubOutput": {
-   "inputs": [
-    [
-     "",
-     "port",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "name",
-     "output1"
-    ],
-    [
-     "string",
-     "type",
-     ""
-    ],
-    [
-     "string",
-     "defl",
-     ""
-    ]
-   ],
-   "categories": [
-    "subgraph"
-   ]
-  },
   "SetVDBPointDataGrid": {
    "inputs": [
     [
@@ -11465,36 +15627,21 @@
     "particles"
    ]
   },
-  "SmoothLiquidSDF": {
+  "SpatialPartitionForParticles": {
    "inputs": [
     [
      "",
-     "inParticles",
+     "ZSPartition",
+     ""
+    ],
+    [
+     "",
+     "ZSParticles",
      ""
     ],
     [
      "",
      "Dx",
-     ""
-    ],
-    [
-     "",
-     "DxScale",
-     ""
-    ],
-    [
-     "",
-     "voxelScale",
-     ""
-    ],
-    [
-     "",
-     "dropletScale",
-     ""
-    ],
-    [
-     "",
-     "influenceScale",
      ""
     ],
     [
@@ -11506,20 +15653,25 @@
    "outputs": [
     [
      "",
-     "inoutSDF",
-     ""
-    ],
-    [
-     "",
      "DST",
      ""
     ]
    ],
-   "params": [],
-   "categories": [
-    "FLIP"
+   "params": [
+    [
+     "float",
+     "dx",
+     "1"
+    ],
+    [
+     "int",
+     "block_side_length",
+     "4"
+    ]
    ],
-   "is_subgraph": true
+   "categories": [
+    "GPUMPM"
+   ]
   },
   "SprayParticles": {
    "inputs": [
@@ -11566,72 +15718,6 @@
    "categories": [
     "primitive"
    ]
-  },
-  "StepFLIPWorld": {
-   "inputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "Collider",
-     ""
-    ],
-    [
-     "",
-     "gravity",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "min_scale",
-     ""
-    ],
-    [
-     "",
-     "dt_scale",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ],
-   "is_subgraph": true
   },
   "StringToMesh": {
    "inputs": [
@@ -11791,6 +15877,47 @@
     "subgraph"
    ]
   },
+  "SubResult": {
+   "inputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "output1"
+    ],
+    [
+     "string",
+     "type",
+     ""
+    ],
+    [
+     "string",
+     "defl",
+     ""
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
   "Subgraph": {
    "inputs": [
     [
@@ -11843,6 +15970,11 @@
     ],
     [
      "",
+     "portion",
+     ""
+    ],
+    [
+     "",
      "DST",
      ""
     ]
@@ -11851,67 +15983,6 @@
    "categories": [
     "control"
    ]
-  },
-  "SubstepFLIPWorld": {
-   "inputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "gravity",
-     ""
-    ],
-    [
-     "",
-     "Collider",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ],
-   "is_subgraph": true
   },
   "SubtractPressureGradient": {
    "inputs": [
@@ -11982,6 +16053,101 @@
    ],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "ToParticleObject": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "pars",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "ZensimGeometry"
+   ]
+  },
+  "ToZensimLevelSet": {
+   "inputs": [
+    [
+     "",
+     "VDBFloatGrid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
+  "ToZensimParticles": {
+   "inputs": [
+    [
+     "",
+     "ZSModel",
+     ""
+    ],
+    [
+     "",
+     "ParticleObject",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZensimParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "ZensimGeometry"
    ]
   },
   "TraceOneStep": {
@@ -12309,41 +16475,6 @@
     "openvdb"
    ]
   },
-  "VDBPointsToDropletPrimitive": {
-   "inputs": [
-    [
-     "",
-     "grid",
-     ""
-    ],
-    [
-     "",
-     "sdf",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "openvdb"
-   ]
-  },
   "VDBPointsToPrimitive": {
    "inputs": [
     [
@@ -12655,6 +16786,748 @@
    "categories": [
     "openvdb"
    ]
+  },
+  "ZSParticleNeighborWrangle": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "ZSParticlesNeighbor",
+     ""
+    ],
+    [
+     "",
+     "ZSIndexBuckets",
+     ""
+    ],
+    [
+     "",
+     "zfxCode",
+     ""
+    ],
+    [
+     "",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
+  "ZSParticlesWrangle": {
+   "inputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "zfxCode",
+     ""
+    ],
+    [
+     "",
+     "params",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSParticles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
+  "ZensimBoundary": {
+   "inputs": [
+    [
+     "",
+     "ZSLevelSet",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "ZSBoundary",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "type",
+     "sticky"
+    ]
+   ],
+   "categories": [
+    "GPUMPM"
+   ]
+  },
+  "makeCompressibleSim": {
+   "inputs": [
+    [
+     "",
+     "inFlowData",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outFlowData",
+     ""
+    ],
+    [
+     "",
+     "SimParam",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "CompressibleFlow"
+   ]
+  },
+  "FLIPSimTemplate": {
+   "inputs": [
+    [
+     "",
+     "Velocity",
+     ""
+    ],
+    [
+     "",
+     "Collision",
+     ""
+    ],
+    [
+     "",
+     "PostAdvVel",
+     ""
+    ],
+    [
+     "",
+     "Pressure",
+     ""
+    ],
+    [
+     "",
+     "CollisionVel",
+     ""
+    ],
+    [
+     "",
+     "DynEmitter",
+     ""
+    ],
+    [
+     "",
+     "ifEmit",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "VelocityWeights",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "ExtractedLiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "Gravity",
+     ""
+    ],
+    [
+     "",
+     "CellFWeight",
+     ""
+    ],
+    [
+     "",
+     "Divergence",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "DynEmitterVelVolume",
+     ""
+    ],
+    [
+     "",
+     "DynEmitterVelInit",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
+   ],
+   "is_subgraph": true
+  },
+  "FLIPMakeCollider": {
+   "inputs": [
+    [
+     "",
+     "StaticSDF",
+     ""
+    ],
+    [
+     "",
+     "dynamicPrim",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Collider",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ],
+   "is_subgraph": true
+  },
+  "FLIPMakeParticles": {
+   "inputs": [
+    [
+     "",
+     "TankSDF",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ],
+   "is_subgraph": true
+  },
+  "MakeFLIPWorld": {
+   "inputs": [
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "World",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ],
+   "is_subgraph": true
+  },
+  "SubstepFLIPWorld": {
+   "inputs": [
+    [
+     "",
+     "World",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "gravity",
+     ""
+    ],
+    [
+     "",
+     "Collider",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "Emitter",
+     ""
+    ],
+    [
+     "",
+     "Absorber",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "World",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ],
+   "is_subgraph": true
+  },
+  "SmoothLiquidSDF": {
+   "inputs": [
+    [
+     "",
+     "inParticles",
+     ""
+    ],
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "DxScale",
+     ""
+    ],
+    [
+     "",
+     "voxelScale",
+     ""
+    ],
+    [
+     "",
+     "dropletScale",
+     ""
+    ],
+    [
+     "",
+     "influenceScale",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ],
+   "is_subgraph": true
+  },
+  "StepFLIPWorld": {
+   "inputs": [
+    [
+     "",
+     "World",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "Environ",
+     ""
+    ],
+    [
+     "",
+     "gravity",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "min_scale",
+     ""
+    ],
+    [
+     "",
+     "dt_scale",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "World",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ],
+   "is_subgraph": true
+  },
+  "FLIPMakeEmitter": {
+   "inputs": [
+    [
+     "",
+     "EmitSDF",
+     ""
+    ],
+    [
+     "",
+     "VelGrid",
+     ""
+    ],
+    [
+     "",
+     "isEnabled",
+     ""
+    ],
+    [
+     "",
+     "VelInit",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Emitter",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ],
+   "is_subgraph": true
+  },
+  "FLIPMakeEnviron": {
+   "inputs": [
+    [
+     "",
+     "Collider",
+     ""
+    ],
+    [
+     "",
+     "Emitter",
+     ""
+    ],
+    [
+     "",
+     "Absorber",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Environ",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ],
+   "is_subgraph": true
+  },
+  "FLIPMakeAbsorber": {
+   "inputs": [
+    [
+     "",
+     "AbsorbSDF",
+     ""
+    ],
+    [
+     "",
+     "isEnabled",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Absorber",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ],
+   "is_subgraph": true
+  },
+  "FLIPGetEnvironArgs": {
+   "inputs": [
+    [
+     "",
+     "environArgs",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "portion",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],

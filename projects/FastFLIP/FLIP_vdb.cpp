@@ -2865,7 +2865,7 @@ void FLIP_vdb::emit_liquid(
       auto in_sdf_axr{in_sdf->getConstAccessor()};
       auto in_vel_axr{in_vel->getConstAccessor()};
 
-      float sdf_threshold = -dx * 0.55;
+      float sdf_threshold = -dx * 0.1;
 
       // std::random_device device;
       // std::mt19937 generator(/*seed=*/device());
@@ -3005,7 +3005,7 @@ void FLIP_vdb::emit_liquid(
       }   // end for range leaf
     } else {
       auto in_sdf_axr{in_sdf->getConstAccessor()};
-      float sdf_threshold = -dx * 0.55;
+      float sdf_threshold = -dx * 0.1;
 
       // std::random_device device;
       // std::mt19937 generator(/*seed=*/device());
@@ -3502,6 +3502,12 @@ void FLIP_vdb::solve_pressure_simd(
     openvdb::Vec3fGrid::Ptr &face_weight, openvdb::Vec3fGrid::Ptr &velocity,
     openvdb::Vec3fGrid::Ptr &solid_velocity, float dt, float dx) {
   // CSim::TimerMan::timer("Sim.step/vdbflip/pressure/buildlevel").start();
+
+    //skip if there is no dof to solve
+	if (liquid_sdf->tree().leafCount() == 0) {
+		return;
+	}
+
   auto simd_solver =
       simd_vdb_poisson(liquid_sdf, face_weight, velocity,
                        solid_velocity, dt, dx);

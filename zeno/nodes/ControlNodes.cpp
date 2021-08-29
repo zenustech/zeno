@@ -183,16 +183,21 @@ struct SubstepDt : zeno::INode {
             }
             fore->m_elapsed += dt;
         }
+        float portion = fore->m_total ? fore->m_elapsed / fore->m_total : 0.0f;
         printf("** actual_dt: %f\n", dt);
-        auto ret = std::make_shared<zeno::NumericObject>();
-        ret->set(dt);
-        set_output("actual_dt", std::move(ret));
+        printf("** portion: %f\n", portion);
+        auto ret_dt = std::make_shared<zeno::NumericObject>();
+        ret_dt->set(dt);
+        set_output("actual_dt", std::move(ret_dt));
+        auto ret_portion = std::make_shared<zeno::NumericObject>();
+        ret_portion->set(portion);
+        set_output("portion", std::move(ret_portion));
     }
 };
 
 ZENDEFNODE(SubstepDt, {
     {"FOR", "desired_dt"},
-    {"actual_dt"},
+    {"actual_dt", "portion"},
     {},
     {"control"},
 });

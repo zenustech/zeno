@@ -8,7 +8,7 @@ import subprocess
 
 
 if sys.platform == 'win32':
-    tcpath = os.expanduser('~') + '\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake'
+    tcpath = 'C:\\Users\\archibate\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake'
     if not os.path.exists(tcpath):
         tcpath = None
 else:
@@ -17,7 +17,7 @@ else:
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--config', default='Release')
-ap.add_argument('--toolchain', type=argparse.FileType('r'), default=tcpath)
+ap.add_argument('--toolchain', default=tcpath)
 ap.add_argument('--clean', action='store_true')
 ap.add_argument('--with-openvdb', action='store_true')
 ap.add_argument('--with-cuda', action='store_true')
@@ -33,6 +33,10 @@ if ap.clean:
 
 
 args = []
+build_args = []
+
+if sys.platform == 'win32':
+    build_args.extend(['--config', ap.config])
 
 args.append('-DPYTHON_EXECUTABLE=' + sys.executable)
 
@@ -69,4 +73,4 @@ if ap.cmake_args:
 print('*** cmake arguments:', args)
 subprocess.check_call(['cmake', '-B', 'build'] + args)
 print('*** now building project...')
-subprocess.check_call(['cmake', '--build', 'build', '--config', ap.config, '--parallel'])
+subprocess.check_call(['cmake', '--build', 'build', '--parallel'] + build_args)

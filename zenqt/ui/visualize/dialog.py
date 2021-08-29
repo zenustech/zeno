@@ -37,13 +37,13 @@ class RecordVideoDialog(QDialog):
         self.fps_edit.setValue(30)
 
         viewport_width = QLabel('Width:')
-        self.viewport_width_eidtor = QLineEdit('1280')
+        self.viewport_width_editor = QLineEdit('1280')
 
         viewport_height = QLabel('Height:')
-        self.viewport_height_eidtor = QLineEdit('720')
+        self.viewport_height_editor = QLineEdit('720')
 
         bit_rate = QLabel('Bit rate:')
-        self.bit_rate_eidtor = QLineEdit('2000')
+        self.bit_rate_editor = QLineEdit('20000')
 
         ok_button = QPushButton('OK')
         cancel_button = QPushButton('Cancel')
@@ -70,7 +70,7 @@ class RecordVideoDialog(QDialog):
         grid.addWidget(self.fps_edit, 3, 1)
 
         grid.addWidget(bit_rate, 4, 0)
-        grid.addWidget(self.bit_rate_eidtor, 4, 1)
+        grid.addWidget(self.bit_rate_editor, 4, 1)
 
         grid.addWidget(encoder, 5, 0)
         grid.addWidget(self.encoder_combo, 5, 1)
@@ -79,10 +79,10 @@ class RecordVideoDialog(QDialog):
         grid.addWidget(res_combo, 6, 1)
 
         grid.addWidget(viewport_width, 7, 0)
-        grid.addWidget(self.viewport_width_eidtor, 7, 1)
+        grid.addWidget(self.viewport_width_editor, 7, 1)
 
         grid.addWidget(viewport_height, 8, 0)
-        grid.addWidget(self.viewport_height_eidtor, 8, 1)
+        grid.addWidget(self.viewport_height_editor, 8, 1)
 
         grid.addWidget(ok_button, 9, 0)
         grid.addWidget(cancel_button, 9, 1)
@@ -99,9 +99,9 @@ class RecordVideoDialog(QDialog):
         r['frame_start'] = self.frame_start_edit.value()
         r['frame_end'] = self.frame_end_edit.value()
         r['fps'] = self.fps_edit.value()
-        r['bit_rate'] = self.bit_rate_eidtor.text().strip() + 'k'
-        r['width'] = int(self.viewport_width_eidtor.text())
-        r['height'] = int(self.viewport_height_eidtor.text())
+        r['bit_rate'] = self.bit_rate_editor.text().strip() + 'k'
+        r['width'] = int(self.viewport_width_editor.text())
+        r['height'] = int(self.viewport_height_editor.text())
         r['encoder'] = self.encoder_combo.currentText().split()[0]
         super().accept()
 
@@ -117,8 +117,8 @@ class RecordVideoDialog(QDialog):
         c.addItems(screen_resolution.keys())
         def callback(text):
             w, h = screen_resolution[text]
-            self.viewport_width_eidtor.setText(str(w))
-            self.viewport_height_eidtor.setText(str(h))
+            self.viewport_width_editor.setText(str(w))
+            self.viewport_height_editor.setText(str(h))
         c.textActivated.connect(callback)
         c.setCurrentIndex(1)
         return c

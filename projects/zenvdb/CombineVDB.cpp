@@ -76,6 +76,9 @@ struct  ResampleVDBGrid : zeno::INode {
           auto source = get_input("resampleFrom")->as<VDBFloat3Grid>();
           resampleVDB<openvdb::Vec3fGrid>(source->m_grid, target->m_grid);
         }
+        set_output("resampleTo", get_input("resampleTo"));
+    } else {
+        printf("ERROR: resample type mismarch!!");
     }
   }
 };
@@ -84,6 +87,7 @@ static int defResampleVDBGrid = zeno::defNodeClass<ResampleVDBGrid>("ResampleVDB
      { /* inputs: */ {
      "resampleTo", "resampleFrom",
      }, /* outputs: */ {
+     "resampleTo",
      }, /* params: */ {
      }, /* category: */ {
      "openvdb",
@@ -95,9 +99,6 @@ struct CombineVDB : zeno::INode{
     std::string targetType = get_input("FieldA")->as<VDBGrid>()->getType();
     std::string sourceType = get_input("FieldB")->as<VDBGrid>()->getType();
     std::shared_ptr<VDBFloatGrid> dataf;
-    openvdb::FloatGrid::Ptr dataft;
-    std::shared_ptr<VDBFloat3Grid> dataf3;
-    openvdb::Vec3fGrid::Ptr dataf3t;
     
     if(targetType == sourceType && targetType==std::string("FloatGrid"))
     {
@@ -106,23 +107,27 @@ struct CombineVDB : zeno::INode{
         
         auto target = get_input("FieldA")->as<VDBFloatGrid>();
         auto source = get_input("FieldB")->as<VDBFloatGrid>();
-        dataf->m_grid = target->m_grid->deepCopy();
-        dataft = source->m_grid->deepCopy();
-        if(OpType==std::string("CSGUnion"))
-        {
-          openvdb::tools::csgUnion(*(dataf->m_grid), *(source->m_grid));
+        if (get_param<bool>("writeBack")) {
+            auto srcgrid = source->m_grid->deepCopy();
+            if(OpType=="CSGUnion") {
+              openvdb::tools::csgUnion(*(target->m_grid), *(srcgrid));
+            } else if(OpType=="CSGIntersection") {
+              openvdb::tools::csgIntersection(*(target->m_grid), *(srcgrid));
+            } else if(OpType=="CSGDifference") {
+              openvdb::tools::csgDifference(*(target->m_grid), *(srcgrid));
+            } else { throw zeno::Exception("bad CSG optype: " + OpType); }
+            set_output("FieldOut", get_input("FieldA"));
+        } else {
+            auto result = std::make_shared<VDBFloatGrid>();
+            if(OpType=="CSGUnion") {
+              result->m_grid = openvdb::tools::csgUnionCopy(*(target->m_grid), *(source->m_grid));
+            } else if(OpType=="CSGIntersection") {
+              result->m_grid = openvdb::tools::csgIntersectionCopy(*(target->m_grid), *(source->m_grid));
+            } else if(OpType=="CSGDifference") {
+              result->m_grid = openvdb::tools::csgDifferenceCopy(*(target->m_grid), *(source->m_grid));
+            } else { throw zeno::Exception("bad CSG optype: " + OpType); }
+            set_output("FieldOut", result);
         }
-        else if(OpType==std::string("CSGIntersection"))
-        {
-          openvdb::tools::csgIntersection(*(dataf->m_grid), *(source->m_grid));
-        }
-        else if(OpType==std::string("CSGDifference"))
-        {
-          openvdb::tools::csgDifference(*(dataf->m_grid), *(source->m_grid));
-        }
-        else { throw zeno::Exception("bad CSG optype: " + OpType); }
-        source->m_grid = dataft->deepCopy();
-        set_output("FieldOut", dataf);
     }
     
   }
@@ -136,9 +141,32 @@ static int defCombineVDB = zeno::defNodeClass<CombineVDB>("CombineVDB",
        {"float", "MultiplierA", "1"},
        {"float", "MultiplierB", "1"},
        {"string", "OpType", "CSGUnion"},
+       {"int", "writeBack", "0"},
      }, /* category: */ {
      "openvdb",
      }});
+
+
+#if 0 // TODO: datan help me
+struct CopyVDBTopology : zeno::INode {
+  virtual void apply() override {
+    auto dst = get_input("copyTo")->as<VDBGrid>();
+    auto src = get_input("copyFrom")->as<VDBGrid>();
+    dst->copyTopologyFrom(src);
+    set_output("copyTo", std::move(dst));
+  }
+};
+
+static int defCopyVDBTopology = zeno::defNodeClass<CopyVDBTopology>("CopyVDBTopology",
+     { /* inputs: */ {
+     "copyTo", "copyFrom",
+     }, /* outputs: */ {
+     "copyTo",
+     }, /* params: */ {
+     }, /* category: */ {
+     "openvdb",
+     }});
+#endif
 
 }
 

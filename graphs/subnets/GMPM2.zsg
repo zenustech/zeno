@@ -628,8 +628,8 @@
       "_KEYS": "obj0\nobj1\nobj2\nobj3\nobj4"
      },
      "uipos": [
-      -922.9580078124997,
-      971.8003417968744
+      -528.077236175537,
+      1314.5270492553707
      ],
      "options": [],
      "socket_keys": [
@@ -656,8 +656,8 @@
      },
      "params": {},
      "uipos": [
-      -591.4914062499995,
-      1047.4328124999997
+      -62.50018386840793,
+      1084.6857154846189
      ],
      "options": []
     },
@@ -679,8 +679,8 @@
       "name": "points2"
      },
      "uipos": [
-      62.51406250000006,
-      1770.8064453125
+      166.82219085693364,
+      1770.8064453124998
      ],
      "options": []
     },
@@ -1306,8 +1306,8 @@
       "_KEYS": "obj0\nobj1\nobj2\nobj3\nobj4"
      },
      "uipos": [
-      -731.5429687499991,
-      2238.3789062499977
+      -649.586582183837,
+      2253.2800674438454
      ],
      "options": [],
      "socket_keys": [
@@ -1499,8 +1499,8 @@
      },
      "params": {},
      "uipos": [
-      -419.30937499999925,
-      2146.2679687499967
+      -188.3413764953607,
+      2161.1691299438444
      ],
      "options": []
     },
@@ -1691,12 +1691,10 @@
      },
      "params": {},
      "uipos": [
-      6355.744567871094,
-      1293.6502075195312
+      6361.994567871095,
+      1291.1502075195312
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "119f7b5f-x": {
      "name": "FixedCorotatedConfig",
@@ -2064,8 +2062,8 @@
       "path": "assets/Pig_Head.obj"
      },
      "uipos": [
-      -3182.2499999999964,
-      568.2499999999995
+      -3216.624999999997,
+      351.06249999999966
      ],
      "options": []
     },
@@ -2093,32 +2091,8 @@
       "type": "vertex"
      },
      "uipos": [
-      -2791.999999999998,
-      632.4999999999991
-     ],
-     "options": []
-    },
-    "0a6c4b74-SDFToPoly": {
-     "name": "SDFToPoly",
-     "inputs": {
-      "SDF": [
-       "0c2b2903-MeshToSDF",
-       "sdf",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "isoValue": 0.0,
-      "adaptivity": 0.0
-     },
-     "uipos": [
-      -2325.8124999999986,
-      586.3749999999992
+      -2718.757812499998,
+      603.2031249999992
      ],
      "options": []
     },
@@ -2126,7 +2100,7 @@
      "name": "PrimitiveCalcNormal",
      "inputs": {
       "prim": [
-       "0a6c4b74-SDFToPoly",
+       "2abbdc24-SDFToPoly",
        "Mesh",
        null
       ],
@@ -2138,8 +2112,8 @@
      },
      "params": {},
      "uipos": [
-      -2038.0424999999998,
-      720.6825
+      -1931.7924999999998,
+      619.9989062500002
      ],
      "options": []
     },
@@ -2336,9 +2310,7 @@
       5925.312499999996,
       1027.1874999999989
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "830e8a96-NumericFloat": {
      "name": "NumericFloat",
@@ -2429,54 +2401,6 @@
      ],
      "options": []
     },
-    "d6ad4467-SDFToPoly": {
-     "name": "SDFToPoly",
-     "inputs": {
-      "SDF": [
-       "f59faf42-x",
-       "grid",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "isoValue": 0.0,
-      "adaptivity": 0.0
-     },
-     "uipos": [
-      -1767.1874999999993,
-      1056.2499999999993
-     ],
-     "options": []
-    },
-    "20152cf8-VDBRenormalizeSDF": {
-     "name": "VDBRenormalizeSDF",
-     "inputs": {
-      "inoutSDF": [
-       "e8e41ffe-VDBWrangle",
-       "grid",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "method": "1oUpwind",
-      "iterations": 4
-     },
-     "uipos": [
-      -2462.4999999999995,
-      1109.3749999999998
-     ],
-     "options": []
-    },
     "9273f62f-x": {
      "name": "MakeMultilineString",
      "inputs": {
@@ -2490,8 +2414,8 @@
       "value": "@val -= 0.12"
      },
      "uipos": [
-      -2518.349999999999,
-      1051.3374999999999
+      -2544.912499999999,
+      820.0874999999999
      ],
      "options": []
     },
@@ -2499,7 +2423,7 @@
      "name": "VDBWrangle",
      "inputs": {
       "grid": [
-       "20152cf8-VDBRenormalizeSDF",
+       "fae24349-VDBRenormalizeSDF",
        "inoutSDF",
        null
       ],
@@ -2521,8 +2445,8 @@
      },
      "params": {},
      "uipos": [
-      -2067.6624999999995,
-      1127.6124999999995
+      -2100.8499999999995,
+      1110.6749999999993
      ],
      "options": []
     },
@@ -2551,8 +2475,8 @@
       "OpType": "CSGDifference"
      },
      "uipos": [
-      -1146.5148437500004,
-      719.4617187499999
+      -1145.5148437500002,
+      718.4617187499998
      ],
      "options": []
     },
@@ -2560,7 +2484,7 @@
      "name": "PrimitiveToSDF",
      "inputs": {
       "PrimitiveMesh": [
-       "d6ad4467-SDFToPoly",
+       "c3644466-SDFToPoly",
        "Mesh",
        null
       ],
@@ -2580,32 +2504,8 @@
       "type": "vertex"
      },
      "uipos": [
-      -1443.7499999999998,
-      1078.1249999999998
-     ],
-     "options": []
-    },
-    "a208f873-x": {
-     "name": "SDFToPoly",
-     "inputs": {
-      "SDF": [
-       "5e2b3914-CombineVDB",
-       "FieldOut",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "isoValue": 0.0,
-      "adaptivity": 0.0
-     },
-     "uipos": [
-      -786.6210937499997,
-      659.6679687499999
+      -1522.75,
+      1032.125
      ],
      "options": []
     },
@@ -2613,7 +2513,7 @@
      "name": "PrimitiveClip",
      "inputs": {
       "prim": [
-       "a208f873-x",
+       "6a7c6bff-SDFToPoly",
        "Mesh",
        null
       ],
@@ -2665,8 +2565,8 @@
       "z": 0.0
      },
      "uipos": [
-      -717.6074218749997,
-      615.5419921874999
+      -648.6074218749995,
+      716.5419921875
      ],
      "options": []
     },
@@ -2685,8 +2585,8 @@
       "z": 0.0
      },
      "uipos": [
-      -778.1249999999997,
-      674.9999999999999
+      -582.1249999999995,
+      891.0
      ],
      "options": []
     },
@@ -2726,8 +2626,8 @@
      },
      "params": {},
      "uipos": [
-      131.25000000000003,
-      642.1874999999999
+      236.25,
+      614.1875
      ],
      "options": []
     },
@@ -2746,8 +2646,8 @@
       "z": 1.0
      },
      "uipos": [
-      -334.3749999999999,
-      657.8125000000001
+      2.6250000000001137,
+      543.8125
      ],
      "options": []
     },
@@ -3190,12 +3090,156 @@
       4974.609374999999
      ],
      "options": []
+    },
+    "a9b7ddbb-MeshToPrimitive": {
+     "name": "MeshToPrimitive",
+     "inputs": {
+      "mesh": [
+       "6999a41b-x",
+       "mesh",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2829.3750000000005,
+      307.56250000000006
+     ],
+     "options": []
+    },
+    "2abbdc24-SDFToPoly": {
+     "name": "SDFToPoly",
+     "inputs": {
+      "SDF": [
+       "0c2b2903-MeshToSDF",
+       "sdf",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isoValue": 0.0,
+      "adaptivity": 0.0,
+      "allowQuads": false
+     },
+     "uipos": [
+      -2295.3124999999986,
+      387.4999999999999
+     ],
+     "options": []
+    },
+    "fae24349-VDBRenormalizeSDF": {
+     "name": "VDBRenormalizeSDF",
+     "inputs": {
+      "inoutSDF": [
+       "e8e41ffe-VDBWrangle",
+       "grid",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "method": "1oUpwind",
+      "iterations": 4,
+      "dilateIters": 0
+     },
+     "uipos": [
+      -2543.7499999999995,
+      1115.6249999999998
+     ],
+     "options": []
+    },
+    "c3644466-SDFToPoly": {
+     "name": "SDFToPoly",
+     "inputs": {
+      "SDF": [
+       "f59faf42-x",
+       "grid",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isoValue": 0.0,
+      "adaptivity": 0.0,
+      "allowQuads": false
+     },
+     "uipos": [
+      -1805.6000000000008,
+      1071.2000000000003
+     ],
+     "options": []
+    },
+    "6a7c6bff-SDFToPoly": {
+     "name": "SDFToPoly",
+     "inputs": {
+      "SDF": [
+       "5e2b3914-CombineVDB",
+       "FieldOut",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isoValue": 0.0,
+      "adaptivity": 0.0,
+      "allowQuads": false
+     },
+     "uipos": [
+      -825.0,
+      474.0
+     ],
+     "options": []
+    },
+    "84d381c9-PrimitiveCalcNormal": {
+     "name": "PrimitiveCalcNormal",
+     "inputs": {
+      "prim": [
+       "6a7c6bff-SDFToPoly",
+       "Mesh",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -630.4300000000001,
+      436.78
+     ],
+     "options": [
+      "VIEW"
+     ]
     }
    },
    "view": {
-    "scale": 0.40960000000000013,
-    "trans_x": -1616,
-    "trans_y": 1569
+    "scale": 0.8,
+    "trans_x": -705,
+    "trans_y": 305
    }
   },
   "ToMaterialPoints": {
@@ -4835,12 +4879,12 @@
    ],
    "params": [
     [
-     "int",
+     "bool",
      "allow_quads",
      "0"
     ],
     [
-     "int",
+     "bool",
      "do_transform",
      "1"
     ]
@@ -4941,6 +4985,46 @@
     [
      "",
      "FOR",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "BeginSubstep": {
+   "inputs": [
+    [
+     "",
+     "total_dt",
+     ""
+    ],
+    [
+     "",
+     "min_scale",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "elapsed_time",
      ""
     ],
     [
@@ -5543,6 +5627,108 @@
    ],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "CachePrimitive": {
+   "inputs": [
+    [
+     "",
+     "inPrim",
+     ""
+    ],
+    [
+     "",
+     "frameNum",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "dir",
+     "/tmp/cache"
+    ],
+    [
+     "string",
+     "prefix",
+     ""
+    ],
+    [
+     "bool",
+     "ignore",
+     "0"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "CacheVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "inGrid",
+     ""
+    ],
+    [
+     "",
+     "frameNum",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "dir",
+     "/tmp/cache"
+    ],
+    [
+     "string",
+     "prefix",
+     ""
+    ],
+    [
+     "bool",
+     "ignore",
+     "0"
+    ]
+   ],
+   "categories": [
+    "openvdb"
    ]
   },
   "CachedByKey": {
@@ -7867,7 +8053,7 @@
     [
      "string",
      "type",
-     "float"
+     ""
     ]
    ],
    "categories": [
@@ -8152,12 +8338,12 @@
    ],
    "params": [
     [
-     "int",
+     "bool",
      "isCentered",
      "0"
     ],
     [
-     "int",
+     "bool",
      "hasFaces",
      "1"
     ]
@@ -8228,7 +8414,7 @@
    ],
    "params": [
     [
-     "int",
+     "bool",
      "isCentered",
      "0"
     ]
@@ -9520,7 +9706,7 @@
    ],
    "params": [
     [
-     "int",
+     "bool",
      "isClamped",
      "0"
     ]
@@ -9952,6 +10138,11 @@
    "outputs": [
     [
      "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
      "DST",
      ""
     ]
@@ -10020,6 +10211,46 @@
    "params": [],
    "categories": [
     "zenofx"
+   ]
+  },
+  "ParticleToLevelSet": {
+   "inputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "Radius",
+     ""
+    ],
+    [
+     "",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "SurfaceSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
    ]
   },
   "ParticlesBuildHashGrid": {
@@ -11238,6 +11469,52 @@
     "primitive"
    ]
   },
+  "PrimitiveGetAttrValue": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "index",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "string",
+     "type",
+     "float3"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveGetSize": {
    "inputs": [
     [
@@ -11593,6 +11870,52 @@
     "primitive"
    ]
   },
+  "PrimitiveSetAttrValue": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "index",
+     ""
+    ],
+    [
+     "",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "pos"
+    ],
+    [
+     "string",
+     "type",
+     "float3"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveShade": {
    "inputs": [
     [
@@ -11816,7 +12139,7 @@
    ],
    "params": [
     [
-     "int",
+     "bool",
      "is_smooth",
      "0"
     ]
@@ -12302,7 +12625,7 @@
     [
      "string",
      "type",
-     "float"
+     ""
     ],
     [
      "string",
@@ -12555,6 +12878,11 @@
      "float",
      "adaptivity",
      "0"
+    ],
+    [
+     "bool",
+     "allowQuads",
+     "0"
     ]
    ],
    "categories": [
@@ -12740,6 +13068,47 @@
    "params": [],
    "categories": [
     "frame"
+   ]
+  },
+  "SetSubOutput": {
+   "inputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "output1"
+    ],
+    [
+     "string",
+     "type",
+     ""
+    ],
+    [
+     "string",
+     "defl",
+     ""
+    ]
+   ],
+   "categories": [
+    "subgraph"
    ]
   },
   "SetVDBPointDataGrid": {
@@ -12946,47 +13315,6 @@
     "subgraph"
    ]
   },
-  "SubEndpoint": {
-   "inputs": [
-    [
-     "",
-     "setValue",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "getValue",
-     ""
-    ],
-    [
-     "",
-     "hasValue",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "name",
-     "Cube"
-    ]
-   ],
-   "categories": [
-    "subgraph"
-   ]
-  },
   "SubInput": {
    "inputs": [
     [
@@ -13098,6 +13426,41 @@
    ],
    "categories": [
     "subgraph"
+   ]
+  },
+  "SubstepDt": {
+   "inputs": [
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "desired_dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "actual_dt",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
    ]
   },
   "SubtractPressureGradient": {
@@ -13591,6 +13954,71 @@
     "openvdb"
    ]
   },
+  "VDBPointsToDropletPrimitive": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "sdf",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBPointsToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
   "VDBRenormalizeSDF": {
    "inputs": [
     [
@@ -13626,6 +14054,52 @@
      "int",
      "iterations",
      "4"
+    ],
+    [
+     "int",
+     "dilateIters",
+     "0"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBSmoothSDF": {
+   "inputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "width",
+     "1"
+    ],
+    [
+     "int",
+     "iterations",
+     "1"
     ]
    ],
    "categories": [

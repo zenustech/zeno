@@ -106,12 +106,20 @@ struct NumericOperator : zeno::INode {
     _PER_OP1(~, inv)
     _PER_OP1(!, not)
 
+    _PER_FN(mix)
+    _PER_FN(clamp)
+
     _PER_FN(atan2)
     _PER_FN(pow)
     _PER_FN(max)
     _PER_FN(min)
     _PER_FN(fmod)
+    _PER_FN(dot)
+    _PER_FN(cross)
+    _PER_FN(distance)
 
+    _PER_FN(length)
+    _PER_FN(normalize)
     _PER_FN(abs)
     _PER_FN(sqrt)
     _PER_FN(sin)
@@ -150,7 +158,8 @@ struct NumericOperator : zeno::INode {
                 if(op == "beq") ret->value = (std::get<int>(lhs->value)>=std::get<int>(rhs->value))?(int)1:(int)0;
                 if(op == "leq") ret->value = (std::get<int>(lhs->value)<=std::get<int>(rhs->value))?(int)1:(int)0;
             }*/
-            
+
+            // todo: no ternary ops?
             std::visit([op, &ret](auto const &lhs, auto const &rhs) {
 
                 if (op == "copy") ret->value = lhs;
@@ -177,6 +186,9 @@ struct NumericOperator : zeno::INode {
     _PER_OP(cmplt)
     _PER_OP(cmpne)
     _PER_OP(cmpeq)
+    _PER_OP(dot)
+    _PER_OP(cross)
+    _PER_OP(distance)
                 else std::cout << "Bad binary op name: " << op << std::endl;
 #undef _PER_OP
 
@@ -203,6 +215,8 @@ struct NumericOperator : zeno::INode {
     _PER_OP(log)
     _PER_OP(floor)
     _PER_OP(ceil)
+    _PER_OP(length)
+    _PER_OP(normalize)
     _PER_OP(toint)
     _PER_OP(tofloat)
                 else std::cout << "Bad unary op name: " << op << std::endl;
