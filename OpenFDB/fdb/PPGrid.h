@@ -17,7 +17,7 @@ struct PPGrid {
 
 private:
     struct LeafNode {
-        densegrid::DenseGrid<float, Log2Dim1> m_data;  // 2 KiB
+        densegrid::DenseGrid<ValueType, Log2Dim1> m_data;  // 2 KiB
     };
 
     struct InternalNode {
@@ -86,13 +86,13 @@ protected:
         }
     }
 
-    T *get_at(vec3i ijk) const {
+    ValueType *get_at(vec3i ijk) const {
         auto *leaf = get_leaf_at(ijk >> Log2Dim1);
         if (!leaf) return nullptr;
         return &leaf->m_data.at(ijk);
     }
 
-    T *add_at(vec3i ijk) {
+    ValueType *add_at(vec3i ijk) {
         auto *leaf = add_leaf_at(ijk >> Log2Dim1);
         return &leaf->m_data.at(ijk);
     }
@@ -102,11 +102,11 @@ protected:
     }
 
 public:
-    T const &at(vec3i ijk) const {
+    ValueType const &at(vec3i ijk) const {
         return *get_at(ijk);
     }
 
-    T &at(vec3i ijk) {
+    ValueType &at(vec3i ijk) {
         return *add_at(ijk);
     }
 
