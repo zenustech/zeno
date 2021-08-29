@@ -9,9 +9,8 @@ namespace fdb::converter {
 
 template <class OurGridT, class VdbGridT>
 void from_vdb_grid(OurGridT &ourGrid, VdbGridT &vdbGrid) {
-    //std::mutex mtx;
+
     auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
-        //std::lock_guard _(mtx);
         for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
             auto coord = iter.getCoord();
             auto value = iter.getValue();
@@ -26,6 +25,9 @@ void from_vdb_grid(OurGridT &ourGrid, VdbGridT &vdbGrid) {
     openvdb::tree::LeafManager<std::decay_t<decltype(vdbGrid.tree())>>
         leafman(vdbGrid.tree());
     leafman.foreach(wrangler);
+
+    //std::vector<openvdb::tree::InternalNode
+    //vdbGrid.getNodes(nodes);
 }
 
 template <class VdbGridT>

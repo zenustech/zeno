@@ -107,7 +107,7 @@
       ]
      },
      "params": {
-      "voxel_size": 0.08,
+      "voxel_size": 0.05,
       "type": "vertex"
      },
      "uipos": [
@@ -228,13 +228,59 @@
       -800.7972665148064
      ],
      "options": []
+    },
+    "94a0c1be-VDBVoxelAsParticles": {
+     "name": "VDBVoxelAsParticles",
+     "inputs": {
+      "vdbGrid": [
+       "40e9fbc9-MeshToSDF",
+       "sdf",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "hasInactive": false
+     },
+     "uipos": [
+      1408.9977220956719,
+      228.07517084282458
+     ],
+     "options": []
+    },
+    "b5858ce5-VDBLeafAsParticles": {
+     "name": "VDBLeafAsParticles",
+     "inputs": {
+      "vdbGrid": [
+       "40e9fbc9-MeshToSDF",
+       "sdf",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1685.9316628701595,
+      223.00683371298405
+     ],
+     "options": [
+      "VIEW"
+     ]
     }
    },
    "view_rect": {
-    "x": 497.9751176153718,
-    "y": -201.02561497692813,
-    "width": 1199.9999999999995,
-    "height": 445.0
+    "x": 945.8412380810109,
+    "y": -47.61987385674689,
+    "width": 959.9999999999997,
+    "height": 356.0
    }
   }
  },
@@ -7591,6 +7637,36 @@
     "openvdb"
    ]
   },
+  "VDBLeafAsParticles": {
+   "inputs": [
+    [
+     "",
+     "vdbGrid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primPars",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "visualize"
+   ]
+  },
   "VDBPointsToPrimitive": {
    "inputs": [
     [
@@ -7706,6 +7782,42 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "VDBVoxelAsParticles": {
+   "inputs": [
+    [
+     "",
+     "vdbGrid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primPars",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "hasInactive",
+     "0"
+    ]
+   ],
+   "categories": [
+    "visualize"
    ]
   },
   "VDBWrangle": {
