@@ -87,40 +87,18 @@ protected:
         }
     }
 
-    ValueType *get_value(vec3i ijk) const {
-        auto *node = m_root.m_data.at(ijk >> Log2Dim2 + Log2Dim1);
-        if (!node) return m_root.m_tiles.at(ijk >> Log2Dim2 + Log2Dim1);
-        auto *leaf = node->m_data.at(ijk);
-        if (!leaf) return node->m_tiles.at(ijk >> Log2Dim1);
-        return &leaf->m_data.at(ijk);
-    }
-
-    ValueType *peek_value(vec3i ijk) const {
-        auto *leaf = peek_leaf(ijk >> Log2Dim1);
-        if (!leaf) return nullptr;
-        return &leaf->m_data.at(ijk);
-    }
-
-    ValueType *touch_value(vec3i ijk) {
-        auto *leaf = touch_leaf(ijk >> Log2Dim1);
-        return &leaf->m_data.at(ijk);
-    }
-
 public:
-    ValueType &at(vec3i ijk) {
-        return *get_value(ijk);
-    }
-
-    ValueType const &at(vec3i ijk) const {
-        return *get_value(ijk);
-    }
-
     ValueType get(vec3i ijk) const {
-        return *get_value(ijk);
+        auto *node = m_root.m_data.at(ijk >> Log2Dim2 + Log2Dim1);
+        if (!node) return m_root.m_tiles.get(ijk >> Log2Dim2 + Log2Dim1);
+        auto *leaf = node->m_data.at(ijk);
+        if (!leaf) return node->m_tiles.get(ijk >> Log2Dim1);
+        return leaf->m_data.get(ijk);
     }
 
     void set(vec3i ijk, ValueType value) {
-        *touch_value(ijk) = value;
+        auto *leaf = touch_leaf(ijk >> Log2Dim1);
+        leaf->m_data.set(ijk, value);
     }
 
     template <class Pol, class F>
