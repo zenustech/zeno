@@ -33,7 +33,7 @@ void from_vdb_grid(OurGridT &ourGrid, VdbGridT &vdbGrid) {
     /*std::vector<LeafNodeType *> nodes;
     vdbGrid.tree().getNodes(nodes);
     for (auto const &node: nodes) {
-        printf("%p\n", node);
+        node.background();
     }*/
 }
 

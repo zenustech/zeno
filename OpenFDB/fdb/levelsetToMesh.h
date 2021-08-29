@@ -393,15 +393,15 @@ void march() {
     compute_cubes();
     printf("march_tetra\n");
     march_tetra();
-    printf("weld_close\n");
-    weld_close();
-    printf("flip_edges\n");
-    flip_edges();
-    printf("flip_edges\n");
-    flip_edges();
-    printf("smooth_mesh\n");
-    smooth_mesh(3);
-    printf("done\n");
+    //printf("weld_close\n");
+    //weld_close();
+    //printf("flip_edges\n");
+    //flip_edges();
+    //printf("flip_edges\n");
+    //flip_edges();
+    //printf("smooth_mesh\n");
+    //smooth_mesh(3);
+    //printf("done\n");
 }
 
 inline auto const &triangles() const { return m_triangles; }
@@ -417,7 +417,7 @@ auto marching_tetra
     , std::vector<vec3f> &vertices
     , std::vector<vec3I> &triangles
     , float isovalue = 0
-    , float weldscale = 1.414f
+    , float weldscale = 2
     ) {
     MarchingTetra mt(grid, isovalue, weldscale);
     mt.march();

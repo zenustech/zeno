@@ -62,7 +62,7 @@ private:
     RootNode m_root;
 
 protected:
-    LeafNode *peek_leaf(vec3i ijk) const {
+    LeafNode *probe_leaf(vec3i ijk) const {
         auto *node = m_root.m_data.at(ijk >> Log2Dim2).load();
         if (!node) return nullptr;
         auto *leaf = node->m_data.at(ijk).load();
