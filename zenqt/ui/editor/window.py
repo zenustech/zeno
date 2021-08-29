@@ -281,6 +281,15 @@ class NodeEditor(QWidget):
                     },
                 }
 
+        for name, graph in prog['graph'].items():
+            if 'view' in graph:
+                graph['view_rect'] = {
+                    'x': graph['view']['trans_x'],
+                    'y': graph['view']['trans_y'],
+                    'width': 1200 / graph['view']['scale'],
+                    'height': 1000 / graph['view']['scale'],
+                }
+
         if 'version' not in prog:
             prog['version'] = 'v0'
         if prog['version'] != CURR_VERSION:

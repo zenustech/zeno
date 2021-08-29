@@ -13,6 +13,7 @@ O=arts/testprimdup.zsg
 #O=arts/lowResMPM.zsg
 #O=arts/literialconst.zsg
 #O=arts/blendtest.zsg
+#default: justrun
 default: run
 
 #####################################################
@@ -50,6 +51,9 @@ run: all
 
 glrun: all
 	ZEN_NOFORK=1 ZEN_NOVIEW=1 ZEN_OPEN=$O python3 -m zenqt
+
+justrun:
+	ZEN_OPEN=$O python3 -m zenqt
 
 gldebug: debug_all
 	ZEN_NOSIGHOOK=1 ZEN_NOVIEW=1 USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O gdb python3 -ex 'r -m zenqt'
