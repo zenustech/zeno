@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
-#include <zeno/types/BlenderMesh.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/PrimitiveTools.h>
 #include <voro++/voro++.hh>
 #include <zinc/random.h>
 #include <zinc/vec.h>
@@ -38,19 +38,19 @@ void vorosplit(F const &factory) {
 		c.face_vertices(f_vert);
 		c.vertices(x, y, z, v);
 
-        auto &mesh = factory();
+        auto &mesh = factory(true);
 
         for (int i = 0; i < (int)v.size(); i += 3) {
-            mesh.verts.emplace_back(v[i], v[i+1], v[i+2]);
+            mesh.verts().emplace_back(v[i], v[i+1], v[i+2]);
         }
 
 		for(int i = 0, j = 0; i < (int)neigh.size(); i++) {
             int len = f_vert[j];
-            int start = (int)mesh.loop.size();
+            int start = (int)mesh.loops().size();
             for (int k = j + 1; k < j + 1 + len; k++) {
-                mesh.loop.push_back(f_vert[k]);
+                mesh.loops().push_back(f_vert[k]);
             }
-            mesh.poly.emplace_back(start, len);
+            mesh.polys().emplace_back(start, len);
         }
 
 	} while (cl.inc());
@@ -58,27 +58,43 @@ void vorosplit(F const &factory) {
 
 struct VoronoiFracture : zeno::INode {
     virtual void apply() override {
-        auto meshList = std::make_shared<zeno::ListObject>();
+        auto boundaries = std::make_shared<zeno::ListObject>();
+        auto interiors = std::make_shared<zeno::ListObject>();
+        auto triangulate = get_param<bool>("triangulate");
 
-        vorosplit([&] () -> decltype(auto) {
+        auto factory = [&] (auto isBoundary) -> decltype(auto) {
             auto ptr = std::make_shared<zeno::PrimitiveObject>();
             auto raw_ptr = ptr.get();
-            meshList->arr.push_back(std::move(ptr));
+            if (isBoundary) {
+                boundaries->arr.push_back(std::move(ptr));
+            } else {
+                interiors->arr.push_back(std::move(ptr));
+            }
             return *raw_ptr;
-        });
+        };
+        vorosplit(factory);
 
-        set_output("meshList", std::move(meshList));
+        if (triangulate) {
+            for (auto const &mesh: boundaries->arr) {
+                auto prim = zeno::smart_any_cast<std::shared_ptr<zeno::PrimitiveObject>>(mesh).get();
+                prim_triangulate(prim);
+            }
+        }
+
+        set_output("boundaryPrimList", std::move(boundaries));
+        set_output("interiorPrimList", std::move(interiors));
     }
 };
 
 ZENO_DEFNODE(VoronoiFracture)({
         { // inputs:
-        {"BlenderMesh", "inMesh"},
+        {"PrimitiveObject", "prim"},
         },
         { // outputs:
-        {"ListObject", "meshList"},
+        {"ListObject", "interiorPrimList"},
+        {"ListObject", "boundaryPrimList"},
         },
-        {},
+        {{"bool", "triangulate", "1"}},
         {"cgmesh"},
 });
 

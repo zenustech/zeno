@@ -27,7 +27,7 @@ struct ListGetItem : zeno::INode {
     virtual void apply() override {
         auto list = get_input<zeno::ListObject>("list");
         auto index = get_input<zeno::NumericObject>("index")->get<int>();
-        auto obj = list->arr[index];
+        auto obj = list->arr.at(index);
         set_output2("object", std::move(obj));
     }
 };
@@ -87,6 +87,25 @@ struct AppendList : zeno::INode {
 
 ZENDEFNODE(AppendList, {
     {"list", "object"},
+    {"list"},
+    {},
+    {"list"},
+});
+
+struct MergeList : zeno::INode {
+    virtual void apply() override {
+        auto list1 = get_input<zeno::ListObject>("list1");
+        auto list2 = get_input<zeno::ListObject>("list2");
+        auto obj = get_input("object");
+        auto list = std::make_shared<zeno::ListObject>();
+        list->arr.insert(list1->arr.begin(), list1->arr.end());
+        list->arr.insert(list2->arr.begin(), list2->arr.end());
+        set_output("list", std::move(list));
+    }
+};
+
+ZENDEFNODE(MergeList, {
+    {"list1", "list2"},
     {"list"},
     {},
     {"list"},

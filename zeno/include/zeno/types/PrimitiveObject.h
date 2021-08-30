@@ -29,7 +29,7 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
   std::vector<std::tuple<int, int>> m_polys;
 
   inline auto &verts() {
-      return attr<vec3f>("pos");
+      return add_attr<vec3f>("pos");
   }
 
   inline auto &polys() {
