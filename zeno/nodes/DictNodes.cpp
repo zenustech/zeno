@@ -33,8 +33,8 @@ struct DictGetItem : zeno::INode {
 };
 
 ZENDEFNODE(DictGetItem, {
-    {{"DictObject", "dict"}, {"StringObject", "key"}},
-    {{"Any", "object"}},
+    {{"DictObject", "dict"}, {"string", "key"}},
+    {{"zany", "object"}},
     {},
     {"dict"},
 });
@@ -66,7 +66,7 @@ struct DictSetItem : zeno::INode {
 };
 
 ZENDEFNODE(DictSetItem, {
-    {{"DictObject", "dict"}, {"StringObject", "key"}, {"Any", "object"}},
+    {{"DictObject", "dict"}, {"string", "key"}, {"zany", "object"}},
     {{"DictObject", "dict"}},
     {},
     {"dict"},

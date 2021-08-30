@@ -12,7 +12,8 @@ struct Make2DGridPrimitive : INode {
     virtual void apply() override {
         size_t nx = get_input<NumericObject>("nx")->get<int>();
         size_t ny = has_input("ny") ?
-            get_input<NumericObject>("ny")->get<int>() : nx;
+            get_input<NumericObject>("ny")->get<int>() : 0;
+        if (!ny) ny = nx;
         float dx = 1.f / std::max(nx - 1, (size_t)1);
         float dy = 1.f / std::max(ny - 1, (size_t)1);
         vec3f ax = has_input("sizeX") ?
@@ -69,11 +70,11 @@ struct Make2DGridPrimitive : INode {
 ZENDEFNODE(Make2DGridPrimitive,
         { /* inputs: */ {
         {"int", "nx", "2"},
-        {"int", "ny"},
-        {"vec3f", "sizeX"},
-        {"vec3f", "sizeY"},
-        {"float", "scale"},
-        {"vec3f", "origin"},
+        {"int", "ny", "0"},
+        {"vec3f", "sizeX", "1,0,0"},
+        {"vec3f", "sizeY", "0,1,0"},
+        {"float", "scale", "1"},
+        {"vec3f", "origin", "0,0,0"},
         }, /* outputs: */ {
         {"PrimitiveObject", "prim"},
         }, /* params: */ {
@@ -87,9 +88,11 @@ struct Make3DGridPrimitive : INode {
     virtual void apply() override {
         size_t nx = get_input<NumericObject>("nx")->get<int>();
         size_t ny = has_input("ny") ?
-            get_input<NumericObject>("ny")->get<int>() : nx;
+            get_input<NumericObject>("ny")->get<int>() : 0;
+        if (!ny) ny = nx;
         size_t nz = has_input("nz") ?
-            get_input<NumericObject>("nz")->get<int>() : nx;
+            get_input<NumericObject>("nz")->get<int>() : 0;
+        if (!nz) nz = nx;
         float dx = 1.f / std::max(nx - 1, (size_t)1);
         float dy = 1.f / std::max(ny - 1, (size_t)1);
         float dz = 1.f / std::max(nz - 1, (size_t)1);
@@ -137,13 +140,13 @@ struct Make3DGridPrimitive : INode {
 ZENDEFNODE(Make3DGridPrimitive,
         { /* inputs: */ {
         {"int", "nx", "2"},
-        {"int", "ny"},
-        {"int", "nz"},
-        {"vec3f", "sizeX"},
-        {"vec3f", "sizeY"},
-        {"vec3f", "sizeZ"},
-        {"float", "scale"},
-        {"vec3f", "origin"},
+        {"int", "ny", "0"},
+        {"int", "nz", "0"},
+        {"vec3f", "sizeX", "1,0,0"},
+        {"vec3f", "sizeY", "0,1,0"},
+        {"vec3f", "sizeZ", "0,0,1"},
+        {"float", "scale", "1"},
+        {"vec3f", "origin", "0,0,0"},
         }, /* outputs: */ {
         "prim",
         }, /* params: */ {
