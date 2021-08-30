@@ -10,8 +10,8 @@
 
 namespace {
 
-template <class F>
-void vorosplit(F const &factory) {
+template <class T, class F>
+void vorosplit(T const &particles, F const &factory) {
 	int nx, ny, nz;
 	double x, y, z;
     voro::voronoicell_neighbor c;
@@ -19,12 +19,11 @@ void vorosplit(F const &factory) {
     std::vector<double> v;
 
     voro::pre_container pcon(-3,3,-3,3,0,6,false,false,false);
-    for (int i = 0; i < 32; i++) {
-        auto x = zinc::frand<double>(i);
-        auto y = zinc::frand<double>(i);
-        auto z = zinc::frand<double>(i);
-        pcon.put(i + 1, x, y, z);
-    }
+    /*for (int i = 0; i < particles.size(); i++) {
+        auto p = particles[i];
+        pcon.put(i + 1, p[0], p[1], p[2]);
+    }*/
+    pcon.import("/home/bate/Codes/zeno-blender/external/zeno/projects/cgmesh/pack_six_cube");
 	pcon.guess_optimal(nx,ny,nz);
 
     voro::container con(-3,3,-3,3,0,6,nx,ny,nz,false,false,false,8);
@@ -38,7 +37,7 @@ void vorosplit(F const &factory) {
 		c.face_vertices(f_vert);
 		c.vertices(x, y, z, v);
 
-        auto &mesh = factory(true);
+        auto &mesh = factory(false);
 
         for (int i = 0; i < (int)v.size(); i += 3) {
             mesh.verts().emplace_back(v[i], v[i+1], v[i+2]);
@@ -51,6 +50,7 @@ void vorosplit(F const &factory) {
                 mesh.loops().push_back(f_vert[k]);
             }
             mesh.polys().emplace_back(start, len);
+            j = j + 1 + len;
         }
 
 	} while (cl.inc());
@@ -62,6 +62,9 @@ struct VoronoiFracture : zeno::INode {
         auto interiors = std::make_shared<zeno::ListObject>();
         auto triangulate = get_param<bool>("triangulate");
 
+        auto mesh = get_input<zeno::PrimitiveObject>("meshPrim");
+        auto particles = get_input<zeno::PrimitiveObject>("particlesPrim");
+
         auto factory = [&] (auto isBoundary) -> decltype(auto) {
             auto ptr = std::make_shared<zeno::PrimitiveObject>();
             auto raw_ptr = ptr.get();
@@ -72,10 +75,14 @@ struct VoronoiFracture : zeno::INode {
             }
             return *raw_ptr;
         };
-        vorosplit(factory);
+        vorosplit(particles->verts(), factory);
 
         if (triangulate) {
             for (auto const &mesh: boundaries->arr) {
+                auto prim = zeno::smart_any_cast<std::shared_ptr<zeno::PrimitiveObject>>(mesh).get();
+                prim_triangulate(prim);
+            }
+            for (auto const &mesh: interiors->arr) {
                 auto prim = zeno::smart_any_cast<std::shared_ptr<zeno::PrimitiveObject>>(mesh).get();
                 prim_triangulate(prim);
             }
@@ -88,7 +95,8 @@ struct VoronoiFracture : zeno::INode {
 
 ZENO_DEFNODE(VoronoiFracture)({
         { // inputs:
-        {"PrimitiveObject", "prim"},
+        {"PrimitiveObject", "meshPrim"},
+        {"PrimitiveObject", "particlesPrim"},
         },
         { // outputs:
         {"ListObject", "interiorPrimList"},

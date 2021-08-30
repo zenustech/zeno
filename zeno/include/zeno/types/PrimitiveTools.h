@@ -6,6 +6,8 @@ namespace zeno {
 
 static void prim_triangulate(PrimitiveObject *prim) {
     prim->resize(prim->verts().size());
+    prim->points.clear();
+    prim->lines.clear();
     prim->tris.clear();
 
     for (auto [start, len]: prim->polys()) {
