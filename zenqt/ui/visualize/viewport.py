@@ -162,7 +162,7 @@ class QDMDisplayMenu(QMenu):
 
         self.addSeparator()
 
-        action = QAction('Flat Shading', self)
+        action = QAction('Smooth Shading', self)
         action.setCheckable(True)
         action.setChecked(False)
         self.addAction(action)
@@ -221,9 +221,9 @@ class DisplayWidget(QWidget):
             checked = act.isChecked()
             zenvis.status['show_grid'] = checked
 
-        elif name == 'Flat Shading':
+        elif name == 'Smooth Shading':
             checked = act.isChecked()
-            zenvis.core.set_flat_shading(checked)
+            zenvis.core.set_smooth_shading(checked)
 
         elif name == 'Wireframe':
             checked = act.isChecked()

@@ -12,7 +12,7 @@ namespace zenvis {
 int curr_frameid = -1;
 
 static bool show_grid = true;
-static bool flat_shading = false;
+static bool smooth_shading = false;
 bool render_wireframe = false;
 
 static int nx = 960, ny = 800;
@@ -67,7 +67,7 @@ void set_program_uniforms(Program *pro) {
   pro->set_uniform("mInvView", glm::inverse(view));
   pro->set_uniform("mInvProj", glm::inverse(proj));
   pro->set_uniform("mPointScale", point_scale);
-  pro->set_uniform("flatShading", flat_shading);
+  pro->set_uniform("mSmoothShading", smooth_shading);
 }
 
 static std::unique_ptr<VAO> vao;
@@ -242,8 +242,8 @@ std::tuple<float, float, float> get_background_color() {
     return {bgcolor.r, bgcolor.g, bgcolor.b};
 }
 
-void set_flat_shading(bool flat) {
-    flat_shading = flat;
+void set_smooth_shading(bool smooth) {
+    smooth_shading = smooth;
 }
 
 void set_render_wireframe(bool render_wireframe_) {

@@ -363,7 +363,7 @@ uniform mat4 mView;
 uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
-uniform bool flatShading;
+uniform bool smoothShading;
 uniform bool renderWireframe;
 
 varying vec3 position;
@@ -425,8 +425,10 @@ void main()
     gl_FragColor = vec4(0.89, 0.57, 0.15, 1.0);
     return;
   }
-  vec3 normal = normalize(iNormal);
-  if (flatShading) {
+  vec3 normal;
+  if (smoothShading) {
+    normal = normalize(iNormal);
+  } else {
     normal = normalize(cross(dFdx(position), dFdy(position)));
   }
   vec3 viewdir = -calcRayDir(position);
