@@ -79,7 +79,7 @@ struct CacheVDBGrid : zeno::INode {
 
 ZENDEFNODE(CacheVDBGrid,
     { /* inputs: */ {
-    "inGrid", {"int", "frameNum"},
+    "inGrid", "frameNum",
     }, /* outputs: */ {
     "outGrid",
     }, /* params: */ {

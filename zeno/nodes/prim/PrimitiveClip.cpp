@@ -264,8 +264,8 @@ namespace zeno {
     };
 
 ZENDEFNODE(PrimitiveClip, {
-    {"prim", {"vec3f", "origin"}, {"vec3f", "direction"}, {"vec3f", "distance"}},
-    {"outPrim"},
+    {{"PrimitiveObject", "prim"}, {"vec3f", "origin", "0,0,0"}, {"vec3f", "direction", "0,0,1"}, {"vec3f", "distance", "0"}},
+    {{"PrimitiveObject", "outPrim"}},
     {{"bool", "reverse", "0"}},
     {"primitive"},
     });

@@ -32,7 +32,7 @@ struct GetBlenderObjectAxes : zeno::INode {
 
 ZENDEFNODE(GetBlenderObjectAxes, {
     {"object"},
-    {"origin", "axisX", "axisY", "axisZ"},
+    {{"vec3f", "origin"}, {"vec3f", "axisX"}, {"vec3f", "axisY"}, {"vec3f", "axisZ"}},
     {},
     {"blendermesh"},
 });
