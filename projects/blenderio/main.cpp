@@ -112,6 +112,11 @@ struct PrimitiveToBMesh : zeno::INode {
             mesh->vert[i] = pos[i];
         }
 
+        for (auto const &[key, attr]: prim->m_attrs) {
+            if (key == "pos") continue; // already in mesh->vert..
+            mesh->vert_attrs[key] = attr;  // deep copy
+        }
+
         mesh->is_smooth = is_smooth;
         mesh->poly.resize(prim->tris.size() + prim->quads.size());
         mesh->loop.resize(3 * prim->tris.size() + 4 * prim->quads.size());
