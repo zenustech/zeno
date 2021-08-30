@@ -152,14 +152,14 @@ struct GraphicPrimitive : IGraphic {
         //printf("TRIS\n");
         tris_prog->use();
         set_program_uniforms(tris_prog);
-        tris_prog->set_uniform("renderWireframe", false);
+        tris_prog->set_uniform("mRenderWireframe", false);
         tris_ebo->bind();
         CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/tris_count * 3,
               GL_UNSIGNED_INT, /*first=*/0));
         if (render_wireframe) {
           glEnable(GL_POLYGON_OFFSET_LINE);
           glPolygonOffset(-1, -1);
-          tris_prog->set_uniform("renderWireframe", true);
+          tris_prog->set_uniform("mRenderWireframe", true);
           glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
           CHECK_GL(glDrawElements(GL_TRIANGLES, tris_count * 3, GL_UNSIGNED_INT, 0));
           glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -363,8 +363,8 @@ uniform mat4 mView;
 uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
-uniform bool smoothShading;
-uniform bool renderWireframe;
+uniform bool mSmoothShading;
+uniform bool mRenderWireframe;
 
 varying vec3 position;
 varying vec3 iColor;
@@ -421,12 +421,12 @@ vec3 calcRayDir(vec3 pos)
 
 void main()
 {
-  if (renderWireframe) {
+  if (mRenderWireframe) {
     gl_FragColor = vec4(0.89, 0.57, 0.15, 1.0);
     return;
   }
   vec3 normal;
-  if (smoothShading) {
+  if (mSmoothShading) {
     normal = normalize(iNormal);
   } else {
     normal = normalize(cross(dFdx(position), dFdy(position)));
