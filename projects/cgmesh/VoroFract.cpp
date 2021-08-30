@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/BlenderMesh.h>
 #include <zeno/types/ListObject.h>
+#include <zeno/types/PrimitiveObject.h>
 #include <voro++/voro++.hh>
 #include <zinc/random.h>
 #include <zinc/vec.h>
@@ -40,16 +41,16 @@ void vorosplit(F const &factory) {
         auto &mesh = factory();
 
         for (int i = 0; i < (int)v.size(); i += 3) {
-            mesh.vert.emplace_back(v[i], v[i+1], v[i+2]);
+            mesh.verts.emplace_back(v[i], v[i+1], v[i+2]);
         }
 
 		for(int i = 0, j = 0; i < (int)neigh.size(); i++) {
-            int jbeg = j + 1;
-            int jend = jbeg + f_vert[j];
-            for (j = jbeg; j < jend; j++) {
-                mesh.loop.push_back(f_vert[j]);
+            int len = f_vert[j];
+            int start = (int)mesh.loop.size();
+            for (int k = j + 1; k < j + 1 + len; k++) {
+                mesh.loop.push_back(f_vert[k]);
             }
-            mesh.poly.emplace_back(jbeg, jend - jbeg);
+            mesh.poly.emplace_back(start, len);
         }
 
 	} while (cl.inc());
@@ -59,11 +60,8 @@ struct VoronoiFracture : zeno::INode {
     virtual void apply() override {
         auto meshList = std::make_shared<zeno::ListObject>();
 
-        set_output("meshList", std::move(meshList));
-
-        std::vector<std::shared_ptr<zeno::BlenderMesh>> meshes;
         vorosplit([&] () -> decltype(auto) {
-            auto ptr = std::make_shared<zeno::BlenderMesh>();
+            auto ptr = std::make_shared<zeno::PrimitiveObject>();
             auto raw_ptr = ptr.get();
             meshList->arr.push_back(std::move(ptr));
             return *raw_ptr;
