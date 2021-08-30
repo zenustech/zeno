@@ -25,36 +25,9 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
   std::vector<vec3i> tris;
   std::vector<vec4i> quads;
 
-  std::vector<int> m_loops;
-  std::vector<std::tuple<int, int>> m_polys;
-
-  inline auto &verts() {
-      return add_attr<vec3f>("pos");
-  }
-
-  inline auto &polys() {
-      return m_polys;
-  }
-
-  inline auto &loops() {
-      return m_loops;
-  }
-
-  inline auto const &verts() const {
-      return attr<vec3f>("pos");
-  }
-
-  inline auto const &polys() const {
-      return m_polys;
-  }
-
-  inline auto const &loops() const {
-      return m_loops;
-  }
-
-  inline std::vector<vec3i> &triangles() {
-      return tris;
-  }
+  // new topology storage that supports n polygons:
+  std::vector<int> loops;
+  std::vector<std::tuple<int, int>> polys;
 
 #ifndef ZENO_APIFREE
   ZENO_API virtual void dumpfile(std::string const &path) override;
