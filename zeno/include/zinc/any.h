@@ -16,6 +16,7 @@ struct is_variant : std::false_type {
 
 template <class ...Ts>
 struct is_variant<std::variant<Ts...>> : std::true_type {
+    using tuple_type = std::tuple<Ts...>;
 };
 
 template <class T>

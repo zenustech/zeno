@@ -240,12 +240,13 @@ class NodeEditor(QWidget):
         views = {}
         for name, scene in self.scenes.items():
             nodes = scene.dumpGraph()
-            view = {
-                'scale': scene.scale,
-                'trans_x': scene.trans_x,
-                'trans_y': scene.trans_y,
+            view_rect = {
+                'x': scene._scene_rect.x(),
+                'y': scene._scene_rect.y(),
+                'width': scene._scene_rect.width(),
+                'height': scene._scene_rect.height(),
             }
-            graphs[name] = {'nodes': nodes, 'view': view}
+            graphs[name] = {'nodes': nodes, 'view_rect': view_rect}
         prog = {}
         prog['graph'] = graphs
         prog['views'] = views
@@ -273,12 +274,22 @@ class NodeEditor(QWidget):
             if 'nodes' not in graph:
                 prog['graph'][name] = {
                     'nodes': graph,
-                    'view': {
+                    'view_rect': {
                         'scale': 1,
-                        'trans_x': 0,
-                        'trans_y': 0,
+                        'x': 0,
+                        'x': 0,
                     },
                 }
+
+        for name, graph in prog['graph'].items():
+            if 'view' in graph:
+                graph['view_rect'] = {
+                    'x': graph['view']['trans_x'],
+                    'y': graph['view']['trans_y'],
+                    'width': 1200 / graph['view']['scale'],
+                    'height': 1000 / graph['view']['scale'],
+                }
+
         if 'version' not in prog:
             prog['version'] = 'v0'
         if prog['version'] != CURR_VERSION:

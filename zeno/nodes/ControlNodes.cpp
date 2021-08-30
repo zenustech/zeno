@@ -39,8 +39,8 @@ struct BeginFor : IBeginFor {
 };
 
 ZENDEFNODE(BeginFor, {
-    {"count"},
-    {"index", "FOR"},
+    {{"int", "count"}},
+    {{"int", "index"}, "FOR"},
     {},
     {"control"},
 });
@@ -124,7 +124,7 @@ struct BeginForEach : IBeginFor {
 
 ZENDEFNODE(BeginForEach, {
     {"list"},
-    {"object", "index", "FOR"},
+    {"object", {"int", "index"}, "FOR"},
     {},
     {"control"},
 });
@@ -158,8 +158,8 @@ struct BeginSubstep : IBeginFor {
 };
 
 ZENDEFNODE(BeginSubstep, {
-    {"total_dt", "min_scale"},
-    {"FOR", "elapsed_time"},
+    {{"float", "total_dt"}, {"float", "min_scale", "0.05"}},
+    {"FOR", {"float", "elapsed_time"}},
     {},
     {"control"},
 });
@@ -183,16 +183,21 @@ struct SubstepDt : zeno::INode {
             }
             fore->m_elapsed += dt;
         }
+        float portion = fore->m_total ? fore->m_elapsed / fore->m_total : 0.0f;
         printf("** actual_dt: %f\n", dt);
-        auto ret = std::make_shared<zeno::NumericObject>();
-        ret->set(dt);
-        set_output("actual_dt", std::move(ret));
+        printf("** portion: %f\n", portion);
+        auto ret_dt = std::make_shared<zeno::NumericObject>();
+        ret_dt->set(dt);
+        set_output("actual_dt", std::move(ret_dt));
+        auto ret_portion = std::make_shared<zeno::NumericObject>();
+        ret_portion->set(portion);
+        set_output("portion", std::move(ret_portion));
     }
 };
 
 ZENDEFNODE(SubstepDt, {
-    {"FOR", "desired_dt"},
-    {"actual_dt"},
+    {"FOR", {"float", "desired_dt", "0.04"}},
+    {{"float", "actual_dt"}, {"float", "portion"}},
     {},
     {"control"},
 });
@@ -207,14 +212,12 @@ struct IfElse : zeno::INode {
         if (has_option("MUTE")) {
             requireInput("true");
         } else if (evaluate_condition(cond.get())) {
-            if (has_input("true")) {
-                requireInput("true");
-                set_output("result", get_input("true"));
+            if (requireInput("true")) {
+                set_output2("result", get_input2("true"));
             }
         } else {
-            if (has_input("false")) {
-                requireInput("false");
-                set_output("result", get_input("false"));
+            if (requireInput("false")) {
+                set_output2("result", get_input2("false"));
             }
         }
 

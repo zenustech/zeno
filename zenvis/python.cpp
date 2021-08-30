@@ -14,7 +14,6 @@ void clear_graphics();
 void auto_gc_frame_data(int nkeep);
 std::vector<int> get_valid_frames_list();
 void load_file(std::string name, std::string ext, std::string path, int frameid);
-void set_curr_playing(bool playing);
 void set_window_size(int nx, int ny);
 void set_curr_frameid(int frameid);
 int get_curr_frameid();
@@ -42,7 +41,6 @@ PYBIND11_MODULE(pylib_zenvis, m) {
     m.def("finalize", zenvis::finalize);
     m.def("new_frame", zenvis::new_frame);
     m.def("set_window_size", zenvis::set_window_size);
-    m.def("set_curr_playing", zenvis::set_curr_playing);
     m.def("set_curr_frameid", zenvis::set_curr_frameid);
     m.def("get_curr_frameid", zenvis::get_curr_frameid);
     m.def("get_solver_interval", zenvis::get_solver_interval);

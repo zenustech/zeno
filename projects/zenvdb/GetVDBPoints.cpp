@@ -59,6 +59,19 @@ static int defGetVDBPoints = zeno::defNodeClass<GetVDBPoints>("GetVDBPoints",
       "openvdb",
     }});
 
+#if 0
+struct GetVDBPointsLeafCount : zeno::INode {
+  virtual void apply() override {
+    auto grid = get_input("grid")->as<VDBPointsGrid>()->m_grid;
+    std::vector<openvdb::points::PointDataTree::LeafNodeType*> leafs;
+    grid->tree().getNodes(leafs);
+    auto ret = std::make_shared<zeno::NumericObject>();
+    ret->set((int)leafs.size());
+    set_output("leafCount", std::move(ret));
+  }
+};
+#endif
+
 
 //TODO: parallelize using concurrent vector
 struct VDBPointsToPrimitive : zeno::INode {
@@ -130,10 +143,11 @@ static int defVDBPointsToPrimitive = zeno::defNodeClass<VDBPointsToPrimitive>("V
 
 
 
-struct VDBPointsToDropletPrimitive : zeno::INode {
+struct GetVDBPointsDroplets : zeno::INode {
   virtual void apply() override {
     auto grid = get_input("grid")->as<VDBPointsGrid>()->m_grid;
     auto sdf = get_input("sdf")->as<VDBFloatGrid>()->m_grid;
+    auto dx = sdf->voxelSize()[0];
     std::vector<openvdb::points::PointDataTree::LeafNodeType*> leafs;
     grid->tree().getNodes(leafs);
     printf("GetVDBPoints: particle leaf nodes: %d\n", leafs.size());
@@ -174,7 +188,7 @@ struct VDBPointsToDropletPrimitive : zeno::INode {
         //retvel.emplace_back(v[0], v[1], v[2]);
         auto p2 = sdf->worldToIndex(p);
         auto val = openvdb::tools::BoxSampler::sample(sdf->tree(), p2);
-        if(val>0)
+        if(val>dx)
           data.emplace_back(std::make_tuple(zeno::vec3f(p[0],p[1],p[2]), zeno::vec3f(v[0],v[1],v[2])));
       }
     });
@@ -189,7 +203,7 @@ struct VDBPointsToDropletPrimitive : zeno::INode {
   }
 };
 
-static int defVDBPointsToDropletPrimitive = zeno::defNodeClass<VDBPointsToDropletPrimitive>("VDBPointsToDropletPrimitive",
+static int defGetVDBPointsDroplets = zeno::defNodeClass<GetVDBPointsDroplets>("GetVDBPointsDroplets",
     { /* inputs: */ {
         "grid","sdf"
     }, /* outputs: */ {

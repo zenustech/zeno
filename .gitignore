@@ -22,8 +22,6 @@ a.out
 # output files
 /zenqt/bin/
 outputs/
-/a.zsl
-/a.zsg
 
 # vim files
 .*.swp
@@ -55,3 +53,6 @@ assets/smoke
 # archibate files
 /a.h
 /a.json
+/a.zsl
+/a.zsg
+/b.zsg

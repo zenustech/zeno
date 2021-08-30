@@ -70,7 +70,7 @@ ZENDEFNODE(PrimitiveReduction,
     "result",
     }, /* params: */ {
     {"string", "attr", "pos"},
-    {"string", "op", "avg"},
+    {"enum avg max min absmax", "op", "avg"},
     }, /* category: */ {
     "primitive",
     }});
