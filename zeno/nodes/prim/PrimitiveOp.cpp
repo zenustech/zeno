@@ -332,6 +332,47 @@ ZENDEFNODE(PrimitiveFillAttr,
     }});
 
 
+void print_cout(float x) {
+    printf("%f\n", x);
+}
+
+void print_cout(zeno::vec3f const &a) {
+    printf("%f %f %f\n", a[0], a[1], a[2]);
+}
+
+
+struct PrimitivePrintAttr : zeno::INode {
+  virtual void apply() override {
+    auto prim = get_input<PrimitiveObject>("prim");
+    auto attrName = std::get<std::string>(get_param("attrName"));
+    std::visit([attrName](auto const &arr) {
+        printf("attribute `%s`, length %zd:\n", attrName.c_str(), arr.size());
+        for (int i = 0; i < arr.size(); i++) {
+            print_cout(arr[i]);
+        }
+        if (arr.size() == 0) {
+            printf("(no data)\n");
+        }
+        printf("\n");
+    }, prim->attr(attrName));
+
+    set_output("prim", get_input("prim"));
+  }
+};
+
+ZENDEFNODE(PrimitivePrintAttr,
+    { /* inputs: */ {
+    "prim",
+    }, /* outputs: */ {
+    "prim",
+    }, /* params: */ {
+    {"string", "attrName", "pos"},
+    }, /* category: */ {
+    "primitive",
+    }});
+
+
+// deprecated: use PrimitiveRandomAttr instead
 struct PrimitiveRandomizeAttr : zeno::INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
@@ -378,41 +419,48 @@ ZENDEFNODE(PrimitiveRandomizeAttr,
     }});
 
 
-void print_cout(float x) {
-    printf("%f\n", x);
-}
-
-void print_cout(zeno::vec3f const &a) {
-    printf("%f %f %f\n", a[0], a[1], a[2]);
-}
-
-
-struct PrimitivePrintAttr : zeno::INode {
+struct PrimitiveRandomAttr : zeno::INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
+    auto min = get_input<zeno::NumericObject>("min");
+    auto max = get_input<zeno::NumericObject>("max");
     auto attrName = std::get<std::string>(get_param("attrName"));
-    std::visit([attrName](auto const &arr) {
-        printf("attribute `%s`, length %zd:\n", attrName.c_str(), arr.size());
+    auto attrType = std::get<std::string>(get_param("attrName"));
+    if (!prim->has_attr(attrName)) {
+        if (attrType == "float3") prim->add_attr<zeno::vec3f>(attrName);
+        else if (attrType == "float") prim->add_attr<float>(attrName);
+    }
+    auto &arr = prim->attr(attrName);
+    std::visit([&](auto &arr) {
         for (int i = 0; i < arr.size(); i++) {
-            print_cout(arr[i]);
+            if constexpr (is_decay_same_v<decltype(arr[i]), zeno::vec3f>) {
+                zeno::vec3f f(drand48(), drand48(), drand48());
+                auto a = min->get<zeno::vec3f>();
+                auto b = min->get<zeno::vec3f>();
+                arr[i] = zeno::mix(a, b, f);
+            } else {
+                float f(drand48());
+                auto a = min->get<float>();
+                auto b = min->get<float>();
+                arr[i] = zeno::mix(a, b, f);
+            }
         }
-        if (arr.size() == 0) {
-            printf("(no data)\n");
-        }
-        printf("\n");
-    }, prim->attr(attrName));
+    }, arr);
 
     set_output("prim", get_input("prim"));
   }
 };
 
-ZENDEFNODE(PrimitivePrintAttr,
+ZENDEFNODE(PrimitiveRandomAttr,
     { /* inputs: */ {
     "prim",
+    {"NumericObject", "min", "-1"},
+    {"NumericObject", "max", "1"},
     }, /* outputs: */ {
     "prim",
     }, /* params: */ {
     {"string", "attrName", "pos"},
+    {"enum float float3", "attrType", ""},
     }, /* category: */ {
     "primitive",
     }});
