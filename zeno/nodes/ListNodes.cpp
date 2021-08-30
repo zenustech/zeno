@@ -150,7 +150,9 @@ ZENO_API void ListObject::dumpfile(std::string const &path) {
         auto const &obj = arr[i];
         std::stringstream ss;
         ss << path << "." << i;
-        obj->dumpfile(ss.str());
+        if (auto o = silent_any_cast<std::shared_ptr<IObject>>(obj); o.has_value()) {
+            o.value()->dumpfile(ss.str());
+        }
     }
 }
 

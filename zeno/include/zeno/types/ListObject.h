@@ -8,7 +8,7 @@
 namespace zeno {
 
 struct ListObject : IObjectClone<ListObject> {
-  std::vector<std::shared_ptr<IObject>> arr;
+  std::vector<zany> arr;
 
 #ifndef ZENO_APIFREE
   ZENO_API virtual void dumpfile(std::string const &path) override;

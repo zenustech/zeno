@@ -1,15 +1,14 @@
-#include <vector>
 #include <voro++/voro++.hh>
+#include <zinc/random.h>
+#include <zinc/vec.h>
+#include <zeno/types/BlenderMesh.h>
+#include <vector>
 #include <tuple>
 
-struct PolyMesh {
-    std::vector<std::tuple<float, float, float>> vert;
-    std::vector<std::tuple<int, int>> poly;
-    std::vector<int> loop;
-};
+namespace {
 
 template <class MeshT>
-void vorosplit(std::vector<MeshT> &outMeshes) {
+void vorosplit(std::vector<MeshT> &meshes) {
 	int nx, ny, nz;
 	double x, y, z;
     voro::voronoicell_neighbor c;
@@ -17,7 +16,12 @@ void vorosplit(std::vector<MeshT> &outMeshes) {
     std::vector<double> v;
 
     voro::pre_container pcon(-3,3,-3,3,0,6,false,false,false);
-	pcon.import("pack_six_cube");
+    for (int i = 0; i < 32; i++) {
+        auto x = zinc::frand<double>(i);
+        auto y = zinc::frand<double>(i);
+        auto z = zinc::frand<double>(i);
+        pcon.put(i + 1, x, y, z);
+    }
 	pcon.guess_optimal(nx,ny,nz);
 
     voro::container con(-3,3,-3,3,0,6,nx,ny,nz,false,false,false,8);
@@ -31,7 +35,7 @@ void vorosplit(std::vector<MeshT> &outMeshes) {
 		c.face_vertices(f_vert);
 		c.vertices(x, y, z, v);
 
-        auto &mesh = outMeshes.emplace_back();
+        auto &mesh = meshes.emplace_back();
 
         for (int i = 0; i < (int)v.size(); i += 3) {
             mesh.vert.emplace_back(v[i], v[i+1], v[i+2]);
@@ -47,4 +51,6 @@ void vorosplit(std::vector<MeshT> &outMeshes) {
         }
 
 	} while (cl.inc());
+}
+
 }
