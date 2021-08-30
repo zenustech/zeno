@@ -96,17 +96,14 @@ struct MergeList : zeno::INode {
     virtual void apply() override {
         auto list1 = get_input<zeno::ListObject>("list1");
         auto list2 = get_input<zeno::ListObject>("list2");
-        auto obj = get_input("object");
-        auto list = std::make_shared<zeno::ListObject>();
-        list->arr.insert(list1->arr.begin(), list1->arr.end());
-        list->arr.insert(list2->arr.begin(), list2->arr.end());
-        set_output("list", std::move(list));
+        list1->arr.insert(list2->arr.begin(), list2->arr.end());
+        set_output("list1", std::move(list1));
     }
 };
 
 ZENDEFNODE(MergeList, {
     {"list1", "list2"},
-    {"list"},
+    {"list1"},
     {},
     {"list"},
 });
