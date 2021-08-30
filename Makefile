@@ -1,6 +1,7 @@
+#O=a.zsg
 O=b.zsg
 #O=arts/flip.zsg
-#O=arts/testsdftopoly.zsg
+#O=arts/visualmarchingtetra.zsg
 #O=arts/testprimdup.zsg
 #O=arts/testnumvecop.zsg
 #O=arts/pa2ls.zsg

@@ -276,8 +276,8 @@ class NodeEditor(QWidget):
                     'nodes': graph,
                     'view_rect': {
                         'scale': 1,
-                        'trans_x': 0,
-                        'trans_y': 0,
+                        'x': 0,
+                        'x': 0,
                     },
                 }
 

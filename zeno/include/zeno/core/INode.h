@@ -47,15 +47,15 @@ protected:
     ZENO_API void set_output2(std::string const &id, zany &&obj);
 
     /* todo: deprecated */
-    bool has_input(std::string const &id) const;
+    ZENO_API bool has_input(std::string const &id) const;
+
+    /* todo: deprecated */
+    ZENO_API std::shared_ptr<IObject> get_input(std::string const &id, std::string const &msg = "IObject") const;
 
     /* todo: deprecated */
     void set_output(std::string const &id, std::shared_ptr<IObject> &&obj) {
         set_output2(id, std::move(obj));
     }
-
-    /* todo: deprecated */
-    std::shared_ptr<IObject> get_input(std::string const &id, std::string const &msg = "IObject") const;
 
     template <class T>
     T get_input2(std::string const &id) const {

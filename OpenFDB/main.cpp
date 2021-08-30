@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cassert>
 #include <fdb/converter.h>
+#include <fdb/levelsetToMesh.h>
 #include <fdb/PPGrid.h>
 #include <set>
 #include <vector>
@@ -37,16 +38,37 @@ int main() {
     auto vdb = readVdbGrid<openvdb::FloatGrid>("/tmp/origin.vdb");
 
     converter::from_vdb_grid(sdf, *vdb);
+
+#if 0
     sdf.foreach(Serial{}, [&] (auto ijk, auto &value) {
         value += 0.1f;
     });
+#endif
 
+#if 1
+    std::vector<vec3f> vertices;
+    std::vector<vec3I> triangles;
+    fdb::levelsetToMesh::marching_tetra(sdf, vertices, triangles,
+            /*isovalue=*/-0.001f);
+
+    FILE *fp = fopen("/tmp/a.obj", "w");
+    for (auto f: triangles) { f += 1;
+        fprintf(fp, "f %d %d %d\n", f[0], f[1], f[2]);
+    }
+    for (auto v: vertices) { v *= vdb->transform().voxelSize()[0];
+        fprintf(fp, "v %f %f %f\n", v[0], v[1], v[2]);
+    }
+    fclose(fp);
+#endif
+
+#if 1
     auto oldtrans = vdb->transform();
     vdb = openvdb::FloatGrid::create();
     vdb->setTransform(std::make_shared<openvdb::math::Transform>(oldtrans));
     converter::to_vdb_grid(sdf, *vdb);
 
     writeVdbGrid<openvdb::FloatGrid>("/tmp/a.vdb", vdb);
+#endif
 
 #if 0
     ppgrid::PPGrid<float> sdf;

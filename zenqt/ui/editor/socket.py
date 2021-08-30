@@ -108,11 +108,16 @@ class QDMGraphicsSocket(QGraphicsItem):
         type = self.type
         if type == 'NumericObject':
             type = 'float'  # for convinent editing for NumericOperator..
-        param_type = 'QDMGraphicsParam_' + type
-        if param_type not in globals():
-            return
+        if type.startswith('enum '):
+            self.paramEdit = QDMGraphicsParamEnum(self)
+            enums = type.split()[1:]
+            self.paramEdit.setEnums(enums)
+        else:
+            param_type = 'QDMGraphicsParam_' + type
+            if param_type not in globals():
+                return
+            self.paramEdit = globals()[param_type](self)
         w = self.node.width / 3
-        self.paramEdit = globals()[param_type](self)
         rect = QRectF(HORI_MARGIN + w, -TEXT_HEIGHT * 0.5,
             self.node.width - HORI_MARGIN * 3 - w, 0)
         self.paramEdit.setGeometry(rect)

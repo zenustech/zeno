@@ -12,8 +12,9 @@ inline T *atomic_allocate_pointer(std::atomic<T *> &ptr) {
     T *old_ptr = ptr;
     if (old_ptr)
         return old_ptr;
-    T *new_ptr = preallocated ? preallocated : new T;
-    while (!ptr.compare_exchange_weak(old_ptr, new_ptr));
+    if (!preallocated) preallocated = new T;
+    T *new_ptr = preallocated;
+    while (ptr.compare_exchange_weak(old_ptr, new_ptr));
     preallocated = new T;
     return new_ptr;
 }
@@ -61,7 +62,7 @@ private:
     RootNode m_root;
 
 protected:
-    LeafNode *peek_leaf(vec3i ijk) const {
+    LeafNode *probe_leaf(vec3i ijk) const {
         auto *node = m_root.m_data.at(ijk >> Log2Dim2).load();
         if (!node) return nullptr;
         auto *leaf = node->m_data.at(ijk).load();
@@ -76,9 +77,9 @@ protected:
 
 public:
     ValueType get(vec3i ijk) const {
-        auto *node = m_root.m_data.at(ijk >> Log2Dim2 + Log2Dim1);
+        auto *node = m_root.m_data.at(ijk >> Log2Dim2 + Log2Dim1).load();
         if (!node) return m_root.m_tiles.get(ijk >> Log2Dim2 + Log2Dim1);
-        auto *leaf = node->m_data.at(ijk);
+        auto *leaf = node->m_data.at(ijk >> Log2Dim1).load();
         if (!leaf) return node->m_tiles.get(ijk >> Log2Dim1);
         return leaf->m_data.get(ijk);
     }
