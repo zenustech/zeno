@@ -2,9 +2,9 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveTools.h>
+#include <zeno/utils/random.h>
+#include <zeno/utils/vec.h>
 #include <voro++/voro++.hh>
-#include <zinc/random.h>
-#include <zinc/vec.h>
 #include <vector>
 #include <tuple>
 

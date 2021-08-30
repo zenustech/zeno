@@ -6,7 +6,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <tuple>
 #include <map>
 
 namespace zeno {
@@ -27,7 +26,7 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
 
   // new topology storage that supports n polygons:
   std::vector<int> loops;
-  std::vector<std::tuple<int, int>> polys;
+  std::vector<std::pair<int, int>> polys;
 
 #ifndef ZENO_APIFREE
   ZENO_API virtual void dumpfile(std::string const &path) override;
