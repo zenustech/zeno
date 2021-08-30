@@ -1,6 +1,7 @@
 #pragma once
 
 #include <zeno/core/IObject.h>
+#include <zeno/types/AttributeArray.h>
 #include <zeno/utils/vec.h>
 #include <variant>
 #include <memory>
@@ -10,18 +11,21 @@
 
 namespace zeno {
 
-using AttributeArray =
-    std::variant<std::vector<zeno::vec3f>, std::vector<float>>;
+struct PrimitiveObject : IObjectClone<PrimitiveObject> {
 
-struct PrimitiveObject : zeno::IObjectClone<PrimitiveObject> {
-
+  // vertex attributes (including "pos"):
   std::map<std::string, AttributeArray> m_attrs;
   size_t m_size{0};
 
+  // todo: legacy topology storage, deprecate:
   std::vector<int> points;
-  std::vector<zeno::vec2i> lines;
-  std::vector<zeno::vec3i> tris;
-  std::vector<zeno::vec4i> quads;
+  std::vector<vec2i> lines;
+  std::vector<vec3i> tris;
+  std::vector<vec4i> quads;
+
+  // new topology storage that supports n polygons:
+  std::vector<int> loops;
+  std::vector<std::pair<int, int>> polys;
 
 #ifndef ZENO_APIFREE
   ZENO_API virtual void dumpfile(std::string const &path) override;
@@ -34,16 +38,18 @@ struct PrimitiveObject : zeno::IObjectClone<PrimitiveObject> {
       m_attrs[name] = std::vector<T>(m_size);
     return attr<T>(name);
   }
+
   template <class T> std::vector<T> &add_attr(std::string const &name, T value) {
     if (!has_attr(name))
       m_attrs[name] = std::vector<T>(m_size, value);
     return attr<T>(name);
   }
+
+  AttributeArray &attr(std::string const &name) { return m_attrs.at(name); }
+
   template <class T> std::vector<T> &attr(std::string const &name) {
     return std::get<std::vector<T>>(m_attrs.at(name));
   }
-
-  AttributeArray &attr(std::string const &name) { return m_attrs.at(name); }
 
   template <class T> std::vector<T> const &attr(std::string const &name) const {
     return std::get<std::vector<T>>(m_attrs.at(name));

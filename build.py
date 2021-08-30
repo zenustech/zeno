@@ -22,6 +22,7 @@ ap.add_argument('--clean', action='store_true')
 ap.add_argument('--with-openvdb', action='store_true')
 ap.add_argument('--with-cuda', action='store_true')
 ap.add_argument('--with-bullet', action='store_true')
+ap.add_argument('--with-cgmesh', action='store_true')
 ap.add_argument('--cmake-args', default='')
 
 ap = ap.parse_args()
@@ -55,6 +56,12 @@ if ap.with_cuda:
     '-DZFX_ENABLE_CUDA:BOOL=ON',
     '-DEXTENSION_gmpm:BOOL=ON',
     '-DEXTENSION_mesher:BOOL=ON',
+    ])
+
+if ap.with_cgmesh:
+    args.extend([
+    '-DEXTENSION_cgmesh:BOOL=ON',
+    '-DEXTENSION_blenderio:BOOL=ON',
     ])
 
 if ap.with_bullet:
