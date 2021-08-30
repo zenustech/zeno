@@ -16,8 +16,6 @@ struct VoronoiFracture : INode {
         auto interiors = std::make_shared<ListObject>();
         auto triangulate = get_param<bool>("triangulate");
 
-        auto mesh = get_input<PrimitiveObject>("meshPrim");
-
         {
             int nx, ny, nz;
             double x, y, z;
@@ -44,6 +42,20 @@ struct VoronoiFracture : INode {
             pcon.guess_optimal(nx,ny,nz);
             voro::container con(-1,1,-1,1,-1,1,nx,ny,nz,false,false,false,8);
             pcon.setup(con);
+
+            if (has_input("meshPrim")) {
+                auto mesh = get_input<PrimitiveObject>("meshPrim");
+                auto meshpos = mesh->attr<zeno::vec3f>("pos");
+                for (int i = 0; i < mesh->tris.size(); i++) {
+                    auto p = mesh->tris[i];
+                    auto n = normalize(cross(
+                                meshpos[p[0]] - meshpos[p[1]],
+                                meshpos[p[0]] - meshpos[p[2]]));
+                    auto c = dot(meshpos[p[0]], n);
+                    voro::wall_plane wal(n[0], n[1], n[2], c);
+                    con.add_wall(wal);
+                }
+            }
 
             voro::c_loop_all cl(con);
             if(cl.start()) do if(con.compute_cell(c, cl)) {
@@ -84,6 +96,9 @@ struct VoronoiFracture : INode {
             } while (cl.inc());
         }
 
+        printf("VoronoiFracture got %zd boundaries, %zd interiors\n",
+                boundaries->arr.size(), interiors->arr.size());
+
         if (triangulate) {
             for (auto const &mesh: boundaries->arr) {
                 auto prim = smart_any_cast<std::shared_ptr<PrimitiveObject>>(mesh).get();
@@ -94,9 +109,6 @@ struct VoronoiFracture : INode {
                 prim_triangulate(prim);
             }
         }
-
-        printf("VoronoiFracture got %zd boundaries, %zd interiors\n",
-                boundaries->arr.size(), interiors->arr.size());
 
         set_output("boundaryPrimList", std::move(boundaries));
         set_output("interiorPrimList", std::move(interiors));
