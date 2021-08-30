@@ -140,10 +140,6 @@ void set_curr_playing(bool playing_) {
   playing = playing_;
 }
 
-void set_render_wireframe(bool render_wireframe_) {
-    render_wireframe = render_wireframe_;
-}
-
 void set_curr_frameid(int frameid) {
   curr_frameid = std::max(frameid, 0);
 }
@@ -250,6 +246,10 @@ std::tuple<float, float, float> get_background_color() {
 
 void set_flat_shading(bool flat) {
     flat_shading = flat;
+}
+
+void set_render_wireframe(bool render_wireframe_) {
+    render_wireframe = render_wireframe_;
 }
 
 }
