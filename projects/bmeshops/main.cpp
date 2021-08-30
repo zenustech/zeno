@@ -1,8 +1,41 @@
 #include <zeno/zeno.h>
 #include <zeno/types/BlenderMesh.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/NumericObject.h>
 
 namespace {
+
+
+struct GetBlenderObjectAxes : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input<zeno::BlenderAxis>("object");
+        auto m = object->matrix;
+
+        auto origin = std::make_shared<zeno::NumericObject>();
+        origin->set(zeno::vec3f(m[0][3], m[1][3], m[2][3]));
+
+        auto axisX = std::make_shared<zeno::NumericObject>();
+        axisX->set(zeno::vec3f(m[0][0], m[1][0], m[2][0]));
+
+        auto axisY = std::make_shared<zeno::NumericObject>();
+        axisY->set(zeno::vec3f(m[0][1], m[1][1], m[2][1]));
+
+        auto axisZ = std::make_shared<zeno::NumericObject>();
+        axisZ->set(zeno::vec3f(m[0][2], m[1][2], m[2][2]));
+
+        set_output("origin", std::move(origin));
+        set_output("axisX", std::move(axisX));
+        set_output("axisY", std::move(axisY));
+        set_output("axisZ", std::move(axisZ));
+    }
+};
+
+ZENDEFNODE(GetBlenderObjectAxes, {
+    {"object"},
+    {"origin", "axisX", "axisY", "axisZ"},
+    {},
+    {"blendermesh"},
+});
 
 
 struct BMeshToPrimitive : zeno::INode {

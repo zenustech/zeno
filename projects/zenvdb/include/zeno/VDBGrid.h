@@ -57,7 +57,8 @@ struct VDBGrid : zeno::IObject {
   virtual openvdb::CoordBBox evalActiveVoxelBoundingBox() = 0;
   virtual openvdb::Vec3d indexToWorld(openvdb::Coord &c) = 0;
   virtual openvdb::Vec3d worldToIndex(openvdb::Vec3d &c) = 0;
-  virtual std::string getType() const { return {}; }
+  virtual std::string getType() const =0;
+  virtual zeno::vec3f getVoxelSize() const=0;
   virtual void dilateTopo(int l) =0;
 };
 
@@ -107,6 +108,11 @@ struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
     openvdb::tools::dilateActiveValues(
       m_grid->tree(), l,
       openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
+  }
+
+  virtual zeno::vec3f getVoxelSize() const override {
+      auto del = m_grid->voxelSize();
+      return zeno::vec3f(del[0], del[1], del[2]);
   }
 
   virtual std::string getType() const override {

@@ -12,6 +12,7 @@ os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 args = [
 	'--clean',
 	'--with-openvdb',
+	'--with-bullet',
 ]
 
 subprocess.check_call(['git', 'pull'])

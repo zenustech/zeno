@@ -105,7 +105,10 @@ class QDMGraphicsSocket(QGraphicsItem):
             return
         if not self.type:
             return
-        param_type = 'QDMGraphicsParam_' + self.type
+        type = self.type
+        if type == 'NumericObject':
+            type = 'float'  # for convinent editing for NumericOperator..
+        param_type = 'QDMGraphicsParam_' + type
         if param_type not in globals():
             return
         w = self.node.width / 3

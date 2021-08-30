@@ -54,12 +54,12 @@ struct MeshToSDF : zeno::INode{
 
 static int defMeshToSDF = zeno::defNodeClass<MeshToSDF>("MeshToSDF",
     { /* inputs: */ {
-        "mesh","Dx",
+        "mesh",{"float","Dx"},
     }, /* outputs: */ {
         "sdf",
     }, /* params: */ {
     {"float", "voxel_size", "0.08 0"},
-    {"string", "type", "vertex"},
+    {"enum vertex cell", "type", "vertex"},
     }, /* category: */ {
     "openvdb",
     }});
@@ -104,12 +104,12 @@ struct PrimitiveToSDF : zeno::INode{
 
 static int defPrimitiveToSDF = zeno::defNodeClass<PrimitiveToSDF>("PrimitiveToSDF",
     { /* inputs: */ {
-        "PrimitiveMesh","Dx",
+        "PrimitiveMesh", {"float","Dx"},
     }, /* outputs: */ {
         "sdf",
     }, /* params: */ {
         {"float", "voxel_size", "0.08 0"},
-        {"string", "type", "vertex"},
+        {"enum vertex cell", "type", "vertex"},
     }, /* category: */ {
     "openvdb",
     }});

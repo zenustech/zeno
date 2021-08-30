@@ -44,7 +44,7 @@ ZENDEFNODE(PrimitiveAddAttr,
     "prim",
     }, /* params: */ {
     {"string", "name", "pos"},
-    {"string", "type", "float3"},
+    {"enum float float3", "type", "float3"},
     }, /* category: */ {
     "primitive",
     } });
@@ -87,12 +87,12 @@ struct PrimitiveGetAttrValue : zeno::INode {
 
 ZENDEFNODE(PrimitiveGetAttrValue,
     { /* inputs: */ {
-    "prim","index",
+    "prim",{"int","index","0"},
     }, /* outputs: */ {
     "value",
     }, /* params: */ {
     {"string", "name", "pos"},
-    {"string", "type", "float3"},
+    {"enum float float3", "type", "float3"},
     }, /* category: */ {
     "primitive",
     } });
@@ -132,11 +132,11 @@ struct PrimitiveSetAttrValue : zeno::INode {
 
 ZENDEFNODE(PrimitiveSetAttrValue,
     { /* inputs: */ {
-    "prim","index","value",
+    "prim",{"int","index","0"},"value",
     }, /* outputs: */ {
     }, /* params: */ {
     {"string", "name", "pos"},
-    {"string", "type", "float3"},
+    {"enum float float3", "type", "float3"},
     }, /* category: */ {
     "primitive",
     } });

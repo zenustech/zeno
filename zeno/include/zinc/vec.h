@@ -388,7 +388,12 @@ inline auto length(vec<N, T> const &a) {
   for (size_t i = 0; i < N; i++) {
     res += a[i] * a[i];
   }
-  return std::sqrt(res);
+  return sqrt(res);
+}
+
+template <size_t N, class T>
+inline auto distance(vec<N, T> const &a, vec<N, T> const &b) {
+  return length(b - a);
 }
 
 template <size_t N, class T>
