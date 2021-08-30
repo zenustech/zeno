@@ -14,6 +14,7 @@ int curr_frameid = -1;
 static bool playing = true;
 static bool show_grid = true;
 static bool flat_shading = false;
+bool render_wireframe = false;
 
 static int nx = 960, ny = 800;
 
@@ -137,6 +138,10 @@ void set_window_size(int nx_, int ny_) {
 
 void set_curr_playing(bool playing_) {
   playing = playing_;
+}
+
+void set_render_wireframe(bool render_wireframe_) {
+    render_wireframe = render_wireframe_;
 }
 
 void set_curr_frameid(int frameid) {

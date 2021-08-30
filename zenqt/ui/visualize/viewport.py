@@ -167,6 +167,11 @@ class QDMDisplayMenu(QMenu):
         action.setChecked(False)
         self.addAction(action)
 
+        action = QAction('Wireframe', self)
+        action.setCheckable(True)
+        action.setChecked(False)
+        self.addAction(action)
+
 class QDMRecordMenu(QMenu):
     def __init__(self):
         super().__init__()
@@ -219,6 +224,10 @@ class DisplayWidget(QWidget):
         elif name == 'Flat Shading':
             checked = act.isChecked()
             zenvis.core.set_flat_shading(checked)
+
+        elif name == 'Wireframe':
+            checked = act.isChecked()
+            zenvis.core.set_render_wireframe(checked)
 
         elif name == 'Background Color':
             c = QColor.fromRgbF(*zenvis.core.get_background_color())
