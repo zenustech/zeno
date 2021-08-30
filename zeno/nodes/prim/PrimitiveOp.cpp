@@ -5,12 +5,6 @@
 #include <cstring>
 #include <cstdlib>
 
-#ifdef _MSC_VER
-static inline double drand48() {
-	return rand() / (double)RAND_MAX;
-}
-#endif
-
 namespace zeno {
 
 template <class T, class S>

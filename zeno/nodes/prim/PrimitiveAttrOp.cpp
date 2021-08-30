@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/utils/random.h>
 #include <zeno/utils/vec.h>
 #include <cstring>
 #include <cstdlib>
@@ -108,12 +109,12 @@ struct PrimitiveRandomizeAttr : INode {
     std::visit([min, minY, minZ, max, maxY, maxZ](auto &arr) {
         for (int i = 0; i < arr.size(); i++) {
             if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
-                vec3f f(drand48(), drand48(), drand48());
+                vec3f f(frand(), frand(), frand());
                 vec3f a(min, minY, minZ);
                 vec3f b(max, maxY, maxZ);
                 arr[i] = mix(a, b, f);
             } else {
-                arr[i] = mix(min, max, (float)drand48());
+                arr[i] = mix(min, max, (float)frand());
             }
         }
     }, arr);
@@ -157,12 +158,12 @@ struct PrimitiveRandomAttr : INode {
     std::visit([&](auto &arr) {
         for (int i = 0; i < arr.size(); i++) {
             if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
-                vec3f f(drand48(), drand48(), drand48());
+                vec3f f(frand(), frand(), frand());
                 auto a = min->is<float>() ? (vec3f)min->get<float>() : min->get<vec3f>();
                 auto b = min->is<float>() ? (vec3f)min->get<float>() : min->get<vec3f>();
                 arr[i] = mix(a, b, f);
             } else {
-                float f(drand48());
+                float f(frand());
                 auto a = min->get<float>();
                 auto b = min->get<float>();
                 arr[i] = mix(a, b, f);

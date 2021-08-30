@@ -1,13 +1,8 @@
 #include <zeno/zeno.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/utils/random.h>
 
 namespace {
-
-#ifdef _MSC_VER
-static inline double drand48() {
-	return rand() / (double)RAND_MAX;
-}
-#endif
 
 using namespace zeno;
 
@@ -80,13 +75,13 @@ struct NumericRandom : INode {
         auto value = std::make_shared<NumericObject>();
         auto dim = get_param<int>("dim");
         if (dim == 1) {
-            value->set(float(drand48()));
+            value->set(float(frand()));
         } else if (dim == 2) {
-            value->set(zeno::vec2f(drand48(), drand48()));
+            value->set(zeno::vec2f(frand(), frand()));
         } else if (dim == 3) {
-            value->set(zeno::vec3f(drand48(), drand48(), drand48()));
+            value->set(zeno::vec3f(frand(), frand(), frand()));
         } else if (dim == 4) {
-            value->set(zeno::vec4f(drand48(), drand48(), drand48(), drand48()));
+            value->set(zeno::vec4f(frand(), frand(), frand(), frand()));
         } else {
             printf("invalid dim for NumericRandom: %d\n", dim);
         }
