@@ -1,6 +1,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <spdlog/spdlog.h>
+#include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
 
 namespace zeno {
@@ -23,21 +24,21 @@ static T generic_get(Value const &x) {
                 auto a = x.GetArray();
                 if (a.Size() == 2) {
                     if (a[0].IsInt()) {
-                        return zeno::vec2i(a[0].GetInt(), a[1].GetInt());
+                        return vec2i(a[0].GetInt(), a[1].GetInt());
                     } else if (a[0].IsFloat()) {
-                        return zeno::vec2f(a[0].GetFloat(), a[1].GetFloat());
+                        return vec2f(a[0].GetFloat(), a[1].GetFloat());
                     }
                 } else if (a.Size() == 3) {
                     if (a[0].IsInt()) {
-                        return zeno::vec3i(a[0].GetInt(), a[1].GetInt(), a[2].GetInt());
+                        return vec3i(a[0].GetInt(), a[1].GetInt(), a[2].GetInt());
                     } else if (a[0].IsFloat()) {
-                        return zeno::vec3f(a[0].GetFloat(), a[1].GetFloat(), a[2].GetFloat());
+                        return vec3f(a[0].GetFloat(), a[1].GetFloat(), a[2].GetFloat());
                     }
                 } else if (a.Size() == 4) {
                     if (a[0].IsInt()) {
-                        return zeno::vec4i(a[0].GetInt(), a[1].GetInt(), a[2].GetInt(), a[4].GetInt());
+                        return vec4i(a[0].GetInt(), a[1].GetInt(), a[2].GetInt(), a[4].GetInt());
                     } else if (a[0].IsFloat()) {
-                        return zeno::vec4f(a[0].GetFloat(), a[1].GetFloat(), a[2].GetFloat(), a[4].GetFloat());
+                        return vec4f(a[0].GetFloat(), a[1].GetFloat(), a[2].GetFloat(), a[4].GetFloat());
                     }
                 }
             }
@@ -63,7 +64,7 @@ ZENO_API void Scene::loadScene(const char *json) {
             } else if (cmd == "completeNode") {
                 getGraph().completeNode(di[1].GetString());
             } else if (cmd == "setNodeInput") {
-                getGraph().setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zeno::zany>(di[3]));
+                getGraph().setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));
             } else if (cmd == "setNodeParam") {
                 getGraph().setNodeParam(di[1].GetString(), di[2].GetString(), generic_get<std::variant<int, float, std::string>, false>(di[3]));
             } else if (cmd == "setNodeOption") {
@@ -76,7 +77,7 @@ ZENO_API void Scene::loadScene(const char *json) {
                 this->clearAllState();
             }
 #ifdef ZENO_FAIL_SILENTLY
-        } catch (zeno::BaseException const &e) {
+        } catch (BaseException const &e) {
             spdlog::warn("exception executing command {} ({}): {}",
                     i, cmd.c_str(), e.what());
         }
@@ -100,16 +101,16 @@ ZENO_API void Graph::loadGraph(const char *json) {
             } else if (cmd == "completeNode") {
                 completeNode(di[1].GetString());
             } else if (cmd == "setNodeInput") {
-                setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zeno::zany>(di[3]));
+                setNodeInput(di[1].GetString(), di[2].GetString(), generic_get<zany>(di[3]));
             } else if (cmd == "setNodeParam") {
-                setNodeParam(di[1].GetString(), di[2].GetString(), generic_get<std::variant<int, float, std::string>>(di[3]));
+                setNodeParam(di[1].GetString(), di[2].GetString(), generic_get<std::variant<int, float, std::string>, false>(di[3]));
             } else if (cmd == "setNodeOption") {
                 setNodeOption(di[1].GetString(), di[2].GetString());
             } else if (cmd == "bindNodeInput") {
                 bindNodeInput(di[1].GetString(), di[2].GetString(), di[3].GetString(), di[4].GetString());
             }
 #ifdef ZENO_FAIL_SILENTLY
-        } catch (zeno::BaseException const &e) {
+        } catch (BaseException const &e) {
             spdlog::warn("exception executing command {} ({}): {}",
                     i, cmd.c_str(), e.what());
         }
