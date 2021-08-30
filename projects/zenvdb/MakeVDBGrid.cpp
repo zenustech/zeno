@@ -65,7 +65,7 @@ static int defMakeVDBGrid = zeno::defNodeClass<MakeVDBGrid>(
                     /* params: */
                     {
                         //{"float", "dx", "0.08"},
-                        {"string", "type", "float"},
+                        {"enum float float3 int int3 points", "type", "float"},
                         {"enum vertex Centered Staggered", "structure", "Centered"},
                         {"string", "name", ""},
                     },
