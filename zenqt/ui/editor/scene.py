@@ -362,9 +362,8 @@ class QDMGraphicsView(QGraphicsView):
 
     def setScene(self, scene):
         super().setScene(scene)
-        if scene._scene_rect is None:
-            scene._scene_rect = QRectF(0, 0, self.size().width(), self.size().height())
-        self._update_scene_rect()
+        if scene._scene_rect:
+            self._update_scene_rect()
 
     def updateSearch(self, edit):
         for act in edit.menu.actions():
