@@ -68,11 +68,12 @@ static int defMeshToSDF = zeno::defNodeClass<MeshToSDF>("MeshToSDF",
 
 struct PrimitiveToSDF : zeno::INode{
     virtual void apply() override {
-    auto h = std::get<float>(get_param("voxel_size"));
-    if(has_input("Dx"))
-    {
-      h = get_input("Dx")->as<NumericObject>()->get<float>();
-    }
+    //auto h = std::get<float>(get_param("voxel_size"));
+    //if(has_input("Dx"))
+    //{
+      //h = get_input("Dx")->as<NumericObject>()->get<float>();
+    //}
+    auto h = get_input2<float>("Dx");
     auto mesh = get_input("PrimitiveMesh")->as<PrimitiveObject>();
     auto result = zeno::IObject::make<VDBFloatGrid>();
     std::vector<openvdb::Vec3s> points;
@@ -104,11 +105,11 @@ struct PrimitiveToSDF : zeno::INode{
 
 static int defPrimitiveToSDF = zeno::defNodeClass<PrimitiveToSDF>("PrimitiveToSDF",
     { /* inputs: */ {
-        "PrimitiveMesh", {"float","Dx"},
+        "PrimitiveMesh", {"float","Dx","0.08"},
     }, /* outputs: */ {
         "sdf",
     }, /* params: */ {
-        {"float", "voxel_size", "0.08 0"},
+        //{"float", "voxel_size", "0.08 0"},
         {"enum vertex cell", "type", "vertex"},
     }, /* category: */ {
     "openvdb",
