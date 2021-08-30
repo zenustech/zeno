@@ -29,9 +29,6 @@ struct VoronoiFracture : zeno::INode {
             return *raw_ptr;
         };
 
-        auto particles = get_input<zeno::PrimitiveObject>("particlesPrim");
-        auto &parspos = particles->attr<zeno::vec3f>("pos");
-
         {
             int nx, ny, nz;
             double x, y, z;
@@ -39,16 +36,33 @@ struct VoronoiFracture : zeno::INode {
             std::vector<int> neigh, f_vert;
             std::vector<double> v;
 
-            voro::pre_container pcon(-3,3,-3,3,0,6,false,false,false);
-            /*for (int i = 0; i < parspos.size(); i++) {
-                auto p = parspos[i];
-                pcon.put(i + 1, p[0], p[1], p[2]);
-            }*/
-            pcon.import("/home/bate/Codes/zeno-blender/external/zeno/projects/cgmesh/pack_six_cube");
-            pcon.guess_optimal(nx,ny,nz);
+            voro::container con(-1,1,-1,1,-1,1,nx,ny,nz,false,false,false,8);
 
-            voro::container con(-3,3,-3,3,0,6,nx,ny,nz,false,false,false,8);
-            pcon.setup(con);
+            if (has_input("particlesPrim")) {
+                voro::pre_container pcon(-1,1,-1,1,-1,1,false,false,false);
+
+                auto particlesPrim = get_input<zeno::PrimitiveObject>("particlesPrim");
+                auto &parspos = particlesPrim->attr<zeno::vec3f>("pos");
+                for (int i = 0; i < parspos.size(); i++) {
+                    auto p = parspos[i];
+                    pcon.put(i + 1, p[0], p[1], p[2]);
+                }
+
+                //pcon.import("/home/bate/Codes/zeno-blender/external/zeno/projects/cgmesh/pack_six_cube");
+                pcon.guess_optimal(nx,ny,nz);
+                pcon.setup(con);
+
+            } else {
+                auto numParticles = get_param<int>("numParticles");
+                for (int i = 0; i < numParticles;) {
+                    auto x = drand48();
+                    auto y = drand48();
+                    auto z = drand48();
+                    if (con.point_inside(x, y, z))
+                        con.put(i++, x, y, z);
+                }
+            }
+
 
             voro::c_loop_all cl(con);
             if(cl.start()) do if(con.compute_cell(c, cl)) {
@@ -117,7 +131,10 @@ ZENO_DEFNODE(VoronoiFracture)({
         {"ListObject", "interiorPrimList"},
         {"ListObject", "boundaryPrimList"},
         },
-        {{"bool", "triangulate", "1"}},
+        { // params:
+        {"bool", "triangulate", "1"},
+        {"int", "numparticles", "64"},
+        },
         {"cgmesh"},
 });
 
