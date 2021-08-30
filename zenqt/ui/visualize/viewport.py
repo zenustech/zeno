@@ -160,6 +160,18 @@ class QDMDisplayMenu(QMenu):
         action = QAction('Background Color', self)
         self.addAction(action)
 
+        self.addSeparator()
+
+        action = QAction('Smooth Shading', self)
+        action.setCheckable(True)
+        action.setChecked(False)
+        self.addAction(action)
+
+        action = QAction('Wireframe', self)
+        action.setCheckable(True)
+        action.setChecked(False)
+        self.addAction(action)
+
 class QDMRecordMenu(QMenu):
     def __init__(self):
         super().__init__()
@@ -208,6 +220,14 @@ class DisplayWidget(QWidget):
         if name == 'Show Grid':
             checked = act.isChecked()
             zenvis.status['show_grid'] = checked
+
+        elif name == 'Smooth Shading':
+            checked = act.isChecked()
+            zenvis.core.set_smooth_shading(checked)
+
+        elif name == 'Wireframe':
+            checked = act.isChecked()
+            zenvis.core.set_render_wireframe(checked)
 
         elif name == 'Background Color':
             c = QColor.fromRgbF(*zenvis.core.get_background_color())

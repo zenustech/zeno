@@ -31,6 +31,8 @@ void do_screenshot(std::string path);
 void new_frame_offline(std::string path);
 void set_background_color(float r, float g, float b);
 std::tuple<float, float, float> get_background_color();
+void set_smooth_shading(bool smooth);
+void set_render_wireframe(bool render_wireframe);
 
 };
 
@@ -54,6 +56,8 @@ PYBIND11_MODULE(pylib_zenvis, m) {
     m.def("new_frame_offline", zenvis::new_frame_offline);
     m.def("set_background_color", zenvis::set_background_color);
     m.def("get_background_color", zenvis::get_background_color);
+    m.def("set_smooth_shading", zenvis::set_smooth_shading);
+    m.def("set_render_wireframe", zenvis::set_render_wireframe);
 }
 
 
