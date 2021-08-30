@@ -1,23 +1,14 @@
 #pragma once
 
-#include <zeno/core/IObject.h>
-#include <zeno/utils/vec.h>
-#include <array>
+#ifndef _MSC_VER
+#warning "<zeno/types/BlenderMesh.h> is deprecated, use <zeno/types/PolyMeshObject.h> instead"
+#endif
+
+#include <zeno/types/PolymeshObject.h>
 
 namespace zeno {
 
-struct PolygonalMesh {
-    std::vector<zeno::vec3f> vert;
-    std::vector<std::tuple<int, int>> poly;
-    std::vector<int> loop;
-};
+using BlenderMesh = PolyMeshObject;
+using BlenderAxis = TransformObject;
 
-struct BlenderAxis : IObjectClone<BlenderAxis> {
-    std::array<std::array<float, 4>, 4> matrix;
 };
-
-struct BlenderMesh : IObjectClone<BlenderMesh, BlenderAxis>, PolygonalMesh {
-    bool is_smooth = false;
-};
-
-}

@@ -28,7 +28,7 @@ struct ListGetItem : zeno::INode {
         auto list = get_input<zeno::ListObject>("list");
         auto index = get_input<zeno::NumericObject>("index")->get<int>();
         auto obj = list->arr[index];
-        set_output("object", std::move(obj));
+        set_output2("object", std::move(obj));
     }
 };
 
@@ -48,7 +48,7 @@ struct ExtractList : zeno::INode {
             int index = std::stoi(key);
             if (list->arr.size() > index) {
                 auto obj = list->arr[index];
-                set_output(key, std::move(obj));
+                set_output2(key, std::move(obj));
             }
         }
     }

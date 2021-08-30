@@ -117,7 +117,7 @@ struct BeginForEach : IBeginFor {
         ret->set(m_index);
         set_output("index", std::move(ret));
         auto obj = m_list->arr[m_index];
-        set_output("object", std::move(obj));
+        set_output2("object", std::move(obj));
         m_index++;
     }
 };

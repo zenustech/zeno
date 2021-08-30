@@ -16,7 +16,7 @@ struct PrimitiveMerge : zeno::INode {
 
     size_t len = 0;
     for (auto const &obj: list->arr) {
-        auto prim = dynamic_cast<PrimitiveObject *>(obj.get());
+        auto prim = smart_any_cast<std::shared_ptr<PrimitiveObject>>(obj).get();
         assert(prim);
         for (auto const &[key, varr]: prim->m_attrs) {
             std::visit([&, key_ = key](auto const &arr) {
