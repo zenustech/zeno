@@ -95,7 +95,7 @@ struct PrimToVDBPointDataGrid : zeno::INode {
             velocitys[i] = {0,0,0};
     }
     auto data = zeno::IObject::make<VDBPointsGrid>();
-    data->m_grid = particleArrayToGrid(particles.get(), dx);
+    data->m_grid = particleArrayToGrid(positions, velocitys, dx);
     set_output("Particles", data);
   }
 };
