@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdlib>
+
 namespace zinc {
 
 template <class T = unsigned int>
@@ -15,6 +17,15 @@ static inline T irand(unsigned int i) {
 template <class T = float>
 static inline T frand(unsigned int i) {
     return (T)irand(i) / (T)4294967296;
+}
+
+template <class T = float>
+static inline T frand() {
+#ifdef _WIN32
+    return (T)rand() / T()RAND_MAX;
+#else
+    return (T)drand48();
+#endif
 }
 
 }

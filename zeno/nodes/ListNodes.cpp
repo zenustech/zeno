@@ -92,16 +92,18 @@ ZENDEFNODE(AppendList, {
     {"list"},
 });
 
-struct MergeList : zeno::INode {
+struct ExtendList : zeno::INode {
     virtual void apply() override {
         auto list1 = get_input<zeno::ListObject>("list1");
         auto list2 = get_input<zeno::ListObject>("list2");
-        list1->arr.insert(list2->arr.begin(), list2->arr.end());
+        for (auto const &ptr: list2->arr) {
+            list1->arr.push_back(ptr);
+        }
         set_output("list1", std::move(list1));
     }
 };
 
-ZENDEFNODE(MergeList, {
+ZENDEFNODE(ExtendList, {
     {"list1", "list2"},
     {"list1"},
     {},

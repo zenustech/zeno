@@ -8,15 +8,15 @@
 #include <vector>
 #include <tuple>
 
-namespace {
+namespace zeno {
 
-struct VoronoiFracture : zeno::INode {
+struct VoronoiFracture : INode {
     virtual void apply() override {
-        auto boundaries = std::make_shared<zeno::ListObject>();
-        auto interiors = std::make_shared<zeno::ListObject>();
+        auto boundaries = std::make_shared<ListObject>();
+        auto interiors = std::make_shared<ListObject>();
         auto triangulate = get_param<bool>("triangulate");
 
-        auto mesh = get_input<zeno::PrimitiveObject>("meshPrim");
+        auto mesh = get_input<PrimitiveObject>("meshPrim");
 
         {
             int nx, ny, nz;
@@ -28,8 +28,8 @@ struct VoronoiFracture : zeno::INode {
             voro::pre_container pcon(-1,1,-1,1,-1,1,false,false,false);
 
             if (has_input("particlesPrim")) {
-                auto particlesPrim = get_input<zeno::PrimitiveObject>("particlesPrim");
-                auto &parspos = particlesPrim->attr<zeno::vec3f>("pos");
+                auto particlesPrim = get_input<PrimitiveObject>("particlesPrim");
+                auto &parspos = particlesPrim->attr<vec3f>("pos");
                 for (int i = 0; i < parspos.size(); i++) {
                     auto p = parspos[i];
                     pcon.put(i + 1, p[0], p[1], p[2]);
@@ -37,7 +37,7 @@ struct VoronoiFracture : zeno::INode {
             } else {
                 auto numParticles = get_param<int>("numRandPoints");
                 for (int i = 0; i < numParticles; i++) {
-                    pcon.put(i + 1, drand48()*2-1, drand48()*2-1, drand48()*2-1);
+                    pcon.put(i + 1, frand()*2-1, frand()*2-1, frand()*2-1);
                 }
             }
 
@@ -53,9 +53,9 @@ struct VoronoiFracture : zeno::INode {
                 c.face_vertices(f_vert);
                 c.vertices(x, y, z, v);
 
-                auto prim = std::make_shared<zeno::PrimitiveObject>();
+                auto prim = std::make_shared<PrimitiveObject>();
 
-                auto &pos = prim->add_attr<zeno::vec3f>("pos");
+                auto &pos = prim->add_attr<vec3f>("pos");
                 for (int i = 0; i < (int)v.size(); i += 3) {
                     pos.emplace_back(v[i], v[i+1], v[i+2]);
                 }
@@ -86,11 +86,11 @@ struct VoronoiFracture : zeno::INode {
 
         if (triangulate) {
             for (auto const &mesh: boundaries->arr) {
-                auto prim = zeno::smart_any_cast<std::shared_ptr<zeno::PrimitiveObject>>(mesh).get();
+                auto prim = smart_any_cast<std::shared_ptr<PrimitiveObject>>(mesh).get();
                 prim_triangulate(prim);
             }
             for (auto const &mesh: interiors->arr) {
-                auto prim = zeno::smart_any_cast<std::shared_ptr<zeno::PrimitiveObject>>(mesh).get();
+                auto prim = smart_any_cast<std::shared_ptr<PrimitiveObject>>(mesh).get();
                 prim_triangulate(prim);
             }
         }
