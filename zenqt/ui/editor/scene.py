@@ -183,7 +183,7 @@ class QDMGraphicsScene(QGraphicsScene):
         self.mmb_press = False
         self.contentChanged = False
 
-        self._scene_rect = None
+        self._scene_rect = QRectF(0, 0, 500, 500)
 
     @property
     def descs(self):
@@ -551,11 +551,13 @@ class QDMGraphicsView(QGraphicsView):
         self.scale(zoomFactor, zoomFactor, event.pos())
         self._update_scene_rect()
 
+    '''
     def resizeEvent(self, event):
         if self.scene()._scene_rect is None:
             self.scene()._scene_rect = QRectF(0, 0, self.size().width(), self.size().height())
             self._update_scene_rect()
         super().resizeEvent(event)
+    '''
 
     def scale(self, sx, sy, pos=None):
         rect = self.scene()._scene_rect
