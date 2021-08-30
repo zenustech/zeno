@@ -73,4 +73,15 @@ struct VoronoiFracture : zeno::INode {
     }
 };
 
+ZENO_DEFNODE(VoronoiFracture)({
+        { // inputs:
+        {"BlenderMesh", "inMesh"},
+        },
+        { // outputs:
+        {"ListObject", "meshList"},
+        },
+        {},
+        {"cgmesh"},
+});
+
 }
