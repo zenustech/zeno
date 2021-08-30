@@ -36,22 +36,23 @@ struct VoronoiFracture : INode {
             int nx, ny, nz;
             pcon.guess_optimal(nx,ny,nz);
             voro::container con(-1,1,-1,1,-1,1,nx,ny,nz,false,false,false,8);
-            pcon.setup(con);
 
             if (has_input("meshPrim")) {
                 auto mesh = get_input<PrimitiveObject>("meshPrim");
                 auto meshpos = mesh->attr<zeno::vec3f>("pos");
                 for (int i = 0; i < mesh->tris.size(); i++) {
                     auto p = mesh->tris[i];
-                    auto n = normalize(cross(
+                    auto n = cross(
                                 meshpos[p[0]] - meshpos[p[1]],
-                                meshpos[p[0]] - meshpos[p[2]]));
+                                meshpos[p[0]] - meshpos[p[2]]);
+                    n *= 1 / (length(n) + 1e-6);
                     auto c = dot(meshpos[p[0]], n);
                     printf("%f %f %f %f\n", n[0], n[1], n[2], c);
                     voro::wall_plane wal(n[0], n[1], n[2], c);
                     con.add_wall(wal);
                 }
             }
+            pcon.setup(con);
 
             voro::c_loop_all cl(con);
             voro::voronoicell_neighbor c;
