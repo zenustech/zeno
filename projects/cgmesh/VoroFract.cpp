@@ -10,52 +10,6 @@
 
 namespace {
 
-template <class T, class F>
-void vorosplit(T const &particles, F const &factory) {
-	int nx, ny, nz;
-	double x, y, z;
-    voro::voronoicell_neighbor c;
-    std::vector<int> neigh, f_vert;
-    std::vector<double> v;
-
-    voro::pre_container pcon(-3,3,-3,3,0,6,false,false,false);
-    /*for (int i = 0; i < particles.size(); i++) {
-        auto p = particles[i];
-        pcon.put(i + 1, p[0], p[1], p[2]);
-    }*/
-    pcon.import("/home/bate/Codes/zeno-blender/external/zeno/projects/cgmesh/pack_six_cube");
-	pcon.guess_optimal(nx,ny,nz);
-
-    voro::container con(-3,3,-3,3,0,6,nx,ny,nz,false,false,false,8);
-	pcon.setup(con);
-
-    voro::c_loop_all cl(con);
-	if(cl.start()) do if(con.compute_cell(c,cl)) {
-		cl.pos(x, y, z);
-
-		c.neighbors(neigh);
-		c.face_vertices(f_vert);
-		c.vertices(x, y, z, v);
-
-        auto &mesh = factory(false);
-
-        for (int i = 0; i < (int)v.size(); i += 3) {
-            mesh.verts().emplace_back(v[i], v[i+1], v[i+2]);
-        }
-
-		for(int i = 0, j = 0; i < (int)neigh.size(); i++) {
-            int len = f_vert[j];
-            int start = (int)mesh.loops().size();
-            for (int k = j + 1; k < j + 1 + len; k++) {
-                mesh.loops().push_back(f_vert[k]);
-            }
-            mesh.polys().emplace_back(start, len);
-            j = j + 1 + len;
-        }
-
-	} while (cl.inc());
-}
-
 struct VoronoiFracture : zeno::INode {
     virtual void apply() override {
         auto boundaries = std::make_shared<zeno::ListObject>();
@@ -63,7 +17,6 @@ struct VoronoiFracture : zeno::INode {
         auto triangulate = get_param<bool>("triangulate");
 
         auto mesh = get_input<zeno::PrimitiveObject>("meshPrim");
-        auto particles = get_input<zeno::PrimitiveObject>("particlesPrim");
 
         auto factory = [&] (auto isBoundary) -> decltype(auto) {
             auto ptr = std::make_shared<zeno::PrimitiveObject>();
@@ -76,59 +29,65 @@ struct VoronoiFracture : zeno::INode {
             return *raw_ptr;
         };
 
-        int nx, ny, nz;
-        double x, y, z;
-        voro::voronoicell_neighbor c;
-        std::vector<int> neigh, f_vert;
-        std::vector<double> v;
+        auto particles = get_input<zeno::PrimitiveObject>("particlesPrim");
+        auto &parspos = particles->attr<zeno::vec3f>("pos");
 
-        voro::pre_container pcon(-3,3,-3,3,0,6,false,false,false);
-        /*for (int i = 0; i < particles.size(); i++) {
-            auto p = particles[i];
-            pcon.put(i + 1, p[0], p[1], p[2]);
-        }*/
-        pcon.import("/home/bate/Codes/zeno-blender/external/zeno/projects/cgmesh/pack_six_cube");
-        pcon.guess_optimal(nx,ny,nz);
+        {
+            int nx, ny, nz;
+            double x, y, z;
+            voro::voronoicell_neighbor c;
+            std::vector<int> neigh, f_vert;
+            std::vector<double> v;
 
-        voro::container con(-3,3,-3,3,0,6,nx,ny,nz,false,false,false,8);
-        pcon.setup(con);
+            voro::pre_container pcon(-3,3,-3,3,0,6,false,false,false);
+            /*for (int i = 0; i < parspos.size(); i++) {
+                auto p = parspos[i];
+                pcon.put(i + 1, p[0], p[1], p[2]);
+            }*/
+            pcon.import("/home/bate/Codes/zeno-blender/external/zeno/projects/cgmesh/pack_six_cube");
+            pcon.guess_optimal(nx,ny,nz);
 
-        voro::c_loop_all cl(con);
-        if(cl.start()) do if(con.compute_cell(c,cl)) {
-            cl.pos(x, y, z);
+            voro::container con(-3,3,-3,3,0,6,nx,ny,nz,false,false,false,8);
+            pcon.setup(con);
 
-            c.neighbors(neigh);
-            c.face_vertices(f_vert);
-            c.vertices(x, y, z, v);
+            voro::c_loop_all cl(con);
+            if(cl.start()) do if(con.compute_cell(c, cl)) {
+                cl.pos(x, y, z);
 
-            auto prim = std::make_shared<zeno::PrimitiveObject>();
+                c.neighbors(neigh);
+                c.face_vertices(f_vert);
+                c.vertices(x, y, z, v);
 
-            auto &pos = prim->add_attr<zeno::vec3f>("pos");
-            for (int i = 0; i < (int)v.size(); i += 3) {
-                pos.emplace_back(v[i], v[i+1], v[i+2]);
-            }
-            prim->resize(pos.size());
+                auto prim = std::make_shared<zeno::PrimitiveObject>();
 
-            bool isBoundary = false;
-            for (int i = 0, j = 0; i < (int)neigh.size(); i++) {
-                if (neigh[i] < 0)
-                    isBoundary = true;
-                int len = f_vert[j];
-                int start = (int)prim->loops.size();
-                for (int k = j + 1; k < j + 1 + len; k++) {
-                    prim->loops.push_back(f_vert[k]);
+                auto &pos = prim->add_attr<zeno::vec3f>("pos");
+                for (int i = 0; i < (int)v.size(); i += 3) {
+                    pos.emplace_back(v[i], v[i+1], v[i+2]);
                 }
-                prim->polys.emplace_back(start, len);
-                j = j + 1 + len;
-            }
+                prim->resize(pos.size());
 
-            if (isBoundary) {
-                boundaries->arr.push_back(std::move(prim));
-            } else {
-                interiors->arr.push_back(std::move(prim));
-            }
+                bool isBoundary = false;
+                for (int i = 0, j = 0; i < (int)neigh.size(); i++) {
+                    if (neigh[i] <= 0)
+                        isBoundary = true;
+                    if (neigh[i] == 0) printf("%d!!!\n", neigh[i]);
+                    int len = f_vert[j];
+                    int start = (int)prim->loops.size();
+                    for (int k = j + 1; k < j + 1 + len; k++) {
+                        prim->loops.push_back(f_vert[k]);
+                    }
+                    prim->polys.emplace_back(start, len);
+                    j = j + 1 + len;
+                }
 
-        } while (cl.inc());
+                if (isBoundary) {
+                    boundaries->arr.push_back(std::move(prim));
+                } else {
+                    interiors->arr.push_back(std::move(prim));
+                }
+
+            } while (cl.inc());
+        }
 
         if (triangulate) {
             for (auto const &mesh: boundaries->arr) {
@@ -140,6 +99,9 @@ struct VoronoiFracture : zeno::INode {
                 prim_triangulate(prim);
             }
         }
+
+        printf("VoronoiFracture got %zd boundaries, %zd interiors\n",
+                boundaries->arr.size(), interiors->arr.size());
 
         set_output("boundaryPrimList", std::move(boundaries));
         set_output("interiorPrimList", std::move(interiors));
