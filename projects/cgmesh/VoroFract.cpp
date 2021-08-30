@@ -17,12 +17,6 @@ struct VoronoiFracture : INode {
         auto triangulate = get_param<bool>("triangulate");
 
         {
-            int nx, ny, nz;
-            double x, y, z;
-            voro::voronoicell_neighbor c;
-            std::vector<int> neigh, f_vert;
-            std::vector<double> v;
-
             voro::pre_container pcon(-1,1,-1,1,-1,1,false,false,false);
 
             if (has_input("particlesPrim")) {
@@ -39,6 +33,7 @@ struct VoronoiFracture : INode {
                 }
             }
 
+            int nx, ny, nz;
             pcon.guess_optimal(nx,ny,nz);
             voro::container con(-1,1,-1,1,-1,1,nx,ny,nz,false,false,false,8);
             pcon.setup(con);
@@ -52,17 +47,22 @@ struct VoronoiFracture : INode {
                                 meshpos[p[0]] - meshpos[p[1]],
                                 meshpos[p[0]] - meshpos[p[2]]));
                     auto c = dot(meshpos[p[0]], n);
+                    printf("%f %f %f %f\n", n[0], n[1], n[2], c);
                     voro::wall_plane wal(n[0], n[1], n[2], c);
                     con.add_wall(wal);
                 }
             }
 
             voro::c_loop_all cl(con);
+            voro::voronoicell_neighbor c;
             if(cl.start()) do if(con.compute_cell(c, cl)) {
+                double x, y, z;
                 cl.pos(x, y, z);
 
+                std::vector<int> neigh, f_vert;
                 c.neighbors(neigh);
                 c.face_vertices(f_vert);
+                std::vector<double> v;
                 c.vertices(x, y, z, v);
 
                 auto prim = std::make_shared<PrimitiveObject>();
