@@ -1,6 +1,7 @@
 #pragma once
 
 #include <zeno/core/IObject.h>
+#include <zeno/types/AttributeArray.h>
 #include <zeno/utils/vec.h>
 #include <variant>
 #include <memory>
@@ -10,11 +11,9 @@
 
 namespace zeno {
 
-using AttributeArray =
-    std::variant<std::vector<vec3f>, std::vector<float>>;
-
 struct PrimitiveObject : IObjectClone<PrimitiveObject> {
 
+  // vertex attributes (including "pos"):
   std::map<std::string, AttributeArray> m_attrs;
   size_t m_size{0};
 

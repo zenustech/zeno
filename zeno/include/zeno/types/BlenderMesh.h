@@ -1,6 +1,7 @@
 #pragma once
 
 #include <zeno/core/IObject.h>
+#include <zeno/types/AttributeArray.h>
 #include <zeno/utils/vec.h>
 #include <array>
 #include <vector>
@@ -17,6 +18,8 @@ struct PolyMesh {
     };
 
     std::vector<vec3f> vert;
+    std::map<std::string, AttributeArray> vert_attrs;
+
     std::vector<Polygon> poly;
     std::vector<int> loop;
 };
