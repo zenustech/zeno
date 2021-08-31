@@ -1,11 +1,12 @@
 #pragma once
 
 #include <zeno/types/PrimitiveObject.h>
+#include <Eigen/Core>
 
 
 namespace zeno {
 
-auto prim_to_eigen(PrimitiveObject const *prim) {
+inline auto prim_to_eigen(PrimitiveObject const *prim) {
     Eigen::MatrixXd V(prim->size(), 3);
     Eigen::MatrixXi F(prim->tris.size(), 3);
     auto &verts = prim->attr<vec3f>("pos");
@@ -21,7 +22,7 @@ auto prim_to_eigen(PrimitiveObject const *prim) {
     return std::make_pair(V, F);
 }
 
-void eigen_to_prim(Eigen::MatrixXd const &V, Eigen::MatrixXi const &F, PrimitiveObject *prim) {
+inline void eigen_to_prim(Eigen::MatrixXd const &V, Eigen::MatrixXi const &F, PrimitiveObject *prim) {
     auto &verts = prim->add_attr<vec3f>("pos");
     verts.clear();
     for (int i = 0; i < V.rows(); i++) {

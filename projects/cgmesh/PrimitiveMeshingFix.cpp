@@ -2,8 +2,9 @@
 #include <zeno/utils/vec.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#define MESHFIX_WITH_EIGEN
 #include "meshfix/meshfix.h"
-#include <Eigen/Core>
+#include "EigenUtils.h"
 
 namespace {
 
@@ -22,7 +23,7 @@ struct PrimitiveMeshingFix : INode {
         meshfix(VA, FA, VB, FB);
 
         auto primFixed = std::make_shared<PrimitiveObject>();
-        eigen_to_prim(VC, FC, primC.get());
+        eigen_to_prim(VB, FB, primFixed.get());
 
         set_output("primFixed", std::move(primFixed));
     }
