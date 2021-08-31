@@ -46,14 +46,14 @@ struct PrimitiveBooleanOp : INode {
         eigen_to_prim(VC, FC, primC.get());
 
         if (get_param<bool>("assignAttrs")) {
-            auto attrName = get_param<std::string>("attrName");
             for (auto const &[key, arrA]: primA->m_attrs) {
+                if (key == "pos") continue;
                 if (!primB->has_attr(key)) continue;
                 std::visit([&] (auto const &arrA) {
                     using T = std::decay_t<decltype(arrA[0])>;
                     if (!primB->attr_is<T>(key)) return;
-                    auto &arrB = primB->attr<T>(attrName);
-                    auto &arrC = primC->add_attr<T>(attrName);
+                    auto &arrB = primB->attr<T>(key);
+                    auto &arrC = primC->add_attr<T>(key);
                     for (int i = 0; i < primC->size(); i++) {
                         int j = J(i), jmax = pFA->rows();
                         if (j < jmax) {
@@ -83,15 +83,13 @@ struct PrimitiveBooleanOp : INode {
 ZENO_DEFNODE(PrimitiveBooleanOp)({
     {
     "primA", "primB",
-    {"float", "attrValA", "0"},
-    {"float", "attrValB", "1"},
     },
     {
     "primC",
     },
     {
     {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "Union"},
-    {"string", "attrName", ""},
+    {"bool", "assignAttrs", "1"},
     },
     {"cgmesh"},
 });
@@ -107,7 +105,7 @@ struct PrimitiveListBoolOp : PrimitiveBooleanOp {
         auto listB = primListB->get<std::shared_ptr<PrimitiveObject>>();
         auto primListC = std::make_shared<ListObject>();
         primListC->arr.resize(listB.size());
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (int i = 0; i < listB.size(); i++) {
             printf("PrimitiveListBoolOp: processing mesh #%d...\n", i);
             auto const &primB = listB[i];
