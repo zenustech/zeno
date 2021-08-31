@@ -147,6 +147,9 @@ ZENO_API std::shared_ptr<IObject> INode::get_input(std::string const &id, std::s
         return false;
     })) {
         return num;
+    } else if (auto o = exact_any_cast<bool>(obj); o.has_value()) {
+        num->set((int)o.value());
+        return num;
     }
 
     throw zeno::Exception("expecting `" + msg + "` (IObject ptr) for input `"
@@ -164,14 +167,19 @@ ZENO_API bool INode::has_input(std::string const &id) const {
         return true;
 
     using Types = typename zinc::is_variant<NumericValue>::tuple_type;
-    return zinc::static_for<0, std::tuple_size_v<Types>>([&] (auto i) {
+    if (zinc::static_for<0, std::tuple_size_v<Types>>([&] (auto i) {
         using T = std::tuple_element_t<i, Types>;
         if (auto o = exact_any_cast<T>(obj); o.has_value()) {
             return true;
         }
         return false;
-    });
+    })) {
+        return true;
+    } else if (auto o = exact_any_cast<bool>(obj); o.has_value()) {
+        return true;
+    }
 
+    return false;
 }
 
 }

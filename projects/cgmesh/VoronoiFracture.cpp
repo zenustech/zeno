@@ -17,6 +17,7 @@ struct VoronoiFracture : INode {
         auto boundaries = std::make_shared<ListObject>();
         auto interiors = std::make_shared<ListObject>();
         auto triangulate = get_param<bool>("triangulate");
+        auto sepBoundaries = get_param<bool>("sepBoundaries");
 
         auto bmin = get_input<NumericObject>("bboxMin")->get<vec3f>();
         auto bmax = get_input<NumericObject>("bboxMax")->get<vec3f>();
@@ -104,10 +105,10 @@ struct VoronoiFracture : INode {
                     j = j + 1 + len;
                 }
 
-                if (isBoundary) {
-                    boundaries->arr.push_back(std::move(prim));
-                } else {
+                if (!isBoundary && sepBoundaries) {
                     interiors->arr.push_back(std::move(prim));
+                } else {
+                    boundaries->arr.push_back(std::move(prim));
                 }
 
             } while (cl.inc());
@@ -125,8 +126,8 @@ struct VoronoiFracture : INode {
             }
         }
 
+        set_output("primList", std::move(interiors));
         set_output("boundaryPrimList", std::move(boundaries));
-        set_output("interiorPrimList", std::move(interiors));
     }
 };
 
@@ -138,11 +139,12 @@ ZENO_DEFNODE(VoronoiFracture)({
         {"vec3f", "bboxMax", "1,1,1"},
         },
         { // outputs:
-        {"ListObject", "interiorPrimList"},
+        {"ListObject", "primList"},
         {"ListObject", "boundaryPrimList"},
         },
         { // params:
         {"bool", "triangulate", "1"},
+        {"bool", "sepBoundaries", "0"},
         {"int", "numRandPoints", "256"},
         {"bool", "periodicX", "0"},
         {"bool", "periodicY", "0"},
