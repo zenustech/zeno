@@ -18,14 +18,14 @@ struct VoronoiFracture : INode {
         auto interiors = std::make_shared<ListObject>();
         auto triangulate = get_param<bool>("triangulate");
 
-        auto bboxMin = get_input<NumericObject>("bboxMin")->get<vec3f>();
-        auto bboxMax = get_input<NumericObject>("bboxMax")->get<vec3f>();
-        auto minx = bboxMin[0];
-        auto miny = bboxMin[1];
-        auto minz = bboxMin[2];
-        auto maxx = bboxMax[0];
-        auto maxy = bboxMax[1];
-        auto maxz = bboxMax[2];
+        auto bmin = get_input<NumericObject>("bboxMin")->get<vec3f>();
+        auto bmax = get_input<NumericObject>("bboxMax")->get<vec3f>();
+        auto minx = bmin[0];
+        auto miny = bmin[1];
+        auto minz = bmin[2];
+        auto maxx = bmax[0];
+        auto maxy = bmax[1];
+        auto maxz = bmax[2];
         auto periX = get_param<bool>("periodicX");
         auto periY = get_param<bool>("periodicY");
         auto periZ = get_param<bool>("periodicZ");
@@ -38,12 +38,15 @@ struct VoronoiFracture : INode {
                 auto &parspos = particlesPrim->attr<vec3f>("pos");
                 for (int i = 0; i < parspos.size(); i++) {
                     auto p = parspos[i];
+                    printf("!! %f %f %f\n", p[0], p[1], p[2]);
                     pcon.put(i + 1, p[0], p[1], p[2]);
                 }
             } else {
                 auto numParticles = get_param<int>("numRandPoints");
                 for (int i = 0; i < numParticles; i++) {
-                    pcon.put(i + 1, frand()*2-1, frand()*2-1, frand()*2-1);
+                    vec3f p(frand(),frand(),frand());
+                    p = p * (bmax - bmin) + bmin;
+                    pcon.put(i + 1, p[0], p[1], p[2]);
                 }
             }
 

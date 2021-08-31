@@ -165,12 +165,12 @@ struct PrimitiveRandomAttr : INode {
             if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
                 vec3f f(frand(), frand(), frand());
                 auto a = min->is<float>() ? (vec3f)min->get<float>() : min->get<vec3f>();
-                auto b = min->is<float>() ? (vec3f)min->get<float>() : min->get<vec3f>();
+                auto b = max->is<float>() ? (vec3f)max->get<float>() : max->get<vec3f>();
                 arr[i] = mix(a, b, f);
             } else {
                 float f(frand());
                 auto a = min->get<float>();
-                auto b = min->get<float>();
+                auto b = max->get<float>();
                 arr[i] = mix(a, b, f);
             }
         }
