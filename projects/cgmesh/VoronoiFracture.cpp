@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/ListObject.h>
+#include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/utils/random.h>
@@ -17,17 +18,17 @@ struct VoronoiFracture : INode {
         auto interiors = std::make_shared<ListObject>();
         auto triangulate = get_param<bool>("triangulate");
 
-        auto bboxMin = get_input2<vec3f>("bboxMin");
-        auto bboxMax = get_input2<vec3f>("bboxMax");
+        auto bboxMin = get_input<NumericObject>("bboxMin")->get<vec3f>();
+        auto bboxMax = get_input<NumericObject>("bboxMax")->get<vec3f>();
         auto minx = bboxMin[0];
         auto miny = bboxMin[1];
         auto minz = bboxMin[2];
         auto maxx = bboxMax[0];
         auto maxy = bboxMax[1];
         auto maxz = bboxMax[2];
-        auto periX = get_param<bool>("periX");
-        auto periY = get_param<bool>("periY");
-        auto periZ = get_param<bool>("periZ");
+        auto periX = get_param<bool>("periodicX");
+        auto periY = get_param<bool>("periodicY");
+        auto periZ = get_param<bool>("periodicZ");
 
         {
             voro::pre_container pcon(minx,maxx,miny,maxy,minz,maxz,periX,periY,periZ);
