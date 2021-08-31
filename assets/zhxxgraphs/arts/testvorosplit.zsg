@@ -240,8 +240,8 @@
      "name": "ExtendList",
      "inputs": {
       "list1": [
-       "a64d8918-VoronoiFracture",
-       "interiorPrimList",
+       null,
+       null,
        null
       ],
       "list2": [
@@ -469,8 +469,8 @@
      "name": "ExtendList",
      "inputs": {
       "list1": [
-       "de4636a2-x",
-       "interiorPrimList",
+       null,
+       null,
        null
       ],
       "list2": [
@@ -796,7 +796,7 @@
       "numParticles": [
        null,
        null,
-       512
+       4
       ],
       "SRC": [
        null,
@@ -806,8 +806,8 @@
      },
      "params": {},
      "uipos": [
-      -2318.1324246013564,
-      -235.50323462414474
+      -2293.797146241447,
+      -241.68362277904222
      ],
      "options": []
     },
@@ -815,8 +815,8 @@
      "name": "BeginForEach",
      "inputs": {
       "list": [
-       "c71f824d-ExtendList",
-       "list1",
+       "f722ebdb-PrimitiveVoronoi",
+       "boundaryPrimList",
        null
       ],
       "SRC": [
@@ -841,7 +841,7 @@
        null
       ],
       "SRC": [
-       "d45f25e6-PrimitiveFillAttr",
+       "2f4e0244-x",
        "prim",
        null
       ]
@@ -855,7 +855,25 @@
       "VIEW"
      ]
     },
-    "d45f25e6-PrimitiveFillAttr": {
+    "58b28155-NumericRandom": {
+     "name": "NumericRandom",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "dim": 3
+     },
+     "uipos": [
+      -1526.6215945330234,
+      41.326651480637636
+     ],
+     "options": []
+    },
+    "2f4e0244-x": {
      "name": "PrimitiveFillAttr",
      "inputs": {
       "prim": [
@@ -879,16 +897,42 @@
       "attrType": "float3"
      },
      "uipos": [
-      -1537.3514350797202,
-      -237.9925576309785
+      -1537.5861503416786,
+      -233.91052391799437
      ],
      "options": [
       "VIEW"
      ]
     },
-    "58b28155-NumericRandom": {
-     "name": "NumericRandom",
+    "b33e8767-ListLength": {
+     "name": "ListLength",
      "inputs": {
+      "list": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2020.4289749430432,
+      54.72218678815466
+     ],
+     "options": []
+    },
+    "d6537b3c-PrintNumeric": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "b33e8767-ListLength",
+       "length",
+       null
+      ],
       "SRC": [
        null,
        null,
@@ -896,15 +940,15 @@
       ]
      },
      "params": {
-      "dim": 3
+      "hint": "PrintNumeric"
      },
      "uipos": [
-      -1520.1836902050052,
-      11.28309794988607
+      -1782.2265148063696,
+      74.03589977220923
      ],
      "options": []
     },
-    "c71f824d-ExtendList": {
+    "3caff849-ExtendList": {
      "name": "ExtendList",
      "inputs": {
       "list1": [
@@ -925,17 +969,17 @@
      },
      "params": {},
      "uipos": [
-      -2049.701321184502,
-      -160.66259681093328
+      -2050.4296091116075,
+      -307.1309558086545
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -2389.7287242525686,
-    "y": -356.48871147171093,
-    "width": 491.51999999999816,
-    "height": 376.83199999999835
+    "x": -2358.955541564667,
+    "y": -359.53598618697333,
+    "width": 491.519999999998,
+    "height": 376.83199999999806
    }
   },
   "PrimitiveVoronoi": {
@@ -989,7 +1033,6 @@
      },
      "params": {
       "triangulate": true,
-      "sepBoundaries": false,
       "numRandPoints": 0,
       "periodicX": false,
       "periodicY": false,
@@ -1010,8 +1053,8 @@
        null
       ],
       "primListB": [
-       "27ec01f2-x",
-       "primList",
+       "d29fd29d-ExtendList",
+       "list1",
        null
       ],
       "SRC": [
@@ -1027,10 +1070,12 @@
       "doMeshFix": true
      },
      "uipos": [
-      -592.8936506532126,
-      138.92178494738914
+      -350.2968397192718,
+      175.9377302776852
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "1ed5aefc-SubInput": {
      "name": "SubInput",
@@ -1182,8 +1227,8 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "59dd41a3-IfElse",
-       "result",
+       "be03fe0a-x",
+       "primListAllFromB",
        null
       ],
       "SRC": [
@@ -1193,13 +1238,13 @@
       ]
      },
      "params": {
-      "name": "primList",
+      "name": "interiorPrimList",
       "type": "",
       "defl": ""
      },
      "uipos": [
-      273.4090261958998,
-      116.57887243735786
+      -75.1103359908883,
+      146.76110478359925
      ],
      "options": []
     },
@@ -1225,8 +1270,8 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "178da3c9-x",
-       "result",
+       "be03fe0a-x",
+       "primListAnyFromA",
        null
       ],
       "SRC": [
@@ -1241,42 +1286,22 @@
       "defl": ""
      },
      "uipos": [
-      232.8623291571755,
-      386.5105353075172
+      -72.37685079726634,
+      376.82944191343984
      ],
      "options": []
     },
-    "e1ea06fe-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "sepBoundary",
-      "type": "bool",
-      "defl": "1"
-     },
-     "uipos": [
-      -576.3097949886105,
-      -141.2300683371298
-     ],
-     "options": []
-    },
-    "c4cc2ffe-ExtendList": {
+    "d29fd29d-ExtendList": {
      "name": "ExtendList",
      "inputs": {
       "list1": [
-       "be03fe0a-x",
-       "primListAllFromB",
+       "27ec01f2-x",
+       "primList",
        null
       ],
       "list2": [
-       "be03fe0a-x",
-       "primListAnyFromA",
+       "27ec01f2-x",
+       "boundaryPrimList",
        null
       ],
       "SRC": [
@@ -1287,93 +1312,15 @@
      },
      "params": {},
      "uipos": [
-      -296.127562642369,
-      108.2004555808656
-     ],
-     "options": []
-    },
-    "59dd41a3-IfElse": {
-     "name": "IfElse",
-     "inputs": {
-      "true": [
-       "be03fe0a-x",
-       "primListAllFromB",
-       null
-      ],
-      "false": [
-       "c4cc2ffe-ExtendList",
-       "list1",
-       null
-      ],
-      "cond": [
-       "e1ea06fe-SubInput",
-       "port",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -17.084282460136677,
-      97.94988610478359
-     ],
-     "options": []
-    },
-    "178da3c9-x": {
-     "name": "IfElse",
-     "inputs": {
-      "true": [
-       "be03fe0a-x",
-       "primListAnyFromA",
-       null
-      ],
-      "false": [
-       "6cb0f29b-EmptyList",
-       "list",
-       null
-      ],
-      "cond": [
-       "e1ea06fe-SubInput",
-       "port",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -34.624145785877005,
-      327.1070615034169
-     ],
-     "options": []
-    },
-    "6cb0f29b-EmptyList": {
-     "name": "EmptyList",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -313.43963553530756,
-      415.489749430524
+      -620.7289293849658,
+      243.4510250569476
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -538.1776765375533,
-    "y": 189.7949886104784,
+    "x": -530.296127562596,
+    "y": 148.33712984054148,
     "width": 400.0,
     "height": 400.0
    }
@@ -7961,11 +7908,6 @@
      "bool",
      "triangulate",
      "1"
-    ],
-    [
-     "bool",
-     "sepBoundaries",
-     "0"
     ],
     [
      "int",

@@ -3,8 +3,8 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <igl/copyleft/cgal/mesh_boolean.h>
 #include "EigenUtils.h"
+#include "igl_sink.h"
 
 namespace zeno {
 // defined in PrimitiveMeshingFix.cpp:
@@ -17,35 +17,15 @@ using namespace zeno;
 
 
 struct PrimitiveBooleanOp : INode {
-    auto boolean_op(Eigen::MatrixXd const *pVA, Eigen::MatrixXi const *pFA,
+    auto boolean_op(Eigen::MatrixXd const &VA, Eigen::MatrixXi const &FA,
             PrimitiveObject const *primA, PrimitiveObject const *primB) {
         auto [VB, FB] = get_param<bool>("doMeshFix") ? prim_to_eigen_with_fix(primB) : prim_to_eigen(primB);
-        auto const *pVB = &VB;
-        auto const *pFB = &FB;
-
-        auto op_type = get_param<std::string>("op_type");
-        igl::MeshBooleanType boolean_type;
-        if (op_type == "Union") {
-          boolean_type = igl::MESH_BOOLEAN_TYPE_UNION;
-        } else if (op_type == "Intersect") {
-          boolean_type = igl::MESH_BOOLEAN_TYPE_INTERSECT;
-        } else if (op_type == "Minus") {
-          boolean_type = igl::MESH_BOOLEAN_TYPE_MINUS;
-        } else if (op_type == "RevMinus") {
-          boolean_type = igl::MESH_BOOLEAN_TYPE_MINUS;
-          std::swap(pVA, pVB); std::swap(pFA, pFB);
-        } else if (op_type == "XOR") {
-          boolean_type = igl::MESH_BOOLEAN_TYPE_XOR;
-        } else if (op_type == "Resolve") {
-          boolean_type = igl::MESH_BOOLEAN_TYPE_RESOLVE;
-        } else {
-          throw Exception("bad boolean op type: " + op_type);
-        }
 
         Eigen::MatrixXd VC;
         Eigen::MatrixXi FC;
         Eigen::VectorXi J;
-        igl::copyleft::cgal::mesh_boolean(*pVA, *pFA, *pVB, *pFB, boolean_type, VC, FC, J);
+        auto op_type = get_param<std::string>("op_type");
+        igl_mesh_boolean(VA, FA, VB, FB, op_type, VC, FC, J);
 
         auto primC = std::make_shared<PrimitiveObject>();
         eigen_to_prim(VC, FC, primC.get());
@@ -53,7 +33,8 @@ struct PrimitiveBooleanOp : INode {
         bool anyFromA = false, anyFromB = false;
         if (get_param<bool>("calcAnyFrom")) {
             for (int i = 0; i < primC->size(); i++) {
-                int j = J(i), jmax = pFA->rows();
+                int j = J(i), jmax = FA.rows();
+                if (j < 0) printf("j=%d\n", j);
                 if (j < jmax) {
                     anyFromA = true;
                 } else {
@@ -66,13 +47,13 @@ struct PrimitiveBooleanOp : INode {
             for (auto const &[key, arrA]: primA->m_attrs) {
                 if (key == "pos") continue;
                 if (!primB->has_attr(key)) continue;
-                std::visit([&] (auto const &arrA) {
+                std::visit([&, key = key] (auto const &arrA) {
                     using T = std::decay_t<decltype(arrA[0])>;
                     if (!primB->attr_is<T>(key)) return;
                     auto &arrB = primB->attr<T>(key);
                     auto &arrC = primC->add_attr<T>(key);
                     for (int i = 0; i < primC->size(); i++) {
-                        int j = J(i), jmax = pFA->rows();
+                        int j = J(i), jmax = FA.rows();
                         if (j < jmax) {
                             arrC[i] = arrA[j];
                         } else {
@@ -91,7 +72,7 @@ struct PrimitiveBooleanOp : INode {
         auto primB = get_input<PrimitiveObject>("primB");
 
         auto [VA, FA] = get_param<bool>("doMeshFix") ? prim_to_eigen_with_fix(primA.get()) : prim_to_eigen(primA.get());
-        auto [primC, anyFromA, anyFromB] = boolean_op(&VA, &FA, primA.get(), primB.get());
+        auto [primC, anyFromA, anyFromB] = boolean_op(VA, FA, primA.get(), primB.get());
 
         set_output("primC", std::move(primC));
         set_output("anyFromA", std::make_shared<NumericObject>(anyFromA));
@@ -129,7 +110,7 @@ struct PrimitiveListBoolOp : PrimitiveBooleanOp {
         for (int i = 0; i < listB.size(); i++) {
             printf("PrimitiveListBoolOp: processing mesh #%d...\n", i);
             auto const &primB = listB[i];
-            auto [primC, anyFromA, anyFromB] = boolean_op(&VA, &FA, primA.get(), primB.get());
+            auto [primC, anyFromA, anyFromB] = boolean_op(VA, FA, primA.get(), primB.get());
             listC[i] = std::make_pair(anyFromA, std::move(primC));
         }
 

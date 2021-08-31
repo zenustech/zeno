@@ -34,7 +34,7 @@ endif()
 
 option(ZENO_CGMESH_WITH_LIBIGL "Build with LIBIGL nodes" ON)
 if (ZENO_CGMESH_WITH_LIBIGL)
-    target_sources(zeno_cgmesh PRIVATE PrimitiveBooleanOp.cpp)
+    target_sources(zeno_cgmesh PRIVATE igl_sink.cpp PrimitiveBooleanOp.cpp)
     if (UNIX)
         find_package(LIBIGL QUIET)
         if (NOT LIBIGL_FOUND)
