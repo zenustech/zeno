@@ -6,6 +6,8 @@ target_include_directories(zeno_cgmesh PRIVATE .)
 add_subdirectory(voro)
 target_link_libraries(zeno_cgmesh PRIVATE voro++)
 
+add_subdirectory(meshfix)
+
 if (UNIX)
     find_package(LIBIGL QUIET)
     if (NOT LIBIGL_FOUND)
