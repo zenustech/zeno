@@ -19,7 +19,7 @@ using namespace zeno;
 struct PrimitiveBooleanOp : INode {
     auto boolean_op(Eigen::MatrixXd const *pVA, Eigen::MatrixXi const *pFA,
             PrimitiveObject const *primA, PrimitiveObject const *primB) {
-        auto [VB, FB] = prim_to_eigen_with_fix(primB);
+        auto [VB, FB] = get_param<bool>("doMeshFix") ? prim_to_eigen_with_fix(primB) : prim_to_eigen(primB);
         auto const *pVB = &VB;
         auto const *pFB = &FB;
 
@@ -78,7 +78,7 @@ struct PrimitiveBooleanOp : INode {
         auto primA = get_input<PrimitiveObject>("primA");
         auto primB = get_input<PrimitiveObject>("primB");
 
-        auto [VA, FA] = prim_to_eigen(primA.get());
+        auto [VA, FA] = get_param<bool>("doMeshFix") ? prim_to_eigen_with_fix(primA.get()) : prim_to_eigen(primA.get());
         auto primC = boolean_op(&VA, &FA, primA.get(), primB.get());
 
         set_output("primC", std::move(primC));
@@ -105,7 +105,7 @@ struct PrimitiveListBoolOp : PrimitiveBooleanOp {
         auto primA = get_input<PrimitiveObject>("primA");
         auto primListB = get_input<ListObject>("primListB");
 
-        auto [VA, FA] = prim_to_eigen_with_fix(primA.get());
+        auto [VA, FA] = get_param<bool>("doMeshFix") ? prim_to_eigen_with_fix(primA.get()) : prim_to_eigen(primA.get());
 
         auto listB = primListB->get<std::shared_ptr<PrimitiveObject>>();
         auto primListC = std::make_shared<ListObject>();
@@ -132,6 +132,7 @@ ZENO_DEFNODE(PrimitiveListBoolOp)({
     {
     {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "union"},
     {"bool", "assignAttrs", "1"},
+    {"bool", "doMeshFix", "1"},
     },
     {"cgmesh"},
 });
