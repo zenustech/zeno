@@ -126,6 +126,15 @@ cmake ..
 make -j8
 sudo make install
 cd ../..
+
+git clone https://github.com/libigl/libigl.git --branch=v2.3.0
+cd libigl
+mkdir build
+cd build
+cmake .. -DLIBIGL_WITH_CGAL:BOOL=ON
+make -j8
+sudo make install
+cd ../..
 ```
 
 ## Build ZENO
