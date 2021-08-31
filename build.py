@@ -37,14 +37,17 @@ if ap.clean:
 args = []
 build_args = []
 
-if ap.parallel:
-    if ap.parallel == 'auto':
-        build_args.extend(['--parallel'])
-    else:
-        build_args.extend(['--parallel', ap.parallel])
-
 if sys.platform == 'win32':
     build_args.extend(['--config', ap.config])
+
+if ap.parallel:
+    if ap.parallel == 'max':
+        build_args.extend(['--parallel'])
+    if ap.parallel == 'auto':
+        from multiprocessing import cpu_count
+        build_args.extend(['--parallel', str(cpu_count())])
+    else:
+        build_args.extend(['--parallel', ap.parallel])
 
 args.append('-DPYTHON_EXECUTABLE=' + sys.executable)
 
@@ -84,7 +87,7 @@ if ap.toolchain:
 if ap.cmake_args:
     args.extend(ap.cmake_args.split(','))
 
-print('*** cmake arguments:', args)
+print('*** config arguments:', args)
 subprocess.check_call(['cmake', '-B', 'build'] + args)
-print('*** now building project...')
+print('*** build arguments:', build_args)
 subprocess.check_call(['cmake', '--build', 'build'] + build_args)
