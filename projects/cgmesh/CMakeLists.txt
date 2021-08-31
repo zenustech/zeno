@@ -1,4 +1,5 @@
 add_subdirectory(voro)
+add_subdirectory(libigl)
 
 file(GLOB PROJECT_SOURCE *.cpp *.h)
 
