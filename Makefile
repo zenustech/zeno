@@ -1,6 +1,7 @@
 #O=a.zsg
 #O=b.zsg
-O=arts/testvorosplit.zsg
+O=arts/testtbbreduce.zsg
+#O=arts/testvorosplit.zsg
 #O=arts/flip.zsg
 #O=arts/visualmarchingtetra.zsg
 #O=arts/testprimdup.zsg
