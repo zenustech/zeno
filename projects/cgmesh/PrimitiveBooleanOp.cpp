@@ -25,25 +25,38 @@ typedef Polyhedron::size_type size_type;
 /// Creation of a mesh
 ///</summery>
 template<class HDS>
-class MeshCreator : public CGAL::Modifier_base<HDS>
+struct MeshCreator : public CGAL::Modifier_base<HDS>
 {
 
     typedef typename HDS::Vertex Vertex;
     typedef typename Vertex::Point Point;
 
-private:
     int _numVertices;
     int _numFacets;
     int _numHalfedges;
     std::vector<vec3f> &_vertices;
-    std::vector<vec3i> &_triangles;
+    std::vector<vec3i> _triangles;
+    std::set<std::pair<int, int>> hes;
 
-public:
     MeshCreator(std::vector<vec3f> & vertices, std::vector<vec3i> & triangles, int numHalfedges) :
-        _numHalfedges(numHalfedges), _vertices(vertices), _triangles(triangles)
+        _numHalfedges(numHalfedges), _vertices(vertices)
     {
         _numVertices = vertices.size();
         _numFacets = triangles.size();
+
+        for (size_t i = 0; i < _numFacets; ++i) {
+            auto f = triangles[i];
+            if (hes.find({f[0], f[1]}) != hes.end()) {
+                std::swap(f[0], f[1]);
+            }
+            if (hes.find({f[1], f[1]}) != hes.end()) {
+                std::swap(f[0], f[1]);
+            }
+            hes.emplace(f[0], f[1]);
+            hes.emplace(f[1], f[2]);
+            hes.emplace(f[2], f[0]);
+            _triangles.push_back(f);
+        }
     }
 
     void operator()(HDS &hds)
@@ -58,7 +71,6 @@ public:
         {
             auto f = _triangles[i];
             mesh.begin_facet();
-            // TODO: sort face order to prevent halfedge error:
             mesh.add_vertex_to_facet(f[0]);
             mesh.add_vertex_to_facet(f[1]);
             mesh.add_vertex_to_facet(f[2]);
@@ -72,8 +84,8 @@ public:
 
 auto prim_to_nef(PrimitiveObject *prim) {
     int nhalfedges = 10000;
-    Polyhedron P(prim->size(), nhalfedges, prim->tris.size());
     MeshCreator<HalfedgeDS> meshCreator(prim->attr<vec3f>("pos"), prim->tris, nhalfedges);
+    Polyhedron P(prim->size(), meshCreator._numHalfedges, prim->tris.size());
     P.delegate(meshCreator);
     Nef_polyhedron nef(P);
     return nef;
