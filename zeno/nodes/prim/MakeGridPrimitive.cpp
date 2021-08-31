@@ -38,9 +38,9 @@ struct Make2DGridPrimitive : INode {
     auto prim = std::make_shared<PrimitiveObject>();
     prim->resize(nx * ny);
     auto &pos = prim->add_attr<vec3f>("pos");
-#pragma omp parallel for
     // for (size_t y = 0; y < ny; y++) {
     //     for (size_t x = 0; x < nx; x++) {
+#pragma omp parallel for
     for (int index = 0; index < nx * ny; index++) {
       int x = index % nx;
       int y = index / nx;
@@ -122,17 +122,17 @@ struct Make3DGridPrimitive : INode {
     auto prim = std::make_shared<PrimitiveObject>();
     prim->resize(nx * ny * nz);
     auto &pos = prim->add_attr<vec3f>("pos");
-#pragma omp parallel for
     // for (size_t y = 0; y < ny; y++) {
     //     for (size_t x = 0; x < nx; x++) {
+#pragma omp parallel for
     for (int index = 0; index < nx * ny * nz; index++) {
       int x = index % nx;
       int y = index / nx % ny;
       int z = index / nx / ny;
       vec3f p = o + x * ax + y * ay + z * az;
       pos[index] = p;
-      // }
     }
+      // }
     set_output("prim", std::move(prim));
   }
 };

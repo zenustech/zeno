@@ -5,8 +5,8 @@
 namespace zinc {
 
 template <class ValT, class GetF, class SumF>
-inline ValT omp_parallel_reduce(size_t num, ValT init, GetF const &get, SumF const &sum) {
-    size_t nproc = std::max(64, (int)(num / 100000));
+inline ValT parallel_reduce_array(size_t num, ValT init, GetF const &get, SumF const &sum) {
+    size_t nproc = std::max(128, (int)(num / 250000));
     std::vector<ValT> tls(nproc);
     for (size_t p = 0; p < nproc; p++) {
         tls[p] = init;

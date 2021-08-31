@@ -17,23 +17,23 @@ static T prim_reduce(PrimitiveObject *prim, std::string channel, std::string typ
     std::vector<T> const &temp = prim->attr<T>(channel);
     
     if(type==std::string("avg")){
-        T total = zeno::omp_parallel_reduce<T>(temp.size(), T(0), [&] (size_t i) -> T { return temp[i]; },
+        T total = zeno::parallel_reduce_array<T>(temp.size(), T(0), [&] (size_t i) -> T { return temp[i]; },
         [&] (T i, T j) -> T { return i + j; });
         return total/(T)(temp.size());
     }
     if(type==std::string("max")){
-        T total = zeno::omp_parallel_reduce<T>(temp.size(), temp[0], [&] (size_t i) -> T { return temp[i]; },
+        T total = zeno::parallel_reduce_array<T>(temp.size(), temp[0], [&] (size_t i) -> T { return temp[i]; },
         [&] (T i, T j) -> T { return zeno::max(i, j); });
         return total;   
     }
     if(type==std::string("min")){
-        T total = zeno::omp_parallel_reduce<T>(temp.size(), temp[0], [&] (size_t i) -> T { return temp[i]; },
+        T total = zeno::parallel_reduce_array<T>(temp.size(), temp[0], [&] (size_t i) -> T { return temp[i]; },
         [&] (T i, T j) -> T { return zeno::min(i, j); });
         return total;
     }
     if(type==std::string("absmax")){
-        T total = zeno::omp_parallel_reduce<T>(temp.size(), temp[0], [&] (size_t i) -> T { return temp[i]; },
-        [&] (T i, T j) -> T { return zeno::min(zeno::abs(i), zeno::abs(j)); });
+        T total = zeno::parallel_reduce_array<T>(temp.size(), temp[0], [&] (size_t i) -> T { return zeno::abs(temp[i]); },
+        [&] (T i, T j) -> T { return zeno::min(i, j); });
         return total;
     }
     return T(0);
