@@ -51,6 +51,17 @@ struct PrimitiveBooleanOp : INode {
         eigen_to_prim(VC, FC, primC.get());
 
         bool anyFromA = false, anyFromB = false;
+        if (get_param<bool>("calcAnyFrom")) {
+            for (int i = 0; i < primC->size(); i++) {
+                int j = J(i), jmax = pFA->rows();
+                if (j < jmax) {
+                    anyFromA = true;
+                } else {
+                    anyFromB = true;
+                }
+            }
+        }
+
         if (get_param<bool>("assignAttrs")) {
             for (auto const &[key, arrA]: primA->m_attrs) {
                 if (key == "pos") continue;
@@ -63,10 +74,8 @@ struct PrimitiveBooleanOp : INode {
                     for (int i = 0; i < primC->size(); i++) {
                         int j = J(i), jmax = pFA->rows();
                         if (j < jmax) {
-                            anyFromA = true;
                             arrC[i] = arrA[j];
                         } else {
-                            anyFromB = true;
                             arrC[i] = arrB[j - jmax];
                         }
                     }
@@ -149,6 +158,7 @@ ZENO_DEFNODE(PrimitiveListBoolOp)({
     {
     {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "union"},
     {"bool", "assignAttrs", "1"},
+    {"bool", "calcAnyFrom", "1"},
     {"bool", "doMeshFix", "1"},
     },
     {"cgmesh"},
