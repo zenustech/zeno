@@ -111,6 +111,23 @@ ZENDEFNODE(ExtendList, {
 });
 
 
+struct ResizeList : zeno::INode {
+    virtual void apply() override {
+        auto list = get_input<zeno::ListObject>("list");
+        auto newSize = get_input<zeno::NumericObject>("newSize")->get<int>();
+        list->arr.resize(newSize);
+        set_output("list", std::move(list));
+    }
+};
+
+ZENDEFNODE(ResizeList, {
+    {"list", {"int", "newSize"}},
+    {"list"},
+    {},
+    {"list"},
+});
+
+
 struct MakeSmallList : zeno::INode {
     virtual void apply() override {
         auto list = std::make_shared<zeno::ListObject>();
