@@ -101,13 +101,11 @@ struct VoronoiFracture : INode {
                 boundaries->arr.size(), interiors->arr.size());
 
         if (triangulate) {
-            for (auto const &mesh: boundaries->arr) {
-                auto prim = smart_any_cast<std::shared_ptr<PrimitiveObject>>(mesh).get();
-                prim_triangulate(prim);
+            for (auto const &prim: boundaries->get<std::shared_ptr<PrimitiveObject>>()) {
+                prim_triangulate(prim.get());
             }
-            for (auto const &mesh: interiors->arr) {
-                auto prim = smart_any_cast<std::shared_ptr<PrimitiveObject>>(mesh).get();
-                prim_triangulate(prim);
+            for (auto const &prim: interiors->get<std::shared_ptr<PrimitiveObject>>()) {
+                prim_triangulate(prim.get());
             }
         }
 
