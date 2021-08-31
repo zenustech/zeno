@@ -8,7 +8,8 @@
 #include <vector>
 #include <tuple>
 
-namespace zeno {
+namespace {
+using namespace zeno;
 
 struct VoronoiFracture : INode {
     virtual void apply() override {
@@ -16,8 +17,20 @@ struct VoronoiFracture : INode {
         auto interiors = std::make_shared<ListObject>();
         auto triangulate = get_param<bool>("triangulate");
 
+        auto bboxMin = get_input2<vec3f>("bboxMin");
+        auto bboxMax = get_input2<vec3f>("bboxMax");
+        auto minx = bboxMin[0];
+        auto miny = bboxMin[1];
+        auto minz = bboxMin[2];
+        auto maxx = bboxMax[0];
+        auto maxy = bboxMax[1];
+        auto maxz = bboxMax[2];
+        auto periX = get_param<bool>("periX");
+        auto periY = get_param<bool>("periY");
+        auto periZ = get_param<bool>("periZ");
+
         {
-            voro::pre_container pcon(-1,1,-1,1,-1,1,false,false,false);
+            voro::pre_container pcon(minx,maxx,miny,maxy,minz,maxz,periX,periY,periZ);
 
             if (has_input("particlesPrim")) {
                 auto particlesPrim = get_input<PrimitiveObject>("particlesPrim");
@@ -35,9 +48,9 @@ struct VoronoiFracture : INode {
 
             int nx, ny, nz;
             pcon.guess_optimal(nx,ny,nz);
-            voro::container con(-1,1,-1,1,-1,1,nx,ny,nz,false,false,false,8);
+            voro::container con(minx,maxx,miny,maxy,minz,maxz,nx,ny,nz,periX,periY,periZ,8);
 
-            if (has_input("meshPrim")) {
+            /*if (has_input("meshPrim")) {
                 auto mesh = get_input<PrimitiveObject>("meshPrim");
                 auto meshpos = mesh->attr<zeno::vec3f>("pos");
                 for (int i = 0; i < mesh->tris.size(); i++) {
@@ -51,7 +64,7 @@ struct VoronoiFracture : INode {
                     voro::wall_plane wal(n[0], n[1], n[2], c);
                     con.add_wall(wal);
                 }
-            }
+            }*/
             pcon.setup(con);
 
             voro::c_loop_all cl(con);
@@ -116,8 +129,10 @@ struct VoronoiFracture : INode {
 
 ZENO_DEFNODE(VoronoiFracture)({
         { // inputs:
-        {"PrimitiveObject", "meshPrim"},
+        //{"PrimitiveObject", "meshPrim"},
         {"PrimitiveObject", "particlesPrim"},
+        {"vec3f", "bboxMin", "-1,-1,-1"},
+        {"vec3f", "bboxMax", "1,1,1"},
         },
         { // outputs:
         {"ListObject", "interiorPrimList"},
@@ -126,6 +141,9 @@ ZENO_DEFNODE(VoronoiFracture)({
         { // params:
         {"bool", "triangulate", "1"},
         {"int", "numRandPoints", "256"},
+        {"bool", "periodicX", "0"},
+        {"bool", "periodicY", "0"},
+        {"bool", "periodicZ", "0"},
         },
         {"cgmesh"},
 });
