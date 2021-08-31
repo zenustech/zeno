@@ -6,6 +6,11 @@
 #include <igl/copyleft/cgal/mesh_boolean.h>
 #include "EigenUtils.h"
 
+namespace zeno {
+// defined in PrimitiveMeshingFix.cpp:
+std::pair<Eigen::MatrixXd, Eigen::MatrixXi> prim_to_eigen_with_fix(PrimitiveObject const *primA);
+}
+
 namespace {
 
 using namespace zeno;
@@ -14,7 +19,7 @@ using namespace zeno;
 struct PrimitiveBooleanOp : INode {
     auto boolean_op(Eigen::MatrixXd const *pVA, Eigen::MatrixXi const *pFA,
             PrimitiveObject const *primA, PrimitiveObject const *primB) {
-        auto [VB, FB] = prim_to_eigen(primB);
+        auto [VB, FB] = prim_to_eigen_with_fix(primB);
         auto const *pVB = &VB;
         auto const *pFB = &FB;
 
@@ -100,7 +105,7 @@ struct PrimitiveListBoolOp : PrimitiveBooleanOp {
         auto primA = get_input<PrimitiveObject>("primA");
         auto primListB = get_input<ListObject>("primListB");
 
-        auto [VA, FA] = prim_to_eigen(primA.get());
+        auto [VA, FA] = prim_to_eigen_with_fix(primA.get());
 
         auto listB = primListB->get<std::shared_ptr<PrimitiveObject>>();
         auto primListC = std::make_shared<ListObject>();
