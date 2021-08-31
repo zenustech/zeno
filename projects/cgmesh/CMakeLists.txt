@@ -1,10 +1,9 @@
-add_subdirectory(voro)
-
 file(GLOB PROJECT_SOURCE *.cpp *.h)
 
 add_library(zeno_cgmesh SHARED ${PROJECT_SOURCE})
 target_include_directories(zeno_cgmesh PRIVATE .)
 
+add_subdirectory(voro)
 target_link_libraries(zeno_cgmesh PRIVATE voro++)
 
 if (UNIX)
