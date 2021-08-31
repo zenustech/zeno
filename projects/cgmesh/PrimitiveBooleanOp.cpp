@@ -50,6 +50,7 @@ struct PrimitiveBooleanOp : INode {
         auto primC = std::make_shared<PrimitiveObject>();
         eigen_to_prim(VC, FC, primC.get());
 
+        bool anyFromA = false, anyFromB = false;
         if (get_param<bool>("assignAttrs")) {
             for (auto const &[key, arrA]: primA->m_attrs) {
                 if (key == "pos") continue;
@@ -62,8 +63,10 @@ struct PrimitiveBooleanOp : INode {
                     for (int i = 0; i < primC->size(); i++) {
                         int j = J(i), jmax = pFA->rows();
                         if (j < jmax) {
+                            anyFromA = true;
                             arrC[i] = arrA[j];
                         } else {
+                            anyFromB = true;
                             arrC[i] = arrB[j - jmax];
                         }
                     }
@@ -71,7 +74,7 @@ struct PrimitiveBooleanOp : INode {
             }
         }
 
-        return primC;
+        return std::make_tuple(primC, anyFromA, anyFromB);
     }
 
     virtual void apply() override {
@@ -79,9 +82,11 @@ struct PrimitiveBooleanOp : INode {
         auto primB = get_input<PrimitiveObject>("primB");
 
         auto [VA, FA] = get_param<bool>("doMeshFix") ? prim_to_eigen_with_fix(primA.get()) : prim_to_eigen(primA.get());
-        auto primC = boolean_op(&VA, &FA, primA.get(), primB.get());
+        auto [primC, anyFromA, anyFromB] = boolean_op(&VA, &FA, primA.get(), primB.get());
 
         set_output("primC", std::move(primC));
+        set_output("anyFromA", std::make_shared<NumericObject>(anyFromA));
+        set_output("anyFromB", std::make_shared<NumericObject>(anyFromB));
     }
 };
 
@@ -90,7 +95,7 @@ ZENO_DEFNODE(PrimitiveBooleanOp)({
     "primA", "primB",
     },
     {
-    "primC",
+    "primC", {"bool", "anyFromA"}, {"bool", "anyFromB"},
     },
     {
     {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "Union"},
@@ -109,17 +114,27 @@ struct PrimitiveListBoolOp : PrimitiveBooleanOp {
         auto [VA, FA] = get_param<bool>("doMeshFix") ? prim_to_eigen_with_fix(primA.get()) : prim_to_eigen(primA.get());
 
         auto listB = primListB->get<std::shared_ptr<PrimitiveObject>>();
-        auto primListC = std::make_shared<ListObject>();
-        primListC->arr.resize(listB.size());
-        //#pragma omp parallel for
+        std::vector<std::pair<bool, std::shared_ptr<PrimitiveObject>>> listC(listB.size());
+
+        #pragma omp parallel for
         for (int i = 0; i < listB.size(); i++) {
             printf("PrimitiveListBoolOp: processing mesh #%d...\n", i);
             auto const &primB = listB[i];
-            auto primC = boolean_op(&VA, &FA, primA.get(), primB.get());
-            primListC->arr[i] = std::move(primC);
+            auto [primC, anyFromA, anyFromB] = boolean_op(&VA, &FA, primA.get(), primB.get());
+            listC[i] = std::make_pair(anyFromA, std::move(primC));
         }
 
-        set_output("primListC", std::move(primListC));
+        auto primListAllFromB = std::make_shared<ListObject>();
+        auto primListAnyFromA = std::make_shared<ListObject>();
+        for (auto const &[anyFromA, primPtr]: listC) {
+            if (anyFromA)
+                primListAnyFromA->arr.push_back(primPtr);
+            else
+                primListAllFromB->arr.push_back(primPtr);
+        }
+
+        set_output("primListAllFromB", std::move(primListAllFromB));
+        set_output("primListAnyFromA", std::move(primListAnyFromA));
     }
 };
 
@@ -128,7 +143,8 @@ ZENO_DEFNODE(PrimitiveListBoolOp)({
     "primA", "primListB",
     },
     {
-    "primListC",
+    "primListAllFromB",
+    "primListAnyFromA",
     },
     {
     {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "union"},
