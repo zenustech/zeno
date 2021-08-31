@@ -19,6 +19,7 @@ O=arts/testtbbreduce.zsg
 #O=arts/literialconst.zsg
 #O=arts/blendtest.zsg
 #default: justrun
+#default: optrun
 default: run
 
 #####################################################
@@ -31,15 +32,15 @@ default: run
 
 all:
 	cmake -B build
-	cmake --build build --parallel
+	cmake --build build --parallel `python -c 'from multiprocessing import cpu_count;print(cpu_count())`
 
 release_all:
 	cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
-	cmake --build build --parallel
+	cmake --build build --parallel `python -c 'from multiprocessing import cpu_count;print(cpu_count())`
 
 debug_all:
 	cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
-	cmake --build build --parallel
+	cmake --build build --parallel `python -c 'from multiprocessing import cpu_count;print(cpu_count())`
 
 configure:
 	cmake -B build
@@ -53,6 +54,9 @@ easygl: all
 
 run: all
 	ZEN_OPEN=$O python3 -m zenqt
+
+optrun: all
+	ZEN_OPEN=$O optirun python3 -m zenqt
 
 glrun: all
 	ZEN_NOFORK=1 ZEN_NOVIEW=1 ZEN_OPEN=$O python3 -m zenqt
