@@ -3,35 +3,13 @@
 #include <tbb/parallel_reduce.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/utils/parallel.h>
 #include <zeno/utils/vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
-#include <cstdint>
 
 namespace zeno {
-
-template <class ValT, class GetF, class SumF>
-inline ValT omp_parallel_reduce(size_t num, ValT init, GetF const &get, SumF const &sum) {
-    size_t nproc = std::max(64, (int)(num / 300000));
-    std::vector<ValT> tls(nproc);
-    for (size_t p = 0; p < nproc; p++) {
-        tls[p] = init;
-    }
-#pragma omp parallel for
-    for (intptr_t p = 0; p < nproc; p++) {
-        size_t i0 = num / nproc * p;
-        size_t i1 = p == nproc - 1 ? num : num / nproc * (p + 1);
-        for (size_t i = i0; i < i1; i++) {
-            tls[p] = sum(tls[p], get(i));
-        }
-    }
-    ValT ret = init;
-    for (size_t p = 0; p < nproc; p++) {
-        ret = sum(ret, tls[p]);
-    }
-    return ret;
-}
 
 template <class T>
 static T prim_reduce_omp(PrimitiveObject *prim, std::string channel, std::string type)
@@ -39,17 +17,17 @@ static T prim_reduce_omp(PrimitiveObject *prim, std::string channel, std::string
     std::vector<T> const &temp = prim->attr<T>(channel);
     
     if(type==std::string("avg")){
-        T total = omp_parallel_reduce<T>(temp.size(), T(0), [&] (size_t i) -> T { return temp[i]; },
+        T total = zeno::omp_parallel_reduce<T>(temp.size(), T(0), [&] (size_t i) -> T { return temp[i]; },
         [&] (T i, T j) -> T { return i + j; });
         return total/(T)(temp.size());
     }
     if(type==std::string("max")){
-        T total = omp_parallel_reduce<T>(temp.size(), temp[0], [&] (size_t i) -> T { return temp[i]; },
+        T total = zeno::omp_parallel_reduce<T>(temp.size(), temp[0], [&] (size_t i) -> T { return temp[i]; },
         [&] (T i, T j) -> T { return zeno::max(i, j); });
         return total;   
     }
     if(type==std::string("min")){
-        T total = omp_parallel_reduce<T>(temp.size(), temp[0], [&] (size_t i) -> T { return temp[i]; },
+        T total = zeno::omp_parallel_reduce<T>(temp.size(), temp[0], [&] (size_t i) -> T { return temp[i]; },
         [&] (T i, T j) -> T { return zeno::min(i, j); });
         return total;
     }
