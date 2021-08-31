@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/utils/vec.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <igl/copyleft/cgal/mesh_boolean.h>
@@ -16,6 +17,7 @@ struct PrimitiveBooleanOp : INode {
         auto pVB = &VB;
         auto pFB = &FB;
 
+        auto op_type = get_param<std::string>("op_type");
         igl::MeshBooleanType boolean_type;
         if (op_type == "Union") {
           boolean_type = igl::MESH_BOOLEAN_TYPE_UNION;
@@ -58,7 +60,6 @@ struct PrimitiveBooleanOp : INode {
     virtual void apply() override {
         auto primA = get_input<PrimitiveObject>("primA");
         auto primB = get_input<PrimitiveObject>("primB");
-        auto op_type = get_param<std::string>("op_type");
 
         auto [VA, FA] = prim_to_eigen(primA.get());
         auto primC = boolean_op(&VA, &FA, primA.get(), primB.get());
@@ -83,17 +84,16 @@ ZENO_DEFNODE(PrimitiveBooleanOp)({
     {"cgmesh"},
 });
 
-#if 0
+#if 1
 struct PrimitiveListBoolOp : PrimitiveBooleanOp {
     virtual void apply() override {
         auto primA = get_input<PrimitiveObject>("primA");
         auto primListB = get_input<ListObject>("primListB");
-        auto op_type = get_param<std::string>("op_type");
 
         auto [VA, FA] = prim_to_eigen(primA.get());
 
         for (auto const &primB: primListB->get<std::shared_ptr<PrimitiveObject>>()) {
-            boolean_op(VA, FA, primA.get(), primB.get());
+            boolean_op(&VA, &FA, primA.get(), primB.get());
         }
 
         auto primListC = std::make_shared<ListObject>();
