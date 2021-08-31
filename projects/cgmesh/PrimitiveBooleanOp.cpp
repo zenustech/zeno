@@ -1,95 +1,11 @@
 #include <zeno/zeno.h>
 #include <zeno/utils/vec.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <CGAL/Polyhedron_3.h>
-#include <CGAL/Nef_polyhedron_3.h>
-#include <CGAL/Polyhedron_3.h>
-#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+#include <igl/copyleft/cgal/mesh_boolean.h>
+#include <Eigen/Core>
 
 namespace {
-    using namespace zeno;
-
-typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
-typedef CGAL::Nef_polyhedron_3<Kernel> Nef_polyhedron;
-typedef CGAL::Polyhedron_3<Kernel> Polyhedron;
-typedef Polyhedron::HalfedgeDS HalfedgeDS;
-typedef HalfedgeDS::Vertex Vertex;
-typedef Vertex::Point Point;
-typedef Polyhedron::Halfedge_handle Halfedge_handle;
-typedef Polyhedron::Halfedge_iterator Halfedge_iterator;
-typedef Polyhedron::size_type size_type;
-
-
-
-///<summery>
-/// Creation of a mesh
-///</summery>
-template<class HDS>
-struct MeshCreator : public CGAL::Modifier_base<HDS>
-{
-
-    typedef typename HDS::Vertex Vertex;
-    typedef typename Vertex::Point Point;
-
-    int _numVertices;
-    int _numFacets;
-    int _numHalfedges;
-    std::vector<vec3f> &_vertices;
-    std::vector<vec3i> _triangles;
-    std::set<std::pair<int, int>> hes;
-
-    MeshCreator(std::vector<vec3f> & vertices, std::vector<vec3i> & triangles, int numHalfedges) :
-        _numHalfedges(numHalfedges), _vertices(vertices)
-    {
-        _numVertices = vertices.size();
-        _numFacets = triangles.size();
-
-        for (size_t i = 0; i < _numFacets; ++i) {
-            auto f = triangles[i];
-            if (hes.find({f[0], f[1]}) != hes.end()) {
-                std::swap(f[0], f[1]);
-            }
-            if (hes.find({f[1], f[1]}) != hes.end()) {
-                std::swap(f[0], f[1]);
-            }
-            hes.emplace(f[0], f[1]);
-            hes.emplace(f[1], f[2]);
-            hes.emplace(f[2], f[0]);
-            _triangles.push_back(f);
-        }
-    }
-
-    void operator()(HDS &hds)
-    {
-        CGAL::Polyhedron_incremental_builder_3<HDS> mesh(hds);
-        mesh.begin_surface(_numVertices, _numFacets);
-        for (size_t i = 0; i < _numVertices; ++i) {
-            auto v = _vertices[i];
-            mesh.add_vertex(Point(v[0], v[1], v[2]));
-        }
-        for (size_t i = 0; i < _numFacets; ++i)
-        {
-            auto f = _triangles[i];
-            mesh.begin_facet();
-            mesh.add_vertex_to_facet(f[0]);
-            mesh.add_vertex_to_facet(f[1]);
-            mesh.add_vertex_to_facet(f[2]);
-            mesh.end_facet();
-        }
-        mesh.end_surface();
-    }
-
-};
-
-
-auto prim_to_nef(PrimitiveObject *prim) {
-    int nhalfedges = 10000;
-    MeshCreator<HalfedgeDS> meshCreator(prim->attr<vec3f>("pos"), prim->tris, nhalfedges);
-    Polyhedron P(prim->size(), meshCreator._numHalfedges, prim->tris.size());
-    P.delegate(meshCreator);
-    Nef_polyhedron nef(P);
-    return nef;
-}
+using namespace zeno;
 
 
 struct PrimitiveBooleanOp : INode {
@@ -98,21 +14,7 @@ struct PrimitiveBooleanOp : INode {
         auto prim2 = get_input<PrimitiveObject>("prim2");
         auto op_type = get_param<std::string>("op_type");
 
-        auto nef1 = prim_to_nef(prim1.get());
-        auto nef2 = prim_to_nef(prim2.get());
-
-        Nef_polyhedron nef3;
-        if (op_type == "union") {
-            nef3 = nef1 + nef2;
-        } else if (op_type == "intersection") {
-            nef3 = nef1 * nef2;
-        } else if (op_type == "difference") {
-            nef3 = nef1 - nef2;
-        } else {
-            throw Exception("Bad boolean op: " + op_type);
-        }
-        Polyhedron result;
-        nef3.convert_to_Polyhedron(result);
+        igl::copyleft::cgal::mesh_boolean(VA,FA,VB,FB,boolean_type,VC,FC,J);
 
         auto res = std::make_shared<PrimitiveObject>();
         auto &pos = res->add_attr<vec3f>("pos");

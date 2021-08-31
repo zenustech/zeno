@@ -7,9 +7,7 @@ add_library(zeno_cgmesh SHARED ${PROJECT_SOURCE})
 target_include_directories(zeno_cgmesh PRIVATE .)
 
 target_link_libraries(zeno_cgmesh PRIVATE voro++)
-
-find_package(CGAL REQUIRED)
-target_link_libraries(zeno_cgmesh PRIVATE CGAL::CGAL)
+target_link_libraries(zeno_cgmesh PRIVATE igl::core igl::cgal)
 
 find_package(OpenMP)
 if (TARGET OpenMP::OpenMP_CXX)
