@@ -105,6 +105,11 @@ struct PrimitiveRandomizeAttr : INode {
     auto maxY = std::get<float>(get_param("maxY"));
     auto maxZ = std::get<float>(get_param("maxZ"));
     auto attrName = std::get<std::string>(get_param("attrName"));
+    auto attrType = std::get<std::string>(get_param("attrType"));
+    if (!prim->has_attr(attrName)) {
+        if (attrType == "float3") prim->add_attr<vec3f>(attrName);
+        else if (attrType == "float") prim->add_attr<float>(attrName);
+    }
     auto &arr = prim->attr(attrName);
     std::visit([min, minY, minZ, max, maxY, maxZ](auto &arr) {
         for (int i = 0; i < arr.size(); i++) {
@@ -149,7 +154,7 @@ struct PrimitiveRandomAttr : INode {
     auto min = get_input<NumericObject>("min");
     auto max = get_input<NumericObject>("max");
     auto attrName = std::get<std::string>(get_param("attrName"));
-    auto attrType = std::get<std::string>(get_param("attrName"));
+    auto attrType = std::get<std::string>(get_param("attrType"));
     if (!prim->has_attr(attrName)) {
         if (attrType == "float3") prim->add_attr<vec3f>(attrName);
         else if (attrType == "float") prim->add_attr<float>(attrName);
