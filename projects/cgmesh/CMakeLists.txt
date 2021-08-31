@@ -1,7 +1,6 @@
 add_subdirectory(voro)
 
-set(LIBIGL_WITH_CGAL ON CACHE BOOL "we need igl::cgal")
-add_subdirectory(libigl)
+find_package(libigl REQUIRED)
 
 file(GLOB PROJECT_SOURCE *.cpp *.h)
 
@@ -9,7 +8,7 @@ add_library(zeno_cgmesh SHARED ${PROJECT_SOURCE})
 target_include_directories(zeno_cgmesh PRIVATE .)
 
 target_link_libraries(zeno_cgmesh PRIVATE voro++)
-target_link_libraries(zeno_cgmesh PRIVATE igl::core igl::cgal)
+target_link_libraries(zeno_cgmesh PRIVATE libigl::core)
 
 find_package(OpenMP)
 if (TARGET OpenMP::OpenMP_CXX)
