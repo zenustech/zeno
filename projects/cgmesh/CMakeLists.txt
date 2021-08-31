@@ -1,20 +1,34 @@
 add_subdirectory(voro)
 
-set(LIBIGL_INCLUDE_DIRS /home/bate/Codes/libigl/include)
-find_package(LIBIGL QUIET)
-if (NOT LIBIGL_FOUND)
-    message(FATAL_ERROR "libigl not found -- install it using: "
-    "https://github.com/libigl/libigl.git")
-endif()
-find_package(Eigen3 REQUIRED)
-
 file(GLOB PROJECT_SOURCE *.cpp *.h)
 
 add_library(zeno_cgmesh SHARED ${PROJECT_SOURCE})
 target_include_directories(zeno_cgmesh PRIVATE .)
 
 target_link_libraries(zeno_cgmesh PRIVATE voro++)
-target_link_libraries(zeno_cgmesh PRIVATE igl::core igl_cgal Eigen3::Eigen)
+
+if (UNIX)
+    find_package(LIBIGL QUIET)
+    if (NOT LIBIGL_FOUND)
+        message(FATAL_ERROR "libigl not found -- install it from source: "
+        "https://github.com/libigl/libigl.git")
+    endif()
+    find_package(Eigen3 REQUIRED)
+    set(LIBIGL_INCLUDE_DIR /home/bate/Codes/libigl/include)
+    set(LIBIGL_EIGEN_INCLUDE_DIR /usr/include/eigen3)
+    if (NOT LIBIGL_INCLUDE_DIR)
+        message(FATAL_ERROR "please specify LIBIGL_INCLUDE_DIR")
+    endif()
+    if (NOT LIBIGL_EIGEN_INCLUDE_DIR)
+        message(FATAL_ERROR "please specify LIBIGL_INCLUDE_DIR")
+    endif()
+    target_include_directories(zeno_cgmesh PRIVATE ${LIBIGL_INCLUDE_DIR} ${LIBIGL_EIGEN_INCLUDE_DIR})
+    target_link_libraries(zeno_cgmesh PRIVATE igl::core igl_cgal Eigen3::Eigen)
+else()
+    find_package(LIBIGL CONFIG REQUIRED)
+    find_package(Eigen3 CONFIG REQUIRED)
+    target_link_libraries(zeno_cgmesh PRIVATE igl::core igl::cgal Eigen3::Eigen)
+endif()
 
 find_package(OpenMP)
 if (TARGET OpenMP::OpenMP_CXX)
