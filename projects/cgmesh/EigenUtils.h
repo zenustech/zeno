@@ -27,7 +27,7 @@ inline void eigen_to_prim(Eigen::MatrixXd const &V, Eigen::MatrixXi const &F, Pr
     verts.clear();
     for (int i = 0; i < V.rows(); i++) {
         auto const &pos = V.row(i);
-        verts.emplace_back(V(0), V(1), V(2));
+        verts.emplace_back(pos(0), pos(1), pos(2));
     }
     prim->resize(verts.size());
 

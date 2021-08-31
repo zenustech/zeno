@@ -14,7 +14,6 @@ using namespace zeno;
 struct PrimitiveMeshingFix : INode {
     virtual void apply() override {
         auto primA = get_input<PrimitiveObject>("prim");
-        auto op_type = get_param<std::string>("op_type");
 
         auto [VA, FA] = prim_to_eigen(primA.get());
         Eigen::MatrixXd VB;
