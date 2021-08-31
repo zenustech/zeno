@@ -24,6 +24,7 @@ ap.add_argument('--with-cuda', action='store_true')
 ap.add_argument('--with-bullet', action='store_true')
 ap.add_argument('--with-cgal', action='store_true')
 ap.add_argument('--cmake-args', default='')
+ap.add_argument('--parallel', default='auto')
 
 ap = ap.parse_args()
 
@@ -35,6 +36,12 @@ if ap.clean:
 
 args = []
 build_args = []
+
+if ap.parallel:
+    if ap.parallel == 'auto':
+        build_args.extend(['--parallel'])
+    else:
+        build_args.extend(['--parallel', ap.parallel])
 
 if sys.platform == 'win32':
     build_args.extend(['--config', ap.config])
@@ -80,4 +87,4 @@ if ap.cmake_args:
 print('*** cmake arguments:', args)
 subprocess.check_call(['cmake', '-B', 'build'] + args)
 print('*** now building project...')
-subprocess.check_call(['cmake', '--build', 'build', '--parallel'] + build_args)
+subprocess.check_call(['cmake', '--build', 'build'] + build_args)

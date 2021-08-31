@@ -1,4 +1,6 @@
 add_subdirectory(voro)
+
+set(LIBIGL_WITH_CGAL ON CACHE BOOL "we need igl::cgal")
 add_subdirectory(libigl)
 
 file(GLOB PROJECT_SOURCE *.cpp *.h)
