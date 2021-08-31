@@ -127,6 +127,7 @@ make -j8
 sudo make install
 cd ../..
 
+# (Optional) Install LibIGL:
 git clone https://github.com/libigl/libigl.git --branch=v2.3.0
 cd libigl
 mkdir build
