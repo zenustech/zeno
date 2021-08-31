@@ -9,12 +9,15 @@ namespace zeno {
 struct MakePrimitive : zeno::INode {
   virtual void apply() override {
     auto prim = std::make_shared<PrimitiveObject>();
+    auto size = get_input<NumericObject>("size")->get<int>();
+    prim->resize(size);
     set_output("prim", std::move(prim));
   }
 };
 
 ZENDEFNODE(MakePrimitive,
     { /* inputs: */ {
+    {"int", "size", ""},
     }, /* outputs: */ {
     "prim",
     }, /* params: */ {
