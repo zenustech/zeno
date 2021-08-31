@@ -57,7 +57,7 @@ target_link_libraries(
 )
 set_target_properties(meshfix-bin PROPERTIES OUTPUT_NAME meshfix)
 
-option(MESHFIX_WITH_LIBIGL "Use libigl" ON)
+set(MESHFIX_WITH_LIBIGL OFF)
 
 if(MESHFIX_WITH_LIBIGL)
   find_package(LIBIGL QUIET)
