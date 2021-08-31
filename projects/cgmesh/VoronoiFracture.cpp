@@ -38,7 +38,6 @@ struct VoronoiFracture : INode {
                 auto &parspos = particlesPrim->attr<vec3f>("pos");
                 for (int i = 0; i < parspos.size(); i++) {
                     auto p = parspos[i];
-                    printf("!! %f %f %f\n", p[0], p[1], p[2]);
                     pcon.put(i + 1, p[0], p[1], p[2]);
                 }
             } else {
