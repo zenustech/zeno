@@ -296,6 +296,16 @@
        "prim",
        null
       ],
+      "attrValA": [
+       null,
+       null,
+       null
+      ],
+      "attrValB": [
+       null,
+       null,
+       null
+      ],
       "SRC": [
        null,
        null,
@@ -304,7 +314,8 @@
      },
      "params": {
       "op_type": "Union",
-      "assignAttrs": true,
+      "attrName": "",
+      "calcAnyFrom": true,
       "doMeshFix": true
      },
      "uipos": [
@@ -551,6 +562,16 @@
        "primFixed",
        null
       ],
+      "attrValA": [
+       null,
+       null,
+       null
+      ],
+      "attrValB": [
+       null,
+       null,
+       null
+      ],
       "SRC": [
        null,
        null,
@@ -559,7 +580,8 @@
      },
      "params": {
       "op_type": "Union",
-      "assignAttrs": true,
+      "attrName": "",
+      "calcAnyFrom": true,
       "doMeshFix": true
      },
      "uipos": [
@@ -851,9 +873,7 @@
       -1205.4502779043216,
       -160.15963553530676
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "58b28155-NumericRandom": {
      "name": "NumericRandom",
@@ -900,9 +920,7 @@
       -1537.5861503416786,
       -233.91052391799437
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "b33e8767-ListLength": {
      "name": "ListLength",
@@ -973,13 +991,138 @@
       -307.1309558086545
      ],
      "options": []
+    },
+    "38d789d4-ImportObjPrimitive": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/monkey.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2453.7085200911024,
+      -850.91069084282
+     ],
+     "options": []
+    },
+    "19cd45cd-x": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/Pig_Head.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2454.9875170842683,
+      -591.5318174031856
+     ],
+     "options": []
+    },
+    "e796c68d-PrimitiveBooleanOp": {
+     "name": "PrimitiveBooleanOp",
+     "inputs": {
+      "primA": [
+       "38d789d4-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "primB": [
+       "19cd45cd-x",
+       "prim",
+       null
+      ],
+      "attrValA": [
+       "f83fd099-NumericVec3",
+       "vec3",
+       null
+      ],
+      "attrValB": [
+       "1473fb90-x",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "Intersect",
+      "attrName": "clr",
+      "calcAnyFrom": true,
+      "doMeshFix": true
+     },
+     "uipos": [
+      -2097.4863978132,
+      -808.2230932118405
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "f83fd099-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 1.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -1842.099025056937,
+      -870.4046651480587
+     ],
+     "options": []
+    },
+    "1473fb90-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 1.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -1836.9487015945222,
+      -627.4810751708392
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -2358.955541564667,
-    "y": -359.53598618697333,
-    "width": 491.519999999998,
-    "height": 376.83199999999806
+    "x": -2497.94056216861,
+    "y": -906.3369829729804,
+    "width": 767.9999999999967,
+    "height": 588.7999999999965
    }
   },
   "PrimitiveVoronoi": {
@@ -5055,6 +5198,16 @@
      ""
     ],
     [
+     "NumericObject",
+     "attrValA",
+     ""
+    ],
+    [
+     "NumericObject",
+     "attrValB",
+     ""
+    ],
+    [
      "",
      "SRC",
      ""
@@ -5089,8 +5242,13 @@
      "Union"
     ],
     [
+     "string",
+     "attrName",
+     ""
+    ],
+    [
      "bool",
-     "assignAttrs",
+     "calcAnyFrom",
      "1"
     ],
     [
@@ -5475,7 +5633,7 @@
      ""
     ],
     [
-     "",
+     "NumericObject",
      "value",
      ""
     ],

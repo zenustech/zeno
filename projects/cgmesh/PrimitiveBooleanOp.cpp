@@ -33,9 +33,7 @@ struct PrimitiveBooleanOp : INode {
         bool anyFromA = false, anyFromB = false;
         if (get_param<bool>("calcAnyFrom")) {
             for (int i = 0; i < primC->size(); i++) {
-                int j = J(i), jmax = FA.rows();
-                if (j < 0) printf("j=%d\n", j);
-                if (j < jmax) {
+                if (J(i) < FA.rows()) {
                     anyFromA = true;
                 } else {
                     anyFromB = true;
@@ -43,25 +41,23 @@ struct PrimitiveBooleanOp : INode {
             }
         }
 
-        if (get_param<bool>("assignAttrs")) {
-            for (auto const &[key, arrA]: primA->m_attrs) {
-                if (key == "pos") continue;
-                if (!primB->has_attr(key)) continue;
-                std::visit([&, key = key] (auto const &arrA) {
-                    using T = std::decay_t<decltype(arrA[0])>;
-                    if (!primB->attr_is<T>(key)) return;
-                    auto &arrB = primB->attr<T>(key);
-                    auto &arrC = primC->add_attr<T>(key);
+        if (auto attrName = get_param<std::string>("attrName"); attrName.size()) {
+            auto attrValA = get_input<NumericObject>("attrValA")->value;
+            auto attrValB = get_input<NumericObject>("attrValB")->value;
+            std::visit([&] (auto const &valA) {
+                using T = std::decay_t<decltype(valA)>;
+                if constexpr (std::is_same_v<T, float> || std::is_same_v<T, vec3f>) {
+                    auto valB = std::get<T>(attrValB);
+                    auto &arrC = primC->add_attr<T>(attrName);
                     for (int i = 0; i < primC->size(); i++) {
-                        int j = J(i), jmax = FA.rows();
-                        if (j < jmax) {
-                            arrC[i] = arrA[j];
+                        if (J(i) < FA.rows()) {
+                            arrC[i] = valA;
                         } else {
-                            arrC[i] = arrB[j - jmax];
+                            arrC[i] = valB;
                         }
                     }
-                }, arrA);
-            }
+                }
+            }, attrValA);
         }
 
         return std::make_tuple(primC, anyFromA, anyFromB);
@@ -83,13 +79,15 @@ struct PrimitiveBooleanOp : INode {
 ZENO_DEFNODE(PrimitiveBooleanOp)({
     {
     "primA", "primB",
+    {"NumericObject", "attrValA"}, {"NumericObject", "attrValB"},
     },
     {
     "primC", {"bool", "anyFromA"}, {"bool", "anyFromB"},
     },
     {
     {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "Union"},
-    {"bool", "assignAttrs", "1"},
+    {"string", "attrName", ""},
+    {"bool", "calcAnyFrom", "1"},
     {"bool", "doMeshFix", "1"},
     },
     {"cgmesh"},

@@ -43,7 +43,7 @@ struct PrimitiveFillAttr : INode {
 ZENDEFNODE(PrimitiveFillAttr,
     { /* inputs: */ {
     "prim",
-    "value",
+    {"NumericObject", "value"},
     }, /* outputs: */ {
     "prim",
     }, /* params: */ {
