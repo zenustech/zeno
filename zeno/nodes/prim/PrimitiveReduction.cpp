@@ -75,4 +75,38 @@ ZENDEFNODE(PrimitiveReduction,
     "primitive",
     }});
 
+struct PrimitiveBoundingBox : zeno::INode {
+    virtual void apply() override{
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto &pos = prim->attr<vec3f>("pos");
+
+        auto bmin = pos.size() ? pos[0] : vec3f(0);
+        auto bmax = bmin;
+
+        for (int i = 1; i < pos.size(); i++) {
+            bmin = zeno::min(pos[i], bmin);
+            bmax = zeno::max(pos[i], bmax);
+        }
+
+        auto exwidth = get_param<float>("exWidth");
+        if (exwidth) {
+            bmin += exwidth;
+            bmax += exwidth;
+        }
+        set_output2("bmin", bmin);
+        set_output2("bmax", bmax);
+    }
+};
+
+ZENDEFNODE(PrimitiveBoundingBox,
+    { /* inputs: */ {
+    {"PrimitiveObject", "prim"},
+    }, /* outputs: */ {
+    {"vec3f", "bmin"}, {"vec3f", "bmax"},
+    }, /* params: */ {
+    {"float", "exWidth", "0"},
+    }, /* category: */ {
+    "primitive",
+    }});
+
 }
