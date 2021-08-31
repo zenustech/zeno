@@ -12,10 +12,11 @@ using namespace zeno;
 
 
 struct PrimitiveBooleanOp : INode {
-    auto boolean_op(Eigen::MatrixXd *pVA, Eigen::MatrixXi *pFA, PrimitiveObject *primA, PrimitiveObject *primB) {
+    auto boolean_op(Eigen::MatrixXd const *pVA, Eigen::MatrixXi const *pFA,
+            PrimitiveObject const *primA, PrimitiveObject const *primB) {
         auto [VB, FB] = prim_to_eigen(primB);
-        auto pVB = &VB;
-        auto pFB = &FB;
+        auto const *pVB = &VB;
+        auto const *pFB = &FB;
 
         auto op_type = get_param<std::string>("op_type");
         igl::MeshBooleanType boolean_type;
@@ -41,19 +42,30 @@ struct PrimitiveBooleanOp : INode {
         Eigen::VectorXi J;
         igl::copyleft::cgal::mesh_boolean(*pVA, *pFA, *pVB, *pFB, boolean_type, VC, FC, J);
 
-        /*auto attrName = get_param<std::string>("attrName");
-        if (attrName.size()) {
-            auto attrValA = get_input<NumericObject>("attrValA")->value;
-            auto attrValB = get_input<NumericObject>("attrValB")->value;
-
-            std::visit([&] (auto valA) {
-                auto valB = std::get<decltype(valA)>(attrValB);
-                // todo: work on J
-            }, attrValA);
-        }*/
-
         auto primC = std::make_shared<PrimitiveObject>();
         eigen_to_prim(VC, FC, primC.get());
+
+        if (get_param<bool>("assignAttrs")) {
+            auto attrName = get_param<std::string>("attrName");
+            for (auto const &[key, arrA]: primA->m_attrs) {
+                if (!primB->has_attr(key)) continue;
+                std::visit([&] (auto const &arrA) {
+                    using T = std::decay_t<decltype(arrA[0])>;
+                    if (!primB->attr_is<T>(key)) return;
+                    auto &arrB = primB->attr<T>(attrName);
+                    auto &arrC = primC->add_attr<T>(attrName);
+                    for (int i = 0; i < primC->size(); i++) {
+                        int j = J(i), jmax = pFA->rows();
+                        if (j < jmax) {
+                            arrC[i] = arrA[j];
+                        } else {
+                            arrC[i] = arrB[j - jmax];
+                        }
+                    }
+                }, arrA);
+            }
+        }
+
         return primC;
     }
 
@@ -78,7 +90,7 @@ ZENO_DEFNODE(PrimitiveBooleanOp)({
     "primC",
     },
     {
-    {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "union"},
+    {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "Union"},
     {"string", "attrName", ""},
     },
     {"cgmesh"},
@@ -92,11 +104,17 @@ struct PrimitiveListBoolOp : PrimitiveBooleanOp {
 
         auto [VA, FA] = prim_to_eigen(primA.get());
 
-        for (auto const &primB: primListB->get<std::shared_ptr<PrimitiveObject>>()) {
-            boolean_op(&VA, &FA, primA.get(), primB.get());
+        auto listB = primListB->get<std::shared_ptr<PrimitiveObject>>();
+        auto primListC = std::make_shared<ListObject>();
+        primListC->arr.resize(listB.size());
+        #pragma omp parallel for
+        for (int i = 0; i < listB.size(); i++) {
+            printf("PrimitiveListBoolOp: processing mesh #%d...\n", i);
+            auto const &primB = listB[i];
+            auto primC = boolean_op(&VA, &FA, primA.get(), primB.get());
+            primListC->arr[i] = std::move(primC);
         }
 
-        auto primListC = std::make_shared<ListObject>();
         set_output("primListC", std::move(primListC));
     }
 };
@@ -104,15 +122,13 @@ struct PrimitiveListBoolOp : PrimitiveBooleanOp {
 ZENO_DEFNODE(PrimitiveListBoolOp)({
     {
     "primA", "primListB",
-    {"float", "attrValA", "0"},
-    {"float", "attrValB", "1"},
     },
     {
     "primListC",
     },
     {
     {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "union"},
-    {"string", "attrName", ""},
+    {"bool", "assignAttrs", "1"},
     },
     {"cgmesh"},
 });
