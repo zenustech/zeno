@@ -69,30 +69,35 @@ public:
 };
 
 
+auto prim_to_nef(PrimitiveObject *prim) {
+    int nhalfedges = 24;
+    Polyhedron P(prim->size(), nhalfedges, prim->tris.size());
+    MeshCreator<HalfedgeDS> meshCreator(prim->attr<vec3f>("pos"), prim->tris, nhalfedges);
+    P.delegate(meshCreator);
+    Nef_polyhedron nef(P);
+    return nef;
+}
+
+
 struct PrimitiveBooleanOp : INode {
     virtual void apply() override {
         auto prim1 = get_input<PrimitiveObject>("prim1");
         auto prim2 = get_input<PrimitiveObject>("prim2");
+        auto op_type = get_param<std::string>("op_type");
 
-        int prim1halfedges = 24;
-        int prim2halfedges = 24;
+        auto nef1 = prim_to_nef(prim1.get());
+        auto nef2 = prim_to_nef(prim2.get());
 
-        Polyhedron P1(prim1->size(), prim1halfedges, prim1->tris.size());
-        Polyhedron P2(prim2->size(), prim2halfedges, prim2->tris.size());
-
-        MeshCreator<HalfedgeDS> meshCreator1(prim1->attr<vec3f>("pos"), prim1->tris, prim1halfedges);
-        MeshCreator<HalfedgeDS> meshCreator2(prim2->attr<vec3f>("pos"), prim2->tris, prim2halfedges);
-        P1.delegate(meshCreator1);
-        P2.delegate(meshCreator2);
-
-        bool isClosed    = P1.is_closed()        && (P2.is_closed());
-        bool isValid     = P1.is_valid()         && (P2.is_valid());
-        bool isTriangles = P1.is_pure_triangle() && (P2.is_pure_triangle());
-
-        Nef_polyhedron nef1(P1);
-        Nef_polyhedron nef2(P2);
-
-        Nef_polyhedron nef3 = nef1 * nef2;
+        Nef_polyhedron nef3;
+        if (op_type == "union") {
+            nef3 = nef1 + nef2;
+        } else if (op_type == "intersection") {
+            nef3 = nef1 * nef2;
+        } else if (op_type == "difference") {
+            nef3 = nef1 - nef2;
+        } else {
+            throw Exception("Bad boolean op: " + op_type);
+        }
         Polyhedron result;
         nef3.convert_to_Polyhedron(result);
 
@@ -100,5 +105,18 @@ struct PrimitiveBooleanOp : INode {
         //}
     }
 };
+
+ZENO_DEFNODE(PrimitiveBooleanOp)({
+    {
+    "prim1", "prim2"
+    },
+    {
+    "prim",
+    },
+    {
+    {"enum union intersection difference", "op_type", "union"},
+    },
+    {"cgmesh"},
+});
 
 }
