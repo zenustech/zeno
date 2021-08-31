@@ -82,9 +82,7 @@
       1022.5340136054424,
       -431.54761904761904
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "ec627314-PrimOmpReduction": {
      "name": "PrimOmpReduction",
@@ -108,9 +106,7 @@
       1036.8109339407742,
       64.7608200455581
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "520d5b8a-PrimTbbReduction": {
      "name": "PrimTbbReduction",
@@ -134,16 +130,89 @@
       1052.3690205011392,
       -190.5239179954442
      ],
+     "options": []
+    },
+    "2cb5b9d7-PrintNumeric": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "b8c06cfe-PrimitiveReduction",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "hint": "serial"
+     },
+     "uipos": [
+      1319.362186788155,
+      -349.1571753986333
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "ef7cae58-x": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "520d5b8a-PrimTbbReduction",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "hint": "tbb"
+     },
+     "uipos": [
+      1301.1389521640092,
+      -150.88838268792708
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "3e13a3b4-x": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "ec627314-PrimOmpReduction",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "hint": "omp"
+     },
+     "uipos": [
+      1279.2710706150342,
+      109.33940774487476
+     ],
      "options": [
       "VIEW"
      ]
     }
    },
    "view_rect": {
-    "x": 727.7494752372404,
-    "y": -494.3029445985512,
-    "width": 400.0,
-    "height": 400.0
+    "x": 774.6733842900148,
+    "y": -375.9070481617597,
+    "width": 320.0,
+    "height": 320.0
    }
   }
  },
