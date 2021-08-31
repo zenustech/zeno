@@ -58,6 +58,7 @@ public:
         {
             auto f = _triangles[i];
             mesh.begin_facet();
+            // TODO: sort face order to prevent halfedge error:
             mesh.add_vertex_to_facet(f[0]);
             mesh.add_vertex_to_facet(f[1]);
             mesh.add_vertex_to_facet(f[2]);
@@ -70,7 +71,7 @@ public:
 
 
 auto prim_to_nef(PrimitiveObject *prim) {
-    int nhalfedges = 24;
+    int nhalfedges = 10000;
     Polyhedron P(prim->size(), nhalfedges, prim->tris.size());
     MeshCreator<HalfedgeDS> meshCreator(prim->attr<vec3f>("pos"), prim->tris, nhalfedges);
     P.delegate(meshCreator);
@@ -101,8 +102,23 @@ struct PrimitiveBooleanOp : INode {
         Polyhedron result;
         nef3.convert_to_Polyhedron(result);
 
-        //for (auto vit = result.vertices_begin(); vit != result.vertices_end(); vit++) {
-        //}
+        auto res = std::make_shared<PrimitiveObject>();
+        auto &pos = res->add_attr<vec3f>("pos");
+        for (auto vit = result.vertices_begin(); vit != result.vertices_end(); vit++) {
+            float x = vit->point().x().exact().convert_to<float>();
+            float y = vit->point().y().exact().convert_to<float>();
+            float z = vit->point().z().exact().convert_to<float>();
+            pos.emplace_back(x, y, z);
+        }
+        res->resize(pos.size());
+        for (auto fsit = result.facets_begin(); fsit != result.facets_end(); fsit++) {
+            int fitid = 0;
+            for (auto fit = fsit->facet_begin(); fitid++ < fsit->facet_degree(); fit++) {
+                printf("%zd\n", fit->vertex_degree());
+            }
+        }
+
+        set_output("prim", std::move(res));
     }
 };
 
