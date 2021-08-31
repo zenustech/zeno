@@ -456,6 +456,7 @@
      "params": {
       "op_type": "Intersect",
       "assignAttrs": true,
+      "calcAnyFrom": true,
       "doMeshFix": true
      },
      "uipos": [
@@ -704,8 +705,8 @@
      "name": "CachedOnce",
      "inputs": {
       "input": [
-       "0a22692b-PrimitiveListBoolOp",
-       "primListC",
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -814,8 +815,8 @@
      "name": "BeginForEach",
      "inputs": {
       "list": [
-       "f722ebdb-PrimitiveVoronoi",
-       "primList",
+       "c71f824d-ExtendList",
+       "list1",
        null
       ],
       "SRC": [
@@ -826,8 +827,8 @@
      },
      "params": {},
      "uipos": [
-      -2011.5165011389438,
-      -181.21024145785796
+      -1797.7579589977147,
+      -204.2626332574023
      ],
      "options": []
     },
@@ -847,8 +848,8 @@
      },
      "params": {},
      "uipos": [
-      -1419.2088200455507,
-      -137.10724373576247
+      -1205.4502779043216,
+      -160.15963553530676
      ],
      "options": [
       "VIEW"
@@ -878,8 +879,8 @@
       "attrType": "float3"
      },
      "uipos": [
-      -1751.1099772209493,
-      -214.9401658314342
+      -1537.3514350797202,
+      -237.9925576309785
      ],
      "options": [
       "VIEW"
@@ -898,17 +899,43 @@
       "dim": 3
      },
      "uipos": [
-      -1733.9422323462343,
-      34.33548974943039
+      -1520.1836902050052,
+      11.28309794988607
+     ],
+     "options": []
+    },
+    "c71f824d-ExtendList": {
+     "name": "ExtendList",
+     "inputs": {
+      "list1": [
+       "f722ebdb-PrimitiveVoronoi",
+       "interiorPrimList",
+       null
+      ],
+      "list2": [
+       "f722ebdb-PrimitiveVoronoi",
+       "boundaryPrimList",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2049.701321184502,
+      -160.66259681093328
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -2304.903994153994,
-    "y": -344.6967389979532,
-    "width": 614.3999999999978,
-    "height": 471.039999999998
+    "x": -2158.12293502962,
+    "y": -244.16684776102915,
+    "width": 314.5727999999989,
+    "height": 241.17247999999898
    }
   },
   "PrimitiveVoronoi": {
@@ -1021,6 +1048,7 @@
      "params": {
       "op_type": "Intersect",
       "assignAttrs": true,
+      "calcAnyFrom": true,
       "doMeshFix": true
      },
      "uipos": [
@@ -1152,8 +1180,8 @@
      },
      "params": {},
      "uipos": [
-      -1435.5353075170842,
-      -180.6378132118451
+      -1695.358769931663,
+      -114.79214123006832
      ],
      "options": []
     },
@@ -1172,8 +1200,8 @@
       "defl": "32"
      },
      "uipos": [
-      -1698.6332574031896,
-      -285.5125284738042
+      -1958.456719817768,
+      -219.66685649202745
      ],
      "options": []
     },
@@ -1182,23 +1210,23 @@
      "inputs": {
       "port": [
        "be03fe0a-x",
-       "primListC",
+       "primListAllFromB",
        null
       ],
       "SRC": [
-       "6e8222d5-PrintNumeric",
-       "DST",
+       null,
+       null,
        null
       ]
      },
      "params": {
-      "name": "primList",
+      "name": "interiorPrimList",
       "type": "",
       "defl": ""
      },
      "uipos": [
-      -81.54897494305243,
-      244.64692482915723
+      86.10478359908882,
+      242.82460136674274
      ],
      "options": []
     },
@@ -1220,33 +1248,12 @@
      ],
      "options": []
     },
-    "ac80d066-PrimitiveGetSize": {
-     "name": "PrimitiveGetSize",
+    "ef7f74e1-x": {
+     "name": "SubOutput",
      "inputs": {
-      "prim": [
-       "efe8c6e3-MakePrimitive",
-       "prim",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -1108.8838268792713,
-      -155.80865603644648
-     ],
-     "options": []
-    },
-    "6e8222d5-PrintNumeric": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "ac80d066-PrimitiveGetSize",
-       "size",
+      "port": [
+       "be03fe0a-x",
+       "primListAnyFromA",
        null
       ],
       "SRC": [
@@ -1256,18 +1263,20 @@
       ]
      },
      "params": {
-      "hint": "PrintNumeric"
+      "name": "boundaryPrimList",
+      "type": "",
+      "defl": ""
      },
      "uipos": [
-      -806.378132118451,
-      -82.00455580865605
+      86.5603644646925,
+      459.2255125284738
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -613.0410022778499,
-    "y": -81.5774487471522,
+    "x": -465.9026195899239,
+    "y": 80.79441913439604,
     "width": 625.0,
     "height": 625.0
    }
@@ -4488,6 +4497,16 @@
      ""
     ],
     [
+     "bool",
+     "anyFromA",
+     ""
+    ],
+    [
+     "bool",
+     "anyFromB",
+     ""
+    ],
+    [
      "",
      "DST",
      ""
@@ -5142,7 +5161,12 @@
    "outputs": [
     [
      "",
-     "primListC",
+     "primListAllFromB",
+     ""
+    ],
+    [
+     "",
+     "primListAnyFromA",
      ""
     ],
     [
@@ -5160,6 +5184,11 @@
     [
      "bool",
      "assignAttrs",
+     "1"
+    ],
+    [
+     "bool",
+     "calcAnyFrom",
      "1"
     ],
     [
@@ -6845,7 +6874,12 @@
    "outputs": [
     [
      "",
-     "primList",
+     "interiorPrimList",
+     ""
+    ],
+    [
+     "",
+     "boundaryPrimList",
      ""
     ],
     [
