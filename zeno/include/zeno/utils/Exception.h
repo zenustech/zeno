@@ -16,7 +16,7 @@ public:
   ZENO_API char const *what() const noexcept;
 #else
   BaseException(std::string_view msg) noexcept : msg(msg) {}
-  ~BaseException() noexcept = defalut;
+  ~BaseException() noexcept = default;
   char const *what() const noexcept { return msg.c_str(); }
 #endif
 };
@@ -26,7 +26,7 @@ public:
 #ifndef ZENO_APIFREE
   ZENO_API Exception(std::string_view msg) noexcept;
 #else
-  ZENO_API Exception(std::string_view msg) noexcept = default;
+  Exception(std::string_view msg) noexcept : BaseException(msg) {}
 #endif
 };
 
