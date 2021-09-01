@@ -2,6 +2,7 @@
 #include <zeno/types/BlenderMesh.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/StringObject.h>
 
 namespace {
 
@@ -138,8 +139,6 @@ struct PrimitiveToBMesh : zeno::INode {
             mesh->poly[base_poly + i] = {base + i*4, 4};
         }
 
-        mesh->attrs = prim->m_attrs;
-
         set_output("mesh", std::move(mesh));
     }
 };
@@ -151,6 +150,21 @@ ZENDEFNODE(PrimitiveToBMesh, {
     {"blendermesh"},
 });
 
+
+struct MakeText : zeno::INode {
+    virtual void apply() override {
+        auto obj = std::make_unique<zeno::StringObject>();
+        obj->set(get_param<std::string>("text"));
+        set_output("value", std::move(obj));
+    }
+};
+
+ZENDEFNODE(MakeText, {
+    {},
+    {{"StringObject", "value"}},
+    {{"text", "value", ""}},
+    {"string"},
+    });
 
 /*
 static void decompose_matrix(const Matrix4x4 &m, Vector3f *T,
