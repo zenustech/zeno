@@ -261,6 +261,8 @@ _PER_IOP2(%)
 _PER_IOP2(&)
 _PER_IOP2(|)
 _PER_IOP2(^)
+_PER_IOP2(&&)
+_PER_IOP2(||)
 _PER_IOP2(>>)
 _PER_IOP2(<<)
 _PER_OP2(==)
@@ -335,7 +337,7 @@ template <class T> inline auto tofloat(T const &a) {
 /* vector math functions */
 
 template <size_t N, class T>
-inline bool anyTrue(vec<N, T> const &a) {
+inline bool anytrue(vec<N, T> const &a) {
   bool ret = false;
   for (size_t i = 0; i < N; i++) {
     ret = ret || (bool)a[i];
@@ -344,12 +346,12 @@ inline bool anyTrue(vec<N, T> const &a) {
 }
 
 template <class T>
-inline bool anyTrue(T const &a) {
+inline bool anytrue(T const &a) {
     return (bool)a;
 }
 
 template <size_t N, class T>
-inline bool allTrue(vec<N, T> const &a) {
+inline bool alltrue(vec<N, T> const &a) {
   bool ret = true;
   for (size_t i = 0; i < N; i++) {
     ret = ret && (bool)a[i];
@@ -358,7 +360,7 @@ inline bool allTrue(vec<N, T> const &a) {
 }
 
 template <class T>
-inline bool allTrue(T const &a) {
+inline bool alltrue(T const &a) {
     return (bool)a;
 }
 

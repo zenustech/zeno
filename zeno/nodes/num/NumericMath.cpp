@@ -39,6 +39,29 @@ ZENDEFNODE(MakeOrthonormalBase, {
 });
 
 
+struct BoundingBoxesHasOverlap : INode {
+    virtual void apply() override {
+        auto bminA = get_input<NumericObject>("bminA")->get<vec3f>();
+        auto bmaxA = get_input<NumericObject>("bmaxA")->get<vec3f>();
+        auto bminB = get_input<NumericObject>("bminB")->get<vec3f>();
+        auto bmaxB = get_input<NumericObject>("bmaxB")->get<vec3f>();
+
+        // https://www.cnblogs.com/liez/p/11965027.html
+        bool overlap = allTrue(abs(bminA + bmaxA - bminB - bmaxB) <= (bmaxA - bminA - bmaxA + bminB));
+        set_output2("overlap", overlap);
+        bool AinsideB = allTrue(bminA >= bminB && bmaxA <= bmaxB);
+        set_output2("AinsideB", AinsideB);
+    }
+};
+
+ZENDEFNODE(BoundingBoxesHasOverlap, {
+    {{"vec3f", "bminA"}, {"vec3f", "bmaxA"}, {"vec3f", "bminB"}, {"vec3f", "bmaxB"}},
+    {{"bool", "overlap"}, {"bool", "AinsideB"}},
+    {},
+    {"math"},
+});
+
+
 struct UnpackNumericVec : INode {
     virtual void apply() override {
         auto vec = get_input<NumericObject>("vec")->value;
