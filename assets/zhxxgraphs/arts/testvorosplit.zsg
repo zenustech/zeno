@@ -781,217 +781,6 @@
      ],
      "options": []
     },
-    "2b542f84-x": {
-     "name": "ImportObjPrimitive",
-     "inputs": {
-      "path": [
-       null,
-       null,
-       "assets/monkey.obj"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2624.619589977209,
-      -239.32574031890553
-     ],
-     "options": []
-    },
-    "f722ebdb-PrimitiveVoronoi": {
-     "name": "PrimitiveVoronoi",
-     "inputs": {
-      "prim": [
-       "2b542f84-x",
-       "prim",
-       null
-      ],
-      "particlesPrim": [
-       null,
-       null,
-       null
-      ],
-      "numParticles": [
-       null,
-       null,
-       4
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2293.797146241447,
-      -241.68362277904222
-     ],
-     "options": []
-    },
-    "b3bc2e60-BeginForEach": {
-     "name": "BeginForEach",
-     "inputs": {
-      "list": [
-       "f722ebdb-PrimitiveVoronoi",
-       "boundaryPrimList",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -1797.7579589977147,
-      -204.2626332574023
-     ],
-     "options": []
-    },
-    "1532b159-EndFor": {
-     "name": "EndFor",
-     "inputs": {
-      "FOR": [
-       "b3bc2e60-BeginForEach",
-       "FOR",
-       null
-      ],
-      "SRC": [
-       "2f4e0244-x",
-       "prim",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -1205.4502779043216,
-      -160.15963553530676
-     ],
-     "options": []
-    },
-    "58b28155-NumericRandom": {
-     "name": "NumericRandom",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "dim": 3
-     },
-     "uipos": [
-      -1526.6215945330234,
-      41.326651480637636
-     ],
-     "options": []
-    },
-    "2f4e0244-x": {
-     "name": "PrimitiveFillAttr",
-     "inputs": {
-      "prim": [
-       "b3bc2e60-BeginForEach",
-       "object",
-       null
-      ],
-      "value": [
-       "58b28155-NumericRandom",
-       "value",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "attrName": "clr",
-      "attrType": "float3"
-     },
-     "uipos": [
-      -1537.5861503416786,
-      -233.91052391799437
-     ],
-     "options": []
-    },
-    "b33e8767-ListLength": {
-     "name": "ListLength",
-     "inputs": {
-      "list": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2020.4289749430432,
-      54.72218678815466
-     ],
-     "options": []
-    },
-    "d6537b3c-PrintNumeric": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "b33e8767-ListLength",
-       "length",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "hint": "PrintNumeric"
-     },
-     "uipos": [
-      -1782.2265148063696,
-      74.03589977220923
-     ],
-     "options": []
-    },
-    "3caff849-ExtendList": {
-     "name": "ExtendList",
-     "inputs": {
-      "list1": [
-       "f722ebdb-PrimitiveVoronoi",
-       "interiorPrimList",
-       null
-      ],
-      "list2": [
-       "f722ebdb-PrimitiveVoronoi",
-       "boundaryPrimList",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2050.4296091116075,
-      -307.1309558086545
-     ],
-     "options": []
-    },
     "38d789d4-ImportObjPrimitive": {
      "name": "ImportObjPrimitive",
      "inputs": {
@@ -1177,10 +966,10 @@
     }
    },
    "view_rect": {
-    "x": -2289.1110405285235,
-    "y": -978.1598531324329,
-    "width": 767.9999999999964,
-    "height": 588.7999999999963
+    "x": -2424.7345865376574,
+    "y": -1032.748107987292,
+    "width": 959.9999999999955,
+    "height": 735.9999999999953
    }
   },
   "PrimitiveVoronoi": {
@@ -1637,7 +1426,7 @@
     ]
    ],
    "categories": [
-    "blendermesh"
+    "blender"
    ]
   },
   "BeginFor": {
@@ -1753,6 +1542,36 @@
    "params": [],
    "categories": [
     "control"
+   ]
+  },
+  "BlenderText": {
+   "inputs": [
+    [
+     "string",
+     "text",
+     "DontUseThisNodeDirectly"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "string",
+     "value",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "blender"
    ]
   },
   "BreakFor": {
@@ -2283,6 +2102,52 @@
     "control"
    ]
   },
+  "EndForEach": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "accept",
+     ""
+    ],
+    [
+     "",
+     "FOR",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "list",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "doConcat",
+     "0"
+    ]
+   ],
+   "categories": [
+    "control"
+   ]
+  },
   "ExitProcess": {
    "inputs": [
     [
@@ -2751,7 +2616,7 @@
    ],
    "params": [],
    "categories": [
-    "blendermesh"
+    "blender"
    ]
   },
   "GetFrameNum": {
@@ -4465,7 +4330,7 @@
    ],
    "params": [
     [
-     "enum add sub mul div mod and or xor shr shl cmpge cmple mpgt mplt cmpne cmpeq pos neg inv not atan2 pow max min fmod dot cross distance length normalize abs sqrt sin cos tan asin acos atan exp log floor ceil toint tofloat copy copyr",
+     "enum add sub mul div mod and or xor shr shl cmpge cmple cmpgt cmplt cmpne cmpeq pos neg inv not atan2 pow max min fmod dot cross distance length normalize abs sqrt sin cos tan asin acos atan exp log floor ceil toint tofloat copy copyr",
      "op_type",
      "add"
     ]
@@ -4636,7 +4501,7 @@
      ""
     ],
     [
-     "StringObject",
+     "string",
      "zfxCode",
      ""
     ],
@@ -4676,7 +4541,7 @@
      ""
     ],
     [
-     "StringObject",
+     "string",
      "zfxCode",
      ""
     ],
@@ -4801,12 +4666,12 @@
      ""
     ],
     [
-     "hashgrid",
+     "HashGrid",
      "hashGrid",
      ""
     ],
     [
-     "StringObject",
+     "string",
      "zfxCode",
      ""
     ],
@@ -4876,7 +4741,7 @@
      ""
     ],
     [
-     "StringObject",
+     "string",
      "zfxCode",
      ""
     ],
@@ -5307,7 +5172,7 @@
     [
      "bool",
      "calcAnyFrom",
-     "1"
+     "0"
     ],
     [
      "bool",
@@ -5915,7 +5780,7 @@
     [
      "enum Union Intersect Minus RevMinus XOR Resolve",
      "op_type",
-     "union"
+     "Union"
     ],
     [
      "bool",
@@ -5925,7 +5790,7 @@
     [
      "bool",
      "calcAnyFrom",
-     "1"
+     "0"
     ],
     [
      "bool",
@@ -6562,7 +6427,7 @@
     ]
    ],
    "categories": [
-    "blendermesh"
+    "blender"
    ]
   },
   "PrimitiveToMesh": {
@@ -7182,6 +7047,41 @@
    "params": [],
    "categories": [
     "frame"
+   ]
+  },
+  "SetRandomSeed": {
+   "inputs": [
+    [
+     "",
+     "routeIn",
+     ""
+    ],
+    [
+     "int",
+     "seed",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "routeOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
    ]
   },
   "SetVDBGridName": {
