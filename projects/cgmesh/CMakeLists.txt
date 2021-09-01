@@ -1,6 +1,8 @@
 add_library(zeno_cgmesh SHARED)
 target_include_directories(zeno_cgmesh PRIVATE .)
 
+target_sources(zeno_cgmesh PRIVATE PrimEdgeTessellation.cpp)
+
 option(ZENO_CGMESH_WITH_VOROXX "Build with Voro++ nodes" ON)
 if (ZENO_CGMESH_WITH_VOROXX)
     target_sources(zeno_cgmesh PRIVATE VoronoiFracture.cpp PrimitiveVoronoi.cpp)
