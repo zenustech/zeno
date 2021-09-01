@@ -44,6 +44,36 @@ struct AttrVector {
         return values.data();
     }
 
+    decltype(auto) at(size_t idx) const {
+        return values.at(idx);
+    }
+
+    decltype(auto) at(size_t idx) {
+        return values.at(idx);
+    }
+
+    void push_back(ValT const &t) {
+        values.push_back(t);
+    }
+
+    void push_back(ValT &&t) {
+        values.push_back(std::move(t));
+    }
+
+    void update() {
+        for (auto &[key, val] : attrs) {
+            std::visit([&](auto &val) { val.resize(size); }, val);
+        }
+    }
+
+    decltype(auto) operator[](size_t idx) const {
+        return values[idx];
+    }
+
+    decltype(auto) operator[](size_t idx) {
+        return values[idx];
+    }
+
     auto const *operator->() const {
         return &values;
     }
@@ -58,14 +88,6 @@ struct AttrVector {
 
     operator auto &() {
         return values;
-    }
-
-    void push_back(ValT const &t) {
-        values.push_back(t);
-    }
-
-    void push_back(ValT &&t) {
-        values.push_back(std::move(t));
     }
 
     template <class F>
@@ -102,22 +124,6 @@ struct AttrVector {
     template <class ...Ts>
     decltype(auto) emplace_back(Ts &&...ts) {
         values.emplace_back(std::forward<Ts>(ts)...);
-    }
-
-    decltype(auto) at(size_t idx) const {
-        return values.at(idx);
-    }
-
-    decltype(auto) at(size_t idx) {
-        return values.at(idx);
-    }
-
-    decltype(auto) operator[](size_t idx) const {
-        return values[idx];
-    }
-
-    decltype(auto) operator[](size_t idx) {
-        return values[idx];
     }
 
     template <class T>
