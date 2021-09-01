@@ -4,7 +4,7 @@
 #include <vector>
 #include <zeno/zeno.h>
 #include "tbb/scalable_allocator.h"
-#include <tbb/atomic.h>
+
 #include <zeno/ZenoInc.h>
 #include "openvdb/points/PointConversion.h"
 #include <openvdb/Types.h>

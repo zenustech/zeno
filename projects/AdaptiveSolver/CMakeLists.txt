@@ -20,7 +20,7 @@ if (OPENMP_FOUND)
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-set(AdaptSource AdaptiveGridGen.cpp AdaptiveGridGen.h)
+set(AdaptSource AdaptiveGridGen.cpp AdaptiveGridGen.h AdaptiveSolver.cpp AdaptiveSolver.h)
 #file(GLOB NOSYS_SOURCE nosys/*.cpp nosys/*.h)
 
 add_library(zeno_AdaptiveSolver SHARED ${AdaptSource} ${NOSYS_SOURCE})

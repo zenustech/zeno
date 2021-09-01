@@ -2,7 +2,9 @@
 #include <openvdb/Types.h>
 #include <tbb/parallel_for.h>
 #include <cmath>
+#include <zeno/MeshObject.h>
 #include <omp.h>
+
 namespace zeno{
     
 void AdaptiveIndexGenerator::generateAdaptiveGrid(
@@ -196,4 +198,85 @@ ZENDEFNODE(generateAdaptiveGrid, {
         {},
         {"AdaptiveSolver"},
 });
+
+struct MeshToMultiGridLevelSet : zeno::INode{
+    virtual void apply() override {
+        float h = 0.08;
+        int max_level = 5;
+        if(has_input("maxDx"))
+        {
+        h = get_input("maxDx")->as<NumericObject>()->get<float>();
+        }
+        if(has_input("max_level"))
+        {
+        max_level = get_input("max_level")->as<NumericObject>()->get<int>();
+        }
+        auto mesh = get_input("mesh")->as<zeno::MeshObject>();
+        
+        std::vector<openvdb::Vec3s> points;
+        std::vector<openvdb::Vec3I> triangles;
+        std::vector<openvdb::Vec4I> quads;
+
+        zeno::AdaptiveIndexGenerator aig;
+        aig.topoLevels.resize(max_level);
+        aig.tag.resize(max_level);
+        aig.hLevels.resize(max_level);
+        aig.hLevels[0] = h;
+
+        points.resize(mesh->vertices.size());
+        triangles.resize(mesh->vertices.size()/3);
+        quads.resize(0);
+    #pragma omp parallel for
+        for(int i=0;i<mesh->vertices.size();i++)
+        {
+            points[i] = openvdb::Vec3s(mesh->vertices[i].x, mesh->vertices[i].y, mesh->vertices[i].z);
+        }
+    #pragma omp parallel for
+        for(int i=0;i<mesh->vertices.size()/3;i++)
+        {
+            triangles[i] = openvdb::Vec3I(i*3, i*3+1, i*3+2);
+        }
+        for(int i=0;i<max_level;++i)
+        {
+            if(i > 0)
+                aig.hLevels[i] = aig.hLevels[i - 1] / 2.0;
+            auto result = zeno::IObject::make<VDBFloatGrid>();
+            auto vdbtransform = openvdb::math::Transform::createLinearTransform(aig.hLevels[i]);
+            if(std::get<std::string>(get_param("type"))==std::string("vertex"))
+            {
+                vdbtransform->postTranslate(openvdb::Vec3d{ -0.5,-0.5,-0.5 }*double(aig.hLevels[i]));
+            }
+            result->m_grid = openvdb::tools::meshToLevelSet<openvdb::FloatGrid>(*vdbtransform,points, triangles, quads, 4);
+            openvdb::tools::signedFloodFill(result->m_grid->tree());
+            aig.topoLevels[i] = result->m_grid;
+        }
+        //set_output("MultiGrid", aig);
+        auto level0 = zeno::IObject::make<VDBFloatGrid>();
+        auto level1 = zeno::IObject::make<VDBFloatGrid>();
+        auto level2 = zeno::IObject::make<VDBFloatGrid>();
+        auto level3 = zeno::IObject::make<VDBFloatGrid>();
+        auto level4 = zeno::IObject::make<VDBFloatGrid>();
+        level0->m_grid = aig.topoLevels[0];
+        level1->m_grid = aig.topoLevels[1];
+        level2->m_grid = aig.topoLevels[2];
+        level3->m_grid = aig.topoLevels[3];
+        level4->m_grid = aig.topoLevels[4];
+        printf("adaptive grid generate done\n");
+        set_output("level0", level0);
+        set_output("level1", level1);
+        set_output("level2", level2);
+        set_output("level3", level3);
+        set_output("level4", level4);
+  };
+};
+
+ZENDEFNODE(MeshToMultiGridLevelSet,
+    {
+        {"mesh","maxDx","max_level"},
+        {"level0", "level1", "level2", "level3", "level4"},
+        {{"string", "type", "vertex"},},
+        {"AdaptiveSolver"},
+    }
+);
+
 }

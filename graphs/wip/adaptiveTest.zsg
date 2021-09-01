@@ -35,8 +35,8 @@
      "name": "SDFToPoly",
      "inputs": {
       "SDF": [
-       "47585c98-generateAdaptiveGrid",
-       "level1"
+       "9d4fdc0d-MeshToMultiGridLevelSet",
+       "level4"
       ],
       "SRC": null
      },
@@ -45,32 +45,12 @@
       "adaptivity": 0.0
      },
      "uipos": [
-      -278.25,
+      -279.5,
       -75.0
      ],
      "options": [
       "VIEW"
      ]
-    },
-    "47585c98-generateAdaptiveGrid": {
-     "name": "generateAdaptiveGrid",
-     "inputs": {
-      "VDBGrid": [
-       "5303dfd6-MeshToLevelSet",
-       "levelset"
-      ],
-      "Dx": [
-       "ad6b21b5-NumericFloat",
-       "value"
-      ],
-      "SRC": null
-     },
-     "params": {},
-     "uipos": [
-      -591.25,
-      -22.5
-     ],
-     "options": []
     },
     "ad6b21b5-NumericFloat": {
      "name": "NumericFloat",
@@ -86,34 +66,34 @@
      ],
      "options": []
     },
-    "5303dfd6-MeshToLevelSet": {
-     "name": "MeshToLevelSet",
+    "9d4fdc0d-MeshToMultiGridLevelSet": {
+     "name": "MeshToMultiGridLevelSet",
      "inputs": {
       "mesh": [
        "5b79a082-ReadObjMesh",
        "mesh"
       ],
-      "Dx": [
+      "maxDx": [
        "ad6b21b5-NumericFloat",
        "value"
       ],
+      "max_level": null,
       "SRC": null
      },
      "params": {
-      "voxel_size": 0.08,
       "type": "vertex"
      },
      "uipos": [
-      -965.0,
-      -90.0
+      -695.0,
+      20.0
      ],
      "options": []
     }
    },
    "view": {
     "scale": 0.8,
-    "trans_x": -1077,
-    "trans_y": -253
+    "trans_x": -1012,
+    "trans_y": -264
    }
   }
  },
@@ -2688,7 +2668,7 @@
     "trimesh"
    ]
   },
-  "MeshToLevelSet": {
+  "MeshToMultiGridLevelSet": {
    "inputs": [
     [
      "",
@@ -2697,7 +2677,12 @@
     ],
     [
      "",
-     "Dx",
+     "maxDx",
+     ""
+    ],
+    [
+     "",
+     "max_level",
      ""
     ],
     [
@@ -2709,7 +2694,27 @@
    "outputs": [
     [
      "",
-     "levelset",
+     "level0",
+     ""
+    ],
+    [
+     "",
+     "level1",
+     ""
+    ],
+    [
+     "",
+     "level2",
+     ""
+    ],
+    [
+     "",
+     "level3",
+     ""
+    ],
+    [
+     "",
+     "level4",
      ""
     ],
     [
@@ -2720,18 +2725,13 @@
    ],
    "params": [
     [
-     "float",
-     "voxel_size",
-     "0.08 0"
-    ],
-    [
      "string",
      "type",
      "vertex"
     ]
    ],
    "categories": [
-    "openvdb"
+    "AdaptiveSolver"
    ]
   },
   "MeshToPrimitive": {
