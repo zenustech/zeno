@@ -9,8 +9,8 @@ namespace {
 
 struct BlenderText : zeno::INode {
     virtual void apply() override {
-        auto text = get_input<zeno::StringObject>("text");
-        set_output("value", std::move(text));
+        auto text = get_input2<std::string>("text");
+        set_output2("value", std::move(text));
     }
 };
 
