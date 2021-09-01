@@ -134,15 +134,19 @@ ZENDEFNODE(BeginForEach, {
 
 struct EndForEach : EndFor {
     std::vector<zany> result;
+    std::vector<zany> dropped_result;
 
     virtual void post_do_apply() override {
+        bool accept = true;
         if (requireInput("accept")) {
-            if (!evaluate_condition(get_input("accept").get()))
-                return;
+            accept = evaluate_condition(get_input("accept").get());
         }
         if (requireInput("object")) {
             auto obj = get_input2("object");
-            result.push_back(std::move(obj));
+            if (accept)
+                result.push_back(std::move(obj));
+            else
+                dropped_result.push_back(std::move(obj));
         }
     }
 
@@ -155,16 +159,25 @@ struct EndForEach : EndFor {
                     newres.push_back(std::move(x));
             }
             result = std::move(newres);
+            decltype(dropped_result) dropped_newres;
+            for (auto &xs: dropped_result) {
+                for (auto &x: smart_any_cast<std::shared_ptr<ListObject>>(xs, "doConcat ")->arr)
+                    dropped_newres.push_back(std::move(x));
+            }
+            dropped_result = std::move(dropped_newres);
         }
         auto list = std::make_shared<ListObject>();
         list->arr = std::move(result);
         set_output("list", std::move(list));
+        auto dropped_list = std::make_shared<ListObject>();
+        dropped_list->arr = std::move(dropped_result);
+        set_output("droppedList", std::move(dropped_list));
     }
 };
 
 ZENDEFNODE(EndForEach, {
     {"object", {"bool", "accept", "1"}, "FOR"},
-    {"list"},
+    {"list", "droppedList"},
     {{"bool", "doConcat", "0"}},
     {"control"},
 });
