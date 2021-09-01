@@ -71,7 +71,6 @@ if ap.with_cuda:
 if ap.with_cgal:
     args.extend([
     '-DEXTENSION_cgmesh:BOOL=ON',
-    '-DEXTENSION_blenderio:BOOL=ON',
     ])
 
 if ap.with_bullet:
