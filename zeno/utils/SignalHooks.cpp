@@ -50,6 +50,7 @@ static void signal_handler(int signo) {
         has_jb = false;
         longjmp(jb, signo);
     }
+    spdlog::warn("no jmp_buf found, exiting...");
     exit(-signo);
 }
 

@@ -11,10 +11,10 @@
 #ifdef ZENO_GLOBALSTATE
 #include <zeno/extra/GlobalState.h>
 #endif
-#include <zeno/utils/safe_at.h>
 #ifdef ZENO_BENCHMARKING
 #include <zeno/utils/Timer.h>
 #endif
+#include <zeno/utils/safe_at.h>
 
 namespace zeno {
 
