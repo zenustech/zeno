@@ -25,20 +25,11 @@ static const char *signal_to_string(int signo) {
 #endif
 }
 
-class SignalException : public std::exception {
-private:
-    int signo;
-
+class SignalException : public BaseException {
 public:
-    SignalException(int signo) noexcept : signo(signo) {
-        spdlog::error("recieved signal {}: {}", signo, signal_to_string(signo));
+    SignalException(int signo) noexcept : BaseException(signal_to_string(signo)) {
+        spdlog::error("recieved signal {}: {}", signo, what());
         print_traceback(1);
-    }
-
-    ~SignalException() noexcept = default;
-
-    char const *what() noexcept {
-        return signal_to_string(signo);
     }
 };
 

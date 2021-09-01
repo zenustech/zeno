@@ -6821,52 +6821,6 @@
     "openvdb"
    ]
   },
-  "PrimitiveVoronoi": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "particlesPrim",
-     ""
-    ],
-    [
-     "int",
-     "numParticles",
-     "32"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "interiorPrimList",
-     ""
-    ],
-    [
-     "",
-     "boundaryPrimList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "cgmeshtools"
-   ],
-   "is_subgraph": true
-  },
   "Blackboard": {
    "inputs": [],
    "outputs": [],
