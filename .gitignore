@@ -27,10 +27,9 @@ outputs
 .*.swp
 .*.un~
 tags
-compile_commands.json
 *~
 
-# msvc files
+# ide files
 .vs
 .idea
 .vscode
@@ -42,17 +41,12 @@ compile_commands.json
 *.exp
 CMakeSettings.json
 
-# binary folders
-zeno-windows-*
-zeno-linux-*
-
-# euler files
-projects/Euler
-assets/smoke
-
 # archibate files
 /a.h
 /a.json
 /a.zsl
 /a.zsg
 /b.zsg
+
+# zhxx files
+assets/smoke

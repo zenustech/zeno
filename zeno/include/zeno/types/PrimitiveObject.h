@@ -22,6 +22,28 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     std::vector<int> loops;
     AttrVector<std::pair<int, int>> polys;
 
+    struct Deprecated_M_Attrs {
+        PrimitiveObject *that{};
+
+        struct MyIt {
+        };
+
+        auto begin() {
+            auto it = that->verts.attrs.begin();
+            decltype(that->verts.attrs) attrs;
+            for (auto &[key, arr]: that->verts.attrs) {
+                attrs[
+            }
+            that->verts.pos;
+        }
+
+        auto end() {
+            return that->verts.attrs.end();
+        }
+    };
+
+    Deprecated_M_Attrs m_attrs{this};
+
     template <class T>
     [[deprecated("use prim->verts.somefunc() instead")]] auto &add_attr(std::string const &name) {
         return verts.add_attr(name);

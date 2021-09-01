@@ -45,7 +45,7 @@ struct PrimitiveSplitEdges : zeno::INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
 
-    for (auto &[_, arr]: prim->m_attrs) {
+    prim->foreach_attr([&] (auto &, auto &arr) {
         std::visit([&prim](auto &arr) {
             auto oldarr = arr;
             arr.resize(prim->tris.size() * 3);
@@ -56,7 +56,7 @@ struct PrimitiveSplitEdges : zeno::INode {
                 arr[i * 3 + 2] = oldarr[ind[2]];
             }
         }, arr);
-    }
+    });
     prim->resize(prim->tris.size() * 3);
 
     for (size_t i = 0; i < prim->tris.size(); i++) {

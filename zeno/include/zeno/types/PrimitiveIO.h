@@ -20,10 +20,10 @@ static void writezpm(PrimitiveObject const *prim, const char *path) {
     size_t size = prim->size();
     fwrite(&size, sizeof(size), 1, fp);
 
-    int count = prim->m_attrs.size();
+    int count = prim->num_attrs();
     fwrite(&count, sizeof(count), 1, fp);
 
-    for (auto const &[name, _]: prim->m_attrs) {
+    prim->foreach_attr([&] (auto const &name, auto const &) {
         char type[5];
         memset(type, 0, sizeof(type));
         if (0) {
@@ -42,14 +42,14 @@ static void writezpm(PrimitiveObject const *prim, const char *path) {
         size_t namelen = name.size();
         fwrite(&namelen, sizeof(namelen), 1, fp);
         fwrite(name.c_str(), sizeof(name[0]), namelen, fp);
-    }
+    });
 
-    for (auto const &[key, _]: prim->m_attrs) {
+    prim->foreach_attr([&] (auto const &key, auto const &) {
         std::visit([=](auto const &attr) {
             assert(attr.size() == size);
             fwrite(attr.data(), sizeof(attr[0]), size, fp);
         }, prim->attr(key));
-    }
+    });
 
     size = prim->points.size();
     fwrite(&size, sizeof(size_t), 1, fp);
@@ -118,17 +118,17 @@ static void readzpm(PrimitiveObject *prim, const char *path) {
             assert(0 && "Bad primitive variant type");
         }
     }
-    assert(prim->m_attrs.size() == count);
+    assert(prim->num_attrs() == count);
 
     // assuming prim->m_attrs is an ordered map
-    for (auto const &[key, _]: prim->m_attrs) {
+    prim->foreach_attr([&] (auto const &key, auto const &) {
         //printf("reading array of attr `%s`\n", key.c_str());
 
         std::visit([=](auto &attr) {
             assert(attr.size() == size);
             fread(attr.data(), sizeof(attr[0]), size, fp);
         }, prim->attr(key));
-    }
+    });
 
     fread(&size, sizeof(size_t), 1, fp);
     prim->points.resize(size);
