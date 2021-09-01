@@ -117,7 +117,7 @@ ZENO_API bool INode::has_input2(std::string const &id) const {
     return inputs.find(id) != inputs.end();
 }
 
-ZENO_API struct zany INode::get_input2(std::string const &id) const {
+ZENO_API zany INode::get_input2(std::string const &id) const {
     return safe_at(inputs, id, "input", myname);
 }
 
