@@ -122,4 +122,9 @@ ZENO_API std::set<std::string> Graph::getGraphOutputNames() const {
     return res;
 }
 
+ZENO_API UserData &Graph::getUserData() {
+    return userData;
+}
+
+
 }

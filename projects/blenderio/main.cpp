@@ -22,6 +22,21 @@ ZENDEFNODE(BlenderText, {
 });
 
 
+struct BlenderInput : zeno::INode {
+    virtual void apply() override {
+        auto text = get_input2<std::string>("object");
+        set_output2("value", std::move(text));
+    }
+};
+
+ZENDEFNODE(BlenderInput, {
+    {{"string", "object", "DontUseThisNodeDirectly"}},
+    {{"BlenderAxis", "object"}, {"PrimitiveObject", "primitive"}},
+    {},
+    {"blender"},
+});
+
+
 struct GetBlenderObjectAxes : zeno::INode {
     virtual void apply() override {
         auto object = get_input<zeno::BlenderAxis>("object");
