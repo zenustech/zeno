@@ -28,18 +28,20 @@ static const char *signal_to_string(int signo) {
 
 #ifdef ZENO_FAULTHANDLER
 static jmp_buf jb;
-static bool has_jb = false;
+static int has_jb = 0;
 
 ZENO_API void signal_catcher(std::function<void()> const &callback) {
     struct dtor {
-        dtor() { has_jb = true; }
-        ~dtor() { has_jb = false; }
+        dtor() { has_jb++; }
+        ~dtor() { has_jb--; }
     } guard;
+    spdlog::info("entering jmp_buf... {}", has_jb);
     if (int signo = setjmp(jb); signo) {
         spdlog::warn("recoverer from signal {}", signo);
     } else {
         callback();
     }
+    spdlog::info("leaving jmp_buf... {}", has_jb);
 }
 
 static void signal_handler(int signo) {
