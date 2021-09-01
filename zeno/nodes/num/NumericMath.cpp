@@ -87,9 +87,9 @@ struct UnpackNumericVec : INode {
 };
 
 ZENDEFNODE(UnpackNumericVec, {
-    {{"NumericObject", "vec"}},
-    {{"NumericObject", "X"}, {"NumericObject", "Y"},
-     {"NumericObject", "Z"}, {"NumericObject", "W"}},
+    {{"vec3f", "vec"}},
+    {{"float", "X"}, {"float", "Y"},
+     {"float", "Z"}, {"float", "W"}},
     {},
     {"numeric"},
 }); // TODO: add PackNumericVec too.
