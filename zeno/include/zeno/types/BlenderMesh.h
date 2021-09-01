@@ -1,7 +1,7 @@
 #pragma once
 
 #include <zeno/core/IObject.h>
-#include <zeno/types/AttributeArray.h>
+#include <zeno/types/AttrVector.h>
 #include <zeno/utils/vec.h>
 #include <array>
 #include <vector>
@@ -17,11 +17,9 @@ struct PolyMesh {
             : start(start), len(len) {}
     };
 
-    std::vector<vec3f> vert;
-    std::map<std::string, AttributeArray> vert_attrs;
-
-    std::vector<Polygon> poly;
-    std::vector<int> loop;
+    AttrVector<vec3f> vert;
+    AttrVector<Polygon> poly;
+    AttrVector<int> loop;
 };
 
 struct BlenderAxis : IObjectClone<BlenderAxis> {
