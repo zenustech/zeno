@@ -77,7 +77,7 @@ ZENDEFNODE(TransformPrimitive, {
     {"PrimitiveObject", "prim"},
     {"vec3f", "translation", "0,0,0"},
     {"vec3f", "eulerXYZ", "0,0,0"},
-    {"vec3f", "quatRotation", "0,0,0,1"},
+    {"vec4f", "quatRotation", "0,0,0,1"},
     {"vec3f", "scaling", "1,1,1"},
     },
     {"outPrim"},
