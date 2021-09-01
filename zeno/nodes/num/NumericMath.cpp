@@ -99,14 +99,23 @@ struct NumericRandom : INode {
     virtual void apply() override {
         auto value = std::make_shared<NumericObject>();
         auto dim = get_param<int>("dim");
+        auto symmetric = get_param<bool>("symmetric");
+        auto scale = has_input("scale") ?
+            get_input<NumericObject>("scale")->get<float>()
+            : 1.0f;
+        float offs = 0.0f;
+        if (symmetric) {
+            offs = -scale;
+            scale *= 2.0f;
+        }
         if (dim == 1) {
-            value->set(float(frand()));
+            value->set(offs + scale * float(frand()));
         } else if (dim == 2) {
-            value->set(zeno::vec2f(frand(), frand()));
+            value->set(offs + scale * zeno::vec2f(frand(), frand()));
         } else if (dim == 3) {
-            value->set(zeno::vec3f(frand(), frand(), frand()));
+            value->set(offs + scale * zeno::vec3f(frand(), frand(), frand()));
         } else if (dim == 4) {
-            value->set(zeno::vec4f(frand(), frand(), frand(), frand()));
+            value->set(offs + scale * zeno::vec4f(frand(), frand(), frand(), frand()));
         } else {
             printf("invalid dim for NumericRandom: %d\n", dim);
         }
@@ -115,9 +124,9 @@ struct NumericRandom : INode {
 };
 
 ZENDEFNODE(NumericRandom, {
-    {},
+    {{"float", "scale", "1"}},
     {{"NumericObject", "value"}},
-    {{"int", "dim", "1"}},
+    {{"int", "dim", "1"}, {"bool", "symmetric", "0"}},
     {"numeric"},
 });
 
