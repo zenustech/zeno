@@ -61,6 +61,7 @@ static int register_my_handlers() {
     signal(SIGSEGV, signal_handler);
     signal(SIGFPE, signal_handler);
     signal(SIGILL, signal_handler);
+    signal(SIGABRT, signal_handler);
 #ifdef __linux__
     signal(SIGBUS, signal_handler);
 #endif
