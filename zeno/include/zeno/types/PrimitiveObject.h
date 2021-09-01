@@ -26,20 +26,26 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     // deprecated:
     template <class F>
     void foreach_attr(F const &f) {
-        verts.foreach_attr(f);
         std::string pos_name = "pos";
         f(pos_name, verts.values);
+        verts.foreach_attr(f);
     }
 
     template <class F>
     void foreach_attr(F const &f) const {
-        verts.foreach_attr(f);
         std::string const pos_name = "pos";
         f(pos_name, verts.values);
+        verts.foreach_attr(f);
     }
 
     size_t num_attrs() const {
-        return verts.num_attrs();
+        return 1 + verts.num_attrs();
+    }
+
+    auto attr_keys() const {
+        auto keys = verts.attr_keys();
+        keys.insert(keys.begin(), "pos");
+        return keys;
     }
 
     template <class T>
@@ -85,11 +91,17 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     }
 
     bool has_attr(std::string const &name) const {
+        if (name == "pos") return true;
         return verts.has_attr(name);
     }
 
     template <class T>
     bool attr_is(std::string const &name) const {
+        if constexpr (std::is_same_v<T, vec3f>) {
+            if (name == "pos") return true;
+        } else {
+            if (name == "pos") return false;
+        }
         return verts.attr_is<T>(name);
     }
 

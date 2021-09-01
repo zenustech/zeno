@@ -112,7 +112,6 @@ struct AttrVector {
         return attrs.size();
     }
 
-    template <class F>
     auto attr_keys() const {
         std::vector<std::string> keys;
         for (auto const &[key, val]: attrs) {
