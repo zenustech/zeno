@@ -104,7 +104,11 @@ class NodeEditor(QWidget):
 
     def auto_save(self):
         if any(s.contentChanged is True for s in self.scenes.values()):
-            dir_path = '/tmp/autosave'
+            from ...system.utils import os_name
+            if os_name == 'win32':
+                dir_path = '\\zeno_autosave'
+            else:
+                dir_path = '/tmp/autosave'
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
             file_name = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
@@ -236,12 +240,13 @@ class NodeEditor(QWidget):
         views = {}
         for name, scene in self.scenes.items():
             nodes = scene.dumpGraph()
-            view = {
-                'scale': scene.scale,
-                'trans_x': scene.trans_x,
-                'trans_y': scene.trans_y,
+            view_rect = {
+                'x': scene._scene_rect.x(),
+                'y': scene._scene_rect.y(),
+                'width': scene._scene_rect.width(),
+                'height': scene._scene_rect.height(),
             }
-            graphs[name] = {'nodes': nodes, 'view': view}
+            graphs[name] = {'nodes': nodes, 'view_rect': view_rect}
         prog = {}
         prog['graph'] = graphs
         prog['views'] = views
@@ -269,12 +274,22 @@ class NodeEditor(QWidget):
             if 'nodes' not in graph:
                 prog['graph'][name] = {
                     'nodes': graph,
-                    'view': {
+                    'view_rect': {
                         'scale': 1,
-                        'trans_x': 0,
-                        'trans_y': 0,
+                        'x': 0,
+                        'x': 0,
                     },
                 }
+
+        for name, graph in prog['graph'].items():
+            if 'view' in graph:
+                graph['view_rect'] = {
+                    'x': graph['view']['trans_x'],
+                    'y': graph['view']['trans_y'],
+                    'width': 1200 / graph['view']['scale'],
+                    'height': 1000 / graph['view']['scale'],
+                }
+
         if 'version' not in prog:
             prog['version'] = 'v0'
         if prog['version'] != CURR_VERSION:
@@ -388,15 +403,50 @@ class NodeEditor(QWidget):
 
     def do_export(self):
         path, kind = QFileDialog.getSaveFileName(self, 'Path to Export',
-                '', 'C++ Header File(*.h);; All Files(*);;')
+                '', 'C++ Source File(*.cpp);; C++ Header File(*.h);; JSON file(*.json);; All Files(*);;',
+                options=QFileDialog.DontConfirmOverwrite)
         if path != '':
             prog = self.dumpProgram()
-            from ..system import serial
-            data = list(serial.serializeScene(prog['graph']))
+            from ...system import serial
+
+            if path.endswith('.cpp'):
+                graphs = serial.serializeGraphs(prog['graph'], has_subgraphs=False)
+                content = self.do_export_cpp(graphs)
+            else:
+                data = list(serial.serializeScene(prog['graph']))
+                content = json.dumps(data)
+                if path.endswith('.h'):
+                    content = 'R"ZSL(' + content + ')ZSL"\n'
+
             with open(path, 'w') as f:
-                f.write('R"ZSL(')
-                json.dump(data, f)
-                f.write(')ZSL"\n')
+                f.write(content)
+
+    def do_export_cpp(self, graphs):
+        res = '/* auto generated from: %s */\n' % self.current_path
+        res += '#include <zeno/zeno.h>\n'
+        res += '#include <zeno/extra/ISubgraphNode.h>\n'
+        res += 'namespace {\n'
+
+        for key, data in graphs.items():
+            if key not in self.descs: continue
+            desc = self.descs[key]
+            res += 'struct ' + key + ''' : zeno::ISerialSubgraphNode {
+    virtual const char *get_subgraph_json() override {
+        return R"ZSL(
+''' + json.dumps(data) + '''
+)ZSL";
+    }
+};
+ZENDEFNODE(''' + key + ''', {
+    {''' + ', '.join('{"%s", "%s", "%s"}' % (x, y, z) for x, y, z in desc['inputs'] if y != 'SRC') + '''},
+    {''' + ', '.join('{"%s", "%s", "%s"}' % (x, y, z) for x, y, z in desc['outputs'] if y != 'DST') + '''},
+    {''' + ', '.join('{"%s", "%s", "%s"}' % (x, y, z) for x, y, z in desc['params']) + '''},
+    {''' + ', '.join('"%s"' % x for x in desc['categories']) + '''},
+});
+'''
+
+        res += '}\n'
+        return res
 
     def do_copy(self):
         itemList = self.scene.selectedItems()
@@ -431,7 +481,7 @@ class NodeEditor(QWidget):
                 for name, info in inputs.items():
                     if info == None:
                         continue
-                    nid_, name_ = info
+                    nid_, name_, _ = info
                     if nid_ in nid_map:
                         info = (nid_map[nid_], name_)
                     else:
@@ -481,18 +531,20 @@ class NodeEditor(QWidget):
             subinputs = []
             suboutputs = []
             for node in graph.values():
-                params = node['params']
                 if node['name'] == 'SubInput':
+                    params = node['params']
                     n_type = params.get('type')
                     n_name = params['name']
                     n_defl = params.get('defl')
                     subinputs.append((n_type, n_name, n_defl))
                 elif node['name'] == 'SubOutput':
+                    params = node['params']
                     n_type = params.get('type')
                     n_name = params['name']
                     n_defl = params.get('defl')
                     suboutputs.append((n_type, n_name, n_defl))
                 elif node['name'] == 'SubCategory':
+                    params = node['params']
                     subcategory = params['name']
             subinputs.extend(self.descs['Subgraph']['inputs'])
             suboutputs.extend(self.descs['Subgraph']['outputs'])

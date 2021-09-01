@@ -27,7 +27,7 @@ struct GridFromPartition : zeno::INode {
     using GridT = zs::GridBlocks<zs::GridBlock<zs::dat32, 3, 2, 2>>;
     GridT &gridblocks = std::get<GridT>(grid);
     if (gridblocks.dx.asFloat() != dx)
-      gridblocks = GridT{dx, cnt, mloc.memspace(), mloc.devid()};
+      gridblocks = GridT{dx, (size_t)cnt, mloc.memspace(), mloc.devid()};
     else
       gridblocks.resize(cnt);
 

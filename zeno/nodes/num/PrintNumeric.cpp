@@ -3,12 +3,6 @@
 #include <iostream>
 #include <cstdlib>
 
-#ifdef _MSC_VER
-static inline double drand48() {
-	return rand() / (double)RAND_MAX;
-}
-#endif
-
 namespace {
 
 struct PrintNumeric : zeno::INode {
@@ -45,7 +39,7 @@ struct PrintNumeric : zeno::INode {
 };
 
 ZENDEFNODE(PrintNumeric, {
-    {{"numeric", "value"}},
+    {{"NumericObject", "value"}},
     {},
     {{"string", "hint", "PrintNumeric"}},
     {"numeric"},

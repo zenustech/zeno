@@ -1,0 +1,42 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+*.un~
+*.swo
+*.swp
+JMeshLib-1.2/test/test
+JMeshExt-1.0alpha_src/JMeshLib-1.2/test/test
+*/build/*
+build/*
+*/*/build/*
+*/*/*/build/*
+meshfix
+libigl_example
+*.swp
+*.swo
+.DS_Store

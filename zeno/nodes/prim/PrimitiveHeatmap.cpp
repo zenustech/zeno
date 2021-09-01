@@ -95,7 +95,7 @@ struct PrimitiveColorByHeatmap : zeno::INode {
 
 ZENDEFNODE(PrimitiveColorByHeatmap,
         { /* inputs: */ {
-        "prim", "heatmap", "min", "max", 
+        "prim", "heatmap", {"float", "min", "0"}, {"float", "max", "1"},
         }, /* outputs: */ {
         "prim",
         }, /* params: */ {

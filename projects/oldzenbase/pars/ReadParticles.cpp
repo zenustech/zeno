@@ -55,7 +55,7 @@ static int defReadParticles = zeno::defNodeClass<ReadParticles>("ReadParticles",
     }, /* outputs: */ {
     "pars",
     }, /* params: */ {
-    {"string", "path", ""},
+    {"readpath", "path", ""},
     }, /* category: */ {
     "particles",
     }});

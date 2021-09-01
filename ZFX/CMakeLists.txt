@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(ZFX LANGUAGES CXX)
 
-option(ZFX_ENABLE_CUDA "Build ZFX with CUDA support" OFF)
+option(ZFX_ENABLE_CUDA "Build ZFX with CUDA support" ON)
 
 set(CMAKE_CXX_STANDARD 17)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

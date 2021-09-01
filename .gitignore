@@ -1,15 +1,17 @@
 # python files
-__pycache__/
-*.egg-info/
+__pycache__
+*.egg-info
 dist
 
 # cmake files
-build/
-cmake-build-*/
+build
+cmake-build-*
 
 # binary files
 *.zpm
 *.exe
+*.a
+*.la
 *.so
 *.dll
 *.lib
@@ -18,9 +20,8 @@ cmake-build-*/
 a.out
 
 # output files
-outputs/
-/a.zsl
-/a.zsg
+/zenqt/bin
+outputs
 
 # vim files
 .*.swp
@@ -30,11 +31,11 @@ compile_commands.json
 *~
 
 # msvc files
-.vs/
-.idea/
-.vscode/
-.cache/
-.run/
+.vs
+.idea
+.vscode
+.cache
+.run
 *.pdb
 *.ilk
 *.manifest
@@ -48,3 +49,10 @@ zeno-linux-*
 # euler files
 projects/Euler
 assets/smoke
+
+# archibate files
+/a.h
+/a.json
+/a.zsl
+/a.zsg
+/b.zsg

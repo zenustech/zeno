@@ -43,12 +43,15 @@ class MainWindow(QWidget):
         self.timeline = self.editorTimeline.timeline
         self.editor = self.editorTimeline.editor
         self.timeline.setEditor(self.editor)
+        self.viewport.timeline = self.timeline
 
         self.mainsplit = QSplitter(Qt.Vertical)
         if hasattr(self, 'viewport'):
             self.mainsplit.addWidget(self.viewport)
         self.mainsplit.addWidget(self.editorTimeline)
-
+        if hasattr(self, 'viewport'):
+            self.mainsplit.setStretchFactor(0, 1)
+            self.mainsplit.setStretchFactor(1, 3)
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addWidget(self.mainsplit)
@@ -61,10 +64,12 @@ class MainWindow(QWidget):
         self.timer.timeout.connect(self.on_update)
 
     def setWindowTitleWithPostfix(self, postfix):
+        #from .. import version
+        #title = 'ZENO Qt Editor ({})'.format(version)
+        title = 'ZENO Qt Editor'
         if postfix:
-            self.setWindowTitle('ZENO Qt Editor - {}'.format(postfix))
-        else:
-            self.setWindowTitle('ZENO Qt Editor')
+            title = '{} - [{}]'.format(title, postfix)
+        self.setWindowTitle(title)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:

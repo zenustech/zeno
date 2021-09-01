@@ -7,6 +7,17 @@ def serializeScene(graphs):
         yield from serializeGraph(graph['nodes'], subgkeys)
 
 
+def serializeGraphs(graphs, has_subgraphs=True):
+    if has_subgraphs:
+        subgkeys = set(graphs.keys())
+    else:
+        subgkeys = set()
+    res = {}
+    for name, graph in graphs.items():
+        res[name] = list(serializeGraph(graph['nodes'], subgkeys))
+    return res
+
+
 def serializeGraph(nodes, subgkeys):
     for ident, data in nodes.items():
         if 'special' in data:
@@ -26,8 +37,15 @@ def serializeGraph(nodes, subgkeys):
         for name, input in inputs.items():
             if input is None:
                 continue
-            srcIdent, srcSockName = input
-            yield 'bindNodeInput', ident, name, srcIdent, srcSockName
+            elif len(input) == 2:
+                srcIdent, srcSockName = input
+            else:
+                srcIdent, srcSockName, sockDeflVal = input
+            if srcIdent is None:
+                if sockDeflVal is not None:
+                    yield 'setNodeInput', ident, name, sockDeflVal
+            else:
+                yield 'bindNodeInput', ident, name, srcIdent, srcSockName
 
         for name, value in params.items():
             yield 'setNodeParam', ident, name, value

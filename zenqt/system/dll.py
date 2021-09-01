@@ -1,38 +1,22 @@
-import ctypes, os, sys
-
-'''
-from .utils import os_name
-from ..utils import relative_path
-
-lib_dir = relative_path('lib')
-
-if os_name == 'win32':
-    os.environ['PATH'] += os.pathsep + lib_dir
-    if sys.version_info >= (3, 8):
-        # for py 3.8+
-        #   https://docs.python.org/3.8/whatsnew/3.8.html#ctypes
-        os.add_dll_directory(lib_dir)
-    ctypes.cdll.LoadLibrary('zeno.dll')
-elif os_name == 'darwin':
-    ctypes.cdll.LoadLibrary(os.path.join(lib_dir, 'libzeno.dylib'))
-else:
-    ctypes.cdll.LoadLibrary(os.path.join(lib_dir, 'libzeno.so'))
-'''
+import ctypes, os, sys, traceback
 
 from .utils import os_name
 from ..utils import relative_path
-
-lib_dir = relative_path('lib')
-if os_name == 'win32':  # windows doesn't support rpath, let's mock him only
-    os.environ['PATH'] += os.pathsep + lib_dir
-    if sys.version_info >= (3, 8):
-        os.add_dll_directory(lib_dir)
-
-from .. import zeno_pybind11_module as core
 
 #'''
-def loadAutoloads():
-    print('loading addons from', lib_dir)
+if os_name == 'win32':  # windows doesn't support rpath, let's mock him only
+    lib_dir = relative_path('bin')
+    os.environ['PATH'] += os.pathsep + lib_dir
+    if sys.version_info >= (3, 8):
+        os.add_dll_directory(lib_dir)
+    del lib_dir
+#'''
+
+from ..bin import pylib_zeno as core
+
+#'''
+def loadAutoloads(lib_dir):
+    #print('loading addons from', lib_dir)
     if not os.path.isdir(lib_dir):
         return
 
@@ -45,11 +29,13 @@ def loadAutoloads():
             if name.startswith('zeno_') and name.endswith('.dll'):
                 paths.append(name)
         elif os_name == 'darwin':
-            if 'zeno_' in name and name.endswith('.dylib'):
+            if name.startswith('libzeno_') and name.endswith('.dylib'):
                 paths.append(name)
         else:
-            if 'zeno_' in name and 'so' in name.split(os.extsep):
+            if name.startswith('libzeno_') and name.endswith('.so'):
                 paths.append(path)
+
+    #print('to be loaded:', paths)
 
     retries = {}
     max_retries = len(paths) + 2
@@ -71,7 +57,8 @@ def loadAutoloads():
                 print('[  OK  ] [{}]'.format(path))
 
 if not os.environ.get('ZEN_NOAUTOLOAD'):
-    loadAutoloads()
+    loadAutoloads(relative_path('bin'))
+    loadAutoloads(relative_path('..'))
 #'''
 
 __all__ = ['core']

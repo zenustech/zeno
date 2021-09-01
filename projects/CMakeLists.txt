@@ -5,6 +5,12 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 set(EXTENSIONS_LIST ZenoFX oldzenbase zenvdb FastFLIP gmpm mesher Euler Rigid ZMS OldZFX EasyGL AdaptiveSolver)
 set(EXTENSIONS_ENABLE_LIST oldzenbase AdaptiveSolver zenvdb FastFLIP)
 
+add_library(zeno_nodep INTERFACE)
+if (ZENO_HIDE_SYMBOLS AND UNIX)
+    message("Hidding symbols from ZENO libraries...")
+    target_link_libraries(zeno_nodep INTERFACE -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/../scripts/linker.map)
+endif()
+
 foreach (name IN ITEMS ${EXTENSIONS_LIST})
     if (${name} IN_LIST EXTENSIONS_ENABLE_LIST)
         set(val ON)
@@ -18,19 +24,5 @@ foreach (name IN ITEMS ${EXTENSIONS_LIST})
     if (${EXTENSION_${name}})
         message("*** Building ZENO with extension: ${name}")
         add_subdirectory(${name})
-
-        get_property(OUTPUT_DIR TARGET zeno
-            PROPERTY LIBRARY_OUTPUT_DIRECTORY)
-        set_target_properties(zeno_${name} PROPERTIES
-            LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-            RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-            ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-            LIBRARY_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-            RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-            ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-            LIBRARY_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-            RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-            ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-            )
     endif()
 endforeach()

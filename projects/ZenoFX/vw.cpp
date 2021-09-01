@@ -6,6 +6,7 @@
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
+#include "dbg_printf.h"
 
 namespace {
 
@@ -56,7 +57,7 @@ struct VDBWrangle : zeno::INode {
         else if (zeno::silent_any_cast<std::shared_ptr<zeno::VDBFloat3Grid>>(grid).has_value())
             opts.define_symbol("@val", 3);
         else
-            printf("unexpected vdb grid type");
+            dbg_printf("unexpected vdb grid type");
         opts.reassign_channels = false;
 
         auto params = has_input("params") ?
@@ -93,11 +94,11 @@ struct VDBWrangle : zeno::INode {
         for (int i = 0; i < pars.size(); i++) {
             auto [name, dimid] = prog->params[i];
             assert(name[0] == '$');
-            printf("parameter %d: %s.%d\n", i, name.c_str(), dimid);
+            dbg_printf("parameter %d: %s.%d\n", i, name.c_str(), dimid);
             auto it = std::find(parnames.begin(),
                 parnames.end(), std::pair{name, dimid});
             auto value = parvals.at(it - parnames.begin());
-            printf("(valued %f)\n", value);
+            dbg_printf("(valued %f)\n", value);
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
 
@@ -111,9 +112,9 @@ struct VDBWrangle : zeno::INode {
 };
 
 ZENDEFNODE(VDBWrangle, {
-    {{"openvdb", "grid"}, {"string", "zfxCode"},
-     {"dict:numeric", "params"}},
-    {{"openvdb", "grid"}},
+    {{"VDBGrid", "grid"}, {"StringObject", "zfxCode"},
+     {"DictObject:NumericObject", "params"}},
+    {{"VDBGrid", "grid"}},
     {},
     {"zenofx"},
 });

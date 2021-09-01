@@ -6,6 +6,7 @@
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
+#include "dbg_printf.h"
 
 namespace {
 
@@ -68,7 +69,7 @@ struct ParticlesWrangle : zeno::INode {
                 else if constexpr (std::is_same_v<T, float>) return 1;
                 else return 0;
             }, attr);
-            printf("define symbol: @%s dim %d\n", key.c_str(), dim);
+            dbg_printf("define symbol: @%s dim %d\n", key.c_str(), dim);
             opts.define_symbol('@' + key, dim);
         }
 
@@ -96,7 +97,7 @@ struct ParticlesWrangle : zeno::INode {
                     return 1;
                 } else return 0;
             }, par->value);
-            printf("define param: %s dim %d\n", key.c_str(), dim);
+            dbg_printf("define param: %s dim %d\n", key.c_str(), dim);
             opts.define_param(key, dim);
         }
 
@@ -104,7 +105,7 @@ struct ParticlesWrangle : zeno::INode {
         auto exec = assembler.assemble(prog->assembly);
 
         for (auto const &[name, dim]: prog->newsyms) {
-            printf("auto-defined new attribute: %s with dim %d\n",
+            dbg_printf("auto-defined new attribute: %s with dim %d\n",
                     name.c_str(), dim);
             assert(name[0] == '@');
             auto key = name.substr(1);
@@ -113,7 +114,7 @@ struct ParticlesWrangle : zeno::INode {
             } else if (dim == 1) {
                 prim->add_attr<float>(key);
             } else {
-                printf("ERROR: bad attribute dimension for primitive: %d\n",
+                dbg_printf("ERROR: bad attribute dimension for primitive: %d\n",
                     dim);
                 abort();
             }
@@ -121,19 +122,19 @@ struct ParticlesWrangle : zeno::INode {
 
         for (int i = 0; i < prog->params.size(); i++) {
             auto [name, dimid] = prog->params[i];
-            printf("parameter %d: %s.%d\n", i, name.c_str(), dimid);
+            dbg_printf("parameter %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '$');
             auto it = std::find(parnames.begin(),
                 parnames.end(), std::pair{name, dimid});
             auto value = parvals.at(it - parnames.begin());
-            printf("(valued %f)\n", value);
+            dbg_printf("(valued %f)\n", value);
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
 
         std::vector<Buffer> chs(prog->symbols.size());
         for (int i = 0; i < chs.size(); i++) {
             auto [name, dimid] = prog->symbols[i];
-            printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
+            dbg_printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '@');
             Buffer iob;
             auto const &attr = prim->attr(name.substr(1));
@@ -151,9 +152,9 @@ struct ParticlesWrangle : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesWrangle, {
-    {{"primitive", "prim"},
-     {"string", "zfxCode"}, {"dict:numeric", "params"}},
-    {{"primitive", "prim"}},
+    {{"PrimitiveObject", "prim"},
+     {"StringObject", "zfxCode"}, {"DictObject:NumericObject", "params"}},
+    {{"PrimitiveObject", "prim"}},
     {},
     {"zenofx"},
 });
