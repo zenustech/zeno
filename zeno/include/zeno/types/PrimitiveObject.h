@@ -91,6 +91,15 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     }
 
     template <class F>
+    auto attr_visit(std::string const &name, F const &f) const {
+        if (name == "pos") {
+            return f(verts.values);
+        } else {
+            return verts.attr_visit(name, f);
+        }
+    }
+
+    template <class F>
     auto attr_visit(std::string const &name, F const &f) {
         if (name == "pos") {
             return f(verts.values);
