@@ -261,8 +261,6 @@ _PER_IOP2(%)
 _PER_IOP2(&)
 _PER_IOP2(|)
 _PER_IOP2(^)
-_PER_IOP2(&&)
-_PER_IOP2(||)
 _PER_IOP2(>>)
 _PER_IOP2(<<)
 _PER_OP2(==)
@@ -271,6 +269,8 @@ _PER_OP2(<)
 _PER_OP2(>)
 _PER_OP2(<=)
 _PER_OP2(>=)
+_PER_OP2(&&)
+_PER_OP2(||)
 #undef _PER_IOP2
 #undef _PER_OP2
 

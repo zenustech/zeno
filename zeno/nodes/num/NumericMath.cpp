@@ -47,9 +47,9 @@ struct BoundingBoxesHasOverlap : INode {
         auto bmaxB = get_input<NumericObject>("bmaxB")->get<vec3f>();
 
         // https://www.cnblogs.com/liez/p/11965027.html
-        bool overlap = allTrue(abs(bminA + bmaxA - bminB - bmaxB) <= (bmaxA - bminA - bmaxA + bminB));
+        bool overlap = alltrue(abs(bminA + bmaxA - bminB - bmaxB) <= (bmaxA - bminA - bmaxA + bminB));
         set_output2("overlap", overlap);
-        bool AinsideB = allTrue(bminA >= bminB && bmaxA <= bmaxB);
+        bool AinsideB = alltrue(bminA >= bminB && bmaxA <= bmaxB);
         set_output2("AinsideB", AinsideB);
     }
 };
