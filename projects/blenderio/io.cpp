@@ -42,6 +42,12 @@ ZENDEFNODE(BlenderInput, {
 
 
 struct BlenderOutput : zeno::INode {
+    virtual void complete() override {
+        if (get_param<bool>("active")) {
+            graph->finalOutputNodes.insert(myname);
+        }
+    }
+
     virtual void apply() override {
         auto &outputs = graph->getUserData().get<zeno::BlenderOutputsType>("blender_outputs");
         auto objid = get_input2<std::string>("objid");
@@ -53,7 +59,7 @@ struct BlenderOutput : zeno::INode {
 ZENDEFNODE(BlenderOutput, {
     {{"string", "objid", "DontUseThisNodeDirectly"}, {"BlenderAxis", "object"}},
     {},
-    {},
+    {{"bool", "active", "1"}},
     {"blender"},
 });
 
