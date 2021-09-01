@@ -466,6 +466,7 @@
      },
      "params": {
       "op_type": "Intersect",
+      "faceAttrName": "",
       "assignAttrs": true,
       "calcAnyFrom": true,
       "doMeshFix": true
@@ -781,6 +782,221 @@
      ],
      "options": []
     },
+    "2b542f84-x": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/monkey.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2624.619589977209,
+      -239.32574031890553
+     ],
+     "options": []
+    },
+    "f722ebdb-PrimitiveVoronoi": {
+     "name": "PrimitiveVoronoi",
+     "inputs": {
+      "prim": [
+       "2b542f84-x",
+       "prim",
+       null
+      ],
+      "particlesPrim": [
+       null,
+       null,
+       null
+      ],
+      "numParticles": [
+       null,
+       null,
+       400
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2293.797146241447,
+      -241.68362277904222
+     ],
+     "options": []
+    },
+    "b3bc2e60-BeginForEach": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "f722ebdb-PrimitiveVoronoi",
+       "interiorPrimList",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1797.7579589977147,
+      -204.2626332574023
+     ],
+     "options": []
+    },
+    "1532b159-EndFor": {
+     "name": "EndFor",
+     "inputs": {
+      "FOR": [
+       "b3bc2e60-BeginForEach",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       "2f4e0244-x",
+       "prim",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1205.4502779043216,
+      -160.15963553530676
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "58b28155-NumericRandom": {
+     "name": "NumericRandom",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "dim": 3
+     },
+     "uipos": [
+      -1526.6215945330234,
+      41.326651480637636
+     ],
+     "options": []
+    },
+    "2f4e0244-x": {
+     "name": "PrimitiveFillAttr",
+     "inputs": {
+      "prim": [
+       "b3bc2e60-BeginForEach",
+       "object",
+       null
+      ],
+      "value": [
+       "58b28155-NumericRandom",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrName": "clr",
+      "attrType": "float3"
+     },
+     "uipos": [
+      -1537.5861503416786,
+      -233.91052391799437
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "b33e8767-ListLength": {
+     "name": "ListLength",
+     "inputs": {
+      "list": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2020.4289749430432,
+      54.72218678815466
+     ],
+     "options": []
+    },
+    "d6537b3c-PrintNumeric": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "b33e8767-ListLength",
+       "length",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "hint": "PrintNumeric"
+     },
+     "uipos": [
+      -1782.2265148063696,
+      74.03589977220923
+     ],
+     "options": []
+    },
+    "3caff849-ExtendList": {
+     "name": "ExtendList",
+     "inputs": {
+      "list1": [
+       "f722ebdb-PrimitiveVoronoi",
+       "interiorPrimList",
+       null
+      ],
+      "list2": [
+       "f722ebdb-PrimitiveVoronoi",
+       "boundaryPrimList",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2050.4296091116075,
+      -307.1309558086545
+     ],
+     "options": []
+    },
     "38d789d4-ImportObjPrimitive": {
      "name": "ImportObjPrimitive",
      "inputs": {
@@ -862,9 +1078,7 @@
       -2097.4863978132,
       -808.2230932118405
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "f83fd099-NumericVec3": {
      "name": "NumericVec3",
@@ -905,71 +1119,13 @@
       -627.4810751708392
      ],
      "options": []
-    },
-    "239e3ad7-Make3DGridPrimitive": {
-     "name": "Make3DGridPrimitive",
-     "inputs": {
-      "nx": [
-       null,
-       null,
-       4
-      ],
-      "ny": [
-       null,
-       null,
-       0
-      ],
-      "nz": [
-       null,
-       null,
-       0
-      ],
-      "sizeX": [
-       null,
-       null,
-       null
-      ],
-      "sizeY": [
-       null,
-       null,
-       null
-      ],
-      "sizeZ": [
-       null,
-       null,
-       null
-      ],
-      "scale": [
-       null,
-       null,
-       1.0
-      ],
-      "origin": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "isCentered": false
-     },
-     "uipos": [
-      -3176.89118906604,
-      -379.407161731205
-     ],
-     "options": []
     }
    },
    "view_rect": {
-    "x": -2424.7345865376574,
-    "y": -1032.748107987292,
-    "width": 959.9999999999955,
-    "height": 735.9999999999953
+    "x": -2608.6121308282477,
+    "y": -246.57234719843012,
+    "width": 614.3999999999969,
+    "height": 471.0399999999963
    }
   },
   "PrimitiveVoronoi": {
@@ -1055,6 +1211,7 @@
      },
      "params": {
       "op_type": "Intersect",
+      "faceAttrName": "",
       "assignAttrs": true,
       "calcAnyFrom": true,
       "doMeshFix": true
@@ -1309,8 +1466,8 @@
     }
    },
    "view_rect": {
-    "x": -530.296127562596,
-    "y": 148.33712984054148,
+    "x": -603.5079726651065,
+    "y": 114.94305239179329,
     "width": 400.0,
     "height": 400.0
    }
@@ -5771,6 +5928,16 @@
      ""
     ],
     [
+     "bool",
+     "anyFromA",
+     ""
+    ],
+    [
+     "bool",
+     "anyFromB",
+     ""
+    ],
+    [
      "",
      "DST",
      ""
@@ -5781,6 +5948,11 @@
      "enum Union Intersect Minus RevMinus XOR Resolve",
      "op_type",
      "Union"
+    ],
+    [
+     "string",
+     "faceAttrName",
+     ""
     ],
     [
      "bool",
