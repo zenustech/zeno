@@ -26,8 +26,6 @@ struct HashGrid : zeno::IObject {
     float radius_sqr;
     float radius_sqr_min;
     zeno::vec3i GridRes;
-    zeno::vec3f pMin;
-    zeno::vec3f pMax;
     std::vector<zeno::vec3f> const &refpos;
 
 
