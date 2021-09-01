@@ -159,12 +159,11 @@ struct ParticleParticleWrangle : zeno::INode {
                 primPtr = prim.get();
                 iob.which = 0;
             }
-            auto const &attr = primPtr->attr(name);
-            std::visit([&, dimid_ = dimid] (auto const &arr) {
+            prim->attr_visit(name, [&, dimid_ = dimid] (auto const &arr) {
                 iob.base = (float *)arr.data() + dimid_;
                 iob.count = arr.size();
                 iob.stride = sizeof(arr[0]) / sizeof(float);
-            }, attr);
+            });
             chs[i] = iob;
         }
 
