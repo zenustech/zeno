@@ -2,94 +2,133 @@
  "graph": {
   "main": {
    "nodes": {
-    "46e84ca1-Make2DGridPrimitive": {
-     "name": "Make2DGridPrimitive",
+    "8a871d86-PrimitiveBooleanOp": {
+     "name": "PrimitiveBooleanOp",
      "inputs": {
-      "nx": [
-       "d4a13f31-NumericInt",
-       "value",
+      "primA": [
+       "bbf83e6f-TransformPrimitive",
+       "outPrim",
        null
       ],
-      "ny": [
+      "primB": [
+       "3318e7d0-x",
+       "prim",
+       null
+      ],
+      "faceAttrA": [
        null,
        null,
        null
       ],
-      "sizeX": [
-       "97c86c9b-NumericVec3",
+      "faceAttrB": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "Intersect",
+      "faceAttrName": "",
+      "calcAnyFrom": false,
+      "doMeshFix": true
+     },
+     "uipos": [
+      607.198177676538,
+      0.728929384965852
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "28d9b631-ImportObjPrimitive": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/cube.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -106.42369020501144,
+      -118.8154897494305
+     ],
+     "options": []
+    },
+    "3318e7d0-x": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/monkey.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      17.494305239179937,
+      132.66514806378134
+     ],
+     "options": []
+    },
+    "bbf83e6f-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "28d9b631-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "translation": [
+       null,
+       null,
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       "decc781a-NumericVec3",
        "vec3",
        null
       ],
-      "sizeY": [
-       "c2d96f9f-x",
-       "vec3",
-       null
-      ],
-      "scale": [
-       null,
-       null,
-       null
-      ],
-      "origin": [
-       null,
-       null,
-       null
-      ],
       "SRC": [
        null,
        null,
        null
       ]
      },
-     "params": {
-      "isCentered": 1,
-      "hasFaces": 1
-     },
+     "params": {},
      "uipos": [
-      -298.4,
-      184.0
+      240.5466970387243,
+      -98.40546697038727
      ],
      "options": []
     },
-    "d4a13f31-NumericInt": {
-     "name": "NumericInt",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": 3
-     },
-     "uipos": [
-      -540.0,
-      164.79999999999998
-     ],
-     "options": []
-    },
-    "97c86c9b-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 2.0,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -550.4,
-      339.2
-     ],
-     "options": []
-    },
-    "c2d96f9f-x": {
+    "decc781a-NumericVec3": {
      "name": "NumericVec3",
      "inputs": {
       "SRC": [
@@ -100,202 +139,21 @@
      },
      "params": {
       "x": 0.0,
-      "y": 2.0,
+      "y": 0.0,
       "z": 0.0
      },
      "uipos": [
-      -776.8,
-      338.4000000000001
-     ],
-     "options": []
-    },
-    "e2e7d25d-ParticlesWrangle": {
-     "name": "ParticlesWrangle",
-     "inputs": {
-      "prim": [
-       "46e84ca1-Make2DGridPrimitive",
-       "prim",
-       null
-      ],
-      "zfxCode": [
-       "dacabede-MakeMultilineString",
-       "value",
-       ""
-      ],
-      "params": [
-       "b40920c6-MakeDict",
-       "dict",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      371.98,
-      321.8800000000001
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
-    "dacabede-MakeMultilineString": {
-     "name": "MakeMultilineString",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "value": "@pos.z = sin($frame_id / 10)\n@clr = vec3(cos(@pos.xy + $frame_id / 4) * 0.5 + 0.5, 0.5)"
-     },
-     "uipos": [
-      -238.71999999999997,
-      493.4399999999998
-     ],
-     "options": []
-    },
-    "0ba458ab-NumericOperator": {
-     "name": "NumericOperator",
-     "inputs": {
-      "lhs": [
-       "da7c6252-GetFrameNum",
-       "FrameNum",
-       null
-      ],
-      "rhs": [
-       "af3bd429-GetFramePortion",
-       "FramePortion",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "op_type": "add"
-     },
-     "uipos": [
-      -469.76,
-      673.4399999999999
-     ],
-     "options": []
-    },
-    "da7c6252-GetFrameNum": {
-     "name": "GetFrameNum",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -714.2399999999999,
-      647.04
-     ],
-     "options": []
-    },
-    "ff25c3c5-PrintNumeric": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "0ba458ab-NumericOperator",
-       "ret",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "hint": "PrintNumeric"
-     },
-     "uipos": [
-      -140.79999999999998,
-      806.4000000000001
-     ],
-     "options": []
-    },
-    "af3bd429-GetFramePortion": {
-     "name": "GetFramePortion",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -712.8000000000001,
-      793.6000000000001
-     ],
-     "options": []
-    },
-    "b40920c6-MakeDict": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ],
-      "frame_id": [
-       "0ba458ab-NumericOperator",
-       "ret",
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "frame_id"
-     },
-     "uipos": [
-      165.5324601366742,
-      619.0802961275626
-     ],
-     "options": [],
-     "socket_keys": [
-      "frame_id"
-     ]
-    },
-    "a537e974-PrimitiveClearConnect": {
-     "name": "PrimitiveClearConnect",
-     "inputs": {
-      "prim": [
-       "e2e7d25d-ParticlesWrangle",
-       "prim",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      728.9600000000002,
-      398.08000000000004
+      213.57630979498862,
+      -351.3439635535308
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -254.99540701594503,
-    "y": 275.08754660592206,
-    "width": 614.3999999999999,
-    "height": 511.99999999999983
+    "x": 263.14350797265917,
+    "y": -49.27562642369114,
+    "width": 320.0,
+    "height": 320.0
    }
   }
  },
@@ -4155,7 +4013,7 @@
     [
      "bool",
      "calcAnyFrom",
-     "1"
+     "0"
     ],
     [
      "bool",
@@ -4754,6 +4612,16 @@
      ""
     ],
     [
+     "bool",
+     "anyFromA",
+     ""
+    ],
+    [
+     "bool",
+     "anyFromB",
+     ""
+    ],
+    [
      "",
      "DST",
      ""
@@ -4766,6 +4634,11 @@
      "Union"
     ],
     [
+     "string",
+     "faceAttrName",
+     ""
+    ],
+    [
      "bool",
      "assignAttrs",
      "1"
@@ -4773,7 +4646,7 @@
     [
      "bool",
      "calcAnyFrom",
-     "1"
+     "0"
     ],
     [
      "bool",

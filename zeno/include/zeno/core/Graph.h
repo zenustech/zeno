@@ -2,8 +2,9 @@
 
 #include <zeno/utils/defs.h>
 #include <zeno/core/IObject.h>
-#include <zeno/utils/any.h>
 #include <zeno/utils/safe_dynamic_cast.h>
+#include <zeno/utils/UserData.h>
+#include <zeno/utils/any.h>
 #include <functional>
 #include <variant>
 #include <memory>
@@ -49,8 +50,12 @@ struct Graph {
     bool isViewed = true;
     bool hasAnyView = false;
 
+    UserData userData;
+
     ZENO_API Graph();
     ZENO_API ~Graph();
+
+    ZENO_API UserData &getUserData();
 
     ZENO_API std::set<std::string> getGraphInputNames() const;
     ZENO_API std::set<std::string> getGraphOutputNames() const;

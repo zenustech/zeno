@@ -4,6 +4,9 @@
 #include <zeno/core/IObject.h>
 #include <zeno/core/Session.h>
 #include <zeno/utils/safe_at.h>
+#ifdef ZENO_FAULTHANDLER
+#include <zeno/utils/FaultHandler.h>
+#endif
 
 namespace zeno {
 
@@ -77,6 +80,9 @@ ZENO_API void Graph::applyNode(std::string const &id) {
 }
 
 ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
+#ifdef ZENO_FAULTHANDLER
+    signal_catcher([&] () {
+#endif
     try {
         ctx = std::make_unique<Context>();
         for (auto const &id: ids) {
@@ -89,6 +95,9 @@ ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
                 (std::string)"ZENO Traceback (most recent call last):\n"
                 + e.what());
     }
+#ifdef ZENO_FAULTHANDLER
+    });
+#endif
 }
 
 ZENO_API void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
@@ -121,5 +130,10 @@ ZENO_API std::set<std::string> Graph::getGraphOutputNames() const {
     }
     return res;
 }
+
+ZENO_API UserData &Graph::getUserData() {
+    return userData;
+}
+
 
 }

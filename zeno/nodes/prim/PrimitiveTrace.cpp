@@ -19,15 +19,15 @@ struct PrimitiveTraceTrail : zeno::INode {
         int last_base = base - parsPrim->size();
         trailPrim->resize(base + parsPrim->size());
 
-        for (auto const &[parsAttr, parsArr]: parsPrim->m_attrs) {
-            std::visit([&, trailAttr = parsAttr] (auto const &parsArr) {
+        parsPrim->foreach_attr([&] (auto const &parsAttr, auto const &parsArr) {
+            ([&, trailAttr = parsAttr] (auto const &parsArr) {
                 using T = std::decay_t<decltype(parsArr[0])>;
                 auto &trailArr = trailPrim->add_attr<T>(trailAttr);
                 for (int i = 0; i < parsPrim->size(); i++) {
                     trailArr[base + i] = parsArr[i];
                 }
-            }, parsArr);
-        }
+            })(parsArr);
+        });
         if (last_base > 0) {
             for (int i = 0; i < parsPrim->size(); i++) {
                 trailPrim->lines.emplace_back(base + i, last_base + i);

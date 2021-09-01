@@ -1,4 +1,5 @@
-x=gdbtrace
+#x=gdbtrace
+x=segf
 
 x: $x.exe Makefile
 	./$<

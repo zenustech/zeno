@@ -125,8 +125,8 @@ struct VoronoiFracture : INode {
             }
         }
 
+        set_output("primList", std::move(interiors));
         set_output("boundaryPrimList", std::move(boundaries));
-        set_output("interiorPrimList", std::move(interiors));
     }
 };
 
@@ -138,7 +138,7 @@ ZENO_DEFNODE(VoronoiFracture)({
         {"vec3f", "bboxMax", "1,1,1"},
         },
         { // outputs:
-        {"ListObject", "interiorPrimList"},
+        {"ListObject", "primList"},
         {"ListObject", "boundaryPrimList"},
         },
         { // params:
