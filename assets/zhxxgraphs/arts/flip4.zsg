@@ -347,11 +347,12 @@
      },
      "params": {
       "isoValue": 0.0,
-      "adaptivity": 0.025
+      "adaptivity": 0.025,
+      "allowQuads": false
      },
      "uipos": [
-      1652.9765625000005,
-      98.58984374999989
+      1688.1765625000003,
+      78.58984374999989
      ],
      "options": []
     },
@@ -414,8 +415,8 @@
      },
      "params": {},
      "uipos": [
-      1289.848437500001,
-      73.52031250000007
+      1316.2484375000006,
+      55.12031250000004
      ],
      "options": []
     },
@@ -555,9 +556,7 @@
       2995.1623535156236,
       779.6569824218745
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "a32f490d-NumericFloat": {
      "name": "NumericFloat",
@@ -1135,9 +1134,9 @@
     }
    },
    "view": {
-    "scale": 0.3276800000000002,
-    "trans_x": 193,
-    "trans_y": 144
+    "scale": 0.40960000000000013,
+    "trans_x": 393,
+    "trans_y": 49
    }
   },
   "FLIPSimTemplate": {
@@ -3967,34 +3966,8 @@
      },
      "params": {},
      "uipos": [
-      834.3195312499998,
-      271.77343749999994
-     ],
-     "options": []
-    },
-    "d6f480a9-VDBPointsToDropletPrimitive": {
-     "name": "VDBPointsToDropletPrimitive",
-     "inputs": {
-      "grid": [
-       "44d210b4-SubInput",
-       "port",
-       null
-      ],
-      "sdf": [
-       "c60435c4-x",
-       "inoutSDF",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1632.6904296874989,
-      651.8945312499995
+      836.81953125,
+      273.0234374999999
      ],
      "options": []
     },
@@ -4002,7 +3975,7 @@
      "name": "ParticleToLevelSet",
      "inputs": {
       "Particles": [
-       "d6f480a9-VDBPointsToDropletPrimitive",
+       "4453e48c-GetVDBPointsDroplets",
        "prim",
        null
       ],
@@ -4087,7 +4060,8 @@
      "params": {
       "MultiplierA": 1.0,
       "MultiplierB": 1.0,
-      "OpType": "CSGUnion"
+      "OpType": "CSGUnion",
+      "writeBack": 0
      },
      "uipos": [
       2436.249999999997,
@@ -4158,12 +4132,38 @@
       98.74999999999991
      ],
      "options": []
+    },
+    "4453e48c-GetVDBPointsDroplets": {
+     "name": "GetVDBPointsDroplets",
+     "inputs": {
+      "grid": [
+       "44d210b4-SubInput",
+       "port",
+       null
+      ],
+      "sdf": [
+       "c60435c4-x",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1477.4999999999977,
+      643.749999999999
+     ],
+     "options": []
     }
    },
    "view": {
-    "scale": 0.5120000000000007,
-    "trans_x": -617,
-    "trans_y": -85
+    "scale": 0.8000000000000013,
+    "trans_x": -1850,
+    "trans_y": -193
    }
   },
   "StepFLIPWorld": {
@@ -5977,6 +5977,11 @@
      "string",
      "OpType",
      "CSGUnion"
+    ],
+    [
+     "int",
+     "writeBack",
+     "0"
     ]
    ],
    "categories": [
@@ -7647,6 +7652,51 @@
     "trimesh"
    ]
   },
+  "GetBlenderObjectAxes": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "origin",
+     ""
+    ],
+    [
+     "",
+     "axisX",
+     ""
+    ],
+    [
+     "",
+     "axisY",
+     ""
+    ],
+    [
+     "",
+     "axisZ",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "blendermesh"
+   ]
+  },
   "GetDenseField": {
    "inputs": [
     [
@@ -7860,6 +7910,41 @@
     [
      "",
      "pars",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "GetVDBPointsDroplets": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "sdf",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
      ""
     ],
     [
@@ -8230,6 +8315,41 @@
    ],
    "categories": [
     "frame"
+   ]
+  },
+  "KillParticlesInSDF": {
+   "inputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "KillerSDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
    ]
   },
   "ListGetItem": {
@@ -10197,6 +10317,11 @@
     ],
     [
      "",
+     "VelocityInit",
+     ""
+    ],
+    [
+     "",
      "LiquidSDF",
      ""
     ],
@@ -11252,6 +11377,41 @@
     "primitive"
    ]
   },
+  "PrimitiveCalcVelocity": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "NumericObject:float",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveClearConnect": {
    "inputs": [
     [
@@ -11668,6 +11828,41 @@
      "copyA"
     ]
    ],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimitiveInterpSubframe": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "NumericObject:float",
+     "portion",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
    "categories": [
     "primitive"
    ]
@@ -12358,7 +12553,7 @@
   "PrimitiveTraceTrail": {
    "inputs": [
     [
-     "primitive",
+     "PrimitiveObject",
      "parsPrim",
      ""
     ],
@@ -12370,7 +12565,7 @@
    ],
    "outputs": [
     [
-     "primitive",
+     "PrimitiveObject",
      "trailPrim",
      ""
     ],
@@ -12727,6 +12922,11 @@
     ]
    ],
    "outputs": [
+    [
+     "",
+     "resampleTo",
+     ""
+    ],
     [
      "",
      "DST",
@@ -13141,47 +13341,6 @@
     "frame"
    ]
   },
-  "SetSubOutput": {
-   "inputs": [
-    [
-     "",
-     "port",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "name",
-     "output1"
-    ],
-    [
-     "string",
-     "type",
-     ""
-    ],
-    [
-     "string",
-     "defl",
-     ""
-    ]
-   ],
-   "categories": [
-    "subgraph"
-   ]
-  },
   "SetVDBPointDataGrid": {
    "inputs": [
     [
@@ -13473,6 +13632,47 @@
     "subgraph"
    ]
   },
+  "SubResult": {
+   "inputs": [
+    [
+     "",
+     "port",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "output1"
+    ],
+    [
+     "string",
+     "type",
+     ""
+    ],
+    [
+     "string",
+     "defl",
+     ""
+    ]
+   ],
+   "categories": [
+    "subgraph"
+   ]
+  },
   "Subgraph": {
    "inputs": [
     [
@@ -13521,6 +13721,11 @@
     [
      "",
      "actual_dt",
+     ""
+    ],
+    [
+     "",
+     "portion",
      ""
     ],
     [
@@ -14012,41 +14217,6 @@
     [
      "",
      "inoutSDF",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "openvdb"
-   ]
-  },
-  "VDBPointsToDropletPrimitive": {
-   "inputs": [
-    [
-     "",
-     "grid",
-     ""
-    ],
-    [
-     "",
-     "sdf",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
      ""
     ],
     [
