@@ -296,12 +296,12 @@
        "prim",
        null
       ],
-      "attrValA": [
+      "faceAttrA": [
        null,
        null,
        null
       ],
-      "attrValB": [
+      "faceAttrB": [
        null,
        null,
        null
@@ -314,7 +314,7 @@
      },
      "params": {
       "op_type": "Union",
-      "attrName": "",
+      "faceAttrName": "",
       "calcAnyFrom": true,
       "doMeshFix": true
      },
@@ -562,12 +562,12 @@
        "primFixed",
        null
       ],
-      "attrValA": [
+      "faceAttrA": [
        null,
        null,
        null
       ],
-      "attrValB": [
+      "faceAttrB": [
        null,
        null,
        null
@@ -580,7 +580,7 @@
      },
      "params": {
       "op_type": "Union",
-      "attrName": "",
+      "faceAttrName": "",
       "calcAnyFrom": true,
       "doMeshFix": true
      },
@@ -1047,12 +1047,12 @@
        "prim",
        null
       ],
-      "attrValA": [
+      "faceAttrA": [
        "f83fd099-NumericVec3",
        "vec3",
        null
       ],
-      "attrValB": [
+      "faceAttrB": [
        "1473fb90-x",
        "vec3",
        null
@@ -1065,7 +1065,7 @@
      },
      "params": {
       "op_type": "Intersect",
-      "attrName": "clr",
+      "faceAttrName": "",
       "calcAnyFrom": true,
       "doMeshFix": true
      },
@@ -1073,7 +1073,9 @@
       -2097.4863978132,
       -808.2230932118405
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "f83fd099-NumericVec3": {
      "name": "NumericVec3",
@@ -1171,16 +1173,14 @@
       -3176.89118906604,
       -379.407161731205
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     }
    },
    "view_rect": {
-    "x": -3190.046070949632,
-    "y": -523.4879497405209,
-    "width": 491.5199999999978,
-    "height": 376.8319999999978
+    "x": -2289.1110405285235,
+    "y": -978.1598531324329,
+    "width": 767.9999999999964,
+    "height": 588.7999999999963
    }
   },
   "PrimitiveVoronoi": {
@@ -5257,12 +5257,12 @@
     ],
     [
      "NumericObject",
-     "attrValA",
+     "faceAttrA",
      ""
     ],
     [
      "NumericObject",
-     "attrValB",
+     "faceAttrB",
      ""
     ],
     [
@@ -5301,7 +5301,7 @@
     ],
     [
      "string",
-     "attrName",
+     "faceAttrName",
      ""
     ],
     [

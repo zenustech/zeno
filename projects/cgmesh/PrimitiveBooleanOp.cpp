@@ -41,15 +41,15 @@ struct PrimitiveBooleanOp : INode {
             }
         }
 
-        if (auto attrName = get_param<std::string>("attrName"); attrName.size()) {
-            auto attrValA = get_input<NumericObject>("attrValA")->value;
-            auto attrValB = get_input<NumericObject>("attrValB")->value;
+        if (auto attrName = get_param<std::string>("faceAttrName"); attrName.size()) {
+            auto attrValA = get_input<NumericObject>("faceAttrA")->value;
+            auto attrValB = get_input<NumericObject>("faceAttrB")->value;
             std::visit([&] (auto const &valA) {
                 using T = std::decay_t<decltype(valA)>;
                 if constexpr (std::is_same_v<T, float> || std::is_same_v<T, vec3f>) {
                     auto valB = std::get<T>(attrValB);
-                    auto &arrC = primC->add_attr<T>(attrName);
-                    for (int i = 0; i < primC->size(); i++) {
+                    auto &arrC = primC->tris.add_attr<T>(attrName);
+                    for (int i = 0; i < primC->tris.size(); i++) {
                         if (J(i) < FA.rows()) {
                             arrC[i] = valA;
                         } else {
@@ -79,14 +79,14 @@ struct PrimitiveBooleanOp : INode {
 ZENO_DEFNODE(PrimitiveBooleanOp)({
     {
     "primA", "primB",
-    {"NumericObject", "attrValA"}, {"NumericObject", "attrValB"},
+    {"NumericObject", "faceAttrA"}, {"NumericObject", "faceAttrB"},
     },
     {
     "primC", {"bool", "anyFromA"}, {"bool", "anyFromB"},
     },
     {
     {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "Union"},
-    {"string", "attrName", ""},
+    {"string", "faceAttrName", ""},
     {"bool", "calcAnyFrom", "1"},
     {"bool", "doMeshFix", "1"},
     },
