@@ -95,7 +95,7 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
         if (name == "pos") {
             return f(verts.values);
         } else {
-            return verts.attr_visit(name);
+            return verts.attr_visit(name, f);
         }
     }
 

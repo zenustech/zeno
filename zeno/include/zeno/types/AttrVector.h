@@ -93,12 +93,9 @@ struct AttrVector {
 
     template <class F>
     void attr_visit(std::string const &name, F const &f) const {
-        attr(name);
-        for (auto const &[key, arr]: attrs) {
-            std::visit([&] (auto &arr) {
-                f(key, arr);
-            }, arr);
-        }
+        std::visit([&] (auto &arr) {
+            f(arr);
+        }, attr(name));
     }
 
     template <class F>
