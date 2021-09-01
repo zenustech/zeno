@@ -135,7 +135,7 @@ ZENO_DEFNODE(PrimitiveListBoolOp)({
     "primListAnyFromA",
     },
     {
-    {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "union"},
+    {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "Union"},
     {"bool", "assignAttrs", "1"},
     {"bool", "calcAnyFrom", "1"},
     {"bool", "doMeshFix", "1"},

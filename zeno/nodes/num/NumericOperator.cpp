@@ -143,87 +143,65 @@ struct NumericOperator : zeno::INode {
         auto op = get_param<std::string>("op_type");
         auto ret = std::make_unique<zeno::NumericObject>();
         auto lhs = get_input<zeno::NumericObject>("lhs");
+        auto rhs = has_input("rhs") ?
+            get_input<zeno::NumericObject>("lhs")
+            : std::make_shared<zeno::NumericObject>(0);
         
-        if (has_input("rhs")) {
-            auto rhs = get_input<zeno::NumericObject>("rhs");
-            //if(op == "set") lhs->value = rhs->value;
-            //// ZHXX: use the `Assign` node in portal category instead
-            //// it's universal and not only to NumericObject
-            
-            /*if (lhs->value.index() == 1 && rhs->value.index() == 1){
-                if(op == "beq") ret->value = (std::get<float>(lhs->value)>=std::get<float>(rhs->value))?(int)1:(int)0;
-                if(op == "leq") ret->value = (std::get<float>(lhs->value)<=std::get<float>(rhs->value))?(int)1:(int)0;
-            }
-            if (lhs->value.index() == 0 && rhs->value.index() == 0){
-                if(op == "beq") ret->value = (std::get<int>(lhs->value)>=std::get<int>(rhs->value))?(int)1:(int)0;
-                if(op == "leq") ret->value = (std::get<int>(lhs->value)<=std::get<int>(rhs->value))?(int)1:(int)0;
-            }*/
+        // todo: no ternary ops..
+        std::visit([op, &ret](auto const &lhs, auto const &rhs) {
 
-            // todo: no ternary ops?
-            std::visit([op, &ret](auto const &lhs, auto const &rhs) {
-
-                if (op == "copy") ret->value = lhs;
-                else if (op == "copyr") ret->value = rhs;
-#define _PER_OP(name) else if (op == #name) ret->value = remove_bool(op_##name(lhs, rhs));
-    _PER_OP(add)
-    _PER_OP(sub)
-    _PER_OP(mul)
-    _PER_OP(div)
-    _PER_OP(mod)
-    _PER_OP(and)
-    _PER_OP(or)
-    _PER_OP(xor)
-    _PER_OP(shr)
-    _PER_OP(shl)
-    _PER_OP(atan2)
-    _PER_OP(pow)
-    _PER_OP(max)
-    _PER_OP(min)
-    _PER_OP(fmod)
-    _PER_OP(cmpge)
-    _PER_OP(cmple)
-    _PER_OP(cmpgt)
-    _PER_OP(cmplt)
-    _PER_OP(cmpne)
-    _PER_OP(cmpeq)
-    _PER_OP(dot)
-    _PER_OP(cross)
-    _PER_OP(distance)
-                else std::cout << "Bad binary op name: " << op << std::endl;
-#undef _PER_OP
-
-            }, lhs->value, rhs->value);
-
-        } else {
-            std::visit([op, &ret](auto const &lhs) {
-
-                if (op == "copy" || op == "copyr") ret->value = remove_bool(lhs);
+            if (op == "copy" || op == "copyr") ret->value = remove_bool(lhs);
 #define _PER_OP(name) else if (op == #name) ret->value = remove_bool(op_##name(lhs));
-    _PER_OP(pos)
-    _PER_OP(neg)
-    _PER_OP(inv)
-    _PER_OP(not)
-    _PER_OP(abs)
-    _PER_OP(sqrt)
-    _PER_OP(sin)
-    _PER_OP(cos)
-    _PER_OP(tan)
-    _PER_OP(asin)
-    _PER_OP(acos)
-    _PER_OP(atan)
-    _PER_OP(exp)
-    _PER_OP(log)
-    _PER_OP(floor)
-    _PER_OP(ceil)
-    _PER_OP(length)
-    _PER_OP(normalize)
-    _PER_OP(toint)
-    _PER_OP(tofloat)
-                else std::cout << "Bad unary op name: " << op << std::endl;
+_PER_OP(pos)
+_PER_OP(neg)
+_PER_OP(inv)
+_PER_OP(not)
+_PER_OP(abs)
+_PER_OP(sqrt)
+_PER_OP(sin)
+_PER_OP(cos)
+_PER_OP(tan)
+_PER_OP(asin)
+_PER_OP(acos)
+_PER_OP(atan)
+_PER_OP(exp)
+_PER_OP(log)
+_PER_OP(floor)
+_PER_OP(ceil)
+_PER_OP(length)
+_PER_OP(normalize)
+_PER_OP(toint)
+_PER_OP(tofloat)
+#undef _PER_OP
+#define _PER_OP(name) else if (op == #name) ret->value = remove_bool(op_##name(lhs, rhs));
+_PER_OP(add)
+_PER_OP(sub)
+_PER_OP(mul)
+_PER_OP(div)
+_PER_OP(mod)
+_PER_OP(and)
+_PER_OP(or)
+_PER_OP(xor)
+_PER_OP(shr)
+_PER_OP(shl)
+_PER_OP(atan2)
+_PER_OP(pow)
+_PER_OP(max)
+_PER_OP(min)
+_PER_OP(fmod)
+_PER_OP(cmpge)
+_PER_OP(cmple)
+_PER_OP(cmpgt)
+_PER_OP(cmplt)
+_PER_OP(cmpne)
+_PER_OP(cmpeq)
+_PER_OP(dot)
+_PER_OP(cross)
+_PER_OP(distance)
+            else std::cout << "Bad op name: " << op << std::endl;
 #undef _PER_OP
 
-            }, lhs->value);
-        }
+        }, lhs->value, rhs->value);
 
         set_output("ret", std::move(ret));
     }
