@@ -27,19 +27,17 @@ struct PrimitiveDuplicate : zeno::INode {
             }
         }
 
-        for (auto const &[key, attr]: mesh->m_attrs) {
-            if (key == "pos") continue;
-            std::visit([&] (auto const &attr) {
-                using T = std::decay_t<decltype(attr[0])>;
-                auto &outattr = outm->add_attr<T>(key);
-                #pragma omp parallel for
-                for(int i = 0; i < pars->size(); i++) {
-                    for (int j = 0; j < attr.size(); j++) {
-                        outattr[i * attr.size() + j] = attr[j];
-                    }
+        mesh->foreach_attr([&] (auto const &key, auto const &attr) {
+            if (key == "pos") return;
+            using T = std::decay_t<decltype(attr[0])>;
+            auto &outattr = outm->add_attr<T>(key);
+            #pragma omp parallel for
+            for(int i = 0; i < pars->size(); i++) {
+                for (int j = 0; j < attr.size(); j++) {
+                    outattr[i * attr.size() + j] = attr[j];
                 }
-            }, attr);
-        }
+            }
+        });
 
         outm->points.resize(pars->size() * mesh->points.size());
         #pragma omp parallel for

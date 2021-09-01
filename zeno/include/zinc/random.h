@@ -28,4 +28,11 @@ static inline T frand() {
 #endif
 }
 
+static inline void sfrand(unsigned long i) {
+    srand(i);
+#ifndef _WIN32
+    srand48(i);
+#endif
+}
+
 }

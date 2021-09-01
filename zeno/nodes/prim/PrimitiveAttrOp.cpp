@@ -43,7 +43,7 @@ struct PrimitiveFillAttr : INode {
 ZENDEFNODE(PrimitiveFillAttr,
     { /* inputs: */ {
     "prim",
-    "value",
+    {"NumericObject", "value"},
     }, /* outputs: */ {
     "prim",
     }, /* params: */ {
@@ -110,8 +110,7 @@ struct PrimitiveRandomizeAttr : INode {
         if (attrType == "float3") prim->add_attr<vec3f>(attrName);
         else if (attrType == "float") prim->add_attr<float>(attrName);
     }
-    auto &arr = prim->attr(attrName);
-    std::visit([min, minY, minZ, max, maxY, maxZ](auto &arr) {
+    prim->attr_visit(attrName, [min, minY, minZ, max, maxY, maxZ](auto &arr) {
         for (int i = 0; i < arr.size(); i++) {
             if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
                 vec3f f(frand(), frand(), frand());
@@ -122,7 +121,7 @@ struct PrimitiveRandomizeAttr : INode {
                 arr[i] = mix(min, max, (float)frand());
             }
         }
-    }, arr);
+    });
 
     set_output("prim", get_input("prim"));
   }
@@ -159,8 +158,7 @@ struct PrimitiveRandomAttr : INode {
         if (attrType == "float3") prim->add_attr<vec3f>(attrName);
         else if (attrType == "float") prim->add_attr<float>(attrName);
     }
-    auto &arr = prim->attr(attrName);
-    std::visit([&](auto &arr) {
+    prim->attr_visit(attrName, [&](auto &arr) {
         for (int i = 0; i < arr.size(); i++) {
             if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
                 vec3f f(frand(), frand(), frand());
@@ -174,7 +172,7 @@ struct PrimitiveRandomAttr : INode {
                 arr[i] = mix(a, b, f);
             }
         }
-    }, arr);
+    });
 
     set_output("prim", get_input("prim"));
   }
