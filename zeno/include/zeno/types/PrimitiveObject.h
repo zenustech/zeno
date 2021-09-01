@@ -44,29 +44,43 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
 
     template <class T>
     auto &add_attr(std::string const &name) {
+        if constexpr (std::is_same_v<T, vec3f>) {
+            if (name == "pos") return verts.values;
+        }
         return verts.add_attr<T>(name);
     }
 
     template <class T>
     auto &add_attr(std::string const &name, T const &value) {
+        if constexpr (std::is_same_v<T, vec3f>) {
+            if (name == "pos") return verts.values;
+        }
         return verts.add_attr<T>(name, value);
     }
 
     template <class T>
     auto const &attr(std::string const &name) const {
+        if constexpr (std::is_same_v<T, vec3f>) {
+            if (name == "pos") return verts.values;
+        }
         return verts.attr<T>(name);
     }
 
     template <class T>
     auto &attr(std::string const &name) {
+        if constexpr (std::is_same_v<T, vec3f>) {
+            if (name == "pos") return verts.values;
+        }
         return verts.attr<T>(name);
     }
 
     auto const &attr(std::string const &name) const {
+        //if (name == "pos") return verts.values;
         return verts.attr(name);
     }
 
     auto &attr(std::string const &name) {
+        //if (name == "pos") return verts.values;
         return verts.attr(name);
     }
 

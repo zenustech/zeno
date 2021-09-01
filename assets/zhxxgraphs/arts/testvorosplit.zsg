@@ -1073,9 +1073,7 @@
       -2097.4863978132,
       -808.2230932118405
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "f83fd099-NumericVec3": {
      "name": "NumericVec3",
@@ -1116,13 +1114,73 @@
       -627.4810751708392
      ],
      "options": []
+    },
+    "239e3ad7-Make3DGridPrimitive": {
+     "name": "Make3DGridPrimitive",
+     "inputs": {
+      "nx": [
+       null,
+       null,
+       4
+      ],
+      "ny": [
+       null,
+       null,
+       0
+      ],
+      "nz": [
+       null,
+       null,
+       0
+      ],
+      "sizeX": [
+       null,
+       null,
+       null
+      ],
+      "sizeY": [
+       null,
+       null,
+       null
+      ],
+      "sizeZ": [
+       null,
+       null,
+       null
+      ],
+      "scale": [
+       null,
+       null,
+       1.0
+      ],
+      "origin": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isCentered": false
+     },
+     "uipos": [
+      -3176.89118906604,
+      -379.407161731205
+     ],
+     "options": [
+      "VIEW"
+     ]
     }
    },
    "view_rect": {
-    "x": -2497.94056216861,
-    "y": -906.3369829729804,
-    "width": 767.9999999999967,
-    "height": 588.7999999999965
+    "x": -3190.046070949632,
+    "y": -523.4879497405209,
+    "width": 491.5199999999978,
+    "height": 376.8319999999978
    }
   },
   "PrimitiveVoronoi": {
@@ -5537,56 +5595,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "PrimitiveEdgeWrangle": {
-   "inputs": [
-    [
-     "PrimitiveObject",
-     "prim",
-     ""
-    ],
-    [
-     "PrimitiveObject",
-     "edgePrim",
-     ""
-    ],
-    [
-     "StringObject",
-     "zfxCode",
-     ""
-    ],
-    [
-     "DictObject:NumericObject",
-     "params",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "PrimitiveObject",
-     "prim",
-     ""
-    ],
-    [
-     "PrimitiveObject",
-     "edgePrim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "zenofx"
    ]
   },
   "PrimitiveFaceToEdges": {
