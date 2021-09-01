@@ -39,7 +39,7 @@ ZENDEFNODE(MakeOrthonormalBase, {
 });
 
 
-struct BoundingBoxCollideDetect : INode {
+struct AABBCollideDetect : INode {
     virtual void apply() override {
         auto bminA = get_input<NumericObject>("bminA")->get<vec3f>();
         auto bmaxA = get_input<NumericObject>("bmaxA")->get<vec3f>();
@@ -47,7 +47,7 @@ struct BoundingBoxCollideDetect : INode {
         auto bmaxB = get_input<NumericObject>("bmaxB")->get<vec3f>();
 
         // https://www.cnblogs.com/liez/p/11965027.html
-        bool overlap = alltrue(abs(bminA + bmaxA - bminB - bmaxB) <= (bmaxA - bminA - bmaxA + bminB));
+        bool overlap = alltrue(abs(bminA + bmaxA - bminB - bmaxB) <= (bmaxA - bminA + bmaxB - bminB));
         set_output2("overlap", overlap);
         bool AinsideB = alltrue(bminA >= bminB && bmaxA <= bmaxB);
         set_output2("AinsideB", AinsideB);
@@ -56,7 +56,7 @@ struct BoundingBoxCollideDetect : INode {
     }
 };
 
-ZENDEFNODE(BoundingBoxCollideDetect, {
+ZENDEFNODE(AABBCollideDetect, {
     {{"vec3f", "bminA"}, {"vec3f", "bmaxA"}, {"vec3f", "bminB"}, {"vec3f", "bmaxB"}},
     {{"bool", "overlap"}, {"bool", "AinsideB"}, {"bool", "BinsideA"}},
     {},
