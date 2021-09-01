@@ -9,24 +9,42 @@
 
 namespace zeno {
 
+// defined in zeno/utils/StackTraceback.cpp:
 void print_traceback(int skip);
 
-#ifdef ZENO_FAULTHANDLER
-static void signal_handler(int signo) {
+static const char *signal_to_string(int signo) {
 #ifdef __linux__
-    spdlog::error("recieved signal {}: {}", signo, strsignal(signo));
+    return strsignal(signo);
 #else
     const char *signame = "SIG-unknown";
     if (signo == SIGSEGV) signame = "SIGSEGV";
     if (signo == SIGFPE) signame = "SIGFPE";
     if (signo == SIGILL) signame = "SIGILL";
-    spdlog::error("recieved signal {}: {}", signo, signame);
+    return signo;
 #endif
-    print_traceback(1);
-    exit(-signo);
 }
 
-static int registerMyHandlers() {
+class SignalException : public std::exception {
+private:
+    int signo;
+
+public:
+    SignalException(int signo) noexcept : signo(signo) {
+        spdlog::error("recieved signal {}: {}", signo, signal_to_string(signo));
+        print_traceback(1);
+    }
+
+    ~SignalException() noexcept = default;
+
+    char const *what() noexcept { return signal_to_string(signo); }
+};
+
+#ifdef ZENO_FAULTHANDLER
+static void signal_handler(int signo) {
+    throw SignalException(signo);
+}
+
+static int register_my_handlers() {
     if (getenv("ZEN_NOSIGHOOK")) {
         return 0;
     }
@@ -39,7 +57,7 @@ static int registerMyHandlers() {
     return 1;
 }
 
-static int doRegisterMyHandlers = registerMyHandlers();
+static int doRegisterMyHandlers = register_my_handlers();
 #endif
 
 }
