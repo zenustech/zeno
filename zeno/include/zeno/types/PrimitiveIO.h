@@ -23,12 +23,12 @@ static void writezpm(PrimitiveObject const *prim, const char *path) {
     int count = prim->num_attrs();
     fwrite(&count, sizeof(count), 1, fp);
 
-    prim->foreach_attr([&] (auto const &name, auto const &) {
+    prim->foreach_attr([&] (auto const &name, auto const &arr) {
         char type[5];
         memset(type, 0, sizeof(type));
-        if (0) {
+        if constexpr (0) {
 #define _PER_ALTER(T, id) \
-        } else if (prim->attr_is<T>(name)) { \
+        } else if constexpr (std::is_same_v<std::decay_t<decltype(arr[0])>, T>) { \
             strcpy(type, id);
         _PER_ALTER(float, "f")
         _PER_ALTER(zeno::vec3f, "3f")
@@ -44,11 +44,9 @@ static void writezpm(PrimitiveObject const *prim, const char *path) {
         fwrite(name.c_str(), sizeof(name[0]), namelen, fp);
     });
 
-    prim->foreach_attr([&] (auto const &key, auto const &) {
-        std::visit([=](auto const &attr) {
-            assert(attr.size() == size);
-            fwrite(attr.data(), sizeof(attr[0]), size, fp);
-        }, prim->attr(key));
+    prim->foreach_attr([&] (auto const &key, auto const &attr) {
+        assert(attr.size() == size);
+        fwrite(attr.data(), sizeof(attr[0]), size, fp);
     });
 
     size = prim->points.size();
@@ -121,13 +119,11 @@ static void readzpm(PrimitiveObject *prim, const char *path) {
     assert(prim->num_attrs() == count);
 
     // assuming prim->m_attrs is an ordered map
-    prim->foreach_attr([&] (auto const &key, auto const &) {
+    prim->foreach_attr([&] (auto const &key, auto &attr) {
         //printf("reading array of attr `%s`\n", key.c_str());
 
-        std::visit([=](auto &attr) {
-            assert(attr.size() == size);
-            fread(attr.data(), sizeof(attr[0]), size, fp);
-        }, prim->attr(key));
+        assert(attr.size() == size);
+        fread(attr.data(), sizeof(attr[0]), size, fp);
     });
 
     fread(&size, sizeof(size_t), 1, fp);

@@ -3,6 +3,7 @@
 #include <zeno/utils/vec.h>
 #include <variant>
 #include <vector>
+#include <map>
 
 namespace zeno {
 
@@ -19,11 +20,43 @@ struct AttrVector {
     AttrVector(std::vector<ValT> &&values_) : values(std::move(values_)) {}
     explicit AttrVector(size_t size) : values(size) {}
 
-    operator auto &() {
-        return values;
+    decltype(auto) begin() const {
+        return values.begin();
+    }
+
+    decltype(auto) end() const {
+        return values.end();
+    }
+
+    decltype(auto) data() const {
+        return values.data();
+    }
+
+    decltype(auto) begin() {
+        return values.begin();
+    }
+
+    decltype(auto) end() {
+        return values.end();
+    }
+
+    decltype(auto) data() {
+        return values.data();
+    }
+
+    auto const *operator->() const {
+        return &values;
+    }
+
+    auto *operator->() {
+        return &values;
     }
 
     operator auto const &() const {
+        return values;
+    }
+
+    operator auto &() {
         return values;
     }
 
@@ -35,29 +68,56 @@ struct AttrVector {
         values.push_back(std::move(t));
     }
 
+    template <class F>
+    void foreach_attr(F const &f) const {
+        for (auto const &[key, arr]: attrs) {
+            std::visit([&] (auto &arr) {
+                f(key, arr);
+            }, arr);
+        }
+    }
+
+    template <class F>
+    void foreach_attr(F const &f) {
+        for (auto &[key, arr]: attrs) {
+            std::visit([&] (auto &arr) {
+                f(key, arr);
+            }, arr);
+        }
+    }
+
+    size_t num_attrs() const {
+        return attrs.size();
+    }
+
+    template <class F>
+    auto attr_keys() const {
+        std::vector<std::string> keys;
+        for (auto const &[key, val]: attrs) {
+            keys.push_back(key);
+        }
+        return keys;
+    }
+
     template <class ...Ts>
     decltype(auto) emplace_back(Ts &&...ts) {
         values.emplace_back(std::forward<Ts>(ts)...);
     }
 
-    template <class T>
-    decltype(auto) at(T &&idx) const {
-        return values.at(std::forward<T>(idx));
+    decltype(auto) at(size_t idx) const {
+        return values.at(idx);
     }
 
-    template <class T>
-    decltype(auto) at(T &&idx) {
-        return values.at(std::forward<T>(idx));
+    decltype(auto) at(size_t idx) {
+        return values.at(idx);
     }
 
-    template <class T>
-    decltype(auto) operator[](T &&idx) const {
-        return values.operator[](std::forward<T>(idx));
+    decltype(auto) operator[](size_t idx) const {
+        return values[idx];
     }
 
-    template <class T>
-    decltype(auto) operator[](T &&idx) {
-        return values.operator[](std::forward<T>(idx));
+    decltype(auto) operator[](size_t idx) {
+        return values[idx];
     }
 
     template <class T>

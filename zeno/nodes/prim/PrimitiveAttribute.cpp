@@ -103,14 +103,14 @@ struct PrimitiveSetAttrValue : zeno::INode {
 
         if (type == "float") {
             auto value = get_input<zeno::NumericObject>("value")->get<float>();
-                std::vector<float>& attr_arr = std::get<std::vector<float>>(it->second);
+                std::vector<float>& attr_arr = std::get<std::vector<float>>(it);
                 if (index < attr_arr.size()) {
                     attr_arr[index] = value;
                 }
         }
         else if (type == "float3") {
             auto value = get_input<zeno::NumericObject>("value")->get<vec3f>();
-                std::vector<vec3f>& attr_arr = std::get<std::vector<vec3f>>(it->second);
+                std::vector<vec3f>& attr_arr = std::get<std::vector<vec3f>>(it);
                 if (index < attr_arr.size()) {
                     attr_arr[index] = value;
                 }

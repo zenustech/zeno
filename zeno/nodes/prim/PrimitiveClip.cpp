@@ -257,8 +257,8 @@ namespace zeno {
                 origin,
                 direction);
 
-            outprim->m_attrs["pos"] = new_pos_attr;
-            outprim->m_size = new_pos_attr.size();
+            outprim->attr<zeno::vec3f>("pos") = new_pos_attr;
+            outprim->resize(new_pos_attr.size());
             set_output("outPrim", std::move(outprim));
         }
     };

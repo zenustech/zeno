@@ -46,16 +46,14 @@ struct PrimitiveSplitEdges : zeno::INode {
     auto prim = get_input<PrimitiveObject>("prim");
 
     prim->foreach_attr([&] (auto &, auto &arr) {
-        std::visit([&prim](auto &arr) {
-            auto oldarr = arr;
-            arr.resize(prim->tris.size() * 3);
-            for (size_t i = 0; i < prim->tris.size(); i++) {
-                auto ind = prim->tris[i];
-                arr[i * 3 + 0] = oldarr[ind[0]];
-                arr[i * 3 + 1] = oldarr[ind[1]];
-                arr[i * 3 + 2] = oldarr[ind[2]];
-            }
-        }, arr);
+        auto oldarr = arr;
+        arr.resize(prim->tris.size() * 3);
+        for (size_t i = 0; i < prim->tris.size(); i++) {
+            auto ind = prim->tris[i];
+            arr[i * 3 + 0] = oldarr[ind[0]];
+            arr[i * 3 + 1] = oldarr[ind[1]];
+            arr[i * 3 + 2] = oldarr[ind[2]];
+        }
     });
     prim->resize(prim->tris.size() * 3);
 

@@ -3,6 +3,7 @@
 #include <zeno/core/IObject.h>
 #include <zeno/types/AttrVector.h>
 #include <zeno/utils/vec.h>
+#include <optional>
 #include <variant>
 #include <memory>
 #include <string>
@@ -19,75 +20,73 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     AttrVector<vec3i> tris;
     AttrVector<vec4i> quads;
 
-    std::vector<int> loops;
+    AttrVector<int> loops;
     AttrVector<std::pair<int, int>> polys;
 
-    struct Deprecated_M_Attrs {
-        PrimitiveObject *that{};
+    // deprecated:
+    template <class F>
+    void foreach_attr(F const &f) {
+        verts.foreach_attr(f);
+        std::string pos_name = "pos";
+        f(pos_name, verts.values);
+    }
 
-        struct MyIt {
-        };
+    template <class F>
+    void foreach_attr(F const &f) const {
+        verts.foreach_attr(f);
+        std::string const pos_name = "pos";
+        f(pos_name, verts.values);
+    }
 
-        auto begin() {
-            auto it = that->verts.attrs.begin();
-            decltype(that->verts.attrs) attrs;
-            for (auto &[key, arr]: that->verts.attrs) {
-                attrs[
-            }
-            that->verts.pos;
-        }
-
-        auto end() {
-            return that->verts.attrs.end();
-        }
-    };
-
-    Deprecated_M_Attrs m_attrs{this};
-
-    template <class T>
-    [[deprecated("use prim->verts.somefunc() instead")]] auto &add_attr(std::string const &name) {
-        return verts.add_attr(name);
+    size_t num_attrs() const {
+        return verts.num_attrs();
     }
 
     template <class T>
-    [[deprecated("use prim->verts.somefunc() instead")]] auto &add_attr(std::string const &name, T const &value) {
-        return verts.add_attr(name, value);
+    auto &add_attr(std::string const &name) {
+        return verts.add_attr<T>(name);
     }
 
     template <class T>
-    [[deprecated("use prim->verts.somefunc() instead")]] auto const &attr(std::string const &name) const {
-        return verts.attr(name);
+    auto &add_attr(std::string const &name, T const &value) {
+        return verts.add_attr<T>(name, value);
     }
 
     template <class T>
-    [[deprecated("use prim->verts.somefunc() instead")]] auto &attr(std::string const &name) {
+    auto const &attr(std::string const &name) const {
+        return verts.attr<T>(name);
+    }
+
+    template <class T>
+    auto &attr(std::string const &name) {
+        return verts.attr<T>(name);
+    }
+
+    auto const &attr(std::string const &name) const {
         return verts.attr(name);
     }
 
-    [[deprecated("use prim->verts.somefunc() instead")]] auto const &attr(std::string const &name) const {
+    auto &attr(std::string const &name) {
         return verts.attr(name);
     }
 
-    [[deprecated("use prim->verts.somefunc() instead")]] auto &attr(std::string const &name) {
-        return verts.attr(name);
-    }
-
-    [[deprecated("use prim->verts.somefunc() instead")]] bool has_attr(std::string const &name) const {
+    bool has_attr(std::string const &name) const {
         return verts.has_attr(name);
     }
 
     template <class T>
-    [[deprecated("use prim->verts.somefunc() instead")]] bool attr_is(std::string const &name) const {
+    bool attr_is(std::string const &name) const {
         return verts.attr_is<T>(name);
     }
 
-    [[deprecated("use prim->verts.somefunc() instead")]] size_t size() const {
+    size_t size() const {
         return verts.size();
     }
 
-    [[deprecated("use prim->verts.somefunc() instead")]] void resize(size_t size) {
+    void resize(size_t size) {
         return verts.resize(size);
     }
+    // end of deprecated
 
 #ifndef ZENO_APIFREE
     ZENO_API virtual void dumpfile(std::string const &path) override;
