@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <csignal>
+#include <sstream>
 #ifdef __linux__
 #include <string.h>
 #endif
@@ -36,7 +37,9 @@ public:
 
     ~SignalException() noexcept = default;
 
-    char const *what() noexcept { return signal_to_string(signo); }
+    char const *what() noexcept {
+        return signal_to_string(signo);
+    }
 };
 
 #ifdef ZENO_FAULTHANDLER
