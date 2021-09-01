@@ -2,9 +2,57 @@
  "graph": {
   "main": {
    "nodes": {
-    "df9c6a8e-TriggerSegFault": {
-     "name": "TriggerSegFault",
+    "8a871d86-PrimitiveBooleanOp": {
+     "name": "PrimitiveBooleanOp",
      "inputs": {
+      "primA": [
+       "28d9b631-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "primB": [
+       "3318e7d0-x",
+       "prim",
+       null
+      ],
+      "faceAttrA": [
+       null,
+       null,
+       null
+      ],
+      "faceAttrB": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "Intersect",
+      "faceAttrName": "",
+      "calcAnyFrom": false,
+      "doMeshFix": true
+     },
+     "uipos": [
+      607.198177676538,
+      0.728929384965852
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "28d9b631-ImportObjPrimitive": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/cube.obj"
+      ],
       "SRC": [
        null,
        null,
@@ -13,17 +61,36 @@
      },
      "params": {},
      "uipos": [
-      212.98405466970388,
-      240.31890660592254
+      226.69703872437356,
+      -64.14578587699314
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
+    },
+    "3318e7d0-x": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/monkey.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      276.9931662870159,
+      96.21867881548977
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 212.30068337129842,
-    "y": 56.85649202733485,
+    "x": 443.3712984054671,
+    "y": -69.9772209567199,
     "width": 320.0,
     "height": 320.0
    }
