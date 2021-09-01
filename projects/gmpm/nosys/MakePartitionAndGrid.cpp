@@ -7,7 +7,7 @@ namespace zeno {
 struct MakePartition : zeno::INode {
   void apply() override {
     auto cnt = std::get<int>(get_param("count"));
-    zs::HashTable<zs::i32, 3, int> ret{cnt, zs::memsrc_e::um, 0};
+    zs::HashTable<zs::i32, 3, int> ret{(std::size_t)cnt, zs::memsrc_e::um, 0};
 
     auto partition = zeno::IObject::make<ZenoPartition>();
     partition->get() = std::move(ret);
@@ -30,7 +30,7 @@ struct MakeGrid : zeno::INode {
     }
     auto cnt = std::get<int>(get_param("count"));
     using GridT = zs::GridBlocks<zs::GridBlock<zs::dat32, 3, 2, 2>>;
-    GridT gridblocks{dx, cnt, zs::memsrc_e::um, 0};
+    GridT gridblocks{dx, (std::size_t)cnt, zs::memsrc_e::um, 0};
 
     auto grid = zeno::IObject::make<zeno::ZenoGrid>();
     grid->get() = std::move(gridblocks);

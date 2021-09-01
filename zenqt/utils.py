@@ -1,24 +1,18 @@
-from itertools import chain
+import os, sys
 
-def capital_search(pattern, keys):
-    pattern = pattern.lower()
-    matched = filter(lambda k: capital_match(pattern, k), keys)
-    return matched
+from .system.utils import rel2abs
 
-def capital_match(pattern, key):
-    only_upper = ''.join(filter(lambda c: c.isupper(), key)).lower()
-    return pattern in only_upper
+def is_portable_mode():
+    return getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
 
-def direct_search(pattern, keys):
-    pattern = pattern.lower()
-    matched = filter(lambda k: pattern in k.lower(), keys)
-    return matched
+def relative_path(*args):
+    if is_portable_mode():
+        return rel2abs(sys.executable, 'zenqt', *args)
+    else:
+        return rel2abs(__file__, *args)
 
-def fuzzy_search(pattern, keys):
-    return chain(capital_search(pattern, keys), direct_search(pattern, keys))
-
-from zenutils import rel2abs
-
-def asset_path(name):
-    return rel2abs(__file__, 'assets', name)
-
+def get_executable():
+    if is_portable_mode():
+        return [sys.executable]
+    else:
+        return [sys.executable, '-m', 'zenqt.system']

@@ -14,25 +14,22 @@ struct GridFromPartition : zeno::INode {
   void apply() override {
     fmt::print(fg(fmt::color::green), "begin executing GridFromPartition\n");
     auto &partition = get_input("ZSPartition")->as<ZenoPartition>()->get();
-    auto mh =
-        zs::match([](auto &partition) { return partition.base(); })(partition);
+    auto mloc = zs::match(
+        [](auto &partition) { return partition.memoryLocation(); })(partition);
     auto cnt =
         zs::match([](auto &partition) { return partition.size(); })(partition);
     auto dx = std::get<float>(get_param("dx"));
-    if(has_input("Dx"))
-    {
+    if (has_input("Dx")) {
       dx = get_input("Dx")->as<NumericObject>()->get<float>();
     }
     // auto grid = zeno::IObject::make<ZenoGrid>();
     auto &grid = get_input("ZSGrid")->as<ZenoGrid>()->get();
     using GridT = zs::GridBlocks<zs::GridBlock<zs::dat32, 3, 2, 2>>;
-    // GridT gridblocks{dx, cnt, mh.memspace(), mh.devid()};
     GridT &gridblocks = std::get<GridT>(grid);
     if (gridblocks.dx.asFloat() != dx)
-      gridblocks = GridT{dx, cnt, mh.memspace(), mh.devid()};
+      gridblocks = GridT{dx, (size_t)cnt, mloc.memspace(), mloc.devid()};
     else
       gridblocks.resize(cnt);
-    // ret = TableT{cnt, mh.memspace(), mh.devid()};
 
     auto cudaPol = zs::cuda_exec().device(0);
     cudaPol(

@@ -1,23 +1,6 @@
 file(GLOB ZENVIS_SOURCE "*.cpp" "*.hpp" "*.h")
-find_package(OpenMP)
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
-pybind11_add_module(pyzenvis ${ZENVIS_SOURCE})
-target_compile_definitions(pyzenvis PRIVATE -DZEN_NOREFDLL )
-target_include_directories(pyzenvis PRIVATE .)
-target_include_directories(pyzenvis PRIVATE ${PROJECT_SOURCE_DIR}/zeno/include)
-target_link_libraries(pyzenvis PRIVATE glad)
-set_target_properties(pyzenvis PROPERTIES
-	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-	LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}
-	RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}
-	LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}
-	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}
-	)
+pybind11_add_module(pylib_zenvis ${ZENVIS_SOURCE})
+target_compile_definitions(pylib_zenvis PRIVATE -DZENO_APIFREE)
+target_include_directories(pylib_zenvis PRIVATE .)
+target_include_directories(pylib_zenvis PRIVATE ${PROJECT_SOURCE_DIR}/zeno/include)
+target_link_libraries(pylib_zenvis PRIVATE glad)

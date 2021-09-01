@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/StringObject.h>
-#include <zeno/vec.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/StringObject.h>
+#include <zeno/utils/vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
@@ -47,15 +47,16 @@ static void readobj(
             }
         }
     }
+    fclose(fp);
 }
 
 
 struct ImportObjPrimitive : zeno::INode {
     virtual void apply() override {
-        auto path = get_input<zeno::StringObject>("path");
+        auto path = get_input<zeno::StringObject>("path")->get();
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto &pos = prim->add_attr<zeno::vec3f>("pos");
-        readobj(pos, prim->tris, path->get().c_str());
+        readobj(pos, prim->tris, path.c_str());
         prim->resize(pos.size());
         set_output("prim", std::move(prim));
     }
@@ -63,9 +64,52 @@ struct ImportObjPrimitive : zeno::INode {
 
 ZENDEFNODE(ImportObjPrimitive,
         { /* inputs: */ {
-        "path",
+        {"readpath", "path"},
         }, /* outputs: */ {
         "prim",
+        }, /* params: */ {
+        }, /* category: */ {
+        "primitive",
+        }});
+
+
+
+static void writeobj(
+        std::vector<zeno::vec3f> const &vertices,
+        std::vector<zeno::vec3i> const &indices,
+        const char *path)
+{
+    FILE *fp = fopen(path, "w");
+    if (!fp) {
+        perror(path);
+        abort();
+    }
+
+    for (auto const &vert: vertices) {
+        fprintf(fp, "v %f %f %f\n", vert[0], vert[1], vert[2]);
+    }
+
+    for (auto const &ind: indices) {
+        fprintf(fp, "f %d %d %d\n", ind[0] + 1, ind[1] + 1, ind[2] + 1);
+    }
+    fclose(fp);
+}
+
+
+struct ExportObjPrimitive : zeno::INode {
+    virtual void apply() override {
+        auto path = get_input<zeno::StringObject>("path")->get();
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto &pos = prim->attr<zeno::vec3f>("pos");
+        writeobj(pos, prim->tris, path.c_str());
+    }
+};
+
+ZENDEFNODE(ExportObjPrimitive,
+        { /* inputs: */ {
+        {"writepath", "path"},
+        "prim",
+        }, /* outputs: */ {
         }, /* params: */ {
         }, /* category: */ {
         "primitive",

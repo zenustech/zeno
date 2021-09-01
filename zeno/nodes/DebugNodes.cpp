@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/NumericObject.h>
+#include <zeno/types/NumericObject.h>
 #include <cstdio>
 
 namespace {
@@ -57,6 +57,49 @@ ZENDEFNODE(ExitProcess, {
     {},
     {},
     {{"int", "status", "-1"}},
+    {"debug"},
+});
+
+
+struct TriggerSegFault : zeno::INode {
+    virtual void apply() override {
+        *(volatile float *)nullptr = 0;
+    }
+};
+
+ZENDEFNODE(TriggerSegFault, {
+    {},
+    {},
+    {},
+    {"debug"},
+});
+
+
+struct TriggerDivideZero : zeno::INode {
+    virtual void apply() override {
+        volatile int x = 0;
+        x /= x;
+    }
+};
+
+ZENDEFNODE(TriggerDivideZero, {
+    {},
+    {},
+    {},
+    {"debug"},
+});
+
+
+struct TriggerAbortSignal : zeno::INode {
+    virtual void apply() override {
+        abort();
+    }
+};
+
+ZENDEFNODE(TriggerAbortSignal, {
+    {},
+    {},
+    {},
     {"debug"},
 });
 

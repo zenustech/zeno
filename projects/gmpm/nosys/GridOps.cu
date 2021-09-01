@@ -3,12 +3,14 @@
 #include "../ZensimGeometry.h"
 #include "zensim/container/HashTable.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
-#include "zensim/simulation/grid/GridOp.hpp"
 #include "zensim/geometry/VdbLevelSet.h"
+#include "zensim/simulation/grid/GridOp.hpp"
 #include "zensim/simulation/sparsity/SparsityCompute.hpp"
 #include "zensim/tpls/fmt/color.h"
 #include "zensim/tpls/fmt/format.h"
-#include <zeno/NumericObject.h>
+#include <zeno/core/INode.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/zeno.h>
 
 namespace zeno {
 
@@ -22,8 +24,13 @@ struct GridUpdate : zeno::INode {
     auto &grid = get_input("ZSGrid")->as<ZenoGrid>()->get();
     // auto stepDt = std::get<float>(get_param("dt"));
     auto stepDt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
-    auto gravity = std::get<float>(get_param("gravity"));
-
+    auto gravity = get_param<float>("gravity");
+    auto extf = zs::vec<float, 3>::zeros();
+    if (has_input("extforce")) {
+      auto tmp = get_input<zeno::NumericObject>("extforce")->get<zeno::vec3f>();
+      extf = zs::vec<float, 3>{tmp[0], tmp[1], tmp[2]};
+    } else
+      extf[1] = gravity;
     zs::Vector<float> velSqr{1, zs::memsrc_e::um, 0};
     velSqr[0] = 0;
     auto cudaPol = zs::cuda_exec().device(0);
@@ -34,7 +41,7 @@ struct GridUpdate : zeno::INode {
           {(std::size_t)partition.size(), (std::size_t)GridT::block_t::space()},
           zs::ComputeGridBlockVelocity{zs::wrapv<zs::execspace_e::cuda>{},
                                        zs::wrapv<zs::transfer_scheme_e::apic>{},
-                                       grid, stepDt, gravity, velSqr.data()});
+                                       grid, stepDt, extf, velSqr.data()});
     })(partition, grid);
     maxVelSqr->set<float>(velSqr[0]);
     fmt::print(fg(fmt::color::cyan), "done executing GridUpdate\n");
@@ -43,7 +50,7 @@ struct GridUpdate : zeno::INode {
 };
 
 static int defGridUpdate = zeno::defNodeClass<GridUpdate>(
-    "GridUpdate", {/* inputs: */ {"dt", "ZSPartition", "ZSGrid"},
+    "GridUpdate", {/* inputs: */ {"dt", "ZSPartition", "ZSGrid", "extforce"},
                    /* outputs: */ {"MaxVelSqr"},
                    /* params: */
                    {/*{"float", "dt", "1"}, */ {"float", "gravity", "-9.8"}},

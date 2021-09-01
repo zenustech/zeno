@@ -1,12 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(ZFX LANGUAGES CXX)
 
-option(ZFX_ENABLE_CUDA "Build ZFX with CUDA support" OFF)
-if (ZFX_ENABLE_CUDA)  # WXL may need turn ON this
-    link_directories(/opt/cuda/lib64)  # WXL may need change this
-    include_directories(/opt/cuda/include)  # WXL may need change this
-    set(CMAKE_CUDA_ARCHITECTURES 75)  # WXL may need change this
-endif()
+option(ZFX_ENABLE_CUDA "Build ZFX with CUDA support" ON)
 
 set(CMAKE_CXX_STANDARD 17)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -19,7 +14,7 @@ else()
     option(ZFX_PRINT_IR "Print IR for the ZFX compiler" OFF)
 endif()
 
-add_library(ZFX STATIC
+add_library(ZFX
 # ls {,include/zfx/}*{,/*}.{h,cpp} | grep -v main.cpp
 AST.h
 ConstantFold.cpp
@@ -63,14 +58,17 @@ if (ZFX_PRINT_IR)
 endif()
 target_include_directories(ZFX PUBLIC include)
 if (ZFX_ENABLE_CUDA)
-    find_package(CUDAToolkit REQUIRED)
     target_sources(ZFX PRIVATE cuda/Assembler.cpp)
-    target_link_libraries(ZFX PUBLIC CUDA::cuda_driver CUDA::nvrtc)
 endif()
 
-if (ZFX_ENABLE_CUDA)
-    add_executable(ZFXtest cuda/test_main.cpp)
-else()
-    add_executable(ZFXtest x64/test_main.cpp)
-endif()
-target_link_libraries(ZFXtest PRIVATE ZFX)
+#if (ZFX_ENABLE_CUDA)
+#    find_package(CUDAToolkit REQUIRED)
+#    set(CMAKE_CUDA_ARCHITECTURES 75)  # WXL may need change this
+#    add_executable(ZFXtest cuda/test_main.cpp)
+#    link_directories(/opt/cuda/lib64)  # WXL may need change this
+#    include_directories(/opt/cuda/include)  # WXL may need change this
+#    target_link_libraries(ZFXtest PUBLIC CUDA::cuda_driver CUDA::nvrtc)
+#else()
+#    add_executable(ZFXtest x64/test_main.cpp)
+#endif()
+#target_link_libraries(ZFXtest PRIVATE ZFX)

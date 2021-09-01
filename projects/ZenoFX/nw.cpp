@@ -1,10 +1,11 @@
 #include <zeno/zeno.h>
-#include <zeno/StringObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/DictObject.h>
+#include <zeno/types/StringObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/DictObject.h>
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
+#include "dbg_printf.h"
 
 namespace {
 
@@ -39,7 +40,7 @@ struct NumericWrangle : zeno::INode {
         std::vector<std::pair<std::string, int>> parnames;
         for (auto const &[key_, obj]: params->lut) {
             auto key = '$' + key_;
-            auto par = dynamic_cast<zeno::NumericObject *>(obj.get());
+            auto par = zeno::smart_any_cast<std::shared_ptr<zeno::NumericObject>>(obj).get();
             auto dim = std::visit([&] (auto const &v) {
                 using T = std::decay_t<decltype(v)>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) {
@@ -56,7 +57,7 @@ struct NumericWrangle : zeno::INode {
                     return 1;
                 } else return 0;
             }, par->value);
-            printf("define param: %s dim %d\n", key.c_str(), dim);
+            dbg_printf("define param: %s dim %d\n", key.c_str(), dim);
             opts.define_param(key, dim);
         }
 
@@ -65,7 +66,7 @@ struct NumericWrangle : zeno::INode {
 
         auto result = std::make_shared<zeno::DictObject>();
         for (auto const &[name, dim]: prog->newsyms) {
-            printf("output numeric value: %s with dim %d\n",
+            dbg_printf("output numeric value: %s with dim %d\n",
                     name.c_str(), dim);
             assert(name[0] == '@');
             auto key = name.substr(1);
@@ -79,7 +80,7 @@ struct NumericWrangle : zeno::INode {
             } else if (dim == 1) {
                 value = float{};
             } else {
-                printf("ERROR: bad output dimension for numeric: %d\n", dim);
+                dbg_printf("ERROR: bad output dimension for numeric: %d\n", dim);
                 abort();
             }
             result->lut[key] = std::make_shared<zeno::NumericObject>(value);
@@ -87,19 +88,19 @@ struct NumericWrangle : zeno::INode {
 
         for (int i = 0; i < prog->params.size(); i++) {
             auto [name, dimid] = prog->params[i];
-            printf("parameter %d: %s.%d\n", i, name.c_str(), dimid);
+            dbg_printf("parameter %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '$');
             auto it = std::find(parnames.begin(),
                 parnames.end(), std::pair{name, dimid});
             auto value = parvals.at(it - parnames.begin());
-            printf("(valued %f)\n", value);
+            dbg_printf("(valued %f)\n", value);
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
 
         std::vector<float> chs(prog->symbols.size());
         for (int i = 0; i < chs.size(); i++) {
             auto [name, dimid] = prog->symbols[i];
-            printf("output %d: %s.%d\n", i, name.c_str(), dimid);
+            dbg_printf("output %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '@');
         }
 
@@ -108,11 +109,11 @@ struct NumericWrangle : zeno::INode {
         for (int i = 0; i < chs.size(); i++) {
             auto [name, dimid] = prog->symbols[i];
             float value = chs[i];
-            printf("output %d: %s.%d = %f\n", i, name.c_str(), dimid, value);
+            dbg_printf("output %d: %s.%d = %f\n", i, name.c_str(), dimid, value);
             auto key = name.substr(1);
             std::visit([dimid = dimid, value] (auto &res) {
                     dimid[(float *)(void *)&res] = value;
-            }, std::static_pointer_cast<zeno::NumericObject>(
+            }, zeno::smart_any_cast<std::shared_ptr<zeno::NumericObject>>(
                 result->lut[key])->value);
         }
 
@@ -121,8 +122,8 @@ struct NumericWrangle : zeno::INode {
 };
 
 ZENDEFNODE(NumericWrangle, {
-    {{"dict:numeric", "params"}, {"string", "zfxCode"}},
-    {{"dict:numeric", "result"}},
+    {{"DictObject:NumericObject", "params"}, {"StringObject", "zfxCode"}},
+    {{"DictObject:NumericObject", "result"}},
     {},
     {"zenofx"},
 });

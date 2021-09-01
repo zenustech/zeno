@@ -1,6 +1,8 @@
 #include <zeno/zeno.h>
-#include <zeno/ListObject.h>
-#include <zeno/NumericObject.h>
+#include <zeno/types/ListObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/utils/string.h>
+#include <sstream>
 
 namespace zeno {
 
@@ -21,22 +23,43 @@ ZENDEFNODE(ListLength, {
 });
 
 
-struct ExtractList : zeno::INode {
+struct ListGetItem : zeno::INode {
     virtual void apply() override {
         auto list = get_input<zeno::ListObject>("list");
         auto index = get_input<zeno::NumericObject>("index")->get<int>();
-        auto obj = list->arr[index];
-        set_output("object", std::move(obj));
+        auto obj = list->arr.at(index);
+        set_output2("object", std::move(obj));
     }
 };
 
-ZENDEFNODE(ExtractList, {
-    {"list", "index"},
+ZENDEFNODE(ListGetItem, {
+    {"list", {"int", "index"}},
     {"object"},
     {},
     {"list"},
 });
 
+struct ExtractList : zeno::INode {
+    virtual void apply() override {
+        auto inkeys = get_param<std::string>("_KEYS");
+        auto keys = zeno::split_str(inkeys, '\n');
+        auto list = get_input<zeno::ListObject>("list");
+        for (auto const& key : keys) {
+            int index = std::stoi(key);
+            if (list->arr.size() > index) {
+                auto obj = list->arr[index];
+                set_output2(key, std::move(obj));
+            }
+        }
+    }
+};
+
+ZENDEFNODE(ExtractList, {
+    {"list"},
+    {},
+    {},
+    {"list"},
+    });
 
 struct EmptyList : zeno::INode {
     virtual void apply() override {
@@ -69,6 +92,41 @@ ZENDEFNODE(AppendList, {
     {"list"},
 });
 
+struct ExtendList : zeno::INode {
+    virtual void apply() override {
+        auto list1 = get_input<zeno::ListObject>("list1");
+        auto list2 = get_input<zeno::ListObject>("list2");
+        for (auto const &ptr: list2->arr) {
+            list1->arr.push_back(ptr);
+        }
+        set_output("list1", std::move(list1));
+    }
+};
+
+ZENDEFNODE(ExtendList, {
+    {"list1", "list2"},
+    {"list1"},
+    {},
+    {"list"},
+});
+
+
+struct ResizeList : zeno::INode {
+    virtual void apply() override {
+        auto list = get_input<zeno::ListObject>("list");
+        auto newSize = get_input<zeno::NumericObject>("newSize")->get<int>();
+        list->arr.resize(newSize);
+        set_output("list", std::move(list));
+    }
+};
+
+ZENDEFNODE(ResizeList, {
+    {"list", {"int", "newSize"}},
+    {"list"},
+    {},
+    {"list"},
+});
+
 
 struct MakeSmallList : zeno::INode {
     virtual void apply() override {
@@ -92,12 +150,44 @@ ZENDEFNODE(MakeSmallList, {
     {"list"},
 });
 
-ZENAPI void ListObject::dumpfile(std::string const &path) {
+struct MakeList : zeno::INode {
+    virtual void apply() override {
+        auto list = std::make_shared<zeno::ListObject>();
+
+        int max_input_index = 0;
+        for (auto& pair : inputs) {
+            if (std::isdigit(pair.first.back())) {
+                max_input_index = std::max<int>(max_input_index, std::stoi(pair.first.substr(3)));
+            }
+        }
+        for (int i = 0; i <= max_input_index; ++i) {
+            std::stringstream namess;
+            namess << "obj" << i;
+            auto name = namess.str();
+            if (!has_input(name)) continue;
+            auto obj = get_input(name);
+            list->arr.push_back(std::move(obj));
+        }
+        set_output("list", std::move(list));
+    }
+};
+
+ZENDEFNODE(MakeList, {
+    {},
+    {"list"},
+    {},
+    {"list"},
+    });
+
+
+ZENO_API void ListObject::dumpfile(std::string const &path) {
     for (int i = 0; i < arr.size(); i++) {
         auto const &obj = arr[i];
         std::stringstream ss;
         ss << path << "." << i;
-        obj->dumpfile(ss.str());
+        if (auto o = silent_any_cast<std::shared_ptr<IObject>>(obj); o.has_value()) {
+            o.value()->dumpfile(ss.str());
+        }
     }
 }
 

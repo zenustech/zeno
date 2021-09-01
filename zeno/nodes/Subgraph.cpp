@@ -1,25 +1,91 @@
 #include <zeno/zeno.h>
-#include <zeno/GlobalState.h>
-#include <zeno/Visualization.h>
-#include <zeno/ConditionObject.h>
-#include <zeno/safe_at.h>
+#include <zeno/extra/ISubgraphNode.h>
+#include <zeno/types/ConditionObject.h>
+#include <zeno/utils/safe_at.h>
 #include <cassert>
 
 
 namespace {
 
-struct SubInput : zeno::INode {
+
+struct FinalOutput : zeno::INode {
+    virtual void complete() override {
+        graph->finalOutputNodes.insert(myname);
+    }
+
+    virtual void apply() override {}
+};
+
+ZENDEFNODE(FinalOutput, {
+    {},
+    {},
+    {},
+    {"subgraph"},
+});
+
+
+#if 0
+struct SubEndpoint : zeno::INode {
+    virtual void complete() override {
+        auto name = get_param<std::string>("name");
+        graph->subEndpointNodes[name].insert(myname);
+    }
+
     virtual void apply() override {
         auto name = get_param<std::string>("name");
-        if (auto it = graph->subInputs.find(name);
-                it == graph->subInputs.end()) {
-            set_output("hasValue",
+        if (auto it = graph->subEndpointGetters.find(name);
+                it == graph->subEndpointGetters.end()) {
+            set_output2("hasValue",
                     std::make_shared<zeno::ConditionObject>(false));
         } else {
-            auto obj = it->second;
-            set_output("port", std::move(obj));
-            set_output("hasValue",
+            if (has_input2("setValue")) {
+                auto obj = get_input2("setValue");
+                graph->subEndpointSetValues[name] = std::move(obj);
+            } else {
+                auto obj = it->second();
+                set_output2("getValue", std::move(obj));
+            }
+            set_output2("hasValue",
                     std::make_shared<zeno::ConditionObject>(true));
+        }
+    }
+};
+
+ZENDEFNODE(SubEndpoint, {
+    {"setValue"},
+    {"getValue", "hasValue"},
+    {{"string", "name", "Cube"}},
+    {"subgraph"},
+});
+#endif
+
+
+struct SubInput : zeno::INode {
+    virtual void complete() override {
+        auto name = get_param<std::string>("name");
+        graph->subInputNodes[name] = myname;
+    }
+
+    virtual void apply() override {
+        auto name = get_param<std::string>("name");
+
+        if (auto it = graph->subInputs.find(name);
+                it != graph->subInputs.end()) {
+            auto obj = it->second;
+            set_output2("port", std::move(obj));
+            set_output2("hasValue",
+                    std::make_shared<zeno::ConditionObject>(true));
+
+        } else if (auto it = graph->subInputPromises.find(name);
+                it != graph->subInputPromises.end()) {
+            auto obj = it->second();
+            set_output2("port", std::move(obj));
+            set_output2("hasValue",
+                    std::make_shared<zeno::ConditionObject>(true));
+
+        } else {
+            set_output2("hasValue",
+                    std::make_shared<zeno::ConditionObject>(false));
         }
     }
 };
@@ -27,65 +93,70 @@ struct SubInput : zeno::INode {
 ZENDEFNODE(SubInput, {
     {},
     {"port", "hasValue"},
-    {{"string", "type", ""},
-     {"string", "name", "input1"},
+    {{"string", "name", "input1"},
+     {"string", "type", ""},
      {"string", "defl", ""}},
     {"subgraph"},
 });
 
 
 struct SubOutput : zeno::INode {
-    virtual void apply() override {
+    virtual void complete() override {
         auto name = get_param<std::string>("name");
-        auto obj = get_input("port");
-        graph->subOutputs[name] = std::move(obj);
+        graph->subOutputNodes[name] = myname;
+        graph->finalOutputNodes.insert(myname);
+    }
+
+    virtual void apply() override {
+        if (has_input2("port")) {
+            auto name = get_param<std::string>("name");
+            auto obj = get_input2("port");
+            graph->subOutputs[name] = std::move(obj);
+        }
     }
 };
 
 ZENDEFNODE(SubOutput, {
     {"port"},
     {},
-    {{"string", "type", ""},
-     {"string", "name", "output1"},
+    {{"string", "name", "output1"},
+     {"string", "type", ""},
      {"string", "defl", ""}},
     {"subgraph"},
 });
 
 
-struct Subgraph : zeno::INode {
-    virtual void apply() override {
+struct SubResult : zeno::INode {
+    virtual void complete() override {
         auto name = get_param<std::string>("name");
+        graph->subOutputNodes[name] = myname;
+    }
 
-        auto subg = graph->sess->graphs.at(name).get();
-        assert(subg->sess == graph->sess);
-
-        // VIEW subnodes only if subgraph is VIEW'ed
-        subg->isViewed = has_option("VIEW");
-
-        for (auto const &[key, obj]: inputs) {
-            subg->subInputs[key] = obj;
+    virtual void apply() override {
+        if (has_input2("port")) {
+            auto name = get_param<std::string>("name");
+            auto obj = get_input2("port");
+            graph->subOutputs[name] = std::move(obj);
         }
+    }
+};
 
-        std::vector<std::string> applies;
-        for (auto const &[key, node]: subg->nodes) {
-            auto suboutptr = dynamic_cast<SubOutput *>(node.get());
-            if (suboutptr) {
-                applies.push_back(key);
-            }
-        }
-        subg->applyNodes(applies);
+ZENDEFNODE(SubResult, {
+    {"port"},
+    {},
+    {{"string", "name", "output1"},
+     {"string", "type", ""},
+     {"string", "defl", ""}},
+    {"subgraph"},
+});
 
-        for (auto &[key, obj]: subg->subOutputs) {
-            if (subg->isViewed && !subg->hasAnyView) {
-                auto path = zeno::Visualization::exportPath();
-                obj->dumpfile(path);
-                subg->hasAnyView = true;
-            }
-            set_output(key, std::move(obj));
-        }
 
-        subg->subInputs.clear();
-        subg->subOutputs.clear();
+struct Subgraph : zeno::ISubgraphNode {
+    virtual zeno::Graph *get_subgraph() override {
+        auto name = get_param<std::string>("name");
+        auto subg = safe_at(graph->scene->graphs, name, "subgraph");
+        assert(subg->scene == graph->scene);
+        return subg;
     }
 };
 

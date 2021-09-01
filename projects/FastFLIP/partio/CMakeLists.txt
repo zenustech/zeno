@@ -55,7 +55,7 @@ IF(APPLE)
   set (CMAKE_SHARED_LINKER_FLAGS "-undefined dynamic_lookup")
 ENDIF()
 
-SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "type of build" FORCE)
+#SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "type of build" FORCE)
 
 ## Set install location
 IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -70,6 +70,24 @@ ENDIF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 SET (ZLIB_LIBRARY "")
 
 #option(BUILD_SHARED_LIBS "Enabled shared libraries" OFF)
+
+####################################################
+# FUN FACT: DID U KNOW THAT MICROSOFT LOVES LINUX? #
+####################################################
+if (MSVC)  # we must use this to fix bullet3 on win
+    set(BUILD_SHARED_LIBS OFF)
+    add_compile_options(
+            $<$<CONFIG:>:/MD> #---------|
+            $<$<CONFIG:Debug>:/MDd> #---|-- Statically link the runtime libraries
+            $<$<CONFIG:Release>:/MD> #--|
+    )  # cl: 命令行 warning D9025 :正在重写“/MT”(用“/MD”)
+else()
+    set(BUILD_SHARED_LIBS OFF)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
+####################################################
+# FUN FACT: DID U KNOW THAT MICROSOFT BUYS GITHUB? #
+####################################################
 
 
 file(GLOB io_cpp "io/*.cpp")

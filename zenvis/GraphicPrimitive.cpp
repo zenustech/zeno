@@ -2,10 +2,10 @@
 #include "IGraphic.hpp"
 #include "MyShader.hpp"
 #include "main.hpp"
-#include <zeno/vec.h>
+#include <zeno/utils/vec.h>
+#include <zeno/types/PrimitiveObject.h>
 #include <Hg/IOUtils.h>
 #include <Hg/IterUtils.h>
-#include <zeno/PrimitiveObject.h>
 
 namespace zenvis {
 
@@ -58,7 +58,7 @@ struct GraphicPrimitive : IGraphic {
             }
         } else {
             for (size_t i = 0; i < nrm.size(); i++) {
-                nrm[i] = zeno::vec3f(5.0f, 0.0f, 0.0f);
+                nrm[i] = zeno::vec3f(1.5f, 0.0f, 0.0f);
             }
         }
     }
@@ -152,9 +152,19 @@ struct GraphicPrimitive : IGraphic {
         //printf("TRIS\n");
         tris_prog->use();
         set_program_uniforms(tris_prog);
+        tris_prog->set_uniform("mRenderWireframe", false);
         tris_ebo->bind();
         CHECK_GL(glDrawElements(GL_TRIANGLES, /*count=*/tris_count * 3,
               GL_UNSIGNED_INT, /*first=*/0));
+        if (render_wireframe) {
+          glEnable(GL_POLYGON_OFFSET_LINE);
+          glPolygonOffset(-1, -1);
+          tris_prog->set_uniform("mRenderWireframe", true);
+          glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+          CHECK_GL(glDrawElements(GL_TRIANGLES, tris_count * 3, GL_UNSIGNED_INT, 0));
+          glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+          glDisable(GL_POLYGON_OFFSET_LINE);
+        }
         tris_ebo->unbind();
     }
 
@@ -199,7 +209,6 @@ attribute vec3 vNormal;
 varying vec3 position;
 varying vec3 color;
 varying float radius;
-
 void main()
 {
   position = vPosition;
@@ -208,7 +217,10 @@ void main()
 
   vec3 posEye = vec3(mView * vec4(position, 1.0));
   float dist = length(posEye);
-  gl_PointSize = max(1, radius * mPointScale / dist);
+  if (radius != 0)
+    gl_PointSize = max(1, radius * mPointScale / dist);
+  else
+    gl_PointSize = 1.5;
   gl_Position = mVP * vec4(position, 1.0);
 }
 )";
@@ -227,13 +239,23 @@ varying vec3 color;
 varying float radius;
 void main()
 {
+  const vec3 lightDir = vec3(0.577, 0.577, 0.577);
   vec2 coor = gl_PointCoord * 2 - 1;
   float len2 = dot(coor, coor);
-  if (len2 > 1 && radius > 0)
+  if (len2 > 1 && radius != 0)
     discard;
   vec3 oColor;
-  if (radius > 1)
-    oColor = color * mix(1, 0.4, len2);
+  if (radius != 0)
+  {
+    vec3 N;
+    N.xy = gl_PointCoord*vec2(2.0, -2.0) + vec2(-1.0, 1.0);
+    float mag = dot(N.xy, N.xy);
+    N.z = sqrt(1.0-mag);
+
+    // calculate lighting
+    float diffuse = max(0.0, dot(lightDir, N) * 0.6 + 0.4);
+    oColor = color * diffuse;
+  }
   else
     oColor = color;
   gl_FragColor = vec4(oColor, 1.0);
@@ -341,6 +363,8 @@ uniform mat4 mView;
 uniform mat4 mProj;
 uniform mat4 mInvView;
 uniform mat4 mInvProj;
+uniform bool mSmoothShading;
+uniform bool mRenderWireframe;
 
 varying vec3 position;
 varying vec3 iColor;
@@ -397,7 +421,16 @@ vec3 calcRayDir(vec3 pos)
 
 void main()
 {
-  vec3 normal = normalize(iNormal);
+  if (mRenderWireframe) {
+    gl_FragColor = vec4(0.89, 0.57, 0.15, 1.0);
+    return;
+  }
+  vec3 normal;
+  if (mSmoothShading) {
+    normal = normalize(iNormal);
+  } else {
+    normal = normalize(cross(dFdx(position), dFdy(position)));
+  }
   vec3 viewdir = -calcRayDir(position);
 
   Material material;

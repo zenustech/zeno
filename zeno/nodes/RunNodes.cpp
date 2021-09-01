@@ -1,7 +1,8 @@
+#ifdef ZENO_GLOBALSTATE
 #include <zeno/zeno.h>
-#include <zeno/NumericObject.h>
-#include <zeno/ConditionObject.h>
-#include <zeno/GlobalState.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/ConditionObject.h>
+#include <zeno/extra/GlobalState.h>
 
 /*struct RunOnce : zeno::INode {  // deprecated
     virtual void apply() override {
@@ -170,3 +171,4 @@ ZENDEFNODE(IntegrateFrameTime, {
     {{"float", "min_scale", "0.0001"}},
     {"frame"},
 });
+#endif

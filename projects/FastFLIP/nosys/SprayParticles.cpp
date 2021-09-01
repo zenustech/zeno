@@ -9,7 +9,7 @@
 #include <zeno/NumericObject.h>
 #include <zeno/ParticlesObject.h>
 #include <zeno/PrimitiveObject.h>
-#include <zeno/vec.h>
+#include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
 #include <zeno/ZenoInc.h>
 
@@ -61,10 +61,11 @@ struct SprayParticles : zeno::INode {
     auto channel = std::get<std::string>(get_param("channel"));
     auto prim = get_input("TrianglePrim")->as<PrimitiveObject>();
     auto result = zeno::IObject::make<ParticlesObject>();
-    tbb::concurrent_vector<zeno::vec3f> pos(0);
-    tbb::concurrent_vector<zeno::vec3f> vel(0);
+    tbb::concurrent_vector<std::tuple<zeno::vec3f,zeno::vec3f>> data(0);
+    //tbb::concurrent_vector<zeno::vec3f> vel(0);
     size_t n = prim->tris.size();
-    tbb::parallel_for((size_t)0, (size_t)n, (size_t)1, [&](size_t index) {
+    tbb::parallel_for((size_t)0, (size_t)n, (size_t)1, [&](size_t index)
+    {
       zeno::vec3f a, b, c;
       zeno::vec3i vi = prim->tris[index];
       a = prim->attr<zeno::vec3f>("pos")[vi[0]];
@@ -82,34 +83,31 @@ struct SprayParticles : zeno::INode {
       zeno::vec3f vel1 = prim->attr<zeno::vec3f>(channel)[vi[0]];
       zeno::vec3f vel2 = prim->attr<zeno::vec3f>(channel)[vi[1]];
       zeno::vec3f vel3 = prim->attr<zeno::vec3f>(channel)[vi[2]];
-      pos.emplace_back(a);
-      vel.emplace_back(vel1);
-      pos.emplace_back(b);
-      vel.emplace_back(vel2);
-      pos.emplace_back(c);
-      vel.emplace_back(vel3);
+      // pos.emplace_back(a);
+      // vel.emplace_back(vel1);
+      // pos.emplace_back(b);
+      // vel.emplace_back(vel2);
+      // pos.emplace_back(c);
+      // vel.emplace_back(vel3);
+      data.emplace_back(std::make_tuple(a, vel1));
+      data.emplace_back(std::make_tuple(b, vel2));
+      data.emplace_back(std::make_tuple(c, vel3));
       for (int kk = 0; kk < kn; kk++) {
         zeno::vec3f vij = b + (float)kk * 0.5f * dx * dir3;
         if (ptInTriangle(vij, a, b, c)) {
-          pos.emplace_back(vij);
-          vel.emplace_back(
-              baryCentricInterpolation(vel1, vel2, vel3, vij, a, b, c));
+              data.emplace_back(std::make_tuple(vij,baryCentricInterpolation(vel1, vel2, vel3, vij, a, b, c)));
         }
       }
       for (int ii = 0; ii < in; ii++) {
         zeno::vec3f vij = a + (float)ii * 0.5f * dx * dir1;
         if (ptInTriangle(vij, a, b, c)) {
-          pos.emplace_back(vij);
-          vel.emplace_back(
-              baryCentricInterpolation(vel1, vel2, vel3, vij, a, b, c));
+          data.emplace_back(std::make_tuple(vij,baryCentricInterpolation(vel1, vel2, vel3, vij, a, b, c)));
         }
       }
       for (int jj = 0; jj < jn; jj++) {
         zeno::vec3f vij = a + (float)jj * 0.5f * dx * dir2;
         if (ptInTriangle(vij, a, b, c)) {
-          pos.emplace_back(vij);
-          vel.emplace_back(
-              baryCentricInterpolation(vel1, vel2, vel3, vij, a, b, c));
+          data.emplace_back(std::make_tuple(vij,baryCentricInterpolation(vel1, vel2, vel3, vij, a, b, c)));
         }
       }
       for (int ii = 0; ii < in; ii++) {
@@ -117,19 +115,17 @@ struct SprayParticles : zeno::INode {
           zeno::vec3f vij =
               a + (float)ii * 0.5f * dx * dir1 + (float)jj * 0.5f * dx * dir2;
           if (ptInTriangle(vij, a, b, c)) {
-            pos.emplace_back(vij);
-            vel.emplace_back(
-                baryCentricInterpolation(vel1, vel2, vel3, vij, a, b, c));
+            data.emplace_back(std::make_tuple(vij,baryCentricInterpolation(vel1, vel2, vel3, vij, a, b, c)));
           }
         }
       }
     });
-    result->pos.resize(pos.size());
-    result->vel.resize(vel.size());
+    result->pos.resize(data.size());
+    result->vel.resize(data.size());
 #pragma omp parallel for
-    for (size_t index = 0; index < pos.size(); index++) {
-      result->pos[index] = zeno::vec_to_other<glm::vec3>(pos[index]);
-      result->vel[index] = zeno::vec_to_other<glm::vec3>(vel[index]);
+    for (int index = 0; index < data.size(); index++) {
+      result->pos[index] = zeno::vec_to_other<glm::vec3>(std::get<0>(data[index]));
+      result->vel[index] = zeno::vec_to_other<glm::vec3>(std::get<1>(data[index]));
     }
     set_output("particles", result);
   }

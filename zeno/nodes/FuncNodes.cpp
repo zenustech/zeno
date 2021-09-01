@@ -1,8 +1,8 @@
 #include <zeno/zeno.h>
-#include <zeno/DictObject.h>
-#include <zeno/FunctionObject.h>
-#include <zeno/ConditionObject.h>
-#include <zeno/ContextManaged.h>
+#include <zeno/types/DictObject.h>
+#include <zeno/types/FunctionObject.h>
+#include <zeno/types/ConditionObject.h>
+#include <zeno/extra/ContextManaged.h>
 #include <cassert>
 
 namespace {
@@ -37,16 +37,19 @@ ZENDEFNODE(FuncBegin, {
 
 struct FuncEnd : zeno::ContextManagedNode {
     virtual void doApply() override {
-        auto [sn, ss] = inputBounds.at("FUNC");
-        auto fore = dynamic_cast<FuncBegin *>(graph->nodes.at(sn).get());
-        if (!fore) {
-            printf("FuncEnd::FUNC must be conn to FuncBegin::FUNC!\n");
-            abort();
+        FuncBegin *fore = nullptr;
+        if (auto it = inputBounds.find("FUNC"); it != inputBounds.end()) {
+            auto [sn, ss] = it->second;
+            fore = dynamic_cast<FuncBegin *>(graph->nodes.at(sn).get());
+            if (!fore) {
+                printf("FuncEnd::FUNC must be conn to FuncBegin::FUNC!\n");
+                abort();
+            }
+            graph->applyNode(sn);
         }
-        graph->applyNode(sn);
         auto func = std::make_shared<zeno::FunctionObject>();
         func->func = [this, fore] (zeno::FunctionObject::DictType const &args) {
-            fore->update_arguments(args);
+            if (fore) fore->update_arguments(args);
             push_context();
             zeno::INode::doApply();
             pop_context();
@@ -73,6 +76,11 @@ ZENDEFNODE(FuncEnd, {
 
 struct FuncCall : zeno::ContextManagedNode {
     virtual void apply() override {
+        if (has_input<zeno::DictObject>("function")) {
+            set_output("rets", get_input("function"));
+            return;
+        }
+
         auto func = get_input<zeno::FunctionObject>("function");
 
         zeno::FunctionObject::DictType args{};

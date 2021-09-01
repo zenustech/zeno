@@ -1,18 +1,7 @@
 #pragma once
 
-#include <zeno/zeno.h>
-#include <functional>
-#include <memory>
+#ifndef _MSC_VER
+#warning "<zeno/FunctionObject.h> is deprecated, use <zeno/types/FunctionObject.h> instead"
+#endif
 
-namespace zeno {
-
-struct FunctionObject : IObjectClone<FunctionObject> {
-    using DictType = std::map<std::string, std::shared_ptr<IObject>>;
-    std::function<DictType(DictType const &)> func;
-
-    inline DictType call(DictType const &args) {
-        return func(args);
-    }
-};
-
-}
+#include <zeno/types/FunctionObject.h>

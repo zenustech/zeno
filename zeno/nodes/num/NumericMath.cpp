@@ -1,13 +1,8 @@
 #include <zeno/zeno.h>
-#include <zeno/NumericObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/utils/random.h>
 
 namespace {
-
-#ifdef _MSC_VER
-static inline double drand48() {
-	return rand() / (double)RAND_MAX;
-}
-#endif
 
 using namespace zeno;
 
@@ -37,8 +32,8 @@ struct MakeOrthonormalBase : INode {
 };
 
 ZENDEFNODE(MakeOrthonormalBase, {
-    {{"numeric:vec3f", "normal"}, {"numeric:vec3f", "tangent"}},
-    {{"numeric:vec3f", "normal"}, "tangent", {"numeric:vec3f", "bitangent"}},
+    {{"vec3f", "normal"}, {"vec3f", "tangent"}},
+    {{"vec3f", "normal"}, "tangent", {"vec3f", "bitangent"}},
     {},
     {"math"},
 });
@@ -67,9 +62,9 @@ struct UnpackNumericVec : INode {
 };
 
 ZENDEFNODE(UnpackNumericVec, {
-    {{"numeric:vec3", "vec"}},
-    {{"numeric:scalar", "X"}, {"numeric:scalar", "Y"},
-     {"numeric:scalar", "Z"}, {"numeric:scalar", "W"}},
+    {{"NumericObject", "vec"}},
+    {{"NumericObject", "X"}, {"NumericObject", "Y"},
+     {"NumericObject", "Z"}, {"NumericObject", "W"}},
     {},
     {"numeric"},
 }); // TODO: add PackNumericVec too.
@@ -80,13 +75,13 @@ struct NumericRandom : INode {
         auto value = std::make_shared<NumericObject>();
         auto dim = get_param<int>("dim");
         if (dim == 1) {
-            value->set(float(drand48()));
+            value->set(float(frand()));
         } else if (dim == 2) {
-            value->set(zeno::vec2f(drand48(), drand48()));
+            value->set(zeno::vec2f(frand(), frand()));
         } else if (dim == 3) {
-            value->set(zeno::vec3f(drand48(), drand48(), drand48()));
+            value->set(zeno::vec3f(frand(), frand(), frand()));
         } else if (dim == 4) {
-            value->set(zeno::vec4f(drand48(), drand48(), drand48(), drand48()));
+            value->set(zeno::vec4f(frand(), frand(), frand(), frand()));
         } else {
             printf("invalid dim for NumericRandom: %d\n", dim);
         }
@@ -96,8 +91,26 @@ struct NumericRandom : INode {
 
 ZENDEFNODE(NumericRandom, {
     {},
-    {{"numeric", "value"}},
+    {{"NumericObject", "value"}},
     {{"int", "dim", "1"}},
+    {"numeric"},
+});
+
+
+struct NumericCounter : INode {
+    int counter = 0;
+
+    virtual void apply() override {
+        auto count = std::make_shared<NumericObject>();
+        count->value = counter++;
+        set_output("count", std::move(count));
+    }
+};
+
+ZENDEFNODE(NumericCounter, {
+    {},
+    {{"int", "count"}},
+    {},
     {"numeric"},
 });
 

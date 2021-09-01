@@ -1,14 +1,7 @@
 #pragma once
 
-#include <zeno/zeno.h>
-#include <memory>
-#include <string>
-#include <map>
+#ifndef _MSC_VER
+#warning "<zeno/DictObject.h> is deprecated, use <zeno/types/DictObject.h> instead"
+#endif
 
-namespace zeno {
-
-struct DictObject : IObjectClone<DictObject> {
-  std::map<std::string, std::shared_ptr<IObject>> lut;
-};
-
-}
+#include <zeno/types/DictObject.h>

@@ -1,35 +1,7 @@
 #pragma once
 
-#include <zeno/zeno.h>
-#include <zeno/vec.h>
-#include <variant>
+#ifndef _MSC_VER
+#warning "<zeno/NumericObject.h> is deprecated, use <zeno/types/NumericObject.h> instead"
+#endif
 
-namespace zeno {
-
-
-using NumericValue = std::variant<
-  int, float, zeno::vec2f, zeno::vec3f, zeno::vec4f>;
-
-struct NumericObject : IObjectClone<NumericObject> {
-  NumericValue value;
-
-  NumericObject() = default;
-  NumericObject(NumericValue value) : value(value) {}
-
-  template <class T>
-  T get() {
-    return std::get<T>(value);
-  }
-
-  template <class T>
-  T is() {
-    return std::holds_alternative<T>(value);
-  }
-
-  template <class T>
-  void set(T const &x) {
-    value = x;
-  }
-};
-
-}
+#include <zeno/types/NumericObject.h>

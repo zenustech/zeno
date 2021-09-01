@@ -1,11 +1,15 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/../zeno/cmake ${CMAKE_MODULE_PATH})
-set(ENV{PYTHONPATH} ${CMAKE_CURRENT_SOURCE_DIR}/.. $ENV{PYTHONPATH})
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
-set(EXTENSIONS_LIST Rigid ZMS oldzenbase ZenoFX OldZFX zenvdb FastFLIP gmpm mesher)
+set(EXTENSIONS_LIST ZenoFX oldzenbase zenvdb FastFLIP Rigid cgmesh gmpm mesher blenderio Euler OldZMS OldZFX EasyGL)
+set(EXTENSIONS_ENABLE_LIST ZenoFX oldzenbase)
 
-set(EXTENSIONS_ENABLE_LIST Rigid ZMS oldzenbase ZenoFX)
+add_library(zeno_nodep INTERFACE)
+if (ZENO_HIDE_SYMBOLS AND UNIX)
+    message("Hidding symbols from ZENO libraries...")
+    target_link_libraries(zeno_nodep INTERFACE -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/../scripts/linker.map)
+endif()
 
 foreach (name IN ITEMS ${EXTENSIONS_LIST})
     if (${name} IN_LIST EXTENSIONS_ENABLE_LIST)

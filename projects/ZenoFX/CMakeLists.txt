@@ -1,34 +1,33 @@
-add_library(ZenoFXlib SHARED)
-target_include_directories(ZenoFXlib PRIVATE .)
+add_library(zeno_ZenoFX SHARED)
+target_include_directories(zeno_ZenoFX PRIVATE .)
 
-target_link_libraries(ZenoFXlib PRIVATE zeno ZFX)
-target_sources(ZenoFXlib PRIVATE nw.cpp pw.cpp pnw.cpp ppw.cpp)
+target_link_libraries(zeno_ZenoFX PUBLIC zeno ZFX)
+target_link_libraries(zeno_ZenoFX PRIVATE zeno_nodep)
+target_sources(zeno_ZenoFX PRIVATE nw.cpp pw.cpp pnw.cpp ppw.cpp pew.cpp)
 
 if (EXTENSION_zenvdb)
     option(ZENOFX_ENABLE_OPENVDB "Enable OpenVDB wrangler in ZenoFX" ON)
 else()
     option(ZENOFX_ENABLE_OPENVDB "Enable OpenVDB wrangler in ZenoFX" OFF)
 endif()
+
+if (CMAKE_BUILD_TYPE EQUAL Debug)
+    option(ZENOFX_PRINT_LOGS "Enable detailed logs for ZenoFX" ON)
+else()
+    option(ZENOFX_PRINT_LOGS "Enable detailed logs for ZenoFX" OFF)
+endif()
+
+if (ZENOFX_PRINT_LOGS)
+    target_compile_definitions(ZFX PRIVATE -DZENOFX_PRINT_LOGS)
+endif()
 if (ZENOFX_ENABLE_OPENVDB)
-    target_sources(ZenoFXlib PRIVATE vw.cpp)
-    target_include_directories(ZenoFXlib PRIVATE ../zenvdb/include)
-    target_link_libraries(ZenoFXlib PRIVATE openvdb)
+    find_package(OpenVDB REQUIRED)
+    target_sources(zeno_ZenoFX PRIVATE vw.cpp)
+    target_include_directories(zeno_ZenoFX PRIVATE ../zenvdb/include)
+    target_link_libraries(zeno_ZenoFX PRIVATE OpenVDB::openvdb)
 endif()
 find_package(OpenMP)
 if (TARGET OpenMP::OpenMP_CXX)
     message("found package: OpenMP::OpenMP_CXX")
-    target_link_libraries(ZenoFXlib PRIVATE OpenMP::OpenMP_CXX)
+    target_link_libraries(zeno_ZenoFX PRIVATE OpenMP::OpenMP_CXX)
 endif()
-
-get_property(zeno_AUTOLOAD_DIR TARGET zeno PROPERTY LIBRARY_OUTPUT_DIRECTORY)
-set_target_properties(ZenoFXlib PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-    RUNTIME_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-    ARCHIVE_OUTPUT_DIRECTORY ${zeno_AUTOLOAD_DIR}
-    LIBRARY_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-    RUNTIME_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-    ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${zeno_AUTOLOAD_DIR}
-    LIBRARY_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-    RUNTIME_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-    ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${zeno_AUTOLOAD_DIR}
-    )

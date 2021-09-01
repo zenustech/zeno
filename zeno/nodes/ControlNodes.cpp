@@ -1,8 +1,9 @@
 #include <zeno/zeno.h>
-#include <zeno/ListObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/ConditionObject.h>
-#include <zeno/ContextManaged.h>
+#include <zeno/types/ListObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/types/ConditionObject.h>
+#include <zeno/extra/ContextManaged.h>
+#include <zeno/extra/evaluate_condition.h>
 
 namespace zeno {
 
@@ -38,8 +39,8 @@ struct BeginFor : IBeginFor {
 };
 
 ZENDEFNODE(BeginFor, {
-    {"count"},
-    {"index", "FOR"},
+    {{"int", "count"}},
+    {{"int", "index"}, "FOR"},
     {},
     {"control"},
 });
@@ -96,20 +97,113 @@ ZENDEFNODE(BreakFor, {
     {"control"},
 });
 
+struct BeginForEach : IBeginFor {
+    int m_index = 0;
+    std::shared_ptr<zeno::ListObject> m_list;
 
-static bool evaluate_condition(zeno::IObject *cond) {
-    if (auto num = dynamic_cast<zeno::NumericObject *>(cond); num) {
-        return std::visit([] (auto const &v) {
-            return zeno::any(v);
-        }, num->value);
-    } else if (auto con = dynamic_cast<zeno::ConditionObject *>(cond); con) {
-        return con->get();
-    } else {
-        printf("invalid input `%s` to be evaluated as boolean\n",
-                typeid(*cond).name());
-        abort();
+    virtual bool isContinue() const override {
+        return m_index < m_list->arr.size() && !is_break;
     }
-}
+
+    virtual void apply() override {
+        m_index = 0;
+        is_break = false;
+        m_list = get_input<zeno::ListObject>("list");
+        set_output("FOR", std::make_shared<zeno::ConditionObject>());
+    }
+
+    virtual void update() override {
+        auto ret = std::make_shared<zeno::NumericObject>();
+        ret->set(m_index);
+        set_output("index", std::move(ret));
+        auto obj = m_list->arr[m_index];
+        set_output2("object", std::move(obj));
+        m_index++;
+    }
+};
+
+ZENDEFNODE(BeginForEach, {
+    {"list"},
+    {"object", {"int", "index"}, "FOR"},
+    {},
+    {"control"},
+});
+
+struct BeginSubstep : IBeginFor {
+    float m_total = 0;
+    float m_mindt = 0;
+    float m_elapsed = 0;
+    bool m_ever_called = false;
+
+    virtual bool isContinue() const override {
+        return m_elapsed < m_total && !is_break;
+    }
+
+    virtual void apply() override {
+        m_elapsed = 0;
+        is_break = false;
+        m_ever_called = false;
+        m_total = get_input<zeno::NumericObject>("total_dt")->get<float>();
+        auto min_scale = has_input("min_scale") ?
+            get_input<zeno::NumericObject>("min_scale")->get<float>() : 0.05f;
+        m_mindt = m_total * min_scale;
+        set_output("FOR", std::make_shared<zeno::ConditionObject>());
+    }
+
+    virtual void update() override {
+        auto ret = std::make_shared<zeno::NumericObject>();
+        ret->set(m_elapsed);
+        set_output("elapsed_time", std::move(ret));
+    }
+};
+
+ZENDEFNODE(BeginSubstep, {
+    {{"float", "total_dt"}, {"float", "min_scale", "0.05"}},
+    {"FOR", {"float", "elapsed_time"}},
+    {},
+    {"control"},
+});
+
+struct SubstepDt : zeno::INode {
+    void apply() override {
+        auto [sn, ss] = inputBounds.at("FOR");
+        auto fore = dynamic_cast<BeginSubstep *>(graph->nodes.at(sn).get());
+        if (!fore) {
+            printf("SubstepDt::FOR must be conn to BeginSubstep::FOR!\n");
+            abort();
+        }
+        fore->m_ever_called = true;
+        float dt = get_input<zeno::NumericObject>("desired_dt")->get<float>();
+        if (fore->m_elapsed + dt >= fore->m_total) {
+            dt = std::max(0.f, fore->m_total - fore->m_elapsed);
+            fore->m_elapsed = fore->m_total;
+        } else {
+            if (dt < fore->m_mindt) {
+                dt = fore->m_mindt;
+            }
+            fore->m_elapsed += dt;
+        }
+        float portion = fore->m_total ? fore->m_elapsed / fore->m_total : 0.0f;
+        printf("** actual_dt: %f\n", dt);
+        printf("** portion: %f\n", portion);
+        auto ret_dt = std::make_shared<zeno::NumericObject>();
+        ret_dt->set(dt);
+        set_output("actual_dt", std::move(ret_dt));
+        auto ret_portion = std::make_shared<zeno::NumericObject>();
+        ret_portion->set(portion);
+        set_output("portion", std::move(ret_portion));
+    }
+};
+
+ZENDEFNODE(SubstepDt, {
+    {"FOR", {"float", "desired_dt", "0.04"}},
+    {{"float", "actual_dt"}, {"float", "portion"}},
+    {},
+    {"control"},
+});
+
+
+
 
 struct IfElse : zeno::INode {
     virtual void doApply() override {
@@ -118,14 +212,12 @@ struct IfElse : zeno::INode {
         if (has_option("MUTE")) {
             requireInput("true");
         } else if (evaluate_condition(cond.get())) {
-            if (has_input("true")) {
-                requireInput("true");
-                set_output("result", get_input("true"));
+            if (requireInput("true")) {
+                set_output2("result", get_input2("true"));
             }
         } else {
-            if (has_input("false")) {
-                requireInput("false");
-                set_output("result", get_input("false"));
+            if (requireInput("false")) {
+                set_output2("result", get_input2("false"));
             }
         }
 
@@ -292,92 +384,5 @@ ZENDEFNODE(ConditionedDo, {
 
 
 
-
-struct BeginForEach : IBeginFor {
-    int m_index = 0;
-    std::shared_ptr<zeno::ListObject> m_list;
-
-    virtual bool isContinue() const override {
-        return m_index < m_list->arr.size() && !is_break;
-    }
-
-    virtual void apply() override {
-        m_index = 0;
-        is_break = false;
-        m_list = get_input<zeno::ListObject>("list");
-        set_output("FOR", std::make_shared<zeno::ConditionObject>());
-    }
-
-    virtual void update() override {
-        auto ret = std::make_shared<zeno::NumericObject>();
-        ret->set(m_index);
-        set_output("index", std::move(ret));
-        auto obj = m_list->arr[m_index];
-        set_output("object", std::move(obj));
-        m_index++;
-    }
-};
-
-ZENDEFNODE(BeginForEach, {
-    {"list"},
-    {"object", "index", "FOR"},
-    {},
-    {"control"},
-});
-
-
-struct CachedOnce : zeno::INode {
-    bool m_done = false;
-
-    virtual void doApply() override {
-        if (!m_done) {
-            zeno::INode::doApply();
-            m_done = true;
-        }
-    }
-
-    virtual void apply() override {
-        auto ptr = get_input("input");
-        set_output("output", std::move(ptr));
-    }
-};
-
-ZENDEFNODE(CachedOnce, {
-    {"input"},
-    {"output"},
-    {},
-    {"control"},
-});
-
-
-struct CachedIf : zeno::INode {
-    bool m_done = false;
-
-    virtual void doApply() override {
-        if (has_input("keepCache")) {
-            requireInput("keepCache");
-            bool keep = evaluate_condition(get_input("keepCache").get());
-            if (!keep) {
-                m_done = false;
-            }
-        }
-        if (!m_done) {
-            zeno::INode::doApply();
-            m_done = true;
-        }
-    }
-
-    virtual void apply() override {
-        auto ptr = get_input("input");
-        set_output("output", std::move(ptr));
-    }
-};
-
-ZENDEFNODE(CachedIf, {
-    {"input", "keepCache"},
-    {"output"},
-    {},
-    {"control"},
-});
 
 }

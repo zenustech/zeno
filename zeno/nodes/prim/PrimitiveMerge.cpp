@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/ListObject.h>
-#include <zeno/vec.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/ListObject.h>
+#include <zeno/utils/vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
@@ -15,9 +15,7 @@ struct PrimitiveMerge : zeno::INode {
     auto outprim = std::make_shared<PrimitiveObject>();
 
     size_t len = 0;
-    for (auto const &obj: list->arr) {
-        auto prim = dynamic_cast<PrimitiveObject *>(obj.get());
-        assert(prim);
+    for (auto const &prim: list->get<std::shared_ptr<PrimitiveObject>>()) {
         for (auto const &[key, varr]: prim->m_attrs) {
             std::visit([&, key_ = key](auto const &arr) {
                 using T = std::decay_t<decltype(arr[0])>;

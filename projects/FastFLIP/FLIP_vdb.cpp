@@ -1950,7 +1950,6 @@ struct particle_fill_kill_op {
                         FLIP_vdb::descriptor_t::Ptr pv_descriptor)
       : m_leaf_nodes(in_nodes), m_p_descriptor(p_descriptor),
         m_pv_descriptor(pv_descriptor) {
-    initRandomTable();
     m_boundary_fill_kill_volume = in_boundary_fill_kill_volume;
     m_domain_begin = in_domain_begin;
     m_domain_end = in_domain_end;
@@ -2568,7 +2567,6 @@ void FLIP_vdb::update_solid_sdf(
 void FLIP_vdb::reseed_fluid(
     openvdb::points::PointDataGrid::Ptr &in_out_particles,
     openvdb::FloatGrid::Ptr &liquid_sdf, openvdb::Vec3fGrid::Ptr &velocity) {
-  initRandomTable();
   using namespace openvdb::tools::local_util;
   float dx = in_out_particles->transform().voxelSize()[0];
   std::vector<openvdb::points::PointDataTree::LeafNodeType *> particle_leaves;
@@ -2740,7 +2738,6 @@ void FLIP_vdb::emit_liquid(
     openvdb::points::PointDataGrid::Ptr &in_out_particles,
     openvdb::FloatGrid::Ptr &sdf, openvdb::Vec3fGrid::Ptr &vel,
     openvdb::FloatGrid::Ptr &liquid_sdf, float vx, float vy, float vz) {
-  initRandomTable();
   using namespace openvdb::tools::local_util;
 
   // alias
@@ -2796,9 +2793,9 @@ void FLIP_vdb::emit_liquid(
               // test if any of the corner of this box touches the
               int has_solid = 0;
               int i8 = i * 8, j8 = j * 8, k8 = k * 8;
-              for (int ii = 0; ii <= 8 && !has_solid; ii += 8) {
-                for (int jj = 0; jj <= 8 && !has_solid; jj += 8) {
-                  for (int kk = 0; kk <= 8 && !has_solid; kk += 8) {
+              for (int ii = 0; ii <= 8 && !has_solid; ii += 1) {
+                for (int jj = 0; jj <= 8 && !has_solid; jj += 1) {
+                  for (int kk = 0; kk <= 8 && !has_solid; kk += 1) {
                     auto particle_idx_pos =
                         openvdb::Vec3i(i8 + ii, j8 + jj, k8 + kk);
                     has_solid =
@@ -2868,7 +2865,7 @@ void FLIP_vdb::emit_liquid(
       auto in_sdf_axr{in_sdf->getConstAccessor()};
       auto in_vel_axr{in_vel->getConstAccessor()};
 
-      float sdf_threshold = -dx * 0.55;
+      float sdf_threshold = -dx * 0.1;
 
       // std::random_device device;
       // std::mt19937 generator(/*seed=*/device());
@@ -3008,7 +3005,7 @@ void FLIP_vdb::emit_liquid(
       }   // end for range leaf
     } else {
       auto in_sdf_axr{in_sdf->getConstAccessor()};
-      float sdf_threshold = -dx * 0.55;
+      float sdf_threshold = -dx * 0.1;
 
       // std::random_device device;
       // std::mt19937 generator(/*seed=*/device());
@@ -3505,8 +3502,14 @@ void FLIP_vdb::solve_pressure_simd(
     openvdb::Vec3fGrid::Ptr &face_weight, openvdb::Vec3fGrid::Ptr &velocity,
     openvdb::Vec3fGrid::Ptr &solid_velocity, float dt, float dx) {
   // CSim::TimerMan::timer("Sim.step/vdbflip/pressure/buildlevel").start();
+
+    //skip if there is no dof to solve
+	if (liquid_sdf->tree().leafCount() == 0) {
+		return;
+	}
+
   auto simd_solver =
-      simd_vdb_poisson(liquid_sdf, pushed_out_liquid_sdf, face_weight, velocity,
+      simd_vdb_poisson(liquid_sdf, face_weight, velocity,
                        solid_velocity, dt, dx);
 
   simd_solver.construct_levels();

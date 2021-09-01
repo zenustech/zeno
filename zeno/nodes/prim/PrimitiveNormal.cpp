@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/NumericObject.h>
-#include <zeno/vec.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/NumericObject.h>
+#include <zeno/utils/vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
@@ -73,5 +73,44 @@ ZENDEFNODE(PrimitiveSplitEdges, {
     {},
     {"primitive"},
 });
+
+
+struct PrimitiveFaceToEdges : zeno::INode {
+  std::pair<int, int> sorted(int x, int y) {
+      return x < y ? std::make_pair(x, y) : std::make_pair(y, x);
+  }
+
+  virtual void apply() override {
+    auto prim = get_input<PrimitiveObject>("prim");
+    std::set<std::pair<int, int>> lines;
+
+    for (int i = 0; i < prim->tris.size(); i++) {
+        auto uvw = prim->tris[i];
+        int u = uvw[0], v = uvw[1], w = uvw[2];
+        lines.insert(sorted(u, v));
+        lines.insert(sorted(v, w));
+        lines.insert(sorted(u, w));
+    }
+    for (auto [u, v]: lines) {
+        prim->lines.emplace_back(u, v);
+    }
+
+    if (get_param<int>("clearFaces")) {
+        prim->tris.clear();
+    }
+    set_output("prim", get_input("prim"));
+  }
+};
+
+ZENDEFNODE(PrimitiveFaceToEdges,
+    { /* inputs: */ {
+    "prim",
+    }, /* outputs: */ {
+    "prim",
+    }, /* params: */ {
+    {"int", "clearFaces", "1"},
+    }, /* category: */ {
+    "primitive",
+    }});
 
 }

@@ -1,6 +1,8 @@
 #include <zeno/zeno.h>
-#include <zeno/GlobalState.h>
-#include <zeno/ConditionObject.h>
+#include <zeno/extra/GlobalState.h>
+#include <zeno/types/ConditionObject.h>
+#include <zeno/utils/safe_at.h>
+#include <spdlog/spdlog.h>
 
 struct PortalIn : zeno::INode {
     virtual void complete() override {
@@ -10,7 +12,7 @@ struct PortalIn : zeno::INode {
 
     virtual void apply() override {
         auto name = get_param<std::string>("name");
-        auto obj = get_input("port");
+        auto obj = get_input2("port");
         graph->portals[name] = std::move(obj);
     }
 };
@@ -25,10 +27,10 @@ ZENDEFNODE(PortalIn, {
 struct PortalOut : zeno::INode {
     virtual void apply() override {
         auto name = get_param<std::string>("name");
-        auto depnode = graph->portalIns.at(name);
+        auto depnode = zeno::safe_at(graph->portalIns, name, "PortalIn");
         graph->applyNode(depnode);
-        auto obj = graph->portals.at(name);
-        set_output("port", std::move(obj));
+        auto obj = zeno::safe_at(graph->portals, name, "portal object");
+        set_output2("port", std::move(obj));
     }
 };
 
@@ -42,11 +44,11 @@ ZENDEFNODE(PortalOut, {
 
 struct Route : zeno::INode {
     virtual void apply() override {
-        if (has_input("input")) {
-            auto obj = get_input("input");
-            set_output("output", std::move(obj));
+        if (has_input2("input")) {
+            auto obj = get_input2("input");
+            set_output2("output", std::move(obj));
         } else {
-            set_output("output", std::make_shared<zeno::ConditionObject>());
+            set_output2("output", std::make_shared<zeno::ConditionObject>());
         }
     }
 };
@@ -64,7 +66,7 @@ struct Clone : zeno::INode {
         auto obj = get_input("object");
         auto newobj = obj->clone();
         if (!newobj) {
-            printf("ERROR: requested object doesn't support clone\n");
+            spdlog::error("requested object doesn't support clone");
             return;
         }
         set_output("newObject", std::move(newobj));
@@ -85,7 +87,7 @@ struct Assign : zeno::INode {
         auto dst = get_input("dst");
         bool succ = dst->assign(src.get());
         if (!succ) {
-            printf("ERROR: requested object doesn't support assign or type mismatch\n");
+            spdlog::error("requested object doesn't support assign or type mismatch");
             return;
         }
         set_output("dst", std::move(dst));

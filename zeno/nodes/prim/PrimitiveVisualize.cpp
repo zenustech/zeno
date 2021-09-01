@@ -1,12 +1,24 @@
+#ifndef ZENO_VISUALIZATION
 #include <zeno/zeno.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/Visualization.h>
-#include <zeno/PrimitiveIO.h>
-#include <zeno/filesystem.h>
+#include <zeno/types/PrimitiveObject.h>
 
 namespace zeno {
 
-ZENAPI void PrimitiveObject::dumpfile(std::string const &path) {
+// TODO: why taint IObject with visualization stuffs?
+ZENO_API void PrimitiveObject::dumpfile(std::string const &path) {
+}
+
+}
+#else
+#include <zeno/zeno.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/extra/Visualization.h>
+#include <zeno/types/PrimitiveIO.h>
+#include <zeno/utils/filesystem.h>
+
+namespace zeno {
+
+ZENO_API void PrimitiveObject::dumpfile(std::string const &path) {
     writezpm(this, (path + ".zpm").c_str());
 }
 
@@ -42,11 +54,12 @@ ZENDEFNODE(PrimitiveShade,
     }, /* outputs: */ {
     "shade",
     }, /* params: */ {
-    {"string", "primtype", "points"},
-    {"string", "vertpath", "assets/particles.vert"},
-    {"string", "fragpath", "assets/particles.frag"},
+    {"enum points lines tris quads", "primtype", "points"},
+    {"readpath", "vertpath", "assets/particles.vert"},
+    {"readpath", "fragpath", "assets/particles.frag"},
     }, /* category: */ {
     "visualize",
     }});
 
 }
+#endif

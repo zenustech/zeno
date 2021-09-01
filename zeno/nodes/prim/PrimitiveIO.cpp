@@ -1,8 +1,8 @@
 #include <zeno/zeno.h>
-#include <zeno/PrimitiveObject.h>
-#include <zeno/PrimitiveIO.h>
-#include <zeno/StringObject.h>
-#include <zeno/vec.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/PrimitiveIO.h>
+#include <zeno/types/StringObject.h>
+#include <zeno/utils/vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
@@ -21,8 +21,8 @@ struct ExportZpmPrimitive : zeno::INode {
 
 ZENDEFNODE(ExportZpmPrimitive,
     { /* inputs: */ {
-    "prim",
-    "path",
+    {"PrimitiveObject", "prim"},
+    {"writepath", "path"},
     }, /* outputs: */ {
     }, /* params: */ {
     }, /* category: */ {
@@ -41,9 +41,9 @@ struct ImportZpmPrimitive : zeno::INode {
 
 ZENDEFNODE(ImportZpmPrimitive,
     { /* inputs: */ {
-    "path",
+    {"readpath", "path"},
     }, /* outputs: */ {
-    "prim",
+    {"PrimitiveObject", "prim"},
     }, /* params: */ {
     }, /* category: */ {
     "primitive",
