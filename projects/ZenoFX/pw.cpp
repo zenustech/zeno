@@ -60,28 +60,38 @@ struct ParticlesWrangle : zeno::INode {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto code = get_input<zeno::StringObject>("zfxCode")->get();
 
+                printf("1\n");
         zfx::Options opts(zfx::Options::for_x64);
+                printf("2\n");
         opts.detect_new_symbols = true;
+                printf("3\n");
         prim->foreach_attr([&] (auto const &key, auto const &attr) {
+                printf("4\n");
             int dim = ([] (auto const &v) {
                 using T = std::decay_t<decltype(v[0])>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) return 3;
                 else if constexpr (std::is_same_v<T, float>) return 1;
                 else return 0;
             })(attr);
+                printf("5\n");
             dbg_printf("define symbol: @%s dim %d\n", key.c_str(), dim);
+                printf("6\n");
             opts.define_symbol('@' + key, dim);
+                printf("7\n");
         });
 
+                printf("8\n");
         auto params = has_input("params") ?
             get_input<zeno::DictObject>("params") :
             std::make_shared<zeno::DictObject>();
         std::vector<float> parvals;
+                printf("9\n");
         std::vector<std::pair<std::string, int>> parnames;
         for (auto const &[key_, obj]: params->lut) {
             auto key = '$' + key_;
             auto par = zeno::smart_any_cast<std::shared_ptr<zeno::NumericObject>>(obj).get();
             auto dim = std::visit([&] (auto const &v) {
+                printf("10\n");
                 using T = std::decay_t<decltype(v)>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) {
                     parvals.push_back(v[0]);
@@ -99,10 +109,12 @@ struct ParticlesWrangle : zeno::INode {
             }, par->value);
             dbg_printf("define param: %s dim %d\n", key.c_str(), dim);
             opts.define_param(key, dim);
+                printf("11\n");
         }
 
         auto prog = compiler.compile(code, opts);
         auto exec = assembler.assemble(prog->assembly);
+                printf("12\n");
 
         for (auto const &[name, dim]: prog->newsyms) {
             dbg_printf("auto-defined new attribute: %s with dim %d\n",
@@ -119,6 +131,7 @@ struct ParticlesWrangle : zeno::INode {
                 abort();
             }
         }
+                printf("13\n");
 
         for (int i = 0; i < prog->params.size(); i++) {
             auto [name, dimid] = prog->params[i];
@@ -130,21 +143,28 @@ struct ParticlesWrangle : zeno::INode {
             dbg_printf("(valued %f)\n", value);
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
+                printf("14\n");
 
         std::vector<Buffer> chs(prog->symbols.size());
+                printf("14.0\n");
         for (int i = 0; i < chs.size(); i++) {
             auto [name, dimid] = prog->symbols[i];
+                printf("14.1\n");
             dbg_printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
+                printf("14.2\n");
             assert(name[0] == '@');
             Buffer iob;
-            auto const &attr = prim->attr(name.substr(1));
-            std::visit([&, dimid_ = dimid] (auto const &arr) {
+                printf("14.3 %s\n", name.c_str());
+            prim->attr_visit(name.substr(1),
+            [&, dimid_ = dimid] (auto const &arr) {
                 iob.base = (float *)arr.data() + dimid_;
                 iob.count = arr.size();
                 iob.stride = sizeof(arr[0]) / sizeof(float);
-            }, attr);
+            });
+                printf("14.5\n");
             chs[i] = iob;
         }
+                printf("15\n");
         vectors_wrangle(exec, chs);
 
         set_output("prim", std::move(prim));

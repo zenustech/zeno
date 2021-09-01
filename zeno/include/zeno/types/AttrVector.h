@@ -1,6 +1,7 @@
 #pragma once
 
 #include <zeno/utils/vec.h>
+#include <zeno/utils/Exception.h>
 #include <variant>
 #include <vector>
 #include <map>
@@ -91,6 +92,16 @@ struct AttrVector {
     }
 
     template <class F>
+    void attr_visit(std::string const &name, F const &f) const {
+        attr(name);
+        for (auto const &[key, arr]: attrs) {
+            std::visit([&] (auto &arr) {
+                f(key, arr);
+            }, arr);
+        }
+    }
+
+    template <class F>
     void foreach_attr(F const &f) const {
         for (auto const &[key, arr]: attrs) {
             std::visit([&] (auto &arr) {
@@ -141,20 +152,26 @@ struct AttrVector {
 
     template <class T>
     auto const &attr(std::string const &name) const {
-        return std::get<std::vector<T>>(attrs.at(name));
+        return std::get<std::vector<T>>(attr(name));
     }
 
     template <class T>
     auto &attr(std::string const &name) {
-        return std::get<std::vector<T>>(attrs.at(name));
+        return std::get<std::vector<T>>(attr(name));
     }
 
     auto const &attr(std::string const &name) const {
-        return attrs.at(name);
+        auto it = attrs.find(name);
+        if (it == attrs.end())
+            throw Exception("invalid primitive attribute name: `" + name + "`");
+        return it->second;
     }
 
     auto &attr(std::string const &name) {
-        return attrs.at(name);
+        auto it = attrs.find(name);
+        if (it == attrs.end())
+            throw Exception("invalid primitive attribute name: `" + name + "`");
+        return it->second;
     }
 
     bool has_attr(std::string const &name) const {
@@ -167,7 +184,7 @@ struct AttrVector {
 
     template <class T>
     bool attr_is(std::string const &name) const {
-        return std::holds_alternative<std::vector<T>>(attrs.at(name));
+        return std::holds_alternative<std::vector<T>>(attr(name));
     }
 
     void clear_attrs() {
