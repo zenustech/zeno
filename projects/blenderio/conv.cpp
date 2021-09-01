@@ -2,39 +2,8 @@
 #include <zeno/types/BlenderMesh.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
-#include <zeno/types/StringObject.h>
 
 namespace {
-
-
-struct BlenderText : zeno::INode {
-    virtual void apply() override {
-        auto text = get_input2<std::string>("text");
-        set_output2("value", std::move(text));
-    }
-};
-
-ZENDEFNODE(BlenderText, {
-    {{"string", "text", "DontUseThisNodeDirectly"}},
-    {{"string", "value"}},
-    {},
-    {"blender"},
-});
-
-
-struct BlenderInput : zeno::INode {
-    virtual void apply() override {
-        auto text = get_input2<std::string>("object");
-        set_output2("value", std::move(text));
-    }
-};
-
-ZENDEFNODE(BlenderInput, {
-    {{"string", "object", "DontUseThisNodeDirectly"}},
-    {{"BlenderAxis", "object"}, {"PrimitiveObject", "primitive"}},
-    {},
-    {"blender"},
-});
 
 
 struct GetBlenderObjectAxes : zeno::INode {

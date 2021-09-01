@@ -9,16 +9,18 @@ namespace zeno {
 struct UserData {
     std::map<std::string, zany> m_data;
 
-    ZENO_API zany &at(std::string const &name);
-
     template <class T>
     T get(std::string const &name) {
-        return smart_any_cast<T>(at(name));
+        auto it = m_data.find(name);
+        if (it == m_data.end()) {
+            return (m_data[name] = T{});
+        }
+        return smart_any_cast<T>(it->second);
     }
 
     template <class T>
-    T set(std::string const &name, T const &value) {
-        getUserData(name) = value;
+    void set(std::string const &name, T const &value) {
+        m_data[name] = value;
     }
 };
 
