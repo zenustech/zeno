@@ -10,13 +10,13 @@ namespace {
 struct BlenderText : zeno::INode {
     virtual void apply() override {
         auto text = get_input<zeno::StringObject>("text");
-        set_output("text", std::move(text));
+        set_output("value", std::move(text));
     }
 };
 
 ZENDEFNODE(BlenderText, {
     {{"string", "text", "DontUseThisNodeDirectly"}},
-    {{"string", "text"}},
+    {{"string", "value"}},
     {},
     {"blender"},
 });

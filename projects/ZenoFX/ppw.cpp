@@ -176,7 +176,7 @@ struct ParticleParticleWrangle : zeno::INode {
 
 ZENDEFNODE(ParticleParticleWrangle, {
     {{"PrimitiveObject", "prim1"}, {"PrimitiveObject", "prim2"},
-     {"StringObject", "zfxCode"}, {"DictObject:NumericObject", "params"}},
+     {"string", "zfxCode"}, {"DictObject:NumericObject", "params"}},
     {{"PrimitiveObject", "prim"}},
     {},
     {"zenofx"},

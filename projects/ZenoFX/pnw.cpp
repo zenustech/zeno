@@ -303,8 +303,8 @@ struct ParticlesNeighborWrangle : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesNeighborWrangle, {
-    {{"PrimitiveObject", "prim"}, {"PrimitiveObject", "primNei"}, {"hashgrid", "hashGrid"},
-     {"StringObject", "zfxCode"}, {"DictObject:NumericObject", "params"}},
+    {{"PrimitiveObject", "prim"}, {"PrimitiveObject", "primNei"}, {"HashGrid", "hashGrid"},
+     {"string", "zfxCode"}, {"DictObject:NumericObject", "params"}},
     {{"PrimitiveObject", "prim"}},
     {},
     {"zenofx"},
