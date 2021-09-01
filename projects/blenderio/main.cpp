@@ -34,7 +34,7 @@ ZENDEFNODE(GetBlenderObjectAxes, {
     {"object"},
     {{"vec3f", "origin"}, {"vec3f", "axisX"}, {"vec3f", "axisY"}, {"vec3f", "axisZ"}},
     {},
-    {"blendermesh"},
+    {"blender"},
 });
 
 
@@ -95,7 +95,7 @@ ZENDEFNODE(BMeshToPrimitive, {
     {"mesh"},
     {"prim"},
     {{"bool", "allow_quads", "0"}, {"bool", "do_transform", "1"}},
-    {"blendermesh"},
+    {"blender"},
 });
 
 
@@ -146,7 +146,7 @@ ZENDEFNODE(PrimitiveToBMesh, {
     {"prim"},
     {"mesh"},
     {{"bool", "is_smooth", "0"}},
-    {"blendermesh"},
+    {"blender"},
 });
 
 
@@ -208,7 +208,7 @@ ZENDEFNODE(BAxisExtract, {
     {"mesh"},
     {"trans"},
     {},
-    {"blendermesh"},
+    {"blender"},
 });*/
 
 
