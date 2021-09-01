@@ -32,8 +32,8 @@ struct MakeOrthonormalBase : INode {
 };
 
 ZENDEFNODE(MakeOrthonormalBase, {
-    {{"vec3f", "normal"}, {"vec3f", "tangent"}},
-    {{"vec3f", "normal"}, "tangent", {"vec3f", "bitangent"}},
+    {{"vec3f", "normal", "0,0,1"}, {"vec3f", "tangent", "0,1,0"}},
+    {{"vec3f", "normal"}, {"vec3f", "tangent"}, {"vec3f", "bitangent"}},
     {},
     {"math"},
 });
