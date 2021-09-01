@@ -148,14 +148,14 @@ struct EndForEach : EndFor {
 
     virtual void doApply() override {
         EndFor::doApply();
-        /*if (get_param<bool>("doConcat")) {
+        if (get_param<bool>("doConcat")) {
             decltype(result) newres;
             for (auto &xs: result) {
                 for (auto &x: smart_any_cast<std::shared_ptr<ListObject>>(xs, "doConcat ")->arr)
                     newres.push_back(std::move(x));
             }
             result = std::move(newres);
-        }*/
+        }
         auto list = std::make_shared<ListObject>();
         list->arr = std::move(result);
         set_output("list", std::move(list));
@@ -165,7 +165,7 @@ struct EndForEach : EndFor {
 ZENDEFNODE(EndForEach, {
     {"object", {"bool", "accept", "1"}, "FOR"},
     {"list"},
-    {},//{{"bool", "doConcat", "0"}},
+    {{"bool", "doConcat", "0"}},
     {"control"},
 });
 
