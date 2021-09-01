@@ -163,7 +163,7 @@ struct EndForEach : EndFor {
 };
 
 ZENDEFNODE(EndForEach, {
-    {"FOR", "object", {"bool", "accept", "1"}},
+    {"object", "accept", "FOR"},
     {"list"},
     {{"bool", "doConcat", "0"}},
     {"control"},

@@ -246,8 +246,8 @@ ZENO_DEFNODE(NumericOperator)({
     _PER_FN(shl)
     _PER_FN(cmpge)
     _PER_FN(cmple)
-    _PER_FN(mpgt)
-    _PER_FN(mplt)
+    _PER_FN(cmpgt)
+    _PER_FN(cmplt)
     _PER_FN(cmpne)
     _PER_FN(cmpeq)
 
