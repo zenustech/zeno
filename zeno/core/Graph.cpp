@@ -71,21 +71,18 @@ ZENO_API void Graph::applyNode(std::string const &id) {
     }
     ctx->visited.insert(id);
     auto node = safe_at(nodes, id, "node");
-#ifdef ZENO_FAULTHANDLER
-    signal_catcher([&] () {
-#endif
     try {
         node->doApply();
     } catch (std::exception const &e) {
         throw zeno::BaseException("During evaluation of `"
                 + node->myname + "`:\n" + e.what());
     }
-#ifdef ZENO_FAULTHANDLER
-    });
-#endif
 }
 
 ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
+#ifdef ZENO_FAULTHANDLER
+    signal_catcher([&] () {
+#endif
     try {
         ctx = std::make_unique<Context>();
         for (auto const &id: ids) {
@@ -93,17 +90,14 @@ ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
         }
         ctx = nullptr;
     } catch (std::exception const &e) {
-#ifdef ZENO_FAULTHANDLER
-    signal_catcher([&] () {
-#endif
         ctx = nullptr;
         throw zeno::BaseException(
                 (std::string)"ZENO Traceback (most recent call last):\n"
                 + e.what());
+    }
 #ifdef ZENO_FAULTHANDLER
     });
 #endif
-    }
 }
 
 ZENO_API void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
