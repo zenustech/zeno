@@ -26,12 +26,8 @@ ZENDEFNODE(BlenderText, {
 
 struct BlenderInput : zeno::INode {
     virtual void apply() override {
-        auto &ud = graph->getUserData();
-        using UDType = std::shared_ptr<std::map<std::string,
-              std::function<std::shared_ptr<zeno::BlenderAxis>()>
-                  >>;
-        auto &inputs = *ud.get<UDType>("blender_inputs");
-        auto objid = get_input2<std::string>("object");
+        auto &inputs = graph->getUserData().get<zeno::BlenderInputsType>("blender_inputs");
+        auto objid = get_input2<std::string>("objid");
         auto object = zeno::safe_at(inputs, objid, "blender input")();
         set_output2("object", std::move(object));
     }
@@ -47,9 +43,7 @@ ZENDEFNODE(BlenderInput, {
 
 struct BlenderOutput : zeno::INode {
     virtual void apply() override {
-        auto &ud = graph->getUserData();
-        using UDType = std::shared_ptr<std::map<std::string, std::shared_ptr<zeno::BlenderAxis>>>;
-        auto &outputs = *ud.get<UDType>("blender_outputs");
+        auto &outputs = graph->getUserData().get<zeno::BlenderOutputsType>("blender_outputs");
         auto objid = get_input2<std::string>("objid");
         auto object = get_input<zeno::BlenderAxis>("object");
         outputs[objid] = std::move(object);

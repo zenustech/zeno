@@ -30,4 +30,7 @@ struct BlenderMesh : IObjectClone<BlenderMesh, BlenderAxis>, PolyMesh {
     bool is_smooth = false;
 };
 
+using BlenderInputsType = std::map<std::string, std::function<std::shared_ptr<zeno::BlenderAxis>()>>;
+using BlenderOutputsType = std::map<std::string, std::shared_ptr<zeno::BlenderAxis>>;
+
 }
