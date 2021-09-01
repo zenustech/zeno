@@ -138,6 +138,8 @@ struct PrimitiveToBMesh : zeno::INode {
             mesh->poly[base_poly + i] = {base + i*4, 4};
         }
 
+        mesh->attrs = prim->m_attrs;
+
         set_output("mesh", std::move(mesh));
     }
 };
