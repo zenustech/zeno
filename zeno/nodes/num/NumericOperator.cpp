@@ -23,8 +23,7 @@ struct NumericOperator : zeno::INode {
     template <class, class T1, class T2> \
     struct _op_##name { \
         static int apply(T1 const &t1, T2 const &t2) { \
-            std::cout << "Invalid numeric operation encountered!" << std::endl; \
-            return 0; \
+            throw zeno::Exception("Invalid numeric operation encountered!"); \
         } \
     }; \
  \
@@ -45,8 +44,7 @@ struct NumericOperator : zeno::INode {
     template <class, class T1> \
     struct _op_##name { \
         static int apply(T1 const &t1) { \
-            std::cout << "Invalid numeric operation encountered!" << std::endl; \
-            return 0; \
+            throw zeno::Exception("Invalid numeric operation encountered!"); \
         } \
     }; \
  \
@@ -67,8 +65,7 @@ struct NumericOperator : zeno::INode {
     template <class, class ...Ts> \
     struct _op_##name { \
         static int apply(Ts const &...ts) { \
-            std::cout << "Invalid numeric operation encountered!" << std::endl; \
-            return 0; \
+            throw zeno::Exception("Invalid numeric operation encountered!"); \
         } \
     }; \
  \
@@ -144,7 +141,7 @@ struct NumericOperator : zeno::INode {
         auto ret = std::make_unique<zeno::NumericObject>();
         auto lhs = get_input<zeno::NumericObject>("lhs");
         auto rhs = has_input("rhs") ?
-            get_input<zeno::NumericObject>("lhs")
+            get_input<zeno::NumericObject>("rhs")
             : std::make_shared<zeno::NumericObject>(0);
         
         // todo: no ternary ops..
@@ -198,7 +195,7 @@ _PER_OP(cmpeq)
 _PER_OP(dot)
 _PER_OP(cross)
 _PER_OP(distance)
-            else std::cout << "Bad op name: " << op << std::endl;
+            else throw zeno::Exception("Bad op name: " + op);
 #undef _PER_OP
 
         }, lhs->value, rhs->value);
