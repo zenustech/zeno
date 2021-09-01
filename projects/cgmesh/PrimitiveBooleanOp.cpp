@@ -32,7 +32,7 @@ struct PrimitiveBooleanOp : INode {
 
         bool anyFromA = false, anyFromB = false;
         if (get_param<bool>("calcAnyFrom")) {
-            for (int i = 0; i < primC->size(); i++) {
+            for (int i = 0; i < J.size(); i++) {
                 if (J(i) < FA.rows()) {
                     anyFromA = true;
                 } else {
@@ -87,7 +87,7 @@ ZENO_DEFNODE(PrimitiveBooleanOp)({
     {
     {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "Union"},
     {"string", "faceAttrName", ""},
-    {"bool", "calcAnyFrom", "1"},
+    {"bool", "calcAnyFrom", "0"},
     {"bool", "doMeshFix", "1"},
     },
     {"cgmesh"},
@@ -137,7 +137,7 @@ ZENO_DEFNODE(PrimitiveListBoolOp)({
     {
     {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "Union"},
     {"bool", "assignAttrs", "1"},
-    {"bool", "calcAnyFrom", "1"},
+    {"bool", "calcAnyFrom", "0"},
     {"bool", "doMeshFix", "1"},
     },
     {"cgmesh"},
