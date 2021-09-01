@@ -131,6 +131,8 @@ struct NumericOperator : zeno::INode {
     _PER_FN(ceil)
     _PER_FN(toint)
     _PER_FN(tofloat)
+    _PER_FN(anyTrue)
+    _PER_FN(allTrue)
 
 #undef _PER_FN
 #undef _PER_OP2
@@ -169,6 +171,8 @@ _PER_OP(length)
 _PER_OP(normalize)
 _PER_OP(toint)
 _PER_OP(tofloat)
+_PER_OP(anyTrue)
+_PER_OP(allTrue)
 #undef _PER_OP
 #define _PER_OP(name) else if (op == #name) ret->value = remove_bool(op_##name(lhs, rhs));
 _PER_OP(add)
@@ -259,6 +263,8 @@ ZENO_DEFNODE(NumericOperator)({
     _PER_FN(ceil)
     _PER_FN(toint)
     _PER_FN(tofloat)
+    _PER_FN(anyTrue)
+    _PER_FN(allTrue)
 
     _PER_FN(copy)
     _PER_FN(copyr)
