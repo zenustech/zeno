@@ -25,17 +25,11 @@ static const char *signal_to_string(int signo) {
 #endif
 }
 
-class SignalException : public BaseException {
-public:
-    SignalException(int signo) noexcept : BaseException(signal_to_string(signo)) {
-        spdlog::error("recieved signal {}: {}", signo, what());
-        print_traceback(1);
-    }
-};
-
 #ifdef ZENO_FAULTHANDLER
 static void signal_handler(int signo) {
-    throw SignalException(signo);
+    spdlog::error("recieved signal {}: {}", signo, signal_to_string(signo));
+    print_traceback(1);
+    exit(-signo);
 }
 
 static int register_my_handlers() {
