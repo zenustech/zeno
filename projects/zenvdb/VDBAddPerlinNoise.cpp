@@ -120,7 +120,6 @@ struct VDBAddPerlinNoise : INode {
             auto coord = iter.getCoord();
             auto pos = vec3i(coord[0], coord[1], coord[2]) * inv_scale;
             auto noise = strength * perlin(pos[0], pos[1], pos[2]);
-
             iter.modifyValue([&] (auto &v) {
                 v += noise;
             });
