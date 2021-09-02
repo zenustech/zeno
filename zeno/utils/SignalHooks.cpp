@@ -22,7 +22,7 @@ static const char *signal_to_string(int signo) {
     if (signo == SIGSEGV) signame = "SIGSEGV";
     if (signo == SIGFPE) signame = "SIGFPE";
     if (signo == SIGILL) signame = "SIGILL";
-    return signo;
+    return signame;
 #endif
 }
 
