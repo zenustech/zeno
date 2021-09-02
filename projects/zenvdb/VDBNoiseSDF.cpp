@@ -1,12 +1,11 @@
 #include <zeno/zeno.h>
-#include <zeno/NumericObject.h>
-#include <vector>
 #include <zeno/VDBGrid.h>
+#include <zeno/types/NumericObject.h>
 #include <openvdb/openvdb.h>
 #include <openvdb/tree/LeafManager.h>
 #include <openvdb/points/PointCount.h>
 #include <openvdb/points/PointAdvect.h>
-#include <openvdb/tools/Morphology.h>
+#include <openvdb/tools/Interpolation.h>
 
 namespace zeno {
 
@@ -69,6 +68,9 @@ static float grad(int hash, float x, float y, float z) {
 }
 
 static float perlin(float x, float y, float z) {
+    x = fmodf(x, 256.f);
+    y = fmodf(y, 256.f);
+    z = fmodf(z, 256.f);
     int xi = (int)x & 255;
     int yi = (int)y & 255;
     int zi = (int)z & 255;
@@ -100,35 +102,53 @@ static float perlin(float x, float y, float z) {
             grad (bbb, xf-1, yf-1, zf-1),
             u);
     float y2 = mix (x1, x2, v);
-    return (mix (y1, y2, w)+1)/2;
+    return mix (y1, y2, w);
 }
 
-struct VDBAddPerlinNoise : INode {
+struct VDBAdvectPerlinNoise : INode {
   virtual void apply() override {
     auto inoutSDF = get_input<VDBFloatGrid>("inoutSDF");
-    auto grid = inoutSDF->m_grid;
     auto strength = get_input<NumericObject>("strength")->get<float>();
     auto inv_scale = 1.0f / get_input<NumericObject>("scale")->get<float>();
+
+    auto grid = inoutSDF->m_grid;
+    auto oldgrid = grid->deepCopy();
+
+    auto axr = oldgrid->getConstAccessor();
     auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
         for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
             auto coord = iter.getCoord();
             auto pos = vec3i(coord[0], coord[1], coord[2]) * inv_scale;
-            iter.modifyValue([&](auto &v) {
-                v += strength * perlin(pos[0], pos[1], pos[2]);
-            });
+            auto noise = strength * perlin(pos[0], pos[1], pos[2]);
+
+            auto px = axr.getValue({coord[0] + 1, coord[1], coord[2]});
+            auto nx = axr.getValue({coord[0] - 1, coord[1], coord[2]});
+            auto py = axr.getValue({coord[0], coord[1] + 1, coord[2]});
+            auto ny = axr.getValue({coord[0], coord[1] - 1, coord[2]});
+            auto pz = axr.getValue({coord[0], coord[1], coord[2] + 1});
+            auto nz = axr.getValue({coord[0], coord[1], coord[2] - 1});
+            vec3f gradient(px - nx, py - ny, pz - nz);
+            gradient = normalize(gradient);
+
+
+            auto newcoord = vec3f(coord[0], coord[1], coord[2]) - noise * gradient;
+            auto value = openvdb::tools::BoxSampler::sample(oldgrid->tree(),
+                    vec_to_other<openvdb::Vec3R>(newcoord));
+            iter.setValue(value);
         }
     };
     auto velman = openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>>(grid->tree());
     velman.foreach(wrangler);
+
     set_output("inoutSDF", get_input("inoutSDF"));
   }
 };
 
-ZENO_DEFNODE(VDBAddPerlinNoise)(
+ZENO_DEFNODE(VDBAdvectPerlinNoise)(
      { /* inputs: */ {
      "inoutSDF",
-     {"float", "strength", "1"},
-     {"float", "scale", "1"},
+     {"float", "strength", "0.01"},
+     {"float", "scale", "8"},
      }, /* outputs: */ {
        "inoutSDF",
      }, /* params: */ {

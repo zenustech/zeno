@@ -13,12 +13,12 @@
       "strength": [
        null,
        null,
-       1.0
+       0.0001
       ],
       "scale": [
        null,
        null,
-       1.0
+       8.0
       ],
       "SRC": [
        null,
@@ -37,14 +37,14 @@
      "name": "PrimitiveToSDF",
      "inputs": {
       "PrimitiveMesh": [
-       null,
-       null,
+       "294ee8ca-ReadObjPrimitive",
+       "prim",
        null
       ],
       "Dx": [
        null,
        null,
-       0.08
+       0.04
       ],
       "SRC": [
        null,
@@ -56,17 +56,86 @@
       "type": "vertex"
      },
      "uipos": [
-      -249.58542141230072,
-      151.03416856492026
+      -312.4555808656038,
+      146.47835990888382
+     ],
+     "options": []
+    },
+    "294ee8ca-ReadObjPrimitive": {
+     "name": "ReadObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "/home/bate/Codes/zeno-blender/external/zeno/assets/monkey.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -592.9476082004554,
+      201.87699316628704
+     ],
+     "options": []
+    },
+    "a6c4f5c2-SDFToPoly": {
+     "name": "SDFToPoly",
+     "inputs": {
+      "SDF": [
+       "ba067165-VDBAddPerlinNoise",
+       "inoutSDF",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isoValue": 0.0,
+      "adaptivity": 0.0,
+      "allowQuads": false
+     },
+     "uipos": [
+      319.13439635535303,
+      154.44191343963547
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "d24389f8-PrimitiveCalcNormal": {
+     "name": "PrimitiveCalcNormal",
+     "inputs": {
+      "prim": [
+       "a6c4f5c2-SDFToPoly",
+       "Mesh",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      606.8337129840546,
+      179.498861047836
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -157.65284738041024,
-    "y": 73.38861047835995,
-    "width": 256.0,
-    "height": 256.0
+    "x": -197.81321184509875,
+    "y": 17.949886104782976,
+    "width": 400.0,
+    "height": 400.0
    }
   }
  },
@@ -5533,6 +5602,36 @@
     "trimesh"
    ]
   },
+  "ReadObjPrimitive": {
+   "inputs": [
+    [
+     "readpath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "ReadParticles": {
    "inputs": [
     [
@@ -6448,12 +6547,12 @@
     [
      "float",
      "strength",
-     "1"
+     "0.01"
     ],
     [
      "float",
      "scale",
-     "1"
+     "8"
     ],
     [
      "",
@@ -6831,6 +6930,36 @@
    ],
    "categories": [
     "trimesh"
+   ]
+  },
+  "WriteObjPrimitive": {
+   "inputs": [
+    [
+     "writepath",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
    ]
   },
   "WriteParticles": {
