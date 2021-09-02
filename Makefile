@@ -35,15 +35,15 @@ default: run
 
 all:
 	cmake -B build
-	cmake --build build --parallel `python -c 'from multiprocessing import cpu_count;print(cpu_count())`
+	cmake --build build --parallel `python -c 'from multiprocessing import cpu_count;print(cpu_count())'`
 
 release_all:
 	cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
-	cmake --build build --parallel `python -c 'from multiprocessing import cpu_count;print(cpu_count())`
+	cmake --build build --parallel `python -c 'from multiprocessing import cpu_count;print(cpu_count())'`
 
 debug_all:
 	cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
-	cmake --build build --parallel `python -c 'from multiprocessing import cpu_count;print(cpu_count())`
+	cmake --build build --parallel `python -c 'from multiprocessing import cpu_count;print(cpu_count())'`
 
 configure:
 	cmake -B build
