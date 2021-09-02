@@ -127,8 +127,18 @@ make -j8
 sudo make install
 cd ../..
 
-# (Optional) Install LIBIGL dependencies:
-sudo yum -y install gmp-devel mpfr-devel lapack-devel
+# (Optional) Install CGAL dependencies (GMP, MPFR, LAPACK, BLAS):
+sudo yum -y install gmp-devel mpfr-devel lapack-devel blas-devel
+
+# (Optional) Install CGAL:
+git clone https://github.com/CGAL/cgal.git
+cd cgal
+mkdir build
+cd build
+cmake ..
+make -j8
+sudo make install
+cd ../..
 ```
 
 ## Build ZENO
@@ -142,10 +152,18 @@ cmake --build build --parallel
 cmake -B build -DEXTENSION_FastFLIP:BOOL=ON -DEXTENSION_zenvdb:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
 cmake --build build --parallel
 
-# (Optional) Enable LIBIGL support:
-git submodule update --init --recursive
+# (Optional) Enable CUDA support (for NVIDIA users):
+cmake -B build -DEXTENSION_gmpm:BOOL=ON -DEXTENSION_mesher:BOOL=ON -DZFX_ENABLE_CUDA:BOOL=ON
+cmake --build build --parallel
+
+# (Optional) Enable CGAL support:
 cmake -B build -DEXTENSION_cgmesh:BOOL=ON
 cmake --build build --parallel
+
+# (Optional) Enable Bullet support:
+cmake -B build -DEXTENSION_Rigid:BOOL=ON
+cmake --build build --parallel
+
 ```
 
 ## Run ZENO
