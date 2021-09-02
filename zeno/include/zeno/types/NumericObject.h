@@ -1,7 +1,8 @@
 #pragma once
 
-#include <zeno/core/IObject.h>
 #include <zeno/utils/vec.h>
+#include <zeno/core/IObject.h>
+#include <zeno/utils/Exception.h>
 #include <variant>
 
 namespace zeno {
@@ -19,11 +20,14 @@ struct NumericObject : IObjectClone<NumericObject> {
 
   template <class T>
   T get() {
+    if (!is<T>())
+        throw Exception((std::string)"NumericObject expect `" + typeid(T).name()
+                + "`, got index `" + "0123456789abcdefghijklmnopqrstuvwxyz"[value.index()] + "`");
     return std::get<T>(value);
   }
 
   template <class T>
-  T is() {
+  bool is() {
     return std::holds_alternative<T>(value);
   }
 
