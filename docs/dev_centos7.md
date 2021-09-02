@@ -128,7 +128,7 @@ sudo make install
 cd ../..
 
 # (Optional) Install LIBIGL dependencies:
-sudo yum -y install gmp-devel mpfr-devel
+sudo yum -y install gmp-devel mpfr-devel lapack-devel
 ```
 
 ## Build ZENO

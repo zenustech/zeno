@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 project(libjmeshext)
+include_directories(JMeshLib-1.2/include)
 
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
