@@ -109,7 +109,14 @@ struct VDBAddPerlinNoise : INode {
   virtual void apply() override {
     auto inoutSDF = get_input<VDBFloatGrid>("inoutSDF");
     auto strength = get_input<NumericObject>("strength")->get<float>();
-    auto inv_scale = 1.0f / get_input<NumericObject>("scale")->get<float>();
+    auto scale = get_input<NumericObject>("scale")->get<float>();
+    auto scaling = has_input("scaling") ?
+        get_input<NumericObject>("scaling")->get<vec3f>()
+        : vec3f(1);
+    auto translation = has_input("translation") ?
+        get_input<NumericObject>("translation")->get<vec3f>()
+        : vec3f(0);
+    auto inv_scale = 1.f / (scale * scaling);
 
     auto grid = inoutSDF->m_grid;
     float dx = grid->voxelSize()[0];
@@ -118,7 +125,7 @@ struct VDBAddPerlinNoise : INode {
     auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
         for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
             auto coord = iter.getCoord();
-            auto pos = vec3i(coord[0], coord[1], coord[2]) * inv_scale;
+            auto pos = (vec3i(coord[0], coord[1], coord[2]) + translation) * inv_scale;
             auto noise = strength * perlin(pos[0], pos[1], pos[2]);
             iter.modifyValue([&] (auto &v) {
                 v += noise;
@@ -137,6 +144,8 @@ ZENO_DEFNODE(VDBAddPerlinNoise)(
      "inoutSDF",
      {"float", "strength", "1.0"},
      {"float", "scale", "8.0"},
+     {"vec3f", "scaling", "1,1,1"},
+     {"vec3f", "translation", "0,0,0"},
      }, /* outputs: */ {
        "inoutSDF",
      }, /* params: */ {
