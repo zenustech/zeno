@@ -15,29 +15,29 @@
 #
 #  The name of the libraries to be created/linked to
 #
-# SuperLUroot	= /home/bate/zenoblend/build
+# SuperLUroot	= ${CMAKE_SOURCE_DIR}/build
 #
-SuperLUroot	= /usr/local
-SUPERLULIB   	= $(SuperLUroot)/SRC/libsuperlu.a
+SuperLUroot	= ${CMAKE_INSTALL_PREFIX}
+SUPERLULIB   	= $(SuperLUroot)/SRC/${PROJECT_NAME_LIB_EXPORT}
 
 TMGLIB       	= libtmglib.a
 
 # BLASDEF 	= -DUSE_VENDOR_BLAS
-BLASLIB		= /usr/local/CBLAS/libblas.a
-LIBS		= $(SUPERLULIB) /usr/local/CBLAS/libblas.a
+BLASLIB		= ${BLAS_LIB_EXPORT}
+LIBS		= $(SUPERLULIB) ${BLAS_LIB_EXPORT}
 
 #
 #  The archiver and the flag(s) to use when building archive (library)
 #  If your system has no ranlib, set RANLIB = echo.
 #
-ARCH         = /usr/bin/ar
+ARCH         = @CMAKE_AR@
 ARCHFLAGS    = cr
-RANLIB       = /usr/bin/ranlib
+RANLIB       = @CMAKE_RANLIB@
 
-CC           = /usr/bin/cc
-CFLAGS 	     = -O3 -DNDEBUG -DPRNTlevel=0 -DDEBUGlevel=0  
+CC           = @CMAKE_C_COMPILER@
+CFLAGS 	     = @CMAKE_C_FLAGS_RELEASE@ @CMAKE_C_FLAGS@ 
 NOOPTS       = -O0
-FORTRAN	     = /usr/bin/gfortran
+FORTRAN	     = @CMAKE_Fortran_COMPILER@
 
 LOADER       = $(CC)
 LOADOPTS     =
