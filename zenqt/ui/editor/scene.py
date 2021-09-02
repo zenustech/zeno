@@ -183,7 +183,7 @@ class QDMGraphicsScene(QGraphicsScene):
         self.mmb_press = False
         self.contentChanged = False
 
-        self._scene_rect = None
+        self._scene_rect = QRectF(0, 0, 500, 500)
 
     @property
     def descs(self):
@@ -198,7 +198,7 @@ class QDMGraphicsScene(QGraphicsScene):
 
     def dumpGraph(self, input_nodes=None):
         nodes = {}
-        if input_nodes == None:
+        if input_nodes is None:
             input_nodes = self.nodes
         for node in input_nodes:
             ident, data = node.dump()
@@ -362,9 +362,8 @@ class QDMGraphicsView(QGraphicsView):
 
     def setScene(self, scene):
         super().setScene(scene)
-        if scene._scene_rect == None:
-            scene._scene_rect = QRectF(0, 0, self.size().width(), self.size().height())
-        self._update_scene_rect()
+        if scene._scene_rect:
+            self._update_scene_rect()
 
     def updateSearch(self, edit):
         for act in edit.menu.actions():
@@ -429,8 +428,10 @@ class QDMGraphicsView(QGraphicsView):
             src = node.outputs[sock_name]
             dst = new_node.inputs[sock_name]
             self.addEdge(src, dst)
-        if node.name in ['BeginFor', 'BeginForEach', 'BeginSubstep']:
+        if node.name in ('BeginFor', 'BeginSubstep'):
             connectWith('EndFor', 'FOR')
+        if node.name == 'BeginForEach':
+            connectWith('EndForEach', 'FOR')
         elif node.name == 'FuncBegin':
             connectWith('FuncEnd', 'FUNC')
 
@@ -550,12 +551,15 @@ class QDMGraphicsView(QGraphicsView):
             zoomFactor = 1 / self.ZOOM_FACTOR
 
         self.scale(zoomFactor, zoomFactor, event.pos())
+        self._update_scene_rect()
 
+    '''
     def resizeEvent(self, event):
         if self.scene()._scene_rect is None:
             self.scene()._scene_rect = QRectF(0, 0, self.size().width(), self.size().height())
             self._update_scene_rect()
         super().resizeEvent(event)
+    '''
 
     def scale(self, sx, sy, pos=None):
         rect = self.scene()._scene_rect

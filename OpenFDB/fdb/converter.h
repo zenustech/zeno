@@ -3,6 +3,7 @@
 #include <openvdb/openvdb.h>
 #include <openvdb/tree/LeafManager.h>
 #include "schedule.h"
+#include <vector>
 
 
 namespace fdb::converter {
@@ -10,7 +11,9 @@ namespace fdb::converter {
 template <class OurGridT, class VdbGridT>
 void from_vdb_grid(OurGridT &ourGrid, VdbGridT &vdbGrid) {
 
+    //std::mutex mtx;
     auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
+        //std::lock_guard _(mtx);
         for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
             auto coord = iter.getCoord();
             auto value = iter.getValue();
@@ -22,12 +25,16 @@ void from_vdb_grid(OurGridT &ourGrid, VdbGridT &vdbGrid) {
             ourGrid.set(vec3i(coord[0], coord[1], coord[2]), value);
         }
     };
-    openvdb::tree::LeafManager<std::decay_t<decltype(vdbGrid.tree())>>
-        leafman(vdbGrid.tree());
+    using TreeType = std::decay_t<decltype(vdbGrid.tree())>;
+    using LeafNodeType = typename TreeType::LeafNodeType;
+    openvdb::tree::LeafManager<TreeType> leafman(vdbGrid.tree());
     leafman.foreach(wrangler);
 
-    //std::vector<openvdb::tree::InternalNode
-    //vdbGrid.getNodes(nodes);
+    /*std::vector<LeafNodeType *> nodes;
+    vdbGrid.tree().getNodes(nodes);
+    for (auto const &node: nodes) {
+        node.background();
+    }*/
 }
 
 template <class VdbGridT>

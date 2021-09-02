@@ -27,8 +27,8 @@ struct ListGetItem : zeno::INode {
     virtual void apply() override {
         auto list = get_input<zeno::ListObject>("list");
         auto index = get_input<zeno::NumericObject>("index")->get<int>();
-        auto obj = list->arr[index];
-        set_output("object", std::move(obj));
+        auto obj = list->arr.at(index);
+        set_output2("object", std::move(obj));
     }
 };
 
@@ -48,7 +48,7 @@ struct ExtractList : zeno::INode {
             int index = std::stoi(key);
             if (list->arr.size() > index) {
                 auto obj = list->arr[index];
-                set_output(key, std::move(obj));
+                set_output2(key, std::move(obj));
             }
         }
     }
@@ -87,6 +87,41 @@ struct AppendList : zeno::INode {
 
 ZENDEFNODE(AppendList, {
     {"list", "object"},
+    {"list"},
+    {},
+    {"list"},
+});
+
+struct ExtendList : zeno::INode {
+    virtual void apply() override {
+        auto list1 = get_input<zeno::ListObject>("list1");
+        auto list2 = get_input<zeno::ListObject>("list2");
+        for (auto const &ptr: list2->arr) {
+            list1->arr.push_back(ptr);
+        }
+        set_output("list1", std::move(list1));
+    }
+};
+
+ZENDEFNODE(ExtendList, {
+    {"list1", "list2"},
+    {"list1"},
+    {},
+    {"list"},
+});
+
+
+struct ResizeList : zeno::INode {
+    virtual void apply() override {
+        auto list = get_input<zeno::ListObject>("list");
+        auto newSize = get_input<zeno::NumericObject>("newSize")->get<int>();
+        list->arr.resize(newSize);
+        set_output("list", std::move(list));
+    }
+};
+
+ZENDEFNODE(ResizeList, {
+    {"list", {"int", "newSize"}},
     {"list"},
     {},
     {"list"},
@@ -150,7 +185,9 @@ ZENO_API void ListObject::dumpfile(std::string const &path) {
         auto const &obj = arr[i];
         std::stringstream ss;
         ss << path << "." << i;
-        obj->dumpfile(ss.str());
+        if (auto o = silent_any_cast<std::shared_ptr<IObject>>(obj); o.has_value()) {
+            o.value()->dumpfile(ss.str());
+        }
     }
 }
 

@@ -51,7 +51,7 @@ struct GetVDBBound : INode {
 
 ZENDEFNODE(GetVDBBound, {
                             {"vdbGrid"},
-                            {"bmin", "bmax"},
+                            {{"vec3f", "bmin"}, {"vec3f", "bmax"}},
                             {},
                             {"openvdb"},
                         });

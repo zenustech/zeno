@@ -64,7 +64,7 @@ struct ImportObjPrimitive : zeno::INode {
 
 ZENDEFNODE(ImportObjPrimitive,
         { /* inputs: */ {
-        "path",
+        {"readpath", "path"},
         }, /* outputs: */ {
         "prim",
         }, /* params: */ {
@@ -107,7 +107,7 @@ struct ExportObjPrimitive : zeno::INode {
 
 ZENDEFNODE(ExportObjPrimitive,
         { /* inputs: */ {
-        "path",
+        {"writepath", "path"},
         "prim",
         }, /* outputs: */ {
         }, /* params: */ {

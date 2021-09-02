@@ -1,3 +1,4 @@
+#include <zeno/utils/FaultHandler.h>
 #ifdef ZENO_FAULTHANDLER
 // https://github.com/taichi-dev/taichi/blob/eb769ebfc0cb6b48649a3aed8ccd293cbd4eb5ed/taichi/system/traceback.cpp
 /*******************************************************************************
@@ -243,7 +244,7 @@ static std::string calc_addr_to_line(
 #endif
 
 namespace zeno {
-void print_traceback(int skip) {
+ZENO_API void print_traceback(int skip) {
 #ifdef __APPLE__
   static std::mutex traceback_printer_mutex;
   // Modified based on
@@ -415,7 +416,7 @@ void print_traceback(int skip) {
 }
 #else
 namespace zeno {
-void print_traceback(int skip) {
+ZENO_API void print_traceback(int skip) {
 }
 }
 #endif

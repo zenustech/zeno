@@ -257,15 +257,15 @@ namespace zeno {
                 origin,
                 direction);
 
-            outprim->m_attrs["pos"] = new_pos_attr;
-            outprim->m_size = new_pos_attr.size();
+            outprim->attr<zeno::vec3f>("pos") = new_pos_attr;
+            outprim->resize(new_pos_attr.size());
             set_output("outPrim", std::move(outprim));
         }
     };
 
 ZENDEFNODE(PrimitiveClip, {
-    {"prim", {"vec3f", "origin"}, {"vec3f", "direction"}, {"vec3f", "distance"}},
-    {"outPrim"},
+    {{"PrimitiveObject", "prim"}, {"vec3f", "origin", "0,0,0"}, {"vec3f", "direction", "0,0,1"}, {"vec3f", "distance", "0"}},
+    {{"PrimitiveObject", "outPrim"}},
     {{"bool", "reverse", "0"}},
     {"primitive"},
     });

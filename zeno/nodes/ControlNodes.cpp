@@ -47,6 +47,8 @@ ZENDEFNODE(BeginFor, {
 
 
 struct EndFor : zeno::ContextManagedNode {
+    virtual void post_do_apply() {}
+
     virtual void doApply() override {
         auto [sn, ss] = inputBounds.at("FOR");
         auto fore = dynamic_cast<IBeginFor *>(graph->nodes.at(sn).get());
@@ -60,6 +62,7 @@ struct EndFor : zeno::ContextManagedNode {
             fore->update();
             push_context();
             zeno::INode::doApply();
+            post_do_apply();
             old_ctx = pop_context();
         }
         if (old_ctx) {
@@ -117,7 +120,7 @@ struct BeginForEach : IBeginFor {
         ret->set(m_index);
         set_output("index", std::move(ret));
         auto obj = m_list->arr[m_index];
-        set_output("object", std::move(obj));
+        set_output2("object", std::move(obj));
         m_index++;
     }
 };
@@ -128,6 +131,57 @@ ZENDEFNODE(BeginForEach, {
     {},
     {"control"},
 });
+
+struct EndForEach : EndFor {
+    std::vector<zany> result;
+    std::vector<zany> dropped_result;
+
+    virtual void post_do_apply() override {
+        bool accept = true;
+        if (requireInput("accept")) {
+            accept = evaluate_condition(get_input("accept").get());
+        }
+        if (requireInput("object")) {
+            auto obj = get_input2("object");
+            if (accept)
+                result.push_back(std::move(obj));
+            else
+                dropped_result.push_back(std::move(obj));
+        }
+    }
+
+    virtual void doApply() override {
+        EndFor::doApply();
+        if (get_param<bool>("doConcat")) {
+            decltype(result) newres;
+            for (auto &xs: result) {
+                for (auto &x: smart_any_cast<std::shared_ptr<ListObject>>(xs, "doConcat ")->arr)
+                    newres.push_back(std::move(x));
+            }
+            result = std::move(newres);
+            decltype(dropped_result) dropped_newres;
+            for (auto &xs: dropped_result) {
+                for (auto &x: smart_any_cast<std::shared_ptr<ListObject>>(xs, "doConcat ")->arr)
+                    dropped_newres.push_back(std::move(x));
+            }
+            dropped_result = std::move(dropped_newres);
+        }
+        auto list = std::make_shared<ListObject>();
+        list->arr = std::move(result);
+        set_output("list", std::move(list));
+        auto dropped_list = std::make_shared<ListObject>();
+        dropped_list->arr = std::move(dropped_result);
+        set_output("droppedList", std::move(dropped_list));
+    }
+};
+
+ZENDEFNODE(EndForEach, {
+    {"object", {"bool", "accept", "1"}, "FOR"},
+    {"list", "droppedList"},
+    {{"bool", "doConcat", "0"}},
+    {"control"},
+});
+
 
 struct BeginSubstep : IBeginFor {
     float m_total = 0;

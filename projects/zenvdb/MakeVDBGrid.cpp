@@ -8,7 +8,8 @@ namespace zeno {
 
 struct MakeVDBGrid : zeno::INode {
   virtual void apply() override {
-    auto dx = std::get<float>(get_param("dx"));
+    //auto dx = std::get<float>(get_param("dx"));
+    float dx=0.08f;
     if(has_input("Dx"))
     {
       dx = get_input("Dx")->as<NumericObject>()->get<float>();
@@ -57,16 +58,40 @@ struct MakeVDBGrid : zeno::INode {
 };
 
 static int defMakeVDBGrid = zeno::defNodeClass<MakeVDBGrid>(
-    "MakeVDBGrid", {/* inputs: */ {{"float","Dx"},}, /* outputs: */
+    "MakeVDBGrid", {/* inputs: */ {{"float","Dx","0.08"},}, /* outputs: */
                     {
                         "data",
                     },
                     /* params: */
                     {
-                        {"float", "dx", "0.08"},
-                        {"string", "type", "float"},
+                        //{"float", "dx", "0.08"},
+                        {"enum float float3 int int3 points", "type", "float"},
                         {"enum vertex Centered Staggered", "structure", "Centered"},
-                        {"string", "name", "Rename!"},
+                        {"string", "name", ""},
+                    },
+                    /* category: */
+                    {
+                        "openvdb",
+                    }});
+
+struct SetVDBGridName : zeno::INode {
+    virtual void apply() override {
+        auto grid = get_input<VDBGrid>("grid");
+        auto name = get_param<std::string>("name");
+        grid->setName(name);
+        set_output("grid", std::move(grid));
+    }
+};
+
+static int defSetVDBGridName = zeno::defNodeClass<SetVDBGridName>(
+    "SetVDBGridName", {/* inputs: */ {}, /* outputs: */
+                    {
+                        "grid",
+                    },
+                    /* params: */
+                    {
+                        //{"float", "dx", "0.08"},
+                        {"string", "name", "density"},
                     },
                     /* category: */
                     {

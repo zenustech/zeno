@@ -1,13 +1,8 @@
 #include <zeno/zeno.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/utils/random.h>
 
 namespace {
-
-#ifdef _MSC_VER
-static inline double drand48() {
-	return rand() / (double)RAND_MAX;
-}
-#endif
 
 using namespace zeno;
 
@@ -37,8 +32,33 @@ struct MakeOrthonormalBase : INode {
 };
 
 ZENDEFNODE(MakeOrthonormalBase, {
-    {{"vec3f", "normal"}, {"vec3f", "tangent"}},
-    {{"vec3f", "normal"}, "tangent", {"vec3f", "bitangent"}},
+    {{"vec3f", "normal", "0,0,1"}, {"vec3f", "tangent", "0,1,0"}},
+    {{"vec3f", "normal"}, {"vec3f", "tangent"}, {"vec3f", "bitangent"}},
+    {},
+    {"math"},
+});
+
+
+struct AABBCollideDetect : INode {
+    virtual void apply() override {
+        auto bminA = get_input<NumericObject>("bminA")->get<vec3f>();
+        auto bmaxA = get_input<NumericObject>("bmaxA")->get<vec3f>();
+        auto bminB = get_input<NumericObject>("bminB")->get<vec3f>();
+        auto bmaxB = get_input<NumericObject>("bmaxB")->get<vec3f>();
+
+        // https://www.cnblogs.com/liez/p/11965027.html
+        bool overlap = alltrue(abs(bminA + bmaxA - bminB - bmaxB) <= (bmaxA - bminA + bmaxB - bminB));
+        set_output2("overlap", overlap);
+        bool AinsideB = alltrue(bminA >= bminB && bmaxA <= bmaxB);
+        set_output2("AinsideB", AinsideB);
+        bool BinsideA = alltrue(bminA <= bminB && bmaxA >= bmaxB);
+        set_output2("BinsideA", BinsideA);
+    }
+};
+
+ZENDEFNODE(AABBCollideDetect, {
+    {{"vec3f", "bminA"}, {"vec3f", "bmaxA"}, {"vec3f", "bminB"}, {"vec3f", "bmaxB"}},
+    {{"bool", "overlap"}, {"bool", "AinsideB"}, {"bool", "BinsideA"}},
     {},
     {"math"},
 });
@@ -67,9 +87,9 @@ struct UnpackNumericVec : INode {
 };
 
 ZENDEFNODE(UnpackNumericVec, {
-    {{"NumericObject", "vec"}},
-    {{"NumericObject", "X"}, {"NumericObject", "Y"},
-     {"NumericObject", "Z"}, {"NumericObject", "W"}},
+    {{"vec3f", "vec"}},
+    {{"float", "X"}, {"float", "Y"},
+     {"float", "Z"}, {"float", "W"}},
     {},
     {"numeric"},
 }); // TODO: add PackNumericVec too.
@@ -79,14 +99,23 @@ struct NumericRandom : INode {
     virtual void apply() override {
         auto value = std::make_shared<NumericObject>();
         auto dim = get_param<int>("dim");
+        auto symmetric = get_param<bool>("symmetric");
+        auto scale = has_input("scale") ?
+            get_input<NumericObject>("scale")->get<float>()
+            : 1.0f;
+        float offs = 0.0f;
+        if (symmetric) {
+            offs = -scale;
+            scale *= 2.0f;
+        }
         if (dim == 1) {
-            value->set(float(drand48()));
+            value->set(offs + scale * float(frand()));
         } else if (dim == 2) {
-            value->set(zeno::vec2f(drand48(), drand48()));
+            value->set(offs + scale * zeno::vec2f(frand(), frand()));
         } else if (dim == 3) {
-            value->set(zeno::vec3f(drand48(), drand48(), drand48()));
+            value->set(offs + scale * zeno::vec3f(frand(), frand(), frand()));
         } else if (dim == 4) {
-            value->set(zeno::vec4f(drand48(), drand48(), drand48(), drand48()));
+            value->set(offs + scale * zeno::vec4f(frand(), frand(), frand(), frand()));
         } else {
             printf("invalid dim for NumericRandom: %d\n", dim);
         }
@@ -95,9 +124,29 @@ struct NumericRandom : INode {
 };
 
 ZENDEFNODE(NumericRandom, {
-    {},
+    {{"float", "scale", "1"}},
     {{"NumericObject", "value"}},
-    {{"int", "dim", "1"}},
+    {{"int", "dim", "1"}, {"bool", "symmetric", "0"}},
+    {"numeric"},
+});
+
+
+struct SetRandomSeed : INode {
+    virtual void apply() override {
+        auto seed = get_input<NumericObject>("seed")->get<int>();
+        sfrand(seed);
+        if (has_input2("routeIn")) {
+            set_output2("routeOut", get_input2("routeIn"));
+        } else {
+            set_output2("routeOut", std::make_shared<NumericObject>(seed));
+        }
+    }
+};
+
+ZENDEFNODE(SetRandomSeed, {
+    {"routeIn", {"int", "seed", "0"}},
+    {"routeOut"},
+    {},
     {"numeric"},
 });
 
