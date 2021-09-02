@@ -4,6 +4,7 @@
 if(COMMAND cmake_minimum_required)
    cmake_minimum_required(VERSION 2.4)
 endif(COMMAND cmake_minimum_required)
+include_directories(SuperLU/SRC)
 
 if(COMMAND cmake_policy)
 	if(POLICY CMP0003)

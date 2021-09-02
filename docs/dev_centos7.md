@@ -126,6 +126,9 @@ cmake ..
 make -j8
 sudo make install
 cd ../..
+
+# (Optional) Install LIBIGL dependencies:
+sudo yum -y install gmp-devel mpfr-devel
 ```
 
 ## Build ZENO
