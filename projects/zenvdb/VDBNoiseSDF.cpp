@@ -68,9 +68,9 @@ static float grad(int hash, float x, float y, float z) {
 }
 
 static float perlin(float x, float y, float z) {
-    x = fmodf(x, 256.f);
-    y = fmodf(y, 256.f);
-    z = fmodf(z, 256.f);
+    x = fmodf(x + 1024.f, 256.f);
+    y = fmodf(y + 1024.f, 256.f);
+    z = fmodf(z + 1024.f, 256.f);
     int xi = (int)x & 255;
     int yi = (int)y & 255;
     int zi = (int)z & 255;
@@ -105,37 +105,25 @@ static float perlin(float x, float y, float z) {
     return mix (y1, y2, w);
 }
 
-struct VDBAdvectPerlinNoise : INode {
+struct VDBAddPerlinNoise : INode {
   virtual void apply() override {
     auto inoutSDF = get_input<VDBFloatGrid>("inoutSDF");
     auto strength = get_input<NumericObject>("strength")->get<float>();
     auto inv_scale = 1.0f / get_input<NumericObject>("scale")->get<float>();
-    auto thick_factor = 1.0f / get_input<NumericObject>("thick_factor")->get<float>();
 
     auto grid = inoutSDF->m_grid;
-    auto oldgrid = grid->deepCopy();
+    float dx = grid->voxelSize()[0];
+    strength *= dx;
 
-    auto axr = oldgrid->getConstAccessor();
     auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
         for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
             auto coord = iter.getCoord();
             auto pos = vec3i(coord[0], coord[1], coord[2]) * inv_scale;
             auto noise = strength * perlin(pos[0], pos[1], pos[2]);
 
-            auto c0 = axr.getValue(coord);
-            auto px = axr.getValue({coord[0] + 1, coord[1], coord[2]});
-            auto nx = axr.getValue({coord[0] - 1, coord[1], coord[2]});
-            auto py = axr.getValue({coord[0], coord[1] + 1, coord[2]});
-            auto ny = axr.getValue({coord[0], coord[1] - 1, coord[2]});
-            auto pz = axr.getValue({coord[0], coord[1], coord[2] + 1});
-            auto nz = axr.getValue({coord[0], coord[1], coord[2] - 1});
-            vec3f gradient(px - nx, py - ny, pz - nz);
-            gradient *= strength / (length(gradient) + fabsf(c0) * thick_factor);
-
-            auto newcoord = vec3f(coord[0], coord[1], coord[2]) - gradient;
-            auto value = openvdb::tools::BoxSampler::sample(oldgrid->tree(),
-                    vec_to_other<openvdb::Vec3R>(newcoord));
-            iter.setValue(value);
+            iter.modifyValue([&] (auto &v) {
+                v += noise;
+            });
         }
     };
     auto velman = openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>>(grid->tree());
@@ -145,12 +133,11 @@ struct VDBAdvectPerlinNoise : INode {
   }
 };
 
-ZENO_DEFNODE(VDBAdvectPerlinNoise)(
+ZENO_DEFNODE(VDBAddPerlinNoise)(
      { /* inputs: */ {
      "inoutSDF",
-     {"float", "strength", "0.01"},
-     {"float", "thick_factor", "0.1"},
-     {"float", "scale", "8"},
+     {"float", "strength", "1.0"},
+     {"float", "scale", "8.0"},
      }, /* outputs: */ {
        "inoutSDF",
      }, /* params: */ {
