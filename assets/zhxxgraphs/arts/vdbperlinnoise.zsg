@@ -2,37 +2,6 @@
  "graph": {
   "main": {
    "nodes": {
-    "ba067165-VDBAddPerlinNoise": {
-     "name": "VDBAddPerlinNoise",
-     "inputs": {
-      "inoutSDF": [
-       "61bb3a53-PrimitiveToSDF",
-       "sdf",
-       null
-      ],
-      "strength": [
-       null,
-       null,
-       0.0001
-      ],
-      "scale": [
-       null,
-       null,
-       8.0
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      44.41913439635535,
-      146.9248291571754
-     ],
-     "options": []
-    },
     "61bb3a53-PrimitiveToSDF": {
      "name": "PrimitiveToSDF",
      "inputs": {
@@ -44,7 +13,7 @@
       "Dx": [
        null,
        null,
-       0.04
+       0.02
       ],
       "SRC": [
        null,
@@ -86,7 +55,7 @@
      "name": "SDFToPoly",
      "inputs": {
       "SDF": [
-       "ba067165-VDBAddPerlinNoise",
+       "fa2d491d-VDBAdvectPerlinNoise",
        "inoutSDF",
        null
       ],
@@ -105,9 +74,7 @@
       319.13439635535303,
       154.44191343963547
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "d24389f8-PrimitiveCalcNormal": {
      "name": "PrimitiveCalcNormal",
@@ -128,12 +95,45 @@
       606.8337129840546,
       179.498861047836
      ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "fa2d491d-VDBAdvectPerlinNoise": {
+     "name": "VDBAdvectPerlinNoise",
+     "inputs": {
+      "inoutSDF": [
+       "61bb3a53-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "strength": [
+       null,
+       null,
+       0.005
+      ],
+      "scale": [
+       null,
+       null,
+       16.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -13.667425968109342,
+      184.05466970387243
+     ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -197.81321184509875,
-    "y": 17.949886104782976,
+    "x": -375.4897494305206,
+    "y": 41.640091116172854,
     "width": 400.0,
     "height": 400.0
    }
@@ -6537,7 +6537,7 @@
     "numeric"
    ]
   },
-  "VDBAddPerlinNoise": {
+  "VDBAdvectPerlinNoise": {
    "inputs": [
     [
      "",

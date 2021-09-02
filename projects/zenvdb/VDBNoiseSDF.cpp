@@ -110,6 +110,7 @@ struct VDBAdvectPerlinNoise : INode {
     auto inoutSDF = get_input<VDBFloatGrid>("inoutSDF");
     auto strength = get_input<NumericObject>("strength")->get<float>();
     auto inv_scale = 1.0f / get_input<NumericObject>("scale")->get<float>();
+    auto thick_factor = 1.0f / get_input<NumericObject>("thick_factor")->get<float>();
 
     auto grid = inoutSDF->m_grid;
     auto oldgrid = grid->deepCopy();
@@ -121,6 +122,7 @@ struct VDBAdvectPerlinNoise : INode {
             auto pos = vec3i(coord[0], coord[1], coord[2]) * inv_scale;
             auto noise = strength * perlin(pos[0], pos[1], pos[2]);
 
+            auto c0 = axr.getValue(coord);
             auto px = axr.getValue({coord[0] + 1, coord[1], coord[2]});
             auto nx = axr.getValue({coord[0] - 1, coord[1], coord[2]});
             auto py = axr.getValue({coord[0], coord[1] + 1, coord[2]});
@@ -128,10 +130,9 @@ struct VDBAdvectPerlinNoise : INode {
             auto pz = axr.getValue({coord[0], coord[1], coord[2] + 1});
             auto nz = axr.getValue({coord[0], coord[1], coord[2] - 1});
             vec3f gradient(px - nx, py - ny, pz - nz);
-            gradient = normalize(gradient);
+            gradient *= strength / (length(gradient) + fabsf(c0) * thick_factor);
 
-
-            auto newcoord = vec3f(coord[0], coord[1], coord[2]) - noise * gradient;
+            auto newcoord = vec3f(coord[0], coord[1], coord[2]) - gradient;
             auto value = openvdb::tools::BoxSampler::sample(oldgrid->tree(),
                     vec_to_other<openvdb::Vec3R>(newcoord));
             iter.setValue(value);
@@ -148,6 +149,7 @@ ZENO_DEFNODE(VDBAdvectPerlinNoise)(
      { /* inputs: */ {
      "inoutSDF",
      {"float", "strength", "0.01"},
+     {"float", "thick_factor", "0.1"},
      {"float", "scale", "8"},
      }, /* outputs: */ {
        "inoutSDF",
