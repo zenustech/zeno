@@ -2,41 +2,13 @@
  "graph": {
   "main": {
    "nodes": {
-    "61bb3a53-PrimitiveToSDF": {
-     "name": "PrimitiveToSDF",
-     "inputs": {
-      "PrimitiveMesh": [
-       "294ee8ca-ReadObjPrimitive",
-       "prim",
-       null
-      ],
-      "Dx": [
-       null,
-       null,
-       0.01
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "type": "vertex"
-     },
-     "uipos": [
-      -291.100227790433,
-      137.93621867881546
-     ],
-     "options": []
-    },
-    "294ee8ca-ReadObjPrimitive": {
-     "name": "ReadObjPrimitive",
+    "01fb0622-ImportObjPrimitive": {
+     "name": "ImportObjPrimitive",
      "inputs": {
       "path": [
        null,
        null,
-       "/home/bate/Codes/zeno-blender/external/zeno/assets/monkey.obj"
+       "assets/monkey.obj"
       ],
       "SRC": [
        null,
@@ -46,17 +18,48 @@
      },
      "params": {},
      "uipos": [
-      -571.5922551252846,
-      193.33485193621868
+      -370.8531733621007,
+      -516.7955611056551
      ],
      "options": []
     },
-    "a6c4f5c2-SDFToPoly": {
-     "name": "SDFToPoly",
+    "3a6cce3e-PrimitiveSplitEdges": {
+     "name": "PrimitiveSplitEdges",
      "inputs": {
-      "SDF": [
-       "f332637a-x",
-       "inoutSDF",
+      "prim": [
+       "d99edf6d-BeginForEach",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1008.8783024389484,
+      408.4699127845922
+     ],
+     "options": []
+    },
+    "a64d8918-VoronoiFracture": {
+     "name": "VoronoiFracture",
+     "inputs": {
+      "particlesPrim": [
+       null,
+       null,
+       null
+      ],
+      "bboxMin": [
+       "2e067de3-NumericVec3",
+       "vec3",
+       null
+      ],
+      "bboxMax": [
+       "3b7c7c89-x",
+       "vec3",
        null
       ],
       "SRC": [
@@ -66,22 +69,82 @@
       ]
      },
      "params": {
-      "isoValue": 0.0,
-      "adaptivity": 0.0,
-      "allowQuads": false
+      "triangulate": true,
+      "numRandPoints": 256,
+      "periodicX": false,
+      "periodicY": false,
+      "periodicZ": false
      },
      "uipos": [
-      1653.701594533029,
-      170.9567198177676
+      199.18875990888364,
+      357.0354441913437
      ],
      "options": []
     },
-    "d24389f8-PrimitiveCalcNormal": {
-     "name": "PrimitiveCalcNormal",
+    "36409052-Make3DGridPrimitive": {
+     "name": "Make3DGridPrimitive",
      "inputs": {
-      "prim": [
-       "a6c4f5c2-SDFToPoly",
-       "Mesh",
+      "nx": [
+       null,
+       null,
+       4
+      ],
+      "ny": [
+       null,
+       null,
+       0
+      ],
+      "nz": [
+       null,
+       null,
+       0
+      ],
+      "sizeX": [
+       null,
+       null,
+       null
+      ],
+      "sizeY": [
+       null,
+       null,
+       null
+      ],
+      "sizeZ": [
+       null,
+       null,
+       null
+      ],
+      "scale": [
+       null,
+       null,
+       1.0
+      ],
+      "origin": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "isCentered": false
+     },
+     "uipos": [
+      -659.0268063781314,
+      145.4966378132126
+     ],
+     "options": []
+    },
+    "d99edf6d-BeginForEach": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "7c0dc416-ExtendList",
+       "list1",
        null
       ],
       "SRC": [
@@ -92,30 +155,736 @@
      },
      "params": {},
      "uipos": [
-      1941.400911161731,
-      196.01366742596812
+      715.4657676537579,
+      405.15877904327976
+     ],
+     "options": []
+    },
+    "dfe92b3b-PrimitiveRandomAttr": {
+     "name": "PrimitiveRandomAttr",
+     "inputs": {
+      "prim": [
+       "36409052-Make3DGridPrimitive",
+       "prim",
+       null
+      ],
+      "min": [
+       null,
+       null,
+       -1.0
+      ],
+      "max": [
+       null,
+       null,
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrName": "pos",
+      "attrType": ""
+     },
+     "uipos": [
+      -310.09239179954386,
+      164.16656036446534
+     ],
+     "options": []
+    },
+    "5085491a-EndFor": {
+     "name": "EndFor",
+     "inputs": {
+      "FOR": [
+       "d99edf6d-BeginForEach",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       "fdda4137-PrimitiveCalcNormal",
+       "prim",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1568.1661958997709,
+      437.77749430523875
+     ],
+     "options": []
+    },
+    "fdda4137-PrimitiveCalcNormal": {
+     "name": "PrimitiveCalcNormal",
+     "inputs": {
+      "prim": [
+       "3a6cce3e-PrimitiveSplitEdges",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1278.0849567198172,
+      431.6185658314348
+     ],
+     "options": []
+    },
+    "7c0dc416-ExtendList": {
+     "name": "ExtendList",
+     "inputs": {
+      "list1": [
+       null,
+       null,
+       null
+      ],
+      "list2": [
+       "a64d8918-VoronoiFracture",
+       "boundaryPrimList",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      453.87225512528425,
+      456.01822323462375
+     ],
+     "options": []
+    },
+    "9bfe0a6b-x": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/Pig_Head.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -385.0671526195894,
+      -333.94952164009
+     ],
+     "options": []
+    },
+    "988e56b1-PrimitiveBooleanOp": {
+     "name": "PrimitiveBooleanOp",
+     "inputs": {
+      "primA": [
+       "01fb0622-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "primB": [
+       "9bfe0a6b-x",
+       "prim",
+       null
+      ],
+      "faceAttrA": [
+       null,
+       null,
+       null
+      ],
+      "faceAttrB": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "Union",
+      "faceAttrName": "",
+      "calcAnyFrom": true,
+      "doMeshFix": true
+     },
+     "uipos": [
+      785.9071708428226,
+      -603.4395261958982
+     ],
+     "options": []
+    },
+    "2e067de3-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": -1.0,
+      "y": -1.0,
+      "z": -1.0
+     },
+     "uipos": [
+      -81.93306241457837,
+      452.370077448746
+     ],
+     "options": []
+    },
+    "3b7c7c89-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 1.0,
+      "y": 1.0,
+      "z": 1.0
+     },
+     "uipos": [
+      -67.98426970387229,
+      678.4692774487454
+     ],
+     "options": []
+    },
+    "1673dd60-PrimitiveBoundingBox": {
+     "name": "PrimitiveBoundingBox",
+     "inputs": {
+      "prim": [
+       "b7c13f2e-x",
+       "primFixed",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "exWidth": 0.01
+     },
+     "uipos": [
+      7.510888382687909,
+      20.1184510250569
+     ],
+     "options": []
+    },
+    "de4636a2-x": {
+     "name": "VoronoiFracture",
+     "inputs": {
+      "particlesPrim": [
+       null,
+       null,
+       null
+      ],
+      "bboxMin": [
+       "1673dd60-PrimitiveBoundingBox",
+       "bmin",
+       null
+      ],
+      "bboxMax": [
+       "1673dd60-PrimitiveBoundingBox",
+       "bmax",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "triangulate": true,
+      "numRandPoints": 16,
+      "periodicX": false,
+      "periodicY": false,
+      "periodicZ": false
+     },
+     "uipos": [
+      283.267790432801,
+      -57.94113895216384
+     ],
+     "options": []
+    },
+    "c2c1a4c8-x": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/monkey.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -562.1148546016846,
+      -97.7328134336948
+     ],
+     "options": []
+    },
+    "0a22692b-PrimitiveListBoolOp": {
+     "name": "PrimitiveListBoolOp",
+     "inputs": {
+      "primA": [
+       "b7c13f2e-x",
+       "primFixed",
+       null
+      ],
+      "primListB": [
+       "9a7347c7-x",
+       "list1",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "Intersect",
+      "faceAttrName": "",
+      "assignAttrs": true,
+      "calcAnyFrom": true,
+      "doMeshFix": true
+     },
+     "uipos": [
+      785.5068846542995,
+      23.908715471306834
+     ],
+     "options": []
+    },
+    "9a7347c7-x": {
+     "name": "ExtendList",
+     "inputs": {
+      "list1": [
+       null,
+       null,
+       null
+      ],
+      "list2": [
+       "de4636a2-x",
+       "boundaryPrimList",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      532.2210065645497,
+      103.54330979000383
+     ],
+     "options": []
+    },
+    "b7c13f2e-x": {
+     "name": "PrimitiveMeshingFix",
+     "inputs": {
+      "prim": [
+       "c2c1a4c8-x",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -294.0825572276773,
+      -77.11001008252708
+     ],
+     "options": []
+    },
+    "037d6094-ListGetItem": {
+     "name": "ListGetItem",
+     "inputs": {
+      "list": [
+       "9a7347c7-x",
+       "list1",
+       null
+      ],
+      "index": [
+       null,
+       null,
+       0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      850.8763553530721,
+      -246.78633257403106
+     ],
+     "options": []
+    },
+    "dc29bf8e-x": {
+     "name": "PrimitiveBooleanOp",
+     "inputs": {
+      "primA": [
+       "57e73511-x",
+       "primFixed",
+       null
+      ],
+      "primB": [
+       "b7c13f2e-x",
+       "primFixed",
+       null
+      ],
+      "faceAttrA": [
+       null,
+       null,
+       null
+      ],
+      "faceAttrB": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "Union",
+      "faceAttrName": "",
+      "calcAnyFrom": true,
+      "doMeshFix": true
+     },
+     "uipos": [
+      1403.9996355353026,
+      -374.2031890660578
+     ],
+     "options": []
+    },
+    "57e73511-x": {
+     "name": "PrimitiveMeshingFix",
+     "inputs": {
+      "prim": [
+       "037d6094-ListGetItem",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1138.7043280182186,
+      -218.62050113895128
+     ],
+     "options": []
+    },
+    "125d6270-ResizeList": {
+     "name": "ResizeList",
+     "inputs": {
+      "list": [
+       "dce6562e-Clone",
+       "newObject",
+       null
+      ],
+      "newSize": [
+       "446ab04d-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1742.95529840546,
+      110.08816400911121
+     ],
+     "options": []
+    },
+    "45b46b12-GetFrameNum": {
+     "name": "GetFrameNum",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1981.5869521640004,
+      43.348555808655874
+     ],
+     "options": []
+    },
+    "dce6562e-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "ac980cde-CachedOnce",
+       "output",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1468.915170842818,
+      90.13066059225474
+     ],
+     "options": []
+    },
+    "446ab04d-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "45b46b12-GetFrameNum",
+       "FrameNum",
+       null
+      ],
+      "rhs": [
+       "007f4146-ListLength",
+       "length",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "min"
+     },
+     "uipos": [
+      2243.609658314341,
+      69.74396355353042
+     ],
+     "options": []
+    },
+    "007f4146-ListLength": {
+     "name": "ListLength",
+     "inputs": {
+      "list": [
+       "ac980cde-CachedOnce",
+       "output",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1985.0205011389437,
+      202.79398633257324
+     ],
+     "options": []
+    },
+    "ac980cde-CachedOnce": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1167.4066514806332,
+      109.44437357630935
+     ],
+     "options": []
+    },
+    "005d38b8-VoronoiFracture": {
+     "name": "VoronoiFracture",
+     "inputs": {
+      "particlesPrim": [
+       null,
+       null,
+       null
+      ],
+      "bboxMin": [
+       null,
+       null,
+       null
+      ],
+      "bboxMax": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "triangulate": true,
+      "numRandPoints": 256,
+      "periodicX": false,
+      "periodicY": false,
+      "periodicZ": false
+     },
+     "uipos": [
+      471.52619589977013,
+      -727.1981776765344
+     ],
+     "options": []
+    },
+    "2b542f84-x": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/monkey.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2624.619589977209,
+      -239.32574031890553
+     ],
+     "options": []
+    },
+    "f722ebdb-PrimitiveVoronoi": {
+     "name": "PrimitiveVoronoi",
+     "inputs": {
+      "prim": [
+       "2b542f84-x",
+       "prim",
+       null
+      ],
+      "particlesPrim": [
+       null,
+       null,
+       null
+      ],
+      "numParticles": [
+       null,
+       null,
+       64
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2325.986667881538,
+      -255.6324154897482
+     ],
+     "options": []
+    },
+    "b3bc2e60-BeginForEach": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "3caff849-ExtendList",
+       "list1",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1797.7579589977147,
+      -204.2626332574023
+     ],
+     "options": []
+    },
+    "1532b159-EndFor": {
+     "name": "EndFor",
+     "inputs": {
+      "FOR": [
+       "b3bc2e60-BeginForEach",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       "2f4e0244-x",
+       "prim",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1205.4502779043216,
+      -160.15963553530676
      ],
      "options": [
       "VIEW"
      ]
     },
-    "73424ad3-VDBAddPerlinNoise": {
-     "name": "VDBAddPerlinNoise",
+    "58b28155-NumericRandom": {
+     "name": "NumericRandom",
      "inputs": {
-      "inoutSDF": [
-       "61bb3a53-PrimitiveToSDF",
-       "sdf",
-       null
-      ],
-      "strength": [
-       null,
-       null,
-       0.8
-      ],
       "scale": [
        null,
        null,
-       8.0
+       1.0
       ],
       "SRC": [
        null,
@@ -123,50 +892,27 @@
        null
       ]
      },
-     "params": {},
-     "uipos": [
-      -18.22323462414579,
-      181.3211845102506
-     ],
-     "options": []
-    },
-    "0ec55b10-x": {
-     "name": "VDBAddPerlinNoise",
-     "inputs": {
-      "inoutSDF": [
-       "7aad46e3-VDBRenormalizeSDF",
-       "inoutSDF",
-       null
-      ],
-      "strength": [
-       null,
-       null,
-       0.4
-      ],
-      "scale": [
-       null,
-       null,
-       4.0
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
+     "params": {
+      "dim": 3,
+      "symmetric": false
      },
-     "params": {},
      "uipos": [
-      509.851936218679,
-      179.78359908883834
+      -1526.6215945330234,
+      41.326651480637636
      ],
      "options": []
     },
-    "7aad46e3-VDBRenormalizeSDF": {
-     "name": "VDBRenormalizeSDF",
+    "2f4e0244-x": {
+     "name": "PrimitiveFillAttr",
      "inputs": {
-      "inoutSDF": [
-       "73424ad3-VDBAddPerlinNoise",
-       "inoutSDF",
+      "prim": [
+       "b3bc2e60-BeginForEach",
+       "object",
+       null
+      ],
+      "value": [
+       "58b28155-NumericRandom",
+       "value",
        null
       ],
       "SRC": [
@@ -176,58 +922,24 @@
       ]
      },
      "params": {
-      "method": "1oUpwind",
-      "iterations": 2,
-      "dilateIters": 0
+      "attrName": "clr",
+      "attrType": "float3"
      },
      "uipos": [
-      241.28701594533032,
-      169.3052391799544
+      -1537.5861503416786,
+      -233.91052391799437
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
-    "42f63612-x": {
-     "name": "VDBRenormalizeSDF",
+    "b33e8767-ListLength": {
+     "name": "ListLength",
      "inputs": {
-      "inoutSDF": [
-       "0ec55b10-x",
-       "inoutSDF",
-       null
-      ],
-      "SRC": [
+      "list": [
        null,
        null,
        null
-      ]
-     },
-     "params": {
-      "method": "1oUpwind",
-      "iterations": 2,
-      "dilateIters": 0
-     },
-     "uipos": [
-      765.4328018223234,
-      169.98861047835993
-     ],
-     "options": []
-    },
-    "71c3fcf4-x": {
-     "name": "VDBAddPerlinNoise",
-     "inputs": {
-      "inoutSDF": [
-       "42f63612-x",
-       "inoutSDF",
-       null
-      ],
-      "strength": [
-       null,
-       null,
-       0.2
-      ],
-      "scale": [
-       null,
-       null,
-       2.0
       ],
       "SRC": [
        null,
@@ -237,17 +949,17 @@
      },
      "params": {},
      "uipos": [
-      1023.9749430523916,
-      175.74031890660586
+      -2020.4289749430432,
+      54.72218678815466
      ],
      "options": []
     },
-    "f332637a-x": {
-     "name": "VDBRenormalizeSDF",
+    "d6537b3c-PrintNumeric": {
+     "name": "PrintNumeric",
      "inputs": {
-      "inoutSDF": [
-       "71c3fcf4-x",
-       "inoutSDF",
+      "value": [
+       "b33e8767-ListLength",
+       "length",
        null
       ],
       "SRC": [
@@ -257,22 +969,513 @@
       ]
      },
      "params": {
-      "method": "1oUpwind",
-      "iterations": 2,
-      "dilateIters": 0
+      "hint": "PrintNumeric"
      },
      "uipos": [
-      1312.3006833712984,
-      164.52164009111607
+      -1782.2265148063696,
+      74.03589977220923
+     ],
+     "options": []
+    },
+    "3caff849-ExtendList": {
+     "name": "ExtendList",
+     "inputs": {
+      "list1": [
+       "f722ebdb-PrimitiveVoronoi",
+       "interiorPrimList",
+       null
+      ],
+      "list2": [
+       "f722ebdb-PrimitiveVoronoi",
+       "boundaryPrimList",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2049.3566250569374,
+      -307.13095580865456
+     ],
+     "options": []
+    },
+    "38d789d4-ImportObjPrimitive": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/monkey.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2453.7085200911024,
+      -850.91069084282
+     ],
+     "options": []
+    },
+    "19cd45cd-x": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/Pig_Head.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2454.9875170842683,
+      -591.5318174031856
+     ],
+     "options": []
+    },
+    "e796c68d-PrimitiveBooleanOp": {
+     "name": "PrimitiveBooleanOp",
+     "inputs": {
+      "primA": [
+       "38d789d4-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "primB": [
+       "19cd45cd-x",
+       "prim",
+       null
+      ],
+      "faceAttrA": [
+       "f83fd099-NumericVec3",
+       "vec3",
+       null
+      ],
+      "faceAttrB": [
+       "1473fb90-x",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "Intersect",
+      "faceAttrName": "",
+      "calcAnyFrom": true,
+      "doMeshFix": true
+     },
+     "uipos": [
+      -2097.4863978132,
+      -808.2230932118405
+     ],
+     "options": []
+    },
+    "f83fd099-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 1.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -1842.099025056937,
+      -870.4046651480587
+     ],
+     "options": []
+    },
+    "1473fb90-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 1.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -1836.9487015945222,
+      -627.4810751708392
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -243.2232346241376,
-    "y": -21.810933940774618,
-    "width": 500.0,
-    "height": 500.0
+    "x": -2168.4673958815715,
+    "y": -451.1905592827741,
+    "width": 767.9999999999961,
+    "height": 588.7999999999951
+   }
+  },
+  "PrimitiveVoronoi": {
+   "nodes": {
+    "2b7dc5f4-x": {
+     "name": "PrimitiveBoundingBox",
+     "inputs": {
+      "prim": [
+       "1ed5aefc-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "exWidth": 0.01
+     },
+     "uipos": [
+      -1867.341099088833,
+      164.72292141230093
+     ],
+     "options": []
+    },
+    "27ec01f2-x": {
+     "name": "VoronoiFracture",
+     "inputs": {
+      "particlesPrim": [
+       "cab2770b-IfElse",
+       "result",
+       null
+      ],
+      "bboxMin": [
+       "2b7dc5f4-x",
+       "bmin",
+       null
+      ],
+      "bboxMax": [
+       "2b7dc5f4-x",
+       "bmax",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "triangulate": true,
+      "numRandPoints": 0,
+      "periodicX": false,
+      "periodicY": false,
+      "periodicZ": false
+     },
+     "uipos": [
+      -893.3175398633215,
+      92.63927107061551
+     ],
+     "options": []
+    },
+    "be03fe0a-x": {
+     "name": "PrimitiveListBoolOp",
+     "inputs": {
+      "primA": [
+       "1ed5aefc-SubInput",
+       "port",
+       null
+      ],
+      "primListB": [
+       "d29fd29d-ExtendList",
+       "list1",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "Intersect",
+      "faceAttrName": "",
+      "assignAttrs": true,
+      "calcAnyFrom": true,
+      "doMeshFix": true
+     },
+     "uipos": [
+      -350.2968397192718,
+      175.9377302776852
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "1ed5aefc-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "prim",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -2130.840689066059,
+      142.54342255125272
+     ],
+     "options": []
+    },
+    "a45b6b0d-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "particlesPrim",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -1430.2000284738044,
+      271.77890091116166
+     ],
+     "options": []
+    },
+    "46b6a05b-PrimitiveRandomAttr": {
+     "name": "PrimitiveRandomAttr",
+     "inputs": {
+      "prim": [
+       "efe8c6e3-MakePrimitive",
+       "prim",
+       null
+      ],
+      "min": [
+       "2b7dc5f4-x",
+       "bmin",
+       -1.0
+      ],
+      "max": [
+       "2b7dc5f4-x",
+       "bmax",
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrName": "pos",
+      "attrType": "float3"
+     },
+     "uipos": [
+      -1438.0410022779047,
+      -5.011389521640069
+     ],
+     "options": []
+    },
+    "cab2770b-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "a45b6b0d-x",
+       "port",
+       null
+      ],
+      "false": [
+       "46b6a05b-PrimitiveRandomAttr",
+       "prim",
+       null
+      ],
+      "cond": [
+       "a45b6b0d-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1134.396355353075,
+      118.45102505694763
+     ],
+     "options": []
+    },
+    "efe8c6e3-MakePrimitive": {
+     "name": "MakePrimitive",
+     "inputs": {
+      "size": [
+       "212cefad-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1695.358769931663,
+      -114.79214123006832
+     ],
+     "options": []
+    },
+    "212cefad-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "numParticles",
+      "type": "int",
+      "defl": "64"
+     },
+     "uipos": [
+      -1958.456719817768,
+      -219.66685649202745
+     ],
+     "options": []
+    },
+    "24385354-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "be03fe0a-x",
+       "primListAllFromB",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "interiorPrimList",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -75.1103359908883,
+      146.76110478359925
+     ],
+     "options": []
+    },
+    "f0192d87-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "cgmesh"
+     },
+     "uipos": [
+      -736.2186788154899,
+      494.76082004555815
+     ],
+     "options": []
+    },
+    "ef7f74e1-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "be03fe0a-x",
+       "primListAnyFromA",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "boundaryPrimList",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -72.37685079726634,
+      376.82944191343984
+     ],
+     "options": []
+    },
+    "d29fd29d-ExtendList": {
+     "name": "ExtendList",
+     "inputs": {
+      "list1": [
+       "27ec01f2-x",
+       "primList",
+       null
+      ],
+      "list2": [
+       "27ec01f2-x",
+       "boundaryPrimList",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -620.7289293849658,
+      243.4510250569476
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -1402.245871298337,
+    "y": -94.76437927108168,
+    "width": 781.25,
+    "height": 781.25
    }
   }
  },
@@ -5578,7 +6781,8 @@
    "params": [],
    "categories": [
     "cgmesh"
-   ]
+   ],
+   "is_subgraph": true
   },
   "PrintLiteral": {
    "inputs": [
@@ -5737,36 +6941,6 @@
    ],
    "categories": [
     "trimesh"
-   ]
-  },
-  "ReadObjPrimitive": {
-   "inputs": [
-    [
-     "readpath",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
    ]
   },
   "ReadParticles": {
@@ -6684,12 +7858,12 @@
     [
      "float",
      "strength",
-     "1.0"
+     "1"
     ],
     [
      "float",
      "scale",
-     "8.0"
+     "1"
     ],
     [
      "",
@@ -7067,36 +8241,6 @@
    ],
    "categories": [
     "trimesh"
-   ]
-  },
-  "WriteObjPrimitive": {
-   "inputs": [
-    [
-     "writepath",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
    ]
   },
   "WriteParticles": {
