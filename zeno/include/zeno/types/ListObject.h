@@ -10,7 +10,7 @@ namespace zeno {
 struct ListObject : IObjectClone<ListObject> {
   std::vector<zany> arr;
 
-  template <class T>
+  template <class T = std::shared_ptr<IObject>>
   auto get() {
       std::vector<T> res;
       for (auto const &val: arr) {
