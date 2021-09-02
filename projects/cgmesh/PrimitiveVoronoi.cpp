@@ -13,6 +13,6 @@ ZENDEFNODE(PrimitiveVoronoi, {
     {{"", "prim", ""}, {"", "particlesPrim", ""}, {"int", "numParticles", "64"}},
     {{"", "interiorPrimList", ""}, {"", "boundaryPrimList", ""}},
     {},
-    {"cgmeshtools"},
+    {"cgmesh"},
 });
 }
