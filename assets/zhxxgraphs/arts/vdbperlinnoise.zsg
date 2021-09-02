@@ -1,12 +1,72 @@
 {
  "graph": {
   "main": {
-   "nodes": {},
+   "nodes": {
+    "ba067165-VDBAddPerlinNoise": {
+     "name": "VDBAddPerlinNoise",
+     "inputs": {
+      "inoutSDF": [
+       "61bb3a53-PrimitiveToSDF",
+       "sdf",
+       null
+      ],
+      "strength": [
+       null,
+       null,
+       1.0
+      ],
+      "scale": [
+       null,
+       null,
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      44.41913439635535,
+      146.9248291571754
+     ],
+     "options": []
+    },
+    "61bb3a53-PrimitiveToSDF": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       null,
+       null,
+       null
+      ],
+      "Dx": [
+       null,
+       null,
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "vertex"
+     },
+     "uipos": [
+      -249.58542141230072,
+      151.03416856492026
+     ],
+     "options": []
+    }
+   },
    "view_rect": {
-    "x": 0.0,
-    "y": 0.0,
-    "width": 500.0,
-    "height": 500.0
+    "x": -157.65284738041024,
+    "y": 73.38861047835995,
+    "width": 256.0,
+    "height": 256.0
    }
   }
  },
@@ -5311,7 +5371,7 @@
    ],
    "params": [],
    "categories": [
-    "cgmeshtools"
+    "cgmesh"
    ]
   },
   "PrintLiteral": {

@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cstdio>
 
+namespace {
 
 static void readobj(
         std::vector<zeno::vec3f> &vertices,
@@ -51,7 +52,7 @@ static void readobj(
 }
 
 
-struct ImportObjPrimitive : zeno::INode {
+struct ReadObjPrimitive : zeno::INode {
     virtual void apply() override {
         auto path = get_input<zeno::StringObject>("path")->get();
         auto prim = std::make_shared<zeno::PrimitiveObject>();
@@ -60,6 +61,19 @@ struct ImportObjPrimitive : zeno::INode {
         prim->resize(pos.size());
         set_output("prim", std::move(prim));
     }
+};
+
+ZENDEFNODE(ReadObjPrimitive,
+        { /* inputs: */ {
+        {"readpath", "path"},
+        }, /* outputs: */ {
+        "prim",
+        }, /* params: */ {
+        }, /* category: */ {
+        "primitive",
+        }});
+
+struct ImportObjPrimitive : ReadObjPrimitive {
 };
 
 ZENDEFNODE(ImportObjPrimitive,
@@ -96,7 +110,26 @@ static void writeobj(
 }
 
 
-struct ExportObjPrimitive : zeno::INode {
+struct WriteObjPrimitive : zeno::INode {
+    virtual void apply() override {
+        auto path = get_input<zeno::StringObject>("path")->get();
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto &pos = prim->attr<zeno::vec3f>("pos");
+        writeobj(pos, prim->tris, path.c_str());
+    }
+};
+
+ZENDEFNODE(WriteObjPrimitive,
+        { /* inputs: */ {
+        {"writepath", "path"},
+        "prim",
+        }, /* outputs: */ {
+        }, /* params: */ {
+        }, /* category: */ {
+        "primitive",
+        }});
+
+struct ExportObjPrimitive : WriteObjPrimitive {
     virtual void apply() override {
         auto path = get_input<zeno::StringObject>("path")->get();
         auto prim = get_input<zeno::PrimitiveObject>("prim");
@@ -114,3 +147,5 @@ ZENDEFNODE(ExportObjPrimitive,
         }, /* category: */ {
         "primitive",
         }});
+
+}
