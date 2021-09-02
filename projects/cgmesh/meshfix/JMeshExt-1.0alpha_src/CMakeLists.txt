@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.6)
 project(libjmeshext)
 include_directories(JMeshLib-1.2/include)
+if (WIN32)
+include_directories(winhappy)
+endif()
 
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 

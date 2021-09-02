@@ -6,6 +6,9 @@
 
 # Required version
 cmake_minimum_required(VERSION 2.8.12)
+if (WIN32)
+include_directories(winhappy)
+endif()
 
 # Project Version	
 project(SuperLU NONE)
@@ -79,7 +82,7 @@ endif()
 # setup options
 option(enable_internal_blaslib  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
 option(enable_matlabmex "Build the Matlab mex library" OFF)
-option(enable_tests     "Build tests" ON)
+option(enable_tests     "Build tests" OFF)
 option(enable_doc       "Build doxygen documentation" OFF)
 option(enable_single    "Enable single precision library" ON)
 option(enable_double    "Enable double precision library" ON)
@@ -143,8 +146,8 @@ if(enable_matlabmex)
 endif()
 
 if(enable_tests)
-  enable_testing()
-  add_subdirectory(TESTING)
+	#enable_testing()
+	#add_subdirectory(TESTING)
 endif()
 
 if(enable_doc)
