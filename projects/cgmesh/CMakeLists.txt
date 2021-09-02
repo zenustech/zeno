@@ -23,15 +23,14 @@ if (ZENO_CGMESH_WITH_MESHFIX)
       set(CMAKE_CXX_LINK_FLAGS "-framework Accelerate")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
     endif()
-    target_link_libraries(
-        zeno_cgmesh PRIVATE
-      meshfix
-      jmesh
-      jmeshext
-      nl
-      superlu
-blas lapack
-      )
+    target_link_libraries(zeno_cgmesh PRIVATE meshfix jmesh jmeshext nl superlu)
+    if (UNIX)
+        target_link_libraries(zeno_cgmesh PRIVATE blas lapack)
+    else()
+        find_package(OpenBLAS CONFIG REQUIRED)
+        find_package(LAPACK CONFIG REQUIRED)
+        target_link_libraries(zeno_cgmesh PRIVATE OpenBLAS::OpenBLAS LAPACK::LAPACK)
+    endif()
 endif()
 
 option(ZENO_CGMESH_WITH_LIBIGL "Build with LIBIGL nodes" ON)

@@ -41,6 +41,7 @@ endif()
 
 
 add_library(meshfix STATIC meshfix.cpp)
+#[=[
 add_executable(meshfix-bin main.cpp)
 
 target_link_libraries(
@@ -53,7 +54,9 @@ target_link_libraries(
 openblas lapack
 )
 set_target_properties(meshfix-bin PROPERTIES OUTPUT_NAME meshfix)
+#]=]
 
+#[=[
 set(MESHFIX_WITH_LIBIGL OFF)
 
 if(MESHFIX_WITH_LIBIGL)
@@ -78,3 +81,4 @@ openblas lapack
 else()
   message(STATUS "NOT attempting libigl example")
 endif()
+#]=]
