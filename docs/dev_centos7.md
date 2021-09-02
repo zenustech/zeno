@@ -126,17 +126,6 @@ cmake ..
 make -j8
 sudo make install
 cd ../..
-
-# (Optional) Install LibIGL:
-git clone https://github.com/libigl/libigl.git --branch=v2.3.0
-cd libigl
-mkdir build
-cd build
-cmake .. -DLIBIGL_WITH_CGAL:BOOL=ON -DLIBIGL_BUILD_TESTS:BOOL=OFF -DLIBIGL_BUILD_TUTURIALS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release
-make -j8
-sudo make install
-sudo cp build/libigl_cgal.a /usr/local/lib/
-cd ../..
 ```
 
 ## Build ZENO
@@ -148,6 +137,11 @@ cmake --build build --parallel
 
 # (Optional) Enable OpenVDB support:
 cmake -B build -DEXTENSION_FastFLIP:BOOL=ON -DEXTENSION_zenvdb:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
+cmake --build build --parallel
+
+# (Optional) Enable LIBIGL support:
+git submodule update --init --recursive
+cmake -B build -DEXTENSION_cgmesh:BOOL=ON
 cmake --build build --parallel
 ```
 
