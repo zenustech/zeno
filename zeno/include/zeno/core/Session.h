@@ -63,6 +63,6 @@ struct Session {
     }
 };
 
-}
+ZENO_API Session &getSession();
 
 }

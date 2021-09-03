@@ -3,7 +3,7 @@
 #include <zeno/utils/defs.h>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/any.h>
-#include <zeno/utils/safe_dynamic_cast.h>
+#include <zeno/utils/Exception.h>
 #include <variant>
 #include <memory>
 #include <string>
@@ -94,7 +94,7 @@ protected:
         auto ret = std::make_shared<T>();
         if (!_implicit_cast_from_to(obj, ret)) {
             throw Exception("input socket `" + id + "` expect IObject of `"
-                typeid(T).name() + "`, got `" + typeid(*obj) + "` (get_input)";
+                + typeid(T).name() + "`, got `" + typeid(*obj).name() + "` (get_input)");
         }
         return ret;
     }
