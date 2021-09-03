@@ -151,6 +151,7 @@ struct generateAdaptiveGrid : zeno::INode{
         {
             h_coarse = get_input("Dx")->as<NumericObject>()->get<float>();
         }
+        
         // auto coarse_grid = openvdb::FloatGrid::create(float(0));
         auto coarse_grid = get_input("VDBGrid")->as<VDBFloatGrid>();
         

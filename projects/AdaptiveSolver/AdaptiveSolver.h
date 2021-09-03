@@ -41,16 +41,27 @@ namespace zeno{
             openvdb::FloatGrid::Ptr rhsGrid;
             std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
 
-            // mark the points based on level set
-            auto setzero = [&](const tbb::blocked_range<size_t> &r) {
+            for(int i=aig.hLevels.size() - 1;i >= 0;--i)
+            {
+                sdfgrid = aig.topoLevels[i];
+                velGrid = vel[i];
+                
+                pressGrid = press[i] = sdfgrid->deepCopy();
+                rhsGrid = rhs[i] = sdfgrid->deepCopy();
+                sdfgrid->tree().getNodes(leaves);
                 auto grid_axr{sdfgrid->getAccessor()};
                 auto vel_axr{velGrid->getAccessor()};
                 auto press_axr{pressGrid->getAccessor()};
                 auto rhs_axr{rhsGrid->getAccessor()};
 
-                // leaf iter
-                for (auto liter = r.begin(); liter != r.end(); ++liter) {
-                    auto &leaf = *leaves[liter];
+                #pragma omp parallel for
+                for(int ii= 0 ;ii < sdfgrid->tree().leafCount(); ++ii)
+                {
+                    openvdb::FloatGrid::TreeType::LeafIter iter = sdfgrid->tree().beginLeaf();
+                    for(int jj = 0;jj<ii;++jj)
+                        ++iter;
+                    
+                    openvdb::FloatGrid::TreeType::LeafNodeType& leaf = *iter;
                     for (auto offset = 0; offset < leaf.SIZE; ++offset) {
                         auto voxelwpos =
                             sdfgrid->indexToWorld(leaf.offsetToGlobalCoord(offset));
@@ -58,28 +69,29 @@ namespace zeno{
 
                         if(sdfgrid->tree().isValueOff(openvdb::Coord(voxelipos)))
                             continue;
-                        vel_axr.setValue(openvdb::Coord(voxelipos), openvdb::Vec3f(0,0,0));
+                        float sdfvalue = grid_axr.getValue(openvdb::Coord(voxelipos));
+                        
+                        vel_axr.setValue(openvdb::Coord(voxelipos), openvdb::Vec3f(0.0));
+                        
+                        press_axr.setValue(openvdb::Coord(voxelipos), 0);
+                        rhs_axr.setValue(openvdb::Coord(voxelipos), 0);
+                        auto velV = vel_axr.getValue(openvdb::Coord(voxelipos));
+                        //printf("sdf value is %f, vel value is (%f,%f,%f)\n", 
+                        //    sdfvalue, velV[0], velV[1], velV[2]);
                         for(int i=0;i<=1;++i)
                         for(int j=0;j<=1;++j)
                         for(int k=0;k<=1;++k)
                         {
-                            auto drift = voxelipos + openvdb::Vec3i(i,j,k);
+                            openvdb::Vec3i drift = voxelipos + openvdb::Vec3i(i,j,k);
+                            if(sdfgrid->tree().isValueOn(openvdb::Coord(drift)))
+                                continue;
+                            //printf("insert press and rhs in (%d,%d,%d)\n", drift[0], drift[1], drift[2]);
                             press_axr.setValue(openvdb::Coord(drift), 0);
                             rhs_axr.setValue(openvdb::Coord(drift), 0);
                         }
 
                     }
                 }
-            };
-            
-            for(int i=aig.hLevels.size() - 1;i >= 0;--i)
-            {
-                sdfgrid = aig.topoLevels[i];
-                velGrid = vel[i];
-                pressGrid = press[i];
-                rhsGrid = rhs[i];
-                sdfgrid->tree().getNodes(leaves);
-                tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), setzero);
                 leaves.clear();
             }
             
