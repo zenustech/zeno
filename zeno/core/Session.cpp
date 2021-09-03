@@ -73,6 +73,7 @@ ZENO_API Scene &Session::getDefaultScene() {
 ZENO_API std::string Session::dumpDescriptors() const {
   std::string res = "";
   for (auto const &[key, cls] : nodeClasses) {
+    if (key.size() && key[0] == '^') continue;  // skip internal overload nodes..
     res += "DESC@" + key + "@" + cls->desc->serialize() + "\n";
   }
   return res;
