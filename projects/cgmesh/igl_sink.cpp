@@ -1,4 +1,5 @@
 #include <igl/copyleft/cgal/mesh_boolean.h>
+//#include <igl/copyleft/cgal/trim_with_solid.h>
 #include <zeno/utils/Exception.h>
 #include "igl_sink.h"
 
@@ -40,6 +41,7 @@ void igl_mesh_boolean(
 
 }
 
+#if 0
 void igl_trim_with_sold(
     Eigen::MatrixXd const &VA,
     Eigen::MatrixXi const &FA,
@@ -53,5 +55,6 @@ void igl_trim_with_sold(
     igl::copyleft::cgal::trim_with_solid(VA, FA, FB, FB, VC, FC, D, J);
 
 }
+#endif
 
 }
