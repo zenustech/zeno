@@ -13,4 +13,8 @@ ZENO_API bool IObject::assign(IObject *other) {
     return false;
 }
 
+ZENO_API bool IObject::movefrom(IObject *other) {
+    return false;
+}
+
 }
