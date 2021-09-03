@@ -33,7 +33,7 @@ ZENO_API void Session::defOverloadNodeClass(
 ZENO_API std::unique_ptr<INode> Session::getOverloadNode(
         std::string const &name, std::vector<std::shared_ptr<IObject>> const &inputs) {
     std::string key = '^' + name;
-    for (auto const &obj: args) {
+    for (auto const &obj: inputs) {
         auto type = typeid(*obj).name();
         key += '^';
         key += type;
@@ -45,7 +45,7 @@ ZENO_API std::unique_ptr<INode> Session::getOverloadNode(
     auto const &cls = it->second;
     auto node = cls->new_instance();
 
-    for (int i = 0; i < args.size(); i++) {
+    for (int i = 0; i < inputs.size(); i++) {
         auto key = cls->desc.inputs.at(i).name;
         node->inputs[key] = std::move(inputs[i]);
     }

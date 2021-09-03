@@ -183,7 +183,7 @@ ZENDEFNODE(MakeList, {
 #ifdef ZENO_VISUALIZATION
 struct ToVisualize_ListObject : zeno::INode {
     virtual void apply() override {
-        auto list = get_input<ListObject>("overload_0");
+        auto list = get_input<ListObject>("list");
         auto path = get_param<std::string>("path");
         for (int i = 0; i < list->arr.size(); i++) {
             auto const &obj = list->arr[i];
@@ -199,7 +199,12 @@ struct ToVisualize_ListObject : zeno::INode {
     }
 };
 
-ZENO_DEFOVERLOADNODE(ToVisualize, _ListObject, typeid(ListObject).name())({});
+ZENO_DEFOVERLOADNODE(ToVisualize, _ListObject, typeid(ListObject).name())({
+        {"list"},
+        {},
+        {{"string", "path", ""}},
+        {"list"},
+});
 #endif
 
 }
