@@ -38,11 +38,12 @@ class CameraControl:
     def mouseMoveEvent(self, event):
         if not (event.buttons() & Qt.MiddleButton):
             return
+        ratio = QApplication.desktop().devicePixelRatio()
 
         x, y = event.x(), event.y()
         dx, dy = x - self.last_pos[0], y - self.last_pos[1]
-        dx /= self.res[0]
-        dy /= self.res[1]
+        dx *= ratio / self.res[0]
+        dy *= ratio / self.res[1]
 
         shift_pressed = bool(event.modifiers() & Qt.ShiftModifier)
 
