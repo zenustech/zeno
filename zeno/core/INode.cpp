@@ -104,7 +104,7 @@ ZENO_API void INode::coreApply() {
             : safe_at(outputs, desc->outputs[0].name, "output");
         if (auto p = silent_any_cast<std::shared_ptr<IObject>>(obj); p.has_value()) {
             auto path = Visualization::exportPath();
-            if (auto node = graph->scene->sess->getOverloadNode("ToVisualize", {p.value()}); node) {
+            if (auto node = graph->getOverloadNode("ToVisualize", {p.value()}); node) {
                 node->inputs["path:"] = path;
                 node->doApply();
             }

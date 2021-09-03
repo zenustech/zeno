@@ -25,8 +25,7 @@ void ISubgraphNode::apply() {
             auto path = zeno::Visualization::exportPath();
             if (auto p = zeno::silent_any_cast<
                     std::shared_ptr<zeno::IObject>>(obj); p.has_value()) {
-                auto node = graph->scene->sess->getOverloadNode("ToVisualize", {p.value()});
-                if (auto node = graph->scene->sess->getOverloadNode("ToVisualize", {p.value()}); node) {
+                if (auto node = graph->getOverloadNode("ToVisualize", {p.value()}); node) {
                     node->inputs["path:"] = path;
                     node->doApply();
                 }

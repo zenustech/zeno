@@ -190,7 +190,7 @@ struct ToVisualize_ListObject : zeno::INode {
             std::stringstream ss;
             ss << path << "." << i;
             if (auto o = silent_any_cast<std::shared_ptr<IObject>>(obj); o.has_value()) {
-                if (auto node = graph->scene->sess->getOverloadNode("ToVisualize", {o.value()}); node) {
+                if (auto node = graph->getOverloadNode("ToVisualize", {o.value()}); node) {
                     node->inputs["path:"] = ss.str();
                     node->doApply();
                 }

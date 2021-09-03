@@ -36,7 +36,7 @@ struct ToVisualize_PrimitiveShadeObject : zeno::INode {
         fs::copy_file(that->vertpath, path + ".zpm." + that->primtype + ".vert");
         fs::copy_file(that->fragpath, path + ".zpm." + that->primtype + ".frag");
 
-        if (auto node = graph->scene->sess->getOverloadNode("ToVisualize", {that}); node) {
+        if (auto node = graph->getOverloadNode("ToVisualize", {that}); node) {
             node->inputs["path:"] = path;
             node->doApply();
         }

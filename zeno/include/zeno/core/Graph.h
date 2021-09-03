@@ -57,6 +57,9 @@ struct Graph {
 
     ZENO_API UserData &getUserData();
 
+    ZENO_API std::unique_ptr<INode> getOverloadNode(std::string const &id,
+            std::vector<std::shared_ptr<IObject>> const &inputs) const;
+
     ZENO_API std::set<std::string> getGraphInputNames() const;
     ZENO_API std::set<std::string> getGraphOutputNames() const;
 
