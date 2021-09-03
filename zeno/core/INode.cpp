@@ -104,9 +104,9 @@ ZENO_API void INode::coreApply() {
             : safe_at(outputs, desc->outputs[0].name, "output");
         if (auto p = silent_any_cast<std::shared_ptr<IObject>>(obj); p.has_value()) {
             auto path = Visualization::exportPath();
-            UserData ud;
-            ud.get<std::string>("path") = path;
-            graph->scene->sess->callObjectMethod("dumpfile", ud, {p.value().get()});
+            auto node = graph->scene->sess->getOverloadNode("dumpfile", {p.value()});
+            node->inputs["path:"] = path;
+            node->apply();
         }
     }
 #endif

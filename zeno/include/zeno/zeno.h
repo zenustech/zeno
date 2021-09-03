@@ -76,10 +76,21 @@ auto defNodeClassHelper(F const &func, std::string const &name) {
         getSession().defNodeClass(func, name, desc);
         return 1;
     };
-};
+}
+
+template <class F>
+auto defOverloadNodeClassHelper(F const &func, std::string const &name, std::vector<std::string> const &types) {
+    return [=] (zeno::Descriptor const &desc) -> int {
+        getSession().defOverloadNodeClass(func, name, types, desc);
+        return 1;
+    };
+}
 
 #define ZENO_DEFNODE(Class) \
     static int def##Class = zeno::defNodeClassHelper(std::make_unique<Class>, #Class)
+
+#define ZENO_DEFOVERLOADNODE(Class, ...) \
+    static int def##Class = zeno::defOverloadNodeClassHelper(std::make_unique<Class>, #Class, {__VA_ARGS__})
 
 // [[deprecated("use ZENO_DEFNODE(T)(...)")]]
 #define ZENDEFNODE(Class, ...) \

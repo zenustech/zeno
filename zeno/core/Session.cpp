@@ -1,7 +1,9 @@
 #include <zeno/core/Session.h>
 #include <zeno/core/IObject.h>
 #include <zeno/core/Scene.h>
+#include <zeno/core/INode.h>
 #include <zeno/utils/safe_at.h>
+#include <sstream>
 
 namespace zeno {
 
@@ -12,29 +14,35 @@ ZENO_API void Session::defNodeClass(std::string const &id, std::unique_ptr<INode
     nodeClasses[id] = std::move(cls);
 }
 
-ZENO_API void Session::defObjectMethod(
-        std::string const &name,
-        Session::ObjectMethod const &func,
-        std::vector<std::string> const &types) {
-    std::string key = name;
+ZENO_API void Session::defOverloadNodeClass(
+        std::string const &id,
+        std::vector<std::string> const &types,
+        std::unique_ptr<INodeClass> &&cls) {
+    std::string key = '@' + id;
     for (auto const &type: types) {
         key += '@';
         key += type;
     }
-    objectMethods[key] = func;
+    defNodeClass(key, std::move(cls));
 }
 
-ZENO_API void Session::callObjectMethod(
-        std::string const &name, UserData &ud,
-        std::vector<IObject *> const &args) {
-    std::string key = name;
+ZENO_API std::unique_ptr<INode> Session::getOverloadNode(
+        std::string const &name, std::vector<std::shared_ptr<IObject>> const &args) {
+    std::string key = '@' + name;
     for (auto const &obj: args) {
         auto type = typeid(*obj).name();
         key += '@';
         key += type;
     }
-    auto meth = safe_at(objectMethods, key, "object method");
-    meth(ud, args);
+    auto cls = safe_at(nodeClasses, key, "object method");
+    auto node = cls->new_instance();
+
+    for (int i = 0; i < args.size(); i++) {
+        std::stringstream ss;
+        ss << "overload_" << i;
+        node->inputs[ss.str()] = std::move(args[i]);
+    }
+    return node;
 }
 
 ZENO_API INodeClass::INodeClass(Descriptor const &desc)

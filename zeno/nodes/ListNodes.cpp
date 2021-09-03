@@ -181,23 +181,25 @@ ZENDEFNODE(MakeList, {
 
 
 #ifdef ZENO_VISUALIZATION
-void dumpfile_ListObject(UserData &ud, std::vector<IObject *> const &args) {
-    auto list = static_cast<ListObject *>(args[0]);
-    auto path = ud.get<std::string>("path");
-    for (int i = 0; i < list->arr.size(); i++) {
-        auto const &obj = list->arr[i];
-        std::stringstream ss;
-        ss << path << "." << i;
-        if (auto o = silent_any_cast<std::shared_ptr<IObject>>(obj); o.has_value()) {
-            UserData ud;
-            ud.get<std::string>("path") = ss.str();
-            graph->scene->sess->callObjectMethod("dumpfile", ud, {o.value().get()});
+struct dumpfile_ListObject : zeno::INode {
+    virtual void apply() override {
+        auto list = get_input<ListObject>("overload_0");
+        auto path = get_param<std::string>("path");
+        for (int i = 0; i < list->arr.size(); i++) {
+            auto const &obj = list->arr[i];
+            std::stringstream ss;
+            ss << path << "." << i;
+            if (auto o = silent_any_cast<std::shared_ptr<IObject>>(obj); o.has_value()) {
+                auto node = graph->scene->sess->getOverloadNode("dumpfile", {o.value()});
+                node->inputs["path:"] = ss.str();
+                node->apply();
+            }
         }
     }
-}
+};
 
-static int def_dumpfile_ListObject = defObjectMethod(
-        "dumpfile", dumpfile_ListObject, {typeid(ListObject).name()});
+static int defdumpfile_ListObject = defOverloadNodeClass(std::make_unique<dumpfile_ListObject>,
+        "dumpfile", {typeid(ListObject).name()});
 #endif
 
 }
