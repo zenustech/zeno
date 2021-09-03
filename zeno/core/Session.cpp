@@ -1,13 +1,40 @@
 #include <zeno/core/Session.h>
+#include <zeno/core/IObject.h>
 #include <zeno/core/Scene.h>
+#include <zeno/utils/safe_at.h>
 
 namespace zeno {
 
 ZENO_API Session::Session() = default;
 ZENO_API Session::~Session() = default;
 
-ZENO_API void Session::_defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls) {
+ZENO_API void Session::defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls) {
     nodeClasses[id] = std::move(cls);
+}
+
+ZENO_API void Session::defObjectMethod(
+        std::string const &name,
+        Session::ObjectMethod const &func,
+        std::vector<std::string> const &types) {
+    std::string key = name;
+    for (auto const &type: types) {
+        key += '@';
+        key += type;
+    }
+    objectMethods[key] = func;
+}
+
+ZENO_API void Session::callObjectMethod(
+        std::string const &name, UserData &ud,
+        std::vector<IObject *> const &args) {
+    std::string key = name;
+    for (auto const &obj: args) {
+        auto type = typeid(*obj).name();
+        key += '@';
+        key += type;
+    }
+    auto meth = safe_at(objectMethods, key, "object method");
+    meth(ud, args);
 }
 
 ZENO_API INodeClass::INodeClass(Descriptor const &desc)

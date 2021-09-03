@@ -7,13 +7,15 @@
 
 namespace zeno {
 
-void PrimitiveObject_dumpfile(UserData &ud, PrimitiveObject *that) {
+void dumpfile_PrimitiveObject(UserData &ud, std::vector<IObject *> const &args) {
+    auto that = static_cast<PrimitiveObject *>(args[0]);
     auto path = ud.get<std::string>("path");
     writezpm(that, (path + ".zpm").c_str());
 }
 
-static int defPrimitiveObject_dumpfile = registerObjectMethod(
-        "dumpfile", PrimitiveObject_dumpfile, {typeid(PrimitiveObject)});
+static int def_dumpfile_PrimitiveObject = defObjectMethod(
+        "dumpfile", dumpfile_PrimitiveObject,
+        {typeid(PrimitiveObject).name()});
 
 
 struct PrimitiveShadeObject : zeno::IObject {
@@ -22,15 +24,17 @@ struct PrimitiveShadeObject : zeno::IObject {
     std::string primtype;
 };
 
-void PrimitiveShadeObject_dumpfile(UserData &ud, PrimitiveShadeObject *that) {
+void ject_dumpfile_PrimitiveShadeObject(UserData &ud, std::vector<IObject *> const &args) {
+    auto that = static_cast<PrimitiveShadeObject *>(args[0]);
     auto path = ud.get<std::string>("path");
     fs::copy_file(that->vertpath, path + ".zpm." + that->primtype + ".vert");
     fs::copy_file(that->fragpath, path + ".zpm." + that->primtype + ".frag");
-    PrimitiveObject_dumpfile(that, ud);
+    dumpfile_PrimitiveObject(ud, {that});
 }
 
-static int defPrimitiveShadeObject_dumpfile = registerObjectMethod(
-        "dumpfile", PrimitiveShadeObject_dumpfile, {typeid(PrimitiveShadeObject)});
+static int def_dumpfile_PrimitiveShadeObject = defObjectMethod(
+        "dumpfile", dumpfile_PrimitiveShadeObject,
+        {typeid(PrimitiveShadeObject).name()});
 
 
 struct PrimitiveShade : zeno::INode {

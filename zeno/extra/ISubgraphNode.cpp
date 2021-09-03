@@ -27,7 +27,7 @@ void ISubgraphNode::apply() {
                     std::shared_ptr<zeno::IObject>>(obj); p.has_value()) {
                 UserData ud;
                 ud.get<std::string>("path") = path;
-                invokeObjectMethod("dumpfile", ud, p.value());
+                graph->scene->sess->callObjectMethod("dumpfile", ud, {p.value().get()});
             }
             subg->hasAnyView = true;
         }

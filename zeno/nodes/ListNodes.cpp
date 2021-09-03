@@ -181,7 +181,9 @@ ZENDEFNODE(MakeList, {
 
 
 #ifdef ZENO_VISUALIZATION
-void ListObject_dumpfile(UserData &ud, ListObject *that) {
+void dumpfile_ListObject(UserData &ud, std::vector<IObject *> const &args) {
+    auto list = static_cast<ListObject *>(args[0]);
+    auto path = ud.get<std::string>("path");
     for (int i = 0; i < list->arr.size(); i++) {
         auto const &obj = list->arr[i];
         std::stringstream ss;
@@ -189,13 +191,13 @@ void ListObject_dumpfile(UserData &ud, ListObject *that) {
         if (auto o = silent_any_cast<std::shared_ptr<IObject>>(obj); o.has_value()) {
             UserData ud;
             ud.get<std::string>("path") = ss.str();
-            invokeObjectMethod("dumpfile", ud, o.value());
+            graph->scene->sess->callObjectMethod("dumpfile", ud, {o.value().get()});
         }
     }
 }
 
-static int defListObject_dumpfile = registerObjectMethod(
-        "dumpfile", ListObject_dumpfile, {typeid(ListObject)});
+static int def_dumpfile_ListObject = defObjectMethod(
+        "dumpfile", dumpfile_ListObject, {typeid(ListObject).name()});
 #endif
 
 }

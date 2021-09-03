@@ -2,6 +2,7 @@
 #include <zeno/core/Graph.h>
 #include <zeno/core/Descriptor.h>
 #include <zeno/core/Session.h>
+#include <zeno/core/Scene.h>
 #include <zeno/types/ConditionObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
@@ -105,7 +106,7 @@ ZENO_API void INode::coreApply() {
             auto path = Visualization::exportPath();
             UserData ud;
             ud.get<std::string>("path") = path;
-            invokeObjectMethod("dumpfile", ud, p.value());
+            graph->scene->sess->callObjectMethod("dumpfile", ud, {p.value().get()});
         }
     }
 #endif

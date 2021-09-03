@@ -1,7 +1,9 @@
 #pragma once
 
 #include <zeno/utils/defs.h>
+#include <zeno/utils/UserData.h>
 #include <zeno/core/Descriptor.h>
+#include <functional>
 #include <memory>
 #include <string>
 #include <map>
@@ -33,8 +35,12 @@ struct ImplNodeClass : INodeClass {
     }
 };
 
+struct IObject;
+
 struct Session {
+    using ObjectMethod = std::function<void(UserData const &, std::vector<IObject *>)>;
     std::map<std::string, std::unique_ptr<INodeClass>> nodeClasses;
+    std::map<std::string, ObjectMethod> objectMethods;
     std::unique_ptr<Scene> defaultScene;
 
     ZENO_API Session();
@@ -43,11 +49,18 @@ struct Session {
     ZENO_API Scene &getDefaultScene();
     ZENO_API std::unique_ptr<Scene> createScene();
     ZENO_API std::string dumpDescriptors() const;
-    ZENO_API void _defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
+    ZENO_API void defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls);
+    ZENO_API void callObjectMethod(
+            std::string const &name, UserData &ud,
+            std::vector<IObject *> const &args);
+    ZENO_API void defObjectMethod(
+            std::string const &name,
+            ObjectMethod const &func,
+            std::vector<std::string> const &types);
 
     template <class F>
     void defNodeClass(F const &ctor, std::string const &id, Descriptor const &desc = {}) {
-        _defNodeClass(id, std::make_unique<ImplNodeClass<F>>(ctor, desc));
+        defNodeClass(id, std::make_unique<ImplNodeClass<F>>(ctor, desc));
     }
 };
 
