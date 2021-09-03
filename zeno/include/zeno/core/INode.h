@@ -81,12 +81,22 @@ protected:
         return (bool)p;
     }
 
+    ZENO_API static bool _implicit_cast_from_to(
+        std::shared_ptr<IObject> const &from, std::shared_ptr<IObject> const &to);
+
     /* todo: deprecated */
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
         auto obj = get_input(id, typeid(T).name());
-        return safe_dynamic_cast<T>(std::move(obj),
-                "input socket `" + id + "` ");
+        if (auto p = std::dynamic_pointer_cast<T>(obj); p) {
+            return p;
+        }
+        auto ret = std::make_shared<T>();
+        if (!_implicit_cast_from_to(obj, ret)) {
+            throw Exception("input socket `" + id + "` expect IObject of `"
+                typeid(T).name() + "`, got `" + typeid(*obj) + "` (get_input)";
+        }
+        return ret;
     }
 
     /* todo: deprecated */

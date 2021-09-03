@@ -186,4 +186,12 @@ ZENO_API bool INode::has_input(std::string const &id) const {
     return false;
 }
 
+ZENO_API bool _implicit_cast_from_to(std::shared_ptr<IObject> const &from,
+        std::shared_ptr<IObject> const &to) {
+    auto node = graph->scene->sess->getOverloadNode("ConvertTo", {obj, ret});
+    if (!node) return false;
+    node->doApply();
+    return true;
+}
+
 }
