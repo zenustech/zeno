@@ -81,8 +81,8 @@ protected:
         return (bool)p;
     }
 
-    ZENO_API static bool _implicit_cast_from_to(
-        std::shared_ptr<IObject> const &from, std::shared_ptr<IObject> const &to);
+    ZENO_API bool _implicit_cast_from_to(
+        std::shared_ptr<IObject> const &from, std::shared_ptr<IObject> const &to) const;
 
     /* todo: deprecated */
     template <class T>
