@@ -15,13 +15,15 @@ struct IObject {
     ZENO_API virtual ~IObject();
 
     ZENO_API virtual std::shared_ptr<IObject> clone() const;
+    ZENO_API virtual std::shared_ptr<IObject> move_clone();
     ZENO_API virtual bool assign(IObject *other);
-    ZENO_API virtual bool movefrom(IObject *other);
+    ZENO_API virtual bool move_assign(IObject *other);
 #else
     virtual ~IObject() = default;
     virtual std::shared_ptr<IObject> clone() const { return nullptr; }
+    virtual std::shared_ptr<IObject> move_clone() { return nullptr; }
     virtual bool assign(IObject *other) { return false; }
-    virtual bool movefrom(IObject *other) { return false; }
+    virtual bool move_assign(IObject *other) { return false; }
 #endif
 
     template <class T>
@@ -43,6 +45,10 @@ struct IObjectClone : Base {
         return std::make_shared<Derived>(static_cast<Derived const &>(*this));
     }
 
+    virtual std::shared_ptr<IObject> move_clone() {
+        return std::make_shared<Derived>(static_cast<Derived &&>(*this));
+    }
+
     virtual bool assign(IObject *other) {
         auto src = dynamic_cast<Derived *>(other);
         if (!src)
@@ -52,7 +58,7 @@ struct IObjectClone : Base {
         return true;
     }
 
-    virtual bool movefrom(IObject *other) {
+    virtual bool move_assign(IObject *other) {
         auto src = dynamic_cast<Derived *>(other);
         if (!src)
             return false;
