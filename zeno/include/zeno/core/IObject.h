@@ -41,15 +41,17 @@ struct IObject {
 
 template <class Derived, class Base = IObject>
 struct IObjectClone : Base {
-    virtual std::shared_ptr<IObject> clone() const {
+    using has_iobject_clone = std::true_type;
+
+    virtual std::shared_ptr<IObject> clone() const override {
         return std::make_shared<Derived>(static_cast<Derived const &>(*this));
     }
 
-    virtual std::shared_ptr<IObject> move_clone() {
+    virtual std::shared_ptr<IObject> move_clone() override {
         return std::make_shared<Derived>(static_cast<Derived &&>(*this));
     }
 
-    virtual bool assign(IObject *other) {
+    virtual bool assign(IObject *other) override {
         auto src = dynamic_cast<Derived *>(other);
         if (!src)
             return false;
@@ -58,7 +60,7 @@ struct IObjectClone : Base {
         return true;
     }
 
-    virtual bool move_assign(IObject *other) {
+    virtual bool move_assign(IObject *other) override {
         auto src = dynamic_cast<Derived *>(other);
         if (!src)
             return false;
