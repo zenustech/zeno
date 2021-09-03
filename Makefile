@@ -1,9 +1,10 @@
 #O=a.zsg
 #O=b.zsg
+O=c.zsg
 #O=arts/segvtrig.zsg
 #O=arts/testtbbreduce.zsg
 #O=arts/ZFXv2.zsg
-O=arts/testvorosplit.zsg
+#O=arts/testvorosplit.zsg
 #O=arts/vdbperlinnoise.zsg
 #O=arts/flip.zsg
 #O=arts/visualmarchingtetra.zsg
