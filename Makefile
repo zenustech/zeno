@@ -34,7 +34,7 @@ default: run
 #default: run
 
 all:
-	cmake -B build
+	cmake -B build -DCMAKE_BUILD_TYPE=Release
 	cmake --build build --parallel 24
 
 release_all:
