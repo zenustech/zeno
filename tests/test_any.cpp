@@ -31,14 +31,14 @@ TEST_CASE("cast any of vec3i to vec3f", "[any]") {
     zeno::vec3i i(42, 985, 211);
     zinc::zany a = i;
     zeno::vec3f f = zeno::smart_any_cast<zeno::vec3f>(a);
-    REQUIRE(allTrue(f == zeno::vec3f(42.0f, 985.0f, 211.0f)));
+    REQUIRE(alltrue(f == zeno::vec3f(42.0f, 985.0f, 211.0f)));
 }
 
 TEST_CASE("cast any of vec3f to vec3i", "[any]") {
     zeno::vec3f f(42.0f, 985.99f, 211.3f);
     zinc::zany a = f;
     zeno::vec3i i = zeno::smart_any_cast<zeno::vec3i>(a);
-    REQUIRE(allTrue(i == zeno::vec3i(42, 985, 211)));
+    REQUIRE(alltrue(i == zeno::vec3i(42, 985, 211)));
 }
 
 TEST_CASE("static assertion of underlying type", "[any]") {
