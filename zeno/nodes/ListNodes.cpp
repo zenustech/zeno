@@ -181,7 +181,7 @@ ZENDEFNODE(MakeList, {
 
 
 #ifdef ZENO_VISUALIZATION
-struct dumpfile_ListObject : zeno::INode {
+struct ToVisualize_ListObject : zeno::INode {
     virtual void apply() override {
         auto list = get_input<ListObject>("overload_0");
         auto path = get_param<std::string>("path");
@@ -190,7 +190,7 @@ struct dumpfile_ListObject : zeno::INode {
             std::stringstream ss;
             ss << path << "." << i;
             if (auto o = silent_any_cast<std::shared_ptr<IObject>>(obj); o.has_value()) {
-                if (auto node = graph->scene->sess->getOverloadNode("dumpfile", {o.value()}); node) {
+                if (auto node = graph->scene->sess->getOverloadNode("ToVisualize", {o.value()}); node) {
                     node->inputs["path:"] = ss.str();
                     node->doApply();
                 }
@@ -199,7 +199,7 @@ struct dumpfile_ListObject : zeno::INode {
     }
 };
 
-ZENO_DEFOVERLOADNODE(dumpfile, _ListObject, typeid(ListObject).name())({});
+ZENO_DEFOVERLOADNODE(ToVisualize, _ListObject, typeid(ListObject).name())({});
 #endif
 
 }

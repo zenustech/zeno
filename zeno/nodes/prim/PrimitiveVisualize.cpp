@@ -7,7 +7,7 @@
 
 namespace zeno {
 
-struct dumpfile_PrimitiveObject : zeno::INode {
+struct ToVisualize_PrimitiveObject : zeno::INode {
     virtual void apply() override {
         auto that = get_input<PrimitiveObject>("overload_0");
         auto path = get_param<std::string>("path");
@@ -15,7 +15,7 @@ struct dumpfile_PrimitiveObject : zeno::INode {
     }
 };
 
-ZENO_DEFOVERLOADNODE(dumpfile, _PrimitiveObject, typeid(PrimitiveObject).name())({});
+ZENO_DEFOVERLOADNODE(ToVisualize, _PrimitiveObject, typeid(PrimitiveObject).name())({});
 
 
 struct PrimitiveShadeObject : zeno::IObject {
@@ -24,21 +24,21 @@ struct PrimitiveShadeObject : zeno::IObject {
     std::string primtype;
 };
 
-struct dumpfile_PrimitiveShadeObject : zeno::INode {
+struct ToVisualize_PrimitiveShadeObject : zeno::INode {
     virtual void apply() override {
         auto that = get_input<PrimitiveShadeObject>("overload_0");
         auto path = get_param<std::string>("path");
         fs::copy_file(that->vertpath, path + ".zpm." + that->primtype + ".vert");
         fs::copy_file(that->fragpath, path + ".zpm." + that->primtype + ".frag");
 
-        if (auto node = graph->scene->sess->getOverloadNode("dumpfile", {that}); node) {
+        if (auto node = graph->scene->sess->getOverloadNode("ToVisualize", {that}); node) {
             node->inputs["path:"] = path;
             node->doApply();
         }
     }
 };
 
-ZENO_DEFOVERLOADNODE(dumpfile, _PrimitiveShadeObject, typeid(PrimitiveShadeObject).name())({});
+ZENO_DEFOVERLOADNODE(ToVisualize, _PrimitiveShadeObject, typeid(PrimitiveShadeObject).name())({});
 
 
 struct PrimitiveShade : zeno::INode {
