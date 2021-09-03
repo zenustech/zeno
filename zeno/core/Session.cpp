@@ -3,6 +3,7 @@
 #include <zeno/core/Scene.h>
 #include <zeno/core/INode.h>
 #include <zeno/utils/safe_at.h>
+#include <spdlog/spdlog.h>
 #include <sstream>
 
 namespace zeno {
@@ -11,7 +12,10 @@ ZENO_API Session::Session() = default;
 ZENO_API Session::~Session() = default;
 
 ZENO_API void Session::defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls) {
-    nodeClasses[id] = std::move(cls);
+    if (nodeClasses.find(id) != nodeClasses.end()) {
+        spdlog::warn("node class redefined: `{}`\n", id);
+    }
+    nodeClasses.emplace(id, std::move(cls));
 }
 
 ZENO_API void Session::defOverloadNodeClass(

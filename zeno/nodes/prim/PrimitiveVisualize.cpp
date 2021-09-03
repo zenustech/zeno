@@ -7,15 +7,15 @@
 
 namespace zeno {
 
-void dumpfile_PrimitiveObject(UserData &ud, std::vector<IObject *> const &args) {
-    auto that = static_cast<PrimitiveObject *>(args[0]);
-    auto path = ud.get<std::string>("path");
-    writezpm(that, (path + ".zpm").c_str());
-}
+struct dumpfile_PrimitiveObject : zeno::INode {
+    virtual void apply() override {
+        auto that = get_input<PrimitiveObject>("overload_0");
+        auto path = get_param<std::string>("path");
+        writezpm(that.get(), (path + ".zpm").c_str());
+    }
+};
 
-static int def_dumpfile_PrimitiveObject = defObjectMethod(
-        "dumpfile", dumpfile_PrimitiveObject,
-        {typeid(PrimitiveObject).name()});
+ZENO_DEFOVERLOADNODE(dumpfile, _PrimitiveObject, typeid(PrimitiveObject).name())({});
 
 
 struct PrimitiveShadeObject : zeno::IObject {
@@ -24,17 +24,20 @@ struct PrimitiveShadeObject : zeno::IObject {
     std::string primtype;
 };
 
-void ject_dumpfile_PrimitiveShadeObject(UserData &ud, std::vector<IObject *> const &args) {
-    auto that = static_cast<PrimitiveShadeObject *>(args[0]);
-    auto path = ud.get<std::string>("path");
-    fs::copy_file(that->vertpath, path + ".zpm." + that->primtype + ".vert");
-    fs::copy_file(that->fragpath, path + ".zpm." + that->primtype + ".frag");
-    dumpfile_PrimitiveObject(ud, {that});
-}
+struct dumpfile_PrimitiveShadeObject : zeno::INode {
+    virtual void apply() override {
+        auto that = get_input<PrimitiveShadeObject>("overload_0");
+        auto path = get_param<std::string>("path");
+        fs::copy_file(that->vertpath, path + ".zpm." + that->primtype + ".vert");
+        fs::copy_file(that->fragpath, path + ".zpm." + that->primtype + ".frag");
 
-static int def_dumpfile_PrimitiveShadeObject = defObjectMethod(
-        "dumpfile", dumpfile_PrimitiveShadeObject,
-        {typeid(PrimitiveShadeObject).name()});
+        auto node = graph->scene->sess->getOverloadNode("dumpfile", {that});
+        node->inputs["path:"] = path;
+        node->doApply();
+    }
+};
+
+ZENO_DEFOVERLOADNODE(dumpfile, _PrimitiveShadeObject, typeid(PrimitiveShadeObject).name())({});
 
 
 struct PrimitiveShade : zeno::INode {
