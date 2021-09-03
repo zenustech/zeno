@@ -46,7 +46,7 @@ ZENO_API std::unique_ptr<INode> Session::getOverloadNode(
     auto node = cls->new_instance();
 
     for (int i = 0; i < inputs.size(); i++) {
-        auto key = cls->desc.inputs.at(i).name;
+        auto key = cls->desc->inputs.at(i).name;
         node->inputs[key] = std::move(inputs[i]);
     }
     return node;
