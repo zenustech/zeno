@@ -16,12 +16,10 @@ struct IObject {
 
     ZENO_API virtual std::shared_ptr<IObject> clone() const;
     ZENO_API virtual bool assign(IObject *other);
-    ZENO_API virtual void dumpfile(std::string const &path);
 #else
     virtual ~IObject() = default;
     virtual std::shared_ptr<IObject> clone() const { return nullptr; }
     virtual bool assign(IObject *other) { return false; }
-    virtual void dumpfile(std::string const &path) {}
 #endif
 
     template <class T>

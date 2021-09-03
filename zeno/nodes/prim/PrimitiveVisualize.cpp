@@ -1,15 +1,4 @@
-#ifndef ZENO_VISUALIZATION
-#include <zeno/zeno.h>
-#include <zeno/types/PrimitiveObject.h>
-
-namespace zeno {
-
-// TODO: why taint IObject with visualization stuffs?
-ZENO_API void PrimitiveObject::dumpfile(std::string const &path) {
-}
-
-}
-#else
+#ifdef ZENO_VISUALIZATION
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/extra/Visualization.h>
@@ -18,22 +7,30 @@ ZENO_API void PrimitiveObject::dumpfile(std::string const &path) {
 
 namespace zeno {
 
-ZENO_API void PrimitiveObject::dumpfile(std::string const &path) {
-    writezpm(this, (path + ".zpm").c_str());
+void PrimitiveObject_dumpfile(UserData &ud, PrimitiveObject *that) {
+    auto path = ud.get<std::string>("path");
+    writezpm(that, (path + ".zpm").c_str());
 }
+
+static int defPrimitiveObject_dumpfile = registerObjectMethod(
+        "dumpfile", PrimitiveObject_dumpfile, {typeid(PrimitiveObject)});
 
 
 struct PrimitiveShadeObject : zeno::IObject {
     std::string vertpath, fragpath;
     std::shared_ptr<PrimitiveObject> prim;
     std::string primtype;
-
-    virtual void dumpfile(std::string const &path) override {
-        fs::copy_file(vertpath, path + ".zpm." + primtype + ".vert");
-        fs::copy_file(fragpath, path + ".zpm." + primtype + ".frag");
-        prim->dumpfile(path);
-    }
 };
+
+void PrimitiveShadeObject_dumpfile(UserData &ud, PrimitiveShadeObject *that) {
+    auto path = ud.get<std::string>("path");
+    fs::copy_file(that->vertpath, path + ".zpm." + that->primtype + ".vert");
+    fs::copy_file(that->fragpath, path + ".zpm." + that->primtype + ".frag");
+    PrimitiveObject_dumpfile(that, ud);
+}
+
+static int defPrimitiveShadeObject_dumpfile = registerObjectMethod(
+        "dumpfile", PrimitiveShadeObject_dumpfile, {typeid(PrimitiveShadeObject)});
 
 
 struct PrimitiveShade : zeno::INode {

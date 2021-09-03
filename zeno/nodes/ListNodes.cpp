@@ -180,15 +180,22 @@ ZENDEFNODE(MakeList, {
     });
 
 
-ZENO_API void ListObject::dumpfile(std::string const &path) {
-    for (int i = 0; i < arr.size(); i++) {
-        auto const &obj = arr[i];
+#ifdef ZENO_VISUALIZATION
+void ListObject_dumpfile(UserData &ud, ListObject *that) {
+    for (int i = 0; i < list->arr.size(); i++) {
+        auto const &obj = list->arr[i];
         std::stringstream ss;
         ss << path << "." << i;
         if (auto o = silent_any_cast<std::shared_ptr<IObject>>(obj); o.has_value()) {
-            o.value()->dumpfile(ss.str());
+            UserData ud;
+            ud.get<std::string>("path") = ss.str();
+            invokeObjectMethod("dumpfile", ud, o.value());
         }
     }
 }
+
+static int defListObject_dumpfile = registerObjectMethod(
+        "dumpfile", ListObject_dumpfile, {typeid(ListObject)});
+#endif
 
 }

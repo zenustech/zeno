@@ -131,12 +131,6 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
         return verts.resize(size);
     }
     // end of deprecated
-
-#ifndef ZENO_APIFREE
-    ZENO_API virtual void dumpfile(std::string const &path) override;
-#else
-    virtual void dumpfile(std::string const &path) override {}
-#endif
 };
 
 } // namespace zeno
