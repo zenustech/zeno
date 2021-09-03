@@ -31,9 +31,10 @@ struct dumpfile_PrimitiveShadeObject : zeno::INode {
         fs::copy_file(that->vertpath, path + ".zpm." + that->primtype + ".vert");
         fs::copy_file(that->fragpath, path + ".zpm." + that->primtype + ".frag");
 
-        auto node = graph->scene->sess->getOverloadNode("dumpfile", {that});
-        node->inputs["path:"] = path;
-        node->doApply();
+        if (auto node = graph->scene->sess->getOverloadNode("dumpfile", {that}); node) {
+            node->inputs["path:"] = path;
+            node->doApply();
+        }
     }
 };
 

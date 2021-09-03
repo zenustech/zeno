@@ -26,8 +26,10 @@ void ISubgraphNode::apply() {
             if (auto p = zeno::silent_any_cast<
                     std::shared_ptr<zeno::IObject>>(obj); p.has_value()) {
                 auto node = graph->scene->sess->getOverloadNode("dumpfile", {p.value()});
-                node->inputs["path:"] = path;
-                node->doApply();
+                if (auto node = graph->scene->sess->getOverloadNode("dumpfile", {p.value()}); node) {
+                    node->inputs["path:"] = path;
+                    node->doApply();
+                }
             }
             subg->hasAnyView = true;
         }

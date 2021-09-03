@@ -190,9 +190,10 @@ struct dumpfile_ListObject : zeno::INode {
             std::stringstream ss;
             ss << path << "." << i;
             if (auto o = silent_any_cast<std::shared_ptr<IObject>>(obj); o.has_value()) {
-                auto node = graph->scene->sess->getOverloadNode("dumpfile", {o.value()});
-                node->inputs["path:"] = ss.str();
-                node->doApply();
+                if (auto node = graph->scene->sess->getOverloadNode("dumpfile", {o.value()}); node) {
+                    node->inputs["path:"] = ss.str();
+                    node->doApply();
+                }
             }
         }
     }

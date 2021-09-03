@@ -22,9 +22,9 @@ ZENO_API void Session::defOverloadNodeClass(
         std::string const &id,
         std::vector<std::string> const &types,
         std::unique_ptr<INodeClass> &&cls) {
-    std::string key = '@' + id;
+    std::string key = '^' + id;
     for (auto const &type: types) {
-        key += '@';
+        key += '^';
         key += type;
     }
     defNodeClass(key, std::move(cls));
@@ -32,14 +32,17 @@ ZENO_API void Session::defOverloadNodeClass(
 
 ZENO_API std::unique_ptr<INode> Session::getOverloadNode(
         std::string const &name, std::vector<std::shared_ptr<IObject>> const &args) {
-    std::string key = '@' + name;
+    std::string key = '^' + name;
     for (auto const &obj: args) {
         auto type = typeid(*obj).name();
-        key += '@';
+        key += '^';
         key += type;
     }
-    auto cls = safe_at(nodeClasses, key, "object method");
-    auto node = cls->new_instance();
+    auto it = nodeClasses.find(key);
+    if (it == nodeClasses.end()) {
+        return nullptr;
+    }
+    auto node = it->second->new_instance();
 
     for (int i = 0; i < args.size(); i++) {
         std::stringstream ss;

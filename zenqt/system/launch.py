@@ -88,7 +88,7 @@ def getDescriptors():
 
 def parse_descriptor_line(line):
     _, z_name, rest = line.strip().split('@', maxsplit=2)
-    assert rest.startswith('{') and rest.endswith('}'), (n_name, rest)
+    assert rest.startswith('{') and rest.endswith('}'), (z_name, rest)
     inputs, outputs, params, categories = rest[1:-1].split('}{')
 
     z_categories = [name for name in categories.split('%') if name]
