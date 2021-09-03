@@ -4,6 +4,7 @@
 #include <zeno/core/IObject.h>
 #include <zeno/utils/any.h>
 #include <zeno/utils/Exception.h>
+#include <zeno/utils/safe_dynamic_cast.h>
 #include <variant>
 #include <memory>
 #include <string>
@@ -86,7 +87,8 @@ protected:
 
     /* todo: deprecated */
     template <class T>
-    std::shared_ptr<T> get_input(std::string const &id) const {
+    std::enable_if_t<!std::is_abstract_v<T>, std::shared_ptr<T>>
+    get_input(std::string const &id) const {
         auto obj = get_input(id, typeid(T).name());
         if (auto p = std::dynamic_pointer_cast<T>(obj); p) {
             return p;
@@ -97,6 +99,13 @@ protected:
                 + typeid(T).name() + "`, got `" + typeid(*obj).name() + "` (get_input)");
         }
         return ret;
+    }
+
+    template <class T>
+    std::enable_if_t<std::is_abstract_v<T>, std::shared_ptr<T>>
+    get_input(std::string const &id) const {
+        auto obj = get_input(id, typeid(T).name());
+        return safe_dynamic_cast<T>(std::move(obj));
     }
 
     /* todo: deprecated */
