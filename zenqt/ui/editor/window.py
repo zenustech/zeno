@@ -481,9 +481,13 @@ ZENDEFNODE(''' + key + ''', {
                 for name, info in inputs.items():
                     if info == None:
                         continue
-                    nid_, name_, _ = info
-                    if nid_ in nid_map:
+                    nid_, name_, value = info
+                    if nid_ in nid_map and value != None:
+                        info = (nid_map[nid_], name_, value)
+                    elif nid_ in nid_map:
                         info = (nid_map[nid_], name_)
+                    elif value != None:
+                        info = (None, None, value)
                     else:
                         info = None
                     inputs[name] = info
