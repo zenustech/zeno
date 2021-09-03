@@ -106,9 +106,9 @@ struct AttrVector {
     }
 
     template <class F>
-    void foreach_attr(F const &f) const {
+    void foreach_attr(F &&f) const {
         for (auto const &[key, arr]: attrs) {
-            auto &k = key;
+            auto const &k = key;
             std::visit([&] (auto &arr) {
                 f(k, arr);
             }, arr);
@@ -116,7 +116,7 @@ struct AttrVector {
     }
 
     template <class F>
-    void foreach_attr(F const &f) {
+    void foreach_attr(F &&f) {
         for (auto &[key, arr]: attrs) {
             auto &k = key;
             std::visit([&] (auto &arr) {

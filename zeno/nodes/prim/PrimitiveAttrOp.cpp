@@ -134,6 +134,7 @@ ZENDEFNODE(PrimitiveRandomizeAttr,
     "prim",
     }, /* params: */ {
     {"string", "attrName", "pos"},
+    {"string", "attrType", "float3"},
     {"float", "min", "-1"},
     {"float", "minY", "-1"},
     {"float", "minZ", "-1"},
