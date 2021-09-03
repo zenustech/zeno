@@ -198,8 +198,7 @@ struct dumpfile_ListObject : zeno::INode {
     }
 };
 
-static int defdumpfile_ListObject = defOverloadNodeClass(std::make_unique<dumpfile_ListObject>,
-        "dumpfile", {typeid(ListObject).name()});
+ZENO_DEFOVERLOADNODE(dumpfile, _ListObject, typeid(ListObject).name())({});
 #endif
 
 }
