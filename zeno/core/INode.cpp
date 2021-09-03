@@ -106,7 +106,7 @@ ZENO_API void INode::coreApply() {
             auto path = Visualization::exportPath();
             auto node = graph->scene->sess->getOverloadNode("dumpfile", {p.value()});
             node->inputs["path:"] = path;
-            node->apply();
+            node->doApply();
         }
     }
 #endif

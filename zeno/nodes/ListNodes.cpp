@@ -192,7 +192,7 @@ struct dumpfile_ListObject : zeno::INode {
             if (auto o = silent_any_cast<std::shared_ptr<IObject>>(obj); o.has_value()) {
                 auto node = graph->scene->sess->getOverloadNode("dumpfile", {o.value()});
                 node->inputs["path:"] = ss.str();
-                node->apply();
+                node->doApply();
             }
         }
     }
