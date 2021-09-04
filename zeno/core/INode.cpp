@@ -126,7 +126,13 @@ ZENO_API zany INode::get_input2(std::string const &id) const {
 }
 
 ZENO_API void INode::set_output2(std::string const &id, zany &&obj) {
-    outputs[id] = std::move(obj);
+    if (auto num = silent_any_cast<std::shared_ptr<NumericObject>>(obj); num.has_value()) {
+        std::visit([&] (auto const &x) {
+            outputs[id] = x;
+        }, num.value()->value);
+    } else {
+        outputs[id] = std::move(obj);
+    }
 }
 
 ZENO_API std::shared_ptr<IObject> INode::get_input(std::string const &id, std::string const &msg) const {

@@ -1,5 +1,7 @@
 #include <igl/copyleft/cgal/mesh_boolean.h>
-//#include <igl/copyleft/cgal/trim_with_solid.h>
+#if 0
+#include <igl/copyleft/cgal/trim_with_solid.h>
+#endif
 #include <zeno/utils/Exception.h>
 #include "igl_sink.h"
 
