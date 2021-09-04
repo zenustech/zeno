@@ -57,7 +57,7 @@ class NodeEditor(QWidget):
         self.window = window
 
         self.current_path = None
-        self.clipboard = None
+        self.clipboard = QApplication.clipboard()
 
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -452,16 +452,16 @@ ZENDEFNODE(''' + key + ''', {
         itemList = self.scene.selectedItems()
         itemList = [n for n in itemList if isinstance(n, QDMGraphicsNode)]
         nodes = self.scene.dumpGraph(itemList)
-        self.clipboard = nodes
+        self.clipboard.setText(json.dumps(nodes))
 
     def do_paste(self):
-            if not self.clipboard:
+            if self.clipboard.text() == '':
                 print('nothing to paste')
                 return
             itemList = self.scene.selectedItems()
             for i in itemList:
                 i.setSelected(False)
-            nodes = self.clipboard
+            nodes = json.loads(self.clipboard.text())
             nid_map = {}
             for nid in nodes:
                 nid_map[nid] = gen_unique_ident()
