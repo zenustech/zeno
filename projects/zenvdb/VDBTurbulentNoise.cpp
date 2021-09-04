@@ -12,19 +12,6 @@ namespace {
 using namespace zeno;
 
 
-struct {
-#define UVScale 			 0.4
-#define Speed				 0.6
-
-#define FBM_WarpPrimary		-0.24
-#define FBM_WarpSecond		 0.29
-#define FBM_WarpPersist 	 0.78
-#define FBM_EvalPersist 	 0.62
-#define FBM_Persistence 	 0.5
-#define FBM_Lacunarity 		 2.2
-#define FBM_Octaves 		 5
-
-
 template <class T0, class T1, class T2>
 auto smoothstep(T0 edge0, T1 edge1, T2 x) {
   // Scale, bias and saturate x to 0..1 range
@@ -32,6 +19,20 @@ auto smoothstep(T0 edge0, T1 edge1, T2 x) {
   // Evaluate polynomial
   return x * x * (3 - 2 * x);
 }
+
+
+struct FBMTurbulent {
+float UVScale= 			 0.4;
+float Speed=				 0.6;
+
+float FBM_WarpPrimary=		-0.24;
+float FBM_WarpSecond=		 0.29;
+float FBM_WarpPersist= 	 0.78;
+float FBM_EvalPersist= 	 0.62;
+float FBM_Persistence= 	 0.5;
+float FBM_Lacunarity= 		 2.2;
+int FBM_Octaves= 		 5;
+
 
 //fork from Dave Hoskins
 //https://www.shadertoy.com/view/4djSRW
@@ -94,12 +95,14 @@ vec4f FBM(vec3f p)
     return f;
 }
 
-float turbulent(float x, float y, float z) {  // https://www.shadertoy.com/view/3lsSR7
+float operator()(float x, float y, float z) {  // https://www.shadertoy.com/view/3lsSR7
     auto fbm = FBM({x, y, z});
     float explosionGrad = (dot(fbm, vec4f(fbm[1], fbm[0], fbm[3], fbm[0]))) *0.5f;
     explosionGrad = pow(explosionGrad, 1.3f);
     explosionGrad = smoothstep(0.0f,1.0f,explosionGrad);
     return explosionGrad;
+}
+
 }
 
 struct VDBTurbulentNoise : INode {
@@ -118,6 +121,17 @@ struct VDBTurbulentNoise : INode {
     auto grid = inoutSDF->m_grid;
     float dx = grid->voxelSize()[0];
     strength *= dx;
+
+    Turbulent turbulent;
+    turbulent.UVScale=get_param<float>("UVScale");
+    turbulent.Speed=get_param<float>("Speed");
+    turbulent.FBM_WarpPrimary=get_param<float>("FBM_WarpPrimary");
+    turbulent.FBM_WarpSecond=get_param<float>("FBM_WarpSecond");
+    turbulent.FBM_WarpPersist=get_param<float>("FBM_WarpPersist");
+    turbulent.FBM_EvalPersist=get_param<float>("FBM_EvalPersist");
+    turbulent.FBM_Persistence=get_param<float>("FBM_Persistence");
+    turbulent.FBM_Lacunarity=get_param<float>("FBM_Lacunarity");
+    turbulent.FBM_Octaves=get_param<int>("FBM_Octaves");
 
     auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
         for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
@@ -146,6 +160,15 @@ ZENO_DEFNODE(VDBTurbulentNoise)(
      }, /* outputs: */ {
        "inoutSDF",
      }, /* params: */ {
+    {"float","UVScale","0.4"},
+    {"float","Speed","0.6"},
+    {"floa"," FBM_WarpPrimary","-0.24"},
+    {"float","FBM_WarpSecond","0.29"},
+    {"float","FBM_WarpPersist","0.78"},
+    {"float","FBM_EvalPersist","0.62"},
+    {"float","FBM_Persistence","0.5"},
+    {"float","FBM_Lacunarity","2.2"},
+    {"int","FBM_Octaves","5"},
      }, /* category: */ {
      "openvdb",
      }});
