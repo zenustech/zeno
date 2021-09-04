@@ -69,6 +69,8 @@ struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
 
   VDBGridWrapper() { m_grid = GridT::create(); }
 
+  VDBGridWrapper(typename GridT::Ptr &&ptr) { m_grid = std::move(ptr); }
+
   VDBGridWrapper(VDBGridWrapper const &other) {
       m_grid = other.m_grid->deepCopy();
   }
