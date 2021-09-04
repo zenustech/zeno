@@ -53,8 +53,7 @@ struct EndFor : zeno::ContextManagedNode {
         auto [sn, ss] = inputBounds.at("FOR");
         auto fore = dynamic_cast<IBeginFor *>(graph->nodes.at(sn).get());
         if (!fore) {
-            printf("EndFor::FOR must be conn to BeginFor::FOR!\n");
-            abort();
+            throw Exception("EndFor::FOR must be conn to BeginFor::FOR!\n");
         }
         graph->applyNode(sn);
         std::unique_ptr<zeno::Context> old_ctx = nullptr;
@@ -87,6 +86,9 @@ struct BreakFor : zeno::INode {
     virtual void doApply() override {
         auto [sn, ss] = inputBounds.at("FOR");
         auto fore = dynamic_cast<IBeginFor *>(graph->nodes.at(sn).get());
+        if (!fore) {
+            throw Exception("BreakFor::FOR must be conn to BeginFor::FOR!\n");
+        }
         fore->is_break = true;  // will still keep going the rest of loop body?
     }
 
@@ -103,6 +105,7 @@ ZENDEFNODE(BreakFor, {
 struct BeginForEach : IBeginFor {
     int m_index = 0;
     std::shared_ptr<zeno::ListObject> m_list;
+    zany m_accumate;
 
     virtual bool isContinue() const override {
         return m_index < m_list->arr.size() && !is_break;
@@ -112,6 +115,8 @@ struct BeginForEach : IBeginFor {
         m_index = 0;
         is_break = false;
         m_list = get_input<zeno::ListObject>("list");
+        if (has_input("accumate"))
+            m_accumate = get_input<zeno::ListObject>("accumate");
         set_output("FOR", std::make_shared<zeno::ConditionObject>());
     }
 
@@ -122,12 +127,14 @@ struct BeginForEach : IBeginFor {
         auto obj = m_list->arr[m_index];
         set_output2("object", std::move(obj));
         m_index++;
+        if (m_accumate.has_value())
+            set_output2("accumate", std::move(m_accumate));
     }
 };
 
 ZENDEFNODE(BeginForEach, {
-    {"list"},
-    {"object", {"int", "index"}, "FOR"},
+    {"list", "accumate"},
+    {"object", "accumate", {"int", "index"}, "FOR"},
     {},
     {"control"},
 });
@@ -148,6 +155,15 @@ struct EndForEach : EndFor {
             else
                 dropped_result.push_back(std::move(obj));
         }
+        if (requireInput("accumate")) {
+            auto [sn, ss] = inputBounds.at("FOR");
+            auto fore = dynamic_cast<BeginForEach *>(graph->nodes.at(sn).get());
+            if (!fore) {
+                throw Exception("EndForEach::FOR must be conn to BeginForEach::FOR (when accumate used)!\n");
+            }
+            auto accumate = get_input2("accumate");
+            fore->m_accumate = std::move(accumate);
+        }
     }
 
     virtual void doApply() override {
@@ -155,13 +171,13 @@ struct EndForEach : EndFor {
         if (get_param<bool>("doConcat")) {
             decltype(result) newres;
             for (auto &xs: result) {
-                for (auto &x: smart_any_cast<std::shared_ptr<ListObject>>(xs, "doConcat ")->arr)
+                for (auto &x: smart_any_cast<std::shared_ptr<ListObject>>(xs, "do concat ")->arr)
                     newres.push_back(std::move(x));
             }
             result = std::move(newres);
             decltype(dropped_result) dropped_newres;
             for (auto &xs: dropped_result) {
-                for (auto &x: smart_any_cast<std::shared_ptr<ListObject>>(xs, "doConcat ")->arr)
+                for (auto &x: smart_any_cast<std::shared_ptr<ListObject>>(xs, "do concat ")->arr)
                     dropped_newres.push_back(std::move(x));
             }
             dropped_result = std::move(dropped_newres);
@@ -172,12 +188,14 @@ struct EndForEach : EndFor {
         auto dropped_list = std::make_shared<ListObject>();
         dropped_list->arr = std::move(dropped_result);
         set_output("droppedList", std::move(dropped_list));
+        if (
+        set_output("accumate", std::move(accumate));
     }
 };
 
 ZENDEFNODE(EndForEach, {
-    {"object", {"bool", "accept", "1"}, "FOR"},
-    {"list", "droppedList"},
+    {"object", "accumate", {"bool", "accept", "1"}, "FOR"},
+    {"list", "droppedList", "accumate"},
     {{"bool", "doConcat", "0"}},
     {"control"},
 });
@@ -223,8 +241,7 @@ struct SubstepDt : zeno::INode {
         auto [sn, ss] = inputBounds.at("FOR");
         auto fore = dynamic_cast<BeginSubstep *>(graph->nodes.at(sn).get());
         if (!fore) {
-            printf("SubstepDt::FOR must be conn to BeginSubstep::FOR!\n");
-            abort();
+            throw Exception("SubstepDt::FOR must be conn to BeginSubstep::FOR!\n");
         }
         fore->m_ever_called = true;
         float dt = get_input<zeno::NumericObject>("desired_dt")->get<float>();
@@ -317,8 +334,7 @@ struct EndIF : zeno::ContextManagedNode {
         auto [sn, ss] = inputBounds.at("IF");
         auto true_exp = dynamic_cast<IF *>(graph->nodes.at(sn).get());
         if (!true_exp) {
-            printf("please connect true and false execution tree\n");
-            abort();
+            throw Exception("please connect true and false execution tree\n");
         }
         graph->applyNode(sn);
         if(true_exp->getCondition()){

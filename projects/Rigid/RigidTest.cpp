@@ -321,7 +321,7 @@ struct BulletMakeObject : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeObject, {
-    {"shape", "trans", "mass"},
+    {"shape", "trans", {"float", "mass", "0"}},
     {"object"},
     {},
     {"Rigid"},
@@ -506,12 +506,13 @@ struct BulletSetWorldGravity : zeno::INode {
         auto world = get_input<BulletWorld>("world");
         auto gravity = get_input<zeno::NumericObject>("gravity")->get<zeno::vec3f>();
         world->dynamicsWorld->setGravity(zeno::vec_to_other<btVector3>(gravity));
+        set_output("world", std::move(world));
     }
 };
 
 ZENDEFNODE(BulletSetWorldGravity, {
-    {"world", "gravity"},
-    {},
+    {"world", {"vec3f", "gravity", "0,0,-9.8"}},
+    {"world"},
     {},
     {"Rigid"},
 });
@@ -525,7 +526,7 @@ struct BulletStepWorld : zeno::INode {
 };
 
 ZENDEFNODE(BulletStepWorld, {
-    {"world", "dt"},
+    {"world", {"float", "dt", "0.04"}},
     {},
     {},
     {"Rigid"},
