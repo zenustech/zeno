@@ -373,11 +373,11 @@ void main()
   }
 };
 
-std::unique_ptr<IGraphic> makeGraphicPrimitive
-    ( zeno::PrimitiveObject *prim
-    , std::string const &path
+std::unique_ptr<IGraphic> makeGraphicVolume
+    ( std::string const &path
     ) {
-  return std::make_unique<GraphicPrimitive>(prim, path);
+  return std::make_unique<GraphicVolume>(path);
 }
 
 }
+#endif
