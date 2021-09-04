@@ -5,6 +5,8 @@
 #include <zeno/ZenoInc.h>
 #include <openvdb/tools/LevelSetSphere.h>
 
+namespace zeno {
+
 struct VDBCreateLevelsetSphere : zeno::INode {
   virtual void apply() override {
     //auto dx = std::get<float>(get_param("dx"));
@@ -23,8 +25,13 @@ struct VDBCreateLevelsetSphere : zeno::INode {
     {
       center = get_input("center")->as<NumericObject>()->get<vec3f>();
     }
-    auto data = std::make_shared<VDBGrid>(openvdb::tools::createLevelSetSphere(
-        radius, {center[0], center[1], center[2]}, dx));
+    float half_width=(float)openvdb::LEVEL_SET_HALF_WIDTH;
+    if(has_input("half_width"))
+    {
+      half_width = get_input("half_width")->as<NumericObject>()->get<float>();
+    }
+    auto data = std::make_shared<VDBFloatGrid>(openvdb::tools::createLevelSetSphere<openvdb::FloatGrid>(
+        radius, openvdb::Vec3f(center[0], center[1], center[2]), dx, half_width));
     set_output("data", data);
   }
 };
@@ -41,3 +48,5 @@ static int defVDBCreateLevelsetSphere = zeno::defNodeClass<VDBCreateLevelsetSphe
                     {
                         "openvdb",
                     }});
+
+}
