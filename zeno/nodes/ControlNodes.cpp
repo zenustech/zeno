@@ -115,8 +115,8 @@ struct BeginForEach : IBeginFor {
         m_index = 0;
         is_break = false;
         m_list = get_input<zeno::ListObject>("list");
-        if (has_input("accumate"))
-            m_accumate = get_input<zeno::ListObject>("accumate");
+        if (has_input2("accumate"))
+            m_accumate = get_input2("accumate");
         set_output("FOR", std::make_shared<zeno::ConditionObject>());
     }
 

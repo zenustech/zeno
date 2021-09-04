@@ -6,6 +6,7 @@
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
 #include <BulletCollision/CollisionShapes/btConvexPointCloudShape.h>
 #include <hacdCircularList.h>
+#include <spdlog/spdlog.h>
 #include <hacdVector.h>
 #include <hacdICHull.h>
 #include <hacdGraph.h>
@@ -415,7 +416,7 @@ struct BulletExtractTransform : zeno::INode {
 
 ZENDEFNODE(BulletExtractTransform, {
     {"trans"},
-    {"origin", "rotation"},
+    {{"vec3f","origin"}, {"vec4f", "rotation"}},
     {},
     {"Rigid"},
 });
@@ -465,7 +466,8 @@ struct BulletWorld : zeno::IObject {
     }*/
 
     void step(float dt = 1.f / 60.f) {
-        std::cout<<dt<<std::endl;
+        spdlog::info("dt = {}", dt);
+        spdlog::info("len(objects) = {}", objects.size());
         for(int i=0;i<10;i++)
             dynamicsWorld->stepSimulation(0.1*dt, 1, 0.1*dt);
 
