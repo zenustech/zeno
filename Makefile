@@ -1,6 +1,6 @@
-#O=a.zsg
+O=a.zsg
 #O=b.zsg
-O=c.zsg
+#O=c.zsg
 #O=arts/segvtrig.zsg
 #O=arts/testtbbreduce.zsg
 #O=arts/ZFXv2.zsg
