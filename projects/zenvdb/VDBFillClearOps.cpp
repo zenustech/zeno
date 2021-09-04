@@ -12,14 +12,14 @@ namespace {
 using namespace zeno;
 
 
-#if 0
+#if 1
 template <class T>
 struct fill_voxels_op {
     T value;
     fill_voxels_op(T const &val) : value(val) {}
 
     template <class LeafT>
-    void operator()(LeafT &leaf, openvdb::Index leafpos) {
+    void operator()(LeafT &leaf, openvdb::Index leafpos) const {
         for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
             iter.setValue(value);
         }
@@ -34,10 +34,10 @@ struct VDBFillActiveVoxels : INode {
         auto velman = openvdb::tree::LeafManager
             <std::decay_t<decltype(p->m_grid->tree())>>(p->m_grid->tree());
         velman.foreach(fill_voxels_op(std::get<float>(value)));
-    } elseif (auto p = std::dynamic_pointer_cast<VDBFloat3Grid>(grid); p) {
+    } else if (auto p = std::dynamic_pointer_cast<VDBFloat3Grid>(grid); p) {
         auto velman = openvdb::tree::LeafManager
             <std::decay_t<decltype(p->m_grid->tree())>>(p->m_grid->tree());
-        velman.foreach(fill_voxels_op(std::get<vec3f>(value)));
+        velman.foreach(fill_voxels_op(vec_to_other<openvdb::Vec3f>(std::get<vec3f>(value))));
     }
 
     set_output("grid", get_input("grid"));
