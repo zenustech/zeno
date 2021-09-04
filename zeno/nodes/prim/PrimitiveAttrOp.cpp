@@ -78,7 +78,7 @@ struct PrimitivePrintAttr : INode {
         printf("\n");
     });
 
-    set_output("prim", std::move(prim));
+    set_output("prim", get_input("prim"));
   }
 };
 

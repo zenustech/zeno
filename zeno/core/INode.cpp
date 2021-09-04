@@ -186,10 +186,13 @@ ZENO_API bool INode::has_input(std::string const &id) const {
     return false;
 }
 
-ZENO_API bool INode::_implicit_cast_from_to(std::shared_ptr<IObject> const &from,
-        std::shared_ptr<IObject> const &to) const {
+ZENO_API bool INode::_implicit_cast_from_to(std::string const &id,
+        std::shared_ptr<IObject> const &from, std::shared_ptr<IObject> const &to) {
     auto node = graph->scene->sess->getOverloadNode("ConvertTo", {from, to});
-    if (!node) return false;
+    if (!node) {
+        inputs[id] = from;
+        return false;
+    }
     node->doApply();
     return true;
 }

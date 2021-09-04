@@ -82,8 +82,8 @@ protected:
         return (bool)p;
     }
 
-    ZENO_API bool _implicit_cast_from_to(
-        std::shared_ptr<IObject> const &from, std::shared_ptr<IObject> const &to) const;
+    ZENO_API bool _implicit_cast_from_to(std::string const &id,
+        std::shared_ptr<IObject> const &from, std::shared_ptr<IObject> const &to);
 
     /* todo: deprecated */
     template <class T>
@@ -94,7 +94,7 @@ protected:
             return p;
         }
         auto ret = std::make_shared<T>();
-        if (!_implicit_cast_from_to(obj, ret)) {
+        if (!const_cast<INode *>(this)->_implicit_cast_from_to(id, obj, ret)) {
             throw Exception("input socket `" + id + "` expect IObject of `"
                 + typeid(T).name() + "`, got `" + typeid(*obj).name() + "` (get_input)");
         }
