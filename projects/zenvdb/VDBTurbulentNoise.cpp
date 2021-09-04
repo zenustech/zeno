@@ -76,7 +76,7 @@ vec4f ValueSimplex3D(vec3f p)
 //my FBM
 vec4f FBM(vec3f p)
 {
-    vec4f f, s, n = vec4f(0.0f);
+    vec4f f(0), s(0), n(0);
     float a = 1.0f, w = 0.0f;
     for (int i=0; i<FBM_Octaves; i++)
     {
