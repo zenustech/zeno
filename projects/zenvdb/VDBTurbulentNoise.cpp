@@ -12,6 +12,7 @@ namespace {
 using namespace zeno;
 
 
+struct {
 #define UVScale 			 0.4
 #define Speed				 0.6
 
