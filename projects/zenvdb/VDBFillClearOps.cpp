@@ -63,9 +63,12 @@ void touch_aabb_region(GridPtr const &grid, vec3f const &bmin, vec3f const &bmax
     auto cmax = grid->transform().worldToIndex(openvdb::Vec3R(bmax[0], bmax[1], bmax[2]));
     using size_type = std::decay_t<decltype(std::declval<openvdb::Coord>()[0])>;
 
-    tbb::parallel_for(tbb::blocked_range<size_type>(cmin[2], cmax[2]), [&] (auto const &r) {
+    //std::mutex mtx;
+    //tbb::parallel_for(tbb::blocked_range<size_type>(cmin[2], cmax[2]), [&] (auto const &r) {
+        //std::lock_guard _(mtx);
+        //for (size_type z = r.begin(); z < r.end(); z++) {
         auto axr = grid->getAccessor();
-        for (size_type z = r.begin(); z < r.end(); z++) {
+        for (size_type z = cmin[2]; z < cmax[2]; z++) {
             for (size_type y = cmin[1]; y < cmax[1]; y++) {
                 for (size_type x = cmin[0]; x < cmax[0]; x++) {
                     using value_type = std::decay_t<decltype(axr.getValue({x, y, z}))>;
@@ -73,7 +76,7 @@ void touch_aabb_region(GridPtr const &grid, vec3f const &bmin, vec3f const &bmax
                 }
             }
         }
-    });
+    //});
 }
 
 struct VDBTouchAABBRegion : INode {
@@ -94,7 +97,8 @@ struct VDBTouchAABBRegion : INode {
 ZENO_DEFNODE(VDBTouchAABBRegion)(
      { /* inputs: */ {
      "grid",
-     {"NumericObject", "fillValue", "0.0"},
+     {"vec3f", "bmin", "-1,-1,-1"},
+     {"vec3f", "bmax", "1,1,1"},
      }, /* outputs: */ {
        "grid",
      }, /* params: */ {
