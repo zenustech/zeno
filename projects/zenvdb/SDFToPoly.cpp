@@ -73,4 +73,19 @@ static int defSDFToPoly = zeno::defNodeClass<SDFToPoly>("SDFToPoly",
     "openvdb",
     }});
 
+
+struct ConvertTo_VDBFloatGrid_PrimitiveObject : SDFToPoly {
+    virtual void apply() override {
+        SDFToPoly::apply();
+        get_input<PrimitiveObject>("prim")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(outputs.at("prim"))).get());
+    }
+};
+
+ZENO_DEFOVERLOADNODE(ConvertTo, _VDBFloatGrid_PrimitiveObject, typeid(VDBFloatGrid).name(), typeid(PrimitiveObject).name())({
+        {"mesh", "prim"},
+        {},
+        {},
+        {"primitive"},
+});
+
 }

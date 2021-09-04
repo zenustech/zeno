@@ -322,6 +322,39 @@ _PER_FN1(floor)
 _PER_FN1(ceil)
 #undef _PER_FN1
 
+template <class T>
+inline std::enable_if_t<!std::is_integral_v<T>, T> _fract(T x) {
+    int dummy;
+    return std::frexp(x, &dummy);
+}
+
+template <class T>
+inline std::enable_if_t<std::is_integral_v<T>, T> _fract(T x) {
+    return 0;
+}
+
+template <class T>
+inline std::enable_if_t<!std::is_integral_v<T>, T> _ifloor(T x) {
+    int i = 0;
+    std::frexp(x, &i);
+    return i;
+}
+
+template <class T>
+inline std::enable_if_t<std::is_integral_v<T>, T> _ifloor(T x) {
+    return x;
+}
+
+template <class T>
+inline auto fract(T const &a) {
+  return vapply([](auto const &x) { return _fract(x); }, a);
+}
+
+template <class T>
+inline auto ifloor(T const &a) {
+  return vapply([](auto const &x) { return _ifloor(x); }, a);
+}
+
 template <class To, class T> inline auto cast(T const &a) {
   return vapply([](auto const &x) { return (To)x; }, a);
 }
