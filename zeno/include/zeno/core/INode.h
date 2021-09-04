@@ -106,7 +106,7 @@ protected:
     std::enable_if_t<std::is_abstract_v<T> || !std::is_trivially_constructible_v<T>,
     std::shared_ptr<T>> get_input(std::string const &id) const {
         auto obj = get_input(id, typeid(T).name());
-        return safe_dynamic_cast<T>(std::move(obj));
+        return safe_dynamic_cast<T>(std::move(obj), "input socket `" + id + "` ");
     }
 
     /* todo: deprecated */

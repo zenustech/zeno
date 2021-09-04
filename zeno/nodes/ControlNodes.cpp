@@ -188,8 +188,12 @@ struct EndForEach : EndFor {
         auto dropped_list = std::make_shared<ListObject>();
         dropped_list->arr = std::move(dropped_result);
         set_output("droppedList", std::move(dropped_list));
-        if (
-        set_output("accumate", std::move(accumate));
+
+        auto [sn, ss] = inputBounds.at("FOR");
+        if (auto fore = dynamic_cast<BeginForEach *>(graph->nodes.at(sn).get()); fore) {
+            if (fore->m_accumate.has_value())
+                set_output2("accumate", std::move(fore->m_accumate));
+        }
     }
 };
 

@@ -263,7 +263,7 @@ struct BulletMakeTransform : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeTransform, {
-    {"origin", "rotation"},
+    {{"vec3f", "origin"}, {"vec3f", "rotation"}},
     {"trans"},
     {},
     {"Rigid"},
