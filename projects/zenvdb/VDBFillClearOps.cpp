@@ -12,7 +12,6 @@ namespace {
 using namespace zeno;
 
 
-#if 1
 template <class T>
 struct fill_voxels_op {
     T value;
@@ -54,7 +53,50 @@ ZENO_DEFNODE(VDBFillActiveVoxels)(
      }, /* category: */ {
      "openvdb",
      }});
- #endif
+
+
+#if 0
+struct multiply_voxels_op {
+    T value;
+    fill_voxels_op(T const &val) : value(val) {}
+
+    template <class LeafT>
+    void operator()(LeafT &leaf, openvdb::Index leafpos) const {
+        for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
+            iter.setValue(value);
+        }
+    }
+};
+
+struct VDBMultiplyOperation : INode {
+  virtual void apply() override {
+    auto grid = get_input<VDBGrid>("grid");
+    auto value = get_input<NumericObject>("fillValue")->value;
+    if (auto p = std::dynamic_pointer_cast<VDBFloatGrid>(grid); p) {
+        auto velman = openvdb::tree::LeafManager
+            <std::decay_t<decltype(p->m_grid->tree())>>(p->m_grid->tree());
+        velman.foreach(fill_voxels_op(std::get<float>(value)));
+    } else if (auto p = std::dynamic_pointer_cast<VDBFloat3Grid>(grid); p) {
+        auto velman = openvdb::tree::LeafManager
+            <std::decay_t<decltype(p->m_grid->tree())>>(p->m_grid->tree());
+        velman.foreach(fill_voxels_op(vec_to_other<openvdb::Vec3f>(std::get<vec3f>(value))));
+    }
+
+    set_output("grid", get_input("grid"));
+  }
+};
+
+ZENO_DEFNODE(VDBMultiplyOperation)(
+     { /* inputs: */ {
+     "grid",
+     {"NumericObject", "fillValue", "0.0"},
+     }, /* outputs: */ {
+       "grid",
+     }, /* params: */ {
+     }, /* category: */ {
+     "openvdb",
+     }});
+#endif
 
 
 template <class GridPtr>
