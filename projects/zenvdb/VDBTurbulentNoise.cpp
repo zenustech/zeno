@@ -47,7 +47,7 @@ vec4f hash43(vec3f p)
 }
 
 //offsets for noise
-const vec3f nbs[] = {
+inline static const vec3f nbs[] = {
     vec3f(0.0, 0.0, 0.0),vec3f(0.0, 1.0, 0.0),vec3f(1.0, 0.0, 0.0),vec3f(1.0, 1.0, 0.0),
     vec3f(0.0, 0.0, 1.0),vec3f(0.0, 1.0, 1.0),vec3f(1.0, 0.0, 1.0),vec3f(1.0, 1.0, 1.0)
 };
@@ -103,7 +103,7 @@ float operator()(float x, float y, float z) {  // https://www.shadertoy.com/view
     return explosionGrad;
 }
 
-}
+};
 
 struct VDBTurbulentNoise : INode {
   virtual void apply() override {
@@ -122,7 +122,7 @@ struct VDBTurbulentNoise : INode {
     float dx = grid->voxelSize()[0];
     strength *= dx;
 
-    Turbulent turbulent;
+    FBMTurbulent turbulent;
     turbulent.UVScale=get_param<float>("UVScale");
     turbulent.Speed=get_param<float>("Speed");
     turbulent.FBM_WarpPrimary=get_param<float>("FBM_WarpPrimary");
@@ -162,7 +162,7 @@ ZENO_DEFNODE(VDBTurbulentNoise)(
      }, /* params: */ {
     {"float","UVScale","0.4"},
     {"float","Speed","0.6"},
-    {"floa"," FBM_WarpPrimary","-0.24"},
+    {"float","FBM_WarpPrimary","-0.24"},
     {"float","FBM_WarpSecond","0.29"},
     {"float","FBM_WarpPersist","0.78"},
     {"float","FBM_EvalPersist","0.62"},
