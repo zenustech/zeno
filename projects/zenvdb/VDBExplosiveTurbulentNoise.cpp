@@ -105,7 +105,7 @@ float operator()(float x, float y, float z) {  // https://www.shadertoy.com/view
 
 };
 
-struct VDBTurbulentNoise : INode {
+struct VDBExplosiveTurbulentNoise : INode {
   virtual void apply() override {
     auto inoutSDF = get_input<VDBFloatGrid>("inoutSDF");
     auto strength = get_input<NumericObject>("strength")->get<float>();
@@ -150,7 +150,7 @@ struct VDBTurbulentNoise : INode {
   }
 };
 
-ZENO_DEFNODE(VDBTurbulentNoise)(
+ZENO_DEFNODE(VDBExplosiveTurbulentNoise)(
      { /* inputs: */ {
      "inoutSDF",
      {"float", "strength", "1.0"},
