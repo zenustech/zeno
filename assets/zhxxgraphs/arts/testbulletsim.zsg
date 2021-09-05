@@ -53,8 +53,8 @@
        null
       ],
       "translation": [
-       "1a04b6c0-BulletExtractTransform",
-       "origin",
+       "9962b653-NumericOperator",
+       "ret",
        null
       ],
       "eulerXYZ": [
@@ -100,7 +100,7 @@
       ]
      },
      "params": {
-      "_KEYS": "BulletObj\nPrimitive\nobj2"
+      "_KEYS": "BulletObj\nPrimitive\nAddTranslate\nobj3"
      },
      "uipos": [
       -862.3402301820523,
@@ -110,7 +110,8 @@
      "socket_keys": [
       "BulletObj",
       "Primitive",
-      "obj2"
+      "AddTranslate",
+      "obj3"
      ]
     },
     "3051bdd4-CachedOnce": {
@@ -169,15 +170,15 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "b6bdff6c-Route",
+       "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      -834.4898458134523,
-      378.5625792278421
+      -753.8511427952292,
+      225.6271079863842
      ],
      "options": [
       "VIEW"
@@ -720,11 +721,39 @@
       -264.23690205011394
      ],
      "options": []
+    },
+    "9962b653-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "1a04b6c0-BulletExtractTransform",
+       "origin",
+       null
+      ],
+      "rhs": [
+       "eaad726b-x",
+       "AddTranslate",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      -187.9271070615034,
+      624.145785876993
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -3080.1929644955603,
-    "y": -119.91992568228116,
+    "x": -484.80572075980916,
+    "y": 589.2486392380092,
     "width": 500.0,
     "height": 500.0
    }
@@ -1154,8 +1183,8 @@
      },
      "params": {},
      "uipos": [
-      -358.01415901538917,
-      238.43278068942584
+      522.0409880434344,
+      247.62395716001407
      ],
      "options": []
     },
@@ -1185,8 +1214,8 @@
      },
      "params": {},
      "uipos": [
-      160.1618613927737,
-      263.2343679910131
+      1118.5242224782958,
+      258.81441837499074
      ],
      "options": []
     },
@@ -1194,7 +1223,7 @@
      "name": "BulletMakeTransform",
      "inputs": {
       "origin": [
-       "ab61bf12-x",
+       "7bc61f9a-IfElse",
        "result",
        null
       ],
@@ -1212,7 +1241,7 @@
      "params": {},
      "uipos": [
       149.4754695703985,
-      44.858135951117276
+      43.71918378710815
      ],
      "options": []
     },
@@ -1232,8 +1261,8 @@
      },
      "params": {},
      "uipos": [
-      -101.14057624894878,
-      258.8055131157297
+      828.7479807363453,
+      249.82975484367086
      ],
      "options": []
     },
@@ -1277,8 +1306,8 @@
       "defl": ""
      },
      "uipos": [
-      869.1813804173354,
-      333.8683788121991
+      1799.0699374026296,
+      324.8926205401403
      ],
      "options": []
     },
@@ -1300,24 +1329,30 @@
        "port",
        null
       ],
-      "obj2": [
+      "AddTranslate": [
+       "04583556-x",
+       "result",
+       null
+      ],
+      "obj3": [
        null,
        null,
        null
       ]
      },
      "params": {
-      "_KEYS": "BulletObj\nPrimitive\nobj2"
+      "_KEYS": "BulletObj\nPrimitive\nAddTranslate\nobj3"
      },
      "uipos": [
-      506.42054574638877,
-      341.8940609951846
+      1436.309102731683,
+      332.9183027231258
      ],
      "options": [],
      "socket_keys": [
       "BulletObj",
       "Primitive",
-      "obj2"
+      "AddTranslate",
+      "obj3"
      ]
     },
     "edc91d70-x": {
@@ -1331,8 +1366,8 @@
      },
      "params": {
       "name": "origin",
-      "type": "vec3f",
-      "defl": "0,0,0"
+      "type": "",
+      "defl": ""
      },
      "uipos": [
       -544.8475434572388,
@@ -1351,8 +1386,8 @@
      },
      "params": {
       "name": "rotation",
-      "type": "vec4f",
-      "defl": "0,0,0,1"
+      "type": "",
+      "defl": ""
      },
      "uipos": [
       -542.5853203058942,
@@ -1388,37 +1423,6 @@
      "uipos": [
       -269.2511013215859,
       4.933920704845815
-     ],
-     "options": []
-    },
-    "ab61bf12-x": {
-     "name": "IfElse",
-     "inputs": {
-      "true": [
-       "edc91d70-x",
-       "port",
-       null
-      ],
-      "false": [
-       "25623029-NumericVec3",
-       "vec3",
-       null
-      ],
-      "cond": [
-       "edc91d70-x",
-       "hasValue",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -278.36691410392365,
-      -479.8515376458113
      ],
      "options": []
     },
@@ -1478,17 +1482,197 @@
       "defl": "0"
      },
      "uipos": [
-      -66.83259587020652,
-      488.56932153392324
+      863.0559611150875,
+      479.5935632618644
+     ],
+     "options": []
+    },
+    "275b411f-PrimitiveCalcCentroid": {
+     "name": "PrimitiveCalcCentroid",
+     "inputs": {
+      "prim": [
+       "6a8cbdd2-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -289.5220588235294,
+      498.6213235294117
+     ],
+     "options": []
+    },
+    "a09ceaf2-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "275b411f-PrimitiveCalcCentroid",
+       "centroid",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "copy"
+     },
+     "uipos": [
+      -42.277904328018224,
+      640.4100227790433
+     ],
+     "options": []
+    },
+    "04583556-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "e5eea951-NumericVec3",
+       "vec3",
+       null
+      ],
+      "false": [
+       "6c318353-x",
+       "ret",
+       null
+      ],
+      "cond": [
+       "edc91d70-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      485.64920273348537,
+      780.865603644647
+     ],
+     "options": []
+    },
+    "e5eea951-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      155.80865603644645,
+      861.9589977220957
+     ],
+     "options": []
+    },
+    "7bc61f9a-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "edc91d70-x",
+       "port",
+       null
+      ],
+      "false": [
+       "a09ceaf2-NumericOperator",
+       "ret",
+       null
+      ],
+      "cond": [
+       "edc91d70-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      163.7243735763098,
+      -172.26651480637818
+     ],
+     "options": []
+    },
+    "fd1da4c1-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "6a8cbdd2-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -59.794988610478356,
+      482.63097949886094
+     ],
+     "options": []
+    },
+    "6c318353-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "275b411f-PrimitiveCalcCentroid",
+       "centroid",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "neg"
+     },
+     "uipos": [
+      242.5968109339408,
+      529.6127562642369
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -361.7439608755417,
-    "y": 146.8860558390893,
-    "width": 500.0,
-    "height": 500.0
+    "x": -124.50791488245682,
+    "y": -123.0153114151621,
+    "width": 625.0,
+    "height": 625.0
    }
   }
  },
@@ -5234,6 +5418,41 @@
     "primitive"
    ]
   },
+  "PrimitiveCalcCentroid": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "centroid",
+     ""
+    ],
+    [
+     "float",
+     "totalArea",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveCalcNormal": {
    "inputs": [
     [
@@ -5476,7 +5695,7 @@
     [
      "float",
      "uniScale",
-     ""
+     "1.0"
     ],
     [
      "",
@@ -5496,7 +5715,18 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "bool",
+     "attrFromMesh",
+     "1"
+    ],
+    [
+     "bool",
+     "attrFromParticles",
+     "1"
+    ]
+   ],
    "categories": [
     "primitive"
    ]
@@ -7196,6 +7426,41 @@
     "primitive"
    ]
   },
+  "TranslatePrimitive": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "translation",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "TriggerAbortSignal": {
    "inputs": [
     [
@@ -7512,14 +7777,14 @@
      ""
     ],
     [
-     "vec3f",
+     "",
      "origin",
-     "0,0,0"
+     ""
     ],
     [
-     "vec4f",
+     "",
      "rotation",
-     "0,0,0,1"
+     ""
     ],
     [
      "float",
