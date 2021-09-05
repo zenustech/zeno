@@ -32,13 +32,13 @@ public:
     ZENO_API virtual ~INode();
 
     ZENO_API void doComplete();
-    ZENO_API virtual void doApply();
+    ZENO_API void doApply();
 
 protected:
     ZENO_API bool checkApplyCondition();
     ZENO_API bool requireInput(std::string const &ds);
-    ZENO_API void coreApply();
 
+    ZENO_API virtual void preApply();
     ZENO_API virtual void complete();
     ZENO_API virtual void apply() = 0;
 
