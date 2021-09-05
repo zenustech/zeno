@@ -86,4 +86,27 @@ ZENDEFNODE(TransformPrimitive, {
 });
 
 
+struct TranslatePrimitive : zeno::INode {
+    virtual void apply() override {
+        auto translation = get_input<zeno::NumericObject>("translation")->get<zeno::vec3f>();
+        auto prim = get_input<PrimitiveObject>("prim");
+        #pragma omp parallel for
+        for (int i = 0; i < pos.size(); i++) {
+            pos[i] += translation;
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(TranslatePrimitive, {
+    {
+    {"PrimitiveObject", "prim"},
+    {"vec3f", "translation", "0,0,0"},
+    },
+    {"prim"},
+    {},
+    {"primitive"},
+});
+
+
 }
