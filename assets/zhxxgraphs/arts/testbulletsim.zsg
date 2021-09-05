@@ -676,8 +676,8 @@
     }
    },
    "view_rect": {
-    "x": -3742.32280504224,
-    "y": -255.91081406496843,
+    "x": -4227.516426910126,
+    "y": -517.869811787064,
     "width": 500.0,
     "height": 500.0
    }
@@ -2815,36 +2815,6 @@
     "debug"
    ]
   },
-  "ExportObjMesh": {
-   "inputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
   "ExportObjPrimitive": {
    "inputs": [
     [
@@ -2873,36 +2843,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "ExportParticles": {
-   "inputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "particles"
    ]
   },
   "ExportZpmPrimitive": {
@@ -3145,46 +3085,6 @@
     "functional"
    ]
   },
-  "GeoVertexVel": {
-   "inputs": [
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "TargetMesh",
-     ""
-    ],
-    [
-     "",
-     "OriginMesh",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "MeshVel",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
   "GetFrameNum": {
    "inputs": [
     [
@@ -3350,36 +3250,6 @@
     "control"
    ]
   },
-  "ImportObjMesh": {
-   "inputs": [
-    [
-     "",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
   "ImportObjPrimitive": {
    "inputs": [
     [
@@ -3408,36 +3278,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "ImportParticles": {
-   "inputs": [
-    [
-     "",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "particles"
    ]
   },
   "ImportZpmPrimitive": {
@@ -4255,106 +4095,6 @@
     "string"
    ]
   },
-  "MeshCopy": {
-   "inputs": [
-    [
-     "",
-     "copyFrom",
-     ""
-    ],
-    [
-     "",
-     "copyTo",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
-  "MeshMix": {
-   "inputs": [
-    [
-     "",
-     "meshA",
-     ""
-    ],
-    [
-     "",
-     "meshB",
-     ""
-    ],
-    [
-     "",
-     "coef",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
-  "MeshToPrimitive": {
-   "inputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
   "NumericCounter": {
    "inputs": [
     [
@@ -5036,36 +4776,6 @@
     "zenofx"
    ]
   },
-  "ParticlesToPrimitive": {
-   "inputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
   "ParticlesWrangle": {
    "inputs": [
     [
@@ -5159,41 +4869,6 @@
    "params": [],
    "categories": [
     "math"
-   ]
-  },
-  "PolyDuplicate": {
-   "inputs": [
-    [
-     "",
-     "Mesh",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Meshes",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
    ]
   },
   "PortalIn": {
@@ -6761,66 +6436,6 @@
     "Rigid"
    ]
   },
-  "PrimitiveToMesh": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
-  "PrimitiveToParticles": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
   "PrimitiveTraceTrail": {
    "inputs": [
     [
@@ -7034,47 +6649,6 @@
     "numeric"
    ]
   },
-  "RandomParticles": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "int",
-     "count",
-     "1 0"
-    ],
-    [
-     "float",
-     "Prange",
-     "1 0"
-    ],
-    [
-     "float",
-     "Vrange",
-     "1 0"
-    ]
-   ],
-   "categories": [
-    "particles"
-   ]
-  },
   "ReadMutable": {
    "inputs": [
     [
@@ -7105,37 +6679,6 @@
     "control"
    ]
   },
-  "ReadObjMesh": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "readpath",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "trimesh"
-   ]
-  },
   "ReadObjPrimitive": {
    "inputs": [
     [
@@ -7164,37 +6707,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "ReadParticles": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "readpath",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "particles"
    ]
   },
   "ResizeList": {
@@ -7365,51 +6877,6 @@
    "params": [],
    "categories": [
     "numeric"
-   ]
-  },
-  "StringToMesh": {
-   "inputs": [
-    [
-     "",
-     "string",
-     ""
-    ],
-    [
-     "",
-     "AZmesh",
-     ""
-    ],
-    [
-     "",
-     "spacing",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "StringMeshList",
-     ""
-    ],
-    [
-     "",
-     "SpacingList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "math"
    ]
   },
   "SubCategory": {
@@ -7630,51 +7097,6 @@
    "params": [],
    "categories": [
     "control"
-   ]
-  },
-  "TransformMesh": {
-   "inputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "translate",
-     ""
-    ],
-    [
-     "",
-     "rotate",
-     ""
-    ],
-    [
-     "",
-     "scaling",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
    ]
   },
   "TransformPrimitive": {
@@ -7938,37 +7360,6 @@
     "cgmesh"
    ]
   },
-  "WriteObjMesh": {
-   "inputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "writepath",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "trimesh"
-   ]
-  },
   "WriteObjPrimitive": {
    "inputs": [
     [
@@ -7997,37 +7388,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "WriteParticles": {
-   "inputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "writepath",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "particles"
    ]
   },
   "RigidStepWorld": {

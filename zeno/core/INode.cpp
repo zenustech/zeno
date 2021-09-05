@@ -16,7 +16,7 @@
 #include <zeno/utils/Timer.h>
 #endif
 #include <zeno/utils/safe_at.h>
-#include <spdlog/spdlog.h>
+//#include <spdlog/spdlog.h>
 
 namespace zeno {
 
@@ -90,9 +90,9 @@ ZENO_API void INode::doApply() {
 #ifdef ZENO_BENCHMARKING
         Timer _(myname);
 #endif
-        spdlog::info("--> enter {}", myname);
+        //spdlog::info("--> enter {}", myname);
         preApply();
-        spdlog::info("--> leave {}", myname);
+        //spdlog::info("--> leave {}", myname);
     }
 
 #ifdef ZENO_VISUALIZATION
