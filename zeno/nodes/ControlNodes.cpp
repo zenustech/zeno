@@ -60,7 +60,7 @@ struct EndFor : zeno::ContextManagedNode {
         while (fore->isContinue()) {
             fore->update();
             push_context();
-            zeno::INode::doApply();
+            zeno::INode::coreApply();
             post_do_apply();
             old_ctx = pop_context();
         }

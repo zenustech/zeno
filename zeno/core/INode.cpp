@@ -66,12 +66,12 @@ ZENO_API bool INode::checkApplyCondition() {
     return true;
 }
 
-ZENO_API void INode::doApply() {
+ZENO_API void INode::preApply() {
     for (auto const &[ds, bound]: inputBounds) {
         requireInput(ds);
     }
 
-    coreApply();
+    apply();
 }
 
 ZENO_API bool INode::requireInput(std::string const &ds) {
@@ -85,13 +85,13 @@ ZENO_API bool INode::requireInput(std::string const &ds) {
     return true;
 }
 
-ZENO_API void INode::coreApply() {
+ZENO_API void INode::doApply() {
     if (checkApplyCondition()) {
 #ifdef ZENO_BENCHMARKING
         Timer _(myname);
 #endif
         //spdlog::trace("--> enter {}", myname);
-        apply();
+        preApply();
         //spdlog::trace("--> leave {}", myname);
     }
 
