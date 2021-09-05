@@ -90,6 +90,7 @@ struct TranslatePrimitive : zeno::INode {
     virtual void apply() override {
         auto translation = get_input<zeno::NumericObject>("translation")->get<zeno::vec3f>();
         auto prim = get_input<PrimitiveObject>("prim");
+        auto &pos = prim->attr<vec3f>("pos");
         #pragma omp parallel for
         for (int i = 0; i < pos.size(); i++) {
             pos[i] += translation;
