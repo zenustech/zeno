@@ -60,7 +60,7 @@ struct EndFor : zeno::ContextManagedNode {
         while (fore->isContinue()) {
             fore->update();
             push_context();
-            this->apply();
+            INode::preApply();
             post_do_apply();
             old_ctx = pop_context();
         }
@@ -167,7 +167,7 @@ struct EndForEach : EndFor {
     }
 
     virtual void preApply() override {
-        EndFor::doApply();
+        EndFor::preApply();
         if (get_param<bool>("doConcat")) {
             decltype(result) newres;
             for (auto &xs: result) {
