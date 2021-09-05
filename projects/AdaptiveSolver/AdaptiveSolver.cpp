@@ -128,7 +128,7 @@ struct AdaptiveSolver : zeno::INode
                 divVel = -divVel/dt;
                 rhs_axr.setValue(openvdb::Coord(voxelipos), divVel);
                 float rhsvalue = rhs_axr.getValue(openvdb::Coord(voxelipos));
-                if(rhsvalue > 1 || rhsvalue < -1)
+                if(rhsvalue != 0)
                     printf("rhs value is %f, getValue is %f, vel sum is (%f,%f,%f), divVel is %f, dt is %f\n", 
                         rhsvalue, rhs_axr.getValue(openvdb::Coord(voxelipos)), velSum[0], velSum[1], velSum[2], divVel, dt);
             }
@@ -238,6 +238,8 @@ struct AdaptiveSolver : zeno::INode
                     //     voxelipos[2]);
                     res_axr.setValue(openvdb::Coord(voxelipos), b - Ax);
                     p_axr.setValue(openvdb::Coord(voxelipos), b - Ax);
+                    if(b - Ax != 0)
+                        printf("b is %f, Ax is %f, press is %f\n", b ,Ax, pressValue);
                     //printf("p-Ax is %f, b is %f, Ax is %f\n", 
                     //    b - Ax, b, Ax);
                 }
@@ -365,9 +367,10 @@ struct AdaptiveSolver : zeno::INode
         
         leaves.clear();
         pressGrid->tree().getNodes(leaves);
-        
         printf("pressGrid leaves num is %d\n", leaves.size());
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeRHS);
+        
+        computeRHS();
+        //tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeRHS);
         tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), initIter);
         printf("start to iteration\n");
         for(int iterNum = 0; iterNum < 2; ++iterNum)

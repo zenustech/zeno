@@ -1,9 +1,30 @@
 #pragma once
 
 #include "AdaptiveGridGen.h"
+#include <openvdb/tools/ValueTransformer.h>
 
 
 namespace zeno{
+    // init the staggered press grid according to sdfGrid
+    struct initializer{
+        openvdb::FloatGrid::Ptr sdfGrid;
+        openvdb::FloatGrid::Ptr pGrid;
+        double spacing;
+        initializer(openvdb::FloatGrid::Ptr sdf, openvdb::FloatGrid::Ptr p, double h):sdfGrid(sdf), pGrid(p), spacing(h){}
+        
+        void operator()(const openvdb::FloatGrid::ValueOnCIter& sdfiter) const 
+        {
+            auto press_axr{pGrid->getAccessor()};
+            openvdb::Coord coord = sdfiter.getCoord();
+            for(int i=0;i<=1;++i)
+            for(int j=0;j<=1;++j)
+            for(int k=0;k<=1;++k)
+            {
+                openvdb::Coord drift = coord + openvdb::Coord(i,j,k);
+                press_axr.setValue(drift, 0.0f);
+            }
+        }
+    };
     struct mgData{
         zeno::AdaptiveIndexGenerator aig;
         std::vector<openvdb::Vec3fGrid::Ptr> vel;
@@ -15,7 +36,7 @@ namespace zeno{
         std::vector<openvdb::FloatGrid::Ptr> r2;
         std::vector<openvdb::FloatGrid::Ptr> p;
         std::vector<openvdb::FloatGrid::Ptr> Ap;
-        
+
         void initData(){
             for(int i=0;i<aig.hLevels.size();++i)
             {
@@ -23,17 +44,6 @@ namespace zeno{
                 {
                     aig.hLevels[i] = aig.hLevels[i-1] * 0.5;
                 }
-                auto transform1 = openvdb::math::Transform::createLinearTransform(aig.hLevels[i]);
-                auto transform2 = openvdb::math::Transform::createLinearTransform(aig.hLevels[i]);
-                transform1->postTranslate(openvdb::Vec3d{0.5,0.5,0.5} *
-                                                double(aig.hLevels[i]));
-                vel[i]->setTransform(transform1);
-                press[i]->setTransform(transform2);
-                rhs[i]->setTransform(transform2);
-                residual[i]->setTransform(transform2);
-                r2[i]->setTransform(transform2);
-                p[i]->setTransform(transform2);
-                Ap[i]->setTransform(transform2);
             }
             openvdb::FloatGrid::Ptr sdfgrid;
             openvdb::Vec3fGrid::Ptr velGrid;
@@ -49,14 +59,18 @@ namespace zeno{
                 pressGrid = press[i] = sdfgrid->deepCopy();
                 rhsGrid = rhs[i] = sdfgrid->deepCopy();
                 sdfgrid->tree().getNodes(leaves);
-                auto grid_axr{sdfgrid->getAccessor()};
-                auto vel_axr{velGrid->getAccessor()};
-                auto press_axr{pressGrid->getAccessor()};
-                auto rhs_axr{rhsGrid->getAccessor()};
-
+                vel[i]->setTree(std::make_shared<openvdb::Vec3fTree>(
+                    sdfgrid->tree(), /*bgval*/ openvdb::Vec3f(0),
+                    openvdb::TopologyCopy()));
+                auto transform2 = openvdb::math::Transform::createLinearTransform(aig.hLevels[i]);
+                press[i]->setTransform(transform2);
+                rhs[i]->setTransform(transform2);
                 #pragma omp parallel for
                 for(int ii= 0 ;ii < sdfgrid->tree().leafCount(); ++ii)
                 {
+                    auto grid_axr{sdfgrid->getAccessor()};
+                    auto press_axr{pressGrid->getAccessor()};
+                    auto rhs_axr{rhsGrid->getAccessor()};
                     openvdb::FloatGrid::TreeType::LeafIter iter = sdfgrid->tree().beginLeaf();
                     for(int jj = 0;jj<ii;++jj)
                         ++iter;
@@ -69,15 +83,9 @@ namespace zeno{
 
                         if(sdfgrid->tree().isValueOff(openvdb::Coord(voxelipos)))
                             continue;
-                        float sdfvalue = grid_axr.getValue(openvdb::Coord(voxelipos));
+                        press_axr.setValue(openvdb::Coord(voxelipos), 0.0f);
+                        rhs_axr.setValue(openvdb::Coord(voxelipos), 0.0f);
                         
-                        vel_axr.setValue(openvdb::Coord(voxelipos), openvdb::Vec3f(0.0));
-                        
-                        press_axr.setValue(openvdb::Coord(voxelipos), 0);
-                        rhs_axr.setValue(openvdb::Coord(voxelipos), 0);
-                        auto velV = vel_axr.getValue(openvdb::Coord(voxelipos));
-                        //printf("sdf value is %f, vel value is (%f,%f,%f)\n", 
-                        //    sdfvalue, velV[0], velV[1], velV[2]);
                         for(int i=0;i<=1;++i)
                         for(int j=0;j<=1;++j)
                         for(int k=0;k<=1;++k)
@@ -85,14 +93,28 @@ namespace zeno{
                             openvdb::Vec3i drift = voxelipos + openvdb::Vec3i(i,j,k);
                             if(sdfgrid->tree().isValueOn(openvdb::Coord(drift)))
                                 continue;
-                            //printf("insert press and rhs in (%d,%d,%d)\n", drift[0], drift[1], drift[2]);
-                            press_axr.setValue(openvdb::Coord(drift), 0);
-                            rhs_axr.setValue(openvdb::Coord(drift), 0);
+                            
+                            press_axr.setValue(openvdb::Coord(drift), 0.0f);
+                            rhs_axr.setValue(openvdb::Coord(drift), 0.0f);
                         }
 
                     }
                 }
                 leaves.clear();
+
+                openvdb::tools::foreach(pressGrid->beginValueOn(), setzero);
+                residual[i]->setTree(std::make_shared<openvdb::FloatTree>(
+                    pressGrid->tree(), /*bgval*/ float(0),
+                    openvdb::TopologyCopy()));
+                r2[i]->setTree(std::make_shared<openvdb::FloatTree>(
+                    pressGrid->tree(), /*bgval*/ float(0),
+                    openvdb::TopologyCopy()));
+                p[i]->setTree(std::make_shared<openvdb::FloatTree>(
+                    pressGrid->tree(), /*bgval*/ float(0),
+                    openvdb::TopologyCopy()));
+                Ap[i]->setTree(std::make_shared<openvdb::FloatTree>(
+                    pressGrid->tree(), /*bgval*/ float(0),
+                    openvdb::TopologyCopy()));
             }
             
         }
