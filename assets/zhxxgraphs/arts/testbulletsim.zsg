@@ -2,55 +2,6 @@
  "graph": {
   "main": {
    "nodes": {
-    "c510ac25-BulletStepWorld": {
-     "name": "BulletStepWorld",
-     "inputs": {
-      "world": [
-       "de0af25c-BulletWorldSetObjList",
-       "world",
-       null
-      ],
-      "dt": [
-       null,
-       null,
-       0.04
-      ],
-      "steps": [
-       null,
-       null,
-       1
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1010.9582782015345,
-      532.3241916439837
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
-    "dbbbe83e-BulletMakeWorld": {
-     "name": "BulletMakeWorld",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -571.5802726499089,
-      -44.08254613988447
-     ],
-     "options": []
-    },
     "4efd0e41-BulletMakeConvexHullShape": {
      "name": "BulletMakeConvexHullShape",
      "inputs": {
@@ -187,8 +138,8 @@
      },
      "params": {},
      "uipos": [
-      -560.4679550931455,
-      1483.1653285261405
+      -549.1411763617033,
+      979.9327306006364
      ],
      "options": []
     },
@@ -208,8 +159,8 @@
      },
      "params": {},
      "uipos": [
-      -241.29316634631004,
-      1527.5483580073856
+      -229.9663876148678,
+      1024.3157600818815
      ],
      "options": []
     },
@@ -249,12 +200,10 @@
      },
      "params": {},
      "uipos": [
-      130.66068519909481,
-      1393.9922174165754
+      141.98746393053705,
+      849.3359715589397
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "f9339a50-CachedOnce": {
      "name": "CachedOnce",
@@ -274,70 +223,6 @@
      "uipos": [
       -3812.4422069180478,
       379.844369451373
-     ],
-     "options": []
-    },
-    "ccb4cdad-BeginForEach": {
-     "name": "BeginForEach",
-     "inputs": {
-      "list": [
-       "3051bdd4-CachedOnce",
-       "output",
-       null
-      ],
-      "accumate": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -412.1504188851701,
-      397.27458085371575
-     ],
-     "options": []
-    },
-    "29d5af40-EndForEach": {
-     "name": "EndForEach",
-     "inputs": {
-      "object": [
-       "6ea6c539-ExtractDict",
-       "BulletObj",
-       null
-      ],
-      "accumate": [
-       null,
-       null,
-       null
-      ],
-      "accept": [
-       null,
-       null,
-       true
-      ],
-      "FOR": [
-       "ccb4cdad-BeginForEach",
-       "FOR",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "doConcat": false
-     },
-     "uipos": [
-      124.46642970060321,
-      410.64031568495295
      ],
      "options": []
     },
@@ -411,66 +296,12 @@
       "obj2"
      ]
     },
-    "6ea6c539-ExtractDict": {
-     "name": "ExtractDict",
-     "inputs": {
-      "dict": [
-       "ccb4cdad-BeginForEach",
-       "object",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "BulletObj\nobj1"
-     },
-     "uipos": [
-      -139.20315350496463,
-      393.2201594363184
-     ],
-     "options": [],
-     "socket_keys": [
-      "BulletObj",
-      "obj1"
-     ]
-    },
-    "323e83b9-ExtractList": {
-     "name": "ExtractList",
-     "inputs": {
-      "list": [
-       "3051bdd4-CachedOnce",
-       "output",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "0\n1"
-     },
-     "uipos": [
-      -1274.3794326241134,
-      627.9550827423167
-     ],
-     "options": [],
-     "socket_keys": [
-      "0",
-      "1"
-     ]
-    },
     "eaad726b-x": {
      "name": "ExtractDict",
      "inputs": {
       "dict": [
-       "323e83b9-ExtractList",
-       "0",
+       "8b676642-BeginForEach",
+       "object",
        null
       ],
       "SRC": [
@@ -483,65 +314,14 @@
       "_KEYS": "BulletObj\nPrimitive\nobj2"
      },
      "uipos": [
-      -873.6670089134944,
-      1273.116148886416
+      -862.3402301820523,
+      769.8835509609123
      ],
      "options": [],
      "socket_keys": [
       "BulletObj",
       "Primitive",
       "obj2"
-     ]
-    },
-    "de0af25c-BulletWorldSetObjList": {
-     "name": "BulletWorldSetObjList",
-     "inputs": {
-      "world": [
-       "cb5b65f4-CachedOnce",
-       "output",
-       null
-      ],
-      "objList": [
-       "29d5af40-EndForEach",
-       "list",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      638.7665198237885,
-      451.5418502202642
-     ],
-     "options": []
-    },
-    "51f7e467-PrintNumeric": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "1a04b6c0-BulletExtractTransform",
-       "origin",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "hint": "PrintNumeric"
-     },
-     "uipos": [
-      55.50660792951541,
-      1704.8458149779738
-     ],
-     "options": [
-      "VIEW"
      ]
     },
     "3051bdd4-CachedOnce": {
@@ -569,7 +349,7 @@
      "name": "CachedOnce",
      "inputs": {
       "input": [
-       "dbbbe83e-BulletMakeWorld",
+       "5a797c6f-RigidMakeWorld",
        "world",
        null
       ],
@@ -581,17 +361,560 @@
      },
      "params": {},
      "uipos": [
-      -288.48126367614884,
-      6.41069474835885
+      -1062.0678888087043,
+      183.49678965822096
+     ],
+     "options": []
+    },
+    "670a0d29-RigidStepWorld": {
+     "name": "RigidStepWorld",
+     "inputs": {
+      "world": [
+       "cb5b65f4-CachedOnce",
+       "output",
+       null
+      ],
+      "objList": [
+       "3051bdd4-CachedOnce",
+       "output",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -834.4898458134523,
+      378.5625792278421
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "5a797c6f-RigidMakeWorld": {
+     "name": "RigidMakeWorld",
+     "inputs": {
+      "gravity": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1332.3497460162,
+      170.3862972973484
+     ],
+     "options": []
+    },
+    "8b676642-BeginForEach": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "3051bdd4-CachedOnce",
+       "output",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1178.502783669141,
+      706.2731972428419
+     ],
+     "options": []
+    },
+    "4dfebc81-EndForEach": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       "c520bfe3-TransformPrimitive",
+       "outPrim",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "8b676642-BeginForEach",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      553.7198435843053,
+      833.6509146341463
+     ],
+     "options": []
+    },
+    "b6bdff6c-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "4dfebc81-EndForEach",
+       "list",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      847.669616519174,
+      921.2979351032449
+     ],
+     "options": [
+      "VIEW"
+     ]
+    }
+   },
+   "view_rect": {
+    "x": 119.42816225355108,
+    "y": 748.196616027106,
+    "width": 320.0,
+    "height": 320.0
+   }
+  },
+  "RigidStepWorld": {
+   "nodes": {
+    "881c8622-x": {
+     "name": "BulletStepWorld",
+     "inputs": {
+      "world": [
+       "4caf47b8-x",
+       "world",
+       null
+      ],
+      "dt": [
+       null,
+       null,
+       0.04
+      ],
+      "steps": [
+       null,
+       null,
+       1
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      723.7610427144155,
+      479.2022711970932
+     ],
+     "options": []
+    },
+    "791830ef-x": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "20154a69-x",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "BulletObj\nobj1"
+     },
+     "uipos": [
+      -426.4003889920837,
+      340.09823898942795
+     ],
+     "options": [],
+     "socket_keys": [
+      "BulletObj",
+      "obj1"
+     ]
+    },
+    "19b87e02-x": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       "791830ef-x",
+       "BulletObj",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "20154a69-x",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      -162.73080578651587,
+      357.51839523806245
+     ],
+     "options": []
+    },
+    "4caf47b8-x": {
+     "name": "BulletWorldSetObjList",
+     "inputs": {
+      "world": [
+       "0871d035-SubInput",
+       "port",
+       null
+      ],
+      "objList": [
+       "19b87e02-x",
+       "list",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      351.5692843366694,
+      398.4199297733737
+     ],
+     "options": []
+    },
+    "20154a69-x": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "9e6d65b1-SubInput",
+       "port",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -699.3476543722892,
+      344.15266040682525
+     ],
+     "options": []
+    },
+    "0871d035-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "world",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -146.32357985729982,
+      6.431805708013087
+     ],
+     "options": []
+    },
+    "082e319f-x": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Rigid"
+     },
+     "uipos": [
+      -526.3361004390779,
+      68.60592755214054
+     ],
+     "options": []
+    },
+    "9e6d65b1-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "objList",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -992.6420142700331,
+      324.8061882546653
+     ],
+     "options": []
+    },
+    "df7818f7-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "881c8622-x",
+       "world",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "world",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1017.2972694840832,
+      483.45739571899026
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -129.89796945765897,
-    "y": -28.75436155852185,
-    "width": 625.0,
-    "height": 625.0
+    "x": 1.8223449506043607,
+    "y": -129.65448339736437,
+    "width": 976.5625,
+    "height": 976.5625
+   }
+  },
+  "RigidMakeWorld": {
+   "nodes": {
+    "63ca24d8-x": {
+     "name": "BulletMakeWorld",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -590.678209206968,
+      -108.46561056486807
+     ],
+     "options": []
+    },
+    "2fcc727a-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "398c9bd1-BulletSetWorldGravity",
+       "world",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "world",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      230.51591657519208,
+      209.11086717892422
+     ],
+     "options": []
+    },
+    "13678edd-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "gravity",
+      "type": "vec3f",
+      "defl": "0,0,-9.8"
+     },
+     "uipos": [
+      -1047.8183315038418,
+      77.49039517014268
+     ],
+     "options": []
+    },
+    "b9a36d04-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Rigid"
+     },
+     "uipos": [
+      -253.5675082327113,
+      363.8858397365532
+     ],
+     "options": []
+    },
+    "398c9bd1-BulletSetWorldGravity": {
+     "name": "BulletSetWorldGravity",
+     "inputs": {
+      "world": [
+       "63ca24d8-x",
+       "world",
+       null
+      ],
+      "gravity": [
+       "e20efa7e-IfElse",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -190.82738748627867,
+      114.297475301866
+     ],
+     "options": []
+    },
+    "e20efa7e-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "13678edd-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "d5f32d97-NumericVec3",
+       "vec3",
+       null
+      ],
+      "cond": [
+       "13678edd-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -615.7381997804611,
+      121.7755214050494
+     ],
+     "options": []
+    },
+    "d5f32d97-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": -9.8,
+      "z": 0.0
+     },
+     "uipos": [
+      -611.4503293084523,
+      339.5993413830955
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -640.4363336992333,
+    "y": -233.77469813391872,
+    "width": 781.25,
+    "height": 781.25
    }
   }
  },
@@ -1361,6 +1684,11 @@
     ]
    ],
    "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
     [
      "",
      "DST",
@@ -7174,6 +7502,73 @@
    "categories": [
     "particles"
    ]
+  },
+  "RigidStepWorld": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "objList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeWorld": {
+   "inputs": [
+    [
+     "vec3f",
+     "gravity",
+     "0,0,-9.8"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],

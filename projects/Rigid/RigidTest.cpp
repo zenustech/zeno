@@ -552,12 +552,13 @@ struct BulletStepWorld : zeno::INode {
         auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
         auto steps = get_input<zeno::NumericObject>("steps")->get<int>();
         world->step(dt, steps);
+        set_output("world", std::move(world));
     }
 };
 
 ZENDEFNODE(BulletStepWorld, {
     {"world", {"float", "dt", "0.04"}, {"int", "steps", "1"}},
-    {},
+    {"world"},
     {},
     {"Rigid"},
 });
