@@ -4,6 +4,7 @@
 #include <zeno/types/ConditionObject.h>
 #include <zeno/extra/ContextManaged.h>
 #include <zeno/extra/evaluate_condition.h>
+#include <zeno/utils/safe_at.h>
 
 namespace zeno {
 
@@ -60,7 +61,7 @@ struct EndFor : zeno::ContextManagedNode {
         while (fore->isContinue()) {
             fore->update();
             push_context();
-            INode::preApply();
+            apply();
             post_do_apply();
             old_ctx = pop_context();
         }

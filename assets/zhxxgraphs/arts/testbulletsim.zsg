@@ -2,27 +2,6 @@
  "graph": {
   "main": {
    "nodes": {
-    "fc4e5787-ImportObjPrimitive": {
-     "name": "ImportObjPrimitive",
-     "inputs": {
-      "path": [
-       null,
-       null,
-       "assets/monkey.obj"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2901.2692005556914,
-      -206.06838974787507
-     ],
-     "options": []
-    },
     "56e7623d-BulletGetObjTransform": {
      "name": "BulletGetObjTransform",
      "inputs": {
@@ -495,13 +474,13 @@
        null
       ],
       "bboxMin": [
-       null,
-       null,
+       "67a3c8f7-NumericVec3",
+       "vec3",
        null
       ],
       "bboxMax": [
-       null,
-       null,
+       "a01be75c-x",
+       "vec3",
        null
       ],
       "SRC": [
@@ -518,8 +497,8 @@
       "periodicZ": false
      },
      "uipos": [
-      -3239.182692307692,
-      -167.41071428571428
+      -3923.465152444366,
+      -339.6202814838919
      ],
      "options": []
     },
@@ -568,8 +547,8 @@
        true
       ],
       "FOR": [
-       null,
-       null,
+       "2b782000-BeginForEach",
+       "FOR",
        null
       ],
       "SRC": [
@@ -591,8 +570,8 @@
      "name": "BeginForEach",
      "inputs": {
       "list": [
-       "baaae994-VoronoiFracture",
-       "primList",
+       "70992cec-Route",
+       "output",
        null
       ],
       "accumate": [
@@ -612,11 +591,93 @@
       -12.019230769230745
      ],
      "options": []
+    },
+    "70992cec-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "f7c837d8-CachedOnce",
+       "output",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3172.665148063782,
+      35.53530751708429
+     ],
+     "options": []
+    },
+    "67a3c8f7-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": -1.0,
+      "y": -1.0,
+      "z": -1.0
+     },
+     "uipos": [
+      -4256.036446469248,
+      -363.5535307517085
+     ],
+     "options": []
+    },
+    "a01be75c-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 1.0,
+      "y": 1.0,
+      "z": 1.0
+     },
+     "uipos": [
+      -4224.145785876994,
+      -133.02961275626424
+     ],
+     "options": []
+    },
+    "f7c837d8-CachedOnce": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "baaae994-VoronoiFracture",
+       "primList",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3555.353075170843,
+      -224.1457858769932
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -2740.0909750840055,
-    "y": -46.74224914469286,
+    "x": -3742.32280504224,
+    "y": -255.91081406496843,
     "width": 500.0,
     "height": 500.0
    }
