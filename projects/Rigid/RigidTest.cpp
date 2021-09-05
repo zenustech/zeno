@@ -15,6 +15,7 @@
 #include <vector>
 
 namespace {
+using namespace zeno;
 
 
 struct BulletTransform : zeno::IObject {
@@ -440,13 +441,32 @@ struct BulletWorld : zeno::IObject {
     }
 
     void addObject(std::shared_ptr<BulletObject> obj) {
+        spdlog::info("adding object {}", (void *)obj.get());
         dynamicsWorld->addRigidBody(obj->body.get());
         objects.insert(std::move(obj));
     }
 
     void removeObject(std::shared_ptr<BulletObject> const &obj) {
+        spdlog::info("removing object {}", (void *)obj.get());
         dynamicsWorld->removeRigidBody(obj->body.get());
         objects.erase(obj);
+    }
+
+    void setObjectList(std::vector<std::shared_ptr<BulletObject>> objList) {
+        std::set<std::shared_ptr<BulletObject>> objSet;
+        spdlog::info("setting object list len={}", objList.size());
+        spdlog::info("existing object list len={}", objects.size());
+        for (auto const &object: objList) {
+            objSet.insert(object);
+            if (auto it = objects.find(object); it == objects.end()) {
+                addObject(std::move(object));
+            }
+        }
+        for (auto const &object: std::set(objects)) {
+            if (auto it = objSet.find(object); it == objSet.end()) {
+                removeObject(object);
+            }
+        }
     }
 
     /*
@@ -473,11 +493,10 @@ struct BulletWorld : zeno::IObject {
         addObject(std::make_unique<BulletObject>(mass, startTransform, std::move(colShape)));
     }*/
 
-    void step(float dt = 1.f / 60.f) {
-        spdlog::info("dt = {}", dt);
-        spdlog::info("len(objects) = {}", objects.size());
-        for(int i=0;i<10;i++)
-            dynamicsWorld->stepSimulation(0.1*dt, 1, 0.1*dt);
+    void step(float dt = 1.f / 60.f, int steps = 10) {
+        spdlog::info("stepping with dt={}, steps={}, len(objects)={}", dt, steps, objects.size());
+        for(int i=0;i<steps;i++)
+            dynamicsWorld->stepSimulation(dt, 1, dt);
 
         /*for (int j = dynamicsWorld->getNumCollisionObjects() - 1; j >= 0; j--)
         {
@@ -531,12 +550,13 @@ struct BulletStepWorld : zeno::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
         auto dt = get_input<zeno::NumericObject>("dt")->get<float>();
-        world->step(dt);
+        auto steps = get_input<zeno::NumericObject>("steps")->get<int>();
+        world->step(dt, steps);
     }
 };
 
 ZENDEFNODE(BulletStepWorld, {
-    {"world", {"float", "dt", "0.04"}},
+    {"world", {"float", "dt", "0.04"}, {"int", "steps", "1"}},
     {},
     {},
     {"Rigid"},
@@ -578,13 +598,8 @@ ZENDEFNODE(BulletWorldRemoveObject, {
 struct BulletWorldSetObjList : zeno::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
-        auto objList = get_input<ListObject>("objList")->get<std::shared_ptr<IObject>>();
-        if (
-            world.objects.find(object);
-            world->addObject(std::move(object));
-        for (auto const &existingObj: world->objects) {
-        }
-        world->addObject(std::move(object));
+        auto objList = get_input<ListObject>("objList")->get<std::shared_ptr<BulletObject>>();
+        world->setObjectList(std::move(objList));
         set_output("world", get_input("world"));
     }
 };
