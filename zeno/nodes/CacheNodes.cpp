@@ -49,7 +49,7 @@ struct CachedIf : zeno::INode {
             }
         }
         if (!m_done) {
-            zeno::INode::doApply();
+            INode::preApply();
             m_done = true;
         }
     }
@@ -73,7 +73,7 @@ struct CachedOnce : zeno::INode {
 
     virtual void preApply() override {
         if (!m_done) {
-            zeno::INode::doApply();
+            INode::preApply();
             m_done = true;
         }
     }

@@ -36,44 +36,23 @@ default: run
 #O=arts/ZFXv2.zsg
 #default: run
 
+B=Release
+
 all:
-	cmake -B build -DCMAKE_BUILD_TYPE=Release
+	cmake -B build -DCMAKE_BUILD_TYPE=$B
 	cmake --build build --parallel 24
-
-release_all:
-	cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
-	cmake --build build --parallel 24
-
-debug_all:
-	cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
-	cmake --build build --parallel 24
-
-configure:
-	cmake -B build
-	ccmake -B build
-
-test: all
-	build/tests/zentest
-
-easygl: all
-	build/projects/EasyGL/zeno_EasyGL_main
 
 run: all
 	ZEN_OPEN=$O python3 -m zenqt
 
+debug: all
+	ZEN_NOSIGHOOK=1 USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O gdb python3 -ex 'r -m zenqt'
+
 optrun: all
 	ZEN_OPEN=$O optirun python3 -m zenqt
 
-glrun: all
+noglrun: all
 	ZEN_NOFORK=1 ZEN_NOVIEW=1 ZEN_OPEN=$O python3 -m zenqt
 
 justrun:
 	ZEN_OPEN=$O python3 -m zenqt
-
-gldebug: debug_all
-	ZEN_NOSIGHOOK=1 ZEN_NOVIEW=1 USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O gdb python3 -ex 'r -m zenqt'
-
-debug: debug_all
-	ZEN_NOSIGHOOK=1 USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O gdb python3 -ex 'r -m zenqt'
-
-.PHONY: all debug_all debug run test configure default

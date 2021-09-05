@@ -10,7 +10,7 @@ namespace zeno {
 struct CachePrimitive : zeno::INode {
     int m_framecounter = 0;
 
-    virtual void doApply() override {
+    virtual void preApply() override {
         if (has_option("MUTE")) {
             requireInput("inPrim");
             set_output("outPrim", get_input("inPrim"));
