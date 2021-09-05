@@ -84,7 +84,7 @@ ZENDEFNODE(PrimitiveDuplicate, {
         {
         "meshPrim",
         "particlesPrim",
-        {"float", "uniScale"},
+        {"float", "uniScale", "1.0"},
         }, {
         "outPrim",
         }, {
