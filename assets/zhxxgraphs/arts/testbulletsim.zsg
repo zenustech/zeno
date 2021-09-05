@@ -2,79 +2,6 @@
  "graph": {
   "main": {
    "nodes": {
-    "4efd0e41-BulletMakeConvexHullShape": {
-     "name": "BulletMakeConvexHullShape",
-     "inputs": {
-      "triMesh": [
-       "4a340cda-PrimitiveToBulletMesh",
-       "mesh",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -3266.2565583074506,
-      335.28227055120277
-     ],
-     "options": []
-    },
-    "4aa76f0c-BulletMakeObject": {
-     "name": "BulletMakeObject",
-     "inputs": {
-      "shape": [
-       "4efd0e41-BulletMakeConvexHullShape",
-       "shape",
-       null
-      ],
-      "trans": [
-       "8c4275a7-BulletMakeTransform",
-       "trans",
-       null
-      ],
-      "mass": [
-       null,
-       null,
-       1.0
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -3004.954120665728,
-      339.71112542648615
-     ],
-     "options": []
-    },
-    "4a340cda-PrimitiveToBulletMesh": {
-     "name": "PrimitiveToBulletMesh",
-     "inputs": {
-      "prim": [
-       "f9339a50-CachedOnce",
-       "output",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -3523.130141073891,
-      314.9095381248989
-     ],
-     "options": []
-    },
     "fc4e5787-ImportObjPrimitive": {
      "name": "ImportObjPrimitive",
      "inputs": {
@@ -91,34 +18,8 @@
      },
      "params": {},
      "uipos": [
-      -4096.847431710723,
-      292.6119184316155
-     ],
-     "options": []
-    },
-    "8c4275a7-BulletMakeTransform": {
-     "name": "BulletMakeTransform",
-     "inputs": {
-      "origin": [
-       null,
-       null,
-       null
-      ],
-      "rotation": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -3001.3233318713633,
-      124.63885814429972
+      -2707.20366828175,
+      115.67439557466344
      ],
      "options": []
     },
@@ -205,27 +106,6 @@
      ],
      "options": []
     },
-    "f9339a50-CachedOnce": {
-     "name": "CachedOnce",
-     "inputs": {
-      "input": [
-       "fc4e5787-ImportObjPrimitive",
-       "prim",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -3812.4422069180478,
-      379.844369451373
-     ],
-     "options": []
-    },
     "36960baf-MakeList": {
      "name": "MakeList",
      "inputs": {
@@ -235,45 +115,13 @@
        null
       ],
       "obj0": [
-       "2f11d0c2-MakeDict",
-       "dict",
+       "456fb647-RigidMakeObject",
+       "object",
        null
       ],
       "obj1": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "obj0\nobj1"
-     },
-     "uipos": [
-      -2070.1850485290493,
-      282.5652649538114
-     ],
-     "options": [],
-     "socket_keys": [
-      "obj0",
-      "obj1"
-     ]
-    },
-    "2f11d0c2-MakeDict": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": [
-       "4aa76f0c-BulletMakeObject",
+       "7790ceb3-x",
        "object",
-       null
-      ],
-      "BulletObj": [
-       "4aa76f0c-BulletMakeObject",
-       "object",
-       null
-      ],
-      "Primitive": [
-       "f9339a50-CachedOnce",
-       "output",
        null
       ],
       "obj2": [
@@ -283,16 +131,16 @@
       ]
      },
      "params": {
-      "_KEYS": "BulletObj\nPrimitive\nobj2"
+      "_KEYS": "obj0\nobj1\nobj2"
      },
      "uipos": [
-      -2482.600620306154,
-      267.81981818864745
+      -2070.1850485290493,
+      282.5652649538114
      ],
      "options": [],
      "socket_keys": [
-      "BulletObj",
-      "Primitive",
+      "obj0",
+      "obj1",
       "obj2"
      ]
     },
@@ -501,13 +349,96 @@
      "options": [
       "VIEW"
      ]
+    },
+    "456fb647-RigidMakeObject": {
+     "name": "RigidMakeObject",
+     "inputs": {
+      "prim": [
+       "fc4e5787-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "origin": [
+       null,
+       null,
+       null
+      ],
+      "rotation": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2437.102746530462,
+      159.9630718593521
+     ],
+     "options": []
+    },
+    "e665aacb-x": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/cube.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2863.6848221091245,
+      324.11116846558514
+     ],
+     "options": []
+    },
+    "7790ceb3-x": {
+     "name": "RigidMakeObject",
+     "inputs": {
+      "prim": [
+       "e665aacb-x",
+       "prim",
+       null
+      ],
+      "origin": [
+       null,
+       null,
+       null
+      ],
+      "rotation": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2422.9803107268426,
+      392.94646931056263
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 119.42816225355108,
-    "y": 748.196616027106,
-    "width": 320.0,
-    "height": 320.0
+    "x": -2226.376789417721,
+    "y": 77.72786821500608,
+    "width": 625.0,
+    "height": 625.0
    }
   },
   "RigidStepWorld": {
@@ -913,6 +844,341 @@
    "view_rect": {
     "x": -640.4363336992333,
     "y": -233.77469813391872,
+    "width": 781.25,
+    "height": 781.25
+   }
+  },
+  "RigidMakeObject": {
+   "nodes": {
+    "79716266-x": {
+     "name": "PrimitiveToBulletMesh",
+     "inputs": {
+      "prim": [
+       "6a8cbdd2-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -358.01415901538917,
+      238.43278068942584
+     ],
+     "options": []
+    },
+    "d4323c5d-x": {
+     "name": "BulletMakeObject",
+     "inputs": {
+      "shape": [
+       "5c50043f-x",
+       "shape",
+       null
+      ],
+      "trans": [
+       "ff4ca279-x",
+       "trans",
+       null
+      ],
+      "mass": [
+       null,
+       null,
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      160.1618613927737,
+      263.2343679910131
+     ],
+     "options": []
+    },
+    "ff4ca279-x": {
+     "name": "BulletMakeTransform",
+     "inputs": {
+      "origin": [
+       "ab61bf12-x",
+       "result",
+       null
+      ],
+      "rotation": [
+       "04b219ff-IfElse",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      149.4754695703985,
+      44.858135951117276
+     ],
+     "options": []
+    },
+    "5c50043f-x": {
+     "name": "BulletMakeConvexHullShape",
+     "inputs": {
+      "triMesh": [
+       "79716266-x",
+       "mesh",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -101.14057624894878,
+      258.8055131157297
+     ],
+     "options": []
+    },
+    "6a8cbdd2-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "prim",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -621.9903691813804,
+      247.19101123595505
+     ],
+     "options": []
+    },
+    "0940ab4d-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "b62603b8-x",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "object",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      869.1813804173354,
+      333.8683788121991
+     ],
+     "options": []
+    },
+    "b62603b8-x": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "BulletObj": [
+       "d4323c5d-x",
+       "object",
+       null
+      ],
+      "Primitive": [
+       "6a8cbdd2-SubInput",
+       "port",
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "BulletObj\nPrimitive\nobj2"
+     },
+     "uipos": [
+      506.42054574638877,
+      341.8940609951846
+     ],
+     "options": [],
+     "socket_keys": [
+      "BulletObj",
+      "Primitive",
+      "obj2"
+     ]
+    },
+    "edc91d70-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "origin",
+      "type": "vec3f",
+      "defl": "0,0,0"
+     },
+     "uipos": [
+      -544.8475434572388,
+      -560.261444167784
+     ],
+     "options": []
+    },
+    "c7894ffe-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "rotation",
+      "type": "vec4f",
+      "defl": "0,0,0,1"
+     },
+     "uipos": [
+      -542.5853203058942,
+      -95.80923778735969
+     ],
+     "options": []
+    },
+    "04b219ff-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "c7894ffe-x",
+       "port",
+       null
+      ],
+      "false": [
+       "747e3a9b-NumericVec4",
+       "vec4",
+       null
+      ],
+      "cond": [
+       "c7894ffe-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -269.2511013215859,
+      4.933920704845815
+     ],
+     "options": []
+    },
+    "ab61bf12-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "edc91d70-x",
+       "port",
+       null
+      ],
+      "false": [
+       "25623029-NumericVec3",
+       "vec3",
+       null
+      ],
+      "cond": [
+       "edc91d70-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -278.36691410392365,
+      -479.8515376458113
+     ],
+     "options": []
+    },
+    "25623029-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -281.01802757158003,
+      -708.5100742311772
+     ],
+     "options": []
+    },
+    "747e3a9b-NumericVec4": {
+     "name": "NumericVec4",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "w": 1.0
+     },
+     "uipos": [
+      -269.7507953340403,
+      -253.84411452810184
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -491.31978958699216,
+    "y": -224.75853210369877,
     "width": 781.25,
     "height": 781.25
    }
@@ -7567,6 +7833,47 @@
    "params": [],
    "categories": [
     "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeObject": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec4f",
+     "rotation",
+     "0,0,0,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
    ],
    "is_subgraph": true
   },

@@ -259,8 +259,13 @@ struct BulletMakeTransform : zeno::INode {
             trans->trans.setOrigin(zeno::vec_to_other<btVector3>(origin));
         }
         if (has_input("rotation")) {
-            auto rotation = get_input<zeno::NumericObject>("rotation")->get<zeno::vec3f>();
-            trans->trans.setRotation(zeno::vec_to_other<btQuaternion>(rotation));
+            if (get_input<zeno::NumericObject>("rotation")->is<zeno::vec3f>()) {
+                auto rotation = get_input<zeno::NumericObject>("rotation")->get<zeno::vec3f>();
+                trans->trans.setRotation(zeno::vec_to_other<btQuaternion>(rotation));
+            } else {
+                auto rotation = get_input<zeno::NumericObject>("rotation")->get<zeno::vec4f>();
+                trans->trans.setRotation(zeno::vec_to_other<btQuaternion>(rotation));
+            }
         }
         set_output("trans", std::move(trans));
     }
