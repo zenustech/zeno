@@ -14,6 +14,8 @@
 #include <memory>
 #include <vector>
 
+namespace {
+
 
 struct BulletTransform : zeno::IObject {
     btTransform trans;
@@ -317,6 +319,7 @@ struct BulletMakeObject : zeno::INode {
         auto trans = get_input<BulletTransform>("trans");
         auto object = std::make_unique<BulletObject>(
             mass, trans->trans, shape);
+        object->body->setDamping(0, 0);
         set_output("object", std::move(object));
     }
 };
@@ -430,7 +433,7 @@ struct BulletWorld : zeno::IObject {
 
     std::unique_ptr<btDiscreteDynamicsWorld> dynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>(dispatcher.get(), overlappingPairCache.get(), solver.get(), collisionConfiguration.get());
 
-    std::vector<std::shared_ptr<BulletObject>> objects;
+    std::set<std::shared_ptr<BulletObject>> objects;
 
     BulletWorld() {
         dynamicsWorld->setGravity(btVector3(0, -10, 0));
@@ -438,7 +441,12 @@ struct BulletWorld : zeno::IObject {
 
     void addObject(std::shared_ptr<BulletObject> obj) {
         dynamicsWorld->addRigidBody(obj->body.get());
-        objects.push_back(std::move(obj));
+        objects.insert(std::move(obj));
+    }
+
+    void removeObject(std::shared_ptr<BulletObject> const &obj) {
+        dynamicsWorld->removeRigidBody(obj->body.get());
+        objects.erase(obj);
     }
 
     /*
@@ -551,6 +559,41 @@ ZENDEFNODE(BulletWorldAddObject, {
     {"Rigid"},
 });
 
+struct BulletWorldRemoveObject : zeno::INode {
+    virtual void apply() override {
+        auto world = get_input<BulletWorld>("world");
+        auto object = get_input<BulletObject>("object");
+        world->removeObject(std::move(object));
+        set_output("world", get_input("world"));
+    }
+};
+
+ZENDEFNODE(BulletWorldRemoveObject, {
+    {"world", "object"},
+    {"world"},
+    {},
+    {"Rigid"},
+});
+
+#if 0
+struct BulletWorldSetObjList : zeno::INode {
+    virtual void apply() override {
+        auto world = get_input<BulletWorld>("world");
+        auto object = get_input<BulletObject>("object");
+        object->body->setDamping(0,0);
+        world->addObject(std::move(object));
+        set_output("world", get_input("world"));
+    }
+};
+
+ZENDEFNODE(BulletWorldSetObjList, {
+    {"world", "object"},
+    {"world"},
+    {},
+    {"Rigid"},
+});
+#endif
+
 struct BulletObjectApplyForce:zeno::INode {
     virtual void apply() override {
         auto object = get_input<BulletObject>("object");
@@ -567,3 +610,6 @@ ZENDEFNODE(BulletObjectApplyForce, {
     {},
     {"Rigid"},
 });
+
+
+}
