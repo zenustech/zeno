@@ -71,6 +71,9 @@ ZENO_API void INode::preApply() {
         requireInput(ds);
     }
 
+#ifdef ZENO_BENCHMARKING
+    Timer _(myname);
+#endif
     apply();
 }
 
@@ -87,9 +90,6 @@ ZENO_API bool INode::requireInput(std::string const &ds) {
 
 ZENO_API void INode::doApply() {
     if (checkApplyCondition()) {
-#ifdef ZENO_BENCHMARKING
-        Timer _(myname);
-#endif
         //spdlog::info("--> enter {}", myname);
         preApply();
         //spdlog::info("--> leave {}", myname);
