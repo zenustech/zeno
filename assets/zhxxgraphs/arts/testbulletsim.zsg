@@ -491,14 +491,14 @@
      },
      "params": {
       "triangulate": true,
-      "numRandPoints": 256,
+      "numRandPoints": 80,
       "periodicX": false,
       "periodicY": false,
       "periodicZ": false
      },
      "uipos": [
-      -3923.465152444366,
-      -339.6202814838919
+      -4381.323922376029,
+      -489.9619671330946
      ],
      "options": []
     },
@@ -628,8 +628,8 @@
       "z": -1.0
      },
      "uipos": [
-      -4256.036446469248,
-      -363.5535307517085
+      -4713.895216400912,
+      -513.8952164009113
      ],
      "options": []
     },
@@ -648,8 +648,8 @@
       "z": 1.0
      },
      "uipos": [
-      -4224.145785876994,
-      -133.02961275626424
+      -4682.004555808656,
+      -283.3712984054671
      ],
      "options": []
     },
@@ -657,8 +657,8 @@
      "name": "CachedOnce",
      "inputs": {
       "input": [
-       "baaae994-VoronoiFracture",
-       "primList",
+       "05a75eed-CachedOnce",
+       "output",
        null
       ],
       "SRC": [
@@ -673,11 +673,58 @@
       -224.1457858769932
      ],
      "options": []
+    },
+    "05a75eed-CachedOnce": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "76d639eb-ExtendList",
+       "list1",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3855.353075170842,
+      -264.2369020501139
+     ],
+     "options": []
+    },
+    "76d639eb-ExtendList": {
+     "name": "ExtendList",
+     "inputs": {
+      "list1": [
+       "baaae994-VoronoiFracture",
+       "primList",
+       null
+      ],
+      "list2": [
+       "baaae994-VoronoiFracture",
+       "boundaryPrimList",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -4118.4510250569465,
+      -264.23690205011394
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -4227.516426910126,
-    "y": -517.869811787064,
+    "x": -3080.1929644955603,
+    "y": -119.91992568228116,
     "width": 500.0,
     "height": 500.0
    }
@@ -1438,10 +1485,10 @@
     }
    },
    "view_rect": {
-    "x": -337.96008897378186,
-    "y": 207.21271710862902,
-    "width": 400.0,
-    "height": 400.0
+    "x": -361.7439608755417,
+    "y": 146.8860558390893,
+    "width": 500.0,
+    "height": 500.0
    }
   }
  },
