@@ -18,8 +18,8 @@
      },
      "params": {},
      "uipos": [
-      -2707.20366828175,
-      115.67439557466344
+      -2997.4230467095376,
+      5.985181680696343
      ],
      "options": []
     },
@@ -354,8 +354,8 @@
      "name": "RigidMakeObject",
      "inputs": {
       "prim": [
-       "fc4e5787-ImportObjPrimitive",
-       "prim",
+       "4dbdab89-x",
+       "outPrim",
        null
       ],
       "origin": [
@@ -367,6 +367,11 @@
        null,
        null,
        null
+      ],
+      "mass": [
+       null,
+       null,
+       1.0
       ],
       "SRC": [
        null,
@@ -397,8 +402,8 @@
      },
      "params": {},
      "uipos": [
-      -2863.6848221091245,
-      324.11116846558514
+      -3051.737919454257,
+      286.31618321484757
      ],
      "options": []
     },
@@ -406,19 +411,24 @@
      "name": "RigidMakeObject",
      "inputs": {
       "prim": [
-       "e665aacb-x",
-       "prim",
+       "793ebafc-TransformPrimitive",
+       "outPrim",
        null
       ],
       "origin": [
-       null,
-       null,
+       "0a2a860b-NumericVec3",
+       "vec3",
        null
       ],
       "rotation": [
        null,
        null,
        null
+      ],
+      "mass": [
+       null,
+       null,
+       0.0
       ],
       "SRC": [
        null,
@@ -432,13 +442,155 @@
       392.94646931056263
      ],
      "options": []
+    },
+    "0a2a860b-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": -3.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -2749.269614901339,
+      585.984897510152
+     ],
+     "options": []
+    },
+    "793ebafc-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "e665aacb-x",
+       "prim",
+       null
+      ],
+      "translation": [
+       null,
+       null,
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       "aab1a0cb-NumericVec3",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2752.581120943953,
+      318.95280235988196
+     ],
+     "options": []
+    },
+    "aab1a0cb-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 10.0,
+      "y": 1.0,
+      "z": 10.0
+     },
+     "uipos": [
+      -3053.0973451327436,
+      463.6799410029497
+     ],
+     "options": []
+    },
+    "4dbdab89-x": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "fc4e5787-ImportObjPrimitive",
+       "prim",
+       null
+      ],
+      "translation": [
+       "74fd3f0c-NumericVec3",
+       "vec3",
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2709.095063985375,
+      5.712979890310805
+     ],
+     "options": []
+    },
+    "74fd3f0c-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": -1.0
+     },
+     "uipos": [
+      -2415.3564899451553,
+      -147.71480804387568
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -2226.376789417721,
-    "y": 77.72786821500608,
-    "width": 625.0,
-    "height": 625.0
+    "x": -3110.077238820242,
+    "y": -176.89905845155988,
+    "width": 500.0,
+    "height": 500.0
    }
   },
   "RigidStepWorld": {
@@ -885,8 +1037,8 @@
        null
       ],
       "mass": [
-       null,
-       null,
+       "3a219a6d-SubInput",
+       "port",
        1.0
       ],
       "SRC": [
@@ -1174,13 +1326,33 @@
       -253.84411452810184
      ],
      "options": []
+    },
+    "3a219a6d-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "mass",
+      "type": "float",
+      "defl": "0"
+     },
+     "uipos": [
+      -66.83259587020652,
+      488.56932153392324
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -491.31978958699216,
-    "y": -224.75853210369877,
-    "width": 781.25,
-    "height": 781.25
+    "x": -337.96008897378186,
+    "y": 207.21271710862902,
+    "width": 400.0,
+    "height": 400.0
    }
   }
  },
@@ -7852,6 +8024,11 @@
      "vec4f",
      "rotation",
      "0,0,0,1"
+    ],
+    [
+     "float",
+     "mass",
+     "0"
     ],
     [
      "",

@@ -23,7 +23,7 @@ class CameraControl:
         self.last_pos = (0, 0)
         self.center = (0.0, 0.0, 0.0)
         self.ortho_mode = False
-        self.fov = 60.0
+        self.fov = 45.0
         self.radius = 5.0
         self.res = (1, 1)
 
