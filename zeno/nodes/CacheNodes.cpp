@@ -12,7 +12,7 @@ namespace zeno {
 struct CachedByKey : zeno::INode {
     std::map<std::string, std::shared_ptr<IObject>> cache;
 
-    virtual void doApply() override {
+    virtual void preApply() override {
         requireInput("key");
         auto key = get_input<zeno::StringObject>("key")->get();
         if (auto it = cache.find(key); it != cache.end()) {
@@ -40,7 +40,7 @@ ZENDEFNODE(CachedByKey, {
 struct CachedIf : zeno::INode {
     bool m_done = false;
 
-    virtual void doApply() override {
+    virtual void preApply() override {
         if (has_input("keepCache")) {
             requireInput("keepCache");
             bool keep = evaluate_condition(get_input("keepCache").get());
@@ -71,7 +71,7 @@ ZENDEFNODE(CachedIf, {
 struct CachedOnce : zeno::INode {
     bool m_done = false;
 
-    virtual void doApply() override {
+    virtual void preApply() override {
         if (!m_done) {
             zeno::INode::doApply();
             m_done = true;

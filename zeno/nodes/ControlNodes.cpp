@@ -49,7 +49,7 @@ ZENDEFNODE(BeginFor, {
 struct EndFor : zeno::ContextManagedNode {
     virtual void post_do_apply() {}
 
-    virtual void doApply() override {
+    virtual void preApply() override {
         auto [sn, ss] = inputBounds.at("FOR");
         auto fore = dynamic_cast<IBeginFor *>(graph->nodes.at(sn).get());
         if (!fore) {
@@ -60,7 +60,7 @@ struct EndFor : zeno::ContextManagedNode {
         while (fore->isContinue()) {
             fore->update();
             push_context();
-            zeno::INode::coreApply();
+            this->apply();
             post_do_apply();
             old_ctx = pop_context();
         }
@@ -83,7 +83,7 @@ ZENDEFNODE(EndFor, {
 
 
 struct BreakFor : zeno::INode {
-    virtual void doApply() override {
+    virtual void preApply() override {
         auto [sn, ss] = inputBounds.at("FOR");
         auto fore = dynamic_cast<IBeginFor *>(graph->nodes.at(sn).get());
         if (!fore) {
@@ -166,7 +166,7 @@ struct EndForEach : EndFor {
         }
     }
 
-    virtual void doApply() override {
+    virtual void preApply() override {
         EndFor::doApply();
         if (get_param<bool>("doConcat")) {
             decltype(result) newres;
@@ -281,7 +281,7 @@ ZENDEFNODE(SubstepDt, {
 
 
 struct IfElse : zeno::INode {
-    virtual void doApply() override {
+    virtual void preApply() override {
         requireInput("cond");
         auto cond = get_input("cond");
         if (has_option("MUTE")) {
@@ -296,7 +296,7 @@ struct IfElse : zeno::INode {
             }
         }
 
-        coreApply();
+        apply();
     }
 
     virtual void apply() override {}
@@ -334,7 +334,7 @@ ZENDEFNODE(IF, {
 });
 
 struct EndIF : zeno::ContextManagedNode {
-    virtual void doApply() override {
+    virtual void preApply() override {
         auto [sn, ss] = inputBounds.at("IF");
         auto true_exp = dynamic_cast<IF *>(graph->nodes.at(sn).get());
         if (!true_exp) {
@@ -404,7 +404,7 @@ ZENDEFNODE(FalseBranch, {
 });
 
 struct EndBranch : zeno::ContextManagedNode {
-    virtual void doApply() override {
+    virtual void preApply() override {
         auto [sn, ss] = inputBounds.at("BranchIn");
         auto exec = dynamic_cast<IBranch *>(graph->nodes.at(sn).get());
         graph->applyNode(sn);
@@ -430,7 +430,7 @@ ZENDEFNODE(EndBranch, {
 
 struct ConditionedDo : zeno::INode {
     bool m_which;
-    virtual void doApply() override {
+    virtual void preApply() override {
         
         auto [sn, ss] = inputBounds.at("True");
         auto [sn1, ss1] = inputBounds.at("False");

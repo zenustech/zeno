@@ -36,7 +36,7 @@ ZENDEFNODE(FuncBegin, {
 
 
 struct FuncEnd : zeno::ContextManagedNode {
-    virtual void doApply() override {
+    virtual void preApply() override {
         FuncBegin *fore = nullptr;
         if (auto it = inputBounds.find("FUNC"); it != inputBounds.end()) {
             auto [sn, ss] = it->second;
