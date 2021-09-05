@@ -7,6 +7,12 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+if (CMAKE_COMPILER_IS_GNUCC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+endif()
+if (MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w")
+endif()
 
 include_directories(include)
 
