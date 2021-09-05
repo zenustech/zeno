@@ -546,7 +546,6 @@ struct BulletWorldAddObject : zeno::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
         auto object = get_input<BulletObject>("object");
-        object->body->setDamping(0,0);
         world->addObject(std::move(object));
         set_output("world", get_input("world"));
     }
@@ -575,19 +574,23 @@ ZENDEFNODE(BulletWorldRemoveObject, {
     {"Rigid"},
 });
 
-#if 0
+#if 1
 struct BulletWorldSetObjList : zeno::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
-        auto object = get_input<BulletObject>("object");
-        object->body->setDamping(0,0);
+        auto objList = get_input<ListObject>("objList")->get<std::shared_ptr<IObject>>();
+        if (
+            world.objects.find(object);
+            world->addObject(std::move(object));
+        for (auto const &existingObj: world->objects) {
+        }
         world->addObject(std::move(object));
         set_output("world", get_input("world"));
     }
 };
 
 ZENDEFNODE(BulletWorldSetObjList, {
-    {"world", "object"},
+    {"world", "objList"},
     {"world"},
     {},
     {"Rigid"},

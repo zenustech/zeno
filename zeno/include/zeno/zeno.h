@@ -86,6 +86,14 @@ auto defOverloadNodeClassHelper(F const &func, std::string const &name, std::vec
     };
 }
 
+template <class T>
+using SharedPtr = std::shared_ptr<T>;
+
+template <class T, class ...Ts>
+auto makeShared(Ts &&...ts) {
+    return std::make_shared<T>(std::forward<Ts>(ts)...);
+}
+
 #define ZENO_DEFNODE(Class) \
     static int def##Class = zeno::defNodeClassHelper(std::make_unique<Class>, #Class)
 
