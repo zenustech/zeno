@@ -1,9 +1,12 @@
 #O=a.zsg
 #O=b.zsg
+#O=c.zsg
+#O=d.zsg
+O=arts/testbulletsim.zsg
 #O=arts/segvtrig.zsg
 #O=arts/testtbbreduce.zsg
 #O=arts/ZFXv2.zsg
-O=arts/testvorosplit.zsg
+#O=arts/testvorosplit.zsg
 #O=arts/vdbperlinnoise.zsg
 #O=arts/flip.zsg
 #O=arts/visualmarchingtetra.zsg
@@ -34,7 +37,7 @@ default: run
 #default: run
 
 all:
-	cmake -B build
+	cmake -B build -DCMAKE_BUILD_TYPE=Release
 	cmake --build build --parallel 24
 
 release_all:

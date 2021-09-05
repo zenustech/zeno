@@ -7,7 +7,8 @@
 #include <openvdb/points/PointAdvect.h>
 #include <openvdb/tools/Interpolation.h>
 
-namespace zeno {
+namespace {
+using namespace zeno;
 
 static const int permutation[] = {151,160,137,91,90,15,
 131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
@@ -68,9 +69,9 @@ static float grad(int hash, float x, float y, float z) {
 }
 
 static float perlin(float x, float y, float z) {
-    x = fmodf(x + 1024.f, 256.f);
-    y = fmodf(y + 1024.f, 256.f);
-    z = fmodf(z + 1024.f, 256.f);
+    x = fract(x / 256.f) * 256.f;
+    y = fract(y / 256.f) * 256.f;
+    z = fract(z / 256.f) * 256.f;
     int xi = (int)x & 255;
     int yi = (int)y & 255;
     int zi = (int)z & 255;
@@ -104,6 +105,7 @@ static float perlin(float x, float y, float z) {
     float y2 = mix (x1, x2, v);
     return mix (y1, y2, w);
 }
+
 
 struct VDBAddPerlinNoise : INode {
   virtual void apply() override {

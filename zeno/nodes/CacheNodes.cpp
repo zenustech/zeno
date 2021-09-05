@@ -4,6 +4,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/ConditionObject.h>
 #include <zeno/extra/evaluate_condition.h>
+#include <zeno/types/MutableObject.h>
 
 
 namespace zeno {
@@ -30,29 +31,6 @@ struct CachedByKey : zeno::INode {
 
 ZENDEFNODE(CachedByKey, {
     {"input", "key"},
-    {"output"},
-    {},
-    {"control"},
-});
-
-struct CachedOnce : zeno::INode {
-    bool m_done = false;
-
-    virtual void doApply() override {
-        if (!m_done) {
-            zeno::INode::doApply();
-            m_done = true;
-        }
-    }
-
-    virtual void apply() override {
-        auto ptr = get_input("input");
-        set_output("output", std::move(ptr));
-    }
-};
-
-ZENDEFNODE(CachedOnce, {
-    {"input"},
     {"output"},
     {},
     {"control"},
@@ -88,5 +66,80 @@ ZENDEFNODE(CachedIf, {
     {},
     {"control"},
 });
+
+
+struct CachedOnce : zeno::INode {
+    bool m_done = false;
+
+    virtual void doApply() override {
+        if (!m_done) {
+            zeno::INode::doApply();
+            m_done = true;
+        }
+    }
+
+    virtual void apply() override {
+        auto ptr = get_input("input");
+        set_output("output", std::move(ptr));
+    }
+};
+
+ZENDEFNODE(CachedOnce, {
+    {"input"},
+    {"output"},
+    {},
+    {"control"},
+});
+
+
+struct MakeMutable : zeno::INode {
+    virtual void apply() override {
+        auto obj = get_input2("anyobj");
+        auto ptr = std::make_shared<MutableObject>();
+        ptr->set(std::move(obj));
+        set_output("mutable", std::move(ptr));
+    }
+};
+
+ZENDEFNODE(MakeMutable, {
+    {"anyobj"},
+    {"mutable"},
+    {},
+    {"control"},
+});
+
+
+struct UpdateMutable : zeno::INode {
+    virtual void apply() override {
+        auto obj = get_input2("anyobj");
+        auto ptr = get_input<MutableObject>("mutable");
+        ptr->set(std::move(obj));
+        set_output("mutable", std::move(ptr));
+    }
+};
+
+ZENDEFNODE(UpdateMutable, {
+    {"mutable", "anyobj"},
+    {"mutable"},
+    {},
+    {"control"},
+});
+
+
+struct ReadMutable : zeno::INode {
+    virtual void apply() override {
+        auto ptr = get_input<MutableObject>("mutable");
+        auto obj = ptr->value;
+        set_output2("anyobj", std::move(obj));
+    }
+};
+
+ZENDEFNODE(ReadMutable, {
+    {"mutable"},
+    {"anyobj"},
+    {},
+    {"control"},
+});
+
 
 }

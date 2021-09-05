@@ -94,7 +94,6 @@ struct VoronoiFracture : INode {
                 for (int i = 0, j = 0; i < (int)neigh.size(); i++) {
                     if (neigh[i] <= 0)
                         isBoundary = true;
-                    if (neigh[i] == 0) printf("%d!!!\n", neigh[i]);
                     int len = f_vert[j];
                     int start = (int)prim->loops.size();
                     for (int k = j + 1; k < j + 1 + len; k++) {

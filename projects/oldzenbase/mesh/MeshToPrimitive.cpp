@@ -95,4 +95,33 @@ static int defPrimitiveToMesh = zeno::defNodeClass<PrimitiveToMesh>("PrimitiveTo
     }});
 
 
+struct ConvertTo_MeshObject_PrimitiveObject : MeshToPrimitive {
+    virtual void apply() override {
+        MeshToPrimitive::apply();
+        get_input<PrimitiveObject>("prim")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(outputs.at("prim"))).get());
+    }
+};
+
+ZENO_DEFOVERLOADNODE(ConvertTo, _MeshObject_PrimitiveObject, typeid(MeshObject).name(), typeid(PrimitiveObject).name())({
+        {"mesh", "prim"},
+        {},
+        {},
+        {"primitive"},
+});
+
+
+struct ConvertTo_PrimitiveObject_MeshObject : PrimitiveToMesh {
+    virtual void apply() override {
+        PrimitiveToMesh::apply();
+        get_input<MeshObject>("mesh")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(outputs.at("mesh"))).get());
+    }
+};
+
+ZENO_DEFOVERLOADNODE(ConvertTo, _PrimitiveObject_MeshObject, typeid(PrimitiveObject).name(), typeid(MeshObject).name())({
+        {"prim", "mesh"},
+        {},
+        {},
+        {"primitive"},
+});
+
 }

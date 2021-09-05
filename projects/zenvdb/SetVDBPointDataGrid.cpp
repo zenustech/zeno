@@ -78,7 +78,8 @@ struct PrimToVDBPointDataGrid : zeno::INode {
     //{
       //dx = get_input("Dx")->as<NumericObject>()->get<float>();
     //}
-    auto dx = get_input2<float>("Dx");
+    //auto dx = get_input2<float>("Dx");
+    auto dx = get_input("Dx")->as<NumericObject>()->get<float>();
     auto prims = get_input("ParticleGeo")->as<PrimitiveObject>();
     auto particles = std::make_unique<ParticlesObject>();
     particles->pos.resize(prims->attr<zeno::vec3f>("pos").size());

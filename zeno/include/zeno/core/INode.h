@@ -3,6 +3,7 @@
 #include <zeno/utils/defs.h>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/any.h>
+#include <zeno/utils/Exception.h>
 #include <zeno/utils/safe_dynamic_cast.h>
 #include <variant>
 #include <memory>
@@ -81,12 +82,31 @@ protected:
         return (bool)p;
     }
 
+    ZENO_API bool _implicit_cast_from_to(std::string const &id,
+        std::shared_ptr<IObject> const &from, std::shared_ptr<IObject> const &to);
+
     /* todo: deprecated */
     template <class T>
-    std::shared_ptr<T> get_input(std::string const &id) const {
+    std::enable_if_t<!std::is_abstract_v<T> && std::is_trivially_constructible_v<T>,
+    std::shared_ptr<T>> get_input(std::string const &id) const {
         auto obj = get_input(id, typeid(T).name());
-        return safe_dynamic_cast<T>(std::move(obj),
-                "input socket `" + id + "` ");
+        if (auto p = std::dynamic_pointer_cast<T>(obj); p) {
+            return p;
+        }
+        auto ret = std::make_shared<T>();
+        if (!const_cast<INode *>(this)->_implicit_cast_from_to(id, obj, ret)) {
+            throw Exception("input socket `" + id + "` expect IObject of `"
+                + typeid(T).name() + "`, got `" + typeid(*obj).name() + "` (get_input)");
+        }
+        return ret;
+    }
+
+    /* todo: deprecated */
+    template <class T>
+    std::enable_if_t<std::is_abstract_v<T> || !std::is_trivially_constructible_v<T>,
+    std::shared_ptr<T>> get_input(std::string const &id) const {
+        auto obj = get_input(id, typeid(T).name());
+        return safe_dynamic_cast<T>(std::move(obj), "input socket `" + id + "` ");
     }
 
     /* todo: deprecated */

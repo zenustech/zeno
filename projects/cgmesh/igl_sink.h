@@ -15,6 +15,7 @@ void igl_mesh_boolean(
     Eigen::MatrixXi &FC,
     Eigen::VectorXi &J);
 
+#if 0
 void igl_trim_with_sold(
     Eigen::MatrixXd const &VA,
     Eigen::MatrixXi const &FA,
@@ -24,5 +25,6 @@ void igl_trim_with_sold(
     Eigen::MatrixXi &FC,
     Eigen::VectorXi &D,
     Eigen::VectorXi &J);
+#endif
 
 }

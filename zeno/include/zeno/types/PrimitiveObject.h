@@ -25,14 +25,14 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
 
     // deprecated:
     template <class F>
-    void foreach_attr(F const &f) {
+    void foreach_attr(F &&f) {
         std::string pos_name = "pos";
         f(pos_name, verts.values);
         verts.foreach_attr(f);
     }
 
     template <class F>
-    void foreach_attr(F const &f) const {
+    void foreach_attr(F &&f) const {
         std::string const pos_name = "pos";
         f(pos_name, verts.values);
         verts.foreach_attr(f);

@@ -15,11 +15,15 @@ struct IObject {
     ZENO_API virtual ~IObject();
 
     ZENO_API virtual std::shared_ptr<IObject> clone() const;
+    ZENO_API virtual std::shared_ptr<IObject> move_clone();
     ZENO_API virtual bool assign(IObject *other);
+    ZENO_API virtual bool move_assign(IObject *other);
 #else
     virtual ~IObject() = default;
     virtual std::shared_ptr<IObject> clone() const { return nullptr; }
+    virtual std::shared_ptr<IObject> move_clone() { return nullptr; }
     virtual bool assign(IObject *other) { return false; }
+    virtual bool move_assign(IObject *other) { return false; }
 #endif
 
     template <class T>
@@ -37,16 +41,31 @@ struct IObject {
 
 template <class Derived, class Base = IObject>
 struct IObjectClone : Base {
-    virtual std::shared_ptr<IObject> clone() const {
+    using has_iobject_clone = std::true_type;
+
+    virtual std::shared_ptr<IObject> clone() const override {
         return std::make_shared<Derived>(static_cast<Derived const &>(*this));
     }
 
-    virtual bool assign(IObject *other) {
+    virtual std::shared_ptr<IObject> move_clone() override {
+        return std::make_shared<Derived>(static_cast<Derived &&>(*this));
+    }
+
+    virtual bool assign(IObject *other) override {
         auto src = dynamic_cast<Derived *>(other);
         if (!src)
             return false;
         auto dst = static_cast<Derived *>(this);
         *dst = *src;
+        return true;
+    }
+
+    virtual bool move_assign(IObject *other) override {
+        auto src = dynamic_cast<Derived *>(other);
+        if (!src)
+            return false;
+        auto dst = static_cast<Derived *>(this);
+        *dst = std::move(*src);
         return true;
     }
 };

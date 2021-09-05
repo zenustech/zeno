@@ -6,6 +6,7 @@
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
 #include <BulletCollision/CollisionShapes/btConvexPointCloudShape.h>
 #include <hacdCircularList.h>
+#include <spdlog/spdlog.h>
 #include <hacdVector.h>
 #include <hacdICHull.h>
 #include <hacdGraph.h>
@@ -263,7 +264,7 @@ struct BulletMakeTransform : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeTransform, {
-    {"origin", "rotation"},
+    {{"vec3f", "origin"}, {"vec3f", "rotation"}},
     {"trans"},
     {},
     {"Rigid"},
@@ -321,7 +322,7 @@ struct BulletMakeObject : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeObject, {
-    {"shape", "trans", "mass"},
+    {"shape", "trans", {"float", "mass", "0"}},
     {"object"},
     {},
     {"Rigid"},
@@ -415,7 +416,7 @@ struct BulletExtractTransform : zeno::INode {
 
 ZENDEFNODE(BulletExtractTransform, {
     {"trans"},
-    {"origin", "rotation"},
+    {{"vec3f","origin"}, {"vec4f", "rotation"}},
     {},
     {"Rigid"},
 });
@@ -465,7 +466,8 @@ struct BulletWorld : zeno::IObject {
     }*/
 
     void step(float dt = 1.f / 60.f) {
-        std::cout<<dt<<std::endl;
+        spdlog::info("dt = {}", dt);
+        spdlog::info("len(objects) = {}", objects.size());
         for(int i=0;i<10;i++)
             dynamicsWorld->stepSimulation(0.1*dt, 1, 0.1*dt);
 
@@ -506,12 +508,13 @@ struct BulletSetWorldGravity : zeno::INode {
         auto world = get_input<BulletWorld>("world");
         auto gravity = get_input<zeno::NumericObject>("gravity")->get<zeno::vec3f>();
         world->dynamicsWorld->setGravity(zeno::vec_to_other<btVector3>(gravity));
+        set_output("world", std::move(world));
     }
 };
 
 ZENDEFNODE(BulletSetWorldGravity, {
-    {"world", "gravity"},
-    {},
+    {"world", {"vec3f", "gravity", "0,0,-9.8"}},
+    {"world"},
     {},
     {"Rigid"},
 });
@@ -525,7 +528,7 @@ struct BulletStepWorld : zeno::INode {
 };
 
 ZENDEFNODE(BulletStepWorld, {
-    {"world", "dt"},
+    {"world", {"float", "dt", "0.04"}},
     {},
     {},
     {"Rigid"},

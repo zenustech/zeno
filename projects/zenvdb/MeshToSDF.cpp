@@ -74,6 +74,7 @@ struct PrimitiveToSDF : zeno::INode{
       //h = get_input("Dx")->as<NumericObject>()->get<float>();
     //}
     auto h = get_input2<float>("Dx");
+    //auto h = get_input("Dx")->as<NumericObject>()->get<float>();
     auto mesh = get_input("PrimitiveMesh")->as<PrimitiveObject>();
     auto result = zeno::IObject::make<VDBFloatGrid>();
     std::vector<openvdb::Vec3s> points;

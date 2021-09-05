@@ -16,6 +16,7 @@
 #include <zeno/utils/Timer.h>
 #endif
 #include <zeno/utils/safe_at.h>
+//#include <spdlog/spdlog.h>
 
 namespace zeno {
 
@@ -89,7 +90,9 @@ ZENO_API void INode::coreApply() {
 #ifdef ZENO_BENCHMARKING
         Timer _(myname);
 #endif
+        //spdlog::trace("--> enter {}", myname);
         apply();
+        //spdlog::trace("--> leave {}", myname);
     }
 
 #ifdef ZENO_VISUALIZATION
@@ -126,7 +129,13 @@ ZENO_API zany INode::get_input2(std::string const &id) const {
 }
 
 ZENO_API void INode::set_output2(std::string const &id, zany &&obj) {
-    outputs[id] = std::move(obj);
+    if (auto num = silent_any_cast<std::shared_ptr<NumericObject>>(obj); num.has_value()) {
+        std::visit([&] (auto const &x) {
+            outputs[id] = x;
+        }, num.value()->value);
+    } else {
+        outputs[id] = std::move(obj);
+    }
 }
 
 ZENO_API std::shared_ptr<IObject> INode::get_input(std::string const &id, std::string const &msg) const {
@@ -184,6 +193,17 @@ ZENO_API bool INode::has_input(std::string const &id) const {
     }
 
     return false;
+}
+
+ZENO_API bool INode::_implicit_cast_from_to(std::string const &id,
+        std::shared_ptr<IObject> const &from, std::shared_ptr<IObject> const &to) {
+    auto node = graph->scene->sess->getOverloadNode("ConvertTo", {from, to});
+    if (!node) {
+        inputs[id] = from;
+        return false;
+    }
+    node->doApply();
+    return true;
 }
 
 }

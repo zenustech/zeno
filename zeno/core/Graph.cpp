@@ -138,7 +138,7 @@ ZENO_API UserData &Graph::getUserData() {
 ZENO_API std::unique_ptr<INode> Graph::getOverloadNode(std::string const &id,
         std::vector<std::shared_ptr<IObject>> const &inputs) const {
     auto node = scene->sess->getOverloadNode(id, inputs);
-    node->graph = const_cast<Graph *>(this);
+    if (node) node->graph = const_cast<Graph *>(this);
     return node;
 }
 

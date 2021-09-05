@@ -67,7 +67,7 @@ struct PrimitivePrintAttr : INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
     auto attrName = std::get<std::string>(get_param("attrName"));
-    std::visit([attrName](auto const &arr) {
+    prim->attr_visit(attrName, [attrName](auto const &arr) {
         printf("attribute `%s`, length %zd:\n", attrName.c_str(), arr.size());
         for (int i = 0; i < arr.size(); i++) {
             print_cout(arr[i]);
@@ -76,7 +76,7 @@ struct PrimitivePrintAttr : INode {
             printf("(no data)\n");
         }
         printf("\n");
-    }, prim->attr(attrName));
+    });
 
     set_output("prim", get_input("prim"));
   }
@@ -134,6 +134,7 @@ ZENDEFNODE(PrimitiveRandomizeAttr,
     "prim",
     }, /* params: */ {
     {"string", "attrName", "pos"},
+    {"enum float float3", "attrType", "float3"},
     {"float", "min", "-1"},
     {"float", "minY", "-1"},
     {"float", "minZ", "-1"},

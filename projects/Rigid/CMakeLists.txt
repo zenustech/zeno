@@ -16,3 +16,4 @@ target_link_libraries(zeno_Rigid PRIVATE HACD)
 
 target_link_libraries(zeno_Rigid PUBLIC zeno)
 target_link_libraries(zeno_Rigid PRIVATE zeno_nodep)
+target_link_libraries(zeno_Rigid PRIVATE spdlog)

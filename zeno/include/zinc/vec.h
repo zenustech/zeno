@@ -322,6 +322,16 @@ _PER_FN1(floor)
 _PER_FN1(ceil)
 #undef _PER_FN1
 
+template <class T>
+inline auto fract(T const &a) {
+  return a - floor(a);
+}
+
+template <class T>
+inline auto ifloor(T const &a) {
+  return toint(floor(a));
+}
+
 template <class To, class T> inline auto cast(T const &a) {
   return vapply([](auto const &x) { return (To)x; }, a);
 }

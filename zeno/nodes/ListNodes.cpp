@@ -180,6 +180,27 @@ ZENDEFNODE(MakeList, {
     });
 
 
+struct NumericRangeList : zeno::INode {
+    virtual void apply() override {
+        auto list = std::make_shared<zeno::ListObject>();
+        auto start = get_input2<int>("start");
+        auto stop = get_input2<int>("stop");
+        auto skip = get_input2<int>("skip");
+        for (int i = start; i < stop; i += skip) {
+            list->arr.emplace_back(i);
+        }
+        set_output("list", std::move(list));
+    }
+};
+
+ZENDEFNODE(NumericRangeList, {
+    {{"int","start","0"},{"int","end","1"},{"int","skip","1"}},
+    {"list"},
+    {},
+    {"list"},
+    });
+
+
 #ifdef ZENO_VISUALIZATION
 struct ToVisualize_ListObject : zeno::INode {
     virtual void apply() override {
