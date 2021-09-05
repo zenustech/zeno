@@ -27,19 +27,7 @@ struct PrimitiveDuplicate : zeno::INode {
             }
         }
 
-        if (get_param<bool>("attrFromParticles")) {
-            pars->verts.foreach_attr([&] (auto const &key, auto const &attr) {
-                using T = std::decay_t<decltype(attr[0])>;
-                auto &outattr = outm->add_attr<T>(key);
-                #pragma omp parallel for
-                for (int i = 0; i < attr.size(); i++) {
-                    for (int j = 0; j < mesh->size(); j++) {
-                        outattr[i * mesh->size() + j] = attr[j];
-                    }
-                }
-            });
-
-        } else {
+        if (get_param<bool>("attrFromMesh")) {
             mesh->verts.foreach_attr([&] (auto const &key, auto const &attr) {
                 using T = std::decay_t<decltype(attr[0])>;
                 auto &outattr = outm->add_attr<T>(key);
@@ -50,7 +38,19 @@ struct PrimitiveDuplicate : zeno::INode {
                     }
                 }
             });
+        }
 
+        if (get_param<bool>("attrFromParticles")) {
+            pars->verts.foreach_attr([&] (auto const &key, auto const &attr) {
+                using T = std::decay_t<decltype(attr[0])>;
+                auto &outattr = outm->add_attr<T>(key);
+                #pragma omp parallel for
+                for (int i = 0; i < attr.size(); i++) {
+                    for (int j = 0; j < mesh->size(); j++) {
+                        outattr[i * mesh->size() + j] = attr[i];
+                    }
+                }
+            });
         }
 
         outm->points.resize(pars->size() * mesh->points.size());
@@ -102,7 +102,8 @@ ZENDEFNODE(PrimitiveDuplicate, {
         }, {
         "outPrim",
         }, {
-        {"bool", "attrFromParticles", "0"},
+        {"bool", "attrFromMesh", "1"},
+        {"bool", "attrFromParticles", "1"},
         }, {
         "primitive",
         }});
