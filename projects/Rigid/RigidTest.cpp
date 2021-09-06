@@ -553,7 +553,6 @@ struct BulletWorld : zeno::IObject {
 
     std::set<std::shared_ptr<BulletObject>> objects;
     std::set<std::shared_ptr<BulletConstraint>> constraints;
-    std::set<std::shared_ptr<BulletConstraint>> constraintBlklist;
 
     BulletWorld() {
         dynamicsWorld->setGravity(btVector3(0, -10, 0));
@@ -606,10 +605,11 @@ struct BulletWorld : zeno::IObject {
         spdlog::info("existing constraint list len={}", constraints.size());
         for (auto const &constraint: consList) {
             consSet.insert(constraint);
+            if (!constraint->constraint->isEnabled()) {
+                continue;
+            }
             if (constraints.find(constraint) == constraints.end()) {
-                if (constraintBlklist.find(constraint) == constraintBlklist.end()) {
-                    addConstraint(std::move(constraint));
-                }
+                addConstraint(std::move(constraint));
             }
         }
         for (auto const &constraint: std::set(constraints)) {
@@ -623,7 +623,6 @@ struct BulletWorld : zeno::IObject {
         spdlog::info("checking for disabled constraints...");
         for (auto const &constraint: std::set(constraints)) {
             if (!constraint->constraint->isEnabled()) {
-                constraintBlklist.insert(constraint);
                 removeConstraint(constraint);
             }
         }
