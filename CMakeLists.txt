@@ -17,7 +17,6 @@ endif()
 include_directories(include)
 
 option(ZENO_BUILD_EXTENSIONS "Build extension modules for Zeno" ON)
-option(ZENO_BUILD_ZFX "Build ZFX module for Zeno" ON)
 option(ZENO_BUILD_TESTS "Build tests for Zeno" OFF)
 option(ZENO_GLOBALSTATE "Enable ZENO frame and substep support" ON)
 option(ZENO_VISUALIZATION "Enable ZENO visualization support" ON)
@@ -58,10 +57,6 @@ endif()
 if (ZENO_VISUALIZATION)
     add_subdirectory(external/glad)
     add_subdirectory(zenvis)
-endif()
-
-if (ZENO_BUILD_ZFX)
-    add_subdirectory(ZFX)
 endif()
 
 if (ZENO_BUILD_EXTENSIONS)

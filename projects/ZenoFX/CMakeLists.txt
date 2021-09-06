@@ -1,3 +1,5 @@
+add_subdirectory(ZFX)
+
 add_library(zeno_ZenoFX SHARED)
 target_include_directories(zeno_ZenoFX PRIVATE .)
 
