@@ -124,6 +124,7 @@ class QDMGraphicsNode(QGraphicsItem):
                 param = QDMGraphicsParamEnum(self)
                 enums = type.split()[1:]
                 param.setEnums(enums)
+                param.setZValue(len(params) - index)
             else:
                 param = globals()['QDMGraphicsParam_' + type](self)
             rect = QRectF(HORI_MARGIN, y, self.width - HORI_MARGIN * 2, 0)
