@@ -95,7 +95,8 @@ struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
     return m_grid->transform().worldToIndex(c);
   }
   virtual void output(std::string path) override {
-    writeFloatGrid<GridT>(path, m_grid);
+    //writeFloatGrid<GridT>(path, m_grid);
+    openvdb::io::File(path).write({ m_grid });
   }
 
   virtual void input(std::string path) override {

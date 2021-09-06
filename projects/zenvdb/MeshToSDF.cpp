@@ -71,7 +71,7 @@ struct PrimitiveToSDF : zeno::INode{
     //auto h = std::get<float>(get_param("voxel_size"));
     //if(has_input("Dx"))
     //{
-      //h = get_input("Dx")->as<NumericObject>()->get<float>();
+      //h = get_input<NumericObject>("Dx")->get<float>();
     //}
     auto h = get_input2<float>("Dx");
     //auto h = get_input("Dx")->as<NumericObject>()->get<float>();
