@@ -63,37 +63,39 @@ struct PrimSprayParticles : zeno::INode {
       zeno::vec3f e1 = b - a;
       zeno::vec3f e2 = c - a;
       zeno::vec3f e3 = c - b;
-      zeno::vec3f dir1 = e1 / zeno::length(e1);
-      zeno::vec3f dir2 = e2 / zeno::length(e2);
-      zeno::vec3f dir3 = e3 / zeno::length(e3);
-      int in(zeno::length(e1) / (dx) + 1);
-      int jn(zeno::length(e2) / (dx) + 1);
-      int kn(zeno::length(e3) / (dx) + 1);
+      auto le1 = length(e1);
+      auto le2 = length(e2);
+      auto le3 = length(e3);
+      int in = std::max(int(le1 / dx), 1);
+      int jn = std::max(int(le2 / dx), 1);
+      int kn = std::max(int(le3 / dx), 1);
+      zeno::vec3f dir1 = e1 / (in);
+      zeno::vec3f dir2 = e2 / (jn);
+      zeno::vec3f dir3 = e3 / (kn);
       data.push_back(a);
       data.push_back(b);
       data.push_back(c);
-      for (int kk = 0; kk < kn; kk++) {
-        zeno::vec3f vij = b + (float)kk * dx * dir3;
+      /*for (int kk = 0; kk < kn; kk++) {
+        zeno::vec3f vij = b + (0.5f + kk) * dir3;
         if (ptInTriangle(vij, a, b, c)) {
               data.push_back(vij);
         }
       }
       for (int ii = 0; ii < in; ii++) {
-        zeno::vec3f vij = a + (float)ii * dx * dir1;
+        zeno::vec3f vij = a + (0.5f + ii) * dir1;
         if (ptInTriangle(vij, a, b, c)) {
           data.push_back(vij);
         }
       }
       for (int jj = 0; jj < jn; jj++) {
-        zeno::vec3f vij = a + (float)jj * dx * dir2;
+        zeno::vec3f vij = a + (0.5f + jj) * dir2;
         if (ptInTriangle(vij, a, b, c)) {
           data.push_back(vij);
         }
-      }
+      }*/
       for (int ii = 0; ii < in; ii++) {
         for (int jj = 0; jj < jn; jj++) {
-          zeno::vec3f vij =
-              a + (float)ii * dx * dir1 + (float)jj * dx * dir2;
+          zeno::vec3f vij = a + (0.5f + ii) * dir1 + (0.5f + jj) * dir2;
           if (ptInTriangle(vij, a, b, c)) {
             data.push_back(vij);
           }
