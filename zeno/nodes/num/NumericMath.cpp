@@ -117,7 +117,9 @@ struct NumericRandom : INode {
         } else if (dim == 4) {
             value->set(offs + scale * zeno::vec4f(frand(), frand(), frand(), frand()));
         } else {
-            printf("invalid dim for NumericRandom: %d\n", dim);
+            char buf[1024];
+            sprintf(buf, "invalid dim for NumericRandom: %d\n", dim);
+            throw Exception(buf);
         }
         set_output("value", std::move(value));
     }

@@ -16,14 +16,28 @@ struct PrimitiveDuplicate : zeno::INode {
         float uniScale = has_input("uniScale") ?
             get_input<NumericObject>("uniScale")->get<float>() : 1.0f;
 
+        auto scaleByAttr = get_param<std::string>("scaleByAttr");
+
         auto const &parspos = pars->attr<vec3f>("pos");
         auto const &meshpos = mesh->attr<vec3f>("pos");
         auto &outmpos = outm->add_attr<vec3f>("pos");
 
-        #pragma omp parallel for
-        for(int i = 0; i < parspos.size(); i++) {
-            for (int j = 0; j < meshpos.size(); j++) {
-                outmpos[i * meshpos.size() + j] = parspos[i] + uniScale * meshpos[j];
+        if (scaleByAttr.size()) {
+            auto const &scaleAttr = pars->attr<float>(scaleByAttr);
+            #pragma omp parallel for
+            for(int i = 0; i < parspos.size(); i++) {
+                for (int j = 0; j < meshpos.size(); j++) {
+                    auto scale = uniScale * scaleAttr[i];
+                    outmpos[i * meshpos.size() + j] = parspos[i] + scale * meshpos[j];
+                }
+            }
+        } else {
+            #pragma omp parallel for
+            for(int i = 0; i < parspos.size(); i++) {
+                for (int j = 0; j < meshpos.size(); j++) {
+                    auto scale = uniScale;
+                    outmpos[i * meshpos.size() + j] = parspos[i] + scale * meshpos[j];
+                }
             }
         }
 
@@ -104,6 +118,7 @@ ZENDEFNODE(PrimitiveDuplicate, {
         }, {
         {"bool", "attrFromMesh", "1"},
         {"bool", "attrFromParticles", "1"},
+        {"string", "scaleByAttr", ""},
         }, {
         "primitive",
         }});

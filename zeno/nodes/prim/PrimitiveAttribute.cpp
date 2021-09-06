@@ -29,8 +29,7 @@ struct PrimitiveAddAttr : zeno::INode {
             }
         }
         else {
-            printf("%s\n", type.c_str());
-            assert(0 && "Bad attribute type");
+            throw Exception("Bad attribute type: " + type);
         }
 
         set_output("prim", get_input("prim"));
@@ -74,8 +73,7 @@ struct PrimitiveGetAttrValue : zeno::INode {
                 }
         }
         else {
-            printf("%s\n", type.c_str());
-            assert(0 && "Bad attribute type");
+            throw Exception("Bad attribute type: " + type);
         }
         set_output("value", std::move(value));
     }
@@ -116,8 +114,7 @@ struct PrimitiveSetAttrValue : zeno::INode {
                 }
         }
         else {
-            printf("%s\n", type.c_str());
-            assert(0 && "Bad attribute type");
+            throw Exception("Bad attribute type: " + type);
         }
     }
 };
