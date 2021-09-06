@@ -438,6 +438,48 @@ ZENDEFNODE(BulletGetObjMotion, {
     {"Rigid"},
 });
 
+
+struct BulletConstraint : zeno::IObject {
+    std::unique_ptr<btConstraint> constraint;
+
+    BulletObject *obj1;
+    BulletObject *obj2;
+
+    BulletConstraint(BulletObject *obj1, BulletObject *obj2)
+        : obj1(obj1), obj2(obj2)
+    {
+        auto trA = obj1->body->getWorldTransform().inverse();
+        auto trB = obj1->body->getWorldTransform().inverse();
+        constraint = std::make_unique<btGeneric6DofConstraint>(
+                *obj1->body, *obj2->body, trA, trB, true);
+    }
+
+    void setBreakingThreshold(float breakingThreshold) {
+        auto totalMass = obj1->body->getMass() + obj2->body->getMass();
+        constraint->setBreakingImpulseThreshold(breakingThreshold * totalMass);
+    }
+};
+
+struct BulletMakeConstraint : zeno::INode {
+    virtual void apply() override {
+        auto obj1 = get_input<BulletObject>("obj1");
+        auto obj2 = get_input<BulletObject>("obj2");
+        auto breakThres = get_input2<float>("breakThres");
+        auto cons = std::make_shared<BulletConstraint>();
+        if (breakThres > 0)
+            cons->setBreakingThreshold(breakThres);
+        set_output("constraint", std::move(cons));
+    }
+};
+
+ZENDEFNODE(BulletMakeConstraint, {
+    {"obj1", "obj2", {"float", "breakThres", "0"}},
+    {"object"},
+    {},
+    {"Rigid"},
+});
+
+
 struct RigidVelToPrimitive : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
@@ -447,6 +489,7 @@ struct RigidVelToPrimitive : zeno::INode {
 
         auto &pos = prim->attr<zeno::vec3f>("pos");
         auto &vel = prim->add_attr<zeno::vec3f>("vel");
+        #pragma omp parallel for
         for (size_t i = 0; i < prim->size(); i++) {
             vel[i] = lin + zeno::cross(ang, pos[i] - com);
         }
@@ -491,6 +534,7 @@ struct BulletWorld : zeno::IObject {
     std::unique_ptr<btDiscreteDynamicsWorld> dynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>(dispatcher.get(), overlappingPairCache.get(), solver.get(), collisionConfiguration.get());
 
     std::set<std::shared_ptr<BulletObject>> objects;
+    std::set<std::shared_ptr<BulletConstraint>> constraints;
 
     BulletWorld() {
         dynamicsWorld->setGravity(btVector3(0, -10, 0));
@@ -521,6 +565,35 @@ struct BulletWorld : zeno::IObject {
         for (auto const &object: std::set(objects)) {
             if (auto it = objSet.find(object); it == objSet.end()) {
                 removeObject(object);
+            }
+        }
+    }
+
+    void addConstraint(std::shared_ptr<BulletConstraint> cons) {
+        spdlog::info("adding constraint {}", (void *)obj.get());
+        dynamicsWorld->addConstraint(cons->constraint.get());
+        constraints.insert(std::move(cons));
+    }
+
+    void removeConstraint(std::shared_ptr<BulletConstraint> const &obj) {
+        spdlog::info("removing constraint {}", (void *)obj.get());
+        dynamicsWorld->removeConstraint(cons->constraint.get());
+        constraints.erase(obj);
+    }
+
+    void setObjectList(std::vector<std::shared_ptr<BulletObject>> objList) {
+        std::set<std::shared_ptr<BulletConstraint>> consSet;
+        spdlog::info("setting constraint list len={}", objList.size());
+        spdlog::info("existing constraint list len={}", constraints.size());
+        for (auto const &constraint: objList) {
+            consSet.insert(constraint);
+            if (auto it = constraints.find(constraint); it == constraints.end()) {
+                addConstraint(std::move(constraint));
+            }
+        }
+        for (auto const &constraint: std::set(constraints)) {
+            if (auto it = objSet.find(constraint); it == objSet.end()) {
+                removeConstraint(constraint);
             }
         }
     }
@@ -652,7 +725,6 @@ ZENDEFNODE(BulletWorldRemoveObject, {
     {"Rigid"},
 });
 
-#if 1
 struct BulletWorldSetObjList : zeno::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
@@ -668,7 +740,55 @@ ZENDEFNODE(BulletWorldSetObjList, {
     {},
     {"Rigid"},
 });
-#endif
+
+struct BulletWorldAddConstraint : zeno::INode {
+    virtual void apply() override {
+        auto world = get_input<BulletWorld>("world");
+        auto constraint = get_input<BulletConstraint>("constraint");
+        world->addConstraint(std::move(constraint));
+        set_output("world", get_input("world"));
+    }
+};
+
+ZENDEFNODE(BulletWorldAddConstraint, {
+    {"world", "constraint"},
+    {"world"},
+    {},
+    {"Rigid"},
+});
+
+struct BulletWorldRemoveConstraint : zeno::INode {
+    virtual void apply() override {
+        auto world = get_input<BulletWorld>("world");
+        auto constraint = get_input<BulletConstraint>("constraint");
+        world->removeConstraint(std::move(constraint));
+        set_output("world", get_input("world"));
+    }
+};
+
+ZENDEFNODE(BulletWorldRemoveConstraint, {
+    {"world", "constraint"},
+    {"world"},
+    {},
+    {"Rigid"},
+});
+
+struct BulletWorldSetConsList : zeno::INode {
+    virtual void apply() override {
+        auto world = get_input<BulletWorld>("world");
+        auto consList = get_input<ListObject>("consList")->get<std::shared_ptr<BulletConstraint>>();
+        world->setConstraintList(std::move(consList));
+        set_output("world", get_input("world"));
+    }
+};
+
+ZENDEFNODE(BulletWorldSetConsList, {
+    {"world", "consList"},
+    {"world"},
+    {},
+    {"Rigid"},
+});
+
 
 struct BulletObjectApplyForce:zeno::INode {
     virtual void apply() override {
