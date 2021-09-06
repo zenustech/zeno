@@ -60,125 +60,6 @@ struct AdaptiveSolver : zeno::INode
         set_output("level4", level4);
     }
 
-    void applyGravityAndBound()
-    {
-        auto vel_axr = velGrid->getAccessor();
-        #pragma omp parallel for
-        for(int ii= 0 ;ii < sdfgrid->tree().leafCount(); ++ii)
-        {
-            openvdb::FloatGrid::TreeType::LeafIter iter = sdfgrid->tree().beginLeaf();
-            for(int jj = 0;jj<ii;++jj)
-                ++iter;
-            
-            openvdb::FloatGrid::TreeType::LeafNodeType& leaf = *iter;
-            for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-                    auto voxelwpos =
-                        sdfgrid->indexToWorld(leaf.offsetToGlobalCoord(offset));
-                    auto voxelipos = openvdb::Vec3i(sdfgrid->worldToIndex(voxelwpos));
-
-                    if(sdfgrid->tree().isValueOff(openvdb::Coord(voxelipos)))
-                        continue;
-                    openvdb::Vec3f vel_value = vel_axr.getValue(openvdb::Coord(voxelipos));
-                    vel_value += openvdb::Vec3f(0, -dt * 9.8, 0);
-                    // bound
-                    if(voxelipos[1] <= -10)
-                        vel_value = openvdb::Vec3f(vel_value[0], 0, vel_value[2]);
-                    if(voxelipos[0] <= -30 || voxelipos[0] >= 30)
-                        vel_value = openvdb::Vec3f(0, vel_value[1], vel_value[2]);
-                    if(voxelipos[2] <= -30 || voxelipos[2] >= 30)
-                        vel_value = openvdb::Vec3f(vel_value[0], vel_value[1], 0);
-                    vel_axr.setValue(openvdb::Coord(voxelipos), vel_value);
-            }    
-        }
-    }
-    
-    void computeRHS()
-    {
-        auto rhs_axr{rhsGrid->getAccessor()};
-        auto vel_axr = velGrid->getAccessor();
-        for(int ii= 0 ;ii < sdfgrid->tree().leafCount(); ++ii)
-        {
-            openvdb::FloatGrid::TreeType::LeafIter iter = sdfgrid->tree().beginLeaf();
-            for(int jj = 0;jj<ii;++jj)
-                ++iter;          
-            openvdb::FloatGrid::TreeType::LeafNodeType& leaf = *iter;
-            for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-                auto voxelwpos =
-                    pressGrid->indexToWorld(leaf.offsetToGlobalCoord(offset));
-                auto voxelipos = openvdb::Vec3i(sdfgrid->worldToIndex(voxelwpos));
-
-                if(pressGrid->tree().isValueOff(openvdb::Coord(voxelipos)))
-                    continue;
-                
-                float divVel = 0.0f;
-                openvdb::Vec3f velSum = openvdb::Vec3f(0,0,0);
-                for(int ss = 0; ss<3;++ss)
-                for(int i = -1;i <= 1;i += 2)
-                {
-                    auto ipos = voxelipos;
-                    ipos[ss] += i;
-                    if(velGrid->tree().isValueOff(openvdb::Coord(ipos)))
-                        continue;
-                    openvdb::Vec3f vel_value = vel_axr.getValue(openvdb::Coord(ipos));
-                    //printf("index (%d,%d,%d) vel value is (%f,%f,%f)\n", 
-                    //    ipos[0], ipos[1], ipos[2], vel_value[0], vel_value[1], vel_value[2]);
-                    velSum += vel_value;
-                    divVel += i * vel_value[ss] / dx;
-                }
-                divVel = -divVel/dt;
-                rhs_axr.setValue(openvdb::Coord(voxelipos), divVel);
-                float rhsvalue = rhs_axr.getValue(openvdb::Coord(voxelipos));
-                if(rhsvalue != 0)
-                    printf("rhs value is %f, getValue is %f, vel sum is (%f,%f,%f), divVel is %f, dt is %f\n", 
-                        rhsvalue, rhs_axr.getValue(openvdb::Coord(voxelipos)), velSum[0], velSum[1], velSum[2], divVel, dt);
-            }
-        }
-
-    }
-    
-    void initIter()
-    {
-        auto press_axr = pressGrid->getAccessor();
-        auto res_axr{resGrid->getAccessor()};
-        auto p_axr{pGrid->getAccessor()};
-        auto rhs_axr{rhsGrid->getAccessor()};
-        for(int ii= 0 ;ii < sdfgrid->tree().leafCount(); ++ii)
-        {
-            openvdb::FloatGrid::TreeType::LeafIter iter = sdfgrid->tree().beginLeaf();
-            for(int jj = 0;jj<ii;++jj)
-                ++iter;          
-            openvdb::FloatGrid::TreeType::LeafNodeType& leaf = *iter;
-            for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-                auto voxelwpos =
-                        pressGrid->indexToWorld(leaf.offsetToGlobalCoord(offset));
-                auto voxelipos = openvdb::Vec3i(sdfgrid->worldToIndex(voxelwpos));
-                if(pressGrid->tree().isValueOff(openvdb::Coord(voxelipos)))
-                        continue;
-                float pressValue = press_axr.getValue(openvdb::Coord(voxelipos));
-                float Ax = 6 * pressValue;
-                for(int ss = 0; ss<3;++ss)
-                for(int i = -1;i <= 1;i += 2)
-                {
-                    auto ipos = voxelipos;
-                    ipos[ss] += i;
-                    if(pressGrid->tree().isValueOff(openvdb::Coord(ipos)))
-                        continue;
-                    float press_value = press_axr.getValue(openvdb::Coord(ipos));
-                    Ax -= press_value;
-                }
-                Ax /= dx * dx;
-
-                float b = rhs_axr.getValue(openvdb::Coord(voxelipos));
-                // if(rhsGrid->tree().isValueOff(openvdb::Coord(voxelipos)))
-                //     printf("wrong rhs tree on (%d,%d,%d)!\n", voxelipos[0], voxelipos[1],
-                //     voxelipos[2]);
-                res_axr.setValue(openvdb::Coord(voxelipos), b - Ax);
-                p_axr.setValue(openvdb::Coord(voxelipos), b - Ax);
-                //printf("p-Ax is %f, b is %f, Ax is %f\n", 
-                //    b - Ax, b, Ax);
-            }
-        }     
-    }
     //using cg iteration to solve press possion equation 
     void step()
     {
@@ -196,18 +77,38 @@ struct AdaptiveSolver : zeno::INode
         dx = data.aig.hLevels[data.aig.topoLevels.size()-1];
         // compute the finest level only
         sdfgrid = data.aig.topoLevels[data.aig.topoLevels.size()-1];
-        
-        auto grid_axr(sdfgrid->getAccessor());
-        auto vel_axr = velGrid->getAccessor();
-        auto press_axr = pressGrid->getAccessor();
-        auto rhs_axr{rhsGrid->getAccessor()};
-        auto res_axr{resGrid->getAccessor()};
-        auto r2_axr{r2Grid->getAccessor()};
-        auto p_axr{pGrid->getAccessor()};
-        auto Ap_axr{ApGrid->getAccessor()};
 
+        auto applyGravityAndBound = [&](const tbb::blocked_range<size_t> &r) {
+            auto vel_axr = velGrid->getAccessor();
+            // leaf iter
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    auto voxelwpos =
+                        sdfgrid->indexToWorld(leaf.offsetToGlobalCoord(offset));
+                    auto voxelipos = openvdb::Vec3i(sdfgrid->worldToIndex(voxelwpos));
+
+                    if(sdfgrid->tree().isValueOff(openvdb::Coord(voxelipos)))
+                        continue;
+                    openvdb::Vec3f vel_value = vel_axr.getValue(openvdb::Coord(voxelipos));
+                    vel_value += openvdb::Vec3f(0, -dt * 9.8, 0);
+                    // bound
+                    if(voxelipos[1] <= -10)
+                        vel_value = openvdb::Vec3f(vel_value[0], 0, vel_value[2]);
+                    if(voxelipos[0] <= -30 || voxelipos[0] >= 30)
+                        vel_value = openvdb::Vec3f(0, vel_value[1], vel_value[2]);
+                    if(voxelipos[2] <= -30 || voxelipos[2] >= 30)
+                        vel_value = openvdb::Vec3f(vel_value[0], vel_value[1], 0);
+                    vel_axr.setValue(openvdb::Coord(voxelipos), vel_value);
+                }
+            }
+        };
         // set r0 and p0
         auto initIter = [&](const tbb::blocked_range<size_t> &r) {
+            auto press_axr{pressGrid->getAccessor()};
+            auto rhs_axr{rhsGrid->getAccessor()};
+            auto res_axr{resGrid->getAccessor()};
+            auto p_axr{pGrid->getAccessor()};
             // leaf iter
             for (auto liter = r.begin(); liter != r.end(); ++liter) {
                 auto &leaf = *leaves[liter];
@@ -238,15 +139,59 @@ struct AdaptiveSolver : zeno::INode
                     //     voxelipos[2]);
                     res_axr.setValue(openvdb::Coord(voxelipos), b - Ax);
                     p_axr.setValue(openvdb::Coord(voxelipos), b - Ax);
-                    if(b - Ax != 0)
-                        printf("b is %f, Ax is %f, press is %f\n", b ,Ax, pressValue);
+                    //if(b - Ax != 0)
+                    //    printf("b is %f, Ax is %f, press is %f\n", b ,Ax, pressValue);
                     //printf("p-Ax is %f, b is %f, Ax is %f\n", 
                     //    b - Ax, b, Ax);
                 }
             }
         };
 
+        auto computeRHS = [&](const tbb::blocked_range<size_t> &r) {
+            auto rhs_axr{rhsGrid->getAccessor()};
+            auto vel_axr{velGrid->getAccessor()};
+            // leaf iter
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    auto voxelwpos =
+                        pressGrid->indexToWorld(leaf.offsetToGlobalCoord(offset));
+                    auto voxelipos = openvdb::Vec3i(sdfgrid->worldToIndex(voxelwpos));
+
+                    if(pressGrid->tree().isValueOff(openvdb::Coord(voxelipos)))
+                        continue;
+                
+                    float divVel = 0.0f;
+                    openvdb::Vec3f velSum = openvdb::Vec3f(0,0,0);
+                    for(int ss = 0; ss<3;++ss)
+                    for(int i = -1;i <= 1;i += 2)
+                    {
+                        auto ipos = voxelipos;
+                        ipos[ss] += i;
+                        if(velGrid->tree().isValueOff(openvdb::Coord(ipos)))
+                            continue;
+                        openvdb::Vec3f vel_value = vel_axr.getValue(openvdb::Coord(ipos));
+                        //printf("index (%d,%d,%d) vel value is (%f,%f,%f)\n", 
+                        //    ipos[0], ipos[1], ipos[2], vel_value[0], vel_value[1], vel_value[2]);
+                        velSum += vel_value;
+                        divVel += i * vel_value[ss] / dx;
+                    }
+                    divVel = -divVel/dt;
+                    rhs_axr.setValue(openvdb::Coord(voxelipos), divVel);
+                    float rhsvalue = rhs_axr.getValue(openvdb::Coord(voxelipos));
+                    // if(rhsvalue != 0)
+                    //     printf("rhs value is %f, getValue is %f, vel sum is (%f,%f,%f), divVel is %f, dt is %f, dx is %f\n", 
+                    //         rhsvalue, rhs_axr.getValue(openvdb::Coord(voxelipos)), velSum[0], velSum[1], velSum[2], divVel, 
+                    //         dt, dx);
+
+                }
+            }
+        };
+
         auto computeAlpha = [&](const tbb::blocked_range<size_t> &r, double alphaSum) {
+            auto p_axr{pGrid->getAccessor()};
+            auto res_axr{resGrid->getAccessor()};
+            auto Ap_axr{ApGrid->getAccessor()};
             // leaf iter
             for (auto liter = r.begin(); liter != r.end(); ++liter) {
                 auto &leaf = *leaves[liter];
@@ -281,6 +226,11 @@ struct AdaptiveSolver : zeno::INode
         };
 
         auto computeNewPress = [&](const tbb::blocked_range<size_t> &r) {
+            auto res_axr{resGrid->getAccessor()};
+            auto p_axr{pGrid->getAccessor()};
+            auto press_axr = pressGrid->getAccessor();
+            auto Ap_axr{ApGrid->getAccessor()};
+            auto r2_axr{r2Grid->getAccessor()};
             // leaf iter
             for (auto liter = r.begin(); liter != r.end(); ++liter) {
                 auto &leaf = *leaves[liter];
@@ -302,6 +252,8 @@ struct AdaptiveSolver : zeno::INode
         };
 
         auto computeBeta1 = [&](const tbb::blocked_range<size_t> &r, float betaSum) {
+            auto r2_axr{r2Grid->getAccessor()};
+            auto res_axr{resGrid->getAccessor()};
             // leaf iter
             for (auto liter = r.begin(); liter != r.end(); ++liter) {
                 auto &leaf = *leaves[liter];
@@ -323,6 +275,8 @@ struct AdaptiveSolver : zeno::INode
         };
 
         auto computeBeta2 = [&](const tbb::blocked_range<size_t> &r, float betaSum) {
+            auto r2_axr{r2Grid->getAccessor()};
+            auto res_axr{resGrid->getAccessor()};
             // leaf iter
             for (auto liter = r.begin(); liter != r.end(); ++liter) {
                 auto &leaf = *leaves[liter];
@@ -342,6 +296,9 @@ struct AdaptiveSolver : zeno::INode
         };
 
         auto computeP = [&](const tbb::blocked_range<size_t> &r) {
+            auto r2_axr{r2Grid->getAccessor()};
+            auto p_axr{pGrid->getAccessor()};
+            auto res_axr{resGrid->getAccessor()};
             // leaf iter
             for (auto liter = r.begin(); liter != r.end(); ++liter) {
                 auto &leaf = *leaves[liter];
@@ -363,14 +320,14 @@ struct AdaptiveSolver : zeno::INode
 
         sdfgrid->tree().getNodes(leaves);
         printf("sdfgrid leaves num is %d\n", leaves.size());
-        //tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), applyGravityAndBound);
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), applyGravityAndBound);
         
         leaves.clear();
         pressGrid->tree().getNodes(leaves);
         printf("pressGrid leaves num is %d\n", leaves.size());
         
-        computeRHS();
-        //tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeRHS);
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeRHS);
+
         tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), initIter);
         printf("start to iteration\n");
         for(int iterNum = 0; iterNum < 2; ++iterNum)

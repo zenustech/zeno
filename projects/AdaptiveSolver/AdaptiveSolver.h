@@ -9,10 +9,10 @@ namespace zeno{
     struct initializer{
         openvdb::FloatGrid::Ptr sdfGrid;
         openvdb::FloatGrid::Ptr pGrid;
-        double spacing;
-        initializer(openvdb::FloatGrid::Ptr sdf, openvdb::FloatGrid::Ptr p, double h):sdfGrid(sdf), pGrid(p), spacing(h){}
+
+        initializer(openvdb::FloatGrid::Ptr sdf, openvdb::FloatGrid::Ptr p):sdfGrid(sdf), pGrid(p){}
         
-        void operator()(const openvdb::FloatGrid::ValueOnCIter& sdfiter) const 
+        inline void operator()(const openvdb::FloatGrid::ValueOnIter& sdfiter) const 
         {
             auto press_axr{pGrid->getAccessor()};
             openvdb::Coord coord = sdfiter.getCoord();
@@ -46,63 +46,22 @@ namespace zeno{
                 }
             }
             openvdb::FloatGrid::Ptr sdfgrid;
-            openvdb::Vec3fGrid::Ptr velGrid;
             openvdb::FloatGrid::Ptr pressGrid;
-            openvdb::FloatGrid::Ptr rhsGrid;
-            std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
-
             for(int i=aig.hLevels.size() - 1;i >= 0;--i)
             {
                 sdfgrid = aig.topoLevels[i];
-                velGrid = vel[i];
-                
                 pressGrid = press[i] = sdfgrid->deepCopy();
-                rhsGrid = rhs[i] = sdfgrid->deepCopy();
-                sdfgrid->tree().getNodes(leaves);
+                rhs[i] = sdfgrid->deepCopy();
                 vel[i]->setTree(std::make_shared<openvdb::Vec3fTree>(
                     sdfgrid->tree(), /*bgval*/ openvdb::Vec3f(0),
                     openvdb::TopologyCopy()));
                 auto transform2 = openvdb::math::Transform::createLinearTransform(aig.hLevels[i]);
                 press[i]->setTransform(transform2);
-                rhs[i]->setTransform(transform2);
-                #pragma omp parallel for
-                for(int ii= 0 ;ii < sdfgrid->tree().leafCount(); ++ii)
-                {
-                    auto grid_axr{sdfgrid->getAccessor()};
-                    auto press_axr{pressGrid->getAccessor()};
-                    auto rhs_axr{rhsGrid->getAccessor()};
-                    openvdb::FloatGrid::TreeType::LeafIter iter = sdfgrid->tree().beginLeaf();
-                    for(int jj = 0;jj<ii;++jj)
-                        ++iter;
-                    
-                    openvdb::FloatGrid::TreeType::LeafNodeType& leaf = *iter;
-                    for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-                        auto voxelwpos =
-                            sdfgrid->indexToWorld(leaf.offsetToGlobalCoord(offset));
-                        auto voxelipos = openvdb::Vec3i(sdfgrid->worldToIndex(voxelwpos));
-
-                        if(sdfgrid->tree().isValueOff(openvdb::Coord(voxelipos)))
-                            continue;
-                        press_axr.setValue(openvdb::Coord(voxelipos), 0.0f);
-                        rhs_axr.setValue(openvdb::Coord(voxelipos), 0.0f);
-                        
-                        for(int i=0;i<=1;++i)
-                        for(int j=0;j<=1;++j)
-                        for(int k=0;k<=1;++k)
-                        {
-                            openvdb::Vec3i drift = voxelipos + openvdb::Vec3i(i,j,k);
-                            if(sdfgrid->tree().isValueOn(openvdb::Coord(drift)))
-                                continue;
-                            
-                            press_axr.setValue(openvdb::Coord(drift), 0.0f);
-                            rhs_axr.setValue(openvdb::Coord(drift), 0.0f);
-                        }
-
-                    }
-                }
-                leaves.clear();
-
-                openvdb::tools::foreach(pressGrid->beginValueOn(), setzero);
+                
+                openvdb::tools::foreach(sdfgrid->beginValueOn(), initializer(sdfgrid, press[i]));
+                rhs[i]->setTree(std::make_shared<openvdb::FloatTree>(
+                    pressGrid->tree(), /*bgval*/ float(0),
+                    openvdb::TopologyCopy()));
                 residual[i]->setTree(std::make_shared<openvdb::FloatTree>(
                     pressGrid->tree(), /*bgval*/ float(0),
                     openvdb::TopologyCopy()));
