@@ -72,6 +72,8 @@ struct VoronoiFracture : INode {
             }*/
             pcon.setup(con);
 
+            //std::set<int, int> neighlist;
+
             voro::c_loop_all cl(con);
             voro::voronoicell_neighbor c;
             if(cl.start()) do if(con.compute_cell(c, cl)) {
@@ -94,8 +96,10 @@ struct VoronoiFracture : INode {
 
                 bool isBoundary = false;
                 for (int i = 0, j = 0; i < (int)neigh.size(); i++) {
-                    if (neigh[i] <= 0)
+                    printf("%d\n", neigh[i]);
+                    if (neigh[i] < 0) {
                         isBoundary = true;
+                    }
                     int len = f_vert[j];
                     int start = (int)prim->loops.size();
                     for (int k = j + 1; k < j + 1 + len; k++) {

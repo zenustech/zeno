@@ -440,7 +440,7 @@ ZENDEFNODE(BulletGetObjMotion, {
 
 
 struct BulletConstraint : zeno::IObject {
-    std::unique_ptr<btConstraint> constraint;
+    std::unique_ptr<btGeneric6DofConstraint> constraint;
 
     BulletObject *obj1;
     BulletObject *obj2;
@@ -570,29 +570,29 @@ struct BulletWorld : zeno::IObject {
     }
 
     void addConstraint(std::shared_ptr<BulletConstraint> cons) {
-        spdlog::info("adding constraint {}", (void *)obj.get());
+        spdlog::info("adding constraint {}", (void *)cons.get());
         dynamicsWorld->addConstraint(cons->constraint.get());
         constraints.insert(std::move(cons));
     }
 
-    void removeConstraint(std::shared_ptr<BulletConstraint> const &obj) {
-        spdlog::info("removing constraint {}", (void *)obj.get());
+    void removeConstraint(std::shared_ptr<BulletConstraint> const &cons) {
+        spdlog::info("removing constraint {}", (void *)cons.get());
         dynamicsWorld->removeConstraint(cons->constraint.get());
-        constraints.erase(obj);
+        constraints.erase(cons);
     }
 
-    void setObjectList(std::vector<std::shared_ptr<BulletObject>> objList) {
+    void setConstraintList(std::vector<std::shared_ptr<BulletConstraint>> consList) {
         std::set<std::shared_ptr<BulletConstraint>> consSet;
-        spdlog::info("setting constraint list len={}", objList.size());
+        spdlog::info("setting constraint list len={}", consList.size());
         spdlog::info("existing constraint list len={}", constraints.size());
-        for (auto const &constraint: objList) {
+        for (auto const &constraint: consList) {
             consSet.insert(constraint);
             if (auto it = constraints.find(constraint); it == constraints.end()) {
                 addConstraint(std::move(constraint));
             }
         }
         for (auto const &constraint: std::set(constraints)) {
-            if (auto it = objSet.find(constraint); it == objSet.end()) {
+            if (auto it = consSet.find(constraint); it == consSet.end()) {
                 removeConstraint(constraint);
             }
         }
@@ -776,7 +776,8 @@ ZENDEFNODE(BulletWorldRemoveConstraint, {
 struct BulletWorldSetConsList : zeno::INode {
     virtual void apply() override {
         auto world = get_input<BulletWorld>("world");
-        auto consList = get_input<ListObject>("consList")->get<std::shared_ptr<BulletConstraint>>();
+        auto consList = get_input<ListObject>("consList")
+            ->get<std::shared_ptr<BulletConstraint>>();
         world->setConstraintList(std::move(consList));
         set_output("world", get_input("world"));
     }
