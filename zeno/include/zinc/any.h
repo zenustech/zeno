@@ -184,11 +184,12 @@ inline constexpr bool static_for(Lambda const &f) {
     return false;
 }
 
-template <class ...Ts>
-auto any_to_variant(Any a) {
-    std::variant<Ts...> v;
-    static_for<0, sizeof...(Ts)>([&] (auto i) {
-        using T = std::tuple_element_t<i, std::tuple<Ts...>>;
+template <class VariantT>
+VariantT variant_any_cast(Any a) {
+    using TupleT = typename is_variant<VariantT>::tuple_type;
+    VariantT v;
+    static_for<0, std::tuple_size_v<TupleT>>([&] (auto i) {
+        using T = std::tuple_element_t<i, TupleT>;
         auto o = exact_any_cast<T>(std::move(a));
         if (o.has_value()) {
             v = o.value();
