@@ -315,6 +315,26 @@
        "mass",
        1.0
       ],
+      "dampLin": [
+       null,
+       null,
+       0.1
+      ],
+      "dampAng": [
+       null,
+       null,
+       0.1
+      ],
+      "friction": [
+       null,
+       null,
+       0.7
+      ],
+      "restitution": [
+       null,
+       null,
+       0.4
+      ],
       "SRC": [
        null,
        null,
@@ -323,8 +343,8 @@
      },
      "params": {},
      "uipos": [
-      -4263.703568580868,
-      -150.5310518221712
+      -4263.703568580867,
+      -153.17422362833858
      ],
      "options": []
     },
@@ -371,6 +391,26 @@
        null,
        null,
        0.0
+      ],
+      "dampLin": [
+       null,
+       null,
+       0.1
+      ],
+      "dampAng": [
+       null,
+       null,
+       0.1
+      ],
+      "friction": [
+       null,
+       null,
+       0.7
+      ],
+      "restitution": [
+       null,
+       null,
+       0.4
       ],
       "SRC": [
        null,
@@ -688,10 +728,10 @@
     }
    },
    "view_rect": {
-    "x": -4262.766598005397,
-    "y": -212.98832516429857,
-    "width": 400.0,
-    "height": 400.0
+    "x": -4230.101972171684,
+    "y": -217.31300065304782,
+    "width": 320.0,
+    "height": 320.0
    }
   },
   "RigidStepWorld": {
@@ -1150,8 +1190,8 @@
      },
      "params": {},
      "uipos": [
-      1118.5242224782958,
-      258.81441837499074
+      1142.7269559634894,
+      302.9488147303437
      ],
      "options": []
     },
@@ -1242,8 +1282,8 @@
       "defl": ""
      },
      "uipos": [
-      2182.982186031514,
-      351.4008472311823
+      2943.824308195423,
+      345.63283221909023
      ],
      "options": []
     },
@@ -1256,7 +1296,7 @@
        null
       ],
       "BulletObj": [
-       "34e54573-BulletSetObjectDamping",
+       "5981514f-BulletSetObjectRestitution",
        "object",
        null
       ],
@@ -1275,8 +1315,8 @@
       "_KEYS": "BulletObj\nPrimitive\nAddTranslate"
      },
      "uipos": [
-      1820.2213513605677,
-      359.4265294141678
+      2579.2411500620615,
+      353.65851440207575
      ],
      "options": [],
      "socket_keys": [
@@ -1456,15 +1496,15 @@
        "object",
        null
       ],
-      "damping1": [
-       null,
-       null,
+      "dampLin": [
+       "46a7fd7e-SubInput",
+       "port",
        0.0
       ],
-      "damping2": [
-       null,
-       null,
-       0.5
+      "dampAug": [
+       "380592ea-x",
+       "port",
+       0.0
       ],
       "SRC": [
        null,
@@ -1474,17 +1514,149 @@
      },
      "params": {},
      "uipos": [
-      1465.2650822669102,
-      297.98903107861065
+      1476.6546039070008,
+      254.13937276425983
+     ],
+     "options": []
+    },
+    "a1a09895-BulletSetObjectFriction": {
+     "name": "BulletSetObjectFriction",
+     "inputs": {
+      "object": [
+       "34e54573-BulletSetObjectDamping",
+       "object",
+       null
+      ],
+      "friction": [
+       "6d08ec81-x",
+       "port",
+       0.7
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1838.9749430523925,
+      309.97722095671986
+     ],
+     "options": []
+    },
+    "46a7fd7e-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dampLin",
+      "type": "float",
+      "defl": "0.1"
+     },
+     "uipos": [
+      1251.9931662870165,
+      -61.788154897494394
+     ],
+     "options": []
+    },
+    "380592ea-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dampAng",
+      "type": "float",
+      "defl": "0.1"
+     },
+     "uipos": [
+      1519.4760820045558,
+      -39.69248291571752
+     ],
+     "options": []
+    },
+    "6d08ec81-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "friction",
+      "type": "float",
+      "defl": "0.7"
+     },
+     "uipos": [
+      1857.8587699316631,
+      27.9612756264237
+     ],
+     "options": []
+    },
+    "5981514f-BulletSetObjectRestitution": {
+     "name": "BulletSetObjectRestitution",
+     "inputs": {
+      "object": [
+       "a1a09895-BulletSetObjectFriction",
+       "object",
+       null
+      ],
+      "restitution": [
+       "05c845f2-x",
+       "port",
+       0.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2242.2907488986784,
+      327.7533039647576
+     ],
+     "options": []
+    },
+    "05c845f2-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "restitution",
+      "type": "float",
+      "defl": "0.4"
+     },
+     "uipos": [
+      2258.149779735683,
+      43.171806167400916
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": 913.0139273509454,
-    "y": 157.13066731521982,
-    "width": 500.0,
-    "height": 500.0
+    "x": 1752.4564390619835,
+    "y": 0.14042639931506073,
+    "width": 400.0,
+    "height": 400.0
    }
   },
   "RigidRecenterPrim": {
@@ -2405,12 +2577,82 @@
     ],
     [
      "float",
-     "damping1",
+     "dampLin",
      "0"
     ],
     [
      "float",
-     "damping2",
+     "dampAug",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletSetObjectFriction": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "float",
+     "friction",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletSetObjectRestitution": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "float",
+     "restitution",
      "0"
     ],
     [
@@ -7753,6 +7995,26 @@
      "float",
      "mass",
      "0"
+    ],
+    [
+     "float",
+     "dampLin",
+     "0.06"
+    ],
+    [
+     "float",
+     "dampAng",
+     "0.06"
+    ],
+    [
+     "float",
+     "friction",
+     "0.7"
+    ],
+    [
+     "float",
+     "restitution",
+     "0.4"
     ],
     [
      "",

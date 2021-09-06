@@ -340,15 +340,47 @@ ZENDEFNODE(BulletMakeObject, {
 struct BulletSetObjectDamping : zeno::INode {
     virtual void apply() override {
         auto object = get_input<BulletObject>("object");
-        auto dampLinear = get_input2<float>("dampLinear");
-        auto dampAugular = get_input2<float>("dampAugular");
-        object->body->setDamping(dampLinear, dampAugular);
+        auto dampLin = get_input2<float>("dampLin");
+        auto dampAug = get_input2<float>("dampAug");
+        object->body->setDamping(dampLin, dampAug);
         set_output("object", std::move(object));
     }
 };
 
 ZENDEFNODE(BulletSetObjectDamping, {
-    {"object", {"float", "dampLinear", "0"}, {"float", "dampAugular", "0"}},
+    {"object", {"float", "dampLin", "0"}, {"float", "dampAug", "0"}},
+    {"object"},
+    {},
+    {"Rigid"},
+});
+
+struct BulletSetObjectFriction : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input<BulletObject>("object");
+        auto friction = get_input2<float>("friction");
+        object->body->setFriction(friction);
+        set_output("object", std::move(object));
+    }
+};
+
+ZENDEFNODE(BulletSetObjectFriction, {
+    {"object", {"float", "friction", "0"}},
+    {"object"},
+    {},
+    {"Rigid"},
+});
+
+struct BulletSetObjectRestitution : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input<BulletObject>("object");
+        auto restitution = get_input2<float>("restitution");
+        object->body->setRestitution(restitution);
+        set_output("object", std::move(object));
+    }
+};
+
+ZENDEFNODE(BulletSetObjectRestitution, {
+    {"object", {"float", "restitution", "0"}},
     {"object"},
     {},
     {"Rigid"},
