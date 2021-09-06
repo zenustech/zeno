@@ -77,7 +77,7 @@ struct SampleVDBToPrimitive : INode {
 };
 
 ZENDEFNODE(SampleVDBToPrimitive, {
-                                     {"prim", "vdbGrid", "primAttr"},
+                                     {"prim", "vdbGrid", {"string", "primAttr", "sdf"}},
                                      {"prim"},
                                      {},
                                      {"openvdb"},
