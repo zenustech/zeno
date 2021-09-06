@@ -15,6 +15,14 @@ struct type { \
     } \
 }
 
+#define DEFINE_FUNCTOR_UNOP(type, op) \
+struct type { \
+    template <class T1> \
+    auto operator()(T1 &&t1) const { \
+        return op std::forward<T1>(t1); \
+    } \
+}
+
 #define DEFINE_FUNCTOR_BINOP(type, op) \
 struct type { \
     template <class T1, class T2> \
