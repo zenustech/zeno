@@ -36,10 +36,8 @@ default: run
 #O=arts/ZFXv2.zsg
 #default: run
 
-B=Release
-
 all:
-	cmake -B build -DCMAKE_BUILD_TYPE=$B
+	cmake -B build -DCMAKE_BUILD_TYPE=Release  # makexinxinhaappy
 	cmake --build build --parallel 24
 
 run: all
