@@ -591,8 +591,8 @@
      "name": "RigidRecenterPrim",
      "inputs": {
       "prim": [
-       "43e411cb-BeginForEach",
-       "object",
+       "534f37d1-TranslatePrimitive",
+       "prim",
        null
       ],
       "SRC": [
@@ -603,8 +603,8 @@
      },
      "params": {},
      "uipos": [
-      -4589.6242865274735,
-      -105.2010370209106
+      -4265.022919784876,
+      -99.50627620086506
      ],
      "options": []
     },
@@ -803,8 +803,8 @@
      },
      "params": {},
      "uipos": [
-      -2921.4203042328036,
-      -250.08267195767195
+      -2911.454472797724,
+      -536.2444031649613
      ],
      "options": []
     },
@@ -829,8 +829,8 @@
      },
      "params": {},
      "uipos": [
-      -2916.253306878307,
-      4.133597883597886
+      -2906.2874754432273,
+      -282.02813332369146
      ],
      "options": []
     },
@@ -843,8 +843,8 @@
        null
       ],
       "obj1": [
-       null,
-       null,
+       "da673880-x",
+       "constraint",
        null
       ],
       "obj2": [
@@ -896,7 +896,7 @@
       "breakThres": [
        null,
        null,
-       0.0
+       1.0
       ],
       "SRC": [
        null,
@@ -906,15 +906,144 @@
      },
      "params": {},
      "uipos": [
-      -2612.3511904761913,
-      -0.7440476190476204
+      -2602.3853590411113,
+      -286.9057788263369
+     ],
+     "options": []
+    },
+    "d5a905b3-x": {
+     "name": "ListGetItem",
+     "inputs": {
+      "list": [
+       "c547de5f-EndForEach",
+       "list",
+       null
+      ],
+      "index": [
+       null,
+       null,
+       2
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2920.7646252154354,
+      -63.04207569512238
+     ],
+     "options": []
+    },
+    "165d8e3c-x": {
+     "name": "ListGetItem",
+     "inputs": {
+      "list": [
+       "c547de5f-EndForEach",
+       "list",
+       null
+      ],
+      "index": [
+       null,
+       null,
+       3
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2915.5976278609396,
+      191.17419414614747
+     ],
+     "options": []
+    },
+    "da673880-x": {
+     "name": "RigidMakeConstraint",
+     "inputs": {
+      "obj1": [
+       "d5a905b3-x",
+       "object",
+       null
+      ],
+      "obj2": [
+       "165d8e3c-x",
+       "object",
+       null
+      ],
+      "breakThres": [
+       null,
+       null,
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2611.6955114588236,
+      186.296548643502
+     ],
+     "options": []
+    },
+    "534f37d1-TranslatePrimitive": {
+     "name": "TranslatePrimitive",
+     "inputs": {
+      "prim": [
+       "43e411cb-BeginForEach",
+       "object",
+       null
+      ],
+      "translation": [
+       "af6e491e-NumericVec3",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -4544.419134396357,
+      -144.6469248291572
+     ],
+     "options": []
+    },
+    "af6e491e-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 2.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -4534.168564920273,
+      -379.27107061503415
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -4839.350436517675,
-    "y": -340.9725420370521,
+    "x": -3042.974298877506,
+    "y": -110.42511019047883,
     "width": 400.0,
     "height": 400.0
    }
@@ -2314,8 +2443,8 @@
       "defl": ""
      },
      "uipos": [
-      258.83556271715565,
-      386.63566135234134
+      606.8993440383404,
+      409.4147046325236
      ],
      "options": []
     },
@@ -2328,7 +2457,7 @@
        null
       ],
       "BulletCons": [
-       "5464c27e-BulletMakeConstraint",
+       "0e4eb85d-BulletSetConstraintBreakThres",
        "constraint",
        null
       ],
@@ -2342,8 +2471,8 @@
       "_KEYS": "BulletCons\nPrimitive"
      },
      "uipos": [
-      -47.54653721514751,
-      386.7248355988189
+      300.51724410603714,
+      409.50387887900115
      ],
      "options": [],
      "socket_keys": [
@@ -2364,11 +2493,6 @@
        "BulletObj",
        null
       ],
-      "breakThres": [
-       "d23dfbe2-SubInput",
-       "port",
-       0.0
-      ],
       "SRC": [
        null,
        null,
@@ -2377,8 +2501,8 @@
      },
      "params": {},
      "uipos": [
-      -330.0264550264551,
-      365.7407407407408
+      -326.381808101626,
+      369.38538766556997
      ],
      "options": []
     },
@@ -2468,18 +2592,44 @@
      "params": {
       "name": "breakThres",
       "type": "float",
-      "defl": "0.0"
+      "defl": "1.0"
      },
      "uipos": [
       -328.7037037037037,
       619.7089947089946
      ],
      "options": []
+    },
+    "0e4eb85d-BulletSetConstraintBreakThres": {
+     "name": "BulletSetConstraintBreakThres",
+     "inputs": {
+      "constraint": [
+       "5464c27e-BulletMakeConstraint",
+       "constraint",
+       null
+      ],
+      "threshold": [
+       "d23dfbe2-SubInput",
+       "port",
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -5.46697038724372,
+      417.31207289293866
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -673.760711573925,
-    "y": 331.5314989574678,
+    "x": -313.851827747046,
+    "y": 360.6886743561065,
     "width": 400.0,
     "height": 400.0
    }
@@ -3010,11 +3160,6 @@
      ""
     ],
     [
-     "float",
-     "breakThres",
-     "0"
-    ],
-    [
      "",
      "SRC",
      ""
@@ -3231,6 +3376,41 @@
     ]
    ],
    "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletSetConstraintBreakThres": {
+   "inputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "float",
+     "threshold",
+     "3.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
     [
      "",
      "DST",
@@ -8956,7 +9136,7 @@
     [
      "float",
      "breakThres",
-     "0.0"
+     "1.0"
     ],
     [
      "",

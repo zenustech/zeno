@@ -467,10 +467,7 @@ struct BulletMakeConstraint : zeno::INode {
     virtual void apply() override {
         auto obj1 = get_input<BulletObject>("obj1");
         auto obj2 = get_input<BulletObject>("obj2");
-        auto breakThres = get_input2<float>("breakThres");
         auto cons = std::make_shared<BulletConstraint>(obj1.get(), obj2.get());
-        if (breakThres > 0)
-            cons->setBreakingThreshold(breakThres);
         for (int i = 0; i < 6; i++)
             cons->constraint->setLimit(i, 0, 0);
         set_output("constraint", std::move(cons));
@@ -478,7 +475,22 @@ struct BulletMakeConstraint : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeConstraint, {
-    {"obj1", "obj2", {"float", "breakThres", "0"}},
+    {"obj1", "obj2"},
+    {"constraint"},
+    {},
+    {"Rigid"},
+});
+
+struct BulletSetConstraintBreakThres : zeno::INode {
+    virtual void apply() override {
+        auto cons = get_input<BulletConstraint>("constraint");
+        cons->setBreakingThreshold(get_input2<float>("threshold"));
+        set_output("constraint", std::move(cons));
+    }
+};
+
+ZENDEFNODE(BulletSetConstraintBreakThres, {
+    {"constraint", {"float", "threshold", "3.0"}},
     {"constraint"},
     {},
     {"Rigid"},
