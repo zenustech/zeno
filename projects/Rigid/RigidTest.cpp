@@ -604,25 +604,15 @@ struct BulletWorld : zeno::IObject {
         spdlog::info("setting constraint list len={}", consList.size());
         spdlog::info("existing constraint list len={}", constraints.size());
         for (auto const &constraint: consList) {
-            consSet.insert(constraint);
-            if (!constraint->constraint->isEnabled()) {
+            if (!constraint->constraint->isEnabled())
                 continue;
-            }
+            consSet.insert(constraint);
             if (constraints.find(constraint) == constraints.end()) {
                 addConstraint(std::move(constraint));
             }
         }
         for (auto const &constraint: std::set(constraints)) {
             if (consSet.find(constraint) == consSet.end()) {
-                removeConstraint(constraint);
-            }
-        }
-    }
-
-    void cleanDisabledConstraints() {
-        spdlog::info("checking for disabled constraints...");
-        for (auto const &constraint: std::set(constraints)) {
-            if (!constraint->constraint->isEnabled()) {
                 removeConstraint(constraint);
             }
         }
@@ -815,21 +805,6 @@ struct BulletWorldSetConsList : zeno::INode {
 
 ZENDEFNODE(BulletWorldSetConsList, {
     {"world", "consList"},
-    {"world"},
-    {},
-    {"Rigid"},
-});
-
-struct BulletWorldCleanDisabledCons : zeno::INode {
-    virtual void apply() override {
-        auto world = get_input<BulletWorld>("world");
-        world->cleanDisabledConstraints();
-        set_output("world", get_input("world"));
-    }
-};
-
-ZENDEFNODE(BulletWorldCleanDisabledCons, {
-    {"world"},
     {"world"},
     {},
     {"Rigid"},

@@ -1321,7 +1321,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "93a59826-BulletWorldCleanDisabledCons",
+       "881c8622-x",
        "world",
        null
       ],
@@ -1337,8 +1337,8 @@
       "defl": ""
      },
      "uipos": [
-      1807.051250856994,
-      643.0837252559731
+      1495.069474091618,
+      619.7579849370665
      ],
      "options": []
     },
@@ -1518,34 +1518,13 @@
       855.7716521316985
      ],
      "options": []
-    },
-    "93a59826-BulletWorldCleanDisabledCons": {
-     "name": "BulletWorldCleanDisabledCons",
-     "inputs": {
-      "world": [
-       "881c8622-x",
-       "world",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1484.4220246238028,
-      691.3303693570452
-     ],
-     "options": []
     }
    },
    "view_rect": {
-    "x": 1198.152453346148,
-    "y": 511.7487363963172,
-    "width": 400.0,
-    "height": 400.0
+    "x": 1235.952486594914,
+    "y": 560.2873718049806,
+    "width": 320.0,
+    "height": 320.0
    }
   },
   "RigidMakeWorld": {
@@ -3734,36 +3713,6 @@
     [
      "",
      "object",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ]
-  },
-  "BulletWorldCleanDisabledCons": {
-   "inputs": [
-    [
-     "",
-     "world",
      ""
     ],
     [
