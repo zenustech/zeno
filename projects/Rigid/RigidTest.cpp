@@ -465,16 +465,18 @@ struct BulletMakeConstraint : zeno::INode {
         auto obj1 = get_input<BulletObject>("obj1");
         auto obj2 = get_input<BulletObject>("obj2");
         auto breakThres = get_input2<float>("breakThres");
-        auto cons = std::make_shared<BulletConstraint>();
+        auto cons = std::make_shared<BulletConstraint>(obj1.get(), obj2.get());
         if (breakThres > 0)
             cons->setBreakingThreshold(breakThres);
+        for (int i = 0; i < 6; i++)
+            cons->constraint->setLimit(i, 0, 0);
         set_output("constraint", std::move(cons));
     }
 };
 
 ZENDEFNODE(BulletMakeConstraint, {
     {"obj1", "obj2", {"float", "breakThres", "0"}},
-    {"object"},
+    {"constraint"},
     {},
     {"Rigid"},
 });
@@ -571,7 +573,7 @@ struct BulletWorld : zeno::IObject {
 
     void addConstraint(std::shared_ptr<BulletConstraint> cons) {
         spdlog::info("adding constraint {}", (void *)cons.get());
-        dynamicsWorld->addConstraint(cons->constraint.get());
+        dynamicsWorld->addConstraint(cons->constraint.get(), true);
         constraints.insert(std::move(cons));
     }
 
