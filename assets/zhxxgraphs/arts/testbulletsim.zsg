@@ -172,12 +172,12 @@
       "dt": [
        null,
        null,
-       0.04
+       0.017
       ],
       "steps": [
        null,
        null,
-       10
+       40
       ],
       "SRC": [
        "b6bdff6c-Route",
@@ -306,7 +306,7 @@
      "name": "RigidMakeObject",
      "inputs": {
       "prim": [
-       "91991664-TransformPrimitive",
+       "a51bd4b6-RigidRecenterPrim",
        "outPrim",
        null
       ],
@@ -755,74 +755,13 @@
       -189.0022404250978
      ],
      "options": []
-    },
-    "91991664-TransformPrimitive": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "a51bd4b6-RigidRecenterPrim",
-       "outPrim",
-       null
-      ],
-      "translation": [
-       null,
-       null,
-       null
-      ],
-      "eulerXYZ": [
-       null,
-       null,
-       null
-      ],
-      "quatRotation": [
-       null,
-       null,
-       null
-      ],
-      "scaling": [
-       "eda4a257-NumericVec3",
-       "vec3",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -4308.810572687224,
-      -279.7356828193832
-     ],
-     "options": []
-    },
-    "eda4a257-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 0.98,
-      "y": 0.98,
-      "z": 0.98
-     },
-     "uipos": [
-      -4340.308370044053,
-      -510.79295154185024
-     ],
-     "options": []
     }
    },
    "view_rect": {
-    "x": -4505.670274179669,
-    "y": -350.7381459070765,
-    "width": 320.0,
-    "height": 320.0
+    "x": -4701.391074416135,
+    "y": -332.3494471766692,
+    "width": 500.0,
+    "height": 500.0
    }
   },
   "RigidStepWorld": {
@@ -843,7 +782,7 @@
       "steps": [
        "ce15fe63-x",
        "port",
-       10
+       40
       ],
       "SRC": [
        null,
@@ -1090,7 +1029,7 @@
      "params": {
       "name": "steps",
       "type": "int",
-      "defl": "10"
+      "defl": "40"
      },
      "uipos": [
       692.5110132158591,
@@ -8118,7 +8057,7 @@
     [
      "int",
      "steps",
-     "10"
+     "40"
     ],
     [
      "",

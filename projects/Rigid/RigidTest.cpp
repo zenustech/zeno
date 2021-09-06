@@ -551,9 +551,9 @@ struct BulletWorld : zeno::IObject {
 
     void step(float dt = 1.f / 60.f, int steps = 10) {
         spdlog::info("stepping with dt={}, steps={}, len(objects)={}", dt, steps, objects.size());
-        dt /= steps;
-        for(int i=0;i<steps;i++)
-            dynamicsWorld->stepSimulation(dt, 1, dt);
+        //dt /= steps;
+        //for(int i=0;i<steps;i++)
+        dynamicsWorld->stepSimulation(dt, steps, dt);
 
         /*for (int j = dynamicsWorld->getNumCollisionObjects() - 1; j >= 0; j--)
         {
@@ -614,7 +614,7 @@ struct BulletStepWorld : zeno::INode {
 };
 
 ZENDEFNODE(BulletStepWorld, {
-    {"world", {"float", "dt", "0.04"}, {"int", "steps", "10"}},
+    {"world", {"float", "dt", "0.04"}, {"int", "steps", "40"}},
     {"world"},
     {},
     {"Rigid"},
