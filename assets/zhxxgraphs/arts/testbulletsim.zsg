@@ -335,6 +335,11 @@
        null,
        0.4
       ],
+      "margin": [
+       null,
+       null,
+       0.0
+      ],
       "SRC": [
        null,
        null,
@@ -411,6 +416,11 @@
        null,
        null,
        0.4
+      ],
+      "margin": [
+       null,
+       null,
+       0.0
       ],
       "SRC": [
        null,
@@ -728,10 +738,10 @@
     }
    },
    "view_rect": {
-    "x": -4230.101972171684,
-    "y": -217.31300065304782,
-    "width": 320.0,
-    "height": 320.0
+    "x": -4384.939538107556,
+    "y": -255.55924626050103,
+    "width": 400.0,
+    "height": 400.0
    }
   },
   "RigidStepWorld": {
@@ -1229,6 +1239,16 @@
        "mesh",
        null
       ],
+      "margin": [
+       "46e48dfb-SubInput",
+       "port",
+       0.0
+      ],
+      "highres": [
+       null,
+       null,
+       0
+      ],
       "SRC": [
        null,
        null,
@@ -1650,11 +1670,31 @@
       43.171806167400916
      ],
      "options": []
+    },
+    "46e48dfb-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "margin",
+      "type": "float",
+      "defl": "0.0"
+     },
+     "uipos": [
+      823.6902050113897,
+      -17.312072892938488
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 1752.4564390619835,
-    "y": 0.14042639931506073,
+    "x": 501.52249828748586,
+    "y": -35.98713624305398,
     "width": 400.0,
     "height": 400.0
    }
@@ -2379,6 +2419,16 @@
      "",
      "triMesh",
      ""
+    ],
+    [
+     "float",
+     "margin",
+     "0"
+    ],
+    [
+     "int",
+     "highres",
+     "0"
     ],
     [
      "",
@@ -7999,12 +8049,12 @@
     [
      "float",
      "dampLin",
-     "0.06"
+     "0.1"
     ],
     [
      "float",
      "dampAng",
-     "0.06"
+     "0.1"
     ],
     [
      "float",
@@ -8015,6 +8065,11 @@
      "float",
      "restitution",
      "0.4"
+    ],
+    [
+     "float",
+     "margin",
+     "0.0"
     ],
     [
      "",

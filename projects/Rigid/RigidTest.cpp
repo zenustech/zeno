@@ -192,7 +192,9 @@ struct BulletMakeConvexHullShape : zeno::INode {
         auto triMesh = &get_input<BulletTriangleMesh>("triMesh")->mesh;
         auto inShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
         auto hull = std::make_unique<btShapeHull>(inShape.get());
-        hull->buildHull(0.01, 256);
+        auto margin = get_input2<float>("margin");
+        auto highres = get_input2<int>("highres");
+        hull->buildHull(margin, highres);
         auto convex = std::make_unique<btConvexHullShape>(
              (const float *)hull->getVertexPointer(), hull->numVertices());
         // auto convex = std::make_unique<btConvexPointCloudShape>();
@@ -210,7 +212,7 @@ struct BulletMakeConvexHullShape : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeConvexHullShape, {
-    {"triMesh"},
+    {"triMesh", {"float", "margin", "0"}, {"int", "highres", "0"}},
     {"shape"},
     {},
     {"Rigid"},
