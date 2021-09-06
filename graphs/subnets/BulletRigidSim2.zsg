@@ -2,27 +2,6 @@
  "graph": {
   "main": {
    "nodes": {
-    "fc4e5787-ImportObjPrimitive": {
-     "name": "ImportObjPrimitive",
-     "inputs": {
-      "path": [
-       null,
-       null,
-       "assets/monkey.obj"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2997.4230467095376,
-      5.985181680696343
-     ],
-     "options": []
-    },
     "56e7623d-BulletGetObjTransform": {
      "name": "BulletGetObjTransform",
      "inputs": {
@@ -106,44 +85,6 @@
      ],
      "options": []
     },
-    "36960baf-MakeList": {
-     "name": "MakeList",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ],
-      "obj0": [
-       "456fb647-RigidMakeObject",
-       "object",
-       null
-      ],
-      "obj1": [
-       "7790ceb3-x",
-       "object",
-       null
-      ],
-      "obj2": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "obj0\nobj1\nobj2"
-     },
-     "uipos": [
-      -2070.1850485290493,
-      282.5652649538114
-     ],
-     "options": [],
-     "socket_keys": [
-      "obj0",
-      "obj1",
-      "obj2"
-     ]
-    },
     "eaad726b-x": {
      "name": "ExtractDict",
      "inputs": {
@@ -159,7 +100,7 @@
       ]
      },
      "params": {
-      "_KEYS": "BulletObj\nPrimitive\nobj2"
+      "_KEYS": "BulletObj\nPrimitive\nAddTranslate\nobj3"
      },
      "uipos": [
       -862.3402301820523,
@@ -169,14 +110,15 @@
      "socket_keys": [
       "BulletObj",
       "Primitive",
-      "obj2"
+      "AddTranslate",
+      "obj3"
      ]
     },
     "3051bdd4-CachedOnce": {
      "name": "CachedOnce",
      "inputs": {
       "input": [
-       "36960baf-MakeList",
+       "05e89cbb-MakeSmallList",
        "list",
        null
       ],
@@ -188,8 +130,8 @@
      },
      "params": {},
      "uipos": [
-      -1745.5787575218824,
-      388.648369119256
+      -2837.036048819687,
+      449.16481299319366
      ],
      "options": []
     },
@@ -209,8 +151,8 @@
      },
      "params": {},
      "uipos": [
-      -1062.0678888087043,
-      183.49678965822096
+      1515.2842297509633,
+      426.6432159374349
      ],
      "options": []
     },
@@ -228,15 +170,15 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "faf0c4de-IfElse",
+       "result",
        null
       ]
      },
      "params": {},
      "uipos": [
-      -834.4898458134523,
-      378.5625792278421
+      1943.0123072091974,
+      400.6078118859947
      ],
      "options": [
       "VIEW"
@@ -258,8 +200,8 @@
      },
      "params": {},
      "uipos": [
-      -1332.3497460162,
-      170.3862972973484
+      1245.0023725434673,
+      413.53272357656226
      ],
      "options": []
     },
@@ -354,13 +296,13 @@
      "name": "RigidMakeObject",
      "inputs": {
       "prim": [
-       "4dbdab89-x",
+       "a51bd4b6-RigidRecenterPrim",
        "outPrim",
        null
       ],
       "origin": [
-       null,
-       null,
+       "a51bd4b6-RigidRecenterPrim",
+       "origin",
        null
       ],
       "rotation": [
@@ -369,8 +311,8 @@
        null
       ],
       "mass": [
-       null,
-       null,
+       "a51bd4b6-RigidRecenterPrim",
+       "mass",
        1.0
       ],
       "SRC": [
@@ -381,8 +323,8 @@
      },
      "params": {},
      "uipos": [
-      -2437.102746530462,
-      159.9630718593521
+      -2404.220430608499,
+      111.30447549976458
      ],
      "options": []
     },
@@ -402,8 +344,8 @@
      },
      "params": {},
      "uipos": [
-      -3051.737919454257,
-      286.31618321484757
+      -4143.195210752061,
+      346.8326270887851
      ],
      "options": []
     },
@@ -438,8 +380,8 @@
      },
      "params": {},
      "uipos": [
-      -2422.9803107268426,
-      392.94646931056263
+      -3514.437602024647,
+      453.46291318450017
      ],
      "options": []
     },
@@ -458,8 +400,8 @@
       "z": 0.0
      },
      "uipos": [
-      -2749.269614901339,
-      585.984897510152
+      -3840.726906199144,
+      646.5013413840895
      ],
      "options": []
     },
@@ -499,8 +441,8 @@
      },
      "params": {},
      "uipos": [
-      -2752.581120943953,
-      318.95280235988196
+      -3844.0384122417577,
+      379.4692462338196
      ],
      "options": []
     },
@@ -519,21 +461,21 @@
       "z": 10.0
      },
      "uipos": [
-      -3053.0973451327436,
-      463.6799410029497
+      -4144.554636430548,
+      524.1963848768874
      ],
      "options": []
     },
-    "4dbdab89-x": {
+    "024f9057-x": {
      "name": "TransformPrimitive",
      "inputs": {
       "prim": [
-       "fc4e5787-ImportObjPrimitive",
+       "c5d0db98-x",
        "prim",
        null
       ],
       "translation": [
-       "74fd3f0c-NumericVec3",
+       "b891edf8-NumericVec3",
        "vec3",
        null
       ],
@@ -560,12 +502,79 @@
      },
      "params": {},
      "uipos": [
-      -2709.095063985375,
-      5.712979890310805
+      -3022.148935476536,
+      -15.486146867469586
      ],
      "options": []
     },
-    "74fd3f0c-NumericVec3": {
+    "c5d0db98-x": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/monkey.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3368.903147808134,
+      -40.87745976802228
+     ],
+     "options": []
+    },
+    "05e89cbb-MakeSmallList": {
+     "name": "MakeSmallList",
+     "inputs": {
+      "obj0": [
+       "7790ceb3-x",
+       "object",
+       null
+      ],
+      "obj1": [
+       null,
+       null,
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ],
+      "obj3": [
+       null,
+       null,
+       null
+      ],
+      "obj4": [
+       null,
+       null,
+       null
+      ],
+      "obj5": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3205.994736231725,
+      368.886487926801
+     ],
+     "options": []
+    },
+    "b891edf8-NumericVec3": {
      "name": "NumericVec3",
      "inputs": {
       "SRC": [
@@ -576,21 +585,161 @@
      },
      "params": {
       "x": 0.0,
-      "y": 0.0,
-      "z": -1.0
+      "y": 8.0,
+      "z": 0.0
      },
      "uipos": [
-      -2415.3564899451553,
-      -147.71480804387568
+      -3029.9321805466666,
+      -255.09740798183697
+     ],
+     "options": []
+    },
+    "a51bd4b6-RigidRecenterPrim": {
+     "name": "RigidRecenterPrim",
+     "inputs": {
+      "prim": [
+       "024f9057-x",
+       "outPrim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2706.4609062151712,
+      90.66432547562329
+     ],
+     "options": []
+    },
+    "faf0c4de-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       null,
+       null,
+       null
+      ],
+      "false": [
+       "d778c2be-AppendList",
+       "list",
+       null
+      ],
+      "cond": [
+       "3e36102e-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       "b6bdff6c-Route",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1194.1191157268063,
+      143.553650075248
+     ],
+     "options": []
+    },
+    "3e36102e-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "0987f820-GetFrameNum",
+       "FrameNum",
+       null
+      ],
+      "rhs": [
+       "eeb1a5bc-NumericInt",
+       "value",
+       20.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mod"
+     },
+     "uipos": [
+      874.8819064823834,
+      -2.0359460760445884
+     ],
+     "options": []
+    },
+    "0987f820-GetFrameNum": {
+     "name": "GetFrameNum",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      611.1602350942816,
+      -73.83127185508143
+     ],
+     "options": []
+    },
+    "d778c2be-AppendList": {
+     "name": "AppendList",
+     "inputs": {
+      "list": [
+       "3051bdd4-CachedOnce",
+       "output",
+       null
+      ],
+      "object": [
+       "456fb647-RigidMakeObject",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2005.5771954674217,
+      143.41359773371107
+     ],
+     "options": []
+    },
+    "eeb1a5bc-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 30
+     },
+     "uipos": [
+      617.5637393767706,
+      87.8186968838527
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -3110.077238820242,
-    "y": -176.89905845155988,
-    "width": 500.0,
-    "height": 500.0
+    "x": -1001.2498218086876,
+    "y": 23.67016406752458,
+    "width": 625.0,
+    "height": 625.0
    }
   },
   "RigidStepWorld": {
@@ -1018,8 +1167,8 @@
      },
      "params": {},
      "uipos": [
-      -358.01415901538917,
-      238.43278068942584
+      522.0409880434344,
+      247.62395716001407
      ],
      "options": []
     },
@@ -1049,8 +1198,8 @@
      },
      "params": {},
      "uipos": [
-      160.1618613927737,
-      263.2343679910131
+      1118.5242224782958,
+      258.81441837499074
      ],
      "options": []
     },
@@ -1058,7 +1207,7 @@
      "name": "BulletMakeTransform",
      "inputs": {
       "origin": [
-       "ab61bf12-x",
+       "7bc61f9a-IfElse",
        "result",
        null
       ],
@@ -1076,7 +1225,7 @@
      "params": {},
      "uipos": [
       149.4754695703985,
-      44.858135951117276
+      43.71918378710815
      ],
      "options": []
     },
@@ -1096,8 +1245,8 @@
      },
      "params": {},
      "uipos": [
-      -101.14057624894878,
-      258.8055131157297
+      828.7479807363453,
+      249.82975484367086
      ],
      "options": []
     },
@@ -1141,8 +1290,8 @@
       "defl": ""
      },
      "uipos": [
-      869.1813804173354,
-      333.8683788121991
+      1799.0699374026296,
+      324.8926205401403
      ],
      "options": []
     },
@@ -1164,24 +1313,24 @@
        "port",
        null
       ],
-      "obj2": [
+      "AddTranslate": [
        null,
        null,
        null
       ]
      },
      "params": {
-      "_KEYS": "BulletObj\nPrimitive\nobj2"
+      "_KEYS": "BulletObj\nPrimitive\nAddTranslate"
      },
      "uipos": [
-      506.42054574638877,
-      341.8940609951846
+      1436.309102731683,
+      332.9183027231258
      ],
      "options": [],
      "socket_keys": [
       "BulletObj",
       "Primitive",
-      "obj2"
+      "AddTranslate"
      ]
     },
     "edc91d70-x": {
@@ -1255,57 +1404,6 @@
      ],
      "options": []
     },
-    "ab61bf12-x": {
-     "name": "IfElse",
-     "inputs": {
-      "true": [
-       "edc91d70-x",
-       "port",
-       null
-      ],
-      "false": [
-       "25623029-NumericVec3",
-       "vec3",
-       null
-      ],
-      "cond": [
-       "edc91d70-x",
-       "hasValue",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -278.36691410392365,
-      -479.8515376458113
-     ],
-     "options": []
-    },
-    "25623029-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 0.0,
-      "y": 0.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -281.01802757158003,
-      -708.5100742311772
-     ],
-     "options": []
-    },
     "747e3a9b-NumericVec4": {
      "name": "NumericVec4",
      "inputs": {
@@ -1342,17 +1440,269 @@
       "defl": "0"
      },
      "uipos": [
-      -66.83259587020652,
-      488.56932153392324
+      863.0559611150875,
+      479.5935632618644
+     ],
+     "options": []
+    },
+    "7bc61f9a-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "edc91d70-x",
+       "port",
+       null
+      ],
+      "false": [
+       "61921ac6-NumericVec3",
+       "vec3",
+       null
+      ],
+      "cond": [
+       "edc91d70-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      163.7243735763098,
+      -172.26651480637818
+     ],
+     "options": []
+    },
+    "61921ac6-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      159.69162995594712,
+      -431.7180616740088
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -337.96008897378186,
-    "y": 207.21271710862902,
-    "width": 400.0,
-    "height": 400.0
+    "x": 197.93652382589545,
+    "y": 188.0298075337775,
+    "width": 781.25,
+    "height": 781.25
+   }
+  },
+  "RigidRecenterPrim": {
+   "nodes": {
+    "bb70e589-PrimitiveCalcCentroid": {
+     "name": "PrimitiveCalcCentroid",
+     "inputs": {
+      "prim": [
+       "333224cd-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      45.59915164369035,
+      224.28419936373277
+     ],
+     "options": []
+    },
+    "333224cd-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "prim",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -247.6139978791092,
+      174.44326617179215
+     ],
+     "options": []
+    },
+    "217a09aa-Clone": {
+     "name": "Clone",
+     "inputs": {
+      "object": [
+       "333224cd-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      329.2682926829269,
+      190.88016967126185
+     ],
+     "options": []
+    },
+    "7ca95586-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "bb70e589-PrimitiveCalcCentroid",
+       "centroid",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "neg"
+     },
+     "uipos": [
+      327.1474019088017,
+      382.2905620360552
+     ],
+     "options": []
+    },
+    "0e9fe4eb-TranslatePrimitive": {
+     "name": "TranslatePrimitive",
+     "inputs": {
+      "prim": [
+       "217a09aa-Clone",
+       "newObject",
+       null
+      ],
+      "translation": [
+       "7ca95586-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      620.8907741251326,
+      379.10922587486743
+     ],
+     "options": []
+    },
+    "351c376a-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "0e9fe4eb-TranslatePrimitive",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "outPrim",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      883.351007423118,
+      367.4443266171793
+     ],
+     "options": []
+    },
+    "72814902-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "bb70e589-PrimitiveCalcCentroid",
+       "centroid",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "origin",
+      "type": "vec3f",
+      "defl": ""
+     },
+     "uipos": [
+      623.6831621813031,
+      581.6328788951841
+     ],
+     "options": []
+    },
+    "2cab0d13-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "bb70e589-PrimitiveCalcCentroid",
+       "totalArea",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "mass",
+      "type": "vec3f",
+      "defl": ""
+     },
+     "uipos": [
+      331.44475920679884,
+      614.7308781869689
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": 31.460793561626225,
+    "y": 193.28002817840462,
+    "width": 500.0,
+    "height": 500.0
    }
   }
  },
@@ -2726,36 +3076,6 @@
     "debug"
    ]
   },
-  "ExportObjMesh": {
-   "inputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
   "ExportObjPrimitive": {
    "inputs": [
     [
@@ -2784,36 +3104,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "ExportParticles": {
-   "inputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "particles"
    ]
   },
   "ExportZpmPrimitive": {
@@ -3056,46 +3346,6 @@
     "functional"
    ]
   },
-  "GeoVertexVel": {
-   "inputs": [
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "TargetMesh",
-     ""
-    ],
-    [
-     "",
-     "OriginMesh",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "MeshVel",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
   "GetFrameNum": {
    "inputs": [
     [
@@ -3261,36 +3511,6 @@
     "control"
    ]
   },
-  "ImportObjMesh": {
-   "inputs": [
-    [
-     "",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
   "ImportObjPrimitive": {
    "inputs": [
     [
@@ -3319,36 +3539,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "ImportParticles": {
-   "inputs": [
-    [
-     "",
-     "path",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "particles"
    ]
   },
   "ImportZpmPrimitive": {
@@ -3480,66 +3670,6 @@
    "params": [],
    "categories": [
     "list"
-   ]
-  },
-  "LiteralFloat": {
-   "inputs": [
-    [
-     "float",
-     "value",
-     "0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "float",
-     "value",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "literal"
-   ]
-  },
-  "LiteralInt": {
-   "inputs": [
-    [
-     "int",
-     "value",
-     "0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "int",
-     "value",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "literal"
    ]
   },
   "Make2DGridPrimitive": {
@@ -4164,106 +4294,6 @@
    ],
    "categories": [
     "string"
-   ]
-  },
-  "MeshCopy": {
-   "inputs": [
-    [
-     "",
-     "copyFrom",
-     ""
-    ],
-    [
-     "",
-     "copyTo",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
-  "MeshMix": {
-   "inputs": [
-    [
-     "",
-     "meshA",
-     ""
-    ],
-    [
-     "",
-     "meshB",
-     ""
-    ],
-    [
-     "",
-     "coef",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
-  "MeshToPrimitive": {
-   "inputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
    ]
   },
   "NumericCounter": {
@@ -4947,36 +4977,6 @@
     "zenofx"
    ]
   },
-  "ParticlesToPrimitive": {
-   "inputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
   "ParticlesWrangle": {
    "inputs": [
     [
@@ -5070,41 +5070,6 @@
    "params": [],
    "categories": [
     "math"
-   ]
-  },
-  "PolyDuplicate": {
-   "inputs": [
-    [
-     "",
-     "Mesh",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Meshes",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
    ]
   },
   "PortalIn": {
@@ -5423,6 +5388,41 @@
     "primitive"
    ]
   },
+  "PrimitiveCalcCentroid": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "centroid",
+     ""
+    ],
+    [
+     "float",
+     "totalArea",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
   "PrimitiveCalcNormal": {
    "inputs": [
     [
@@ -5665,7 +5665,7 @@
     [
      "float",
      "uniScale",
-     ""
+     "1.0"
     ],
     [
      "",
@@ -5685,7 +5685,18 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "bool",
+     "attrFromMesh",
+     "1"
+    ],
+    [
+     "bool",
+     "attrFromParticles",
+     "1"
+    ]
+   ],
    "categories": [
     "primitive"
    ]
@@ -6672,66 +6683,6 @@
     "Rigid"
    ]
   },
-  "PrimitiveToMesh": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
-  "PrimitiveToParticles": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "primitive"
-   ]
-  },
   "PrimitiveTraceTrail": {
    "inputs": [
     [
@@ -6858,36 +6809,6 @@
     "cgmesh"
    ]
   },
-  "PrintLiteral": {
-   "inputs": [
-    [
-     "",
-     "value",
-     ""
-    ],
-    [
-     "string",
-     "hint",
-     "PrintLiteral"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "literal"
-   ]
-  },
   "PrintMessage": {
    "inputs": [
     [
@@ -6945,47 +6866,6 @@
     "numeric"
    ]
   },
-  "RandomParticles": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "int",
-     "count",
-     "1 0"
-    ],
-    [
-     "float",
-     "Prange",
-     "1 0"
-    ],
-    [
-     "float",
-     "Vrange",
-     "1 0"
-    ]
-   ],
-   "categories": [
-    "particles"
-   ]
-  },
   "ReadMutable": {
    "inputs": [
     [
@@ -7016,37 +6896,6 @@
     "control"
    ]
   },
-  "ReadObjMesh": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "readpath",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "trimesh"
-   ]
-  },
   "ReadObjPrimitive": {
    "inputs": [
     [
@@ -7075,37 +6924,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "ReadParticles": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "readpath",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "particles"
    ]
   },
   "ResizeList": {
@@ -7276,51 +7094,6 @@
    "params": [],
    "categories": [
     "numeric"
-   ]
-  },
-  "StringToMesh": {
-   "inputs": [
-    [
-     "",
-     "string",
-     ""
-    ],
-    [
-     "",
-     "AZmesh",
-     ""
-    ],
-    [
-     "",
-     "spacing",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "StringMeshList",
-     ""
-    ],
-    [
-     "",
-     "SpacingList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "math"
    ]
   },
   "SubCategory": {
@@ -7543,51 +7316,6 @@
     "control"
    ]
   },
-  "TransformMesh": {
-   "inputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "translate",
-     ""
-    ],
-    [
-     "",
-     "rotate",
-     ""
-    ],
-    [
-     "",
-     "scaling",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "trimesh"
-   ]
-  },
   "TransformPrimitive": {
    "inputs": [
     [
@@ -7625,6 +7353,41 @@
     [
      "",
      "outPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "TranslatePrimitive": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "prim",
+     ""
+    ],
+    [
+     "vec3f",
+     "translation",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
      ""
     ],
     [
@@ -7849,37 +7612,6 @@
     "cgmesh"
    ]
   },
-  "WriteObjMesh": {
-   "inputs": [
-    [
-     "",
-     "mesh",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "writepath",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "trimesh"
-   ]
-  },
   "WriteObjPrimitive": {
    "inputs": [
     [
@@ -7908,37 +7640,6 @@
    "params": [],
    "categories": [
     "primitive"
-   ]
-  },
-  "WriteParticles": {
-   "inputs": [
-    [
-     "",
-     "pars",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "writepath",
-     "path",
-     ""
-    ]
-   ],
-   "categories": [
-    "particles"
    ]
   },
   "RigidStepWorld": {
@@ -8040,6 +7741,47 @@
     [
      "",
      "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "RigidRecenterPrim": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     ""
+    ],
+    [
+     "vec3f",
+     "mass",
      ""
     ],
     [
