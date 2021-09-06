@@ -591,7 +591,7 @@
      "name": "RigidRecenterPrim",
      "inputs": {
       "prim": [
-       "534f37d1-TranslatePrimitive",
+       "532dbdc0-TranslatePrimitive",
        "prim",
        null
       ],
@@ -603,8 +603,8 @@
      },
      "params": {},
      "uipos": [
-      -4265.022919784876,
-      -99.50627620086506
+      -4570.262099739318,
+      -57.59283656532975
      ],
      "options": []
     },
@@ -666,8 +666,8 @@
       "periodicZ": false
      },
      "uipos": [
-      -5426.757028484808,
-      -375.64011573856305
+      -5670.492791582758,
+      -355.13897678639904
      ],
      "options": []
     },
@@ -692,8 +692,8 @@
      },
      "params": {},
      "uipos": [
-      -4865.86491125047,
-      -196.88695996235197
+      -5109.600674348419,
+      -176.38582101018795
      ],
      "options": []
     },
@@ -756,8 +756,8 @@
      },
      "params": {},
      "uipos": [
-      -5132.943722853584,
-      -189.0022404250978
+      -5376.679485951533,
+      -168.50110147293378
      ],
      "options": []
     },
@@ -843,7 +843,7 @@
        null
       ],
       "obj1": [
-       "da673880-x",
+       "5cf8d9c7-x",
        "constraint",
        null
       ],
@@ -911,7 +911,88 @@
      ],
      "options": []
     },
-    "d5a905b3-x": {
+    "af6e491e-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 2.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -4846.2414578587695,
+      -354.21412300683363
+     ],
+     "options": []
+    },
+    "0309120d-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "a51bd4b6-RigidRecenterPrim",
+       "outPrim",
+       null
+      ],
+      "translation": [
+       null,
+       null,
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       "add797d6-x",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -4417.941565615919,
+      -510.4722218433293
+     ],
+     "options": []
+    },
+    "add797d6-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.9,
+      "y": 0.9,
+      "z": 0.9
+     },
+     "uipos": [
+      -4119.876420280168,
+      -507.95220492954854
+     ],
+     "options": []
+    },
+    "45e1d396-x": {
      "name": "ListGetItem",
      "inputs": {
       "list": [
@@ -932,12 +1013,43 @@
      },
      "params": {},
      "uipos": [
-      -2920.7646252154354,
-      -63.04207569512238
+      -2923.612005625458,
+      -79.05859050150059
      ],
      "options": []
     },
-    "165d8e3c-x": {
+    "5cf8d9c7-x": {
+     "name": "RigidMakeConstraint",
+     "inputs": {
+      "obj1": [
+       "45e1d396-x",
+       "object",
+       null
+      ],
+      "obj2": [
+       "d0e48e4c-x",
+       "object",
+       null
+      ],
+      "breakThres": [
+       null,
+       null,
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2614.5428918688463,
+      170.28003383712388
+     ],
+     "options": []
+    },
+    "d0e48e4c-x": {
      "name": "ListGetItem",
      "inputs": {
       "list": [
@@ -958,43 +1070,12 @@
      },
      "params": {},
      "uipos": [
-      -2915.5976278609396,
-      191.17419414614747
+      -2918.4450082709623,
+      175.15767933976935
      ],
      "options": []
     },
-    "da673880-x": {
-     "name": "RigidMakeConstraint",
-     "inputs": {
-      "obj1": [
-       "d5a905b3-x",
-       "object",
-       null
-      ],
-      "obj2": [
-       "165d8e3c-x",
-       "object",
-       null
-      ],
-      "breakThres": [
-       null,
-       null,
-       1.0
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2611.6955114588236,
-      186.296548643502
-     ],
-     "options": []
-    },
-    "534f37d1-TranslatePrimitive": {
+    "532dbdc0-TranslatePrimitive": {
      "name": "TranslatePrimitive",
      "inputs": {
       "prim": [
@@ -1015,37 +1096,17 @@
      },
      "params": {},
      "uipos": [
-      -4544.419134396357,
-      -144.6469248291572
-     ],
-     "options": []
-    },
-    "af6e491e-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 0.0,
-      "y": 2.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -4534.168564920273,
-      -379.27107061503415
+      -4833.71298405467,
+      -136.67425968109342
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -3042.974298877506,
-    "y": -110.42511019047883,
-    "width": 400.0,
-    "height": 400.0
+    "x": -4654.324890824103,
+    "y": -414.75852492197635,
+    "width": 500.0,
+    "height": 500.0
    }
   },
   "RigidStepWorld": {
@@ -1260,7 +1321,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "881c8622-x",
+       "93a59826-BulletWorldCleanDisabledCons",
        "world",
        null
       ],
@@ -1276,8 +1337,8 @@
       "defl": ""
      },
      "uipos": [
-      1437.890854140168,
-      631.2335200576148
+      1807.051250856994,
+      643.0837252559731
      ],
      "options": []
     },
@@ -1457,11 +1518,32 @@
       855.7716521316985
      ],
      "options": []
+    },
+    "93a59826-BulletWorldCleanDisabledCons": {
+     "name": "BulletWorldCleanDisabledCons",
+     "inputs": {
+      "world": [
+       "881c8622-x",
+       "world",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1484.4220246238028,
+      691.3303693570452
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 171.91442325038764,
-    "y": 627.7268485714201,
+    "x": 1198.152453346148,
+    "y": 511.7487363963172,
     "width": 400.0,
     "height": 400.0
    }
@@ -3652,6 +3734,36 @@
     [
      "",
      "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletWorldCleanDisabledCons": {
+   "inputs": [
+    [
+     "",
+     "world",
      ""
     ],
     [

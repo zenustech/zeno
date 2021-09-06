@@ -440,7 +440,7 @@ ZENDEFNODE(BulletGetObjMotion, {
 
 
 struct BulletConstraint : zeno::IObject {
-    std::unique_ptr<btGeneric6DofConstraint> constraint;
+    std::unique_ptr<btFixedConstraint> constraint;
 
     BulletObject *obj1;
     BulletObject *obj2;
@@ -453,8 +453,8 @@ struct BulletConstraint : zeno::IObject {
         //gf.setOrigin(cposw);
         auto trA = obj1->body->getWorldTransform().inverse();// * gf;
         auto trB = obj2->body->getWorldTransform().inverse();// * gf;
-        constraint = std::make_unique<btGeneric6DofConstraint>(
-                *obj1->body, *obj2->body, trA, trB, true);
+        constraint = std::make_unique<btFixedConstraint>(
+                *obj1->body, *obj2->body, trA, trB);
     }
 
     void setBreakingThreshold(float breakingThreshold) {
@@ -468,8 +468,9 @@ struct BulletMakeConstraint : zeno::INode {
         auto obj1 = get_input<BulletObject>("obj1");
         auto obj2 = get_input<BulletObject>("obj2");
         auto cons = std::make_shared<BulletConstraint>(obj1.get(), obj2.get());
-        for (int i = 0; i < 6; i++)
-            cons->constraint->setLimit(i, 0, 0);
+        //for (int i = 0; i < 6; i++)
+            //cons->constraint->setLimit(i, 0, 0);
+        //cons->constraint->setOverrideNumSolverIterations(30);
         set_output("constraint", std::move(cons));
     }
 };
@@ -552,6 +553,7 @@ struct BulletWorld : zeno::IObject {
 
     std::set<std::shared_ptr<BulletObject>> objects;
     std::set<std::shared_ptr<BulletConstraint>> constraints;
+    std::set<std::shared_ptr<BulletConstraint>> constraintBlklist;
 
     BulletWorld() {
         dynamicsWorld->setGravity(btVector3(0, -10, 0));
@@ -575,12 +577,12 @@ struct BulletWorld : zeno::IObject {
         spdlog::info("existing object list len={}", objects.size());
         for (auto const &object: objList) {
             objSet.insert(object);
-            if (auto it = objects.find(object); it == objects.end()) {
+            if (objects.find(object) == objects.end()) {
                 addObject(std::move(object));
             }
         }
         for (auto const &object: std::set(objects)) {
-            if (auto it = objSet.find(object); it == objSet.end()) {
+            if (objSet.find(object) == objSet.end()) {
                 removeObject(object);
             }
         }
@@ -604,12 +606,24 @@ struct BulletWorld : zeno::IObject {
         spdlog::info("existing constraint list len={}", constraints.size());
         for (auto const &constraint: consList) {
             consSet.insert(constraint);
-            if (auto it = constraints.find(constraint); it == constraints.end()) {
-                addConstraint(std::move(constraint));
+            if (constraints.find(constraint) == constraints.end()) {
+                if (constraintBlklist.find(constraint) == constraintBlklist.end()) {
+                    addConstraint(std::move(constraint));
+                }
             }
         }
         for (auto const &constraint: std::set(constraints)) {
-            if (auto it = consSet.find(constraint); it == consSet.end()) {
+            if (consSet.find(constraint) == consSet.end()) {
+                removeConstraint(constraint);
+            }
+        }
+    }
+
+    void cleanDisabledConstraints() {
+        spdlog::info("checking for disabled constraints...");
+        for (auto const &constraint: std::set(constraints)) {
+            if (!constraint->constraint->isEnabled()) {
+                constraintBlklist.insert(constraint);
                 removeConstraint(constraint);
             }
         }
@@ -802,6 +816,21 @@ struct BulletWorldSetConsList : zeno::INode {
 
 ZENDEFNODE(BulletWorldSetConsList, {
     {"world", "consList"},
+    {"world"},
+    {},
+    {"Rigid"},
+});
+
+struct BulletWorldCleanDisabledCons : zeno::INode {
+    virtual void apply() override {
+        auto world = get_input<BulletWorld>("world");
+        world->cleanDisabledConstraints();
+        set_output("world", get_input("world"));
+    }
+};
+
+ZENDEFNODE(BulletWorldCleanDisabledCons, {
+    {"world"},
     {"world"},
     {},
     {"Rigid"},
