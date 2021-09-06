@@ -12,6 +12,31 @@ from ...system import fileio
 from . import zenvis
 
 
+class RecordVideoCancelDialog(QDialog):
+    def __init__(self, display):
+        super().__init__(display)
+        self.display = display
+        self.setWindowFlags(Qt.Window | Qt.WindowTitleHint | Qt.CustomizeWindowHint)
+
+        self.setWindowTitle('Zeno')
+        self.initUI()
+
+    def initUI(self):
+        msg = QLabel('Recording Screen')
+        btn = QPushButton('Cancel')
+        btn.clicked.connect(self.btn_callback)
+
+        layout = QVBoxLayout()
+        layout.addWidget(msg)
+        layout.addWidget(btn)
+        self.setLayout(layout)
+    
+    def btn_callback(self):
+        view = self.display.view
+        shutil.rmtree(view.record_path, ignore_errors=True)
+        view.record_path = None
+        self.close()
+
 class RecordVideoDialog(QDialog):
     def __init__(self, display):
         super().__init__()
@@ -167,9 +192,12 @@ class RecordVideoDialog(QDialog):
         display.timeline.stop_play()
         display.view.paintGL()
         display.timeline.start_play()
+        display.cancel_dialog = RecordVideoCancelDialog(display)
+        display.cancel_dialog.show()
 
     def finish_record(self):
         display = self.display
+        display.cancel_dialog.close()
         params = self.params
 
         tmp_path = display.view.record_path
