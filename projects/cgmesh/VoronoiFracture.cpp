@@ -20,7 +20,7 @@ struct VoronoiFracture : INode {
 
         auto bmin = has_input("bboxMin") ?
             get_input<NumericObject>("bboxMin")->get<vec3f>() : vec3f(-1);
-        auto bmax = has_axput("bboxMax") ?
+        auto bmax = has_input("bboxMax") ?
             get_input<NumericObject>("bboxMax")->get<vec3f>() : vec3f(1);
         auto minx = bmin[0];
         auto miny = bmin[1];

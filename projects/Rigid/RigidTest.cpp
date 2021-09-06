@@ -337,6 +337,23 @@ ZENDEFNODE(BulletMakeObject, {
     {"Rigid"},
 });
 
+struct BulletSetObjectDamping : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input<BulletObject>("object");
+        auto dampLinear = get_input2<float>("dampLinear");
+        auto dampAugular = get_input2<float>("dampAugular");
+        object->body->setDamping(dampLinear, dampAugular);
+        set_output("object", std::move(object));
+    }
+};
+
+ZENDEFNODE(BulletSetObjectDamping, {
+    {"object", {"float", "dampLinear", "0"}, {"float", "dampAugular", "0"}},
+    {"object"},
+    {},
+    {"Rigid"},
+});
+
 struct BulletGetObjTransform : zeno::INode {
     virtual void apply() override {
         auto obj = get_input<BulletObject>("object");

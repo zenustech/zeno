@@ -323,8 +323,8 @@
      },
      "params": {},
      "uipos": [
-      -3938.960301308147,
-      -86.35796857247205
+      -4263.703568580868,
+      -150.5310518221712
      ],
      "options": []
     },
@@ -528,8 +528,8 @@
      },
      "params": {},
      "uipos": [
-      -4241.20077691482,
-      -106.99811859661334
+      -4575.527370227914,
+      -172.82218239535993
      ],
      "options": []
     },
@@ -585,14 +585,14 @@
      },
      "params": {
       "triangulate": true,
-      "numRandPoints": 256,
+      "numRandPoints": 64,
       "periodicX": false,
       "periodicY": false,
       "periodicZ": false
      },
      "uipos": [
-      -4827.754080118693,
-      -325.1344584569733
+      -5426.757028484808,
+      -375.64011573856305
      ],
      "options": []
     },
@@ -600,8 +600,8 @@
      "name": "BeginForEach",
      "inputs": {
       "list": [
-       "4d3f1c92-VoronoiFracture",
-       "primList",
+       "edf06d5f-ExtendList",
+       "list1",
        null
       ],
       "accumate": [
@@ -617,8 +617,8 @@
      },
      "params": {},
      "uipos": [
-      -4535.654673590505,
-      -145.4701409495549
+      -4865.86491125047,
+      -196.88695996235197
      ],
      "options": []
     },
@@ -659,13 +659,39 @@
       -108.37815281899107
      ],
      "options": []
+    },
+    "edf06d5f-ExtendList": {
+     "name": "ExtendList",
+     "inputs": {
+      "list1": [
+       "4d3f1c92-VoronoiFracture",
+       "primList",
+       null
+      ],
+      "list2": [
+       "4d3f1c92-VoronoiFracture",
+       "boundaryPrimList",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -5132.943722853584,
+      -189.0022404250978
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -4950.447422404879,
-    "y": -399.039405665412,
-    "width": 625.0,
-    "height": 625.0
+    "x": -4262.766598005397,
+    "y": -212.98832516429857,
+    "width": 400.0,
+    "height": 400.0
    }
   },
   "RigidStepWorld": {
@@ -1216,8 +1242,8 @@
       "defl": ""
      },
      "uipos": [
-      1799.0699374026296,
-      324.8926205401403
+      2182.982186031514,
+      351.4008472311823
      ],
      "options": []
     },
@@ -1230,7 +1256,7 @@
        null
       ],
       "BulletObj": [
-       "d4323c5d-x",
+       "34e54573-BulletSetObjectDamping",
        "object",
        null
       ],
@@ -1249,8 +1275,8 @@
       "_KEYS": "BulletObj\nPrimitive\nAddTranslate"
      },
      "uipos": [
-      1436.309102731683,
-      332.9183027231258
+      1820.2213513605677,
+      359.4265294141678
      ],
      "options": [],
      "socket_keys": [
@@ -1421,13 +1447,44 @@
       -431.7180616740088
      ],
      "options": []
+    },
+    "34e54573-BulletSetObjectDamping": {
+     "name": "BulletSetObjectDamping",
+     "inputs": {
+      "object": [
+       "d4323c5d-x",
+       "object",
+       null
+      ],
+      "damping1": [
+       null,
+       null,
+       0.0
+      ],
+      "damping2": [
+       null,
+       null,
+       0.5
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1465.2650822669102,
+      297.98903107861065
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 197.93652382589545,
-    "y": 188.0298075337775,
-    "width": 781.25,
-    "height": 781.25
+    "x": 913.0139273509454,
+    "y": 157.13066731521982,
+    "width": 500.0,
+    "height": 500.0
    }
   },
   "RigidRecenterPrim": {
@@ -2328,6 +2385,46 @@
     ]
    ],
    "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletSetObjectDamping": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "float",
+     "damping1",
+     "0"
+    ],
+    [
+     "float",
+     "damping2",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
     [
      "",
      "DST",
