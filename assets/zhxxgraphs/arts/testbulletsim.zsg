@@ -660,7 +660,7 @@
      },
      "params": {
       "triangulate": true,
-      "numRandPoints": 3,
+      "numRandPoints": 4,
       "periodicX": false,
       "periodicY": false,
       "periodicZ": false
@@ -913,8 +913,8 @@
     }
    },
    "view_rect": {
-    "x": -5457.118090276194,
-    "y": -445.7561411258913,
+    "x": -4839.350436517675,
+    "y": -340.9725420370521,
     "width": 400.0,
     "height": 400.0
    }
@@ -2327,14 +2327,14 @@
        null,
        null
       ],
-      "Primitive": [
-       null,
-       null,
-       null
-      ],
       "BulletCons": [
        "5464c27e-BulletMakeConstraint",
        "constraint",
+       null
+      ],
+      "Primitive": [
+       null,
+       null,
        null
       ]
      },

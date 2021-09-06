@@ -448,8 +448,11 @@ struct BulletConstraint : zeno::IObject {
     BulletConstraint(BulletObject *obj1, BulletObject *obj2)
         : obj1(obj1), obj2(obj2)
     {
-        auto trA = obj1->body->getWorldTransform().inverse();
-        auto trB = obj1->body->getWorldTransform().inverse();
+        //btTransform gf;
+        //gf.setIdentity();
+        //gf.setOrigin(cposw);
+        auto trA = obj1->body->getWorldTransform().inverse();// * gf;
+        auto trB = obj2->body->getWorldTransform().inverse();// * gf;
         constraint = std::make_unique<btGeneric6DofConstraint>(
                 *obj1->body, *obj2->body, trA, trB, true);
     }
