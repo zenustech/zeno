@@ -47,7 +47,7 @@ struct ZSParticlesWrangle : zeno::INode {
     } else if (get_input("ZSParticles")->as<zeno::ListObject>()) {
       auto &objSharedPtrLists =
           *get_input("ZSParticles")->as<zeno::ListObject>();
-      for (auto &&objSharedPtr : objSharedPtrLists.arr)
+      for (auto &&objSharedPtr : objSharedPtrLists.get())
         if (auto ptr = dynamic_cast<zeno::ZenoParticles *>(objSharedPtr.get());
             ptr != nullptr)
           parObjPtrs.push_back(ptr);

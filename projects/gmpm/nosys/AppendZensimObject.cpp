@@ -25,7 +25,7 @@ struct PairZensimParticles : zeno::INode {
           ret.push_back(pobj);
       } else if (has_input<ListObject>(paramStr)) {
         auto &objSharedPtrLists = *get_input<ListObject>(paramStr);
-        for (auto &&objSharedPtr : objSharedPtrLists.arr)
+        for (auto &&objSharedPtr : objSharedPtrLists.get())
           if (auto ptr = dynamic_cast<ZenoParticles *>(objSharedPtr.get());
               ptr != nullptr)
             ret.push_back(ptr);

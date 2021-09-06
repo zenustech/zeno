@@ -26,7 +26,7 @@ struct P2G : zeno::INode {
       parObjPtrs.insert(parObjPtrs.end(), list.begin(), list.end());
     } else if (has_input<ListObject>("ZSParticles")) {
       auto &objSharedPtrLists = *get_input<ListObject>("ZSParticles");
-      for (auto &&objSharedPtr : objSharedPtrLists.arr)
+      for (auto &&objSharedPtr : objSharedPtrLists.get())
         if (auto ptr = dynamic_cast<ZenoParticles *>(objSharedPtr.get());
             ptr != nullptr)
           parObjPtrs.push_back(ptr);
@@ -82,7 +82,7 @@ struct G2P : zeno::INode {
       parObjPtrs.insert(parObjPtrs.end(), list.begin(), list.end());
     } else if (has_input<ListObject>("ZSParticles")) {
       auto &objSharedPtrLists = *get_input<ListObject>("ZSParticles");
-      for (auto &&objSharedPtr : objSharedPtrLists.arr)
+      for (auto &&objSharedPtr : objSharedPtrLists.get())
         if (auto ptr = dynamic_cast<ZenoParticles *>(objSharedPtr.get());
             ptr != nullptr)
           parObjPtrs.push_back(ptr);

@@ -63,7 +63,7 @@ struct AttrVector {
 
     void update() {
         for (auto &[key, val] : attrs) {
-            std::visit([&](auto &val) { val.resize(size); }, val);
+            std::visit([&](auto &val) { val.resize(this->size()); }, val);
         }
     }
 
@@ -108,8 +108,9 @@ struct AttrVector {
     template <class F>
     void foreach_attr(F const &f) const {
         for (auto const &[key, arr]: attrs) {
+            auto const &k = key;
             std::visit([&] (auto &arr) {
-                f(key, arr);
+                f(k, arr);
             }, arr);
         }
     }
@@ -117,8 +118,9 @@ struct AttrVector {
     template <class F>
     void foreach_attr(F const &f) {
         for (auto &[key, arr]: attrs) {
+            auto &k = key;
             std::visit([&] (auto &arr) {
-                f(key, arr);
+                f(k, arr);
             }, arr);
         }
     }
