@@ -20,7 +20,7 @@ else()
 endif()
 
 if (ZENOFX_PRINT_LOGS)
-    target_compile_definitions(ZFX PRIVATE -DZENOFX_PRINT_LOGS)
+    target_compile_definitions(zeno_ZenoFX PRIVATE -DZENOFX_PRINT_LOGS)
 endif()
 if (ZENOFX_ENABLE_OPENVDB)
     find_package(OpenVDB REQUIRED)

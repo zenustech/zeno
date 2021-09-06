@@ -113,6 +113,7 @@ struct PrimitiveRandomizeAttr : INode {
     prim->attr_visit(attrName, [min, minY, minZ, max, maxY, maxZ](auto &arr) {
         for (int i = 0; i < arr.size(); i++) {
             if constexpr (is_decay_same_v<decltype(arr[i]), vec3f>) {
+                // note: can't parallelize cuz frand() uses drand48() or rand()
                 vec3f f(frand(), frand(), frand());
                 vec3f a(min, minY, minZ);
                 vec3f b(max, maxY, maxZ);
