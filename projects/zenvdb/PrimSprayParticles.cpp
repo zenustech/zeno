@@ -57,35 +57,35 @@ struct PrimSprayParticles : zeno::INode {
     tbb::parallel_for((size_t)0, (size_t)n, (size_t)1, [&](size_t index) {
       zeno::vec3f a, b, c;
       zeno::vec3i vi = prim->tris[index];
-      a = prim->attr<zeno::vec3f>("pos")[vi[0]];
-      b = prim->attr<zeno::vec3f>("pos")[vi[1]];
-      c = prim->attr<zeno::vec3f>("pos")[vi[2]];
+      a = prim->verts[vi[0]];
+      b = prim->verts[vi[1]];
+      c = prim->verts[vi[2]];
       zeno::vec3f e1 = b - a;
       zeno::vec3f e2 = c - a;
       zeno::vec3f e3 = c - b;
       zeno::vec3f dir1 = e1 / zeno::length(e1);
       zeno::vec3f dir2 = e2 / zeno::length(e2);
       zeno::vec3f dir3 = e3 / zeno::length(e3);
-      int in(zeno::length(e1) / (0.5 * dx) + 1);
-      int jn(zeno::length(e2) / (0.5 * dx) + 1);
-      int kn(zeno::length(e3) / (0.5 * dx) + 1);
+      int in(zeno::length(e1) / (dx) + 1);
+      int jn(zeno::length(e2) / (dx) + 1);
+      int kn(zeno::length(e3) / (dx) + 1);
       data.push_back(a);
       data.push_back(b);
       data.push_back(c);
       for (int kk = 0; kk < kn; kk++) {
-        zeno::vec3f vij = b + (float)kk * 0.5f * dx * dir3;
+        zeno::vec3f vij = b + (float)kk * dx * dir3;
         if (ptInTriangle(vij, a, b, c)) {
               data.push_back(vij);
         }
       }
       for (int ii = 0; ii < in; ii++) {
-        zeno::vec3f vij = a + (float)ii * 0.5f * dx * dir1;
+        zeno::vec3f vij = a + (float)ii * dx * dir1;
         if (ptInTriangle(vij, a, b, c)) {
           data.push_back(vij);
         }
       }
       for (int jj = 0; jj < jn; jj++) {
-        zeno::vec3f vij = a + (float)jj * 0.5f * dx * dir2;
+        zeno::vec3f vij = a + (float)jj * dx * dir2;
         if (ptInTriangle(vij, a, b, c)) {
           data.push_back(vij);
         }
@@ -93,7 +93,7 @@ struct PrimSprayParticles : zeno::INode {
       for (int ii = 0; ii < in; ii++) {
         for (int jj = 0; jj < jn; jj++) {
           zeno::vec3f vij =
-              a + (float)ii * 0.5f * dx * dir1 + (float)jj * 0.5f * dx * dir2;
+              a + (float)ii * dx * dir1 + (float)jj * dx * dir2;
           if (ptInTriangle(vij, a, b, c)) {
             data.push_back(vij);
           }
