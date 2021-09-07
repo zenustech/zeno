@@ -96,7 +96,7 @@ struct AABBVoronoi : INode {
 
                 bool isBoundary = false;
                 for (int i = 0, j = 0; i < (int)neigh.size(); i++) {
-                    if (neigh[i] < 0) {
+                    if (neigh[i] <= 0) {
                         isBoundary = true;
                     } else {
                         if (auto ncid = neigh[i] - 1; ncid > cid) {

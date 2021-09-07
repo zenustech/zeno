@@ -333,22 +333,22 @@
       "dampLin": [
        null,
        null,
-       0.1
+       0.0
       ],
       "dampAng": [
        null,
        null,
-       0.1
+       0.0
       ],
       "friction": [
        null,
        null,
-       0.7
+       0.5
       ],
       "restitution": [
        null,
        null,
-       0.4
+       0.5
       ],
       "margin": [
        null,
@@ -420,22 +420,22 @@
       "dampLin": [
        null,
        null,
-       0.1
+       0.0
       ],
       "dampAng": [
        null,
        null,
-       0.1
+       0.0
       ],
       "friction": [
        null,
        null,
-       0.7
+       0.5
       ],
       "restitution": [
        null,
        null,
-       0.4
+       0.5
       ],
       "margin": [
        null,
@@ -852,7 +852,7 @@
      },
      "params": {
       "triangulate": true,
-      "numRandPoints": 6,
+      "numRandPoints": 32,
       "periodicX": false,
       "periodicY": false,
       "periodicZ": false
@@ -943,7 +943,7 @@
       "breakThres": [
        null,
        null,
-       100.0
+       1.0
       ],
       "SRC": [
        null,
@@ -1077,10 +1077,10 @@
     }
    },
    "view_rect": {
-    "x": -2635.367130705884,
-    "y": -683.147572348446,
-    "width": 400.0,
-    "height": 400.0
+    "x": -2781.6804395783033,
+    "y": -275.5176089435316,
+    "width": 500.0,
+    "height": 500.0
    }
   },
   "RigidStepWorld": {
@@ -2066,7 +2066,7 @@
       "friction": [
        "6d08ec81-x",
        "port",
-       0.7
+       0.0
       ],
       "SRC": [
        null,
@@ -2093,7 +2093,7 @@
      "params": {
       "name": "dampLin",
       "type": "float",
-      "defl": "0.1"
+      "defl": "0.0"
      },
      "uipos": [
       1251.9931662870165,
@@ -2113,7 +2113,7 @@
      "params": {
       "name": "dampAng",
       "type": "float",
-      "defl": "0.1"
+      "defl": "0.0"
      },
      "uipos": [
       1519.4760820045558,
@@ -2133,7 +2133,7 @@
      "params": {
       "name": "friction",
       "type": "float",
-      "defl": "0.7"
+      "defl": "0.5"
      },
      "uipos": [
       1857.8587699316631,
@@ -2179,7 +2179,7 @@
      "params": {
       "name": "restitution",
       "type": "float",
-      "defl": "0.4"
+      "defl": "0.5"
      },
      "uipos": [
       2258.149779735683,
@@ -2229,10 +2229,10 @@
     }
    },
    "view_rect": {
-    "x": 1239.4263590452392,
-    "y": -215.0318863370402,
-    "width": 1220.703125,
-    "height": 1220.703125
+    "x": 1002.7715423596749,
+    "y": -139.84243649786697,
+    "width": 500.0,
+    "height": 500.0
    }
   },
   "RigidRecenterPrim": {
@@ -8372,22 +8372,22 @@
     [
      "float",
      "dampLin",
-     "0.1"
+     "0.0"
     ],
     [
      "float",
      "dampAng",
-     "0.1"
+     "0.0"
     ],
     [
      "float",
      "friction",
-     "0.7"
+     "0.5"
     ],
     [
      "float",
      "restitution",
-     "0.4"
+     "0.5"
     ],
     [
      "float",

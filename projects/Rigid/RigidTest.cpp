@@ -468,9 +468,9 @@ struct BulletMakeConstraint : zeno::INode {
         auto obj1 = get_input<BulletObject>("obj1");
         auto obj2 = get_input<BulletObject>("obj2");
         auto cons = std::make_shared<BulletConstraint>(obj1.get(), obj2.get());
-        //for (int i = 0; i < 6; i++)
-            //cons->constraint->setLimit(i, 0, 0);
-        //cons->constraint->setOverrideNumSolverIterations(30);
+        for (int i = 0; i < 6; i++)
+            cons->constraint->setLimit(i, 0, 0);
+        //cons->constraint->setOverrideNumSolverIterations(400);
         set_output("constraint", std::move(cons));
     }
 };
@@ -559,21 +559,21 @@ struct BulletWorld : zeno::IObject {
     }
 
     void addObject(std::shared_ptr<BulletObject> obj) {
-        spdlog::info("adding object {}", (void *)obj.get());
+        spdlog::trace("adding object {}", (void *)obj.get());
         dynamicsWorld->addRigidBody(obj->body.get());
         objects.insert(std::move(obj));
     }
 
     void removeObject(std::shared_ptr<BulletObject> const &obj) {
-        spdlog::info("removing object {}", (void *)obj.get());
+        spdlog::trace("removing object {}", (void *)obj.get());
         dynamicsWorld->removeRigidBody(obj->body.get());
         objects.erase(obj);
     }
 
     void setObjectList(std::vector<std::shared_ptr<BulletObject>> objList) {
         std::set<std::shared_ptr<BulletObject>> objSet;
-        spdlog::info("setting object list len={}", objList.size());
-        spdlog::info("existing object list len={}", objects.size());
+        spdlog::trace("setting object list len={}", objList.size());
+        spdlog::trace("existing object list len={}", objects.size());
         for (auto const &object: objList) {
             objSet.insert(object);
             if (objects.find(object) == objects.end()) {
@@ -588,21 +588,21 @@ struct BulletWorld : zeno::IObject {
     }
 
     void addConstraint(std::shared_ptr<BulletConstraint> cons) {
-        spdlog::info("adding constraint {}", (void *)cons.get());
+        spdlog::trace("adding constraint {}", (void *)cons.get());
         dynamicsWorld->addConstraint(cons->constraint.get(), true);
         constraints.insert(std::move(cons));
     }
 
     void removeConstraint(std::shared_ptr<BulletConstraint> const &cons) {
-        spdlog::info("removing constraint {}", (void *)cons.get());
+        spdlog::warn("removing constraint {}", (void *)cons.get());
         dynamicsWorld->removeConstraint(cons->constraint.get());
         constraints.erase(cons);
     }
 
     void setConstraintList(std::vector<std::shared_ptr<BulletConstraint>> consList) {
         std::set<std::shared_ptr<BulletConstraint>> consSet;
-        spdlog::info("setting constraint list len={}", consList.size());
-        spdlog::info("existing constraint list len={}", constraints.size());
+        spdlog::trace("setting constraint list len={}", consList.size());
+        spdlog::trace("existing constraint list len={}", constraints.size());
         for (auto const &constraint: consList) {
             if (!constraint->constraint->isEnabled())
                 continue;
@@ -643,7 +643,7 @@ struct BulletWorld : zeno::IObject {
     }*/
 
     void step(float dt = 1.f / 60.f, int steps = 10) {
-        spdlog::info("stepping with dt={}, steps={}, len(objects)={}", dt, steps, objects.size());
+        spdlog::trace("stepping with dt={}, steps={}, len(objects)={}", dt, steps, objects.size());
         //dt /= steps;
         //for(int i=0;i<steps;i++)
         dynamicsWorld->stepSimulation(dt, steps, dt);
