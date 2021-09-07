@@ -38,7 +38,7 @@ default: run
 #default: run
 
 all:
-	cmake -B build -DCMAKE_BUILD_TYPE=Release  -DPYTHON_EXECUTABLE=/usr/bin/python3.8 # makexinxinVeryHappy
+	cmake -B build -DCMAKE_BUILD_TYPE=Release  -DPYTHON_EXECUTABLE=`which python3` # makexinxinVeryHappy
 	cmake --build build --parallel 24
 
 run: all
