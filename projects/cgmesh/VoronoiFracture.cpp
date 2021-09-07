@@ -15,6 +15,8 @@ using namespace zeno;
 struct AABBVoronoi : INode {
     virtual void apply() override {
         auto pieces = std::make_shared<ListObject>();
+        auto neighs = std::make_shared<ListObject>();
+
         auto triangulate = get_param<bool>("triangulate");
 
         auto bmin = has_input("bboxMin") ?
@@ -71,8 +73,6 @@ struct AABBVoronoi : INode {
             }*/
             pcon.setup(con);
 
-            auto neighs = std::make_shared<ListObject>();
-
             int cid = 0;
             voro::c_loop_all cl(con);
             voro::voronoicell_neighbor c;
@@ -100,7 +100,7 @@ struct AABBVoronoi : INode {
                         isBoundary = true;
                     } else {
                         if (auto ncid = neigh[i] - 1; ncid > cid) {
-                            neighs.arr.push_back(std::make_pair(cid, ncid));
+                            neighs->arr.push_back(std::make_pair(cid, ncid));
                         }
                     }
                     int len = f_vert[j];

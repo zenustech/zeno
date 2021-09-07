@@ -44,6 +44,7 @@ ZENO_API std::unique_ptr<INode> Session::getOverloadNode(
     }
     auto const &cls = it->second;
     auto node = cls->new_instance();
+    node->myname = key + "(TEMP)";
 
     for (int i = 0; i < inputs.size(); i++) {
         auto key = cls->desc->inputs.at(i).name;
