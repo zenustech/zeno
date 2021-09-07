@@ -6,6 +6,9 @@
 namespace zeno {
 
 
+// This is an area method...
+// TODO: use this volume method instead:
+// https://github.com/bulletphysics/bullet3/blob/master/examples/VoronoiFracture/VoronoiFractureDemo.cpp#L362
 struct PrimitiveCalcCentroid : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");

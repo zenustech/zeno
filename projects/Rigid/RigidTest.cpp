@@ -4,7 +4,7 @@
 #include <zeno/PrimitiveObject.h>
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
-#include <BulletCollision/CollisionShapes/btConvexPointCloudShape.h>
+#include <LinearMath/btConvexHullComputer.h>
 #include <hacdCircularList.h>
 #include <spdlog/spdlog.h>
 #include <hacdVector.h>
@@ -187,9 +187,28 @@ ZENDEFNODE(PrimitiveConvexDecomposition, {
 });
 
 
+struct BulletMakeConvexMeshShape : zeno::INode {
+    virtual void apply() override {
+        auto triMesh = &get_input<BulletTriangleMesh>("triMesh")->mesh;
+        auto inShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
+
+        auto shape = std::make_shared<BulletCollisionShape>(std::move(inShape));
+        set_output("shape", std::move(shape));
+    }
+};
+
+ZENDEFNODE(BulletMakeConvexMeshShape, {
+    {"triMesh"},
+    {"shape"},
+    {},
+    {"Rigid"},
+});
+
 struct BulletMakeConvexHullShape : zeno::INode {
     virtual void apply() override {
         auto triMesh = &get_input<BulletTriangleMesh>("triMesh")->mesh;
+
+#if 1
         auto inShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
         auto hull = std::make_unique<btShapeHull>(inShape.get());
         auto margin = get_input2<float>("margin");
@@ -197,6 +216,21 @@ struct BulletMakeConvexHullShape : zeno::INode {
         hull->buildHull(margin, highres);
         auto convex = std::make_unique<btConvexHullShape>(
              (const btScalar *)hull->getVertexPointer(), hull->numVertices());
+#else
+        auto convexHC = std::make_unique<btConvexHullComputer>();
+        std::vector<float> vertices;
+        for (int i = 0; i < inShape->getNumVertices(); i++) {
+            btVector3 coor;
+            //inShape->btTriangleIndexVertexArray::preallocateVertices
+            inShape->getVertex(i, coor);
+            vertices.push_back(coor[0]);
+            vertices.push_back(coor[1]);
+            vertices.push_back(coor[2]);
+        }
+        convexHC->compute(vertices.data(), sizeof(float) * 3, vertices.size() / 3, 0.04f, 0.0f);
+        auto convex = std::make_unique<btConvexHullShape>(&(convexHC->vertices[0].getX()), convexHC->vertices.size());
+#endif
+
         // auto convex = std::make_unique<btConvexPointCloudShape>();
         // btVector3* points = new btVector3[inShape->getNumVertices()];
         // for(int i=0;i<inShape->getNumVertices(); i++)

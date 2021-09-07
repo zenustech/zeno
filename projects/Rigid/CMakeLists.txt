@@ -1,4 +1,4 @@
-add_definitions(-DBT_USE_DOUBLE_PRECISION)
+#add_definitions(-DBT_USE_DOUBLE_PRECISION)
 add_subdirectory(bullet3)
 add_subdirectory(HACD)
 
