@@ -12,10 +12,9 @@
 namespace {
 using namespace zeno;
 
-struct VoronoiFracture : INode {
+struct AABBVoronoi : INode {
     virtual void apply() override {
-        auto boundaries = std::make_shared<ListObject>();
-        auto interiors = std::make_shared<ListObject>();
+        auto pieces = std::make_shared<ListObject>();
         auto triangulate = get_param<bool>("triangulate");
 
         auto bmin = has_input("bboxMin") ?
@@ -72,8 +71,9 @@ struct VoronoiFracture : INode {
             }*/
             pcon.setup(con);
 
-            //std::set<int, int> neighlist;
+            auto neighs = std::make_shared<ListObject>();
 
+            int cid = 0;
             voro::c_loop_all cl(con);
             voro::voronoicell_neighbor c;
             if(cl.start()) do if(con.compute_cell(c, cl)) {
@@ -96,9 +96,12 @@ struct VoronoiFracture : INode {
 
                 bool isBoundary = false;
                 for (int i = 0, j = 0; i < (int)neigh.size(); i++) {
-                    printf("%d\n", neigh[i]);
                     if (neigh[i] < 0) {
                         isBoundary = true;
+                    } else {
+                        if (auto ncid = neigh[i] - 1; ncid > cid) {
+                            neighs.arr.push_back(std::make_pair(cid, ncid));
+                        }
                     }
                     int len = f_vert[j];
                     int start = (int)prim->loops.size();
@@ -109,42 +112,36 @@ struct VoronoiFracture : INode {
                     j = j + 1 + len;
                 }
 
-                if (isBoundary) {
-                    boundaries->arr.push_back(std::move(prim));
-                } else {
-                    interiors->arr.push_back(std::move(prim));
-                }
+                prim->userdata.set<bool>("isBoundary", isBoundary);
+                pieces->arr.push_back(std::move(prim));
 
+                cid++;
             } while (cl.inc());
         }
 
-        printf("VoronoiFracture got %zd boundaries, %zd interiors\n",
-                boundaries->arr.size(), interiors->arr.size());
+        printf("AABBVoronoi got %zd pieces, %zd neighs\n",
+                pieces->arr.size(), neighs->arr.size());
 
         if (triangulate) {
-            for (auto const &prim: boundaries->get<std::shared_ptr<PrimitiveObject>>()) {
-                prim_triangulate(prim.get());
-            }
-            for (auto const &prim: interiors->get<std::shared_ptr<PrimitiveObject>>()) {
+            for (auto const &prim: pieces->get<std::shared_ptr<PrimitiveObject>>()) {
                 prim_triangulate(prim.get());
             }
         }
 
-        set_output("primList", std::move(interiors));
-        set_output("boundaryPrimList", std::move(boundaries));
+        set_output("primList", std::move(pieces));
+        set_output("neighList", std::move(neighs));
     }
 };
 
-ZENO_DEFNODE(VoronoiFracture)({
+ZENO_DEFNODE(AABBVoronoi)({
         { // inputs:
-        //{"PrimitiveObject", "meshPrim"},
         {"PrimitiveObject", "particlesPrim"},
         {"vec3f", "bboxMin", "-1,-1,-1"},
         {"vec3f", "bboxMax", "1,1,1"},
         },
         { // outputs:
         {"ListObject", "primList"},
-        {"ListObject", "boundaryPrimList"},
+        {"ListObject", "neighList"},
         },
         { // params:
         {"bool", "triangulate", "1"},

@@ -822,7 +822,7 @@ struct BulletObjectApplyForce:zeno::INode {
 };
 
 ZENDEFNODE(BulletObjectApplyForce, {
-    {"object", "ForceImpulse", "TorqueImpulse"},
+    {"object", {"vec3f", "ForceImpulse", "0,0,0"}, {"vec3f", "TorqueImpulse", "0,0,0"}},
     {},
     {},
     {"Rigid"},

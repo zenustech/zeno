@@ -45,4 +45,19 @@ ZENDEFNODE(PrintNumeric, {
     {"numeric"},
 });
 
+
+struct ToVisualize_NumericObject : PrintNumeric {
+    virtual void apply() override {
+        inputs["hint:"] = "VIEW of NumericObject";
+        PrintNumeric::apply();
+    }
+};
+
+ZENO_DEFOVERLOADNODE(ToVisualize, _NumericObject, typeid(NumericObject).name())({
+        {"value"},
+        {},
+        {{"string", "path", ""}},
+        {"numeric"},
+});
+
 }
