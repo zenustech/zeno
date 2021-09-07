@@ -634,7 +634,7 @@ struct BulletWorld : zeno::IObject {
     }
 
     void removeConstraint(std::shared_ptr<BulletConstraint> const &cons) {
-        spdlog::warn("removing constraint {}", (void *)cons.get());
+        spdlog::info("removing constraint {}", (void *)cons.get());
         dynamicsWorld->removeConstraint(cons->constraint.get());
         constraints.erase(cons);
     }
@@ -682,11 +682,11 @@ struct BulletWorld : zeno::IObject {
         addObject(std::make_unique<BulletObject>(mass, startTransform, std::move(colShape)));
     }*/
 
-    void step(float dt = 1.f / 60.f, int steps = 10) {
-        spdlog::trace("stepping with dt={}, steps={}, len(objects)={}", dt, steps, objects.size());
+    void step(float dt = 1.f / 60.f, int steps = 1) {
+        spdlog::info("stepping with dt={}, steps={}, len(objects)={}", dt, steps, objects.size());
         //dt /= steps;
         //for(int i=0;i<steps;i++)
-        dynamicsWorld->stepSimulation(dt, steps, dt);
+        dynamicsWorld->stepSimulation(dt, steps, dt / steps);
 
         /*for (int j = dynamicsWorld->getNumCollisionObjects() - 1; j >= 0; j--)
         {
@@ -747,7 +747,7 @@ struct BulletStepWorld : zeno::INode {
 };
 
 ZENDEFNODE(BulletStepWorld, {
-    {"world", {"float", "dt", "0.04"}, {"int", "steps", "40"}},
+    {"world", {"float", "dt", "0.04"}, {"int", "steps", "1"}},
     {"world"},
     {},
     {"Rigid"},

@@ -177,7 +177,7 @@
       "steps": [
        null,
        null,
-       40
+       10
       ],
       "dt": [
        null,
@@ -185,8 +185,8 @@
        0.017
       ],
       "SRC": [
-       null,
-       null,
+       "4dfebc81-EndForEach",
+       "DST",
        null
       ]
      },
@@ -282,7 +282,9 @@
       1280.528904105368,
       657.2001600567785
      ],
-     "options": []
+     "options": [
+      "VIEW"
+     ]
     },
     "456fb647-RigidMakeObject": {
      "name": "RigidMakeObject",
@@ -809,7 +811,7 @@
      },
      "params": {
       "triangulate": true,
-      "numRandPoints": 256,
+      "numRandPoints": 64,
       "periodicX": false,
       "periodicY": false,
       "periodicZ": false
@@ -1119,10 +1121,10 @@
     }
    },
    "view_rect": {
-    "x": 1425.1754236371573,
-    "y": 381.4520560713152,
-    "width": 781.25,
-    "height": 781.25
+    "x": 1374.583797323676,
+    "y": 300.5074480040902,
+    "width": 500.0,
+    "height": 500.0
    }
   },
   "RigidStepWorld": {
@@ -1143,7 +1145,7 @@
       "steps": [
        "a67b9505-x",
        "port",
-       40
+       1
       ],
       "SRC": [
        null,
@@ -1507,7 +1509,7 @@
      "params": {
       "name": "steps",
       "type": "int",
-      "defl": "40"
+      "defl": "10"
      },
      "uipos": [
       1091.4421868080321,
@@ -1537,10 +1539,10 @@
     }
    },
    "view_rect": {
-    "x": 1235.952486594914,
-    "y": 560.2873718049806,
-    "width": 320.0,
-    "height": 320.0
+    "x": 498.77257123850006,
+    "y": 694.9820480580402,
+    "width": 500.0,
+    "height": 500.0
    }
   },
   "RigidMakeWorld": {
@@ -3741,7 +3743,7 @@
     [
      "int",
      "steps",
-     "40"
+     "1"
     ],
     [
      "",
@@ -9160,7 +9162,7 @@
     [
      "int",
      "steps",
-     "40"
+     "1"
     ],
     [
      "float",
