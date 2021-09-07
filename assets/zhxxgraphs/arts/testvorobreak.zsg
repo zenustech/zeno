@@ -28,7 +28,7 @@
      },
      "params": {
       "triangulate": true,
-      "numRandPoints": 2,
+      "numRandPoints": 3,
       "periodicX": false,
       "periodicY": false,
       "periodicZ": false
@@ -37,16 +37,103 @@
       -3616.740088105727,
       -139.8678414096916
      ],
+     "options": []
+    },
+    "33e1d24f-BeginForEach": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "ad4653a0-AABBVoronoi",
+       "neighList",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3223.690205011389,
+      42.8246013667426
+     ],
+     "options": []
+    },
+    "693a66c4-EndForEach": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       null,
+       null,
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "33e1d24f-BeginForEach",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       "01f10933-PrintNumeric",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      -2653.0751708428247,
+      39.17995444191334
+     ],
      "options": [
       "VIEW"
      ]
+    },
+    "01f10933-PrintNumeric": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "33e1d24f-BeginForEach",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "hint": "PrintNumeric"
+     },
+     "uipos": [
+      -2959.453302961275,
+      20.045558086560334
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -3665.3383552739433,
-    "y": -279.9153334298971,
-    "width": 500.0,
-    "height": 500.0
+    "x": -3158.6943744241544,
+    "y": -107.07577471658342,
+    "width": 400.0,
+    "height": 400.0
    }
   }
  },
@@ -134,6 +221,11 @@
     [
      "ListObject",
      "primList",
+     ""
+    ],
+    [
+     "ListObject",
+     "neighList",
      ""
     ],
     [

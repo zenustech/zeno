@@ -18,8 +18,8 @@
      },
      "params": {},
      "uipos": [
-      -549.1411763617033,
-      979.9327306006364
+      177.66788415935946,
+      803.4819760232685
      ],
      "options": []
     },
@@ -39,8 +39,8 @@
      },
      "params": {},
      "uipos": [
-      -229.9663876148678,
-      1024.3157600818815
+      496.84267290619493,
+      847.8650055045136
      ],
      "options": []
     },
@@ -80,8 +80,8 @@
      },
      "params": {},
      "uipos": [
-      141.98746393053705,
-      849.3359715589397
+      868.7965244515999,
+      672.8852169815718
      ],
      "options": []
     },
@@ -103,8 +103,8 @@
       "_KEYS": "BulletObj\nPrimitive\nAddTranslate\nobj3"
      },
      "uipos": [
-      -862.3402301820523,
-      769.8835509609123
+      -135.53116966098952,
+      593.4327963835444
      ],
      "options": [],
      "socket_keys": [
@@ -130,8 +130,8 @@
      },
      "params": {},
      "uipos": [
-      -2840.513422706928,
-      449.1648129931936
+      -836.5369957211074,
+      226.50076555032473
      ],
      "options": []
     },
@@ -241,8 +241,8 @@
      },
      "params": {},
      "uipos": [
-      -1178.502783669141,
-      706.2731972428419
+      -451.69372314807816,
+      529.8224426654742
      ],
      "options": []
     },
@@ -279,8 +279,8 @@
       "doConcat": false
      },
      "uipos": [
-      553.7198435843053,
-      833.6509146341463
+      1280.528904105368,
+      657.2001600567785
      ],
      "options": []
     },
@@ -300,8 +300,8 @@
      },
      "params": {},
      "uipos": [
-      847.669616519174,
-      921.2979351032449
+      1574.4786770402366,
+      744.8471805258771
      ],
      "options": [
       "VIEW"
@@ -622,52 +622,15 @@
        null
       ],
       "SRC": [
-       null,
-       null,
+       "868197cb-EndForEach",
+       "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      -3254.821958456974,
-      295.5767804154302
-     ],
-     "options": []
-    },
-    "4d3f1c92-VoronoiFracture": {
-     "name": "VoronoiFracture",
-     "inputs": {
-      "particlesPrim": [
-       null,
-       null,
-       null
-      ],
-      "bboxMin": [
-       null,
-       null,
-       null
-      ],
-      "bboxMax": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "triangulate": true,
-      "numRandPoints": 4,
-      "periodicX": false,
-      "periodicY": false,
-      "periodicZ": false
-     },
-     "uipos": [
-      -5670.492791582758,
-      -355.13897678639904
+      -1272.8719631892159,
+      52.81361402982998
      ],
      "options": []
     },
@@ -675,8 +638,8 @@
      "name": "BeginForEach",
      "inputs": {
       "list": [
-       "edf06d5f-ExtendList",
-       "list1",
+       "c3e5d8e7-AABBVoronoi",
+       "primList",
        null
       ],
       "accumate": [
@@ -692,8 +655,8 @@
      },
      "params": {},
      "uipos": [
-      -5109.600674348419,
-      -176.38582101018795
+      -5112.243846154585,
+      -176.38582101018793
      ],
      "options": []
     },
@@ -735,37 +698,11 @@
      ],
      "options": []
     },
-    "edf06d5f-ExtendList": {
-     "name": "ExtendList",
-     "inputs": {
-      "list1": [
-       "4d3f1c92-VoronoiFracture",
-       "primList",
-       null
-      ],
-      "list2": [
-       "4d3f1c92-VoronoiFracture",
-       "boundaryPrimList",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -5376.679485951533,
-      -168.50110147293378
-     ],
-     "options": []
-    },
     "f6703de4-x": {
      "name": "CachedOnce",
      "inputs": {
       "input": [
-       "1e7ce72e-MakeSmallList",
+       "868197cb-EndForEach",
        "list",
        null
       ],
@@ -777,137 +714,8 @@
      },
      "params": {},
      "uipos": [
-      -1992.7171172288367,
-      49.53858713624328
-     ],
-     "options": []
-    },
-    "449fa6af-ListGetItem": {
-     "name": "ListGetItem",
-     "inputs": {
-      "list": [
-       "c547de5f-EndForEach",
-       "list",
-       null
-      ],
-      "index": [
-       null,
-       null,
-       0
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2911.454472797724,
-      -536.2444031649613
-     ],
-     "options": []
-    },
-    "d31f7e38-x": {
-     "name": "ListGetItem",
-     "inputs": {
-      "list": [
-       "c547de5f-EndForEach",
-       "list",
-       null
-      ],
-      "index": [
-       null,
-       null,
-       1
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2906.2874754432273,
-      -282.02813332369146
-     ],
-     "options": []
-    },
-    "1e7ce72e-MakeSmallList": {
-     "name": "MakeSmallList",
-     "inputs": {
-      "obj0": [
-       "026d01a1-RigidMakeConstraint",
-       "constraint",
-       null
-      ],
-      "obj1": [
-       "5cf8d9c7-x",
-       "constraint",
-       null
-      ],
-      "obj2": [
-       null,
-       null,
-       null
-      ],
-      "obj3": [
-       null,
-       null,
-       null
-      ],
-      "obj4": [
-       null,
-       null,
-       null
-      ],
-      "obj5": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2295.180224867725,
-      -3.1001984126983757
-     ],
-     "options": []
-    },
-    "026d01a1-RigidMakeConstraint": {
-     "name": "RigidMakeConstraint",
-     "inputs": {
-      "obj1": [
-       "449fa6af-ListGetItem",
-       "object",
-       null
-      ],
-      "obj2": [
-       "d31f7e38-x",
-       "object",
-       null
-      ],
-      "breakThres": [
-       null,
-       null,
-       1.0
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2602.3853590411113,
-      -286.9057788263369
+      -1582.0274145856656,
+      -237.75147343644426
      ],
      "options": []
     },
@@ -992,89 +800,6 @@
      ],
      "options": []
     },
-    "45e1d396-x": {
-     "name": "ListGetItem",
-     "inputs": {
-      "list": [
-       "c547de5f-EndForEach",
-       "list",
-       null
-      ],
-      "index": [
-       null,
-       null,
-       2
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2923.612005625458,
-      -79.05859050150059
-     ],
-     "options": []
-    },
-    "5cf8d9c7-x": {
-     "name": "RigidMakeConstraint",
-     "inputs": {
-      "obj1": [
-       "45e1d396-x",
-       "object",
-       null
-      ],
-      "obj2": [
-       "d0e48e4c-x",
-       "object",
-       null
-      ],
-      "breakThres": [
-       null,
-       null,
-       1.0
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2614.5428918688463,
-      170.28003383712388
-     ],
-     "options": []
-    },
-    "d0e48e4c-x": {
-     "name": "ListGetItem",
-     "inputs": {
-      "list": [
-       "c547de5f-EndForEach",
-       "list",
-       null
-      ],
-      "index": [
-       null,
-       null,
-       3
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2918.4450082709623,
-      175.15767933976935
-     ],
-     "options": []
-    },
     "532dbdc0-TranslatePrimitive": {
      "name": "TranslatePrimitive",
      "inputs": {
@@ -1100,13 +825,262 @@
       -136.67425968109342
      ],
      "options": []
+    },
+    "c3e5d8e7-AABBVoronoi": {
+     "name": "AABBVoronoi",
+     "inputs": {
+      "particlesPrim": [
+       null,
+       null,
+       null
+      ],
+      "bboxMin": [
+       null,
+       null,
+       null
+      ],
+      "bboxMax": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "triangulate": true,
+      "numRandPoints": 6,
+      "periodicX": false,
+      "periodicY": false,
+      "periodicZ": false
+     },
+     "uipos": [
+      -5415.859030837003,
+      -336.56387665198235
+     ],
+     "options": []
+    },
+    "8d15b202-BeginForEach": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "c3e5d8e7-AABBVoronoi",
+       "neighList",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "c0cce422-Route",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2901.266519823789,
+      -345.9801762114537
+     ],
+     "options": []
+    },
+    "868197cb-EndForEach": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       "fb07bf86-RigidMakeConstraint",
+       "constraint",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "8d15b202-BeginForEach",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       "d298ba29-PrintNumeric",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      -1885.8480176211451,
+      -334.52643171806176
+     ],
+     "options": []
+    },
+    "fb07bf86-RigidMakeConstraint": {
+     "name": "RigidMakeConstraint",
+     "inputs": {
+      "obj1": [
+       "53f14d89-ListGetItem",
+       "object",
+       null
+      ],
+      "obj2": [
+       "a315b856-x",
+       "object",
+       null
+      ],
+      "breakThres": [
+       null,
+       null,
+       100.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2133.0947136563873,
+      -282.5440528634365
+     ],
+     "options": []
+    },
+    "3857d4a0-UnpackNumericVec": {
+     "name": "UnpackNumericVec",
+     "inputs": {
+      "vec": [
+       "8d15b202-BeginForEach",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2647.632158590308,
+      -293.9977973568282
+     ],
+     "options": []
+    },
+    "53f14d89-ListGetItem": {
+     "name": "ListGetItem",
+     "inputs": {
+      "list": [
+       "c0cce422-Route",
+       "output",
+       null
+      ],
+      "index": [
+       "3857d4a0-UnpackNumericVec",
+       "X",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2381.7731277533026,
+      -286.068281938326
+     ],
+     "options": []
+    },
+    "a315b856-x": {
+     "name": "ListGetItem",
+     "inputs": {
+      "list": [
+       "c0cce422-Route",
+       "output",
+       null
+      ],
+      "index": [
+       "3857d4a0-UnpackNumericVec",
+       "Y",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2374.7246696035245,
+      -79.90088105726886
+     ],
+     "options": []
+    },
+    "c0cce422-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "c547de5f-EndForEach",
+       "list",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3155.2863436123343,
+      -90.03303964757708
+     ],
+     "options": []
+    },
+    "d298ba29-PrintNumeric": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "8d15b202-BeginForEach",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "hint": "X"
+     },
+     "uipos": [
+      -2417.6211453744486,
+      -641.4096916299559
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -4743.518300318284,
-    "y": -457.51421537798296,
-    "width": 625.0,
-    "height": 625.0
+    "x": -2635.367130705884,
+    "y": -683.147572348446,
+    "width": 400.0,
+    "height": 400.0
    }
   },
   "RigidStepWorld": {
@@ -2753,6 +2727,77 @@
     "math"
    ]
   },
+  "AABBVoronoi": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "particlesPrim",
+     ""
+    ],
+    [
+     "vec3f",
+     "bboxMin",
+     "-1,-1,-1"
+    ],
+    [
+     "vec3f",
+     "bboxMax",
+     "1,1,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ListObject",
+     "primList",
+     ""
+    ],
+    [
+     "ListObject",
+     "neighList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "triangulate",
+     "1"
+    ],
+    [
+     "int",
+     "numRandPoints",
+     "256"
+    ],
+    [
+     "bool",
+     "periodicX",
+     "0"
+    ],
+    [
+     "bool",
+     "periodicY",
+     "0"
+    ],
+    [
+     "bool",
+     "periodicZ",
+     "0"
+    ]
+   ],
+   "categories": [
+    "cgmesh"
+   ]
+  },
   "AppendList": {
    "inputs": [
     [
@@ -3421,14 +3466,14 @@
      ""
     ],
     [
-     "",
+     "vec3f",
      "ForceImpulse",
-     ""
+     "0,0,0"
     ],
     [
-     "",
+     "vec3f",
      "TorqueImpulse",
-     ""
+     "0,0,0"
     ],
     [
      "",
@@ -9079,77 +9124,6 @@
    "params": [],
    "categories": [
     "control"
-   ]
-  },
-  "VoronoiFracture": {
-   "inputs": [
-    [
-     "PrimitiveObject",
-     "particlesPrim",
-     ""
-    ],
-    [
-     "vec3f",
-     "bboxMin",
-     "-1,-1,-1"
-    ],
-    [
-     "vec3f",
-     "bboxMax",
-     "1,1,1"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "ListObject",
-     "primList",
-     ""
-    ],
-    [
-     "ListObject",
-     "boundaryPrimList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "bool",
-     "triangulate",
-     "1"
-    ],
-    [
-     "int",
-     "numRandPoints",
-     "256"
-    ],
-    [
-     "bool",
-     "periodicX",
-     "0"
-    ],
-    [
-     "bool",
-     "periodicY",
-     "0"
-    ],
-    [
-     "bool",
-     "periodicZ",
-     "0"
-    ]
-   ],
-   "categories": [
-    "cgmesh"
    ]
   },
   "WriteObjPrimitive": {

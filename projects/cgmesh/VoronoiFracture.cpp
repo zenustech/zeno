@@ -100,7 +100,7 @@ struct AABBVoronoi : INode {
                         isBoundary = true;
                     } else {
                         if (auto ncid = neigh[i] - 1; ncid > cid) {
-                            neighs->arr.push_back(std::make_pair(cid, ncid));
+                            neighs->arr.push_back(zeno::vec2i(cid, ncid));
                         }
                     }
                     int len = f_vert[j];

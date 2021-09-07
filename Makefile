@@ -2,8 +2,8 @@
 #O=b.zsg
 #O=c.zsg
 #O=d.zsg
-O=arts/testvorobreak.zsg
-#O=arts/testbulletsim.zsg
+#O=arts/testvorobreak.zsg
+O=arts/testbulletsim.zsg
 #O=arts/segvtrig.zsg
 #O=arts/testtbbreduce.zsg
 #O=arts/ZFXv2.zsg
