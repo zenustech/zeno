@@ -923,7 +923,7 @@
       "breakThres": [
        null,
        null,
-       10.0
+       1.0
       ],
       "SRC": [
        null,
@@ -3640,7 +3640,7 @@
     [
      "float",
      "threshold",
-     "1.0"
+     "3.0"
     ],
     [
      "",
@@ -10743,7 +10743,7 @@
     [
      "float",
      "breakThres",
-     "0.5"
+     "1"
     ],
     [
      "",

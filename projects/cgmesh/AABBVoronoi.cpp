@@ -165,15 +165,23 @@ struct SimplifyVoroNeighborList : INode {
             lut[x].push_back(y);
             lut[y].push_back(x);
         }
-        std::set<std::pair<int, int>> nit;
-        for (auto &[x, ys]: lut) {
-            auto yid = rand() % ys.size();
-            auto y = ys[yid];
-            ys.erase(ys.begin() + yid);
-            nit.emplace(std::min(x, y), std::max(x, y));
+
+        std::set<int> visited;
+        std::vector<std::pair<int, int>> edges;
+        auto touch = [&] (auto touch, int x) -> void {
+            visited.insert(x);
+            for (int y: lut.at(x)) {
+                if (visited.find(y) == visited.end()) {
+                    edges.emplace_back(x, y);
+                    touch(touch, y);
+                }
+            }
+        };
+        for (auto const &[x, ys]: lut) {
+            touch(touch, x);
         }
 
-        for (auto const &[x, y]: nit) {
+        for (auto const &[x, y]: edges) {
             newNeighList->arr.push_back(vec2i(x, y));
         }
         set_output("newNeighList", std::move(newNeighList));
