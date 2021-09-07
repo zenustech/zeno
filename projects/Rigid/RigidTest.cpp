@@ -196,7 +196,7 @@ struct BulletMakeConvexHullShape : zeno::INode {
         auto highres = get_input2<int>("highres");
         hull->buildHull(margin, highres);
         auto convex = std::make_unique<btConvexHullShape>(
-             (const float *)hull->getVertexPointer(), hull->numVertices());
+             (const btScalar *)hull->getVertexPointer(), hull->numVertices());
         // auto convex = std::make_unique<btConvexPointCloudShape>();
         // btVector3* points = new btVector3[inShape->getNumVertices()];
         // for(int i=0;i<inShape->getNumVertices(); i++)
@@ -440,7 +440,7 @@ ZENDEFNODE(BulletGetObjMotion, {
 
 
 struct BulletConstraint : zeno::IObject {
-    std::unique_ptr<btFixedConstraint> constraint;
+    std::unique_ptr<btTypedConstraint> constraint;
 
     BulletObject *obj1;
     BulletObject *obj2;
@@ -453,8 +453,15 @@ struct BulletConstraint : zeno::IObject {
         //gf.setOrigin(cposw);
         auto trA = obj1->body->getWorldTransform().inverse();// * gf;
         auto trB = obj2->body->getWorldTransform().inverse();// * gf;
+#if 0
         constraint = std::make_unique<btFixedConstraint>(
                 *obj1->body, *obj2->body, trA, trB);
+#else
+        constraint = std::make_unique<btGeneric6DofConstraint>(
+                *obj1->body, *obj2->body, trA, trB, true);
+        for (int i = 0; i < 6; i++)
+            static_cast<btGeneric6DofConstraint *>(constraint.get())->setLimit(i, -0.1f, 0.1f);
+#endif
     }
 
     void setBreakingThreshold(float breakingThreshold) {
@@ -468,8 +475,6 @@ struct BulletMakeConstraint : zeno::INode {
         auto obj1 = get_input<BulletObject>("obj1");
         auto obj2 = get_input<BulletObject>("obj2");
         auto cons = std::make_shared<BulletConstraint>(obj1.get(), obj2.get());
-        for (int i = 0; i < 6; i++)
-            cons->constraint->setLimit(i, 0, 0);
         //cons->constraint->setOverrideNumSolverIterations(400);
         set_output("constraint", std::move(cons));
     }
@@ -528,8 +533,8 @@ struct BulletExtractTransform : zeno::INode {
         auto trans = &get_input<BulletTransform>("trans")->trans;
         auto origin = std::make_unique<zeno::NumericObject>();
         auto rotation = std::make_unique<zeno::NumericObject>();
-        origin->set(zeno::other_to_vec<3>(trans->getOrigin()));
-        rotation->set(zeno::other_to_vec<4>(trans->getRotation()));
+        origin->set(vec3f(other_to_vec<3>(trans->getOrigin())));
+        rotation->set(vec4f(other_to_vec<4>(trans->getRotation())));
         set_output("origin", std::move(origin));
         set_output("rotation", std::move(rotation));
     }

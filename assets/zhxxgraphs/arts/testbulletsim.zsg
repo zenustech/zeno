@@ -638,8 +638,8 @@
      "name": "BeginForEach",
      "inputs": {
       "list": [
-       "c3e5d8e7-AABBVoronoi",
-       "primList",
+       "54702da9-EndForEach",
+       "list",
        null
       ],
       "accumate": [
@@ -858,8 +858,8 @@
       "periodicZ": false
      },
      "uipos": [
-      -5415.859030837003,
-      -336.56387665198235
+      -6271.212106007847,
+      -325.17435501189124
      ],
      "options": []
     },
@@ -867,8 +867,8 @@
      "name": "BeginForEach",
      "inputs": {
       "list": [
-       "d5a45b3f-SimplifyVoroNeighborList",
-       "newNeighList",
+       "c3e5d8e7-AABBVoronoi",
+       "neighList",
        null
       ],
       "accumate": [
@@ -1079,8 +1079,8 @@
      "name": "SimplifyVoroNeighborList",
      "inputs": {
       "neighList": [
-       "c3e5d8e7-AABBVoronoi",
-       "neighList",
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -1095,11 +1095,136 @@
       -349.6583143507972
      ],
      "options": []
+    },
+    "cb6c2277-BeginForEach": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "c3e5d8e7-AABBVoronoi",
+       "primList",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -5993.621867881551,
+      -130.2961275626424
+     ],
+     "options": []
+    },
+    "54702da9-EndForEach": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       "2accea54-TransformPrimitive",
+       "outPrim",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "cb6c2277-BeginForEach",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      -5404.78359908884,
+      -194.07744874715263
+     ],
+     "options": []
+    },
+    "2accea54-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "cb6c2277-BeginForEach",
+       "object",
+       null
+      ],
+      "translation": [
+       null,
+       null,
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       "0131e506-NumericVec3",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -5708.428246013667,
+      -187.69931662870164
+     ],
+     "options": []
+    },
+    "0131e506-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.3,
+      "y": 0.3,
+      "z": 0.3
+     },
+     "uipos": [
+      -5713.89521640091,
+      -415.489749430524
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -5414.823947550992,
-    "y": -408.43332648339486,
+    "x": -5975.017569418833,
+    "y": -488.5016636132344,
     "width": 500.0,
     "height": 500.0
    }
@@ -2250,8 +2375,8 @@
     }
    },
    "view_rect": {
-    "x": 1002.7715423596749,
-    "y": -139.84243649786697,
+    "x": 580.2202895122858,
+    "y": 43.52886190760333,
     "width": 500.0,
     "height": 500.0
    }
