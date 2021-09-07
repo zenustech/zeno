@@ -141,7 +141,7 @@ static int defCombineVDB = zeno::defNodeClass<CombineVDB>("CombineVDB",
        {"float", "MultiplierA", "1"},
        {"float", "MultiplierB", "1"},
        {"enum CSGUnion CSGIntersection CSGDifference", "OpType", "CSGUnion"},
-       {"int", "writeBack", "0"},
+       {"bool", "writeBack", "false"},
      }, /* category: */ {
      "openvdb",
      }});
