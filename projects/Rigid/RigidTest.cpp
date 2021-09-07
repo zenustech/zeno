@@ -531,7 +531,7 @@ struct BulletSetConstraintBreakThres : zeno::INode {
 };
 
 ZENDEFNODE(BulletSetConstraintBreakThres, {
-    {"constraint", {"float", "threshold", "3.0"}},
+    {"constraint", {"float", "threshold", "1.0"}},
     {"constraint"},
     {},
     {"Rigid"},

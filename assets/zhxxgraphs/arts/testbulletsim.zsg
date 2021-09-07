@@ -847,8 +847,8 @@
      "name": "BeginForEach",
      "inputs": {
       "list": [
-       "c3e5d8e7-AABBVoronoi",
-       "neighList",
+       "d5a45b3f-SimplifyVoroNeighborList",
+       "newNeighList",
        null
       ],
       "accumate": [
@@ -923,7 +923,7 @@
       "breakThres": [
        null,
        null,
-       0.5
+       10.0
       ],
       "SRC": [
        null,
@@ -933,8 +933,8 @@
      },
      "params": {},
      "uipos": [
-      -2135.281501811285,
-      -284.730841018334
+      -2142.399952836342,
+      -280.4597704032998
      ],
      "options": []
     },
@@ -1059,8 +1059,8 @@
      "name": "SimplifyVoroNeighborList",
      "inputs": {
       "neighList": [
-       null,
-       null,
+       "c3e5d8e7-AABBVoronoi",
+       "neighList",
        null
       ],
       "SRC": [
@@ -1071,8 +1071,8 @@
      },
      "params": {},
      "uipos": [
-      -3232.346241457859,
-      -349.6583143507972
+      -3235.1936218678816,
+      -382.40318906605916
      ],
      "options": []
     },
@@ -1203,8 +1203,8 @@
     }
    },
    "view_rect": {
-    "x": -6430.492415443973,
-    "y": -336.8149983165543,
+    "x": -2397.8728254667694,
+    "y": -414.6282101616563,
     "width": 400.0,
     "height": 400.0
    }
@@ -2734,7 +2734,7 @@
      "params": {
       "name": "breakThres",
       "type": "float",
-      "defl": "1.0"
+      "defl": "1"
      },
      "uipos": [
       -328.7037037037037,
@@ -2770,8 +2770,8 @@
     }
    },
    "view_rect": {
-    "x": -313.851827747046,
-    "y": 360.6886743561065,
+    "x": -392.2117366308726,
+    "y": 434.49277458389685,
     "width": 400.0,
     "height": 400.0
    }
@@ -3640,7 +3640,7 @@
     [
      "float",
      "threshold",
-     "3.0"
+     "1.0"
     ],
     [
      "",
@@ -10743,7 +10743,7 @@
     [
      "float",
      "breakThres",
-     "1.0"
+     "0.5"
     ],
     [
      "",
