@@ -70,7 +70,7 @@ void Timer::print() {
 namespace {
     static struct TimerAtexitHelper {
         ~TimerAtexitHelper() {
-            if (getenv("ZENO_TIMER"))
+            if (getenv("ZINC_TIMER"))
                 Timer::print();
         }
     } timerAtexitHelper;

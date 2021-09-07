@@ -185,8 +185,8 @@
        0.017
       ],
       "SRC": [
-       "b6bdff6c-Route",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -284,29 +284,6 @@
      ],
      "options": []
     },
-    "b6bdff6c-Route": {
-     "name": "Route",
-     "inputs": {
-      "input": [
-       "4dfebc81-EndForEach",
-       "list",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1574.4786770402366,
-      744.8471805258771
-     ],
-     "options": [
-      "VIEW"
-     ]
-    },
     "456fb647-RigidMakeObject": {
      "name": "RigidMakeObject",
      "inputs": {
@@ -333,22 +310,22 @@
       "dampLin": [
        null,
        null,
-       0.0
+       0.1
       ],
       "dampAng": [
        null,
        null,
-       0.0
+       0.06
       ],
       "friction": [
        null,
        null,
-       0.5
+       0.7
       ],
       "restitution": [
        null,
        null,
-       0.5
+       0.6
       ],
       "SRC": [
        null,
@@ -410,22 +387,22 @@
       "dampLin": [
        null,
        null,
-       0.0
+       0.1
       ],
       "dampAng": [
        null,
        null,
-       0.0
+       0.06
       ],
       "friction": [
        null,
        null,
-       0.5
+       0.7
       ],
       "restitution": [
        null,
        null,
-       0.5
+       0.6
       ],
       "SRC": [
        null,
@@ -832,7 +809,7 @@
      },
      "params": {
       "triangulate": true,
-      "numRandPoints": 32,
+      "numRandPoints": 256,
       "periodicX": false,
       "periodicY": false,
       "periodicZ": false
@@ -923,7 +900,7 @@
       "breakThres": [
        null,
        null,
-       1.0
+       0.05
       ],
       "SRC": [
        null,
@@ -1106,8 +1083,8 @@
      "name": "EndForEach",
      "inputs": {
       "object": [
-       "2accea54-TransformPrimitive",
-       "outPrim",
+       "cb6c2277-BeginForEach",
+       "object",
        null
       ],
       "accumate": [
@@ -1139,74 +1116,13 @@
       -194.07744874715263
      ],
      "options": []
-    },
-    "2accea54-TransformPrimitive": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "cb6c2277-BeginForEach",
-       "object",
-       null
-      ],
-      "translation": [
-       null,
-       null,
-       null
-      ],
-      "eulerXYZ": [
-       null,
-       null,
-       null
-      ],
-      "quatRotation": [
-       null,
-       null,
-       null
-      ],
-      "scaling": [
-       "0131e506-NumericVec3",
-       "vec3",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -5708.428246013667,
-      -187.69931662870164
-     ],
-     "options": []
-    },
-    "0131e506-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 1.0,
-      "y": 1.0,
-      "z": 1.0
-     },
-     "uipos": [
-      -5713.89521640091,
-      -415.489749430524
-     ],
-     "options": []
     }
    },
    "view_rect": {
-    "x": -2397.8728254667694,
-    "y": -414.6282101616563,
-    "width": 400.0,
-    "height": 400.0
+    "x": 1425.1754236371573,
+    "y": 381.4520560713152,
+    "width": 781.25,
+    "height": 781.25
    }
   },
   "RigidStepWorld": {
@@ -2219,7 +2135,7 @@
      "params": {
       "name": "dampLin",
       "type": "float",
-      "defl": "0.0"
+      "defl": "0.1"
      },
      "uipos": [
       1251.9931662870165,
@@ -2239,7 +2155,7 @@
      "params": {
       "name": "dampAng",
       "type": "float",
-      "defl": "0.0"
+      "defl": "0.06"
      },
      "uipos": [
       1519.4760820045558,
@@ -2259,7 +2175,7 @@
      "params": {
       "name": "friction",
       "type": "float",
-      "defl": "0.5"
+      "defl": "0.7"
      },
      "uipos": [
       1857.8587699316631,
@@ -2305,7 +2221,7 @@
      "params": {
       "name": "restitution",
       "type": "float",
-      "defl": "0.5"
+      "defl": "0.6"
      },
      "uipos": [
       2258.149779735683,
@@ -2336,10 +2252,10 @@
     }
    },
    "view_rect": {
-    "x": 908.8649364370772,
-    "y": -64.50075084866347,
-    "width": 500.0,
-    "height": 500.0
+    "x": 1947.8208785346153,
+    "y": 23.114661280066592,
+    "width": 400.0,
+    "height": 400.0
    }
   },
   "RigidRecenterPrim": {
@@ -2734,7 +2650,7 @@
      "params": {
       "name": "breakThres",
       "type": "float",
-      "defl": "1"
+      "defl": "0.05"
      },
      "uipos": [
       -328.7037037037037,
@@ -2770,8 +2686,8 @@
     }
    },
    "view_rect": {
-    "x": -392.2117366308726,
-    "y": 434.49277458389685,
+    "x": -535.2641284304192,
+    "y": 357.0440274312777,
     "width": 400.0,
     "height": 400.0
    }
@@ -9111,22 +9027,22 @@
     [
      "float",
      "dampLin",
-     "0.0"
+     "0.1"
     ],
     [
      "float",
      "dampAng",
-     "0.0"
+     "0.06"
     ],
     [
      "float",
      "friction",
-     "0.5"
+     "0.7"
     ],
     [
      "float",
      "restitution",
-     "0.5"
+     "0.6"
     ],
     [
      "",
@@ -10743,7 +10659,7 @@
     [
      "float",
      "breakThres",
-     "1"
+     "0.05"
     ],
     [
      "",
