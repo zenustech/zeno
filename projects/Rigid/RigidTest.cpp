@@ -216,6 +216,7 @@ struct BulletMakeConvexHullShape : zeno::INode {
         hull->buildHull(margin, highres);
         auto convex = std::make_unique<btConvexHullShape>(
              (const btScalar *)hull->getVertexPointer(), hull->numVertices());
+        convex->setMargin(margin);
 #else
         auto convexHC = std::make_unique<btConvexHullComputer>();
         std::vector<float> vertices;
@@ -494,7 +495,7 @@ struct BulletConstraint : zeno::IObject {
         constraint = std::make_unique<btGeneric6DofConstraint>(
                 *obj1->body, *obj2->body, trA, trB, true);
         for (int i = 0; i < 6; i++)
-            static_cast<btGeneric6DofConstraint *>(constraint.get())->setLimit(i, -0.1f, 0.1f);
+            static_cast<btGeneric6DofConstraint *>(constraint.get())->setLimit(i, 0, 0);
 #endif
     }
 

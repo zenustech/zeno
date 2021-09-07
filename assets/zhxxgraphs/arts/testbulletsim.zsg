@@ -350,16 +350,6 @@
        null,
        0.5
       ],
-      "margin": [
-       null,
-       null,
-       0.0
-      ],
-      "highres": [
-       null,
-       null,
-       0
-      ],
       "SRC": [
        null,
        null,
@@ -436,16 +426,6 @@
        null,
        null,
        0.5
-      ],
-      "margin": [
-       null,
-       null,
-       0.0
-      ],
-      "highres": [
-       null,
-       null,
-       0
       ],
       "SRC": [
        null,
@@ -730,7 +710,7 @@
      },
      "params": {
       "x": 0.0,
-      "y": 2.0,
+      "y": 4.0,
       "z": 0.0
      },
      "uipos": [
@@ -943,7 +923,7 @@
       "breakThres": [
        null,
        null,
-       1.0
+       0.5
       ],
       "SRC": [
        null,
@@ -953,8 +933,8 @@
      },
      "params": {},
      "uipos": [
-      -2133.0947136563873,
-      -282.5440528634365
+      -2135.281501811285,
+      -284.730841018334
      ],
      "options": []
     },
@@ -1211,9 +1191,9 @@
       ]
      },
      "params": {
-      "x": 0.3,
-      "y": 0.3,
-      "z": 0.3
+      "x": 1.0,
+      "y": 1.0,
+      "z": 1.0
      },
      "uipos": [
       -5713.89521640091,
@@ -1223,10 +1203,10 @@
     }
    },
    "view_rect": {
-    "x": -4483.29360186463,
-    "y": -564.9978084459276,
-    "width": 625.0,
-    "height": 625.0
+    "x": -6430.492415443973,
+    "y": -336.8149983165543,
+    "width": 400.0,
+    "height": 400.0
    }
   },
   "RigidStepWorld": {
@@ -1904,7 +1884,7 @@
       "margin": [
        null,
        null,
-       0.0
+       -0.05
       ],
       "highres": [
        null,
@@ -2356,10 +2336,10 @@
     }
    },
    "view_rect": {
-    "x": 877.3005786630745,
-    "y": 65.4393968866689,
-    "width": 256.0,
-    "height": 256.0
+    "x": 908.8649364370772,
+    "y": -64.50075084866347,
+    "width": 500.0,
+    "height": 500.0
    }
   },
   "RigidRecenterPrim": {
@@ -4131,6 +4111,57 @@
     "primitive"
    ]
   },
+  "CacheVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "inGrid",
+     ""
+    ],
+    [
+     "",
+     "frameNum",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "dir",
+     "/tmp/cache"
+    ],
+    [
+     "string",
+     "prefix",
+     ""
+    ],
+    [
+     "bool",
+     "ignore",
+     "0"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
   "CachedByKey": {
    "inputs": [
     [
@@ -4259,6 +4290,62 @@
    "params": [],
    "categories": [
     "portal"
+   ]
+  },
+  "CombineVDB": {
+   "inputs": [
+    [
+     "",
+     "FieldA",
+     ""
+    ],
+    [
+     "",
+     "FieldB",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "FieldOut",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "MultiplierA",
+     "1"
+    ],
+    [
+     "float",
+     "MultiplierB",
+     "1"
+    ],
+    [
+     "enum CSGUnion CSGIntersection CSGDifference",
+     "OpType",
+     "CSGUnion"
+    ],
+    [
+     "int",
+     "writeBack",
+     "0"
+    ]
+   ],
+   "categories": [
+    "openvdb"
    ]
   },
   "DictGetItem": {
@@ -4591,6 +4678,36 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "ExportVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
    ]
   },
   "ExportZpmPrimitive": {
@@ -4958,6 +5075,151 @@
     "frame"
    ]
   },
+  "GetVDBBound": {
+   "inputs": [
+    [
+     "",
+     "vdbGrid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "bmin",
+     ""
+    ],
+    [
+     "vec3f",
+     "bmax",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "GetVDBPoints": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "pars",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "GetVDBPointsDroplets": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "sdf",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "GetVDBVoxelSize": {
+   "inputs": [
+    [
+     "",
+     "vdbGrid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "dy",
+     ""
+    ],
+    [
+     "",
+     "dz",
+     ""
+    ],
+    [
+     "",
+     "dxyz",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
   "IfElse": {
    "inputs": [
     [
@@ -5026,6 +5288,42 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "ImportVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "path",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "type",
+     ""
+    ]
+   ],
+   "categories": [
+    "openvdb"
    ]
   },
   "ImportZpmPrimitive": {
@@ -5711,6 +6009,52 @@
     "string"
    ]
   },
+  "MakeVDBGrid": {
+   "inputs": [
+    [
+     "float",
+     "Dx",
+     "0.08"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum float float3 int int3 points",
+     "type",
+     "float"
+    ],
+    [
+     "enum vertex Centered Staggered",
+     "structure",
+     "Centered"
+    ],
+    [
+     "string",
+     "name",
+     ""
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
   "MakeVisualAABBPrimitive": {
    "inputs": [
     [
@@ -5781,6 +6125,52 @@
    ],
    "categories": [
     "string"
+   ]
+  },
+  "MeshToSDF": {
+   "inputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "float",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "sdf",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "voxel_size",
+     "0.08 0"
+    ],
+    [
+     "enum vertex cell",
+     "type",
+     "vertex"
+    ]
+   ],
+   "categories": [
+    "openvdb"
    ]
   },
   "NumericCounter": {
@@ -6374,6 +6764,46 @@
     "zenofx"
    ]
   },
+  "ParticleToLevelSet": {
+   "inputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "float",
+     "Radius",
+     ""
+    ],
+    [
+     "float",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "SurfaceSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
   "ParticlesBuildHashGrid": {
    "inputs": [
     [
@@ -6619,6 +7049,76 @@
    ],
    "categories": [
     "portal"
+   ]
+  },
+  "PrimSprayParticles": {
+   "inputs": [
+    [
+     "",
+     "TrianglePrim",
+     ""
+    ],
+    [
+     "float",
+     "Dx",
+     "0.04"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "particlesPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "primitive"
+   ]
+  },
+  "PrimToVDBPointDataGrid": {
+   "inputs": [
+    [
+     "",
+     "ParticleGeo",
+     ""
+    ],
+    [
+     "float",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
    ]
   },
   "PrimitiveAddAttr": {
@@ -8196,6 +8696,47 @@
     "Rigid"
    ]
   },
+  "PrimitiveToSDF": {
+   "inputs": [
+    [
+     "",
+     "PrimitiveMesh",
+     ""
+    ],
+    [
+     "float",
+     "Dx",
+     "0.08"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "sdf",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum vertex cell",
+     "type",
+     "vertex"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
   "PrimitiveTraceTrail": {
    "inputs": [
     [
@@ -8437,6 +8978,77 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "ReadVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "type",
+     ""
+    ],
+    [
+     "readpath",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "ResampleVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "resampleTo",
+     ""
+    ],
+    [
+     "",
+     "resampleFrom",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "resampleTo",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
    ]
   },
   "ResizeList": {
@@ -8738,6 +9350,92 @@
     "portal"
    ]
   },
+  "SDFToPoly": {
+   "inputs": [
+    [
+     "",
+     "SDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Mesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "isoValue",
+     "0"
+    ],
+    [
+     "float",
+     "adaptivity",
+     "0"
+    ],
+    [
+     "bool",
+     "allowQuads",
+     "0"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "SampleVDBToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "vdbGrid",
+     ""
+    ],
+    [
+     "string",
+     "primAttr",
+     "sdf"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
   "SetFrameTime": {
    "inputs": [
     [
@@ -8796,6 +9494,78 @@
    "params": [],
    "categories": [
     "numeric"
+   ]
+  },
+  "SetVDBGridName": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "name",
+     "density"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "SetVDBPointDataGrid": {
+   "inputs": [
+    [
+     "",
+     "ParticleGeo",
+     ""
+    ],
+    [
+     "float",
+     "Dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "dx",
+     "0.08"
+    ]
+   ],
+   "categories": [
+    "particles"
    ]
   },
   "SimplifyVoroNeighborList": {
@@ -9048,6 +9818,61 @@
     "control"
    ]
   },
+  "TraceOneStep": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "size",
+     ""
+    ],
+    [
+     "",
+     "steps",
+     ""
+    ],
+    [
+     "",
+     "maxlength",
+     ""
+    ],
+    [
+     "",
+     "vecField",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
   "TransformPrimitive": {
    "inputs": [
     [
@@ -9273,6 +10098,575 @@
     "control"
    ]
   },
+  "VDBAddPerlinNoise": {
+   "inputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "float",
+     "strength",
+     "1.0"
+    ],
+    [
+     "float",
+     "scale",
+     "8.0"
+    ],
+    [
+     "vec3f",
+     "scaling",
+     "1,1,1"
+    ],
+    [
+     "vec3f",
+     "translation",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBAddTurbulentNoise": {
+   "inputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "float",
+     "strength",
+     "3.0"
+    ],
+    [
+     "float",
+     "scale",
+     "16.0"
+    ],
+    [
+     "vec3f",
+     "scaling",
+     "1,1,1"
+    ],
+    [
+     "vec3f",
+     "translation",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBCreateLevelsetSphere": {
+   "inputs": [
+    [
+     "float",
+     "Dx",
+     "0.08"
+    ],
+    [
+     "float",
+     "radius",
+     "1.0"
+    ],
+    [
+     "vec3f",
+     "center",
+     "0,0,0"
+    ],
+    [
+     "float",
+     "half_width",
+     "3.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBDilateTopo": {
+   "inputs": [
+    [
+     "",
+     "inField",
+     ""
+    ],
+    [
+     "int",
+     "layers",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "oField",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBErodeSDF": {
+   "inputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "float",
+     "depth",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBExplosiveTurbulentNoise": {
+   "inputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "float",
+     "strength",
+     "1.0"
+    ],
+    [
+     "float",
+     "scale",
+     "8.0"
+    ],
+    [
+     "vec3f",
+     "scaling",
+     "1,1,1"
+    ],
+    [
+     "vec3f",
+     "translation",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "float",
+     "UVScale",
+     "0.4"
+    ],
+    [
+     "float",
+     "Speed",
+     "0.6"
+    ],
+    [
+     "float",
+     "FBM_WarpPrimary",
+     "-0.24"
+    ],
+    [
+     "float",
+     "FBM_WarpSecond",
+     "0.29"
+    ],
+    [
+     "float",
+     "FBM_WarpPersist",
+     "0.78"
+    ],
+    [
+     "float",
+     "FBM_EvalPersist",
+     "0.62"
+    ],
+    [
+     "float",
+     "FBM_Persistence",
+     "0.5"
+    ],
+    [
+     "float",
+     "FBM_Lacunarity",
+     "2.2"
+    ],
+    [
+     "int",
+     "FBM_Octaves",
+     "5"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBFillActiveVoxels": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "NumericObject",
+     "fillValue",
+     "0.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBLeafAsParticles": {
+   "inputs": [
+    [
+     "",
+     "vdbGrid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primPars",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "visualize"
+   ]
+  },
+  "VDBPointsToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBRenormalizeSDF": {
+   "inputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum 1oUpwind",
+     "method",
+     "1oUpwind"
+    ],
+    [
+     "int",
+     "iterations",
+     "4"
+    ],
+    [
+     "int",
+     "dilateIters",
+     "0"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBSmoothSDF": {
+   "inputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "int",
+     "width",
+     "1"
+    ],
+    [
+     "int",
+     "iterations",
+     "1"
+    ]
+   ],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBTouchAABBRegion": {
+   "inputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "vec3f",
+     "bmin",
+     "-1,-1,-1"
+    ],
+    [
+     "vec3f",
+     "bmax",
+     "1,1,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "grid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "VDBVoxelAsParticles": {
+   "inputs": [
+    [
+     "",
+     "vdbGrid",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "primPars",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "hasInactive",
+     "0"
+    ]
+   ],
+   "categories": [
+    "visualize"
+   ]
+  },
   "WriteObjPrimitive": {
    "inputs": [
     [
@@ -9301,6 +10695,37 @@
    "params": [],
    "categories": [
     "primitive"
+   ]
+  },
+  "WriteVDBGrid": {
+   "inputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "writepath",
+     "path",
+     ""
+    ]
+   ],
+   "categories": [
+    "openvdb"
    ]
   },
   "RigidMakeConstraint": {
