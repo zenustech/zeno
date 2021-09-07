@@ -100,7 +100,7 @@ struct AABBVoronoi : INode {
                         isBoundary = true;
                     } else {
                         if (auto ncid = neigh[i] - 1; ncid > cid) {
-                            neighs->arr.push_back(zeno::vec2i(cid, ncid));
+                            neighs->arr.push_back(vec2i(cid, ncid));
                         }
                     }
                     int len = f_vert[j];
@@ -149,6 +149,45 @@ ZENO_DEFNODE(AABBVoronoi)({
         {"bool", "periodicX", "0"},
         {"bool", "periodicY", "0"},
         {"bool", "periodicZ", "0"},
+        },
+        {"cgmesh"},
+});
+
+
+struct SimplifyVoroNeighborList : INode {
+    virtual void apply() override {
+        auto neighList = get_input<ListObject>("neighList");
+        auto newNeighList = std::make_shared<ListObject>();
+
+        std::map<int, std::vector<int>> lut;
+        for (auto const &ind: neighList->get<vec2i>()) {
+            auto x = ind[0], y = ind[1];
+            lut[x].push_back(y);
+            lut[y].push_back(x);
+        }
+        std::set<std::pair<int, int>> nit;
+        for (auto &[x, ys]: lut) {
+            auto yid = rand() % ys.size();
+            auto y = ys[yid];
+            ys.erase(ys.begin() + yid);
+            nit.emplace(std::min(x, y), std::max(x, y));
+        }
+
+        for (auto const &[x, y]: nit) {
+            newNeighList->arr.push_back(vec2i(x, y));
+        }
+        set_output("newNeighList", std::move(newNeighList));
+    }
+};
+
+ZENO_DEFNODE(SimplifyVoroNeighborList)({
+        { // inputs:
+        {"ListObject", "neighList"},
+        },
+        { // outputs:
+        {"ListObject", "newNeighList"},
+        },
+        { // params:
         },
         {"cgmesh"},
 });

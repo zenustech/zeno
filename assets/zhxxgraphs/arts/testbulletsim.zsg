@@ -867,8 +867,8 @@
      "name": "BeginForEach",
      "inputs": {
       "list": [
-       "c3e5d8e7-AABBVoronoi",
-       "neighList",
+       "d5a45b3f-SimplifyVoroNeighborList",
+       "newNeighList",
        null
       ],
       "accumate": [
@@ -1074,11 +1074,32 @@
       -641.4096916299559
      ],
      "options": []
+    },
+    "d5a45b3f-SimplifyVoroNeighborList": {
+     "name": "SimplifyVoroNeighborList",
+     "inputs": {
+      "neighList": [
+       "c3e5d8e7-AABBVoronoi",
+       "neighList",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3232.346241457859,
+      -349.6583143507972
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -2781.6804395783033,
-    "y": -275.5176089435316,
+    "x": -5414.823947550992,
+    "y": -408.43332648339486,
     "width": 500.0,
     "height": 500.0
    }
@@ -6464,36 +6485,6 @@
     "portal"
    ]
   },
-  "PrimEdgeTessellation": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "cgmesh"
-   ]
-  },
   "PrimitiveAddAttr": {
    "inputs": [
     [
@@ -8679,6 +8670,36 @@
    "params": [],
    "categories": [
     "numeric"
+   ]
+  },
+  "SimplifyVoroNeighborList": {
+   "inputs": [
+    [
+     "ListObject",
+     "neighList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ListObject",
+     "newNeighList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "cgmesh"
    ]
   },
   "SubCategory": {

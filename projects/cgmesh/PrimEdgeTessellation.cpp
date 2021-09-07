@@ -1,3 +1,4 @@
+#if 0
 #include <zeno/zeno.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -13,7 +14,7 @@ struct PrimEdgeTessellation : INode {
             auto line = prim->lines[i];
             auto v0 = prim->verts[line[0]];
             auto v1 = prim->verts[line[1]];
-        }
+        } // TODO
 
         set_output("prim", std::move(prim));
     }
@@ -27,3 +28,4 @@ ZENO_DEFNODE(PrimEdgeTessellation)({
 });
 
 }
+#endif
