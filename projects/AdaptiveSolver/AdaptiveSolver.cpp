@@ -329,6 +329,7 @@ struct AdaptiveSolver : zeno::INode
         tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeRHS);
 
         tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), initIter);
+        
         printf("start to iteration\n");
         for(int iterNum = 0; iterNum < 2; ++iterNum)
         {
