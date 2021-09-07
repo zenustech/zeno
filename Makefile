@@ -2,14 +2,16 @@
 #O=b.zsg
 #O=c.zsg
 #O=d.zsg
-#O=arts/testvorobreak.zsg
-O=arts/testbulletsim.zsg
+O=arts/testbulletsim.zsg   # Rigid/stub.cpp
+#O=arts/testvorosplit.zsg  # cgmesh/PrimitiveVoronoi.cpp
+#O=arts/flip.zsg           # FLIPtools/stub.cpp
+
 #O=arts/segvtrig.zsg
 #O=arts/testtbbreduce.zsg
 #O=arts/ZFXv2.zsg
-#O=arts/testvorosplit.zsg
 #O=arts/vdbperlinnoise.zsg
 #O=arts/flip.zsg
+#O=arts/testvorobreak.zsg
 #O=arts/visualmarchingtetra.zsg
 #O=arts/testprimdup.zsg
 #O=arts/testnumvecop.zsg

@@ -4,8 +4,6 @@ target_include_directories(zeno_cgmesh PRIVATE .)
 find_package(Eigen3 REQUIRED)
 target_link_libraries(zeno_cgmesh PRIVATE Eigen3::Eigen)
 
-target_sources(zeno_cgmesh PRIVATE PrimEdgeTessellation.cpp)
-
 option(ZENO_CGMESH_WITH_VOROXX "Build with Voro++ nodes" ON)
 if (ZENO_CGMESH_WITH_VOROXX)
     target_sources(zeno_cgmesh PRIVATE AABBVoronoi.cpp PrimitiveVoronoi.cpp)
