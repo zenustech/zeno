@@ -25,7 +25,6 @@ struct BulletTransform : zeno::IObject {
 
 struct BulletCollisionShape : zeno::IObject {
     std::unique_ptr<btCollisionShape> shape;
-    UserData userData;
 
     BulletCollisionShape(std::unique_ptr<btCollisionShape> &&shape)
         : shape(std::move(shape)) {
@@ -341,7 +340,6 @@ struct BulletObject : zeno::IObject {
     std::shared_ptr<BulletCollisionShape> colShape;
     btScalar mass = 0.f;
     btTransform trans;
-    UserData userData;
 
     BulletObject(btScalar mass_,
         btTransform const &trans,
@@ -366,7 +364,7 @@ struct BulletMakeObject : zeno::INode {
         auto object = std::make_unique<BulletObject>(
             mass, trans->trans, shape);
         object->body->setDamping(0, 0);
-        object->userData = shape->userData;
+        object->userData = shape->userData; // todo: use a node to perform this??
         set_output("object", std::move(object));
     }
 };
