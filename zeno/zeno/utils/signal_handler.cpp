@@ -1,6 +1,6 @@
 #ifdef ZENO_FAULTHANDLER
 #include <zeno/zeno.h>
-#include <zeno/utils/logging.h>
+#include <zeno/utils/logger.h>
 #include <cstdio>
 #include <cstdlib>
 #include <csignal>

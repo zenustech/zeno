@@ -8,4 +8,8 @@ namespace zeno {
 
 ZENO_API spdlog::logger &logger();
 
+static inline spdlog::logger &logger(const char *key) {
+    return *spdlog::get(key);
+}
+
 }

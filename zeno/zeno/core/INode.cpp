@@ -16,7 +16,7 @@
 #include <zeno/utils/Timer.h>
 #endif
 #include <zeno/utils/safe_at.h>
-#include <zeno/utils/logging.h>
+#include <zeno/utils/logger.h>
 
 namespace zeno {
 

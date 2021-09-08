@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/utils/logging.h>
+#include <zeno/utils/logger.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/ConditionObject.h>
 #include <zeno/utils/safe_at.h>

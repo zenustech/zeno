@@ -1,7 +1,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/basic_file_sink.h>
-#include <zeno/utils/logging.h>
+#include <zeno/utils/logger.h>
 #include <cassert>
 #include <cstring>
 #include <cstdio>

@@ -1,5 +1,5 @@
 #include <zeno/utils/Exception.h>
-#include <zeno/utils/logging.h>
+#include <zeno/utils/logger.h>
 
 namespace zeno {
 

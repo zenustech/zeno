@@ -1,6 +1,6 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
-#include <zeno/utils/logging.h>
+#include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
 
