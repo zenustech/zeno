@@ -29,7 +29,8 @@ namespace zeno{
         zeno::AdaptiveIndexGenerator aig;
         std::vector<openvdb::Vec3fGrid::Ptr> vel;
         std::vector<openvdb::FloatGrid::Ptr> press;
-
+        std::vector<openvdb::FloatGrid::Ptr> staggeredSDF;
+        
         // used for iteration solver
         std::vector<openvdb::FloatGrid::Ptr> rhs;
         std::vector<openvdb::FloatGrid::Ptr> residual;
@@ -94,9 +95,6 @@ namespace zeno{
                         {
                             continue;
                         }
-                        // printf("coord (%d,%d,%d) tag is %f\n", 
-                        //     coord[0], coord[1], coord[2],
-                        //     tag_axr.getValue(coord));
                         float dis[3] = {100000,100000,100000};
                         int sign[3];
                         
@@ -204,6 +202,9 @@ namespace zeno{
                 Ap[i]->setTree(std::make_shared<openvdb::FloatTree>(
                     pressGrid->tree(), /*bgval*/ float(0),
                     openvdb::TopologyCopy()));
+                staggeredSDF[i]->setTree(std::make_shared<openvdb::FloatTree>(
+                    pressGrid->tree(), /*bgval*/ float(0),
+                    openvdb::TopologyCopy()));
             }
             
         }
@@ -214,6 +215,7 @@ namespace zeno{
             aig.hLevels.resize(levelNum);
             vel.resize(levelNum);
             press.resize(levelNum);
+            staggeredSDF.resize(levelNum);
             rhs.resize(levelNum);
             residual.resize(levelNum);
             r2.resize(levelNum);
@@ -224,6 +226,7 @@ namespace zeno{
                 //data.aig.topoLevels[i] = zeno::IObject::make<VDBFloatGrid>();
                 vel[i] = zeno::IObject::make<VDBFloat3Grid>()->m_grid;
                 press[i] = zeno::IObject::make<VDBFloatGrid>()->m_grid;
+                staggeredSDF[i] = zeno::IObject::make<VDBFloatGrid>()->m_grid;
                 rhs[i] = zeno::IObject::make<VDBFloatGrid>()->m_grid;
                 residual[i] = zeno::IObject::make<VDBFloatGrid>()->m_grid;
                 r2[i] = zeno::IObject::make<VDBFloatGrid>()->m_grid;

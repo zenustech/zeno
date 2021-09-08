@@ -13,6 +13,8 @@ struct AdaptiveSolver : zeno::INode
     openvdb::FloatGrid::Ptr sdfgrid;
     openvdb::Vec3fGrid::Ptr velGrid;
     openvdb::FloatGrid::Ptr pressGrid;
+    openvdb::FloatGrid::Ptr staggeredSDFGrid;
+    
     // iteration terms
     openvdb::FloatGrid::Ptr rhsGrid;
     openvdb::FloatGrid::Ptr resGrid;
@@ -66,6 +68,7 @@ struct AdaptiveSolver : zeno::INode
         std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
         velGrid = data.vel[0];
         pressGrid = data.press[0];
+        staggeredSDFGrid = data.staggeredSDF[0];
         // iteration terms
         rhsGrid = data.rhs[0];
         resGrid = data.residual[0];
@@ -77,7 +80,7 @@ struct AdaptiveSolver : zeno::INode
         dx = data.aig.hLevels[0];
         // compute the finest level only
         sdfgrid = data.aig.topoLevels[0];
-
+        
         auto applyGravityAndBound = [&](const tbb::blocked_range<size_t> &r) {
             auto vel_axr = velGrid->getAccessor();
             auto sdf_axr = sdfgrid->getConstAccessor();
@@ -115,6 +118,7 @@ struct AdaptiveSolver : zeno::INode
             auto res_axr{resGrid->getAccessor()};
             auto p_axr{pGrid->getAccessor()};
             auto sdf_axr{sdfgrid->getConstAccessor()};
+            auto ssdf_axr{staggeredSDFGrid->getConstAccessor()};
             // leaf iter
             for (auto liter = r.begin(); liter != r.end(); ++liter) {
                 auto &leaf = *leaves[liter];
@@ -124,7 +128,7 @@ struct AdaptiveSolver : zeno::INode
                     if(!press_axr.isValueOn(openvdb::Coord(coord)))
                         continue;
                     // this node is definitely outside the fluids
-                    if(sdf_axr.getValue(coord) > 0.5 * dx)
+                    if(ssdf_axr.getValue(coord) > 0)
                         continue;
                     float pressValue = press_axr.getValue(openvdb::Coord(coord));
                     float Ax = 6 * pressValue;
@@ -161,23 +165,36 @@ struct AdaptiveSolver : zeno::INode
             auto rhs_axr{rhsGrid->getAccessor()};
             auto vel_axr{velGrid->getAccessor()};
             auto sdf_axr{sdfgrid->getConstAccessor()};
+            auto ssdf_axr{staggeredSDFGrid->getAccessor()};
             // leaf iter
             for (auto liter = r.begin(); liter != r.end(); ++liter) {
                 auto &leaf = *leaves[liter];
                 for (auto offset = 0; offset < leaf.SIZE; ++offset) {
                     auto voxelipos = leaf.offsetToGlobalCoord(offset);
-
                     if(pressGrid->tree().isValueOff(openvdb::Coord(voxelipos)))
                         continue;
-                    if(sdf_axr.getValue(voxelipos) > 0.5 * dx)
+                    float sdf = 0;
+                    for(int i=-1;i<=0;++i)
+                    for(int j=-1;j<=0;++j)
+                    for(int k=-1;k<=0;++k)
+                    {
+                        auto ipos = voxelipos + openvdb::Coord(i,j,k);
+                        sdf += sdf_axr.getValue(ipos);
+                    }
+                    sdf /= 8.0f;
+                    ssdf_axr.setValue(voxelipos, sdf);
+                    if(sdf>0)
                         continue;
+                    
                     float divVel[3] = {0.0f, 0.0f, 0.0f};
+                    int mask[3] = {1, 1, 1};
                     // x, y, z
                     float velV[6];
                     for(int ss = 0; ss<3;++ss)
                     for(int i = -1;i <= 0;i += 1)
                     {
                         float sum = 0;
+                        int count = 0;
                         for(int j=-1;j<=0;++j)
                         for(int k=-1;k<=0;++k)
                         {
@@ -185,21 +202,27 @@ struct AdaptiveSolver : zeno::INode
                             ipos[ss] += i;
                             ipos[(ss + 1)%3] += j;
                             ipos[(ss + 2)%3] += k;
-                            if(!vel_axr.isValueOn(openvdb::Coord(ipos)))
+                            if(!vel_axr.isValueOn(openvdb::Coord(ipos)) || sdf_axr.getValue(openvdb::Coord(ipos)) > 0)
                             {
                                 continue;
                             }
+                            count++;
                             sum += vel_axr.getValue(openvdb::Coord(ipos))[ss];
                         }
-                        sum /= 4;
+                        // actually this will leads to numerical error!
+                        // I believe using cut-cell method will be better
+                        if(count != 0)
+                            sum /= count;
+                        else
+                            mask[ss] = 0;
                         velV[ss * 2 + i + 1] = sum;
                     }
                     for(int ss = 0;ss<3;++ss)
-                        divVel[ss] = (velV[ss * 2 + 1] - velV[ss * 2]) / dx;
+                        divVel[ss] = mask[ss] * (velV[ss * 2 + 1] - velV[ss * 2]) / dx;
                     float rhsV = -(divVel[0] + divVel[1] + divVel[2])/dt;
                     rhs_axr.setValue(openvdb::Coord(voxelipos), rhsV);
-                    //float rhsvalue = rhs_axr.getValue(openvdb::Coord(voxelipos));
-
+                    if(rhsV != 0)
+                        printf("rhs value is %f, sdf is %f\n", rhsV, sdf);
                 }
             }
         };
@@ -209,6 +232,7 @@ struct AdaptiveSolver : zeno::INode
             auto res_axr{resGrid->getAccessor()};
             auto Ap_axr{ApGrid->getAccessor()};
             auto sdf_axr{sdfgrid->getConstAccessor()};
+            auto ssdf_axr{staggeredSDFGrid->getConstAccessor()};
             // leaf iter
             for (auto liter = r.begin(); liter != r.end(); ++liter) {
                 auto &leaf = *leaves[liter];
@@ -217,7 +241,7 @@ struct AdaptiveSolver : zeno::INode
 
                     if(pressGrid->tree().isValueOff(openvdb::Coord(voxelipos)))
                         continue;
-                    if(sdf_axr.getValue(voxelipos) > 0.5 * dx)
+                    if(ssdf_axr.getValue(voxelipos) > 0)
                         continue;
                     float pValue = p_axr.getValue(openvdb::Coord(voxelipos));
                     float Ap = 6 * pValue;
@@ -249,6 +273,7 @@ struct AdaptiveSolver : zeno::INode
             auto Ap_axr{ApGrid->getAccessor()};
             auto r2_axr{r2Grid->getAccessor()};
             auto sdf_axr{sdfgrid->getConstAccessor()};
+            auto ssdf_axr{staggeredSDFGrid->getConstAccessor()};
             // leaf iter
             for (auto liter = r.begin(); liter != r.end(); ++liter) {
                 auto &leaf = *leaves[liter];
@@ -257,7 +282,7 @@ struct AdaptiveSolver : zeno::INode
 
                     if(pressGrid->tree().isValueOff(openvdb::Coord(voxelipos)))
                         continue;
-                    if(sdf_axr.getValue(voxelipos) > 0.5 * dx)
+                    if(ssdf_axr.getValue(voxelipos) > 0)
                         continue;
                     float resValue = res_axr.getValue(openvdb::Coord(voxelipos));
                     float pValue = p_axr.getValue(openvdb::Coord(voxelipos));
@@ -273,6 +298,7 @@ struct AdaptiveSolver : zeno::INode
             auto r2_axr{r2Grid->getAccessor()};
             auto res_axr{resGrid->getAccessor()};
             auto sdf_axr{sdfgrid->getConstAccessor()};
+            auto ssdf_axr{staggeredSDFGrid->getConstAccessor()};
             // leaf iter
             for (auto liter = r.begin(); liter != r.end(); ++liter) {
                 auto &leaf = *leaves[liter];
@@ -281,7 +307,7 @@ struct AdaptiveSolver : zeno::INode
 
                     if(pressGrid->tree().isValueOff(openvdb::Coord(voxelipos)))
                         continue;
-                    if(sdf_axr.getValue(voxelipos) > 0.5 * dx)
+                    if(ssdf_axr.getValue(voxelipos) > 0)
                         continue;
                     float r2Value = r2_axr.getValue(openvdb::Coord(voxelipos));
                     float rValue = res_axr.getValue(openvdb::Coord(voxelipos));
@@ -298,6 +324,7 @@ struct AdaptiveSolver : zeno::INode
             auto r2_axr{r2Grid->getAccessor()};
             auto res_axr{resGrid->getAccessor()};
             auto sdf_axr{sdfgrid->getConstAccessor()};
+            auto ssdf_axr{staggeredSDFGrid->getConstAccessor()};
             // leaf iter
             for (auto liter = r.begin(); liter != r.end(); ++liter) {
                 auto &leaf = *leaves[liter];
@@ -306,7 +333,7 @@ struct AdaptiveSolver : zeno::INode
 
                     if(pressGrid->tree().isValueOff(openvdb::Coord(voxelipos)))
                         continue;
-                    if(sdf_axr.getValue(voxelipos) > 0.5 * dx)
+                    if(ssdf_axr.getValue(voxelipos) > 0)
                         continue;
                     float r2Value = r2_axr.getValue(openvdb::Coord(voxelipos));
                     float rValue = res_axr.getValue(openvdb::Coord(voxelipos));
@@ -322,6 +349,7 @@ struct AdaptiveSolver : zeno::INode
             auto p_axr{pGrid->getAccessor()};
             auto res_axr{resGrid->getAccessor()};
             auto sdf_axr{sdfgrid->getConstAccessor()};
+            auto ssdf_axr{staggeredSDFGrid->getConstAccessor()};
             // leaf iter
             for (auto liter = r.begin(); liter != r.end(); ++liter) {
                 auto &leaf = *leaves[liter];
@@ -330,7 +358,7 @@ struct AdaptiveSolver : zeno::INode
 
                     if(pressGrid->tree().isValueOff(openvdb::Coord(voxelipos)))
                         continue;
-                    if(sdf_axr.getValue(voxelipos) > 0.5 * dx)
+                    if(ssdf_axr.getValue(voxelipos) > 0)
                         continue;
                     float r2Value = r2_axr.getValue(openvdb::Coord(voxelipos));
                     float pValue = p_axr.getValue(openvdb::Coord(voxelipos));
@@ -372,11 +400,12 @@ struct AdaptiveSolver : zeno::INode
         }
         printf("pressure computation is done. beta is %f\n", beta);
 
-        //TODO:apply press and semi-langrain advection
-
+        //apply press and semi-langrain advection
         auto applyPress = [&](const tbb::blocked_range<size_t> &r){
-            auto press_axr{pressGrid->getAccessor()};
+            auto press_axr{pressGrid->getConstAccessor()};
             auto sdf_axr{sdfgrid->getAccessor()};
+            auto vel_axr{velGrid->getAccessor()};
+            //auto ssdf_axr{staggeredSDFGrid->getAccessor()};
             for (auto liter = r.begin(); liter != r.end(); ++liter) {
                 auto &leaf = *leaves[liter];
                 for (auto offset = 0; offset < leaf.SIZE; ++offset) {
@@ -384,14 +413,59 @@ struct AdaptiveSolver : zeno::INode
                     if(!sdf_axr.isValueOn(coord) || sdf_axr.getValue(coord) > 0)
                         continue;
                     // compute grad of press
-                    for(int ss = 0; ss<3;++ss)
+                    openvdb::Vec3f gradPress(0.0f);
+                    // x, y, z
+                    float pressInter[6];
+                    for(int ss = 0;ss<3;++ss)
                     for(int i=0;i<=1;++i)
                     {
-                        
+                        pressInter[ss * 2 + i] = 0;
+                        for(int j=0;j<=1;++j)
+                        for(int k=0;k<=1;++k)
+                        {
+                            auto ipos = coord;
+                            ipos[ss] += i;
+                            ipos[(ss + 1)%3] += j;
+                            ipos[(ss+2)%3] += k;
+                            //the voxel is active and if outside, it's zero
+                            float pV = press_axr.getValue(ipos);
+                            pressInter[ss * 2 + i] += pV;
+                        }
+                        pressInter[ss * 2 + i] /= 4.0f;
                     }
+                    for(int ss = 0;ss<3;++ss)
+                        gradPress[ss] = (pressInter[ss * 2] - pressInter[ss * 2 + 1])/(dx*density)*dt;
+                    vel_axr.setValue(coord, gradPress + vel_axr.getValue(coord));
                 }
             }
         };
+        
+        // velocity extrapolation
+        auto velExtra = [&](const tbb::blocked_range<size_t> &r){
+            
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+
+                }
+            }
+        };
+        
+        // semi-lagrangian advection
+        auto advect = [&](const tbb::blocked_range<size_t> &r){
+            auto press_axr{pressGrid->getConstAccessor()};
+            auto sdf_axr{sdfgrid->getAccessor()};
+            auto vel_axr{velGrid->getAccessor()};
+            //auto ssdf_axr{staggeredSDFGrid->getAccessor()};
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    auto coord = leaf.offsetToGlobalCoord(offset);
+
+                }
+            }
+        };
+
     };
 };
 
