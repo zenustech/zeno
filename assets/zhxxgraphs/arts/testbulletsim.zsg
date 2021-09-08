@@ -251,7 +251,7 @@
      },
      "uipos": [
       1638.9847864583091,
-      671.9060424097196
+      674.1839467377378
      ],
      "options": [
       "VIEW"
@@ -1408,8 +1408,8 @@
     }
    },
    "view_rect": {
-    "x": 344.2616722643388,
-    "y": 166.37250677190127,
+    "x": 1306.960988893038,
+    "y": 274.3451719199643,
     "width": 500.0,
     "height": 500.0
    }
@@ -2073,7 +2073,7 @@
      },
      "uipos": [
       -93.30525119910774,
-      -1231.964961612562
+      -1233.3886518175734
      ],
      "options": []
     },
@@ -2081,8 +2081,8 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "5981514f-BulletSetObjectRestitution",
-       "object",
+       "c5b04261-CopyAllUserData",
+       "dst",
        null
       ],
       "SRC": [
@@ -2101,38 +2101,6 @@
       345.63283221909023
      ],
      "options": []
-    },
-    "b62603b8-x": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ],
-      "BulletObj": [
-       "5981514f-BulletSetObjectRestitution",
-       "object",
-       null
-      ],
-      "Primitive": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "BulletObj\nPrimitive"
-     },
-     "uipos": [
-      2579.2411500620615,
-      353.65851440207575
-     ],
-     "options": [],
-     "socket_keys": [
-      "BulletObj",
-      "Primitive"
-     ]
     },
     "edc91d70-x": {
      "name": "SubInput",
@@ -2561,13 +2529,39 @@
       24.60136674259681
      ],
      "options": []
+    },
+    "c5b04261-CopyAllUserData": {
+     "name": "CopyAllUserData",
+     "inputs": {
+      "dst": [
+       "5981514f-BulletSetObjectRestitution",
+       "object",
+       null
+      ],
+      "src": [
+       "6a8cbdd2-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2600.820045558087,
+      346.24145785876993
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 705.1537585421577,
-    "y": 116.67141230068091,
-    "width": 625.0,
-    "height": 625.0
+    "x": 2312.255125284745,
+    "y": 110.068337129837,
+    "width": 400.0,
+    "height": 400.0
    }
   },
   "RigidRecenterPrim": {
@@ -4446,47 +4440,6 @@
     "Rigid"
    ]
   },
-  "BulletGetObjectUserData": {
-   "inputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "data",
-     ""
-    ],
-    [
-     "bool",
-     "hasValue",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "key",
-     "prim"
-    ]
-   ],
-   "categories": [
-    "Rigid"
-   ]
-  },
   "BulletMakeBoxShape": {
    "inputs": [
     [
@@ -5533,6 +5486,41 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "CopyAllUserData": {
+   "inputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "src",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
    ]
   },
   "DelUserData": {

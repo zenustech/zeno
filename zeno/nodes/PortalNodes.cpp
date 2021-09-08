@@ -217,4 +217,21 @@ ZENDEFNODE(DelUserData, {
 });
 
 
+struct CopyAllUserData : zeno::INode {
+    virtual void apply() override {
+        auto src = get_input("src");
+        auto dst = get_input("dst");
+        dst->userData = src->userData;
+        set_output("dst", std::move(dst));
+    }
+};
+
+ZENDEFNODE(CopyAllUserData, {
+    {"dst", "src"},
+    {"dst"},
+    {},
+    {"portal"},
+});
+
+
 }

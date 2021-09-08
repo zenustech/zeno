@@ -364,7 +364,6 @@ struct BulletMakeObject : zeno::INode {
         auto object = std::make_unique<BulletObject>(
             mass, trans->trans, shape);
         object->body->setDamping(0, 0);
-        object->userData = shape->userData; // todo: use a node to perform this??
         set_output("object", std::move(object));
     }
 };
@@ -373,24 +372,6 @@ ZENDEFNODE(BulletMakeObject, {
     {"shape", "trans", {"float", "mass", "0"}},
     {"object"},
     {},
-    {"Rigid"},
-});
-
-struct BulletGetObjectUserData : zeno::INode {
-    virtual void apply() override {
-        auto object = get_input<BulletObject>("object");
-        auto key = get_param<std::string>("key");
-        auto hasValue = object->userData.has(key);
-        auto data = object->userData.get<Any>(key);
-        set_output2("hasValue", hasValue);
-        set_output2("data", std::move(data));
-    }
-};
-
-ZENDEFNODE(BulletGetObjectUserData, {
-    {"object"},
-    {"data", {"bool", "hasValue"}},
-    {{"string", "key", "prim"}},
     {"Rigid"},
 });
 
