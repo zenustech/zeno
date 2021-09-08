@@ -13,7 +13,7 @@ ZENO_API Session::~Session() = default;
 
 ZENO_API void Session::defNodeClass(std::string const &id, std::unique_ptr<INodeClass> &&cls) {
     if (nodeClasses.find(id) != nodeClasses.end()) {
-        logger().warn("node class redefined: `{}`\n", id);
+        log_warn("node class redefined: `{}`\n", id);
     }
     nodeClasses.emplace(id, std::move(cls));
 }

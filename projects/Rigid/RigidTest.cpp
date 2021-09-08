@@ -662,9 +662,9 @@ struct BulletWorld : zeno::IObject {
 
     BulletWorld() {
         /*if (NULL != btGetTaskScheduler() && gTaskSchedulerMgr.getNumTaskSchedulers() > 1) {
-            logger().critical("bullet multithreading enabled!");
+            log_critical("bullet multithreading enabled!");
         } else {
-            logger().critical("bullet multithreading disabled...");
+            log_critical("bullet multithreading disabled...");
         }*/
         collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
         dispatcher = std::make_unique<btCollisionDispatcherMt>(collisionConfiguration.get());
@@ -708,26 +708,26 @@ struct BulletWorld : zeno::IObject {
                 collisionConfiguration.get());
         dynamicsWorld->setGravity(btVector3(0, -10, 0));
 
-        logger().trace("creating bullet world {}", (void *)this);
+        log_trace("creating bullet world {}", (void *)this);
     }
 #endif
 
     void addObject(std::shared_ptr<BulletObject> obj) {
-        logger().trace("adding object {}", (void *)obj.get());
+        log_trace("adding object {}", (void *)obj.get());
         dynamicsWorld->addRigidBody(obj->body.get());
         objects.insert(std::move(obj));
     }
 
     void removeObject(std::shared_ptr<BulletObject> const &obj) {
-        logger().trace("removing object {}", (void *)obj.get());
+        log_trace("removing object {}", (void *)obj.get());
         dynamicsWorld->removeRigidBody(obj->body.get());
         objects.erase(obj);
     }
 
     void setObjectList(std::vector<std::shared_ptr<BulletObject>> objList) {
         std::set<std::shared_ptr<BulletObject>> objSet;
-        logger().trace("setting object list len={}", objList.size());
-        logger().trace("existing object list len={}", objects.size());
+        log_trace("setting object list len={}", objList.size());
+        log_trace("existing object list len={}", objects.size());
         for (auto const &object: objList) {
             objSet.insert(object);
             if (objects.find(object) == objects.end()) {
@@ -742,21 +742,21 @@ struct BulletWorld : zeno::IObject {
     }
 
     void addConstraint(std::shared_ptr<BulletConstraint> cons) {
-        logger().trace("adding constraint {}", (void *)cons.get());
+        log_trace("adding constraint {}", (void *)cons.get());
         dynamicsWorld->addConstraint(cons->constraint.get(), true);
         constraints.insert(std::move(cons));
     }
 
     void removeConstraint(std::shared_ptr<BulletConstraint> const &cons) {
-        logger().trace("removing constraint {}", (void *)cons.get());
+        log_trace("removing constraint {}", (void *)cons.get());
         dynamicsWorld->removeConstraint(cons->constraint.get());
         constraints.erase(cons);
     }
 
     void setConstraintList(std::vector<std::shared_ptr<BulletConstraint>> consList) {
         std::set<std::shared_ptr<BulletConstraint>> consSet;
-        logger().trace("setting constraint list len={}", consList.size());
-        logger().trace("existing constraint list len={}", constraints.size());
+        log_trace("setting constraint list len={}", consList.size());
+        log_trace("existing constraint list len={}", constraints.size());
         for (auto const &constraint: consList) {
             if (!constraint->constraint->isEnabled())
                 continue;
@@ -797,7 +797,7 @@ struct BulletWorld : zeno::IObject {
     }*/
 
     void step(float dt = 1.f / 60.f, int steps = 1) {
-        logger().trace("stepping with dt={}, steps={}, len(objects)={}", dt, steps, objects.size());
+        log_trace("stepping with dt={}, steps={}, len(objects)={}", dt, steps, objects.size());
         //dt /= steps;
         //for(int i=0;i<steps;i++)
         dynamicsWorld->stepSimulation(dt, steps, dt / steps);

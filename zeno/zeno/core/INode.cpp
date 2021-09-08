@@ -90,9 +90,9 @@ ZENO_API bool INode::requireInput(std::string const &ds) {
 
 ZENO_API void INode::doApply() {
     if (checkApplyCondition()) {
-        logger().trace("--> enter {}", myname);
+        log_trace("--> enter {}", myname);
         preApply();
-        logger().trace("--> leave {}", myname);
+        log_trace("--> leave {}", myname);
     }
 
 #ifdef ZENO_VISUALIZATION

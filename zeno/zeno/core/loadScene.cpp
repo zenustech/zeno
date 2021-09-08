@@ -43,7 +43,7 @@ static T generic_get(Value const &x) {
                 }
             }
         }
-        logger().warn("unknown type encountered in generic_get");
+        log_warn("unknown type encountered in generic_get");
         return 0;
     }
 }
@@ -78,7 +78,7 @@ ZENO_API void Scene::loadScene(const char *json) {
             }
 #ifdef ZENO_FAIL_SILENTLY
         } catch (BaseException const &e) {
-            logger().warn("exception executing command {} ({}): {}",
+            log_warn("exception executing command {} ({}): {}",
                     i, cmd.c_str(), e.what());
         }
 #endif
@@ -111,7 +111,7 @@ ZENO_API void Graph::loadGraph(const char *json) {
             }
 #ifdef ZENO_FAIL_SILENTLY
         } catch (BaseException const &e) {
-            logger().warn("exception executing command {} ({}): {}",
+            log_warn("exception executing command {} ({}): {}",
                     i, cmd.c_str(), e.what());
         }
 #endif

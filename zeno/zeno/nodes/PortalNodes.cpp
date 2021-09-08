@@ -68,7 +68,7 @@ struct Clone : zeno::INode {
         auto obj = get_input("object");
         auto newobj = obj->clone();
         if (!newobj) {
-            logger().error("requested object doesn't support clone");
+            log_error("requested object doesn't support clone");
             return;
         }
         set_output("newObject", std::move(newobj));
@@ -89,7 +89,7 @@ struct Assign : zeno::INode {
         auto dst = get_input("dst");
         bool succ = dst->assign(src.get());
         if (!succ) {
-            logger().error("requested object doesn't support assign or type mismatch");
+            log_error("requested object doesn't support assign or type mismatch");
             return;
         }
         set_output("dst", std::move(dst));
@@ -109,7 +109,7 @@ struct MoveClone : zeno::INode {
         auto obj = get_input("object");
         auto newobj = obj->move_clone();
         if (!newobj) {
-            logger().error("requested object doesn't support move_clone");
+            log_error("requested object doesn't support move_clone");
             return;
         }
         set_output("newObject", std::move(newobj));
@@ -129,7 +129,7 @@ struct MoveDelete : zeno::INode {
         auto obj = get_input("object");
         auto newobj = obj->move_clone();
         if (!newobj) {
-            logger().error("requested object doesn't support move_clone");
+            log_error("requested object doesn't support move_clone");
             return;
         }
         newobj = nullptr;
@@ -150,7 +150,7 @@ struct MoveAssign : zeno::INode {
         auto dst = get_input("dst");
         bool succ = dst->move_assign(src.get());
         if (!succ) {
-            logger().error("requested object doesn't support move_assign or type mismatch");
+            log_error("requested object doesn't support move_assign or type mismatch");
             return;
         }
         set_output("dst", std::move(dst));

@@ -11,7 +11,7 @@ ZENO_API BaseException::BaseException(std::string_view msg) noexcept
 
 ZENO_API Exception::Exception(std::string_view msg) noexcept
     : BaseException(msg) {
-    logger().error("Exception: {}", msg);
+    log_error("Exception: {}", msg);
     print_traceback(0);
 }
 

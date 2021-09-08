@@ -25,7 +25,7 @@ static const char *signal_to_string(int signo) {
 }
 
 static void signal_handler(int signo) {
-    logger().error("recieved signal {}: {}", signo, signal_to_string(signo));
+    log_error("recieved signal {}: {}", signo, signal_to_string(signo));
     print_traceback(1);
     exit(-signo);
 }
