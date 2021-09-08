@@ -251,7 +251,7 @@
      },
      "uipos": [
       1638.9847864583091,
-      671.9060424097196
+      674.1839467377378
      ],
      "options": [
       "VIEW"
@@ -1173,8 +1173,8 @@
      ],
      "options": []
     },
-    "581c0d19-BulletGetObjectUserData": {
-     "name": "BulletGetObjectUserData",
+    "581c0d19-GetUserData": {
+     "name": "GetUserData",
      "inputs": {
       "object": [
        "8b676642-BeginForEach",
@@ -1191,13 +1191,13 @@
       "key": "prim"
      },
      "uipos": [
-      416.97547902988066,
+      415.15315556746606,
       460.52472196167764
      ],
      "options": []
     },
     "b4578d59-x": {
-     "name": "BulletGetObjectUserData",
+     "name": "GetUserData",
      "inputs": {
       "object": [
        "8b676642-BeginForEach",
@@ -1243,7 +1243,7 @@
      },
      "uipos": [
       629.2402176729721,
-      744.9780373189082
+      742.2445521252863
      ],
      "options": []
     },
@@ -1389,7 +1389,7 @@
      "name": "Clone",
      "inputs": {
       "object": [
-       "581c0d19-BulletGetObjectUserData",
+       "581c0d19-GetUserData",
        "data",
        null
       ],
@@ -1401,15 +1401,15 @@
      },
      "params": {},
      "uipos": [
-      712.4705882352941,
-      561.8823529411765
+      693.1084014471394,
+      553.9096877931128
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -4740.248578305122,
-    "y": -391.7140535925936,
+    "x": 1306.960988893038,
+    "y": 274.3451719199643,
     "width": 500.0,
     "height": 500.0
    }
@@ -2073,7 +2073,7 @@
      },
      "uipos": [
       -93.30525119910774,
-      -1231.964961612562
+      -1233.3886518175734
      ],
      "options": []
     },
@@ -2081,8 +2081,8 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "5981514f-BulletSetObjectRestitution",
-       "object",
+       "c5b04261-CopyAllUserData",
+       "dst",
        null
       ],
       "SRC": [
@@ -2101,38 +2101,6 @@
       345.63283221909023
      ],
      "options": []
-    },
-    "b62603b8-x": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ],
-      "BulletObj": [
-       "5981514f-BulletSetObjectRestitution",
-       "object",
-       null
-      ],
-      "Primitive": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "BulletObj\nPrimitive"
-     },
-     "uipos": [
-      2579.2411500620615,
-      353.65851440207575
-     ],
-     "options": [],
-     "socket_keys": [
-      "BulletObj",
-      "Primitive"
-     ]
     },
     "edc91d70-x": {
      "name": "SubInput",
@@ -2460,10 +2428,10 @@
      ],
      "options": []
     },
-    "fa092108-BulletGetShapeUserData": {
-     "name": "BulletGetShapeUserData",
+    "fa092108-GetUserData": {
+     "name": "GetUserData",
      "inputs": {
-      "shape": [
+      "object": [
        "6a8cbdd2-SubInput",
        "port",
        null
@@ -2487,7 +2455,7 @@
      "name": "IfElse",
      "inputs": {
       "true": [
-       "fa092108-BulletGetShapeUserData",
+       "fa092108-GetUserData",
        "data",
        null
       ],
@@ -2497,7 +2465,7 @@
        null
       ],
       "cond": [
-       "fa092108-BulletGetShapeUserData",
+       "fa092108-GetUserData",
        "hasValue",
        true
       ],
@@ -2561,13 +2529,39 @@
       24.60136674259681
      ],
      "options": []
+    },
+    "c5b04261-CopyAllUserData": {
+     "name": "CopyAllUserData",
+     "inputs": {
+      "dst": [
+       "5981514f-BulletSetObjectRestitution",
+       "object",
+       null
+      ],
+      "src": [
+       "6a8cbdd2-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2600.820045558087,
+      346.24145785876993
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -118.69912882874252,
-    "y": -524.2290283760047,
-    "width": 320.0,
-    "height": 320.0
+    "x": 2312.255125284745,
+    "y": 110.068337129837,
+    "width": 400.0,
+    "height": 400.0
    }
   },
   "RigidRecenterPrim": {
@@ -3081,8 +3075,8 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "52e94c21-BulletSetShapeUserData",
-       "shape",
+       "52e94c21-SetUserData",
+       "object",
        null
       ],
       "SRC": [
@@ -3102,10 +3096,10 @@
      ],
      "options": []
     },
-    "52e94c21-BulletSetShapeUserData": {
-     "name": "BulletSetShapeUserData",
+    "52e94c21-SetUserData": {
+     "name": "SetUserData",
      "inputs": {
-      "shape": [
+      "object": [
        "fd3be3ee-PortalOut",
        "port",
        null
@@ -3189,8 +3183,8 @@
       "name": "shape"
      },
      "uipos": [
-      1783.1656601645936,
-      1109.6485183257262
+      1684.9310360188076,
+      1119.614349760806
      ],
      "options": []
     },
@@ -3344,8 +3338,8 @@
      "name": "IfElse",
      "inputs": {
       "true": [
-       "0438fad3-BulletSetShapeUserData",
-       "shape",
+       "0438fad3-SetUserData",
+       "object",
        null
       ],
       "false": [
@@ -3497,7 +3491,7 @@
      "inputs": {
       "true": [
        "b4cdb32c-x",
-       "shape",
+       "object",
        null
       ],
       "false": [
@@ -3649,10 +3643,10 @@
      ],
      "options": []
     },
-    "0438fad3-BulletSetShapeUserData": {
-     "name": "BulletSetShapeUserData",
+    "0438fad3-SetUserData": {
+     "name": "SetUserData",
      "inputs": {
-      "shape": [
+      "object": [
        "b6ca337e-BulletMakeSphereShape",
        "shape",
        null
@@ -3734,9 +3728,9 @@
      "options": []
     },
     "b4cdb32c-x": {
-     "name": "BulletSetShapeUserData",
+     "name": "SetUserData",
      "inputs": {
-      "shape": [
+      "object": [
        "5d41761a-BulletMakeBoxShape",
        "shape",
        null
@@ -3756,8 +3750,8 @@
       "key": "origin"
      },
      "uipos": [
-      519.8667815482502,
-      1779.1456786850479
+      519.8667815482501,
+      1818.325633126961
      ],
      "options": []
     },
@@ -3766,7 +3760,7 @@
      "inputs": {
       "true": [
        "0fb0e3a4-x",
-       "shape",
+       "object",
        null
       ],
       "false": [
@@ -3867,9 +3861,9 @@
      "options": []
     },
     "0fb0e3a4-x": {
-     "name": "BulletSetShapeUserData",
+     "name": "SetUserData",
      "inputs": {
-      "shape": [
+      "object": [
        "f5f5a1d1-BulletMakeConvexHullShape",
        "shape",
        null
@@ -3916,10 +3910,10 @@
     }
    },
    "view_rect": {
-    "x": -256.4487700666914,
-    "y": 2098.791983181918,
-    "width": 781.25,
-    "height": 781.25
+    "x": 1317.9771145876284,
+    "y": 42.03846748216358,
+    "width": 320.0,
+    "height": 320.0
    }
   }
  },
@@ -4446,88 +4440,6 @@
     "Rigid"
    ]
   },
-  "BulletGetObjectUserData": {
-   "inputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "data",
-     ""
-    ],
-    [
-     "bool",
-     "hasValue",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "key",
-     "prim"
-    ]
-   ],
-   "categories": [
-    "Rigid"
-   ]
-  },
-  "BulletGetShapeUserData": {
-   "inputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "data",
-     ""
-    ],
-    [
-     "bool",
-     "hasValue",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "key",
-     "prim"
-    ]
-   ],
-   "categories": [
-    "Rigid"
-   ]
-  },
   "BulletMakeBoxShape": {
    "inputs": [
     [
@@ -4999,47 +4911,6 @@
     ]
    ],
    "params": [],
-   "categories": [
-    "Rigid"
-   ]
-  },
-  "BulletSetShapeUserData": {
-   "inputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "",
-     "data",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [
-    [
-     "string",
-     "key",
-     "prim"
-    ]
-   ],
    "categories": [
     "Rigid"
    ]
@@ -5615,6 +5486,72 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "CopyAllUserData": {
+   "inputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "src",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "DelUserData": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "key",
+     ""
+    ]
+   ],
+   "categories": [
+    "portal"
    ]
   },
   "DictGetItem": {
@@ -6342,6 +6279,47 @@
    "params": [],
    "categories": [
     "frame"
+   ]
+  },
+  "GetUserData": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "bool",
+     "hasValue",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "key",
+     ""
+    ]
+   ],
+   "categories": [
+    "portal"
    ]
   },
   "GetVDBBound": {
@@ -7440,6 +7418,96 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "MoveAssign": {
+   "inputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "src",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "MoveClone": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "newObject",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "MoveDelete": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
    ]
   },
   "NumericCounter": {
@@ -10804,6 +10872,47 @@
    "params": [],
    "categories": [
     "numeric"
+   ]
+  },
+  "SetUserData": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "key",
+     ""
+    ]
+   ],
+   "categories": [
+    "portal"
    ]
   },
   "SetVDBGridName": {
