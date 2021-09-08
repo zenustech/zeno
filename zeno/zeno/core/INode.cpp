@@ -150,8 +150,8 @@ ZENO_API std::shared_ptr<IObject> INode::get_input(std::string const &id, std::s
     }
 
     auto num = std::make_shared<NumericObject>();
-    using Types = typename zinc::is_variant<NumericValue>::tuple_type;
-    if (zinc::static_for<0, std::tuple_size_v<Types>>([&] (auto i) {
+    using Types = typename is_variant<NumericValue>::tuple_type;
+    if (static_for<0, std::tuple_size_v<Types>>([&] (auto i) {
         using T = std::tuple_element_t<i, Types>;
         if (auto o = exact_any_cast<T>(obj); o.has_value()) {
             num->set(o.value());
@@ -179,8 +179,8 @@ ZENO_API bool INode::has_input(std::string const &id) const {
     if (exact_any_cast<std::string>(obj))
         return true;
 
-    using Types = typename zinc::is_variant<NumericValue>::tuple_type;
-    if (zinc::static_for<0, std::tuple_size_v<Types>>([&] (auto i) {
+    using Types = typename is_variant<NumericValue>::tuple_type;
+    if (static_for<0, std::tuple_size_v<Types>>([&] (auto i) {
         using T = std::tuple_element_t<i, Types>;
         if (auto o = exact_any_cast<T>(obj); o.has_value()) {
             return true;

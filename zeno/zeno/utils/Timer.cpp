@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <map>
 
-namespace zinc {
+namespace zeno {
 
 Timer::Timer(std::string_view &&tag_, Timer::ClockType::time_point &&beg_)
     : parent(current), beg(beg_)
@@ -70,7 +70,7 @@ std::string Timer::getLog() {
 namespace {
     static struct TimerAtexitHelper {
         ~TimerAtexitHelper() {
-            auto log = zinc::Timer::getLog();
+            auto log = Timer::getLog();
             if (auto env = getenv("ZEN_TIMER"); env) {
                 FILE *fp = fopen(env, "w");
                 fprintf(fp, "%s", log.c_str());
@@ -80,5 +80,7 @@ namespace {
             }
         }
     } timerAtexitHelper;
+}
+
 }
 #endif
