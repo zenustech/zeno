@@ -646,6 +646,8 @@ public:
 } gTaskSchedulerMgr; */
 
 struct BulletWorld : zeno::IObject {
+#ifdef ZENO_RIGID_MULTITHREADING
+    // mt bullet not working for now
     std::unique_ptr<btDefaultCollisionConfiguration> collisionConfiguration;
     std::unique_ptr<btCollisionDispatcherMt> dispatcher;
     std::unique_ptr<btBroadphaseInterface> broadphase;
@@ -664,16 +666,8 @@ struct BulletWorld : zeno::IObject {
         } else {
             spdlog::critical("bullet multithreading disabled...");
         }*/
-#if 0
-
-		btDefaultCollisionConstructionInfo cci;
-		cci.m_defaultMaxPersistentManifoldPoolSize = 80000;
-		cci.m_defaultMaxCollisionAlgorithmPoolSize = 80000;
-        collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>(cci);
-#else
         collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
-#endif
-        dispatcher = std::make_unique<btCollisionDispatcherMt>(collisionConfiguration.get(), 40);
+        dispatcher = std::make_unique<btCollisionDispatcherMt>(collisionConfiguration.get());
         broadphase = std::make_unique<btDbvtBroadphase>();
         solver = std::make_unique<btSequentialImpulseConstraintSolverMt>();
         std::vector<btConstraintSolver *> solversPtr;
@@ -688,6 +682,33 @@ struct BulletWorld : zeno::IObject {
                 collisionConfiguration.get());
         dynamicsWorld->setGravity(btVector3(0, -10, 0));
     }
+#else
+    std::unique_ptr<btDefaultCollisionConfiguration> collisionConfiguration;
+    std::unique_ptr<btCollisionDispatcher> dispatcher;
+    std::unique_ptr<btBroadphaseInterface> broadphase;
+    std::unique_ptr<btSequentialImpulseConstraintSolver> solver;
+
+    std::unique_ptr<btDiscreteDynamicsWorld> dynamicsWorld;
+
+    std::set<std::shared_ptr<BulletObject>> objects;
+    std::set<std::shared_ptr<BulletConstraint>> constraints;
+
+    BulletWorld() {
+        collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
+		/*btDefaultCollisionConstructionInfo cci;
+		cci.m_defaultMaxPersistentManifoldPoolSize = 80000;
+		cci.m_defaultMaxCollisionAlgorithmPoolSize = 80000;
+        collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>(cci);*/
+
+        dispatcher = std::make_unique<btCollisionDispatcher>(collisionConfiguration.get());
+        broadphase = std::make_unique<btDbvtBroadphase>();
+        solver = std::make_unique<btSequentialImpulseConstraintSolver>();
+        dynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>(
+                dispatcher.get(), broadphase.get(), solver.get(),
+                collisionConfiguration.get());
+        dynamicsWorld->setGravity(btVector3(0, -10, 0));
+    }
+#endif
 
     void addObject(std::shared_ptr<BulletObject> obj) {
         spdlog::trace("adding object {}", (void *)obj.get());
