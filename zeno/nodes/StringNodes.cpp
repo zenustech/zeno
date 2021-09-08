@@ -15,7 +15,7 @@ struct MakeWritePath : zeno::INode {
 
 ZENDEFNODE(MakeWritePath, {
     {},
-    {{"StringObject", "path"}},
+    {{"string", "path"}},
     {{"writepath", "path", ""}},
     {"string"},
 });
@@ -30,7 +30,7 @@ struct MakeReadPath : zeno::INode {
 
 ZENDEFNODE(MakeReadPath, {
     {},
-    {{"StringObject", "path"}},
+    {{"string", "path"}},
     {{"readpath", "path", ""}},
     {"string"},
 });
@@ -45,7 +45,7 @@ struct MakeString : zeno::INode {
 
 ZENDEFNODE(MakeString, {
     {},
-    {{"StringObject", "value"}},
+    {{"string", "value"}},
     {{"string", "value", ""}},
     {"string"},
 });
@@ -55,8 +55,23 @@ struct MakeMultilineString : MakeString {
 
 ZENDEFNODE(MakeMultilineString, {
     {},
-    {{"StringObject", "value"}},
+    {{"string", "value"}},
     {{"multiline_string", "value", ""}},
+    {"string"},
+});
+
+struct StringEqual : zeno::INode {
+    virtual void apply() override {
+        auto lhs = get_input2<std::string>("lhs");
+        auto rhs = get_input2<std::string>("rhs");
+        set_output2("isEqual", lhs == rhs);
+    }
+};
+
+ZENDEFNODE(StringEqual, {
+    {{"string", "lhs"}, {"string", "rhs"}},
+    {{"bool", "isEqual"}},
+    {},
     {"string"},
 });
 

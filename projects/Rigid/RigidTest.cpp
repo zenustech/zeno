@@ -399,7 +399,9 @@ struct BulletGetObjectUserData : zeno::INode {
         auto object = get_input<BulletObject>("object");
         auto key = get_param<std::string>("key");
         auto data = object->userData.get<Any>(key);
-        set_output2("prim", std::move(data));
+        auto hasValue = object->userData.has(key);
+        set_output2("hasValue", hasValue);
+        set_output2("data", std::move(data));
     }
 };
 

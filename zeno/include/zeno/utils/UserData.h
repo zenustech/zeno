@@ -1,15 +1,25 @@
 #pragma once
 
 #include <zeno/utils/any.h>
+#include <zeno/utils/safe_at.h>
 #include <string>
 #include <map>
 
 namespace zeno {
 
 struct UserData {
-    std::map<std::string, zany> m_data;
+    std::map<std::string, Any> m_data;
 
-    template <class T>
+    inline bool has(std::string const &name) const {
+        return m_data.find(name) != m_data.end();
+    }
+
+    template <class T = Any>
+    inline T &get(std::string const &name) const {
+        return *smart_any_cast<std::shared_ptr<T>>(safe_at(m_data, name, "user data"));
+    }
+
+    template <class T = Any>
     inline T &get(std::string const &name) {
         auto it = m_data.find(name);
         if (it == m_data.end()) {
@@ -21,14 +31,18 @@ struct UserData {
         return *smart_any_cast<std::shared_ptr<T>>(it->second);
     }
 
-    template <class T>
+    template <class T = Any>
     inline void set(std::string const &name, T const &value) {
         m_data[name] = std::make_shared<T>(value);
     }
 
-    template <class T>
+    template <class T = Any>
     inline void set(std::string const &name, T &&value) {
         m_data[name] = std::make_shared<T>(std::move(value));
+    }
+
+    inline void set(std::string const &name, Any const &value) {
+        m_data[name] = std::make_shared<Any>(value);
     }
 
     inline void del(std::string const &name) {

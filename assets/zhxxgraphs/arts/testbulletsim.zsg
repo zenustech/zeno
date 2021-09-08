@@ -48,8 +48,8 @@
      "name": "TransformPrimitive",
      "inputs": {
       "prim": [
-       "3dfa47fe-BulletGetObjectUserPrimPtr",
-       "prim",
+       "581c0d19-BulletGetObjectUserData",
+       "data",
        null
       ],
       "translation": [
@@ -1122,6 +1122,11 @@
        null,
        0.0
       ],
+      "type": [
+       null,
+       null,
+       "convex"
+      ],
       "SRC": [
        null,
        null,
@@ -1147,6 +1152,11 @@
        null,
        null,
        0.0
+      ],
+      "type": [
+       null,
+       null,
+       "convex"
       ],
       "SRC": [
        null,
@@ -1174,6 +1184,11 @@
        null,
        0.0
       ],
+      "type": [
+       null,
+       null,
+       "convex"
+      ],
       "SRC": [
        null,
        null,
@@ -1182,13 +1197,13 @@
      },
      "params": {},
      "uipos": [
-      -4413.222522779046,
-      -236.4037585421412
+      -4419.566135113847,
+      -256.13944136152446
      ],
      "options": []
     },
-    "3dfa47fe-BulletGetObjectUserPrimPtr": {
-     "name": "BulletGetObjectUserPrimPtr",
+    "581c0d19-BulletGetObjectUserData": {
+     "name": "BulletGetObjectUserData",
      "inputs": {
       "object": [
        "8b676642-BeginForEach",
@@ -1201,19 +1216,21 @@
        null
       ]
      },
-     "params": {},
+     "params": {
+      "key": "prim"
+     },
      "uipos": [
-      341.6856492027335,
-      556.6628701594533
+      410.38724373576304,
+      522.6423690205012
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -4730.673232444488,
-    "y": 884.042956886081,
-    "width": 256.0,
-    "height": 256.0
+    "x": -4879.37304221573,
+    "y": 760.0566943915893,
+    "width": 781.25,
+    "height": 781.25
    }
   },
   "RigidStepWorld": {
@@ -2264,10 +2281,10 @@
     }
    },
    "view_rect": {
-    "x": 295.4253009017932,
-    "y": 142.67464778459765,
-    "width": 500.0,
-    "height": 500.0
+    "x": -700.8084849620934,
+    "y": -580.6054168013238,
+    "width": 781.25,
+    "height": 781.25
    }
   },
   "RigidRecenterPrim": {
@@ -2720,8 +2737,8 @@
       "defl": ""
      },
      "uipos": [
-      -234.16856492027338,
-      130.9339407744875
+      -668.1691720269334,
+      37.903594221950186
      ],
      "options": []
     },
@@ -2751,8 +2768,8 @@
      },
      "params": {},
      "uipos": [
-      280.637813211845,
-      191.70842824601368
+      184.52858549559272,
+      2345.3090657519265
      ],
      "options": []
     },
@@ -2760,7 +2777,7 @@
      "name": "PrimitiveToBulletMesh",
      "inputs": {
       "prim": [
-       "283f5060-SubInput",
+       "73ac6637-x",
        "port",
        null
       ],
@@ -2772,8 +2789,8 @@
      },
      "params": {},
      "uipos": [
-      13.849658314350819,
-      201.91343963553544
+      -81.52702748143724,
+      2336.323485789457
      ],
      "options": []
     },
@@ -2781,7 +2798,7 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "55838ca3-BulletSetShapeUserPrimPtr",
+       "52e94c21-BulletSetShapeUserData",
        "shape",
        null
       ],
@@ -2797,8 +2814,8 @@
       "defl": ""
      },
      "uipos": [
-      770.478359908884,
-      198.99772209567197
+      1633.621701679829,
+      110.1384084021555
      ],
      "options": []
     },
@@ -2817,20 +2834,125 @@
       "defl": "0.0"
      },
      "uipos": [
-      278.45102505694757,
-      406.7425968109339
+      173.9125478449452,
+      2600.038978549333
      ],
      "options": []
     },
-    "55838ca3-BulletSetShapeUserPrimPtr": {
-     "name": "BulletSetShapeUserPrimPtr",
+    "52e94c21-BulletSetShapeUserData": {
+     "name": "BulletSetShapeUserData",
      "inputs": {
       "shape": [
-       "f5f5a1d1-BulletMakeConvexHullShape",
-       "shape",
+       "fd3be3ee-PortalOut",
+       "port",
        null
       ],
+      "data": [
+       "b8707c8a-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "key": "prim"
+     },
+     "uipos": [
+      1394.5328634110363,
+      108.6805496322238
+     ],
+     "options": []
+    },
+    "ff574332-x": {
+     "name": "PrimitiveBoundingBox",
+     "inputs": {
       "prim": [
+       "5a562f8a-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "exWidth": 0.0
+     },
+     "uipos": [
+      -735.8552442734897,
+      1145.0553351601468
+     ],
+     "options": []
+    },
+    "fd3be3ee-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "shape"
+     },
+     "uipos": [
+      1019.8237885462551,
+      205.9471365638766
+     ],
+     "options": []
+    },
+    "9c00192c-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "47b341a3-IfElse",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "shape"
+     },
+     "uipos": [
+      1783.1656601645936,
+      1109.6485183257262
+     ],
+     "options": []
+    },
+    "b8707c8a-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "prim"
+     },
+     "uipos": [
+      1023.8298458149776,
+      20.62224669603502
+     ],
+     "options": []
+    },
+    "336cc474-x": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
        "283f5060-SubInput",
        "port",
        null
@@ -2841,50 +2963,62 @@
        null
       ]
      },
-     "params": {},
+     "params": {
+      "name": "prim"
+     },
      "uipos": [
-      529.2027334851936,
-      233.257403189066
+      -362.0732378854624,
+      68.1167400881057
      ],
      "options": []
-    }
-   },
-   "view_rect": {
-    "x": -4.920273348518691,
-    "y": 234.53302961275656,
-    "width": 320.0,
-    "height": 320.0
-   }
-  },
-  "RigidBoxShape": {
-   "nodes": {
-    "861318f0-BulletMakeBoxShape": {
-     "name": "BulletMakeBoxShape",
+    },
+    "73ac6637-x": {
+     "name": "PortalOut",
      "inputs": {
-      "size": [
-       null,
-       null,
-       null
-      ],
       "SRC": [
        null,
        null,
        null
       ]
      },
-     "params": {},
+     "params": {
+      "name": "prim"
+     },
      "uipos": [
-      -112.37885462555064,
-      177.18061674008806
+      -387.0368716406698,
+      2324.783454380468
      ],
      "options": []
     },
-    "a8f7b498-SubOutput": {
-     "name": "SubOutput",
+    "5a562f8a-x": {
+     "name": "PortalOut",
      "inputs": {
-      "port": [
-       "8ba5e07b-BulletSetShapeUserPrimPtr",
-       "shape",
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "prim"
+     },
+     "uipos": [
+      -1000.2936024223234,
+      1095.9724936637097
+     ],
+     "options": []
+    },
+    "41d465cd-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "ff574332-x",
+       "bmax",
+       null
+      ],
+      "rhs": [
+       "ff574332-x",
+       "bmin",
        null
       ],
       "SRC": [
@@ -2894,27 +3028,71 @@
       ]
      },
      "params": {
-      "name": "output1",
-      "type": "",
-      "defl": ""
+      "op_type": "sub"
      },
      "uipos": [
-      447.57709251101323,
-      132.51101321585907
+      -474.1454301431602,
+      1136.6131196977733
      ],
      "options": []
     },
-    "8ba5e07b-BulletSetShapeUserPrimPtr": {
-     "name": "BulletSetShapeUserPrimPtr",
+    "b6ca337e-BulletMakeSphereShape": {
+     "name": "BulletMakeSphereShape",
      "inputs": {
-      "shape": [
-       "861318f0-BulletMakeBoxShape",
+      "radius": [
+       "4fd7af5e-NumericOperator",
+       "ret",
+       1.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      288.04969180805944,
+      1216.9749966861084
+     ],
+     "options": []
+    },
+    "45c33cb2-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "type",
+      "type": "enum convex sphere box",
+      "defl": "convex"
+     },
+     "uipos": [
+      806.0192702810182,
+      759.4218087221628
+     ],
+     "options": []
+    },
+    "47b341a3-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "0438fad3-BulletSetShapeUserData",
        "shape",
        null
       ],
-      "prim": [
-       null,
-       null,
+      "false": [
+       "131565d5-x",
+       "result",
+       null
+      ],
+      "cond": [
+       "e75a5d8b-StringEqual",
+       "isEqual",
        null
       ],
       "SRC": [
@@ -2925,17 +3103,464 @@
      },
      "params": {},
      "uipos": [
-      176.21145374449338,
-      182.55506607929513
+      1101.8690349946976,
+      1031.9148495493105
+     ],
+     "options": []
+    },
+    "e75a5d8b-StringEqual": {
+     "name": "StringEqual",
+     "inputs": {
+      "lhs": [
+       "45c33cb2-SubInput",
+       "port",
+       ""
+      ],
+      "rhs": [
+       null,
+       null,
+       "sphere"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1099.124718319194,
+      839.8126822640511
+     ],
+     "options": []
+    },
+    "92290251-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "b83172d1-x",
+       "bmax",
+       null
+      ],
+      "rhs": [
+       "b83172d1-x",
+       "bmin",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "sub"
+     },
+     "uipos": [
+      9.88579210003033,
+      1767.1887831622194
+     ],
+     "options": []
+    },
+    "2de7f349-x": {
+     "name": "StringEqual",
+     "inputs": {
+      "lhs": [
+       "45c33cb2-SubInput",
+       "port",
+       ""
+      ],
+      "rhs": [
+       null,
+       null,
+       "box"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1069.6968795536354,
+      1421.1589291391547
+     ],
+     "options": []
+    },
+    "b83172d1-x": {
+     "name": "PrimitiveBoundingBox",
+     "inputs": {
+      "prim": [
+       "2f8ad289-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "exWidth": 0.0
+     },
+     "uipos": [
+      -251.82402203029918,
+      1773.5598162279862
+     ],
+     "options": []
+    },
+    "2f8ad289-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "prim"
+     },
+     "uipos": [
+      -516.2623801791331,
+      1726.5481571281557
+     ],
+     "options": []
+    },
+    "131565d5-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "b4cdb32c-x",
+       "shape",
+       null
+      ],
+      "false": [
+       "fd65ac02-x",
+       "result",
+       null
+      ],
+      "cond": [
+       "2de7f349-x",
+       "isEqual",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1071.8368902439024,
+      1616.816758351008
+     ],
+     "options": []
+    },
+    "5d41761a-BulletMakeBoxShape": {
+     "name": "BulletMakeBoxShape",
+     "inputs": {
+      "size": [
+       "92290251-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      268.8524199695122,
+      1801.9675197176562
+     ],
+     "options": []
+    },
+    "fff75fab-UnpackNumericVec": {
+     "name": "UnpackNumericVec",
+     "inputs": {
+      "vec": [
+       "41d465cd-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -204.06324562566283,
+      1151.5256329533406
+     ],
+     "options": []
+    },
+    "4fd7af5e-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "fff75fab-UnpackNumericVec",
+       "X",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       0.5
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      33.70849350477192,
+      1181.3506594644748
+     ],
+     "options": []
+    },
+    "4ea2809e-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "ff574332-x",
+       "bmin",
+       null
+      ],
+      "rhs": [
+       "ff574332-x",
+       "bmax",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      -469.17459239130426,
+      1371.0709669936375
+     ],
+     "options": []
+    },
+    "3a780f68-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "4ea2809e-x",
+       "ret",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       0.5
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      -204.8917185843054,
+      1397.5821016702018
+     ],
+     "options": []
+    },
+    "0438fad3-BulletSetShapeUserData": {
+     "name": "BulletSetShapeUserData",
+     "inputs": {
+      "shape": [
+       "b6ca337e-BulletMakeSphereShape",
+       "shape",
+       null
+      ],
+      "data": [
+       "3a780f68-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "key": "origin"
+     },
+     "uipos": [
+      545.2076981707318,
+      1221.4383947507952
+     ],
+     "options": []
+    },
+    "24c62c31-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "b83172d1-x",
+       "bmin",
+       null
+      ],
+      "rhs": [
+       "b83172d1-x",
+       "bmax",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      -251.23442470837745,
+      2009.2540429480382
+     ],
+     "options": []
+    },
+    "dd7ad520-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "24c62c31-x",
+       "ret",
+       null
+      ],
+      "rhs": [
+       null,
+       null,
+       0.5
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      13.048449098621404,
+      2035.7651776246025
+     ],
+     "options": []
+    },
+    "b4cdb32c-x": {
+     "name": "BulletSetShapeUserData",
+     "inputs": {
+      "shape": [
+       "5d41761a-BulletMakeBoxShape",
+       "shape",
+       null
+      ],
+      "data": [
+       "dd7ad520-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "key": "origin"
+     },
+     "uipos": [
+      519.8667815482502,
+      1779.1456786850479
+     ],
+     "options": []
+    },
+    "fd65ac02-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "f5f5a1d1-BulletMakeConvexHullShape",
+       "shape",
+       null
+      ],
+      "false": [
+       null,
+       null,
+       null
+      ],
+      "cond": [
+       "3aaca6c3-x",
+       "isEqual",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1080.9327273758863,
+      2238.9137170979743
+     ],
+     "options": []
+    },
+    "3aaca6c3-x": {
+     "name": "StringEqual",
+     "inputs": {
+      "lhs": [
+       "45c33cb2-SubInput",
+       "port",
+       ""
+      ],
+      "rhs": [
+       null,
+       null,
+       "convex"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1079.8283078839227,
+      2043.25588788612
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -59.559471365639524,
-    "y": 56.91629955947096,
-    "width": 320.0,
-    "height": 320.0
+    "x": 376.78747131103574,
+    "y": 461.0318532562271,
+    "width": 976.5625,
+    "height": 976.5625
    }
   }
  },
@@ -3462,7 +4087,7 @@
     "Rigid"
    ]
   },
-  "BulletGetObjectUserPrimPtr": {
+  "BulletGetObjectUserData": {
    "inputs": [
     [
      "",
@@ -3478,7 +4103,7 @@
    "outputs": [
     [
      "",
-     "prim",
+     "data",
      ""
     ],
     [
@@ -3487,7 +4112,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "string",
+     "key",
+     "prim"
+    ]
+   ],
    "categories": [
     "Rigid"
    ]
@@ -3967,7 +4598,7 @@
     "Rigid"
    ]
   },
-  "BulletSetShapeUserPrimPtr": {
+  "BulletSetShapeUserData": {
    "inputs": [
     [
      "",
@@ -3976,7 +4607,7 @@
     ],
     [
      "",
-     "prim",
+     "data",
      ""
     ],
     [
@@ -3997,7 +4628,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "string",
+     "key",
+     "prim"
+    ]
+   ],
    "categories": [
     "Rigid"
    ]
@@ -5993,7 +6630,7 @@
    ],
    "outputs": [
     [
-     "StringObject",
+     "string",
      "value",
      ""
     ],
@@ -6129,7 +6766,7 @@
    ],
    "outputs": [
     [
-     "StringObject",
+     "string",
      "path",
      ""
     ],
@@ -6215,7 +6852,7 @@
    ],
    "outputs": [
     [
-     "StringObject",
+     "string",
      "value",
      ""
     ],
@@ -6333,7 +6970,7 @@
    ],
    "outputs": [
     [
-     "StringObject",
+     "string",
      "path",
      ""
     ],
@@ -9866,6 +10503,41 @@
     "cgmesh"
    ]
   },
+  "StringEqual": {
+   "inputs": [
+    [
+     "string",
+     "lhs",
+     ""
+    ],
+    [
+     "string",
+     "rhs",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "bool",
+     "isEqual",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "string"
+   ]
+  },
   "SubCategory": {
    "inputs": [
     [
@@ -11009,6 +11681,11 @@
      "0.0"
     ],
     [
+     "enum convex sphere box",
+     "type",
+     "convex"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -11020,27 +11697,6 @@
      "shape",
      ""
     ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
-  },
-  "RigidBoxShape": {
-   "inputs": [
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
     [
      "",
      "DST",
