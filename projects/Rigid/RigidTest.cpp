@@ -1,4 +1,5 @@
 #include <zeno/zeno.h>
+#include <zeno/logger.h>
 #include <zeno/ListObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/PrimitiveObject.h>
