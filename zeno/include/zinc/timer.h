@@ -36,7 +36,7 @@ public:
     ~Timer() { _destroy(ClockType::now()); }
 
     static auto const &getRecords() { return records; }
-    static void print();
+    static std::string getLog();
 };
 
 #define ZINC_FUNC_TIMER ::zinc::Timer _zinc_timer(__func__);

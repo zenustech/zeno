@@ -2,6 +2,8 @@
 
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
+#include <stdarg.h>
 #include <string>
 
 namespace zinc {

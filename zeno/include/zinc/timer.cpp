@@ -1,4 +1,5 @@
 #include "timer.h"
+#include "format.h"
 #include <algorithm>
 #include <cstdlib>
 #include <cstdio>
@@ -24,12 +25,13 @@ void Timer::_destroy(Timer::ClockType::time_point &&end) {
 Timer *Timer::current = nullptr;
 std::vector<Timer::Record> Timer::records;
 
-void Timer::print() {
+std::string Timer::getLog() {
     if (records.size() == 0) {
-        return;
+        return "";
     }
 
-    printf("=== Begin ZINC Timing Statistics ===\n");
+    std::string res;
+    res += "=== Begin ZINC Timing Statistics ===\n";
 
     struct Statistic {
         int max_us = 0;
@@ -55,21 +57,22 @@ void Timer::print() {
         return lhs.second.total_us > rhs.second.total_us;
     });
 
-    printf("   avg   |   min   |   max   |  total  | cnt | tag\n");
+    res += "   avg   |   min   |   max   |  total  | cnt | tag\n";
     for (auto const &[tag, stat]: sortstats) {
-        printf("%9d|%9d|%9d|%9d|%5d| %s\n",
+        res += format("%9d|%9d|%9d|%9d|%5d| %s\n",
                 stat.total_us / stat.count_rec,
                 stat.min_us, stat.max_us, stat.total_us,
                 stat.count_rec, tag.c_str());
     }
 
-    printf("==== End ZINC Timing Statistics ====\n");
+    res += "==== End ZINC Timing Statistics ====\n";
 }
 
 namespace {
     static struct TimerAtexitHelper {
         ~TimerAtexitHelper() {
-            Timer::print();
+            auto log = Timer::getLog();
+            printf("%s", log.c_str());
         }
     } timerAtexitHelper;
 }
