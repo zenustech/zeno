@@ -5,6 +5,7 @@
 #include <string>
 #include <typeinfo>
 #include <zeno/utils/Exception.h>
+#include <zeno/utils/Any.h>
 
 namespace zeno {
 
@@ -31,11 +32,22 @@ std::shared_ptr<T> safe_dynamic_cast(
     return t;
 }
 
-template <class T, class A>
-T safe_any_cast(A &&a, std::string const &msg = {}) {
+template <class T>
+T safe_any_cast(std::any &&a, std::string const &msg = {}) {
     try {
-        return std::any_cast<T>(std::forward<A>(a));
+        return std::any_cast<T>(std::forward<std::any>(a));
     } catch (std::bad_any_cast const &e) {
+        throw Exception(msg + "expect `"
+                + typeid(T).name() + "`, got `"
+                + a.type().name() + "` (safe_any_cast for std::any)");
+    }
+}
+
+template <class T>
+T safe_any_cast(Any const &a, std::string const &msg = {}) {
+    if (auto o = silent_any_cast<T>(a); o.has_value()) {
+        return o.value();
+    } else {
         throw Exception(msg + "expect `"
                 + typeid(T).name() + "`, got `"
                 + a.type().name() + "` (safe_any_cast)");

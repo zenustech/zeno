@@ -10,6 +10,18 @@
 
 namespace zeno {
 
+template <int First, int Last, typename Lambda>
+inline constexpr bool static_for(Lambda const &f) {
+    if constexpr (First < Last) {
+        if (f(std::integral_constant<int, First>{})) {
+            return true;
+        } else {
+            return static_for<First + 1, Last>(f);
+        }
+    }
+    return false;
+}
+
 template <class T>
 struct is_variant : std::false_type {
 };
@@ -120,33 +132,6 @@ struct Any : std::any {
 };
 
 template <class T>
-std::optional<T> silent_any_cast(Any const &a) {
-    if constexpr (std::is_same_v<T, Any>) {
-        return std::make_optional(a);
-    } else {
-        using V = any_underlying_type_t<T>;
-        if (typeid(V) != a.type()) return std::nullopt;
-        decltype(auto) v = std::any_cast<V const &>(a);
-        if constexpr (std::is_pointer_v<T>) {
-            auto ptr = dynamic_cast<T>(v);
-            if (!ptr) return std::nullopt;
-            return std::make_optional(ptr);
-        } else if constexpr (is_shared_ptr<T>::value) {
-            using U = typename is_shared_ptr<T>::type;
-            auto ptr = std::dynamic_pointer_cast<U>(v);
-            if (!ptr) return std::nullopt;
-            return std::make_optional(ptr);
-        } else if constexpr (is_variant<V>::value && !is_variant<T>::value) {
-            return std::make_optional(std::visit([] (auto const &x) {
-                return (T)x;
-            }, v));
-        } else {
-            return std::make_optional(v);
-        }
-    }
-}
-
-template <class T>
 std::optional<T> exact_any_cast(Any a) {
     if constexpr (std::is_same_v<std::decay_t<T>, Any>) {
         return std::make_optional(a);
@@ -172,32 +157,46 @@ std::optional<T> exact_any_cast(Any a) {
     }
 }
 
-template <int First, int Last, typename Lambda>
-inline constexpr bool static_for(Lambda const &f) {
-    if constexpr (First < Last) {
-        if (f(std::integral_constant<int, First>{})) {
-            return true;
-        } else {
-            return static_for<First + 1, Last>(f);
-        }
-    }
-    return false;
-}
+template <class T>
+std::optional<T> silent_any_cast(Any const &a) {
+    if constexpr (std::is_same_v<T, Any>) {
+        return std::make_optional(a);
 
-template <class VariantT>
-VariantT variant_any_cast(Any a) {
-    using TupleT = typename is_variant<VariantT>::tuple_type;
-    VariantT v;
-    static_for<0, std::tuple_size_v<TupleT>>([&] (auto i) {
-        using T = std::tuple_element_t<i, TupleT>;
-        auto o = exact_any_cast<T>(std::move(a));
+    } else if constexpr (is_variant<T>::value) {
+    using TupleT = typename is_variant<T>::tuple_type;
+    T v;
+    if (static_for<0, std::tuple_size_v<TupleT>>([&] (auto i) {
+        using Ti = std::tuple_element_t<i, TupleT>;
+        auto o = exact_any_cast<Ti>(std::move(a));
         if (o.has_value()) {
             v = o.value();
             return true;
         }
         return false;
-    });
-    return v;
+    })) return std::make_optional(v);
+    else return std::nullopt;
+
+    } else {
+        using V = any_underlying_type_t<T>;
+        if (typeid(V) != a.type()) return std::nullopt;
+        decltype(auto) v = std::any_cast<V const &>(a);
+        if constexpr (std::is_pointer_v<T>) {
+            auto ptr = dynamic_cast<T>(v);
+            if (!ptr) return std::nullopt;
+            return std::make_optional(ptr);
+        } else if constexpr (is_shared_ptr<T>::value) {
+            using U = typename is_shared_ptr<T>::type;
+            auto ptr = std::dynamic_pointer_cast<U>(v);
+            if (!ptr) return std::nullopt;
+            return std::make_optional(ptr);
+        } else if constexpr (is_variant<V>::value && !is_variant<T>::value) {
+            return std::make_optional(std::visit([] (auto const &x) {
+                return (T)x;
+            }, v));
+        } else {
+            return std::make_optional(v);
+        }
+    }
 }
 
 using zany = Any;  /* deprecated: use zeno::Any instead */
