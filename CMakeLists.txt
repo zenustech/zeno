@@ -2,11 +2,10 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 17)
 project(zeno LANGUAGES C CXX)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
-
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if (CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 endif()
@@ -14,10 +13,8 @@ if (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w")
 endif()
 
-include_directories(include)
-
-option(ZENO_BUILD_EXTENSIONS "Build extension modules for Zeno" ON)
 option(ZENO_BUILD_TESTS "Build tests for Zeno" OFF)
+option(ZENO_BUILD_EXTENSIONS "Build extension modules for Zeno" ON)
 option(ZENO_GLOBALSTATE "Enable ZENO frame and substep support" ON)
 option(ZENO_VISUALIZATION "Enable ZENO visualization support" ON)
 option(ZENO_FAULTHANDLER "Enable ZENO fault handler for traceback" ON)
@@ -42,6 +39,8 @@ if (ZENO_ENABLE_PYTHON)
         set(CMAKE_DEBUG_POSTFIX "")
     endif()
 endif()
+
+include_directories(include)
 
 if (ZENO_ENABLE_PYTHON)
     add_subdirectory(external/pybind11)

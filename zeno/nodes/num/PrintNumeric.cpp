@@ -35,12 +35,13 @@ struct PrintNumeric : zeno::INode {
             do_print _(val);
         }, obj->value);
         std::cout << std::endl;
+        set_output("value", std::move(obj));
     }
 };
 
 ZENDEFNODE(PrintNumeric, {
     {{"NumericObject", "value"}},
-    {},
+    {{"NumericObject", "value"}},
     {{"string", "hint", "PrintNumeric"}},
     {"numeric"},
 });
