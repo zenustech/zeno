@@ -31,7 +31,6 @@ std::string Timer::getLog() {
     }
 
     std::string res;
-    res += "=== Begin ZINC Timing Statistics ===\n";
 
     struct Statistic {
         int max_us = 0;
@@ -64,17 +63,7 @@ std::string Timer::getLog() {
                 stat.min_us, stat.max_us, stat.total_us,
                 stat.count_rec, tag.c_str());
     }
-
-    res += "==== End ZINC Timing Statistics ====\n";
-}
-
-namespace {
-    static struct TimerAtexitHelper {
-        ~TimerAtexitHelper() {
-            auto log = Timer::getLog();
-            printf("%s", log.c_str());
-        }
-    } timerAtexitHelper;
+    return res;
 }
 
 }
