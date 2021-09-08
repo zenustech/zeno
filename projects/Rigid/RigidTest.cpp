@@ -304,6 +304,24 @@ ZENDEFNODE(BulletSetShapeUserData, {
     {"Rigid"},
 });
 
+struct BulletGetShapeUserData : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input<BulletCollisionShape>("shape");
+        auto key = get_param<std::string>("key");
+        auto data = object->userData.get<Any>(key);
+        auto hasValue = object->userData.has(key);
+        set_output2("hasValue", hasValue);
+        set_output2("data", std::move(data));
+    }
+};
+
+ZENDEFNODE(BulletGetShapeUserData, {
+    {"shape"},
+    {"data"},
+    {{"string", "key", "prim"}},
+    {"Rigid"},
+});
+
 
 struct BulletMakeTransform : zeno::INode {
     virtual void apply() override {
