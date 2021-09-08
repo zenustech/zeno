@@ -24,6 +24,7 @@ struct BulletTransform : zeno::IObject {
 
 struct BulletCollisionShape : zeno::IObject {
     std::unique_ptr<btCollisionShape> shape;
+    std::shared_ptr<PrimitiveObject> userPrim;
 
     BulletCollisionShape(std::unique_ptr<btCollisionShape> &&shape)
         : shape(std::move(shape)) {
@@ -286,6 +287,22 @@ ZENDEFNODE(BulletCompoundAddChild, {
     {"Rigid"},
 });
 
+struct BulletSetShapeUserPrimPtr : zeno::INode {
+    virtual void apply() override {
+        auto shape = get_input<BulletCollisionShape>("shape");
+        auto prim = get_input<PrimitiveObject>("prim");
+        shape->userPrim = std::move(prim);
+        set_output("shape", std::move(shape));
+    }
+};
+
+ZENDEFNODE(BulletSetShapeUserPrimPtr, {
+    {"shape", "prim"},
+    {"shape"},
+    {},
+    {"Rigid"},
+});
+
 
 struct BulletMakeTransform : zeno::INode {
     virtual void apply() override {
@@ -337,6 +354,7 @@ struct BulletObject : zeno::IObject {
     std::unique_ptr<btDefaultMotionState> myMotionState;
     std::unique_ptr<btRigidBody> body;
     std::shared_ptr<BulletCollisionShape> colShape;
+    std::shared_ptr<PrimitiveObject> userPrim;
     btScalar mass = 0.f;
     btTransform trans;
 
@@ -363,6 +381,7 @@ struct BulletMakeObject : zeno::INode {
         auto object = std::make_unique<BulletObject>(
             mass, trans->trans, shape);
         object->body->setDamping(0, 0);
+        object->userPrim = shape->userPrim;
         set_output("object", std::move(object));
     }
 };
@@ -370,6 +389,21 @@ struct BulletMakeObject : zeno::INode {
 ZENDEFNODE(BulletMakeObject, {
     {"shape", "trans", {"float", "mass", "0"}},
     {"object"},
+    {},
+    {"Rigid"},
+});
+
+struct BulletGetObjectUserPrimPtr : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input<BulletObject>("object");
+        auto prim = object->userPrim;
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(BulletGetObjectUserPrimPtr, {
+    {"object"},
+    {"prim"},
     {},
     {"Rigid"},
 });
