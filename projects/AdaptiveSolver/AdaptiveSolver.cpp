@@ -441,31 +441,175 @@ struct AdaptiveSolver : zeno::INode
         };
         
         // velocity extrapolation
-        auto velExtra = [&](const tbb::blocked_range<size_t> &r){
+        openvdb::Int32Grid::Ptr tag = zeno::IObject::make<VDBIntGrid>()->m_grid;
+        tag->setTree(std::make_shared<openvdb::Int32Tree>(
+            sdfgrid->tree(), /*bgval*/ openvdb::Int32(1000000),
+            openvdb::TopologyCopy()));
+        {
+            auto initTag= [&](const tbb::blocked_range<size_t> &r){
+                    auto sdf_axr{sdfgrid->getConstAccessor()};
+                    auto tag_axr{tag->getAccessor()};
+                    for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                        auto &leaf = *leaves[liter];
+                        for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                            auto coord = leaf.offsetToGlobalCoord(offset);
+                            if(!sdf_axr.isValueOn(coord))
+                                continue;
+                            if(sdf_axr.getValue(coord) <= 0)
+                                tag_axr.setValue(coord, 0);
+                        }
+                    }
+            };    
+
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), initTag);
             
-            for (auto liter = r.begin(); liter != r.end(); ++liter) {
-                auto &leaf = *leaves[liter];
-                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-
+            for(int d=1;d<5;++d)
+            {
+                auto computeTag = [&](const tbb::blocked_range<size_t> &r){
+                    auto tag_axr{tag->getConstAccessor()};
+                    auto sdf_axr{sdfgrid->getConstAccessor()};
+                    
+                    for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                        auto &leaf = *leaves[liter];
+                        for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                            auto coord = leaf.offsetToGlobalCoord(offset);
+                            if(!sdf_axr.isValueOn(coord))
+                                continue;
+                            int flag = 0, tag = tag_axr.getValue(coord);
+                            if(tag < d)
+                                continue;
+                            for(int ss=0;ss<3;++ss)
+                            {
+                                if(flag)
+                                    break;
+                                for(int i=-1;i<=1;i+=2)
+                                {
+                                    auto ipos = coord;
+                                    ipos[ss] += i;
+                                    if(!sdf_axr.isValueOn(ipos) && tag_axr.getValue(ipos) < d)
+                                    {
+                                        tag_axr.setValue(coord, d);
+                                        flag = 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                        }
                 }
-            }
-        };
+            };
         
-        // semi-lagrangian advection
-        auto advect = [&](const tbb::blocked_range<size_t> &r){
-            auto press_axr{pressGrid->getConstAccessor()};
-            auto sdf_axr{sdfgrid->getAccessor()};
-            auto vel_axr{velGrid->getAccessor()};
-            //auto ssdf_axr{staggeredSDFGrid->getAccessor()};
-            for (auto liter = r.begin(); liter != r.end(); ++liter) {
-                auto &leaf = *leaves[liter];
-                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-                    auto coord = leaf.offsetToGlobalCoord(offset);
-
-                }
+                auto sweep = [&](const tbb::blocked_range<size_t> &r){
+                    auto tag_axr{tag->getAccessor()};
+                    auto sdf_axr{sdfgrid->getConstAccessor()};
+                    auto vel_axr{velGrid->getAccessor()};
+                    for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                        auto &leaf = *leaves[liter];
+                        for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                            auto coord = leaf.offsetToGlobalCoord(offset);
+                            if(!sdf_axr.isValueOn(coord))
+                                continue;
+                            int tagV = tag_axr.getValue(coord);
+                            if(tagV != d)
+                                continue;
+                            openvdb::Vec3f vel(0.0f);
+                            int count = 0;
+                            for(int ss = 0;ss < 3;++ss)
+                            for(int i=-1;i<=1;i+=2)
+                            {
+                                auto ipos = coord;
+                                ipos[ss] += i;
+                                auto tagNei = tag_axr.getValue(ipos);
+                                if(tagNei < tagV)
+                                {
+                                    count++;
+                                    vel += vel_axr.getValue(ipos);
+                                }
+                            }
+                            vel /= count;
+                        }
+                    }
+                };
+            
+                tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), initTag);
+                tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), sweep);
+        
             }
-        };
+        }
 
+        // semi-lagrangian advection.
+        {
+            auto newsdf = sdfgrid->deepCopy();
+            auto newvel = velGrid->deepCopy();
+            auto advect = [&](const tbb::blocked_range<size_t> &r){
+                auto tag_axr{tag->getConstAccessor()};
+                auto sdf_axr{sdfgrid->getConstAccessor()};
+                auto vel_axr{velGrid->getConstAccessor()};
+                auto nsdf_axr{newsdf->getAccessor()};
+                auto nvel_axr{newvel->getAccessor()};
+                //auto ssdf_axr{staggeredSDFGrid->getAccessor()};
+                for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                    auto &leaf = *leaves[liter];
+                    for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                        auto coord = leaf.offsetToGlobalCoord(offset);
+                        auto wpos = sdfgrid->indexToWorld(coord);
+                        if(!sdf_axr.isValueOn(coord) || tag_axr.getValue(coord) > 100)
+                            continue;
+                        auto vel = vel_axr.getValue(coord);
+
+                        // at first we need to compute the mid-point velocity
+                        auto midpos = wpos - 0.5 * dt * vel;
+
+                        openvdb::Coord midipos = openvdb::Coord(openvdb::Vec3i(sdfgrid->worldToIndex(midpos)));
+                        auto basepos = sdfgrid->indexToWorld(midipos);
+                        openvdb::Vec3f midvel(0);
+                        openvdb::Vec3f x((midpos - basepos) / dx);
+                        
+                        for(int ii=0;ii<=1;++ii)
+                        for(int jj=0;jj<=1;++jj)
+                        for(int kk=0;kk<=1;++kk)
+                        {
+                            auto neipos = midipos + openvdb::Coord(ii, jj, kk);
+                            if(!vel_axr.isValueOn(neipos))
+                                continue;
+                            auto neivel = vel_axr.getValue(neipos);
+                            midvel += (ii*(float)(x[0])+(1-ii)*(1-(float)(x[0])))*
+                                            (jj*(float)(x[1])+(1-jj)*(1-(float)(x[1])))*
+                                            (kk*(float)(x[2])+(1-kk)*(1-(float)(x[2])))*neivel;
+                        
+                        }
+
+                        // then we can get the final position and its quantity
+                        auto pwpos = wpos - dt * midvel;
+                        openvdb::Coord pipos = openvdb::Coord(openvdb::Vec3i(sdfgrid->worldToIndex(pwpos)));
+                        basepos = sdfgrid->indexToWorld(pipos);
+                        openvdb::Vec3f pvel(0);
+                        float psdf=0;
+                        x = (pwpos - basepos) / dx;
+                        for(int ii=0;ii<=1;++ii)
+                        for(int jj=0;jj<=1;++jj)
+                        for(int kk=0;kk<=1;++kk)
+                        {
+                            auto neipos = midipos + openvdb::Coord(ii, jj, kk);
+                            if(!vel_axr.isValueOn(neipos))
+                                continue;
+                            auto neivel = vel_axr.getValue(neipos);
+                            auto neisdf = sdf_axr.getValue(neipos);
+                            auto weight = (ii*(float)(x[0])+(1-ii)*(1-(float)(x[0])))*
+                                            (jj*(float)(x[1])+(1-jj)*(1-(float)(x[1])))*
+                                            (kk*(float)(x[2])+(1-kk)*(1-(float)(x[2])));
+                            pvel += weight * neivel;
+                            psdf += weight * neisdf;
+                        }
+                        nvel_axr.setValue(coord, pvel);
+                        nsdf_axr.setValue(coord, psdf);
+
+                    }
+                }
+            };
+            sdfgrid = newsdf->deepCopy();
+            velGrid = newvel->deepCopy();
+        }
     };
 };
 
