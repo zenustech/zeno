@@ -588,6 +588,63 @@ ZENDEFNODE(BulletExtractTransform, {
 });
 
 
+/*static class btTaskSchedulerManager {
+	btAlignedObjectArray<btITaskScheduler*> m_taskSchedulers;
+	btAlignedObjectArray<btITaskScheduler*> m_allocatedTaskSchedulers;
+
+public:
+	btTaskSchedulerManager() {}
+	void init()
+	{
+		addTaskScheduler(btGetSequentialTaskScheduler());
+#if BT_THREADSAFE
+		if (btITaskScheduler* ts = btCreateDefaultTaskScheduler())
+		{
+			m_allocatedTaskSchedulers.push_back(ts);
+			addTaskScheduler(ts);
+		}
+		addTaskScheduler(btGetOpenMPTaskScheduler());
+		addTaskScheduler(btGetTBBTaskScheduler());
+		addTaskScheduler(btGetPPLTaskScheduler());
+		if (getNumTaskSchedulers() > 1)
+		{
+			// prefer a non-sequential scheduler if available
+			btSetTaskScheduler(m_taskSchedulers[1]);
+		}
+		else
+		{
+			btSetTaskScheduler(m_taskSchedulers[0]);
+		}
+#endif  // #if BT_THREADSAFE
+	}
+	void shutdown()
+	{
+		for (int i = 0; i < m_allocatedTaskSchedulers.size(); ++i)
+		{
+			delete m_allocatedTaskSchedulers[i];
+		}
+		m_allocatedTaskSchedulers.clear();
+	}
+
+	void addTaskScheduler(btITaskScheduler* ts)
+	{
+		if (ts)
+		{
+#if BT_THREADSAFE
+			// if initial number of threads is 0 or 1,
+			if (ts->getNumThreads() <= 1)
+			{
+				// for OpenMP, TBB, PPL set num threads to number of logical cores
+				ts->setNumThreads(ts->getMaxNumThreads());
+			}
+#endif  // #if BT_THREADSAFE
+			m_taskSchedulers.push_back(ts);
+		}
+	}
+	int getNumTaskSchedulers() const { return m_taskSchedulers.size(); }
+	btITaskScheduler* getTaskScheduler(int i) { return m_taskSchedulers[i]; }
+} gTaskSchedulerMgr; */
+
 struct BulletWorld : zeno::IObject {
     std::unique_ptr<btDefaultCollisionConfiguration> collisionConfiguration;
     std::unique_ptr<btCollisionDispatcherMt> dispatcher;
@@ -602,7 +659,13 @@ struct BulletWorld : zeno::IObject {
     std::set<std::shared_ptr<BulletConstraint>> constraints;
 
     BulletWorld() {
+        /*if (NULL != btGetTaskScheduler() && gTaskSchedulerMgr.getNumTaskSchedulers() > 1) {
+            spdlog::critical("bullet multithreading enabled!");
+        } else {
+            spdlog::critical("bullet multithreading disabled...");
+        }*/
 #if 0
+
 		btDefaultCollisionConstructionInfo cci;
 		cci.m_defaultMaxPersistentManifoldPoolSize = 80000;
 		cci.m_defaultMaxCollisionAlgorithmPoolSize = 80000;
@@ -610,7 +673,7 @@ struct BulletWorld : zeno::IObject {
 #else
         collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
 #endif
-        dispatcher = std::make_unique<btCollisionDispatcherMt>(collisionConfiguration.get());
+        dispatcher = std::make_unique<btCollisionDispatcherMt>(collisionConfiguration.get(), 40);
         broadphase = std::make_unique<btDbvtBroadphase>();
         solver = std::make_unique<btSequentialImpulseConstraintSolverMt>();
         std::vector<btConstraintSolver *> solversPtr;
