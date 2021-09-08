@@ -4,73 +4,43 @@
 #include <zeno/utils/source_location.h>
 #include <string_view>
 #include <spdlog/spdlog.h>
+#include <string_view>
 #include <memory>
 
 namespace zeno {
 
 ZENO_API spdlog::logger *get_spdlog_logger();
 
-template <class ...Args>
-void log_print(source_location const &location, spdlog::level_t log_level,
-        fmt::format_string<Args...> &&fmt, Args &&...args) {
-    spdlog::source_loc loc(location.file_name(), location.line(), location.function_name());
-    get_spdlog_logger()->log(loc, log_level,
-            std::forward<fmt::format_string<Args...>>(fmt),
-            std::forward<Args>(args)...);
-}
+namespace __log_print {
+    struct format_string {
+        std::string_view str;
+        source_location loc;
+
+        format_string(const char *str, source_location loc = source_location::current())
+            : str(str), loc(loc) {}
+        format_string(std::string_view str, source_location loc = source_location::current())
+            : str(str), loc(loc) {}
+    };
+};
 
 template <class ...Args>
-void log_trace(fmt::format_string<Args...> &&fmt, Args &&...args,
-        source_location const &location = source_location::current()) {
-    spdlog::source_loc loc(location.file_name(), location.line(), location.function_name());
-    log_print(location, spdlog::level::trace,
-            std::forward<fmt::format_string<Args...>>(fmt),
-            std::forward<Args>(args)...);
+void log_print(spdlog::level_t log_level,
+        __log_print::format_string const &fmt, Args &&...args) {
+    spdlog::source_loc loc(fmt.loc.file_name(), fmt.loc.line(), fmt.loc.function_name());
+    get_spdlog_logger()->log(loc, log_level, fmt.str, std::forward<Args>(args)...);
 }
 
-template <class ...Args>
-void log_debug(fmt::format_string<Args...> &&fmt, Args &&...args,
-        source_location const &location = source_location::current()) {
-    spdlog::source_loc loc(location.file_name(), location.line(), location.function_name());
-    log_print(location, spdlog::level::debug,
-            std::forward<fmt::format_string<Args...>>(fmt),
-            std::forward<Args>(args)...);
+#define _PER_LOG_LEVEL(x, y) \
+template <class ...Args> \
+void log_##x(__log_print::format_string const &fmt, Args &&...args) { \
+    log_print(spdlog::level::y, fmt, std::forward<Args>(args)...); \
 }
-
-template <class ...Args>
-void log_info(fmt::format_string<Args...> &&fmt, Args &&...args,
-        source_location const &location = source_location::current()) {
-    spdlog::source_loc loc(location.file_name(), location.line(), location.function_name());
-    log_print(location, spdlog::level::info,
-            std::forward<fmt::format_string<Args...>>(fmt),
-            std::forward<Args>(args)...);
-}
-
-template <class ...Args>
-void log_critical(fmt::format_string<Args...> &&fmt, Args &&...args,
-        source_location const &location = source_location::current()) {
-    spdlog::source_loc loc(location.file_name(), location.line(), location.function_name());
-    log_print(location, spdlog::level::critical,
-            std::forward<fmt::format_string<Args...>>(fmt),
-            std::forward<Args>(args)...);
-}
-
-template <class ...Args>
-void log_warn(fmt::format_string<Args...> &&fmt, Args &&...args,
-        source_location const &location = source_location::current()) {
-    spdlog::source_loc loc(location.file_name(), location.line(), location.function_name());
-    log_print(location, spdlog::level::warn,
-            std::forward<fmt::format_string<Args...>>(fmt),
-            std::forward<Args>(args)...);
-}
-
-template <class ...Args>
-void log_error(fmt::format_string<Args...> &&fmt, Args &&...args,
-        source_location const &location = source_location::current()) {
-    spdlog::source_loc loc(location.file_name(), location.line(), location.function_name());
-    log_print(location, spdlog::level::err,
-            std::forward<fmt::format_string<Args...>>(fmt),
-            std::forward<Args>(args)...);
-}
+_PER_LOG_LEVEL(trace, trace)
+_PER_LOG_LEVEL(debug, debug)
+_PER_LOG_LEVEL(info, info)
+_PER_LOG_LEVEL(critical, critical)
+_PER_LOG_LEVEL(warn, warn)
+_PER_LOG_LEVEL(error, err)
+#undef _PER_LOG_LEVEL
 
 }
