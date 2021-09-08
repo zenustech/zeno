@@ -177,7 +177,7 @@
       "steps": [
        null,
        null,
-       10
+       1
       ],
       "dt": [
        null,
@@ -337,8 +337,8 @@
      },
      "params": {},
      "uipos": [
-      -3947.404009109501,
-      -141.72047913494652
+      -4491.965512526357,
+      -182.65157252902395
      ],
      "options": []
     },
@@ -430,7 +430,7 @@
      },
      "params": {
       "x": 0.0,
-      "y": -3.0,
+      "y": -2.0,
       "z": 0.0
      },
      "uipos": [
@@ -509,8 +509,8 @@
        null
       ],
       "obj1": [
-       null,
-       null,
+       "7b5cc8d6-x",
+       "object",
        null
       ],
       "obj2": [
@@ -550,8 +550,8 @@
      "name": "RigidRecenterPrim",
      "inputs": {
       "prim": [
-       "532dbdc0-TranslatePrimitive",
-       "prim",
+       "43e411cb-BeginForEach",
+       "object",
        null
       ],
       "SRC": [
@@ -562,8 +562,8 @@
      },
      "params": {},
      "uipos": [
-      -4570.262099739318,
-      -57.59283656532975
+      -4801.6117580536675,
+      -114.54044476578532
      ],
      "options": []
     },
@@ -675,113 +675,6 @@
      "uipos": [
       -1582.0274145856656,
       -237.75147343644426
-     ],
-     "options": []
-    },
-    "af6e491e-NumericVec3": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 0.0,
-      "y": 4.0,
-      "z": 0.0
-     },
-     "uipos": [
-      -4846.2414578587695,
-      -354.21412300683363
-     ],
-     "options": []
-    },
-    "0309120d-TransformPrimitive": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "a51bd4b6-RigidRecenterPrim",
-       "outPrim",
-       null
-      ],
-      "translation": [
-       null,
-       null,
-       null
-      ],
-      "eulerXYZ": [
-       null,
-       null,
-       null
-      ],
-      "quatRotation": [
-       null,
-       null,
-       null
-      ],
-      "scaling": [
-       "add797d6-x",
-       "vec3",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -4417.941565615919,
-      -510.4722218433293
-     ],
-     "options": []
-    },
-    "add797d6-x": {
-     "name": "NumericVec3",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "x": 0.9,
-      "y": 0.9,
-      "z": 0.9
-     },
-     "uipos": [
-      -4119.876420280168,
-      -507.95220492954854
-     ],
-     "options": []
-    },
-    "532dbdc0-TranslatePrimitive": {
-     "name": "TranslatePrimitive",
-     "inputs": {
-      "prim": [
-       "43e411cb-BeginForEach",
-       "object",
-       null
-      ],
-      "translation": [
-       "af6e491e-NumericVec3",
-       "vec3",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -4833.71298405467,
-      -136.67425968109342
      ],
      "options": []
     },
@@ -902,7 +795,7 @@
       "breakThres": [
        null,
        null,
-       0.05
+       2.0
       ],
       "SRC": [
        null,
@@ -1118,13 +1011,151 @@
       -194.07744874715263
      ],
      "options": []
+    },
+    "7d92cd3f-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": -3.0,
+      "y": 2.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -4585.490468064942,
+      1175.8024664870602
+     ],
+     "options": []
+    },
+    "7b5cc8d6-x": {
+     "name": "RigidMakeObject",
+     "inputs": {
+      "prim": [
+       "8d0a8107-x",
+       "outPrim",
+       null
+      ],
+      "origin": [
+       "7d92cd3f-x",
+       "vec3",
+       null
+      ],
+      "rotation": [
+       null,
+       null,
+       null
+      ],
+      "mass": [
+       null,
+       null,
+       3.0
+      ],
+      "dampLin": [
+       null,
+       null,
+       0.1
+      ],
+      "dampAng": [
+       null,
+       null,
+       0.06
+      ],
+      "friction": [
+       null,
+       null,
+       0.7
+      ],
+      "restitution": [
+       null,
+       null,
+       0.6
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -4273.779751589761,
+      968.1854505881537
+     ],
+     "options": []
+    },
+    "8d0a8107-x": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "7c5785f8-x",
+       "prim",
+       null
+      ],
+      "translation": [
+       null,
+       null,
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -4603.380561806872,
+      894.1917836374731
+     ],
+     "options": []
+    },
+    "7c5785f8-x": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/sphere.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -4902.537360317175,
+      861.5551644924388
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 1374.583797323676,
-    "y": 300.5074480040902,
-    "width": 500.0,
-    "height": 500.0
+    "x": -4795.184898359765,
+    "y": 809.0164367632223,
+    "width": 400.0,
+    "height": 400.0
    }
   },
   "RigidStepWorld": {
@@ -1509,7 +1540,7 @@
      "params": {
       "name": "steps",
       "type": "int",
-      "defl": "10"
+      "defl": "1"
      },
      "uipos": [
       1091.4421868080321,
@@ -1539,8 +1570,8 @@
     }
    },
    "view_rect": {
-    "x": 498.77257123850006,
-    "y": 694.9820480580402,
+    "x": 466.8819106462455,
+    "y": 635.7565355295678,
     "width": 500.0,
     "height": 500.0
    }
@@ -1802,7 +1833,7 @@
       "margin": [
        null,
        null,
-       -0.05
+       -0.04
       ],
       "highres": [
        null,
@@ -1817,8 +1848,8 @@
      },
      "params": {},
      "uipos": [
-      837.8595980484181,
-      1.5381830896845372
+      832.7570923536572,
+      215.11449288467315
      ],
      "options": []
     },
@@ -2230,32 +2261,11 @@
       43.171806167400916
      ],
      "options": []
-    },
-    "fea8b93d-BulletMakeConvexMeshShape": {
-     "name": "BulletMakeConvexMeshShape",
-     "inputs": {
-      "triMesh": [
-       "79716266-x",
-       "mesh",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      839.3621867881549,
-      256.4464692482916
-     ],
-     "options": []
     }
    },
    "view_rect": {
-    "x": 1947.8208785346153,
-    "y": 23.114661280066592,
+    "x": 727.2286234093388,
+    "y": 13.456346929269785,
     "width": 400.0,
     "height": 400.0
    }
@@ -2652,7 +2662,7 @@
      "params": {
       "name": "breakThres",
       "type": "float",
-      "defl": "0.05"
+      "defl": "2"
      },
      "uipos": [
       -328.7037037037037,
@@ -9004,6 +9014,47 @@
     "list"
    ]
   },
+  "RigidMakeConstraint": {
+   "inputs": [
+    [
+     "",
+     "obj1",
+     ""
+    ],
+    [
+     "",
+     "obj2",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "2"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
   "RigidMakeObject": {
    "inputs": [
     [
@@ -10645,47 +10696,6 @@
    "categories": [
     "openvdb"
    ]
-  },
-  "RigidMakeConstraint": {
-   "inputs": [
-    [
-     "",
-     "obj1",
-     ""
-    ],
-    [
-     "",
-     "obj2",
-     ""
-    ],
-    [
-     "float",
-     "breakThres",
-     "0.05"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "constraint",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],

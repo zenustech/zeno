@@ -217,6 +217,7 @@ struct BulletMakeConvexHullShape : zeno::INode {
         auto convex = std::make_unique<btConvexHullShape>(
              (const btScalar *)hull->getVertexPointer(), hull->numVertices());
         convex->setMargin(margin);
+        //convex->setSafeMargin(0.f, 0.01f);
 #else
         auto convexHC = std::make_unique<btConvexHullComputer>();
         std::vector<float> vertices;
