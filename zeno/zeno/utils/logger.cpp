@@ -16,16 +16,16 @@ ZENO_API spdlog::logger *get_spdlog_logger() {
 }
 
 static void initialize_spdlog() {
-    spdlog::set_pattern("%^[%L %D %X.%e] %v%$");
+    spdlog::set_pattern("%^[%L %X.%e] (%s:%#) %v%$");
     if (auto env = getenv("ZEN_LOGLEVEL"); env) {
         if (0) {
 #define _PER_LEVEL(x, y) } else if (!strcmp(env, #x)) { spdlog::set_level(spdlog::level::y);
-        _PER_LEVEL(0, trace)
-        _PER_LEVEL(1, debug)
-        _PER_LEVEL(2, info)
-        _PER_LEVEL(3, critical)
-        _PER_LEVEL(4, warn)
-        _PER_LEVEL(5, err)
+        _PER_LEVEL(trace, trace)
+        _PER_LEVEL(debug, debug)
+        _PER_LEVEL(info, info)
+        _PER_LEVEL(critical, critical)
+        _PER_LEVEL(warn, warn)
+        _PER_LEVEL(error, err)
 #undef _PER_LEVEL
         }
     }

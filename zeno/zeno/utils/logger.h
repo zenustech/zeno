@@ -3,7 +3,7 @@
 #include <zeno/utils/api.h>
 #include <zeno/utils/source_location.h>
 #include <spdlog/spdlog.h>
-#include <fmt/core.h>
+#include <spdlog/fmt/bundled/core.h>
 #include <string_view>
 #include <memory>
 
@@ -16,7 +16,8 @@ namespace __log_print {
         std::string_view str;
         source_location loc;
 
-        format_string(const char *str, source_location loc = source_location::current())
+        template <class Str>
+        format_string(Str str, source_location loc = source_location::current())
             : str(str), loc(loc) {}
 
         operator auto const &() const { return str; }

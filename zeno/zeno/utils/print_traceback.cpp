@@ -15,8 +15,8 @@
 #include <algorithm>
 #include <memory>
 #include <mutex>
-#include <fmt/core.h>
-#include <fmt/color.h>
+#include <spdlog/fmt/bundled/core.h>
+#include <spdlog/fmt/bundled/color.h>
 
 #ifdef __APPLE__
 #include <execinfo.h>

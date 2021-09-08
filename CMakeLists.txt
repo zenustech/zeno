@@ -47,7 +47,6 @@ if (ZENO_ENABLE_PYTHON)
 endif()
 
 add_subdirectory(external/spdlog)
-add_subdirectory(external/fmt)
 
 add_subdirectory(zeno)
 

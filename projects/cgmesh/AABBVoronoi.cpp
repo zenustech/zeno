@@ -1,4 +1,5 @@
 #include <zeno/zeno.h>
+#include <zeno/utils/logger.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -119,8 +120,7 @@ struct AABBVoronoi : INode {
             } while (cl.inc());
         }
 
-        printf("AABBVoronoi got %zd pieces, %zd neighs\n",
-                pieces->arr.size(), neighs->arr.size());
+        log_info("AABBVoronoi got {} pieces, {} neighs", pieces->arr.size(), neighs->arr.size());
 
         if (triangulate) {
             for (auto const &prim: pieces->get<std::shared_ptr<PrimitiveObject>>()) {
