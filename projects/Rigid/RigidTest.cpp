@@ -5,6 +5,10 @@
 #include <zeno/utils/UserData.h>
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
+#include <BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h>
+#include <BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolverMt.h>
+#include <BulletDynamics/Dynamics/btSimulationIslandManagerMt.h>
+#include <BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.h>
 #include <LinearMath/btConvexHullComputer.h>
 #include <hacdCircularList.h>
 #include <spdlog/spdlog.h>
@@ -585,17 +589,30 @@ ZENDEFNODE(BulletExtractTransform, {
 
 
 struct BulletWorld : zeno::IObject {
-    std::unique_ptr<btDefaultCollisionConfiguration> collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
-    std::unique_ptr<btCollisionDispatcher> dispatcher = std::make_unique<btCollisionDispatcher>(collisionConfiguration.get());
-    std::unique_ptr<btBroadphaseInterface> overlappingPairCache = std::make_unique<btDbvtBroadphase>();
-    std::unique_ptr<btSequentialImpulseConstraintSolver> solver = std::make_unique<btSequentialImpulseConstraintSolver>();
+    std::unique_ptr<btDefaultCollisionConfiguration> collisionConfiguration;
+    std::unique_ptr<btCollisionDispatcherMt> dispatcher;
+    std::unique_ptr<btBroadphaseInterface> broadphase;
+    std::unique_ptr<btSequentialImpulseConstraintSolverMt> solver;
+    std::vector<std::unique_ptr<btSequentialImpulseConstraintSolver>> solvers;
+    std::unique_ptr<btConstraintSolverPoolMt> solverPool;
 
-    std::unique_ptr<btDiscreteDynamicsWorld> dynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>(dispatcher.get(), overlappingPairCache.get(), solver.get(), collisionConfiguration.get());
+    std::unique_ptr<btDiscreteDynamicsWorldMt> dynamicsWorld;
 
     std::set<std::shared_ptr<BulletObject>> objects;
     std::set<std::shared_ptr<BulletConstraint>> constraints;
 
     BulletWorld() {
+        collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
+        dispatcher = std::make_unique<btCollisionDispatcherMt>(collisionConfiguration.get());
+        broadphase = std::make_unique<btDbvtBroadphase>();
+        solver = std::make_unique<btSequentialImpulseConstraintSolverMt>();
+        for (int i = 0; i < BT_MAX_THREAD_COUNT; i++) {
+            solvers.push_back(std::make_unique<btSequentialImpulseConstraintSolver>());
+        }
+        solverPool = std::make_unique<btConstraintSolverPoolMt>(solvers.data(), solvers.size());
+        dynamicsWorld = std::make_unique<btDiscreteDynamicsWorldMt>(
+                dispatcher.get(), broadphase.get(), solverPool.get(), solver.get(),
+                collisionConfiguration.get());
         dynamicsWorld->setGravity(btVector3(0, -10, 0));
     }
 
