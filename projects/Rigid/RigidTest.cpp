@@ -602,14 +602,24 @@ struct BulletWorld : zeno::IObject {
     std::set<std::shared_ptr<BulletConstraint>> constraints;
 
     BulletWorld() {
+#if 0
+		btDefaultCollisionConstructionInfo cci;
+		cci.m_defaultMaxPersistentManifoldPoolSize = 80000;
+		cci.m_defaultMaxCollisionAlgorithmPoolSize = 80000;
+        collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>(cci);
+#else
         collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
+#endif
         dispatcher = std::make_unique<btCollisionDispatcherMt>(collisionConfiguration.get());
         broadphase = std::make_unique<btDbvtBroadphase>();
         solver = std::make_unique<btSequentialImpulseConstraintSolverMt>();
+        std::vector<btConstraintSolver *> solversPtr;
         for (int i = 0; i < BT_MAX_THREAD_COUNT; i++) {
-            solvers.push_back(std::make_unique<btSequentialImpulseConstraintSolver>());
+            auto sol = std::make_unique<btSequentialImpulseConstraintSolver>();
+            solversPtr.push_back(sol.get());
+            solvers.push_back(std::move(sol));
         }
-        solverPool = std::make_unique<btConstraintSolverPoolMt>(solvers.data(), solvers.size());
+        solverPool = std::make_unique<btConstraintSolverPoolMt>(solversPtr.data(), solversPtr.size());
         dynamicsWorld = std::make_unique<btDiscreteDynamicsWorldMt>(
                 dispatcher.get(), broadphase.get(), solverPool.get(), solver.get(),
                 collisionConfiguration.get());
