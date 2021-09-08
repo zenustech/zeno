@@ -10,20 +10,22 @@ namespace zeno {
 
 std::shared_ptr<spdlog::logger> g_logger;
 
-ZENO_API spdlog::logger &logger() {
-    return *g_logger;
+ZENO_API spdlog::logger *get_spdlog_logger() {
+    assert(g_logger);
+    return g_logger.get();
 }
 
 static void initialize_spdlog() {
+    spdlog::set_pattern("%^[%L %D %X.%e] %v%$");
     if (auto env = getenv("ZEN_LOGLEVEL"); env) {
         if (0) {
 #define _PER_LEVEL(x, y) } else if (!strcmp(env, #x)) { spdlog::set_level(spdlog::level::y);
-        _PER_LEVEL(t, trace)
-        _PER_LEVEL(d, debug)
-        _PER_LEVEL(i, info)
-        _PER_LEVEL(c, critical)
-        _PER_LEVEL(w, warn)
-        _PER_LEVEL(e, err)
+        _PER_LEVEL(0, trace)
+        _PER_LEVEL(1, debug)
+        _PER_LEVEL(2, info)
+        _PER_LEVEL(3, critical)
+        _PER_LEVEL(4, warn)
+        _PER_LEVEL(5, err)
 #undef _PER_LEVEL
         }
     }
