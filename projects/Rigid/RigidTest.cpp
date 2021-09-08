@@ -2,6 +2,7 @@
 #include <zeno/ListObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/PrimitiveObject.h>
+#include <zeno/utils/UserData.h>
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
 #include <LinearMath/btConvexHullComputer.h>
@@ -24,7 +25,7 @@ struct BulletTransform : zeno::IObject {
 
 struct BulletCollisionShape : zeno::IObject {
     std::unique_ptr<btCollisionShape> shape;
-    std::shared_ptr<PrimitiveObject> userPrim;
+    UserData userData;
 
     BulletCollisionShape(std::unique_ptr<btCollisionShape> &&shape)
         : shape(std::move(shape)) {
@@ -46,15 +47,15 @@ struct BulletCompoundShape : BulletCollisionShape {
 
 struct BulletMakeBoxShape : zeno::INode {
     virtual void apply() override {
-        auto v3size = get_input<zeno::NumericObject>("v3size")->get<zeno::vec3f>();
+        auto size = get_input<zeno::NumericObject>("size")->get<zeno::vec3f>();
         auto shape = std::make_shared<BulletCollisionShape>(
-            std::make_unique<btBoxShape>(zeno::vec_to_other<btVector3>(v3size)));
+            std::make_unique<btBoxShape>(zeno::vec_to_other<btVector3>(size)));
         set_output("shape", std::move(shape));
     }
 };
 
 ZENDEFNODE(BulletMakeBoxShape, {
-    {"v3size"},
+    {{"vec3f", "size", "1,1,1"}},
     {"shape"},
     {},
     {"Rigid"},
@@ -70,7 +71,7 @@ struct BulletMakeSphereShape : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeSphereShape, {
-    {"radius"},
+    {{"float", "radius", "1"}},
     {"shape"},
     {},
     {"Rigid"},
@@ -287,19 +288,19 @@ ZENDEFNODE(BulletCompoundAddChild, {
     {"Rigid"},
 });
 
-struct BulletSetShapeUserPrimPtr : zeno::INode {
+struct BulletSetShapeUserData : zeno::INode {
     virtual void apply() override {
         auto shape = get_input<BulletCollisionShape>("shape");
-        auto prim = get_input<PrimitiveObject>("prim");
-        shape->userPrim = std::move(prim);
+        auto key = get_param<std::string>("key");
+        shape->userData.get<Any>(key) = get_input2("data");
         set_output("shape", std::move(shape));
     }
 };
 
-ZENDEFNODE(BulletSetShapeUserPrimPtr, {
-    {"shape", "prim"},
+ZENDEFNODE(BulletSetShapeUserData, {
+    {"shape", "data"},
     {"shape"},
-    {},
+    {{"string", "key", "prim"}},
     {"Rigid"},
 });
 
@@ -354,9 +355,9 @@ struct BulletObject : zeno::IObject {
     std::unique_ptr<btDefaultMotionState> myMotionState;
     std::unique_ptr<btRigidBody> body;
     std::shared_ptr<BulletCollisionShape> colShape;
-    std::shared_ptr<PrimitiveObject> userPrim;
     btScalar mass = 0.f;
     btTransform trans;
+    UserData userData;
 
     BulletObject(btScalar mass_,
         btTransform const &trans,
@@ -381,7 +382,7 @@ struct BulletMakeObject : zeno::INode {
         auto object = std::make_unique<BulletObject>(
             mass, trans->trans, shape);
         object->body->setDamping(0, 0);
-        object->userPrim = shape->userPrim;
+        object->userData = shape->userData;
         set_output("object", std::move(object));
     }
 };
@@ -393,18 +394,19 @@ ZENDEFNODE(BulletMakeObject, {
     {"Rigid"},
 });
 
-struct BulletGetObjectUserPrimPtr : zeno::INode {
+struct BulletGetObjectUserData : zeno::INode {
     virtual void apply() override {
         auto object = get_input<BulletObject>("object");
-        auto prim = object->userPrim;
-        set_output("prim", std::move(prim));
+        auto key = get_param<std::string>("key");
+        auto data = object->userData.get<Any>(key);
+        set_output2("prim", std::move(data));
     }
 };
 
-ZENDEFNODE(BulletGetObjectUserPrimPtr, {
+ZENDEFNODE(BulletGetObjectUserData, {
     {"object"},
-    {"prim"},
-    {},
+    {"data"},
+    {{"string", "key", "prim"}},
     {"Rigid"},
 });
 

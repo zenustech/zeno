@@ -2855,6 +2855,88 @@
     "width": 320.0,
     "height": 320.0
    }
+  },
+  "RigidBoxShape": {
+   "nodes": {
+    "861318f0-BulletMakeBoxShape": {
+     "name": "BulletMakeBoxShape",
+     "inputs": {
+      "size": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -112.37885462555064,
+      177.18061674008806
+     ],
+     "options": []
+    },
+    "a8f7b498-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "8ba5e07b-BulletSetShapeUserPrimPtr",
+       "shape",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "output1",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      447.57709251101323,
+      132.51101321585907
+     ],
+     "options": []
+    },
+    "8ba5e07b-BulletSetShapeUserPrimPtr": {
+     "name": "BulletSetShapeUserPrimPtr",
+     "inputs": {
+      "shape": [
+       "861318f0-BulletMakeBoxShape",
+       "shape",
+       null
+      ],
+      "prim": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      176.21145374449338,
+      182.55506607929513
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -59.559471365639524,
+    "y": 56.91629955947096,
+    "width": 320.0,
+    "height": 320.0
+   }
   }
  },
  "views": {},
@@ -3413,9 +3495,9 @@
   "BulletMakeBoxShape": {
    "inputs": [
     [
-     "",
-     "v3size",
-     ""
+     "vec3f",
+     "size",
+     "1,1,1"
     ],
     [
      "",
@@ -3618,9 +3700,9 @@
   "BulletMakeSphereShape": {
    "inputs": [
     [
-     "",
+     "float",
      "radius",
-     ""
+     "1"
     ],
     [
      "",
@@ -10938,6 +11020,27 @@
      "shape",
      ""
     ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "RigidBoxShape": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
     [
      "",
      "DST",
