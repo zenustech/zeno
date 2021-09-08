@@ -1,8 +1,7 @@
 #pragma once
 
-#include <zinc/attrvector.h>
 #include <zeno/core/IObject.h>
-#include <zeno/utils/UserData.h>
+#include <zeno/types/AttrVector.h>
 #include <zeno/utils/vec.h>
 #include <optional>
 #include <variant>
