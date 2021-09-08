@@ -1,7 +1,7 @@
 #pragma once
 
-#include <zinc/memory.h>
+#include <zeno/utils/memory.h>
 
 namespace zeno {
-using namespace zinc;
+using namespace zeno;
 }
