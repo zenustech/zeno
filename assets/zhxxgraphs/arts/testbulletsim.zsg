@@ -1022,8 +1022,8 @@
       ]
      },
      "params": {
-      "x": -3.0,
-      "y": 2.0,
+      "x": 0.0,
+      "y": 4.0,
       "z": 0.0
      },
      "uipos": [
@@ -1227,10 +1227,10 @@
     }
    },
    "view_rect": {
-    "x": -4681.926050027736,
-    "y": 949.4604520911312,
-    "width": 320.0,
-    "height": 320.0
+    "x": -5385.480361710201,
+    "y": -142.9450417485508,
+    "width": 976.5625,
+    "height": 976.5625
    }
   },
   "RigidStepWorld": {
@@ -1854,8 +1854,8 @@
      "name": "BulletMakeTransform",
      "inputs": {
       "origin": [
-       "7bc61f9a-IfElse",
-       "result",
+       "adfd1fcb-NumericOperator",
+       "ret",
        null
       ],
       "rotation": [
@@ -1871,8 +1871,8 @@
      },
      "params": {},
      "uipos": [
-      149.4754695703985,
-      43.71918378710815
+      581.3661301626536,
+      190.41622251148175
      ],
      "options": []
     },
@@ -1891,8 +1891,8 @@
       "defl": ""
      },
      "uipos": [
-      207.0933820582954,
-      -676.72578165812
+      -93.30525119910774,
+      -1231.964961612562
      ],
      "options": []
     },
@@ -2278,13 +2278,115 @@
       43.171806167400916
      ],
      "options": []
+    },
+    "fa092108-BulletGetShapeUserData": {
+     "name": "BulletGetShapeUserData",
+     "inputs": {
+      "shape": [
+       "6a8cbdd2-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "key": "origin"
+     },
+     "uipos": [
+      99.0888382687927,
+      -433.6560364464694
+     ],
+     "options": []
+    },
+    "aea617f1-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "fa092108-BulletGetShapeUserData",
+       "data",
+       null
+      ],
+      "false": [
+       "9e012264-x",
+       "vec3",
+       null
+      ],
+      "cond": [
+       "fa092108-BulletGetShapeUserData",
+       "hasValue",
+       true
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      349.63391220618036,
+      -364.7680804858848
+     ],
+     "options": []
+    },
+    "9e012264-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+     },
+     "uipos": [
+      342.279527429355,
+      -597.6464981018148
+     ],
+     "options": []
+    },
+    "adfd1fcb-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "aea617f1-x",
+       "result",
+       null
+      ],
+      "rhs": [
+       "7bc61f9a-IfElse",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "add"
+     },
+     "uipos": [
+      338.9521640091117,
+      24.60136674259681
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -379.14731492459657,
-    "y": -977.9566003686843,
-    "width": 976.5625,
-    "height": 976.5625
+    "x": -118.69912882874252,
+    "y": -524.2290283760047,
+    "width": 320.0,
+    "height": 320.0
    }
   },
   "RigidRecenterPrim": {
@@ -3263,7 +3365,7 @@
     "5d41761a-BulletMakeBoxShape": {
      "name": "BulletMakeBoxShape",
      "inputs": {
-      "size": [
+      "semiSize": [
        "bf512b1c-x",
        "ret",
        null
@@ -3297,8 +3399,8 @@
      },
      "params": {},
      "uipos": [
-      -204.06324562566283,
-      1151.5256329533406
+      -216.81950986256487,
+      1146.969824297304
      ],
      "options": []
     },
@@ -3585,10 +3687,10 @@
     }
    },
    "view_rect": {
-    "x": 933.1931960849948,
-    "y": 1348.565298574367,
-    "width": 400.0,
-    "height": 400.0
+    "x": -895.9807092666675,
+    "y": 618.2775550383908,
+    "width": 1220.703125,
+    "height": 1220.703125
    }
   }
  },
@@ -4135,6 +4237,52 @@
      ""
     ],
     [
+     "bool",
+     "hasValue",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "key",
+     "prim"
+    ]
+   ],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "BulletGetShapeUserData": {
+   "inputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "bool",
+     "hasValue",
+     ""
+    ],
+    [
      "",
      "DST",
      ""
@@ -4155,7 +4303,7 @@
    "inputs": [
     [
      "vec3f",
-     "size",
+     "semiSize",
      "1,1,1"
     ],
     [

@@ -47,7 +47,7 @@ struct BulletCompoundShape : BulletCollisionShape {
 
 struct BulletMakeBoxShape : zeno::INode {
     virtual void apply() override {
-        auto size = get_input<zeno::NumericObject>("size")->get<zeno::vec3f>();
+        auto size = get_input<zeno::NumericObject>("semiSize")->get<zeno::vec3f>();
         auto shape = std::make_shared<BulletCollisionShape>(
             std::make_unique<btBoxShape>(zeno::vec_to_other<btVector3>(size)));
         set_output("shape", std::move(shape));
@@ -55,7 +55,7 @@ struct BulletMakeBoxShape : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeBoxShape, {
-    {{"vec3f", "size", "1,1,1"}},
+    {{"vec3f", "semiSize", "1,1,1"}},
     {"shape"},
     {},
     {"Rigid"},
@@ -317,7 +317,7 @@ struct BulletGetShapeUserData : zeno::INode {
 
 ZENDEFNODE(BulletGetShapeUserData, {
     {"shape"},
-    {"data"},
+    {"data", {"bool", "hasValue"}},
     {{"string", "key", "prim"}},
     {"Rigid"},
 });
@@ -425,7 +425,7 @@ struct BulletGetObjectUserData : zeno::INode {
 
 ZENDEFNODE(BulletGetObjectUserData, {
     {"object"},
-    {"data"},
+    {"data", {"bool", "hasValue"}},
     {{"string", "key", "prim"}},
     {"Rigid"},
 });

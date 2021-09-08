@@ -304,7 +304,7 @@ struct IfElse : zeno::INode {
 };
 
 ZENDEFNODE(IfElse, {
-    {"true", "false", {"bool", "cond", "1"}},
+    {"true", "false", {"bool", "cond"}},
     {"result"},
     {},
     {"control"},
