@@ -104,6 +104,67 @@ ZENDEFNODE(Assign, {
 });
 
 
+struct MoveClone : zeno::INode {
+    virtual void apply() override {
+        auto obj = get_input("object");
+        auto newobj = obj->move_clone();
+        if (!newobj) {
+            spdlog::error("requested object doesn't support move_clone");
+            return;
+        }
+        set_output("newObject", std::move(newobj));
+    }
+};
+
+ZENDEFNODE(MoveClone, {
+    {"object"},
+    {"newObject"},
+    {},
+    {"portal"},
+});
+
+
+struct MoveDelete : zeno::INode {
+    virtual void apply() override {
+        auto obj = get_input("object");
+        auto newobj = obj->move_clone();
+        if (!newobj) {
+            spdlog::error("requested object doesn't support move_clone");
+            return;
+        }
+        newobj = nullptr;
+    }
+};
+
+ZENDEFNODE(MoveDelete, {
+    {"object"},
+    {},
+    {},
+    {"portal"},
+});
+
+
+struct MoveAssign : zeno::INode {
+    virtual void apply() override {
+        auto src = get_input("src");
+        auto dst = get_input("dst");
+        bool succ = dst->move_assign(src.get());
+        if (!succ) {
+            spdlog::error("requested object doesn't support move_assign or type mismatch");
+            return;
+        }
+        set_output("dst", std::move(dst));
+    }
+};
+
+ZENDEFNODE(MoveAssign, {
+    {"dst", "src"},
+    {"dst"},
+    {},
+    {"portal"},
+});
+
+
 struct SetUserData : zeno::INode {
     virtual void apply() override {
         auto object = get_input("object");
@@ -117,8 +178,9 @@ ZENDEFNODE(SetUserData, {
     {"object", "data"},
     {"object"},
     {{"string", "key", ""}},
-    {"Rigid"},
+    {"portal"},
 });
+
 
 struct GetUserData : zeno::INode {
     virtual void apply() override {
@@ -135,7 +197,24 @@ ZENDEFNODE(GetUserData, {
     {"object"},
     {"data", {"bool", "hasValue"}},
     {{"string", "key", ""}},
-    {"Rigid"},
+    {"portal"},
 });
+
+
+struct DelUserData : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input("object");
+        auto key = get_param<std::string>("key");
+        object->userData.del(key);
+    }
+};
+
+ZENDEFNODE(DelUserData, {
+    {"object"},
+    {},
+    {{"string", "key", ""}},
+    {"portal"},
+});
+
 
 }
