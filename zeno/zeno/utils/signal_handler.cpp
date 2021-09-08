@@ -30,9 +30,9 @@ static void signal_handler(int signo) {
     exit(-signo);
 }
 
-static int register_my_handlers() {
+static void register_my_handlers() {
     if (getenv("ZEN_NOSIGHOOK")) {
-        return 0;
+        return;
     }
     signal(SIGSEGV, signal_handler);
     signal(SIGFPE, signal_handler);
@@ -41,10 +41,9 @@ static int register_my_handlers() {
 #ifdef __linux__
     signal(SIGBUS, signal_handler);
 #endif
-    return 1;
 }
 
-static int doRegisterMyHandlers = register_my_handlers();
+static int register_my_handlers_helper = (register_my_handlers(), 0);
 
 }
 #endif
