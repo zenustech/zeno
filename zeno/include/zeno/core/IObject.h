@@ -2,6 +2,7 @@
 
 #include <zeno/utils/defs.h>
 #include <zeno/utils/safe_dynamic_cast.h>
+#include <zeno/utils/UserData.h>
 #include <string>
 #include <memory>
 
@@ -9,6 +10,8 @@ namespace zeno {
 
 struct IObject {
     using polymorphic_base_type = IObject;
+
+    UserData userData;
 
 #ifndef ZENO_APIFREE
     ZENO_API IObject();

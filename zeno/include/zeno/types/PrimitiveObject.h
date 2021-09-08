@@ -1,7 +1,7 @@
 #pragma once
 
+#include <zinc/attrvector.h>
 #include <zeno/core/IObject.h>
-#include <zeno/types/AttrVector.h>
 #include <zeno/utils/UserData.h>
 #include <zeno/utils/vec.h>
 #include <optional>
@@ -13,9 +13,9 @@
 
 namespace zeno {
 
-struct PrimitiveObject : IObjectClone<PrimitiveObject> {
-    UserData userdata;
+using zinc::AttrVector;
 
+struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     AttrVector<vec3f> verts;
     AttrVector<int> points;
     AttrVector<vec2i> lines;
