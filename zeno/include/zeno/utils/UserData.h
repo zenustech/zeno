@@ -14,6 +14,15 @@ struct UserData {
         return m_data.find(name) != m_data.end();
     }
 
+    template <class T>
+    inline bool has(std::string const &name) const {
+        auto it = m_data.find(name);
+        if (it == m_data.end()) {
+            return false;
+        }
+        return silent_any_cast<std::shared_ptr<T>>(it->second).has_value();
+    }
+
     template <class T = Any>
     inline T &get(std::string const &name) const {
         return *smart_any_cast<std::shared_ptr<T>>(safe_at(m_data, name, "user data"));
@@ -39,10 +48,6 @@ struct UserData {
     template <class T = Any>
     inline void set(std::string const &name, T &&value) {
         m_data[name] = std::make_shared<T>(std::move(value));
-    }
-
-    inline void set(std::string const &name, Any const &value) {
-        m_data[name] = std::make_shared<Any>(value);
     }
 
     inline void del(std::string const &name) {

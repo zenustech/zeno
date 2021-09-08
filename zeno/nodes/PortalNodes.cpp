@@ -4,6 +4,8 @@
 #include <zeno/utils/safe_at.h>
 #include <spdlog/spdlog.h>
 
+namespace zeno {
+
 struct PortalIn : zeno::INode {
     virtual void complete() override {
         auto name = get_param<std::string>("name");
@@ -100,3 +102,40 @@ ZENDEFNODE(Assign, {
     {},
     {"portal"},
 });
+
+
+struct SetUserData : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input("object");
+        auto key = get_param<std::string>("key");
+        object->userData.get(key) = get_input2("data");
+        set_output("object", std::move(object));
+    }
+};
+
+ZENDEFNODE(SetUserData, {
+    {"object", "data"},
+    {"object"},
+    {{"string", "key", ""}},
+    {"Rigid"},
+});
+
+struct GetUserData : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input("object");
+        auto key = get_param<std::string>("key");
+        auto hasValue = object->userData.has(key);
+        auto data = object->userData.get(key);
+        set_output2("hasValue", hasValue);
+        set_output2("data", std::move(data));
+    }
+};
+
+ZENDEFNODE(GetUserData, {
+    {"object"},
+    {"data", {"bool", "hasValue"}},
+    {{"string", "key", ""}},
+    {"Rigid"},
+});
+
+}
