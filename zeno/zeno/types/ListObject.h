@@ -1,6 +1,6 @@
 #pragma once
 
-#include <zeno/utils/defs.h>
+#include <zeno/utils/api.h>
 #include <zeno/core/IObject.h>
 #include <vector>
 #include <memory>
@@ -14,7 +14,7 @@ struct ListObject : IObjectClone<ListObject> {
   auto get() {
       std::vector<T> res;
       for (auto const &val: arr) {
-          res.push_back(smart_any_cast<T>(val));
+          res.push_back(safe_any_cast<T>(val));
       }
       return res;
   }

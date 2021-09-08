@@ -1,6 +1,6 @@
 #pragma once
 
-#include <zeno/utils/defs.h>
+#include <zeno/utils/api.h>
 #include <string>
 #include <vector>
 

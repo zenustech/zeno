@@ -1,6 +1,6 @@
 #pragma once
 
-#include <zeno/utils/defs.h>
+#include <zeno/utils/api.h>
 #include <zeno/utils/safe_dynamic_cast.h>
 #include <zeno/utils/UserData.h>
 #include <string>

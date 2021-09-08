@@ -1,7 +1,7 @@
 #pragma once
 
 #include <zeno/core/IObject.h>
-#include <zeno/utils/any.h>
+#include <zeno/utils/Any.h>
 #include <memory>
 #include <string>
 #include <map>
@@ -15,7 +15,7 @@ struct DictObject : IObjectClone<DictObject> {
   auto get() {
       std::map<std::string, T> res;
       for (auto const &[key, val]: lut) {
-          res.emplace(key, smart_any_cast<T>(val));
+          res.emplace(key, safe_any_cast<T>(val));
       }
       return res;
   }

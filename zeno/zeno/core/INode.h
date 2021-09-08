@@ -1,8 +1,8 @@
 #pragma once
 
-#include <zeno/utils/defs.h>
+#include <zeno/utils/api.h>
 #include <zeno/core/IObject.h>
-#include <zeno/utils/any.h>
+#include <zeno/utils/Any.h>
 #include <zeno/utils/Exception.h>
 #include <zeno/utils/safe_dynamic_cast.h>
 #include <variant>
@@ -60,7 +60,7 @@ protected:
 
     template <class T>
     T get_input2(std::string const &id) const {
-        return smart_any_cast<T>(get_input2(id), "input `" + id + "` ");
+        return safe_any_cast<T>(get_input2(id), "input `" + id + "` ");
     }
 
     template <class T>

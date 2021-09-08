@@ -1,6 +1,6 @@
 #pragma once
 
-#include <zeno/utils/any.h>
+#include <zeno/utils/Any.h>
 #include <zeno/utils/safe_at.h>
 #include <string>
 #include <map>
@@ -25,7 +25,7 @@ struct UserData {
 
     template <class T = Any>
     inline T &get(std::string const &name) const {
-        return *smart_any_cast<std::shared_ptr<T>>(safe_at(m_data, name, "user data"));
+        return *safe_any_cast<std::shared_ptr<T>>(safe_at(m_data, name, "user data"));
     }
 
     template <class T = Any>
@@ -37,7 +37,7 @@ struct UserData {
             m_data[name] = std::move(ptr);
             return *raw_ptr;
         }
-        return *smart_any_cast<std::shared_ptr<T>>(it->second);
+        return *safe_any_cast<std::shared_ptr<T>>(it->second);
     }
 
     template <class T = Any>

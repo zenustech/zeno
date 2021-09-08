@@ -141,7 +141,7 @@ ZENO_API void INode::set_output2(std::string const &id, zany &&obj) {
 ZENO_API std::shared_ptr<IObject> INode::get_input(std::string const &id, std::string const &msg) const {
     auto obj = get_input2(id);
     if (silent_any_cast<std::shared_ptr<IObject>>(obj).has_value())
-        return smart_any_cast<std::shared_ptr<IObject>>(obj, "input `" + id + "` ");
+        return safe_any_cast<std::shared_ptr<IObject>>(obj, "input `" + id + "` ");
 
     auto str = std::make_shared<StringObject>();
     if (auto o = exact_any_cast<std::string>(obj); o.has_value()) {

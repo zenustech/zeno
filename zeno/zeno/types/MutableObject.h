@@ -1,7 +1,7 @@
 #pragma once
 
 #include <zeno/core/IObject.h>
-#include <zeno/utils/any.h>
+#include <zeno/utils/Any.h>
 #include <string>
 
 namespace zeno {
@@ -11,7 +11,7 @@ struct MutableObject : IObjectClone<MutableObject> {
 
   template <class T>
   T get() const {
-    return smart_any_cast<T>(value, "MutableObject::get ");
+    return safe_any_cast<T>(value, "MutableObject::get ");
   }
 
   template <class T>

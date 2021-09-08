@@ -1,10 +1,10 @@
 #pragma once
 
-#include <zeno/utils/defs.h>
+#include <zeno/utils/api.h>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/safe_dynamic_cast.h>
 #include <zeno/utils/UserData.h>
-#include <zeno/utils/any.h>
+#include <zeno/utils/Any.h>
 #include <functional>
 #include <variant>
 #include <memory>
@@ -76,7 +76,7 @@ struct Graph {
     }
     std::shared_ptr<IObject> getGraphOutput(
             std::string const &id) const {
-        return smart_any_cast<std::shared_ptr<IObject>>(getGraphOutput2(id));
+        return safe_any_cast<std::shared_ptr<IObject>>(getGraphOutput2(id));
     }
 
     template <class T>

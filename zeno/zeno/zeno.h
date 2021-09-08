@@ -104,4 +104,10 @@ auto makeShared(Ts &&...ts) {
 #define ZENDEFNODE(Class, ...) \
     ZENO_DEFNODE(Class)(__VA_ARGS__)
 
+template <class T, class ...Ts>
+[[deprecated("use safe_any_cast<T>() instead")]]
+auto smart_any_cast(Ts &&...ts) {
+    return safe_any_cast<T>(std::forward<Ts>(ts)...);
+}
+
 }
