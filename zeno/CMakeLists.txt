@@ -31,4 +31,4 @@ endif()
 target_compile_definitions(zeno PRIVATE -DDLL_ZENO)
 target_include_directories(zeno PUBLIC .)
 
-target_link_libraries(zeno PUBLIC spdlog)
+target_link_libraries(zeno PUBLIC spdlog fmt)

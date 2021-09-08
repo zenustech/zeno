@@ -6,7 +6,7 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#define FMT_HEADER_ONLY
+//#define FMT_HEADER_ONLY
 #include <vector>
 #include <iostream>
 #include <string>
