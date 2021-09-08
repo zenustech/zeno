@@ -1,6 +1,6 @@
 #ifdef ZENO_FAULTHANDLER
 #include <zeno/zeno.h>
-#include <spdlog/spdlog.h>
+#include <zeno/utils/logging.h>
 #include <cstdio>
 #include <cstdlib>
 #include <csignal>
@@ -25,7 +25,7 @@ static const char *signal_to_string(int signo) {
 }
 
 static void signal_handler(int signo) {
-    spdlog::error("recieved signal {}: {}", signo, signal_to_string(signo));
+    logger().error("recieved signal {}: {}", signo, signal_to_string(signo));
     print_traceback(1);
     exit(-signo);
 }

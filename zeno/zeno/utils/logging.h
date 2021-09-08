@@ -6,6 +6,6 @@
 
 namespace zeno {
 
-ZENO_API spdlog::logger *logger();
+ZENO_API spdlog::logger &logger();
 
 }

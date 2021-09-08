@@ -1,5 +1,5 @@
 #include <zeno/utils/Exception.h>
-#include <spdlog/spdlog.h>
+#include <zeno/utils/logging.h>
 
 namespace zeno {
 
@@ -11,7 +11,7 @@ ZENO_API BaseException::BaseException(std::string_view msg) noexcept
 
 ZENO_API Exception::Exception(std::string_view msg) noexcept
     : BaseException(msg) {
-    spdlog::error("Exception: {}", msg);
+    logger().error("Exception: {}", msg);
     print_traceback(0);
 }
 

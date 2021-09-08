@@ -1,6 +1,6 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
-#include <spdlog/spdlog.h>
+#include <zeno/utils/logging.h>
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
 
@@ -43,7 +43,7 @@ static T generic_get(Value const &x) {
                 }
             }
         }
-        spdlog::warn("unknown type encountered in generic_get");
+        logger().warn("unknown type encountered in generic_get");
         return 0;
     }
 }
@@ -78,7 +78,7 @@ ZENO_API void Scene::loadScene(const char *json) {
             }
 #ifdef ZENO_FAIL_SILENTLY
         } catch (BaseException const &e) {
-            spdlog::warn("exception executing command {} ({}): {}",
+            logger().warn("exception executing command {} ({}): {}",
                     i, cmd.c_str(), e.what());
         }
 #endif
@@ -111,7 +111,7 @@ ZENO_API void Graph::loadGraph(const char *json) {
             }
 #ifdef ZENO_FAIL_SILENTLY
         } catch (BaseException const &e) {
-            spdlog::warn("exception executing command {} ({}): {}",
+            logger().warn("exception executing command {} ({}): {}",
                     i, cmd.c_str(), e.what());
         }
 #endif

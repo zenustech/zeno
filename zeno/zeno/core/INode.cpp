@@ -16,7 +16,7 @@
 #include <zeno/utils/Timer.h>
 #endif
 #include <zeno/utils/safe_at.h>
-//#include <spdlog/spdlog.h>
+#include <zeno/utils/logging.h>
 
 namespace zeno {
 
@@ -90,9 +90,9 @@ ZENO_API bool INode::requireInput(std::string const &ds) {
 
 ZENO_API void INode::doApply() {
     if (checkApplyCondition()) {
-        //spdlog::trace("--> enter {}", myname);
+        logger().trace("--> enter {}", myname);
         preApply();
-        //spdlog::trace("--> leave {}", myname);
+        logger().trace("--> leave {}", myname);
     }
 
 #ifdef ZENO_VISUALIZATION

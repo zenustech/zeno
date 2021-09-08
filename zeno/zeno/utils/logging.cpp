@@ -10,8 +10,8 @@ namespace zeno {
 
 std::shared_ptr<spdlog::logger> g_logger;
 
-ZENO_API spdlog::logger *logger() {
-    return g_logger.get();
+ZENO_API spdlog::logger &logger() {
+    return *g_logger;
 }
 
 static void initialize_spdlog() {
