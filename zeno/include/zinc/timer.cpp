@@ -7,8 +7,7 @@
 namespace zinc {
 
 Timer::Timer(std::string_view &&tag_, Timer::ClockType::time_point &&beg_)
-    : parent(current)
-    , beg(ClockType::now())
+    : parent(current), beg(beg_)
     , tag(current ? current->tag + " => " + (std::string)tag_ : tag_)
 {
     current = this;
@@ -70,8 +69,7 @@ void Timer::print() {
 namespace {
     static struct TimerAtexitHelper {
         ~TimerAtexitHelper() {
-            if (getenv("ZINC_TIMER"))
-                Timer::print();
+            Timer::print();
         }
     } timerAtexitHelper;
 }
