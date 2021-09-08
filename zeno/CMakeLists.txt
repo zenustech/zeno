@@ -1,7 +1,6 @@
-file(GLOB ZENO_SOURCE core/*.cpp utils/*.cpp extra/*.cpp include/*/*.h include/*/*/*.h)
-file(GLOB ZENO_NODES_SOURCE nodes/*.cpp nodes/*/*.cpp)
+file(GLOB ZENO_SOURCE */*.cpp */*/*.cpp */*/*/*.cpp */*/*/*/*.cpp */*.h */*/*.h */*/*/*.h */*/*/*/*.h)
 
-add_library(zeno SHARED ${ZENO_SOURCE} ${ZENO_NODES_SOURCE})
+add_library(zeno SHARED ${ZENO_SOURCE})
 
 if (ZENO_ENABLE_OPENMP)
     find_package(OpenMP)
@@ -30,6 +29,6 @@ if (ZENO_FAIL_SILENTLY)
 endif()
 
 target_compile_definitions(zeno PRIVATE -DDLL_ZENO)
-target_include_directories(zeno PUBLIC include)
+target_include_directories(zeno PUBLIC .)
 
 target_link_libraries(zeno PRIVATE spdlog)
