@@ -40,13 +40,15 @@ if (ZENO_ENABLE_PYTHON)
     endif()
 endif()
 
-include_directories(include)
+include_directories(external/include)
 
 if (ZENO_ENABLE_PYTHON)
     add_subdirectory(external/pybind11)
 endif()
 
 add_subdirectory(external/spdlog)
+add_subdirectory(external/fmt)
+
 add_subdirectory(zeno)
 
 if (ZENO_ENABLE_PYTHON)
