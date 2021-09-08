@@ -12,8 +12,6 @@
 
 namespace zeno {
 
-using zinc::AttrVector;
-
 struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     AttrVector<vec3f> verts;
     AttrVector<int> points;
