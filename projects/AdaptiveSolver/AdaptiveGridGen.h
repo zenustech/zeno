@@ -13,7 +13,7 @@
 
 #include <iostream>
 namespace zeno{
-       struct initializer{
+    struct initializer{
         openvdb::FloatGrid::Ptr sdfGrid;
         openvdb::FloatGrid::Ptr pGrid;
 

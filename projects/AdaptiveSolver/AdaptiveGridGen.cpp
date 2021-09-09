@@ -323,11 +323,11 @@ struct MeshToMultiGridLevelSet : zeno::INode{
         int max_level = 5;
         if(has_input("maxDx"))
         {
-        h = get_input("maxDx")->as<NumericObject>()->get<float>();
+            h = get_input("maxDx")->as<NumericObject>()->get<float>();
         }
         if(has_input("max_level"))
         {
-        max_level = get_input("max_level")->as<NumericObject>()->get<int>();
+            max_level = get_input("max_level")->as<NumericObject>()->get<int>();
         }
         auto mesh = get_input("mesh")->as<zeno::MeshObject>();
         
@@ -335,12 +335,10 @@ struct MeshToMultiGridLevelSet : zeno::INode{
         std::vector<openvdb::Vec3I> triangles;
         std::vector<openvdb::Vec4I> quads;
 
-        auto data = zeno::IObject::make<mgData>();;
+        auto data = zeno::IObject::make<mgData>();
+
         data->resize(max_level);
         data->hLevels[0] = h;
-        printf("begin to init\n");
-        data->initData();
-        printf("init over\n");
         
         points.resize(mesh->vertices.size());
         triangles.resize(mesh->vertices.size()/3);
@@ -369,7 +367,11 @@ struct MeshToMultiGridLevelSet : zeno::INode{
             openvdb::tools::signedFloodFill(result->m_grid->tree());
             data->sdf[i] = result->m_grid;
         }
+        printf("begin to init\n");
+        data->initData();
         fillInner(*data);
+        printf("init over\n");
+
         printf("adaptive grid generate done\n");
         set_output("mgData", data);
   };
