@@ -145,6 +145,23 @@ struct ScalarFieldAnalyzer : zeno::INode {
             auto result = std::make_shared<VDBFloatGrid>(openvdb::tools::laplacian(*grid));
             set_output("OutVDB", std::move(result));
         }
+        else if (OpType == "ClosestPoint") {
+            auto x = grid->tree();
+            openvdb::Vec3STree::Ptr resultTree(new openvdb::Vec3STree(grid->tree(), openvdb::Vec3f(0.0), openvdb::TopologyCopy()));
+            auto closestSurface = openvdb::tools::ClosestSurfacePoint<openvdb::FloatGrid>::create(*grid);
+            std::vector<openvdb::Vec3R> activeVoxels(1);
+            std::vector<float> distances(1);
+            const openvdb::math::Transform& transform = grid->transform();
+            for (openvdb::Vec3SGrid::ValueOnIter iter = resultTree->beginValueOn(); iter; ++iter)
+            {
+                activeVoxels[0] = transform.indexToWorld(iter.getCoord());
+                (*closestSurface).searchAndReplace(activeVoxels, distances);
+                iter.setValue(activeVoxels[0]);
+            }
+            openvdb::Vec3fGrid::Ptr resultGrid(new openvdb::Vec3fGrid(resultTree));
+            auto result = std::make_shared<VDBFloat3Grid>(resultGrid);
+            set_output("OutVDB", std::move(result));
+        }
         else {
             throw zeno::Exception("wrong parameter for ScalarFieldAnalyzer Operator: " + OpType);
         }  
@@ -157,7 +174,7 @@ ZENO_DEFNODE(ScalarFieldAnalyzer)(
     }, /* outputs: */ {
         "OutVDB"
     }, /* params: */ {
-        {"enum Gradient Curvature Laplacian", "Operator", "Gradient"},
+        {"enum Gradient Curvature Laplacian ClosestPoint", "Operator", "Gradient"},
     }, /* category: */ {
         "openvdb",
     } });
