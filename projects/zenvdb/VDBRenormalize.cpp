@@ -159,7 +159,7 @@ struct ScalarFieldAnalyzer : zeno::INode {
                 iter.setValue(activeVoxels[0]);
             }
             openvdb::Vec3fGrid::Ptr resultGrid(new openvdb::Vec3fGrid(resultTree));
-            auto result = std::make_shared<VDBFloat3Grid>(resultGrid);
+            auto result = std::make_shared<VDBFloat3Grid>(std::move(resultGrid));
             set_output("OutVDB", std::move(result));
         }
         else {
