@@ -49,21 +49,20 @@ namespace loggerstd {
 
 static inline constexpr struct {} endl;
 
-static inline constexpr struct __logger_ostream {
+static inline struct __logger_ostream {
     static thread_local std::stringstream ss;
 
     template <class T>
     __logger_ostream &operator<<(T const &x) {
-        ss << x;
+        if constexpr (std::is_same_v<std::decay_t<decltype(endl)>, T>) {
+            log_trace(ss.str());
+            ss.clear();
+        } else {
+            ss << x;
+        }
         return *this;
     }
-
-    __logger_ostream &operator<<(decltype(endl) const &x) {
-        log_trace(ss.str());
-        ss.clear();
-        return *this;
-    }
-} cout;
+} cout, cerr;
 
 template <class ...Ts>
 void printf(const char *fmt, Ts &&...ts) {

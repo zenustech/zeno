@@ -1,12 +1,10 @@
 cmake_minimum_required(VERSION 3.12)
 project(ZFX LANGUAGES CXX)
 
+option(ZFX_PRINT_IR "Print generated IR in log" ON)
 option(ZFX_ENABLE_CUDA "Build ZFX with CUDA support" ON)
 
 set(CMAKE_CXX_STANDARD 17)
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-security")
-endif()
 
 add_library(ZFX
 # ls {,include/zfx/}*{,/*}.{h,cpp} | grep -v main.cpp
@@ -48,6 +46,10 @@ x64/SIMDBuilder.h
 zfx.cpp
     )
 target_include_directories(ZFX PUBLIC include)
+if (ZFX_PRINT_IR)
+    target_link_libraries(ZFX PRIVATE zeno)
+    target_compile_definitions(ZFX PRIVATE -DZFX_PRINT_IR)
+endif()
 if (ZFX_ENABLE_CUDA)
     target_sources(ZFX PRIVATE cuda/Assembler.cpp)
 endif()

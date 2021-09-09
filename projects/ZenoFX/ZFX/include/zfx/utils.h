@@ -16,6 +16,7 @@ namespace zfx {
 using namespace zeno::loggerstd;
 }
 #else
+#pragma message("falling back to iostream")
 #include <iostream>
 namespace zfx {
 using std::cout;
