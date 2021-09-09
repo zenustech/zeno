@@ -138,8 +138,8 @@
      "name": "EndForEach",
      "inputs": {
       "object": [
-       null,
-       null,
+       "0224e38a-RigidGetPrimitive",
+       "prim",
        null
       ],
       "accumate": [
@@ -173,62 +173,6 @@
      "options": [
       "VIEW"
      ]
-    },
-    "456fb647-RigidMakeObject": {
-     "name": "RigidMakeObject",
-     "inputs": {
-      "shape": [
-       "3ce81ce6-x",
-       "shape",
-       null
-      ],
-      "origin": [
-       "a51bd4b6-RigidRecenterPrim",
-       "origin",
-       null
-      ],
-      "rotation": [
-       null,
-       null,
-       null
-      ],
-      "mass": [
-       "a51bd4b6-RigidRecenterPrim",
-       "mass",
-       1.0
-      ],
-      "dampLin": [
-       null,
-       null,
-       0.1
-      ],
-      "dampAng": [
-       null,
-       null,
-       0.06
-      ],
-      "friction": [
-       null,
-       null,
-       0.7
-      ],
-      "restitution": [
-       null,
-       null,
-       0.6
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -4077.3869248270403,
-      -179.00692560419478
-     ],
-     "options": []
     },
     "e665aacb-x": {
      "name": "ImportObjPrimitive",
@@ -274,25 +218,10 @@
        null,
        0.0
       ],
-      "dampLin": [
+      "material": [
        null,
        null,
-       0.1
-      ],
-      "dampAng": [
-       null,
-       null,
-       0.06
-      ],
-      "friction": [
-       null,
-       null,
-       0.7
-      ],
-      "restitution": [
-       null,
-       null,
-       0.6
+       null
       ],
       "SRC": [
        null,
@@ -434,33 +363,12 @@
      ],
      "options": []
     },
-    "a51bd4b6-RigidRecenterPrim": {
-     "name": "RigidRecenterPrim",
-     "inputs": {
-      "prim": [
-       "43e411cb-BeginForEach",
-       "object",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -4737.830436869157,
-      -113.62928303457802
-     ],
-     "options": []
-    },
     "92c0b1cd-ExtendList": {
      "name": "ExtendList",
      "inputs": {
       "list1": [
-       "c547de5f-EndForEach",
-       "list",
+       "1a89cabb-RigidObjectFragments",
+       "objectList",
        null
       ],
       "list2": [
@@ -469,8 +377,8 @@
        null
       ],
       "SRC": [
-       "868197cb-EndForEach",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -481,76 +389,12 @@
      ],
      "options": []
     },
-    "43e411cb-BeginForEach": {
-     "name": "BeginForEach",
-     "inputs": {
-      "list": [
-       "54702da9-EndForEach",
-       "list",
-       null
-      ],
-      "accumate": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -5112.243846154585,
-      -176.38582101018793
-     ],
-     "options": []
-    },
-    "c547de5f-EndForEach": {
-     "name": "EndForEach",
-     "inputs": {
-      "object": [
-       "456fb647-RigidMakeObject",
-       "object",
-       null
-      ],
-      "accumate": [
-       null,
-       null,
-       null
-      ],
-      "accept": [
-       null,
-       null,
-       true
-      ],
-      "FOR": [
-       "43e411cb-BeginForEach",
-       "FOR",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "doConcat": false
-     },
-     "uipos": [
-      -3581.9083827893164,
-      -108.37815281899107
-     ],
-     "options": []
-    },
     "f6703de4-x": {
      "name": "CachedOnce",
      "inputs": {
       "input": [
-       "868197cb-EndForEach",
-       "list",
+       "1a89cabb-RigidObjectFragments",
+       "constrList",
        null
       ],
       "SRC": [
@@ -561,8 +405,8 @@
      },
      "params": {},
      "uipos": [
-      -1582.0274145856656,
-      -237.75147343644426
+      -1279.1176091964442,
+      -130.1541680472227
      ],
      "options": []
     },
@@ -598,220 +442,8 @@
       "periodicZ": false
      },
      "uipos": [
-      -6271.212106007847,
-      -325.17435501189124
-     ],
-     "options": []
-    },
-    "8d15b202-BeginForEach": {
-     "name": "BeginForEach",
-     "inputs": {
-      "list": [
-       "d5a45b3f-SimplifyVoroNeighborList",
-       "newNeighList",
-       null
-      ],
-      "accumate": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       "c0cce422-Route",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2901.266519823789,
-      -345.9801762114537
-     ],
-     "options": []
-    },
-    "868197cb-EndForEach": {
-     "name": "EndForEach",
-     "inputs": {
-      "object": [
-       "fb07bf86-RigidMakeConstraint",
-       "constraint",
-       null
-      ],
-      "accumate": [
-       null,
-       null,
-       null
-      ],
-      "accept": [
-       null,
-       null,
-       true
-      ],
-      "FOR": [
-       "8d15b202-BeginForEach",
-       "FOR",
-       null
-      ],
-      "SRC": [
-       "d298ba29-PrintNumeric",
-       "DST",
-       null
-      ]
-     },
-     "params": {
-      "doConcat": false
-     },
-     "uipos": [
-      -1885.8480176211451,
-      -334.52643171806176
-     ],
-     "options": []
-    },
-    "fb07bf86-RigidMakeConstraint": {
-     "name": "RigidMakeConstraint",
-     "inputs": {
-      "obj1": [
-       "53f14d89-ListGetItem",
-       "object",
-       null
-      ],
-      "obj2": [
-       "a315b856-x",
-       "object",
-       null
-      ],
-      "breakThres": [
-       null,
-       null,
-       2.0
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2142.399952836342,
-      -280.4597704032998
-     ],
-     "options": []
-    },
-    "3857d4a0-UnpackNumericVec": {
-     "name": "UnpackNumericVec",
-     "inputs": {
-      "vec": [
-       "8d15b202-BeginForEach",
-       "object",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2647.632158590308,
-      -293.9977973568282
-     ],
-     "options": []
-    },
-    "53f14d89-ListGetItem": {
-     "name": "ListGetItem",
-     "inputs": {
-      "list": [
-       "c0cce422-Route",
-       "output",
-       null
-      ],
-      "index": [
-       "3857d4a0-UnpackNumericVec",
-       "X",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2381.7731277533026,
-      -286.068281938326
-     ],
-     "options": []
-    },
-    "a315b856-x": {
-     "name": "ListGetItem",
-     "inputs": {
-      "list": [
-       "c0cce422-Route",
-       "output",
-       null
-      ],
-      "index": [
-       "3857d4a0-UnpackNumericVec",
-       "Y",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2374.7246696035245,
-      -79.90088105726886
-     ],
-     "options": []
-    },
-    "c0cce422-Route": {
-     "name": "Route",
-     "inputs": {
-      "input": [
-       "c547de5f-EndForEach",
-       "list",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -3155.2863436123343,
-      -90.03303964757708
-     ],
-     "options": []
-    },
-    "d298ba29-PrintNumeric": {
-     "name": "PrintNumeric",
-     "inputs": {
-      "value": [
-       "8d15b202-BeginForEach",
-       "object",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "hint": "X"
-     },
-     "uipos": [
-      -2417.6211453744486,
-      -641.4096916299559
+      -5083.006901140957,
+      -363.7656351699611
      ],
      "options": []
     },
@@ -831,72 +463,8 @@
      },
      "params": {},
      "uipos": [
-      -3235.1936218678816,
-      -382.40318906605916
-     ],
-     "options": []
-    },
-    "cb6c2277-BeginForEach": {
-     "name": "BeginForEach",
-     "inputs": {
-      "list": [
-       "c3e5d8e7-AABBVoronoi",
-       "primList",
-       null
-      ],
-      "accumate": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -5993.621867881551,
-      -130.2961275626424
-     ],
-     "options": []
-    },
-    "54702da9-EndForEach": {
-     "name": "EndForEach",
-     "inputs": {
-      "object": [
-       "cb6c2277-BeginForEach",
-       "object",
-       null
-      ],
-      "accumate": [
-       null,
-       null,
-       null
-      ],
-      "accept": [
-       null,
-       null,
-       true
-      ],
-      "FOR": [
-       "cb6c2277-BeginForEach",
-       "FOR",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "doConcat": false
-     },
-     "uipos": [
-      -5404.78359908884,
-      -194.07744874715263
+      -4756.3259101199965,
+      -122.39453021902779
      ],
      "options": []
     },
@@ -941,27 +509,12 @@
       "mass": [
        null,
        null,
-       800.0
+       4.0
       ],
-      "dampLin": [
+      "material": [
        null,
        null,
-       0.1
-      ],
-      "dampAng": [
-       null,
-       null,
-       0.06
-      ],
-      "friction": [
-       null,
-       null,
-       0.7
-      ],
-      "restitution": [
-       null,
-       null,
-       0.6
+       null
       ],
       "SRC": [
        null,
@@ -1015,6 +568,16 @@
        null,
        0.0
       ],
+      "recentered": [
+       null,
+       null,
+       true
+      ],
+      "auto_mass": [
+       null,
+       null,
+       true
+      ],
       "SRC": [
        null,
        null,
@@ -1023,8 +586,8 @@
      },
      "params": {},
      "uipos": [
-      -4584.236902050114,
-      965.8314350797268
+      -4565.934073431145,
+      933.3855116188281
      ],
      "options": []
     },
@@ -1046,36 +609,15 @@
        null,
        0.0
       ],
-      "SRC": [
+      "recentered": [
        null,
        null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -4611.264236902051,
-      394.88610478359936
-     ],
-     "options": []
-    },
-    "3ce81ce6-x": {
-     "name": "RigidConvexShape",
-     "inputs": {
-      "prim": [
-       "a51bd4b6-RigidRecenterPrim",
-       "outPrim",
-       null
+       true
       ],
-      "type": [
+      "auto_mass": [
        null,
        null,
-       "convex"
-      ],
-      "margin": [
-       null,
-       null,
-       0.0
+       false
       ],
       "SRC": [
        null,
@@ -1085,8 +627,8 @@
      },
      "params": {},
      "uipos": [
-      -4419.566135113847,
-      -256.13944136152446
+      -4611.264236902052,
+      345.80124621454786
      ],
      "options": []
     },
@@ -1150,13 +692,75 @@
       1183.2757994186056
      ],
      "options": []
+    },
+    "0224e38a-RigidGetPrimitive": {
+     "name": "RigidGetPrimitive",
+     "inputs": {
+      "object": [
+       "8b676642-BeginForEach",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -258.31435079726646,
+      465.3758542141229
+     ],
+     "options": []
+    },
+    "1a89cabb-RigidObjectFragments": {
+     "name": "RigidObjectFragments",
+     "inputs": {
+      "primList": [
+       "c3e5d8e7-AABBVoronoi",
+       "primList",
+       null
+      ],
+      "neighList": [
+       "d5a45b3f-SimplifyVoroNeighborList",
+       "newNeighList",
+       null
+      ],
+      "breakThres": [
+       null,
+       null,
+       0.2
+      ],
+      "mass": [
+       null,
+       null,
+       1.0
+      ],
+      "material": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -4353.714446107784,
+      -236.7140718562874
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -446.73320877286244,
-    "y": 313.4947094150725,
-    "width": 500.0,
-    "height": 500.0
+    "x": -4760.609964241643,
+    "y": -520.5916631291607,
+    "width": 625.0,
+    "height": 625.0
    }
   },
   "RigidStepWorld": {
@@ -1541,7 +1145,7 @@
      "params": {
       "name": "steps",
       "type": "int",
-      "defl": "1"
+      "defl": "10"
      },
      "uipos": [
       1091.4421868080321,
@@ -1571,10 +1175,10 @@
     }
    },
    "view_rect": {
-    "x": -392.68757800431644,
-    "y": 106.92357840906152,
-    "width": 1220.703125,
-    "height": 1220.703125
+    "x": 238.50831085905656,
+    "y": 469.03872180375384,
+    "width": 625.0,
+    "height": 625.0
    }
   },
   "RigidMakeWorld": {
@@ -1759,8 +1363,8 @@
        null
       ],
       "mass": [
-       "3a219a6d-SubInput",
-       "port",
+       "c774f748-x",
+       "result",
        1.0
       ],
       "SRC": [
@@ -1818,7 +1422,7 @@
      },
      "uipos": [
       -93.30525119910774,
-      -1233.3886518175734
+      -1235.4685187060927
      ],
      "options": []
     },
@@ -1954,8 +1558,8 @@
       "defl": "0"
      },
      "uipos": [
-      863.0559611150875,
-      479.5935632618644
+      296.79469388285,
+      393.432375563031
      ],
      "options": []
     },
@@ -2019,13 +1623,13 @@
        null
       ],
       "dampLin": [
-       "46a7fd7e-SubInput",
-       "port",
+       "d22f3659-ExtractDict",
+       "dampLin",
        0.0
       ],
       "dampAug": [
-       "380592ea-x",
-       "port",
+       "d22f3659-ExtractDict",
+       "dampAng",
        0.0
       ],
       "SRC": [
@@ -2050,8 +1654,8 @@
        null
       ],
       "friction": [
-       "6d08ec81-x",
-       "port",
+       "d22f3659-ExtractDict",
+       "friction",
        0.0
       ],
       "SRC": [
@@ -2067,66 +1671,6 @@
      ],
      "options": []
     },
-    "46a7fd7e-SubInput": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "dampLin",
-      "type": "float",
-      "defl": "0.1"
-     },
-     "uipos": [
-      1251.9931662870165,
-      -61.788154897494394
-     ],
-     "options": []
-    },
-    "380592ea-x": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "dampAng",
-      "type": "float",
-      "defl": "0.06"
-     },
-     "uipos": [
-      1519.4760820045558,
-      -39.69248291571752
-     ],
-     "options": []
-    },
-    "6d08ec81-x": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "friction",
-      "type": "float",
-      "defl": "0.7"
-     },
-     "uipos": [
-      1857.8587699316631,
-      27.9612756264237
-     ],
-     "options": []
-    },
     "5981514f-BulletSetObjectRestitution": {
      "name": "BulletSetObjectRestitution",
      "inputs": {
@@ -2136,8 +1680,8 @@
        null
       ],
       "restitution": [
-       "05c845f2-x",
-       "port",
+       "d22f3659-ExtractDict",
+       "restitution",
        0.0
       ],
       "SRC": [
@@ -2150,26 +1694,6 @@
      "uipos": [
       2242.2907488986784,
       327.7533039647576
-     ],
-     "options": []
-    },
-    "05c845f2-x": {
-     "name": "SubInput",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "restitution",
-      "type": "float",
-      "defl": "0.6"
-     },
-     "uipos": [
-      2258.149779735683,
-      43.171806167400916
      ],
      "options": []
     },
@@ -2318,13 +1842,212 @@
       166.0
      ],
      "options": []
+    },
+    "c774f748-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "d21bc294-NumericOperator",
+       "ret",
+       null
+      ],
+      "false": [
+       "3a219a6d-SubInput",
+       "port",
+       null
+      ],
+      "cond": [
+       "3b9be532-x",
+       "hasValue",
+       true
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      831.959970690857,
+      671.9303275778483
+     ],
+     "options": []
+    },
+    "3b9be532-x": {
+     "name": "GetUserData",
+     "inputs": {
+      "object": [
+       "6a8cbdd2-SubInput",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "key": "mass_scale"
+     },
+     "uipos": [
+      302.2195096909027,
+      695.002870026595
+     ],
+     "options": []
+    },
+    "d21bc294-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "3a219a6d-SubInput",
+       "port",
+       null
+      ],
+      "rhs": [
+       "3b9be532-x",
+       "data",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      565.8470307529163,
+      556.7338282078475
+     ],
+     "options": []
+    },
+    "d22f3659-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "3ee161c0-IfElse",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "dampLin\ndampAng\nfriction\nrestitution\nobj4"
+     },
+     "uipos": [
+      2111.6475713501645,
+      -341.1858534577387
+     ],
+     "options": [],
+     "socket_keys": [
+      "dampLin",
+      "dampAng",
+      "friction",
+      "restitution",
+      "obj4"
+     ]
+    },
+    "75fd95c0-RigidObjectProp": {
+     "name": "RigidObjectProp",
+     "inputs": {
+      "friction": [
+       null,
+       null,
+       0.7
+      ],
+      "dampAng": [
+       null,
+       null,
+       0.06
+      ],
+      "dampLin": [
+       null,
+       null,
+       0.1
+      ],
+      "restitution": [
+       null,
+       null,
+       0.6
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1585.482985729967,
+      -463.7760702524698
+     ],
+     "options": []
+    },
+    "3ee161c0-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "0c07c6a6-SubInput",
+       "port",
+       null
+      ],
+      "false": [
+       "75fd95c0-RigidObjectProp",
+       "material",
+       null
+      ],
+      "cond": [
+       "0c07c6a6-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1861.9648737650932,
+      -375.96048298572987
+     ],
+     "options": []
+    },
+    "0c07c6a6-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "material",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1867.4533479692643,
+      -643.5236004390779
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 1029.1965493308876,
-    "y": -451.59809225513584,
-    "width": 1220.703125,
-    "height": 1220.703125
+    "x": -49.06641806781704,
+    "y": -819.431818749825,
+    "width": 976.5625,
+    "height": 976.5625
    }
   },
   "RigidRecenterPrim": {
@@ -2540,10 +2263,10 @@
     }
    },
    "view_rect": {
-    "x": -98.15501005995901,
-    "y": 10.062544028757344,
-    "width": 781.25,
-    "height": 781.25
+    "x": -4.471936267721446,
+    "y": 148.79547826039052,
+    "width": 500.0,
+    "height": 500.0
    }
   },
   "RigidMakeConstraint": {
@@ -2572,8 +2295,8 @@
      "name": "SubOutput",
      "inputs": {
       "port": [
-       "0e4eb85d-BulletSetConstraintBreakThres",
-       "constraint",
+       "debb6ea8-IfElse",
+       "result",
        null
       ],
       "SRC": [
@@ -2592,38 +2315,6 @@
       409.4147046325236
      ],
      "options": []
-    },
-    "b541d952-x": {
-     "name": "MakeDict",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ],
-      "BulletCons": [
-       "0e4eb85d-BulletSetConstraintBreakThres",
-       "constraint",
-       null
-      ],
-      "Primitive": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "BulletCons\nPrimitive"
-     },
-     "uipos": [
-      300.51724410603714,
-      409.50387887900115
-     ],
-     "options": [],
-     "socket_keys": [
-      "BulletCons",
-      "Primitive"
-     ]
     },
     "5464c27e-BulletMakeConstraint": {
      "name": "BulletMakeConstraint",
@@ -2736,7 +2427,7 @@
      "params": {
       "name": "breakThres",
       "type": "float",
-      "defl": "2"
+      "defl": "-1"
      },
      "uipos": [
       -328.7037037037037,
@@ -2787,13 +2478,72 @@
       251.25
      ],
      "options": []
+    },
+    "debb6ea8-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "0e4eb85d-BulletSetConstraintBreakThres",
+       "constraint",
+       null
+      ],
+      "false": [
+       "5464c27e-BulletMakeConstraint",
+       "constraint",
+       null
+      ],
+      "cond": [
+       "0f7c4817-NumericOperator",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      289.51747088186363,
+      514.1430948419301
+     ],
+     "options": []
+    },
+    "0f7c4817-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "d23dfbe2-SubInput",
+       "port",
+       0.0
+      ],
+      "rhs": [
+       null,
+       null,
+       0.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "cmpgt"
+     },
+     "uipos": [
+      -16.059900166389383,
+      644.8785357737104
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -349.49555266298574,
-    "y": 3.1904543455057137,
-    "width": 781.25,
-    "height": 781.25
+    "x": -108.7254168070425,
+    "y": 369.6202014768111,
+    "width": 400.0,
+    "height": 400.0
    }
   },
   "RigidConvexShape": {
@@ -2853,8 +2603,8 @@
      "name": "PrimitiveToBulletMesh",
      "inputs": {
       "prim": [
-       "73ac6637-x",
-       "port",
+       "09ca46c5-RigidRecenterPrim",
+       "outPrim",
        null
       ],
       "SRC": [
@@ -2968,7 +2718,7 @@
      "name": "PortalIn",
      "inputs": {
       "port": [
-       "47b341a3-IfElse",
+       "2c56b85a-IfElse",
        "result",
        null
       ],
@@ -2982,8 +2732,8 @@
       "name": "shape"
      },
      "uipos": [
-      1684.9310360188076,
-      1119.614349760806
+      2194.4984237059957,
+      1053.0586093281934
      ],
      "options": []
     },
@@ -3041,8 +2791,8 @@
       "name": "prim"
      },
      "uipos": [
-      -387.0368716406698,
-      2324.783454380468
+      -1041.5305089683475,
+      2298.272319703904
      ],
      "options": []
     },
@@ -3159,7 +2909,7 @@
      },
      "params": {},
      "uipos": [
-      1101.8690349946976,
+      1103.9489018832166,
       1031.9148495493105
      ],
      "options": []
@@ -3668,8 +3418,8 @@
        null
       ],
       "data": [
-       "465f0746-NumericVec3",
-       "vec3",
+       "0cfb62df-x",
+       "result",
        null
       ],
       "SRC": [
@@ -3682,8 +3432,8 @@
       "key": "origin"
      },
      "uipos": [
-      483.7390988372092,
-      2397.1202761627906
+      464.68422078842883,
+      2402.0911139146456
      ],
      "options": []
     },
@@ -3702,8 +3452,8 @@
       "z": 0.0
      },
      "uipos": [
-      487.1457122093025,
-      2638.9898255813955
+      -305.7029092116942,
+      2859.3636325803354
      ],
      "options": []
     },
@@ -3724,13 +3474,205 @@
       -63.75
      ],
      "options": []
+    },
+    "b4d7a9c2-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "recentered",
+      "type": "bool",
+      "defl": "1"
+     },
+     "uipos": [
+      -1191.5512327677625,
+      2498.6744432661717
+     ],
+     "options": []
+    },
+    "09ca46c5-RigidRecenterPrim": {
+     "name": "RigidRecenterPrim",
+     "inputs": {
+      "prim": [
+       "73ac6637-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -764.6805408271473,
+      2375.23197242842
+     ],
+     "options": []
+    },
+    "0b1dc678-x": {
+     "name": "SetUserData",
+     "inputs": {
+      "object": [
+       "47b341a3-IfElse",
+       "result",
+       null
+      ],
+      "data": [
+       "9ca26cd7-PortalOut",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "key": "mass_scale"
+     },
+     "uipos": [
+      1641.4499879616392,
+      861.5062329012011
+     ],
+     "options": []
+    },
+    "2c56b85a-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "0b1dc678-x",
+       "object",
+       null
+      ],
+      "false": [
+       "47b341a3-IfElse",
+       "result",
+       null
+      ],
+      "cond": [
+       "57b98618-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1909.098533163125,
+      1018.8643154833848
+     ],
+     "options": []
+    },
+    "0cfb62df-x": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "09ca46c5-RigidRecenterPrim",
+       "origin",
+       null
+      ],
+      "false": [
+       "465f0746-NumericVec3",
+       "vec3",
+       null
+      ],
+      "cond": [
+       "b4d7a9c2-x",
+       "port",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -299.07873806998936,
+      2632.887062566278
+     ],
+     "options": []
+    },
+    "57b98618-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "auto_mass",
+      "type": "bool",
+      "defl": "0"
+     },
+     "uipos": [
+      1646.0583687940884,
+      1113.9315874876274
+     ],
+     "options": []
+    },
+    "16bc81fa-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "09ca46c5-RigidRecenterPrim",
+       "mass",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "mass"
+     },
+     "uipos": [
+      -385.81530782029955,
+      2425.1247920133105
+     ],
+     "options": []
+    },
+    "9ca26cd7-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "mass"
+     },
+     "uipos": [
+      1389.3315827787023,
+      950.1657393926788
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 1181.467564911202,
-    "y": -250.86702274862392,
-    "width": 781.25,
-    "height": 781.25
+    "x": -976.88041043412,
+    "y": -253.3031174232646,
+    "width": 1220.703125,
+    "height": 1220.703125
    }
   },
   "RigidGetPrimitive": {
@@ -4057,6 +3999,756 @@
    "view_rect": {
     "x": -251.75000000000057,
     "y": 157.4999999999991,
+    "width": 781.25,
+    "height": 781.25
+   }
+  },
+  "RigidObjectFragments": {
+   "nodes": {
+    "3f83e33d-x": {
+     "name": "ListGetItem",
+     "inputs": {
+      "list": [
+       "869e0e15-x",
+       "output",
+       null
+      ],
+      "index": [
+       "b63c8e18-x",
+       "X",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1010.4062448173222,
+      237.6485684651866
+     ],
+     "options": []
+    },
+    "869e0e15-x": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "2ed85004-x",
+       "list",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      236.89302895829042,
+      433.6838107559355
+     ],
+     "options": []
+    },
+    "2ed85004-x": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       "0fbeb637-x",
+       "object",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "938e931b-x",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      -189.72901021869166,
+      415.3386975845215
+     ],
+     "options": []
+    },
+    "70e58ae5-x": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "2a354f3a-SubInput",
+       "port",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "869e0e15-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      490.9128527468356,
+      177.7366741920589
+     ],
+     "options": []
+    },
+    "c1876381-x": {
+     "name": "RigidConvexShape",
+     "inputs": {
+      "prim": [
+       "938e931b-x",
+       "object",
+       null
+      ],
+      "type": [
+       null,
+       null,
+       "convex"
+      ],
+      "margin": [
+       null,
+       null,
+       0.0
+      ],
+      "recentered": [
+       null,
+       null,
+       true
+      ],
+      "auto_mass": [
+       null,
+       null,
+       true
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1027.3867625432222,
+      267.5774090419881
+     ],
+     "options": []
+    },
+    "938e931b-x": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "9c3ce484-SubInput",
+       "port",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -1380.86743219461,
+      343.26878937668573
+     ],
+     "options": []
+    },
+    "2daecb12-x": {
+     "name": "RigidMakeConstraint",
+     "inputs": {
+      "obj1": [
+       "3f83e33d-x",
+       "object",
+       null
+      ],
+      "obj2": [
+       "b84aa89e-x",
+       "object",
+       null
+      ],
+      "breakThres": [
+       "ed15ae73-SubInput",
+       "port",
+       0.2
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1249.7794197342828,
+      243.2570800002128
+     ],
+     "options": []
+    },
+    "1d70fe8b-x": {
+     "name": "PrintNumeric",
+     "inputs": {
+      "value": [
+       "70e58ae5-x",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "hint": "X"
+     },
+     "uipos": [
+      974.5582271961762,
+      -117.6928412264433
+     ],
+     "options": []
+    },
+    "b84aa89e-x": {
+     "name": "ListGetItem",
+     "inputs": {
+      "list": [
+       "869e0e15-x",
+       "output",
+       null
+      ],
+      "index": [
+       "b63c8e18-x",
+       "Y",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1017.4547029671003,
+      443.8159693462437
+     ],
+     "options": []
+    },
+    "cfabb7bb-x": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       "2daecb12-x",
+       "constraint",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "70e58ae5-x",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       "1d70fe8b-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      1506.3313549494796,
+      189.19041868545082
+     ],
+     "options": []
+    },
+    "0fbeb637-x": {
+     "name": "RigidMakeObject",
+     "inputs": {
+      "shape": [
+       "c1876381-x",
+       "shape",
+       null
+      ],
+      "origin": [
+       null,
+       null,
+       null
+      ],
+      "rotation": [
+       null,
+       null,
+       null
+      ],
+      "mass": [
+       "be7b0867-SubInput",
+       "port",
+       1.0
+      ],
+      "material": [
+       "224fff26-IfElse",
+       "result",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -685.2075522564155,
+      344.70992479931783
+     ],
+     "options": []
+    },
+    "b63c8e18-x": {
+     "name": "UnpackNumericVec",
+     "inputs": {
+      "vec": [
+       "70e58ae5-x",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      746.6270808688361,
+      211.00025105001214
+     ],
+     "options": []
+    },
+    "9c3ce484-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "primList",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -1643.481529271204,
+      232.8965272839718
+     ],
+     "options": []
+    },
+    "2a354f3a-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "neighList",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      142.00005833772957,
+      50.28699902336683
+     ],
+     "options": []
+    },
+    "ed15ae73-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "breakThres",
+      "type": "float",
+      "defl": "0.2"
+     },
+     "uipos": [
+      1392.4708818635606,
+      552.2046589018303
+     ],
+     "options": []
+    },
+    "be7b0867-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "mass",
+      "type": "float",
+      "defl": "1.0"
+     },
+     "uipos": [
+      -960.4829857299669,
+      570.1152579582875
+     ],
+     "options": []
+    },
+    "c622d04b-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "material",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -681.9429198682765,
+      664.1053787047199
+     ],
+     "options": []
+    },
+    "6a98ae37-RigidObjectProp": {
+     "name": "RigidObjectProp",
+     "inputs": {
+      "friction": [
+       null,
+       null,
+       0.7
+      ],
+      "dampAng": [
+       null,
+       null,
+       0.06
+      ],
+      "dampLin": [
+       null,
+       null,
+       0.1
+      ],
+      "restitution": [
+       null,
+       null,
+       0.6
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -684.131736526946,
+      932.6347305389221
+     ],
+     "options": []
+    },
+    "224fff26-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "c622d04b-x",
+       "port",
+       null
+      ],
+      "false": [
+       "6a98ae37-RigidObjectProp",
+       "material",
+       null
+      ],
+      "cond": [
+       "c622d04b-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -414.6706586826348,
+      824.8502994011974
+     ],
+     "options": []
+    },
+    "092f94f7-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "869e0e15-x",
+       "output",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "objectList",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      657.3727544910178,
+      556.1377245508982
+     ],
+     "options": []
+    },
+    "a7f46bed-x": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "cfabb7bb-x",
+       "list",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "constrList",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1871.2574850299402,
+      329.34131736526945
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -1442.0320279331193,
+    "y": 65.89175868955436,
+    "width": 625.0,
+    "height": 625.0
+   }
+  },
+  "RigidObjectProp": {
+   "nodes": {
+    "426fe08b-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "friction",
+      "type": "float",
+      "defl": "0.7"
+     },
+     "uipos": [
+      -384.21187980855586,
+      441.5298780924585
+     ],
+     "options": []
+    },
+    "f12cfb22-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dampAng",
+      "type": "float",
+      "defl": "0.06"
+     },
+     "uipos": [
+      -392.428541390987,
+      159.48259594987803
+     ],
+     "options": []
+    },
+    "dc72c27a-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "dampLin",
+      "type": "float",
+      "defl": "0.1"
+     },
+     "uipos": [
+      -390.6331914663752,
+      -97.58837789798011
+     ],
+     "options": []
+    },
+    "12b1f6e3-x": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "restitution",
+      "type": "float",
+      "defl": "0.6"
+     },
+     "uipos": [
+      -398.98673169498625,
+      699.4338773491327
+     ],
+     "options": []
+    },
+    "04cb817b-MakeDict": {
+     "name": "MakeDict",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ],
+      "dampLin": [
+       "dc72c27a-x",
+       "port",
+       null
+      ],
+      "dampAng": [
+       "f12cfb22-x",
+       "port",
+       null
+      ],
+      "friction": [
+       "426fe08b-x",
+       "port",
+       null
+      ],
+      "restitution": [
+       "12b1f6e3-x",
+       "port",
+       null
+      ],
+      "obj4": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "dampLin\ndampAng\nfriction\nrestitution\nobj4"
+     },
+     "uipos": [
+      73.96576564215148,
+      497.3929747530186
+     ],
+     "options": [],
+     "socket_keys": [
+      "dampLin",
+      "dampAng",
+      "friction",
+      "restitution",
+      "obj4"
+     ]
+    },
+    "825094d5-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "04cb817b-MakeDict",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "material",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      360.18111964873765,
+      510.256586169045
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -352.2056805708006,
+    "y": -3.130145444565869,
     "width": 781.25,
     "height": 781.25
    }
@@ -4442,7 +5134,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletCompoundAddChild": {
@@ -4482,7 +5174,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletExtractTransform": {
@@ -4517,7 +5209,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletGetObjMotion": {
@@ -4552,7 +5244,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletGetObjTransform": {
@@ -4582,7 +5274,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeBoxShape": {
@@ -4612,7 +5304,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeCompoundShape": {
@@ -4642,7 +5334,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeConstraint": {
@@ -4677,7 +5369,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeConvexHullShape": {
@@ -4717,7 +5409,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeConvexMeshShape": {
@@ -4747,7 +5439,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeObject": {
@@ -4787,7 +5479,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeSphereShape": {
@@ -4817,7 +5509,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeTransform": {
@@ -4852,7 +5544,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeWorld": {
@@ -4877,7 +5569,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletObjectApplyForce": {
@@ -4912,7 +5604,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletSetConstraintBreakThres": {
@@ -4947,7 +5639,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletSetObjectDamping": {
@@ -4987,7 +5679,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletSetObjectFriction": {
@@ -5022,7 +5714,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletSetObjectRestitution": {
@@ -5057,7 +5749,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletSetWorldGravity": {
@@ -5092,7 +5784,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletStepWorld": {
@@ -5132,7 +5824,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletWorldAddConstraint": {
@@ -5167,7 +5859,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletWorldAddObject": {
@@ -5202,7 +5894,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletWorldRemoveConstraint": {
@@ -5237,7 +5929,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletWorldRemoveObject": {
@@ -5272,7 +5964,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletWorldSetConsList": {
@@ -5307,7 +5999,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletWorldSetObjList": {
@@ -5342,7 +6034,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "CachePrimitive": {
@@ -9086,7 +9778,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "PrimitiveDuplicate": {
@@ -10175,7 +10867,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "PrimitiveToSDF": {
@@ -10588,7 +11280,7 @@
     [
      "float",
      "breakThres",
-     "2"
+     "-1"
     ],
     [
      "",
@@ -10637,24 +11329,9 @@
      "0"
     ],
     [
-     "float",
-     "dampLin",
-     "0.1"
-    ],
-    [
-     "float",
-     "dampAng",
-     "0.06"
-    ],
-    [
-     "float",
-     "friction",
-     "0.7"
-    ],
-    [
-     "float",
-     "restitution",
-     "0.6"
+     "",
+     "material",
+     ""
     ],
     [
      "",
@@ -10772,7 +11449,7 @@
     [
      "int",
      "steps",
-     "1"
+     "10"
     ],
     [
      "float",
@@ -10845,7 +11522,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "Route": {
@@ -12402,6 +13079,16 @@
      "0.0"
     ],
     [
+     "bool",
+     "recentered",
+     "1"
+    ],
+    [
+     "bool",
+     "auto_mass",
+     "0"
+    ],
+    [
      "",
      "SRC",
      ""
@@ -12453,6 +13140,108 @@
    "params": [],
    "categories": [
     "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidObjectFragments": {
+   "inputs": [
+    [
+     "",
+     "primList",
+     ""
+    ],
+    [
+     "",
+     "neighList",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "0.2"
+    ],
+    [
+     "float",
+     "mass",
+     "1.0"
+    ],
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "objectList",
+     ""
+    ],
+    [
+     "",
+     "constrList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "RigidObjectProp": {
+   "inputs": [
+    [
+     "float",
+     "friction",
+     "0.7"
+    ],
+    [
+     "float",
+     "dampAng",
+     "0.06"
+    ],
+    [
+     "float",
+     "dampLin",
+     "0.1"
+    ],
+    [
+     "float",
+     "restitution",
+     "0.6"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
    ],
    "is_subgraph": true
   },
