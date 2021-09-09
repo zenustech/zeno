@@ -2,9 +2,11 @@
 
 #include <zeno/utils/api.h>
 #include <zeno/utils/source_location.h>
+#include <zeno/utils/format.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/bundled/core.h>
 #include <string_view>
+#include <sstream>
 #include <memory>
 
 namespace zeno {
@@ -42,5 +44,32 @@ _PER_LOG_LEVEL(critical, critical)
 _PER_LOG_LEVEL(warn, warn)
 _PER_LOG_LEVEL(error, err)
 #undef _PER_LOG_LEVEL
+
+namespace loggerstd {
+
+static inline constexpr struct {} endl;
+
+static inline constexpr struct __logger_ostream {
+    static thread_local std::stringstream ss;
+
+    template <class T>
+    __logger_ostream &operator<<(T const &x) {
+        ss << x;
+        return *this;
+    }
+
+    __logger_ostream &operator<<(decltype(endl) const &x) {
+        log_trace(ss.str());
+        ss.clear();
+        return *this;
+    }
+} cout;
+
+template <class ...Ts>
+void printf(const char *fmt, Ts &&...ts) {
+    log_trace(format(fmt, std::forward<Ts>(ts)...));
+}
+
+}
 
 }

@@ -8,12 +8,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-security")
 endif()
 
-if (CMAKE_BUILD_TYPE EQUAL Debug)
-    option(ZFX_PRINT_IR "Print IR for the ZFX compiler" ON)
-else()
-    option(ZFX_PRINT_IR "Print IR for the ZFX compiler" OFF)
-endif()
-
 add_library(ZFX
 # ls {,include/zfx/}*{,/*}.{h,cpp} | grep -v main.cpp
 AST.h
@@ -53,9 +47,6 @@ x64/Executable.h
 x64/SIMDBuilder.h
 zfx.cpp
     )
-if (ZFX_PRINT_IR)
-    target_compile_definitions(ZFX PRIVATE -DZFX_PRINT_IR)
-endif()
 target_include_directories(ZFX PUBLIC include)
 if (ZFX_ENABLE_CUDA)
     target_sources(ZFX PRIVATE cuda/Assembler.cpp)

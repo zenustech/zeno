@@ -6,16 +6,24 @@
 #include <vector>
 #include <cstring>
 #include <cstdlib>
-#include <iostream>
 #include <sstream>
 #include <memory>
 #include <tuple>
 #include <set>
-
+#if __has_include(<zeno/utils/logger.h>)
+#include <zeno/utils/logger.h>
 namespace zfx {
-
+using namespace zeno::loggerstd;
+}
+#else
+#include <iostream>
+namespace zfx {
 using std::cout;
 using std::endl;
+}
+#endif
+
+namespace zfx {
 
 template <int First, int Last, typename Lambda>
 inline constexpr bool static_for(Lambda const &f) {
