@@ -61,7 +61,7 @@ ZENDEFNODE(BulletMakeBoxShape, {
     {{"vec3f", "semiSize", "1,1,1"}},
     {"shape"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletMakeSphereShape : zeno::INode {
@@ -77,7 +77,7 @@ ZENDEFNODE(BulletMakeSphereShape, {
     {{"float", "radius", "1"}},
     {"shape"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 
@@ -105,7 +105,7 @@ ZENDEFNODE(PrimitiveToBulletMesh, {
     {"prim"},
     {"mesh"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct PrimitiveConvexDecomposition : zeno::INode {
@@ -188,7 +188,7 @@ ZENDEFNODE(PrimitiveConvexDecomposition, {
     {"prim"},
     {"listPrim"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 
@@ -206,7 +206,7 @@ ZENDEFNODE(BulletMakeConvexMeshShape, {
     {"triMesh"},
     {"shape"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletMakeConvexHullShape : zeno::INode {
@@ -255,7 +255,7 @@ ZENDEFNODE(BulletMakeConvexHullShape, {
     {"triMesh", {"float", "margin", "0"}, {"int", "highres", "0"}},
     {"shape"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletMakeCompoundShape : zeno::INode {
@@ -270,7 +270,7 @@ ZENDEFNODE(BulletMakeCompoundShape, {
     {""},
     {"compound"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletCompoundAddChild : zeno::INode {
@@ -288,7 +288,7 @@ ZENDEFNODE(BulletCompoundAddChild, {
     {"compound", "childShape", "trans"},
     {"compound"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 
@@ -317,7 +317,7 @@ ZENDEFNODE(BulletMakeTransform, {
     {{"vec3f", "origin"}, {"vec3f", "rotation"}},
     {"trans"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletComposeTransform : zeno::INode {
@@ -334,7 +334,7 @@ ZENDEFNODE(BulletComposeTransform, {
     {"transFirst", "transSecond"},
     {"trans"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 
@@ -376,7 +376,7 @@ ZENDEFNODE(BulletMakeObject, {
     {"shape", "trans", {"float", "mass", "0"}},
     {"object"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletSetObjectDamping : zeno::INode {
@@ -393,7 +393,7 @@ ZENDEFNODE(BulletSetObjectDamping, {
     {"object", {"float", "dampLin", "0"}, {"float", "dampAug", "0"}},
     {"object"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletSetObjectFriction : zeno::INode {
@@ -409,7 +409,7 @@ ZENDEFNODE(BulletSetObjectFriction, {
     {"object", {"float", "friction", "0"}},
     {"object"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletSetObjectRestitution : zeno::INode {
@@ -425,7 +425,7 @@ ZENDEFNODE(BulletSetObjectRestitution, {
     {"object", {"float", "restitution", "0"}},
     {"object"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletGetObjTransform : zeno::INode {
@@ -446,7 +446,7 @@ ZENDEFNODE(BulletGetObjTransform, {
     {"object"},
     {"trans"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletGetObjMotion : zeno::INode {
@@ -475,7 +475,7 @@ ZENDEFNODE(BulletGetObjMotion, {
     {"object"},
     {"linearVel", "angularVel"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 
@@ -524,7 +524,7 @@ ZENDEFNODE(BulletMakeConstraint, {
     {"obj1", "obj2"},
     {"constraint"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletSetConstraintBreakThres : zeno::INode {
@@ -539,7 +539,7 @@ ZENDEFNODE(BulletSetConstraintBreakThres, {
     {"constraint", {"float", "threshold", "3.0"}},
     {"constraint"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 
@@ -565,7 +565,7 @@ ZENDEFNODE(RigidVelToPrimitive, {
     {"prim", "centroid", "linearVel", "angularVel"},
     {"prim"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletExtractTransform : zeno::INode {
@@ -584,7 +584,7 @@ ZENDEFNODE(BulletExtractTransform, {
     {"trans"},
     {{"vec3f","origin"}, {"vec4f", "rotation"}},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 
@@ -831,7 +831,7 @@ ZENDEFNODE(BulletMakeWorld, {
     {},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletSetWorldGravity : zeno::INode {
@@ -847,7 +847,7 @@ ZENDEFNODE(BulletSetWorldGravity, {
     {"world", {"vec3f", "gravity", "0,0,-9.8"}},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletStepWorld : zeno::INode {
@@ -864,7 +864,7 @@ ZENDEFNODE(BulletStepWorld, {
     {"world", {"float", "dt", "0.04"}, {"int", "steps", "1"}},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletWorldAddObject : zeno::INode {
@@ -880,7 +880,7 @@ ZENDEFNODE(BulletWorldAddObject, {
     {"world", "object"},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletWorldRemoveObject : zeno::INode {
@@ -896,7 +896,7 @@ ZENDEFNODE(BulletWorldRemoveObject, {
     {"world", "object"},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletWorldSetObjList : zeno::INode {
@@ -912,7 +912,7 @@ ZENDEFNODE(BulletWorldSetObjList, {
     {"world", "objList"},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletWorldAddConstraint : zeno::INode {
@@ -928,7 +928,7 @@ ZENDEFNODE(BulletWorldAddConstraint, {
     {"world", "constraint"},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletWorldRemoveConstraint : zeno::INode {
@@ -944,7 +944,7 @@ ZENDEFNODE(BulletWorldRemoveConstraint, {
     {"world", "constraint"},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletWorldSetConsList : zeno::INode {
@@ -961,7 +961,7 @@ ZENDEFNODE(BulletWorldSetConsList, {
     {"world", "consList"},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 
@@ -979,7 +979,7 @@ ZENDEFNODE(BulletObjectApplyForce, {
     {"object", {"vec3f", "ForceImpulse", "0,0,0"}, {"vec3f", "TorqueImpulse", "0,0,0"}},
     {},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 
