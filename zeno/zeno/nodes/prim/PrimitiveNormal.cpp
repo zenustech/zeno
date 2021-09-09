@@ -106,7 +106,7 @@ ZENDEFNODE(PrimitiveFaceToEdges,
     }, /* outputs: */ {
     "prim",
     }, /* params: */ {
-    {"int", "clearFaces", "1"},
+    {"bool", "clearFaces", "1"},
     }, /* category: */ {
     "primitive",
     }});
