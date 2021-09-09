@@ -53,7 +53,7 @@ _PER_LOG_LEVEL(error, err)
 namespace loggerstd {
 
 //static inline constexpr struct __logger_endl {} endl;
-static inline constexpr char endl[] = "";
+static inline constexpr char endl[] = "\n";
 
 static inline struct __logger_ostream {
     struct __logger_ostream_proxy {
@@ -61,6 +61,11 @@ static inline struct __logger_ostream {
 
         template <class T>
         __logger_ostream_proxy &operator<<(T const &x) {
+            if constexpr (std::is_same_v<std::decay_t<T>, char *>) {
+                if (x == endl) {
+                    return *this;
+                }
+            }
             ss << x;
             return *this;
         }
@@ -75,7 +80,7 @@ static inline struct __logger_ostream {
     __logger_ostream_proxy &operator<<(T const &x) {
         return __logger_ostream_proxy() << x;
     }
-} cout, cerr, clog;
+} cout, cerr;
 
 template <class ...Ts>
 void printf(with_source_location<const char *> fmt, Ts &&...ts) {

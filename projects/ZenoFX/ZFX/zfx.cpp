@@ -165,7 +165,7 @@ std::tuple
         params = new_params;
     }
 
-    std::ostringstream oss_end;
+    std::stringstream oss_end;
     if (options.const_parametrize) {
 #ifdef ZFX_PRINT_IR
         cout << "=== ConstParametrize" << endl;
