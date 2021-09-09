@@ -41,6 +41,10 @@ static void log_print(spdlog::level::level_enum log_level, with_source_location<
 template <class ...Args> \
 void log_##x(with_source_location<std::string_view> const &fmt, Args &&...args) { \
     log_print(spdlog::level::y, fmt, std::forward<Args>(args)...); \
+} \
+template <class ...Args> \
+void log_##x##f(with_source_location<const char *> const &fmt, Args &&...args) { \
+    log_print(spdlog::level::y, "{}", format(fmt, std::forward<Args>(args)...)); \
 }
 _PER_LOG_LEVEL(trace, trace)
 _PER_LOG_LEVEL(debug, debug)
@@ -72,7 +76,7 @@ static inline struct __logger_ostream {
 
         ~__logger_ostream_proxy() {
             if (ss.str().size())
-                log_info("{}", ss.str());
+                log_debug("{}", ss.str());
         }
     };
 
@@ -80,14 +84,14 @@ static inline struct __logger_ostream {
     __logger_ostream_proxy &operator<<(T const &x) {
         return __logger_ostream_proxy() << x;
     }
-} cout, cerr;
+} cout, cerr, clog;
 
 template <class ...Ts>
 void printf(with_source_location<const char *> fmt, Ts &&...ts) {
     auto s = format(fmt, std::forward<Ts>(ts)...);
     if (s.size() && s[s.size() - 1] == '\n')
         s.resize(s.size() - 1);
-    log_info({"{}", fmt.location()}, s);
+    log_debug({"{}", fmt.location()}, s);
 }
 
 }
