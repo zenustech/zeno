@@ -24,42 +24,15 @@ struct AdaptiveSolver : zeno::INode
     openvdb::FloatGrid::Ptr ApGrid;
 
     virtual void apply() override {
-        int levelNum = has_input("levelNum") ? 
-            get_input("levelNum")->as<NumericObject>()->get<int>() : 1;
-        auto level0 = get_input<VDBFloatGrid>("level0");
-        auto level1 = has_input("level1") ? get_input<VDBFloatGrid>("level1")
-            :zeno::IObject::make<VDBFloatGrid>();
-        auto level2 = has_input("level2") ? get_input<VDBFloatGrid>("level2")
-            :zeno::IObject::make<VDBFloatGrid>();
-        auto level3 = has_input("level3") ? get_input<VDBFloatGrid>("level3")
-            :zeno::IObject::make<VDBFloatGrid>();
-        auto level4 = has_input("level4") ? get_input<VDBFloatGrid>("level4")
-            :zeno::IObject::make<VDBFloatGrid>();
-        float h = has_input("Dx") ? get_input("Dx")->as<NumericObject>()->get<float>()
-            :0.08;
+        auto data = get_input<mgData>("mgData");
         dt = has_input("dt") ? get_input("dt")->as<NumericObject>()->get<float>()
             :0.001;
         density = has_input("density") ? get_input("density")->as<NumericObject>()->get<float>()
             :1000.0f;
-
-        data.resize(levelNum);
-        printf("resize over. levelNum is %d\n", levelNum);
-        data.aig.topoLevels[0] = level0->m_grid;
-        data.aig.topoLevels[1] = level1->m_grid;
-        data.aig.topoLevels[2] = level2->m_grid;
-        data.aig.topoLevels[3] = level3->m_grid;
-        data.aig.topoLevels[4] = level4->m_grid;
-        data.aig.hLevels[0] = h;
-        printf("begin to init\n");
-        data.initData();
-        printf("init over\n");
+        //std::cout<<"solve again, data position is " << &*level0 <<std::endl;
         step();
         //generate  
-        set_output("level0", level0);
-        set_output("level1", level1);
-        set_output("level2", level2);
-        set_output("level3", level3);
-        set_output("level4", level4);
+        set_output("mgData", data);
     }
 
     //using cg iteration to solve press possion equation 
@@ -77,10 +50,30 @@ struct AdaptiveSolver : zeno::INode
         pGrid = data.p[0];
         ApGrid = data.Ap[0];
 
-        dx = data.aig.hLevels[0];
+        dx = data.hLevels[0];
         // compute the finest level only
-        sdfgrid = data.aig.topoLevels[0];
+        sdfgrid = data.sdf[0];
         
+        openvdb::Int32Grid::Ptr tag = zeno::IObject::make<VDBIntGrid>()->m_grid;
+        tag->setTree(std::make_shared<openvdb::Int32Tree>(
+            sdfgrid->tree(), /*bgval*/ openvdb::Int32(1000000),
+            openvdb::TopologyCopy()));
+
+        auto initTag= [&](const tbb::blocked_range<size_t> &r){
+                    auto sdf_axr{sdfgrid->getConstAccessor()};
+                    auto tag_axr{tag->getAccessor()};
+                    for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                        auto &leaf = *leaves[liter];
+                        for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                            auto coord = leaf.offsetToGlobalCoord(offset);
+                            if(!sdf_axr.isValueOn(coord))
+                                continue;
+                            if(sdf_axr.getValue(coord) <= 0)
+                                tag_axr.setValue(coord, 0);
+                        }
+                    }
+            };    
+
         auto applyGravityAndBound = [&](const tbb::blocked_range<size_t> &r) {
             auto vel_axr = velGrid->getAccessor();
             auto sdf_axr = sdfgrid->getConstAccessor();
@@ -369,38 +362,6 @@ struct AdaptiveSolver : zeno::INode
             }
         };
 
-        sdfgrid->tree().getNodes(leaves);
-        printf("sdfgrid leaves num is %d\n", leaves.size());
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), applyGravityAndBound);
-        
-        leaves.clear();
-        pressGrid->tree().getNodes(leaves);
-        printf("pressGrid leaves num is %d\n", leaves.size());
-        
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeRHS);
-
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), initIter);
-        
-        printf("start to solve pressure possision equation\n");
-        for(int iterNum = 0; iterNum < 2; ++iterNum)
-        {
-            alpha = 0;
-            beta = 0;
-            alpha = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, leaves.size()), 0.0,computeAlpha, std::plus<double>());
-            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeNewPress);
-            
-            beta = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, leaves.size()), 0.0, computeBeta1, std::plus<float>());
-            printf("iterNum is %d, beta is %f, alpha is %f, dx is %f\n", iterNum, beta, alpha, dx);
-            if(beta < 0.0001 && beta > -0.0001)
-                break;
-            alpha = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, leaves.size()), 0.0, computeBeta2, std::plus<float>());
-            beta = beta / alpha;
-            // assign r2 to r
-            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeP);
-        }
-        printf("pressure computation is done. beta is %f\n", beta);
-
-        //apply press and semi-langrain advection
         auto applyPress = [&](const tbb::blocked_range<size_t> &r){
             auto press_axr{pressGrid->getConstAccessor()};
             auto sdf_axr{sdfgrid->getAccessor()};
@@ -440,33 +401,18 @@ struct AdaptiveSolver : zeno::INode
             }
         };
         
-        // velocity extrapolation
-        openvdb::Int32Grid::Ptr tag = zeno::IObject::make<VDBIntGrid>()->m_grid;
-        tag->setTree(std::make_shared<openvdb::Int32Tree>(
-            sdfgrid->tree(), /*bgval*/ openvdb::Int32(1000000),
-            openvdb::TopologyCopy()));
-        {
-            auto initTag= [&](const tbb::blocked_range<size_t> &r){
-                    auto sdf_axr{sdfgrid->getConstAccessor()};
-                    auto tag_axr{tag->getAccessor()};
-                    for (auto liter = r.begin(); liter != r.end(); ++liter) {
-                        auto &leaf = *leaves[liter];
-                        for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-                            auto coord = leaf.offsetToGlobalCoord(offset);
-                            if(!sdf_axr.isValueOn(coord))
-                                continue;
-                            if(sdf_axr.getValue(coord) <= 0)
-                                tag_axr.setValue(coord, 0);
-                        }
-                    }
-            };    
+        sdfgrid->tree().getNodes(leaves);
+        printf("sdfgrid leaves num is %d\n", leaves.size());
+        // advection part 
 
+        // velocity extrapolation
+        {
             tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), initTag);
             
             for(int d=1;d<5;++d)
             {
                 auto computeTag = [&](const tbb::blocked_range<size_t> &r){
-                    auto tag_axr{tag->getConstAccessor()};
+                    auto tag_axr{tag->getAccessor()};
                     auto sdf_axr{sdfgrid->getConstAccessor()};
                     
                     for (auto liter = r.begin(); liter != r.end(); ++liter) {
@@ -496,8 +442,8 @@ struct AdaptiveSolver : zeno::INode
                             }
                             
                         }
-                }
-            };
+                    }
+                };
         
                 auto sweep = [&](const tbb::blocked_range<size_t> &r){
                     auto tag_axr{tag->getAccessor()};
@@ -533,10 +479,8 @@ struct AdaptiveSolver : zeno::INode
             
                 tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), initTag);
                 tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), sweep);
-        
             }
         }
-
         // semi-lagrangian advection.
         {
             auto newsdf = sdfgrid->deepCopy();
@@ -607,18 +551,74 @@ struct AdaptiveSolver : zeno::INode
                     }
                 }
             };
+            
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), advect);
+            
             sdfgrid = newsdf->deepCopy();
             velGrid = newvel->deepCopy();
         }
+
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), applyGravityAndBound);
+        
+        leaves.clear();
+        pressGrid->tree().getNodes(leaves);
+        printf("pressGrid leaves num is %d\n", leaves.size());
+        
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeRHS);
+
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), initIter);
+        
+        printf("start to solve pressure possision equation\n");
+        for(int iterNum = 0; iterNum < 2; ++iterNum)
+        {
+            alpha = 0;
+            beta = 0;
+            alpha = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, leaves.size()), 0.0,computeAlpha, std::plus<double>());
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeNewPress);
+            
+            beta = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, leaves.size()), 0.0, computeBeta1, std::plus<float>());
+            printf("iterNum is %d, beta is %f, alpha is %f, dx is %f\n", iterNum, beta, alpha, dx);
+            if(beta < 0.0001 && beta > -0.0001)
+                break;
+            alpha = tbb::parallel_reduce(tbb::blocked_range<size_t>(0, leaves.size()), 0.0, computeBeta2, std::plus<float>());
+            beta = beta / alpha;
+            // assign r2 to r
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeP);
+        }
+        printf("pressure computation is done. beta is %f\n", beta);
+
+        //apply press
+        
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), applyPress);
+            
+        
     };
 };
 
 ZENDEFNODE(AdaptiveSolver, {
-        {"levelNum", "level0","level1","level2","level3", "level4", "Dx", "dt", "density"},
-        {"level0","level1","level2","level3", "level4"},
+        {"mgData", "dt", "density"},
+        {"mgData"},
         {},
         {"AdaptiveSolver"},
 });
 
+struct selectLevelGrid : zeno::INode{
+    virtual void apply() override {
+        auto data = get_input<mgData>("mgData");
+        int selectNum = has_input("level") ? get_input("level")->as<NumericObject>()->get<int>()
+            :0;
+
+        auto result = zeno::IObject::make<VDBFloatGrid>();
+        result->m_grid = data->sdf[selectNum];
+        //generate  
+        set_output("vdbGrid", result);
+    }
+};
+ZENDEFNODE(selectLevelGrid, {
+        {"mgData", "level"},
+        {"vdbGrid"},
+        {},
+        {"AdaptiveSolver"},
+});
 
 }

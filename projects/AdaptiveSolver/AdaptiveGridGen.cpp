@@ -33,7 +33,7 @@ void AdaptiveIndexGenerator::generateAdaptiveGrid(
     
     for(int level = 1; level<max_levels; level++)
     {
-        coarse_grid = data.topoLevels[level-1];
+        coarse_grid = data.sdf[level-1];
         auto transform =
         openvdb::math::Transform::createLinearTransform(data.hLevels[level]);
         transform->postTranslate(openvdb::Vec3d{0.5,0.5,0.5} *
@@ -133,11 +133,11 @@ void AdaptiveIndexGenerator::generateAdaptiveGrid(
         printf("fine count is %d\n", emitCount * 8);
         
         //openvdb::tools::signedFloodFill(fine_grid->tree());
-        data.topoLevels[level] = fine_grid->deepCopy();
+        data.sdf[level] = fine_grid->deepCopy();
         data.tag[level] = fine_grid->deepCopy();
-        data.topoLevels[level]->setGridClass(openvdb::GRID_LEVEL_SET);
+        data.sdf[level]->setGridClass(openvdb::GRID_LEVEL_SET);
         printf("fine grid active voxel is %d\n", fine_grid->activeVoxelCount());
-        rule->markSubd(data.topoLevels[level], data.tag[level]);
+        rule->markSubd(data.sdf[level], data.tag[level]);
         //fine_grid->tree().getNodes(leaves);
         leaves.clear();
     }
@@ -163,14 +163,14 @@ struct generateAdaptiveGrid : zeno::INode{
         auto rule = std::make_shared<LiquidAdaptiveRule>();
         AdaptiveIndexGenerator aig;
         int max_level = 5;
-        aig.topoLevels.resize(max_level);
+        aig.sdf.resize(max_level);
         aig.tag.resize(max_level);
-        aig.topoLevels[0] = coarse_grid->m_grid;
+        aig.sdf[0] = coarse_grid->m_grid;
         aig.tag[0] = coarse_grid->m_grid->deepCopy();
-        aig.topoLevels[0]->setGridClass(openvdb::GRID_LEVEL_SET);
+        aig.sdf[0]->setGridClass(openvdb::GRID_LEVEL_SET);
         // aig.tag[0] = openvdb::FloatGrid::create(float(0));
         // aig.tag[0]->setTransform(transform);
-        rule->markSubd(aig.topoLevels[0], aig.tag[0]);
+        rule->markSubd(aig.sdf[0], aig.tag[0]);
 
         aig.generateAdaptiveGrid(aig, max_level, h_coarse, rule);
 
@@ -179,11 +179,11 @@ struct generateAdaptiveGrid : zeno::INode{
         auto level2 = zeno::IObject::make<VDBFloatGrid>();
         auto level3 = zeno::IObject::make<VDBFloatGrid>();
         auto level4 = zeno::IObject::make<VDBFloatGrid>();
-        level0->m_grid = aig.topoLevels[0];
-        level1->m_grid = aig.topoLevels[1];
-        level2->m_grid = aig.topoLevels[2];
-        level3->m_grid = aig.topoLevels[3];
-        level4->m_grid = aig.topoLevels[4];
+        level0->m_grid = aig.sdf[0];
+        level1->m_grid = aig.sdf[1];
+        level2->m_grid = aig.sdf[2];
+        level3->m_grid = aig.sdf[3];
+        level4->m_grid = aig.sdf[4];
         printf("adaptive grid generate done\n");
         set_output("level0", level0);
         set_output("level1", level1);
@@ -201,6 +201,123 @@ ZENDEFNODE(generateAdaptiveGrid, {
 });
 
 struct MeshToMultiGridLevelSet : zeno::INode{
+    void fillInner(mgData &data){
+        auto sdf = data.sdf[0];
+        auto dx = data.hLevels[0];
+        openvdb::FloatGrid::Ptr tag = zeno::IObject::make<VDBFloatGrid>()->m_grid;
+        tag->setTree(std::make_shared<openvdb::FloatTree>(
+                sdf->tree(), /*bgval*/ float(1),
+                openvdb::TopologyCopy()));
+        int activeNum = sdf->activeVoxelCount();
+        std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+
+        auto extendTag = [&](const tbb::blocked_range<size_t> &r){
+            auto tag_axr{tag->getAccessor()};
+            auto sdf_axr{sdf->getConstAccessor()};
+            
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    auto coord = leaf.offsetToGlobalCoord(offset);
+                    if(!sdf_axr.isValueOn(coord) || tag_axr.getValue(coord) == 2 )
+                        continue;
+                    if( sdf_axr.getValue(coord) >= 0)
+                        continue;
+                    int count = 0;
+                    for(int i = -1;i<=1; i += 2)
+                    for(int j = 0;j<3;++j)
+                    {
+                        auto neighbor = coord;
+                        neighbor[j] += i;
+                        if(!sdf_axr.isValueOn(neighbor))
+                        {
+                            tag_axr.setValue(neighbor, 0.0f);
+                        }
+                        else
+                            count++;
+                    }
+                    if(count == 6)
+                        tag_axr.setValue(coord, 2);
+                    else
+                        tag_axr.setValue(coord, 1);
+                }
+            }
+        };
+        auto computeSDF = [&](const tbb::blocked_range<size_t> &r){
+            auto tag_axr{tag->getConstAccessor()};
+            auto sdf_axr{sdf->getAccessor()};
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    auto coord = leaf.offsetToGlobalCoord(offset);
+                    if(!tag_axr.isValueOn(coord) || tag_axr.getValue(coord) > 0.01f)
+                    {
+                        continue;
+                    }
+                    float dis[3] = {100000,100000,100000};
+                    int sign[3];
+                    
+                    for(int i=-1;i<=1;i += 2)
+                    for(int select = 0;select < 3;++select)
+                    {
+                        auto base = openvdb::Vec3i(0,0,0);
+                        base[select] = i;
+                        auto ipos = coord + base;
+                        if(!tag_axr.isValueOn(openvdb::Coord(ipos)) || tag_axr.getValue(openvdb::Coord(ipos)) == 0)
+                            continue;
+                        float nei_value = sdf_axr.getValue(openvdb::Coord(ipos));
+                        for(int t = 0;t < 3;++t)
+                            if(abs(nei_value) < dis[t] && nei_value != 0)
+                            {
+                                for(int tt= 2;tt>=t+1;--tt)
+                                {
+                                    dis[tt] = dis[tt-1];
+                                    sign[tt] = sign[tt-1];
+                                }
+                                dis[t] = abs(nei_value);
+                                sign[t] = nei_value / abs(nei_value);
+                                break;
+                            }
+                    }
+                    
+                    float d = dis[0] + dx;
+                    if(d > dis[1])
+                    {
+                        d = 0.5 * (dis[0] + dis[1] + sqrt(2 * dx * dx - (dis[1]-dis[0]) * (dis[1]-dis[0])));
+                        if(d > dis[2])
+                        {
+                            float delta = dis[0] + dis[1] + dis[2];
+                            delta = delta * delta  - 3 *(dis[0] * dis[0] + 
+                                dis[1] * dis[1] + dis[2] * dis[2] - dx * dx);
+                            if(delta < 0)
+                                delta = 0;
+                            d = 0.3333 * (dis[0] + dis[1] + dis[2] + sqrt(delta));
+                        }
+                    }
+                    float value = sign[0] * d;
+                    sdf_axr.setValue(coord, value);
+                }
+            }
+        };
+
+        tag->tree().getNodes(leaves);
+        for(int i=0;;++i)
+        {
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), extendTag);
+            leaves.clear();
+            tag->tree().getNodes(leaves);
+            //printf("leaves size is %d\n", leaves.size());
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeSDF);
+            
+            int newAN = sdf->activeVoxelCount();
+            //printf("iter %d  activeNum is %d, newAN is %d\n", i, activeNum, newAN);
+            if(activeNum == newAN)
+                break;
+            else
+                activeNum = newAN;
+        }
+    }
+
     virtual void apply() override {
         float h = 0.08;
         int max_level = 5;
@@ -218,12 +335,13 @@ struct MeshToMultiGridLevelSet : zeno::INode{
         std::vector<openvdb::Vec3I> triangles;
         std::vector<openvdb::Vec4I> quads;
 
-        zeno::AdaptiveIndexGenerator aig;
-        aig.topoLevels.resize(max_level);
-        aig.tag.resize(max_level);
-        aig.hLevels.resize(max_level);
-        aig.hLevels[0] = h;
-
+        auto data = zeno::IObject::make<mgData>();;
+        data->resize(max_level);
+        data->hLevels[0] = h;
+        printf("begin to init\n");
+        data->initData();
+        printf("init over\n");
+        
         points.resize(mesh->vertices.size());
         triangles.resize(mesh->vertices.size()/3);
         quads.resize(0);
@@ -240,41 +358,27 @@ struct MeshToMultiGridLevelSet : zeno::INode{
         for(int i=0;i<max_level;++i)
         {
             if(i > 0)
-                aig.hLevels[i] = aig.hLevels[i - 1] / 2.0;
+                data->hLevels[i] = data->hLevels[i - 1] / 2.0;
             auto result = zeno::IObject::make<VDBFloatGrid>();
-            auto vdbtransform = openvdb::math::Transform::createLinearTransform(aig.hLevels[i]);
+            auto vdbtransform = openvdb::math::Transform::createLinearTransform(data->hLevels[i]);
             if(std::get<std::string>(get_param("type"))==std::string("vertex"))
             {
-                vdbtransform->postTranslate(openvdb::Vec3d{ -0.5,-0.5,-0.5 }*double(aig.hLevels[i]));
+                vdbtransform->postTranslate(openvdb::Vec3d{ -0.5,-0.5,-0.5 }*double(data->hLevels[i]));
             }
             result->m_grid = openvdb::tools::meshToLevelSet<openvdb::FloatGrid>(*vdbtransform,points, triangles, quads, 4);
             openvdb::tools::signedFloodFill(result->m_grid->tree());
-            aig.topoLevels[i] = result->m_grid;
+            data->sdf[i] = result->m_grid;
         }
-        //set_output("MultiGrid", aig);
-        auto level0 = zeno::IObject::make<VDBFloatGrid>();
-        auto level1 = zeno::IObject::make<VDBFloatGrid>();
-        auto level2 = zeno::IObject::make<VDBFloatGrid>();
-        auto level3 = zeno::IObject::make<VDBFloatGrid>();
-        auto level4 = zeno::IObject::make<VDBFloatGrid>();
-        level0->m_grid = aig.topoLevels[0];
-        level1->m_grid = aig.topoLevels[1];
-        level2->m_grid = aig.topoLevels[2];
-        level3->m_grid = aig.topoLevels[3];
-        level4->m_grid = aig.topoLevels[4];
+        fillInner(*data);
         printf("adaptive grid generate done\n");
-        set_output("level0", level0);
-        set_output("level1", level1);
-        set_output("level2", level2);
-        set_output("level3", level3);
-        set_output("level4", level4);
+        set_output("mgData", data);
   };
 };
 
 ZENDEFNODE(MeshToMultiGridLevelSet,
     {
         {"mesh","maxDx","max_level"},
-        {"level0", "level1", "level2", "level3", "level4"},
+        {"mgData"},
         {{"string", "type", "vertex"},},
         {"AdaptiveSolver"},
     }

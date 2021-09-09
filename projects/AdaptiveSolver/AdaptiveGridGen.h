@@ -13,11 +13,118 @@
 
 #include <iostream>
 namespace zeno{
+       struct initializer{
+        openvdb::FloatGrid::Ptr sdfGrid;
+        openvdb::FloatGrid::Ptr pGrid;
+
+        initializer(openvdb::FloatGrid::Ptr sdf, openvdb::FloatGrid::Ptr p):sdfGrid(sdf), pGrid(p){}
+        
+        inline void operator()(const openvdb::FloatGrid::ValueOnIter& sdfiter) const 
+        {
+            auto press_axr{pGrid->getAccessor()};
+            openvdb::Coord coord = sdfiter.getCoord();
+            for(int i=0;i<=1;++i)
+            for(int j=0;j<=1;++j)
+            for(int k=0;k<=1;++k)
+            {
+                openvdb::Coord drift = coord + openvdb::Coord(i,j,k);
+                press_axr.setValue(drift, 0.0f);
+            }
+        }
+    };
+    struct mgData:IObject{
+        std::vector<openvdb::FloatGrid::Ptr> sdf;
+        std::vector<double> hLevels;
+
+        std::vector<openvdb::Vec3fGrid::Ptr> vel;
+        std::vector<openvdb::FloatGrid::Ptr> press;
+        std::vector<openvdb::FloatGrid::Ptr> staggeredSDF;
+        
+        // used for iteration solver
+        std::vector<openvdb::FloatGrid::Ptr> rhs;
+        std::vector<openvdb::FloatGrid::Ptr> residual;
+        std::vector<openvdb::FloatGrid::Ptr> r2;
+        std::vector<openvdb::FloatGrid::Ptr> p;
+        std::vector<openvdb::FloatGrid::Ptr> Ap;
+
+        void initData(){
+            // fill the coarsest level grid
+            // fillInner();
+            for(int i=0;i<hLevels.size();++i)
+            {
+                if(i > 0)
+                {
+                    hLevels[i] = hLevels[i-1] * 0.5;
+                }
+            }
+            openvdb::FloatGrid::Ptr sdfgrid;
+            openvdb::FloatGrid::Ptr pressGrid;
+            for(int i=hLevels.size() - 1;i >= 0;--i)
+            {
+                sdfgrid = sdf[i];
+                pressGrid = press[i] = sdfgrid->deepCopy();
+                rhs[i] = sdfgrid->deepCopy();
+                vel[i]->setTree(std::make_shared<openvdb::Vec3fTree>(
+                    sdfgrid->tree(), /*bgval*/ openvdb::Vec3f(0),
+                    openvdb::TopologyCopy()));
+                auto transform2 = openvdb::math::Transform::createLinearTransform(hLevels[i]);
+                press[i]->setTransform(transform2);
+                
+                openvdb::tools::foreach(sdfgrid->beginValueOn(), initializer(sdfgrid, press[i]));
+                rhs[i]->setTree(std::make_shared<openvdb::FloatTree>(
+                    pressGrid->tree(), /*bgval*/ float(0),
+                    openvdb::TopologyCopy()));
+                residual[i]->setTree(std::make_shared<openvdb::FloatTree>(
+                    pressGrid->tree(), /*bgval*/ float(0),
+                    openvdb::TopologyCopy()));
+                r2[i]->setTree(std::make_shared<openvdb::FloatTree>(
+                    pressGrid->tree(), /*bgval*/ float(0),
+                    openvdb::TopologyCopy()));
+                p[i]->setTree(std::make_shared<openvdb::FloatTree>(
+                    pressGrid->tree(), /*bgval*/ float(0),
+                    openvdb::TopologyCopy()));
+                Ap[i]->setTree(std::make_shared<openvdb::FloatTree>(
+                    pressGrid->tree(), /*bgval*/ float(0),
+                    openvdb::TopologyCopy()));
+                staggeredSDF[i]->setTree(std::make_shared<openvdb::FloatTree>(
+                    pressGrid->tree(), /*bgval*/ float(0),
+                    openvdb::TopologyCopy()));
+            }
+            
+        }
+
+        void resize(int levelNum)
+        {
+            sdf.resize(levelNum);
+            hLevels.resize(levelNum);
+            vel.resize(levelNum);
+            press.resize(levelNum);
+            staggeredSDF.resize(levelNum);
+            rhs.resize(levelNum);
+            residual.resize(levelNum);
+            r2.resize(levelNum);
+            p.resize(levelNum);
+            Ap.resize(levelNum);
+            for(int i=0;i < levelNum;++i)
+            {
+                vel[i] = zeno::IObject::make<VDBFloat3Grid>()->m_grid;
+                press[i] = zeno::IObject::make<VDBFloatGrid>()->m_grid;
+                staggeredSDF[i] = zeno::IObject::make<VDBFloatGrid>()->m_grid;
+                rhs[i] = zeno::IObject::make<VDBFloatGrid>()->m_grid;
+                residual[i] = zeno::IObject::make<VDBFloatGrid>()->m_grid;
+                r2[i] = zeno::IObject::make<VDBFloatGrid>()->m_grid;
+                p[i] = zeno::IObject::make<VDBFloatGrid>()->m_grid;
+                Ap[i] = zeno::IObject::make<VDBFloatGrid>()->m_grid;
+            }
+        }
+    
+    };
+    
     struct AdaptiveRule{
         virtual void markSubd(openvdb::FloatGrid::Ptr &grid, openvdb::FloatGrid::Ptr &tag){}
     };
     struct AdaptiveIndexGenerator{
-        std::vector<openvdb::FloatGrid::Ptr> topoLevels;
+        std::vector<openvdb::FloatGrid::Ptr> sdf;
         std::vector<openvdb::FloatGrid::Ptr> tag;
         std::vector<double> hLevels;
         void generateAdaptiveGrid(
@@ -182,7 +289,7 @@ namespace zeno{
         // refinement the details
         virtual void markSubd(openvdb::FloatGrid::Ptr &grid, openvdb::FloatGrid::Ptr &tag) override
         {
-            //openvdb::FloatGrid::Ptr grid = aig.topoLevels[level];
+            //openvdb::FloatGrid::Ptr grid = aig.sdf[level];
             float dx = grid->voxelSize()[0];
             std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
             openvdb::FloatGrid::Ptr tmpGrid;
