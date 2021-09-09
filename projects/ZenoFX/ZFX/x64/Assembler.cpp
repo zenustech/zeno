@@ -345,9 +345,15 @@ struct ImplAssembler {
 #ifdef ZFX_PRINT_IR
         printf("variables: %d slots\n", nlocals);
         printf("consts: %d values\n", nconsts);
-        printf("insts:");
-        for (auto const &inst: insts) printf(" %02X", inst);
-        printf("\n");
+        {
+            std::string _ = "insts:";
+            for (auto const &inst: insts) {
+                char buf[8];
+                sprintf(buf, " %02X", inst);
+                _ += buf;
+            }
+            printf("%s\n", _.c_str());
+        }
 #endif
 
         if (!functable)
