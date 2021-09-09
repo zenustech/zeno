@@ -367,7 +367,7 @@
      "name": "ExtendList",
      "inputs": {
       "list1": [
-       "1a89cabb-RigidObjectFragments",
+       "1a89cabb-RigidMakeObjectFragments",
        "objectList",
        null
       ],
@@ -393,7 +393,7 @@
      "name": "CachedOnce",
      "inputs": {
       "input": [
-       "1a89cabb-RigidObjectFragments",
+       "1a89cabb-RigidMakeObjectFragments",
        "constrList",
        null
       ],
@@ -492,7 +492,7 @@
      "name": "RigidMakeObject",
      "inputs": {
       "shape": [
-       "6bb45c5c-RigidConvexShape",
+       "6bb45c5c-RigidMakeShape",
        "shape",
        null
       ],
@@ -550,8 +550,8 @@
      ],
      "options": []
     },
-    "6bb45c5c-RigidConvexShape": {
-     "name": "RigidConvexShape",
+    "6bb45c5c-RigidMakeShape": {
+     "name": "RigidMakeShape",
      "inputs": {
       "prim": [
        "aee45d7e-TransformPrimitive",
@@ -592,7 +592,7 @@
      "options": []
     },
     "4d2bc114-x": {
-     "name": "RigidConvexShape",
+     "name": "RigidMakeShape",
      "inputs": {
       "prim": [
        "793ebafc-TransformPrimitive",
@@ -714,8 +714,8 @@
      ],
      "options": []
     },
-    "1a89cabb-RigidObjectFragments": {
-     "name": "RigidObjectFragments",
+    "1a89cabb-RigidMakeObjectFragments": {
+     "name": "RigidMakeObjectFragments",
      "inputs": {
       "primList": [
        "c3e5d8e7-AABBVoronoi",
@@ -2546,7 +2546,7 @@
     "height": 400.0
    }
   },
-  "RigidConvexShape": {
+  "RigidMakeShape": {
    "nodes": {
     "283f5060-SubInput": {
      "name": "SubInput",
@@ -4003,7 +4003,7 @@
     "height": 781.25
    }
   },
-  "RigidObjectFragments": {
+  "RigidMakeObjectFragments": {
    "nodes": {
     "3f83e33d-x": {
      "name": "ListGetItem",
@@ -4117,7 +4117,7 @@
      "options": []
     },
     "c1876381-x": {
-     "name": "RigidConvexShape",
+     "name": "RigidMakeShape",
      "inputs": {
       "prim": [
        "938e931b-x",
@@ -13061,7 +13061,7 @@
     "openvdb"
    ]
   },
-  "RigidConvexShape": {
+  "RigidMakeShape": {
    "inputs": [
     [
      "",
@@ -13143,7 +13143,7 @@
    ],
    "is_subgraph": true
   },
-  "RigidObjectFragments": {
+  "RigidMakeObjectFragments": {
    "inputs": [
     [
      "",
