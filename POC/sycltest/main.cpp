@@ -1,30 +1,57 @@
 #include <CL/sycl.hpp>
-#include <cstdio>
+#include <iostream>
+#include <memory>
+#include <array>
 
 namespace sycl = cl::sycl;
 
-static constexpr int N = 1024;
+struct Instance {
+    std::optional<sycl::queue> m_deviceQueue;
 
-class kernel0;
+    static std::unique_ptr<Instance> g_instance;
+
+    static Instance &get() {
+        return *g_instance;
+    }
+};
+
+std::unique_ptr<Instance> Instance::g_instance;
+
+template <typename T>
+class SimpleVadd;
+
+template <typename T, size_t N>
+void simple_vadd(std::array<T, N> const &VA, std::array<T, N> const &VB,
+        std::array<T, N> &VC) {
+    sycl::queue deviceQueue;
+    sycl::buffer<T, 1> bufferA(VA.data(), N);
+    sycl::buffer<T, 1> bufferB(VB.data(), N);
+    sycl::buffer<T, 1> bufferC(VC.data(), N);
+
+    deviceQueue.submit([&](sycl::handler &cgh) {
+        auto accessorA = bufferA.template get_access<sycl::access::mode::read>(cgh);
+        auto accessorB = bufferB.template get_access<sycl::access::mode::read>(cgh);
+        auto accessorC = bufferC.template get_access<sycl::access::mode::write>(cgh);
+
+        auto kern = [=](sycl::id<1> wiID) {
+            accessorC[wiID] = accessorA[wiID] + accessorB[wiID];
+        };
+        sycl::range<1> range{N};
+        cgh.parallel_for<class SimpleVadd<T>>(range, kern);
+    });
+}
 
 int main() {
-    sycl::queue q;
-
-    std::array<int, N> arr;
-    for (int i = 0; i < N; i++) {
-        arr[i] = i % 4;
+    constexpr size_t array_size = 4;
+    std::array<int, array_size> A = {1, 2, 3, 4}, B = {1, 2, 3, 4}, C;
+    simple_vadd(A, B, C);
+    for (unsigned int i = 0; i < array_size; i++) {
+        if (C[i] != A[i] + B[i]) {
+            std::cout << "The results are incorrect (element " << i << " is " << C[i]
+                << "!\n";
+            return 1;
+        }
     }
-
-    sycl::buffer<int> buf(arr.data(), arr.size());
-    q.submit([&] (sycl::handler &cgh) {
-        auto axr = buf.get_access<sycl::access::mode::read_write>(cgh);
-        //cgh.parallel_for<kernel0>(sycl::range<1>(N), [=] (sycl::id<1> id) {
-            //axr[id[0]] = id[0] + 1;
-        //});
-    });
-
-    /*for (int i = 0; i < N; i++) {
-        printf("%d\n", arr[i]);
-    }*/
+    std::cout << "The results are correct!\n";
     return 0;
 }
