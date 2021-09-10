@@ -5,17 +5,49 @@
 
 namespace sycl = cl::sycl;
 
-struct Instance {
-    std::optional<sycl::queue> m_deviceQueue;
+
+class Instance {
+    sycl::queue m_deviceQueue;
+    std::map<int, sycl::buffer<char>> m_buffers;
+    int m_buffercounter;
 
     static std::unique_ptr<Instance> g_instance;
 
+    Instance() = default;
+    Instance(Instance const &) = delete;
+    Instance(Instance &&) = delete;
+    Instance &operator=(Instance const &) = delete;
+    Instance &operator=(Instance &&) = delete;
+    ~Instance() = default;
+
+public:
     static Instance &get() {
+        if (!g_instance)
+            g_instance = new Instance;
         return *g_instance;
+    }
+
+    int new_buffer(void *data, size_t size) {
+        int key = m_buffercounter++;
+        m_buffers.emplace(std::piecewise_construct,
+                std::make_tuple(key), std::make_tuple(data, size));
+        return key;
+    }
+
+    void delete_buffer(int key) {
+        m_buffers.erase(key);
+    }
+
+    template <class F>
+    void launch(F const &kernel) {
+        m_deviceQueue.submit([&](sycl::handler &cgh) {
+        });
     }
 };
 
+
 std::unique_ptr<Instance> Instance::g_instance;
+
 
 template <typename T>
 class SimpleVadd;
@@ -24,9 +56,9 @@ template <typename T, size_t N>
 void simple_vadd(std::array<T, N> const &VA, std::array<T, N> const &VB,
         std::array<T, N> &VC) {
     sycl::queue deviceQueue;
-    sycl::buffer<T, 1> bufferA(VA.data(), N);
-    sycl::buffer<T, 1> bufferB(VB.data(), N);
-    sycl::buffer<T, 1> bufferC(VC.data(), N);
+    sycl::buffer<T> bufferA(VA.data(), N);
+    sycl::buffer<T> bufferB(VB.data(), N);
+    sycl::buffer<T> bufferC(VC.data(), N);
 
     deviceQueue.submit([&](sycl::handler &cgh) {
         auto accessorA = bufferA.template get_access<sycl::access::mode::read>(cgh);
