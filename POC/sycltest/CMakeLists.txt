@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.10)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} cmake)
-project(sycltest LANGUAGES C CXX)
-set(CMAKE_BUILD_TYPE RelWithDebInfo)
+set(CMAKE_CXX_STANDARD 17)
+project(sycltest LANGUAGES CXX)
 
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE RelWithDebInfo)
+endif()
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 find_package(ComputeCpp REQUIRED)
 
 add_executable(sycltest main.cpp)
