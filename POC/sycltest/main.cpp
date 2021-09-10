@@ -3,24 +3,28 @@
 
 namespace sycl = cl::sycl;
 
+static constexpr int N = 1024;
+
+class kernel0;
+
 int main() {
     sycl::queue q;
 
-    constexpr int N = 1024;
-    int *data = sycl::malloc_shared<int>(N, q);
-
-    q.submit([&] (sycl::handler &cgh) {
-        //auto data_axr = data.template get_access<sycl::access::mode::write>(cgh);
-        class SimpleVfill;
-        cgh.parallel_for<SimpleVfill>(sycl::range<1>(N), [&] (sycl::id<1> id) {
-            //data_axr[id] = id;
-            data[id[0]] = id[0];
-        });
-    });
-    q.wait();
-
+    std::array<int, N> arr;
     for (int i = 0; i < N; i++) {
-        printf("%d\n", data[i]);
+        arr[i] = i % 4;
     }
+
+    sycl::buffer<int> buf(arr.data(), arr.size());
+    q.submit([&] (sycl::handler &cgh) {
+        auto axr = buf.get_access<sycl::access::mode::read_write>(cgh);
+        //cgh.parallel_for<kernel0>(sycl::range<1>(N), [=] (sycl::id<1> id) {
+            //axr[id[0]] = id[0] + 1;
+        //});
+    });
+
+    /*for (int i = 0; i < N; i++) {
+        printf("%d\n", arr[i]);
+    }*/
     return 0;
 }
