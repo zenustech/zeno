@@ -6,6 +6,7 @@
 namespace sycl = cl::sycl;
 
 
+#if 0
 class Instance {
     sycl::queue m_deviceQueue;
     std::map<int, sycl::buffer<char>> m_buffers;
@@ -38,15 +39,23 @@ public:
         m_buffers.erase(key);
     }
 
-    template <class F>
-    void launch(F const &kernel) {
+    template <class JitKey, class RangeT, class KernelT, size_t NBuffers>
+    void parallel_for(RangeT &&range, KernelT &&kernel,
+            std::array<int, NBuffers> const &buffers) {
+
+        std::array<sycl::accessor<char>, NBuffers> accessors;
+
         m_deviceQueue.submit([&](sycl::handler &cgh) {
+            cgh.parallel_for<JitKey>(range, [accessors](auto wiID) {
+                kernel(wiID);
+            });
         });
     }
 };
 
 
 std::unique_ptr<Instance> Instance::g_instance;
+#endif
 
 
 template <typename T>
