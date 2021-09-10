@@ -41,7 +41,7 @@ public:
         m_buffers.erase(key);
     }
 
-    template <class JitKey, class RangeT, class KernelT, size_t NBuffers>
+    template <class Jitkey, class RangeT, class KernelT, size_t NBuffers>
     void parallel_for(RangeT &&range, KernelT &&kernel,
             std::array<int, NBuffers> const &buffers) {
 
@@ -57,8 +57,12 @@ public:
                 accessors[i] = buffer->get_access<sycl_read_write>(cgh);
             }
 
-            cgh.parallel_for<JitKey>(range, [accessors, kernel](auto wiID) {
-                kernel(wiID);
+            cgh.parallel_for<Jitkey>(range, [accessors, kernel](auto wiID) {
+                std::array<void *, NBuffers> pointers;
+                for (size_t i = 0; i < NBuffers; i++) {
+                    pointers[i] = (void *)&accessors[i][0];
+                }
+                kernel(wiID, pointers);
             });
         });
     }
@@ -76,21 +80,20 @@ template <typename T, size_t N>
 void simple_vadd(std::array<T, N> const &VA, std::array<T, N> const &VB,
         std::array<T, N> &VC) {
     sycl::queue deviceQueue;
-    sycl::buffer<T> bufferA(VA.data(), N);
-    sycl::buffer<T> bufferB(VB.data(), N);
-    sycl::buffer<T> bufferC(VC.data(), N);
+    auto bufferA = Instance::get().new_buffer((void *)VA.data(), N * sizeof(T));
+    auto bufferB = Instance::get().new_buffer((void *)VB.data(), N * sizeof(T));
+    auto bufferC = Instance::get().new_buffer((void *)VC.data(), N * sizeof(T));
 
-    deviceQueue.submit([&](sycl::handler &cgh) {
-        auto accessorA = bufferA.template get_access<sycl::access::mode::read>(cgh);
-        auto accessorB = bufferB.template get_access<sycl::access::mode::read>(cgh);
-        auto accessorC = bufferC.template get_access<sycl::access::mode::write>(cgh);
+    Instance::get().parallel_for<SimpleVadd<T>>(sycl::range<1>(N), [&](auto id, auto accessors) {
+        auto accessorA = accessors[0];
+        auto accessorB = accessors[1];
+        auto accessorC = accessors[2];
+        accessorC[id[0]] = accessorA[id[0]] + accessorB[id[0]];
+    }, std::array<int, 3>{bufferA, bufferB, bufferC});
 
-        auto kern = [=](sycl::id<1> wiID) {
-            accessorC[wiID] = wiID[0][&accessorA[0]] + accessorB[wiID];
-        };
-        sycl::range<1> range{N};
-        cgh.parallel_for<class SimpleVadd<T>>(range, kern);
-    });
+    Instance::get().delete_buffer(bufferA);
+    Instance::get().delete_buffer(bufferB);
+    Instance::get().delete_buffer(bufferC);
 }
 
 int main() {
