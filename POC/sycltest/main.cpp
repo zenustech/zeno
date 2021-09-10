@@ -6,7 +6,7 @@
 namespace sycl = cl::sycl;
 
 
-#if 0
+#if 1
 class Instance {
     sycl::queue m_deviceQueue;
     std::map<int, sycl::buffer<char>> m_buffers;
@@ -14,24 +14,26 @@ class Instance {
 
     static std::unique_ptr<Instance> g_instance;
 
-    Instance() = default;
+    struct __private_class {};
+
     Instance(Instance const &) = delete;
     Instance(Instance &&) = delete;
     Instance &operator=(Instance const &) = delete;
     Instance &operator=(Instance &&) = delete;
-    ~Instance() = default;
 
 public:
+    Instance(__private_class) {}
+
     static Instance &get() {
         if (!g_instance)
-            g_instance = new Instance;
+            g_instance = std::make_unique<Instance>(__private_class{});
         return *g_instance;
     }
 
     int new_buffer(void *data, size_t size) {
         int key = m_buffercounter++;
         m_buffers.emplace(std::piecewise_construct,
-                std::make_tuple(key), std::make_tuple(data, size));
+                std::make_tuple(key), std::make_tuple((char *)data, size));
         return key;
     }
 
@@ -43,10 +45,19 @@ public:
     void parallel_for(RangeT &&range, KernelT &&kernel,
             std::array<int, NBuffers> const &buffers) {
 
-        std::array<sycl::accessor<char>, NBuffers> accessors;
-
         m_deviceQueue.submit([&](sycl::handler &cgh) {
-            cgh.parallel_for<JitKey>(range, [accessors](auto wiID) {
+            constexpr auto sycl_read_write = sycl::access::mode::read_write;
+
+            using AccessorT = std::decay_t<decltype(
+                    m_buffers.at(0).get_access<sycl_read_write>(cgh))>;
+
+            std::array<AccessorT, NBuffers> accessors;
+            for (size_t i = 0; i < NBuffers; i++) {
+                auto &buffer = m_buffers.at(buffers[i]);
+                accessors[i] = buffer->get_access<sycl_read_write>(cgh);
+            }
+
+            cgh.parallel_for<JitKey>(range, [accessors, kernel](auto wiID) {
                 kernel(wiID);
             });
         });
@@ -75,7 +86,7 @@ void simple_vadd(std::array<T, N> const &VA, std::array<T, N> const &VB,
         auto accessorC = bufferC.template get_access<sycl::access::mode::write>(cgh);
 
         auto kern = [=](sycl::id<1> wiID) {
-            accessorC[wiID] = accessorA[wiID] + accessorB[wiID];
+            accessorC[wiID] = wiID[0][&accessorA[0]] + accessorB[wiID];
         };
         sycl::range<1> range{N};
         cgh.parallel_for<class SimpleVadd<T>>(range, kern);
