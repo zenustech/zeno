@@ -37,28 +37,49 @@ struct Queue {
 
 static Queue *getQueue() {
     std::unique_ptr<Queue> g_queue;
-    return g_queue;
+    if (!g_queue) g_queue = std::make_unique<Queue>();
+    return g_queue.get();
 }
 
 
-enum AccessorType {
-    ReadOnly,
-    WriteOnly,
-    ReadWrite,
+enum AccessorType : int {
+    ReadOnly = 1,
+    WriteOnly = 2,
+    ReadWrite = 3,
 };
 
+template <AccessorType Type>
+static constexpr auto __sycl_accessor_type() {
+    if constexpr (Type == AccessorType::ReadOnly) {
+        return sycl::access::mode::read;
+    } else if constexpr (Type == AccessorType::WriteOnly) {
+        return sycl::access::mode::write;
+    } else if constexpr (Type == AccessorType::ReadWrite) {
+        return sycl::access::mode::read_write;
+    } else {
+        static_assert(Type != Type, "invalid AccessorType!");
+    }
+}
 
+
+template <AccessorType Type>
 struct Accessor {
+    using __SyclAccessorType = sycl::accessor<char, 1, __sycl_accessor_type<Type>()>;
+    __SyclAccessorType m_accessor;
+
+    Accessor(__SyclAccessorType &&accessor) : m_accessor(std::move(accessor)) {
+    }
 };
 
 
 struct Buffer {
-    sycl::buffer<char> m_buffer;
+    sycl::buffer<char, 1> m_buffer;
 
     Buffer(void *data, size_t size) : m_buffer((char *)data, size) {}
 
     template <AccessorType Type = AccessorType::ReadWrite>
     auto getAccessor() {
+        return Accessor(m_buffer.get_access<__sycl_accessor_type<Type>()>());
     }
 };
 
@@ -73,12 +94,12 @@ void simple_vadd(std::array<T, N> const &VA, std::array<T, N> const &VB,
     Buffer bufB((void *)VB.data(), N * sizeof(T));
     Buffer bufC((void *)VC.data(), N * sizeof(T));
 
-    getQueue().enqueue([&] (auto &hdl) {
+    getQueue()->enqueue([&] (Handler &hdl) {
         auto axrA = bufA.getAccessor<AccessorType::ReadOnly>();
         auto axrB = bufB.getAccessor<AccessorType::ReadOnly>();
         auto axrC = bufC.getAccessor<AccessorType::WriteOnly>();
         hdl.parallel_for<SimpleVadd<T>>(N, [=](auto id) {
-            axrC[id] = axrA[id] + axrB[id];
+            axrC[id[0]] = axrA[id[0]] + axrB[id[0]];
         });
     });
 }
