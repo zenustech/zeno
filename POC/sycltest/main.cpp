@@ -161,11 +161,7 @@ struct Array {
             : acc(base.buf.template get_access<Mode>(cgh))
         {}
 
-        decltype(auto) operator[](size_t id) {
-            return acc[id];
-        }
-
-        decltype(auto) operator[](size_t id) const {
+        T &operator[](size_t id) const {
             return acc[id];
         }
     };
