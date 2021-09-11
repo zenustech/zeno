@@ -141,38 +141,38 @@ int main() {
 #endif
 
 
-template <class T, size_t N>
+template <class T, size_t ...Ns>
 struct Array {
-    sycl::buffer<T, 1> buf;
+    static constexpr size_t Dim = sizeof...(Ns);
+
+    sycl::buffer<T, Dim> buf;
 
     Array()
-        : buf((T *)nullptr, sycl::range<1>(N))
+        : buf((T *)nullptr, sycl::range<Dim>(Ns...))
     {}
 
     template <sycl::access::mode Mode, sycl::access::target Target>
     struct Accessor {
-        sycl::accessor<T, 1, Mode, Target> acc;
+        sycl::accessor<T, Dim, Mode, Target> acc;
 
-        inline Accessor(Array &base)
-            : acc(base.buf.template get_access<Mode>())
+        template <class ...Args>
+        Accessor(Array &base, Args &&...args)
+            : acc(base.buf.template get_access<Mode>(std::forward<Args>(args)...))
         {}
 
-        inline Accessor(Array &base, sycl::handler &cgh)
-            : acc(base.buf.template get_access<Mode>(cgh))
-        {}
-
-        T &operator[](size_t id) const {
-            return acc[id];
+        template <class Indices>
+        T &operator[](Indices indices) const {
+            return acc[indices];
         }
     };
 
     template <auto Mode = sycl::access::mode::read_write>
-    auto access() {
+    auto accessor() {
         return Accessor<Mode, sycl::access::target::host_buffer>(*this);
     }
 
     template <auto Mode = sycl::access::mode::read_write>
-    auto access(sycl::handler &cgh) {
+    auto accessor(sycl::handler &cgh) {
         return Accessor<Mode, sycl::access::target::global_buffer>(*this, cgh);
     }
 };
@@ -186,7 +186,7 @@ int main() {
     Array<int, 32> arr;
 
     que.submit([&] (sycl::handler &cgh) {
-        auto arrAxr = arr.access(cgh);
+        auto arrAxr = arr.accessor(cgh);
         cgh.parallel_for<kernel0>(sycl::range<1>(32), [=] (sycl::item<1> id) {
             arrAxr[id[0]] = id[0];
         });
@@ -194,7 +194,7 @@ int main() {
     que.wait();
 
     {
-        auto arrAxr = arr.access();
+        auto arrAxr = arr.accessor();
         for (int i = 0; i < 32; i++) {
             printf("%d\n", arrAxr[i]);
         }
