@@ -32,10 +32,8 @@ struct AdaptiveSolver : zeno::INode
             :1000.0f;
         frameNum = has_input("frameNum") ? get_input("frameNum")->as<NumericObject>()->get<int>()
             :0;
-        //printf("frameNum is %d\n", frameNum);
         if(frameNum % 10 == 0)
             data->recomputeSDF();
-        //std::cout<<"solve again, data position is " << &*level0 <<std::endl;
         step();
         //generate  
         set_output("mgData", data);
@@ -417,34 +415,6 @@ struct AdaptiveSolver : zeno::INode
             }
         
         };
-        
-        auto initSurface = [&](const tbb::blocked_range<size_t> &r){
-            auto tag_axr{tag->getAccessor()};
-            auto sdf_axr{sdfgrid->getConstAccessor()};  
-            for (auto liter = r.begin(); liter != r.end(); ++liter) {
-                auto &leaf = *leaves[liter];
-                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-                    auto coord = leaf.offsetToGlobalCoord(offset);
-                    if(!sdf_axr.isValueOn(coord))
-                        continue;
-                    auto sdfV = sdf_axr.getValue(coord);
-                    if(sdfV>=0)
-                        continue;
-                    tag_axr.setValue(coord, 0);
-                    for(int ss=0;ss<3;++ss)
-                    for(int i=-1;i<=1;i+=2)
-                    {
-                        auto ipos = coord;
-                        ipos[ss] += i;
-                        if(!sdf_axr.isValueOn(ipos) || sdf_axr.getValue(ipos))
-                        {
-                            tag_axr.setValue(ipos, 1);
-                        }
-                    }
-                }
-            }
-        
-        };
         tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), initTag);
         
         auto newsdf = sdfgrid->deepCopy();
@@ -514,52 +484,6 @@ struct AdaptiveSolver : zeno::INode
                         }
                         vel /= count;
                         vel_axr.setValue(coord, vel);
-                        // compute sdf
-                        if(d < 2)
-                            continue;
-                        float dis[3] = {100000,100000,100000};
-                        
-                        for(int i=-1;i<=1;i += 2)
-                        for(int select = 0;select < 3;++select)
-                        {
-                            auto base = openvdb::Vec3i(0,0,0);
-                            base[select] = i;
-                            auto ipos = coord + base;
-                            if(!tag_axr.isValueOn(openvdb::Coord(ipos)) || tag_axr.getValue(openvdb::Coord(ipos)) >= d)
-                                continue;
-                            float nei_value = sdf_axr.getValue(openvdb::Coord(ipos));
-                            for(int t = 0;t < 3;++t)
-                                if(abs(nei_value) < dis[t] && nei_value != 0)
-                                {
-                                    for(int tt= 2;tt>=t+1;--tt)
-                                    {
-                                        dis[tt] = dis[tt-1];
-                                        
-                                    }
-                                    dis[t] = abs(nei_value);
-                                    
-                                    break;
-                                }
-                        }
-                        
-                        float d = dis[0] + dx;
-                        if(d > dis[1])
-                        {
-                            d = 0.5 * (dis[0] + dis[1] + sqrt(2 * dx * dx - (dis[1]-dis[0]) * (dis[1]-dis[0])));
-                            if(d > dis[2])
-                            {
-                                float delta = dis[0] + dis[1] + dis[2];
-                                delta = delta * delta  - 3 *(dis[0] * dis[0] + 
-                                    dis[1] * dis[1] + dis[2] * dis[2] - dx * dx);
-                                if(delta < 0)
-                                    delta = 0;
-                                d = 0.3333 * (dis[0] + dis[1] + dis[2] + sqrt(delta));
-                            }
-                        }
-                        float value = d;
-                        sdf_axr.setValue(coord, value);
-
-
                     }
                 }
             };
