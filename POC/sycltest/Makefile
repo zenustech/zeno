@@ -1,9 +1,11 @@
 x:
-	cmake -B build
+	clear
+	cmake -B build -DComputeCpp_DIR=/opt/ComputeCpp-CE
 	cmake --build build --parallel
-	build/sycltest | tee /tmp/a.txt
+	build/sycltest
 
 d:
-	cmake -B build
+	clear
+	cmake -B build -DComputeCpp_DIR=/opt/ComputeCpp-CE
 	cmake --build build --parallel
 	gdb build/sycltest -ex r

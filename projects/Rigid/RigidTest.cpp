@@ -1,12 +1,17 @@
 #include <zeno/zeno.h>
+#include <zeno/logger.h>
 #include <zeno/ListObject.h>
 #include <zeno/NumericObject.h>
 #include <zeno/PrimitiveObject.h>
+#include <zeno/utils/UserData.h>
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
+#include <BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h>
+#include <BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolverMt.h>
+#include <BulletDynamics/Dynamics/btSimulationIslandManagerMt.h>
+#include <BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.h>
 #include <LinearMath/btConvexHullComputer.h>
 #include <hacdCircularList.h>
-#include <spdlog/spdlog.h>
 #include <hacdVector.h>
 #include <hacdICHull.h>
 #include <hacdGraph.h>
@@ -45,18 +50,18 @@ struct BulletCompoundShape : BulletCollisionShape {
 
 struct BulletMakeBoxShape : zeno::INode {
     virtual void apply() override {
-        auto v3size = get_input<zeno::NumericObject>("v3size")->get<zeno::vec3f>();
+        auto size = get_input<zeno::NumericObject>("semiSize")->get<zeno::vec3f>();
         auto shape = std::make_shared<BulletCollisionShape>(
-            std::make_unique<btBoxShape>(zeno::vec_to_other<btVector3>(v3size)));
+            std::make_unique<btBoxShape>(zeno::vec_to_other<btVector3>(size)));
         set_output("shape", std::move(shape));
     }
 };
 
 ZENDEFNODE(BulletMakeBoxShape, {
-    {"v3size"},
+    {{"vec3f", "semiSize", "1,1,1"}},
     {"shape"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletMakeSphereShape : zeno::INode {
@@ -69,10 +74,10 @@ struct BulletMakeSphereShape : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeSphereShape, {
-    {"radius"},
+    {{"float", "radius", "1"}},
     {"shape"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 
@@ -100,7 +105,7 @@ ZENDEFNODE(PrimitiveToBulletMesh, {
     {"prim"},
     {"mesh"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct PrimitiveConvexDecomposition : zeno::INode {
@@ -183,7 +188,7 @@ ZENDEFNODE(PrimitiveConvexDecomposition, {
     {"prim"},
     {"listPrim"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 
@@ -201,7 +206,7 @@ ZENDEFNODE(BulletMakeConvexMeshShape, {
     {"triMesh"},
     {"shape"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletMakeConvexHullShape : zeno::INode {
@@ -250,7 +255,7 @@ ZENDEFNODE(BulletMakeConvexHullShape, {
     {"triMesh", {"float", "margin", "0"}, {"int", "highres", "0"}},
     {"shape"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletMakeCompoundShape : zeno::INode {
@@ -265,7 +270,7 @@ ZENDEFNODE(BulletMakeCompoundShape, {
     {""},
     {"compound"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletCompoundAddChild : zeno::INode {
@@ -283,7 +288,7 @@ ZENDEFNODE(BulletCompoundAddChild, {
     {"compound", "childShape", "trans"},
     {"compound"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 
@@ -312,7 +317,7 @@ ZENDEFNODE(BulletMakeTransform, {
     {{"vec3f", "origin"}, {"vec3f", "rotation"}},
     {"trans"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletComposeTransform : zeno::INode {
@@ -329,7 +334,7 @@ ZENDEFNODE(BulletComposeTransform, {
     {"transFirst", "transSecond"},
     {"trans"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 
@@ -371,7 +376,7 @@ ZENDEFNODE(BulletMakeObject, {
     {"shape", "trans", {"float", "mass", "0"}},
     {"object"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletSetObjectDamping : zeno::INode {
@@ -388,7 +393,7 @@ ZENDEFNODE(BulletSetObjectDamping, {
     {"object", {"float", "dampLin", "0"}, {"float", "dampAug", "0"}},
     {"object"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletSetObjectFriction : zeno::INode {
@@ -404,7 +409,7 @@ ZENDEFNODE(BulletSetObjectFriction, {
     {"object", {"float", "friction", "0"}},
     {"object"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletSetObjectRestitution : zeno::INode {
@@ -420,7 +425,7 @@ ZENDEFNODE(BulletSetObjectRestitution, {
     {"object", {"float", "restitution", "0"}},
     {"object"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletGetObjTransform : zeno::INode {
@@ -441,7 +446,7 @@ ZENDEFNODE(BulletGetObjTransform, {
     {"object"},
     {"trans"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletGetObjMotion : zeno::INode {
@@ -470,7 +475,7 @@ ZENDEFNODE(BulletGetObjMotion, {
     {"object"},
     {"linearVel", "angularVel"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 
@@ -519,7 +524,7 @@ ZENDEFNODE(BulletMakeConstraint, {
     {"obj1", "obj2"},
     {"constraint"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletSetConstraintBreakThres : zeno::INode {
@@ -534,7 +539,7 @@ ZENDEFNODE(BulletSetConstraintBreakThres, {
     {"constraint", {"float", "threshold", "3.0"}},
     {"constraint"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 
@@ -560,7 +565,7 @@ ZENDEFNODE(RigidVelToPrimitive, {
     {"prim", "centroid", "linearVel", "angularVel"},
     {"prim"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletExtractTransform : zeno::INode {
@@ -579,41 +584,150 @@ ZENDEFNODE(BulletExtractTransform, {
     {"trans"},
     {{"vec3f","origin"}, {"vec4f", "rotation"}},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 
-struct BulletWorld : zeno::IObject {
-    std::unique_ptr<btDefaultCollisionConfiguration> collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
-    std::unique_ptr<btCollisionDispatcher> dispatcher = std::make_unique<btCollisionDispatcher>(collisionConfiguration.get());
-    std::unique_ptr<btBroadphaseInterface> overlappingPairCache = std::make_unique<btDbvtBroadphase>();
-    std::unique_ptr<btSequentialImpulseConstraintSolver> solver = std::make_unique<btSequentialImpulseConstraintSolver>();
+/*static class btTaskSchedulerManager {
+	btAlignedObjectArray<btITaskScheduler*> m_taskSchedulers;
+	btAlignedObjectArray<btITaskScheduler*> m_allocatedTaskSchedulers;
 
-    std::unique_ptr<btDiscreteDynamicsWorld> dynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>(dispatcher.get(), overlappingPairCache.get(), solver.get(), collisionConfiguration.get());
+public:
+	btTaskSchedulerManager() {}
+	void init()
+	{
+		addTaskScheduler(btGetSequentialTaskScheduler());
+#if BT_THREADSAFE
+		if (btITaskScheduler* ts = btCreateDefaultTaskScheduler())
+		{
+			m_allocatedTaskSchedulers.push_back(ts);
+			addTaskScheduler(ts);
+		}
+		addTaskScheduler(btGetOpenMPTaskScheduler());
+		addTaskScheduler(btGetTBBTaskScheduler());
+		addTaskScheduler(btGetPPLTaskScheduler());
+		if (getNumTaskSchedulers() > 1)
+		{
+			// prefer a non-sequential scheduler if available
+			btSetTaskScheduler(m_taskSchedulers[1]);
+		}
+		else
+		{
+			btSetTaskScheduler(m_taskSchedulers[0]);
+		}
+#endif  // #if BT_THREADSAFE
+	}
+	void shutdown()
+	{
+		for (int i = 0; i < m_allocatedTaskSchedulers.size(); ++i)
+		{
+			delete m_allocatedTaskSchedulers[i];
+		}
+		m_allocatedTaskSchedulers.clear();
+	}
+
+	void addTaskScheduler(btITaskScheduler* ts)
+	{
+		if (ts)
+		{
+#if BT_THREADSAFE
+			// if initial number of threads is 0 or 1,
+			if (ts->getNumThreads() <= 1)
+			{
+				// for OpenMP, TBB, PPL set num threads to number of logical cores
+				ts->setNumThreads(ts->getMaxNumThreads());
+			}
+#endif  // #if BT_THREADSAFE
+			m_taskSchedulers.push_back(ts);
+		}
+	}
+	int getNumTaskSchedulers() const { return m_taskSchedulers.size(); }
+	btITaskScheduler* getTaskScheduler(int i) { return m_taskSchedulers[i]; }
+} gTaskSchedulerMgr; */
+
+struct BulletWorld : zeno::IObject {
+#ifdef ZENO_RIGID_MULTITHREADING
+    // mt bullet not working for now
+    std::unique_ptr<btDefaultCollisionConfiguration> collisionConfiguration;
+    std::unique_ptr<btCollisionDispatcherMt> dispatcher;
+    std::unique_ptr<btBroadphaseInterface> broadphase;
+    std::unique_ptr<btSequentialImpulseConstraintSolverMt> solver;
+    std::vector<std::unique_ptr<btSequentialImpulseConstraintSolver>> solvers;
+    std::unique_ptr<btConstraintSolverPoolMt> solverPool;
+
+    std::unique_ptr<btDiscreteDynamicsWorldMt> dynamicsWorld;
 
     std::set<std::shared_ptr<BulletObject>> objects;
     std::set<std::shared_ptr<BulletConstraint>> constraints;
 
     BulletWorld() {
+        /*if (NULL != btGetTaskScheduler() && gTaskSchedulerMgr.getNumTaskSchedulers() > 1) {
+            log_critical("bullet multithreading enabled!");
+        } else {
+            log_critical("bullet multithreading disabled...");
+        }*/
+        collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
+        dispatcher = std::make_unique<btCollisionDispatcherMt>(collisionConfiguration.get());
+        broadphase = std::make_unique<btDbvtBroadphase>();
+        solver = std::make_unique<btSequentialImpulseConstraintSolverMt>();
+        std::vector<btConstraintSolver *> solversPtr;
+        for (int i = 0; i < BT_MAX_THREAD_COUNT; i++) {
+            auto sol = std::make_unique<btSequentialImpulseConstraintSolver>();
+            solversPtr.push_back(sol.get());
+            solvers.push_back(std::move(sol));
+        }
+        solverPool = std::make_unique<btConstraintSolverPoolMt>(solversPtr.data(), solversPtr.size());
+        dynamicsWorld = std::make_unique<btDiscreteDynamicsWorldMt>(
+                dispatcher.get(), broadphase.get(), solverPool.get(), solver.get(),
+                collisionConfiguration.get());
         dynamicsWorld->setGravity(btVector3(0, -10, 0));
     }
+#else
+    std::unique_ptr<btDefaultCollisionConfiguration> collisionConfiguration;
+    std::unique_ptr<btCollisionDispatcher> dispatcher;
+    std::unique_ptr<btBroadphaseInterface> broadphase;
+    std::unique_ptr<btSequentialImpulseConstraintSolver> solver;
+
+    std::unique_ptr<btDiscreteDynamicsWorld> dynamicsWorld;
+
+    std::set<std::shared_ptr<BulletObject>> objects;
+    std::set<std::shared_ptr<BulletConstraint>> constraints;
+
+    BulletWorld() {
+        collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
+		/*btDefaultCollisionConstructionInfo cci;
+		cci.m_defaultMaxPersistentManifoldPoolSize = 80000;
+		cci.m_defaultMaxCollisionAlgorithmPoolSize = 80000;
+        collisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>(cci);*/
+
+        dispatcher = std::make_unique<btCollisionDispatcher>(collisionConfiguration.get());
+        broadphase = std::make_unique<btDbvtBroadphase>();
+        solver = std::make_unique<btSequentialImpulseConstraintSolver>();
+        dynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>(
+                dispatcher.get(), broadphase.get(), solver.get(),
+                collisionConfiguration.get());
+        dynamicsWorld->setGravity(btVector3(0, -10, 0));
+
+        log_trace("creating bullet world {}", (void *)this);
+    }
+#endif
 
     void addObject(std::shared_ptr<BulletObject> obj) {
-        spdlog::trace("adding object {}", (void *)obj.get());
+        log_trace("adding object {}", (void *)obj.get());
         dynamicsWorld->addRigidBody(obj->body.get());
         objects.insert(std::move(obj));
     }
 
     void removeObject(std::shared_ptr<BulletObject> const &obj) {
-        spdlog::trace("removing object {}", (void *)obj.get());
+        log_trace("removing object {}", (void *)obj.get());
         dynamicsWorld->removeRigidBody(obj->body.get());
         objects.erase(obj);
     }
 
     void setObjectList(std::vector<std::shared_ptr<BulletObject>> objList) {
         std::set<std::shared_ptr<BulletObject>> objSet;
-        spdlog::trace("setting object list len={}", objList.size());
-        spdlog::trace("existing object list len={}", objects.size());
+        log_trace("setting object list len={}", objList.size());
+        log_trace("existing object list len={}", objects.size());
         for (auto const &object: objList) {
             objSet.insert(object);
             if (objects.find(object) == objects.end()) {
@@ -628,21 +742,21 @@ struct BulletWorld : zeno::IObject {
     }
 
     void addConstraint(std::shared_ptr<BulletConstraint> cons) {
-        spdlog::trace("adding constraint {}", (void *)cons.get());
+        log_trace("adding constraint {}", (void *)cons.get());
         dynamicsWorld->addConstraint(cons->constraint.get(), true);
         constraints.insert(std::move(cons));
     }
 
     void removeConstraint(std::shared_ptr<BulletConstraint> const &cons) {
-        spdlog::warn("removing constraint {}", (void *)cons.get());
+        log_trace("removing constraint {}", (void *)cons.get());
         dynamicsWorld->removeConstraint(cons->constraint.get());
         constraints.erase(cons);
     }
 
     void setConstraintList(std::vector<std::shared_ptr<BulletConstraint>> consList) {
         std::set<std::shared_ptr<BulletConstraint>> consSet;
-        spdlog::trace("setting constraint list len={}", consList.size());
-        spdlog::trace("existing constraint list len={}", constraints.size());
+        log_trace("setting constraint list len={}", consList.size());
+        log_trace("existing constraint list len={}", constraints.size());
         for (auto const &constraint: consList) {
             if (!constraint->constraint->isEnabled())
                 continue;
@@ -682,11 +796,11 @@ struct BulletWorld : zeno::IObject {
         addObject(std::make_unique<BulletObject>(mass, startTransform, std::move(colShape)));
     }*/
 
-    void step(float dt = 1.f / 60.f, int steps = 10) {
-        spdlog::trace("stepping with dt={}, steps={}, len(objects)={}", dt, steps, objects.size());
+    void step(float dt = 1.f / 60.f, int steps = 1) {
+        log_trace("stepping with dt={}, steps={}, len(objects)={}", dt, steps, objects.size());
         //dt /= steps;
         //for(int i=0;i<steps;i++)
-        dynamicsWorld->stepSimulation(dt, steps, dt);
+        dynamicsWorld->stepSimulation(dt, steps, dt / steps);
 
         /*for (int j = dynamicsWorld->getNumCollisionObjects() - 1; j >= 0; j--)
         {
@@ -717,7 +831,7 @@ ZENDEFNODE(BulletMakeWorld, {
     {},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletSetWorldGravity : zeno::INode {
@@ -733,7 +847,7 @@ ZENDEFNODE(BulletSetWorldGravity, {
     {"world", {"vec3f", "gravity", "0,0,-9.8"}},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletStepWorld : zeno::INode {
@@ -747,10 +861,10 @@ struct BulletStepWorld : zeno::INode {
 };
 
 ZENDEFNODE(BulletStepWorld, {
-    {"world", {"float", "dt", "0.04"}, {"int", "steps", "40"}},
+    {"world", {"float", "dt", "0.04"}, {"int", "steps", "1"}},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletWorldAddObject : zeno::INode {
@@ -766,7 +880,7 @@ ZENDEFNODE(BulletWorldAddObject, {
     {"world", "object"},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletWorldRemoveObject : zeno::INode {
@@ -782,7 +896,7 @@ ZENDEFNODE(BulletWorldRemoveObject, {
     {"world", "object"},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletWorldSetObjList : zeno::INode {
@@ -798,7 +912,7 @@ ZENDEFNODE(BulletWorldSetObjList, {
     {"world", "objList"},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletWorldAddConstraint : zeno::INode {
@@ -814,7 +928,7 @@ ZENDEFNODE(BulletWorldAddConstraint, {
     {"world", "constraint"},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletWorldRemoveConstraint : zeno::INode {
@@ -830,7 +944,7 @@ ZENDEFNODE(BulletWorldRemoveConstraint, {
     {"world", "constraint"},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 struct BulletWorldSetConsList : zeno::INode {
@@ -847,7 +961,7 @@ ZENDEFNODE(BulletWorldSetConsList, {
     {"world", "consList"},
     {"world"},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 
@@ -865,7 +979,7 @@ ZENDEFNODE(BulletObjectApplyForce, {
     {"object", {"vec3f", "ForceImpulse", "0,0,0"}, {"vec3f", "TorqueImpulse", "0,0,0"}},
     {},
     {},
-    {"Rigid"},
+    {"Bullet"},
 });
 
 

@@ -6,6 +6,7 @@ O=arts/testbulletsim.zsg   # Rigid/stub.cpp
 #O=arts/testvorosplit.zsg  # cgmesh/PrimitiveVoronoi.cpp
 #O=arts/flip.zsg           # FLIPtools/stub.cpp
 
+#O=arts/ZFXv2.zsg
 #O=arts/segvtrig.zsg
 #O=arts/testtbbreduce.zsg
 #O=arts/ZFXv2.zsg
@@ -40,20 +41,20 @@ default: run
 #default: run
 
 all:
-	cmake -B build -DCMAKE_BUILD_TYPE=Release  -DPYTHON_EXECUTABLE=`which python3` # makexinxinVeryHappy
+	cmake -B build -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=`which python3` # makexinxinVeryHappy
 	cmake --build build --parallel 24
 
 run: all
-	ZEN_OPEN=$O python3 -m zenqt
+	ZEN_TIMER=/tmp/timer ZEN_OPEN=$O python3 -m zenqt
 
 debug: all
-	ZEN_NOSIGHOOK=1 USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O gdb python3 -ex 'r -m zenqt'
+	ZEN_TIMER=/tmp/timer ZEN_NOSIGHOOK=1 USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O gdb python3 -ex 'r -m zenqt'
 
 optrun: all
-	ZEN_OPEN=$O optirun python3 -m zenqt
+	ZEN_TIMER=/tmp/timer ZEN_OPEN=$O optirun python3 -m zenqt
 
-noglrun: all
-	ZEN_NOFORK=1 ZEN_NOVIEW=1 ZEN_OPEN=$O python3 -m zenqt
+noviewrun: all
+	ZEN_TIMER=/tmp/timer ZEN_NOFORK=1 ZEN_NOVIEW=1 ZEN_OPEN=$O python3 -m zenqt
 
 justrun:
 	ZEN_OPEN=$O python3 -m zenqt

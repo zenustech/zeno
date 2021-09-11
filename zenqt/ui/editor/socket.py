@@ -86,6 +86,12 @@ class QDMGraphicsSocket(QGraphicsItem):
         return QRectF(*self.getCircleBounds()).normalized()
 
     def paint(self, painter, styleOptions, widget=None):
+        if hasattr(self, 'paramEdit'):
+            if self.hasAnyEdge() or self.dummy:
+                self.paramEdit.hide()
+            else:
+                self.paramEdit.show()
+
         if self.hasAnyEdge() or self.dummy:
             socket_color = 'socket_connect_color'
         else:
