@@ -799,8 +799,8 @@ struct BulletWorld : zeno::IObject {
     void step(float dt = 1.f / 60.f, int steps = 1) {
         log_trace("stepping with dt={}, steps={}, len(objects)={}", dt, steps, objects.size());
         //dt /= steps;
-        //for(int i=0;i<steps;i++)
-        dynamicsWorld->stepSimulation(dt, steps, dt / steps);
+        for(int i=0;i<steps;i++)
+            dynamicsWorld->stepSimulation(dt/(float)steps, 1, dt / (float)steps);
 
         /*for (int j = dynamicsWorld->getNumCollisionObjects() - 1; j >= 0; j--)
         {
