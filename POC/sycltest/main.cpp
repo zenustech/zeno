@@ -6,71 +6,61 @@
 namespace sycl = cl::sycl;
 
 
-#if 1
-class Instance {
-    sycl::queue m_deviceQueue;
-    std::map<int, sycl::buffer<char>> m_buffers;
-    int m_buffercounter;
+struct Handler {
+    sycl::handler &m_handler;
+    Handler(sycl::handler &handler) : m_handler(handler) {}
 
-    static std::unique_ptr<Instance> g_instance;
-
-    struct __private_class {};
-
-    Instance(Instance const &) = delete;
-    Instance(Instance &&) = delete;
-    Instance &operator=(Instance const &) = delete;
-    Instance &operator=(Instance &&) = delete;
-
-public:
-    Instance(__private_class) {}
-
-    static Instance &get() {
-        if (!g_instance)
-            g_instance = std::make_unique<Instance>(__private_class{});
-        return *g_instance;
-    }
-
-    int new_buffer(void *data, size_t size) {
-        int key = m_buffercounter++;
-        m_buffers.emplace(std::piecewise_construct,
-                std::make_tuple(key), std::make_tuple((char *)data, size));
-        return key;
-    }
-
-    void delete_buffer(int key) {
-        m_buffers.erase(key);
-    }
-
-    template <class Jitkey, class RangeT, class KernelT, size_t NBuffers>
-    void parallel_for(RangeT &&range, KernelT &&kernel,
-            std::array<int, NBuffers> const &buffers) {
-
-        m_deviceQueue.submit([&](sycl::handler &cgh) {
-            constexpr auto sycl_read_write = sycl::access::mode::read_write;
-
-            using AccessorT = std::decay_t<decltype(
-                    m_buffers.at(0).get_access<sycl_read_write>(cgh))>;
-
-            std::array<AccessorT, NBuffers> accessors;
-            for (size_t i = 0; i < NBuffers; i++) {
-                auto &buffer = m_buffers.at(buffers[i]);
-                accessors[i] = buffer->get_access<sycl_read_write>(cgh);
-            }
-
-            cgh.parallel_for<Jitkey>(range, [accessors, kernel](auto wiID) {
-                std::array<void *, NBuffers> pointers;
-                for (size_t i = 0; i < NBuffers; i++) {
-                    pointers[i] = (void *)&accessors[i][0];
-                }
-                kernel(wiID, pointers);
-            });
+    template <class Key, class RangeT, class KernelT>
+    void parallel_for(RangeT &&range, KernelT &&kernel) {
+        m_handler.parallel_for<Key>(std::forward(range), [&] (auto const &id) {
+            kernel(id);
         });
     }
 };
 
 
-std::unique_ptr<Instance> Instance::g_instance;
-#endif
+struct Queue {
+    sycl::queue m_queue;
+
+    template <class Func>
+    void enqueue(Func const &func) {
+        m_queue.submit([&] (sycl::handler &cgh) {
+            Handler handler(cgh);
+            func(handler);
+        });
+    }
+
+    void wait() {
+        m_queue.wait();
+    }
+};
+
+static Queue *getQueue() {
+    std::unique_ptr<Queue> g_queue;
+    return g_queue;
+}
+
+
+enum AccessorType {
+    ReadOnly,
+    WriteOnly,
+    ReadWrite,
+};
+
+
+struct Accessor {
+};
+
+
+struct Buffer {
+    sycl::buffer<char> m_buffer;
+
+    Buffer(void *data, size_t size) : m_buffer((char *)data, size) {}
+
+    template <AccessorType Type = AccessorType::ReadWrite>
+    auto getAccessor() {
+    }
+};
 
 
 template <typename T>
@@ -79,22 +69,20 @@ class SimpleVadd;
 template <typename T, size_t N>
 void simple_vadd(std::array<T, N> const &VA, std::array<T, N> const &VB,
         std::array<T, N> &VC) {
-    sycl::queue deviceQueue;
-    auto bufferA = Instance::get().new_buffer((void *)VA.data(), N * sizeof(T));
-    auto bufferB = Instance::get().new_buffer((void *)VB.data(), N * sizeof(T));
-    auto bufferC = Instance::get().new_buffer((void *)VC.data(), N * sizeof(T));
+    Buffer bufA((void *)VA.data(), N * sizeof(T));
+    Buffer bufB((void *)VB.data(), N * sizeof(T));
+    Buffer bufC((void *)VC.data(), N * sizeof(T));
 
-    Instance::get().parallel_for<SimpleVadd<T>>(sycl::range<1>(N), [&](auto id, auto accessors) {
-        auto accessorA = accessors[0];
-        auto accessorB = accessors[1];
-        auto accessorC = accessors[2];
-        accessorC[id[0]] = accessorA[id[0]] + accessorB[id[0]];
-    }, std::array<int, 3>{bufferA, bufferB, bufferC});
-
-    Instance::get().delete_buffer(bufferA);
-    Instance::get().delete_buffer(bufferB);
-    Instance::get().delete_buffer(bufferC);
+    getQueue().enqueue([&] (auto &hdl) {
+        auto axrA = bufA.getAccessor<AccessorType::ReadOnly>();
+        auto axrB = bufB.getAccessor<AccessorType::ReadOnly>();
+        auto axrC = bufC.getAccessor<AccessorType::WriteOnly>();
+        hdl.parallel_for<SimpleVadd<T>>(N, [=](auto id) {
+            axrC[id] = axrA[id] + axrB[id];
+        });
+    });
 }
+
 
 int main() {
     constexpr size_t array_size = 4;
