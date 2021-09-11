@@ -144,29 +144,57 @@ int main() {
 struct NoHandler {};
 
 
-template <class T, size_t ...Ns>
-struct Array {
-    static constexpr size_t Dim = sizeof...(Ns);
-    static_assert(Dim != 0, "dimension of Array can't be 0");
+template <class T, size_t Dim = 1>
+struct NDArray {
+    static_assert(Dim > 0, "dimension of NDArray can't be 0");
 
-    sycl::buffer<T, Dim> buf;
+    sycl::buffer<T, Dim> m_buffer;
+    sycl::range<Dim> m_shape;
 
-    Array()
-        : buf((T *)nullptr, sycl::range<Dim>(Ns...))
+    NDArray() {}
+
+    explicit NDArray(sycl::range<Dim> shape)
+        : m_buffer((T *)nullptr, shape), m_shape(shape)
     {}
+
+    template <std::enable_if_t<Dim == 1, int> = 0>
+    explicit NDArray(size_t length)
+        : NDArray(sycl::range<Dim>(length))
+    {}
+
+    auto const &shape() const {
+        return m_shape;
+    }
+
+    void reshape(sycl::range<Dim> shape) {
+        m_buffer = sycl::buffer<T, Dim>((T *)nullptr, shape);
+        m_shape = shape;
+    }
+
+    template <std::enable_if_t<Dim == 1, int> = 0>
+    void reshape(size_t length) {
+        reshape(sycl::range<Dim>(length));
+    }
 
     template <sycl::access::mode Mode, sycl::access::target Target>
     struct Accessor {
         sycl::accessor<T, Dim, Mode, Target> acc;
 
         template <class ...Args>
-        Accessor(Array &base, Args &&...args)
-            : acc(base.buf.template get_access<Mode>(std::forward<Args>(args)...))
+        Accessor(NDArray &parent, Args &&...args)
+            : acc(parent.m_buffer.template get_access<Mode>(std::forward<Args>(args)...))
         {}
 
-        template <class Indices>
-        T &operator[](Indices &&indices) const {
-            return acc[std::forward<Indices>(indices)];
+        using ReferenceT = std::conditional_t<Mode == sycl::access::mode::read,
+              T const &, T &>;
+
+        ReferenceT operator[](sycl::item<Dim> indices) const {
+            return acc[indices];
+        }
+
+        template <std::enable_if_t<Dim == 1, int> = 0>
+        ReferenceT operator[](size_t index) const {
+            return acc[index];
         }
     };
 
@@ -180,50 +208,28 @@ struct Array {
         return Accessor<Mode, sycl::access::target::global_buffer>(*this, cgh);
     }
 };
-
-
 
 
 template <class T>
-struct Vector {
-    sycl::buffer<T, 1> buf;
-    size_t len;
+class kernel_memcpy_buffer;
 
-    Vector(size_t n = 0)
-        : buf((T *)nullptr, sycl::range<1>(n)), len(n)
-    {}
+template <class T>
+void __memcpy_buffer(sycl::buffer<T, 1> &dst, sycl::buffer<T, 1> &src, size_t n, sycl::handler &cgh) {
+    auto dstAxr = dst.template get_access<sycl::access::mode::discard_write>(cgh);
+    auto srcAxr = src.template get_access<sycl::access::mode::read>(cgh);
+    cgh.parallel_for<kernel_memcpy_buffer<T>>(sycl::range<1>(n), [&] (sycl::item<1> id) {
+        dstAxr[id[0]] = srcAxr[id[0]];
+    });
+}
 
-    template <class Handler = NoHandler>
-    void resize(size_t n, Handler cgh = {}) {
-        buf = sycl::buffer<T, 1>((T *)nullptr, sycl::range<1>(n));
-        len = n;
+template <class T>
+void __memcpy_buffer(sycl::buffer<T, 1> &dst, sycl::buffer<T, 1> &src, size_t n, NoHandler) {
+    auto dstAxr = dst.template get_access<sycl::access::mode::discard_write>();
+    auto srcAxr = src.template get_access<sycl::access::mode::read>();
+    for (int i = 0; i < n; i++) {
+        dstAxr[i] = srcAxr[i];
     }
-
-    template <sycl::access::mode Mode, sycl::access::target Target>
-    struct Accessor {
-        sycl::accessor<T, 1, Mode, Target> acc;
-
-        template <class ...Args>
-        Accessor(Vector &base, Args &&...args)
-            : acc(base.buf.template get_access<Mode>(std::forward<Args>(args)...))
-        {}
-
-        template <class Indices>
-        T &operator[](Indices &&indices) const {
-            return acc[std::forward<Indices>(indices)];
-        }
-    };
-
-    template <auto Mode = sycl::access::mode::read_write>
-    auto accessor(NoHandler = {}) {
-        return Accessor<Mode, sycl::access::target::host_buffer>(*this);
-    }
-
-    template <auto Mode = sycl::access::mode::read_write>
-    auto accessor(sycl::handler &cgh) {
-        return Accessor<Mode, sycl::access::target::global_buffer>(*this, cgh);
-    }
-};
+}
 
 
 class kernel0;
@@ -231,11 +237,11 @@ class kernel0;
 int main() {
     sycl::queue que;
 
-    Vector<int> arr(32);
+    NDArray<int> arr(16);
 
     que.submit([&] (sycl::handler &cgh) {
         auto arrAxr = arr.accessor(cgh);
-        cgh.parallel_for<kernel0>(sycl::range<1>(32), [=] (sycl::item<1> id) {
+        cgh.parallel_for<kernel0>(sycl::range<1>(16), [=] (sycl::item<1> id) {
             arrAxr[id[0]] = id[0];
         });
     });
@@ -243,7 +249,7 @@ int main() {
 
     {
         auto arrAxr = arr.accessor();
-        for (int i = 0; i < 32; i++) {
+        for (int i = 0; i < 16; i++) {
             printf("%d\n", arrAxr[i]);
         }
     }
