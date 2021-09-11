@@ -3,7 +3,7 @@ set(CMAKE_CXX_STANDARD 17)
 project(sycltest LANGUAGES CXX)
 
 if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE RelWithDebInfo)
+    set(CMAKE_BUILD_TYPE Debug)#RelWithDebInfo)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)

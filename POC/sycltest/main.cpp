@@ -20,7 +20,7 @@ struct SyclSession {
     }
 
     void *allocate(size_t size) {
-        sycl::codeplay::SYCLmalloc(size, m_mapper);
+        return sycl::codeplay::SYCLmalloc(size, m_mapper);
     }
 
     void deallocate(void *ptr) {
@@ -97,7 +97,7 @@ int main() {
 
     sess->queue().submit([&] (sycl::handler &cgh) {
         auto axr = sess->mapper().get_access<
-            sycl::access::mode::read_write, sycl::access::target::global_buffer,
+            sycl::access::mode::discard_write, sycl::access::target::global_buffer,
             int>(arr, cgh);
         cgh.parallel_for<kernel0>(sycl::range<1>(32), [=](sycl::item<1> id) {
             axr[id[0]] = id[0];
@@ -106,12 +106,14 @@ int main() {
 
     {
         auto axr = sess->mapper().get_access<
-            sycl::access::mode::read_write, sycl::access::target::host_buffer,
+            sycl::access::mode::read, sycl::access::target::host_buffer,
             int>(arr);
         for (int i = 0; i < 32; i++) {
             printf("%d\n", axr[i]);
         }
     }
+
+    svm.deallocate(arr, 32);
 
     return 0;
 }
