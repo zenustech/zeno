@@ -4,11 +4,13 @@
 block_cipher = None
 
 dlls=[
+    ( '../zenqt/bin/lib*.so*', '.' ),
+    ( '../zenqt/bin/pylib_*.so', 'zenqt/bin' ),
 ]
 assets=[
-    ( '../zenqt/assets/*',  'zenqt/assets' ),
-    ( '../assets/*',        'assets' ),
-    ( '../graphs/*',        'graphs' ),
+    ( '../zenqt/assets/*',     'zenqt/assets' ),
+    ( '../assets/*',           'assets' ),
+    ( '../graphs/*',           'graphs' ),
 ]
 
 a = Analysis(['launcher.py'],

@@ -21,7 +21,7 @@ std::vector<int> ArrangeCore(std::vector<int> a);
 
 typedef std::tuple<int, int, int> key_f;
 
-struct key_hash : public std::unary_function<key_f, std::size_t>
+struct key_hash : public std::function<std::size_t(key_f)>
 {
     std::size_t operator()(const key_f &k) const
     {
@@ -29,7 +29,7 @@ struct key_hash : public std::unary_function<key_f, std::size_t>
     }
 };
 
-struct key_equal : public std::binary_function<key_f, key_f, bool>
+struct key_equal : public std::function<bool(key_f, key_f)>
 {
     bool operator()(const key_f &v0, const key_f &v1) const
     {

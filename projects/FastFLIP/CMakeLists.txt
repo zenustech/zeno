@@ -3,10 +3,24 @@ set(CMAKE_CXX_STANDARD 17)
 project(zeno_FastFLIP)
 add_definitions(-D__TBB_CPP20_COMPARISONS_PRESENT=0)  
 
+####################################################
+# FUN FACT: DID U KNOW THAT MICROSOFT LOVES LINUX? #
+####################################################
+if (MSVC)  # must use this to make msvc linker happy
+    add_compile_options(
+            $<$<CONFIG:>:/bigobj>
+            $<$<CONFIG:Debug>:/bigobj>
+            $<$<CONFIG:Release>:/bigobj>
+    )  # 节数超过对象文件格式限制: 请使用 /bigobj 进行编译 
+endif()
+####################################################
+# FUN FACT: DID U KNOW THAT MICROSOFT BUYS GITHUB? #
+####################################################
+
 # add cmake file
 include (common)
 
-find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
+find_package(TBB REQUIRED COMPONENTS tbb tbbmalloc)
 find_package(IlmBase REQUIRED COMPONENTS Half REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenVDB REQUIRED)
@@ -26,10 +40,10 @@ file(GLOB NOSYS_SOURCE nosys/*.cpp nosys/*.h)
 add_library(zeno_FastFLIP SHARED ${FLIP_SOURCE} ${NOSYS_SOURCE})
 
 #simd compiler flags
-if (WIN32)
-#target_compile_options(zeno_FastFLIP PRIVATE "/arch:AVX")
+if (MSVC)
+    target_compile_options(zeno_FastFLIP PRIVATE "/arch:AVX")
 else()
-target_compile_options(zeno_FastFLIP PRIVATE "-march=native")
+    target_compile_options(zeno_FastFLIP PRIVATE -mavx -mfma)
 endif()
 
 
@@ -58,5 +72,6 @@ target_link_libraries(zeno_FastFLIP PRIVATE partio)
 
 
 target_link_libraries(zeno_FastFLIP PUBLIC zeno)
+target_link_libraries(zeno_FastFLIP PRIVATE zeno_nodep)
 target_include_directories(zeno_FastFLIP PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_FastFLIP PRIVATE ../zenvdb/include)

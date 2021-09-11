@@ -4,6 +4,9 @@
 #include <zeno/core/IObject.h>
 #include <zeno/core/Session.h>
 #include <zeno/utils/safe_at.h>
+#ifdef ZENO_FAULTHANDLER
+#include <zeno/utils/FaultHandler.h>
+#endif
 
 namespace zeno {
 
@@ -17,24 +20,25 @@ ZENO_API Context::Context(Context const &other)
 ZENO_API Graph::Graph() = default;
 ZENO_API Graph::~Graph() = default;
 
-ZENO_API void Graph::setGraphInput2(std::string const &id, any obj) {
+ZENO_API void Graph::setGraphInputPromise(std::string const &id,
+        std::function<zany()> getter) {
+    subInputPromises[id] = std::move(getter);
+}
+
+ZENO_API void Graph::setGraphInput2(std::string const &id, zany obj) {
     subInputs[id] = std::move(obj);
 }
 
 ZENO_API void Graph::applyGraph() {
-    std::set<std::string> applies;
-    for (auto const &[id, nodename]: subOutputNodes) {
-        applies.insert(nodename);
-    }
-    applyNodes(applies);
+    applyNodes(finalOutputNodes);
 }
 
-ZENO_API any const &Graph::getGraphOutput2(
+ZENO_API zany const &Graph::getGraphOutput2(
         std::string const &id) const {
-    return subOutputs.at(id);
+    return safe_at(subOutputs, id, "subgraph output");
 }
 
-ZENO_API any const &Graph::getNodeOutput(
+ZENO_API zany const &Graph::getNodeOutput(
     std::string const &sn, std::string const &ss) const {
     auto node = safe_at(nodes, sn, "node");
     if (node->muted_output.has_value())
@@ -76,6 +80,9 @@ ZENO_API void Graph::applyNode(std::string const &id) {
 }
 
 ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
+#ifdef ZENO_FAULTHANDLER
+    signal_catcher([&] () {
+#endif
     try {
         ctx = std::make_unique<Context>();
         for (auto const &id: ids) {
@@ -88,6 +95,9 @@ ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
                 (std::string)"ZENO Traceback (most recent call last):\n"
                 + e.what());
     }
+#ifdef ZENO_FAULTHANDLER
+    });
+#endif
 }
 
 ZENO_API void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
@@ -96,7 +106,7 @@ ZENO_API void Graph::bindNodeInput(std::string const &dn, std::string const &ds,
 }
 
 ZENO_API void Graph::setNodeInput(std::string const &id, std::string const &par,
-        any const &val) {
+        zany const &val) {
     safe_at(nodes, id, "node")->inputs[par] = val;
 }
 
@@ -104,5 +114,26 @@ ZENO_API void Graph::setNodeOption(std::string const &id,
         std::string const &name) {
     safe_at(nodes, id, "node")->options.insert(name);
 }
+
+ZENO_API std::set<std::string> Graph::getGraphInputNames() const {
+    std::set<std::string> res;
+    for (auto const &[id, _]: subInputNodes) {
+        res.insert(id);
+    }
+    return res;
+}
+
+ZENO_API std::set<std::string> Graph::getGraphOutputNames() const {
+    std::set<std::string> res;
+    for (auto const &[id, _]: subOutputNodes) {
+        res.insert(id);
+    }
+    return res;
+}
+
+ZENO_API UserData &Graph::getUserData() {
+    return userData;
+}
+
 
 }

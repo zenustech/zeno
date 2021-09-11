@@ -1,17 +1,15 @@
 import os
 import copy
 import time
-import shutil
-import tempfile
-import subprocess
 import numpy as np
 
 from PySide2.QtGui import *
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
-from PySide2.QtOpenGL import *
+# from PySide2.QtOpenGL import *
 
 from . import zenvis
+from .dialog import RecordVideoDialog
 
 
 class CameraControl:
@@ -92,18 +90,19 @@ class CameraControl:
         self.update_perspective()
 
 
-class ViewportWidget(QGLWidget):
+class ViewportWidget(QOpenGLWidget):
     def __init__(self, parent=None):
-        fmt = QGLFormat()
+        fmt = QSurfaceFormat()
         nsamples = os.environ.get('ZEN_MSAA')
         if not nsamples:
             nsamples = 16
         else:
             nsamples = int(nsamples)
         fmt.setSamples(nsamples)
-        fmt.setVersion(3, 2)
-        fmt.setProfile(QGLFormat.CoreProfile)
-        super().__init__(fmt, parent)
+        fmt.setVersion(3, 0)
+        fmt.setProfile(QSurfaceFormat.CoreProfile)
+        super().__init__(parent)
+        self.setFormat(fmt)
 
         self.camera = CameraControl()
         self.record_path = None
@@ -117,17 +116,23 @@ class ViewportWidget(QGLWidget):
         self.camera.update_perspective()
 
     def paintGL(self):
-        if self.record_path:
+        zenvis.paintGL()
+        self.check_record()
+
+    def check_record(self):
+        f = zenvis.get_curr_frameid()
+        if self.record_path and f <= self.frame_end:
             old_res = self.camera.res
             self.camera.res = self.record_res
             self.camera.update_perspective()
             zenvis.recordGL(self.record_path)
             self.camera.res = old_res
             self.camera.update_perspective()
-        zenvis.paintGL()
+            if f == self.frame_end:
+                self.parent_widget.record_video.finish_record()
 
     def on_update(self):
-        self.updateGL()
+        self.update()
 
 @eval('lambda x: x()')
 def _():
@@ -155,6 +160,18 @@ class QDMDisplayMenu(QMenu):
         action = QAction('Background Color', self)
         self.addAction(action)
 
+        self.addSeparator()
+
+        action = QAction('Smooth Shading', self)
+        action.setCheckable(True)
+        action.setChecked(False)
+        self.addAction(action)
+
+        action = QAction('Wireframe', self)
+        action.setCheckable(True)
+        action.setChecked(False)
+        self.addAction(action)
+
 class QDMRecordMenu(QMenu):
     def __init__(self):
         super().__init__()
@@ -167,8 +184,6 @@ class QDMRecordMenu(QMenu):
 
         action = QAction('Record Video', self)
         action.setShortcut(QKeySequence('Shift+F12'))
-        action.setCheckable(True)
-        action.setChecked(False)
         self.addAction(action)
 
 
@@ -192,7 +207,10 @@ class DisplayWidget(QWidget):
         self.menubar.addMenu(self.recordDisplay)
 
         self.view = ViewportWidget()
+        self.view.parent_widget = self
         self.layout.addWidget(self.view)
+
+        self.record_video = RecordVideoDialog(self)
 
     def on_update(self):
         self.view.on_update()
@@ -202,6 +220,14 @@ class DisplayWidget(QWidget):
         if name == 'Show Grid':
             checked = act.isChecked()
             zenvis.status['show_grid'] = checked
+
+        elif name == 'Smooth Shading':
+            checked = act.isChecked()
+            zenvis.core.set_smooth_shading(checked)
+
+        elif name == 'Wireframe':
+            checked = act.isChecked()
+            zenvis.core.set_render_wireframe(checked)
 
         elif name == 'Background Color':
             c = QColor.fromRgbF(*zenvis.core.get_background_color())
@@ -216,7 +242,7 @@ class DisplayWidget(QWidget):
 
         elif name == 'Record Video':
             checked = act.isChecked()
-            self.do_record_video(checked)
+            self.record_video.do_record_video()
 
         elif name == 'Screenshot':
             self.do_screenshot()
@@ -229,26 +255,6 @@ class DisplayWidget(QWidget):
         file_name += extname
         path = os.path.join(dir_path, file_name)
         return path
-
-    def do_record_video(self, checked):
-        if checked:
-            tmp_path = tempfile.mkdtemp(prefix='recording-')
-            assert os.path.isdir(tmp_path)
-            self.view.record_path = tmp_path
-            self.view.record_res = (1024, 768)
-        else:
-            tmp_path = self.view.record_path
-            assert tmp_path is not None
-            self.view.record_path = None
-            path = self.get_output_path('.mp4')
-            png_paths = os.path.join(tmp_path, '%06d.png')
-            cmd = ['ffmpeg', '-r', '60', '-i', png_paths, path]
-            print('Executing command:', cmd)
-            subprocess.check_call(cmd)
-            shutil.rmtree(tmp_path, ignore_errors=True)
-            zenvis.status['record_video'] = None
-            msg = 'Saved video to {}!'.format(path)
-            QMessageBox.information(self, 'Record Video', msg)
 
     def do_screenshot(self):
         path = self.get_output_path('.png')

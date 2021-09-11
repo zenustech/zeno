@@ -27,7 +27,8 @@ class QDMGraphicsParam(QGraphicsProxyWidget):
         font = QFont()
         font.setPointSize(style['param_text_size'])
 
-        self.edit = QLineEdit()
+        if not hasattr(self, 'edit'):
+            self.edit = QLineEdit()
         self.edit.setFont(font)
         self.label = QLabel()
         self.label.setFont(font)
@@ -62,6 +63,7 @@ class QDMGraphicsParam_int(QDMGraphicsParam):
         self.edit.setValidator(self.validator)
 
     def setDefault(self, default):
+        if not default: return
         default = [int(x) for x in default.split()]
         if len(default) == 1:
             x = default[0]
@@ -79,7 +81,34 @@ class QDMGraphicsParam_int(QDMGraphicsParam):
             assert False, default
 
     def getValue(self):
-        return int(self.edit.text())
+        text = super().getValue()
+        if not text: return None
+        return int(text)
+
+
+class QDMGraphicsParam_bool(QDMGraphicsParam):
+    def initLayout(self):
+        super().initLayout()
+
+        self.validator = QIntValidator()
+        self.edit.setValidator(self.validator)
+
+    def setDefault(self, default):
+        if not default: return
+        default = [bool(int(x)) for x in default.split()]
+        if len(default) == 1:
+            x = default[0]
+            self.setValue(x)
+        else:
+            assert False, default
+
+    def setValue(self, x):
+        super().setValue(str(int(x)))
+
+    def getValue(self):
+        text = super().getValue()
+        if not text: return None
+        return bool(int(text))
 
 
 class QDMGraphicsParam_float(QDMGraphicsParam):
@@ -90,6 +119,7 @@ class QDMGraphicsParam_float(QDMGraphicsParam):
         self.edit.setValidator(self.validator)
 
     def setDefault(self, default):
+        if not default: return
         default = [float(x) for x in default.split()]
         if len(default) == 1:
             x = default[0]
@@ -107,7 +137,9 @@ class QDMGraphicsParam_float(QDMGraphicsParam):
             assert False, default
 
     def getValue(self):
-        return float(self.edit.text())
+        text = super().getValue()
+        if not text: return None
+        return float(text)
 
 
 class QDMGraphicsParam_string(QDMGraphicsParam):
@@ -116,6 +148,51 @@ class QDMGraphicsParam_string(QDMGraphicsParam):
 
     def getValue(self):
         return str(self.edit.text())
+
+
+class QDMGraphicsParamEnum(QDMGraphicsParam):
+    def initLayout(self):
+        self.edit = QComboBox()
+        self.edit.setEditable(True)
+        super().initLayout()
+
+    def setEnums(self, enums):
+        self.edit.addItems(enums)
+
+    def setValue(self, value):
+        self.edit.setCurrentText(str(value))
+        self.edit.setEditText(str(value))
+
+    def getValue(self):
+        return str(self.edit.currentText())
+
+
+class QDMGraphicsParam_writepath(QDMGraphicsParam):
+    def initLayout(self):
+        super().initLayout()
+        self.button = QPushButton('..')
+        self.button.setFixedWidth(20)
+        self.button.clicked.connect(self.on_open)
+        self.layout.addWidget(self.button)
+
+    def getValue(self):
+        return str(self.edit.text())
+
+    def on_open(self):
+        path, kind = QFileDialog.getSaveFileName(None, 'Path to Save',
+            '', 'All Files(*);;')
+        if not path:
+            return
+        self.edit.setText(path)
+
+
+class QDMGraphicsParam_readpath(QDMGraphicsParam_writepath):
+    def on_open(self):
+        path, kind = QFileDialog.getOpenFileName(None, 'File to Open',
+            '', 'All Files(*);;')
+        if not path:
+            return
+        self.edit.setText(path)
 
 
 class QDMGraphicsParam_multiline_string(QDMGraphicsParam):

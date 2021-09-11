@@ -1,3 +1,4 @@
+#include <zeno/utils/FaultHandler.h>
 #ifdef ZENO_FAULTHANDLER
 // https://github.com/taichi-dev/taichi/blob/eb769ebfc0cb6b48649a3aed8ccd293cbd4eb5ed/taichi/system/traceback.cpp
 /*******************************************************************************
@@ -243,7 +244,7 @@ static std::string calc_addr_to_line(
 #endif
 
 namespace zeno {
-void print_traceback() {
+ZENO_API void print_traceback(int skip) {
 #ifdef __APPLE__
   static std::mutex traceback_printer_mutex;
   // Modified based on
@@ -309,7 +310,7 @@ void print_traceback() {
     const int line_width = 86;
     const int function_width = line_width - function_start - 2;
     int i;
-    for (i = 0; i < (int)trace.size(); i++) {
+    for (i = skip; i < (int)trace.size(); i++) {
       std::cout << trace[i];
       if (i > function_start + 3 &&
           (i - 3 - function_start) % function_width == 0) {
@@ -338,7 +339,7 @@ void print_traceback() {
   fmt::print(fg(fmt::color::magenta), "************************\n");
 
   std::vector<dbg::StackFrame> stack = dbg::stack_trace();
-  for (unsigned int i = 0; i < stack.size(); i++) {
+  for (unsigned int i = skip; i < stack.size(); i++) {
     fmt::print(fg(fmt::color::gray), "0x{:x}: ", stack[i].address);
     fmt::print(fg(fmt::color::yellow), stack[i].name);
     if (stack[i].file != std::string("")) {
@@ -368,7 +369,7 @@ void print_traceback() {
   fmt::print(fg(fmt::color::magenta), "************************\n");
 
   // j = 0: zeno::print_traceback
-  for (int j = 1; j < nptrs; j++) {
+  for (int j = 1 + skip; j < nptrs; j++) {
     std::string s(strings[j]);
     std::size_t slash = s.find("/");
     std::size_t bra = s.find("(");
@@ -415,7 +416,7 @@ void print_traceback() {
 }
 #else
 namespace zeno {
-void print_traceback() {
+ZENO_API void print_traceback(int skip) {
 }
 }
 #endif

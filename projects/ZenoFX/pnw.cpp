@@ -6,6 +6,7 @@
 #include <zfx/zfx.h>
 #include <zfx/x64.h>
 #include <cassert>
+#include "dbg_printf.h"
 
 namespace {
 
@@ -24,7 +25,9 @@ struct HashGrid : zeno::IObject {
     float radius;
     float radius_sqr;
     float radius_sqr_min;
+    zeno::vec3i GridRes;
     std::vector<zeno::vec3f> const &refpos;
+
 
     std::vector<std::vector<int>> table;
 
@@ -51,6 +54,7 @@ struct HashGrid : zeno::IObject {
         radius = radius_;
         radius_sqr = radius * radius;
         radius_sqr_min = radius_min < 0.f ? -1.f : radius_min * radius_min;
+
 #ifdef DILEI
         inv_dx = 0.5f / radius;
 #else
@@ -69,12 +73,12 @@ struct HashGrid : zeno::IObject {
         pMax += radius;
         gridRes = zeno::toint(zeno::floor((pMax - pMin) * inv_dx)) + 1;
 
-        printf("grid res: %dx%dx%d\n", gridRes[0], gridRes[1], gridRes[2]);
+        dbg_printf("grid res: %dx%dx%d\n", gridRes[0], gridRes[1], gridRes[2]);
         table.clear();
         table.resize(gridRes[0] * gridRes[1] * gridRes[2]);
 #else
         int table_size = refpos.size() / 8;
-        printf("table size: %d\n", table_size);
+        dbg_printf("table size: %d\n", table_size);
         table.clear();
         table.resize(table_size);
 #endif
@@ -86,6 +90,7 @@ struct HashGrid : zeno::IObject {
             auto coor = zeno::toint(zeno::floor(refpos[i] * inv_dx));
 #endif
             auto key = hash(coor[0], coor[1], coor[2]);
+            //printf("generate key %d\n", key);
             table[key].push_back(i);
         }
     }
@@ -115,10 +120,12 @@ struct HashGrid : zeno::IObject {
                 for (int dx = -1; dx < 2; dx++) {
 #endif
                     int key = hash(coor[0] + dx, coor[1] + dy, coor[2] + dz);
+                    if(key < 0 || key >= table.size())
+                        continue;
                     for (int pid: table[key]) {
                         auto dist = refpos[pid] - pos;
                         auto dis2 = zeno::dot(dist, dist);
-                        if (dis2 <= radius_sqr && dis2 > radius_sqr_min) {
+                        if (dis2 <= radius_sqr && dis2 >= radius_sqr_min) {
                             f(pid);
                         }
                     }
@@ -171,7 +178,7 @@ struct ParticlesBuildHashGrid : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesBuildHashGrid, {
-    {{"primitive", "primNei"}, {"numeric:float", "radius"}, {"numeric:float", "radiusMin"}},
+    {{"PrimitiveObject", "primNei"}, {"numeric:float", "radius"}, {"numeric:float", "radiusMin"}},
     {{"hashgrid", "hashGrid"}},
     {},
     {"zenofx"},
@@ -186,26 +193,26 @@ struct ParticlesNeighborWrangle : zeno::INode {
 
         zfx::Options opts(zfx::Options::for_x64);
         opts.detect_new_symbols = true;
-        for (auto const &[key, attr]: prim->m_attrs) {
-            int dim = std::visit([] (auto const &v) {
+        prim->foreach_attr([&] (auto const &key, auto const &attr) {
+            int dim = ([] (auto const &v) {
                 using T = std::decay_t<decltype(v[0])>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) return 3;
                 else if constexpr (std::is_same_v<T, float>) return 1;
                 else return 0;
-            }, attr);
-            printf("define symbol: @%s dim %d\n", key.c_str(), dim);
+            })(attr);
+            dbg_printf("define symbol: @%s dim %d\n", key.c_str(), dim);
             opts.define_symbol('@' + key, dim);
-        }
-        for (auto const &[key, attr]: primNei->m_attrs) {
-            int dim = std::visit([] (auto const &v) {
+        });
+        primNei->foreach_attr([&] (auto const &key, auto const &attr) {
+            int dim = ([] (auto const &v) {
                 using T = std::decay_t<decltype(v[0])>;
                 if constexpr (std::is_same_v<T, zeno::vec3f>) return 3;
                 else if constexpr (std::is_same_v<T, float>) return 1;
                 else return 0;
-            }, attr);
-            printf("define symbol: @@%s dim %d\n", key.c_str(), dim);
+            })(attr);
+            dbg_printf("define symbol: @@%s dim %d\n", key.c_str(), dim);
             opts.define_symbol("@@" + key, dim);
-        }
+        });
 
         auto params = has_input("params") ?
             get_input<zeno::DictObject>("params") :
@@ -231,7 +238,7 @@ struct ParticlesNeighborWrangle : zeno::INode {
                     return 1;
                 } else return 0;
             }, par->value);
-            printf("define param: %s dim %d\n", key.c_str(), dim);
+            dbg_printf("define param: %s dim %d\n", key.c_str(), dim);
             opts.define_param(key, dim);
         }
 
@@ -239,11 +246,11 @@ struct ParticlesNeighborWrangle : zeno::INode {
         auto exec = assembler.assemble(prog->assembly);
 
         for (auto const &[name, dim]: prog->newsyms) {
-            printf("auto-defined new attribute: %s with dim %d\n",
+            dbg_printf("auto-defined new attribute: %s with dim %d\n",
                     name.c_str(), dim);
             assert(name[0] == '@');
             if (name[1] == '@') {
-                printf("ERROR: cannot define new attribute %s on primNei\n",
+                dbg_printf("ERROR: cannot define new attribute %s on primNei\n",
                         name.c_str());
             }
             auto key = name.substr(1);
@@ -252,7 +259,7 @@ struct ParticlesNeighborWrangle : zeno::INode {
             } else if (dim == 1) {
                 prim->add_attr<float>(key);
             } else {
-                printf("ERROR: bad attribute dimension for primitive: %d\n",
+                dbg_printf("ERROR: bad attribute dimension for primitive: %d\n",
                     dim);
                 abort();
             }
@@ -260,19 +267,19 @@ struct ParticlesNeighborWrangle : zeno::INode {
 
         for (int i = 0; i < prog->params.size(); i++) {
             auto [name, dimid] = prog->params[i];
-            printf("parameter %d: %s.%d\n", i, name.c_str(), dimid);
+            dbg_printf("parameter %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '$');
             auto it = std::find(parnames.begin(),
                 parnames.end(), std::pair{name, dimid});
             auto value = parvals.at(it - parnames.begin());
-            printf("(valued %f)\n", value);
+            dbg_printf("(valued %f)\n", value);
             exec->parameter(prog->param_id(name, dimid)) = value;
         }
 
         std::vector<Buffer> chs(prog->symbols.size());
         for (int i = 0; i < chs.size(); i++) {
             auto [name, dimid] = prog->symbols[i];
-            printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
+            dbg_printf("channel %d: %s.%d\n", i, name.c_str(), dimid);
             assert(name[0] == '@');
             Buffer iob;
             zeno::PrimitiveObject *primPtr;
@@ -285,12 +292,11 @@ struct ParticlesNeighborWrangle : zeno::INode {
                 primPtr = prim.get();
                 iob.which = 0;
             }
-            auto const &attr = primPtr->attr(name);
-            std::visit([&, dimid_ = dimid] (auto const &arr) {
+            prim->attr_visit(name, [&, dimid_ = dimid] (auto const &arr) {
                 iob.base = (float *)arr.data() + dimid_;
                 iob.count = arr.size();
                 iob.stride = sizeof(arr[0]) / sizeof(float);
-            }, attr);
+            });
             chs[i] = iob;
         }
 
@@ -302,9 +308,9 @@ struct ParticlesNeighborWrangle : zeno::INode {
 };
 
 ZENDEFNODE(ParticlesNeighborWrangle, {
-    {{"primitive", "prim"}, {"primitive", "primNei"}, {"hashgrid", "hashGrid"},
-     {"string", "zfxCode"}, {"dict:numeric", "params"}},
-    {{"primitive", "prim"}},
+    {{"PrimitiveObject", "prim"}, {"PrimitiveObject", "primNei"}, {"HashGrid", "hashGrid"},
+     {"string", "zfxCode"}, {"DictObject:NumericObject", "params"}},
+    {{"PrimitiveObject", "prim"}},
     {},
     {"zenofx"},
 });

@@ -17,7 +17,7 @@ struct MakeVisualAABBPrimitive : INode {
         auto b = has_input("boundMax")
             ? get_input<NumericObject>("boundMax")->get<vec3f>()
             : vec3f(+1, +1, +1);
-        auto connType = get_param<int>("connType");
+        auto connType = get_param<std::string>("type");
 
         auto prim = std::make_shared<PrimitiveObject>();
         auto &pos = prim->add_attr<vec3f>("pos");
@@ -32,7 +32,7 @@ struct MakeVisualAABBPrimitive : INode {
         pos[6] = vec3f(b[0], b[1], b[2]);
         pos[7] = vec3f(a[0], b[1], b[2]);
 
-        if (connType == 2) {
+        if (connType == "edges") {
             prim->lines.resize(12);
             prim->lines[0] = vec2i(0, 1);
             prim->lines[1] = vec2i(1, 2);
@@ -46,10 +46,12 @@ struct MakeVisualAABBPrimitive : INode {
             prim->lines[9] = vec2i(1, 5);
             prim->lines[10] = vec2i(2, 6);
             prim->lines[11] = vec2i(3, 7);
-        } else if (connType == 3) {
+
+        } else if (connType == "trifaces") {
             prim->tris.resize(12);
             // TODO: impl triface aabb
-        } else if (connType == 4) {
+
+        } else if (connType == "quadfaces") {
             prim->quads.resize(6);
             // TODO: impl quadface aabb
         }
@@ -64,7 +66,7 @@ ZENDEFNODE(MakeVisualAABBPrimitive,
         }, /* outputs: */ {
         "prim",
         }, /* params: */ {
-        {{"int", "connType", "2"}},
+        {{"enum points edges trifaces quadfaces", "type", "edges"}},
         }, /* category: */ {
         "visualize",
         }});

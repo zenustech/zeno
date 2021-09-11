@@ -3,8 +3,7 @@
 
 namespace zeno {
 
-void print_traceback();
-void trigger_gdb();
+void print_traceback(int skip);
 
 ZENO_API BaseException::BaseException(std::string_view msg) noexcept
     : msg(msg) {
@@ -13,8 +12,7 @@ ZENO_API BaseException::BaseException(std::string_view msg) noexcept
 ZENO_API Exception::Exception(std::string_view msg) noexcept
     : BaseException(msg) {
     spdlog::error("Exception: {}", msg);
-    print_traceback();
-    trigger_gdb();
+    print_traceback(0);
 }
 
 ZENO_API BaseException::~BaseException() noexcept = default;

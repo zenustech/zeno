@@ -2,7 +2,10 @@
 
 #include <zeno/utils/defs.h>
 #include <zeno/core/IObject.h>
+#include <zeno/utils/safe_dynamic_cast.h>
+#include <zeno/utils/UserData.h>
 #include <zeno/utils/any.h>
+#include <functional>
 #include <variant>
 #include <memory>
 #include <string>
@@ -31,23 +34,37 @@ struct Graph {
 
     std::map<std::string, std::unique_ptr<INode>> nodes;
 
-    std::map<std::string, any> subInputs;
-    std::map<std::string, any> subOutputs;
+    std::map<std::string, zany> subInputs;
+    std::map<std::string, zany> subOutputs;
+    std::map<std::string, std::function<zany()>> subInputPromises;
+
+    std::set<std::string> finalOutputNodes;
+    std::map<std::string, std::string> subInputNodes;
     std::map<std::string, std::string> subOutputNodes;
 
     std::map<std::string, std::string> portalIns;
-    std::map<std::string, any> portals;
+    std::map<std::string, zany> portals;
 
     std::unique_ptr<Context> ctx;
 
     bool isViewed = true;
     bool hasAnyView = false;
 
+    UserData userData;
+
     ZENO_API Graph();
     ZENO_API ~Graph();
 
-    ZENO_API void setGraphInput2(std::string const &id, any obj);
-    ZENO_API any const &getGraphOutput2(std::string const &id) const;
+    ZENO_API UserData &getUserData();
+
+    ZENO_API std::set<std::string> getGraphInputNames() const;
+    ZENO_API std::set<std::string> getGraphOutputNames() const;
+
+    ZENO_API void setGraphInputPromise(std::string const &id,
+            std::function<zany()> getter);
+
+    ZENO_API void setGraphInput2(std::string const &id, zany obj);
+    ZENO_API zany const &getGraphOutput2(std::string const &id) const;
     ZENO_API void applyGraph();
 
     void setGraphInput(std::string const &id,
@@ -75,14 +92,15 @@ struct Graph {
     ZENO_API void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss);
     ZENO_API void setNodeInput(std::string const &id, std::string const &par,
-        any const &val);
+        zany const &val);
     ZENO_API void setNodeOption(std::string const &id, std::string const &name);
-    ZENO_API any const &getNodeOutput(
+    ZENO_API zany const &getNodeOutput(
         std::string const &sn, std::string const &ss) const;
+    ZENO_API void loadGraph(const char *json);
 
     void setNodeParam(std::string const &id, std::string const &par,
         std::variant<int, float, std::string> const &val) {
-        auto parid = "param_" + par;
+        auto parid = par + ":";
         std::visit([&] (auto const &val) {
             setNodeInput(id, parid, val);
         }, val);

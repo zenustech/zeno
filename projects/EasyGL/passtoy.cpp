@@ -224,6 +224,22 @@ ZENDEFNODE(PassToyMakeTexture, {
         {"PassToy"},
 });
 
+struct PassToyGetTextureInteger : zeno::INode {
+    virtual void apply() override {
+        auto texture = get_input<PassToyTexture>("texture");
+        auto id = std::make_shared<zeno::NumericObject>();
+        id->value = (int)texture->tex.impl->id;
+        set_output("id", std::move(id));
+    }
+};
+
+ZENDEFNODE(PassToyGetTextureInteger, {
+        {"texture"},
+        {"id"},
+        {},
+        {"PassToy"},
+});
+
 struct PassToyImageTextureFromVoidPtr : zeno::INode {
     virtual void apply() override {
         void *p = get_input<zeno::VoidPtrObject>("voidPtr")->get();
@@ -252,6 +268,41 @@ struct PassToyImageTextureFromVoidPtr : zeno::INode {
 
 ZENDEFNODE(PassToyImageTextureFromVoidPtr, {
         {"voidPtr"},
+        {"texture"},
+        {},
+        {"PassToy"},
+});
+
+struct PassToyImageTextureFromVoidPtrAndRes : zeno::INode {
+    virtual void apply() override {
+        void *p = get_input<zeno::VoidPtrObject>("voidPtr")->get();
+        auto res = get_input<zeno::NumericObject>("voidPtr")->get<zeno::vec2i>();
+        auto nx = res[0], ny = res[1];
+        auto texture = std::make_shared<PassToyTexture>();
+        zlog::info("loading image file from void ptr {}", p);
+        // >>> tianjia zhexie daima
+        auto img = (unsigned char *)p + 8;
+        for (int i = 0; i < nx * ny * 4; i += 4) {
+            std::swap(img[i + 0], img[i + 2]);
+        }
+        // <<< tianjia zhexie daima
+        zlog::info("loaded {}x{} at {}", nx, ny, p);
+        texture->tex.width = nx;
+        texture->tex.height = ny;
+        texture->tex.type = GL_UNSIGNED_BYTE;
+        texture->tex.format = GL_RGBA;
+        texture->tex.internalformat = GL_RGBA;
+        texture->tex.base = p;
+        texture->tex.initialize();
+        texture->fbo.initialize();
+        texture->fbo.bindToTexture(texture->tex, GL_COLOR_ATTACHMENT0);
+        texture->fbo.checkStatusComplete();
+        set_output("texture", std::move(texture));
+    }
+};
+
+ZENDEFNODE(PassToyImageTextureFromVoidPtrAndRes, {
+        {"voidPtr", "resolution"},
         {"texture"},
         {},
         {"PassToy"},

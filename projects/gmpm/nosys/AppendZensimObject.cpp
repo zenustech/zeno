@@ -16,16 +16,16 @@ struct PairZensimParticles : zeno::INode {
     auto mergeParticles = [&](std::string paramStr) {
       if (!has_input(paramStr))
         return;
-      if (get_input(paramStr)->as<ZenoParticles>())
-        ret.push_back(get_input(paramStr)->as<ZenoParticles>());
-      else if (get_input(paramStr)->as<ZenoParticleList>()) {
+      if (has_input<ZenoParticles>(paramStr)) {
+        ret.push_back(get_input<ZenoParticles>(paramStr).get());
+      } else if (has_input<ZenoParticleList>(paramStr)) {
         ZenoParticleObjects &pobjs =
-            get_input(paramStr)->as<ZenoParticleList>()->get();
+            get_input<ZenoParticleList>(paramStr)->get();
         for (auto &&pobj : pobjs)
           ret.push_back(pobj);
-      } else if (get_input(paramStr)->as<ListObject>()) {
-        auto &objSharedPtrLists = *get_input(paramStr)->as<ListObject>();
-        for (auto &&objSharedPtr : objSharedPtrLists.arr)
+      } else if (has_input<ListObject>(paramStr)) {
+        auto &objSharedPtrLists = *get_input<ListObject>(paramStr);
+        for (auto &&objSharedPtr : objSharedPtrLists.get())
           if (auto ptr = dynamic_cast<ZenoParticles *>(objSharedPtr.get());
               ptr != nullptr)
             ret.push_back(ptr);

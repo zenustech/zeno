@@ -1,9 +1,14 @@
-O=arts/testerr.zsg
+O=arts/adaptiveTest.zsg
 #O=arts/prim.zsg
+#O=arts/testlitsock.zsg
+#O=graphs/BulletRigidSim.zsg
 #O=graphs/Xuben_ZFX_IISPH.zsg
 #O=arts/ZFXv2.zsg
 #O=arts/lowResMPM.zsg
 #O=arts/literialconst.zsg
+#O=arts/blendtest.zsg
+#default: justrun
+#default: optrun
 default: run
 
 #####################################################
@@ -16,15 +21,15 @@ default: run
 
 all:
 	cmake -B build
-	make -C build -j `python -c 'from multiprocessing import cpu_count; print(cpu_count() * 2)'`
+	cmake --build build --parallel 
 
 release_all:
 	cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
-	make -C build -j `python -c 'from multiprocessing import cpu_count; print(cpu_count() * 2)'`
+	cmake --build build --parallel `python -c 'from multiprocessing import cpu_count;print(cpu_count())`
 
 debug_all:
 	cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/tmp/tmp-install
-	make -C build -j `python -c 'from multiprocessing import cpu_count; print(cpu_count() * 2)'`
+	cmake --build build --parallel `python -c 'from multiprocessing import cpu_count;print(cpu_count())`
 
 configure:
 	cmake -B build
@@ -39,8 +44,14 @@ easygl: all
 run: all
 	ZEN_OPEN=$O python3 -m zenqt
 
+optrun: all
+	ZEN_OPEN=$O optirun python3 -m zenqt
+
 glrun: all
 	ZEN_NOFORK=1 ZEN_NOVIEW=1 ZEN_OPEN=$O python3 -m zenqt
+
+justrun:
+	ZEN_OPEN=$O python3 -m zenqt
 
 gldebug: debug_all
 	ZEN_NOSIGHOOK=1 ZEN_NOVIEW=1 USE_GDB=1 ZEN_SPROC=1 ZEN_OPEN=$O gdb python3 -ex 'r -m zenqt'

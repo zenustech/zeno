@@ -79,16 +79,26 @@ struct VDBGrid : zeno::IObject {
   virtual openvdb::CoordBBox evalActiveVoxelBoundingBox() = 0;
   virtual openvdb::Vec3d indexToWorld(openvdb::Coord &c) = 0;
   virtual openvdb::Vec3d worldToIndex(openvdb::Vec3d &c) = 0;
-  virtual std::string getType() { return std::string(); }
+  virtual void setName(std::string const &name) = 0;
+  virtual std::string getType() const =0;
+  virtual zeno::vec3f getVoxelSize() const=0;
   virtual void dilateTopo(int l) =0;
 };
 
 template <typename GridT>
-// struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
-struct VDBGridWrapper : VDBGrid {
+struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
   typename GridT::Ptr m_grid;
 
   VDBGridWrapper() { m_grid = GridT::create(); }
+
+  VDBGridWrapper(VDBGridWrapper const &other) {
+      m_grid = other.m_grid->deepCopy();
+  }
+
+  VDBGridWrapper &operator=(VDBGridWrapper const &other) {
+      m_grid = other.m_grid->deepCopy();
+      return *this;
+  }
 
   // using VDBGrid::GeneralVdbGrid;
   // GeneralVdbGrid getGrid() override {
@@ -123,8 +133,16 @@ struct VDBGridWrapper : VDBGrid {
       openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX);
   }
 
+  virtual zeno::vec3f getVoxelSize() const override {
+      auto del = m_grid->voxelSize();
+      return zeno::vec3f(del[0], del[1], del[2]);
+  }
 
-  virtual std::string getType() {
+  virtual void setName(std::string const &name) override {
+      m_grid->setName(name);
+  }
+
+  virtual std::string getType() const override {
     if (std::is_same<GridT, openvdb::FloatGrid>::value) {
       return std::string("FloatGrid");
     } else if (std::is_same<GridT, openvdb::Int32Grid>::value) {
