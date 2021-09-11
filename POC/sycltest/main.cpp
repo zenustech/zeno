@@ -161,8 +161,8 @@ struct Array {
         {}
 
         template <class Indices>
-        T &operator[](Indices indices) const {
-            return acc[indices];
+        T &operator[](Indices &&indices) const {
+            return acc[std::forward<Indices>(indices)];
         }
     };
 
