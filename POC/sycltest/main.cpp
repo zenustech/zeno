@@ -141,9 +141,13 @@ int main() {
 #endif
 
 
+struct NoHandler {};
+
+
 template <class T, size_t ...Ns>
 struct Array {
     static constexpr size_t Dim = sizeof...(Ns);
+    static_assert(Dim != 0, "dimension of Array can't be 0");
 
     sycl::buffer<T, Dim> buf;
 
@@ -167,7 +171,51 @@ struct Array {
     };
 
     template <auto Mode = sycl::access::mode::read_write>
-    auto accessor() {
+    auto accessor(NoHandler = {}) {
+        return Accessor<Mode, sycl::access::target::host_buffer>(*this);
+    }
+
+    template <auto Mode = sycl::access::mode::read_write>
+    auto accessor(sycl::handler &cgh) {
+        return Accessor<Mode, sycl::access::target::global_buffer>(*this, cgh);
+    }
+};
+
+
+
+
+template <class T>
+struct Vector {
+    sycl::buffer<T, 1> buf;
+    size_t len;
+
+    Vector(size_t n = 0)
+        : buf((T *)nullptr, sycl::range<1>(n)), len(n)
+    {}
+
+    template <class Handler = NoHandler>
+    void resize(size_t n, Handler cgh = {}) {
+        buf = sycl::buffer<T, 1>((T *)nullptr, sycl::range<1>(n));
+        len = n;
+    }
+
+    template <sycl::access::mode Mode, sycl::access::target Target>
+    struct Accessor {
+        sycl::accessor<T, 1, Mode, Target> acc;
+
+        template <class ...Args>
+        Accessor(Vector &base, Args &&...args)
+            : acc(base.buf.template get_access<Mode>(std::forward<Args>(args)...))
+        {}
+
+        template <class Indices>
+        T &operator[](Indices &&indices) const {
+            return acc[std::forward<Indices>(indices)];
+        }
+    };
+
+    template <auto Mode = sycl::access::mode::read_write>
+    auto accessor(NoHandler = {}) {
         return Accessor<Mode, sycl::access::target::host_buffer>(*this);
     }
 
@@ -183,7 +231,7 @@ class kernel0;
 int main() {
     sycl::queue que;
 
-    Array<int, 32> arr;
+    Vector<int> arr(32);
 
     que.submit([&] (sycl::handler &cgh) {
         auto arrAxr = arr.accessor(cgh);
