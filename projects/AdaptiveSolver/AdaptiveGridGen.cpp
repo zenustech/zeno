@@ -201,123 +201,7 @@ ZENDEFNODE(generateAdaptiveGrid, {
 });
 
 struct MeshToMultiGridLevelSet : zeno::INode{
-    void fillInner(mgData &data){
-        auto sdf = data.sdf[0];
-        auto dx = data.hLevels[0];
-        openvdb::FloatGrid::Ptr tag = zeno::IObject::make<VDBFloatGrid>()->m_grid;
-        tag->setTree(std::make_shared<openvdb::FloatTree>(
-                sdf->tree(), /*bgval*/ float(1),
-                openvdb::TopologyCopy()));
-        int activeNum = sdf->activeVoxelCount();
-        std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
-
-        auto extendTag = [&](const tbb::blocked_range<size_t> &r){
-            auto tag_axr{tag->getAccessor()};
-            auto sdf_axr{sdf->getConstAccessor()};
-            
-            for (auto liter = r.begin(); liter != r.end(); ++liter) {
-                auto &leaf = *leaves[liter];
-                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-                    auto coord = leaf.offsetToGlobalCoord(offset);
-                    if(!sdf_axr.isValueOn(coord) || tag_axr.getValue(coord) == 2 )
-                        continue;
-                    if( sdf_axr.getValue(coord) >= 0)
-                        continue;
-                    int count = 0;
-                    for(int i = -1;i<=1; i += 2)
-                    for(int j = 0;j<3;++j)
-                    {
-                        auto neighbor = coord;
-                        neighbor[j] += i;
-                        if(!sdf_axr.isValueOn(neighbor))
-                        {
-                            tag_axr.setValue(neighbor, 0.0f);
-                        }
-                        else
-                            count++;
-                    }
-                    if(count == 6)
-                        tag_axr.setValue(coord, 2);
-                    else
-                        tag_axr.setValue(coord, 1);
-                }
-            }
-        };
-        auto computeSDF = [&](const tbb::blocked_range<size_t> &r){
-            auto tag_axr{tag->getConstAccessor()};
-            auto sdf_axr{sdf->getAccessor()};
-            for (auto liter = r.begin(); liter != r.end(); ++liter) {
-                auto &leaf = *leaves[liter];
-                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-                    auto coord = leaf.offsetToGlobalCoord(offset);
-                    if(!tag_axr.isValueOn(coord) || tag_axr.getValue(coord) > 0.01f)
-                    {
-                        continue;
-                    }
-                    float dis[3] = {100000,100000,100000};
-                    int sign[3];
-                    
-                    for(int i=-1;i<=1;i += 2)
-                    for(int select = 0;select < 3;++select)
-                    {
-                        auto base = openvdb::Vec3i(0,0,0);
-                        base[select] = i;
-                        auto ipos = coord + base;
-                        if(!tag_axr.isValueOn(openvdb::Coord(ipos)) || tag_axr.getValue(openvdb::Coord(ipos)) == 0)
-                            continue;
-                        float nei_value = sdf_axr.getValue(openvdb::Coord(ipos));
-                        for(int t = 0;t < 3;++t)
-                            if(abs(nei_value) < dis[t] && nei_value != 0)
-                            {
-                                for(int tt= 2;tt>=t+1;--tt)
-                                {
-                                    dis[tt] = dis[tt-1];
-                                    sign[tt] = sign[tt-1];
-                                }
-                                dis[t] = abs(nei_value);
-                                sign[t] = nei_value / abs(nei_value);
-                                break;
-                            }
-                    }
-                    
-                    float d = dis[0] + dx;
-                    if(d > dis[1])
-                    {
-                        d = 0.5 * (dis[0] + dis[1] + sqrt(2 * dx * dx - (dis[1]-dis[0]) * (dis[1]-dis[0])));
-                        if(d > dis[2])
-                        {
-                            float delta = dis[0] + dis[1] + dis[2];
-                            delta = delta * delta  - 3 *(dis[0] * dis[0] + 
-                                dis[1] * dis[1] + dis[2] * dis[2] - dx * dx);
-                            if(delta < 0)
-                                delta = 0;
-                            d = 0.3333 * (dis[0] + dis[1] + dis[2] + sqrt(delta));
-                        }
-                    }
-                    float value = sign[0] * d;
-                    sdf_axr.setValue(coord, value);
-                }
-            }
-        };
-
-        tag->tree().getNodes(leaves);
-        for(int i=0;;++i)
-        {
-            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), extendTag);
-            leaves.clear();
-            tag->tree().getNodes(leaves);
-            //printf("leaves size is %d\n", leaves.size());
-            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeSDF);
-            
-            int newAN = sdf->activeVoxelCount();
-            //printf("iter %d  activeNum is %d, newAN is %d\n", i, activeNum, newAN);
-            if(activeNum == newAN)
-                break;
-            else
-                activeNum = newAN;
-        }
-    }
-
+    
     virtual void apply() override {
         float h = 0.08;
         int max_level = 5;
@@ -369,7 +253,7 @@ struct MeshToMultiGridLevelSet : zeno::INode{
         }
         printf("begin to init\n");
         data->initData();
-        fillInner(*data);
+        data->fillInner();
         printf("init over\n");
 
         printf("adaptive grid generate done\n");

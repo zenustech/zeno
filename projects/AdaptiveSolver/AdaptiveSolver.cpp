@@ -7,6 +7,7 @@ namespace zeno{
 struct AdaptiveSolver : zeno::INode
 {
     std::shared_ptr<mgData>  data;
+    int frameNum;
     float dt, density, dx;
     float alpha;
     float beta;
@@ -29,13 +30,17 @@ struct AdaptiveSolver : zeno::INode
             :0.001;
         density = has_input("density") ? get_input("density")->as<NumericObject>()->get<float>()
             :1000.0f;
-        
+        frameNum = has_input("frameNum") ? get_input("frameNum")->as<NumericObject>()->get<int>()
+            :0;
+        //printf("frameNum is %d\n", frameNum);
+        if(frameNum % 10 == 0)
+            data->recomputeSDF();
         //std::cout<<"solve again, data position is " << &*level0 <<std::endl;
         step();
         //generate  
         set_output("mgData", data);
     }
-
+    
     //using cg iteration to solve press possion equation 
     void step()
     {
@@ -56,30 +61,9 @@ struct AdaptiveSolver : zeno::INode
         sdfgrid = data->sdf[0];
         
         openvdb::Int32Grid::Ptr tag = zeno::IObject::make<VDBIntGrid>()->m_grid;
-        tag->setTree(std::make_shared<openvdb::Int32Tree>(
-            sdfgrid->tree(), /*bgval*/ openvdb::Int32(1000),
+        tag->setTree(std::make_shared<openvdb::FloatTree>(
+            sdfgrid->tree(), /*bgval*/ float(1),
             openvdb::TopologyCopy()));
-
-        auto initTag= [&](const tbb::blocked_range<size_t> &r)
-        {
-            auto sdf_axr{sdfgrid->getConstAccessor()};
-            auto tag_axr{tag->getAccessor()};
-            auto vel_axr{velGrid->getAccessor()};
-            for (auto liter = r.begin(); liter != r.end(); ++liter) {
-                auto &leaf = *leaves[liter];
-                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-                    auto coord = leaf.offsetToGlobalCoord(offset);
-                    if(!sdf_axr.isValueOn(coord))
-                        continue;
-                    if(sdf_axr.getValue(coord) <= 0)
-                    {
-                        tag_axr.setValue(coord, 0);
-                        auto vel = vel_axr.getValue(coord);
-                        printf("vel is (%f,%f,%f)\n", vel[0], vel[1], vel[2]);
-                    }
-                }
-            }
-        };    
 
         auto applyGravityAndBound = [&](const tbb::blocked_range<size_t> &r) {
             auto vel_axr = velGrid->getAccessor();
@@ -100,12 +84,12 @@ struct AdaptiveSolver : zeno::INode
                     openvdb::Vec3f vel_value = vel_axr.getValue(openvdb::Coord(voxelipos));
                     vel_value += openvdb::Vec3f(0, -dt * 9.8, 0);
                     // bound
-                    if(voxelipos[1] <= -20)
-                        vel_value = openvdb::Vec3f(vel_value[0], 0, vel_value[2]);
-                    if(voxelipos[0] <= -30 || voxelipos[0] >= 30)
-                        vel_value = openvdb::Vec3f(0, vel_value[1], vel_value[2]);
-                    if(voxelipos[2] <= -30 || voxelipos[2] >= 30)
-                        vel_value = openvdb::Vec3f(vel_value[0], vel_value[1], 0);
+                    // if(voxelipos[1] <= -20)
+                    //     vel_value = openvdb::Vec3f(vel_value[0], 0.0f, vel_value[2]);
+                    // if(voxelipos[0] <= -30 || voxelipos[0] >= 30)
+                    //     vel_value = openvdb::Vec3f(0.0f, vel_value[1], vel_value[2]);
+                    // if(voxelipos[2] <= -30 || voxelipos[2] >= 30)
+                    //     vel_value = openvdb::Vec3f(vel_value[0], vel_value[1], 0.0f);
                     
                     vel_axr.setValue(openvdb::Coord(voxelipos), vel_value);
                 }
@@ -399,93 +383,196 @@ struct AdaptiveSolver : zeno::INode
                 }
             }
         };
-        
-        sdfgrid->tree().getNodes(leaves);
-        printf("sdfgrid leaves num is %d\n", leaves.size());
 
         // advection part 
 
-        // velocity extrapolation
-        {
-             tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), initTag);
-            
-            for(int d=1;d<5;++d)
-            {
-                auto computeTag = [&](const tbb::blocked_range<size_t> &r){
-                    auto tag_axr{tag->getAccessor()};
-                    auto sdf_axr{sdfgrid->getConstAccessor()};                
-                    for (auto liter = r.begin(); liter != r.end(); ++liter) {
-                        auto &leaf = *leaves[liter];
-                        for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-                            auto coord = leaf.offsetToGlobalCoord(offset);
-                            if(!sdf_axr.isValueOn(coord))
-                                continue;
-                            int flag = 0, tag = tag_axr.getValue(coord);
-                            if(tag < d)
-                                continue;
-                            for(int ss=0;ss<3;++ss)
-                            {
-                                if(flag)
-                                    break;
-                                for(int i=-1;i<=1;i+=2)
-                                {
-                                    auto ipos = coord;
-                                    ipos[ss] += i;
-                                    if(!sdf_axr.isValueOn(ipos) && tag_axr.getValue(ipos) < d)
-                                    {
-                                        tag_axr.setValue(coord, d);
-                                        flag = 1;
-                                        break;
-                                    }
-                                }
-                            }                 
+        // velocity&&sdf extrapolation
+        
+        leaves.clear();
+        tag->tree().getNodes(leaves);
+        auto initTag = [&](const tbb::blocked_range<size_t> &r){
+            auto tag_axr{tag->getAccessor()};
+            auto sdf_axr{sdfgrid->getConstAccessor()};  
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    auto coord = leaf.offsetToGlobalCoord(offset);
+                    if(!sdf_axr.isValueOn(coord))
+                        continue;
+                    auto sdfV = sdf_axr.getValue(coord);
+                    if(sdfV>=0)
+                        continue;
+                    tag_axr.setValue(coord, 0);
+                    for(int ss=0;ss<3;++ss)
+                    for(int i=-1;i<=1;i+=2)
+                    {
+                        auto ipos = coord;
+                        ipos[ss] += i;
+                        if(!sdf_axr.isValueOn(ipos) || sdf_axr.getValue(ipos))
+                        {
+                            tag_axr.setValue(ipos, 1);
                         }
                     }
-                };
+                }
+            }
         
-                auto sweep = [&](const tbb::blocked_range<size_t> &r){
-                    auto tag_axr{tag->getAccessor()};
-                    auto sdf_axr{sdfgrid->getConstAccessor()};
-                    auto vel_axr{velGrid->getAccessor()};
-                    for (auto liter = r.begin(); liter != r.end(); ++liter) {
-                        auto &leaf = *leaves[liter];
-                        for (auto offset = 0; offset < leaf.SIZE; ++offset) {
-                            auto coord = leaf.offsetToGlobalCoord(offset);
-                            if(!sdf_axr.isValueOn(coord))
-                                continue;
-                            int tagV = tag_axr.getValue(coord);
-                            if(tagV != d)
-                                continue;
-                            openvdb::Vec3f vel(0.0f);
-                            int count = 0;
-                            for(int ss = 0;ss < 3;++ss)
+        };
+        
+        auto initSurface = [&](const tbb::blocked_range<size_t> &r){
+            auto tag_axr{tag->getAccessor()};
+            auto sdf_axr{sdfgrid->getConstAccessor()};  
+            for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                auto &leaf = *leaves[liter];
+                for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                    auto coord = leaf.offsetToGlobalCoord(offset);
+                    if(!sdf_axr.isValueOn(coord))
+                        continue;
+                    auto sdfV = sdf_axr.getValue(coord);
+                    if(sdfV>=0)
+                        continue;
+                    tag_axr.setValue(coord, 0);
+                    for(int ss=0;ss<3;++ss)
+                    for(int i=-1;i<=1;i+=2)
+                    {
+                        auto ipos = coord;
+                        ipos[ss] += i;
+                        if(!sdf_axr.isValueOn(ipos) || sdf_axr.getValue(ipos))
+                        {
+                            tag_axr.setValue(ipos, 1);
+                        }
+                    }
+                }
+            }
+        
+        };
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), initTag);
+        
+        auto newsdf = sdfgrid->deepCopy();
+        auto newvel = velGrid->deepCopy();
+        for(int d=1;d<5;++d)
+        {
+            auto computeTag = [&](const tbb::blocked_range<size_t> &r){
+                auto tag_axr{tag->getAccessor()};
+                auto sdf_axr{sdfgrid->getConstAccessor()};           
+                for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                    auto &leaf = *leaves[liter];
+                    for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                        auto coord = leaf.offsetToGlobalCoord(offset);
+                        if(!sdf_axr.isValueOn(coord))
+                            continue;
+                        int tag = tag_axr.getValue(coord);
+                        if(tag == d - 1)
+                        {                            
+                            for(int ss=0;ss<3;++ss)
                             for(int i=-1;i<=1;i+=2)
                             {
                                 auto ipos = coord;
                                 ipos[ss] += i;
-                                auto tagNei = tag_axr.getValue(ipos);
-                                if(tagNei < tagV)
+                                if(!tag_axr.isValueOn(ipos) || tag_axr.getValue(ipos) > d)
                                 {
-                                    count++;
-                                    vel += vel_axr.getValue(ipos);
+                                    tag_axr.setValue(ipos, d);
                                 }
                             }
-                            vel /= count;
-                            vel_axr.setValue(coord, vel);
-                            printf("ex vel is (%f,%f,%f)\n", vel[0], vel[1], vel[2]);
                         }
+                                        
                     }
-                };
+                }
+            };
+    
+            auto sweep = [&](const tbb::blocked_range<size_t> &r){
+                auto tag_axr{tag->getConstAccessor()};
+                auto sdf_axr{sdfgrid->getConstAccessor()};
+                auto vel_axr{velGrid->getAccessor()};
+                
+                for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                    auto &leaf = *leaves[liter];
+                    for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                        auto coord = leaf.offsetToGlobalCoord(offset);
+                        if(!sdf_axr.isValueOn(coord))
+                            continue;
+                        int tagV = tag_axr.getValue(coord);
+                        if(tagV != d)
+                        {
+                            continue;
+                        }
+                        openvdb::Vec3f vel(0.0f);
+                        
+                        int count = 0;
+                        for(int ss = 0;ss < 3;++ss)
+                        for(int i=-1;i<=1;i+=2)
+                        {
+                            auto ipos = coord;
+                            ipos[ss] += i;
+                            if(!tag_axr.isValueOn(ipos))
+                                continue;
+                            auto tagNei = tag_axr.getValue(ipos);
+                            if(tagNei < tagV)
+                            {
+                                count++;
+                                vel += vel_axr.getValue(ipos);
+                            }
+                        }
+                        vel /= count;
+                        vel_axr.setValue(coord, vel);
+                        // compute sdf
+                        if(d < 2)
+                            continue;
+                        float dis[3] = {100000,100000,100000};
+                        
+                        for(int i=-1;i<=1;i += 2)
+                        for(int select = 0;select < 3;++select)
+                        {
+                            auto base = openvdb::Vec3i(0,0,0);
+                            base[select] = i;
+                            auto ipos = coord + base;
+                            if(!tag_axr.isValueOn(openvdb::Coord(ipos)) || tag_axr.getValue(openvdb::Coord(ipos)) >= d)
+                                continue;
+                            float nei_value = sdf_axr.getValue(openvdb::Coord(ipos));
+                            for(int t = 0;t < 3;++t)
+                                if(abs(nei_value) < dis[t] && nei_value != 0)
+                                {
+                                    for(int tt= 2;tt>=t+1;--tt)
+                                    {
+                                        dis[tt] = dis[tt-1];
+                                        
+                                    }
+                                    dis[t] = abs(nei_value);
+                                    
+                                    break;
+                                }
+                        }
+                        
+                        float d = dis[0] + dx;
+                        if(d > dis[1])
+                        {
+                            d = 0.5 * (dis[0] + dis[1] + sqrt(2 * dx * dx - (dis[1]-dis[0]) * (dis[1]-dis[0])));
+                            if(d > dis[2])
+                            {
+                                float delta = dis[0] + dis[1] + dis[2];
+                                delta = delta * delta  - 3 *(dis[0] * dis[0] + 
+                                    dis[1] * dis[1] + dis[2] * dis[2] - dx * dx);
+                                if(delta < 0)
+                                    delta = 0;
+                                d = 0.3333 * (dis[0] + dis[1] + dis[2] + sqrt(delta));
+                            }
+                        }
+                        float value = d;
+                        sdf_axr.setValue(coord, value);
 
-                tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), initTag);
-                tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), sweep);
-            }
+
+                    }
+                }
+            };
+
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeTag);
+            leaves.clear();
+            tag->tree().getNodes(leaves);
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), sweep);
         }
         
         // semi-lagrangian advection.
-        // {
-            auto newsdf = sdfgrid->deepCopy();
-            auto newvel = velGrid->deepCopy();
+        {
+            
             auto advect = [&](const tbb::blocked_range<size_t> &r){
                 auto tag_axr{tag->getConstAccessor()};
                 auto sdf_axr{sdfgrid->getConstAccessor()};
@@ -516,7 +603,7 @@ struct AdaptiveSolver : zeno::INode
                         for(int kk=0;kk<=1;++kk)
                         {
                             auto neipos = midipos + openvdb::Coord(ii, jj, kk);
-                            if(!vel_axr.isValueOn(neipos))
+                            if(!sdf_axr.isValueOn(neipos) || tag_axr.getValue(neipos) > 100)
                                 continue;
                             auto neivel = vel_axr.getValue(neipos);
                             neivels[ii * 4 + jj * 2 + kk] = neivel[1];
@@ -528,7 +615,10 @@ struct AdaptiveSolver : zeno::INode
                             nw[ii * 4 + jj * 2 + kk] = weight;
                             midvel += weight*neivel;
                         }
-
+                        if(weightsum <= 0.01)
+                            continue;
+                        midvel /= weightsum;
+                        weightsum = 0;
                         // then we can get the final position and its quantity
                         auto pwpos = openvdb::Vec3f(wpos - dt * midvel);
                         tmp = sdfgrid->worldToIndex(pwpos);
@@ -545,7 +635,7 @@ struct AdaptiveSolver : zeno::INode
                         for(int kk=0;kk<=1;++kk)
                         {
                             auto neipos = midipos + openvdb::Coord(ii, jj, kk);
-                            if(!vel_axr.isValueOn(neipos))
+                            if(!sdf_axr.isValueOn(neipos) || tag_axr.getValue(neipos) > 100)
                                 continue;
                             auto neivel = vel_axr.getValue(neipos);
                             auto neisdf = sdf_axr.getValue(neipos);
@@ -556,6 +646,9 @@ struct AdaptiveSolver : zeno::INode
                             pvel += weight * neivel;
                             psdf += weight * neisdf;
                         }
+                          
+                        pvel /= weightsum;
+                        psdf /= weightsum;
                         nvel_axr.setValue(coord, pvel);
                         nsdf_axr.setValue(coord, psdf);
                         
@@ -564,12 +657,12 @@ struct AdaptiveSolver : zeno::INode
             };
             
             tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), advect);
-            
-            data->sdf[0] = sdfgrid = newsdf->deepCopy();
-            data->vel[0] = velGrid = newvel->deepCopy();
-        // }
 
-        
+        }
+        data->sdf[0] = sdfgrid = newsdf->deepCopy();
+        data->vel[0] = velGrid = newvel->deepCopy();
+        data->cutOutGrid();
+
         //leaves.clear();
         //pressGrid->tree().getNodes(leaves);
         //printf("pressGrid leaves num is %d\n", leaves.size());
@@ -605,10 +698,11 @@ struct AdaptiveSolver : zeno::INode
         tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), applyGravityAndBound);
         tag->clear();
     };
+
 };
 
 ZENDEFNODE(AdaptiveSolver, {
-        {"mgData", "dt", "density"},
+        {"mgData", "dt", "density", "frameNum"},
         {"mgData"},
         {},
         {"AdaptiveSolver"},
