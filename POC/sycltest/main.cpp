@@ -7,32 +7,16 @@
 namespace sycl = cl::sycl;
 
 
-struct SyclHandler {
-    sycl::handler &m_handler;
-
-    SyclHandler(sycl::handler &handler) : m_handler(handler) {}
-
-    template <auto Mode = sycl::access::mode::read_write, class T>
-    [[nodiscard]] auto remapPointer(T *ptr) {
-        auto axr = m_mapper.get_access<Mode,
-             sycl::access::mode::global_buffer, T>(ptr, m_handler);
-        return axr;
-    }
-
-    template <class Key, class Range, class Kernel>
-    decltype(auto) parallel_for(Range &&range, Kernel &&kernel) {
-        return m_handler.parallel_for(range, kernel);
-    }
-};
-
-
 struct SyclSession {
     sycl::queue m_queue;
     sycl::codeplay::PointerMapper m_mapper;
 
     template <class F>
     decltype(auto) submit(F const &f) {
-        return m_queue.submit(f);
+        return m_queue.submit([&] (sycl::handler &cgh) {
+            Handler handler(cgh, *this);
+            f(handler);
+        });
     }
 
     decltype(auto) wait() {
@@ -50,9 +34,30 @@ struct SyclSession {
     template <auto Mode = sycl::access::mode::read_write, class T>
     [[nodiscard]] auto remapPointer(T *ptr) {
         auto axr = m_mapper.get_access<Mode,
-             sycl::access::mode::host_buffer, T>(ptr);
+             sycl::access::target::host_buffer, T>(ptr);
         return axr;
     }
+
+
+    struct Handler {
+        sycl::handler &m_handler;
+        SyclSession &m_session;
+
+        Handler(sycl::handler &handler, SyclSession &session)
+            : m_handler(handler), m_session(session) {}
+
+        template <auto Mode = sycl::access::mode::read_write, class T>
+        [[nodiscard]] auto remapPointer(T *ptr) {
+            auto axr = m_session.get_access<Mode,
+                 sycl::access::target::global_buffer, T>(ptr, m_handler);
+            return axr;
+        }
+
+        template <class Key, class Range, class Kernel>
+        decltype(auto) parallel_for(Range &&range, Kernel &&kernel) {
+            return m_handler.parallel_for(range, kernel);
+        }
+    };
 };
 
 
@@ -109,20 +114,20 @@ struct SyclAllocator {
 class kernel0;
 
 int main() {
-    auto *sess = syclSession();
+    SyclSession *sess = syclSession();
 
     SyclAllocator<int> svm;
     int *arr = svm.allocate(32);
 
-    sess->submit([&] (SyclHandler &hdl) {
+    sess->submit([&] (SyclSession::Handler &hdl) {
         auto axr = hdl.remapPointer(arr);
-        handler.parallel_for<kernel0>(sycl::range<1>(32), [=](sycl::item<1> id) {
+        hdl.parallel_for<kernel0>(sycl::range<1>(32), [=](sycl::item<1> id) {
             axr[id[0]] = id[0];
         });
     });
 
     {
-        auto axr = sess.remapPointer(arr);
+        auto axr = sess->remapPointer(arr);
         for (int i = 0; i < 32; i++) {
             printf("%d\n", axr[i]);
         }
