@@ -48,14 +48,14 @@ struct SyclSession {
 
         template <auto Mode = sycl::access::mode::read_write, class T>
         [[nodiscard]] auto remapPointer(T *ptr) {
-            auto axr = m_session.get_access<Mode,
+            auto axr = m_session.m_mapper.get_access<Mode,
                  sycl::access::target::global_buffer, T>(ptr, m_handler);
             return axr;
         }
 
         template <class Key, class Range, class Kernel>
         decltype(auto) parallel_for(Range &&range, Kernel &&kernel) {
-            return m_handler.parallel_for(range, kernel);
+            return m_handler.parallel_for<Key>(range, kernel);
         }
     };
 };
