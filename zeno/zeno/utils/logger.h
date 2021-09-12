@@ -56,12 +56,17 @@ _PER_LOG_LEVEL(error, err)
 
 namespace loggerstd {
 
-//static inline constexpr struct __logger_endl {} endl;
 static inline constexpr char endl[] = "\n";
 
 static inline struct __logger_ostream {
     struct __logger_ostream_proxy {
         std::stringstream ss;
+
+        source_location m_loc;
+
+        __logger_ostream_proxy(source_location loc)
+            : m_loc(loc)
+        {}
 
         template <class T>
         __logger_ostream_proxy &operator<<(T const &x) {
@@ -76,18 +81,28 @@ static inline struct __logger_ostream {
 
         ~__logger_ostream_proxy() {
             if (ss.str().size())
-                log_debug("{}", ss.str());
+                log_debug({"{}", m_loc}, ss.str());
         }
     };
 
+    source_location m_loc;
+
+    __logger_ostream(source_location loc = source_location::current())
+        : m_loc(loc)
+    {}
+
+    auto operator()(source_location loc = source_location::current()) const {
+        return __logger_ostream(loc);
+    }
+
     template <class T>
     __logger_ostream_proxy &operator<<(T const &x) {
-        return __logger_ostream_proxy() << x;
+        return __logger_ostream_proxy(m_loc) << x;
     }
 } cout, cerr, clog;
 
 template <class ...Ts>
-void printf(with_source_location<const char *> fmt, Ts &&...ts) {
+void log_printf(with_source_location<const char *> fmt, Ts &&...ts) {
     auto s = format(fmt, std::forward<Ts>(ts)...);
     if (s.size() && s[s.size() - 1] == '\n')
         s.resize(s.size() - 1);
