@@ -123,6 +123,7 @@ struct PrimitiveListBoolOp : PrimitiveBooleanOp {
                 auto cnt = std::make_shared<NumericObject>();
                 cnt->set((int)-1);
                 lutList->arr[lutcnt] = std::move(cnt);
+                log_info("PrimListBool got null mesh {}", (void *)primPtr.get());
                 continue;
             }
             auto cnt = std::make_shared<NumericObject>();
