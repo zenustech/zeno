@@ -37,6 +37,24 @@ ZENDEFNODE(NumericIntVec2, {
 });
 
 
+struct PackNumericIntVec2 : zeno::INode {
+    virtual void apply() override {
+        auto obj = std::make_unique<zeno::NumericObject>();
+        auto x = get_input2<int>("x");
+        auto y = get_input2<int>("y");
+        obj->set(zeno::vec2i(x, y));
+        set_output("vec2", std::move(obj));
+    }
+};
+
+ZENDEFNODE(PackNumericIntVec2, {
+    {{"int", "x", "0"}, {"int", "y", "0"}},
+    {{"vec2i", "vec2"}},
+    {},
+    {"numeric"},
+});
+
+
 struct NumericIntVec3 : zeno::INode {
     virtual void apply() override {
         auto obj = std::make_unique<zeno::NumericObject>();

@@ -474,7 +474,8 @@
       "faceAttrName": "",
       "assignAttrs": true,
       "calcAnyFrom": true,
-      "doMeshFix": true
+      "doMeshFix": true,
+      "noNullMesh": true
      },
      "uipos": [
       785.5068846542995,
@@ -1174,10 +1175,10 @@
     }
    },
    "view_rect": {
-    "x": -1914.294690442605,
-    "y": -425.2247223150074,
-    "width": 614.3999999999968,
-    "height": 471.0399999999959
+    "x": -1155.5097731703988,
+    "y": -232.2645659581118,
+    "width": 1199.9999999999936,
+    "height": 919.9999999999918
    }
   },
   "PrimitiveVoronoi": {
@@ -1449,8 +1450,8 @@
       "defl": ""
      },
      "uipos": [
-      1670.625344592415,
-      380.67137385635954
+      2243.1525296912077,
+      417.38626477293474
      ],
      "options": []
     },
@@ -1531,8 +1532,8 @@
        null
       ],
       "accept": [
-       null,
-       null,
+       "f5b441f2-NumericOperator",
+       "ret",
        true
       ],
       "FOR": [
@@ -1550,8 +1551,8 @@
       "doConcat": false
      },
      "uipos": [
-      1338.4193194291986,
-      345.7738748627879
+      1910.9465045279912,
+      382.4887657793631
      ],
      "options": []
     },
@@ -1749,13 +1750,115 @@
       528.2656421514819
      ],
      "options": []
+    },
+    "871c1258-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "e4e5d2c1-ListGetItem",
+       "object",
+       null
+      ],
+      "rhs": [
+       "ae68dfd0-NumericInt",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "cmpne"
+     },
+     "uipos": [
+      1088.0900109769482,
+      597.5576289791436
+     ],
+     "options": []
+    },
+    "fd4afd1e-x": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "e4e5d2c1-ListGetItem",
+       "object",
+       null
+      ],
+      "rhs": [
+       "ae68dfd0-NumericInt",
+       "value",
+       0.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "cmpne"
+     },
+     "uipos": [
+      1103.1833150384196,
+      826.701427003293
+     ],
+     "options": []
+    },
+    "ae68dfd0-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": -1
+     },
+     "uipos": [
+      846.5971459934138,
+      769.0724478594949
+     ],
+     "options": []
+    },
+    "f5b441f2-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "871c1258-NumericOperator",
+       "ret",
+       null
+      ],
+      "rhs": [
+       "fd4afd1e-x",
+       "ret",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      1359.0834248079034,
+      767.7003293084522
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 136.41262835524776,
-    "y": 61.724697497427144,
-    "width": 500.0,
-    "height": 500.0
+    "x": 641.3239632706268,
+    "y": 331.44374234379,
+    "width": 625.0,
+    "height": 625.0
    }
   }
  },
@@ -8070,12 +8173,12 @@
    "outputs": [
     [
      "",
-     "interiorPrimList",
+     "primList",
      ""
     ],
     [
      "",
-     "boundaryPrimList",
+     "neighList",
      ""
     ],
     [
