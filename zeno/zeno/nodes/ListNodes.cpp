@@ -131,13 +131,21 @@ ZENDEFNODE(ResizeList, {
 struct MakeSmallList : zeno::INode {
     virtual void apply() override {
         auto list = std::make_shared<zeno::ListObject>();
+        auto doConcat = get_param<bool>("doConcat");
         for (int i = 0; i < 6; i++) {
             std::stringstream namess;
             namess << "obj" << i;
             auto name = namess.str();
             if (!has_input(name)) break;
-            auto obj = get_input(name);
-            list->arr.push_back(std::move(obj));
+            if (doConcat && has_input<ListObject>(name)) {
+                auto objlist = get_input<ListObject>(name);
+                for (auto const &obj: objlist->arr) {
+                    list->arr.push_back(std::move(obj));
+                }
+            } else {
+                auto obj = get_input2(name);
+                list->arr.push_back(std::move(obj));
+            }
         }
         set_output("list", std::move(list));
     }
@@ -146,7 +154,7 @@ struct MakeSmallList : zeno::INode {
 ZENDEFNODE(MakeSmallList, {
     {"obj0", "obj1", "obj2", "obj3", "obj4", "obj5"},
     {"list"},
-    {},
+    {{"bool", "doConcat", "1"}},
     {"list"},
 });
 
