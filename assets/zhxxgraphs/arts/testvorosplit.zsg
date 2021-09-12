@@ -44,8 +44,8 @@
      ],
      "options": []
     },
-    "a64d8918-VoronoiFracture": {
-     "name": "VoronoiFracture",
+    "a64d8918-AABBVoronoi": {
+     "name": "AABBVoronoi",
      "inputs": {
       "particlesPrim": [
        null,
@@ -245,7 +245,7 @@
        null
       ],
       "list2": [
-       "a64d8918-VoronoiFracture",
+       "a64d8918-AABBVoronoi",
        "boundaryPrimList",
        null
       ],
@@ -388,7 +388,7 @@
      "options": []
     },
     "de4636a2-x": {
-     "name": "VoronoiFracture",
+     "name": "AABBVoronoi",
      "inputs": {
       "particlesPrim": [
        null,
@@ -745,8 +745,8 @@
      ],
      "options": []
     },
-    "005d38b8-VoronoiFracture": {
-     "name": "VoronoiFracture",
+    "005d38b8-AABBVoronoi": {
+     "name": "AABBVoronoi",
      "inputs": {
       "particlesPrim": [
        null,
