@@ -76,6 +76,7 @@ if ap.with_cgal:
 if ap.with_bullet:
     args.extend([
     '-DEXTENSION_Rigid:BOOL=ON',
+    '-DEXTENSION_BulletTools:BOOL=ON',
     ])
 
 if ap.config:
