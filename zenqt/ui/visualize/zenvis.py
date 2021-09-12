@@ -14,6 +14,8 @@ status = {
     'playing': True,
 }
 
+camera_keyframe = None
+camera_control = None
 
 def _uploadStatus():
     core.set_window_size(*status['resolution'])
@@ -57,8 +59,8 @@ def initializeGL():
 
 
 def paintGL():
-    _uploadStatus()
     _frameUpdate()
+    _uploadStatus()
     core.new_frame()
     _recieveStatus()
 
@@ -75,5 +77,13 @@ def set_curr_frameid(frameid):
         frameid = 0
     if frameid >= fileio.getFrameCount():
         frameid = fileio.getFrameCount() - 1
+    cur_frameid = core.get_curr_frameid()
     core.set_curr_frameid(frameid)
+    if cur_frameid != frameid and camera_keyframe != None and camera_control != None:
+        r = camera_keyframe.query_frame(frameid)
+        if r:
+            print(r)
+            camera_control.set_keyframe(r)
+            camera_control.update_perspective()
+
     return frameid
