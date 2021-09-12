@@ -147,6 +147,11 @@
        "list1",
        null
       ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
       "SRC": [
        null,
        null,
@@ -245,8 +250,8 @@
        null
       ],
       "list2": [
-       "a64d8918-AABBVoronoi",
-       "boundaryPrimList",
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -486,8 +491,8 @@
        null
       ],
       "list2": [
-       "de4636a2-x",
-       "boundaryPrimList",
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -829,8 +834,8 @@
      },
      "params": {},
      "uipos": [
-      -2325.986667881538,
-      -255.6324154897482
+      -2325.9866678815374,
+      -257.77838359908765
      ],
      "options": []
     },
@@ -840,6 +845,11 @@
       "list": [
        "3caff849-ExtendList",
        "list1",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -1107,6 +1117,11 @@
       "object": [
        "2f4e0244-x",
        "prim",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
        null
       ],
       "accept": [
@@ -1477,8 +1492,8 @@
     }
    },
    "view_rect": {
-    "x": -788.4396355352615,
-    "y": 57.118451025042816,
+    "x": -727.3348519361341,
+    "y": 69.93166287014265,
     "width": 500.0,
     "height": 500.0
    }
@@ -1864,7 +1879,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletCompoundAddChild": {
@@ -1904,7 +1919,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletExtractTransform": {
@@ -1939,7 +1954,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletGetObjMotion": {
@@ -1974,7 +1989,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletGetObjTransform": {
@@ -2004,15 +2019,15 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeBoxShape": {
    "inputs": [
     [
-     "",
-     "v3size",
-     ""
+     "vec3f",
+     "semiSize",
+     "1,1,1"
     ],
     [
      "",
@@ -2034,16 +2049,11 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeCompoundShape": {
    "inputs": [
-    [
-     "",
-     "",
-     ""
-    ],
     [
      "",
      "SRC",
@@ -2064,7 +2074,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeConstraint": {
@@ -2099,7 +2109,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeConvexHullShape": {
@@ -2112,11 +2122,6 @@
     [
      "float",
      "margin",
-     "0"
-    ],
-    [
-     "int",
-     "highres",
      "0"
     ],
     [
@@ -2139,7 +2144,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeConvexMeshShape": {
@@ -2169,7 +2174,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeObject": {
@@ -2209,15 +2214,15 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeSphereShape": {
    "inputs": [
     [
-     "",
+     "float",
      "radius",
-     ""
+     "1"
     ],
     [
      "",
@@ -2239,7 +2244,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeTransform": {
@@ -2274,7 +2279,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletMakeWorld": {
@@ -2299,7 +2304,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletObjectApplyForce": {
@@ -2334,7 +2339,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletSetConstraintBreakThres": {
@@ -2369,7 +2374,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletSetObjectDamping": {
@@ -2409,7 +2414,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletSetObjectFriction": {
@@ -2444,7 +2449,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletSetObjectRestitution": {
@@ -2479,7 +2484,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletSetWorldGravity": {
@@ -2514,7 +2519,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletStepWorld": {
@@ -2532,7 +2537,7 @@
     [
      "int",
      "steps",
-     "40"
+     "1"
     ],
     [
      "",
@@ -2554,7 +2559,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletWorldAddConstraint": {
@@ -2589,7 +2594,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletWorldAddObject": {
@@ -2624,7 +2629,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletWorldRemoveConstraint": {
@@ -2659,7 +2664,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletWorldRemoveObject": {
@@ -2694,7 +2699,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletWorldSetConsList": {
@@ -2729,7 +2734,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "BulletWorldSetObjList": {
@@ -2764,7 +2769,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "CachePrimitive": {
@@ -3046,13 +3051,79 @@
      "CSGUnion"
     ],
     [
-     "int",
+     "bool",
      "writeBack",
      "0"
     ]
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "CopyAllUserData": {
+   "inputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "src",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "DelUserData": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "key",
+     ""
+    ]
+   ],
+   "categories": [
+    "portal"
    ]
   },
   "DictGetItem": {
@@ -3782,6 +3853,47 @@
     "frame"
    ]
   },
+  "GetUserData": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "bool",
+     "hasValue",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "key",
+     ""
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
   "GetVDBBound": {
    "inputs": [
     [
@@ -3940,7 +4052,7 @@
      ""
     ],
     [
-     "",
+     "bool",
      "cond",
      ""
     ],
@@ -4230,6 +4342,62 @@
     "primitive"
    ]
   },
+  "Make3DGridPointsInAABB": {
+   "inputs": [
+    [
+     "int",
+     "nx",
+     "4"
+    ],
+    [
+     "int",
+     "ny",
+     "0"
+    ],
+    [
+     "int",
+     "nz",
+     "0"
+    ],
+    [
+     "vec3f",
+     "bmin",
+     "-1,-1,-1"
+    ],
+    [
+     "vec3f",
+     "bmax",
+     "1,1,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "isStaggered",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "Make3DGridPrimitive": {
    "inputs": [
     [
@@ -4473,7 +4641,7 @@
    ],
    "outputs": [
     [
-     "StringObject",
+     "string",
      "value",
      ""
     ],
@@ -4609,7 +4777,7 @@
    ],
    "outputs": [
     [
-     "StringObject",
+     "string",
      "path",
      ""
     ],
@@ -4680,7 +4848,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "bool",
+     "doConcat",
+     "1"
+    ]
+   ],
    "categories": [
     "list"
    ]
@@ -4695,7 +4869,7 @@
    ],
    "outputs": [
     [
-     "StringObject",
+     "string",
      "value",
      ""
     ],
@@ -4765,14 +4939,14 @@
   "MakeVisualAABBPrimitive": {
    "inputs": [
     [
-     "",
+     "vec3f",
      "boundMin",
-     ""
+     "-1,-1,-1"
     ],
     [
-     "",
+     "vec3f",
      "boundMax",
-     ""
+     "1,1,1"
     ],
     [
      "",
@@ -4813,7 +4987,7 @@
    ],
    "outputs": [
     [
-     "StringObject",
+     "string",
      "path",
      ""
     ],
@@ -4878,6 +5052,96 @@
    ],
    "categories": [
     "openvdb"
+   ]
+  },
+  "MoveAssign": {
+   "inputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "src",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "dst",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "MoveClone": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "newObject",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
+   ]
+  },
+  "MoveDelete": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "portal"
    ]
   },
   "NumericCounter": {
@@ -6311,7 +6575,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "PrimitiveDuplicate": {
@@ -6397,7 +6661,7 @@
    ],
    "params": [
     [
-     "int",
+     "bool",
      "clearFaces",
      "1"
     ]
@@ -7400,7 +7664,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "PrimitiveToSDF": {
@@ -7612,6 +7876,11 @@
    ],
    "outputs": [
     [
+     "NumericObject",
+     "value",
+     ""
+    ],
+    [
      "",
      "DST",
      ""
@@ -7794,196 +8063,6 @@
     "list"
    ]
   },
-  "RigidMakeObject": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "vec3f",
-     "origin",
-     "0,0,0"
-    ],
-    [
-     "vec4f",
-     "rotation",
-     "0,0,0,1"
-    ],
-    [
-     "float",
-     "mass",
-     "0"
-    ],
-    [
-     "float",
-     "dampLin",
-     "0.1"
-    ],
-    [
-     "float",
-     "dampAng",
-     "0.1"
-    ],
-    [
-     "float",
-     "friction",
-     "0.7"
-    ],
-    [
-     "float",
-     "restitution",
-     "0.4"
-    ],
-    [
-     "float",
-     "margin",
-     "0.0"
-    ],
-    [
-     "int",
-     "highres",
-     "0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ]
-  },
-  "RigidMakeWorld": {
-   "inputs": [
-    [
-     "vec3f",
-     "gravity",
-     "0,0,-9.8"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ]
-  },
-  "RigidRecenterPrim": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outPrim",
-     ""
-    ],
-    [
-     "vec3f",
-     "origin",
-     ""
-    ],
-    [
-     "vec3f",
-     "mass",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ]
-  },
-  "RigidStepWorld": {
-   "inputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "objList",
-     ""
-    ],
-    [
-     "float",
-     "dt",
-     "0.04"
-    ],
-    [
-     "int",
-     "steps",
-     "40"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ]
-  },
   "RigidVelToPrimitive": {
    "inputs": [
     [
@@ -8026,7 +8105,7 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
+    "Bullet"
    ]
   },
   "Route": {
@@ -8205,6 +8284,47 @@
     "numeric"
    ]
   },
+  "SetUserData": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "data",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "key",
+     ""
+    ]
+   ],
+   "categories": [
+    "portal"
+   ]
+  },
   "SetVDBGridName": {
    "inputs": [
     [
@@ -8305,6 +8425,93 @@
    "params": [],
    "categories": [
     "cgmesh"
+   ]
+  },
+  "SpdlogErrorMessage": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "error from spdlog!"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "SpdlogInfoMessage": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "string",
+     "message",
+     "hello from spdlog!"
+    ]
+   ],
+   "categories": [
+    "debug"
+   ]
+  },
+  "StringEqual": {
+   "inputs": [
+    [
+     "string",
+     "lhs",
+     ""
+    ],
+    [
+     "string",
+     "rhs",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "bool",
+     "isEqual",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "string"
    ]
   },
   "SubCategory": {
