@@ -50,7 +50,7 @@ struct PassToyMakeShader : zeno::INode {
         auto source = get_input<zeno::StringObject>("source")->get();
 
         if (auto it = cache.find(source); it == cache.end()) {
-            zlog::info("compiling shader:\n{}", source);
+            //zlog::info("compiling shader:\n{}", source);
             frag.initialize(GL_FRAGMENT_SHADER, source);
             vert = get_generic_vertex_shader();
             prog.initialize({vert, frag});
@@ -187,7 +187,7 @@ internalformat_from_string(std::string name) {
 #undef _PER_FMT
 #undef _EVAL
     }
-    zlog::error("bad format string {}", name);
+//    zlog::error("bad format string {}", name);
     abort();
 }
 
@@ -244,14 +244,14 @@ struct PassToyImageTextureFromVoidPtr : zeno::INode {
     virtual void apply() override {
         void *p = get_input<zeno::VoidPtrObject>("voidPtr")->get();
         auto texture = std::make_shared<PassToyTexture>();
-        zlog::info("loading image file from void ptr {}", p);
+        // zlog::info("loading image file from void ptr {}", p);
         auto nx = 0[(int *)p];
         auto ny = 1[(int *)p];
         auto img = (unsigned char *)p + 8;
         for (int i = 0; i < nx * ny * 4; i += 4) {
             std::swap(img[i + 0], img[i + 2]);
         }
-        zlog::info("loaded {}x{} at {}", nx, ny, (void *)img);
+        // zlog::info("loaded {}x{} at {}", nx, ny, (void *)img);
         texture->tex.width = nx;
         texture->tex.height = ny;
         texture->tex.type = GL_UNSIGNED_BYTE;
@@ -279,14 +279,14 @@ struct PassToyImageTextureFromVoidPtrAndRes : zeno::INode {
         auto res = get_input<zeno::NumericObject>("voidPtr")->get<zeno::vec2i>();
         auto nx = res[0], ny = res[1];
         auto texture = std::make_shared<PassToyTexture>();
-        zlog::info("loading image file from void ptr {}", p);
+        // zlog::info("loading image file from void ptr {}", p);
         // >>> tianjia zhexie daima
         auto img = (unsigned char *)p + 8;
         for (int i = 0; i < nx * ny * 4; i += 4) {
             std::swap(img[i + 0], img[i + 2]);
         }
         // <<< tianjia zhexie daima
-        zlog::info("loaded {}x{} at {}", nx, ny, p);
+        // zlog::info("loaded {}x{} at {}", nx, ny, p);
         texture->tex.width = nx;
         texture->tex.height = ny;
         texture->tex.type = GL_UNSIGNED_BYTE;
@@ -315,9 +315,9 @@ struct PassToyLoadImageTexture : zeno::INode {
         auto texture = std::make_shared<PassToyTexture>();
         int nx = 0, ny = 0, nc = 0;
         //stbi_set_flip_vertically_on_load(true);
-        zlog::info("loading image file: {}", path);
+        // zlog::info("loading image file: {}", path);
         unsigned char *img = stbi_load(path.c_str(), &nx, &ny, &nc, 0);
-        zlog::info("loaded {}x{}x{} at {}", nx, ny, nc, (void *)img);
+        // zlog::info("loaded {}x{}x{} at {}", nx, ny, nc, (void *)img);
         int format = GL_RGB;
         switch (nc) {
         case 4: format = GL_RGBA; break;
