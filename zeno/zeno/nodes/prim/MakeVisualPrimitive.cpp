@@ -62,7 +62,7 @@ struct MakeVisualAABBPrimitive : INode {
 
 ZENDEFNODE(MakeVisualAABBPrimitive,
         { /* inputs: */ {
-        "boundMin", "boundMax",
+        {"vec3f","boundMin","-1,-1,-1"}, {"vec3f","boundMax","1,1,1"},
         }, /* outputs: */ {
         "prim",
         }, /* params: */ {
