@@ -20,10 +20,9 @@ struct PrimitiveCalcCentroid : zeno::INode {
                 auto ind = prim->tris[i];
                 auto a = pos[ind[0]], b = pos[ind[1]], c = pos[ind[2]];
                 auto weight = length(cross(b - a, c - a));
-                auto center = weight * (a + b + c);
+                auto center = weight / 3.0f * (a + b + c);
                 return vec4f(center[0], center[1], center[2], weight);
             }, [&] (auto a, auto b) { return a + b; });
-            acc /= 3.0f;
         } else {
             acc = parallel_reduce_array(prim->size(), vec4f(0), [&] (size_t i) {
                 auto pos = prim->verts[i];
