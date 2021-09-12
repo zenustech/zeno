@@ -385,6 +385,7 @@ struct BulletSetObjectDamping : zeno::INode {
         auto object = get_input<BulletObject>("object");
         auto dampLin = get_input2<float>("dampLin");
         auto dampAug = get_input2<float>("dampAug");
+        log_debug("set object {} with dampLin={}, dampAug={}", (void*)object.get(), dampLin, dampAug);
         object->body->setDamping(dampLin, dampAug);
         set_output("object", std::move(object));
     }
@@ -401,6 +402,7 @@ struct BulletSetObjectFriction : zeno::INode {
     virtual void apply() override {
         auto object = get_input<BulletObject>("object");
         auto friction = get_input2<float>("friction");
+        log_debug("set object {} with friction={}", (void*)object.get(), friction);
         object->body->setFriction(friction);
         set_output("object", std::move(object));
     }
@@ -417,7 +419,7 @@ struct BulletSetObjectRestitution : zeno::INode {
     virtual void apply() override {
         auto object = get_input<BulletObject>("object");
         auto restitution = get_input2<float>("restitution");
-        log_debug("set object {} with restituion={}", object.get(), restitution);
+        log_debug("set object {} with restituion={}", (void*)object.get(), restitution);
         object->body->setRestitution(restitution);
         set_output("object", std::move(object));
     }
