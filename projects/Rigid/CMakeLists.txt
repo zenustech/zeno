@@ -1,4 +1,5 @@
-#add_definitions(-DBT_USE_DOUBLE_PRECISION)
+set(CMAKE_LINK_WHAT_YOU_USE TRUE)
+#add_definitions(-DBT_THREAD_SAFE)
 add_subdirectory(bullet3)
 add_subdirectory(HACD)
 
