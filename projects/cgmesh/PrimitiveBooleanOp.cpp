@@ -121,7 +121,9 @@ struct PrimitiveListBoolOp : PrimitiveBooleanOp {
             primPtr->userData.get("anyFromA") = anyFromA;
             if (get_param<bool>("noNullMesh") && primPtr->size() == 0)
                 continue;
-            lutList->arr[lutcnt] = primList->arr.size();
+            auto cnt = std::make_shared<NumericObject>();
+            cnt->set((int)primList->arr.size());
+            lutList->arr[lutcnt] = cnt;
             primList->arr.push_back(primPtr);
         }
 
