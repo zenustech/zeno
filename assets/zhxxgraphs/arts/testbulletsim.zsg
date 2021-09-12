@@ -4953,13 +4953,31 @@
       510.256586169045
      ],
      "options": []
+    },
+    "b2b6cdb4-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Rigid"
+     },
+     "uipos": [
+      96.81093394077448,
+      324.6013667425968
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -186.73322327213015,
-    "y": 57.29087225482567,
-    "width": 625.0,
-    "height": 625.0
+    "x": -120.34329843547167,
+    "y": 116.96026044622963,
+    "width": 500.0,
+    "height": 500.0
    }
   },
   "RigidMakeCompoundShape": {
@@ -11656,6 +11674,37 @@
     "list"
    ]
   },
+  "RigidMakeCompoundShape": {
+   "inputs": [
+    [
+     "",
+     "shapeList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "compShape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
   "RigidMakeConstraint": {
    "inputs": [
     [
@@ -13645,37 +13694,6 @@
    "categories": [
     "openvdb"
    ]
-  },
-  "RigidMakeCompoundShape": {
-   "inputs": [
-    [
-     "",
-     "shapeList",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "compShape",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],
