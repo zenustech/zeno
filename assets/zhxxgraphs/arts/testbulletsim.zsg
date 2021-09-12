@@ -4830,13 +4830,31 @@
       329.34131736526945
      ],
      "options": []
+    },
+    "1ccf4808-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Rigid"
+     },
+     "uipos": [
+      -86.56036446469248,
+      208.42824601366743
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -1442.0320279331193,
-    "y": 65.89175868955436,
-    "width": 625.0,
-    "height": 625.0
+    "x": -313.42061095697403,
+    "y": 14.159876199935155,
+    "width": 500.0,
+    "height": 500.0
    }
   },
   "RigidMakeMaterial": {
@@ -5203,6 +5221,24 @@
      "uipos": [
       131.03732162458837,
       293.63336992316135
+     ],
+     "options": []
+    },
+    "820ebcba-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Rigid"
+     },
+     "uipos": [
+      -161.73120728929385,
+      259.68109339407744
      ],
      "options": []
     }
@@ -13656,7 +13692,7 @@
    ],
    "params": [],
    "categories": [
-    "subgraph"
+    "Rigid"
    ],
    "is_subgraph": true
   },
@@ -13733,7 +13769,7 @@
    ],
    "params": [],
    "categories": [
-    "subgraph"
+    "Rigid"
    ],
    "is_subgraph": true
   },
