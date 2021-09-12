@@ -21,6 +21,7 @@ using namespace zeno::loggerstd;
 namespace zfx {
 using std::cout;
 using std::endl;
+#define log_printf printf
 }
 #endif
 
