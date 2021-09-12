@@ -14,7 +14,7 @@ inline constexpr bool is_decay_same_v = std::is_same_v<std::decay_t<T>, std::dec
 struct PrimitiveFillAttr : INode {
   virtual void apply() override {
     auto prim = get_input<PrimitiveObject>("prim");
-    auto const &value = get_input<NumericObject>("value")->value;
+    auto value = get_input<NumericObject>("value")->value;
     auto attrName = std::get<std::string>(get_param("attrName"));
     auto attrType = std::get<std::string>(get_param("attrType"));
     if (std::holds_alternative<vec3f>(value)) {
@@ -32,7 +32,7 @@ struct PrimitiveFillAttr : INode {
                 arr[i] = decltype(arr[i])(value);
             }
         } else {
-            throw Exception("Failed to promote variant type");
+            throw Exception((std::string)"Failed to promote variant type from " + typeid(value).name() + " to " + typeid(arr[0]).name());
         }
     }, arr, value);
 
