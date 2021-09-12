@@ -113,17 +113,20 @@ struct PrimitiveListBoolOp : PrimitiveBooleanOp {
             listC[i] = std::make_pair(anyFromA, std::move(primC));
         }
 
+        auto lutList = std::make_shared<ListObject>();
         auto primList = std::make_shared<ListObject>();
-        int lutcnt=0;
-        for (auto const &[anyFromA, primPtr]: listC) {
+        lutList->arr.resize(listC.size(), -1);
+        int lutcnt=-1;
+        for (auto const &[anyFromA, primPtr]: listC) { lutcnt++;
             primPtr->userData.get("anyFromA") = anyFromA;
-            primPtr->userData.get("fromId") = lutcnt++;
             if (get_param<bool>("noNullMesh") && primPtr->size() == 0)
                 continue;
+            lutList->arr[lutcnt] = primList->arr.size();
             primList->arr.push_back(primPtr);
         }
 
         set_output("primList", std::move(primList));
+        set_output("lutList", std::move(lutList));
     }
 };
 
@@ -132,7 +135,7 @@ ZENO_DEFNODE(PrimitiveListBoolOp)({
     "primA", "primListB",
     },
     {
-    "primList",
+    "primList", "lutList",
     //{"bool", "anyFromA"}, {"bool", "anyFromB"},
     },
     {
