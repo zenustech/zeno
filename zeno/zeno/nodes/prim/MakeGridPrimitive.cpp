@@ -156,6 +156,61 @@ ZENDEFNODE(Make3DGridPrimitive,
         }});
 
 
+struct Make3DGridPointsInAABB : INode {
+    virtual void apply() override {
+        size_t nx = get_input<NumericObject>("nx")->get<int>();
+        size_t ny = has_input("ny") ?
+            get_input<NumericObject>("ny")->get<int>() : 0;
+        if (!ny) ny = nx;
+        size_t nz = has_input("nz") ?
+            get_input<NumericObject>("nz")->get<int>() : 0;
+        if (!nz) nz = nx;
+        float dx = 1.f / std::max(nx - 1, (size_t)1);
+        float dy = 1.f / std::max(ny - 1, (size_t)1);
+        float dz = 1.f / std::max(nz - 1, (size_t)1);
+
+        vec3f bmin = has_input("bmin") ?
+            get_input<NumericObject>("bmin")->get<vec3f>() : vec3f(-1);
+        vec3f bmax = has_input("bmax") ?
+            get_input<NumericObject>("bmax")->get<vec3f>() : vec3f(1);
+        auto delta = (bmax - bmin) * vec3f(dx, dy, dz);
+
+        if (get_param<bool>("isStaggered")) {
+            nx--, ny--, nz--;
+            bmin += 0.5f * delta;
+        }
+
+        auto prim = std::make_shared<PrimitiveObject>();
+        prim->resize(nx * ny * nz);
+        auto &pos = prim->add_attr<vec3f>("pos");
+#pragma omp parallel for
+        for (int index = 0; index < nx * ny * nz; index++) {
+            int x = index % nx;
+            int y = index / nx % ny;
+            int z = index / nx / ny;
+            vec3f p = bmin + vec3f(x, y, z) * delta;
+            pos[index] = p;
+        }
+        set_output("prim", std::move(prim));
+  }
+};
+
+ZENDEFNODE(Make3DGridPointsInAABB,
+        { /* inputs: */ {
+        {"int", "nx", "4"},
+        {"int", "ny", "0"},
+        {"int", "nz", "0"},
+        {"vec3f", "bmin", "-1,-1,-1"},
+        {"vec3f", "bmax", "1,1,1"},
+        }, /* outputs: */ {
+        "prim",
+        }, /* params: */ {
+        {"bool", "isStaggered", "1"},
+        }, /* category: */ {
+        "primitive",
+        }});
+
+
 // TODO: deprecate this xuben-happy node
 struct MakeCubePrimitive : INode {
     virtual void apply() override {
