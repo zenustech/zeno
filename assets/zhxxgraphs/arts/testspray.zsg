@@ -2,32 +2,11 @@
  "graph": {
   "main": {
    "nodes": {
-    "5a69aef8-ReadObjPrimitive": {
-     "name": "ReadObjPrimitive",
-     "inputs": {
-      "path": [
-       null,
-       null,
-       "assets/cube.obj"
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -2228.7015945330295,
-      -1924.3735763097952
-     ],
-     "options": []
-    },
-    "9b682f0b-RigidMakeShape": {
+    "3cdc84e8-RigidMakeShape": {
      "name": "RigidMakeShape",
      "inputs": {
       "prim": [
-       "5a69aef8-ReadObjPrimitive",
+       "0a05fa87-ReadObjPrimitive",
        "prim",
        null
       ],
@@ -59,17 +38,319 @@
      },
      "params": {},
      "uipos": [
-      -1914.9251101321588,
-      -1912.1057268722466
+      -114.56560770542706,
+      89.35783111795212
      ],
      "options": []
+    },
+    "0a05fa87-ReadObjPrimitive": {
+     "name": "ReadObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/cube.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -385.6676570458403,
+      140.4248726655348
+     ],
+     "options": []
+    },
+    "f18c1ffd-RigidMakeObject": {
+     "name": "RigidMakeObject",
+     "inputs": {
+      "shape": [
+       "3cdc84e8-RigidMakeShape",
+       "shape",
+       null
+      ],
+      "origin": [
+       null,
+       null,
+       null
+      ],
+      "rotation": [
+       null,
+       null,
+       null
+      ],
+      "mass": [
+       null,
+       null,
+       1.0
+      ],
+      "material": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      184.13879456706297,
+      132.16680814940577
+     ],
+     "options": []
+    },
+    "af8c23fd-RigidMakeWorld": {
+     "name": "RigidMakeWorld",
+     "inputs": {
+      "gravity": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      547.3684210526317,
+      -88.9643463497454
+     ],
+     "options": []
+    },
+    "9ce604af-CachedOnce": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "af8c23fd-RigidMakeWorld",
+       "world",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      840.7470288624788,
+      -23.089983022071365
+     ],
+     "options": []
+    },
+    "0271d940-RigidStepWorld": {
+     "name": "RigidStepWorld",
+     "inputs": {
+      "world": [
+       "9ce604af-CachedOnce",
+       "output",
+       null
+      ],
+      "objList": [
+       "930fc311-MakeSmallList",
+       "list",
+       null
+      ],
+      "consList": [
+       "dcfaad7a-MakeSmallList",
+       "list",
+       null
+      ],
+      "steps": [
+       null,
+       null,
+       10
+      ],
+      "dt": [
+       null,
+       null,
+       0.04
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1157.8947368421063,
+      27.20713073005092
+     ],
+     "options": []
+    },
+    "930fc311-MakeSmallList": {
+     "name": "MakeSmallList",
+     "inputs": {
+      "obj0": [
+       "7f844a9a-x",
+       "output",
+       null
+      ],
+      "obj1": [
+       null,
+       null,
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ],
+      "obj3": [
+       null,
+       null,
+       null
+      ],
+      "obj4": [
+       null,
+       null,
+       null
+      ],
+      "obj5": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      844.142614601019,
+      173.8539898132428
+     ],
+     "options": []
+    },
+    "dcfaad7a-MakeSmallList": {
+     "name": "MakeSmallList",
+     "inputs": {
+      "obj0": [
+       null,
+       null,
+       null
+      ],
+      "obj1": [
+       null,
+       null,
+       null
+      ],
+      "obj2": [
+       null,
+       null,
+       null
+      ],
+      "obj3": [
+       null,
+       null,
+       null
+      ],
+      "obj4": [
+       null,
+       null,
+       null
+      ],
+      "obj5": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1124.6179966044144,
+      371.4770797962649
+     ],
+     "options": []
+    },
+    "b9f1b874-RigidGetPrimitive": {
+     "name": "RigidGetPrimitive",
+     "inputs": {
+      "object": [
+       "7f844a9a-x",
+       "output",
+       null
+      ],
+      "SRC": [
+       "0271d940-RigidStepWorld",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1526.9524617996603,
+      273.7691001697793
+     ],
+     "options": []
+    },
+    "7f844a9a-x": {
+     "name": "CachedOnce",
+     "inputs": {
+      "input": [
+       "f18c1ffd-RigidMakeObject",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      485.46264855687605,
+      226.8145161290322
+     ],
+     "options": []
+    },
+    "f3b980a8-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "b9f1b874-RigidGetPrimitive",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1830.3416856492026,
+      291.57175398633257
+     ],
+     "options": [
+      "VIEW"
+     ]
     }
    },
    "view_rect": {
-    "x": -2049.351853598655,
-    "y": -1960.451930866772,
-    "width": 256.0,
-    "height": 256.0
+    "x": -87.00558067223216,
+    "y": -47.00991217112083,
+    "width": 400.0,
+    "height": 400.0
    }
   },
   "RigidStepWorld": {
@@ -4411,6 +4692,941 @@
     "control"
    ]
   },
+  "BulletComposeTransform": {
+   "inputs": [
+    [
+     "",
+     "transFirst",
+     ""
+    ],
+    [
+     "",
+     "transSecond",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "trans",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletCompoundAddChild": {
+   "inputs": [
+    [
+     "",
+     "compound",
+     ""
+    ],
+    [
+     "",
+     "childShape",
+     ""
+    ],
+    [
+     "",
+     "trans",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "compound",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletExtractTransform": {
+   "inputs": [
+    [
+     "",
+     "trans",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec3f",
+     "origin",
+     ""
+    ],
+    [
+     "vec4f",
+     "rotation",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletGetObjMotion": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "linearVel",
+     ""
+    ],
+    [
+     "",
+     "angularVel",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletGetObjTransform": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "trans",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeBoxShape": {
+   "inputs": [
+    [
+     "vec3f",
+     "semiSize",
+     "1,1,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeCompoundShape": {
+   "inputs": [
+    [
+     "",
+     "",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "compound",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeConstraint": {
+   "inputs": [
+    [
+     "",
+     "obj1",
+     ""
+    ],
+    [
+     "",
+     "obj2",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeConvexHullShape": {
+   "inputs": [
+    [
+     "",
+     "triMesh",
+     ""
+    ],
+    [
+     "float",
+     "margin",
+     "0"
+    ],
+    [
+     "int",
+     "highres",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeConvexMeshShape": {
+   "inputs": [
+    [
+     "",
+     "triMesh",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeObject": {
+   "inputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "trans",
+     ""
+    ],
+    [
+     "float",
+     "mass",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeSphereShape": {
+   "inputs": [
+    [
+     "float",
+     "radius",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeTransform": {
+   "inputs": [
+    [
+     "vec3f",
+     "origin",
+     ""
+    ],
+    [
+     "vec3f",
+     "rotation",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "trans",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletMakeWorld": {
+   "inputs": [
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletObjectApplyForce": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "vec3f",
+     "ForceImpulse",
+     "0,0,0"
+    ],
+    [
+     "vec3f",
+     "TorqueImpulse",
+     "0,0,0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletSetConstraintBreakThres": {
+   "inputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "float",
+     "threshold",
+     "3.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletSetObjectDamping": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "float",
+     "dampLin",
+     "0"
+    ],
+    [
+     "float",
+     "dampAug",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletSetObjectFriction": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "float",
+     "friction",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletSetObjectRestitution": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "float",
+     "restitution",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletSetWorldGravity": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "vec3f",
+     "gravity",
+     "0,0,-9.8"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletStepWorld": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "float",
+     "dt",
+     "0.04"
+    ],
+    [
+     "int",
+     "steps",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletWorldAddConstraint": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletWorldAddObject": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletWorldRemoveConstraint": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletWorldRemoveObject": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletWorldSetConsList": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "consList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
+  "BulletWorldSetObjList": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "objList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
   "CachePrimitive": {
    "inputs": [
     [
@@ -8125,6 +9341,36 @@
     "visualize"
    ]
   },
+  "PrimitiveConvexDecomposition": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "listPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
   "PrimitiveDuplicate": {
    "inputs": [
     [
@@ -9184,6 +10430,36 @@
     "primitive"
    ]
   },
+  "PrimitiveToBulletMesh": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mesh",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
+   ]
+  },
   "PrimitiveToSDF": {
    "inputs": [
     [
@@ -9579,11 +10855,26 @@
     "list"
    ]
   },
-  "RigidGetPrimitive": {
+  "RigidVelToPrimitive": {
    "inputs": [
     [
      "",
-     "object",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "centroid",
+     ""
+    ],
+    [
+     "",
+     "linearVel",
+     ""
+    ],
+    [
+     "",
+     "angularVel",
      ""
     ],
     [
@@ -9606,377 +10897,8 @@
    ],
    "params": [],
    "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeConstraint": {
-   "inputs": [
-    [
-     "",
-     "obj1",
-     ""
-    ],
-    [
-     "",
-     "obj2",
-     ""
-    ],
-    [
-     "float",
-     "breakThres",
-     "-1"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "constraint",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeObject": {
-   "inputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "vec3f",
-     "origin",
-     "0,0,0"
-    ],
-    [
-     "vec4f",
-     "rotation",
-     "0,0,0,1"
-    ],
-    [
-     "float",
-     "mass",
-     "0"
-    ],
-    [
-     "",
-     "material",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeObjectFragments": {
-   "inputs": [
-    [
-     "",
-     "primList",
-     ""
-    ],
-    [
-     "",
-     "neighList",
-     ""
-    ],
-    [
-     "float",
-     "breakThres",
-     "0.2"
-    ],
-    [
-     "float",
-     "mass",
-     "1.0"
-    ],
-    [
-     "",
-     "material",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "objectList",
-     ""
-    ],
-    [
-     "",
-     "constrList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeShape": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "enum convex sphere box",
-     "type",
-     "convex"
-    ],
-    [
-     "float",
-     "margin",
-     "0.0"
-    ],
-    [
-     "bool",
-     "recentered",
-     "1"
-    ],
-    [
-     "bool",
-     "auto_mass",
-     "0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeWorld": {
-   "inputs": [
-    [
-     "vec3f",
-     "gravity",
-     "0,0,-9.8"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidObjectProp": {
-   "inputs": [
-    [
-     "float",
-     "friction",
-     "0.7"
-    ],
-    [
-     "float",
-     "dampAng",
-     "0.06"
-    ],
-    [
-     "float",
-     "dampLin",
-     "0.1"
-    ],
-    [
-     "float",
-     "restitution",
-     "0.6"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "material",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
-  },
-  "RigidRecenterPrim": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outPrim",
-     ""
-    ],
-    [
-     "vec3f",
-     "origin",
-     ""
-    ],
-    [
-     "vec3f",
-     "mass",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidStepWorld": {
-   "inputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "objList",
-     ""
-    ],
-    [
-     "",
-     "consList",
-     ""
-    ],
-    [
-     "int",
-     "steps",
-     "10"
-    ],
-    [
-     "float",
-     "dt",
-     "0.04"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
+    "Bullet"
+   ]
   },
   "Route": {
    "inputs": [
@@ -11513,6 +12435,405 @@
    "categories": [
     "openvdb"
    ]
+  },
+  "RigidStepWorld": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "objList",
+     ""
+    ],
+    [
+     "",
+     "consList",
+     ""
+    ],
+    [
+     "int",
+     "steps",
+     "10"
+    ],
+    [
+     "float",
+     "dt",
+     "0.04"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeWorld": {
+   "inputs": [
+    [
+     "vec3f",
+     "gravity",
+     "0,0,-9.8"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeObject": {
+   "inputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec4f",
+     "rotation",
+     "0,0,0,1"
+    ],
+    [
+     "float",
+     "mass",
+     "0"
+    ],
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidRecenterPrim": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     ""
+    ],
+    [
+     "vec3f",
+     "mass",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeConstraint": {
+   "inputs": [
+    [
+     "",
+     "obj1",
+     ""
+    ],
+    [
+     "",
+     "obj2",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "-1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeShape": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "enum convex sphere box",
+     "type",
+     "convex"
+    ],
+    [
+     "float",
+     "margin",
+     "0.0"
+    ],
+    [
+     "bool",
+     "recentered",
+     "1"
+    ],
+    [
+     "bool",
+     "auto_mass",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidGetPrimitive": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeObjectFragments": {
+   "inputs": [
+    [
+     "",
+     "primList",
+     ""
+    ],
+    [
+     "",
+     "neighList",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "0.2"
+    ],
+    [
+     "float",
+     "mass",
+     "1.0"
+    ],
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "objectList",
+     ""
+    ],
+    [
+     "",
+     "constrList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "RigidObjectProp": {
+   "inputs": [
+    [
+     "float",
+     "friction",
+     "0.7"
+    ],
+    [
+     "float",
+     "dampAng",
+     "0.06"
+    ],
+    [
+     "float",
+     "dampLin",
+     "0.1"
+    ],
+    [
+     "float",
+     "restitution",
+     "0.6"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],

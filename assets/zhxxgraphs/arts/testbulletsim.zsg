@@ -138,7 +138,7 @@
      "name": "EndForEach",
      "inputs": {
       "object": [
-       "0224e38a-RigidGetPrimitive",
+       "0224e38a-RigidObjectToPrimitive",
        "prim",
        null
       ],
@@ -693,8 +693,8 @@
      ],
      "options": []
     },
-    "0224e38a-RigidGetPrimitive": {
-     "name": "RigidGetPrimitive",
+    "0224e38a-RigidObjectToPrimitive": {
+     "name": "RigidObjectToPrimitive",
      "inputs": {
       "object": [
        "8b676642-BeginForEach",
@@ -796,71 +796,6 @@
      ],
      "options": []
     },
-    "791830ef-x": {
-     "name": "ExtractDict",
-     "inputs": {
-      "dict": [
-       "20154a69-x",
-       "object",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "BulletObj\nobj1"
-     },
-     "uipos": [
-      -426.4003889920837,
-      340.09823898942795
-     ],
-     "options": [],
-     "socket_keys": [
-      "BulletObj",
-      "obj1"
-     ]
-    },
-    "19b87e02-x": {
-     "name": "EndForEach",
-     "inputs": {
-      "object": [
-       "791830ef-x",
-       "BulletObj",
-       null
-      ],
-      "accumate": [
-       null,
-       null,
-       null
-      ],
-      "accept": [
-       null,
-       null,
-       true
-      ],
-      "FOR": [
-       "20154a69-x",
-       "FOR",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "doConcat": false
-     },
-     "uipos": [
-      -162.73080578651587,
-      357.51839523806245
-     ],
-     "options": []
-    },
     "4caf47b8-x": {
      "name": "BulletWorldSetObjList",
      "inputs": {
@@ -884,32 +819,6 @@
      "uipos": [
       351.5692843366694,
       398.4199297733737
-     ],
-     "options": []
-    },
-    "20154a69-x": {
-     "name": "BeginForEach",
-     "inputs": {
-      "list": [
-       "9e6d65b1-SubInput",
-       "port",
-       null
-      ],
-      "accumate": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -699.3476543722892,
-      344.15266040682525
      ],
      "options": []
     },
@@ -966,8 +875,8 @@
       "defl": ""
      },
      "uipos": [
-      -992.6420142700331,
-      323.38249804965386
+      -12.00420105818813,
+      376.9132497580821
      ],
      "options": []
     },
@@ -1005,8 +914,8 @@
        null
       ],
       "consList": [
-       "8b422ccf-x",
-       "port",
+       "33622e89-IfElse",
+       "result",
        null
       ],
       "SRC": [
@@ -1037,99 +946,8 @@
       "defl": ""
      },
      "uipos": [
-      -465.59217831583265,
-      731.8251134395184
-     ],
-     "options": []
-    },
-    "175ebd07-x": {
-     "name": "BeginForEach",
-     "inputs": {
-      "list": [
-       "8b422ccf-x",
-       "port",
-       null
-      ],
-      "accumate": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -172.29781841808875,
-      751.1715855916784
-     ],
-     "options": []
-    },
-    "83ac3cfe-x": {
-     "name": "ExtractDict",
-     "inputs": {
-      "dict": [
-       "175ebd07-x",
-       "object",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "_KEYS": "BulletCons\nobj1"
-     },
-     "uipos": [
-      100.64944696211671,
-      747.117164174281
-     ],
-     "options": [],
-     "socket_keys": [
-      "BulletCons",
-      "obj1"
-     ]
-    },
-    "c4242ea7-x": {
-     "name": "EndForEach",
-     "inputs": {
-      "object": [
-       "83ac3cfe-x",
-       "BulletCons",
-       null
-      ],
-      "accumate": [
-       null,
-       null,
-       null
-      ],
-      "accept": [
-       null,
-       null,
-       true
-      ],
-      "FOR": [
-       "175ebd07-x",
-       "FOR",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "doConcat": false
-     },
-     "uipos": [
-      364.31903016768456,
-      764.5373204229156
+      68.47850790284633,
+      708.8725579156005
      ],
      "options": []
     },
@@ -1172,13 +990,60 @@
       855.7716521316985
      ],
      "options": []
+    },
+    "33622e89-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "8b422ccf-x",
+       "port",
+       null
+      ],
+      "false": [
+       "4e747140-EmptyList",
+       "list",
+       null
+      ],
+      "cond": [
+       "8b422ccf-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      412.2028046697037,
+      895.042888667426
+     ],
+     "options": []
+    },
+    "4e747140-EmptyList": {
+     "name": "EmptyList",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      111.5194333712983,
+      963.3800185079731
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 238.50831085905656,
-    "y": 469.03872180375384,
-    "width": 625.0,
-    "height": 625.0
+    "x": -285.9587271669694,
+    "y": 155.07152414003963,
+    "width": 500.0,
+    "height": 500.0
    }
   },
   "RigidMakeWorld": {
@@ -1955,8 +1820,8 @@
       "obj4"
      ]
     },
-    "75fd95c0-RigidObjectProp": {
-     "name": "RigidObjectProp",
+    "75fd95c0-RigidMakeMaterial": {
+     "name": "RigidMakeMaterial",
      "inputs": {
       "friction": [
        null,
@@ -2000,7 +1865,7 @@
        null
       ],
       "false": [
-       "75fd95c0-RigidObjectProp",
+       "75fd95c0-RigidMakeMaterial",
        "material",
        null
       ],
@@ -3675,7 +3540,7 @@
     "height": 1220.703125
    }
   },
-  "RigidGetPrimitive": {
+  "RigidObjectToPrimitive": {
    "nodes": {
     "fab8fd99-x": {
      "name": "NumericVec3",
@@ -4463,8 +4328,8 @@
      ],
      "options": []
     },
-    "6a98ae37-RigidObjectProp": {
-     "name": "RigidObjectProp",
+    "6a98ae37-RigidMakeMaterial": {
+     "name": "RigidMakeMaterial",
      "inputs": {
       "friction": [
        null,
@@ -4508,7 +4373,7 @@
        null
       ],
       "false": [
-       "6a98ae37-RigidObjectProp",
+       "6a98ae37-RigidMakeMaterial",
        "material",
        null
       ],
@@ -4588,7 +4453,7 @@
     "height": 625.0
    }
   },
-  "RigidObjectProp": {
+  "RigidMakeMaterial": {
    "nodes": {
     "426fe08b-x": {
      "name": "SubInput",
@@ -4747,10 +4612,10 @@
     }
    },
    "view_rect": {
-    "x": -352.2056805708006,
-    "y": -3.130145444565869,
-    "width": 781.25,
-    "height": 781.25
+    "x": -186.73322327213015,
+    "y": 57.29087225482567,
+    "width": 625.0,
+    "height": 625.0
    }
   }
  },
@@ -6316,7 +6181,7 @@
      "CSGUnion"
     ],
     [
-     "int",
+     "bool",
      "writeBack",
      "0"
     ]
@@ -9864,7 +9729,7 @@
    ],
    "params": [
     [
-     "int",
+     "bool",
      "clearFaces",
      "1"
     ]
@@ -11264,221 +11129,6 @@
    "categories": [
     "list"
    ]
-  },
-  "RigidMakeConstraint": {
-   "inputs": [
-    [
-     "",
-     "obj1",
-     ""
-    ],
-    [
-     "",
-     "obj2",
-     ""
-    ],
-    [
-     "float",
-     "breakThres",
-     "-1"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "constraint",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeObject": {
-   "inputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "vec3f",
-     "origin",
-     "0,0,0"
-    ],
-    [
-     "vec4f",
-     "rotation",
-     "0,0,0,1"
-    ],
-    [
-     "float",
-     "mass",
-     "0"
-    ],
-    [
-     "",
-     "material",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeWorld": {
-   "inputs": [
-    [
-     "vec3f",
-     "gravity",
-     "0,0,-9.8"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidRecenterPrim": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outPrim",
-     ""
-    ],
-    [
-     "vec3f",
-     "origin",
-     ""
-    ],
-    [
-     "vec3f",
-     "mass",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidStepWorld": {
-   "inputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "objList",
-     ""
-    ],
-    [
-     "",
-     "consList",
-     ""
-    ],
-    [
-     "int",
-     "steps",
-     "10"
-    ],
-    [
-     "float",
-     "dt",
-     "0.04"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
   },
   "RigidVelToPrimitive": {
    "inputs": [
@@ -13061,6 +12711,221 @@
     "openvdb"
    ]
   },
+  "RigidStepWorld": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "objList",
+     ""
+    ],
+    [
+     "",
+     "consList",
+     ""
+    ],
+    [
+     "int",
+     "steps",
+     "10"
+    ],
+    [
+     "float",
+     "dt",
+     "0.04"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeWorld": {
+   "inputs": [
+    [
+     "vec3f",
+     "gravity",
+     "0,0,-9.8"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeObject": {
+   "inputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec4f",
+     "rotation",
+     "0,0,0,1"
+    ],
+    [
+     "float",
+     "mass",
+     "0"
+    ],
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidRecenterPrim": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     ""
+    ],
+    [
+     "vec3f",
+     "mass",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeConstraint": {
+   "inputs": [
+    [
+     "",
+     "obj1",
+     ""
+    ],
+    [
+     "",
+     "obj2",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "-1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
   "RigidMakeShape": {
    "inputs": [
     [
@@ -13112,7 +12977,7 @@
    ],
    "is_subgraph": true
   },
-  "RigidGetPrimitive": {
+  "RigidObjectToPrimitive": {
    "inputs": [
     [
      "",
@@ -13199,7 +13064,7 @@
    ],
    "is_subgraph": true
   },
-  "RigidObjectProp": {
+  "RigidMakeMaterial": {
    "inputs": [
     [
      "float",
