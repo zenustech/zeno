@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/utils/vec.h>
+#include <zeno/utils/logger.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -106,20 +107,25 @@ struct PrimitiveListBoolOp : PrimitiveBooleanOp {
 
         #pragma omp parallel for
         for (int i = 0; i < listB.size(); i++) {
-            printf("PrimitiveListBoolOp: processing mesh #%d...\n", i);
+            log_debugf("PrimitiveListBoolOp: processing mesh #%d...\n", i);
             auto const &primB = listB[i];
             auto [primC, anyFromA, anyFromB] = boolean_op(VFA.first, VFA.second, primA.get(), primB.get());
             listC[i] = std::make_pair(anyFromA, std::move(primC));
         }
 
+        auto lutList = std::make_shared<ListObject>();
         auto primList = std::make_shared<ListObject>();
-        for (auto const &[anyFromA, primPtr]: listC) {
-            if (anyFromA)
-                primPtr->userData.get("anyFromA") = true;
+        int lutcnt=-1;
+        for (auto const &[anyFromA, primPtr]: listC) { lutcnt++;
+            primPtr->userData.get("anyFromA") = anyFromA;
+            if (get_param<bool>("noNullMesh") && primPtr->size() == 0)
+                continue;
+            lutList->arr.push_back(lutcnt);
             primList->arr.push_back(primPtr);
         }
 
         set_output("primList", std::move(primList));
+        set_output("lutList", std::move(lutList));
     }
 };
 
@@ -137,6 +143,7 @@ ZENO_DEFNODE(PrimitiveListBoolOp)({
     {"bool", "assignAttrs", "1"},
     {"bool", "calcAnyFrom", "0"},
     {"bool", "doMeshFix", "1"},
+    {"bool", "noNullMesh", "1"},
     },
     {"cgmesh"},
 });
