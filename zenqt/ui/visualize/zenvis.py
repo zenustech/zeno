@@ -82,7 +82,7 @@ def set_curr_frameid(frameid):
     if cur_frameid != frameid and camera_keyframe != None and camera_control != None:
         r = camera_keyframe.query_frame(frameid)
         if r:
-            print(r)
+            # print(r)
             camera_control.set_keyframe(r)
             camera_control.update_perspective()
 
