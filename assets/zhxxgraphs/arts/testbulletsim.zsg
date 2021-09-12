@@ -2436,9 +2436,9 @@
     "f5f5a1d1-BulletMakeConvexHullShape": {
      "name": "BulletMakeConvexHullShape",
      "inputs": {
-      "triMesh": [
-       "387e3412-PrimitiveToBulletMesh",
-       "mesh",
+      "prim": [
+       "09ca46c5-RigidRecenterPrim",
+       "outPrim",
        null
       ],
       "margin": [
@@ -2461,27 +2461,6 @@
      "uipos": [
       184.52858549559272,
       2345.3090657519265
-     ],
-     "options": []
-    },
-    "387e3412-PrimitiveToBulletMesh": {
-     "name": "PrimitiveToBulletMesh",
-     "inputs": {
-      "prim": [
-       "09ca46c5-RigidRecenterPrim",
-       "outPrim",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -81.52702748143724,
-      2336.323485789457
      ],
      "options": []
     },
@@ -3534,10 +3513,10 @@
     }
    },
    "view_rect": {
-    "x": -976.88041043412,
-    "y": -253.3031174232646,
-    "width": 1220.703125,
-    "height": 1220.703125
+    "x": -467.2112343944698,
+    "y": 2162.464604869983,
+    "width": 400.0,
+    "height": 400.0
    }
   },
   "RigidObjectToPrimitive": {
@@ -5241,17 +5220,12 @@
    "inputs": [
     [
      "",
-     "triMesh",
+     "prim",
      ""
     ],
     [
      "float",
      "margin",
-     "0"
-    ],
-    [
-     "int",
-     "highres",
      "0"
     ],
     [
@@ -11130,6 +11104,405 @@
     "list"
    ]
   },
+  "RigidMakeConstraint": {
+   "inputs": [
+    [
+     "",
+     "obj1",
+     ""
+    ],
+    [
+     "",
+     "obj2",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "-1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeMaterial": {
+   "inputs": [
+    [
+     "float",
+     "friction",
+     "0.7"
+    ],
+    [
+     "float",
+     "dampAng",
+     "0.06"
+    ],
+    [
+     "float",
+     "dampLin",
+     "0.1"
+    ],
+    [
+     "float",
+     "restitution",
+     "0.6"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeObject": {
+   "inputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec4f",
+     "rotation",
+     "0,0,0,1"
+    ],
+    [
+     "float",
+     "mass",
+     "0"
+    ],
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeObjectFragments": {
+   "inputs": [
+    [
+     "",
+     "primList",
+     ""
+    ],
+    [
+     "",
+     "neighList",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "0.2"
+    ],
+    [
+     "float",
+     "mass",
+     "1.0"
+    ],
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "objectList",
+     ""
+    ],
+    [
+     "",
+     "constrList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeShape": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "enum convex sphere box",
+     "type",
+     "convex"
+    ],
+    [
+     "float",
+     "margin",
+     "0.0"
+    ],
+    [
+     "bool",
+     "recentered",
+     "1"
+    ],
+    [
+     "bool",
+     "auto_mass",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeWorld": {
+   "inputs": [
+    [
+     "vec3f",
+     "gravity",
+     "0,0,-9.8"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidObjectToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidRecenterPrim": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     ""
+    ],
+    [
+     "vec3f",
+     "mass",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidStepWorld": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "objList",
+     ""
+    ],
+    [
+     "",
+     "consList",
+     ""
+    ],
+    [
+     "int",
+     "steps",
+     "10"
+    ],
+    [
+     "float",
+     "dt",
+     "0.04"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
   "RigidVelToPrimitive": {
    "inputs": [
     [
@@ -12710,405 +13083,6 @@
    "categories": [
     "openvdb"
    ]
-  },
-  "RigidStepWorld": {
-   "inputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "objList",
-     ""
-    ],
-    [
-     "",
-     "consList",
-     ""
-    ],
-    [
-     "int",
-     "steps",
-     "10"
-    ],
-    [
-     "float",
-     "dt",
-     "0.04"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeWorld": {
-   "inputs": [
-    [
-     "vec3f",
-     "gravity",
-     "0,0,-9.8"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeObject": {
-   "inputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "vec3f",
-     "origin",
-     "0,0,0"
-    ],
-    [
-     "vec4f",
-     "rotation",
-     "0,0,0,1"
-    ],
-    [
-     "float",
-     "mass",
-     "0"
-    ],
-    [
-     "",
-     "material",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidRecenterPrim": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outPrim",
-     ""
-    ],
-    [
-     "vec3f",
-     "origin",
-     ""
-    ],
-    [
-     "vec3f",
-     "mass",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeConstraint": {
-   "inputs": [
-    [
-     "",
-     "obj1",
-     ""
-    ],
-    [
-     "",
-     "obj2",
-     ""
-    ],
-    [
-     "float",
-     "breakThres",
-     "-1"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "constraint",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeShape": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "enum convex sphere box",
-     "type",
-     "convex"
-    ],
-    [
-     "float",
-     "margin",
-     "0.0"
-    ],
-    [
-     "bool",
-     "recentered",
-     "1"
-    ],
-    [
-     "bool",
-     "auto_mass",
-     "0"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidObjectToPrimitive": {
-   "inputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeObjectFragments": {
-   "inputs": [
-    [
-     "",
-     "primList",
-     ""
-    ],
-    [
-     "",
-     "neighList",
-     ""
-    ],
-    [
-     "float",
-     "breakThres",
-     "0.2"
-    ],
-    [
-     "float",
-     "mass",
-     "1.0"
-    ],
-    [
-     "",
-     "material",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "objectList",
-     ""
-    ],
-    [
-     "",
-     "constrList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeMaterial": {
-   "inputs": [
-    [
-     "float",
-     "friction",
-     "0.7"
-    ],
-    [
-     "float",
-     "dampAng",
-     "0.06"
-    ],
-    [
-     "float",
-     "dampLin",
-     "0.1"
-    ],
-    [
-     "float",
-     "restitution",
-     "0.6"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "material",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],

@@ -216,8 +216,7 @@ struct BulletMakeConvexHullShape : zeno::INode {
         auto inShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
         auto hull = std::make_unique<btShapeHull>(inShape.get());
         auto margin = get_input2<float>("margin");
-        auto highres = get_input2<int>("highres");
-        hull->buildHull(margin, highres);
+        hull->buildHull(margin, 0);
         auto convex = std::make_unique<btConvexHullShape>(
              (const btScalar *)hull->getVertexPointer(), hull->numVertices());
         convex->setMargin(btScalar(margin));
@@ -225,14 +224,18 @@ struct BulletMakeConvexHullShape : zeno::INode {
         auto prim = get_input<PrimitiveObject>("prim");
         auto convexHC = std::make_unique<btConvexHullComputer>();
         std::vector<float> vertices;
+        vertices.reserve(prim->size() * 3);
         for (int i = 0; i < prim->size(); i++) {
             btVector3 coor = vec_to_other<btVector3>(prim->verts[i]);
             vertices.push_back(coor[0]);
             vertices.push_back(coor[1]);
             vertices.push_back(coor[2]);
         }
-        convexHC->compute(vertices.data(), sizeof(float) * 3, vertices.size() / 3, 0.04f, 0.0f);
-        auto convex = std::make_unique<btConvexHullShape>(&(convexHC->vertices[0].getX()), convexHC->vertices.size());
+        auto margin = get_input2<float>("margin");
+        convexHC->compute(vertices.data(), sizeof(float) * 3, vertices.size() / 3, 0.0f, 0.0f);
+        auto convex = std::make_unique<btConvexHullShape>(
+                &(convexHC->vertices[0].getX()), convexHC->vertices.size());
+        convex->setMargin(btScalar(margin));
 #endif
 
         // auto convex = std::make_unique<btConvexPointCloudShape>();
@@ -250,7 +253,7 @@ struct BulletMakeConvexHullShape : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeConvexHullShape, {
-    {"prim", {"float", "margin", "0"}, {"int", "highres", "0"}},
+    {"prim", {"float", "margin", "0"}},
     {"shape"},
     {},
     {"Bullet"},
