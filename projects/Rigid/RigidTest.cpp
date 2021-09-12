@@ -417,6 +417,7 @@ struct BulletSetObjectRestitution : zeno::INode {
     virtual void apply() override {
         auto object = get_input<BulletObject>("object");
         auto restitution = get_input2<float>("restitution");
+        log_debug("set object {} with restituion={}", object.get(), restitution);
         object->body->setRestitution(restitution);
         set_output("object", std::move(object));
     }
