@@ -80,8 +80,8 @@
      },
      "params": {},
      "uipos": [
-      356.0982447091976,
-      339.57265563599475
+      356.09824470919756,
+      338.72231549994035
      ],
      "options": [
       "VIEW"
@@ -754,13 +754,55 @@
       -236.7140718562874
      ],
      "options": []
+    },
+    "b20e2474-RigidObjectListToPrimitive": {
+     "name": "RigidObjectListToPrimitive",
+     "inputs": {
+      "objList": [
+       "3051bdd4-CachedOnce",
+       "output",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -278.8052721088434,
+      715.6675170068027
+     ],
+     "options": []
+    },
+    "39ff1bb2-Route": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "b20e2474-RigidObjectListToPrimitive",
+       "mergedPrim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      140.3061224489796,
+      802.7210884353742
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -4694.071220514575,
-    "y": -321.13542763474624,
-    "width": 976.5625,
-    "height": 976.5625
+    "x": -619.0868135344795,
+    "y": 283.74410597579345,
+    "width": 625.0,
+    "height": 625.0
    }
   },
   "RigidStepWorld": {
@@ -5248,6 +5290,167 @@
     "y": -48.232812152501765,
     "width": 500.0,
     "height": 500.0
+   }
+  },
+  "RigidObjectListToPrimitive": {
+   "nodes": {
+    "b565be2c-x": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "d229455e-SubInput",
+       "port",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -341.9768997332157,
+      127.19791003248133
+     ],
+     "options": []
+    },
+    "a509ac1a-x": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       "25242613-x",
+       "prim",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "b565be2c-x",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      289.28754737317183,
+      204.27425785474497
+     ],
+     "options": []
+    },
+    "25242613-x": {
+     "name": "RigidObjectToPrimitive",
+     "inputs": {
+      "object": [
+       "b565be2c-x",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -32.34752738240405,
+      206.50132158113001
+     ],
+     "options": []
+    },
+    "d229455e-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "objList",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -620.1975850713502,
+      170.14270032930847
+     ],
+     "options": []
+    },
+    "fe5054c1-PrimitiveMerge": {
+     "name": "PrimitiveMerge",
+     "inputs": {
+      "listPrim": [
+       "a509ac1a-x",
+       "list",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      574.9176728869372,
+      307.35455543358944
+     ],
+     "options": []
+    },
+    "6a0d393e-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "fe5054c1-PrimitiveMerge",
+       "prim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "mergedPrim",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      850.7135016465422,
+      303.9242590559824
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": -36.56695938528895,
+    "y": -19.518386388584247,
+    "width": 625.0,
+    "height": 625.0
    }
   }
  },
@@ -13770,6 +13973,37 @@
    "params": [],
    "categories": [
     "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidObjectListToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "objList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mergedPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
    ],
    "is_subgraph": true
   },

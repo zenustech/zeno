@@ -1,4 +1,4 @@
-/* auto generated from: arts/testbulletsim.zsg */
+/* auto generated from: /home/bate/Codes/zeno-blender/external/zeno/arts/testbulletsim.zsg */
 #include <zeno/zeno.h>
 #include <zeno/extra/ISubgraphNode.h>
 namespace {
@@ -131,5 +131,18 @@ ZENDEFNODE(RigidMakeCompoundShape, {
     {{"", "compShape", ""}},
     {},
     {"Rigid"},
+});
+struct RigidObjectListToPrimitive : zeno::ISerialSubgraphNode {
+    virtual const char *get_subgraph_json() override {
+        return R"ZSL(
+[["addNode", "BeginForEach", "b565be2c-x"], ["bindNodeInput", "b565be2c-x", "list", "d229455e-SubInput", "port"], ["completeNode", "b565be2c-x"], ["addNode", "EndForEach", "a509ac1a-x"], ["bindNodeInput", "a509ac1a-x", "object", "25242613-x", "prim"], ["setNodeInput", "a509ac1a-x", "accept", true], ["bindNodeInput", "a509ac1a-x", "FOR", "b565be2c-x", "FOR"], ["setNodeParam", "a509ac1a-x", "doConcat", false], ["completeNode", "a509ac1a-x"], ["addNode", "RigidObjectToPrimitive", "25242613-x"], ["bindNodeInput", "25242613-x", "object", "b565be2c-x", "object"], ["completeNode", "25242613-x"], ["addNode", "SubInput", "d229455e-SubInput"], ["setNodeParam", "d229455e-SubInput", "name", "objList"], ["setNodeParam", "d229455e-SubInput", "type", ""], ["setNodeParam", "d229455e-SubInput", "defl", ""], ["completeNode", "d229455e-SubInput"], ["addNode", "PrimitiveMerge", "fe5054c1-PrimitiveMerge"], ["bindNodeInput", "fe5054c1-PrimitiveMerge", "listPrim", "a509ac1a-x", "list"], ["completeNode", "fe5054c1-PrimitiveMerge"], ["addNode", "SubOutput", "6a0d393e-SubOutput"], ["bindNodeInput", "6a0d393e-SubOutput", "port", "fe5054c1-PrimitiveMerge", "prim"], ["setNodeParam", "6a0d393e-SubOutput", "name", "mergedPrim"], ["setNodeParam", "6a0d393e-SubOutput", "type", ""], ["setNodeParam", "6a0d393e-SubOutput", "defl", ""], ["completeNode", "6a0d393e-SubOutput"]]
+)ZSL";
+    }
+};
+ZENDEFNODE(RigidObjectListToPrimitive, {
+    {{"", "objList", ""}},
+    {{"", "mergedPrim", ""}},
+    {},
+    {"subgraph"},
 });
 }
