@@ -211,9 +211,8 @@ ZENDEFNODE(BulletMakeConvexMeshShape, {
 
 struct BulletMakeConvexHullShape : zeno::INode {
     virtual void apply() override {
+#if 0
         auto triMesh = &get_input<BulletTriangleMesh>("triMesh")->mesh;
-
-#if 1
         auto inShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
         auto hull = std::make_unique<btShapeHull>(inShape.get());
         auto margin = get_input2<float>("margin");
@@ -223,12 +222,11 @@ struct BulletMakeConvexHullShape : zeno::INode {
              (const btScalar *)hull->getVertexPointer(), hull->numVertices());
         convex->setMargin(btScalar(margin));
 #else
+        auto prim = get_input<PrimitiveObject>("prim");
         auto convexHC = std::make_unique<btConvexHullComputer>();
         std::vector<float> vertices;
-        for (int i = 0; i < inShape->getNumVertices(); i++) {
-            btVector3 coor;
-            //inShape->btTriangleIndexVertexArray::preallocateVertices
-            inShape->getVertex(i, coor);
+        for (int i = 0; i < prim->size(); i++) {
+            btVector3 coor = vec_to_other<btVector3>(prim->verts[i]);
             vertices.push_back(coor[0]);
             vertices.push_back(coor[1]);
             vertices.push_back(coor[2]);
@@ -252,7 +250,7 @@ struct BulletMakeConvexHullShape : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeConvexHullShape, {
-    {"triMesh", {"float", "margin", "0"}, {"int", "highres", "0"}},
+    {"prim", {"float", "margin", "0"}, {"int", "highres", "0"}},
     {"shape"},
     {},
     {"Bullet"},
