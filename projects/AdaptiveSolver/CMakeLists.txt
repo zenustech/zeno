@@ -20,7 +20,7 @@ if (OPENMP_FOUND)
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-set(AdaptSource AdaptiveGridGen.h AdaptiveGridGen.cpp AdaptiveSolver.h AdaptiveSolver.cpp)
+set(AdaptSource smokeSolver.h smokeSolver.cpp)
 #file(GLOB NOSYS_SOURCE nosys/*.cpp nosys/*.h)
 
 add_library(zeno_AdaptiveSolver SHARED ${AdaptSource} ${NOSYS_SOURCE})
@@ -54,3 +54,5 @@ target_link_libraries(zeno_AdaptiveSolver PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno_AdaptiveSolver PUBLIC zeno zeno_zenvdb)
 target_include_directories(zeno_AdaptiveSolver PRIVATE ../oldzenbase/include)
 target_include_directories(zeno_AdaptiveSolver PRIVATE ../zenvdb/include)
+
+add_definitions(-w)
