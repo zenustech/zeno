@@ -10,6 +10,7 @@ from PySide2.QtWidgets import *
 
 from . import zenvis
 from .dialog import RecordVideoDialog
+from .camera_keyframe import CameraKeyframeWidget
 
 
 class CameraControl:
@@ -65,9 +66,7 @@ class CameraControl:
             self.center = tuple(center)
         else:
             self.theta -= dy * np.pi
-            self.theta = max(-np.pi / 2, min(self.theta, np.pi / 2))
             self.phi += dx * np.pi
-            self.phi %= np.pi * 2
 
         self.last_pos = x, y
 
@@ -93,6 +92,14 @@ class CameraControl:
 
         self.update_perspective()
 
+    def set_keyframe(self, keyframe):
+        f = keyframe
+        self.center = (f[0], f[1], f[2])
+        self.theta = f[3]
+        self.phi = f[4]
+        self.radius = f[5]
+        self.fov = f[6]
+        self.ortho_mode = f[7]
 
 class ViewportWidget(QOpenGLWidget):
     def __init__(self, parent=None):
@@ -109,6 +116,7 @@ class ViewportWidget(QOpenGLWidget):
         self.setFormat(fmt)
 
         self.camera = CameraControl()
+        zenvis.camera_control = self.camera
         self.record_path = None
         self.record_res = None
 
@@ -177,6 +185,11 @@ class QDMDisplayMenu(QMenu):
         action.setChecked(False)
         self.addAction(action)
 
+        self.addSeparator()
+
+        action = QAction('Camera Keyframe', self)
+        self.addAction(action)
+
 class QDMRecordMenu(QMenu):
     def __init__(self):
         super().__init__()
@@ -216,6 +229,8 @@ class DisplayWidget(QWidget):
         self.layout.addWidget(self.view)
 
         self.record_video = RecordVideoDialog(self)
+        self.camera_keyframe_widget = CameraKeyframeWidget(self)
+        zenvis.camera_keyframe = self.camera_keyframe_widget
 
     def on_update(self):
         self.view.on_update()
@@ -251,6 +266,9 @@ class DisplayWidget(QWidget):
 
         elif name == 'Screenshot':
             self.do_screenshot()
+
+        elif name == 'Camera Keyframe':
+            self.camera_keyframe_widget.show()
 
     def get_output_path(self, extname):
         dir_path = 'outputs'
