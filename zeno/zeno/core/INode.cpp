@@ -71,10 +71,14 @@ ZENO_API void INode::preApply() {
         requireInput(ds);
     }
 
+    log_trace("==> enter {}", myname);
+    {
 #ifdef ZENO_BENCHMARKING
-    Timer _(myname);
+        Timer _(myname);
 #endif
-    apply();
+        apply();
+    }
+    log_trace("==> leave {}", myname);
 }
 
 ZENO_API bool INode::requireInput(std::string const &ds) {
