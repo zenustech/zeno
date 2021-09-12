@@ -211,7 +211,7 @@ ZENDEFNODE(BulletMakeConvexMeshShape, {
 
 struct BulletMakeConvexHullShape : zeno::INode {
     virtual void apply() override {
-#if 0
+#if 1
         auto triMesh = &get_input<BulletTriangleMesh>("triMesh")->mesh;
         auto inShape = std::make_unique<btConvexTriangleMeshShape>(triMesh);
         auto hull = std::make_unique<btShapeHull>(inShape.get());
@@ -253,7 +253,7 @@ struct BulletMakeConvexHullShape : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeConvexHullShape, {
-    {"prim", {"float", "margin", "0"}},
+    {"triMesh", {"float", "margin", "0"}},
     {"shape"},
     {},
     {"Bullet"},
@@ -497,7 +497,7 @@ struct BulletConstraint : zeno::IObject {
         //gf.setOrigin(cposw);
         auto trA = obj1->body->getWorldTransform().inverse();// * gf;
         auto trB = obj2->body->getWorldTransform().inverse();// * gf;
-#if 0
+#if 1
         constraint = std::make_unique<btFixedConstraint>(
                 *obj1->body, *obj2->body, trA, trB);
 #else

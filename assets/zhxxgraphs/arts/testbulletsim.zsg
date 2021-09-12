@@ -251,8 +251,8 @@
       "z": 0.0
      },
      "uipos": [
-      -4621.7776816535215,
-      609.712717902543
+      -4609.184892682154,
+      653.4560901188739
      ],
      "options": []
     },
@@ -757,10 +757,10 @@
     }
    },
    "view_rect": {
-    "x": -4722.718740624064,
-    "y": 701.9882079582065,
-    "width": 500.0,
-    "height": 500.0
+    "x": -4694.071220514575,
+    "y": -321.13542763474624,
+    "width": 976.5625,
+    "height": 976.5625
    }
   },
   "RigidStepWorld": {
@@ -2436,9 +2436,9 @@
     "f5f5a1d1-BulletMakeConvexHullShape": {
      "name": "BulletMakeConvexHullShape",
      "inputs": {
-      "prim": [
-       "09ca46c5-RigidRecenterPrim",
-       "outPrim",
+      "triMesh": [
+       "623eb76a-x",
+       "mesh",
        null
       ],
       "margin": [
@@ -3727,9 +3727,9 @@
     "60cf937f-x": {
      "name": "BulletMakeConvexHullShape",
      "inputs": {
-      "prim": [
-       "97bc25e9-BeginForEach",
-       "object",
+      "triMesh": [
+       "c3e1880d-PrimitiveToBulletMesh",
+       "mesh",
        null
       ],
       "margin": [
@@ -3745,7 +3745,7 @@
      },
      "params": {},
      "uipos": [
-      -24.63108662001605,
+      -25.293864986930156,
       3440.1283038768374
      ],
      "options": []
@@ -3875,13 +3875,55 @@
       3499.3478417003985
      ],
      "options": []
+    },
+    "c3e1880d-PrimitiveToBulletMesh": {
+     "name": "PrimitiveToBulletMesh",
+     "inputs": {
+      "prim": [
+       "97bc25e9-BeginForEach",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -295.59915164369033,
+      3518.027571580064
+     ],
+     "options": []
+    },
+    "623eb76a-x": {
+     "name": "PrimitiveToBulletMesh",
+     "inputs": {
+      "prim": [
+       "09ca46c5-RigidRecenterPrim",
+       "outPrim",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -71.36466065747614,
+      2326.816012725344
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -84.06512755428469,
-    "y": 3166.1022632815266,
-    "width": 625.0,
-    "height": 625.0
+    "x": -1064.4420758294889,
+    "y": 1653.7939593436915,
+    "width": 1220.703125,
+    "height": 1220.703125
    }
   },
   "RigidObjectToPrimitive": {
@@ -5790,7 +5832,7 @@
    "inputs": [
     [
      "",
-     "prim",
+     "triMesh",
      ""
     ],
     [
@@ -11674,446 +11716,6 @@
     "list"
    ]
   },
-  "RigidMakeCompoundShape": {
-   "inputs": [
-    [
-     "",
-     "shapeList",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "compShape",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeConstraint": {
-   "inputs": [
-    [
-     "",
-     "obj1",
-     ""
-    ],
-    [
-     "",
-     "obj2",
-     ""
-    ],
-    [
-     "float",
-     "breakThres",
-     "-1"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "constraint",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeMaterial": {
-   "inputs": [
-    [
-     "float",
-     "friction",
-     "0.7"
-    ],
-    [
-     "float",
-     "dampAng",
-     "0.06"
-    ],
-    [
-     "float",
-     "dampLin",
-     "0.1"
-    ],
-    [
-     "float",
-     "restitution",
-     "0.6"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "material",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeObject": {
-   "inputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "vec3f",
-     "origin",
-     "0,0,0"
-    ],
-    [
-     "vec4f",
-     "rotation",
-     "0,0,0,1"
-    ],
-    [
-     "float",
-     "mass",
-     "0"
-    ],
-    [
-     "",
-     "material",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeObjectFragments": {
-   "inputs": [
-    [
-     "",
-     "primList",
-     ""
-    ],
-    [
-     "",
-     "neighList",
-     ""
-    ],
-    [
-     "float",
-     "breakThres",
-     "0.2"
-    ],
-    [
-     "float",
-     "mass",
-     "1.0"
-    ],
-    [
-     "",
-     "material",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "objectList",
-     ""
-    ],
-    [
-     "",
-     "constrList",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeShape": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "enum convex decomp sphere box",
-     "type",
-     "convex"
-    ],
-    [
-     "float",
-     "margin",
-     "0.0"
-    ],
-    [
-     "bool",
-     "recentered",
-     "1"
-    ],
-    [
-     "bool",
-     "auto_mass",
-     "0"
-    ],
-    [
-     "float",
-     "margin",
-     "0.0"
-    ],
-    [
-     "bool",
-     "recentered",
-     "1"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "shape",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidMakeWorld": {
-   "inputs": [
-    [
-     "vec3f",
-     "gravity",
-     "0,0,-9.8"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidObjectToPrimitive": {
-   "inputs": [
-    [
-     "",
-     "object",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidRecenterPrim": {
-   "inputs": [
-    [
-     "",
-     "prim",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "outPrim",
-     ""
-    ],
-    [
-     "vec3f",
-     "origin",
-     ""
-    ],
-    [
-     "vec3f",
-     "mass",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
-  "RigidStepWorld": {
-   "inputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "objList",
-     ""
-    ],
-    [
-     "",
-     "consList",
-     ""
-    ],
-    [
-     "int",
-     "steps",
-     "10"
-    ],
-    [
-     "float",
-     "dt",
-     "0.04"
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "world",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "Rigid"
-   ],
-   "is_subgraph": true
-  },
   "RigidVelToPrimitive": {
    "inputs": [
     [
@@ -13694,6 +13296,446 @@
    "categories": [
     "openvdb"
    ]
+  },
+  "RigidStepWorld": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "objList",
+     ""
+    ],
+    [
+     "",
+     "consList",
+     ""
+    ],
+    [
+     "int",
+     "steps",
+     "10"
+    ],
+    [
+     "float",
+     "dt",
+     "0.04"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeWorld": {
+   "inputs": [
+    [
+     "vec3f",
+     "gravity",
+     "0,0,-9.8"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeObject": {
+   "inputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec4f",
+     "rotation",
+     "0,0,0,1"
+    ],
+    [
+     "float",
+     "mass",
+     "0"
+    ],
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidRecenterPrim": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     ""
+    ],
+    [
+     "vec3f",
+     "mass",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeConstraint": {
+   "inputs": [
+    [
+     "",
+     "obj1",
+     ""
+    ],
+    [
+     "",
+     "obj2",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "-1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeShape": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "enum convex decomp sphere box",
+     "type",
+     "convex"
+    ],
+    [
+     "float",
+     "margin",
+     "0.0"
+    ],
+    [
+     "bool",
+     "recentered",
+     "1"
+    ],
+    [
+     "bool",
+     "auto_mass",
+     "0"
+    ],
+    [
+     "float",
+     "margin",
+     "0.0"
+    ],
+    [
+     "bool",
+     "recentered",
+     "1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidObjectToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeObjectFragments": {
+   "inputs": [
+    [
+     "",
+     "primList",
+     ""
+    ],
+    [
+     "",
+     "neighList",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "0.2"
+    ],
+    [
+     "float",
+     "mass",
+     "1.0"
+    ],
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "objectList",
+     ""
+    ],
+    [
+     "",
+     "constrList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeMaterial": {
+   "inputs": [
+    [
+     "float",
+     "friction",
+     "0.7"
+    ],
+    [
+     "float",
+     "dampAng",
+     "0.06"
+    ],
+    [
+     "float",
+     "dampLin",
+     "0.1"
+    ],
+    [
+     "float",
+     "restitution",
+     "0.6"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ],
+   "is_subgraph": true
+  },
+  "RigidMakeCompoundShape": {
+   "inputs": [
+    [
+     "",
+     "shapeList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "compShape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "subgraph"
+   ],
+   "is_subgraph": true
   },
   "Blackboard": {
    "inputs": [],
