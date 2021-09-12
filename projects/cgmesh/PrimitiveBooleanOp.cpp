@@ -115,15 +115,19 @@ struct PrimitiveListBoolOp : PrimitiveBooleanOp {
 
         auto lutList = std::make_shared<ListObject>();
         auto primList = std::make_shared<ListObject>();
-        lutList->arr.resize(listC.size(), -1);
+        lutList->arr.resize(listC.size());
         int lutcnt=-1;
         for (auto const &[anyFromA, primPtr]: listC) { lutcnt++;
             primPtr->userData.get("anyFromA") = anyFromA;
-            if (get_param<bool>("noNullMesh") && primPtr->size() == 0)
+            if (get_param<bool>("noNullMesh") && primPtr->size() == 0) {
+                auto cnt = std::make_shared<NumericObject>();
+                cnt->set((int)-1);
+                lutList->arr[lutcnt] = std::move(cnt);
                 continue;
+            }
             auto cnt = std::make_shared<NumericObject>();
             cnt->set((int)primList->arr.size());
-            lutList->arr[lutcnt] = cnt;
+            lutList->arr[lutcnt] = std::move(cnt);
             primList->arr.push_back(primPtr);
         }
 
