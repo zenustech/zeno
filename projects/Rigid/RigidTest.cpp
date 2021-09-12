@@ -147,11 +147,11 @@ struct PrimitiveConvexDecomposition : zeno::INode {
         auto listPrim = std::make_shared<zeno::ListObject>();
         listPrim->arr.clear();
 
-        printf("hacd got %d clusters\n", nClusters);
+        log_debugf("hacd got %d clusters\n", nClusters);
         for (size_t c = 0; c < nClusters; c++) {
             size_t nPoints = hacd.GetNPointsCH(c);
             size_t nTriangles = hacd.GetNTrianglesCH(c);
-            printf("hacd cluster %d have %d points, %d triangles\n",
+            log_debugf("hacd cluster %d have %d points, %d triangles\n",
                 c, nPoints, nTriangles);
 
             points.clear();
@@ -268,7 +268,7 @@ struct BulletMakeCompoundShape : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeCompoundShape, {
-    {""},
+    {},
     {"compound"},
     {},
     {"Bullet"},
