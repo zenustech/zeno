@@ -22,7 +22,7 @@ bool ptInTriangle(zeno::vec3f &p, zeno::vec3f &p0, zeno::vec3f &p1,
                   zeno::vec3f &p2) {
   float A = 0.5 * (-p1[1] * p2[0] + p0[1] * (-p1[0] + p2[0]) +
                    p0[0] * (p1[1] - p2[1]) + p1[0] * p2[1]);
-  float sign = A < 0 ? -1.0f : 1.0f;
+  float sign = A == 0 ? 0.0f : A < 0 ? -1.0f : 1.0f;
   float s = (p0[1] * p2[0] - p0[0] * p2[1] + (p2[1] - p0[1]) * p[0] +
              (p0[0] - p2[0]) * p[1]) *
             sign;
@@ -72,6 +72,7 @@ struct PrimSprayParticles : zeno::INode {
       zeno::vec3f dir1 = e1 / (in);
       zeno::vec3f dir2 = e2 / (jn);
       zeno::vec3f dir3 = e3 / (kn);
+      printf("%f %f %f\n", dir1[0], dir1[1], dir1[2]);
       data.push_back(a);
       data.push_back(b);
       data.push_back(c);
