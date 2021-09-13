@@ -14,14 +14,15 @@ struct DeviceHandler {
     DeviceHandler(sycl::handler &cgh) : m_cgh(&cgh) {}
 
     template <class Key, size_t Dim, class Kernel>
-    void parallelFor(vec<Dim, size_t> range, Kernel kernel) {
+    void parallelFor(vec<Dim, size_t> range, Kernel kernel) const {
         m_cgh->parallel_for<Key>(vec_to_other<sycl::range<Dim>>(range), [=] (sycl::id<Dim> idx) {
-            kernel(other_to_vec<Dim>(idx));
+            auto id = other_to_vec<Dim>(idx);
+            kernel(std::as_const(id));
         });
     }
 
     template <class Key, class Kernel>
-    void parallelFor(size_t range, Kernel kernel) {
+    void parallelFor(size_t range, Kernel kernel) const {
         return parallelFor<Key>(vec<1, size_t>(range), [=] (vec<1, size_t> id) {
             return kernel(std::as_const(id[0]));
         });
@@ -34,13 +35,17 @@ struct CommandQueue {
 
     template <bool IsBlocked = true, class Functor>
     void enqueue(Functor const &functor) {
-        auto e = m_que.submit([&] (sycl::handler &cgh) {
+        auto event = m_que.submit([&] (sycl::handler &cgh) {
             DeviceHandler dev(cgh);
             functor(std::as_const(dev));
         });
         if constexpr (IsBlocked) {
-            e.wait();
+            event.wait();
         }
+    }
+
+    void waitAll() {
+        m_que.wait();
     }
 };
 
