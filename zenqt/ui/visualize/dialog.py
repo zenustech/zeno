@@ -77,9 +77,6 @@ class RecordVideoDialog(QDialog):
         ok_button.clicked.connect(self.accept)
         cancel_button.clicked.connect(self.reject)
 
-        encoder = QLabel('Encoder:')
-        self.encoder_combo = self.build_encoder_combobox()
-
         presets = QLabel('Presets:')
         res_combo = self.build_res_combobox()
 
@@ -101,22 +98,19 @@ class RecordVideoDialog(QDialog):
         grid.addWidget(bit_rate, 4, 0)
         grid.addWidget(self.bit_rate_editor, 4, 1)
 
-        grid.addWidget(encoder, 5, 0)
-        grid.addWidget(self.encoder_combo, 5, 1)
+        grid.addWidget(presets, 5, 0)
+        grid.addWidget(res_combo, 5, 1)
 
-        grid.addWidget(presets, 6, 0)
-        grid.addWidget(res_combo, 6, 1)
+        grid.addWidget(viewport_width, 6, 0)
+        grid.addWidget(self.viewport_width_editor, 6, 1)
 
-        grid.addWidget(viewport_width, 7, 0)
-        grid.addWidget(self.viewport_width_editor, 7, 1)
+        grid.addWidget(viewport_height, 7, 0)
+        grid.addWidget(self.viewport_height_editor, 7, 1)
 
-        grid.addWidget(viewport_height, 8, 0)
-        grid.addWidget(self.viewport_height_editor, 8, 1)
+        grid.addWidget(self.lock_camera, 8, 1)
 
-        grid.addWidget(self.lock_camera, 9, 1)
-
-        grid.addWidget(ok_button, 10, 0)
-        grid.addWidget(cancel_button, 10, 1)
+        grid.addWidget(ok_button, 9, 0)
+        grid.addWidget(cancel_button, 9, 1)
 
         self.setLayout(grid) 
 
@@ -133,7 +127,6 @@ class RecordVideoDialog(QDialog):
         r['bit_rate'] = self.bit_rate_editor.text().strip() + 'k'
         r['width'] = int(self.viewport_width_editor.text())
         r['height'] = int(self.viewport_height_editor.text())
-        r['encoder'] = self.encoder_combo.currentText().split()[0]
         r['lock_camera'] = self.lock_camera.checkState() == Qt.Checked
         super().accept()
 
@@ -153,21 +146,6 @@ class RecordVideoDialog(QDialog):
             self.viewport_height_editor.setText(str(h))
         c.textActivated.connect(callback)
         c.setCurrentIndex(1)
-        return c
-
-    def build_encoder_combobox(self):
-        encoders =[
-            'libx264 (linux)',
-            'h264_mf (win)',
-            'h264_qsv (intel)',
-            'h264_amf (amd)',
-        ]
-        c = QComboBox()
-        c.addItems(encoders)
-        if sys.platform == 'win32':
-            c.setCurrentIndex(1)
-        else:
-            c.setCurrentIndex(0)
         return c
 
     def do_record_video(self):
@@ -226,7 +204,7 @@ class RecordVideoDialog(QDialog):
             'ffmpeg', '-y',
             '-r', str(params['fps']), 
             '-i', png_paths, 
-            '-c:v', params['encoder'],
+            '-c:v', 'mpeg4',
             '-b:v', params['bit_rate'],
             path,
         ]
