@@ -34,7 +34,7 @@ struct CommandQueue {
     sycl::queue m_que;
 
     template <bool IsBlocked = true, class Functor>
-    void enqueue(Functor const &functor) {
+    void submit(Functor const &functor) {
         auto event = m_que.submit([&] (sycl::handler &cgh) {
             DeviceHandler dev(cgh);
             functor(std::as_const(dev));
@@ -44,9 +44,24 @@ struct CommandQueue {
         }
     }
 
-    void waitAll() {
+    void wait() {
         m_que.wait();
     }
+};
+
+
+CommandQueue &getQueue() {
+    static auto p = std::make_unique<CommandQueue>();
+    return *p;
+}
+
+
+enum class Access {
+    read = (int)sycl::access::mode::read,
+    write = (int)sycl::access::mode::write,
+    read_write = (int)sycl::access::mode::read_write,
+    discard_write = (int)sycl::access::mode::write,
+    discard_read_write = (int)sycl::access::mode::read_write,
 };
 
 
@@ -107,34 +122,39 @@ struct NDArray {
         }
     };
 
-    template <auto Mode = sycl::access::mode::read_write>
+    template <auto Mode = Access::read_write>
     auto accessor(HostHandler = {}) {
-        return Accessor<Mode, sycl::access::target::host_buffer>(*this);
+        return Accessor<(sycl::access::mode)(int)Mode,
+               sycl::access::target::host_buffer>(*this);
     }
 
-    template <auto Mode = sycl::access::mode::read_write>
-    auto accessor(DeviceHandler dev) {
-        return Accessor<Mode, sycl::access::target::global_buffer>(*this, *dev.m_cgh);
+    template <auto Mode = Access::read_write>
+    auto accessor(DeviceHandler hand) {
+        return Accessor<(sycl::access::mode)(int)Mode,
+               sycl::access::target::global_buffer>(*this, *hand.m_cgh);
     }
+};
+
+
+template <class T>
+struct Vector : NDArray<T, 1> {
 };
 
 
 class kernel0;
 
 int main() {
-    CommandQueue que;
-
     NDArray<int> arr(16);
 
-    que.enqueue<true>([&] (DeviceHandler dev) {
-        auto arrAxr = arr.accessor(dev);
+    getQueue().submit([&] (DeviceHandler dev) {
+        auto arrAxr = arr.accessor<Access::discard_write>(dev);
         dev.parallelFor<kernel0>((size_t)16, [=] (size_t id) {
             arrAxr[id] = id;
         });
     });
 
     {
-        auto arrAxr = arr.accessor();
+        auto arrAxr = arr.accessor<Access::read>();
         for (int i = 0; i < 16; i++) {
             printf("%d\n", arrAxr[i]);
         }
