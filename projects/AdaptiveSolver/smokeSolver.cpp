@@ -24,8 +24,8 @@ namespace zeno{
         }
         worldinputbbox = openvdb::BBoxd(sdf->indexToWorld(inputbbox.min()),
                                        sdf->indexToWorld(inputbbox.max()));
-        worldinputbbox.min() += openvdb::Vec3d(-3);
-        worldinputbbox.max() -= openvdb::Vec3d(-3);
+        worldinputbbox.min() += openvdb::Vec3d(-0.1);
+        worldinputbbox.max() -= openvdb::Vec3d(-0.1);
         
         auto loopbegin =
             openvdb::tools::local_util::floorVec3(sdf->worldToIndex(worldinputbbox.min()));
@@ -69,7 +69,7 @@ namespace zeno{
             v[i] = -0.5 * double(dx);
             velTrans->postTranslate(v);
             velField[i]->setTree((std::make_shared<openvdb::FloatTree>(
-                        temperatureField->tree(), /*bgval*/ openvdb::Vec3f(0),
+                        temperatureField->tree(), /*bgval*/ float(0),
                         openvdb::TopologyCopy())));
             velField[i]->setTransform(velTrans);
         }
@@ -126,8 +126,12 @@ namespace zeno{
         volumeField->tree().getNodes(leaves);
         tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), semiLangAdvection);
         sign = -1;
-        auto temBuffer = temperatureField->deepCopy(); temperatureField->clear(); temperatureField = new_temField->deepCopy();
-        auto volBuffer = volumeField->deepCopy(); volumeField->clear(); volumeField=new_volField->deepCopy();
+        auto temBuffer = temperatureField->deepCopy(); 
+        temperatureField->clear(); 
+        temperatureField = new_temField->deepCopy();
+        auto volBuffer = volumeField->deepCopy(); 
+        volumeField->clear(); 
+        volumeField=new_volField->deepCopy();
         tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), semiLangAdvection);
         
         auto computeNewField = [&](const tbb::blocked_range<size_t> &r){
@@ -151,15 +155,17 @@ namespace zeno{
         };
         tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), computeNewField);
         sign = 1;
-        volumeField->clear();volumeField = new_volField->deepCopy();
-        temperatureField->clear();temperatureField = new_temField->deepCopy();
+        volumeField->clear();
+        volumeField = new_volField->deepCopy();
+        temperatureField->clear();
+        temperatureField = new_temField->deepCopy();
         
         tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), semiLangAdvection);
         volumeField->clear();temperatureField->clear();
         volumeField = new_volField->deepCopy();
         temperatureField = new_temField->deepCopy();
         
-        //leaves.clear();
+        leaves.clear();
         //velField->tree().getNodes(leaves);
         openvdb::FloatGrid::Ptr new_vel[3], inte_vel[3];
         for(int i=0;i<3;++i)
@@ -291,19 +297,24 @@ namespace zeno{
     }
     
     void smokeData::solvePress(){
-        
+
     }
     void smokeData::step(){
+        printf("begin to step\n");
         advection();
+        printf("advection over\n");
         applyOuterforce();
+        printf("apply outer force over\n");
         solvePress();
     }
     struct SDFtoSmoke : zeno::INode{
         virtual void apply() override {
-            auto sdf = get_input("mesh")->as<zeno::VDBFloatGrid>();
+            auto sdf = get_input("sdfgrid")->as<zeno::VDBFloatGrid>();
             auto data = zeno::IObject::make<smokeData>();
             float dt = get_input("dt")->as<zeno::NumericObject>()->get<float>();
             data->initData(sdf->m_grid, dt);
+            printf("after init, volume num is %d\n", data->volumeField->tree().activeVoxelCount());
+            
             set_output("smokeData", data);
         }
     };
@@ -318,11 +329,10 @@ namespace zeno{
 
     struct smokeSolver : zeno::INode{
         virtual void apply() override {
-            auto data = get_input("mesh")->as<zeno::smokeData>();
-
-
-            auto result = std::make_shared<smokeData>(data);
-            set_output("smokeData", result);
+            std::shared_ptr<smokeData> data(get_input("smokeData")->as<smokeData>());
+            //data->step();
+            printf("volume num is %d\n", data->volumeField->tree().activeVoxelCount());
+            set_output("smokeData", data);
         }
     };
     ZENDEFNODE(smokeSolver,
@@ -333,4 +343,25 @@ namespace zeno{
         {"AdaptiveSolver"},
     }
     );
+
+    struct smokeToSDF : zeno::INode{
+        virtual void apply() override {
+            auto data = get_input<smokeData>("smokeData");
+            printf("smoke sdf:volume num is %d\n", data->volumeField->tree().activeVoxelCount());
+            
+            auto result = zeno::IObject::make<VDBFloatGrid>();
+            result->m_grid = data->volumeField;
+            printf("heiha ,after set result !\n");
+            set_output("volumeGrid", result);
+        }
+    };
+    ZENDEFNODE(smokeToSDF,
+    {
+        {"smokeData"},
+        {"volumeGrid"},
+        {},
+        {"AdaptiveSolver"},
+    }
+    );
+
 }
