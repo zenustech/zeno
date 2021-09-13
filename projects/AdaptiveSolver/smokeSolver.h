@@ -14,12 +14,15 @@
 #include <iostream>
 namespace zeno{
     struct smokeData: IObject{
+        // vertex attribute
         openvdb::FloatGrid::Ptr temperatureField;
         openvdb::FloatGrid::Ptr volumeField;
+
+        // cell centered
         openvdb::FloatGrid::Ptr pressField;
 
-        // staggered
-        openvdb::Vec3fGrid::Ptr velField;
+        // face centered
+        openvdb::FloatGrid::Ptr velField[3];
 
         // parms
         float dx, dt;
@@ -29,5 +32,6 @@ namespace zeno{
         void advection();
         void applyOuterforce();
         void solvePress();
+        void step();
     };
 };
