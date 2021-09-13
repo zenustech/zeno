@@ -141,7 +141,14 @@ int main() {
 #endif
 
 
-struct NoHandler {};
+struct HostHandler {};
+
+
+struct DeviceHandler {
+    sycl::handler *m_cgh;
+
+    DeviceHandler(sycl::handler &cgh) : m_cgh(&cgh) {}
+};
 
 
 template <class T, size_t Dim = 1>
@@ -151,15 +158,15 @@ struct NDArray {
     sycl::buffer<T, Dim> m_buffer;
     sycl::range<Dim> m_shape;
 
-    NDArray() {}
+    NDArray() = default;
 
-    explicit NDArray(sycl::range<Dim> shape)
-        : m_buffer((T *)nullptr, shape), m_shape(shape)
+    explicit NDArray(sycl::range<Dim> shape, T *data = nullptr)
+        : m_buffer(data, shape), m_shape(shape)
     {}
 
     template <std::enable_if_t<Dim == 1, int> = 0>
-    explicit NDArray(size_t length)
-        : NDArray(sycl::range<Dim>(length))
+    explicit NDArray(size_t length, T *data = nullptr)
+        : NDArray(sycl::range<Dim>(length), data)
     {}
 
     auto const &shape() const {
@@ -182,54 +189,33 @@ struct NDArray {
 
         template <class ...Args>
         Accessor(NDArray &parent, Args &&...args)
-            : acc(parent.m_buffer.template get_access<Mode>(std::forward<Args>(args)...))
+            : acc(parent.m_buffer.template get_access<Mode>(
+                        std::forward<Args>(args)...))
         {}
 
         using ReferenceT = std::conditional_t<Mode == sycl::access::mode::read,
               T const &, T &>;
 
-        ReferenceT operator[](sycl::item<Dim> indices) const {
+        inline ReferenceT operator[](sycl::item<Dim> indices) const {
             return acc[indices];
         }
 
         template <std::enable_if_t<Dim == 1, int> = 0>
-        ReferenceT operator[](size_t index) const {
+        inline ReferenceT operator[](size_t index) const {
             return acc[index];
         }
     };
 
     template <auto Mode = sycl::access::mode::read_write>
-    auto accessor(NoHandler = {}) {
+    auto accessor(HostHandler = {}) {
         return Accessor<Mode, sycl::access::target::host_buffer>(*this);
     }
 
     template <auto Mode = sycl::access::mode::read_write>
-    auto accessor(sycl::handler &cgh) {
-        return Accessor<Mode, sycl::access::target::global_buffer>(*this, cgh);
+    auto accessor(DeviceHandler dev) {
+        return Accessor<Mode, sycl::access::target::global_buffer>(*this, *dev.m_cgh);
     }
 };
-
-
-template <class T>
-class kernel_memcpy_buffer;
-
-template <class T>
-void __memcpy_buffer(sycl::buffer<T, 1> &dst, sycl::buffer<T, 1> &src, size_t n, sycl::handler &cgh) {
-    auto dstAxr = dst.template get_access<sycl::access::mode::discard_write>(cgh);
-    auto srcAxr = src.template get_access<sycl::access::mode::read>(cgh);
-    cgh.parallel_for<kernel_memcpy_buffer<T>>(sycl::range<1>(n), [&] (sycl::item<1> id) {
-        dstAxr[id[0]] = srcAxr[id[0]];
-    });
-}
-
-template <class T>
-void __memcpy_buffer(sycl::buffer<T, 1> &dst, sycl::buffer<T, 1> &src, size_t n, NoHandler) {
-    auto dstAxr = dst.template get_access<sycl::access::mode::discard_write>();
-    auto srcAxr = src.template get_access<sycl::access::mode::read>();
-    for (int i = 0; i < n; i++) {
-        dstAxr[i] = srcAxr[i];
-    }
-}
 
 
 class kernel0;
@@ -240,7 +226,8 @@ int main() {
     NDArray<int> arr(16);
 
     que.submit([&] (sycl::handler &cgh) {
-        auto arrAxr = arr.accessor(cgh);
+        DeviceHandler dev(cgh);
+        auto arrAxr = arr.accessor(dev);
         cgh.parallel_for<kernel0>(sycl::range<1>(16), [=] (sycl::item<1> id) {
             arrAxr[id[0]] = id[0];
         });
