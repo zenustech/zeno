@@ -15,8 +15,8 @@
       "value": 0.04
      },
      "uipos": [
-      -8001.417625004161,
-      3215.556537579579
+      -9496.034621955376,
+      4067.071400384454
      ],
      "options": []
     },
@@ -33,10 +33,12 @@
       "value": 0.02
      },
      "uipos": [
-      -5571.951117912482,
-      3475.418945353733
+      -5654.2681910832125,
+      3457.126262426904
      ],
-     "options": []
+     "options": [
+      "collapsed"
+     ]
     },
     "c1d1d1a0-NumericVec3": {
      "name": "NumericVec3",
@@ -53,10 +55,12 @@
       "z": 0.0
      },
      "uipos": [
-      -5601.351825260455,
-      3643.8643000834604
+      -5689.766459406797,
+      3794.7789342298024
      ],
-     "options": []
+     "options": [
+      "collapsed"
+     ]
     },
     "cc374997-makeTank": {
      "name": "makeTank",
@@ -79,8 +83,8 @@
      },
      "params": {},
      "uipos": [
-      -6817.481217152346,
-      3784.4960568402184
+      -6788.5178025182,
+      3787.544837328023
      ],
      "options": [
       "ONCE"
@@ -107,11 +111,11 @@
      },
      "params": {
       "voxel_size": 0.08,
-      "type": "vertex"
+      "type": "cell"
      },
      "uipos": [
-      -7295.876892828021,
-      3772.0794081915683
+      -7250.145185510946,
+      3819.3355057525437
      ],
      "options": [
       "ONCE"
@@ -127,11 +131,11 @@
       ]
      },
      "params": {
-      "path": "assets/Pig_Head.obj"
+      "path": "assets/cube.obj"
      },
      "uipos": [
-      -8058.200352287482,
-      3652.4396244077852
+      -8126.797913263092,
+      3565.549380505346
      ],
      "options": [
       "ONCE"
@@ -141,8 +145,8 @@
      "name": "PrimitiveAddAttr",
      "inputs": {
       "prim": [
-       "1821cdf8-MeshToPrimitive",
-       "prim",
+       "ac2498c6-x",
+       "outPrim",
        null
       ],
       "fillValue": [
@@ -161,82 +165,8 @@
       "type": "float3"
      },
      "uipos": [
-      -6943.35689282802,
-      4134.047408191569
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "3ae6801d-x": {
-     "name": "MeshToSDF",
-     "inputs": {
-      "mesh": [
-       "371e4cd2-x",
-       "mesh",
-       null
-      ],
-      "Dx": [
-       "35e6f99c-NumericFloat",
-       "value",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "voxel_size": 0.08,
-      "type": "vertex"
-     },
-     "uipos": [
-      -7484.986514449642,
-      4036.5521649483253
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "371e4cd2-x": {
-     "name": "ReadObjMesh",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "path": "assets/bowl.obj"
-     },
-     "uipos": [
-      -7963.990615800993,
-      4493.304137921297
-     ],
-     "options": [
-      "ONCE"
-     ]
-    },
-    "1821cdf8-MeshToPrimitive": {
-     "name": "MeshToPrimitive",
-     "inputs": {
-      "mesh": [
-       "371e4cd2-x",
-       "mesh",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -7382.00554147667,
-      4550.65821900238
+      -6729.929873010947,
+      4950.116386850103
      ],
      "options": [
       "ONCE"
@@ -251,8 +181,8 @@
        null
       ],
       "translate": [
-       null,
-       null,
+       "6b3d812a-NumericVec3",
+       "vec3",
        null
       ],
       "rotate": [
@@ -261,8 +191,8 @@
        null
       ],
       "scaling": [
-       "6b3d812a-NumericVec3",
-       "vec3",
+       null,
+       null,
        null
       ],
       "SRC": [
@@ -291,12 +221,12 @@
      },
      "params": {
       "x": 2.0,
-      "y": 2.0,
-      "z": 2.0
+      "y": 4.0,
+      "z": 0.0
      },
      "uipos": [
-      -8044.203379314507,
-      3935.3922730564336
+      -8370.422891509626,
+      3717.4044681783857
      ],
      "options": []
     },
@@ -316,8 +246,8 @@
      },
      "params": {},
      "uipos": [
-      -6442.156892828021,
-      3458.3474081915683
+      -6615.372641684728,
+      3433.326924197664
      ],
      "options": [
       "ONCE"
@@ -327,7 +257,7 @@
      "name": "makeCollision",
      "inputs": {
       "StaticSDF": [
-       "3ae6801d-x",
+       "7a124754-PrimitiveToSDF",
        "sdf",
        null
       ],
@@ -349,8 +279,8 @@
      },
      "params": {},
      "uipos": [
-      -6219.156892828021,
-      3657.8474081915683
+      -6214.488889872679,
+      4754.789100264737
      ],
      "options": [
       "ONCE"
@@ -375,13 +305,13 @@
        null
       ],
       "RigidLocalPrimList": [
-       null,
-       null,
+       "36c91f4e-PortalOut",
+       "port",
        null
       ],
       "BulletWorld": [
-       null,
-       null,
+       "a58d8bfd-x",
+       "port",
        null
       ],
       "gravity": [
@@ -395,13 +325,18 @@
        null
       ],
       "RigidLocalPosList": [
-       null,
-       null,
+       "e02d3d6b-x",
+       "port",
        null
       ],
       "RigidList": [
-       null,
-       null,
+       "e778cd64-x",
+       "port",
+       null
+      ],
+      "DynaEmitter": [
+       "01257425-MeshToSDF",
+       "sdf",
        null
       ],
       "SRC": [
@@ -412,16 +347,16 @@
      },
      "params": {},
      "uipos": [
-      -5146.266389238495,
-      3670.677456820689
+      -4904.87856410002,
+      3645.432266718094
      ],
      "options": []
     },
     "5f6f9816-Blackboard": {
      "name": "Blackboard",
      "uipos": [
-      -5455.156892828023,
-      3817.0974081915683
+      -5416.734761680484,
+      3733.849457371898
      ],
      "special": true,
      "width": 829.9999999999995,
@@ -581,8 +516,8 @@
       "_KEYS": "BulletObj\nobj1"
      },
      "uipos": [
-      -112.18211442255267,
-      988.7976513588103
+      -109.1333339347478,
+      959.834236724664
      ],
      "options": [],
      "socket_keys": [
@@ -637,8 +572,8 @@
      },
      "params": {},
      "uipos": [
-      -404.9974551852307,
-      1030.8768305564827
+      -491.8876990876694,
+      977.5231720198974
      ],
      "options": []
     },
@@ -807,8 +742,8 @@
       "periodicZ": false
      },
      "uipos": [
-      -8451.58936900628,
-      783.6598829573595
+      -8748.596020890978,
+      736.6901859876627
      ],
      "options": []
     },
@@ -869,8 +804,8 @@
      },
      "params": {},
      "uipos": [
-      -6805.466450694566,
-      1451.514860721524
+      -7059.932914109198,
+      1420.3105924288413
      ],
      "options": []
     },
@@ -895,8 +830,8 @@
      },
      "params": {},
      "uipos": [
-      -7014.090247053104,
-      972.1599782881574
+      -7014.385886373134,
+      963.6233929223038
      ],
      "options": []
     },
@@ -957,8 +892,8 @@
       "z": 0.0
      },
      "uipos": [
-      -7262.208698078156,
-      700.9709122289322
+      -7287.966273835732,
+      688.8497001077202
      ],
      "options": []
     },
@@ -1047,8 +982,8 @@
       "hint": "X"
      },
      "uipos": [
-      -4597.998408372881,
-      467.4245463392949
+      -4614.665075039547,
+      440.15181906656767
      ],
      "options": []
     },
@@ -1115,8 +1050,8 @@
      },
      "params": {},
      "uipos": [
-      -8173.9991308799845,
-      978.5381104066084
+      -8248.241555122408,
+      975.5078073763054
      ],
      "options": []
     },
@@ -1218,8 +1153,8 @@
      },
      "params": {},
      "uipos": [
-      -6475.865640477456,
-      1525.5085276722045
+      -6432.057229262502,
+      1527.9423282952573
      ],
      "options": []
     },
@@ -1238,8 +1173,8 @@
       "z": 10.0
      },
      "uipos": [
-      -7105.982674883358,
-      1596.2419993645915
+      -7534.717430980917,
+      1565.754194486543
      ],
      "options": []
     },
@@ -1297,8 +1232,8 @@
      },
      "params": {},
      "uipos": [
-      -7104.623249204869,
-      1418.8782415764892
+      -7464.760444326819,
+      1367.4300708447824
      ],
      "options": []
     },
@@ -1419,8 +1354,8 @@
      },
      "params": {},
      "uipos": [
-      -6750.639362737751,
-      1051.2414014039211
+      -6758.424736972973,
+      1088.3161946557107
      ],
      "options": []
     },
@@ -1443,8 +1378,8 @@
        null
       ],
       "mass": [
-       "861881dd-x",
-       "mass",
+       "d08a59e0-NumericOperator",
+       "ret",
        1.0
       ],
       "dampLin": [
@@ -1460,7 +1395,7 @@
       "friction": [
        null,
        null,
-       0.5
+       0.2
       ],
       "restitution": [
        null,
@@ -1516,8 +1451,8 @@
      },
      "params": {},
      "uipos": [
-      -7888.805509012101,
-      921.1349213405492
+      -7913.047933254526,
+      922.6500728557007
      ],
      "options": []
     },
@@ -1731,8 +1666,8 @@
       "z": 0.0
      },
      "uipos": [
-      -6802.154944651953,
-      1718.546955871794
+      -6886.959610296315,
+      1715.3063023137618
      ],
      "options": []
     },
@@ -1772,8 +1707,8 @@
       "z": 1.0
      },
      "uipos": [
-      -7894.272479399343,
-      693.3444885387269
+      -8344.013794994316,
+      628.1190635572044
      ],
      "options": []
     },
@@ -1818,8 +1753,8 @@
      },
      "params": {},
      "uipos": [
-      -6167.422774684535,
-      1440.9321024145054
+      -6043.298942908836,
+      1560.1883329440998
      ],
      "options": []
     },
@@ -1844,8 +1779,8 @@
      },
      "params": {},
      "uipos": [
-      -7292.621109153017,
-      932.448416959063
+      -7315.34838188029,
+      973.3575078681536
      ],
      "options": []
     },
@@ -1885,8 +1820,8 @@
      },
      "params": {},
      "uipos": [
-      -4393.403831417609,
-      3515.672030651329
+      -4431.513587515171,
+      3429.925079431817
      ],
      "options": []
     },
@@ -2405,12 +2340,10 @@
      },
      "params": {},
      "uipos": [
-      -358.237547892719,
-      3277.777777777767
+      -271.75222014881683,
+      3300.9294546070355
      ],
-     "options": [
-      "VIEW"
-     ]
+     "options": []
     },
     "3674bed7-ParticlesWrangle": {
      "name": "ParticlesWrangle",
@@ -2511,13 +2444,574 @@
       3220.7733179727425
      ],
      "options": []
+    },
+    "7b29fa57-x": {
+     "name": "ImportObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/cube.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -8301.252916598809,
+      4626.133288788859
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "0cf6b280-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 10.0,
+      "y": 1.0,
+      "z": 10.0
+     },
+     "uipos": [
+      -8371.209903252908,
+      4824.457412430619
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "8f3dd5ec-x": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "7b29fa57-x",
+       "prim",
+       null
+      ],
+      "translation": [
+       null,
+       null,
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       "0cf6b280-x",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -7896.425386381187,
+      4679.013810372918
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "ac2498c6-x": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "8f3dd5ec-x",
+       "outPrim",
+       null
+      ],
+      "translation": [
+       "6c8910c2-NumericVec3",
+       "vec3",
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -7492.354230182903,
+      4813.10022865852
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "6c8910c2-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": -3.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -7846.0127667682655,
+      4957.00266768291
+     ],
+     "options": []
+    },
+    "7a124754-PrimitiveToSDF": {
+     "name": "PrimitiveToSDF",
+     "inputs": {
+      "PrimitiveMesh": [
+       "ac2498c6-x",
+       "outPrim",
+       null
+      ],
+      "Dx": [
+       "35e6f99c-NumericFloat",
+       "value",
+       0.08
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "type": "vertex"
+     },
+     "uipos": [
+      -7135.265815548754,
+      4659.441692073156
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "9293f19c-x": {
+     "name": "PrimitiveColorByHeatmap",
+     "inputs": {
+      "prim": [
+       "51b954ad-x",
+       "prim",
+       null
+      ],
+      "heatmap": [
+       "157c7eaa-x",
+       "heatmap",
+       null
+      ],
+      "min": [
+       null,
+       null,
+       0.0
+      ],
+      "max": [
+       null,
+       null,
+       6.0
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "attrName": "speed"
+     },
+     "uipos": [
+      -3330.169604817112,
+      4112.424004402751
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "157c7eaa-x": {
+     "name": "MakeHeatmap",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "nres": 1024,
+      "_RAMPS": "5\n0 0 0 0.5750473091862824\n0.2652085217759482 0 0.22313336210617093 0.993052481668943\n0.5163584226631521 0 0.7012051392716036 1\n0.7715397226516214 0 1 0.6547259387138543\n1 1 1 1"
+     },
+     "uipos": [
+      -3972.047194462389,
+      4335.751284300781
+     ],
+     "options": [],
+     "color_ramps": [
+      [
+       0,
+       [
+        0,
+        0,
+        0.5750473091862824
+       ]
+      ],
+      [
+       0.2652085217759482,
+       [
+        0,
+        0.22313336210617093,
+        0.993052481668943
+       ]
+      ],
+      [
+       0.5163584226631521,
+       [
+        0,
+        0.7012051392716036,
+        1
+       ]
+      ],
+      [
+       0.7715397226516214,
+       [
+        0,
+        1,
+        0.6547259387138543
+       ]
+      ],
+      [
+       1,
+       [
+        1,
+        1,
+        1
+       ]
+      ]
+     ]
+    },
+    "6b1ec62c-x": {
+     "name": "VDBPointsToPrimitive",
+     "inputs": {
+      "grid": [
+       "98305b7b-StepFLIPRigid",
+       "Particles",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -4264.167656412625,
+      3834.027679113825
+     ],
+     "options": []
+    },
+    "88d153b7-x": {
+     "name": "MakeMultilineString",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": "@speed = length(@vel)\n@rad=0"
+     },
+     "uipos": [
+      -4402.277832874448,
+      4217.743582071564
+     ],
+     "options": []
+    },
+    "51b954ad-x": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "6b1ec62c-x",
+       "prim",
+       null
+      ],
+      "zfxCode": [
+       "88d153b7-x",
+       "value",
+       ""
+      ],
+      "params": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -3871.711450796773,
+      3996.354844061315
+     ],
+     "options": []
+    },
+    "36c91f4e-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "PrimList"
+     },
+     "uipos": [
+      -5931.243886194064,
+      3856.6062984128403
+     ],
+     "options": []
+    },
+    "a58d8bfd-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "bulletWorld"
+     },
+     "uipos": [
+      -5946.646341463394,
+      3967.987804878035
+     ],
+     "options": []
+    },
+    "e02d3d6b-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "PrimRefineList"
+     },
+     "uipos": [
+      -5961.89024390242,
+      4099.085365853643
+     ],
+     "options": []
+    },
+    "e778cd64-x": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "BulletObj"
+     },
+     "uipos": [
+      -5966.463414634126,
+      4251.52439024389
+     ],
+     "options": []
+    },
+    "8ecd2501-viewRigids": {
+     "name": "viewRigids",
+     "inputs": {
+      "RigidDataList": [
+       "e54d7318-PortalOut",
+       "port",
+       null
+      ],
+      "SRC": [
+       "9293f19c-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -2604.211161419836,
+      4278.580581777784
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "4a73c08b-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "1cb49a46-x",
+       "output",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "RigidDataList"
+     },
+     "uipos": [
+      -2672.2560975609667,
+      1260.6707317073126
+     ],
+     "options": []
+    },
+    "e54d7318-PortalOut": {
+     "name": "PortalOut",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "RigidDataList"
+     },
+     "uipos": [
+      -2976.8292682926726,
+      4047.560975609742
+     ],
+     "options": []
+    },
+    "6ab0fa44-ExtractDict": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "5fb9adea-makeCollision",
+       "Collider",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "SDF\nobj1"
+     },
+     "uipos": [
+      -5810.647985989472,
+      5002.605954465833
+     ],
+     "options": [],
+     "socket_keys": [
+      "SDF",
+      "obj1"
+     ]
+    },
+    "d08a59e0-NumericOperator": {
+     "name": "NumericOperator",
+     "inputs": {
+      "lhs": [
+       "861881dd-x",
+       "mass",
+       null
+      ],
+      "rhs": [
+       "a92cf535-NumericFloat",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "op_type": "mul"
+     },
+     "uipos": [
+      -6451.51515151513,
+      1166.6666666666629
+     ],
+     "options": []
+    },
+    "a92cf535-NumericFloat": {
+     "name": "NumericFloat",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 0.05
+     },
+     "uipos": [
+      -6744.852756274378,
+      1306.6110964863317
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -1327.1689935406175,
-    "y": 1806.1483349763384,
-    "width": 1499.9999999999673,
-    "height": 1249.9999999999957
+    "x": -7175.36925870627,
+    "y": 806.8785488372325,
+    "width": 1199.9999999999566,
+    "height": 999.9999999999966
    }
   },
   "makeCollision": {
@@ -2535,8 +3029,8 @@
       "name": "FLIP"
      },
      "uipos": [
-      204.9375,
-      -51.87499999999994
+      -110.91615853658539,
+      -173.82621951219508
      ],
      "options": []
     },
@@ -2563,8 +3057,8 @@
       "type": "vertex"
      },
      "uipos": [
-      588.0,
-      102.0
+      596.5365853658537,
+      62.97560975609761
      ],
      "options": []
     },
@@ -2594,8 +3088,8 @@
       "writeBack": false
      },
      "uipos": [
-      1032.0,
-      97.0
+      1291.9293615886986,
+      58.088897774223625
      ],
      "options": []
     },
@@ -2649,8 +3143,8 @@
      },
      "params": {},
      "uipos": [
-      1490.0625000000002,
-      468.2500000000001
+      1486.4039634146345,
+      392.64024390243935
      ],
      "options": []
     },
@@ -2670,8 +3164,8 @@
      },
      "params": {},
      "uipos": [
-      1187.0,
-      437.0
+      1168.7073170731708,
+      443.0975609756096
      ],
      "options": []
     },
@@ -2723,8 +3217,8 @@
       "dx": 0.04
      },
      "uipos": [
-      2525.6499999999996,
-      552.75
+      2987.8451219512203,
+      428.3597560975611
      ],
      "options": []
     },
@@ -2748,8 +3242,8 @@
       "name": "Rename!"
      },
      "uipos": [
-      1741.2500000000002,
-      301.37500000000006
+      1808.3231707317077,
+      435.5213414634146
      ],
      "options": []
     },
@@ -2773,8 +3267,8 @@
       "name": "Rename!"
      },
      "uipos": [
-      1797.0375000000001,
-      655.5124999999998
+      2186.061890243902,
+      666.4881097560971
      ],
      "options": []
     },
@@ -2798,8 +3292,8 @@
       "name": "Rename!"
      },
      "uipos": [
-      2060.0000000000005,
-      874.3999999999999
+      2520.9756097560985,
+      887.8146341463414
      ],
      "options": []
     },
@@ -2826,8 +3320,8 @@
       "op_type": "div"
      },
      "uipos": [
-      610.9374999999999,
-      499.9999999999999
+      604.8399390243902,
+      499.99999999999983
      ],
      "options": []
     },
@@ -2844,8 +3338,8 @@
       "value": 2.0
      },
      "uipos": [
-      519.9999999999998,
-      749.9999999999999
+      77.31707317073153,
+      785.3658536585364
      ],
      "options": []
     },
@@ -2864,8 +3358,8 @@
       "defl": ""
      },
      "uipos": [
-      -322.89937499999974,
-      589.5362499999999
+      -753.3871798780484,
+      613.9264939024389
      ],
      "options": []
     },
@@ -2884,8 +3378,8 @@
       "defl": ""
      },
      "uipos": [
-      -332.2993749999999,
-      193.78124999999983
+      -914.0066920731705,
+      47.43978658536574
      ],
      "options": []
     },
@@ -2937,8 +3431,8 @@
       "_KEYS": "SDF\nVel\nobj2"
      },
      "uipos": [
-      2853.0249999999996,
-      814.0925
+      3426.1957317073166,
+      748.2388414634148
      ],
      "options": [],
      "socket_keys": [
@@ -2967,8 +3461,8 @@
       "defl": ""
      },
      "uipos": [
-      3153.4349999999995,
-      669.4525000000001
+      3829.2886585365845,
+      540.9159146341464
      ],
      "options": []
     },
@@ -2992,13 +3486,44 @@
       982.4999999999998
      ],
      "options": []
+    },
+    "11fc9107-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       null,
+       null,
+       null
+      ],
+      "false": [
+       null,
+       null,
+       null
+      ],
+      "cond": [
+       "9c99f5bb-x",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -184.14634146341407,
+      347.5609756097562
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -180.0,
-    "y": -214.0,
-    "width": 768.0,
-    "height": 640.0
+    "x": 918.4264402820297,
+    "y": -136.76072740781228,
+    "width": 1200.0,
+    "height": 1000.0
    }
   },
   "makeTank": {
@@ -3571,10 +4096,10 @@
     }
    },
    "view_rect": {
-    "x": 131.39068100358395,
-    "y": 657.9534050179215,
-    "width": 768.0,
-    "height": 640.0
+    "x": -108.46903957950929,
+    "y": 134.53170759026222,
+    "width": 1500.0,
+    "height": 1250.0
    }
   },
   "FLIPRigidSimTemplate": {
@@ -3593,8 +4118,8 @@
        null
       ],
       "SolidSDF": [
-       "d99f35a2-PortalOut",
-       "port",
+       "5a5c217f-CombineVDB",
+       "FieldOut",
        null
       ],
       "ExtractedLiquidSDF": [
@@ -3612,8 +4137,8 @@
       "dx": 0.04
      },
      "uipos": [
-      7322.811980714968,
-      3900.588703774848
+      8141.7420218672305,
+      3845.7190192755347
      ],
      "options": []
     },
@@ -3626,15 +4151,15 @@
        null
       ],
       "SRC": [
-       "50a1bfa6-x",
+       "5a5c217f-CombineVDB",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      4553.889242249298,
-      4101.810529210602
+      3915.5654694244977,
+      4003.6770178036777
      ],
      "options": []
     },
@@ -3710,8 +4235,8 @@
        null
       ],
       "SolidSDF": [
-       "d99f35a2-PortalOut",
-       "port",
+       "5a5c217f-CombineVDB",
+       "FieldOut",
        null
       ],
       "FaceWeight": [
@@ -3727,8 +4252,8 @@
      },
      "params": {},
      "uipos": [
-      7001.141878214058,
-      4040.9811689848075
+      7820.071919366319,
+      3986.111484485494
      ],
      "options": []
     },
@@ -3770,8 +4295,8 @@
      },
      "params": {},
      "uipos": [
-      5434.020277100374,
-      4112.125451543364
+      4670.188556646725,
+      4039.296818185218
      ],
      "options": []
     },
@@ -3814,7 +4339,7 @@
        null
       ],
       "SRC": [
-       "c072ebaa-x",
+       "8a3b7fc4-ParticleAddDV",
        "DST",
        null
       ]
@@ -3823,8 +4348,8 @@
       "dx": 0.04
      },
      "uipos": [
-      5875.2238791372065,
-      3965.536705254949
+      6692.71765458031,
+      3955.1912577394774
      ],
      "options": []
     },
@@ -3870,8 +4395,8 @@
       "dilateIters": 0
      },
      "uipos": [
-      6350.057964118908,
-      3973.6876096958267
+      7154.409417571851,
+      3926.1072190461705
      ],
      "options": []
     },
@@ -3898,8 +4423,8 @@
       "op_type": "mul"
      },
      "uipos": [
-      7874.404638322766,
-      3705.845945381553
+      5744.089137636902,
+      3685.2698136943113
      ],
      "options": []
     },
@@ -3941,8 +4466,8 @@
       "NumIterates": 1
      },
      "uipos": [
-      6647.4150143529705,
-      4174.109963845646
+      7466.345055505231,
+      4119.240279346332
      ],
      "options": []
     },
@@ -3959,8 +4484,8 @@
       "name": "step_dt"
      },
      "uipos": [
-      7268.698308977063,
-      3629.860575699241
+      5082.141381679402,
+      3815.0457608844263
      ],
      "options": []
     },
@@ -3998,8 +4523,8 @@
        null
       ],
       "SolidSDF": [
-       "d99f35a2-PortalOut",
-       "port",
+       "5a5c217f-CombineVDB",
+       "FieldOut",
        null
       ],
       "SolidVelocity": [
@@ -4020,8 +4545,8 @@
       "surface_size": 4
      },
      "uipos": [
-      3930.6303768481566,
-      3984.181726478965
+      5507.945614726669,
+      3913.7788134371176
      ],
      "options": []
     },
@@ -4066,8 +4591,8 @@
        null
       ],
       "SolidSDF": [
-       "d99f35a2-PortalOut",
-       "port",
+       "5a5c217f-CombineVDB",
+       "FieldOut",
        null
       ],
       "ExtractedLiquidSDF": [
@@ -4145,8 +4670,8 @@
       "defl": ""
      },
      "uipos": [
-      4355.098177913047,
-      4384.075296153537
+      3800.3405477514693,
+      4245.834721647253
      ],
      "options": [
       "collapsed"
@@ -4214,8 +4739,8 @@
       "defl": ""
      },
      "uipos": [
-      5520.149708824919,
-      4364.828016736538
+      5540.257428753106,
+      4416.533582266162
      ],
      "options": []
     },
@@ -4234,39 +4759,8 @@
       "defl": ""
      },
      "uipos": [
-      4244.476400452427,
-      4013.9910101676296
-     ],
-     "options": []
-    },
-    "8e7a5faf-x": {
-     "name": "FieldAddVector",
-     "inputs": {
-      "invec3": [
-       "bfda6608-x",
-       "ret",
-       null
-      ],
-      "Velocity": [
-       "d75d928b-x",
-       "port",
-       null
-      ],
-      "FieldWeight": [
-       "3c649c74-x",
-       "port",
-       null
-      ],
-      "SRC": [
-       "bc7051bf-x",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      8279.183093818603,
-      3850.462992691432
+      3610.4532143947163,
+      3803.8659937469097
      ],
      "options": []
     },
@@ -4289,15 +4783,15 @@
        null
       ],
       "SRC": [
-       "ddc5db34-CombineVDB",
+       "c072ebaa-x",
        "DST",
        null
       ]
      },
      "params": {},
      "uipos": [
-      3545.955816301282,
-      4309.409021400842
+      5097.403560218864,
+      4226.030622311646
      ],
      "options": []
     },
@@ -4316,8 +4810,8 @@
       "defl": ""
      },
      "uipos": [
-      7509.899512368004,
-      3440.9752106452315
+      5380.955753794625,
+      3554.829805981309
      ],
      "options": []
     },
@@ -4421,8 +4915,8 @@
       "vz": 0.0
      },
      "uipos": [
-      4943.825691379541,
-      4174.534052890079
+      4294.45843648617,
+      4026.104749566525
      ],
      "options": []
     },
@@ -4444,9 +4938,7 @@
       -1183.1922139350827,
       3701.538507916958
      ],
-     "options": [
-      "collapsed"
-     ]
+     "options": []
     },
     "03ec1098-x": {
      "name": "PortalIn",
@@ -4520,7 +5012,7 @@
        null
       ],
       "SRC": [
-       "8e7a5faf-x",
+       "bc7051bf-x",
        "DST",
        null
       ]
@@ -4549,12 +5041,10 @@
       "defl": ""
      },
      "uipos": [
-      1732.0849899484733,
-      4673.367265096584
+      1814.6502741266602,
+      4936.424100734064
      ],
-     "options": [
-      "collapsed"
-     ]
+     "options": []
     },
     "86ec49cb-x": {
      "name": "SubInput",
@@ -4571,12 +5061,10 @@
       "defl": ""
      },
      "uipos": [
-      2388.8069926078842,
-      4971.659967877897
+      2329.662809067057,
+      4859.82514547294
      ],
-     "options": [
-      "collapsed"
-     ]
+     "options": []
     },
     "b4fc8ec8-RigidGetForce": {
      "name": "RigidGetForce",
@@ -4619,8 +5107,8 @@
      },
      "params": {},
      "uipos": [
-      1111.9258373078007,
-      4722.779366947249
+      461.1492894654018,
+      4570.651599592654
      ],
      "options": []
     },
@@ -4639,8 +5127,8 @@
       "defl": ""
      },
      "uipos": [
-      532.9687499999997,
-      4184.609374999994
+      -9.062106792743634,
+      4288.8138844416535
      ],
      "options": []
     },
@@ -4659,8 +5147,8 @@
       "defl": ""
      },
      "uipos": [
-      301.80539044703823,
-      4677.310008542137
+      361.25660995923323,
+      4680.358789029942
      ],
      "options": []
     },
@@ -4710,8 +5198,8 @@
       "defl": ""
      },
      "uipos": [
-      1031.992166923226,
-      4566.031177703227
+      935.7528468457634,
+      5143.848317425411
      ],
      "options": []
     },
@@ -4751,8 +5239,8 @@
      },
      "params": {},
      "uipos": [
-      2131.4687499999995,
-      4625.374999999999
+      2635.754116809878,
+      4337.545184546788
      ],
      "options": []
     },
@@ -4794,12 +5282,12 @@
       "name": "RigidVel"
      },
      "uipos": [
-      2522.3125000000005,
-      4417.250000000001
+      3238.824045556908,
+      4425.100956961056
      ],
      "options": []
     },
-    "ddc5db34-CombineVDB": {
+    "5a5c217f-CombineVDB": {
      "name": "CombineVDB",
      "inputs": {
       "FieldA": [
@@ -4813,8 +5301,8 @@
        null
       ],
       "SRC": [
-       "95dd02ba-RasterizeRigid",
-       "DST",
+       null,
+       null,
        null
       ]
      },
@@ -4822,61 +5310,51 @@
       "MultiplierA": 1.0,
       "MultiplierB": 1.0,
       "OpType": "CSGUnion",
-      "writeBack": false
+      "writeBack": true
      },
      "uipos": [
-      2821.6406249999986,
-      4589.468749999997
+      3103.601163066383,
+      4658.714811794568
      ],
      "options": []
     },
-    "bdd0aa4c-PortalIn": {
-     "name": "PortalIn",
+    "8a3b7fc4-ParticleAddDV": {
+     "name": "ParticleAddDV",
      "inputs": {
-      "port": [
-       "ddc5db34-CombineVDB",
-       "FieldOut",
+      "Particles": [
+       "177d293a-x",
+       "port",
+       null
+      ],
+      "dv": [
+       "bfda6608-x",
+       "ret",
        null
       ],
       "SRC": [
-       null,
-       null,
+       "50a1bfa6-x",
+       "DST",
        null
       ]
      },
      "params": {
-      "name": "newCollider"
+      "channel": "vel",
+      "vx": 0.0,
+      "vy": 0.0,
+      "vz": 0.0
      },
      "uipos": [
-      3134.9999999999995,
-      4388.749999999999
-     ],
-     "options": []
-    },
-    "d99f35a2-PortalOut": {
-     "name": "PortalOut",
-     "inputs": {
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "newCollider"
-     },
-     "uipos": [
-      2949.523925781251,
-      3877.2583007812473
+      6236.968449931394,
+      3969.650205761307
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": 4464.732246061451,
-    "y": 3982.211539281965,
-    "width": 767.9999999999978,
-    "height": 639.9999999999983
+    "x": 5324.333416000268,
+    "y": 3512.555707815964,
+    "width": 1499.9999999999957,
+    "height": 1249.9999999999957
    }
   },
   "addRigid": {
@@ -5357,91 +5835,8 @@
       "defl": ""
      },
      "uipos": [
-      415.24324035644304,
-      3092.9929504394463
-     ],
-     "options": []
-    },
-    "77f86948-d4d0-11eb-8394-b5a978b884f7-BulletGetObjTransform": {
-     "name": "BulletGetObjTransform",
-     "inputs": {
-      "object": [
-       "6d6fa09e-d4f4-11eb-8394-b5a978b884f7-BeginForEach",
-       "object",
-       null
-      ],
-      "SRC": [
-       "6d6fa09e-d4f4-11eb-8394-b5a978b884f7-BeginForEach",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1993.0175781250005,
-      3938.3789062499986
-     ],
-     "options": []
-    },
-    "7bda993c-d4d0-11eb-8394-b5a978b884f7-BulletExtractTransform": {
-     "name": "BulletExtractTransform",
-     "inputs": {
-      "trans": [
-       "77f86948-d4d0-11eb-8394-b5a978b884f7-BulletGetObjTransform",
-       "trans",
-       null
-      ],
-      "SRC": [
-       "77f86948-d4d0-11eb-8394-b5a978b884f7-BulletGetObjTransform",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2266.9433593750005,
-      4095.117187499999
-     ],
-     "options": []
-    },
-    "9016f81e-d4d0-11eb-8394-b5a978b884f7-TransformPrimitive": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "99ad3cb0-ListGetItem",
-       "object",
-       null
-      ],
-      "translation": [
-       "7bda993c-d4d0-11eb-8394-b5a978b884f7-BulletExtractTransform",
-       "origin",
-       null
-      ],
-      "eulerXYZ": [
-       null,
-       null,
-       null
-      ],
-      "quatRotation": [
-       "7bda993c-d4d0-11eb-8394-b5a978b884f7-BulletExtractTransform",
-       "rotation",
-       null
-      ],
-      "scaling": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       "99ad3cb0-ListGetItem",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2979.0527343749986,
-      3675.9765624999986
+      228.97631927349397,
+      3390.4844898979704
      ],
      "options": []
     },
@@ -5460,8 +5855,8 @@
       "defl": ""
      },
      "uipos": [
-      1042.2558593749986,
-      3914.199218749999
+      8.153876848118216,
+      3850.9620715725796
      ],
      "options": []
     },
@@ -5485,7 +5880,7 @@
       ]
      },
      "params": {
-      "type": "Centered"
+      "type": "vertex"
      },
      "uipos": [
       7234.494934082024,
@@ -5558,106 +5953,8 @@
       "defl": ""
      },
      "uipos": [
-      1136.7500000000005,
-      4424.792968749998
-     ],
-     "options": []
-    },
-    "77e95b32-d4d1-11eb-8394-b5a978b884f7-TransformPrimitive": {
-     "name": "TransformPrimitive",
-     "inputs": {
-      "prim": [
-       "b22d80f6-x",
-       "object",
-       null
-      ],
-      "translation": [
-       "7bda993c-d4d0-11eb-8394-b5a978b884f7-BulletExtractTransform",
-       "origin",
-       null
-      ],
-      "eulerXYZ": [
-       null,
-       null,
-       null
-      ],
-      "quatRotation": [
-       "7bda993c-d4d0-11eb-8394-b5a978b884f7-BulletExtractTransform",
-       "rotation",
-       null
-      ],
-      "scaling": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       "b22d80f6-x",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      4230.854492187497,
-      4166.708007812497
-     ],
-     "options": []
-    },
-    "c4cd2726-d4d1-11eb-8394-b5a978b884f7-BulletGetObjMotion": {
-     "name": "BulletGetObjMotion",
-     "inputs": {
-      "object": [
-       "6d6fa09e-d4f4-11eb-8394-b5a978b884f7-BeginForEach",
-       "object",
-       null
-      ],
-      "SRC": [
-       "6d6fa09e-d4f4-11eb-8394-b5a978b884f7-BeginForEach",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      3681.787109375,
-      4600.585937499997
-     ],
-     "options": []
-    },
-    "d1f1c27c-d4d1-11eb-8394-b5a978b884f7-RigidVelToPrimitive": {
-     "name": "RigidVelToPrimitive",
-     "inputs": {
-      "prim": [
-       "77e95b32-d4d1-11eb-8394-b5a978b884f7-TransformPrimitive",
-       "outPrim",
-       null
-      ],
-      "centroid": [
-       "7bda993c-d4d0-11eb-8394-b5a978b884f7-BulletExtractTransform",
-       "origin",
-       null
-      ],
-      "linearVel": [
-       "c4cd2726-d4d1-11eb-8394-b5a978b884f7-BulletGetObjMotion",
-       "linearVel",
-       null
-      ],
-      "angularVel": [
-       "c4cd2726-d4d1-11eb-8394-b5a978b884f7-BulletGetObjMotion",
-       "angularVel",
-       null
-      ],
-      "SRC": [
-       "c4cd2726-d4d1-11eb-8394-b5a978b884f7-BulletGetObjMotion",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      4577.490234374997,
-      4575.898437500001
+      262.9542770737344,
+      4393.180245535712
      ],
      "options": []
     },
@@ -5707,8 +6004,8 @@
       "name": "Rename!"
      },
      "uipos": [
-      7118.507690429684,
-      3884.834289550782
+      7221.714295652418,
+      4012.042430871826
      ],
      "options": []
     },
@@ -5760,8 +6057,8 @@
       "dx": 0.02
      },
      "uipos": [
-      8107.257690429682,
-      4165.7717895507785
+      8313.67090087515,
+      4160.971482331116
      ],
      "options": []
     },
@@ -5810,8 +6107,8 @@
       "name": "Rename!"
      },
      "uipos": [
-      7436.94519042968,
-      3947.9592895507785
+      7532.951334822921,
+      4012.763437016216
      ],
      "options": []
     },
@@ -5835,8 +6132,8 @@
       "name": "Rename!"
      },
      "uipos": [
-      7717.25769042968,
-      3894.2092895507785
+      7902.912499166706,
+      4186.387013315343
      ],
      "options": []
     },
@@ -5860,159 +6157,8 @@
       "defl": ""
      },
      "uipos": [
-      8525.34362792968,
-      4293.064758300778
-     ],
-     "options": []
-    },
-    "275e4f66-d4e9-11eb-8394-b5a978b884f7-EmptyList": {
-     "name": "EmptyList",
-     "inputs": {
-      "SRC": [
-       "0c4b6b64-d4d0-11eb-8394-b5a978b884f7-SubInput",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      853.8922119140611,
-      3431.9644165039012
-     ],
-     "options": []
-    },
-    "32da3152-d4e9-11eb-8394-b5a978b884f7-EmptyList": {
-     "name": "EmptyList",
-     "inputs": {
-      "SRC": [
-       "275e4f66-d4e9-11eb-8394-b5a978b884f7-EmptyList",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1120.1226806640611,
-      3602.296447753899
-     ],
-     "options": []
-    },
-    "41a77cb2-d4e9-11eb-8394-b5a978b884f7-AppendList": {
-     "name": "AppendList",
-     "inputs": {
-      "list": [
-       "275e4f66-d4e9-11eb-8394-b5a978b884f7-EmptyList",
-       "list",
-       null
-      ],
-      "object": [
-       "9016f81e-d4d0-11eb-8394-b5a978b884f7-TransformPrimitive",
-       "outPrim",
-       null
-      ],
-      "SRC": [
-       "9016f81e-d4d0-11eb-8394-b5a978b884f7-TransformPrimitive",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      3494.677734374993,
-      3698.242187499993
-     ],
-     "options": []
-    },
-    "498d4358-d4e9-11eb-8394-b5a978b884f7-PortalIn": {
-     "name": "PortalIn",
-     "inputs": {
-      "port": [
-       "41a77cb2-d4e9-11eb-8394-b5a978b884f7-AppendList",
-       "list",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "shapeList"
-     },
-     "uipos": [
-      5835.839843749992,
-      4209.1796874999945
-     ],
-     "options": []
-    },
-    "5d8f26aa-d4e9-11eb-8394-b5a978b884f7-AppendList": {
-     "name": "AppendList",
-     "inputs": {
-      "list": [
-       "32da3152-d4e9-11eb-8394-b5a978b884f7-EmptyList",
-       "list",
-       null
-      ],
-      "object": [
-       "d1f1c27c-d4d1-11eb-8394-b5a978b884f7-RigidVelToPrimitive",
-       "prim",
-       null
-      ],
-      "SRC": [
-       "d1f1c27c-d4d1-11eb-8394-b5a978b884f7-RigidVelToPrimitive",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      5021.240234374994,
-      4315.429687499994
-     ],
-     "options": []
-    },
-    "6e590e38-d4e9-11eb-8394-b5a978b884f7-PortalIn": {
-     "name": "PortalIn",
-     "inputs": {
-      "port": [
-       "5d8f26aa-d4e9-11eb-8394-b5a978b884f7-AppendList",
-       "list",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {
-      "name": "MotionList"
-     },
-     "uipos": [
-      5863.226317405693,
-      4503.598424911492
-     ],
-     "options": []
-    },
-    "8187dfac-d4e9-11eb-8394-b5a978b884f7-EndFor": {
-     "name": "EndFor",
-     "inputs": {
-      "FOR": [
-       "6d6fa09e-d4f4-11eb-8394-b5a978b884f7-BeginForEach",
-       "FOR",
-       null
-      ],
-      "SRC": [
-       "5d8f26aa-d4e9-11eb-8394-b5a978b884f7-AppendList",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      5609.457015991203,
-      3776.6990661621026
+      8714.955763106333,
+      4285.864297471285
      ],
      "options": []
     },
@@ -6025,15 +6171,15 @@
        null
       ],
       "SRC": [
-       "8187dfac-d4e9-11eb-8394-b5a978b884f7-EndFor",
-       "DST",
+       null,
+       null,
        null
       ]
      },
      "params": {},
      "uipos": [
       6172.83416748046,
-      3601.3500976562436
+      3564.8677627868124
      ],
      "options": []
     },
@@ -6050,8 +6196,8 @@
       "name": "shapeList"
      },
      "uipos": [
-      5782.740478515616,
-      3360.1025390624955
+      5831.8956244449555,
+      3500.1947049611135
      ],
      "options": []
     },
@@ -6071,8 +6217,8 @@
      },
      "params": {},
      "uipos": [
-      6531.334228515616,
-      3879.5556640624936
+      6525.617765100981,
+      3881.461151867372
      ],
      "options": []
     },
@@ -6089,34 +6235,8 @@
       "name": "MotionList"
      },
      "uipos": [
-      6102.896728515616,
-      3924.7119140624936
-     ],
-     "options": []
-    },
-    "6d6fa09e-d4f4-11eb-8394-b5a978b884f7-BeginForEach": {
-     "name": "BeginForEach",
-     "inputs": {
-      "list": [
-       "0c4b6b64-d4d0-11eb-8394-b5a978b884f7-SubInput",
-       "port",
-       null
-      ],
-      "accumate": [
-       null,
-       null,
-       null
-      ],
-      "SRC": [
-       "32da3152-d4e9-11eb-8394-b5a978b884f7-EmptyList",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      1473.7261962890584,
-      3215.496826171867
+      6052.512703938042,
+      3898.9054624495893
      ],
      "options": []
     },
@@ -6133,8 +6253,8 @@
       "name": "Rigid_Fluid"
      },
      "uipos": [
-      1774.754524230956,
-      2692.3802495002724
+      430.6685027255812,
+      2007.2804031101045
      ],
      "options": []
     },
@@ -6158,58 +6278,6 @@
      ],
      "options": []
     },
-    "99ad3cb0-ListGetItem": {
-     "name": "ListGetItem",
-     "inputs": {
-      "list": [
-       "9445a930-d4d0-11eb-8394-b5a978b884f7-SubInput",
-       "port",
-       null
-      ],
-      "index": [
-       "6d6fa09e-d4f4-11eb-8394-b5a978b884f7-BeginForEach",
-       "index",
-       null
-      ],
-      "SRC": [
-       "7bda993c-d4d0-11eb-8394-b5a978b884f7-BulletExtractTransform",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      2578.1249999999995,
-      3756.2499999999995
-     ],
-     "options": []
-    },
-    "b22d80f6-x": {
-     "name": "ListGetItem",
-     "inputs": {
-      "list": [
-       "70f52342-d4d1-11eb-8394-b5a978b884f7-SubInput",
-       "port",
-       null
-      ],
-      "index": [
-       "6d6fa09e-d4f4-11eb-8394-b5a978b884f7-BeginForEach",
-       "index",
-       null
-      ],
-      "SRC": [
-       "41a77cb2-d4e9-11eb-8394-b5a978b884f7-AppendList",
-       "DST",
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      3860.9374999999995,
-      3914.062500000001
-     ],
-     "options": []
-    },
     "bdadbf8e-SubInput": {
      "name": "SubInput",
      "inputs": {
@@ -6225,17 +6293,466 @@
       "defl": ""
      },
      "uipos": [
-      1126.1652069091788,
-      4761.919189453121
+      1013.3579872471203,
+      4747.518267794135
+     ],
+     "options": []
+    },
+    "fd2f8443-BeginForEach": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "0c4b6b64-d4d0-11eb-8394-b5a978b884f7-SubInput",
+       "port",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1253.5852294546826,
+      3187.876524097539
+     ],
+     "options": []
+    },
+    "bf0a7e20-EndForEach": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       "592551f9-x",
+       "outPrim",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "fd2f8443-BeginForEach",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      2805.889376920118,
+      3290.795110887091
+     ],
+     "options": []
+    },
+    "66f239e7-x": {
+     "name": "BulletExtractTransform",
+     "inputs": {
+      "trans": [
+       "44fa5cef-x",
+       "trans",
+       null
+      ],
+      "SRC": [
+       "44fa5cef-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1793.0058773761498,
+      3118.012177779374
+     ],
+     "options": []
+    },
+    "44fa5cef-x": {
+     "name": "BulletGetObjTransform",
+     "inputs": {
+      "object": [
+       "fd2f8443-BeginForEach",
+       "object",
+       null
+      ],
+      "SRC": [
+       "fd2f8443-BeginForEach",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1523.6883910570245,
+      3079.5534664218467
+     ],
+     "options": []
+    },
+    "de17d8be-PortalIn": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "bf0a7e20-EndForEach",
+       "list",
+       null
+      ],
+      "SRC": [
+       "bf0a7e20-EndForEach",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "shapeList"
+     },
+     "uipos": [
+      3485.152049731178,
+      3433.652253744236
+     ],
+     "options": []
+    },
+    "592551f9-x": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "a3c8fc24-ListGetItem",
+       "object",
+       null
+      ],
+      "translation": [
+       "66f239e7-x",
+       "origin",
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       "66f239e7-x",
+       "rotation",
+       null
+      ],
+      "scaling": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "a3c8fc24-ListGetItem",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2454.814108102915,
+      3134.881132392469
+     ],
+     "options": []
+    },
+    "a3c8fc24-ListGetItem": {
+     "name": "ListGetItem",
+     "inputs": {
+      "list": [
+       "9445a930-d4d0-11eb-8394-b5a978b884f7-SubInput",
+       "port",
+       null
+      ],
+      "index": [
+       "fd2f8443-BeginForEach",
+       "index",
+       null
+      ],
+      "SRC": [
+       "66f239e7-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2147.594446044544,
+      3274.6660786290286
+     ],
+     "options": []
+    },
+    "7f09e7d1-BeginForEach": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "0c4b6b64-d4d0-11eb-8394-b5a978b884f7-SubInput",
+       "port",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1202.269945276496,
+      3681.084089381715
+     ],
+     "options": []
+    },
+    "998ebf9e-EndForEach": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       "2a71f224-x",
+       "prim",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "7f09e7d1-BeginForEach",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      3681.993447580641,
+      3759.1370847734197
+     ],
+     "options": []
+    },
+    "a0dffd72-x": {
+     "name": "BulletGetObjTransform",
+     "inputs": {
+      "object": [
+       "7f09e7d1-BeginForEach",
+       "object",
+       null
+      ],
+      "SRC": [
+       "7f09e7d1-BeginForEach",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1519.3971789194497,
+      3616.81791384648
+     ],
+     "options": []
+    },
+    "3c046d5a-x": {
+     "name": "BulletExtractTransform",
+     "inputs": {
+      "trans": [
+       "a0dffd72-x",
+       "trans",
+       null
+      ],
+      "SRC": [
+       "a0dffd72-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1776.425878756239,
+      3632.235150549631
+     ],
+     "options": []
+    },
+    "868904d1-x": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "31769c7f-x",
+       "object",
+       null
+      ],
+      "translation": [
+       "3c046d5a-x",
+       "origin",
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       "3c046d5a-x",
+       "rotation",
+       null
+      ],
+      "scaling": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       "31769c7f-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2425.945323000669,
+      3646.0319085421415
+     ],
+     "options": []
+    },
+    "31769c7f-x": {
+     "name": "ListGetItem",
+     "inputs": {
+      "list": [
+       "70f52342-d4d1-11eb-8394-b5a978b884f7-SubInput",
+       "port",
+       null
+      ],
+      "index": [
+       "7f09e7d1-BeginForEach",
+       "index",
+       null
+      ],
+      "SRC": [
+       "3c046d5a-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2100.292481218796,
+      3759.7031835037396
+     ],
+     "options": []
+    },
+    "2a71f224-x": {
+     "name": "RigidVelToPrimitive",
+     "inputs": {
+      "prim": [
+       "868904d1-x",
+       "outPrim",
+       null
+      ],
+      "centroid": [
+       "3c046d5a-x",
+       "origin",
+       null
+      ],
+      "linearVel": [
+       "ab21fb8c-x",
+       "linearVel",
+       null
+      ],
+      "angularVel": [
+       "ab21fb8c-x",
+       "angularVel",
+       null
+      ],
+      "SRC": [
+       "ab21fb8c-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      3207.7731974846333,
+      3889.818488383251
+     ],
+     "options": []
+    },
+    "ab21fb8c-x": {
+     "name": "BulletGetObjMotion",
+     "inputs": {
+      "object": [
+       "7f09e7d1-BeginForEach",
+       "object",
+       null
+      ],
+      "SRC": [
+       "868904d1-x",
+       "DST",
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      2847.7843581989205,
+      3968.2694292434644
+     ],
+     "options": []
+    },
+    "1a327de6-x": {
+     "name": "PortalIn",
+     "inputs": {
+      "port": [
+       "998ebf9e-EndForEach",
+       "list",
+       null
+      ],
+      "SRC": [
+       "998ebf9e-EndForEach",
+       "DST",
+       null
+      ]
+     },
+     "params": {
+      "name": "MotionList"
+     },
+     "uipos": [
+      4035.267257104449,
+      3905.2344350038347
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": -715.0,
-    "y": 372.0,
-    "width": 1199.999999999999,
-    "height": 999.9999999999993
+    "x": 971.0140903814204,
+    "y": 2270.2674610243057,
+    "width": 4577.636718749993,
+    "height": 3814.697265624994
    }
   },
   "RigidGetForce": {
@@ -6460,8 +6977,8 @@
      },
      "params": {},
      "uipos": [
-      3193.125,
-      894.1249999999998
+      3183.59756097561,
+      861.731707317073
      ],
      "options": []
     },
@@ -6790,10 +7307,10 @@
     }
    },
    "view_rect": {
-    "x": 3562.071844738033,
-    "y": 606.3718399999999,
-    "width": 614.3999999999999,
-    "height": 511.9999999999997
+    "x": 3943.8147066864153,
+    "y": 515.4518497889293,
+    "width": 1874.999999999999,
+    "height": 1562.499999999999
    }
   },
   "StepFLIPRigid": {
@@ -6832,8 +7349,8 @@
        null
       ],
       "DynEmitter": [
-       null,
-       null,
+       "dbf49c5b-SubInput",
+       "port",
        null
       ],
       "CellFWeight": [
@@ -6847,8 +7364,8 @@
        null
       ],
       "ifEmit": [
-       "6a89294b-x",
-       "value",
+       "f5e85b05-IfElse",
+       "result",
        null
       ],
       "Gravity": [
@@ -6873,12 +7390,12 @@
       ],
       "CollisionVel": [
        "9cd48759-x",
-       "SDF",
+       "Vel",
        null
       ],
       "Collision": [
        "9cd48759-x",
-       "Vel",
+       "SDF",
        null
       ],
       "RigidList": [
@@ -6909,8 +7426,8 @@
      },
      "params": {},
      "uipos": [
-      1450.0079355713438,
-      29.44588909453283
+      2807.5983201435047,
+      -268.20804896064146
      ],
      "options": []
     },
@@ -6934,8 +7451,8 @@
       "defl": ""
      },
      "uipos": [
-      2742.0360595703114,
-      -55.58989257812493
+      3364.102609482745,
+      -48.5846386376696
      ],
      "options": []
     },
@@ -6977,8 +7494,8 @@
       "_KEYS": "SDF\nVel\nobj2"
      },
      "uipos": [
-      -81.87727050781302,
-      715.7234375000003
+      -135.90192644483355,
+      756.5674255691763
      ],
      "options": [],
      "socket_keys": [
@@ -7152,8 +7669,8 @@
       "value": 0
      },
      "uipos": [
-      682.3194189453119,
-      -255.68403320312507
+      600.0023457745802,
+      -324.2815941787348
      ],
      "options": []
     },
@@ -7275,13 +7792,82 @@
       "Dx",
       "obj9"
      ]
+    },
+    "dbf49c5b-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "DynaEmitter",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      423.78048780487813,
+      -187.4999999999999
+     ],
+     "options": []
+    },
+    "f5e85b05-IfElse": {
+     "name": "IfElse",
+     "inputs": {
+      "true": [
+       "bd4df491-x",
+       "value",
+       null
+      ],
+      "false": [
+       "6a89294b-x",
+       "value",
+       null
+      ],
+      "cond": [
+       "dbf49c5b-SubInput",
+       "hasValue",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1012.1951219512189,
+      -266.76829268292664
+     ],
+     "options": []
+    },
+    "bd4df491-x": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 1
+     },
+     "uipos": [
+      743.9024390243899,
+      -439.02439024390213
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 936.436628701592,
-    "y": -117.14259681093506,
-    "width": 959.9999999999994,
-    "height": 799.9999999999995
+    "x": 291.378414996268,
+    "y": -1267.4481174255545,
+    "width": 2929.687499999998,
+    "height": 2441.4062499999986
    }
   },
   "RigidStepWorld": {
@@ -8435,8 +9021,8 @@
      },
      "params": {},
      "uipos": [
-      45.59915164369035,
-      224.28419936373277
+      -29.819842769717482,
+      370.93224405647027
      ],
      "options": []
     },
@@ -8530,8 +9116,8 @@
      },
      "params": {},
      "uipos": [
-      620.8907741251326,
-      379.10922587486743
+      630.6673104379817,
+      355.3662091150909
      ],
      "options": []
     },
@@ -8555,8 +9141,8 @@
       "defl": ""
      },
      "uipos": [
-      883.351007423118,
-      367.4443266171793
+      894.5241917806599,
+      353.47784617025195
      ],
      "options": []
     },
@@ -8580,8 +9166,8 @@
       "defl": ""
      },
      "uipos": [
-      623.6831621813031,
-      581.6328788951841
+      693.5155644159399,
+      580.2362308504916
      ],
      "options": []
     },
@@ -8605,17 +9191,17 @@
       "defl": ""
      },
      "uipos": [
-      331.44475920679884,
-      614.7308781869689
+      253.23246870400567,
+      644.0604871255165
      ],
      "options": []
     }
    },
    "view_rect": {
-    "x": 31.460793561626225,
-    "y": 193.28002817840462,
-    "width": 500.0,
-    "height": 500.0
+    "x": -205.07154486869015,
+    "y": 139.32995311703075,
+    "width": 625.0,
+    "height": 625.0
    }
   },
   "RigidMakeConstraint": {
@@ -9595,8 +10181,8 @@
       "defl": ""
      },
      "uipos": [
-      5500.034179687501,
-      -1853.7255859374995
+      5503.8451552972565,
+      -1825.143268864329
      ],
      "options": []
     },
@@ -9854,10 +10440,10 @@
     }
    },
    "view_rect": {
-    "x": 10339.811065072252,
-    "y": -2621.9759538931717,
-    "width": 767.9999999999986,
-    "height": 639.9999999999989
+    "x": 4870.153090127813,
+    "y": -2315.3112666549246,
+    "width": 1499.9999999999968,
+    "height": 1249.9999999999973
    }
   },
   "FLIPMakeCollider": {
@@ -11884,6 +12470,278 @@
     "y": 315.35309192783836,
     "width": 959.9999999999984,
     "height": 799.9999999999983
+   }
+  },
+  "viewRigids": {
+   "nodes": {
+    "184d8f9f-x": {
+     "name": "Route",
+     "inputs": {
+      "input": [
+       "0c4ed465-x",
+       "list",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1121.132106256608,
+      202.9423160321819
+     ],
+     "options": [
+      "VIEW"
+     ]
+    },
+    "ba96c0b3-x": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "bd5e1a38-x",
+       "Primitive",
+       null
+      ],
+      "translation": [
+       "75b68c76-x",
+       "origin",
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       "75b68c76-x",
+       "rotation",
+       null
+      ],
+      "scaling": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      440.24023735390574,
+      117.4668389743631
+     ],
+     "options": []
+    },
+    "396c1efe-x": {
+     "name": "BulletGetObjTransform",
+     "inputs": {
+      "object": [
+       "bd5e1a38-x",
+       "BulletObj",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -298.6868910816504,
+      289.7763452460483
+     ],
+     "options": []
+    },
+    "0c4ed465-x": {
+     "name": "EndForEach",
+     "inputs": {
+      "object": [
+       "ba96c0b3-x",
+       "outPrim",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "accept": [
+       null,
+       null,
+       true
+      ],
+      "FOR": [
+       "e6f2a302-x",
+       "FOR",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "doConcat": false
+     },
+     "uipos": [
+      802.6482926833492,
+      138.94394421173183
+     ],
+     "options": []
+    },
+    "75b68c76-x": {
+     "name": "BulletExtractTransform",
+     "inputs": {
+      "trans": [
+       "396c1efe-x",
+       "trans",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      20.98908851120359,
+      305.96014101081846
+     ],
+     "options": []
+    },
+    "e6f2a302-x": {
+     "name": "BeginForEach",
+     "inputs": {
+      "list": [
+       "d432663b-SubInput",
+       "port",
+       null
+      ],
+      "accumate": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -919.4391994349617,
+      -8.704043449842402
+     ],
+     "options": []
+    },
+    "bd5e1a38-x": {
+     "name": "ExtractDict",
+     "inputs": {
+      "dict": [
+       "e6f2a302-x",
+       "object",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "_KEYS": "BulletObj\nPrimitive\nAddTranslate\nobj3"
+     },
+     "uipos": [
+      -636.0852833497092,
+      101.17109512220372
+     ],
+     "options": [],
+     "socket_keys": [
+      "BulletObj",
+      "Primitive",
+      "AddTranslate",
+      "obj3"
+     ]
+    },
+    "334a0e75-SubCategory": {
+     "name": "SubCategory",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "Bullet"
+     },
+     "uipos": [
+      -1156.8999871975038,
+      -420.2261203672829
+     ],
+     "options": []
+    },
+    "d432663b-SubInput": {
+     "name": "SubInput",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "RigidDataList",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      -1542.626357660061,
+      -124.6754716082317
+     ],
+     "options": []
+    },
+    "fb69e2c5-SubOutput": {
+     "name": "SubOutput",
+     "inputs": {
+      "port": [
+       "184d8f9f-x",
+       "output",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "name": "end",
+      "type": "",
+      "defl": ""
+     },
+     "uipos": [
+      1591.0078839557927,
+      256.79425495426835
+     ],
+     "options": []
+    }
+   },
+   "view_rect": {
+    "x": 845.7574416223297,
+    "y": -163.63188812150065,
+    "width": 976.5625,
+    "height": 976.5625
    }
   }
  },
@@ -25343,6 +26201,11 @@
     ],
     [
      "",
+     "DynaEmitter",
+     ""
+    ],
+    [
+     "",
      "SRC",
      ""
     ]
@@ -25372,6 +26235,37 @@
    "params": [],
    "categories": [
     "Rigid_Fluid"
+   ],
+   "is_subgraph": true
+  },
+  "viewRigids": {
+   "inputs": [
+    [
+     "",
+     "RigidDataList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "end",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Bullet"
    ],
    "is_subgraph": true
   },
