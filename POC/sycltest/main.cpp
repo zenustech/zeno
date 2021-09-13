@@ -12,6 +12,36 @@ struct DeviceHandler {
     sycl::handler *m_cgh;
 
     DeviceHandler(sycl::handler &cgh) : m_cgh(&cgh) {}
+
+    template <class Key, size_t Dim, class Kernel>
+    void parallelFor(vec<Dim, size_t> range, Kernel kernel) {
+        m_cgh->parallel_for<Key>(vec_to_other<sycl::range<Dim>>(range), [=] (sycl::id<Dim> idx) {
+            kernel(other_to_vec<Dim>(idx));
+        });
+    }
+
+    template <class Key, class Kernel>
+    void parallelFor(size_t range, Kernel kernel) {
+        return parallelFor<Key>(vec<1, size_t>(range), [=] (vec<1, size_t> id) {
+            return kernel(std::as_const(id[0]));
+        });
+    }
+};
+
+
+struct CommandQueue {
+    sycl::queue m_que;
+
+    template <bool IsBlocked = true, class Functor>
+    void enqueue(Functor const &functor) {
+        auto e = m_que.submit([&] (sycl::handler &cgh) {
+            DeviceHandler dev(cgh);
+            functor(std::as_const(dev));
+        });
+        if constexpr (IsBlocked) {
+            e.wait();
+        }
+    }
 };
 
 
@@ -87,18 +117,16 @@ struct NDArray {
 class kernel0;
 
 int main() {
-    sycl::queue que;
+    CommandQueue que;
 
     NDArray<int> arr(16);
 
-    que.submit([&] (sycl::handler &cgh) {
-        DeviceHandler dev(cgh);
+    que.enqueue<true>([&] (DeviceHandler dev) {
         auto arrAxr = arr.accessor(dev);
-        cgh.parallel_for<kernel0>(sycl::range<1>(16), [=] (sycl::id<1> id) {
-            arrAxr[id[0]] = id[0];
+        dev.parallelFor<kernel0>(16, [=] (size_t id) {
+            arrAxr[id] = id;
         });
     });
-    que.wait();
 
     {
         auto arrAxr = arr.accessor();
