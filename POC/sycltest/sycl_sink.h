@@ -4,10 +4,10 @@
 #include "vec.h"
 
 
-namespace zinc {
+namespace fdb {
 
 
-struct HostHandler {};
+static constexpr struct HostHandler {} host;
 
 
 struct DeviceHandler {
@@ -63,7 +63,7 @@ enum class Access {
 
 template <class T, size_t Dim = 1>
 struct NDArray {
-    static_assert(Dim > 0, "dimension of NDArray can't be 0");
+    static_assert(Dim > 0);
 
     sycl::buffer<T, Dim> m_buffer;
     vec<Dim, size_t> m_shape;
@@ -75,11 +75,6 @@ struct NDArray {
         , m_shape(shape)
     {}
 
-    template <std::enable_if_t<Dim == 1, int> = 0>
-    explicit NDArray(size_t length, T *data = nullptr)
-        : NDArray(vec<1, size_t>(length), data)
-    {}
-
     auto const &shape() const {
         return m_shape;
     }
@@ -88,11 +83,6 @@ struct NDArray {
         m_buffer = sycl::buffer<T, Dim>(
                 (T *)nullptr, vec_to_other<sycl::range<Dim>>(shape));
         m_shape = shape;
-    }
-
-    template <std::enable_if_t<Dim == 1, int> = 0>
-    void reshape(size_t length) {
-        reshape(sycl::range<Dim>(length));
     }
 
     template <sycl::access::mode Mode, sycl::access::target Target>
@@ -112,14 +102,14 @@ struct NDArray {
             return acc[vec_to_other<sycl::id<Dim>>(indices)];
         }
 
-        template <std::enable_if_t<Dim == 1, int> = 0>
-        inline ReferenceT operator[](size_t index) const {
-            return operator[](vec<1, size_t>(index));
+        template <class ...Indices>
+        inline ReferenceT operator()(Indices &&...indices) const {
+            return operator[](vec<Dim, size_t>(std::forward<Indices>(indices)...));
         }
     };
 
     template <auto Mode = Access::read_write>
-    auto accessor(HostHandler = {}) {
+    auto accessor(HostHandler hand) {
         return Accessor<(sycl::access::mode)(int)Mode,
                sycl::access::target::host_buffer>(*this);
     }
@@ -130,6 +120,9 @@ struct NDArray {
                sycl::access::target::global_buffer>(*this, *hand.m_cgh);
     }
 };
+
+
+CommandQueue &getQueue();
 
 
 }

@@ -9,8 +9,9 @@ endif()
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 find_package(ComputeCpp REQUIRED)
 
-add_executable(sycltest main.cpp)
-add_sycl_to_target(TARGET sycltest SOURCES main.cpp)
+set(PROJECT_SOURCES main.cpp sycl_sink.cpp)
+add_executable(sycltest ${PROJECT_SOURCES})
+add_sycl_to_target(TARGET sycltest SOURCES ${PROJECT_SOURCES})
 target_include_directories(sycltest PRIVATE .)
 
 target_link_libraries(sycltest PRIVATE ComputeCpp::ComputeCpp)

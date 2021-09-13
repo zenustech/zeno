@@ -3,31 +3,27 @@
 #include "sycl_sink.h"
 
 
-using namespace zinc;
-
-
-static CommandQueue &getQueue() {
-    static auto p = std::make_unique<CommandQueue>();
-    return *p;
-}
+using namespace fdb;
 
 
 class kernel0;
 
 int main() {
-    NDArray<int> arr(16);
+    NDArray<float, 1> img(512);
 
-    getQueue().submit([&] (DeviceHandler dev) {
-        auto arrAxr = arr.accessor<Access::discard_write>(dev);
+    fdb::getQueue().submit([&] (fdb::DeviceHandler dev) {
+        auto imgAxr = img.accessor<fdb::Access::discard_write>(dev);
         dev.parallelFor<kernel0>((size_t)16, [=] (size_t id) {
-            arrAxr[id] = id;
+            imgAxr(id, id) = id;
         });
     });
 
     {
-        auto arrAxr = arr.accessor<Access::read>();
+        auto imgAxr = img.accessor<fdb::Access::read>(fdb::host);
         for (int i = 0; i < 16; i++) {
-            printf("%d\n", arrAxr[i]);
+            for (int j = 0; j < 16; j++) {
+                printf("%f\n", imgAxr(fdb::vec2I(i, j)));
+            }
         }
     }
 }
