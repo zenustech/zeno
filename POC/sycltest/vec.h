@@ -35,25 +35,10 @@ struct vec : std::array<T, N> {
         }
     }
 
-    template <std::enable_if_t<N == 1, int> = 0>
-    vec(T const &x) : vec{x} {}
+    template <class ...Ts>
+    vec(T const &t, Ts const &...ts) : vec({t, T(ts)...}) {}
 
-    template <std::enable_if_t<N == 2, int> = 0>
-    vec(T const &x, T const &y) : vec{x, y} {}
-
-    template <std::enable_if_t<N == 3, int> = 0>
-    vec(T const &x, T const &y, T const &z) : vec{x, y, z} {}
-
-    template <std::enable_if_t<N == 4, int> = 0>
-    vec(T const &x, T const &y, T const &z, T const &w) : vec{x, y, z, w} {}
-
-    template <std::enable_if_t<N == 1, int> = 0>
-    operator T const &() const {
-        return (*this)[0];
-    }
-
-    template <std::enable_if_t<N == 1, int> = 0>
-    operator T &() {
+    operator T() const {
         return (*this)[0];
     }
 
@@ -446,6 +431,20 @@ inline auto tovec(vec<N, T> const &x) { return x; }
 
 /* common type definitions */
 
+using vec1f = vec<1, float>;
+using vec1d = vec<1, double>;
+using vec1i = vec<1, int32_t>;
+using vec1l = vec<1, intptr_t>;
+using vec1h = vec<1, int16_t>;
+using vec1c = vec<1, int8_t>;
+using vec1b = vec<1, bool>;
+using vec1I = vec<1, uint32_t>;
+using vec1L = vec<1, uintptr_t>;
+using vec1S = vec<1, size_t>;
+using vec1Q = vec<1, uint64_t>;
+using vec1H = vec<1, uint16_t>;
+using vec1C = vec<1, uint8_t>;
+
 using vec2f = vec<2, float>;
 using vec2d = vec<2, double>;
 using vec2i = vec<2, int32_t>;
@@ -455,9 +454,11 @@ using vec2c = vec<2, int8_t>;
 using vec2b = vec<2, bool>;
 using vec2I = vec<2, uint32_t>;
 using vec2L = vec<2, uintptr_t>;
+using vec2S = vec<2, size_t>;
 using vec2Q = vec<2, uint64_t>;
 using vec2H = vec<2, uint16_t>;
 using vec2C = vec<2, uint8_t>;
+
 using vec3f = vec<3, float>;
 using vec3d = vec<3, double>;
 using vec3i = vec<3, int32_t>;
@@ -467,9 +468,11 @@ using vec3c = vec<3, int8_t>;
 using vec3b = vec<3, bool>;
 using vec3I = vec<3, uint32_t>;
 using vec3L = vec<3, uintptr_t>;
+using vec3S = vec<3, size_t>;
 using vec3Q = vec<3, uint64_t>;
 using vec3H = vec<3, uint16_t>;
 using vec3C = vec<3, uint8_t>;
+
 using vec4f = vec<4, float>;
 using vec4d = vec<4, double>;
 using vec4i = vec<4, int32_t>;
@@ -479,6 +482,7 @@ using vec4c = vec<4, int8_t>;
 using vec4b = vec<4, bool>;
 using vec4I = vec<4, uint32_t>;
 using vec4L = vec<4, uintptr_t>;
+using vec4S = vec<4, size_t>;
 using vec4Q = vec<4, uint64_t>;
 using vec4H = vec<4, uint16_t>;
 using vec4C = vec<4, uint8_t>;

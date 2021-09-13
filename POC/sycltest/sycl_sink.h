@@ -22,13 +22,6 @@ struct DeviceHandler {
             kernel(std::as_const(id));
         });
     }
-
-    template <class Key, class Kernel>
-    void parallelFor(size_t range, Kernel kernel) const {
-        return parallelFor<Key>(vec<1, size_t>(range), [=] (vec<1, size_t> id) {
-            return kernel(std::as_const(id[0]));
-        });
-    }
 };
 
 
