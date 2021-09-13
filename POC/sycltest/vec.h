@@ -13,27 +13,39 @@ struct vec : std::array<T, N> {
     static_assert(N > 0);
 
     vec() = default;
+    vec(vec &&) = default;
+    vec(vec const &) = default;
+    vec &operator=(vec &&) = default;
+    vec &operator=(vec const &) = default;
+
     explicit vec(T const &x) {
         for (size_t i = 0; i < N; i++) {
             (*this)[i] = x;
         }
     }
 
-    template <std::enable_if_t<N == 1, int> = 0>
-    vec(T const &x) {
-        (*this)[0] = x;
-    }
-
-    vec(vec &&) = default;
-    vec(vec const &) = default;
-    vec &operator=(vec const &) = default;
-
-    template <class S>
-    vec(std::initializer_list<S> const &a) {
-        for (size_t i = 0; i < std::min(N, a.size()); i++) {
-            (*this)[i] = (T)*(a.begin() + i);
+    template <class S = T>
+    vec(std::initializer_list<S> const &x) {
+        T val;
+        auto it = x.begin();
+        for (size_t i = 0; i < N; i++) {
+            if (it != x.end())
+                val = *it++;
+            (*this)[i] = val;
         }
     }
+
+    template <std::enable_if_t<N == 1, int> = 0>
+    vec(T const &x) : vec{x} {}
+
+    template <std::enable_if_t<N == 2, int> = 0>
+    vec(T const &x, T const &y) : vec{x, y} {}
+
+    template <std::enable_if_t<N == 3, int> = 0>
+    vec(T const &x, T const &y, T const &z) : vec{x, y, z} {}
+
+    template <std::enable_if_t<N == 4, int> = 0>
+    vec(T const &x, T const &y, T const &z, T const &w) : vec{x, y, z, w} {}
 
     template <std::enable_if_t<N == 1, int> = 0>
     operator T const &() const {
@@ -51,22 +63,6 @@ struct vec : std::array<T, N> {
             (*this)[i] = T(x[i]);
         }
     }
-
-    vec(std::initializer_list<T> const &x) {
-        T val;
-        auto it = x.begin();
-        for (size_t i = 0; i < N; i++) {
-            if (it != x.end())
-                val = *it++;
-            (*this)[i] = val;
-        }
-    }
-
-    vec(T const &x, T const &y) : vec{x, y} {}
-
-    vec(T const &x, T const &y, T const &z) : vec{x, y, z} {}
-
-    vec(T const &x, T const &y, T const &z, T const &w) : vec{x, y, z, w} {}
 
     template <class S>
     operator vec<N, S>() const {
@@ -329,6 +325,11 @@ _PER_FN1(floor)
 _PER_FN1(ceil)
 #undef _PER_FN1
 
+template <class To, class T>
+inline auto vcast(T const &a) {
+    return vapply([](auto const &x) { return (To)x; }, a);
+}
+
 template <class T>
 inline auto fract(T const &a) {
     return a - floor(a);
@@ -337,11 +338,6 @@ inline auto fract(T const &a) {
 template <class T>
 inline auto ifloor(T const &a) {
     return vcast<int>(floor(a));
-}
-
-template <class To, class T>
-inline auto vcast(T const &a) {
-    return vapply([](auto const &x) { return (To)x; }, a);
 }
 
 /* vector math functions */
