@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 17)
 project(sycltest LANGUAGES CXX)
 
+add_definitions(-DCL_TARGET_OPENCL_VERSION=300)
+
 if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Debug)#RelWithDebInfo)
+    set(CMAKE_BUILD_TYPE Debug)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)

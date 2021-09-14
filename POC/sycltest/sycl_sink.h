@@ -150,7 +150,7 @@ static void __partial_memcpy(DeviceHandler dev
         ) {
     auto dstAxr = dst.template get_access<sycl::access::mode::write>(*dev.m_cgh);
     auto srcAxr = dst.template get_access<sycl::access::mode::read>(*dev.m_cgh);
-    dev.parallelFor<__partial_memcpy_kernel<T>>([=] (size_t id) {
+    dev.parallelFor<__partial_memcpy_kernel<T>, 1>(n, [=] (size_t id) {
         dstAxr[id] = srcAxr[id];
     });
 }
