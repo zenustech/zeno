@@ -8,13 +8,17 @@ using namespace fdb;
 
 class kernel0;
 
+
 int main() {
     NDArray<float, 2> img({16, 16});
+
+    int *dat = sycl::malloc_device<int>(1, fdb::getQueue().m_que);
 
     fdb::getQueue().submit([&] (fdb::DeviceHandler dev) {
         auto imgAxr = img.accessor<fdb::Access::discard_write>(dev);
         dev.parallelFor<kernel0>(img.shape(), [=] (fdb::vec2S id) {
             imgAxr(id[0], id[1]) = (id[0] + id[1]) % 2;
+            dat[0] = id[0];
         });
     });
 

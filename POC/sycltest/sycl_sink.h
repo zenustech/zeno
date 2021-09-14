@@ -22,6 +22,11 @@ struct DeviceHandler {
             kernel(std::as_const(id));
         });
     }
+
+    template <size_t Dim, class Kernel>
+    void parallelFor(vec<Dim, size_t> range, Kernel kernel) const {
+        parallelFor<Kernel>(range, kernel);
+    }
 };
 
 
@@ -49,8 +54,9 @@ enum class Access {
     read = (int)sycl::access::mode::read,
     write = (int)sycl::access::mode::write,
     read_write = (int)sycl::access::mode::read_write,
-    discard_write = (int)sycl::access::mode::write,
-    discard_read_write = (int)sycl::access::mode::read_write,
+    discard_write = (int)sycl::access::mode::discard_write,
+    discard_read_write = (int)sycl::access::mode::discard_read_write,
+    atomic = (int)sycl::access::mode::atomic,
 };
 
 
@@ -78,7 +84,9 @@ struct NDArray {
         m_shape = shape;
     }
 
-    template <sycl::access::mode Mode, sycl::access::target Target>
+    template
+        < auto Mode = sycl::access::mode::read_write
+        , auto Target = sycl::access::target::global_buffer>
     struct Accessor {
         sycl::accessor<T, Dim, Mode, Target> acc;
 
