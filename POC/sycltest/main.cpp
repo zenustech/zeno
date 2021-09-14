@@ -1,61 +1,81 @@
-#include <CL/sycl.hpp>
 #include <memory>
 #include <array>
-#include <list>
-#include "vec.h"
+#include "sycl_sink.h"
 
 
-sycl::queue &getQueue() {
-    static auto p = std::make_unique<sycl::queue>();
-    return *p;
-}
+namespace fdb {
 
+template <class T>
+struct ExtensibleArray {
+    NDArray<T> m_arr;
+    size_t m_size = 0;
 
-struct Instance {
-    sycl::queue que;
-    sycl::buffer<char> rootbuf{(char *)nullptr, 1024};
-
-    struct Chunk {
-        uintptr_t base = 0;
-        size_t size = 0;
-        bool used = true;
-    };
-
-    std::map<uintptr_t, Chunk *> chklut;
-    std::list<Chunk> chks;
-    uintptr_t top = 0x10000;
-
-    void *malloc(size_t size) {
-        auto ret = top;
-        Chunk chk{top, size};
-        top += size;
-        chks.push_back(std::move(chk));
-        chklut[ret] = &chks.back();
-        return (void *)ret;
+    size_t size() const {
+        return m_size;
     }
 
-    void free(void *ptr) {
-        auto loc = (uintptr_t)ptr;
-        if (auto it = chklut.find(loc); it != chklut.end()) {
-            auto &chk = *it->second;
-            chk.used = false;
+    size_t capacity() const {
+        return m_arr.shape();
+    }
+
+    template <class Handler>
+    void __recapacity(size_t n, Handler hand) {
+        auto old_buffer = std::move(m_arr.m_buffer);
+        m_arr.reshape(n);
+        __partial_memcpy(hand, m_arr.m_buffer, old_buffer, m_size);
+    }
+
+    template <class Handler>
+    void reserve(size_t n, Handler hand) {
+        if (n > capacity()) {
+            __recapacity(n, hand);
         }
+    }
+
+    template <class Handler>
+    void shrink_to_fit(Handler hand) {
+        if (capacity() > m_size) {
+            __recapacity(m_size, hand);
+        }
+    }
+
+    template <class Handler>
+    void resize(size_t n, Handler hand) {
+        reserve(n, hand);
+        m_size = n;
+    }
+
+    void clear() {
+        m_size = 0;
     }
 };
 
+}
+
+
+using namespace fdb;
+
+
 class kernel0;
 
+
 int main() {
-    Instance inst;
+    NDArray<float, 2> img({16, 16});
 
-    int *dat = (int *)inst.malloc(32 * sizeof(int));
-
-    inst.que.submit([&] (sycl::handler &cgh) {
-        auto rootaxr = inst.rootbuf.get_access<sycl::access::mode::read_write>(cgh);
-        cgh.parallel_for<kernel0>(sycl::range<1>(32), [=] (sycl::item<1> id) {
-            rootaxr[id[0]] = id[0];
+    fdb::getQueue().submit([&] (fdb::DeviceHandler dev) {
+        auto imgAxr = img.accessor<fdb::Access::discard_write>(dev);
+        dev.parallelFor<kernel0>(img.shape(), [=] (fdb::vec2S id) {
+            imgAxr(id[0], id[1]) = (id[0] + id[1]) % 2;
         });
     });
 
-    inst.free(dat);
+    {
+        auto imgAxr = img.accessor<fdb::Access::read>(fdb::host);
+        for (int j = 0; j < 16; j++) {
+            for (int i = 0; i < 16; i++) {
+                printf(" %.3f", imgAxr(i, j));
+            }
+            printf("\n");
+        }
+    }
 }

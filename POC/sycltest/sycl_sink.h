@@ -87,11 +87,11 @@ struct NDArray {
     template
         < auto Mode = sycl::access::mode::read_write
         , auto Target = sycl::access::target::global_buffer>
-    struct Accessor {
+    struct _Accessor {
         sycl::accessor<T, Dim, Mode, Target> acc;
 
         template <class ...Args>
-        Accessor(NDArray &parent, Args &&...args)
+        _Accessor(NDArray &parent, Args &&...args)
             : acc(parent.m_buffer.template get_access<Mode>(
                         std::forward<Args>(args)...))
         {}
@@ -111,19 +111,49 @@ struct NDArray {
 
     template <auto Mode = Access::read_write>
     auto accessor(HostHandler hand) {
-        return Accessor<(sycl::access::mode)(int)Mode,
+        return _Accessor<(sycl::access::mode)(int)Mode,
                sycl::access::target::host_buffer>(*this);
     }
 
     template <auto Mode = Access::read_write>
     auto accessor(DeviceHandler hand) {
-        return Accessor<(sycl::access::mode)(int)Mode,
+        return _Accessor<(sycl::access::mode)(int)Mode,
                sycl::access::target::global_buffer>(*this, *hand.m_cgh);
     }
 };
 
 
 CommandQueue &getQueue();
+
+
+template <class T>
+static void __partial_memcpy(HostHandler
+        , sycl::buffer<T, 1> const &dst
+        , sycl::buffer<T, 1> const &src
+        , size_t n
+        ) {
+    auto dstAxr = dst.get_access<sycl::access::mode::write>(dst);
+    auto srcAxr = dst.get_access<sycl::access::mode::read>(src);
+    for (size_t id = 0; id < n; id++) {
+        dstAxr[id] = srcAxr[id];
+    }
+}
+
+template <class T>
+class __partial_memcpy_kernel;
+
+template <class T>
+static void __partial_memcpy(DeviceHandler dev
+        , sycl::buffer<T, 1> const &dst
+        , sycl::buffer<T, 1> const &src
+        , size_t n
+        ) {
+    auto dstAxr = dst.get_access<sycl::access::mode::write>(dst, dev.m_cgh);
+    auto srcAxr = dst.get_access<sycl::access::mode::read>(src, dev.m_cgh);
+    dev.parallelFor<__partial_memcpy_kernel<T>>([=] (size_t id) {
+        dstAxr[id] = srcAxr[id];
+    });
+}
 
 
 }
