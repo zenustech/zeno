@@ -128,12 +128,12 @@ CommandQueue &getQueue();
 
 template <class T>
 static void __partial_memcpy(HostHandler
-        , sycl::buffer<T, 1> const &dst
-        , sycl::buffer<T, 1> const &src
+        , sycl::buffer<T, 1> &dst
+        , sycl::buffer<T, 1> &src
         , size_t n
         ) {
-    auto dstAxr = dst.get_access<sycl::access::mode::write>(dst);
-    auto srcAxr = dst.get_access<sycl::access::mode::read>(src);
+    auto dstAxr = dst.template get_access<sycl::access::mode::write>();
+    auto srcAxr = dst.template get_access<sycl::access::mode::read>();
     for (size_t id = 0; id < n; id++) {
         dstAxr[id] = srcAxr[id];
     }
@@ -144,12 +144,12 @@ class __partial_memcpy_kernel;
 
 template <class T>
 static void __partial_memcpy(DeviceHandler dev
-        , sycl::buffer<T, 1> const &dst
-        , sycl::buffer<T, 1> const &src
+        , sycl::buffer<T, 1> &dst
+        , sycl::buffer<T, 1> &src
         , size_t n
         ) {
-    auto dstAxr = dst.get_access<sycl::access::mode::write>(dst, dev.m_cgh);
-    auto srcAxr = dst.get_access<sycl::access::mode::read>(src, dev.m_cgh);
+    auto dstAxr = dst.template get_access<sycl::access::mode::write>(*dev.m_cgh);
+    auto srcAxr = dst.template get_access<sycl::access::mode::read>(*dev.m_cgh);
     dev.parallelFor<__partial_memcpy_kernel<T>>([=] (size_t id) {
         dstAxr[id] = srcAxr[id];
     });

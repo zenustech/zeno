@@ -97,6 +97,7 @@ int main() {
         dev.parallelFor<kernel0, 1>(arr.size(), [=] (size_t id) {
             arrAxr(id) = id;
         });
+        arr.resize(16, dev);
     });
 
     {
