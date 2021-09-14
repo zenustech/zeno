@@ -30,24 +30,16 @@ struct DeviceHandler {
 };
 
 
-struct CommandQueue {
-    sycl::queue m_que;
-
-    template <bool IsBlocked = true, class Functor>
-    void submit(Functor const &functor) {
-        auto event = m_que.submit([&] (sycl::handler &cgh) {
-            DeviceHandler dev(cgh);
-            functor(std::as_const(dev));
-        });
-        if constexpr (IsBlocked) {
-            event.wait();
-        }
+template <bool IsBlocked = true, class Functor>
+void enqueue(Functor const &functor) {
+    auto event = sycl::queue().submit([&] (sycl::handler &cgh) {
+        DeviceHandler dev(cgh);
+        functor(std::as_const(dev));
+    });
+    if constexpr (IsBlocked) {
+        event.wait();
     }
-
-    void wait() {
-        m_que.wait();
-    }
-};
+}
 
 
 enum class Access {
@@ -123,32 +115,16 @@ struct NDArray {
 };
 
 
-CommandQueue &getQueue();
-
-
-template <class T>
-static void __partial_memcpy(HostHandler
-        , sycl::buffer<T, 1> &dst
-        , sycl::buffer<T, 1> &src
-        , size_t n
-        ) {
-    auto dstAxr = dst.template get_access<sycl::access::mode::write>();
-    auto srcAxr = src.template get_access<sycl::access::mode::read>();
-    for (size_t id = 0; id < n; id++) {
-        dstAxr[id] = srcAxr[id];
-    }
-}
-
 template <class T>
 class __partial_memcpy_kernel;
 
 template <class T>
-static void __partial_memcpy(DeviceHandler dev
-        , sycl::buffer<T, 1> &dst
+static void __partial_memcpy
+        ( sycl::buffer<T, 1> &dst
         , sycl::buffer<T, 1> &src
         , size_t n
         ) {
-    fdb::getQueue().submit([&] (fdb::DeviceHandler dev) {
+    enqueue([&] (fdb::DeviceHandler dev) {
         auto dstAxr = dst.template get_access<sycl::access::mode::write>(*dev.m_cgh);
         auto srcAxr = src.template get_access<sycl::access::mode::read>(*dev.m_cgh);
         dev.parallelFor<__partial_memcpy_kernel<T>, 1>(n, [=] (size_t id) {

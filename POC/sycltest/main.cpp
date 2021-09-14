@@ -90,7 +90,7 @@ int main() {
 
     arr.resize(16);
 
-    fdb::getQueue().submit([&] (fdb::DeviceHandler dev) {
+    fdb::enqueue([&] (fdb::DeviceHandler dev) {
         auto arrAxr = arr.accessor<fdb::Access::discard_write>(dev);
         dev.parallelFor<kernel0, 1>(arr.size(), [=] (size_t id) {
             arrAxr(id) = id;
