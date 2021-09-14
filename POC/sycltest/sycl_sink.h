@@ -168,22 +168,22 @@ struct NDArray {
 
 
 template <class T>
-struct ExtensibleArray {
+struct Vector {
     NDArray<T> m_arr;
     size_t m_size = 0;
 
-    ExtensibleArray(NDArray<T> &&arr)
+    Vector(NDArray<T> &&arr)
         : m_arr(std::move(arr))
         , m_size(m_arr.shape())
     {}
 
-    ExtensibleArray(size_t n, T *data = nullptr)
+    Vector(size_t n, T *data = nullptr)
         : m_arr(n, data)
         , m_size(n)
     {}
 
-    ExtensibleArray clone() const {
-        ExtensibleArray ret(m_arr.clone());
+    Vector clone() const {
+        Vector ret(m_arr.clone());
         return ret;
     }
 

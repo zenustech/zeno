@@ -10,7 +10,7 @@ class kernel0;
 
 
 int main() {
-    ExtensibleArray<float> arr(4);
+    Vector<float> arr(4);
 
     arr.resize(16);
 
