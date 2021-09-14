@@ -1,33 +1,21 @@
+#include <CL/sycl.hpp>
 #include <memory>
 #include <array>
-#include "sycl_sink.h"
-
-
-using namespace fdb;
-
-
-class kernel0;
+#include "vec.h"
 
 
 int main() {
-    ExtensibleArray<float> arr(4);
+    sycl::queue Q;
 
-    arr.resize(16);
+    int *result = sycl::malloc_shared<int>(32, Q);
 
-    /*fdb::enqueue([&] (fdb::DeviceHandler dev) {
-        auto arrAxr = arr.accessor<fdb::Access::discard_write>(dev);
-        dev.parallelFor<kernel0, 1>(arr.size(), [=] (size_t id) {
-            arrAxr(id) = id;
-        });
-    });*/
+    Q.parallel_for(32, [=] (size_t i) {
+        result[i] = i;
+    }).wait();
 
-    /*{
-        auto arrAxr = arr.accessor<fdb::Access::read>(fdb::host);
-        for (int i = 0; i < 16; i++) {
-            printf(" %.3f", arrAxr(i));
-        }
-        printf("\n");
-    }*/
+    for (int i = 0; i < 32; i++) {
+        printf("%d\n", result[i]);
+    }
 
     return 0;
 }

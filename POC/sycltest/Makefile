@@ -6,10 +6,10 @@ d: b
 
 b:
 	clear
-	cmake -B build -DCMAKE_CXX_COMPILER=dpcpp
+	cmake -B build -DComputeCpp_DIR=/opt/ComputeCpp-CE -DCOMPUTECPP_BITCODE=ptx64
 	cmake --build build --parallel
 
-c:
+b2:
 	clear
-	cmake -B build -DComputeCpp_DIR=/opt/ComputeCpp-CE -DCOMPUTECPP_BITCODE=ptx64
+	cmake -B build -DCMAKE_CXX_COMPILER=dpcpp
 	cmake --build build --parallel
