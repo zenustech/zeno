@@ -24,9 +24,11 @@ struct DeviceHandler {
         });
     }
 
-    template <size_t Dim, class Kernel>
-    void parallelFor(vec<Dim, size_t> range, Kernel kernel) const {
-        parallelFor<Kernel>(range, kernel);
+    template <class Key, class Kernel>
+    void singleTask(Kernel kernel) const {
+        m_cgh->single_task<Key>([=] {
+            kernel();
+        });
     }
 };
 
@@ -245,6 +247,28 @@ struct Vector {
 
     void clear() {
         m_size = 0;
+    }
+};
+
+
+namespace snode {
+
+template <size_t X, size_t Y, size_t Z>
+struct Shape {
+    static inline constexpr size_t x = X;
+    static inline constexpr size_t y = Y;
+    static inline constexpr size_t z = Z;
+    static inline constexpr vec3S value{x, y, z};
+
+    constexpr operator vec3S() const {
+        return value;
+    }
+};
+
+template <class Shape, class T>
+struct Dense {
+    size_t linearize(vec3S coor) {
+        return 0;
     }
 };
 

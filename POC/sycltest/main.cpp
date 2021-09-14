@@ -11,7 +11,6 @@ class kernel0;
 
 int main() {
     Vector<float> arr(4);
-
     arr.resize(16);
 
     fdb::enqueue([&] (fdb::DeviceHandler dev) {
@@ -21,6 +20,8 @@ int main() {
         });
     });
 
+    arr.resize(4);
+    arr.resize(16);
     {
         auto arrAxr = arr.accessor<fdb::Access::read>(fdb::host);
         for (int i = 0; i < 16; i++) {
