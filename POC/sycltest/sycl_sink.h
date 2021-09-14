@@ -88,11 +88,11 @@ struct NDArray {
         < auto Mode = sycl::access::mode::read_write
         , auto Target = sycl::access::target::global_buffer>
     struct _Accessor {
-        sycl::accessor<T, Dim, Mode, Target> acc;
+        sycl::accessor<T, Dim, Mode, Target> m_axr;
 
         template <class ...Args>
         _Accessor(NDArray &parent, Args &&...args)
-            : acc(parent.m_buffer.template get_access<Mode>(
+            : m_axr(parent.m_buffer.template get_access<Mode>(
                         std::forward<Args>(args)...))
         {}
 
@@ -100,7 +100,7 @@ struct NDArray {
               T const &, T &>;
 
         inline ReferenceT operator[](vec<Dim, size_t> indices) const {
-            return acc[vec_to_other<sycl::id<Dim>>(indices)];
+            return m_axr[vec_to_other<sycl::id<Dim>>(indices)];
         }
 
         template <class ...Indices>
