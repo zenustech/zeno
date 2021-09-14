@@ -13,16 +13,30 @@
 #include <openvdb/tools/MeshToVolume.h>
 #include <iostream>
 namespace zeno{
+    struct iterStuff{
+        // iteration terms
+        openvdb::FloatGrid::Ptr rhsGrid;
+        openvdb::FloatGrid::Ptr resGrid;
+        openvdb::FloatGrid::Ptr r2Grid;
+            
+        openvdb::FloatGrid::Ptr pGrid;
+        openvdb::FloatGrid::Ptr ApGrid;
+        void init(openvdb::FloatGrid::Ptr pressField);
+    };
     struct smokeData: IObject{
+        using ConstBoxSample = openvdb::tools::GridSampler<openvdb::FloatGrid::ConstAccessor, openvdb::tools::BoxSampler>;
+        using BoxSample = openvdb::tools::GridSampler<openvdb::FloatGrid::Accessor, openvdb::tools::BoxSampler>;
+
         // vertex attribute
         openvdb::FloatGrid::Ptr temperatureField;
         openvdb::FloatGrid::Ptr volumeField;
 
         // cell centered
         openvdb::FloatGrid::Ptr pressField;
-
+        iterStuff iterBuffer;
         // face centered
         openvdb::FloatGrid::Ptr velField[3];
+
 
         // parms
         float dx, dt;
