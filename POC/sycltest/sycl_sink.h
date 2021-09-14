@@ -133,7 +133,7 @@ static void __partial_memcpy(HostHandler
         , size_t n
         ) {
     auto dstAxr = dst.template get_access<sycl::access::mode::write>();
-    auto srcAxr = dst.template get_access<sycl::access::mode::read>();
+    auto srcAxr = src.template get_access<sycl::access::mode::read>();
     for (size_t id = 0; id < n; id++) {
         dstAxr[id] = srcAxr[id];
     }
@@ -148,10 +148,12 @@ static void __partial_memcpy(DeviceHandler dev
         , sycl::buffer<T, 1> &src
         , size_t n
         ) {
-    auto dstAxr = dst.template get_access<sycl::access::mode::write>(*dev.m_cgh);
-    auto srcAxr = dst.template get_access<sycl::access::mode::read>(*dev.m_cgh);
-    dev.parallelFor<__partial_memcpy_kernel<T>, 1>(n, [=] (size_t id) {
-        dstAxr[id] = srcAxr[id];
+    fdb::getQueue().submit([&] (fdb::DeviceHandler dev) {
+        auto dstAxr = dst.template get_access<sycl::access::mode::write>(*dev.m_cgh);
+        auto srcAxr = src.template get_access<sycl::access::mode::read>(*dev.m_cgh);
+        dev.parallelFor<__partial_memcpy_kernel<T>, 1>(n, [=] (size_t id) {
+            dstAxr[id] = srcAxr[id];
+        });
     });
 }
 

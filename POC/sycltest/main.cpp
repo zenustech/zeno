@@ -48,30 +48,26 @@ struct ExtensibleArray {
         return m_arr.shape();
     }
 
-    template <class Handler>
-    void __recapacity(size_t n, Handler hand) {
+    void __recapacity(size_t n) {
         auto old_buffer = std::move(m_arr.m_buffer);
         m_arr.reshape(n);
-        __partial_memcpy(hand, m_arr.m_buffer, old_buffer, m_size);
+        __partial_memcpy(m_arr.m_buffer, old_buffer, m_size);
     }
 
-    template <class Handler>
-    void reserve(size_t n, Handler hand) {
+    void reserve(size_t n) {
         if (n > capacity()) {
-            __recapacity(n, hand);
+            __recapacity(n);
         }
     }
 
-    template <class Handler>
-    void shrink_to_fit(Handler hand) {
+    void shrink_to_fit() {
         if (capacity() > m_size) {
-            __recapacity(m_size, hand);
+            __recapacity(m_size);
         }
     }
 
-    template <class Handler>
-    void resize(size_t n, Handler hand) {
-        reserve(n, hand);
+    void resize(size_t n) {
+        reserve(n);
         m_size = n;
     }
 
@@ -92,9 +88,9 @@ class kernel0;
 int main() {
     ExtensibleArray<float> arr(4);
 
-    fdb::getQueue().submit([&] (fdb::DeviceHandler dev) {
-        arr.resize(16, dev);
+    arr.resize(16);
 
+    fdb::getQueue().submit([&] (fdb::DeviceHandler dev) {
         auto arrAxr = arr.accessor<fdb::Access::discard_write>(dev);
         dev.parallelFor<kernel0, 1>(arr.size(), [=] (size_t id) {
             arrAxr(id) = id;
