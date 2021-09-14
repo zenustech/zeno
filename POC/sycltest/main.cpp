@@ -12,9 +12,7 @@ class kernel0;
 int main() {
     ExtensibleArray<float> arr(4);
 
-    auto b = arr.clone();
     arr.resize(16);
-    arr = b;
 
     fdb::enqueue([&] (fdb::DeviceHandler dev) {
         auto arrAxr = arr.accessor<fdb::Access::discard_write>(dev);
