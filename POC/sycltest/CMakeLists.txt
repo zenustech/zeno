@@ -11,7 +11,7 @@ endif()
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 find_package(ComputeCpp REQUIRED)
 
-set(PROJECT_SOURCES main.cpp sycl_sink.cpp)
+set(PROJECT_SOURCES main.cpp)
 add_executable(sycltest ${PROJECT_SOURCES})
 add_sycl_to_target(TARGET sycltest SOURCES ${PROJECT_SOURCES})
 target_include_directories(sycltest PRIVATE .)
