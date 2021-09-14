@@ -2,6 +2,7 @@
 
 #include <CL/sycl.hpp>
 #include "vec.h"
+#include <memory>
 
 
 namespace fdb {
@@ -28,6 +29,12 @@ struct DeviceHandler {
         parallelFor<Kernel>(range, kernel);
     }
 };
+
+
+/*static sycl::queue &__get_sycl_queue() {
+    static auto p = std::make_unique<sycl::queue>();
+    return *p;
+}*/
 
 
 template <bool IsBlocked = true, class Functor>

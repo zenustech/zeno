@@ -140,22 +140,22 @@ auto vec_to_other(T const &a) {
 }
 
 template <class OtherT, class T>
-auto vec_to_other_safe(vec<1, T> const &a) {
+auto vec_to_other(vec<1, T> const &a) {
     return OtherT(a[0]);
 }
 
 template <class OtherT, class T>
-auto vec_to_other_safe(vec<2, T> const &a) {
+auto vec_to_other(vec<2, T> const &a) {
     return OtherT(a[0], a[1]);
 }
 
 template <class OtherT, class T>
-auto vec_to_other_safe(vec<3, T> const &a) {
+auto vec_to_other(vec<3, T> const &a) {
     return OtherT(a[0], a[1], a[2]);
 }
 
 template <class OtherT, class T>
-auto vec_to_other_safe(vec<4, T> const &a) {
+auto vec_to_other(vec<4, T> const &a) {
     return OtherT(a[0], a[1], a[2], a[3]);
 }
 
