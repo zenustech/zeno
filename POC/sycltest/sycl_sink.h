@@ -124,15 +124,48 @@ static void __fully_memdeinit
         ( sycl::buffer<T, Dim> &dst
         , vec<Dim, size_t> shape
         ) {
-    if constexpr (!std::is_trivially_destructible<T>::value) {
-        enqueue([&] (fdb::DeviceHandler dev) {
-            auto dstAxr = dst.template get_access<sycl::access::mode::discard_read_write>(*dev.m_cgh);
-            dev.parallelFor<__fully_memdeinit_kernel<T>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
-                auto id = vec_to_other<sycl::id<Dim>>(idx);
-                dstAxr[id].~T();
-            });
+    enqueue([&] (fdb::DeviceHandler dev) {
+        auto dstAxr = dst.template get_access<sycl::access::mode::discard_read_write>(*dev.m_cgh);
+        dev.parallelFor<__fully_memdeinit_kernel<T>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
+            auto id = vec_to_other<sycl::id<Dim>>(idx);
+            dstAxr[id].~T();
         });
-    }
+    });
+}
+
+template <class T>
+class __partial_meminit_kernel;
+
+template <class T, size_t Dim, class ...Args>
+static void __partial_meminit
+        ( sycl::buffer<T, Dim> &dst
+        , size_t nbeg
+        , size_t nend
+        , Args ...args
+        ) {
+    enqueue([&] (fdb::DeviceHandler dev) {
+        auto dstAxr = dst.template get_access<sycl::access::mode::write>(*dev.m_cgh);
+        dev.parallelFor<__partial_meminit_kernel<T>, Dim>(nend - nbeg, [=] (size_t id) {
+            new (&dstAxr[nbeg + id]) T(args...);
+        });
+    });
+}
+
+template <class T>
+class __partial_memdeinit_kernel;
+
+template <class T, size_t Dim>
+static void __partial_memdeinit
+        ( sycl::buffer<T, Dim> &dst
+        , size_t nbeg
+        , size_t nend
+        ) {
+    enqueue([&] (fdb::DeviceHandler dev) {
+        auto dstAxr = dst.template get_access<sycl::access::mode::read_write>(*dev.m_cgh);
+        dev.parallelFor<__partial_memdeinit_kernel<T>, Dim>(nend - nbeg, [=] (size_t id) {
+            dstAxr[nbeg + id].~T();
+        });
+    });
 }
 
 
@@ -145,15 +178,18 @@ struct NDArray {
 
     NDArray() = default;
 
-    template <class ...Args>
-    explicit NDArray(vec<Dim, size_t> shape = {0}, Args const &...args)
+    explicit NDArray(vec<Dim, size_t> shape = {0})
         : m_buffer((T *)nullptr, vec_to_other<sycl::range<Dim>>(shape))
         , m_shape(shape)
     {
+    }
+
+    template <class ...Args>
+    void construct(Args const &...args) {
         __fully_meminit<T, Dim>(m_buffer, m_shape, args...);
     }
 
-    ~NDArray() {
+    void destroy() {
         __fully_memdeinit<T, Dim>(m_buffer, m_shape);
     }
 
@@ -210,16 +246,24 @@ struct Vector {
     NDArray<T> m_arr;
     size_t m_size = 0;
 
-    template <class ...Args>
-    Vector(NDArray<T> &&arr, Args const &...args)
-        : m_arr(std::move(arr), args...)
+    Vector(NDArray<T> &&arr)
+        : m_arr(std::move(arr))
         , m_size(m_arr.shape())
-    {}
+    {
+    }
 
-    explicit Vector(size_t n = 0)
+    template <class Args>
+    explicit Vector(size_t n = 0, Args const &...args)
         : m_arr(n)
         , m_size(n)
-    {}
+    {
+        m_arr.construct(args...);
+    }
+
+    ~Vector() {
+        if constexpr (!std::is_trivially_destructible<T>::value)
+            m_arr.destroy();
+    }
 
     Vector clone() const {
         Vector ret(m_arr.clone());
@@ -260,8 +304,14 @@ struct Vector {
         }
     }
 
-    void resize(size_t n) {
+    template <class Args>
+    void resize(size_t n, Args const &...args) {
         reserve(n);
+        if (m_size < n)
+            __partial_meminit<T, Dim>(m_buffer, m_size, n, args...);
+        if constexpr (!std::is_trivially_destructible<T>::value)
+            if (m_size > n)
+                __partial_memdeinit<T, Dim>(m_buffer, n, m_size);
         m_size = n;
     }
 

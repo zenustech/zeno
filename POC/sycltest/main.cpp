@@ -34,14 +34,18 @@ struct L1PointerMap {
     explicit L1PointerMap(vec<Dim, size_t> shape = {0})
         : m_offset1((shape + (1 << PotBlkSize) - 1) >> PotBlkSize)
         , m_data(1 << PotBlkSize)
-    {}
+    {
+        m_offset1.construct();
+    }
 
     auto shape() const {
         return m_offset1.shape() << PotBlkSize;
     }
 
     void reshape(vec<Dim, size_t> shape) {
-        return m_offset1.reshape((shape + (1 << PotBlkSize) - 1) >> PotBlkSize);
+        m_data.clear();
+        m_offset1.reshape((shape + (1 << PotBlkSize) - 1) >> PotBlkSize);
+        m_offset1.construct();
     }
 
     template <auto Mode = Access::read_write, class Handler>
@@ -52,9 +56,9 @@ struct L1PointerMap {
             auto offset1 = *offset1Axr(indices >> PotBlkSize);
             if (!offset1.has_value())
                 return nullptr;
-            offset1 *= (1 << (Dim * PotBlkSize));
+            offset1 *= 1 << (Dim * PotBlkSize);
             size_t offset0 = indices & ((1 << PotBlkSize) - 1);
-            return dataAxr(offset1 + offset0);
+            return dataAxr(offset1 | offset0);
         };
     }
 };
@@ -77,6 +81,7 @@ int main() {
     {
         auto arrAxr = arr.accessor<fdb::Access::read>(fdb::host);
         for (int i = 0; i < arr.shape(); i++) {
+            printf(" %p", arrAxr(i));
             printf(" %.3f", *arrAxr(i));
         }
         printf("\n");
