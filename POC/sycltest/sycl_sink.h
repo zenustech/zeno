@@ -98,6 +98,41 @@ static void __fully_memcpy
     });
 }
 
+template <class T>
+class __fully_meminit_kernel;
+
+template <class T, size_t Dim, class ...Args>
+static void __fully_meminit
+        ( sycl::buffer<T, Dim> &dst
+        , vec<Dim, size_t> shape
+        , Args ...args
+        ) {
+    enqueue([&] (fdb::DeviceHandler dev) {
+        auto dstAxr = dst.template get_access<sycl::access::mode::discard_write>(*dev.m_cgh);
+        dev.parallelFor<__fully_meminit_kernel<T>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
+            auto id = vec_to_other<sycl::id<Dim>>(idx);
+            dstAxr[id].T(args...);
+        });
+    });
+}
+
+template <class T>
+class __fully_memdeinit_kernel;
+
+template <class T, size_t Dim>
+static void __fully_memdeinit
+        ( sycl::buffer<T, Dim> &dst
+        , vec<Dim, size_t> shape
+        ) {
+    enqueue([&] (fdb::DeviceHandler dev) {
+        auto dstAxr = dst.template get_access<sycl::access::mode::discard_read_write>(*dev.m_cgh);
+        dev.parallelFor<__fully_memdeinit_kernel<T>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
+            auto id = vec_to_other<sycl::id<Dim>>(idx);
+            dstAxr[id].~T();
+        });
+    });
+}
+
 
 template <class T, size_t Dim = 1>
 struct NDArray {
@@ -108,10 +143,17 @@ struct NDArray {
 
     NDArray() = default;
 
-    explicit NDArray(vec<Dim, size_t> shape, T *data = nullptr)
-        : m_buffer(data, vec_to_other<sycl::range<Dim>>(shape))
+    template <class ...Args>
+    explicit NDArray(vec<Dim, size_t> shape = {0}, Args const &...args)
+        : m_buffer((T *)data, vec_to_other<sycl::range<Dim>>(shape))
         , m_shape(shape)
-    {}
+    {
+        __fully_meminit<T, Dim>(m_buffer, m_shape, args...);
+    }
+
+    ~NDArray() {
+        __fully_memdeinit<T, Dim>(m_buffer, m_shape);
+    }
 
     auto const &shape() const {
         return m_shape;
@@ -142,11 +184,11 @@ struct NDArray {
                         std::forward<Args>(args)...))
         {}
 
-        using ReferenceT = std::conditional_t<Mode == sycl::access::mode::read,
-              T const &, T &>;
+        using PointerT = std::conditional_t<
+            Mode == sycl::access::mode::read, T const *, T *>;
 
-        inline ReferenceT operator()(vec<Dim, size_t> indices) const {
-            return m_axr[vec_to_other<sycl::id<Dim>>(indices)];
+        inline PointerT operator()(vec<Dim, size_t> indices) const {
+            return &m_axr[vec_to_other<sycl::id<Dim>>(indices)];
         }
     };
 
@@ -169,13 +211,14 @@ struct Vector {
     NDArray<T> m_arr;
     size_t m_size = 0;
 
-    Vector(NDArray<T> &&arr)
-        : m_arr(std::move(arr))
+    template <class ...Args>
+    Vector(NDArray<T> &&arr, Args const &args)
+        : m_arr(std::move(arr), args...)
         , m_size(m_arr.shape())
     {}
 
-    Vector(size_t n, T *data = nullptr)
-        : m_arr(n, data)
+    explicit Vector(size_t n = 0)
+        : m_arr(n)
         , m_size(n)
     {}
 
@@ -187,7 +230,7 @@ struct Vector {
     template <auto Mode = Access::read_write, class Handler>
     auto accessor(Handler hand) {
         auto arrAxr = m_arr.template accessor<Mode>(hand);
-        return [=] (size_t index) -> typename decltype(arrAxr)::ReferenceT {
+        return [=] (size_t index) {
             return arrAxr(vec1S(index));
         };
     }
