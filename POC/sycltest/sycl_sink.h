@@ -124,13 +124,15 @@ static void __fully_memdeinit
         ( sycl::buffer<T, Dim> &dst
         , vec<Dim, size_t> shape
         ) {
-    enqueue([&] (fdb::DeviceHandler dev) {
-        auto dstAxr = dst.template get_access<sycl::access::mode::discard_read_write>(*dev.m_cgh);
-        dev.parallelFor<__fully_memdeinit_kernel<T>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
-            auto id = vec_to_other<sycl::id<Dim>>(idx);
-            dstAxr[id].~T();
+    if constexpr (!std::is_trivially_destructible<T>::value) {
+        enqueue([&] (fdb::DeviceHandler dev) {
+            auto dstAxr = dst.template get_access<sycl::access::mode::discard_read_write>(*dev.m_cgh);
+            dev.parallelFor<__fully_memdeinit_kernel<T>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
+                auto id = vec_to_other<sycl::id<Dim>>(idx);
+                dstAxr[id].~T();
+            });
         });
-    });
+    }
 }
 
 
