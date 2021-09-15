@@ -1,2 +1,3 @@
 x:
-	clang++ -c -D__OPENCL__ -cl-std=clc++ -target spir -emit-llvm -Xclang -finclude-default-header main.cpp
+	clang++ -c -D__OPENCL__ -cl-std=clc++ -target spir -emit-llvm -Xclang -finclude-default-header main.cpp -o main.bc
+	clang++ -c main.cpp -o main.o
