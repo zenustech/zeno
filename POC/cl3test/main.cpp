@@ -12,32 +12,38 @@ __kernel void test() {
 #endif
 
 #if !defined(__OPENCL__)
-void __CLK_test(NDRrange range) {
-    static std::unique_ptr<cl::Kernel> kern;
-    if (!kern) kern = std::make_unique<Kernel>(program, "test");
-    cl::KernelFunctor func(kern);
-    func(range);
-}
-#endif
-
-#if !defined(__OPENCL__)
-std::vector<std::vector<unsigned char>> __CLRT_binaries;
+std::vector<std::vector<unsigned char>> __CLRT_binaries = {
+#include "main.bc.inl"
+};
 std::unique_ptr<cl::Program> __CLRT_program;
 
-void __CLRT_init() {
-    cl::Context context = cl::Context::getDefault();
-    std::vector<cl::Device> devices = {cl::Device::getDefault()};
-    cl::Program::Binaries binaries;
-    for (auto spir: __CLRT_binaries) {
-        binaries.push_back(spir);
+cl::Program *__CLRT_init() {
+    if (!__CLRT_program) {
+        cl::Context context = cl::Context::getDefault();
+        std::vector<cl::Device> devices = {cl::Device::getDefault()};
+        cl::Program::Binaries binaries;
+        for (auto spir: __CLRT_binaries) {
+            binaries.push_back(spir);
+        }
+        __CLRT_program = std::make_unique<cl::Program>(
+                context, devices, binaries);
     }
-    __CLRT_program = std::make_unique<cl::Program>(context, devices, binaries);
+    return __CLRT_program.get();
+}
+
+void __CLK_test(cl::NDRange range) {
+    static std::unique_ptr<cl::Kernel> kernel;
+    if (!kernel)
+        kernel = std::make_unique<cl::Kernel>(*__CLRT_init(), "test");
+    cl::KernelFunctor<> functor(*kernel);
+    functor(range);
 }
 #endif
 
 #if !defined(__OPENCL__)
 int main() {
     __CLRT_init();
+    __CLK_test({1});
     return 0;
 }
 #endif
