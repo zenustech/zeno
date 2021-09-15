@@ -26,29 +26,18 @@ struct default_minus1 {
 };
 
 
-#define FDB_BAD_VALUE ((size_t)-1)
+#define FDB_BAD_OFFSET ((size_t)-1)
 
 
-template <class T, size_t PotBlkSize, size_t Dim>
+template <class T, size_t Dim, size_t N0, size_t N1>
 struct L1PointerMap {
     Vector<T> m_data;
-    NDArray<size_t, Dim> m_offset1;
+    NDArray<size_t, 1 << N1> m_offset1;
 
-    explicit L1PointerMap(vec<Dim, size_t> shape = {0})
-        : m_offset1((shape + (1 << PotBlkSize) - 1) >> PotBlkSize)
-        , m_data(1 << PotBlkSize)
+    L1PointerMap()
+        : m_data(4 << N0)
+        , m_offset1(FDB_BAD_OFFSET)
     {
-        m_offset1.construct(FDB_BAD_VALUE);
-    }
-
-    auto shape() const {
-        return m_offset1.shape() << PotBlkSize;
-    }
-
-    void reshape(vec<Dim, size_t> shape) {
-        m_data.clear();
-        m_offset1.reshape((shape + (1 << PotBlkSize) - 1) >> PotBlkSize);
-        m_offset1.construct(FDB_BAD_VALUE);
     }
 
     template <auto Mode = Access::read_write, class Handler>
@@ -56,13 +45,17 @@ struct L1PointerMap {
         auto dataAxr = m_data.template accessor<Mode>(hand);
         auto offset1Axr = m_offset1.template accessor<Access::read>(hand);
         return [=] (vec<Dim, size_t> indices) -> T * {
-            auto offset1 = *offset1Axr(indices >> PotBlkSize);
-            if (offset1 == FDB_BAD_VALUE)
+            auto offset1 = *offset1Axr(indices >> N0);
+            if (offset1 == FDB_BAD_OFFSET)
                 return nullptr;
-            offset1 *= 1 << (Dim * PotBlkSize);
-            size_t offset0 = indices & ((1 << PotBlkSize) - 1);
+            offset1 *= 1 << (Dim * N0);
+            size_t offset0 = indices & ((1 << N0) - 1);
             return dataAxr(offset1 | offset0);
         };
+    }
+
+    static inline constexpr auto size() {
+        return vec<Dim, size_t>(1 << (N0 + N1));
     }
 };
 
@@ -72,26 +65,25 @@ class kernel0;
 
 int main() {
 #if 1
-    L1PointerMap<float, 2, 1> arr(32);
+    L1PointerMap<float, 1, 2, 3> arr;
 
     fdb::enqueue([&] (fdb::DeviceHandler dev) {
         auto arrAxr = arr.accessor<fdb::Access::discard_write>(dev);
-        dev.parallelFor<kernel0, 1>(arr.shape(), [=] (size_t id) {
+        dev.parallelFor<kernel0, 1>(arr.size(), [=] (size_t id) {
             *arrAxr(id) = id;
         });
     });
 
     {
         auto arrAxr = arr.accessor<fdb::Access::read>(fdb::host);
-        for (int i = 0; i < arr.shape(); i++) {
-            printf(" %p", arrAxr(i));
+        for (int i = 0; i < arr.size(); i++) {
             printf(" %.3f", *arrAxr(i));
         }
         printf("\n");
     }
 #else
-    NDArray<size_t> arr(32);
-    arr.construct(FDB_BAD_VALUE);
+    NDBuffer<size_t> arr(32);
+    arr.construct(FDB_BAD_OFFSET);
 
     {
         auto arrAxr = arr.accessor<fdb::Access::read>(fdb::host);

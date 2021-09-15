@@ -174,19 +174,19 @@ static void __partial_memdeinit
 
 
 template <class T, size_t Dim = 1>
-struct NDArray {
+struct NDBuffer {
     static_assert(Dim > 0);
 
     sycl::buffer<T, Dim> m_buffer;
     vec<Dim, size_t> m_shape;
 
-    NDArray() = default;
-    NDArray(NDArray const &) = delete;
-    NDArray &operator=(NDArray const &) = delete;
-    NDArray(NDArray &&) = default;
-    NDArray &operator=(NDArray &&) = default;
+    NDBuffer() = default;
+    NDBuffer(NDBuffer const &) = delete;
+    NDBuffer &operator=(NDBuffer const &) = delete;
+    NDBuffer(NDBuffer &&) = default;
+    NDBuffer &operator=(NDBuffer &&) = default;
 
-    explicit NDArray(vec<Dim, size_t> shape = {0})
+    explicit NDBuffer(vec<Dim, size_t> shape = {0})
         : m_buffer((T *)nullptr, vec_to_other<sycl::range<Dim>>(shape))
         , m_shape(shape)
     {}
@@ -196,7 +196,7 @@ struct NDArray {
         __fully_meminit<T, Dim>(m_buffer, m_shape, args...);
     }
 
-    void destruct() {
+    void destroy() {
         __fully_memdeinit<T, Dim>(m_buffer, m_shape);
     }
 
@@ -210,8 +210,8 @@ struct NDArray {
         m_shape = shape;
     }
 
-    NDArray clone() const {
-        NDArray ret(m_shape);
+    NDBuffer clone() const {
+        NDBuffer ret(m_shape);
         __fully_memcpy<T, Dim>(ret.m_buffer, const_cast<
                 sycl::buffer<T, Dim> &>(m_buffer), m_shape);
         return ret;
@@ -224,7 +224,7 @@ struct NDArray {
         sycl::accessor<T, Dim, Mode, Target> m_axr;
 
         template <class ...Args>
-        _Accessor(NDArray &parent, Args &&...args)
+        _Accessor(NDBuffer &parent, Args &&...args)
             : m_axr(parent.m_buffer.template get_access<Mode>(
                         std::forward<Args>(args)...))
         {}
@@ -248,47 +248,87 @@ struct NDArray {
 };
 
 
+template <class T, size_t ...Ns>
+struct NDArray {
+    inline static constexpr size_t Dim = sizeof...(Ns);
+    static_assert(Dim > 0);
+
+    NDBuffer<T, Dim> m_buf;
+
+    template <class ...Args>
+    explicit NDArray(Args const &...args)
+        : m_buf(vec<Dim, size_t>(Ns...))
+    {
+        m_buf.construct(args...);
+    }
+
+    NDArray(NDArray &&) = default;
+
+    NDArray &operator=(NDArray const &other) const {
+        m_buf = other.m_buf.clone();
+        return *this;
+    }
+
+    NDArray &operator=(NDArray &&) = default;
+
+    ~NDArray() {
+        m_buf.destroy();
+    }
+
+    static inline constexpr auto size() {
+        return vec<Dim, size_t>(Ns...);
+    }
+
+    template <auto Mode = Access::read_write, class Handler>
+    auto accessor(Handler hand) {
+        auto bufAxr = m_buf.template accessor<Mode>(hand);
+        return [=] (vec<Dim, size_t> index) -> T * {
+            return bufAxr(index);
+        };
+    }
+};
+
 template <class T>
 struct Vector {
-    NDArray<T> m_arr;
+    NDBuffer<T> m_buf;
     size_t m_size = 0;
 
-    explicit Vector(NDArray<T> &&arr)
-        : m_arr(std::move(arr))
-        , m_size(m_arr.shape())
+    explicit Vector(NDBuffer<T> &&buf)
+        : m_buf(std::move(buf))
+        , m_size(m_buf.shape())
     {}
 
     template <class ...Args>
     explicit Vector(size_t n = 0, Args const &...args)
-        : m_arr(n)
+        : m_buf(n)
         , m_size(n)
     {
-        m_arr.construct(args...);
+        m_buf.construct(args...);
     }
 
     Vector(Vector const &other)
-        : m_arr(other.clone())
+        : m_buf(other.clone())
         , m_size(other.m_size)
     {}
 
     Vector(Vector &&) = default;
 
     Vector &operator=(Vector const &other) const {
-        m_arr = other.m_arr.clone();
+        m_buf = other.m_buf.clone();
         return *this;
     }
 
     Vector &operator=(Vector &&) = default;
 
     ~Vector() {
-        m_arr.destroy();
+        m_buf.destroy();
     }
 
     template <auto Mode = Access::read_write, class Handler>
     auto accessor(Handler hand) {
-        auto arrAxr = m_arr.template accessor<Mode>(hand);
+        auto bufAxr = m_buf.template accessor<Mode>(hand);
         return [=] (size_t index) -> T * {
-            return arrAxr(vec1S(index));
+            return bufAxr(vec1S(index));
         };
     }
 
@@ -297,13 +337,13 @@ struct Vector {
     }
 
     size_t capacity() const {
-        return m_arr.shape();
+        return m_buf.shape();
     }
 
     void __recapacity(size_t n) {
-        auto old_buffer = std::move(m_arr.m_buffer);
-        m_arr.reshape(n);
-        __partial_memcpy<T>(m_arr.m_buffer, old_buffer, m_size);
+        auto old_buffer = std::move(m_buf.m_buffer);
+        m_buf.reshape(n);
+        __partial_memcpy<T>(m_buf.m_buffer, old_buffer, m_size);
     }
 
     void reserve(size_t n) {
@@ -325,17 +365,17 @@ struct Vector {
         reserve(n);
         if (m_size < n) {
             if (m_size == 0)
-                __fully_meminit<T>(m_arr.m_buffer, n, args...);
+                __fully_meminit<T>(m_buf.m_buffer, n, args...);
             else
-                __partial_meminit<T>(m_arr.m_buffer, m_size, n, args...);
+                __partial_meminit<T>(m_buf.m_buffer, m_size, n, args...);
         } else if (m_size > n) {
-            __partial_memdeinit<T>(m_arr.m_buffer, n, m_size);
+            __partial_memdeinit<T>(m_buf.m_buffer, n, m_size);
         }
         m_size = n;
     }
 
     void clear() {
-        __fully_memdeinit<T>(m_arr.m_buffer, m_size);
+        __fully_memdeinit<T>(m_buf.m_buffer, m_size);
         m_size = 0;
     }
 };
