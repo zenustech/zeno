@@ -1,6 +1,7 @@
 #include <memory>
 #include <array>
 #include "sycl_sink.h"
+#include "L1PointerMap.h"
 
 
 using namespace fdb;
@@ -26,38 +27,6 @@ struct default_minus1 {
 };
 
 
-#define FDB_BAD_OFFSET ((size_t)-1)
-
-
-template <class T, size_t Dim, size_t N0, size_t N1>
-struct L1PointerMap {
-    Vector<T> m_data;
-    Vector<size_t> m_offset1;
-
-    L1PointerMap()
-        : m_offset1(1 << (Dim * N1), FDB_BAD_OFFSET)
-    {}
-
-    template <auto Mode = Access::read_write, class Handler>
-    auto accessor(Handler hand) {
-        auto dataAxr = m_data.template accessor<Mode>(hand);
-        auto offset1Axr = m_offset1.template accessor<Access::read>(hand);
-        return [=] (vec<Dim, size_t> indices) -> T * {
-            auto offset1 = *offset1Axr(indices >> N0);
-            if (offset1 == FDB_BAD_OFFSET)
-                return nullptr;
-            offset1 *= 1 << (Dim * N0);
-            size_t offset0 = indices & ((1 << N0) - 1);
-            return dataAxr(offset1 | offset0);
-        };
-    }
-
-    static inline constexpr auto size() {
-        return vec<Dim, size_t>(1 << (N0 + N1));
-    }
-};
-
-
 class kernel0;
 
 
@@ -73,7 +42,7 @@ int main() {
     });
 
     {
-        auto arrAxr = arr.accessor<fdb::Access::read>(fdb::host);
+        auto arrAxr = arr.accessor<fdb::Access::read>(fdb::HOST);
         for (int i = 0; i < arr.size(); i++) {
             printf(" %.3f", *arrAxr(i));
         }
@@ -84,7 +53,7 @@ int main() {
     arr.construct(FDB_BAD_OFFSET);
 
     {
-        auto arrAxr = arr.accessor<fdb::Access::read>(fdb::host);
+        auto arrAxr = arr.accessor<fdb::Access::read>(fdb::HOST);
         for (int i = 0; i < arr.shape(); i++) {
             printf(" %zd", (size_t)*arrAxr(i));
         }

@@ -8,7 +8,7 @@
 namespace fdb {
 
 
-static constexpr struct HostHandler {} host;
+static constexpr struct HostHandler {} HOST;
 
 
 struct DeviceHandler {
