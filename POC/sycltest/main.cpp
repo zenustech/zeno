@@ -10,6 +10,7 @@ template <class T, T Minus1 = (T)-1>
 struct default_minus1 {
     T m{Minus1};
 
+    default_minus1() = default;
     default_minus1(T const &t)
         : m(t) {}
 
@@ -62,7 +63,7 @@ class kernel0;
 
 int main() {
 #if 0
-    L1PointerMap<float, 2, 1> arr{32};
+    L1PointerMap<float, 2, 1> arr(32);
 
     fdb::enqueue([&] (fdb::DeviceHandler dev) {
         auto arrAxr = arr.accessor<fdb::Access::discard_write>(dev);
@@ -79,7 +80,7 @@ int main() {
         printf("\n");
     }
 #else
-    NDArray<default_minus1<int>> arr{32};
+    NDArray<default_minus1<int>> arr(32);
 
     {
         auto arrAxr = arr.accessor<fdb::Access::read>(fdb::host);

@@ -111,7 +111,7 @@ static void __fully_meminit
         auto dstAxr = dst.template get_access<sycl::access::mode::discard_write>(*dev.m_cgh);
         dev.parallelFor<__fully_meminit_kernel<T>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
             auto id = vec_to_other<sycl::id<Dim>>(idx);
-            dstAxr[id].T(args...);
+            new (&dstAxr[id]) T(args...);
         });
     });
 }
@@ -145,7 +145,7 @@ struct NDArray {
 
     template <class ...Args>
     explicit NDArray(vec<Dim, size_t> shape = {0}, Args const &...args)
-        : m_buffer((T *)data, vec_to_other<sycl::range<Dim>>(shape))
+        : m_buffer((T *)nullptr, vec_to_other<sycl::range<Dim>>(shape))
         , m_shape(shape)
     {
         __fully_meminit<T, Dim>(m_buffer, m_shape, args...);
@@ -212,7 +212,7 @@ struct Vector {
     size_t m_size = 0;
 
     template <class ...Args>
-    Vector(NDArray<T> &&arr, Args const &args)
+    Vector(NDArray<T> &&arr, Args const &...args)
         : m_arr(std::move(arr), args...)
         , m_size(m_arr.shape())
     {}
