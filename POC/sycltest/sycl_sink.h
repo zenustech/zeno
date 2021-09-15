@@ -177,6 +177,10 @@ struct NDArray {
     vec<Dim, size_t> m_shape;
 
     NDArray() = default;
+    NDArray(NDArray const &) = delete;
+    NDArray &operator=(NDArray const &) = delete;
+    NDArray(NDArray &&) = default;
+    NDArray &operator=(NDArray &&) = default;
 
     explicit NDArray(vec<Dim, size_t> shape = {0})
         : m_buffer((T *)nullptr, vec_to_other<sycl::range<Dim>>(shape))

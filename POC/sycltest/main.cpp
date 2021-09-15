@@ -6,11 +6,11 @@
 using namespace fdb;
 
 
-template <class T>
+/*template <class T>
 struct default_minus1 {
-    T m{(T)-1};
+    T m;
 
-    default_minus1() = default;
+    default_minus1() : m((T)-1) {}
     default_minus1(T const &t)
         : m(t) {}
 
@@ -23,19 +23,22 @@ struct default_minus1 {
     bool has_value() const {
         return m != (T)-1;
     }
-};
+};*/
+
+
+#define FDB_BAD_VALUE ((size_t)-1)
 
 
 template <class T, size_t PotBlkSize, size_t Dim>
 struct L1PointerMap {
     Vector<T> m_data;
-    NDArray<default_minus1<size_t>, Dim> m_offset1;
+    NDArray<size_t, Dim> m_offset1;
 
     explicit L1PointerMap(vec<Dim, size_t> shape = {0})
         : m_offset1((shape + (1 << PotBlkSize) - 1) >> PotBlkSize)
         , m_data(1 << PotBlkSize)
     {
-        m_offset1.construct();
+        m_offset1.construct(FDB_BAD_VALUE);
     }
 
     auto shape() const {
@@ -45,7 +48,7 @@ struct L1PointerMap {
     void reshape(vec<Dim, size_t> shape) {
         m_data.clear();
         m_offset1.reshape((shape + (1 << PotBlkSize) - 1) >> PotBlkSize);
-        m_offset1.construct();
+        m_offset1.construct(FDB_BAD_VALUE);
     }
 
     template <auto Mode = Access::read_write, class Handler>
@@ -54,7 +57,7 @@ struct L1PointerMap {
         auto offset1Axr = m_offset1.template accessor<Mode>(hand);
         return [=] (vec<Dim, size_t> indices) -> T * {
             auto offset1 = *offset1Axr(indices >> PotBlkSize);
-            if (!offset1.has_value())
+            if (offset1 == FDB_BAD_VALUE)
                 return nullptr;
             offset1 *= 1 << (Dim * PotBlkSize);
             size_t offset0 = indices & ((1 << PotBlkSize) - 1);
