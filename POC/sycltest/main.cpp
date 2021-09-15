@@ -6,9 +6,9 @@
 using namespace fdb;
 
 
-template <class T, T Minus1 = (T)-1>
+template <class T>
 struct default_minus1 {
-    T m{Minus1};
+    T m{(T)-1};
 
     default_minus1() = default;
     default_minus1(T const &t)
@@ -20,8 +20,8 @@ struct default_minus1 {
     T const &value() const { return m; }
     T &value() { return m; }
 
-    bool has_value() {
-        return m == Minus1;
+    bool has_value() const {
+        return m != (T)-1;
     }
 };
 
@@ -48,8 +48,10 @@ struct L1PointerMap {
     auto accessor(Handler hand) {
         auto dataAxr = m_data.template accessor<Mode>(hand);
         auto offset1Axr = m_offset1.template accessor<Mode>(hand);
-        return [=] (vec<Dim, size_t> indices) {
-            size_t offset1 = *offset1Axr(indices >> PotBlkSize);
+        return [=] (vec<Dim, size_t> indices) -> T * {
+            auto offset1 = *offset1Axr(indices >> PotBlkSize);
+            if (!offset1.has_value())
+                return nullptr;
             offset1 *= (1 << (Dim * PotBlkSize));
             size_t offset0 = indices & ((1 << PotBlkSize) - 1);
             return dataAxr(offset1 + offset0);
@@ -62,7 +64,7 @@ class kernel0;
 
 
 int main() {
-#if 0
+#if 1
     L1PointerMap<float, 2, 1> arr(32);
 
     fdb::enqueue([&] (fdb::DeviceHandler dev) {

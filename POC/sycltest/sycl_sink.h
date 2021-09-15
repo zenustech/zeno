@@ -186,11 +186,8 @@ struct NDArray {
                         std::forward<Args>(args)...))
         {}
 
-        using PointerT = std::conditional_t<
-            Mode == sycl::access::mode::read, T const *, T *>;
-
-        inline PointerT operator()(vec<Dim, size_t> indices) const {
-            return &m_axr[vec_to_other<sycl::id<Dim>>(indices)];
+        inline T *operator()(vec<Dim, size_t> indices) const {
+            return const_cast<T *>(&m_axr[vec_to_other<sycl::id<Dim>>(indices)]);
         }
     };
 
@@ -232,7 +229,7 @@ struct Vector {
     template <auto Mode = Access::read_write, class Handler>
     auto accessor(Handler hand) {
         auto arrAxr = m_arr.template accessor<Mode>(hand);
-        return [=] (size_t index) {
+        return [=] (size_t index) -> T * {
             return arrAxr(vec1S(index));
         };
     }
