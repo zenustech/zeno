@@ -1,10 +1,2 @@
-x: b
-	build/openfdb
-
-d: b
-	gdb build/openfdb -ex r
-
-b:
-	clear
-	cmake -B build
-	cmake --build build --parallel
+x:
+	clang++ -c -D__OPENCL__ -cl-std=clc++ -target spir -emit-llvm -Xclang -finclude-default-header main.cpp
