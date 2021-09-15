@@ -174,19 +174,19 @@ static void __partial_memdeinit
 
 
 template <class T, size_t Dim = 1>
-struct NDBuffer {
+struct __NDBuffer {
     static_assert(Dim > 0);
 
     sycl::buffer<T, Dim> m_buffer;
     vec<Dim, size_t> m_shape;
 
-    NDBuffer() = default;
-    NDBuffer(NDBuffer const &) = delete;
-    NDBuffer &operator=(NDBuffer const &) = delete;
-    NDBuffer(NDBuffer &&) = default;
-    NDBuffer &operator=(NDBuffer &&) = default;
+    __NDBuffer() = default;
+    __NDBuffer(__NDBuffer const &) = delete;
+    __NDBuffer &operator=(__NDBuffer const &) = delete;
+    __NDBuffer(__NDBuffer &&) = default;
+    __NDBuffer &operator=(__NDBuffer &&) = default;
 
-    explicit NDBuffer(vec<Dim, size_t> shape = {0})
+    explicit __NDBuffer(vec<Dim, size_t> shape = {0})
         : m_buffer((T *)nullptr, vec_to_other<sycl::range<Dim>>(shape))
         , m_shape(shape)
     {}
@@ -210,8 +210,8 @@ struct NDBuffer {
         m_shape = shape;
     }
 
-    NDBuffer clone() const {
-        NDBuffer ret(m_shape);
+    __NDBuffer clone() const {
+        __NDBuffer ret(m_shape);
         __fully_memcpy<T, Dim>(ret.m_buffer, const_cast<
                 sycl::buffer<T, Dim> &>(m_buffer), m_shape);
         return ret;
@@ -224,7 +224,7 @@ struct NDBuffer {
         sycl::accessor<T, Dim, Mode, Target> m_axr;
 
         template <class ...Args>
-        _Accessor(NDBuffer &parent, Args &&...args)
+        _Accessor(__NDBuffer &parent, Args &&...args)
             : m_axr(parent.m_buffer.template get_access<Mode>(
                         std::forward<Args>(args)...))
         {}
@@ -248,12 +248,13 @@ struct NDBuffer {
 };
 
 
+#if 0
 template <class T, size_t ...Ns>
 struct NDArray {
     inline static constexpr size_t Dim = sizeof...(Ns);
     static_assert(Dim > 0);
 
-    NDBuffer<T, Dim> m_buf;
+    __NDBuffer<T, Dim> m_buf;
 
     template <class ...Args>
     explicit NDArray(Args const &...args)
@@ -287,19 +288,24 @@ struct NDArray {
         };
     }
 };
+#endif
 
 template <class T>
 struct Vector {
-    NDBuffer<T> m_buf;
+    __NDBuffer<T> m_buf;
     size_t m_size = 0;
 
-    explicit Vector(NDBuffer<T> &&buf)
+    explicit Vector(__NDBuffer<T> &&buf)
         : m_buf(std::move(buf))
         , m_size(m_buf.shape())
     {}
 
+    Vector()
+        : Vector(0)
+    {}
+
     template <class ...Args>
-    explicit Vector(size_t n = 0, Args const &...args)
+    explicit Vector(size_t n, Args const &...args)
         : m_buf(std::max((size_t)1, n))
         , m_size(n)
     {
@@ -380,28 +386,5 @@ struct Vector {
     }
 };
 
-
-/*namespace snode {
-
-template <size_t X, size_t Y, size_t Z>
-struct Shape {
-    static inline constexpr size_t x = X;
-    static inline constexpr size_t y = Y;
-    static inline constexpr size_t z = Z;
-    static inline constexpr vec3S value{x, y, z};
-
-    constexpr operator vec3S() const {
-        return value;
-    }
-};
-
-template <class Shape, class T>
-struct Dense {
-    size_t linearize(vec3S coor) {
-        return dot(coor, vec3S(1, Shape::x, Shape::x * Shape::y));
-    }
-};
-
-}*/
 
 }

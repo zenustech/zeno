@@ -32,10 +32,10 @@ struct default_minus1 {
 template <class T, size_t Dim, size_t N0, size_t N1>
 struct L1PointerMap {
     Vector<T> m_data;
-    NDArray<size_t, 1 << N1> m_offset1;
+    Vector<size_t> m_offset1;
 
     L1PointerMap()
-        : m_offset1(FDB_BAD_OFFSET)
+        : m_offset1(1 << (Dim * N1), FDB_BAD_OFFSET)
     {}
 
     template <auto Mode = Access::read_write, class Handler>
