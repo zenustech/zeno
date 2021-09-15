@@ -1,30 +1,10 @@
 #include <memory>
 #include <array>
-#include "sycl_sink.h"
+#include "ImplSycl.h"
 #include "PointerMap.h"
 
 
 using namespace fdb;
-
-
-template <class T>
-struct default_minus1 {
-    T m;
-
-    default_minus1() : m((T)-1) {}
-    default_minus1(T const &t)
-        : m(t) {}
-
-    operator T const &() const { return m; }
-    operator T &() { return m; }
-
-    T const &value() const { return m; }
-    T &value() { return m; }
-
-    bool has_value() const {
-        return m != (T)-1;
-    }
-};
 
 
 class kernel0;
@@ -32,11 +12,12 @@ class kernel0;
 
 int main() {
 #if 1
-    L1PointerMap<float, 1, 2, 3> arr;
+    //L1PointerMap<float, 1, 2, 3> arr;
+    L1DenseMap<float, 1, 2, 3> arr;
 
-    fdb::enqueue([&] (fdb::DeviceHandler dev) {
+    fdb::enqueue([&] (auto dev) {
         auto arrAxr = arr.accessor<fdb::Access::discard_write>(dev);
-        dev.parallelFor<kernel0, 1>(arr.size(), [=] (size_t id) {
+        dev.template parallelFor<kernel0, 1>(arr.size(), [=] (size_t id) {
             *arrAxr(id) = id;
         });
     });

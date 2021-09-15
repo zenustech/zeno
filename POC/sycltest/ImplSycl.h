@@ -1,13 +1,10 @@
 #pragma once
 
-#include <CL/sycl.hpp>
 #include "common.h"
+#include <CL/sycl.hpp>
 
 
 namespace fdb::__ImplSycl {
-
-
-static constexpr struct HostHandler {} HOST;
 
 
 struct DeviceHandler {
@@ -32,13 +29,14 @@ struct DeviceHandler {
 };
 
 
-template <bool IsBlocked = true, class Functor>
-void enqueue(Functor const &functor) {
-    auto event = sycl::queue().submit([&] (sycl::handler &cgh) {
+template <class Functor>
+void enqueue(Functor const &functor,
+        sycl::queue q = sycl::queue{}, bool blocked = true) {
+    auto event = q.submit([&] (sycl::handler &cgh) {
         DeviceHandler dev(cgh);
         functor(std::as_const(dev));
     });
-    if constexpr (IsBlocked) {
+    if (blocked) {
         event.wait();
     }
 }
@@ -66,7 +64,7 @@ static void __partial_memcpy
         , sycl::buffer<T, 1> &src
         , size_t n
         ) {
-    enqueue([&] (fdb::DeviceHandler dev) {
+    enqueue([&] (DeviceHandler dev) {
         auto dstAxr = dst.template get_access<sycl::access::mode::write>(*dev.m_cgh);
         auto srcAxr = src.template get_access<sycl::access::mode::read>(*dev.m_cgh);
         dev.parallelFor<__partial_memcpy_kernel<T>, 1>(n, [=] (size_t id) {
@@ -84,7 +82,7 @@ static void __fully_memcpy
         , sycl::buffer<T, Dim> &src
         , vec<Dim, size_t> shape
         ) {
-    enqueue([&] (fdb::DeviceHandler dev) {
+    enqueue([&] (DeviceHandler dev) {
         auto dstAxr = dst.template get_access<sycl::access::mode::discard_write>(*dev.m_cgh);
         auto srcAxr = src.template get_access<sycl::access::mode::read>(*dev.m_cgh);
         dev.parallelFor<__fully_memcpy_kernel<T, Dim>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
@@ -103,7 +101,7 @@ static void __fully_meminit
         , vec<Dim, size_t> shape
         , Args ...args
         ) {
-    enqueue([&] (fdb::DeviceHandler dev) {
+    enqueue([&] (DeviceHandler dev) {
         auto dstAxr = dst.template get_access<sycl::access::mode::discard_write>(*dev.m_cgh);
         dev.parallelFor<__fully_meminit_kernel<T, Dim, Args...>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
             auto id = vec_to_other<sycl::id<Dim>>(idx);
@@ -121,7 +119,7 @@ static void __fully_memdeinit
         , vec<Dim, size_t> shape
         ) {
     if constexpr (!std::is_trivially_destructible<T>::value) {
-        enqueue([&] (fdb::DeviceHandler dev) {
+        enqueue([&] (DeviceHandler dev) {
             auto dstAxr = dst.template get_access<sycl::access::mode::discard_read_write>(*dev.m_cgh);
             dev.parallelFor<__fully_memdeinit_kernel<T, Dim>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
                 auto id = vec_to_other<sycl::id<Dim>>(idx);
@@ -141,7 +139,7 @@ static void __partial_meminit
         , size_t nend
         , Args ...args
         ) {
-    enqueue([&] (fdb::DeviceHandler dev) {
+    enqueue([&] (DeviceHandler dev) {
         auto dstAxr = dst.template get_access<sycl::access::mode::write>(*dev.m_cgh);
         dev.parallelFor<__partial_meminit_kernel<T, Args...>, 1>(nend - nbeg, [=] (size_t id) {
             new (&dstAxr[nbeg + id]) T(args...);
@@ -159,7 +157,7 @@ static void __partial_memdeinit
         , size_t nend
         ) {
     if constexpr (!std::is_trivially_destructible<T>::value) {
-        enqueue([&] (fdb::DeviceHandler dev) {
+        enqueue([&] (DeviceHandler dev) {
             auto dstAxr = dst.template get_access<sycl::access::mode::read_write>(*dev.m_cgh);
             dev.parallelFor<__partial_memdeinit_kernel<T>, 1>(nend - nbeg, [=] (size_t id) {
                 dstAxr[nbeg + id].~T();
@@ -388,10 +386,6 @@ struct Vector {
 
 namespace fdb {
 
-class ImplSycl;
-
-template <class T>
-struct Vector<T, ImplSycl> : __ImplSycl::Vector<T> {
-};
+using namespace __ImplSycl;
 
 }

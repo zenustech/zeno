@@ -5,15 +5,13 @@
 
 namespace fdb {
 
+
 enum class Access {
     read, write, read_write, discard_write, discard_read_write, atomic,
 };
 
 
-template <class T, class Impl>
-struct Vector {
-    static_assert(0, "Unimplemented class Vector");
-};
+static constexpr struct HostHandler {} HOST;
 
 
 }
