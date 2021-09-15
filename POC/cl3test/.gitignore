@@ -1,3 +1,4 @@
 *.bc
 *.bc.inl
+*.exe
 *.o

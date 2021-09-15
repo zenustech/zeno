@@ -6,7 +6,7 @@
 #endif
 
 #if defined(__OPENCL__)
-__kernel void test() {
+extern "C" __kernel void test() {
     printf("hello from kernel!\n");
 }
 #endif
@@ -32,11 +32,12 @@ cl::Program *__CLRT_init() {
 }
 
 void __CLK_test(cl::NDRange range) {
-    static std::unique_ptr<cl::Kernel> kernel;
+    static std::unique_ptr<cl::KernelFunctor<>> kernel;
     if (!kernel)
-        kernel = std::make_unique<cl::Kernel>(*__CLRT_init(), "test");
-    cl::KernelFunctor<> functor(*kernel);
-    functor(range);
+        kernel = std::make_unique<cl::KernelFunctor<>>(*__CLRT_init(), "test");
+    printf("!!!\n");
+    (*kernel)(range);
+    printf("???\n");
 }
 #endif
 
