@@ -79,7 +79,7 @@ static void __partial_memcpy
     });
 }
 
-template <class T>
+template <class T, size_t Dim>
 class __fully_memcpy_kernel;
 
 template <class T, size_t Dim>
@@ -91,14 +91,14 @@ static void __fully_memcpy
     enqueue([&] (fdb::DeviceHandler dev) {
         auto dstAxr = dst.template get_access<sycl::access::mode::discard_write>(*dev.m_cgh);
         auto srcAxr = src.template get_access<sycl::access::mode::read>(*dev.m_cgh);
-        dev.parallelFor<__fully_memcpy_kernel<T>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
+        dev.parallelFor<__fully_memcpy_kernel<T, Dim>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
             auto id = vec_to_other<sycl::id<Dim>>(idx);
             dstAxr[id] = srcAxr[id];
         });
     });
 }
 
-template <class T>
+template <class T, size_t Dim, class ...Args>
 class __fully_meminit_kernel;
 
 template <class T, size_t Dim, class ...Args>
@@ -109,14 +109,14 @@ static void __fully_meminit
         ) {
     enqueue([&] (fdb::DeviceHandler dev) {
         auto dstAxr = dst.template get_access<sycl::access::mode::discard_write>(*dev.m_cgh);
-        dev.parallelFor<__fully_meminit_kernel<T>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
+        dev.parallelFor<__fully_meminit_kernel<T, Dim, Args...>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
             auto id = vec_to_other<sycl::id<Dim>>(idx);
             new (&dstAxr[id]) T(args...);
         });
     });
 }
 
-template <class T>
+template <class T, size_t Dim>
 class __fully_memdeinit_kernel;
 
 template <class T, size_t Dim>
@@ -126,26 +126,26 @@ static void __fully_memdeinit
         ) {
     enqueue([&] (fdb::DeviceHandler dev) {
         auto dstAxr = dst.template get_access<sycl::access::mode::discard_read_write>(*dev.m_cgh);
-        dev.parallelFor<__fully_memdeinit_kernel<T>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
+        dev.parallelFor<__fully_memdeinit_kernel<T, Dim>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
             auto id = vec_to_other<sycl::id<Dim>>(idx);
             dstAxr[id].~T();
         });
     });
 }
 
-template <class T>
+template <class T, class ...Args>
 class __partial_meminit_kernel;
 
-template <class T, size_t Dim, class ...Args>
+template <class T, class ...Args>
 static void __partial_meminit
-        ( sycl::buffer<T, Dim> &dst
+        ( sycl::buffer<T, 1> &dst
         , size_t nbeg
         , size_t nend
         , Args ...args
         ) {
     enqueue([&] (fdb::DeviceHandler dev) {
         auto dstAxr = dst.template get_access<sycl::access::mode::write>(*dev.m_cgh);
-        dev.parallelFor<__partial_meminit_kernel<T>, Dim>(nend - nbeg, [=] (size_t id) {
+        dev.parallelFor<__partial_meminit_kernel<T, Args...>, 1>(nend - nbeg, [=] (size_t id) {
             new (&dstAxr[nbeg + id]) T(args...);
         });
     });
@@ -154,15 +154,15 @@ static void __partial_meminit
 template <class T>
 class __partial_memdeinit_kernel;
 
-template <class T, size_t Dim>
+template <class T>
 static void __partial_memdeinit
-        ( sycl::buffer<T, Dim> &dst
+        ( sycl::buffer<T, 1> &dst
         , size_t nbeg
         , size_t nend
         ) {
     enqueue([&] (fdb::DeviceHandler dev) {
         auto dstAxr = dst.template get_access<sycl::access::mode::read_write>(*dev.m_cgh);
-        dev.parallelFor<__partial_memdeinit_kernel<T>, Dim>(nend - nbeg, [=] (size_t id) {
+        dev.parallelFor<__partial_memdeinit_kernel<T>, 1>(nend - nbeg, [=] (size_t id) {
             dstAxr[nbeg + id].~T();
         });
     });
@@ -252,7 +252,7 @@ struct Vector {
     {
     }
 
-    template <class Args>
+    template <class ...Args>
     explicit Vector(size_t n = 0, Args const &...args)
         : m_arr(n)
         , m_size(n)
@@ -289,7 +289,7 @@ struct Vector {
     void __recapacity(size_t n) {
         auto old_buffer = std::move(m_arr.m_buffer);
         m_arr.reshape(n);
-        __partial_memcpy(m_arr.m_buffer, old_buffer, m_size);
+        __partial_memcpy<T>(m_arr.m_buffer, old_buffer, m_size);
     }
 
     void reserve(size_t n) {
@@ -304,14 +304,14 @@ struct Vector {
         }
     }
 
-    template <class Args>
+    template <class ...Args>
     void resize(size_t n, Args const &...args) {
         reserve(n);
         if (m_size < n)
-            __partial_meminit<T, Dim>(m_buffer, m_size, n, args...);
+            __partial_meminit<T>(m_arr.m_buffer, m_size, n, args...);
         if constexpr (!std::is_trivially_destructible<T>::value)
             if (m_size > n)
-                __partial_memdeinit<T, Dim>(m_buffer, n, m_size);
+                __partial_memdeinit<T>(m_arr.m_buffer, n, m_size);
         m_size = n;
     }
 
