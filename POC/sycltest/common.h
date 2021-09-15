@@ -12,6 +12,7 @@ enum class Access {
 
 template <class T, class Impl>
 struct Vector {
+    static_assert(0, "Unimplemented class Vector");
 };
 
 
