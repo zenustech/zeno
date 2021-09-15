@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <cctype>
 
 
 namespace hg {
@@ -74,12 +75,12 @@ bool starts_with(std::string line, std::string pattern) {
 }
 
 std::string trim(std::string str) {
-	while (str.size() != 0 && isspace(str[0])) {
+	while (str.size() != 0 && std::isspace(str[0])) {
 		str.erase(0, 1);
 	}
 	while (str.size() != 0) {
 		auto len = str.size();
-		if (isspace(str[len - 1])) {
+		if (std::isspace(str[len - 1])) {
 			str.pop_back();
 		} else {
 			break;
