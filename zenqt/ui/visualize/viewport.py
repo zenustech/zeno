@@ -26,6 +26,7 @@ class CameraControl:
         self.fov = 45.0
         self.radius = 5.0
         self.res = (1, 1)
+        self.lock_flag = False
 
         self.update_perspective()
 
@@ -73,6 +74,8 @@ class CameraControl:
         self.update_perspective()
 
     def update_perspective(self):
+        if self.lock_flag:
+            return
         cx, cy, cz = self.center
         zenvis.status['perspective'] = (cx, cy, cz,
                 self.theta, self.phi, self.radius,

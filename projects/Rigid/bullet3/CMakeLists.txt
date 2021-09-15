@@ -53,7 +53,7 @@ if (MSVC)  # we must use this to fix bullet3 on win
             $<$<CONFIG:Release>:/MD> #--|
     )  # cl: 命令行 warning D9025 :正在重写“/MT”(用“/MD”)
 else()
-    set(BUILD_SHARED_LIBS ON)
+    set(BUILD_SHARED_LIBS OFF)
 endif()
 ####################################################
 # FUN FACT: DID U KNOW THAT MICROSOFT BUYS GITHUB? #

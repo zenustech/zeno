@@ -5,9 +5,10 @@
 #include <cstring>
 #include <zeno/NumericObject.h>
 #include <zeno/PrimitiveObject.h>
+#include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
-
+#include <iostream>
 namespace {
 using namespace zeno;
 // todo where to put this func???
@@ -18,19 +19,30 @@ float area(zeno::vec3f &p1, zeno::vec3f &p2, zeno::vec3f &p3) {
   return 0.5 * sqrt(zeno::dot(areavec, areavec));
 }
 // todo where to put this func????
-bool ptInTriangle(zeno::vec3f &p, zeno::vec3f &p0, zeno::vec3f &p1,
-                  zeno::vec3f &p2) {
-  float A = 0.5 * (-p1[1] * p2[0] + p0[1] * (-p1[0] + p2[0]) +
-                   p0[0] * (p1[1] - p2[1]) + p1[0] * p2[1]);
-  float sign = A < 0 ? -1.0f : 1.0f;
-  float s = (p0[1] * p2[0] - p0[0] * p2[1] + (p2[1] - p0[1]) * p[0] +
-             (p0[0] - p2[0]) * p[1]) *
-            sign;
-  float t = (p0[0] * p1[1] - p0[1] * p1[0] + (p0[1] - p1[1]) * p[0] +
-             (p1[0] - p0[0]) * p[1]) *
-            sign;
+bool ptInTriangle(zeno::vec3f p, zeno::vec3f p0, zeno::vec3f p1,
+                  zeno::vec3f p2) {
+  // float A = 0.5 * (-p1[1] * p2[0] + p0[1] * (-p1[0] + p2[0]) +
+  //                  p0[0] * (p1[1] - p2[1]) + p1[0] * p2[1]);
+  // float sign = A < 0 ? -1.0f : 1.0f;
+  // float s = (p0[1] * p2[0] - p0[0] * p2[1] + (p2[1] - p0[1]) * p[0] +
+  //            (p0[0] - p2[0]) * p[1]) *
+  //           sign;
+  // float t = (p0[0] * p1[1] - p0[1] * p1[0] + (p0[1] - p1[1]) * p[0] +
+  //            (p1[0] - p0[0]) * p[1]) *
+  //           sign;
 
-  return s > 0 && t > 0 && ((s + t) < 2 * A * sign);
+  // return s > 0 && t > 0 && ((s + t) < 2 * A * sign);
+  p0-=p;
+  p1-=p;
+  p2-=p;
+  auto u = zeno::cross(p1,p2);
+  auto v = zeno::cross(p2,p0);
+  auto w = zeno::cross(p0,p1);
+  if(zeno::dot(u,v)<0)
+  {return false;}
+  if(zeno::dot(u,w)<0)
+  {return false;}
+  return true;
 }
 
 // to do where to put this func??
@@ -54,6 +66,7 @@ struct PrimSprayParticles : zeno::INode {
     auto result = zeno::IObject::make<PrimitiveObject>();
     tbb::concurrent_vector<zeno::vec3f> data(0);
     size_t n = prim->tris.size();
+    log_debugf("PrimSprayParticles got num tris:", n);
     tbb::parallel_for((size_t)0, (size_t)n, (size_t)1, [&](size_t index) {
       zeno::vec3f a, b, c;
       zeno::vec3i vi = prim->tris[index];

@@ -2,11 +2,10 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 17)
 project(zeno LANGUAGES C CXX)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
-
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if (CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 endif()
@@ -14,14 +13,12 @@ if (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w")
 endif()
 
-include_directories(include)
-
-option(ZENO_BUILD_EXTENSIONS "Build extension modules for Zeno" ON)
-option(ZENO_BUILD_TESTS "Build tests for Zeno" OFF)
+option(ZENO_BUILD_TESTS "Build tests for ZENO" OFF)
+option(ZENO_BUILD_EXTENSIONS "Build extension modules for ZENO" ON)
 option(ZENO_GLOBALSTATE "Enable ZENO frame and substep support" ON)
 option(ZENO_VISUALIZATION "Enable ZENO visualization support" ON)
 option(ZENO_FAULTHANDLER "Enable ZENO fault handler for traceback" ON)
-option(ZENO_BENCHMARKING "Enable ZENO benchmarking timer" OFF)
+option(ZENO_BENCHMARKING "Enable ZENO benchmarking timer" ON)
 option(ZENO_ENABLE_PYTHON "Enable ZENO Python bindings" ON)
 option(ZENO_ENABLE_OPENMP "Enable OpenMP in ZENO for parallelism" ON)
 option(ZENO_FAIL_SILENTLY "Silently supress error as possible" OFF)
@@ -43,11 +40,14 @@ if (ZENO_ENABLE_PYTHON)
     endif()
 endif()
 
+include_directories(external/include)
+
 if (ZENO_ENABLE_PYTHON)
     add_subdirectory(external/pybind11)
 endif()
 
 add_subdirectory(external/spdlog)
+
 add_subdirectory(zeno)
 
 if (ZENO_ENABLE_PYTHON)
