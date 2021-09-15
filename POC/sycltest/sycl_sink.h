@@ -145,13 +145,8 @@ struct NDArray {
         using ReferenceT = std::conditional_t<Mode == sycl::access::mode::read,
               T const &, T &>;
 
-        inline ReferenceT operator[](vec<Dim, size_t> indices) const {
+        inline ReferenceT operator()(vec<Dim, size_t> indices) const {
             return m_axr[vec_to_other<sycl::id<Dim>>(indices)];
-        }
-
-        template <class ...Indices>
-        inline ReferenceT operator()(Indices &&...indices) const {
-            return operator[](vec<Dim, size_t>(std::forward<Indices>(indices)...));
         }
     };
 
@@ -189,29 +184,12 @@ struct Vector {
         return ret;
     }
 
-    template <class ArrAxr>
-    struct _Accessor {
-        ArrAxr m_arrAxr;
-
-        _Accessor(ArrAxr &&arrAxr)
-            : m_arrAxr(std::move(arrAxr))
-        {}
-
-        using ReferenceT = typename ArrAxr::ReferenceT;
-
-        inline ReferenceT operator[](size_t index) const {
-            return m_arrAxr[index];
-        }
-
-        inline ReferenceT operator()(size_t index) const {
-            return operator[](index);
-        }
-    };
-
     template <auto Mode = Access::read_write, class Handler>
     auto accessor(Handler hand) {
         auto arrAxr = m_arr.template accessor<Mode>(hand);
-        return _Accessor<std::decay_t<decltype(arrAxr)>>(std::move(arrAxr));
+        return [=] (size_t index) -> typename decltype(arrAxr)::ReferenceT {
+            return arrAxr(vec1S(index));
+        };
     }
 
     size_t size() const {
@@ -251,7 +229,7 @@ struct Vector {
 };
 
 
-namespace snode {
+/*namespace snode {
 
 template <size_t X, size_t Y, size_t Z>
 struct Shape {
@@ -268,9 +246,10 @@ struct Shape {
 template <class Shape, class T>
 struct Dense {
     size_t linearize(vec3S coor) {
-        return 0;
+        return dot(coor, vec3S(1, Shape::x, Shape::x * Shape::y));
     }
 };
 
+}*/
 
 }

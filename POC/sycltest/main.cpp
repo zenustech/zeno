@@ -6,6 +6,23 @@
 using namespace fdb;
 
 
+template <class T, size_t PotBlkSize, size_t Dim = 1>
+struct PointerArray {
+    Vector<T> m_data;
+    NDArray<size_t, Dim> m_offset;
+
+    template <auto Mode = Access::read_write, class Handler>
+    auto accessor(Handler hand) {
+        auto dataAxr = m_data.template accessor<Mode>(hand);
+        auto offsetAxr = m_offset.template accessor<Mode>(hand);
+        return [=] (vec<Dim, size_t> indices) -> typename decltype(dataAxr)::ReferenceT {
+            size_t offset = offsetAxr(indices >> PotBlkSize);
+            return dataAxr(offset);
+        };
+    }
+};
+
+
 class kernel0;
 
 
