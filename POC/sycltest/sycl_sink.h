@@ -1,11 +1,10 @@
 #pragma once
 
 #include <CL/sycl.hpp>
-#include "vec.h"
-#include <memory>
+#include "common.h"
 
 
-namespace fdb {
+namespace fdb::__ImplSycl {
 
 
 static constexpr struct HostHandler {} HOST;
@@ -33,12 +32,6 @@ struct DeviceHandler {
 };
 
 
-/*static sycl::queue &__get_sycl_queue() {
-    static auto p = std::make_unique<sycl::queue>();
-    return *p;
-}*/
-
-
 template <bool IsBlocked = true, class Functor>
 void enqueue(Functor const &functor) {
     auto event = sycl::queue().submit([&] (sycl::handler &cgh) {
@@ -51,14 +44,17 @@ void enqueue(Functor const &functor) {
 }
 
 
-enum class Access {
-    read = (int)sycl::access::mode::read,
-    write = (int)sycl::access::mode::write,
-    read_write = (int)sycl::access::mode::read_write,
-    discard_write = (int)sycl::access::mode::discard_write,
-    discard_read_write = (int)sycl::access::mode::discard_read_write,
-    atomic = (int)sycl::access::mode::atomic,
-};
+inline static constexpr sycl::access::mode __to_sycl_mode(Access mode) {
+    switch (mode) {
+        case Access::read: return sycl::access::mode::read;
+        case Access::write: return sycl::access::mode::write;
+        case Access::read_write: return sycl::access::mode::read_write;
+        case Access::discard_write: return sycl::access::mode::discard_write;
+        case Access::discard_read_write: return sycl::access::mode::discard_read_write;
+        case Access::atomic: return sycl::access::mode::atomic;
+    }
+    return sycl::access::mode::read_write;
+}
 
 
 template <class T>
@@ -220,11 +216,11 @@ struct __NDBuffer {
     template
         < auto Mode = sycl::access::mode::read_write
         , auto Target = sycl::access::target::global_buffer>
-    struct _Accessor {
+    struct __Accessor {
         sycl::accessor<T, Dim, Mode, Target> m_axr;
 
         template <class ...Args>
-        _Accessor(__NDBuffer &parent, Args &&...args)
+        __Accessor(__NDBuffer &parent, Args &&...args)
             : m_axr(parent.m_buffer.template get_access<Mode>(
                         std::forward<Args>(args)...))
         {}
@@ -236,13 +232,13 @@ struct __NDBuffer {
 
     template <auto Mode = Access::read_write>
     auto accessor(HostHandler hand) {
-        return _Accessor<(sycl::access::mode)(int)Mode,
+        return __Accessor<__to_sycl_mode(Mode),
                sycl::access::target::host_buffer>(*this);
     }
 
     template <auto Mode = Access::read_write>
     auto accessor(DeviceHandler hand) {
-        return _Accessor<(sycl::access::mode)(int)Mode,
+        return __Accessor<__to_sycl_mode(Mode),
                sycl::access::target::global_buffer>(*this, *hand.m_cgh);
     }
 };
@@ -386,5 +382,16 @@ struct Vector {
     }
 };
 
+
+}
+
+
+namespace fdb {
+
+class ImplSycl;
+
+template <class T>
+struct Vector<T, ImplSycl> : __ImplSycl::Vector<T> {
+};
 
 }

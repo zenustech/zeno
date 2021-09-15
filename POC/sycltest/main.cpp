@@ -1,7 +1,7 @@
 #include <memory>
 #include <array>
 #include "sycl_sink.h"
-#include "L1PointerMap.h"
+#include "PointerMap.h"
 
 
 using namespace fdb;
