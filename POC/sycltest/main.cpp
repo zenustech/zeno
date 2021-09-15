@@ -6,7 +6,7 @@
 using namespace fdb;
 
 
-/*template <class T>
+template <class T>
 struct default_minus1 {
     T m;
 
@@ -23,7 +23,7 @@ struct default_minus1 {
     bool has_value() const {
         return m != (T)-1;
     }
-};*/
+};
 
 
 #define FDB_BAD_VALUE ((size_t)-1)
@@ -54,7 +54,7 @@ struct L1PointerMap {
     template <auto Mode = Access::read_write, class Handler>
     auto accessor(Handler hand) {
         auto dataAxr = m_data.template accessor<Mode>(hand);
-        auto offset1Axr = m_offset1.template accessor<Mode>(hand);
+        auto offset1Axr = m_offset1.template accessor<Access::read>(hand);
         return [=] (vec<Dim, size_t> indices) -> T * {
             auto offset1 = *offset1Axr(indices >> PotBlkSize);
             if (offset1 == FDB_BAD_VALUE)
@@ -90,12 +90,13 @@ int main() {
         printf("\n");
     }
 #else
-    NDArray<default_minus1<int>> arr(32);
+    NDArray<size_t> arr(32);
+    arr.construct(FDB_BAD_VALUE);
 
     {
         auto arrAxr = arr.accessor<fdb::Access::read>(fdb::host);
         for (int i = 0; i < arr.shape(); i++) {
-            printf(" %d", (int)*arrAxr(i));
+            printf(" %zd", (size_t)*arrAxr(i));
         }
         printf("\n");
     }
