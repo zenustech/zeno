@@ -152,13 +152,15 @@ struct ScalarFieldAnalyzer : zeno::INode {
             std::vector<openvdb::Vec3R> activeVoxels(1);
             std::vector<float> distances(1);
             const openvdb::math::Transform& transform = grid->transform();
-            for (openvdb::Vec3SGrid::ValueOnIter iter = resultTree->beginValueOn(); iter; ++iter)
+            for (openvdb::Vec3SGrid::ValueAllIter iter = resultTree->beginValueAll(); iter; ++iter)
             {
-                activeVoxels[0] = transform.indexToWorld(iter.getCoord());
+                activeVoxels[0] = transform.indexToWorld(iter.getCoord().asVec3d() + 0.5f);
                 (*closestSurface).searchAndReplace(activeVoxels, distances);
                 iter.setValue(activeVoxels[0]);
+                iter.setActiveState(true);
             }
             openvdb::Vec3fGrid::Ptr resultGrid(new openvdb::Vec3fGrid(resultTree));
+            resultGrid->setTransform(transform.copy());
             auto result = std::make_shared<VDBFloat3Grid>(std::move(resultGrid));
             set_output("OutVDB", std::move(result));
         }
