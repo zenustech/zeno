@@ -300,7 +300,7 @@ struct Vector {
 
     template <class ...Args>
     explicit Vector(size_t n = 0, Args const &...args)
-        : m_buf(n)
+        : m_buf(std::max((size_t)1, n))
         , m_size(n)
     {
         m_buf.construct(args...);
@@ -342,7 +342,7 @@ struct Vector {
 
     void __recapacity(size_t n) {
         auto old_buffer = std::move(m_buf.m_buffer);
-        m_buf.reshape(n);
+        m_buf.reshape(std::max((size_t)1, n));
         __partial_memcpy<T>(m_buf.m_buffer, old_buffer, m_size);
     }
 

@@ -35,10 +35,8 @@ struct L1PointerMap {
     NDArray<size_t, 1 << N1> m_offset1;
 
     L1PointerMap()
-        : m_data(4 << N0)
-        , m_offset1(FDB_BAD_OFFSET)
-    {
-    }
+        : m_offset1(FDB_BAD_OFFSET)
+    {}
 
     template <auto Mode = Access::read_write, class Handler>
     auto accessor(Handler hand) {
