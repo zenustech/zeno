@@ -124,13 +124,15 @@ static void __fully_memdeinit
         ( sycl::buffer<T, Dim> &dst
         , vec<Dim, size_t> shape
         ) {
-    enqueue([&] (fdb::DeviceHandler dev) {
-        auto dstAxr = dst.template get_access<sycl::access::mode::discard_read_write>(*dev.m_cgh);
-        dev.parallelFor<__fully_memdeinit_kernel<T, Dim>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
-            auto id = vec_to_other<sycl::id<Dim>>(idx);
-            dstAxr[id].~T();
+    if constexpr (!std::is_trivially_destructible<T>::value) {
+        enqueue([&] (fdb::DeviceHandler dev) {
+            auto dstAxr = dst.template get_access<sycl::access::mode::discard_read_write>(*dev.m_cgh);
+            dev.parallelFor<__fully_memdeinit_kernel<T, Dim>, Dim>(shape, [=] (vec<Dim, size_t> idx) {
+                auto id = vec_to_other<sycl::id<Dim>>(idx);
+                dstAxr[id].~T();
+            });
         });
-    });
+    }
 }
 
 template <class T, class ...Args>
@@ -160,12 +162,14 @@ static void __partial_memdeinit
         , size_t nbeg
         , size_t nend
         ) {
-    enqueue([&] (fdb::DeviceHandler dev) {
-        auto dstAxr = dst.template get_access<sycl::access::mode::read_write>(*dev.m_cgh);
-        dev.parallelFor<__partial_memdeinit_kernel<T>, 1>(nend - nbeg, [=] (size_t id) {
-            dstAxr[nbeg + id].~T();
+    if constexpr (!std::is_trivially_destructible<T>::value) {
+        enqueue([&] (fdb::DeviceHandler dev) {
+            auto dstAxr = dst.template get_access<sycl::access::mode::read_write>(*dev.m_cgh);
+            dev.parallelFor<__partial_memdeinit_kernel<T>, 1>(nend - nbeg, [=] (size_t id) {
+                dstAxr[nbeg + id].~T();
+            });
         });
-    });
+    }
 }
 
 
@@ -185,15 +189,14 @@ struct NDArray {
     explicit NDArray(vec<Dim, size_t> shape = {0})
         : m_buffer((T *)nullptr, vec_to_other<sycl::range<Dim>>(shape))
         , m_shape(shape)
-    {
-    }
+    {}
 
     template <class ...Args>
     void construct(Args const &...args) {
         __fully_meminit<T, Dim>(m_buffer, m_shape, args...);
     }
 
-    void destroy() {
+    void destruct() {
         __fully_memdeinit<T, Dim>(m_buffer, m_shape);
     }
 
@@ -250,11 +253,10 @@ struct Vector {
     NDArray<T> m_arr;
     size_t m_size = 0;
 
-    Vector(NDArray<T> &&arr)
+    explicit Vector(NDArray<T> &&arr)
         : m_arr(std::move(arr))
         , m_size(m_arr.shape())
-    {
-    }
+    {}
 
     template <class ...Args>
     explicit Vector(size_t n = 0, Args const &...args)
@@ -264,14 +266,22 @@ struct Vector {
         m_arr.construct(args...);
     }
 
-    ~Vector() {
-        if constexpr (!std::is_trivially_destructible<T>::value)
-            m_arr.destroy();
+    Vector(Vector const &other)
+        : m_arr(other.clone())
+        , m_size(other.m_size)
+    {}
+
+    Vector(Vector &&) = default;
+
+    Vector &operator=(Vector const &other) const {
+        m_arr = other.m_arr.clone();
+        return *this;
     }
 
-    Vector clone() const {
-        Vector ret(m_arr.clone());
-        return ret;
+    Vector &operator=(Vector &&) = default;
+
+    ~Vector() {
+        m_arr.destroy();
     }
 
     template <auto Mode = Access::read_write, class Handler>
@@ -310,16 +320,22 @@ struct Vector {
 
     template <class ...Args>
     void resize(size_t n, Args const &...args) {
+        if (n == 0)
+            return clear();
         reserve(n);
-        if (m_size < n)
-            __partial_meminit<T>(m_arr.m_buffer, m_size, n, args...);
-        if constexpr (!std::is_trivially_destructible<T>::value)
-            if (m_size > n)
-                __partial_memdeinit<T>(m_arr.m_buffer, n, m_size);
+        if (m_size < n) {
+            if (m_size == 0)
+                __fully_meminit<T>(m_arr.m_buffer, n, args...);
+            else
+                __partial_meminit<T>(m_arr.m_buffer, m_size, n, args...);
+        } else if (m_size > n) {
+            __partial_memdeinit<T>(m_arr.m_buffer, n, m_size);
+        }
         m_size = n;
     }
 
     void clear() {
+        __fully_memdeinit<T>(m_arr.m_buffer, m_size);
         m_size = 0;
     }
 };
