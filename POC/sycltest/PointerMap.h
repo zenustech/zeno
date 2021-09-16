@@ -33,12 +33,12 @@ struct L1PointerMap {
         auto alloctop1Axr = m_alloctop1.template accessor<Access::atomic>(hand);
         return [=] (vec<Dim, size_t> indices) {
             auto o1lin = __linearize<N1, Dim>(indices >> N0);
-            auto &offset1 = offset1Axr(o1lin)();
-            if (offset1 == BAD_OFFSET) {
-                offset1 = alloctop1Axr(0)().fetch_add(1);
+            auto offset1Fun = offset1Axr(o1lin);
+            if (offset1Fun() == BAD_OFFSET) {
+                offset1Fun() = alloctop1Axr(0)().fetch_add(1);
             }
             size_t offset0 = indices & ((1 << N0) - 1);
-            return dataAxr(offset1 << (Dim * N0) | offset0);
+            return dataAxr(offset1Fun() << (Dim * N0) | offset0);
         };
     }
 

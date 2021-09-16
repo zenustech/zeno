@@ -237,6 +237,11 @@ struct __NDBuffer {
             RetType operator()() const {
                 return m_axr[m_id];
             }
+
+            __Proxy &operator=(T const &val) const {
+                m_axr[m_id] = val;
+                return *this;
+            }
         };
 
         inline __Proxy operator()(vec<Dim, size_t> indices) const {
