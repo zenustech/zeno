@@ -35,7 +35,7 @@ struct L1PointerMap {
             auto o1lin = __linearize<N1, Dim>(indices >> N0);
             auto &offset1 = offset1Axr(o1lin)();
             if (offset1 == BAD_OFFSET) {
-                offset1 = alloctop1Axr(0)()++;
+                offset1 = alloctop1Axr(0)().fetch_add(1);
             }
             size_t offset0 = indices & ((1 << N0) - 1);
             return dataAxr(offset1 << (Dim * N0) | offset0);
@@ -49,9 +49,7 @@ struct L1PointerMap {
         return [=] (vec<Dim, size_t> indices) {
             auto o1lin = __linearize<N1, Dim>(indices >> N0);
             auto offset1 = offset1Axr(o1lin)();
-            if (offset1 == BAD_OFFSET) {
-                return nullptr;
-            }
+            //if (offset1 != BAD_OFFSET) { }
             size_t offset0 = indices & ((1 << N0) - 1);
             return dataAxr(offset1 << (Dim * N0) | offset0);
         };

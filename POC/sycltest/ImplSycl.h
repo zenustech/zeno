@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include <CL/sycl.hpp>
+#include <optional>
 
 
 namespace fdb::__ImplSycl {
