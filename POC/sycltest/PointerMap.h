@@ -19,22 +19,41 @@ template <class T, size_t Dim, size_t N0, size_t N1>
 struct L1PointerMap {
     Vector<T> m_data;
     Vector<size_t> m_offset1;
+    Vector<size_t> m_alloctop1;
 
     L1PointerMap()
         : m_offset1(1 << (Dim * N1), BAD_OFFSET)
+        , m_alloctop1(1)
     {}
+
+    template <auto Mode = Access::read_write, class Handler>
+    auto activateAccessor(Handler hand) {
+        auto dataAxr = m_data.template accessor<Mode>(hand);
+        auto offset1Axr = m_offset1.template accessor<Access::read_write>(hand);
+        auto alloctop1Axr = m_alloctop1.template accessor<Access::atomic>(hand);
+        return [=] (vec<Dim, size_t> indices) {
+            auto o1lin = __linearize<N1, Dim>(indices >> N0);
+            auto &offset1 = offset1Axr(o1lin)();
+            if (offset1 == BAD_OFFSET) {
+                offset1 = alloctop1Axr(0)()++;
+            }
+            size_t offset0 = indices & ((1 << N0) - 1);
+            return dataAxr(offset1 << (Dim * N0) | offset0);
+        };
+    }
 
     template <auto Mode = Access::read_write, class Handler>
     auto accessor(Handler hand) {
         auto dataAxr = m_data.template accessor<Mode>(hand);
         auto offset1Axr = m_offset1.template accessor<Access::read>(hand);
-        return [=] (vec<Dim, size_t> indices) -> T * {
-            auto offset1 = *offset1Axr(__linearize<N1, Dim>(indices >> N0));
-            if (offset1 == BAD_OFFSET)
+        return [=] (vec<Dim, size_t> indices) {
+            auto o1lin = __linearize<N1, Dim>(indices >> N0);
+            auto offset1 = offset1Axr(o1lin)();
+            if (offset1 == BAD_OFFSET) {
                 return nullptr;
-            offset1 *= 1 << (Dim * N0);
+            }
             size_t offset0 = indices & ((1 << N0) - 1);
-            return dataAxr(offset1 | offset0);
+            return dataAxr(offset1 << (Dim * N0) | offset0);
         };
     }
 

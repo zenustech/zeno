@@ -223,8 +223,24 @@ struct __NDBuffer {
                         std::forward<Args>(args)...))
         {}
 
-        inline T *operator()(vec<Dim, size_t> indices) const {
-            return const_cast<T *>(&m_axr[vec_to_other<sycl::id<Dim>>(indices)]);
+        struct __Proxy {
+            sycl::accessor<T, Dim, Mode, Target> const &m_axr;
+            sycl::id<Dim> m_id;
+
+            using RetType = std::conditional_t<Mode == sycl::access::mode::atomic,
+                decltype(std::declval<sycl::accessor<T, Dim, Mode, Target> &>()
+                        [std::declval<sycl::id<Dim>>()]),
+                std::conditional_t<Mode == sycl::access::mode::read,
+                T const &, T &>>;
+
+            RetType operator()() const {
+                return m_axr[m_id];
+            }
+        };
+
+        inline __Proxy operator()(vec<Dim, size_t> indices) const {
+            auto id = vec_to_other<sycl::id<Dim>>(indices);
+            return __Proxy{m_axr, id};
         }
     };
 
@@ -327,7 +343,7 @@ struct Vector {
     template <auto Mode = Access::read_write, class Handler>
     auto accessor(Handler hand) {
         auto bufAxr = m_buf.template accessor<Mode>(hand);
-        return [=] (size_t index) -> T * {
+        return [=] (size_t index) {
             return bufAxr(vec1S(index));
         };
     }
