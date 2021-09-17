@@ -92,7 +92,7 @@ ZENDEFNODE(CachedOnce, {
 });
 
 struct CacheLastFrameBegin : zeno::INode {
-    std::shared_ptr<IObject> m_lastFrameCache = nullptr; //= std::make_shared<IObject>();
+    std::shared_ptr<IObject> m_lastFrameCache = nullptr;
 
     virtual void apply() override { 
         if (m_lastFrameCache == nullptr) {
