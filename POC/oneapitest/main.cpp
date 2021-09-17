@@ -1,12 +1,12 @@
-#include "ImplIntel.h"
+//#include "ImplIntel.h"
+#include "ImplHost.h"
 #include "Vector.h"
 #include <cstdio>
 
-using namespace ImplIntel;
+using namespace ImplHost;
 
 int main(void) {
     Queue q;
-    q.__print_device_info();
 
     Vector<int, Allocator> v(100, q.allocator());
     auto vAxr = v.begin();

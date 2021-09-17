@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <cstring>
 #include "Dim3.h"
 
 namespace ImplHost {
@@ -47,6 +48,14 @@ struct Queue {
 
     void memcpy_htod(void *h, void *d, size_t size) {
         std::memcpy(d, h, size);
+    }
+
+    Allocator allocator() {
+        return {};
+    }
+
+    DeviceAllocator device_allocator() {
+        return {};
     }
 };
 
