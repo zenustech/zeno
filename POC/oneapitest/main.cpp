@@ -135,7 +135,7 @@ struct Vector {
     size_t m_size{0};
     Alloc m_alloc;
 
-    Vector(Alloc alloc, size_t n = 0)
+    Vector(size_t n = 0, Alloc alloc = {})
         : m_base(n ? (T *)alloc.allocate(n * sizeof(T)) : nullptr)
         , m_cap(n), m_size(n)
         , m_alloc(std::move(alloc))
@@ -240,9 +240,10 @@ struct Vector {
 
 int main(void) {
     SyclQueue q;
-    Vector<int, SyclQueue::SharedAllocator> v(q.shared_allocator(), 32);
+    auto v = Vector<int, SyclQueue::SharedAllocator>(32, q.shared_allocator());
+    auto p = v.begin();
     q.parallel_for(Dim3(32, 1, 1), [=](Dim3 idx) {
-        v[idx.x] = idx.x;
+        p[idx.x] = idx.x;
     });
     for (int i = 0; i < 32; i++) {
         printf("%d\n", v[i]);
