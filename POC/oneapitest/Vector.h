@@ -86,12 +86,16 @@ struct Vector {
 
         using iterator = T *;
 
-        iterator begin() {
+        iterator begin() const {
             return m_base;
         }
 
-        iterator end() {
+        iterator end() const {
             return m_base + m_size;
+        }
+
+        size_t size() const {
+            return m_size;
         }
     };
 
@@ -114,12 +118,16 @@ struct Vector {
 
         using iterator = T const *;
 
-        iterator begin() {
+        iterator begin() const {
             return m_base;
         }
 
-        iterator end() {
+        iterator end() const {
             return m_base + m_size;
+        }
+
+        size_t size() const {
+            return m_size;
         }
     };
 

@@ -42,7 +42,7 @@ struct HashMap {
         return m_table.size();
     }
 
-    size_t __recapacity(size_t n) {
+    void __recapacity(size_t n) {
         m_table.resize(n);
     }
 
@@ -62,20 +62,22 @@ struct HashMap {
         typename Vector<std::pair<Key, T>, Alloc>::View m_table_view;
 
         View(HashMap const &parent)
-            : m_table_view(parent.table.view())
+            : m_table_view(parent.m_table.view())
         {}
 
-        T &operator[](size_t i) const {
-            return m_table_view[i];
+        T &operator[](Key i) const {
+            size_t offset = KeyHash{}(i) % m_table_view.size();
+            auto &kv = m_table_view[offset];
+            return kv.second;
         }
 
         using iterator = T *;
 
-        iterator begin() {
+        iterator begin() const {
             return m_table_view.begin();
         }
 
-        iterator end() {
+        iterator end() const {
             return m_table_view.end();
         }
     };
@@ -88,8 +90,10 @@ struct HashMap {
 int main(void) {
     Queue q;
 
-    Vector<int, Allocator> v(q.allocator(), 100);
+    HashMap<uint32_t, int, Allocator> v(q.allocator());
     Vector<size_t, Allocator> c(q.allocator(), 1);
+    v.reserve(200);
+
     auto vAxr = v.view();
     auto cAxr = c.view();
 
