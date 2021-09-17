@@ -46,8 +46,8 @@
       "type": "vertex"
      },
      "uipos": [
-      53.53075170842823,
-      255.125284738041
+      3.7015945330296063,
+      226.65148063781317
      ],
      "options": [
       "ONCE"
@@ -172,7 +172,7 @@
       ]
      },
      "params": {
-      "value": "@rad = 10*@sdf"
+      "value": "@rad = @sdf"
      },
      "uipos": [
       1041.457858769932,
@@ -198,8 +198,8 @@
       "_KEYS": "obj0"
      },
      "uipos": [
-      1569.4760820045553,
-      678.8154897494305
+      1569.476082004555,
+      680.2391799544417
      ],
      "options": [],
      "socket_keys": [
@@ -235,16 +235,163 @@
       1738.0410022779045,
       320.0455580865603
      ],
+     "options": []
+    },
+    "f30ec586-mgSmokeToSDF": {
+     "name": "mgSmokeToSDF",
+     "inputs": {
+      "mgSmokeData": [
+       "e9d209c2-SDFtoMGSmoke",
+       "mgSmokeData",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1173.120728929385,
+      39.86332574031889
+     ],
+     "options": []
+    },
+    "4d88dffe-mgSmokeSolver": {
+     "name": "mgSmokeSolver",
+     "inputs": {
+      "mgSmokeData": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      853.0751708428246,
+      62.64236902050112
+     ],
+     "options": []
+    },
+    "a6601ea4-ParticlesWrangle": {
+     "name": "ParticlesWrangle",
+     "inputs": {
+      "prim": [
+       "b59844e4-x",
+       "primPars",
+       null
+      ],
+      "zfxCode": [
+       "c3ef9b45-MakeMultilineString",
+       "value",
+       ""
+      ],
+      "params": [
+       "793e4600-MakeDict",
+       "dict",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      1739.1799544419132,
+      72.89293849658314
+     ],
      "options": [
       "VIEW"
      ]
+    },
+    "b59844e4-x": {
+     "name": "VDBVoxelAsParticles",
+     "inputs": {
+      "vdbGrid": [
+       "f30ec586-mgSmokeToSDF",
+       "volumeGrid",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "hasInactive": false
+     },
+     "uipos": [
+      1443.0523917995445,
+      23.91799544419136
+     ],
+     "options": []
+    },
+    "e9d209c2-SDFtoMGSmoke": {
+     "name": "SDFtoMGSmoke",
+     "inputs": {
+      "sdfgrid": [
+       "18f32518-MeshToSDF",
+       "sdf",
+       null
+      ],
+      "dt": [
+       "2a4d2b89-GetFrameTime",
+       "time",
+       null
+      ],
+      "levelNum": [
+       "41a98ce3-NumericInt",
+       "value",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      551.9646924829158,
+      4.555808656036433
+     ],
+     "options": [
+      "ONCE"
+     ]
+    },
+    "41a98ce3-NumericInt": {
+     "name": "NumericInt",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "value": 2
+     },
+     "uipos": [
+      138.95216400911158,
+      6.833712984054667
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": 1206.465603644644,
-    "y": 425.986332574033,
-    "width": 256.0,
-    "height": 256.0
+    "x": 950.5125284737942,
+    "y": 146.4692482915741,
+    "width": 500.0,
+    "height": 500.0
    }
   }
  },
@@ -6854,6 +7001,46 @@
     "openvdb"
    ]
   },
+  "SDFtoMGSmoke": {
+   "inputs": [
+    [
+     "",
+     "sdfgrid",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "levelNum",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mgSmokeData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "AdaptiveSolver"
+   ]
+  },
   "SDFtoSmoke": {
    "inputs": [
     [
@@ -8527,6 +8714,66 @@
    ],
    "categories": [
     "GPUMPM"
+   ]
+  },
+  "mgSmokeSolver": {
+   "inputs": [
+    [
+     "",
+     "mgSmokeData",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mgSmokeData",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "AdaptiveSolver"
+   ]
+  },
+  "mgSmokeToSDF": {
+   "inputs": [
+    [
+     "",
+     "mgSmokeData",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "volumeGrid",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "AdaptiveSolver"
    ]
   },
   "smokeSolver": {
