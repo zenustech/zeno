@@ -8,12 +8,14 @@ using namespace ImplHost;
 
 template <class T>
 struct HashFunc {
+    size_t operator()(T i) const {
+        return i;
+    }
 };
 
 template <>
 struct HashFunc<uint32_t> {
     size_t operator()(uint32_t i) const {
-        i = (i ^ 61) ^ (i >> 16);
         i = i * 314159265u + 1931127624u;
         return i;
     }
@@ -90,16 +92,16 @@ struct HashMap {
 int main(void) {
     Queue q;
 
-    HashMap<uint32_t, int, Allocator> v(q.allocator());
-    Vector<size_t, Allocator> c(q.allocator(), 1);
-    v.reserve(200);
+    HashMap<uint32_t, int, Queue> v(q);
+    Vector<size_t, Queue> c(q, 1);
+    v.reserve(100);
 
     auto vAxr = v.view();
     auto cAxr = c.view();
 
     cAxr[0] = 0;
     q.parallel_for(Dim3(100, 1, 1), [=](Dim3 idx) {
-        size_t id = make_atomic_ref(cAxr[0])++;
+        size_t id = Queue::make_atomic_ref(cAxr[0])++;
         vAxr[id] = idx.x;
     });
 

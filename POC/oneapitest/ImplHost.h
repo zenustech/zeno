@@ -6,26 +6,6 @@
 
 namespace ImplHost {
 
-struct Allocator {
-    void *allocate(size_t n) {
-        return std::malloc(n);
-    }
-
-    void *zeroallocate(size_t n) {
-        return std::calloc(n, 1);
-    }
-
-    void *reallocate(void *old_p, size_t old_n, size_t new_n) {
-        return std::realloc(old_p, new_n);
-    }
-
-    void deallocate(void *p) {
-        std::free(p);
-    }
-};
-
-using DeviceAllocator = Allocator;
-
 struct Queue {
     template <class Kernel>
     void parallel_for(Dim3 dim, Kernel kernel) {
@@ -50,18 +30,26 @@ struct Queue {
         std::memcpy(d, h, size);
     }
 
-    Allocator allocator() {
-        return {};
+    void *allocate(size_t n) {
+        return std::malloc(n);
     }
 
-    DeviceAllocator device_allocator() {
-        return {};
+    void *zeroallocate(size_t n) {
+        return std::calloc(n, 1);
+    }
+
+    void *reallocate(void *old_p, size_t old_n, size_t new_n) {
+        return std::realloc(old_p, new_n);
+    }
+
+    void deallocate(void *p) {
+        std::free(p);
+    }
+
+    template <class T>
+    static T &make_atomic_ref(T &t) {
+        return t;
     }
 };
-
-template <class T>
-T &make_atomic_ref(T &t) {
-    return t;
-}
 
 }
