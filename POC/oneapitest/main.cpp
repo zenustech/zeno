@@ -141,6 +141,9 @@ struct Vector {
         , m_alloc(std::move(alloc))
     {}
 
+    Vector(Vector const &) = delete;
+    Vector &operator=(Vector const &) = delete;
+
     ~Vector() {
         if (m_base) {
             m_alloc.deallocate(m_base);
@@ -158,31 +161,29 @@ struct Vector {
         return m_cap;
     }
 
-    void reserve(size_t n) {
-        if (m_cap < n) {
+    void __recapacity(size_t n) {
+        if (!n) {
+            m_alloc.deallocate(m_base);
+            m_base = nullptr;
+        } else {
             if (m_base) {
                 m_base = (T *)m_alloc.reallocate(m_base, m_size * sizeof(T), n * sizeof(T));
             } else {
                 m_base = (T *)m_alloc.allocate(m_base, n * sizeof(T));
             }
-            m_cap = n;
+        }
+        m_cap = n;
+    }
+
+    void reserve(size_t n) {
+        if (m_cap < n) {
+            __recapacity(n);
         }
     }
 
     void shrink_to_fit() {
         if (m_cap > m_size) {
-            if (m_size == 0) {
-                m_alloc.deallocate(m_base);
-                m_cap = 0;
-                m_base = nullptr;
-            } else {
-                if (m_base) {
-                    m_base = (T *)m_alloc.reallocate(m_base, m_size * sizeof(T), m_size * sizeof(T));
-                } else {
-                    m_base = (T *)m_alloc.allocate(m_base, m_size * sizeof(T));
-                }
-                m_cap = m_size;
-            }
+            __recapacity(m_size);
         }
     }
 
