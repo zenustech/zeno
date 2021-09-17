@@ -6,49 +6,82 @@
 #include <cstdlib>
 #include <cassert>
 #include <cstdio>
+#include <Hg/StrUtils.h>
+#include <iostream>
+#include <fstream>
+
 
 namespace {
+
+
+static zeno::vec3i read_index(std::string str) {
+    zeno::vec3i face(0, 0, 0);
+    auto items = hg::split_str(str, '/');
+    for (auto i = 0; i < items.size(); i++) {
+        if (items[i].empty()) {
+            continue;
+        }
+        face[i] = std::stoi(items[i]);
+    }
+    return face - 1;
+
+}
+static zeno::vec3f read_vec3f(std::vector<std::string> items) {
+    zeno::vec3f vec(0, 0, 0);
+    for (auto i = 0; i < items.size(); i++) {
+        vec[i] = std::stof(items[i]);
+    }
+    return vec;
+}
 
 static void readobj(
         std::vector<zeno::vec3f> &vertices,
         std::vector<zeno::vec3i> &indices,
         const char *path)
 {
-    FILE *fp = fopen(path, "r");
-    if (!fp) {
-        perror(path);
-        abort();
-    }
 
-    //printf("o %s\n", path);
+    std::vector<zeno::vec3f> normals;
+    std::vector<zeno::vec3f> uvs;
+    std::vector<zeno::vec3i> loop_indices;
 
-    char hdr[128];
-    while (EOF != fscanf(fp, "%s", hdr)) 
+    auto is = std::ifstream(path);
+    while (!is.eof())
     {
-        if (!strcmp(hdr, "v")) {
-            zeno::vec3f vertex;
-            fscanf(fp, "%f %f %f\n", &vertex[0], &vertex[1], &vertex[2]);
-            //printf("v %f %f %f\n", vertex[0], vertex[1], vertex[2]);
-            vertices.push_back(vertex);
+        std::string line;
+        std::getline(is, line);
+        line = hg::trim(line);
+        if (line.empty()) {
+            continue;
+        }
+        auto items = hg::split_str(line, ' ');
+        items.erase(items.begin());
 
-        } else if (!strcmp(hdr, "f")) {
-            zeno::vec3i last_index, first_index, index;
+        if (hg::starts_with(line, "v ")) {
+            vertices.push_back(read_vec3f(items));
+        }
+        else if (hg::starts_with(line, "vt")) {
+            uvs.push_back(read_vec3f(items));
+        }
+        else if (hg::starts_with(line, "vn")) {
+            normals.push_back(read_vec3f(items));
+        }
+        else if (hg::starts_with(line, "f")) {
+            zeno::vec3i first_index = read_index(items[0]);
+            zeno::vec3i last_index = read_index(items[1]);
 
-            fscanf(fp, "%d/%d/%d", &index[0], &index[1], &index[2]);
-            first_index = index;
-
-            fscanf(fp, "%d/%d/%d", &index[0], &index[1], &index[2]);
-            last_index = index;
-
-            while (fscanf(fp, "%d/%d/%d", &index[0], &index[1], &index[2]) > 0) {
+            for (auto i = 2; i < items.size(); i++) {
+                zeno::vec3i index = read_index(items[i]);
                 zeno::vec3i face(first_index[0], last_index[0], index[0]);
-                //printf("f %d %d %d\n", face[0], face[1], face[2]);
-                indices.push_back(face - 1);
+                indices.push_back(face);
+
+                loop_indices.push_back(first_index);
+                loop_indices.push_back(last_index);
+                loop_indices.push_back(index);
+
                 last_index = index;
             }
         }
     }
-    fclose(fp);
 }
 
 

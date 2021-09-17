@@ -113,7 +113,7 @@ struct AABBVoronoi : INode {
                     j = j + 1 + len;
                 }
 
-                prim->userData.get("isBoundary") = isBoundary;
+                prim->userData.get("isBoundary") = std::make_shared<NumericObject>(isBoundary);
                 pieces->arr.push_back(std::move(prim));
 
                 cid++;
