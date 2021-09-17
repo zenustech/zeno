@@ -10,7 +10,7 @@ struct Vector {
     size_t m_size{0};
     Alloc m_alloc;
 
-    Vector(size_t n = 0, Alloc alloc = {})
+    explicit Vector(Alloc alloc, size_t n = 0)
         : m_base(n ? (T *)alloc.allocate(n * sizeof(T)) : nullptr)
         , m_cap(n), m_size(n)
         , m_alloc(std::move(alloc))
@@ -71,44 +71,69 @@ struct Vector {
         resize(0);
     }
 
-    T &operator[](size_t i) {
-        return m_base[i];
+    struct View {
+        T *m_base;
+        size_t m_size;
+
+        View(Vector const &parent)
+            : m_base(parent.m_base)
+            , m_size(parent.m_size)
+        {}
+
+        T &operator[](size_t i) const {
+            return m_base[i];
+        }
+
+        using iterator = T *;
+
+        iterator begin() {
+            return m_base;
+        }
+
+        iterator end() {
+            return m_base + m_size;
+        }
+    };
+
+    View view() const {
+        return {*this};
     }
 
-    T const &operator[](size_t i) const {
-        return m_base[i];
+    struct ConstView {
+        T const *m_base;
+        size_t m_size;
+
+        ConstView(Vector const &parent)
+            : m_base(parent.m_base)
+            , m_size(parent.m_size)
+        {}
+
+        T const &operator[](size_t i) const {
+            return m_base[i];
+        }
+
+        using iterator = T const *;
+
+        iterator begin() {
+            return m_base;
+        }
+
+        iterator end() {
+            return m_base + m_size;
+        }
+    };
+
+    ConstView const_view() const {
+        return {*this};
     }
 
-    using iterator = T *;
-    using const_iterator = T const *;
-
-    iterator begin() {
-        return m_base;
-    }
-
-    iterator end() {
-        return m_base + m_size;
-    }
-
-    const_iterator begin() const {
-        return m_base;
-    }
-
-    const_iterator end() const {
-        return m_base + m_size;
-    }
-
-    iterator __push_back() {
+    void push_back(T const &val) {
         size_t idx = m_size;
         size_t new_size = m_size + 1;
         if (new_size >= m_cap) {
             reserve(new_size + (new_size >> 1) + 1);
         }
         m_size = new_size;
-        return m_base + idx;
-    }
-
-    void push_back(T const &val) {
-        *__push_back() = val;
+        m_base[idx] = val;
     }
 };
