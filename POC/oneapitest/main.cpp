@@ -8,9 +8,6 @@ using namespace ImplHost;
 
 template <class T>
 struct HashFunc {
-    size_t operator()(T i) const {
-        return i;
-    }
 };
 
 template <>
@@ -67,13 +64,17 @@ struct HashMap {
             : m_table_view(parent.m_table.view())
         {}
 
-        T &operator[](Key i) const {
-            size_t offset = KeyHash{}(i) % m_table_view.size();
+        using iterator = std::pair<Key, T> *;
+
+        iterator find(Key k) const {
+            size_t offset = KeyHash{}(k) % m_table_view.size();
             auto &kv = m_table_view[offset];
-            return kv.second;
+            return &kv;
         }
 
-        using iterator = T *;
+        T &operator[](Key k) const {
+            return find(k)->second;
+        }
 
         iterator begin() const {
             return m_table_view.begin();
