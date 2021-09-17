@@ -3,23 +3,29 @@
 #include <CL/sycl.hpp>
 #include <iostream>
 #include <iomanip>
+#include <memory>
 #include "Dim3.h"
 
 namespace ImplIntel {
 
 struct Queue {
-    //sycl::queue m_q{sycl::accelerator_selector{}};
-    //sycl::queue m_q{sycl::gpu_selector{}};
-    //sycl::queue m_q{sycl::cpu_selector{}};
-    std::shared_ptr<sycl::queue> m_q;
+    std::shared_ptr<sycl::queue> m_qq;
 
-    template <class ...Args>
-    Queue(Args &&...args)
-        : m_q(std::make_shared<sycl::queue>(std::forward<Args>(args)...))
+    Queue()
+        : m_qq(std::make_shared<sycl::queue>())
     {}
 
+    sycl::queue &sycl_queue() {
+        return *m_qq;
+    }
+
+    Queue(Queue const &) = default;
+    Queue &operator=(Queue const &) = default;
+    Queue(Queue &&) = default;
+    Queue &operator=(Queue &&) = default;
+
     void __print_device_info() {
-        auto device = m_q.get_device();
+        auto device = sycl_queue().get_device();
         auto p_name = device.get_platform().get_info<sycl::info::platform::name>();
         std::cout << std::setw(20) << "Platform Name: " << p_name << "\n";
         auto p_version = device.get_platform().get_info<sycl::info::platform::version>();
@@ -34,36 +40,36 @@ struct Queue {
 
     template <class Kernel>
     void parallel_for(Dim3 dim, Kernel kernel) {
-        m_q.parallel_for(sycl::range<3>(dim.x, dim.y, dim.z), [=] (sycl::id<3> idx) {
+        sycl_queue().parallel_for(sycl::range<3>(dim.x, dim.y, dim.z), [=] (sycl::id<3> idx) {
             kernel(Dim3(idx[0], idx[1], idx[2]));
         }).wait();
     }
 
     void *allocate(size_t n) {
-        return (void *)sycl::malloc_shared<unsigned char>(n, m_q);
+        return (void *)sycl::malloc_shared<unsigned char>(n, sycl_queue());
     }
 
     void deallocate(void *p) {
-        return sycl::free(p, m_q);
+        return sycl::free(p, sycl_queue());
     }
 
     void *reallocate(void *old_p, size_t old_n, size_t new_n) {
         void *new_p = allocate(new_n);
-        if (old_n) m_q.memcpy_dtod(new_p, old_p, std::min(old_n, new_n));
+        if (old_n) sycl_queue().memcpy(new_p, old_p, std::min(old_n, new_n)).wait();
         deallocate(old_p);
         return new_p;
     }
 
     void memcpy_dtod(void *d1, void *d2, size_t size) {
-        m_q.memcpy(d1, d2, size).wait();
+        sycl_queue().memcpy(d1, d2, size).wait();
     }
 
     void memcpy_dtoh(void *h, void *d, size_t size) {
-        m_q.memcpy(h, d, size).wait();
+        sycl_queue().memcpy(h, d, size).wait();
     }
 
     void memcpy_htod(void *h, void *d, size_t size) {
-        m_q.memcpy(d, h, size).wait();
+        sycl_queue().memcpy(d, h, size).wait();
     }
 
     template <class T>

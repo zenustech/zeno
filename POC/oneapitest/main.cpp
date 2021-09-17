@@ -1,10 +1,11 @@
-//#include "ImplIntel.h"
-#include "ImplHost.h"
+#include "ImplIntel.h"
+//#include "ImplHost.h"
 #include "Vector.h"
 #include <cstdio>
 #include "vec.h"
 
-using namespace ImplHost;
+using namespace ImplIntel;
+//using namespace ImplHost;
 
 template <class T>
 struct HashFunc {
@@ -25,9 +26,31 @@ struct HashFunc<vec3I> {
     }
 };
 
+template <class Alloc>
+struct SpinLock {
+    int m{0};
+
+    void acquire() {
+        int n;
+        do n = 0;
+        while (!Alloc::make_atomic_ref(m).compare_exchange_weak(&n, 1));
+    }
+
+    void release() {
+        Alloc::make_atomic_ref(m).store(0);
+    }
+};
+
 template <class Key, class T, class Alloc, class KeyHash = HashFunc<Key>>
 struct HashMap {
-    Vector<std::pair<Key, T>, Alloc> m_table;
+    struct HashEntry {
+        Key key;
+        bool used{false};
+        SpinLock<Alloc> spin;
+        T value;
+    };
+
+    Vector<HashEntry, Alloc> m_table;
     size_t m_size{0};
     Alloc m_alloc;
 
@@ -57,31 +80,76 @@ struct HashMap {
         }
     }
 
-    struct View {
-        typename Vector<std::pair<Key, T>, Alloc>::View m_table_view;
+    struct TouchView {
+        typename Vector<HashEntry, Alloc>::View m_view;
 
-        View(HashMap const &parent)
-            : m_table_view(parent.m_table.view())
+        TouchView(HashMap const &parent)
+            : m_view(parent.m_table.view())
         {}
 
-        using iterator = std::pair<Key, T> *;
+        using iterator = HashEntry *;
 
         iterator find(Key k) const {
-            size_t offset = KeyHash{}(k) % m_table_view.size();
-            auto &kv = m_table_view[offset];
-            return &kv;
+            size_t offset = KeyHash{}(k) % m_view.size();
+            auto it = m_view.find(offset);
+            if (it->used && it->key == k) {
+                return it;
+            }
+            while (1) {
+                //printf("?\n");
+                offset = (offset + 1) % m_view.size();
+                it = m_view.find(offset);
+                if (!it->used) {
+                    it->spin.acquire();
+                    if (!it->used) {
+                        it->used = true;
+                        it->key = k;
+                        it->spin.release();
+                        return it;
+                    } else {
+                        it->spin.release();
+                    }
+                } else if (it->key == k) {
+                    return it;
+                }
+            }
         }
 
         T &operator[](Key k) const {
-            return find(k)->second;
+            return find(k)->value;
+        }
+    };
+
+    TouchView touch_view() const {
+        return {*this};
+    }
+
+    struct View {
+        typename Vector<HashEntry, Alloc>::View m_view;
+
+        View(HashMap const &parent)
+            : m_view(parent.m_table.view())
+        {}
+
+        using iterator = HashEntry *;
+
+        iterator find(Key k) const {
+            size_t offset = KeyHash{}(k) % m_view.size();
+            auto it = m_view.find(offset);
+            if (it->used && it->key == k) {
+                return it;
+            }
+            while (1) {
+                offset = (offset + 1) % m_view.size();
+                it = m_view.find(offset);
+                if (it->used && it->key == k) {
+                    return it;
+                }
+            }
         }
 
-        iterator begin() const {
-            return m_table_view.begin();
-        }
-
-        iterator end() const {
-            return m_table_view.end();
+        T &operator[](Key k) const {
+            return find(k)->value;
         }
     };
 
@@ -95,9 +163,9 @@ int main(void) {
 
     HashMap<uint32_t, int, Queue> v(q);
     Vector<size_t, Queue> c(q, 1);
-    v.reserve(100);
+    v.reserve(200);
 
-    auto vAxr = v.view();
+    auto vAxr = v.touch_view();
     auto cAxr = c.view();
 
     cAxr[0] = 0;

@@ -80,11 +80,15 @@ struct Vector {
             , m_size(parent.m_size)
         {}
 
-        T &operator[](size_t i) const {
-            return m_base[i];
+        using iterator = T *;
+
+        iterator find(size_t i) const {
+            return m_base + i;
         }
 
-        using iterator = T *;
+        T &operator[](size_t i) const {
+            return *find(i);
+        }
 
         iterator begin() const {
             return m_base;
