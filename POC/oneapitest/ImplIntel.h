@@ -13,7 +13,7 @@ struct Queue {
     //sycl::queue m_q{sycl::cpu_selector{}};
     sycl::queue m_q;
 
-    void print_device_info() {
+    void __print_device_info() {
         auto device = m_q.get_device();
         auto p_name = device.get_platform().get_info<sycl::info::platform::name>();
         std::cout << std::setw(20) << "Platform Name: " << p_name << "\n";
@@ -34,15 +34,15 @@ struct Queue {
         }).wait();
     }
 
-    void *malloc_device(size_t n) {
+    void *__malloc_device(size_t n) {
         return (void *)sycl::malloc_device<unsigned char>(n, m_q);
     }
 
-    void *malloc_shared(size_t n) {
+    void *__malloc_shared(size_t n) {
         return (void *)sycl::malloc_shared<unsigned char>(n, m_q);
     }
 
-    void memcpy(void *d1, void *d2, size_t size) {
+    void memcpy_dtod(void *d1, void *d2, size_t size) {
         m_q.memcpy(d1, d2, size).wait();
     }
 
@@ -54,32 +54,32 @@ struct Queue {
         m_q.memcpy(d, h, size).wait();
     }
 
-    void free(void *p) {
+    void __free(void *p) {
         return sycl::free(p, m_q);
     }
 
-    struct SharedAllocator {
+    struct Allocator {
         Queue &m_q;
 
-        SharedAllocator(Queue &q) : m_q(q) {}
+        Allocator(Queue &q) : m_q(q) {}
 
         void *allocate(size_t n) {
-            return m_q.malloc_shared(n);
+            return m_q.__malloc_shared(n);
         }
 
         void *reallocate(void *old_p, size_t old_n, size_t new_n) {
             void *new_p = allocate(new_n);
-            if (old_n) m_q.memcpy(new_p, old_p, std::min(old_n, new_n));
+            if (old_n) m_q.memcpy_dtod(new_p, old_p, std::min(old_n, new_n));
             deallocate(old_p);
             return new_p;
         }
 
         void deallocate(void *p) {
-            m_q.free(p);
+            m_q.__free(p);
         }
     };
 
-    SharedAllocator shared_allocator() {
+    Allocator allocator() {
         return {*this};
     }
 
@@ -89,18 +89,18 @@ struct Queue {
         DeviceAllocator(Queue &q) : m_q(q) {}
 
         void *allocate(size_t n) {
-            return m_q.malloc_device(n);
+            return m_q.__malloc_device(n);
         }
 
         void *reallocate(void *old_p, size_t old_n, size_t new_n) {
             void *new_p = allocate(new_n);
-            if (old_n) m_q.memcpy(new_p, old_p, std::min(old_n, new_n));
+            if (old_n) m_q.memcpy_dtod(new_p, old_p, std::min(old_n, new_n));
             deallocate(old_p);
             return new_p;
         }
 
         void deallocate(void *p) {
-            m_q.free(p);
+            m_q.__free(p);
         }
     };
 
@@ -110,13 +110,15 @@ struct Queue {
 };
 
 using DeviceAllocator = Queue::DeviceAllocator;
-using SharedAllocator = Queue::SharedAllocator;
+using Allocator = Queue::Allocator;
 
 template <class T>
-using AtomicRef = sycl::ONEAPI::atomic_ref<T
+auto make_atomic_ref(T &&t) {
+    return sycl::ONEAPI::atomic_ref<std::decay_t<T>
     , sycl::ONEAPI::memory_order::acq_rel
     , sycl::ONEAPI::memory_scope::device
     , sycl::access::address_space::global_space
-    >;
+    >(std::forward<T>(t));
+}
 
 }

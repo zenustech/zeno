@@ -1,25 +1,58 @@
 #pragma once
 
 #include <cstdlib>
+#include "Dim3.h"
 
 namespace ImplHost {
 
-struct HostAllocator {
+struct Allocator {
     void *allocate(size_t n) {
-        return malloc(n);
+        return std::malloc(n);
     }
 
     void *zeroallocate(size_t n) {
-        return calloc(n, 1);
+        return std::calloc(n, 1);
     }
 
     void *reallocate(void *old_p, size_t old_n, size_t new_n) {
-        return realloc(old_p, new_n);
+        return std::realloc(old_p, new_n);
     }
 
     void deallocate(void *p) {
-        free(p);
+        std::free(p);
     }
 };
+
+using DeviceAllocator = Allocator;
+
+struct Queue {
+    template <class Kernel>
+    void parallel_for(Dim3 dim, Kernel kernel) {
+        for (size_t z = 0; z < dim.z; z++) {
+            for (size_t y = 0; y < dim.y; y++) {
+                for (size_t x = 0; x < dim.x; x++) {
+                    kernel(Dim3(x, y, z));
+                }
+            }
+        }
+    }
+
+    void memcpy_dtod(void *d1, void *d2, size_t size) {
+        std::memcpy(d1, d2, size);
+    }
+
+    void memcpy_dtoh(void *h, void *d, size_t size) {
+        std::memcpy(h, d, size);
+    }
+
+    void memcpy_htod(void *h, void *d, size_t size) {
+        std::memcpy(d, h, size);
+    }
+};
+
+template <class T>
+T &make_atomic_ref(T &t) {
+    return t;
+}
 
 }
