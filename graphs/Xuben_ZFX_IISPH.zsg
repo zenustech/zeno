@@ -36,8 +36,8 @@
      },
      "params": {},
      "uipos": [
-      -1416.703124999999,
-      -555.7578124999995
+      -1438.5781249999993,
+      -555.7578124999997
      ],
      "options": [
       "ONCE"
@@ -273,8 +273,8 @@
      },
      "params": {},
      "uipos": [
-      -1686.046874999999,
-      -449.24218749999955
+      -1692.2968749999993,
+      -485.17968749999955
      ],
      "options": [
       "ONCE"
@@ -293,8 +293,8 @@
       "value": 0.0001
      },
      "uipos": [
-      -2117.812499999998,
-      -568.1640624999995
+      -2020.9374999999984,
+      -568.1640624999997
      ],
      "options": []
     },
@@ -588,10 +588,10 @@
     }
    },
    "view_rect": {
-    "x": 251.29399999999998,
-    "y": -141.67919999999995,
-    "width": 614.4,
-    "height": 512.0
+    "x": 163.59218733485187,
+    "y": -213.34461055125283,
+    "width": 393.216,
+    "height": 327.68
    }
   },
   "GenParticles": {
@@ -2318,8 +2318,8 @@
     }
    },
    "view_rect": {
-    "x": 480.265625,
-    "y": -663.5937499999999,
+    "x": 433.1138952164014,
+    "y": -675.8997722095668,
     "width": 1199.999999999999,
     "height": 999.9999999999993
    }
@@ -3549,8 +3549,8 @@
      },
      "params": {},
      "uipos": [
-      871.9531249999998,
-      441.3281249999999
+      1019.9999999999998,
+      469.9999999999999
      ],
      "options": []
     },
@@ -3567,8 +3567,8 @@
       "value": "@press = 0\n@pressAccel = vec3(0,0,0)"
      },
      "uipos": [
-      492.5,
-      266.2499999999998
+      680.0,
+      332.4999999999998
      ],
      "options": []
     },
@@ -3588,8 +3588,8 @@
      },
      "params": {},
      "uipos": [
-      1281.75,
-      119.84765624999983
+      1216.75,
+      181.09765624999983
      ],
      "options": []
     },
@@ -3609,8 +3609,8 @@
      },
      "params": {},
      "uipos": [
-      3272.25,
-      215.75000000000006
+      3269.75,
+      254.5
      ],
      "options": []
     },
@@ -3650,8 +3650,8 @@
      },
      "params": {},
      "uipos": [
-      1773.3928999999994,
-      319.55919999999975
+      1751.5624999999993,
+      389.7499999999996
      ],
      "options": []
     },
@@ -3668,8 +3668,8 @@
       "value": "\nrij = @pos - @@pos\nd2 = dot(rij,rij)\nd = sqrt(d2)\nc = $h - d\nkernel = d>0?$spikykern * c * c * rij / d:vec3(0,0,0)\n\n@pressAccel -= @volume / $mass*  2 * @@volume * @volume / (@volume + @@volume) *(@press + @@press) * kernel * (1-@isboundary)\n\n"
      },
      "uipos": [
-      1288.0,
-      364.31250000000006
+      1285.5,
+      403.0625
      ],
      "options": []
     },
@@ -3726,8 +3726,8 @@
       "value": 5
      },
      "uipos": [
-      904.53125,
-      83.82812500000006
+      947.5,
+      128.75
      ],
      "options": []
     },
@@ -3767,8 +3767,8 @@
      },
      "params": {},
      "uipos": [
-      2418.7,
-      420.45
+      2416.2,
+      459.19999999999993
      ],
      "options": []
     },
@@ -3785,8 +3785,8 @@
       "value": "rij = @pos - @@pos\nd2 = dot(rij,rij)\nd = sqrt(d2)\nc = $h - d\nkernel = d > 0?$spikykern * c * c * rij / d:vec3(0,0,0)\n\n@Ap += $dt * $dt  * dot(@pressAccel - @@pressAccel, kernel) * 2 * @@volume * @volume / (@volume + @@volume)"
      },
      "uipos": [
-      2024.1,
-      395.6500000000001
+      2061.6000000000004,
+      434.4000000000001
      ],
      "options": []
     },
@@ -3816,8 +3816,8 @@
      },
      "params": {},
      "uipos": [
-      3021.55,
-      471.95000000000044
+      3019.0499999999997,
+      510.7000000000004
      ],
      "options": []
     },
@@ -3834,8 +3834,8 @@
       "value": "omega = 0.5 * @restvolume / pow(0.5 * $h, 3)\n\ndelta = @source - @Ap\n\ndivision = @aii < 0?@aii:10000000\n\n@press = @press + omega * delta/division\n\n@press = @press > 10000? 10000:@press\n\n@press = @press < 0 ? 0 : @press\n\n@pressAccel = vec3(0,0,0)\n\n@Ap = 0"
      },
      "uipos": [
-      2623.0000000000014,
-      205.43750000000023
+      2676.7500000000005,
+      280.4375000000001
      ],
      "options": []
     },
@@ -4019,10 +4019,10 @@
     }
    },
    "view_rect": {
-    "x": 1219.4042968749995,
-    "y": -206.88964843749943,
-    "width": 1499.999999999998,
-    "height": 1249.9999999999993
+    "x": 3518.4437357631004,
+    "y": 212.57585421412244,
+    "width": 959.9999999999998,
+    "height": 800.0
    }
   },
   "advection": {
@@ -8152,7 +8152,7 @@
      ""
     ],
     [
-     "int",
+     "",
      "frameNum",
      ""
     ],
@@ -16762,6 +16762,461 @@
    ],
    "categories": [
     "FLIPSolver"
+   ]
+  },
+  "RigidMakeCompoundShape": {
+   "inputs": [
+    [
+     "",
+     "shapeList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "compShape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeConstraint": {
+   "inputs": [
+    [
+     "",
+     "obj1",
+     ""
+    ],
+    [
+     "",
+     "obj2",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "-1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "constraint",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeMaterial": {
+   "inputs": [
+    [
+     "float",
+     "friction",
+     "0.7"
+    ],
+    [
+     "float",
+     "dampAng",
+     "0.06"
+    ],
+    [
+     "float",
+     "dampLin",
+     "0.1"
+    ],
+    [
+     "float",
+     "restitution",
+     "0.6"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeObject": {
+   "inputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     "0,0,0"
+    ],
+    [
+     "vec4f",
+     "rotation",
+     "0,0,0,1"
+    ],
+    [
+     "float",
+     "mass",
+     "0"
+    ],
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeObjectFragments": {
+   "inputs": [
+    [
+     "",
+     "primList",
+     ""
+    ],
+    [
+     "",
+     "neighList",
+     ""
+    ],
+    [
+     "float",
+     "breakThres",
+     "0.2"
+    ],
+    [
+     "float",
+     "mass",
+     "1.0"
+    ],
+    [
+     "",
+     "material",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "objectList",
+     ""
+    ],
+    [
+     "",
+     "constrList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeShape": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "enum convex decomp sphere box",
+     "type",
+     "convex"
+    ],
+    [
+     "float",
+     "margin",
+     "0.0"
+    ],
+    [
+     "bool",
+     "recentered",
+     "1"
+    ],
+    [
+     "bool",
+     "auto_mass",
+     "0"
+    ],
+    [
+     "float",
+     "margin",
+     "0.0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "shape",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidMakeWorld": {
+   "inputs": [
+    [
+     "vec3f",
+     "gravity",
+     "0,0,-9.8"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidObjectListToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "objList",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "mergedPrim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidObjectToPrimitive": {
+   "inputs": [
+    [
+     "",
+     "object",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidRecenterPrim": {
+   "inputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "outPrim",
+     ""
+    ],
+    [
+     "vec3f",
+     "origin",
+     ""
+    ],
+    [
+     "vec3f",
+     "mass",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
+   ]
+  },
+  "RigidStepWorld": {
+   "inputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "objList",
+     ""
+    ],
+    [
+     "",
+     "consList",
+     ""
+    ],
+    [
+     "int",
+     "steps",
+     "10"
+    ],
+    [
+     "float",
+     "dt",
+     "0.04"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "world",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "Rigid"
    ]
   },
   "RigidVelToPrimitive": {
