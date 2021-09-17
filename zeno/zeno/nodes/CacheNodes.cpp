@@ -91,6 +91,65 @@ ZENDEFNODE(CachedOnce, {
     {"control"},
 });
 
+struct CacheLastFrameBegin : zeno::INode {
+    std::shared_ptr<IObject> m_lastFrameCache = nullptr; //= std::make_shared<IObject>();
+
+    virtual void apply() override { 
+        if (m_lastFrameCache == nullptr) {
+            m_lastFrameCache = (*get_input("input")).clone();            
+        }         
+        set_output("lastFrame", std::move(m_lastFrameCache));
+        set_output("linkFrom", std::make_shared<zeno::IObject>());
+    }
+};
+
+
+ZENO_DEFNODE(CacheLastFrameBegin)(
+    { /* inputs: */ {
+        "input",
+    }, /* outputs: */ {
+        "linkFrom",
+        "lastFrame",
+    }, /* params: */ {
+    }, /* category: */ {
+        "control",
+    } }
+);
+
+
+struct CacheLastFrameEnd : zeno::INode {
+    CacheLastFrameBegin* m_CacheLastFrameBegin;
+
+    virtual void apply() override {
+        if (auto it = inputBounds.find("linkTo"); it != inputBounds.end()) {
+            auto [sn, ss] = it->second;
+            m_CacheLastFrameBegin = dynamic_cast<CacheLastFrameBegin*>(graph->nodes.at(sn).get());
+            if (!m_CacheLastFrameBegin) {
+                printf("CacheLastFrameEnd Node: 'linkTo' socket must be connected to CacheLastFrameBegin Node 'linkFrom' socket!\n");
+                abort();
+            }
+            auto updatedCache = (*get_input("updateCache")).clone();
+            m_CacheLastFrameBegin->m_lastFrameCache = updatedCache;
+            set_output("output", std::move(updatedCache));
+            return;
+        }
+        throw zeno::Exception("CacheLastFrameEnd Node: 'linkTo' socket must be connected to CacheLastFrameBegin Node 'linkFrom' socket!\n");
+    }
+};
+
+
+ZENO_DEFNODE(CacheLastFrameEnd)(
+    { /* inputs: */ {
+        "linkTo",
+        "updateCache",
+    }, /* outputs: */ {
+        "output",
+    }, /* params: */ {
+    }, /* category: */ {
+        "control",
+    } }
+);
+
 
 struct MakeMutable : zeno::INode {
     virtual void apply() override {
