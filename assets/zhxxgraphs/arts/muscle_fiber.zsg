@@ -8,7 +8,7 @@
       "path": [
        null,
        null,
-       "/home/dilei/Desktop/R_bicep.obj"
+       "/home/lsl/Desktop/R_bicep.obj"
       ],
       "SRC": [
        null,
@@ -410,7 +410,7 @@
       "path": [
        null,
        null,
-       "/home/dilei/Codes/zeno/assets/sphere.obj"
+       "assets/sphere.obj"
       ],
       "SRC": [
        null,
@@ -1678,7 +1678,7 @@
       ]
      },
      "params": {
-      "path": "/home/dilei/Desktop/muscleFiber.vdb"
+      "path": "/home/lsl/Desktop/muscleFiber.vdb"
      },
      "uipos": [
       -1285.3033472803345,
@@ -1690,10 +1690,10 @@
     }
    },
    "view_rect": {
-    "x": -2774.8690974255273,
-    "y": -947.2232151861465,
-    "width": 2384.185791015625,
-    "height": 2384.185791015625
+    "x": -1372.1061466570177,
+    "y": 372.9274176917718,
+    "width": 400.0,
+    "height": 400.0
    }
   },
   "makeCollision": {
@@ -14032,344 +14032,6 @@
     "FLIPSolver"
    ]
   },
-  "FLIPGetEnvironArgs": {
-   "inputs": [
-    [
-     "",
-     "environArgs",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "portion",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "subgraph"
-   ]
-  },
-  "FLIPMakeAbsorber": {
-   "inputs": [
-    [
-     "",
-     "AbsorbSDF",
-     ""
-    ],
-    [
-     "",
-     "isEnabled",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Absorber",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ]
-  },
-  "FLIPMakeCollider": {
-   "inputs": [
-    [
-     "",
-     "StaticSDF",
-     ""
-    ],
-    [
-     "",
-     "dynamicPrim",
-     ""
-    ],
-    [
-     "",
-     "dx",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Collider",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ],
-   "is_subgraph": true
-  },
-  "FLIPMakeEmitter": {
-   "inputs": [
-    [
-     "",
-     "EmitSDF",
-     ""
-    ],
-    [
-     "",
-     "VelGrid",
-     ""
-    ],
-    [
-     "",
-     "isEnabled",
-     ""
-    ],
-    [
-     "",
-     "VelInit",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Emitter",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ]
-  },
-  "FLIPMakeEnviron": {
-   "inputs": [
-    [
-     "",
-     "Collider",
-     ""
-    ],
-    [
-     "",
-     "Emitter",
-     ""
-    ],
-    [
-     "",
-     "Absorber",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Environ",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ]
-  },
-  "FLIPMakeParticles": {
-   "inputs": [
-    [
-     "",
-     "TankSDF",
-     ""
-    ],
-    [
-     "",
-     "dx",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ],
-   "is_subgraph": true
-  },
-  "FLIPSimTemplate": {
-   "inputs": [
-    [
-     "",
-     "Velocity",
-     ""
-    ],
-    [
-     "",
-     "Collision",
-     ""
-    ],
-    [
-     "",
-     "PostAdvVel",
-     ""
-    ],
-    [
-     "",
-     "Pressure",
-     ""
-    ],
-    [
-     "",
-     "CollisionVel",
-     ""
-    ],
-    [
-     "",
-     "DynEmitter",
-     ""
-    ],
-    [
-     "",
-     "ifEmit",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "VelocityWeights",
-     ""
-    ],
-    [
-     "",
-     "dx",
-     ""
-    ],
-    [
-     "",
-     "ExtractedLiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "Gravity",
-     ""
-    ],
-    [
-     "",
-     "CellFWeight",
-     ""
-    ],
-    [
-     "",
-     "Divergence",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIPSolver"
-   ],
-   "is_subgraph": true
-  },
   "FLIP_P2G": {
    "inputs": [
     [
@@ -16404,37 +16066,6 @@
    "categories": [
     "dict"
    ]
-  },
-  "MakeFLIPWorld": {
-   "inputs": [
-    [
-     "",
-     "dx",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ],
-   "is_subgraph": true
   },
   "MakeFullscreenRect": {
    "inputs": [
@@ -21937,57 +21568,6 @@
     "cgmesh"
    ]
   },
-  "SmoothLiquidSDF": {
-   "inputs": [
-    [
-     "",
-     "inParticles",
-     ""
-    ],
-    [
-     "",
-     "influenceScale",
-     ""
-    ],
-    [
-     "",
-     "particleSeparation",
-     ""
-    ],
-    [
-     "",
-     "voxelScale",
-     ""
-    ],
-    [
-     "",
-     "dropletScale",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "inoutSDF",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ],
-   "is_subgraph": true
-  },
   "SpatialPartitionForParticles": {
    "inputs": [
     [
@@ -22130,76 +21710,6 @@
    ],
    "categories": [
     "FLIPSolver"
-   ]
-  },
-  "StepFLIPWorld": {
-   "inputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "Environ",
-     ""
-    ],
-    [
-     "",
-     "gravity",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "min_scale",
-     ""
-    ],
-    [
-     "",
-     "dt_scale",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
    ]
   },
   "StringEqual": {
@@ -22501,67 +22011,6 @@
    "categories": [
     "control"
    ]
-  },
-  "SubstepFLIPWorld": {
-   "inputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "gravity",
-     ""
-    ],
-    [
-     "",
-     "Collider",
-     ""
-    ],
-    [
-     "",
-     "dt",
-     ""
-    ],
-    [
-     "",
-     "SRC",
-     ""
-    ]
-   ],
-   "outputs": [
-    [
-     "",
-     "World",
-     ""
-    ],
-    [
-     "",
-     "Particles",
-     ""
-    ],
-    [
-     "",
-     "LiquidSDF",
-     ""
-    ],
-    [
-     "",
-     "DST",
-     ""
-    ]
-   ],
-   "params": [],
-   "categories": [
-    "FLIP"
-   ],
-   "is_subgraph": true
   },
   "SubtractPressureGradient": {
    "inputs": [
@@ -24816,6 +24265,332 @@
    "params": [],
    "categories": [
     "subgraph"
+   ],
+   "is_subgraph": true
+  },
+  "FLIPSimTemplate": {
+   "inputs": [
+    [
+     "",
+     "Velocity",
+     ""
+    ],
+    [
+     "",
+     "Collision",
+     ""
+    ],
+    [
+     "",
+     "PostAdvVel",
+     ""
+    ],
+    [
+     "",
+     "Pressure",
+     ""
+    ],
+    [
+     "",
+     "CollisionVel",
+     ""
+    ],
+    [
+     "",
+     "DynEmitter",
+     ""
+    ],
+    [
+     "",
+     "ifEmit",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "VelocityWeights",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "ExtractedLiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "Gravity",
+     ""
+    ],
+    [
+     "",
+     "CellFWeight",
+     ""
+    ],
+    [
+     "",
+     "Divergence",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIPSolver"
+   ],
+   "is_subgraph": true
+  },
+  "FLIPMakeCollider": {
+   "inputs": [
+    [
+     "",
+     "StaticSDF",
+     ""
+    ],
+    [
+     "",
+     "dynamicPrim",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Collider",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ],
+   "is_subgraph": true
+  },
+  "FLIPMakeParticles": {
+   "inputs": [
+    [
+     "",
+     "TankSDF",
+     ""
+    ],
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ],
+   "is_subgraph": true
+  },
+  "MakeFLIPWorld": {
+   "inputs": [
+    [
+     "",
+     "dx",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "World",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ],
+   "is_subgraph": true
+  },
+  "SubstepFLIPWorld": {
+   "inputs": [
+    [
+     "",
+     "World",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "gravity",
+     ""
+    ],
+    [
+     "",
+     "Collider",
+     ""
+    ],
+    [
+     "",
+     "dt",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "World",
+     ""
+    ],
+    [
+     "",
+     "Particles",
+     ""
+    ],
+    [
+     "",
+     "LiquidSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
+   ],
+   "is_subgraph": true
+  },
+  "SmoothLiquidSDF": {
+   "inputs": [
+    [
+     "",
+     "inParticles",
+     ""
+    ],
+    [
+     "",
+     "influenceScale",
+     ""
+    ],
+    [
+     "",
+     "particleSeparation",
+     ""
+    ],
+    [
+     "",
+     "voxelScale",
+     ""
+    ],
+    [
+     "",
+     "dropletScale",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "inoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "FLIP"
    ],
    "is_subgraph": true
   },
