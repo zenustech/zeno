@@ -12,6 +12,9 @@ struct Dim3 {
 };
 
 struct SyclQueue {
+    //sycl::queue m_q{sycl::accelerator_selector{}};
+    //sycl::queue m_q{sycl::gpu_selector{}};
+    //sycl::queue m_q{sycl::cpu_selector{}};
     sycl::queue m_q;
 
     void print_device_info() {
@@ -169,7 +172,7 @@ struct Vector {
             if (m_base) {
                 m_base = (T *)m_alloc.reallocate(m_base, m_size * sizeof(T), n * sizeof(T));
             } else {
-                m_base = (T *)m_alloc.allocate(m_base, n * sizeof(T));
+                m_base = (T *)m_alloc.allocate(n * sizeof(T));
             }
         }
         m_cap = n;
@@ -240,12 +243,24 @@ struct Vector {
 
 int main(void) {
     SyclQueue q;
-    auto v = Vector<int, SyclQueue::SharedAllocator>(32, q.shared_allocator());
-    auto p = v.begin();
-    q.parallel_for(Dim3(32, 1, 1), [=](Dim3 idx) {
-        p[idx.x] = idx.x;
+    q.print_device_info();
+
+    Vector<int, SyclQueue::SharedAllocator> v(100, q.shared_allocator());
+    auto vAxr = v.begin();
+    Vector<size_t, SyclQueue::SharedAllocator> c(1, q.shared_allocator());
+    auto cAxr = c.begin();
+    cAxr[0] = 0;
+
+    q.parallel_for(Dim3(100, 1, 1), [=](Dim3 idx) {
+        /*size_t id = sycl::ONEAPI::atomic_ref<size_t
+        , sycl::ONEAPI::memory_order::acq_rel
+        , sycl::ONEAPI::memory_scope::device
+        , sycl::access::address_space::global_space
+        >(cAxr[0])++;*/
+        size_t id = cAxr[0]++;
+        vAxr[id] = idx.x;
     });
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 100; i++) {
         printf("%d\n", v[i]);
     }
     return 0;
