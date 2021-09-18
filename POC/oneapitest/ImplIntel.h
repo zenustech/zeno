@@ -6,7 +6,11 @@
 #include <memory>
 #include "Dim3.h"
 
-namespace ImplIntel {
+#ifdef __SYCL_DEVICE_ONLY__
+#define __INTEL_SYCL_CONSTANT __attribute__((opencl_constant))
+#else
+#define __INTEL_SYCL_CONSTANT
+#endif
 
 struct Queue {
     std::shared_ptr<sycl::queue> m_qq;
@@ -105,6 +109,9 @@ struct Queue {
         return __AtomicRef<std::decay_t<T>, SyclAtomicRef>(
                 SyclAtomicRef(std::forward<T>(t)));
     }
-};
 
-}
+    template <class ...Args>
+    static void printf(const __INTEL_SYCL_CONSTANT char *fmt, Args &&...args) {
+        sycl::ONEAPI::experimental::printf(fmt, std::forward<Args>(args)...);
+    }
+};

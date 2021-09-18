@@ -1,10 +1,9 @@
 #pragma once
 
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include "Dim3.h"
-
-namespace ImplHost {
 
 struct Queue {
     template <class Kernel>
@@ -77,6 +76,9 @@ struct Queue {
     static auto make_atomic_ref(T &t) {
         return __AtomicRef<T>(t);
     }
-};
 
-}
+    template <class ...Args>
+    static void printf(Args &&...args) {
+        std::printf(std::forward<Args>(args)...);
+    }
+};

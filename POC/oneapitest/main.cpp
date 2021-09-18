@@ -1,11 +1,8 @@
-//#include "ImplIntel.h"
-#include "ImplHost.h"
+#include "ImplIntel.h"
+//#include "ImplHost.h"
 #include "Vector.h"
 #include <cstdio>
 #include "vec.h"
-
-//using namespace ImplIntel;
-using namespace ImplHost;
 
 template <class T>
 struct HashFunc {
@@ -31,7 +28,9 @@ struct SpinLock {
     int m{0};
 
     void acquire() {
-        while (!Alloc::make_atomic_ref(m).store_if_equal(0, 1));
+        static const __INTEL_SYCL_CONSTANT char fmt[] = "spin\n";
+        while (!Alloc::make_atomic_ref(m).store_if_equal(0, 1))
+            Queue::printf(fmt);
     }
 
     void release() {
@@ -94,7 +93,6 @@ struct HashMap {
                 return it;
             }
             while (1) {
-                //printf("?\n");
                 offset = (offset + 1) % m_view.size();
                 it = m_view.find(offset);
                 if (!it->used) {
@@ -167,7 +165,7 @@ int main(void) {
     auto cAxr = c.view();
 
     cAxr[0] = 0;
-    q.parallel_for(Dim3(100, 1, 1), [=](Dim3 idx) {
+    q.parallel_for(Dim3(1, 1, 1), [=](Dim3 idx) {
         size_t id = Queue::make_atomic_ref(cAxr[0]).fetch_inc();
         vAxr[id] = idx.x;
     });
