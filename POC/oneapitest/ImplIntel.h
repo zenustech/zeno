@@ -72,13 +72,38 @@ struct Queue {
         sycl_queue().memcpy(d, h, size).wait();
     }
 
+    template <class T, class Parent>
+    struct __AtomicRef {
+        Parent parent;
+
+        __AtomicRef(Parent &&parent) : parent(std::move(parent)) {}
+
+        T load() {
+            return parent.load();
+        }
+
+        bool store(T value) {
+            parent.store();
+        }
+
+        bool store_if_equal(T if_equal, T then_set) {
+            return parent.compare_exchage_weak(if_equal, then_set);
+        }
+
+        inline T fetch_inc() {
+            return parent++;
+        }
+    };
+
     template <class T>
     static auto make_atomic_ref(T &&t) {
-        return sycl::ONEAPI::atomic_ref<std::decay_t<T>
+        using SyclAtomicRef = sycl::ONEAPI::atomic_ref<std::decay_t<T>
         , sycl::ONEAPI::memory_order::acq_rel
         , sycl::ONEAPI::memory_scope::device
         , sycl::access::address_space::global_space
-        >(std::forward<T>(t));
+        >;
+        return __AtomicRef<std::decay_t<T>, SyclAtomicRef>(
+                SyclAtomicRef(std::forward<T>(t)));
     }
 };
 

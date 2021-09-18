@@ -31,9 +31,7 @@ struct SpinLock {
     int m{0};
 
     void acquire() {
-        int n;
-        do n = 0;
-        while (!Alloc::make_atomic_ref(m).compare_exchange_weak(&n, 1));
+        while (!Alloc::make_atomic_ref(m).store_if_equal(0, 1));
     }
 
     void release() {
@@ -170,7 +168,7 @@ int main(void) {
 
     cAxr[0] = 0;
     q.parallel_for(Dim3(100, 1, 1), [=](Dim3 idx) {
-        size_t id = Queue::make_atomic_ref(cAxr[0])++;
+        size_t id = Queue::make_atomic_ref(cAxr[0]).fetch_inc();
         vAxr[id] = idx.x;
     });
 
