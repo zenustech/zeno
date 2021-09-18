@@ -8,4 +8,4 @@ set(CMAKE_BUILD_TYPE Release)
 
 add_executable(cudatest)
 target_sources(cudatest PRIVATE main.cu)
-target_include_directories(cudatest PRIVATE inc)
+target_include_directories(cudatest PRIVATE inc .)
