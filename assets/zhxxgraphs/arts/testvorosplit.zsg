@@ -1130,16 +1130,6 @@
        null,
        null
       ],
-      "bboxMin": [
-       null,
-       null,
-       null
-      ],
-      "bboxMax": [
-       null,
-       null,
-       null
-      ],
       "SRC": [
        null,
        null,
@@ -1148,7 +1138,8 @@
      },
      "params": {
       "doMeshFix": true,
-      "numRandPoints": 256,
+      "doMeshFix2": true,
+      "numRandPoints": 4,
       "periodicX": false,
       "periodicY": false,
       "periodicZ": false
@@ -9955,16 +9946,6 @@
      ""
     ],
     [
-     "vec3f",
-     "bboxMin",
-     "-1,-1,-1"
-    ],
-    [
-     "vec3f",
-     "bboxMax",
-     "1,1,1"
-    ],
-    [
      "",
      "SRC",
      ""
@@ -9991,6 +9972,11 @@
     [
      "bool",
      "doMeshFix",
+     "1"
+    ],
+    [
+     "bool",
+     "doMeshFix2",
      "1"
     ],
     [

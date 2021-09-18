@@ -183,18 +183,27 @@ struct VoronoiFracture : AABBVoronoi {
 
         #pragma omp parallel for
         for (int i = 0; i < listB.size(); i++) {
-            log_debugf("VoronoiFracture: processing fragment #%d...\n", i);
+            log_debug("VoronoiFracture: processing fragment #{}...", i);
             auto const &primB = listB[i];
-            auto [VB, FB] = get_param<bool>("doMeshFix") ? prim_to_eigen_with_fix(primB.get()) : prim_to_eigen(primB.get());
+            auto [VB, FB] = get_param<bool>("doMeshFix2") ? prim_to_eigen_with_fix(primB.get()) : prim_to_eigen(primB.get());
             Eigen::MatrixXd VC;
             Eigen::MatrixXi FC;
             Eigen::VectorXi J;
             igl_mesh_boolean(VFA.first, VFA.second, VB, FB, "Intersect", VC, FC, J);
-            auto primC = std::make_shared<PrimitiveObject>();
-            if (primC->size() != 0) {
+            if (VC.size() != 0) {
+                bool anyFromA = false;
+                for (int i = 0; i < J.size(); i++) {
+                    if (J(i) < VFA.second.rows()) {
+                        anyFromA = true;
+                    }
+                }
+                auto primC = std::make_shared<PrimitiveObject>();
                 eigen_to_prim(VC, FC, primC.get());
+                primC->userData.get("isBoundary") = anyFromA;
                 std::lock_guard _(mtx);
                 dictC.emplace(i, std::move(primC));
+            } else {
+                log_debug("null piece encountered at #{}, removing...", i);
             }
         }
 
@@ -212,10 +221,13 @@ struct VoronoiFracture : AABBVoronoi {
                 if (auto yit = dictD.find(c[1]); yit != dictD.end()) {
                     auto ret = std::make_shared<NumericObject>();
                     ret->set(zeno::vec2i(xit->second, yit->second));
+                    //log_trace("VoronoiFracture: neigh {} and {}", xit->second, yit->second);
                     neighListC->arr.push_back(std::move(ret));
                 }
             }
         }
+
+        log_info("VoronoiFracture got {} pieces, {} neighs", primListC->arr.size(), neighListC->arr.size());
 
         set_output("primList", std::move(primListC));
         set_output("neighList", std::move(neighListC));
@@ -233,6 +245,7 @@ ZENO_DEFNODE(VoronoiFracture)({
         },
         { // params:
         {"bool", "doMeshFix", "1"},
+        {"bool", "doMeshFix2", "1"},
         {"int", "numRandPoints", "256"},
         {"bool", "periodicX", "0"},
         {"bool", "periodicY", "0"},
