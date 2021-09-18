@@ -35,7 +35,6 @@ class RecordVideoCancelDialog(QDialog):
         view = self.display.view
         shutil.rmtree(view.record_path, ignore_errors=True)
         view.record_path = None
-        self.display.view.camera.lock_flag = False
         self.close()
 
 class RecordVideoDialog(QDialog):
@@ -77,14 +76,8 @@ class RecordVideoDialog(QDialog):
         ok_button.clicked.connect(self.accept)
         cancel_button.clicked.connect(self.reject)
 
-        encoder = QLabel('Encoder:')
-        self.encoder_combo = self.build_encoder_combobox()
-
         presets = QLabel('Presets:')
         res_combo = self.build_res_combobox()
-
-        self.lock_camera = QCheckBox('Lock Camera')
-        self.lock_camera.setCheckState(Qt.Checked)
 
         grid = QGridLayout()
         grid.setSpacing(10)
@@ -101,22 +94,17 @@ class RecordVideoDialog(QDialog):
         grid.addWidget(bit_rate, 4, 0)
         grid.addWidget(self.bit_rate_editor, 4, 1)
 
-        grid.addWidget(encoder, 5, 0)
-        grid.addWidget(self.encoder_combo, 5, 1)
+        grid.addWidget(presets, 5, 0)
+        grid.addWidget(res_combo, 5, 1)
 
-        grid.addWidget(presets, 6, 0)
-        grid.addWidget(res_combo, 6, 1)
+        grid.addWidget(viewport_width, 6, 0)
+        grid.addWidget(self.viewport_width_editor, 6, 1)
 
-        grid.addWidget(viewport_width, 7, 0)
-        grid.addWidget(self.viewport_width_editor, 7, 1)
+        grid.addWidget(viewport_height, 7, 0)
+        grid.addWidget(self.viewport_height_editor, 7, 1)
 
-        grid.addWidget(viewport_height, 8, 0)
-        grid.addWidget(self.viewport_height_editor, 8, 1)
-
-        grid.addWidget(self.lock_camera, 9, 1)
-
-        grid.addWidget(ok_button, 10, 0)
-        grid.addWidget(cancel_button, 10, 1)
+        grid.addWidget(ok_button, 8, 0)
+        grid.addWidget(cancel_button, 8, 1)
 
         self.setLayout(grid) 
 
@@ -133,8 +121,6 @@ class RecordVideoDialog(QDialog):
         r['bit_rate'] = self.bit_rate_editor.text().strip() + 'k'
         r['width'] = int(self.viewport_width_editor.text())
         r['height'] = int(self.viewport_height_editor.text())
-        r['encoder'] = self.encoder_combo.currentText().split()[0]
-        r['lock_camera'] = self.lock_camera.checkState() == Qt.Checked
         super().accept()
 
     def build_res_combobox(self):
@@ -155,21 +141,6 @@ class RecordVideoDialog(QDialog):
         c.setCurrentIndex(1)
         return c
 
-    def build_encoder_combobox(self):
-        encoders =[
-            'libx264 (linux)',
-            'h264_mf (win)',
-            'h264_qsv (intel)',
-            'h264_amf (amd)',
-        ]
-        c = QComboBox()
-        c.addItems(encoders)
-        if sys.platform == 'win32':
-            c.setCurrentIndex(1)
-        else:
-            c.setCurrentIndex(0)
-        return c
-
     def do_record_video(self):
         display = self.display
         params = self.params
@@ -182,7 +153,6 @@ class RecordVideoDialog(QDialog):
         accept = self.exec()
         if not accept:
             return
-        self.display.view.camera.lock_flag = params['lock_camera']
         if params['frame_start'] >= params['frame_end']:
             QMessageBox.information(display, 'Zeno', 'Frame strat must be less than frame end!')
             return
@@ -211,7 +181,6 @@ class RecordVideoDialog(QDialog):
         tmp_path = display.view.record_path
         assert tmp_path is not None
         display.view.record_path = None
-        self.display.view.camera.lock_flag = False
         l = os.listdir(tmp_path)
         l.sort()
         for i in range(len(l)):
@@ -226,7 +195,7 @@ class RecordVideoDialog(QDialog):
             'ffmpeg', '-y',
             '-r', str(params['fps']), 
             '-i', png_paths, 
-            '-c:v', params['encoder'],
+            '-c:v', 'mpeg4',
             '-b:v', params['bit_rate'],
             path,
         ]
@@ -236,7 +205,7 @@ class RecordVideoDialog(QDialog):
             msg = 'Saved video to {}!'.format(path)
             QMessageBox.information(display, 'Record Video', msg)
         except subprocess.CalledProcessError:
-            msg = 'Encoding error, please try use libx264 (linux) / h264_mf (win)!'.format(path)
+            msg = 'Encoding error!'
             QMessageBox.critical(display, 'Record Video', msg)
         finally:
             shutil.rmtree(tmp_path, ignore_errors=True)
