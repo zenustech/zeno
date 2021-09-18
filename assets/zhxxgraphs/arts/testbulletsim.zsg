@@ -803,8 +803,8 @@
      "name": "VoronoiFracture",
      "inputs": {
       "meshPrim": [
-       "a921f7b3-TranslatePrimitive",
-       "prim",
+       "de9c64d3-TransformPrimitive",
+       "outPrim",
        null
       ],
       "particlesPrim": [
@@ -853,32 +853,6 @@
      ],
      "options": []
     },
-    "a921f7b3-TranslatePrimitive": {
-     "name": "TranslatePrimitive",
-     "inputs": {
-      "prim": [
-       "6b315a3e-ReadObjPrimitive",
-       "prim",
-       null
-      ],
-      "translation": [
-       "679a1435-NumericVec3",
-       "vec3",
-       null
-      ],
-      "SRC": [
-       null,
-       null,
-       null
-      ]
-     },
-     "params": {},
-     "uipos": [
-      -5352.164009111618,
-      -524.8291571753987
-     ],
-     "options": []
-    },
     "679a1435-NumericVec3": {
      "name": "NumericVec3",
      "inputs": {
@@ -918,13 +892,54 @@
       1161.9512195121954
      ],
      "options": []
+    },
+    "de9c64d3-TransformPrimitive": {
+     "name": "TransformPrimitive",
+     "inputs": {
+      "prim": [
+       "6b315a3e-ReadObjPrimitive",
+       "prim",
+       null
+      ],
+      "translation": [
+       "679a1435-NumericVec3",
+       "vec3",
+       null
+      ],
+      "eulerXYZ": [
+       null,
+       null,
+       null
+      ],
+      "quatRotation": [
+       null,
+       null,
+       null
+      ],
+      "scaling": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -5333.029612756265,
+      -560.3644646924829
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -5402.24318469209,
-    "y": 927.5845461442066,
-    "width": 400.0,
-    "height": 400.0
+    "x": -5535.434960363976,
+    "y": -768.9931214199736,
+    "width": 500.0,
+    "height": 500.0
    }
   },
   "RigidStepWorld": {
@@ -6893,6 +6908,76 @@
     "Bullet"
    ]
   },
+  "CacheLastFrameBegin": {
+   "inputs": [
+    [
+     "",
+     "input",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "linkFrom",
+     ""
+    ],
+    [
+     "",
+     "lastFrame",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
+  "CacheLastFrameEnd": {
+   "inputs": [
+    [
+     "",
+     "linkTo",
+     ""
+    ],
+    [
+     "",
+     "updateCache",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "output",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "control"
+   ]
+  },
   "CachePrimitive": {
    "inputs": [
     [
@@ -11985,7 +12070,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "string",
+     "DEPRECATED",
+     ""
+    ]
+   ],
    "categories": [
     "cgmesh"
    ]
@@ -12440,6 +12531,42 @@
     ]
    ],
    "params": [],
+   "categories": [
+    "openvdb"
+   ]
+  },
+  "ScalarFieldAnalyzer": {
+   "inputs": [
+    [
+     "",
+     "InVDB",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "OutVDB",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum Gradient Curvature Laplacian ClosestPoint",
+     "Operator",
+     "Gradient"
+    ]
+   ],
    "categories": [
     "openvdb"
    ]
@@ -13806,6 +13933,42 @@
    ],
    "categories": [
     "visualize"
+   ]
+  },
+  "VectorFieldAnalyzer": {
+   "inputs": [
+    [
+     "",
+     "InVDB",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "OutVDB",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "enum Divergence Curl Magnitude Normalize",
+     "Operator",
+     "Divergence"
+    ]
+   ],
+   "categories": [
+    "openvdb"
    ]
   },
   "VoronoiFracture": {
