@@ -1,12 +1,12 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/utils/string.h>
 #include <zeno/utils/vec.h>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
 #include <cstdio>
-#include <Hg/StrUtils.h>
 #include <iostream>
 #include <fstream>
 
@@ -16,7 +16,7 @@ namespace {
 
 static zeno::vec3i read_index(std::string str) {
     zeno::vec3i face(0, 0, 0);
-    auto items = hg::split_str(str, '/');
+    auto items = zeno::split_str(str, '/');
     for (auto i = 0; i < items.size(); i++) {
         if (items[i].empty()) {
             continue;
@@ -49,23 +49,23 @@ static void readobj(
     {
         std::string line;
         std::getline(is, line);
-        line = hg::trim(line);
+        line = zeno::trim_string(line);
         if (line.empty()) {
             continue;
         }
-        auto items = hg::split_str(line, ' ');
+        auto items = zeno::split_str(line, ' ');
         items.erase(items.begin());
 
-        if (hg::starts_with(line, "v ")) {
+        if (zeno::starts_with(line, "v ")) {
             vertices.push_back(read_vec3f(items));
         }
-        else if (hg::starts_with(line, "vt")) {
+        else if (zeno::starts_with(line, "vt")) {
             uvs.push_back(read_vec3f(items));
         }
-        else if (hg::starts_with(line, "vn")) {
+        else if (zeno::starts_with(line, "vn")) {
             normals.push_back(read_vec3f(items));
         }
-        else if (hg::starts_with(line, "f")) {
+        else if (zeno::starts_with(line, "f")) {
             zeno::vec3i first_index = read_index(items[0]);
             zeno::vec3i last_index = read_index(items[1]);
 
