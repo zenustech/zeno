@@ -172,7 +172,7 @@
       ]
      },
      "params": {
-      "value": "@rad = @sdf"
+      "value": "@rad = 10 * @sdf"
      },
      "uipos": [
       1041.457858769932,
@@ -241,7 +241,7 @@
      "name": "mgSmokeToSDF",
      "inputs": {
       "mgSmokeData": [
-       "e9d209c2-SDFtoMGSmoke",
+       "4d88dffe-mgSmokeSolver",
        "mgSmokeData",
        null
       ],
@@ -262,8 +262,8 @@
      "name": "mgSmokeSolver",
      "inputs": {
       "mgSmokeData": [
-       null,
-       null,
+       "e9d209c2-SDFtoMGSmoke",
+       "mgSmokeData",
        null
       ],
       "SRC": [
@@ -388,8 +388,8 @@
     }
    },
    "view_rect": {
-    "x": 950.5125284737942,
-    "y": 146.4692482915741,
+    "x": 1104.2710706150256,
+    "y": 259.2255125284755,
     "width": 500.0,
     "height": 500.0
    }

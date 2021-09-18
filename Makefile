@@ -1,4 +1,5 @@
-O=arts/adaptiveTest.zsg
+O=arts/testsmoke.zsg
+#O=arts/adaptiveTest.zsg
 #O=arts/prim.zsg
 #O=arts/testlitsock.zsg
 #O=graphs/BulletRigidSim.zsg

@@ -32,6 +32,7 @@ namespace zeno{
         // vertex attribute
         std::vector<openvdb::FloatGrid::Ptr> temperatureField;
         std::vector<openvdb::FloatGrid::Ptr> volumeField;
+        openvdb::Int32Grid::Ptr tag;
 
         // cell centered
         std::vector<openvdb::FloatGrid::Ptr>  pressField;

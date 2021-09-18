@@ -2,6 +2,7 @@
 #include <openvdb/tools/Interpolation.h>
 #include "tbb/blocked_range3d.h"
 
+#include "tbb/atomic.h"
 namespace zeno{
     void mgIterStuff::init(std::vector<openvdb::FloatGrid::Ptr> pressField)
     {
@@ -32,6 +33,7 @@ namespace zeno{
     }
     void mgSmokeData::resize(int levelNum)
     {
+        tag = openvdb::Int32Grid::create(0);
         temperatureField.resize(levelNum);
         volumeField.resize(levelNum);
         pressField.resize(levelNum);
@@ -45,7 +47,7 @@ namespace zeno{
             temperatureField[i] = openvdb::FloatGrid::create(0);
             volumeField[i] = openvdb::FloatGrid::create(0);
             pressField[i] = openvdb::FloatGrid::create(0);
-            //iterBuffer = openvdb::FloatGrid::create(0);
+            
             for(int xyz=0;xyz<3;++xyz)
                 velField[xyz][i] = openvdb::FloatGrid::create(0);
         }
@@ -53,6 +55,9 @@ namespace zeno{
     }
     void mgSmokeData::initData(openvdb::FloatGrid::Ptr sdf, int levelNum, float inputdt)
     {
+        for (openvdb::FloatGrid::ValueOffIter iter = sdf->beginValueOff(); iter.test(); ++iter) {
+            iter.setValue(0);
+        }
         dt = inputdt;
         resize(levelNum);
         printf("mgSmoke Data resize over!level Num is %d\n", levelNum);
@@ -60,6 +65,11 @@ namespace zeno{
         dx[0] = sdf->voxelSize()[0];
         for(int level = 1;level < levelNum;++level)
             dx[level] = dx[level-1]*0.5;
+
+        auto tagtrans = openvdb::math::Transform::createLinearTransform(dx[levelNum-1]);
+        tagtrans->postTranslate(openvdb::Vec3d{0.5,0.5,0.5}*dx[levelNum-1]);
+        tag->setTransform(tagtrans);
+
         auto inputbbox = openvdb::CoordBBox();
         auto is_valid = sdf->tree().evalLeafBoundingBox(inputbbox);
         if (!is_valid) {
@@ -84,6 +94,7 @@ namespace zeno{
             auto mark_active_point_leaves =
                 [&](const tbb::blocked_range3d<int, int, int> &r) {
                     auto sdf_axr{sdf->getConstAccessor()};
+                    auto tag_axr{tag->getAccessor()};
                     ConstBoxSample sdfSample(sdf_axr, sdf->transform());
                     auto temperature_axr{temperatureField[level]->getAccessor()};
                     auto volume_axr{volumeField[level]->getAccessor()};
@@ -92,20 +103,50 @@ namespace zeno{
                         for (int k = r.cols().begin(); k < r.cols().end(); k += 1) {
                             openvdb::Coord coord(i,j,k);
                             auto wpos = temperatureField[level]->indexToWorld(coord);
+                            auto tag_coord = openvdb::Vec3i(tag->worldToIndex(wpos));
                             float sdfValue = sdfSample.wsSample(wpos);
-                            if(sdfValue < -level * 0.04)
-                            {
-                                temperature_axr.setValue(coord, 1);
-                                volume_axr.setValue(coord, 1);
-                            }
-                            else
+                            if(sdfValue>=0)
                             {
                                 if(level == 0)
                                 {
                                     temperature_axr.setValue(coord, 0);
                                     volume_axr.setValue(coord, 0);
+                                    tag_axr.setValue(openvdb::Coord(tag_coord), level);
+                                }
+                                continue;
+                            }
+                            if(level == 0)
+                                continue;
+                            
+                            float dlow = 0, dhigh;
+                            for(int kk=1;kk<level;++kk)
+                            {
+                                dlow += dx[kk];
+                            }
+                            dhigh = dlow + dx[level];
+                            dlow *= 2;dhigh *=2;
+                            //if(level == 1)
+                            //    printf("dlow is %f, dhigh is %f\n", dlow, dhigh);
+                            if(sdfValue <= -dlow)
+                            {
+                                float value = 4 * abs(sdfValue);
+                                if(sdfValue > -dhigh)
+                                {
+                                    temperature_axr.setValue(coord, value);
+                                    volume_axr.setValue(coord, value);
+                                    tag_axr.setValue(openvdb::Coord(tag_coord), level);
+                                    continue;
+                                }
+                                else
+                                if(level == levelNum - 1)
+                                {
+                                    value = 4 * dhigh;
+                                    temperature_axr.setValue(coord, value);
+                                    volume_axr.setValue(coord, value);
+                                    tag_axr.setValue(openvdb::Coord(tag_coord), level);
                                 }
                             }
+                            
                         }     // loop k
                     }       // loop j
                     }         // loop i
@@ -115,7 +156,7 @@ namespace zeno{
             transform->postTranslate(openvdb::Vec3d{0.5,0.5,0.5}*dx[level]);
             temperatureField[level]->setTransform(transform);
             volumeField[level]->setTransform(transform);
-
+            
             loopbegin =
                 openvdb::tools::local_util::floorVec3(volumeField[level]->worldToIndex(worldinputbbox.min()));
             loopend =
@@ -269,6 +310,49 @@ namespace zeno{
         }
     }
 
+    void mgSmokeData::applyOuterforce(){
+        float alpha =-0.1, beta = 0.2;
+        int levelNum = dx.size();
+        std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
+        for(int level = 0;level < levelNum; ++ level){
+            auto applyOuterForce = [&](const tbb::blocked_range<size_t> &r) {
+                openvdb::tree::ValueAccessor<openvdb::FloatTree, true> 
+                    vel_axr[3]=
+                    {velField[0][level]->getAccessor(),velField[1][level]->getAccessor(),velField[2][level]->getAccessor()};
+                auto vol_axr = volumeField[level]->getConstAccessor();
+                auto tem_axr = temperatureField[level]->getConstAccessor();
+                ConstBoxSample volSample(vol_axr, volumeField[level]->transform());
+                ConstBoxSample temSample(tem_axr, temperatureField[level]->transform());
+                
+                for (auto liter = r.begin(); liter != r.end(); ++liter) {
+                    auto &leaf = *leaves[liter];
+                    for (auto offset = 0; offset < leaf.SIZE; ++offset) {
+                        openvdb::Coord coord = leaf.offsetToGlobalCoord(offset);
+                        for(int i=0;i<3;++i)
+                        {
+                            if(!vel_axr[i].isValueOn(coord))
+                                continue;
+                            auto wpos = velField[i][level]->indexToWorld(coord);
+                            float volume =  volSample.wsSample(wpos);
+                            float temperature = temSample.wsSample(wpos);
+                            float dens = (alpha * volume -beta * temperature);
+
+                            auto vel = vel_axr[i].getValue(coord);
+                            auto deltaV = vel - dens * 9.8 * dt;
+                            //if(abs(deltaV) > 0.1)
+                            //    printf("%d's vel is %f, vol is %f, tem is %f, dens is %f, wpos is (%f,%f,%f)\n", 
+                            //        i, deltaV, volume, temperature, dens, wpos[0], wpos[1], wpos[2]);
+                            vel_axr[i].setValue(coord, deltaV);
+                        }
+                    }
+                }
+            };
+
+            velField[0][level]->tree().getNodes(leaves);
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, leaves.size()), applyOuterForce);
+            leaves.clear();
+        }
+    }
     void mgSmokeData::step(){
         //printf("begin to step\n");
         advection();
@@ -289,7 +373,7 @@ namespace zeno{
             result->m_grid->setTransform(data->volumeField[levelNum-1]->transformPtr());
             
             std::vector<openvdb::FloatTree::LeafNodeType *> leaves;
-            for(int level = 0;level < levelNum;++level)
+            for(int level = levelNum-1;level < levelNum;++level)
             {
                 float dx = data->dx[level];
                 auto volumeField = data->volumeField[level];
@@ -308,7 +392,8 @@ namespace zeno{
                             if(vol <= 0.01)
                                 continue;
                             auto wpos = volumeField->indexToWorld(coord);
-                            auto finepos = openvdb::Coord(openvdb::Vec3i(result->m_grid->worldToIndex(wpos)));
+                            auto fine = result->m_grid->worldToIndex(wpos);
+                            auto finepos = openvdb::Coord(round(fine[0]), round(fine[1]), round(fine[2]));
                             result_axr.setValue(finepos, vol);
                             //printf("vol is %f, wpos is (%f,%f,%f),fineindex is (%d,%d,%d)\n",
                             //    vol, wpos[0],wpos[1],wpos[2], finepos[0],finepos[1],finepos[2]);

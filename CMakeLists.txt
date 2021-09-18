@@ -64,4 +64,6 @@ endif()
 
 if (ZENO_BUILD_TESTS)
     add_subdirectory(tests)
+
+add_definitions(-w)
 endif()
