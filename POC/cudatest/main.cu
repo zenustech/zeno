@@ -17,7 +17,6 @@ struct Allocator {
 
 template <class Kernel>
 __global__ void __launch(Kernel kernel) {
-    printf("prep launch\n");
     kernel();
 }
 
@@ -33,5 +32,6 @@ int main() {
         printf("hello, world!\n");
     });
 
+    checkCudaErrors(cudaDeviceSynchronize());
     return 0;
 }
