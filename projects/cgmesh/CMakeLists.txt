@@ -6,7 +6,7 @@ target_link_libraries(zeno_cgmesh PRIVATE Eigen3::Eigen)
 
 option(ZENO_CGMESH_WITH_VOROXX "Build with Voro++ nodes" ON)
 if (ZENO_CGMESH_WITH_VOROXX)
-    target_sources(zeno_cgmesh PRIVATE AABBVoronoi.cpp PrimitiveVoronoi.cpp)
+    target_sources(zeno_cgmesh PRIVATE VoronoiFracture.cpp PrimitiveVoronoi.cpp)
     add_subdirectory(voro)
     target_link_libraries(zeno_cgmesh PRIVATE voro++)
 endif()

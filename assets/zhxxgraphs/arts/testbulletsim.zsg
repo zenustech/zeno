@@ -821,7 +821,7 @@
      "params": {
       "doMeshFix": true,
       "doMeshFix2": true,
-      "numRandPoints": 256,
+      "numRandPoints": 128,
       "periodicX": false,
       "periodicY": false,
       "periodicZ": false
@@ -936,10 +936,10 @@
     }
    },
    "view_rect": {
-    "x": -5535.434960363976,
-    "y": -768.9931214199736,
-    "width": 500.0,
-    "height": 500.0
+    "x": -5266.104583577993,
+    "y": -612.0808583632536,
+    "width": 320.0,
+    "height": 320.0
    }
   },
   "RigidStepWorld": {
@@ -2110,10 +2110,12 @@
        null
       ]
      },
-     "params": {},
+     "params": {
+      "method": "Volume"
+     },
      "uipos": [
-      45.59915164369035,
-      224.28419936373277
+      42.29518688598108,
+      176.9273711699002
      ],
      "options": []
     },
@@ -4125,10 +4127,10 @@
     }
    },
    "view_rect": {
-    "x": -900.4077890229615,
-    "y": 3394.263078090931,
-    "width": 625.0,
-    "height": 625.0
+    "x": -641.1374619851315,
+    "y": 2368.4329466834297,
+    "width": 500.0,
+    "height": 500.0
    }
   },
   "RigidObjectToPrimitive": {
@@ -5056,10 +5058,10 @@
     }
    },
    "view_rect": {
-    "x": 341.4227446223347,
-    "y": -115.82515232192293,
-    "width": 976.5625,
-    "height": 976.5625
+    "x": -1332.2879015914846,
+    "y": 91.07014039943138,
+    "width": 625.0,
+    "height": 625.0
    }
   },
   "RigidMakeMaterial": {
@@ -10587,7 +10589,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "enum Volume Area Vertex",
+     "method",
+     "Volume"
+    ]
+   ],
    "categories": [
     "primitive"
    ]

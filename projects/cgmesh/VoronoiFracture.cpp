@@ -147,7 +147,7 @@ ZENO_DEFNODE(AABBVoronoi)({
         },
         { // params:
         {"bool", "triangulate", "1"},
-        {"int", "numRandPoints", "256"},
+        {"int", "numRandPoints", "64"},
         {"bool", "periodicX", "0"},
         {"bool", "periodicY", "0"},
         {"bool", "periodicZ", "0"},
