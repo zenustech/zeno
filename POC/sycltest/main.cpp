@@ -1,18 +1,33 @@
-#include <CL/sycl.hpp>
-#include <cstdio>
+#include <memory>
+#include <array>
+#include "ImplSycl.h"
+#include "PointerMap.h"
 
-namespace sycl = cl::sycl;
+
+using namespace fdb;
+
+
+class kernel0;
+
 
 int main() {
-    sycl::queue q;
+    //L1PointerMap<float, 1, 2, 3> arr;
+    Vector<float> arr(32);
 
-    int *data = sycl::malloc_shared<int>(1024, q);
-    q.parallel_for(sycl::nd_range<1>(1024, 1), [=](sycl::id<1> idx) {
-        data[idx[0]] = idx[0];
+    fdb::enqueue([&] (auto dev) {
+        auto arrAxr = arr.accessor<fdb::Access::discard_write>(dev);
+        dev.template parallelFor<kernel0, 1>(arr.size(), [=] (size_t id) {
+            *arrAxr(id) = id;
+        });
     });
-    q.wait();
 
-    for (int i = 0; i < 1024; i++) {
-        printf("%d\n", data[i]);
+    {
+        auto arrAxr = arr.accessor<fdb::Access::read>(fdb::HOST);
+        for (int i = 0; i < arr.size(); i++) {
+            printf(" %.3f", *arrAxr(i));
+        }
+        printf("\n");
     }
+
+    return 0;
 }

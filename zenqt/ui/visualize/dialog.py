@@ -12,6 +12,32 @@ from ...system import fileio
 from . import zenvis
 
 
+class RecordVideoCancelDialog(QDialog):
+    def __init__(self, display):
+        super().__init__(display)
+        self.display = display
+        self.setWindowFlags(Qt.Window | Qt.WindowTitleHint | Qt.CustomizeWindowHint)
+
+        self.setWindowTitle('Zeno')
+        self.initUI()
+
+    def initUI(self):
+        msg = QLabel('Recording Screen')
+        btn = QPushButton('Cancel')
+        btn.clicked.connect(self.btn_callback)
+
+        layout = QVBoxLayout()
+        layout.addWidget(msg)
+        layout.addWidget(btn)
+        self.setLayout(layout)
+    
+    def btn_callback(self):
+        view = self.display.view
+        shutil.rmtree(view.record_path, ignore_errors=True)
+        view.record_path = None
+        self.display.view.camera.lock_flag = False
+        self.close()
+
 class RecordVideoDialog(QDialog):
     def __init__(self, display):
         super().__init__()
@@ -57,6 +83,9 @@ class RecordVideoDialog(QDialog):
         presets = QLabel('Presets:')
         res_combo = self.build_res_combobox()
 
+        self.lock_camera = QCheckBox('Lock Camera')
+        self.lock_camera.setCheckState(Qt.Checked)
+
         grid = QGridLayout()
         grid.setSpacing(10)
 
@@ -84,8 +113,10 @@ class RecordVideoDialog(QDialog):
         grid.addWidget(viewport_height, 8, 0)
         grid.addWidget(self.viewport_height_editor, 8, 1)
 
-        grid.addWidget(ok_button, 9, 0)
-        grid.addWidget(cancel_button, 9, 1)
+        grid.addWidget(self.lock_camera, 9, 1)
+
+        grid.addWidget(ok_button, 10, 0)
+        grid.addWidget(cancel_button, 10, 1)
 
         self.setLayout(grid) 
 
@@ -103,6 +134,7 @@ class RecordVideoDialog(QDialog):
         r['width'] = int(self.viewport_width_editor.text())
         r['height'] = int(self.viewport_height_editor.text())
         r['encoder'] = self.encoder_combo.currentText().split()[0]
+        r['lock_camera'] = self.lock_camera.checkState() == Qt.Checked
         super().accept()
 
     def build_res_combobox(self):
@@ -150,6 +182,7 @@ class RecordVideoDialog(QDialog):
         accept = self.exec()
         if not accept:
             return
+        self.display.view.camera.lock_flag = params['lock_camera']
         if params['frame_start'] >= params['frame_end']:
             QMessageBox.information(display, 'Zeno', 'Frame strat must be less than frame end!')
             return
@@ -167,14 +200,18 @@ class RecordVideoDialog(QDialog):
         display.timeline.stop_play()
         display.view.paintGL()
         display.timeline.start_play()
+        display.cancel_dialog = RecordVideoCancelDialog(display)
+        display.cancel_dialog.show()
 
     def finish_record(self):
         display = self.display
+        display.cancel_dialog.close()
         params = self.params
 
         tmp_path = display.view.record_path
         assert tmp_path is not None
         display.view.record_path = None
+        self.display.view.camera.lock_flag = False
         l = os.listdir(tmp_path)
         l.sort()
         for i in range(len(l)):

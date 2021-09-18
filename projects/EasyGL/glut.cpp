@@ -2,7 +2,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/FunctionObject.h>
 #include <zeno/types/NumericObject.h>
-#include <zeno/utils/zlog.h>
+//#include <zeno/utils/zlog.h>
 #include <GLES2/gl2.h>
 #include <GL/glut.h>
 #include <zeno/types/DictObject.h>
@@ -48,11 +48,11 @@ struct GLUTMainLoop : zeno::INode {
         glViewport(0, 0, nx, ny);
         glClearColor(0.23f, 0.23f, 0.23f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        zlog::trace("calling draw function...");
+        //zlog::trace("calling draw function...");
 
         auto vec = zeno::vec4f(ax, ay, fx, fy);
         auto vecobj = std::make_shared<zeno::NumericObject>(vec);
-        std::map<std::string, zinc::zany> param;
+        std::map<std::string, zeno::zany> param;
         param["mouseInput"] = vecobj;
         drawFunc->call(param);
         glutSwapBuffers();
@@ -82,7 +82,7 @@ struct GLUTMainLoop : zeno::INode {
         glutMouseFunc(click);
         glutMotionFunc(motion);
         glutTimerFunc(interval, timerFunc, interval);
-        zlog::trace("entering main loop...");
+        //zlog::trace("entering main loop...");
         glutMainLoop();
     }
 
@@ -95,7 +95,7 @@ struct GLUTMainLoop : zeno::INode {
         nx = resolution[0];
         ny = resolution[1];
         interval = get_param<int>("interval");
-        zlog::debug("initializing with res={}x{} itv={}", nx, ny, interval);
+        //zlog::debug("initializing with res={}x{} itv={}", nx, ny, interval);
         mainFunc();
     }
 };

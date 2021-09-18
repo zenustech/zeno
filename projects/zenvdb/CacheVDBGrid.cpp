@@ -40,7 +40,7 @@ std::shared_ptr<VDBGrid> readGenericVDBGrid(const std::string &fn) {
 struct CacheVDBGrid : zeno::INode {
     int m_framecounter = 0;
 
-    virtual void doApply() override {
+    virtual void preApply() override {
         if (has_option("MUTE")) {
             requireInput("inGrid");
             set_output("outGrid", get_input("inGrid"));

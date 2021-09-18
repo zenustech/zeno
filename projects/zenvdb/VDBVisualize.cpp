@@ -44,12 +44,14 @@ struct VDBVoxelAsParticles : INode {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         prim->resize(pos.size());
         auto &primPos = prim->add_attr<vec3f>("pos");
-        auto &primSdf = prim->add_attr<float>("sdf");
         for (int i = 0; i < pos.size(); i++) {
             primPos[i] = pos[i];
         }
-        for (int i = 0; i < sdf.size(); i++) {
-            primSdf[i] = sdf[i];
+        if (auto attr = get_param<std::string>("valToAttr"); attr.size()) {
+            auto &primSdf = prim->add_attr<float>(attr);
+            for (int i = 0; i < sdf.size(); i++) {
+                primSdf[i] = sdf[i];
+            }
         }
         set_output("primPars", std::move(prim));
     }
@@ -58,7 +60,10 @@ struct VDBVoxelAsParticles : INode {
 ZENDEFNODE(VDBVoxelAsParticles, {
                             {"vdbGrid"},
                             {"primPars"},
-                            {{"bool", "hasInactive", "0"}},
+                            {
+                             {"bool", "hasInactive", "0"},
+                             {"string", "valToAttr", "sdf"},
+                            },
                             {"visualize"},
                         });
 

@@ -214,4 +214,38 @@ static int defGetVDBPointsDroplets = zeno::defNodeClass<GetVDBPointsDroplets>("G
     }});
 
 
+struct ConvertTo_VDBPointsGrid_PrimitiveObject : VDBPointsToPrimitive {
+    virtual void apply() override {
+        VDBPointsToPrimitive::apply();
+        get_input<PrimitiveObject>("prim")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(outputs.at("prim"))).get());
+    }
+};
+
+ZENO_DEFOVERLOADNODE(ConvertTo, _VDBPointsGrid_PrimitiveObject, typeid(VDBPointsGrid).name(), typeid(PrimitiveObject).name())({
+        {"grid", "prim"},
+        {},
+        {},
+        {"primitive"},
+});
+
+struct ToVisualize_VDBPointsGrid : VDBPointsToPrimitive {
+    virtual void apply() override {
+        VDBPointsToPrimitive::apply();
+        auto path = get_param<std::string>("path");
+        auto prim = std::move(smart_any_cast<std::shared_ptr<IObject>>(outputs.at("prim")));
+        if (auto node = graph->getOverloadNode("ToVisualize", {std::move(prim)}); node) {
+            node->inputs["path:"] = std::move(path);
+            node->doApply();
+        }
+    }
+};
+
+ZENO_DEFOVERLOADNODE(ToVisualize, _VDBPointsGrid, typeid(VDBPointsGrid).name())({
+        {"grid"},
+        {},
+        {{"string", "path", ""}},
+        {"primitive"},
+});
+
+
 }

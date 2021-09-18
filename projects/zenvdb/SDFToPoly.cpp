@@ -73,4 +73,41 @@ static int defSDFToPoly = zeno::defNodeClass<SDFToPoly>("SDFToPoly",
     "openvdb",
     }});
 
+
+struct ConvertTo_VDBFloatGrid_PrimitiveObject : SDFToPoly {
+    virtual void apply() override {
+        SDFToPoly::apply();
+        get_input<PrimitiveObject>("Mesh")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(outputs.at("Mesh"))).get());
+    }
+};
+
+ZENO_DEFOVERLOADNODE(ConvertTo, _VDBFloatGrid_PrimitiveObject, typeid(VDBFloatGrid).name(), typeid(PrimitiveObject).name())({
+        {"SDF", "Mesh"},
+        {},
+        {},
+        {"primitive"},
+});
+
+struct ToVisualize_VDBFloatGrid : SDFToPoly {
+    virtual void apply() override {
+        this->inputs["isoValue:"] = 0.0f;
+        this->inputs["adaptivity:"] = 0.0f;
+        this->inputs["allowQuads:"] = false;
+        SDFToPoly::apply();
+        auto path = get_param<std::string>("path");
+        auto prim = std::move(smart_any_cast<std::shared_ptr<IObject>>(outputs.at("Mesh")));
+        if (auto node = graph->getOverloadNode("ToVisualize", {std::move(prim)}); node) {
+            node->inputs["path:"] = std::move(path);
+            node->doApply();
+        }
+    }
+};
+
+ZENO_DEFOVERLOADNODE(ToVisualize, _VDBFloatGrid, typeid(VDBFloatGrid).name())({
+        {"SDF"},
+        {},
+        {{"string", "path", ""}},
+        {"primitive"},
+});
+
 }

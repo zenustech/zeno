@@ -47,6 +47,11 @@ CMakeSettings.json
 /a.zsl
 /a.zsg
 /b.zsg
+/c.zsg
+/d.zsg
+/e.zsg
+/z
 
 # zhxx files
 assets/smoke
+projects/Euler

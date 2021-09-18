@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/utils/vec.h>
+#include <zeno/utils/logger.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -99,30 +100,40 @@ struct PrimitiveListBoolOp : PrimitiveBooleanOp {
         auto primA = get_input<PrimitiveObject>("primA");
         auto primListB = get_input<ListObject>("primListB");
 
-        auto [VA, FA] = get_param<bool>("doMeshFix") ? prim_to_eigen_with_fix(primA.get()) : prim_to_eigen(primA.get());
+        auto VFA = get_param<bool>("doMeshFix") ? prim_to_eigen_with_fix(primA.get()) : prim_to_eigen(primA.get());
 
         auto listB = primListB->get<std::shared_ptr<PrimitiveObject>>();
         std::vector<std::pair<bool, std::shared_ptr<PrimitiveObject>>> listC(listB.size());
 
         #pragma omp parallel for
         for (int i = 0; i < listB.size(); i++) {
-            printf("PrimitiveListBoolOp: processing mesh #%d...\n", i);
+            log_debugf("PrimitiveListBoolOp: processing mesh #%d...\n", i);
             auto const &primB = listB[i];
-            auto [primC, anyFromA, anyFromB] = boolean_op(VA, FA, primA.get(), primB.get());
+            auto [primC, anyFromA, anyFromB] = boolean_op(VFA.first, VFA.second, primA.get(), primB.get());
             listC[i] = std::make_pair(anyFromA, std::move(primC));
         }
 
-        auto primListAllFromB = std::make_shared<ListObject>();
-        auto primListAnyFromA = std::make_shared<ListObject>();
-        for (auto const &[anyFromA, primPtr]: listC) {
-            if (anyFromA)
-                primListAnyFromA->arr.push_back(primPtr);
-            else
-                primListAllFromB->arr.push_back(primPtr);
+        auto lutList = std::make_shared<ListObject>();
+        auto primList = std::make_shared<ListObject>();
+        lutList->arr.resize(listC.size());
+        int lutcnt=-1;
+        for (auto const &[anyFromA, primPtr]: listC) { lutcnt++;
+            primPtr->userData.get("anyFromA") = anyFromA;
+            if (get_param<bool>("noNullMesh") && primPtr->size() == 0) {
+                auto cnt = std::make_shared<NumericObject>();
+                cnt->set((int)-1);
+                lutList->arr[lutcnt] = std::move(cnt);
+                log_info("PrimListBool got null mesh {}", (void *)primPtr.get());
+                continue;
+            }
+            auto cnt = std::make_shared<NumericObject>();
+            cnt->set((int)primList->arr.size());
+            lutList->arr[lutcnt] = std::move(cnt);
+            primList->arr.push_back(primPtr);
         }
 
-        set_output("primListAllFromB", std::move(primListAllFromB));
-        set_output("primListAnyFromA", std::move(primListAnyFromA));
+        set_output("primList", std::move(primList));
+        set_output("lutList", std::move(lutList));
     }
 };
 
@@ -131,9 +142,8 @@ ZENO_DEFNODE(PrimitiveListBoolOp)({
     "primA", "primListB",
     },
     {
-    "primListAllFromB",
-    "primListAnyFromA",
-    {"bool", "anyFromA"}, {"bool", "anyFromB"},
+    "primList", "lutList",
+    //{"bool", "anyFromA"}, {"bool", "anyFromB"},
     },
     {
     {"enum Union Intersect Minus RevMinus XOR Resolve", "op_type", "Union"},
@@ -141,6 +151,7 @@ ZENO_DEFNODE(PrimitiveListBoolOp)({
     {"bool", "assignAttrs", "1"},
     {"bool", "calcAnyFrom", "0"},
     {"bool", "doMeshFix", "1"},
+    {"bool", "noNullMesh", "1"},
     },
     {"cgmesh"},
 });

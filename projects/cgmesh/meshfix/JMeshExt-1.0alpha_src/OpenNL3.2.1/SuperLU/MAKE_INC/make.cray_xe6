@@ -1,0 +1,64 @@
+############################################################################
+#
+#  Program:         SuperLU
+#
+#  Module:          make.inc
+#
+#  Purpose:         Top-level Definitions
+#
+#  Creation date:   July 24, 2015  version 5.0
+#
+#  Modified:
+#
+############################################################################
+#
+#  The machine (platform) identifier to append to the library names
+#
+PLAT		= _xe6
+
+#
+#  The name of the libraries to be created/linked to
+#
+SuperLUroot	= $(HOME)/Hopper/SuperLU_5.1
+SUPERLULIB   	= $(SuperLUroot)/lib/libsuperlu_5.1.a
+#
+# need 'module load mkl'
+BLASDEF	     	= -DUSE_VENDOR_BLAS
+BLASLIB	        = 
+#
+
+TMGLIB       	= libtmglib.a
+LIBS		= $(SUPERLULIB) $(BLASLIB)
+
+#
+#  The archiver and the flag(s) to use when building archive (library)
+#  If your system has no ranlib, set RANLIB = echo.
+#
+ARCH         	= ar
+ARCHFLAGS    	= cr
+RANLIB       	= ranlib
+
+############################################################################
+# C compiler setup
+CC           	= cc
+# CFLAGS should be set to be the C flags that include optimization
+CFLAGS          = -fast -Mipa=fast,safe -m64 \
+		-DDEBUGlevel=0 -DPRNTlevel=0 -DPROFlevel=0 \
+#
+# NOOPTS should be set to be the C flags that turn off any optimization
+NOOPTS		= -O0
+############################################################################
+# FORTRAN compiler setup
+FORTRAN	  = ftn
+FFLAGS	  = -fast -mp=nonuma -Mipa=fast,safe
+############################################################################
+LOADER	        = $(CC)
+LOADOPTS	= -mp=nonuma
+# LOADOPTS	+= -Wl,-ydgemm_ -mkl=sequential
+
+############################################################################
+#  C preprocessor defs for compilation (-DNoChange, -DAdd_, or -DUpCase)
+#
+#  Need follow the convention of how C calls a Fortran routine.
+#
+CDEFS        = -DAdd_

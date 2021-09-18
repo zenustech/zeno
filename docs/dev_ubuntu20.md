@@ -39,17 +39,8 @@ make -j8
 sudo make install
 cd ../..
 
-# (Optional) Install LibIGL:
-# warning: LibIGL take a very long time to compile, install it only if you need mesh processing nodes.
-git clone https://github.com/libigl/libigl.git --branch=v2.3.0
-cd libigl
-mkdir build
-cd build
-cmake .. -DLIBIGL_WITH_CGAL:BOOL=ON -DLIBIGL_BUILD_TESTS:BOOL=OFF -DLIBIGL_BUILD_TUTURIALS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release
-make -j8
-sudo make install
-sudo cp build/libigl_cgal.a /usr/local/lib/
-cd ../..
+# (Optional) Install CGAL:
+sudo apt-get install -y cgal-dev
 ```
 
 See also [`Dockerfile`](/Dockerfile) as a reference for full installing steps.
@@ -65,12 +56,12 @@ cmake --build build --parallel
 cmake -B build -DEXTENSION_FastFLIP:BOOL=ON -DEXTENSION_zenvdb:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
 cmake --build build --parallel
 
-# (Optional) Enable LibIGL support:
-cmake -B build -DEXTENSION_cgmesh:BOOL=ON -DEXTENSION_zenvdb:BOOL=ON -DZENOFX_ENABLE_OPENVDB:BOOL=ON
-cmake --build build --parallel
-
 # (Optional) Enable CUDA support (for NVIDIA users):
 cmake -B build -DEXTENSION_gmpm:BOOL=ON -DEXTENSION_mesher:BOOL=ON -DZFX_ENABLE_CUDA:BOOL=ON
+cmake --build build --parallel
+
+# (Optional) Enable CGAL support:
+cmake -B build -DEXTENSION_cgmesh:BOOL=ON
 cmake --build build --parallel
 
 # (Optional) Enable Bullet support:
