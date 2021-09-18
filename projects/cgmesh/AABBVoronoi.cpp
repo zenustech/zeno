@@ -183,7 +183,7 @@ struct VoronoiFracture : AABBVoronoi {
 
         #pragma omp parallel for
         for (int i = 0; i < listB.size(); i++) {
-            log_debug("VoronoiFracture: processing fragment #{}...", i);
+            log_info("VoronoiFracture: processing fragment #{}...", i);
             auto const &primB = listB[i];
             auto [VB, FB] = get_param<bool>("doMeshFix2") ? prim_to_eigen_with_fix(primB.get()) : prim_to_eigen(primB.get());
             Eigen::MatrixXd VC;

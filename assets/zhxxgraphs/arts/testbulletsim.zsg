@@ -725,8 +725,8 @@
        null
       ],
       "neighList": [
-       "65d31a47-VoronoiFracture",
-       "neighList",
+       "d5a45b3f-SimplifyVoroNeighborList",
+       "newNeighList",
        null
       ],
       "breakThres": [
@@ -901,10 +901,10 @@
     }
    },
    "view_rect": {
-    "x": -5100.522558283009,
-    "y": -537.6965419741975,
-    "width": 400.0,
-    "height": 400.0
+    "x": -4768.891850726658,
+    "y": -368.12534291876653,
+    "width": 320.0,
+    "height": 320.0
    }
   },
   "RigidStepWorld": {
