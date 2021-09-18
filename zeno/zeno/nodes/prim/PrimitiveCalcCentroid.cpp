@@ -38,8 +38,8 @@ struct PrimitiveCalcCentroid : zeno::INode {
                 auto normal = cross(b - a, c - a);
                 auto area = length(normal); normal /= area;
                 auto center = (1.f / 3.f) * (a + b + c);
-                auto weight = (1.f / 3.f) * area * dot(center, normal);
-                center = (2.f / 3.f) * weight * center;
+                auto weight = (1.f / 6.f) * area * dot(center, normal);
+                center = (3.f / 4.f) * weight * center;
                 return vec4f(center[0], center[1], center[2], weight);
             }, [&] (auto a, auto b) { return a + b; });
         }
@@ -58,10 +58,11 @@ ZENDEFNODE(PrimitiveCalcCentroid, {
     },
     {
     {"vec3f", "centroid"},
-    {"float", "totalArea"},
-    {"enum Volume Area Vertex", "method", "Volume"},
+    {"float", "totalArea"},  // actually mass
     },
-    {},
+    {
+    {"enum Volume Area Vertex", "method", "Volume"}
+    },
     {"primitive"},
 });
 
