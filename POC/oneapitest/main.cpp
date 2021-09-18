@@ -1,11 +1,11 @@
-#include "ImplIntel.h"
-//#include "ImplHost.h"
+//#include "ImplIntel.h"
+#include "ImplHost.h"
 #include "Vector.h"
 #include <cstdio>
 #include "vec.h"
 
-using namespace ImplIntel;
-//using namespace ImplHost;
+//using namespace ImplIntel;
+using namespace ImplHost;
 
 template <class T>
 struct HashFunc {

@@ -78,16 +78,16 @@ struct Queue {
 
         __AtomicRef(Parent &&parent) : parent(std::move(parent)) {}
 
-        T load() {
+        inline T load() {
             return parent.load();
         }
 
-        bool store(T value) {
-            parent.store();
+        inline void store(T value) {
+            parent.store(value);
         }
 
         bool store_if_equal(T if_equal, T then_set) {
-            return parent.compare_exchage_weak(if_equal, then_set);
+            return parent.compare_exchange_weak(if_equal, then_set);
         }
 
         inline T fetch_inc() {

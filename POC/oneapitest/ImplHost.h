@@ -47,8 +47,35 @@ struct Queue {
     }
 
     template <class T>
-    static T &make_atomic_ref(T &t) {
-        return t;
+    struct __AtomicRef {
+        T &t;
+
+        __AtomicRef(T &t) : t(t) {}
+
+        inline T load() {
+            return t;
+        }
+
+        inline void store(T value) {
+            t = value;
+        }
+
+        bool store_if_equal(T if_equal, T then_set) {
+            if (t == if_equal) {
+                t = then_set;
+                return true;
+            }
+            return false;
+        }
+
+        inline T fetch_inc() {
+            return t++;
+        }
+    };
+
+    template <class T>
+    static auto make_atomic_ref(T &t) {
+        return __AtomicRef<T>(t);
     }
 };
 
