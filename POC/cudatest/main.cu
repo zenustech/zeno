@@ -1,4 +1,3 @@
-// https://www.slideserve.com/lars/3d-simulation-of-particle-motion-in-lid-driven-cavity-flow-by-mrt-lbm
 #include "helper_cuda.h"
 #include "helper_math.h"
 #include <cstdio>
@@ -23,16 +22,16 @@ __global__ void __parallelFor(Kernel kernel) {
 template <class Kernel>
 void parallelFor(dim3 gridDim, dim3 blockDim, Kernel kernel) {
     __parallelFor<<<gridDim, blockDim>>>([=] __device__ () {
-        kernel();
+        kernel(threadIdx);
     });
-};
+}
 
 int main() {
-    parallelFor(dim3(1, 1, 1), dim3(1, 1, 4), [=] __device__ () {
-        printf("hello, world!\n");
+    parallelFor(dim3(1, 1, 1), dim3(1, 1, 4), [=] __device__ (dim3 threadIdx) {
+        printf("hello, world! %d\n", threadIdx.z);
     });
-    parallelFor(dim3(1, 1, 1), dim3(1, 1, 2), [=] __device__ () {
-        printf("are you ok?\n");
+    parallelFor(dim3(1, 1, 1), dim3(2, 1, 1), [=] __device__ (dim3 threadIdx) {
+        printf("are you ok? %d\n", threadIdx.x);
     });
 
     checkCudaErrors(cudaDeviceSynchronize());
