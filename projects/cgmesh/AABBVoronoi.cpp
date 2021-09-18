@@ -219,10 +219,10 @@ struct VoronoiFracture : AABBVoronoi {
         for (auto const &c: neighB) {
             if (auto xit = dictD.find(c[0]); xit != dictD.end()) {
                 if (auto yit = dictD.find(c[1]); yit != dictD.end()) {
-                    auto ret = std::make_shared<NumericObject>();
-                    ret->set(zeno::vec2i(xit->second, yit->second));
-                    //log_trace("VoronoiFracture: neigh {} and {}", xit->second, yit->second);
-                    neighListC->arr.push_back(std::move(ret));
+                    zeno::vec2i c2(xit->second, yit->second);
+                    //log_trace("VoronoiFracture: neigh {} and {}", c2[0], c2[1]);
+                    //auto ret = std::make_shared<NumericObject>(); ret->set(c2);
+                    neighListC->arr.push_back(c2);
                 }
             }
         }

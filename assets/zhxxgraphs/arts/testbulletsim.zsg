@@ -356,7 +356,9 @@
        null
       ]
      },
-     "params": {},
+     "params": {
+      "doConcat": true
+     },
      "uipos": [
       -3987.045511686102,
       332.09786444525434
@@ -442,8 +444,8 @@
       "periodicZ": false
      },
      "uipos": [
-      -5083.006901140957,
-      -363.7656351699611
+      -5623.32580774688,
+      -318.2075486095967
      ],
      "options": []
     },
@@ -451,7 +453,7 @@
      "name": "SimplifyVoroNeighborList",
      "inputs": {
       "neighList": [
-       "c3e5d8e7-AABBVoronoi",
+       "65d31a47-VoronoiFracture",
        "neighList",
        null
       ],
@@ -718,19 +720,19 @@
      "name": "RigidMakeObjectFragments",
      "inputs": {
       "primList": [
-       "c3e5d8e7-AABBVoronoi",
+       "65d31a47-VoronoiFracture",
        "primList",
        null
       ],
       "neighList": [
-       "d5a45b3f-SimplifyVoroNeighborList",
-       "newNeighList",
+       "65d31a47-VoronoiFracture",
+       "neighList",
        null
       ],
       "breakThres": [
        null,
        null,
-       0.2
+       1.0
       ],
       "mass": [
        null,
@@ -796,13 +798,113 @@
       802.7210884353742
      ],
      "options": []
+    },
+    "65d31a47-VoronoiFracture": {
+     "name": "VoronoiFracture",
+     "inputs": {
+      "meshPrim": [
+       "a921f7b3-TranslatePrimitive",
+       "prim",
+       null
+      ],
+      "particlesPrim": [
+       null,
+       null,
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "doMeshFix": true,
+      "doMeshFix2": true,
+      "numRandPoints": 64,
+      "periodicX": false,
+      "periodicY": false,
+      "periodicZ": false
+     },
+     "uipos": [
+      -5056.947608200458,
+      -554.8974943052392
+     ],
+     "options": []
+    },
+    "6b315a3e-ReadObjPrimitive": {
+     "name": "ReadObjPrimitive",
+     "inputs": {
+      "path": [
+       null,
+       null,
+       "assets/bowl.obj"
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -5647.38041002278,
+      -561.2756264236903
+     ],
+     "options": []
+    },
+    "a921f7b3-TranslatePrimitive": {
+     "name": "TranslatePrimitive",
+     "inputs": {
+      "prim": [
+       "6b315a3e-ReadObjPrimitive",
+       "prim",
+       null
+      ],
+      "translation": [
+       "679a1435-NumericVec3",
+       "vec3",
+       null
+      ],
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {},
+     "uipos": [
+      -5352.164009111618,
+      -524.8291571753987
+     ],
+     "options": []
+    },
+    "679a1435-NumericVec3": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 0.0,
+      "y": 4.0,
+      "z": 0.0
+     },
+     "uipos": [
+      -5343.963553530752,
+      -769.0205011389523
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -4571.432560942038,
-    "y": -659.172913441176,
-    "width": 976.5625,
-    "height": 976.5625
+    "x": -5100.522558283009,
+    "y": -537.6965419741975,
+    "width": 400.0,
+    "height": 400.0
    }
   },
   "RigidStepWorld": {
@@ -6779,7 +6881,7 @@
      ""
     ],
     [
-     "int",
+     "",
      "frameNum",
      ""
     ],
@@ -8341,6 +8443,62 @@
     "primitive"
    ]
   },
+  "Make3DGridPointsInAABB": {
+   "inputs": [
+    [
+     "int",
+     "nx",
+     "4"
+    ],
+    [
+     "int",
+     "ny",
+     "0"
+    ],
+    [
+     "int",
+     "nz",
+     "0"
+    ],
+    [
+     "vec3f",
+     "bmin",
+     "-1,-1,-1"
+    ],
+    [
+     "vec3f",
+     "bmax",
+     "1,1,1"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "prim",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "isStaggered",
+     "1"
+    ]
+   ],
+   "categories": [
+    "primitive"
+   ]
+  },
   "Make3DGridPrimitive": {
    "inputs": [
     [
@@ -8791,7 +8949,13 @@
      ""
     ]
    ],
-   "params": [],
+   "params": [
+    [
+     "bool",
+     "doConcat",
+     "1"
+    ]
+   ],
    "categories": [
     "list"
    ]
@@ -9625,6 +9789,41 @@
    "params": [],
    "categories": [
     "zenofx"
+   ]
+  },
+  "PackNumericIntVec2": {
+   "inputs": [
+    [
+     "int",
+     "x",
+     "0"
+    ],
+    [
+     "int",
+     "y",
+     "0"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "vec2i",
+     "vec2",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "numeric"
    ]
   },
   "ParticleParticleWrangle": {
@@ -10922,22 +11121,12 @@
    "outputs": [
     [
      "",
-     "primListAllFromB",
+     "primList",
      ""
     ],
     [
      "",
-     "primListAnyFromA",
-     ""
-    ],
-    [
-     "bool",
-     "anyFromA",
-     ""
-    ],
-    [
-     "bool",
-     "anyFromB",
+     "lutList",
      ""
     ],
     [
@@ -10971,6 +11160,16 @@
      "bool",
      "doMeshFix",
      "1"
+    ],
+    [
+     "bool",
+     "noNullMesh",
+     "1"
+    ],
+    [
+     "string",
+     "DEPRECATED",
+     ""
     ]
    ],
    "categories": [
@@ -11752,12 +11951,12 @@
    "outputs": [
     [
      "",
-     "interiorPrimList",
+     "primList",
      ""
     ],
     [
      "",
-     "boundaryPrimList",
+     "neighList",
      ""
     ],
     [
@@ -12072,6 +12271,71 @@
    "params": [],
    "categories": [
     "portal"
+   ]
+  },
+  "SDFAdvect": {
+   "inputs": [
+    [
+     "",
+     "InoutSDF",
+     ""
+    ],
+    [
+     "",
+     "VecField",
+     ""
+    ],
+    [
+     "float",
+     "TimeStep",
+     "0.04"
+    ],
+    [
+     "enum Order_1 Order_2 Order_3 Order_5_WENO Order_5_HJ_WENO",
+     "SpatialScheme",
+     "Order_5_HJ_WENO"
+    ],
+    [
+     "enum Explicit_Euler Order_2_Runge_Kuta Order_3_Runge_Kuta",
+     "TemporalScheme",
+     "Order_2_Runge_Kuta"
+    ],
+    [
+     "int",
+     "RenormalizeStep",
+     "3"
+    ],
+    [
+     "enum Order_1 Order_2 Order_3 Order_5_WENO Order_5_HJ_WENO",
+     "TrackerSpatialScheme",
+     "Order_5_HJ_WENO"
+    ],
+    [
+     "enum Explicit_Euler Order_2_Runge_Kuta Order_3_Runge_Kuta",
+     "TrackerTemporalScheme",
+     "Explicit_Euler"
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "",
+     "InoutSDF",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [],
+   "categories": [
+    "openvdb"
    ]
   },
   "SDFToPoly": {
@@ -13513,10 +13777,86 @@
      "bool",
      "hasInactive",
      "0"
+    ],
+    [
+     "string",
+     "valToAttr",
+     "sdf"
     ]
    ],
    "categories": [
     "visualize"
+   ]
+  },
+  "VoronoiFracture": {
+   "inputs": [
+    [
+     "PrimitiveObject",
+     "meshPrim",
+     ""
+    ],
+    [
+     "PrimitiveObject",
+     "particlesPrim",
+     ""
+    ],
+    [
+     "",
+     "SRC",
+     ""
+    ]
+   ],
+   "outputs": [
+    [
+     "ListObject",
+     "primList",
+     ""
+    ],
+    [
+     "ListObject",
+     "neighList",
+     ""
+    ],
+    [
+     "",
+     "DST",
+     ""
+    ]
+   ],
+   "params": [
+    [
+     "bool",
+     "doMeshFix",
+     "1"
+    ],
+    [
+     "bool",
+     "doMeshFix2",
+     "1"
+    ],
+    [
+     "int",
+     "numRandPoints",
+     "256"
+    ],
+    [
+     "bool",
+     "periodicX",
+     "0"
+    ],
+    [
+     "bool",
+     "periodicY",
+     "0"
+    ],
+    [
+     "bool",
+     "periodicZ",
+     "0"
+    ]
+   ],
+   "categories": [
+    "cgmesh"
    ]
   },
   "WriteObjPrimitive": {
