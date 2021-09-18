@@ -16,20 +16,23 @@ struct Allocator {
 };
 
 template <class Kernel>
-__global__ void __launch(Kernel kernel) {
+__global__ void __parallelFor(Kernel kernel) {
     kernel();
 }
 
 template <class Kernel>
-void launch(Kernel kernel) {
-    __launch<<<1, 1>>>([=] __device__ () {
+void parallelFor(dim3 gridDim, dim3 blockDim, Kernel kernel) {
+    __parallelFor<<<gridDim, blockDim>>>([=] __device__ () {
         kernel();
     });
 };
 
 int main() {
-    launch([=] __device__ () {
+    parallelFor(dim3(1, 1, 1), dim3(1, 1, 4), [=] __device__ () {
         printf("hello, world!\n");
+    });
+    parallelFor(dim3(1, 1, 1), dim3(1, 1, 2), [=] __device__ () {
+        printf("are you ok?\n");
     });
 
     checkCudaErrors(cudaDeviceSynchronize());
