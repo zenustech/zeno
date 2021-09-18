@@ -481,7 +481,7 @@
      },
      "params": {
       "x": 0.0,
-      "y": 4.0,
+      "y": 8.0,
       "z": 0.0
      },
      "uipos": [
@@ -643,8 +643,8 @@
        null
       ],
       "translation": [
-       null,
-       null,
+       "f1f6ffa7-x",
+       "vec3",
        null
       ],
       "eulerXYZ": [
@@ -685,9 +685,9 @@
       ]
      },
      "params": {
-      "x": 4.0,
-      "y": 4.0,
-      "z": 4.0
+      "x": 8.0,
+      "y": 8.0,
+      "z": 8.0
      },
      "uipos": [
       -4886.537063953488,
@@ -732,7 +732,7 @@
       "breakThres": [
        null,
        null,
-       1.0
+       0.2
       ],
       "mass": [
        null,
@@ -821,7 +821,7 @@
      "params": {
       "doMeshFix": true,
       "doMeshFix2": true,
-      "numRandPoints": 64,
+      "numRandPoints": 256,
       "periodicX": false,
       "periodicY": false,
       "periodicZ": false
@@ -838,7 +838,7 @@
       "path": [
        null,
        null,
-       "assets/bowl.obj"
+       "assets/temple.obj"
       ],
       "SRC": [
        null,
@@ -890,7 +890,7 @@
      },
      "params": {
       "x": 0.0,
-      "y": 4.0,
+      "y": 3.4,
       "z": 0.0
      },
      "uipos": [
@@ -898,13 +898,33 @@
       -769.0205011389523
      ],
      "options": []
+    },
+    "f1f6ffa7-x": {
+     "name": "NumericVec3",
+     "inputs": {
+      "SRC": [
+       null,
+       null,
+       null
+      ]
+     },
+     "params": {
+      "x": 2.4,
+      "y": 0.8,
+      "z": 0.0
+     },
+     "uipos": [
+      -5150.243902439025,
+      1161.9512195121954
+     ],
+     "options": []
     }
    },
    "view_rect": {
-    "x": -4768.891850726658,
-    "y": -368.12534291876653,
-    "width": 320.0,
-    "height": 320.0
+    "x": -5402.24318469209,
+    "y": 927.5845461442066,
+    "width": 400.0,
+    "height": 400.0
    }
   },
   "RigidStepWorld": {
