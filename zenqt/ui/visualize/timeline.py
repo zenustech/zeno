@@ -162,6 +162,7 @@ class TimelineWidget(QWidget):
         self.editor.on_kill()
 
     def on_execute(self):
+        self.editor.on_kill()
         self.editor.on_execute()
         self.slider.setValue(0)
         self.start_play()

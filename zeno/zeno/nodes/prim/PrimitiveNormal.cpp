@@ -93,7 +93,7 @@ struct PrimitiveFaceToEdges : zeno::INode {
         prim->lines.emplace_back(u, v);
     }
 
-    if (get_param<int>("clearFaces")) {
+    if (get_param<bool>("clearFaces")) {
         prim->tris.clear();
     }
     set_output("prim", get_input("prim"));
