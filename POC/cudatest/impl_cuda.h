@@ -5,22 +5,10 @@
 #define FDB_DEVICE __device__
 
 #include "helper_cuda.h"
+#include <utility>
 #include "vec.h"
 
 namespace fdb {
-
-static void *allocate(size_t n) {
-    void *p = nullptr;
-    checkCudaErrors(cudaMallocManaged(&p, n));
-    return p;
-}
-
-//static void reallocate(void *p, size_t old_n, size_t new_n) {
-//}
-
-static void deallocate(void *p) {
-    checkCudaErrors(cudaFree(p));
-}
 
 template <class Kernel>
 static __global__ void __parallelFor(Kernel kernel) {
@@ -34,7 +22,7 @@ static void parallelFor(vec3S grid_dim, vec3S block_dim, Kernel kernel) {
     __parallelFor<<<gridDim, blockDim>>>([=] __device__ () {
         vec3S block_idx(blockIdx.x, blockIdx.y, blockIdx.z);
         vec3S thread_idx(threadIdx.x, threadIdx.y, threadIdx.z);
-        kernel(block_idx, thread_idx);
+        kernel(std::as_const(block_idx), std::as_const(thread_idx));
     });
 }
 
@@ -49,7 +37,7 @@ static void parallelFor(vec3S dim, Kernel kernel) {
             for (size_t y = blockDim.y * blockIdx.y + threadIdx.y; y < dim[1]; y += gridDim.y * blockDim.y) {
                 for (size_t x = blockDim.x * blockIdx.x + threadIdx.x; x < dim[0]; x += gridDim.x * blockDim.x) {
                     vec3S idx(x, y, z);
-                    kernel(idx);
+                    kernel(std::as_const(idx));
                 }
             }
         }
@@ -66,7 +54,7 @@ static void parallelFor(vec2S dim, Kernel kernel) {
         for (size_t y = blockDim.y * blockIdx.y + threadIdx.y; y < dim[1]; y += gridDim.y * blockDim.y) {
             for (size_t x = blockDim.x * blockIdx.x + threadIdx.x; x < dim[0]; x += gridDim.x * blockDim.x) {
                 vec3S idx(x, y);
-                kernel(idx);
+                kernel(std::as_const(idx));
             }
         }
     });
@@ -80,9 +68,38 @@ static void parallelFor(size_t dim, Kernel kernel) {
     dim3 blockDim(block_dim, 1, 1);
     __parallelFor<<<gridDim, blockDim>>>([=] __device__ () {
         for (size_t x = blockDim.x * blockIdx.x + threadIdx.x; x < dim[0]; x += gridDim.x * blockDim.x) {
-            kernel(x);
+            kernel(std::as_const(x));
         }
     });
+}
+
+void memoryCopy(void *dst, const void *src, size_t n) {
+    checkCudaErrors(cudaMemcpy(dst, src, n, cudaMemcpyDeviceToDevice));
+}
+
+void memoryCopyD2H(void *dst, const void *src, size_t n) {
+    checkCudaErrors(cudaMemcpy(dst, src, n, cudaMemcpyDeviceToHost));
+}
+
+void memoryCopyH2D(void *dst, const void *src, size_t n) {
+    checkCudaErrors(cudaMemcpy(dst, src, n, cudaMemcpyHostToDevice));
+}
+
+static void *allocate(size_t n) {
+    void *p = nullptr;
+    checkCudaErrors(cudaMallocManaged(&p, n));
+    return p;
+}
+
+static void deallocate(void *p) {
+    checkCudaErrors(cudaFree(p));
+}
+
+void *reallocate(void *p, size_t old_n, size_t new_n) {
+    void *new_p = allocate(new_n);
+    memoryCopy(new_p, p, old_n);
+    deallocate(p);
+    return new_p;
 }
 
 static void synchronize() {

@@ -5,31 +5,51 @@
 #define FDB_DEVICE
 
 #include <cstdlib>
+#include <utility>
 #include "vec.h"
 
 namespace fdb {
 
-void *allocate(size_t n) {
-    return malloc(n);
-}
-
-void deallocate(void *p) {
-    free(p);
-}
-
 template <class Kernel>
-__global__ void __parallelFor(Kernel kernel) {
-    kernel();
-}
-
-template <class Kernel>
-void parallelFor(vec3S grid_dim, vec3S block_dim, Kernel kernel) {
-    for (size_t i = 0; i < grid_dim[0] * grid_dim[1] * grid_dim[2]; i++) {
-        size_t x = i % grid_dim[0];
-        size_t y = i % grid_dim[1];
+void parallelFor(size_t dim, Kernel kernel) {
+    #pragma omp parallel for
+    for (size_t i = 0; i < dim; i++) {
+        kernel(std::as_const(i));
     }
 }
 
-#define FDB_DEVICE
+template <class Kernel>
+void parallelFor(vec2S dim, Kernel kernel) {
+    parallelFor(dim[0] * dim[1], [=] (size_t i) {
+        size_t x = i % dim[0];
+        size_t y = i / dim[0];
+        vec2S idx(x, y);
+        kernel(std::as_const(idx));
+    });
+}
+
+void memoryCopy(void *dst, const void *src, size_t n) {
+    std::memcpy(dst, src, n);
+}
+
+void memoryCopyD2H(void *dst, const void *src, size_t n) {
+    std::memcpy(dst, src, n);
+}
+
+void memoryCopyH2D(void *dst, const void *src, size_t n) {
+    std::memcpy(dst, src, n);
+}
+
+void *allocate(size_t n) {
+    return std::malloc(n);
+}
+
+void deallocate(void *p) {
+    std::free(p);
+}
+
+void *reallocate(void *p, size_t old_n, size_t new_n) {
+    return std::realloc(p, new_n);
+}
 
 }
