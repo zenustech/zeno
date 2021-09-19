@@ -1,10 +1,8 @@
 #include <cstdio>
-#include "impl_host.h"
+#include "impl_cuda.h"
 #include "Vector.h"
 
 using namespace fdb;
-
-__global__ void a() { printf("a\n"); }
 
 int main() {
     Vector<int> a;
