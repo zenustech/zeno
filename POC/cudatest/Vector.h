@@ -6,13 +6,13 @@ namespace fdb {
 
 template <class T>
 struct Vector {
-    T *m_base;
-    size_t m_size;
-    size_t m_cap;
-
     static_assert(std::is_trivially_move_constructible<T>::value);
     static_assert(std::is_trivially_move_assignable<T>::value);
     static_assert(std::is_trivially_destructible<T>::value);
+
+    T *m_base;
+    size_t m_size;
+    size_t m_cap;
 
     inline Vector()
         : m_base(nullptr)
