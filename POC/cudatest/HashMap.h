@@ -43,6 +43,15 @@ struct HashMap {
             , m_capacity(parent.capacity())
         {}
 
+        template <class T>
+        inline auto parallelForeach(Kernel kernel) const {
+            return parallelFor(m_capacity, [=] (size_t idx) {
+                if (m_keys[idx] != K()) {
+                    kernel(std::as_const(m_keys[idx]), m_values[idx]);
+                }
+            });
+        }
+
         inline FDB_DEVICE size_t hashFunc(K const &key) const {
             return (size_t)(m_capacity * std::fmod(key * 0.618033989, 1.0));
         }
