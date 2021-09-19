@@ -11,12 +11,12 @@ int main() {
     a.reserve(100);
     {
         auto av = a.view();
-        /*parallelFor(0, [=] FDB_DEVICE (int i) {
+        parallelFor(42, [=] FDB_DEVICE (int i) {
             printf("emplace %d %d\n", i, i * 2);
             av.emplace(i, i * 2 + 1);
-        });*/
+        });
 
-        parallelFor(1, [=] FDB_DEVICE (int i) {
+        parallelFor(42, [=] FDB_DEVICE (int i) {
             printf("at %d %d\n", i, av.at(i));
         });
     }

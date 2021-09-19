@@ -5,6 +5,7 @@
 
 namespace fdb {
 
+// https://github.com/Miruna-Chi/CUDA-Hash-Table/blob/main/gpu_hashtable.cu
 template <class K, class T>
 struct HashMap {
     static_assert(std::is_trivially_move_constructible<T>::value);
@@ -43,7 +44,7 @@ struct HashMap {
         {}
 
         inline FDB_DEVICE size_t hashFunc(K const &key) const {
-            return (size_t)(m_capacity * fmodf(key * 0.618033989f, 1.0f));
+            return (size_t)(m_capacity * std::fmod(key * 0.618033989, 1.0));
         }
 
         inline FDB_DEVICE T *emplace(K key, T val) const {
