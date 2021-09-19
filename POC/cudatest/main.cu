@@ -6,6 +6,62 @@
 
 using namespace fdb;
 
+template <class T>
+struct H21D4_Grid {
+    struct LeafArray {
+        T m_data[16 * 16 * 16]{};
+
+        inline FDB_DEVICE T &operator[](vec3S coord) {
+            size_t i = coord[0] | coord[1] << 4 | coord[2] << 8;
+            return m_data[i];
+        }
+    };
+
+    HashGrid<LeafArray> m_grid;
+
+    inline FDB_CONSTEXPR size_t capacity_blocks() const {
+        m_grid.capacity();
+    }
+
+    inline void reserve_blocks(size_t n) {
+        m_grid.reserve(n);
+    }
+
+    inline void clear_blocks() {
+        m_grid.clear_blocks();
+    }
+
+    struct View {
+        typename HashGrid<LeafArray>::View m_blk_view;
+
+        View(H21D4_Grid const &parent)
+            : m_view(parent.m_grid.view())
+        {}
+
+        inline FDB_DEVICE T *touch(vec3S coord) const {
+            LeafArray *leaf = m_view.touch(coord >> 4);
+            return &leaf[coord & 0xf];
+        }
+
+        inline FDB_DEVICE T *find(vec3S coord) const {
+            return m_view.find(coord >> 4);
+            return &leaf[coord & 0xf];
+        }
+
+        inline FDB_DEVICE T &operator[](vec3S coord) const {
+            return *touch(coord);
+        }
+
+        inline FDB_DEVICE T &operator()(vec3S coord) const {
+            return *find(coord);
+        }
+    };
+
+    View view() const {
+        return *this;
+    }
+};
+
 int main() {
 #if 1
     HashGrid<float> a;
