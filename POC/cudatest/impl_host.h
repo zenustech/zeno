@@ -14,8 +14,13 @@ namespace fdb {
 static void synchronize() {
 }
 
+struct ParallelConfig {
+    size_t block_size{1024};
+    size_t saturation{1};
+};
+
 template <class Kernel>
-void parallelFor(size_t dim, Kernel kernel) {
+void parallelFor(size_t dim, Kernel kernel, ParallelConfig cfg = {1024, 1}) {
     #pragma omp parallel for
     for (size_t i = 0; i < dim; i++) {
         kernel(std::as_const(i));
@@ -23,11 +28,23 @@ void parallelFor(size_t dim, Kernel kernel) {
 }
 
 template <class Kernel>
-void parallelFor(vec2S dim, Kernel kernel) {
+void parallelFor(vec2S dim, Kernel kernel, ParallelConfig cfg = {32, 1}) {
     parallelFor(dim[0] * dim[1], [=] (size_t i) {
-        size_t x = i % dim[0];
         size_t y = i / dim[0];
+        size_t x = i % dim[0];
         vec2S idx(x, y);
+        kernel(std::as_const(idx));
+    });
+}
+
+template <class Kernel>
+void parallelFor(vec3S dim, Kernel kernel, ParallelConfig cfg = {8, 1}) {
+    parallelFor(dim[0] * dim[1] * dim[2], [=] (size_t i) {
+        size_t z = i / dim[1];
+        size_t j = i % dim[1];
+        size_t y = j / dim[0];
+        size_t x = j % dim[0];
+        vec3S idx(x, y, z);
         kernel(std::as_const(idx));
     });
 }

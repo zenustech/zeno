@@ -44,12 +44,12 @@ struct HashMap {
         {}
 
         template <class Kernel>
-        inline auto parallelForeach(Kernel kernel) const {
+        inline auto parallelForeach(Kernel kernel, ParallelConfig cfg = {512, 2}) const {
             return parallelFor(m_capacity, [=] (size_t idx) {
                 if (m_keys[idx] != K()) {
                     kernel(std::as_const(m_keys[idx]), m_values[idx]);
                 }
-            });
+            }, cfg);
         }
 
         inline FDB_DEVICE size_t hashFunc(K const &key) const {

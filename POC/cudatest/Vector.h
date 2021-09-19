@@ -113,8 +113,10 @@ struct Vector {
                 m_base = (T *)allocate(n * sizeof(T));
             }
         } else {
-            deallocate(m_base);
-            m_base = nullptr;
+            if (m_cap) {
+                deallocate(m_base);
+                m_base = nullptr;
+            }
         }
         m_cap = n;
     }
