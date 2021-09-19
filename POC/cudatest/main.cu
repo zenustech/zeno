@@ -20,8 +20,6 @@ int main() {
         av.parallel_foreach([=] FDB_DEVICE (int k, int &v) {
             if (k * 2 + 1 != v) {
                 printf("error: %d != %d\n", k * 2 + 1, v);
-            } else {
-                printf("ok\n");
             }
         });
     }
