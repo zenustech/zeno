@@ -25,6 +25,10 @@ struct Vector {
         , m_size(n)
         , m_cap(n)
     {
+        __construct();
+    }
+
+    void __construct() const {
         if (m_size) {
             auto p_base = m_base;
             parallelFor(m_size, [=] FDB_DEVICE (size_t i) {
@@ -38,6 +42,10 @@ struct Vector {
         , m_size(n)
         , m_cap(n)
     {
+        __construct(val);
+    }
+
+    void __construct(T val) const {
         if (m_size) {
             auto p_base = m_base;
             parallelFor(m_size, [=] FDB_DEVICE (size_t i) {
@@ -55,10 +63,10 @@ struct Vector {
         }
     }
 
-    Vector(Vector const &) = delete;
-    Vector &operator=(Vector const &) = delete;
-    Vector(Vector &&) = default;
-    Vector &operator=(Vector &&) = default;
+    inline Vector(Vector const &) = delete;
+    inline Vector &operator=(Vector const &) = delete;
+    inline Vector(Vector &&) = default;
+    inline Vector &operator=(Vector &&) = default;
 
     inline Vector clone() const {
         Vector res;
@@ -138,6 +146,7 @@ struct Vector {
                 new (&p_base[n + i]) T();
             });
         }
+        m_size = n;
     }
 
     inline void resize(size_t n, T val) {
@@ -154,9 +163,14 @@ struct Vector {
                 new (&p_base[n + i]) T(val);
             });
         }
+        m_size = n;
     }
 
-    T *view() const {
+    inline void clear() {
+        resize(0);
+    }
+
+    inline T *view() const {
         return m_base;
     }
 };
@@ -165,10 +179,15 @@ __global__ void a() { printf("a\n"); }
 
 int main() {
     Vector<int> a;
-    a.resize(5, 42);
+    a.resize(5, 40);
     auto av = a.view();
     parallelFor(a.size(), [=] FDB_DEVICE (size_t i) {
-        printf("%ld %d\n", i, av[i]);
+        printf("- %ld %d\n", i, av[i]);
+        av[i] = 42;
+    });
+    a.resize(8, 4);
+    parallelFor(a.size(), [=] FDB_DEVICE (size_t i) {
+        printf("+ %ld %d\n", i, av[i]);
     });
     synchronize();
     return 0;

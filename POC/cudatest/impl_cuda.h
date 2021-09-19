@@ -48,7 +48,7 @@ template <size_t block_width = 32, size_t grid_dim_scale = 1, class Kernel>
 static void parallelFor(vec2S dim, Kernel kernel) {
     vec2S block_dim = clamp(dim, 1, max(1, block_width));
     vec2S grid_dim = (dim + block_dim - 1) / (block_dim * max(1, grid_dim_scale));
-    dim3 gridDim(grid_dim[0], grid_dim[1], 1;
+    dim3 gridDim(grid_dim[0], grid_dim[1], 1);
     dim3 blockDim(block_dim[0], block_dim[1], 1);
     __parallelFor<<<gridDim, blockDim>>>([=] __device__ () {
         for (size_t y = blockDim.y * blockIdx.y + threadIdx.y; y < dim[1]; y += gridDim.y * blockDim.y) {
@@ -67,7 +67,7 @@ static void parallelFor(size_t dim, Kernel kernel) {
     dim3 gridDim(grid_dim, 1, 1);
     dim3 blockDim(block_dim, 1, 1);
     __parallelFor<<<gridDim, blockDim>>>([=] __device__ () {
-        for (size_t x = blockDim.x * blockIdx.x + threadIdx.x; x < dim[0]; x += gridDim.x * blockDim.x) {
+        for (size_t x = blockDim.x * blockIdx.x + threadIdx.x; x < dim; x += gridDim.x * blockDim.x) {
             kernel(std::as_const(x));
         }
     });
