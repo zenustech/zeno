@@ -8,20 +8,18 @@ using namespace fdb;
 int main() {
 #if 1
     HashMap<int, int> a;
-    a.reserve(100);
+    a.reserve(4099);
     {
         auto av = a.view();
-        parallelFor(42, [=] FDB_DEVICE (int i) {
-            printf("emplace %d %d\n", i, i * 2);
+        parallelFor(4097, [=] FDB_DEVICE (int i) {
+            i = (114514 * i) + 31415;
             av.emplace(i, i * 2 + 1);
         });
 
-        /*parallelFor(42, [=] FDB_DEVICE (int i) {
-            printf("at %d %d\n", i, av.at(i));
-        });*/
-
         av.parallelForeach([=] FDB_DEVICE (int k, int &v) {
-            printf("each %d %d\n", k, v);
+            if (k * 2 + 1 != v) {
+                printf("error: %d != %d\n", k * 2 + 1, v);
+            }
         });
     }
 
