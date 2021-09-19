@@ -1,5 +1,9 @@
 #pragma once
 
+#define FDB_CONSTEXPR constexpr
+#define FDB_HOST_DEVICE
+#define FDB_DEVICE
+
 #include <cstdlib>
 #include "vec.h"
 

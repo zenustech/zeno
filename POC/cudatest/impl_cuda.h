@@ -1,7 +1,10 @@
 #pragma once // vim: ft=cuda
 
+#define FDB_CONSTEXPR constexpr __host__ __device__
+#define FDB_HOST_DEVICE __host__ __device__
+#define FDB_DEVICE __device__
+
 #include "helper_cuda.h"
-#define FDB_VEC_CONSTEXPR constexpr __host__ __device__
 #include "vec.h"
 
 namespace fdb {
@@ -85,7 +88,5 @@ static void parallelFor(size_t dim, Kernel kernel) {
 static void synchronize() {
     checkCudaErrors(cudaDeviceSynchronize());
 }
-
-#define FDB_DEVICE __device__
 
 }

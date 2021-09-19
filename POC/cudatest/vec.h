@@ -6,8 +6,8 @@
 
 namespace fdb {
 
-#ifndef FDB_VEC_CONSTEXPR
-#define FDB_VEC_CONSTEXPR constexpr
+#ifndef FDB_CONSTEXPR
+#define FDB_CONSTEXPR constexpr
 #endif
 
 /* main class definition */
@@ -22,22 +22,22 @@ struct vec {
     vec &operator=(vec &&) = default;
     vec &operator=(vec const &) = default;
 
-    FDB_VEC_CONSTEXPR T const &operator[](size_t i) const {
+    FDB_CONSTEXPR T const &operator[](size_t i) const {
         return m_data[i];
     }
 
-    FDB_VEC_CONSTEXPR T &operator[](size_t i) {
+    FDB_CONSTEXPR T &operator[](size_t i) {
         return m_data[i];
     }
 
-    explicit FDB_VEC_CONSTEXPR vec(T const &x) {
+    explicit FDB_CONSTEXPR vec(T const &x) {
         for (size_t i = 0; i < N; i++) {
             (*this)[i] = x;
         }
     }
 
     template <class S = T>
-    FDB_VEC_CONSTEXPR vec(std::initializer_list<S> const &x) {
+    FDB_CONSTEXPR vec(std::initializer_list<S> const &x) {
         T val;
         auto it = x.begin();
         for (size_t i = 0; i < N; i++) {
@@ -48,9 +48,9 @@ struct vec {
     }
 
     template <class ...Ts>
-    FDB_VEC_CONSTEXPR vec(T const &t, Ts const &...ts) : vec({t, T(ts)...}) {}
+    FDB_CONSTEXPR vec(T const &t, Ts const &...ts) : vec({t, T(ts)...}) {}
 
-    FDB_VEC_CONSTEXPR operator std::conditional_t<N == 1, T, std::tuple<char, char, std::true_type> const &>() const {
+    FDB_CONSTEXPR operator std::conditional_t<N == 1, T, std::tuple<char, char, std::true_type> const &>() const {
         if constexpr (N == 1) {
             return (*this)[0];
         } else {
@@ -59,14 +59,14 @@ struct vec {
     }
 
     template <class S>
-    explicit FDB_VEC_CONSTEXPR vec(vec<N, S> const &x) {
+    explicit FDB_CONSTEXPR vec(vec<N, S> const &x) {
         for (size_t i = 0; i < N; i++) {
             (*this)[i] = T(x[i]);
         }
     }
 
     template <class S>
-    FDB_VEC_CONSTEXPR operator vec<N, S>() const {
+    FDB_CONSTEXPR operator vec<N, S>() const {
         vec<N, S> res;
         for (size_t i = 0; i < N; i++) {
             res[i] = (*this)[i];
@@ -196,7 +196,7 @@ auto other_to_vec(OtherT const &x) {
 /* element-wise operations */
 
 template <size_t N, class T, class F>
-inline FDB_VEC_CONSTEXPR auto vapply(F const &f, vec<N, T> const &a) {
+inline FDB_CONSTEXPR auto vapply(F const &f, vec<N, T> const &a) {
     vec<N, decltype(f(a[0]))> res;
     for (size_t i = 0; i < N; i++) {
         res[i] = f(a[i]);
@@ -205,12 +205,12 @@ inline FDB_VEC_CONSTEXPR auto vapply(F const &f, vec<N, T> const &a) {
 }
 
 template <class T, class F, std::enable_if_t<!is_vec_v<T>, int> = 0>
-inline FDB_VEC_CONSTEXPR auto vapply(F const &f, T const &a) {
+inline FDB_CONSTEXPR auto vapply(F const &f, T const &a) {
     return f(a);
 }
 
 template <size_t N, class T, class S, class F>
-inline FDB_VEC_CONSTEXPR auto vapply(F const &f, vec<N, T> const &a, vec<N, S> const &b) {
+inline FDB_CONSTEXPR auto vapply(F const &f, vec<N, T> const &a, vec<N, S> const &b) {
     vec<N, decltype(f(a[0], b[0]))> res;
     for (size_t i = 0; i < N; i++) {
         res[i] = f(a[i], b[i]);
@@ -219,7 +219,7 @@ inline FDB_VEC_CONSTEXPR auto vapply(F const &f, vec<N, T> const &a, vec<N, S> c
 }
 
 template <size_t N, class T, class S, class F, std::enable_if_t<!is_vec_v<T>, int> = 0>
-inline FDB_VEC_CONSTEXPR auto vapply(F const &f, T const &a, vec<N, S> const &b) {
+inline FDB_CONSTEXPR auto vapply(F const &f, T const &a, vec<N, S> const &b) {
     vec<N, decltype(f(a, b[0]))> res;
     for (size_t i = 0; i < N; i++) {
         res[i] = f(a, b[i]);
@@ -228,7 +228,7 @@ inline FDB_VEC_CONSTEXPR auto vapply(F const &f, T const &a, vec<N, S> const &b)
 }
 
 template <size_t N, class T, class S, class F, std::enable_if_t<!is_vec_v<S>, int> = 0>
-inline FDB_VEC_CONSTEXPR auto vapply(F const &f, vec<N, T> const &a, S const &b) {
+inline FDB_CONSTEXPR auto vapply(F const &f, vec<N, T> const &a, S const &b) {
     vec<N, decltype(f(a[0], b))> res;
     for (size_t i = 0; i < N; i++) {
         res[i] = f(a[i], b);
@@ -237,7 +237,7 @@ inline FDB_VEC_CONSTEXPR auto vapply(F const &f, vec<N, T> const &a, S const &b)
 }
 
 template <class T, class S, class F, std::enable_if_t<!is_vec_v<T> && !is_vec_v<S>, int> = 0>
-inline FDB_VEC_CONSTEXPR auto vapply(F const &f, T const &a, S const &b) {
+inline FDB_CONSTEXPR auto vapply(F const &f, T const &a, S const &b) {
     return f(a, b);
 }
 
@@ -245,19 +245,19 @@ template <class T, class S>
 inline constexpr bool is_vapply_v = (is_vec_v<T> || is_vec_v<S>) && (!is_vec_v<T> || !is_vec_v<S> || is_vec_n<T> == is_vec_n<S>);
 
 template <class T, class S, class F, std::enable_if_t<is_vapply_v<T, S>, int> = 0>
-inline FDB_VEC_CONSTEXPR auto vapply(F const &f, T const &a, S const &b) {
+inline FDB_CONSTEXPR auto vapply(F const &f, T const &a, S const &b) {
     return f(a, b);
 }
 
 #define _PER_OP2(op) \
 template <class T, class S, std::enable_if_t<is_vapply_v<T, S>, int> = 0, decltype(std::declval<decay_vec_t<T>>() op std::declval<decay_vec_t<S>>(), 0) = 0> \
-inline FDB_VEC_CONSTEXPR auto operator op(T const &a, S const &b) -> decltype(auto) { \
+inline FDB_CONSTEXPR auto operator op(T const &a, S const &b) -> decltype(auto) { \
     return vapply([](auto const &x, auto const &y) { return x op y; }, a, b); \
 }
 #define _PER_IOP2(op) \
 _PER_OP2(op) \
 template <size_t N, class T, class S, std::enable_if_t<is_vapply_v<vec<N, T>, S>, int> = 0, decltype(std::declval<vec<N, T>>() op std::declval<S>(), 0) = 0> \
-inline FDB_VEC_CONSTEXPR vec<N, T> &operator op##=(vec<N, T> &a, S const &b) { \
+inline FDB_CONSTEXPR vec<N, T> &operator op##=(vec<N, T> &a, S const &b) { \
     a = a op b; \
     return a; \
 }
@@ -284,7 +284,7 @@ _PER_OP2(||)
 
 #define _PER_OP1(op) \
 template <class T, std::enable_if_t<is_vec_v<T>, int> = 0, decltype(op std::declval<decay_vec_t<T>>(), 0) = 0> \
-inline FDB_VEC_CONSTEXPR auto operator op(T const &a) { \
+inline FDB_CONSTEXPR auto operator op(T const &a) { \
     return vapply([](auto const &x) { return op x; }, a); \
 }
 _PER_OP1(+)
@@ -295,7 +295,7 @@ _PER_OP1(!)
 
 #define _PER_FN2(func) \
 template <class T, class S, decltype(std::declval<T>() + std::declval<S>(), 0) = 0> \
-inline FDB_VEC_CONSTEXPR auto func(T const &a, S const &b) -> decltype(auto) { \
+inline FDB_CONSTEXPR auto func(T const &a, S const &b) -> decltype(auto) { \
     return vapply([](auto const &x, auto const &y) { \
                 using promoted = decltype(x + y); \
                 return (promoted)std::func((promoted)x, (promoted)y); \
@@ -310,7 +310,7 @@ _PER_FN2(fmod)
 
 #define _PER_FN1(func) \
 template <class T> \
-inline FDB_VEC_CONSTEXPR auto func(T const &a) { \
+inline FDB_CONSTEXPR auto func(T const &a) { \
     return vapply([](auto const &x) { return (decltype(x))std::func(x); }, a); \
 }
 _PER_FN1(abs)
@@ -328,24 +328,24 @@ _PER_FN1(ceil)
 #undef _PER_FN1
 
 template <class To, class T>
-inline FDB_VEC_CONSTEXPR auto vcast(T const &a) {
+inline FDB_CONSTEXPR auto vcast(T const &a) {
     return vapply([](auto const &x) { return (To)x; }, a);
 }
 
 template <class T>
-inline FDB_VEC_CONSTEXPR auto fract(T const &a) {
+inline FDB_CONSTEXPR auto fract(T const &a) {
     return a - floor(a);
 }
 
 template <class T>
-inline FDB_VEC_CONSTEXPR auto ifloor(T const &a) {
+inline FDB_CONSTEXPR auto ifloor(T const &a) {
     return vcast<int>(floor(a));
 }
 
 /* vector math functions */
 
 template <size_t N, class T>
-inline FDB_VEC_CONSTEXPR bool vany(vec<N, T> const &a) {
+inline FDB_CONSTEXPR bool vany(vec<N, T> const &a) {
     bool ret = false;
     for (size_t i = 0; i < N; i++) {
         ret = ret || (bool)a[i];
@@ -354,12 +354,12 @@ inline FDB_VEC_CONSTEXPR bool vany(vec<N, T> const &a) {
 }
 
 template <class T>
-inline FDB_VEC_CONSTEXPR bool vany(T const &a) {
+inline FDB_CONSTEXPR bool vany(T const &a) {
     return (bool)a;
 }
 
 template <size_t N, class T>
-inline FDB_VEC_CONSTEXPR bool vall(vec<N, T> const &a) {
+inline FDB_CONSTEXPR bool vall(vec<N, T> const &a) {
     bool ret = true;
     for (size_t i = 0; i < N; i++) {
         ret = ret && (bool)a[i];
@@ -368,16 +368,16 @@ inline FDB_VEC_CONSTEXPR bool vall(vec<N, T> const &a) {
 }
 
 template <class T>
-inline FDB_VEC_CONSTEXPR bool vall(T const &a) {
+inline FDB_CONSTEXPR bool vall(T const &a) {
     return (bool)a;
 }
 
-inline FDB_VEC_CONSTEXPR auto dot(float a, float b) {
+inline FDB_CONSTEXPR auto dot(float a, float b) {
     return a * b;
 }
 
 template <size_t N, class T, class S>
-inline FDB_VEC_CONSTEXPR auto dot(vec<N, T> const &a, vec<N, S> const &b) {
+inline FDB_CONSTEXPR auto dot(vec<N, T> const &a, vec<N, S> const &b) {
     std::decay_t<decltype(a[0] * b[0])> res(0);
     for (size_t i = 0; i < N; i++) {
         res += a[i] * b[i];
@@ -386,7 +386,7 @@ inline FDB_VEC_CONSTEXPR auto dot(vec<N, T> const &a, vec<N, S> const &b) {
 }
 
 template <size_t N, class T>
-inline FDB_VEC_CONSTEXPR auto lengthSquared(vec<N, T> const &a) {
+inline FDB_CONSTEXPR auto lengthSquared(vec<N, T> const &a) {
     std::decay_t<decltype(a[0])> res(0);
     for (size_t i = 0; i < N; i++) {
         res += a[i] * a[i];
@@ -395,7 +395,7 @@ inline FDB_VEC_CONSTEXPR auto lengthSquared(vec<N, T> const &a) {
 }
 
 template <size_t N, class T>
-inline FDB_VEC_CONSTEXPR auto length(vec<N, T> const &a) {
+inline FDB_CONSTEXPR auto length(vec<N, T> const &a) {
     std::decay_t<decltype(a[0])> res(0);
     for (size_t i = 0; i < N; i++) {
         res += a[i] * a[i];
@@ -404,22 +404,22 @@ inline FDB_VEC_CONSTEXPR auto length(vec<N, T> const &a) {
 }
 
 template <size_t N, class T>
-inline FDB_VEC_CONSTEXPR auto distance(vec<N, T> const &a, vec<N, T> const &b) {
+inline FDB_CONSTEXPR auto distance(vec<N, T> const &a, vec<N, T> const &b) {
     return length(b - a);
 }
 
 template <size_t N, class T>
-inline FDB_VEC_CONSTEXPR auto normalize(vec<N, T> const &a) {
+inline FDB_CONSTEXPR auto normalize(vec<N, T> const &a) {
     return a * (1 / length(a));
 }
 
 template <class T, class S>
-inline FDB_VEC_CONSTEXPR auto cross(vec<2, T> const &a, vec<2, S> const &b) {
+inline FDB_CONSTEXPR auto cross(vec<2, T> const &a, vec<2, S> const &b) {
     return a[0] * b[1] - b[0] * a[1];
 }
 
 template <class T, class S>
-inline FDB_VEC_CONSTEXPR auto cross(vec<3, T> const &a, vec<3, S> const &b) {
+inline FDB_CONSTEXPR auto cross(vec<3, T> const &a, vec<3, S> const &b) {
     return vec<3, decltype(a[0] * b[0])>(
             a[1] * b[2] - b[1] * a[2],
             a[2] * b[0] - b[2] * a[0],
@@ -429,22 +429,22 @@ inline FDB_VEC_CONSTEXPR auto cross(vec<3, T> const &a, vec<3, S> const &b) {
 /* generic helper functions */
 
 template <class T, class S, class F>
-inline FDB_VEC_CONSTEXPR auto mix(T const &a, S const &b, F const &f) {
+inline FDB_CONSTEXPR auto mix(T const &a, S const &b, F const &f) {
     return a * (1 - f) + b * f;
 }
 
 template <class T, class S, class F>
-inline FDB_VEC_CONSTEXPR auto clamp(T const &x, S const &a, F const &b) {
+inline FDB_CONSTEXPR auto clamp(T const &x, S const &a, F const &b) {
     return min(max(x, a), b);
 }
 
 template <size_t N, class T, std::enable_if_t<!is_vec_v<T>, int> = 0>
-inline FDB_VEC_CONSTEXPR auto tovec(T const &x) {
+inline FDB_CONSTEXPR auto tovec(T const &x) {
     return vec<N, T>(x);
 }
 
 template <size_t N, class T>
-inline FDB_VEC_CONSTEXPR auto tovec(vec<N, T> const &x) {
+inline FDB_CONSTEXPR auto tovec(vec<N, T> const &x) {
     return x;
 }
 
