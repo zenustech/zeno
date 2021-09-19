@@ -25,9 +25,9 @@ struct HashGrid {
         }
 
         FDB_CONSTEXPR operator vec3S() const {
-            uint64_t x = value & 0x1ffffful;
-            uint64_t y = (value >> 21) & 0x1ffffful;
-            uint64_t z = (value >> 42) & 0x1ffffful;
+            size_t x = value & 0x1ffffful;
+            size_t y = (value >> 21) & 0x1ffffful;
+            size_t z = (value >> 42) & 0x1ffffful;
             return vec3S(x, y, z);
         }
     };
@@ -37,6 +37,10 @@ struct HashGrid {
     struct View {
         HashMap<u64_3x21, T> m_view;
 
+        inline View(HashGrid const &parent)
+            : m_view(parent.view())
+        {}
+
         template <class Kernel>
         inline void parallel_foreach(Kernel kernel, ParallelConfig cfg = {512, 2}) const {
             m_view.parallel_foreach([=] FDB_DEVICE (u64_3x21 key, T &value) {
@@ -45,9 +49,28 @@ struct HashGrid {
             }, cfg);
         }
 
-        View(HashGrid const &parent)
-            : m_view(parent.view())
-        {}
+        inline FDB_DEVICE T *emplace(vec3S coord, T value) const {
+            u64_3x21 key(coord);
+            return m_view.emplace(key, value);
+        }
+
+        inline FDB_DEVICE T *touch(vec3S coord) const {
+            u64_3x21 key(coord);
+            return m_view.touch(key);
+        }
+
+        inline FDB_DEVICE T *find(vec3S coord) const {
+            u64_3x21 key(coord);
+            return m_view.find(key);
+        }
+
+        inline FDB_DEVICE T &operator[](K key) const {
+            return *touch(key);
+        }
+
+        inline FDB_DEVICE T &operator()(K key) const {
+            return *find(key);
+        }
     };
 
     inline View view() const {
@@ -57,12 +80,11 @@ struct HashGrid {
 
 int main() {
 #if 1
-    HashMap<int, int> a;
+    HashGrid<float> a;
     a.reserve(4099);
     {
         auto av = a.view();
         parallel_for(4097, [=] FDB_DEVICE (int i) {
-            i = (114514 * i) + 31415;
             av.emplace(i, i * 2 + 1);
         });
 

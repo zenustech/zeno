@@ -69,11 +69,34 @@ struct HashMap {
                 atomic_load(&m_keys[hash]) == key
                 #endif
                 ) {
-                    new (&m_values[hash]) T(val);
+                    &m_values[hash] = val;
                     return &m_values[hash];
                 }
                 if (atomic_cass(&m_keys[hash], K(), key)) {
                     new (&m_values[hash]) T(val);
+                    return &m_values[hash];
+                }
+                hash++;
+                if (hash > m_capacity)
+                    hash = 0;
+            }
+            return nullptr;
+        }
+
+        inline FDB_DEVICE T *touch(K key) const {
+            size_t hash = hash_func(key);
+            for (size_t cnt = 0; cnt < m_capacity; cnt++) {
+                if (
+                #ifdef FDB_IMPL_CUDA
+                atomic_cas(&m_keys[hash], key, key) == key
+                #else
+                atomic_load(&m_keys[hash]) == key
+                #endif
+                ) {
+                    return &m_values[hash];
+                }
+                if (atomic_cass(&m_keys[hash], K(), key)) {
+                    new (&m_values[hash]) T();
                     return &m_values[hash];
                 }
                 hash++;
@@ -99,7 +122,11 @@ struct HashMap {
             return nullptr;
         }
 
-        inline FDB_DEVICE T &at(K key) const {
+        inline FDB_DEVICE T &operator[](K key) const {
+            return *touch(key);
+        }
+
+        inline FDB_DEVICE T &operator()(K key) const {
             return *find(key);
         }
     };
