@@ -1,5 +1,6 @@
 #pragma once
 
+#define FDB_IMPL_HOST 1
 #define FDB_CONSTEXPR constexpr
 #define FDB_HOST_DEVICE
 #define FDB_DEVICE

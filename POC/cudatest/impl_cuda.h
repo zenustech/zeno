@@ -1,5 +1,6 @@
 #pragma once // vim: ft=cuda
 
+#define FDB_IMPL_CUDA 1
 #define FDB_CONSTEXPR constexpr __host__ __device__
 #define FDB_HOST_DEVICE __host__ __device__
 #define FDB_DEVICE __device__
@@ -118,8 +119,44 @@ static void *reallocate(void *p, size_t old_n, size_t new_n) {
 }
 
 template <class T>
-static T atomic_cas(T &dst, T cmp, T src) {
-    return atomicCAS(&dst, cmp, src);
+static __device__ T atomic_cas(T *dst, T cmp, T src) {
+    return atomicCAS(dst, cmp, src);
+}
+
+template <class T>
+static __device__ T atomic_add(T *dst, T src) {
+    return atomicAdd(dst, src);
+}
+
+template <class T>
+static __device__ T atomic_sub(T *dst, T src) {
+    return atomicSub(dst, src);
+}
+
+template <class T>
+static __device__ T atomic_max(T *dst, T src) {
+    return atomicMax(dst, src);
+}
+
+template <class T>
+static __device__ T atomic_min(T *dst, T src) {
+    return atomicMin(dst, src);
+}
+
+template <class T>
+static __device__ T atomic_load(T const *src) {
+    const volatile T *vaddr = src;
+    __threadfence();
+    const T value = *vaddr;
+    __threadfence();
+    return value;
+}
+
+template <class T>
+static __device__ void atomic_store(T *dst, T src) {
+    const volatile T *vaddr = dst;
+    __threadfence();
+    *vaddr = src;
 }
 
 }

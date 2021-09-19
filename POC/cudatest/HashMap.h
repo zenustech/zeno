@@ -61,11 +61,17 @@ struct HashMap {
         inline FDB_DEVICE T *emplace(K key, T val) const {
             size_t hash = hash_func(key);
             for (size_t cnt = 0; cnt < m_capacity; cnt++) {
-                if (atomic_cas(m_keys[hash], key, key) == key) {
+                if (
+                #ifdef FDB_IMPL_CUDA
+                atomic_cas(&m_keys[hash], key, key)
+                #else
+                atomic_load(&m_keys[hash])
+                #endif
+                == key) {
                     return new (&m_values[hash]) T(val);
                     return &m_values[hash];
                 }
-                if (atomic_cas(m_keys[hash], K(), key) == K()) {
+                if (atomic_cas(&m_keys[hash], K(), key) == K()) {
                     return new (&m_values[hash]) T(val);
                     return &m_values[hash];
                 }
