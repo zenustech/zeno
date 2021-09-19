@@ -7,7 +7,7 @@
 namespace fdb {
 
 // https://github.com/Miruna-Chi/CUDA-Hash-Table/blob/main/gpu_hashtable.cu
-template <class K, class T>
+template <class K, class T, class UK = K>
 struct HashMap {
     static_assert(std::is_trivially_move_constructible<T>::value);
     static_assert(std::is_trivially_move_assignable<T>::value);
@@ -43,6 +43,8 @@ struct HashMap {
         T *m_values;
         size_t m_capacity;
 
+        View(View const &) = default;
+
         inline View(HashMap const &parent)
             : m_keys(parent.m_keys.data())
             , m_values(parent.m_values.data())
@@ -61,23 +63,17 @@ struct HashMap {
         }
 
         inline FDB_DEVICE size_t hash_func(K const &key) const {
-            return (size_t)(m_capacity * std::fmod(key * 0.6180339887498949, 1.0));
+            return (size_t)(m_capacity * std::fmod((UK)key * 0.6180339887498949, 1.0));
         }
 
         inline FDB_DEVICE T *emplace(K key, T val) const {
             size_t hash = hash_func(key);
             for (size_t cnt = 0; cnt < m_capacity; cnt++) {
-                if (
-                #ifdef FDB_IMPL_CUDA
-                atomic_cas(&m_keys[hash], key, key) == key
-                #else
-                atomic_load(&m_keys[hash]) == key
-                #endif
-                ) {
-                    &m_values[hash] = val;
+                if (atomic_load((UK *)&m_keys[hash]) == (UK)key) {
+                    m_values[hash] = val;
                     return &m_values[hash];
                 }
-                if (atomic_cass(&m_keys[hash], K(), key)) {
+                if (atomic_cass((UK *)&m_keys[hash], (UK)K(), (UK)key)) {
                     new (&m_values[hash]) T(val);
                     return &m_values[hash];
                 }
@@ -91,16 +87,10 @@ struct HashMap {
         inline FDB_DEVICE T *touch(K key) const {
             size_t hash = hash_func(key);
             for (size_t cnt = 0; cnt < m_capacity; cnt++) {
-                if (
-                #ifdef FDB_IMPL_CUDA
-                atomic_cas(&m_keys[hash], key, key) == key
-                #else
-                atomic_load(&m_keys[hash]) == key
-                #endif
-                ) {
+                if (atomic_load((UK *)&m_keys[hash]) == (UK)key) {
                     return &m_values[hash];
                 }
-                if (atomic_cass(&m_keys[hash], K(), key)) {
+                if (atomic_cass((UK *)&m_keys[hash], (UK)K(), (UK)key)) {
                     new (&m_values[hash]) T();
                     return &m_values[hash];
                 }

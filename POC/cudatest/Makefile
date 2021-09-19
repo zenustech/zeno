@@ -1,4 +1,4 @@
 x:
 	cmake -Bbuild
 	make -Cbuild
-	build/cudatest
+	build/OpenFDB
