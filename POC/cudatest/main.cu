@@ -11,12 +11,12 @@ int main() {
     a.reserve(4099);
     {
         auto av = a.view();
-        parallelFor(4097, [=] FDB_DEVICE (int i) {
+        parallel_for(4097, [=] FDB_DEVICE (int i) {
             i = (114514 * i) + 31415;
             av.emplace(i, i * 2 + 1);
         });
 
-        av.parallelForeach([=] FDB_DEVICE (int k, int &v) {
+        av.parallel_foreach([=] FDB_DEVICE (int k, int &v) {
             if (k * 2 + 1 != v) {
                 printf("error: %d != %d\n", k * 2 + 1, v);
             }
@@ -28,7 +28,7 @@ int main() {
     a.resize(5, 40);
     {
         auto av = a.view();
-        parallelFor(a.size(), [=] FDB_DEVICE (size_t i) {
+        parallel_for(a.size(), [=] FDB_DEVICE (size_t i) {
             printf("- %ld %d\n", i, av[i]);
             av[i] = 42;
         });
@@ -36,7 +36,7 @@ int main() {
     a.resize(8, 4);
     {
         auto av = a.view();
-        parallelFor(a.size(), [=] FDB_DEVICE (size_t i) {
+        parallel_for(a.size(), [=] FDB_DEVICE (size_t i) {
             printf("+ %ld %d\n", i, av[i]);
         });
     }

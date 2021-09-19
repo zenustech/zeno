@@ -44,28 +44,28 @@ struct HashMap {
         {}
 
         template <class Kernel>
-        inline void parallelForeach(Kernel kernel, ParallelConfig cfg = {512, 2}) const {
+        inline void parallel_foreach(Kernel kernel, ParallelConfig cfg = {512, 2}) const {
             auto p_keys = m_keys;
             auto p_values = m_values;
-            parallelFor(m_capacity, [=] FDB_DEVICE (size_t idx) {
+            parallel_for(m_capacity, [=] FDB_DEVICE (size_t idx) {
                 if (p_keys[idx] != K()) {
                     kernel(std::as_const(p_keys[idx]), p_values[idx]);
                 }
             }, cfg);
         }
 
-        inline FDB_DEVICE size_t hashFunc(K const &key) const {
-            return (size_t)(m_capacity * std::fmod(key * 0.618033989, 1.0));
+        inline FDB_DEVICE size_t hash_func(K const &key) const {
+            return (size_t)(m_capacity * std::fmod(key * 0.6180339887498949, 1.0));
         }
 
         inline FDB_DEVICE T *emplace(K key, T val) const {
-            size_t hash = hashFunc(key);
+            size_t hash = hash_func(key);
             for (size_t cnt = 0; cnt < m_capacity; cnt++) {
-                if (atomicCAS(&m_keys[hash], key, key) == key) {
+                if (atomic_cas(m_keys[hash], key, key) == key) {
                     return new (&m_values[hash]) T(val);
                     return &m_values[hash];
                 }
-                if (atomicCAS(&m_keys[hash], K(), key) == K()) {
+                if (atomic_cas(m_keys[hash], K(), key) == K()) {
                     return new (&m_values[hash]) T(val);
                     return &m_values[hash];
                 }
@@ -77,7 +77,7 @@ struct HashMap {
         }
 
         inline FDB_DEVICE T *find(K key) const {
-            size_t hash = hashFunc(key);
+            size_t hash = hash_func(key);
             if (m_keys[hash] == key) {
                 return &m_values[hash];
             }

@@ -20,7 +20,7 @@ struct ParallelConfig {
 };
 
 template <class Kernel>
-void parallelFor(size_t dim, Kernel kernel, ParallelConfig cfg = {1024, 1}) {
+static void parallel_for(size_t dim, Kernel kernel, ParallelConfig cfg = {1024, 1}) {
     #pragma omp parallel for
     for (size_t i = 0; i < dim; i++) {
         kernel(std::as_const(i));
@@ -28,8 +28,8 @@ void parallelFor(size_t dim, Kernel kernel, ParallelConfig cfg = {1024, 1}) {
 }
 
 template <class Kernel>
-void parallelFor(vec2S dim, Kernel kernel, ParallelConfig cfg = {32, 1}) {
-    parallelFor(dim[0] * dim[1], [=] (size_t i) {
+static void parallel_for(vec2S dim, Kernel kernel, ParallelConfig cfg = {32, 1}) {
+    parallel_for(dim[0] * dim[1], [=] (size_t i) {
         size_t y = i / dim[0];
         size_t x = i % dim[0];
         vec2S idx(x, y);
@@ -38,8 +38,8 @@ void parallelFor(vec2S dim, Kernel kernel, ParallelConfig cfg = {32, 1}) {
 }
 
 template <class Kernel>
-void parallelFor(vec3S dim, Kernel kernel, ParallelConfig cfg = {8, 1}) {
-    parallelFor(dim[0] * dim[1] * dim[2], [=] (size_t i) {
+static void parallel_for(vec3S dim, Kernel kernel, ParallelConfig cfg = {8, 1}) {
+    parallel_for(dim[0] * dim[1] * dim[2], [=] (size_t i) {
         size_t z = i / dim[1];
         size_t j = i % dim[1];
         size_t y = j / dim[0];
@@ -49,27 +49,27 @@ void parallelFor(vec3S dim, Kernel kernel, ParallelConfig cfg = {8, 1}) {
     });
 }
 
-void memoryCopy(void *dst, const void *src, size_t n) {
+static void memcpy_d2d(void *dst, const void *src, size_t n) {
     std::memcpy(dst, src, n);
 }
 
-void memoryCopyD2H(void *dst, const void *src, size_t n) {
+static void memcpy_d2h(void *dst, const void *src, size_t n) {
     std::memcpy(dst, src, n);
 }
 
-void memoryCopyH2D(void *dst, const void *src, size_t n) {
+static void memcpy_h2d(void *dst, const void *src, size_t n) {
     std::memcpy(dst, src, n);
 }
 
-void *allocate(size_t n) {
+static void *allocate(size_t n) {
     return std::malloc(n);
 }
 
-void deallocate(void *p) {
+static void deallocate(void *p) {
     std::free(p);
 }
 
-void *reallocate(void *p, size_t old_n, size_t new_n) {
+static void *reallocate(void *p, size_t old_n, size_t new_n) {
     return std::realloc(p, new_n);
 }
 

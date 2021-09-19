@@ -31,7 +31,7 @@ struct Vector {
     void __construct() const {
         if (m_size) {
             auto p_base = m_base;
-            parallelFor(m_size, [=] FDB_DEVICE (size_t i) {
+            parallel_for(m_size, [=] FDB_DEVICE (size_t i) {
                 new (&p_base[i]) T();
             });
         }
@@ -48,7 +48,7 @@ struct Vector {
     void __construct(T val) const {
         if (m_size) {
             auto p_base = m_base;
-            parallelFor(m_size, [=] FDB_DEVICE (size_t i) {
+            parallel_for(m_size, [=] FDB_DEVICE (size_t i) {
                 new (&p_base[i]) T(val);
             });
         }
@@ -73,7 +73,7 @@ struct Vector {
         res.reserve(m_size);
         auto p_res = res.m_base;
         auto p_this = m_base;
-        parallelFor(m_size, [=] FDB_DEVICE (size_t i) {
+        parallel_for(m_size, [=] FDB_DEVICE (size_t i) {
             new (&p_res[i]) T(static_cast<T const &>(p_this[i]));
         });
         return res;
@@ -84,7 +84,7 @@ struct Vector {
         resize(other.size());
         auto p_this = m_base;
         auto p_other = other.m_base;
-        parallelFor(other.size(), [=] FDB_DEVICE (size_t i) {
+        parallel_for(other.size(), [=] FDB_DEVICE (size_t i) {
             new (&p_this[i]) T(static_cast<T const &>(p_other[i]));
         });
     }
@@ -138,12 +138,12 @@ struct Vector {
         if (n > m_size) {
             auto p_base = m_base;
             auto p_size = m_size;
-            parallelFor(n - m_size, [=] FDB_DEVICE (size_t i) {
+            parallel_for(n - m_size, [=] FDB_DEVICE (size_t i) {
                 new (&p_base[p_size + i]) T();
             });
         } else if (n < m_size) {
             auto p_base = m_base;
-            parallelFor(m_size - n, [=] FDB_DEVICE (size_t i) {
+            parallel_for(m_size - n, [=] FDB_DEVICE (size_t i) {
                 new (&p_base[n + i]) T();
             });
         }
@@ -155,12 +155,12 @@ struct Vector {
         if (n > m_size) {
             auto p_base = m_base;
             auto p_size = m_size;
-            parallelFor(n - m_size, [=] FDB_DEVICE (size_t i) {
+            parallel_for(n - m_size, [=] FDB_DEVICE (size_t i) {
                 new (&p_base[p_size + i]) T(val);
             });
         } else if (n < m_size) {
             auto p_base = m_base;
-            parallelFor(m_size - n, [=] FDB_DEVICE (size_t i) {
+            parallel_for(m_size - n, [=] FDB_DEVICE (size_t i) {
                 new (&p_base[n + i]) T(val);
             });
         }
