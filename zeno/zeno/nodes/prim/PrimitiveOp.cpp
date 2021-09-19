@@ -33,9 +33,7 @@ struct PrimitiveUnaryOp : INode {
     auto attrA = std::get<std::string>(get_param("attrA"));
     auto attrOut = std::get<std::string>(get_param("attrOut"));
     auto op = std::get<std::string>(get_param("op"));
-    auto const &arrA = primA->attr(attrA);
-    auto &arrOut = primOut->attr(attrOut);
-    std::visit([op](auto &arrOut, auto const &arrA) {
+    primOut->attr_visit(attrOut, [&] (auto &arrOut) { primA->attr_visit(attrA, [&] (auto &arrA) {
         if constexpr (is_vec_castable_v<decltype(arrOut[0]), decltype(arrA[0])>) {
             if (0) {
 #define _PER_OP(opname, expr) \
@@ -59,7 +57,7 @@ struct PrimitiveUnaryOp : INode {
         } else {
             throw Exception("Failed to promote variant type");
         }
-    }, arrOut, arrA);
+    }); });
 
     set_output("primOut", get_input("primOut"));
   }
@@ -106,10 +104,7 @@ struct PrimitiveBinaryOp : INode {
     auto attrB = std::get<std::string>(get_param("attrB"));
     auto attrOut = std::get<std::string>(get_param("attrOut"));
     auto op = std::get<std::string>(get_param("op"));
-    auto const &arrA = primA->attr(attrA);
-    auto const &arrB = primB->attr(attrB);
-    auto &arrOut = primOut->attr(attrOut);
-    std::visit([op](auto &arrOut, auto const &arrA, auto const &arrB) {
+    primOut->attr_visit(attrOut, [&] (auto &arrOut) { primA->attr_visit(attrA, [&] (auto &arrA) { primB->attr_visit(attrB, [&] (auto &arrB) {
         if constexpr (is_decay_same_v<decltype(arrOut[0]),
             is_vec_promotable_t<decltype(arrA[0]), decltype(arrB[0])>>) {
             if (0) {
@@ -140,7 +135,7 @@ struct PrimitiveBinaryOp : INode {
         } else {
             throw Exception("Failed to promote variant type");
         }
-    }, arrOut, arrA, arrB);
+    }); }); });
 
     set_output("primOut", get_input("primOut"));
   }
@@ -171,19 +166,16 @@ struct PrimitiveMix : INode {
         auto attrA = std::get<std::string>(get_param("attrA"));
         auto attrB = std::get<std::string>(get_param("attrB"));
         auto attrOut = std::get<std::string>(get_param("attrOut"));
-        auto const &arrA = primA->attr(attrA);
-        auto const &arrB = primB->attr(attrB);
-        auto &arrOut = primOut->attr(attrOut);
         auto coef = get_input<NumericObject>("coef")->get<float>();
         
-        std::visit([coef](auto &arrA, auto &arrB, auto &arrOut) {
+    primOut->attr_visit(attrOut, [&] (auto &arrOut) { primA->attr_visit(attrA, [&] (auto &arrA) { primB->attr_visit(attrB, [&] (auto &arrB) {
           if constexpr (std::is_same_v<decltype(arrA), decltype(arrB)> && std::is_same_v<decltype(arrA), decltype(arrOut)>) {
 #pragma omp parallel for
             for (int i = 0; i < arrOut.size(); i++) {
-                arrOut[i] = (1.0-coef)*arrA[i] + coef*arrB[i];
+                arrOut[i] = (1.0f-coef)*arrA[i] + coef*arrB[i];
             }
           }
-        }, arrA, arrB, arrOut);
+    }); }); });
         set_output("primOut", get_input("primOut"));
     }
 };
@@ -228,10 +220,8 @@ struct PrimitiveHalfBinaryOp : INode {
     auto attrA = std::get<std::string>(get_param("attrA"));
     auto attrOut = std::get<std::string>(get_param("attrOut"));
     auto op = std::get<std::string>(get_param("op"));
-    auto const &arrA = primA->attr(attrA);
-    auto &arrOut = primOut->attr(attrOut);
     auto const &valB = get_input<NumericObject>("valueB")->value;
-    std::visit([op](auto &arrOut, auto const &arrA, auto const &valB) {
+    primOut->attr_visit(attrOut, [&] (auto &arrOut) { primA->attr_visit(attrA, [&] (auto &arrA) { std::visit([&] (auto &valB) {
         if constexpr (is_decay_same_v<decltype(arrOut[0]),
             is_vec_promotable_t<decltype(arrA[0]), decltype(valB)>>) {
             if (0) {
@@ -262,7 +252,7 @@ struct PrimitiveHalfBinaryOp : INode {
         } else {
             throw Exception("Failed to promote variant type");
         }
-    }, arrOut, arrA, valB);
+    }, valB); }); });
 
     set_output("primOut", get_input("primOut"));
   }
