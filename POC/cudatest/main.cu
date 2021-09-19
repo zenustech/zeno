@@ -100,12 +100,12 @@ int main() {
     a.reserve(4099);
     {
         auto av = a.view();
-        parallel_for(vec3S(4, 4, 4), [=] FDB_DEVICE (vec3S c) {
+        parallel_for(vec3S(16, 16, 16), [=] FDB_DEVICE (vec3S c) {
             av.emplace(c, length(vcast<float>(c)));
         });
 
         av.parallel_foreach([=] FDB_DEVICE (vec3S c, float &v) {
-            printf("%ld %ld %ld %f\n", c[0], c[1], c[2], v);
+            printf("%ld %ld %ld %f %f\n", c[0], c[1], c[2], v, length(vcast<float>(c)));
         });
     }
 
