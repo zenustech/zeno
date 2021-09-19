@@ -43,8 +43,6 @@ struct HashMap {
         T *m_values;
         size_t m_capacity;
 
-        View(View const &) = default;
-
         inline View(HashMap const &parent)
             : m_keys(parent.m_keys.data())
             , m_values(parent.m_values.data())

@@ -42,8 +42,8 @@ static void parallel_for(vec2S dim, Kernel kernel, ParallelConfig cfg = {32, 1})
 template <class Kernel>
 static void parallel_for(vec3S dim, Kernel kernel, ParallelConfig cfg = {8, 1}) {
     parallel_for(dim[0] * dim[1] * dim[2], [=] (size_t i) {
-        size_t z = i / dim[1];
-        size_t j = i % dim[1];
+        size_t z = i % dim[1];
+        size_t j = i / dim[1];
         size_t y = j / dim[0];
         size_t x = j % dim[0];
         vec3S idx(x, y, z);
@@ -76,11 +76,14 @@ static void *reallocate(void *p, size_t old_n, size_t new_n) {
 }
 
 #if defined(__cpp_lib_atomic_ref)
+// atomic_ref is introduced in cpp20:
 template <class T>
 using atomic_ref = std::atomic_ref<T>;
 #else
 template <class T>
 struct atomic_ref {
+    // hope this adhoc mock works for cpp17...:
+    static_assert(sizeof(std::atomic<T>) == sizeof(T));
     std::atomic<T> *p;
     atomic_ref(T &t) : p((std::atomic<T> *)&t) {}
 
