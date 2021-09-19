@@ -1,5 +1,6 @@
 #include <cstdio>
-#include "impl_cuda.h"
+//#include "impl_cuda.h"
+#include "impl_host.h"
 #include "Vector.h"
 #include "HashMap.h"
 

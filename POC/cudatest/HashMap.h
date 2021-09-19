@@ -1,5 +1,6 @@
 #pragma once
 
+#include <new>
 #include <utility>
 #include "Vector.h"
 
@@ -63,17 +64,15 @@ struct HashMap {
             for (size_t cnt = 0; cnt < m_capacity; cnt++) {
                 if (
                 #ifdef FDB_IMPL_CUDA
-                atomic_cas(&m_keys[hash], key, key)
+                atomic_cas(&m_keys[hash], key, key) == key
                 #else
-                atomic_load(&m_keys[hash])
+                atomic_load(&m_keys[hash]) == key
                 #endif
-                == key) {
+                ) {
                     return new (&m_values[hash]) T(val);
-                    return &m_values[hash];
                 }
-                if (atomic_cas(&m_keys[hash], K(), key) == K()) {
+                if (atomic_cass(&m_keys[hash], K(), key)) {
                     return new (&m_values[hash]) T(val);
-                    return &m_values[hash];
                 }
                 hash++;
                 if (hash > m_capacity)

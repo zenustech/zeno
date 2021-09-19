@@ -124,6 +124,16 @@ static __device__ T atomic_cas(T *dst, T cmp, T src) {
 }
 
 template <class T>
+static __device__ bool atomic_casw(T *dst, T cmp, T src) {
+    return atomicCAS(dst, cmp, src) == src;
+}
+
+template <class T>
+static __device__ bool atomic_cass(T *dst, T cmp, T src) {
+    return atomicCAS(dst, cmp, src) == src;
+}
+
+template <class T>
 static __device__ T atomic_add(T *dst, T src) {
     return atomicAdd(dst, src);
 }
