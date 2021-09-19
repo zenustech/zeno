@@ -69,10 +69,12 @@ struct HashMap {
                 atomic_load(&m_keys[hash]) == key
                 #endif
                 ) {
-                    return new (&m_values[hash]) T(val);
+                    new (&m_values[hash]) T(val);
+                    return &m_values[hash];
                 }
                 if (atomic_cas(&m_keys[hash], K(), key)) {
-                    return new (&m_values[hash]) T(val);
+                    new (&m_values[hash]) T(val);
+                    return &m_values[hash];
                 }
                 hash++;
                 if (hash > m_capacity)
