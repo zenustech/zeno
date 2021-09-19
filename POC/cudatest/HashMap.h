@@ -43,7 +43,7 @@ struct HashMap {
             , m_capacity(parent.capacity())
         {}
 
-        template <class T>
+        template <class Kernel>
         inline auto parallelForeach(Kernel kernel) const {
             return parallelFor(m_capacity, [=] (size_t idx) {
                 if (m_keys[idx] != K()) {

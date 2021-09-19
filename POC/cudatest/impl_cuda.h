@@ -20,7 +20,7 @@ static __global__ void __parallelFor(Kernel kernel) {
 }
 
 template <class Kernel>
-static void parallelFor(vec3S grid_dim, vec3S block_dim, Kernel kernel) {
+static void parallelGridBlockFor(vec3S grid_dim, vec3S block_dim, Kernel kernel) {
     dim3 gridDim(grid_dim[0], grid_dim[1], grid_dim[2]);
     dim3 blockDim(block_dim[0], block_dim[1], block_dim[2]);
     __parallelFor<<<gridDim, blockDim>>>([=] __device__ () {
@@ -30,9 +30,14 @@ static void parallelFor(vec3S grid_dim, vec3S block_dim, Kernel kernel) {
     });
 }
 
-template <size_t block_width = 8, size_t grid_dim_scale = 1, class Kernel>
-static void parallelFor(vec3S dim, Kernel kernel) {
-    vec3S block_dim = clamp(dim, 1, max(1, block_width));
+struct ParallelConfig {
+    size_t block_width;
+    size_t grid_dim_scale;
+};
+
+template <class Kernel>
+static void parallelFor(vec3S dim, Kernel kernel, ParallelConfig cfg = {8, 1}) {
+    vec3S block_dim = clamp(dim, 1, max(1, cfg.block_width));
     vec3S grid_dim = (dim + block_dim - 1) / (block_dim * max(1, grid_dim_scale));
     dim3 gridDim(grid_dim[0], grid_dim[1], grid_dim[2]);
     dim3 blockDim(block_dim[0], block_dim[1], block_dim[2]);
@@ -48,9 +53,9 @@ static void parallelFor(vec3S dim, Kernel kernel) {
     });
 }
 
-template <size_t block_width = 32, size_t grid_dim_scale = 1, class Kernel>
-static void parallelFor(vec2S dim, Kernel kernel) {
-    vec2S block_dim = clamp(dim, 1, max(1, block_width));
+template <class Kernel>
+static void parallelFor(vec2S dim, Kernel kernel, ParallelConfig cfg = {32, 1}) {
+    vec2S block_dim = clamp(dim, 1, max(1, cfg.block_width));
     vec2S grid_dim = (dim + block_dim - 1) / (block_dim * max(1, grid_dim_scale));
     dim3 gridDim(grid_dim[0], grid_dim[1], 1);
     dim3 blockDim(block_dim[0], block_dim[1], 1);
@@ -64,10 +69,10 @@ static void parallelFor(vec2S dim, Kernel kernel) {
     });
 }
 
-template <size_t block_width = 1024, size_t grid_dim_scale = 1, class Kernel>
-static void parallelFor(size_t dim, Kernel kernel) {
-    size_t block_dim = clamp(dim, 1, max(1, block_width));
-    size_t grid_dim = (dim + block_dim - 1) / (block_dim * max(1, grid_dim_scale));
+template <class Kernel>
+static void parallelFor(size_t dim, Kernel kernel, ParallelConfig cfg = {1024, 1}) {
+    size_t block_dim = clamp(dim, 1, max(1, cfg.block_width));
+    size_t grid_dim = (dim + block_dim - 1) / (block_dim * max(1, cfg.grid_dim_scale));
     dim3 gridDim(grid_dim, 1, 1);
     dim3 blockDim(block_dim, 1, 1);
     __parallelFor<<<gridDim, blockDim>>>([=] __device__ () {
