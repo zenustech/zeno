@@ -7,7 +7,8 @@ using namespace fdb;
 
 int main() {
 #if 1
-    HashMap<int, int> a(512);
+    HashMap<int, int> a;
+    a.reserve(100);
     {
         auto av = a.view();
         parallelFor(42, [=] FDB_DEVICE (int i) {
@@ -37,7 +38,9 @@ int main() {
             printf("+ %ld %d\n", i, av[i]);
         });
     }
+
 #endif
+
     synchronize();
     return 0;
 }

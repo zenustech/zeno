@@ -22,20 +22,14 @@ struct HashMap {
         T value;
     };
 
-    Vector<KTPair> kvs;
-    size_t m_size;
-
-    HashMap(size_t n)
-    {
-        kvs.reserve(n);
-    }
+    Vector<KTPair> m_table;
 
     FDB_CONSTEXPR size_t capacity() const {
-        return kvs.capacity();
+        return m_table.capacity();
     }
 
-    void reserve(size_t n) const {
-        kvs.reserve(n);
+    void reserve(size_t n) {
+        m_table.reserve(n);
     }
 
     struct View {
@@ -43,8 +37,8 @@ struct HashMap {
         size_t m_capacity;
 
         View(HashMap const &parent)
-            : m_base(parent.kvs.data())
-            , m_capacity(parent.kvs.capacity())
+            : m_base(parent.m_table.data())
+            , m_capacity(parent.m_table.capacity())
         {}
 
         FDB_DEVICE size_t hashFunc(K const &key) const {
