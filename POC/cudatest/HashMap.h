@@ -33,6 +33,11 @@ struct HashMap {
         }
     }
 
+    inline void clear() {
+        m_keys.clear();
+        m_values.clear();
+    }
+
     struct View {
         K *m_keys;
         T *m_values;

@@ -34,6 +34,18 @@ struct HashGrid {
 
     HashMap<u64_3x21, T> m_table;
 
+    inline FDB_CONSTEXPR size_t capacity() const {
+        return m_table.capacity();
+    }
+
+    inline void reserve(size_t n) {
+        return m_table.reserve(n);
+    }
+
+    inline void clear() {
+        return m_table.clear();
+    }
+
     struct View {
         HashMap<u64_3x21, T> m_view;
 
@@ -64,11 +76,11 @@ struct HashGrid {
             return m_view.find(key);
         }
 
-        inline FDB_DEVICE T &operator[](K key) const {
+        inline FDB_DEVICE T &operator[](vec3S coord) const {
             return *touch(key);
         }
 
-        inline FDB_DEVICE T &operator()(K key) const {
+        inline FDB_DEVICE T &operator()(vec3S coord) const {
             return *find(key);
         }
     };
@@ -84,16 +96,12 @@ int main() {
     a.reserve(4099);
     {
         auto av = a.view();
-        parallel_for(4097, [=] FDB_DEVICE (int i) {
-            av.emplace(i, i * 2 + 1);
+        parallel_for(vec3S(4, 4, 4), [=] FDB_DEVICE (vec3S c) {
+            av.emplace(c, length(cast<float>(c)));
         });
 
-        av.parallel_foreach([=] FDB_DEVICE (int k, int &v) {
-            if (k * 2 + 1 != v) {
-                printf("error: %d != %d\n", k * 2 + 1, v);
-            } else {
-                printf("ok\n");
-            }
+        av.parallel_foreach([=] FDB_DEVICE (vec3S c, int &v) {
+            printf("%d %d %d %f\n", c[0], c[1], c[2], v);
         });
     }
 
