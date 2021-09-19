@@ -89,9 +89,15 @@ void memoryCopyH2D(void *dst, const void *src, size_t n) {
     checkCudaErrors(cudaMemcpy(dst, src, n, cudaMemcpyHostToDevice));
 }
 
-static void *allocate(size_t n) {
+/*static void *allocate_shared(size_t n) {
     void *p = nullptr;
     checkCudaErrors(cudaMallocManaged(&p, n));
+    return p;
+}*/
+
+static void *allocate(size_t n) {
+    void *p = nullptr;
+    checkCudaErrors(cudaMalloc(&p, n));
     return p;
 }
 
