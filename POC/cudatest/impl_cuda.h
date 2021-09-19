@@ -72,7 +72,7 @@ static void parallelFor(vec2S dim, Kernel kernel, ParallelConfig cfg = {32, 1}) 
 template <class Kernel>
 static void parallelFor(size_t dim, Kernel kernel, ParallelConfig cfg = {1024, 1}) {
     size_t block_dim = clamp(dim, 1, max(1, cfg.block_size));
-    size_t grid_dim = (dim + block_dim - 1) / (block_dim * max(1, cfg.saturation));
+    size_t grid_dim = max(1, (dim + block_dim - 1) / (block_dim * max(1, cfg.saturation)));
     dim3 gridDim(grid_dim, 1, 1);
     dim3 blockDim(block_dim, 1, 1);
     __parallelFor<<<gridDim, blockDim>>>([=] __device__ () {

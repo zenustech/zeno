@@ -16,8 +16,12 @@ int main() {
             av.emplace(i, i * 2 + 1);
         });
 
-        parallelFor(42, [=] FDB_DEVICE (int i) {
+        /*parallelFor(42, [=] FDB_DEVICE (int i) {
             printf("at %d %d\n", i, av.at(i));
+        });*/
+
+        av.parallelForeach([=] FDB_DEVICE (int k, int &v) {
+            printf("each %d %d\n", k, v);
         });
     }
 

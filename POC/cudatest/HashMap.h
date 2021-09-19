@@ -44,8 +44,8 @@ struct HashMap {
         {}
 
         template <class Kernel>
-        inline auto parallelForeach(Kernel kernel, ParallelConfig cfg = {512, 2}) const {
-            return parallelFor(m_capacity, [=] (size_t idx) {
+        inline void parallelForeach(Kernel kernel, ParallelConfig cfg = {512, 2}) const {
+            parallelFor(m_capacity, [=] FDB_DEVICE (size_t idx) {
                 if (m_keys[idx] != K()) {
                     kernel(std::as_const(m_keys[idx]), m_values[idx]);
                 }
