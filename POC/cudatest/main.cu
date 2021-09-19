@@ -44,12 +44,13 @@ struct HashMap {
         View(HashMap const &parent)
             : m_base(parent.kvs.data())
             , m_capacity(parent.kvs.capacity())
+        {}
 
-        FDB_DEVICE size_t hashFunc(K const &key) {
+        FDB_DEVICE size_t hashFunc(K const &key) const {
             return (size_t)(m_capacity * fmodf(key * 0.618033989f, 1.0f));
         }
 
-        FDB_DEVICE void emplace(K key, T val) {
+        FDB_DEVICE void emplace(K key, T val) const {
             size_t hash = hashFunc(key);
             for (size_t cnt = 0; cnt < m_capacity; cnt++) {
                 if (atomicCAS(&m_base[hash].key, key, key) == key) {
@@ -61,20 +62,20 @@ struct HashMap {
                     return;
                 }
                 hash++;
-                if (hash > capacity)
+                if (hash > m_capacity)
                     hash = 0;
             }
             printf("bad HashMap::emplace occurred!\n");
         }
 
-        FDB_DEVICE T &at(K key) {
+        FDB_DEVICE T &at(K key) const {
             size_t hash = hashFunc(key);
             if (m_base[hash].key == key) {
-                return m_base[has].value;
+                return m_base[hash].value;
             }
             for (size_t cnt = 0; cnt < m_capacity - 1; cnt++) {
                 hash++;
-                if (hash > capacity)
+                if (hash > m_capacity)
                     hash = 0;
                 if (m_base[hash].key == key) {
                     return m_base[hash].value;
@@ -94,9 +95,13 @@ int main() {
     HashMap<int, int> a(512);
     {
         auto av = a.view();
-        parallelFor(42, [=] FDB_DEVICE (size_t i) {
+        parallelFor(42, [=] FDB_DEVICE (int i) {
             printf("emplace %d %d\n", i, i * 2);
-            av[i] = i * 2;
+            av.emplace(i, i * 2);
+        });
+
+        parallelFor(42, [=] FDB_DEVICE (int i) {
+            printf("at %d %d\n", i, av.at(i));
         });
     }
 
