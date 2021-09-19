@@ -12,6 +12,9 @@ static void *allocate(size_t n) {
     return p;
 }
 
+//static void reallocate(void *p, size_t old_n, size_t new_n) {
+//}
+
 static void deallocate(void *p) {
     checkCudaErrors(cudaFree(p));
 }
