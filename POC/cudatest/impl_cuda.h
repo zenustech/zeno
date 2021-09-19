@@ -10,6 +10,10 @@
 
 namespace fdb {
 
+static void synchronize() {
+    checkCudaErrors(cudaDeviceSynchronize());
+}
+
 template <class Kernel>
 static __global__ void __parallelFor(Kernel kernel) {
     kernel();
@@ -100,10 +104,6 @@ void *reallocate(void *p, size_t old_n, size_t new_n) {
     memoryCopy(new_p, p, old_n);
     deallocate(p);
     return new_p;
-}
-
-static void synchronize() {
-    checkCudaErrors(cudaDeviceSynchronize());
 }
 
 }

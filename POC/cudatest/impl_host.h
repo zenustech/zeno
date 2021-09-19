@@ -5,10 +5,14 @@
 #define FDB_DEVICE
 
 #include <cstdlib>
+#include <cstring>
 #include <utility>
 #include "vec.h"
 
 namespace fdb {
+
+static void synchronize() {
+}
 
 template <class Kernel>
 void parallelFor(size_t dim, Kernel kernel) {
