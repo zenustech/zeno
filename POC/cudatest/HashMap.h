@@ -64,7 +64,7 @@ struct HashMap {
             for (size_t cnt = 0; cnt < m_capacity; cnt++) {
                 if (
                 #ifdef FDB_IMPL_CUDA
-                atomicCAS(&m_keys[hash], key, key) == key
+                atomic_cas(&m_keys[hash], key, key) == key
                 #else
                 atomic_load(&m_keys[hash]) == key
                 #endif
