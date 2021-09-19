@@ -141,7 +141,6 @@ struct Vector {
             });
         } else if (n < m_size) {
             auto p_base = m_base;
-            auto p_size = m_size;
             parallelFor(m_size - n, [=] FDB_DEVICE (size_t i) {
                 new (&p_base[n + i]) T();
             });
