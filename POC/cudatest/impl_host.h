@@ -26,6 +26,6 @@ void parallelFor(vec3S grid_dim, vec3S block_dim, Kernel kernel) {
     }
 }
 
-#define FDB_DEVICE_FUNCTOR
+#define FDB_DEVICE
 
 }

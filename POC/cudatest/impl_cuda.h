@@ -1,6 +1,7 @@
 #pragma once // vim: ft=cuda
 
 #include "helper_cuda.h"
+#define FDB_VEC_CONSTEXPR constexpr __host__ __device__
 #include "vec.h"
 
 namespace fdb {
@@ -31,6 +32,6 @@ void parallelFor(vec3S grid_dim, vec3S block_dim, Kernel kernel) {
     });
 }
 
-#define FDB_DEVICE_FUNCTOR __device__
+#define FDB_DEVICE __device__
 
 }
