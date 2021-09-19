@@ -18,18 +18,22 @@ struct HashMap {
     static_assert(std::is_trivially_destructible<K>::value);
 
     struct KTPair {
-        K key;
+        K key{(K)-1};
         T value;
     };
 
-    Vector<KTPair> m_table;
+    Vector<K> m_keys;
+    Vector<T> m_values;
 
     FDB_CONSTEXPR size_t capacity() const {
-        return m_table.capacity();
+        return m_keys.size();
     }
 
     void reserve(size_t n) {
-        m_table.reserve(n);
+        if (n > capacity()) {
+            m_keys.resize(n);
+            m_values.reserve(n);
+        }
     }
 
     struct View {
@@ -52,7 +56,7 @@ struct HashMap {
                     new (&m_base[hash].value) T(val);
                     return;
                 }
-                if (atomicCAS(&m_base[hash].key, 0, key) == 0) {
+                if (atomicCAS(&m_base[hash].key, (K)-1, key) == (K)-1) {
                     new (&m_base[hash].value) T(val);
                     return;
                 }
