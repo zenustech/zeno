@@ -22,11 +22,11 @@ __global__ void __parallelFor(Kernel kernel) {
 
 template <class Kernel>
 void parallelFor(vec3S grid_dim, vec3S block_dim, Kernel kernel) {
-    dim3 gridDim(vec_to_other<dim3>(grid_dim));
-    dim3 blockDim(vec_to_other<dim3>(block_dim));
+    dim3 gridDim(grid_dim[0], grid_dim[1], grid_dim[2]);
+    dim3 blockDim(block_dim[0], block_dim[1], block_dim[2]);
     __parallelFor<<<gridDim, blockDim>>>([=] __device__ () {
-        vec3S block_idx = other_to_vec<3>(blockIdx);
-        vec3S thread_idx = other_to_vec<3>(threadIdx);
+        vec3S block_idx(blockIdx.x, blockIdx.y, blockIdx.z);
+        vec3S thread_idx(threadIdx.x, threadIdx.y, threadIdx.z);
         kernel(block_idx, thread_idx);
     });
 }
