@@ -101,7 +101,7 @@ static void deallocate(void *p) {
 
 void *reallocate(void *p, size_t old_n, size_t new_n) {
     void *new_p = allocate(new_n);
-    memoryCopy(new_p, p, old_n);
+    memoryCopy(new_p, p, std::min(old_n, new_n));
     deallocate(p);
     return new_p;
 }
