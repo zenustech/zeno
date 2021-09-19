@@ -7,20 +7,20 @@
 using namespace fdb;
 
 template <class T>
-struct H21D4_Grid {
-    struct LeafArray {
-        T m_data[16 * 16 * 16]{};
+struct H21D3_Grid {
+    struct Leaf {
+        T m_data[8 * 8 * 8]{};
 
-        inline FDB_DEVICE T &operator[](vec3S coord) {
-            size_t i = coord[0] | coord[1] << 4 | coord[2] << 8;
+        inline FDB_DEVICE T &at(vec3i coord) {
+            size_t i = coord[0] | coord[1] << 3 | coord[2] << 6;
             return m_data[i];
         }
     };
 
-    HashGrid<LeafArray> m_grid;
+    HashGrid<Leaf> m_grid;
 
     inline FDB_CONSTEXPR size_t capacity_blocks() const {
-        m_grid.capacity();
+        return m_grid.capacity();
     }
 
     inline void reserve_blocks(size_t n) {
@@ -32,27 +32,41 @@ struct H21D4_Grid {
     }
 
     struct View {
-        typename HashGrid<LeafArray>::View m_blk_view;
+        typename HashGrid<Leaf>::View m_view;
 
-        View(H21D4_Grid const &parent)
+        View(H21D3_Grid const &parent)
             : m_view(parent.m_grid.view())
         {}
 
-        inline FDB_DEVICE T *touch(vec3S coord) const {
-            LeafArray *leaf = m_view.touch(coord >> 4);
-            return &leaf[coord & 0xf];
+        template <class Kernel>
+        inline void parallel_foreach(Kernel kernel, ParallelConfig cfg = {256, 2}) const {
+            m_view.parallel_foreach([=] FDB_DEVICE (vec3i leaf_coord, Leaf &leaf) {
+                leaf_coord <<= 3;
+                for (int i = 0; i < 8 * 8 * 8; i++) {
+                    int x = i & 0x7;
+                    int y = (i >> 3) & 0x7;
+                    int z = (i >> 6) & 0x7;
+                    vec3i coord = leaf_coord | vec3i(x, y, z);
+                    kernel(std::as_const(coord), leaf.m_data[i]);
+                }
+            }, cfg);
         }
 
-        inline FDB_DEVICE T *find(vec3S coord) const {
-            return m_view.find(coord >> 4);
-            return &leaf[coord & 0xf];
+        inline FDB_DEVICE T *touch(vec3i coord) const {
+            auto *leaf = m_view.touch(coord >> 3);
+            return &leaf->at(coord & 0x7);
         }
 
-        inline FDB_DEVICE T &operator[](vec3S coord) const {
+        inline FDB_DEVICE T *find(vec3i coord) const {
+            auto *leaf = m_view.find(coord >> 3);
+            return leaf ? &leaf->at(coord & 0x7) : nullptr;
+        }
+
+        inline FDB_DEVICE T &operator[](vec3i coord) const {
             return *touch(coord);
         }
 
-        inline FDB_DEVICE T &operator()(vec3S coord) const {
+        inline FDB_DEVICE T &operator()(vec3i coord) const {
             return *find(coord);
         }
     };
@@ -64,16 +78,16 @@ struct H21D4_Grid {
 
 int main() {
 #if 1
-    HashGrid<float> a;
-    a.reserve(4099);
+    H21D3_Grid<float> a;
+    a.reserve_blocks(32);
     {
         auto av = a.view();
-        parallel_for(vec3S(16, 16, 16), [=] FDB_DEVICE (vec3S c) {
-            av.emplace(c, length(vcast<float>(c)));
+        parallel_for(vec3i(16, 16, 16), [=] FDB_DEVICE (vec3i c) {
+            av[c] = length(vcast<float>(c));
         });
 
-        av.parallel_foreach([=] FDB_DEVICE (vec3S c, float &v) {
-            printf("%ld %ld %ld %f %f\n", c[0], c[1], c[2], v, length(vcast<float>(c)));
+        av.parallel_foreach([=] FDB_DEVICE (vec3i c, float &v) {
+            printf("%d %d %d %f %f\n", c[0], c[1], c[2], v, length(vcast<float>(c)));
         });
     }
 

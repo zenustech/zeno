@@ -14,7 +14,7 @@ struct HashGrid {
         FDB_CONSTEXPR u64u21x3(uint64_t value) : value(value) {}
         FDB_CONSTEXPR operator uint64_t() const { return value; }
 
-        FDB_CONSTEXPR u64u21x3(vec3S const &a) {
+        FDB_CONSTEXPR u64u21x3(vec3i const &a) {
             uint64_t x = a[0] & 0x1fffffUL;
             uint64_t y = a[1] & 0x1fffffUL;
             uint64_t z = a[2] & 0x1fffffUL;
@@ -25,11 +25,11 @@ struct HashGrid {
             return (int64_t)value >= 0l;
         }
 
-        FDB_CONSTEXPR operator vec3S() const {
+        FDB_CONSTEXPR operator vec3i() const {
             size_t x = value & 0x1fffffUL;
             size_t y = (value >> 21) & 0x1fffffUL;
             size_t z = (value >> 42) & 0x1fffffUL;
-            return vec3S(x, y, z);
+            return vec3i(x, y, z);
         }
     };
 
@@ -58,31 +58,31 @@ struct HashGrid {
         template <class Kernel>
         inline void parallel_foreach(Kernel kernel, ParallelConfig cfg = {512, 2}) const {
             m_view.parallel_foreach([=] FDB_DEVICE (u64u21x3 key, T &value) {
-                vec3S coord(key);
+                vec3i coord(key);
                 kernel(std::as_const(coord), value);
             }, cfg);
         }
 
-        inline FDB_DEVICE T *emplace(vec3S coord, T value) const {
+        inline FDB_DEVICE T *emplace(vec3i coord, T value) const {
             u64u21x3 key(coord);
             return m_view.emplace(key, value);
         }
 
-        inline FDB_DEVICE T *touch(vec3S coord) const {
+        inline FDB_DEVICE T *touch(vec3i coord) const {
             u64u21x3 key(coord);
             return m_view.touch(key);
         }
 
-        inline FDB_DEVICE T *find(vec3S coord) const {
+        inline FDB_DEVICE T *find(vec3i coord) const {
             u64u21x3 key(coord);
             return m_view.find(key);
         }
 
-        inline FDB_DEVICE T &operator[](vec3S coord) const {
+        inline FDB_DEVICE T &operator[](vec3i coord) const {
             return *touch(coord);
         }
 
-        inline FDB_DEVICE T &operator()(vec3S coord) const {
+        inline FDB_DEVICE T &operator()(vec3i coord) const {
             return *find(coord);
         }
     };
