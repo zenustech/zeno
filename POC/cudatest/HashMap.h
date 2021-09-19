@@ -71,7 +71,7 @@ struct HashMap {
                 ) {
                     return new (&m_values[hash]) T(val);
                 }
-                if (atomic_cass(&m_keys[hash], K(), key)) {
+                if (atomic_cas(&m_keys[hash], K(), key)) {
                     return new (&m_values[hash]) T(val);
                 }
                 hash++;
