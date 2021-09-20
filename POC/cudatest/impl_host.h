@@ -99,7 +99,7 @@ _PER_ATOMIC_OP(fetch_sub)
 _PER_ATOMIC_OP(fetch_and)
 _PER_ATOMIC_OP(fetch_or)
 _PER_ATOMIC_OP(fetch_xor)
-_PER_ATOMIC_OP(exchage)
+_PER_ATOMIC_OP(exchange)
 _PER_ATOMIC_OP(load)
 _PER_ATOMIC_OP(store)
 };
@@ -142,7 +142,7 @@ static T atomic_xor(T *dst, T src) {
 
 template <class T>
 static T atomic_swap(T *dst, T src) {
-    return atomic_ref<T>(*dst).exchage(src);
+    return atomic_ref<T>(*dst).exchange(src);
 }
 
 template <class T>
