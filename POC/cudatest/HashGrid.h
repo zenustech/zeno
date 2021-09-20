@@ -1,6 +1,6 @@
 #pragma once
 
-#include "HashGrid.h"
+#include "HashMap_vec3i.h"
 
 namespace fdb {
 
@@ -37,7 +37,7 @@ struct HashGrid {
         }
     };
 
-    HashGrid<Leaf> m_grid;
+    HashMap<vec3i, Leaf> m_grid;
 
     inline FDB_CONSTEXPR size_t capacity_blocks() const {
         return m_grid.capacity();
@@ -52,7 +52,7 @@ struct HashGrid {
     }
 
     struct View {
-        typename HashGrid<Leaf>::View m_view;
+        typename HashMap<vec3i, Leaf>::View m_view;
 
         View(HashGrid const &parent)
             : m_view(parent.m_grid.view())
