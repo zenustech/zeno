@@ -12,7 +12,7 @@ int main() {
 
     auto av = a.view();
     parallel_for(vec3S(16, 4, 2), [=] (vec3S c) {
-        av.insert(c, c[0]);
+        av.emplace(c / 2, c[0]);
     });
 
     av.parallel_foreach([=] (vec3S c, int &val) {

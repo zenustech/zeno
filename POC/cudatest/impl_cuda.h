@@ -154,6 +154,11 @@ static __device__ T atomic_min(T *dst, T src) {
 }
 
 template <class T>
+static __device__ T atomic_swap(T *dst, T src) {
+    return atomicExch(dst, src);
+}
+
+template <class T>
 static __device__ T atomic_load(T const *src) {
     const volatile T *vaddr = src;
     __threadfence();
