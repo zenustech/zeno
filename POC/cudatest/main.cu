@@ -12,13 +12,13 @@ __managed__ int count = 0;
 
 int main() {
 #if 1
-    const int n = 8192 * 2;
+    const int n = 8192 * 16;
     HashListGrid<int> a;
-    a.reserve_blocks(33);
+    a.reserve_blocks(65);
 
     auto av = a.view();
     parallel_for(n, [=] FDB_DEVICE (size_t i) {
-        vec3i coord((i * 114514 + 31415) % 32, 0, 0);
+        vec3i coord((i * 114514 + 31415) % 64, 0, 0);
         av.append(coord, i);
     });
 

@@ -36,11 +36,19 @@ struct HashListMap {
             return chunk->m_data;
         }
 
+        inline FDB_DEVICE T &__init_head_nonatomic() {
+            auto *chunk = (Chunk *)dynamic_allocate(sizeof(Chunk));
+            new (&chunk->m_data) T();
+            atomic_store(&m_head, chunk);
+            chunk->m_next = nullptr;
+            return chunk->m_data;
+        }
+
         inline FDB_DEVICE T &__append_nonatomic() {
             auto *chunk = (Chunk *)dynamic_allocate(sizeof(Chunk));
-            new (chunk) Chunk();
+            new (&chunk->m_data) T();
             auto *old_head = m_head;
-            m_head = chunk;
+            atomic_store(&m_head, chunk);
             chunk->m_next = old_head;
             return chunk->m_data;
         }
