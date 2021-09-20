@@ -114,62 +114,62 @@ _PER_ATOMIC_OP(store)
 #endif
 
 template <class T>
-static T atomic_casw(T *dst, T cmp, T src) {
+inline T atomic_casw(T *dst, T cmp, T src) {
     return atomic_ref<T>(*dst).compare_exchange_weak(cmp, src);
 }
 
 template <class T>
-static T atomic_cass(T *dst, T cmp, T src) {
+inline T atomic_cass(T *dst, T cmp, T src) {
     return atomic_ref<T>(*dst).compare_exchange_strong(cmp, src);
 }
 
 template <class T>
-static T atomic_add(T *dst, T src) {
+inline T atomic_add(T *dst, T src) {
     return atomic_ref<T>(*dst).fetch_add(src);
 }
 
 template <class T>
-static T atomic_sub(T *dst, T src) {
+inline T atomic_sub(T *dst, T src) {
     return atomic_ref<T>(*dst).fetch_sub(src);
 }
 
 template <class T>
-static T atomic_and(T *dst, T src) {
+inline T atomic_and(T *dst, T src) {
     return atomic_ref<T>(*dst).fetch_and(src);
 }
 
 template <class T>
-static T atomic_or(T *dst, T src) {
+inline T atomic_or(T *dst, T src) {
     return atomic_ref<T>(*dst).fetch_or(src);
 }
 
 template <class T>
-static T atomic_xor(T *dst, T src) {
+inline T atomic_xor(T *dst, T src) {
     return atomic_ref<T>(*dst).fetch_xor(src);
 }
 
 template <class T>
-static T atomic_swap(T *dst, T src) {
+inline T atomic_swap(T *dst, T src) {
     return atomic_ref<T>(*dst).exchange(src);
 }
 
 template <class T>
-static T atomic_load(T const *src) {
+inline T atomic_load(T const *src) {
     return atomic_ref<T>(*(T *)src).load();
 }
 
 template <class T>
-static void atomic_store(T *dst, T src) {
+inline void atomic_store(T *dst, T src) {
     atomic_ref<T>(*dst).store(src);
 }
 
 template <class T>
-static void atomic_spin_lock(T *dst, T val = (T)1, T dfl = (T)0) {
+inline void atomic_spin_lock(T *dst, T val = (T)1, T dfl = (T)0) {
     while (!atomic_casw(dst, dfl, val));
 }
 
 template <class T>
-static void atomic_spin_unlock(T *dst, T val = (T)1, T dfl = (T)0) {
+inline void atomic_spin_unlock(T *dst, T val = (T)1, T dfl = (T)0) {
     atomic_store(dst, dfl);
 }
 

@@ -35,6 +35,30 @@ struct HashGrid {
             m_mask[i] |= 1 << coord[0];
             return m_data[i << 3 | coord[0]];
         }
+
+        template <class Func>
+        inline FDB_DEVICE void foreach(Func func) {
+            for (int i = 0; i < 8 * 8 * 8; i++) {
+                int x = i & 0x7;
+                if (leaf.m_mask[i >> 3] & (1 << x)) {
+                    int y = (i >> 3) & 0x7;
+                    int z = (i >> 6) & 0x7;
+                    vec3i coord(x, y, z);
+                    func(std::as_const(coord), leaf.m_data[i]);
+                }
+            }
+        }
+
+        template <class Func>
+        inline FDB_DEVICE void foreach_with_off(Func func) {
+            for (int i = 0; i < 8 * 8 * 8; i++) {
+                int x = i & 0x7;
+                int y = (i >> 3) & 0x7;
+                int z = (i >> 6) & 0x7;
+                vec3i coord(x, y, z);
+                func(std::as_const(coord), leaf.m_data[i]);
+            }
+        }
     };
 
     HashMap<vec3i, Leaf> m_grid;
@@ -60,17 +84,19 @@ struct HashGrid {
 
         template <class Kernel>
         inline void parallel_foreach(Kernel kernel, ParallelConfig cfg = {256, 2}) const {
+            parallel_foreach_leaf([=] FDB_DEVICE (vec3i leaf_coord, Leaf &leaf) {
+                leaf.foreach([&] (vec3i sub_coord, T &val) {
+                    vec3i coord = leaf_coord | sub_coord;
+                    kernel(std::as_const(coord), leaf.m_data[i]);
+                });
+            }, cfg);
+        }
+
+        template <class Kernel>
+        inline void parallel_foreach_leaf(Kernel kernel, ParallelConfig cfg = {256, 2}) const {
             m_view.parallel_foreach([=] FDB_DEVICE (vec3i leaf_coord, Leaf &leaf) {
                 leaf_coord <<= 3;
-                for (int i = 0; i < 8 * 8 * 8; i++) {
-                    int x = i & 0x7;
-                    if (leaf.m_mask[i >> 3] & (1 << x)) {
-                        int y = (i >> 3) & 0x7;
-                        int z = (i >> 6) & 0x7;
-                        vec3i coord = leaf_coord | vec3i(x, y, z);
-                        kernel(std::as_const(coord), leaf.m_data[i]);
-                    }
-                }
+                kernel(std::as_const(leaf_coord), leaf);
             }, cfg);
         }
 
