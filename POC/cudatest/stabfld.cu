@@ -2,9 +2,28 @@
 #include "impl_cuda.h"
 //#include "impl_host.h"
 #include "Vector.h"
-#include "HashListGrid.h"
+#include "H21B3_Grid.h"
 
 using namespace fdb;
+
+template <class Grid>
+auto bilerp(Grid &grid, vec3f pos) {
+    auto ip = ifloor(pos);
+    auto of = pos - ip;
+    return (
+        of[0] * of[0] * of[0] * grid(pos)
+}
+
+template <class Vel, class Qua>
+auto advect(Vel vel, Qua qua, Qua new_qua, float dt) {
+    auto _vel = vel.view();
+    auto _qua = qua.view();
+    auto _new_qua = new_qua.view();
+    _vel.parallel_foreach([=] FDB_DEVICE (vec3i c, vec3f &vel) {
+        auto btpos = c - vel * dt;
+        _new_qua[i] = bilerp(_qua, btpos);
+    });
+}
 
 int main() {
 #if 1

@@ -5,7 +5,7 @@
 namespace fdb {
 
 template <class T>
-struct H21B3_Grid {
+struct HashMaskedGrid {
     struct Leaf {
         T m_data[8 * 8 * 8]{};
         uint8_t m_mask[8 * 8]{};
@@ -54,7 +54,7 @@ struct H21B3_Grid {
     struct View {
         typename HashGrid<Leaf>::View m_view;
 
-        View(H21B3_Grid const &parent)
+        View(HashMaskedGrid const &parent)
             : m_view(parent.m_grid.view())
         {}
 
