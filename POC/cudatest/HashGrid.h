@@ -86,7 +86,7 @@ struct HashGrid {
         inline void parallel_foreach(Kernel kernel, ParallelConfig cfg = {256, 2}) const {
             parallel_foreach_leaf([=] FDB_DEVICE (vec3i leaf_coord, Leaf &leaf) {
                 leaf.foreach([&] (vec3i sub_coord, T &val) {
-                    vec3i coord = leaf_coord | sub_coord;
+                    vec3i coord = leaf_coord << 3 | sub_coord;
                     kernel(std::as_const(coord), leaf.m_data[i]);
                 });
             }, cfg);
@@ -95,21 +95,20 @@ struct HashGrid {
         template <class Kernel>
         inline void parallel_foreach_leaf(Kernel kernel, ParallelConfig cfg = {256, 2}) const {
             m_view.parallel_foreach([=] FDB_DEVICE (vec3i leaf_coord, Leaf &leaf) {
-                leaf_coord <<= 3;
                 kernel(std::as_const(leaf_coord), leaf);
             }, cfg);
         }
 
         inline FDB_DEVICE Leaf *probe_leaf(vec3i coord) const {
-            return m_view.find(coord >> 3);
+            return m_view.find(coord);
         }
 
         inline FDB_DEVICE Leaf &touch_leaf(vec3i coord) const {
-            return *m_view.touch(coord >> 3);
+            return *m_view.touch(coord);
         }
 
         inline FDB_DEVICE Leaf &get_leaf(vec3i coord) const {
-            return *m_view.find(coord >> 3);
+            return *m_view.find(coord);
         }
 
         template <class Func>
@@ -121,7 +120,7 @@ struct HashGrid {
         }
 
         inline FDB_DEVICE T *probe(vec3i coord) const {
-            auto *leaf = probe_leaf(coord);
+            auto *leaf = probe_leaf(coord >> 3);
             if (!leaf)
                 return nullptr;
             coord &= 0x7;
@@ -131,12 +130,12 @@ struct HashGrid {
         }
 
         inline FDB_DEVICE T &operator[](vec3i coord) const {
-            auto *leaf = &touch_leaf(coord);
+            auto *leaf = &touch_leaf(coord >> 3);
             return leaf->turn_on_at(coord & 0x7);
         }
 
         inline FDB_DEVICE T &operator()(vec3i coord) const {
-            auto *leaf = &get_leaf(coord);
+            auto *leaf = &get_leaf(coord >> 3);
             return leaf->at(coord & 0x7);
         }
     };
