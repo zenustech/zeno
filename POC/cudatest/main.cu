@@ -1,13 +1,12 @@
 #include <cstdio>
 #include "impl_cuda.h"
 //#include "impl_host.h"
-#include "Vector.h"
-#include "HashListGrid.h"
+#include "HashTiledListGrid.h"
 
 using namespace fdb;
 
 int main() {
-    HashListGrid<int> a;
+    HashTiledListGrid<int> a;
     a.reserve_blocks(4096);
 
     auto av = a.view();

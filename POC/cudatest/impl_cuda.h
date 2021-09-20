@@ -234,9 +234,10 @@ static __device__ T atomic_load(T const *src) {
 
 template <class T>
 static __device__ void atomic_store(T *dst, T src) {
-    const volatile T *vaddr = dst;
+    volatile T *vaddr = dst;
     __threadfence();
     *vaddr = src;
+    __threadfence();
 }
 
 template <class T>

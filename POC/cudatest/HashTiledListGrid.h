@@ -14,11 +14,11 @@ struct HashTiledListGrid {
     HashListGrid<Tile> m_grid;
 
     inline FDB_CONSTEXPR size_t capacity_blocks() const {
-        return m_grid.capacity();
+        return m_grid.capacity_blocks();
     }
 
     inline void reserve_blocks(size_t n) {
-        m_grid.reserve(n);
+        m_grid.reserve_blocks(n);
     }
 
     inline void clear_blocks() {
@@ -42,38 +42,38 @@ struct HashTiledListGrid {
         }
 
         inline FDB_DEVICE T *append(vec3i coord) const {
-            auto *leaf = m_view.touch_leaf_at(coord);
+            auto *leaf = &m_view.touch_leaf_at(coord);
             auto *chunk = leaf->m_head;
             auto *tile = &chunk->m_data;
             auto idx = atomic_add(&tile->m_count, 1);
             if (idx < TileSize) {
                 return &tile->m_data[idx];
             }
-            atomic_store(&tile->m_count, TileSize);
+            atomic_store(&tile->m_count, (int)TileSize);
 
             T *ptr;
             atomic_spin_lock(&leaf->m_lock);
             if (leaf->m_head->m_data.m_count >= TileSize) {
                 tile = leaf->append_nonatomic();
-                ptr = tile->m_data[0];
+                ptr = &tile->m_data[0];
             } else {
                 tile = &leaf->m_head->m_data;
                 auto idx = tile->m_count++;
-                ptr = tile->m_data[idx];
+                ptr = &tile->m_data[idx];
             }
             atomic_spin_unlock(&leaf->m_lock);
             return ptr;
         }
 
-        inline FDB_DEVICE Leaf *probe_leaf_at(vec3i coord) const {
+        inline FDB_DEVICE auto *probe_leaf_at(vec3i coord) const {
             return m_view.probe_leaf_at(coord);
         }
 
-        inline FDB_DEVICE Leaf &touch_leaf_at(vec3i coord) const {
+        inline FDB_DEVICE auto &touch_leaf_at(vec3i coord) const {
             return m_view.touch_leaf_at(coord);
         }
 
-        inline FDB_DEVICE Leaf &leaf_at(vec3i coord) const {
+        inline FDB_DEVICE auto &leaf_at(vec3i coord) const {
             return m_view.leaf_at(coord);
         }
     };

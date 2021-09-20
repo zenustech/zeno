@@ -44,7 +44,7 @@ struct HashListGrid {
     }
 
     inline void clear_blocks() {
-        m_grid.clear_blocks();
+        m_grid.clear();
     }
 
     struct View {
