@@ -4,7 +4,7 @@
 
 namespace fdb {
 
-template <class T>
+template <class T, class LockType = int>
 struct HashListGrid {
     struct Chunk {
         T m_data{};
@@ -13,13 +13,23 @@ struct HashListGrid {
 
     struct Leaf {
         Chunk *m_head{nullptr};
+        LockType m_lock{};
 
         inline FDB_DEVICE T *append() {
-            auto *new_node = (Chunk *)dynamic_allocate(sizeof(Chunk));
-            new (new_node) Chunk();
-            auto *old_head = (Chunk *)atomic_swap(&m_head, new_node);
-            new_node->m_next = old_head;
-            return &new_node->m_data;
+            auto *chunk = (Chunk *)dynamic_allocate(sizeof(Chunk));
+            new (chunk) Chunk();
+            auto *old_head = atomic_swap(&m_head, chunk);
+            chunk->m_next = old_head;
+            return &chunk->m_data;
+        }
+
+        inline FDB_DEVICE T *append_nonatomic() {
+            auto *chunk = (Chunk *)dynamic_allocate(sizeof(Chunk));
+            new (chunk) Chunk();
+            auto *old_head = m_head;
+            m_head = chunk;
+            chunk->m_next = old_head;
+            return &chunk->m_data;
         }
     };
 

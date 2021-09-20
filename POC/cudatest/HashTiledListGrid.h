@@ -43,13 +43,26 @@ struct HashTiledListGrid {
 
         inline FDB_DEVICE T *append(vec3i coord) const {
             auto *leaf = m_view.touch_leaf_at(coord);
-            for (auto chunk = leaf->m_head; chunk; chunk = chunk->m_next) {
-                auto *tile = chunk->m_data;
-                auto idx = atomic_add(&tile->m_count, 1);
-                if (idx < TileSize) {
-                    return &tile->m_data[idx];
-                }
-                atomic_store(&tile->m_count, TileSize);
+            auto *chunk = leaf->m_head;
+            auto *tile = &chunk->m_data;
+            auto idx = atomic_add(&tile->m_count, 1);
+            if (idx < TileSize) {
+                return &tile->m_data[idx];
+            }
+            atomic_store(&tile->m_count, TileSize);
+
+            T *ptr;
+            atomic_spin_lock(&leaf->m_lock);
+            if (leaf->m_head->m_data.m_count >= TileSize) {
+                tile = leaf->append_nonatomic();
+                ptr = tile->m_data[0];
+            } else {
+                tile = &leaf->m_head->m_data;
+                auto idx = tile->m_count++;
+                ptr = tile->m_data[idx];
+            }
+            atomic_spin_unlock(&leaf->m_lock);
+            return ptr;
         }
 
         inline FDB_DEVICE Leaf *probe_leaf_at(vec3i coord) const {
