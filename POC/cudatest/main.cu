@@ -13,7 +13,7 @@ __managed__ int count = 0;
 int main() {
     const int n = 8192 * 2;
     HashListGrid<int> a;
-    a.reserve_blocks(9);
+    a.reserve_blocks(10);
 
     auto av = a.view();
     parallel_for(n, [=] FDB_DEVICE (size_t i) {
