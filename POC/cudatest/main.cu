@@ -16,8 +16,8 @@ int main() {
     a.reserve_blocks(166444);
 
     auto av = a.view();
-    parallel_for(vec3S(64, 32, 16), [=] FDB_DEVICE (vec3i c) {
-        *av.append(c) = c[0] + c[1] * 2 + c[2] * 4;
+    parallel_for(vec3S(16, 8, 8), [=] FDB_DEVICE (vec3i c) {
+        *av.append(c / 4) = c[0] + c[1] * 2 + c[2] * 4;
     });
 
     av.parallel_foreach([=] FDB_DEVICE (vec3i c, int &val) {
@@ -27,7 +27,7 @@ int main() {
     });
 
     synchronize();
-    printf("3031040 = %d\n", total);
-    printf("32768 = %d\n", count);
+    printf("29184 = %d\n", total);
+    printf("1024 = %d\n", count);
     return 0;
 }
