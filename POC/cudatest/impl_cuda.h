@@ -8,6 +8,7 @@
 #include "helper_cuda.h"
 #include <type_traits>
 #include <utility>
+#include <cstdlib>
 #include "vec.h"
 
 namespace fdb {
@@ -117,6 +118,14 @@ static void *reallocate(void *p, size_t old_n, size_t new_n) {
     memcpy_d2d(new_p, p, std::min(old_n, new_n));
     deallocate(p);
     return new_p;
+}
+
+static __device__ void *dynamic_allocate(size_t n) {
+    return std::malloc(n);
+}
+
+static __device__ void dynamic_deallocate(void *p) {
+    std::free(p);
 }
 
 template <class T>

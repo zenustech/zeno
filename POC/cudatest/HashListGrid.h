@@ -15,7 +15,7 @@ struct HashListGrid {
         Chunk *m_head{nullptr};
 
         inline FDB_DEVICE T *emplace() {
-            auto *new_node = (Chunk *)malloc(sizeof(Chunk));
+            auto *new_node = (Chunk *)dynamic_allocate(sizeof(Chunk));
             new (new_node) Chunk();
             auto *old_head = (Chunk *)atomic_swap(&m_head, new_node);
             new_node->m_next = old_head;
