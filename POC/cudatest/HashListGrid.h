@@ -47,7 +47,7 @@ struct HashListGrid {
         template <class Kernel>
         inline void parallel_foreach(Kernel kernel, ParallelConfig cfg = {256, 2}) const {
             m_view.parallel_foreach([=] FDB_DEVICE (vec3i coord, Leaf &leaf) {
-                for (auto chunk = leaf.m_leaf; chunk; chunk = chunk->next) {
+                for (auto chunk = leaf.m_head; chunk; chunk = chunk->m_next) {
                     kernel(std::as_const(coord), chunk->m_data);
                 }
             }, cfg);
