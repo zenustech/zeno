@@ -4,7 +4,7 @@
 
 namespace fdb {
 
-template <class K, class T, class LockType = int>
+template <class K, class T>
 struct HashListMap {
     struct Chunk {
         T m_data{};
@@ -12,8 +12,9 @@ struct HashListMap {
     };
 
     struct Leaf {
-        Chunk *m_head{nullptr};
-        LockType m_lock{};
+        // HashMap will zero initialize these:
+        Chunk *m_head;
+        int m_lock;
 
         inline FDB_DEVICE T &append() {
             auto *chunk = (Chunk *)dynamic_allocate(sizeof(Chunk));

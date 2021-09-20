@@ -6,7 +6,7 @@
 
 namespace fdb {
 
-template <class T, size_t TileSize = 1024>
+template <class T, size_t TileSize = 128>
 struct HashListGrid {
     struct Tile {
         Array<T, TileSize> m_data{};

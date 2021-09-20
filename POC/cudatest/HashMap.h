@@ -9,6 +9,7 @@ namespace fdb {
 // https://github.com/Miruna-Chi/CUDA-Hash-Table/blob/main/gpu_hashtable.cu
 template <class K, class T, class UK = K>
 struct HashMap {
+    static_assert(std::is_trivially_constructible<T>::value);
     static_assert(std::is_trivially_move_constructible<T>::value);
     static_assert(std::is_trivially_move_assignable<T>::value);
     static_assert(std::is_trivially_destructible<T>::value);
@@ -19,7 +20,12 @@ struct HashMap {
     static_assert(std::is_trivially_move_assignable<K>::value);
     static_assert(std::is_trivially_destructible<K>::value);
 
-    Vector<K> m_keys;
+    struct KB {
+        K key{};
+        int initialized{false};
+    };
+
+    Vector<KB> m_keys;
     Vector<T> m_values;
 
     inline FDB_CONSTEXPR size_t capacity() const {
@@ -29,7 +35,7 @@ struct HashMap {
     inline void reserve(size_t n) {
         if (n > capacity()) {
             m_keys.resize(n);
-            m_values.reserve(n);
+            m_values.resize(n);
         }
     }
 
@@ -39,7 +45,7 @@ struct HashMap {
     }
 
     struct View {
-        K *m_keys;
+        KB *m_keys;
         T *m_values;
         size_t m_capacity;
 
@@ -54,8 +60,8 @@ struct HashMap {
             auto p_keys = m_keys;
             auto p_values = m_values;
             parallel_for(m_capacity, [=] FDB_DEVICE (size_t idx) {
-                if (p_keys[idx] != K()) {
-                    kernel(std::as_const(p_keys[idx]), p_values[idx]);
+                if (p_keys[idx].key != K()) {
+                    kernel(std::as_const(p_keys[idx].key), p_values[idx]);
                 }
             }, cfg);
         }
@@ -64,33 +70,13 @@ struct HashMap {
             return (size_t)(m_capacity * std::fmod((UK)key * 0.6180339887498949, 1.0));
         }
 
-        inline FDB_DEVICE T *emplace(K key, T val) const {
-            size_t hash = hash_func(key);
-            for (size_t cnt = 0; cnt < m_capacity * 32; cnt++) {
-                if (atomic_cass((UK *)&m_keys[hash], (UK)key, (UK)key)) {
-                    m_values[hash] = val;
-                    return &m_values[hash];
-                }
-                if (atomic_cass((UK *)&m_keys[hash], (UK)K(), (UK)key)) {
-                    new (&m_values[hash]) T(val);
-                    return &m_values[hash];
-                }
-                hash++;
-                if (hash > m_capacity)
-                    hash = 0;
-            }
-            printf("bad emplace\n");
-            return nullptr;
-        }
-
         inline FDB_DEVICE T *touch(K key) const {
             size_t hash = hash_func(key);
             for (size_t cnt = 0; cnt < m_capacity * 32; cnt++) {
-                if (atomic_cass((UK *)&m_keys[hash], (UK)key, (UK)key)) {
+                if (atomic_cass((UK *)&m_keys[hash].key, (UK)key, (UK)key)) {
                     return &m_values[hash];
                 }
-                if (atomic_cass((UK *)&m_keys[hash], (UK)K(), (UK)key)) {
-                    new (&m_values[hash]) T();
+                if (atomic_cass((UK *)&m_keys[hash].key, (UK)K(), (UK)key)) {
                     return &m_values[hash];
                 }
                 hash++;
@@ -103,14 +89,14 @@ struct HashMap {
 
         inline FDB_DEVICE T *find(K key) const {
             size_t hash = hash_func(key);
-            if (m_keys[hash] == key) {
+            if (m_keys[hash].key == key) {
                 return &m_values[hash];
             }
             for (size_t cnt = 0; cnt < m_capacity * 32; cnt++) {
                 hash++;
                 if (hash > m_capacity)
                     hash = 0;
-                if (m_keys[hash] == key) {
+                if (m_keys[hash].key == key) {
                     return &m_values[hash];
                 }
             }
