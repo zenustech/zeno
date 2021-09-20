@@ -12,12 +12,12 @@ int main() {
     a.reserve(16);
     {
         auto av = a.view();
-        parallel_for(32, [=] FDB_DEVICE (size_t i) {
+        parallel_for(32, [=] FDB_DEVICE (int i) {
             av[i / 2] = i;
         });
 
-        av.parallel_foreach([=] FDB_DEVICE (size_t i, int &val) {
-            printf("%ld %d\n", i, val);
+        av.parallel_foreach([=] FDB_DEVICE (int i, int &val) {
+            printf("%d %d\n", i, val);
         });
     }
 
