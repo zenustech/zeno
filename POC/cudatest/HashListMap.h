@@ -1,6 +1,6 @@
 #pragma once
 
-#include "HashGrid.h"
+#include "HashMap.h"
 
 namespace fdb {
 

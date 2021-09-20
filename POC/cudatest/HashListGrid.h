@@ -1,5 +1,6 @@
 #pragma once
 
+#include "HashMap_vec3i.h"
 #include "HashListMap.h"
 
 namespace fdb {
