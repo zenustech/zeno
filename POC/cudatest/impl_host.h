@@ -23,7 +23,7 @@ struct ParallelConfig {
 
 template <class Kernel>
 static void parallel_for(size_t dim, Kernel kernel, ParallelConfig cfg = {1024, 1}) {
-    //#pragma omp parallel for
+    #pragma omp parallel for
     for (size_t i = 0; i < dim; i++) {
         kernel(std::as_const(i));
     }
