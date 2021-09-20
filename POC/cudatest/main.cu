@@ -12,12 +12,12 @@ __managed__ int count = 0;
 
 int main() {
     const int n = 8192 * 2;
-    HashListGrid<int, 64> a;
+    HashListGrid<int> a;
     a.reserve_blocks(n);
 
     auto av = a.view();
     parallel_for(n, [=] FDB_DEVICE (size_t c) {
-        *av.append(vec3i((c * 114514 + 31415) % 1, 0, 0)) = c;
+        *av.append(vec3i((c * 114514 + 31415) % 2, 0, 0)) = c;
     });
 
     av.parallel_foreach([=] FDB_DEVICE (vec3i c, int &val) {

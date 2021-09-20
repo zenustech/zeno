@@ -56,9 +56,9 @@ struct HashListMap {
 
         template <class Kernel>
         inline void parallel_foreach(Kernel kernel, ParallelConfig cfg = {256, 2}) const {
-            m_view.parallel_foreach([=] FDB_DEVICE (K coord, Leaf &leaf) {
+            m_view.parallel_foreach([=] FDB_DEVICE (K key, Leaf &leaf) {
                 for (auto chunk = leaf.m_head; chunk; chunk = chunk->m_next) {
-                    kernel(std::as_const(coord), chunk->m_data);
+                    kernel(std::as_const(key), chunk->m_data);
                 }
             }, cfg);
         }
@@ -68,16 +68,16 @@ struct HashListMap {
             return leaf->append();
         }
 
-        inline FDB_DEVICE Leaf *probe_leaf_at(K coord) const {
-            return m_view.find(coord);
+        inline FDB_DEVICE Leaf *probe_leaf_at(K key) const {
+            return m_view.find(key);
         }
 
-        inline FDB_DEVICE Leaf &touch_leaf_at(K coord) const {
-            return *m_view.touch(coord);
+        inline FDB_DEVICE Leaf &touch_leaf_at(K key) const {
+            return *m_view.touch(key);
         }
 
-        inline FDB_DEVICE Leaf &leaf_at(K coord) const {
-            return *m_view.find(coord);
+        inline FDB_DEVICE Leaf &leaf_at(K key) const {
+            return *m_view.find(key);
         }
     };
 

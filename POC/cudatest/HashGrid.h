@@ -39,16 +39,16 @@ struct HashGrid {
 
     HashMap<vec3i, Leaf> m_grid;
 
-    inline FDB_CONSTEXPR size_t capacity_blocks() const {
+    inline FDB_CONSTEXPR size_t capacity() const {
         return m_grid.capacity();
     }
 
-    inline void reserve_blocks(size_t n) {
+    inline void reserve(size_t n) {
         m_grid.reserve(n);
     }
 
-    inline void clear_blocks() {
-        m_grid.clear_blocks();
+    inline void clear() {
+        m_grid.clear();
     }
 
     struct View {

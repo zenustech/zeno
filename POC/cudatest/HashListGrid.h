@@ -5,7 +5,7 @@
 
 namespace fdb {
 
-template <class T, size_t TileSize = 64>
+template <class T, size_t TileSize = 1024>
 struct HashListGrid {
     struct Tile {
         T m_data[TileSize]{};
@@ -44,7 +44,7 @@ struct HashListGrid {
 
         inline FDB_DEVICE T *append(vec3i coord) const {
             auto *leaf = &m_view.touch_leaf_at(coord);
-            /*if (auto *chunk = leaf->m_head; chunk) {
+            if (auto *chunk = leaf->m_head; chunk) {
                 auto *tile = &chunk->m_data;
                 auto idx = atomic_add(&tile->m_count, 1);
                 if (idx < TileSize) {
@@ -52,7 +52,7 @@ struct HashListGrid {
                 } else {
                     atomic_store(&tile->m_count, (int)TileSize);
                 }
-            }*/
+            }
 
             T *ptr;
             atomic_spin_lock(&leaf->m_lock);
