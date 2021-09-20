@@ -9,9 +9,9 @@ def load_translation():
         for line in f.readlines():
             try:
                 en, zh = line.split(' ', maxsplit=1)
+                translation[en.lower()] = zh
             except ValueError:
                 pass
-            translation[en.lower()] = zh
 
 def translate(x):
     return translation.get(x.lower(), x)

@@ -100,9 +100,10 @@ allowQuads 允许四边形面
 vdbGrid OpenVDB体素网格
 resolution 分辨率
 
-path 文件路径
 name 名称
+defl 默认值
 type 类型
+path 文件路径
 fillValue 填充值
 dict 词典对象
 args 参数词典
@@ -125,6 +126,9 @@ vec4 四维矢量
 X X分量
 Y Y分量
 Z Z分量
+op_type 运算类型
+lhs 左参数
+rhs 右参数
 
 dim 维度
 symmetric 是否对称
@@ -140,7 +144,6 @@ message 信息
 FrameNum 帧编号
 routeIn 路由点输入
 routeOut 路由点输出
-
 
 origin 原点
 normal 法线
