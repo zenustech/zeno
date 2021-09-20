@@ -100,8 +100,28 @@ struct HashGrid {
             }, cfg);
         }
 
+        inline FDB_DEVICE Leaf *probe_leaf(vec3i coord) const {
+            return m_view.find(coord >> 3);
+        }
+
+        inline FDB_DEVICE Leaf &touch_leaf(vec3i coord) const {
+            return *m_view.touch(coord >> 3);
+        }
+
+        inline FDB_DEVICE Leaf &get_leaf(vec3i coord) const {
+            return *m_view.find(coord >> 3);
+        }
+
+        template <class Func>
+        inline FDB_DEVICE void foreach_in_leaf(vec3i coord, Func func) const {
+            auto *leaf = probe_leaf(coord);
+            if (leaf) {
+                leaf->foreach(func);
+            }
+        }
+
         inline FDB_DEVICE T *probe(vec3i coord) const {
-            auto *leaf = m_view.find(coord >> 3);
+            auto *leaf = probe_leaf(coord);
             if (!leaf)
                 return nullptr;
             coord &= 0x7;
@@ -111,12 +131,12 @@ struct HashGrid {
         }
 
         inline FDB_DEVICE T &operator[](vec3i coord) const {
-            auto *leaf = m_view.touch(coord >> 3);
+            auto *leaf = &touch_leaf(coord);
             return leaf->turn_on_at(coord & 0x7);
         }
 
         inline FDB_DEVICE T &operator()(vec3i coord) const {
-            auto *leaf = m_view.find(coord >> 3);
+            auto *leaf = &get_leaf(coord);
             return leaf->at(coord & 0x7);
         }
     };

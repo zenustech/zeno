@@ -26,7 +26,7 @@ struct HashListGrid {
         m_grid.clear();
     }
 
-    struct Cell {
+    struct Leaf {
         typename HashListMap<vec3i, Tile>::Leaf m_leaf;
 
         inline FDB_DEVICE T &__append_slow() {
@@ -77,44 +77,43 @@ struct HashListGrid {
 
         template <class Kernel>
         inline void parallel_foreach(Kernel kernel, ParallelConfig cfg = {256, 2}) const {
-            parallel_foreach_cell([=] FDB_DEVICE (vec3i coord, Cell &cell) {
-                cell.foreach([&] (T &val) {
+            parallel_foreach_leaf([=] FDB_DEVICE (vec3i coord, Leaf &leaf) {
+                leaf.foreach([&] (T &val) {
                     kernel(std::as_const(coord), val);
                 });
             }, cfg);
         }
 
         template <class Kernel>
-        inline void parallel_foreach_cell(Kernel kernel, ParallelConfig cfg = {256, 2}) const {
+        inline void parallel_foreach_leaf(Kernel kernel, ParallelConfig cfg = {256, 2}) const {
             m_view.parallel_foreach_leaf([=] FDB_DEVICE (vec3i coord, auto &leaf) {
-                Cell &cell = *(Cell *)&leaf;
-                kernel(std::as_const(coord), cell);
+                kernel(std::as_const(coord), *(Leaf *)&leaf);
             }, cfg);
         }
 
         inline FDB_DEVICE T &append(vec3i coord) const {
-            auto *cell = &touch_cell(coord);
-            return cell->append();
+            auto *leaf = &touch_leaf(coord);
+            return leaf->append();
         }
 
         template <class Func>
-        inline FDB_DEVICE void foreach_in_cell(vec3i coord, Func func) const {
-            auto *cell = probe_cell(coord);
-            if (cell) {
-                cell->foreach(func);
+        inline FDB_DEVICE void foreach_in_leaf(vec3i coord, Func func) const {
+            auto *leaf = probe_leaf(coord);
+            if (leaf) {
+                leaf->foreach(func);
             }
         }
 
-        inline FDB_DEVICE Cell *probe_cell(vec3i coord) const {
-            return (Cell *)m_view.probe_leaf(coord);
+        inline FDB_DEVICE Leaf *probe_leaf(vec3i coord) const {
+            return (Leaf *)m_view.probe_leaf(coord);
         }
 
-        inline FDB_DEVICE Cell &touch_cell(vec3i coord) const {
-            return *(Cell *)&m_view.touch_leaf(coord);
+        inline FDB_DEVICE Leaf &touch_leaf(vec3i coord) const {
+            return *(Leaf *)&m_view.touch_leaf(coord);
         }
 
-        inline FDB_DEVICE Cell &get_cell(vec3i coord) const {
-            return *(Cell *)&m_view.get_leaf(coord);
+        inline FDB_DEVICE Leaf &get_leaf(vec3i coord) const {
+            return *(Leaf *)&m_view.get_leaf(coord);
         }
     };
 
