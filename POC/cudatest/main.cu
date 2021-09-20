@@ -8,26 +8,24 @@
 
 using namespace fdb;
 
-__managed__ int total = 0;
 __managed__ int count = 0;
 
 int main() {
+    const int n = 8192;
     HashTiledListGrid<int, 32> a;
-    a.reserve_blocks(166444);
+    a.reserve_blocks(n);
 
     auto av = a.view();
-    parallel_for(vec3S(16, 8, 8), [=] FDB_DEVICE (vec3i c) {
-        *av.append(c / 4) = c[0] + c[1] * 2 + c[2] * 4;
+    parallel_for(n, [=] FDB_DEVICE (size_t c) {
+        *av.append(vec3i((c * 114514 + 31415) % 8, 0, 0)) = c;
     });
 
     av.parallel_foreach([=] FDB_DEVICE (vec3i c, int &val) {
-        printf("%d %d %d = %d\n", c[0], c[1], c[2], val);
-        atomic_add(&total, val);
+        printf("%d = %d\n", c[0], val);
         atomic_add(&count, 1);
     });
 
     synchronize();
-    printf("29184 = %d\n", total);
-    printf("1024 = %d\n", count);
+    printf("%d = %d\n", n, count);
     return 0;
 }

@@ -242,12 +242,16 @@ static __device__ void atomic_store(T *dst, T src) {
 
 template <class T>
 static __device__ void atomic_spin_lock(T *dst, T val = (T)1, T dfl = (T)0) {
+    __threadfence();
     while (!atomic_casw(dst, dfl, val));
+    __threadfence();
 }
 
 template <class T>
 static __device__ void atomic_spin_unlock(T *dst, T val = (T)1, T dfl = (T)0) {
+    __threadfence();
     atomic_store(dst, dfl);
+    __threadfence();
 }
 
 }
