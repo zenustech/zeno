@@ -2,13 +2,13 @@
 //#include "impl_cuda.h"
 #include "impl_host.h"
 #include "Vector.h"
-#include "H21D3B_Grid.h"
+#include "H21B3_Grid.h"
 
 using namespace fdb;
 
 int main() {
 #if 1
-    H21D3B_Grid<float> a;
+    H21B3_Grid<float> a;
     a.reserve_blocks(32);
     {
         auto av = a.view();
