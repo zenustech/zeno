@@ -8,16 +8,14 @@ using namespace fdb;
 
 int main() {
 #if 1
-    HashMap<int, int> a;
-    a.reserve(16);
-    {
-        auto av = a.view();
-        parallel_for(32, [=] FDB_DEVICE (int i) {
-            av[i / 2] = i;
-        });
+    H21B3_Grid<vec3f> vel;
+    float dt = 0.01f;
 
-        av.parallel_foreach([=] FDB_DEVICE (int i, int &val) {
-            printf("%d %d\n", i, val);
+    a.reserve_blocks(16);
+    {
+        auto _vel = vel.view();
+        _vel.parallel_foreach([=] FDB_DEVICE (vec3i c, vec3f &vel) {
+            auto btpos = c - vel * dt;
         });
     }
 
@@ -43,4 +41,4 @@ int main() {
 
     synchronize();
     return 0;
-}
+i
