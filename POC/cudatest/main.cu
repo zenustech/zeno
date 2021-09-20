@@ -12,7 +12,7 @@ int main() {
 
     auto av = a.view();
     parallel_for(vec3S(16, 4, 2), [=] FDB_DEVICE (vec3S c) {
-        av.emplace(c / 2, c[0]);
+        *av.append(c / 2) = c[0];
     });
 
     av.parallel_foreach([=] FDB_DEVICE (vec3S c, int &val) {
