@@ -22,7 +22,7 @@ struct HashGrid {
         }
 
         FDB_CONSTEXPR bool has_value() const {
-            return (int64_t)value >= 0l;
+            return (int64_t)value >= 0L;
         }
 
         FDB_CONSTEXPR operator vec3i() const {

@@ -67,11 +67,13 @@ struct HashMap {
         inline FDB_DEVICE T *emplace(K key, T val) const {
             size_t hash = hash_func(key);
             for (size_t cnt = 0; cnt < m_capacity; cnt++) {
-                if (atomic_load((UK *)&m_keys[hash]) == (UK)key) {
+                if (atomic_cass((UK *)&m_keys[hash], (UK)key, (UK)key)) {
+                    printf("found[%ld] %lld -> %lld\n", cnt, (UK)key, (UK)hash);
                     m_values[hash] = val;
                     return &m_values[hash];
                 }
                 if (atomic_cass((UK *)&m_keys[hash], (UK)K(), (UK)key)) {
+                    printf("creat[%ld] %lld -> %lld\n", cnt, (UK)key, (UK)hash);
                     new (&m_values[hash]) T(val);
                     return &m_values[hash];
                 }
@@ -79,16 +81,22 @@ struct HashMap {
                 if (hash > m_capacity)
                     hash = 0;
             }
+            printf("bad emplace\n");
             return nullptr;
         }
 
         inline FDB_DEVICE T *touch(K key) const {
+        #if 0
+            return emplace(key, T());
+        #else
             size_t hash = hash_func(key);
             for (size_t cnt = 0; cnt < m_capacity; cnt++) {
-                if (atomic_load((UK *)&m_keys[hash]) == (UK)key) {
+                if (atomic_cass((UK *)&m_keys[hash], (UK)key, (UK)key)) {
+                    printf("found[%ld] %lld -> %lld\n", cnt, (UK)key, (UK)hash);
                     return &m_values[hash];
                 }
                 if (atomic_cass((UK *)&m_keys[hash], (UK)K(), (UK)key)) {
+                    printf("creat[%ld] %lld -> %lld\n", cnt, (UK)key, (UK)hash);
                     new (&m_values[hash]) T();
                     return &m_values[hash];
                 }
@@ -96,7 +104,9 @@ struct HashMap {
                 if (hash > m_capacity)
                     hash = 0;
             }
+            printf("bad touch\n");
             return nullptr;
+        #endif
         }
 
         inline FDB_DEVICE T *find(K key) const {
@@ -112,6 +122,7 @@ struct HashMap {
                     return &m_values[hash];
                 }
             }
+            printf("bad find\n");
             return nullptr;
         }
 

@@ -9,17 +9,16 @@ using namespace fdb;
 int main() {
 #if 1
     H21B3_Grid<float> a;
-    a.reserve_blocks(32);
+    a.reserve_blocks(4095);
     {
         auto av = a.view();
         parallel_for(vec3i(16, 8, 2), [=] FDB_DEVICE (vec3i c) {
-            printf("%d %d %d\n", c[0], c[1], c[2]);
             av[c] = length(vcast<float>(c));
         });
 
-        av.parallel_foreach([=] FDB_DEVICE (vec3i c, float &v) {
+        /*av.parallel_foreach([=] FDB_DEVICE (vec3i c, float &v) {
             printf("%d %d %d %f %f\n", c[0], c[1], c[2], v, length(vcast<float>(c)));
-        });
+        });*/
     }
 
 #else
