@@ -1,6 +1,6 @@
 #include <cstdio>
-//#include "impl_cuda.h"
-#include "impl_host.h"
+#include "impl_cuda.h"
+//#include "impl_host.h"
 #include "Vector.h"
 #include "H21B3_Grid.h"
 
@@ -12,7 +12,8 @@ int main() {
     a.reserve_blocks(32);
     {
         auto av = a.view();
-        parallel_for(vec3i(16, 16, 14), [=] FDB_DEVICE (vec3i c) {
+        parallel_for(vec3i(16, 8, 2), [=] FDB_DEVICE (vec3i c) {
+            printf("%d %d %d\n", c[0], c[1], c[2]);
             av[c] = length(vcast<float>(c));
         });
 

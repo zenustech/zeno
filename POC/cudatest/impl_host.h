@@ -42,10 +42,10 @@ static void parallel_for(vec2S dim, Kernel kernel, ParallelConfig cfg = {32, 1})
 template <class Kernel>
 static void parallel_for(vec3S dim, Kernel kernel, ParallelConfig cfg = {8, 1}) {
     parallel_for(dim[0] * dim[1] * dim[2], [=] (size_t i) {
-        size_t z = i % dim[1];
-        size_t j = i / dim[1];
-        size_t y = j / dim[0];
-        size_t x = j % dim[0];
+        size_t x = i % dim[0];
+        size_t j = i / dim[0];
+        size_t y = j % dim[1];
+        size_t z = j / dim[1];
         vec3S idx(x, y, z);
         kernel(std::as_const(idx));
     });

@@ -26,7 +26,7 @@ struct H21B3_Grid {
         }
 
         inline FDB_DEVICE T &at(vec3i coord) {
-            size_t i = coord[0] | coord[1] | coord[2] << 6;
+            size_t i = coord[0] | coord[1] << 3 | coord[2] << 6;
             return m_data[i];
         }
 
@@ -74,13 +74,12 @@ struct H21B3_Grid {
             }, cfg);
         }
 
-        template <bool allow_off = false>
         inline FDB_DEVICE T *probe(vec3i coord) const {
             auto *leaf = m_view.find(coord >> 3);
             if (!leaf)
                 return nullptr;
             coord &= 0x7;
-            if (!allow_off && !leaf->is_on(coord))
+            if (!leaf->is_on(coord))
                 return nullptr;
             return &leaf->at(coord);
         }
