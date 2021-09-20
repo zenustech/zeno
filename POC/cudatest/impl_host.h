@@ -64,7 +64,9 @@ static void memcpy_h2d(void *dst, const void *src, size_t n) {
 }
 
 static void *allocate(size_t n) {
-    return std::malloc(n);
+    void *p = std::malloc(n);
+    memset(p, 0xcc, n);
+    return p;
 }
 
 static void deallocate(void *p) {

@@ -1,13 +1,14 @@
 #pragma once
 
 #include "HashMap_vec3i.h"
+#include "Array.h"
 
 namespace fdb {
 
 template <class T>
 struct HashGrid {
     struct Leaf {
-        T m_data[8 * 8 * 8]{};
+        Array<T, 8 * 8 * 8> m_data{};
         uint8_t m_mask[8 * 8]{};
 
         inline FDB_DEVICE bool is_on(vec3i coord) {

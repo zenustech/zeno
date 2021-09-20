@@ -97,17 +97,20 @@ static void memcpy_h2d(void *dst, const void *src, size_t n) {
     checkCudaErrors(cudaMemcpy(dst, src, n, cudaMemcpyHostToDevice));
 }
 
-/*static void *allocate_shared(size_t n) {
+#if 1
+static void *allocate(size_t n) {
     void *p = nullptr;
     checkCudaErrors(cudaMallocManaged(&p, n));
+    memset(p, 0xcc, n);
     return p;
-}*/
-
+}
+#else
 static void *allocate(size_t n) {
     void *p = nullptr;
     checkCudaErrors(cudaMalloc(&p, n));
     return p;
 }
+#endif
 
 static void deallocate(void *p) {
     checkCudaErrors(cudaFree(p));
