@@ -1,6 +1,6 @@
 #include <cstdio>
-#include "impl_cuda.h"
-//#include "impl_host.h"
+//#include "impl_cuda.h"
+#include "impl_host.h"
 #include "HashTiledListGrid.h"
 
 using namespace fdb;

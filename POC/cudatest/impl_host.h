@@ -163,4 +163,14 @@ static void atomic_store(T *dst, T src) {
     atomic_ref<T>(*dst).store(src);
 }
 
+template <class T>
+static void atomic_spin_lock(T *dst, T val = (T)1, T dfl = (T)0) {
+    while (!atomic_casw(dst, dfl, val));
+}
+
+template <class T>
+static void atomic_spin_unlock(T *dst, T val = (T)1, T dfl = (T)0) {
+    atomic_store(dst, dfl);
+}
+
 }
