@@ -2,13 +2,14 @@
 
 #include "HashMap_vec3i.h"
 #include "HashListMap.h"
+#include "Array.h"
 
 namespace fdb {
 
 template <class T, size_t TileSize = 1024>
 struct HashListGrid {
     struct Tile {
-        T m_data[TileSize]{};
+        Array<T, TileSize> m_data{};
         int m_count{0};
     };
 
@@ -29,33 +30,31 @@ struct HashListGrid {
     struct Leaf {
         typename HashListMap<vec3i, Tile>::Leaf m_leaf;
 
-        inline FDB_DEVICE T &__append_slow() {
-            T *ptr;
+        inline FDB_DEVICE T &__append_slow(T val) {
             atomic_spin_lock(&m_leaf.m_lock);
             if (!m_leaf.m_head || m_leaf.m_head->m_data.m_count >= TileSize) {
                 Tile *tile = &m_leaf.__append_nonatomic();
-                ptr = &tile->m_data[0];
+                tile->m_data.store(0, val);
                 tile->m_count = 1;
             } else {
                 Tile *tile = &m_leaf.m_head->m_data;
                 int idx = tile->m_count++;
-                ptr = &tile->m_data[idx];
+                tile->m_data.store(idx, val);
             }
             atomic_spin_unlock(&m_leaf.m_lock);
-            return *ptr;
         }
 
-        inline FDB_DEVICE T &append() {
+        inline FDB_DEVICE T &append(T val) {
             if (auto *chunk = m_leaf.m_head; chunk) {
                 Tile *tile = &chunk->m_data;
                 int idx = atomic_add(&tile->m_count, 1);
                 if (idx < TileSize) {
-                    return tile->m_data[idx];
+                    tile->m_data.store(idx, val);
                 } else {
                     atomic_store(&tile->m_count, (int)TileSize);
                 }
             }
-            return __append_slow();
+            return __append_slow(val);
         }
 
         template <class Func>
