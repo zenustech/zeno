@@ -1,4 +1,5 @@
 x:
+	clear
 	cmake -Bbuild -DCMAKE_BUILD_TYPE=Release
 	make -Cbuild
 	build/OpenFDB

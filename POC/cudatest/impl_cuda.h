@@ -6,6 +6,7 @@
 #define FDB_DEVICE __device__
 
 #include "helper_cuda.h"
+#include <type_traits>
 #include <utility>
 #include "vec.h"
 
@@ -119,43 +120,98 @@ static void *reallocate(void *p, size_t old_n, size_t new_n) {
 }
 
 template <class T>
+inline __device__ std::conditional_t<std::is_pointer_v<T>,
+    std::conditional_t<sizeof(T) == 8, unsigned long long, uint32_t>,
+    std::conditional_t<std::is_same_v<T, unsigned long> && sizeof(unsigned long) == sizeof(unsigned long long),
+    unsigned long long, std::conditional_t<std::is_same_v<T, long> && sizeof(long) == sizeof(long long),
+    long long, T>>> *__atomic_mockp(T *p) {
+    if constexpr (std::is_pointer_v<T>) {
+        if constexpr (sizeof(T) == 8) {
+            return (unsigned long long *)p;
+        } else {
+            static_assert(sizeof(T) == 4);
+            return (uint32_t *)p;
+        }
+    } else {
+        if constexpr (std::is_same_v<T, unsigned long> && sizeof(unsigned long) == sizeof(unsigned long long)) {
+            return (unsigned long long *)p;
+        } else if constexpr (std::is_same_v<T, long> && sizeof(long) == sizeof(long long)) {
+            return (long long *)p;
+        } else {
+            return p;
+        }
+    }
+    return {};
+}
+
+template <class T>
+inline __device__ std::conditional_t<std::is_pointer_v<T>,
+    std::conditional_t<sizeof(T) == 8, unsigned long long, uint32_t>,
+    std::conditional_t<std::is_same_v<T, unsigned long> && sizeof(unsigned long) == sizeof(unsigned long long),
+    unsigned long long, std::conditional_t<std::is_same_v<T, long> && sizeof(long) == sizeof(long long),
+    long long, T>>> __atomic_mock(T t) {
+    if constexpr (std::is_pointer_v<T>) {
+        if constexpr (sizeof(T) == 8) {
+            return (unsigned long long)t;
+        } else {
+            static_assert(sizeof(T) == 4);
+            return (uint32_t)t;
+        }
+    } else {
+        if constexpr (std::is_same_v<T, unsigned long> && sizeof(unsigned long) == sizeof(unsigned long long)) {
+            return (unsigned long long)t;
+        } else if constexpr (std::is_same_v<T, long> && sizeof(long) == sizeof(long long)) {
+            return (long long)t;
+        } else {
+            return t;
+        }
+    }
+    return {};
+}
+
+template <class T, class S>
+inline __device__ T __atomic_unmock(S s) {
+    return (T)s;
+}
+
+template <class T>
 static __device__ T atomic_cas(T *dst, T cmp, T src) {
-    return atomicCAS(dst, cmp, src);
+    return __atomic_unmock<T>(atomicCAS(__atomic_mockp(dst), __atomic_mock(cmp), __atomic_mock(src)));
 }
 
 template <class T>
 static __device__ bool atomic_casw(T *dst, T cmp, T src) {
-    return atomicCAS(dst, cmp, src) == cmp;
+    return __atomic_unmock<T>(atomicCAS(__atomic_mockp(dst), __atomic_mock(cmp), __atomic_mock(src))) == cmp;
 }
 
 template <class T>
 static __device__ bool atomic_cass(T *dst, T cmp, T src) {
-    return atomicCAS(dst, cmp, src) == cmp;
+    return __atomic_unmock<T>(atomicCAS(__atomic_mockp(dst), __atomic_mock(cmp), __atomic_mock(src))) == cmp;
 }
 
 template <class T>
 static __device__ T atomic_add(T *dst, T src) {
-    return atomicAdd(dst, src);
+    return __atomic_unmock<T>(atomicAdd(__atomic_mockp(dst), __atomic_mock(src)));
 }
 
 template <class T>
 static __device__ T atomic_sub(T *dst, T src) {
-    return atomicSub(dst, src);
+    return __atomic_unmock<T>(atomicSub(__atomic_mockp(dst), __atomic_mock(src)));
 }
 
 template <class T>
 static __device__ T atomic_max(T *dst, T src) {
-    return atomicMax(dst, src);
+    return __atomic_unmock<T>(atomicMax(__atomic_mockp(dst), __atomic_mock(src)));
 }
 
 template <class T>
 static __device__ T atomic_min(T *dst, T src) {
-    return atomicMin(dst, src);
+    return __atomic_unmock<T>(atomicMin(__atomic_mockp(dst), __atomic_mock(src)));
 }
 
 template <class T>
 static __device__ T atomic_swap(T *dst, T src) {
-    return atomicExch(dst, src);
+    return __atomic_unmock<T>(atomicExch(__atomic_mockp(dst), __atomic_mock(src)));
 }
 
 template <class T>

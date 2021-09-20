@@ -14,10 +14,10 @@ struct HashListGrid {
     struct Leaf {
         Chunk *m_head{nullptr};
 
-        T *emplace() {
+        inline FDB_DEVICE T *emplace() {
             auto *new_node = (Chunk *)malloc(sizeof(Chunk));
             new (new_node) Chunk();
-            auto *old_head = (Chunk *)atomic_swap((uintptr_t *)&m_head, (uintptr_t)new_node);
+            auto *old_head = (Chunk *)atomic_swap(&m_head, new_node);
             new_node->m_next = old_head;
             return &new_node->m_data;
         }
