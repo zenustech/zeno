@@ -30,7 +30,7 @@ int main() {
 #else
     av.parallel_foreach_leaf([=] FDB_DEVICE (vec3i coord, auto &leaf) {
         leaf.foreach_load([&] (int val) {
-            printf("%d = %d\n", coord[0], val);
+            //printf("%d = %d\n", coord[0], val);
             atomic_add(&count, 1);
         });
     });
