@@ -4,7 +4,7 @@
 #else
 #include "impl_host.h"
 #endif
-#include "HashTiledListGrid.h"
+#include "HashListGrid.h"
 
 using namespace fdb;
 
@@ -12,7 +12,7 @@ __managed__ int count = 0;
 
 int main() {
     const int n = 8192 * 2;
-    HashTiledListGrid<int, 64> a;
+    HashListGrid<int, 64> a;
     a.reserve_blocks(n);
 
     auto av = a.view();

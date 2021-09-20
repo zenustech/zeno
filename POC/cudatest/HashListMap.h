@@ -4,8 +4,8 @@
 
 namespace fdb {
 
-template <class T, class LockType = int>
-struct HashListGrid {
+template <class K, class T, class LockType = int>
+struct HashListMap {
     struct Chunk {
         T m_data{};
         Chunk *m_next{nullptr};
@@ -33,50 +33,50 @@ struct HashListGrid {
         }
     };
 
-    HashGrid<Leaf> m_grid;
+    HashMap<K, Leaf> m_grid;
 
-    inline FDB_CONSTEXPR size_t capacity_blocks() const {
+    inline FDB_CONSTEXPR size_t capacity() const {
         return m_grid.capacity();
     }
 
-    inline void reserve_blocks(size_t n) {
+    inline void reserve(size_t n) {
         m_grid.reserve(n);
     }
 
-    inline void clear_blocks() {
+    inline void clear() {
         m_grid.clear();
     }
 
     struct View {
-        typename HashGrid<Leaf>::View m_view;
+        typename HashMap<K, Leaf>::View m_view;
 
-        View(HashListGrid const &parent)
+        View(HashListMap const &parent)
             : m_view(parent.m_grid.view())
         {}
 
         template <class Kernel>
         inline void parallel_foreach(Kernel kernel, ParallelConfig cfg = {256, 2}) const {
-            m_view.parallel_foreach([=] FDB_DEVICE (vec3i coord, Leaf &leaf) {
+            m_view.parallel_foreach([=] FDB_DEVICE (K coord, Leaf &leaf) {
                 for (auto chunk = leaf.m_head; chunk; chunk = chunk->m_next) {
                     kernel(std::as_const(coord), chunk->m_data);
                 }
             }, cfg);
         }
 
-        inline FDB_DEVICE T *append(vec3i coord) const {
-            auto *leaf = m_view.touch(coord);
+        inline FDB_DEVICE T *append(K key) const {
+            auto *leaf = m_view.touch(key);
             return leaf->append();
         }
 
-        inline FDB_DEVICE Leaf *probe_leaf_at(vec3i coord) const {
+        inline FDB_DEVICE Leaf *probe_leaf_at(K coord) const {
             return m_view.find(coord);
         }
 
-        inline FDB_DEVICE Leaf &touch_leaf_at(vec3i coord) const {
+        inline FDB_DEVICE Leaf &touch_leaf_at(K coord) const {
             return *m_view.touch(coord);
         }
 
-        inline FDB_DEVICE Leaf &leaf_at(vec3i coord) const {
+        inline FDB_DEVICE Leaf &leaf_at(K coord) const {
             return *m_view.find(coord);
         }
     };

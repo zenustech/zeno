@@ -1,6 +1,6 @@
 #pragma once
 
-#include "HashLinkedListGrid.h"
+#include "HashListMap.h"
 
 namespace fdb {
 
@@ -11,22 +11,22 @@ struct HashListGrid {
         int m_count{0};
     };
 
-    HashLinkedListGrid<Tile> m_grid;
+    HashListMap<vec3i, Tile> m_grid;
 
     inline FDB_CONSTEXPR size_t capacity_blocks() const {
-        return m_grid.capacity_blocks();
+        return m_grid.capacity();
     }
 
     inline void reserve_blocks(size_t n) {
-        m_grid.reserve_blocks(n);
+        m_grid.reserve(n);
     }
 
     inline void clear_blocks() {
-        m_grid.clear_blocks();
+        m_grid.clear();
     }
 
     struct View {
-        typename HashLinkedListGrid<Tile>::View m_view;
+        typename HashListMap<vec3i, Tile>::View m_view;
 
         View(HashListGrid const &parent)
             : m_view(parent.m_grid.view())
