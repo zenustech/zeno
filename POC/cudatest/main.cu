@@ -17,7 +17,7 @@ int main() {
 
     auto av = a.view();
     parallel_for(n, [=] FDB_DEVICE (size_t c) {
-        *av.append(vec3i((c * 114514 + 31415) % 8, 0, 0)) = c;
+        av.append(vec3i((c * 114514 + 31415) % 8, 0, 0)) = c;
     });
 
     av.parallel_foreach([=] FDB_DEVICE (vec3i c, int &val) {

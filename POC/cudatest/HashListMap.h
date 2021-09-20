@@ -15,21 +15,28 @@ struct HashListMap {
         Chunk *m_head{nullptr};
         LockType m_lock{};
 
-        inline FDB_DEVICE T *append() {
+        inline FDB_DEVICE T &append() {
             auto *chunk = (Chunk *)dynamic_allocate(sizeof(Chunk));
             new (chunk) Chunk();
             auto *old_head = atomic_swap(&m_head, chunk);
             chunk->m_next = old_head;
-            return &chunk->m_data;
+            return chunk->m_data;
         }
 
-        inline FDB_DEVICE T *append_nonatomic() {
+        inline FDB_DEVICE T &__append_nonatomic() {
             auto *chunk = (Chunk *)dynamic_allocate(sizeof(Chunk));
             new (chunk) Chunk();
             auto *old_head = m_head;
             m_head = chunk;
             chunk->m_next = old_head;
-            return &chunk->m_data;
+            return chunk->m_data;
+        }
+
+        template <class Func>
+        inline FDB_DEVICE void foreach(Func func) const {
+            for (auto chunk = m_head; chunk; chunk = chunk->m_next) {
+                func(chunk->m_data);
+            }
         }
     };
 
@@ -55,28 +62,33 @@ struct HashListMap {
         {}
 
         template <class Kernel>
+        inline void parallel_foreach_leaf(Kernel kernel, ParallelConfig cfg = {256, 2}) const {
+            m_view.parallel_foreach(kernel, cfg);
+        }
+
+        template <class Kernel>
         inline void parallel_foreach(Kernel kernel, ParallelConfig cfg = {256, 2}) const {
-            m_view.parallel_foreach([=] FDB_DEVICE (K key, Leaf &leaf) {
-                for (auto chunk = leaf.m_head; chunk; chunk = chunk->m_next) {
-                    kernel(std::as_const(key), chunk->m_data);
-                }
+            parallel_foreach_leaf([=] FDB_DEVICE (K key, Leaf &leaf) {
+                leaf.foreach([&] (T &value) {
+                    kernel(std::as_const(key), value);
+                });
             }, cfg);
         }
 
-        inline FDB_DEVICE T *append(K key) const {
+        inline FDB_DEVICE T &append(K key) const {
             auto *leaf = m_view.touch(key);
             return leaf->append();
         }
 
-        inline FDB_DEVICE Leaf *probe_leaf_at(K key) const {
+        inline FDB_DEVICE Leaf *probe_leaf(K key) const {
             return m_view.find(key);
         }
 
-        inline FDB_DEVICE Leaf &touch_leaf_at(K key) const {
+        inline FDB_DEVICE Leaf &touch_leaf(K key) const {
             return *m_view.touch(key);
         }
 
-        inline FDB_DEVICE Leaf &leaf_at(K key) const {
+        inline FDB_DEVICE Leaf &get_leaf(K key) const {
             return *m_view.find(key);
         }
     };
