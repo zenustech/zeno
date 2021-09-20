@@ -50,6 +50,7 @@ struct HashListGrid {
                 int idx = atomic_add(&tile->m_count, 1);
                 if (idx < TileSize) {
                     tile->m_data.store(idx, val);
+                    return;
                 } else {
                     atomic_store(&tile->m_count, (int)TileSize);
                 }
