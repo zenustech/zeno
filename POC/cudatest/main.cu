@@ -11,6 +11,7 @@ using namespace fdb;
 __managed__ int count = 0;
 
 int main() {
+#if 1
     const int n = 8192 * 2;
     HashListGrid<int> a;
     a.reserve_blocks(10);
@@ -26,7 +27,7 @@ int main() {
         printf("%d = %d\n", coord[0], val);
         atomic_add(&count, 1);
     });
-#else
+#elif 0
     av.parallel_foreach_leaf([=] FDB_DEVICE (vec3i coord, auto &leaf) {
         leaf.foreach_load([&] (int val) {
             printf("%d = %d\n", coord[0], val);
@@ -34,8 +35,18 @@ int main() {
         });
     });
 #endif
-
     synchronize();
     printf("%d = %d\n", n, count);
+
+#else
+    Vector<int> a;
+    a.resize(1024);
+
+    auto av = a.view();
+    parallel_for(a.size(), [=] FDB_DEVICE (size_t i) {
+        printf("%d\n", av[i]);
+    });
+
+#endif
     return 0;
 }
