@@ -8,12 +8,12 @@ using namespace fdb;
 __managed__ int count = 0;
 
 int main() {
-    HashTiledListGrid<int> a;
+    HashTiledListGrid<int, 8> a;
     a.reserve_blocks(4096);
 
     auto av = a.view();
     parallel_for(vec3S(2, 2, 16), [=] FDB_DEVICE (vec3i c) {
-        *av.append(vec3i(0, 0, 0)) = c[0] + c[1] * 2 + c[2] * 4;
+        *av.append(c / 2) = c[0] + c[1] * 2 + c[2] * 4;
     });
 
     av.parallel_foreach([=] FDB_DEVICE (vec3i c, int &val) {
@@ -22,6 +22,6 @@ int main() {
     });
 
     synchronize();
-    printf("%d\n", count);
+    printf("2016 = %d\n", count);
     return 0;
 }
