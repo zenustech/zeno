@@ -1,6 +1,5 @@
 #pragma once
 
-#include "HashMap_vec3i.h"
 #include "HashListMap.h"
 #include "Array.h"
 
@@ -8,6 +7,13 @@ namespace fdb {
 
 template <class T, size_t TileSize = 128>
 struct HashListGrid {
+    static_assert(std::is_constructible<T>::value);
+    static_assert(std::is_trivially_copy_constructible<T>::value);
+    static_assert(std::is_trivially_copy_assignable<T>::value);
+    static_assert(std::is_trivially_move_constructible<T>::value);
+    static_assert(std::is_trivially_move_assignable<T>::value);
+    static_assert(std::is_trivially_destructible<T>::value);
+
     struct Tile {
         Array<T, TileSize> m_data{};
         int m_count{0};

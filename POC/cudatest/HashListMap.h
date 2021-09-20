@@ -6,6 +6,18 @@ namespace fdb {
 
 template <class K, class T>
 struct HashListMap {
+    static_assert(std::is_constructible<T>::value);
+    static_assert(std::is_trivially_move_constructible<T>::value);
+    static_assert(std::is_trivially_move_assignable<T>::value);
+    static_assert(std::is_trivially_destructible<T>::value);
+
+    static_assert(std::is_constructible<K>::value);
+    static_assert(std::is_trivially_copy_constructible<K>::value);
+    static_assert(std::is_trivially_copy_assignable<K>::value);
+    static_assert(std::is_trivially_move_constructible<K>::value);
+    static_assert(std::is_trivially_move_assignable<K>::value);
+    static_assert(std::is_trivially_destructible<K>::value);
+
     struct Chunk {
         T m_data{};
         Chunk *m_next{nullptr};
