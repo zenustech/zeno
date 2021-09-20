@@ -14,10 +14,10 @@ struct HashListGrid {
     struct Leaf {
         Chunk *m_head{nullptr};
 
-        T *insert(T val) {
+        T *insert() {
             auto *new_node = (Chunk *)malloc(sizeof(Chunk));
             new (new_node) Chunk();
-            auto *old_head = atomic_swap(&m_head, new_node);
+            auto *old_head = (Chunk *)atomic_swap((uintptr_t *)&m_head, (uintptr_t)new_node);
             new_node->m_next = old_head;
             return &new_node->m_data;
         }
@@ -53,9 +53,18 @@ struct HashListGrid {
             }, cfg);
         }
 
-        inline FDB_DEVICE T *insert(vec3i coord, T val) const {
-            auto *leaf = m_view.find(coord);
-            return leaf->insert(val);
+        inline FDB_DEVICE T *emplace(vec3i coord, T val) const {
+            auto *leaf = m_view.touch(coord);
+            auto *ptr = leaf->insert();
+            new (ptr) T(val);
+            return ptr;
+        }
+
+        inline FDB_DEVICE T *insert(vec3i coord) const {
+            auto *leaf = m_view.touch(coord);
+            auto *ptr = leaf->insert();
+            new (ptr) T();
+            return ptr;
         }
 
         inline FDB_DEVICE Leaf *probe_leaf_at(vec3i coord) const {
