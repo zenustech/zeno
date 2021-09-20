@@ -13,11 +13,11 @@ __managed__ int count = 0;
 int main() {
     const int n = 8192 * 2;
     HashListGrid<int> a;
-    a.reserve_blocks(n);
+    a.reserve_blocks(n / 4);
 
     auto av = a.view();
     parallel_for(n, [=] FDB_DEVICE (size_t c) {
-        av.append(vec3i((c * 114514 + 31415) % 8, 0, 0)) = c;
+        av.append(vec3i((c * 114514 + 31415) % 8, 0, 0), c);
     });
 
 #if 0
@@ -27,7 +27,7 @@ int main() {
     });
 #else
     av.parallel_foreach_leaf([=] FDB_DEVICE (vec3i coord, auto &leaf) {
-        leaf.foreach([&] (int &val) {
+        leaf.foreach([&] (int val) {
             printf("%d = %d\n", coord[0], val);
             atomic_add(&count, 1);
         });

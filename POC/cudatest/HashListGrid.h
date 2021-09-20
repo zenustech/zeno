@@ -58,10 +58,30 @@ struct HashListGrid {
         }
 
         template <class Func>
-        inline FDB_DEVICE void foreach(Func func) const {
+        inline FDB_DEVICE void foreach_load(Func func) const {
             m_leaf.foreach([&] (Tile &tile) {
                 for (int i = 0; i < std::min((int)TileSize, tile.m_count); i++) {
-                    func(tile.m_data[i]);
+                    func(tile.m_data.load(i));
+                }
+            });
+        }
+
+        template <class Func>
+        inline FDB_DEVICE void foreach_store(Func func) const {
+            m_leaf.foreach([&] (Tile &tile) {
+                for (int i = 0; i < std::min((int)TileSize, tile.m_count); i++) {
+                    tile.m_data.store(i, func());
+                }
+            });
+        }
+
+        template <class Func>
+        inline FDB_DEVICE void foreach_modify(Func func) const {
+            m_leaf.foreach([&] (Tile &tile) {
+                for (int i = 0; i < std::min((int)TileSize, tile.m_count); i++) {
+                    auto val = tile.m_data.load(i);
+                    func(val);
+                    tile.m_data.store(i, val);
                 }
             });
         }
@@ -77,7 +97,7 @@ struct HashListGrid {
         template <class Kernel>
         inline void parallel_foreach(Kernel kernel, ParallelConfig cfg = {256, 2}) const {
             parallel_foreach_leaf([=] FDB_DEVICE (vec3i coord, Leaf &leaf) {
-                leaf.foreach([&] (T &val) {
+                leaf.foreach_modify([&] (T &val) {
                     kernel(std::as_const(coord), val);
                 });
             }, cfg);
@@ -92,7 +112,7 @@ struct HashListGrid {
 
         inline FDB_DEVICE void append(vec3i coord, T val) const {
             auto *leaf = &touch_leaf(coord);
-            leaf->append(val);
+            return leaf->append(val);
         }
 
         template <class Func>
