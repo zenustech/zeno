@@ -1,5 +1,9 @@
 #pragma once
 
+#error "WIP"
+
+namespace fdb {
+
 template <class ...Ts>
 struct TiledVector {
     struct Tile {
@@ -8,3 +12,5 @@ struct TiledVector {
 
     Vector<Tile> m_arr;
 };
+
+}

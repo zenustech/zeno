@@ -2,6 +2,13 @@
 
 namespace fdb {
 
+#if 0
+template <class Ts...>
+struct SOATuple {
+    //... TODO
+};
+#endif
+
 template <class T, size_t N>
 struct Array {
     T m[N]{};
