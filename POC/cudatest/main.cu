@@ -10,7 +10,7 @@ int main() {
     a.reserve_blocks(4096);
 
     auto av = a.view();
-    parallel_for(vec3S(16, 4, 2), [=] FDB_DEVICE (vec3S c) {
+    parallel_for(vec3S(2, 2, 2), [=] FDB_DEVICE (vec3S c) {
         *av.append(c / 2) = c[0];
     });
 
