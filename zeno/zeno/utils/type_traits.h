@@ -23,7 +23,7 @@ struct tuple_contains<T, std::tuple<>> : std::false_type {
 };
 
 template <typename T, typename U, typename... Ts>
-struct tuple_contains<T, std::tuple<U, Ts...>> : has_type<T, std::tuple<Ts...>> {
+struct tuple_contains<T, std::tuple<U, Ts...>> : tuple_contains<T, std::tuple<Ts...>> {
 };
 
 template <typename T, typename... Ts>
@@ -62,7 +62,7 @@ struct remove_shared_ptr {
 };
 
 template <class T>
-struct is_shared_ptr<std::shared_ptr<T>> {
+struct remove_shared_ptr<std::shared_ptr<T>> {
     using type = T;
 };
 
