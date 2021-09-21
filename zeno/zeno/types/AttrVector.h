@@ -10,7 +10,12 @@ namespace zeno {
 
 template <class ValT>
 struct AttrVector {
-    using VariantType = std::variant<std::vector<vec3f>, std::vector<float>>;
+    using VariantType = std::variant
+        < std::vector<vec3f>
+        , std::vector<float>
+        , std::vector<vec3i>
+        , std::vector<int>
+        >;
     using ValueType = ValT;
 
     std::vector<ValT> values;
