@@ -28,24 +28,14 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     void foreach_attr(F &&f) {
         std::string pos_name = "pos";
         f(pos_name, verts.values);
-        verts.foreach_attr([&] (auto const &key, auto const &arr) {
-            using T = std::decay_t<decltype(arr[0])>;
-            if constexpr (tuple_contains<T, std::tuple<float, vec3f>>::value) {
-                f(key, arr);
-            }
-        });
+        verts.foreach_attr(std::move(f));
     }
 
     template <class F>
     void foreach_attr(F &&f) const {
         std::string const pos_name = "pos";
         f(pos_name, verts.values);
-        verts.foreach_attr([&] (auto &key, auto &arr) {
-            using T = std::decay_t<decltype(arr[0])>;
-            if constexpr (tuple_contains<T, std::tuple<float, vec3f>>::value) {
-                f(key, arr);
-            }
-        });
+        verts.foreach_attr(std::move(f));
     }
 
     size_t num_attrs() const {
