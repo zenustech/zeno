@@ -2,6 +2,7 @@
 
 #include <zeno/core/IObject.h>
 #include <zeno/types/AttrVector.h>
+#include <zeno/utils/type_traits.h>
 #include <zeno/utils/vec.h>
 #include <optional>
 #include <variant>
@@ -27,14 +28,24 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     void foreach_attr(F &&f) {
         std::string pos_name = "pos";
         f(pos_name, verts.values);
-        verts.foreach_attr(f);
+        verts.foreach_attr([&] (auto const &key, auto const &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            if constexpr (tuple_contains<T, std::tuple<float, vec3f>>::value) {
+                f(key, arr);
+            }
+        });
     }
 
     template <class F>
     void foreach_attr(F &&f) const {
         std::string const pos_name = "pos";
         f(pos_name, verts.values);
-        verts.foreach_attr(f);
+        verts.foreach_attr([&] (auto &key, auto &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            if constexpr (tuple_contains<T, std::tuple<float, vec3f>>::value) {
+                f(key, arr);
+            }
+        });
     }
 
     size_t num_attrs() const {

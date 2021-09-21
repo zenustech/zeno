@@ -5,40 +5,11 @@
 #include <variant>
 #include <cstdint>
 #include <optional>
+#include "type_traits.h"
 #include "vec.h"
 
 
 namespace zeno {
-
-template <int First, int Last, typename Lambda>
-inline constexpr bool static_for(Lambda const &f) {
-    if constexpr (First < Last) {
-        if (f(std::integral_constant<int, First>{})) {
-            return true;
-        } else {
-            return static_for<First + 1, Last>(f);
-        }
-    }
-    return false;
-}
-
-template <class T>
-struct is_variant : std::false_type {
-};
-
-template <class ...Ts>
-struct is_variant<std::variant<Ts...>> : std::true_type {
-    using tuple_type = std::tuple<Ts...>;
-};
-
-template <class T>
-struct is_shared_ptr : std::false_type {
-};
-
-template <class T>
-struct is_shared_ptr<std::shared_ptr<T>> : std::true_type {
-    using type = T;
-};
 
 using scalar_type_variant = std::variant
         < bool
@@ -144,7 +115,7 @@ std::optional<T> exact_any_cast(Any a) {
             if (!ptr) return std::nullopt;
             return std::make_optional(ptr);
         } else if constexpr (is_shared_ptr<T>::value) {
-            using U = typename is_shared_ptr<T>::type;
+            using U = typename remove_shared_ptr<T>::type;
             decltype(auto) ptr = std::static_pointer_cast<U>(std::move(v));
             if (!ptr) return std::nullopt;
             return std::make_optional(std::move(ptr));
@@ -163,7 +134,7 @@ std::optional<T> silent_any_cast(Any const &a) {
         return std::make_optional(a);
 
     } else if constexpr (is_variant<T>::value) {
-    using TupleT = typename is_variant<T>::tuple_type;
+    using TupleT = typename variant_to_tuple<T>::type;
     T v;
     if (static_for<0, std::tuple_size_v<TupleT>>([&] (auto i) {
         using Ti = std::tuple_element_t<i, TupleT>;
@@ -185,7 +156,7 @@ std::optional<T> silent_any_cast(Any const &a) {
             if (!ptr) return std::nullopt;
             return std::make_optional(ptr);
         } else if constexpr (is_shared_ptr<T>::value) {
-            using U = typename is_shared_ptr<T>::type;
+            using U = typename remove_shared_ptr<T>::type;
             auto ptr = std::dynamic_pointer_cast<U>(v);
             if (!ptr) return std::nullopt;
             return std::make_optional(ptr);
