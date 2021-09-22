@@ -26,8 +26,22 @@ struct CursorState {
 } cur;
 
 
-struct Button {
+struct Widget {
+    Widget() = default;
+    Widget(Widget const &) = delete;
+    Widget &operator=(Widget const &) = delete;
+    virtual ~Widget() = default;
+
+    virtual void on_update() = 0;
+    virtual void on_draw() const = 0;
+};
+
+
+struct Button : Widget {
     float x0, y0, nx, ny;
+
+    Button(float x0, float y0, float nx, float ny)
+        : x0(x0), y0(y0), nx(nx), ny(ny) {}
 
     bool hover = false;
     bool press = false;
