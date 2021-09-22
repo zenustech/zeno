@@ -123,6 +123,8 @@ struct Widget : IWidget {
     Widget *parent = nullptr;
     std::vector<std::unique_ptr<Widget>> children;
 
+    Widget *child_selected = nullptr;
+
     template <class T, class ...Ts>
     T *add_child(Ts &&...ts) {
         std::unique_ptr<Widget> p = std::make_unique<T>(std::forward<Ts>(ts)...);
@@ -139,28 +141,30 @@ struct Widget : IWidget {
         auto bbox = get_bounding_box();
         hovered = bbox.contains(cur.x, cur.y);
 
-        if (pressable) {
-            if (hovered && cur.lmb) {
-                if (cur.lmb_pressed)
-                    cur.lmb_pressed->pressed = false;
-                cur.lmb_pressed = this;
-                pressed = true;
+        if (parent) {
+            if (pressable) {
+                if (hovered && cur.lmb) {
+                    if (cur.lmb_pressed)
+                        cur.lmb_pressed->pressed = false;
+                    cur.lmb_pressed = this;
+                    pressed = true;
+                }
+                if (!cur.lmb) {
+                    pressed = false;
+                }
             }
-            if (!cur.lmb) {
-                pressed = false;
+
+            if (cur.lmb) {
+                if (parent->child_selected)
+                    parent->child_selected->selected = false;
+                parent->child_selected = nullptr;
             }
-        }
 
-        if (cur.lmb) {
-            if (cur.lmb_selected)
-                cur.lmb_selected->selected = false;
-            cur.lmb_selected = nullptr;
-        }
-
-        if (selectable) {
-            if (hovered && cur.lmb) {
-                cur.lmb_selected = this;
-                selected = true;
+            if (selectable) {
+                if (hovered && cur.lmb) {
+                    parent->child_selected = this;
+                    selected = true;
+                }
             }
         }
 
@@ -238,6 +242,7 @@ struct MyWindow : Widget {
         add_child<Button>(AABB(100, 100, 150, 50), "OK");
         add_child<Button>(AABB(300, 100, 150, 50), "Cancel");
         add_child<Selectable>(AABB(100, 300, 150, 50));
+        add_child<Selectable>(AABB(300, 300, 150, 50));
     }
 
     AABB get_bounding_box() const override {
@@ -280,8 +285,9 @@ int main() {
         fprintf(stderr, "Failed to initialize GLFW library: %s\n", err);
         return -1;
     }
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
     window = glfwCreateWindow(800, 600, "Zeno Editor", nullptr, nullptr);
     if (!window) {
         const char *err = "unknown error"; glfwGetError(&err);
