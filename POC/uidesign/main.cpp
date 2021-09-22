@@ -154,14 +154,10 @@ struct Widget : IWidget {
                 }
             }
 
-            if (cur.lmb) {
-                if (parent->child_selected)
-                    parent->child_selected->selected = false;
-                parent->child_selected = nullptr;
-            }
-
             if (selectable) {
                 if (hovered && cur.lmb) {
+                    if (parent->child_selected)
+                        parent->child_selected->selected = false;
                     parent->child_selected = this;
                     selected = true;
                 }
@@ -192,9 +188,9 @@ struct Button : Widget {
 
     void draw() const override {
         if (pressed) {
-            glColor3f(0.375f, 0.5f, 1.0f);
-        } else if (hovered) {
             glColor3f(0.75f, 0.5f, 0.375f);
+        } else if (hovered) {
+            glColor3f(0.375f, 0.5f, 1.0f);
         } else {
             glColor3f(0.375f, 0.375f, 0.375f);
         }
@@ -226,9 +222,9 @@ struct Selectable : Widget {
 
     void draw() const override {
         if (selected) {
-            glColor3f(0.375f, 0.5f, 1.0f);
-        } else if (hovered) {
             glColor3f(0.75f, 0.5f, 0.375f);
+        } else if (hovered) {
+            glColor3f(0.375f, 0.5f, 1.0f);
         } else {
             glColor3f(0.375f, 0.375f, 0.375f);
         }
@@ -285,7 +281,7 @@ int main() {
         fprintf(stderr, "Failed to initialize GLFW library: %s\n", err);
         return -1;
     }
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
     window = glfwCreateWindow(800, 600, "Zeno Editor", nullptr, nullptr);
